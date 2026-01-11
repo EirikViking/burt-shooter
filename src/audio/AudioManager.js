@@ -13,8 +13,7 @@ class SimpleAudio {
     try {
       this.context = new (window.AudioContext || window.webkitAudioContext)();
       this.createSounds();
-    } catch (e) {
-      console.warn('Web Audio API not supported', e);
+    } catch (error) {
       this.enabled = false;
     }
   }
