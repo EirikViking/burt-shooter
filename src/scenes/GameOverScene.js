@@ -107,14 +107,19 @@ export class GameOverScene {
     this.keyHandler = (e) => {
       if (this.submitting) return;
 
-      if (e.key === 'Enter' && this.nameInput.length > 0) {
+      const isSubmitKey = e.key === 'Enter' || e.key === 'Return' || e.code === 'NumpadEnter';
+      if (isSubmitKey && this.nameInput.length > 0) {
+        e.preventDefault();
         this.submitScore();
+        return;
       } else if (e.key === 'Backspace') {
+        e.preventDefault();
         this.nameInput = this.nameInput.slice(0, -1);
         this.updateNameDisplay();
       } else if (e.key === 'Escape') {
         this.game.switchScene('menu');
       } else if (e.key.length === 1 && this.nameInput.length < 10) {
+        e.preventDefault();
         this.nameInput += e.key.toUpperCase();
         this.updateNameDisplay();
       }
