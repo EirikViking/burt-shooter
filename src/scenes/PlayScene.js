@@ -6,6 +6,7 @@ import { PowerupManager } from '../managers/PowerupManager.js';
 import { ParticleManager } from '../effects/ParticleManager.js';
 import { ScreenShake } from '../effects/ScreenShake.js';
 import { InputManager } from '../input/InputManager.js';
+import { TouchControls } from '../input/TouchControls.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import {
@@ -20,9 +21,12 @@ export class PlayScene {
     this.game = game;
     this.container = new PIXI.Container();
     this.gameContainer = new PIXI.Container();
+    this.uiContainer = new PIXI.Container();
     this.container.addChild(this.gameContainer);
+    this.container.addChild(this.uiContainer);
 
     this.inputManager = new InputManager();
+    this.touchControls = null;
     this.player = null;
     this.enemyManager = null;
     this.bulletManager = null;
@@ -42,14 +46,11 @@ export class PlayScene {
     this.achievementTimer = 0;
     this.tauntTimer = 0;
     this.lowLivesShownFor = null;
-    this.pausePressed = false;
-    this.achievementTimer = 0;
-    this.tauntTimer = 0;
-    this.lowLivesShownFor = null;
   }
 
   init() {
     this.gameContainer.removeChildren();
+    this.uiContainer.removeChildren();
     this.levelAdvancePending = false;
     this.levelAdvanceTimeout = null;
     this.capState = {
@@ -75,7 +76,11 @@ export class PlayScene {
     this.enemyManager = new EnemyManager(this.gameContainer, this.game, capHandler);
 
     // Create HUD
-    this.hud = new HUD(this.container, this.game);
+    this.hud = new HUD(this.uiContainer, this.game);
+
+    // Initialize touch controls for mobile
+    this.touchControls = new TouchControls(this.uiContainer, this.game);
+    this.touchControls.init();
 
     // Start first level
     this.startLevel();
@@ -163,11 +168,24 @@ export class PlayScene {
     this.handlePauseToggle();
     if (this.isPaused) return;
 
+    // Apply touch control movement to input manager
+    if (this.touchControls && this.touchControls.active) {
+      const movement = this.touchControls.getMovement();
+      this.inputManager.setKeyPressed('KeyA', movement.dx < -0.3);
+      this.inputManager.setKeyPressed('KeyD', movement.dx > 0.3);
+      this.inputManager.setKeyPressed('KeyW', movement.dy < -0.3);
+      this.inputManager.setKeyPressed('KeyS', movement.dy > 0.3);
+    }
+
     // Update player
     this.player.update(delta);
 
-    // Player shooting
-    if (this.inputManager.isKeyPressed('Space') || this.inputManager.isKeyPressed('shoot')) {
+    // Player shooting (keyboard or touch)
+    const firePressed = this.inputManager.isKeyPressed('Space') ||
+                       this.inputManager.isKeyPressed('shoot') ||
+                       (this.touchControls && this.touchControls.isFirePressed());
+
+    if (firePressed) {
       if (this.player.canShoot()) {
         const bullets = this.player.shoot();
         bullets.forEach(bullet => this.bulletManager.addPlayerBullet(bullet));
@@ -293,6 +311,10 @@ export class PlayScene {
       this.levelAdvanceTimeout = null;
     }
     this.inputManager.destroy();
+    if (this.touchControls) {
+      this.touchControls.destroy();
+      this.touchControls = null;
+    }
     if (this.hud) {
       this.hud.destroy();
     }

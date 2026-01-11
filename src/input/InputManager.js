@@ -3,86 +3,59 @@ export class InputManager {
     this.keys = {};
     this.touches = [];
     this.touchFireActive = false;
-
     this.setupKeyboard();
-    this.setupTouch();
+    this.setupFocusHandlers();
   }
 
   setupKeyboard() {
-    window.addEventListener('keydown', (e) => {
+    this.handleKeyDown = (e) => {
       this.keys[e.code] = true;
       this.keys[e.key] = true;
-    });
-
-    window.addEventListener('keyup', (e) => {
-      this.keys[e.code] = false;
-      this.keys[e.key] = false;
-    });
-  }
-
-  setupTouch() {
-    // Touch joystick for mobile
-    this.joystick = {
-      active: false,
-      startX: 0,
-      startY: 0,
-      currentX: 0,
-      currentY: 0
     };
 
-    window.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      this.joystick.active = true;
-      this.joystick.startX = touch.clientX;
-      this.joystick.startY = touch.clientY;
-      this.joystick.currentX = touch.clientX;
-      this.joystick.currentY = touch.clientY;
-      this.touchFireActive = true;
-      this.keys['Space'] = true;
-    });
+    this.handleKeyUp = (e) => {
+      this.keys[e.code] = false;
+      this.keys[e.key] = false;
+    };
 
-    window.addEventListener('touchmove', (e) => {
-      if (!this.joystick.active) return;
-      const touch = e.touches[0];
-      this.joystick.currentX = touch.clientX;
-      this.joystick.currentY = touch.clientY;
+    window.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('keyup', this.handleKeyUp);
+  }
 
-      // Convert to key presses
-      const dx = this.joystick.currentX - this.joystick.startX;
-      const dy = this.joystick.currentY - this.joystick.startY;
+  setupFocusHandlers() {
+    // Reset all keys when window loses focus to prevent stuck keys
+    this.handleBlur = () => {
+      this.resetAllKeys();
+    };
 
-      this.keys['KeyA'] = dx < -20;
-      this.keys['KeyD'] = dx > 20;
-      this.keys['KeyW'] = dy < -20;
-      this.keys['KeyS'] = dy > 20;
-    });
+    this.handleVisibilityChange = () => {
+      if (document.hidden) {
+        this.resetAllKeys();
+      }
+    };
 
-    window.addEventListener('touchend', () => {
-      this.joystick.active = false;
-      this.keys['KeyA'] = false;
-      this.keys['KeyD'] = false;
-      this.keys['KeyW'] = false;
-      this.keys['KeyS'] = false;
-      this.touchFireActive = false;
-      this.keys['Space'] = false;
-    });
+    window.addEventListener('blur', this.handleBlur);
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
+  }
 
-    window.addEventListener('touchcancel', () => {
-      this.joystick.active = false;
-      this.keys['KeyA'] = false;
-      this.keys['KeyD'] = false;
-      this.keys['KeyW'] = false;
-      this.keys['KeyS'] = false;
-      this.touchFireActive = false;
-      this.keys['Space'] = false;
-    });
+  resetAllKeys() {
+    this.keys = {};
+    this.touchFireActive = false;
   }
 
   isKeyPressed(key) {
     return !!this.keys[key];
   }
 
+  setKeyPressed(key, pressed) {
+    this.keys[key] = pressed;
+  }
+
   destroy() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('keyup', this.handleKeyUp);
+    window.removeEventListener('blur', this.handleBlur);
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     this.keys = {};
   }
 }

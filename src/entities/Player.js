@@ -13,18 +13,19 @@ export class Player {
     this.invulnerable = false;
     this.invulnerableTime = 0;
 
-    // Shooting
+    // Shooting (time-based to prevent stuck shooting)
     this.shootCooldown = 0;
-    this.shootDelay = 10; // frames
+    this.shootDelay = 167; // milliseconds (~10 frames at 60fps)
     this.bulletDamage = 1;
     this.bulletSpeed = 8;
     this.multiShot = 1; // Number of bullets
 
-    // Dodge
+    // Dodge (time-based)
     this.dodgeCooldown = 0;
-    this.dodgeDelay = 60; // frames
+    this.dodgeDelay = 1000; // milliseconds
     this.isDodging = false;
-    this.dodgeDuration = 20;
+    this.dodgeDuration = 0;
+    this.dodgeDurationMax = 333; // milliseconds
 
     // Powerups
     this.powerups = {
@@ -71,6 +72,8 @@ export class Player {
   update(delta) {
     if (!this.active) return;
 
+    const deltaMs = Math.min(delta * 16.67, 100); // Clamp delta to prevent huge spikes
+
     // Movement
     let dx = 0;
     let dy = 0;
@@ -116,7 +119,7 @@ export class Player {
     }
 
     if (this.isDodging) {
-      this.dodgeDuration--;
+      this.dodgeDuration -= deltaMs;
       this.sprite.alpha = 0.3;
       if (this.dodgeDuration <= 0) {
         this.isDodging = false;
@@ -125,11 +128,11 @@ export class Player {
       }
     }
 
-    // Cooldowns
-    if (this.shootCooldown > 0) this.shootCooldown--;
-    if (this.dodgeCooldown > 0) this.dodgeCooldown--;
+    // Cooldowns (time-based)
+    if (this.shootCooldown > 0) this.shootCooldown = Math.max(0, this.shootCooldown - deltaMs);
+    if (this.dodgeCooldown > 0) this.dodgeCooldown = Math.max(0, this.dodgeCooldown - deltaMs);
     if (this.invulnerableTime > 0) {
-      this.invulnerableTime--;
+      this.invulnerableTime -= deltaMs;
       if (this.invulnerableTime <= 0) {
         this.invulnerable = false;
       }
@@ -154,8 +157,8 @@ export class Player {
   startDodge() {
     this.isDodging = true;
     this.invulnerable = true;
-    this.dodgeDuration = 20;
-    this.dodgeCooldown = 60;
+    this.dodgeDuration = this.dodgeDurationMax;
+    this.dodgeCooldown = this.dodgeDelay;
   }
 
   canShoot() {
@@ -183,7 +186,7 @@ export class Player {
     if (this.invulnerable) return;
 
     this.invulnerable = true;
-    this.invulnerableTime = 120; // 2 seconds of invulnerability
+    this.invulnerableTime = 2000; // 2 seconds of invulnerability (milliseconds)
   }
 
   applyPowerup(type) {
@@ -198,7 +201,7 @@ export class Player {
       case 'rolp':
         this.powerups.rolp = 180; // 3 seconds
         this.bulletDamage = 3;
-        this.shootDelay = 5;
+        this.shootDelay = 83; // milliseconds (~5 frames)
         break;
       case 'deili':
         this.powerups.deili = 600; // 10 seconds
@@ -214,13 +217,13 @@ export class Player {
     // Reset to defaults
     this.multiShot = 1;
     this.bulletDamage = 1;
-    this.shootDelay = 10;
+    this.shootDelay = 167;
 
     // Reapply active powerups
     if (this.powerups.isbjorn > 0) this.multiShot = 3;
     if (this.powerups.rolp > 0) {
       this.bulletDamage = 3;
-      this.shootDelay = 5;
+      this.shootDelay = 83;
     }
     if (this.powerups.deili > 0) {
       this.multiShot = 5;

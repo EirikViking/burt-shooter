@@ -26,41 +26,48 @@ export class MenuScene {
   }
 
   createElements() {
-    const { width } = this.game.app.screen;
+    const { width, height } = this.game.app.screen;
+    const layout = getCurrentLayout();
+    const titleSize = layout.isMobile ? (layout.isPortrait ? 42 : 36) : 64;
+    const titleBlur = layout.isMobile ? 6 : 10;
 
     this.title = new PIXI.Text('BURT SHOOTER', {
       fontFamily: 'Courier New',
-      fontSize: 64,
+      fontSize: titleSize,
       fill: '#00ffff',
       stroke: '#0088ff',
-      strokeThickness: 4,
+      strokeThickness: layout.isMobile ? 2 : 4,
       dropShadow: true,
       dropShadowColor: '#00ffff',
-      dropShadowBlur: 10,
-      dropShadowDistance: 0
+      dropShadowBlur: titleBlur,
+      dropShadowDistance: 0,
+      dropShadowAlpha: layout.isMobile ? 0.5 : 0.7
     });
     this.title.anchor.set(0.5);
     this.container.addChild(this.title);
 
+    const subtitleSize = layout.isMobile ? 16 : 20;
     this.subtitle = new PIXI.Text('Kurt Edgar & Eirik sitt Galaga', {
       fontFamily: 'Courier New',
-      fontSize: 20,
+      fontSize: subtitleSize,
       fill: '#ff00ff',
       align: 'center'
     });
     this.subtitle.anchor.set(0.5);
     this.container.addChild(this.subtitle);
 
+    const storySize = layout.isMobile ? (layout.isPortrait ? 14 : 13) : 18;
+    const storyLineHeight = layout.isMobile ? 22 : 28;
     this.flavor = new PIXI.Text(
       'Stokmarknes er under angrep!\nRølp, gris og mongo invaderer.\nKun Eirik kan redde dagen.',
       {
         fontFamily: 'Courier New',
-        fontSize: 18,
+        fontSize: storySize,
         fill: '#ffffff',
         align: 'center',
         wordWrap: true,
-        wordWrapWidth: clampTextWidth(width * 0.75, { width, height: this.game.app.screen.height }),
-        lineHeight: 28
+        wordWrapWidth: clampTextWidth(width * (layout.isMobile ? 0.85 : 0.75), { width, height }),
+        lineHeight: storyLineHeight
       }
     );
     this.flavor.anchor.set(0.5);
@@ -80,18 +87,19 @@ export class MenuScene {
     });
     this.container.addChild(this.highscoreBtn);
 
-    this.controls = new PIXI.Text(
-      'WASD/Piltaster: Bevegelse | SPACE: Skyt | SHIFT: Dodge',
-      {
-        fontFamily: 'Courier New',
-        fontSize: 14,
-        fill: '#888888',
-        align: 'center',
-        wordWrap: true,
-        wordWrapWidth: clampTextWidth(width * 0.9, { width, height: this.game.app.screen.height }),
-        lineHeight: 20
-      }
-    );
+    const controlsText = layout.isMobile
+      ? 'TOUCH: Drag to move | Tap FIRE button to shoot'
+      : 'WASD/Piltaster: Bevegelse | SPACE: Skyt | SHIFT: Dodge';
+    const controlsSize = layout.isMobile ? 12 : 14;
+    this.controls = new PIXI.Text(controlsText, {
+      fontFamily: 'Courier New',
+      fontSize: controlsSize,
+      fill: '#888888',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.9, { width, height }),
+      lineHeight: layout.isMobile ? 18 : 20
+    });
     this.controls.anchor.set(0.5);
     this.container.addChild(this.controls);
 
@@ -106,30 +114,36 @@ export class MenuScene {
 
   layoutMenu() {
     const { width, height } = this.game.app.screen;
-    const layout = createTextLayout(width, height);
-    const stack = createVerticalStack(layout);
+    const responsiveLayout = getCurrentLayout();
+    const layout = createTextLayout(width, height, responsiveLayout);
+    const startY = layout.isMobile && layout.isPortrait ? layout.padding * 1.5 : layout.padding * 2;
+    const stack = createVerticalStack(layout, { startY });
+
     this.title.x = width / 2;
     this.title.y = stack.next();
 
     this.subtitle.x = width / 2;
     this.subtitle.y = stack.next();
 
-    this.flavor.style.wordWrapWidth = clampTextWidth(width * 0.75, layout);
-    this.flavor.y = stack.next(0);
+    const wrapWidth = layout.isMobile ? width * 0.85 : width * 0.75;
+    this.flavor.style.wordWrapWidth = clampTextWidth(wrapWidth, layout);
     this.flavor.x = width / 2;
+    this.flavor.y = stack.next(layout.isMobile ? -8 : 0);
 
-    stack.addGap(layout.spacing * 0.6);
-    const buttonBaseY = stack.next(0.4);
+    stack.addGap(layout.spacing * (layout.isMobile && layout.isPortrait ? 0.3 : 0.6));
+    const buttonBaseY = stack.next(layout.isMobile ? 0.2 : 0.4);
     this.startBtn.x = width / 2;
     this.startBtn.y = buttonBaseY;
 
     this.highscoreBtn.x = width / 2;
-    this.highscoreBtn.y = buttonBaseY + layout.spacing;
+    this.highscoreBtn.y = buttonBaseY + (layout.isMobile ? layout.spacing * 0.9 : layout.spacing);
 
-    this.controls.y = height - layout.padding - layout.lineHeight * 1.5;
+    const controlsBottomOffset = layout.isMobile ? layout.padding * 2.5 : layout.padding + layout.lineHeight * 1.5;
+    this.controls.y = height - controlsBottomOffset;
     this.controls.x = width / 2;
 
-    this.easter.y = height - layout.padding / 2;
+    const easterBottomOffset = layout.isMobile ? layout.padding * 0.8 : layout.padding / 2;
+    this.easter.y = height - easterBottomOffset;
     this.easter.x = width / 2;
   }
 

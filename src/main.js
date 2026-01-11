@@ -65,10 +65,19 @@ function ensureBuildStamp() {
   stamp = document.createElement('div');
   stamp.id = 'build-stamp';
   stamp.textContent = `Build ${BUILD_ID} | ${GIT_SHA}`;
+
+  // Position build stamp to avoid mobile controls
+  const layout = getCurrentLayout();
+  const isMobile = layout.isMobile;
+  const bottomPos = isMobile ? '2px' : '8px';
+  const leftPos = isMobile ? '8px' : 'auto';
+  const rightPos = isMobile ? 'auto' : '8px';
+
   stamp.style.cssText = [
     'position: fixed',
-    'right: 8px',
-    'bottom: 8px',
+    `left: ${leftPos}`,
+    `right: ${rightPos}`,
+    `bottom: ${bottomPos}`,
     'z-index: 9999',
     'background: rgba(0, 0, 0, 0.7)',
     'color: #00ffff',
@@ -83,6 +92,15 @@ function ensureBuildStamp() {
   if (parent) {
     parent.appendChild(stamp);
   }
+
+  // Update stamp position on layout changes
+  const updateStampPosition = (newLayout) => {
+    const newIsMobile = newLayout.isMobile;
+    stamp.style.left = newIsMobile ? '8px' : 'auto';
+    stamp.style.right = newIsMobile ? 'auto' : '8px';
+    stamp.style.bottom = newIsMobile ? '2px' : '8px';
+  };
+  addResponsiveListener(updateStampPosition);
 
   return stamp;
 }
