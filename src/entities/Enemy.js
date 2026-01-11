@@ -113,7 +113,8 @@ export class Enemy {
     }
     this.body.closePath();
     this.body.fill({ color: this.color });
-    this.body.stroke({ color: this.color - 0x222222, width: 2 });
+    const strokeColor = Math.max(0, this.color - 0x222222);
+    this.body.stroke({ color: strokeColor, width: 2 });
     this.sprite.addChild(this.body);
 
     // Eye (menacing)

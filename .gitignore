@@ -6,3 +6,6 @@ dist/
 .wrangler/
 wrangler.toml.local
 .dev.vars
+test-results/
+playwright-report/
+.tmp-playwright/

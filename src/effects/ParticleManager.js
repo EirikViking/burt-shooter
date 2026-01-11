@@ -1,7 +1,22 @@
 import * as PIXI from 'pixi.js';
 
 class Particle {
-  constructor(x, y, vx, vy, color, size, lifetime) {
+  constructor() {
+    this.x = 0;
+    this.y = 0;
+    this.vx = 0;
+    this.vy = 0;
+    this.color = 0xffffff;
+    this.size = 1;
+    this.lifetime = 0;
+    this.age = 0;
+    this.active = false;
+
+    this.sprite = new PIXI.Graphics();
+    this.sprite.visible = false;
+  }
+
+  reset(x, y, vx, vy, color, size, lifetime) {
     this.x = x;
     this.y = y;
     this.vx = vx;
@@ -12,17 +27,21 @@ class Particle {
     this.age = 0;
     this.active = true;
 
-    this.sprite = new PIXI.Graphics();
+    this.sprite.clear();
     this.sprite.circle(0, 0, size);
     this.sprite.fill({ color: color });
     this.sprite.x = x;
     this.sprite.y = y;
+    this.sprite.alpha = 1;
+    this.sprite.scale.set(1);
+    this.sprite.visible = true;
   }
 
   update(delta) {
     this.age += delta;
     if (this.age >= this.lifetime) {
       this.active = false;
+      this.sprite.visible = false;
       return;
     }
 
@@ -41,9 +60,25 @@ class Particle {
 }
 
 export class ParticleManager {
-  constructor(container) {
+  constructor(container, onCap) {
     this.container = container;
     this.particles = [];
+    this.pool = [];
+    this.maxParticles = 400;
+    this.onCap = onCap;
+  }
+
+  spawnParticle(x, y, vx, vy, color, size, lifetime) {
+    if (this.particles.length >= this.maxParticles) {
+      if (this.onCap) this.onCap('particles');
+      return null;
+    }
+
+    const particle = this.pool.pop() || new Particle();
+    particle.reset(x, y, vx, vy, color, size, lifetime);
+    this.particles.push(particle);
+    this.container.addChild(particle.sprite);
+    return particle;
   }
 
   createExplosion(x, y, color) {
@@ -56,9 +91,9 @@ export class ParticleManager {
       const size = 2 + Math.random() * 3;
       const lifetime = 30 + Math.random() * 30;
 
-      const particle = new Particle(x, y, vx, vy, color, size, lifetime);
-      this.particles.push(particle);
-      this.container.addChild(particle.sprite);
+      if (!this.spawnParticle(x, y, vx, vy, color, size, lifetime)) {
+        break;
+      }
     }
   }
 
@@ -72,9 +107,9 @@ export class ParticleManager {
       const size = 1 + Math.random() * 2;
       const lifetime = 15 + Math.random() * 15;
 
-      const particle = new Particle(x, y, vx, vy, 0xffff00, size, lifetime);
-      this.particles.push(particle);
-      this.container.addChild(particle.sprite);
+      if (!this.spawnParticle(x, y, vx, vy, 0xffff00, size, lifetime)) {
+        break;
+      }
     }
   }
 
@@ -88,16 +123,14 @@ export class ParticleManager {
       const size = 2 + Math.random() * 2;
       const lifetime = 40 + Math.random() * 20;
 
-      const particle = new Particle(x, y, vx, vy, color, size, lifetime);
-      this.particles.push(particle);
-      this.container.addChild(particle.sprite);
+      if (!this.spawnParticle(x, y, vx, vy, color, size, lifetime)) {
+        break;
+      }
     }
   }
 
   createTrail(x, y, color) {
-    const particle = new Particle(x, y, 0, 0, color, 2, 20);
-    this.particles.push(particle);
-    this.container.addChild(particle.sprite);
+    this.spawnParticle(x, y, 0, 0, color, 2, 20);
   }
 
   update(delta) {
@@ -105,6 +138,7 @@ export class ParticleManager {
       particle.update(delta);
       if (!particle.active) {
         this.container.removeChild(particle.sprite);
+        this.pool.push(particle);
         return false;
       }
       return true;

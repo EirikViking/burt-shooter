@@ -25,16 +25,31 @@ export class PlayScene {
     this.screenShake = null;
     this.hud = null;
     this.isPaused = false;
+    this.levelAdvancePending = false;
+    this.levelAdvanceTimeout = null;
+    this.capState = {
+      bullets: false,
+      enemies: false,
+      particles: false
+    };
   }
 
   init() {
     this.gameContainer.removeChildren();
+    this.levelAdvancePending = false;
+    this.levelAdvanceTimeout = null;
+    this.capState = {
+      bullets: false,
+      enemies: false,
+      particles: false
+    };
 
     const { width, height } = this.game.app.screen;
 
     // Initialize managers
-    this.bulletManager = new BulletManager(this.gameContainer);
-    this.particleManager = new ParticleManager(this.gameContainer);
+    const capHandler = this.logCap.bind(this);
+    this.bulletManager = new BulletManager(this.gameContainer, capHandler);
+    this.particleManager = new ParticleManager(this.gameContainer, capHandler);
     this.powerupManager = new PowerupManager(this.gameContainer, this.game);
     this.screenShake = new ScreenShake(this.gameContainer);
 
@@ -43,7 +58,7 @@ export class PlayScene {
     this.gameContainer.addChild(this.player.sprite);
 
     // Create enemy manager
-    this.enemyManager = new EnemyManager(this.gameContainer, this.game);
+    this.enemyManager = new EnemyManager(this.gameContainer, this.game, capHandler);
 
     // Create HUD
     this.hud = new HUD(this.container, this.game);
@@ -55,6 +70,11 @@ export class PlayScene {
   }
 
   startLevel() {
+    this.levelAdvancePending = false;
+    if (this.levelAdvanceTimeout) {
+      clearTimeout(this.levelAdvanceTimeout);
+      this.levelAdvanceTimeout = null;
+    }
     this.enemyManager.startLevel(this.game.level);
     this.showLevelIntro();
   }
@@ -143,7 +163,14 @@ export class PlayScene {
 
     // Check level completion
     if (this.enemyManager.isLevelComplete() && !this.enemyManager.spawning) {
-      setTimeout(() => this.game.nextLevel(), 2000);
+      if (!this.levelAdvancePending) {
+        this.levelAdvancePending = true;
+        this.levelAdvanceTimeout = setTimeout(() => {
+          this.levelAdvancePending = false;
+          this.levelAdvanceTimeout = null;
+          this.game.nextLevel();
+        }, 2000);
+      }
     }
 
     // Update HUD
@@ -234,7 +261,28 @@ export class PlayScene {
   }
 
   destroy() {
+    if (this.levelAdvanceTimeout) {
+      clearTimeout(this.levelAdvanceTimeout);
+      this.levelAdvanceTimeout = null;
+    }
     this.inputManager.destroy();
     AudioManager.stopMusic();
+  }
+
+  getPerfCounts() {
+    return {
+      bullets: this.bulletManager ? this.bulletManager.getTotalCount() : 0,
+      enemies: this.enemyManager ? this.enemyManager.enemies.length : 0,
+      particles: this.particleManager ? this.particleManager.particles.length : 0,
+      children: this.gameContainer ? this.gameContainer.children.length : 0
+    };
+  }
+
+  logCap(type) {
+    if (!this.capState[type]) {
+      this.capState[type] = true;
+      const counts = this.getPerfCounts();
+      console.warn(`CAP bullets=${counts.bullets} enemies=${counts.enemies} particles=${counts.particles}`);
+    }
   }
 }

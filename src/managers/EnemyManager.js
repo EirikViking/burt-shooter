@@ -2,7 +2,7 @@ import { Enemy } from '../entities/Enemy.js';
 import { Boss } from '../entities/Boss.js';
 
 export class EnemyManager {
-  constructor(container, game) {
+  constructor(container, game, onCap) {
     this.container = container;
     this.game = game;
     this.enemies = [];
@@ -11,6 +11,8 @@ export class EnemyManager {
     this.spawnDelay = 60;
     this.enemiesToSpawn = 0;
     this.isBossLevel = false;
+    this.maxEnemies = 120;
+    this.onCap = onCap;
   }
 
   startLevel(level) {
@@ -30,6 +32,11 @@ export class EnemyManager {
   }
 
   spawnBoss(level) {
+    if (this.enemies.length >= this.maxEnemies) {
+      if (this.onCap) this.onCap('enemies');
+      this.spawning = false;
+      return;
+    }
     const boss = new Boss(400, 100, level);
     this.enemies.push(boss);
     this.container.addChild(boss.sprite);
@@ -81,6 +88,10 @@ export class EnemyManager {
   }
 
   spawnEnemy() {
+    if (this.enemies.length >= this.maxEnemies) {
+      if (this.onCap) this.onCap('enemies');
+      return;
+    }
     const level = this.game.level;
     const types = ['gris', 'mongo', 'tufs', 'deili', 'rolp', 'svin'];
 

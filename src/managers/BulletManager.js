@@ -1,17 +1,28 @@
 export class BulletManager {
-  constructor(container) {
+  constructor(container, onCap) {
     this.container = container;
     this.playerBullets = [];
     this.enemyBullets = [];
+    this.maxPlayerBullets = 200;
+    this.maxEnemyBullets = 300;
+    this.onCap = onCap;
   }
 
   addPlayerBullet(bullet) {
+    if (this.playerBullets.length >= this.maxPlayerBullets) {
+      if (this.onCap) this.onCap('bullets');
+      return;
+    }
     this.playerBullets.push(bullet);
     this.container.addChild(bullet.sprite);
   }
 
   addEnemyBullet(bullet) {
     if (!bullet) return;
+    if (this.enemyBullets.length >= this.maxEnemyBullets) {
+      if (this.onCap) this.onCap('bullets');
+      return;
+    }
     this.enemyBullets.push(bullet);
     this.container.addChild(bullet.sprite);
   }
@@ -36,5 +47,9 @@ export class BulletManager {
       }
       return true;
     });
+  }
+
+  getTotalCount() {
+    return this.playerBullets.length + this.enemyBullets.length;
   }
 }

@@ -4,6 +4,26 @@ import { AudioManager } from './audio/AudioManager.js';
 
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;
+const PERF_SAMPLE_MS = 500;
+const MAX_DELTA = 2;
+const urlParams = new URLSearchParams(window.location.search);
+const perfState = {
+  enabled: false,
+  lastFrameTime: 0,
+  fps: 0,
+  frameMs: 0,
+  delta: 0,
+  clampedDelta: 0,
+  bullets: 0,
+  enemies: 0,
+  particles: 0,
+  children: 0,
+  level: 0,
+  scene: 'boot',
+  renderer: '',
+  memory: 0,
+  fatal: false
+};
 const BUILD_ID = typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev';
 const GIT_SHA = typeof __GIT_SHA__ !== 'undefined' ? __GIT_SHA__ : 'unknown';
 const bootState = {
@@ -12,10 +32,18 @@ const bootState = {
   fatalLogged: false
 };
 const supportsAsyncInit = typeof PIXI.Application?.prototype?.init === 'function';
+let autoStartTriggered = false;
 
 function isBootDebugEnabled() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('debug') === '1';
+  return urlParams.get('debug') === '1';
+}
+
+function isPerfEnabled() {
+  return urlParams.get('perf') === '1';
+}
+
+function isAutoStartEnabled() {
+  return urlParams.get('autostart') === '1';
 }
 
 function ensureBuildStamp() {
@@ -47,6 +75,80 @@ function ensureBuildStamp() {
   }
 
   return stamp;
+}
+
+function createPerfOverlay(enabled) {
+  if (!enabled) return null;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'perf-overlay';
+  overlay.style.cssText = [
+    'position: fixed',
+    'top: 8px',
+    'right: 8px',
+    'z-index: 9999',
+    'background: rgba(0, 0, 0, 0.75)',
+    'color: #00ff88',
+    'padding: 8px 10px',
+    'font-family: "Courier New", monospace',
+    'font-size: 12px',
+    'white-space: pre',
+    'pointer-events: none',
+    'text-align: right'
+  ].join(';');
+
+  const parent = document.body || document.documentElement;
+  if (parent) {
+    parent.appendChild(overlay);
+  }
+
+  const update = () => {
+    const memMb = perfState.memory ? (perfState.memory / (1024 * 1024)).toFixed(1) : 'n/a';
+    overlay.textContent = [
+      `FPS: ${perfState.fps.toFixed(1)} (${perfState.frameMs.toFixed(1)} ms)`,
+      `Delta: ${perfState.delta.toFixed(2)} (clamped ${perfState.clampedDelta.toFixed(2)})`,
+      `Bullets: ${perfState.bullets}  Enemies: ${perfState.enemies}`,
+      `Particles: ${perfState.particles}  Children: ${perfState.children}`,
+      `Level: ${perfState.level}  Scene: ${perfState.scene}`,
+      `Renderer: ${perfState.renderer}`,
+      `Heap: ${memMb} MB`
+    ].join('\n');
+  };
+
+  update();
+  setInterval(update, PERF_SAMPLE_MS);
+  return overlay;
+}
+
+function updatePerfStats(app, game, delta, clampedDelta) {
+  perfState.lastFrameTime = performance.now();
+  perfState.frameMs = app.ticker.deltaMS || 0;
+  perfState.fps = app.ticker.FPS || (perfState.frameMs ? 1000 / perfState.frameMs : 0);
+  perfState.delta = delta;
+  perfState.clampedDelta = clampedDelta;
+  perfState.level = game?.level || 0;
+  perfState.renderer = app.renderer?.constructor?.name || perfState.renderer;
+
+  const playScene = game?.scenes?.play;
+  const isPlayScene = playScene && game?.currentScene === playScene;
+  perfState.scene = isPlayScene ? 'play' : (game?.currentScene?.constructor?.name || 'unknown');
+
+  if (isPlayScene && playScene) {
+    const bulletManager = playScene.bulletManager;
+    perfState.bullets = bulletManager ? (bulletManager.playerBullets.length + bulletManager.enemyBullets.length) : 0;
+    perfState.enemies = playScene.enemyManager ? playScene.enemyManager.enemies.length : 0;
+    perfState.particles = playScene.particleManager ? playScene.particleManager.particles.length : 0;
+    perfState.children = playScene.gameContainer ? playScene.gameContainer.children.length : 0;
+  } else {
+    perfState.bullets = 0;
+    perfState.enemies = 0;
+    perfState.particles = 0;
+    perfState.children = app?.stage?.children?.length || 0;
+  }
+
+  if (performance && performance.memory && performance.memory.usedJSHeapSize) {
+    perfState.memory = performance.memory.usedJSHeapSize;
+  }
 }
 
 function createBootLogger(enabled) {
@@ -129,6 +231,7 @@ function logFatalOnce(step, error) {
 function showFatalOverlay(step, error) {
   if (bootState.fatalShown) return;
   bootState.fatalShown = true;
+  perfState.fatal = true;
 
   const overlay = document.createElement('div');
   overlay.id = 'fatal-overlay';
@@ -310,8 +413,12 @@ async function init() {
   const bootLogger = createBootLogger(isBootDebugEnabled());
   const loadingEl = document.getElementById('loading');
 
+  perfState.enabled = isPerfEnabled();
+  window.__perfStats = perfState;
+
   await runBootStep(bootLogger, 'dom ready', waitForDomReady, { timeoutMs: DOM_READY_TIMEOUT_MS });
   ensureBuildStamp();
+  createPerfOverlay(perfState.enabled);
   registerBootErrorHandlers();
 
   let app = null;
@@ -383,16 +490,28 @@ async function init() {
   }
 
   const game = new Game(app);
+  window.__app = app;
+  window.__game = game;
+  perfState.renderer = app.renderer?.constructor?.name || perfState.renderer;
   await runBootStep(bootLogger, 'start game', () => {
     game.start();
     if (document.body) {
       document.body.dataset.menuReady = '1';
     }
+    if (isAutoStartEnabled() && !autoStartTriggered) {
+      autoStartTriggered = true;
+      setTimeout(() => {
+        game.startGame();
+      }, 100);
+    }
   });
 
   await runBootStep(bootLogger, 'start ticker', () => {
     app.ticker.add((delta) => {
-      game.update(delta.deltaTime);
+      const rawDelta = delta.deltaTime;
+      const clampedDelta = Math.min(rawDelta, MAX_DELTA);
+      game.update(clampedDelta);
+      updatePerfStats(app, game, rawDelta, clampedDelta);
     });
   });
 
