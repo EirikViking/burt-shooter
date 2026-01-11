@@ -2,6 +2,8 @@ import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { API } from '../api/API.js';
 import { extendGameOverTexts, getGameOverComment } from '../text/phrasePool.js';
+import { addResponsiveListener } from '../ui/responsiveLayout.js';
+import { createTextLayout, createVerticalStack, clampTextWidth } from '../ui/textLayout.js';
 
 const ENTRY_PROMPT = 'PRESS ENTER TO LOG YOUR SCORE';
 const INPUT_PROMPT = 'TYPE YOUR NAME THEN HIT ENTER';
@@ -18,6 +20,14 @@ export class GameOverScene {
     this.caretInterval = null;
     this.caretVisible = true;
     this.promptPointer = null;
+    this.layoutUnsubscribe = null;
+    this.title = null;
+    this.scoreText = null;
+    this.levelText = null;
+    this.comment = null;
+    this.promptText = null;
+    this.nameDisplay = null;
+    this.instructions = null;
   }
 
   init() {
@@ -27,7 +37,6 @@ export class GameOverScene {
     this.caretVisible = true;
 
     const { width, height } = this.game.app.screen;
-
     const gameOverTexts = [
       'MONGO VANT!',
       'RØLP OVERLOAD!',
@@ -38,7 +47,7 @@ export class GameOverScene {
     const gameOverPool = extendGameOverTexts(gameOverTexts);
     const randomText = gameOverPool[Math.floor(Math.random() * gameOverPool.length)];
 
-    const title = new PIXI.Text(randomText, {
+    this.title = new PIXI.Text(randomText, {
       fontFamily: 'Courier New',
       fontSize: 64,
       fill: '#ff0000',
@@ -48,57 +57,46 @@ export class GameOverScene {
       dropShadowColor: '#ff0000',
       dropShadowBlur: 10
     });
-    title.anchor.set(0.5);
-    title.x = width / 2;
-    title.y = height / 4;
-    this.container.addChild(title);
+    this.title.anchor.set(0.5);
+    this.container.addChild(this.title);
 
-    const scoreText = new PIXI.Text(`SCORE: ${this.game.score}`, {
+    this.scoreText = new PIXI.Text(`SCORE: ${this.game.score}`, {
       fontFamily: 'Courier New',
       fontSize: 36,
       fill: '#ffff00'
     });
-    scoreText.anchor.set(0.5);
-    scoreText.x = width / 2;
-    scoreText.y = height / 3;
-    this.container.addChild(scoreText);
+    this.scoreText.anchor.set(0.5);
+    this.container.addChild(this.scoreText);
 
-    const levelText = new PIXI.Text(`NÅDDE LEVEL: ${this.game.level}`, {
+    this.levelText = new PIXI.Text(`NÅDDE LEVEL: ${this.game.level}`, {
       fontFamily: 'Courier New',
       fontSize: 24,
       fill: '#ffffff'
     });
-    levelText.anchor.set(0.5);
-    levelText.x = width / 2;
-    levelText.y = height / 3 + 50;
-    this.container.addChild(levelText);
+    this.levelText.anchor.set(0.5);
+    this.container.addChild(this.levelText);
 
-    const comment = new PIXI.Text(getGameOverComment(this.game.score, this.game.level), {
+    this.comment = new PIXI.Text(getGameOverComment(this.game.score, this.game.level), {
       fontFamily: 'Courier New',
       fontSize: 18,
       fill: '#ffffff',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: width * 0.9,
-      lineHeight: 22
+      wordWrapWidth: clampTextWidth(width * 0.9, { width, height }),
+      lineHeight: 24
     });
-    comment.anchor.set(0.5);
-    comment.x = width / 2;
-    comment.y = height / 3 + 90;
-    if (comment.width > width * 0.9) {
-      comment.scale.set((width * 0.9) / comment.width);
-    }
-    this.container.addChild(comment);
+    this.comment.anchor.set(0.5);
+    this.container.addChild(this.comment);
 
     this.promptText = new PIXI.Text(ENTRY_PROMPT, {
       fontFamily: 'Courier New',
       fontSize: 22,
       fill: '#00ffff',
-      align: 'center'
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.8, { width, height })
     });
     this.promptText.anchor.set(0.5);
-    this.promptText.x = width / 2;
-    this.promptText.y = height / 2;
     this.promptText.interactive = true;
     this.promptText.buttonMode = true;
     this.promptPointer = () => this.enterInputMode();
@@ -111,24 +109,54 @@ export class GameOverScene {
       fill: '#ffffff'
     });
     this.nameDisplay.anchor.set(0.5);
-    this.nameDisplay.x = width / 2;
-    this.nameDisplay.y = height / 2 + 50;
     this.container.addChild(this.nameDisplay);
 
-    const instructions = new PIXI.Text('ESC: Tilbake til meny', {
+    this.instructions = new PIXI.Text('ESC: Tilbake til meny', {
       fontFamily: 'Courier New',
       fontSize: 14,
       fill: '#888888'
     });
-    instructions.anchor.set(0.5);
-    instructions.x = width / 2;
-    instructions.y = height - 40;
-    this.container.addChild(instructions);
+    this.instructions.anchor.set(0.5);
+    this.container.addChild(this.instructions);
+
+    this.layoutUnsubscribe?.();
+    this.layoutUnsubscribe = addResponsiveListener(() => this.layoutScreen());
+    this.layoutScreen();
 
     this.updateNameDisplay();
     this.setupKeyboard();
 
     AudioManager.play('gameOver');
+  }
+
+  layoutScreen() {
+    const { width, height } = this.game.app.screen;
+    const layout = createTextLayout(width, height);
+    const stack = createVerticalStack(layout);
+
+    this.title.x = width / 2;
+    this.title.y = stack.next();
+
+    this.scoreText.x = width / 2;
+    this.scoreText.y = stack.next();
+
+    this.levelText.x = width / 2;
+    this.levelText.y = stack.next();
+
+    stack.addGap(layout.spacing * 0.4);
+    this.comment.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
+    this.comment.x = width / 2;
+    this.comment.y = stack.next();
+
+    stack.addGap(layout.spacing * 0.5);
+    this.promptText.x = width / 2;
+    this.promptText.y = stack.next();
+
+    this.nameDisplay.x = width / 2;
+    this.nameDisplay.y = this.promptText.y + layout.spacing;
+
+    this.instructions.x = width / 2;
+    this.instructions.y = height - layout.padding * 0.6;
   }
 
   setupKeyboard() {
@@ -329,5 +357,7 @@ export class GameOverScene {
       this.hiddenInput = null;
     }
     this.stopCaretBlink();
+    this.layoutUnsubscribe?.();
+    this.layoutUnsubscribe = null;
   }
 }

@@ -2,10 +2,11 @@ import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 
 export class Player {
-  constructor(x, y, inputManager) {
+  constructor(x, y, inputManager, game) {
     this.x = x;
     this.y = y;
     this.inputManager = inputManager;
+    this.game = game;
     this.speed = 5;
     this.radius = 12;
     this.active = true;
@@ -98,8 +99,13 @@ export class Player {
     this.y += dy * this.speed * speedMultiplier * delta;
 
     // Boundary check
-    this.x = Math.max(20, Math.min(780, this.x));
-    this.y = Math.max(20, Math.min(580, this.y));
+    const width = this.game?.getWidth ? this.game.getWidth() : 800;
+    const height = this.game?.getHeight ? this.game.getHeight() : 600;
+    const padding = 20;
+    const maxX = Math.max(width - padding, padding);
+    const maxY = Math.max(height - padding, padding);
+    this.x = Math.max(padding, Math.min(maxX, this.x));
+    this.y = Math.max(padding, Math.min(maxY, this.y));
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;

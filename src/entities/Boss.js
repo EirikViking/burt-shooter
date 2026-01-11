@@ -3,11 +3,12 @@ import { Bullet } from './Bullet.js';
 import { extendBossNames } from '../text/phrasePool.js';
 
 export class Boss {
-  constructor(x, y, level) {
+  constructor(x, y, level, game) {
     this.x = x;
     this.y = y;
     this.level = level;
     this.active = true;
+    this.game = game;
     this.radius = 50;
     this.vx = 2;
     this.vy = 0;
@@ -129,7 +130,8 @@ export class Boss {
     if (this.phase === 1) {
       // Horizontal sweep
       this.x += this.vx * delta;
-      if (this.x < this.radius || this.x > 800 - this.radius) {
+      const width = this.game?.getWidth ? this.game.getWidth() : 800;
+      if (this.x < this.radius || this.x > width - this.radius) {
         this.vx *= -1;
       }
     } else if (this.phase === 2) {

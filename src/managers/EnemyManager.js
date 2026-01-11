@@ -37,7 +37,8 @@ export class EnemyManager {
       this.spawning = false;
       return;
     }
-    const boss = new Boss(400, 100, level);
+    const centerX = this.game.getWidth() / 2;
+    const boss = new Boss(centerX, 100, level, this.game);
     this.enemies.push(boss);
     this.container.addChild(boss.sprite);
     this.spawning = false;
@@ -108,10 +109,12 @@ export class EnemyManager {
       type = types[Math.floor(Math.random() * types.length)];
     }
 
-    const x = Math.random() * 700 + 50;
+    const spawnPadding = Math.max(40, Math.min(this.game.getWidth() * 0.12, 80));
+    const available = Math.max(this.game.getWidth() - spawnPadding * 2, 100);
+    const x = spawnPadding + Math.random() * available;
     const y = -30;
 
-    const enemy = new Enemy(x, y, type, level);
+    const enemy = new Enemy(x, y, type, level, this.game);
     this.enemies.push(enemy);
     this.container.addChild(enemy.sprite);
   }

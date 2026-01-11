@@ -1,19 +1,34 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
+import { createTextLayout, createVerticalStack, clampTextWidth } from '../ui/textLayout.js';
 
 export class MenuScene {
   constructor(game) {
     this.game = game;
     this.container = new PIXI.Container();
+    this.layoutUnsubscribe = null;
+    this.title = null;
+    this.subtitle = null;
+    this.flavor = null;
+    this.startBtn = null;
+    this.highscoreBtn = null;
+    this.controls = null;
+    this.easter = null;
   }
 
   init() {
     this.container.removeChildren();
+    this.createElements();
+    this.layoutUnsubscribe?.();
+    this.layoutUnsubscribe = addResponsiveListener(() => this.layoutMenu());
+    this.layoutMenu();
+  }
 
-    const { width, height } = this.game.app.screen;
+  createElements() {
+    const { width } = this.game.app.screen;
 
-    // Title
-    const title = new PIXI.Text('BURT SHOOTER', {
+    this.title = new PIXI.Text('BURT SHOOTER', {
       fontFamily: 'Courier New',
       fontSize: 64,
       fill: '#00ffff',
@@ -24,86 +39,102 @@ export class MenuScene {
       dropShadowBlur: 10,
       dropShadowDistance: 0
     });
-    title.anchor.set(0.5);
-    title.x = width / 2;
-    title.y = height / 4;
-    this.container.addChild(title);
+    this.title.anchor.set(0.5);
+    this.container.addChild(this.title);
 
-    // Subtitle
-    const subtitle = new PIXI.Text('Kurt Edgar & Eirik sitt Galaga', {
+    this.subtitle = new PIXI.Text('Kurt Edgar & Eirik sitt Galaga', {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: '#ff00ff',
       align: 'center'
     });
-    subtitle.anchor.set(0.5);
-    subtitle.x = width / 2;
-    subtitle.y = height / 4 + 60;
-    this.container.addChild(subtitle);
+    this.subtitle.anchor.set(0.5);
+    this.container.addChild(this.subtitle);
 
-    // Flavor text
-    const flavor = new PIXI.Text(
-      'Stokmarknes er under angrep!\nR\u00f8lp, gris og mongo invaderer.\nKun Eirik kan redde dagen.',
+    this.flavor = new PIXI.Text(
+      'Stokmarknes er under angrep!\nRølp, gris og mongo invaderer.\nKun Eirik kan redde dagen.',
       {
         fontFamily: 'Courier New',
-        fontSize: 16,
+        fontSize: 18,
         fill: '#ffffff',
         align: 'center',
-        lineHeight: 24
+        wordWrap: true,
+        wordWrapWidth: clampTextWidth(width * 0.75, { width, height: this.game.app.screen.height }),
+        lineHeight: 28
       }
     );
-    flavor.anchor.set(0.5);
-    flavor.x = width / 2;
-    flavor.y = height / 2 - 20;
-    this.container.addChild(flavor);
+    this.flavor.anchor.set(0.5);
+    this.container.addChild(this.flavor);
 
-    // Start button
-    const startBtn = this.createButton('START SPILL', width / 2, height / 2 + 80);
-    startBtn.on('pointerdown', () => {
+    this.startBtn = this.createButton('START SPILL');
+    this.startBtn.on('pointerdown', () => {
       AudioManager.play('menuSelect');
       this.game.startGame();
     });
-    this.container.addChild(startBtn);
+    this.container.addChild(this.startBtn);
 
-    // Highscore button
-    const highscoreBtn = this.createButton('HIGHSCORES', width / 2, height / 2 + 140);
-    highscoreBtn.on('pointerdown', () => {
+    this.highscoreBtn = this.createButton('HIGHSCORES');
+    this.highscoreBtn.on('pointerdown', () => {
       AudioManager.play('menuSelect');
       this.game.showHighscores();
     });
-    this.container.addChild(highscoreBtn);
+    this.container.addChild(this.highscoreBtn);
 
-    // Controls info
-    const controls = new PIXI.Text(
+    this.controls = new PIXI.Text(
       'WASD/Piltaster: Bevegelse | SPACE: Skyt | SHIFT: Dodge',
       {
         fontFamily: 'Courier New',
-        fontSize: 12,
+        fontSize: 14,
         fill: '#888888',
-        align: 'center'
+        align: 'center',
+        wordWrap: true,
+        wordWrapWidth: clampTextWidth(width * 0.9, { width, height: this.game.app.screen.height }),
+        lineHeight: 20
       }
     );
-    controls.anchor.set(0.5);
-    controls.x = width / 2;
-    controls.y = height - 40;
-    this.container.addChild(controls);
+    this.controls.anchor.set(0.5);
+    this.container.addChild(this.controls);
 
-    // Easter egg
-    const easter = new PIXI.Text('Powered by Kj\u00f8ttdeig Engine v1.0', {
+    this.easter = new PIXI.Text('Powered by Kjøttdeig Engine v1.0', {
       fontFamily: 'Courier New',
-      fontSize: 10,
+      fontSize: 12,
       fill: '#444444'
     });
-    easter.anchor.set(0.5);
-    easter.x = width / 2;
-    easter.y = height - 20;
-    this.container.addChild(easter);
+    this.easter.anchor.set(0.5);
+    this.container.addChild(this.easter);
   }
 
-  createButton(text, x, y) {
+  layoutMenu() {
+    const { width, height } = this.game.app.screen;
+    const layout = createTextLayout(width, height);
+    const stack = createVerticalStack(layout);
+    this.title.x = width / 2;
+    this.title.y = stack.next();
+
+    this.subtitle.x = width / 2;
+    this.subtitle.y = stack.next();
+
+    this.flavor.style.wordWrapWidth = clampTextWidth(width * 0.75, layout);
+    this.flavor.y = stack.next(0);
+    this.flavor.x = width / 2;
+
+    stack.addGap(layout.spacing * 0.6);
+    const buttonBaseY = stack.next(0.4);
+    this.startBtn.x = width / 2;
+    this.startBtn.y = buttonBaseY;
+
+    this.highscoreBtn.x = width / 2;
+    this.highscoreBtn.y = buttonBaseY + layout.spacing;
+
+    this.controls.y = height - layout.padding - layout.lineHeight * 1.5;
+    this.controls.x = width / 2;
+
+    this.easter.y = height - layout.padding / 2;
+    this.easter.x = width / 2;
+  }
+
+  createButton(text) {
     const container = new PIXI.Container();
-    container.x = x;
-    container.y = y;
     container.eventMode = 'static';
     container.cursor = 'pointer';
 
@@ -141,6 +172,9 @@ export class MenuScene {
   }
 
   destroy() {
-    // Cleanup
+    if (this.layoutUnsubscribe) {
+      this.layoutUnsubscribe();
+      this.layoutUnsubscribe = null;
+    }
   }
 }

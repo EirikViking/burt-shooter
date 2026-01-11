@@ -5,7 +5,11 @@ export async function onRequestGet(context) {
     const db = context.env.DB;
 
     const { results } = await db.prepare(
-      'SELECT * FROM game_highscores ORDER BY score DESC LIMIT 50'
+      `SELECT name, SUM(score) AS score, MAX(level) AS level, MAX(created_at) AS created_at
+       FROM game_highscores
+       GROUP BY name
+       ORDER BY score DESC
+       LIMIT 50`
     ).all();
 
     return new Response(JSON.stringify(results), {

@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { getLoadingLines } from './text/phrasePool.js';
-import { applyResponsiveLayout } from './ui/responsiveLayout.js';
+import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;
@@ -502,6 +502,18 @@ async function init() {
   if (!audioResult.ok) {
     AudioManager.enabled = false;
   }
+
+  const resizeCanvas = (layout) => {
+    if (!app) return;
+    app.renderer.resize(layout.width, layout.height);
+    const view = app.view;
+    if (view) {
+      view.style.width = `${layout.width}px`;
+      view.style.height = `${layout.height}px`;
+    }
+  };
+  addResponsiveListener((layout) => resizeCanvas(layout));
+  resizeCanvas(getCurrentLayout());
 
   const game = new Game(app);
   window.__app = app;

@@ -68,7 +68,7 @@ export class PlayScene {
     this.screenShake = new ScreenShake(this.gameContainer);
 
     // Create player
-    this.player = new Player(width / 2, height - 100, this.inputManager);
+    this.player = new Player(width / 2, height - 100, this.inputManager, this.game);
     this.gameContainer.addChild(this.player.sprite);
 
     // Create enemy manager

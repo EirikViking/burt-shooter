@@ -2,6 +2,7 @@ export class InputManager {
   constructor() {
     this.keys = {};
     this.touches = [];
+    this.touchFireActive = false;
 
     this.setupKeyboard();
     this.setupTouch();
@@ -36,6 +37,8 @@ export class InputManager {
       this.joystick.startY = touch.clientY;
       this.joystick.currentX = touch.clientX;
       this.joystick.currentY = touch.clientY;
+      this.touchFireActive = true;
+      this.keys['Space'] = true;
     });
 
     window.addEventListener('touchmove', (e) => {
@@ -60,6 +63,18 @@ export class InputManager {
       this.keys['KeyD'] = false;
       this.keys['KeyW'] = false;
       this.keys['KeyS'] = false;
+      this.touchFireActive = false;
+      this.keys['Space'] = false;
+    });
+
+    window.addEventListener('touchcancel', () => {
+      this.joystick.active = false;
+      this.keys['KeyA'] = false;
+      this.keys['KeyD'] = false;
+      this.keys['KeyW'] = false;
+      this.keys['KeyS'] = false;
+      this.touchFireActive = false;
+      this.keys['Space'] = false;
     });
   }
 

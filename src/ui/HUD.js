@@ -36,16 +36,25 @@ export class HUD {
     this.levelText.y = 35;
     this.hudContainer.addChild(this.levelText);
 
-    // Lives
+    // Lives group
+    this.livesGroup = new PIXI.Container();
+    this.livesBg = new PIXI.Graphics();
+    this.livesGroup.addChild(this.livesBg);
+    this.livesIcon = new PIXI.Text('♥', {
+      fontFamily: 'Courier New',
+      fontSize: 20,
+      fill: '#ff8080'
+    });
+    this.livesGroup.addChild(this.livesIcon);
     this.livesText = new PIXI.Text('LIVES: 3', {
       fontFamily: 'Courier New',
       fontSize: 20,
-      fill: '#ff0000'
+      fill: '#ff0000',
+      stroke: '#000000',
+      strokeThickness: 3
     });
-    this.livesText.anchor.set(1, 0);
-    this.livesText.x = 790;
-    this.livesText.y = 10;
-    this.hudContainer.addChild(this.livesText);
+    this.livesGroup.addChild(this.livesText);
+    this.hudContainer.addChild(this.livesGroup);
 
     // Easter egg location
     this.locationText = new PIXI.Text('STOKMARKNES', {
@@ -63,6 +72,7 @@ export class HUD {
     this.scoreText.text = `SCORE: ${this.game.score}`;
     this.levelText.text = `LEVEL: ${this.game.level}`;
     this.livesText.text = `LIVES: ${this.game.lives}`;
+    this.updateLivesVisuals();
 
     // Random location updates
     const locations = extendLocations(['STOKMARKNES', 'MELBU', 'HADSEL', 'SORTLAND', 'LOFOTEN']);
@@ -88,11 +98,28 @@ export class HUD {
     this.levelText.x = margin;
     this.levelText.y = margin + blockSpacing;
 
-    this.livesText.x = layout.width - margin;
-    this.livesText.y = margin;
-
     this.locationText.x = layout.width - margin;
     this.locationText.y = margin + blockSpacing;
+
+    this.updateLivesVisuals();
+    this.livesGroup.x = layout.width - margin - this.livesGroup.width;
+    this.livesGroup.y = margin;
+  }
+
+  updateLivesVisuals() {
+    if (!this.livesGroup || !this.livesText || !this.livesIcon) return;
+    const padding = 8;
+    const height = Math.max(this.livesIcon.height, this.livesText.height) + padding;
+    this.livesGroup.pivot.set(0, 0);
+    this.livesIcon.x = padding / 2;
+    this.livesIcon.y = height / 2 - this.livesIcon.height / 2;
+    this.livesText.x = this.livesIcon.x + this.livesIcon.width + 6;
+    this.livesText.y = height / 2 - this.livesText.height / 2;
+    const width = this.livesText.x + this.livesText.width + padding / 2;
+    this.livesBg.clear();
+    this.livesBg.beginFill(0x000000, 0.45);
+    this.livesBg.drawRoundedRect(0, 0, width, height, 8);
+    this.livesBg.endFill();
   }
 
   destroy() {

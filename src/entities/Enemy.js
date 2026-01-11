@@ -2,11 +2,12 @@ import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 
 export class Enemy {
-  constructor(x, y, type, level) {
+  constructor(x, y, type, level, game) {
     this.x = x;
     this.y = y;
     this.type = type;
     this.level = level;
+    this.game = game;
     this.active = true;
     this.radius = 15;
     this.vx = 0;
@@ -188,8 +189,9 @@ export class Enemy {
     this.y += this.vy * delta;
 
     // Boundary wrap
-    if (this.x < -this.radius) this.x = 800 + this.radius;
-    if (this.x > 800 + this.radius) this.x = -this.radius;
+    const width = this.game?.getWidth ? this.game.getWidth() : 800;
+    if (this.x < -this.radius) this.x = width + this.radius;
+    if (this.x > width + this.radius) this.x = -this.radius;
 
     // Deactivate if too far off screen
     if (this.y > 650) {
