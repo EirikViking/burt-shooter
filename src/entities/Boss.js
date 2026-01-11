@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
+import { extendBossNames } from '../text/phrasePool.js';
 
 export class Boss {
   constructor(x, y, level) {
@@ -28,7 +29,8 @@ export class Boss {
       'DEILI FETTA PRIME',
       'GIGA GRIS'
     ];
-    this.name = bossNames[(level - 1) % bossNames.length] || 'BOSS';
+    const namePool = extendBossNames(bossNames);
+    this.name = namePool[(level - 1) % namePool.length] || 'BOSS';
 
     this.createSprite();
   }

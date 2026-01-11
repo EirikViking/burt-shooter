@@ -59,6 +59,9 @@ export class Game {
 
   loseLife() {
     this.lives--;
+    if (this.currentScene && this.currentScene.onLifeLost) {
+      this.currentScene.onLifeLost(this.lives);
+    }
     if (this.lives <= 0) {
       this.gameOver();
     }

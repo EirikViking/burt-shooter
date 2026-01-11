@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { extendLocations } from '../text/phrasePool.js';
 
 export class HUD {
   constructor(container, game) {
@@ -60,7 +61,7 @@ export class HUD {
     this.livesText.text = `LIVES: ${this.game.lives}`;
 
     // Random location updates
-    const locations = ['STOKMARKNES', 'MELBU', 'HADSEL', 'SORTLAND', 'LOFOTEN'];
+    const locations = extendLocations(['STOKMARKNES', 'MELBU', 'HADSEL', 'SORTLAND', 'LOFOTEN']);
     if (Math.random() < 0.001) {
       this.locationText.text = locations[Math.floor(Math.random() * locations.length)];
     }

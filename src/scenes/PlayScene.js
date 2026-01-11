@@ -8,6 +8,12 @@ import { ScreenShake } from '../effects/ScreenShake.js';
 import { InputManager } from '../input/InputManager.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
+import {
+  extendLevelIntroTexts,
+  getAchievementPopup,
+  getEnemyTaunt,
+  getMicroMessage
+} from '../text/phrasePool.js';
 
 export class PlayScene {
   constructor(game) {
@@ -32,6 +38,14 @@ export class PlayScene {
       enemies: false,
       particles: false
     };
+    this.pausePressed = false;
+    this.achievementTimer = 0;
+    this.tauntTimer = 0;
+    this.lowLivesShownFor = null;
+    this.pausePressed = false;
+    this.achievementTimer = 0;
+    this.tauntTimer = 0;
+    this.lowLivesShownFor = null;
   }
 
   init() {
@@ -77,6 +91,14 @@ export class PlayScene {
     }
     this.enemyManager.startLevel(this.game.level);
     this.showLevelIntro();
+    this.showToast(getMicroMessage('levelStart'), { fontSize: 20, y: this.game.getHeight() * 0.25 });
+    this.showToast(getMicroMessage('newWave'), { fontSize: 22, y: this.game.getHeight() * 0.35 });
+
+    if (this.game.level % 5 === 0) {
+      this.showToast(getMicroMessage('bossIntro'), { fontSize: 26, y: this.game.getHeight() * 0.4 });
+    }
+
+    this.resetRandomTimers();
   }
 
   showLevelIntro() {
@@ -94,9 +116,10 @@ export class PlayScene {
       'Wave 9: Isbjørn chaos',
       'BOSS: ULTIMATE SVIN'
     ];
+    const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
 
     const text = new PIXI.Text(
-      levelTexts[(this.game.level - 1) % levelTexts.length] || `LEVEL ${this.game.level}`,
+      introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`,
       {
         fontFamily: 'Courier New',
         fontSize: 48,
@@ -137,6 +160,7 @@ export class PlayScene {
   }
 
   update(delta) {
+    this.handlePauseToggle();
     if (this.isPaused) return;
 
     // Update player
@@ -175,6 +199,9 @@ export class PlayScene {
 
     // Update HUD
     this.hud.update();
+
+    this.updateRandomPopups(delta);
+    this.checkLowLives();
   }
 
   checkCollisions() {
@@ -284,5 +311,101 @@ export class PlayScene {
       const counts = this.getPerfCounts();
       console.warn(`CAP bullets=${counts.bullets} enemies=${counts.enemies} particles=${counts.particles}`);
     }
+  }
+
+  handlePauseToggle() {
+    const pressed = this.inputManager.isKeyPressed('KeyP');
+    if (pressed && !this.pausePressed) {
+      this.isPaused = !this.isPaused;
+      this.showToast(getMicroMessage(this.isPaused ? 'pause' : 'resume'), {
+        fontSize: 26,
+        y: this.game.getHeight() * 0.45
+      });
+    }
+    this.pausePressed = pressed;
+  }
+
+  resetRandomTimers() {
+    this.achievementTimer = this.getRandomTimer(8000, 14000);
+    this.tauntTimer = this.getRandomTimer(6000, 11000);
+  }
+
+  updateRandomPopups(delta) {
+    if (this.achievementTimer > 0) {
+      this.achievementTimer -= delta * 16.67;
+    } else {
+      this.showToast(getAchievementPopup(), { fontSize: 20, y: 70 });
+      this.achievementTimer = this.getRandomTimer(12000, 20000);
+    }
+
+    if (this.tauntTimer > 0) {
+      this.tauntTimer -= delta * 16.67;
+    } else {
+      this.showToast(getEnemyTaunt(), { fontSize: 18, y: 110 });
+      this.tauntTimer = this.getRandomTimer(9000, 15000);
+    }
+  }
+
+  checkLowLives() {
+    if (this.game.lives <= 1 && this.lowLivesShownFor !== this.game.lives) {
+      this.lowLivesShownFor = this.game.lives;
+      this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, y: this.game.getHeight() * 0.3 });
+    }
+  }
+
+  onLifeLost() {
+    this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
+  }
+
+  getRandomTimer(minMs, maxMs) {
+    return minMs + Math.random() * (maxMs - minMs);
+  }
+
+  showToast(message, options = {}) {
+    const { width, height } = this.game.app.screen;
+    const fontSize = options.fontSize || 24;
+    const y = options.y || height * 0.2;
+    const maxWidth = width * 0.9;
+
+    const text = new PIXI.Text(message, {
+      fontFamily: 'Courier New',
+      fontSize,
+      fill: options.fill || '#ffffff',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: maxWidth,
+      lineHeight: fontSize + 6
+    });
+    text.anchor.set(0.5);
+    text.x = width / 2;
+    text.y = y;
+    text.alpha = 0;
+
+    if (text.width > maxWidth) {
+      const scale = maxWidth / text.width;
+      text.scale.set(scale);
+    }
+
+    this.container.addChild(text);
+
+    let elapsed = 0;
+    const duration = options.duration || 2200;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+
+      if (elapsed < 250) {
+        text.alpha = elapsed / 250;
+      } else if (elapsed > duration - 350) {
+        text.alpha = Math.max(0, (duration - elapsed) / 350);
+      } else {
+        text.alpha = 1;
+      }
+
+      if (elapsed >= duration) {
+        this.game.app.ticker.remove(ticker);
+        this.container.removeChild(text);
+      }
+    };
+    this.game.app.ticker.add(ticker);
   }
 }

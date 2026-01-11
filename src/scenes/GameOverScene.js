@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { API } from '../api/API.js';
+import { extendGameOverTexts, getGameOverComment } from '../text/phrasePool.js';
 
 export class GameOverScene {
   constructor(game) {
@@ -25,7 +26,8 @@ export class GameOverScene {
       'DEILI FETTA...',
       'TILBAKE TIL MELBU!'
     ];
-    const randomText = gameOverTexts[Math.floor(Math.random() * gameOverTexts.length)];
+    const gameOverPool = extendGameOverTexts(gameOverTexts);
+    const randomText = gameOverPool[Math.floor(Math.random() * gameOverPool.length)];
 
     const title = new PIXI.Text(randomText, {
       fontFamily: 'Courier New',
@@ -63,6 +65,23 @@ export class GameOverScene {
     levelText.x = width / 2;
     levelText.y = height / 3 + 50;
     this.container.addChild(levelText);
+
+    const comment = new PIXI.Text(getGameOverComment(this.game.score, this.game.level), {
+      fontFamily: 'Courier New',
+      fontSize: 18,
+      fill: '#ffffff',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: width * 0.9,
+      lineHeight: 22
+    });
+    comment.anchor.set(0.5);
+    comment.x = width / 2;
+    comment.y = height / 3 + 90;
+    if (comment.width > width * 0.9) {
+      comment.scale.set((width * 0.9) / comment.width);
+    }
+    this.container.addChild(comment);
 
     // Name input prompt
     const prompt = new PIXI.Text('SKRIV NAVN (TRYKK ENTER):', {

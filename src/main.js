@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
 import { AudioManager } from './audio/AudioManager.js';
+import { getLoadingLines } from './text/phrasePool.js';
 
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;
@@ -412,6 +413,10 @@ function registerBootErrorHandlers() {
 async function init() {
   const bootLogger = createBootLogger(isBootDebugEnabled());
   const loadingEl = document.getElementById('loading');
+  if (loadingEl) {
+    const { title, subtitle } = getLoadingLines();
+    loadingEl.innerHTML = `${title}<br><small>${subtitle}</small>`;
+  }
 
   perfState.enabled = isPerfEnabled();
   window.__perfStats = perfState;

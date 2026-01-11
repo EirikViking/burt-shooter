@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { API } from '../api/API.js';
+import { getHighscoreComment } from '../text/phrasePool.js';
 
 export class HighscoreScene {
   constructor(game) {
@@ -37,6 +38,19 @@ export class HighscoreScene {
     subtitle.y = 100;
     this.container.addChild(subtitle);
 
+    this.commentText = new PIXI.Text('', {
+      fontFamily: 'Courier New',
+      fontSize: 14,
+      fill: '#ffffff',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: width * 0.9
+    });
+    this.commentText.anchor.set(0.5);
+    this.commentText.x = width / 2;
+    this.commentText.y = 125;
+    this.container.addChild(this.commentText);
+
     // Loading text
     const loading = new PIXI.Text('Laster...', {
       fontFamily: 'Courier New',
@@ -68,6 +82,10 @@ export class HighscoreScene {
 
   displayHighscores() {
     const { width } = this.game.app.screen;
+    this.commentText.text = getHighscoreComment(this.highscores.length > 0);
+    if (this.commentText.width > width * 0.9) {
+      this.commentText.scale.set((width * 0.9) / this.commentText.width);
+    }
     const startY = 150;
     const lineHeight = 35;
 
