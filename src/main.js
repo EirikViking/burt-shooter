@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { getLoadingLines } from './text/phrasePool.js';
+import { applyResponsiveLayout } from './ui/responsiveLayout.js';
 
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;
@@ -34,6 +35,14 @@ const bootState = {
 };
 const supportsAsyncInit = typeof PIXI.Application?.prototype?.init === 'function';
 let autoStartTriggered = false;
+
+applyResponsiveLayout(window.innerWidth, window.innerHeight);
+window.addEventListener('resize', () => {
+  applyResponsiveLayout(window.innerWidth, window.innerHeight);
+});
+window.addEventListener('orientationchange', () => {
+  applyResponsiveLayout(window.innerWidth, window.innerHeight);
+});
 
 function isBootDebugEnabled() {
   return urlParams.get('debug') === '1';

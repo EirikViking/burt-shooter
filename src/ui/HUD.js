@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { extendLocations } from '../text/phrasePool.js';
 
 export class HUD {
@@ -6,9 +7,12 @@ export class HUD {
     this.container = container;
     this.game = game;
     this.hudContainer = new PIXI.Container();
+    this.layoutUnsubscribe = null;
     this.container.addChild(this.hudContainer);
 
     this.createHUD();
+    this.layoutUnsubscribe = addResponsiveListener((layout) => this.applyLayout(layout));
+    this.applyLayout(getCurrentLayout());
   }
 
   createHUD() {
@@ -64,6 +68,37 @@ export class HUD {
     const locations = extendLocations(['STOKMARKNES', 'MELBU', 'HADSEL', 'SORTLAND', 'LOFOTEN']);
     if (Math.random() < 0.001) {
       this.locationText.text = locations[Math.floor(Math.random() * locations.length)];
+    }
+  }
+
+  applyLayout(layout = getCurrentLayout()) {
+    if (!layout || typeof layout.width !== 'number') return;
+    const margin = layout.isMobile ? 14 : 10;
+    const blockSpacing = layout.isMobile ? 26 : 22;
+    const scoreFont = layout.isMobile ? 16 : 20;
+    const livesFont = layout.isMobile ? 18 : 20;
+
+    this.scoreText.style.fontSize = scoreFont;
+    this.levelText.style.fontSize = scoreFont;
+    this.livesText.style.fontSize = livesFont;
+    this.locationText.style.fontSize = layout.isMobile ? 10 : 12;
+
+    this.scoreText.x = margin;
+    this.scoreText.y = margin;
+    this.levelText.x = margin;
+    this.levelText.y = margin + blockSpacing;
+
+    this.livesText.x = layout.width - margin;
+    this.livesText.y = margin;
+
+    this.locationText.x = layout.width - margin;
+    this.locationText.y = margin + blockSpacing;
+  }
+
+  destroy() {
+    if (this.layoutUnsubscribe) {
+      this.layoutUnsubscribe();
+      this.layoutUnsubscribe = null;
     }
   }
 }

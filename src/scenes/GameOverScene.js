@@ -3,25 +3,34 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { API } from '../api/API.js';
 import { extendGameOverTexts, getGameOverComment } from '../text/phrasePool.js';
 
+const ENTRY_PROMPT = 'PRESS ENTER TO LOG YOUR SCORE';
+const INPUT_PROMPT = 'TYPE YOUR NAME THEN HIT ENTER';
+
 export class GameOverScene {
   constructor(game) {
     this.game = game;
     this.container = new PIXI.Container();
     this.nameInput = '';
-    this.submitting = false;
+    this.state = 'prompt';
+    this.hiddenInput = null;
+    this.boundHiddenInput = null;
+    this.keyHandler = null;
+    this.caretInterval = null;
+    this.caretVisible = true;
+    this.promptPointer = null;
   }
 
   init() {
     this.container.removeChildren();
     this.nameInput = '';
-    this.submitting = false;
+    this.state = 'prompt';
+    this.caretVisible = true;
 
     const { width, height } = this.game.app.screen;
 
-    // Game Over title
     const gameOverTexts = [
       'MONGO VANT!',
-      'R\u00d8LP OVERLOAD!',
+      'RØLP OVERLOAD!',
       'GRIS DOMINANS!',
       'DEILI FETTA...',
       'TILBAKE TIL MELBU!'
@@ -44,7 +53,6 @@ export class GameOverScene {
     title.y = height / 4;
     this.container.addChild(title);
 
-    // Score
     const scoreText = new PIXI.Text(`SCORE: ${this.game.score}`, {
       fontFamily: 'Courier New',
       fontSize: 36,
@@ -55,8 +63,7 @@ export class GameOverScene {
     scoreText.y = height / 3;
     this.container.addChild(scoreText);
 
-    // Level reached
-    const levelText = new PIXI.Text(`N\u00c5DDE LEVEL: ${this.game.level}`, {
+    const levelText = new PIXI.Text(`NÅDDE LEVEL: ${this.game.level}`, {
       fontFamily: 'Courier New',
       fontSize: 24,
       fill: '#ffffff'
@@ -83,29 +90,31 @@ export class GameOverScene {
     }
     this.container.addChild(comment);
 
-    // Name input prompt
-    const prompt = new PIXI.Text('SKRIV NAVN (TRYKK ENTER):', {
+    this.promptText = new PIXI.Text(ENTRY_PROMPT, {
       fontFamily: 'Courier New',
-      fontSize: 20,
-      fill: '#00ffff'
+      fontSize: 22,
+      fill: '#00ffff',
+      align: 'center'
     });
-    prompt.anchor.set(0.5);
-    prompt.x = width / 2;
-    prompt.y = height / 2;
-    this.container.addChild(prompt);
+    this.promptText.anchor.set(0.5);
+    this.promptText.x = width / 2;
+    this.promptText.y = height / 2;
+    this.promptText.interactive = true;
+    this.promptText.buttonMode = true;
+    this.promptPointer = () => this.enterInputMode();
+    this.promptText.on('pointerdown', this.promptPointer);
+    this.container.addChild(this.promptText);
 
-    // Name display
-    this.nameDisplay = new PIXI.Text('_', {
+    this.nameDisplay = new PIXI.Text('NAME: _', {
       fontFamily: 'Courier New',
       fontSize: 28,
       fill: '#ffffff'
     });
     this.nameDisplay.anchor.set(0.5);
     this.nameDisplay.x = width / 2;
-    this.nameDisplay.y = height / 2 + 40;
+    this.nameDisplay.y = height / 2 + 50;
     this.container.addChild(this.nameDisplay);
 
-    // Instructions
     const instructions = new PIXI.Text('ESC: Tilbake til meny', {
       fontFamily: 'Courier New',
       fontSize: 14,
@@ -116,7 +125,7 @@ export class GameOverScene {
     instructions.y = height - 40;
     this.container.addChild(instructions);
 
-    // Setup keyboard input
+    this.updateNameDisplay();
     this.setupKeyboard();
 
     AudioManager.play('gameOver');
@@ -124,50 +133,201 @@ export class GameOverScene {
 
   setupKeyboard() {
     this.keyHandler = (e) => {
-      if (this.submitting) return;
+      if (this.state === 'submitting') {
+        return;
+      }
 
       const isSubmitKey = e.key === 'Enter' || e.key === 'Return' || e.code === 'NumpadEnter';
-      if (isSubmitKey && this.nameInput.length > 0) {
+      const isEscape = e.key === 'Escape';
+
+      if (isEscape) {
         e.preventDefault();
-        this.submitScore();
+        if (this.state === 'input') {
+          this.exitInputMode();
+        } else {
+          this.game.switchScene('menu');
+        }
         return;
-      } else if (e.key === 'Backspace') {
-        e.preventDefault();
-        this.nameInput = this.nameInput.slice(0, -1);
-        this.updateNameDisplay();
-      } else if (e.key === 'Escape') {
-        this.game.switchScene('menu');
-      } else if (e.key.length === 1 && this.nameInput.length < 10) {
-        e.preventDefault();
-        this.nameInput += e.key.toUpperCase();
-        this.updateNameDisplay();
+      }
+
+      if (this.state === 'prompt') {
+        if (isSubmitKey) {
+          e.preventDefault();
+          this.enterInputMode();
+        }
+        return;
+      }
+
+      if (this.state === 'input') {
+        if (isSubmitKey && this.nameInput.length > 0) {
+          e.preventDefault();
+          this.submitScore();
+          return;
+        }
+        if (e.key === 'Backspace') {
+          e.preventDefault();
+          this.nameInput = this.nameInput.slice(0, -1);
+          this.syncHiddenInput();
+          this.updateNameDisplay();
+          return;
+        }
+        const char = e.key.toUpperCase();
+        if (/^[A-Z0-9 ]$/.test(char) && this.nameInput.length < 10) {
+          e.preventDefault();
+          this.nameInput += char;
+          this.syncHiddenInput();
+          this.updateNameDisplay();
+        }
       }
     };
 
     window.addEventListener('keydown', this.keyHandler);
   }
 
+  enterInputMode() {
+    if (this.state === 'input' || this.state === 'submitting') return;
+    this.state = 'input';
+    this.nameInput = '';
+    this.caretVisible = true;
+    this.updatePromptMessage(INPUT_PROMPT);
+    this.ensureHiddenInput();
+    if (this.hiddenInput) {
+      this.hiddenInput.value = '';
+      this.hiddenInput.focus();
+    }
+    this.startCaretBlink();
+    this.updateNameDisplay();
+  }
+
+  exitInputMode() {
+    if (this.state !== 'input') return;
+    this.state = 'prompt';
+    this.stopCaretBlink();
+    this.hideHiddenInput();
+    this.updatePromptMessage(ENTRY_PROMPT);
+    this.updateNameDisplay();
+  }
+
+  updatePromptMessage(text) {
+    if (this.promptText) {
+      this.promptText.text = text;
+    }
+  }
+
+  ensureHiddenInput() {
+    if (this.hiddenInput) return this.hiddenInput;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.maxLength = 10;
+    input.autocapitalize = 'characters';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.style.position = 'absolute';
+    input.style.opacity = '0';
+    input.style.pointerEvents = 'none';
+    input.style.zIndex = '-1';
+    input.style.left = '0';
+    input.style.top = '0';
+    input.style.width = '1px';
+    input.style.height = '1px';
+    this.boundHiddenInput = this.boundHiddenInput || this.handleHiddenInput.bind(this);
+    input.addEventListener('input', this.boundHiddenInput);
+    document.body.appendChild(input);
+    this.hiddenInput = input;
+    return input;
+  }
+
+  handleHiddenInput(event) {
+    if (!event.target) return;
+    const value = event.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
+    this.nameInput = value.slice(0, 10);
+    event.target.value = this.nameInput;
+    this.caretVisible = true;
+    this.updateNameDisplay();
+  }
+
+  syncHiddenInput() {
+    if (this.hiddenInput) {
+      this.hiddenInput.value = this.nameInput;
+    }
+  }
+
+  hideHiddenInput() {
+    if (this.hiddenInput) {
+      this.hiddenInput.blur();
+    }
+  }
+
+  startCaretBlink() {
+    this.stopCaretBlink();
+    this.caretInterval = setInterval(() => {
+      this.caretVisible = !this.caretVisible;
+      this.updateNameDisplay();
+    }, 500);
+  }
+
+  stopCaretBlink() {
+    if (this.caretInterval) {
+      clearInterval(this.caretInterval);
+      this.caretInterval = null;
+    }
+    this.caretVisible = true;
+  }
+
   updateNameDisplay() {
-    this.nameDisplay.text = this.nameInput || '_';
+    if (!this.nameDisplay) return;
+    if (this.state === 'input') {
+      const caret = this.caretVisible ? '|' : '';
+      this.nameDisplay.text = `NAME: ${this.nameInput}${caret}`;
+    } else if (this.state === 'submitting') {
+      this.nameDisplay.text = 'SENDER...';
+    } else {
+      this.nameDisplay.text = this.nameInput ? `NAME: ${this.nameInput}` : 'NAME: _';
+    }
   }
 
   async submitScore() {
-    this.submitting = true;
-    this.nameDisplay.text = 'SENDER...';
+    if (this.state !== 'input' || this.nameInput.length === 0) {
+      return;
+    }
+    this.state = 'submitting';
+    this.stopCaretBlink();
+    this.hideHiddenInput();
+    this.updatePromptMessage('SENDING...');
+    this.updateNameDisplay();
 
     try {
       await API.submitScore(this.nameInput, this.game.score, this.game.level);
       this.game.showHighscores();
     } catch (error) {
       console.error('Failed to submit score:', error);
-      this.nameDisplay.text = 'FEIL! TRYKK ESC';
-      this.submitting = false;
+      this.state = 'prompt';
+      this.updatePromptMessage('FEIL! TRYKK ESC');
+      if (this.nameDisplay) {
+        this.nameDisplay.text = 'FEIL! TRYKK ESC';
+      }
+      this.nameInput = '';
     }
   }
 
   destroy() {
+    if (this.promptText && this.promptPointer) {
+      this.promptText.off('pointerdown', this.promptPointer);
+      this.promptPointer = null;
+    }
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler);
+      this.keyHandler = null;
     }
+    if (this.hiddenInput) {
+      if (this.boundHiddenInput) {
+        this.hiddenInput.removeEventListener('input', this.boundHiddenInput);
+      }
+      if (this.hiddenInput.parentNode) {
+        this.hiddenInput.parentNode.removeChild(this.hiddenInput);
+      }
+      this.hiddenInput = null;
+    }
+    this.stopCaretBlink();
   }
 }

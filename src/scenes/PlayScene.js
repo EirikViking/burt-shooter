@@ -293,6 +293,9 @@ export class PlayScene {
       this.levelAdvanceTimeout = null;
     }
     this.inputManager.destroy();
+    if (this.hud) {
+      this.hud.destroy();
+    }
     AudioManager.stopMusic();
   }
 
