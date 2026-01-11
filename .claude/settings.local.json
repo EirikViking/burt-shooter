@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npx wrangler:*)",
+      "Bash(timeout 5 npm run dev:*)",
+      "Bash(exit 0)"
+    ]
+  }
+}

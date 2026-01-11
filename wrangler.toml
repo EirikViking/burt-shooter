@@ -1,0 +1,8 @@
+name = "burt-game"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "burt-game-db"
+database_id = "dec0edd2-9a7c-4dab-8ee3-4224c78c0915"
