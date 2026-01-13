@@ -47,6 +47,7 @@ export class Game {
 
     // Rank System (Per Run)
     this.rankIndex = 0;
+    this.lastRankIndex = 0; // Track last rank to prevent spam
     // Removed legacy rankXp, we now derive from score
     this.pendingHighscore = null;
 
@@ -65,15 +66,21 @@ export class Game {
   addScore(points) {
     this.score += points;
 
-    // Check Rank Up
+    // Check Rank Up - STRICT GATING to prevent spam
     const newRank = rankManager.getRankFromScore(this.score);
-    if (newRank > this.rankIndex) {
+
+    // Only trigger if newRank is STRICTLY greater than both current and last tracked rank
+    if (newRank > this.rankIndex && newRank > this.lastRankIndex) {
+      this.lastRankIndex = newRank; // Update BEFORE triggering to prevent re-entry
       this.rankIndex = newRank;
 
-      // Notify Scene
+      // Notify Scene (only once per actual rank increase)
       if (this.currentScene && this.currentScene.onRankUp) {
         this.currentScene.onRankUp(newRank);
       }
+    } else if (newRank > this.rankIndex) {
+      // Score increased rank but we already notified - just update silently
+      this.rankIndex = newRank;
     }
   }
 

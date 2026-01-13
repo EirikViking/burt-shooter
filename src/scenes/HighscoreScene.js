@@ -513,9 +513,17 @@ export class HighscoreScene {
     });
 
     if (!this.highscores || this.highscores.length === 0) {
-      if (!this.loadingText) {
-        // Empty state handled elsewhere or just blank
-      }
+      // Show empty state message
+      const emptyText = new PIXI.Text(EMPTY_MESSAGE, {
+        fontFamily: 'Courier New',
+        fontSize: rowFontSize,
+        fill: '#888888',
+        align: 'center'
+      });
+      emptyText.anchor.set(0.5, 0);
+      emptyText.x = width / 2;
+      emptyText.y = tableStartY + rowHeight;
+      this.rowsContainer.addChild(emptyText);
       return;
     }
 

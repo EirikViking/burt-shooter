@@ -341,10 +341,19 @@ export class PlayScene {
 
         if (this.enemyManager.isBossLevel) this.showWantedPoster();
 
+        // CRITICAL: Ensure player sprite stays intact after level completion
+        if (this.player) {
+          this.player.ensureRenderable('afterLevelComplete');
+        }
+
         this.levelAdvanceTimeout = setTimeout(() => {
           this.levelAdvancePending = false;
           this.levelAdvanceTimeout = null;
           this.game.nextLevel();
+          // CRITICAL: Ensure player sprite stays intact after level transition
+          if (this.player) {
+            this.player.ensureRenderable('afterNextLevel');
+          }
         }, 3000);
       }
 

@@ -471,14 +471,27 @@ export class Player {
       this.createSprite();
     }
 
-    // 2. Ensure sprite is visible and renderable
+    // 2. STRICT: Always set sprite visible and renderable
     this.sprite.visible = true;
     this.sprite.renderable = true;
 
-    // 3. Ensure alpha is 1 (unless in special states)
-    if (!this.isDodging && !this.invulnerable && this.activePowerup.type !== 'ghost') {
+    // 3. STRICT: Force alpha to 1 unless in specific valid states
+    // Ghost = 0.4, Dodge = 0.3, Invulnerable = blinking (handled by update)
+    if (this.activePowerup.type === 'ghost') {
+      // Ghost mode: alpha should be 0.4, not 0 or undefined
+      if (this.sprite.alpha === 0 || !Number.isFinite(this.sprite.alpha)) {
+        this.sprite.alpha = 0.4;
+      }
+    } else if (this.isDodging) {
+      // Dodge mode: alpha should be 0.3
+      if (this.sprite.alpha === 0 || !Number.isFinite(this.sprite.alpha)) {
+        this.sprite.alpha = 0.3;
+      }
+    } else if (!this.invulnerable) {
+      // Normal state: ALWAYS alpha = 1
       this.sprite.alpha = 1;
     }
+    // If invulnerable and not ghost/dodge, let update() handle the blinking
 
     // 4. Ensure shipSprite exists and is valid
     if (!this.shipSprite) {
@@ -487,10 +500,14 @@ export class Player {
     }
 
     if (this.shipSprite) {
+      // STRICT: Always enforce visibility on shipSprite
       this.shipSprite.visible = true;
       this.shipSprite.renderable = true;
 
-      // 5. Check texture validity
+      // STRICT: shipSprite alpha should always be 1 (container handles transparency)
+      this.shipSprite.alpha = 1;
+
+      // 5. Check texture validity - STRICT fallback
       if (!this.shipSprite.texture || !this.shipSprite.texture.valid) {
         console.warn('[Player] ensureRenderable: Invalid texture, falling back to default');
         const fallbackTexture = GameAssets.getShipTexture('player_01');
@@ -507,10 +524,14 @@ export class Player {
       // 7. Ensure position is finite (not NaN)
       if (!Number.isFinite(this.sprite.x)) this.sprite.x = this.x;
       if (!Number.isFinite(this.sprite.y)) this.sprite.y = this.y;
-      if (!Number.isFinite(this.shipSprite.alpha)) this.shipSprite.alpha = 1;
+
+      // 8. Ensure scale is valid
+      if (!Number.isFinite(this.shipSprite.scale.x) || this.shipSprite.scale.x <= 0) {
+        this.shipSprite.scale.set(this.baseScale || 1);
+      }
     }
 
-    // 8. Ensure sprite is attached to parent container
+    // 9. Ensure sprite is attached to parent container
     if (!this.sprite.parent && this.game && this.game.scenes && this.game.scenes.play) {
       const gameContainer = this.game.scenes.play.gameContainer;
       if (gameContainer) {
@@ -519,11 +540,12 @@ export class Player {
       }
     }
 
-    // 9. DEBUG overlay (only in debug mode)
+    // 10. DEBUG overlay (only in debug mode)
     if (debug) {
       console.log(`[Player] ensureRenderable(${reason}):`, {
         visible: this.sprite.visible,
         alpha: this.sprite.alpha,
+        shipAlpha: this.shipSprite?.alpha,
         textureValid: this.shipSprite?.texture?.valid,
         parent: this.sprite.parent?.constructor?.name || 'NONE',
         x: this.sprite.x,
