@@ -67,14 +67,13 @@ export class Game {
   addScore(points) {
     this.score += points;
 
-    // Check Rank Up - STRICT GATING to prevent spam
     const newRank = rankManager.getRankFromScore(this.score);
 
     if (newRank > this.rankIndex) {
       this.rankIndex = newRank;
       if (newRank > this.lastRankIndex) {
         this.lastRankIndex = newRank;
-        if (this.currentScene && this.currentScene.onRankUp) {
+        if (this.currentScene && typeof this.currentScene.onRankUp === 'function') {
           this.currentScene.onRankUp(newRank);
         }
       }
