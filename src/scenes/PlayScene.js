@@ -73,6 +73,8 @@ export class PlayScene {
     this.playerDiagText = null;
     this.rankDiagText = null;
     this.diagLayout = { width: 0, height: 0 };
+    this._lastRankUpSeen = null;
+    this._rankUpCount = 0;
   }
 
   init() {
@@ -374,7 +376,8 @@ export class PlayScene {
         const rank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 0;
         const last = Number.isFinite(this.game.lastRankIndex) ? this.game.lastRankIndex : 0;
         const score = Number.isFinite(this.game.score) ? this.game.score : 0;
-        this.rankDiagText.text = `rank:${rank} last:${last} score:${score}`;
+        const rankEv = Number.isFinite(this._rankUpCount) ? this._rankUpCount : 0;
+        this.rankDiagText.text = `rank:${rank} last:${last} score:${score} rankEv:${rankEv}`;
       }
 
       // Fire logic
@@ -472,6 +475,9 @@ export class PlayScene {
   }
 
   onRankUp(newRank) {
+    if (this._lastRankUpSeen === newRank) return;
+    this._lastRankUpSeen = newRank;
+    this._rankUpCount += 1;
     this.showRankUp();
   }
 
