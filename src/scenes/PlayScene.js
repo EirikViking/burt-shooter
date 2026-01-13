@@ -376,6 +376,8 @@ export class PlayScene {
     // Ship Swap
     if (this.player) {
       this.player.swapSprite();
+      // CRITICAL: Ensure player visibility after rank up celebration
+      this.player.ensureRenderable('showRankUp');
     }
 
     // SFX
@@ -395,7 +397,9 @@ export class PlayScene {
       const flash = new PIXI.Graphics();
       flash.rect(0, 0, this.game.getWidth(), this.game.getHeight()).fill({ color: 0xffff00, alpha: 0.2 });
       this.uiContainer.addChild(flash);
-      setTimeout(() => this.uiContainer.removeChild(flash), 100);
+      setTimeout(() => {
+        if (this.uiContainer && flash.parent) this.uiContainer.removeChild(flash);
+      }, 100);
     }
   }
 
@@ -510,15 +514,16 @@ export class PlayScene {
       }
     });
 
-    // Player bullets vs Ambient Beer (Shoot them down for points)
+    // Player bullets vs Ambient Beer (Shoot them down for points - RED HAZARD ONLY)
     this.bulletManager.playerBullets.forEach(bullet => {
       if (bullet.active) {
         this.ambientBeers.forEach(beer => {
-          if (beer.active && this.checkCollision(bullet, beer)) {
+          // Only damage HAZARD type beers (red cans), not POWERUP (white cans)
+          if (beer.active && beer.type === 'HAZARD' && this.checkCollision(bullet, beer)) {
             bullet.active = false;
-            beer.hp--;
-            if (beer.hp <= 0) {
-              beer.active = false;
+            // Use the BeerCan's takeDamage method properly
+            const destroyed = beer.takeDamage(bullet.damage || 1);
+            if (destroyed) {
               if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
                 this.game.addScore(500 * this.scoreMultiplier);
               }
@@ -565,6 +570,8 @@ export class PlayScene {
           powerup.collect(this.player, this);
           AudioManager.playSfx('pickup');
           this.particleManager.createPickupEffect(powerup.x, powerup.y, powerup.color);
+          // CRITICAL: Ensure player visibility after powerup pickup
+          this.player.ensureRenderable('afterPowerupPickup');
         }
       }
     });

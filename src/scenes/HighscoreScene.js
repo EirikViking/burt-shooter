@@ -110,6 +110,15 @@ export class HighscoreScene {
     this.loadingText.anchor.set(0.5);
     this.container.addChild(this.loadingText);
 
+    // Retry button (hidden initially)
+    this.retryBtn = this.createButton('PRØV IGJEN', layout);
+    this.retryBtn.visible = false;
+    this.retryBtn.on('pointerdown', () => {
+      this.retryBtn.visible = false;
+      this.loadHighscores();
+    });
+    this.container.addChild(this.retryBtn);
+
     this.backBtn = this.createButton('TILBAKE', layout);
     this.backBtn.on('pointerdown', () => {
       // Clear pending on exit if desired, but maybe keep it?
@@ -126,6 +135,23 @@ export class HighscoreScene {
 
     this.layoutHighscore();
 
+    // Load highscores
+    await this.loadHighscores();
+  }
+
+  async loadHighscores() {
+    // Show loading state
+    if (this.loadingText) {
+      this.loadingText.text = 'Laster...';
+      this.loadingText.visible = true;
+      if (!this.loadingText.parent) {
+        this.container.addChild(this.loadingText);
+      }
+    }
+    if (this.retryBtn) {
+      this.retryBtn.visible = false;
+    }
+
     try {
       this.highscores = await API.getHighscores();
 
@@ -141,23 +167,33 @@ export class HighscoreScene {
         }
       }
 
+      // Hide loading text on success
       if (this.loadingText && this.loadingText.parent) {
         this.container.removeChild(this.loadingText);
         this.loadingText = null;
       }
       this.displayHighscores();
     } catch (error) {
-      if (this.loadingText) {
-        this.loadingText.text = 'Kunne ikke laste scores!';
-      }
       console.error('Failed to load highscores:', error);
 
-      // Even if failed, show pending!
+      // Show error state with retry button
+      if (this.loadingText) {
+        this.loadingText.text = 'Kunne ikke laste scores!';
+        this.loadingText.visible = true;
+      }
+      if (this.retryBtn) {
+        this.retryBtn.visible = true;
+      }
+
+      // Even if failed, show pending score if exists
       if (this.game.pendingHighscore) {
         this.highscores = [this.game.pendingHighscore];
         if (this.loadingText && this.loadingText.parent) {
           this.container.removeChild(this.loadingText);
           this.loadingText = null;
+        }
+        if (this.retryBtn) {
+          this.retryBtn.visible = false;
         }
         this.displayHighscores();
       }
@@ -274,6 +310,11 @@ export class HighscoreScene {
     if (this.loadingText) {
       this.loadingText.x = width / 2;
       this.loadingText.y = tableStartY + rowHeight * 2;
+    }
+
+    if (this.retryBtn) {
+      this.retryBtn.x = width / 2;
+      this.retryBtn.y = tableStartY + rowHeight * 4;
     }
 
     if (this.backBtn) {

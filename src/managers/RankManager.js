@@ -19,6 +19,11 @@ export class RankManager {
     }
 
     getRankFromScore(score) {
+        // Guard: Ensure score is a valid number
+        if (typeof score !== 'number' || !Number.isFinite(score) || score < 0) {
+            return 0;
+        }
+
         // Binary search or simple loop - simple loop is fine for 78 items
         for (let i = this.thresholds.length - 1; i >= 0; i--) {
             if (score >= this.thresholds[i]) {

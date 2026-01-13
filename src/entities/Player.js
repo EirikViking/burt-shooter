@@ -320,11 +320,15 @@ export class Player {
     this.shieldActive = true;
     this.shieldExpiresAt = Date.now() + 15000; // 15 Seconds
     if (this.shieldSprite) this.shieldSprite.visible = true;
+    // CRITICAL: Ensure player remains visible after shield activation
+    this.ensureRenderable('activateShield');
   }
 
   deactivateShield() {
     this.shieldActive = false;
     if (this.shieldSprite) this.shieldSprite.visible = false;
+    // CRITICAL: Ensure player remains visible after shield breaks
+    this.ensureRenderable('deactivateShield');
   }
 
   // --- Powerups ---
@@ -355,6 +359,7 @@ export class Player {
         break;
       case 'ghost':
         this.activePowerup.expiresAt = Date.now() + 8000; // 8s
+        // Ghost mode uses reduced alpha for the CONTAINER only, not destroying visibility
         this.sprite.alpha = 0.4;
         break;
       case 'shield':
@@ -364,6 +369,10 @@ export class Player {
         }
         break;
     }
+
+    // CRITICAL: Ensure player remains visible after powerup application
+    // (Ghost is special - it sets alpha to 0.4, which ensureRenderable respects)
+    this.ensureRenderable('applyPowerup:' + type);
   }
 
   resetPowerups() {
@@ -391,23 +400,32 @@ export class Player {
   // --- Rank Up Visual Reward ---
   swapSprite() {
     // Deterministic but feels random: based on Rank
-    this.sprite.removeChild(this.shipSprite);
-    if (this.damageOverlay) this.sprite.removeChild(this.damageOverlay);
+    if (this.shipSprite && this.sprite) {
+      this.sprite.removeChild(this.shipSprite);
+    }
+    if (this.damageOverlay && this.sprite) {
+      this.sprite.removeChild(this.damageOverlay);
+    }
+    if (this.shieldSprite && this.sprite) {
+      this.sprite.removeChild(this.shieldSprite);
+    }
 
     // Re-run create logic which uses game.rankIndex
     this.createSprite();
-
-    // ENSURE VISIBILITY
-    this.sprite.visible = true;
-    this.sprite.alpha = 1; // Force visible, animation can fade/blink later if needed
 
     // Visual feedback
     if (this.shipSprite) {
       const flash = new PIXI.Graphics();
       flash.circle(0, 0, 60).fill({ color: 0xffffff, alpha: 0.8 });
       this.sprite.addChild(flash);
-      setTimeout(() => this.sprite.removeChild(flash), 150);
+      setTimeout(() => {
+        if (this.sprite && flash.parent) this.sprite.removeChild(flash);
+      }, 150);
     }
+
+    // CRITICAL: Ensure visibility after sprite swap
+    this.ensureRenderable('swapSprite');
+
     console.log('[Player] Ship sprite updated for Rank', this.game.rankIndex);
   }
 
@@ -421,9 +439,6 @@ export class Player {
 
     // Force Visible
     this.active = true;
-    this.sprite.visible = true;
-    this.sprite.alpha = 1;
-    this.sprite.renderable = true;
 
     // Invulnerability
     this.invulnerable = true;
@@ -432,6 +447,88 @@ export class Player {
     // Reset cooldowns
     this.shootCooldown = 0;
 
+    // CRITICAL: Ensure player is visible after respawn
+    this.ensureRenderable('forceRespawn');
+
     console.log('[Player] Force Respawned at', this.x, this.y);
+  }
+
+  /**
+   * HARDENING FUNCTION: Ensures player sprite is always visible and correctly attached.
+   * Call this after any operation that might affect visibility:
+   * - forceRespawn
+   * - swapSprite
+   * - powerup pickup
+   * - shield activate/break
+   * - any toast/celebration that touches visuals
+   */
+  ensureRenderable(reason = 'unknown') {
+    const debug = window.location.search.includes('debug=1');
+
+    // 1. Ensure sprite container exists
+    if (!this.sprite) {
+      console.error('[Player] ensureRenderable: sprite container missing! Recreating...');
+      this.createSprite();
+    }
+
+    // 2. Ensure sprite is visible and renderable
+    this.sprite.visible = true;
+    this.sprite.renderable = true;
+
+    // 3. Ensure alpha is 1 (unless in special states)
+    if (!this.isDodging && !this.invulnerable && this.activePowerup.type !== 'ghost') {
+      this.sprite.alpha = 1;
+    }
+
+    // 4. Ensure shipSprite exists and is valid
+    if (!this.shipSprite) {
+      console.error('[Player] ensureRenderable: shipSprite missing! Recreating...');
+      this.createSprite();
+    }
+
+    if (this.shipSprite) {
+      this.shipSprite.visible = true;
+      this.shipSprite.renderable = true;
+
+      // 5. Check texture validity
+      if (!this.shipSprite.texture || !this.shipSprite.texture.valid) {
+        console.warn('[Player] ensureRenderable: Invalid texture, falling back to default');
+        const fallbackTexture = GameAssets.getShipTexture('player_01');
+        if (GameAssets.isValidTexture(fallbackTexture)) {
+          this.shipSprite.texture = fallbackTexture;
+        }
+      }
+
+      // 6. Ensure tint is reset if needed (avoid 0x000000 blackout)
+      if (this.shipSprite.tint === 0x000000) {
+        this.shipSprite.tint = 0xffffff;
+      }
+
+      // 7. Ensure position is finite (not NaN)
+      if (!Number.isFinite(this.sprite.x)) this.sprite.x = this.x;
+      if (!Number.isFinite(this.sprite.y)) this.sprite.y = this.y;
+      if (!Number.isFinite(this.shipSprite.alpha)) this.shipSprite.alpha = 1;
+    }
+
+    // 8. Ensure sprite is attached to parent container
+    if (!this.sprite.parent && this.game && this.game.scenes && this.game.scenes.play) {
+      const gameContainer = this.game.scenes.play.gameContainer;
+      if (gameContainer) {
+        console.warn('[Player] ensureRenderable: Sprite detached, reattaching to gameContainer');
+        gameContainer.addChild(this.sprite);
+      }
+    }
+
+    // 9. DEBUG overlay (only in debug mode)
+    if (debug) {
+      console.log(`[Player] ensureRenderable(${reason}):`, {
+        visible: this.sprite.visible,
+        alpha: this.sprite.alpha,
+        textureValid: this.shipSprite?.texture?.valid,
+        parent: this.sprite.parent?.constructor?.name || 'NONE',
+        x: this.sprite.x,
+        y: this.sprite.y
+      });
+    }
   }
 }

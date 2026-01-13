@@ -11,7 +11,9 @@ export class BeerCan {
         this.type = type; // 'HAZARD' or 'POWERUP' (White)
         this.active = true;
         this.radius = 20;
-        this.health = type === 'HAZARD' ? 3 : 999;
+        // HAZARD cans: 1 hp so they die in one hit (was 3, felt indestructible)
+        // POWERUP cans: 999 hp (effectively indestructible, must be collected)
+        this.health = type === 'HAZARD' ? 1 : 999;
 
         // Movement
         this.vx = (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random());
