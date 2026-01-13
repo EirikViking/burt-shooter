@@ -46,9 +46,11 @@ export class Game {
     this.lives = 3;
 
     // Rank System (Per Run)
+    // Rank System (Per Run)
     const initialRank = rankManager.getRankFromScore(this.score);
     this.rankIndex = initialRank;
-    this.lastRankIndex = initialRank; // Track last rank to prevent spam
+    this.lastRankIndex = 0; // Explicitly 0 at start to ensure consistent progression logic
+    if (this.rankIndex > 0) this.lastRankIndex = this.rankIndex; // Sync if starting non-zero (unlikely but safe)
     // Removed legacy rankXp, we now derive from score
     this.pendingHighscore = null;
 
@@ -65,22 +67,25 @@ export class Game {
   }
 
   addScore(points) {
-    this.score += points;
+    this.score += Number(points) || 0;
 
     const prevRank = this.rankIndex;
-    const newRank = rankManager.getRankFromScore(this.score);
+    const computedRank = rankManager.getRankFromScore(this.score);
 
-    if (newRank > this.rankIndex) {
-      this.rankIndex = newRank;
+    // Always update current rank index source of truth
+    this.rankIndex = computedRank;
 
-      if (newRank > this.lastRankIndex) {
-        this.lastRankIndex = newRank;
+    // Strict Rank Up Event Logic
+    // Only fire if we have strictly exceeded the last SEEN rank index
+    if (computedRank > this.lastRankIndex) {
 
-        console.log('[RankUp]', { score: this.score, newRank, prevRank });
+      // Update lastRankIndex to the new high water mark
+      this.lastRankIndex = computedRank;
 
-        if (this.currentScene && typeof this.currentScene.onRankUp === 'function') {
-          this.currentScene.onRankUp(newRank);
-        }
+      console.log('[RankUp]', { score: this.score, newRank: computedRank, prevRank });
+
+      if (this.currentScene && typeof this.currentScene.onRankUp === 'function') {
+        this.currentScene.onRankUp(computedRank);
       }
     }
   }

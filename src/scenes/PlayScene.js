@@ -143,6 +143,9 @@ export class PlayScene {
       GameAssets.loadShips(),
       RankAssets.preloadAll()
     ]).then(() => {
+      // Sync rank state to prevent immediate spam if starting with score > 0 (handled in Game, but good safety)
+      this._lastRankUpSeen = this.game.rankIndex;
+
       // Create player AFTER ships are loaded to ensure texture is ready
       if (this.player) {
         this.gameContainer.removeChild(this.player.sprite);
