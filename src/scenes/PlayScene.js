@@ -76,6 +76,8 @@ export class PlayScene {
     this._lastRankUpSeen = null;
     this._rankUpCount = 0;
     this._rankUpAnimating = false;
+    this.sceneId = Math.random().toString(36).substring(7);
+    this._showRankUpCount = 0;
   }
 
   init() {
@@ -377,12 +379,22 @@ export class PlayScene {
       }
 
       if (this.rankDiagText) {
-        const rank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 0;
-        const last = Number.isFinite(this.game.lastRankIndex) ? this.game.lastRankIndex : 0;
-        const score = Number.isFinite(this.game.score) ? this.game.score : 0;
         const rankEv = Number.isFinite(this._rankUpCount) ? this._rankUpCount : 0;
         const seen = Number.isFinite(this._lastRankUpSeen) ? this._lastRankUpSeen : 'null';
-        this.rankDiagText.text = `rank:${rank} last:${last} score:${score} rankEv:${rankEv} seen:${seen}`;
+
+        // Detailed Prod Diagnostics
+        const d = this.game.diag || {};
+        const asEv = d.asEv || 0;
+        const asComp = d.asComp || 0;
+        const asBefore = d.asBefore || 0;
+        const asAfter = d.asAfter || 0;
+        const rkFromAdd = d.rkFromAdd || 0;
+        const uiRankEv = this._showRankUpCount || 0;
+
+        this.rankDiagText.text = `S:${score} R:${rank} (seen:${seen}) REV:${rankEv} UI:${uiRankEv}\n` +
+          `AS: evt=${asEv} cmp=${asComp} bef=${asBefore} aft=${asAfter} YES=${rkFromAdd}\n` +
+          `ID: G=${this.game.gameId} S=${this.sceneId}`;
+        this.rankDiagText.style.fontSize = 10; // Smaller font for more data
       }
 
       // Fire logic
@@ -495,6 +507,7 @@ export class PlayScene {
 
     if (this._rankUpAnimating) return;
     this._rankUpAnimating = true;
+    this._showRankUpCount++;
 
     // Reset loop or visual reset
     // Ensure all animation logic is cleared if invalid

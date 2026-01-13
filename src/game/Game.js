@@ -54,6 +54,17 @@ export class Game {
     // Removed legacy rankXp, we now derive from score
     this.pendingHighscore = null;
 
+    // Diagnostics
+    this.gameId = Math.random().toString(36).substring(7);
+    this.diag = {
+      asEv: 0,
+      asPts: 0,
+      asComp: 0,
+      asBefore: 0,
+      asAfter: 0,
+      rkFromAdd: 0
+    };
+
     this.switchScene('play');
   }
 
@@ -75,12 +86,20 @@ export class Game {
     // Always update current rank index source of truth
     this.rankIndex = computedRank;
 
+    // Diag Update
+    this.diag.asEv++;
+    this.diag.asPts = Number(points);
+    this.diag.asComp = computedRank;
+    this.diag.asBefore = this.lastRankIndex;
+
     // Strict Rank Up Event Logic
     // Only fire if we have strictly exceeded the last SEEN rank index
     if (computedRank > this.lastRankIndex) {
+      this.diag.rkFromAdd++;
 
       // Update lastRankIndex to the new high water mark
       this.lastRankIndex = computedRank;
+      this.diag.asAfter = this.lastRankIndex;
 
       console.log('[RankUp]', { score: this.score, newRank: computedRank, prevRank });
 
