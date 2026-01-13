@@ -67,12 +67,17 @@ export class Game {
   addScore(points) {
     this.score += points;
 
+    const prevRank = this.rankIndex;
     const newRank = rankManager.getRankFromScore(this.score);
 
     if (newRank > this.rankIndex) {
       this.rankIndex = newRank;
+
       if (newRank > this.lastRankIndex) {
         this.lastRankIndex = newRank;
+
+        console.log('[RankUp]', { score: this.score, newRank, prevRank });
+
         if (this.currentScene && typeof this.currentScene.onRankUp === 'function') {
           this.currentScene.onRankUp(newRank);
         }
