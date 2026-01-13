@@ -29,6 +29,7 @@ export class HighscoreScene {
     this.apiUrl = new URL(API_PATH, window.location.origin).toString();
     this.fetchToken = 0;
     this.fetchController = null;
+    this.rowsFadeTicker = null;
   }
 
   async init() {
@@ -45,7 +46,12 @@ export class HighscoreScene {
       fontSize: getResponsiveFontSize(layout, 'score'),
       fill: '#ffff00',
       stroke: '#ff8800',
-      strokeThickness: 3
+      strokeThickness: 3,
+      dropShadow: true,
+      dropShadowColor: '#ffaa33',
+      dropShadowBlur: 8,
+      dropShadowDistance: 0,
+      dropShadowAlpha: 0.7
     });
     this.title.anchor.set(0.5);
     this.container.addChild(this.title);
@@ -134,20 +140,20 @@ export class HighscoreScene {
 
     // Title block
     this.title.x = width / 2;
-    this.title.y = stack.placeElement(this.title, layout.spacing * 0.5);
+    this.title.y = stack.placeElement(this.title, layout.spacing * 0.2);
 
     this.subtitle.x = width / 2;
-    this.subtitle.y = stack.placeElement(this.subtitle, layout.spacing * 0.2);
+    this.subtitle.y = stack.placeElement(this.subtitle, layout.spacing * 0.1);
 
     this.comment.x = width / 2;
-    this.comment.y = stack.placeElement(this.comment, layout.spacing * 0.7);
+    this.comment.y = stack.placeElement(this.comment, layout.spacing * 0.4);
 
-    const headerY = stack.placeElement(this.stateMessage, layout.spacing * 0.4);
+    const headerY = stack.placeElement(this.stateMessage, layout.spacing * 0.2);
     this.stateMessage.y = headerY;
     this.stateMessage.x = width / 2;
 
     // Rows start after status message
-    const rowsStartY = headerY + layout.lineHeight + layout.spacing * 0.6;
+    const rowsStartY = headerY + layout.lineHeight * 0.9 + layout.spacing * 0.3;
     this.renderHighscoreRows(rowsStartY, layout);
 
     // Retry/back & diag
@@ -263,8 +269,8 @@ export class HighscoreScene {
       };
       const columns = {
         rank: layout.padding,
-        name: layout.padding + layout.width * 0.12,
-        score: layout.width - layout.padding - 160,
+        name: layout.padding + layout.width * 0.14,
+        score: layout.width - layout.padding - (layout.isMobile ? 120 : 180),
         level: layout.width - layout.padding
       };
       const maxRows = Math.max(4, Math.min(12, Math.floor((layout.height - startY - layout.padding * 2) / (layout.lineHeight * 1.2))));
@@ -283,6 +289,9 @@ export class HighscoreScene {
         const text = new PIXI.Text(entry.text, headerStyle);
         text.x = entry.x;
         text.y = startY;
+        if (entry.text === 'SCORE' || entry.text === 'LEVEL') {
+          text.anchor.set(1, 0);
+        }
         this.rowsContainer.addChild(text);
       });
 
@@ -301,6 +310,7 @@ export class HighscoreScene {
         scoreText.y = y;
         levelText.x = columns.level;
         levelText.y = y;
+        scoreText.anchor.set(1, 0);
         levelText.anchor.set(1, 0);
 
         this.rowsContainer.addChild(rankText, nameText, scoreText, levelText);
@@ -312,7 +322,9 @@ export class HighscoreScene {
         more.y = startY + layout.lineHeight * 1.4 * (maxRows + 1);
         this.rowsContainer.addChild(more);
       }
+      this.fadeInRows();
     } else {
+      this.rowsContainer.alpha = 1;
       const message = this.status === 'EMPTY' ? 'Ingen highscores enda. Vær først!' : 'Ingen data.';
       const empty = new PIXI.Text(message, {
         fontFamily: 'Courier New',
@@ -327,6 +339,28 @@ export class HighscoreScene {
       empty.y = startY;
       this.rowsContainer.addChild(empty);
     }
+  }
+
+  fadeInRows() {
+    if (!this.game?.app?.ticker) return;
+    if (this.rowsFadeTicker) {
+      this.game.app.ticker.remove(this.rowsFadeTicker);
+      this.rowsFadeTicker = null;
+    }
+    this.rowsContainer.alpha = 0;
+    let elapsed = 0;
+    const duration = 420;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      this.rowsContainer.alpha = Math.min(1, elapsed / duration);
+      if (elapsed >= duration) {
+        this.rowsContainer.alpha = 1;
+        this.game.app.ticker.remove(ticker);
+        this.rowsFadeTicker = null;
+      }
+    };
+    this.rowsFadeTicker = ticker;
+    this.game.app.ticker.add(ticker);
   }
 
   createButton(text) {
@@ -373,6 +407,10 @@ export class HighscoreScene {
     if (this.loadingTimer) {
       clearTimeout(this.loadingTimer);
       this.loadingTimer = null;
+    }
+    if (this.rowsFadeTicker && this.game?.app?.ticker) {
+      this.game.app.ticker.remove(this.rowsFadeTicker);
+      this.rowsFadeTicker = null;
     }
   }
 }

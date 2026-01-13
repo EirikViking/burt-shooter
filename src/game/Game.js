@@ -46,8 +46,9 @@ export class Game {
     this.lives = 3;
 
     // Rank System (Per Run)
-    this.rankIndex = 0;
-    this.lastRankIndex = 0; // Track last rank to prevent spam
+    const initialRank = rankManager.getRankFromScore(this.score);
+    this.rankIndex = initialRank;
+    this.lastRankIndex = initialRank; // Track last rank to prevent spam
     // Removed legacy rankXp, we now derive from score
     this.pendingHighscore = null;
 
@@ -69,14 +70,14 @@ export class Game {
     // Check Rank Up - STRICT GATING to prevent spam
     const newRank = rankManager.getRankFromScore(this.score);
 
-    if (newRank > this.lastRankIndex) {
-      this.lastRankIndex = newRank;
+    if (newRank > this.rankIndex) {
       this.rankIndex = newRank;
-      if (this.currentScene && this.currentScene.onRankUp) {
-        this.currentScene.onRankUp(newRank);
+      if (newRank > this.lastRankIndex) {
+        this.lastRankIndex = newRank;
+        if (this.currentScene && this.currentScene.onRankUp) {
+          this.currentScene.onRankUp(newRank);
+        }
       }
-    } else {
-      this.rankIndex = newRank;
     }
   }
 

@@ -359,22 +359,6 @@ export class PlayScene {
             this.gameContainer.addChild(sprite);
           }
         }
-
-        const shipSprite = this.player.shipSprite;
-        const fallbackTexture = GameAssets.getShipTexture(this.player.config?.texture || 'player_01');
-        if (!GameAssets.isValidTexture(shipSprite?.texture) && GameAssets.isValidTexture(fallbackTexture)) {
-          if (shipSprite && shipSprite instanceof PIXI.Sprite) {
-            shipSprite.texture = fallbackTexture;
-          } else if (this.player.sprite) {
-            const fallbackSprite = new PIXI.Sprite(fallbackTexture);
-            fallbackSprite.anchor.set(0.5);
-            const targetWidth = shipSprite?.width || 60;
-            fallbackSprite.width = targetWidth;
-            fallbackSprite.scale.y = fallbackSprite.scale.x;
-            this.player.sprite.addChild(fallbackSprite);
-            this.player.shipSprite = fallbackSprite;
-          }
-        }
       }
 
       if (this.playerDiagText) {
@@ -461,13 +445,10 @@ export class PlayScene {
               }
             }
             const shipSprite = this.player.shipSprite;
-            const fallbackTexture = GameAssets.getShipTexture(this.player.config?.texture || 'player_01');
-            if (shipSprite && shipSprite instanceof PIXI.Sprite) {
-              if (!GameAssets.isValidTexture(shipSprite.texture) && GameAssets.isValidTexture(fallbackTexture)) {
-                shipSprite.texture = fallbackTexture;
-              }
-            }
-            if (shipSprite?.scale) {
+            const texValid = shipSprite && shipSprite instanceof PIXI.Sprite && GameAssets.isValidTexture(shipSprite.texture);
+            if (!texValid && this.player.rebuildShipSprite) {
+              this.player.rebuildShipSprite('afterNextLevel');
+            } else if (shipSprite?.scale) {
               const baseScale = Number.isFinite(this.player.baseScale) ? this.player.baseScale : (shipSprite.scale.x || 1);
               shipSprite.scale.set(baseScale);
             }

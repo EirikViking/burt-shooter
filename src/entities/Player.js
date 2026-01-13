@@ -134,6 +134,72 @@ export class Player {
     }
   }
 
+  rebuildShipSprite(reason = 'unknown') {
+    if (!this.sprite) {
+      this.sprite = new PIXI.Container();
+      this.sprite.x = this.x;
+      this.sprite.y = this.y;
+    }
+
+    if (this.shipSprite && this.shipSprite.parent) {
+      this.shipSprite.parent.removeChild(this.shipSprite);
+    }
+    if (this.damageOverlay && this.damageOverlay.parent) {
+      this.damageOverlay.parent.removeChild(this.damageOverlay);
+    }
+    if (this.shieldSprite && this.shieldSprite.parent) {
+      this.shieldSprite.parent.removeChild(this.shieldSprite);
+    }
+
+    const rank = this.game.rankIndex || 0;
+    this.currentModel = Math.min(3, Math.floor(rank / 30) + 1);
+    const colorIdx = Math.floor((rank % 30) / 10);
+    const colors = ['blue', 'green', 'orange', 'red'];
+    const color = colors[colorIdx] || 'blue';
+
+    let texture = GameAssets.getXtraShip(this.currentModel, color);
+    if (!GameAssets.isValidTexture(texture)) {
+      texture = GameAssets.getShipTexture(this.config.texture);
+      this.currentModel = 1;
+    }
+
+    if (GameAssets.isValidTexture(texture)) {
+      this.shipSprite = new PIXI.Sprite(texture);
+      this.shipSprite.anchor.set(0.5);
+      const screenWidth = this.game.getWidth();
+      const targetWidth = Math.max(52, Math.min(screenWidth * 0.06, 78)) * 1.15;
+      this.shipSprite.width = targetWidth;
+      this.shipSprite.scale.y = this.shipSprite.scale.x;
+      this.baseScale = Number.isFinite(this.shipSprite.scale.x) ? this.shipSprite.scale.x : 1;
+      this.sprite.addChild(this.shipSprite);
+
+      this.damageOverlay = new PIXI.Sprite();
+      this.damageOverlay.anchor.set(0.5);
+      this.damageOverlay.visible = false;
+      this.sprite.addChild(this.damageOverlay);
+
+      this.shieldSprite = new PIXI.Container();
+      const sGfx = new PIXI.Graphics();
+      sGfx.circle(0, 0, 50);
+      sGfx.stroke({ width: 4, color: 0x00ffff, alpha: 0.8 });
+      sGfx.fill({ color: 0x00ffff, alpha: 0.1 });
+      this.shieldSprite.addChild(sGfx);
+      this.shieldSprite.visible = false;
+      this.sprite.addChild(this.shieldSprite);
+    } else {
+      const g = new PIXI.Graphics();
+      g.moveTo(0, -20);
+      g.lineTo(-15, 15);
+      g.lineTo(0, 10);
+      g.lineTo(15, 15);
+      g.closePath();
+      g.fill(0x00ff00);
+      this.shipSprite = g;
+      this.sprite.addChild(g);
+      this.baseScale = 1;
+    }
+  }
+
   update(delta) {
     if (!this.active) return;
 
@@ -468,7 +534,7 @@ export class Player {
     // 1. Ensure sprite container exists
     if (!this.sprite) {
       console.error('[Player] ensureRenderable: sprite container missing! Recreating...');
-      this.createSprite();
+      this.rebuildShipSprite('ensureRenderable:container');
     }
 
     // 2. STRICT: Always set sprite visible and renderable
@@ -495,8 +561,11 @@ export class Player {
 
     // 4. Ensure shipSprite exists and is valid
     if (!this.shipSprite) {
-      console.error('[Player] ensureRenderable: shipSprite missing! Recreating...');
-      this.createSprite();
+      console.error('[Player] ensureRenderable: shipSprite missing! Rebuilding...');
+      this.rebuildShipSprite('ensureRenderable:ship');
+    } else if (this.shipSprite instanceof PIXI.Sprite && !GameAssets.isValidTexture(this.shipSprite.texture)) {
+      console.error('[Player] ensureRenderable: shipSprite missing/invalid! Rebuilding...');
+      this.rebuildShipSprite('ensureRenderable:ship');
     }
 
     if (this.shipSprite) {
@@ -506,15 +575,6 @@ export class Player {
 
       // STRICT: shipSprite alpha should always be 1 (container handles transparency)
       this.shipSprite.alpha = 1;
-
-      // 5. Check texture validity - STRICT fallback
-      if (!this.shipSprite.texture || !this.shipSprite.texture.valid) {
-        console.warn('[Player] ensureRenderable: Invalid texture, falling back to default');
-        const fallbackTexture = GameAssets.getShipTexture('player_01');
-        if (GameAssets.isValidTexture(fallbackTexture)) {
-          this.shipSprite.texture = fallbackTexture;
-        }
-      }
 
       // 6. Ensure tint is reset if needed (avoid 0x000000 blackout)
       if (this.shipSprite.tint === 0x000000) {

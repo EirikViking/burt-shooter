@@ -471,7 +471,6 @@ async function init() {
   window.__perfStats = perfState;
 
   await runBootStep(bootLogger, 'dom ready', waitForDomReady, { timeoutMs: DOM_READY_TIMEOUT_MS });
-  ensureBuildStamp();
   createPerfOverlay(perfState.enabled);
   registerBootErrorHandlers();
 
