@@ -69,17 +69,13 @@ export class Game {
     // Check Rank Up - STRICT GATING to prevent spam
     const newRank = rankManager.getRankFromScore(this.score);
 
-    // Only trigger if newRank is STRICTLY greater than both current and last tracked rank
-    if (newRank > this.rankIndex && newRank > this.lastRankIndex) {
-      this.lastRankIndex = newRank; // Update BEFORE triggering to prevent re-entry
+    if (newRank > this.lastRankIndex) {
+      this.lastRankIndex = newRank;
       this.rankIndex = newRank;
-
-      // Notify Scene (only once per actual rank increase)
       if (this.currentScene && this.currentScene.onRankUp) {
         this.currentScene.onRankUp(newRank);
       }
-    } else if (newRank > this.rankIndex) {
-      // Score increased rank but we already notified - just update silently
+    } else {
       this.rankIndex = newRank;
     }
   }

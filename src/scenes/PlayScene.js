@@ -14,6 +14,7 @@ import { InputManager } from '../input/InputManager.js';
 import { TouchControls } from '../input/TouchControls.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
+import { BUILD_ID } from '../buildInfo.js';
 import {
   extendLevelIntroTexts,
   getAchievementPopup,
@@ -67,6 +68,11 @@ export class PlayScene {
     // White Can State
     this.lastWhiteCanTime = 0;
     this.hasActiveWhiteCan = false;
+
+    this.buildStamp = null;
+    this.playerDiagText = null;
+    this.rankDiagText = null;
+    this.diagLayout = { width: 0, height: 0 };
   }
 
   init() {
@@ -78,6 +84,32 @@ export class PlayScene {
     // --- Hud & UI ---
     this.hud = new HUD(this.uiContainer, this.game);
     // Note: HUD creates itself in constructor
+
+    const diagStyle = {
+      fontFamily: 'Courier New',
+      fontSize: 12,
+      fill: '#66fffe',
+      align: 'left'
+    };
+    this.playerDiagText = new PIXI.Text('', diagStyle);
+    this.playerDiagText.anchor.set(0, 1);
+    this.playerDiagText.zIndex = 9999;
+    this.uiContainer.addChild(this.playerDiagText);
+
+    this.rankDiagText = new PIXI.Text('', diagStyle);
+    this.rankDiagText.anchor.set(0, 1);
+    this.rankDiagText.zIndex = 9999;
+    this.uiContainer.addChild(this.rankDiagText);
+
+    this.buildStamp = new PIXI.Text(`build: ${BUILD_ID}`, {
+      ...diagStyle,
+      align: 'right'
+    });
+    this.buildStamp.anchor.set(1, 1);
+    this.buildStamp.zIndex = 9999;
+    this.uiContainer.addChild(this.buildStamp);
+
+    this.updateDiagnosticsLayout();
 
     // Internal Debug Stats
     this.debugStats = {
@@ -146,6 +178,7 @@ export class PlayScene {
     // Start first level
     this.startLevel();
 
+    console.log(`PlayScene build:${BUILD_ID}`);
     this.isReady = true;
   }
 
@@ -169,6 +202,36 @@ export class PlayScene {
     if (e.key === 'F5') {
       this.spawnEasterEgg();
       this.showToast('TRIGGERED FLYBY', { fontSize: 20 });
+    }
+  }
+
+  updateDiagnosticsLayout() {
+    if (!this.game || !this.game.app) return;
+    const { width, height } = this.game.app.screen;
+    if (this.diagLayout.width === width && this.diagLayout.height === height) return;
+    this.diagLayout.width = width;
+    this.diagLayout.height = height;
+
+    const margin = 8;
+    const fontSize = width < 500 ? 10 : 12;
+    const lineHeight = Math.round(fontSize * 1.2);
+
+    if (this.playerDiagText) {
+      this.playerDiagText.style.fontSize = fontSize;
+      this.playerDiagText.x = margin;
+      this.playerDiagText.y = height - margin - lineHeight;
+    }
+
+    if (this.rankDiagText) {
+      this.rankDiagText.style.fontSize = fontSize;
+      this.rankDiagText.x = margin;
+      this.rankDiagText.y = height - margin;
+    }
+
+    if (this.buildStamp) {
+      this.buildStamp.style.fontSize = fontSize;
+      this.buildStamp.x = width - margin;
+      this.buildStamp.y = height - margin;
     }
   }
 
@@ -260,6 +323,7 @@ export class PlayScene {
     if (!this.isReady) return;
 
     try {
+      this.updateDiagnosticsLayout();
       this.gameTime += delta / 60;
 
       // Score Boost Timer
@@ -286,6 +350,47 @@ export class PlayScene {
       // Player update
       if (this.game.lives > 0 && this.player) {
         this.player.update(delta);
+        const sprite = this.player.sprite;
+        if (sprite) {
+          sprite.visible = true;
+          sprite.renderable = true;
+          sprite.alpha = 1;
+          if (!sprite.parent && this.gameContainer) {
+            this.gameContainer.addChild(sprite);
+          }
+        }
+
+        const shipSprite = this.player.shipSprite;
+        const fallbackTexture = GameAssets.getShipTexture(this.player.config?.texture || 'player_01');
+        if (!GameAssets.isValidTexture(shipSprite?.texture) && GameAssets.isValidTexture(fallbackTexture)) {
+          if (shipSprite && shipSprite instanceof PIXI.Sprite) {
+            shipSprite.texture = fallbackTexture;
+          } else if (this.player.sprite) {
+            const fallbackSprite = new PIXI.Sprite(fallbackTexture);
+            fallbackSprite.anchor.set(0.5);
+            const targetWidth = shipSprite?.width || 60;
+            fallbackSprite.width = targetWidth;
+            fallbackSprite.scale.y = fallbackSprite.scale.x;
+            this.player.sprite.addChild(fallbackSprite);
+            this.player.shipSprite = fallbackSprite;
+          }
+        }
+      }
+
+      if (this.playerDiagText) {
+        const sprite = this.player?.sprite;
+        const vis = sprite?.visible ? 't' : 'f';
+        const alpha = sprite && Number.isFinite(sprite.alpha) ? sprite.alpha.toFixed(2) : 'na';
+        const texOk = GameAssets.isValidTexture(this.player?.shipSprite?.texture) ? 'ok' : 'bad';
+        const parent = sprite?.parent ? 'yes' : 'no';
+        this.playerDiagText.text = `pVis:${vis} a:${alpha} tex:${texOk} parent:${parent}`;
+      }
+
+      if (this.rankDiagText) {
+        const rank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 0;
+        const last = Number.isFinite(this.game.lastRankIndex) ? this.game.lastRankIndex : 0;
+        const score = Number.isFinite(this.game.score) ? this.game.score : 0;
+        this.rankDiagText.text = `rank:${rank} last:${last} score:${score}`;
       }
 
       // Fire logic
@@ -341,18 +446,31 @@ export class PlayScene {
 
         if (this.enemyManager.isBossLevel) this.showWantedPoster();
 
-        // CRITICAL: Ensure player sprite stays intact after level completion
-        if (this.player) {
-          this.player.ensureRenderable('afterLevelComplete');
-        }
-
         this.levelAdvanceTimeout = setTimeout(() => {
           this.levelAdvancePending = false;
           this.levelAdvanceTimeout = null;
           this.game.nextLevel();
-          // CRITICAL: Ensure player sprite stays intact after level transition
           if (this.player) {
-            this.player.ensureRenderable('afterNextLevel');
+            const sprite = this.player.sprite;
+            if (sprite) {
+              sprite.visible = true;
+              sprite.alpha = 1;
+              sprite.renderable = true;
+              if (!sprite.parent && this.gameContainer) {
+                this.gameContainer.addChild(sprite);
+              }
+            }
+            const shipSprite = this.player.shipSprite;
+            const fallbackTexture = GameAssets.getShipTexture(this.player.config?.texture || 'player_01');
+            if (shipSprite && shipSprite instanceof PIXI.Sprite) {
+              if (!GameAssets.isValidTexture(shipSprite.texture) && GameAssets.isValidTexture(fallbackTexture)) {
+                shipSprite.texture = fallbackTexture;
+              }
+            }
+            if (shipSprite?.scale) {
+              const baseScale = Number.isFinite(this.player.baseScale) ? this.player.baseScale : (shipSprite.scale.x || 1);
+              shipSprite.scale.set(baseScale);
+            }
           }
         }, 3000);
       }

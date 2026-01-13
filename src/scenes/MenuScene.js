@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { BeerAsset } from '../utils/BeerAsset.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize, calculateCenteredStartY } from '../ui/textLayout.js';
 
@@ -20,6 +21,7 @@ export class MenuScene {
     this.easter = null;
     this.stars = [];
     this.animationTime = 0;
+    this.buildStamp = null;
   }
 
   init() {
@@ -42,6 +44,7 @@ export class MenuScene {
     this.layoutMenu();
     this.startAnimations();
     AudioManager.playMusicContext('menu');
+    console.log(`MenuScene build:${BUILD_ID}`);
   }
 
   async loadAndCreateDebugSprite() {
@@ -242,6 +245,16 @@ export class MenuScene {
       }
     });
     this.container.addChild(this.musicBtn);
+
+    const stampFont = Math.max(10, getResponsiveFontSize(layout, 'small') - 2);
+    this.buildStamp = new PIXI.Text(`build: ${BUILD_ID}`, {
+      fontFamily: 'Courier New',
+      fontSize: stampFont,
+      fill: '#66fffe',
+      align: 'right'
+    });
+    this.buildStamp.anchor.set(1, 1);
+    this.container.addChild(this.buildStamp);
   }
 
   async initBeerDecorations() {
@@ -391,6 +404,11 @@ export class MenuScene {
     // Position Music Btn (Top Right)
     this.musicBtn.x = width - 60;
     this.musicBtn.y = 40;
+
+    if (this.buildStamp) {
+      this.buildStamp.x = width - layout.padding / 2;
+      this.buildStamp.y = height - layout.padding / 2;
+    }
 
     // Reposition beer cans
     if (this.leftBeer) {
