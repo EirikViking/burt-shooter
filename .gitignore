@@ -9,3 +9,8 @@ wrangler.toml.local
 test-results/
 playwright-report/
 .tmp-playwright/
+
+# Claude Code temp files
+.claude/settings.local.json
+tmpclaude-*
+tmpclaude-*/**
