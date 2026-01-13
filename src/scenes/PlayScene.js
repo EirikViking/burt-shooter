@@ -75,6 +75,7 @@ export class PlayScene {
     this.diagLayout = { width: 0, height: 0 };
     this._lastRankUpSeen = null;
     this._rankUpCount = 0;
+    this._rankUpAnimating = false;
   }
 
   init() {
@@ -478,20 +479,24 @@ export class PlayScene {
     if (this._lastRankUpSeen === newRank) return;
     this._lastRankUpSeen = newRank;
     this._rankUpCount += 1;
-    this.showRankUp();
+    this.showRankUp(newRank);
   }
 
-  showRankUp() {
+  showRankUp(newRank) {
+    if (this._rankUpAnimating) return;
+    this._rankUpAnimating = true;
+
+    // Reset loop or visual reset
+    // Ensure all animation logic is cleared if invalid
+
     // Visuals
-    const rank = this.game.rankIndex;
+    const rank = (newRank !== undefined) ? newRank : this.game.rankIndex;
     const msg = `RANK UP! ${rank}`;
     this.showToast(msg, { fontSize: 32, fill: '#ffff00', y: this.game.getHeight() * 0.15 });
 
     // Ship Swap
     if (this.player) {
       this.player.swapSprite();
-      // CRITICAL: Ensure player visibility after rank up celebration
-      this.player.ensureRenderable('showRankUp');
     }
 
     // SFX
@@ -507,14 +512,21 @@ export class PlayScene {
     // Particles
     if (this.player && this.player.active) {
       this.particleManager.createExplosion(this.player.x, this.player.y, 0xffff00);
-      // Screen flash?
+      // Screen flash
       const flash = new PIXI.Graphics();
       flash.rect(0, 0, this.game.getWidth(), this.game.getHeight()).fill({ color: 0xffff00, alpha: 0.2 });
       this.uiContainer.addChild(flash);
+
+      // Cleanup Flash
       setTimeout(() => {
         if (this.uiContainer && flash.parent) this.uiContainer.removeChild(flash);
       }, 100);
     }
+
+    // Release Lock after animation
+    setTimeout(() => {
+      this._rankUpAnimating = false;
+    }, 2500);
   }
 
   showErrorOverlay(e) {
