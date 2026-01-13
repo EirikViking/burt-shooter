@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
 import { AudioManager } from './audio/AudioManager.js';
+import { BootWatchdog } from './utils/BootWatchdog.js';
 import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 
@@ -110,10 +111,17 @@ function createPerfOverlay(enabled) {
 
   const overlay = document.createElement('div');
   overlay.id = 'perf-overlay';
+
+  // Apply initial position with safe margin
+  const layout = getCurrentLayout();
+  const safeMargin = layout.safeArea;
+  const topPos = `${safeMargin.top}px`;
+  const rightPos = `${window.innerWidth - safeMargin.right}px`;
+
   overlay.style.cssText = [
     'position: fixed',
-    'top: 8px',
-    'right: 8px',
+    `top: ${topPos}`,
+    `right: ${rightPos}`,
     'z-index: 9999',
     'background: rgba(0, 0, 0, 0.75)',
     'color: #00ff88',
@@ -122,13 +130,22 @@ function createPerfOverlay(enabled) {
     'font-size: 12px',
     'white-space: pre',
     'pointer-events: none',
-    'text-align: right'
+    'text-align: right',
+    'transform: translateX(100%)'
   ].join(';');
 
   const parent = document.body || document.documentElement;
   if (parent) {
     parent.appendChild(overlay);
   }
+
+  // Update position on layout changes
+  const updatePosition = (newLayout) => {
+    const newSafeMargin = newLayout.safeArea;
+    overlay.style.top = `${newSafeMargin.top}px`;
+    overlay.style.right = `${window.innerWidth - newSafeMargin.right}px`;
+  };
+  addResponsiveListener(updatePosition);
 
   const update = () => {
     const memMb = perfState.memory ? (perfState.memory / (1024 * 1024)).toFixed(1) : 'n/a';
@@ -182,7 +199,7 @@ function updatePerfStats(app, game, delta, clampedDelta) {
 function createBootLogger(enabled) {
   if (!enabled) {
     return {
-      startStep: () => () => {}
+      startStep: () => () => { }
     };
   }
 
@@ -311,15 +328,15 @@ async function runBootStep(logger, label, fn, options = {}) {
     const task = Promise.resolve().then(fn);
     const result = timeoutMs
       ? await Promise.race([
-          task,
-          new Promise((_, reject) => {
-            timeoutId = setTimeout(() => {
-              const error = new Error(`timeout after ${timeoutMs}ms`);
-              error.code = 'BOOT_TIMEOUT';
-              reject(error);
-            }, timeoutMs);
-          })
-        ])
+        task,
+        new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            const error = new Error(`timeout after ${timeoutMs}ms`);
+            error.code = 'BOOT_TIMEOUT';
+            reject(error);
+          }, timeoutMs);
+        })
+      ])
       : await task;
 
     if (result && result.bootDetail) {
@@ -438,6 +455,11 @@ function registerBootErrorHandlers() {
 }
 
 async function init() {
+  // --- BOOT WATCHDOG START ---
+  BootWatchdog.init();
+  BootWatchdog.checkpoint('BOOT_START');
+  // ---------------------------
+
   const bootLogger = createBootLogger(isBootDebugEnabled());
   const loadingEl = document.getElementById('loading');
   if (loadingEl) {
@@ -512,22 +534,49 @@ async function init() {
 
   const audioResult = await runBootStep(bootLogger, 'init audio', () => {
     AudioManager.init();
-    if (!AudioManager.enabled) {
-      throw new Error('audio disabled');
+    if (AudioManager.AUDIO_ENABLED && !AudioManager.enabled) {
+      // It's allowed to be disabled via flag, but if flag is true and enabled is false, it's a runtime failure
+      // Actually our AudioManager now hard checks flag. 
+      // check flag:
+      if (AudioManager.AUDIO_ENABLED && !AudioManager.audioEnabled) {
+        throw new Error('audio disallowed environment');
+      }
     }
   });
 
   if (!audioResult.ok) {
-    AudioManager.enabled = false;
+    // If audio init failed, we just proceed without audio
   }
 
   const resizeCanvas = (layout) => {
     if (!app) return;
-    app.renderer.resize(layout.width, layout.height);
+
+    // On desktop, limit to reasonable dimensions and 16:9 aspect ratio
+    let canvasWidth = layout.width;
+    let canvasHeight = layout.height;
+
+    if (!layout.isMobile) {
+      // Enforce maximum width of 1280px (BASE_WIDTH) for consistent gameplay
+      const maxWidth = 1280;
+      const targetAspect = 16 / 9;
+
+      if (canvasWidth > maxWidth) {
+        canvasWidth = maxWidth;
+        canvasHeight = Math.round(canvasWidth / targetAspect);
+      } else {
+        const currentAspect = canvasWidth / canvasHeight;
+        if (currentAspect > targetAspect) {
+          // Too wide - limit width to maintain 16:9
+          canvasWidth = Math.round(canvasHeight * targetAspect);
+        }
+      }
+    }
+
+    app.renderer.resize(canvasWidth, canvasHeight);
     const view = app.view;
     if (view) {
-      view.style.width = `${layout.width}px`;
-      view.style.height = `${layout.height}px`;
+      view.style.width = `${canvasWidth}px`;
+      view.style.height = `${canvasHeight}px`;
     }
   };
   addResponsiveListener((layout) => resizeCanvas(layout));
@@ -560,6 +609,7 @@ async function init() {
   });
 
   bootState.completed = true;
+  BootWatchdog.checkpoint('SCENE_READY');
 }
 
 init().catch((error) => {

@@ -2,7 +2,10 @@
 <html lang="no">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>BURT SHOOTER - Kurt Edgar & Eirik sitt Galaga</title>
   <style>
     * {
@@ -10,23 +13,46 @@
       padding: 0;
       box-sizing: border-box;
     }
-    body {
+    html, body {
       background: #000;
       overflow: hidden;
       font-family: 'Courier New', monospace;
       color: #fff;
+      /* Prevent pull-to-refresh and overscroll */
+      overscroll-behavior: none;
+      /* Prevent text selection */
+      -webkit-user-select: none;
+      user-select: none;
+      /* Prevent touch callouts */
+      -webkit-touch-callout: none;
+      /* Prevent tap highlight */
+      -webkit-tap-highlight-color: transparent;
+      /* Full height on mobile */
+      height: 100%;
+      height: 100dvh;
+      position: fixed;
+      width: 100%;
     }
     #game-container {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
       position: relative;
+      /* Prevent touch scrolling */
+      touch-action: none;
     }
     canvas {
       display: block;
       image-rendering: pixelated;
+      /* Prevent canvas touch scrolling */
+      touch-action: none;
+      /* Center canvas when constrained */
+      margin: 0 auto;
+      /* Prevent canvas from stretching beyond its set dimensions */
+      max-width: 100%;
+      max-height: 100%;
     }
     .loading {
       position: absolute;
@@ -37,6 +63,13 @@
       font-size: 24px;
       color: #0ff;
       text-shadow: 0 0 10px #0ff;
+    }
+    /* Prevent iOS bounce effect */
+    @supports (-webkit-touch-callout: none) {
+      body {
+        position: fixed;
+        width: 100%;
+      }
     }
   </style>
 </head>

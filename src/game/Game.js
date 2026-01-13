@@ -38,9 +38,17 @@ export class Game {
   }
 
   startGame() {
+    console.log('[Game] Starting new game...');
     this.score = 0;
     this.level = 1;
     this.lives = 3;
+
+    // Rank System (Per Run)
+    this.rankIndex = 0;
+    this.rankXp = 0;
+    this.rankNextForLevel = 150; // Base XP needed for first rank up
+    this.pendingHighscore = null;
+
     this.switchScene('play');
   }
 
@@ -55,6 +63,36 @@ export class Game {
 
   addScore(points) {
     this.score += points;
+  }
+
+  activateScoreBoost(multiplier, duration) {
+    if (this.currentScene && this.currentScene.scoreMultiplier !== undefined) {
+      this.currentScene.scoreMultiplier = multiplier;
+      this.currentScene.scoreBoostTimer = duration;
+    }
+  }
+
+  // --- Rank System ---
+  addRankXp(amount) {
+    if (this.rankIndex >= 77) return false; // Max rank
+
+    this.rankXp += amount;
+    let leveledUp = false;
+
+    while (this.rankXp >= this.rankNextForLevel && this.rankIndex < 77) {
+      this.rankXp -= this.rankNextForLevel;
+      this.rankIndex++;
+      leveledUp = true;
+      // Curve: Increase requirement by 10% each rank
+      this.rankNextForLevel = Math.floor(this.rankNextForLevel * 1.15);
+    }
+
+    return leveledUp;
+  }
+
+  getRankProgress() {
+    if (this.rankIndex >= 77) return 1.0;
+    return Math.min(1, Math.max(0, this.rankXp / this.rankNextForLevel));
   }
 
   loseLife() {

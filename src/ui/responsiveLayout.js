@@ -45,8 +45,9 @@ function computeSafeArea(width, height, isMobile) {
 }
 
 export function applyResponsiveLayout(viewportW = window.innerWidth, viewportH = window.innerHeight) {
-  const width = Math.max(320, Math.round(viewportW));
-  const height = Math.max(240, Math.round(viewportH));
+  let width = Math.max(320, Math.round(viewportW));
+  let height = Math.max(240, Math.round(viewportH));
+
   const isMobile = detectMobile(width, height);
   const isPortrait = height >= width;
   const scale = computeScale(width, height, isMobile);

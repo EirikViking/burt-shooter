@@ -1,7 +1,8 @@
 import * as PIXI from 'pixi.js';
+import { GameAssets } from '../utils/GameAssets.js';
 
 export class Bullet {
-  constructor(x, y, vx, vy, damage, color, isPlayer) {
+  constructor(x, y, vx, vy, damage, color, isPlayer, visualConfig = null) {
     this.x = x;
     this.y = y;
     this.vx = vx;
@@ -10,18 +11,53 @@ export class Bullet {
     this.color = color;
     this.isPlayer = isPlayer;
     this.active = true;
-    this.radius = 4;
+    this.radius = 5;
+    // Store screen bounds (will be updated dynamically)
+    this.screenWidth = 800;
+    this.screenHeight = 600;
 
-    this.sprite = new PIXI.Graphics();
-    this.sprite.circle(0, 0, this.radius);
-    this.sprite.fill({ color: this.color });
+    this.sprite = null;
 
-    // Add glow
-    this.sprite.circle(0, 0, this.radius + 2);
-    this.sprite.fill({ color: this.color, alpha: 0.3 });
+    // Try Sprite First
+    if (visualConfig) {
+      let c = visualConfig.color;
+      let idx = visualConfig.index;
+      const tex = GameAssets.getXtraLaser(c, idx);
+      if (GameAssets.isValidTexture(tex)) {
+        this.sprite = new PIXI.Sprite(tex);
+        this.sprite.anchor.set(0.5);
+        this.sprite.rotation = Math.atan2(vy, vx) + Math.PI / 2;
+        this.sprite.scale.set(0.8);
+      }
+    }
+
+    // Fallback to Graphics
+    if (!this.sprite) {
+      this.sprite = new PIXI.Graphics();
+
+      // Draw glow first (behind)
+      this.sprite.circle(0, 0, this.radius + 3);
+      this.sprite.fill({ color: this.color, alpha: 0.4 });
+
+      // Draw main bullet (on top)
+      this.sprite.circle(0, 0, this.radius);
+      this.sprite.fill({ color: this.color, alpha: 1 });
+
+      // Add bright center
+      this.sprite.circle(0, 0, this.radius * 0.5);
+      this.sprite.fill({ color: 0xffffff, alpha: 0.8 });
+    }
 
     this.sprite.x = x;
     this.sprite.y = y;
+
+    // Set zIndex for proper layering (bullets should be above background but below UI)
+    this.sprite.zIndex = isPlayer ? 100 : 90;
+  }
+
+  setScreenBounds(width, height) {
+    this.screenWidth = width;
+    this.screenHeight = height;
   }
 
   update(delta) {
@@ -33,8 +69,14 @@ export class Bullet {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
-    // Deactivate if off-screen
-    if (this.y < -20 || this.y > 620 || this.x < -20 || this.x > 820) {
+    // Deactivate if off-screen (use dynamic bounds with padding)
+    const padding = 30;
+    if (
+      this.y < -padding ||
+      this.y > this.screenHeight + padding ||
+      this.x < -padding ||
+      this.x > this.screenWidth + padding
+    ) {
       this.active = false;
     }
   }

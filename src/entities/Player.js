@@ -1,157 +1,295 @@
 import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
+import { GameAssets } from '../utils/GameAssets.js';
+import { ShipRegistry } from '../utils/ShipRegistry.js';
 
 export class Player {
-  constructor(x, y, inputManager, game) {
+  constructor(x, y, inputManager, game, shipId = 'player_01') {
     this.x = x;
     this.y = y;
     this.inputManager = inputManager;
     this.game = game;
-    this.speed = 5;
-    this.radius = 12;
+
+    // Config from Registry
+    this.config = ShipRegistry[shipId] || ShipRegistry.player_01;
+    this.stats = { ...this.config.stats };
+    this.visuals = { ...this.config.visuals };
+
+    this.speed = this.stats.speed;
+    this.radius = this.config.hitbox.radius;
     this.active = true;
-    this.invulnerable = false;
-    this.invulnerableTime = 0;
+    this.invulnerable = true; // Invulnerable on spawn
+    this.invulnerableTime = 2000; // 2s spawn protection
 
-    // Shooting (time-based to prevent stuck shooting)
+    // Shooting
     this.shootCooldown = 0;
-    this.shootDelay = 167; // milliseconds (~10 frames at 60fps)
-    this.bulletDamage = 1;
-    this.bulletSpeed = 8;
-    this.multiShot = 1; // Number of bullets
+    this.shootDelay = this.stats.fireRate;
+    this.bulletDamage = this.stats.damage;
+    this.bulletSpeed = this.stats.bulletSpeed;
+    this.multiShot = 1;
 
-    // Dodge (time-based)
+    // Dodge
     this.dodgeCooldown = 0;
-    this.dodgeDelay = 1000; // milliseconds
+    this.dodgeDelay = 1000;
     this.isDodging = false;
     this.dodgeDuration = 0;
-    this.dodgeDurationMax = 333; // milliseconds
+    this.dodgeDurationMax = 333;
+
+    // Tractor Beam Removed
+
+    // Animation State
+    this.idleTimer = 0;
+    this.tilt = 0;
+    this.spawnFadeTime = 0;
+    this.spawnFadeDuration = 1000; // 1s fade in
 
     // Powerups
-    this.powerups = {
-      isbjorn: 0,
-      kjottdeig: 0,
-      rolp: 0,
-      deili: 0
-    };
+    this.activePowerup = { type: null, expiresAt: 0 };
+    this.currentModel = 1;
+    this.damageOverlay = null;
+
+    // Shield State
+    this.shieldActive = false;
+    this.shieldExpiresAt = 0;
+    this.shieldSprite = null;
 
     this.createSprite();
+  }
+
+  // ... (existing code) ...
+
+  canShoot() {
+    return this.shootCooldown <= 0;
   }
 
   createSprite() {
     this.sprite = new PIXI.Container();
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+    this.sprite.alpha = 0; // Start invisible for fade-in
 
-    // Ship body (techy triangle)
-    const ship = new PIXI.Graphics();
-    ship.moveTo(0, -15);
-    ship.lineTo(-10, 10);
-    ship.lineTo(10, 10);
-    ship.closePath();
-    ship.fill({ color: 0x00ffff });
-    ship.stroke({ color: 0x00aaff, width: 2 });
-    this.sprite.addChild(ship);
+    // Rank-based Ship Selection
+    const rank = this.game.rankIndex || 0;
+    this.currentModel = Math.min(3, Math.floor(rank / 30) + 1);
+    const colorIdx = Math.floor((rank % 30) / 10); // 0, 1, 2
+    const colors = ['blue', 'green', 'orange', 'red'];
+    const color = colors[colorIdx] || 'blue';
 
-    // Cockpit
-    const cockpit = new PIXI.Graphics();
-    cockpit.circle(0, 0, 4);
-    cockpit.fill({ color: 0xffff00 });
-    this.sprite.addChild(cockpit);
+    let texture = GameAssets.getXtraShip(this.currentModel, color);
 
-    // Engine glow
-    this.engineGlow = new PIXI.Graphics();
-    this.engineGlow.moveTo(-5, 10);
-    this.engineGlow.lineTo(0, 15);
-    this.engineGlow.lineTo(5, 10);
-    this.engineGlow.closePath();
-    this.engineGlow.fill({ color: 0xff4400, alpha: 0.8 });
-    this.sprite.addChild(this.engineGlow);
+    // Fallback if not found
+    if (!GameAssets.isValidTexture(texture)) {
+      texture = GameAssets.getShipTexture(this.config.texture);
+      this.currentModel = 1;
+    }
+
+    if (GameAssets.isValidTexture(texture)) {
+      // Asset Loaded
+      this.shipSprite = new PIXI.Sprite(texture);
+      this.shipSprite.anchor.set(0.5);
+
+      // Responsive Sizing Calculation
+      const screenWidth = this.game.getWidth();
+      const targetWidth = Math.max(52, Math.min(screenWidth * 0.06, 78)) * 1.15; // Increased by 15%
+
+      this.shipSprite.width = targetWidth;
+      this.shipSprite.scale.y = this.shipSprite.scale.x; // Maintain aspect ratio
+
+      // Keep reference to base scale for animations
+      this.baseScale = this.shipSprite.scale.x;
+
+      this.sprite.addChild(this.shipSprite);
+
+      // Damage Overlay
+      this.damageOverlay = new PIXI.Sprite();
+      this.damageOverlay.anchor.set(0.5);
+      this.damageOverlay.visible = false;
+      this.sprite.addChild(this.damageOverlay);
+
+      this.engineGlow = null;
+
+      // Shield Sprite
+      this.shieldSprite = new PIXI.Container();
+
+      const sGfx = new PIXI.Graphics();
+      sGfx.circle(0, 0, 50);
+      sGfx.stroke({ width: 4, color: 0x00ffff, alpha: 0.8 });
+      sGfx.fill({ color: 0x00ffff, alpha: 0.1 });
+      this.shieldSprite.addChild(sGfx);
+      this.shieldSprite.visible = false;
+      this.sprite.addChild(this.shieldSprite);
+
+    } else {
+      // Fallback
+      const g = new PIXI.Graphics();
+      g.moveTo(0, -20);
+      g.lineTo(-15, 15);
+      g.lineTo(0, 10);
+      g.lineTo(15, 15);
+      g.closePath();
+      g.fill(0x00ff00);
+      this.shipSprite = g;
+      this.sprite.addChild(g);
+      this.baseScale = 1;
+    }
   }
 
   update(delta) {
     if (!this.active) return;
 
-    const deltaMs = Math.min(delta * 16.67, 100); // Clamp delta to prevent huge spikes
+    const now = Date.now();
+    const dt = delta * 16.67;
+    const deltaSeconds = dt / 1000;
 
-    // Movement
+    // Powerup Expiry
+    if (this.activePowerup.type && now > this.activePowerup.expiresAt) {
+      this.resetPowerups();
+    }
+
+    // Shield Logic
+    if (this.shieldActive) {
+      // Expiry
+      if (now > this.shieldExpiresAt) {
+        this.deactivateShield();
+      } else {
+        // Visuals
+        if (this.shieldSprite) {
+          this.shieldSprite.visible = true;
+          this.shieldSprite.scale.set(1 + Math.sin(now * 0.005) * 0.05);
+          this.shieldSprite.rotation += deltaSeconds * 0.5;
+          this.shieldSprite.alpha = 0.8 + Math.sin(now * 0.01) * 0.2;
+        }
+      }
+    } else {
+      if (this.shieldSprite) this.shieldSprite.visible = false;
+    }
+
+    // Spawn Fade-In
+    if (this.sprite.alpha < 1 && !this.isDodging && this.activePowerup.type !== 'ghost') {
+      this.sprite.alpha += deltaSeconds * (1000 / this.spawnFadeDuration);
+      if (this.sprite.alpha > 1) this.sprite.alpha = 1;
+    }
+
+    // Input & Movement
     let dx = 0;
     let dy = 0;
 
-    if (this.inputManager.isKeyPressed('ArrowLeft') || this.inputManager.isKeyPressed('KeyA')) {
-      dx -= 1;
-    }
-    if (this.inputManager.isKeyPressed('ArrowRight') || this.inputManager.isKeyPressed('KeyD')) {
-      dx += 1;
-    }
-    if (this.inputManager.isKeyPressed('ArrowUp') || this.inputManager.isKeyPressed('KeyW')) {
-      dy -= 1;
-    }
-    if (this.inputManager.isKeyPressed('ArrowDown') || this.inputManager.isKeyPressed('KeyS')) {
-      dy += 1;
-    }
+    if (this.inputManager.isKeyPressed('ArrowLeft') || this.inputManager.isKeyPressed('KeyA')) dx -= 1;
+    if (this.inputManager.isKeyPressed('ArrowRight') || this.inputManager.isKeyPressed('KeyD')) dx += 1;
+    if (this.inputManager.isKeyPressed('ArrowUp') || this.inputManager.isKeyPressed('KeyW')) dy -= 1;
+    if (this.inputManager.isKeyPressed('ArrowDown') || this.inputManager.isKeyPressed('KeyS')) dy += 1;
 
-    // Normalize diagonal movement
+    // Normalize diagonal
     if (dx !== 0 && dy !== 0) {
       dx *= 0.707;
       dy *= 0.707;
     }
 
-    const speedMultiplier = this.powerups.kjottdeig > 0 ? 1.5 : 1;
+    // Apply Speed
+    const speedMultiplier = this.activePowerup.type === 'kjottdeig' ? 1.5 : 1;
     this.x += dx * this.speed * speedMultiplier * delta;
     this.y += dy * this.speed * speedMultiplier * delta;
 
-    // Boundary check
-    const width = this.game?.getWidth ? this.game.getWidth() : 800;
-    const height = this.game?.getHeight ? this.game.getHeight() : 600;
-    const padding = 20;
-    const maxX = Math.max(width - padding, padding);
-    const maxY = Math.max(height - padding, padding);
-    this.x = Math.max(padding, Math.min(maxX, this.x));
-    this.y = Math.max(padding, Math.min(maxY, this.y));
+    // Clamping
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const margin = 20;
+    this.x = Math.max(margin, Math.min(width - margin, this.x));
+    this.y = Math.max(margin, Math.min(height - margin, this.y));
 
+    // Update Sprite Container Position
     this.sprite.x = this.x;
-    this.sprite.y = this.y;
 
-    // Dodge
+    // Idle Animation (Bobbing)
+    this.idleTimer += deltaSeconds;
+    const bobOffset = Math.sin(this.idleTimer * 2) * (this.visuals.idleAmplitude || 3);
+    this.sprite.y = this.y + bobOffset;
+
+    // Tilt Animation
+    const targetTilt = dx * (this.visuals.tiltMax || 0.2);
+    // Smooth Lerp
+    this.tilt = this.tilt + (targetTilt - this.tilt) * (this.visuals.tiltSpeed || 0.1);
+
+    if (this.shipSprite) {
+      this.shipSprite.rotation = this.tilt;
+      if (this.damageOverlay) {
+        this.damageOverlay.rotation = this.tilt;
+        this.damageOverlay.scale.set(this.shipSprite.scale.x); // Sync scale
+        if (this.game.lives <= 1 && !this.invulnerable) { // Only show damage when low lives
+          const dTex = GameAssets.getXtraDamage(this.currentModel, 2); // Use stage 2 for distinct look
+          if (dTex) {
+            this.damageOverlay.texture = dTex;
+            this.damageOverlay.visible = true;
+            this.damageOverlay.alpha = 0.8 + Math.sin(Date.now() * 0.01) * 0.2; // Pulse
+          }
+        } else {
+          this.damageOverlay.visible = false;
+        }
+      }
+    }
+
+    // Dodge Logic
     if (this.inputManager.isKeyPressed('ShiftLeft') && this.dodgeCooldown <= 0 && !this.isDodging) {
       this.startDodge();
     }
 
     if (this.isDodging) {
-      this.dodgeDuration -= deltaMs;
-      this.sprite.alpha = 0.3;
+      this.dodgeDuration -= dt;
+      this.sprite.alpha = 0.3; // Visually indicate dodge
       if (this.dodgeDuration <= 0) {
         this.isDodging = false;
         this.invulnerable = false;
-        this.sprite.alpha = 1;
+        if (this.activePowerup.type !== 'ghost') this.sprite.alpha = 1;
+      }
+    } else {
+      // Invulnerable blinking
+      if (this.invulnerable) {
+        this.invulnerableTime -= dt;
+        this.sprite.alpha = 0.5 + Math.sin(Date.now() * 0.02) * 0.4;
+        if (this.invulnerableTime <= 0) {
+          this.invulnerable = false;
+          if (this.activePowerup.type !== 'ghost') this.sprite.alpha = 1;
+        }
       }
     }
 
-    // Cooldowns (time-based)
-    if (this.shootCooldown > 0) this.shootCooldown = Math.max(0, this.shootCooldown - deltaMs);
-    if (this.dodgeCooldown > 0) this.dodgeCooldown = Math.max(0, this.dodgeCooldown - deltaMs);
-    if (this.invulnerableTime > 0) {
-      this.invulnerableTime -= deltaMs;
-      if (this.invulnerableTime <= 0) {
-        this.invulnerable = false;
-      }
-    }
+    // Cooldowns
+    if (this.shootCooldown > 0) this.shootCooldown -= dt;
+    if (this.dodgeCooldown > 0) this.dodgeCooldown -= dt;
+  }
 
-    // Powerup timers
-    Object.keys(this.powerups).forEach(key => {
-      if (this.powerups[key] > 0) {
-        this.powerups[key]--;
-      }
+  // --- Actions ---
+
+  shoot() {
+    this.shootCooldown = this.shootDelay;
+    const bullets = [];
+    const spreadAngles = this.multiShot > 1 ?
+      Array.from({ length: this.multiShot }, (_, i) => (i - (this.multiShot - 1) / 2) * 0.15) :
+      [0];
+
+    // Origin: Nose of the ship
+    const spawnY = this.y - 20;
+
+    // Visuals based on powerup
+    let vConfig = { color: 'Blue', index: 1 };
+    const pType = this.activePowerup.type;
+
+    if (pType === 'rolp') vConfig = { color: 'Red', index: 1 }; // Rapid
+    else if (pType === 'isbjorn') vConfig = { color: 'Green', index: 13 }; // Round spread
+    else if (pType === 'deili') vConfig = { color: 'Blue', index: 8 }; // Strong/Big
+    else if (this.activePowerup.type) vConfig = { color: 'Blue', index: 3 }; // Other powerups slightly different
+
+    spreadAngles.forEach(angle => {
+      const vx = Math.sin(angle) * this.bulletSpeed;
+      const vy = -Math.cos(angle) * this.bulletSpeed;
+      bullets.push(new Bullet(this.x, spawnY, vx, vy, this.bulletDamage, 0x00ffff, true, vConfig));
     });
 
-    // Engine glow animation
-    this.engineGlow.alpha = 0.6 + Math.sin(Date.now() * 0.01) * 0.2;
+    return bullets;
+  }
 
-    // Invulnerable blink
-    if (this.invulnerable && !this.isDodging) {
-      this.sprite.alpha = Math.abs(Math.sin(Date.now() * 0.02)) * 0.5 + 0.5;
-    }
+  canShoot() {
+    return this.shootCooldown <= 0;
   }
 
   startDodge() {
@@ -161,73 +299,113 @@ export class Player {
     this.dodgeCooldown = this.dodgeDelay;
   }
 
-  canShoot() {
-    return this.shootCooldown <= 0;
-  }
-
-  shoot() {
-    this.shootCooldown = this.shootDelay;
-    const bullets = [];
-
-    const spreadAngles = this.multiShot > 1 ?
-      Array.from({ length: this.multiShot }, (_, i) => (i - (this.multiShot - 1) / 2) * 0.2) :
-      [0];
-
-    spreadAngles.forEach(angle => {
-      const vx = Math.sin(angle) * this.bulletSpeed;
-      const vy = -Math.cos(angle) * this.bulletSpeed;
-      bullets.push(new Bullet(this.x, this.y - 15, vx, vy, this.bulletDamage, 0x00ffff, true));
-    });
-
-    return bullets;
-  }
-
   takeDamage() {
-    if (this.invulnerable) return;
+    if (this.shieldActive) {
+      this.deactivateShield();
+      // Play Break Sound
+      if (this.game && this.game.scenes && this.game.scenes.play) {
+        // Direct access if possible, or assume generic hit sound
+        // AudioManager.playSfx('shield_break'); 
+      }
+      return false; // DAMAGE ABSORBED
+    }
 
+    if (this.invulnerable) return false;
     this.invulnerable = true;
-    this.invulnerableTime = 2000; // 2 seconds of invulnerability (milliseconds)
+    this.invulnerableTime = 2000;
+    return true; // DAMAGE TAKEN
   }
+
+  activateShield() {
+    this.shieldActive = true;
+    this.shieldExpiresAt = Date.now() + 15000; // 15 Seconds
+    if (this.shieldSprite) this.shieldSprite.visible = true;
+  }
+
+  deactivateShield() {
+    this.shieldActive = false;
+    if (this.shieldSprite) this.shieldSprite.visible = false;
+  }
+
+  // --- Powerups ---
 
   applyPowerup(type) {
+    this.resetPowerups(); // Clear existing to prevent stacking weirdness
+    this.activePowerup.type = type;
+    this.activePowerup.expiresAt = Date.now() + 12000; // 12 Seconds Default
+
     switch (type) {
       case 'isbjorn':
-        this.powerups.isbjorn = 300; // 5 seconds
         this.multiShot = 3;
         break;
       case 'kjottdeig':
-        this.powerups.kjottdeig = 300;
+        // Speed handled in update
         break;
       case 'rolp':
-        this.powerups.rolp = 180; // 3 seconds
         this.bulletDamage = 3;
-        this.shootDelay = 83; // milliseconds (~5 frames)
+        this.shootDelay = this.stats.fireRate / 2; // Rapid fire
         break;
       case 'deili':
-        this.powerups.deili = 600; // 10 seconds
         this.multiShot = 5;
         this.bulletDamage = 2;
+        break;
+      case 'slow_time':
+        // Global effect handled by Scene
+        this.activePowerup.expiresAt = Date.now() + 8000; // 8s
+        break;
+      case 'ghost':
+        this.activePowerup.expiresAt = Date.now() + 8000; // 8s
+        this.sprite.alpha = 0.4;
+        break;
+      case 'shield':
+        this.activateShield();
+        if (type === 'shield') {
+          this.activePowerup.type = null; // Don't block weapon slot
+        }
         break;
     }
   }
 
-  removePowerup(type) {
-    this.powerups[type] = 0;
-
-    // Reset to defaults
+  resetPowerups() {
+    // Revert Stats
+    this.speed = this.stats.speed;
+    this.bulletDamage = this.stats.damage;
+    this.shootDelay = this.stats.fireRate;
     this.multiShot = 1;
-    this.bulletDamage = 1;
-    this.shootDelay = 167;
+    this.bulletSpeed = this.stats.bulletSpeed;
 
-    // Reapply active powerups
-    if (this.powerups.isbjorn > 0) this.multiShot = 3;
-    if (this.powerups.rolp > 0) {
-      this.bulletDamage = 3;
-      this.shootDelay = 83;
+    // Visuals
+    if (this.sprite && !this.isDodging && !this.invulnerable) {
+      this.sprite.alpha = 1;
     }
-    if (this.powerups.deili > 0) {
-      this.multiShot = 5;
-      this.bulletDamage = 2;
+
+    if (this.activePowerup.type) {
+      // Play expiry sound?
+      // Game.audio.playSfx('powerdown') // if exists
     }
+
+    this.activePowerup.type = null;
+    this.activePowerup.expiresAt = 0;
+  }
+
+  // --- Rank Up Visual Reward ---
+  swapSprite() {
+    // Deterministic but feels random: based on Rank
+    // Called by PlayScene just after rankIndex increases
+    this.sprite.removeChild(this.shipSprite);
+    if (this.damageOverlay) this.sprite.removeChild(this.damageOverlay);
+
+    // Re-run create logic which uses game.rankIndex
+    // Manually remove children first to be safe
+    this.createSprite();
+
+    // Visual feedback
+    if (this.shipSprite) {
+      const flash = new PIXI.Graphics();
+      flash.circle(0, 0, 60).fill({ color: 0xffffff, alpha: 0.8 });
+      this.sprite.addChild(flash);
+      setTimeout(() => this.sprite.removeChild(flash), 150);
+    }
+    console.log('[Player] Ship sprite updated for Rank', this.game.rankIndex);
   }
 }

@@ -6,6 +6,16 @@ export class BulletManager {
     this.maxPlayerBullets = 200;
     this.maxEnemyBullets = 300;
     this.onCap = onCap;
+    this.screenWidth = 800;
+    this.screenHeight = 600;
+
+    // Enable zIndex sorting on container
+    this.container.sortableChildren = true;
+  }
+
+  setScreenBounds(width, height) {
+    this.screenWidth = width;
+    this.screenHeight = height;
   }
 
   addPlayerBullet(bullet) {
@@ -13,6 +23,7 @@ export class BulletManager {
       if (this.onCap) this.onCap('bullets');
       return;
     }
+    bullet.setScreenBounds(this.screenWidth, this.screenHeight);
     this.playerBullets.push(bullet);
     this.container.addChild(bullet.sprite);
   }
@@ -23,6 +34,7 @@ export class BulletManager {
       if (this.onCap) this.onCap('bullets');
       return;
     }
+    bullet.setScreenBounds(this.screenWidth, this.screenHeight);
     this.enemyBullets.push(bullet);
     this.container.addChild(bullet.sprite);
   }

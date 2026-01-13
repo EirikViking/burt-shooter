@@ -1,0 +1,17 @@
+/sprites/player/*
+  Cache-Control: no-store
+
+/player_01.png
+  Cache-Control: no-store
+
+/player_02.png
+  Cache-Control: no-store
+
+/player_03.png
+  Cache-Control: no-store
+
+/player_04.png
+  Cache-Control: no-store
+
+/player_05.png
+  Cache-Control: no-store

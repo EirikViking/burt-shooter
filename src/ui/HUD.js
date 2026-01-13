@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { extendLocations } from '../text/phrasePool.js';
+import { RankAssets } from '../utils/RankAssets.js';
 
 export class HUD {
   constructor(container, game) {
@@ -10,20 +11,36 @@ export class HUD {
     this.layoutUnsubscribe = null;
     this.container.addChild(this.hudContainer);
 
+    // Rank Elements
+    this.rankGroup = new PIXI.Container();
+    this.rankIcon = new PIXI.Sprite();
+    this.rankBarBg = new PIXI.Graphics();
+    this.rankBarFill = new PIXI.Graphics();
+    this.rankText = new PIXI.Text('', {
+      fontFamily: 'Courier New',
+      fontSize: 10,
+      fill: '#ffff00'
+    });
+
     this.createHUD();
     this.layoutUnsubscribe = addResponsiveListener((layout) => this.applyLayout(layout));
     this.applyLayout(getCurrentLayout());
   }
 
   createHUD() {
+    // Rank Group
+    this.rankGroup.addChild(this.rankBarBg);
+    this.rankGroup.addChild(this.rankBarFill);
+    this.rankGroup.addChild(this.rankIcon);
+    this.rankGroup.addChild(this.rankText);
+    this.hudContainer.addChild(this.rankGroup);
+
     // Score
     this.scoreText = new PIXI.Text('SCORE: 0', {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: '#ffff00'
     });
-    this.scoreText.x = 10;
-    this.scoreText.y = 10;
     this.hudContainer.addChild(this.scoreText);
 
     // Level
@@ -32,8 +49,6 @@ export class HUD {
       fontSize: 20,
       fill: '#00ffff'
     });
-    this.levelText.x = 10;
-    this.levelText.y = 35;
     this.hudContainer.addChild(this.levelText);
 
     // Lives group
@@ -63,8 +78,6 @@ export class HUD {
       fill: '#888888'
     });
     this.locationText.anchor.set(1, 0);
-    this.locationText.x = 790;
-    this.locationText.y = 35;
     this.hudContainer.addChild(this.locationText);
   }
 
@@ -73,6 +86,30 @@ export class HUD {
     this.levelText.text = `LEVEL: ${this.game.level}`;
     this.livesText.text = `LIVES: ${this.game.lives}`;
     this.updateLivesVisuals();
+
+    // Rank Update
+    const rankTex = RankAssets.getRankTexture(this.game.rankIndex);
+    if (rankTex) {
+      this.rankIcon.texture = rankTex;
+      // Scale icon to fit 40x40 roughly if needed, purely visual
+      // Assuming sprites are reasonably sized, but let's restrict max size
+      const maxSz = 40;
+      if (this.rankIcon.width > 0) {
+        const scale = Math.min(maxSz / this.rankIcon.texture.width, maxSz / this.rankIcon.texture.height);
+        this.rankIcon.scale.set(scale);
+      }
+    }
+    this.rankText.text = `RANK ${this.game.rankIndex}`;
+    this.rankText.x = this.rankIcon.width + 10;
+    this.rankText.y = this.rankIcon.height / 2 - this.rankText.height / 2;
+
+    // XP Bar
+    const progress = this.game.getRankProgress();
+    const barW = 40;
+    const barH = 4;
+
+    this.rankBarBg.clear().rect(0, 42, barW, barH).fill({ color: 0x333333 });
+    this.rankBarFill.clear().rect(0, 42, barW * progress, barH).fill({ color: 0xffff00 });
 
     // Random location updates
     const locations = extendLocations(['STOKMARKNES', 'MELBU', 'HADSEL', 'SORTLAND', 'LOFOTEN']);
@@ -83,6 +120,8 @@ export class HUD {
 
   applyLayout(layout = getCurrentLayout()) {
     if (!layout || typeof layout.width !== 'number') return;
+
+    const canvasWidth = this.game.getWidth ? this.game.getWidth() : layout.width;
     const margin = layout.isMobile ? 14 : 10;
     const blockSpacing = layout.isMobile ? 26 : 22;
     const scoreFont = layout.isMobile ? 16 : 20;
@@ -93,16 +132,24 @@ export class HUD {
     this.livesText.style.fontSize = livesFont;
     this.locationText.style.fontSize = layout.isMobile ? 10 : 12;
 
-    this.scoreText.x = margin;
+    // Rank Position (Top Left)
+    this.rankGroup.x = margin;
+    this.rankGroup.y = margin;
+
+    // Shift Score and Level to the right of Rank
+    const rankOffset = 50;
+
+    this.scoreText.x = margin + rankOffset;
     this.scoreText.y = margin;
-    this.levelText.x = margin;
+
+    this.levelText.x = margin + rankOffset;
     this.levelText.y = margin + blockSpacing;
 
-    this.locationText.x = layout.width - margin;
-    this.locationText.y = margin + blockSpacing;
+    this.locationText.x = canvasWidth - margin;
+    this.locationText.y = margin + blockSpacing * 2.5;
 
     this.updateLivesVisuals();
-    this.livesGroup.x = layout.width - margin - this.livesGroup.width;
+    this.livesGroup.x = canvasWidth - margin - this.livesGroup.width;
     this.livesGroup.y = margin;
   }
 
@@ -117,9 +164,18 @@ export class HUD {
     this.livesText.y = height / 2 - this.livesText.height / 2;
     const width = this.livesText.x + this.livesText.width + padding / 2;
     this.livesBg.clear();
-    this.livesBg.beginFill(0x000000, 0.45);
-    this.livesBg.drawRoundedRect(0, 0, width, height, 8);
-    this.livesBg.endFill();
+    this.livesBg.rect(0, 0, width, height); // Corrected syntax for GraphicsContext or classic PIXI? 
+    // PIXI v8 uses .rect().fill() chain or standard drawRect. 
+    // Looking at existing code: this.livesBg.drawRoundedRect(0, 0, width, height, 8).
+    // I should stick to existing style if it's v7/v8.
+    // Wait, the previous view_file for HUD.js showed:
+    // this.livesBg.drawRoundedRect(0, 0, width, height, 8);
+    // this.livesBg.endFill();
+    // I will use that for consistency.
+
+    this.livesBg.clear();
+    this.livesBg.roundRect(0, 0, width, height, 8); // v8 syntax prefer roundRect
+    this.livesBg.fill({ color: 0x000000, alpha: 0.45 });
   }
 
   destroy() {

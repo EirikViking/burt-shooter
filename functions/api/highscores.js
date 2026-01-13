@@ -4,18 +4,21 @@ export async function onRequestGet(context) {
   try {
     const db = context.env.DB;
 
+    // Get ALL scores, not grouped by name - show every game played
     const { results } = await db.prepare(
-      `SELECT name, MAX(score) AS score, MAX(level) AS level, MAX(created_at) AS created_at
+      `SELECT name, score, level, created_at
        FROM game_highscores
-       GROUP BY name
-       ORDER BY score DESC
+       ORDER BY score DESC, created_at DESC
        LIMIT 50`
     ).all();
 
     return new Response(JSON.stringify(results), {
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
   } catch (error) {
@@ -89,8 +92,33 @@ export async function onRequestOptions() {
   return new Response(null, {
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type'
     }
   });
+}
+
+export async function onRequestDelete(context) {
+  try {
+    const db = context.env.DB;
+    // DELETE ALL
+    await db.prepare('DELETE FROM game_highscores').run();
+
+    return new Response(JSON.stringify({ success: true, message: 'Leaderboard reset' }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  } catch (error) {
+    console.error('Error resetting highscores:', error);
+    return new Response(JSON.stringify({ error: 'Failed to reset' }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  }
 }

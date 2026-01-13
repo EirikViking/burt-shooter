@@ -42,21 +42,30 @@ class APIClient {
 
   async submitScore(name, score, level) {
     try {
+      const payload = { name, score, level };
+      console.log('[API] Submitting payload:', payload);
+
       const response = await fetchWithTimeout(`${this.baseUrl}/api/highscores`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name, score, level })
+        body: JSON.stringify(payload)
       });
 
+      console.log('[API] Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to submit score');
+        const errorText = await response.text();
+        console.error('[API] Error response:', errorText);
+        throw new Error(`Failed to submit score: ${response.status}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('[API] Success response:', result);
+      return result;
     } catch (error) {
-      console.error('Error submitting score:', error);
+      console.error('[API] Error submitting score:', error);
       throw error;
     }
   }

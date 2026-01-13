@@ -12,7 +12,9 @@ export class Boss {
     this.radius = 50;
     this.vx = 2;
     this.vy = 0;
-    this.health = 50 + level * 20;
+    // BALANCING: Increased Boss HP (+15-20%)
+    // Old: 50 + level*20
+    this.health = 60 + level * 25;
     this.maxHealth = this.health;
     this.shootCooldown = 0;
     this.shootDelay = 30;
@@ -190,7 +192,7 @@ export class Boss {
       const dx = playerX - this.x;
       const dy = playerY - this.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const speed = 5;
+      const speed = 4; // Reduced from 5
       bullets.push(new Bullet(
         this.x,
         this.y,
@@ -204,7 +206,7 @@ export class Boss {
       // Triple shot
       for (let i = -1; i <= 1; i++) {
         const angle = Math.atan2(playerY - this.y, playerX - this.x) + i * 0.3;
-        const speed = 5;
+        const speed = 4; // Reduced from 5
         bullets.push(new Bullet(
           this.x,
           this.y,
@@ -219,7 +221,7 @@ export class Boss {
       // Spiral pattern
       for (let i = 0; i < 8; i++) {
         const angle = (Math.PI * 2 * i) / 8 + this.moveTimer * 0.05;
-        const speed = 4;
+        const speed = 3.5; // Reduced from 4
         bullets.push(new Bullet(
           this.x,
           this.y,

@@ -55,7 +55,80 @@ const newPhrases = [
   'Sjøge!',
   'Lille dutten',
   'Hut dæ heim',
-  'Jatta jatta'
+  'Jatta jatta',
+  'Jatta jatta',
+  // New Additions (Boosted)
+  'Stokmarknes og Melbu energi',
+  'Stokmarknes og Melbu energi',
+  'Stokmarknes og Melbu energi',
+  'Stokmarknes klokken litt for sent',
+  'Stokmarknes klokken litt for sent',
+  'Melbu stemning på feil side av midnatt',
+  'Melbu stemning på feil side av midnatt',
+  'Hurtigruta gikk, men festen ble igjen',
+  'Nordlys i blikket, øl i hånda',
+  'Det lukter kai, diesel og dårlige valg',
+  'Småby, store ambisjoner, tomme glass',
+  'Dette hadde aldri gått i Harstad',
+  'Alle kjenner alle, ingen husker noe',
+  'Klassisk Vesterålen avgjørelse',
+  'Kurt Edgar sa dette var en god idé',
+  'Kurt Edgar godkjente dette etter tredje øl',
+  'Dette er helt innenfor ifølge Kurt Edgar',
+  'Kurt Edgar ville kalt dette lett oppvarming',
+  'Kurt Edgar er stolt nå',
+  'Kurt Edgar nikker anerkjennende',
+  'Kurt Edgar har sett verre',
+  'Kurt Edgar overlevde dette på nittitallet',
+  'Kurt Edgar anbefaler én til',
+  'Eirik burde visst bedre',
+  'Eirik gjør det igjen',
+  'Eirik med selvtillit langt over ferdighetsnivå',
+  'Eirik tenkte dette var lurt',
+  'Eirik ignorerte alle varsler',
+  'Eirik kjører på',
+  'Eirik er i flytsonen nå',
+  'Eirik fant rytmen etter tredje runde',
+  'Eirik nekter å gi seg',
+  'Øl nummer som ikke burde telles',
+  'Dette er ikke den første',
+  'Det var en tabbe å bytte type øl',
+  'Kroppen sier nei, hjertet sier ja',
+  'Dette startet uskyldig',
+  'Nå er det for sent å snu',
+  'Klassisk overmot etter pils',
+  'Øl først, konsekvenser senere',
+  'Dette eskalerte raskt',
+  'Litt for god stemning',
+  'Full kontroll, nesten',
+  'Dette var planlagt',
+  'Kaosmodus aktivert',
+  'Null struktur, maks innsats',
+  'Improvisasjon på høyt nivå',
+  'Dette holder akkurat',
+  'Overlevd på ren vilje',
+  'Panikk men med stil',
+  'Ingen vet hva som skjer nå',
+  'Dette burde ikke fungere',
+  'Noen ringte taxisentralen',
+  'Dette forklarer mye',
+  'Historien blir bedre i morgen',
+  'Ingen tar ansvar',
+  'Dette blir nevnt i årevis',
+  'Noen filmet dette',
+  'Klassisk kveld som sporet av',
+  'Dette var ikke på planen',
+  'Dette går rett i bygdehistorien',
+  'Absolutt kaos',
+  'Fullstendig nydelig rot',
+  'Dette er helt feil',
+  'Dette er helt riktig',
+  'Ingen angrer ennå',
+  'Fremdeles stående',
+  'Overraskende solid',
+  'Mer flaks enn forstand',
+  'Ren viljestyrke',
+  'Ingen lærdom tatt'
 ];
 
 const fragments = {
@@ -280,15 +353,15 @@ export function getGameOverComment(score, level) {
 export function getHighscoreComment(hasScores) {
   const lines = hasScores
     ? [
-        `Stokmarknes jubler – ${buildShortBurst()}`,
-        `Melbu applaud – ${buildCombo()}`,
-        `Kjøttdeig bonus: ${buildShortBurst()}`
-      ]
+      `Stokmarknes jubler – ${buildShortBurst()}`,
+      `Melbu applaud – ${buildCombo()}`,
+      `Kjøttdeig bonus: ${buildShortBurst()}`
+    ]
     : [
-        `Ingen scores ennå – ${buildShortBurst()}`,
-        `Bli første: ${buildShortBurst()}`,
-        `Jatta jatta, skriv deg inn!`
-      ];
+      `Ingen scores ennå – ${buildShortBurst()}`,
+      `Bli første: ${buildShortBurst()}`,
+      `Jatta jatta, skriv deg inn!`
+    ];
   return weightedPick(lines, 'highscoreComment');
 }
 

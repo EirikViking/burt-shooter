@@ -1,7 +1,9 @@
 import * as PIXI from 'pixi.js';
+import { GameAssets } from '../utils/GameAssets.js';
+import { BeerAsset } from '../utils/BeerAsset.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
-import { createTextLayout, createVerticalStack, clampTextWidth } from '../ui/textLayout.js';
+import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize, calculateCenteredStartY } from '../ui/textLayout.js';
 
 export class MenuScene {
   constructor(game) {
@@ -13,40 +15,134 @@ export class MenuScene {
     this.flavor = null;
     this.startBtn = null;
     this.highscoreBtn = null;
+    this.musicBtn = null;
     this.controls = null;
     this.easter = null;
+    this.stars = [];
+    this.animationTime = 0;
   }
 
   init() {
     this.container.removeChildren();
+    this.stars = [];
+    this.animationTime = 0;
+    this.container.sortableChildren = true;
+    this.createStarfield();
+    // Preload all game assets here for simplicity
+    // Preload all game assets here for simplicity
+    GameAssets.loadBeer().then(() => {
+      GameAssets.loadPhotos().then(() => {
+        GameAssets.loadShips().then(() => {
+          this.initBeerDecorations();
+        });
+      });
+    });
     this.createElements();
-    this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutMenu());
     this.layoutMenu();
+    this.startAnimations();
+    AudioManager.playMusicContext('menu');
+  }
+
+  async loadAndCreateDebugSprite() {
+    console.log('DEBUG: Starting loadAndCreateDebugSprite');
+    try {
+      // 1. Explicitly load the asset (async/await)
+      const texture = await PIXI.Assets.load({
+        alias: 'beervan',
+        src: '/beervan.png'
+      });
+
+      // 2. Validate texture BEFORE using dimensions
+      console.log('DEBUG: Texture loaded', texture);
+      if (!texture) {
+        throw new Error('Texture invalid after load');
+      }
+
+      // 3. Create Sprite
+      const sprite = new PIXI.Sprite(texture);
+      sprite.label = 'DebugBeerVan';
+      sprite.anchor.set(0.5);
+
+      // 4. Set dimensions safely
+      sprite.width = 120;
+      sprite.scale.y = sprite.scale.x; // Keep aspect ratio
+
+      // 5. Position (Center)
+      const { width, height } = this.game.app.screen;
+      sprite.x = width / 2;
+      sprite.y = height / 2;
+      sprite.alpha = 1;
+      sprite.tint = 0xFFFFFF;
+
+      // 6. Z-Index (Over stars(0), Under UI(10))
+      sprite.zIndex = 5;
+
+      // 7. Add to container
+      this.container.addChild(sprite);
+      console.log('DEBUG: Debug sprite added to container at', sprite.x, sprite.y);
+
+    } catch (e) {
+      console.error('DEBUG: Error loading beervan', e);
+      // Fallback visual
+      const { width, height } = this.game.app.screen;
+      const errText = new PIXI.Text('LOAD FAIL', { fill: 'red', fontSize: 24 });
+      errText.anchor.set(0.5);
+      errText.x = width / 2;
+      errText.y = height / 2;
+      errText.zIndex = 100;
+      this.container.addChild(errText);
+    }
+  }
+
+  createStarfield() {
+    const { width, height } = this.game.app.screen;
+    const starCount = 100;
+
+    for (let i = 0; i < starCount; i++) {
+      const star = new PIXI.Graphics();
+      const size = Math.random() * 2 + 0.5;
+      const alpha = Math.random() * 0.5 + 0.3;
+      star.circle(0, 0, size);
+      star.fill({ color: 0xffffff, alpha });
+
+      star.x = Math.random() * width;
+      star.y = Math.random() * height;
+      star.speedY = Math.random() * 0.3 + 0.1;
+      star.twinkleSpeed = Math.random() * 0.02 + 0.01;
+      star.twinkleOffset = Math.random() * Math.PI * 2;
+
+      this.stars.push(star);
+      this.container.addChild(star);
+    }
   }
 
   createElements() {
     const { width, height } = this.game.app.screen;
-    const layout = getCurrentLayout();
-    const titleSize = layout.isMobile ? (layout.isPortrait ? 42 : 36) : 64;
-    const titleBlur = layout.isMobile ? 6 : 10;
+    const responsiveLayout = getCurrentLayout();
+    const layout = createTextLayout(width, height, responsiveLayout);
+
+    const titleSize = getResponsiveFontSize(layout, 'title');
+    const titleBlur = layout.isMobile ? 4 : 8;
 
     this.title = new PIXI.Text('BURT SHOOTER', {
       fontFamily: 'Courier New',
       fontSize: titleSize,
       fill: '#00ffff',
       stroke: '#0088ff',
-      strokeThickness: layout.isMobile ? 2 : 4,
+      strokeThickness: layout.isMobile ? 2 : 3,
       dropShadow: true,
       dropShadowColor: '#00ffff',
       dropShadowBlur: titleBlur,
       dropShadowDistance: 0,
-      dropShadowAlpha: layout.isMobile ? 0.5 : 0.7
+      dropShadowAlpha: layout.isMobile ? 0.4 : 0.6
     });
     this.title.anchor.set(0.5);
+    this.title.alpha = 0;  // Start invisible for fade-in
+    this.title.zIndex = 10;
     this.container.addChild(this.title);
 
-    const subtitleSize = layout.isMobile ? 16 : 20;
+    const subtitleSize = getResponsiveFontSize(layout, 'subtitle');
     this.subtitle = new PIXI.Text('Kurt Edgar & Eirik sitt Galaga', {
       fontFamily: 'Courier New',
       fontSize: subtitleSize,
@@ -54,10 +150,11 @@ export class MenuScene {
       align: 'center'
     });
     this.subtitle.anchor.set(0.5);
+    this.subtitle.alpha = 0;  // Start invisible
     this.container.addChild(this.subtitle);
 
-    const storySize = layout.isMobile ? (layout.isPortrait ? 14 : 13) : 18;
-    const storyLineHeight = layout.isMobile ? 22 : 28;
+    const storySize = getResponsiveFontSize(layout, 'body');
+    const storyLineHeight = Math.round(storySize * 1.5);
     this.flavor = new PIXI.Text(
       'Stokmarknes er under angrep!\nRølp, gris og mongo invaderer.\nKun Eirik kan redde dagen.',
       {
@@ -66,109 +163,278 @@ export class MenuScene {
         fill: '#ffffff',
         align: 'center',
         wordWrap: true,
-        wordWrapWidth: clampTextWidth(width * (layout.isMobile ? 0.85 : 0.75), { width, height }),
+        wordWrapWidth: clampTextWidth(width * (layout.isMobile ? 0.9 : 0.7), layout),
         lineHeight: storyLineHeight
       }
     );
     this.flavor.anchor.set(0.5);
+    this.flavor.alpha = 0;  // Start invisible
     this.container.addChild(this.flavor);
 
-    this.startBtn = this.createButton('START SPILL');
+    this.startBtn = this.createButton('START SPILL', layout);
+    this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
-      AudioManager.play('menuSelect');
-      this.game.startGame();
+      try {
+        AudioManager.init();
+        AudioManager.playSfx('ui_open');
+        AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
+        this.game.startGame();
+      } catch (e) {
+        console.error('[MenuScene] Start Game Error:', e);
+      }
     });
     this.container.addChild(this.startBtn);
 
-    this.highscoreBtn = this.createButton('HIGHSCORES');
+    this.highscoreBtn = this.createButton('HIGHSCORES', layout);
+    this.highscoreBtn.alpha = 0;  // Start invisible
     this.highscoreBtn.on('pointerdown', () => {
-      AudioManager.play('menuSelect');
-      this.game.showHighscores();
+      try {
+        AudioManager.init();
+        AudioManager.playSfx('ui_open');
+        AudioManager.playMusicContext('scoreboard');
+        this.game.showHighscores();
+      } catch (e) {
+        console.error('[MenuScene] Highscore Error:', e);
+      }
     });
     this.container.addChild(this.highscoreBtn);
 
+    // ... (controls and easter code unchanged) ...
+
     const controlsText = layout.isMobile
-      ? 'TOUCH: Drag to move | Tap FIRE button to shoot'
-      : 'WASD/Piltaster: Bevegelse | SPACE: Skyt | SHIFT: Dodge';
-    const controlsSize = layout.isMobile ? 12 : 14;
+      ? 'Joystick: Beveg | FIRE-knapp: Skyt'
+      : 'WASD/Piltaster: Beveg | SPACE: Skyt | SHIFT: Dodge';
+    const controlsSize = getResponsiveFontSize(layout, 'small');
     this.controls = new PIXI.Text(controlsText, {
       fontFamily: 'Courier New',
       fontSize: controlsSize,
-      fill: '#888888',
+      fill: '#666666',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: clampTextWidth(width * 0.9, { width, height }),
-      lineHeight: layout.isMobile ? 18 : 20
+      wordWrapWidth: clampTextWidth(width * 0.9, layout),
+      lineHeight: Math.round(controlsSize * 1.4)
     });
     this.controls.anchor.set(0.5);
     this.container.addChild(this.controls);
 
     this.easter = new PIXI.Text('Powered by Kjøttdeig Engine v1.0', {
       fontFamily: 'Courier New',
-      fontSize: 12,
-      fill: '#444444'
+      fontSize: 10,
+      fill: '#333333'
     });
     this.easter.anchor.set(0.5);
     this.container.addChild(this.easter);
+
+    // Mute/Music Toggle (Small corner button)
+    this.musicBtn = this.createButton('MUSIKK: PÅ', layout);
+    // Overwrite style for small button
+    const scale = 0.6;
+    this.musicBtn.scale.set(scale);
+    this.musicBtn.on('pointerdown', () => {
+      try {
+        AudioManager.init();
+        const enabled = AudioManager.toggleMute();
+        const label = this.musicBtn._label;
+        label.text = enabled ? 'MUSIKK: PÅ' : 'MUSIKK: AV';
+        label.updateText?.(false);
+      } catch (e) {
+        console.error('[MenuScene] Music Toggle Error:', e);
+      }
+    });
+    this.container.addChild(this.musicBtn);
   }
+
+  async initBeerDecorations() {
+    try {
+      const texture = await BeerAsset.ensureLoaded();
+
+      const { width, height } = this.game.app.screen;
+
+      // 1. Hero Beer (Center - bobbing and swaying)
+      const hero = new PIXI.Sprite(texture);
+      hero.anchor.set(0.5);
+      hero.height = 120;
+      hero.scale.x = hero.scale.y; // Maintain aspect ratio
+      hero.x = width * 0.15; // LEFT side, safe form text
+      hero.y = height * 0.5;
+      hero.rotation = -0.2;
+      hero.zIndex = 0; // Behind UI
+      hero.alpha = 0.9;
+      this.container.addChild(hero);
+
+      // Store for animation
+      this.heroBeer = hero;
+      this.heroBaseY = hero.y;
+
+      // 2. Floating cluster (Background)
+      this.floatingBeers = [];
+      for (let i = 0; i < 3; i++) {
+        const sprite = new PIXI.Sprite(texture);
+        sprite.anchor.set(0.5);
+        const scale = 0.3 + Math.random() * 0.3;
+        sprite.scale.set(scale);
+
+        // Custom properties for animation
+        // Divide screen into 3 columns: 0-20% (left), 20-80% (center - AVOID), 80-100% (right)
+        const isLeft = Math.random() < 0.5;
+        const minX = isLeft ? 0 : width * 0.8;
+        const maxX = isLeft ? width * 0.2 : width;
+
+        sprite.x = minX + Math.random() * (maxX - minX);
+        sprite.y = Math.random() * height;
+
+        sprite.driftSpeedX = (Math.random() - 0.5) * 0.2; // Slower drift
+        sprite.driftSpeedY = (Math.random() - 0.5) * 0.2;
+        sprite.rotSpeed = (Math.random() - 0.5) * 0.02;
+
+        // Store boundary info for update loop
+        sprite.boundsX = { min: isLeft ? -50 : width * 0.75, max: isLeft ? width * 0.25 : width + 50 };
+
+        sprite.alpha = 0.4 + Math.random() * 0.3;
+        sprite.rotation = Math.random() * Math.PI * 2;
+        sprite.zIndex = 1; // Just above stars
+
+        this.container.addChild(sprite);
+        this.floatingBeers.push(sprite);
+      }
+
+    } catch (e) {
+      console.error('Menu beer decorations failed:', e);
+    }
+  }
+
+
 
   layoutMenu() {
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
     const layout = createTextLayout(width, height, responsiveLayout);
-    const startY = layout.isMobile && layout.isPortrait ? layout.padding * 1.5 : layout.padding * 2;
-    const stack = createVerticalStack(layout, { startY });
+    const safeMargin = responsiveLayout.safeArea;
 
+    // Update font sizes based on current layout
+    const titleSize = getResponsiveFontSize(layout, 'title');
+    const subtitleSize = getResponsiveFontSize(layout, 'subtitle');
+    const storySize = getResponsiveFontSize(layout, 'body');
+    const controlsSize = getResponsiveFontSize(layout, 'small');
+
+    this.title.style.fontSize = titleSize;
+    this.title.style.strokeThickness = layout.isMobile ? 2 : 3;
+    this.subtitle.style.fontSize = subtitleSize;
+    this.flavor.style.fontSize = storySize;
+    this.flavor.style.lineHeight = Math.round(storySize * 1.5);
+    this.flavor.style.wordWrapWidth = clampTextWidth(width * (layout.isMobile ? 0.9 : 0.7), layout);
+    this.controls.style.fontSize = controlsSize;
+    this.controls.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
+
+    // Force text measurement update
+    this.title.updateText?.(false);
+    this.subtitle.updateText?.(false);
+    this.flavor.updateText?.(false);
+    this.controls.updateText?.(false);
+
+    // Use MEASURED heights instead of estimates
+    const buttonHeight = layout.isMobile ? 36 : 40;
+    const buttonSpacing = layout.isMobile ? 8 : 12;
+    const sectionSpacing = layout.isMobile ? 12 : 20;
+
+    // Measure actual text heights
+    const titleHeight = this.title.height || titleSize * 1.2;
+    const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
+    const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
+    const buttonsHeight = buttonHeight * 2 + buttonSpacing;
+
+    // Spacing between sections: title->subtitle, subtitle->flavor, flavor->buttons
+    const totalContentHeight = titleHeight + subtitleHeight + flavorHeight + buttonsHeight + sectionSpacing * 3;
+
+    // Calculate starting Y for better vertical centering
+    const footerReserve = layout.isMobile ? 70 : 60; // Space for controls and easter egg
+    const availableHeight = height - footerReserve - safeMargin.top;
+    const startY = Math.max(
+      safeMargin.top,
+      safeMargin.top + (availableHeight - totalContentHeight) / 2 * (layout.isMobile ? 0.6 : 0.75)
+    );
+
+    const stack = createVerticalStack(layout, { startY, spacing: 0 });
+
+    // Position elements using actual measured heights with explicit spacing
     this.title.x = width / 2;
-    this.title.y = stack.next();
+    this.title.y = stack.getCurrentY();
+    stack.addGap(titleHeight + (layout.isMobile ? 4 : 8));
 
     this.subtitle.x = width / 2;
-    this.subtitle.y = stack.next();
+    this.subtitle.y = stack.getCurrentY();
+    stack.addGap(subtitleHeight + (layout.isMobile ? 12 : 40));  // Much more spacing on desktop
 
-    const wrapWidth = layout.isMobile ? width * 0.85 : width * 0.75;
-    this.flavor.style.wordWrapWidth = clampTextWidth(wrapWidth, layout);
+    // Flavor text must come AFTER subtitle with guaranteed spacing
     this.flavor.x = width / 2;
-    this.flavor.y = stack.next(layout.isMobile ? -8 : 0);
+    this.flavor.y = stack.getCurrentY();
+    stack.addGap(flavorHeight + (layout.isMobile ? 16 : 32));
 
-    stack.addGap(layout.spacing * (layout.isMobile && layout.isPortrait ? 0.3 : 0.6));
-    const buttonBaseY = stack.next(layout.isMobile ? 0.2 : 0.4);
+    // Position buttons with proper spacing
     this.startBtn.x = width / 2;
-    this.startBtn.y = buttonBaseY;
+    this.startBtn.y = stack.getCurrentY();
+    stack.addGap(buttonHeight + buttonSpacing);
 
     this.highscoreBtn.x = width / 2;
-    this.highscoreBtn.y = buttonBaseY + (layout.isMobile ? layout.spacing * 0.9 : layout.spacing);
+    this.highscoreBtn.y = stack.getCurrentY();
 
-    const controlsBottomOffset = layout.isMobile ? layout.padding * 2.5 : layout.padding + layout.lineHeight * 1.5;
-    this.controls.y = height - controlsBottomOffset;
+    // Footer elements - position from bottom with safe margin
+    const easterY = height - safeMargin.bottom - (layout.isMobile ? 8 : 12);
+    const controlsY = easterY - (layout.isMobile ? 20 : 28);
+
     this.controls.x = width / 2;
+    this.controls.y = controlsY;
 
-    const easterBottomOffset = layout.isMobile ? layout.padding * 0.8 : layout.padding / 2;
-    this.easter.y = height - easterBottomOffset;
     this.easter.x = width / 2;
+    this.easter.y = easterY;
+
+    // Position Music Btn (Top Right)
+    this.musicBtn.x = width - 60;
+    this.musicBtn.y = 40;
+
+    // Reposition beer cans
+    if (this.leftBeer) {
+      this.leftBeer.x = width * 0.15;
+      this.leftBeer.y = height * 0.3;
+    }
+    if (this.rightBeer) {
+      this.rightBeer.x = width * 0.85;
+      this.rightBeer.y = height * 0.3;
+    }
   }
 
-  createButton(text) {
+  createButton(text, layout) {
     const container = new PIXI.Container();
     container.eventMode = 'static';
     container.cursor = 'pointer';
 
+    const btnWidth = layout?.isMobile ? 200 : 240;
+    const btnHeight = layout?.isMobile ? 36 : 40;
+    const fontSize = getResponsiveFontSize(layout || { isMobile: false }, 'button');
+
     const bg = new PIXI.Graphics();
-    bg.rect(-120, -20, 240, 40);
+    bg.rect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight);
     bg.fill({ color: 0x0088ff, alpha: 0.3 });
     bg.stroke({ color: 0x00ffff, width: 2 });
     container.addChild(bg);
 
     const label = new PIXI.Text(text, {
       fontFamily: 'Courier New',
-      fontSize: 20,
+      fontSize: fontSize,
       fill: '#00ffff'
     });
     label.anchor.set(0.5);
     container.addChild(label);
 
+    // Store dimensions for hover redraw
+    container._btnWidth = btnWidth;
+    container._btnHeight = btnHeight;
+    container._bg = bg;
+    container._label = label;
+
     container.on('pointerover', () => {
       bg.clear();
-      bg.rect(-120, -20, 240, 40);
+      bg.rect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight);
       bg.fill({ color: 0x00ffff, alpha: 0.5 });
       bg.stroke({ color: 0x00ffff, width: 2 });
       label.style.fill = '#ffffff';
@@ -176,13 +442,105 @@ export class MenuScene {
 
     container.on('pointerout', () => {
       bg.clear();
-      bg.rect(-120, -20, 240, 40);
+      bg.rect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight);
       bg.fill({ color: 0x0088ff, alpha: 0.3 });
       bg.stroke({ color: 0x00ffff, width: 2 });
       label.style.fill = '#00ffff';
     });
 
     return container;
+  }
+
+  startAnimations() {
+    // Staggered fade-in animations
+    this.animateElement(this.title, 0, 0.5);
+    this.animateElement(this.subtitle, 0.3, 0.5);
+    this.animateElement(this.flavor, 0.6, 0.5);
+    this.animateElement(this.startBtn, 0.9, 0.4);
+    this.animateElement(this.highscoreBtn, 1.1, 0.4);
+  }
+
+  animateElement(element, delay, duration) {
+    if (!element) return;
+
+    const startTime = Date.now() + delay * 1000;
+    const initialY = element.y;
+    const offsetY = 20;
+
+    const animate = () => {
+      const now = Date.now();
+      if (now < startTime) {
+        requestAnimationFrame(animate);
+        return;
+      }
+
+      const progress = Math.min(1, (now - startTime) / (duration * 1000));
+      const eased = this.easeOutCubic(progress);
+
+      element.alpha = eased;
+      element.y = initialY + offsetY * (1 - eased);  // Slide up from below
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }
+
+  easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  update(delta) {
+    this.animationTime += delta * 0.016;
+
+    // Update starfield
+    const { height } = this.game.app.screen;
+    this.stars.forEach(star => {
+      star.y += star.speedY * delta;
+
+      // Wrap around
+      if (star.y > height) {
+        star.y = -5;
+        star.x = Math.random() * this.game.app.screen.width;
+      }
+
+      // Twinkling effect
+      const twinkle = Math.sin(this.animationTime * star.twinkleSpeed + star.twinkleOffset);
+      star.alpha = 0.3 + twinkle * 0.3;
+    });
+
+    // Pulsating glow on title
+    if (this.title && this.title.alpha >= 1) {
+      const pulse = Math.sin(this.animationTime * 0.5) * 0.3 + 0.7;
+      this.title.style.dropShadowAlpha = pulse * 0.8;
+    }
+
+    // Animate Hero Beer
+    if (this.heroBeer) {
+      this.heroBeer.y = this.heroBaseY + Math.sin(this.animationTime * 2) * 10;
+      this.heroBeer.rotation = Math.sin(this.animationTime) * 0.1;
+    }
+
+    // Animate Floating Beers
+    if (this.floatingBeers) {
+      this.floatingBeers.forEach(beer => {
+        beer.x += beer.driftSpeedX;
+        beer.y += beer.driftSpeedY;
+        beer.rotation += beer.rotSpeed;
+
+        // Wrap around with respect to side columns
+        if (beer.y < -50) beer.y = this.game.app.screen.height + 50;
+        if (beer.y > this.game.app.screen.height + 50) beer.y = -50;
+
+        // Horizontal constraint buffer
+        if (beer.boundsX) {
+          if (beer.x < beer.boundsX.min) beer.driftSpeedX = Math.abs(beer.driftSpeedX);
+          if (beer.x > beer.boundsX.max) beer.driftSpeedX = -Math.abs(beer.driftSpeedX);
+        }
+      });
+    }
   }
 
   destroy() {
