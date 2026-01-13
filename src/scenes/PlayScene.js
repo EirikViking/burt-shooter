@@ -379,6 +379,9 @@ export class PlayScene {
       }
 
       if (this.rankDiagText) {
+        // Safe accessors for diagnostics to prevent crash
+        const rank = (this.game && Number.isFinite(this.game.rankIndex)) ? this.game.rankIndex : 0;
+        const score = (this.game && Number.isFinite(this.game.score)) ? this.game.score : 0;
         const rankEv = Number.isFinite(this._rankUpCount) ? this._rankUpCount : 0;
         const seen = Number.isFinite(this._lastRankUpSeen) ? this._lastRankUpSeen : 'null';
 
