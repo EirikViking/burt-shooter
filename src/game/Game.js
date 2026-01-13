@@ -3,7 +3,9 @@ import { GameState } from './GameState.js';
 import { MenuScene } from '../scenes/MenuScene.js';
 import { PlayScene } from '../scenes/PlayScene.js';
 import { GameOverScene } from '../scenes/GameOverScene.js';
+
 import { HighscoreScene } from '../scenes/HighscoreScene.js';
+import { rankManager } from '../managers/RankManager.js';
 
 export class Game {
   constructor(app) {
@@ -45,8 +47,7 @@ export class Game {
 
     // Rank System (Per Run)
     this.rankIndex = 0;
-    this.rankXp = 0;
-    this.rankNextForLevel = 150; // Base XP needed for first rank up
+    // Removed legacy rankXp, we now derive from score
     this.pendingHighscore = null;
 
     this.switchScene('play');
@@ -63,6 +64,17 @@ export class Game {
 
   addScore(points) {
     this.score += points;
+
+    // Check Rank Up
+    const newRank = rankManager.getRankFromScore(this.score);
+    if (newRank > this.rankIndex) {
+      this.rankIndex = newRank;
+
+      // Notify Scene
+      if (this.currentScene && this.currentScene.onRankUp) {
+        this.currentScene.onRankUp(newRank);
+      }
+    }
   }
 
   activateScoreBoost(multiplier, duration) {
@@ -73,26 +85,17 @@ export class Game {
   }
 
   // --- Rank System ---
+
+  // Legacy addRankXp removed - Rank is purely score based now.
+  // Compatibility shim if needed by old calls, redirect to addScore if appropriate
+  // or just return true/false to prevent crash, but better to update callsites.
   addRankXp(amount) {
-    if (this.rankIndex >= 77) return false; // Max rank
-
-    this.rankXp += amount;
-    let leveledUp = false;
-
-    while (this.rankXp >= this.rankNextForLevel && this.rankIndex < 77) {
-      this.rankXp -= this.rankNextForLevel;
-      this.rankIndex++;
-      leveledUp = true;
-      // Curve: Increase requirement by 10% each rank
-      this.rankNextForLevel = Math.floor(this.rankNextForLevel * 1.15);
-    }
-
-    return leveledUp;
+    this.addScore(amount); // Convert XP to Score directly
+    return false; // Handling rank up in addScore event now
   }
 
   getRankProgress() {
-    if (this.rankIndex >= 77) return 1.0;
-    return Math.min(1, Math.max(0, this.rankXp / this.rankNextForLevel));
+    return rankManager.getRankProgress(this.score, this.rankIndex);
   }
 
   loseLife() {

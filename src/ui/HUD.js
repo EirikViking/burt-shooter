@@ -1,7 +1,9 @@
 import * as PIXI from 'pixi.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { extendLocations } from '../text/phrasePool.js';
+
 import { RankAssets } from '../utils/RankAssets.js';
+import { rankManager } from '../managers/RankManager.js';
 
 export class HUD {
   constructor(container, game) {
@@ -91,17 +93,18 @@ export class HUD {
     const rankTex = RankAssets.getRankTexture(this.game.rankIndex);
     if (rankTex) {
       this.rankIcon.texture = rankTex;
-      // Scale icon to fit 40x40 roughly if needed, purely visual
-      // Assuming sprites are reasonably sized, but let's restrict max size
-      const maxSz = 40;
+      // Make it slightly larger as requested
+      const maxSz = 50;
       if (this.rankIcon.width > 0) {
         const scale = Math.min(maxSz / this.rankIcon.texture.width, maxSz / this.rankIcon.texture.height);
         this.rankIcon.scale.set(scale);
       }
     }
-    this.rankText.text = `RANK ${this.game.rankIndex}`;
-    this.rankText.x = this.rankIcon.width + 10;
-    this.rankText.y = this.rankIcon.height / 2 - this.rankText.height / 2;
+
+    // Clearer text
+    this.rankText.text = rankManager.getRankString(this.game.rankIndex);
+    this.rankText.x = 60; // Fixed offset to clear the icon
+    this.rankText.y = 15;
 
     // XP Bar
     const progress = this.game.getRankProgress();

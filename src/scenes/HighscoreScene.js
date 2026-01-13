@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { RankAssets } from '../utils/RankAssets.js';
+import { rankManager } from '../managers/RankManager.js';
 import { API } from '../api/API.js';
 import { getHighscoreComment } from '../text/phrasePool.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
@@ -435,9 +436,9 @@ export class HighscoreScene {
     }, 10000);
   }
 
-  renderHighscoreRows() {
+  renderHighscoreRows(layout) {
     if (!this.layoutInfo) return;
-    const { rowHeight, headerY, tableStartY, columns, maxRows, width, layout, rowFontSize } = this.layoutInfo;
+    const { rowHeight, headerY, tableStartY, columns, maxRows, width, rowFontSize } = this.layoutInfo;
 
     this.rowsContainer.removeChildren();
 
@@ -451,14 +452,12 @@ export class HighscoreScene {
     const headerEntries = layout.isMobile
       ? [
         { text: '#', x: columns.rank },
-        // Icon header empty
         { text: 'NAVN', x: columns.name },
         { text: 'SCORE', x: columns.score },
         { text: 'LV', x: columns.level }
       ]
       : [
         { text: 'RANK', x: columns.rank },
-        // Icon header empty
         { text: 'NAVN', x: columns.name },
         { text: 'SCORE', x: columns.score },
         { text: 'LEVEL', x: columns.level }
@@ -474,21 +473,7 @@ export class HighscoreScene {
 
     if (!this.highscores || this.highscores.length === 0) {
       if (!this.loadingText) {
-        // Show empty message
-        const emptyFontSize = getResponsiveFontSize(layout, 'body');
-        const empty = new PIXI.Text(EMPTY_MESSAGE, {
-          fontFamily: 'Courier New',
-          fontSize: emptyFontSize,
-          fill: '#ffffff',
-          align: 'center',
-          wordWrap: true,
-          wordWrapWidth: clampTextWidth(width * 0.85, layout),
-          lineHeight: Math.round(emptyFontSize * 1.4)
-        });
-        empty.anchor.set(0.5, 0);
-        empty.x = width / 2;
-        empty.y = tableStartY;
-        this.rowsContainer.addChild(empty);
+        // Empty state handled elsewhere or just blank
       }
       return;
     }
@@ -511,36 +496,23 @@ export class HighscoreScene {
       this.rowsContainer.addChild(rankText);
 
       // Rank Icon
-      if (score.rankIndex !== undefined) {
-        const iconTex = RankAssets.getRankTexture(score.rankIndex);
-        if (iconTex) {
-          const icon = new PIXI.Sprite(iconTex);
-          icon.anchor.set(0.5);
-          const maxH = rowFontSize * 1.5;
-          const scale = Math.min(maxH / icon.texture.height, maxH / icon.texture.width);
-          icon.scale.set(scale);
-          icon.x = columns.icon;
-          icon.y = tableStartY + index * rowHeight + rowHeight * 0.4;
-          this.rowsContainer.addChild(icon);
-        }
-      } else {
-        // Fallback if Rank missing
-        const scoreValue = typeof score.score === 'number' ? score.score : parseInt(score.score, 10) || 0;
-        const rankEstimate = Math.max(0, Math.floor(scoreValue / 2000)); // Rough guess
-        const iconTex = RankAssets.getRankTexture(rankEstimate);
-        if (iconTex) {
-          const icon = new PIXI.Sprite(iconTex);
-          icon.anchor.set(0.5);
-          const maxH = rowFontSize * 1.5;
-          const scale = Math.min(maxH / icon.texture.height, maxH / icon.texture.width);
-          icon.scale.set(scale);
-          icon.x = columns.icon;
-          icon.y = tableStartY + index * rowHeight + rowHeight * 0.4;
-          icon.alpha = 0.5; // Dimmed
-          this.rowsContainer.addChild(icon);
-        }
+      const scoreValue = typeof score.score === 'number' ? score.score : parseInt(score.score, 10) || 0;
+      let rankIdx = score.rankIndex;
+      if (rankIdx === undefined || rankIdx === null) {
+        rankIdx = rankManager.getRankFromScore(scoreValue);
       }
 
+      const iconTex = RankAssets.getRankTexture(rankIdx || 0);
+      if (iconTex) {
+        const icon = new PIXI.Sprite(iconTex);
+        icon.anchor.set(0.5);
+        const maxH = rowFontSize * 1.5;
+        const scale = Math.min(maxH / icon.texture.height, maxH / icon.texture.width);
+        icon.scale.set(scale);
+        icon.x = columns.icon;
+        icon.y = tableStartY + index * rowHeight + rowHeight * 0.4;
+        this.rowsContainer.addChild(icon);
+      }
 
       // Name
       const nameColWidth = columns.score - columns.name - (layout.isMobile ? 8 : 20);
@@ -559,7 +531,6 @@ export class HighscoreScene {
 
       // Score
       const scoreColor = index === 0 ? '#ffff00' : index === 1 ? '#cccccc' : index === 2 ? '#ff8844' : '#00ffff';
-      const scoreValue = typeof score.score === 'number' ? score.score : parseInt(score.score, 10) || 0;
       const scoreText = new PIXI.Text(scoreValue.toString(), { ...rowStyle, fill: scoreColor });
       scoreText.x = columns.score;
       scoreText.y = tableStartY + index * rowHeight;
