@@ -362,7 +362,23 @@ export class HighscoreScene {
     this.commentText.text = randomComment;
 
     this.layoutHighscore();
+    // Debug Rank Overlay
+    if (this.game.rankIndex !== undefined) {
+      this.showRankDebug();
+    }
     this.startAttractMode();
+  }
+
+  showRankDebug() {
+    // DEBUG: Show text to confirm we have rank data
+    if (window.location.href.includes('localhost')) {
+      const dText = new PIXI.Text(`DEBUG RANK: ${this.game.rankIndex}`, {
+        fontSize: 12, fill: '#00ff00'
+      });
+      dText.x = 10;
+      dText.y = 10;
+      this.container.addChild(dText);
+    }
   }
 
   startAttractMode() {
@@ -507,7 +523,24 @@ export class HighscoreScene {
           icon.y = tableStartY + index * rowHeight + rowHeight * 0.4;
           this.rowsContainer.addChild(icon);
         }
+      } else {
+        // Fallback if Rank missing
+        const scoreValue = typeof score.score === 'number' ? score.score : parseInt(score.score, 10) || 0;
+        const rankEstimate = Math.max(0, Math.floor(scoreValue / 2000)); // Rough guess
+        const iconTex = RankAssets.getRankTexture(rankEstimate);
+        if (iconTex) {
+          const icon = new PIXI.Sprite(iconTex);
+          icon.anchor.set(0.5);
+          const maxH = rowFontSize * 1.5;
+          const scale = Math.min(maxH / icon.texture.height, maxH / icon.texture.width);
+          icon.scale.set(scale);
+          icon.x = columns.icon;
+          icon.y = tableStartY + index * rowHeight + rowHeight * 0.4;
+          icon.alpha = 0.5; // Dimmed
+          this.rowsContainer.addChild(icon);
+        }
       }
+
 
       // Name
       const nameColWidth = columns.score - columns.name - (layout.isMobile ? 8 : 20);

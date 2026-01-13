@@ -84,16 +84,14 @@ export const SFX_CATALOG = {
         '/audio/sfx/doorClose_002.mp3'
     ],
     'pickup': [
-        '/audio/sfx/computerNoise_000.mp3',
-        '/audio/sfx/computerNoise_001.mp3',
-        '/audio/sfx/computerNoise_002.mp3',
-        '/audio/sfx/computerNoise_003.mp3'
+        '/audio/sfx/forceField_000.mp3', // Pleasant hum instead of blipp blopp
+        '/audio/sfx/forceField_001.mp3'
     ],
     // Mapping old keys to new catalog for compatibility if needed
     'shoot': ['/audio/sfx/laserSmall_000.mp3'],
     'explosion': ['/audio/sfx/explosionCrunch_000.mp3'],
-    'powerup': ['/audio/sfx/computerNoise_000.mp3'],
+    'powerup': ['/audio/sfx/forceField_000.mp3'],
     'menuSelect': ['/audio/sfx/doorOpen_000.mp3'], // Closest map
     'playerHit': ['/audio/sfx/impactMetal_000.mp3'],
-    'levelComplete': ['/audio/sfx/computerNoise_002.mp3']
+    'levelComplete': ['/audio/sfx/doorOpen_000.mp3']
 };

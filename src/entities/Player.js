@@ -391,13 +391,15 @@ export class Player {
   // --- Rank Up Visual Reward ---
   swapSprite() {
     // Deterministic but feels random: based on Rank
-    // Called by PlayScene just after rankIndex increases
     this.sprite.removeChild(this.shipSprite);
     if (this.damageOverlay) this.sprite.removeChild(this.damageOverlay);
 
     // Re-run create logic which uses game.rankIndex
-    // Manually remove children first to be safe
     this.createSprite();
+
+    // ENSURE VISIBILITY
+    this.sprite.visible = true;
+    this.sprite.alpha = 1; // Force visible, animation can fade/blink later if needed
 
     // Visual feedback
     if (this.shipSprite) {
@@ -407,5 +409,29 @@ export class Player {
       setTimeout(() => this.sprite.removeChild(flash), 150);
     }
     console.log('[Player] Ship sprite updated for Rank', this.game.rankIndex);
+  }
+
+  forceRespawn(screenWidth, screenHeight) {
+    this.x = screenWidth / 2;
+    this.y = screenHeight - 100;
+    this.sprite.x = this.x;
+    this.sprite.y = this.y;
+
+    this.resetPowerups();
+
+    // Force Visible
+    this.active = true;
+    this.sprite.visible = true;
+    this.sprite.alpha = 1;
+    this.sprite.renderable = true;
+
+    // Invulnerability
+    this.invulnerable = true;
+    this.invulnerableTime = 2000;
+
+    // Reset cooldowns
+    this.shootCooldown = 0;
+
+    console.log('[Player] Force Respawned at', this.x, this.y);
   }
 }

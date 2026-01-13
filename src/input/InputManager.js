@@ -4,7 +4,21 @@ export class InputManager {
     this.touches = [];
     this.touchFireActive = false;
     this.setupKeyboard();
+    this.setupKeyboard();
+    this.setupMouse();
     this.setupFocusHandlers();
+  }
+
+  setupMouse() {
+    this.handleMouseDown = (e) => {
+      if (e.button === 0) this.touchFireActive = true;
+    };
+    this.handleMouseUp = (e) => {
+      if (e.button === 0) this.touchFireActive = false;
+    };
+    // Bind to window to catch clicks outside canvas if needed, or document
+    document.addEventListener('pointerdown', this.handleMouseDown);
+    document.addEventListener('pointerup', this.handleMouseUp);
   }
 
   setupKeyboard() {
@@ -43,6 +57,12 @@ export class InputManager {
     this.touchFireActive = false;
   }
 
+  isFiring() {
+    return this.isKeyPressed('Space') ||
+      this.isKeyPressed('shoot') ||
+      this.touchFireActive;
+  }
+
   isKeyPressed(key) {
     return !!this.keys[key];
   }
@@ -56,6 +76,8 @@ export class InputManager {
     window.removeEventListener('keyup', this.handleKeyUp);
     window.removeEventListener('blur', this.handleBlur);
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    document.removeEventListener('pointerdown', this.handleMouseDown);
+    document.removeEventListener('pointerup', this.handleMouseUp);
     this.keys = {};
   }
 }

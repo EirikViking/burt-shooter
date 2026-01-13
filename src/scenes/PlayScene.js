@@ -289,8 +289,7 @@ export class PlayScene {
       }
 
       // Fire logic
-      const firePressed = this.inputManager.isKeyPressed('Space') ||
-        this.inputManager.isKeyPressed('shoot') ||
+      const firePressed = this.inputManager.isFiring() ||
         (this.touchControls && this.touchControls.isFirePressed());
 
       if (firePressed && this.player) {
@@ -699,6 +698,13 @@ export class PlayScene {
 
   onLifeLost() {
     this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
+
+    // RESPONDER LOGIC
+    if (this.player && this.game.lives > 0) {
+      this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
+      // Small screen shake
+      if (this.screenShake) this.screenShake.shake(5);
+    }
   }
 
   getRandomTimer(minMs, maxMs) {

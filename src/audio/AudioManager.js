@@ -364,16 +364,10 @@ class AudioController {
   }
 
   playTone(freq, duration, type, vol) {
-    if (!this.context) return;
-    const osc = this.context.createOscillator();
-    const gain = this.context.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, this.context.currentTime);
-    osc.connect(gain);
-    gain.connect(this.context.destination);
-    gain.gain.value = Math.max(0, Math.min(1, vol * this.sfxVolume));
-    osc.start();
-    osc.stop(this.context.currentTime + duration);
+    // DISABLE GLOBAL FALLBACK
+    // The user has explicitly requested this to be dead.
+    // console.log('[AudioManager] playTone fallback prevented.'); 
+    return;
   }
 
   update(delta) { }
