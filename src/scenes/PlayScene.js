@@ -378,7 +378,8 @@ export class PlayScene {
         const last = Number.isFinite(this.game.lastRankIndex) ? this.game.lastRankIndex : 0;
         const score = Number.isFinite(this.game.score) ? this.game.score : 0;
         const rankEv = Number.isFinite(this._rankUpCount) ? this._rankUpCount : 0;
-        this.rankDiagText.text = `rank:${rank} last:${last} score:${score} rankEv:${rankEv}`;
+        const seen = Number.isFinite(this._lastRankUpSeen) ? this._lastRankUpSeen : 'null';
+        this.rankDiagText.text = `rank:${rank} last:${last} score:${score} rankEv:${rankEv} seen:${seen}`;
       }
 
       // Fire logic
@@ -476,13 +477,19 @@ export class PlayScene {
   }
 
   onRankUp(newRank) {
-    if (this._lastRankUpSeen === newRank) return;
-    this._lastRankUpSeen = newRank;
-    this._rankUpCount += 1;
-    this.showRankUp(newRank);
+    const nr = Number(newRank);
+    if (!Number.isFinite(nr)) return;
+
+    if (this._lastRankUpSeen === nr) return;
+    this._lastRankUpSeen = nr;
+    this._rankUpCount = (this._rankUpCount || 0) + 1;
+    this.showRankUp(nr);
   }
 
   showRankUp(newRank) {
+    const nr = Number(newRank);
+    if (!Number.isFinite(nr)) return;
+
     if (this._rankUpAnimating) return;
     this._rankUpAnimating = true;
 
