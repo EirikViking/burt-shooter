@@ -347,17 +347,10 @@ export class HighscoreScene {
       const entriesToRender = this.entries.slice(0, maxRows);
       const rankTextures = await Promise.all(
         entriesToRender.map(async (entry) => {
-          const playerRankIndex = entry.rank_index !== null && entry.rank_index !== undefined
+          const rIndex = (entry.rank_index !== null && entry.rank_index !== undefined)
             ? entry.rank_index
-            : getRankFromScore(entry.score || 0);
-          const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
-
-          try {
-            return await RankAssets.loadRankTexture(clampedRank);
-          } catch (error) {
-            console.error(`[HighscoreScene] Failed to load rank ${clampedRank} texture:`, error.message);
-            return RankAssets.getRankTextureFallback();
-          }
+            : 0;
+          return RankAssets.loadRankTexture(rIndex).catch(() => null);
         })
       );
 
@@ -408,7 +401,7 @@ export class HighscoreScene {
         }
 
         // Add rank name label
-        const playerRankIndex = score.rank_index !== null && score.rank_index !== undefined
+        const playerRankIndex = (score.rank_index !== null && score.rank_index !== undefined)
           ? score.rank_index
           : getRankFromScore(score.score || 0);
         const clampedRank = Math.max(0, Math.min(19, playerRankIndex));

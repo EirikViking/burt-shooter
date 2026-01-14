@@ -29,9 +29,8 @@ This document serves as the human-readable registry of all game assets found in 
 **Missiles**: 40 distinct missile types (`spaceMissiles_001` - `040`).
 **Effects**: 18 generic space effects (`spaceEffects_001` - `018`).
 **Ranks**: 20 rank icons (`rank000` - `rank019`). Only these 20 are used in-game.
-  - **Canonical path**: `/sprites/ranks/PNG/Default size/Gold/rankXXX.png`
-  - **Warning**: Case and spacing are significant on Cloudflare Pages
-  - Scenes must use `RankAssets.getRankSpriteUrl` and `RankAssets.loadRankTexture`
+  - **Canonical path**: `/sprites/ranks/PNG/Default size/Gold/rankXXX.png` (note the space in directory name)
+  - **Loading**: Use `RankAssets.loadRankTexture` with alias `rank_00..rank_19`. Do not use raw URL as cache key.
 
 ### 3. Audio (`/public/audio`)
 **Voice** (`/voice`):

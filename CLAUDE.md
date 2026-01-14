@@ -42,9 +42,9 @@ Lore is core identity, not decoration.
 - **Do NOT change rank count without explicit approval**
 
 #### Rank sprite loading rule
-- HighscoreScene must never use Assets.get for rank textures unless Assets.load ran first
-- RankAssets.loadRankTexture is the only approved way to load rank textures in scenes
-- Rank sprite URLs must be built with encodeURI over the full path to handle spaces safely on Pages
+- Scenes must not build rank sprite URLs.
+- Must use `RankAssets.loadRankTexture` (async) or `RankAssets.getRankTexture` (sync).
+- Loading uses alias keys `rank_00..rank_19` to avoid Assets cache mismatches.
 
 ## Safety
 - Production behavior is the source of truth
