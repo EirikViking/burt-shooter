@@ -1,3 +1,4 @@
+import './styles.css';
 import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
 import { AudioManager } from './audio/AudioManager.js';

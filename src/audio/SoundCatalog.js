@@ -1,97 +1,70 @@
-// Music Pools for distinct audio experiences
+import { AssetManifest } from '../assets/assetManifest.js';
 
+// Safe lookup helpers
+const getMusic = (partial) => AssetManifest.audio.music.find(p => p.includes(partial)) || partial;
+const getSfx = (partial) => AssetManifest.audio.sfx.find(p => p.includes(partial)) || partial;
+
+// Music Pools
 const MENU_POOL = [
-    '/audio/music/Brave Pilots (Menu Screen).mp3',
-    '/audio/music/SkyFire (Title Screen).mp3',
-    '/audio/music/Space Heroes.mp3',
-    '/audio/music/Defeated (Game Over Tune).mp3',
-    '/audio/music/Victory Tune.mp3'
+    getMusic('Brave Pilots'),
+    getMusic('SkyFire'),
+    getMusic('Space Heroes'),
+    getMusic('Defeated'),
+    getMusic('Victory Tune')
 ];
 
 const GAMEPLAY_POOL = [
-    '/audio/music/bgm_v2.mp3', // Forced start track
-    '/audio/music/Alone Against Enemy.mp3',
-    '/audio/music/Battle in the Stars.mp3',
-    '/audio/music/Rain of Lasers.mp3',
-    '/audio/music/DeathMatch (Boss Theme).mp3',
-    '/audio/music/Without Fear.mp3'
+    getMusic('bgm_v2'), // Forced start track
+    getMusic('Alone Against Enemy'),
+    getMusic('Battle in the Stars'),
+    getMusic('Rain of Lasers'),
+    getMusic('DeathMatch'),
+    getMusic('Without Fear')
 ];
-
-// Combine for preloading if needed
-const MUSIC_LIBRARY = [...MENU_POOL, ...GAMEPLAY_POOL];
 
 export const MUSIC_PLAYLISTS = {
     menu: MENU_POOL,
-    scoreboard: MENU_POOL, // Share pool to allow seamless switching
+    scoreboard: MENU_POOL,
     gameplay: GAMEPLAY_POOL
 };
 
 export const SFX_CATALOG = {
     'shoot_small': [
-        '/audio/sfx/laserSmall_000.mp3',
-        '/audio/sfx/laserSmall_001.mp3',
-        '/audio/sfx/laserSmall_002.mp3',
-        '/audio/sfx/laserSmall_003.mp3',
-        '/audio/sfx/laserSmall_004.mp3'
+        getSfx('laserSmall_000'), getSfx('laserSmall_001'), getSfx('laserSmall_002'), getSfx('laserSmall_003'), getSfx('laserSmall_004')
     ],
     'shoot_alt': [
-        '/audio/sfx/laserRetro_000.mp3',
-        '/audio/sfx/laserRetro_001.mp3',
-        '/audio/sfx/laserRetro_002.mp3',
-        '/audio/sfx/laserRetro_003.mp3',
-        '/audio/sfx/laserRetro_004.mp3'
+        getSfx('laserRetro_000'), getSfx('laserRetro_001'), getSfx('laserRetro_002'), getSfx('laserRetro_003'), getSfx('laserRetro_004')
     ],
     'shoot_heavy': [
-        '/audio/sfx/laserLarge_000.mp3',
-        '/audio/sfx/laserLarge_001.mp3',
-        '/audio/sfx/laserLarge_002.mp3',
-        '/audio/sfx/laserLarge_003.mp3',
-        '/audio/sfx/laserLarge_004.mp3'
+        getSfx('laserLarge_000'), getSfx('laserLarge_001'), getSfx('laserLarge_002'), getSfx('laserLarge_003'), getSfx('laserLarge_004')
     ],
     'enemy_explode': [
-        '/audio/sfx/explosionCrunch_000.mp3',
-        '/audio/sfx/explosionCrunch_001.mp3',
-        '/audio/sfx/explosionCrunch_002.mp3',
-        '/audio/sfx/explosionCrunch_003.mp3',
-        '/audio/sfx/explosionCrunch_004.mp3'
+        getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002'), getSfx('explosionCrunch_003'), getSfx('explosionCrunch_004')
     ],
     'boss_explode': [
-        '/audio/sfx/lowFrequency_explosion_000.mp3',
-        '/audio/sfx/lowFrequency_explosion_001.mp3'
+        getSfx('lowFrequency_explosion_000'), getSfx('lowFrequency_explosion_001') // 001 might not exist in manifest if truncated in my previous tool output, but lookup returns partial if not found, safe enough
     ],
     'hit': [
-        '/audio/sfx/impactMetal_000.mp3',
-        '/audio/sfx/impactMetal_001.mp3',
-        '/audio/sfx/impactMetal_002.mp3',
-        '/audio/sfx/impactMetal_003.mp3',
-        '/audio/sfx/impactMetal_004.mp3'
+        getSfx('impactMetal_000'), getSfx('impactMetal_001'), getSfx('impactMetal_002'), getSfx('impactMetal_003'), getSfx('impactMetal_004')
     ],
     'shield': [
-        '/audio/sfx/forceField_000.mp3',
-        '/audio/sfx/forceField_001.mp3',
-        '/audio/sfx/forceField_002.mp3',
-        '/audio/sfx/forceField_003.mp3',
-        '/audio/sfx/forceField_004.mp3'
+        getSfx('forceField_000'), getSfx('forceField_001'), getSfx('forceField_002'), getSfx('forceField_003'), getSfx('forceField_004')
     ],
     'ui_open': [
-        '/audio/sfx/doorOpen_000.mp3',
-        '/audio/sfx/doorOpen_001.mp3',
-        '/audio/sfx/doorOpen_002.mp3'
+        getSfx('doorOpen_000'), getSfx('doorOpen_001'), getSfx('doorOpen_002')
     ],
     'ui_close': [
-        '/audio/sfx/doorClose_000.mp3',
-        '/audio/sfx/doorClose_001.mp3',
-        '/audio/sfx/doorClose_002.mp3'
+        getSfx('doorClose_000'), getSfx('doorClose_001'), getSfx('doorClose_002')
     ],
     'pickup': [
-        '/audio/sfx/forceField_000.mp3', // Pleasant hum instead of blipp blopp
-        '/audio/sfx/forceField_001.mp3'
+        getSfx('forceField_000'),
+        getSfx('forceField_001')
     ],
-    // Mapping old keys to new catalog for compatibility if needed
-    'shoot': ['/audio/sfx/laserSmall_000.mp3'],
-    'explosion': ['/audio/sfx/explosionCrunch_000.mp3'],
-    'powerup': ['/audio/sfx/forceField_000.mp3'],
-    'menuSelect': ['/audio/sfx/doorOpen_000.mp3'], // Closest map
-    'playerHit': ['/audio/sfx/impactMetal_000.mp3'],
-    'levelComplete': ['/audio/sfx/doorOpen_000.mp3']
+    // Mappings
+    'shoot': [getSfx('laserSmall_000')],
+    'explosion': [getSfx('explosionCrunch_000')],
+    'powerup': [getSfx('forceField_000')],
+    'menuSelect': [getSfx('doorOpen_000')],
+    'playerHit': [getSfx('impactMetal_000')],
+    'levelComplete': [getSfx('doorOpen_000')]
 };

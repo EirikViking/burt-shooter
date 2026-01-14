@@ -1,3 +1,4 @@
+import { AssetManifest } from '../assets/assetManifest.js';
 import * as Features from '../config/Features.js';
 import { SFX_CATALOG, MUSIC_PLAYLISTS } from './SoundCatalog.js';
 
@@ -173,7 +174,7 @@ class AudioController {
 
     if (contextName === 'gameplay' && options.resetForNewRun) {
       // FORCE RULE: New Run -> bgm_v2.mp3
-      const forcedTrack = '/audio/music/bgm_v2.mp3';
+      const forcedTrack = AssetManifest.audio.music.find(p => p.includes('bgm_v2.mp3')) || '/audio/music/bgm_v2.mp3';
       this.currentContext = 'gameplay';
       // Set last track IMMEDIATELY so it won't be picked next
       this.lastTrackByContext.gameplay = forcedTrack;
@@ -349,17 +350,24 @@ class AudioController {
       'go': 'go.mp3',
       'wave_clear': 'objective_achieved.mp3',
       'mission_complete': 'mission_completed.mp3',
-      'war_target': 'war_target.mp3',
+      'war_target': 'war_target_engaged.mp3', // Corrected name based on file list
       'round': 'round.mp3',
       'powerup': 'objective_achieved.mp3' // Re-use nice sound
     };
 
-    const file = map[eventName];
-    if (file) {
-      const audio = new Audio(`/audio/voice/${file}`);
-      audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.voiceVolume));
-      audio.play().catch(e => { });
-      this.globalVoiceCooldown = now + 1500;
+    const filename = map[eventName];
+    if (filename) {
+      // Lookup in manifest (robust to path changes)
+      const src = AssetManifest.audio.voice.find(p => p.endsWith(filename));
+
+      if (src) {
+        const audio = new Audio(src);
+        audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.voiceVolume));
+        audio.play().catch(e => { });
+        this.globalVoiceCooldown = now + 1500;
+      } else {
+        console.warn(`[Audio] Voice asset not found for: ${filename}`);
+      }
     }
   }
 

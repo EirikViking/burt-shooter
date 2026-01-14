@@ -374,3 +374,44 @@ export function extendLocations(base) {
 export function getAllNewPhrases() {
   return [...newPhrases];
 }
+
+// Trophy Room Taunt System - Top 3 trash talk
+const tauntFragments = {
+  insults: [
+    { value: 'du er for treig!', weight: 1.2 },
+    { value: 'du henger etter!', weight: 1.1 },
+    { value: 'prøv igjen!', weight: 1.0 },
+    { value: 'du kommer ikke forbi!', weight: 1.0 },
+    { value: 'amatør!', weight: 1.3 }
+  ],
+  boasts: [
+    { value: 'Toppen er fin!', weight: 1.0 },
+    { value: 'Se og lær!', weight: 1.1 },
+    { value: 'Sånn gjør man det!', weight: 1.0 },
+    { value: 'Jeg eier denne!', weight: 0.9 }
+  ],
+  mockery: [
+    { value: 'Bæ bæ!', weight: 1.5 },
+    { value: 'Hæstkuk!', weight: 1.4 },
+    { value: 'Jatta jatta!', weight: 1.3 },
+    { value: 'Hold kjæften!', weight: 1.2 },
+    { value: 'Hut dæ heim!', weight: 1.2 }
+  ],
+  regional: [
+    { value: 'Stokmarknes eier deg!', weight: 1.1 },
+    { value: 'Melbu er bedre!', weight: 1.0 },
+    { value: 'Kurt Edgar ville skammet seg!', weight: 1.2 },
+    { value: 'Dette hadde aldri gått i Harstad!', weight: 0.9 }
+  ]
+};
+
+export function getLeaderboardTaunt(targetName) {
+  const allTaunts = [
+    ...tauntFragments.insults,
+    ...tauntFragments.boasts,
+    ...tauntFragments.mockery,
+    ...tauntFragments.regional
+  ];
+  const taunt = weightedPick(allTaunts, 'leaderboardTaunt');
+  return `${targetName}: «${taunt}»`;
+}

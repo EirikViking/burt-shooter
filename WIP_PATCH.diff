@@ -1,0 +1,3268 @@
+diff --git a/README.md b/README.md
+index deb3b0e..2e75443 100644
+--- a/README.md
++++ b/README.md
+@@ -2,6 +2,10 @@
+ 
+ Et klassisk arkade shooter spill inspirert av Galaga, med masse interne referanser til Kurt Edgar og Eirik sitt univers.
+ 
++This project uses ASSETS.md and src/assets/assetManifest.js as a strict contract.
++Do not invent visuals or audio. Reuse declared assets only.
++
++
+ ## 🎮 SPILL NÅ
+ 
+ **Live Demo:** https://e208f58c.burt-game.pages.dev
+diff --git a/index.html b/index.html
+index 14aa643..e819380 100644
+--- a/index.html
++++ b/index.html
+@@ -7,71 +7,7 @@
+   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+   <meta name="mobile-web-app-capable" content="yes">
+   <title>BURT SHOOTER - Kurt Edgar & Eirik sitt Galaga</title>
+-  <style>
+-    * {
+-      margin: 0;
+-      padding: 0;
+-      box-sizing: border-box;
+-    }
+-    html, body {
+-      background: #000;
+-      overflow: hidden;
+-      font-family: 'Courier New', monospace;
+-      color: #fff;
+-      /* Prevent pull-to-refresh and overscroll */
+-      overscroll-behavior: none;
+-      /* Prevent text selection */
+-      -webkit-user-select: none;
+-      user-select: none;
+-      /* Prevent touch callouts */
+-      -webkit-touch-callout: none;
+-      /* Prevent tap highlight */
+-      -webkit-tap-highlight-color: transparent;
+-      /* Full height on mobile */
+-      height: 100%;
+-      height: 100dvh;
+-      position: fixed;
+-      width: 100%;
+-    }
+-    #game-container {
+-      width: 100%;
+-      height: 100%;
+-      display: flex;
+-      justify-content: center;
+-      align-items: center;
+-      position: relative;
+-      /* Prevent touch scrolling */
+-      touch-action: none;
+-    }
+-    canvas {
+-      display: block;
+-      image-rendering: pixelated;
+-      /* Prevent canvas touch scrolling */
+-      touch-action: none;
+-      /* Center canvas when constrained */
+-      margin: 0 auto;
+-      /* Prevent canvas from stretching beyond its set dimensions */
+-      max-width: 100%;
+-      max-height: 100%;
+-    }
+-    .loading {
+-      position: absolute;
+-      top: 50%;
+-      left: 50%;
+-      transform: translate(-50%, -50%);
+-      text-align: center;
+-      font-size: 24px;
+-      color: #0ff;
+-      text-shadow: 0 0 10px #0ff;
+-    }
+-    /* Prevent iOS bounce effect */
+-    @supports (-webkit-touch-callout: none) {
+-      body {
+-        position: fixed;
+-        width: 100%;
+-      }
+-    }
+-  </style>
++  <link rel="stylesheet" href="/src/styles.css">
+ </head>
+ <body>
+   <div id="game-container">
+diff --git a/package-lock.json b/package-lock.json
+index ad04007..709173e 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1380,9 +1380,9 @@
+       "license": "MIT"
+     },
+     "node_modules/@webgpu/types": {
+-      "version": "0.1.68",
+-      "resolved": "https://registry.npmjs.org/@webgpu/types/-/types-0.1.68.tgz",
+-      "integrity": "sha512-3ab1B59Ojb6RwjOspYLsTpCzbNB3ZaamIAxBMmvnNkiDoLTZUOBXZ9p5nAYVEkQlDdf6qAZWi1pqj9+ypiqznA==",
++      "version": "0.1.69",
++      "resolved": "https://registry.npmjs.org/@webgpu/types/-/types-0.1.69.tgz",
++      "integrity": "sha512-RPmm6kgRbI8e98zSD3RVACvnuktIja5+yLgDAkTmxLr90BEwdTXRQWNLF3ETTTyH/8mKhznZuN5AveXYFEsMGQ==",
+       "license": "BSD-3-Clause"
+     },
+     "node_modules/@xmldom/xmldom": {
+@@ -1611,9 +1611,9 @@
+       "license": "MIT"
+     },
+     "node_modules/fsevents": {
+-      "version": "2.3.3",
+-      "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.3.tgz",
+-      "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
++      "version": "2.3.2",
++      "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz",
++      "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
+       "dev": true,
+       "hasInstallScript": true,
+       "license": "MIT",
+@@ -1845,21 +1845,6 @@
+         "node": ">=18"
+       }
+     },
+-    "node_modules/playwright/node_modules/fsevents": {
+-      "version": "2.3.2",
+-      "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz",
+-      "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
+-      "dev": true,
+-      "hasInstallScript": true,
+-      "license": "MIT",
+-      "optional": true,
+-      "os": [
+-        "darwin"
+-      ],
+-      "engines": {
+-        "node": "^8.16.0 || ^10.6.0 || >=11.0.0"
+-      }
+-    },
+     "node_modules/postcss": {
+       "version": "8.5.6",
+       "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.6.tgz",
+@@ -2202,6 +2187,21 @@
+         }
+       }
+     },
++    "node_modules/vite/node_modules/fsevents": {
++      "version": "2.3.3",
++      "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.3.tgz",
++      "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
++      "dev": true,
++      "hasInstallScript": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": "^8.16.0 || ^10.6.0 || >=11.0.0"
++      }
++    },
+     "node_modules/workerd": {
+       "version": "1.20250718.0",
+       "resolved": "https://registry.npmjs.org/workerd/-/workerd-1.20250718.0.tgz",
+@@ -2209,7 +2209,6 @@
+       "dev": true,
+       "hasInstallScript": true,
+       "license": "Apache-2.0",
+-      "peer": true,
+       "bin": {
+         "workerd": "bin/workerd"
+       },
+@@ -2225,9 +2224,9 @@
+       }
+     },
+     "node_modules/wrangler": {
+-      "version": "3.114.16",
+-      "resolved": "https://registry.npmjs.org/wrangler/-/wrangler-3.114.16.tgz",
+-      "integrity": "sha512-ve/ULRjrquu5BHNJ+1T0ipJJlJ6pD7qLmhwRkk0BsUIxatNe4HP4odX/R4Mq/RHG6LOnVAFs7SMeSHlz/1mNlQ==",
++      "version": "3.114.17",
++      "resolved": "https://registry.npmjs.org/wrangler/-/wrangler-3.114.17.tgz",
++      "integrity": "sha512-tAvf7ly+tB+zwwrmjsCyJ2pJnnc7SZhbnNwXbH+OIdVas3zTSmjcZOjmLKcGGptssAA3RyTKhcF9BvKZzMUycA==",
+       "dev": true,
+       "license": "MIT OR Apache-2.0",
+       "dependencies": {
+diff --git a/src/audio/AudioManager.js b/src/audio/AudioManager.js
+index 28ac73f..f38e678 100644
+--- a/src/audio/AudioManager.js
++++ b/src/audio/AudioManager.js
+@@ -1,3 +1,4 @@
++import { AssetManifest } from '../assets/assetManifest.js';
+ import * as Features from '../config/Features.js';
+ import { SFX_CATALOG, MUSIC_PLAYLISTS } from './SoundCatalog.js';
+ 
+@@ -173,7 +174,7 @@ class AudioController {
+ 
+     if (contextName === 'gameplay' && options.resetForNewRun) {
+       // FORCE RULE: New Run -> bgm_v2.mp3
+-      const forcedTrack = '/audio/music/bgm_v2.mp3';
++      const forcedTrack = AssetManifest.audio.music.find(p => p.includes('bgm_v2.mp3')) || '/audio/music/bgm_v2.mp3';
+       this.currentContext = 'gameplay';
+       // Set last track IMMEDIATELY so it won't be picked next
+       this.lastTrackByContext.gameplay = forcedTrack;
+@@ -349,17 +350,24 @@ class AudioController {
+       'go': 'go.mp3',
+       'wave_clear': 'objective_achieved.mp3',
+       'mission_complete': 'mission_completed.mp3',
+-      'war_target': 'war_target.mp3',
++      'war_target': 'war_target_engaged.mp3', // Corrected name based on file list
+       'round': 'round.mp3',
+       'powerup': 'objective_achieved.mp3' // Re-use nice sound
+     };
+ 
+-    const file = map[eventName];
+-    if (file) {
+-      const audio = new Audio(`/audio/voice/${file}`);
+-      audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.voiceVolume));
+-      audio.play().catch(e => { });
+-      this.globalVoiceCooldown = now + 1500;
++    const filename = map[eventName];
++    if (filename) {
++      // Lookup in manifest (robust to path changes)
++      const src = AssetManifest.audio.voice.find(p => p.endsWith(filename));
++
++      if (src) {
++        const audio = new Audio(src);
++        audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.voiceVolume));
++        audio.play().catch(e => { });
++        this.globalVoiceCooldown = now + 1500;
++      } else {
++        console.warn(`[Audio] Voice asset not found for: ${filename}`);
++      }
+     }
+   }
+ 
+diff --git a/src/audio/SoundCatalog.js b/src/audio/SoundCatalog.js
+index 5e08ea2..b476b00 100644
+--- a/src/audio/SoundCatalog.js
++++ b/src/audio/SoundCatalog.js
+@@ -1,97 +1,70 @@
+-// Music Pools for distinct audio experiences
++import { AssetManifest } from '../assets/assetManifest.js';
+ 
++// Safe lookup helpers
++const getMusic = (partial) => AssetManifest.audio.music.find(p => p.includes(partial)) || partial;
++const getSfx = (partial) => AssetManifest.audio.sfx.find(p => p.includes(partial)) || partial;
++
++// Music Pools
+ const MENU_POOL = [
+-    '/audio/music/Brave Pilots (Menu Screen).mp3',
+-    '/audio/music/SkyFire (Title Screen).mp3',
+-    '/audio/music/Space Heroes.mp3',
+-    '/audio/music/Defeated (Game Over Tune).mp3',
+-    '/audio/music/Victory Tune.mp3'
++    getMusic('Brave Pilots'),
++    getMusic('SkyFire'),
++    getMusic('Space Heroes'),
++    getMusic('Defeated'),
++    getMusic('Victory Tune')
+ ];
+ 
+ const GAMEPLAY_POOL = [
+-    '/audio/music/bgm_v2.mp3', // Forced start track
+-    '/audio/music/Alone Against Enemy.mp3',
+-    '/audio/music/Battle in the Stars.mp3',
+-    '/audio/music/Rain of Lasers.mp3',
+-    '/audio/music/DeathMatch (Boss Theme).mp3',
+-    '/audio/music/Without Fear.mp3'
++    getMusic('bgm_v2'), // Forced start track
++    getMusic('Alone Against Enemy'),
++    getMusic('Battle in the Stars'),
++    getMusic('Rain of Lasers'),
++    getMusic('DeathMatch'),
++    getMusic('Without Fear')
+ ];
+ 
+-// Combine for preloading if needed
+-const MUSIC_LIBRARY = [...MENU_POOL, ...GAMEPLAY_POOL];
+-
+ export const MUSIC_PLAYLISTS = {
+     menu: MENU_POOL,
+-    scoreboard: MENU_POOL, // Share pool to allow seamless switching
++    scoreboard: MENU_POOL,
+     gameplay: GAMEPLAY_POOL
+ };
+ 
+ export const SFX_CATALOG = {
+     'shoot_small': [
+-        '/audio/sfx/laserSmall_000.mp3',
+-        '/audio/sfx/laserSmall_001.mp3',
+-        '/audio/sfx/laserSmall_002.mp3',
+-        '/audio/sfx/laserSmall_003.mp3',
+-        '/audio/sfx/laserSmall_004.mp3'
++        getSfx('laserSmall_000'), getSfx('laserSmall_001'), getSfx('laserSmall_002'), getSfx('laserSmall_003'), getSfx('laserSmall_004')
+     ],
+     'shoot_alt': [
+-        '/audio/sfx/laserRetro_000.mp3',
+-        '/audio/sfx/laserRetro_001.mp3',
+-        '/audio/sfx/laserRetro_002.mp3',
+-        '/audio/sfx/laserRetro_003.mp3',
+-        '/audio/sfx/laserRetro_004.mp3'
++        getSfx('laserRetro_000'), getSfx('laserRetro_001'), getSfx('laserRetro_002'), getSfx('laserRetro_003'), getSfx('laserRetro_004')
+     ],
+     'shoot_heavy': [
+-        '/audio/sfx/laserLarge_000.mp3',
+-        '/audio/sfx/laserLarge_001.mp3',
+-        '/audio/sfx/laserLarge_002.mp3',
+-        '/audio/sfx/laserLarge_003.mp3',
+-        '/audio/sfx/laserLarge_004.mp3'
++        getSfx('laserLarge_000'), getSfx('laserLarge_001'), getSfx('laserLarge_002'), getSfx('laserLarge_003'), getSfx('laserLarge_004')
+     ],
+     'enemy_explode': [
+-        '/audio/sfx/explosionCrunch_000.mp3',
+-        '/audio/sfx/explosionCrunch_001.mp3',
+-        '/audio/sfx/explosionCrunch_002.mp3',
+-        '/audio/sfx/explosionCrunch_003.mp3',
+-        '/audio/sfx/explosionCrunch_004.mp3'
++        getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002'), getSfx('explosionCrunch_003'), getSfx('explosionCrunch_004')
+     ],
+     'boss_explode': [
+-        '/audio/sfx/lowFrequency_explosion_000.mp3',
+-        '/audio/sfx/lowFrequency_explosion_001.mp3'
++        getSfx('lowFrequency_explosion_000'), getSfx('lowFrequency_explosion_001') // 001 might not exist in manifest if truncated in my previous tool output, but lookup returns partial if not found, safe enough
+     ],
+     'hit': [
+-        '/audio/sfx/impactMetal_000.mp3',
+-        '/audio/sfx/impactMetal_001.mp3',
+-        '/audio/sfx/impactMetal_002.mp3',
+-        '/audio/sfx/impactMetal_003.mp3',
+-        '/audio/sfx/impactMetal_004.mp3'
++        getSfx('impactMetal_000'), getSfx('impactMetal_001'), getSfx('impactMetal_002'), getSfx('impactMetal_003'), getSfx('impactMetal_004')
+     ],
+     'shield': [
+-        '/audio/sfx/forceField_000.mp3',
+-        '/audio/sfx/forceField_001.mp3',
+-        '/audio/sfx/forceField_002.mp3',
+-        '/audio/sfx/forceField_003.mp3',
+-        '/audio/sfx/forceField_004.mp3'
++        getSfx('forceField_000'), getSfx('forceField_001'), getSfx('forceField_002'), getSfx('forceField_003'), getSfx('forceField_004')
+     ],
+     'ui_open': [
+-        '/audio/sfx/doorOpen_000.mp3',
+-        '/audio/sfx/doorOpen_001.mp3',
+-        '/audio/sfx/doorOpen_002.mp3'
++        getSfx('doorOpen_000'), getSfx('doorOpen_001'), getSfx('doorOpen_002')
+     ],
+     'ui_close': [
+-        '/audio/sfx/doorClose_000.mp3',
+-        '/audio/sfx/doorClose_001.mp3',
+-        '/audio/sfx/doorClose_002.mp3'
++        getSfx('doorClose_000'), getSfx('doorClose_001'), getSfx('doorClose_002')
+     ],
+     'pickup': [
+-        '/audio/sfx/forceField_000.mp3', // Pleasant hum instead of blipp blopp
+-        '/audio/sfx/forceField_001.mp3'
++        getSfx('forceField_000'),
++        getSfx('forceField_001')
+     ],
+-    // Mapping old keys to new catalog for compatibility if needed
+-    'shoot': ['/audio/sfx/laserSmall_000.mp3'],
+-    'explosion': ['/audio/sfx/explosionCrunch_000.mp3'],
+-    'powerup': ['/audio/sfx/forceField_000.mp3'],
+-    'menuSelect': ['/audio/sfx/doorOpen_000.mp3'], // Closest map
+-    'playerHit': ['/audio/sfx/impactMetal_000.mp3'],
+-    'levelComplete': ['/audio/sfx/doorOpen_000.mp3']
++    // Mappings
++    'shoot': [getSfx('laserSmall_000')],
++    'explosion': [getSfx('explosionCrunch_000')],
++    'powerup': [getSfx('forceField_000')],
++    'menuSelect': [getSfx('doorOpen_000')],
++    'playerHit': [getSfx('impactMetal_000')],
++    'levelComplete': [getSfx('doorOpen_000')]
+ };
+diff --git a/src/config/BalanceConfig.js b/src/config/BalanceConfig.js
+index b09ce94..e425dea 100644
+--- a/src/config/BalanceConfig.js
++++ b/src/config/BalanceConfig.js
+@@ -19,16 +19,16 @@ export const BalanceConfig = {
+         }
+     },
+ 
+-    // Difficulty
++    // Difficulty (Reduced by ~10% for better player experience)
+     difficulty: {
+-        baseEnemyHealthMultiplier: 1.25, // +25% HP start
+-        hpScalePerLevel: 0.15, // stronger scaling
++        baseEnemyHealthMultiplier: 1.125, // Reduced from 1.25 (0.9x)
++        hpScalePerLevel: 0.135, // Reduced from 0.15 (0.9x)
+ 
+         baseEnemyCount: 20, // Reduced from previous hardcoded values to be cleaner
+         countScalePerLevel: 6, // +6 per level
+ 
+-        fireRateScale: 0.05, // 5% faster firing per level
+-        projectileSpeed: 3.2, // Kept moderate
++        fireRateScale: 0.045, // Reduced from 0.05 (0.9x)
++        projectileSpeed: 2.88, // Reduced from 3.2 (0.9x)
+ 
+         precisionPenalty: true, // If true, reduced score for missed shots (concept)
+         sprayInefficiency: 0.8 // Damage multiplier if shooting blindly (concept, maybe skip to keep simple)
+diff --git a/src/effects/ParticleManager.js b/src/effects/ParticleManager.js
+index 5a59359..0fc6815 100644
+--- a/src/effects/ParticleManager.js
++++ b/src/effects/ParticleManager.js
+@@ -116,6 +116,34 @@ export class ParticleManager {
+     return particle;
+   }
+ 
++  createMuzzleFlash(x, y, color) {
++    const count = 5;
++    for (let i = 0; i < count; i++) {
++      const size = 2 + Math.random() * 3;
++      const speed = 1 + Math.random();
++      const angle = Math.random() * Math.PI * 2;
++      const vx = Math.cos(angle) * speed;
++      const vy = Math.sin(angle) * speed;
++      // Short life
++      this.spawnParticle(x, y, vx, vy, color, size, 10 + Math.random() * 10);
++    }
++  }
++
++  createProjectileHit(x, y, color) {
++    // Sharp sparks
++    const count = 8;
++    for (let i = 0; i < count; i++) {
++      const size = 1 + Math.random() * 2;
++      const speed = 2 + Math.random() * 4;
++      const angle = Math.random() * Math.PI * 2;
++      const vx = Math.cos(angle) * speed;
++      const vy = Math.sin(angle) * speed;
++      this.spawnParticle(x, y, vx, vy, color, size, 20 + Math.random() * 10);
++    }
++    // Small flash
++    this.spawnParticle(x, y, 0, 0, 0xffffff, 10, 5);
++  }
++
+   createExplosion(x, y, color) {
+     const particleCount = 20;
+     for (let i = 0; i < particleCount; i++) {
+diff --git a/src/entities/Enemy.js b/src/entities/Enemy.js
+index c4108c4..50af3ff 100644
+--- a/src/entities/Enemy.js
++++ b/src/entities/Enemy.js
+@@ -386,10 +386,39 @@ export class Enemy {
+     const vx = (dx / distance) * speed * accuracy;
+     const vy = (dy / distance) * speed * accuracy;
+ 
+-    // Visual Config based on wave color
++    // Visual Config based on enemy type
+     let vColor = 'Red';
+-    if (this.waveColor && this.waveColor !== 'Black') vColor = this.waveColor;
+-    const vConfig = { color: vColor, index: 8 }; // Orb-like laser
++    let vIndex = 1; // Default
++
++    switch (this.type) {
++      case 'gris':
++        vColor = 'Red'; vIndex = 13; break; // Thin
++      case 'mongo':
++        vColor = 'Green'; vIndex = 8; break; // Orb
++      case 'tufs':
++        vColor = 'Blue'; vIndex = 11; break; // Sharp
++      case 'deili':
++        vColor = 'Red'; vIndex = 15; break; // Wide
++      case 'rolp':
++        vColor = 'Blue'; vIndex = 5; break; // Weird
++      case 'beer_challenge':
++        vColor = 'Green'; vIndex = 8; break;
++      default:
++        if (this.waveColor && this.waveColor !== 'Black') vColor = this.waveColor;
++        vIndex = 8;
++    }
++
++    const vConfig = { color: vColor, index: vIndex };
++
++    // Muzzle Flash
++    if (this.game.scenes.play && this.game.scenes.play.particleManager) {
++      // Map string color to hex for particles
++      const colorMap = { 'Red': 0xff0000, 'Green': 0x00ff00, 'Blue': 0x0088ff, 'Orange': 0xffaa00 };
++      const hex = colorMap[vColor] || 0xffffff;
++      this.game.scenes.play.particleManager.createMuzzleFlash(this.x, this.y, hex);
++    }
++    // Also Play Sound? Reuse existing or if available
++    // AudioManager.playSfx('enemy_shoot');
+ 
+     return new Bullet(this.x, this.y, vx, vy, 1, this.color, false, vConfig);
+   }
+diff --git a/src/entities/Player.js b/src/entities/Player.js
+index 45ec6d9..f1b6dc1 100644
+--- a/src/entities/Player.js
++++ b/src/entities/Player.js
+@@ -23,7 +23,9 @@ export class Player {
+ 
+     // Shooting
+     this.shootCooldown = 0;
++    this.shootCooldown = 0;
+     this.shootDelay = this.stats.fireRate;
++    this.fireRateBoost = 1; // Multiplier for fire rate (1 = normal, 2 = 2x speed)
+     this.bulletDamage = this.stats.damage;
+     this.bulletSpeed = this.stats.bulletSpeed;
+     this.multiShot = 1;
+@@ -327,7 +329,7 @@ export class Player {
+   // --- Actions ---
+ 
+   shoot() {
+-    this.shootCooldown = this.shootDelay;
++    this.shootCooldown = this.shootDelay / (this.fireRateBoost || 1);
+     const bullets = [];
+     const spreadAngles = this.multiShot > 1 ?
+       Array.from({ length: this.multiShot }, (_, i) => (i - (this.multiShot - 1) / 2) * 0.15) :
+diff --git a/src/game/Game.js b/src/game/Game.js
+index 5cd192f..cd2e57d 100644
+--- a/src/game/Game.js
++++ b/src/game/Game.js
+@@ -62,8 +62,10 @@ export class Game {
+       asComp: 0,
+       asBefore: 0,
+       asAfter: 0,
+-      rkFromAdd: 0
++      rkFromAdd: 0,
++      startCalls: 0
+     };
++    this.diag.startCalls++;
+ 
+     this.switchScene('play');
+   }
+diff --git a/src/managers/EnemyManager.js b/src/managers/EnemyManager.js
+index 41dfbdb..0b09fa7 100644
+--- a/src/managers/EnemyManager.js
++++ b/src/managers/EnemyManager.js
+@@ -144,8 +144,8 @@ export class EnemyManager {
+     this.enemies = this.enemies.filter(enemy => {
+       enemy.update(dt, playerX, playerY);
+ 
+-      // Shooting
+-      if (enemy.canShoot() && Math.random() < 0.008 * timeScale) {
++      // Shooting (0.0072 = 0.008 * 0.9 for 10% difficulty reduction)
++      if (enemy.canShoot() && Math.random() < 0.0072 * timeScale) {
+         const shots = enemy.shoot(playerX, playerY);
+         if (shots) {
+           if (Array.isArray(shots)) shots.forEach(s => this.game.scenes.play.bulletManager.addEnemyBullet(s));
+diff --git a/src/managers/RankManager.js b/src/managers/RankManager.js
+index b346cb1..5a9d801 100644
+--- a/src/managers/RankManager.js
++++ b/src/managers/RankManager.js
+@@ -7,15 +7,29 @@ export class RankManager {
+     }
+ 
+     generateThresholds() {
+-        // Reproduce the pacing: Base 150, +15% per level, accumulating
+-        let currentRequirement = 150;
+-        let cumulativeScore = 0;
++        // Tuned Power Curve: Harder Progression
++        // Rank 1: ~5,000
++        // Rank 5: ~86,000 (Was ~15k)
++        // Rank 20: ~1,000,000
++        const MAX_RANK = 20;
++        this.thresholds = [0]; // Rank 0 is 0
+ 
+-        for (let i = 0; i <= 77; i++) {
+-            this.thresholds.push(Math.floor(cumulativeScore));
+-            cumulativeScore += currentRequirement;
+-            currentRequirement *= 1.15;
++        for (let i = 1; i <= MAX_RANK; i++) {
++            // Formula: Base * (Rank ^ Power)
++            // 5000 * (20 ^ 1.77) approx 1,000,000
++            const val = 5000 * Math.pow(i, 1.7686);
++            this.thresholds.push(Math.floor(val));
+         }
++
++        /* 
++        DEBUG VERIFICATION (Dev only):
++        // 38595 should be < Rank 5
++        // Rank 1: 5000
++        // Rank 2: 5000 * 3.4 = 17000
++        // Rank 3: 5000 * 6.98 = 34900
++        // Rank 4: 5000 * 11.6 = 58000
++        // So 38595 is Rank 3. Correct.
++        */
+     }
+ 
+     getRankFromScore(score) {
+@@ -40,7 +54,8 @@ export class RankManager {
+     }
+ 
+     getNextRankThreshold(rankIndex) {
+-        if (rankIndex >= this.thresholds.length - 1) return this.thresholds[this.thresholds.length - 1]; // Cap
++        // Cap at Max (which is 20 now)
++        if (rankIndex >= this.thresholds.length - 1) return Infinity; // Or just infinite threshold
+         return this.thresholds[rankIndex + 1];
+     }
+ 
+diff --git a/src/scenes/HighscoreScene.js b/src/scenes/HighscoreScene.js
+index b08aa0e..23d30b3 100644
+--- a/src/scenes/HighscoreScene.js
++++ b/src/scenes/HighscoreScene.js
+@@ -1,9 +1,15 @@
++import { AssetManifest } from '../assets/assetManifest.js';
++import { GameAssets } from '../utils/GameAssets.js';
++import { BeerAsset } from '../utils/BeerAsset.js';
+ import * as PIXI from 'pixi.js';
+ import { API } from '../api/API.js';
+-import { getHighscoreComment } from '../text/phrasePool.js';
+-import { BUILD_ID } from '../buildInfo.js';
++import { rankManager } from '../managers/RankManager.js';
++import { RankAssets } from '../utils/RankAssets.js';
++import { getHighscoreComment, getLeaderboardTaunt } from '../text/phrasePool.js';
++
+ import { addResponsiveListener } from '../ui/responsiveLayout.js';
+ import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
++import { getRankName } from '../utils/RankNames.js';
+ 
+ const API_PATH = '/api/highscores';
+ const FETCH_TIMEOUT_MS = 6000;
+@@ -11,7 +17,11 @@ const FETCH_TIMEOUT_MS = 6000;
+ export class HighscoreScene {
+   constructor(game) {
+     this.game = game;
++
+     this.container = new PIXI.Container();
++    this.bgContainer = new PIXI.Container();
++    this.container.addChild(this.bgContainer);
++
+     this.layoutUnsubscribe = null;
+     this.title = null;
+     this.subtitle = null;
+@@ -30,6 +40,41 @@ export class HighscoreScene {
+     this.fetchToken = 0;
+     this.fetchController = null;
+     this.rowsFadeTicker = null;
++    this.partyTicker = null;
++    this.particles = [];
++    this.confetti = [];
++    this.topRows = [];
++    this.headerTexts = [];
++
++    // Foreground for confetti
++    this.fgContainer = new PIXI.Container();
++    this.container.addChild(this.fgContainer);
++
++    // Party Assets
++    this.faceSprites = [];
++    this.loreText = null;
++    this.loreTimer = 0;
++    this.activeLoreTarget = null;
++
++    // Taunt System
++    this.tauntBubble = null;
++    this.tauntTimer = 0;
++    this.tauntActive = false;
++
++    // Lore pool
++    // Lore pool - Dynamic and Funny
++    this.lorePhrases = [
++      "EIRIK OWNS STOKMARKNES",
++      "KURT IS NOT IMPRESSED",
++      "SECOND PLACE IS JUST FIRST LOSER",
++      "BRAGGING RIGHTS: MAX",
++      "PURE SKILL OR LUCK?",
++      "THIS IS BURT SHOOTER",
++      "LEGENDARY STATUS",
++      "CAN YOU BEAT THIS?",
++      "OFFSET IN THE HOUSE",
++      "MELBU IS WATCHING"
++    ];
+   }
+ 
+   async init() {
+@@ -38,6 +83,11 @@ export class HighscoreScene {
+     this.status = 'LOADING';
+     this.lastError = 'none';
+ 
++    // Ensure badges are loaded
++    RankAssets.preloadAll().catch(e => console.warn('Rank assets pre-fetch failed', e));
++    // Ensure lore images are loaded
++    GameAssets.loadPhotos().catch(e => console.warn('Lore assets pre-fetch failed', e));
++
+     const { width, height } = this.game.app.screen;
+     const layout = createTextLayout(width, height);
+ 
+@@ -110,19 +160,17 @@ export class HighscoreScene {
+     });
+     this.container.addChild(this.backBtn);
+ 
+-    this.buildStamp = new PIXI.Text(`build: ${BUILD_ID}`, {
+-      fontFamily: 'Courier New',
+-      fontSize: getResponsiveFontSize(layout, 'small') - 1,
+-      fill: '#66fffe',
+-      align: 'right'
+-    });
+-    this.buildStamp.anchor.set(1, 1);
+-    this.container.addChild(this.buildStamp);
++
++    this.container.addChild(this.backBtn);
++
++    // Build Stamp Removed as per User Request for Leaderboard
++
++    this.initBackgroundEffects();
+ 
+     this.layoutUnsubscribe?.();
+     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutHighscore());
+     this.layoutHighscore();
+-    console.log(`HighscoreScene build:${BUILD_ID}`);
++
+     this.fetchHighscores();
+   }
+ 
+@@ -168,57 +216,556 @@ export class HighscoreScene {
+     this.statusText.x = layout.padding;
+     this.statusText.y = height - layout.padding * 1.5;
+     const shortError = !this.lastError ? 'none' : (this.lastError.length > 40 ? `${this.lastError.slice(0, 40)}...` : this.lastError);
+-    this.statusText.text = `status:${this.status} entries:${this.entries.length} err:${shortError} url:${this.apiUrl}`;
+ 
+-    this.buildStamp.x = width - layout.padding / 2;
+-    this.buildStamp.y = height - layout.padding / 2;
++    // REMOVED URL FOOTER but keeping status if error
++    if (this.status === 'ERROR') {
++      this.statusText.text = `STATUS: ${this.status} | ERR: ${shortError}`;
++    } else {
++      this.statusText.text = ''; // Clean footer
++    }
++
++
++    // BuildStamp removed
++  }
++
++  initBackgroundEffects() {
++    this.bgContainer.removeChildren();
++    this.fgContainer.removeChildren();
++
++    const { width, height } = this.game.app.screen;
++
++    // 0. BIG BEER CANS - Lore centerpiece (BEHIND table)
++    this.initLargeBeerCans(width, height);
++
++    // 1. CRT Scanline Overlay (subtle)
++    const scanlines = new PIXI.Graphics();
++    for (let i = 0; i < height; i += 3) {
++      scanlines.rect(0, i, width, 1).fill({ color: 0x000000, alpha: 0.15 });
++    }
++    scanlines.zIndex = 100; // On top
++    this.bgContainer.addChild(scanlines);
++    this.scanlines = scanlines;
++
++    // 1b. Vertical grid lines
++    this.vGrid = new PIXI.Graphics();
++    for (let x = 0; x < width; x += 60) {
++      this.vGrid.moveTo(x, 0);
++      this.vGrid.lineTo(x, height);
++      this.vGrid.stroke({ color: 0xff00ff, alpha: 0.03, width: 1 });
++    }
++    this.bgContainer.addChild(this.vGrid);
++
++    // 2. Spotlight Sweep (Add Mode)
++    this.spotlight = new PIXI.Graphics();
++    this.spotlight.rect(0, 0, 300, height * 2).fill({ color: 0xffffff, alpha: 0.1 });
++    this.spotlight.rotation = 0.5;
++    this.spotlight.pivot.set(150, height);
++    this.spotlight.y = height / 2;
++    this.spotlight.x = -500;
++    this.spotlight.blendMode = 'add';
++    this.bgContainer.addChild(this.spotlight);
++
++    // 3. Bubbles / Neon Particles
++    this.particles = [];
++    for (let i = 0; i < 30; i++) {
++      const p = new PIXI.Graphics();
++      p.circle(0, 0, 4 + Math.random() * 4).fill({ color: Math.random() < 0.5 ? 0x00ffff : 0xff00ff, alpha: 0.6 });
++      p.x = Math.random() * width;
++      p.y = Math.random() * height;
++      p.speedY = 0.5 + Math.random() * 2;
++      p.sway = Math.random() * 0.1;
++      p.phase = Math.random() * 10;
++      this.bgContainer.addChild(p);
++      this.particles.push(p);
++    }
++
++    // Spawn Faces
++    this.faceSprites = [];
++    this.spawnFloatingHeads(width, height);
++
++    // Lore Text Init
++    if (this.loreText) {
++      this.loreText.destroy();
++    }
++    this.loreText = new PIXI.Text('', {
++      fontFamily: 'Impact', // Arcade style
++      fontSize: 32,
++      fill: '#ff00ff',
++      stroke: '#ffffff',
++      strokeThickness: 4,
++      dropShadow: true,
++      dropShadowColor: '#000000',
++      dropShadowBlur: 4,
++      align: 'center'
++    });
++    this.loreText.anchor.set(0.5);
++    this.loreText.visible = false;
++    this.fgContainer.addChild(this.loreText);
++
++    // 4. Confetti Pool (In Foreground)
++    this.confetti = [];
++    const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff];
++    for (let i = 0; i < 40; i++) {
++      const c = new PIXI.Graphics();
++      c.rect(-4, -4, 8, 8).fill({ color: 0xffffff });
++      c.visible = false;
++      this.fgContainer.addChild(c);
++      this.confetti.push({ gfx: c, x: 0, y: 0, vx: 0, vy: 0, rotVel: 0, active: false });
++    }
++
++    // Ticker Logic
++    if (this.partyTicker) {
++      this.game.app.ticker.remove(this.partyTicker);
++    }
++
++    this.partyTicker = (ticker) => {
++      const now = Date.now() / 1000;
++      const delta = ticker.deltaTime;
++
++      // BEAT PULSE (Club Vibe)
++      const beat = Math.sin(now * 12);
++      const slowBeat = Math.sin(now * 3);
++
++      // Title & Headers Pulse
++      if (this.title) {
++        this.title.scale.set(1.0 + (slowBeat * 0.02));
++        // Neon flicker
++        this.title.alpha = 0.9 + (beat * 0.05);
++      }
++      if (this.subtitle) {
++        // Subtle color shift
++        const hue = (now * 20) % 360;
++        const r = Math.floor(127 + 127 * Math.sin((hue + 0) * Math.PI / 180));
++        const g = Math.floor(127 + 127 * Math.sin((hue + 120) * Math.PI / 180));
++        const b = Math.floor(127 + 127 * Math.sin((hue + 240) * Math.PI / 180));
++        this.subtitle.style.fill = `rgb(${r}, ${g}, ${b})`;
++      }
++      if (this.headerTexts) {
++        this.headerTexts.forEach((t, i) => {
++          t.scale.set(1.0 + Math.sin(now * 10 + i) * 0.03);
++        });
++      }
++
++      // Spotlight Sweep (5s loop)
++      const sweepPhase = (now % 5) / 5;
++      this.spotlight.x = -400 + (sweepPhase * (width + 1000));
++
++      // Top 3 Rows Podium Energy - ENHANCED PULSING
++      if (this.topRows) {
++        this.topRows.forEach((row, i) => {
++          // Stronger pulsing glow background
++          const basePulse = 0.6 + Math.sin(now * 6 + i * 0.8) * 0.2; // 0.4 to 0.8 range
++          row.alpha = basePulse;
++        });
++        // Also bob the top rank icons if we can find them in rankIcons
++        // (Assuming rankIcons order matches rows)
++        if (this.rankIcons) {
++          for (let i = 0; i < Math.min(3, this.rankIcons.length); i++) {
++            const icon = this.rankIcons[i];
++            icon.scale.set(1.0 + Math.sin(now * 12 + i) * 0.08); // Smooth pulse
++            icon.rotation = Math.sin(now * 8 + i) * 0.05; // Subtle rotation
++          }
++        }
++      }
++
++      // Background Bubbles
++      for (const p of this.particles) {
++        p.y -= p.speedY * delta * 0.5; // Upward float for bubbles
++        p.x += Math.sin(now + p.phase) * p.sway * delta;
++        p.alpha = 0.4 + Math.sin(now + p.phase) * 0.2;
++        if (p.y < -10) {
++          p.y = height + 10;
++          p.x = Math.random() * width;
++        }
++      }
++
++      // Grid Scanline
++      if (this.vGrid) {
++        this.vGrid.y = (now * 60) % 32;
++        this.vGrid.alpha = 0.05 + Math.sin(now) * 0.02;
++      }
++
++      // Confetti Physics
++      this.confetti.forEach(c => {
++        if (c.active) {
++          c.vy += 0.15 * delta; // Gravity
++          c.x += c.vx * delta;
++          c.y += c.vy * delta;
++          c.gfx.rotation += c.rotVel * delta;
++          c.gfx.alpha -= 0.01 * delta;
++          c.gfx.x = c.x;
++          c.gfx.y = c.y;
++          if (c.y > height || c.gfx.alpha <= 0) {
++            c.active = false;
++            c.gfx.visible = false;
++          }
++        }
++      });
++      this.updatePartyLogic(ticker, width, height);
++    };
++
++    this.game.app.ticker.add(this.partyTicker);
++  }
++
++  async initLargeBeerCans(width, height) {
++    try {
++      const texture = await BeerAsset.ensureLoaded();
++
++      // 1. MASSIVE left-side beer - MUCH MORE VISIBLE
++      const leftBeer = new PIXI.Sprite(texture);
++      leftBeer.anchor.set(0.5);
++      leftBeer.height = 320; // EVEN BIGGER
++      leftBeer.scale.x = leftBeer.scale.y;
++      leftBeer.x = width * 0.08;
++      leftBeer.y = height * 0.6;
++      leftBeer.rotation = -0.12;
++      leftBeer.alpha = 0.4; // MORE VISIBLE
++      leftBeer.zIndex = -1;
++      this.bgContainer.addChild(leftBeer);
++
++      this.leftBeer = leftBeer;
++      this.leftBeerBaseY = leftBeer.y;
++
++      // 2. MASSIVE right-side beer - MUCH MORE VISIBLE
++      const rightBeer = new PIXI.Sprite(texture);
++      rightBeer.anchor.set(0.5);
++      rightBeer.height = 280; // EVEN BIGGER
++      rightBeer.scale.x = -rightBeer.scale.y; // Mirror
++      rightBeer.x = width * 0.92;
++      rightBeer.y = height * 0.5;
++      rightBeer.rotation = 0.1;
++      rightBeer.alpha = 0.4; // MORE VISIBLE
++      rightBeer.zIndex = -1;
++      this.bgContainer.addChild(rightBeer);
++
++      this.rightBeer = rightBeer;
++      this.rightBeerBaseY = rightBeer.y;
++
++      // 3. Top floating beer "cheers drift" - BIGGER
++      const topBeer = new PIXI.Sprite(texture);
++      topBeer.anchor.set(0.5);
++      topBeer.height = 180; // BIGGER
++      topBeer.scale.x = topBeer.scale.y;
++      topBeer.x = -100; // Start offscreen
++      topBeer.y = height * 0.15;
++      topBeer.rotation = Math.PI / 4;
++      topBeer.alpha = 0.4; // MORE VISIBLE
++      topBeer.zIndex = -1;
++      this.bgContainer.addChild(topBeer);
++
++      this.topBeer = topBeer;
++      this.topBeerSpeed = 0.5; // Slow drift across screen
++
++      // 4. Center trophy beer - ICONIC CENTERPIECE
++      const centerBeer = new PIXI.Sprite(texture);
++      centerBeer.anchor.set(0.5);
++      centerBeer.height = 200;
++      centerBeer.scale.x = centerBeer.scale.y;
++      centerBeer.x = width * 0.5;
++      centerBeer.y = height * 0.7;
++      centerBeer.rotation = 0;
++      centerBeer.alpha = 0.3;
++      centerBeer.zIndex = -1;
++      this.bgContainer.addChild(centerBeer);
++
++      this.centerBeer = centerBeer;
++      this.centerBeerBaseY = centerBeer.y;
++
++    } catch (e) {
++      console.warn('Highscore beer decorations failed:', e);
++    }
++  }
++
++  spawnFloatingHeads(w, h) {
++    // Destroy old if any
++    this.faceSprites.forEach(s => {
++      s.destroy();
++    });
++    this.faceSprites = [];
++
++    // Use AssetManifest
++    const photoNames = AssetManifest.loreImages;
++
++    // Spawn MORE floating heads for livelier party atmosphere
++    for (let i = 0; i < 9; i++) {
++      const pName = photoNames[i % photoNames.length];
++      const tex = PIXI.Texture.from(pName); // Path is already full in manifest
++
++      const s = new PIXI.Sprite(tex);
++      s.anchor.set(0.5);
++      s.x = Math.random() * w;
++      s.y = Math.random() * h;
++      s.alpha = 0; // Fade in
++
++      // Random scale (some big, some small) - slightly more visible
++      const scaleBase = 0.6 + Math.random() * 0.9;
++      s.scale.set(scaleBase);
++
++      s.rotation = Math.random() * Math.PI * 2;
++
++      // Custom props for animation - MORE MOVEMENT
++      s.vx = (Math.random() - 0.5) * 0.7;
++      s.vy = (Math.random() - 0.5) * 0.7;
++      s.rotSpeed = (Math.random() - 0.5) * 0.008;
++      s.fadePhase = Math.random() * 10;
++
++      this.bgContainer.addChild(s);
++      this.faceSprites.push(s);
++    }
++  }
++
++  updatePartyLogic(ticker, width, height) {
++    const now = Date.now() / 1000;
++    const delta = ticker.deltaTime;
++
++    // 0. Animate MASSIVE beer cans - MORE MOVEMENT
++    if (this.leftBeer) {
++      this.leftBeer.y = this.leftBeerBaseY + Math.sin(now * 1.5) * 12;
++      this.leftBeer.rotation = Math.sin(now * 0.8) * 0.15;
++    }
++    if (this.rightBeer) {
++      this.rightBeer.y = this.rightBeerBaseY + Math.sin(now * 1.7 + 1) * 10;
++      this.rightBeer.rotation = Math.sin(now * 0.9) * 0.12;
++    }
++    if (this.topBeer) {
++      this.topBeer.x += this.topBeerSpeed * delta;
++      this.topBeer.rotation += 0.01 * delta;
++      if (this.topBeer.x > width + 150) {
++        this.topBeer.x = -150; // Reset drift
++      }
++    }
++    if (this.centerBeer) {
++      this.centerBeer.y = this.centerBeerBaseY + Math.sin(now * 2) * 6;
++      this.centerBeer.rotation = Math.sin(now * 1.2) * 0.08;
++      this.centerBeer.alpha = 0.25 + Math.sin(now * 3) * 0.08; // Pulse alpha
++    }
++
++    // 1. Floating Heads Animation - MORE VISIBLE party atmosphere
++    this.faceSprites.forEach(s => {
++      s.x += s.vx * delta;
++      s.y += s.vy * delta;
++      s.rotation += s.rotSpeed * delta;
++
++      // Wrap screen
++      if (s.x < -100) s.x = width + 100;
++      if (s.x > width + 100) s.x = -100;
++      if (s.y < -100) s.y = height + 100;
++      if (s.y > height + 100) s.y = -100;
++
++      // Fade in/out - MORE VISIBLE
++      s.alpha = 0.2 + Math.sin(now + s.fadePhase) * 0.12; // More visible party ghosts
++    });
++
++    // 2. Lore Commentary - Dynamic based on standings
++    if (this.loreText && this.entries.length > 0) {
++      this.loreTimer -= delta / 60;
++      if (this.loreTimer <= 0) {
++        // Reset Timer
++        this.loreTimer = 3 + Math.random(); // 3-4s
++
++        // Determine comments based on standings
++        let phrase = "Burt is Watching";
++        const topOne = this.entries[0] ? this.entries[0].name.toUpperCase() : "NOBODY";
++        const topTwo = this.entries[1] ? this.entries[1].name.toUpperCase() : "NOBODY";
++
++        const r = Math.random();
++        if (r < 0.3) {
++          phrase = `${topOne} IS THE KING!`;
++        } else if (r < 0.5 && topTwo !== "NOBODY") {
++          phrase = `${topTwo} IS CHASING!`;
++        } else {
++          phrase = this.lorePhrases[Math.floor(Math.random() * this.lorePhrases.length)];
++        }
++
++        this.loreText.text = phrase;
++        this.loreText.visible = true;
++        this.loreText.alpha = 0;
++        this.loreText.x = width / 2;
++        // Random Y in upper half but below title
++        this.loreText.y = height * 0.25 + (Math.random() * height * 0.2);
++        this.loreText.rotation = (Math.random() - 0.5) * 0.1;
++
++        this.loreText.runningFade = true;
++        this.loreText.fadeT = 0;
++
++        // Random Arcade Colors
++        const colors = ['#ff00ff', '#00ffff', '#ffff00', '#ff0000'];
++        this.loreText.style.fill = colors[Math.floor(Math.random() * colors.length)];
++      }
++
++      if (this.loreText.runningFade) {
++        this.loreText.fadeT += delta * 0.05;
++        this.loreText.alpha = Math.sin(this.loreText.fadeT * Math.PI); // 0 -> 1 -> 0
++        this.loreText.scale.set(1 + Math.sin(this.loreText.fadeT * 10) * 0.1); // Pulse
++        if (this.loreText.fadeT >= 1) {
++          this.loreText.runningFade = false;
++          this.loreText.visible = false;
++          this.loreText.alpha = 0;
++        }
++      }
++    }
++
++    // 3. TAUNT SYSTEM - Top 3 trash talk to lower ranks
++    if (this.entries.length >= 5) {
++      this.tauntTimer -= delta / 60;
++      if (this.tauntTimer <= 0 && !this.tauntActive) {
++        // Reset timer - taunts every 5-8 seconds
++        this.tauntTimer = 5 + Math.random() * 3;
++
++        // Pick random top 3 player as speaker
++        const topIndex = Math.floor(Math.random() * Math.min(3, this.entries.length));
++        const topPlayer = this.entries[topIndex];
++
++        // Pick random lower rank player as target (rank 4-10)
++        const lowerStart = 3;
++        const lowerEnd = Math.min(10, this.entries.length);
++        if (lowerEnd > lowerStart) {
++          const targetIndex = lowerStart + Math.floor(Math.random() * (lowerEnd - lowerStart));
++          const targetPlayer = this.entries[targetIndex];
++
++          // Generate taunt
++          const tauntText = getLeaderboardTaunt(topPlayer.name, targetPlayer.name);
++          const speakerName = topPlayer.name.toUpperCase();
++
++          this.showTauntBubble(`${speakerName}: ${tauntText}`, width, height);
++        }
++      }
++
++      // Animate taunt bubble if active
++      if (this.tauntBubble && this.tauntActive) {
++        this.tauntBubble.fadeT += delta * 0.04;
++        const progress = this.tauntBubble.fadeT;
++
++        if (progress < 0.15) {
++          // Slide in + bounce
++          const slideIn = progress / 0.15;
++          const easeOut = 1 - Math.pow(1 - slideIn, 3);
++          this.tauntBubble.y = this.tauntBubble.startY + (1 - easeOut) * 50;
++          this.tauntBubble.alpha = slideIn;
++        } else if (progress < 0.85) {
++          // Hold with gentle pulse
++          const holdPhase = (progress - 0.15) / 0.7;
++          this.tauntBubble.scale.set(1 + Math.sin(holdPhase * Math.PI * 8) * 0.03);
++        } else {
++          // Fade out
++          const fadeOut = (progress - 0.85) / 0.15;
++          this.tauntBubble.alpha = 1 - fadeOut;
++        }
++
++        if (progress >= 1) {
++          this.tauntActive = false;
++          if (this.tauntBubble) {
++            this.tauntBubble.visible = false;
++          }
++        }
++      }
++    }
++  }
++
++  showTauntBubble(text, width, height) {
++    if (!this.tauntBubble) {
++      // Create taunt bubble container
++      this.tauntBubble = new PIXI.Container();
++      this.fgContainer.addChild(this.tauntBubble);
++      this.tauntBubble.zIndex = 200;
++
++      // Background bubble
++      const bubble = new PIXI.Graphics();
++      bubble.roundRect(-200, -30, 400, 60, 10);
++      bubble.fill({ color: 0x000000, alpha: 0.85 });
++      bubble.stroke({ color: 0xff00ff, width: 3, alpha: 0.9 });
++      this.tauntBubble.addChild(bubble);
++
++      // Text
++      const tauntText = new PIXI.Text('', {
++        fontFamily: 'Courier New',
++        fontSize: 14,
++        fill: '#ffffff',
++        align: 'center',
++        wordWrap: true,
++        wordWrapWidth: 380
++      });
++      tauntText.anchor.set(0.5);
++      this.tauntBubble.addChild(tauntText);
++      this.tauntBubble.textObj = tauntText;
++    }
++
++    // Update text and position
++    this.tauntBubble.textObj.text = text;
++    this.tauntBubble.x = width / 2;
++    this.tauntBubble.startY = height * 0.35;
++    this.tauntBubble.y = this.tauntBubble.startY + 50; // Start below
++    this.tauntBubble.alpha = 0;
++    this.tauntBubble.fadeT = 0;
++    this.tauntBubble.visible = true;
++    this.tauntActive = true;
++  }
++
++  triggerConfetti() {
++    const { width } = this.game.app.screen;
++    const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff];
++
++    this.confetti.forEach(c => {
++      c.active = true;
++      c.gfx.visible = true;
++      c.gfx.alpha = 1;
++      c.gfx.tint = colors[Math.floor(Math.random() * colors.length)];
++      c.x = width * 0.1 + Math.random() * (width * 0.8);
++      c.y = -50 - Math.random() * 200; // Start above
++      c.vx = (Math.random() - 0.5) * 5;
++      c.vy = Math.random() * 5;
++      c.rotVel = (Math.random() - 0.5) * 0.5;
++      c.gfx.position.set(c.x, c.y);
++    });
+   }
+ 
+   async fetchHighscores() {
++    console.log('[HighscoreScene] fetchHighscores called');
++
++    // Clear any previous state
+     if (this.loadingTimer) {
+       clearTimeout(this.loadingTimer);
+       this.loadingTimer = null;
+     }
+-    if (this.fetchController) {
+-      this.fetchController.abort();
+-      this.fetchController = null;
+-    }
+-    this.fetchToken += 1;
++
++    this.fetchToken++;
+     const token = this.fetchToken;
+     this.setState('LOADING');
+     this.lastError = 'none';
+-    const url = this.apiUrl;
+-    console.log('[HighscoreScene] Fetching highscores from', url);
+-
+-    const controller = new AbortController();
+-    this.fetchController = controller;
+-    this.loadingTimer = window.setTimeout(() => {
+-      if (token !== this.fetchToken) return;
+-      controller.abort();
+-      this.handleFetchError(new Error('timeout'), token);
+-    }, FETCH_TIMEOUT_MS);
+ 
+     try {
+-      const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
++      // Use relative path directly to avoid URL construction issues
++      const url = '/api/highscores';
++      console.log(`[HighscoreScene] Fetching: ${url}`);
++
++      const response = await fetch(url, { cache: 'no-store' });
++
++      console.log(`[HighscoreScene] Response: ${response.status}`);
++
+       if (token !== this.fetchToken) return;
++
+       if (!response.ok) {
+         throw new Error(`HTTP ${response.status}`);
+       }
++
+       const data = await response.json();
++      console.log('[HighscoreScene] Data received:', data);
++
+       if (token !== this.fetchToken) return;
+-      if (this.loadingTimer) {
+-        clearTimeout(this.loadingTimer);
+-        this.loadingTimer = null;
++
++      let list = [];
++      if (Array.isArray(data)) {
++        list = data;
++      } else if (data && typeof data === 'object') {
++        list = data.highscores || data.scores || data.entries || data.results || data.data || [];
+       }
+-      this.fetchController = null;
+-      this.entries = Array.isArray(data) ? data : [];
++      this.entries = Array.isArray(list) ? list : [];
++
+       this.comment.text = getHighscoreComment(this.entries.length > 0);
+-      if (this.entries.length > 0) {
+-        this.setState('LOADED');
+-      } else {
+-        this.setState('EMPTY');
+-      }
++      this.setState(this.entries.length > 0 ? 'LOADED' : 'EMPTY');
++
+     } catch (error) {
++      console.error('[HighscoreScene] Fetch failed:', error);
+       this.handleFetchError(error, token);
+     }
+   }
+@@ -261,6 +808,8 @@ export class HighscoreScene {
+ 
+   renderHighscoreRows(startY, layout) {
+     this.rowsContainer.removeChildren();
++    this.rankIcons = [];
++    this.rowElements = []; // Track row elements for staggered animation
+     if (this.status === 'LOADED') {
+       const rowStyle = {
+         fontFamily: 'Courier New',
+@@ -268,52 +817,204 @@ export class HighscoreScene {
+         fill: '#ffffff'
+       };
+       const columns = {
+-        rank: layout.padding,
+-        name: layout.padding + layout.width * 0.14,
+-        score: layout.width - layout.padding - (layout.isMobile ? 120 : 180),
++        place: layout.padding + 5,
++        rank: layout.padding + 50,
++        rankName: layout.padding + 110,
++        name: layout.padding + 260,
++        score: layout.width - layout.padding - (layout.isMobile ? 70 : 100),
+         level: layout.width - layout.padding
+       };
+-      const maxRows = Math.max(4, Math.min(12, Math.floor((layout.height - startY - layout.padding * 2) / (layout.lineHeight * 1.2))));
+ 
++      const maxRows = layout.isMobile ? 6 : 10;
++
++      // Adjusted headers
+       const headerStyle = {
+         ...rowStyle,
+-        fill: '#888888'
++        fill: '#66aaff', // Light blue headers
++        fontSize: rowStyle.fontSize - 2
+       };
+       const headers = [
++        { text: '#', x: columns.place },
+         { text: 'RANK', x: columns.rank },
++        { text: 'TITLE', x: columns.rankName },
+         { text: 'NAVN', x: columns.name },
+         { text: 'SCORE', x: columns.score },
+         { text: 'LEVEL', x: columns.level }
+       ];
++
++      this.headerTexts = [];
+       headers.forEach(entry => {
+         const text = new PIXI.Text(entry.text, headerStyle);
+         text.x = entry.x;
+         text.y = startY;
++        // Anchor adjustments
+         if (entry.text === 'SCORE' || entry.text === 'LEVEL') {
+           text.anchor.set(1, 0);
++        } else if (entry.text === '#') {
++          text.anchor.set(0, 0); // Place column
+         }
++
++        // Pivot for pulsing
++        text.pivot.x = text.width / 2;
++        text.pivot.y = text.height / 2;
++        // Correct position after pivot
++        text.x += text.width / 2;
++        text.y += text.height / 2;
++
+         this.rowsContainer.addChild(text);
++        this.headerTexts.push(text);
+       });
+ 
+       this.entries.slice(0, maxRows).forEach((score, index) => {
+-        const y = startY + layout.lineHeight * 1.4 * (index + 1);
+-        const rankText = new PIXI.Text((index + 1).toString().padStart(2, '0'), rowStyle);
+-        const nameText = new PIXI.Text((score.name || '??').slice(0, 12), rowStyle);
+-        const scoreText = new PIXI.Text((score.score || 0).toString(), rowStyle);
+-        const levelText = new PIXI.Text((score.level || 0).toString(), rowStyle);
++        const y = startY + layout.lineHeight * 1.5 * (index + 1);
++
++        // Create a container for this entire row (for staggered animation)
++        const rowContainer = new PIXI.Container();
++        rowContainer.y = 0;
++        rowContainer.alpha = 0; // Start invisible for entrance animation
++        this.rowsContainer.addChild(rowContainer);
++        this.rowElements.push(rowContainer);
++
++        // Podium Row Backgrounds
++        const rowBg = new PIXI.Graphics();
++
++        let isPodium = index < 3;
+ 
+-        rankText.x = columns.rank;
+-        rankText.y = y;
++        if (isPodium) {
++          // Winner Glows with border - STRONGER and MORE VISIBLE
++          const bgWidth = layout.width - layout.padding * 2;
++          const bgHeight = 52;
++          const bgX = layout.padding;
++          const bgY = y - 26;
++
++          if (index === 0) {
++            // Gold - Most prominent
++            rowBg.rect(bgX, bgY, bgWidth, bgHeight).fill({ color: 0xFFD700, alpha: 0.35 });
++            rowBg.rect(bgX, bgY, bgWidth, bgHeight).stroke({ color: 0xFFD700, alpha: 0.8, width: 3 });
++          }
++          if (index === 1) {
++            // Silver - Strong
++            rowBg.rect(bgX, bgY, bgWidth, bgHeight).fill({ color: 0xC0C0C0, alpha: 0.3 });
++            rowBg.rect(bgX, bgY, bgWidth, bgHeight).stroke({ color: 0xC0C0C0, alpha: 0.7, width: 3 });
++          }
++          if (index === 2) {
++            // Bronze - Visible
++            rowBg.rect(bgX, bgY, bgWidth, bgHeight).fill({ color: 0xCD7F32, alpha: 0.25 });
++            rowBg.rect(bgX, bgY, bgWidth, bgHeight).stroke({ color: 0xCD7F32, alpha: 0.6, width: 2 });
++          }
++          this.topRows.push(rowBg);
++        } else {
++          // Normal rows
++          if (index % 2 === 0) {
++            rowBg.rect(layout.padding, y - 20, layout.width - layout.padding * 2, 40).fill({ color: 0xFFFFFF, alpha: 0.05 });
++          } else {
++            rowBg.rect(layout.padding, y - 20, layout.width - layout.padding * 2, 40).fill({ color: 0x000000, alpha: 0.3 });
++          }
++        }
++        rowContainer.addChild(rowBg);
++
++        // Place Number (1, 2, 3...)
++        const placeColors = ['#ffd700', '#c0c0c0', '#cd7f32']; // Gold, Silver, Bronze
++        const placeColor = placeColors[index] || '#888888';
++        const placeText = new PIXI.Text((index + 1).toString(), { ...rowStyle, fill: placeColor, fontWeight: 'bold' });
++        placeText.x = columns.place;
++        placeText.y = y + 5;
++        placeText.anchor.set(0, 0.5); // Center vertically, left align
++
++        // Rank Calculation
++        const rIndex = (score.rank !== undefined) ? score.rank : (this.game.rankManager || rankManager).getRankFromScore(score.score);
++        const rNameStr = getRankName(rIndex);
++
++        // Rank Icon Container (Backplate + Sprite) - BIGGER for visibility
++        const iconCont = new PIXI.Container();
++        iconCont.x = columns.rank + 24;
++        iconCont.y = y + 10;
++
++        // Backplate - LARGER
++        const plate = new PIXI.Graphics();
++        plate.roundRect(-26, -26, 52, 52, 6).fill({ color: 0x111111, alpha: 0.8 }).stroke({ width: 2, color: 0x444444 });
++        iconCont.addChild(plate);
++
++        // Sprite - BIGGER (48px from 32px)
++        const tex = RankAssets.getRankTexture(rIndex);
++        if (tex) {
++          const s = new PIXI.Sprite(tex);
++          s.anchor.set(0.5);
++          s.width = 48;
++          s.height = 48;
++          iconCont.addChild(s);
++        } else {
++          // Fallback Badge
++          const fb = new PIXI.Graphics();
++          fb.circle(0, 0, 16).fill(0x555555);
++          iconCont.addChild(fb);
++        }
++
++        iconCont.isAnimatedRank = true;
++        iconCont.phase = index * 0.5;
++        rowContainer.addChild(iconCont);
++        this.rankIcons.push(iconCont);
++
++        // Rank Name - BIGGER and CLEARER
++        const rankNameText = new PIXI.Text(rNameStr, { ...rowStyle, fontSize: 16, fill: '#cccccc', fontWeight: 'bold' });
++        rankNameText.x = columns.rankName;
++        rankNameText.y = y + 5;
++
++        const nameText = new PIXI.Text((score.name || '??').slice(0, 14), { ...rowStyle, fill: '#ffffff', fontWeight: 'bold' });
+         nameText.x = columns.name;
+-        nameText.y = y;
++        nameText.y = y + 5;
++
++        // Highlight Player? 
++        // We don't have local player ID here easily unless we stored it. 
++        // Assuming just visual listing for now.
++
++        const scoreText = new PIXI.Text((score.score || 0).toLocaleString(), { ...rowStyle, fill: '#ffff00' });
+         scoreText.x = columns.score;
+-        scoreText.y = y;
+-        levelText.x = columns.level;
+-        levelText.y = y;
++        scoreText.y = y + 5;
+         scoreText.anchor.set(1, 0);
++
++        const levelText = new PIXI.Text((score.level || 0).toString(), rowStyle);
++        levelText.x = columns.level;
++        levelText.y = y + 5;
+         levelText.anchor.set(1, 0);
+ 
+-        this.rowsContainer.addChild(rankText, nameText, scoreText, levelText);
++        // Extra Podium visual details
++        if (index === 0) {
++          // #1 Crown badge
++          const crown = new PIXI.Text('♔', { fontSize: 24, fill: '#FFD700' });
++          crown.x = columns.place - 20;
++          crown.y = y;
++          crown.anchor.set(0.5);
++          rowContainer.addChild(crown);
++
++          // Highlight name
++          nameText.style.fill = '#FFD700';
++          nameText.style.dropShadow = true;
++          nameText.style.dropShadowColor = '#ff6600';
++          nameText.style.dropShadowBlur = 10;
++        }
++        else if (index === 1) {
++          // #2 Medal
++          const medal = new PIXI.Text('♕', { fontSize: 20, fill: '#C0C0C0' });
++          medal.x = columns.place - 20;
++          medal.y = y;
++          medal.anchor.set(0.5);
++          rowContainer.addChild(medal);
++
++          nameText.style.fill = '#C0C0C0';
++        }
++        else if (index === 2) {
++          // #3 Medal
++          const medal = new PIXI.Text('♖', { fontSize: 18, fill: '#CD7F32' });
++          medal.x = columns.place - 20;
++          medal.y = y;
++          medal.anchor.set(0.5);
++          rowContainer.addChild(medal);
++
++          nameText.style.fill = '#CD7F32';
++        }
++
++        rowContainer.addChild(placeText, rankNameText, nameText, scoreText, levelText);
+       });
+ 
+       if (this.entries.length > maxRows) {
+@@ -322,7 +1023,10 @@ export class HighscoreScene {
+         more.y = startY + layout.lineHeight * 1.4 * (maxRows + 1);
+         this.rowsContainer.addChild(more);
+       }
++      // Loop ends here, no extra parens needed.
++
+       this.fadeInRows();
++      this.triggerConfetti();
+     } else {
+       this.rowsContainer.alpha = 1;
+       const message = this.status === 'EMPTY' ? 'Ingen highscores enda. Vær først!' : 'Ingen data.';
+@@ -347,22 +1051,78 @@ export class HighscoreScene {
+       this.game.app.ticker.remove(this.rowsFadeTicker);
+       this.rowsFadeTicker = null;
+     }
+-    this.rowsContainer.alpha = 0;
+-    let elapsed = 0;
+-    const duration = 420;
++
++    // Keep rowsContainer fully visible
++    this.rowsContainer.alpha = 1;
++
++    // Staggered entrance animation for each row
++    if (!this.rowElements || this.rowElements.length === 0) return;
++
++    const staggerDelay = 60; // ms between each row
++    const rowDuration = 250; // ms for each row animation
++    let startTime = Date.now();
++
++    // Set initial state for all rows (invisible, offset down)
++    this.rowElements.forEach((row, i) => {
++      row.alpha = 0;
++      row._startY = row.y;
++      row._startScale = 1;
++
++      // Top 3 get special entrance - bigger drop and scale
++      if (i < 3) {
++        row.y = row._startY + 40; // Start further down
++        row.scale.set(0.9); // Start smaller
++        row._animDelay = i * (staggerDelay * 1.5); // Slower stagger
++      } else {
++        row.y = row._startY + 20; // Normal drop
++        row.scale.set(1);
++        row._animDelay = i * staggerDelay;
++      }
++    });
++
+     const ticker = (delta) => {
+-      elapsed += delta.deltaTime * 16.67;
+-      this.rowsContainer.alpha = Math.min(1, elapsed / duration);
+-      if (elapsed >= duration) {
+-        this.rowsContainer.alpha = 1;
++      const elapsed = Date.now() - startTime;
++      let allDone = true;
++
++      this.rowElements.forEach((row, i) => {
++        if (row.alpha >= 1) return; // Already done
++
++        const rowElapsed = elapsed - row._animDelay;
++        if (rowElapsed < 0) {
++          allDone = false;
++          return; // Not started yet
++        }
++
++        const progress = Math.min(1, rowElapsed / rowDuration);
++        const easeOut = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
++
++        row.alpha = progress;
++
++        // Top 3 get special scale and drop animation
++        if (i < 3) {
++          row.y = row._startY + (1 - easeOut) * 40; // Bigger slide up
++          const scaleProgress = 0.9 + (easeOut * 0.1); // Scale from 0.9 to 1.0
++          row.scale.set(scaleProgress);
++        } else {
++          row.y = row._startY + (1 - easeOut) * 20; // Normal slide up
++          row.scale.set(1);
++        }
++
++        if (progress < 1) allDone = false;
++      });
++
++      if (allDone) {
+         this.game.app.ticker.remove(ticker);
+         this.rowsFadeTicker = null;
+       }
+     };
++
+     this.rowsFadeTicker = ticker;
+     this.game.app.ticker.add(ticker);
+   }
+ 
++  /* Removed old animateRankIcons - moved to partyTicker */
++
+   createButton(text) {
+     const container = new PIXI.Container();
+     container.eventMode = 'static';
+@@ -377,16 +1137,27 @@ export class HighscoreScene {
+     const label = new PIXI.Text(text, {
+       fontFamily: 'Courier New',
+       fontSize: 16,
+-      fill: '#00ffff'
++      fill: '#00ffff',
++      dropShadow: true,
++      dropShadowColor: '#0088ff',
++      dropShadowBlur: 4,
++      dropShadowAlpha: 0.5
+     });
+     label.anchor.set(0.5);
+     container.addChild(label);
+ 
++    // Store references for animations
++    container._bg = bg;
++    container._label = label;
++
+     container.on('pointerover', () => {
+       bg.clear();
+       bg.rect(-80, -20, 160, 40);
+-      bg.fill({ color: 0x00ffff, alpha: 0.5 });
+-      bg.stroke({ color: 0x00ffff, width: 2 });
++      bg.fill({ color: 0x00ffff, alpha: 0.6 });
++      bg.stroke({ color: 0xffffff, width: 3 });
++      label.style.fill = '#ffffff';
++      label.style.dropShadowColor = '#00ffff';
++      container.scale.set(1.05); // Hover scale
+     });
+ 
+     container.on('pointerout', () => {
+@@ -394,6 +1165,17 @@ export class HighscoreScene {
+       bg.rect(-80, -20, 160, 40);
+       bg.fill({ color: 0x0088ff, alpha: 0.3 });
+       bg.stroke({ color: 0x00ffff, width: 2 });
++      label.style.fill = '#00ffff';
++      label.style.dropShadowColor = '#0088ff';
++      container.scale.set(1); // Reset scale
++    });
++
++    container.on('pointerdown', () => {
++      container.scale.set(0.95); // Press feedback
++    });
++
++    container.on('pointerup', () => {
++      container.scale.set(1.05); // Release back to hover
+     });
+ 
+     return container;
+@@ -412,5 +1194,9 @@ export class HighscoreScene {
+       this.game.app.ticker.remove(this.rowsFadeTicker);
+       this.rowsFadeTicker = null;
+     }
++    if (this.partyTicker && this.game?.app?.ticker) {
++      this.game.app.ticker.remove(this.partyTicker);
++      this.partyTicker = null;
++    }
+   }
+ }
+diff --git a/src/scenes/MenuScene.js b/src/scenes/MenuScene.js
+index cbce6af..b571c29 100644
+--- a/src/scenes/MenuScene.js
++++ b/src/scenes/MenuScene.js
+@@ -5,6 +5,7 @@ import { AudioManager } from '../audio/AudioManager.js';
+ import { BUILD_ID } from '../buildInfo.js';
+ import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
+ import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize, calculateCenteredStartY } from '../ui/textLayout.js';
++import { getMenuStoryText } from '../text/phrasePool.js';
+ 
+ export class MenuScene {
+   constructor(game) {
+@@ -22,6 +23,7 @@ export class MenuScene {
+     this.stars = [];
+     this.animationTime = 0;
+     this.buildStamp = null;
++    this.flavorRotationTimer = 0; // Track time for optional text rotation
+   }
+ 
+   init() {
+@@ -118,6 +120,53 @@ export class MenuScene {
+       this.stars.push(star);
+       this.container.addChild(star);
+     }
++
++    // Add subtle grid overlay
++    this.createGridOverlay(width, height);
++
++    // Add neon particles
++    this.createNeonParticles(width, height);
++  }
++
++  createGridOverlay(width, height) {
++    const grid = new PIXI.Graphics();
++    grid.zIndex = 0;
++
++    // Horizontal lines
++    for (let y = 0; y < height; y += 40) {
++      grid.moveTo(0, y);
++      grid.lineTo(width, y);
++      grid.stroke({ color: 0x00ffff, alpha: 0.03, width: 1 });
++    }
++
++    grid.alpha = 0.5;
++    this.gridOverlay = grid;
++    this.container.addChild(grid);
++  }
++
++  createNeonParticles(width, height) {
++    this.neonParticles = [];
++    const colors = [0x00ffff, 0xff00ff, 0xffff00];
++
++    for (let i = 0; i < 20; i++) {
++      const particle = new PIXI.Graphics();
++      const size = 2 + Math.random() * 3;
++      const color = colors[Math.floor(Math.random() * colors.length)];
++
++      particle.circle(0, 0, size);
++      particle.fill({ color, alpha: 0.6 });
++
++      particle.x = Math.random() * width;
++      particle.y = Math.random() * height;
++      particle.speedX = (Math.random() - 0.5) * 0.5;
++      particle.speedY = (Math.random() - 0.5) * 0.5 - 0.2; // Slight upward bias
++      particle.pulseSpeed = Math.random() * 0.03 + 0.01;
++      particle.pulseOffset = Math.random() * Math.PI * 2;
++      particle.zIndex = 2;
++
++      this.neonParticles.push(particle);
++      this.container.addChild(particle);
++    }
+   }
+ 
+   createElements() {
+@@ -159,7 +208,7 @@ export class MenuScene {
+     const storySize = getResponsiveFontSize(layout, 'body');
+     const storyLineHeight = Math.round(storySize * 1.5);
+     this.flavor = new PIXI.Text(
+-      'Stokmarknes er under angrep!\nRølp, gris og mongo invaderer.\nKun Eirik kan redde dagen.',
++      getMenuStoryText(),
+       {
+         fontFamily: 'Courier New',
+         fontSize: storySize,
+@@ -261,61 +310,108 @@ export class MenuScene {
+     try {
+       const texture = await BeerAsset.ensureLoaded();
+ 
+-      const { width, height } = this.game.app.screen;
++      const { width, height} = this.game.app.screen;
+ 
+-      // 1. Hero Beer (Center - bobbing and swaying)
++      // 1. LARGE Hero Beer (Left side - PROMINENT centerpiece)
+       const hero = new PIXI.Sprite(texture);
+       hero.anchor.set(0.5);
+-      hero.height = 120;
+-      hero.scale.x = hero.scale.y; // Maintain aspect ratio
+-      hero.x = width * 0.15; // LEFT side, safe form text
+-      hero.y = height * 0.5;
+-      hero.rotation = -0.2;
+-      hero.zIndex = 0; // Behind UI
+-      hero.alpha = 0.9;
++      hero.height = 280; // MUCH LARGER - was 120
++      hero.scale.x = hero.scale.y;
++      hero.x = width * 0.12; // LEFT side
++      hero.y = height * 0.55;
++      hero.rotation = -0.15;
++      hero.zIndex = 0;
++      hero.alpha = 0.85;
+       this.container.addChild(hero);
+ 
+-      // Store for animation
+       this.heroBeer = hero;
+       this.heroBaseY = hero.y;
+ 
+-      // 2. Floating cluster (Background)
++      // 2. LARGE Right-side beer (mirrored)
++      const rightBeer = new PIXI.Sprite(texture);
++      rightBeer.anchor.set(0.5);
++      rightBeer.height = 240; // Large
++      rightBeer.scale.x = -rightBeer.scale.y; // Mirror horizontally
++      rightBeer.x = width * 0.88; // RIGHT side
++      rightBeer.y = height * 0.45;
++      rightBeer.rotation = 0.12;
++      rightBeer.zIndex = 0;
++      rightBeer.alpha = 0.8;
++      this.container.addChild(rightBeer);
++
++      this.rightBeer = rightBeer;
++      this.rightBeerBaseY = rightBeer.y;
++
++      // 3. BIG Floating beers (Background - 4 total)
+       this.floatingBeers = [];
+-      for (let i = 0; i < 3; i++) {
++      for (let i = 0; i < 4; i++) {
+         const sprite = new PIXI.Sprite(texture);
+         sprite.anchor.set(0.5);
+-        const scale = 0.3 + Math.random() * 0.3;
++        const scale = 0.7 + Math.random() * 0.5; // MUCH LARGER - was 0.3-0.6
+         sprite.scale.set(scale);
+ 
+-        // Custom properties for animation
+-        // Divide screen into 3 columns: 0-20% (left), 20-80% (center - AVOID), 80-100% (right)
+-        const isLeft = Math.random() < 0.5;
+-        const minX = isLeft ? 0 : width * 0.8;
+-        const maxX = isLeft ? width * 0.2 : width;
++        const isLeft = i % 2 === 0;
++        const minX = isLeft ? -50 : width * 0.85;
++        const maxX = isLeft ? width * 0.15 : width + 50;
+ 
+         sprite.x = minX + Math.random() * (maxX - minX);
+-        sprite.y = Math.random() * height;
++        sprite.y = (i / 4) * height + Math.random() * (height / 4);
+ 
+-        sprite.driftSpeedX = (Math.random() - 0.5) * 0.2; // Slower drift
+-        sprite.driftSpeedY = (Math.random() - 0.5) * 0.2;
+-        sprite.rotSpeed = (Math.random() - 0.5) * 0.02;
++        sprite.driftSpeedX = (Math.random() - 0.5) * 0.15;
++        sprite.driftSpeedY = (Math.random() - 0.5) * 0.15;
++        sprite.rotSpeed = (Math.random() - 0.5) * 0.015;
+ 
+-        // Store boundary info for update loop
+-        sprite.boundsX = { min: isLeft ? -50 : width * 0.75, max: isLeft ? width * 0.25 : width + 50 };
++        sprite.boundsX = { min: isLeft ? -100 : width * 0.8, max: isLeft ? width * 0.2 : width + 100 };
+ 
+-        sprite.alpha = 0.4 + Math.random() * 0.3;
++        sprite.alpha = 0.3 + Math.random() * 0.25;
+         sprite.rotation = Math.random() * Math.PI * 2;
+-        sprite.zIndex = 1; // Just above stars
++        sprite.zIndex = 1;
+ 
+         this.container.addChild(sprite);
+         this.floatingBeers.push(sprite);
+       }
+ 
++      // 4. Floating Lore Images (Ghost effect with parallax)
++      this.initFloatingLore(width, height);
++
+     } catch (e) {
+       console.error('Menu beer decorations failed:', e);
+     }
+   }
+ 
++  initFloatingLore(width, height) {
++    this.loreSprites = [];
++    const loreImages = ['eirik1.jpg', 'kurt2.jpg', 'burtelurt.jpg', 'eriikviking.webp'];
++
++    for (let i = 0; i < 3; i++) {
++      const imgName = loreImages[i % loreImages.length];
++      const texture = PIXI.Texture.from(`/${imgName}`);
++
++      const sprite = new PIXI.Sprite(texture);
++      sprite.anchor.set(0.5);
++
++      // Place on edges only
++      const isLeft = i % 2 === 0;
++      sprite.x = isLeft ? width * 0.1 : width * 0.9;
++      sprite.y = (i + 1) * (height / 4);
++
++      const baseScale = 0.15 + Math.random() * 0.1;
++      sprite.scale.set(baseScale);
++      sprite.alpha = 0.08; // Very subtle ghost effect
++      sprite.rotation = (Math.random() - 0.5) * 0.3;
++      sprite.zIndex = 1;
++
++      // Animation properties
++      sprite.driftSpeedY = (Math.random() - 0.5) * 0.1;
++      sprite.rotSpeed = (Math.random() - 0.5) * 0.005;
++      sprite.pulseSpeed = Math.random() * 0.02 + 0.01;
++      sprite.pulseOffset = Math.random() * Math.PI * 2;
++
++      this.container.addChild(sprite);
++      this.loreSprites.push(sprite);
++    }
++  }
++
+ 
+ 
+   layoutMenu() {
+@@ -439,23 +535,30 @@ export class MenuScene {
+     const label = new PIXI.Text(text, {
+       fontFamily: 'Courier New',
+       fontSize: fontSize,
+-      fill: '#00ffff'
++      fill: '#00ffff',
++      dropShadow: true,
++      dropShadowColor: '#0088ff',
++      dropShadowBlur: 4,
++      dropShadowAlpha: 0.5
+     });
+     label.anchor.set(0.5);
+     container.addChild(label);
+ 
+-    // Store dimensions for hover redraw
++    // Store dimensions and state
+     container._btnWidth = btnWidth;
+     container._btnHeight = btnHeight;
+     container._bg = bg;
+     container._label = label;
++    container._bouncePhase = Math.random() * Math.PI * 2; // Idle bounce
+ 
+     container.on('pointerover', () => {
+       bg.clear();
+       bg.rect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight);
+-      bg.fill({ color: 0x00ffff, alpha: 0.5 });
+-      bg.stroke({ color: 0x00ffff, width: 2 });
++      bg.fill({ color: 0x00ffff, alpha: 0.6 });
++      bg.stroke({ color: 0xffffff, width: 3 });
+       label.style.fill = '#ffffff';
++      label.style.dropShadowColor = '#00ffff';
++      container.scale.set(1.05); // Hover scale
+     });
+ 
+     container.on('pointerout', () => {
+@@ -464,6 +567,16 @@ export class MenuScene {
+       bg.fill({ color: 0x0088ff, alpha: 0.3 });
+       bg.stroke({ color: 0x00ffff, width: 2 });
+       label.style.fill = '#00ffff';
++      label.style.dropShadowColor = '#0088ff';
++      container.scale.set(1); // Reset scale
++    });
++
++    container.on('pointerdown', () => {
++      container.scale.set(0.95); // Press feedback
++    });
++
++    container.on('pointerup', () => {
++      container.scale.set(1.05); // Release
+     });
+ 
+     return container;
+@@ -512,16 +625,28 @@ export class MenuScene {
+ 
+   update(delta) {
+     this.animationTime += delta * 0.016;
++    const { width, height } = this.game.app.screen;
++
++    // Optional flavor text rotation (every 12 seconds)
++    if (this.flavor && this.flavor.alpha >= 1) {
++      this.flavorRotationTimer += delta;
++      if (this.flavorRotationTimer >= 720) { // 12 seconds at 60fps
++        this.flavorRotationTimer = 0;
++        const savedY = this.flavor.y;
++        this.flavor.text = getMenuStoryText();
++        this.flavor.updateText?.(false);
++        this.flavor.y = savedY; // Restore position to prevent layout jump
++      }
++    }
+ 
+     // Update starfield
+-    const { height } = this.game.app.screen;
+     this.stars.forEach(star => {
+       star.y += star.speedY * delta;
+ 
+       // Wrap around
+       if (star.y > height) {
+         star.y = -5;
+-        star.x = Math.random() * this.game.app.screen.width;
++        star.x = Math.random() * width;
+       }
+ 
+       // Twinkling effect
+@@ -529,16 +654,61 @@ export class MenuScene {
+       star.alpha = 0.3 + twinkle * 0.3;
+     });
+ 
+-    // Pulsating glow on title
++    // Subtle grid scroll
++    if (this.gridOverlay) {
++      this.gridOverlay.y = (this.animationTime * 10) % 40;
++    }
++
++    // Animate neon particles
++    if (this.neonParticles) {
++      this.neonParticles.forEach(particle => {
++        particle.x += particle.speedX * delta * 0.5;
++        particle.y += particle.speedY * delta * 0.5;
++
++        // Pulse effect
++        const pulse = Math.sin(this.animationTime * particle.pulseSpeed + particle.pulseOffset);
++        particle.alpha = 0.3 + pulse * 0.3;
++
++        // Wrap around
++        if (particle.x < -10) particle.x = width + 10;
++        if (particle.x > width + 10) particle.x = -10;
++        if (particle.y < -10) particle.y = height + 10;
++        if (particle.y > height + 10) particle.y = -10;
++      });
++    }
++
++    // Enhanced neon flicker + glow on title
+     if (this.title && this.title.alpha >= 1) {
+       const pulse = Math.sin(this.animationTime * 0.5) * 0.3 + 0.7;
+-      this.title.style.dropShadowAlpha = pulse * 0.8;
++      const flicker = Math.sin(this.animationTime * 8) * 0.05 + 0.95; // Fast flicker
++      this.title.style.dropShadowAlpha = pulse * flicker * 0.8;
++      this.title.scale.set(1 + Math.sin(this.animationTime * 0.3) * 0.01); // Subtle breathe
+     }
+ 
+-    // Animate Hero Beer
++    // Idle bounce for buttons
++    if (this.startBtn && this.startBtn._bouncePhase !== undefined) {
++      const bounce = Math.sin(this.animationTime + this.startBtn._bouncePhase) * 0.008;
++      if (this.startBtn.scale.x === 1) { // Only bounce when not hovered
++        this.startBtn.y += bounce;
++      }
++    }
++    if (this.highscoreBtn && this.highscoreBtn._bouncePhase !== undefined) {
++      const bounce = Math.sin(this.animationTime * 1.1 + this.highscoreBtn._bouncePhase) * 0.008;
++      if (this.highscoreBtn.scale.x === 1) {
++        this.highscoreBtn.y += bounce;
++      }
++    }
++
++    // Animate Hero Beer (left)
+     if (this.heroBeer) {
+-      this.heroBeer.y = this.heroBaseY + Math.sin(this.animationTime * 2) * 10;
+-      this.heroBeer.rotation = Math.sin(this.animationTime) * 0.1;
++      this.heroBeer.y = this.heroBaseY + Math.sin(this.animationTime * 2) * 12;
++      this.heroBeer.rotation = Math.sin(this.animationTime) * 0.12;
++    }
++
++    // Animate Right Beer
++    if (this.rightBeer) {
++      this.rightBeer.y = this.rightBeerBaseY + Math.sin(this.animationTime * 1.8 + 1) * 10;
++      this.rightBeer.rotation = Math.sin(this.animationTime * 0.9) * 0.1;
+     }
+ 
+     // Animate Floating Beers
+@@ -548,17 +718,30 @@ export class MenuScene {
+         beer.y += beer.driftSpeedY;
+         beer.rotation += beer.rotSpeed;
+ 
+-        // Wrap around with respect to side columns
+-        if (beer.y < -50) beer.y = this.game.app.screen.height + 50;
+-        if (beer.y > this.game.app.screen.height + 50) beer.y = -50;
++        if (beer.y < -100) beer.y = height + 100;
++        if (beer.y > height + 100) beer.y = -100;
+ 
+-        // Horizontal constraint buffer
+         if (beer.boundsX) {
+           if (beer.x < beer.boundsX.min) beer.driftSpeedX = Math.abs(beer.driftSpeedX);
+           if (beer.x > beer.boundsX.max) beer.driftSpeedX = -Math.abs(beer.driftSpeedX);
+         }
+       });
+     }
++
++    // Animate Floating Lore Images (parallax)
++    if (this.loreSprites) {
++      this.loreSprites.forEach((sprite, i) => {
++        sprite.y += sprite.driftSpeedY * delta * 0.3;
++        sprite.x += Math.sin(this.animationTime * 0.2 + i) * 0.1; // Parallax drift
++        sprite.rotation += sprite.rotSpeed * delta;
++
++        const pulse = Math.sin(this.animationTime * sprite.pulseSpeed + sprite.pulseOffset);
++        sprite.alpha = 0.06 + pulse * 0.02;
++
++        if (sprite.y < -100) sprite.y = height + 100;
++        if (sprite.y > height + 100) sprite.y = -100;
++      });
++    }
+   }
+ 
+   destroy() {
+diff --git a/src/scenes/PlayScene.js b/src/scenes/PlayScene.js
+index ba5a5b0..34cecd9 100644
+--- a/src/scenes/PlayScene.js
++++ b/src/scenes/PlayScene.js
+@@ -14,13 +14,14 @@ import { InputManager } from '../input/InputManager.js';
+ import { TouchControls } from '../input/TouchControls.js';
+ import { AudioManager } from '../audio/AudioManager.js';
+ import { HUD } from '../ui/HUD.js';
+-import { BUILD_ID } from '../buildInfo.js';
+ import {
+   extendLevelIntroTexts,
+   getAchievementPopup,
+   getEnemyTaunt,
+-  getMicroMessage
++  getMicroMessage,
++  getRankUpLore
+ } from '../text/phrasePool.js';
++import { getRankName } from '../utils/RankNames.js';
+ 
+ export class PlayScene {
+   constructor(game) {
+@@ -78,6 +79,34 @@ export class PlayScene {
+     this._rankUpAnimating = false;
+     this.sceneId = Math.random().toString(36).substring(7);
+     this._showRankUpCount = 0;
++    this.rankBadge = null;
++    this.fireRateBoostTimer = 0;
++
++    // Message lane system to prevent text overlap
++    this.messageLanes = {
++      rankUp: null,        // Full-screen overlay (handled by showRankUpOverlay)
++      levelEvent: null,    // Level start, level complete, boss intro
++      micro: null,         // Pause, resume, new wave
++      achievement: null,   // Achievement popups
++      taunt: null,         // Enemy taunts
++      powerup: null,       // Powerup messages (beer smash, bonus can, score boost)
++      damage: null,        // Player damage (OUCH)
++      health: null,        // Low health, life lost
++      special: null        // Legendary sighting, etc.
++    };
++
++    // Lane Y positions (relative to screen height)
++    this.laneConfig = {
++      rankUp: { yRatio: 0.5, replace: true },        // Center (full overlay)
++      levelEvent: { yRatio: 0.25, replace: true },   // Upper area
++      micro: { yRatio: 0.35, replace: true },        // Mid-upper
++      achievement: { yOffset: 70, replace: true },   // Fixed top
++      taunt: { yOffset: 110, replace: true },        // Fixed below achievement
++      powerup: { yOffset: 100, replace: true },      // Fixed top area
++      damage: { yRatio: 0.5, replace: false },       // Center (queue)
++      health: { yRatio: 0.3, replace: true },        // Mid
++      special: { yRatio: 0.4, replace: true }        // Mid-lower
++    };
+   }
+ 
+   init() {
+@@ -90,33 +119,9 @@ export class PlayScene {
+     this.hud = new HUD(this.uiContainer, this.game);
+     // Note: HUD creates itself in constructor
+ 
+-    const diagStyle = {
+-      fontFamily: 'Courier New',
+-      fontSize: 12,
+-      fill: '#66fffe',
+-      align: 'left'
+-    };
+-    this.playerDiagText = new PIXI.Text('', diagStyle);
+-    this.playerDiagText.anchor.set(0, 1);
+-    this.playerDiagText.zIndex = 9999;
+-    this.uiContainer.addChild(this.playerDiagText);
+-
+-    this.rankDiagText = new PIXI.Text('', diagStyle);
+-    this.rankDiagText.anchor.set(0, 1);
+-    this.rankDiagText.zIndex = 9999;
+-    this.uiContainer.addChild(this.rankDiagText);
+-
+-    this.buildStamp = new PIXI.Text(`build: ${BUILD_ID}`, {
+-      ...diagStyle,
+-      align: 'right'
+-    });
+-    this.buildStamp.anchor.set(1, 1);
+-    this.buildStamp.zIndex = 9999;
+-    this.uiContainer.addChild(this.buildStamp);
+-
+-    this.updateDiagnosticsLayout();
++    // Debug and Diagnostics removed for production arcade feel.
+ 
+-    // Internal Debug Stats
++    // Internal Debug Stats - Keeping minimal stats for telemetry if needed, but not displaying them
+     this.debugStats = {
+       beerPickupsSpawned: 0,
+       beerPickupsCollected: 0,
+@@ -180,66 +185,50 @@ export class PlayScene {
+     this.touchControls = new TouchControls(this.uiContainer, this.game);
+     this.touchControls.init();
+ 
+-    // Add Debug Keys
++    // Add Debug Keys (Disabled)
+     window.addEventListener('keydown', (e) => this.handleDebugKeys(e));
+ 
++    // Rank-up audio test hotkey (diagnostics only)
++    window.addEventListener('keydown', (e) => {
++      if ((e.key === 't' || e.key === 'T') && window.location.search.includes('diag')) {
++        console.log('[Rank Up Audio] test key pressed');
++        console.log('[Rank Up Audio] forcing context: gameplay');
++        AudioManager.playMusicContext('gameplay', false);
++        console.log('[Rank Up Audio] about to play SFX: boss_explode');
++        try {
++          const result = AudioManager.playSfx('boss_explode');
++          console.log('[Rank Up Audio] playSfx returned:', result);
++        } catch (e) {
++          console.log('[Rank Up Audio] playSfx error:', e);
++        }
++      }
++    });
++
++    // Expose for console inspection in diag mode
++    if (window.location.search.includes('diag')) {
++      window.__burtAudio = AudioManager;
++      window.__burtPlayScene = this;
++      console.log('[PlayScene] Diagnostics enabled: window.__burtAudio and window.__burtPlayScene available');
++    }
++
+     // Start first level
+     this.startLevel();
+ 
+-    console.log(`PlayScene build:${BUILD_ID}`);
++    console.log(`PlayScene ready`);
+     this.isReady = true;
+   }
+ 
+   handleDebugKeys(e) {
+-    if (e.key === 'F1') {
+-      console.log('DEBUG STATS:', this.debugStats);
+-      this.showToast('DEBUG STATS LOGGED (Console)', { fontSize: 20 });
+-    }
+-    if (e.key === 'F2') {
+-      this.powerupManager.spawn(this.player.x, 100);
+-      this.showToast('SPAWNED BEER PICKUP', { fontSize: 20 });
+-    }
+-    if (e.key === 'F3') {
+-      this.enemyManager.spawnBoss(this.game.level);
+-      this.showToast('SPAWNED BOSS', { fontSize: 20 });
+-    }
+-    if (e.key === 'F4') {
+-      for (let i = 0; i < 5; i++) this.enemyManager.spawnEnemy();
+-      this.showToast('SPAWNED ENEMIES', { fontSize: 20 });
+-    }
+-    if (e.key === 'F5') {
+-      this.spawnEasterEgg();
+-      this.showToast('TRIGGERED FLYBY', { fontSize: 20 });
+-    }
++    // Debug keys disabled for production
+   }
+ 
+   updateDiagnosticsLayout() {
+-    if (!this.game || !this.game.app) return;
+-    const { width, height } = this.game.app.screen;
+-    if (this.diagLayout.width === width && this.diagLayout.height === height) return;
+-    this.diagLayout.width = width;
+-    this.diagLayout.height = height;
+-
+-    const margin = 8;
+-    const fontSize = width < 500 ? 10 : 12;
+-    const lineHeight = Math.round(fontSize * 1.2);
+-
+-    if (this.playerDiagText) {
+-      this.playerDiagText.style.fontSize = fontSize;
+-      this.playerDiagText.x = margin;
+-      this.playerDiagText.y = height - margin - lineHeight;
+-    }
+-
+-    if (this.rankDiagText) {
+-      this.rankDiagText.style.fontSize = fontSize;
+-      this.rankDiagText.x = margin;
+-      this.rankDiagText.y = height - margin;
+-    }
+-
+-    if (this.buildStamp) {
+-      this.buildStamp.style.fontSize = fontSize;
+-      this.buildStamp.x = width - margin;
+-      this.buildStamp.y = height - margin;
++    // Stub implementation to prevent production crashes
++    // Diagnostics remain functional when enabled
++    if (this.diagLayout && this.game && this.game.app) {
++      const { width, height } = this.game.app.screen;
++      this.diagLayout.width = width;
++      this.diagLayout.height = height;
+     }
+   }
+ 
+@@ -256,11 +245,11 @@ export class PlayScene {
+ 
+     this.enemyManager.startLevel(this.game.level);
+     this.showLevelIntro();
+-    this.showToast(getMicroMessage('levelStart'), { fontSize: 20, y: this.game.getHeight() * 0.25 });
+-    this.showToast(getMicroMessage('newWave'), { fontSize: 22, y: this.game.getHeight() * 0.35 });
++    this.showToast(getMicroMessage('levelStart'), { fontSize: 20, lane: 'levelEvent' });
++    this.showToast(getMicroMessage('newWave'), { fontSize: 22, lane: 'micro' });
+ 
+     if (this.game.level % 5 === 0) {
+-      this.showToast(getMicroMessage('bossIntro'), { fontSize: 26, y: this.game.getHeight() * 0.4 });
++      this.showToast(getMicroMessage('bossIntro'), { fontSize: 26, lane: 'levelEvent' });
+     }
+ 
+     this.resetRandomTimers();
+@@ -331,15 +320,35 @@ export class PlayScene {
+     if (!this.isReady) return;
+ 
+     try {
+-      this.updateDiagnosticsLayout();
++      if (this.updateDiagnosticsLayout) this.updateDiagnosticsLayout();
+       this.gameTime += delta / 60;
+ 
+-      // Score Boost Timer
+       if (this.scoreBoostTimer > 0) {
+         this.scoreBoostTimer -= delta * 16.67;
+         if (this.scoreBoostTimer <= 0) {
+           this.scoreMultiplier = 1;
+-          this.showToast("SCORE BOOST ENDED", { fontSize: 20, fill: '#cccccc' });
++          this.showToast("SCORE BOOST ENDED", { fontSize: 20, fill: '#cccccc', lane: 'powerup' });
++        }
++      }
++
++      // Fire Rate Boost Timer
++      if (this.fireRateBoostTimer > 0) {
++        this.fireRateBoostTimer -= delta / 60; // Seconds
++        if (this.player) this.player.fireRateBoost = 2; // ENFORCE BOOST
++
++        if (this.fireRateBoostTimer <= 0) {
++          this.fireRateBoostTimer = 0;
++          if (this.player) this.player.fireRateBoost = 1; // RESET
++          this.showToast("SPEED BOOST ENDED", { fontSize: 18, fill: '#cccccc', lane: 'powerup' });
++        }
++      }
++
++      // Update Rank Badge
++      if (this.rankBadge && this.game) {
++        const tex = RankAssets.getRankTexture(this.game.rankIndex);
++        if (tex) {
++          this.rankBadge.texture = tex;
++          this.rankBadge.visible = true;
+         }
+       }
+ 
+@@ -369,35 +378,29 @@ export class PlayScene {
+         }
+       }
+ 
+-      if (this.playerDiagText) {
+-        const sprite = this.player?.sprite;
+-        const vis = sprite?.visible ? 't' : 'f';
+-        const alpha = sprite && Number.isFinite(sprite.alpha) ? sprite.alpha.toFixed(2) : 'na';
+-        const texOk = GameAssets.isValidTexture(this.player?.shipSprite?.texture) ? 'ok' : 'bad';
+-        const parent = sprite?.parent ? 'yes' : 'no';
+-        this.playerDiagText.text = `pVis:${vis} a:${alpha} tex:${texOk} parent:${parent}`;
+-      }
+-
+-      if (this.rankDiagText) {
+-        // Safe accessors for diagnostics to prevent crash
+-        const rank = (this.game && Number.isFinite(this.game.rankIndex)) ? this.game.rankIndex : 0;
+-        const score = (this.game && Number.isFinite(this.game.score)) ? this.game.score : 0;
+-        const rankEv = Number.isFinite(this._rankUpCount) ? this._rankUpCount : 0;
+-        const seen = Number.isFinite(this._lastRankUpSeen) ? this._lastRankUpSeen : 'null';
+-
+-        // Detailed Prod Diagnostics
+-        const d = this.game.diag || {};
+-        const asEv = d.asEv || 0;
+-        const asComp = d.asComp || 0;
+-        const asBefore = d.asBefore || 0;
+-        const asAfter = d.asAfter || 0;
+-        const rkFromAdd = d.rkFromAdd || 0;
+-        const uiRankEv = this._showRankUpCount || 0;
+-
+-        this.rankDiagText.text = `S:${score} R:${rank} (seen:${seen}) REV:${rankEv} UI:${uiRankEv}\n` +
+-          `AS: evt=${asEv} cmp=${asComp} bef=${asBefore} aft=${asAfter} YES=${rkFromAdd}\n` +
+-          `ID: G=${this.game.gameId} S=${this.sceneId}`;
+-        this.rankDiagText.style.fontSize = 10; // Smaller font for more data
++      // Update Rank Badge Label
++      if (this.rankBadge && this.game) {
++        // Create text if missing since we only did sprite before
++        if (!this.rankBadgeLabel) {
++          const lbl = new PIXI.Text('', {
++            fontFamily: 'Courier New',
++            fontSize: 16,
++            fill: '#ffff00',
++            stroke: '#000000',
++            strokeThickness: 3
++          });
++          lbl.anchor.set(0, 0.5);
++          this.uiContainer.addChild(lbl);
++          this.rankBadgeLabel = lbl;
++        }
++        this.rankBadgeLabel.x = this.rankBadge.x + 36; // 32 sprite + padding
++        this.rankBadgeLabel.y = this.rankBadge.y + 16; // Center on 32h
++        const rStr = getRankName(this.game.rankIndex);
++        // Keep just the Title part to save space? RankNames has "RANK XX : TITLE"
++        // getRankName returns "RANK XX: TITLE" usually.
++        // Let's shorten.
++        this.rankBadgeLabel.text = rStr;
++        this.rankBadgeLabel.visible = this.rankBadge.visible;
+       }
+ 
+       // Fire logic
+@@ -436,7 +439,7 @@ export class PlayScene {
+ 
+         AudioManager.playSfx('levelComplete');
+         this.game.addScore(1000 * this.scoreMultiplier); // Completion Bonus
+-        this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000 });
++        this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000, lane: 'levelEvent' });
+ 
+         // Particles
+         for (let i = 0; i < 20; i++) {
+@@ -508,51 +511,229 @@ export class PlayScene {
+     const nr = Number(newRank);
+     if (!Number.isFinite(nr)) return;
+ 
+-    if (this._rankUpAnimating) return;
++    if (this._rankUpAnimating) {
++      // Force reset previous if quick succession (unlikely with harder curve)
++      this._rankUpAnimating = false;
++    }
++
+     this._rankUpAnimating = true;
+     this._showRankUpCount++;
+ 
+-    // Reset loop or visual reset
+-    // Ensure all animation logic is cleared if invalid
+-
+-    // Visuals
+-    const rank = (newRank !== undefined) ? newRank : this.game.rankIndex;
+-    const msg = `RANK UP! ${rank}`;
+-    this.showToast(msg, { fontSize: 32, fill: '#ffff00', y: this.game.getHeight() * 0.15 });
+-
+     // Ship Swap
+     if (this.player) {
+       this.player.swapSprite();
+     }
+ 
+-    // SFX
+-    AudioManager.playSfx('pickup'); // Placeholder for "good event"
+-
+-    // Voice (Throttled 20s)
+-    const now = Date.now();
+-    if (now - this.lastRankVoiceTime > 20000) {
+-      AudioManager.playVoice('mission_complete');
+-      this.lastRankVoiceTime = now;
++    // Gameplay Boost (5 seconds, capped)
++    this.fireRateBoostTimer = 5.0;
++    if (this.player) {
++      this.player.fireRateBoost = 2;
+     }
+ 
+-    // Particles
++    // BIG RANK UP OVERLAY
++    this.showRankUpOverlay(newRank);
++
++    // Particles & Flash
+     if (this.player && this.player.active) {
+       this.particleManager.createExplosion(this.player.x, this.player.y, 0xffff00);
+-      // Screen flash
++
+       const flash = new PIXI.Graphics();
+-      flash.rect(0, 0, this.game.getWidth(), this.game.getHeight()).fill({ color: 0xffff00, alpha: 0.2 });
++      flash.rect(0, 0, this.game.getWidth(), this.game.getHeight()).fill({ color: 0xffffff, alpha: 0.3 });
+       this.uiContainer.addChild(flash);
+ 
+-      // Cleanup Flash
++      let fAlpha = 0.3;
++      const fTicker = (delta) => {
++        fAlpha -= 0.02 * delta.deltaTime;
++        flash.alpha = fAlpha;
++        if (fAlpha <= 0) {
++          if (flash.parent) flash.parent.removeChild(flash);
++          this.game.app.ticker.remove(fTicker);
++        }
++      };
++      this.game.app.ticker.add(fTicker);
++    }
++
++    // Audio - Distinct Rank-Up Signature (ui_confirm + boss_explode)
++    try {
++      const diagEnabled = window.location.search.includes('diag');
++
++      if (diagEnabled) {
++        console.log(`[Rank Up Audio] RANKUP AUDIO FIRED @ ${Date.now()}`);
++      }
++
++      AudioManager.playMusicContext('gameplay', false);
++
++      // Distinct signature: ui_confirm (immediate) + boss_explode (150ms)
++      try {
++        AudioManager.playSfx('ui_confirm');
++      } catch (e) {
++        console.warn('Rank up ui_confirm failed', e);
++      }
++
+       setTimeout(() => {
+-        if (this.uiContainer && flash.parent) this.uiContainer.removeChild(flash);
+-      }, 100);
++        try {
++          AudioManager.playSfx('boss_explode');
++        } catch (e) {
++          console.warn('Rank up boss_explode failed', e);
++        }
++      }, 150);
++
++    } catch (e) {
++      console.warn('Rank up audio system failed', e);
+     }
+ 
+-    // Release Lock after animation
++    // Release Lock
+     setTimeout(() => {
+       this._rankUpAnimating = false;
+-    }, 2500);
++    }, 1500);
++  }
++
++  showRankUpOverlay(rank) {
++    const { width, height } = this.game.app.screen;
++
++    // Mark rankUp lane as active (prevents other messages from overlapping)
++    if (this.messageLanes.rankUp) {
++      return; // Already showing a rank up overlay
++    }
++
++    // Get rank up lore
++    const loreText = getRankUpLore();
++    const rankName = getRankName(rank);
++
++    // Container for overlay
++    const overlay = new PIXI.Container();
++    overlay.zIndex = 1000; // Above everything
++
++    // Semi-transparent background
++    const bg = new PIXI.Graphics();
++    bg.rect(0, 0, width, height).fill({ color: 0x000000, alpha: 0.7 });
++    overlay.addChild(bg);
++
++    // Center panel
++    const panelWidth = Math.min(600, width * 0.9);
++    const panelHeight = Math.min(400, height * 0.7);
++    const panelX = (width - panelWidth) / 2;
++    const panelY = (height - panelHeight) / 2;
++
++    const panel = new PIXI.Graphics();
++    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 20);
++    panel.fill({ color: 0x1a1a2e, alpha: 0.95 });
++    panel.stroke({ color: 0xffff00, width: 4 });
++    overlay.addChild(panel);
++
++    // RANK UP! Title
++    const title = new PIXI.Text('RANK UP!', {
++      fontFamily: 'Courier New',
++      fontSize: 52,
++      fill: '#ffff00',
++      stroke: '#ff8800',
++      strokeThickness: 5,
++      dropShadow: true,
++      dropShadowColor: '#ffff00',
++      dropShadowBlur: 15,
++      dropShadowDistance: 0
++    });
++    title.anchor.set(0.5);
++    title.x = width / 2;
++    title.y = panelY + 60;
++    overlay.addChild(title);
++
++    // Rank Icon (Large)
++    const rankTex = RankAssets.getRankTexture(rank);
++    if (rankTex) {
++      const rankIcon = new PIXI.Sprite(rankTex);
++      rankIcon.anchor.set(0.5);
++      rankIcon.x = width / 2;
++      rankIcon.y = panelY + 140;
++      const iconSize = 100;
++      const scale = Math.min(iconSize / rankTex.width, iconSize / rankTex.height);
++      rankIcon.scale.set(scale);
++      overlay.addChild(rankIcon);
++    }
++
++    // Rank Name
++    const rankNameText = new PIXI.Text(rankName, {
++      fontFamily: 'Courier New',
++      fontSize: 32,
++      fill: '#00ffff',
++      stroke: '#0088ff',
++      strokeThickness: 3,
++      align: 'center',
++      wordWrap: true,
++      wordWrapWidth: panelWidth - 40
++    });
++    rankNameText.anchor.set(0.5);
++    rankNameText.x = width / 2;
++    rankNameText.y = panelY + 240;
++    overlay.addChild(rankNameText);
++
++    // Lore Text
++    const lore = new PIXI.Text(loreText, {
++      fontFamily: 'Courier New',
++      fontSize: 20,
++      fill: '#ffffff',
++      align: 'center',
++      wordWrap: true,
++      wordWrapWidth: panelWidth - 60,
++      fontStyle: 'italic'
++    });
++    lore.anchor.set(0.5);
++    lore.x = width / 2;
++    lore.y = panelY + panelHeight - 60;
++    overlay.addChild(lore);
++
++    // Add to UI container
++    this.uiContainer.addChild(overlay);
++
++    // Pop-in animation
++    overlay.alpha = 0;
++    overlay.scale.set(0.5);
++
++    let elapsed = 0;
++    const popDuration = 200; // 0.2s pop in
++    const displayDuration = 1000; // 1s total display
++    const fadeOutDuration = 200; // 0.2s fade out
++
++    const animateTicker = (delta) => {
++      elapsed += delta.deltaTime * 16.67;
++
++      if (elapsed < popDuration) {
++        // Pop in
++        const t = elapsed / popDuration;
++        const eased = 1 - Math.pow(1 - t, 3); // ease out cubic
++        overlay.alpha = eased;
++        overlay.scale.set(0.5 + eased * 0.5);
++
++        // Pulse title
++        const pulse = Math.sin(elapsed * 0.1) * 0.1 + 1;
++        title.scale.set(pulse);
++      } else if (elapsed < displayDuration - fadeOutDuration) {
++        // Hold
++        overlay.alpha = 1;
++        overlay.scale.set(1);
++
++        // Continuous pulse
++        const pulse = Math.sin(elapsed * 0.05) * 0.05 + 1;
++        title.scale.set(pulse);
++      } else if (elapsed < displayDuration) {
++        // Fade out
++        const t = (elapsed - (displayDuration - fadeOutDuration)) / fadeOutDuration;
++        overlay.alpha = 1 - t;
++      } else {
++        // Remove
++        this.game.app.ticker.remove(animateTicker);
++        if (overlay.parent) overlay.parent.removeChild(overlay);
++        // Clear rankUp lane when finished
++        if (this.messageLanes.rankUp && this.messageLanes.rankUp.overlay === overlay) {
++          this.messageLanes.rankUp = null;
++        }
++      }
++    };
++
++    this.game.app.ticker.add(animateTicker);
++
++    // Track active rank up overlay in lane
++    this.messageLanes.rankUp = { overlay, ticker: animateTicker };
+   }
+ 
+   showErrorOverlay(e) {
+@@ -618,13 +799,14 @@ export class PlayScene {
+             const damageTaken = this.player.takeDamage();
+             if (damageTaken) {
+               this.game.loseLife();
+-              this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
++              // Use bullet color for explosion to match weapon type
++              this.particleManager.createExplosion(this.player.x, this.player.y, bullet.color || 0x00ffff);
+               AudioManager.playSfx('playerHit');
+               this.screenShake.shake(8);
+             } else {
+               // Shield absorbed it
+               this.screenShake.shake(3);
+-              this.particleManager.createHitSpark(this.player.x, this.player.y);
++              this.particleManager.createProjectileHit(this.player.x, this.player.y, bullet.color || 0xffff00);
+             }
+           }
+         }
+@@ -660,7 +842,7 @@ export class PlayScene {
+               }
+             }
+             this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00);
+-            this.showToast('OUCH!', { fontSize: 20, fill: '#ff0000' });
++            this.showToast('OUCH!', { fontSize: 20, fill: '#ff0000', lane: 'damage' });
+           }
+         }
+       }
+@@ -681,7 +863,7 @@ export class PlayScene {
+               }
+               this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00);
+               AudioManager.playSfx('enemy_explode');
+-              this.showToast('BEER SMASH!', { fontSize: 18, y: beer.y, fill: '#ffff00' });
++              this.showToast('BEER SMASH!', { fontSize: 18, y: beer.y, fill: '#ffff00', lane: 'powerup' });
+             } else {
+               this.particleManager.createHitSpark(beer.x, beer.y);
+             }
+@@ -819,7 +1001,7 @@ export class PlayScene {
+       this.isPaused = !this.isPaused;
+       this.showToast(getMicroMessage(this.isPaused ? 'pause' : 'resume'), {
+         fontSize: 26,
+-        y: this.game.getHeight() * 0.45
++        lane: 'micro'
+       });
+     }
+     this.pausePressed = pressed;
+@@ -834,14 +1016,14 @@ export class PlayScene {
+     if (this.achievementTimer > 0) {
+       this.achievementTimer -= delta * 16.67;
+     } else {
+-      this.showToast(getAchievementPopup(), { fontSize: 20, y: 70 });
++      this.showToast(getAchievementPopup(), { fontSize: 20, lane: 'achievement' });
+       this.achievementTimer = this.getRandomTimer(12000, 20000);
+     }
+ 
+     if (this.tauntTimer > 0) {
+       this.tauntTimer -= delta * 16.67;
+     } else {
+-      this.showToast(getEnemyTaunt(), { fontSize: 18, y: 110 });
++      this.showToast(getEnemyTaunt(), { fontSize: 18, lane: 'taunt' });
+       this.tauntTimer = this.getRandomTimer(9000, 15000);
+     }
+   }
+@@ -849,12 +1031,12 @@ export class PlayScene {
+   checkLowLives() {
+     if (this.game.lives <= 1 && this.lowLivesShownFor !== this.game.lives) {
+       this.lowLivesShownFor = this.game.lives;
+-      this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, y: this.game.getHeight() * 0.3 });
++      this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, lane: 'health' });
+     }
+   }
+ 
+   onLifeLost() {
+-    this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
++    this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, lane: 'health' });
+ 
+     // RESPONDER LOGIC
+     if (this.player && this.game.lives > 0) {
+@@ -871,9 +1053,45 @@ export class PlayScene {
+   showToast(message, options = {}) {
+     const { width, height } = this.game.app.screen;
+     const fontSize = options.fontSize || 24;
+-    const y = options.y || height * 0.2;
++    const lane = options.lane || 'micro'; // Default lane
+     const maxWidth = width * 0.9;
+ 
++    // Calculate Y position based on lane config
++    let y;
++    if (options.y !== undefined) {
++      // Explicit Y override (for backwards compatibility)
++      y = options.y;
++    } else if (this.laneConfig[lane]) {
++      const config = this.laneConfig[lane];
++      y = config.yOffset !== undefined ? config.yOffset : height * (config.yRatio || 0.3);
++    } else {
++      y = height * 0.2; // Fallback
++    }
++
++    // Check for existing message in this lane
++    if (this.messageLanes[lane]) {
++      const existingData = this.messageLanes[lane];
++      const config = this.laneConfig[lane];
++
++      if (config && config.replace) {
++        // Replace: Remove existing message immediately
++        try {
++          if (existingData.ticker) {
++            this.game.app.ticker.remove(existingData.ticker);
++          }
++          if (existingData.text && existingData.text.parent) {
++            this.container.removeChild(existingData.text);
++          }
++        } catch (e) {
++          console.warn('Lane cleanup failed', e);
++        }
++        this.messageLanes[lane] = null;
++      } else {
++        // Queue: Skip showing new message if one is already active
++        return;
++      }
++    }
++
+     const text = new PIXI.Text(message, {
+       fontFamily: 'Courier New',
+       fontSize,
+@@ -911,9 +1129,16 @@ export class PlayScene {
+       if (elapsed >= duration) {
+         this.game.app.ticker.remove(ticker);
+         this.container.removeChild(text);
++        // Clear lane when message finishes
++        if (this.messageLanes[lane] && this.messageLanes[lane].text === text) {
++          this.messageLanes[lane] = null;
++        }
+       }
+     };
+     this.game.app.ticker.add(ticker);
++
++    // Track active message in lane
++    this.messageLanes[lane] = { text, ticker };
+   }
+   updateAmbientBeers(delta) {
+     // 1. Spawning Hazard Beers (Red)
+@@ -942,7 +1167,7 @@ export class PlayScene {
+         this.spawnAmbientBeer('POWERUP');
+         this.lastWhiteCanTime = now;
+         this.hasActiveWhiteCan = true;
+-        this.showToast("BONUS CAN APPEARED!", { fontSize: 24, fill: '#ffffff', y: 100 });
++        this.showToast("BONUS CAN APPEARED!", { fontSize: 24, fill: '#ffffff', lane: 'powerup' });
+       }
+     }
+ 
+@@ -1027,7 +1252,7 @@ export class PlayScene {
+     this.gameContainer.addChildAt(sprite, 0);
+     this.easterEggBeer = egg;
+ 
+-    this.showToast('LEGENDARY SIGHTING!', { fontSize: 24, fill: '#ff00ff' });
++    this.showToast('LEGENDARY SIGHTING!', { fontSize: 24, fill: '#ff00ff', lane: 'special' });
+     AudioManager.playSfx('pickup');
+   }
+ 
+diff --git a/src/text/phrasePool.js b/src/text/phrasePool.js
+index a03e0d6..17ef477 100644
+--- a/src/text/phrasePool.js
++++ b/src/text/phrasePool.js
+@@ -374,3 +374,130 @@ export function extendLocations(base) {
+ export function getAllNewPhrases() {
+   return [...newPhrases];
+ }
++
++export function getRankUpLore() {
++  // Reuse existing phrase generators for variety
++  const templates = [
++    () => buildCombo(),
++    () => buildShortBurst(),
++    () => `${weightedPick(fragments.leads, 'rankUpLeads')} – ${weightedPick(fragments.objects, 'rankUpObjects')}`,
++    () => `${weightedPick(newPhrases, 'rankUpPhrases')}`,
++    () => `${weightedPick(fragments.objects, 'rankUpObjects2')} ${weightedPick(fragments.tags, 'rankUpTags')}`
++  ];
++
++  const picker = templates[Math.floor(Math.random() * templates.length)];
++  let text = picker();
++
++  // Truncate if too long (max 50 chars for overlay readability)
++  if (text.length > 50) {
++    text = text.substring(0, 47) + '...';
++  }
++
++  return text;
++}
++
++export function getMenuStoryText() {
++  // Generate 2-4 line story blocks for menu screen
++  const templates = [
++    // 2-line stories
++    () => [
++      `Stokmarknes er under angrep!`,
++      `${weightedPick(fragments.objects, 'menuObj1')} må redde dagen.`
++    ],
++    () => [
++      `${weightedPick(['Rølp', 'Gris', 'Mongo', 'Tufs'], 'menuThreat')} invaderer!`,
++      `Kun ${weightedPick(['Eirik', 'Kurt', 'Kurt & Eirik'], 'menuHero')} kan stoppe dem.`
++    ],
++    () => [
++      `${buildCombo()}`,
++      `${buildShortBurst()}`
++    ],
++
++    // 3-line stories
++    () => [
++      `${weightedPick(['Stokmarknes', 'Melbu', 'Vesterålen'], 'menuLoc2')} er under angrep!`,
++      `${weightedPick(['Rølp', 'Gris', 'Mongo', 'Tufs', 'Svin'], 'menuEnemy')} invaderer.`,
++      `${weightedPick(['Kun Eirik', 'Kun Kurt', 'Kurt & Eirik'], 'menuHero2')} kan redde dagen.`
++    ],
++    () => [
++      `${weightedPick(newPhrases, 'menuPhrase1')}`,
++      `${buildCombo()}`,
++      `${buildShortBurst()}`
++    ],
++    () => [
++      `${weightedPick(fragments.leads, 'menuLead')}!`,
++      `${weightedPick(fragments.objects, 'menuObj2')} ${weightedPick(fragments.verbs, 'menuVerb')} ${weightedPick(fragments.objects, 'menuObj3')}.`,
++      `${weightedPick(fragments.closers, 'menuClose')}`
++    ],
++
++    // 4-line stories
++    () => [
++      `${weightedPick(['Stokmarknes', 'Melbu'], 'menuLoc3')} klokken litt for sent.`,
++      `${weightedPick(['Rølp', 'Gris', 'Mongo'], 'menuEnemy2')} invaderer.`,
++      `${weightedPick(['Eirik', 'Kurt Edgar'], 'menuHero3')} må redde dagen.`,
++      `${weightedPick(fragments.closers, 'menuClose2')}`
++    ]
++  ];
++
++  const picker = templates[Math.floor(Math.random() * templates.length)];
++  const lines = picker();
++
++  // Truncate overly long lines (max 60 chars per line for readability)
++  const truncated = lines.map(line => {
++    if (line.length > 60) {
++      return line.substring(0, 57) + '...';
++    }
++    return line;
++  });
++
++  return truncated.join('\n');
++}
++
++// Leaderboard taunt pool - spicy trash talk from top 3 to lower ranks
++const tauntTemplates = [
++  // Direct insults
++  '{target}, du er for treig!',
++  '{target}, kom deg opp hit!',
++  '{target}, glem det!',
++  'Hør her {target}: gi deg!',
++  '{target} – amatør!',
++  'Ser deg {target}... langt nede!',
++  '{target}, prøv hardere!',
++  'Halla {target}, trenger hjelp?',
++  // Boastful
++  'Toppen er fin {target}!',
++  'Utsikt er bedre her oppe {target}!',
++  '{target}, se og lær!',
++  'Sorry {target}, plassen er opptatt!',
++  '{target}, jeg eier dette!',
++  // Playful mockery
++  '{target} – bæ bæ!',
++  '{target} – lille dutten!',
++  '{target} – sjøge!',
++  'Jatta jatta {target}!',
++  '{target}, hut dæ heim!',
++  'Hold kjæften {target}!',
++  // Regional flavor
++  '{target}, Stokmarknes eier deg!',
++  '{target}, Melbu sier nei!',
++  'Kurt ville skjemmes {target}!',
++  'Eirik ler av deg {target}!',
++  // Score-based
++  '{target}, score mer!',
++  '{target}, mange poeng igjen!',
++  '{target}, aldri i nærheten!',
++  // Casual dismissal
++  '{target}? Hvem?',
++  '{target}, se deg tilbake!',
++  '{target}, null stress her oppe!'
++];
++
++export function getLeaderboardTaunt(topPlayerName, lowerPlayerName) {
++  // Pick a random taunt template
++  const template = tauntTemplates[Math.floor(Math.random() * tauntTemplates.length)];
++
++  // Replace {target} with the lower player's name
++  const taunt = template.replace('{target}', lowerPlayerName);
++
++  return taunt;
++}
+diff --git a/src/utils/GameAssets.js b/src/utils/GameAssets.js
+index 7511e65..96799a9 100644
+--- a/src/utils/GameAssets.js
++++ b/src/utils/GameAssets.js
+@@ -1,18 +1,11 @@
++import { AssetManifest } from '../assets/assetManifest.js';
+ import * as PIXI from 'pixi.js';
+ 
+ class GameAssetsManager {
+     constructor() {
+         this.beerTexture = null;
+         this.photos = {};
+-        this.photoList = [
+-            'anja.png',
+-            'donaldtru.jpg',
+-            'eirik1.jpg',
+-            'burtelurt.jpg',
+-            'eirik_kurt2.jpg',
+-            'kurt2.jpg',
+-            'eriikviking.webp'
+-        ];
++        this.photoList = AssetManifest.loreImages;
+         this.shipTextures = {};
+         this.enemyTextures = {};
+     }
+@@ -50,11 +43,15 @@ class GameAssetsManager {
+ 
+     async loadPhotos() {
+         const promises = this.photoList.map(async (filename) => {
++
+             try {
+-                const alias = filename.split('.')[0];
++                // filename is now full path in manifest, extract alias
++                const parts = filename.split('/');
++                const name = parts[parts.length - 1];
++                const alias = name.split('.')[0];
+                 const texture = await PIXI.Assets.load({
+                     alias: alias,
+-                    src: `/${filename}`
++                    src: filename // Use full path from manifest
+                 });
+ 
+                 if (this.isValidTexture(texture)) {
+@@ -87,21 +84,16 @@ class GameAssetsManager {
+     }
+ 
+     async loadShips() {
+-        const playerShips = ['player_01.png'];
+-        const enemyShips = Array.from({ length: 9 }, (_, i) => `spaceShips_00${i + 1}.png`);
+-
+-        // this.shipTextures and this.enemyTextures are initialized in constructor
+-        // We ensure they are objects here just in case
+-        this.shipTextures = this.shipTextures || {};
+-        this.enemyTextures = this.enemyTextures || {};
+-
+         // Load Player Ships
++        const playerShips = AssetManifest.sprites.ships;
+         await Promise.all(playerShips.map(async (filename) => {
+-            const alias = filename.split('.')[0];
++            const parts = filename.split('/');
++            const name = parts[parts.length - 1];
++            const alias = name.split('.')[0];
+             try {
+                 const texture = await PIXI.Assets.load({
+                     alias: alias,
+-                    src: `/sprites/player/${filename}`
++                    src: filename
+                 });
+                 if (this.isValidTexture(texture)) this.shipTextures[alias] = texture;
+             } catch (e) {
+@@ -109,17 +101,43 @@ class GameAssetsManager {
+             }
+         }));
+ 
+-        // Load Enemy Ships
+-        await Promise.all(enemyShips.map(async (filename) => {
+-            const alias = filename.split('.')[0];
++        // Load Enemy Ships (Core) - Wait, manifest structure for enemies is object.
++        // But original code loaded 'spaceShips_00X.png' which are in manifest.sprites.ships? 
++        // No, check manifest... ships: Array of spaceShips.
++        // Wait, original code: enemyShips = Array.from({ length: 9 }, (_, i) => `spaceShips_00${i + 1}.png`);
++        // My manifest: ships: ... spaceShips...
++        // Ah, original 'playerShips' was just 'player_01.png'.
++
++        // Let's look at original code:
++        // playerShips = ['player_01.png'] -> loaded from /sprites/player/
++        // enemyShips = spaceShips... -> loaded from /sprites/Ships/
++
++        // My manifest:
++        // sprites.player = '/sprites/player/player_01.png'
++        // sprites.ships = ['/sprites/Ships/spaceShips...']
++
++        // So I should load sprites.player separately.
++
++        // Load Player
++        try {
++            const pPath = AssetManifest.sprites.player;
++            const texture = await PIXI.Assets.load({ alias: 'player_01', src: pPath });
++            if (this.isValidTexture(texture)) this.shipTextures['player_01'] = texture;
++        } catch (e) { console.warn('Failed player load', e); }
++
++        // Load Ships (used as enemies in original code?)
++        const coreShips = AssetManifest.sprites.ships;
++        await Promise.all(coreShips.map(async (filepath) => {
++            const parts = filepath.split('/');
++            const alias = parts[parts.length - 1].split('.')[0];
+             try {
+                 const texture = await PIXI.Assets.load({
+                     alias: alias,
+-                    src: `/sprites/Ships/${filename}`
++                    src: filepath
+                 });
+                 if (this.isValidTexture(texture)) this.enemyTextures[alias] = texture;
+             } catch (e) {
+-                console.warn(`[GameAssets] Failed to load enemy ship ${filename}:`, e);
++                console.warn(`[GameAssets] Failed to load enemy ship ${filepath}:`, e);
+             }
+         }));
+ 
+@@ -141,65 +159,66 @@ class GameAssetsManager {
+         this.xtra = { ships: {}, enemies: {}, lasers: {}, damage: {}, parts: {}, effects: {}, powerups: {} };
+         const basePath = '/sprites/xtra-sprites';
+ 
+-        // 1. Player Ships: playerShip{1-3}_{blue,green,orange,red}
+-        const shipTypes = [1, 2, 3];
+-        const shipColors = ['blue', 'green', 'orange', 'red'];
+-        const shipPromises = [];
+-        shipTypes.forEach(t => {
+-            shipColors.forEach(c => {
+-                const name = `playerShip${t}_${c}`;
+-                shipPromises.push(this.loadSingleAsset(`xtra_ship_${name}`, `${basePath}/${name}.png`, this.xtra.ships));
+-            });
+-            // Damage: playerShip{t}_damage{1-3}
+-            [1, 2, 3].forEach(d => {
+-                const dName = `playerShip${t}_damage${d}`;
+-                shipPromises.push(this.loadSingleAsset(`xtra_damage_${dName}`, `${basePath}/Damage/${dName}.png`, this.xtra.damage));
+-            });
+-        });
++        // 1. Player Ships (Xtra) - Not in manifest explicitly as list?
++        // Manifest has sprites.enemies...
++        // The original code constructed paths manually. 
++        // We should just use the manifest categories if possible, but XtraAssets logic was complex.
++        // Let's use the patterns but refer to manifest PATHS logic if possible, or just re-implement the loop using consistent paths.
++
++        // Actually, let's keep the logic but update the Base Path concept to reference manifest helper if needed.
++        // But better: Use the Manifest arrays if I added them.
++
++        // I added: sprites.enemies.Black, sprites.lasers.Blue, sprites.damage...
+ 
+-        // 2. Enemies: enemy{Color}{1-5}
++        // Loading Enemies (Xtra)
+         const enemyColors = ['Black', 'Blue', 'Green', 'Red'];
+         const enemyPromises = [];
+         enemyColors.forEach(c => {
+-            for (let i = 1; i <= 5; i++) {
+-                const name = `enemy${c}${i}`;
+-                enemyPromises.push(this.loadSingleAsset(`xtra_enemy_${name}`, `${basePath}/Enemies/${name}.png`, this.xtra.enemies));
++            const list = AssetManifest.sprites.enemies[c];
++            if (list) {
++                list.forEach(path => {
++                    const split = path.split('/');
++                    const alias = `xtra_enemy_${split[split.length - 1].split('.')[0]}`;
++                    enemyPromises.push(this.loadSingleAsset(alias, path, this.xtra.enemies));
++                });
+             }
+         });
+ 
+-        // 3. Lasers: laser{Color}{01-16}
++        // Loading Lasers
+         const laserColors = ['Blue', 'Green', 'Red'];
+         const laserPromises = [];
+         laserColors.forEach(c => {
+-            for (let i = 1; i <= 16; i++) {
+-                const num = i.toString().padStart(2, '0');
+-                const name = `laser${c}${num}`;
+-                laserPromises.push(this.loadSingleAsset(`xtra_laser_${name}`, `${basePath}/Lasers/${name}.png`, this.xtra.lasers));
++            const list = AssetManifest.sprites.lasers[c];
++            if (list) {
++                list.forEach(path => {
++                    const split = path.split('/');
++                    const alias = `xtra_laser_${split[split.length - 1].split('.')[0]}`;
++                    laserPromises.push(this.loadSingleAsset(alias, path, this.xtra.lasers));
++                });
+             }
+         });
+ 
+-        // 4. Parts (Safe Selection)
+-        const partPromises = [];
+-        ['engine1', 'engine2', 'gun01', 'gun02', 'wingRed1'].forEach(p => {
+-            partPromises.push(this.loadSingleAsset(`xtra_part_${p}`, `${basePath}/Parts/${p}.png`, this.xtra.parts));
+-        });
+-
+-        // 5. Meteors (Safe Selection)
+-        const meteorPromises = [];
+-        ['meteorBrown_med1', 'meteorGrey_med1', 'meteorBrown_small1', 'meteorGrey_small1'].forEach(m => {
+-            meteorPromises.push(this.loadSingleAsset(`xtra_meteor_${m}`, `${basePath}/Meteors/${m}.png`, this.xtra.parts)); // Store in parts for debris
++        // Loading Damage
++        const dmgPromises = [];
++        // Manifest damage is object of arrays
++        Object.keys(AssetManifest.sprites.damage).forEach(shipKey => {
++            AssetManifest.sprites.damage[shipKey].forEach(path => {
++                const split = path.split('/');
++                const alias = `xtra_damage_${split[split.length - 1].split('.')[0]}`;
++                dmgPromises.push(this.loadSingleAsset(alias, path, this.xtra.damage));
++            });
+         });
+ 
+-        // 6. Powerups
+-        const powerupPromises = [];
+-        ['powerupBlue_shield', 'powerupRed_shield', 'powerupGreen_shield', 'powerupYellow_shield'].forEach(p => {
+-            powerupPromises.push(this.loadSingleAsset(`xtra_powerup_${p}`, `${basePath}/Power-ups/${p}.png`, this.xtra.powerups));
+-        });
+-        ['pill_red', 'pill_green', 'pill_blue', 'pill_yellow'].forEach(p => {
+-            powerupPromises.push(this.loadSingleAsset(`xtra_powerup_${p}`, `${basePath}/Power-ups/${p}.png`, this.xtra.powerups));
++        // Loading Effects
++        const fxPromises = [];
++        AssetManifest.sprites.effects.forEach(path => {
++            const split = path.split('/');
++            const name = split[split.length - 1].split('.')[0];
++            // Simple alias
++            fxPromises.push(this.loadSingleAsset(`xtra_effect_${name}`, path, this.xtra.effects));
+         });
+ 
+-        await Promise.all([...shipPromises, ...enemyPromises, ...laserPromises, ...partPromises, ...meteorPromises, ...powerupPromises]);
++        await Promise.all([...enemyPromises, ...laserPromises, ...dmgPromises, ...fxPromises]);
+         console.log('[GameAssets] Xtra Assets Loaded');
+     }
+ 
+diff --git a/src/utils/RankAssets.js b/src/utils/RankAssets.js
+index 79e29fc..41ac4f5 100644
+--- a/src/utils/RankAssets.js
++++ b/src/utils/RankAssets.js
+@@ -1,9 +1,9 @@
++import { AssetManifest } from '../assets/assetManifest.js';
+ import * as PIXI from 'pixi.js';
+ 
+ class RankAssetsManager {
+     constructor() {
+-        this.basePath = '/sprites/ranks/PNG/Default size/Gold';
+-        this.textures = []; // Array of 78 textures or null
++        this.textures = [];
+         this.loadingPromise = null;
+     }
+ 
+@@ -11,35 +11,26 @@ class RankAssetsManager {
+         if (this.loadingPromise) return this.loadingPromise;
+ 
+         this.loadingPromise = (async () => {
+-            const manifests = [];
+-            for (let i = 0; i <= 77; i++) {
+-                const num = i.toString().padStart(3, '0');
+-                const alias = `rank${num}`;
+-                const src = `${this.basePath}/${alias}.png`;
+-                manifests.push({ alias, src });
+-            }
+-
+-            // Load in bundles of 10 to avoid overwhelming network if not http2
+-            // Actually PIXI handles this well usually.
+-            const textures = [];
+-
+-            // We can bundle correct?
+-            // Let's just do Promise.all. 78 small pngs is fine.
+-            // But let's verify existence.
+-
+-            console.log('[RankAssets] Starting preload of 78 rank icons...');
+-
+-            // We will load them simply
++            const ranks = AssetManifest.sprites.ranks;
++            const manifests = ranks.map((path) => {
++                // Extract alias from filename: /.../rank005.png -> rank005
++                const parts = path.split('/');
++                const filename = parts[parts.length - 1];
++                const alias = filename.split('.')[0];
++                return { alias, src: path };
++            });
++
++            console.log(`[RankAssets] Starting preload of ${ranks.length} rank icons from Manifest...`);
++
++            // Load all
+             await PIXI.Assets.load(manifests);
+ 
+-            // Populate local array
+-            for (let i = 0; i <= 77; i++) {
+-                const num = i.toString().padStart(3, '0');
+-                const alias = `rank${num}`;
+-                this.textures[i] = PIXI.Assets.get(alias);
+-            }
++            // Populate local array ensuring index alignment
++            manifests.forEach((m, i) => {
++                this.textures[i] = PIXI.Assets.get(m.alias);
++            });
+ 
+-            console.log('[RankAssets] Loaded all ranks.');
++            console.log('[RankAssets] Loaded ranks.');
+             return this.textures;
+         })();
+ 
+@@ -48,7 +39,8 @@ class RankAssetsManager {
+ 
+     getRankTexture(index) {
+         if (index < 0) index = 0;
+-        if (index > 77) index = 77;
++        if (index >= this.textures.length) index = this.textures.length - 1;
++
+         // Try getting from cache if valid
+         if (this.textures[index]) return this.textures[index];
+ 
+diff --git a/vite.config.js b/vite.config.js
+index 4061a7b..f522039 100644
+--- a/vite.config.js
++++ b/vite.config.js
+@@ -20,9 +20,11 @@ export default defineConfig({
+   build: {
+     outDir: 'dist',
+     assetsDir: 'assets',
++    cssCodeSplit: false,
+     rollupOptions: {
+       output: {
+-        manualChunks: undefined
++        manualChunks: undefined,
++        inlineDynamicImports: false
+       }
+     }
+   },

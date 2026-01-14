@@ -1,18 +1,11 @@
+import { AssetManifest } from '../assets/assetManifest.js';
 import * as PIXI from 'pixi.js';
 
 class GameAssetsManager {
     constructor() {
         this.beerTexture = null;
         this.photos = {};
-        this.photoList = [
-            'anja.png',
-            'donaldtru.jpg',
-            'eirik1.jpg',
-            'burtelurt.jpg',
-            'eirik_kurt2.jpg',
-            'kurt2.jpg',
-            'eriikviking.webp'
-        ];
+        this.photoList = AssetManifest.loreImages;
         this.shipTextures = {};
         this.enemyTextures = {};
     }
@@ -50,11 +43,15 @@ class GameAssetsManager {
 
     async loadPhotos() {
         const promises = this.photoList.map(async (filename) => {
+
             try {
-                const alias = filename.split('.')[0];
+                // filename is now full path in manifest, extract alias
+                const parts = filename.split('/');
+                const name = parts[parts.length - 1];
+                const alias = name.split('.')[0];
                 const texture = await PIXI.Assets.load({
                     alias: alias,
-                    src: `/${filename}`
+                    src: filename // Use full path from manifest
                 });
 
                 if (this.isValidTexture(texture)) {
@@ -87,21 +84,16 @@ class GameAssetsManager {
     }
 
     async loadShips() {
-        const playerShips = ['player_01.png'];
-        const enemyShips = Array.from({ length: 9 }, (_, i) => `spaceShips_00${i + 1}.png`);
-
-        // this.shipTextures and this.enemyTextures are initialized in constructor
-        // We ensure they are objects here just in case
-        this.shipTextures = this.shipTextures || {};
-        this.enemyTextures = this.enemyTextures || {};
-
         // Load Player Ships
+        const playerShips = AssetManifest.sprites.ships;
         await Promise.all(playerShips.map(async (filename) => {
-            const alias = filename.split('.')[0];
+            const parts = filename.split('/');
+            const name = parts[parts.length - 1];
+            const alias = name.split('.')[0];
             try {
                 const texture = await PIXI.Assets.load({
                     alias: alias,
-                    src: `/sprites/player/${filename}`
+                    src: filename
                 });
                 if (this.isValidTexture(texture)) this.shipTextures[alias] = texture;
             } catch (e) {
@@ -109,17 +101,43 @@ class GameAssetsManager {
             }
         }));
 
-        // Load Enemy Ships
-        await Promise.all(enemyShips.map(async (filename) => {
-            const alias = filename.split('.')[0];
+        // Load Enemy Ships (Core) - Wait, manifest structure for enemies is object.
+        // But original code loaded 'spaceShips_00X.png' which are in manifest.sprites.ships? 
+        // No, check manifest... ships: Array of spaceShips.
+        // Wait, original code: enemyShips = Array.from({ length: 9 }, (_, i) => `spaceShips_00${i + 1}.png`);
+        // My manifest: ships: ... spaceShips...
+        // Ah, original 'playerShips' was just 'player_01.png'.
+
+        // Let's look at original code:
+        // playerShips = ['player_01.png'] -> loaded from /sprites/player/
+        // enemyShips = spaceShips... -> loaded from /sprites/Ships/
+
+        // My manifest:
+        // sprites.player = '/sprites/player/player_01.png'
+        // sprites.ships = ['/sprites/Ships/spaceShips...']
+
+        // So I should load sprites.player separately.
+
+        // Load Player
+        try {
+            const pPath = AssetManifest.sprites.player;
+            const texture = await PIXI.Assets.load({ alias: 'player_01', src: pPath });
+            if (this.isValidTexture(texture)) this.shipTextures['player_01'] = texture;
+        } catch (e) { console.warn('Failed player load', e); }
+
+        // Load Ships (used as enemies in original code?)
+        const coreShips = AssetManifest.sprites.ships;
+        await Promise.all(coreShips.map(async (filepath) => {
+            const parts = filepath.split('/');
+            const alias = parts[parts.length - 1].split('.')[0];
             try {
                 const texture = await PIXI.Assets.load({
                     alias: alias,
-                    src: `/sprites/Ships/${filename}`
+                    src: filepath
                 });
                 if (this.isValidTexture(texture)) this.enemyTextures[alias] = texture;
             } catch (e) {
-                console.warn(`[GameAssets] Failed to load enemy ship ${filename}:`, e);
+                console.warn(`[GameAssets] Failed to load enemy ship ${filepath}:`, e);
             }
         }));
 
@@ -141,65 +159,66 @@ class GameAssetsManager {
         this.xtra = { ships: {}, enemies: {}, lasers: {}, damage: {}, parts: {}, effects: {}, powerups: {} };
         const basePath = '/sprites/xtra-sprites';
 
-        // 1. Player Ships: playerShip{1-3}_{blue,green,orange,red}
-        const shipTypes = [1, 2, 3];
-        const shipColors = ['blue', 'green', 'orange', 'red'];
-        const shipPromises = [];
-        shipTypes.forEach(t => {
-            shipColors.forEach(c => {
-                const name = `playerShip${t}_${c}`;
-                shipPromises.push(this.loadSingleAsset(`xtra_ship_${name}`, `${basePath}/${name}.png`, this.xtra.ships));
-            });
-            // Damage: playerShip{t}_damage{1-3}
-            [1, 2, 3].forEach(d => {
-                const dName = `playerShip${t}_damage${d}`;
-                shipPromises.push(this.loadSingleAsset(`xtra_damage_${dName}`, `${basePath}/Damage/${dName}.png`, this.xtra.damage));
-            });
-        });
+        // 1. Player Ships (Xtra) - Not in manifest explicitly as list?
+        // Manifest has sprites.enemies...
+        // The original code constructed paths manually. 
+        // We should just use the manifest categories if possible, but XtraAssets logic was complex.
+        // Let's use the patterns but refer to manifest PATHS logic if possible, or just re-implement the loop using consistent paths.
 
-        // 2. Enemies: enemy{Color}{1-5}
+        // Actually, let's keep the logic but update the Base Path concept to reference manifest helper if needed.
+        // But better: Use the Manifest arrays if I added them.
+
+        // I added: sprites.enemies.Black, sprites.lasers.Blue, sprites.damage...
+
+        // Loading Enemies (Xtra)
         const enemyColors = ['Black', 'Blue', 'Green', 'Red'];
         const enemyPromises = [];
         enemyColors.forEach(c => {
-            for (let i = 1; i <= 5; i++) {
-                const name = `enemy${c}${i}`;
-                enemyPromises.push(this.loadSingleAsset(`xtra_enemy_${name}`, `${basePath}/Enemies/${name}.png`, this.xtra.enemies));
+            const list = AssetManifest.sprites.enemies[c];
+            if (list) {
+                list.forEach(path => {
+                    const split = path.split('/');
+                    const alias = `xtra_enemy_${split[split.length - 1].split('.')[0]}`;
+                    enemyPromises.push(this.loadSingleAsset(alias, path, this.xtra.enemies));
+                });
             }
         });
 
-        // 3. Lasers: laser{Color}{01-16}
+        // Loading Lasers
         const laserColors = ['Blue', 'Green', 'Red'];
         const laserPromises = [];
         laserColors.forEach(c => {
-            for (let i = 1; i <= 16; i++) {
-                const num = i.toString().padStart(2, '0');
-                const name = `laser${c}${num}`;
-                laserPromises.push(this.loadSingleAsset(`xtra_laser_${name}`, `${basePath}/Lasers/${name}.png`, this.xtra.lasers));
+            const list = AssetManifest.sprites.lasers[c];
+            if (list) {
+                list.forEach(path => {
+                    const split = path.split('/');
+                    const alias = `xtra_laser_${split[split.length - 1].split('.')[0]}`;
+                    laserPromises.push(this.loadSingleAsset(alias, path, this.xtra.lasers));
+                });
             }
         });
 
-        // 4. Parts (Safe Selection)
-        const partPromises = [];
-        ['engine1', 'engine2', 'gun01', 'gun02', 'wingRed1'].forEach(p => {
-            partPromises.push(this.loadSingleAsset(`xtra_part_${p}`, `${basePath}/Parts/${p}.png`, this.xtra.parts));
+        // Loading Damage
+        const dmgPromises = [];
+        // Manifest damage is object of arrays
+        Object.keys(AssetManifest.sprites.damage).forEach(shipKey => {
+            AssetManifest.sprites.damage[shipKey].forEach(path => {
+                const split = path.split('/');
+                const alias = `xtra_damage_${split[split.length - 1].split('.')[0]}`;
+                dmgPromises.push(this.loadSingleAsset(alias, path, this.xtra.damage));
+            });
         });
 
-        // 5. Meteors (Safe Selection)
-        const meteorPromises = [];
-        ['meteorBrown_med1', 'meteorGrey_med1', 'meteorBrown_small1', 'meteorGrey_small1'].forEach(m => {
-            meteorPromises.push(this.loadSingleAsset(`xtra_meteor_${m}`, `${basePath}/Meteors/${m}.png`, this.xtra.parts)); // Store in parts for debris
+        // Loading Effects
+        const fxPromises = [];
+        AssetManifest.sprites.effects.forEach(path => {
+            const split = path.split('/');
+            const name = split[split.length - 1].split('.')[0];
+            // Simple alias
+            fxPromises.push(this.loadSingleAsset(`xtra_effect_${name}`, path, this.xtra.effects));
         });
 
-        // 6. Powerups
-        const powerupPromises = [];
-        ['powerupBlue_shield', 'powerupRed_shield', 'powerupGreen_shield', 'powerupYellow_shield'].forEach(p => {
-            powerupPromises.push(this.loadSingleAsset(`xtra_powerup_${p}`, `${basePath}/Power-ups/${p}.png`, this.xtra.powerups));
-        });
-        ['pill_red', 'pill_green', 'pill_blue', 'pill_yellow'].forEach(p => {
-            powerupPromises.push(this.loadSingleAsset(`xtra_powerup_${p}`, `${basePath}/Power-ups/${p}.png`, this.xtra.powerups));
-        });
-
-        await Promise.all([...shipPromises, ...enemyPromises, ...laserPromises, ...partPromises, ...meteorPromises, ...powerupPromises]);
+        await Promise.all([...enemyPromises, ...laserPromises, ...dmgPromises, ...fxPromises]);
         console.log('[GameAssets] Xtra Assets Loaded');
     }
 

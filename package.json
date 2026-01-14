@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/check-ranks.cjs",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler pages deploy dist"
@@ -16,6 +17,6 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "vite": "^5.0.11",
-    "wrangler": "^3.22.1"
+    "wrangler": "^4.59.1"
   }
 }

@@ -1,9 +1,10 @@
+import { NUM_RANKS, MAX_RANK_INDEX } from '../shared/RankPolicy.js';
 import * as PIXI from 'pixi.js';
 
 class RankAssetsManager {
     constructor() {
         this.basePath = '/sprites/ranks/PNG/Default size/Gold';
-        this.textures = []; // Array of 78 textures or null
+        this.textures = []; // Array of 20 textures (0-19)
         this.loadingPromise = null;
     }
 
@@ -12,7 +13,7 @@ class RankAssetsManager {
 
         this.loadingPromise = (async () => {
             const manifests = [];
-            for (let i = 0; i <= 77; i++) {
+            for (let i = 0; i < NUM_RANKS; i++) {
                 const num = i.toString().padStart(3, '0');
                 const alias = `rank${num}`;
                 const src = `${this.basePath}/${alias}.png`;
@@ -24,16 +25,16 @@ class RankAssetsManager {
             const textures = [];
 
             // We can bundle correct?
-            // Let's just do Promise.all. 78 small pngs is fine.
+            // Let's just do Promise.all. 20 small pngs is fine.
             // But let's verify existence.
 
-            console.log('[RankAssets] Starting preload of 78 rank icons...');
+            console.log(`[RankAssets] Starting preload of ${NUM_RANKS} rank icons...`);
 
             // We will load them simply
             await PIXI.Assets.load(manifests);
 
             // Populate local array
-            for (let i = 0; i <= 77; i++) {
+            for (let i = 0; i < NUM_RANKS; i++) {
                 const num = i.toString().padStart(3, '0');
                 const alias = `rank${num}`;
                 this.textures[i] = PIXI.Assets.get(alias);
@@ -48,7 +49,7 @@ class RankAssetsManager {
 
     getRankTexture(index) {
         if (index < 0) index = 0;
-        if (index > 77) index = 77;
+        if (index > MAX_RANK_INDEX) index = MAX_RANK_INDEX;
         // Try getting from cache if valid
         if (this.textures[index]) return this.textures[index];
 

@@ -1,4 +1,10 @@
 export const BalanceConfig = {
+    // Rank System
+    ranks: {
+        NUM_RANKS: 20,
+        MAX_RANK_INDEX: 19
+    },
+
     // Powerups
     powerups: {
         dropChance: 0.05, // Lowered base chance since we have guarantees

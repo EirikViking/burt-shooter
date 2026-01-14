@@ -1,9 +1,11 @@
 import * as PIXI from 'pixi.js';
 import { API } from '../api/API.js';
-import { getHighscoreComment } from '../text/phrasePool.js';
+import { getHighscoreComment, getLeaderboardTaunt } from '../text/phrasePool.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
+import { BeerAsset } from '../utils/BeerAsset.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 
 const API_PATH = '/api/highscores';
 const FETCH_TIMEOUT_MS = 6000;
@@ -30,6 +32,17 @@ export class HighscoreScene {
     this.fetchToken = 0;
     this.fetchController = null;
     this.rowsFadeTicker = null;
+
+    // Trophy Room Assets
+    this.beerCansContainer = new PIXI.Container();
+    this.partyHeadsContainer = new PIXI.Container();
+    this.scanlineOverlay = null;
+    this.tauntBanner = null;
+    this.tauntTimer = 0;
+    this.tauntInterval = 5000 + Math.random() * 3000; // 5-8s
+    this.animationTicker = null;
+    this.beerCans = [];
+    this.partyHeads = [];
   }
 
   async init() {
@@ -38,8 +51,23 @@ export class HighscoreScene {
     this.status = 'LOADING';
     this.lastError = 'none';
 
+    // Load beer can texture
+    await BeerAsset.ensureLoaded();
+
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height);
+
+    // Layer setup: background effects -> beer cans -> party heads -> content -> taunt banner -> scanline
+    this.beerCansContainer = new PIXI.Container();
+    this.beerCansContainer.zIndex = -10;
+    this.container.addChild(this.beerCansContainer);
+
+    this.partyHeadsContainer = new PIXI.Container();
+    this.partyHeadsContainer.zIndex = -5;
+    this.container.addChild(this.partyHeadsContainer);
+
+    this.setupBeerCans(width, height);
+    this.setupPartyHeads(width, height);
 
     this.title = new PIXI.Text('HIGHSCORES', {
       fontFamily: 'Courier New',
@@ -119,6 +147,24 @@ export class HighscoreScene {
     this.buildStamp.anchor.set(1, 1);
     this.container.addChild(this.buildStamp);
 
+    // Scanline overlay
+    this.scanlineOverlay = new PIXI.Graphics();
+    this.scanlineOverlay.zIndex = 100;
+    this.container.addChild(this.scanlineOverlay);
+    this.drawScanline(width, height);
+
+    // Taunt banner (hidden initially)
+    this.tauntBanner = new PIXI.Container();
+    this.tauntBanner.visible = false;
+    this.tauntBanner.zIndex = 50;
+    this.container.addChild(this.tauntBanner);
+
+    // Enable sortable children for zIndex
+    this.container.sortableChildren = true;
+
+    // Start animation loop
+    this.startAnimationLoop();
+
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutHighscore());
     this.layoutHighscore();
@@ -167,8 +213,7 @@ export class HighscoreScene {
 
     this.statusText.x = layout.padding;
     this.statusText.y = height - layout.padding * 1.5;
-    const shortError = !this.lastError ? 'none' : (this.lastError.length > 40 ? `${this.lastError.slice(0, 40)}...` : this.lastError);
-    this.statusText.text = `status:${this.status} entries:${this.entries.length} err:${shortError} url:${this.apiUrl}`;
+    this.statusText.text = ''; // Debug line removed
 
     this.buildStamp.x = width - layout.padding / 2;
     this.buildStamp.y = height - layout.padding / 2;
@@ -297,10 +342,24 @@ export class HighscoreScene {
 
       this.entries.slice(0, maxRows).forEach((score, index) => {
         const y = startY + layout.lineHeight * 1.4 * (index + 1);
-        const rankText = new PIXI.Text((index + 1).toString().padStart(2, '0'), rowStyle);
-        const nameText = new PIXI.Text((score.name || '??').slice(0, 12), rowStyle);
-        const scoreText = new PIXI.Text((score.score || 0).toString(), rowStyle);
-        const levelText = new PIXI.Text((score.level || 0).toString(), rowStyle);
+        const isTop3 = index < 3;
+
+        // Premium glow for top 3
+        if (isTop3) {
+          const glow = new PIXI.Graphics();
+          glow.rect(layout.padding - 5, y - 2, layout.width - layout.padding * 2 + 10, layout.lineHeight * 1.2);
+          glow.fill({ color: 0xffaa00, alpha: 0.15 });
+          glow.filters = [new PIXI.BlurFilter(4)];
+          this.rowsContainer.addChild(glow);
+        }
+
+        const rankStyle = isTop3 ? { ...rowStyle, fill: '#ffdd00', fontSize: rowStyle.fontSize + 2 } : rowStyle;
+        const nameStyle = isTop3 ? { ...rowStyle, fill: '#ffff88', fontSize: rowStyle.fontSize + 1 } : rowStyle;
+
+        const rankText = new PIXI.Text((index + 1).toString().padStart(2, '0'), rankStyle);
+        const nameText = new PIXI.Text((score.name || '??').slice(0, 12), nameStyle);
+        const scoreText = new PIXI.Text((score.score || 0).toString(), isTop3 ? nameStyle : rowStyle);
+        const levelText = new PIXI.Text((score.level || 0).toString(), isTop3 ? nameStyle : rowStyle);
 
         rankText.x = columns.rank;
         rankText.y = y;
@@ -363,6 +422,208 @@ export class HighscoreScene {
     this.game.app.ticker.add(ticker);
   }
 
+  setupBeerCans(width, height) {
+    this.beerCans = [];
+    const texture = BeerAsset.getTexture();
+    if (!texture || texture === PIXI.Texture.EMPTY) return;
+
+    const canCount = 5;
+    for (let i = 0; i < canCount; i++) {
+      const can = new PIXI.Sprite(texture);
+      const scale = 0.3 + Math.random() * 0.4; // 0.3-0.7
+      can.scale.set(scale);
+      can.anchor.set(0.5);
+      can.alpha = 0.2 + Math.random() * 0.15; // 0.2-0.35
+
+      // Random position
+      const edge = Math.random();
+      if (edge < 0.3) {
+        // Left edge
+        can.x = -can.width / 2 + Math.random() * 80;
+      } else if (edge < 0.6) {
+        // Right edge
+        can.x = width - Math.random() * 80 + can.width / 2;
+      } else {
+        // Random across screen
+        can.x = Math.random() * width;
+      }
+      can.y = Math.random() * height;
+
+      // Animation properties
+      can._driftX = (Math.random() - 0.5) * 0.3;
+      can._driftY = (Math.random() - 0.5) * 0.3;
+      can._rotation = (Math.random() - 0.5) * 0.005;
+
+      this.beerCansContainer.addChild(can);
+      this.beerCans.push(can);
+    }
+  }
+
+  setupPartyHeads(width, height) {
+    this.partyHeads = [];
+    const maxHeads = 10;
+    const images = AssetManifest.loreImages;
+
+    for (let i = 0; i < Math.min(maxHeads, images.length); i++) {
+      const imagePath = images[i % images.length];
+      const sprite = PIXI.Sprite.from(imagePath);
+      const scale = 0.08 + Math.random() * 0.12; // 0.08-0.2
+      sprite.scale.set(scale);
+      sprite.anchor.set(0.5);
+      sprite.alpha = 0.15 + Math.random() * 0.2; // 0.15-0.35
+      sprite.x = Math.random() * width;
+      sprite.y = Math.random() * height;
+
+      // Animation properties
+      sprite._driftX = (Math.random() - 0.5) * 0.4;
+      sprite._driftY = (Math.random() - 0.5) * 0.4;
+      sprite._rotation = (Math.random() - 0.5) * 0.008;
+
+      this.partyHeadsContainer.addChild(sprite);
+      this.partyHeads.push(sprite);
+    }
+  }
+
+  drawScanline(width, height) {
+    if (!this.scanlineOverlay) return;
+    this.scanlineOverlay.clear();
+
+    // Subtle scanline effect
+    for (let y = 0; y < height; y += 4) {
+      this.scanlineOverlay.rect(0, y, width, 2);
+      this.scanlineOverlay.fill({ color: 0x000000, alpha: 0.05 });
+    }
+
+    // Shimmer gradient
+    this.scanlineOverlay.rect(0, 0, width, height);
+    this.scanlineOverlay.fill({ color: 0xffffff, alpha: 0.02 });
+  }
+
+  startAnimationLoop() {
+    if (!this.game?.app?.ticker) return;
+    if (this.animationTicker) {
+      this.game.app.ticker.remove(this.animationTicker);
+    }
+
+    this.animationTicker = (delta) => {
+      const dt = delta.deltaTime;
+      const { width, height } = this.game.app.screen;
+
+      // Animate beer cans
+      this.beerCans.forEach(can => {
+        can.x += can._driftX * dt;
+        can.y += can._driftY * dt;
+        can.rotation += can._rotation * dt;
+
+        // Wrap around
+        if (can.x < -can.width) can.x = width + can.width / 2;
+        if (can.x > width + can.width) can.x = -can.width / 2;
+        if (can.y < -can.height) can.y = height + can.height / 2;
+        if (can.y > height + can.height) can.y = -can.height / 2;
+      });
+
+      // Animate party heads
+      this.partyHeads.forEach(head => {
+        head.x += head._driftX * dt;
+        head.y += head._driftY * dt;
+        head.rotation += head._rotation * dt;
+
+        // Wrap around
+        if (head.x < -head.width) head.x = width + head.width / 2;
+        if (head.x > width + head.width) head.x = -head.width / 2;
+        if (head.y < -head.height) head.y = height + head.height / 2;
+        if (head.y > height + head.height) head.y = -head.height / 2;
+      });
+
+      // Taunt system
+      if (this.status === 'LOADED' && this.entries.length >= 4) {
+        this.tauntTimer += dt * 16.67;
+        if (this.tauntTimer >= this.tauntInterval && !this.tauntBanner.visible) {
+          this.showTaunt();
+          this.tauntTimer = 0;
+          this.tauntInterval = 5000 + Math.random() * 3000;
+        }
+      }
+    };
+
+    this.game.app.ticker.add(this.animationTicker);
+  }
+
+  showTaunt() {
+    if (!this.entries || this.entries.length < 4) return;
+
+    // Pick random from top 3 and target from 4-10
+    const speakerIndex = Math.floor(Math.random() * 3);
+    const targetIndex = 3 + Math.floor(Math.random() * Math.min(7, this.entries.length - 3));
+
+    const speaker = this.entries[speakerIndex];
+    const target = this.entries[targetIndex];
+
+    if (!speaker || !target) return;
+
+    const speakerName = (speaker.name || '??').slice(0, 12).toUpperCase();
+    const targetName = (target.name || '??').slice(0, 12).toUpperCase();
+    const tauntText = getLeaderboardTaunt(targetName);
+    const fullText = `${speakerName} til ${tauntText}`;
+
+    // Clear and rebuild taunt banner
+    this.tauntBanner.removeChildren();
+
+    const { width } = this.game.app.screen;
+    const bg = new PIXI.Graphics();
+    bg.rect(0, 0, Math.min(width * 0.8, 600), 50);
+    bg.fill({ color: 0xff4400, alpha: 0.85 });
+    bg.stroke({ color: 0xffff00, width: 3 });
+    this.tauntBanner.addChild(bg);
+
+    const text = new PIXI.Text(fullText, {
+      fontFamily: 'Courier New',
+      fontSize: 14,
+      fill: '#ffffff',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: Math.min(width * 0.75, 580)
+    });
+    text.anchor.set(0.5);
+    text.x = bg.width / 2;
+    text.y = bg.height / 2;
+    this.tauntBanner.addChild(text);
+
+    // Position at top center
+    this.tauntBanner.x = (width - bg.width) / 2;
+    this.tauntBanner.y = -60;
+    this.tauntBanner.visible = true;
+
+    // Slide in animation
+    let elapsed = 0;
+    const slideIn = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      const progress = Math.min(1, elapsed / 300);
+      this.tauntBanner.y = -60 + progress * 100; // Slide to y=40
+
+      if (progress >= 1) {
+        this.game.app.ticker.remove(slideIn);
+        // Hold for 2s, then fade out
+        setTimeout(() => {
+          let fadeElapsed = 0;
+          const fadeOut = (delta) => {
+            fadeElapsed += delta.deltaTime * 16.67;
+            const fadeProgress = Math.min(1, fadeElapsed / 400);
+            this.tauntBanner.alpha = 1 - fadeProgress;
+
+            if (fadeProgress >= 1) {
+              this.game.app.ticker.remove(fadeOut);
+              this.tauntBanner.visible = false;
+              this.tauntBanner.alpha = 1;
+            }
+          };
+          this.game.app.ticker.add(fadeOut);
+        }, 2000);
+      }
+    };
+    this.game.app.ticker.add(slideIn);
+  }
+
   createButton(text) {
     const container = new PIXI.Container();
     container.eventMode = 'static';
@@ -382,11 +643,20 @@ export class HighscoreScene {
     label.anchor.set(0.5);
     container.addChild(label);
 
+    const glow = new PIXI.Graphics();
+    glow.rect(-80, -20, 160, 40);
+    glow.fill({ color: 0x00ffff, alpha: 0 });
+    glow.filters = [new PIXI.BlurFilter(8)];
+    container.addChildAt(glow, 0);
+
     container.on('pointerover', () => {
       bg.clear();
       bg.rect(-80, -20, 160, 40);
       bg.fill({ color: 0x00ffff, alpha: 0.5 });
       bg.stroke({ color: 0x00ffff, width: 2 });
+      glow.clear();
+      glow.rect(-80, -20, 160, 40);
+      glow.fill({ color: 0x00ffff, alpha: 0.4 });
     });
 
     container.on('pointerout', () => {
@@ -394,6 +664,17 @@ export class HighscoreScene {
       bg.rect(-80, -20, 160, 40);
       bg.fill({ color: 0x0088ff, alpha: 0.3 });
       bg.stroke({ color: 0x00ffff, width: 2 });
+      glow.clear();
+      glow.rect(-80, -20, 160, 40);
+      glow.fill({ color: 0x00ffff, alpha: 0 });
+    });
+
+    container.on('pointerdown', () => {
+      container.scale.set(0.95);
+    });
+
+    container.on('pointerup', () => {
+      container.scale.set(1);
     });
 
     return container;
@@ -412,5 +693,11 @@ export class HighscoreScene {
       this.game.app.ticker.remove(this.rowsFadeTicker);
       this.rowsFadeTicker = null;
     }
+    if (this.animationTicker && this.game?.app?.ticker) {
+      this.game.app.ticker.remove(this.animationTicker);
+      this.animationTicker = null;
+    }
+    this.beerCans = [];
+    this.partyHeads = [];
   }
 }

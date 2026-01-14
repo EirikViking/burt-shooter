@@ -1,18 +1,53 @@
 // Cloudflare Pages Function for highscores API
+import { getRankFromScore } from '../shared/RankPolicy.js';
+
+// Schema detection cache
+let schemaChecked = false;
+let hasRankIndexColumn = false;
+
+async function checkSchema(db) {
+  if (schemaChecked) return hasRankIndexColumn;
+
+  try {
+    const { results } = await db.prepare('PRAGMA table_info(game_highscores)').all();
+    hasRankIndexColumn = results.some(col => col.name === 'rank_index');
+    schemaChecked = true;
+  } catch (error) {
+    console.error('Schema check failed, assuming no rank_index column:', error);
+    hasRankIndexColumn = false;
+    schemaChecked = true;
+  }
+
+  return hasRankIndexColumn;
+}
 
 export async function onRequestGet(context) {
   try {
     const db = context.env.DB;
+    const hasRankIndex = await checkSchema(db);
 
-    // Get ALL scores, not grouped by name - show every game played
+    // Build query based on schema
+    const selectFields = hasRankIndex
+      ? 'id, name, score, level, rank_index, created_at'
+      : 'id, name, score, level, created_at';
+
     const { results } = await db.prepare(
-      `SELECT name, score, level, created_at
+      `SELECT ${selectFields}
        FROM game_highscores
        ORDER BY score DESC, created_at DESC
        LIMIT 50`
     ).all();
 
-    return new Response(JSON.stringify(results), {
+    // Always compute rank_index for response (compute if missing)
+    const enrichedResults = results.map(entry => {
+      const rank_index = (hasRankIndex && entry.rank_index !== null && entry.rank_index !== undefined)
+        ? entry.rank_index
+        : getRankFromScore(entry.score);
+
+      return { ...entry, rank_index };
+    });
+
+    return new Response(JSON.stringify(enrichedResults), {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
@@ -39,6 +74,7 @@ export async function onRequestPost(context) {
     const body = await context.request.json();
 
     const { name, score, level } = body;
+    // NOTE: Ignore any client-provided rank or rankIndex - backend is authoritative
 
     // Validation
     if (!name || typeof score !== 'number' || typeof level !== 'number') {
@@ -64,12 +100,23 @@ export async function onRequestPost(context) {
       });
     }
 
-    // Insert score
-    const result = await db.prepare(
-      'INSERT INTO game_highscores (name, score, level, created_at) VALUES (?, ?, ?, ?)'
-    ).bind(sanitizedName, score, level, new Date().toISOString()).run();
+    // Compute rank_index from score (backend authority)
+    const computedRankIndex = getRankFromScore(score);
+    const hasRankIndex = await checkSchema(db);
 
-    return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id }), {
+    // Insert based on schema
+    let result;
+    if (hasRankIndex) {
+      result = await db.prepare(
+        'INSERT INTO game_highscores (name, score, level, rank_index, created_at) VALUES (?, ?, ?, ?, ?)'
+      ).bind(sanitizedName, score, level, computedRankIndex, new Date().toISOString()).run();
+    } else {
+      result = await db.prepare(
+        'INSERT INTO game_highscores (name, score, level, created_at) VALUES (?, ?, ?, ?)'
+      ).bind(sanitizedName, score, level, new Date().toISOString()).run();
+    }
+
+    return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id, rank_index: computedRankIndex }), {
       status: 201,
       headers: {
         'Content-Type': 'application/json',

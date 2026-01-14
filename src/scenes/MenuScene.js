@@ -263,32 +263,47 @@ export class MenuScene {
 
       const { width, height } = this.game.app.screen;
 
-      // 1. Hero Beer (Center - bobbing and swaying)
+      // 1. HERO Beer (LEFT side - large, prominent, animated)
       const hero = new PIXI.Sprite(texture);
       hero.anchor.set(0.5);
-      hero.height = 120;
+      hero.height = 180; // Much bigger!
       hero.scale.x = hero.scale.y; // Maintain aspect ratio
-      hero.x = width * 0.15; // LEFT side, safe form text
+      hero.x = width * 0.12; // LEFT side, safe from text
       hero.y = height * 0.5;
-      hero.rotation = -0.2;
+      hero.rotation = -0.15;
       hero.zIndex = 0; // Behind UI
-      hero.alpha = 0.9;
+      hero.alpha = 0.85; // More visible
       this.container.addChild(hero);
 
       // Store for animation
       this.heroBeer = hero;
       this.heroBaseY = hero.y;
 
-      // 2. Floating cluster (Background)
+      // 2. Secondary Hero Beer (RIGHT side)
+      const hero2 = new PIXI.Sprite(texture);
+      hero2.anchor.set(0.5);
+      hero2.height = 160;
+      hero2.scale.x = hero2.scale.y;
+      hero2.x = width * 0.88;
+      hero2.y = height * 0.55;
+      hero2.rotation = 0.2;
+      hero2.zIndex = 0;
+      hero2.alpha = 0.75;
+      this.container.addChild(hero2);
+
+      // Store for animation
+      this.heroBeer2 = hero2;
+      this.heroBaseY2 = hero2.y;
+
+      // 3. Floating cluster (More cans, more variation)
       this.floatingBeers = [];
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 6; i++) {
         const sprite = new PIXI.Sprite(texture);
         sprite.anchor.set(0.5);
-        const scale = 0.3 + Math.random() * 0.3;
+        const scale = 0.25 + Math.random() * 0.4; // Bigger range
         sprite.scale.set(scale);
 
-        // Custom properties for animation
-        // Divide screen into 3 columns: 0-20% (left), 20-80% (center - AVOID), 80-100% (right)
+        // Divide screen: left and right columns (avoid center text area)
         const isLeft = Math.random() < 0.5;
         const minX = isLeft ? 0 : width * 0.8;
         const maxX = isLeft ? width * 0.2 : width;
@@ -296,14 +311,13 @@ export class MenuScene {
         sprite.x = minX + Math.random() * (maxX - minX);
         sprite.y = Math.random() * height;
 
-        sprite.driftSpeedX = (Math.random() - 0.5) * 0.2; // Slower drift
-        sprite.driftSpeedY = (Math.random() - 0.5) * 0.2;
-        sprite.rotSpeed = (Math.random() - 0.5) * 0.02;
+        sprite.driftSpeedX = (Math.random() - 0.5) * 0.35; // More movement
+        sprite.driftSpeedY = (Math.random() - 0.5) * 0.35;
+        sprite.rotSpeed = (Math.random() - 0.5) * 0.025;
 
-        // Store boundary info for update loop
         sprite.boundsX = { min: isLeft ? -50 : width * 0.75, max: isLeft ? width * 0.25 : width + 50 };
 
-        sprite.alpha = 0.4 + Math.random() * 0.3;
+        sprite.alpha = 0.5 + Math.random() * 0.35; // More visible
         sprite.rotation = Math.random() * Math.PI * 2;
         sprite.zIndex = 1; // Just above stars
 
@@ -535,10 +549,14 @@ export class MenuScene {
       this.title.style.dropShadowAlpha = pulse * 0.8;
     }
 
-    // Animate Hero Beer
+    // Animate Hero Beers
     if (this.heroBeer) {
-      this.heroBeer.y = this.heroBaseY + Math.sin(this.animationTime * 2) * 10;
-      this.heroBeer.rotation = Math.sin(this.animationTime) * 0.1;
+      this.heroBeer.y = this.heroBaseY + Math.sin(this.animationTime * 2) * 12;
+      this.heroBeer.rotation = -0.15 + Math.sin(this.animationTime) * 0.12;
+    }
+    if (this.heroBeer2) {
+      this.heroBeer2.y = this.heroBaseY2 + Math.sin(this.animationTime * 1.7) * 10;
+      this.heroBeer2.rotation = 0.2 + Math.sin(this.animationTime * 1.3) * 0.1;
     }
 
     // Animate Floating Beers

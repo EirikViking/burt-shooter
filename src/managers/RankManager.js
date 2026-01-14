@@ -1,47 +1,27 @@
-
+import {
+    NUM_RANKS,
+    MAX_RANK_INDEX,
+    getRankFromScore,
+    getThresholds,
+    getRankThreshold,
+    getNextRankThreshold
+} from '../shared/RankPolicy.js';
 
 export class RankManager {
     constructor() {
-        this.thresholds = [];
-        this.generateThresholds();
-    }
-
-    generateThresholds() {
-        // Reproduce the pacing: Base 150, +15% per level, accumulating
-        let currentRequirement = 150;
-        let cumulativeScore = 0;
-
-        for (let i = 0; i <= 77; i++) {
-            this.thresholds.push(Math.floor(cumulativeScore));
-            cumulativeScore += currentRequirement;
-            currentRequirement *= 1.15;
-        }
+        this.thresholds = getThresholds();
     }
 
     getRankFromScore(score) {
-        // Guard: Ensure score is a valid number
-        if (typeof score !== 'number' || !Number.isFinite(score) || score < 0) {
-            return 0;
-        }
-
-        // Binary search or simple loop - simple loop is fine for 78 items
-        for (let i = this.thresholds.length - 1; i >= 0; i--) {
-            if (score >= this.thresholds[i]) {
-                return i;
-            }
-        }
-        return 0;
+        return getRankFromScore(score);
     }
 
     getRankThreshold(rankIndex) {
-        if (rankIndex >= this.thresholds.length) return Infinity;
-        if (rankIndex < 0) return 0;
-        return this.thresholds[rankIndex];
+        return getRankThreshold(rankIndex);
     }
 
     getNextRankThreshold(rankIndex) {
-        if (rankIndex >= this.thresholds.length - 1) return this.thresholds[this.thresholds.length - 1]; // Cap
-        return this.thresholds[rankIndex + 1];
+        return getNextRankThreshold(rankIndex);
     }
 
     getRankString(rankIndex) {
