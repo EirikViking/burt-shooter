@@ -50,13 +50,24 @@ class RankAssetsManager {
     getRankTexture(index) {
         if (index < 0) index = 0;
         if (index > MAX_RANK_INDEX) index = MAX_RANK_INDEX;
+
         // Try getting from cache if valid
         if (this.textures[index]) return this.textures[index];
 
         // Fallback: try getting directly from PIXI cache by alias
         const num = index.toString().padStart(3, '0');
         const alias = `rank${num}`;
-        return PIXI.Assets.get(alias);
+
+        try {
+            const cached = PIXI.Assets.get(alias);
+            if (cached) return cached;
+        } catch (e) {
+            // Assets.get failed, use Texture.from
+        }
+
+        // Final fallback: Texture.from with direct path
+        const path = `${this.basePath}/rank${num}.png`;
+        return PIXI.Texture.from(path);
     }
 }
 

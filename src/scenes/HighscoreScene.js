@@ -6,6 +6,9 @@ import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { BeerAsset } from '../utils/BeerAsset.js';
 import { AssetManifest } from '../assets/assetManifest.js';
+import { getRankFromScore } from '../shared/RankPolicy.js';
+import { RankAssets } from '../utils/RankAssets.js';
+import { getRankName } from '../utils/RankNames.js';
 
 const API_PATH = '/api/highscores';
 const FETCH_TIMEOUT_MS = 6000;
@@ -373,6 +376,41 @@ export class HighscoreScene {
         levelText.anchor.set(1, 0);
 
         this.rowsContainer.addChild(rankText, nameText, scoreText, levelText);
+
+        // Add rank sprite and rank name
+        try {
+          // Compute player rank from score
+          const playerRankIndex = score.rank_index !== null && score.rank_index !== undefined
+            ? score.rank_index
+            : getRankFromScore(score.score || 0);
+
+          // Clamp to valid range (0-19)
+          const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
+
+          // Rank sprite
+          const rankTexture = RankAssets.getRankTexture(clampedRank);
+          if (rankTexture) {
+            const rankSprite = new PIXI.Sprite(rankTexture);
+            const spriteSize = layout.isMobile ? 20 : 24;
+            rankSprite.width = spriteSize;
+            rankSprite.height = spriteSize;
+            rankSprite.x = columns.rank + 30; // Position after placement text
+            rankSprite.y = y - 2;
+            this.rowsContainer.addChild(rankSprite);
+          }
+
+          // Rank name label
+          const rankNameText = new PIXI.Text(getRankName(clampedRank), {
+            fontFamily: 'Courier New',
+            fontSize: Math.max(8, rowStyle.fontSize - 4),
+            fill: '#aaaaaa'
+          });
+          rankNameText.x = columns.name;
+          rankNameText.y = y + layout.lineHeight * 0.7;
+          this.rowsContainer.addChild(rankNameText);
+        } catch (error) {
+          console.error('Error rendering rank sprite/name:', error);
+        }
       });
 
       if (this.entries.length > maxRows) {

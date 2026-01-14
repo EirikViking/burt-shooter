@@ -18,7 +18,6 @@ export const RankNames = [
     "Kulturhus King",
     "Stokmarknes Legend",
     "Melbu Myth",
-    "Viking Voyager",
     "ULTIMATE SVIN"
 ];
 
