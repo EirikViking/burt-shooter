@@ -389,6 +389,8 @@ export class HighscoreScene {
 
           // Rank sprite
           const rankTexture = RankAssets.getRankTexture(clampedRank);
+          console.log(`[HighscoreScene] Rank ${clampedRank} texture:`, rankTexture, 'valid:', rankTexture && rankTexture.valid);
+
           if (rankTexture) {
             const rankSprite = new PIXI.Sprite(rankTexture);
             const spriteSize = layout.isMobile ? 20 : 24;
@@ -396,7 +398,10 @@ export class HighscoreScene {
             rankSprite.height = spriteSize;
             rankSprite.x = columns.rank + 30; // Position after placement text
             rankSprite.y = y - 2;
+            console.log(`[HighscoreScene] Adding rank sprite at (${rankSprite.x}, ${rankSprite.y}), size: ${spriteSize}`);
             this.rowsContainer.addChild(rankSprite);
+          } else {
+            console.warn(`[HighscoreScene] No texture for rank ${clampedRank}`);
           }
 
           // Rank name label

@@ -55,9 +55,10 @@ class RankAssetsManager {
         if (this.textures[index]) return this.textures[index];
 
         // Use Texture.from directly with the public path
-        // This avoids "Asset ID not found" warnings from PIXI.Assets.get
+        // URL-encode to handle spaces in path
         const num = index.toString().padStart(3, '0');
-        const path = `${this.basePath}/rank${num}.png`;
+        const path = `${this.basePath}/rank${num}.png`.replace(/ /g, '%20');
+        console.log(`[RankAssets] Loading texture for rank ${index} from:`, path);
         return PIXI.Texture.from(path);
     }
 }
