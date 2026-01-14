@@ -175,7 +175,7 @@ export class HighscoreScene {
     this.fetchHighscores();
   }
 
-  layoutHighscore() {
+  async layoutHighscore() {
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height);
     const stack = createVerticalStack(layout, { startY: layout.padding, spacing: layout.spacing });
@@ -203,7 +203,7 @@ export class HighscoreScene {
 
     // Rows start after status message
     const rowsStartY = headerY + layout.lineHeight * 0.9 + layout.spacing * 0.3;
-    this.renderHighscoreRows(rowsStartY, layout);
+    await this.renderHighscoreRows(rowsStartY, layout);
 
     // Retry/back & diag
     const buttonY = height - layout.padding - (layout.isMobile ? 70 : 50);
@@ -307,7 +307,7 @@ export class HighscoreScene {
     this.layoutHighscore();
   }
 
-  renderHighscoreRows(startY, layout) {
+  async renderHighscoreRows(startY, layout) {
     this.rowsContainer.removeChildren();
     if (this.status === 'LOADED') {
       const rowStyle = {
@@ -343,7 +343,25 @@ export class HighscoreScene {
         this.rowsContainer.addChild(text);
       });
 
-      this.entries.slice(0, maxRows).forEach((score, index) => {
+      // Preload rank textures for visible entries
+      const entriesToRender = this.entries.slice(0, maxRows);
+      const rankTextures = await Promise.all(
+        entriesToRender.map(async (entry) => {
+          const playerRankIndex = entry.rank_index !== null && entry.rank_index !== undefined
+            ? entry.rank_index
+            : getRankFromScore(entry.score || 0);
+          const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
+
+          try {
+            return await RankAssets.loadRankTexture(clampedRank);
+          } catch (error) {
+            console.error(`[HighscoreScene] Failed to load rank ${clampedRank} texture:`, error.message);
+            return RankAssets.getRankTextureFallback();
+          }
+        })
+      );
+
+      entriesToRender.forEach((score, index) => {
         const y = startY + layout.lineHeight * 1.4 * (index + 1);
         const isTop3 = index < 3;
 
@@ -377,45 +395,32 @@ export class HighscoreScene {
 
         this.rowsContainer.addChild(rankText, nameText, scoreText, levelText);
 
-        // Add rank sprite and rank name
-        try {
-          // Compute player rank from score
-          const playerRankIndex = score.rank_index !== null && score.rank_index !== undefined
-            ? score.rank_index
-            : getRankFromScore(score.score || 0);
-
-          // Clamp to valid range (0-19)
-          const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
-
-          // Rank sprite
-          const rankTexture = RankAssets.getRankTexture(clampedRank);
-          console.log(`[HighscoreScene] Rank ${clampedRank} texture:`, rankTexture, 'valid:', rankTexture && rankTexture.valid);
-
-          if (rankTexture) {
-            const rankSprite = new PIXI.Sprite(rankTexture);
-            const spriteSize = layout.isMobile ? 20 : 24;
-            rankSprite.width = spriteSize;
-            rankSprite.height = spriteSize;
-            rankSprite.x = columns.rank + 30; // Position after placement text
-            rankSprite.y = y - 2;
-            console.log(`[HighscoreScene] Adding rank sprite at (${rankSprite.x}, ${rankSprite.y}), size: ${spriteSize}`);
-            this.rowsContainer.addChild(rankSprite);
-          } else {
-            console.warn(`[HighscoreScene] No texture for rank ${clampedRank}`);
-          }
-
-          // Rank name label
-          const rankNameText = new PIXI.Text(getRankName(clampedRank), {
-            fontFamily: 'Courier New',
-            fontSize: Math.max(8, rowStyle.fontSize - 4),
-            fill: '#aaaaaa'
-          });
-          rankNameText.x = columns.name;
-          rankNameText.y = y + layout.lineHeight * 0.7;
-          this.rowsContainer.addChild(rankNameText);
-        } catch (error) {
-          console.error('Error rendering rank sprite/name:', error);
+        // Add rank sprite using preloaded texture
+        const rankTexture = rankTextures[index];
+        if (rankTexture) {
+          const rankSprite = new PIXI.Sprite(rankTexture);
+          const spriteSize = layout.isMobile ? 20 : 24;
+          rankSprite.width = spriteSize;
+          rankSprite.height = spriteSize;
+          rankSprite.x = columns.rank + 30;
+          rankSprite.y = y - 2;
+          this.rowsContainer.addChild(rankSprite);
         }
+
+        // Add rank name label
+        const playerRankIndex = score.rank_index !== null && score.rank_index !== undefined
+          ? score.rank_index
+          : getRankFromScore(score.score || 0);
+        const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
+
+        const rankNameText = new PIXI.Text(getRankName(clampedRank), {
+          fontFamily: 'Courier New',
+          fontSize: Math.max(8, rowStyle.fontSize - 4),
+          fill: '#aaaaaa'
+        });
+        rankNameText.x = columns.name;
+        rankNameText.y = y + layout.lineHeight * 0.7;
+        this.rowsContainer.addChild(rankNameText);
       });
 
       if (this.entries.length > maxRows) {

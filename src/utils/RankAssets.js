@@ -6,61 +6,101 @@ class RankAssetsManager {
         this.basePath = '/sprites/ranks/PNG/Default size/Gold';
         this.textures = []; // Array of 20 textures (0-19)
         this.loadingPromise = null;
+        this.textureCache = new Map(); // Cache for loaded textures by URL
     }
 
+    /**
+     * Get the properly encoded URL for a rank sprite
+     * @param {number} rankIndex - Rank index (0-19)
+     * @returns {string} Encoded URL
+     */
+    getRankSpriteUrl(rankIndex) {
+        // Clamp to valid range
+        if (rankIndex < 0) rankIndex = 0;
+        if (rankIndex > MAX_RANK_INDEX) rankIndex = MAX_RANK_INDEX;
+
+        // Format as 3 digits
+        const pad3 = rankIndex.toString().padStart(3, '0');
+
+        // Build raw path with spaces
+        const raw = `${this.basePath}/rank${pad3}.png`;
+
+        // Encode the full path to handle spaces safely
+        return encodeURI(raw);
+    }
+
+    /**
+     * Async loader with caching - ensures texture is loaded before use
+     * @param {number} rankIndex - Rank index (0-19)
+     * @returns {Promise<PIXI.Texture>} Loaded texture
+     */
+    async loadRankTexture(rankIndex) {
+        const url = this.getRankSpriteUrl(rankIndex);
+
+        // Return cached texture if available
+        if (this.textureCache.has(url)) {
+            return this.textureCache.get(url);
+        }
+
+        try {
+            // Load the texture using PIXI.Assets
+            const alias = `rank${rankIndex.toString().padStart(3, '0')}`;
+            await PIXI.Assets.load({ alias, src: url });
+
+            // Get the loaded texture
+            const texture = PIXI.Assets.get(alias);
+
+            // Validate texture
+            if (!texture || !texture.valid) {
+                throw new Error(`Failed to load valid texture for ${url}`);
+            }
+
+            // Cache and return
+            this.textureCache.set(url, texture);
+            return texture;
+        } catch (error) {
+            console.error(`[RankAssets] Failed to load rank ${rankIndex} from ${url}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Sync fallback that never returns undefined
+     * @returns {PIXI.Texture} Fallback texture
+     */
+    getRankTextureFallback() {
+        return PIXI.Texture.WHITE;
+    }
+
+    // Legacy preloadAll method - kept for compatibility
     async preloadAll() {
         if (this.loadingPromise) return this.loadingPromise;
 
         this.loadingPromise = (async () => {
-            const manifests = [];
+            console.log(`[RankAssets] Preloading ${NUM_RANKS} rank icons...`);
+
+            const loadPromises = [];
             for (let i = 0; i < NUM_RANKS; i++) {
-                const num = i.toString().padStart(3, '0');
-                const alias = `rank${num}`;
-                const src = `${this.basePath}/${alias}.png`;
-                manifests.push({ alias, src });
+                loadPromises.push(
+                    this.loadRankTexture(i).catch(err => {
+                        console.error(`[RankAssets] Preload failed for rank ${i}:`, err);
+                        return this.getRankTextureFallback();
+                    })
+                );
             }
 
-            // Load in bundles of 10 to avoid overwhelming network if not http2
-            // Actually PIXI handles this well usually.
-            const textures = [];
-
-            // We can bundle correct?
-            // Let's just do Promise.all. 20 small pngs is fine.
-            // But let's verify existence.
-
-            console.log(`[RankAssets] Starting preload of ${NUM_RANKS} rank icons...`);
-
-            // We will load them simply
-            await PIXI.Assets.load(manifests);
-
-            // Populate local array
-            for (let i = 0; i < NUM_RANKS; i++) {
-                const num = i.toString().padStart(3, '0');
-                const alias = `rank${num}`;
-                this.textures[i] = PIXI.Assets.get(alias);
-            }
-
-            console.log('[RankAssets] Loaded all ranks.');
+            this.textures = await Promise.all(loadPromises);
+            console.log('[RankAssets] Preload complete');
             return this.textures;
         })();
 
         return this.loadingPromise;
     }
-
-    getRankTexture(index) {
-        if (index < 0) index = 0;
-        if (index > MAX_RANK_INDEX) index = MAX_RANK_INDEX;
-
-        // Try getting from cache if valid
-        if (this.textures[index]) return this.textures[index];
-
-        // Use Texture.from directly with the public path
-        // URL-encode to handle spaces in path
-        const num = index.toString().padStart(3, '0');
-        const path = `${this.basePath}/rank${num}.png`.replace(/ /g, '%20');
-        console.log(`[RankAssets] Loading texture for rank ${index} from:`, path);
-        return PIXI.Texture.from(path);
-    }
 }
 
 export const RankAssets = new RankAssetsManager();
+
+// Export helper for CLI verification
+export function getRankSpriteUrl(rankIndex) {
+    return RankAssets.getRankSpriteUrl(rankIndex);
+}

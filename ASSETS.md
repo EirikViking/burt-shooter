@@ -29,6 +29,8 @@ This document serves as the human-readable registry of all game assets found in 
 **Missiles**: 40 distinct missile types (`spaceMissiles_001` - `040`).
 **Effects**: 18 generic space effects (`spaceEffects_001` - `018`).
 **Ranks**: 20 rank icons (`rank000` - `rank019`). Only these 20 are used in-game.
+  - **Note**: The rank sprite path contains a space in "Default size"
+  - Scenes must use `RankAssets.getRankSpriteUrl` and `RankAssets.loadRankTexture`
 
 ### 3. Audio (`/public/audio`)
 **Voice** (`/voice`):

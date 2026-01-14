@@ -41,6 +41,11 @@ Lore is core identity, not decoration.
 - **RankManager must generate 20 thresholds only**
 - **Do NOT change rank count without explicit approval**
 
+#### Rank sprite loading rule
+- HighscoreScene must never use Assets.get for rank textures unless Assets.load ran first
+- RankAssets.loadRankTexture is the only approved way to load rank textures in scenes
+- Rank sprite URLs must be built with encodeURI over the full path to handle spaces safely on Pages
+
 ## Safety
 - Production behavior is the source of truth
 - npm run build must always pass
