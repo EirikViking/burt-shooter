@@ -1,6 +1,9 @@
 import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 import { extendBossNames } from '../text/phrasePool.js';
+import { createBossVisual } from '../game/BossFactory.js';
+
+const ENABLE_BOSS_WEAPON_FX = true;
 
 export class Boss {
   constructor(x, y, level, game) {
@@ -10,6 +13,8 @@ export class Boss {
     this.active = true;
     this.game = game;
     this.radius = 50;
+    // CLEANUP FIX: Add kind tag for cleanup targeting
+    this.kind = 'boss';
     this.vx = 2;
     this.vy = 0;
     // BALANCING: Increased Boss HP (+15-20%)
@@ -35,53 +40,35 @@ export class Boss {
     const namePool = extendBossNames(bossNames);
     this.name = namePool[(level - 1) % namePool.length] || 'BOSS';
 
-    this.createSprite();
+    // Note: createSprite() must be called manually after construction (it's async)
   }
 
-  createSprite() {
+  async createSprite() {
     this.sprite = new PIXI.Container();
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
-    // Main body
-    this.body = new PIXI.Graphics();
-    this.body.circle(0, 0, this.radius);
-    this.body.fill({ color: this.color });
-    this.body.stroke({ color: 0xff0000, width: 4 });
-    this.sprite.addChild(this.body);
+    // Load boss visual from factory
+    const bossVisual = await createBossVisual(this.level);
+    this.visualContainer = bossVisual.container;
+    this.bossType = bossVisual.kind;
+    this.hitboxRef = bossVisual.hitboxRef; // Store hitbox reference
+    this.sprite.addChild(this.visualContainer);
 
-    // Multiple eyes
-    for (let i = 0; i < 3; i++) {
-      const angle = (Math.PI * 2 * i) / 3;
-      const eyeX = Math.cos(angle) * 20;
-      const eyeY = Math.sin(angle) * 20;
-
-      const eye = new PIXI.Graphics();
-      eye.circle(eyeX, eyeY, 8);
-      eye.fill({ color: 0xff0000 });
-      eye.circle(eyeX, eyeY, 4);
-      eye.fill({ color: 0xffff00 });
-      this.sprite.addChild(eye);
+    // TASK 2: Compute accurate hitbox from actual boss body size
+    if (this.hitboxRef) {
+      const bounds = this.hitboxRef.getBounds();
+      // Use the larger dimension for radius (accounting for rotation)
+      this.radius = Math.max(bounds.width, bounds.height) / 2;
+      console.log(`[Boss] ${this.bossType} hitbox radius computed: ${this.radius.toFixed(1)}`);
     }
 
-    // Armor plates
-    for (let i = 0; i < 6; i++) {
-      const angle = (Math.PI * 2 * i) / 6;
-      const plateX = Math.cos(angle) * this.radius;
-      const plateY = Math.sin(angle) * this.radius;
-
-      const plate = new PIXI.Graphics();
-      plate.rect(plateX - 5, plateY - 8, 10, 16);
-      plate.fill({ color: 0x666666 });
-      this.sprite.addChild(plate);
-    }
-
-    // Health bar
+    // Health bar overlay
     this.healthBar = new PIXI.Graphics();
     this.updateHealthBar();
     this.sprite.addChild(this.healthBar);
 
-    // Name display
+    // Name display overlay
     this.nameText = new PIXI.Text(this.name, {
       fontFamily: 'Courier New',
       fontSize: 20,
@@ -92,6 +79,10 @@ export class Boss {
     this.nameText.anchor.set(0.5);
     this.nameText.y = -this.radius - 30;
     this.sprite.addChild(this.nameText);
+
+    // Force visibility
+    this.sprite.visible = true;
+    this.sprite.alpha = 1;
   }
 
   updateHealthBar() {
@@ -187,6 +178,10 @@ export class Boss {
     this.shootCooldown = this.shootDelay;
     const bullets = [];
 
+    // Boss FX
+    const killSwitch = typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_weapon_fx") === "1";
+    const vConfig = (ENABLE_BOSS_WEAPON_FX && !killSwitch) ? { color: 'Red', index: 5 } : null;
+
     if (this.phase === 1) {
       // Single aimed shot
       const dx = playerX - this.x;
@@ -200,7 +195,8 @@ export class Boss {
         (dy / distance) * speed,
         1,
         this.color,
-        false
+        false,
+        vConfig
       ));
     } else if (this.phase === 2) {
       // Triple shot
@@ -214,7 +210,8 @@ export class Boss {
           Math.sin(angle) * speed,
           1,
           this.color,
-          false
+          false,
+          vConfig
         ));
       }
     } else {
@@ -229,7 +226,8 @@ export class Boss {
           Math.sin(angle) * speed,
           1,
           this.color,
-          false
+          false,
+          vConfig
         ));
       }
     }

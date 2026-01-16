@@ -45,10 +45,21 @@ class AudioController {
 
     // Safety lock
     this.isSwitchingTrack = false;
+
+    // Idempotency guard
+    this._initialized = false;
+    this._debugKeyHandler = null;
   }
 
   init() {
     console.log('[AudioManager] INIT called. Feature Enabled:', Features.AUDIO_ENABLED);
+
+    // Idempotency guard: only initialize once
+    if (this._initialized) {
+      console.log('[AudioManager] Already initialized. Skipping duplicate init.');
+      return;
+    }
+
     if (!Features.AUDIO_ENABLED) {
       console.log('[AudioManager] Audio disabled by feature flag.');
       return;
@@ -63,13 +74,17 @@ class AudioController {
       this.musicEnabled = savedMusic !== 'false' && Features.MUSIC_ENABLED;
       this.voiceEnabled = Features.VOICE_ENABLED;
 
-      // Add debug key listener globally
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'n' || e.key === 'N') {
-          this.debugNextTrack();
-        }
-      });
+      // Add debug key listener globally (only once)
+      if (!this._debugKeyHandler) {
+        this._debugKeyHandler = (e) => {
+          if (e.key === 'n' || e.key === 'N') {
+            this.debugNextTrack();
+          }
+        };
+        window.addEventListener('keydown', this._debugKeyHandler);
+      }
 
+      this._initialized = true;
       console.log('[AudioManager] INIT OK. Context:', this.context.state);
     } catch (e) {
       console.warn('[AudioManager] Failed to init context:', e);

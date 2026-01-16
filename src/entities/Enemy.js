@@ -1,6 +1,11 @@
 import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 import { GameAssets } from '../utils/GameAssets.js';
+import { AssetManifest } from '../assets/assetManifest.js';
+// TASK 3: Import difficulty multiplier
+import { BalanceConfig } from '../config/BalanceConfig.js';
+
+const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
 export class Enemy {
   constructor(x, y, type, level, game, waveColor = null) {
@@ -12,6 +17,9 @@ export class Enemy {
     this.waveColor = waveColor; // 'Blue', 'Green', 'Red', 'Black'
     this.active = true;
     this.radius = 15;
+
+    // CLEANUP FIX: Add kind tag for cleanup targeting
+    this.kind = (type === 'beer_challenge') ? 'beer_can' : 'enemy';
     this.vx = 0;
     this.vy = 0;
     this.health = 1;
@@ -125,6 +133,11 @@ export class Enemy {
         this.xtraType = 1;
         break;
     }
+
+    // TASK 3: Apply global difficulty multiplier (0.9 = 10% easier)
+    const diff = BalanceConfig.DIFFICULTY_MULTIPLIER;
+    this.speed *= diff; // Reduce enemy speed
+    this.shootDelay /= diff; // Increase shoot delay (slower fire rate)
 
     // Sprite Selection
     if (this.type === 'beer_challenge') {
@@ -386,10 +399,29 @@ export class Enemy {
     const vx = (dx / distance) * speed * accuracy;
     const vy = (dy / distance) * speed * accuracy;
 
-    // Visual Config based on wave color
+    // Visual Config based on wave color (Default)
     let vColor = 'Red';
     if (this.waveColor && this.waveColor !== 'Black') vColor = this.waveColor;
-    const vConfig = { color: vColor, index: 8 }; // Orb-like laser
+    let vConfig = { color: vColor, index: 8 }; // Orb-like laser
+
+    // Feature Flag + Kill Switch Check
+    // Kill Switch: localStorage key "bs_disable_weapon_fx" == "1"
+    const killSwitch = typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_weapon_fx") === "1";
+
+    if (ENABLE_ENEMY_WEAPON_FX_VARIETY && !killSwitch) {
+      // Look up specific style mapping
+      const style = AssetManifest.enemyWeaponMap[this.type];
+      if (style && style.projectile) {
+        // Parse projectile path: .../laser(Color)(Index).png
+        const match = style.projectile.match(/laser(Red|Green|Blue)(\d+)\./);
+        if (match) {
+          vConfig = {
+            color: match[1],
+            index: parseInt(match[2], 10)
+          };
+        }
+      }
+    }
 
     return new Bullet(this.x, this.y, vx, vy, 1, this.color, false, vConfig);
   }

@@ -375,43 +375,100 @@ export function getAllNewPhrases() {
   return [...newPhrases];
 }
 
-// Trophy Room Taunt System - Top 3 trash talk
-const tauntFragments = {
-  insults: [
-    { value: 'du er for treig!', weight: 1.2 },
-    { value: 'du henger etter!', weight: 1.1 },
-    { value: 'prøv igjen!', weight: 1.0 },
-    { value: 'du kommer ikke forbi!', weight: 1.0 },
-    { value: 'amatør!', weight: 1.3 }
-  ],
-  boasts: [
-    { value: 'Toppen er fin!', weight: 1.0 },
-    { value: 'Se og lær!', weight: 1.1 },
-    { value: 'Sånn gjør man det!', weight: 1.0 },
-    { value: 'Jeg eier denne!', weight: 0.9 }
-  ],
-  mockery: [
-    { value: 'Bæ bæ!', weight: 1.5 },
-    { value: 'Hæstkuk!', weight: 1.4 },
-    { value: 'Jatta jatta!', weight: 1.3 },
-    { value: 'Hold kjæften!', weight: 1.2 },
-    { value: 'Hut dæ heim!', weight: 1.2 }
-  ],
-  regional: [
-    { value: 'Stokmarknes eier deg!', weight: 1.1 },
-    { value: 'Melbu er bedre!', weight: 1.0 },
-    { value: 'Kurt Edgar ville skammet seg!', weight: 1.2 },
-    { value: 'Dette hadde aldri gått i Harstad!', weight: 0.9 }
-  ]
-};
+// Trophy Room Taunt System - Top 3 trash talk Bottom 3
+const tauntTemplates = [
+  // Stokmarknes/Melbu energy
+  '{TAUNTER} roper fra kaia i Stokmarknes: {TARGET}, det der e ikkje score, det e symptoma!',
+  'Melbu klokka litt for seint: {TARGET}, du e på feil side av midnatt, og feil side av lista.',
+  '{TAUNTER}: {TARGET}, Hurtigruta gikk, men du blei igjen på bunn.',
+  'Det lukte kai og diesel. {TAUNTER}: {TARGET}, æ trur du mista aimen i råka.',
+  '{TAUNTER} til {TARGET}: Småby, store ambisjoner, men du klarte det ikkje.',
+
+  // Kurt Edgar wisdom
+  'Kurt Edgar sa: {TARGET}, dette hadde ikkje gått i Harstad heller. {TAUNTER} er enig.',
+  '{TAUNTER}: Kurt Edgar ville kalt deg lett oppvarming, {TARGET}.',
+  'Kurt Edgar nikker til {TAUNTER}, ser på {TARGET} og ryster på hodet.',
+  '{TAUNTER} siterer Kurt: {TARGET}, du må trene mer før du får øl.',
+
+  // Arcade taunts
+  '{TAUNTER} smeller bord: {TARGET}, toppen er fin, bunnen e trist!',
+  '{TARGET}, {TAUNTER} spør: Kødde du bare, eller?',
+  '{TAUNTER}: {TARGET}, æ venta mer, men fikk mindre.',
+  'Fra toppen ser {TAUNTER} ned på {TARGET}: Bæ bæ, lille dutten!',
+
+  // Beer/party culture
+  '{TAUNTER} til {TARGET}: Du telte feil øl, du telte feil score.',
+  '{TARGET}, dette e ikkje din fest. Hilsen {TAUNTER}.',
+  '{TAUNTER}: {TARGET}, du blei invitert, men du kom sist.',
+  'Øl nummer som ikkje burde telles: {TARGET}. Mvh {TAUNTER}.',
+
+  // Score comparisons
+  '{TAUNTER} ({SCORE_T}) til {TARGET} ({SCORE_B}): Se differansen?',
+  '{TARGET}, {TAUNTER} e {SCORE_T} poeng bedre. Det e langt.',
+  '{TAUNTER} level {LEVEL_T} til {TARGET} level {LEVEL_B}: Kom deg opp!',
+  '{TARGET}, toppen e {SCORE_T}, bunnen e {SCORE_B}. Du e bunnen. Hilsen {TAUNTER}.',
+
+  // Late night chaos
+  'Nordlys i blikket: {TAUNTER} skinner, {TARGET} slokner.',
+  '{TAUNTER} har full kontroll, {TARGET} har ingen.',
+  '{TARGET}, {TAUNTER} sa: Dette e kaos, men du e verst.',
+  'Klassisk kveld: {TAUNTER} vant, {TARGET} tapte.',
+
+  // Short and punchy
+  '{TAUNTER}: {TARGET}, jatta jatta, prøv igjen!',
+  '{TARGET}, hut dæ heim! - {TAUNTER}',
+  '{TAUNTER} til {TARGET}: Bæ bæ mø!',
+  '{TARGET}, hold kjæften og spill bedre! - {TAUNTER}',
+  '{TAUNTER}: {TARGET}, dette e hæstkuk!',
+
+  // Diesel/harbor vibes
+  '{TAUNTER}: {TARGET}, du lukter diesel og nederlag.',
+  'Kaia kaller: {TARGET}, du tilhører bunnen. {TAUNTER} på topp.',
+  '{TAUNTER} på brygga, {TARGET} i sjøen.',
+
+  // Confidence
+  '{TAUNTER} med selvtillit: {TARGET}, æ e ikkje redd for deg.',
+  '{TARGET}, {TAUNTER} kjører på, du kjører av.',
+  '{TAUNTER}: {TARGET}, æ vant før du starta.',
+
+  // Extra spicy (still playful)
+  '{TAUNTER}: {TARGET}, du e Grandiosa uten ost.',
+  '{TARGET} e våt mus, {TAUNTER} e løve.',
+  '{TAUNTER} til {TARGET}: Du e lille grisegutten, æ e sjefen.',
+  '{TARGET}, {TAUNTER} sa: Sjøge!',
+
+  // Final taunts
+  '{TAUNTER}: {TARGET}, this is Stokmarknes, not amateur hour.',
+  'Melbu stemning: {TAUNTER} vinner, {TARGET} kjemper.',
+  '{TARGET}, alle kjenner alle, men ingen husker deg. - {TAUNTER}',
+  '{TAUNTER}: {TARGET}, dette blir nevnt i årevis!',
+  'Kurt Edgar overlevde nittitallet, {TAUNTER} overlevde deg, {TARGET}.'
+];
 
 export function getLeaderboardTaunt(targetName) {
   const allTaunts = [
-    ...tauntFragments.insults,
-    ...tauntFragments.boasts,
-    ...tauntFragments.mockery,
-    ...tauntFragments.regional
+    '{TARGET}: Jatta jatta, prøv igjen!',
+    '{TARGET}: Hut dæ heim!',
+    '{TARGET}: Bæ bæ mø!',
+    '{TARGET}: Hold kjæften og spill bedre!',
+    '{TARGET}: Dette e hæstkuk!',
+    '{TARGET}: Du e for treig!',
+    '{TARGET}: Amatør!',
+    '{TARGET}: Se og lær!',
+    '{TARGET}: Stokmarknes eier deg!',
+    '{TARGET}: Kurt Edgar ville skammet seg!'
   ];
   const taunt = weightedPick(allTaunts, 'leaderboardTaunt');
-  return `${targetName}: «${taunt}»`;
+  return taunt.replace('{TARGET}', targetName);
+}
+
+export function getEnhancedLeaderboardTaunt(taunterName, targetName, taunterScore, targetScore, taunterLevel, targetLevel) {
+  const template = weightedPick(tauntTemplates, 'enhancedTaunt');
+  return template
+    .replace('{TAUNTER}', taunterName)
+    .replace('{TARGET}', targetName)
+    .replace('{SCORE_T}', taunterScore)
+    .replace('{SCORE_B}', targetScore)
+    .replace('{LEVEL_T}', taunterLevel)
+    .replace('{LEVEL_B}', targetLevel);
 }

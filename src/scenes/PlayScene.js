@@ -12,6 +12,7 @@ import { ParticleManager } from '../effects/ParticleManager.js';
 import { ScreenShake } from '../effects/ScreenShake.js';
 import { InputManager } from '../input/InputManager.js';
 import { TouchControls } from '../input/TouchControls.js';
+import { NullTouchControls } from '../input/NullTouchControls.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import { BUILD_ID } from '../buildInfo.js';
@@ -32,8 +33,9 @@ export class PlayScene {
     this.container.addChild(this.uiContainer);
 
     this.inputManager = new InputManager();
-    this.touchControls = null;
+    this.touchControls = new NullTouchControls();
     this.player = null;
+    this.companionShip = null; // Double ship powerup from hijacker rescue
     this.enemyManager = null;
     this.bulletManager = null;
     this.powerupManager = null;
@@ -76,6 +78,14 @@ export class PlayScene {
     this._lastRankUpSeen = null;
     this._rankUpCount = 0;
     this._rankUpAnimating = false;
+
+    // TASK 4: Shooting sound health check
+    this.shootSoundHealthCheck = {
+      shotsFired: 0,
+      lastShotTime: 0,
+      lastRecoveryAttempt: 0,
+      recoveryAttempts: 0
+    };
     this.sceneId = Math.random().toString(36).substring(7);
     this._showRankUpCount = 0;
   }
@@ -86,35 +96,39 @@ export class PlayScene {
     this.uiContainer.removeChildren();
     this.uiContainer.sortableChildren = true;
 
+    // TASK D: Create procedural starfield background
+    this.createStarfield();
+
     // --- Hud & UI ---
     this.hud = new HUD(this.uiContainer, this.game);
     // Note: HUD creates itself in constructor
 
-    const diagStyle = {
-      fontFamily: 'Courier New',
-      fontSize: 12,
-      fill: '#66fffe',
-      align: 'left'
-    };
-    this.playerDiagText = new PIXI.Text('', diagStyle);
-    this.playerDiagText.anchor.set(0, 1);
-    this.playerDiagText.zIndex = 9999;
-    this.uiContainer.addChild(this.playerDiagText);
+    // TASK C: Debug diagnostics removed from gameplay screen
+    // const diagStyle = {
+    //   fontFamily: 'Courier New',
+    //   fontSize: 12,
+    //   fill: '#66fffe',
+    //   align: 'left'
+    // };
+    // this.playerDiagText = new PIXI.Text('', diagStyle);
+    // this.playerDiagText.anchor.set(0, 1);
+    // this.playerDiagText.zIndex = 9999;
+    // this.uiContainer.addChild(this.playerDiagText);
 
-    this.rankDiagText = new PIXI.Text('', diagStyle);
-    this.rankDiagText.anchor.set(0, 1);
-    this.rankDiagText.zIndex = 9999;
-    this.uiContainer.addChild(this.rankDiagText);
+    // this.rankDiagText = new PIXI.Text('', diagStyle);
+    // this.rankDiagText.anchor.set(0, 1);
+    // this.rankDiagText.zIndex = 9999;
+    // this.uiContainer.addChild(this.rankDiagText);
 
-    this.buildStamp = new PIXI.Text(`build: ${BUILD_ID}`, {
-      ...diagStyle,
-      align: 'right'
-    });
-    this.buildStamp.anchor.set(1, 1);
-    this.buildStamp.zIndex = 9999;
-    this.uiContainer.addChild(this.buildStamp);
+    // this.buildStamp = new PIXI.Text(`build: ${BUILD_ID}`, {
+    //   ...diagStyle,
+    //   align: 'right'
+    // });
+    // this.buildStamp.anchor.set(1, 1);
+    // this.buildStamp.zIndex = 9999;
+    // this.uiContainer.addChild(this.buildStamp);
 
-    this.updateDiagnosticsLayout();
+    // this.updateDiagnosticsLayout();
 
     // Internal Debug Stats
     this.debugStats = {
@@ -139,6 +153,15 @@ export class PlayScene {
     this.particleManager = new ParticleManager(this.gameContainer, capHandler);
     this.powerupManager = new PowerupManager(this.gameContainer, this.game);
     this.screenShake = new ScreenShake(this.gameContainer);
+
+    // Initialize touch controls for mobile
+    try {
+      this.touchControls = new TouchControls();
+      this.touchControls.init();
+    } catch (error) {
+      console.warn('[PlayScene] TouchControls init failed, using NullTouchControls', error);
+      this.touchControls = new NullTouchControls();
+    }
 
     // Initial load of ships AND Ranks
     Promise.all([
@@ -177,11 +200,19 @@ export class PlayScene {
     GameAssets.loadPhotos();
 
     // Initialize touch controls
-    this.touchControls = new TouchControls(this.uiContainer, this.game);
-    this.touchControls.init();
+    try {
+      this.touchControls = new TouchControls(this.uiContainer, this.game);
+      this.touchControls.init();
+    } catch (error) {
+      console.warn('[PlayScene] TouchControls init failed, using NullTouchControls', error);
+      this.touchControls = new NullTouchControls();
+    }
 
     // Add Debug Keys
-    window.addEventListener('keydown', (e) => this.handleDebugKeys(e));
+    if (!this._debugKeyHandler) {
+      this._debugKeyHandler = (e) => this.handleDebugKeys(e);
+      window.addEventListener('keydown', this._debugKeyHandler);
+    }
 
     // Start first level
     this.startLevel();
@@ -357,6 +388,12 @@ export class PlayScene {
 
       // Player update
       if (this.game.lives > 0 && this.player) {
+        // Pass touch input to player
+        if (this.touchControls) {
+          const touchInput = this.touchControls.getInput();
+          this.player.touchInput = { moveX: touchInput.moveX, moveY: touchInput.moveY };
+        }
+
         this.player.update(delta);
         const sprite = this.player.sprite;
         if (sprite) {
@@ -369,53 +406,56 @@ export class PlayScene {
         }
       }
 
-      if (this.playerDiagText) {
-        const sprite = this.player?.sprite;
-        const vis = sprite?.visible ? 't' : 'f';
-        const alpha = sprite && Number.isFinite(sprite.alpha) ? sprite.alpha.toFixed(2) : 'na';
-        const texOk = GameAssets.isValidTexture(this.player?.shipSprite?.texture) ? 'ok' : 'bad';
-        const parent = sprite?.parent ? 'yes' : 'no';
-        this.playerDiagText.text = `pVis:${vis} a:${alpha} tex:${texOk} parent:${parent}`;
-      }
+      // TASK C: Debug diagnostics removed
+      // if (this.playerDiagText) {
+      //   const sprite = this.player?.sprite;
+      //   const vis = sprite?.visible ? 't' : 'f';
+      //   const alpha = sprite && Number.isFinite(sprite.alpha) ? sprite.alpha.toFixed(2) : 'na';
+      //   const texOk = GameAssets.isValidTexture(this.player?.shipSprite?.texture) ? 'ok' : 'bad';
+      //   const parent = sprite?.parent ? 'yes' : 'no';
+      //   this.playerDiagText.text = `pVis:${vis} a:${alpha} tex:${texOk} parent:${parent}`;
+      // }
 
-      if (this.rankDiagText) {
-        // Safe accessors for diagnostics to prevent crash
-        const rank = (this.game && Number.isFinite(this.game.rankIndex)) ? this.game.rankIndex : 0;
-        const score = (this.game && Number.isFinite(this.game.score)) ? this.game.score : 0;
-        const rankEv = Number.isFinite(this._rankUpCount) ? this._rankUpCount : 0;
-        const seen = Number.isFinite(this._lastRankUpSeen) ? this._lastRankUpSeen : 'null';
+      // if (this.rankDiagText) {
+      //   // Safe accessors for diagnostics to prevent crash
+      //   const rank = (this.game && Number.isFinite(this.game.rankIndex)) ? this.game.rankIndex : 0;
+      //   const score = (this.game && Number.isFinite(this.game.score)) ? this.game.score : 0;
+      //   const rankEv = Number.isFinite(this._rankUpCount) ? this._rankUpCount : 0;
+      //   const seen = Number.isFinite(this._lastRankUpSeen) ? this._lastRankUpSeen : 'null';
 
-        // Detailed Prod Diagnostics
-        const d = this.game.diag || {};
-        const asEv = d.asEv || 0;
-        const asComp = d.asComp || 0;
-        const asBefore = d.asBefore || 0;
-        const asAfter = d.asAfter || 0;
-        const rkFromAdd = d.rkFromAdd || 0;
-        const uiRankEv = this._showRankUpCount || 0;
+      //   // Detailed Prod Diagnostics
+      //   const d = this.game.diag || {};
+      //   const asEv = d.asEv || 0;
+      //   const asComp = d.asComp || 0;
+      //   const asBefore = d.asBefore || 0;
+      //   const asAfter = d.asAfter || 0;
+      //   const rkFromAdd = d.rkFromAdd || 0;
+      //   const uiRankEv = this._showRankUpCount || 0;
 
-        this.rankDiagText.text = `S:${score} R:${rank} (seen:${seen}) REV:${rankEv} UI:${uiRankEv}\n` +
-          `AS: evt=${asEv} cmp=${asComp} bef=${asBefore} aft=${asAfter} YES=${rkFromAdd}\n` +
-          `ID: G=${this.game.gameId} S=${this.sceneId}`;
-        this.rankDiagText.style.fontSize = 10; // Smaller font for more data
-      }
+      //   this.rankDiagText.text = `S:${score} R:${rank} (seen:${seen}) REV:${rankEv} UI:${uiRankEv}\n` +
+      //     `AS: evt=${asEv} cmp=${asComp} bef=${asBefore} aft=${asAfter} YES=${rkFromAdd}\n` +
+      //     `ID: G=${this.game.gameId} S=${this.sceneId}`;
+      //   this.rankDiagText.style.fontSize = 10; // Smaller font for more data
+      // }
 
-      // Fire logic
-      const firePressed = this.inputManager.isFiring() ||
-        (this.touchControls && this.touchControls.isFirePressed());
+      // Fire logic - merge keyboard and touch input
+      const touchInput = this.touchControls ? this.touchControls.getInput() : { firing: false };
+      const firePressed = this.inputManager.isFiring() || touchInput.firing;
 
       if (firePressed && this.player) {
         if (this.player.canShoot()) {
           const bullets = this.player.shoot();
           bullets.forEach(bullet => this.bulletManager.addPlayerBullet(bullet));
-          AudioManager.playSfx('shoot_small');
+
+          // TASK 4: Shooting sound with health check
+          this.playShootSoundWithHealthCheck();
         }
       }
 
       // Managers update
       if (this.bulletManager) this.bulletManager.update(delta);
       if (this.enemyManager) this.enemyManager.update(delta);
-      if (this.powerupManager) this.powerupManager.update(delta);
+      if (this.powerupManager) this.powerupManager.update(delta, this);
       if (this.particleManager) this.particleManager.update(delta);
       if (this.screenShake) this.screenShake.update(delta);
 
@@ -480,6 +520,7 @@ export class PlayScene {
       }
 
       this.hud.update();
+      this.updateStarfield(delta); // TASK D: Animate background stars
       this.updateAmbientBeers(delta); // Handles both Red Hazards and White Powerups
       this.updateEasterEgg(delta);
       this.updateRandomPopups(delta);
@@ -512,27 +553,22 @@ export class PlayScene {
     this._rankUpAnimating = true;
     this._showRankUpCount++;
 
-    // Reset loop or visual reset
-    // Ensure all animation logic is cleared if invalid
-
-    // Visuals
+    // TASK 4: Enhanced rank up animation with rank sprite and title
     const rank = (newRank !== undefined) ? newRank : this.game.rankIndex;
-    const msg = `RANK UP! ${rank}`;
-    this.showToast(msg, { fontSize: 32, fill: '#ffff00', y: this.game.getHeight() * 0.15 });
+    const rankTitle = this.game.getRankTitle ? this.game.getRankTitle(rank) : '';
 
-    // Ship Swap
-    if (this.player) {
-      this.player.swapSprite();
-    }
+    // TASK 4: Audio - SFX first, then optional voice
+    AudioManager.playSfx('achievement'); // Distinct rank up sound (fallback to achievement if exists)
+    setTimeout(() => {
+      AudioManager.playVoice('power_up'); // Optional celebratory voice
+    }, 200);
 
-    // SFX
-    AudioManager.playSfx('pickup'); // Placeholder for "good event"
+    // TASK 4: Polished arcade animation
+    this.createRankUpAnimation(rank, rankTitle);
 
-    // Voice (Throttled 20s)
-    const now = Date.now();
-    if (now - this.lastRankVoiceTime > 20000) {
-      AudioManager.playVoice('mission_complete');
-      this.lastRankVoiceTime = now;
+    // TASK 5: Ship sprite rotation every other rank up
+    if (this.player && rank % 2 === 0 && rank > 0) {
+      this.player.rotateShipSprite();
     }
 
     // Particles
@@ -553,6 +589,107 @@ export class PlayScene {
     setTimeout(() => {
       this._rankUpAnimating = false;
     }, 2500);
+  }
+
+  // TASK 4: Create polished rank up animation
+  createRankUpAnimation(rank, rankTitle) {
+    const { width, height } = this.game.app.screen;
+
+    // Container for animation
+    const container = new PIXI.Container();
+    container.x = width / 2;
+    container.y = height * 0.3;
+    container.alpha = 0;
+    container.scale.set(0.5);
+    container.zIndex = 10000;
+    this.uiContainer.addChild(container);
+
+    // Background panel
+    const panel = new PIXI.Graphics();
+    panel.roundRect(-200, -80, 400, 160, 10);
+    panel.fill({ color: 0x000000, alpha: 0.85 });
+    panel.stroke({ color: 0xffff00, width: 3 });
+    container.addChild(panel);
+
+    // Inner glow
+    const glow = new PIXI.Graphics();
+    glow.roundRect(-195, -75, 390, 150, 8);
+    glow.stroke({ color: 0xffaa00, width: 1, alpha: 0.6 });
+    container.addChild(glow);
+
+    // Rank sprite (if available)
+    const rankTexture = this.game.getRankTexture ? this.game.getRankTexture(rank) : null;
+    if (rankTexture) {
+      const rankSprite = new PIXI.Sprite(rankTexture);
+      rankSprite.anchor.set(0.5);
+      rankSprite.scale.set(0.6);
+      rankSprite.y = -20;
+      container.addChild(rankSprite);
+    }
+
+    // "RANK UP!" text
+    const rankUpText = new PIXI.Text('RANK UP!', {
+      fontFamily: 'Courier New',
+      fontSize: 24,
+      fill: '#ffff00',
+      stroke: '#000000',
+      strokeThickness: 4
+    });
+    rankUpText.anchor.set(0.5);
+    rankUpText.y = rankTexture ? 30 : -30;
+    container.addChild(rankUpText);
+
+    // Rank title text
+    if (rankTitle) {
+      const titleText = new PIXI.Text(rankTitle.toUpperCase(), {
+        fontFamily: 'Courier New',
+        fontSize: 20,
+        fill: '#00ffff',
+        stroke: '#000000',
+        strokeThickness: 3
+      });
+      titleText.anchor.set(0.5);
+      titleText.y = rankTexture ? 55 : 0;
+      container.addChild(titleText);
+    }
+
+    // Animation sequence: ease in, hold, ease out
+    let elapsed = 0;
+    const phases = {
+      easeIn: 300,
+      hold: 1500,
+      easeOut: 500
+    };
+    const totalDuration = phases.easeIn + phases.hold + phases.easeOut;
+
+    const animate = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+
+      if (elapsed < phases.easeIn) {
+        // Ease in: scale up and fade in
+        const t = elapsed / phases.easeIn;
+        const eased = 1 - Math.pow(1 - t, 3); // Ease out cubic
+        container.alpha = eased;
+        container.scale.set(0.5 + eased * 0.5);
+      } else if (elapsed < phases.easeIn + phases.hold) {
+        // Hold: full visibility with subtle pulse
+        const pulse = Math.sin((elapsed - phases.easeIn) * 0.005) * 0.05;
+        container.alpha = 1;
+        container.scale.set(1 + pulse);
+      } else if (elapsed < totalDuration) {
+        // Ease out: fade out
+        const t = (elapsed - phases.easeIn - phases.hold) / phases.easeOut;
+        container.alpha = 1 - t;
+      } else {
+        // Cleanup
+        this.game.app.ticker.remove(animate);
+        if (container.parent) {
+          this.uiContainer.removeChild(container);
+        }
+      }
+    };
+
+    this.game.app.ticker.add(animate);
   }
 
   showErrorOverlay(e) {
@@ -605,6 +742,30 @@ export class PlayScene {
         });
       }
     });
+
+    // Player bullets vs hijacker
+    if (this.enemyManager.hijacker && this.enemyManager.hijacker.active) {
+      this.bulletManager.playerBullets.forEach(bullet => {
+        if (bullet.active) {
+          const hijacker = this.enemyManager.hijacker;
+          if (this.checkCollision(bullet, hijacker)) {
+            bullet.active = false;
+            const destroyed = hijacker.takeDamage(bullet.damage);
+
+            if (destroyed) {
+              // Hijacker explosion
+              this.particleManager.createExplosion(hijacker.x, hijacker.y, 0xff4444);
+              AudioManager.playSfx('enemy_explode');
+              this.screenShake.shake(5);
+              // Score already added in hijacker.destroy()
+            } else {
+              this.particleManager.createHitSpark(hijacker.x, hijacker.y);
+              AudioManager.playSfx('hit');
+            }
+          }
+        }
+      });
+    }
 
     // Enemy bullets vs player
     this.bulletManager.enemyBullets.forEach(bullet => {
@@ -780,10 +941,145 @@ export class PlayScene {
     return distance < minDistance;
   }
 
+  // TASK D: Procedural starfield background with parallax layers
+  createStarfield() {
+    const { width, height } = this.game.app.screen;
+
+    // Create container for starfield (behind everything)
+    this.starfieldContainer = new PIXI.Container();
+    this.starfieldContainer.zIndex = -1000;
+    this.gameContainer.addChild(this.starfieldContainer);
+    this.gameContainer.sortableChildren = true;
+
+    // 3 parallax layers: far (slow), mid (medium), near (fast)
+    this.starLayers = [];
+
+    // Layer 1: Far stars (small, slow, many)
+    const farStars = [];
+    for (let i = 0; i < 100; i++) {
+      const star = new PIXI.Graphics();
+      star.circle(0, 0, 0.8 + Math.random() * 0.4); // 0.8-1.2 px
+      star.fill({ color: 0xffffff, alpha: 0.3 + Math.random() * 0.3 }); // 0.3-0.6 alpha
+      star.x = Math.random() * width;
+      star.y = Math.random() * height;
+      star._speed = 15 + Math.random() * 10; // 15-25 px/s
+      this.starfieldContainer.addChild(star);
+      farStars.push(star);
+    }
+    this.starLayers.push(farStars);
+
+    // Layer 2: Mid stars (medium, medium speed)
+    const midStars = [];
+    for (let i = 0; i < 50; i++) {
+      const star = new PIXI.Graphics();
+      star.circle(0, 0, 1.2 + Math.random() * 0.6); // 1.2-1.8 px
+      star.fill({ color: 0xffffff, alpha: 0.5 + Math.random() * 0.3 }); // 0.5-0.8 alpha
+      star.x = Math.random() * width;
+      star.y = Math.random() * height;
+      star._speed = 40 + Math.random() * 20; // 40-60 px/s
+      this.starfieldContainer.addChild(star);
+      midStars.push(star);
+    }
+    this.starLayers.push(midStars);
+
+    // Layer 3: Near stars (larger, fast, fewer)
+    const nearStars = [];
+    for (let i = 0; i < 25; i++) {
+      const star = new PIXI.Graphics();
+      star.circle(0, 0, 1.5 + Math.random() * 1); // 1.5-2.5 px
+      star.fill({ color: 0xffffff, alpha: 0.6 + Math.random() * 0.4 }); // 0.6-1.0 alpha
+      star.x = Math.random() * width;
+      star.y = Math.random() * height;
+      star._speed = 80 + Math.random() * 40; // 80-120 px/s
+      this.starfieldContainer.addChild(star);
+      nearStars.push(star);
+    }
+    this.starLayers.push(nearStars);
+
+    // Optional: Add subtle nebula haze
+    const nebula = new PIXI.Graphics();
+    nebula.circle(width * 0.3, height * 0.2, 150);
+    nebula.fill({ color: 0x4444ff, alpha: 0.03 });
+    nebula.circle(width * 0.7, height * 0.6, 200);
+    nebula.fill({ color: 0xff4488, alpha: 0.02 });
+    this.starfieldContainer.addChildAt(nebula, 0); // Behind stars
+  }
+
+  updateStarfield(delta) {
+    if (!this.starLayers || !this.game?.app?.screen) return;
+
+    const { width, height } = this.game.app.screen;
+    const dtSec = Math.min(0.05, delta / 60); // Convert to seconds, clamp for safety
+
+    // Update all star layers
+    this.starLayers.forEach(layer => {
+      layer.forEach(star => {
+        // Move star downward (forward motion)
+        star.y += star._speed * dtSec;
+
+        // Wrap around when star goes off bottom
+        if (star.y > height + 10) {
+          star.y = -10;
+          star.x = Math.random() * width; // Randomize X for variety
+        }
+      });
+    });
+  }
+
+  // TASK 4: Play shooting sound with self-healing health check
+  playShootSoundWithHealthCheck() {
+    const now = Date.now();
+    const check = this.shootSoundHealthCheck;
+
+    // Track shot
+    check.shotsFired++;
+    check.lastShotTime = now;
+
+    // Try to play sound
+    const played = AudioManager.playSfx('shoot_small');
+
+    // Health check: If we've fired 10+ shots without sound recovery
+    if (check.shotsFired >= 10) {
+      const timeSinceLastShot = now - check.lastShotTime;
+      const timeSinceRecovery = now - check.lastRecoveryAttempt;
+
+      // If it's been >5s since last recovery attempt and we're still shooting
+      if (timeSinceRecovery > 5000) {
+        console.log('[PlayScene] Shooting sound health check: Attempting recovery');
+        check.lastRecoveryAttempt = now;
+        check.recoveryAttempts++;
+
+        // Resume AudioContext if suspended
+        if (AudioManager && AudioManager.audioContext) {
+          if (AudioManager.audioContext.state === 'suspended') {
+            AudioManager.audioContext.resume().then(() => {
+              console.log('[PlayScene] AudioContext resumed');
+            }).catch(e => {
+              console.warn('[PlayScene] AudioContext resume failed', e);
+            });
+          }
+        }
+
+        // Reset counter after recovery attempt
+        check.shotsFired = 0;
+
+        // Rate limit recovery attempts
+        if (check.recoveryAttempts > 3) {
+          console.warn('[PlayScene] Too many recovery attempts, stopping health check');
+          check.shotsFired = -999; // Disable further checks
+        }
+      }
+    }
+  }
+
   destroy() {
     if (this.levelAdvanceTimeout) {
       clearTimeout(this.levelAdvanceTimeout);
       this.levelAdvanceTimeout = null;
+    }
+    if (this._debugKeyHandler) {
+      window.removeEventListener('keydown', this._debugKeyHandler);
+      this._debugKeyHandler = null;
     }
     this.inputManager.destroy();
     if (this.touchControls) {
@@ -916,37 +1212,49 @@ export class PlayScene {
     this.game.app.ticker.add(ticker);
   }
   updateAmbientBeers(delta) {
+    // WAVE FIX: Use spawn gate from EnemyManager
+    const canSpawn = this.enemyManager && this.enemyManager.allowBeerCanSpawns();
+
     // 1. Spawning Hazard Beers (Red)
-    this.ambientBeerTimer -= delta * 16.67;
-    if (this.ambientBeerTimer <= 0) {
-      this.spawnAmbientBeer('HAZARD');
-      this.ambientBeerTimer = 4000 + Math.random() * 4000;
+    // WAVE FIX: Don't spawn during wave ending or cleanup
+    if (canSpawn) {
+      this.ambientBeerTimer -= delta * 16.67;
+      if (this.ambientBeerTimer <= 0) {
+        this.spawnAmbientBeer('HAZARD');
+        this.ambientBeerTimer = 4000 + Math.random() * 4000;
+      }
     }
 
     // 2. Spawn White Can (Powerup) Logic
-    const config = BalanceConfig.powerups.whiteCan;
-    const now = Date.now();
-    const runTime = this.gameTime * 1000; // approx ms
+    // WAVE FIX: Don't spawn during wave ending or cleanup
+    if (canSpawn) {
+      const config = BalanceConfig.powerups.whiteCan;
+      const now = Date.now();
+      const runTime = this.gameTime * 1000; // approx ms
 
-    // Conditions:
-    // - Not waiting for cooldown
-    // - Game time > 20s
-    // - No white can currently exists
-    // - Player not already boosted (optional, but requested "If player already has the same active effect, do NOT spawn" - checking boost simpler here)
-    if (!this.hasActiveWhiteCan &&
-      now - this.lastWhiteCanTime > config.cooldown &&
-      runTime > config.minTime &&
-      this.scoreMultiplier === 1) { // Don't spawn if boost active
+      // Conditions:
+      // - Not waiting for cooldown
+      // - Game time > 20s
+      // - No white can currently exists
+      // - Player not already boosted (optional, but requested "If player already has the same active effect, do NOT spawn" - checking boost simpler here)
+      if (!this.hasActiveWhiteCan &&
+        now - this.lastWhiteCanTime > config.cooldown &&
+        runTime > config.minTime &&
+        this.scoreMultiplier === 1) { // Don't spawn if boost active
 
-      if (Math.random() < config.spawnChance) {
-        this.spawnAmbientBeer('POWERUP');
-        this.lastWhiteCanTime = now;
-        this.hasActiveWhiteCan = true;
-        this.showToast("BONUS CAN APPEARED!", { fontSize: 24, fill: '#ffffff', y: 100 });
+        if (Math.random() < config.spawnChance) {
+          this.spawnAmbientBeer('POWERUP');
+          this.lastWhiteCanTime = now;
+          this.hasActiveWhiteCan = true;
+          this.showToast("BONUS CAN APPEARED!", { fontSize: 24, fill: '#ffffff', y: 100 });
+        }
       }
     }
 
     // Update existing
+    // TASK 1: Count remaining hazard cans for wave easing
+    const hazardCount = this.ambientBeers.filter(b => b.type === 'HAZARD' && b.active).length;
+
     this.ambientBeers = this.ambientBeers.filter(beer => {
       // Check if manually removed or destroyed
       if (!beer.active) {
@@ -955,7 +1263,7 @@ export class PlayScene {
         return false;
       }
 
-      beer.update(delta);
+      beer.update(delta, hazardCount); // Pass hazard count for wave easing
       return true;
     });
   }
@@ -968,6 +1276,28 @@ export class PlayScene {
     const beer = new BeerCan(x, y, this.game, type);
     this.gameContainer.addChild(beer.sprite);
     this.ambientBeers.push(beer);
+  }
+
+  // CLEANUP FIX: Authoritative collector for wave cleanup targets
+  // Returns all beer cans across all tracking systems
+  getWaveCleanupTargets() {
+    const targets = [];
+
+    // Collect beer cans from EnemyManager.enemies array (type='beer_challenge')
+    if (this.enemyManager && this.enemyManager.enemies) {
+      const enemyBeerCans = this.enemyManager.enemies.filter(e =>
+        e.active && e.kind === 'beer_can'
+      );
+      targets.push(...enemyBeerCans);
+    }
+
+    // Collect beer cans from PlayScene.ambientBeers array (BeerCan instances)
+    const ambientBeerCans = this.ambientBeers.filter(b =>
+      b.active && b.kind === 'beer_can'
+    );
+    targets.push(...ambientBeerCans);
+
+    return targets;
   }
 
   updateEasterEgg(delta) {

@@ -4,7 +4,6 @@ export class InputManager {
     this.touches = [];
     this.touchFireActive = false;
     this.setupKeyboard();
-    this.setupKeyboard();
     this.setupMouse();
     this.setupFocusHandlers();
   }

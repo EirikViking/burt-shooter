@@ -1,9 +1,10 @@
 import * as PIXI from 'pixi.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 
 class BeerAssetManager {
     constructor() {
         this.alias = 'beervan';
-        this.url = '/beervan.png';
+        this.url = AssetManifest.sprites.beervan;
         this._texture = null;
         this._loadPromise = null;
     }

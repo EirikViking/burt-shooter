@@ -28,6 +28,13 @@ class Powerup {
     this.color = data.color;
     this.label = data.label;
 
+    // TASK A: Idle animation state
+    this.bobPhase = Math.random() * Math.PI * 2;
+    this.pulsePhase = 0;
+    this.sparkleTimer = 0;
+    this.baseY = y;
+    this.particleCount = 0; // Track particles per powerup
+
     this.createSprite();
   }
 
@@ -36,18 +43,36 @@ class Powerup {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
+    // TASK A: Create breathing aura ring
+    this.aura = new PIXI.Graphics();
+    this.aura.name = 'aura';
+    this.sprite.addChild(this.aura);
+
     try {
       let texture = null;
-      if (this.type === 'shield') texture = GameAssets.getXtraPowerup('powerupBlue_shield');
-      else if (this.type === 'life') texture = GameAssets.getXtraPowerup('pill_red');
+      // PART B: Load sprite for each powerup type
+      if (this.type === 'shield') texture = GameAssets.getXtraPowerup('shield');
+      else if (this.type === 'life') texture = GameAssets.getXtraPowerup('life');
+      else if (this.type === 'ghost') texture = GameAssets.getXtraPowerup('ghost');
+      else if (this.type === 'slow_time') texture = GameAssets.getXtraPowerup('slow_time');
+      else if (this.type === 'isbjorn') texture = GameAssets.getXtraPowerup('isbjorn');
+      else if (this.type === 'kjottdeig') texture = GameAssets.getXtraPowerup('kjottdeig');
+      else if (this.type === 'rolp') texture = GameAssets.getXtraPowerup('rolp');
+      else if (this.type === 'deili') texture = GameAssets.getXtraPowerup('deili');
       else texture = GameAssets.getBeer();
 
       if (GameAssets.isValidTexture(texture)) {
         const beerSprite = new PIXI.Sprite(texture);
         beerSprite.anchor.set(0.5);
+        beerSprite.name = 'mainSprite';
 
-        // Reduce scale if using xtra assets vs beer assets which might be different sizes
-        if (this.type === 'shield' || this.type === 'life') {
+        // PART B: Consistent scale for all powerup sprites
+        const hasSprite = this.type === 'shield' || this.type === 'life' ||
+          this.type === 'ghost' || this.type === 'slow_time' ||
+          this.type === 'isbjorn' || this.type === 'kjottdeig' ||
+          this.type === 'rolp' || this.type === 'deili';
+
+        if (hasSprite) {
           beerSprite.scale.set(0.8);
         } else {
           beerSprite.width = 24;
@@ -56,11 +81,15 @@ class Powerup {
         }
 
         this.sprite.addChild(beerSprite);
+        this.mainSprite = beerSprite;
+
+        // PART B: Store base scale to prevent runaway scaling
+        this.baseScale = beerSprite.scale.x;
 
         const glow = new PIXI.Graphics();
-        glow.circle(0, 0, 20);
-        glow.fill({ color: this.color, alpha: 0.3 });
-        this.sprite.addChildAt(glow, 0);
+        glow.circle(0, 0, 15);
+        glow.fill({ color: this.color, alpha: 0.25 });
+        this.sprite.addChildAt(glow, 1);
 
         // No text overlay for icons
         if (this.type !== 'shield' && this.type !== 'life') {
@@ -86,8 +115,8 @@ class Powerup {
 
   createFallbackSprite() {
     const glow = new PIXI.Graphics();
-    glow.circle(0, 0, this.radius + 4);
-    glow.fill({ color: this.color, alpha: 0.3 });
+    glow.circle(0, 0, this.radius + 2);
+    glow.fill({ color: this.color, alpha: 0.25 });
     this.sprite.addChild(glow);
 
     const circle = new PIXI.Graphics();
@@ -106,23 +135,75 @@ class Powerup {
     this.sprite.addChild(text);
   }
 
-  update(delta) {
+  update(delta, scene) {
     if (!this.active) return;
-    this.y += this.vy * delta;
+
+    const age = Date.now() - this.createdAt;
+
+    // TASK A: Idle bob animation (sine wave vertical movement) - subtle
+    this.bobPhase += 0.04 * delta;
+    const bobOffset = Math.sin(this.bobPhase) * 2;
+
+    // TASK A: Idle pulse animation (scale breathing) - subtle
+    this.pulsePhase += 0.03 * delta;
+    const pulseScale = 1.0 + Math.sin(this.pulsePhase) * 0.06;
+
+    // Update position with bob
+    this.baseY += this.vy * delta;
+    this.y = this.baseY + bobOffset;
     this.sprite.x = this.x;
     this.sprite.y = this.y;
-    this.sprite.rotation += 0.05 * delta;
+
+    // PART B: Apply pulse to main sprite using stable base scale (no accumulation)
+    if (this.mainSprite && this.baseScale !== undefined) {
+      const scale = this.baseScale * pulseScale;
+      this.mainSprite.scale.set(scale, scale);
+    }
+
+    // Gentle rotation
+    this.sprite.rotation += 0.02 * delta;
+
+    // TASK A: Breathing aura ring (reduced size)
+    if (this.aura) {
+      const auraPhase = (age * 0.003) % (Math.PI * 2);
+      const auraRadius = 18 + Math.sin(auraPhase) * 3;
+      const auraAlpha = 0.3 + Math.sin(auraPhase) * 0.15;
+
+      this.aura.clear();
+      this.aura.circle(0, 0, auraRadius);
+      this.aura.stroke({ width: 1.5, color: this.color, alpha: auraAlpha });
+    }
+
+    // TASK A: Ambient sparkles (spawn every 200-300ms, reduced distance)
+    this.sparkleTimer += delta * 16.67;
+    const sparkleInterval = 200 + Math.random() * 100;
+
+    if (this.sparkleTimer > sparkleInterval && this.particleCount < 2 && scene && scene.particleManager) {
+      this.sparkleTimer = 0;
+      this.particleCount++;
+
+      // Spawn tiny sparkle around powerup (reduced distance)
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 10 + Math.random() * 8;
+      const sx = this.x + Math.cos(angle) * dist;
+      const sy = this.y + Math.sin(angle) * dist;
+      const vx = (Math.random() - 0.5) * 0.3;
+      const vy = (Math.random() - 0.5) * 0.3;
+
+      scene.particleManager.spawnParticle(sx, sy, vx, vy, this.color, 1.2, 18);
+
+      // Decrement count after particle dies
+      setTimeout(() => {
+        this.particleCount = Math.max(0, this.particleCount - 1);
+      }, 25);
+    }
 
     // Scale down if expiring soon
-    const age = Date.now() - this.createdAt;
     if (age > this.lifeTime - 2000) {
       this.sprite.alpha = 0.5 + Math.sin(age * 0.01) * 0.5;
     }
 
     if (this.y > 620 || age > this.lifeTime) {
-      if (this.active) {
-        // Maybe play generic poof sound?
-      }
       this.active = false;
     }
   }
@@ -130,17 +211,32 @@ class Powerup {
   collect(player, scene) {
     this.active = false;
 
+    // TASK 1: Premium powerup pickup effects
+    this.showPickupEffect(scene);
+    this.playPickupSFX(scene);
+
     // Pass type directly to player (Player handles reset)
     // Life Powerup Logic
     if (this.type === 'life') {
-      const maxLives = 5;
+      const maxLives = 6; // TASK 3: Increased from 3 to 6
       if (scene.game.lives < maxLives) {
-        scene.game.gainLife ? scene.game.gainLife() : (scene.game.lives++);
+        scene.game.gainLife(); // Use the new gainLife() method
         scene.onLifeGained ? scene.onLifeGained() : null; // Optional hook
+
+        // Play distinct audio for life gain (not achievement audio per AUDIO_RULES.md)
+        if (scene.game && scene.game.audio) {
+          scene.game.audio.playSfx('ui_open'); // Positive, distinct sound
+        }
       } else {
         // Score bonus instead
+        console.log(`[Lives] pickup extra_life before=${scene.game.lives} after=${scene.game.lives} max=6 applied=false (at max, bonus awarded)`);
         scene.game.addScore(1000);
         scene.showToast('MAX LIVES BONUS!', { fontSize: 24, fill: '#00ff00' });
+
+        // Play pickup sound for bonus
+        if (scene.game && scene.game.audio) {
+          scene.game.audio.playSfx('pickup');
+        }
       }
     } else {
       // Pass type directly to player (Player handles reset)
@@ -151,8 +247,59 @@ class Powerup {
       scene.debugStats.beerPickupsCollected++;
     }
     this.showMessage(scene);
+  }
 
-    // Play voice/sound? Managed in Player or Scene usually.
+  // TASK 1: Show premium visual effect on pickup
+  showPickupEffect(scene) {
+    if (!scene || !scene.particleManager) return;
+
+    // Use existing particle system for pickup burst
+    scene.particleManager.createPickupEffect(this.x, this.y, this.color);
+
+    // Create expanding ring effect
+    const ring = new PIXI.Graphics();
+    ring.x = this.x;
+    ring.y = this.y;
+    ring.alpha = 0.8;
+    scene.container.addChild(ring);
+
+    let ringTime = 0;
+    const ringTicker = (delta) => {
+      ringTime += delta.deltaTime * 16.67;
+      const progress = ringTime / 400;
+
+      if (progress < 1) {
+        ring.clear();
+        const radius = 15 + progress * 30;
+        ring.circle(0, 0, radius);
+        ring.stroke({ width: 3, color: this.color, alpha: 0.8 * (1 - progress) });
+        ring.alpha = 1 - progress;
+      } else {
+        scene.game.app.ticker.remove(ringTicker);
+        scene.container.removeChild(ring);
+      }
+    };
+    scene.game.app.ticker.add(ringTicker);
+  }
+
+  // TASK 1: Play category-specific pickup SFX
+  playPickupSFX(scene) {
+    if (!scene.game || !scene.game.audio) return;
+
+    // Category-specific sounds
+    const sfxMap = {
+      life: 'ui_open',          // Extra life - positive, distinct
+      shield: 'forceField',     // Shield - protective sound
+      ghost: 'thrusterFire',    // Ghost mode - whoosh
+      slow_time: 'computerNoise', // Slow time - tech sound
+      isbjorn: 'pickup',        // Weapon powerups - generic pickup
+      kjottdeig: 'pickup',
+      rolp: 'pickup',
+      deili: 'pickup'
+    };
+
+    const sfxKey = sfxMap[this.type] || 'pickup';
+    scene.game.audio.playSfx(sfxKey);
   }
 
   showMessage(scene) {
@@ -207,14 +354,57 @@ export class PowerupManager {
     this.dropsThisRun = 0; // Track total drops this run
     this.currentLevel = 1;
     this.lastSpawnTime = Date.now();
+
+    // TASK 2: Track extra life spawns for guaranteed spawn every 2 levels
+    this.lastExtraLifeLevel = 0;
+    this.extraLifeSpawnedThisLevel = false;
   }
 
   checkLevelReset(level) {
     if (this.currentLevel !== level) {
-      if (level === 1) this.dropsThisRun = 0;
+      if (level === 1) {
+        this.dropsThisRun = 0;
+        this.lastExtraLifeLevel = 0; // Reset on game start
+      }
       this.currentLevel = level;
       this.dropsThisLevel = 0;
+
+      // TASK B: Reset extra life flag for new level
+      this.extraLifeSpawnedThisLevel = false;
+
+      // TASK B: Force spawn guaranteed extra life if needed
+      const levelsSinceLastLife = level - this.lastExtraLifeLevel;
+      if (levelsSinceLastLife >= 2) {
+        console.log(`[PowerupManager] FORCING guaranteed extra life for level ${level} (${levelsSinceLastLife} levels since last)`);
+        // Force spawn immediately at start of level
+        this.forceExtraLifeSpawn();
+      }
     }
+  }
+
+  forceExtraLifeSpawn() {
+    // Spawn guaranteed extra life at safe, reachable position
+    const screenWidth = this.game.getWidth ? this.game.getWidth() : 800;
+    const safeX = screenWidth * 0.3 + Math.random() * screenWidth * 0.4; // Middle 40% of screen
+    const safeY = 100 + Math.random() * 50; // Upper portion, reachable
+
+    // Check if one already exists
+    const lifeExists = this.powerups.some(p => p.type === 'life' && p.active);
+    if (lifeExists) {
+      console.log('[PowerupManager] Extra life already exists, skipping forced spawn');
+      return;
+    }
+
+    const powerup = new Powerup(safeX, safeY, 'life');
+    this.powerups.push(powerup);
+    this.container.addChild(powerup.sprite);
+
+    this.lastExtraLifeLevel = this.currentLevel;
+    this.extraLifeSpawnedThisLevel = true;
+    this.dropsThisLevel++;
+    this.dropsThisRun++;
+
+    console.log(`[PowerupManager] FORCED extra life spawned at ${Math.round(safeX)},${Math.round(safeY)}`);
   }
 
   spawn(x, y, force = false) {
@@ -255,8 +445,19 @@ export class PowerupManager {
     // Check if player has shield active
     const shieldActive = player && player.shieldActive;
 
-    if (rand < 0.02) {
+    // TASK 2: Guaranteed extra life spawn if >= 2 levels without one
+    const levelsSinceLastLife = this.currentLevel - this.lastExtraLifeLevel;
+    const needsGuaranteedLife = levelsSinceLastLife >= 2 && !this.extraLifeSpawnedThisLevel;
+
+    if (needsGuaranteedLife) {
+      type = 'life';
+      console.log(`[PowerupManager] GUARANTEED extra life spawned (${levelsSinceLastLife} levels since last)`);
+      this.lastExtraLifeLevel = this.currentLevel;
+      this.extraLifeSpawnedThisLevel = true;
+    } else if (rand < 0.02) {
       type = 'life'; // 2% Very Rare
+      this.lastExtraLifeLevel = this.currentLevel;
+      this.extraLifeSpawnedThisLevel = true;
     } else if (rand < 0.15 && !shieldActive) {
       type = 'shield'; // 13% Uncommon, if no shield
     } else {
@@ -278,9 +479,9 @@ export class PowerupManager {
     this.dropsThisRun++;
   }
 
-  update(delta) {
+  update(delta, scene) {
     this.powerups = this.powerups.filter(powerup => {
-      powerup.update(delta);
+      powerup.update(delta, scene);
       if (!powerup.active) {
         this.container.removeChild(powerup.sprite);
         return false;

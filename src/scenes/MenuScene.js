@@ -1,10 +1,15 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { BeerAsset } from '../utils/BeerAsset.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize, calculateCenteredStartY } from '../ui/textLayout.js';
+import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
+// PART A: Dynamic story rotation
+import { tauntDirector } from '../game/TauntDirector.js';
+import { TypewriterText } from '../utils/TypewriterText.js';
 
 export class MenuScene {
   constructor(game) {
@@ -22,6 +27,15 @@ export class MenuScene {
     this.stars = [];
     this.animationTime = 0;
     this.buildStamp = null;
+
+    // PWA install prompt
+    this.installPrompt = null;
+    this.installButton = null;
+
+    // PART A: Story rotation
+    this.storyTypewriter = null;
+    this.storyRotationTimer = null;
+    this.skipHandler = null;
   }
 
   init() {
@@ -45,6 +59,146 @@ export class MenuScene {
     this.startAnimations();
     AudioManager.playMusicContext('menu');
     console.log(`MenuScene build:${BUILD_ID}`);
+
+    // TASK C: Setup PWA install prompt
+    this.setupInstallPrompt();
+
+    // PART A: Initialize story rotation
+    this.initStoryRotation();
+  }
+
+  // PART A: Story rotation system
+  initStoryRotation() {
+    tauntDirector.setScene(this);
+
+    // Start with a fresh line
+    this.rotateStory();
+
+    // Rotate every 15 seconds
+    this.storyRotationTimer = setInterval(() => {
+      this.rotateStory();
+    }, 15000);
+
+    // Skip typewriter on any input
+    this.skipHandler = () => {
+      if (this.storyTypewriter && !this.storyTypewriter.complete) {
+        this.storyTypewriter.skip();
+      }
+    };
+
+    // Add skip listeners
+    window.addEventListener('keydown', this.skipHandler);
+    this.container.eventMode = 'static';
+    this.container.on('pointerdown', this.skipHandler);
+  }
+
+  rotateStory() {
+    if (!this.flavor) return;
+
+    const line = tauntDirector.getRotatingText('start_story');
+    this.flavor.text = ''; // Clear for typewriter
+    this.storyTypewriter = new TypewriterText(this.flavor, line, { charDelay: 30 });
+  }
+
+  setupInstallPrompt() {
+    // Only valid on mobile and if not already installed
+    if (!isMobile() || isStandalone()) return;
+
+    if (isIOS()) {
+      // iOS doesn't support programmatic install, show hint
+      this.createInstallUI('iOS');
+    } else {
+      // Android / Chrome supports deferred install prompt
+      // Check if we already have a stashed prompt event from global scope or wait for it
+      if (window.deferredInstallPrompt) {
+        this.installPrompt = window.deferredInstallPrompt;
+        this.createInstallUI('Android');
+      } else {
+        window.addEventListener('beforeinstallprompt', (e) => {
+          // Prevent Chrome 67 and earlier from automatically showing the prompt
+          e.preventDefault();
+          // Stash the event so it can be triggered later.
+          this.installPrompt = e;
+          window.deferredInstallPrompt = e;
+
+          this.createInstallUI('Android');
+        }, { once: true });
+      }
+    }
+  }
+
+  createInstallUI(platform) {
+    if (this.installButton) return; // Already created
+
+    const { width, height } = this.game.app.screen;
+    const isPortrait = height > width;
+
+    // Create container for install UI
+    this.installButton = new PIXI.Container();
+
+    // Background pill
+    const bg = new PIXI.Graphics();
+    bg.roundRect(0, 0, 160, 40, 20); // width, height, radius
+    bg.fill({ color: 0x000000, alpha: 0.8 });
+    bg.stroke({ width: 2, color: 0x00ffff });
+    this.installButton.addChild(bg);
+
+    // Icon (simple circle for now, or could use a sprite if available)
+    const icon = new PIXI.Graphics();
+    icon.circle(20, 20, 10);
+    icon.fill({ color: 0x00ffff });
+    // Minimal "download" arrow shape
+    icon.moveTo(20, 14);
+    icon.lineTo(20, 24);
+    icon.lineTo(16, 20);
+    icon.moveTo(20, 24);
+    icon.lineTo(24, 20);
+    icon.stroke({ width: 2, color: 0x000000 });
+    this.installButton.addChild(icon);
+
+    // Text
+    const textStr = platform === 'iOS' ? 'INSTALL APP' : 'INSTALL APP';
+    const text = new PIXI.Text(textStr, {
+      fontFamily: 'Courier New',
+      fontSize: 16,
+      fill: 0x00ffff,
+      fontWeight: 'bold'
+    });
+    text.anchor.set(0, 0.5);
+    text.x = 45;
+    text.y = 20;
+    this.installButton.addChild(text);
+
+    // Interactive
+    this.installButton.eventMode = 'static';
+    this.installButton.cursor = 'pointer';
+
+    // Position: Bottom center
+    this.installButton.pivot.set(80, 40); // Pivot at bottom center
+    this.installButton.x = width / 2;
+    this.installButton.y = height - 80; // Above footer/version text
+
+    // Interaction Logic
+    this.installButton.on('pointertap', async () => {
+      if (platform === 'iOS') {
+        // Show iOS instructions popup
+        alert('To install on iOS:\n1. Tap the Share button below\n2. Select "Add to Home Screen"');
+      } else if (this.installPrompt) {
+        // Show the native prompt
+        this.installPrompt.prompt();
+        // Wait for usage
+        const { outcome } = await this.installPrompt.userChoice;
+        console.log(`User response to install prompt: ${outcome}`);
+        // We can't use the prompt again, discard it
+        this.installPrompt = null;
+        window.deferredInstallPrompt = null;
+        // Hide button
+        this.installButton.visible = false;
+      }
+    });
+
+    this.container.addChild(this.installButton);
+    this.installButton.zIndex = 20; // High z-index
   }
 
   async loadAndCreateDebugSprite() {
@@ -53,7 +207,7 @@ export class MenuScene {
       // 1. Explicitly load the asset (async/await)
       const texture = await PIXI.Assets.load({
         alias: 'beervan',
-        src: '/beervan.png'
+        src: AssetManifest.sprites.beervan
       });
 
       // 2. Validate texture BEFORE using dimensions
@@ -433,6 +587,12 @@ export class MenuScene {
       this.rightBeer.x = width * 0.85;
       this.rightBeer.y = height * 0.3;
     }
+
+    // Reposition install button if exists
+    if (this.installButton && this.installButton.visible) {
+      this.installButton.x = width / 2;
+      this.installButton.y = height - 100; // Adjusted to be above footer
+    }
   }
 
   createButton(text, layout) {
@@ -527,6 +687,11 @@ export class MenuScene {
   update(delta) {
     this.animationTime += delta * 0.016;
 
+    // PART A: Update typewriter
+    if (this.storyTypewriter) {
+      this.storyTypewriter.update(delta);
+    }
+
     // Update starfield
     const { height } = this.game.app.screen;
     this.stars.forEach(star => {
@@ -580,6 +745,17 @@ export class MenuScene {
   }
 
   destroy() {
+    // PART A: Cleanup story rotation
+    if (this.storyRotationTimer) {
+      clearInterval(this.storyRotationTimer);
+      this.storyRotationTimer = null;
+    }
+    if (this.skipHandler) {
+      window.removeEventListener('keydown', this.skipHandler);
+      this.container.off('pointerdown', this.skipHandler);
+      this.skipHandler = null;
+    }
+
     if (this.layoutUnsubscribe) {
       this.layoutUnsubscribe();
       this.layoutUnsubscribe = null;

@@ -1,4 +1,7 @@
 export const BalanceConfig = {
+    // TASK 3: Global difficulty multiplier (0.9 = 10% easier)
+    DIFFICULTY_MULTIPLIER: 0.9,
+
     // Rank System
     ranks: {
         NUM_RANKS: 20,
@@ -25,16 +28,16 @@ export const BalanceConfig = {
         }
     },
 
-    // Difficulty
+    // Difficulty (reduced ~15% for better player experience)
     difficulty: {
-        baseEnemyHealthMultiplier: 1.25, // +25% HP start
-        hpScalePerLevel: 0.15, // stronger scaling
+        baseEnemyHealthMultiplier: 1.06, // +6% HP start (was 1.25, reduced by 15%)
+        hpScalePerLevel: 0.13, // gentler scaling (was 0.15, reduced by 13%)
 
-        baseEnemyCount: 20, // Reduced from previous hardcoded values to be cleaner
-        countScalePerLevel: 6, // +6 per level
+        baseEnemyCount: 17, // Reduced by 15% (was 20)
+        countScalePerLevel: 5, // +5 per level (was 6, reduced by 17%)
 
-        fireRateScale: 0.05, // 5% faster firing per level
-        projectileSpeed: 3.2, // Kept moderate
+        fireRateScale: 0.04, // 4% faster firing per level (was 0.05, reduced by 20%)
+        projectileSpeed: 2.7, // More manageable (was 3.2, reduced by 16%)
 
         precisionPenalty: true, // If true, reduced score for missed shots (concept)
         sprayInefficiency: 0.8 // Damage multiplier if shooting blindly (concept, maybe skip to keep simple)

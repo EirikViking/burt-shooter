@@ -140,6 +140,21 @@ export class Game {
     }
   }
 
+  gainLife() {
+    const before = this.lives;
+    // PART C: Clamp lives to max of 6
+    const MAX_LIVES = 6;
+    this.lives = Math.min(this.lives + 1, MAX_LIVES);
+    const after = this.lives;
+    const applied = after > before;
+    console.log(`[Lives] pickup extra_life before=${before} after=${after} max=${MAX_LIVES} applied=${applied}`);
+
+    // Notify scene if needed
+    if (this.currentScene && this.currentScene.onLifeGained) {
+      this.currentScene.onLifeGained(this.lives);
+    }
+  }
+
   nextLevel() {
     this.level++;
     if (this.currentScene && this.currentScene.startLevel) {
@@ -159,5 +174,14 @@ export class Game {
 
   getHeight() {
     return this.app.screen.height;
+  }
+
+  // TASK 2 & 4: Rank title and texture helpers
+  getRankTitle(rankIndex) {
+    return rankManager.getRankTitle(rankIndex);
+  }
+
+  getRankTexture(rankIndex) {
+    return rankManager.getRankTexture(rankIndex);
   }
 }

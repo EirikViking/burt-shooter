@@ -53,6 +53,9 @@ export class Player {
     this.shieldExpiresAt = 0;
     this.shieldSprite = null;
 
+    // Touch input (set externally by PlayScene)
+    this.touchInput = { moveX: 0, moveY: 0 };
+
     this.createSprite();
   }
 
@@ -68,19 +71,34 @@ export class Player {
     this.sprite.y = this.y;
     this.sprite.alpha = 0; // Start invisible for fade-in
 
-    // Rank-based Ship Selection
+    // Rank-based Ship Selection (20-rank system: 0-19)
+    // Map 20 ranks to 12 available ship skins for visible progression
     const rank = this.game.rankIndex || 0;
-    this.currentModel = Math.min(3, Math.floor(rank / 30) + 1);
-    const colorIdx = Math.floor((rank % 30) / 10); // 0, 1, 2
+
+    // Ship model: cycle through 1-3 based on rank groups
+    // Ranks 0-6: ship1, 7-13: ship2, 14-19: ship3
+    const modelIndex = Math.min(3, 1 + Math.floor(rank / 7));
+    this.currentModel = modelIndex;
+
+    // Color: cycle through 4 colors for variety
+    // blue (0-4), green (5-9), orange (10-14), red (15-19)
     const colors = ['blue', 'green', 'orange', 'red'];
-    const color = colors[colorIdx] || 'blue';
+    const colorIndex = Math.min(3, Math.floor(rank / 5));
+    const color = colors[colorIndex];
 
     let texture = GameAssets.getXtraShip(this.currentModel, color);
 
-    // Fallback if not found
+    // Fallback chain: try ship2_blue as baseline default, then old player texture
     if (!GameAssets.isValidTexture(texture)) {
-      texture = GameAssets.getShipTexture(this.config.texture);
-      this.currentModel = 1;
+      // Try ship2_blue as a nicer default
+      texture = GameAssets.getXtraShip(2, 'blue');
+      this.currentModel = 2;
+
+      if (!GameAssets.isValidTexture(texture)) {
+        // Final fallback to original player texture
+        texture = GameAssets.getShipTexture(this.config.texture);
+        this.currentModel = 1;
+      }
     }
 
     if (GameAssets.isValidTexture(texture)) {
@@ -152,15 +170,27 @@ export class Player {
     }
 
     const rank = this.game.rankIndex || 0;
-    this.currentModel = Math.min(3, Math.floor(rank / 30) + 1);
-    const colorIdx = Math.floor((rank % 30) / 10);
+
+    // Ship model: cycle through 1-3 based on rank groups
+    const modelIndex = Math.min(3, 1 + Math.floor(rank / 7));
+    this.currentModel = modelIndex;
+
+    // Color: cycle through 4 colors for variety
     const colors = ['blue', 'green', 'orange', 'red'];
-    const color = colors[colorIdx] || 'blue';
+    const colorIndex = Math.min(3, Math.floor(rank / 5));
+    const color = colors[colorIndex];
 
     let texture = GameAssets.getXtraShip(this.currentModel, color);
     if (!GameAssets.isValidTexture(texture)) {
-      texture = GameAssets.getShipTexture(this.config.texture);
-      this.currentModel = 1;
+      // Try ship2_blue as a nicer default
+      texture = GameAssets.getXtraShip(2, 'blue');
+      this.currentModel = 2;
+
+      if (!GameAssets.isValidTexture(texture)) {
+        // Final fallback to original player texture
+        texture = GameAssets.getShipTexture(this.config.texture);
+        this.currentModel = 1;
+      }
     }
 
     if (GameAssets.isValidTexture(texture)) {
@@ -236,19 +266,31 @@ export class Player {
       if (this.sprite.alpha > 1) this.sprite.alpha = 1;
     }
 
-    // Input & Movement
+    // Input & Movement - merge keyboard and touch
     let dx = 0;
     let dy = 0;
 
+    // Keyboard input
     if (this.inputManager.isKeyPressed('ArrowLeft') || this.inputManager.isKeyPressed('KeyA')) dx -= 1;
     if (this.inputManager.isKeyPressed('ArrowRight') || this.inputManager.isKeyPressed('KeyD')) dx += 1;
     if (this.inputManager.isKeyPressed('ArrowUp') || this.inputManager.isKeyPressed('KeyW')) dy -= 1;
     if (this.inputManager.isKeyPressed('ArrowDown') || this.inputManager.isKeyPressed('KeyS')) dy += 1;
 
+    // Touch input (additive, clamped later)
+    dx += this.touchInput.moveX;
+    dy += this.touchInput.moveY;
+
+    // Clamp to -1..1 range
+    dx = Math.max(-1, Math.min(1, dx));
+    dy = Math.max(-1, Math.min(1, dy));
+
     // Normalize diagonal
     if (dx !== 0 && dy !== 0) {
-      dx *= 0.707;
-      dy *= 0.707;
+      const magnitude = Math.sqrt(dx * dx + dy * dy);
+      if (magnitude > 1) {
+        dx /= magnitude;
+        dy /= magnitude;
+      }
     }
 
     // Apply Speed
@@ -465,19 +507,8 @@ export class Player {
 
   // --- Rank Up Visual Reward ---
   swapSprite() {
-    // Deterministic but feels random: based on Rank
-    if (this.shipSprite && this.sprite) {
-      this.sprite.removeChild(this.shipSprite);
-    }
-    if (this.damageOverlay && this.sprite) {
-      this.sprite.removeChild(this.damageOverlay);
-    }
-    if (this.shieldSprite && this.sprite) {
-      this.sprite.removeChild(this.shieldSprite);
-    }
-
-    // Re-run create logic which uses game.rankIndex
-    this.createSprite();
+    // Use rebuildShipSprite to preserve container reference in scene graph
+    this.rebuildShipSprite('rank_up');
 
     // Visual feedback
     if (this.shipSprite) {
@@ -493,6 +524,71 @@ export class Player {
     this.ensureRenderable('swapSprite');
 
     console.log('[Player] Ship sprite updated for Rank', this.game.rankIndex);
+  }
+
+  // TASK 5: Rotate ship sprite every other rank up
+  rotateShipSprite() {
+    // Get available ship sprites from GameAssets
+    const availableShips = [];
+    const models = [1, 2, 3];
+    const colors = ['blue', 'green', 'orange', 'red'];
+
+    // Build list of available ship combinations
+    models.forEach(model => {
+      colors.forEach(color => {
+        const texture = GameAssets.getXtraShip(model, color);
+        if (GameAssets.isValidTexture(texture)) {
+          availableShips.push({ model, color });
+        }
+      });
+    });
+
+    if (availableShips.length === 0) {
+      console.warn('[Player] No ship sprites available for rotation');
+      return;
+    }
+
+    // Get or initialize ship rotation index from localStorage
+    let shipIndex = 0;
+    try {
+      const stored = localStorage.getItem('bs_ship_rotation_index');
+      if (stored) {
+        shipIndex = parseInt(stored, 10);
+      }
+    } catch (e) {
+      // localStorage not available, use default
+    }
+
+    // Increment and wrap
+    shipIndex = (shipIndex + 1) % availableShips.length;
+
+    // Save new index
+    try {
+      localStorage.setItem('bs_ship_rotation_index', shipIndex.toString());
+    } catch (e) {
+      // localStorage not available, continue anyway
+    }
+
+    // Apply new ship
+    const newShip = availableShips[shipIndex];
+    const texture = GameAssets.getXtraShip(newShip.model, newShip.color);
+
+    if (GameAssets.isValidTexture(texture) && this.shipSprite instanceof PIXI.Sprite) {
+      this.shipSprite.texture = texture;
+      this.currentModel = newShip.model;
+
+      // Visual feedback
+      const flash = new PIXI.Graphics();
+      flash.circle(0, 0, 60).fill({ color: 0x00ffff, alpha: 0.6 });
+      this.sprite.addChild(flash);
+      setTimeout(() => {
+        if (this.sprite && flash.parent) this.sprite.removeChild(flash);
+      }, 150);
+
+      console.log(`[Player] Ship rotated to model ${newShip.model} ${newShip.color}`);
+    }
+
+    this.ensureRenderable('rotateShipSprite');
   }
 
   forceRespawn(screenWidth, screenHeight) {

@@ -1,16 +1,10 @@
-node_modules/
+﻿node_modules/
 dist/
-.DS_Store
-*.log
 .env
+RESCUE/
+*.diff
+RESCUE_*.txt
+.claude/
 .wrangler/
-wrangler.toml.local
-.dev.vars
 test-results/
-playwright-report/
-.tmp-playwright/
-
-# Claude Code temp files
-.claude/settings.local.json
 tmpclaude-*
-tmpclaude-*/**

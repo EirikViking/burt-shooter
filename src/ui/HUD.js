@@ -66,7 +66,7 @@ export class HUD {
     this.livesText = new PIXI.Text('LIVES: 3', {
       fontFamily: 'Courier New',
       fontSize: 20,
-      fill: '#ff0000',
+      fill: '#00ff00', // TASK 4: Start with green (default for >= 2 lives)
       stroke: '#000000',
       strokeThickness: 3
     });
@@ -87,6 +87,14 @@ export class HUD {
     this.scoreText.text = `SCORE: ${this.game.score}`;
     this.levelText.text = `LEVEL: ${this.game.level}`;
     this.livesText.text = `LIVES: ${this.game.lives}`;
+
+    // TASK 4: Update lives color based on count
+    if (this.game.lives === 1) {
+      this.livesText.style.fill = '#ff0000'; // Red at 1 life
+    } else {
+      this.livesText.style.fill = '#00ff00'; // Green at 2+ lives
+    }
+
     this.updateLivesVisuals();
 
     // Rank Update

@@ -17,7 +17,7 @@ class GameAssetsManager {
         try {
             const tex = await PIXI.Assets.load({
                 alias: 'beervan',
-                src: '/beervan.png'
+                src: AssetManifest.sprites.beervan
             });
 
             this.beerTexture = tex;
@@ -26,7 +26,7 @@ class GameAssetsManager {
                 isTexture: this.beerTexture instanceof PIXI.Texture,
                 w: this.beerTexture?.width,
                 h: this.beerTexture?.height,
-                url: '/beervan.png'
+                url: AssetManifest.sprites.beervan
             });
 
             return this.beerTexture;
@@ -157,18 +157,22 @@ class GameAssetsManager {
 
     async loadXtraAssets() {
         this.xtra = { ships: {}, enemies: {}, lasers: {}, damage: {}, parts: {}, effects: {}, powerups: {} };
-        const basePath = '/sprites/xtra-sprites';
 
-        // 1. Player Ships (Xtra) - Not in manifest explicitly as list?
-        // Manifest has sprites.enemies...
-        // The original code constructed paths manually. 
-        // We should just use the manifest categories if possible, but XtraAssets logic was complex.
-        // Let's use the patterns but refer to manifest PATHS logic if possible, or just re-implement the loop using consistent paths.
-
-        // Actually, let's keep the logic but update the Base Path concept to reference manifest helper if needed.
-        // But better: Use the Manifest arrays if I added them.
-
-        // I added: sprites.enemies.Black, sprites.lasers.Blue, sprites.damage...
+        // Loading Xtra Player Ships (for rank progression)
+        const shipPromises = [];
+        const xtraShips = AssetManifest.sprites.xtraPlayerShips;
+        if (xtraShips) {
+            Object.keys(xtraShips).forEach(shipKey => {
+                const shipColors = xtraShips[shipKey];
+                Object.keys(shipColors).forEach(colorKey => {
+                    const path = shipColors[colorKey];
+                    // Create deterministic alias: xtra_ship_1_blue, xtra_ship_2_green, etc.
+                    const shipNum = shipKey.replace('ship', '');
+                    const alias = `xtra_ship_${shipNum}_${colorKey}`;
+                    shipPromises.push(this.loadSingleAsset(alias, path, this.xtra.ships));
+                });
+            });
+        }
 
         // Loading Enemies (Xtra)
         const enemyColors = ['Black', 'Blue', 'Green', 'Red'];
@@ -218,8 +222,59 @@ class GameAssetsManager {
             fxPromises.push(this.loadSingleAsset(`xtra_effect_${name}`, path, this.xtra.effects));
         });
 
-        await Promise.all([...enemyPromises, ...laserPromises, ...dmgPromises, ...fxPromises]);
-        console.log('[GameAssets] Xtra Assets Loaded');
+        // PART B: Loading Powerups - All types
+        const powerupPromises = [];
+        // Life powerup - red heart
+        powerupPromises.push(this.loadSingleAsset(
+            'xtra_powerup_life',
+            '/sprites/xtra-sprites/UI/playerLife1_red.png',
+            this.xtra.powerups
+        ));
+        // Shield powerup - blue shield
+        powerupPromises.push(this.loadSingleAsset(
+            'xtra_powerup_shield',
+            '/sprites/xtra-sprites/Power-ups/powerupBlue_shield.png',
+            this.xtra.powerups
+        ));
+        // Ghost powerup - star (ethereal)
+        powerupPromises.push(this.loadSingleAsset(
+            'xtra_powerup_ghost',
+            '/sprites/xtra-sprites/Power-ups/powerupGreen_star.png',
+            this.xtra.powerups
+        ));
+        // Slow time powerup - bolt (speed related)
+        powerupPromises.push(this.loadSingleAsset(
+            'xtra_powerup_slow_time',
+            '/sprites/xtra-sprites/Power-ups/powerupYellow_bolt.png',
+            this.xtra.powerups
+        ));
+        // Isbjorn powerup - yellow pill
+        powerupPromises.push(this.loadSingleAsset(
+            'xtra_powerup_isbjorn',
+            '/sprites/xtra-sprites/Power-ups/pill_yellow.png',
+            this.xtra.powerups
+        ));
+        // Kjottdeig powerup - red pill
+        powerupPromises.push(this.loadSingleAsset(
+            'xtra_powerup_kjottdeig',
+            '/sprites/xtra-sprites/Power-ups/pill_red.png',
+            this.xtra.powerups
+        ));
+        // Rolp powerup - green pill
+        powerupPromises.push(this.loadSingleAsset(
+            'xtra_powerup_rolp',
+            '/sprites/xtra-sprites/Power-ups/pill_green.png',
+            this.xtra.powerups
+        ));
+        // Deili powerup - blue pill
+        powerupPromises.push(this.loadSingleAsset(
+            'xtra_powerup_deili',
+            '/sprites/xtra-sprites/Power-ups/pill_blue.png',
+            this.xtra.powerups
+        ));
+
+        await Promise.all([...shipPromises, ...enemyPromises, ...laserPromises, ...dmgPromises, ...fxPromises, ...powerupPromises]);
+        console.log('[GameAssets] Xtra Assets Loaded (ships:', Object.keys(this.xtra.ships).length, 'powerups:', Object.keys(this.xtra.powerups).length, ')');
     }
 
     async loadSingleAsset(alias, src, targetObj) {
@@ -232,7 +287,9 @@ class GameAssetsManager {
     }
 
     getXtraShip(type, color) {
-        return this.xtra?.ships[`xtra_ship_playerShip${type}_${color}`];
+        // type is 1-3, color is 'blue', 'green', 'orange', 'red'
+        const alias = `xtra_ship_${type}_${color}`;
+        return this.xtra?.ships[alias] || null;
     }
     getXtraDamage(shipType, level) {
         return this.xtra?.damage[`xtra_damage_playerShip${shipType}_damage${level}`];

@@ -406,11 +406,13 @@ function applyCompatibilitySettings() {
 }
 
 function createRendererOptions(isCompat) {
+  // Cap DPR at 2 to avoid performance issues on high-DPR mobile devices
+  const dpr = isCompat ? 1 : Math.min(window.devicePixelRatio || 1, 2);
   return {
     width: 800,
     height: 600,
     backgroundColor: 0x000000,
-    resolution: isCompat ? 1 : window.devicePixelRatio || 1,
+    resolution: dpr,
     autoDensity: !isCompat,
     antialias: false,
     powerPreference: isCompat ? 'low-power' : 'high-performance',
@@ -455,7 +457,95 @@ function registerBootErrorHandlers() {
   });
 }
 
+// TASK 3: Force Reload Logic
+async function enforceVersion() {
+  const storedVersion = localStorage.getItem('app_version');
+  const currentVersion = BUILD_ID;
+  console.log(`[Version] Current: ${currentVersion}, Stored: ${storedVersion}`);
+
+  // 1. Check if we just updated (Local storage mismatch)
+  if (storedVersion && storedVersion !== currentVersion) {
+    console.log('[Version] New version detected (storage mismatch). Cleaning up...');
+    if ('caches' in window) {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+        console.log('[Version] Caches cleared.');
+      } catch (e) {
+        console.warn('Cache clear failed', e);
+      }
+    }
+    // Update storage
+    localStorage.setItem('app_version', currentVersion);
+    // User requested hard reload on new version
+    window.location.reload(true);
+    return true;
+  }
+
+  // Update storage if missing
+  if (!storedVersion) {
+    localStorage.setItem('app_version', currentVersion);
+  }
+
+  // 2. Check if we are STALE (Remote mismatch)
+  // This handles the "Mobile stuck on old version" case
+  try {
+    const resp = await fetch(`/version.json?t=${Date.now()}`);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.version && data.version !== currentVersion) {
+        console.log(`[Version] Remote mismatch! Remote: ${data.version}, Local: ${currentVersion}`);
+        // Aggressive cleanup
+        localStorage.removeItem('app_version'); // Force storage mismatch next time
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.unregister()));
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        window.location.reload(true);
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('[Version] Remote check failed', e);
+  }
+
+  return false;
+}
+
 async function init() {
+  if (await enforceVersion()) {
+    return; // Stop boot if reloading
+  }
+
+  // Register service worker in production with version param
+  if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    try {
+      // TASK 4: Mobile Safety - Cache busting param
+      const registration = await navigator.serviceWorker.register(`/sw.js?v=${BUILD_ID}`);
+      console.log('[SW] Service worker registered:', registration.scope);
+
+      // Force update if found
+      registration.onupdatefound = () => {
+        const installingWorker = registration.installing;
+        if (installingWorker) {
+          installingWorker.onstatechange = () => {
+            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New content available
+              console.log('[SW] New content available, reloading...');
+              window.location.reload(true);
+            }
+          };
+        }
+      };
+    } catch (error) {
+      console.warn('[SW] Service worker registration failed:', error);
+    }
+  }
+
   // --- BOOT WATCHDOG START ---
   BootWatchdog.init();
   BootWatchdog.checkpoint('BOOT_START');

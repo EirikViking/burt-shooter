@@ -75,7 +75,32 @@ export const AssetManifest = {
             '/sprites/xtra-sprites/UI/numeral0.png', '/sprites/xtra-sprites/UI/numeral1.png', '/sprites/xtra-sprites/UI/numeral2.png', '/sprites/xtra-sprites/UI/numeral3.png', '/sprites/xtra-sprites/UI/numeral4.png',
             '/sprites/xtra-sprites/UI/numeral5.png', '/sprites/xtra-sprites/UI/numeral6.png', '/sprites/xtra-sprites/UI/numeral7.png', '/sprites/xtra-sprites/UI/numeral8.png', '/sprites/xtra-sprites/UI/numeral9.png', '/sprites/xtra-sprites/UI/numeralX.png',
             '/sprites/xtra-sprites/UI/playerLife1_blue.png', '/sprites/xtra-sprites/UI/playerLife1_green.png', '/sprites/xtra-sprites/UI/playerLife1_orange.png', '/sprites/xtra-sprites/UI/playerLife1_red.png'
-        ]
+        ],
+
+        // Xtra Player Ships (for rank progression)
+        xtraPlayerShips: {
+            ship1: {
+                blue: '/sprites/xtra-sprites/playerShip1_blue.png',
+                green: '/sprites/xtra-sprites/playerShip1_green.png',
+                orange: '/sprites/xtra-sprites/playerShip1_orange.png',
+                red: '/sprites/xtra-sprites/playerShip1_red.png'
+            },
+            ship2: {
+                blue: '/sprites/xtra-sprites/playerShip2_blue.png',
+                green: '/sprites/xtra-sprites/playerShip2_green.png',
+                orange: '/sprites/xtra-sprites/playerShip2_orange.png',
+                red: '/sprites/xtra-sprites/playerShip2_red.png'
+            },
+            ship3: {
+                blue: '/sprites/xtra-sprites/playerShip3_blue.png',
+                green: '/sprites/xtra-sprites/playerShip3_green.png',
+                orange: '/sprites/xtra-sprites/playerShip3_orange.png',
+                red: '/sprites/xtra-sprites/playerShip3_red.png'
+            }
+        },
+
+        // Powerups
+        beervan: '/beervan.png'
     },
 
     // Audio Assets
@@ -115,5 +140,97 @@ export const AssetManifest = {
         'deili': { projectile: '/sprites/xtra-sprites/Lasers/laserRed15.png', flashColor: 0xff4400, impactColor: 0xff4400, sound: 'enemy_shoot' },
         'rolp': { projectile: '/sprites/xtra-sprites/Lasers/laserBlue05.png', flashColor: 0xff00ff, impactColor: 0xff00ff, sound: 'enemy_shoot' },
         'beer_challenge': { projectile: '/sprites/xtra-sprites/Lasers/laserGreen08.png', flashColor: 0x00ff00, impactColor: 0x00ff00, sound: 'enemy_shoot' }
+    },
+
+    // Extras Bundles (Curated, Scene-Scoped)
+    extras: {
+        // Start Screen Extras - subtle background decorations
+        start: {
+            decorSprites: [
+                '/sprites/xtra-sprites/Effects/star1.png',
+                '/sprites/xtra-sprites/Effects/star2.png',
+                '/sprites/xtra-sprites/Effects/star3.png'
+            ]
+        },
+
+        // Play Scene Extras - impact effects and variety
+        play: {
+            impactEffects: [
+                '/sprites/xtra-sprites/Effects/fire00.png',
+                '/sprites/xtra-sprites/Effects/fire03.png',
+                '/sprites/xtra-sprites/Effects/fire08.png',
+                '/sprites/Effects/spaceEffects_001.png',
+                '/sprites/Effects/spaceEffects_003.png',
+                '/sprites/Effects/spaceEffects_007.png'
+            ],
+            particles: [
+                '/sprites/xtra-sprites/Effects/star1.png',
+                '/sprites/xtra-sprites/Effects/speed.png'
+            ]
+        },
+
+        // Highscore Scene Extras - party mode enhancements
+        highscore: {
+            confettiSprites: [
+                '/sprites/xtra-sprites/Effects/star1.png',
+                '/sprites/xtra-sprites/Effects/star2.png',
+                '/sprites/xtra-sprites/Effects/star3.png'
+            ],
+            celebrationSprites: [
+                '/sprites/xtra-sprites/Effects/shield1.png',
+                '/sprites/xtra-sprites/Effects/shield2.png'
+            ]
+        },
+
+        // Audio Extras - additional SFX variety
+        audio: {
+            hitVariants: [
+                '/audio/sfx/impactMetal_000.mp3',
+                '/audio/sfx/laserRetro_000.mp3'
+            ],
+            uiSounds: [
+                '/audio/sfx/computerNoise_000.mp3'
+            ]
+        },
+
+        // Hijacker Enemy Feature (Galaga-inspired, optional)
+        hijacker: {
+            ships: [
+                '/sprites/xtra-sprites/ufoBlue.png',
+                '/sprites/xtra-sprites/ufoGreen.png',
+                '/sprites/xtra-sprites/ufoRed.png',
+                '/sprites/xtra-sprites/ufoYellow.png'
+            ],
+            beams: [
+                '/sprites/xtra-sprites/Parts/beam0.png',
+                '/sprites/xtra-sprites/Parts/beam1.png',
+                '/sprites/xtra-sprites/Parts/beam2.png',
+                '/sprites/xtra-sprites/Parts/beam3.png',
+                '/sprites/xtra-sprites/Parts/beam4.png',
+                '/sprites/xtra-sprites/Parts/beam5.png',
+                '/sprites/xtra-sprites/Parts/beam6.png',
+                '/sprites/xtra-sprites/Parts/beamLong1.png',
+                '/sprites/xtra-sprites/Parts/beamLong2.png'
+            ],
+            effects: {
+                capture: [
+                    '/sprites/xtra-sprites/Effects/shield1.png',
+                    '/sprites/xtra-sprites/Effects/shield2.png',
+                    '/sprites/xtra-sprites/Effects/shield3.png'
+                ],
+                rescue: [
+                    '/sprites/xtra-sprites/Effects/star1.png',
+                    '/sprites/xtra-sprites/Effects/star2.png',
+                    '/sprites/xtra-sprites/Effects/star3.png'
+                ]
+            },
+            audio: {
+                spawn: '/audio/voice/war_look_out.mp3',
+                beamLoop: '/audio/sfx/forceField_000.mp3',
+                captureHit: '/audio/sfx/impactMetal_000.mp3',
+                rescueSuccess: '/audio/voice/power_up.mp3',
+                doubleShip: '/audio/sfx/thrusterFire_000.mp3'
+            }
+        }
     }
 };

@@ -11,6 +11,8 @@ export class BeerCan {
         this.type = type; // 'HAZARD' or 'POWERUP' (White)
         this.active = true;
         this.radius = 20;
+        // CLEANUP FIX: Add kind tag for cleanup targeting
+        this.kind = 'beer_can';
         // HAZARD cans: 1 hp so they die in one hit (was 3, felt indestructible)
         // POWERUP cans: 999 hp (effectively indestructible, must be collected)
         this.health = type === 'HAZARD' ? 1 : 999;
@@ -62,14 +64,21 @@ export class BeerCan {
         }
     }
 
-    update(delta) {
+    update(delta, remainingHazardCount = null) {
         if (!this.active) return;
 
         const width = this.game.getWidth();
 
+        // TASK 1: Wave easing - reduce speed when few hazard cans remain
+        // This prevents frustrating ultra-fast cans at wave end
+        let speedMultiplier = 1.0;
+        if (this.type === 'HAZARD' && remainingHazardCount !== null && remainingHazardCount <= 3) {
+            speedMultiplier = 0.5; // Reduce speed to 50% when 3 or fewer remain
+        }
+
         // Physics
-        this.x += this.vx * delta;
-        this.y += this.vy * delta;
+        this.x += this.vx * delta * speedMultiplier;
+        this.y += this.vy * delta * speedMultiplier;
 
         // Wall Bounce
         if (this.x < this.radius) {
@@ -94,7 +103,9 @@ export class BeerCan {
             }
         } else {
             // Hazard Logic: Zig Zag drunk
-            this.x += Math.sin(this.y * 0.02) * 2 * delta;
+            // TASK 1: Reduce zigzag amplitude when few cans remain
+            const zigzagAmplitude = speedMultiplier < 1.0 ? 1 : 2;
+            this.x += Math.sin(this.y * 0.02) * zigzagAmplitude * delta;
             this.sprite.y = this.y;
             this.sprite.rotation += 0.05 * delta;
         }

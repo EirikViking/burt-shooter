@@ -2,10 +2,12 @@ import {
     NUM_RANKS,
     MAX_RANK_INDEX,
     getRankFromScore,
+    getRankTitle,
     getThresholds,
     getRankThreshold,
     getNextRankThreshold
 } from '../shared/RankPolicy.js';
+import { RankAssets } from '../utils/RankAssets.js';
 
 export class RankManager {
     constructor() {
@@ -38,6 +40,16 @@ export class RankManager {
         const currentInRank = score - currentThresh;
 
         return Math.max(0, Math.min(1, currentInRank / spread));
+    }
+
+    // TASK 2: Get rank title
+    getRankTitle(rankIndex) {
+        return getRankTitle(rankIndex);
+    }
+
+    // TASK 4: Get rank texture for display
+    getRankTexture(rankIndex) {
+        return RankAssets.getRankTexture(rankIndex);
     }
 }
 

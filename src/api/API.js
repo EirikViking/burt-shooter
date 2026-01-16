@@ -96,7 +96,7 @@ class APIClient {
         name: entry.name || 'Unknown',
         score: typeof entry.score === 'number' ? entry.score : parseInt(entry.score, 10) || 0,
         level: typeof entry.level === 'number' ? entry.level : parseInt(entry.level, 10) || 1,
-        rankIndex: entry.rankIndex,
+        rankIndex: entry.rankIndex ?? entry.rank_index ?? 0,
         timestamp: entry.timestamp
       }));
 

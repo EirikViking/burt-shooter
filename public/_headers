@@ -1,17 +1,18 @@
-/sprites/player/*
-  Cache-Control: no-store
+/*
+  X-Content-Type-Options: nosniff
 
-/player_01.png
-  Cache-Control: no-store
+# TASK 4: Mobile Safety Overrides - No Cache for HTML
+/index.html
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  
+/version.json
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  Access-Control-Allow-Origin: *
 
-/player_02.png
-  Cache-Control: no-store
+# Service Worker should never be cached long term
+/sw.js
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
-/player_03.png
-  Cache-Control: no-store
-
-/player_04.png
-  Cache-Control: no-store
-
-/player_05.png
-  Cache-Control: no-store
+# Long cache for immutable assets (vite handles hashing for assets)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
