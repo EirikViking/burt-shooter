@@ -4,6 +4,7 @@ import { MenuScene } from '../scenes/MenuScene.js';
 import { PlayScene } from '../scenes/PlayScene.js';
 import { GameOverScene } from '../scenes/GameOverScene.js';
 import { ShipSelectScene } from '../scenes/ShipSelectScene.js';
+import { ShipDetailsScene } from '../scenes/ShipDetailsScene.js';
 import { HighscoreScene } from '../scenes/HighscoreScene.js';
 import { rankManager } from '../managers/RankManager.js';
 
@@ -64,6 +65,24 @@ export class Game {
 
     // Show ship select
     this.currentScene = this.scenes.shipSelect;
+    this.app.stage.addChild(this.currentScene.container);
+  }
+
+  async showShipDetails(spriteKey) {
+    // Create ship details scene
+    const detailsScene = new ShipDetailsScene(this, spriteKey);
+    await detailsScene.create();
+
+    // Remove current scene
+    if (this.currentScene) {
+      this.app.stage.removeChild(this.currentScene.container);
+      if (this.currentScene.cleanup) {
+        this.currentScene.cleanup();
+      }
+    }
+
+    // Show ship details
+    this.currentScene = detailsScene;
     this.app.stage.addChild(this.currentScene.container);
   }
 

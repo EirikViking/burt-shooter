@@ -272,11 +272,11 @@ export class ShipSelectScene {
     this.confirmed = true;
 
     const selectedShip = this.ships[this.selectedIndex];
-    console.log('[ShipSelect] confirmed spriteKey=' + selectedShip.spriteKey);
+    console.log('[ShipSelect] opening details for spriteKey=' + selectedShip.spriteKey);
     this.saveSelection(selectedShip.spriteKey);
 
-    // Transition to game
-    this.game.startGame(selectedShip.spriteKey);
+    // Open ship details screen
+    this.game.showShipDetails(selectedShip.spriteKey);
   }
 
   saveSelection(spriteKey) {
