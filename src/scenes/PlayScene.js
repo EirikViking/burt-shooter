@@ -231,11 +231,18 @@ export class PlayScene {
       console.log('[PlayScene] Assets ready, creating player with spriteKey=' + spriteKey);
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
       this.gameContainer.addChild(this.player.sprite);
-      if (this.player.setRank) {
-        const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
-        this.player.setRank(initialRank, 'init');
-      }
+      const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
+      this.player.setRank(initialRank, 'init');
+
       this.applySeasonCosmetics();
+
+      // DEBUG: Log ship selection details
+      if (this.player) {
+        console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
+        console.log(`[ShipDebug] Selected: ${this.game.selectedShipSpriteKey}`);
+        console.log(`[ShipDebug] Active: ${this.player.selectedShipSpriteKey}`);
+        console.log(`[ShipDebug] Texture: ${this.player.shipSprite?.texture?.baseTexture?.resource?.url || 'unknown'}`);
+      }
 
       // Start ship intro animation
       this.startShipIntro(spriteKey);
@@ -2266,6 +2273,7 @@ export class PlayScene {
 
     // Create intro overlay
     this.introOverlay = new PIXI.Container();
+    this.introOverlay.zIndex = 99999; // Ensure it is on top
 
     // Ship name (big retro text)
     const nameText = new PIXI.Text(shipName, {
@@ -2302,10 +2310,18 @@ export class PlayScene {
     this.uiOverlay.addChild(this.introOverlay);
 
     // Animate player ship flying in from below
-    const startY = this.game.getHeight() + 100;
+    const startY = this.game.getHeight() + 140;
     const targetY = this.game.getHeight() - 100;
     this.player.sprite.y = startY;
     this.player.y = startY;
+
+    // VISIBILITY FIX: Ensure player is visible!
+    this.player.sprite.visible = true;
+    this.player.sprite.alpha = 1;
+    if (this.player.shipSprite) {
+      this.player.shipSprite.alpha = 1;
+      this.player.shipSprite.visible = true;
+    }
 
     // Play SFX
     AudioManager.playSfx('ui_open', { volume: 0.7 });

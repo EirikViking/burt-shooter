@@ -430,7 +430,28 @@ export class Player {
 
     this.baseShipWidth = this.baseShipWidth || this.computeBaselineShipWidth();
 
-    const applied = this.swapToRankShip(this.game.rankIndex || 0, { log: false, force: true });
+    // FIX: Always prioritize User Selected Ship if available
+    let applied = false;
+
+    // 1. Try to build from selected ship key/index
+    if (this.selectedShipSpriteKey) {
+      const selectedSprite = this.buildDefaultShipSprite();
+      if (selectedSprite) {
+        this.shipSprite = selectedSprite;
+        this.sprite.addChild(this.shipSprite);
+        applied = true;
+        // Ensure weapon profile matches selection
+        this.setWeaponProfile(this.selectedShipSpriteKey);
+      }
+    }
+
+    // 2. Fallback to rank ship (only if no selection or selection failed)
+    if (!applied) {
+      const rankApplied = this.swapToRankShip(this.game.rankIndex || 0, { log: false, force: true });
+      if (rankApplied) applied = true;
+    }
+
+    // 3. Last resort fallback
     if (!applied) {
       const fallbackSprite = this.buildDefaultShipSprite();
       if (fallbackSprite) {
@@ -448,8 +469,8 @@ export class Player {
         this.sprite.addChild(g);
         this.baseScale = 1;
       }
-      this.ensureShipOverlays();
     }
+    this.ensureShipOverlays();
   }
 
   update(delta) {

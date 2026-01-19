@@ -344,10 +344,11 @@ export class ShipSelectScene {
     });
 
     // Add wheel listener to container
-    if (this.container.canvas) {
-      this.container.canvas.addEventListener('wheel', this.wheelHandler, { passive: false });
+    // Add wheel listener to canvas
+    const canvas = this.game.app.canvas || this.game.app.view;
+    if (canvas) {
+      canvas.addEventListener('wheel', this.wheelHandler, { passive: false });
     } else {
-      // Fallback: add to window
       window.addEventListener('wheel', this.wheelHandler, { passive: false });
     }
   }
@@ -435,6 +436,8 @@ export class ShipSelectScene {
     }
     if (this.wheelHandler) {
       window.removeEventListener('wheel', this.wheelHandler);
+      const canvas = this.game.app.canvas || this.game.app.view;
+      if (canvas) canvas.removeEventListener('wheel', this.wheelHandler);
     }
   }
 
