@@ -203,16 +203,50 @@ export class TauntBubble {
     }
 
     // Safely get/set x/y to guard against null/destroyed container
-    get x() { return (this.container && !this.container.destroyed) ? this.container.x : 0; }
-    set x(val) { if (this.container && !this.container.destroyed) this.container.x = val; }
+    get x() {
+        try {
+            return (this.container && typeof this.container === 'object' && !this.container.destroyed) ? this.container.x : 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+    set x(val) {
+        try {
+            if (this.container &&
+                typeof this.container === 'object' &&
+                !this.container.destroyed &&
+                'x' in this.container) {
+                this.container.x = val;
+            }
+        } catch (e) {
+            // Silent fail for x, y has the warning
+        }
+    }
 
-    get y() { return (this.container && !this.container.destroyed) ? this.container.y : 0; }
+    get y() {
+        try {
+            return (this.container && typeof this.container === 'object' && !this.container.destroyed) ? this.container.y : 0;
+        } catch (e) {
+            return 0;
+        }
+    }
     set y(val) {
-        if (this.container && !this.container.destroyed) {
-            this.container.y = val;
-        } else {
+        try {
+            // Defensive: check container is valid object with y property before assignment
+            if (this.container &&
+                typeof this.container === 'object' &&
+                !this.container.destroyed &&
+                'y' in this.container) {
+                this.container.y = val;
+            } else {
+                if (!this._warnedMissingContainer) {
+                    console.warn('[TauntBubble] Skipped setting y: container missing/destroyed');
+                    this._warnedMissingContainer = true;
+                }
+            }
+        } catch (e) {
             if (!this._warnedMissingContainer) {
-                console.warn('[TauntBubble] Skipped setting y: container missing/destroyed');
+                console.warn('[TauntBubble] Error setting y:', e.message);
                 this._warnedMissingContainer = true;
             }
         }
