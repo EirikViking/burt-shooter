@@ -86,9 +86,14 @@ export class Game {
     this.app.stage.addChild(this.currentScene.container);
   }
 
-  startGame(spriteKey) {
+  async startGame(spriteKey) {
     console.log('[Game] starting new game spriteKey=' + spriteKey);
     this.selectedShipSpriteKey = spriteKey;
+
+    // Increment ship usage count
+    const { incrementShipUsage } = await import('../config/ShipMetadata.js');
+    incrementShipUsage(spriteKey);
+
     this.score = 0;
     this.level = 1;
     this.lives = 3;
