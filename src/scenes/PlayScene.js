@@ -2269,30 +2269,30 @@ export class PlayScene {
     this.introStartTime = Date.now();
 
     const shipMeta = getShipMetadata(spriteKey);
-    const shipName = shipMeta ? shipMeta.name : 'UNKNOWN SHIP';
-    const shipTagline = shipMeta ? shipMeta.description : '';
+    const shipName = (shipMeta ? shipMeta.name : 'UNKNOWN SHIP').toUpperCase();
+    const shipTagline = "PILOT READY";
 
     // Create intro overlay
     this.introOverlay = new PIXI.Container();
-    this.introOverlay.zIndex = 99999; // Ensure it is on top
+    this.introOverlay.zIndex = 999999; // CINEMATIC TOP
 
-    // Vignette background (Step 3D)
+    // Vignette background
     const overlayBg = new PIXI.Graphics();
     overlayBg.rect(0, 0, this.game.getWidth(), this.game.getHeight());
-    overlayBg.fill({ color: 0x000000, alpha: 0.35 });
+    overlayBg.fill({ color: 0x000000, alpha: 0.25 });
     this.introOverlay.addChild(overlayBg);
 
-    // Ship name (big retro text)
+    // Ship name (Huge text)
     const nameText = new PIXI.Text(shipName, {
       fontFamily: 'Courier New',
-      fontSize: 48,
+      fontSize: 64,
       fill: '#00ff00',
       stroke: '#000000',
-      strokeThickness: 6,
+      strokeThickness: 8,
       fontWeight: 'bold',
       dropShadow: true,
       dropShadowColor: '#00ff00',
-      dropShadowBlur: 8,
+      dropShadowBlur: 15,
       dropShadowDistance: 0
     });
     nameText.anchor.set(0.5);
@@ -2300,29 +2300,44 @@ export class PlayScene {
     nameText.alpha = 0;
     this.introOverlay.addChild(nameText);
 
-    // Tagline (smaller text)
+    // Subtext (READY)
     const taglineText = new PIXI.Text(shipTagline, {
       fontFamily: 'Courier New',
-      fontSize: 16,
-      fill: '#cccccc',
+      fontSize: 24,
+      fill: '#aaaaaa',
       align: 'center',
-      wordWrap: true,
-      wordWrapWidth: this.game.getWidth() - 100
+      letterSpacing: 4
     });
     taglineText.anchor.set(0.5);
-    taglineText.position.set(this.game.getWidth() / 2, this.game.getHeight() / 2 + 20);
+    taglineText.position.set(this.game.getWidth() / 2, this.game.getHeight() / 2 + 30);
     taglineText.alpha = 0;
     this.introOverlay.addChild(taglineText);
 
     this.uiOverlay.addChild(this.introOverlay);
 
+    // ENGINE FLARE EFFECT
+    const flare = new PIXI.Graphics();
+    flare.moveTo(0, 0);
+    flare.lineTo(-10, 40);
+    flare.lineTo(0, 60);
+    flare.lineTo(10, 40);
+    flare.closePath();
+    flare.fill({ color: 0x00ffff, alpha: 0.4 });
+    flare.y = 20; // Below ship
+    // Add to player sprite at bottom
+    this.player.sprite.addChildAt(flare, 0);
+
     // Animate player ship flying in from below
-    const startY = this.game.getHeight() + 140;
-    const targetY = this.game.getHeight() - 100;
+    const startY = this.game.getHeight() + 600;
+    const targetY = this.game.getHeight() - 130;
     this.player.sprite.y = startY;
     this.player.y = startY;
 
-    // VISIBILITY FIX: Ensure player is visible!
+    // Initial Scale
+    const initialScale = 1.25;
+    this.player.sprite.scale.set(initialScale);
+
+    // Ensure visible
     this.player.sprite.visible = true;
     this.player.sprite.alpha = 1;
     if (this.player.shipSprite) {
@@ -2333,46 +2348,85 @@ export class PlayScene {
     // Play SFX
     AudioManager.playSfx('ui_open', { volume: 0.7 });
 
-    // Animate over 900ms
-    const introDuration = 900;
+    // Animation Config
+    const introDuration = 1500;
     const startTime = Date.now();
 
-    console.log(`[IntroDebug] start t=${startTime}`);
+    console.log(`[Intro] start spriteKey=${spriteKey} yStart=${startY} yEnd=${targetY} duration=${introDuration}`);
+
+    // Easing: easeOutBack
+    const easeOutBack = (x) => {
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    };
 
     const animateIntro = () => {
       const now = Date.now();
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / introDuration, 1);
 
-      if (Math.random() < 0.05) console.log(`[IntroDebug] frame elapsed=${elapsed}`);
-
-      // Ease out cubic
-
-      // Ease out cubic
-      const eased = 1 - Math.pow(1 - progress, 3);
-
-      // Move player up
+      // 1. Movement (easeOutBack)
+      const eased = easeOutBack(progress);
       const currentY = startY + (targetY - startY) * eased;
       this.player.sprite.y = currentY;
       this.player.y = currentY;
 
-      // Fade in text
-      if (progress < 0.3) {
-        const textProgress = progress / 0.3;
-        nameText.alpha = textProgress;
-        taglineText.alpha = textProgress;
-      } else if (progress > 0.7) {
-        const fadeOut = (progress - 0.7) / 0.3;
-        nameText.alpha = 1 - fadeOut;
-        taglineText.alpha = 1 - fadeOut;
+      // 2. Scale (1.25 -> 1.0 over first 25%)
+      if (progress < 0.25) {
+        const scaleProgress = progress / 0.25;
+        const currentScale = initialScale - (scaleProgress * (initialScale - 1.0));
+        this.player.sprite.scale.set(currentScale);
       } else {
-        nameText.alpha = 1;
-        taglineText.alpha = 1;
+        this.player.sprite.scale.set(1.0);
+      }
+
+      // 3. Flare Flicker
+      if (flare) {
+        flare.alpha = 0.2 + Math.random() * 0.3;
+        flare.scale.x = 0.8 + Math.random() * 0.4;
+        flare.scale.y = 0.9 + Math.random() * 0.3;
+      }
+
+      // 4. Text Reveal logic
+      // Fade in 0-20%, Hold 20-75%, Fade out 75-100%
+      let textAlpha = 0;
+      if (progress < 0.2) {
+        textAlpha = progress / 0.2;
+      } else if (progress < 0.75) {
+        textAlpha = 1;
+        // Shake at impact time (~70% is when easing settles?)
+        // easeOutBack overshoots around 70-80% usually
+      } else {
+        textAlpha = 1 - ((progress - 0.75) / 0.25);
+      }
+      nameText.alpha = textAlpha;
+      taglineText.alpha = textAlpha;
+
+      // 5. Screen Shake Impact at ~85% (overshoot settle)
+      // Manual shake of this.gameContainer
+      if (progress > 0.8 && progress < 0.92) {
+        const shakeIntensity = 6 * (1 - ((progress - 0.8) / 0.12));
+        this.gameContainer.x = (Math.random() - 0.5) * shakeIntensity;
+        this.gameContainer.y = (Math.random() - 0.5) * shakeIntensity;
+      } else {
+        this.gameContainer.x = 0; // Reset
+        this.gameContainer.y = 0;
       }
 
       if (progress < 1) {
         requestAnimationFrame(animateIntro);
       } else {
+        // Cleanup Flare
+        if (flare && flare.parent) {
+          flare.parent.removeChild(flare);
+          flare.destroy();
+        }
+        this.gameContainer.x = 0;
+        this.gameContainer.y = 0;
+        this.player.sprite.y = targetY; // Snap to final
+        this.player.y = targetY;
+        console.log('[Intro] complete');
         this.completeShipIntro();
       }
     };
