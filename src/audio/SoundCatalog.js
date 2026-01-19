@@ -60,11 +60,22 @@ export const SFX_CATALOG = {
         getSfx('forceField_000'),
         getSfx('forceField_001')
     ],
-    // Mappings
+    // Direct matches from manifest
+    'computerNoise': [getSfx('computerNoise_000')],
+    'thrusterFire': [getSfx('thrusterFire_000')],
+    'doorClose': [getSfx('doorClose_000')],
+    'spaceEngine': [getSfx('spaceEngine_000')],
+
+    // Mappings and Aliases
     'shoot': [getSfx('laserSmall_000')],
     'explosion': [getSfx('explosionCrunch_000')],
     'powerup': [getSfx('forceField_000')],
     'menuSelect': [getSfx('doorOpen_000')],
     'playerHit': [getSfx('impactMetal_000')],
-    'levelComplete': [getSfx('doorOpen_000')]
+    'levelComplete': [getSfx('doorOpen_000')],
+
+    // Aliases for inconsistent call sites
+    'forceField': [getSfx('forceField_000')], // Alias for shield/pickup reuse
+    'shield_up': [getSfx('forceField_000')],
+    'life_up': [getSfx('ui_open_000')] // Fallback if specific not found
 };

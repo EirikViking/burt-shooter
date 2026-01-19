@@ -162,18 +162,24 @@ class AudioController {
       }
     }
 
-    // 1. Get variants
-    const variants = SFX_CATALOG[eventName];
+
+    // 1. Get variants with Fallback
+    let variants = SFX_CATALOG[eventName];
     if (!variants || variants.length === 0) {
-      // SILENT FALLBACK - No playTone, it is often annoying
-      return;
+      if (!this.sfxDenylistLogged[eventName]) {
+        console.warn(`[AudioManager] Unknown SFX key: "${eventName}". Falling back to default.`);
+        this.sfxDenylistLogged[eventName] = true;
+      }
+      // Fallback to ensuring not silent
+      variants = SFX_CATALOG['shoot_small'];
+      if (!variants) return false;
     }
 
     // 2. Cooldown
     const now = Date.now();
     const minIntervalMs = Number.isFinite(options.minIntervalMs) ? options.minIntervalMs : 50;
     if (!options.force && this.sfxCooldowns[eventName] && now < this.sfxCooldowns[eventName]) {
-      return;
+      return false;
     }
     this.sfxCooldowns[eventName] = now + minIntervalMs;
 
@@ -181,9 +187,15 @@ class AudioController {
     const src = variants[Math.floor(Math.random() * variants.length)];
 
     // 4. Play
+    if (!src) return false;
+
     const audio = this.getSfxAudio(eventName, src, options);
     audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.sfxVolume * (options.volume || 1.0)));
-    audio.play().catch(() => { });
+    audio.play().catch(e => {
+      if (e.name !== 'AbortError') {
+        console.warn(`[AudioManager] Play failed for ${eventName}:`, e);
+      }
+    });
     this.lastSfxPlayedAt[eventName] = now;
     return true;
   }
