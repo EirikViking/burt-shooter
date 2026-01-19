@@ -196,21 +196,28 @@ class AudioController {
       if (e.name === 'AbortError') return;
 
       const srcUrl = audio.src;
+
+      // Anti-spam: Only log typical errors once per session per URL
+      if (!this._warnedUrls) this._warnedUrls = new Set();
+      if (this._warnedUrls.has(srcUrl)) return;
+      this._warnedUrls.add(srcUrl);
+
       console.warn(`[AudioManager] Play failed for key="${eventName}" src="${srcUrl}" error="${e.name}: ${e.message}"`);
 
       // Proactive check for 404/Decode errors
       if (e.name === 'NotSupportedError' || e.name === 'NotAllowedError') {
-        const checkUrl = srcUrl;
-        // Run HEAD check to see if it's a 404
-        fetch(checkUrl, { method: 'HEAD' })
+        fetch(srcUrl, { method: 'HEAD' })
           .then(res => {
+            const type = res.headers.get('content-type');
             if (!res.ok) {
-              console.error(`[AudioManager] Asset MISSING (404): ${checkUrl}`);
+              console.error(`[AudioManager] Asset MISSING (404): ${srcUrl}`);
+            } else if (type && type.includes('text/html')) {
+              console.error(`[AudioManager] Asset is HTML (Likely 404): ${srcUrl}. Check catalog path.`);
             } else {
-              console.warn(`[AudioManager] Asset exists but failed to play (likely decode error): ${checkUrl} type=${res.headers.get('content-type')}`);
+              console.warn(`[AudioManager] Asset exists but failed to play (decode error): ${srcUrl} type=${type}`);
             }
           })
-          .catch(err => console.warn(`[AudioManager] Network check failed for ${checkUrl}`, err));
+          .catch(err => console.warn(`[AudioManager] Network check failed for ${srcUrl}`, err));
       }
     });
     this.lastSfxPlayedAt[eventName] = now;

@@ -1,8 +1,14 @@
 import { AssetManifest } from '../assets/assetManifest.js';
 
 // Safe lookup helpers
-const getMusic = (partial) => AssetManifest.audio.music.find(p => p.includes(partial)) || partial;
-const getSfx = (partial) => AssetManifest.audio.sfx.find(p => p.includes(partial)) || partial;
+// Safe lookup helpers
+const getMusic = (partial) => AssetManifest.audio.music.find(p => p.includes(partial)) || `/audio/music/${partial}.mp3`;
+const getSfx = (partial) => {
+    const match = AssetManifest.audio.sfx.find(p => p.includes(partial));
+    if (match) return match;
+    // Fallback: Construct URL assuming standard location and format
+    return `/audio/sfx/${partial}.mp3`;
+};
 
 // Music Pools
 const MENU_POOL = [
