@@ -134,7 +134,11 @@ export class PlayScene {
     this.seasonUnlocks = {};
     this.lastScoreSeen = 0;
     this.lastBossDefeatedLevel = 0;
+    this.lastBossDefeatedLevel = 0;
     this.freezeTimerMs = 0;
+
+    // TASK: Fix duplicate wave start
+    this._lastStartedLevel = -1;
   }
 
   init() {
@@ -305,8 +309,8 @@ export class PlayScene {
       window.addEventListener('keydown', this._debugKeyHandler);
     }
 
-    // Start first level
-    this.startLevel();
+    // Start first level - DEFERRED until intro complete
+    // this.startLevel();
     this.initLoreBag();
 
     console.log(`PlayScene build:${BUILD_ID}`);
@@ -375,7 +379,15 @@ export class PlayScene {
     }
   }
 
-  startLevel() {
+  startLevel(source = 'unknown') {
+    // GUARD: specific level start
+    if (this._lastStartedLevel === this.game.level) {
+      console.log(`[LevelStart] suppressed duplicate source=${source} level=${this.game.level}`);
+      return;
+    }
+    console.log(`[LevelStart] starting source=${source} level=${this.game.level}`);
+    this._lastStartedLevel = this.game.level;
+
     this.levelAdvancePending = false;
     if (this.levelAdvanceTimeout) {
       clearTimeout(this.levelAdvanceTimeout);
@@ -2474,7 +2486,7 @@ export class PlayScene {
 
     // Start enemy waves - use startLevel, not startWave
     if (this.enemyManager && this.game.level) {
-      this.enemyManager.startLevel(this.game.level);
+      this.startLevel('introComplete');
     }
 
     console.log('[PlayScene] Ship intro complete, gameplay enabled');
