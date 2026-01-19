@@ -108,6 +108,7 @@ export class ShipDetailsScene {
 
     createStatsSection(container, panelWidth, yOffset, isMobile) {
         const stats = this.ship.stats || { speed: 6, fireRate: 150, damage: 1 };
+        console.log(`[ShipStats] details shipId=${this.ship.id} damage=${stats.damage} fireRate=${stats.fireRate} speed=${stats.speed}`);
 
         // Stats title
         const statsTitle = new PIXI.Text('STATS', {

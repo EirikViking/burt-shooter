@@ -35,6 +35,8 @@ export class Player {
     this.selectedShipTextureIndex = textureIndex; // Store texture index
     this.hasSetInitialRank = false; // Track if initial rank has been set
 
+    console.log(`[ShipStats] applied shipId=${this.config.id} damage=${this.stats.damage} fireRate=${this.stats.fireRate} speed=${this.stats.speed}`);
+
     this.speed = this.stats.speed;
     this.radius = this.config.hitbox.radius;
     this.baseHitboxRadius = this.config.hitbox.radius;
@@ -75,8 +77,8 @@ export class Player {
     this.damageOverlay = null;
     this.boostAura = null;
     this.rankBoostText = null;
-    this.weaponProfile = this.getWeaponProfileForShip(spriteKey);
-    this.weaponProfileName = this.weaponProfile.name;
+    this.weaponProfile = this.config.weapon || { bullets: 1, spread: 0, shootSfx: 'shoot_small' };
+    this.weaponProfileName = this.config.name;
     this.weaponSfxKey = this.weaponProfile.shootSfx;
     this.bulletPierce = false;
     this.scoreMultiplier = 1;
@@ -292,6 +294,21 @@ export class Player {
     const texture = GameAssets.getRankShipTexture(index);
     if (!GameAssets.isValidTexture(texture)) return false;
 
+    // Load new config from Registry
+    const newShipId = `rank_ship_${index}`;
+    const newConfig = ShipRegistry[newShipId];
+
+    if (newConfig) {
+      this.config = newConfig;
+      this.stats = { ...newConfig.stats };
+      this.visuals = { ...newConfig.visuals };
+      this.weaponProfile = { ...newConfig.weapon };
+      this.speed = this.stats.speed;
+      this.weaponSfxKey = this.weaponProfile.shootSfx;
+      this.activePowerup.type = null; // Clear powerups on ship swap to avoid stuck states? No, keep powerups.
+      this.recalculateStats();
+    }
+
     const shipPath = GameAssets.getRankShipPath(index);
     const shipName = shipPath ? shipPath.split('/').pop() : `rank_ship_${index}`;
 
@@ -317,7 +334,6 @@ export class Player {
     this.sprite.addChildAt(this.shipSprite, 0);
     this.rankShipIndex = index;
     this.currentShipPath = shipPath || null;
-    this.setWeaponProfile(this.currentShipPath || shipName);
 
     this.ensureShipOverlays();
 
@@ -329,7 +345,7 @@ export class Player {
       const spriteName = this.shipSprite?.name || 'unnamed';
       console.log(`[PlayerShipSwap] rank=${nr} old=${previousName} new=${shipName} sprite=${spriteName} texture=${textureSource}`);
       console.log(`[PlayerShipScale] texW=${texWidth} targetW=${targetWidth} scale=${this.baseScale}`);
-      console.log(`[ShipWeapon] ship=${shipName} profile=${this.weaponProfileName} shootSfx=${this.weaponSfxKey}`);
+      console.log(`[ShipWeapon] ship=${shipName} shootSfx=${this.weaponSfxKey}`);
     }
 
     if (this.shipSprite && this.baseScale) {
@@ -346,31 +362,8 @@ export class Player {
     return true;
   }
 
-  getWeaponProfileForShip(shipId) {
-    const key = (shipId || '').toString();
-    const name = key.split('/').pop();
-    const profiles = {
-      'row2_ship_1.png': { name: 'precision', bullets: 1, damageMult: 1.1, speedMult: 1.0, fireRateMult: 1.0, spread: 0, shootSfx: 'shoot_small' },
-      'row2_ship_2.png': { name: 'double', bullets: 2, damageMult: 0.85, speedMult: 1.0, fireRateMult: 1.05, spread: 0.14, shootSfx: 'shoot_small' },
-      'row2_ship_3_clean.png': { name: 'rapid', bullets: 1, damageMult: 0.9, speedMult: 1.1, fireRateMult: 0.75, spread: 0, shootSfx: 'shoot_small' },
-      'row2_ship_5.png': { name: 'heavy', bullets: 1, damageMult: 1.4, speedMult: 0.9, fireRateMult: 1.2, spread: 0, shootSfx: 'shoot_heavy' },
-      'ship_extract_1.png': { name: 'arc', bullets: 2, damageMult: 0.8, speedMult: 1.05, fireRateMult: 1.0, spread: 0.2, shootSfx: 'shoot_small' },
-      'ship_extract_2.png': { name: 'sniper', bullets: 1, damageMult: 1.25, speedMult: 1.2, fireRateMult: 1.15, spread: 0, shootSfx: 'shoot_heavy' },
-      'ship_extract_3.png': { name: 'spray', bullets: 3, damageMult: 0.7, speedMult: 1.0, fireRateMult: 1.1, spread: 0.22, shootSfx: 'shoot_small' },
-      'ship_extract_5.png': { name: 'steady', bullets: 1, damageMult: 1.0, speedMult: 1.0, fireRateMult: 0.9, spread: 0, shootSfx: 'shoot_small' },
-      'ship_new.png': { name: 'balanced', bullets: 2, damageMult: 0.95, speedMult: 1.0, fireRateMult: 0.95, spread: 0.12, shootSfx: 'shoot_small' }
-    };
+  // Legacy weapon profile methods removed
 
-    return profiles[name] || { name: 'default', bullets: 1, damageMult: 1.0, speedMult: 1.0, fireRateMult: 1.0, spread: 0, shootSfx: 'shoot_small' };
-  }
-
-  setWeaponProfile(shipId) {
-    const profile = this.getWeaponProfileForShip(shipId);
-    this.weaponProfile = profile;
-    this.weaponProfileName = profile.name;
-    this.weaponSfxKey = profile.shootSfx || 'shoot_small';
-    this.recalculateStats();
-  }
 
   getShootSfxKey() {
     return this.weaponSfxKey || 'shoot_small';
@@ -1038,35 +1031,42 @@ export class Player {
   }
 
   recalculateStats() {
+    // 1. Reset to BASE STATS from Single Source of Truth
     this.speed = this.stats.speed;
     this.bulletDamage = this.stats.damage;
     this.shootDelay = this.stats.fireRate;
-    this.multiShot = 1;
     this.bulletSpeed = this.stats.bulletSpeed;
+
+    // 2. Base Weapon Profile properties
+    const weapon = this.weaponProfile || { bullets: 1, spread: 0 };
+    this.multiShot = weapon.bullets || 1;
     this.bulletPierce = false;
+
+    // 3. Reset dynamic modifiers
     this.rankBoostExtraShots = 0;
     this.rankBoostBulletFx = false;
     this.magnetActive = false;
     this.magnetRadius = 140;
     this.magnetStrength = 0.08;
 
+    // 4. Apply Powerups (Additive or Multiplicative)
     switch (this.activePowerup.type) {
       case 'isbjorn':
-        this.multiShot = 3;
+        this.multiShot = Math.max(this.multiShot, 3);
         break;
       case 'rolp':
-        this.bulletDamage = 3;
+        this.bulletDamage = Math.max(this.bulletDamage, 3);
         this.shootDelay = this.stats.fireRate / 2; // Rapid fire
         break;
       case 'deili':
-        this.multiShot = 5;
-        this.bulletDamage = 2;
+        this.multiShot = Math.max(this.multiShot, 5);
+        this.bulletDamage = Math.max(this.bulletDamage, 2);
         break;
       case 'rapid_fire':
         this.shootDelay = this.stats.fireRate * 0.5;
         break;
       case 'double_shot':
-        this.multiShot = 2;
+        this.multiShot = Math.max(this.multiShot, 2);
         break;
       case 'damage_up':
         this.bulletDamage = Math.max(2, Math.round(this.bulletDamage * 1.6));
@@ -1085,18 +1085,8 @@ export class Player {
         break;
     }
 
-    this.applyWeaponProfile();
     this.applyRankBoostModifiers();
     this.applySynergyModifiers();
-  }
-
-  applyWeaponProfile() {
-    const profile = this.weaponProfile || { bullets: 1, damageMult: 1, speedMult: 1, fireRateMult: 1 };
-    const baseMultiShot = this.multiShot;
-    this.multiShot = Math.max(baseMultiShot, profile.bullets || 1);
-    this.bulletDamage = Math.max(1, Math.round(this.bulletDamage * (profile.damageMult || 1)));
-    this.bulletSpeed = this.bulletSpeed * (profile.speedMult || 1);
-    this.shootDelay = this.shootDelay * (profile.fireRateMult || 1);
   }
 
   applyRankBoostModifiers() {
