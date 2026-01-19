@@ -1226,18 +1226,16 @@ export class PlayScene {
 
       // If it's been >5s since last recovery attempt and we're still shooting
       if (timeSinceRecovery > 5000) {
-        console.log('[PlayScene] Shooting sound health check: Attempting recovery');
+        if (check.recoveryAttempts === 0) {
+          console.log('[PlayScene] Shooting sound health check: Attempting recovery (first attempt)');
+        }
         check.lastRecoveryAttempt = now;
         check.recoveryAttempts++;
 
         // Resume AudioContext if suspended
         if (AudioManager && AudioManager.audioContext) {
           if (AudioManager.audioContext.state === 'suspended') {
-            AudioManager.audioContext.resume().then(() => {
-              console.log('[PlayScene] AudioContext resumed');
-            }).catch(e => {
-              console.warn('[PlayScene] AudioContext resume failed', e);
-            });
+            AudioManager.audioContext.resume().catch(() => { });
           }
         }
 

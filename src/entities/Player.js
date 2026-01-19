@@ -534,6 +534,7 @@ export class Player {
 
   update(delta) {
     if (!this.active) return;
+    if (!this.sprite) return; // Guard: Sprite might be missing/destroyed during update
 
     const now = Date.now();
     const dt = delta * 16.67;
