@@ -475,6 +475,9 @@ export class Player {
       }, 200);
     }
 
+    const oldWidth = this.shipSprite ? this.shipSprite.width : 0;
+    if (oldWidth > 0) console.log(`[RankUpSprite] before width=${oldWidth.toFixed(1)} scale=${this.sprite.scale.x.toFixed(3)}`);
+
     // 2. Scale Pulse (Pop up and down)
     if (this.sprite) {
       const currentScale = this.sprite.scale.x;
@@ -487,6 +490,17 @@ export class Player {
     // 3. Swap Sprite (Force update to next rank variant)
     // Note: swapToRankShip handles logic to find the correct texture for the rank
     const swapped = this.swapToRankShip(newRank, { force: true, log: true });
+
+    // TASK 2: Preserve visual size
+    if (swapped && oldWidth > 0 && this.shipSprite && this.shipSprite.texture.valid) {
+      const texW = this.shipSprite.texture.width;
+      if (texW > 0) {
+        const newScale = oldWidth / texW;
+        this.shipSprite.scale.set(newScale);
+        this.baseScale = newScale;
+        console.log(`[RankUpSprite] after preserved width=${oldWidth.toFixed(1)} newScale=${newScale.toFixed(3)} texW=${texW}`);
+      }
+    }
 
     // 4. Apply Stats/Boost (Shields, etc)
     this.applyRankUpBoost();

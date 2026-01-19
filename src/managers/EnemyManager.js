@@ -55,6 +55,9 @@ export class EnemyManager {
     this.levelStartTime = 0;
     this.bossSpawnedAtMs = 0;
     this.directorState = { tier: 0, spawnCadenceScale: 1, eliteChance: 0.02, clutchDropChance: 0.04 };
+
+    // TASK 1: Voice history to prevent duplicates
+    this.voiceHistory = {};
   }
 
   startLevel(level) {
@@ -89,9 +92,16 @@ export class EnemyManager {
     this.bossSpawnedAtMs = 0;
 
     // Play Voice
-    AudioManager.playSfx('ui_open');
-    setTimeout(() => AudioManager.playVoice('ready'), 500);
-    setTimeout(() => AudioManager.playVoice('go'), 2000);
+    // Play Voice (TASK 1: Prevent duplicates per level)
+    if (!this.voiceHistory[level]) {
+      console.log(`[IntroVoice] play requested source=EnemyManager level=${level}`);
+      AudioManager.playSfx('ui_open');
+      setTimeout(() => AudioManager.playVoice('ready'), 500);
+      setTimeout(() => AudioManager.playVoice('go'), 2000);
+      this.voiceHistory[level] = true;
+    } else {
+      console.log(`[IntroVoice] suppressed duplicate for level=${level}`);
+    }
 
     // Modifier Logic
     if (BalanceConfig.modifiers.enabled && level >= 3) {

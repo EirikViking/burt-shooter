@@ -1432,6 +1432,7 @@ export class PlayScene {
       slot: 'top',
       type: 'lore',
       banner: true,
+      title: 'LORE UNLOCKED', // TASK 3: Add title
       y: this.game.getHeight() * 0.16,
       maxWidth: this.game.getWidth() * 0.7
     });
@@ -1538,7 +1539,23 @@ export class PlayScene {
       banner.addChild(bannerText);
 
       bannerText.x = -panelWidth / 2 + paddingX + avatarSlot;
-      bannerText.y = 0;
+      bannerText.y = options.title ? 10 : 0; // Shift down if title
+
+      // TASK 3: Add Title Label if present
+      if (options.title) {
+        const titleLabel = new PIXI.Text(String(options.title).toUpperCase(), {
+          fontFamily: 'Courier New',
+          fontSize: 14,
+          fill: '#ffff00', // Yellow for visibility
+          fontWeight: 'bold',
+          stroke: '#000000',
+          strokeThickness: 3
+        });
+        titleLabel.anchor.set(0, 0.5);
+        titleLabel.x = bannerText.x;
+        titleLabel.y = -panelHeight / 2 + 16;
+        banner.addChild(titleLabel);
+      }
 
       if (hasAvatar) {
         const pick = photos[Math.floor(Math.random() * photos.length)];
@@ -2100,7 +2117,7 @@ export class PlayScene {
     topText.y = -215;
     poster.addChild(topText);
 
-    const subText = new PIXI.Text('KURT MELDER', {
+    const subText = new PIXI.Text(reason ? `REASON: ${reason.toUpperCase().replace(/_/g, ' ')}` : 'KURT MELDER', {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#333333',
