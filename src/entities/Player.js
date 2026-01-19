@@ -389,20 +389,11 @@ export class Player {
     }
 
     // After initial spawn, allow rank-based ship swaps on rank up
+    // After initial spawn, allow rank-based ship swaps on rank up
     if (nr > prevRank) {
-      // FIX: If user selected a specific ship, NEVER swap it out for a rank ship.
-      // Only apply the boost effects.
-      if (this.selectedShipSpriteKey) {
-        console.log('[Player] setRank: Rank up but preserving selected ship:', this.selectedShipSpriteKey);
-        this.applyRankUpBoost();
-        return false;
-      }
-
-      const swapped = this.swapToRankShip(nr);
-      if (swapped) {
-        this.applyRankUpBoost();
-      }
-      return swapped;
+      console.log(`[RankUp] triggered: ${prevRank} -> ${nr}`);
+      this.animateRankUp(nr);
+      return true;
     }
 
     return false;
@@ -471,6 +462,36 @@ export class Player {
       }
     }
     this.ensureShipOverlays();
+  }
+
+  animateRankUp(newRank) {
+    console.log('[RankUp] applying visual evolution');
+
+    // 1. Visual Flash (Green Tint)
+    if (this.shipSprite) {
+      this.shipSprite.tint = 0x00ff00;
+      setTimeout(() => {
+        if (this.shipSprite) this.shipSprite.tint = 0xffffff;
+      }, 200);
+    }
+
+    // 2. Scale Pulse (Pop up and down)
+    if (this.sprite) {
+      const currentScale = this.sprite.scale.x;
+      this.sprite.scale.set(currentScale * 1.3);
+      setTimeout(() => {
+        if (this.sprite) this.sprite.scale.set(this.baseScale || 1);
+      }, 300);
+    }
+
+    // 3. Swap Sprite (Force update to next rank variant)
+    // Note: swapToRankShip handles logic to find the correct texture for the rank
+    const swapped = this.swapToRankShip(newRank, { force: true, log: true });
+
+    // 4. Apply Stats/Boost (Shields, etc)
+    this.applyRankUpBoost();
+
+    console.log(`[RankUp] complete. Swapped=${swapped}`);
   }
 
   update(delta) {
