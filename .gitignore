@@ -8,3 +8,8 @@ RESCUE_*.txt
 .wrangler/
 test-results/
 tmpclaude-*
+
+# Protected build artifacts - never commit
+index.html
+public/sw.js
+public/version.json
