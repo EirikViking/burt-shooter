@@ -37,7 +37,9 @@ export class Game {
       if (this.currentScene.cleanup) {
         this.currentScene.cleanup();
       }
-      this.currentScene.destroy();
+      if (typeof this.currentScene.destroy === 'function') {
+        this.currentScene.destroy();
+      }
     }
 
     this.currentScene = this.scenes[sceneName];

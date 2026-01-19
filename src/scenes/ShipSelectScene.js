@@ -43,24 +43,24 @@ export class ShipSelectScene {
     this.container.addChild(title);
 
     // Ship grid
-    await this.createShipGrid();
+    const gridBottom = await this.createShipGrid();
 
-    // Instructions
+    // Instructions - positioned below grid
     const instructions = new PIXI.Text(
       'Arrow Keys / Touch to Select | Enter / Tap to Confirm',
       {
         fontFamily: 'Courier New',
-        fontSize: 16,
+        fontSize: 14,
         fill: '#ffffff',
         align: 'center'
       }
     );
     instructions.anchor.set(0.5, 0);
-    instructions.position.set(width / 2, height - 50);
+    instructions.position.set(width / 2, Math.min(gridBottom + 30, height - 80));
     this.container.addChild(instructions);
 
-    // Start button (for mobile)
-    this.createStartButton();
+    // Start button (for mobile) - positioned below instructions
+    this.createStartButton(gridBottom);
 
     // Update selection
     this.updateSelection();
@@ -97,6 +97,9 @@ export class ShipSelectScene {
 
     this.container.addChild(gridContainer);
     this.gridContainer = gridContainer;
+
+    // Return bottom position of grid
+    return startY + gridHeight;
   }
 
   async createShipCard(ship, index, x, y, width, height) {
@@ -164,11 +167,13 @@ export class ShipSelectScene {
     return card;
   }
 
-  createStartButton() {
+  createStartButton(gridBottom) {
     const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
 
     const button = new PIXI.Container();
-    button.position.set(width / 2, height - 80);
+    // Position below grid with spacing, but cap at height - 40 for safety
+    const buttonY = Math.min(gridBottom + 70, height - 40);
+    button.position.set(width / 2, buttonY);
     button.eventMode = 'static';
     button.cursor = 'pointer';
 
@@ -270,6 +275,14 @@ export class ShipSelectScene {
   cleanup() {
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler);
+    }
+  }
+
+  destroy() {
+    this.cleanup();
+    if (this.container) {
+      this.container.destroy({ children: true });
+      this.container = null;
     }
   }
 
