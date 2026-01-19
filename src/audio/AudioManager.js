@@ -192,8 +192,25 @@ class AudioController {
     const audio = this.getSfxAudio(eventName, src, options);
     audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.sfxVolume * (options.volume || 1.0)));
     audio.play().catch(e => {
-      if (e.name !== 'AbortError') {
-        console.warn(`[AudioManager] Play failed for ${eventName}:`, e);
+      // Suppress innocuous AbortError
+      if (e.name === 'AbortError') return;
+
+      const srcUrl = audio.src;
+      console.warn(`[AudioManager] Play failed for key="${eventName}" src="${srcUrl}" error="${e.name}: ${e.message}"`);
+
+      // Proactive check for 404/Decode errors
+      if (e.name === 'NotSupportedError' || e.name === 'NotAllowedError') {
+        const checkUrl = srcUrl;
+        // Run HEAD check to see if it's a 404
+        fetch(checkUrl, { method: 'HEAD' })
+          .then(res => {
+            if (!res.ok) {
+              console.error(`[AudioManager] Asset MISSING (404): ${checkUrl}`);
+            } else {
+              console.warn(`[AudioManager] Asset exists but failed to play (likely decode error): ${checkUrl} type=${res.headers.get('content-type')}`);
+            }
+          })
+          .catch(err => console.warn(`[AudioManager] Network check failed for ${checkUrl}`, err));
       }
     });
     this.lastSfxPlayedAt[eventName] = now;

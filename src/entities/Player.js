@@ -435,7 +435,24 @@ export class Player {
         this.sprite.addChild(this.shipSprite);
         applied = true;
         // Ensure weapon profile matches selection
-        this.setWeaponProfile(this.selectedShipSpriteKey);
+        // Fix: setWeaponProfile was removed, read directly from config
+        this.weaponProfile = this.config.weapon || { bullets: 1, spread: 0, shootSfx: 'shoot_small' };
+        this.weaponSfxKey = this.weaponProfile.shootSfx || 'shoot_small';
+
+        // Defensive Fallback per Guardrails
+        const profile = (typeof this.actWeaponProfile === 'function' ? this.actWeaponProfile() : this.actWeaponProfile)
+          || this.activeWeaponProfile
+          || this.weaponProfile;
+
+        if (profile) {
+          this.weaponProfile = profile;
+        } else {
+          // Only warn once per session
+          if (!this._warnedProfileMissing) {
+            console.warn('[Player] No weapon profile found in rebuildShipSprite, using defaults');
+            this._warnedProfileMissing = true;
+          }
+        }
       }
     }
 
