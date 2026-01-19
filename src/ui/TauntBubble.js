@@ -22,8 +22,9 @@ export class TauntBubble {
         this.complete = false;
         this.animationTime = 0;
 
-        // Warn flag
+        // Warn flag and lifecycle
         this._warnedMissingContainer = false;
+        this._destroyed = false;
 
         this.createBubble();
     }
@@ -133,7 +134,7 @@ export class TauntBubble {
     }
 
     update(delta) {
-        if (this.complete) return;
+        if (this._destroyed || this.complete) return;
 
         this.animationTime += delta * 16.67;
 
@@ -180,6 +181,7 @@ export class TauntBubble {
             if (progress >= 1) {
                 if (activeTicker) activeTicker.remove(ticker);
                 this.container.parent?.removeChild(this.container);
+                this._destroyed = true;
                 if (callback) callback();
                 return;
             }
@@ -194,6 +196,7 @@ export class TauntBubble {
             activeTicker.add(ticker);
         } else {
             this.container.parent?.removeChild(this.container);
+            this._destroyed = true;
             if (callback) callback();
         }
     }
@@ -202,8 +205,20 @@ export class TauntBubble {
         if (this.typewriter) this.typewriter.skip();
     }
 
+    destroy() {
+        this._destroyed = true;
+        this.complete = true;
+        if (this.typewriter) {
+            this.typewriter = null;
+        }
+        if (this.container && this.container.parent) {
+            this.container.parent.removeChild(this.container);
+        }
+    }
+
     // Safely get/set x/y to guard against null/destroyed container
     get x() {
+        if (this._destroyed) return 0;
         try {
             return (this.container && typeof this.container === 'object' && !this.container.destroyed) ? this.container.x : 0;
         } catch (e) {
@@ -211,6 +226,7 @@ export class TauntBubble {
         }
     }
     set x(val) {
+        if (this._destroyed) return;
         try {
             if (this.container &&
                 typeof this.container === 'object' &&
@@ -224,6 +240,7 @@ export class TauntBubble {
     }
 
     get y() {
+        if (this._destroyed) return 0;
         try {
             return (this.container && typeof this.container === 'object' && !this.container.destroyed) ? this.container.y : 0;
         } catch (e) {
@@ -231,6 +248,7 @@ export class TauntBubble {
         }
     }
     set y(val) {
+        if (this._destroyed) return;
         try {
             // Defensive: check container is valid object with y property before assignment
             if (this.container &&
