@@ -15,6 +15,8 @@ export class Player {
     this.config = ShipRegistry[shipId] || ShipRegistry.player_01;
     this.stats = { ...this.config.stats };
     this.visuals = { ...this.config.visuals };
+    this.initialShipId = shipId; // Store for initial spawn preservation
+    this.hasSetInitialRank = false; // Track if initial rank has been set
 
     this.speed = this.stats.speed;
     this.radius = this.config.hitbox.radius;
@@ -83,6 +85,7 @@ export class Player {
     // Touch input (set externally by PlayScene)
     this.touchInput = { moveX: 0, moveY: 0 };
 
+    console.log('[Player] init spriteKey=' + shipId);
     this.createSprite();
   }
 
@@ -354,10 +357,19 @@ export class Player {
     const prevRank = Number.isFinite(this.rankIndex) ? this.rankIndex : null;
     this.rankIndex = nr;
 
+    // On initial spawn, preserve the selected ship from constructor
     if (prevRank === null) {
+      if (!this.hasSetInitialRank && this.initialShipId) {
+        // First time setting rank - keep the selected ship, don't swap
+        this.hasSetInitialRank = true;
+        console.log('[Player] setRank initial, preserving selected ship:', this.initialShipId);
+        return false; // Don't swap on initial spawn
+      }
+      // Fallback for cases where initialShipId wasn't set
       return this.swapToRankShip(nr, { force: true });
     }
 
+    // After initial spawn, allow rank-based ship swaps on rank up
     if (nr > prevRank) {
       const swapped = this.swapToRankShip(nr);
       if (swapped) {

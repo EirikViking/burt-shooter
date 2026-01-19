@@ -68,7 +68,7 @@ export class Game {
   }
 
   startGame(shipId) {
-    console.log('[Game] Starting new game with ship:', shipId);
+    console.log('[Game] starting new game spriteKey=' + shipId);
     this.selectedShipId = shipId;
     this.score = 0;
     this.level = 1;

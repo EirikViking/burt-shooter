@@ -45,7 +45,7 @@ export class ShipSelectScene {
     // Ship grid
     const gridBottom = await this.createShipGrid();
 
-    // Instructions - positioned below grid
+    // Instructions - positioned in footer area
     const instructions = new PIXI.Text(
       'Arrow Keys / Touch to Select | Enter / Tap to Confirm',
       {
@@ -55,11 +55,11 @@ export class ShipSelectScene {
         align: 'center'
       }
     );
-    instructions.anchor.set(0.5, 0);
-    instructions.position.set(width / 2, Math.min(gridBottom + 30, height - 80));
+    instructions.anchor.set(0.5, 1);
+    instructions.position.set(width / 2, height - 100);
     this.container.addChild(instructions);
 
-    // Start button (for mobile) - positioned below instructions
+    // Start button - positioned in footer
     this.createStartButton(gridBottom);
 
     // Update selection
@@ -80,8 +80,20 @@ export class ShipSelectScene {
     const spacing = 20;
     const gridWidth = cols * cardWidth + (cols - 1) * spacing;
     const gridHeight = rows * cardHeight + (rows - 1) * spacing;
+
+    // Responsive layout: reserve space for footer
+    const topMargin = 120;
+    const footerHeight = 120; // Space for instructions + START button
+    const availableHeight = height - topMargin - footerHeight;
+
+    // Scale grid down if it doesn't fit
+    let scale = 1;
+    if (gridHeight > availableHeight) {
+      scale = availableHeight / gridHeight;
+    }
+
     const startX = (width - gridWidth) / 2;
-    const startY = 120;
+    const startY = topMargin;
 
     for (let i = 0; i < this.ships.length; i++) {
       const ship = this.ships[i];
@@ -95,11 +107,17 @@ export class ShipSelectScene {
       gridContainer.addChild(card);
     }
 
+    // Apply scale and center
+    gridContainer.scale.set(scale);
+    gridContainer.x = (width - gridWidth * scale) / 2;
+    gridContainer.y = 0;
+
     this.container.addChild(gridContainer);
     this.gridContainer = gridContainer;
+    this.gridScale = scale;
 
-    // Return bottom position of grid
-    return startY + gridHeight;
+    // Return actual bottom position after scaling
+    return topMargin + gridHeight * scale;
   }
 
   async createShipCard(ship, index, x, y, width, height) {
@@ -170,10 +188,13 @@ export class ShipSelectScene {
   createStartButton(gridBottom) {
     const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
 
+    // Footer container positioned at bottom
+    const footerContainer = new PIXI.Container();
+    const footerY = height - 60; // Fixed position from bottom
+    footerContainer.position.set(width / 2, footerY);
+
     const button = new PIXI.Container();
-    // Position below grid with spacing, but cap at height - 40 for safety
-    const buttonY = Math.min(gridBottom + 70, height - 40);
-    button.position.set(width / 2, buttonY);
+    button.position.set(0, 0);
     button.eventMode = 'static';
     button.cursor = 'pointer';
 
@@ -197,8 +218,10 @@ export class ShipSelectScene {
       this.confirmSelection();
     });
 
-    this.container.addChild(button);
+    footerContainer.addChild(button);
+    this.container.addChild(footerContainer);
     this.startButton = button;
+    this.footerContainer = footerContainer;
   }
 
   updateSelection() {
@@ -249,6 +272,7 @@ export class ShipSelectScene {
     this.confirmed = true;
 
     const selectedShip = this.ships[this.selectedIndex];
+    console.log('[ShipSelect] confirmed spriteKey=' + selectedShip.id);
     this.saveSelection(selectedShip.id);
 
     // Transition to game
