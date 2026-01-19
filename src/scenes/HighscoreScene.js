@@ -496,12 +496,8 @@ export class HighscoreScene {
     const width = layout.width;
     const height = layout.height;
     const padding = Math.max(12, layout.padding || 0);
-    const bubbleWidth = Number.isFinite(bubble.container.width) && bubble.container.width > 0
-      ? bubble.container.width
-      : 220;
-    const bubbleHeight = Number.isFinite(bubble.container.height) && bubble.container.height > 0
-      ? bubble.container.height
-      : 90;
+    const bubbleWidth = bubble.width > 0 ? bubble.width : 220;
+    const bubbleHeight = bubble.height > 0 ? bubble.height : 90;
     const halfW = bubbleWidth / 2;
     const halfH = bubbleHeight / 2;
     const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -573,8 +569,8 @@ export class HighscoreScene {
       }
     }
 
-    bubble.container.x = chosen.x;
-    bubble.container.y = chosen.y;
+    bubble.x = chosen.x;
+    bubble.y = chosen.y;
   }
 
   async renderHighscoreRows(startY, layout) {

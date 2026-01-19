@@ -10,8 +10,8 @@ export class TauntBubble {
     constructor(text, targetX, targetY, screenWidth, screenHeight, speaker = null) {
         this.container = new PIXI.Container();
         this.text = String(text ?? '').trim();
+        this.y = targetY; // Initial pos (will be updated by positionBubble)
         this.targetX = targetX;
-        this.targetY = targetY;
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
         const speakerText = speaker ? String(speaker ?? '').trim() : '';
@@ -128,20 +128,6 @@ export class TauntBubble {
         let y = this.targetY - 80; // Above target
 
         // Clamp to screen bounds
-        const halfWidth = this.container.width / 2;
-        const halfHeight = this.container.height / 2;
-
-        x = Math.max(margin + halfWidth, Math.min(this.screenWidth - margin - halfWidth, x));
-        y = Math.max(margin + halfHeight, Math.min(this.screenHeight - margin - halfHeight, y));
-
-        this.container.x = x;
-        this.container.y = y;
-    }
-
-    update(delta) {
-        if (this.complete) return;
-
-        this.animationTime += delta * 16.67;
 
         // Update typewriter
         if (this.typewriter) {
