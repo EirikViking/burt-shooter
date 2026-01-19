@@ -390,6 +390,14 @@ export class Player {
 
     // After initial spawn, allow rank-based ship swaps on rank up
     if (nr > prevRank) {
+      // FIX: If user selected a specific ship, NEVER swap it out for a rank ship.
+      // Only apply the boost effects.
+      if (this.selectedShipSpriteKey) {
+        console.log('[Player] setRank: Rank up but preserving selected ship:', this.selectedShipSpriteKey);
+        this.applyRankUpBoost();
+        return false;
+      }
+
       const swapped = this.swapToRankShip(nr);
       if (swapped) {
         this.applyRankUpBoost();
