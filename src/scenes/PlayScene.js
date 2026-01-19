@@ -241,6 +241,7 @@ export class PlayScene {
         console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
         console.log(`[ShipDebug] Selected: ${this.game.selectedShipSpriteKey}`);
         console.log(`[ShipDebug] Active: ${this.player.selectedShipSpriteKey}`);
+        console.log(`[ShipDebug] PlayerSprite: exists=${!!this.player.sprite} alpha=${this.player.sprite?.alpha} visible=${this.player.sprite?.visible} x=${this.player.sprite?.x} y=${this.player.sprite?.y}`);
         console.log(`[ShipDebug] Texture: ${this.player.shipSprite?.texture?.baseTexture?.resource?.url || 'unknown'}`);
       }
 
@@ -2275,6 +2276,12 @@ export class PlayScene {
     this.introOverlay = new PIXI.Container();
     this.introOverlay.zIndex = 99999; // Ensure it is on top
 
+    // Vignette background (Step 3D)
+    const overlayBg = new PIXI.Graphics();
+    overlayBg.rect(0, 0, this.game.getWidth(), this.game.getHeight());
+    overlayBg.fill({ color: 0x000000, alpha: 0.35 });
+    this.introOverlay.addChild(overlayBg);
+
     // Ship name (big retro text)
     const nameText = new PIXI.Text(shipName, {
       fontFamily: 'Courier New',
@@ -2330,9 +2337,16 @@ export class PlayScene {
     const introDuration = 900;
     const startTime = Date.now();
 
+    console.log(`[IntroDebug] start t=${startTime}`);
+
     const animateIntro = () => {
-      const elapsed = Date.now() - startTime;
+      const now = Date.now();
+      const elapsed = now - startTime;
       const progress = Math.min(elapsed / introDuration, 1);
+
+      if (Math.random() < 0.05) console.log(`[IntroDebug] frame elapsed=${elapsed}`);
+
+      // Ease out cubic
 
       // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
