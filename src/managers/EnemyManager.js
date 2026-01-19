@@ -442,7 +442,8 @@ export class EnemyManager {
       }
 
       if (!enemy.active && !enemy.waitingForEntry) {
-        this.container.removeChild(enemy.sprite);
+        if (enemy.destroy) enemy.destroy();
+        else this.container.removeChild(enemy.sprite);
         return false;
       }
       return true;
@@ -748,6 +749,8 @@ export class EnemyManager {
         }
         // Mark as inactive (their managers will clean up sprites)
         target.active = false;
+        if (target.destroy) target.destroy(); // CLEANUP: Force destroy
+
         // Remove sprite immediately
         if (target.sprite && target.sprite.parent) {
           target.sprite.parent.removeChild(target.sprite);
@@ -777,12 +780,22 @@ export class EnemyManager {
   }
 
   clearEnemies() {
-    this.enemies.forEach(e => this.container.removeChild(e.sprite));
+    this.enemies.forEach(e => {
+      e.active = false; // Disable update
+      if (e.destroy) e.destroy(); // CLEANUP: Call destroy to stop tickers
+      else if (e.sprite && e.sprite.parent) e.sprite.parent.removeChild(e.sprite); // Fallback
+    });
     this.enemies = [];
-
+    if (this.boss) {
+      this.boss.active = false;
+      if (this.boss.destroy) this.boss.destroy();
+      this.boss = null;
+    }
     // Also clear hijacker
     if (this.hijacker) {
-      this.container.removeChild(this.hijacker.sprite);
+      this.hijacker.active = false;
+      if (this.hijacker.destroy) this.hijacker.destroy();
+      else if (this.hijacker.sprite && this.hijacker.sprite.parent) this.hijacker.sprite.parent.removeChild(this.hijacker.sprite);
       this.hijacker = null;
     }
   }

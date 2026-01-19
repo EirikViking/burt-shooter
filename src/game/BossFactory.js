@@ -51,6 +51,31 @@ function selectBossType(level) {
   };
 }
 
+// Ticker tracking for leak detection
+let activeTickers = 0;
+
+export function getActiveTickerCount() {
+  return activeTickers;
+}
+
+function createBossTicker(fn) {
+  const ticker = new PIXI.Ticker();
+  ticker.add(fn);
+  ticker.start();
+  activeTickers++;
+  console.log(`[BossTicker] create activeTickers=${activeTickers}`);
+  return ticker;
+}
+
+function safeDestroyTicker(ticker) {
+  if (ticker) {
+    ticker.stop();
+    ticker.destroy();
+    activeTickers--;
+    console.log(`[BossTicker] destroy activeTickers=${activeTickers}`);
+  }
+}
+
 /**
  * Creates fallback boss visual (always visible)
  */
@@ -78,15 +103,13 @@ function createFallbackBoss() {
 
   // Pulsing animation
   let pulseTime = 0;
-  const ticker = new PIXI.Ticker();
-  ticker.add(() => {
+  const ticker = createBossTicker(() => {
     pulseTime += 0.05;
     const scale = 1 + Math.sin(pulseTime) * 0.1;
     gfx.scale.set(scale);
   });
-  ticker.start();
 
-  return { container, hitboxRef: gfx }; // Return hitbox reference
+  return { container, hitboxRef: gfx, ticker }; // Return hitbox reference
 }
 
 /**
@@ -118,16 +141,14 @@ async function createBigBeerCanBoss() {
 
     // Pulse animation
     let pulseTime = 0;
-    const ticker = new PIXI.Ticker();
-    ticker.add(() => {
+    const ticker = createBossTicker(() => {
       pulseTime += 0.05;
       const pulse = 1 + Math.sin(pulseTime) * 0.08;
       beerSprite.scale.set(1.05 * pulse); // Updated to new base scale
       aura.scale.set(pulse);
     });
-    ticker.start();
 
-    return { container, hitboxRef: beerSprite }; // Return hitbox reference
+    return { container, hitboxRef: beerSprite, ticker }; // Return hitbox reference
   } catch (e) {
     console.error('[BossFactory] Failed to create beer can boss:', e);
     return createFallbackBoss();
@@ -167,14 +188,12 @@ async function createIcon192Boss() {
     container.addChild(iconSprite);
 
     // Rotation animation
-    const ticker = new PIXI.Ticker();
-    ticker.add((delta) => {
+    const ticker = createBossTicker((delta) => {
       iconSprite.rotation += 0.01 * delta;
     });
-    ticker.start();
 
     console.log(`[BossFactory] Icon-192 created successfully w=${texture.width} h=${texture.height}`);
-    return { container, hitboxRef: iconSprite }; // Return hitbox reference
+    return { container, hitboxRef: iconSprite, ticker }; // Return hitbox reference
   } catch (e) {
     console.error('[BossFactory] Failed to create icon-192 boss:', e);
     return createFallbackBoss();
@@ -224,19 +243,17 @@ async function createBossSpriteVisual(level, maxWidth) {
 
       // Hover animation
       let hoverTime = 0;
-      const ticker = new PIXI.Ticker();
-      ticker.add(() => {
+      const ticker = createBossTicker(() => {
         hoverTime += 0.05;
         bossSprite.y = Math.sin(hoverTime) * 5;
         bossSprite.rotation += 0.002;
       });
-      ticker.start();
 
       if (level === 3) {
         console.log(`[BossSelect] level=3 url=${url}`);
       }
       console.log(`[BossFactory] Boss sprite created url=${url} w=${texture.width} h=${texture.height} scale=${scale.toFixed(2)}`);
-      return { container, hitboxRef: bossSprite, url };
+      return { container, hitboxRef: bossSprite, url, ticker };
     } catch (e) {
       console.warn(`[BossFactory] Boss sprite load failed url=${url}:`, e);
     }
@@ -294,15 +311,13 @@ async function createBigPlayerShipBoss(shipNum, shipColor) {
 
     // Pulse animation
     let pulseTime = 0;
-    const ticker = new PIXI.Ticker();
-    ticker.add(() => {
+    const ticker = createBossTicker(() => {
       pulseTime += 0.05;
       const pulse = 1 + Math.sin(pulseTime) * 0.05;
       shipSprite.scale.set(2.5 * pulse);
     });
-    ticker.start();
 
-    return { container, hitboxRef: shipSprite }; // Return hitbox reference
+    return { container, hitboxRef: shipSprite, ticker }; // Return hitbox reference
   } catch (e) {
     console.error('[BossFactory] Failed to create player ship boss:', e);
     return createFallbackBoss();
@@ -311,7 +326,7 @@ async function createBigPlayerShipBoss(shipNum, shipColor) {
 
 /**
  * Main factory function - creates boss visual for a given level
- * @returns {Promise<{container: PIXI.Container, hitboxRef: PIXI.DisplayObject, textureOk: boolean, kind: string}>}
+ * @returns {Promise<{container: PIXI.Container, hitboxRef: PIXI.DisplayObject, textureOk: boolean, kind: string, cleanup: Function}>}
  */
 export async function createBossVisual(level, maxWidth) {
   const selection = selectBossType(level);
@@ -361,6 +376,7 @@ export async function createBossVisual(level, maxWidth) {
     container: result.container,
     hitboxRef: result.hitboxRef,
     textureOk,
-    kind
+    kind,
+    cleanup: () => safeDestroyTicker(result.ticker)
   };
 }

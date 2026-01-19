@@ -88,6 +88,7 @@ export class Boss {
     this.visualContainer = bossVisual.container;
     this.bossType = bossVisual.kind;
     this.hitboxRef = bossVisual.hitboxRef; // Store hitbox reference
+    this.visualCleanup = bossVisual.cleanup; // Store cleanup callback for ticker
     this.sprite.addChild(this.visualContainer);
     this.moveProfile = this.getMoveProfile(this.bossType);
     this.noseOffset = this.getNoseOffset(this.bossType);
@@ -450,5 +451,17 @@ export class Boss {
       return true; // Destroyed
     }
     return false;
+  }
+
+  destroy() {
+    if (this.visualCleanup) {
+      this.visualCleanup();
+      this.visualCleanup = null;
+    }
+    this.active = false;
+    // Also cleanup sprite from parent if needed, but Manager usually handles that
+    if (this.sprite && this.sprite.parent) {
+      this.sprite.parent.removeChild(this.sprite);
+    }
   }
 }
