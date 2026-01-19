@@ -1,0 +1,229 @@
+diff --git a/src/entities/Player.js b/src/entities/Player.js
+index 6af290c..5949032 100644
+--- a/src/entities/Player.js
++++ b/src/entities/Player.js
+@@ -109,7 +109,14 @@ export class Player {
+   }
+ 
+   buildDefaultShipSprite() {
+-    const texture = GameAssets.getShipTexture(this.config.texture);
++    // Support both textureIndex (rank ships) and texture (old player_01)
++    let texture;
++    if (typeof this.config.textureIndex === 'number') {
++      texture = GameAssets.getRankShipTexture(this.config.textureIndex);
++    } else if (this.config.texture) {
++      texture = GameAssets.getShipTexture(this.config.texture);
++    }
++
+     if (!GameAssets.isValidTexture(texture)) return null;
+ 
+     const sprite = new PIXI.Sprite(texture);
+diff --git a/src/game/Game.js b/src/game/Game.js
+index 7c3f58d..81c6f90 100644
+--- a/src/game/Game.js
++++ b/src/game/Game.js
+@@ -3,7 +3,7 @@ import { GameState } from './GameState.js';
+ import { MenuScene } from '../scenes/MenuScene.js';
+ import { PlayScene } from '../scenes/PlayScene.js';
+ import { GameOverScene } from '../scenes/GameOverScene.js';
+-
++import { ShipSelectScene } from '../scenes/ShipSelectScene.js';
+ import { HighscoreScene } from '../scenes/HighscoreScene.js';
+ import { rankManager } from '../managers/RankManager.js';
+ 
+@@ -19,10 +19,12 @@ export class Game {
+ 
+     this.scenes = {
+       menu: new MenuScene(this),
++      shipSelect: null, // Created on demand
+       play: new PlayScene(this),
+       gameOver: new GameOverScene(this),
+       highscore: new HighscoreScene(this)
+     };
++    this.selectedShipId = null;
+   }
+ 
+   start() {
+@@ -32,6 +34,9 @@ export class Game {
+   switchScene(sceneName) {
+     if (this.currentScene) {
+       this.app.stage.removeChild(this.currentScene.container);
++      if (this.currentScene.cleanup) {
++        this.currentScene.cleanup();
++      }
+       this.currentScene.destroy();
+     }
+ 
+@@ -40,8 +45,29 @@ export class Game {
+     this.currentScene.init();
+   }
+ 
+-  startGame() {
+-    console.log('[Game] Starting new game...');
++  async showShipSelect() {
++    // Create ship select scene if not exists
++    if (!this.scenes.shipSelect) {
++      this.scenes.shipSelect = new ShipSelectScene(this);
++      await this.scenes.shipSelect.create();
++    }
++
++    // Remove current scene
++    if (this.currentScene) {
++      this.app.stage.removeChild(this.currentScene.container);
++      if (this.currentScene.cleanup) {
++        this.currentScene.cleanup();
++      }
++    }
++
++    // Show ship select
++    this.currentScene = this.scenes.shipSelect;
++    this.app.stage.addChild(this.currentScene.container);
++  }
++
++  startGame(shipId) {
++    console.log('[Game] Starting new game with ship:', shipId);
++    this.selectedShipId = shipId;
+     this.score = 0;
+     this.level = 1;
+     this.lives = 3;
+diff --git a/src/scenes/MenuScene.js b/src/scenes/MenuScene.js
+index 91b7fe2..4a48254 100644
+--- a/src/scenes/MenuScene.js
++++ b/src/scenes/MenuScene.js
+@@ -335,7 +335,7 @@ export class MenuScene {
+         AudioManager.init();
+         AudioManager.playSfx('ui_open');
+         AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
+-        this.game.startGame();
++        this.game.showShipSelect();
+       } catch (e) {
+         console.error('[MenuScene] Start Game Error:', e);
+       }
+diff --git a/src/scenes/PlayScene.js b/src/scenes/PlayScene.js
+index a12c424..a4fd0cf 100644
+--- a/src/scenes/PlayScene.js
++++ b/src/scenes/PlayScene.js
+@@ -220,19 +220,21 @@ export class PlayScene {
+       if (this.player) {
+         this.gameContainer.removeChild(this.player.sprite);
+       }
+-      this.player = new Player(width / 2, height - 100, this.inputManager, this.game);
++      const shipId = this.game.selectedShipId || 'rank_ship_0';
++      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, shipId);
+       this.gameContainer.addChild(this.player.sprite);
+       if (this.player.setRank) {
+         const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
+         this.player.setRank(initialRank, 'init');
+       }
+       this.applySeasonCosmetics();
+-      console.log('[PlayScene] Assets (Ships+Ranks) ready');
++      console.log('[PlayScene] Assets (Ships+Ranks) ready, shipId:', shipId);
+     });
+ 
+     // Create placeholder player immediately (will be replaced)
+     if (!this.player) {
+-      this.player = new Player(width / 2, height - 100, this.inputManager, this.game);
++      const shipId = this.game.selectedShipId || 'rank_ship_0';
++      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, shipId);
+       this.gameContainer.addChild(this.player.sprite);
+       if (this.player.setRank) {
+         const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
+diff --git a/src/utils/ShipRegistry.js b/src/utils/ShipRegistry.js
+index 5cc8495..309cf20 100644
+--- a/src/utils/ShipRegistry.js
++++ b/src/utils/ShipRegistry.js
+@@ -10,16 +10,89 @@ export const ShipRegistry = {
+             fireRate: 150 // ms delay
+         },
+         visuals: {
+-            scale: 0.15, // Adjust based on actual sprite size (assuming it's large)
+-            idleAmplitude: 2, // px
++            scale: 0.15,
++            idleAmplitude: 2,
+             idleSpeed: 0.05,
+-            tiltMax: 0.2, // radians
++            tiltMax: 0.2,
+             tiltSpeed: 0.1
+         },
+         hitbox: {
+-            radius: 12 // pixel radius for collision
++            radius: 12
+         }
++    },
++    // Rank ships (playerRankShips from assetManifest)
++    rank_ship_0: {
++        id: 'rank_ship_0',
++        name: 'Stokmarknes Skuta',
++        textureIndex: 0,
++        stats: { speed: 5.5, bulletSpeed: 10, damage: 1, fireRate: 160 },
++        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
++        hitbox: { radius: 12 }
++    },
++    rank_ship_1: {
++        id: 'rank_ship_1',
++        name: 'Isbjørn Classic',
++        textureIndex: 1,
++        stats: { speed: 6, bulletSpeed: 10, damage: 1, fireRate: 150 },
++        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
++        hitbox: { radius: 12 }
++    },
++    rank_ship_2: {
++        id: 'rank_ship_2',
++        name: 'Tufsingen',
++        textureIndex: 2,
++        stats: { speed: 6.5, bulletSpeed: 11, damage: 1, fireRate: 145 },
++        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
++        hitbox: { radius: 12 }
++    },
++    rank_ship_3: {
++        id: 'rank_ship_3',
++        name: 'Deili Fetta',
++        textureIndex: 3,
++        stats: { speed: 7, bulletSpeed: 11, damage: 1, fireRate: 140 },
++        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
++        hitbox: { radius: 12 }
++    },
++    rank_ship_4: {
++        id: 'rank_ship_4',
++        name: 'Roland Turbo',
++        textureIndex: 4,
++        stats: { speed: 6, bulletSpeed: 12, damage: 1, fireRate: 150 },
++        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
++        hitbox: { radius: 12 }
++    },
++    rank_ship_5: {
++        id: 'rank_ship_5',
++        name: 'Giga Gris',
++        textureIndex: 5,
++        stats: { speed: 5, bulletSpeed: 10, damage: 2, fireRate: 180 },
++        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
++        hitbox: { radius: 13 }
++    },
++    rank_ship_6: {
++        id: 'rank_ship_6',
++        name: 'Melbu Express',
++        textureIndex: 6,
++        stats: { speed: 7.5, bulletSpeed: 11, damage: 1, fireRate: 150 },
++        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
++        hitbox: { radius: 12 }
++    },
++    rank_ship_7: {
++        id: 'rank_ship_7',
++        name: 'Kjøttdeig Special',
++        textureIndex: 7,
++        stats: { speed: 6, bulletSpeed: 10, damage: 1, fireRate: 140 },
++        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
++        hitbox: { radius: 12 }
++    },
++    rank_ship_8: {
++        id: 'rank_ship_8',
++        name: 'Burt Prototype',
++        textureIndex: 8,
++        stats: { speed: 6, bulletSpeed: 10, damage: 1, fireRate: 150 },
++        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
++        hitbox: { radius: 12 }
+     }
+ };
+ 
+-export const getDefaultShip = () => ShipRegistry.player_01;
++export const getDefaultShip = () => ShipRegistry.rank_ship_0;
