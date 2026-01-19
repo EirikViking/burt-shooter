@@ -2361,9 +2361,9 @@ export class PlayScene {
       this.introOverlay = null;
     }
 
-    // Start enemy waves
-    if (this.enemyManager && !this.enemyManager.waveActive) {
-      this.enemyManager.startWave();
+    // Start enemy waves - use startLevel, not startWave
+    if (this.enemyManager && this.game.level) {
+      this.enemyManager.startLevel(this.game.level);
     }
 
     console.log('[PlayScene] Ship intro complete, gameplay enabled');
