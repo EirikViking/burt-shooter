@@ -303,7 +303,12 @@ export class Player {
     this.shipSprite.anchor.set(0.5);
     this.shipSprite.name = `player_ship_rank_${index}`;
 
-    const targetWidth = this.baseShipWidth || this.computeBaselineShipWidth();
+    // STRICT SIZING: Use targetShipWidthPx if set, otherwise compute it
+    if (!this.targetShipWidthPx) {
+      this.targetShipWidthPx = this.computeBaselineShipWidth();
+    }
+    const targetWidth = this.targetShipWidthPx;
+
     const scale = texture.width > 0 ? targetWidth / texture.width : 1;
     this.shipSprite.scale.set(scale);
     this.baseScale = Number.isFinite(scale) ? scale : 1;
@@ -419,7 +424,10 @@ export class Player {
     this.damageOverlay = null;
     this.shieldSprite = null;
 
-    this.baseShipWidth = this.baseShipWidth || this.computeBaselineShipWidth();
+    if (!this.targetShipWidthPx) {
+      this.targetShipWidthPx = this.computeBaselineShipWidth();
+    }
+    this.baseShipWidth = this.targetShipWidthPx;
 
     // FIX: Always prioritize User Selected Ship if available
     let applied = false;
@@ -475,34 +483,32 @@ export class Player {
       }, 200);
     }
 
-    const oldWidth = this.shipSprite ? this.shipSprite.width : 0;
-    if (oldWidth > 0) console.log(`[RankUpSprite] before width=${oldWidth.toFixed(1)} scale=${this.sprite.scale.x.toFixed(3)}`);
-
-    // 2. Scale Pulse (Pop up and down)
+    // 2. Scale Pulse (Pop up and down) - Container scale only
     if (this.sprite) {
       const currentScale = this.sprite.scale.x;
       this.sprite.scale.set(currentScale * 1.3);
       setTimeout(() => {
-        if (this.sprite) this.sprite.scale.set(this.baseScale || 1);
+        if (this.sprite) this.sprite.scale.set(1); // Reset container scale to 1
       }, 300);
     }
 
-    // 3. Swap Sprite (Force update to next rank variant)
-    // Note: swapToRankShip handles logic to find the correct texture for the rank
+    // 3. Swap Sprite
+    // We trust swapToRankShip to maintain the correct targetShipWidthPx
     const swapped = this.swapToRankShip(newRank, { force: true, log: true });
 
-    // TASK 2: Preserve visual size
-    if (swapped && oldWidth > 0 && this.shipSprite && this.shipSprite.texture.valid) {
-      const texW = this.shipSprite.texture.width;
-      if (texW > 0) {
-        const newScale = oldWidth / texW;
-        this.shipSprite.scale.set(newScale);
-        this.baseScale = newScale;
-        console.log(`[RankUpSprite] after preserved width=${oldWidth.toFixed(1)} newScale=${newScale.toFixed(3)} texW=${texW}`);
-      }
+    // 4. Verification Logs (REQUIRED)
+    if (this.shipSprite && this.shipSprite.texture) {
+      const tex = this.shipSprite.texture;
+      const finalW = this.shipSprite.width; // Local width (tex * scale)
+      const scaleX = this.shipSprite.scale.x;
+      const scaleY = this.shipSprite.scale.y;
+      console.log(`[RankUpSprite] targetWidthPx=${this.targetShipWidthPx?.toFixed(2) || 'nan'}`);
+      console.log(`[RankUpSprite] texW=${tex.width} texH=${tex.height}`);
+      console.log(`[RankUpSprite] scaleX=${scaleX.toFixed(4)} scaleY=${scaleY.toFixed(4)} finalWidth=${finalW.toFixed(2)}`);
+      console.log('[RankUpSprite] done');
     }
 
-    // 4. Apply Stats/Boost (Shields, etc)
+    // 5. Apply Stats/Boost (Shields, etc)
     this.applyRankUpBoost();
 
     console.log(`[RankUp] complete. Swapped=${swapped}`);
