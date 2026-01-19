@@ -141,32 +141,77 @@ export class BeerCan {
 
         // Effect
         AudioManager.playSfx('pickup'); // Positive sound
-        AudioManager.playVoice('powerup'); // Or cheerful line
+        const voiceOk = AudioManager.playPowerupVoice();
+        if (!voiceOk) {
+            AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+        }
 
-        // Logic
-        if (player.shieldActive) {
-            // Already shield -> Score Boost
-            this.applyScoreBoost(scene);
-            scene.showToast("SCORE BOOST!", { fontSize: 32, fill: '#00ff00', duration: 1200 });
-        } else {
-            // Give Shield
-            // If shield system exists logic:
-            if (player.activateShield) {
-                player.activateShield();
-                scene.showToast("WHITE CAN: SHIELD", { fontSize: 32, fill: '#00ffff', duration: 1200 });
-            } else {
-                // Fallback
-                this.applyScoreBoost(scene);
+        const effects = [
+            { type: 'shield', weight: 1 },
+            { type: 'rapid_fire', weight: 1.3 },
+            { type: 'double_shot', weight: 1.1 },
+            { type: 'damage_up', weight: 1.1 },
+            { type: 'speed_up', weight: 1.0 },
+            { type: 'pierce', weight: 0.9 },
+            { type: 'slow_time', weight: 0.8 },
+            { type: 'score_boost', weight: 0.8 },
+            { type: 'score_x2', weight: 0.7 }
+        ];
+
+        const total = effects.reduce((sum, e) => sum + e.weight, 0);
+        let roll = Math.random() * total;
+        let picked = effects[0].type;
+        for (const effect of effects) {
+            roll -= effect.weight;
+            if (roll <= 0) {
+                picked = effect.type;
+                break;
             }
         }
+
+        if (picked === 'shield' && player.shieldActive) {
+            const fallback = effects.find(e => e.type !== 'shield');
+            picked = fallback ? fallback.type : 'score_boost';
+        }
+
+        const durations = {
+            shield: 15000,
+            rapid_fire: 8000,
+            double_shot: 8000,
+            damage_up: 8000,
+            speed_up: 8000,
+            pierce: 7000,
+            slow_time: 8000,
+            score_boost: BalanceConfig.powerups.whiteCan.scoreBoostDuration,
+            score_x2: 10000
+        };
+        const durationMs = durations[picked] || 8000;
+        console.log(`[Powerup] pickup source=beer_can rolled=${picked} durationMs=${durationMs}`);
+
+        if (picked === 'score_boost') {
+            this.applyScoreBoost(scene);
+            scene.showToast("SCORE BOOST!", { fontSize: 32, fill: '#00ff00', duration: 1200 });
+            return;
+        }
+        if (picked === 'score_x2') {
+            if (scene.applyScoreMultiplier) {
+                scene.applyScoreMultiplier(2, durationMs, 'beer_can');
+            }
+            return;
+        }
+
+        if (player.applyPowerup) {
+            player.applyPowerup(picked);
+        }
+        scene.showToast(`WHITE CAN: ${picked.toUpperCase()}`, { fontSize: 28, fill: '#00ffff', duration: 1200 });
     }
 
     applyScoreBoost(scene) {
         // Simple boost logic: Score Multiplier
         // We need to implement this in Game or Scene
         // For now, let's just trigger the state
-        if (scene.game) {
-            scene.game.activateScoreBoost(BalanceConfig.powerups.whiteCan.scoreMultiplier, BalanceConfig.powerups.whiteCan.scoreBoostDuration);
+        if (scene.applyScoreMultiplier) {
+            scene.applyScoreMultiplier(BalanceConfig.powerups.whiteCan.scoreMultiplier, BalanceConfig.powerups.whiteCan.scoreBoostDuration, 'white_can');
         }
     }
 }

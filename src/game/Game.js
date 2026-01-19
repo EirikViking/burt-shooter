@@ -15,6 +15,7 @@ export class Game {
     this.score = 0;
     this.level = 1;
     this.lives = 3;
+    this.scoreMultiplier = 1;
 
     this.scenes = {
       menu: new MenuScene(this),
@@ -78,7 +79,10 @@ export class Game {
   }
 
   addScore(points) {
-    this.score += Number(points) || 0;
+    const base = Number(points) || 0;
+    const mult = Number(this.scoreMultiplier) || 1;
+    const applied = Math.round(base * mult);
+    this.score += applied;
 
     const prevRank = this.rankIndex;
     const computedRank = rankManager.getRankFromScore(this.score);
@@ -88,7 +92,7 @@ export class Game {
 
     // Diag Update
     this.diag.asEv++;
-    this.diag.asPts = Number(points);
+    this.diag.asPts = base;
     this.diag.asComp = computedRank;
     this.diag.asBefore = this.lastRankIndex;
 
@@ -114,6 +118,7 @@ export class Game {
       this.currentScene.scoreMultiplier = multiplier;
       this.currentScene.scoreBoostTimer = duration;
     }
+    this.scoreMultiplier = multiplier;
   }
 
   // --- Rank System ---

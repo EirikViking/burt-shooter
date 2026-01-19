@@ -8,6 +8,8 @@ class GameAssetsManager {
         this.photoList = AssetManifest.loreImages;
         this.shipTextures = {};
         this.enemyTextures = {};
+        this.rankShipTextures = [];
+        this.rankShipList = AssetManifest.sprites.playerRankShips || [];
     }
 
     async ensureBeerTexture() {
@@ -84,6 +86,22 @@ class GameAssetsManager {
     }
 
     async loadShips() {
+        // Load Rank Player Ships
+        const rankShips = this.rankShipList;
+        await Promise.all(rankShips.map(async (filename, index) => {
+            const parts = filename.split('/');
+            const alias = `rank_ship_${index}_${parts[parts.length - 1].split('.')[0]}`;
+            try {
+                const texture = await PIXI.Assets.load({
+                    alias: alias,
+                    src: filename
+                });
+                if (this.isValidTexture(texture)) this.rankShipTextures[index] = texture;
+            } catch (e) {
+                console.warn(`[GameAssets] Failed to load rank ship ${filename}:`, e);
+            }
+        }));
+
         // Load Player Ships
         const playerShips = AssetManifest.sprites.ships;
         await Promise.all(playerShips.map(async (filename) => {
@@ -153,6 +171,18 @@ class GameAssetsManager {
 
     getEnemyTexture(alias) {
         return this.enemyTextures ? this.enemyTextures[alias] : null;
+    }
+
+    getRankShipTexture(index) {
+        return this.rankShipTextures ? this.rankShipTextures[index] : null;
+    }
+
+    getRankShipCount() {
+        return this.rankShipList.length;
+    }
+
+    getRankShipPath(index) {
+        return this.rankShipList[index] || null;
     }
 
     async loadXtraAssets() {

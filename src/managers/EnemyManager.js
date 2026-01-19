@@ -23,6 +23,9 @@ export class EnemyManager {
     this.currentWaveIndex = 0;
     this.waves = [];
     this.waveTimer = 0;
+    this.normalWavesTotal = 0;
+    this.bossWaveIndex = 0;
+    this.phase = 'WAVES';
 
     // Debug Stats
     this.totalEnemiesSpawned = 0;
@@ -45,6 +48,13 @@ export class EnemyManager {
     // BOSS FIX: Boss state machine
     this.boss = null;
     this.bossGateTimer = 0;
+    this.bossSpawnedThisLevel = false;
+    this.bossDefeatedThisLevel = false;
+    this.bossDefeatCelebrated = false;
+    this.bossBlockLogged = false;
+    this.levelStartTime = 0;
+    this.bossSpawnedAtMs = 0;
+    this.directorState = { tier: 0, spawnCadenceScale: 1, eliteChance: 0.02, clutchDropChance: 0.04 };
   }
 
   startLevel(level) {
@@ -53,8 +63,12 @@ export class EnemyManager {
     this.clearEnemies();
 
     this.currentWaveIndex = 0;
-    this.state = 'IDLE';
-    this.waveTimer = 2000;
+    this.state = 'WAVE_ACTIVE';
+    this.waveTimer = 0;
+    this.normalWavesTotal = 0;
+    this.bossWaveIndex = 0;
+    this.levelStartTime = Date.now();
+    this.phase = 'WAVES';
 
     // Reset hijacker state for new level
     this.hijacker = null;
@@ -68,6 +82,11 @@ export class EnemyManager {
     // BOSS FIX: Reset boss state
     this.boss = null;
     this.bossGateTimer = 0;
+    this.bossSpawnedThisLevel = false;
+    this.bossDefeatedThisLevel = false;
+    this.bossDefeatCelebrated = false;
+    this.bossBlockLogged = false;
+    this.bossSpawnedAtMs = 0;
 
     // Play Voice
     AudioManager.playSfx('ui_open');
@@ -86,22 +105,42 @@ export class EnemyManager {
     // TASK D: Normal waves, then boss at end of every level
     this.isBossLevel = true;
     const normalWaves = this.generateWaves(level);
-    const bossWave = { type: 'BOSS', count: 1 };
-    this.waves = [...normalWaves, bossWave];
+    this.waves = normalWaves;
+    this.normalWavesTotal = normalWaves.length;
+    this.bossWaveIndex = this.normalWavesTotal;
     console.log(`[EnemyManager] Level ${level}: ${normalWaves.length} waves + boss`);
+    console.log(`[BossPlan] level=${level} normalWaves=${this.normalWavesTotal} bossWaveIndex=${this.bossWaveIndex} hasBoss=${this.isBossLevel}`);
+    this.logBossStatus('level_start');
+    console.log(`[BossPhase] level=${level} phase=${this.phase} waveIndex=${this.currentWaveIndex} normalWaves=${this.normalWavesTotal} hasBoss=${this.isBossLevel}`);
+    this.logLevelDifficulty(level, normalWaves.length);
+
+    if (this.normalWavesTotal > 0) {
+      const config = this.waves[this.currentWaveIndex];
+      this.spawnWave(config);
+      this.state = 'WAVE_ACTIVE';
+    } else if (this.isBossLevel) {
+      this.phase = 'BOSS';
+      this.state = 'BOSS_GATE';
+      this.bossGateTimer = 0;
+    } else {
+      this.phase = 'COMPLETE';
+      this.state = 'LEVEL_COMPLETE';
+      console.log(`[BossPhase] level=${level} phase=${this.phase} bossDefeated=true`);
+    }
   }
 
   generateWaves(level) {
     // GALAGA STYLE: Large Waves
     // 8-16 on early levels, 12-24 on high
-    const numWaves = Math.min(4 + Math.floor(level / 3), 6);
+    const diff = BalanceConfig.difficulty;
+    const numWaves = Math.min(diff.waveCountBase + Math.floor(level / diff.waveCountPerLevel), diff.waveCountMax);
     const waves = [];
     const patterns = ['GRID', 'V_SHAPE', 'ARC', 'BOX', 'SPIRAL', 'DOUBLE_ARC'];
     const enemyTypes = ['gris', 'mongo', 'tufs', 'deili', 'rolp'];
 
     for (let i = 0; i < numWaves; i++) {
-      let count = 8 + Math.floor(level * 0.8) + Math.floor(Math.random() * 4);
-      if (count > 24) count = 24;
+      let count = diff.waveEnemyBase + Math.floor(level * diff.waveEnemyPerLevel) + Math.floor(Math.random() * diff.waveEnemyRandom);
+      if (count > diff.waveEnemyMax) count = diff.waveEnemyMax;
 
       let typeIndex = Math.min(Math.floor(level / 2) + Math.floor(i / 2), enemyTypes.length - 1);
       const pattern = patterns[Math.floor(Math.random() * patterns.length)];
@@ -135,20 +174,14 @@ export class EnemyManager {
       this.cleanupPhase === 'NONE';
   }
 
+  setDirectorState(state) {
+    if (!state) return;
+    this.directorState = state;
+  }
+
   update(delta) {
     // 1. Update State Machine
     switch (this.state) {
-      case 'IDLE':
-        this.waveTimer -= delta * 16.67;
-        if (this.waveTimer <= 0) {
-          this.startNextWave();
-        }
-        break;
-
-      case 'SPAWNING':
-        this.state = 'WAVE_ACTIVE';
-        break;
-
       case 'WAVE_ACTIVE':
         // WAVE FIX: Check objective enemies only, not beer cans
         const objectiveCount = this.getObjectiveEnemyCount();
@@ -163,6 +196,7 @@ export class EnemyManager {
             beerCount = playScene.getWaveCleanupTargets().length;
           }
           console.log(`[WaveCleanup] start objectiveAlive=0 beerAlive=${beerCount} state=${this.state}`);
+          this.logBossStatus('wave_cleanup_start');
 
           // Immediately start cleanup phase
           this.cleanupTimer = 0;
@@ -196,23 +230,16 @@ export class EnemyManager {
 
             // WAVE FIX: Diagnostic - cleanup end
             console.log(`[WaveCleanup] end objectiveAlive=0 beerAlive=0 cleared=${clearedCount}`);
+            this.logBossStatus('wave_cleanup_end');
 
             this.cleanupPhase = 'NONE';
           }
         }
 
-        // After cleanup finishes, transition to WAVE_CLEARED
+        // After cleanup finishes, progress phase
         if (this.waveEnding && this.cleanupPhase === 'NONE') {
-          this.state = 'WAVE_CLEARED';
           this.onWaveCleared();
           this.waveEnding = false; // Reset for next wave
-        }
-        break;
-
-      case 'WAVE_CLEARED':
-        this.waveTimer -= delta * 16.67;
-        if (this.waveTimer <= 0) {
-          this.startNextWave();
         }
         break;
 
@@ -222,11 +249,14 @@ export class EnemyManager {
 
         // Show wanted poster at start of gate
         if (this.bossGateTimer < 100 && this.game.scenes.play) {
-          this.game.scenes.play.showWantedPoster();
+          const playScene = this.game.scenes.play;
+          if (playScene.showBossTaunt) playScene.showBossTaunt('boss_spawn');
+          else if (playScene.showWantedPoster) playScene.showWantedPoster();
         }
 
         // After gate duration (1000ms), spawn boss and enter BOSS_ACTIVE
         if (this.bossGateTimer > 1000 && !this.bossSpawning) {
+          this.logBossStatus('boss_gate_spawn');
           console.log(`[BossFlow] spawn boss level=${this.level}`);
           AudioManager.playVoice('war_target');
           this.bossSpawning = true;
@@ -234,6 +264,7 @@ export class EnemyManager {
             this.state = 'BOSS_ACTIVE';
             this.bossGateTimer = 0;
             this.bossSpawning = false;
+            this.logBossStatus('boss_spawned');
           });
         }
         break;
@@ -244,10 +275,46 @@ export class EnemyManager {
         const bossAlive = this.boss && this.boss.active;
         const bossInEnemies = this.enemies.some(e => e.kind === 'boss' && e.active);
 
+        if (this.boss) {
+          const dt = Date.now() - (this.bossSpawnedAtMs || this.boss.spawnedAtMs || 0);
+          if (this.boss.health <= 0) {
+            console.log(`[BossDefeatAttempt] level=${this.level} hp=${this.boss.health} dt=${dt} reason=hp_zero`);
+            if (dt < 1500) {
+              console.warn(`[BossFix] prevented instant boss defeat level=${this.level} dt=${dt}`);
+              this.boss.health = this.boss.maxHealth;
+              this.boss.active = true;
+              return;
+            }
+            this.bossDefeatedThisLevel = true;
+            if (!this.bossDefeatCelebrated) {
+              this.bossDefeatCelebrated = true;
+              const playScene = this.game.scenes.play;
+              if (playScene?.showBossCelebration) {
+                playScene.showBossCelebration({ level: this.level, type: this.boss?.bossType || 'UNKNOWN' });
+              }
+            }
+            this.logBossStatus('boss_defeated');
+            console.log(`[BossDefeatProof] level=${this.level} hp=0 dt=${dt} reason=hp_zero`);
+            console.log(`[BossFlow] boss defeated level=${this.level}`);
+            this.phase = 'COMPLETE';
+            console.log(`[BossPhase] level=${this.level} phase=${this.phase} bossDefeated=true`);
+            this.state = 'LEVEL_COMPLETE';
+            AudioManager.playVoice('mission_complete');
+            return;
+          }
+        }
+
         if (!bossAlive && !bossInEnemies) {
-          console.log(`[BossFlow] boss defeated level=${this.level}`);
-          this.state = 'LEVEL_COMPLETE';
-          AudioManager.playVoice('mission_complete');
+          const dt = Date.now() - (this.bossSpawnedAtMs || this.boss?.spawnedAtMs || 0);
+          const hp = this.boss ? this.boss.health : -1;
+          console.log(`[BossDefeatAttempt] level=${this.level} hp=${hp} dt=${dt} reason=missing_entity`);
+          if (!this.bossSpawning) {
+            console.warn(`[BossFix] boss missing, respawning level=${this.level}`);
+            this.bossSpawning = true;
+            this.spawnBoss(this.level).finally(() => {
+              this.bossSpawning = false;
+            });
+          }
         }
         break;
 
@@ -299,10 +366,14 @@ export class EnemyManager {
         break;
     }
 
+    this.ensureBossActive();
+
     // 2. Chance to spawn Beer Can (Rare Powerup Source)
     // WAVE FIX: Use spawn gate
     if (this.allowBeerCanSpawns() && this.enemies.length < 20) {
-      if (Math.random() < 0.0005) { // very rare per tick
+      const clutchBoost = this.directorState?.clutchDropChance || 0;
+      const chance = 0.0005 + clutchBoost * 0.0008;
+      if (Math.random() < chance) { // very rare per tick
         this.spawnBeerCan('bonus');
       }
     }
@@ -342,6 +413,8 @@ export class EnemyManager {
       player.activePowerup.type === 'slow_time';
 
     const timeScale = isSlowTime ? 0.5 : 1.0;
+    const tier = this.directorState?.tier || 0;
+    const fireChance = BalanceConfig.difficulty.enemyFireChance * (1 + tier * 0.1);
     const dt = delta * timeScale;
     const playerX = player ? player.x : 400;
     const playerY = player ? player.y : 300;
@@ -350,7 +423,7 @@ export class EnemyManager {
       enemy.update(dt, playerX, playerY);
 
       // Shooting
-      if (enemy.canShoot() && Math.random() < 0.008 * timeScale) {
+      if (enemy.canShoot() && Math.random() < fireChance * timeScale) {
         const shots = enemy.shoot(playerX, playerY);
         if (shots) {
           if (Array.isArray(shots)) shots.forEach(s => this.game.scenes.play.bulletManager.addEnemyBullet(s));
@@ -382,38 +455,7 @@ export class EnemyManager {
     this.container.addChild(enemy.sprite);
   }
 
-  startNextWave() {
-    if (this.currentWaveIndex >= this.waves.length) {
-      // BOSS FIX: Should not reach here - boss should be last wave
-      console.log('[EnemyManager] All waves done. Level Complete.');
-      this.state = 'LEVEL_COMPLETE';
-      AudioManager.playVoice('mission_complete');
-      return;
-    }
-
-    const config = this.waves[this.currentWaveIndex];
-
-    // BOSS FIX: If this is a boss wave, enter BOSS_GATE state instead
-    if (config.type === 'BOSS') {
-      console.log(`[BossFlow] enter gate level=${this.level}`);
-      this.state = 'BOSS_GATE';
-      this.bossGateTimer = 0;
-      this.currentWaveIndex++;
-      return;
-    }
-
-    console.log(`[EnemyManager] Spawning Wave ${this.currentWaveIndex}`);
-    this.spawnWave(config);
-
-    this.currentWaveIndex++;
-    this.state = 'WAVE_ACTIVE';
-
-    // Feedback
-    AudioManager.playVoice('round');
-    if (this.game.scenes.play) {
-      this.game.scenes.play.showToast(`WAVE ${this.currentWaveIndex} / ${this.waves.length}`, { fontSize: 20, y: 100, duration: 1500 });
-    }
-  }
+  startNextWave() { }
 
   spawnWave(config) {
     if (config.type === 'BOSS') {
@@ -432,10 +474,14 @@ export class EnemyManager {
     const waveColors = ['Blue', 'Green', 'Red', 'Black'];
     const waveColor = waveColors[Math.floor(Math.random() * waveColors.length)];
 
+    const cadence = this.directorState?.spawnCadenceScale || 1;
+    const delayStep = Math.max(60, 150 / cadence);
+    const eliteChance = this.directorState?.eliteChance || 0.02;
     positions.forEach((pos, i) => {
       const enemy = new Enemy(startX, -100, type, this.level, this.game, waveColor);
       this.applyModifier(enemy);
-      enemy.startEntry(startX, -50, pos.x, pos.y, 2000, i * 150);
+      if (Math.random() < eliteChance) enemy.applyElite?.();
+      enemy.startEntry(startX, -50, pos.x, pos.y, 2000, i * delayStep);
       this.enemies.push(enemy);
       this.container.addChild(enemy.sprite);
     });
@@ -499,6 +545,8 @@ export class EnemyManager {
     await boss.createSprite();
 
     this.boss = boss;
+    this.bossSpawnedThisLevel = true;
+    this.bossSpawnedAtMs = Date.now();
     this.enemies.push(boss);
     this.container.addChild(boss.sprite);
 
@@ -509,6 +557,43 @@ export class EnemyManager {
     // Diagnostic
     const textureOk = boss.sprite.children.length > 0;
     console.log(`[BossVisual] type=${boss.bossType || 'UNKNOWN'} level=${level} textureOk=${textureOk}`);
+    console.log(`[BossFlow] boss active level=${level} bossSpawned=true bossActive=${boss.active}`);
+    let bulletsCleared = false;
+    const playScene = this.game.scenes && this.game.scenes.play ? this.game.scenes.play : null;
+    if (playScene?.showBossIntro) {
+      const taunt = playScene.getBossTauntCaption ? playScene.getBossTauntCaption('boss_spawn') : getMicroMessage('bossIntro');
+      playScene.showBossIntro(boss.name, taunt);
+    }
+    if (playScene && playScene.bulletManager) {
+      const bm = playScene.bulletManager;
+      bm.playerBullets.forEach(b => {
+        b.active = false;
+        if (b.sprite && b.sprite.parent) b.sprite.parent.removeChild(b.sprite);
+      });
+      bm.enemyBullets.forEach(b => {
+        b.active = false;
+        if (b.sprite && b.sprite.parent) b.sprite.parent.removeChild(b.sprite);
+      });
+      bm.playerBullets = [];
+      bm.enemyBullets = [];
+      bulletsCleared = true;
+    }
+    console.log(`[BossSpawnProof] level=${level} hp=${boss.health} x=${Math.round(boss.x)} y=${Math.round(boss.y)} invulnMs=${boss.invulnerableUntilMs - boss.spawnedAtMs} bulletsCleared=${bulletsCleared}`);
+    console.log(`[BossPhase] level=${level} phase=${this.phase} spawned bossSpawned=true bossActive=${boss.active}`);
+    this.logBossStatus('boss_spawn_complete');
+  }
+
+  spawnBossAdds(count = 6) {
+    const positions = this.getFormationPositions('ARC', count);
+    const screenW = this.game.getWidth();
+    const startX = Math.random() < 0.5 ? -80 : screenW + 80;
+    const waveColor = 'Red';
+    positions.forEach((pos, i) => {
+      const enemy = new Enemy(startX, -100, 'gris', this.level, this.game, waveColor);
+      enemy.startEntry(startX, -50, pos.x, pos.y + 40, 1600, i * 120);
+      this.enemies.push(enemy);
+      this.container.addChild(enemy.sprite);
+    });
   }
 
   applyModifier(enemy) {
@@ -522,9 +607,11 @@ export class EnemyManager {
 
   onWaveCleared() {
     console.log('Wave Cleared!');
+    console.log(`[BossPhase] level=${this.level} phase=${this.phase} waveCleared waveIndex=${this.currentWaveIndex} of ${this.normalWavesTotal}`);
+    if (this.phase !== 'WAVES') return;
 
     const prevWaveIdx = this.currentWaveIndex - 1;
-    const prevWave = (prevWaveIdx >= 0 && prevWaveIdx < this.waves.length) ? this.waves[prevWaveIdx] : null;
+    const prevWave = (prevWaveIdx >= 0 && prevWaveIdx < this.normalWavesTotal) ? this.waves[prevWaveIdx] : null;
 
     if (prevWave && prevWave.isChallenge) {
       // Challenge Bonus
@@ -547,7 +634,7 @@ export class EnemyManager {
 
     // Logic to potentially inject a Challenge Wave
     // Criteria: Not boss level, not first wave, chance 8%, not back-to-back
-    const isLevelDone = this.currentWaveIndex >= this.waves.length;
+    const isLevelDone = this.currentWaveIndex >= this.normalWavesTotal;
 
     if (!isLevelDone && !this.isBossLevel && this.currentWaveIndex > 0) {
       // 8% Chance
@@ -565,10 +652,29 @@ export class EnemyManager {
       }
     }
 
-    this.waveTimer = 2000;
+    if (this.currentWaveIndex < this.normalWavesTotal - 1) {
+      this.currentWaveIndex += 1;
+      const config = this.waves[this.currentWaveIndex];
+      this.spawnWave(config);
+      this.state = 'WAVE_ACTIVE';
+      AudioManager.playVoice('round');
+      if (this.game.scenes.play) {
+        this.game.scenes.play.showToast(`WAVE ${this.currentWaveIndex + 1} / ${this.normalWavesTotal}`, { fontSize: 20, y: 100, duration: 1500 });
+      }
+      return;
+    }
 
-    // Maybe spawn hijacker (once per level, after wave 1, non-boss levels)
-    this.maybeSpawnHijacker();
+    if (this.isBossLevel && !this.bossSpawnedThisLevel && !this.bossDefeatedThisLevel) {
+      this.phase = 'BOSS';
+      console.log(`[BossFlow] spawning boss level=${this.level} waveIndex=${this.currentWaveIndex + 1} bossWaveIndex=${this.bossWaveIndex}`);
+      this.state = 'BOSS_GATE';
+      this.bossGateTimer = 0;
+      return;
+    }
+
+    this.phase = 'COMPLETE';
+    this.state = 'LEVEL_COMPLETE';
+    console.log(`[BossPhase] level=${this.level} phase=${this.phase} bossDefeated=true`);
   }
 
   maybeSpawnHijacker() {
@@ -610,6 +716,7 @@ export class EnemyManager {
   isLevelComplete() {
     // Level is complete when all waves are done and no enemies (including hijacker)
     const noHijacker = !this.hijacker || !this.hijacker.active;
+    if (this.phase !== 'COMPLETE') return false;
     return this.state === 'LEVEL_COMPLETE' && this.enemies.length === 0 && noHijacker;
   }
 
@@ -673,5 +780,95 @@ export class EnemyManager {
     if (!metrics) return;
     this.adaptation.diagonalShotBias = Math.abs(metrics.avgX) * 0.5;
     this.adaptation.spawnYBias = metrics.bottomRatio > 0.5 ? -100 : 0;
+  }
+
+  forceBossStart(level) {
+    this.clearEnemies();
+    this.currentWaveIndex = this.normalWavesTotal;
+    this.phase = 'BOSS';
+    this.state = 'BOSS_GATE';
+    this.waveEnding = false;
+    this.cleanupPhase = 'NONE';
+    this.cleanupTimer = 0;
+    this.bossGateTimer = 0;
+    this.bossSpawnedThisLevel = false;
+    this.bossDefeatedThisLevel = false;
+    console.log(`[BossPhase] level=${level} phase=${this.phase} forced boss start`);
+  }
+
+  ensureBossActive() {
+    if (!this.boss || !this.boss.active) return;
+    const bossInEnemies = this.enemies.includes(this.boss);
+    if (!bossInEnemies) {
+      this.enemies.push(this.boss);
+      console.warn(`[BossGuard] boss reattached to enemies level=${this.level}`);
+    }
+    if (this.boss.sprite && !this.boss.sprite.parent) {
+      this.container.addChild(this.boss.sprite);
+      console.warn(`[BossGuard] boss sprite reattached level=${this.level}`);
+    }
+    this.boss.sprite.visible = true;
+    this.boss.sprite.renderable = true;
+  }
+
+  getBossStatus() {
+    const bossEntityExists = !!this.boss;
+    const bossActive = !!(this.boss && this.boss.active);
+    const bossDefeated = bossEntityExists && !this.boss.active;
+    const bossInEnemies = bossEntityExists && this.enemies.includes(this.boss);
+    const bossContainerChildrenCount = this.boss?.sprite?.children?.length ?? 0;
+    return {
+      bossEntityExists,
+      bossActive,
+      bossDefeated,
+      bossInEnemies,
+      bossContainerChildrenCount
+    };
+  }
+
+  logBossStatus(tag) {
+    const status = this.getBossStatus();
+    const bossWaveIndex = this.bossWaveIndex ?? -1;
+    console.log(
+      `[BossStatus] tag=${tag} level=${this.level} state=${this.state} waveIndex=${this.currentWaveIndex}` +
+      ` wavesTotal=${this.normalWavesTotal} bossWaveIndex=${bossWaveIndex} hasBoss=${this.isBossLevel}` +
+      ` bossSpawned=${this.bossSpawnedThisLevel} bossActive=${status.bossActive} bossDefeated=${status.bossDefeated}` +
+      ` bossEntityExists=${status.bossEntityExists} bossInEnemies=${status.bossInEnemies}` +
+      ` bossContainerChildrenCount=${status.bossContainerChildrenCount}`
+    );
+  }
+
+  getDifficultyScalars(level) {
+    const diff = BalanceConfig.difficulty;
+    const levelScale = Math.max(0, level - 1);
+    return {
+      hpScale: diff.baseEnemyHealthMultiplier + levelScale * diff.hpScalePerLevel,
+      speedScale: diff.enemySpeedMultiplier + levelScale * diff.enemySpeedPerLevel,
+      fireDelayScale: 1 + levelScale * diff.enemyFireDelayPerLevel
+    };
+  }
+
+  logLevelDifficulty(level, waveCount) {
+    const diff = BalanceConfig.difficulty;
+    const scalars = this.getDifficultyScalars(level);
+    const bossHp = Math.round(diff.bossBaseHealth + level * diff.bossHealthPerLevel);
+    console.log(
+      `[Difficulty] level=${level} waves=${waveCount} waveDelayMs=${diff.waveDelayMs}` +
+      ` countBase=${diff.waveEnemyBase} countScale=${diff.waveEnemyPerLevel} countMax=${diff.waveEnemyMax}` +
+      ` hpScale=${scalars.hpScale.toFixed(2)} speedScale=${scalars.speedScale.toFixed(2)} fireDelayScale=${scalars.fireDelayScale.toFixed(2)}` +
+      ` fireChance=${diff.enemyFireChance} projSpeed=${diff.enemyProjectileSpeed}` +
+      ` bossHp=${bossHp} bossDelay=${diff.bossShootDelayBase}`
+    );
+  }
+
+  logWaveDifficulty(config) {
+    const scalars = this.getDifficultyScalars(this.level);
+    const waveIndex = this.currentWaveIndex + 1;
+    const waveTotal = this.normalWavesTotal;
+    console.log(
+      `[DifficultyWave] level=${this.level} wave=${waveIndex}/${waveTotal} type=${config.type}` +
+      ` count=${config.count} formation=${config.formation}` +
+      ` hpScale=${scalars.hpScale.toFixed(2)} speedScale=${scalars.speedScale.toFixed(2)} fireDelayScale=${scalars.fireDelayScale.toFixed(2)}`
+    );
   }
 }

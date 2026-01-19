@@ -20,7 +20,8 @@ import {
   extendLevelIntroTexts,
   getAchievementPopup,
   getEnemyTaunt,
-  getMicroMessage
+  getMicroMessage,
+  getAllNewPhrases
 } from '../text/phrasePool.js';
 
 export class PlayScene {
@@ -29,8 +30,10 @@ export class PlayScene {
     this.container = new PIXI.Container();
     this.gameContainer = new PIXI.Container();
     this.uiContainer = new PIXI.Container();
+    this.uiOverlay = new PIXI.Container();
     this.container.addChild(this.gameContainer);
     this.container.addChild(this.uiContainer);
+    this.container.addChild(this.uiOverlay);
 
     this.inputManager = new InputManager();
     this.touchControls = new NullTouchControls();
@@ -83,18 +86,57 @@ export class PlayScene {
     this.shootSoundHealthCheck = {
       shotsFired: 0,
       lastShotTime: 0,
+      lastSoundTime: 0,
+      lastSoundKey: 'shoot_small',
+      recoveredLogged: false,
       lastRecoveryAttempt: 0,
       recoveryAttempts: 0
     };
     this.sceneId = Math.random().toString(36).substring(7);
     this._showRankUpCount = 0;
+    this.toastQueue = [];
+    this.toastTopQueue = [];
+    this.toastCornerQueue = [];
+    this.activeCenterToast = null;
+    this.activeTopToast = null;
+    this.activeCornerToast = null;
+    this.centerToastLockUntil = 0;
+    this.loreBag = [];
+    this.loreBagIndex = 0;
+    this.lastLoreLine = null;
+    this.lastLoreAt = 0;
+    this.loreCooldownMs = 10000;
+    this.lastMajorToastAt = 0;
+    this.majorToastCooldownMs = 3500;
+
+    this.comboCount = 0;
+    this.comboMultiplier = 1;
+    this.comboTimerMs = 0;
+    this.comboWindowMs = 3200;
+    this.killStreak = 0;
+    this.lastKillAt = 0;
+    this.lastHitAt = 0;
+    this.nearMissCooldownAt = 0;
+
+    // Synergy + Meta
+    this.synergyBadge = null;
+    this.comboDisplay = null;
+    this.devOverlay = null;
+    this.seasonXp = 0;
+    this.seasonLevel = 0;
+    this.seasonUnlocks = {};
+    this.lastScoreSeen = 0;
+    this.lastBossDefeatedLevel = 0;
+    this.freezeTimerMs = 0;
   }
 
   init() {
     this.isReady = false;
     this.gameContainer.removeChildren();
     this.uiContainer.removeChildren();
+    this.uiOverlay.removeChildren();
     this.uiContainer.sortableChildren = true;
+    this.uiOverlay.sortableChildren = true;
 
     // TASK D: Create procedural starfield background
     this.createStarfield();
@@ -102,6 +144,9 @@ export class PlayScene {
     // --- Hud & UI ---
     this.hud = new HUD(this.uiContainer, this.game);
     // Note: HUD creates itself in constructor
+    this.initMetaProgress();
+    this.createComboDisplay();
+    this.createSynergyBadge();
 
     // TASK C: Debug diagnostics removed from gameplay screen
     // const diagStyle = {
@@ -177,6 +222,11 @@ export class PlayScene {
       }
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game);
       this.gameContainer.addChild(this.player.sprite);
+      if (this.player.setRank) {
+        const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
+        this.player.setRank(initialRank, 'init');
+      }
+      this.applySeasonCosmetics();
       console.log('[PlayScene] Assets (Ships+Ranks) ready');
     });
 
@@ -184,10 +234,31 @@ export class PlayScene {
     if (!this.player) {
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game);
       this.gameContainer.addChild(this.player.sprite);
+      if (this.player.setRank) {
+        const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
+        this.player.setRank(initialRank, 'init_placeholder');
+      }
+      this.applySeasonCosmetics();
     }
 
     // Create enemy manager
     this.enemyManager = new EnemyManager(this.gameContainer, this.game, capHandler);
+
+    const params = new URLSearchParams(window.location.search);
+    const debugToken = params.get('debugBossToken');
+    if (debugToken === 'KURT_DEBUG_2026') {
+      const startLevel = Number(params.get('startLevel'));
+      const startAtBoss = params.get('startAtBoss') === '1';
+      const debugPowerups = params.get('debugPowerups') === '1';
+      const debugOverlay = params.get('debugOverlay') === '1';
+      if (Number.isFinite(startLevel) && startLevel > 0) {
+        this.debugStartLevel = Math.floor(startLevel);
+      }
+      this.debugStartAtBoss = startAtBoss;
+      this.debugPowerups = debugPowerups;
+      this.debugOverlayEnabled = debugOverlay;
+      console.log(`[Debug] enabled startLevel=${this.debugStartLevel ?? 'default'} startAtBoss=${startAtBoss} debugPowerups=${debugPowerups} debugOverlay=${debugOverlay}`);
+    }
 
     // Ensure Assets are ready for gameplay
     GameAssets.ensureBeerTexture().then(tex => {
@@ -216,6 +287,7 @@ export class PlayScene {
 
     // Start first level
     this.startLevel();
+    this.initLoreBag();
 
     console.log(`PlayScene build:${BUILD_ID}`);
     this.isReady = true;
@@ -272,6 +344,15 @@ export class PlayScene {
       this.buildStamp.x = width - margin;
       this.buildStamp.y = height - margin;
     }
+
+    this.layoutComboDisplay();
+    if (this.synergyBadge) {
+      this.synergyBadge.x = width * 0.82;
+      this.synergyBadge.y = height * 0.1;
+    }
+    if (this.devOverlay) {
+      this.devOverlay.y = height - margin;
+    }
   }
 
   startLevel() {
@@ -281,17 +362,24 @@ export class PlayScene {
       this.levelAdvanceTimeout = null;
     }
 
+    if (Number.isFinite(this.debugStartLevel)) {
+      this.game.level = this.debugStartLevel;
+    }
+
     // Update music for the new level
     AudioManager.playMusicContext('gameplay');
     this.powerupManager.checkLevelReset(this.game.level); // Reset powerup caps
 
     this.enemyManager.startLevel(this.game.level);
+    if (this.debugStartAtBoss) {
+      this.enemyManager.forceBossStart(this.game.level);
+    }
     this.showLevelIntro();
-    this.showToast(getMicroMessage('levelStart'), { fontSize: 20, y: this.game.getHeight() * 0.25 });
-    this.showToast(getMicroMessage('newWave'), { fontSize: 22, y: this.game.getHeight() * 0.35 });
+    this.showToast(getMicroMessage('levelStart'), { fontSize: 18, y: this.game.getHeight() * 0.12, slot: 'corner', type: 'level_up' });
+    this.showToast(getMicroMessage('newWave'), { fontSize: 18, y: this.game.getHeight() * 0.16, slot: 'corner', type: 'level_up' });
 
     if (this.game.level % 5 === 0) {
-      this.showToast(getMicroMessage('bossIntro'), { fontSize: 26, y: this.game.getHeight() * 0.4 });
+      this.showToast(getMicroMessage('bossIntro'), { fontSize: 22, y: this.game.getHeight() * 0.25, slot: 'center', type: 'level_up' });
     }
 
     this.resetRandomTimers();
@@ -300,8 +388,6 @@ export class PlayScene {
   }
 
   showLevelIntro() {
-    const { width, height } = this.game.app.screen;
-
     const levelTexts = [
       'Wave 1: Grunnleggende gris',
       'Wave 2: Mongo intensifiserer',
@@ -315,46 +401,16 @@ export class PlayScene {
       'BOSS: ULTIMATE SVIN'
     ];
     const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
-
-    const text = new PIXI.Text(
-      introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`,
-      {
-        fontFamily: 'Courier New',
-        fontSize: 48,
-        fill: '#ffff00',
-        stroke: '#ff8800',
-        strokeThickness: 3,
-        dropShadow: true,
-        dropShadowColor: '#ffff00',
-        dropShadowBlur: 10
-      }
-    );
-    text.anchor.set(0.5);
-    text.x = width / 2;
-    text.y = height / 2;
-    text.alpha = 0;
-    this.container.addChild(text);
-
-    // Fade in/out animation
-    let elapsed = 0;
-    const duration = 2000;
-    const ticker = (delta) => {
-      elapsed += delta.deltaTime * 16.6;
-
-      if (elapsed < 500) {
-        text.alpha = elapsed / 500;
-      } else if (elapsed > duration - 500) {
-        text.alpha = (duration - elapsed) / 500;
-      } else {
-        text.alpha = 1;
-      }
-
-      if (elapsed >= duration) {
-        this.game.app.ticker.remove(ticker);
-        this.container.removeChild(text);
-      }
-    };
-    this.game.app.ticker.add(ticker);
+    const message = introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`;
+    this.showToast(message, {
+      fontSize: 42,
+      fill: '#ffff00',
+      stroke: '#ff8800',
+      strokeThickness: 3,
+      duration: 2000,
+      type: 'level_up',
+      slot: 'center'
+    });
   }
 
   update(delta) {
@@ -370,8 +426,19 @@ export class PlayScene {
         this.scoreBoostTimer -= delta * 16.67;
         if (this.scoreBoostTimer <= 0) {
           this.scoreMultiplier = 1;
-          this.showToast("SCORE BOOST ENDED", { fontSize: 20, fill: '#cccccc' });
+          this.game.scoreMultiplier = 1;
+          if (this.player) {
+            this.player.scoreMultiplier = 1;
+            this.player.scoreBoostExpiresAt = 0;
+          }
+          this.showToast("SCORE BOOST ENDED", { fontSize: 20, fill: '#cccccc', slot: 'corner', type: 'score_boost' });
+          console.log('[Powerup] expire type=SCORE_X2 restored multiplier=1');
+          if (this.debugPowerups) {
+            console.log('[PowerupTest] expired type=score_x2 restoredOk=true');
+          }
         }
+      } else if (this.game.scoreMultiplier !== this.scoreMultiplier) {
+        this.game.scoreMultiplier = this.scoreMultiplier;
       }
 
       this.handlePauseToggle();
@@ -404,6 +471,22 @@ export class PlayScene {
             this.gameContainer.addChild(sprite);
           }
         }
+      }
+
+      this.updateComboTimers(delta);
+      this.updateComboDisplay(delta);
+
+      if (this.player?.synergyState?.type) {
+        this.setSynergyBadge(this.player.synergyState.label || this.player.synergyState.type);
+      } else {
+        this.setSynergyBadge('');
+      }
+
+
+      if (this.freezeTimerMs > 0) {
+        this.freezeTimerMs -= delta * 16.67;
+        this.updateDevOverlay();
+        return;
       }
 
       // TASK C: Debug diagnostics removed
@@ -453,7 +536,8 @@ export class PlayScene {
       }
 
       // Managers update
-      if (this.bulletManager) this.bulletManager.update(delta);
+      const enemyBulletScale = (this.player && this.player.activePowerup && this.player.activePowerup.type === 'slow_time') ? 0.6 : 1;
+      if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
       if (this.enemyManager) this.enemyManager.update(delta);
       if (this.powerupManager) this.powerupManager.update(delta, this);
       if (this.particleManager) this.particleManager.update(delta);
@@ -475,7 +559,7 @@ export class PlayScene {
         this.levelAdvancePending = true;
 
         AudioManager.playSfx('levelComplete');
-        this.game.addScore(1000 * this.scoreMultiplier); // Completion Bonus
+        this.game.addScore(1000); // Completion Bonus
         this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000 });
 
         // Particles
@@ -522,9 +606,21 @@ export class PlayScene {
       this.hud.update();
       this.updateStarfield(delta); // TASK D: Animate background stars
       this.updateAmbientBeers(delta); // Handles both Red Hazards and White Powerups
+      this.applyMagnetPull(delta);
       this.updateEasterEgg(delta);
       this.updateRandomPopups(delta);
       this.checkLowLives();
+
+      const scoreDelta = this.game.score - this.lastScoreSeen;
+      if (scoreDelta > 0) {
+        this.updateMetaProgress(scoreDelta, false);
+        this.lastScoreSeen = this.game.score;
+      }
+      if (this.enemyManager?.bossDefeatedThisLevel && this.lastBossDefeatedLevel !== this.game.level) {
+        this.lastBossDefeatedLevel = this.game.level;
+        this.updateMetaProgress(0, true);
+      }
+      this.updateDevOverlay();
 
     } catch (e) {
       console.error('GAME LOOP CRASH:', e);
@@ -536,13 +632,30 @@ export class PlayScene {
   }
 
   onRankUp(newRank) {
-    const nr = Number(newRank);
-    if (!Number.isFinite(nr)) return;
+    const nr = this.normalizeRankValue(newRank);
+    if (!Number.isFinite(nr)) {
+      console.warn('[PlayScene] Invalid rank payload for rank up:', newRank);
+      return;
+    }
 
     if (this._lastRankUpSeen === nr) return;
     this._lastRankUpSeen = nr;
     this._rankUpCount = (this._rankUpCount || 0) + 1;
+    if (this.player && this.player.setRank) {
+      this.player.setRank(nr, 'rank_up');
+    }
     this.showRankUp(nr);
+  }
+
+  normalizeRankValue(payload) {
+    if (payload == null) return NaN;
+    if (typeof payload === 'number') return payload;
+    if (typeof payload === 'string') return Number(payload);
+    if (typeof payload === 'object') {
+      const candidate = payload.rankIndex ?? payload.newRank ?? payload.rank ?? payload.rank_index ?? payload.value ?? payload.index;
+      return Number(candidate);
+    }
+    return NaN;
   }
 
   showRankUp(newRank) {
@@ -552,24 +665,20 @@ export class PlayScene {
     if (this._rankUpAnimating) return;
     this._rankUpAnimating = true;
     this._showRankUpCount++;
+    this.centerToastLockUntil = Date.now() + 2500;
 
     // TASK 4: Enhanced rank up animation with rank sprite and title
     const rank = (newRank !== undefined) ? newRank : this.game.rankIndex;
     const rankTitle = this.game.getRankTitle ? this.game.getRankTitle(rank) : '';
 
     // TASK 4: Audio - SFX first, then optional voice
-    AudioManager.playSfx('achievement'); // Distinct rank up sound (fallback to achievement if exists)
+    AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
     setTimeout(() => {
-      AudioManager.playVoice('power_up'); // Optional celebratory voice
+      AudioManager.playVoice('powerup'); // Optional celebratory voice
     }, 200);
 
     // TASK 4: Polished arcade animation
     this.createRankUpAnimation(rank, rankTitle);
-
-    // TASK 5: Ship sprite rotation every other rank up
-    if (this.player && rank % 2 === 0 && rank > 0) {
-      this.player.rotateShipSprite();
-    }
 
     // Particles
     if (this.player && this.player.active) {
@@ -718,7 +827,7 @@ export class PlayScene {
       if (bullet.active) {
         this.enemyManager.enemies.forEach(enemy => {
           if (enemy.active && this.checkCollision(bullet, enemy)) {
-            bullet.active = false;
+            if (!bullet.piercing) bullet.active = false;
             const destroyed = enemy.takeDamage(bullet.damage);
 
             if (destroyed) {
@@ -726,8 +835,9 @@ export class PlayScene {
 
               // Feature: Slow Time Trade-off
               if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
-                this.game.addScore(enemy.scoreValue * this.scoreMultiplier);
+                this.game.addScore(this.getComboScore(enemy.scoreValue));
               }
+              this.onEnemyKilled(enemy);
               this.particleManager.createExplosion(enemy.x, enemy.y, enemy.color);
               AudioManager.playSfx('enemy_explode');
               this.screenShake.shake(3);
@@ -749,7 +859,7 @@ export class PlayScene {
         if (bullet.active) {
           const hijacker = this.enemyManager.hijacker;
           if (this.checkCollision(bullet, hijacker)) {
-            bullet.active = false;
+            if (!bullet.piercing) bullet.active = false;
             const destroyed = hijacker.takeDamage(bullet.damage);
 
             if (destroyed) {
@@ -757,6 +867,7 @@ export class PlayScene {
               this.particleManager.createExplosion(hijacker.x, hijacker.y, 0xff4444);
               AudioManager.playSfx('enemy_explode');
               this.screenShake.shake(5);
+              this.onEnemyKilled(hijacker);
               // Score already added in hijacker.destroy()
             } else {
               this.particleManager.createHitSpark(hijacker.x, hijacker.y);
@@ -770,6 +881,14 @@ export class PlayScene {
     // Enemy bullets vs player
     this.bulletManager.enemyBullets.forEach(bullet => {
       if (bullet.active && this.player.active) {
+        const dx = bullet.x - this.player.x;
+        const dy = bullet.y - this.player.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const nearThreshold = (this.player.radius || 12) + (bullet.radius || 6) + 12;
+        if (!bullet.nearMissed && dist < nearThreshold && dist > (this.player.radius || 12)) {
+          bullet.nearMissed = true;
+          this.applyNearMiss(bullet);
+        }
         if (this.checkCollision(bullet, this.player)) {
           // Feature: Ghost Ship prevents hit
           if (this.player.activePowerup && this.player.activePowerup.type === 'ghost') return;
@@ -778,6 +897,7 @@ export class PlayScene {
           if (!this.player.invulnerable) {
             const damageTaken = this.player.takeDamage();
             if (damageTaken) {
+              this.lastHitAt = Date.now();
               this.game.loseLife();
               this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
               AudioManager.playSfx('playerHit');
@@ -811,6 +931,7 @@ export class PlayScene {
             if (!this.player.invulnerable) {
               const damageTaken = this.player.takeDamage();
               if (damageTaken) {
+                this.lastHitAt = Date.now();
                 this.game.loseLife();
                 this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
                 AudioManager.playSfx('playerHit');
@@ -833,13 +954,14 @@ export class PlayScene {
         this.ambientBeers.forEach(beer => {
           // Only damage HAZARD type beers (red cans), not POWERUP (white cans)
           if (beer.active && beer.type === 'HAZARD' && this.checkCollision(bullet, beer)) {
-            bullet.active = false;
+            if (!bullet.piercing) bullet.active = false;
             // Use the BeerCan's takeDamage method properly
             const destroyed = beer.takeDamage(bullet.damage || 1);
             if (destroyed) {
               if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
-                this.game.addScore(500 * this.scoreMultiplier);
+                this.game.addScore(this.getComboScore(500));
               }
+              this.onEnemyKilled(beer);
               this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00);
               AudioManager.playSfx('enemy_explode');
               this.showToast('BEER SMASH!', { fontSize: 18, y: beer.y, fill: '#ffff00' });
@@ -862,6 +984,7 @@ export class PlayScene {
           if (!this.player.invulnerable) {
             const damageTaken = this.player.takeDamage();
             if (damageTaken) {
+              this.lastHitAt = Date.now();
               this.game.loseLife();
               this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
               AudioManager.playSfx('playerHit');
@@ -882,7 +1005,8 @@ export class PlayScene {
         if (this.checkCollision(powerup, this.player)) {
           powerup.collect(this.player, this);
           AudioManager.playSfx('pickup');
-          this.particleManager.createPickupEffect(powerup.x, powerup.y, powerup.color);
+          const pickupColor = this.player?.synergyState?.type === 'cash_vacuum' ? 0xffff00 : powerup.color;
+          this.particleManager.createPickupEffect(powerup.x, powerup.y, pickupColor);
           // CRITICAL: Ensure player visibility after powerup pickup
           this.player.ensureRenderable('afterPowerupPickup');
         }
@@ -934,6 +1058,14 @@ export class PlayScene {
   }
 
   checkCollision(a, b) {
+    if (!this._uiCollisionWarned) {
+      const nameA = a?.name || a?.sprite?.name;
+      const nameB = b?.name || b?.sprite?.name;
+      if ((nameA && nameA.startsWith('ui_')) || (nameB && nameB.startsWith('ui_'))) {
+        console.warn('[UI] ERROR poster reached collision loop');
+        this._uiCollisionWarned = true;
+      }
+    }
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -1030,17 +1162,34 @@ export class PlayScene {
   playShootSoundWithHealthCheck() {
     const now = Date.now();
     const check = this.shootSoundHealthCheck;
+    const sfxKey = this.player?.getShootSfxKey ? this.player.getShootSfxKey() : 'shoot_small';
+    check.lastSoundKey = sfxKey;
 
     // Track shot
     check.shotsFired++;
     check.lastShotTime = now;
 
-    // Try to play sound
-    const played = AudioManager.playSfx('shoot_small');
+    // Try to play sound with a minimum interval to avoid choking the pool
+    let played = false;
+    if (now - check.lastSoundTime >= 80) {
+      played = AudioManager.playSfx(sfxKey, { pool: true, minIntervalMs: 60 }) === true;
+      if (played) {
+        check.lastSoundTime = now;
+      }
+    }
+
+    // Fail-safe: if firing but no sound in >500ms, force recover once
+    if (!played && now - check.lastSoundTime > 500) {
+      AudioManager.playSfx(sfxKey, { force: true, pool: true, volume: 0.8 });
+      check.lastSoundTime = now;
+      if (!check.recoveredLogged) {
+        console.warn('[AudioFix] shooting sound recovered');
+        check.recoveredLogged = true;
+      }
+    }
 
     // Health check: If we've fired 10+ shots without sound recovery
     if (check.shotsFired >= 10) {
-      const timeSinceLastShot = now - check.lastShotTime;
       const timeSinceRecovery = now - check.lastRecoveryAttempt;
 
       // If it's been >5s since last recovery attempt and we're still shooting
@@ -1130,15 +1279,17 @@ export class PlayScene {
     if (this.achievementTimer > 0) {
       this.achievementTimer -= delta * 16.67;
     } else {
-      this.showToast(getAchievementPopup(), { fontSize: 20, y: 70 });
-      this.achievementTimer = this.getRandomTimer(12000, 20000);
+      const line = this.getNextLoreLine();
+      if (line && this.canShowLore()) this.showLoreBanner(line);
+      this.achievementTimer = this.getRandomTimer(18000, 26000);
     }
 
     if (this.tauntTimer > 0) {
       this.tauntTimer -= delta * 16.67;
     } else {
-      this.showToast(getEnemyTaunt(), { fontSize: 18, y: 110 });
-      this.tauntTimer = this.getRandomTimer(9000, 15000);
+      const line = this.getNextLoreLine();
+      if (line && this.canShowLore()) this.showLoreBanner(line);
+      this.tauntTimer = this.getRandomTimer(16000, 24000);
     }
   }
 
@@ -1155,8 +1306,14 @@ export class PlayScene {
     // RESPONDER LOGIC
     if (this.player && this.game.lives > 0) {
       this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
+      AudioManager.recoverSfx('respawn');
       // Small screen shake
       if (this.screenShake) this.screenShake.shake(5);
+    }
+    const boss = this.enemyManager?.boss;
+    if (boss && boss.active) {
+      console.log(`[BossHP] player_death level=${this.game.level} hp=${boss.health} max=${boss.maxHealth} bossActive=true`);
+      this.showBossTaunt('boss_life_lost');
     }
   }
 
@@ -1165,51 +1322,504 @@ export class PlayScene {
   }
 
   showToast(message, options = {}) {
-    const { width, height } = this.game.app.screen;
-    const fontSize = options.fontSize || 24;
-    const y = options.y || height * 0.2;
-    const maxWidth = width * 0.9;
+    this.enqueueToast(message, options);
+  }
 
-    const text = new PIXI.Text(message, {
-      fontFamily: 'Courier New',
-      fontSize,
-      fill: options.fill || '#ffffff',
-      align: 'center',
-      wordWrap: true,
-      wordWrapWidth: maxWidth,
-      lineHeight: fontSize + 6
-    });
-    text.anchor.set(0.5);
-    text.x = width / 2;
-    text.y = y;
-    text.alpha = 0;
+  applyScoreMultiplier(multiplier, durationMs, source = 'unknown') {
+    const mult = Number(multiplier) || 1;
+    this.scoreMultiplier = mult;
+    this.scoreBoostTimer = durationMs;
+    this.game.scoreMultiplier = mult;
+    if (this.player) {
+      this.player.scoreMultiplier = mult;
+      this.player.scoreBoostExpiresAt = Date.now() + durationMs;
+    }
+    if (this.player?.noteScoreMultiplier) this.player.noteScoreMultiplier();
+    this.showToast(`SCORE x${mult}`, { fontSize: 34, fill: '#ffff00', duration: 1800, slot: 'center', type: 'score_boost' });
+    console.log(`[Powerup] pickup type=SCORE_X2 durationMs=${durationMs} source=${source}`);
+  }
 
-    if (text.width > maxWidth) {
-      const scale = maxWidth / text.width;
-      text.scale.set(scale);
+  enqueueToast(message, options = {}) {
+    if (!message) return;
+    const slot = options.slot || 'center';
+    const type = options.type || 'generic';
+    const priorityMap = { rank_up: 3, rank_boost: 2, level_up: 1 };
+    const priority = Number.isFinite(options.priority) ? options.priority : (priorityMap[type] || 0);
+    const entry = { message, options: { ...options, type, slot }, priority, createdAt: Date.now() };
+
+    if (slot === 'corner') {
+      this.toastCornerQueue.push(entry);
+      this.toastCornerQueue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
+    } else if (slot === 'top') {
+      this.toastTopQueue.push(entry);
+      this.toastTopQueue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
+    } else {
+      this.toastQueue.push(entry);
+      this.toastQueue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
     }
 
-    this.container.addChild(text);
+    this.processToastQueue();
+  }
+
+  processToastQueue() {
+    const now = Date.now();
+    if (!this.activeCenterToast && now >= this.centerToastLockUntil && this.toastQueue.length > 0) {
+      const entry = this.toastQueue.shift();
+      this.activeCenterToast = this.showToastNow(entry.message, entry.options, 'center');
+    }
+    if (!this.activeTopToast && this.toastTopQueue.length > 0) {
+      const entry = this.toastTopQueue.shift();
+      this.activeTopToast = this.showToastNow(entry.message, entry.options, 'top');
+    }
+    if (!this.activeCornerToast && this.toastCornerQueue.length > 0) {
+      const entry = this.toastCornerQueue.shift();
+      this.activeCornerToast = this.showToastNow(entry.message, entry.options, 'corner');
+    }
+  }
+
+  initLoreBag() {
+    const pool = getAllNewPhrases();
+    const unique = Array.from(new Set(pool.filter(Boolean)));
+    this.loreBag = this.shuffleArray(unique);
+    this.loreBagIndex = 0;
+    if (this.lastLoreLine && this.loreBag.length > 1 && this.loreBag[0] === this.lastLoreLine) {
+      const swapIndex = 1;
+      [this.loreBag[0], this.loreBag[swapIndex]] = [this.loreBag[swapIndex], this.loreBag[0]];
+    }
+  }
+
+  getNextLoreLine() {
+    if (!this.loreBag.length || this.loreBagIndex >= this.loreBag.length) {
+      this.initLoreBag();
+    }
+    const idx = this.loreBagIndex;
+    const line = this.loreBag[idx];
+    this.loreBagIndex += 1;
+    this.lastLoreLine = line;
+    const remaining = this.loreBag.length - this.loreBagIndex;
+    console.log(`[Lore] picked idx=${idx} remaining=${remaining} text="${line}"`);
+    return line;
+  }
+
+  showLoreBanner(text) {
+    if (!text) return;
+    if (!this.canShowLore()) return;
+    const duration = 2500 + Math.random() * 1000;
+    this.enqueueToast(text, {
+      fontSize: 22,
+      fill: '#ffffff',
+      duration,
+      slot: 'top',
+      type: 'lore',
+      banner: true,
+      y: this.game.getHeight() * 0.16,
+      maxWidth: this.game.getWidth() * 0.7
+    });
+  }
+
+  canShowLore() {
+    const now = Date.now();
+    if (now - this.lastLoreAt < this.loreCooldownMs) return false;
+    if (this.activeCenterToast) return false;
+    if (this.activeTopToast) return false;
+    if (now < this.centerToastLockUntil) return false;
+    if (now - this.lastMajorToastAt < this.majorToastCooldownMs) return false;
+    const hasMajorQueued = this.toastQueue.some(entry =>
+      ['rank_up', 'level_up', 'rank_boost'].includes(entry.options?.type)
+    );
+    return !hasMajorQueued;
+  }
+
+  shuffleArray(items) {
+    const arr = [...items];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  showToastNow(message, options, slot) {
+    const { width, height } = this.game.app.screen;
+    const fontSize = options.fontSize || (slot === 'corner' ? 16 : 24);
+    const maxWidth = Number.isFinite(options.maxWidth)
+      ? options.maxWidth
+      : (slot === 'corner' ? width * 0.45 : slot === 'top' ? width * 0.7 : width * 0.9);
+    const y = options.y || (slot === 'corner' ? height * 0.12 : slot === 'top' ? height * 0.18 : height * 0.2);
+
+    let display = null;
+    if (options.banner) {
+      const banner = new PIXI.Container();
+      const bannerText = new PIXI.Text(message, {
+        fontFamily: 'Courier New',
+        fontSize,
+        fill: options.fill || '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 4,
+        align: 'left',
+        wordWrap: true,
+        wordWrapWidth: maxWidth * 0.6,
+        lineHeight: fontSize + 6
+      });
+      bannerText.anchor.set(0, 0.5);
+
+      const paddingX = 24;
+      const paddingY = 16;
+      const minFontSize = 16;
+      const maxTextHeight = 80;
+
+      const photos = Object.keys(GameAssets.photos || {});
+      const hasAvatar = photos.length > 0;
+      const avatarSlot = hasAvatar ? 56 : 0;
+      const contentWidth = Math.max(140, maxWidth - paddingX * 2 - avatarSlot);
+      bannerText.style.wordWrapWidth = contentWidth;
+      if (bannerText.updateText) bannerText.updateText(false);
+
+      while (bannerText.height > maxTextHeight && bannerText.style.fontSize > minFontSize) {
+        bannerText.style.fontSize -= 2;
+        bannerText.style.lineHeight = bannerText.style.fontSize + 6;
+        if (bannerText.updateText) bannerText.updateText(false);
+      }
+
+      if (bannerText.height > maxTextHeight) {
+        const raw = message.trim();
+        let trimmed = raw;
+        let guard = 0;
+        while (trimmed.length > 10 && bannerText.height > maxTextHeight && guard < 40) {
+          trimmed = trimmed.slice(0, -4).trimEnd();
+          bannerText.text = `${trimmed}...`;
+          if (bannerText.updateText) bannerText.updateText(false);
+          guard += 1;
+        }
+      }
+
+      const panelWidth = Math.min(maxWidth, bannerText.width + paddingX * 2 + avatarSlot);
+      const panelHeight = Math.max(52, bannerText.height + paddingY * 2);
+      const panel = new PIXI.Graphics();
+      panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
+      panel.fill({ color: 0x111111, alpha: 0.88 });
+      panel.stroke({ color: 0xffff00, width: 3 });
+
+      const accent = new PIXI.Graphics();
+      accent.roundRect(-panelWidth / 2 + 6, -panelHeight / 2 + 6, panelWidth - 12, panelHeight - 12, 10);
+      accent.stroke({ color: 0xff66cc, width: 1, alpha: 0.7 });
+
+      const noise = new PIXI.Graphics();
+      for (let i = 0; i < 24; i++) {
+        const nx = -panelWidth / 2 + 10 + Math.random() * (panelWidth - 20);
+        const ny = -panelHeight / 2 + 10 + Math.random() * (panelHeight - 20);
+        noise.circle(nx, ny, 1.2);
+      }
+      noise.fill({ color: 0xffffff, alpha: 0.08 });
+
+      banner.addChild(panel);
+      banner.addChild(accent);
+      banner.addChild(noise);
+      banner.addChild(bannerText);
+
+      bannerText.x = -panelWidth / 2 + paddingX + avatarSlot;
+      bannerText.y = 0;
+
+      if (hasAvatar) {
+        const pick = photos[Math.floor(Math.random() * photos.length)];
+        const tex = GameAssets.getPhoto(pick);
+        if (GameAssets.isValidTexture(tex)) {
+          const sticker = new PIXI.Sprite(tex);
+          sticker.anchor.set(0.5);
+          sticker.width = 44;
+          sticker.height = 44;
+          sticker.x = -panelWidth / 2 + paddingX + avatarSlot / 2;
+          sticker.y = 0;
+          sticker.alpha = 0.85;
+          banner.addChild(sticker);
+        }
+      }
+
+      banner.x = width / 2;
+      banner.y = y;
+      banner.alpha = 0;
+      display = banner;
+      this.uiOverlay.addChild(banner);
+    } else {
+      const text = new PIXI.Text(message, {
+        fontFamily: 'Courier New',
+        fontSize,
+        fill: options.fill || '#ffffff',
+        stroke: options.stroke,
+        strokeThickness: options.strokeThickness,
+        align: 'center',
+        wordWrap: true,
+        wordWrapWidth: maxWidth,
+        lineHeight: fontSize + 6
+      });
+
+      if (slot === 'corner') {
+        text.anchor.set(1, 0.5);
+        text.x = width - 16;
+        text.y = y;
+      } else {
+        text.anchor.set(0.5);
+        text.x = width / 2;
+        text.y = y;
+      }
+      text.alpha = 0;
+
+      if (text.width > maxWidth) {
+        const scale = maxWidth / text.width;
+        text.scale.set(scale);
+      }
+
+      this.container.addChild(text);
+      display = text;
+    }
+
+    const duration = options.duration || (slot === 'corner' ? 1800 : 2200);
+    const now = Date.now();
+    if (slot === 'center' && ['rank_up', 'level_up', 'rank_boost'].includes(options.type)) {
+      this.lastMajorToastAt = now;
+      this.centerToastLockUntil = Math.max(this.centerToastLockUntil, now + duration);
+    }
+    if (slot === 'center' && options.type === 'lore') {
+      this.lastLoreAt = now;
+    }
+    console.log(`[Toast] show type=${options.type} ms=${duration} slot=${slot}`);
 
     let elapsed = 0;
-    const duration = options.duration || 2200;
     const ticker = (delta) => {
       elapsed += delta.deltaTime * 16.67;
 
       if (elapsed < 250) {
-        text.alpha = elapsed / 250;
+        display.alpha = elapsed / 250;
+        if (options.banner) {
+          const t = elapsed / 250;
+          display.scale.set(0.9 + t * 0.1);
+        }
       } else if (elapsed > duration - 350) {
-        text.alpha = Math.max(0, (duration - elapsed) / 350);
+        display.alpha = Math.max(0, (duration - elapsed) / 350);
       } else {
-        text.alpha = 1;
+        display.alpha = 1;
       }
 
       if (elapsed >= duration) {
         this.game.app.ticker.remove(ticker);
-        this.container.removeChild(text);
+        if (display.parent) display.parent.removeChild(display);
+        if (slot === 'corner') {
+          this.activeCornerToast = null;
+        } else if (slot === 'top') {
+          this.activeTopToast = null;
+        } else {
+          this.activeCenterToast = null;
+        }
+        this.processToastQueue();
       }
     };
     this.game.app.ticker.add(ticker);
+    return display;
+  }
+
+  createComboDisplay() {
+    if (!this.comboDisplay) {
+      this.comboDisplay = new PIXI.Text('', {
+        fontFamily: 'Courier New',
+        fontSize: 26,
+        fill: '#00ffff',
+        stroke: '#000000',
+        strokeThickness: 4,
+        align: 'center'
+      });
+      this.comboDisplay.anchor.set(0.5);
+      this.comboDisplay.visible = false;
+      this.uiOverlay.addChild(this.comboDisplay);
+    }
+    this.layoutComboDisplay();
+  }
+
+  layoutComboDisplay() {
+    if (!this.comboDisplay) return;
+    const { width, height } = this.game.app.screen;
+    this.comboDisplay.x = width / 2;
+    this.comboDisplay.y = height * 0.24;
+  }
+
+  updateComboDisplay(delta) {
+    if (!this.comboDisplay) return;
+    if (this.comboCount <= 0) {
+      this.comboDisplay.visible = false;
+      return;
+    }
+    this.comboDisplay.visible = true;
+    this.comboDisplay.text = `COMBO x${this.comboMultiplier}  (${this.comboCount})`;
+    const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.06;
+    this.comboDisplay.scale.set(pulse);
+  }
+
+  createSynergyBadge() {
+    if (!this.synergyBadge) {
+      this.synergyBadge = new PIXI.Text('', {
+        fontFamily: 'Courier New',
+        fontSize: 16,
+        fill: '#ffff00',
+        stroke: '#000000',
+        strokeThickness: 3
+      });
+      this.synergyBadge.anchor.set(0.5);
+      this.synergyBadge.visible = false;
+      this.uiOverlay.addChild(this.synergyBadge);
+    }
+    const { width, height } = this.game.app.screen;
+    this.synergyBadge.x = width * 0.82;
+    this.synergyBadge.y = height * 0.1;
+  }
+
+  setSynergyBadge(text) {
+    if (!this.synergyBadge) return;
+    if (!text) {
+      this.synergyBadge.visible = false;
+      return;
+    }
+    this.synergyBadge.text = text;
+    this.synergyBadge.visible = true;
+  }
+
+  onEnemyKilled(enemy) {
+    const now = Date.now();
+    if (now - this.lastKillAt > this.comboWindowMs) {
+      this.comboCount = 0;
+      this.comboMultiplier = 1;
+      this.killStreak = 0;
+    }
+    this.comboCount += 1;
+    this.killStreak += 1;
+    this.lastKillAt = now;
+    this.comboTimerMs = this.comboWindowMs;
+
+    const prevMultiplier = this.comboMultiplier;
+    if (this.comboCount >= 50) this.comboMultiplier = 4;
+    else if (this.comboCount >= 25) this.comboMultiplier = 3;
+    else if (this.comboCount >= 10) this.comboMultiplier = 2;
+    else this.comboMultiplier = 1;
+
+    if (this.comboMultiplier !== prevMultiplier) {
+      const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
+      this.enqueueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
+      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+      if (this.particleManager && this.player) {
+        this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
+      }
+    }
+
+    if (this.comboCount > 0 && this.comboCount % 10 === 0) {
+      const bonus = this.getComboScore(100 * (this.comboCount / 10));
+      this.game.addScore(bonus);
+      this.enqueueToast(`COMBO BONUS +${bonus}`, { fontSize: 18, fill: '#ffff00', slot: 'top', type: 'combo', duration: 1200 });
+      AudioManager.playSfx('pickup', { force: true, volume: 0.8 });
+    }
+
+    const clutchChance = 0;
+    const danger = this.game.lives <= 1;
+    if (danger && this.powerupManager && Math.random() < clutchChance) {
+      this.powerupManager.spawn(enemy.x, enemy.y);
+    }
+  }
+
+  updateComboTimers(delta) {
+    if (this.comboCount <= 0) return;
+    this.comboTimerMs -= delta * 16.67;
+    if (this.comboTimerMs <= 0) {
+      this.comboCount = 0;
+      this.comboMultiplier = 1;
+      this.killStreak = 0;
+    }
+  }
+
+  applyNearMiss(bullet) {
+    const now = Date.now();
+    if (now < this.nearMissCooldownAt) return;
+    this.nearMissCooldownAt = now + 450;
+    this.game.addScore(25 * Math.max(1, this.comboMultiplier));
+    this.enqueueToast('NEAR MISS +25', { fontSize: 16, fill: '#ffcc00', slot: 'top', type: 'combo', duration: 900 });
+    if (this.particleManager) {
+      this.particleManager.createHitSpark(this.player.x, this.player.y);
+    }
+  }
+
+  getComboScore(points) {
+    const base = Number(points) || 0;
+    return Math.round(base * Math.max(1, this.comboMultiplier));
+  }
+
+  initMetaProgress() {
+    try {
+      const rawXp = localStorage.getItem('burt_season_xp');
+      this.seasonXp = rawXp ? Number(rawXp) : 0;
+      const rawUnlocks = localStorage.getItem('burt_season_unlocks');
+      this.seasonUnlocks = rawUnlocks ? JSON.parse(rawUnlocks) : {};
+    } catch {
+      this.seasonXp = 0;
+      this.seasonUnlocks = {};
+    }
+    this.seasonLevel = Math.floor(this.seasonXp / 5000);
+  }
+
+  applySeasonCosmetics() {
+    if (!this.player) return;
+    const style = this.seasonLevel % 3;
+    const styles = [
+      { auraColor: 0x66ffff, muzzleColor: 0xffffff },
+      { auraColor: 0xffcc00, muzzleColor: 0xffcc00 },
+      { auraColor: 0x66ff66, muzzleColor: 0x66ff66 }
+    ];
+    this.player.setCosmetics(styles[style] || styles[0]);
+    if (this.comboDisplay) {
+      const colors = [0x00ffff, 0xffcc00, 0x66ff66];
+      this.comboDisplay.style.fill = colors[style] || 0x00ffff;
+    }
+  }
+
+  updateMetaProgress(deltaScore, bossDefeated) {
+    const gain = Math.max(0, Math.floor(deltaScore * 0.1)) + (bossDefeated ? 500 : 0);
+    if (!gain) return;
+    this.seasonXp += gain;
+    const newLevel = Math.floor(this.seasonXp / 5000);
+    if (newLevel > this.seasonLevel) {
+      this.seasonLevel = newLevel;
+      const unlockKey = `season_${newLevel}`;
+      if (!this.seasonUnlocks[unlockKey]) {
+        this.seasonUnlocks[unlockKey] = true;
+        this.showUnlockToast(`UNLOCKED STYLE ${newLevel}`);
+      }
+      this.applySeasonCosmetics();
+    }
+    try {
+      localStorage.setItem('burt_season_xp', String(this.seasonXp));
+      localStorage.setItem('burt_season_unlocks', JSON.stringify(this.seasonUnlocks));
+    } catch { }
+  }
+
+  showUnlockToast(text) {
+    this.enqueueToast(text, { fontSize: 22, fill: '#ffcc00', slot: 'top', type: 'unlock', duration: 1400 });
+    AudioManager.playSfx('pickup', { force: true, volume: 0.8 });
+  }
+
+  updateDevOverlay() {
+    if (!this.debugOverlayEnabled) return;
+    if (!this.devOverlay) {
+      this.devOverlay = new PIXI.Text('', {
+        fontFamily: 'Courier New',
+        fontSize: 12,
+        fill: '#00ffcc'
+      });
+      this.devOverlay.anchor.set(0, 1);
+      this.devOverlay.x = 8;
+      this.devOverlay.y = this.game.getHeight() - 8;
+      this.uiOverlay.addChild(this.devOverlay);
+    }
+    const synergy = this.player?.synergyState?.type || 'none';
+    const powerup = this.player?.activePowerup?.type || 'none';
+    const weapon = this.player?.weaponProfileName || 'na';
+    this.devOverlay.text =
+      `COMBO:${this.comboCount}x${this.comboMultiplier} STREAK:${this.killStreak}\n` +
+      `PU:${powerup} SYN:${synergy} WEAPON:${weapon}`;
   }
   updateAmbientBeers(delta) {
     // WAVE FIX: Use spawn gate from EnemyManager
@@ -1265,6 +1875,41 @@ export class PlayScene {
 
       beer.update(delta, hazardCount); // Pass hazard count for wave easing
       return true;
+    });
+  }
+
+  applyMagnetPull(delta) {
+    if (!this.player?.magnetActive) return;
+    const range = this.player.magnetRadius || 140;
+    const strength = this.player.magnetStrength || 0.08;
+    const pull = strength * delta;
+    const px = this.player.x;
+    const py = this.player.y;
+
+    this.powerupManager?.powerups?.forEach(p => {
+      if (!p.active) return;
+      const dx = px - p.x;
+      const dy = py - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < range && dist > 1) {
+        p.x += (dx / dist) * pull * dist * 0.25;
+        p.y += (dy / dist) * pull * dist * 0.25;
+        p.sprite.x = p.x;
+        p.sprite.y = p.y;
+      }
+    });
+
+    this.ambientBeers.forEach(b => {
+      if (!b.active) return;
+      const dx = px - b.x;
+      const dy = py - b.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < range && dist > 1) {
+        b.x += (dx / dist) * pull * dist * 0.18;
+        b.y += (dy / dist) * pull * dist * 0.18;
+        b.sprite.x = b.x;
+        b.sprite.y = b.y;
+      }
     });
   }
 
@@ -1361,11 +2006,44 @@ export class PlayScene {
     AudioManager.playSfx('pickup');
   }
 
-  showWantedPoster() {
-    const tex = GameAssets.getPhoto('burtelurt') || GameAssets.getPhoto('kurt2');
-    if (!tex) return;
+  safeGetEnemyTaunt() {
+    try {
+      const line = getEnemyTaunt();
+      if (typeof line === 'string' && line.trim()) return line;
+    } catch (error) {
+      console.warn('[PlayScene] getEnemyTaunt failed', error);
+    }
+    return '';
+  }
+
+  getBossTauntCaption(reason) {
+    switch (reason) {
+      case 'boss_spawn':
+        return getMicroMessage('bossIntro');
+      case 'boss_life_lost':
+        return getMicroMessage('lifeLost');
+      case 'boss_phase2':
+      case 'boss_half':
+        return this.safeGetEnemyTaunt();
+      default:
+        return getMicroMessage('bossIntro');
+    }
+  }
+
+  showBossTaunt(reason = 'boss_spawn') {
+    const caption = this.getBossTauntCaption(reason);
+    if (!caption) return;
+    const photoKeys = Object.keys(GameAssets.photos || {});
+    const pickedKey = photoKeys.length
+      ? photoKeys[Math.floor(Math.random() * photoKeys.length)]
+      : 'kurt2';
+    const tex = GameAssets.getPhoto(pickedKey) || GameAssets.getPhoto('kurt2');
+    if (!GameAssets.isValidTexture(tex)) return;
 
     const poster = new PIXI.Container();
+    poster.name = 'ui_wanted_poster';
+    poster.eventMode = 'none';
+    poster.interactive = false;
 
     const bg = new PIXI.Graphics();
     bg.rect(-200, -250, 400, 500);
@@ -1385,49 +2063,182 @@ export class PlayScene {
     sprite.y = -20;
     poster.addChild(sprite);
 
-    const topText = new PIXI.Text('WANTED', {
+    const headerLabel = reason === 'boss_spawn'
+      ? 'BOSS INCOMING'
+      : reason === 'boss_life_lost'
+        ? 'HIT TAKEN'
+        : reason === 'boss_defeat'
+          ? 'BOSS DEFEATED'
+          : 'BOSS ALERT';
+    const topText = new PIXI.Text(headerLabel, {
       fontFamily: 'Courier New',
-      fontSize: 40,
+      fontSize: 20,
       fill: 'black',
       fontWeight: 'bold'
     });
     topText.anchor.set(0.5);
-    topText.y = -200;
+    topText.y = -215;
     poster.addChild(topText);
 
-    const bottomText = new PIXI.Text('DEFEATED', {
+    const subText = new PIXI.Text('KURT MELDER', {
       fontFamily: 'Courier New',
-      fontSize: 30,
-      fill: 'red',
-      fontWeight: 'bold',
-      rotation: -0.2
+      fontSize: 12,
+      fill: '#333333',
+      fontWeight: 'bold'
+    });
+    subText.anchor.set(0.5);
+    subText.y = -190;
+    poster.addChild(subText);
+
+    const bottomText = new PIXI.Text(caption, {
+      fontFamily: 'Courier New',
+      fontSize: 18,
+      fill: '#111111',
+      fontWeight: 'bold'
     });
     bottomText.anchor.set(0.5);
-    bottomText.y = 180;
+    bottomText.y = 190;
     poster.addChild(bottomText);
 
-    poster.x = this.game.getWidth() / 2;
-    poster.y = this.game.getHeight() / 2;
-    poster.rotation = (Math.random() - 0.5) * 0.2;
+    const margin = 20;
+    poster.x = margin + 90;
+    poster.y = margin + 120;
+    poster.rotation = -0.05;
 
-    this.uiContainer.addChild(poster);
+    this.uiOverlay.addChild(poster);
+    console.log('[UI] wanted poster shown uiOnly=true');
 
     // Animate Pop
-    poster.scale.set(0.1);
-    let t = 0;
+    poster.scale.set(0.16);
+    let elapsed = 0;
+    const fadeDelay = 1200;
+    const fadeDuration = 600;
     const animate = (delta) => {
-      t += 0.1;
-      if (t < 1.5) {
-        poster.scale.set(Math.min(1, poster.scale.x + 0.1));
-      } else if (t > 20) {
-        poster.alpha -= 0.05;
-        if (poster.alpha <= 0) {
+      elapsed += delta.deltaTime * 16.67;
+      if (elapsed < 200) {
+        const t = elapsed / 200;
+        poster.scale.set(0.16 + t * 0.05);
+      } else if (elapsed > fadeDelay) {
+        const t = Math.min(1, (elapsed - fadeDelay) / fadeDuration);
+        poster.alpha = 1 - t;
+        if (t >= 1) {
           this.game.app.ticker.remove(animate);
-          this.uiContainer.removeChild(poster);
+          if (this.uiOverlay) this.uiOverlay.removeChild(poster);
         }
       }
     };
     this.game.app.ticker.add(animate);
     AudioManager.play('menuSelect');
+  }
+
+  showBossIntro(name, taunt) {
+    const { width, height } = this.game.app.screen;
+    const card = new PIXI.Container();
+    card.x = width / 2;
+    card.y = height * 0.28;
+    card.alpha = 0;
+
+    const panel = new PIXI.Graphics();
+    panel.roundRect(-220, -70, 440, 140, 12);
+    panel.fill({ color: 0x111111, alpha: 0.9 });
+    panel.stroke({ color: 0xff3300, width: 3 });
+    card.addChild(panel);
+
+    const title = new PIXI.Text(name || 'BOSS', {
+      fontFamily: 'Courier New',
+      fontSize: 26,
+      fill: '#ff3300',
+      stroke: '#000000',
+      strokeThickness: 4
+    });
+    title.anchor.set(0.5);
+    title.y = -18;
+    card.addChild(title);
+
+    const line = new PIXI.Text(taunt || 'LET\'S GO!', {
+      fontFamily: 'Courier New',
+      fontSize: 18,
+      fill: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 3
+    });
+    line.anchor.set(0.5);
+    line.y = 22;
+    card.addChild(line);
+
+    this.uiOverlay.addChild(card);
+    this.freezeTimerMs = 250;
+    AudioManager.playSfx('ui_open', { force: true, volume: 1.0 });
+
+    let elapsed = 0;
+    const duration = 1400;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      if (elapsed < 200) {
+        card.alpha = elapsed / 200;
+      } else if (elapsed > duration - 300) {
+        card.alpha = Math.max(0, (duration - elapsed) / 300);
+      } else {
+        card.alpha = 1;
+      }
+      if (elapsed >= duration) {
+        this.game.app.ticker.remove(ticker);
+        if (card.parent) card.parent.removeChild(card);
+      }
+    };
+    this.game.app.ticker.add(ticker);
+  }
+
+  triggerShockwave(x, y, color = 0xffff00) {
+    const ring = new PIXI.Graphics();
+    ring.circle(0, 0, 10);
+    ring.stroke({ color, width: 3, alpha: 0.9 });
+    ring.x = x;
+    ring.y = y;
+    this.uiOverlay.addChild(ring);
+    let radius = 10;
+    const ticker = (delta) => {
+      radius += delta.deltaTime * 2.4;
+      ring.scale.set(radius / 10);
+      ring.alpha -= 0.02 * delta.deltaTime;
+      if (ring.alpha <= 0) {
+        this.game.app.ticker.remove(ticker);
+        if (ring.parent) ring.parent.removeChild(ring);
+      }
+    };
+    this.game.app.ticker.add(ticker);
+  }
+
+  onBossPhaseChange(phase, boss) {
+    const label = phase === 2 ? 'BOSS PHASE 2' : 'BOSS PHASE 3';
+    this.enqueueToast(label, { fontSize: 22, fill: '#ff3300', slot: 'top', type: 'boss' });
+    this.triggerShockwave(boss.x, boss.y, phase === 2 ? 0xffaa00 : 0xff3300);
+    AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
+  }
+
+  showWantedPoster() {
+    this.showBossTaunt('boss_spawn');
+  }
+
+  showBossCelebration({ level = this.game.level, type = 'UNKNOWN' } = {}) {
+    if (!this.uiOverlay) return;
+
+    this.showToast('BOSS NEDKJEMPET!', { fontSize: 34, fill: '#ffff00', duration: 2000 });
+    this.showToast(getAchievementPopup(), { fontSize: 20, y: this.game.getHeight() * 0.28, duration: 2000 });
+
+    if (this.screenShake) this.screenShake.shake(12);
+    if (this.particleManager) {
+      for (let i = 0; i < 18; i++) {
+        const x = this.game.getWidth() * 0.2 + Math.random() * this.game.getWidth() * 0.6;
+        const y = this.game.getHeight() * 0.2 + Math.random() * this.game.getHeight() * 0.3;
+        this.particleManager.createExplosion(x, y, 0xffff33);
+      }
+    }
+
+    AudioManager.playSfx('boss_explode', { force: true, volume: 1.0 });
+    if (type === 'BIG_BEER_CAN') AudioManager.playSfx('pickup', { force: true, volume: 0.9 });
+    else if (type === 'ICON_192') AudioManager.playSfx('ui_open', { force: true, volume: 0.8 });
+    else AudioManager.playSfx('powerup', { force: true, volume: 0.8 });
+    console.log(`[BossCelebration] level=${level} type=${type} fired=true`);
   }
 }

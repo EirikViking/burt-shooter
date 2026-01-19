@@ -2,8 +2,27 @@ import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 import { extendBossNames } from '../text/phrasePool.js';
 import { createBossVisual } from '../game/BossFactory.js';
+import { BalanceConfig } from '../config/BalanceConfig.js';
 
 const ENABLE_BOSS_WEAPON_FX = true;
+const HARD_SCALE_FACTOR = 0.3;
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function normalizeAngle(angle) {
+  let a = angle;
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  return a;
+}
+
+function lerpAngle(current, target, maxStep) {
+  const diff = normalizeAngle(target - current);
+  const step = clamp(diff, -maxStep, maxStep);
+  return normalizeAngle(current + step);
+}
 
 export class Boss {
   constructor(x, y, level, game) {
@@ -17,16 +36,31 @@ export class Boss {
     this.kind = 'boss';
     this.vx = 2;
     this.vy = 0;
-    // BALANCING: Increased Boss HP (+15-20%)
-    // Old: 50 + level*20
-    this.health = 60 + level * 25;
+    const diff = BalanceConfig.difficulty;
+    this.health = Math.round(diff.bossBaseHealth + level * diff.bossHealthPerLevel);
+    this.health = Math.max(this.health, 70);
     this.maxHealth = this.health;
     this.shootCooldown = 0;
-    this.shootDelay = 30;
+    this.shootDelay = diff.bossShootDelayBase;
     this.moveTimer = 0;
+    this.entryStartMs = null;
+    this.entryDurationMs = 1000;
+    this.entryFromY = 0;
+    this.entryToY = 0;
+    this.bossLaneY = 0;
+    this.baseX = x;
+    this.moveProfile = null;
+    this.noseOffset = 0;
+    this.tauntPhase2Shown = false;
+    this.tauntHalfShown = false;
     this.scoreValue = 1000;
     this.phase = 1;
     this.color = 0xff00ff;
+    this.signatureCooldown = 0;
+    this.telegraph = null;
+    this.phaseNotified = { 2: false, 3: false };
+    this.spawnedAtMs = Date.now();
+    this.invulnerableUntilMs = this.spawnedAtMs + 800;
 
     // Boss names
     const bossNames = [
@@ -49,13 +83,41 @@ export class Boss {
     this.sprite.y = this.y;
 
     // Load boss visual from factory
-    const bossVisual = await createBossVisual(this.level);
+    const maxBossWidth = this.game?.getWidth ? this.game.getWidth() * 0.55 : null;
+    const bossVisual = await createBossVisual(this.level, maxBossWidth);
     this.visualContainer = bossVisual.container;
     this.bossType = bossVisual.kind;
     this.hitboxRef = bossVisual.hitboxRef; // Store hitbox reference
     this.sprite.addChild(this.visualContainer);
+    this.moveProfile = this.getMoveProfile(this.bossType);
+    this.noseOffset = this.getNoseOffset(this.bossType);
 
-    // TASK 2: Compute accurate hitbox from actual boss body size
+    const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
+    const gameHeight = this.game?.getHeight ? this.game.getHeight() : 600;
+
+    if (this.hitboxRef?.anchor?.set) {
+      this.hitboxRef.anchor.set(0.5, 0.5);
+    }
+
+    const baseScaleX = this.visualContainer.scale?.x || 1;
+    const baseScaleY = this.visualContainer.scale?.y || 1;
+    this.visualContainer.scale.set(baseScaleX * HARD_SCALE_FACTOR, baseScaleY * HARD_SCALE_FACTOR);
+    console.log(`[BossScale] type=${this.bossType || 'UNKNOWN'} level=${this.level} finalScale=${this.visualContainer.scale.x.toFixed(3)}`);
+
+    const postScaleBounds = this.hitboxRef?.getBounds ? this.hitboxRef.getBounds() : { width: 0, height: 0 };
+
+    const bossHeight = Math.max(postScaleBounds.height, 1);
+    this.baseX = gameWidth * 0.5;
+    this.sprite.x = this.baseX;
+    this.sprite.y = -bossHeight * 0.6;
+    this.x = this.sprite.x;
+    this.y = this.sprite.y;
+    this.bossLaneY = gameHeight * 0.18;
+    this.entryFromY = this.sprite.y;
+    this.entryToY = this.bossLaneY;
+    this.entryStartMs = Date.now();
+
+    // Compute accurate hitbox from actual boss body size
     if (this.hitboxRef) {
       const bounds = this.hitboxRef.getBounds();
       // Use the larger dimension for radius (accounting for rotation)
@@ -119,55 +181,188 @@ export class Boss {
 
     this.moveTimer += delta;
 
-    // Complex movement pattern
-    if (this.phase === 1) {
-      // Horizontal sweep
-      this.x += this.vx * delta;
-      const width = this.game?.getWidth ? this.game.getWidth() : 800;
-      if (this.x < this.radius || this.x > width - this.radius) {
-        this.vx *= -1;
+    // Phase transitions
+    if (this.health < this.maxHealth * 0.7 && this.phase === 1) {
+      this.phase = 2;
+      this.shootDelay = BalanceConfig.difficulty.bossShootDelayPhase2;
+      this.color = 0xff8800;
+      this.startPhaseChange(2, playerX, playerY);
+      if (!this.tauntPhase2Shown) {
+        const playScene = this.game?.scenes?.play;
+        if (playScene?.showBossTaunt) playScene.showBossTaunt('boss_phase2');
+        this.tauntPhase2Shown = true;
       }
-    } else if (this.phase === 2) {
-      // Figure-8 pattern
-      const t = this.moveTimer * 0.02;
-      this.x = 400 + Math.sin(t) * 200;
-      this.y = 150 + Math.sin(t * 2) * 50;
-    } else {
-      // Aggressive chase
-      const dx = playerX - this.x;
-      const dy = (playerY - 100) - this.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance > 5) {
-        this.x += (dx / distance) * 1.5 * delta;
-        this.y += (dy / distance) * 1.5 * delta;
-      }
+    } else if (this.health < this.maxHealth * 0.35 && this.phase === 2) {
+      this.phase = 3;
+      this.shootDelay = BalanceConfig.difficulty.bossShootDelayPhase3;
+      this.color = 0xff0000;
+      this.startPhaseChange(3, playerX, playerY);
     }
 
-    // Phase transitions
-    if (this.health < this.maxHealth * 0.66 && this.phase === 1) {
-      this.phase = 2;
-      this.shootDelay = 20;
-      this.color = 0xff8800;
-    } else if (this.health < this.maxHealth * 0.33 && this.phase === 2) {
-      this.phase = 3;
-      this.shootDelay = 15;
-      this.color = 0xff0000;
+    if (!this.tauntHalfShown && this.health <= this.maxHealth * 0.5) {
+      const playScene = this.game?.scenes?.play;
+      if (playScene?.showBossTaunt) playScene.showBossTaunt('boss_half');
+      this.tauntHalfShown = true;
+    }
+
+    const now = Date.now();
+    if (this.entryStartMs && now - this.entryStartMs < this.entryDurationMs) {
+      const t = (now - this.entryStartMs) / this.entryDurationMs;
+      const ease = 1 - Math.pow(1 - t, 2);
+      this.y = this.entryFromY + (this.entryToY - this.entryFromY) * ease;
+      this.x = this.baseX;
+    } else {
+      this.applyBossMovement(delta, playerX, playerY);
     }
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
-    // Rotation
-    this.sprite.rotation += 0.005 * delta;
+    if (this.signatureCooldown > 0) {
+      this.signatureCooldown -= delta;
+    }
 
-    // Pulsing effect
-    const pulse = 1 + Math.sin(this.moveTimer * 0.05) * 0.1;
-    this.sprite.scale.set(pulse);
+    if (this.telegraph) {
+      const elapsed = Date.now() - this.telegraph.start;
+      if (this.nameText) {
+        this.nameText.alpha = 0.6 + Math.sin(elapsed * 0.02) * 0.4;
+      }
+      if (elapsed > this.telegraph.duration) {
+        this.executeSignatureMove(this.telegraph.type, playerX, playerY);
+        this.telegraph = null;
+      }
+    } else if (this.nameText) {
+      this.nameText.alpha = 1;
+    }
 
     // Shooting cooldown
     if (this.shootCooldown > 0) {
       this.shootCooldown -= delta;
     }
+  }
+
+  getMoveProfile(bossType) {
+    const base = {
+      profile: 'sway',
+      swayAmpX: 0.12,
+      swayFreq: 0.6,
+      bobAmpY: 0.01,
+      bobFreq: 0.9,
+      rotateMode: 'slow',
+      rotateSpeed: 0.2,
+      aimStrength: 0.5
+    };
+
+    if (!bossType) return base;
+    if (bossType === 'BIG_BEER_CAN') {
+      return { ...base, profile: 'sway', rotateMode: 'slow', rotateSpeed: 0.18 };
+    }
+    if (bossType === 'ICON_192') {
+      return { ...base, profile: 'orbit', swayAmpX: 0.08, bobAmpY: 0.015, rotateMode: 'slow', rotateSpeed: 0.25 };
+    }
+    if (bossType === 'BOSS_SPRITE') {
+      return { ...base, profile: 'charge_tease', swayAmpX: 0.1, bobAmpY: 0.02, rotateMode: 'aimToPlayer', rotateSpeed: 2.2, aimStrength: 0.65 };
+    }
+    if (bossType.startsWith('BIG_SHIP')) {
+      return { ...base, profile: 'zigzag', swayAmpX: 0.14, bobAmpY: 0.012, rotateMode: 'aimToPlayer', rotateSpeed: 1.8, aimStrength: 0.55 };
+    }
+    return base;
+  }
+
+  getNoseOffset(bossType) {
+    // Assumption: art faces right by default.
+    if (bossType === 'BIG_BEER_CAN') return 0;
+    if (bossType === 'ICON_192') return 0;
+    return 0;
+  }
+
+  applyBossMovement(delta, playerX, playerY) {
+    const profile = this.moveProfile || this.getMoveProfile(this.bossType);
+    const t = this.moveTimer * 0.02;
+    const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
+    const gameHeight = this.game?.getHeight ? this.game.getHeight() : 600;
+    const swayAmp = gameWidth * profile.swayAmpX;
+    const bobAmp = gameHeight * profile.bobAmpY;
+
+    switch (profile.profile) {
+      case 'orbit':
+        this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp;
+        this.y = this.bossLaneY + Math.cos(t * profile.bobFreq) * bobAmp;
+        break;
+      case 'charge_tease': {
+        const push = Math.abs(Math.sin(t * 0.5)) * (gameHeight * 0.03);
+        this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp;
+        this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp + push;
+        break;
+      }
+      case 'zigzag': {
+        const zig = Math.sin(t * profile.swayFreq);
+        this.x = this.baseX + zig * swayAmp;
+        this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp;
+        break;
+      }
+      case 'sway':
+      default:
+        this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp;
+        this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp;
+        break;
+    }
+
+    const deltaSeconds = delta / 60;
+    if (profile.rotateMode === 'slow') {
+      this.visualContainer.rotation += profile.rotateSpeed * deltaSeconds;
+    } else if (profile.rotateMode === 'aimToPlayer') {
+      const angleToPlayer = Math.atan2(playerY - this.y, playerX - this.x);
+      const target = angleToPlayer + this.noseOffset;
+      const maxStep = profile.rotateSpeed * deltaSeconds;
+      this.visualContainer.rotation = lerpAngle(this.visualContainer.rotation, target, maxStep * profile.aimStrength);
+    }
+  }
+
+  startPhaseChange(phase, playerX, playerY) {
+    if (this.phaseNotified[phase]) return;
+    this.phaseNotified[phase] = true;
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.onBossPhaseChange) {
+      playScene.onBossPhaseChange(phase, this);
+    }
+    const type = phase === 2 ? 'cone' : 'ring';
+    this.telegraph = { type, start: Date.now(), duration: 700 };
+    this.signatureCooldown = 120;
+  }
+
+  executeSignatureMove(type, playerX, playerY) {
+    if (type === 'cone') {
+      this.fireCone(playerX, playerY, 9, 0.65);
+    } else if (type === 'ring') {
+      this.fireRingBurst(18, 3);
+      const playScene = this.game?.scenes?.play;
+      playScene?.enemyManager?.spawnBossAdds(6);
+    }
+  }
+
+  fireCone(playerX, playerY, shots = 7, spread = 0.6) {
+    const bullets = [];
+    for (let i = 0; i < shots; i++) {
+      const t = (i / (shots - 1)) - 0.5;
+      const angle = Math.atan2(playerY - this.y, playerX - this.x) + t * spread;
+      const vx = Math.cos(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase2;
+      const vy = Math.sin(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase2;
+      bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, this.color));
+    }
+    bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
+  }
+
+  fireRingBurst(count = 16, gapSize = 2) {
+    const bullets = [];
+    for (let i = 0; i < count; i++) {
+      if (i % gapSize === 0) continue;
+      const angle = (i / count) * Math.PI * 2;
+      const vx = Math.cos(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase3;
+      const vy = Math.sin(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase3;
+      bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, this.color));
+    }
+    bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
   }
 
   canShoot() {
@@ -187,7 +382,7 @@ export class Boss {
       const dx = playerX - this.x;
       const dy = playerY - this.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const speed = 4; // Reduced from 5
+      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase1;
       bullets.push(new Bullet(
         this.x,
         this.y,
@@ -202,7 +397,7 @@ export class Boss {
       // Triple shot
       for (let i = -1; i <= 1; i++) {
         const angle = Math.atan2(playerY - this.y, playerX - this.x) + i * 0.3;
-        const speed = 4; // Reduced from 5
+        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase2;
         bullets.push(new Bullet(
           this.x,
           this.y,
@@ -218,7 +413,7 @@ export class Boss {
       // Spiral pattern
       for (let i = 0; i < 8; i++) {
         const angle = (Math.PI * 2 * i) / 8 + this.moveTimer * 0.05;
-        const speed = 3.5; // Reduced from 4
+        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase3;
         bullets.push(new Bullet(
           this.x,
           this.y,
@@ -236,8 +431,13 @@ export class Boss {
   }
 
   takeDamage(amount) {
+    const now = Date.now();
+    const invuln = now < this.invulnerableUntilMs;
+    if (invuln) return false;
+    const hpBefore = this.health;
     this.health -= amount;
     this.updateHealthBar();
+    console.log(`[BossDamage] level=${this.level} hpBefore=${hpBefore} dmg=${amount} hpAfter=${this.health} invuln=${invuln}`);
 
     // Hit flash
     this.sprite.tint = 0xffffff;

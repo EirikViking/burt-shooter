@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { ShipRegistry } from '../utils/ShipRegistry.js';
+import { AudioManager } from '../audio/AudioManager.js';
 
 export class Player {
   constructor(x, y, inputManager, game, shipId = 'player_01') {
@@ -17,9 +18,11 @@ export class Player {
 
     this.speed = this.stats.speed;
     this.radius = this.config.hitbox.radius;
+    this.baseHitboxRadius = this.config.hitbox.radius;
     this.active = true;
     this.invulnerable = true; // Invulnerable on spawn
     this.invulnerableTime = 2000; // 2s spawn protection
+    this.rankIndex = null;
 
     // Shooting
     this.shootCooldown = 0;
@@ -45,8 +48,32 @@ export class Player {
 
     // Powerups
     this.activePowerup = { type: null, expiresAt: 0 };
+    this.rankBoost = { type: null, expiresAt: 0 };
+    this.rankBoostPulse = 0;
+    this.rankBoostExtraShots = 0;
+    this.rankBoostBulletFx = false;
     this.currentModel = 1;
     this.damageOverlay = null;
+    this.boostAura = null;
+    this.rankBoostText = null;
+    this.weaponProfile = this.getWeaponProfileForShip(shipId);
+    this.weaponProfileName = this.weaponProfile.name;
+    this.weaponSfxKey = this.weaponProfile.shootSfx;
+    this.bulletPierce = false;
+    this.scoreMultiplier = 1;
+    this.scoreBoostExpiresAt = 0;
+    this.lastPowerupType = null;
+    this.lastPowerupAt = 0;
+    this.synergyState = { type: null, expiresAt: 0, label: '' };
+    this.magnetActive = false;
+    this.magnetExpiresAt = 0;
+    this.magnetRadius = 140;
+    this.magnetStrength = 0.08;
+    this.dronesActive = false;
+    this.dronesExpiresAt = 0;
+    this.drones = [];
+    this.muzzleFlashColor = 0xffffff;
+    this.baseMuzzleFlashColor = 0xffffff;
 
     // Shield State
     this.shieldActive = false;
@@ -71,62 +98,42 @@ export class Player {
     this.sprite.y = this.y;
     this.sprite.alpha = 0; // Start invisible for fade-in
 
-    // Rank-based Ship Selection (20-rank system: 0-19)
-    // Map 20 ranks to 12 available ship skins for visible progression
-    const rank = this.game.rankIndex || 0;
+    this.rebuildShipSprite('init');
+  }
 
-    // Ship model: cycle through 1-3 based on rank groups
-    // Ranks 0-6: ship1, 7-13: ship2, 14-19: ship3
-    const modelIndex = Math.min(3, 1 + Math.floor(rank / 7));
-    this.currentModel = modelIndex;
+  computeBaselineShipWidth() {
+    const screenWidth = this.game.getWidth();
+    const targetWidth = Math.max(52, Math.min(screenWidth * 0.06, 78)) * 0.95;
+    this.radius = Math.max(8, Math.round(this.baseHitboxRadius * 0.9));
+    return targetWidth;
+  }
 
-    // Color: cycle through 4 colors for variety
-    // blue (0-4), green (5-9), orange (10-14), red (15-19)
-    const colors = ['blue', 'green', 'orange', 'red'];
-    const colorIndex = Math.min(3, Math.floor(rank / 5));
-    const color = colors[colorIndex];
+  buildDefaultShipSprite() {
+    const texture = GameAssets.getShipTexture(this.config.texture);
+    if (!GameAssets.isValidTexture(texture)) return null;
 
-    let texture = GameAssets.getXtraShip(this.currentModel, color);
+    const sprite = new PIXI.Sprite(texture);
+    sprite.anchor.set(0.5);
 
-    // Fallback chain: try ship2_blue as baseline default, then old player texture
-    if (!GameAssets.isValidTexture(texture)) {
-      // Try ship2_blue as a nicer default
-      texture = GameAssets.getXtraShip(2, 'blue');
-      this.currentModel = 2;
+    const targetWidth = this.baseShipWidth || this.computeBaselineShipWidth();
+    const scale = texture.width > 0 ? targetWidth / texture.width : 1;
+    sprite.scale.set(scale);
+    this.baseScale = Number.isFinite(scale) ? scale : 1;
 
-      if (!GameAssets.isValidTexture(texture)) {
-        // Final fallback to original player texture
-        texture = GameAssets.getShipTexture(this.config.texture);
-        this.currentModel = 1;
-      }
-    }
+    return sprite;
+  }
 
-    if (GameAssets.isValidTexture(texture)) {
-      // Asset Loaded
-      this.shipSprite = new PIXI.Sprite(texture);
-      this.shipSprite.anchor.set(0.5);
-
-      // Responsive Sizing Calculation
-      const screenWidth = this.game.getWidth();
-      const targetWidth = Math.max(52, Math.min(screenWidth * 0.06, 78)) * 1.15; // Increased by 15%
-
-      this.shipSprite.width = targetWidth;
-      this.shipSprite.scale.y = this.shipSprite.scale.x; // Maintain aspect ratio
-
-      // Keep reference to base scale for animations
-      this.baseScale = this.shipSprite.scale.x;
-
-      this.sprite.addChild(this.shipSprite);
-
-      // Damage Overlay
+  ensureShipOverlays() {
+    if (!this.damageOverlay) {
       this.damageOverlay = new PIXI.Sprite();
       this.damageOverlay.anchor.set(0.5);
       this.damageOverlay.visible = false;
       this.sprite.addChild(this.damageOverlay);
+    } else if (!this.damageOverlay.parent) {
+      this.sprite.addChild(this.damageOverlay);
+    }
 
-      this.engineGlow = null;
-
-      // Shield Sprite
+    if (!this.shieldSprite) {
       this.shieldSprite = new PIXI.Container();
 
       const sGfx = new PIXI.Graphics();
@@ -136,20 +143,223 @@ export class Player {
       this.shieldSprite.addChild(sGfx);
       this.shieldSprite.visible = false;
       this.sprite.addChild(this.shieldSprite);
-
-    } else {
-      // Fallback
-      const g = new PIXI.Graphics();
-      g.moveTo(0, -20);
-      g.lineTo(-15, 15);
-      g.lineTo(0, 10);
-      g.lineTo(15, 15);
-      g.closePath();
-      g.fill(0x00ff00);
-      this.shipSprite = g;
-      this.sprite.addChild(g);
-      this.baseScale = 1;
+    } else if (!this.shieldSprite.parent) {
+      this.sprite.addChild(this.shieldSprite);
     }
+
+    if (!this.boostAura) {
+      this.boostAura = new PIXI.Graphics();
+      const radius = Math.max(46, (this.baseShipWidth || 60) * 0.95);
+      this.boostAura.circle(0, 0, radius);
+      this.boostAura.stroke({ width: 4, color: 0x66ffff, alpha: 0.95 });
+      this.boostAura.alpha = 0.95;
+      this.boostAura.visible = false;
+      this.sprite.addChild(this.boostAura);
+    } else if (!this.boostAura.parent) {
+      this.sprite.addChild(this.boostAura);
+    }
+
+    if (!this.rankBoostText) {
+      this.rankBoostText = new PIXI.Text('', {
+        fontFamily: 'Courier New',
+        fontSize: 14,
+        fill: '#66ffff',
+        align: 'center'
+      });
+      this.rankBoostText.anchor.set(0.5);
+      this.rankBoostText.y = -70;
+      this.rankBoostText.visible = false;
+      this.sprite.addChild(this.rankBoostText);
+    } else if (!this.rankBoostText.parent) {
+      this.sprite.addChild(this.rankBoostText);
+    }
+  }
+
+  setCosmetics({ auraColor, muzzleColor } = {}) {
+    if (Number.isFinite(auraColor) && this.boostAura) {
+      this.boostAura.clear();
+      const radius = Math.max(46, (this.baseShipWidth || 60) * 0.95);
+      this.boostAura.circle(0, 0, radius);
+      this.boostAura.stroke({ width: 4, color: auraColor, alpha: 0.95 });
+    }
+    if (Number.isFinite(muzzleColor)) {
+      this.muzzleFlashColor = muzzleColor;
+      this.baseMuzzleFlashColor = muzzleColor;
+    }
+  }
+
+  getAvailableRankShipIndices() {
+    const count = GameAssets.getRankShipCount();
+    const available = [];
+    for (let i = 0; i < count; i++) {
+      const texture = GameAssets.getRankShipTexture(i);
+      if (GameAssets.isValidTexture(texture)) available.push(i);
+    }
+    return available;
+  }
+
+  getNextDifferentRankShipIndex(startIndex) {
+    const count = GameAssets.getRankShipCount();
+    if (count <= 1) return startIndex;
+
+    for (let offset = 1; offset <= count; offset++) {
+      const idx = (startIndex + offset) % count;
+      if (idx === this.rankShipIndex) continue;
+      const texture = GameAssets.getRankShipTexture(idx);
+      if (GameAssets.isValidTexture(texture)) return idx;
+    }
+
+    return startIndex;
+  }
+
+  getRankShipIndexForRank(rank) {
+    const nr = Number(rank);
+    if (!Number.isFinite(nr)) return null;
+
+    const count = GameAssets.getRankShipCount();
+    if (count <= 0) return null;
+
+    if (nr <= 0) return 0;
+    if (nr >= 1 && nr <= 9) {
+      let index = Math.min(nr, count) - 1;
+      if (index === this.rankShipIndex) {
+        index = this.getNextDifferentRankShipIndex(index);
+      }
+      return index;
+    }
+
+    const available = this.getAvailableRankShipIndices();
+    if (available.length === 0) return null;
+    if (available.length === 1) return available[0];
+
+    let pick = null;
+    for (let tries = 0; tries < 3; tries++) {
+      pick = available[Math.floor(Math.random() * available.length)];
+      if (pick !== this.rankShipIndex) return pick;
+    }
+
+    const fallback = available.find(index => index !== this.rankShipIndex);
+    return fallback ?? pick;
+  }
+
+  swapToRankShip(rank, options = {}) {
+    const nr = Number(rank);
+    if (!Number.isFinite(nr)) return false;
+
+    const logSwap = options.log !== false;
+    const force = options.force === true;
+    const previousIndex = Number.isFinite(this.rankShipIndex) ? this.rankShipIndex : null;
+    const previousPath = this.currentShipPath || (previousIndex !== null ? GameAssets.getRankShipPath(previousIndex) : null);
+    const previousName = previousPath ? previousPath.split('/').pop() : (previousIndex !== null ? `rank_ship_${previousIndex}` : 'unknown');
+
+    let index = this.getRankShipIndexForRank(nr);
+
+    if (!Number.isFinite(index)) return false;
+    if (index === this.rankShipIndex) {
+      index = this.getNextDifferentRankShipIndex(index);
+    }
+    if (!force && index === this.rankShipIndex) return false;
+
+    const texture = GameAssets.getRankShipTexture(index);
+    if (!GameAssets.isValidTexture(texture)) return false;
+
+    const shipPath = GameAssets.getRankShipPath(index);
+    const shipName = shipPath ? shipPath.split('/').pop() : `rank_ship_${index}`;
+
+    if (this.shipSprite && this.shipSprite.parent) {
+      this.shipSprite.parent.removeChild(this.shipSprite);
+    }
+
+    this.shipSprite = new PIXI.Sprite(texture);
+    this.shipSprite.anchor.set(0.5);
+    this.shipSprite.name = `player_ship_rank_${index}`;
+
+    const targetWidth = this.baseShipWidth || this.computeBaselineShipWidth();
+    const scale = texture.width > 0 ? targetWidth / texture.width : 1;
+    this.shipSprite.scale.set(scale);
+    this.baseScale = Number.isFinite(scale) ? scale : 1;
+
+    this.sprite.addChildAt(this.shipSprite, 0);
+    this.rankShipIndex = index;
+    this.currentShipPath = shipPath || null;
+    this.setWeaponProfile(this.currentShipPath || shipName);
+
+    this.ensureShipOverlays();
+
+    if (logSwap && import.meta?.env?.DEV) {
+      const textureSource = this.shipSprite?.texture?.baseTexture?.resource?.src
+        || this.shipSprite?.texture?.baseTexture?.resource?.url
+        || this.shipSprite?.texture?.baseTexture?.cacheId
+        || 'unknown';
+      const spriteName = this.shipSprite?.name || 'unnamed';
+      console.log(`[PlayerShipSwap] rank=${nr} old=${previousName} new=${shipName} sprite=${spriteName} texture=${textureSource}`);
+      console.log(`[PlayerShipScale] ${texture.width} ${texture.height} ${this.baseScale}`);
+      console.log(`[ShipWeapon] ship=${shipName} profile=${this.weaponProfileName} shootSfx=${this.weaponSfxKey}`);
+    }
+
+    if (this.shipSprite && this.baseScale) {
+      const pulseScale = this.baseScale * 1.08;
+      this.shipSprite.scale.set(pulseScale);
+      setTimeout(() => {
+        if (this.shipSprite) this.shipSprite.scale.set(this.baseScale);
+      }, 180);
+    }
+
+    this.ensureRenderable('swapToRankShip');
+
+    return true;
+  }
+
+  getWeaponProfileForShip(shipId) {
+    const key = (shipId || '').toString();
+    const name = key.split('/').pop();
+    const profiles = {
+      'row2_ship_1.png': { name: 'precision', bullets: 1, damageMult: 1.1, speedMult: 1.0, fireRateMult: 1.0, spread: 0, shootSfx: 'shoot_small' },
+      'row2_ship_2.png': { name: 'double', bullets: 2, damageMult: 0.85, speedMult: 1.0, fireRateMult: 1.05, spread: 0.14, shootSfx: 'shoot_small' },
+      'row2_ship_3_clean.png': { name: 'rapid', bullets: 1, damageMult: 0.9, speedMult: 1.1, fireRateMult: 0.75, spread: 0, shootSfx: 'shoot_small' },
+      'row2_ship_5.png': { name: 'heavy', bullets: 1, damageMult: 1.4, speedMult: 0.9, fireRateMult: 1.2, spread: 0, shootSfx: 'shoot_heavy' },
+      'ship_extract_1.png': { name: 'arc', bullets: 2, damageMult: 0.8, speedMult: 1.05, fireRateMult: 1.0, spread: 0.2, shootSfx: 'shoot_small' },
+      'ship_extract_2.png': { name: 'sniper', bullets: 1, damageMult: 1.25, speedMult: 1.2, fireRateMult: 1.15, spread: 0, shootSfx: 'shoot_heavy' },
+      'ship_extract_3.png': { name: 'spray', bullets: 3, damageMult: 0.7, speedMult: 1.0, fireRateMult: 1.1, spread: 0.22, shootSfx: 'shoot_small' },
+      'ship_extract_5.png': { name: 'steady', bullets: 1, damageMult: 1.0, speedMult: 1.0, fireRateMult: 0.9, spread: 0, shootSfx: 'shoot_small' },
+      'ship_new.png': { name: 'balanced', bullets: 2, damageMult: 0.95, speedMult: 1.0, fireRateMult: 0.95, spread: 0.12, shootSfx: 'shoot_small' }
+    };
+
+    return profiles[name] || { name: 'default', bullets: 1, damageMult: 1.0, speedMult: 1.0, fireRateMult: 1.0, spread: 0, shootSfx: 'shoot_small' };
+  }
+
+  setWeaponProfile(shipId) {
+    const profile = this.getWeaponProfileForShip(shipId);
+    this.weaponProfile = profile;
+    this.weaponProfileName = profile.name;
+    this.weaponSfxKey = profile.shootSfx || 'shoot_small';
+    this.recalculateStats();
+  }
+
+  getShootSfxKey() {
+    return this.weaponSfxKey || 'shoot_small';
+  }
+
+  setRank(newRank, source = 'unknown') {
+    const nr = Number(newRank);
+    if (!Number.isFinite(nr)) return false;
+
+    const prevRank = Number.isFinite(this.rankIndex) ? this.rankIndex : null;
+    this.rankIndex = nr;
+
+    if (prevRank === null) {
+      return this.swapToRankShip(nr, { force: true });
+    }
+
+    if (nr > prevRank) {
+      const swapped = this.swapToRankShip(nr);
+      if (swapped) {
+        this.applyRankUpBoost();
+      }
+      return swapped;
+    }
+
+    return false;
   }
 
   rebuildShipSprite(reason = 'unknown') {
@@ -169,64 +379,30 @@ export class Player {
       this.shieldSprite.parent.removeChild(this.shieldSprite);
     }
 
-    const rank = this.game.rankIndex || 0;
+    this.damageOverlay = null;
+    this.shieldSprite = null;
 
-    // Ship model: cycle through 1-3 based on rank groups
-    const modelIndex = Math.min(3, 1 + Math.floor(rank / 7));
-    this.currentModel = modelIndex;
+    this.baseShipWidth = this.baseShipWidth || this.computeBaselineShipWidth();
 
-    // Color: cycle through 4 colors for variety
-    const colors = ['blue', 'green', 'orange', 'red'];
-    const colorIndex = Math.min(3, Math.floor(rank / 5));
-    const color = colors[colorIndex];
-
-    let texture = GameAssets.getXtraShip(this.currentModel, color);
-    if (!GameAssets.isValidTexture(texture)) {
-      // Try ship2_blue as a nicer default
-      texture = GameAssets.getXtraShip(2, 'blue');
-      this.currentModel = 2;
-
-      if (!GameAssets.isValidTexture(texture)) {
-        // Final fallback to original player texture
-        texture = GameAssets.getShipTexture(this.config.texture);
-        this.currentModel = 1;
+    const applied = this.swapToRankShip(this.game.rankIndex || 0, { log: false, force: true });
+    if (!applied) {
+      const fallbackSprite = this.buildDefaultShipSprite();
+      if (fallbackSprite) {
+        this.shipSprite = fallbackSprite;
+        this.sprite.addChild(this.shipSprite);
+      } else {
+        const g = new PIXI.Graphics();
+        g.moveTo(0, -20);
+        g.lineTo(-15, 15);
+        g.lineTo(0, 10);
+        g.lineTo(15, 15);
+        g.closePath();
+        g.fill(0x00ff00);
+        this.shipSprite = g;
+        this.sprite.addChild(g);
+        this.baseScale = 1;
       }
-    }
-
-    if (GameAssets.isValidTexture(texture)) {
-      this.shipSprite = new PIXI.Sprite(texture);
-      this.shipSprite.anchor.set(0.5);
-      const screenWidth = this.game.getWidth();
-      const targetWidth = Math.max(52, Math.min(screenWidth * 0.06, 78)) * 1.15;
-      this.shipSprite.width = targetWidth;
-      this.shipSprite.scale.y = this.shipSprite.scale.x;
-      this.baseScale = Number.isFinite(this.shipSprite.scale.x) ? this.shipSprite.scale.x : 1;
-      this.sprite.addChild(this.shipSprite);
-
-      this.damageOverlay = new PIXI.Sprite();
-      this.damageOverlay.anchor.set(0.5);
-      this.damageOverlay.visible = false;
-      this.sprite.addChild(this.damageOverlay);
-
-      this.shieldSprite = new PIXI.Container();
-      const sGfx = new PIXI.Graphics();
-      sGfx.circle(0, 0, 50);
-      sGfx.stroke({ width: 4, color: 0x00ffff, alpha: 0.8 });
-      sGfx.fill({ color: 0x00ffff, alpha: 0.1 });
-      this.shieldSprite.addChild(sGfx);
-      this.shieldSprite.visible = false;
-      this.sprite.addChild(this.shieldSprite);
-    } else {
-      const g = new PIXI.Graphics();
-      g.moveTo(0, -20);
-      g.lineTo(-15, 15);
-      g.lineTo(0, 10);
-      g.lineTo(15, 15);
-      g.closePath();
-      g.fill(0x00ff00);
-      this.shipSprite = g;
-      this.sprite.addChild(g);
-      this.baseScale = 1;
+      this.ensureShipOverlays();
     }
   }
 
@@ -240,6 +416,18 @@ export class Player {
     // Powerup Expiry
     if (this.activePowerup.type && now > this.activePowerup.expiresAt) {
       this.resetPowerups();
+    }
+    if (this.rankBoost.type && now > this.rankBoost.expiresAt) {
+      this.clearRankBoost();
+    }
+    if (this.synergyState.type && now > this.synergyState.expiresAt) {
+      this.clearSynergy();
+    }
+    if (this.magnetActive && now > this.magnetExpiresAt) {
+      this.magnetActive = false;
+    }
+    if (this.dronesActive && now > this.dronesExpiresAt) {
+      this.clearDrones();
     }
 
     // Shield Logic
@@ -364,6 +552,23 @@ export class Player {
     // Cooldowns
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
     if (this.dodgeCooldown > 0) this.dodgeCooldown -= dt;
+
+    if (this.rankBoost.type && this.boostAura) {
+      this.rankBoostPulse += deltaSeconds;
+      const pulse = 1 + Math.sin(this.rankBoostPulse * 6) * 0.06;
+      this.boostAura.scale.set(pulse);
+      this.boostAura.visible = true;
+      this.boostAura.alpha = 0.7 + Math.sin(this.rankBoostPulse * 4) * 0.2;
+      if (this.rankBoostText) {
+        this.rankBoostText.visible = true;
+        this.rankBoostText.alpha = 0.8 + Math.sin(this.rankBoostPulse * 3) * 0.2;
+      }
+    } else {
+      if (this.boostAura) this.boostAura.visible = false;
+      if (this.rankBoostText) this.rankBoostText.visible = false;
+    }
+
+    this.updateDrones(deltaSeconds);
   }
 
   // --- Actions ---
@@ -371,9 +576,17 @@ export class Player {
   shoot() {
     this.shootCooldown = this.shootDelay;
     const bullets = [];
-    const spreadAngles = this.multiShot > 1 ?
-      Array.from({ length: this.multiShot }, (_, i) => (i - (this.multiShot - 1) / 2) * 0.15) :
+    const spread = this.weaponProfile?.spread ?? 0.15;
+    const totalShots = Math.max(1, this.multiShot + this.rankBoostExtraShots);
+    const spreadAngles = totalShots > 1 ?
+      Array.from({ length: totalShots }, (_, i) => (i - (totalShots - 1) / 2) * spread) :
       [0];
+    let offsets = [0];
+    if (totalShots === 2) offsets = [-10, 10];
+    else if (totalShots === 3) offsets = [-14, 0, 14];
+    else if (totalShots > 3) {
+      offsets = Array.from({ length: totalShots }, (_, i) => (i - (totalShots - 1) / 2) * 10);
+    }
 
     // Origin: Nose of the ship
     const spawnY = this.y - 20;
@@ -386,14 +599,138 @@ export class Player {
     else if (pType === 'isbjorn') vConfig = { color: 'Green', index: 13 }; // Round spread
     else if (pType === 'deili') vConfig = { color: 'Blue', index: 8 }; // Strong/Big
     else if (this.activePowerup.type) vConfig = { color: 'Blue', index: 3 }; // Other powerups slightly different
+    if (totalShots > 1) vConfig = { color: 'Green', index: 13 };
+    if (this.rankBoostBulletFx) vConfig = { color: 'Red', index: 15 };
+    if (this.synergyState.type === 'bullet_storm') vConfig = { color: 'Red', index: 15 };
+    if (this.synergyState.type === 'rail_rounds') vConfig = { color: 'Blue', index: 8 };
 
-    spreadAngles.forEach(angle => {
+    if (totalShots === 2 || totalShots === 3) {
+      console.log(`[Shot] shots=${totalShots} spread=${spread.toFixed(2)} offsets=${offsets.join(',')}`);
+    }
+
+    spreadAngles.forEach((angle, i) => {
+      const offsetX = offsets[i] || 0;
       const vx = Math.sin(angle) * this.bulletSpeed;
       const vy = -Math.cos(angle) * this.bulletSpeed;
-      bullets.push(new Bullet(this.x, spawnY, vx, vy, this.bulletDamage, 0x00ffff, true, vConfig));
+      const bullet = new Bullet(this.x + offsetX, spawnY, vx, vy, this.bulletDamage, 0x00ffff, true, vConfig);
+      if (this.bulletPierce) bullet.piercing = true;
+      bullets.push(bullet);
+
+      const flash = new PIXI.Graphics();
+      flash.circle(offsetX, -15, 6);
+      flash.fill({ color: this.muzzleFlashColor, alpha: 0.8 });
+      this.sprite.addChild(flash);
+      setTimeout(() => {
+        if (flash.parent) this.sprite.removeChild(flash);
+      }, 80);
     });
 
+    if (this.dronesActive && this.drones.length) {
+      this.drones.forEach((drone) => {
+        const bullet = new Bullet(drone.x, drone.y - 10, 0, -this.bulletSpeed, Math.max(1, Math.round(this.bulletDamage * 0.7)), 0x66ccff, true);
+        bullets.push(bullet);
+      });
+    }
+
     return bullets;
+  }
+
+  createDrones() {
+    this.clearDrones();
+    const texture = this.shipSprite?.texture;
+    for (let i = 0; i < 2; i++) {
+      const sprite = texture ? new PIXI.Sprite(texture) : new PIXI.Graphics();
+      if (sprite instanceof PIXI.Sprite) {
+        sprite.anchor.set(0.5);
+        sprite.scale.set(0.35);
+      } else {
+        sprite.circle(0, 0, 6);
+        sprite.fill(0x66ccff);
+      }
+      this.sprite.addChild(sprite);
+      this.drones.push(sprite);
+    }
+    this.dronesActive = true;
+  }
+
+  updateDrones(deltaSeconds) {
+    if (!this.dronesActive || this.drones.length === 0) return;
+    const t = Date.now() * 0.002;
+    const offset = 28;
+    this.drones.forEach((drone, i) => {
+      const side = i === 0 ? -1 : 1;
+      drone.x = side * (offset + Math.sin(t + i) * 6);
+      drone.y = 8 + Math.cos(t + i) * 4;
+      if (drone.rotation !== undefined) drone.rotation = side * 0.1;
+    });
+  }
+
+  clearDrones() {
+    this.dronesActive = false;
+    this.drones.forEach(d => {
+      if (d.parent) d.parent.removeChild(d);
+    });
+    this.drones = [];
+  }
+
+  getStatSnapshot() {
+    const shots = this.multiShot + this.rankBoostExtraShots;
+    return `fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}`;
+  }
+
+  getPowerupLabel(type) {
+    const labels = {
+      isbjorn: 'ISBJORN',
+      kjottdeig: 'KJOTTDEIG',
+      rolp: 'ROLP',
+      deili: 'DEILI',
+      slow_time: 'SLOW TIME',
+      ghost: 'GHOST',
+      shield: 'SHIELD',
+      rapid_fire: 'RAPID FIRE',
+      double_shot: 'DOUBLE SHOT',
+      damage_up: 'DAMAGE UP',
+      speed_up: 'SPEED UP',
+      pierce: 'PIERCE',
+      score_x2: 'SCORE x2',
+      magnet: 'MAGNET',
+      drones: 'DRONES',
+      shockwave: 'SHOCKWAVE'
+    };
+    return labels[type] || String(type || '').toUpperCase();
+  }
+
+  getActivePowerupState() {
+    const now = Date.now();
+
+    if (this.activePowerup?.type) {
+      const remainingMs = Math.max(0, this.activePowerup.expiresAt - now);
+      return {
+        type: this.activePowerup.type,
+        label: this.getPowerupLabel(this.activePowerup.type),
+        remainingMs
+      };
+    }
+
+    if (this.shieldActive) {
+      const remainingMs = Math.max(0, this.shieldExpiresAt - now);
+      return {
+        type: 'shield',
+        label: this.getPowerupLabel('shield'),
+        remainingMs
+      };
+    }
+
+    if (this.scoreMultiplier > 1) {
+      const remainingMs = Math.max(0, this.scoreBoostExpiresAt - now);
+      return {
+        type: 'score_x2',
+        label: this.getPowerupLabel('score_x2'),
+        remainingMs
+      };
+    }
+
+    return null;
   }
 
   canShoot() {
@@ -442,25 +779,17 @@ export class Player {
   // --- Powerups ---
 
   applyPowerup(type) {
+    if (type !== 'shield' && this.activePowerup.type === type) {
+      this.activePowerup.expiresAt = Date.now() + 12000;
+      console.log(`[Powerup] refresh type=${type} expiresAt=${this.activePowerup.expiresAt}`);
+      return;
+    }
+
     this.resetPowerups(); // Clear existing to prevent stacking weirdness
     this.activePowerup.type = type;
     this.activePowerup.expiresAt = Date.now() + 12000; // 12 Seconds Default
 
     switch (type) {
-      case 'isbjorn':
-        this.multiShot = 3;
-        break;
-      case 'kjottdeig':
-        // Speed handled in update
-        break;
-      case 'rolp':
-        this.bulletDamage = 3;
-        this.shootDelay = this.stats.fireRate / 2; // Rapid fire
-        break;
-      case 'deili':
-        this.multiShot = 5;
-        this.bulletDamage = 2;
-        break;
       case 'slow_time':
         // Global effect handled by Scene
         this.activePowerup.expiresAt = Date.now() + 8000; // 8s
@@ -470,6 +799,30 @@ export class Player {
         // Ghost mode uses reduced alpha for the CONTAINER only, not destroying visibility
         this.sprite.alpha = 0.4;
         break;
+      case 'magnet':
+        this.magnetActive = true;
+        this.magnetExpiresAt = Date.now() + 8000;
+        break;
+      case 'drones':
+        this.dronesActive = true;
+        this.dronesExpiresAt = Date.now() + 8000;
+        this.createDrones();
+        break;
+      case 'rapid_fire':
+        this.activePowerup.expiresAt = Date.now() + 8000;
+        break;
+      case 'double_shot':
+        this.activePowerup.expiresAt = Date.now() + 8000;
+        break;
+      case 'damage_up':
+        this.activePowerup.expiresAt = Date.now() + 8000;
+        break;
+      case 'speed_up':
+        this.activePowerup.expiresAt = Date.now() + 8000;
+        break;
+      case 'pierce':
+        this.activePowerup.expiresAt = Date.now() + 7000;
+        break;
       case 'shield':
         this.activateShield();
         if (type === 'shield') {
@@ -478,19 +831,19 @@ export class Player {
         break;
     }
 
+    this.notePowerup(type);
+    const before = this.getStatSnapshot();
+    this.recalculateStats();
+    const after = this.getStatSnapshot();
+    console.log(`[Powerup] apply type=${type} before=${before} after=${after}`);
+
     // CRITICAL: Ensure player remains visible after powerup application
     // (Ghost is special - it sets alpha to 0.4, which ensureRenderable respects)
     this.ensureRenderable('applyPowerup:' + type);
   }
 
   resetPowerups() {
-    // Revert Stats
-    this.speed = this.stats.speed;
-    this.bulletDamage = this.stats.damage;
-    this.shootDelay = this.stats.fireRate;
-    this.multiShot = 1;
-    this.bulletSpeed = this.stats.bulletSpeed;
-
+    const expiredType = this.activePowerup.type;
     // Visuals
     if (this.sprite && !this.isDodging && !this.invulnerable) {
       this.sprite.alpha = 1;
@@ -501,8 +854,238 @@ export class Player {
       // Game.audio.playSfx('powerdown') // if exists
     }
 
+    this.magnetActive = false;
+    this.magnetExpiresAt = 0;
+    this.clearDrones();
     this.activePowerup.type = null;
     this.activePowerup.expiresAt = 0;
+    const before = this.getStatSnapshot();
+    this.recalculateStats();
+    const after = this.getStatSnapshot();
+    console.log(`[Powerup] expire before=${before} after=${after}`);
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.debugPowerups && expiredType) {
+      console.log(`[PowerupTest] expired type=${expiredType} restoredOk=true`);
+    }
+  }
+
+  notePowerup(type) {
+    if (!type) return;
+    const now = Date.now();
+    const previous = this.lastPowerupType;
+    const previousAt = this.lastPowerupAt;
+    this.lastPowerupType = type;
+    this.lastPowerupAt = now;
+    this.tryActivateSynergy(type, previous, previousAt);
+  }
+
+  noteScoreMultiplier() {
+    this.notePowerup('score_x2');
+  }
+
+  tryActivateSynergy(type, previous, previousAt) {
+    const now = Date.now();
+    const recentOk = previous && (now - previousAt < 8000);
+    const playScene = this.game?.scenes?.play;
+    const activate = (key, label) => {
+      if (this.synergyState.type === key) {
+        this.synergyState.expiresAt = now + 6000;
+      } else {
+        this.synergyState = { type: key, expiresAt: now + 6000, label };
+      }
+      if (playScene?.setSynergyBadge) playScene.setSynergyBadge(label);
+      if (playScene?.enqueueToast) {
+        playScene.enqueueToast(label.toUpperCase(), { fontSize: 20, fill: '#ffff00', slot: 'top', type: 'synergy' });
+      }
+      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+      this.recalculateStats();
+    };
+
+    if (recentOk) {
+      if ((type === 'double_shot' && previous === 'rapid_fire') || (type === 'rapid_fire' && previous === 'double_shot')) {
+        activate('bullet_storm', 'Bullet Storm');
+      } else if ((type === 'pierce' && previous === 'damage_up') || (type === 'damage_up' && previous === 'pierce')) {
+        activate('rail_rounds', 'Rail Rounds');
+      } else if ((type === 'magnet' && previous === 'score_x2') || (type === 'score_x2' && previous === 'magnet')) {
+        activate('cash_vacuum', 'Cash Vacuum');
+      }
+    }
+  }
+
+  clearSynergy() {
+    if (!this.synergyState.type) return;
+    this.synergyState = { type: null, expiresAt: 0, label: '' };
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.setSynergyBadge) playScene.setSynergyBadge('');
+    this.muzzleFlashColor = this.baseMuzzleFlashColor;
+    this.recalculateStats();
+  }
+
+  recalculateStats() {
+    this.speed = this.stats.speed;
+    this.bulletDamage = this.stats.damage;
+    this.shootDelay = this.stats.fireRate;
+    this.multiShot = 1;
+    this.bulletSpeed = this.stats.bulletSpeed;
+    this.bulletPierce = false;
+    this.rankBoostExtraShots = 0;
+    this.rankBoostBulletFx = false;
+    this.magnetActive = false;
+    this.magnetRadius = 140;
+    this.magnetStrength = 0.08;
+
+    switch (this.activePowerup.type) {
+      case 'isbjorn':
+        this.multiShot = 3;
+        break;
+      case 'rolp':
+        this.bulletDamage = 3;
+        this.shootDelay = this.stats.fireRate / 2; // Rapid fire
+        break;
+      case 'deili':
+        this.multiShot = 5;
+        this.bulletDamage = 2;
+        break;
+      case 'rapid_fire':
+        this.shootDelay = this.stats.fireRate * 0.5;
+        break;
+      case 'double_shot':
+        this.multiShot = 2;
+        break;
+      case 'damage_up':
+        this.bulletDamage = Math.max(2, Math.round(this.bulletDamage * 1.6));
+        break;
+      case 'speed_up':
+        this.speed = this.speed * 1.3;
+        break;
+      case 'pierce':
+        this.bulletPierce = true;
+        break;
+      case 'magnet':
+        this.magnetActive = true;
+        break;
+      case 'drones':
+        this.dronesActive = true;
+        break;
+    }
+
+    this.applyWeaponProfile();
+    this.applyRankBoostModifiers();
+    this.applySynergyModifiers();
+  }
+
+  applyWeaponProfile() {
+    const profile = this.weaponProfile || { bullets: 1, damageMult: 1, speedMult: 1, fireRateMult: 1 };
+    const baseMultiShot = this.multiShot;
+    this.multiShot = Math.max(baseMultiShot, profile.bullets || 1);
+    this.bulletDamage = Math.max(1, Math.round(this.bulletDamage * (profile.damageMult || 1)));
+    this.bulletSpeed = this.bulletSpeed * (profile.speedMult || 1);
+    this.shootDelay = this.shootDelay * (profile.fireRateMult || 1);
+  }
+
+  applyRankBoostModifiers() {
+    if (!this.rankBoost.type) return;
+    this.rankBoostExtraShots = 0;
+    this.rankBoostBulletFx = true;
+    this.shootDelay = Math.max(50, this.shootDelay * 0.8);
+    this.rankBoostExtraShots = 1;
+    switch (this.rankBoost.type) {
+      case 'fire_rate':
+        this.shootDelay = Math.max(50, this.shootDelay * 0.5);
+        this.bulletSpeed = this.bulletSpeed * 1.15;
+        break;
+      case 'speed':
+        this.speed *= 1.35;
+        break;
+      case 'damage':
+        this.bulletDamage = Math.max(1, Math.round(this.bulletDamage * 1.75));
+        this.bulletPierce = true;
+        break;
+    }
+  }
+
+  applySynergyModifiers() {
+    if (!this.synergyState.type) return;
+    switch (this.synergyState.type) {
+      case 'bullet_storm':
+        this.shootDelay = Math.max(45, this.shootDelay * 0.6);
+        this.multiShot = Math.max(this.multiShot, 3);
+        this.bulletSpeed = this.bulletSpeed * 1.1;
+        this.muzzleFlashColor = 0xff6666;
+        break;
+      case 'rail_rounds':
+        this.bulletPierce = true;
+        this.bulletDamage = Math.max(2, Math.round(this.bulletDamage * 1.4));
+        this.bulletSpeed = this.bulletSpeed * 1.2;
+        this.muzzleFlashColor = 0x66ccff;
+        break;
+      case 'cash_vacuum':
+        this.magnetActive = true;
+        this.magnetRadius = 200;
+        this.magnetStrength = 0.12;
+        this.muzzleFlashColor = 0xffff66;
+        break;
+    }
+  }
+
+  clearRankBoost() {
+    if (!this.rankBoost.type) return;
+    this.rankBoost.type = null;
+    this.rankBoost.expiresAt = 0;
+    this.recalculateStats();
+  }
+
+  applyRankBoost(type, durationMs) {
+    const now = Date.now();
+    const before = {
+      shootDelay: this.shootDelay,
+      speed: this.speed,
+      damage: this.bulletDamage
+    };
+    if (this.rankBoost.type === type) {
+      this.rankBoost.expiresAt = now + durationMs;
+    } else {
+      this.rankBoost.type = type;
+      this.rankBoost.expiresAt = now + durationMs;
+      this.recalculateStats();
+    }
+
+    const playScene = this.game && this.game.scenes ? this.game.scenes.play : null;
+    if (playScene && playScene.showToast) {
+      const labels = {
+        fire_rate: 'FIRE RATE',
+        speed: 'SPEED',
+        damage: 'DAMAGE'
+      };
+      const label = labels[type] || 'BOOST';
+      playScene.showToast(`RANK BOOST: ${label}`, { fontSize: 30, fill: '#66ffff', duration: 1800, slot: 'center', type: 'rank_boost' });
+    }
+
+    const boostLabels = {
+      fire_rate: 'FIRE RATE +',
+      speed: 'SPEED +',
+      damage: 'DAMAGE +'
+    };
+    if (this.rankBoostText) {
+      this.rankBoostText.text = boostLabels[type] || 'BOOST';
+    }
+    AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+    AudioManager.playPowerupVoice();
+
+    const value = type === 'fire_rate'
+      ? `shootDelay=${this.shootDelay}`
+      : type === 'speed'
+        ? `speed=${this.speed.toFixed(2)}`
+        : `damage=${this.bulletDamage}`;
+    console.log(`[RankBoost] rank=${Number.isFinite(this.rankIndex) ? this.rankIndex : 'unknown'} type=${type} durationMs=${durationMs} fireCooldown=${this.shootDelay} shots=${this.multiShot + this.rankBoostExtraShots} damage=${this.bulletDamage} projSpeed=${this.bulletSpeed.toFixed(1)}`);
+    console.log(`[RankBoost] applied fireCooldown=${this.shootDelay} damage=${this.bulletDamage} projSpeed=${this.bulletSpeed.toFixed(1)} bullets=${this.multiShot + this.rankBoostExtraShots}`);
+  }
+
+  applyRankUpBoost() {
+    const boosts = ['fire_rate', 'speed', 'damage'];
+    const pick = boosts[Math.floor(Math.random() * boosts.length)];
+    const durationMs = 6000 + Math.floor(Math.random() * 4000);
+    this.applyRankBoost(pick, durationMs);
   }
 
   // --- Rank Up Visual Reward ---

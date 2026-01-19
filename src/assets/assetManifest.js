@@ -20,6 +20,17 @@ export const AssetManifest = {
         // Core Ships
         ships: Array.from({ length: 9 }, (_, i) => `/sprites/Ships/spaceShips_00${(i + 1).toString()}.png`),
         player: '/sprites/player/player_01.png',
+        playerRankShips: [
+            '/sprites/player/row2_ship_1.png',
+            '/sprites/player/row2_ship_2.png',
+            '/sprites/player/row2_ship_3_clean.png',
+            '/sprites/player/row2_ship_5.png',
+            '/sprites/player/ship_extract_1.png',
+            '/sprites/player/ship_extract_2.png',
+            '/sprites/player/ship_extract_3.png',
+            '/sprites/player/ship_extract_5.png',
+            '/sprites/player/ship_new.png'
+        ],
 
         // Core Enemies
         enemies: {
@@ -57,6 +68,15 @@ export const AssetManifest = {
             '/sprites/xtra-sprites/Effects/shield3.png', '/sprites/xtra-sprites/Effects/speed.png',
             '/sprites/xtra-sprites/Effects/star1.png', '/sprites/xtra-sprites/Effects/star2.png',
             '/sprites/xtra-sprites/Effects/star3.png'
+        ],
+
+        // Boss Sprites
+        bosses: [
+            '/sprites/boss/Gemini_Generated_Image_kgxeipkgxeipkgxe_no_bg2.png',
+            '/sprites/boss/boss_battleship_no_bg2.png',
+            '/sprites/boss/boss_crystal_no_bg2.png',
+            '/sprites/boss/boss_insect_no_bg2.png',
+            '/sprites/boss/boss_turret_no_bg2.png'
         ],
 
         // Ranks (Default to Gold for consistency) - 20 ranks total (0-19)

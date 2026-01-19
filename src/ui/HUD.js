@@ -44,6 +44,15 @@ export class HUD {
       fill: '#ffff00'
     });
     this.hudContainer.addChild(this.scoreText);
+    this.scoreMultiplierText = new PIXI.Text('', {
+      fontFamily: 'Courier New',
+      fontSize: 14,
+      fill: '#ffff00',
+      stroke: '#000000',
+      strokeThickness: 3
+    });
+    this.scoreMultiplierText.visible = false;
+    this.hudContainer.addChild(this.scoreMultiplierText);
 
     // Level
     this.levelText = new PIXI.Text('LEVEL: 1', {
@@ -73,6 +82,29 @@ export class HUD {
     this.livesGroup.addChild(this.livesText);
     this.hudContainer.addChild(this.livesGroup);
 
+    // Active powerup indicator
+    this.activePowerupGroup = new PIXI.Container();
+    this.activePowerupBg = new PIXI.Graphics();
+    this.activePowerupText = new PIXI.Text('', {
+      fontFamily: 'Courier New',
+      fontSize: 14,
+      fill: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 3
+    });
+    this.activePowerupTimer = new PIXI.Text('', {
+      fontFamily: 'Courier New',
+      fontSize: 12,
+      fill: '#ffff00',
+      stroke: '#000000',
+      strokeThickness: 3
+    });
+    this.activePowerupGroup.addChild(this.activePowerupBg);
+    this.activePowerupGroup.addChild(this.activePowerupText);
+    this.activePowerupGroup.addChild(this.activePowerupTimer);
+    this.activePowerupGroup.visible = false;
+    this.hudContainer.addChild(this.activePowerupGroup);
+
     // Easter egg location
     this.locationText = new PIXI.Text('STOKMARKNES', {
       fontFamily: 'Courier New',
@@ -85,6 +117,18 @@ export class HUD {
 
   update() {
     this.scoreText.text = `SCORE: ${this.game.score}`;
+    const mult = Number(this.game.scoreMultiplier) || 1;
+    if (mult > 1) {
+      this.scoreMultiplierText.text = `x${mult}`;
+      this.scoreMultiplierText.visible = true;
+      const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.08;
+      this.scoreMultiplierText.scale.set(pulse);
+      this.scoreMultiplierText.x = this.scoreText.x + this.scoreText.width + 10;
+      this.scoreMultiplierText.y = this.scoreText.y + 2;
+    } else {
+      this.scoreMultiplierText.visible = false;
+      this.scoreMultiplierText.scale.set(1);
+    }
     this.levelText.text = `LEVEL: ${this.game.level}`;
     this.livesText.text = `LIVES: ${this.game.lives}`;
 
@@ -127,6 +171,40 @@ export class HUD {
     if (Math.random() < 0.001) {
       this.locationText.text = locations[Math.floor(Math.random() * locations.length)];
     }
+
+    this.updateActivePowerup();
+  }
+
+  updateActivePowerup() {
+    const player = this.game?.scenes?.play?.player;
+    const state = player?.getActivePowerupState ? player.getActivePowerupState() : null;
+    if (!state || !state.label) {
+      this.activePowerupGroup.visible = false;
+      return;
+    }
+
+    const remaining = Math.max(0, Math.ceil((state.remainingMs || 0) / 1000));
+    this.activePowerupText.text = `POWERUP: ${state.label}`;
+    this.activePowerupTimer.text = remaining ? `${remaining}s` : '';
+    this.activePowerupTimer.x = this.activePowerupText.width + 10;
+    this.activePowerupTimer.y = 0;
+
+    const paddingX = 8;
+    const paddingY = 6;
+    const width = this.activePowerupText.width + this.activePowerupTimer.width + paddingX * 2 + 6;
+    const height = Math.max(this.activePowerupText.height, this.activePowerupTimer.height) + paddingY * 2;
+    this.activePowerupBg.clear();
+    this.activePowerupBg.roundRect(0, 0, width, height, 8);
+    this.activePowerupBg.fill({ color: 0x000000, alpha: 0.5 });
+
+    this.activePowerupText.x = paddingX;
+    this.activePowerupText.y = paddingY - 2;
+    this.activePowerupGroup.visible = true;
+
+    const canvasWidth = this.game.getWidth ? this.game.getWidth() : 0;
+    if (canvasWidth) {
+      this.activePowerupGroup.x = canvasWidth - 10 - width;
+    }
   }
 
   applyLayout(layout = getCurrentLayout()) {
@@ -152,6 +230,8 @@ export class HUD {
 
     this.scoreText.x = margin + rankOffset;
     this.scoreText.y = margin;
+    this.scoreMultiplierText.x = this.scoreText.x + this.scoreText.width + 10;
+    this.scoreMultiplierText.y = this.scoreText.y + 2;
 
     this.levelText.x = margin + rankOffset;
     this.levelText.y = margin + blockSpacing;
@@ -162,6 +242,11 @@ export class HUD {
     this.updateLivesVisuals();
     this.livesGroup.x = canvasWidth - margin - this.livesGroup.width;
     this.livesGroup.y = margin;
+
+    if (this.activePowerupGroup) {
+      this.activePowerupGroup.x = canvasWidth - margin - this.activePowerupGroup.width;
+      this.activePowerupGroup.y = this.livesGroup.y + this.livesGroup.height + 6;
+    }
   }
 
   updateLivesVisuals() {

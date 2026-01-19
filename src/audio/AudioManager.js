@@ -42,6 +42,10 @@ class AudioController {
     // SFX State
     this.globalVoiceCooldown = 0;
     this.sfxCooldowns = {};
+    this.sfxPools = {};
+    this.sfxPoolIndex = {};
+    this.lastSfxPlayedAt = {};
+    this.lastPowerupVoiceIndex = -1;
 
     // Safety lock
     this.isSwitchingTrack = false;
@@ -49,6 +53,10 @@ class AudioController {
     // Idempotency guard
     this._initialized = false;
     this._debugKeyHandler = null;
+
+    // SFX denylist (bad/annoying variants)
+    this.sfxDenylist = new Set(['shoot_alt']);
+    this.sfxDenylistLogged = {};
   }
 
   init() {
@@ -86,6 +94,11 @@ class AudioController {
 
       this._initialized = true;
       console.log('[AudioManager] INIT OK. Context:', this.context.state);
+      this.context.onstatechange = () => {
+        if (this.context.state === 'running') {
+          this.recoverSfx('context_resumed');
+        }
+      };
     } catch (e) {
       console.warn('[AudioManager] Failed to init context:', e);
       this.enabled = false;
@@ -140,6 +153,15 @@ class AudioController {
     // If eventName is specifically one we hate, mapped here
     if (eventName === 'bad_sound') return;
 
+    const originalName = eventName;
+    if (this.sfxDenylist && this.sfxDenylist.has(eventName)) {
+      eventName = 'shoot_small';
+      if (!this.sfxDenylistLogged[originalName]) {
+        console.warn(`[Audio] SFX denylist applied from ${originalName} to ${eventName}`);
+        this.sfxDenylistLogged[originalName] = true;
+      }
+    }
+
     // 1. Get variants
     const variants = SFX_CATALOG[eventName];
     if (!variants || variants.length === 0) {
@@ -149,22 +171,60 @@ class AudioController {
 
     // 2. Cooldown
     const now = Date.now();
-    if (this.sfxCooldowns[eventName] && now < this.sfxCooldowns[eventName]) {
+    const minIntervalMs = Number.isFinite(options.minIntervalMs) ? options.minIntervalMs : 50;
+    if (!options.force && this.sfxCooldowns[eventName] && now < this.sfxCooldowns[eventName]) {
       return;
     }
-    this.sfxCooldowns[eventName] = now + 50;
+    this.sfxCooldowns[eventName] = now + minIntervalMs;
 
     // 3. Pick variant
     const src = variants[Math.floor(Math.random() * variants.length)];
 
     // 4. Play
-    const audio = new Audio(src);
+    const audio = this.getSfxAudio(eventName, src, options);
     audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.sfxVolume * (options.volume || 1.0)));
     audio.play().catch(() => { });
+    this.lastSfxPlayedAt[eventName] = now;
+    return true;
   }
 
   play(name) {
     if (this.enabled) this.playSfx(name);
+  }
+
+  getSfxAudio(eventName, src, options) {
+    const usePool = options.pool || eventName === 'shoot_small';
+    if (!usePool) {
+      return new Audio(src);
+    }
+
+    const poolSize = options.poolSize || 6;
+    if (!this.sfxPools[eventName]) {
+      this.sfxPools[eventName] = Array.from({ length: poolSize }, () => {
+        const audio = new Audio(src);
+        audio.preload = 'auto';
+        return audio;
+      });
+      this.sfxPoolIndex[eventName] = 0;
+    }
+
+    const pool = this.sfxPools[eventName];
+    let index = this.sfxPoolIndex[eventName] || 0;
+    const audio = pool[index % pool.length];
+    this.sfxPoolIndex[eventName] = (index + 1) % pool.length;
+    if (audio.src !== src) audio.src = src;
+    return audio;
+  }
+
+  recoverSfx(reason = 'unknown') {
+    if (!this.enabled) return;
+    if (this.context && this.context.state === 'suspended') {
+      this.context.resume().catch(() => { });
+    }
+    if (this.lastSfxPlayedAt.shoot_small && Date.now() - this.lastSfxPlayedAt.shoot_small < 200) {
+      return;
+    }
+    this.playSfx('shoot_small', { force: true, pool: true, volume: 0.6 });
   }
 
   // --- MUSIC ---
@@ -367,7 +427,7 @@ class AudioController {
       'mission_complete': 'mission_completed.mp3',
       'war_target': 'war_target_engaged.mp3', // Corrected name based on file list
       'round': 'round.mp3',
-      'powerup': 'objective_achieved.mp3' // Re-use nice sound
+      'powerup': 'power_up.mp3'
     };
 
     const filename = map[eventName];
@@ -380,10 +440,40 @@ class AudioController {
         audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.voiceVolume));
         audio.play().catch(e => { });
         this.globalVoiceCooldown = now + 1500;
+        return true;
       } else {
         console.warn(`[Audio] Voice asset not found for: ${filename}`);
       }
     }
+    return false;
+  }
+
+  playPowerupVoice() {
+    if (!this.enabled || !this.voiceEnabled) return false;
+
+    const candidates = AssetManifest.audio.voice.filter(p => p.includes('power_up'));
+    if (!candidates.length) {
+      console.warn('[PowerupVoice] played key=none ok=false');
+      return false;
+    }
+
+    let index = 0;
+    if (candidates.length > 1) {
+      const next = Math.floor(Math.random() * candidates.length);
+      index = next === this.lastPowerupVoiceIndex ? (next + 1) % candidates.length : next;
+      this.lastPowerupVoiceIndex = index;
+    }
+
+    const src = candidates[index];
+    const audio = new Audio(src);
+    audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.voiceVolume));
+    audio.play().catch(e => { });
+    if (candidates.length > 1) {
+      console.log(`[PowerupVoice] picked key=${src} from=${candidates.length}`);
+    } else {
+      console.log(`[PowerupVoice] played key=${src} ok=true`);
+    }
+    return true;
   }
 
   playTone(freq, duration, type, vol) {

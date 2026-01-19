@@ -56,7 +56,7 @@ export class Enemy {
         this.health = 2;
         this.maxHealth = 2;
         this.scoreValue = 15;
-        this.speed = 0.9 + this.level * 0.08;
+        this.speed = 0.85;
         this.shootDelay = 120;
         this.xtraType = 1;
         break;
@@ -66,7 +66,7 @@ export class Enemy {
         this.health = 3;
         this.maxHealth = 3;
         this.scoreValue = 25;
-        this.speed = 1.3 + this.level * 0.08;
+        this.speed = 1.1;
         this.shootDelay = 90;
         this.radius = 18;
         this.xtraType = 2;
@@ -77,7 +77,7 @@ export class Enemy {
         this.health = 4;
         this.maxHealth = 4;
         this.scoreValue = 40;
-        this.speed = 0.7 + this.level * 0.08;
+        this.speed = 0.65;
         this.shootDelay = 60;
         this.radius = 20;
         this.movePattern = 'zigzag';
@@ -89,7 +89,7 @@ export class Enemy {
         this.health = 5;
         this.maxHealth = 5;
         this.scoreValue = 60;
-        this.speed = 1.6 + this.level * 0.08;
+        this.speed = 1.35;
         this.shootDelay = 80;
         this.radius = 16;
         this.movePattern = 'circle';
@@ -101,7 +101,7 @@ export class Enemy {
         this.health = 6;
         this.maxHealth = 6;
         this.scoreValue = 80;
-        this.speed = 1.0 + this.level * 0.08;
+        this.speed = 0.9;
         this.shootDelay = 50;
         this.radius = 22;
         this.movePattern = 'drunk';
@@ -113,7 +113,7 @@ export class Enemy {
         this.health = 10;
         this.maxHealth = 10;
         this.scoreValue = 120;
-        this.speed = 0.4 + this.level * 0.05;
+        this.speed = 0.35;
         this.shootDelay = 90;
         this.radius = 25;
         this.movePattern = 'aggressive';
@@ -125,7 +125,7 @@ export class Enemy {
         this.health = 5;
         this.maxHealth = 5;
         this.scoreValue = 500;
-        this.speed = 1.5 + this.level * 0.1;
+        this.speed = 1.2;
         this.shootDelay = 60;
         this.radius = 25;
         this.movePattern = 'aggressive';
@@ -134,10 +134,18 @@ export class Enemy {
         break;
     }
 
-    // TASK 3: Apply global difficulty multiplier (0.9 = 10% easier)
-    const diff = BalanceConfig.DIFFICULTY_MULTIPLIER;
-    this.speed *= diff; // Reduce enemy speed
-    this.shootDelay /= diff; // Increase shoot delay (slower fire rate)
+    // TASK 3: Apply difficulty scalars
+    const diff = BalanceConfig.difficulty;
+    const levelScale = Math.max(0, this.level - 1);
+    const hpScale = diff.baseEnemyHealthMultiplier + levelScale * diff.hpScalePerLevel;
+    const speedScale = diff.enemySpeedMultiplier + levelScale * diff.enemySpeedPerLevel;
+    const fireDelayScale = 1 + levelScale * diff.enemyFireDelayPerLevel;
+    const globalMult = BalanceConfig.DIFFICULTY_MULTIPLIER;
+
+    this.health = Math.ceil(this.health * hpScale);
+    this.maxHealth = this.health;
+    this.speed *= speedScale * globalMult;
+    this.shootDelay = (this.shootDelay * fireDelayScale) / globalMult;
 
     // Sprite Selection
     if (this.type === 'beer_challenge') {
@@ -395,7 +403,7 @@ export class Enemy {
     if (distance === 0) return null;
 
     const accuracy = 0.8 + Math.random() * 0.2;
-    const speed = 4.0;
+    const speed = BalanceConfig.difficulty.enemyProjectileSpeed;
     const vx = (dx / distance) * speed * accuracy;
     const vy = (dy / distance) * speed * accuracy;
 
@@ -424,6 +432,17 @@ export class Enemy {
     }
 
     return new Bullet(this.x, this.y, vx, vy, 1, this.color, false, vConfig);
+  }
+
+  applyElite() {
+    if (this.isElite) return;
+    this.isElite = true;
+    this.health = Math.ceil(this.health * 1.6);
+    this.maxHealth = this.health;
+    if (this.sprite) {
+      this.sprite.scale.set(this.sprite.scale.x * 1.12);
+      this.sprite.tint = 0xffcc00;
+    }
   }
 
   takeDamage(amount) {

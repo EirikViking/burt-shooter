@@ -1,6 +1,6 @@
 export const BalanceConfig = {
-    // TASK 3: Global difficulty multiplier (0.9 = 10% easier)
-    DIFFICULTY_MULTIPLIER: 0.9,
+    // TASK 3: Global difficulty multiplier (0.85 = 15% easier)
+    DIFFICULTY_MULTIPLIER: 0.85,
 
     // Rank System
     ranks: {
@@ -28,16 +28,36 @@ export const BalanceConfig = {
         }
     },
 
-    // Difficulty (reduced ~15% for better player experience)
+    // Difficulty (gentler curve and reduced pressure)
     difficulty: {
-        baseEnemyHealthMultiplier: 1.06, // +6% HP start (was 1.25, reduced by 15%)
-        hpScalePerLevel: 0.13, // gentler scaling (was 0.15, reduced by 13%)
+        baseEnemyHealthMultiplier: 0.95, // Slightly lower HP baseline
+        hpScalePerLevel: 0.08, // gentler scaling per level
 
-        baseEnemyCount: 17, // Reduced by 15% (was 20)
-        countScalePerLevel: 5, // +5 per level (was 6, reduced by 17%)
+        enemySpeedMultiplier: 0.92, // Global speed reduction
+        enemySpeedPerLevel: 0.02, // Gentle speed scaling
 
-        fireRateScale: 0.04, // 4% faster firing per level (was 0.05, reduced by 20%)
-        projectileSpeed: 2.7, // More manageable (was 3.2, reduced by 16%)
+        enemyFireDelayPerLevel: 0.04, // Slower firing per level
+        enemyFireChance: 0.006, // Lower shooting chance per tick
+        enemyProjectileSpeed: 3.2, // Slightly slower enemy bullets
+
+        waveCountBase: 3, // Base waves per level
+        waveCountPerLevel: 4, // Add wave every N levels
+        waveCountMax: 5, // Cap waves
+
+        waveEnemyBase: 7, // Base enemies per wave
+        waveEnemyPerLevel: 0.6, // Gentle scaling per level
+        waveEnemyRandom: 2, // Small random add
+        waveEnemyMax: 18, // Cap enemies per wave
+        waveDelayMs: 2400, // Slower pacing between waves
+
+        bossBaseHealth: 52, // Lower boss baseline HP
+        bossHealthPerLevel: 18, // Gentler boss scaling
+        bossShootDelayBase: 40, // Slower boss firing
+        bossShootDelayPhase2: 26,
+        bossShootDelayPhase3: 20,
+        bossProjectileSpeedPhase1: 3.2,
+        bossProjectileSpeedPhase2: 3.1,
+        bossProjectileSpeedPhase3: 2.8,
 
         precisionPenalty: true, // If true, reduced score for missed shots (concept)
         sprayInefficiency: 0.8 // Damage multiplier if shooting blindly (concept, maybe skip to keep simple)

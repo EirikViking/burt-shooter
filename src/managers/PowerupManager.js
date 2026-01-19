@@ -1,6 +1,7 @@
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import * as PIXI from 'pixi.js';
+import { AudioManager } from '../audio/AudioManager.js';
 
 class Powerup {
   constructor(x, y, type) {
@@ -21,7 +22,16 @@ class Powerup {
       slow_time: { color: 0x00cccc, label: 'SLOW' },
       ghost: { color: 0xeeeeee, label: 'GHOST' },
       shield: { color: 0x00aaaa, label: 'SHIELD' },
-      life: { color: 0xff0000, label: 'LIFE' }
+      life: { color: 0xff0000, label: 'LIFE' },
+      rapid_fire: { color: 0xffcc00, label: 'RAPID' },
+      double_shot: { color: 0x66ccff, label: 'DOUBLE' },
+      damage_up: { color: 0xff6666, label: 'DMG+' },
+      speed_up: { color: 0x66ff66, label: 'SPEED' },
+      pierce: { color: 0xcc66ff, label: 'PIERCE' },
+      score_x2: { color: 0xffff00, label: 'x2' },
+      magnet: { color: 0x99ffcc, label: 'MAGNET' },
+      drones: { color: 0x66ccff, label: 'DRONES' },
+      shockwave: { color: 0xff9966, label: 'WAVE' }
     };
 
     const data = powerupData[type] || powerupData['isbjorn'];
@@ -59,6 +69,15 @@ class Powerup {
       else if (this.type === 'kjottdeig') texture = GameAssets.getXtraPowerup('kjottdeig');
       else if (this.type === 'rolp') texture = GameAssets.getXtraPowerup('rolp');
       else if (this.type === 'deili') texture = GameAssets.getXtraPowerup('deili');
+      else if (this.type === 'rapid_fire') texture = GameAssets.getXtraPowerup('rolp');
+      else if (this.type === 'double_shot') texture = GameAssets.getXtraPowerup('isbjorn');
+      else if (this.type === 'damage_up') texture = GameAssets.getXtraPowerup('deili');
+      else if (this.type === 'speed_up') texture = GameAssets.getXtraPowerup('kjottdeig');
+      else if (this.type === 'pierce') texture = GameAssets.getXtraPowerup('ghost');
+      else if (this.type === 'score_x2') texture = GameAssets.getXtraPowerup('slow_time');
+      else if (this.type === 'magnet') texture = GameAssets.getXtraPowerup('ghost');
+      else if (this.type === 'drones') texture = GameAssets.getXtraPowerup('rolp');
+      else if (this.type === 'shockwave') texture = GameAssets.getXtraPowerup('deili');
       else texture = GameAssets.getBeer();
 
       if (GameAssets.isValidTexture(texture)) {
@@ -70,7 +89,11 @@ class Powerup {
         const hasSprite = this.type === 'shield' || this.type === 'life' ||
           this.type === 'ghost' || this.type === 'slow_time' ||
           this.type === 'isbjorn' || this.type === 'kjottdeig' ||
-          this.type === 'rolp' || this.type === 'deili';
+          this.type === 'rolp' || this.type === 'deili' ||
+          this.type === 'rapid_fire' || this.type === 'double_shot' ||
+          this.type === 'damage_up' || this.type === 'speed_up' ||
+          this.type === 'pierce' || this.type === 'score_x2' ||
+          this.type === 'magnet' || this.type === 'drones' || this.type === 'shockwave';
 
         if (hasSprite) {
           beerSprite.scale.set(0.8);
@@ -214,6 +237,10 @@ class Powerup {
     // TASK 1: Premium powerup pickup effects
     this.showPickupEffect(scene);
     this.playPickupSFX(scene);
+    const voiceOk = AudioManager.playPowerupVoice();
+    if (!voiceOk) {
+      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+    }
 
     // Pass type directly to player (Player handles reset)
     // Life Powerup Logic
@@ -240,11 +267,32 @@ class Powerup {
       }
     } else {
       // Pass type directly to player (Player handles reset)
-      player.applyPowerup(this.type);
+      if (this.type === 'score_x2') {
+        if (scene.applyScoreMultiplier) {
+          scene.applyScoreMultiplier(2, 10000, 'score_x2');
+        }
+      } else if (this.type === 'shockwave') {
+        if (scene.triggerShockwave) {
+          scene.triggerShockwave(player.x, player.y, 0xffaa33);
+        }
+        if (scene.bulletManager) {
+          scene.bulletManager.enemyBullets.forEach(b => {
+            b.active = false;
+            if (b.sprite && b.sprite.parent) b.sprite.parent.removeChild(b.sprite);
+          });
+          scene.bulletManager.enemyBullets = [];
+        }
+      } else {
+        player.applyPowerup(this.type);
+      }
     }
 
     if (scene.debugStats) {
       scene.debugStats.beerPickupsCollected++;
+    }
+    if (scene.debugPowerups) {
+      console.log(`[PowerupTest] pickup type=${this.type}`);
+      console.log(`[PowerupTest] applied type=${this.type} ok=true`);
     }
     this.showMessage(scene);
   }
@@ -284,8 +332,6 @@ class Powerup {
 
   // TASK 1: Play category-specific pickup SFX
   playPickupSFX(scene) {
-    if (!scene.game || !scene.game.audio) return;
-
     // Category-specific sounds
     const sfxMap = {
       life: 'ui_open',          // Extra life - positive, distinct
@@ -295,11 +341,20 @@ class Powerup {
       isbjorn: 'pickup',        // Weapon powerups - generic pickup
       kjottdeig: 'pickup',
       rolp: 'pickup',
-      deili: 'pickup'
+      deili: 'pickup',
+      rapid_fire: 'pickup',
+      double_shot: 'pickup',
+      damage_up: 'pickup',
+      speed_up: 'pickup',
+      pierce: 'pickup',
+      score_x2: 'ui_open',
+      magnet: 'pickup',
+      drones: 'pickup',
+      shockwave: 'powerup'
     };
 
     const sfxKey = sfxMap[this.type] || 'pickup';
-    scene.game.audio.playSfx(sfxKey);
+    AudioManager.playSfx(sfxKey);
   }
 
   showMessage(scene) {
@@ -312,7 +367,16 @@ class Powerup {
       slow_time: 'SLOW MOTION!',
       ghost: 'GHOST MODE! Invincible!',
       shield: 'SHIELD UP!',
-      life: 'EXTRA LIFE!'
+      life: 'EXTRA LIFE!',
+      rapid_fire: 'RAPID FIRE!',
+      double_shot: 'DOUBLE SHOT!',
+      damage_up: 'DAMAGE UP!',
+      speed_up: 'SPEED UP!',
+      pierce: 'PIERCING SHOTS!',
+      score_x2: 'SCORE x2!',
+      magnet: 'MAGNET FIELD!',
+      drones: 'SIDE DRONES!',
+      shockwave: 'SHOCKWAVE!'
     };
 
     const { width, height } = scene.game.app.screen;
@@ -358,6 +422,28 @@ export class PowerupManager {
     // TASK 2: Track extra life spawns for guaranteed spawn every 2 levels
     this.lastExtraLifeLevel = 0;
     this.extraLifeSpawnedThisLevel = false;
+
+    this.debugPowerupsEnabled = false;
+    this.debugPowerupTimer = 0;
+    this.debugPowerupIndex = 0;
+    this.debugPowerupTypes = [
+      'isbjorn',
+      'rolp',
+      'deili',
+      'slow_time',
+      'ghost',
+      'life',
+      'shield',
+      'rapid_fire',
+      'double_shot',
+      'damage_up',
+      'speed_up',
+      'pierce',
+      'score_x2',
+      'magnet',
+      'drones',
+      'shockwave'
+    ];
   }
 
   checkLevelReset(level) {
@@ -460,9 +546,26 @@ export class PowerupManager {
       this.extraLifeSpawnedThisLevel = true;
     } else if (rand < 0.15 && !shieldActive) {
       type = 'shield'; // 13% Uncommon, if no shield
+    } else if (rand < 0.2) {
+      type = 'score_x2';
     } else {
       // Remaining 85% - Standard Powerups
-      const rareTypes = ['ghost', 'slow_time', 'rolp', 'deili', 'isbjorn'];
+      const rareTypes = [
+        'ghost',
+        'slow_time',
+        'rolp',
+        'deili',
+        'isbjorn',
+        'rapid_fire',
+        'double_shot',
+        'damage_up',
+        'speed_up',
+        'pierce',
+        'score_x2',
+        'magnet',
+        'drones',
+        'shockwave'
+      ];
       type = rareTypes[Math.floor(Math.random() * rareTypes.length)];
     }
 
@@ -480,6 +583,7 @@ export class PowerupManager {
   }
 
   update(delta, scene) {
+    this.updateDebugPowerups(delta, scene);
     this.powerups = this.powerups.filter(powerup => {
       powerup.update(delta, scene);
       if (!powerup.active) {
@@ -488,5 +592,26 @@ export class PowerupManager {
       }
       return true;
     });
+  }
+
+  updateDebugPowerups(delta, scene) {
+    if (!scene?.debugPowerups) return;
+
+    this.debugPowerupTimer += delta * 16.67;
+    if (this.debugPowerupTimer < 3000) return;
+
+    this.debugPowerupTimer = 0;
+    const type = this.debugPowerupTypes[this.debugPowerupIndex % this.debugPowerupTypes.length];
+    this.debugPowerupIndex += 1;
+    const x = this.game.getWidth() * 0.5;
+    const y = 120;
+    this.spawnSpecific(x, y, type);
+    console.log(`[PowerupTest] spawned type=${type}`);
+  }
+
+  spawnSpecific(x, y, type) {
+    const powerup = new Powerup(x, y, type);
+    this.powerups.push(powerup);
+    this.container.addChild(powerup.sprite);
   }
 }

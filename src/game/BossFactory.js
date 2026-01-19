@@ -1,27 +1,40 @@
 /**
  * BossFactory - Creates varied boss visuals for each level
- * Cycles through: Big Beer Can, Icon-192, Boss_01, and Big Player Ships
+ * Cycles through: Big Beer Can, Icon-192, Boss Sprites, and Big Player Ships
  */
 
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 
 const BOSS_TYPES = {
   BIG_BEER_CAN: 0,
   ICON_192: 1,
-  BOSS_01: 2,
-  BIG_PLAYER_SHIP: 3  // Will cycle through available ship variants
+  BOSS_SPRITE: 2,
+  BIG_PLAYER_SHIP: 3 // Will cycle through available ship variants
+};
+
+const BOSS_SPRITES = AssetManifest.sprites.bosses || [];
+const LEVEL_BOSS_SPRITES = {
+  1: '/sprites/boss/boss_battleship_no_bg2.png',
+  2: '/sprites/boss/boss_turret_no_bg2.png',
+  3: '/sprites/boss/boss_crystal_no_bg2.png'
 };
 
 /**
  * Selects boss type for a given level deterministically
  */
 function selectBossType(level) {
+  if (level === 4) {
+    return { type: BOSS_TYPES.BIG_BEER_CAN };
+  }
+  if (level <= 3) {
+    return { type: BOSS_TYPES.BOSS_SPRITE };
+  }
   const cycle = (level - 1) % 15; // 15-level cycle
 
   if (cycle === 0) return { type: BOSS_TYPES.BIG_BEER_CAN };
-  // PART A: Changed level 2 from ICON_192 to BOSS_01 for reliable sprite loading
-  if (cycle === 1) return { type: BOSS_TYPES.BOSS_01 };
+  if (cycle === 1) return { type: BOSS_TYPES.BOSS_SPRITE };
   if (cycle === 2) return { type: BOSS_TYPES.ICON_192 };
 
   // Cycles 3-14: Player ships (12 variants)
@@ -168,49 +181,69 @@ async function createIcon192Boss() {
   }
 }
 
-/**
- * Creates boss_01 sprite boss visual
- */
-async function createBoss01Visual() {
+function getBossSpriteForLevel(level) {
+  if (LEVEL_BOSS_SPRITES[level]) return LEVEL_BOSS_SPRITES[level];
+  if (!BOSS_SPRITES.length) return null;
+  const idx = (level - 1) % BOSS_SPRITES.length;
+  return BOSS_SPRITES[idx];
+}
+
+function computeBossSpriteScale(textureWidth, baseScale, maxWidth) {
+  if (!textureWidth || !maxWidth) return baseScale;
+  const capScale = maxWidth / textureWidth;
+  return Math.min(baseScale, capScale);
+}
+
+async function createBossSpriteVisual(level, maxWidth) {
   const container = new PIXI.Container();
-  const url = '/sprites/boss/boss_01.png';
+  const tried = [];
 
-  try {
-    const texture = await PIXI.Assets.load({
-      alias: 'boss_sprite_01',
-      src: url
-    });
+  const primary = getBossSpriteForLevel(level);
+  const candidates = primary ? [primary, ...BOSS_SPRITES.filter(p => p !== primary)] : [...BOSS_SPRITES];
 
-    // PART A: Better texture validation
-    const textureValid = texture && texture.width > 0 && texture.height > 0;
+  for (const url of candidates) {
+    tried.push(url);
+    try {
+      const texture = await PIXI.Assets.load({
+        alias: `boss_sprite_${url.split('/').pop()}`,
+        src: url
+      });
 
-    if (!textureValid) {
-      console.warn(`[BossFactory] Boss_01 texture invalid: url=${url} exists=${!!texture} w=${texture?.width || 0} h=${texture?.height || 0}`);
-      return createFallbackBoss();
+      const textureValid = texture && texture.width > 0 && texture.height > 0;
+      if (!textureValid) {
+        console.warn(`[BossFactory] Boss sprite invalid: url=${url} exists=${!!texture} w=${texture?.width || 0} h=${texture?.height || 0}`);
+        continue;
+      }
+
+      const bossSprite = new PIXI.Sprite(texture);
+      bossSprite.anchor.set(0.5);
+      const scale = computeBossSpriteScale(texture.width, 1.5, maxWidth);
+      bossSprite.scale.set(scale);
+
+      container.addChild(bossSprite);
+
+      // Hover animation
+      let hoverTime = 0;
+      const ticker = new PIXI.Ticker();
+      ticker.add(() => {
+        hoverTime += 0.05;
+        bossSprite.y = Math.sin(hoverTime) * 5;
+        bossSprite.rotation += 0.002;
+      });
+      ticker.start();
+
+      if (level === 3) {
+        console.log(`[BossSelect] level=3 url=${url}`);
+      }
+      console.log(`[BossFactory] Boss sprite created url=${url} w=${texture.width} h=${texture.height} scale=${scale.toFixed(2)}`);
+      return { container, hitboxRef: bossSprite, url };
+    } catch (e) {
+      console.warn(`[BossFactory] Boss sprite load failed url=${url}:`, e);
     }
-
-    const bossSprite = new PIXI.Sprite(texture);
-    bossSprite.anchor.set(0.5);
-    bossSprite.scale.set(1.5);
-
-    container.addChild(bossSprite);
-
-    // Hover animation
-    let hoverTime = 0;
-    const ticker = new PIXI.Ticker();
-    ticker.add(() => {
-      hoverTime += 0.05;
-      bossSprite.y = Math.sin(hoverTime) * 5;
-      bossSprite.rotation += 0.002;
-    });
-    ticker.start();
-
-    console.log(`[BossFactory] Boss_01 created successfully url=${url} w=${texture.width} h=${texture.height}`);
-    return { container, hitboxRef: bossSprite }; // Return hitbox reference
-  } catch (e) {
-    console.error(`[BossFactory] Failed to create boss_01 visual from ${url}:`, e);
-    return createFallbackBoss();
   }
+
+  console.error('[BossSprite] FATAL no boss sprites could be loaded', { level, tried });
+  throw new Error('Boss sprite load failed');
 }
 
 /**
@@ -280,7 +313,7 @@ async function createBigPlayerShipBoss(shipNum, shipColor) {
  * Main factory function - creates boss visual for a given level
  * @returns {Promise<{container: PIXI.Container, hitboxRef: PIXI.DisplayObject, textureOk: boolean, kind: string}>}
  */
-export async function createBossVisual(level) {
+export async function createBossVisual(level, maxWidth) {
   const selection = selectBossType(level);
   let result;
   let kind;
@@ -299,10 +332,10 @@ export async function createBossVisual(level) {
       url = '/icons/icon-192.png';
       break;
 
-    case BOSS_TYPES.BOSS_01:
-      result = await createBoss01Visual();
-      kind = 'BOSS_01';
-      url = '/sprites/boss/boss_01.png';
+    case BOSS_TYPES.BOSS_SPRITE:
+      result = await createBossSpriteVisual(level, maxWidth);
+      kind = 'BOSS_SPRITE';
+      url = result.url || 'boss_sprite';
       break;
 
     case BOSS_TYPES.BIG_PLAYER_SHIP:

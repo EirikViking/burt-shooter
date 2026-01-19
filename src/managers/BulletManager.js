@@ -39,7 +39,7 @@ export class BulletManager {
     this.container.addChild(bullet.sprite);
   }
 
-  update(delta) {
+  update(delta, enemyScale = 1) {
     // Update player bullets
     this.playerBullets = this.playerBullets.filter(bullet => {
       bullet.update(delta);
@@ -52,7 +52,7 @@ export class BulletManager {
 
     // Update enemy bullets
     this.enemyBullets = this.enemyBullets.filter(bullet => {
-      bullet.update(delta);
+      bullet.update(delta * enemyScale);
       if (!bullet.active) {
         this.container.removeChild(bullet.sprite);
         return false;
