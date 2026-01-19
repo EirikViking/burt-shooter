@@ -1227,7 +1227,10 @@ export class PlayScene {
       // If it's been >5s since last recovery attempt and we're still shooting
       if (timeSinceRecovery > 5000) {
         if (check.recoveryAttempts === 0) {
-          console.log('[PlayScene] Shooting sound health check: Attempting recovery (first attempt)');
+          if (!window._hasLoggedAudioHealthCheck) {
+            console.log('[PlayScene] Shooting sound health check: Attempting recovery (first attempt)');
+            window._hasLoggedAudioHealthCheck = true;
+          }
         }
         check.lastRecoveryAttempt = now;
         check.recoveryAttempts++;

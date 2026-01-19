@@ -166,9 +166,10 @@ class AudioController {
     // 1. Get variants with Fallback
     let variants = SFX_CATALOG[eventName];
     if (!variants || variants.length === 0) {
-      if (!this.sfxDenylistLogged[eventName]) {
+      if (!this._missingKeysLogged) this._missingKeysLogged = new Set();
+      if (!this._missingKeysLogged.has(eventName)) {
         console.warn(`[AudioManager] Unknown SFX key: "${eventName}". Falling back to default.`);
-        this.sfxDenylistLogged[eventName] = true;
+        this._missingKeysLogged.add(eventName);
       }
       // Fallback to ensuring not silent
       variants = SFX_CATALOG['shoot_small'];
