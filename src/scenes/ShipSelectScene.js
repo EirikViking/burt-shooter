@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { getSelectableShips, getDefaultShipId, isValidShipId } from '../config/ShipMetadata.js';
+import { getSelectableShips, getDefaultShipKey, isValidShipKey } from '../config/ShipMetadata.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 
@@ -15,8 +15,8 @@ export class ShipSelectScene {
 
     // Load saved selection
     const saved = this.loadSelection();
-    if (saved && isValidShipId(saved)) {
-      const index = this.ships.findIndex(s => s.id === saved);
+    if (saved && isValidShipKey(saved)) {
+      const index = this.ships.findIndex(s => s.spriteKey === saved);
       if (index >= 0) this.selectedIndex = index;
     }
   }
@@ -75,14 +75,14 @@ export class ShipSelectScene {
 
     const cols = 3;
     const rows = Math.ceil(this.ships.length / cols);
-    const cardWidth = 180;
-    const cardHeight = 220;
-    const spacing = 20;
+    const cardWidth = 200; // Increased from 180
+    const cardHeight = 240; // Increased from 220
+    const spacing = 24; // Increased from 20
     const gridWidth = cols * cardWidth + (cols - 1) * spacing;
     const gridHeight = rows * cardHeight + (rows - 1) * spacing;
 
     // Responsive layout: reserve space for footer
-    const topMargin = 120;
+    const topMargin = 100; // Reduced from 120 for better centering
     const footerHeight = 120; // Space for instructions + START button
     const availableHeight = height - topMargin - footerHeight;
 
@@ -134,15 +134,15 @@ export class ShipSelectScene {
     card.addChild(bg);
     card.bg = bg;
 
-    // Ship sprite
-    const shipTexture = GameAssets.getRankShipTexture(index);
+    // Ship sprite - use textureIndex from ship metadata
+    const shipTexture = GameAssets.getRankShipTexture(ship.textureIndex);
     if (shipTexture && shipTexture.width > 0) {
       const sprite = new PIXI.Sprite(shipTexture);
       sprite.anchor.set(0.5);
       sprite.position.set(width / 2, height / 3);
 
-      // Scale to fit
-      const maxSize = 80;
+      // Scale to fit - slightly larger
+      const maxSize = 90; // Increased from 80
       const scale = Math.min(maxSize / sprite.width, maxSize / sprite.height);
       sprite.scale.set(scale);
 
@@ -153,7 +153,7 @@ export class ShipSelectScene {
     // Ship name
     const name = new PIXI.Text(ship.name, {
       fontFamily: 'Courier New',
-      fontSize: 14,
+      fontSize: 15, // Increased from 14
       fill: '#00ff00',
       align: 'center',
       wordWrap: true,
@@ -166,14 +166,14 @@ export class ShipSelectScene {
     // Ship description
     const desc = new PIXI.Text(ship.description, {
       fontFamily: 'Courier New',
-      fontSize: 11,
+      fontSize: 12, // Increased from 11
       fill: '#aaaaaa',
       align: 'center',
       wordWrap: true,
       wordWrapWidth: width - 20
     });
     desc.anchor.set(0.5, 0);
-    desc.position.set(width / 2, height / 2 + 45);
+    desc.position.set(width / 2, height / 2 + 48);
     card.addChild(desc);
 
     // Click handler
@@ -229,13 +229,13 @@ export class ShipSelectScene {
     this.shipCards.forEach((card, i) => {
       if (i === this.selectedIndex) {
         card.bg.clear();
-        card.bg.rect(0, 0, 180, 220);
+        card.bg.rect(0, 0, 200, 240); // Updated dimensions
         card.bg.fill({ color: 0x2a2a2a });
         card.bg.stroke({ color: 0x00ff00, width: 4 });
         if (card.sprite) card.sprite.tint = 0xffffff;
       } else {
         card.bg.clear();
-        card.bg.rect(0, 0, 180, 220);
+        card.bg.rect(0, 0, 200, 240); // Updated dimensions
         card.bg.fill({ color: 0x1a1a1a });
         card.bg.stroke({ color: 0x00ff00, width: 2 });
         if (card.sprite) card.sprite.tint = 0x888888;
@@ -272,16 +272,16 @@ export class ShipSelectScene {
     this.confirmed = true;
 
     const selectedShip = this.ships[this.selectedIndex];
-    console.log('[ShipSelect] confirmed spriteKey=' + selectedShip.id);
-    this.saveSelection(selectedShip.id);
+    console.log('[ShipSelect] confirmed spriteKey=' + selectedShip.spriteKey);
+    this.saveSelection(selectedShip.spriteKey);
 
     // Transition to game
-    this.game.startGame(selectedShip.id);
+    this.game.startGame(selectedShip.spriteKey);
   }
 
-  saveSelection(shipId) {
+  saveSelection(spriteKey) {
     try {
-      localStorage.setItem(STORAGE_KEY, shipId);
+      localStorage.setItem(STORAGE_KEY, spriteKey);
     } catch (e) {
       console.warn('[ShipSelect] Failed to save selection:', e);
     }
@@ -289,10 +289,10 @@ export class ShipSelectScene {
 
   loadSelection() {
     try {
-      return localStorage.getItem(STORAGE_KEY) || getDefaultShipId();
+      return localStorage.getItem(STORAGE_KEY) || getDefaultShipKey();
     } catch (e) {
       console.warn('[ShipSelect] Failed to load selection:', e);
-      return getDefaultShipId();
+      return getDefaultShipKey();
     }
   }
 

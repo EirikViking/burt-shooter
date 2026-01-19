@@ -5,17 +5,34 @@ import { ShipRegistry } from '../utils/ShipRegistry.js';
 import { AudioManager } from '../audio/AudioManager.js';
 
 export class Player {
-  constructor(x, y, inputManager, game, shipId = 'player_01') {
+  constructor(x, y, inputManager, game, spriteKey = 'row2_ship_1.png') {
     this.x = x;
     this.y = y;
     this.inputManager = inputManager;
     this.game = game;
 
+    // Map sprite key to texture index for ShipRegistry compatibility
+    const spriteKeyToIndex = {
+      'row2_ship_1.png': 0,
+      'row2_ship_2.png': 1,
+      'row2_ship_3_clean.png': 2,
+      'row2_ship_5.png': 3,
+      'ship_extract_1.png': 4,
+      'ship_extract_2.png': 5,
+      'ship_extract_3.png': 6,
+      'ship_extract_5.png': 7,
+      'ship_new.png': 8
+    };
+
+    const textureIndex = spriteKeyToIndex[spriteKey] !== undefined ? spriteKeyToIndex[spriteKey] : 0;
+    const shipId = `rank_ship_${textureIndex}`;
+
     // Config from Registry
-    this.config = ShipRegistry[shipId] || ShipRegistry.player_01;
+    this.config = ShipRegistry[shipId] || ShipRegistry.rank_ship_0;
     this.stats = { ...this.config.stats };
     this.visuals = { ...this.config.visuals };
-    this.initialShipId = shipId; // Store for initial spawn preservation
+    this.selectedShipSpriteKey = spriteKey; // Store the selected sprite key
+    this.selectedShipTextureIndex = textureIndex; // Store texture index
     this.hasSetInitialRank = false; // Track if initial rank has been set
 
     this.speed = this.stats.speed;
@@ -58,7 +75,7 @@ export class Player {
     this.damageOverlay = null;
     this.boostAura = null;
     this.rankBoostText = null;
-    this.weaponProfile = this.getWeaponProfileForShip(shipId);
+    this.weaponProfile = this.getWeaponProfileForShip(spriteKey);
     this.weaponProfileName = this.weaponProfile.name;
     this.weaponSfxKey = this.weaponProfile.shootSfx;
     this.bulletPierce = false;
@@ -85,7 +102,7 @@ export class Player {
     // Touch input (set externally by PlayScene)
     this.touchInput = { moveX: 0, moveY: 0 };
 
-    console.log('[Player] init spriteKey=' + shipId);
+    console.log('[Player] init selectedShipSpriteKey=' + spriteKey + ' activeSpriteKey=' + spriteKey);
     this.createSprite();
   }
 
@@ -112,9 +129,11 @@ export class Player {
   }
 
   buildDefaultShipSprite() {
-    // Support both textureIndex (rank ships) and texture (old player_01)
+    // Use selected ship texture index if available
     let texture;
-    if (typeof this.config.textureIndex === 'number') {
+    if (this.selectedShipTextureIndex !== undefined) {
+      texture = GameAssets.getRankShipTexture(this.selectedShipTextureIndex);
+    } else if (typeof this.config.textureIndex === 'number') {
       texture = GameAssets.getRankShipTexture(this.config.textureIndex);
     } else if (this.config.texture) {
       texture = GameAssets.getShipTexture(this.config.texture);
@@ -359,13 +378,13 @@ export class Player {
 
     // On initial spawn, preserve the selected ship from constructor
     if (prevRank === null) {
-      if (!this.hasSetInitialRank && this.initialShipId) {
+      if (!this.hasSetInitialRank && this.selectedShipSpriteKey) {
         // First time setting rank - keep the selected ship, don't swap
         this.hasSetInitialRank = true;
-        console.log('[Player] setRank initial, preserving selected ship:', this.initialShipId);
+        console.log('[Player] setRank initial, preserving selected ship:', this.selectedShipSpriteKey);
         return false; // Don't swap on initial spawn
       }
-      // Fallback for cases where initialShipId wasn't set
+      // Fallback for cases where selectedShipSpriteKey wasn't set
       return this.swapToRankShip(nr, { force: true });
     }
 

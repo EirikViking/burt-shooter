@@ -67,9 +67,9 @@ export class Game {
     this.app.stage.addChild(this.currentScene.container);
   }
 
-  startGame(shipId) {
-    console.log('[Game] starting new game spriteKey=' + shipId);
-    this.selectedShipId = shipId;
+  startGame(spriteKey) {
+    console.log('[Game] starting new game spriteKey=' + spriteKey);
+    this.selectedShipSpriteKey = spriteKey;
     this.score = 0;
     this.level = 1;
     this.lives = 3;
