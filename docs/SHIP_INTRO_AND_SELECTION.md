@@ -29,9 +29,9 @@ Player constructor
   ↓ this.selectedShipTextureIndex = textureIndex
   ↓ createSprite() uses selectedShipTextureIndex
   ↓
-Player.setRank(initialRank, 'init')
+Player.setRank(newRank)
   ↓ Checks if this.selectedShipSpriteKey exists
-  ↓ If yes, preserves ship sprite (doesn't swap)
+  ↓ If yes, preserves ship sprite (NEVER swaps)
   ↓ Rank only affects HUD, stats, difficulty
 ```
 
