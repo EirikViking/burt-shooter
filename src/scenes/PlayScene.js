@@ -220,19 +220,21 @@ export class PlayScene {
       if (this.player) {
         this.gameContainer.removeChild(this.player.sprite);
       }
-      this.player = new Player(width / 2, height - 100, this.inputManager, this.game);
+      const shipId = this.game.selectedShipId || 'rank_ship_0';
+      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, shipId);
       this.gameContainer.addChild(this.player.sprite);
       if (this.player.setRank) {
         const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
         this.player.setRank(initialRank, 'init');
       }
       this.applySeasonCosmetics();
-      console.log('[PlayScene] Assets (Ships+Ranks) ready');
+      console.log('[PlayScene] Assets (Ships+Ranks) ready, shipId:', shipId);
     });
 
     // Create placeholder player immediately (will be replaced)
     if (!this.player) {
-      this.player = new Player(width / 2, height - 100, this.inputManager, this.game);
+      const shipId = this.game.selectedShipId || 'rank_ship_0';
+      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, shipId);
       this.gameContainer.addChild(this.player.sprite);
       if (this.player.setRank) {
         const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;

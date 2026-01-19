@@ -335,7 +335,7 @@ export class MenuScene {
         AudioManager.init();
         AudioManager.playSfx('ui_open');
         AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
-        this.game.startGame();
+        this.game.showShipSelect();
       } catch (e) {
         console.error('[MenuScene] Start Game Error:', e);
       }

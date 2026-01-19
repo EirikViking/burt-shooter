@@ -3,7 +3,7 @@ import { GameState } from './GameState.js';
 import { MenuScene } from '../scenes/MenuScene.js';
 import { PlayScene } from '../scenes/PlayScene.js';
 import { GameOverScene } from '../scenes/GameOverScene.js';
-
+import { ShipSelectScene } from '../scenes/ShipSelectScene.js';
 import { HighscoreScene } from '../scenes/HighscoreScene.js';
 import { rankManager } from '../managers/RankManager.js';
 
@@ -19,10 +19,12 @@ export class Game {
 
     this.scenes = {
       menu: new MenuScene(this),
+      shipSelect: null, // Created on demand
       play: new PlayScene(this),
       gameOver: new GameOverScene(this),
       highscore: new HighscoreScene(this)
     };
+    this.selectedShipId = null;
   }
 
   start() {
@@ -32,6 +34,9 @@ export class Game {
   switchScene(sceneName) {
     if (this.currentScene) {
       this.app.stage.removeChild(this.currentScene.container);
+      if (this.currentScene.cleanup) {
+        this.currentScene.cleanup();
+      }
       this.currentScene.destroy();
     }
 
@@ -40,8 +45,29 @@ export class Game {
     this.currentScene.init();
   }
 
-  startGame() {
-    console.log('[Game] Starting new game...');
+  async showShipSelect() {
+    // Create ship select scene if not exists
+    if (!this.scenes.shipSelect) {
+      this.scenes.shipSelect = new ShipSelectScene(this);
+      await this.scenes.shipSelect.create();
+    }
+
+    // Remove current scene
+    if (this.currentScene) {
+      this.app.stage.removeChild(this.currentScene.container);
+      if (this.currentScene.cleanup) {
+        this.currentScene.cleanup();
+      }
+    }
+
+    // Show ship select
+    this.currentScene = this.scenes.shipSelect;
+    this.app.stage.addChild(this.currentScene.container);
+  }
+
+  startGame(shipId) {
+    console.log('[Game] Starting new game with ship:', shipId);
+    this.selectedShipId = shipId;
     this.score = 0;
     this.level = 1;
     this.lives = 3;

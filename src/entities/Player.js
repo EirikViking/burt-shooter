@@ -109,7 +109,14 @@ export class Player {
   }
 
   buildDefaultShipSprite() {
-    const texture = GameAssets.getShipTexture(this.config.texture);
+    // Support both textureIndex (rank ships) and texture (old player_01)
+    let texture;
+    if (typeof this.config.textureIndex === 'number') {
+      texture = GameAssets.getRankShipTexture(this.config.textureIndex);
+    } else if (this.config.texture) {
+      texture = GameAssets.getShipTexture(this.config.texture);
+    }
+
     if (!GameAssets.isValidTexture(texture)) return null;
 
     const sprite = new PIXI.Sprite(texture);
