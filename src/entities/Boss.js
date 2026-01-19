@@ -180,6 +180,15 @@ export class Boss {
   update(delta, playerX, playerY) {
     if (!this.active) return;
 
+    // Guard: Sprite might not be ready yet (async creation) or destroyed
+    if (!this.sprite) {
+      if (!this._warnedSpriteMissing) {
+        console.warn('[Boss] Sprite not ready during update - skipping frame');
+        this._warnedSpriteMissing = true;
+      }
+      return;
+    }
+
     this.moveTimer += delta;
 
     // Phase transitions

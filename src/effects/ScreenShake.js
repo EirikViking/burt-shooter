@@ -14,12 +14,17 @@ export class ScreenShake {
 
   update(delta) {
     if (this.shakeDuration <= 0) {
-      this.container.x = this.originalX;
-      this.container.y = this.originalY;
+      if (this.container && !this.container.destroyed) {
+        this.container.x = this.originalX;
+        this.container.y = this.originalY;
+      }
       return;
     }
 
     this.shakeDuration -= delta;
+
+    // Guard against destroyed container during shake
+    if (!this.container || this.container.destroyed) return;
 
     const shakeX = (Math.random() - 0.5) * this.shakeAmount;
     const shakeY = (Math.random() - 0.5) * this.shakeAmount;
