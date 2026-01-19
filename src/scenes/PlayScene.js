@@ -23,6 +23,7 @@ import {
   getMicroMessage,
   getAllNewPhrases
 } from '../text/phrasePool.js';
+import { getShipMetadata } from '../config/ShipMetadata.js';
 
 export class PlayScene {
   constructor(game) {
@@ -98,6 +99,12 @@ export class PlayScene {
     this.toastTopQueue = [];
     this.toastCornerQueue = [];
     this.activeCenterToast = null;
+
+    // Ship intro state
+    this.introActive = false;
+    this.introComplete = false;
+    this.introOverlay = null;
+    this.introStartTime = 0;
     this.activeTopToast = null;
     this.activeCornerToast = null;
     this.centerToastLockUntil = 0;
@@ -229,6 +236,9 @@ export class PlayScene {
         this.player.setRank(initialRank, 'init');
       }
       this.applySeasonCosmetics();
+
+      // Start ship intro animation
+      this.startShipIntro(spriteKey);
     });
 
     // Create placeholder player immediately (will be replaced)
@@ -527,7 +537,7 @@ export class PlayScene {
       const touchInput = this.touchControls ? this.touchControls.getInput() : { firing: false };
       const firePressed = this.inputManager.isFiring() || touchInput.firing;
 
-      if (firePressed && this.player) {
+      if (firePressed && this.player && !this.introActive) {
         if (this.player.canShoot()) {
           const bullets = this.player.shoot();
           bullets.forEach(bullet => this.bulletManager.addPlayerBullet(bullet));
@@ -2242,5 +2252,120 @@ export class PlayScene {
     else if (type === 'ICON_192') AudioManager.playSfx('ui_open', { force: true, volume: 0.8 });
     else AudioManager.playSfx('powerup', { force: true, volume: 0.8 });
     console.log(`[BossCelebration] level=${level} type=${type} fired=true`);
+  }
+
+  startShipIntro(spriteKey) {
+    if (this.introComplete || !this.player) return;
+
+    this.introActive = true;
+    this.introStartTime = Date.now();
+
+    const shipMeta = getShipMetadata(spriteKey);
+    const shipName = shipMeta ? shipMeta.name : 'UNKNOWN SHIP';
+    const shipTagline = shipMeta ? shipMeta.description : '';
+
+    // Create intro overlay
+    this.introOverlay = new PIXI.Container();
+
+    // Ship name (big retro text)
+    const nameText = new PIXI.Text(shipName, {
+      fontFamily: 'Courier New',
+      fontSize: 48,
+      fill: '#00ff00',
+      stroke: '#000000',
+      strokeThickness: 6,
+      fontWeight: 'bold',
+      dropShadow: true,
+      dropShadowColor: '#00ff00',
+      dropShadowBlur: 8,
+      dropShadowDistance: 0
+    });
+    nameText.anchor.set(0.5);
+    nameText.position.set(this.game.getWidth() / 2, this.game.getHeight() / 2 - 40);
+    nameText.alpha = 0;
+    this.introOverlay.addChild(nameText);
+
+    // Tagline (smaller text)
+    const taglineText = new PIXI.Text(shipTagline, {
+      fontFamily: 'Courier New',
+      fontSize: 16,
+      fill: '#cccccc',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: this.game.getWidth() - 100
+    });
+    taglineText.anchor.set(0.5);
+    taglineText.position.set(this.game.getWidth() / 2, this.game.getHeight() / 2 + 20);
+    taglineText.alpha = 0;
+    this.introOverlay.addChild(taglineText);
+
+    this.uiOverlay.addChild(this.introOverlay);
+
+    // Animate player ship flying in from below
+    const startY = this.game.getHeight() + 100;
+    const targetY = this.game.getHeight() - 100;
+    this.player.sprite.y = startY;
+    this.player.y = startY;
+
+    // Play SFX
+    AudioManager.playSfx('ui_open', { volume: 0.7 });
+
+    // Animate over 900ms
+    const introDuration = 900;
+    const startTime = Date.now();
+
+    const animateIntro = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / introDuration, 1);
+
+      // Ease out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+
+      // Move player up
+      const currentY = startY + (targetY - startY) * eased;
+      this.player.sprite.y = currentY;
+      this.player.y = currentY;
+
+      // Fade in text
+      if (progress < 0.3) {
+        const textProgress = progress / 0.3;
+        nameText.alpha = textProgress;
+        taglineText.alpha = textProgress;
+      } else if (progress > 0.7) {
+        const fadeOut = (progress - 0.7) / 0.3;
+        nameText.alpha = 1 - fadeOut;
+        taglineText.alpha = 1 - fadeOut;
+      } else {
+        nameText.alpha = 1;
+        taglineText.alpha = 1;
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(animateIntro);
+      } else {
+        this.completeShipIntro();
+      }
+    };
+
+    animateIntro();
+  }
+
+  completeShipIntro() {
+    this.introActive = false;
+    this.introComplete = true;
+
+    // Remove overlay
+    if (this.introOverlay && this.introOverlay.parent) {
+      this.introOverlay.parent.removeChild(this.introOverlay);
+      this.introOverlay.destroy({ children: true });
+      this.introOverlay = null;
+    }
+
+    // Start enemy waves
+    if (this.enemyManager && !this.enemyManager.waveActive) {
+      this.enemyManager.startWave();
+    }
+
+    console.log('[PlayScene] Ship intro complete, gameplay enabled');
   }
 }
