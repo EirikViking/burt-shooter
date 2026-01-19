@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { getShipMetadata, getShipUsage, getTotalUsage } from '../config/ShipMetadata.js';
+import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
@@ -14,6 +15,9 @@ export class ShipDetailsScene {
             this.ship = getShipMetadata('row2_ship_1.png');
             this.spriteKey = 'row2_ship_1.png';
         }
+
+        // Ensure state is updated
+        setSelectedShipKey(this.spriteKey);
     }
 
     async create() {
@@ -25,10 +29,10 @@ export class ShipDetailsScene {
         bg.fill({ color: 0x000000 });
         this.container.addChild(bg);
 
-        // Determine layout based on screen size
+        // Determine layout
         const isMobile = width < 900;
-        const panelWidth = Math.min(800, width - 40);
-        const panelHeight = Math.min(700, height - 60);
+        const panelWidth = Math.min(850, width - 40);
+        const panelHeight = Math.min(750, height - 60);
         const panelX = (width - panelWidth) / 2;
         const panelY = (height - panelHeight) / 2;
 
@@ -39,7 +43,7 @@ export class ShipDetailsScene {
         panel.stroke({ color: 0x00ff00, width: 3 });
         this.container.addChild(panel);
 
-        // Content container for scrolling if needed
+        // Content container
         const contentContainer = new PIXI.Container();
         contentContainer.x = panelX;
         contentContainer.y = panelY;
@@ -50,15 +54,16 @@ export class ShipDetailsScene {
         // Title
         const title = new PIXI.Text(this.ship.name, {
             fontFamily: 'Courier New',
-            fontSize: isMobile ? 24 : 32,
+            fontSize: isMobile ? 26 : 32,
             fill: '#00ff00',
             stroke: '#000000',
-            strokeThickness: 4
+            strokeThickness: 4,
+            fontWeight: 'bold'
         });
         title.anchor.set(0.5, 0);
         title.position.set(panelWidth / 2, yOffset);
         contentContainer.addChild(title);
-        yOffset += isMobile ? 50 : 60;
+        yOffset += isMobile ? 50 : 55;
 
         // Ship sprite (large)
         const shipTexture = GameAssets.getRankShipTexture(this.ship.textureIndex);
@@ -67,58 +72,32 @@ export class ShipDetailsScene {
             sprite.anchor.set(0.5);
             sprite.position.set(panelWidth / 2, yOffset + 60);
 
-            const maxSize = isMobile ? 120 : 150;
+            const maxSize = isMobile ? 120 : 140;
             const scale = Math.min(maxSize / sprite.width, maxSize / sprite.height);
             sprite.scale.set(scale);
 
             contentContainer.addChild(sprite);
         }
-        yOffset += isMobile ? 140 : 140;
+        yOffset += isMobile ? 130 : 130;
 
         // Stats section
         yOffset = this.createStatsSection(contentContainer, panelWidth, yOffset, isMobile);
 
         // Usage count
         const usageCount = getShipUsage(this.spriteKey);
-        const totalUsage = getTotalUsage();
         const usageText = new PIXI.Text(`Used ${usageCount} times by players`, {
             fontFamily: 'Courier New',
-            fontSize: 14,
-            fill: '#aaaaaa',
+            fontSize: 13,
+            fill: '#999999',
             align: 'center'
         });
         usageText.anchor.set(0.5, 0);
         usageText.position.set(panelWidth / 2, yOffset);
         contentContainer.addChild(usageText);
-        yOffset += 25;
+        yOffset += 35;
 
-        if (totalUsage > 0) {
-            const totalText = new PIXI.Text(`Total starts: ${totalUsage}`, {
-                fontFamily: 'Courier New',
-                fontSize: 12,
-                fill: '#666666',
-                align: 'center'
-            });
-            totalText.anchor.set(0.5, 0);
-            totalText.position.set(panelWidth / 2, yOffset);
-            contentContainer.addChild(totalText);
-            yOffset += 30;
-        } else {
-            yOffset += 20;
-        }
-
-        // Long lore section
-        const loreText = new PIXI.Text(this.ship.loreLong || this.ship.description, {
-            fontFamily: 'Courier New',
-            fontSize: isMobile ? 12 : 14,
-            fill: '#ffffff',
-            align: 'left',
-            wordWrap: true,
-            wordWrapWidth: panelWidth - 60,
-            lineHeight: isMobile ? 18 : 20
-        });
-        loreText.position.set(30, yOffset);
-        contentContainer.addChild(loreText);
+        // Lore section with better formatting
+        yOffset = this.createLoreSection(contentContainer, panelWidth, yOffset, isMobile);
 
         // Buttons
         this.createButtons(panelX, panelY, panelWidth, panelHeight, isMobile);
@@ -133,17 +112,17 @@ export class ShipDetailsScene {
         // Stats title
         const statsTitle = new PIXI.Text('STATS', {
             fontFamily: 'Courier New',
-            fontSize: 18,
+            fontSize: 16,
             fill: '#00ff00',
             fontWeight: 'bold'
         });
         statsTitle.anchor.set(0.5, 0);
         statsTitle.position.set(panelWidth / 2, yOffset);
         container.addChild(statsTitle);
-        yOffset += 30;
+        yOffset += 28;
 
         // Stats display
-        const statSpacing = isMobile ? 80 : 100;
+        const statSpacing = isMobile ? 90 : 110;
         const startX = (panelWidth - statSpacing * 2) / 2;
 
         const statLabels = [
@@ -159,7 +138,7 @@ export class ShipDetailsScene {
             // Stat value
             const valueText = new PIXI.Text(stat.value, {
                 fontFamily: 'Courier New',
-                fontSize: isMobile ? 18 : 22,
+                fontSize: isMobile ? 20 : 24,
                 fill: stat.color,
                 fontWeight: 'bold'
             });
@@ -169,11 +148,11 @@ export class ShipDetailsScene {
             // Stat label
             const labelText = new PIXI.Text(stat.label, {
                 fontFamily: 'Courier New',
-                fontSize: isMobile ? 10 : 12,
+                fontSize: isMobile ? 10 : 11,
                 fill: '#aaaaaa'
             });
             labelText.anchor.set(0.5, 0);
-            labelText.position.set(0, isMobile ? 22 : 28);
+            labelText.position.set(0, isMobile ? 24 : 30);
             statContainer.addChild(labelText);
 
             container.addChild(statContainer);
@@ -182,10 +161,57 @@ export class ShipDetailsScene {
         return yOffset + 60;
     }
 
+    createLoreSection(container, panelWidth, yOffset, isMobile) {
+        // Format lore into paragraphs
+        const loreLong = this.ship.loreLong || this.ship.description;
+        const paragraphs = this.formatLoreIntoParagraphs(loreLong);
+
+        paragraphs.forEach((para, index) => {
+            const paraText = new PIXI.Text(para, {
+                fontFamily: 'Courier New',
+                fontSize: isMobile ? 11 : 13,
+                fill: '#dddddd',
+                align: 'left',
+                wordWrap: true,
+                wordWrapWidth: panelWidth - 80,
+                lineHeight: isMobile ? 16 : 18
+            });
+            paraText.position.set(40, yOffset);
+            container.addChild(paraText);
+            yOffset += paraText.height + (isMobile ? 10 : 12);
+        });
+
+        return yOffset;
+    }
+
+    formatLoreIntoParagraphs(lore) {
+        // Split long lore into readable paragraphs
+        const sentences = lore.match(/[^.!?]+[.!?]+/g) || [lore];
+        const paragraphs = [];
+        let currentPara = '';
+
+        sentences.forEach((sentence, index) => {
+            currentPara += sentence.trim() + ' ';
+
+            // Create new paragraph every 2-3 sentences or at ~150 chars
+            if ((index + 1) % 2 === 0 || currentPara.length > 150) {
+                paragraphs.push(currentPara.trim());
+                currentPara = '';
+            }
+        });
+
+        // Add remaining
+        if (currentPara.trim()) {
+            paragraphs.push(currentPara.trim());
+        }
+
+        return paragraphs.length > 0 ? paragraphs : [lore];
+    }
+
     createButtons(panelX, panelY, panelWidth, panelHeight, isMobile) {
-        const buttonY = panelY + panelHeight - (isMobile ? 50 : 60);
-        const buttonWidth = isMobile ? 120 : 140;
-        const buttonHeight = isMobile ? 35 : 40;
+        const buttonY = panelY + panelHeight - (isMobile ? 50 : 55);
+        const buttonWidth = isMobile ? 130 : 150;
+        const buttonHeight = isMobile ? 38 : 42;
         const spacing = 20;
 
         // Back button
@@ -202,8 +228,9 @@ export class ShipDetailsScene {
 
         const backText = new PIXI.Text('BACK', {
             fontFamily: 'Courier New',
-            fontSize: isMobile ? 16 : 20,
-            fill: '#00ff00'
+            fontSize: isMobile ? 18 : 22,
+            fill: '#00ff00',
+            fontWeight: 'bold'
         });
         backText.anchor.set(0.5);
         backText.position.set(buttonWidth / 2, buttonHeight / 2);
@@ -226,7 +253,7 @@ export class ShipDetailsScene {
 
         const startText = new PIXI.Text('START GAME', {
             fontFamily: 'Courier New',
-            fontSize: isMobile ? 16 : 20,
+            fontSize: isMobile ? 18 : 22,
             fill: '#000000',
             fontWeight: 'bold'
         });
@@ -260,6 +287,7 @@ export class ShipDetailsScene {
 
     startGame() {
         console.log('[ShipDetails] Starting game with ship:', this.spriteKey);
+        // Read from state to ensure we have the latest selection
         this.game.startGame(this.spriteKey);
     }
 
