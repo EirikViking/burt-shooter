@@ -390,20 +390,24 @@ export class ShipSelectScene {
   }
 
   setupInput() {
+    console.log('[ShipSelectInput] attached');
     this.keyHandler = (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'KeyA') {
+      // Log first key press for debug
+      if (DEBUG) console.log(`[ShipSelectInput] key=${e.key} code=${e.code}`);
+
+      if (e.key === 'ArrowLeft' || e.code === 'KeyA') {
         this.selectedIndex = Math.max(0, this.selectedIndex - 1);
         setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
         this.updateSelection();
-      } else if (e.key === 'ArrowRight' || e.key === 'KeyD') {
+      } else if (e.key === 'ArrowRight' || e.code === 'KeyD') {
         this.selectedIndex = Math.min(this.ships.length - 1, this.selectedIndex + 1);
         setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
         this.updateSelection();
-      } else if (e.key === 'ArrowUp' || e.key === 'KeyW') {
+      } else if (e.key === 'ArrowUp' || e.code === 'KeyW') {
         this.selectedIndex = Math.max(0, this.selectedIndex - 3);
         setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
         this.updateSelection();
-      } else if (e.key === 'ArrowDown' || e.key === 'KeyS') {
+      } else if (e.key === 'ArrowDown' || e.code === 'KeyS') {
         this.selectedIndex = Math.min(this.ships.length - 1, this.selectedIndex + 3);
         setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
         this.updateSelection();
@@ -431,6 +435,7 @@ export class ShipSelectScene {
   }
 
   cleanup() {
+    console.log('[ShipSelectInput] detached');
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler);
     }

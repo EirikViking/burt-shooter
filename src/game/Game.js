@@ -49,11 +49,15 @@ export class Game {
   }
 
   async showShipSelect() {
-    // Create ship select scene if not exists
-    if (!this.scenes.shipSelect) {
-      this.scenes.shipSelect = new ShipSelectScene(this);
-      await this.scenes.shipSelect.create();
+    // Create ship select scene if not exists OR recreate it to ensure fresh input state
+    // Fixing bug where returning from Details broke input
+    if (this.scenes.shipSelect) {
+      if (this.scenes.shipSelect.destroy) this.scenes.shipSelect.destroy();
+      this.scenes.shipSelect = null;
     }
+
+    this.scenes.shipSelect = new ShipSelectScene(this);
+    await this.scenes.shipSelect.create();
 
     // Remove current scene
     if (this.currentScene) {
