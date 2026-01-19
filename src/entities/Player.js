@@ -304,12 +304,13 @@ export class Player {
     this.shipSprite.name = `player_ship_rank_${index}`;
 
     // STRICT SIZING: Use targetShipWidthPx if set, otherwise compute it
-    if (!this.targetShipWidthPx) {
+    if (!this.targetShipWidthPx || isNaN(this.targetShipWidthPx)) {
       this.targetShipWidthPx = this.computeBaselineShipWidth();
     }
     const targetWidth = this.targetShipWidthPx;
 
-    const scale = texture.width > 0 ? targetWidth / texture.width : 1;
+    const texWidth = texture.width || 1;
+    const scale = targetWidth / texWidth;
     this.shipSprite.scale.set(scale);
     this.baseScale = Number.isFinite(scale) ? scale : 1;
 
@@ -327,12 +328,13 @@ export class Player {
         || 'unknown';
       const spriteName = this.shipSprite?.name || 'unnamed';
       console.log(`[PlayerShipSwap] rank=${nr} old=${previousName} new=${shipName} sprite=${spriteName} texture=${textureSource}`);
-      console.log(`[PlayerShipScale] ${texture.width} ${texture.height} ${this.baseScale}`);
+      console.log(`[PlayerShipScale] texW=${texWidth} targetW=${targetWidth} scale=${this.baseScale}`);
       console.log(`[ShipWeapon] ship=${shipName} profile=${this.weaponProfileName} shootSfx=${this.weaponSfxKey}`);
     }
 
     if (this.shipSprite && this.baseScale) {
-      const pulseScale = this.baseScale * 1.08;
+      // Pulse relative to baseScale, not 1
+      const pulseScale = this.baseScale * 1.5; // Bigger pulse for visibility
       this.shipSprite.scale.set(pulseScale);
       setTimeout(() => {
         if (this.shipSprite) this.shipSprite.scale.set(this.baseScale);
@@ -483,32 +485,38 @@ export class Player {
       }, 200);
     }
 
-    // 2. Scale Pulse (Pop up and down) - Container scale only
+    // 2. Scale Pulse (Pop up and down) - Container scale
     if (this.sprite) {
-      const currentScale = this.sprite.scale.x;
-      this.sprite.scale.set(currentScale * 1.3);
+      const startScaleX = this.sprite.scale.x;
+      const startScaleY = this.sprite.scale.y;
+      this.sprite.scale.set(startScaleX * 1.3, startScaleY * 1.3);
       setTimeout(() => {
-        if (this.sprite) this.sprite.scale.set(1); // Reset container scale to 1
+        if (this.sprite) this.sprite.scale.set(startScaleX, startScaleY);
       }, 300);
     }
 
-    // 3. Swap Sprite
+    // 3. Swap Sprite PRE-LOG
+    if (this.shipSprite && this.shipSprite.texture) {
+      const tex = this.shipSprite.texture;
+      console.log(`[RankUpSprite] before rank=${this.rankIndex} texW=${tex.width} scale=${this.shipSprite.scale.x.toFixed(4)}`);
+    }
+
+    // 4. Swap Sprite
     // We trust swapToRankShip to maintain the correct targetShipWidthPx
     const swapped = this.swapToRankShip(newRank, { force: true, log: true });
 
-    // 4. Verification Logs (REQUIRED)
+    // 5. Verification Logs (REQUIRED)
     if (this.shipSprite && this.shipSprite.texture) {
       const tex = this.shipSprite.texture;
       const finalW = this.shipSprite.width; // Local width (tex * scale)
       const scaleX = this.shipSprite.scale.x;
       const scaleY = this.shipSprite.scale.y;
       console.log(`[RankUpSprite] targetWidthPx=${this.targetShipWidthPx?.toFixed(2) || 'nan'}`);
-      console.log(`[RankUpSprite] texW=${tex.width} texH=${tex.height}`);
-      console.log(`[RankUpSprite] scaleX=${scaleX.toFixed(4)} scaleY=${scaleY.toFixed(4)} finalWidth=${finalW.toFixed(2)}`);
+      console.log(`[RankUpSprite] after texW=${tex.width} texH=${tex.height} scale=${scaleX.toFixed(4)} finalWidth=${finalW.toFixed(2)}`);
       console.log('[RankUpSprite] done');
     }
 
-    // 5. Apply Stats/Boost (Shields, etc)
+    // 6. Apply Stats/Boost (Shields, etc)
     this.applyRankUpBoost();
 
     console.log(`[RankUp] complete. Swapped=${swapped}`);
