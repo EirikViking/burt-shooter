@@ -17,6 +17,8 @@ class TauntDirector {
         this.categoryCooldowns = new Map();
         this.recentTaunts = [];
         this.maxRecent = 3;
+        this.activeTickers = []; // Track active tickers for cleanup
+        this._destroyed = false;
 
         // Cooldown durations (ms)
         this.GLOBAL_COOLDOWN = 3000; // 3 seconds between any taunts
@@ -272,12 +274,23 @@ class TauntDirector {
         const ticker = (delta) => {
             time += delta.deltaTime * 16.67;
 
-            // Glitch jitter
+            // Glitch jitter with guards for destroyed objects
             if (time < fadeIn + hold) {
                 glitchLayers.forEach((layer, i) => {
-                    layer.x = (i - 1) * 2 + (Math.random() - 0.5) * 4;
-                    layer.y = (i - 1) * 2 + (Math.random() - 0.5) * 4;
+                    // Guard: check if layer is destroyed before setting properties
+                    if (layer && !layer.destroyed) {
+                        layer.x = (i - 1) * 2 + (Math.random() - 0.5) * 4;
+                        layer.y = (i - 1) * 2 + (Math.random() - 0.5) * 4;
+                    }
                 });
+            }
+
+            // Guard container access during animations
+            if (!container || container.destroyed) {
+                this.scene.game.app.ticker.remove(ticker);
+                const idx = this.activeTickers.indexOf(ticker);
+                if (idx >= 0) this.activeTickers.splice(idx, 1);
+                return;
             }
 
             // Fade in
@@ -300,11 +313,32 @@ class TauntDirector {
             // Remove
             else {
                 this.scene.game.app.ticker.remove(ticker);
-                this.scene.container.removeChild(container);
+                const idx = this.activeTickers.indexOf(ticker);
+                if (idx >= 0) this.activeTickers.splice(idx, 1);
+                if (this.scene && this.scene.container) {
+                    this.scene.container.removeChild(container);
+                }
             }
         };
 
         this.scene.game.app.ticker.add(ticker);
+        this.activeTickers.push(ticker);
+    }
+
+    cleanup() {
+        this._destroyed = true;
+        // Stop all active taunt tickers
+        if (this.scene && this.scene.game && this.scene.game.app && this.scene.game.app.ticker) {
+            this.activeTickers.forEach(ticker => {
+                this.scene.game.app.ticker.remove(ticker);
+            });
+        }
+        this.activeTickers = [];
+        console.log('[TauntDirector] Cleanup: stopped all active tickers');
+    }
+
+    destroy() {
+        this.cleanup();
     }
 }
 
