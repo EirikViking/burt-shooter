@@ -67,6 +67,10 @@ export class Player {
     this.spawnFadeTime = 0;
     this.spawnFadeDuration = 1000; // 1s fade in
 
+    // Damage flash effect
+    this.flashTimer = 0;
+    this.flashDuration = 0;
+
     // Powerups
     this.activePowerup = { type: null, expiresAt: 0 };
     this.rankBoost = { type: null, expiresAt: 0 };
@@ -581,6 +585,25 @@ export class Player {
       if (this.sprite.alpha > 1) this.sprite.alpha = 1;
     }
 
+    // Damage Flash Effect
+    if (this.flashTimer < this.flashDuration) {
+      this.flashTimer += dt;
+      const progress = this.flashTimer / this.flashDuration;
+      // Flash intensity fades out
+      const flashIntensity = 1 - progress;
+      // Apply tint to ship sprite
+      if (this.shipSprite && !this.shipSprite.destroyed) {
+        // Blend flash color with white based on intensity
+        const r = Math.floor(((this.flashColor >> 16) & 0xff) * flashIntensity + 255 * (1 - flashIntensity));
+        const g = Math.floor(((this.flashColor >> 8) & 0xff) * flashIntensity + 255 * (1 - flashIntensity));
+        const b = Math.floor((this.flashColor & 0xff) * flashIntensity + 255 * (1 - flashIntensity));
+        this.shipSprite.tint = (r << 16) | (g << 8) | b;
+      }
+    } else if (this.shipSprite && !this.shipSprite.destroyed) {
+      // Reset tint to white (no flash)
+      this.shipSprite.tint = 0xffffff;
+    }
+
     // Input & Movement - merge keyboard and touch
     let dx = 0;
     let dy = 0;
@@ -883,15 +906,32 @@ export class Player {
       // Play Break Sound
       if (this.game && this.game.scenes && this.game.scenes.play) {
         // Direct access if possible, or assume generic hit sound
-        // AudioManager.playSfx('shield_break'); 
+        // AudioManager.playSfx('shield_break');
       }
+      // Flash effect even for shield break
+      this.triggerFlash(0xff6666, 200);
       return false; // DAMAGE ABSORBED
     }
 
     if (this.invulnerable) return false;
     this.invulnerable = true;
     this.invulnerableTime = 2000;
+
+    // Trigger damage flash effect
+    this.triggerFlash(0xff0000, 300);
+
+    // Trigger medium screen shake
+    if (this.game && this.game.scenes && this.game.scenes.play && this.game.scenes.play.screenShake) {
+      this.game.scenes.play.screenShake.mediumShake();
+    }
+
     return true; // DAMAGE TAKEN
+  }
+
+  triggerFlash(color = 0xffffff, duration = 200) {
+    this.flashTimer = 0;
+    this.flashDuration = duration;
+    this.flashColor = color;
   }
 
   activateShield() {
