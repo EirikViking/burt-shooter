@@ -16,6 +16,9 @@ export class Bullet {
     this.screenWidth = 800;
     this.screenHeight = 600;
 
+    // Pulse effect for enemy bullets
+    this.pulseTimer = 0;
+
     this.sprite = null;
 
     // Try Sprite First
@@ -35,17 +38,30 @@ export class Bullet {
     if (!this.sprite) {
       this.sprite = new PIXI.Graphics();
 
-      // Draw glow first (behind)
-      this.sprite.circle(0, 0, this.radius + 3);
-      this.sprite.fill({ color: this.color, alpha: 0.4 });
-
-      // Draw main bullet (on top)
-      this.sprite.circle(0, 0, this.radius);
-      this.sprite.fill({ color: this.color, alpha: 1 });
-
-      // Add bright center
-      this.sprite.circle(0, 0, this.radius * 0.5);
-      this.sprite.fill({ color: 0xffffff, alpha: 0.8 });
+      if (!isPlayer) {
+        // Enemy bullets: larger, more visible with warning color
+        const warningRad = this.radius * 1.5;
+        // Outer warning glow
+        this.sprite.circle(0, 0, warningRad + 5);
+        this.sprite.fill({ color: 0xff0000, alpha: 0.3 });
+        // Main bullet larger
+        this.sprite.circle(0, 0, warningRad);
+        this.sprite.fill({ color: this.color, alpha: 1 });
+        // Bright center
+        this.sprite.circle(0, 0, warningRad * 0.6);
+        this.sprite.fill({ color: 0xffffff, alpha: 0.9 });
+      } else {
+        // Player bullets: original style
+        // Draw glow first (behind)
+        this.sprite.circle(0, 0, this.radius + 3);
+        this.sprite.fill({ color: this.color, alpha: 0.4 });
+        // Draw main bullet (on top)
+        this.sprite.circle(0, 0, this.radius);
+        this.sprite.fill({ color: this.color, alpha: 1 });
+        // Add bright center
+        this.sprite.circle(0, 0, this.radius * 0.5);
+        this.sprite.fill({ color: 0xffffff, alpha: 0.8 });
+      }
     }
 
     this.sprite.x = x;
@@ -68,6 +84,14 @@ export class Bullet {
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+
+    // Pulse effect for enemy bullets (more visible)
+    if (!this.isPlayer) {
+      this.pulseTimer += delta * 0.1;
+      const pulseScale = 1 + Math.sin(this.pulseTimer) * 0.15;
+      this.sprite.scale.set(pulseScale);
+      this.sprite.alpha = 0.9 + Math.sin(this.pulseTimer * 2) * 0.1;
+    }
 
     // Deactivate if off-screen (use dynamic bounds with padding)
     const padding = 30;
