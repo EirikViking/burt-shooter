@@ -88,5 +88,6 @@ export const SFX_CATALOG = {
     'forceField': [getSfx('forceField_000')], // Alias for shield/pickup reuse
     'shield_up': [getSfx('forceField_000')],
     'spawn_special': [getSfx('forceField_000')], // Alias for missing key
-    'life_up': [getSfx('ui_open_000')] // Fallback if specific not found
+    'life_up': [getSfx('ui_open_000')], // Fallback if specific not found
+    'explosionCrunch': [getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002')]
 };
