@@ -144,11 +144,32 @@ export const AssetManifest = {
             '/audio/music/Without Fear.mp3', '/audio/music/bgm_v2.mp3'
         ],
         sfx: [
-            '/audio/sfx/computerNoise_000.mp3', '/audio/sfx/doorClose_000.mp3', '/audio/sfx/doorOpen_000.mp3', '/audio/sfx/engineCircular_000.mp3',
-            '/audio/sfx/explosionCrunch_000.mp3', '/audio/sfx/forceField_000.mp3', '/audio/sfx/impactMetal_000.mp3', '/audio/sfx/laserLarge_000.mp3',
-            '/audio/sfx/laserRetro_000.mp3', '/audio/sfx/laserSmall_000.mp3', '/audio/sfx/lowFrequency_explosion_000.mp3', '/audio/sfx/slime_000.mp3',
-            '/audio/sfx/spaceEngineLarge_000.mp3', '/audio/sfx/spaceEngineLow_000.mp3', '/audio/sfx/spaceEngineSmall_000.mp3',
-            '/audio/sfx/spaceEngine_000.mp3', '/audio/sfx/thrusterFire_000.mp3'
+            // Computer Noise
+            '/audio/sfx/computerNoise_000.mp3', '/audio/sfx/computerNoise_001.mp3', '/audio/sfx/computerNoise_002.mp3', '/audio/sfx/computerNoise_003.mp3',
+            // Door
+            '/audio/sfx/doorClose_000.mp3', '/audio/sfx/doorOpen_000.mp3',
+            // Engine Circular
+            '/audio/sfx/engineCircular_000.mp3',
+            // Explosions
+            '/audio/sfx/explosionCrunch_000.mp3', '/audio/sfx/explosionCrunch_001.mp3', '/audio/sfx/explosionCrunch_002.mp3', '/audio/sfx/explosionCrunch_003.mp3', '/audio/sfx/explosionCrunch_004.mp3',
+            '/audio/sfx/lowFrequency_explosion_000.mp3', '/audio/sfx/lowFrequency_explosion_001.mp3',
+            // ForceField
+            '/audio/sfx/forceField_000.mp3', '/audio/sfx/forceField_001.mp3', '/audio/sfx/forceField_002.mp3', '/audio/sfx/forceField_003.mp3', '/audio/sfx/forceField_004.mp3',
+            // Impact
+            '/audio/sfx/impactMetal_000.mp3', '/audio/sfx/impactMetal_001.mp3', '/audio/sfx/impactMetal_002.mp3', '/audio/sfx/impactMetal_003.mp3', '/audio/sfx/impactMetal_004.mp3',
+            // Lasers
+            '/audio/sfx/laserLarge_000.mp3', '/audio/sfx/laserLarge_001.mp3', '/audio/sfx/laserLarge_002.mp3', '/audio/sfx/laserLarge_003.mp3', '/audio/sfx/laserLarge_004.mp3',
+            '/audio/sfx/laserRetro_000.mp3', '/audio/sfx/laserRetro_001.mp3', '/audio/sfx/laserRetro_002.mp3', '/audio/sfx/laserRetro_003.mp3', '/audio/sfx/laserRetro_004.mp3',
+            '/audio/sfx/laserSmall_000.mp3', '/audio/sfx/laserSmall_001.mp3', '/audio/sfx/laserSmall_002.mp3', '/audio/sfx/laserSmall_003.mp3', '/audio/sfx/laserSmall_004.mp3',
+            // Slime
+            '/audio/sfx/slime_000.mp3', '/audio/sfx/slime_001.mp3',
+            // Space Engines
+            '/audio/sfx/spaceEngineLarge_000.mp3', '/audio/sfx/spaceEngineLarge_001.mp3', '/audio/sfx/spaceEngineLarge_002.mp3', '/audio/sfx/spaceEngineLarge_003.mp3', '/audio/sfx/spaceEngineLarge_004.mp3',
+            '/audio/sfx/spaceEngineLow_000.mp3', '/audio/sfx/spaceEngineLow_001.mp3', '/audio/sfx/spaceEngineLow_002.mp3', '/audio/sfx/spaceEngineLow_003.mp3', '/audio/sfx/spaceEngineLow_004.mp3',
+            '/audio/sfx/spaceEngineSmall_000.mp3', '/audio/sfx/spaceEngineSmall_001.mp3', '/audio/sfx/spaceEngineSmall_002.mp3', '/audio/sfx/spaceEngineSmall_003.mp3', '/audio/sfx/spaceEngineSmall_004.mp3',
+            '/audio/sfx/spaceEngine_000.mp3', '/audio/sfx/spaceEngine_001.mp3', '/audio/sfx/spaceEngine_002.mp3', '/audio/sfx/spaceEngine_003.mp3',
+            // Thrusters
+            '/audio/sfx/thrusterFire_000.mp3', '/audio/sfx/thrusterFire_001.mp3', '/audio/sfx/thrusterFire_002.mp3', '/audio/sfx/thrusterFire_003.mp3', '/audio/sfx/thrusterFire_004.mp3'
         ]
     },
 
