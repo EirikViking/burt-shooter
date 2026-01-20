@@ -7,9 +7,9 @@ const getSfx = (partial) => {
     const match = AssetManifest.audio.sfx.find(p => p.includes(partial));
     if (!match) {
         // Warn only in development/console if possible, but for now just return safe fallback
-        // Return a known safe sound to prevent crashes
+        // Return a known safe sound to prevent crashes (laserSmall instead of annoying computerNoise)
         console.warn(`[SoundCatalog] Missing SFX: ${partial}`);
-        return AssetManifest.audio.sfx[0]; // computerNoise_000
+        return AssetManifest.audio.sfx.find(p => p.includes('laserSmall_000')) || AssetManifest.audio.sfx[0];
     }
     return match;
 };
@@ -76,7 +76,7 @@ export const SFX_CATALOG = {
         getSfx('forceField_001')
     ],
     // Direct matches from manifest
-    'computerNoise': [getSfx('computerNoise_000')],
+    // 'computerNoise' removed - annoying blip blop sound
     'thrusterFire': [getSfx('thrusterFire_000')],
     'doorClose': [getSfx('doorClose_000')],
     'spaceEngine': [getSfx('spaceEngine_000')],
