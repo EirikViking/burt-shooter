@@ -142,6 +142,7 @@ export class PlayScene {
     this._lastStartedLevel = -1;
     this._deathTimeouts = [];
     this._activeTickers = [];
+    this._introAnimationFrame = null; // Track intro animation
   }
 
   init() {
@@ -1320,6 +1321,10 @@ export class PlayScene {
     if (this._activeTickers) {
       this._activeTickers.forEach(fn => this.game.app.ticker.remove(fn));
       this._activeTickers = [];
+    }
+    if (this._introAnimationFrame) {
+      cancelAnimationFrame(this._introAnimationFrame);
+      this._introAnimationFrame = null;
     }
 
     // Music continues to next scene
@@ -2730,7 +2735,7 @@ export class PlayScene {
       }
 
       if (elapsed < textDuration) {
-        requestAnimationFrame(animate);
+        this._introAnimationFrame = requestAnimationFrame(animate);
       } else {
         // Cleanup
         if (this.introOverlay && this.introOverlay.parent) {
@@ -2739,16 +2744,23 @@ export class PlayScene {
           this.introOverlay = null;
         }
         if (flash.parent) flash.parent.removeChild(flash);
+        this._introAnimationFrame = null;
         console.log('[Intro] complete (text finished)');
       }
     };
 
-    animate();
+    this._introAnimationFrame = requestAnimationFrame(animate);
   }
 
   completeShipIntro() {
     this.introActive = false;
     this.introComplete = true;
+
+    // Cancel animation frame if still running
+    if (this._introAnimationFrame) {
+      cancelAnimationFrame(this._introAnimationFrame);
+      this._introAnimationFrame = null;
+    }
 
     // Remove overlay
     if (this.introOverlay && this.introOverlay.parent) {
