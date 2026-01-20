@@ -139,6 +139,8 @@ export class PlayScene {
 
     // TASK: Fix duplicate wave start
     this._lastStartedLevel = -1;
+    this._deathTimeouts = [];
+    this._activeTickers = [];
   }
 
   init() {
@@ -1265,6 +1267,16 @@ export class PlayScene {
     if (this.hud) {
       this.hud.destroy();
     }
+    // Lifecycle hardening
+    if (this._deathTimeouts) {
+      this._deathTimeouts.forEach(id => clearTimeout(id));
+      this._deathTimeouts = [];
+    }
+    if (this._activeTickers) {
+      this._activeTickers.forEach(fn => this.game.app.ticker.remove(fn));
+      this._activeTickers = [];
+    }
+
     // Music continues to next scene
   }
 
@@ -1349,11 +1361,13 @@ export class PlayScene {
       }
       flash.alpha -= 0.05 * ticker.deltaTime;
       if (flash.alpha <= 0) {
-        flash.parent.removeChild(flash);
+        if (flash.parent) flash.parent.removeChild(flash);
         this.game.app.ticker.remove(fadeTicker);
       }
     };
     this.game.app.ticker.add(fadeTicker);
+    if (!this._activeTickers) this._activeTickers = [];
+    this._activeTickers.push(fadeTicker);
 
     // 4. Multiple Explosions
     if (this.particleManager) {
@@ -1361,7 +1375,7 @@ export class PlayScene {
       this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
       // Cascading smaller ones
       for (let i = 1; i <= 3; i++) {
-        setTimeout(() => {
+        const id = setTimeout(() => {
           if (this.particleManager && this.player) {
             this.particleManager.createExplosion(
               this.player.x + (Math.random() - 0.5) * 50,
@@ -1370,6 +1384,8 @@ export class PlayScene {
             );
           }
         }, i * 80);
+        if (!this._deathTimeouts) this._deathTimeouts = [];
+        this._deathTimeouts.push(id);
       }
     }
 
