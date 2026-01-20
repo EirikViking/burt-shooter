@@ -1369,23 +1369,23 @@ export class PlayScene {
   triggerPlayerDeathFeedback() {
     if (!this.player) return;
 
-    // Task 5: Store player position before death
+    // Store player position before death
     const deathX = this.player.x;
     const deathY = this.player.y;
 
-    // Task 5: Hide/deactivate player immediately
+    // Hide/deactivate player immediately
     this.player.active = false;
     if (this.player.sprite) this.player.sprite.visible = false;
 
-    // 1. Freeze Frame (enhanced for Task 5)
-    this.freezeTimerMs = 250;
+    // 1. Freeze Frame - longer to give player time to process
+    this.freezeTimerMs = 500;
 
     // 2. Heavy Screenshake
     if (this.screenShake) this.screenShake.shake('strong');
 
-    // 3. Fullscreen Red Flash (brighter for Task 5)
+    // 3. Fullscreen Red Flash
     const flash = new PIXI.Graphics();
-    flash.rect(0, 0, this.game.getWidth(), this.game.getHeight()).fill({ color: 0xff0000, alpha: 0.7 });
+    flash.rect(0, 0, this.game.getWidth(), this.game.getHeight()).fill({ color: 0xff0000, alpha: 0.6 });
     this.uiOverlay.addChild(flash);
 
     let frames = 0;
@@ -1394,7 +1394,7 @@ export class PlayScene {
         this.game.app.ticker.remove(fadeTicker);
         return;
       }
-      flash.alpha -= 0.05 * ticker.deltaTime;
+      flash.alpha -= 0.03 * ticker.deltaTime;
       if (flash.alpha <= 0) {
         if (flash.parent) flash.parent.removeChild(flash);
         this.game.app.ticker.remove(fadeTicker);
@@ -1404,7 +1404,7 @@ export class PlayScene {
     if (!this._activeTickers) this._activeTickers = [];
     this._activeTickers.push(fadeTicker);
 
-    // 4. Task 5: Enhanced explosions - more dramatic
+    // 4. Enhanced explosions - more dramatic
     if (this.particleManager) {
       // Immediate huge one
       this.particleManager.createBossExplosion(deathX, deathY, 0xff0000);
@@ -1425,63 +1425,64 @@ export class PlayScene {
       }
     }
 
-    // 5. Audio (louder for Task 5)
+    // 5. Audio
     AudioManager.playSfx('explosionCrunch', { force: true, volume: 1.0 });
     setTimeout(() => AudioManager.playSfx('boss_explode', { force: true, volume: 0.7 }), 150);
 
-    // Task 5: Respawn after pause (if lives remaining)
-    if (this.game.lives > 0) {
-      const respawnDelay = 800;
-      const respawnTimeout = setTimeout(() => {
-        this.respawnPlayer(deathX, deathY);
-      }, respawnDelay);
-      if (!this._deathTimeouts) this._deathTimeouts = [];
-      this._deathTimeouts.push(respawnTimeout);
-    }
-  }
-
-  // Task 5: Respawn player with invulnerability
-  respawnPlayer(deathX, deathY) {
-    if (!this.player || this.game.lives <= 0) return;
-
-    const { width, height } = this.game.app.screen;
-    // Respawn at bottom center
-    const spawnX = width / 2;
-    const spawnY = height - 100;
-
-    // Reset player to spawn position
-    this.player.x = spawnX;
-    this.player.y = spawnY;
-    this.player.active = true;
-    this.player.invulnerable = true;
-    this.player.invulnerableTime = 3000; // Task 5: 3 seconds invulnerability
-
-    if (this.player.sprite) {
-      this.player.sprite.visible = true;
-      this.player.sprite.x = spawnX;
-      this.player.sprite.y = spawnY;
-    }
-
-    // Task 5: Spawn effect
-    if (this.particleManager) {
-      this.particleManager.createExplosion(spawnX, spawnY, 0x00ffff, 1);
-    }
-
-    AudioManager.playSfx('powerup', { force: true, volume: 0.6 });
-    this.showToast('RESPAWNED!', { fontSize: 20, fill: '#00ffff', y: spawnY - 60, duration: 1200 });
-
-    console.log('[PlayScene] Player respawned with 3s invulnerability');
+    // Show death message with delay
+    setTimeout(() => {
+      const { width, height } = this.game.app.screen;
+      this.showToast('YOU DIED!', {
+        fontSize: 52,
+        fill: '#ff0000',
+        stroke: '#000000',
+        strokeThickness: 6,
+        slot: 'center',
+        type: 'death',
+        duration: 1800,
+        banner: false
+      });
+    }, 300);
   }
 
   onLifeLost() {
-    this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
+    // Don't show immediate toast - death message handles this
 
-    // RESPONDER LOGIC
+    // RESPONDER LOGIC - delayed to give player time to process death
     if (this.player && this.game.lives > 0) {
-      this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
-      AudioManager.recoverSfx('respawn');
-      // Small screen shake
-      if (this.screenShake) this.screenShake.shake(5);
+      const respawnTimeout = setTimeout(() => {
+        if (this.player && this.game.lives > 0) {
+          // Show get ready message
+          this.showToast('GET READY!', {
+            fontSize: 32,
+            fill: '#ffff00',
+            stroke: '#000000',
+            strokeThickness: 4,
+            slot: 'center',
+            type: 'respawn',
+            duration: 1200
+          });
+
+          setTimeout(() => {
+            if (this.player && this.game.lives > 0) {
+              this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
+              AudioManager.playSfx('powerup', { force: true, volume: 0.7 });
+              AudioManager.recoverSfx('respawn');
+
+              // Small screen shake
+              if (this.screenShake) this.screenShake.shake(5);
+
+              // Spawn particles
+              if (this.particleManager) {
+                this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff, 2);
+              }
+            }
+          }, 800);
+        }
+      }, 2000);
+
+      if (!this._deathTimeouts) this._deathTimeouts = [];
+      this._deathTimeouts.push(respawnTimeout);
     }
     const boss = this.enemyManager?.boss;
     if (boss && boss.active) {
@@ -1895,6 +1896,54 @@ export class PlayScene {
     else if (this.comboCount >= 25) this.comboMultiplier = 3;
     else if (this.comboCount >= 10) this.comboMultiplier = 2;
     else this.comboMultiplier = 1;
+
+    // Special bonuses for 5x and 10x combos
+    if (this.comboCount === 5) {
+      const bonus = 1000;
+      this.game.addScore(bonus);
+      this.enqueueToast(`5x COMBO! +${bonus}`, {
+        fontSize: 32,
+        fill: '#00ffff',
+        stroke: '#000000',
+        strokeThickness: 4,
+        slot: 'center',
+        type: 'combo_bonus',
+        duration: 1400,
+        banner: true,
+        title: 'COMBO BONUS!'
+      });
+      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+      if (this.particleManager && this.player) {
+        this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff, 2);
+      }
+    } else if (this.comboCount === 10) {
+      const bonus = 2500;
+      this.game.addScore(bonus);
+      this.enqueueToast(`10x COMBO! +${bonus}`, {
+        fontSize: 38,
+        fill: '#ff8800',
+        stroke: '#000000',
+        strokeThickness: 5,
+        slot: 'center',
+        type: 'combo_bonus',
+        duration: 1600,
+        banner: true,
+        title: 'MASSIVE COMBO!'
+      });
+      AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
+      setTimeout(() => AudioManager.playSfx('ui_open', { force: true, volume: 0.8 }), 100);
+      if (this.particleManager && this.player) {
+        this.particleManager.createExplosion(this.player.x, this.player.y, 0xff8800, 3);
+        setTimeout(() => this.particleManager.createExplosion(this.player.x, this.player.y, 0xffff00, 2), 100);
+      }
+      if (this.screenShake) {
+        this.screenShake.shake('medium');
+        this.game.app.ticker.speed = 0.3;
+        setTimeout(() => {
+          if (this.game.app.ticker) this.game.app.ticker.speed = 1.0;
+        }, 100);
+      }
+    }
 
     if (this.comboMultiplier !== prevMultiplier) {
       // Task 4: Enhanced combo milestone feedback
