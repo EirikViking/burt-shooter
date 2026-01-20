@@ -1844,12 +1844,40 @@ export class PlayScene {
     else this.comboMultiplier = 1;
 
     if (this.comboMultiplier !== prevMultiplier) {
-      const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
-      this.enqueueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
-      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
-      if (this.particleManager && this.player) {
-        this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
+      // Task 4: Enhanced combo milestone feedback
+      const label = this.comboMultiplier >= 4 ? 'MEGA COMBO x4!' : this.comboMultiplier >= 3 ? 'SUPER COMBO x3!' : 'COMBO x2!';
+      const color = this.comboMultiplier >= 4 ? '#ff00ff' : this.comboMultiplier >= 3 ? '#ff8800' : '#00ffff';
+      const fontSize = this.comboMultiplier >= 3 ? 36 : 28;
+
+      // Task 4: Large center banner instead of top toast
+      this.enqueueToast(label, { fontSize, fill: color, slot: 'center', type: 'combo', duration: 1500, banner: true, title: 'COMBO!' });
+
+      // Task 4: Enhanced audio - double sound for big combos
+      AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
+      if (this.comboMultiplier >= 3) {
+        setTimeout(() => AudioManager.playSfx('ui_open', { force: true, volume: 0.8 }), 100);
       }
+
+      // Task 4: Enhanced particles - multiple explosions
+      if (this.particleManager && this.player) {
+        const particleColor = this.comboMultiplier >= 4 ? 0xff00ff : this.comboMultiplier >= 3 ? 0xff8800 : 0x00ffff;
+        this.particleManager.createExplosion(this.player.x, this.player.y, particleColor, this.comboMultiplier);
+        // Additional particle bursts for bigger combos
+        if (this.comboMultiplier >= 3) {
+          setTimeout(() => this.particleManager.createExplosion(this.player.x, this.player.y, particleColor, 2), 100);
+        }
+      }
+
+      // Task 4: Screen punch effect (brief pause + shake)
+      if (this.comboMultiplier >= 2 && this.screenShake) {
+        this.screenShake.shake('medium');
+        // Brief freeze frame for dramatic effect
+        this.game.app.ticker.speed = 0.3;
+        setTimeout(() => {
+          if (this.game.app.ticker) this.game.app.ticker.speed = 1.0;
+        }, 80);
+      }
+
       // Task 3: Portrait banner on combo milestones
       if (this.comboMultiplier >= 2) {
         const loreLine = this.getNextLoreLine();
