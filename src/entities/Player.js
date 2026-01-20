@@ -666,9 +666,15 @@ export class Player {
       }
     } else {
       // Invulnerable blinking
+      // Invulnerable blinking (Strobe effect: 150ms interval)
       if (this.invulnerable) {
         this.invulnerableTime -= dt;
-        this.sprite.alpha = 0.5 + Math.sin(Date.now() * 0.02) * 0.4;
+
+        // Strobe logic: Toggle between 1.0 and 0.25 every 150ms
+        const period = 150;
+        const phase = Math.floor(Date.now() / period) % 2;
+        this.sprite.alpha = phase === 0 ? 1.0 : 0.25;
+
         if (this.invulnerableTime <= 0) {
           this.invulnerable = false;
           if (this.activePowerup.type !== 'ghost') this.sprite.alpha = 1;
@@ -1311,7 +1317,7 @@ export class Player {
 
     // Invulnerability
     this.invulnerable = true;
-    this.invulnerableTime = 2000;
+    this.invulnerableTime = 3000;
 
     // Reset cooldowns
     this.shootCooldown = 0;

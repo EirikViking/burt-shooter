@@ -931,9 +931,7 @@ export class PlayScene {
             if (damageTaken) {
               this.lastHitAt = Date.now();
               this.game.loseLife();
-              this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
-              AudioManager.playSfx('playerHit');
-              this.screenShake.shake(8);
+              this.triggerPlayerDeathFeedback();
             } else {
               // Shield absorbed it
               this.screenShake.shake(3);
@@ -965,9 +963,7 @@ export class PlayScene {
               if (damageTaken) {
                 this.lastHitAt = Date.now();
                 this.game.loseLife();
-                this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
-                AudioManager.playSfx('playerHit');
-                this.screenShake.shake(8);
+                this.triggerPlayerDeathFeedback();
               } else {
                 this.screenShake.shake(3);
                 this.particleManager.createHitSpark(this.player.x, this.player.y);
@@ -1018,9 +1014,7 @@ export class PlayScene {
             if (damageTaken) {
               this.lastHitAt = Date.now();
               this.game.loseLife();
-              this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
-              AudioManager.playSfx('playerHit');
-              this.screenShake.shake(8);
+              this.triggerPlayerDeathFeedback();
             } else {
               this.screenShake.shake(3);
               this.particleManager.createHitSpark(this.player.x, this.player.y);
@@ -1331,6 +1325,56 @@ export class PlayScene {
       this.lowLivesShownFor = this.game.lives;
       this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, y: this.game.getHeight() * 0.3 });
     }
+  }
+
+  triggerPlayerDeathFeedback() {
+    if (!this.player) return;
+
+    // 1. Freeze Frame (150-200ms)
+    this.freezeTimerMs = 180;
+
+    // 2. Heavy Screenshake
+    if (this.screenShake) this.screenShake.shake(25);
+
+    // 3. Fullscreen Red Flash
+    const flash = new PIXI.Graphics();
+    flash.rect(0, 0, this.game.getWidth(), this.game.getHeight()).fill({ color: 0xff0000, alpha: 0.5 });
+    this.uiOverlay.addChild(flash);
+
+    let frames = 0;
+    const fadeTicker = (ticker) => {
+      if (!flash.parent) {
+        this.game.app.ticker.remove(fadeTicker);
+        return;
+      }
+      flash.alpha -= 0.05 * ticker.deltaTime;
+      if (flash.alpha <= 0) {
+        flash.parent.removeChild(flash);
+        this.game.app.ticker.remove(fadeTicker);
+      }
+    };
+    this.game.app.ticker.add(fadeTicker);
+
+    // 4. Multiple Explosions
+    if (this.particleManager) {
+      // Immediate big one
+      this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
+      // Cascading smaller ones
+      for (let i = 1; i <= 3; i++) {
+        setTimeout(() => {
+          if (this.particleManager && this.player) {
+            this.particleManager.createExplosion(
+              this.player.x + (Math.random() - 0.5) * 50,
+              this.player.y + (Math.random() - 0.5) * 50,
+              0xffaa00
+            );
+          }
+        }, i * 80);
+      }
+    }
+
+    // 5. Audio
+    AudioManager.playSfx('explosionCrunch', { force: true, volume: 1.0 });
   }
 
   onLifeLost() {
