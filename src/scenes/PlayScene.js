@@ -26,8 +26,8 @@ import {
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
 
-// DEBUG: Flicker trace instrumentation (re-enabled - investigating remaining flicker)
-const DEBUG_FLICKER_TRACE = true;
+// DEBUG: Flicker trace instrumentation (disabled - flicker confirmed fixed)
+const DEBUG_FLICKER_TRACE = false;
 
 // DEBUG: System disable flags for flicker isolation (disabled - kept for future debugging)
 const DISABLE_SCREEN_SHAKE = false;
@@ -503,7 +503,8 @@ export class PlayScene {
           if (gameContainerVisible !== s.gameContainerVisible) console.warn(`[FLICKER] gameContainer.visible: ${s.gameContainerVisible} → ${gameContainerVisible}`);
           if (uiOverlayAlpha !== s.uiOverlayAlpha) console.warn(`[FLICKER] uiOverlay.alpha: ${s.uiOverlayAlpha} → ${uiOverlayAlpha}`);
           if (uiOverlayVisible !== s.uiOverlayVisible) console.warn(`[FLICKER] uiOverlay.visible: ${s.uiOverlayVisible} → ${uiOverlayVisible}`);
-          if (shakeX !== s.shakeX || shakeY !== s.shakeY) console.warn(`[FLICKER] shake: (${s.shakeX},${s.shakeY}) → (${shakeX},${shakeY})`);
+          // Shake position changes are intentional (screen shake effect) - not a flicker bug
+          // if (shakeX !== s.shakeX || shakeY !== s.shakeY) console.warn(`[FLICKER] shake: (${s.shakeX},${s.shakeY}) → (${shakeX},${shakeY})`);
           if (Math.abs(childCount - s.childCount) > 10) console.warn(`[FLICKER] childCount: ${s.childCount} → ${childCount}`);
 
           this._flickerState = {
