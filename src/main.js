@@ -457,6 +457,36 @@ function registerBootErrorHandlers() {
   });
 }
 
+function registerProductionCrashGuard() {
+  let hasLogged = false;
+
+  // Use capture phase to catch errors before they bubble to other listeners
+  window.addEventListener('error', (event) => {
+    const msg = (event.message || '').toString();
+
+    // Strict signature check as requested by USER
+    // "Cannot set properties of null" AND "(setting 'y')"
+    // Example: TypeError: Cannot set properties of null (setting 'y')
+    if (msg.includes('Cannot set properties of null') && msg.includes("setting 'y'")) {
+      // 1. Prevent default crash behavior / console spam
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      // 2. Log one structured warning per session
+      if (!hasLogged) {
+        hasLogged = true;
+        console.warn('GUARD: Caught known y-property null setter crash', {
+          fullMessage: msg,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          stack: event.error ? event.error.stack : 'No stack available'
+        });
+      }
+    }
+  }, { capture: true });
+}
+
 // TASK 3: Force Reload Logic
 async function enforceVersion() {
   const storedVersion = localStorage.getItem('app_version');
@@ -517,6 +547,8 @@ async function enforceVersion() {
 }
 
 async function init() {
+  registerProductionCrashGuard();
+
   if (await enforceVersion()) {
     return; // Stop boot if reloading
   }
