@@ -26,8 +26,8 @@ import {
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
 
-// DEBUG: Flicker trace instrumentation (disabled - flicker fixed)
-const DEBUG_FLICKER_TRACE = false;
+// DEBUG: Flicker trace instrumentation (re-enabled - investigating remaining flicker)
+const DEBUG_FLICKER_TRACE = true;
 
 // DEBUG: System disable flags for flicker isolation (disabled - kept for future debugging)
 const DISABLE_SCREEN_SHAKE = false;
