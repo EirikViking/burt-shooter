@@ -24,8 +24,8 @@ const MENU_POOL = [
     getMusic('Brave Pilots'),
     getMusic('SkyFire'),
     getMusic('Space Heroes'),
-    getMusic('Defeated'),
-    getMusic('Victory Tune')
+    getMusic('Defeated')
+    // Victory Tune removed - annoying leaderboard entry stinger
 ];
 
 const GAMEPLAY_POOL = [
