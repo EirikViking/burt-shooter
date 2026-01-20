@@ -138,26 +138,76 @@ export class ShipSelectScene {
     return button;
   }
 
-  async updateCarousel() {
+  async updateCarousel(direction = null) {
+    // Slide out animation
+    if (direction && this.carouselContainer.children.length > 0) {
+      const slideOutDirection = direction === 'left' ? 200 : -200;
+      let elapsed = 0;
+      const duration = 200;
+
+      await new Promise(resolve => {
+        const ticker = (delta) => {
+          elapsed += delta.deltaTime * 16.67;
+          const progress = Math.min(1, elapsed / duration);
+          this.carouselContainer.x = (width / 2) + slideOutDirection * progress;
+          this.carouselContainer.alpha = 1 - progress;
+
+          if (progress >= 1) {
+            this.game.app.ticker.remove(ticker);
+            resolve();
+          }
+        };
+        this.game.app.ticker.add(ticker);
+      });
+    }
+
     // Clear carousel
     this.carouselContainer.removeChildren();
 
     const ship = this.ships[this.selectedIndex];
     const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
 
+    // Reset carousel position for slide in
+    if (direction) {
+      const slideInDirection = direction === 'left' ? -200 : 200;
+      this.carouselContainer.x = (width / 2) + slideInDirection;
+      this.carouselContainer.alpha = 0;
+    }
+
     // Large ship sprite
     const shipTexture = GameAssets.getRankShipTexture(ship.textureIndex);
+    let shipSprite = null;
     if (shipTexture && shipTexture.width > 0) {
-      const sprite = new PIXI.Sprite(shipTexture);
-      sprite.anchor.set(0.5);
-      sprite.position.set(0, -80);
+      shipSprite = new PIXI.Sprite(shipTexture);
+      shipSprite.anchor.set(0.5);
+      shipSprite.position.set(0, -80);
 
       const maxSize = 150;
-      const scale = Math.min(maxSize / sprite.width, maxSize / sprite.height);
-      sprite.scale.set(scale);
+      const scale = Math.min(maxSize / shipSprite.width, maxSize / shipSprite.height);
+      shipSprite.scale.set(scale);
 
-      this.carouselContainer.addChild(sprite);
+      this.carouselContainer.addChild(shipSprite);
+
+      // Add glow effect around ship
+      const glow = new PIXI.Graphics();
+      glow.circle(0, 0, maxSize * 0.7);
+      glow.fill({ color: 0x00ff00, alpha: 0.15 });
+      glow.filters = [new PIXI.BlurFilter(20)];
+      glow.position.set(0, -80);
+      this.carouselContainer.addChildAt(glow, 0);
+
+      // Pulse the glow
+      let glowTime = 0;
+      const glowTicker = (delta) => {
+        glowTime += delta.deltaTime * 0.03;
+        const pulse = 0.1 + Math.sin(glowTime) * 0.08;
+        glow.alpha = pulse;
+      };
+      this.game.app.ticker.add(glowTicker);
     }
+
+    // Add sparkles around ship
+    this.createSparkles(shipSprite);
 
     // Ship name
     const name = new PIXI.Text(ship.name, {
@@ -249,6 +299,59 @@ export class ShipSelectScene {
     counter.anchor.set(0.5, 0);
     counter.position.set(0, 290);
     this.carouselContainer.addChild(counter);
+
+    // Slide in animation
+    if (direction) {
+      let elapsed = 0;
+      const duration = 250;
+
+      const ticker = (delta) => {
+        elapsed += delta.deltaTime * 16.67;
+        const progress = Math.min(1, elapsed / duration);
+        const eased = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+
+        this.carouselContainer.x = width / 2 - (direction === 'left' ? -200 : 200) * (1 - eased);
+        this.carouselContainer.alpha = eased;
+
+        if (progress >= 1) {
+          this.carouselContainer.x = width / 2;
+          this.carouselContainer.alpha = 1;
+          this.game.app.ticker.remove(ticker);
+        }
+      };
+      this.game.app.ticker.add(ticker);
+    }
+  }
+
+  createSparkles(shipSprite) {
+    if (!shipSprite) return;
+
+    const sparkleCount = 8;
+    const shipX = shipSprite.x;
+    const shipY = shipSprite.y;
+    const radius = 100;
+
+    for (let i = 0; i < sparkleCount; i++) {
+      const angle = (Math.PI * 2 * i) / sparkleCount;
+      const sparkle = new PIXI.Graphics();
+      sparkle.star(0, 0, 4, 4, 3);
+      sparkle.fill({ color: 0xffff00, alpha: 0.6 });
+
+      const x = shipX + Math.cos(angle) * radius;
+      const y = shipY + Math.sin(angle) * radius;
+      sparkle.position.set(x, y);
+
+      this.carouselContainer.addChild(sparkle);
+
+      // Animate sparkle
+      let time = Math.random() * Math.PI * 2;
+      const ticker = (delta) => {
+        time += delta.deltaTime * 0.05;
+        sparkle.alpha = 0.3 + Math.sin(time) * 0.3;
+        sparkle.rotation += delta.deltaTime * 0.02;
+      };
+      this.game.app.ticker.add(ticker);
+    }
   }
 
   createStatBar(label, value, x, y) {
@@ -332,13 +435,23 @@ export class ShipSelectScene {
   navigateLeft() {
     this.selectedIndex = (this.selectedIndex - 1 + this.ships.length) % this.ships.length;
     setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
-    this.updateCarousel();
+    this.updateCarousel('left');
+
+    // SFX and voice
+    import('../audio/AudioManager.js').then(({ AudioManager }) => {
+      AudioManager.playSfx('ui_open', { force: true, volume: 0.6 });
+    });
   }
 
   navigateRight() {
     this.selectedIndex = (this.selectedIndex + 1) % this.ships.length;
     setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
-    this.updateCarousel();
+    this.updateCarousel('right');
+
+    // SFX and voice
+    import('../audio/AudioManager.js').then(({ AudioManager }) => {
+      AudioManager.playSfx('ui_open', { force: true, volume: 0.6 });
+    });
   }
 
   setupInput() {

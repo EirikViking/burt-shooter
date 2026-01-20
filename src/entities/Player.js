@@ -688,15 +688,14 @@ export class Player {
         if (this.activePowerup.type !== 'ghost') this.sprite.alpha = 1;
       }
     } else {
-      // Invulnerable blinking
-      // Invulnerable blinking (Strobe effect: 150ms interval)
+      // Invulnerable blinking - gentler pulse effect
       if (this.invulnerable) {
         this.invulnerableTime -= dt;
 
-        // Strobe logic: Toggle between 1.0 and 0.25 every 150ms
-        const period = 150;
-        const phase = Math.floor(Date.now() / period) % 2;
-        this.sprite.alpha = phase === 0 ? 1.0 : 0.25;
+        // Smooth pulse instead of harsh strobe
+        const time = Date.now() / 1000;
+        const pulse = Math.sin(time * 8) * 0.5 + 0.5; // 0.0 to 1.0
+        this.sprite.alpha = 0.4 + pulse * 0.6; // 0.4 to 1.0
 
         if (this.invulnerableTime <= 0) {
           this.invulnerable = false;
