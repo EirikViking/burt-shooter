@@ -485,6 +485,17 @@ export class EnemyManager {
     const waveColors = ['Blue', 'Green', 'Red', 'Black'];
     const waveColor = waveColors[Math.floor(Math.random() * waveColors.length)];
 
+    // Show wave modifier toast
+    if (this.currentModifier && this.game.scenes.play) {
+      const modLabels = {
+        'SHIELDED': 'SHIELDED WAVE! (+50% HP)',
+        'AGGRESSIVE': 'AGGRESSIVE WAVE! (Rapid Fire)',
+        'SWIFT': 'SWIFT WAVE! (+40% Speed)'
+      };
+      const label = modLabels[this.currentModifier] || this.currentModifier;
+      this.game.scenes.play.showToast(label, { fontSize: 20, fill: '#ffaa00', y: 130, duration: 2000 });
+    }
+
     const cadence = this.directorState?.spawnCadenceScale || 1;
     const delayStep = Math.max(60, 150 / cadence);
     const eliteChance = this.directorState?.eliteChance || 0.02;
@@ -610,9 +621,13 @@ export class EnemyManager {
   applyModifier(enemy) {
     if (this.currentModifier === 'SHIELDED') {
       enemy.health = Math.ceil(enemy.health * 1.5);
-      enemy.tint = 0x8888ff;
+      if (enemy.sprite) enemy.sprite.tint = 0x8888ff;
     } else if (this.currentModifier === 'AGGRESSIVE') {
       enemy.shootDelay *= 0.7;
+      if (enemy.sprite) enemy.sprite.tint = 0xff8888;
+    } else if (this.currentModifier === 'SWIFT') {
+      enemy.speed = enemy.speed ? enemy.speed * 1.4 : 1.4;
+      if (enemy.sprite) enemy.sprite.tint = 0xffff88;
     }
   }
 
