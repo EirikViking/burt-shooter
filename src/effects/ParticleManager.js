@@ -109,9 +109,9 @@ export class ParticleManager {
     particle.reset(x, y, vx, vy, color, size, lifetime, texture);
     this.particles.push(particle);
 
-    // Ensure both are added (safe to add if already added, PIXI handles parent checks)
-    this.container.addChild(particle.sprite);
-    this.container.addChild(particle.bitmap);
+    // Only add to container if not already added (prevents excessive addChild calls that cause flicker)
+    if (!particle.sprite.parent) this.container.addChild(particle.sprite);
+    if (!particle.bitmap.parent) this.container.addChild(particle.bitmap);
 
     return particle;
   }
