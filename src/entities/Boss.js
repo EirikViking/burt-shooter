@@ -162,8 +162,8 @@ export class Boss {
     this.healthBar.rect(-barWidth / 2, this.radius + 10, barWidth * healthPercent, barHeight);
     this.healthBar.fill({ color: 0xff0000 });
 
-    // Health text
-    const healthText = `${Math.max(0, this.health)}/${this.maxHealth}`;
+    // Health text (no decimals)
+    const healthText = `${Math.max(0, Math.ceil(this.health))}/${Math.ceil(this.maxHealth)}`;
     if (this.healthText) {
       this.healthBar.removeChild(this.healthText);
     }

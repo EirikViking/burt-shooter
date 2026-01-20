@@ -10,6 +10,7 @@ import { BulletManager } from '../managers/BulletManager.js';
 import { PowerupManager } from '../managers/PowerupManager.js';
 import { ParticleManager } from '../effects/ParticleManager.js';
 import { ScreenShake } from '../effects/ScreenShake.js';
+import { ScorePopupManager } from '../ui/ScorePopup.js';
 import { InputManager } from '../input/InputManager.js';
 import { TouchControls } from '../input/TouchControls.js';
 import { NullTouchControls } from '../input/NullTouchControls.js';
@@ -211,6 +212,7 @@ export class PlayScene {
     this.particleManager = new ParticleManager(this.gameContainer, capHandler);
     this.powerupManager = new PowerupManager(this.gameContainer, this.game);
     this.screenShake = new ScreenShake(this.gameContainer);
+    this.scorePopupManager = new ScorePopupManager(this.uiContainer);
 
     // Initialize touch controls for mobile
     try {
@@ -576,6 +578,7 @@ export class PlayScene {
       if (this.powerupManager) this.powerupManager.update(delta, this);
       if (this.particleManager) this.particleManager.update(delta);
       if (this.screenShake) this.screenShake.update(delta);
+      if (this.scorePopupManager) this.scorePopupManager.update(delta);
 
       // Audio Update (Sequencer)
       if (AudioManager && AudioManager.update) AudioManager.update(delta);
@@ -869,7 +872,12 @@ export class PlayScene {
 
               // Feature: Slow Time Trade-off
               if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
-                this.game.addScore(this.getComboScore(enemy.scoreValue));
+                const scoreAwarded = this.getComboScore(enemy.scoreValue);
+                this.game.addScore(scoreAwarded);
+                // Score popup with combo
+                if (this.scorePopupManager) {
+                  this.scorePopupManager.addScorePopup(enemy.x, enemy.y, scoreAwarded);
+                }
               }
               this.onEnemyKilled(enemy);
               this.particleManager.createExplosion(enemy.x, enemy.y, enemy.color);
@@ -1266,6 +1274,9 @@ export class PlayScene {
     }
     if (this.hud) {
       this.hud.destroy();
+    }
+    if (this.scorePopupManager) {
+      this.scorePopupManager.cleanup();
     }
     // Lifecycle hardening
     if (this._deathTimeouts) {
@@ -2150,6 +2161,16 @@ export class PlayScene {
     const tex = GameAssets.getPhoto(pickedKey) || GameAssets.getPhoto('kurt2');
     if (!GameAssets.isValidTexture(tex)) return;
 
+    // Lore: Map photo keys to character names from Burt's universe
+    const loreLookup = {
+      'kurt2': 'KURT EDGAR - Havnemann fra Stokmarknes',
+      'eirik1': 'EIRIK - Legendarisk Pilot',
+      'eirik_briller': 'EIRIK - Nattevaktkongen',
+      'eirik_kurt2': 'EIRIK & KURT - Melbu-Gjengen',
+      'eirikanja': 'EIRIK & ANJA - Havneduoen'
+    };
+    const characterName = loreLookup[pickedKey] || 'UKJENT AGENT';
+
     const poster = new PIXI.Container();
     poster.name = 'ui_wanted_poster';
     poster.eventMode = 'none';
@@ -2190,7 +2211,7 @@ export class PlayScene {
     topText.y = -215;
     poster.addChild(topText);
 
-    const subText = new PIXI.Text(reason ? `REASON: ${reason.toUpperCase().replace(/_/g, ' ')}` : 'KURT MELDER', {
+    const subText = new PIXI.Text(characterName, {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#333333',
