@@ -418,6 +418,14 @@ export class PlayScene {
       this.showToast(getMicroMessage('bossIntro'), { fontSize: 22, y: this.game.getHeight() * 0.25, slot: 'center', type: 'level_up' });
     }
 
+    // Task 3: Show portrait banner on level start (every 2 levels)
+    if (this.game.level % 2 === 0) {
+      const loreLine = this.getNextLoreLine();
+      if (loreLine) {
+        this.showLoreBanner(loreLine);
+      }
+    }
+
     this.resetRandomTimers();
     this.ambientBeerTimer = 2000 + Math.random() * 3000; // First drunk beer VERY soon (2-5s)
     this.easterEggTimer = 20000; // Deterministic first flyby at 20s
@@ -735,6 +743,14 @@ export class PlayScene {
     setTimeout(() => {
       this._rankUpAnimating = false;
     }, 2500);
+
+    // Task 3: Show portrait banner on rank up (delayed to avoid overlap)
+    setTimeout(() => {
+      const loreLine = this.getNextLoreLine();
+      if (loreLine) {
+        this.showLoreBanner(loreLine);
+      }
+    }, 3000);
   }
 
   // TASK 4: Create polished rank up animation
@@ -1575,8 +1591,9 @@ export class PlayScene {
 
       const photos = Object.keys(GameAssets.photos || {});
       const hasAvatar = photos.length > 0;
-      const avatarSlot = hasAvatar ? 56 : 0;
-      const contentWidth = Math.max(140, maxWidth - paddingX * 2 - avatarSlot);
+      // Task 3: Bigger avatar slot
+      const avatarSlot = hasAvatar ? 88 : 0;
+      const contentWidth = Math.max(180, maxWidth - paddingX * 2 - avatarSlot);
       bannerText.style.wordWrapWidth = contentWidth;
       if (bannerText.updateText) bannerText.updateText(false);
 
@@ -1598,24 +1615,24 @@ export class PlayScene {
         }
       }
 
-      const panelWidth = Math.min(maxWidth, bannerText.width + paddingX * 2 + avatarSlot);
-      const panelHeight = Math.max(52, bannerText.height + paddingY * 2);
+      const panelWidth = Math.min(maxWidth, bannerText.width + paddingX * 2 + avatarSlot + 20);
+      const panelHeight = Math.max(80, bannerText.height + paddingY * 2 + 10);
       const panel = new PIXI.Graphics();
       panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
-      panel.fill({ color: 0x111111, alpha: 0.88 });
-      panel.stroke({ color: 0xffff00, width: 3 });
+      panel.fill({ color: 0x111111, alpha: 0.92 });
+      panel.stroke({ color: 0xffff00, width: 4 });
 
       const accent = new PIXI.Graphics();
       accent.roundRect(-panelWidth / 2 + 6, -panelHeight / 2 + 6, panelWidth - 12, panelHeight - 12, 10);
-      accent.stroke({ color: 0xff66cc, width: 1, alpha: 0.7 });
+      accent.stroke({ color: 0xff66cc, width: 2, alpha: 0.8 });
 
       const noise = new PIXI.Graphics();
-      for (let i = 0; i < 24; i++) {
+      for (let i = 0; i < 32; i++) {
         const nx = -panelWidth / 2 + 10 + Math.random() * (panelWidth - 20);
         const ny = -panelHeight / 2 + 10 + Math.random() * (panelHeight - 20);
-        noise.circle(nx, ny, 1.2);
+        noise.circle(nx, ny, 1.5);
       }
-      noise.fill({ color: 0xffffff, alpha: 0.08 });
+      noise.fill({ color: 0xffffff, alpha: 0.1 });
 
       banner.addChild(panel);
       banner.addChild(accent);
@@ -1629,15 +1646,15 @@ export class PlayScene {
       if (options.title) {
         const titleLabel = new PIXI.Text(String(options.title).toUpperCase(), {
           fontFamily: 'Courier New',
-          fontSize: 14,
+          fontSize: 16,
           fill: '#ffff00', // Yellow for visibility
           fontWeight: 'bold',
           stroke: '#000000',
-          strokeThickness: 3
+          strokeThickness: 4
         });
         titleLabel.anchor.set(0, 0.5);
         titleLabel.x = bannerText.x;
-        titleLabel.y = -panelHeight / 2 + 16;
+        titleLabel.y = -panelHeight / 2 + 20;
         banner.addChild(titleLabel);
       }
 
@@ -1647,11 +1664,17 @@ export class PlayScene {
         if (GameAssets.isValidTexture(tex)) {
           const sticker = new PIXI.Sprite(tex);
           sticker.anchor.set(0.5);
-          sticker.width = 44;
-          sticker.height = 44;
+          // Task 3: Much bigger portrait
+          sticker.width = 72;
+          sticker.height = 72;
           sticker.x = -panelWidth / 2 + paddingX + avatarSlot / 2;
           sticker.y = 0;
-          sticker.alpha = 0.85;
+          sticker.alpha = 0.92;
+          // Task 3: Add subtle border around portrait
+          const portraitBorder = new PIXI.Graphics();
+          portraitBorder.circle(sticker.x, sticker.y, 38);
+          portraitBorder.stroke({ color: 0x00ffff, width: 2, alpha: 0.7 });
+          banner.addChild(portraitBorder);
           banner.addChild(sticker);
         }
       }
@@ -1826,6 +1849,13 @@ export class PlayScene {
       AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
       if (this.particleManager && this.player) {
         this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
+      }
+      // Task 3: Portrait banner on combo milestones
+      if (this.comboMultiplier >= 2) {
+        const loreLine = this.getNextLoreLine();
+        if (loreLine) {
+          setTimeout(() => this.showLoreBanner(loreLine), 800);
+        }
       }
     }
 
