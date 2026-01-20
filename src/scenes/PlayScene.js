@@ -873,14 +873,14 @@ export class PlayScene {
               }
               this.onEnemyKilled(enemy);
               this.particleManager.createExplosion(enemy.x, enemy.y, enemy.color);
-              AudioManager.playSfx('enemy_explode');
+              AudioManager.playSfx('enemy_explode', { volume: 0.5 });
               this.screenShake.shake(3);
 
               // Powerup Drop Check (Manager handles chance & guarantees)
               this.powerupManager.spawn(enemy.x, enemy.y);
             } else {
               this.particleManager.createHitSpark(enemy.x, enemy.y);
-              AudioManager.playSfx('hit');
+              AudioManager.playSfx('hit', { volume: 0.4 });
             }
           }
         });
@@ -899,13 +899,13 @@ export class PlayScene {
             if (destroyed) {
               // Hijacker explosion
               this.particleManager.createExplosion(hijacker.x, hijacker.y, 0xff4444);
-              AudioManager.playSfx('enemy_explode');
+              AudioManager.playSfx('enemy_explode', { volume: 0.5 });
               this.screenShake.shake(5);
               this.onEnemyKilled(hijacker);
               // Score already added in hijacker.destroy()
             } else {
               this.particleManager.createHitSpark(hijacker.x, hijacker.y);
-              AudioManager.playSfx('hit');
+              AudioManager.playSfx('hit', { volume: 0.4 });
             }
           }
         }
@@ -993,7 +993,7 @@ export class PlayScene {
               }
               this.onEnemyKilled(beer);
               this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00);
-              AudioManager.playSfx('enemy_explode');
+              AudioManager.playSfx('enemy_explode', { volume: 0.5 });
               this.showToast('BEER SMASH!', { fontSize: 18, y: beer.y, fill: '#ffff00' });
             } else {
               this.particleManager.createHitSpark(beer.x, beer.y);
