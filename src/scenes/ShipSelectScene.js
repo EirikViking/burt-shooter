@@ -39,23 +39,40 @@ export class ShipSelectScene {
     bg.fill({ color: 0x000000 });
     this.container.addChild(bg);
 
-    // Fixed header
+    // Fixed header with enhanced styling
     const headerContainer = new PIXI.Container();
     const title = new PIXI.Text('SELECT YOUR SHIP', {
       fontFamily: 'Courier New',
       fontSize: 36,
       fill: '#00ff00',
       stroke: '#000000',
-      strokeThickness: 4
+      strokeThickness: 4,
+      dropShadow: true,
+      dropShadowColor: '#00ff00',
+      dropShadowBlur: 8,
+      dropShadowDistance: 0,
+      fontWeight: 'bold'
     });
     title.anchor.set(0.5, 0);
     title.position.set(width / 2, 20);
     headerContainer.addChild(title);
+
+    // Subtitle
+    const subtitle = new PIXI.Text('Choose Your Combat Vessel', {
+      fontFamily: 'Courier New',
+      fontSize: 14,
+      fill: '#888888',
+      align: 'center'
+    });
+    subtitle.anchor.set(0.5, 0);
+    subtitle.position.set(width / 2, 60);
+    headerContainer.addChild(subtitle);
+
     this.container.addChild(headerContainer);
 
     // Scrollable content area
-    const scrollViewportY = 80;
-    const scrollViewportHeight = height - 120; // Leave space for header and footer
+    const scrollViewportY = 95;
+    const scrollViewportHeight = height - 135; // Leave space for header and footer
 
     // Create scroll viewport with mask
     const scrollMask = new PIXI.Graphics();
@@ -190,6 +207,20 @@ export class ShipSelectScene {
     desc.anchor.set(0.5, 0);
     desc.position.set(width / 2, 160);
     card.addChild(desc);
+
+    // Ship stats (health, damage, speed indicators)
+    const statsY = 200;
+    const statsText = this.getShipStats(ship);
+    const stats = new PIXI.Text(statsText, {
+      fontFamily: 'Courier New',
+      fontSize: 10,
+      fill: '#00ff00',
+      align: 'center',
+      lineHeight: 12
+    });
+    stats.anchor.set(0.5, 0);
+    stats.position.set(width / 2, statsY);
+    card.addChild(stats);
 
     // Buttons at bottom
     const buttonY = height - 50;
@@ -371,6 +402,14 @@ export class ShipSelectScene {
     return lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
   }
 
+  getShipStats(ship) {
+    // Generate stat bars based on ship metadata or defaults
+    const healthBar = '█'.repeat(3) + '░'.repeat(2); // 3/5
+    const damageBar = '█'.repeat(3) + '░'.repeat(2); // 3/5
+    const speedBar = '█'.repeat(4) + '░'.repeat(1);  // 4/5
+    return `HP: ${healthBar}\nDMG: ${damageBar}\nSPD: ${speedBar}`;
+  }
+
   updateSelection() {
     this.shipCards.forEach((card, i) => {
       if (i === this.selectedIndex) {
@@ -378,13 +417,40 @@ export class ShipSelectScene {
         card.bg.rect(0, 0, 220, 280);
         card.bg.fill({ color: 0x2a2a2a });
         card.bg.stroke({ color: 0x00ff00, width: 4 });
-        if (card.sprite) card.sprite.tint = 0xffffff;
+
+        // Add glowing outer border for selected card
+        card.bg.rect(-4, -4, 228, 288);
+        card.bg.stroke({ color: 0x00ff00, width: 1, alpha: 0.5 });
+
+        if (card.sprite) {
+          card.sprite.tint = 0xffffff;
+          // Subtle pulse animation
+          if (!card.pulseAnimating) {
+            card.pulseAnimating = true;
+            const originalScale = card.sprite.scale.x;
+            let pulseTime = 0;
+            const pulseAnim = () => {
+              if (this.selectedIndex !== i || !card.sprite) {
+                card.pulseAnimating = false;
+                return;
+              }
+              pulseTime += 0.05;
+              const scale = originalScale + Math.sin(pulseTime) * 0.03;
+              card.sprite.scale.set(scale);
+              requestAnimationFrame(pulseAnim);
+            };
+            pulseAnim();
+          }
+        }
       } else {
         card.bg.clear();
         card.bg.rect(0, 0, 220, 280);
         card.bg.fill({ color: 0x1a1a1a });
         card.bg.stroke({ color: 0x00ff00, width: 2 });
-        if (card.sprite) card.sprite.tint = 0x888888;
+        if (card.sprite) {
+          card.sprite.tint = 0x888888;
+          card.pulseAnimating = false;
+        }
       }
     });
   }
