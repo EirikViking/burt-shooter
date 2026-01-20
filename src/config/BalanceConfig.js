@@ -67,10 +67,9 @@ export const BalanceConfig = {
     modifiers: {
         enabled: true,
         types: [
-            'DRIFT',      // Enemies drift slowly
-            'SHIELDED',   // One enemy type has +HP / Armor
-            'AGGRESSIVE', // Higher shoot rate
-            'WIND'        // Bullets drift
+            'SHIELDED',   // Enemies have +50% HP (blue tint)
+            'AGGRESSIVE', // Enemies shoot 30% faster (red tint)
+            'SWIFT'       // Enemies move 40% faster (yellow tint)
         ]
     },
 
