@@ -4,7 +4,7 @@ import { getSelectableShips, getDefaultShipKey, isValidShipKey } from '../config
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
-const DEBUG = false; // Set to true to enable debug logs
+const DEBUG = false;
 
 export class ShipSelectScene {
   constructor(game) {
@@ -12,10 +12,6 @@ export class ShipSelectScene {
     this.container = new PIXI.Container();
     this.ships = getSelectableShips();
     this.selectedIndex = 0;
-    this.shipCards = [];
-    this.scrollY = 0;
-    this.isDragging = false;
-    this.lastPointerY = 0;
 
     // Load saved selection
     const saved = this.loadSelection();
@@ -39,8 +35,7 @@ export class ShipSelectScene {
     bg.fill({ color: 0x000000 });
     this.container.addChild(bg);
 
-    // Fixed header with enhanced styling
-    const headerContainer = new PIXI.Container();
+    // Header
     const title = new PIXI.Text('SELECT YOUR SHIP', {
       fontFamily: 'Courier New',
       fontSize: 36,
@@ -55,44 +50,24 @@ export class ShipSelectScene {
     });
     title.anchor.set(0.5, 0);
     title.position.set(width / 2, 20);
-    headerContainer.addChild(title);
+    this.container.addChild(title);
 
-    // Subtitle
-    const subtitle = new PIXI.Text('Choose Your Combat Vessel', {
-      fontFamily: 'Courier New',
-      fontSize: 14,
-      fill: '#888888',
-      align: 'center'
-    });
-    subtitle.anchor.set(0.5, 0);
-    subtitle.position.set(width / 2, 60);
-    headerContainer.addChild(subtitle);
+    // Create carousel container
+    this.carouselContainer = new PIXI.Container();
+    this.carouselContainer.position.set(width / 2, height / 2);
+    this.container.addChild(this.carouselContainer);
 
-    this.container.addChild(headerContainer);
+    // Create left arrow button
+    this.leftArrow = this.createArrowButton(-150, 0, true);
+    this.container.addChild(this.leftArrow);
 
-    // Scrollable content area
-    const scrollViewportY = 95;
-    const scrollViewportHeight = height - 135; // Leave space for header and footer
+    // Create right arrow button
+    this.rightArrow = this.createArrowButton(width - 100, 0, false);
+    this.container.addChild(this.rightArrow);
 
-    // Create scroll viewport with mask
-    const scrollMask = new PIXI.Graphics();
-    scrollMask.rect(0, scrollViewportY, width, scrollViewportHeight);
-    scrollMask.fill({ color: 0xffffff });
-    this.container.addChild(scrollMask);
-
-    // Scrollable content container
-    this.scrollContent = new PIXI.Container();
-    this.scrollContent.y = scrollViewportY;
-    this.scrollContent.mask = scrollMask;
-    this.container.addChild(this.scrollContent);
-
-    // Ship grid
-    await this.createShipGrid(width, scrollViewportHeight);
-
-    // Fixed footer
-    const footerContainer = new PIXI.Container();
+    // Footer instructions
     const instructions = new PIXI.Text(
-      'Arrow Keys to Navigate | Click DETAILS or START',
+      'Arrow Keys or Click Arrows to Navigate',
       {
         fontFamily: 'Courier New',
         fontSize: 14,
@@ -102,182 +77,215 @@ export class ShipSelectScene {
     );
     instructions.anchor.set(0.5, 1);
     instructions.position.set(width / 2, height - 15);
-    footerContainer.addChild(instructions);
-    this.container.addChild(footerContainer);
-
-    // Setup scrolling
-    this.setupScrolling(width, scrollViewportHeight);
-
-    // Update selection
-    this.updateSelection();
+    this.container.addChild(instructions);
 
     // Setup input
     this.setupInput();
+
+    // Show initial ship
+    this.updateCarousel();
   }
 
-  async createShipGrid(width, viewportHeight) {
-    const gridContainer = new PIXI.Container();
+  createArrowButton(x, y, isLeft) {
+    const button = new PIXI.Container();
+    button.position.set(x, y);
+    button.eventMode = 'static';
+    button.cursor = 'pointer';
 
-    const cols = 3;
-    const rows = Math.ceil(this.ships.length / cols);
-    const cardWidth = 220;
-    const cardHeight = 280;
-    const spacing = 20;
-    const gridWidth = cols * cardWidth + (cols - 1) * spacing;
-    const gridHeight = rows * cardHeight + (rows - 1) * spacing;
-
-    // Store content height for scrolling
-    this.contentHeight = gridHeight + 40; // Add padding
-    this.viewportHeight = viewportHeight;
-
-    // Center the grid horizontally
-    const startX = (width - gridWidth) / 2;
-    const startY = 20; // Start from top of scroll area
-
-    for (let i = 0; i < this.ships.length; i++) {
-      const ship = this.ships[i];
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = startX + col * (cardWidth + spacing);
-      const y = startY + row * (cardHeight + spacing);
-
-      const card = await this.createShipCard(ship, i, x, y, cardWidth, cardHeight);
-      this.shipCards.push(card);
-      gridContainer.addChild(card);
-    }
-
-    this.scrollContent.addChild(gridContainer);
-    this.gridContainer = gridContainer;
-  }
-
-  async createShipCard(ship, index, x, y, width, height) {
-    const card = new PIXI.Container();
-    card.position.set(x, y);
-    card.eventMode = 'static';
-    card.cursor = 'pointer';
-
-    // Card background
+    // Arrow background
     const bg = new PIXI.Graphics();
-    bg.rect(0, 0, width, height);
+    bg.rect(0, 0, 80, 80);
     bg.fill({ color: 0x1a1a1a });
     bg.stroke({ color: 0x00ff00, width: 2 });
-    card.addChild(bg);
-    card.bg = bg;
+    button.addChild(bg);
 
-    // Ship sprite
+    // Arrow symbol
+    const arrow = new PIXI.Graphics();
+    if (isLeft) {
+      arrow.moveTo(50, 25);
+      arrow.lineTo(30, 40);
+      arrow.lineTo(50, 55);
+    } else {
+      arrow.moveTo(30, 25);
+      arrow.lineTo(50, 40);
+      arrow.lineTo(30, 55);
+    }
+    arrow.stroke({ color: 0x00ff00, width: 3 });
+    button.addChild(arrow);
+
+    button.on('pointerdown', () => {
+      if (isLeft) {
+        this.navigateLeft();
+      } else {
+        this.navigateRight();
+      }
+    });
+
+    button.on('pointerover', () => {
+      bg.clear();
+      bg.rect(0, 0, 80, 80);
+      bg.fill({ color: 0x2a2a2a });
+      bg.stroke({ color: 0xffffff, width: 3 });
+    });
+
+    button.on('pointerout', () => {
+      bg.clear();
+      bg.rect(0, 0, 80, 80);
+      bg.fill({ color: 0x1a1a1a });
+      bg.stroke({ color: 0x00ff00, width: 2 });
+    });
+
+    return button;
+  }
+
+  async updateCarousel() {
+    // Clear carousel
+    this.carouselContainer.removeChildren();
+
+    const ship = this.ships[this.selectedIndex];
+    const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
+
+    // Large ship sprite
     const shipTexture = GameAssets.getRankShipTexture(ship.textureIndex);
     if (shipTexture && shipTexture.width > 0) {
       const sprite = new PIXI.Sprite(shipTexture);
       sprite.anchor.set(0.5);
-      sprite.position.set(width / 2, 70);
+      sprite.position.set(0, -80);
 
-      const maxSize = 80;
+      const maxSize = 150;
       const scale = Math.min(maxSize / sprite.width, maxSize / sprite.height);
       sprite.scale.set(scale);
 
-      card.addChild(sprite);
-      card.sprite = sprite;
+      this.carouselContainer.addChild(sprite);
     }
 
     // Ship name
     const name = new PIXI.Text(ship.name, {
       fontFamily: 'Courier New',
-      fontSize: 16,
+      fontSize: 24,
       fill: '#00ff00',
       align: 'center',
-      wordWrap: true,
-      wordWrapWidth: width - 20,
       fontWeight: 'bold'
     });
     name.anchor.set(0.5, 0);
-    name.position.set(width / 2, 130);
-    card.addChild(name);
+    name.position.set(0, 20);
+    this.carouselContainer.addChild(name);
 
-    // Short teaser
-    const teaser = this.getShortTeaser(ship.description);
-    const desc = new PIXI.Text(teaser, {
+    // Short lore
+    const lore = this.getShortTeaser(ship.description);
+    const loreText = new PIXI.Text(lore, {
       fontFamily: 'Courier New',
-      fontSize: 11,
+      fontSize: 14,
       fill: '#cccccc',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: width - 30,
-      lineHeight: 14
+      wordWrapWidth: 400
     });
-    desc.anchor.set(0.5, 0);
-    desc.position.set(width / 2, 160);
-    card.addChild(desc);
+    loreText.anchor.set(0.5, 0);
+    loreText.position.set(0, 60);
+    this.carouselContainer.addChild(loreText);
 
-    // Ship stats (health, damage, speed indicators)
-    const statsY = 200;
-    const statsText = this.getShipStats(ship);
-    const stats = new PIXI.Text(statsText, {
-      fontFamily: 'Courier New',
-      fontSize: 10,
-      fill: '#00ff00',
-      align: 'center',
-      lineHeight: 12
-    });
-    stats.anchor.set(0.5, 0);
-    stats.position.set(width / 2, statsY);
-    card.addChild(stats);
+    // Stat bars
+    const statsY = 110;
+    const statSpacing = 35;
 
-    // Buttons at bottom
-    const buttonY = height - 50;
-    const buttonWidth = 85;
-    const buttonHeight = 32;
-    const buttonSpacing = 10;
+    // HP bar
+    this.createStatBar('HP', 3, 0, statsY);
+
+    // DMG bar
+    this.createStatBar('DMG', 3, 0, statsY + statSpacing);
+
+    // SPD bar
+    this.createStatBar('SPD', 4, 0, statsY + statSpacing * 2);
+
+    // Buttons
+    const buttonY = 230;
+    const buttonWidth = 120;
+    const buttonHeight = 40;
+    const buttonSpacing = 20;
 
     // DETAILS button
     const detailsBtn = this.createButton(
       'DETAILS',
-      (width - buttonWidth * 2 - buttonSpacing) / 2,
+      -buttonWidth - buttonSpacing / 2,
       buttonY,
       buttonWidth,
       buttonHeight,
       0x333333,
       0x00ff00,
       () => {
-        this.selectedIndex = index;
         const spriteKey = ship.spriteKey;
         setSelectedShipKey(spriteKey);
         this.saveSelection(spriteKey);
-        if (DEBUG) console.log('[ShipSelect] Opening details for:', spriteKey);
         this.game.showShipDetails(spriteKey);
       }
     );
-    card.addChild(detailsBtn);
+    this.carouselContainer.addChild(detailsBtn);
 
     // START button
     const startBtn = this.createButton(
       'START',
-      (width - buttonWidth * 2 - buttonSpacing) / 2 + buttonWidth + buttonSpacing,
+      buttonSpacing / 2,
       buttonY,
       buttonWidth,
       buttonHeight,
       0x00ff00,
       0x000000,
       () => {
-        this.selectedIndex = index;
         const spriteKey = ship.spriteKey;
         setSelectedShipKey(spriteKey);
         this.saveSelection(spriteKey);
-        if (DEBUG) console.log('[ShipSelect] Starting game with:', spriteKey);
         this.game.startGame(spriteKey);
       }
     );
-    card.addChild(startBtn);
+    this.carouselContainer.addChild(startBtn);
 
-    // Click on card to select
-    card.on('pointerdown', (e) => {
-      if (!this.isDragging && (e.target === card || e.target === bg || e.target === card.sprite)) {
-        this.selectedIndex = index;
-        setSelectedShipKey(ship.spriteKey);
-        this.updateSelection();
-      }
+    // Counter text
+    const counter = new PIXI.Text(`${this.selectedIndex + 1} / ${this.ships.length}`, {
+      fontFamily: 'Courier New',
+      fontSize: 16,
+      fill: '#888888'
     });
+    counter.anchor.set(0.5, 0);
+    counter.position.set(0, 290);
+    this.carouselContainer.addChild(counter);
+  }
 
-    return card;
+  createStatBar(label, value, x, y) {
+    const maxBars = 5;
+    const barWidth = 25;
+    const barHeight = 15;
+    const barSpacing = 5;
+    const totalWidth = maxBars * barWidth + (maxBars - 1) * barSpacing;
+
+    // Label
+    const labelText = new PIXI.Text(label, {
+      fontFamily: 'Courier New',
+      fontSize: 14,
+      fill: '#00ff00',
+      fontWeight: 'bold'
+    });
+    labelText.anchor.set(1, 0.5);
+    labelText.position.set(x - totalWidth / 2 - 15, y);
+    this.carouselContainer.addChild(labelText);
+
+    // Bars
+    for (let i = 0; i < maxBars; i++) {
+      const bar = new PIXI.Graphics();
+      const barX = x - totalWidth / 2 + i * (barWidth + barSpacing);
+
+      if (i < value) {
+        // Filled bar
+        bar.rect(barX, y - barHeight / 2, barWidth, barHeight);
+        bar.fill({ color: 0x00ff00 });
+      } else {
+        // Empty bar
+        bar.rect(barX, y - barHeight / 2, barWidth, barHeight);
+        bar.stroke({ color: 0x00ff00, width: 2 });
+      }
+
+      this.carouselContainer.addChild(bar);
+    }
   }
 
   createButton(label, x, y, width, height, bgColor, textColor, onClick) {
@@ -294,7 +302,7 @@ export class ShipSelectScene {
 
     const text = new PIXI.Text(label, {
       fontFamily: 'Courier New',
-      fontSize: 13,
+      fontSize: 16,
       fill: textColor,
       fontWeight: 'bold'
     });
@@ -302,18 +310,13 @@ export class ShipSelectScene {
     text.position.set(width / 2, height / 2);
     button.addChild(text);
 
-    button.on('pointerdown', (e) => {
-      e.stopPropagation();
-      if (!this.isDragging) {
-        onClick();
-      }
-    });
+    button.on('pointerdown', onClick);
 
     button.on('pointerover', () => {
       bg.clear();
       bg.rect(0, 0, width, height);
       bg.fill({ color: bgColor, alpha: 0.8 });
-      bg.stroke({ color: 0xffffff, width: 2 });
+      bg.stroke({ color: 0xffffff, width: 3 });
     });
 
     button.on('pointerout', () => {
@@ -326,161 +329,41 @@ export class ShipSelectScene {
     return button;
   }
 
-  setupScrolling(width, viewportHeight) {
-    // Wheel scrolling (desktop)
-    this.wheelHandler = (e) => {
-      e.preventDefault();
-      this.scrollY += e.deltaY * 0.5;
-      this.clampScroll();
-      this.applyScroll();
-    };
-
-    // Touch/drag scrolling (mobile)
-    this.scrollContent.eventMode = 'static';
-
-    this.scrollContent.on('pointerdown', (e) => {
-      this.isDragging = false;
-      this.dragStartY = e.global.y;
-      this.dragStartScrollY = this.scrollY;
-      this.lastPointerY = e.global.y;
-    });
-
-    this.scrollContent.on('pointermove', (e) => {
-      if (this.dragStartY !== undefined) {
-        const deltaY = e.global.y - this.dragStartY;
-        if (Math.abs(deltaY) > 5) {
-          this.isDragging = true;
-        }
-        if (this.isDragging) {
-          this.scrollY = this.dragStartScrollY - deltaY;
-          this.clampScroll();
-          this.applyScroll();
-        }
-        this.lastPointerY = e.global.y;
-      }
-    });
-
-    this.scrollContent.on('pointerup', () => {
-      this.dragStartY = undefined;
-      setTimeout(() => {
-        this.isDragging = false;
-      }, 100);
-    });
-
-    this.scrollContent.on('pointerupoutside', () => {
-      this.dragStartY = undefined;
-      setTimeout(() => {
-        this.isDragging = false;
-      }, 100);
-    });
-
-    // Add wheel listener to container
-    // Add wheel listener to canvas
-    const canvas = this.game.app.canvas || this.game.app.view;
-    if (canvas) {
-      canvas.addEventListener('wheel', this.wheelHandler, { passive: false });
-    } else {
-      window.addEventListener('wheel', this.wheelHandler, { passive: false });
-    }
+  navigateLeft() {
+    this.selectedIndex = (this.selectedIndex - 1 + this.ships.length) % this.ships.length;
+    setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
+    this.updateCarousel();
   }
 
-  clampScroll() {
-    const maxScroll = Math.max(0, this.contentHeight - this.viewportHeight);
-    this.scrollY = Math.max(0, Math.min(maxScroll, this.scrollY));
-  }
-
-  applyScroll() {
-    if (this.gridContainer) {
-      this.gridContainer.y = -this.scrollY + 20;
-    }
-  }
-
-  getShortTeaser(description) {
-    if (description.length <= 40) return description;
-    const truncated = description.substring(0, 40);
-    const lastSpace = truncated.lastIndexOf(' ');
-    return lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
-  }
-
-  getShipStats(ship) {
-    // Generate stat bars based on ship metadata or defaults
-    const healthBar = '█'.repeat(3) + '░'.repeat(2); // 3/5
-    const damageBar = '█'.repeat(3) + '░'.repeat(2); // 3/5
-    const speedBar = '█'.repeat(4) + '░'.repeat(1);  // 4/5
-    return `HP: ${healthBar}\nDMG: ${damageBar}\nSPD: ${speedBar}`;
-  }
-
-  updateSelection() {
-    this.shipCards.forEach((card, i) => {
-      if (i === this.selectedIndex) {
-        card.bg.clear();
-        card.bg.rect(0, 0, 220, 280);
-        card.bg.fill({ color: 0x2a2a2a });
-        card.bg.stroke({ color: 0x00ff00, width: 4 });
-
-        // Add glowing outer border for selected card
-        card.bg.rect(-4, -4, 228, 288);
-        card.bg.stroke({ color: 0x00ff00, width: 1, alpha: 0.5 });
-
-        if (card.sprite) {
-          card.sprite.tint = 0xffffff;
-          // Subtle pulse animation
-          if (!card.pulseAnimating) {
-            card.pulseAnimating = true;
-            const originalScale = card.sprite.scale.x;
-            let pulseTime = 0;
-            const pulseAnim = () => {
-              if (this.selectedIndex !== i || !card.sprite) {
-                card.pulseAnimating = false;
-                return;
-              }
-              pulseTime += 0.05;
-              const scale = originalScale + Math.sin(pulseTime) * 0.03;
-              card.sprite.scale.set(scale);
-              requestAnimationFrame(pulseAnim);
-            };
-            pulseAnim();
-          }
-        }
-      } else {
-        card.bg.clear();
-        card.bg.rect(0, 0, 220, 280);
-        card.bg.fill({ color: 0x1a1a1a });
-        card.bg.stroke({ color: 0x00ff00, width: 2 });
-        if (card.sprite) {
-          card.sprite.tint = 0x888888;
-          card.pulseAnimating = false;
-        }
-      }
-    });
+  navigateRight() {
+    this.selectedIndex = (this.selectedIndex + 1) % this.ships.length;
+    setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
+    this.updateCarousel();
   }
 
   setupInput() {
-    console.log('[ShipSelectInput] attached');
     this.keyHandler = (e) => {
-      // Log first key press for debug
-      if (DEBUG) console.log(`[ShipSelectInput] key=${e.key} code=${e.code}`);
-
       if (e.key === 'ArrowLeft' || e.code === 'KeyA') {
-        this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-        setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
-        this.updateSelection();
+        this.navigateLeft();
       } else if (e.key === 'ArrowRight' || e.code === 'KeyD') {
-        this.selectedIndex = Math.min(this.ships.length - 1, this.selectedIndex + 1);
-        setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
-        this.updateSelection();
-      } else if (e.key === 'ArrowUp' || e.code === 'KeyW') {
-        this.selectedIndex = Math.max(0, this.selectedIndex - 3);
-        setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
-        this.updateSelection();
-      } else if (e.key === 'ArrowDown' || e.code === 'KeyS') {
-        this.selectedIndex = Math.min(this.ships.length - 1, this.selectedIndex + 3);
-        setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
-        this.updateSelection();
+        this.navigateRight();
+      } else if (e.key === 'Enter' || e.code === 'Space') {
+        const ship = this.ships[this.selectedIndex];
+        const spriteKey = ship.spriteKey;
+        setSelectedShipKey(spriteKey);
+        this.saveSelection(spriteKey);
+        this.game.startGame(spriteKey);
       }
     };
 
     window.addEventListener('keydown', this.keyHandler);
+  }
+
+  getShortTeaser(description) {
+    if (description.length <= 60) return description;
+    const truncated = description.substring(0, 60);
+    const lastSpace = truncated.lastIndexOf(' ');
+    return lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
   }
 
   saveSelection(spriteKey) {
@@ -501,14 +384,8 @@ export class ShipSelectScene {
   }
 
   cleanup() {
-    console.log('[ShipSelectInput] detached');
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler);
-    }
-    if (this.wheelHandler) {
-      window.removeEventListener('wheel', this.wheelHandler);
-      const canvas = this.game.app.canvas || this.game.app.view;
-      if (canvas) canvas.removeEventListener('wheel', this.wheelHandler);
     }
   }
 
