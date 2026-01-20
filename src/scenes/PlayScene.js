@@ -1006,6 +1006,7 @@ export class PlayScene {
               // Visual feedback
               this.particleManager.createHitSpark(enemyBullet.x, enemyBullet.y);
               AudioManager.playSfx('shield', { volume: 0.3 });
+              console.log('[BulletShield] Destroyed enemy bullet at', enemyBullet.x.toFixed(0), enemyBullet.y.toFixed(0));
             }
           });
         }
