@@ -139,6 +139,9 @@ export class ShipSelectScene {
   }
 
   async updateCarousel(direction = null) {
+    const ship = this.ships[this.selectedIndex];
+    const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
+
     // Slide out animation
     if (direction && this.carouselContainer.children.length > 0) {
       const slideOutDirection = direction === 'left' ? 200 : -200;
@@ -163,9 +166,6 @@ export class ShipSelectScene {
 
     // Clear carousel
     this.carouselContainer.removeChildren();
-
-    const ship = this.ships[this.selectedIndex];
-    const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
 
     // Reset carousel position for slide in
     if (direction) {
@@ -195,19 +195,7 @@ export class ShipSelectScene {
       glow.filters = [new PIXI.BlurFilter(20)];
       glow.position.set(0, -80);
       this.carouselContainer.addChildAt(glow, 0);
-
-      // Pulse the glow
-      let glowTime = 0;
-      const glowTicker = (delta) => {
-        glowTime += delta.deltaTime * 0.03;
-        const pulse = 0.1 + Math.sin(glowTime) * 0.08;
-        glow.alpha = pulse;
-      };
-      this.game.app.ticker.add(glowTicker);
     }
-
-    // Add sparkles around ship
-    this.createSparkles(shipSprite);
 
     // Ship name
     const name = new PIXI.Text(ship.name, {
@@ -335,22 +323,14 @@ export class ShipSelectScene {
       const angle = (Math.PI * 2 * i) / sparkleCount;
       const sparkle = new PIXI.Graphics();
       sparkle.star(0, 0, 4, 4, 3);
-      sparkle.fill({ color: 0xffff00, alpha: 0.6 });
+      sparkle.fill({ color: 0xffff00, alpha: 0.4 });
 
       const x = shipX + Math.cos(angle) * radius;
       const y = shipY + Math.sin(angle) * radius;
       sparkle.position.set(x, y);
+      sparkle.rotation = Math.random() * Math.PI * 2;
 
       this.carouselContainer.addChild(sparkle);
-
-      // Animate sparkle
-      let time = Math.random() * Math.PI * 2;
-      const ticker = (delta) => {
-        time += delta.deltaTime * 0.05;
-        sparkle.alpha = 0.3 + Math.sin(time) * 0.3;
-        sparkle.rotation += delta.deltaTime * 0.02;
-      };
-      this.game.app.ticker.add(ticker);
     }
   }
 
