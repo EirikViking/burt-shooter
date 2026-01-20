@@ -116,14 +116,17 @@ export class ParticleManager {
     return particle;
   }
 
-  createExplosion(x, y, color) {
-    const particleCount = 20;
+  createExplosion(x, y, color, intensity = 1) {
+    const particleCount = Math.floor(20 * intensity);
+    const speedMult = intensity;
+    const sizeMult = intensity;
+
     for (let i = 0; i < particleCount; i++) {
-      const angle = (Math.PI * 2 * i) / particleCount;
-      const speed = 2 + Math.random() * 3;
+      const angle = (Math.PI * 2 * i) / particleCount + (Math.random() * 0.3 - 0.15);
+      const speed = (2 + Math.random() * 3) * speedMult;
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      const size = 2 + Math.random() * 3;
+      const size = (2 + Math.random() * 3) * sizeMult;
       const lifetime = 30 + Math.random() * 30;
 
       if (!this.spawnParticle(x, y, vx, vy, color, size, lifetime)) {
@@ -132,16 +135,46 @@ export class ParticleManager {
     }
 
     // Debris
-    const debrisCount = 2 + Math.floor(Math.random() * 3);
+    const debrisCount = Math.floor((2 + Math.floor(Math.random() * 3)) * intensity);
     for (let i = 0; i < debrisCount; i++) {
       const tex = GameAssets.getRandomPart();
       if (tex) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = 1 + Math.random() * 2;
+        const speed = (1 + Math.random() * 2) * speedMult;
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
-        this.spawnParticle(x, y, vx, vy, 0xffffff, 5, 60, tex);
+        this.spawnParticle(x, y, vx, vy, 0xffffff, 5 * sizeMult, 60, tex);
       }
+    }
+  }
+
+  // Massive explosion for boss deaths
+  createBossExplosion(x, y, color) {
+    this.createExplosion(x, y, color, 3.0);
+    // Add extra ring of slower particles
+    for (let i = 0; i < 30; i++) {
+      const angle = (Math.PI * 2 * i) / 30;
+      const speed = 1 + Math.random();
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      const size = 4 + Math.random() * 4;
+      const lifetime = 60 + Math.random() * 40;
+      this.spawnParticle(x, y, vx, vy, color, size, lifetime);
+    }
+  }
+
+  // Muzzle flash burst
+  createMuzzleFlash(x, y, angle, color = 0xffff00) {
+    const particleCount = 5;
+    for (let i = 0; i < particleCount; i++) {
+      const spread = 0.3;
+      const particleAngle = angle + (Math.random() - 0.5) * spread;
+      const speed = 3 + Math.random() * 2;
+      const vx = Math.cos(particleAngle) * speed;
+      const vy = Math.sin(particleAngle) * speed;
+      const size = 2 + Math.random();
+      const lifetime = 8 + Math.random() * 8;
+      this.spawnParticle(x, y, vx, vy, color, size, lifetime);
     }
   }
 
@@ -162,18 +195,30 @@ export class ParticleManager {
   }
 
   createPickupEffect(x, y, color) {
-    const particleCount = 15;
+    // Enhanced powerup collection burst
+    const particleCount = 25;
     for (let i = 0; i < particleCount; i++) {
       const angle = (Math.PI * 2 * i) / particleCount;
-      const speed = 1 + Math.random() * 2;
+      const speed = 2 + Math.random() * 3;
       const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed - 2; // Upward bias
-      const size = 2 + Math.random() * 2;
-      const lifetime = 40 + Math.random() * 20;
+      const vy = Math.sin(angle) * speed - 3; // Strong upward bias
+      const size = 3 + Math.random() * 3;
+      const lifetime = 50 + Math.random() * 30;
 
       if (!this.spawnParticle(x, y, vx, vy, color, size, lifetime)) {
         break;
       }
+    }
+
+    // Add sparkle particles
+    for (let i = 0; i < 10; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.5 + Math.random();
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed - 1;
+      const size = 1 + Math.random();
+      const lifetime = 30 + Math.random() * 20;
+      this.spawnParticle(x, y, vx, vy, 0xffffff, size, lifetime);
     }
   }
 
