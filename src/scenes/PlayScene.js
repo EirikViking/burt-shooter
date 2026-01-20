@@ -1579,6 +1579,22 @@ export class PlayScene {
     if (!text) return;
     if (!this.canShowLore()) return;
     const duration = 2500 + Math.random() * 1000;
+
+    // Funny rotating titles
+    const funnyTitles = [
+      'STOKMARKNES VISDOM!',
+      'MELBU MELDING!',
+      'KURT EDGAR SIER:',
+      'EIRIK MELDER:',
+      'RØLP STATUS:',
+      'KAI-CHAT:',
+      'HURTIGRUTA NYTT:',
+      'KJØTTDEIG FAKTA:',
+      'ISBJØRN INFO:',
+      'NORDLYS NÆRVÆR!'
+    ];
+    const title = funnyTitles[Math.floor(Math.random() * funnyTitles.length)];
+
     this.enqueueToast(text, {
       fontSize: 22,
       fill: '#ffffff',
@@ -1586,7 +1602,7 @@ export class PlayScene {
       slot: 'top',
       type: 'lore',
       banner: true,
-      title: 'LORE UNLOCKED', // TASK 3: Add title
+      title,
       y: this.game.getHeight() * 0.16,
       maxWidth: this.game.getWidth() * 0.7
     });
@@ -1645,8 +1661,8 @@ export class PlayScene {
 
       const photos = Object.keys(GameAssets.photos || {});
       const hasAvatar = photos.length > 0;
-      // Task 3: Bigger avatar slot
-      const avatarSlot = hasAvatar ? 88 : 0;
+      // Make portraits 50% bigger (was 88, now 132)
+      const avatarSlot = hasAvatar ? 132 : 0;
       const contentWidth = Math.max(180, maxWidth - paddingX * 2 - avatarSlot);
       bannerText.style.wordWrapWidth = contentWidth;
       if (bannerText.updateText) bannerText.updateText(false);
@@ -1718,15 +1734,15 @@ export class PlayScene {
         if (GameAssets.isValidTexture(tex)) {
           const sticker = new PIXI.Sprite(tex);
           sticker.anchor.set(0.5);
-          // Task 3: Much bigger portrait
-          sticker.width = 72;
-          sticker.height = 72;
+          // 50% bigger portraits (was 72px, now 108px)
+          sticker.width = 108;
+          sticker.height = 108;
           sticker.x = -panelWidth / 2 + paddingX + avatarSlot / 2;
           sticker.y = 0;
           sticker.alpha = 0.92;
-          // Task 3: Add subtle border around portrait
+          // Border radius 50% bigger (was 38, now 57)
           const portraitBorder = new PIXI.Graphics();
-          portraitBorder.circle(sticker.x, sticker.y, 38);
+          portraitBorder.circle(sticker.x, sticker.y, 57);
           portraitBorder.stroke({ color: 0x00ffff, width: 2, alpha: 0.7 });
           banner.addChild(portraitBorder);
           banner.addChild(sticker);
