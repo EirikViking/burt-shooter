@@ -5,9 +5,13 @@ import { AssetManifest } from '../assets/assetManifest.js';
 const getMusic = (partial) => AssetManifest.audio.music.find(p => p.includes(partial)) || `/audio/music/${partial}.mp3`;
 const getSfx = (partial) => {
     const match = AssetManifest.audio.sfx.find(p => p.includes(partial));
-    if (match) return match;
-    // Fallback: Construct URL assuming standard location and format
-    return `/audio/sfx/${partial}.mp3`;
+    if (!match) {
+        // Warn only in development/console if possible, but for now just return safe fallback
+        // Return a known safe sound to prevent crashes
+        console.warn(`[SoundCatalog] Missing SFX: ${partial}`);
+        return AssetManifest.audio.sfx[0]; // computerNoise_000
+    }
+    return match;
 };
 
 // Music Pools
