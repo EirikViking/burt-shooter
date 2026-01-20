@@ -1751,7 +1751,7 @@ export class PlayScene {
         if (popup.parent) popup.parent.removeChild(popup);
       }
     };
-    this.activeTickers.push(ticker);
+    this._activeTickers.push(ticker);
     this.game.app.ticker.add(ticker);
   }
 
