@@ -846,6 +846,8 @@ export class PlayScene {
       } else {
         // Cleanup
         this.game.app.ticker.remove(animate);
+        const idx = this._activeTickers.indexOf(animate);
+        if (idx >= 0) this._activeTickers.splice(idx, 1);
         if (container.parent) {
           this.uiContainer.removeChild(container);
         }
@@ -853,6 +855,7 @@ export class PlayScene {
     };
 
     this.game.app.ticker.add(animate);
+    this._activeTickers.push(animate); // Track for cleanup
   }
 
   showErrorOverlay(e) {
@@ -1836,6 +1839,10 @@ export class PlayScene {
 
       if (elapsed >= duration) {
         this.game.app.ticker.remove(ticker);
+        // Remove from tracked tickers
+        const idx = this._activeTickers.indexOf(ticker);
+        if (idx >= 0) this._activeTickers.splice(idx, 1);
+
         if (display.parent) display.parent.removeChild(display);
         if (slot === 'corner') {
           this.activeCornerToast = null;
@@ -1848,6 +1855,7 @@ export class PlayScene {
       }
     };
     this.game.app.ticker.add(ticker);
+    this._activeTickers.push(ticker); // Track toast ticker for cleanup
     return display;
   }
 
@@ -2450,11 +2458,14 @@ export class PlayScene {
         poster.alpha = 1 - t;
         if (t >= 1) {
           this.game.app.ticker.remove(animate);
+          const idx = this._activeTickers.indexOf(animate);
+          if (idx >= 0) this._activeTickers.splice(idx, 1);
           if (this.uiOverlay) this.uiOverlay.removeChild(poster);
         }
       }
     };
     this.game.app.ticker.add(animate);
+    this._activeTickers.push(animate); // Track for cleanup
     AudioManager.play('menuSelect');
   }
 
@@ -2510,10 +2521,13 @@ export class PlayScene {
       }
       if (elapsed >= duration) {
         this.game.app.ticker.remove(ticker);
+        const idx = this._activeTickers.indexOf(ticker);
+        if (idx >= 0) this._activeTickers.splice(idx, 1);
         if (card.parent) card.parent.removeChild(card);
       }
     };
     this.game.app.ticker.add(ticker);
+    this._activeTickers.push(ticker); // Track for cleanup
   }
 
   triggerShockwave(x, y, color = 0xffff00) {
@@ -2530,10 +2544,13 @@ export class PlayScene {
       ring.alpha -= 0.02 * delta.deltaTime;
       if (ring.alpha <= 0) {
         this.game.app.ticker.remove(ticker);
+        const idx = this._activeTickers.indexOf(ticker);
+        if (idx >= 0) this._activeTickers.splice(idx, 1);
         if (ring.parent) ring.parent.removeChild(ring);
       }
     };
     this.game.app.ticker.add(ticker);
+    this._activeTickers.push(ticker); // Track for cleanup
   }
 
   onBossPhaseChange(phase, boss) {
