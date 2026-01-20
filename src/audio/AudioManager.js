@@ -457,30 +457,41 @@ class AudioController {
       if (now < this.globalVoiceCooldown) return;
     }
 
-    const map = {
-      'ready': 'ready.mp3',
-      'go': 'go.mp3',
-      'wave_clear': 'objective_achieved.mp3',
-      'mission_complete': 'mission_completed.mp3',
-      'war_target': 'war_target_engaged.mp3', // Corrected name based on file list
-      'round': 'round.mp3',
-      'powerup': 'power_up.mp3'
-    };
+    // 1. Lookup in Catalog first (supports arrays/variants)
+    let variants = SFX_CATALOG[eventName];
 
-    const filename = map[eventName];
-    if (filename) {
-      // Lookup in manifest (robust to path changes)
-      const src = AssetManifest.audio.voice.find(p => p.endsWith(filename));
+    // 2. Fallback to direct mapping or loose match (Legacy support)
+    if (!variants) {
+      const map = {
+        'ready': 'ready.mp3',
+        'go': 'go.mp3',
+        'wave_clear': 'objective_achieved.mp3',
+        'mission_complete': 'mission_completed.mp3',
+        'war_target': 'war_target_engaged.mp3',
+        'round': 'round.mp3',
+        'powerup': 'power_up.mp3',
+        'game_over': 'game_over.mp3',
+        'you_win': 'you_win.mp3'
+      };
+      const filename = map[eventName];
+      if (filename) {
+        const found = AssetManifest.audio.voice.find(p => p.endsWith(filename));
+        if (found) variants = [found];
+      }
+    }
 
+    if (variants && variants.length > 0) {
+      // Pick random variant
+      const src = variants[Math.floor(Math.random() * variants.length)];
       if (src) {
         const audio = new Audio(src);
         audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.voiceVolume));
         audio.play().catch(e => { });
         this.globalVoiceCooldown = now + 1500;
         return true;
-      } else {
-        console.warn(`[Audio] Voice asset not found for: ${filename}`);
       }
+    } else {
+      console.warn(`[Audio] No voice asset found for: ${eventName}`);
     }
     return false;
   }

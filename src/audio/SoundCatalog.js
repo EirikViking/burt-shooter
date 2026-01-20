@@ -14,6 +14,11 @@ const getSfx = (partial) => {
     return match;
 };
 
+const getVoice = (partial) => {
+    const match = AssetManifest.audio.voice.find(p => p.includes(partial));
+    return match || null;
+};
+
 // Music Pools
 const MENU_POOL = [
     getMusic('Brave Pilots'),
@@ -88,6 +93,35 @@ export const SFX_CATALOG = {
     'forceField': [getSfx('forceField_000')], // Alias for shield/pickup reuse
     'shield_up': [getSfx('forceField_000')],
     'spawn_special': [getSfx('forceField_000')], // Alias for missing key
-    'life_up': [getSfx('ui_open_000')], // Fallback if specific not found
-    'explosionCrunch': [getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002')]
+    'life_up': [getSfx('ui_open_002')],
+    'explosionCrunch': [getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002')],
+
+    // Refined Categories
+    'spawn_special': [
+        getSfx('spaceEngineLarge_000'),
+        getSfx('spaceEngineLarge_001'),
+        getSfx('forceField_002')
+    ],
+    'powerup': [
+        getSfx('forceField_001'), // Sharp
+        getSfx('forceField_002'), // Resonant
+        getSfx('forceField_003')  // High pitch
+    ],
+    'taunt': [
+        getVoice('war_cover_me'),
+        getVoice('war_get_down'),
+        getVoice('war_go_go_go'),
+        getVoice('war_look_out'),
+        getVoice('war_watch_my_back'),
+        getVoice('war_target_engaged')
+    ].filter(Boolean),
+    'intro_voice': [
+        getVoice('ready'),
+        getVoice('go'),
+        getVoice('mission_started') // Fallback if exists, or use others
+    ].filter(Boolean),
+    'boss_spawn': [
+        getSfx('spaceEngineLow_000'),
+        getSfx('spaceEngineLow_001')
+    ]
 };
