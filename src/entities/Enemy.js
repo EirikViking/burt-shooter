@@ -265,15 +265,40 @@ export class Enemy {
     this.state = 'DIVE';
 
     const start = { x: this.x, y: this.y };
-    const end = { x: playerX, y: 700 }; // Fly past player
-    const cp = { x: (this.x + playerX) / 2 + (Math.random() - 0.5) * 200, y: (this.y + playerY) / 2 };
+
+    // Choose dive pattern randomly for variety
+    const diveType = Math.random();
+    let cp, end, duration = 1500;
+
+    if (diveType < 0.4) {
+      // Standard dive (40%)
+      end = { x: playerX, y: 700 };
+      cp = { x: (this.x + playerX) / 2 + (Math.random() - 0.5) * 200, y: (this.y + playerY) / 2 };
+    } else if (diveType < 0.6) {
+      // Spiral dive (20%) - wide arc
+      const side = this.x < playerX ? -1 : 1;
+      end = { x: playerX + side * 150, y: 700 };
+      cp = { x: this.x + side * 300, y: playerY };
+      duration = 1800; // Slower for more dramatic curve
+    } else if (diveType < 0.8) {
+      // Flanking dive (20%) - comes from side
+      const flankSide = Math.random() < 0.5 ? -1 : 1;
+      end = { x: flankSide * 100, y: 700 };
+      cp = { x: playerX + flankSide * 250, y: playerY - 50 };
+      duration = 1600;
+    } else {
+      // Kamikaze dive (20%) - straight at player then down
+      end = { x: playerX, y: 750 };
+      cp = { x: playerX, y: playerY + 100 };
+      duration = 1200; // Faster!
+    }
 
     this.diveCurve = {
       p0: start,
       p1: cp,
       p2: end,
       startTime: Date.now(),
-      duration: 1500
+      duration: duration
     };
 
     this.sprite.tint = 0xff0000; // Aggressive Color
@@ -301,12 +326,16 @@ export class Enemy {
         break;
 
       case 'FORMATION':
-        // Idle Sway
-        const swayX = Math.sin(this.moveTimer * 0.05 + this.idlePhase) * 10;
-        const swayY = Math.cos(this.moveTimer * 0.03 + this.idlePhase) * 5;
+        // Enhanced idle movement - more varied and alive
+        const swaySpeed = 0.04 + (this.idlePhase % 0.02); // Varied speed per enemy
+        const swayX = Math.sin(this.moveTimer * swaySpeed + this.idlePhase) * 12;
+        const swayY = Math.cos(this.moveTimer * (swaySpeed * 0.7) + this.idlePhase) * 6;
         this.x = this.formationX + swayX;
         this.y = this.formationY + swayY;
-        this.sprite.rotation = 0; // Face forward? Or rotate slightly
+
+        // Subtle rotation wobble
+        const wobbleAngle = Math.sin(this.moveTimer * 0.03 + this.idlePhase) * 0.1;
+        this.sprite.rotation = wobbleAngle;
 
         // Chance to dive (low)
         if (this.active && Math.random() < 0.001) {
