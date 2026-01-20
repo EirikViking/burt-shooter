@@ -337,7 +337,7 @@ class Powerup {
       life: 'ui_open',          // Extra life - positive, distinct
       shield: 'forceField',     // Shield - protective sound
       ghost: 'thrusterFire',    // Ghost mode - whoosh
-      slow_time: 'computerNoise', // Slow time - tech sound
+      slow_time: 'forceField',  // Slow time - tech sound (removed annoying computerNoise)
       isbjorn: 'pickup',        // Weapon powerups - generic pickup
       kjottdeig: 'pickup',
       rolp: 'pickup',
