@@ -26,6 +26,17 @@ import {
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
 
+// DEBUG: Flicker trace instrumentation
+const DEBUG_FLICKER_TRACE = true;
+
+// DEBUG: System disable flags for flicker isolation
+// Set to true to disable specific systems one at a time
+const DISABLE_SCREEN_SHAKE = false;
+const DISABLE_TOASTS = false;
+const DISABLE_WANTED_POSTERS = false;
+const DISABLE_DEATH_OVERLAY = false;
+const DISABLE_WAVE_CLEAR_OVERLAY = false;
+
 export class PlayScene {
   constructor(game) {
     this.game = game;
@@ -463,6 +474,29 @@ export class PlayScene {
     if (!this.isReady) return;
 
     try {
+      // DEBUG: Flicker trace - log frame-to-frame changes
+      if (DEBUG_FLICKER_TRACE) {
+        const stageAlpha = this.game.app.stage?.alpha;
+        const containerAlpha = this.container?.alpha;
+        const gameContainerAlpha = this.gameContainer?.alpha;
+        const uiOverlayAlpha = this.uiOverlay?.alpha;
+        const shakeX = this.gameContainer?.x || 0;
+        const shakeY = this.gameContainer?.y || 0;
+
+        if (!this._flickerState) {
+          this._flickerState = { stageAlpha, containerAlpha, gameContainerAlpha, uiOverlayAlpha, shakeX, shakeY };
+        } else {
+          const s = this._flickerState;
+          if (stageAlpha !== s.stageAlpha) console.warn(`[FLICKER] stage.alpha: ${s.stageAlpha} → ${stageAlpha}`);
+          if (containerAlpha !== s.containerAlpha) console.warn(`[FLICKER] container.alpha: ${s.containerAlpha} → ${containerAlpha}`);
+          if (gameContainerAlpha !== s.gameContainerAlpha) console.warn(`[FLICKER] gameContainer.alpha: ${s.gameContainerAlpha} → ${gameContainerAlpha}`);
+          if (uiOverlayAlpha !== s.uiOverlayAlpha) console.warn(`[FLICKER] uiOverlay.alpha: ${s.uiOverlayAlpha} → ${uiOverlayAlpha}`);
+          if (shakeX !== s.shakeX || shakeY !== s.shakeY) console.warn(`[FLICKER] shake: (${s.shakeX},${s.shakeY}) → (${shakeX},${shakeY})`);
+
+          this._flickerState = { stageAlpha, containerAlpha, gameContainerAlpha, uiOverlayAlpha, shakeX, shakeY };
+        }
+      }
+
       this.updateDiagnosticsLayout();
       this.gameTime += delta / 60;
 
@@ -586,7 +620,7 @@ export class PlayScene {
       if (this.enemyManager) this.enemyManager.update(delta);
       if (this.powerupManager) this.powerupManager.update(delta, this);
       if (this.particleManager) this.particleManager.update(delta);
-      if (this.screenShake) this.screenShake.update(delta);
+      if (!DISABLE_SCREEN_SHAKE && this.screenShake) this.screenShake.update(delta);
       if (this.scorePopupManager) this.scorePopupManager.update(delta);
 
       // Audio Update (Sequencer)
@@ -606,7 +640,9 @@ export class PlayScene {
 
         AudioManager.playSfx('levelComplete');
         this.game.addScore(1000); // Completion Bonus
-        this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000 });
+        if (!DISABLE_WAVE_CLEAR_OVERLAY) {
+          this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000 });
+        }
 
         // Particles
         for (let i = 0; i < 20; i++) {
@@ -1456,19 +1492,21 @@ export class PlayScene {
     setTimeout(() => AudioManager.playSfx('boss_explode', { force: true, volume: 0.7 }), 150);
 
     // Show death message with delay
-    setTimeout(() => {
-      const { width, height } = this.game.app.screen;
-      this.showToast('YOU DIED!', {
-        fontSize: 52,
-        fill: '#ff0000',
-        stroke: '#000000',
-        strokeThickness: 6,
-        slot: 'center',
-        type: 'death',
-        duration: 1800,
-        banner: false
-      });
-    }, 300);
+    if (!DISABLE_DEATH_OVERLAY) {
+      setTimeout(() => {
+        const { width, height } = this.game.app.screen;
+        this.showToast('YOU DIED!', {
+          fontSize: 52,
+          fill: '#ff0000',
+          stroke: '#000000',
+          strokeThickness: 6,
+          slot: 'center',
+          type: 'death',
+          duration: 1800,
+          banner: false
+        });
+      }, 300);
+    }
   }
 
   onLifeLost() {
@@ -1654,6 +1692,7 @@ export class PlayScene {
   }
 
   showToastNow(message, options, slot) {
+    if (DISABLE_TOASTS) return null; // DEBUG: Disable toasts for flicker isolation
     const { width, height } = this.game.app.screen;
     const fontSize = options.fontSize || (slot === 'corner' ? 16 : 24);
     const maxWidth = Number.isFinite(options.maxWidth)
@@ -2356,6 +2395,7 @@ export class PlayScene {
   }
 
   showBossTaunt(reason = 'boss_spawn') {
+    if (DISABLE_WANTED_POSTERS) return; // DEBUG: Disable wanted posters for flicker isolation
     const caption = this.getBossTauntCaption(reason);
     if (!caption) return;
     const photoKeys = Object.keys(GameAssets.photos || {});
