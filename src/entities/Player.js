@@ -847,6 +847,7 @@ export class Player {
       damage_up: 'DAMAGE UP',
       speed_up: 'SPEED UP',
       pierce: 'PIERCE',
+      bullet_shield: 'BULLET SHIELD',
       score_x2: 'SCORE x2',
       magnet: 'MAGNET',
       drones: 'DRONES',
@@ -994,6 +995,9 @@ export class Player {
         break;
       case 'pierce':
         this.activePowerup.expiresAt = Date.now() + 7000;
+        break;
+      case 'bullet_shield':
+        this.activePowerup.expiresAt = Date.now() + 10000; // 10s
         break;
       case 'shield':
         this.activateShield();

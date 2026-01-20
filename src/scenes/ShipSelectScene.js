@@ -12,6 +12,7 @@ export class ShipSelectScene {
     this.container = new PIXI.Container();
     this.ships = getSelectableShips();
     this.selectedIndex = 0;
+    this.activeTickers = []; // Track all active animation tickers
 
     // Load saved selection
     const saved = this.loadSelection();
@@ -157,9 +158,12 @@ export class ShipSelectScene {
 
           if (progress >= 1) {
             this.game.app.ticker.remove(ticker);
+            const idx = this.activeTickers.indexOf(ticker);
+            if (idx >= 0) this.activeTickers.splice(idx, 1);
             resolve();
           }
         };
+        this.activeTickers.push(ticker);
         this.game.app.ticker.add(ticker);
       });
     }
@@ -305,8 +309,11 @@ export class ShipSelectScene {
           this.carouselContainer.x = width / 2;
           this.carouselContainer.alpha = 1;
           this.game.app.ticker.remove(ticker);
+          const idx = this.activeTickers.indexOf(ticker);
+          if (idx >= 0) this.activeTickers.splice(idx, 1);
         }
       };
+      this.activeTickers.push(ticker);
       this.game.app.ticker.add(ticker);
     }
   }
@@ -480,6 +487,11 @@ export class ShipSelectScene {
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler);
     }
+    // Clean up all animation tickers to prevent visual glitches
+    this.activeTickers.forEach(ticker => {
+      this.game.app.ticker.remove(ticker);
+    });
+    this.activeTickers = [];
   }
 
   destroy() {
