@@ -153,6 +153,7 @@ export class BeerCan {
             { type: 'damage_up', weight: 1.1 },
             { type: 'speed_up', weight: 1.0 },
             { type: 'pierce', weight: 0.9 },
+            { type: 'bullet_shield', weight: 0.9 },
             { type: 'slow_time', weight: 0.8 },
             { type: 'score_boost', weight: 0.8 },
             { type: 'score_x2', weight: 0.7 }

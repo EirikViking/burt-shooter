@@ -936,6 +936,24 @@ export class PlayScene {
       });
     }
 
+    // Player bullets vs enemy bullets (Bullet Shield powerup)
+    if (this.player.activePowerup && this.player.activePowerup.type === 'bullet_shield') {
+      this.bulletManager.playerBullets.forEach(playerBullet => {
+        if (playerBullet.active) {
+          this.bulletManager.enemyBullets.forEach(enemyBullet => {
+            if (enemyBullet.active && this.checkCollision(playerBullet, enemyBullet)) {
+              // Destroy both bullets
+              playerBullet.active = false;
+              enemyBullet.active = false;
+              // Visual feedback
+              this.particleManager.createHitSpark(enemyBullet.x, enemyBullet.y);
+              AudioManager.playSfx('shield', { volume: 0.3 });
+            }
+          });
+        }
+      });
+    }
+
     // Enemy bullets vs player
     this.bulletManager.enemyBullets.forEach(bullet => {
       if (bullet.active && this.player.active) {
