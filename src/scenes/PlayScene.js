@@ -26,11 +26,10 @@ import {
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
 
-// DEBUG: Flicker trace instrumentation
-const DEBUG_FLICKER_TRACE = true;
+// DEBUG: Flicker trace instrumentation (disabled - flicker fixed)
+const DEBUG_FLICKER_TRACE = false;
 
-// DEBUG: System disable flags for flicker isolation
-// Set to true to disable specific systems one at a time
+// DEBUG: System disable flags for flicker isolation (disabled - kept for future debugging)
 const DISABLE_SCREEN_SHAKE = false;
 const DISABLE_TOASTS = false;
 const DISABLE_WANTED_POSTERS = false;
@@ -662,6 +661,12 @@ export class PlayScene {
           this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000 });
         }
 
+        // Show portrait lore on wave clear
+        const loreLine = this.getNextLoreLine();
+        if (loreLine) {
+          setTimeout(() => this.showPortraitPopup(loreLine), 1200);
+        }
+
         // Particles
         for (let i = 0; i < 20; i++) {
           setTimeout(() => {
@@ -675,7 +680,14 @@ export class PlayScene {
           }, i * 100);
         }
 
-        if (this.enemyManager.isBossLevel) this.showWantedPoster();
+        if (this.enemyManager.isBossLevel) {
+          this.showWantedPoster();
+          // Show portrait lore on boss spawn
+          const bossLore = this.getNextLoreLine();
+          if (bossLore) {
+            setTimeout(() => this.showPortraitPopup(bossLore), 2200);
+          }
+        }
 
         this.levelAdvanceTimeout = setTimeout(() => {
           this.levelAdvancePending = false;
@@ -1658,34 +1670,89 @@ export class PlayScene {
   showLoreBanner(text) {
     if (!text) return;
     if (!this.canShowLore()) return;
-    const duration = 2500 + Math.random() * 1000;
+    this.showPortraitPopup(text);
+  }
 
-    // Funny rotating titles
-    const funnyTitles = [
-      'STOKMARKNES VISDOM!',
-      'MELBU MELDING!',
-      'KURT EDGAR SIER:',
-      'EIRIK MELDER:',
-      'RØLP STATUS:',
-      'KAI-CHAT:',
-      'HURTIGRUTA NYTT:',
-      'KJØTTDEIG FAKTA:',
-      'ISBJØRN INFO:',
-      'NORDLYS NÆRVÆR!'
-    ];
-    const title = funnyTitles[Math.floor(Math.random() * funnyTitles.length)];
+  showPortraitPopup(text) {
+    if (!text) return;
+    const { width, height } = this.game.app.screen;
+    const duration = 3500;
 
-    this.enqueueToast(text, {
-      fontSize: 22,
+    // Portrait container
+    const popup = new PIXI.Container();
+    popup.x = width / 2;
+    popup.y = height * 0.25;
+    popup.alpha = 0;
+
+    // Portrait image (144px - 2x original size)
+    const photos = Object.keys(GameAssets.photos || {});
+    if (photos.length > 0) {
+      const pick = photos[Math.floor(Math.random() * photos.length)];
+      const tex = GameAssets.getPhoto(pick);
+      if (GameAssets.isValidTexture(tex)) {
+        const portrait = new PIXI.Sprite(tex);
+        portrait.anchor.set(0.5);
+        portrait.width = 144;
+        portrait.height = 144;
+        portrait.y = -80;
+
+        // Circular border
+        const border = new PIXI.Graphics();
+        border.circle(0, -80, 76);
+        border.stroke({ color: 0x00ff00, width: 4, alpha: 0.9 });
+        popup.addChild(border);
+        popup.addChild(portrait);
+      }
+    }
+
+    // Text box below portrait (semi-transparent background)
+    const textBg = new PIXI.Graphics();
+    textBg.roundRect(-200, 20, 400, 80, 10);
+    textBg.fill({ color: 0x000000, alpha: 0.85 });
+    textBg.stroke({ color: 0x00ff00, width: 3 });
+    popup.addChild(textBg);
+
+    // Lore text
+    const loreText = new PIXI.Text(text, {
+      fontFamily: 'Courier New',
+      fontSize: 18,
       fill: '#ffffff',
-      duration,
-      slot: 'top',
-      type: 'lore',
-      banner: true,
-      title,
-      y: this.game.getHeight() * 0.16,
-      maxWidth: this.game.getWidth() * 0.7
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: 360,
+      lineHeight: 24
     });
+    loreText.anchor.set(0.5);
+    loreText.y = 60;
+    popup.addChild(loreText);
+
+    this.uiOverlay.addChild(popup);
+    this.lastLoreAt = Date.now();
+
+    // Fade in/out animation
+    let elapsed = 0;
+    const fadeIn = 300;
+    const fadeOut = 400;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+
+      if (elapsed < fadeIn) {
+        popup.alpha = elapsed / fadeIn;
+      } else if (elapsed > duration - fadeOut) {
+        popup.alpha = Math.max(0, (duration - elapsed) / fadeOut);
+      } else {
+        popup.alpha = 1;
+      }
+
+      if (elapsed >= duration) {
+        this.game.app.ticker.remove(ticker);
+        const idx = this._activeTickers.indexOf(ticker);
+        if (idx >= 0) this._activeTickers.splice(idx, 1);
+        if (popup.parent) popup.parent.removeChild(popup);
+      }
+    };
+    this.activeTickers.push(ticker);
+    this.game.app.ticker.add(ticker);
   }
 
   canShowLore() {
