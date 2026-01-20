@@ -1395,10 +1395,10 @@ export class PlayScene {
     this.player.active = false;
     if (this.player.sprite) this.player.sprite.visible = false;
 
-    // 1. Freeze Frame - longer to give player time to process
-    this.freezeTimerMs = 500;
+    // NO FREEZE - Player must keep moving
+    // this.freezeTimerMs = 500; // REMOVED
 
-    // 2. Heavy Screenshake
+    // Heavy Screenshake
     if (this.screenShake) this.screenShake.shake('strong');
 
     // 3. Fullscreen Red Flash
@@ -1466,38 +1466,35 @@ export class PlayScene {
   onLifeLost() {
     // Don't show immediate toast - death message handles this
 
-    // RESPONDER LOGIC - delayed to give player time to process death
+    // RESPAWN LOGIC - Quick respawn with clear invulnerability
     if (this.player && this.game.lives > 0) {
       const respawnTimeout = setTimeout(() => {
         if (this.player && this.game.lives > 0) {
-          // Show get ready message
-          this.showToast('GET READY!', {
-            fontSize: 32,
-            fill: '#ffff00',
+          // Respawn immediately - no "GET READY" delay
+          this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
+          AudioManager.playSfx('powerup', { force: true, volume: 0.7 });
+          AudioManager.recoverSfx('respawn');
+
+          // Show invulnerability message
+          this.showToast('INVULNERABLE!', {
+            fontSize: 28,
+            fill: '#00ffff',
             stroke: '#000000',
             strokeThickness: 4,
             slot: 'center',
             type: 'respawn',
-            duration: 1200
+            duration: 1000
           });
 
-          setTimeout(() => {
-            if (this.player && this.game.lives > 0) {
-              this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
-              AudioManager.playSfx('powerup', { force: true, volume: 0.7 });
-              AudioManager.recoverSfx('respawn');
+          // Small screen shake
+          if (this.screenShake) this.screenShake.shake(5);
 
-              // Small screen shake
-              if (this.screenShake) this.screenShake.shake(5);
-
-              // Spawn particles
-              if (this.particleManager) {
-                this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff, 2);
-              }
-            }
-          }, 800);
+          // Spawn particles
+          if (this.particleManager) {
+            this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff, 2);
+          }
         }
-      }, 2000);
+      }, 800); // Reduced from 2000+800 to just 800ms
 
       if (!this._deathTimeouts) this._deathTimeouts = [];
       this._deathTimeouts.push(respawnTimeout);

@@ -113,7 +113,7 @@ export class Enemy {
         this.health = 10;
         this.maxHealth = 10;
         this.scoreValue = 120;
-        this.speed = 0.35;
+        this.speed = 0.28; // Reduced from 0.35 to make attacks more fair
         this.shootDelay = 90;
         this.radius = 25;
         this.movePattern = 'aggressive';
@@ -290,7 +290,7 @@ export class Enemy {
       // Kamikaze dive (20%) - straight at player then down
       end = { x: playerX, y: 750 };
       cp = { x: playerX, y: playerY + 100 };
-      duration = 1200; // Faster!
+      duration = 1800; // Slowed down for fairness
     }
 
     this.diveCurve = {
