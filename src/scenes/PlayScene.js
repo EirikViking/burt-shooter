@@ -1553,8 +1553,8 @@ export class PlayScene {
           // Respawn immediately - no "GET READY" delay
           this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
 
-          // DEBUG: Enable high-attention property tracking after respawn
-          propertyWriteTracer.setHighAttention(5000);
+          // DEBUG: Property tracking disabled by default (use ?trace=1 or console commands)
+          // propertyWriteTracer.setHighAttention(5000);
 
           AudioManager.playSfx('powerup', { force: true, volume: 0.7 });
           AudioManager.recoverSfx('respawn');
