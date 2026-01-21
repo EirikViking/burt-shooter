@@ -26,7 +26,6 @@ import {
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
 
-import { propertyWriteTracer, patchDisplayObject } from '../utils/PropertyWriteTracer.js';
 
 // DEBUG: Runtime flags for flicker isolation
 export const FLICKER_FLAGS = {
