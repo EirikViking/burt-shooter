@@ -109,6 +109,14 @@ export class Player {
     // Touch input (set externally by PlayScene)
     this.touchInput = { moveX: 0, moveY: 0 };
 
+    // Visual State (Single Source of Truth)
+    this._visual = {
+      baseAlpha: 1,
+      spawnAlpha: 0, // Starts invisible then fades in
+      blinkAlpha: 1,
+      dodgeAlpha: 1
+    };
+
     console.log('[Player] init selectedShipSpriteKey=' + spriteKey + ' activeSpriteKey=' + spriteKey);
     this.createSprite();
   }
@@ -581,9 +589,11 @@ export class Player {
     }
 
     // Spawn Fade-In
-    if (this.sprite.alpha < 1 && !this.isDodging && this.activePowerup.type !== 'ghost') {
-      const newAlpha = Math.min(1, this.sprite.alpha + deltaSeconds * (1000 / this.spawnFadeDuration));
-      visualWrite.set(this.sprite, 'player.sprite', 'alpha', newAlpha, 'spawn_fade_in');
+    if (this._visual.spawnAlpha < 1 && this.activePowerup.type !== 'ghost') {
+      this._visual.spawnAlpha += deltaSeconds * (1000 / this.spawnFadeDuration);
+      if (this._visual.spawnAlpha > 1) this._visual.spawnAlpha = 1;
+    } else if (this.activePowerup.type === 'ghost') {
+      this._visual.spawnAlpha = 1;
     }
 
     // Damage Flash Effect
@@ -682,26 +692,26 @@ export class Player {
 
     if (this.isDodging) {
       this.dodgeDuration -= dt;
-      visualWrite.set(this.sprite, 'player.sprite', 'alpha', 0.3, 'dodge_state');
+      this._visual.dodgeAlpha = 0.3;
       if (this.dodgeDuration <= 0) {
         this.isDodging = false;
         this.invulnerable = false;
-        if (this.activePowerup.type !== 'ghost') visualWrite.set(this.sprite, 'player.sprite', 'alpha', 1, 'dodge_end');
+        this._visual.dodgeAlpha = 1;
       }
     } else {
-      // Invulnerable blinking - gentler pulse effect
+      this._visual.dodgeAlpha = 1;
+      // Invulnerable blinking
       if (this.invulnerable) {
         this.invulnerableTime -= dt;
-
-        // Smooth pulse instead of harsh strobe
         const time = Date.now() / 1000;
-        const pulse = Math.sin(time * 8) * 0.5 + 0.5; // 0.0 to 1.0
-        visualWrite.set(this.sprite, 'player.sprite', 'alpha', 0.4 + pulse * 0.6, 'invuln_pulse');
+        this._visual.blinkAlpha = 0.4 + (Math.sin(time * 8) * 0.5 + 0.5) * 0.6;
 
         if (this.invulnerableTime <= 0) {
           this.invulnerable = false;
-          if (this.activePowerup.type !== 'ghost') visualWrite.set(this.sprite, 'player.sprite', 'alpha', 1, 'invuln_end');
+          this._visual.blinkAlpha = 1;
         }
+      } else {
+        this._visual.blinkAlpha = 1;
       }
     }
 
@@ -725,6 +735,34 @@ export class Player {
     }
 
     this.updateDrones(deltaSeconds);
+
+    // Apply Final Visual State
+    this.updateVisualState();
+  }
+
+  updateVisualState() {
+    let finalAlpha = 1;
+
+    // 1. Ghost Powerup overrides everything
+    if (this.activePowerup.type === 'ghost') {
+      finalAlpha = 0.5;
+    } else {
+      // 2. Combine Spawn, Dodge, Blink
+      // usually one of these is active, but multiplying them is safe (0.3 * 0.5 etc)
+      finalAlpha = this._visual.spawnAlpha * this._visual.dodgeAlpha * this._visual.blinkAlpha;
+    }
+
+    // Clamp
+    finalAlpha = Math.max(0, Math.min(1, finalAlpha));
+
+    // Single Writer
+    if (this.sprite) {
+      visualWrite.set(this.sprite, 'player.sprite', 'alpha', finalAlpha, 'player_visual_update');
+      // Sync ship sprite
+      if (this.shipSprite) {
+        visualWrite.set(this.shipSprite, 'player.shipSprite', 'alpha', finalAlpha, 'player_visual_update');
+      }
+    }
   }
 
   // --- Actions ---
@@ -1362,6 +1400,9 @@ export class Player {
     // Invulnerability
     this.invulnerable = true;
     this.invulnerableTime = 3000;
+    this._visual.baseAlpha = 1;
+    this._visual.blinkAlpha = 1;
+    this._visual.spawnAlpha = 0; // Fade in
 
     // Reset cooldowns
     this.shootCooldown = 0;
@@ -1394,22 +1435,18 @@ export class Player {
     this.sprite.visible = true;
     this.sprite.renderable = true;
 
-    // 3. STRICT: Force alpha to 1 unless in specific valid states
-    // Ghost = 0.4, Dodge = 0.3, Invulnerable = blinking (handled by update)
+    // 3. STRICT: Force alpha state but do NOT write directly
+    // Reset flags if needed, then let updateVisualState handle it
     if (this.activePowerup.type === 'ghost') {
-      // Ghost mode: alpha should be 0.4, not 0 or undefined
-      if (this.sprite.alpha === 0 || !Number.isFinite(this.sprite.alpha)) {
-        this.sprite.alpha = 0.4;
-      }
+      // Ghost handled by updateVisualState (0.5)
     } else if (this.isDodging) {
-      // Dodge mode: alpha should be 0.3
-      if (this.sprite.alpha === 0 || !Number.isFinite(this.sprite.alpha)) {
-        this.sprite.alpha = 0.3;
-      }
-    } else if (!this.invulnerable) {
-      // Normal state: ALWAYS alpha = 1
-      this.sprite.alpha = 1;
+      this._visual.dodgeAlpha = 0.3;
+    } else {
+      this._visual.baseAlpha = 1;
     }
+
+    // Apply immediately to prevent one-frame flicker
+    this.updateVisualState();
     // If invulnerable and not ghost/dodge, let update() handle the blinking
 
     // 4. Ensure shipSprite exists and is valid

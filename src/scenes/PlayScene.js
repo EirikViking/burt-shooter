@@ -575,11 +575,9 @@ export class PlayScene {
       if (sprite) {
         visualWrite.set(sprite, 'player.sprite', 'visible', true, 'playscene_force');
         visualWrite.set(sprite, 'player.sprite', 'renderable', true, 'playscene_force');
-        // FIX: Do NOT override alpha if player is in a special visual state
-        // Player.update() handles alpha for: invulnerable blink, dodge, ghost powerup
-        if (!this.player.invulnerable && !this.player.isDodging && this.player.activePowerup?.type !== 'ghost') {
-          visualWrite.set(sprite, 'player.sprite', 'alpha', 1, 'playscene_reset');
-        }
+
+        // REMOVED: Alpha is now managed solely by Player.updateVisualState()
+        // Do NOT set alpha here.
         if (!sprite.parent && this.gameContainer) {
           this.gameContainer.addChild(sprite);
         }
