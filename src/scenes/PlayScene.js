@@ -26,15 +26,20 @@ import {
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
 
-// DEBUG: Flicker trace instrumentation (disabled - flicker confirmed fixed)
-const DEBUG_FLICKER_TRACE = false;
+import { traceRing } from '../utils/TraceRing.js';
+import { FlickerDetector } from '../utils/FlickerDetector.js';
 
-// DEBUG: System disable flags for flicker isolation (disabled - kept for future debugging)
-const DISABLE_SCREEN_SHAKE = false;
-const DISABLE_TOASTS = false;
-const DISABLE_WANTED_POSTERS = false;
-const DISABLE_DEATH_OVERLAY = false;
-const DISABLE_WAVE_CLEAR_OVERLAY = false;
+// DEBUG: Runtime flags for flicker isolation
+export const FLICKER_FLAGS = {
+  disableScreenShake: false,
+  disableOverlays: false,
+  disableToasts: false,
+  disableLorePortrait: false,
+  disablePostProcessing: false,
+  disableRankUps: false,
+  traceEnabled: true
+};
+if (typeof window !== 'undefined') window.__flickerFlags = FLICKER_FLAGS;
 
 export class PlayScene {
   constructor(game) {
@@ -299,6 +304,9 @@ export class PlayScene {
       console.log(`[Debug] enabled startLevel=${this.debugStartLevel ?? 'default'} startAtBoss=${startAtBoss} debugPowerups=${debugPowerups} debugOverlay=${debugOverlay}`);
     }
 
+    // Initialize Flicker Detector
+    this.flickerDetector = new FlickerDetector(this);
+
     // Ensure Assets are ready for gameplay
     GameAssets.ensureBeerTexture().then(tex => {
       if (!GameAssets.isValidTexture(tex)) {
@@ -352,6 +360,11 @@ export class PlayScene {
     if (e.key === 'F5') {
       this.spawnEasterEgg();
       this.showToast('TRIGGERED FLYBY', { fontSize: 20 });
+    }
+    // Flicker Trace Dump
+    if (e.key === 't' || e.key === 'T') {
+      traceRing.dump();
+      this.showToast('TRACE DUMPED TO CONSOLE', { fontSize: 20 });
     }
   }
 
@@ -473,46 +486,9 @@ export class PlayScene {
     if (!this.isReady) return;
 
     try {
-      // DEBUG: Flicker trace - log frame-to-frame changes
-      if (DEBUG_FLICKER_TRACE) {
-        const stageAlpha = this.game.app.stage?.alpha;
-        const containerAlpha = this.container?.alpha;
-        const containerVisible = this.container?.visible;
-        const containerParent = !!this.container?.parent;
-        const gameContainerAlpha = this.gameContainer?.alpha;
-        const gameContainerVisible = this.gameContainer?.visible;
-        const uiOverlayAlpha = this.uiOverlay?.alpha;
-        const uiOverlayVisible = this.uiOverlay?.visible;
-        const shakeX = this.gameContainer?.x || 0;
-        const shakeY = this.gameContainer?.y || 0;
-        const childCount = this.gameContainer?.children?.length || 0;
-
-        if (!this._flickerState) {
-          this._flickerState = {
-            stageAlpha, containerAlpha, containerVisible, containerParent,
-            gameContainerAlpha, gameContainerVisible,
-            uiOverlayAlpha, uiOverlayVisible, shakeX, shakeY, childCount
-          };
-        } else {
-          const s = this._flickerState;
-          if (stageAlpha !== s.stageAlpha) console.warn(`[FLICKER] stage.alpha: ${s.stageAlpha} → ${stageAlpha}`);
-          if (containerAlpha !== s.containerAlpha) console.warn(`[FLICKER] container.alpha: ${s.containerAlpha} → ${containerAlpha}`);
-          if (containerVisible !== s.containerVisible) console.warn(`[FLICKER] container.visible: ${s.containerVisible} → ${containerVisible}`);
-          if (containerParent !== s.containerParent) console.warn(`[FLICKER] container.parent: ${s.containerParent} → ${containerParent}`);
-          if (gameContainerAlpha !== s.gameContainerAlpha) console.warn(`[FLICKER] gameContainer.alpha: ${s.gameContainerAlpha} → ${gameContainerAlpha}`);
-          if (gameContainerVisible !== s.gameContainerVisible) console.warn(`[FLICKER] gameContainer.visible: ${s.gameContainerVisible} → ${gameContainerVisible}`);
-          if (uiOverlayAlpha !== s.uiOverlayAlpha) console.warn(`[FLICKER] uiOverlay.alpha: ${s.uiOverlayAlpha} → ${uiOverlayAlpha}`);
-          if (uiOverlayVisible !== s.uiOverlayVisible) console.warn(`[FLICKER] uiOverlay.visible: ${s.uiOverlayVisible} → ${uiOverlayVisible}`);
-          // Shake position changes are intentional (screen shake effect) - not a flicker bug
-          // if (shakeX !== s.shakeX || shakeY !== s.shakeY) console.warn(`[FLICKER] shake: (${s.shakeX},${s.shakeY}) → (${shakeX},${shakeY})`);
-          if (Math.abs(childCount - s.childCount) > 10) console.warn(`[FLICKER] childCount: ${s.childCount} → ${childCount}`);
-
-          this._flickerState = {
-            stageAlpha, containerAlpha, containerVisible, containerParent,
-            gameContainerAlpha, gameContainerVisible,
-            uiOverlayAlpha, uiOverlayVisible, shakeX, shakeY, childCount
-          };
-        }
+      // Update Flicker Detector
+      if (this.flickerDetector) {
+        this.flickerDetector.update(delta);
       }
 
       this.updateDiagnosticsLayout();
@@ -638,7 +614,7 @@ export class PlayScene {
       if (this.enemyManager) this.enemyManager.update(delta);
       if (this.powerupManager) this.powerupManager.update(delta, this);
       if (this.particleManager) this.particleManager.update(delta);
-      if (!DISABLE_SCREEN_SHAKE && this.screenShake) this.screenShake.update(delta);
+      if (!FLICKER_FLAGS.disableScreenShake && this.screenShake) this.screenShake.update(delta);
       if (this.scorePopupManager) this.scorePopupManager.update(delta);
 
       // Audio Update (Sequencer)
@@ -658,7 +634,7 @@ export class PlayScene {
 
         AudioManager.playSfx('levelComplete');
         this.game.addScore(1000); // Completion Bonus
-        if (!DISABLE_WAVE_CLEAR_OVERLAY) {
+        if (!FLICKER_FLAGS.disableOverlays) {
           this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000 });
         }
 
@@ -772,6 +748,7 @@ export class PlayScene {
   }
 
   showRankUp(newRank) {
+    if (FLICKER_FLAGS.disableRankUps) return;
     const nr = Number(newRank);
     if (!Number.isFinite(nr)) return;
 
@@ -1589,6 +1566,7 @@ export class PlayScene {
   }
 
   showToast(message, options = {}) {
+    if (FLICKER_FLAGS.disableToasts) return;
     this.enqueueToast(message, options);
   }
 
@@ -1669,6 +1647,7 @@ export class PlayScene {
   }
 
   showLoreBanner(text) {
+    if (FLICKER_FLAGS.disableLorePortrait) return;
     if (!text) return;
     if (!this.canShowLore()) return;
     this.showPortraitPopup(text);
