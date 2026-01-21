@@ -32,6 +32,8 @@ import { tickerSpy } from '../utils/TickerSpy.js';
 import { renderCallSpy } from '../utils/RenderCallSpy.js';
 import { tickerRegistry } from '../utils/TickerRegistry.js';
 import { mutationSpy } from '../utils/MutationSpy.js';
+import { flickerMitigation } from '../utils/FlickerMitigation.js';
+
 
 
 
@@ -359,7 +361,13 @@ export class PlayScene {
     crashCapture.enable(this);
     if (params.get('trace') === '1') {
       propertyTracer.enable();
+
+      // Enable flicker mitigation (will enable clamping if trace=1)
+      if (this.player && this.gameContainer && this.game && this.game.app) {
+        flickerMitigation.enable(this.game.app, this.player, this.gameContainer);
+      }
     }
+
 
 
     // Ensure Assets are ready for gameplay
@@ -565,6 +573,10 @@ export class PlayScene {
 
     // Polling Tracer
     propertyTracer.update();
+
+    // Flicker Mitigation
+    flickerMitigation.update(delta);
+
 
     this.updateDiagnosticsLayout();
     this.gameTime += delta / 60;

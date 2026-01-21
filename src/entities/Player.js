@@ -765,6 +765,64 @@ export class Player {
     }
   }
 
+  /**
+   * Apply visual state - Single writer for player visual properties
+   * This is the ONLY method that should set alpha, visible, renderable, tint
+   * Can be called externally (e.g., from FlickerMitigation)
+   */
+  applyVisualState(options = {}) {
+    if (!this.sprite) return;
+
+    const {
+      alpha = null,
+      visible = null,
+      renderable = null,
+      tint = null
+    } = options;
+
+    if (alpha !== null) {
+      visualWrite.set(this.sprite, 'player.sprite', 'alpha', alpha, 'applyVisualState');
+      if (this.shipSprite) {
+        visualWrite.set(this.shipSprite, 'player.shipSprite', 'alpha', alpha, 'applyVisualState');
+      }
+    }
+
+    if (visible !== null) {
+      this.sprite.visible = visible;
+      if (this.shipSprite) {
+        this.shipSprite.visible = visible;
+      }
+    }
+
+    if (renderable !== null) {
+      this.sprite.renderable = renderable;
+      if (this.shipSprite) {
+        this.shipSprite.renderable = renderable;
+      }
+    }
+
+    if (tint !== null && this.shipSprite) {
+      this.shipSprite.tint = tint;
+    }
+  }
+
+  /**
+   * Ensure player sprite is renderable
+   * Called after operations that might affect visibility
+   */
+  ensureRenderable(source = 'unknown') {
+    if (!this.sprite) return;
+
+    this.sprite.visible = true;
+    this.sprite.renderable = true;
+
+    if (this.shipSprite) {
+      this.shipSprite.visible = true;
+      this.shipSprite.renderable = true;
+    }
+  }
+
+
   // --- Actions ---
 
   shoot() {
