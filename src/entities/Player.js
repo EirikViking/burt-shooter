@@ -6,11 +6,12 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { visualWrite } from '../utils/VisualWrite.js';
 
 export class Player {
-  constructor(x, y, inputManager, game, spriteKey = 'row2_ship_1.png') {
+  constructor(x, y, inputManager, game, scene, spriteKey = 'row2_ship_1.png') {
     this.x = x;
     this.y = y;
     this.inputManager = inputManager;
     this.game = game;
+    this.scene = scene; // Store owning scene to prevent cross-scene pollution
 
     // Map sprite key to texture index for ShipRegistry compatibility
     const spriteKeyToIndex = {
@@ -1622,11 +1623,18 @@ export class Player {
     }
 
     // 9. Ensure sprite is attached to parent container
-    if (!this.sprite.parent && this.game && this.game.scenes && this.game.scenes.play) {
-      const gameContainer = this.game.scenes.play.gameContainer;
-      if (gameContainer) {
-        console.warn('[Player] ensureRenderable: Sprite detached, reattaching to gameContainer');
-        gameContainer.addChild(this.sprite);
+    // 9. Ensure sprite is attached to parent container
+    if (!this.sprite.parent && this.scene && this.scene.gameContainer) {
+      // Validate that our scene is still the active play scene
+      if (this.game && this.game.scenes && this.game.scenes.play === this.scene) {
+        console.warn('[Player] ensureRenderable: Sprite detached, reattaching to OWNING scene gameContainer');
+        this.scene.gameContainer.addChild(this.sprite);
+      } else {
+        // This is likely a zombie player instance from a previous scene
+        if (window.location.search.includes('trace=1')) {
+          console.warn('[Player] 🚨 Zombie player instance detected! Owning scene is inactive. Destroying self.');
+        }
+        if (!this._destroyed) this.destroy();
       }
     }
 

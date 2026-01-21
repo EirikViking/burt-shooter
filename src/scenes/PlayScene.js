@@ -173,6 +173,19 @@ export class PlayScene {
     }
   }
 
+  /**
+   * Safe setter for player to track assignments
+   */
+  _setPlayer(newPlayer, reason) {
+    if (window.location.search.includes('trace=1')) {
+      if (newPlayer && !newPlayer.sprite) {
+        const stack = new Error().stack;
+        console.error(`[PlayScene] 🚨 _setPlayer(${reason}): Assigned player with NO SPRITE!`, stack);
+      }
+    }
+    this.player = newPlayer;
+  }
+
 
   init() {
     this.isReady = false;
@@ -301,7 +314,7 @@ export class PlayScene {
       }
       const spriteKey = this.game.selectedShipSpriteKey || 'row2_ship_1.png';
       console.log('[PlayScene] Assets ready, creating player with spriteKey=' + spriteKey);
-      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
+      this._setPlayer(new Player(width / 2, height - 100, this.inputManager, this.game, this, spriteKey), 'assets_loaded');
       this.gameContainer.addChild(this.player.sprite);
 
       // Patch player sprite for property write tracking
@@ -330,7 +343,7 @@ export class PlayScene {
     // Create placeholder player immediately (will be replaced)
     if (!this.player) {
       const spriteKey = this.game.selectedShipSpriteKey || 'row2_ship_1.png';
-      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
+      this._setPlayer(new Player(width / 2, height - 100, this.inputManager, this.game, this, spriteKey), 'placeholder');
       this.gameContainer.addChild(this.player.sprite);
 
       // Patch player sprite for property write tracking
