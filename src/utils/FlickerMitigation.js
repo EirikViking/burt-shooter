@@ -276,6 +276,24 @@ class FlickerMitigation {
                     console.log(`[FlickerMitigation] ✅ Cleaned up ${destroyedCount} orphan visuals`);
                 }
             }
+        } else if (visuals.length === 1) {
+            // INVARIANT CHECK: single visual exists, but do we have a reference to it?
+            if (!this.player || !this.player.sprite) {
+                if (!this._invariantLog) {
+                    this._invariantLog = true;
+                    console.error('[FlickerMitigation] 🚨 INVARIANT VIOLATION: Visual exists in stage, but player.sprite reference is missing!', {
+                        hasPlayer: !!this.player,
+                        hasSprite: this.player ? !!this.player.sprite : false,
+                        stack: new Error().stack
+                    });
+                }
+
+                // AUTO-HEAL: If we have a player instance but no sprite, bind it
+                if (this.player && !this.player.sprite) {
+                    console.warn('[FlickerMitigation] 🩹 Auto-healing missing sprite reference');
+                    this.player.sprite = visuals[0].obj;
+                }
+            }
         }
     }
 

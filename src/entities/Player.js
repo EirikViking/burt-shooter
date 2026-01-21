@@ -131,6 +131,29 @@ export class Player {
       this.sprite.__isPlayerVisual = true;
       this.sprite.__playerVisualId = ++Player._visualCounter;
     }
+
+    // TRACE MODE: Guard sprite property
+    if (typeof window !== 'undefined' && window.location.search.includes('trace=1')) {
+      console.log('[Player] 🛡️ Installing sprite property guard');
+      // We must capture the current value set by createSprite
+      let _sprite = this.sprite;
+
+      Object.defineProperty(this, 'sprite', {
+        get: () => _sprite,
+        set: (v) => {
+          if (!this._destroyed) {
+            if ((v === null || v === undefined) && _sprite !== null) {
+              console.error('[Player] 🚨 Player.sprite set to NULL/UNDEFINED!', new Error().stack);
+            } else if (v && _sprite && v !== _sprite) {
+              console.error('[Player] 🚨 Player.sprite REPLACED!', { old: _sprite, new: v }, new Error().stack);
+            }
+          }
+          _sprite = v;
+        },
+        configurable: true,
+        enumerable: true
+      });
+    }
   }
 
   // ... (existing code) ...
