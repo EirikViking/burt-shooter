@@ -1,6 +1,6 @@
 /**
  * PropertyWriteTracer - Low-overhead property write tracker for debugging timing-sensitive bugs
- * Intercepts property setters without console.log spam
+ * Uses a simpler, safer approach: store original values and detect changes
  */
 
 const BUFFER_SIZE = 500;
@@ -18,6 +18,7 @@ class PropertyWriteTracer {
         this.onlyWhenFlicker = false;
         this.flickerThreshold = 16; // ms
         this.lastValues = new Map(); // Track last value per target+property
+        this.trackedObjects = new Map(); // Store references to tracked objects
     }
 
     shouldRecord() {
@@ -147,6 +148,47 @@ class PropertyWriteTracer {
             console.log('[PropertyWriteTracer] High attention mode ended');
         }, durationMs);
     }
+
+    // Poll tracked objects for changes
+    checkTrackedObjects() {
+        if (!this.enabled) return;
+
+        this.trackedObjects.forEach((data, targetName) => {
+            const { obj, lastSnapshot } = data;
+            if (!obj) return;
+
+            const properties = ['alpha', 'visible', 'renderable'];
+            properties.forEach(prop => {
+                try {
+                    const currentValue = obj[prop];
+                    const lastValue = lastSnapshot[prop];
+
+                    if (currentValue !== lastValue) {
+                        const stack = new Error().stack;
+                        this.record(targetName, prop, lastValue, currentValue, stack);
+                        lastSnapshot[prop] = currentValue;
+                    }
+                } catch (e) {
+                    // Property doesn't exist or can't be read
+                }
+            });
+        });
+    }
+
+    trackObject(obj, targetName) {
+        if (!obj) return;
+
+        const snapshot = {
+            alpha: obj.alpha,
+            visible: obj.visible,
+            renderable: obj.renderable
+        };
+
+        this.trackedObjects.set(targetName, {
+            obj,
+            lastSnapshot: snapshot
+        });
+    }
 }
 
 // Global singleton
@@ -163,69 +205,9 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * Patch a display object to intercept property writes
+ * Track a display object by polling for changes
+ * This is safer than patching setters
  */
 export function patchDisplayObject(obj, targetName) {
-    if (!obj || obj.__patched) return;
-    obj.__patched = true;
-
-    const properties = ['alpha', 'visible', 'renderable'];
-
-    properties.forEach(prop => {
-        const descriptor = Object.getOwnPropertyDescriptor(obj, prop);
-        if (!descriptor || !descriptor.configurable) {
-            // Try prototype
-            let proto = Object.getPrototypeOf(obj);
-            while (proto) {
-                const protoDesc = Object.getOwnPropertyDescriptor(proto, prop);
-                if (protoDesc && protoDesc.set) {
-                    const originalSet = protoDesc.set;
-                    const originalGet = protoDesc.get;
-
-                    Object.defineProperty(obj, prop, {
-                        get: function () {
-                            return originalGet.call(this);
-                        },
-                        set: function (val) {
-                            const oldVal = originalGet.call(this);
-                            if (oldVal !== val) {
-                                const stack = new Error().stack;
-                                propertyWriteTracer.record(targetName, prop, oldVal, val, stack);
-                            }
-                            originalSet.call(this, val);
-                        },
-                        configurable: true
-                    });
-                    return;
-                }
-                proto = Object.getPrototypeOf(proto);
-            }
-        } else if (descriptor.set) {
-            const originalSet = descriptor.set;
-            const originalGet = descriptor.get;
-
-            Object.defineProperty(obj, prop, {
-                get: originalGet,
-                set: function (val) {
-                    const oldVal = originalGet.call(this);
-                    if (oldVal !== val) {
-                        const stack = new Error().stack;
-                        propertyWriteTracer.record(targetName, prop, oldVal, val, stack);
-                    }
-                    originalSet.call(this, val);
-                },
-                configurable: true
-            });
-        }
-    });
-
-    // Patch scale if it exists
-    if (obj.scale && typeof obj.scale.set === 'function') {
-        const originalSet = obj.scale.set.bind(obj.scale);
-        obj.scale.set = function (x, y) {
-            const stack = new Error().stack;
-            propertyWriteTracer.record(targetName, 'scale.set', `${obj.scale.x},${obj.scale.y}`, `${x},${y || x}`, stack);
-            return originalSet(x, y);
-        };
-    }
+    propertyWriteTracer.trackObject(obj, targetName);
 }

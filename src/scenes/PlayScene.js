@@ -509,10 +509,8 @@ export class PlayScene {
     if (!this.isReady) return;
 
     try {
-      // Update Flicker Detector
-      if (this.flickerDetector) {
-        this.flickerDetector.update(delta);
-      }
+      // Check tracked objects for property changes
+      propertyWriteTracer.checkTrackedObjects();
 
       this.updateDiagnosticsLayout();
       this.gameTime += delta / 60;
