@@ -291,7 +291,13 @@ export class PlayScene {
 
       // Create player AFTER ships are loaded to ensure texture is ready
       if (this.player) {
-        this.gameContainer.removeChild(this.player.sprite);
+        if (typeof this.player.destroy === 'function') {
+          this.player.destroy();
+        } else if (this.player.sprite && this.player.sprite.parent) {
+          this.player.sprite.parent.removeChild(this.player.sprite);
+          this.player.sprite.destroy();
+        }
+        this.player = null;
       }
       const spriteKey = this.game.selectedShipSpriteKey || 'row2_ship_1.png';
       console.log('[PlayScene] Assets ready, creating player with spriteKey=' + spriteKey);

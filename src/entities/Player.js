@@ -1579,4 +1579,25 @@ export class Player {
       });
     }
   }
+
+  destroy() {
+    this.active = false;
+
+    // Clean up sprites
+    if (this.sprite) {
+      if (this.sprite.parent) {
+        this.sprite.parent.removeChild(this.sprite);
+      }
+      this.sprite.destroy({ children: true, texture: false, baseTexture: false });
+      this.sprite = null;
+    }
+    this.shipSprite = null;
+    this.damageOverlay = null;
+    this.shieldSprite = null;
+    this.boostAura = null;
+    this.rankBoostText = null;
+
+    // Clear arrays
+    this.drones = [];
+  }
 }

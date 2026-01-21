@@ -212,6 +212,7 @@ class FlickerMitigation {
             if (child.__isPlayerVisual === true || child.name === 'playerVisualRoot' || child.name === 'playerVisual') {
                 const parentChain = this.getParentChain(child);
                 visuals.push({
+                    obj: child,
                     id: child.__id || child.uid || 'unknown',
                     vid: child.__playerVisualId || 'none',
                     name: child.name || 'unnamed',
@@ -227,7 +228,7 @@ class FlickerMitigation {
         this.lastSample = {
             time: performance.now(),
             count: visuals.length,
-            visuals: visuals,
+            visuals: visuals.map(v => ({ ...v, obj: 'ref' })), // Don't leak massive objects in simple logs
             root: root.constructor.name
         };
 
@@ -236,15 +237,44 @@ class FlickerMitigation {
             if (visuals.length === 0 && !this.missingErrorLogged) {
                 this.missingErrorLogged = true;
                 this.logMissingError();
-            } else if (visuals.length > 1 && !this.duplicateErrorLogged) {
-                this.duplicateErrorLogged = true;
-                const stack = new Error().stack;
-                console.error('[FlickerMitigation] 🚨 DUPLICATE PLAYER VISUALS DETECTED!', {
-                    count: visuals.length,
-                    expected: 1,
-                    visuals: visuals,
-                    stack: stack
+            } else if (visuals.length > 1) {
+                if (!this.duplicateErrorLogged) {
+                    this.duplicateErrorLogged = true;
+                    const stack = new Error().stack;
+                    console.error('[FlickerMitigation] 🚨 DUPLICATE PLAYER VISUALS DETECTED!', {
+                        count: visuals.length,
+                        expected: 1,
+                        visuals: visuals.map(v => ({ ...v, obj: 'ref' })),
+                        stack: stack
+                    });
+                }
+
+                // ACTIVE MITIGATION: Destroy non-authoritative sprites
+                const authoritative = this.player ? this.player.sprite : null;
+                let destroyedCount = 0;
+
+                visuals.forEach(v => {
+                    // If this is NOT the current authoritative sprite, destroy it
+                    if (v.obj !== authoritative) {
+                        // Double check it's not the ship sprite inside the player sprite (nested check)
+                        // But wait, our marker is only on the ROOT player sprite.
+                        // Ship sprites shouldn't have __isPlayerVisual unless we added it?
+                        // We added it to "player.sprite". Ship sprite is child.
+
+                        console.warn(`[FlickerMitigation] 🧹 DESTROYING ORPHAN VISUAL (id=${v.id}, vid=${v.vid})`);
+                        try {
+                            if (v.obj.parent) v.obj.parent.removeChild(v.obj);
+                            v.obj.destroy({ children: true });
+                            destroyedCount++;
+                        } catch (e) {
+                            console.error('Failed to destroy orphan:', e);
+                        }
+                    }
                 });
+
+                if (destroyedCount > 0) {
+                    console.log(`[FlickerMitigation] ✅ Cleaned up ${destroyedCount} orphan visuals`);
+                }
             }
         }
     }
