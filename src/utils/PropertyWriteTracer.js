@@ -39,20 +39,34 @@ class PropertyWriteTracer {
     }
 
     snapshot(obj) {
-        return {
-            alpha: obj.alpha,
-            visible: obj.visible,
-            renderable: obj.renderable,
-            worldAlpha: obj.worldAlpha !== undefined ? obj.worldAlpha : 'N/A',
-            tint: obj.tint !== undefined ? obj.tint.toString(16) : 'N/A',
-            filtersLength: obj.filters ? obj.filters.length : 0,
-            textureKey: obj.texture ? (obj.texture.textureCacheIds ? obj.texture.textureCacheIds[0] : 'unknown') : 'N/A',
-            x: obj.x !== undefined ? obj.x.toFixed(1) : 'N/A',
-            y: obj.y !== undefined ? obj.y.toFixed(1) : 'N/A',
-            scaleX: obj.scale ? obj.scale.x.toFixed(2) : 'N/A',
-            scaleY: obj.scale ? obj.scale.y.toFixed(2) : 'N/A',
-            parentName: obj.parent ? (obj.parent.name || 'unnamed') : 'none'
-        };
+        if (!obj || obj.destroyed || obj._destroyed) {
+            return {
+                alpha: 'DESTROYED',
+                visible: 'DESTROYED',
+                renderable: 'DESTROYED',
+                x: 'DESTROYED',
+                y: 'DESTROYED'
+            };
+        }
+
+        try {
+            return {
+                alpha: obj.alpha,
+                visible: obj.visible,
+                renderable: obj.renderable,
+                worldAlpha: obj.worldAlpha !== undefined ? obj.worldAlpha : 'N/A',
+                tint: obj.tint !== undefined ? obj.tint.toString(16) : 'N/A',
+                filtersLength: obj.filters ? obj.filters.length : 0,
+                textureKey: obj.texture ? (obj.texture.textureCacheIds ? obj.texture.textureCacheIds[0] : 'unknown') : 'N/A',
+                x: obj.x !== undefined ? obj.x.toFixed(1) : 'N/A',
+                y: obj.y !== undefined ? obj.y.toFixed(1) : 'N/A',
+                scaleX: obj.scale ? obj.scale.x.toFixed(2) : 'N/A',
+                scaleY: obj.scale ? obj.scale.y.toFixed(2) : 'N/A',
+                parentName: obj.parent ? (obj.parent.name || 'unnamed') : 'none'
+            };
+        } catch (e) {
+            return { error: 'SNAPSHOT_FAILED' };
+        }
     }
 
     recordManualWrite(targetName, prop, oldVal, newVal, reason) {
@@ -89,6 +103,14 @@ class PropertyWriteTracer {
         const timeStr = (now - this.startTime).toFixed(2);
 
         for (const [name, target] of this.targets) {
+            // Guard against destroyed objects
+            if (!target.obj || target.obj.destroyed || target.obj._destroyed) {
+                // Determine if we should log this removal
+                // console.log(`[PropertyTracer] Auto-removing destroyed target: ${name}`);
+                this.targets.delete(name);
+                continue;
+            }
+
             const current = this.snapshot(target.obj);
             const last = target.lastState;
 
