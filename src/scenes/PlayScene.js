@@ -27,6 +27,7 @@ import {
 import { getShipMetadata } from '../config/ShipMetadata.js';
 import { propertyTracer } from '../utils/PropertyWriteTracer.js';
 import { crashCapture } from '../utils/CrashCapture.js';
+import { tickerSpy } from '../utils/TickerSpy.js';
 
 
 
@@ -174,11 +175,17 @@ export class PlayScene {
 
     // DEBUG: Instrument Containers for Flicker Trace
     if (this.game && this.game.app && this.game.app.stage) {
-      instrumentDisplayObject(this.game.app.stage, 'app.stage');
+      propertyTracer.track(this.game.app.stage, 'app.stage');
     }
-    instrumentDisplayObject(this.container, 'rootContext');
-    instrumentDisplayObject(this.gameContainer, 'gameContainer');
-    instrumentDisplayObject(this.uiOverlay, 'uiOverlay');
+    propertyTracer.track(this.container, 'rootContext');
+    propertyTracer.track(this.gameContainer, 'gameContainer');
+    propertyTracer.track(this.uiOverlay, 'uiOverlay');
+    propertyTracer.track(this.uiContainer, 'uiContainer');
+
+    // FORENSICS: Enable Ticker Spy
+    if (this.game && this.game.app) {
+      tickerSpy.enable(this.game.app);
+    }
 
     // --- Hud & UI ---
     this.hud = new HUD(this.uiContainer, this.game);

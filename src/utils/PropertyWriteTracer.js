@@ -138,6 +138,12 @@ class PropertyWriteTracer {
 
         console.log('--- Recent Writes ---');
         console.table(this.buffer.slice(-20)); // Last 20 writes
+
+        // Include Ticker Report
+        if (window.__tickerSpyDump) {
+            window.__tickerSpyDump();
+        }
+
         console.groupEnd();
     }
 }
