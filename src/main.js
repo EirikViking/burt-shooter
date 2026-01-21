@@ -5,6 +5,7 @@ import { AudioManager } from './audio/AudioManager.js';
 import { BootWatchdog } from './utils/BootWatchdog.js';
 import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
+import { renderLifecycleProbe } from './utils/RenderLifecycleProbe.js';
 
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;
@@ -57,6 +58,11 @@ function isPerfEnabled() {
 function isAutoStartEnabled() {
   return urlParams.get('autostart') === '1';
 }
+
+function isTraceEnabled() {
+  return urlParams.get('trace') === '1';
+}
+
 
 function ensureBuildStamp() {
   let stamp = document.getElementById('build-stamp');
@@ -708,6 +714,12 @@ async function init() {
   window.__app = app;
   window.__game = game;
   perfState.renderer = app.renderer?.constructor?.name || perfState.renderer;
+
+  // Enable render lifecycle probe if trace mode is active
+  if (isTraceEnabled()) {
+    renderLifecycleProbe.enable(app);
+  }
+
   await runBootStep(bootLogger, 'start game', () => {
     game.start();
     if (document.body) {

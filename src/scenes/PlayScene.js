@@ -164,7 +164,13 @@ export class PlayScene {
     this._deathTimeouts = [];
     this._activeTickers = [];
     this._introAnimationFrame = null; // Track intro animation
+
+    // Register with RenderLifecycleProbe if enabled
+    if (typeof window !== 'undefined' && window.__renderProbe && window.__renderProbe.enabled) {
+      window.__renderProbe.registerPlayScene(this, 'construct');
+    }
   }
+
 
   init() {
     this.isReady = false;
@@ -518,7 +524,13 @@ export class PlayScene {
     this.resetRandomTimers();
     this.ambientBeerTimer = 2000 + Math.random() * 3000; // First drunk beer VERY soon (2-5s)
     this.easterEggTimer = 20000; // Deterministic first flyby at 20s
+
+    // Register with RenderLifecycleProbe if enabled
+    if (typeof window !== 'undefined' && window.__renderProbe && window.__renderProbe.enabled) {
+      window.__renderProbe.registerPlayScene(this, 'start');
+    }
   }
+
 
   showLevelIntro() {
     const levelTexts = [
@@ -1434,8 +1446,14 @@ export class PlayScene {
       this._introAnimationFrame = null;
     }
 
+    // Register with RenderLifecycleProbe if enabled
+    if (typeof window !== 'undefined' && window.__renderProbe && window.__renderProbe.enabled) {
+      window.__renderProbe.registerPlayScene(this, 'destroy');
+    }
+
     // Music continues to next scene
   }
+
 
   getPerfCounts() {
     return {
