@@ -28,6 +28,7 @@ import { getShipMetadata } from '../config/ShipMetadata.js';
 
 import { traceRing } from '../utils/TraceRing.js';
 import { FlickerDetector } from '../utils/FlickerDetector.js';
+import { instrumentDisplayObject } from '../utils/DebugHooks.js';
 
 // DEBUG: Runtime flags for flicker isolation
 export const FLICKER_FLAGS = {
@@ -171,6 +172,14 @@ export class PlayScene {
     // TASK D: Create procedural starfield background
     this.createStarfield();
 
+    // DEBUG: Instrument Containers for Flicker Trace
+    if (this.game && this.game.app && this.game.app.stage) {
+      instrumentDisplayObject(this.game.app.stage, 'app.stage');
+    }
+    instrumentDisplayObject(this.container, 'rootContext');
+    instrumentDisplayObject(this.gameContainer, 'gameContainer');
+    instrumentDisplayObject(this.uiOverlay, 'uiOverlay');
+
     // --- Hud & UI ---
     this.hud = new HUD(this.uiContainer, this.game);
     // Note: HUD creates itself in constructor
@@ -255,6 +264,7 @@ export class PlayScene {
       console.log('[PlayScene] Assets ready, creating player with spriteKey=' + spriteKey);
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
       this.gameContainer.addChild(this.player.sprite);
+      instrumentDisplayObject(this.player.sprite, 'player.sprite_async');
       const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
       this.player.setRank(initialRank, 'init');
 
@@ -278,6 +288,7 @@ export class PlayScene {
       const spriteKey = this.game.selectedShipSpriteKey || 'row2_ship_1.png';
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
       this.gameContainer.addChild(this.player.sprite);
+      instrumentDisplayObject(this.player.sprite, 'player.sprite_placeholder');
       if (this.player.setRank) {
         const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
         this.player.setRank(initialRank, 'init_placeholder');
@@ -539,7 +550,11 @@ export class PlayScene {
         if (sprite) {
           sprite.visible = true;
           sprite.renderable = true;
-          sprite.alpha = 1;
+          // FIX: Do NOT override alpha if player is in a special visual state
+          // Player.update() handles alpha for: invulnerable blink, dodge, ghost powerup
+          if (!this.player.invulnerable && !this.player.isDodging && this.player.activePowerup?.type !== 'ghost') {
+            sprite.alpha = 1;
+          }
           if (!sprite.parent && this.gameContainer) {
             this.gameContainer.addChild(sprite);
           }
