@@ -15,7 +15,7 @@ import { TauntBubble } from '../ui/TauntBubble.js';
 
 
 const API_PATH = '/api/highscores';
-const FETCH_TIMEOUT_MS = 6000;
+// Timeout now handled by API retry logic
 
 export class HighscoreScene {
   constructor(game) {
@@ -40,6 +40,7 @@ export class HighscoreScene {
     this.fetchToken = 0;
     this.fetchController = null;
     this.rowsFadeTicker = null;
+    this.retryAttempt = 0; // Track retry attempts for UI feedback
 
     // Trophy Room Assets
     this.beerCansContainer = new PIXI.Container();
@@ -311,42 +312,28 @@ export class HighscoreScene {
   }
 
   async fetchHighscores() {
-    if (this.loadingTimer) {
-      clearTimeout(this.loadingTimer);
-      this.loadingTimer = null;
-    }
-    if (this.fetchController) {
-      this.fetchController.abort();
-      this.fetchController = null;
-    }
     this.fetchToken += 1;
     const token = this.fetchToken;
     this.setState('LOADING');
     this.lastError = 'none';
-    const url = this.apiUrl;
-    console.log('[HighscoreScene] Fetching highscores from', url);
-
-    const controller = new AbortController();
-    this.fetchController = controller;
-    this.loadingTimer = window.setTimeout(() => {
-      if (token !== this.fetchToken) return;
-      controller.abort();
-      this.handleFetchError(new Error('timeout'), token);
-    }, FETCH_TIMEOUT_MS);
+    this.retryAttempt = 0;
+    console.log('[HighscoreScene] Fetching highscores with retry logic');
 
     try {
-      const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
+      // Use API client with retry callback for silent UI updates
+      const data = await API.getHighscores({
+        useCache: false, // Force fresh fetch
+        onRetry: (attempt, delay) => {
+          if (token !== this.fetchToken) return;
+          this.retryAttempt = attempt;
+          // Silent retry - only update state message if not first attempt
+          if (attempt > 0) {
+            this.stateMessage.text = `Laster... (forsøk ${attempt + 1}/4)`;
+          }
+        }
+      });
+
       if (token !== this.fetchToken) return;
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      if (token !== this.fetchToken) return;
-      if (this.loadingTimer) {
-        clearTimeout(this.loadingTimer);
-        this.loadingTimer = null;
-      }
-      this.fetchController = null;
 
       // TASK A: Enforce max 10 entries
       let rawEntries = Array.isArray(data) ? data : [];

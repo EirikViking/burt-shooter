@@ -5,6 +5,7 @@ import { BeerAsset } from '../utils/BeerAsset.js';
 import { Player } from '../entities/Player.js';
 import { BeerCan } from '../entities/BeerCan.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
+import { COMBO_MILESTONES, COMBO_WINDOW_MS } from '../config/ComboConfig.js';
 import { EnemyManager } from '../managers/EnemyManager.js';
 import { BulletManager } from '../managers/BulletManager.js';
 import { PowerupManager } from '../managers/PowerupManager.js';
@@ -120,11 +121,12 @@ export class PlayScene {
     this.comboCount = 0;
     this.comboMultiplier = 1;
     this.comboTimerMs = 0;
-    this.comboWindowMs = 3200;
+    this.comboWindowMs = COMBO_WINDOW_MS;
     this.killStreak = 0;
     this.lastKillAt = 0;
     this.lastHitAt = 0;
     this.nearMissCooldownAt = 0;
+    this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
     // Synergy + Meta
     this.synergyBadge = null;
@@ -1808,11 +1810,34 @@ export class PlayScene {
       this.comboCount = 0;
       this.comboMultiplier = 1;
       this.killStreak = 0;
+      this.comboMilestonesReached.clear(); // Reset milestone tracking
     }
     this.comboCount += 1;
     this.killStreak += 1;
     this.lastKillAt = now;
     this.comboTimerMs = this.comboWindowMs;
+
+    // Check for milestone bonuses (5x, 10x, 15x, 20x)
+    for (const milestone of COMBO_MILESTONES) {
+      if (this.comboCount === milestone.threshold && !this.comboMilestonesReached.has(milestone.threshold)) {
+        this.comboMilestonesReached.add(milestone.threshold);
+        this.game.addScore(milestone.bonus);
+        this.enqueueToast(`${milestone.label} +${milestone.bonus}`, {
+          fontSize: 26,
+          fill: '#ffaa00',
+          slot: 'center',
+          type: 'milestone',
+          duration: 1800
+        });
+        AudioManager.playSfx('achievement', { force: true, volume: 0.95 });
+        if (this.particleManager && this.player) {
+          this.particleManager.createExplosion(this.player.x, this.player.y - 40, 0xffaa00);
+        }
+        if (this.screenShake) {
+          this.screenShake.shake('medium');
+        }
+      }
+    }
 
     const prevMultiplier = this.comboMultiplier;
     if (this.comboCount >= 50) this.comboMultiplier = 4;
@@ -1850,6 +1875,7 @@ export class PlayScene {
       this.comboCount = 0;
       this.comboMultiplier = 1;
       this.killStreak = 0;
+      this.comboMilestonesReached.clear(); // Reset milestones when combo expires
     }
   }
 

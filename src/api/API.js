@@ -1,6 +1,9 @@
 // API client for highscore communication
 
-const DEFAULT_TIMEOUT_MS = 6000; // Increased to 6 seconds for reliability
+const DEFAULT_TIMEOUT_MS = 12000; // First attempt: 12 seconds for cold starts
+const RETRY_TIMEOUT_MS = 15000; // Retry attempts: 15 seconds
+const MAX_RETRIES = 4; // Total: 1 initial + 3 retries
+const RETRY_DELAYS = [0, 800, 2000, 4000]; // Exponential backoff delays
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -20,22 +23,71 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = DEFAULT_TIMEOUT_M
   }
 }
 
+/**
+ * Fetch with automatic retry and exponential backoff
+ * @param {string} url - URL to fetch
+ * @param {object} options - Fetch options
+ * @param {function} onRetry - Callback (attemptNumber, delay) => void
+ * @returns {Promise<Response>} - Fetch response
+ */
+async function fetchWithRetry(url, options = {}, onRetry = null) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    // Wait for backoff delay (except first attempt)
+    if (attempt > 0) {
+      const delay = RETRY_DELAYS[attempt] || 4000;
+      if (onRetry) onRetry(attempt, delay);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    try {
+      const timeout = attempt === 0 ? DEFAULT_TIMEOUT_MS : RETRY_TIMEOUT_MS;
+      const response = await fetchWithTimeout(url, options, timeout);
+      return response; // Success!
+    } catch (error) {
+      lastError = error;
+      // Continue to next retry unless this is the last attempt
+      if (attempt < MAX_RETRIES - 1) {
+        console.log(`[API] Attempt ${attempt + 1} failed, retrying...`, error.message);
+      }
+    }
+  }
+
+  // All attempts failed
+  throw lastError;
+}
+
 class APIClient {
   constructor() {
     // Detect if we're in production or development
     this.baseUrl = window.location.origin;
     this.debug = window.location.search.includes('debug=1');
+
+    // Session cache for last good response
+    this._cachedHighscores = null;
+    this._cacheTimestamp = 0;
+    this._cacheMaxAge = 30000; // 30 seconds
   }
 
-  async getHighscores() {
+  async getHighscores(options = {}) {
+    const { useCache = true, onRetry = null } = options;
     const url = `${this.baseUrl}/api/highscores`;
+
+    // Return cached data if available and fresh
+    if (useCache && this._cachedHighscores && (Date.now() - this._cacheTimestamp < this._cacheMaxAge)) {
+      if (this.debug) {
+        console.log('[API] Returning cached highscores');
+      }
+      return this._cachedHighscores;
+    }
 
     if (this.debug) {
       console.log('[API] Fetching highscores from:', url);
     }
 
     try {
-      const response = await fetchWithTimeout(url);
+      const response = await fetchWithRetry(url, {}, onRetry);
 
       if (this.debug) {
         console.log('[API] Response status:', response.status);
@@ -89,7 +141,7 @@ class APIClient {
       }
 
       // Validate and sanitize entries
-      return scores.filter(entry => {
+      const sanitized = scores.filter(entry => {
         // Must have at least name and score
         return entry && typeof entry.name === 'string' && typeof entry.score === 'number';
       }).map(entry => ({
@@ -99,6 +151,12 @@ class APIClient {
         rankIndex: entry.rankIndex ?? entry.rank_index ?? 0,
         timestamp: entry.timestamp
       }));
+
+      // Cache successful response
+      this._cachedHighscores = sanitized;
+      this._cacheTimestamp = Date.now();
+
+      return sanitized;
 
     } catch (error) {
       if (error.code === 'FETCH_TIMEOUT') {
