@@ -43,7 +43,15 @@ class PropertyWriteTracer {
             alpha: obj.alpha,
             visible: obj.visible,
             renderable: obj.renderable,
-            worldAlpha: obj.worldAlpha !== undefined ? obj.worldAlpha : 'N/A'
+            worldAlpha: obj.worldAlpha !== undefined ? obj.worldAlpha : 'N/A',
+            tint: obj.tint !== undefined ? obj.tint.toString(16) : 'N/A',
+            filtersLength: obj.filters ? obj.filters.length : 0,
+            textureKey: obj.texture ? (obj.texture.textureCacheIds ? obj.texture.textureCacheIds[0] : 'unknown') : 'N/A',
+            x: obj.x !== undefined ? obj.x.toFixed(1) : 'N/A',
+            y: obj.y !== undefined ? obj.y.toFixed(1) : 'N/A',
+            scaleX: obj.scale ? obj.scale.x.toFixed(2) : 'N/A',
+            scaleY: obj.scale ? obj.scale.y.toFixed(2) : 'N/A',
+            parentName: obj.parent ? (obj.parent.name || 'unnamed') : 'none'
         };
     }
 

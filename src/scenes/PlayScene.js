@@ -29,6 +29,9 @@ import { propertyTracer } from '../utils/PropertyWriteTracer.js';
 import { visualWrite } from '../utils/VisualWrite.js';
 import { crashCapture } from '../utils/CrashCapture.js';
 import { tickerSpy } from '../utils/TickerSpy.js';
+import { renderCallSpy } from '../utils/RenderCallSpy.js';
+import { tickerRegistry } from '../utils/TickerRegistry.js';
+import { mutationSpy } from '../utils/MutationSpy.js';
 
 
 
@@ -183,9 +186,23 @@ export class PlayScene {
     propertyTracer.track(this.uiOverlay, 'uiOverlay');
     propertyTracer.track(this.uiContainer, 'uiContainer');
 
-    // FORENSICS: Enable Ticker Spy
-    if (this.game && this.game.app) {
-      tickerSpy.enable(this.game.app);
+    // FORENSICS: Enable comprehensive instrumentation
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('trace') === '1' && this.game && this.game.app) {
+      // Render spy
+      renderCallSpy.enable(this.game.app);
+
+      // Ticker registry (replaces tickerSpy)
+      tickerRegistry.enable(this.game.app);
+
+      // Mutation spy
+      mutationSpy.enable();
+      mutationSpy.wrapContainer(this.container, 'scene.container');
+      mutationSpy.wrapContainer(this.gameContainer, 'gameContainer');
+      mutationSpy.wrapContainer(this.uiContainer, 'uiContainer');
+      mutationSpy.wrapContainer(this.uiOverlay, 'uiOverlay');
+
+      console.log('[PlayScene] Full instrumentation enabled with ?trace=1');
     }
 
     // --- Hud & UI ---
@@ -317,7 +334,6 @@ export class PlayScene {
     // Create enemy manager
     this.enemyManager = new EnemyManager(this.gameContainer, this.game, capHandler);
 
-    const params = new URLSearchParams(window.location.search);
     const debugToken = params.get('debugBossToken');
     if (debugToken === 'KURT_DEBUG_2026') {
       const startLevel = Number(params.get('startLevel'));
@@ -396,8 +412,19 @@ export class PlayScene {
     }
     // Property Write Trace Dump
     if (e.key === 't' || e.key === 'T') {
+      console.group('═══════════════════════════════════════');
+      console.log('🔍 COMPREHENSIVE FLICKER DIAGNOSTIC REPORT');
+      console.log('═══════════════════════════════════════');
+
+      renderCallSpy.dump();
+      tickerRegistry.dump();
+      mutationSpy.dump();
       propertyTracer.dump();
-      this.showToast('FLICKER REPORT (CONSOLE)', { fontSize: 20 });
+
+      console.log('═══════════════════════════════════════');
+      console.groupEnd();
+
+      this.showToast('FULL DIAGNOSTIC REPORT (CONSOLE)', { fontSize: 20 });
     }
     // Crash Dump
     if (e.key === 'y' || e.key === 'Y') {
@@ -1557,6 +1584,11 @@ export class PlayScene {
     if (this.player && this.game.lives > 0) {
       const respawnTimeout = setTimeout(() => {
         if (this.player && this.game.lives > 0) {
+          // FORENSICS: Snapshot tickers BEFORE respawn
+          if (tickerRegistry.enabled) {
+            tickerRegistry.snapshotBeforeRespawn();
+          }
+
           // Respawn immediately - no "GET READY" delay
           this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
 
@@ -1564,6 +1596,13 @@ export class PlayScene {
           propertyTracer.reset();
           if (this.player.sprite) propertyTracer.track(this.player.sprite, 'player.sprite');
           if (this.player.shipSprite) propertyTracer.track(this.player.shipSprite, 'player.shipSprite');
+
+          // FORENSICS: Compare tickers AFTER respawn
+          if (tickerRegistry.enabled) {
+            setTimeout(() => {
+              tickerRegistry.compareAfterRespawn();
+            }, 100);
+          }
 
           AudioManager.playSfx('powerup', { force: true, volume: 0.7 });
           AudioManager.recoverSfx('respawn');
