@@ -1501,7 +1501,7 @@ export class PlayScene {
     setTimeout(() => AudioManager.playSfx('boss_explode', { force: true, volume: 0.7 }), 150);
 
     // Show death message with delay
-    if (!DISABLE_DEATH_OVERLAY) {
+    if (!FLICKER_FLAGS.disableOverlays) {
       setTimeout(() => {
         const { width, height } = this.game.app.screen;
         this.showToast('YOU DIED!', {
@@ -1758,7 +1758,7 @@ export class PlayScene {
   }
 
   showToastNow(message, options, slot) {
-    if (DISABLE_TOASTS) return null; // DEBUG: Disable toasts for flicker isolation
+    if (FLICKER_FLAGS.disableToasts) return null;
     const { width, height } = this.game.app.screen;
     const fontSize = options.fontSize || (slot === 'corner' ? 16 : 24);
     const maxWidth = Number.isFinite(options.maxWidth)
@@ -2461,7 +2461,7 @@ export class PlayScene {
   }
 
   showBossTaunt(reason = 'boss_spawn') {
-    if (DISABLE_WANTED_POSTERS) return; // DEBUG: Disable wanted posters for flicker isolation
+    if (FLICKER_FLAGS.disableOverlays) return; // DEBUG: Disable wanted posters for flicker isolation
     const caption = this.getBossTauntCaption(reason);
     if (!caption) return;
     const photoKeys = Object.keys(GameAssets.photos || {});
