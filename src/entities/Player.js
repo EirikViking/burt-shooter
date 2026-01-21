@@ -119,6 +119,18 @@ export class Player {
 
     console.log('[Player] init selectedShipSpriteKey=' + spriteKey + ' activeSpriteKey=' + spriteKey);
     this.createSprite();
+
+    // Static counter for visual identity
+    if (typeof Player._visualCounter === 'undefined') {
+      Player._visualCounter = 0;
+    }
+
+    // Robust Identity Markers
+    if (this.sprite) {
+      this.sprite.name = 'playerVisualRoot';
+      this.sprite.__isPlayerVisual = true;
+      this.sprite.__playerVisualId = ++Player._visualCounter;
+    }
   }
 
   // ... (existing code) ...
@@ -417,6 +429,12 @@ export class Player {
       this.sprite = new PIXI.Container();
       this.sprite.x = this.x;
       this.sprite.y = this.y;
+
+      // Re-apply markers if sprite was recreated
+      this.sprite.name = 'playerVisualRoot';
+      this.sprite.__isPlayerVisual = true;
+      if (typeof Player._visualCounter === 'undefined') Player._visualCounter = 0;
+      this.sprite.__playerVisualId = ++Player._visualCounter;
     }
 
     if (this.shipSprite && this.shipSprite.parent) {

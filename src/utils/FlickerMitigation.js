@@ -28,6 +28,10 @@ class FlickerMitigation {
         this.rendererChangeDetected = false;
         this.contextLostDetected = false;
 
+        // Status tracking
+        this.lastSample = null;
+        this.missingErrorLogged = false;
+
         // Hotkey listener
         this.hotkeyListener = null;
     }
@@ -50,11 +54,12 @@ class FlickerMitigation {
         if (this.clampEnabled) {
             console.log('[FlickerMitigation] ✅ Visual clamping ENABLED');
 
-            // Tag player sprite for identity tracking with unique marker
+            // Tag player sprite if not already tagged
             if (player && player.sprite) {
-                player.sprite.name = 'playerVisual';
-                player.sprite.__isPlayerVisual = true;
-                player.sprite.__playerMarker = true; // Keep for backward compat
+                if (!player.sprite.__isPlayerVisual) {
+                    player.sprite.name = 'playerVisualRoot';
+                    player.sprite.__isPlayerVisual = true;
+                }
             }
 
             // Set up renderer stability monitoring
@@ -133,14 +138,14 @@ class FlickerMitigation {
         const now = performance.now();
 
         // Clamp player visuals if enabled
-        if (this.clampEnabled && this.player && this.player.sprite) {
+        if (this.clampEnabled) {
             this.clampPlayerVisuals();
         }
 
         // Check for duplicate player visuals (once per second)
         if (this.clampEnabled && now - this.lastDuplicateCheckTime > this.duplicateCheckInterval) {
             this.lastDuplicateCheckTime = now;
-            this.checkDuplicatePlayerVisuals();
+            this.checkPlayerVisuals();
         }
 
         // Check renderer stability (once per second)
@@ -151,63 +156,118 @@ class FlickerMitigation {
     }
 
     /**
-     * Hard clamp player visual properties
+     * Hard clamp player visual properties using authoritative reference
      */
     clampPlayerVisuals() {
-        if (!this.player || !this.player.sprite) return;
+        // 1. Get authoritative reference
+        let sprite = this.player ? this.player.sprite : null;
 
-        const sprite = this.player.sprite;
+        // 2. Safety check
+        if (!sprite || sprite.destroyed) {
+            if (this.player && this.player.ensureRenderable) {
+                // Attempt recovery if method exists
+                // this.player.ensureRenderable('clamp_recovery'); 
+                // Commented out to avoid spam, but could enable if desperate
+            }
+            return;
+        }
 
-        // Hard clamp to visible, opaque, renderable
-        // This overrides any invulnerability blink or other effects
+        // 3. Force properties
         sprite.alpha = 1;
         sprite.visible = true;
         sprite.renderable = true;
 
-        // Also clamp ship sprite if it exists
-        if (this.player.shipSprite) {
+        // 4. Force ship sprite children
+        if (this.player.shipSprite && !this.player.shipSprite.destroyed) {
             this.player.shipSprite.alpha = 1;
             this.player.shipSprite.visible = true;
             this.player.shipSprite.renderable = true;
         }
+
+        // 5. Invariant enforcement: Ensure parentage
+        if (!sprite.parent && this.gameContainer) {
+            // Only log this critical failure once
+            if (!this._reparentLog) {
+                console.warn('[FlickerMitigation] 🚨 Player sprite DETACHED detected in clamp! Attempting re-attach.');
+                this._reparentLog = true;
+            }
+            this.gameContainer.addChild(sprite);
+        }
     }
 
     /**
-     * Check for duplicate player visuals in the scene
+     * Check for duplicate OR missing player visuals in the complete stage
      */
-    checkDuplicatePlayerVisuals() {
-        if (!this.gameContainer) return;
+    checkPlayerVisuals() {
+        // Traverse from STAGE if available, otherwise app.view, otherwise gameContainer
+        const root = (this.app && this.app.stage) ? this.app.stage : this.gameContainer;
 
-        const playerVisuals = [];
+        if (!root) return;
 
-        // Traverse gameContainer and find all player sprites
-        this.traverseContainer(this.gameContainer, (child) => {
-            if (child.__isPlayerVisual === true) {
+        const visuals = [];
+
+        // Traverse root and find all player sprites
+        this.traverseContainer(root, (child) => {
+            // Check for robust marker OR name fallback
+            if (child.__isPlayerVisual === true || child.name === 'playerVisualRoot' || child.name === 'playerVisual') {
                 const parentChain = this.getParentChain(child);
-                playerVisuals.push({
+                visuals.push({
                     id: child.__id || child.uid || 'unknown',
+                    vid: child.__playerVisualId || 'none',
                     name: child.name || 'unnamed',
                     parentChain: parentChain,
                     alpha: child.alpha,
                     visible: child.visible,
                     renderable: child.renderable,
-                    x: child.x,
-                    y: child.y
+                    worldVisible: child.worldVisible // if pixi calculates it
                 });
             }
         });
 
-        // Log error only once per session if count is not exactly 1
-        if (playerVisuals.length !== 1 && !this.duplicateErrorLogged) {
-            this.duplicateErrorLogged = true;
-            const stack = new Error().stack;
+        this.lastSample = {
+            time: performance.now(),
+            count: visuals.length,
+            visuals: visuals,
+            root: root.constructor.name
+        };
 
-            console.error('[FlickerMitigation] 🚨 DUPLICATE PLAYER VISUALS DETECTED!', {
-                count: playerVisuals.length,
-                expected: 1,
-                visuals: playerVisuals,
-                stack: stack
-            });
+        if (visuals.length !== 1) {
+            // Log based on type
+            if (visuals.length === 0 && !this.missingErrorLogged) {
+                this.missingErrorLogged = true;
+                this.logMissingError();
+            } else if (visuals.length > 1 && !this.duplicateErrorLogged) {
+                this.duplicateErrorLogged = true;
+                const stack = new Error().stack;
+                console.error('[FlickerMitigation] 🚨 DUPLICATE PLAYER VISUALS DETECTED!', {
+                    count: visuals.length,
+                    expected: 1,
+                    visuals: visuals,
+                    stack: stack
+                });
+            }
+        }
+    }
+
+    logMissingError() {
+        // Diagnostic dump for missing player
+        const activePlayer = !!this.player;
+        const activeSprite = this.player ? !!this.player.sprite : false;
+        const spriteParent = (this.player && this.player.sprite) ? !!this.player.sprite.parent : false;
+        const destroyed = (this.player && this.player.sprite) ? this.player.sprite.destroyed : 'n/a';
+
+        console.error('[FlickerMitigation] 🚨 MISSING PLAYER VISUAL!', {
+            hasPlayerInstance: activePlayer,
+            hasSprite: activeSprite,
+            spriteDestroyed: destroyed,
+            hasParent: spriteParent,
+            root: (this.app && this.app.stage) ? 'stage' : 'gameContainer'
+        });
+
+        // Attempt recovery
+        if (this.player && this.player.sprite && !this.player.sprite.destroyed && this.gameContainer) {
+            console.warn('[FlickerMitigation] Attempting recovery re-mount...');
+            this.gameContainer.addChild(this.player.sprite);
         }
     }
 
@@ -280,29 +340,28 @@ class FlickerMitigation {
      * Dump current status (V hotkey)
      */
     dumpStatus() {
-        console.group('🔍 [FlickerMitigation] Status Dump');
+        console.group('🔍 [FlickerMitigation] Status Dump V3');
 
         console.log('Enabled:', this.enabled);
         console.log('Clamp Enabled:', this.clampEnabled);
 
-        // Player visual count
-        if (this.gameContainer) {
-            const playerVisuals = [];
-            this.traverseContainer(this.gameContainer, (child) => {
-                if (child.__isPlayerVisual === true) {
-                    playerVisuals.push({
-                        name: child.name,
-                        alpha: child.alpha,
-                        visible: child.visible,
-                        renderable: child.renderable
-                    });
-                }
-            });
+        // Reference check
+        const refStatus = {
+            hasPlayer: !!this.player,
+            hasSprite: this.player ? !!this.player.sprite : false,
+            spriteDestroyed: this.player && this.player.sprite ? this.player.sprite.destroyed : 'n/a',
+            spriteParent: this.player && this.player.sprite && this.player.sprite.parent ? (this.player.sprite.parent.name || 'unnamed') : 'null'
+        };
+        console.log('Authoritative Ref:', refStatus);
 
-            console.log('Player Visual Count:', playerVisuals.length, '(expected: 1)');
-            if (playerVisuals.length > 0) {
-                console.table(playerVisuals);
+        // Last Sample
+        if (this.lastSample) {
+            console.log('Last Visual Count:', this.lastSample.count);
+            if (this.lastSample.visuals.length > 0) {
+                console.table(this.lastSample.visuals);
             }
+        } else {
+            console.log('No sample yet (run ?trace=1 and wait 1s)');
         }
 
         // Renderer state
@@ -318,16 +377,9 @@ class FlickerMitigation {
                 isWebGL: renderer.type === 1
             };
 
-            console.log('Renderer Baseline:', this.rendererBaseline);
-            console.log('Renderer Current:', current);
             console.log('Renderer Changed:', this.rendererChangeDetected);
             console.log('Context Lost:', this.contextLostDetected);
         }
-
-        // Anomaly flags
-        console.log('Duplicate Error Logged:', this.duplicateErrorLogged);
-        console.log('Renderer Change Detected:', this.rendererChangeDetected);
-        console.log('Context Lost Detected:', this.contextLostDetected);
 
         console.groupEnd();
     }
