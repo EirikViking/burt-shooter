@@ -26,9 +26,7 @@ import {
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
 
-import { traceRing } from '../utils/TraceRing.js';
-import { FlickerDetector } from '../utils/FlickerDetector.js';
-import { instrumentDisplayObject } from '../utils/DebugHooks.js';
+import { propertyWriteTracer, patchDisplayObject } from '../utils/PropertyWriteTracer.js';
 
 // DEBUG: Runtime flags for flicker isolation
 export const FLICKER_FLAGS = {
@@ -264,7 +262,12 @@ export class PlayScene {
       console.log('[PlayScene] Assets ready, creating player with spriteKey=' + spriteKey);
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
       this.gameContainer.addChild(this.player.sprite);
-      instrumentDisplayObject(this.player.sprite, 'player.sprite_async');
+
+      // Patch player sprite for property write tracking
+      patchDisplayObject(this.player.sprite, 'player.sprite');
+      if (this.player.shipSprite) {
+        patchDisplayObject(this.player.shipSprite, 'player.shipSprite');
+      }
       const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
       this.player.setRank(initialRank, 'init');
 
@@ -288,7 +291,12 @@ export class PlayScene {
       const spriteKey = this.game.selectedShipSpriteKey || 'row2_ship_1.png';
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
       this.gameContainer.addChild(this.player.sprite);
-      instrumentDisplayObject(this.player.sprite, 'player.sprite_placeholder');
+
+      // Patch player sprite for property write tracking
+      patchDisplayObject(this.player.sprite, 'player.sprite_placeholder');
+      if (this.player.shipSprite) {
+        patchDisplayObject(this.player.shipSprite, 'player.shipSprite_placeholder');
+      }
       if (this.player.setRank) {
         const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
         this.player.setRank(initialRank, 'init_placeholder');
@@ -315,8 +323,12 @@ export class PlayScene {
       console.log(`[Debug] enabled startLevel=${this.debugStartLevel ?? 'default'} startAtBoss=${startAtBoss} debugPowerups=${debugPowerups} debugOverlay=${debugOverlay}`);
     }
 
-    // Initialize Flicker Detector
-    this.flickerDetector = new FlickerDetector(this);
+    // Enable PropertyWriteTracer via query param
+    if (params.get('trace') === '1') {
+      propertyWriteTracer.enabled = true;
+      console.log('[PropertyWriteTracer] Enabled via ?trace=1');
+    }
+
 
     // Ensure Assets are ready for gameplay
     GameAssets.ensureBeerTexture().then(tex => {
@@ -372,10 +384,10 @@ export class PlayScene {
       this.spawnEasterEgg();
       this.showToast('TRIGGERED FLYBY', { fontSize: 20 });
     }
-    // Flicker Trace Dump
+    // Property Write Trace Dump
     if (e.key === 't' || e.key === 'T') {
-      traceRing.dump();
-      this.showToast('TRACE DUMPED TO CONSOLE', { fontSize: 20 });
+      propertyWriteTracer.dump();
+      this.showToast('PROPERTY TRACE DUMPED', { fontSize: 20 });
     }
   }
 
@@ -1542,6 +1554,10 @@ export class PlayScene {
         if (this.player && this.game.lives > 0) {
           // Respawn immediately - no "GET READY" delay
           this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
+
+          // DEBUG: Enable high-attention property tracking after respawn
+          propertyWriteTracer.setHighAttention(5000);
+
           AudioManager.playSfx('powerup', { force: true, volume: 0.7 });
           AudioManager.recoverSfx('respawn');
 
