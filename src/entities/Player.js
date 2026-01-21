@@ -1463,10 +1463,51 @@ export class Player {
   }
 
   forceRespawn(screenWidth, screenHeight) {
+    if (this._destroyed) {
+      console.error('[Player] 🚨 Attempting to respawn DESTROYED player instance!');
+      return;
+    }
+
+    // 1. RECONCILIATION: Check if we lost our sprite reference
+    if (!this.sprite) {
+      console.warn('[Player] 🚨 Sprite missing in forceRespawn! Attempting reconciliation...');
+
+      // Find existing visual
+      const app = this.game?.app;
+      if (app && app.stage) {
+        let found = null;
+        const traverse = (container) => {
+          if (found) return;
+          for (const child of container.children) {
+            if (child.__isPlayerVisual === true) {
+              found = child;
+              return;
+            }
+            if (child.children.length > 0) traverse(child);
+          }
+        };
+        traverse(app.stage);
+
+        if (found) {
+          console.log('[Player] ✅ RECONCILED: Found detached visual, rebinding.');
+          this.sprite = found;
+        } else {
+          console.error('[Player] ❌ Reconciliation failed: No visual found. Recreating.');
+          this.createSprite();
+          // Ensure markers
+          this.sprite.name = 'playerVisualRoot';
+          this.sprite.__isPlayerVisual = true;
+          if (typeof Player._visualCounter === 'number') this.sprite.__playerVisualId = ++Player._visualCounter;
+        }
+      }
+    }
+
     this.x = screenWidth / 2;
     this.y = screenHeight - 100;
-    this.sprite.x = this.x;
-    this.sprite.y = this.y;
+    if (this.sprite) {
+      this.sprite.x = this.x;
+      this.sprite.y = this.y;
+    }
 
     this.resetPowerups();
 
@@ -1582,6 +1623,7 @@ export class Player {
 
   destroy() {
     this.active = false;
+    this._destroyed = true;
 
     // Clean up sprites
     if (this.sprite) {
