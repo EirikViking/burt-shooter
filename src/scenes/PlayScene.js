@@ -273,9 +273,9 @@ export class PlayScene {
       this.gameContainer.addChild(this.player.sprite);
 
       // Patch player sprite for property write tracking
-      patchDisplayObject(this.player.sprite, 'player.sprite');
+      propertyTracer.track(this.player.sprite, 'player.sprite');
       if (this.player.shipSprite) {
-        patchDisplayObject(this.player.shipSprite, 'player.shipSprite');
+        propertyTracer.track(this.player.shipSprite, 'player.shipSprite');
       }
       const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
       this.player.setRank(initialRank, 'init');
@@ -302,9 +302,9 @@ export class PlayScene {
       this.gameContainer.addChild(this.player.sprite);
 
       // Patch player sprite for property write tracking
-      patchDisplayObject(this.player.sprite, 'player.sprite_placeholder');
+      propertyTracer.track(this.player.sprite, 'player.sprite_placeholder');
       if (this.player.shipSprite) {
-        patchDisplayObject(this.player.shipSprite, 'player.shipSprite_placeholder');
+        propertyTracer.track(this.player.shipSprite, 'player.shipSprite_placeholder');
       }
       if (this.player.setRank) {
         const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
