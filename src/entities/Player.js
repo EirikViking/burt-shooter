@@ -110,6 +110,9 @@ export class Player {
     // Touch input (set externally by PlayScene)
     this.touchInput = { moveX: 0, moveY: 0 };
 
+    // LIFECYCLE: Track pending timeouts for cleanup on destroy
+    this._pendingTimeouts = [];
+
     // Visual State (Single Source of Truth)
     this._visual = {
       baseAlpha: 1,
@@ -170,6 +173,25 @@ export class Player {
     this.sprite.alpha = 0; // Start invisible for fade-in
 
     this.rebuildShipSprite('init');
+  }
+
+  /**
+   * LIFECYCLE-SAFE setTimeout wrapper
+   * All timeouts are tracked and cancelled in destroy()
+   * Callbacks automatically bail if player is destroyed
+   */
+  _setTimeout(callback, delay) {
+    if (this._destroyed) return -1;
+    const id = setTimeout(() => {
+      // Remove from tracking
+      const idx = this._pendingTimeouts.indexOf(id);
+      if (idx !== -1) this._pendingTimeouts.splice(idx, 1);
+      // Guard against zombie execution
+      if (this._destroyed) return;
+      callback();
+    }, delay);
+    this._pendingTimeouts.push(id);
+    return id;
   }
 
   computeBaselineShipWidth() {
@@ -401,7 +423,7 @@ export class Player {
       // Pulse relative to baseScale, not 1
       const pulseScale = this.baseScale * 1.5; // Bigger pulse for visibility
       this.shipSprite.scale.set(pulseScale);
-      setTimeout(() => {
+      this._setTimeout(() => {
         if (this.shipSprite) this.shipSprite.scale.set(this.baseScale);
       }, 180);
     }
@@ -449,6 +471,9 @@ export class Player {
   }
 
   rebuildShipSprite(reason = 'unknown') {
+    // LIFECYCLE GUARD: Don't rebuild on destroyed player
+    if (this._destroyed) return;
+
     if (!this.sprite) {
       this.sprite = new PIXI.Container();
       this.sprite.x = this.x;
@@ -545,7 +570,7 @@ export class Player {
     // 1. Visual Flash (Green Tint)
     if (this.shipSprite) {
       this.shipSprite.tint = 0x00ff00;
-      setTimeout(() => {
+      this._setTimeout(() => {
         if (this.shipSprite) this.shipSprite.tint = 0xffffff;
       }, 200);
     }
@@ -555,7 +580,7 @@ export class Player {
       const startScaleX = this.sprite.scale.x;
       const startScaleY = this.sprite.scale.y;
       this.sprite.scale.set(startScaleX * 1.3, startScaleY * 1.3);
-      setTimeout(() => {
+      this._setTimeout(() => {
         if (this.sprite) this.sprite.scale.set(startScaleX, startScaleY);
       }, 300);
     }
@@ -914,8 +939,8 @@ export class Player {
       flash.circle(offsetX, -15, 6);
       flash.fill({ color: this.muzzleFlashColor, alpha: 0.8 });
       this.sprite.addChild(flash);
-      setTimeout(() => {
-        if (flash.parent) this.sprite.removeChild(flash);
+      this._setTimeout(() => {
+        if (flash.parent && this.sprite) this.sprite.removeChild(flash);
       }, 80);
     });
 
@@ -1410,7 +1435,7 @@ export class Player {
       const flash = new PIXI.Graphics();
       flash.circle(0, 0, 60).fill({ color: 0xffffff, alpha: 0.8 });
       this.sprite.addChild(flash);
-      setTimeout(() => {
+      this._setTimeout(() => {
         if (this.sprite && flash.parent) this.sprite.removeChild(flash);
       }, 150);
     }
@@ -1476,7 +1501,7 @@ export class Player {
       const flash = new PIXI.Graphics();
       flash.circle(0, 0, 60).fill({ color: 0x00ffff, alpha: 0.6 });
       this.sprite.addChild(flash);
-      setTimeout(() => {
+      this._setTimeout(() => {
         if (this.sprite && flash.parent) this.sprite.removeChild(flash);
       }, 150);
 
@@ -1564,6 +1589,17 @@ export class Player {
    * - any toast/celebration that touches visuals
    */
   ensureRenderable(reason = 'unknown') {
+    // LIFECYCLE GUARD: No-op if player is destroyed or scene is inactive
+    if (this._destroyed) {
+      return; // Zombie guard - don't manipulate visuals on destroyed player
+    }
+
+    // Validate owning scene is still the active play scene
+    if (this.scene && this.game && this.game.scenes && this.game.scenes.play !== this.scene) {
+      // This player belongs to a defunct scene - do nothing
+      return;
+    }
+
     const debug = window.location.search.includes('debug=1');
 
     // 1. Ensure sprite container exists
@@ -1655,6 +1691,12 @@ export class Player {
   destroy() {
     this.active = false;
     this._destroyed = true;
+
+    // LIFECYCLE: Cancel all pending timeouts to prevent zombie callbacks
+    if (this._pendingTimeouts && this._pendingTimeouts.length > 0) {
+      this._pendingTimeouts.forEach(id => clearTimeout(id));
+      this._pendingTimeouts = [];
+    }
 
     // Clean up sprites
     if (this.sprite) {
