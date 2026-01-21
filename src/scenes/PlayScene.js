@@ -25,6 +25,9 @@ import {
   getAllNewPhrases
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
+import { propertyTracer } from '../utils/PropertyWriteTracer.js';
+import { crashCapture } from '../utils/CrashCapture.js';
+
 
 
 // DEBUG: Runtime flags for flicker isolation
@@ -322,10 +325,10 @@ export class PlayScene {
       console.log(`[Debug] enabled startLevel=${this.debugStartLevel ?? 'default'} startAtBoss=${startAtBoss} debugPowerups=${debugPowerups} debugOverlay=${debugOverlay}`);
     }
 
-    // Enable PropertyWriteTracer via query param
+    // Initialize Forensics
+    crashCapture.enable(this);
     if (params.get('trace') === '1') {
-      propertyWriteTracer.enabled = true;
-      console.log('[PropertyWriteTracer] Enabled via ?trace=1');
+      propertyTracer.enable();
     }
 
 
@@ -385,8 +388,13 @@ export class PlayScene {
     }
     // Property Write Trace Dump
     if (e.key === 't' || e.key === 'T') {
-      propertyWriteTracer.dump();
-      this.showToast('PROPERTY TRACE DUMPED', { fontSize: 20 });
+      propertyTracer.dump();
+      this.showToast('FLICKER REPORT (CONSOLE)', { fontSize: 20 });
+    }
+    // Crash Dump
+    if (e.key === 'y' || e.key === 'Y') {
+      crashCapture.dump();
+      this.showToast('CRASH REPORT (CONSOLE)', { fontSize: 20 });
     }
   }
 
@@ -504,244 +512,238 @@ export class PlayScene {
   }
 
   update(delta) {
+    // Safety check
     if (!Number.isFinite(delta) || delta > 100 || delta < 0) return;
     if (!this.isReady) return;
 
-    try {
-      // Check tracked objects for property changes
-      propertyWriteTracer.checkTrackedObjects();
+    // Polling Tracer
+    propertyTracer.update();
 
-      this.updateDiagnosticsLayout();
-      this.gameTime += delta / 60;
+    this.updateDiagnosticsLayout();
+    this.gameTime += delta / 60;
 
-      // Score Boost Timer
-      if (this.scoreBoostTimer > 0) {
-        this.scoreBoostTimer -= delta * 16.67;
-        if (this.scoreBoostTimer <= 0) {
-          this.scoreMultiplier = 1;
-          this.game.scoreMultiplier = 1;
-          if (this.player) {
-            this.player.scoreMultiplier = 1;
-            this.player.scoreBoostExpiresAt = 0;
-          }
-          this.showToast("SCORE BOOST ENDED", { fontSize: 20, fill: '#cccccc', slot: 'corner', type: 'score_boost' });
-          console.log('[Powerup] expire type=SCORE_X2 restored multiplier=1');
-          if (this.debugPowerups) {
-            console.log('[PowerupTest] expired type=score_x2 restoredOk=true');
-          }
+    // Score Boost Timer
+    if (this.scoreBoostTimer > 0) {
+      this.scoreBoostTimer -= delta * 16.67;
+      if (this.scoreBoostTimer <= 0) {
+        this.scoreMultiplier = 1;
+        this.game.scoreMultiplier = 1;
+        if (this.player) {
+          this.player.scoreMultiplier = 1;
+          this.player.scoreBoostExpiresAt = 0;
         }
-      } else if (this.game.scoreMultiplier !== this.scoreMultiplier) {
-        this.game.scoreMultiplier = this.scoreMultiplier;
-      }
-
-      this.handlePauseToggle();
-      if (this.isPaused) return;
-
-      // Mobile inputs
-      if (this.touchControls && this.touchControls.active) {
-        const movement = this.touchControls.getMovement();
-        this.inputManager.setKeyPressed('KeyA', movement.dx < -0.3);
-        this.inputManager.setKeyPressed('KeyD', movement.dx > 0.3);
-        this.inputManager.setKeyPressed('KeyW', movement.dy < -0.3);
-        this.inputManager.setKeyPressed('KeyS', movement.dy > 0.3);
-      }
-
-      // Player update
-      if (this.game.lives > 0 && this.player) {
-        // Pass touch input to player
-        if (this.touchControls) {
-          const touchInput = this.touchControls.getInput();
-          this.player.touchInput = { moveX: touchInput.moveX, moveY: touchInput.moveY };
-        }
-
-        this.player.update(delta);
-        const sprite = this.player.sprite;
-        if (sprite) {
-          sprite.visible = true;
-          sprite.renderable = true;
-          // FIX: Do NOT override alpha if player is in a special visual state
-          // Player.update() handles alpha for: invulnerable blink, dodge, ghost powerup
-          if (!this.player.invulnerable && !this.player.isDodging && this.player.activePowerup?.type !== 'ghost') {
-            sprite.alpha = 1;
-          }
-          if (!sprite.parent && this.gameContainer) {
-            this.gameContainer.addChild(sprite);
-          }
+        this.showToast("SCORE BOOST ENDED", { fontSize: 20, fill: '#cccccc', slot: 'corner', type: 'score_boost' });
+        console.log('[Powerup] expire type=SCORE_X2 restored multiplier=1');
+        if (this.debugPowerups) {
+          console.log('[PowerupTest] expired type=score_x2 restoredOk=true');
         }
       }
-
-      this.updateComboTimers(delta);
-      this.updateComboDisplay(delta);
-
-      if (this.player?.synergyState?.type) {
-        this.setSynergyBadge(this.player.synergyState.label || this.player.synergyState.type);
-      } else {
-        this.setSynergyBadge('');
-      }
-
-
-      if (this.freezeTimerMs > 0) {
-        this.freezeTimerMs -= delta * 16.67;
-        this.updateDevOverlay();
-        return;
-      }
-
-      // TASK C: Debug diagnostics removed
-      // if (this.playerDiagText) {
-      //   const sprite = this.player?.sprite;
-      //   const vis = sprite?.visible ? 't' : 'f';
-      //   const alpha = sprite && Number.isFinite(sprite.alpha) ? sprite.alpha.toFixed(2) : 'na';
-      //   const texOk = GameAssets.isValidTexture(this.player?.shipSprite?.texture) ? 'ok' : 'bad';
-      //   const parent = sprite?.parent ? 'yes' : 'no';
-      //   this.playerDiagText.text = `pVis:${vis} a:${alpha} tex:${texOk} parent:${parent}`;
-      // }
-
-      // if (this.rankDiagText) {
-      //   // Safe accessors for diagnostics to prevent crash
-      //   const rank = (this.game && Number.isFinite(this.game.rankIndex)) ? this.game.rankIndex : 0;
-      //   const score = (this.game && Number.isFinite(this.game.score)) ? this.game.score : 0;
-      //   const rankEv = Number.isFinite(this._rankUpCount) ? this._rankUpCount : 0;
-      //   const seen = Number.isFinite(this._lastRankUpSeen) ? this._lastRankUpSeen : 'null';
-
-      //   // Detailed Prod Diagnostics
-      //   const d = this.game.diag || {};
-      //   const asEv = d.asEv || 0;
-      //   const asComp = d.asComp || 0;
-      //   const asBefore = d.asBefore || 0;
-      //   const asAfter = d.asAfter || 0;
-      //   const rkFromAdd = d.rkFromAdd || 0;
-      //   const uiRankEv = this._showRankUpCount || 0;
-
-      //   this.rankDiagText.text = `S:${score} R:${rank} (seen:${seen}) REV:${rankEv} UI:${uiRankEv}\n` +
-      //     `AS: evt=${asEv} cmp=${asComp} bef=${asBefore} aft=${asAfter} YES=${rkFromAdd}\n` +
-      //     `ID: G=${this.game.gameId} S=${this.sceneId}`;
-      //   this.rankDiagText.style.fontSize = 10; // Smaller font for more data
-      // }
-
-      // Fire logic - merge keyboard and touch input
-      const touchInput = this.touchControls ? this.touchControls.getInput() : { firing: false };
-      const firePressed = this.inputManager.isFiring() || touchInput.firing;
-
-      if (firePressed && this.player && !this.introActive) {
-        if (this.player.canShoot()) {
-          const bullets = this.player.shoot();
-          bullets.forEach(bullet => this.bulletManager.addPlayerBullet(bullet));
-
-          // TASK 4: Shooting sound with health check
-          this.playShootSoundWithHealthCheck();
-        }
-      }
-
-      // Managers update
-      const enemyBulletScale = (this.player && this.player.activePowerup && this.player.activePowerup.type === 'slow_time') ? 0.6 : 1;
-      if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
-      if (this.enemyManager) this.enemyManager.update(delta);
-      if (this.powerupManager) this.powerupManager.update(delta, this);
-      if (this.particleManager) this.particleManager.update(delta);
-      if (!FLICKER_FLAGS.disableScreenShake && this.screenShake) this.screenShake.update(delta);
-      if (this.scorePopupManager) this.scorePopupManager.update(delta);
-
-      // Audio Update (Sequencer)
-      if (AudioManager && AudioManager.update) AudioManager.update(delta);
-
-      // Tractor beam
-      // Tractor Beam Removed
-
-      // Adaptive Enemy Feature: Track Player Position
-      this.updatePlayerMetrics(delta);
-
-      this.checkCollisions();
-
-      // Level progression
-      if (this.enemyManager.isLevelComplete() && !this.enemyManager.spawning && !this.levelAdvancePending) {
-        this.levelAdvancePending = true;
-
-        AudioManager.playSfx('levelComplete');
-        this.game.addScore(1000); // Completion Bonus
-        if (!FLICKER_FLAGS.disableOverlays) {
-          this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000 });
-        }
-
-        // Show portrait lore on wave clear
-        const loreLine = this.getNextLoreLine();
-        if (loreLine) {
-          setTimeout(() => this.showPortraitPopup(loreLine), 1200);
-        }
-
-        // Particles
-        for (let i = 0; i < 20; i++) {
-          setTimeout(() => {
-            if (this.particleManager) {
-              this.particleManager.createExplosion(
-                this.game.getWidth() * 0.2 + Math.random() * this.game.getWidth() * 0.6,
-                this.game.getHeight() * 0.2 + Math.random() * this.game.getHeight() * 0.6,
-                0xffff00
-              );
-            }
-          }, i * 100);
-        }
-
-        if (this.enemyManager.isBossLevel) {
-          this.showWantedPoster();
-          // Show portrait lore on boss spawn
-          const bossLore = this.getNextLoreLine();
-          if (bossLore) {
-            setTimeout(() => this.showPortraitPopup(bossLore), 2200);
-          }
-        }
-
-        this.levelAdvanceTimeout = setTimeout(() => {
-          this.levelAdvancePending = false;
-          this.levelAdvanceTimeout = null;
-          this.game.nextLevel();
-          if (this.player) {
-            const sprite = this.player.sprite;
-            if (sprite) {
-              sprite.visible = true;
-              sprite.alpha = 1;
-              sprite.renderable = true;
-              if (!sprite.parent && this.gameContainer) {
-                this.gameContainer.addChild(sprite);
-              }
-            }
-            const shipSprite = this.player.shipSprite;
-            const texValid = shipSprite && shipSprite instanceof PIXI.Sprite && GameAssets.isValidTexture(shipSprite.texture);
-            if (!texValid && this.player.rebuildShipSprite) {
-              this.player.rebuildShipSprite('afterNextLevel');
-            } else if (shipSprite?.scale) {
-              const baseScale = Number.isFinite(this.player.baseScale) ? this.player.baseScale : (shipSprite.scale.x || 1);
-              shipSprite.scale.set(baseScale);
-            }
-          }
-        }, 3000);
-      }
-
-      this.hud.update();
-      this.updateStarfield(delta); // TASK D: Animate background stars
-      this.updateAmbientBeers(delta); // Handles both Red Hazards and White Powerups
-      this.applyMagnetPull(delta);
-      this.updateEasterEgg(delta);
-      this.updateRandomPopups(delta);
-      this.checkLowLives();
-
-      const scoreDelta = this.game.score - this.lastScoreSeen;
-      if (scoreDelta > 0) {
-        this.updateMetaProgress(scoreDelta, false);
-        this.lastScoreSeen = this.game.score;
-      }
-      if (this.enemyManager?.bossDefeatedThisLevel && this.lastBossDefeatedLevel !== this.game.level) {
-        this.lastBossDefeatedLevel = this.game.level;
-        this.updateMetaProgress(0, true);
-      }
-      this.updateDevOverlay();
-
-    } catch (e) {
-      console.error('GAME LOOP CRASH:', e);
-      if (this.game && this.game.app && this.game.app.ticker) {
-        this.game.app.ticker.stop();
-      }
-      this.showErrorOverlay(e);
+    } else if (this.game.scoreMultiplier !== this.scoreMultiplier) {
+      this.game.scoreMultiplier = this.scoreMultiplier;
     }
+
+    this.handlePauseToggle();
+    if (this.isPaused) return;
+
+    // Mobile inputs
+    if (this.touchControls && this.touchControls.active) {
+      const movement = this.touchControls.getMovement();
+      this.inputManager.setKeyPressed('KeyA', movement.dx < -0.3);
+      this.inputManager.setKeyPressed('KeyD', movement.dx > 0.3);
+      this.inputManager.setKeyPressed('KeyW', movement.dy < -0.3);
+      this.inputManager.setKeyPressed('KeyS', movement.dy > 0.3);
+    }
+
+    // Player update
+    if (this.game.lives > 0 && this.player) {
+      // Pass touch input to player
+      if (this.touchControls) {
+        const touchInput = this.touchControls.getInput();
+        this.player.touchInput = { moveX: touchInput.moveX, moveY: touchInput.moveY };
+      }
+
+      this.player.update(delta);
+      const sprite = this.player.sprite;
+      if (sprite) {
+        sprite.visible = true;
+        sprite.renderable = true;
+        // FIX: Do NOT override alpha if player is in a special visual state
+        // Player.update() handles alpha for: invulnerable blink, dodge, ghost powerup
+        if (!this.player.invulnerable && !this.player.isDodging && this.player.activePowerup?.type !== 'ghost') {
+          sprite.alpha = 1;
+        }
+        if (!sprite.parent && this.gameContainer) {
+          this.gameContainer.addChild(sprite);
+        }
+      }
+    }
+
+    this.updateComboTimers(delta);
+    this.updateComboDisplay(delta);
+
+    if (this.player?.synergyState?.type) {
+      this.setSynergyBadge(this.player.synergyState.label || this.player.synergyState.type);
+    } else {
+      this.setSynergyBadge('');
+    }
+
+
+    if (this.freezeTimerMs > 0) {
+      this.freezeTimerMs -= delta * 16.67;
+      this.updateDevOverlay();
+      return;
+    }
+
+    // TASK C: Debug diagnostics removed
+    // if (this.playerDiagText) {
+    //   const sprite = this.player?.sprite;
+    //   const vis = sprite?.visible ? 't' : 'f';
+    //   const alpha = sprite && Number.isFinite(sprite.alpha) ? sprite.alpha.toFixed(2) : 'na';
+    //   const texOk = GameAssets.isValidTexture(this.player?.shipSprite?.texture) ? 'ok' : 'bad';
+    //   const parent = sprite?.parent ? 'yes' : 'no';
+    //   this.playerDiagText.text = `pVis:${vis} a:${alpha} tex:${texOk} parent:${parent}`;
+    // }
+
+    // if (this.rankDiagText) {
+    //   // Safe accessors for diagnostics to prevent crash
+    //   const rank = (this.game && Number.isFinite(this.game.rankIndex)) ? this.game.rankIndex : 0;
+    //   const score = (this.game && Number.isFinite(this.game.score)) ? this.game.score : 0;
+    //   const rankEv = Number.isFinite(this._rankUpCount) ? this._rankUpCount : 0;
+    //   const seen = Number.isFinite(this._lastRankUpSeen) ? this._lastRankUpSeen : 'null';
+
+    //   // Detailed Prod Diagnostics
+    //   const d = this.game.diag || {};
+    //   const asEv = d.asEv || 0;
+    //   const asComp = d.asComp || 0;
+    //   const asBefore = d.asBefore || 0;
+    //   const asAfter = d.asAfter || 0;
+    //   const rkFromAdd = d.rkFromAdd || 0;
+    //   const uiRankEv = this._showRankUpCount || 0;
+
+    //   this.rankDiagText.text = `S:${score} R:${rank} (seen:${seen}) REV:${rankEv} UI:${uiRankEv}\n` +
+    //     `AS: evt=${asEv} cmp=${asComp} bef=${asBefore} aft=${asAfter} YES=${rkFromAdd}\n` +
+    //     `ID: G=${this.game.gameId} S=${this.sceneId}`;
+    //   this.rankDiagText.style.fontSize = 10; // Smaller font for more data
+    // }
+
+    // Fire logic - merge keyboard and touch input
+    const touchInput = this.touchControls ? this.touchControls.getInput() : { firing: false };
+    const firePressed = this.inputManager.isFiring() || touchInput.firing;
+
+    if (firePressed && this.player && !this.introActive) {
+      if (this.player.canShoot()) {
+        const bullets = this.player.shoot();
+        bullets.forEach(bullet => this.bulletManager.addPlayerBullet(bullet));
+
+        // TASK 4: Shooting sound with health check
+        this.playShootSoundWithHealthCheck();
+      }
+    }
+
+    // Managers update
+    const enemyBulletScale = (this.player && this.player.activePowerup && this.player.activePowerup.type === 'slow_time') ? 0.6 : 1;
+    if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
+    if (this.enemyManager) this.enemyManager.update(delta);
+    if (this.powerupManager) this.powerupManager.update(delta, this);
+    if (this.particleManager) this.particleManager.update(delta);
+    if (!FLICKER_FLAGS.disableScreenShake && this.screenShake) this.screenShake.update(delta);
+    if (this.scorePopupManager) this.scorePopupManager.update(delta);
+
+    // Audio Update (Sequencer)
+    if (AudioManager && AudioManager.update) AudioManager.update(delta);
+
+    // Tractor beam
+    // Tractor Beam Removed
+
+    // Adaptive Enemy Feature: Track Player Position
+    this.updatePlayerMetrics(delta);
+
+    this.checkCollisions();
+
+    // Level progression
+    if (this.enemyManager.isLevelComplete() && !this.enemyManager.spawning && !this.levelAdvancePending) {
+      this.levelAdvancePending = true;
+
+      AudioManager.playSfx('levelComplete');
+      this.game.addScore(1000); // Completion Bonus
+      if (!FLICKER_FLAGS.disableOverlays) {
+        this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000 });
+      }
+
+      // Show portrait lore on wave clear
+      const loreLine = this.getNextLoreLine();
+      if (loreLine) {
+        setTimeout(() => this.showPortraitPopup(loreLine), 1200);
+      }
+
+      // Particles
+      for (let i = 0; i < 20; i++) {
+        setTimeout(() => {
+          if (this.particleManager) {
+            this.particleManager.createExplosion(
+              this.game.getWidth() * 0.2 + Math.random() * this.game.getWidth() * 0.6,
+              this.game.getHeight() * 0.2 + Math.random() * this.game.getHeight() * 0.6,
+              0xffff00
+            );
+          }
+        }, i * 100);
+      }
+
+      if (this.enemyManager.isBossLevel) {
+        this.showWantedPoster();
+        // Show portrait lore on boss spawn
+        const bossLore = this.getNextLoreLine();
+        if (bossLore) {
+          setTimeout(() => this.showPortraitPopup(bossLore), 2200);
+        }
+      }
+
+      this.levelAdvanceTimeout = setTimeout(() => {
+        this.levelAdvancePending = false;
+        this.levelAdvanceTimeout = null;
+        this.game.nextLevel();
+        if (this.player) {
+          const sprite = this.player.sprite;
+          if (sprite) {
+            sprite.visible = true;
+            sprite.alpha = 1;
+            sprite.renderable = true;
+            if (!sprite.parent && this.gameContainer) {
+              this.gameContainer.addChild(sprite);
+            }
+          }
+          const shipSprite = this.player.shipSprite;
+          const texValid = shipSprite && shipSprite instanceof PIXI.Sprite && GameAssets.isValidTexture(shipSprite.texture);
+          if (!texValid && this.player.rebuildShipSprite) {
+            this.player.rebuildShipSprite('afterNextLevel');
+          } else if (shipSprite?.scale) {
+            const baseScale = Number.isFinite(this.player.baseScale) ? this.player.baseScale : (shipSprite.scale.x || 1);
+            shipSprite.scale.set(baseScale);
+          }
+        }
+      }, 3000);
+    }
+
+    this.hud.update();
+    this.updateStarfield(delta); // TASK D: Animate background stars
+    this.updateAmbientBeers(delta); // Handles both Red Hazards and White Powerups
+    this.applyMagnetPull(delta);
+    this.updateEasterEgg(delta);
+    this.updateRandomPopups(delta);
+    this.checkLowLives();
+
+    const scoreDelta = this.game.score - this.lastScoreSeen;
+    if (scoreDelta > 0) {
+      this.updateMetaProgress(scoreDelta, false);
+      this.lastScoreSeen = this.game.score;
+    }
+    if (this.enemyManager?.bossDefeatedThisLevel && this.lastBossDefeatedLevel !== this.game.level) {
+      this.lastBossDefeatedLevel = this.game.level;
+      this.updateMetaProgress(0, true);
+    }
+    this.updateDevOverlay();
+
+
   }
 
   onRankUp(newRank) {
@@ -1552,8 +1554,10 @@ export class PlayScene {
           // Respawn immediately - no "GET READY" delay
           this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
 
-          // DEBUG: Property tracking disabled by default (use ?trace=1 or console commands)
-          // propertyWriteTracer.setHighAttention(5000);
+          // FORENSICS: Reset tracer and track new/existing sprite
+          propertyTracer.reset();
+          if (this.player.sprite) propertyTracer.track(this.player.sprite, 'player.sprite');
+          if (this.player.shipSprite) propertyTracer.track(this.player.shipSprite, 'player.shipSprite');
 
           AudioManager.playSfx('powerup', { force: true, volume: 0.7 });
           AudioManager.recoverSfx('respawn');
