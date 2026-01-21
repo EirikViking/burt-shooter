@@ -54,6 +54,81 @@ export class PlayScene {
     this.game = game;
     this.container = new PIXI.Container();
     this.gameContainer = new PIXI.Container();
+
+    // ZOMBIE SPY: Trace player visuals added to this container
+    if (typeof window !== 'undefined' && window.location.search.includes('trace=1')) {
+      const originalAddChild = this.gameContainer.addChild.bind(this.gameContainer);
+      const loggedSet = new WeakSet();
+      this.gameContainer.addChild = (...children) => {
+        children.forEach(child => {
+          try {
+            if (loggedSet.has(child)) return;
+
+            let isMatch = false;
+            let matchReason = '';
+
+            // 1. Tag Check
+            const checkTag = (node) => {
+              if (node.__isPlayerVisual) return true;
+              if (node.children) {
+                for (const c of node.children) {
+                  if (checkTag(c)) return true;
+                }
+              }
+              return false;
+            };
+
+            if (checkTag(child)) {
+              isMatch = true;
+              matchReason = 'Tag (__isPlayerVisual)';
+            }
+
+            // 2. Texture Check (fallback)
+            if (!isMatch && this.player && this.player.sprite && !this.player.sprite.destroyed) {
+              // Find ref texture from current authoritative player
+              let refTexture = null;
+              const findTex = (node) => {
+                if (refTexture) return;
+                if (node instanceof PIXI.Sprite && node.texture) {
+                  refTexture = node.texture;
+                  return;
+                }
+                if (node.children) node.children.forEach(findTex);
+              };
+              findTex(this.player.sprite);
+
+              // Compare
+              if (refTexture) {
+                const checkTex = (node) => {
+                  if (node instanceof PIXI.Sprite && node.texture === refTexture) return true;
+                  if (node.children) {
+                    for (const c of node.children) {
+                      if (checkTex(c)) return true;
+                    }
+                  }
+                  return false;
+                };
+                if (checkTex(child)) {
+                  isMatch = true;
+                  matchReason = 'Texture Match';
+                }
+              }
+            }
+
+            if (isMatch) {
+              loggedSet.add(child);
+              console.error(`[PlayScene] 🕵️‍♀️ Player-like visual added to gameContainer! Reason: ${matchReason}`, {
+                childName: child.name,
+                stack: new Error().stack
+              });
+            }
+          } catch (e) {
+            console.warn('Spy error:', e);
+          }
+        });
+        return originalAddChild(...children);
+      };
+    }
     this.uiContainer = new PIXI.Container();
     this.uiOverlay = new PIXI.Container();
     this.container.addChild(this.gameContainer);
