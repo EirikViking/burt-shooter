@@ -19,6 +19,7 @@ class FlickerMitigation {
         this.lastDuplicateCheckTime = 0;
         this.duplicateCheckInterval = 1000; // 1 second
         this.duplicateDetected = false;
+        this.duplicateErrorLogged = false;
 
         // Renderer stability detection
         this.lastRendererCheckTime = 0;
@@ -26,6 +27,9 @@ class FlickerMitigation {
         this.rendererBaseline = null;
         this.rendererChangeDetected = false;
         this.contextLostDetected = false;
+
+        // Hotkey listener
+        this.hotkeyListener = null;
     }
 
     /**
@@ -46,17 +50,37 @@ class FlickerMitigation {
         if (this.clampEnabled) {
             console.log('[FlickerMitigation] ✅ Visual clamping ENABLED');
 
-            // Tag player sprite for identity tracking
+            // Tag player sprite for identity tracking with unique marker
             if (player && player.sprite) {
-                player.sprite.name = 'playerSprite';
-                player.sprite.__playerMarker = true;
+                player.sprite.name = 'playerVisual';
+                player.sprite.__isPlayerVisual = true;
+                player.sprite.__playerMarker = true; // Keep for backward compat
             }
 
             // Set up renderer stability monitoring
             this.setupRendererMonitoring();
+
+            // Register V hotkey
+            this.registerHotkey();
         }
 
         console.log('[FlickerMitigation] Enabled (clamp=' + this.clampEnabled + ')');
+    }
+
+    /**
+     * Register V hotkey for status dump
+     */
+    registerHotkey() {
+        this.hotkeyListener = (e) => {
+            if (e.key === 'v' || e.key === 'V') {
+                // Only if not typing in input
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                this.dumpStatus();
+            }
+        };
+
+        window.addEventListener('keydown', this.hotkeyListener);
     }
 
     /**
@@ -158,20 +182,24 @@ class FlickerMitigation {
 
         // Traverse gameContainer and find all player sprites
         this.traverseContainer(this.gameContainer, (child) => {
-            if (child.name === 'playerSprite' || child.__playerMarker === true) {
+            if (child.__isPlayerVisual === true) {
+                const parentChain = this.getParentChain(child);
                 playerVisuals.push({
-                    id: child.__id || 'unknown',
-                    parent: child.parent ? (child.parent.name || child.parent.constructor.name) : 'none',
+                    id: child.__id || child.uid || 'unknown',
+                    name: child.name || 'unnamed',
+                    parentChain: parentChain,
                     alpha: child.alpha,
                     visible: child.visible,
+                    renderable: child.renderable,
                     x: child.x,
                     y: child.y
                 });
             }
         });
 
-        if (playerVisuals.length !== 1 && !this.duplicateDetected) {
-            this.duplicateDetected = true;
+        // Log error only once per session if count is not exactly 1
+        if (playerVisuals.length !== 1 && !this.duplicateErrorLogged) {
+            this.duplicateErrorLogged = true;
             const stack = new Error().stack;
 
             console.error('[FlickerMitigation] 🚨 DUPLICATE PLAYER VISUALS DETECTED!', {
@@ -180,11 +208,23 @@ class FlickerMitigation {
                 visuals: playerVisuals,
                 stack: stack
             });
-        } else if (playerVisuals.length === 1 && this.duplicateDetected) {
-            // Reset flag if it's back to normal
-            this.duplicateDetected = false;
-            console.log('[FlickerMitigation] ✅ Player visual count normalized (1)');
         }
+    }
+
+    /**
+     * Get parent chain for a display object
+     */
+    getParentChain(child) {
+        const chain = [];
+        let current = child.parent;
+
+        while (current && chain.length < 10) {
+            const name = current.name || current.constructor.name || 'unknown';
+            chain.push(name);
+            current = current.parent;
+        }
+
+        return chain.join(' > ');
     }
 
     /**
@@ -220,9 +260,10 @@ class FlickerMitigation {
             isWebGL: renderer.type === 1
         };
 
-        // Check for changes
+        // Check for changes (only log once per session)
         const changed =
             current.resolution !== this.rendererBaseline.resolution ||
+            current.devicePixelRatio !== this.rendererBaseline.devicePixelRatio ||
             current.isWebGL !== this.rendererBaseline.isWebGL;
 
         if (changed && !this.rendererChangeDetected) {
@@ -236,11 +277,74 @@ class FlickerMitigation {
     }
 
     /**
+     * Dump current status (V hotkey)
+     */
+    dumpStatus() {
+        console.group('🔍 [FlickerMitigation] Status Dump');
+
+        console.log('Enabled:', this.enabled);
+        console.log('Clamp Enabled:', this.clampEnabled);
+
+        // Player visual count
+        if (this.gameContainer) {
+            const playerVisuals = [];
+            this.traverseContainer(this.gameContainer, (child) => {
+                if (child.__isPlayerVisual === true) {
+                    playerVisuals.push({
+                        name: child.name,
+                        alpha: child.alpha,
+                        visible: child.visible,
+                        renderable: child.renderable
+                    });
+                }
+            });
+
+            console.log('Player Visual Count:', playerVisuals.length, '(expected: 1)');
+            if (playerVisuals.length > 0) {
+                console.table(playerVisuals);
+            }
+        }
+
+        // Renderer state
+        if (this.app && this.app.renderer && this.rendererBaseline) {
+            const renderer = this.app.renderer;
+            const canvas = this.app.view;
+
+            const current = {
+                resolution: renderer.resolution,
+                viewWidth: canvas ? canvas.width : 0,
+                viewHeight: canvas ? canvas.height : 0,
+                devicePixelRatio: window.devicePixelRatio || 1,
+                isWebGL: renderer.type === 1
+            };
+
+            console.log('Renderer Baseline:', this.rendererBaseline);
+            console.log('Renderer Current:', current);
+            console.log('Renderer Changed:', this.rendererChangeDetected);
+            console.log('Context Lost:', this.contextLostDetected);
+        }
+
+        // Anomaly flags
+        console.log('Duplicate Error Logged:', this.duplicateErrorLogged);
+        console.log('Renderer Change Detected:', this.rendererChangeDetected);
+        console.log('Context Lost Detected:', this.contextLostDetected);
+
+        console.groupEnd();
+    }
+
+    /**
      * Disable mitigation
      */
     disable() {
         this.enabled = false;
         this.clampEnabled = false;
+
+        // Remove hotkey listener
+        if (this.hotkeyListener) {
+            window.removeEventListener('keydown', this.hotkeyListener);
+            this.hotkeyListener = null;
+        }
+
         console.log('[FlickerMitigation] Disabled');
     }
 }
