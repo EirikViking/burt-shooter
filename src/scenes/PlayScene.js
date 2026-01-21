@@ -26,6 +26,7 @@ import {
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
 import { propertyTracer } from '../utils/PropertyWriteTracer.js';
+import { visualWrite } from '../utils/VisualWrite.js';
 import { crashCapture } from '../utils/CrashCapture.js';
 import { tickerSpy } from '../utils/TickerSpy.js';
 
@@ -572,12 +573,12 @@ export class PlayScene {
       this.player.update(delta);
       const sprite = this.player.sprite;
       if (sprite) {
-        sprite.visible = true;
-        sprite.renderable = true;
+        visualWrite.set(sprite, 'player.sprite', 'visible', true, 'playscene_force');
+        visualWrite.set(sprite, 'player.sprite', 'renderable', true, 'playscene_force');
         // FIX: Do NOT override alpha if player is in a special visual state
         // Player.update() handles alpha for: invulnerable blink, dodge, ghost powerup
         if (!this.player.invulnerable && !this.player.isDodging && this.player.activePowerup?.type !== 'ghost') {
-          sprite.alpha = 1;
+          visualWrite.set(sprite, 'player.sprite', 'alpha', 1, 'playscene_reset');
         }
         if (!sprite.parent && this.gameContainer) {
           this.gameContainer.addChild(sprite);

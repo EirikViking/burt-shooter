@@ -3,6 +3,7 @@ import { Bullet } from './Bullet.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { ShipRegistry } from '../utils/ShipRegistry.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { visualWrite } from '../utils/VisualWrite.js';
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = 'row2_ship_1.png') {
@@ -581,8 +582,8 @@ export class Player {
 
     // Spawn Fade-In
     if (this.sprite.alpha < 1 && !this.isDodging && this.activePowerup.type !== 'ghost') {
-      this.sprite.alpha += deltaSeconds * (1000 / this.spawnFadeDuration);
-      if (this.sprite.alpha > 1) this.sprite.alpha = 1;
+      const newAlpha = Math.min(1, this.sprite.alpha + deltaSeconds * (1000 / this.spawnFadeDuration));
+      visualWrite.set(this.sprite, 'player.sprite', 'alpha', newAlpha, 'spawn_fade_in');
     }
 
     // Damage Flash Effect
@@ -681,11 +682,11 @@ export class Player {
 
     if (this.isDodging) {
       this.dodgeDuration -= dt;
-      this.sprite.alpha = 0.3; // Visually indicate dodge
+      visualWrite.set(this.sprite, 'player.sprite', 'alpha', 0.3, 'dodge_state');
       if (this.dodgeDuration <= 0) {
         this.isDodging = false;
         this.invulnerable = false;
-        if (this.activePowerup.type !== 'ghost') this.sprite.alpha = 1;
+        if (this.activePowerup.type !== 'ghost') visualWrite.set(this.sprite, 'player.sprite', 'alpha', 1, 'dodge_end');
       }
     } else {
       // Invulnerable blinking - gentler pulse effect
@@ -695,11 +696,11 @@ export class Player {
         // Smooth pulse instead of harsh strobe
         const time = Date.now() / 1000;
         const pulse = Math.sin(time * 8) * 0.5 + 0.5; // 0.0 to 1.0
-        this.sprite.alpha = 0.4 + pulse * 0.6; // 0.4 to 1.0
+        visualWrite.set(this.sprite, 'player.sprite', 'alpha', 0.4 + pulse * 0.6, 'invuln_pulse');
 
         if (this.invulnerableTime <= 0) {
           this.invulnerable = false;
-          if (this.activePowerup.type !== 'ghost') this.sprite.alpha = 1;
+          if (this.activePowerup.type !== 'ghost') visualWrite.set(this.sprite, 'player.sprite', 'alpha', 1, 'invuln_end');
         }
       }
     }
