@@ -50,14 +50,14 @@ export const BalanceConfig = {
         waveEnemyMax: 18, // Cap enemies per wave
         waveDelayMs: 2400, // Slower pacing between waves
 
-        bossBaseHealth: 200, // Significantly increased boss baseline HP
-        bossHealthPerLevel: 120, // Much steeper boss scaling for satisfying boss fights
-        bossShootDelayBase: 40, // Slower boss firing
-        bossShootDelayPhase2: 26,
-        bossShootDelayPhase3: 20,
-        bossProjectileSpeedPhase1: 3.2,
-        bossProjectileSpeedPhase2: 3.1,
-        bossProjectileSpeedPhase3: 2.8,
+        bossBaseHealth: 139, // Balanced boss baseline HP
+        bossHealthPerLevel: 60, // Moderate scaling (Level 2 = 259 HP)
+        bossShootDelayBase: 32, // Faster, more dangerous firing
+        bossShootDelayPhase2: 20, // Much faster in phase 2
+        bossShootDelayPhase3: 14, // Very aggressive in phase 3
+        bossProjectileSpeedPhase1: 3.8, // Faster bullets for challenge
+        bossProjectileSpeedPhase2: 4.2, // Even faster
+        bossProjectileSpeedPhase3: 4.8, // Maximum threat
 
         precisionPenalty: true, // If true, reduced score for missed shots (concept)
         sprayInefficiency: 0.8 // Damage multiplier if shooting blindly (concept, maybe skip to keep simple)

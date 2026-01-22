@@ -714,12 +714,18 @@ export class HighscoreScene {
         const rankTexture = rankTextures[index];
         if (rankTexture) {
           const rankSprite = new PIXI.Sprite(rankTexture);
-          const spriteSize = layout.isMobile ? 20 : 24;
+          rankSprite.anchor.set(0, 0.5); // Anchor left-center for consistent positioning
+          const spriteSize = layout.isMobile ? 24 : 28; // Larger for better visibility
           rankSprite.width = spriteSize;
           rankSprite.height = spriteSize;
-          rankSprite.x = columns.rank + 30;
-          rankSprite.y = y - 2;
+          rankSprite.x = columns.rank + 35;
+          rankSprite.y = y + (layout.lineHeight * 0.7) / 2; // Center vertically with row
+          rankSprite.alpha = 1; // Ensure visible
+          rankSprite.visible = true;
           this.rowsContainer.addChild(rankSprite);
+        } else {
+          // Debug: show if texture failed to load
+          console.warn(`[Highscore] Rank texture missing for index ${index}, entry:`, score);
         }
 
         // TASK 1: Use getRankTitle from RankPolicy (single source of truth)

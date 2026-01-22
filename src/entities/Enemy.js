@@ -4,6 +4,7 @@ import { GameAssets } from '../utils/GameAssets.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 // TASK 3: Import difficulty multiplier
 import { BalanceConfig } from '../config/BalanceConfig.js';
+import { enhanceEnemyVisuals } from '../utils/EnemyVisualEnhancer.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
@@ -209,6 +210,18 @@ export class Enemy {
     this.healthBar = new PIXI.Graphics();
     this.updateHealthBar();
     this.sprite.addChild(this.healthBar);
+
+    // Apply visual enhancements to make enemies look distinct and menacing
+    if (this.usingXtraAsset && this.game?.app) {
+      const color = this.waveColor || 'blue';
+      const model = this.xtraType || 1;
+      this.visualEnhancementCleanup = enhanceEnemyVisuals(
+        this.sprite,
+        model,
+        color.toLowerCase(),
+        this.game.app
+      );
+    }
   }
 
   createFallbackGraphics() {
