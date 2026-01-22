@@ -50,7 +50,14 @@ export class Player {
     this.shootDelay = this.stats.fireRate;
     this.bulletDamage = this.stats.damage;
     this.bulletSpeed = this.stats.bulletSpeed;
-    this.multiShot = 1;
+
+    // Weapon Profile (must be set before multiShot)
+    this.weaponProfile = this.config.weapon || { bullets: 1, spread: 0, shootSfx: 'shoot_small' };
+    this.weaponProfileName = this.config.name;
+    this.weaponSfxKey = this.weaponProfile.shootSfx;
+
+    // Initialize multiShot from weapon config (fixes double ship not firing double)
+    this.multiShot = this.weaponProfile.bullets || 1;
 
     // Dodge
     this.dodgeCooldown = 0;
@@ -81,9 +88,6 @@ export class Player {
     this.damageOverlay = null;
     this.boostAura = null;
     this.rankBoostText = null;
-    this.weaponProfile = this.config.weapon || { bullets: 1, spread: 0, shootSfx: 'shoot_small' };
-    this.weaponProfileName = this.config.name;
-    this.weaponSfxKey = this.weaponProfile.shootSfx;
     this.bulletPierce = false;
     this.scoreMultiplier = 1;
     this.scoreBoostExpiresAt = 0;

@@ -68,6 +68,10 @@ class APIClient {
     this._cachedHighscores = null;
     this._cacheTimestamp = 0;
     this._cacheMaxAge = 30000; // 30 seconds
+
+    // Submission deduplication
+    this._submissionInFlight = false;
+    this._currentSubmissionId = null;
   }
 
   async getHighscores(options = {}) {
@@ -169,9 +173,18 @@ class APIClient {
     }
   }
 
-  async submitScore(name, score, level, rankIndex) {
+  async submitScore(name, score, level, rankIndex, submissionId) {
+    // Guard: Prevent duplicate submissions while one is in flight
+    if (this._submissionInFlight) {
+      console.warn('[API] Submission already in flight, blocking duplicate');
+      throw new Error('Submission already in progress');
+    }
+
     try {
-      const payload = { name, score, level, rankIndex };
+      this._submissionInFlight = true;
+      this._currentSubmissionId = submissionId;
+
+      const payload = { name, score, level, rankIndex, submissionId };
       console.log('[API] Submitting payload:', payload);
 
       const response = await fetchWithTimeout(`${this.baseUrl}/api/highscores`, {
@@ -192,10 +205,18 @@ class APIClient {
 
       const result = await response.json();
       console.log('[API] Success response:', result);
+
+      // Invalidate cache to force fresh fetch after submission
+      this._cachedHighscores = null;
+      this._cacheTimestamp = 0;
+
       return result;
     } catch (error) {
       console.error('[API] Error submitting score:', error);
       throw error;
+    } finally {
+      this._submissionInFlight = false;
+      this._currentSubmissionId = null;
     }
   }
 }

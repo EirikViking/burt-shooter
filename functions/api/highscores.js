@@ -51,7 +51,7 @@ export async function onRequestGet(context) {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Cache-Control': 'public, max-age=20, stale-while-revalidate=10',
         'Pragma': 'no-cache',
         'Expires': '0'
       }
@@ -73,7 +73,7 @@ export async function onRequestPost(context) {
     const db = context.env.DB;
     const body = await context.request.json();
 
-    const { name, score, level } = body;
+    const { name, score, level, submissionId } = body;
     // NOTE: Ignore any client-provided rank or rankIndex - backend is authoritative
 
     // Validation
@@ -104,12 +104,57 @@ export async function onRequestPost(context) {
     const computedRankIndex = getRankFromScore(score);
     const hasRankIndex = await checkSchema(db);
 
+    // DEDUPLICATION: Check if submissionId already exists
+    if (submissionId) {
+      try {
+        // Check for existing submission with this ID
+        // Note: This assumes submission_id column exists. If not, this will be a no-op.
+        const existing = await db.prepare(
+          'SELECT id, score, rank_index FROM game_highscores WHERE submission_id = ? LIMIT 1'
+        ).bind(submissionId).first();
+
+        if (existing) {
+          console.log('[Highscores] Duplicate submissionId detected, returning existing entry:', submissionId);
+          return new Response(JSON.stringify({
+            success: true,
+            id: existing.id,
+            rank_index: existing.rank_index || computedRankIndex,
+            duplicate: true
+          }), {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*'
+            }
+          });
+        }
+      } catch (err) {
+        // Column might not exist yet, continue with insert
+        console.warn('[Highscores] submission_id column not found, skipping dedup check:', err.message);
+      }
+    }
+
     // Insert based on schema
     let result;
     if (hasRankIndex) {
-      result = await db.prepare(
-        'INSERT INTO game_highscores (name, score, level, rank_index, created_at) VALUES (?, ?, ?, ?, ?)'
-      ).bind(sanitizedName, score, level, computedRankIndex, new Date().toISOString()).run();
+      // Try to insert with submission_id if provided
+      if (submissionId) {
+        try {
+          result = await db.prepare(
+            'INSERT INTO game_highscores (name, score, level, rank_index, submission_id, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+          ).bind(sanitizedName, score, level, computedRankIndex, submissionId, new Date().toISOString()).run();
+        } catch (err) {
+          // Fallback if submission_id column doesn't exist
+          console.warn('[Highscores] submission_id insert failed, falling back:', err.message);
+          result = await db.prepare(
+            'INSERT INTO game_highscores (name, score, level, rank_index, created_at) VALUES (?, ?, ?, ?, ?)'
+          ).bind(sanitizedName, score, level, computedRankIndex, new Date().toISOString()).run();
+        }
+      } else {
+        result = await db.prepare(
+          'INSERT INTO game_highscores (name, score, level, rank_index, created_at) VALUES (?, ?, ?, ?, ?)'
+        ).bind(sanitizedName, score, level, computedRankIndex, new Date().toISOString()).run();
+      }
     } else {
       result = await db.prepare(
         'INSERT INTO game_highscores (name, score, level, created_at) VALUES (?, ?, ?, ?)'

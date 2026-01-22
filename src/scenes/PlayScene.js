@@ -865,27 +865,27 @@ export class PlayScene {
     effectContainer.x = width / 2;
     effectContainer.y = height * 0.35;
     effectContainer.alpha = 0;
-    effectContainer.scale.set(0.3);
+    effectContainer.scale.set(0.18); // Reduced by 40% from 0.3
     effectContainer.zIndex = 9999;
     this.uiContainer.addChild(effectContainer);
 
-    // Background panel with glow (REDUCED size for punchier feel)
+    // Background panel with glow (REDUCED by 40% for less screen dominance)
     const panel = new PIXI.Graphics();
-    panel.roundRect(-200, -65, 400, 130, 10);
+    panel.roundRect(-120, -39, 240, 78, 6); // 40% smaller
     panel.fill({ color: 0x000000, alpha: 0.9 });
     panel.stroke({ color: 0x00ff00, width: 3 });
     effectContainer.addChild(panel);
 
     // Inner glow
     const glow = new PIXI.Graphics();
-    glow.roundRect(-196, -61, 392, 122, 8);
+    glow.roundRect(-118, -37, 235, 73, 5); // 40% smaller
     glow.stroke({ color: 0x00ff00, width: 2, alpha: 0.5 });
     effectContainer.addChild(glow);
 
-    // Main label (WAVE CLEARED!) - REDUCED for less dominance
+    // Main label (WAVE CLEARED!) - REDUCED by 40%
     const labelText = new PIXI.Text(label, {
       fontFamily: 'Courier New',
-      fontSize: 32,
+      fontSize: 19, // 40% smaller from 32
       fill: '#00ff00',
       stroke: '#004400',
       strokeThickness: 5,
@@ -898,10 +898,10 @@ export class PlayScene {
     labelText.y = -25;
     effectContainer.addChild(labelText);
 
-    // Bonus amount (readable but not overwhelming)
+    // Bonus amount (readable but not overwhelming, 40% smaller)
     const bonusText = new PIXI.Text(`+${bonusAmount}`, {
       fontFamily: 'Courier New',
-      fontSize: 42,
+      fontSize: 25, // 40% smaller from 42
       fill: '#ffff00',
       stroke: '#000000',
       strokeThickness: 6,
@@ -2505,7 +2505,7 @@ export class PlayScene {
 
     this.uiOverlay.addChild(card);
     this.freezeTimerMs = 250;
-    AudioManager.playSfx('computerNoise', { force: true, volume: 0.3 }); // Subtle sound instead of loud ui_open
+    AudioManager.play('menuSelect'); // Calmer sound for boss intro (removed annoying computerNoise)
 
     let elapsed = 0;
     const duration = 1400;

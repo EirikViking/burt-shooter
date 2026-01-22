@@ -4,6 +4,7 @@ import { API } from '../api/API.js';
 import { extendGameOverTexts, getGameOverComment } from '../text/phrasePool.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
+import { generateUUID } from '../utils/uuid.js';
 
 const ENTRY_PROMPT_DESKTOP = 'TRYKK ENTER FOR Å LOGGE SCORE';
 const ENTRY_PROMPT_MOBILE = 'TRYKK HER FOR Å LOGGE SCORE';
@@ -38,6 +39,8 @@ export class GameOverScene {
     this.finalLevel = 0;
     this.cachedHighscores = null;
     this.isQualified = false;
+    // Submission deduplication
+    this.submissionId = null;
   }
 
   init() {
@@ -50,6 +53,10 @@ export class GameOverScene {
     // FREEZE final score and level immediately
     this.finalScore = Number(this.game.score) || 0;
     this.finalLevel = Number(this.game.level) || 0;
+
+    // Generate unique submissionId for this run (reused across retries)
+    this.submissionId = generateUUID();
+    console.log('[GameOver] Generated submissionId:', this.submissionId);
 
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
@@ -626,9 +633,9 @@ export class GameOverScene {
         setTimeout(() => reject(new Error('Timeout')), 5000)
       );
 
-      // Attempt API call (Try to pass rank if API supports it, otherwise it ignores extra args usually)
+      // Attempt API call with submissionId for deduplication
       await Promise.race([
-        API.submitScore(this.nameInput, this.finalScore, this.finalLevel, this.game.rankIndex),
+        API.submitScore(this.nameInput, this.finalScore, this.finalLevel, this.game.rankIndex, this.submissionId),
         timeoutPromise
       ]);
 
