@@ -2389,9 +2389,9 @@ export class PlayScene {
   }
 
   spawnEasterEgg() {
-    // Legendary Flyby - Eirik & Kurt
+    // Legendary Flyby - Variety of characters
     // Use one of the photos
-    const photos = ['eirik_kurt2', 'burtelurt', 'eriikviking'];
+    const photos = ['eirik_kurt2', 'burtelurt', 'eriikviking', 'anja', 'morten_whale', 'donaldtru', 'wieik_shorts', 'kurt2', 'eirik1'];
     const picked = photos[Math.floor(Math.random() * photos.length)];
     const tex = GameAssets.getPhoto(picked);
 
@@ -2463,13 +2463,20 @@ export class PlayScene {
 
     // Lore: Map photo keys to character names from Burt's universe
     const loreLookup = {
-      'kurt2': 'KURT EDGAR - Havnemann fra Stokmarknes',
-      'eirik1': 'EIRIK - Legendarisk Pilot',
-      'eirik_briller': 'EIRIK - Nattevaktkongen',
-      'eirik_kurt2': 'EIRIK & KURT - Melbu-Gjengen',
-      'eirikanja': 'EIRIK & ANJA - Havneduoen'
+      'kurt2': { name: 'KURT EDGAR', subtitle: 'Havnemann fra Stokmarknes', detail: 'Veteran av tusen øl-slag' },
+      'eirik1': { name: 'EIRIK', subtitle: 'Legendarisk Pilot', detail: 'Født i cockpiten' },
+      'eirik_briller': { name: 'EIRIK', subtitle: 'Nattevaktkongen', detail: 'Skjelven, men uredd' },
+      'eirik_kurt2': { name: 'EIRIK & KURT', subtitle: 'Melbu-Gjengen', detail: 'Dobbel trøbbel!' },
+      'eirikanja': { name: 'EIRIK & ANJA', subtitle: 'Havneduoen', detail: 'Gutta på Stokken' },
+      'burtelurt': { name: 'BURT & ELVIS', subtitle: 'Ølgutta', detail: 'Bedre sammen!' },
+      'eriikviking': { name: 'EIRIK VIKING', subtitle: 'Nordmann i hjertet', detail: 'Iskald og ustoppelig' },
+      'anja': { name: 'ANJA', subtitle: 'Harbor Queen', detail: 'Sjefinn på brygga' },
+      'morten_whale': { name: 'MORTEN', subtitle: 'Hvaljeger', detail: 'Kjenner havet' },
+      'donaldtru': { name: 'DONALD', subtitle: 'Amerikansk Venn', detail: 'Over Atlanteren' },
+      'wieik_shorts': { name: 'WIEIK', subtitle: 'Sommerbukse-Kongen', detail: 'Alltid korte bukser' }
     };
-    const characterName = loreLookup[pickedKey] || 'UKJENT AGENT';
+    const characterData = loreLookup[pickedKey] || { name: 'UKJENT AGENT', subtitle: 'Mystisk fremtid', detail: '???' };
+    const characterName = characterData.name;
 
     const poster = new PIXI.Container();
     poster.name = 'ui_wanted_poster';
@@ -2511,15 +2518,26 @@ export class PlayScene {
     topText.y = -215;
     poster.addChild(topText);
 
-    const subText = new PIXI.Text(characterName, {
+    const subText = new PIXI.Text(characterData.subtitle, {
       fontFamily: 'Courier New',
-      fontSize: 12,
-      fill: '#333333',
+      fontSize: 13,
+      fill: '#555555',
       fontWeight: 'bold'
     });
     subText.anchor.set(0.5);
     subText.y = -190;
     poster.addChild(subText);
+
+    // Additional detail text for context
+    const detailText = new PIXI.Text(characterData.detail, {
+      fontFamily: 'Courier New',
+      fontSize: 11,
+      fill: '#666666',
+      fontStyle: 'italic'
+    });
+    detailText.anchor.set(0.5);
+    detailText.y = -170;
+    poster.addChild(detailText);
 
     const bottomText = new PIXI.Text(caption, {
       fontFamily: 'Courier New',
@@ -2539,10 +2557,10 @@ export class PlayScene {
     this.uiOverlay.addChild(poster);
     console.log('[UI] wanted poster shown uiOnly=true');
 
-    // Animate Pop
-    poster.scale.set(0.16);
+    // Animate Pop (30% larger)
+    poster.scale.set(0.208); // Increased from 0.16 to 0.208 (30% larger)
     let elapsed = 0;
-    const fadeDelay = 1200;
+    const fadeDelay = 1500; // Display longer for readability
     const fadeDuration = 600;
     const animate = (delta) => {
       elapsed += delta.deltaTime * 16.67;
