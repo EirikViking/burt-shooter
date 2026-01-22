@@ -1834,7 +1834,7 @@ export class PlayScene {
           this.particleManager.createExplosion(this.player.x, this.player.y - 40, 0xffaa00);
         }
         if (this.screenShake) {
-          this.screenShake.shake('medium');
+          this.screenShake.shake(6, 15); // Medium shake: 6 intensity, 15 duration
         }
       }
     }
