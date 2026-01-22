@@ -704,7 +704,7 @@ export class PlayScene {
     if (this._rankUpAnimating) return;
     this._rankUpAnimating = true;
     this._showRankUpCount++;
-    this.centerToastLockUntil = Date.now() + 2500;
+    this.centerToastLockUntil = Date.now() + 8000; // 8 second cooldown to prevent spam
 
     // TASK 4: Enhanced rank up animation with rank sprite and title
     const rank = (newRank !== undefined) ? newRank : this.game.rankIndex;
@@ -736,7 +736,7 @@ export class PlayScene {
     // Release Lock after animation
     setTimeout(() => {
       this._rankUpAnimating = false;
-    }, 2500);
+    }, 8000); // Match cooldown duration
   }
 
   // TASK 4: Create polished rank up animation
@@ -752,33 +752,33 @@ export class PlayScene {
     container.zIndex = 10000;
     this.uiContainer.addChild(container);
 
-    // Background panel
+    // Background panel (enlarged for bigger portrait and lore text)
     const panel = new PIXI.Graphics();
-    panel.roundRect(-200, -80, 400, 160, 10);
+    panel.roundRect(-220, -110, 440, 220, 10);
     panel.fill({ color: 0x000000, alpha: 0.85 });
     panel.stroke({ color: 0xffff00, width: 3 });
     container.addChild(panel);
 
     // Inner glow
     const glow = new PIXI.Graphics();
-    glow.roundRect(-195, -75, 390, 150, 8);
+    glow.roundRect(-215, -105, 430, 210, 8);
     glow.stroke({ color: 0xffaa00, width: 1, alpha: 0.6 });
     container.addChild(glow);
 
-    // Rank sprite (if available)
+    // Rank sprite (50% larger for better visibility)
     const rankTexture = this.game.getRankTexture ? this.game.getRankTexture(rank) : null;
     if (rankTexture) {
       const rankSprite = new PIXI.Sprite(rankTexture);
       rankSprite.anchor.set(0.5);
-      rankSprite.scale.set(0.6);
-      rankSprite.y = -20;
+      rankSprite.scale.set(0.9); // Increased from 0.6 to 0.9 (50% larger)
+      rankSprite.y = -35;
       container.addChild(rankSprite);
     }
 
-    // "RANK UP!" text
-    const rankUpText = new PIXI.Text('RANK UP!', {
+    // "RANK UP!" trigger reason (clear and prominent)
+    const rankUpText = new PIXI.Text('⬆ RANK UP! ⬆', {
       fontFamily: 'Courier New',
-      fontSize: 24,
+      fontSize: 26,
       fill: '#ffff00',
       stroke: '#000000',
       strokeThickness: 4
@@ -791,15 +791,31 @@ export class PlayScene {
     if (rankTitle) {
       const titleText = new PIXI.Text(rankTitle.toUpperCase(), {
         fontFamily: 'Courier New',
-        fontSize: 20,
+        fontSize: 22,
         fill: '#00ffff',
         stroke: '#000000',
         strokeThickness: 3
       });
       titleText.anchor.set(0.5);
-      titleText.y = rankTexture ? 55 : 0;
+      titleText.y = rankTexture ? 58 : 0;
       container.addChild(titleText);
     }
+
+    // Funny lore text from lore system
+    const loreText = getAchievementPopup();
+    const lore = new PIXI.Text(loreText, {
+      fontFamily: 'Courier New',
+      fontSize: 14,
+      fill: '#aaaaaa',
+      stroke: '#000000',
+      strokeThickness: 2,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: 380
+    });
+    lore.anchor.set(0.5);
+    lore.y = rankTexture ? 85 : 30;
+    container.addChild(lore);
 
     // Animation sequence: ease in, hold, ease out
     let elapsed = 0;
@@ -834,6 +850,139 @@ export class PlayScene {
         if (container.parent) {
           this.uiContainer.removeChild(container);
         }
+      }
+    };
+
+    this.game.app.ticker.add(animate);
+  }
+
+  // Wave bonus WOW effect with premium arcade feel
+  showWaveBonusEffect(bonusAmount, label = 'WAVE CLEARED!') {
+    const { width, height } = this.game.app.screen;
+
+    // Create dedicated isolated effect container
+    const effectContainer = new PIXI.Container();
+    effectContainer.x = width / 2;
+    effectContainer.y = height * 0.35;
+    effectContainer.alpha = 0;
+    effectContainer.scale.set(0.3);
+    effectContainer.zIndex = 9999;
+    this.uiContainer.addChild(effectContainer);
+
+    // Background panel with glow
+    const panel = new PIXI.Graphics();
+    panel.roundRect(-280, -90, 560, 180, 12);
+    panel.fill({ color: 0x000000, alpha: 0.9 });
+    panel.stroke({ color: 0x00ff00, width: 4 });
+    effectContainer.addChild(panel);
+
+    // Inner glow
+    const glow = new PIXI.Graphics();
+    glow.roundRect(-275, -85, 550, 170, 10);
+    glow.stroke({ color: 0x00ff00, width: 2, alpha: 0.5 });
+    effectContainer.addChild(glow);
+
+    // Main label (WAVE CLEARED!)
+    const labelText = new PIXI.Text(label, {
+      fontFamily: 'Courier New',
+      fontSize: 42,
+      fill: '#00ff00',
+      stroke: '#004400',
+      strokeThickness: 6,
+      dropShadow: true,
+      dropShadowColor: '#00ff00',
+      dropShadowBlur: 8,
+      dropShadowDistance: 2
+    });
+    labelText.anchor.set(0.5);
+    labelText.y = -30;
+    effectContainer.addChild(labelText);
+
+    // Bonus amount (big and prominent)
+    const bonusText = new PIXI.Text(`+${bonusAmount}`, {
+      fontFamily: 'Courier New',
+      fontSize: 56,
+      fill: '#ffff00',
+      stroke: '#000000',
+      strokeThickness: 7,
+      dropShadow: true,
+      dropShadowColor: '#ffff00',
+      dropShadowBlur: 10,
+      dropShadowDistance: 3
+    });
+    bonusText.anchor.set(0.5);
+    bonusText.y = 35;
+    effectContainer.addChild(bonusText);
+
+    // Isolated flash effect (contained, not global stage)
+    const flash = new PIXI.Graphics();
+    flash.rect(-width / 2, -height / 2, width, height);
+    flash.fill({ color: 0x00ff00, alpha: 0 });
+    effectContainer.addChild(flash);
+
+    // Particle burst at center screen
+    if (this.particleManager) {
+      this.particleManager.createExplosion(width / 2, height * 0.35, 0x00ff00);
+      this.particleManager.createExplosion(width / 2 - 50, height * 0.35, 0xffff00);
+      this.particleManager.createExplosion(width / 2 + 50, height * 0.35, 0xffff00);
+    }
+
+    // Screen shake isolated to game container (NOT stage)
+    if (this.screenShake) {
+      this.screenShake.shake(8, 20); // Strong but controlled shake
+    }
+
+    // Satisfying sound (NOT the annoying blip blop)
+    AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
+
+    // Animation sequence: explosive entry, hold, smooth exit
+    let elapsed = 0;
+    const phases = {
+      entry: 400,    // Fast explosive entry
+      hold: 1800,    // Hold for readability
+      exit: 600,     // Smooth fade out
+      flashPeak: 150 // Flash duration
+    };
+    const totalDuration = phases.entry + phases.hold + phases.exit;
+
+    const animate = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+
+      if (elapsed < phases.entry) {
+        // Explosive entry: scale up with ease-out elastic
+        const t = elapsed / phases.entry;
+        const eased = 1 - Math.pow(1 - t, 4); // Ease out quart
+        effectContainer.alpha = Math.min(1, t * 2); // Fade in fast
+        effectContainer.scale.set(0.3 + eased * 0.8); // Scale to 1.1 (overshoot)
+
+        // Flash effect (isolated, peaks early then fades)
+        if (elapsed < phases.flashPeak) {
+          const flashT = elapsed / phases.flashPeak;
+          flash.alpha = Math.sin(flashT * Math.PI) * 0.3; // Peak at 0.3 alpha
+        } else {
+          flash.alpha = 0;
+        }
+      } else if (elapsed < phases.entry + phases.hold) {
+        // Hold: stable with subtle pulse
+        const holdT = (elapsed - phases.entry) / phases.hold;
+        const pulse = Math.sin(holdT * Math.PI * 3) * 0.03; // Gentle pulse
+        effectContainer.alpha = 1;
+        effectContainer.scale.set(1 + pulse);
+        flash.alpha = 0;
+      } else if (elapsed < totalDuration) {
+        // Exit: smooth fade out
+        const t = (elapsed - phases.entry - phases.hold) / phases.exit;
+        effectContainer.alpha = 1 - t;
+        effectContainer.scale.set(1 - t * 0.2); // Shrink slightly
+        flash.alpha = 0;
+      } else {
+        // Complete cleanup - remove ticker and container
+        this.game.app.ticker.remove(animate);
+        if (effectContainer.parent) {
+          this.uiContainer.removeChild(effectContainer);
+        }
+        // Ensure flash is cleaned up
+        flash.destroy();
       }
     };
 
@@ -2325,7 +2474,7 @@ export class PlayScene {
 
     this.uiOverlay.addChild(card);
     this.freezeTimerMs = 250;
-    AudioManager.playSfx('ui_open', { force: true, volume: 1.0 });
+    AudioManager.playSfx('computerNoise', { force: true, volume: 0.3 }); // Subtle sound instead of loud ui_open
 
     let elapsed = 0;
     const duration = 1400;

@@ -644,8 +644,7 @@ export class EnemyManager {
       const bonus = 3000;
       this.game.addScore(bonus);
       if (this.game.scenes.play) {
-        this.game.scenes.play.showToast("BEER CAN CHALLENGE KLART", { fontSize: 24, fill: '#ffff00', y: 150, duration: 2500 });
-        this.game.scenes.play.showToast("BONUS 3000", { fontSize: 32, fill: '#00ff00', y: 190, duration: 2500 });
+        this.game.scenes.play.showWaveBonusEffect(bonus, 'BEER CAN CHALLENGE KLART!');
       }
       AudioManager.playVoice('mission_complete');
     } else {
@@ -653,7 +652,7 @@ export class EnemyManager {
       const bonus = 500 * this.currentWaveIndex;
       this.game.addScore(bonus);
       if (this.game.scenes.play) {
-        this.game.scenes.play.showToast(`WAVE CLEARED! +${bonus}`, { fontSize: 30, fill: '#00ff00' });
+        this.game.scenes.play.showWaveBonusEffect(bonus, 'WAVE CLEARED!');
       }
       AudioManager.playVoice('wave_clear');
     }

@@ -347,7 +347,7 @@ export class MenuScene {
     this.highscoreBtn.on('pointerdown', () => {
       try {
         AudioManager.init();
-        AudioManager.playSfx('ui_open');
+        // Removed annoying ui_open sound - no audio needed for viewing leaderboard
         AudioManager.playMusicContext('scoreboard');
         this.game.showHighscores();
       } catch (e) {

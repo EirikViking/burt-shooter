@@ -173,7 +173,7 @@ export class GameOverScene {
       console.log(`[GameOver] Qualification Check: Score ${this.finalScore} vs 10th ${this.cachedHighscores[9]?.score || 0} -> ${this.isQualified}`);
     }).catch(e => {
       console.warn('Failed to pre-fetch scores', e);
-      this.isQualified = true; // Fallback to allow entry
+      this.isQualified = false; // Default to NOT prompting on fetch failure
     });
   }
 
