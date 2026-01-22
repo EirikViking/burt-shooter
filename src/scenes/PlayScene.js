@@ -2558,7 +2558,9 @@ export class PlayScene {
     console.log('[UI] wanted poster shown uiOnly=true');
 
     // Animate Pop (30% larger)
-    poster.scale.set(0.208); // Increased from 0.16 to 0.208 (30% larger)
+    const baseScale = 0.208; // 30% larger than original 0.16
+    const popScale = 0.273; // Pop to 0.273 for bounce effect
+    poster.scale.set(baseScale);
     let elapsed = 0;
     const fadeDelay = 1500; // Display longer for readability
     const fadeDuration = 600;
@@ -2566,7 +2568,7 @@ export class PlayScene {
       elapsed += delta.deltaTime * 16.67;
       if (elapsed < 200) {
         const t = elapsed / 200;
-        poster.scale.set(0.16 + t * 0.05);
+        poster.scale.set(baseScale + t * (popScale - baseScale)); // Animate from 0.208 to 0.273
       } else if (elapsed > fadeDelay) {
         const t = Math.min(1, (elapsed - fadeDelay) / fadeDuration);
         poster.alpha = 1 - t;

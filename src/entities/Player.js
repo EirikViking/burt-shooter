@@ -862,14 +862,16 @@ export class Player {
       if (sprite instanceof PIXI.Sprite) {
         sprite.anchor.set(0.5);
         sprite.scale.set(0.35);
+        sprite.tint = 0x66ccff; // Cyan tint for distinction
       } else {
         sprite.circle(0, 0, 6);
-        sprite.fill(0x66ccff);
+        sprite.fill({ color: 0x66ccff, alpha: 1 }); // Fixed: fill requires object
       }
       this.sprite.addChild(sprite);
       this.drones.push(sprite);
     }
     this.dronesActive = true;
+    console.log('[Player] Drones created: count=2 texture=' + (texture ? 'yes' : 'fallback'));
   }
 
   updateDrones(deltaSeconds) {
