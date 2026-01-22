@@ -846,7 +846,20 @@ export class Player {
 
     if (this.dronesActive && this.drones.length) {
       this.drones.forEach((drone) => {
-        const bullet = new Bullet(drone.x, drone.y - 10, 0, -this.bulletSpeed, Math.max(1, Math.round(this.bulletDamage * 0.7)), 0x66ccff, true);
+        // Convert drone local position to world position
+        const worldX = this.x + drone.x;
+        const worldY = this.y + drone.y - 10;
+
+        // Cyan bullet with distinct visuals
+        const bullet = new Bullet(
+          worldX,
+          worldY,
+          0,
+          -this.bulletSpeed,
+          Math.max(1, Math.round(this.bulletDamage * 0.7)),
+          this.bulletPierce,
+          { color: 'Blue', index: 7 } // Cyan-ish bullet
+        );
         bullets.push(bullet);
       });
     }
@@ -857,32 +870,69 @@ export class Player {
   createDrones() {
     this.clearDrones();
     const texture = this.shipSprite?.texture;
+
     for (let i = 0; i < 2; i++) {
-      const sprite = texture ? new PIXI.Sprite(texture) : new PIXI.Graphics();
-      if (sprite instanceof PIXI.Sprite) {
-        sprite.anchor.set(0.5);
-        sprite.scale.set(0.35);
-        sprite.tint = 0x66ccff; // Cyan tint for distinction
+      // Create a container for each drone (sprite + glow effect)
+      const droneContainer = new PIXI.Container();
+
+      // Add glow ring for visibility
+      const glow = new PIXI.Graphics();
+      glow.circle(0, 0, 16);
+      glow.fill({ color: 0x66ccff, alpha: 0.3 });
+      glow.circle(0, 0, 12);
+      glow.stroke({ color: 0x00ffff, width: 2, alpha: 0.8 });
+      droneContainer.addChild(glow);
+
+      // Add the ship sprite
+      if (texture && GameAssets.isValidTexture(texture)) {
+        const droneSprite = new PIXI.Sprite(texture);
+        droneSprite.anchor.set(0.5);
+        droneSprite.scale.set(0.45); // Larger than before (was 0.35)
+        droneSprite.tint = 0x66ccff; // Cyan tint
+        droneContainer.addChild(droneSprite);
       } else {
-        sprite.circle(0, 0, 6);
-        sprite.fill({ color: 0x66ccff, alpha: 1 }); // Fixed: fill requires object
+        // Fallback graphics
+        const fallback = new PIXI.Graphics();
+        fallback.circle(0, 0, 8);
+        fallback.fill({ color: 0x66ccff, alpha: 1 });
+        droneContainer.addChild(fallback);
       }
-      this.sprite.addChild(sprite);
-      this.drones.push(sprite);
+
+      // Ensure visibility
+      droneContainer.visible = true;
+      droneContainer.alpha = 1;
+
+      // Add to player sprite container
+      this.sprite.addChild(droneContainer);
+      this.drones.push(droneContainer);
     }
+
     this.dronesActive = true;
     console.log('[Player] Drones created: count=2 texture=' + (texture ? 'yes' : 'fallback'));
+    console.log('[Player] Drone containers added to sprite, alpha=' + this.sprite.alpha);
   }
 
   updateDrones(deltaSeconds) {
     if (!this.dronesActive || this.drones.length === 0) return;
     const t = Date.now() * 0.002;
-    const offset = 28;
+    const offset = 32; // Increased from 28 for better visibility
+
     this.drones.forEach((drone, i) => {
       const side = i === 0 ? -1 : 1;
-      drone.x = side * (offset + Math.sin(t + i) * 6);
-      drone.y = 8 + Math.cos(t + i) * 4;
+      drone.x = side * (offset + Math.sin(t + i) * 8);
+      drone.y = 10 + Math.cos(t + i) * 6;
+
+      // Rotate drone sprite slightly
       if (drone.rotation !== undefined) drone.rotation = side * 0.1;
+
+      // Pulse the glow effect for visibility
+      if (drone.children && drone.children[0]) {
+        drone.children[0].alpha = 0.5 + Math.sin(t * 3 + i) * 0.3;
+      }
+
+      // Ensure visibility every frame
+      drone.visible = true;
+      drone.alpha = 1;
     });
   }
 

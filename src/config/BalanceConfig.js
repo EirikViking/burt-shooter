@@ -50,8 +50,8 @@ export const BalanceConfig = {
         waveEnemyMax: 18, // Cap enemies per wave
         waveDelayMs: 2400, // Slower pacing between waves
 
-        bossBaseHealth: 52, // Lower boss baseline HP
-        bossHealthPerLevel: 18, // Gentler boss scaling
+        bossBaseHealth: 200, // Significantly increased boss baseline HP
+        bossHealthPerLevel: 120, // Much steeper boss scaling for satisfying boss fights
         bossShootDelayBase: 40, // Slower boss firing
         bossShootDelayPhase2: 26,
         bossShootDelayPhase3: 20,

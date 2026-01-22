@@ -113,6 +113,49 @@ export class ShipSelectScene {
 
     // Setup input
     this.setupInput();
+
+    // Continuous animation ticker for glow effects
+    this.selectionAnimTicker = () => {
+      const centerShip = this.shipCards[this.selectedIndex];
+      if (!centerShip || this.animating) return;
+
+      const now = Date.now();
+      const pulse = Math.sin(now * 0.004) * 0.5 + 0.5;
+
+      // Animate center ship effects continuously
+      if (centerShip.outerRing) {
+        centerShip.outerRing.alpha = pulse * 0.35;
+        centerShip.outerRing.scale.set(1 + pulse * 0.1);
+      }
+
+      if (centerShip.midRing) {
+        centerShip.midRing.alpha = pulse * 0.2;
+      }
+
+      if (centerShip.innerGlow) {
+        centerShip.innerGlow.alpha = pulse * 0.12;
+      }
+
+      if (centerShip.lightRays) {
+        centerShip.lightRays.alpha = pulse * 0.5;
+        centerShip.lightRays.rotation += 0.005;
+        centerShip.lightRays.children.forEach((ray, idx) => {
+          ray.alpha = (Math.sin(now * 0.003 + idx) * 0.5 + 0.5);
+        });
+      }
+
+      // Holographic scan line continuous sweep
+      if (centerShip.scanLine) {
+        const scanProgress = ((now * 0.5) % 1000) / 1000;
+        centerShip.scanLine.y = -130 + scanProgress * 160;
+        centerShip.scanLine.alpha = (1 - Math.abs(scanProgress - 0.5) * 2) * 0.5;
+      }
+
+      // Update any lingering particles
+      this.updateParticles(centerShip, now);
+    };
+
+    this.game.app.ticker.add(this.selectionAnimTicker);
   }
 
   createAnimatedBackground(width, height) {
@@ -205,6 +248,47 @@ export class ShipSelectScene {
     const container = new PIXI.Container();
     container.shipIndex = index;
 
+    // DRAMATIC MULTI-LAYER GLOW SYSTEM
+    const glowLayers = new PIXI.Container();
+
+    // Outer pulse ring (large)
+    const outerRing = new PIXI.Graphics();
+    outerRing.circle(0, -50, 140);
+    outerRing.stroke({ color: 0x00ffff, width: 3, alpha: 0 });
+    glowLayers.addChild(outerRing);
+    container.outerRing = outerRing;
+
+    // Mid glow ring
+    const midRing = new PIXI.Graphics();
+    midRing.circle(0, -50, 110);
+    midRing.fill({ color: 0x00ff00, alpha: 0 });
+    glowLayers.addChild(midRing);
+    container.midRing = midRing;
+
+    // Inner intense glow
+    const innerGlow = new PIXI.Graphics();
+    innerGlow.circle(0, -50, 85);
+    innerGlow.fill({ color: 0xffffff, alpha: 0 });
+    glowLayers.addChild(innerGlow);
+    container.innerGlow = innerGlow;
+
+    container.addChild(glowLayers);
+    container.glowLayers = glowLayers;
+
+    // Light rays container
+    const lightRays = new PIXI.Container();
+    lightRays.position.set(0, -50);
+    for (let i = 0; i < 8; i++) {
+      const ray = new PIXI.Graphics();
+      const angle = (Math.PI * 2 * i) / 8;
+      ray.moveTo(0, 0);
+      ray.lineTo(Math.cos(angle) * 120, Math.sin(angle) * 120);
+      ray.stroke({ color: 0x00ff00, width: 2, alpha: 0 });
+      lightRays.addChild(ray);
+    }
+    container.addChild(lightRays);
+    container.lightRays = lightRays;
+
     // Ship sprite (large for better visibility)
     const shipTexture = GameAssets.getRankShipTexture(ship.textureIndex);
     if (shipTexture && shipTexture.width > 0) {
@@ -220,11 +304,21 @@ export class ShipSelectScene {
       container.sprite = sprite;
     }
 
-    // Glow effect for center ship (will be shown/hidden based on selection)
+    // Holographic scan line effect
+    const scanLine = new PIXI.Graphics();
+    scanLine.rect(-80, -50, 160, 3);
+    scanLine.fill({ color: 0x00ffff, alpha: 0 });
+    container.addChild(scanLine);
+    container.scanLine = scanLine;
+
+    // Particle container for selection effects
+    container.particles = [];
+
+    // Legacy glow for compatibility
     const glow = new PIXI.Graphics();
     glow.circle(0, -50, 100);
     glow.fill({ color: 0x00ff00, alpha: 0 });
-    container.addChildAt(glow, 0);
+    container.addChild(glow);
     container.glowEffect = glow;
 
     // Ship name below sprite - LARGER and more readable
@@ -283,7 +377,7 @@ export class ShipSelectScene {
   }
 
   updateCarouselPositions(animate = true) {
-    const duration = animate ? 300 : 0; // Animation duration in ms
+    const duration = animate ? 500 : 0; // Longer animation for more drama
 
     this.shipCards.forEach((shipContainer, i) => {
       const offset = i - this.selectedIndex;
@@ -292,11 +386,11 @@ export class ShipSelectScene {
       const targetScale = isCenter ? this.centerScale : this.sideScale;
       const targetAlpha = isCenter ? 1.0 : this.sideAlpha;
 
-      // Slight tilt for side ships
-      const targetRotation = isCenter ? 0 : (offset < 0 ? -0.05 : 0.05);
+      // More dramatic tilt for side ships
+      const targetRotation = isCenter ? 0 : (offset < 0 ? -0.15 : 0.15);
 
       if (duration > 0 && !this.animating) {
-        // Smooth animation with bounce
+        // DRAMATIC animation with elastic bounce
         this.animating = true;
         const startX = shipContainer.x;
         const startScale = shipContainer.scale.x;
@@ -304,25 +398,84 @@ export class ShipSelectScene {
         const startRotation = shipContainer.rotation;
         const startTime = Date.now();
 
+        // Trigger particle burst for newly selected ship
+        if (isCenter && animate) {
+          this.createSelectionParticles(shipContainer);
+          // Whoosh sound effect
+          AudioManager.playSfx('forceField', { volume: 0.3, force: false });
+        }
+
         const animate = () => {
           const elapsed = Date.now() - startTime;
           const t = Math.min(1, elapsed / duration);
-          const eased = 1 - Math.pow(1 - t, 3); // Ease out cubic
+
+          // ELASTIC EASING for more bounce
+          const eased = t < 0.5
+            ? 0.5 * Math.pow(2 * t, 3)
+            : 1 - 0.5 * Math.pow(-2 * t + 2, 3);
+
+          // Add overshoot for center ship selection
+          const bounceT = isCenter && t > 0.7
+            ? t + Math.sin((t - 0.7) * Math.PI * 4) * 0.03 * (1 - t)
+            : t;
 
           shipContainer.x = startX + (targetX - startX) * eased;
-          shipContainer.scale.set(startScale + (targetScale - startScale) * eased);
+          shipContainer.scale.set(startScale + (targetScale - startScale) * bounceT);
           shipContainer.alpha = startAlpha + (targetAlpha - startAlpha) * eased;
           shipContainer.rotation = startRotation + (targetRotation - startRotation) * eased;
 
-          // Animate glow for center ship
-          if (shipContainer.glowEffect) {
-            if (isCenter) {
-              const glowAlpha = Math.sin(elapsed * 0.005) * 0.15 + 0.15;
-              shipContainer.glowEffect.alpha = glowAlpha * eased;
-            } else {
-              shipContainer.glowEffect.alpha = 0;
+          // DRAMATIC multi-layer glow animation
+          if (isCenter) {
+            const pulse = Math.sin(elapsed * 0.008) * 0.5 + 0.5;
+
+            // Outer ring pulse
+            if (shipContainer.outerRing) {
+              shipContainer.outerRing.alpha = pulse * 0.4 * eased;
+              shipContainer.outerRing.scale.set(1 + pulse * 0.15);
             }
+
+            // Mid ring glow
+            if (shipContainer.midRing) {
+              shipContainer.midRing.alpha = pulse * 0.25 * eased;
+            }
+
+            // Inner bright core
+            if (shipContainer.innerGlow) {
+              shipContainer.innerGlow.alpha = pulse * 0.15 * eased;
+            }
+
+            // Light rays rotation
+            if (shipContainer.lightRays) {
+              shipContainer.lightRays.alpha = pulse * 0.6 * eased;
+              shipContainer.lightRays.rotation += 0.02;
+              shipContainer.lightRays.children.forEach((ray, idx) => {
+                ray.alpha = (Math.sin(elapsed * 0.01 + idx) * 0.5 + 0.5) * eased;
+              });
+            }
+
+            // Holographic scan line sweep
+            if (shipContainer.scanLine) {
+              const scanProgress = (elapsed % 1000) / 1000;
+              shipContainer.scanLine.y = -130 + scanProgress * 160;
+              shipContainer.scanLine.alpha = (1 - Math.abs(scanProgress - 0.5) * 2) * 0.6 * eased;
+            }
+
+            // Legacy glow
+            if (shipContainer.glowEffect) {
+              shipContainer.glowEffect.alpha = pulse * 0.2 * eased;
+            }
+          } else {
+            // Hide all effects for non-center ships
+            if (shipContainer.outerRing) shipContainer.outerRing.alpha = 0;
+            if (shipContainer.midRing) shipContainer.midRing.alpha = 0;
+            if (shipContainer.innerGlow) shipContainer.innerGlow.alpha = 0;
+            if (shipContainer.lightRays) shipContainer.lightRays.alpha = 0;
+            if (shipContainer.scanLine) shipContainer.scanLine.alpha = 0;
+            if (shipContainer.glowEffect) shipContainer.glowEffect.alpha = 0;
           }
+
+          // Animate particles
+          this.updateParticles(shipContainer, elapsed);
 
           if (t < 1) {
             requestAnimationFrame(animate);
@@ -339,10 +492,13 @@ export class ShipSelectScene {
         shipContainer.alpha = targetAlpha;
         shipContainer.rotation = targetRotation;
 
-        // Immediate glow state
-        if (shipContainer.glowEffect) {
-          shipContainer.glowEffect.alpha = isCenter ? 0.15 : 0;
-        }
+        // Immediate glow state - hide all effects for non-center
+        if (shipContainer.outerRing) shipContainer.outerRing.alpha = 0;
+        if (shipContainer.midRing) shipContainer.midRing.alpha = 0;
+        if (shipContainer.innerGlow) shipContainer.innerGlow.alpha = 0;
+        if (shipContainer.lightRays) shipContainer.lightRays.alpha = 0;
+        if (shipContainer.scanLine) shipContainer.scanLine.alpha = 0;
+        if (shipContainer.glowEffect) shipContainer.glowEffect.alpha = isCenter ? 0.15 : 0;
       }
 
       // Hide/show text based on whether it's center
@@ -416,13 +572,57 @@ export class ShipSelectScene {
     this.container.addChild(this.startButton);
   }
 
+  createSelectionParticles(shipContainer) {
+    // Create burst of particles when ship is selected
+    const particleCount = 30;
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (Math.PI * 2 * i) / particleCount + Math.random() * 0.2;
+      const speed = 2 + Math.random() * 3;
+      const size = 2 + Math.random() * 3;
+
+      const particle = new PIXI.Graphics();
+      particle.circle(0, 0, size);
+      particle.fill({ color: i % 3 === 0 ? 0x00ffff : 0x00ff00, alpha: 0.8 });
+
+      particle.x = 0;
+      particle.y = -50;
+      particle.vx = Math.cos(angle) * speed;
+      particle.vy = Math.sin(angle) * speed;
+      particle.life = 1.0; // Fade out over time
+      particle.maxLife = 0.6 + Math.random() * 0.4;
+
+      shipContainer.addChild(particle);
+      if (!shipContainer.particles) shipContainer.particles = [];
+      shipContainer.particles.push(particle);
+    }
+  }
+
+  updateParticles(shipContainer, elapsed) {
+    if (!shipContainer.particles) return;
+
+    shipContainer.particles.forEach((particle, idx) => {
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      particle.life -= 0.02;
+      particle.alpha = Math.max(0, particle.life / particle.maxLife);
+
+      if (particle.life <= 0) {
+        shipContainer.removeChild(particle);
+        shipContainer.particles[idx] = null;
+      }
+    });
+
+    // Clean up dead particles
+    shipContainer.particles = shipContainer.particles.filter(p => p !== null);
+  }
+
   navigateTo(newIndex) {
     if (newIndex < 0 || newIndex >= this.ships.length || this.animating) return;
     this.selectedIndex = newIndex;
     setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
 
-    // Subtle navigation sound (NOT the annoying blip blop)
-    AudioManager.playSfx('thrusterFire', { volume: 0.15 });
+    // More dramatic navigation sound
+    AudioManager.playSfx('thrusterFire', { volume: 0.25 });
 
     this.updateCarouselPositions(true);
   }
@@ -445,34 +645,54 @@ export class ShipSelectScene {
     button.eventMode = 'static';
     button.cursor = 'pointer';
 
+    // Background with glow
+    const bgGlow = new PIXI.Graphics();
+    bgGlow.rect(-2, -2, width + 4, height + 4);
+    bgGlow.fill({ color: 0x00ff00, alpha: 0 });
+    button.addChild(bgGlow);
+    button.bgGlow = bgGlow;
+
     const bg = new PIXI.Graphics();
     bg.rect(0, 0, width, height);
     bg.fill({ color: bgColor });
     bg.stroke({ color: 0x00ff00, width: 2 });
     button.addChild(bg);
+    button.bg = bg;
 
     const text = new PIXI.Text(label, {
       fontFamily: 'Courier New',
-      fontSize: 13,
+      fontSize: 14,
       fill: textColor,
       fontWeight: 'bold'
     });
     text.anchor.set(0.5);
     text.position.set(width / 2, height / 2);
     button.addChild(text);
+    button.text = text;
 
     button.on('pointerdown', (e) => {
       e.stopPropagation();
       if (!this.isDragging) {
+        // Button press effect
+        button.scale.set(0.95);
+        setTimeout(() => button.scale.set(1), 100);
+        AudioManager.playSfx('powerup', { force: true, volume: 0.4 });
         onClick();
       }
     });
 
     button.on('pointerover', () => {
+      // Dramatic hover effect
       bg.clear();
       bg.rect(0, 0, width, height);
-      bg.fill({ color: bgColor, alpha: 0.8 });
-      bg.stroke({ color: 0xffffff, width: 2 });
+      bg.fill({ color: label === 'START' ? 0x00ffff : bgColor, alpha: 0.9 });
+      bg.stroke({ color: 0xffffff, width: 3 });
+
+      bgGlow.alpha = 0.3;
+      button.scale.set(1.05);
+
+      // Hover sound
+      AudioManager.playSfx('thrusterFire', { volume: 0.1 });
     });
 
     button.on('pointerout', () => {
@@ -480,6 +700,9 @@ export class ShipSelectScene {
       bg.rect(0, 0, width, height);
       bg.fill({ color: bgColor });
       bg.stroke({ color: 0x00ff00, width: 2 });
+
+      bgGlow.alpha = 0;
+      button.scale.set(1);
     });
 
     return button;
@@ -633,6 +856,11 @@ export class ShipSelectScene {
     if (this.bgAnimationTicker) {
       this.game.app.ticker.remove(this.bgAnimationTicker);
       this.bgAnimationTicker = null;
+    }
+    // Clean up selection animation ticker
+    if (this.selectionAnimTicker) {
+      this.game.app.ticker.remove(this.selectionAnimTicker);
+      this.selectionAnimTicker = null;
     }
   }
 
