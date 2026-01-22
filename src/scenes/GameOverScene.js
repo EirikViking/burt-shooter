@@ -178,9 +178,31 @@ export class GameOverScene {
         this.isQualified = this.finalScore > tenth;
       }
       console.log(`[GameOver] Qualification Check: Score ${this.finalScore} vs 10th ${this.cachedHighscores[9]?.score || 0} -> ${this.isQualified}`);
+
+      // Update prompt visibility based on qualification
+      if (!this.isQualified && this.promptText) {
+        this.promptText.visible = false;
+        // Show "not qualified" message
+        const { width, height } = this.game.app.screen;
+        const notQualifiedMsg = new PIXI.Text('IKKE TOPP 10 - PRØV IGJEN!', {
+          fontFamily: 'Courier New',
+          fontSize: 24,
+          fill: '#888888',
+          align: 'center'
+        });
+        notQualifiedMsg.anchor.set(0.5);
+        notQualifiedMsg.x = width / 2;
+        notQualifiedMsg.y = this.promptText.y; // Same position as prompt
+        this.container.addChild(notQualifiedMsg);
+      }
     }).catch(e => {
       console.warn('Failed to pre-fetch scores', e);
       this.isQualified = false; // Default to NOT prompting on fetch failure
+
+      // Hide prompt on fetch failure
+      if (this.promptText) {
+        this.promptText.visible = false;
+      }
     });
   }
 
@@ -310,15 +332,16 @@ export class GameOverScene {
   enterInputMode() {
     if (this.state === 'input' || this.state === 'submitting' || this.state === 'rejected') return;
 
-    // Qualification Rule (PART 3)
-    // If cachedHighscores is explicitly empty array, it means fetch success but no scores (Qualified)
-    // If cachedHighscores is null, fetch hasn't finished. We should probably wait or allow.
-    // Let's assume fetch is fast enough or optimistic (allow if null).
-    // If we have scores and !isQualified -> reject.
-    if (this.cachedHighscores && !this.isQualified) {
-      console.log('[GameOver] Player not qualified for Top 10. Redirecting.');
+    // STRICT Qualification Rule: Only allow name entry if EXPLICITLY qualified for top 10
+    // If cachedHighscores is null (fetch failed/pending), default to NOT qualified
+    // If cachedHighscores exists but isQualified is false, reject
+    // Only proceed if isQualified === true
 
-      AudioManager.playVoice('game_over'); // Or mockery
+    if (!this.isQualified) {
+      console.log('[GameOver] Player not qualified for Top 10. Blocking submission.');
+
+      AudioManager.playVoice('game_over');
+
       // Show feedback
       const { width, height } = this.game.app.screen;
       const msg = new PIXI.Text('IKKE TOPP 10!\nDU MÅ BLI BEDRE!', {
@@ -338,6 +361,9 @@ export class GameOverScene {
       }, 2000);
       return;
     }
+
+    // Only reach here if isQualified === true
+    console.log('[GameOver] Player qualified for Top 10. Allowing name entry.');
 
     this.state = 'input';
     this.nameInput = '';
