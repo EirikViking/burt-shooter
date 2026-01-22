@@ -35,7 +35,7 @@ export async function onRequestGet(context) {
       `SELECT ${selectFields}
        FROM game_highscores
        ORDER BY score DESC, created_at DESC
-       LIMIT 50`
+       LIMIT 10`
     ).all();
 
     // Always compute rank_index for response (compute if missing)
@@ -51,9 +51,7 @@ export async function onRequestGet(context) {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=20, stale-while-revalidate=10',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+        'Cache-Control': 'public, max-age=30, stale-while-revalidate=60',
       }
     });
   } catch (error) {

@@ -865,53 +865,78 @@ export class PlayScene {
     effectContainer.x = width / 2;
     effectContainer.y = height * 0.35;
     effectContainer.alpha = 0;
-    effectContainer.scale.set(0.18); // Reduced by 40% from 0.3
+    effectContainer.scale.set(0.3); // Bigger for more wow factor
     effectContainer.zIndex = 9999;
     this.uiContainer.addChild(effectContainer);
 
-    // Background panel with glow (REDUCED by 40% for less screen dominance)
+    // Outer glow rings for extra wow
+    for (let i = 0; i < 3; i++) {
+      const outerRing = new PIXI.Graphics();
+      outerRing.circle(0, 0, 220 + i * 30);
+      outerRing.stroke({ color: 0x00ff00, width: 2, alpha: 0.3 - i * 0.1 });
+      effectContainer.addChild(outerRing);
+    }
+
+    // Background panel with glow
     const panel = new PIXI.Graphics();
-    panel.roundRect(-120, -39, 240, 78, 6); // 40% smaller
-    panel.fill({ color: 0x000000, alpha: 0.9 });
-    panel.stroke({ color: 0x00ff00, width: 3 });
+    panel.roundRect(-200, -65, 400, 130, 10);
+    panel.fill({ color: 0x000000, alpha: 0.95 });
+    panel.stroke({ color: 0x00ff00, width: 4 });
     effectContainer.addChild(panel);
 
-    // Inner glow
+    // Inner glow with multiple layers for depth
     const glow = new PIXI.Graphics();
-    glow.roundRect(-118, -37, 235, 73, 5); // 40% smaller
-    glow.stroke({ color: 0x00ff00, width: 2, alpha: 0.5 });
+    glow.roundRect(-195, -60, 390, 120, 8);
+    glow.stroke({ color: 0x00ff00, width: 3, alpha: 0.6 });
     effectContainer.addChild(glow);
 
-    // Main label (WAVE CLEARED!) - REDUCED by 40%
+    const innerGlow = new PIXI.Graphics();
+    innerGlow.roundRect(-190, -55, 380, 110, 7);
+    innerGlow.stroke({ color: 0xffff00, width: 2, alpha: 0.3 });
+    effectContainer.addChild(innerGlow);
+
+    // Star burst decoration
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.PI * 2 * i) / 8;
+      const star = new PIXI.Graphics();
+      star.moveTo(0, 0);
+      star.lineTo(Math.cos(angle) * 25, Math.sin(angle) * 25);
+      star.stroke({ color: 0xffff00, width: 2, alpha: 0.7 });
+      star.x = Math.cos(angle) * 180;
+      star.y = Math.sin(angle) * 50;
+      effectContainer.addChild(star);
+    }
+
+    // Main label (WAVE CLEARED!) - Big and bold
     const labelText = new PIXI.Text(label, {
       fontFamily: 'Courier New',
-      fontSize: 19, // 40% smaller from 32
+      fontSize: 38,
       fill: '#00ff00',
       stroke: '#004400',
-      strokeThickness: 5,
-      dropShadow: true,
-      dropShadowColor: '#00ff00',
-      dropShadowBlur: 6,
-      dropShadowDistance: 2
-    });
-    labelText.anchor.set(0.5);
-    labelText.y = -25;
-    effectContainer.addChild(labelText);
-
-    // Bonus amount (readable but not overwhelming, 40% smaller)
-    const bonusText = new PIXI.Text(`+${bonusAmount}`, {
-      fontFamily: 'Courier New',
-      fontSize: 25, // 40% smaller from 42
-      fill: '#ffff00',
-      stroke: '#000000',
       strokeThickness: 6,
       dropShadow: true,
-      dropShadowColor: '#ffff00',
+      dropShadowColor: '#00ff00',
       dropShadowBlur: 10,
       dropShadowDistance: 3
     });
+    labelText.anchor.set(0.5);
+    labelText.y = -30;
+    effectContainer.addChild(labelText);
+
+    // Bonus amount with coin icon
+    const bonusText = new PIXI.Text(`+${bonusAmount}`, {
+      fontFamily: 'Courier New',
+      fontSize: 48,
+      fill: '#ffff00',
+      stroke: '#000000',
+      strokeThickness: 8,
+      dropShadow: true,
+      dropShadowColor: '#ffff00',
+      dropShadowBlur: 15,
+      dropShadowDistance: 4
+    });
     bonusText.anchor.set(0.5);
-    bonusText.y = 35;
+    bonusText.y = 30;
     effectContainer.addChild(bonusText);
 
     // Isolated flash effect (contained, not global stage)
@@ -953,12 +978,13 @@ export class PlayScene {
         const t = elapsed / phases.entry;
         const eased = 1 - Math.pow(1 - t, 4); // Ease out quart
         effectContainer.alpha = Math.min(1, t * 2); // Fade in fast
-        effectContainer.scale.set(0.3 + eased * 0.8); // Scale to 1.1 (overshoot)
+        effectContainer.scale.set(0.3 * (1 + eased * 2)); // Scale to 0.9 with overshoot
+        effectContainer.rotation = Math.sin(t * Math.PI * 2) * 0.1 * (1 - t); // Wobble entry
 
         // Flash effect (isolated, peaks early then fades)
         if (elapsed < phases.flashPeak) {
           const flashT = elapsed / phases.flashPeak;
-          flash.alpha = Math.sin(flashT * Math.PI) * 0.3; // Peak at 0.3 alpha
+          flash.alpha = Math.sin(flashT * Math.PI) * 0.4; // Brighter flash
         } else {
           flash.alpha = 0;
         }
@@ -1009,6 +1035,74 @@ export class PlayScene {
 
     // Safety checks for managers
     if (!this.bulletManager || !this.enemyManager || !this.powerupManager || !this.player) return;
+
+    // Bomb detonation check
+    const screenHeight = this.game.app.screen.height;
+    const detonationY = screenHeight * 0.45; // Detonate at 45% of screen height
+    this.bulletManager.playerBullets.forEach(bullet => {
+      if (bullet.active && bullet.isBomb && bullet.y <= detonationY) {
+        // Detonate bomb
+        bullet.active = false;
+
+        // Visual explosion
+        if (this.particleManager) {
+          for (let i = 0; i < 10; i++) {
+            const angle = (Math.PI * 2 * i) / 10;
+            const distance = Math.random() * bullet.blastRadius;
+            this.particleManager.createExplosion(
+              bullet.x + Math.cos(angle) * distance,
+              bullet.y + Math.sin(angle) * distance,
+              0xff3300
+            );
+          }
+          // Center explosion
+          this.particleManager.createExplosion(bullet.x, bullet.y, 0xffff00);
+        }
+
+        // Screen shake
+        if (this.screenShake) {
+          this.screenShake.shake(15, 30);
+        }
+
+        // Explosion sound
+        AudioManager.playSfx('explosion', { force: true, volume: 1.0 });
+
+        // Damage all enemies in blast radius
+        this.enemyManager.enemies.forEach(enemy => {
+          if (enemy.active) {
+            const dx = enemy.x - bullet.x;
+            const dy = enemy.y - bullet.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < bullet.blastRadius) {
+              const destroyed = enemy.takeDamage(bullet.damage);
+              if (destroyed) {
+                this.game.addScore(enemy.scoreValue);
+                if (this.particleManager) {
+                  this.particleManager.createExplosion(enemy.x, enemy.y, 0xff6600);
+                }
+              }
+            }
+          }
+        });
+
+        // Also damage hijacker if active
+        if (this.enemyManager.hijacker && this.enemyManager.hijacker.active) {
+          const hijacker = this.enemyManager.hijacker;
+          const dx = hijacker.x - bullet.x;
+          const dy = hijacker.y - bullet.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < bullet.blastRadius) {
+            const destroyed = hijacker.takeDamage(bullet.damage);
+            if (destroyed) {
+              this.game.addScore(hijacker.scoreValue);
+              if (this.particleManager) {
+                this.particleManager.createExplosion(hijacker.x, hijacker.y, 0xff9900);
+              }
+            }
+          }
+        }
+      }
+    });
 
     // Player bullets vs enemies
     this.bulletManager.playerBullets.forEach(bullet => {

@@ -114,6 +114,10 @@ export class Player {
     this.pointDefenseExpiresAt = 0;
     this.pointDefenseRing = null;
 
+    // Bomb State
+    this.bombShotsLeft = 0;
+    this.bombIndicator = null;
+
     // Touch input (set externally by PlayScene)
     this.touchInput = { moveX: 0, moveY: 0 };
 
@@ -764,6 +768,33 @@ export class Player {
   shoot() {
     this.shootCooldown = this.shootDelay;
     const bullets = [];
+
+    // Check if firing bomb
+    if (this.bombShotsLeft > 0) {
+      const bomb = new Bullet(
+        this.x,
+        this.y - 20,
+        0, // Straight up
+        this.bulletSpeed * 0.4, // 40% slower
+        this.bulletDamage * 5, // More damage
+        this.bulletPierce,
+        { color: 'Orange', index: 3 }
+      );
+      bomb.isBomb = true;
+      bomb.blastRadius = 150; // Blast radius
+      bullets.push(bomb);
+
+      this.bombShotsLeft--;
+      this.updateBombIndicator();
+      if (this.bombShotsLeft <= 0) {
+        this.deactivateBomb();
+      }
+
+      AudioManager.playSfx(this.weaponSfxKey, { volume: 0.8, force: false });
+      this.createMuzzleFlash();
+      return bullets;
+    }
+
     const spread = this.weaponProfile?.spread ?? 0.15;
     const totalShots = Math.max(1, this.multiShot + this.rankBoostExtraShots);
     const spreadAngles = totalShots > 1 ?
@@ -884,7 +915,8 @@ export class Player {
       magnet: 'MAGNET',
       drones: 'DRONES',
       shockwave: 'SHOCKWAVE',
-      point_defense: 'POINT DEFENSE'
+      point_defense: 'POINT DEFENSE',
+      bomb: 'BOMB'
     };
     return labels[type] || String(type || '').toUpperCase();
   }
@@ -999,6 +1031,39 @@ export class Player {
     }
   }
 
+  createBombIndicator() {
+    // Create a bomb counter indicator
+    if (!this.bombIndicator) {
+      this.bombIndicator = new PIXI.Graphics();
+      this.sprite.addChild(this.bombIndicator);
+    }
+    this.bombIndicator.visible = true;
+    this.updateBombIndicator();
+  }
+
+  updateBombIndicator() {
+    if (!this.bombIndicator || this.bombShotsLeft <= 0) return;
+
+    this.bombIndicator.clear();
+    const size = 8;
+    const spacing = 12;
+    const startX = -(this.bombShotsLeft - 1) * spacing / 2;
+
+    for (let i = 0; i < this.bombShotsLeft; i++) {
+      this.bombIndicator.circle(startX + i * spacing, -35, size);
+      this.bombIndicator.fill({ color: 0xff3300, alpha: 0.9 });
+      this.bombIndicator.circle(startX + i * spacing, -35, size - 2);
+      this.bombIndicator.stroke({ color: 0xffff00, width: 2, alpha: 0.7 });
+    }
+  }
+
+  deactivateBomb() {
+    this.bombShotsLeft = 0;
+    if (this.bombIndicator) {
+      this.bombIndicator.visible = false;
+    }
+  }
+
   // --- Powerups ---
 
   applyPowerup(type) {
@@ -1057,6 +1122,11 @@ export class Player {
         this.pointDefenseExpiresAt = Date.now() + 10000; // 10 seconds
         this.createPointDefenseRing();
         AudioManager.playSfx('forceField', { force: true, volume: 0.8 }); // Activation sound
+        break;
+      case 'bomb':
+        this.bombShotsLeft = 3; // Next 3 shots are bombs
+        this.createBombIndicator();
+        AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
         break;
     }
 

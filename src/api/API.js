@@ -1,9 +1,9 @@
 // API client for highscore communication
 
-const DEFAULT_TIMEOUT_MS = 12000; // First attempt: 12 seconds for cold starts
-const RETRY_TIMEOUT_MS = 15000; // Retry attempts: 15 seconds
-const MAX_RETRIES = 4; // Total: 1 initial + 3 retries
-const RETRY_DELAYS = [0, 800, 2000, 4000]; // Exponential backoff delays
+const DEFAULT_TIMEOUT_MS = 8000; // First attempt: 8 seconds
+const RETRY_TIMEOUT_MS = 10000; // Retry attempts: 10 seconds
+const MAX_RETRIES = 3; // Total: 1 initial + 2 retries
+const RETRY_DELAYS = [0, 500, 1500]; // Faster backoff
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const controller = new AbortController();
