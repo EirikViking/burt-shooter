@@ -3,6 +3,7 @@ import { Bullet } from './Bullet.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { ShipRegistry } from '../utils/ShipRegistry.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { enhanceShipVisuals } from '../utils/ShipVisualEnhancer.js';
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = 'row2_ship_1.png') {
@@ -354,6 +355,16 @@ export class Player {
 
     this.ensureShipOverlays();
 
+    // Apply visual enhancements to make ships look distinct
+    if (this.visualEnhancementCleanup) {
+      this.visualEnhancementCleanup();
+    }
+    this.visualEnhancementCleanup = enhanceShipVisuals(
+      this.sprite,
+      newShipId,
+      this.game.app
+    );
+
     if (logSwap && import.meta?.env?.DEV) {
       const textureSource = this.shipSprite?.texture?.baseTexture?.resource?.src
         || this.shipSprite?.texture?.baseTexture?.resource?.url
@@ -499,6 +510,17 @@ export class Player {
       }
     }
     this.ensureShipOverlays();
+
+    // Apply visual enhancements after rebuild
+    if (this.visualEnhancementCleanup) {
+      this.visualEnhancementCleanup();
+    }
+    const shipId = this.config?.id || 'rank_ship_0';
+    this.visualEnhancementCleanup = enhanceShipVisuals(
+      this.sprite,
+      shipId,
+      this.game.app
+    );
   }
 
   animateRankUp(newRank) {
@@ -1544,7 +1566,26 @@ export class Player {
     // CRITICAL: Ensure player is visible after respawn
     this.ensureRenderable('forceRespawn');
 
+    // Reapply visual enhancements after respawn
+    if (this.visualEnhancementCleanup) {
+      this.visualEnhancementCleanup();
+    }
+    const shipId = this.config?.id || 'rank_ship_0';
+    this.visualEnhancementCleanup = enhanceShipVisuals(
+      this.sprite,
+      shipId,
+      this.game.app
+    );
+
     console.log('[Player] Force Respawned at', this.x, this.y);
+  }
+
+  destroy() {
+    // Clean up visual enhancements
+    if (this.visualEnhancementCleanup) {
+      this.visualEnhancementCleanup();
+      this.visualEnhancementCleanup = null;
+    }
   }
 
   /**
