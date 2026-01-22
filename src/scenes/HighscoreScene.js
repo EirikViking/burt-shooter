@@ -317,12 +317,15 @@ export class HighscoreScene {
     this.setState('LOADING');
     this.lastError = 'none';
     this.retryAttempt = 0;
-    console.log('[HighscoreScene] Fetching highscores with retry logic');
+
+    const startTime = Date.now();
+    const isDev = window.location.search.includes('debug=1');
+    if (isDev) console.log('[HighscoreScene] Fetching highscores with retry logic');
 
     try {
-      // Use API client with retry callback for silent UI updates
+      // Use cache for fast display - 30 second TTL in API client
       const data = await API.getHighscores({
-        useCache: false, // Force fresh fetch
+        useCache: true, // Fast path: use cached data if available
         onRetry: (attempt, delay) => {
           if (token !== this.fetchToken) return;
           this.retryAttempt = attempt;
@@ -333,7 +336,14 @@ export class HighscoreScene {
         }
       });
 
+      if (isDev) {
+        const fetchTime = Date.now() - startTime;
+        console.log(`[HighscoreScene] Fetch completed in ${fetchTime}ms`);
+      }
+
       if (token !== this.fetchToken) return;
+
+      const parseStart = Date.now();
 
       // TASK A: Enforce max 10 entries
       let rawEntries = Array.isArray(data) ? data : [];
@@ -341,11 +351,24 @@ export class HighscoreScene {
       this.entries = rawEntries.slice(0, 10); // Keep only top 10
       this.entriesNormalized = this.normalizeEntries(this.entries);
 
+      if (isDev) {
+        const parseTime = Date.now() - parseStart;
+        console.log(`[HighscoreScene] Parse/normalize completed in ${parseTime}ms`);
+      }
+
+      const renderStart = Date.now();
+
       this.comment.text = getHighscoreComment(this.entries.length > 0);
       if (this.entries.length > 0) {
         this.setState('LOADED');
       } else {
         this.setState('EMPTY');
+      }
+
+      if (isDev) {
+        const renderTime = Date.now() - renderStart;
+        const totalTime = Date.now() - startTime;
+        console.log(`[HighscoreScene] Render completed in ${renderTime}ms, Total: ${totalTime}ms`);
       }
     } catch (error) {
       this.handleFetchError(error, token);

@@ -869,42 +869,42 @@ export class PlayScene {
     effectContainer.zIndex = 9999;
     this.uiContainer.addChild(effectContainer);
 
-    // Background panel with glow
+    // Background panel with glow (REDUCED size for punchier feel)
     const panel = new PIXI.Graphics();
-    panel.roundRect(-280, -90, 560, 180, 12);
+    panel.roundRect(-200, -65, 400, 130, 10);
     panel.fill({ color: 0x000000, alpha: 0.9 });
-    panel.stroke({ color: 0x00ff00, width: 4 });
+    panel.stroke({ color: 0x00ff00, width: 3 });
     effectContainer.addChild(panel);
 
     // Inner glow
     const glow = new PIXI.Graphics();
-    glow.roundRect(-275, -85, 550, 170, 10);
+    glow.roundRect(-196, -61, 392, 122, 8);
     glow.stroke({ color: 0x00ff00, width: 2, alpha: 0.5 });
     effectContainer.addChild(glow);
 
-    // Main label (WAVE CLEARED!)
+    // Main label (WAVE CLEARED!) - REDUCED for less dominance
     const labelText = new PIXI.Text(label, {
       fontFamily: 'Courier New',
-      fontSize: 42,
+      fontSize: 32,
       fill: '#00ff00',
       stroke: '#004400',
-      strokeThickness: 6,
+      strokeThickness: 5,
       dropShadow: true,
       dropShadowColor: '#00ff00',
-      dropShadowBlur: 8,
+      dropShadowBlur: 6,
       dropShadowDistance: 2
     });
     labelText.anchor.set(0.5);
-    labelText.y = -30;
+    labelText.y = -25;
     effectContainer.addChild(labelText);
 
-    // Bonus amount (big and prominent)
+    // Bonus amount (readable but not overwhelming)
     const bonusText = new PIXI.Text(`+${bonusAmount}`, {
       fontFamily: 'Courier New',
-      fontSize: 56,
+      fontSize: 42,
       fill: '#ffff00',
       stroke: '#000000',
-      strokeThickness: 7,
+      strokeThickness: 6,
       dropShadow: true,
       dropShadowColor: '#ffff00',
       dropShadowBlur: 10,
@@ -1068,6 +1068,37 @@ export class PlayScene {
             }
           }
         }
+      });
+    }
+
+    // Point Defense: Player bullets vs enemy bullets
+    if (this.player.pointDefenseActive) {
+      this.bulletManager.playerBullets.forEach(playerBullet => {
+        if (!playerBullet.active) return;
+
+        this.bulletManager.enemyBullets.forEach(enemyBullet => {
+          if (!enemyBullet.active) return;
+
+          // Check collision between player bullet and enemy bullet
+          const dx = playerBullet.x - enemyBullet.x;
+          const dy = playerBullet.y - enemyBullet.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const hitRadius = (playerBullet.radius || 4) + (enemyBullet.radius || 6);
+
+          if (dist < hitRadius) {
+            // Destroy both projectiles
+            playerBullet.active = false;
+            enemyBullet.active = false;
+
+            // Subtle hit sound (NOT annoying blip blop)
+            AudioManager.playSfx('impactMetal', { volume: 0.15 });
+
+            // Small visual feedback
+            if (this.particleManager) {
+              this.particleManager.createHitSpark(enemyBullet.x, enemyBullet.y, 0x00ddff);
+            }
+          }
+        });
       });
     }
 

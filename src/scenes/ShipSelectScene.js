@@ -1,7 +1,9 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
+import { BeerAsset } from '../utils/BeerAsset.js';
 import { getSelectableShips, getDefaultShipKey, isValidShipKey } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
+import { AudioManager } from '../audio/AudioManager.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -38,6 +40,11 @@ export class ShipSelectScene {
     bg.rect(0, 0, width, height);
     bg.fill({ color: 0x000000 });
     this.container.addChild(bg);
+
+    // Animated background layer
+    this.bgAnimationContainer = new PIXI.Container();
+    this.container.addChild(this.bgAnimationContainer);
+    this.createAnimatedBackground(width, height);
 
     // Fixed header with enhanced styling
     const headerContainer = new PIXI.Container();
@@ -108,6 +115,73 @@ export class ShipSelectScene {
     this.setupInput();
   }
 
+  createAnimatedBackground(width, height) {
+    // Starfield - drifting stars
+    this.stars = [];
+    for (let i = 0; i < 50; i++) {
+      const star = new PIXI.Graphics();
+      const size = Math.random() * 2 + 1;
+      star.circle(0, 0, size);
+      star.fill({ color: 0xffffff, alpha: Math.random() * 0.5 + 0.3 });
+      star.x = Math.random() * width;
+      star.y = Math.random() * height;
+      star.vx = (Math.random() - 0.5) * 0.3;
+      star.vy = (Math.random() - 0.5) * 0.3;
+      this.bgAnimationContainer.addChild(star);
+      this.stars.push(star);
+    }
+
+    // Drifting beer cans (subtle)
+    this.bgBeerCans = [];
+    const beerTexture = BeerAsset.getTexture();
+    if (beerTexture && beerTexture.width > 0) {
+      for (let i = 0; i < 4; i++) {
+        const beer = new PIXI.Sprite(beerTexture);
+        beer.anchor.set(0.5);
+        beer.scale.set(0.15 + Math.random() * 0.1);
+        beer.alpha = 0.2 + Math.random() * 0.15;
+        beer.x = Math.random() * width;
+        beer.y = Math.random() * height;
+        beer.vx = (Math.random() - 0.5) * 0.4;
+        beer.vy = (Math.random() - 0.5) * 0.4;
+        beer.rotation = Math.random() * Math.PI * 2;
+        beer.rotationSpeed = (Math.random() - 0.5) * 0.01;
+        this.bgAnimationContainer.addChild(beer);
+        this.bgBeerCans.push(beer);
+      }
+    }
+
+    // Animation ticker
+    this.bgAnimationTicker = (delta) => {
+      // Animate stars
+      this.stars.forEach(star => {
+        star.x += star.vx * delta.deltaTime;
+        star.y += star.vy * delta.deltaTime;
+
+        // Wrap around
+        if (star.x < 0) star.x = width;
+        if (star.x > width) star.x = 0;
+        if (star.y < 0) star.y = height;
+        if (star.y > height) star.y = 0;
+      });
+
+      // Animate beer cans
+      this.bgBeerCans.forEach(beer => {
+        beer.x += beer.vx * delta.deltaTime;
+        beer.y += beer.vy * delta.deltaTime;
+        beer.rotation += beer.rotationSpeed * delta.deltaTime;
+
+        // Wrap around
+        if (beer.x < -50) beer.x = width + 50;
+        if (beer.x > width + 50) beer.x = -50;
+        if (beer.y < -50) beer.y = height + 50;
+        if (beer.y > height + 50) beer.y = -50;
+      });
+    };
+
+    this.game.app.ticker.add(this.bgAnimationTicker);
+  }
+
   async createShipCarousel(width, carouselHeight) {
     this.shipSpacing = 450; // Horizontal spacing between ships
     this.centerScale = 1.2; // Center ship is larger
@@ -146,48 +220,61 @@ export class ShipSelectScene {
       container.sprite = sprite;
     }
 
-    // Ship name below sprite
+    // Glow effect for center ship (will be shown/hidden based on selection)
+    const glow = new PIXI.Graphics();
+    glow.circle(0, -50, 100);
+    glow.fill({ color: 0x00ff00, alpha: 0 });
+    container.addChildAt(glow, 0);
+    container.glowEffect = glow;
+
+    // Ship name below sprite - LARGER and more readable
     const name = new PIXI.Text(ship.name, {
       fontFamily: 'Courier New',
-      fontSize: 22,
+      fontSize: 28,
       fill: '#00ff00',
       align: 'center',
       fontWeight: 'bold',
       stroke: '#000000',
-      strokeThickness: 3
+      strokeThickness: 4,
+      dropShadow: true,
+      dropShadowColor: '#00ff00',
+      dropShadowBlur: 6,
+      dropShadowDistance: 0
     });
     name.anchor.set(0.5, 0);
-    name.position.set(0, 60);
+    name.position.set(0, 65);
     container.addChild(name);
     container.nameText = name;
 
-    // Ship description
+    // Ship description - BETTER spacing and size
     const teaser = this.getShortTeaser(ship.description);
     const desc = new PIXI.Text(teaser, {
       fontFamily: 'Courier New',
-      fontSize: 13,
+      fontSize: 15,
       fill: '#cccccc',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: 350,
-      lineHeight: 16
+      wordWrapWidth: 380,
+      lineHeight: 20
     });
     desc.anchor.set(0.5, 0);
-    desc.position.set(0, 95);
+    desc.position.set(0, 105);
     container.addChild(desc);
     container.descText = desc;
 
-    // Stats
+    // Stats - CLEARER and larger
     const statsText = this.getShipStats(ship);
     const stats = new PIXI.Text(statsText, {
       fontFamily: 'Courier New',
-      fontSize: 12,
+      fontSize: 14,
       fill: '#00ff00',
       align: 'center',
-      lineHeight: 14
+      lineHeight: 18,
+      stroke: '#000000',
+      strokeThickness: 2
     });
     stats.anchor.set(0.5, 0);
-    stats.position.set(0, 140);
+    stats.position.set(0, 150);
     container.addChild(stats);
     container.statsText = stats;
 
@@ -205,12 +292,16 @@ export class ShipSelectScene {
       const targetScale = isCenter ? this.centerScale : this.sideScale;
       const targetAlpha = isCenter ? 1.0 : this.sideAlpha;
 
+      // Slight tilt for side ships
+      const targetRotation = isCenter ? 0 : (offset < 0 ? -0.05 : 0.05);
+
       if (duration > 0 && !this.animating) {
-        // Smooth animation
+        // Smooth animation with bounce
         this.animating = true;
         const startX = shipContainer.x;
         const startScale = shipContainer.scale.x;
         const startAlpha = shipContainer.alpha;
+        const startRotation = shipContainer.rotation;
         const startTime = Date.now();
 
         const animate = () => {
@@ -221,6 +312,17 @@ export class ShipSelectScene {
           shipContainer.x = startX + (targetX - startX) * eased;
           shipContainer.scale.set(startScale + (targetScale - startScale) * eased);
           shipContainer.alpha = startAlpha + (targetAlpha - startAlpha) * eased;
+          shipContainer.rotation = startRotation + (targetRotation - startRotation) * eased;
+
+          // Animate glow for center ship
+          if (shipContainer.glowEffect) {
+            if (isCenter) {
+              const glowAlpha = Math.sin(elapsed * 0.005) * 0.15 + 0.15;
+              shipContainer.glowEffect.alpha = glowAlpha * eased;
+            } else {
+              shipContainer.glowEffect.alpha = 0;
+            }
+          }
 
           if (t < 1) {
             requestAnimationFrame(animate);
@@ -235,6 +337,12 @@ export class ShipSelectScene {
         shipContainer.x = targetX;
         shipContainer.scale.set(targetScale);
         shipContainer.alpha = targetAlpha;
+        shipContainer.rotation = targetRotation;
+
+        // Immediate glow state
+        if (shipContainer.glowEffect) {
+          shipContainer.glowEffect.alpha = isCenter ? 0.15 : 0;
+        }
       }
 
       // Hide/show text based on whether it's center
@@ -297,6 +405,10 @@ export class ShipSelectScene {
         const spriteKey = ship.spriteKey;
         setSelectedShipKey(spriteKey);
         this.saveSelection(spriteKey);
+
+        // Confirm sound for starting game
+        AudioManager.playSfx('powerup', { force: true, volume: 0.8 });
+
         if (DEBUG) console.log('[ShipSelect] Starting game with:', spriteKey);
         this.game.startGame(spriteKey);
       }
@@ -308,6 +420,10 @@ export class ShipSelectScene {
     if (newIndex < 0 || newIndex >= this.ships.length || this.animating) return;
     this.selectedIndex = newIndex;
     setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
+
+    // Subtle navigation sound (NOT the annoying blip blop)
+    AudioManager.playSfx('thrusterFire', { volume: 0.15 });
+
     this.updateCarouselPositions(true);
   }
 
@@ -512,6 +628,11 @@ export class ShipSelectScene {
       window.removeEventListener('wheel', this.wheelHandler);
       const canvas = this.game.app.canvas || this.game.app.view;
       if (canvas) canvas.removeEventListener('wheel', this.wheelHandler);
+    }
+    // Clean up background animation ticker
+    if (this.bgAnimationTicker) {
+      this.game.app.ticker.remove(this.bgAnimationTicker);
+      this.bgAnimationTicker = null;
     }
   }
 

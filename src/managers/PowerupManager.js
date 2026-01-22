@@ -31,7 +31,8 @@ class Powerup {
       score_x2: { color: 0xffff00, label: 'x2' },
       magnet: { color: 0x99ffcc, label: 'MAGNET' },
       drones: { color: 0x66ccff, label: 'DRONES' },
-      shockwave: { color: 0xff9966, label: 'WAVE' }
+      shockwave: { color: 0xff9966, label: 'WAVE' },
+      point_defense: { color: 0x00ddff, label: 'P-DEF' }
     };
 
     const data = powerupData[type] || powerupData['isbjorn'];
@@ -78,6 +79,7 @@ class Powerup {
       else if (this.type === 'magnet') texture = GameAssets.getXtraPowerup('ghost');
       else if (this.type === 'drones') texture = GameAssets.getXtraPowerup('rolp');
       else if (this.type === 'shockwave') texture = GameAssets.getXtraPowerup('deili');
+      else if (this.type === 'point_defense') texture = GameAssets.getXtraPowerup('shield'); // Reuse shield texture
       else texture = GameAssets.getBeer();
 
       if (GameAssets.isValidTexture(texture)) {
@@ -564,7 +566,8 @@ export class PowerupManager {
         'score_x2',
         'magnet',
         'drones',
-        'shockwave'
+        'shockwave',
+        'point_defense'
       ];
       type = rareTypes[Math.floor(Math.random() * rareTypes.length)];
     }

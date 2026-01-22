@@ -105,6 +105,11 @@ export class Player {
     this.shieldExpiresAt = 0;
     this.shieldSprite = null;
 
+    // Point Defense State
+    this.pointDefenseActive = false;
+    this.pointDefenseExpiresAt = 0;
+    this.pointDefenseRing = null;
+
     // Touch input (set externally by PlayScene)
     this.touchInput = { moveX: 0, moveY: 0 };
 
@@ -579,6 +584,29 @@ export class Player {
       if (this.shieldSprite) this.shieldSprite.visible = false;
     }
 
+    // Point Defense Ring Animation
+    if (this.pointDefenseActive) {
+      // Check expiry
+      if (now > this.pointDefenseExpiresAt) {
+        this.deactivatePointDefense();
+      } else {
+        // Animate ring
+        if (this.pointDefenseRing) {
+          this.pointDefenseRing.clear();
+          const radius = 35 + Math.sin(now * 0.008) * 5;
+          this.pointDefenseRing.circle(0, 0, radius);
+          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 2, alpha: 0.6 + Math.sin(now * 0.01) * 0.2 });
+
+          // Inner ring
+          const innerRadius = radius - 8;
+          this.pointDefenseRing.circle(0, 0, innerRadius);
+          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 1, alpha: 0.4 });
+        }
+      }
+    } else {
+      if (this.pointDefenseRing) this.pointDefenseRing.visible = false;
+    }
+
     // Spawn Fade-In
     if (this.sprite.alpha < 1 && !this.isDodging && this.activePowerup.type !== 'ghost') {
       this.sprite.alpha += deltaSeconds * (1000 / this.spawnFadeDuration);
@@ -851,7 +879,8 @@ export class Player {
       score_x2: 'SCORE x2',
       magnet: 'MAGNET',
       drones: 'DRONES',
-      shockwave: 'SHOCKWAVE'
+      shockwave: 'SHOCKWAVE',
+      point_defense: 'POINT DEFENSE'
     };
     return labels[type] || String(type || '').toUpperCase();
   }
@@ -949,6 +978,23 @@ export class Player {
     this.ensureRenderable('deactivateShield');
   }
 
+  createPointDefenseRing() {
+    // Create a pulsing ring effect around the player
+    if (!this.pointDefenseRing) {
+      this.pointDefenseRing = new PIXI.Graphics();
+      this.sprite.addChild(this.pointDefenseRing);
+    }
+    this.pointDefenseRing.visible = true;
+  }
+
+  deactivatePointDefense() {
+    this.pointDefenseActive = false;
+    this.pointDefenseExpiresAt = 0;
+    if (this.pointDefenseRing) {
+      this.pointDefenseRing.visible = false;
+    }
+  }
+
   // --- Powerups ---
 
   applyPowerup(type) {
@@ -1002,6 +1048,12 @@ export class Player {
           this.activePowerup.type = null; // Don't block weapon slot
         }
         break;
+      case 'point_defense':
+        this.pointDefenseActive = true;
+        this.pointDefenseExpiresAt = Date.now() + 10000; // 10 seconds
+        this.createPointDefenseRing();
+        AudioManager.playSfx('forceField', { force: true, volume: 0.8 }); // Activation sound
+        break;
     }
 
     this.notePowerup(type);
@@ -1030,6 +1082,7 @@ export class Player {
     this.magnetActive = false;
     this.magnetExpiresAt = 0;
     this.clearDrones();
+    this.deactivatePointDefense();
     this.activePowerup.type = null;
     this.activePowerup.expiresAt = 0;
     const before = this.getStatSnapshot();
