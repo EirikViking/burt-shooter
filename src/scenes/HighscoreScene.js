@@ -730,6 +730,12 @@ export class HighscoreScene {
           rankSprite.visible = true;
 
           this.rowsContainer.addChild(rankSprite);
+          if (isDebug && index === 0) {
+            const alias = RankAssets.getRankAlias(score.rank_index);
+            const badgePath = RankAssets.getRankPath(score.rank_index);
+            const resourceUrl = rankTexture?.baseTexture?.resource?.url || 'unknown';
+            console.log(`[HighscoreScene] Rank badge row=${index + 1} alias=${alias} url=${resourceUrl} path=${badgePath}`);
+          }
         } else if (isDebug) {
           const placeholder = new PIXI.Sprite(PIXI.Texture.WHITE);
           const size = layout.isMobile ? 10 : 12;

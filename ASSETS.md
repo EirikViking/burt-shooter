@@ -30,7 +30,8 @@ This document serves as the human-readable registry of all game assets found in 
 **Effects**: 18 generic space effects (`spaceEffects_001` - `018`).
 **Ranks**: 20 rank icons (`rank000` - `rank019`). Only these 20 are used in-game.
   - **Canonical path**: `/sprites/ranks/PNG/Default size/Gold/rankXXX.png` (note the space in directory name)
-  - **Loading**: Use `RankAssets.loadRankTexture` with alias `rank_00..rank_19`. Do not use raw URL as cache key.
+  - **Loading**: Registered as PIXI Assets bundle `rank_badges`, exposing alias `rank_00..rank_19` so loaders can reference `PIXI.Assets.load('rank_XX')`.
+  - **HighscoreScene** preloads the bundle via `RankAssets.preloadAll()` before rendering the table; when `debug=1` it logs the resolved alias + URL for row 1.
 
 ### 3. Audio (`/public/audio`)
 **Voice** (`/voice`):

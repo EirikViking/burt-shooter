@@ -3,6 +3,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 
 const NUM_RANKS = 20;
 const MAX_RANK_INDEX = 19;
+const BUNDLE_NAME = 'rank_badges';
 
 class RankAssetsManager {
     constructor() {
@@ -10,6 +11,7 @@ class RankAssetsManager {
         this.inflight = new Map();
         this.failedIcons = new Set();
         this.warned = new Set();
+        this.bundleRegistered = false;
     }
 
     clampIndex(idx) {
@@ -24,7 +26,6 @@ class RankAssetsManager {
     }
 
     rankSrc(idx) {
-        // Use AssetManifest for consistency with other asset loading
         return AssetManifest.sprites.ranks[idx];
     }
 
@@ -45,9 +46,21 @@ class RankAssetsManager {
         this.warned.add(alias);
     }
 
-    /**
-     * Load rank texture using PIXI Assets
-     */
+    ensureBundleRegistered() {
+        if (this.bundleRegistered) return;
+        const manifestList = AssetManifest.sprites.ranks || [];
+        const bundle = {};
+        manifestList.forEach((src, idx) => {
+            if (typeof src === 'string' && src.length > 0) {
+                bundle[this.rankAlias(idx)] = src;
+            }
+        });
+        if (Object.keys(bundle).length > 0) {
+            PIXI.Assets.addBundle(BUNDLE_NAME, bundle);
+        }
+        this.bundleRegistered = true;
+    }
+
     async loadRankTexture(idx) {
         const clamped = this.clampIndex(idx);
         const alias = this.rankAlias(clamped);
@@ -58,25 +71,21 @@ class RankAssetsManager {
             return null;
         }
 
-        // 1. Check cache or PIXI.Assets cache by alias
-        const cached = this.cache.get(alias) || PIXI.Assets.get?.(alias);
-        if (this.isValidTexture(cached)) {
-            this.cache.set(alias, cached);
-            return cached;
+        if (this.cache.has(alias)) {
+            return this.cache.get(alias);
         }
 
-        // 2. Check if we already failed for this
         if (this.failedIcons.has(alias)) return null;
 
-        // 3. Dedupe inflight loads
         if (this.inflight.has(alias)) {
             return await this.inflight.get(alias);
         }
 
-        // 4. Load using PIXI.Assets.load with alias to avoid cache mismatch
+        this.ensureBundleRegistered();
+
         const loadTask = (async () => {
             try {
-                const texture = await PIXI.Assets.load({ alias, src });
+                const texture = await PIXI.Assets.load(alias);
                 if (this.isValidTexture(texture)) {
                     this.cache.set(alias, texture);
                     return texture;
@@ -95,31 +104,40 @@ class RankAssetsManager {
         return result;
     }
 
-    /**
-     * Sync getter from our cache.
-     */
     getRankTexture(idx) {
         const clamped = this.clampIndex(idx);
         const alias = this.rankAlias(clamped);
-        const cached = this.cache.get(alias) || PIXI.Assets.get?.(alias);
-        if (this.isValidTexture(cached)) {
-            this.cache.set(alias, cached);
-            return cached;
-        }
-        return null;
+        return this.cache.get(alias) || null;
+    }
+
+    getRankAlias(idx) {
+        return this.rankAlias(this.clampIndex(idx));
+    }
+
+    getRankPath(idx) {
+        return this.rankSrc(this.clampIndex(idx));
     }
 
     getRankTextureFallback() {
-        return null; // Prompt says "If texture is null, skip creating rank sprite"
+        return null;
     }
 
-    // Compat helper for any existing preload logic
     async preloadAll() {
-        const tasks = [];
-        for (let i = 0; i < NUM_RANKS; i++) {
-            tasks.push(this.loadRankTexture(i));
+        this.ensureBundleRegistered();
+        try {
+            const bundle = await PIXI.Assets.loadBundle(BUNDLE_NAME);
+            if (bundle && typeof bundle === 'object') {
+                Object.entries(bundle).forEach(([alias, texture]) => {
+                    if (this.isValidTexture(texture)) {
+                        this.cache.set(alias, texture);
+                    }
+                });
+            }
+            return bundle || null;
+        } catch (error) {
+            console.warn('[RankAssets] preloadAll failed:', error?.message || error);
+            return null;
         }
-        return Promise.all(tasks);
     }
 }
 
