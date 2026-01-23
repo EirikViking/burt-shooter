@@ -588,6 +588,7 @@ export class HighscoreScene {
   async renderHighscoreRows(startY, layout) {
     this.rowsContainer.removeChildren();
     if (this.status === 'LOADED') {
+      const isDebug = window.location.search.includes('debug=1');
       // Check for pending highscore and prepare combined list
       let entriesToDisplay = [...this.entries];
       let pendingEntry = null;
@@ -729,6 +730,17 @@ export class HighscoreScene {
           rankSprite.visible = true;
 
           this.rowsContainer.addChild(rankSprite);
+        } else if (isDebug) {
+          const placeholder = new PIXI.Sprite(PIXI.Texture.WHITE);
+          const size = layout.isMobile ? 10 : 12;
+          placeholder.width = size;
+          placeholder.height = size;
+          placeholder.tint = 0xff3355;
+          placeholder.alpha = 0.6;
+          placeholder.anchor.set(0, 0.5);
+          placeholder.x = columns.rank + 40;
+          placeholder.y = y + rowStyle.fontSize / 2;
+          this.rowsContainer.addChild(placeholder);
         }
 
         // TASK 1: Use getRankTitle from RankPolicy (single source of truth)

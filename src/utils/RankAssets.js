@@ -9,6 +9,18 @@ class RankAssetsManager {
         this.cache = new Map();
         this.inflight = new Map();
         this.failedIcons = new Set();
+        this.warned = new Set();
+    }
+
+    clampIndex(idx) {
+        const parsed = Number(idx);
+        if (!Number.isFinite(parsed)) return 0;
+        const clamped = Math.max(0, Math.min(MAX_RANK_INDEX, Math.floor(parsed)));
+        return clamped;
+    }
+
+    rankAlias(idx) {
+        return `rank_${idx.toString().padStart(2, '0')}`;
     }
 
     rankSrc(idx) {
@@ -16,45 +28,70 @@ class RankAssetsManager {
         return AssetManifest.sprites.ranks[idx];
     }
 
+    isValidTexture(tex) {
+        return !!(tex && tex.width > 0 && tex.height > 0);
+    }
+
+    shouldWarn() {
+        if (typeof window === 'undefined') return false;
+        return window.location?.search?.includes('debug=1');
+    }
+
+    noteFailure(alias, src, reason) {
+        this.failedIcons.add(alias);
+        if (!this.shouldWarn() || this.warned.has(alias)) return;
+        const detail = reason ? ` (${reason})` : '';
+        console.warn(`[RankAssets] Missing rank texture ${alias} -> ${src}${detail}`);
+        this.warned.add(alias);
+    }
+
     /**
      * Load rank texture using PIXI Assets
      */
     async loadRankTexture(idx) {
-        // Clamp 0 to 19
-        if (idx < 0) idx = 0;
-        if (idx > MAX_RANK_INDEX) idx = MAX_RANK_INDEX;
+        const clamped = this.clampIndex(idx);
+        const alias = this.rankAlias(clamped);
+        const src = this.rankSrc(clamped);
 
-        const src = this.rankSrc(idx);
+        if (!src) {
+            this.noteFailure(alias, src, 'manifest missing');
+            return null;
+        }
 
-        // 1. Check if already in our cache
-        if (this.cache.has(src)) {
-            return this.cache.get(src);
+        // 1. Check cache or PIXI.Assets cache by alias
+        const cached = this.cache.get(alias) || PIXI.Assets.get?.(alias);
+        if (this.isValidTexture(cached)) {
+            this.cache.set(alias, cached);
+            return cached;
         }
 
         // 2. Check if we already failed for this
-        if (this.failedIcons.has(src)) return null;
+        if (this.failedIcons.has(alias)) return null;
 
         // 3. Dedupe inflight loads
-        if (this.inflight.has(src)) {
-            return await this.inflight.get(src);
+        if (this.inflight.has(alias)) {
+            return await this.inflight.get(alias);
         }
 
-        // 4. Load using PIXI.Assets.load with simple URL
+        // 4. Load using PIXI.Assets.load with alias to avoid cache mismatch
         const loadTask = (async () => {
             try {
-                const texture = await PIXI.Assets.load(src);
-                this.cache.set(src, texture);
-                return texture;
+                const texture = await PIXI.Assets.load({ alias, src });
+                if (this.isValidTexture(texture)) {
+                    this.cache.set(alias, texture);
+                    return texture;
+                }
+                this.noteFailure(alias, src, 'invalid texture');
+                return null;
             } catch (error) {
-                console.warn(`[RankAssets] Failed to load ${src}:`, error.message);
-                this.failedIcons.add(src);
+                this.noteFailure(alias, src, error?.message || 'load failed');
                 return null;
             }
         })();
 
-        this.inflight.set(src, loadTask);
+        this.inflight.set(alias, loadTask);
         const result = await loadTask;
-        this.inflight.delete(src);
+        this.inflight.delete(alias);
         return result;
     }
 
@@ -62,10 +99,14 @@ class RankAssetsManager {
      * Sync getter from our cache.
      */
     getRankTexture(idx) {
-        if (idx < 0) idx = 0;
-        if (idx > MAX_RANK_INDEX) idx = MAX_RANK_INDEX;
-        const src = this.rankSrc(idx);
-        return this.cache.get(src) || null;
+        const clamped = this.clampIndex(idx);
+        const alias = this.rankAlias(clamped);
+        const cached = this.cache.get(alias) || PIXI.Assets.get?.(alias);
+        if (this.isValidTexture(cached)) {
+            this.cache.set(alias, cached);
+            return cached;
+        }
+        return null;
     }
 
     getRankTextureFallback() {
