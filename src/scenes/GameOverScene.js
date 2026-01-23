@@ -9,6 +9,8 @@ import { generateUUID } from '../utils/uuid.js';
 const ENTRY_PROMPT_DESKTOP = 'TRYKK ENTER FOR Å LOGGE SCORE';
 const ENTRY_PROMPT_MOBILE = 'TRYKK HER FOR Å LOGGE SCORE';
 const INPUT_PROMPT = 'SKRIV NAVN OG TRYKK OK';
+const WALLET_PROMPT = 'VKC WALLET (VALGFRI)';
+const WALLET_STORAGE_KEY = 'burt.wallet.v1';
 
 export class GameOverScene {
   constructor(game) {
@@ -34,6 +36,12 @@ export class GameOverScene {
     this.inputOverlay = null;
     this.inputField = null;
     this.submitButton = null;
+    this.walletInput = '';
+    this.walletOverlay = null;
+    this.walletField = null;
+    this.walletSubmitButton = null;
+    this.walletSkipButton = null;
+    this.walletPrompted = false;
     // Frozen final values
     this.finalScore = 0;
     this.finalLevel = 0;
@@ -47,8 +55,10 @@ export class GameOverScene {
     this.container.removeChildren();
     this.removeInputOverlay();
     this.nameInput = '';
+    this.walletInput = '';
     this.state = 'prompt';
     this.caretVisible = true;
+    this.walletPrompted = false;
 
     // FREEZE final score and level immediately
     this.finalScore = Number(this.game.score) || 0;
@@ -412,6 +422,25 @@ export class GameOverScene {
     }
   }
 
+  loadLastWallet() {
+    try {
+      const value = localStorage.getItem(WALLET_STORAGE_KEY);
+      return typeof value === 'string' ? value : '';
+    } catch {
+      return '';
+    }
+  }
+
+  saveLastWallet(value) {
+    try {
+      if (value && value.length > 0) {
+        localStorage.setItem(WALLET_STORAGE_KEY, value);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }
+
   showInputOverlay() {
     if (this.inputOverlay) return;
 
@@ -553,6 +582,168 @@ export class GameOverScene {
     this.submitButton = null;
   }
 
+  showWalletOverlay() {
+    if (this.walletOverlay) return;
+    const savedWallet = this.loadLastWallet();
+    this.walletInput = savedWallet || '';
+
+    this.walletOverlay = document.createElement('div');
+    this.walletOverlay.id = 'wallet-input-overlay';
+    this.walletOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 10000;
+      padding: 20px;
+      box-sizing: border-box;
+    `;
+
+    const label = document.createElement('div');
+    label.textContent = WALLET_PROMPT;
+    label.style.cssText = `
+      font-family: 'Courier New', monospace;
+      font-size: 20px;
+      color: #00ffff;
+      margin-bottom: 8px;
+      text-align: center;
+    `;
+    this.walletOverlay.appendChild(label);
+
+    const hint = document.createElement('div');
+    hint.textContent = 'Kun for VKC-belÃ¸nning (valgfri)';
+    hint.style.cssText = `
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #888888;
+      margin-bottom: 14px;
+      text-align: center;
+    `;
+    this.walletOverlay.appendChild(hint);
+
+    this.walletField = document.createElement('input');
+    this.walletField.type = 'text';
+    this.walletField.maxLength = 120;
+    this.walletField.autocapitalize = 'off';
+    this.walletField.autocomplete = 'off';
+    this.walletField.spellcheck = false;
+    this.walletField.placeholder = 'Wallet address (valgfri)';
+    this.walletField.value = this.walletInput;
+    this.walletField.style.cssText = `
+      font-family: 'Courier New', monospace;
+      font-size: 20px;
+      color: #ffffff;
+      background: #111111;
+      border: 3px solid #00ffff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      width: 420px;
+      max-width: 95%;
+      text-align: center;
+      outline: none;
+      box-sizing: border-box;
+    `;
+    this.walletField.addEventListener('input', (e) => {
+      const value = String(e.target.value || '').trim().slice(0, 120);
+      e.target.value = value;
+      this.walletInput = value;
+    });
+    this.walletField.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.finishWalletEntry();
+      }
+    });
+    this.walletOverlay.appendChild(this.walletField);
+
+    const btnContainer = document.createElement('div');
+    btnContainer.style.cssText = `
+      display: flex;
+      gap: 12px;
+      margin-top: 18px;
+    `;
+
+    this.walletSubmitButton = document.createElement('button');
+    this.walletSubmitButton.textContent = 'FORTSETT';
+    this.walletSubmitButton.style.cssText = `
+      font-family: 'Courier New', monospace;
+      font-size: 20px;
+      color: #000000;
+      background: #00ffff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 28px;
+      cursor: pointer;
+      font-weight: bold;
+      min-width: 120px;
+    `;
+    this.walletSubmitButton.addEventListener('click', () => this.finishWalletEntry());
+    btnContainer.appendChild(this.walletSubmitButton);
+
+    this.walletSkipButton = document.createElement('button');
+    this.walletSkipButton.textContent = 'HOPP OVER';
+    this.walletSkipButton.style.cssText = `
+      font-family: 'Courier New', monospace;
+      font-size: 18px;
+      color: #888888;
+      background: #333333;
+      border: 2px solid #666666;
+      border-radius: 8px;
+      padding: 12px 20px;
+      cursor: pointer;
+    `;
+    this.walletSkipButton.addEventListener('click', () => {
+      this.walletInput = '';
+      this.finishWalletEntry();
+    });
+    btnContainer.appendChild(this.walletSkipButton);
+
+    this.walletOverlay.appendChild(btnContainer);
+    document.body.appendChild(this.walletOverlay);
+
+    setTimeout(() => {
+      if (this.walletField) this.walletField.focus();
+    }, 100);
+  }
+
+  removeWalletOverlay() {
+    if (this.walletOverlay && this.walletOverlay.parentNode) {
+      this.walletOverlay.parentNode.removeChild(this.walletOverlay);
+    }
+    this.walletOverlay = null;
+    this.walletField = null;
+    this.walletSubmitButton = null;
+    this.walletSkipButton = null;
+  }
+
+  enterWalletMode() {
+    if (this.walletPrompted) return;
+    this.walletPrompted = true;
+    this.state = 'wallet';
+    this.stopCaretBlink();
+    this.hideHiddenInput();
+    this.removeInputOverlay();
+    if (this.promptText) this.promptText.visible = false;
+    if (this.nameDisplay) this.nameDisplay.visible = false;
+    this.showWalletOverlay();
+  }
+
+  finishWalletEntry() {
+    const trimmed = (this.walletInput || '').trim().slice(0, 120);
+    this.walletInput = trimmed;
+    if (trimmed.length > 0) {
+      this.saveLastWallet(trimmed);
+    }
+    this.removeWalletOverlay();
+    this.submitScoreFinal();
+  }
+
   ensureHiddenInput() {
     if (this.hiddenInput) return this.hiddenInput;
     const input = document.createElement('input');
@@ -631,6 +822,14 @@ export class GameOverScene {
     if (this.state !== 'input' || this.nameInput.length === 0) {
       return;
     }
+    if (!this.walletPrompted) {
+      this.enterWalletMode();
+      return;
+    }
+    await this.submitScoreFinal();
+  }
+
+  async submitScoreFinal() {
     // Prevent double submission
     if (this.isSubmitting) {
       console.log('[GameOverScene] Already submitting, ignoring duplicate call');
@@ -667,7 +866,7 @@ export class GameOverScene {
 
       // Attempt API call with submissionId for deduplication
       await Promise.race([
-        API.submitScore(this.nameInput, this.finalScore, this.finalLevel, this.game.rankIndex, this.submissionId),
+        API.submitScore(this.nameInput, this.finalScore, this.finalLevel, this.game.rankIndex, this.submissionId, this.walletInput),
         timeoutPromise
       ]);
 
@@ -690,6 +889,8 @@ export class GameOverScene {
           score: this.finalScore,
           level: this.finalLevel,
           rankIndex: this.game.rankIndex || 0,
+          walletAddress: this.walletInput || null,
+          hasWallet: !!(this.walletInput && this.walletInput.length > 0),
           pending: true
         };
         this.removeInputOverlay();
@@ -746,6 +947,7 @@ export class GameOverScene {
       this.hiddenInput = null;
     }
     this.removeInputOverlay();
+    this.removeWalletOverlay();
     this.stopCaretBlink();
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = null;

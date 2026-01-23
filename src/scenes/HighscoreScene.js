@@ -71,6 +71,7 @@ export class HighscoreScene {
     this.bubbleTimerMs = null;
     this.bubbleLifetimeMs = 5000;
     this.lastBubbleErrorAt = 0;
+    this.walletPanels = new Map();
   }
 
   async init() {
@@ -82,6 +83,7 @@ export class HighscoreScene {
     this.currentBubble = null;
     this.bubbleTimer = 0;
     this.bubbleTimerMs = null;
+    this.walletPanels = new Map();
 
     // Load beer can texture and rank textures
     await BeerAsset.ensureLoaded();
@@ -425,6 +427,8 @@ export class HighscoreScene {
     const levelNum = Number(raw.level);
     const rankValue = raw.rank_index ?? raw.rankIndex ?? raw.rank;
     const rankNum = Number(rankValue);
+    const walletValue = (raw.walletAddress ?? raw.wallet_address ?? '').toString().trim();
+    const hasWallet = !!walletValue;
 
     const safeScore = Number.isFinite(scoreNum) ? scoreNum : 0;
     const safeLevel = Number.isFinite(levelNum) ? levelNum : 0;
@@ -434,7 +438,9 @@ export class HighscoreScene {
       name,
       score: safeScore,
       level: safeLevel,
-      rank_index: safeRank  // CRITICAL FIX: Must be rank_index not rank!
+      rank_index: safeRank,  // CRITICAL FIX: Must be rank_index not rank!
+      walletAddress: hasWallet ? walletValue : null,
+      hasWallet
     };
   }
 
@@ -587,6 +593,7 @@ export class HighscoreScene {
 
   async renderHighscoreRows(startY, layout) {
     this.rowsContainer.removeChildren();
+    this.walletPanels.clear();
     if (this.status === 'LOADED') {
       const isDebug = window.location.search.includes('debug=1');
       // Check for pending highscore and prepare combined list
@@ -600,6 +607,8 @@ export class HighscoreScene {
           score: pending.score || 0,
           level: pending.level || 0,
           rank_index: pending.rankIndex ?? getRankFromScore(pending.score || 0),
+          walletAddress: pending.walletAddress || null,
+          hasWallet: !!pending.walletAddress,
           isPending: true
         };
         // Add pending entry at the start
@@ -724,6 +733,23 @@ export class HighscoreScene {
         levelText.anchor.set(1, 0);
 
         this.rowsContainer.addChild(rankText, nameText, scoreText, levelText);
+
+        if (score.hasWallet && score.walletAddress) {
+          const vkcTag = new PIXI.Text('$VKC', {
+            fontFamily: 'Courier New',
+            fontSize: Math.max(10, rowStyle.fontSize - 2),
+            fill: '#66ff66'
+          });
+          vkcTag.x = nameText.x + nameText.width + 8;
+          vkcTag.y = y;
+          this.rowsContainer.addChild(vkcTag);
+
+          nameText.eventMode = 'static';
+          nameText.cursor = 'pointer';
+          nameText.on('pointerdown', () => {
+            this.toggleWalletPanel(index, score.walletAddress, nameText.x, y + rowHeight * 0.6, layout);
+          });
+        }
 
         // Add rank sprite using preloaded texture
         const rankTexture = rankTextures[index];
@@ -1337,6 +1363,96 @@ export class HighscoreScene {
     const rowX = layout.padding + layout.width * 0.14;
 
     return { x: rowX, y: rowY };
+  }
+
+  toggleWalletPanel(rowIndex, walletAddress, anchorX, anchorY, layout) {
+    if (!walletAddress) return;
+    const existing = this.walletPanels.get(rowIndex);
+    if (existing) {
+      if (existing.parent) existing.parent.removeChild(existing);
+      this.walletPanels.delete(rowIndex);
+      return;
+    }
+
+    this.walletPanels.forEach((panel) => {
+      if (panel.parent) panel.parent.removeChild(panel);
+    });
+    this.walletPanels.clear();
+
+    const panel = new PIXI.Container();
+    const padding = 10;
+    const maxWidth = Math.max(200, layout.width - layout.padding * 2);
+    const panelWidth = Math.min(380, maxWidth);
+
+    const background = new PIXI.Graphics();
+    background.rect(0, 0, panelWidth, 42);
+    background.fill({ color: 0x111111, alpha: 0.85 });
+    background.stroke({ color: 0x00ff88, width: 1, alpha: 0.6 });
+    panel.addChild(background);
+
+    const walletText = new PIXI.Text(walletAddress, {
+      fontFamily: 'Courier New',
+      fontSize: 12,
+      fill: '#ffffff'
+    });
+    walletText.x = padding;
+    walletText.y = 6;
+    panel.addChild(walletText);
+
+    const copyText = new PIXI.Text('COPY', {
+      fontFamily: 'Courier New',
+      fontSize: 12,
+      fill: '#00ffff'
+    });
+    copyText.eventMode = 'static';
+    copyText.cursor = 'pointer';
+    copyText.x = panelWidth - padding - copyText.width;
+    copyText.y = 24;
+    copyText.on('pointerdown', () => {
+      this.copyWalletToClipboard(walletAddress, copyText);
+    });
+    panel.addChild(copyText);
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    panel.x = clamp(anchorX, layout.padding, layout.width - layout.padding - panelWidth);
+    panel.y = anchorY;
+
+    this.rowsContainer.addChild(panel);
+    this.walletPanels.set(rowIndex, panel);
+  }
+
+  async copyWalletToClipboard(walletAddress, label) {
+    let success = false;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(walletAddress);
+        success = true;
+      }
+    } catch {
+      success = false;
+    }
+
+    if (!success) {
+      try {
+        const temp = document.createElement('input');
+        temp.value = walletAddress;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        success = true;
+      } catch {
+        success = false;
+      }
+    }
+
+    if (label) {
+      const original = label.text;
+      label.text = success ? 'COPIED' : 'COPY';
+      setTimeout(() => {
+        label.text = original;
+      }, 1200);
+    }
   }
 
 

@@ -153,7 +153,9 @@ class APIClient {
         score: typeof entry.score === 'number' ? entry.score : parseInt(entry.score, 10) || 0,
         level: typeof entry.level === 'number' ? entry.level : parseInt(entry.level, 10) || 1,
         rankIndex: entry.rankIndex ?? entry.rank_index ?? 0,
-        timestamp: entry.timestamp
+        timestamp: entry.timestamp,
+        walletAddress: entry.walletAddress ?? entry.wallet_address ?? null,
+        hasWallet: !!(entry.hasWallet || entry.walletAddress || entry.wallet_address)
       }));
 
       // Cache successful response
@@ -173,7 +175,7 @@ class APIClient {
     }
   }
 
-  async submitScore(name, score, level, rankIndex, submissionId) {
+  async submitScore(name, score, level, rankIndex, submissionId, walletAddress = null) {
     // Guard: Prevent duplicate submissions while one is in flight
     if (this._submissionInFlight) {
       console.warn('[API] Submission already in flight, blocking duplicate');
@@ -184,7 +186,7 @@ class APIClient {
       this._submissionInFlight = true;
       this._currentSubmissionId = submissionId;
 
-      const payload = { name, score, level, rankIndex, submissionId };
+      const payload = { name, score, level, rankIndex, submissionId, walletAddress };
       console.log('[API] Submitting payload:', payload);
 
       const response = await fetchWithTimeout(`${this.baseUrl}/api/highscores`, {

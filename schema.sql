@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS game_highscores (
   name TEXT NOT NULL,
   score INTEGER NOT NULL,
   level INTEGER NOT NULL,
+  wallet_address TEXT,
   created_at TEXT NOT NULL
 );
 
