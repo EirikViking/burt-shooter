@@ -7,6 +7,7 @@ when git commits are not used.
 
 ## 2026-01-23
 - Added `difficulty.pressureScalar=0.9` to reduce incoming fire pressure by 10% (enemy + boss projectiles).
+- Ship Select carousel now shows real per-ship stats and shuffles ship order on each open.
 
 ---
 

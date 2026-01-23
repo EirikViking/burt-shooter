@@ -12,12 +12,13 @@ export class ShipSelectScene {
   constructor(game) {
     this.game = game;
     this.container = new PIXI.Container();
-    this.ships = getSelectableShips();
+    this.ships = this.shuffleShips(getSelectableShips());
     this.selectedIndex = 0;
     this.shipCards = [];
     this.scrollY = 0;
     this.isDragging = false;
     this.lastPointerY = 0;
+    this.statRanges = this.computeStatRanges(this.ships);
 
     // Load saved selection
     const saved = this.loadSelection();
@@ -787,11 +788,63 @@ export class ShipSelectScene {
   }
 
   getShipStats(ship) {
-    // Generate stat bars based on ship metadata or defaults
-    const healthBar = '█'.repeat(3) + '░'.repeat(2); // 3/5
-    const damageBar = '█'.repeat(3) + '░'.repeat(2); // 3/5
-    const speedBar = '█'.repeat(4) + '░'.repeat(1);  // 4/5
-    return `HP: ${healthBar}\nDMG: ${damageBar}\nSPD: ${speedBar}`;
+    const stats = ship?.stats || { speed: 6, fireRate: 150, damage: 1 };
+    const ranges = this.statRanges || this.computeStatRanges(this.ships);
+    const segments = 5;
+    const barChar = '#';
+    const emptyChar = '.';
+    const clamp01 = (value) => Math.max(0, Math.min(1, value));
+    const makeBar = (value) => {
+      const filled = Math.max(1, Math.min(segments, Math.round(value * segments)));
+      return barChar.repeat(filled) + emptyChar.repeat(segments - filled);
+    };
+
+    const speedNorm = ranges.speed.max > ranges.speed.min
+      ? (stats.speed - ranges.speed.min) / (ranges.speed.max - ranges.speed.min)
+      : 0.5;
+    const damageNorm = ranges.damage.max > ranges.damage.min
+      ? (stats.damage - ranges.damage.min) / (ranges.damage.max - ranges.damage.min)
+      : 0.5;
+    const fireRateNorm = ranges.fireRate.max > ranges.fireRate.min
+      ? (ranges.fireRate.max - stats.fireRate) / (ranges.fireRate.max - ranges.fireRate.min)
+      : 0.5;
+
+    const speedBar = makeBar(clamp01(speedNorm));
+    const damageBar = makeBar(clamp01(damageNorm));
+    const fireRateBar = makeBar(clamp01(fireRateNorm));
+    return `DMG: ${damageBar}
+SPD: ${speedBar}
+FIR: ${fireRateBar}`;
+  }
+
+  computeStatRanges(ships) {
+    const list = Array.isArray(ships) ? ships : [];
+    const defaults = { speed: 6, fireRate: 150, damage: 1 };
+    const values = {
+      speed: list.map(s => Number(s?.stats?.speed ?? defaults.speed)).filter(Number.isFinite),
+      fireRate: list.map(s => Number(s?.stats?.fireRate ?? defaults.fireRate)).filter(Number.isFinite),
+      damage: list.map(s => Number(s?.stats?.damage ?? defaults.damage)).filter(Number.isFinite)
+    };
+    const range = (arr, fallback) => {
+      if (!arr.length) return { min: fallback, max: fallback };
+      return { min: Math.min(...arr), max: Math.max(...arr) };
+    };
+    return {
+      speed: range(values.speed, defaults.speed),
+      fireRate: range(values.fireRate, defaults.fireRate),
+      damage: range(values.damage, defaults.damage)
+    };
+  }
+
+  shuffleShips(ships) {
+    const list = Array.isArray(ships) ? [...ships] : [];
+    for (let i = list.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = list[i];
+      list[i] = list[j];
+      list[j] = temp;
+    }
+    return list;
   }
 
   updateSelection() {
