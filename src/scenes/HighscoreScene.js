@@ -657,11 +657,25 @@ export class HighscoreScene {
         this.rowsContainer.addChild(text);
       });
 
+      const computeDisplayRank = (entry) => {
+        const scoreValue = Number(entry?.score);
+        if (Number.isFinite(scoreValue)) {
+          const rankFromScore = getRankFromScore(scoreValue);
+          return Math.max(1, Math.min(19, Math.floor(rankFromScore)));
+        }
+        const fallbackRank = Number(entry?.rank_index ?? entry?.rankIndex ?? entry?.rank);
+        if (Number.isFinite(fallbackRank)) {
+          return Math.max(1, Math.min(19, Math.floor(fallbackRank)));
+        }
+        return 1;
+      };
+
       // Preload rank textures for visible entries
       const entriesToRender = entriesToDisplay.slice(0, maxRows);
       const rankTextures = await Promise.all(
-        entriesToRender.map(async (_entry, idx) => {
-          return RankAssets.loadRankTexture(idx + 1).catch(() => null);
+        entriesToRender.map(async (entry) => {
+          const displayRank = computeDisplayRank(entry);
+          return RankAssets.loadRankTexture(displayRank).catch(() => null);
         })
       );
 
@@ -713,6 +727,7 @@ export class HighscoreScene {
 
         // Add rank sprite using preloaded texture
         const rankTexture = rankTextures[index];
+        const displayRank = computeDisplayRank(score);
         if (rankTexture) {
           const rankSprite = new PIXI.Sprite(rankTexture);
           rankSprite.anchor.set(0, 0.5); // Anchor left-center for consistent positioning
@@ -728,11 +743,11 @@ export class HighscoreScene {
 
           this.rowsContainer.addChild(rankSprite);
 
-          if (isDebug && index === 0) {
-            const alias = RankAssets.getRankAlias(index + 1);
-            const badgePath = RankAssets.getRankPath(index + 1);
+          if (isDebug && index < 2) {
+            const alias = RankAssets.getRankAlias(displayRank);
+            const badgePath = RankAssets.getRankPath(displayRank);
             const resourceUrl = rankTexture?.baseTexture?.resource?.url || 'unknown';
-            console.log(`[HighscoreScene] Rank badge row=${index + 1} alias=${alias} url=${resourceUrl} path=${badgePath}`);
+            console.log(`[HighscoreScene] Rank badge row=${index + 1} score=${score.score} computedRank=${displayRank} alias=${alias} url=${resourceUrl} path=${badgePath}`);
           }
         } else if (isDebug) {
           const placeholder = new PIXI.Sprite(PIXI.Texture.WHITE);
