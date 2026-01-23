@@ -85,7 +85,7 @@ class RankAssetsManager {
 
         const loadTask = (async () => {
             try {
-                const texture = await PIXI.Assets.load(alias);
+                const texture = await PIXI.Assets.load({ alias, src });
                 if (this.isValidTexture(texture)) {
                     this.cache.set(alias, texture);
                     return texture;
@@ -133,11 +133,34 @@ class RankAssetsManager {
                     }
                 });
             }
-            return bundle || null;
+            if (this.cache.size > 0) {
+                return bundle || null;
+            }
         } catch (error) {
             console.warn('[RankAssets] preloadAll failed:', error?.message || error);
+        }
+
+        const manifestList = AssetManifest.sprites.ranks || [];
+        const entries = manifestList
+            .map((src, idx) => ({ alias: this.rankAlias(idx), src }))
+            .filter(entry => typeof entry.src === 'string' && entry.src.length > 0);
+
+        if (entries.length === 0) {
             return null;
         }
+
+        const textures = await Promise.all(
+            entries.map(entry => PIXI.Assets.load(entry).catch(() => null))
+        );
+
+        textures.forEach((texture, index) => {
+            const alias = entries[index]?.alias;
+            if (alias && this.isValidTexture(texture)) {
+                this.cache.set(alias, texture);
+            }
+        });
+
+        return this.cache.size > 0 ? textures : null;
     }
 }
 
