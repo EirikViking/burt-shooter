@@ -812,7 +812,8 @@ export class Player {
         0, // Straight up
         this.bulletSpeed * 0.4, // 40% slower
         this.bulletDamage * 5, // More damage
-        this.bulletPierce,
+        0xffaa00,
+        true,
         { color: 'Orange', index: 3 }
       );
       bomb.isBomb = true;
@@ -892,7 +893,8 @@ export class Player {
           0,
           -this.bulletSpeed,
           Math.max(1, Math.round(this.bulletDamage * 0.7)),
-          this.bulletPierce,
+          0x00ffff,
+          true,
           { color: 'Blue', index: 7 } // Cyan-ish bullet
         );
         bullets.push(bullet);
