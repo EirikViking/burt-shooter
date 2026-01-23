@@ -800,6 +800,18 @@ export class Player {
 
   // --- Actions ---
 
+  createMuzzleFlash() {
+    if (!this.sprite) return;
+    const color = Number.isFinite(this.muzzleFlashColor) ? this.muzzleFlashColor : 0xffffff;
+    const flash = new PIXI.Graphics();
+    flash.circle(0, -15, 6);
+    flash.fill({ color, alpha: 0.8 });
+    this.sprite.addChild(flash);
+    setTimeout(() => {
+      if (flash.parent) flash.parent.removeChild(flash);
+    }, 80);
+  }
+
   shoot() {
     this.shootCooldown = this.shootDelay;
     const bullets = [];
