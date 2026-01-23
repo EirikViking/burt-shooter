@@ -2061,7 +2061,10 @@ export class PlayScene {
       return;
     }
     this.comboDisplay.visible = true;
-    this.comboDisplay.text = `COMBO x${this.comboMultiplier}  (${this.comboCount})`;
+    this.comboDisplay.text = t('play.combo.display', {
+      mult: this.comboMultiplier,
+      count: this.comboCount
+    });
     const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.06;
     this.comboDisplay.scale.set(pulse);
   }
@@ -2386,9 +2389,14 @@ export class PlayScene {
     const synergy = this.player?.synergyState?.type || 'none';
     const powerup = this.player?.activePowerup?.type || 'none';
     const weapon = this.player?.weaponProfileName || 'na';
-    this.devOverlay.text =
-      `COMBO:${this.comboCount}x${this.comboMultiplier} STREAK:${this.killStreak}\n` +
-      `PU:${powerup} SYN:${synergy} WEAPON:${weapon}`;
+    this.devOverlay.text = t('play.debug.overlay', {
+      comboCount: this.comboCount,
+      comboMultiplier: this.comboMultiplier,
+      killStreak: this.killStreak,
+      powerup,
+      synergy,
+      weapon
+    });
   }
   updateAmbientBeers(delta) {
     // WAVE FIX: Use spawn gate from EnemyManager

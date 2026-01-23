@@ -1564,21 +1564,21 @@ export class Player {
     const playScene = this.game && this.game.scenes ? this.game.scenes.play : null;
     if (playScene && playScene.showToast) {
       const labels = {
-        fire_rate: 'FIRE RATE',
-        speed: 'SPEED',
-        damage: 'DAMAGE'
+        fire_rate: t('player.rankBoost.label.fire_rate'),
+        speed: t('player.rankBoost.label.speed'),
+        damage: t('player.rankBoost.label.damage')
       };
-      const label = labels[type] || 'BOOST';
-      playScene.showToast(`RANK BOOST: ${label}`, { fontSize: 30, fill: '#66ffff', duration: 1800, slot: 'center', type: 'rank_boost' });
+      const label = labels[type] || t('player.rankBoost.label.default');
+      playScene.showToast(t('player.rankBoost.toast', { label }), { fontSize: 30, fill: '#66ffff', duration: 1800, slot: 'center', type: 'rank_boost' });
     }
 
     const boostLabels = {
-      fire_rate: 'FIRE RATE +',
-      speed: 'SPEED +',
-      damage: 'DAMAGE +'
+      fire_rate: t('player.rankBoost.hud.fire_rate'),
+      speed: t('player.rankBoost.hud.speed'),
+      damage: t('player.rankBoost.hud.damage')
     };
     if (this.rankBoostText) {
-      this.rankBoostText.text = boostLabels[type] || 'BOOST';
+      this.rankBoostText.text = boostLabels[type] || t('player.rankBoost.hud.default');
     }
     AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
     AudioManager.playPowerupVoice();

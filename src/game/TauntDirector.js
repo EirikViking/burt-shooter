@@ -4,6 +4,7 @@
  */
 
 import * as PIXI from 'pixi.js';
+import { t } from '../i18n/index.ts';
 
 // Simple helper for random text generation
 function randomChoice(arr) {
@@ -27,89 +28,105 @@ class TauntDirector {
         // Taunt pools by category
         this.pools = {
             wave_start: [
-                'NY WAVE!',
-                'HER KOMMER DEM!',
-                'KLAR FOR KAMP!',
-                'DREKKA!'
+                t('taunt.wave_start.0'),
+                t('taunt.wave_start.1'),
+                t('taunt.wave_start.2'),
+                t('taunt.wave_start.3')
             ],
             wave_cleared: [
-                'WAVE KLART!',
-                'PERFEKT!',
-                'STOKMARKNES STYLE!',
-                'SKÅL!'
+                t('taunt.wave_cleared.0'),
+                t('taunt.wave_cleared.1'),
+                t('taunt.wave_cleared.2'),
+                t('taunt.wave_cleared.3')
             ],
             boss_gate: [
-                'BOSS INCOMING!',
-                'STOR FISK PÅ VEI!',
-                'NÅ BLIR DET ALVOR!',
-                'BOSS: KLAR!'
+                t('taunt.boss_gate.0'),
+                t('taunt.boss_gate.1'),
+                t('taunt.boss_gate.2'),
+                t('taunt.boss_gate.3')
             ],
             boss_spawn: [
-                'BOSS ER HER!',
-                'KJØR PÅ!',
-                'FULL GASS!',
-                'JATTA JATTA!'
+                t('taunt.boss_spawn.0'),
+                t('taunt.boss_spawn.1'),
+                t('taunt.boss_spawn.2'),
+                t('taunt.boss_spawn.3')
             ],
             boss_defeated: [
-                'BOSS KNUST!',
-                'LEGENDARISK!',
-                'STOKMARKNES VINNER!',
-                'SEIER!'
+                t('taunt.boss_defeated.0'),
+                t('taunt.boss_defeated.1'),
+                t('taunt.boss_defeated.2'),
+                t('taunt.boss_defeated.3')
             ],
             rank_up: [
-                'RANK UP!',
-                'LEVEL OPP!',
-                'SKAMSTERK!',
-                'DREKKA SPRIT!'
+                t('taunt.rank_up.0'),
+                t('taunt.rank_up.1'),
+                t('taunt.rank_up.2'),
+                t('taunt.rank_up.3')
             ],
             low_lives: [
-                'KRITISK!',
-                'SISTE SJANSE!',
-                'HOLD UT!',
-                'LAVT LIV!'
+                t('taunt.low_lives.0'),
+                t('taunt.low_lives.1'),
+                t('taunt.low_lives.2'),
+                t('taunt.low_lives.3')
             ],
             // PART A: New pools for dynamic text rotation
             start_story: [
-                'Stokmarknes og Melbu energi',
-                'Nordlys i blikket, øl i hånda',
-                'Kurt Edgar godkjente dette etter tredje øl',
-                'Eirik med selvtillit langt over ferdighetsnivå',
-                'Hurtigruta gikk, men festen ble igjen',
-                'Klassisk Vesterålen avgjørelse',
-                'Dette hadde aldri gått i Harstad',
-                'Alle kjenner alle, ingen husker noe',
-                'Småby, store ambisjoner, tomme glass',
-                'Drekka sprit!',
-                'Skål!'
+                t('taunt.start_story.0'),
+                t('taunt.start_story.1'),
+                t('taunt.start_story.2'),
+                t('taunt.start_story.3'),
+                t('taunt.start_story.4'),
+                t('taunt.start_story.5'),
+                t('taunt.start_story.6'),
+                t('taunt.start_story.7'),
+                t('taunt.start_story.8'),
+                t('taunt.start_story.9'),
+                t('taunt.start_story.10')
             ],
             highscore_banner: [
-                'Stokmarknes jubler!',
-                'Melbu applauderer!',
-                'Kurt Edgar nikker anerkjennende',
-                'Eirik er stolt nå',
-                'Arcade-geist i lufta',
-                'Legendene lever',
-                'SKAMSTERK!'
+                t('taunt.highscore_banner.0'),
+                t('taunt.highscore_banner.1'),
+                t('taunt.highscore_banner.2'),
+                t('taunt.highscore_banner.3'),
+                t('taunt.highscore_banner.4'),
+                t('taunt.highscore_banner.5'),
+                t('taunt.highscore_banner.6')
             ],
             highscore_comment: [
-                'Dette blir nevnt i årevis',
-                'Klassisk kveld som sporet av',
-                'Ingen angrer ennå',
-                'Fremdeles stående',
-                'Mer flaks enn forstand',
-                'Drekka!',
-                'Jatta jatta!'
+                t('taunt.highscore_comment.0'),
+                t('taunt.highscore_comment.1'),
+                t('taunt.highscore_comment.2'),
+                t('taunt.highscore_comment.3'),
+                t('taunt.highscore_comment.4'),
+                t('taunt.highscore_comment.5'),
+                t('taunt.highscore_comment.6')
             ],
             // PART C: Context-aware highscore taunts (speaker taunts target)
             highscore_taunt: [
-                (ctx) => ctx ? `${ctx.speakerName} sier: ${ctx.targetName} må tilbake til Melbu skolebenk` : 'Jatta jatta, prøv igjen!',
-                (ctx) => ctx ? `${ctx.speakerName} til ${ctx.targetName}: Du skyter som en våt vott` : 'Hut dæ heim!',
-                (ctx) => ctx ? `Rang ${ctx.speakerRank} ler av rang ${ctx.targetRank}: ${ctx.targetName}` : 'Bæ bæ mø!',
-                (ctx) => ctx ? `${ctx.targetName}: "Jeg prøvde"  ${ctx.speakerName}: "Du feila"` : 'Dette e hæstkuk!',
-                (ctx) => ctx ? `${ctx.speakerName}: ${ctx.targetName} e grønn som en Isbjørn` : 'Kurt Edgar ville skammet seg!',
-                (ctx) => ctx ? `${ctx.targetName} burde øvd mer, sier ${ctx.speakerName}` : 'Stokmarknes eier deg!',
-                (ctx) => ctx ? `Rang ${ctx.speakerRank} dominerer rang ${ctx.targetRank}` : 'SKÅL!',
-                (ctx) => ctx ? `${ctx.speakerName} eier ${ctx.targetName} totalt` : 'DREKKA SPRIT!'
+                (ctx) => ctx
+                    ? t('taunt.highscore_taunt.0.ctx', { speakerName: ctx.speakerName, targetName: ctx.targetName })
+                    : t('taunt.highscore_taunt.0.fallback'),
+                (ctx) => ctx
+                    ? t('taunt.highscore_taunt.1.ctx', { speakerName: ctx.speakerName, targetName: ctx.targetName })
+                    : t('taunt.highscore_taunt.1.fallback'),
+                (ctx) => ctx
+                    ? t('taunt.highscore_taunt.2.ctx', { speakerRank: ctx.speakerRank, targetRank: ctx.targetRank, targetName: ctx.targetName })
+                    : t('taunt.highscore_taunt.2.fallback'),
+                (ctx) => ctx
+                    ? t('taunt.highscore_taunt.3.ctx', { targetName: ctx.targetName, speakerName: ctx.speakerName })
+                    : t('taunt.highscore_taunt.3.fallback'),
+                (ctx) => ctx
+                    ? t('taunt.highscore_taunt.4.ctx', { speakerName: ctx.speakerName, targetName: ctx.targetName })
+                    : t('taunt.highscore_taunt.4.fallback'),
+                (ctx) => ctx
+                    ? t('taunt.highscore_taunt.5.ctx', { targetName: ctx.targetName, speakerName: ctx.speakerName })
+                    : t('taunt.highscore_taunt.5.fallback'),
+                (ctx) => ctx
+                    ? t('taunt.highscore_taunt.6.ctx', { speakerRank: ctx.speakerRank, targetRank: ctx.targetRank })
+                    : t('taunt.highscore_taunt.6.fallback'),
+                (ctx) => ctx
+                    ? t('taunt.highscore_taunt.7.ctx', { speakerName: ctx.speakerName, targetName: ctx.targetName })
+                    : t('taunt.highscore_taunt.7.fallback')
             ]
         };
     }
