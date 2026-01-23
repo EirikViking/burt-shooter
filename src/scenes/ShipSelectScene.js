@@ -4,6 +4,7 @@ import { BeerAsset } from '../utils/BeerAsset.js';
 import { getSelectableShips, getDefaultShipKey, isValidShipKey } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { onLanguageChange, t } from '../i18n/index.ts';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -19,6 +20,10 @@ export class ShipSelectScene {
     this.isDragging = false;
     this.lastPointerY = 0;
     this.statRanges = this.computeStatRanges(this.ships);
+    this.langUnsubscribe = null;
+    this.titleText = null;
+    this.subtitleText = null;
+    this.instructionsText = null;
 
     // Load saved selection
     const saved = this.loadSelection();
@@ -49,7 +54,7 @@ export class ShipSelectScene {
 
     // Fixed header with enhanced styling
     const headerContainer = new PIXI.Container();
-    const title = new PIXI.Text('SELECT YOUR SHIP', {
+    this.titleText = new PIXI.Text(t('shipselect.title'), {
       fontFamily: 'Courier New',
       fontSize: 36,
       fill: '#00ff00',
@@ -61,20 +66,20 @@ export class ShipSelectScene {
       dropShadowDistance: 0,
       fontWeight: 'bold'
     });
-    title.anchor.set(0.5, 0);
-    title.position.set(width / 2, 20);
-    headerContainer.addChild(title);
+    this.titleText.anchor.set(0.5, 0);
+    this.titleText.position.set(width / 2, 20);
+    headerContainer.addChild(this.titleText);
 
     // Subtitle
-    const subtitle = new PIXI.Text('Choose Your Combat Vessel', {
+    this.subtitleText = new PIXI.Text(t('shipselect.subtitle'), {
       fontFamily: 'Courier New',
       fontSize: 14,
       fill: '#888888',
       align: 'center'
     });
-    subtitle.anchor.set(0.5, 0);
-    subtitle.position.set(width / 2, 60);
-    headerContainer.addChild(subtitle);
+    this.subtitleText.anchor.set(0.5, 0);
+    this.subtitleText.position.set(width / 2, 60);
+    headerContainer.addChild(this.subtitleText);
 
     this.container.addChild(headerContainer);
 
@@ -92,8 +97,8 @@ export class ShipSelectScene {
 
     // Fixed footer
     const footerContainer = new PIXI.Container();
-    const instructions = new PIXI.Text(
-      'Arrow Keys to Navigate | Click DETAILS or START',
+    this.instructionsText = new PIXI.Text(
+      t('shipselect.instructions'),
       {
         fontFamily: 'Courier New',
         fontSize: 14,
@@ -101,9 +106,9 @@ export class ShipSelectScene {
         align: 'center'
       }
     );
-    instructions.anchor.set(0.5, 1);
-    instructions.position.set(width / 2, height - 15);
-    footerContainer.addChild(instructions);
+    this.instructionsText.anchor.set(0.5, 1);
+    this.instructionsText.position.set(width / 2, height - 15);
+    footerContainer.addChild(this.instructionsText);
     this.container.addChild(footerContainer);
 
     // Setup carousel navigation
@@ -114,6 +119,9 @@ export class ShipSelectScene {
 
     // Setup input
     this.setupInput();
+
+    this.applyLanguage();
+    this.langUnsubscribe = onLanguageChange(() => this.applyLanguage());
 
     // Continuous animation ticker for glow effects
     this.selectionAnimTicker = () => {
@@ -533,7 +541,7 @@ export class ShipSelectScene {
     const buttonSpacing = 20;
 
     this.detailsButton = this.createButton(
-      'DETAILS',
+      t('shipselect.button.details'),
       (width - buttonWidth * 2 - buttonSpacing) / 2,
       buttonY,
       buttonWidth,
@@ -551,7 +559,7 @@ export class ShipSelectScene {
     this.container.addChild(this.detailsButton);
 
     this.startButton = this.createButton(
-      'START',
+      t('shipselect.button.start'),
       (width - buttonWidth * 2 - buttonSpacing) / 2 + buttonWidth + buttonSpacing,
       buttonY,
       buttonWidth,
@@ -568,9 +576,23 @@ export class ShipSelectScene {
 
         if (DEBUG) console.log('[ShipSelect] Starting game with:', spriteKey);
         this.game.startGame(spriteKey);
-      }
+      },
+      true
     );
     this.container.addChild(this.startButton);
+  }
+
+  applyLanguage() {
+    if (this.titleText) this.titleText.text = t('shipselect.title');
+    if (this.subtitleText) this.subtitleText.text = t('shipselect.subtitle');
+    if (this.instructionsText) this.instructionsText.text = t('shipselect.instructions');
+    if (this.detailsButton?.text) this.detailsButton.text.text = t('shipselect.button.details');
+    if (this.startButton?.text) this.startButton.text.text = t('shipselect.button.start');
+    this.shipCards.forEach((shipContainer) => {
+      if (shipContainer.statsText && shipContainer.shipData) {
+        shipContainer.statsText.text = this.getShipStats(shipContainer.shipData);
+      }
+    });
   }
 
   createSelectionParticles(shipContainer) {
@@ -640,7 +662,7 @@ export class ShipSelectScene {
     }
   }
 
-  createButton(label, x, y, width, height, bgColor, textColor, onClick) {
+  createButton(label, x, y, width, height, bgColor, textColor, onClick, isPrimary = false) {
     const button = new PIXI.Container();
     button.position.set(x, y);
     button.eventMode = 'static';
@@ -670,6 +692,7 @@ export class ShipSelectScene {
     text.position.set(width / 2, height / 2);
     button.addChild(text);
     button.text = text;
+    button.isPrimary = isPrimary;
 
     button.on('pointerdown', (e) => {
       e.stopPropagation();
@@ -686,7 +709,7 @@ export class ShipSelectScene {
       // Dramatic hover effect
       bg.clear();
       bg.rect(0, 0, width, height);
-      bg.fill({ color: label === 'START' ? 0x00ffff : bgColor, alpha: 0.9 });
+      bg.fill({ color: button.isPrimary ? 0x00ffff : bgColor, alpha: 0.9 });
       bg.stroke({ color: 0xffffff, width: 3 });
 
       bgGlow.alpha = 0.3;
@@ -812,9 +835,9 @@ export class ShipSelectScene {
     const speedBar = makeBar(clamp01(speedNorm));
     const damageBar = makeBar(clamp01(damageNorm));
     const fireRateBar = makeBar(clamp01(fireRateNorm));
-    return `DMG: ${damageBar}
-SPD: ${speedBar}
-FIR: ${fireRateBar}`;
+    return `${t('shipselect.stats.damage')}: ${damageBar}
+${t('shipselect.stats.speed')}: ${speedBar}
+${t('shipselect.stats.fireRate')}: ${fireRateBar}`;
   }
 
   computeStatRanges(ships) {
@@ -914,6 +937,10 @@ FIR: ${fireRateBar}`;
     if (this.selectionAnimTicker) {
       this.game.app.ticker.remove(this.selectionAnimTicker);
       this.selectionAnimTicker = null;
+    }
+    if (this.langUnsubscribe) {
+      this.langUnsubscribe();
+      this.langUnsubscribe = null;
     }
   }
 

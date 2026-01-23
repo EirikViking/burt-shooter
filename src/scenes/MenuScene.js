@@ -10,6 +10,7 @@ import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
+import { onLanguageChange, t } from '../i18n/index.ts';
 
 export class MenuScene {
   constructor(game) {
@@ -27,6 +28,7 @@ export class MenuScene {
     this.stars = [];
     this.animationTime = 0;
     this.buildStamp = null;
+    this.langUnsubscribe = null;
 
     // PWA install prompt
     this.installPrompt = null;
@@ -54,6 +56,8 @@ export class MenuScene {
       });
     });
     this.createElements();
+    this.applyLanguage();
+    this.langUnsubscribe = onLanguageChange(() => this.applyLanguage());
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutMenu());
     this.layoutMenu();
     this.startAnimations();
@@ -157,7 +161,7 @@ export class MenuScene {
     this.installButton.addChild(icon);
 
     // Text
-    const textStr = platform === 'iOS' ? 'INSTALL APP' : 'INSTALL APP';
+    const textStr = platform === 'iOS' ? t('menu.install.button') : t('menu.install.button');
     const text = new PIXI.Text(textStr, {
       fontFamily: 'Courier New',
       fontSize: 16,
@@ -182,7 +186,7 @@ export class MenuScene {
     this.installButton.on('pointertap', async () => {
       if (platform === 'iOS') {
         // Show iOS instructions popup
-        alert('To install on iOS:\n1. Tap the Share button below\n2. Select "Add to Home Screen"');
+        alert(t('menu.install.iosAlert'));
       } else if (this.installPrompt) {
         // Show the native prompt
         this.installPrompt.prompt();
@@ -243,7 +247,7 @@ export class MenuScene {
       console.error('DEBUG: Error loading beervan', e);
       // Fallback visual
       const { width, height } = this.game.app.screen;
-      const errText = new PIXI.Text('LOAD FAIL', { fill: 'red', fontSize: 24 });
+      const errText = new PIXI.Text(t('menu.loadFail'), { fill: 'red', fontSize: 24 });
       errText.anchor.set(0.5);
       errText.x = width / 2;
       errText.y = height / 2;
@@ -282,7 +286,7 @@ export class MenuScene {
     const titleSize = getResponsiveFontSize(layout, 'title');
     const titleBlur = layout.isMobile ? 4 : 8;
 
-    this.title = new PIXI.Text('BURT SHOOTER', {
+    this.title = new PIXI.Text(t('menu.title'), {
       fontFamily: 'Courier New',
       fontSize: titleSize,
       fill: '#00ffff',
@@ -300,7 +304,7 @@ export class MenuScene {
     this.container.addChild(this.title);
 
     const subtitleSize = getResponsiveFontSize(layout, 'subtitle');
-    this.subtitle = new PIXI.Text('Kurt Edgar & Eirik sitt Galaga', {
+    this.subtitle = new PIXI.Text(t('menu.subtitle'), {
       fontFamily: 'Courier New',
       fontSize: subtitleSize,
       fill: '#ff00ff',
@@ -313,7 +317,7 @@ export class MenuScene {
     const storySize = getResponsiveFontSize(layout, 'body');
     const storyLineHeight = Math.round(storySize * 1.5);
     this.flavor = new PIXI.Text(
-      'Stokmarknes er under angrep!\nRølp, gris og mongo invaderer.\nKun Eirik kan redde dagen.',
+      t('menu.story.default'),
       {
         fontFamily: 'Courier New',
         fontSize: storySize,
@@ -328,7 +332,7 @@ export class MenuScene {
     this.flavor.alpha = 0;  // Start invisible
     this.container.addChild(this.flavor);
 
-    this.startBtn = this.createButton('START SPILL', layout);
+    this.startBtn = this.createButton(t('menu.button.start'), layout);
     this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
       try {
@@ -342,7 +346,7 @@ export class MenuScene {
     });
     this.container.addChild(this.startBtn);
 
-    this.highscoreBtn = this.createButton('HIGHSCORES', layout);
+    this.highscoreBtn = this.createButton(t('menu.button.highscores'), layout);
     this.highscoreBtn.alpha = 0;  // Start invisible
     this.highscoreBtn.on('pointerdown', () => {
       try {
@@ -359,8 +363,8 @@ export class MenuScene {
     // ... (controls and easter code unchanged) ...
 
     const controlsText = layout.isMobile
-      ? 'Joystick: Beveg | FIRE-knapp: Skyt'
-      : 'WASD/Piltaster: Beveg | SPACE: Skyt | SHIFT: Dodge';
+      ? t('menu.controls.mobile')
+      : t('menu.controls.desktop');
     const controlsSize = getResponsiveFontSize(layout, 'small');
     this.controls = new PIXI.Text(controlsText, {
       fontFamily: 'Courier New',
@@ -374,7 +378,7 @@ export class MenuScene {
     this.controls.anchor.set(0.5);
     this.container.addChild(this.controls);
 
-    this.easter = new PIXI.Text('Powered by Kjøttdeig Engine v1.0', {
+    this.easter = new PIXI.Text(t('menu.easter'), {
       fontFamily: 'Courier New',
       fontSize: 10,
       fill: '#333333'
@@ -383,7 +387,7 @@ export class MenuScene {
     this.container.addChild(this.easter);
 
     // Mute/Music Toggle (Small corner button)
-    this.musicBtn = this.createButton('MUSIKK: PÅ', layout);
+    this.musicBtn = this.createButton(t('menu.music.on'), layout);
     // Overwrite style for small button
     const scale = 0.6;
     this.musicBtn.scale.set(scale);
@@ -392,7 +396,7 @@ export class MenuScene {
         AudioManager.init();
         const enabled = AudioManager.toggleMute();
         const label = this.musicBtn._label;
-        label.text = enabled ? 'MUSIKK: PÅ' : 'MUSIKK: AV';
+        label.text = enabled ? t('menu.music.on') : t('menu.music.off');
         label.updateText?.(false);
       } catch (e) {
         console.error('[MenuScene] Music Toggle Error:', e);
@@ -481,6 +485,28 @@ export class MenuScene {
 
     } catch (e) {
       console.error('Menu beer decorations failed:', e);
+    }
+  }
+
+  applyLanguage() {
+    if (!this.title) return;
+    const layout = getCurrentLayout();
+    this.title.text = t('menu.title');
+    this.subtitle.text = t('menu.subtitle');
+    this.flavor.text = t('menu.story.default');
+    if (this.startBtn?._label) this.startBtn._label.text = t('menu.button.start');
+    if (this.highscoreBtn?._label) this.highscoreBtn._label.text = t('menu.button.highscores');
+    if (this.controls) {
+      this.controls.text = layout.isMobile ? t('menu.controls.mobile') : t('menu.controls.desktop');
+    }
+    if (this.easter) this.easter.text = t('menu.easter');
+    if (this.musicBtn?._label) {
+      const enabled = AudioManager.AUDIO_ENABLED && AudioManager.enabled;
+      this.musicBtn._label.text = enabled ? t('menu.music.on') : t('menu.music.off');
+    }
+    if (this.installButton) {
+      const textNode = this.installButton.children.find(child => child instanceof PIXI.Text);
+      if (textNode) textNode.text = t('menu.install.button');
     }
   }
 
@@ -759,6 +785,10 @@ export class MenuScene {
     if (this.layoutUnsubscribe) {
       this.layoutUnsubscribe();
       this.layoutUnsubscribe = null;
+    }
+    if (this.langUnsubscribe) {
+      this.langUnsubscribe();
+      this.langUnsubscribe = null;
     }
   }
 }

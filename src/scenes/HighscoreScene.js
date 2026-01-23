@@ -12,6 +12,7 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
 import { TauntBubble } from '../ui/TauntBubble.js';
+import { onLanguageChange, t } from '../i18n/index.ts';
 
 
 const API_PATH = '/api/highscores';
@@ -72,6 +73,7 @@ export class HighscoreScene {
     this.bubbleLifetimeMs = 5000;
     this.lastBubbleErrorAt = 0;
     this.walletPanels = new Map();
+    this.langUnsubscribe = null;
   }
 
   async init() {
@@ -119,7 +121,7 @@ export class HighscoreScene {
     this.setupPartyHeads(width, height);
     this.setupConfetti(width, height);
 
-    this.title = new PIXI.Text('HIGHSCORES', {
+    this.title = new PIXI.Text(t('highscores.title'), {
       fontFamily: 'Courier New',
       fontSize: getResponsiveFontSize(layout, 'score'),
       fill: '#ffff00',
@@ -134,7 +136,7 @@ export class HighscoreScene {
     this.title.anchor.set(0.5);
     this.container.addChild(this.title);
 
-    this.subtitle = new PIXI.Text('Stokmarknes sine beste', {
+    this.subtitle = new PIXI.Text(t('highscores.subtitle'), {
       fontFamily: 'Courier New',
       fontSize: getResponsiveFontSize(layout, 'subtitle'),
       fill: '#00ffff'
@@ -179,15 +181,18 @@ export class HighscoreScene {
     this.statusText.anchor.set(0, 0.5);
     this.container.addChild(this.statusText);
 
-    this.retryBtn = this.createButton('Retry');
+    this.retryBtn = this.createButton(t('highscores.button.retry'));
     this.retryBtn.on('pointerdown', () => this.fetchHighscores());
     this.container.addChild(this.retryBtn);
 
-    this.backBtn = this.createButton('TILBAKE');
+    this.backBtn = this.createButton(t('highscores.button.back'));
     this.backBtn.on('pointerdown', () => {
       this.game.switchScene('menu');
     });
     this.container.addChild(this.backBtn);
+
+    this.applyLanguage();
+    this.langUnsubscribe = onLanguageChange(() => this.applyLanguage(true));
 
     // TASK C: Build stamp removed from HighscoreScene (only allowed on MenuScene)
     // this.buildStamp = new PIXI.Text(`build: ${BUILD_ID}`, {
@@ -263,6 +268,37 @@ export class HighscoreScene {
     this.commentTypewriter = new TypewriterText(this.comment, line, { charDelay: 30 });
   }
 
+  applyLanguage(forceRefresh = false) {
+    if (!this.title) return;
+    this.title.text = t('highscores.title');
+    if (forceRefresh) {
+      this.rotateBanner();
+      this.rotateComment();
+    }
+    if (this.retryBtn?._label) this.retryBtn._label.text = t('highscores.button.retry');
+    if (this.backBtn?._label) this.backBtn._label.text = t('highscores.button.back');
+    this.updateStateMessage();
+    if (forceRefresh) {
+      this.layoutHighscore();
+    }
+  }
+
+  updateStateMessage() {
+    switch (this.status) {
+      case 'LOADED':
+        this.stateMessage.text = t('highscores.state.loaded');
+        break;
+      case 'EMPTY':
+        this.stateMessage.text = t('highscores.state.empty');
+        break;
+      case 'ERROR':
+        this.stateMessage.text = t('highscores.state.error', { error: this.lastError });
+        break;
+      default:
+        this.stateMessage.text = t('highscores.state.loading');
+    }
+  }
+
   async layoutHighscore() {
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height);
@@ -335,7 +371,7 @@ export class HighscoreScene {
           this.retryAttempt = attempt;
           // Silent retry - only update state message if not first attempt
           if (attempt > 0) {
-            this.stateMessage.text = `Laster... (forsøk ${attempt + 1}/4)`;
+            this.stateMessage.text = t('highscores.loadingAttempt', { attempt: attempt + 1 });
           }
         }
       });
@@ -393,26 +429,14 @@ export class HighscoreScene {
     this.entries = [];
     this.entriesNormalized = [];
     this.lastError = (error && error.message) ? error.message : 'unknown';
-    this.stateMessage.text = `Last error: ${this.lastError}`;
+    this.stateMessage.text = t('highscores.state.lastError', { error: this.lastError });
     this.setState('ERROR');
     console.error('[HighscoreScene] fetch failed:', this.lastError);
   }
 
   setState(newState) {
     this.status = newState;
-    switch (newState) {
-      case 'LOADED':
-        this.stateMessage.text = 'Highscores loaded.';
-        break;
-      case 'EMPTY':
-        this.stateMessage.text = 'Ingen scores ennå! Vær den første.';
-        break;
-      case 'ERROR':
-        this.stateMessage.text = `Feil: ${this.lastError}`;
-        break;
-      default:
-        this.stateMessage.text = 'Laster...';
-    }
+    this.updateStateMessage();
     this.layoutHighscore();
   }
 
@@ -603,7 +627,7 @@ export class HighscoreScene {
       if (this.game.pendingHighscore) {
         const pending = this.game.pendingHighscore;
         pendingEntry = {
-          name: `${pending.name} (pending)`,
+          name: `${pending.name} ${t('highscores.pendingSuffix')}`,
           score: pending.score || 0,
           level: pending.level || 0,
           rank_index: pending.rankIndex ?? getRankFromScore(pending.score || 0),
@@ -627,7 +651,7 @@ export class HighscoreScene {
       if (entriesToDisplay.length > 0) {
         const tempText = new PIXI.Text('', rowStyle);
         entriesToDisplay.forEach(entry => {
-          const displayName = (entry.name || 'NoName').slice(0, 20).toUpperCase();
+          const displayName = (entry.name || t('highscores.noName')).slice(0, 20).toUpperCase();
           tempText.text = displayName;
           maxNameWidth = Math.max(maxNameWidth, tempText.width);
         });
@@ -651,16 +675,16 @@ export class HighscoreScene {
         fill: '#888888'
       };
       const headers = [
-        { text: 'RANK', x: columns.rank },
-        { text: 'NAVN', x: columns.name },
-        { text: 'SCORE', x: columns.score },
-        { text: 'LEVEL', x: columns.level }
+        { key: 'highscores.header.rank', x: columns.rank, alignRight: false },
+        { key: 'highscores.header.name', x: columns.name, alignRight: false },
+        { key: 'highscores.header.score', x: columns.score, alignRight: true },
+        { key: 'highscores.header.level', x: columns.level, alignRight: true }
       ];
       headers.forEach(entry => {
-        const text = new PIXI.Text(entry.text, headerStyle);
+        const text = new PIXI.Text(t(entry.key), headerStyle);
         text.x = entry.x;
         text.y = startY;
-        if (entry.text === 'SCORE' || entry.text === 'LEVEL') {
+        if (entry.alignRight) {
           text.anchor.set(1, 0);
         }
         this.rowsContainer.addChild(text);
@@ -717,7 +741,7 @@ export class HighscoreScene {
         const nameStyle = isTop3 ? { ...rowStyle, fill: '#ffff88', fontSize: rowStyle.fontSize + 1 } : (isPending ? { ...rowStyle, fill: '#ffaa44' } : rowStyle);
 
         const rankText = new PIXI.Text((index + 1).toString().padStart(2, '0'), rankStyle);
-        const nameText = new PIXI.Text((score.name || '??').slice(0, 20), nameStyle);
+        const nameText = new PIXI.Text((score.name || t('highscores.unknownName')).slice(0, 20), nameStyle);
         const scoreText = new PIXI.Text((score.score || 0).toString(), isTop3 ? nameStyle : (isPending ? nameStyle : rowStyle));
         const levelText = new PIXI.Text((score.level || 0).toString(), isTop3 ? nameStyle : (isPending ? nameStyle : rowStyle));
 
@@ -735,7 +759,7 @@ export class HighscoreScene {
         this.rowsContainer.addChild(rankText, nameText, scoreText, levelText);
 
         if (score.hasWallet && score.walletAddress) {
-          const vkcTag = new PIXI.Text('$VKC', {
+          const vkcTag = new PIXI.Text(t('highscores.vkcTag'), {
             fontFamily: 'Courier New',
             fontSize: Math.max(10, rowStyle.fontSize - 2),
             fill: '#66ff66'
@@ -811,7 +835,7 @@ export class HighscoreScene {
       this.fadeInRows();
     } else {
       this.rowsContainer.alpha = 1;
-      const message = this.status === 'EMPTY' ? 'Ingen highscores enda. Vær først!' : 'Ingen data.';
+      const message = this.status === 'EMPTY' ? t('highscores.emptyTable') : t('highscores.noData');
       const empty = new PIXI.Text(message, {
         fontFamily: 'Courier New',
         fontSize: getResponsiveFontSize(layout, 'body'),
@@ -1399,7 +1423,7 @@ export class HighscoreScene {
     walletText.y = 6;
     panel.addChild(walletText);
 
-    const copyText = new PIXI.Text('COPY', {
+    const copyText = new PIXI.Text(t('highscores.copy'), {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#00ffff'
@@ -1448,7 +1472,7 @@ export class HighscoreScene {
 
     if (label) {
       const original = label.text;
-      label.text = success ? 'COPIED' : 'COPY';
+      label.text = success ? t('highscores.copied') : t('highscores.copy');
       setTimeout(() => {
         label.text = original;
       }, 1200);
@@ -1476,6 +1500,10 @@ export class HighscoreScene {
     if (this.layoutUnsubscribe) {
       this.layoutUnsubscribe();
       this.layoutUnsubscribe = null;
+    }
+    if (this.langUnsubscribe) {
+      this.langUnsubscribe();
+      this.langUnsubscribe = null;
     }
     if (this.loadingTimer) {
       clearTimeout(this.loadingTimer);

@@ -4,6 +4,7 @@ import { extendLocations } from '../text/phrasePool.js';
 
 import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
+import { onLanguageChange, t } from '../i18n/index.ts';
 
 export class HUD {
   constructor(container, game) {
@@ -11,6 +12,7 @@ export class HUD {
     this.game = game;
     this.hudContainer = new PIXI.Container();
     this.layoutUnsubscribe = null;
+    this.langUnsubscribe = null;
     this.container.addChild(this.hudContainer);
 
     // Rank Elements
@@ -27,6 +29,8 @@ export class HUD {
     this.createHUD();
     this.layoutUnsubscribe = addResponsiveListener((layout) => this.applyLayout(layout));
     this.applyLayout(getCurrentLayout());
+    this.applyLanguage();
+    this.langUnsubscribe = onLanguageChange(() => this.applyLanguage());
   }
 
   createHUD() {
@@ -38,7 +42,7 @@ export class HUD {
     this.hudContainer.addChild(this.rankGroup);
 
     // Score
-    this.scoreText = new PIXI.Text('SCORE: 0', {
+    this.scoreText = new PIXI.Text(t('hud.score', { score: 0 }), {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: '#ffff00'
@@ -55,7 +59,7 @@ export class HUD {
     this.hudContainer.addChild(this.scoreMultiplierText);
 
     // Level
-    this.levelText = new PIXI.Text('LEVEL: 1', {
+    this.levelText = new PIXI.Text(t('hud.level', { level: 1 }), {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: '#00ffff'
@@ -72,7 +76,7 @@ export class HUD {
       fill: '#ff8080'
     });
     this.livesGroup.addChild(this.livesIcon);
-    this.livesText = new PIXI.Text('LIVES: 3', {
+    this.livesText = new PIXI.Text(t('hud.lives', { lives: 3 }), {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: '#00ff00', // TASK 4: Start with green (default for >= 2 lives)
@@ -106,7 +110,7 @@ export class HUD {
     this.hudContainer.addChild(this.activePowerupGroup);
 
     // Easter egg location
-    this.locationText = new PIXI.Text('STOKMARKNES', {
+    this.locationText = new PIXI.Text(t('hud.location.stokmarknes'), {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#888888'
@@ -116,7 +120,7 @@ export class HUD {
   }
 
   update() {
-    this.scoreText.text = `SCORE: ${this.game.score}`;
+    this.scoreText.text = t('hud.score', { score: this.game.score });
     const mult = Number(this.game.scoreMultiplier) || 1;
     if (mult > 1) {
       this.scoreMultiplierText.text = `x${mult}`;
@@ -129,8 +133,8 @@ export class HUD {
       this.scoreMultiplierText.visible = false;
       this.scoreMultiplierText.scale.set(1);
     }
-    this.levelText.text = `LEVEL: ${this.game.level}`;
-    this.livesText.text = `LIVES: ${this.game.lives}`;
+    this.levelText.text = t('hud.level', { level: this.game.level });
+    this.livesText.text = t('hud.lives', { lives: this.game.lives });
 
     // TASK 4: Update lives color based on count
     if (this.game.lives === 1) {
@@ -167,7 +171,13 @@ export class HUD {
     this.rankBarFill.clear().rect(0, 42, barW * progress, barH).fill({ color: 0xffff00 });
 
     // Random location updates
-    const locations = extendLocations(['STOKMARKNES', 'MELBU', 'HADSEL', 'SORTLAND', 'LOFOTEN']);
+    const locations = extendLocations([
+      t('hud.location.stokmarknes'),
+      t('hud.location.melbu'),
+      t('hud.location.hadsel'),
+      t('hud.location.sortland'),
+      t('hud.location.lofoten')
+    ]);
     if (Math.random() < 0.001) {
       this.locationText.text = locations[Math.floor(Math.random() * locations.length)];
     }
@@ -184,7 +194,7 @@ export class HUD {
     }
 
     const remaining = Math.max(0, Math.ceil((state.remainingMs || 0) / 1000));
-    this.activePowerupText.text = `POWERUP: ${state.label}`;
+    this.activePowerupText.text = t('hud.powerup', { label: state.label });
     this.activePowerupTimer.text = remaining ? `${remaining}s` : '';
     this.activePowerupTimer.x = this.activePowerupText.width + 10;
     this.activePowerupTimer.y = 0;
@@ -205,6 +215,22 @@ export class HUD {
     if (canvasWidth) {
       this.activePowerupGroup.x = canvasWidth - 10 - width;
     }
+  }
+
+  applyLanguage() {
+    if (this.scoreText) {
+      this.scoreText.text = t('hud.score', { score: this.game?.score ?? 0 });
+    }
+    if (this.levelText) {
+      this.levelText.text = t('hud.level', { level: this.game?.level ?? 0 });
+    }
+    if (this.livesText) {
+      this.livesText.text = t('hud.lives', { lives: this.game?.lives ?? 0 });
+    }
+    if (this.locationText) {
+      this.locationText.text = t('hud.location.stokmarknes');
+    }
+    this.updateActivePowerup();
   }
 
   applyLayout(layout = getCurrentLayout()) {
@@ -278,6 +304,10 @@ export class HUD {
     if (this.layoutUnsubscribe) {
       this.layoutUnsubscribe();
       this.layoutUnsubscribe = null;
+    }
+    if (this.langUnsubscribe) {
+      this.langUnsubscribe();
+      this.langUnsubscribe = null;
     }
   }
 }

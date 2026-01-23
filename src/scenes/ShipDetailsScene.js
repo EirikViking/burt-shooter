@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { getShipMetadata, getShipUsage, getTotalUsage } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
+import { onLanguageChange, t } from '../i18n/index.ts';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
@@ -9,6 +10,13 @@ export class ShipDetailsScene {
         this.spriteKey = spriteKey;
         this.container = new PIXI.Container();
         this.ship = getShipMetadata(spriteKey);
+        this.langUnsubscribe = null;
+        this.titleText = null;
+        this.usageText = null;
+        this.statsTitleText = null;
+        this.statLabelNodes = [];
+        this.backButtonText = null;
+        this.startButtonText = null;
 
         if (!this.ship) {
             console.error('[ShipDetails] Invalid sprite key:', spriteKey);
@@ -52,7 +60,7 @@ export class ShipDetailsScene {
         let yOffset = 20;
 
         // Title
-        const title = new PIXI.Text(this.ship.name, {
+        this.titleText = new PIXI.Text(this.ship.name, {
             fontFamily: 'Courier New',
             fontSize: isMobile ? 26 : 32,
             fill: '#00ff00',
@@ -60,9 +68,9 @@ export class ShipDetailsScene {
             strokeThickness: 4,
             fontWeight: 'bold'
         });
-        title.anchor.set(0.5, 0);
-        title.position.set(panelWidth / 2, yOffset);
-        contentContainer.addChild(title);
+        this.titleText.anchor.set(0.5, 0);
+        this.titleText.position.set(panelWidth / 2, yOffset);
+        contentContainer.addChild(this.titleText);
         yOffset += isMobile ? 50 : 55;
 
         // Ship sprite (large)
@@ -85,15 +93,15 @@ export class ShipDetailsScene {
 
         // Usage count
         const usageCount = getShipUsage(this.spriteKey);
-        const usageText = new PIXI.Text(`Used ${usageCount} times by players`, {
+        this.usageText = new PIXI.Text(t('shipdetails.usage', { count: usageCount }), {
             fontFamily: 'Courier New',
             fontSize: 13,
             fill: '#999999',
             align: 'center'
         });
-        usageText.anchor.set(0.5, 0);
-        usageText.position.set(panelWidth / 2, yOffset);
-        contentContainer.addChild(usageText);
+        this.usageText.anchor.set(0.5, 0);
+        this.usageText.position.set(panelWidth / 2, yOffset);
+        contentContainer.addChild(this.usageText);
         yOffset += 35;
 
         // Lore section with better formatting
@@ -104,6 +112,29 @@ export class ShipDetailsScene {
 
         // Setup input
         this.setupInput();
+
+        this.applyLanguage();
+        this.langUnsubscribe = onLanguageChange(() => this.applyLanguage());
+    }
+
+    applyLanguage() {
+        if (this.titleText) {
+            this.titleText.text = this.ship?.name || '';
+        }
+        if (this.usageText) {
+            const usageCount = getShipUsage(this.spriteKey);
+            this.usageText.text = t('shipdetails.usage', { count: usageCount });
+        }
+        if (this.statsTitleText) {
+            this.statsTitleText.text = t('shipdetails.stats.title');
+        }
+        if (this.statLabelNodes.length >= 3) {
+            this.statLabelNodes[0].text = t('shipdetails.stat.speed');
+            this.statLabelNodes[1].text = t('shipdetails.stat.fireRate');
+            this.statLabelNodes[2].text = t('shipdetails.stat.damage');
+        }
+        if (this.backButtonText) this.backButtonText.text = t('shipdetails.back');
+        if (this.startButtonText) this.startButtonText.text = t('shipdetails.start');
     }
 
     createStatsSection(container, panelWidth, yOffset, isMobile) {
@@ -111,15 +142,15 @@ export class ShipDetailsScene {
         console.log(`[ShipStats] details shipId=${this.ship.id} damage=${stats.damage} fireRate=${stats.fireRate} speed=${stats.speed}`);
 
         // Stats title
-        const statsTitle = new PIXI.Text('STATS', {
+        this.statsTitleText = new PIXI.Text(t('shipdetails.stats.title'), {
             fontFamily: 'Courier New',
             fontSize: 16,
             fill: '#00ff00',
             fontWeight: 'bold'
         });
-        statsTitle.anchor.set(0.5, 0);
-        statsTitle.position.set(panelWidth / 2, yOffset);
-        container.addChild(statsTitle);
+        this.statsTitleText.anchor.set(0.5, 0);
+        this.statsTitleText.position.set(panelWidth / 2, yOffset);
+        container.addChild(this.statsTitleText);
         yOffset += 28;
 
         // Stats display
@@ -127,9 +158,9 @@ export class ShipDetailsScene {
         const startX = (panelWidth - statSpacing * 2) / 2;
 
         const statLabels = [
-            { label: 'SPEED', value: stats.speed.toFixed(1), color: 0x00ffff },
-            { label: 'FIRE RATE', value: `${stats.fireRate}ms`, color: 0xff00ff },
-            { label: 'DAMAGE', value: stats.damage.toFixed(1), color: 0xff0000 }
+            { label: t('shipdetails.stat.speed'), value: stats.speed.toFixed(1), color: 0x00ffff },
+            { label: t('shipdetails.stat.fireRate'), value: `${stats.fireRate}ms`, color: 0xff00ff },
+            { label: t('shipdetails.stat.damage'), value: stats.damage.toFixed(1), color: 0xff0000 }
         ];
 
         statLabels.forEach((stat, index) => {
@@ -155,6 +186,7 @@ export class ShipDetailsScene {
             labelText.anchor.set(0.5, 0);
             labelText.position.set(0, isMobile ? 24 : 30);
             statContainer.addChild(labelText);
+            this.statLabelNodes.push(labelText);
 
             container.addChild(statContainer);
         });
@@ -227,7 +259,7 @@ export class ShipDetailsScene {
         backBg.stroke({ color: 0x00ff00, width: 2 });
         backButton.addChild(backBg);
 
-        const backText = new PIXI.Text('BACK', {
+        const backText = new PIXI.Text(t('shipdetails.back'), {
             fontFamily: 'Courier New',
             fontSize: isMobile ? 18 : 22,
             fill: '#00ff00',
@@ -236,6 +268,7 @@ export class ShipDetailsScene {
         backText.anchor.set(0.5);
         backText.position.set(buttonWidth / 2, buttonHeight / 2);
         backButton.addChild(backText);
+        this.backButtonText = backText;
 
         backButton.on('pointerdown', () => this.goBack());
         this.container.addChild(backButton);
@@ -252,7 +285,7 @@ export class ShipDetailsScene {
         startBg.stroke({ color: 0xffffff, width: 2 });
         startButton.addChild(startBg);
 
-        const startText = new PIXI.Text('START GAME', {
+        const startText = new PIXI.Text(t('shipdetails.start'), {
             fontFamily: 'Courier New',
             fontSize: isMobile ? 18 : 22,
             fill: '#000000',
@@ -261,6 +294,7 @@ export class ShipDetailsScene {
         startText.anchor.set(0.5);
         startText.position.set(buttonWidth / 2, buttonHeight / 2);
         startButton.addChild(startText);
+        this.startButtonText = startText;
 
         startButton.on('pointerdown', () => this.startGame());
         this.container.addChild(startButton);
@@ -295,6 +329,10 @@ export class ShipDetailsScene {
     cleanup() {
         if (this.keyHandler) {
             window.removeEventListener('keydown', this.keyHandler);
+        }
+        if (this.langUnsubscribe) {
+            this.langUnsubscribe();
+            this.langUnsubscribe = null;
         }
     }
 

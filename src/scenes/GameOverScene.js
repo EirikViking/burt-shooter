@@ -5,11 +5,12 @@ import { extendGameOverTexts, getGameOverComment } from '../text/phrasePool.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { generateUUID } from '../utils/uuid.js';
+import { onLanguageChange, t } from '../i18n/index.ts';
 
-const ENTRY_PROMPT_DESKTOP = 'TRYKK ENTER FOR Å LOGGE SCORE';
-const ENTRY_PROMPT_MOBILE = 'TRYKK HER FOR Å LOGGE SCORE';
-const INPUT_PROMPT = 'SKRIV NAVN OG TRYKK OK';
-const WALLET_PROMPT = 'VKC WALLET (VALGFRI)';
+const ENTRY_PROMPT_DESKTOP = 'gameover.prompt.desktop';
+const ENTRY_PROMPT_MOBILE = 'gameover.prompt.mobile';
+const INPUT_PROMPT = 'gameover.input.prompt';
+const WALLET_PROMPT = 'gameover.wallet.prompt';
 const WALLET_STORAGE_KEY = 'burt.wallet.v1';
 
 export class GameOverScene {
@@ -36,17 +37,23 @@ export class GameOverScene {
     this.inputOverlay = null;
     this.inputField = null;
     this.submitButton = null;
+    this.inputLabel = null;
+    this.inputLabel = null;
     this.walletInput = '';
     this.walletOverlay = null;
     this.walletField = null;
     this.walletSubmitButton = null;
     this.walletSkipButton = null;
+    this.walletLabel = null;
+    this.walletHint = null;
     this.walletPrompted = false;
+    this.langUnsubscribe = null;
     // Frozen final values
     this.finalScore = 0;
     this.finalLevel = 0;
     this.cachedHighscores = null;
     this.isQualified = false;
+    this.titleIndex = 0;
     // Submission deduplication
     this.submissionId = null;
   }
@@ -73,14 +80,16 @@ export class GameOverScene {
     const layout = createTextLayout(width, height, responsiveLayout);
 
     const gameOverTexts = [
-      'MONGO VANT!',
-      'RØLP OVERLOAD!',
-      'GRIS DOMINANS!',
-      'DEILI FETTA...',
-      'TILBAKE TIL MELBU!'
+      t('gameover.title.mongo'),
+      t('gameover.title.rolp'),
+      t('gameover.title.gris'),
+      t('gameover.title.deili'),
+      t('gameover.title.melbu')
     ];
     const gameOverPool = extendGameOverTexts(gameOverTexts);
-    const randomText = gameOverPool[Math.floor(Math.random() * gameOverPool.length)];
+    const randomIndex = Math.floor(Math.random() * gameOverPool.length);
+    this.titleIndex = randomIndex;
+    const randomText = gameOverPool[randomIndex];
 
     const titleSize = getResponsiveFontSize(layout, 'title');
     this.title = new PIXI.Text(randomText, {
@@ -97,7 +106,7 @@ export class GameOverScene {
     this.container.addChild(this.title);
 
     const scoreSize = getResponsiveFontSize(layout, 'score');
-    this.scoreText = new PIXI.Text(`SCORE: ${this.finalScore}`, {
+    this.scoreText = new PIXI.Text(t('gameover.score', { score: this.finalScore }), {
       fontFamily: 'Courier New',
       fontSize: scoreSize,
       fill: '#ffff00'
@@ -106,7 +115,7 @@ export class GameOverScene {
     this.container.addChild(this.scoreText);
 
     const levelSize = getResponsiveFontSize(layout, 'subtitle');
-    this.levelText = new PIXI.Text(`NÅDDE LEVEL: ${this.finalLevel}`, {
+    this.levelText = new PIXI.Text(t('gameover.level', { level: this.finalLevel }), {
       fontFamily: 'Courier New',
       fontSize: levelSize,
       fill: '#ffffff'
@@ -128,7 +137,7 @@ export class GameOverScene {
     this.container.addChild(this.comment);
 
     const promptSize = layout.isMobile ? 18 : 20;
-    const promptText = layout.isMobile ? ENTRY_PROMPT_MOBILE : ENTRY_PROMPT_DESKTOP;
+    const promptText = layout.isMobile ? t(ENTRY_PROMPT_MOBILE) : t(ENTRY_PROMPT_DESKTOP);
     this.promptText = new PIXI.Text(promptText, {
       fontFamily: 'Courier New',
       fontSize: promptSize,
@@ -155,13 +164,16 @@ export class GameOverScene {
     this.container.addChild(this.nameDisplay);
 
     const smallSize = getResponsiveFontSize(layout, 'small');
-    this.instructions = new PIXI.Text('ESC: Tilbake til meny', {
+    this.instructions = new PIXI.Text(t('gameover.instructions'), {
       fontFamily: 'Courier New',
       fontSize: smallSize,
       fill: '#666666'
     });
     this.instructions.anchor.set(0.5);
     this.container.addChild(this.instructions);
+
+    this.applyLanguage();
+    this.langUnsubscribe = onLanguageChange(() => this.applyLanguage());
 
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutScreen());
@@ -194,7 +206,7 @@ export class GameOverScene {
         this.promptText.visible = false;
         // Show "not qualified" message
         const { width, height } = this.game.app.screen;
-        const notQualifiedMsg = new PIXI.Text('IKKE TOPP 10 - PRØV IGJEN!', {
+        const notQualifiedMsg = new PIXI.Text(t('gameover.notQualified.inline'), {
           fontFamily: 'Courier New',
           fontSize: 24,
           fill: '#888888',
@@ -214,6 +226,62 @@ export class GameOverScene {
         this.promptText.visible = false;
       }
     });
+  }
+
+  applyLanguage() {
+    if (!this.title) return;
+
+    const gameOverTexts = [
+      t('gameover.title.mongo'),
+      t('gameover.title.rolp'),
+      t('gameover.title.gris'),
+      t('gameover.title.deili'),
+      t('gameover.title.melbu')
+    ];
+    const gameOverPool = extendGameOverTexts(gameOverTexts);
+    const index = Number.isFinite(this.titleIndex) ? this.titleIndex : 0;
+    this.title.text = gameOverPool[index % gameOverPool.length] || gameOverPool[0] || '';
+
+    if (this.scoreText) {
+      this.scoreText.text = t('gameover.score', { score: this.finalScore });
+    }
+    if (this.levelText) {
+      this.levelText.text = t('gameover.level', { level: this.finalLevel });
+    }
+    if (this.comment) {
+      this.comment.text = getGameOverComment(this.finalScore, this.finalLevel);
+    }
+
+    const layout = getCurrentLayout();
+    if (this.promptText) {
+      if (this.state === 'prompt') {
+        this.promptText.text = layout.isMobile ? t(ENTRY_PROMPT_MOBILE) : t(ENTRY_PROMPT_DESKTOP);
+      } else if (this.state === 'input') {
+        this.promptText.text = t(INPUT_PROMPT);
+      } else if (this.state === 'submitting') {
+        this.promptText.text = t('gameover.sending');
+      }
+    }
+
+    if (this.instructions) {
+      this.instructions.text = t('gameover.instructions');
+    }
+
+    if (this.inputLabel) this.inputLabel.textContent = t('gameover.html.nameLabel');
+    if (this.inputField) this.inputField.placeholder = t('gameover.html.namePlaceholder');
+    if (this.submitButton) {
+      this.submitButton.textContent = this.state === 'submitting'
+        ? t('gameover.sending')
+        : t('gameover.html.ok');
+    }
+
+    if (this.walletLabel) this.walletLabel.textContent = t(WALLET_PROMPT);
+    if (this.walletHint) this.walletHint.textContent = t('gameover.wallet.hint');
+    if (this.walletField) this.walletField.placeholder = t('gameover.wallet.placeholder');
+    if (this.walletSubmitButton) this.walletSubmitButton.textContent = t('gameover.wallet.continue');
+    if (this.walletSkipButton) this.walletSkipButton.textContent = t('gameover.wallet.skip');
+
+    this.updateNameDisplay();
   }
 
   layoutScreen() {
@@ -354,7 +422,7 @@ export class GameOverScene {
 
       // Show feedback
       const { width, height } = this.game.app.screen;
-      const msg = new PIXI.Text('IKKE TOPP 10!\nDU MÅ BLI BEDRE!', {
+      const msg = new PIXI.Text(t('gameover.notQualified.block'), {
         fontFamily: 'Courier New', fontSize: 32, fill: '#ff0000', align: 'center', stroke: '#ffffff', strokeThickness: 2
       });
       msg.anchor.set(0.5);
@@ -389,7 +457,7 @@ export class GameOverScene {
       this.nameDisplay.visible = false;
     } else {
       // Desktop: use PIXI text display with hidden input
-      this.updatePromptMessage(INPUT_PROMPT);
+      this.updatePromptMessage(t(INPUT_PROMPT));
       this.nameDisplay.visible = true;
       this.ensureHiddenInput();
       if (this.hiddenInput) {
@@ -409,7 +477,7 @@ export class GameOverScene {
     this.removeInputOverlay();
 
     const layout = getCurrentLayout();
-    const promptText = layout.isMobile ? ENTRY_PROMPT_MOBILE : ENTRY_PROMPT_DESKTOP;
+    const promptText = layout.isMobile ? t(ENTRY_PROMPT_MOBILE) : t(ENTRY_PROMPT_DESKTOP);
     this.updatePromptMessage(promptText);
     this.promptText.visible = true;
     this.nameDisplay.visible = false;
@@ -467,7 +535,7 @@ export class GameOverScene {
 
     // Label
     const label = document.createElement('div');
-    label.textContent = 'SKRIV DITT NAVN';
+    label.textContent = t('gameover.html.nameLabel');
     label.style.cssText = `
       font-family: 'Courier New', monospace;
       font-size: 20px;
@@ -475,6 +543,7 @@ export class GameOverScene {
       margin-bottom: 16px;
       text-align: center;
     `;
+    this.inputLabel = label;
     this.inputOverlay.appendChild(label);
 
     // Input field
@@ -484,7 +553,7 @@ export class GameOverScene {
     this.inputField.autocapitalize = 'characters';
     this.inputField.autocomplete = 'off';
     this.inputField.spellcheck = false;
-    this.inputField.placeholder = 'NAVN';
+    this.inputField.placeholder = t('gameover.html.namePlaceholder');
     this.inputField.style.cssText = `
       font-family: 'Courier New', monospace;
       font-size: 28px;
@@ -523,7 +592,7 @@ export class GameOverScene {
 
     // Submit button
     this.submitButton = document.createElement('button');
-    this.submitButton.textContent = 'OK';
+    this.submitButton.textContent = t('gameover.html.ok');
     this.submitButton.style.cssText = `
       font-family: 'Courier New', monospace;
       font-size: 22px;
@@ -545,7 +614,7 @@ export class GameOverScene {
 
     // Cancel button
     const cancelButton = document.createElement('button');
-    cancelButton.textContent = 'AVBRYT';
+    cancelButton.textContent = t('gameover.html.cancel');
     cancelButton.style.cssText = `
       font-family: 'Courier New', monospace;
       font-size: 18px;
@@ -606,7 +675,7 @@ export class GameOverScene {
     `;
 
     const label = document.createElement('div');
-    label.textContent = WALLET_PROMPT;
+    label.textContent = t(WALLET_PROMPT);
     label.style.cssText = `
       font-family: 'Courier New', monospace;
       font-size: 20px;
@@ -615,9 +684,10 @@ export class GameOverScene {
       text-align: center;
     `;
     this.walletOverlay.appendChild(label);
+    this.walletLabel = label;
 
     const hint = document.createElement('div');
-    hint.textContent = 'Kun for VKC-belÃ¸nning (valgfri)';
+    hint.textContent = t('gameover.wallet.hint');
     hint.style.cssText = `
       font-family: 'Courier New', monospace;
       font-size: 12px;
@@ -626,6 +696,7 @@ export class GameOverScene {
       text-align: center;
     `;
     this.walletOverlay.appendChild(hint);
+    this.walletHint = hint;
 
     this.walletField = document.createElement('input');
     this.walletField.type = 'text';
@@ -633,7 +704,7 @@ export class GameOverScene {
     this.walletField.autocapitalize = 'off';
     this.walletField.autocomplete = 'off';
     this.walletField.spellcheck = false;
-    this.walletField.placeholder = 'Wallet address (valgfri)';
+    this.walletField.placeholder = t('gameover.wallet.placeholder');
     this.walletField.value = this.walletInput;
     this.walletField.style.cssText = `
       font-family: 'Courier New', monospace;
@@ -670,7 +741,7 @@ export class GameOverScene {
     `;
 
     this.walletSubmitButton = document.createElement('button');
-    this.walletSubmitButton.textContent = 'FORTSETT';
+    this.walletSubmitButton.textContent = t('gameover.wallet.continue');
     this.walletSubmitButton.style.cssText = `
       font-family: 'Courier New', monospace;
       font-size: 20px;
@@ -687,7 +758,7 @@ export class GameOverScene {
     btnContainer.appendChild(this.walletSubmitButton);
 
     this.walletSkipButton = document.createElement('button');
-    this.walletSkipButton.textContent = 'HOPP OVER';
+    this.walletSkipButton.textContent = t('gameover.wallet.skip');
     this.walletSkipButton.style.cssText = `
       font-family: 'Courier New', monospace;
       font-size: 18px;
@@ -720,6 +791,8 @@ export class GameOverScene {
     this.walletField = null;
     this.walletSubmitButton = null;
     this.walletSkipButton = null;
+    this.walletLabel = null;
+    this.walletHint = null;
   }
 
   enterWalletMode() {
@@ -808,10 +881,10 @@ export class GameOverScene {
     if (!this.nameDisplay) return;
     if (this.state === 'input') {
       const caret = this.caretVisible ? '|' : '';
-      this.nameDisplay.text = `NAME: ${this.nameInput}${caret}`;
+      this.nameDisplay.text = t('gameover.nameDisplay', { name: this.nameInput, caret });
       this.nameDisplay.visible = true;
     } else if (this.state === 'submitting') {
-      this.nameDisplay.text = 'SENDER...';
+      this.nameDisplay.text = t('gameover.sending');
       this.nameDisplay.visible = true;
     } else {
       this.nameDisplay.visible = false;
@@ -843,11 +916,11 @@ export class GameOverScene {
     // Update UI to show submitting state
     if (this.inputOverlay) {
       if (this.submitButton) {
-        this.submitButton.textContent = 'SENDER...';
+        this.submitButton.textContent = t('gameover.sending');
         this.submitButton.disabled = true;
       }
     } else {
-      this.updatePromptMessage('SENDER...');
+      this.updatePromptMessage(t('gameover.sending'));
       this.updateNameDisplay();
     }
 
@@ -906,20 +979,20 @@ export class GameOverScene {
 
       if (this.inputOverlay) {
         if (this.submitButton) {
-          this.submitButton.textContent = 'FEIL! PRØV IGJEN';
+          this.submitButton.textContent = t('gameover.errorRetry');
           this.submitButton.style.background = '#ff4444';
           this.submitButton.disabled = false;
         }
         setTimeout(() => {
           if (this.submitButton) {
-            this.submitButton.textContent = 'OK';
+            this.submitButton.textContent = t('gameover.html.ok');
             this.submitButton.style.background = '#00ffff';
           }
         }, 2000);
       } else {
-        this.updatePromptMessage('FEIL! PRØV IGJEN');
+        this.updatePromptMessage(t('gameover.errorRetry'));
         if (this.nameDisplay) {
-          this.nameDisplay.text = 'FEIL! PRØV IGJEN';
+          this.nameDisplay.text = t('gameover.errorRetry');
         }
         setTimeout(() => {
           if (this.state === 'input') this.updateNameDisplay();
@@ -951,5 +1024,9 @@ export class GameOverScene {
     this.stopCaretBlink();
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = null;
+    if (this.langUnsubscribe) {
+      this.langUnsubscribe();
+      this.langUnsubscribe = null;
+    }
   }
 }
