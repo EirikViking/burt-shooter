@@ -1,0 +1,174 @@
+ISBJØRN CLASSIC
+Named after the legendary Isbjørn beer that fuels half of Melbu's economy, this ship runs on pure Norwegian determination and questionable life choices. Built in someone's garage after a particularly inspiring Friday night, the Isbjørn Classic has become a symbol of "it'll probably work" engineering. The fuel tank is rumored to actually contain beer, which somehow makes it faster. Scientists are baffled. Locals are not. This ship has participated in more harbor races than anyone can remember, mostly because everyone was too drunk to keep count. It's balanced, reliable, and has a built-in bottle opener on the dashboard.
+KJØTTDEIG SPECIAL
+The Kjøttdeig Special, named after ground beef for reasons nobody can quite explain, is the ship equivalent of a mystery meat sandwich that's somehow delicious. It was found abandoned in a harbor parking lot with a note that said "good luck" and a half-eaten meatball sub in the cockpit. Despite its questionable origins, this ship has proven surprisingly effective in combat. It's reliable, it's consistent, and it has a weird compartment that keeps producing meatballs. The previous owner claimed the ship was haunted by the ghost of a chef who died doing what he loved: making questionable food choices. Whether that's true or not, the ship definitely has personality. And it definitely smells like ground beef. You get used to it.
+SKÅL!
+STOR FISK PÅ VEI!
+NÅ BLIR DET ALVOR!
+KJØR PÅ!
+Nordlys i blikket, øl i hånda
+Kurt Edgar godkjente dette etter tredje øl
+Eirik med selvtillit langt over ferdighetsnivå
+Klassisk Vesterålen avgjørelse
+Dette hadde aldri gått i Harstad
+Småby, store ambisjoner, tomme glass
+Skål!
+Eirik er stolt nå
+Dette blir nevnt i årevis
+Ingen angrer ennå
+Fremdeles stående
+${ctx.speakerName} sier: ${ctx.targetName} må tilbake til Melbu skolebenk
+Jatta jatta, prøv igjen!
+${ctx.speakerName} til ${ctx.targetName}: Du skyter som en våt vott
+Hut dæ heim!
+Bæ bæ mø!
+${ctx.targetName}: "Jeg prøvde"  ${ctx.speakerName}: "Du feila"
+Dette e hæstkuk!
+${ctx.speakerName}: ${ctx.targetName} e grønn som en Isbjørn
+${ctx.targetName} burde øvd mer, sier ${ctx.speakerName}
+SKÅL!
+ISBJØRN
+KJØTTDEIG
+RØLP
+ISBJØRN CAN! Triple Shot!
+KJØTTDEIG BOOST! Speed Up!
+RØLP MODE! Rapid Fire!
+TRYKK ENTER FOR Å LOGGE SCORE
+TRYKK HER FOR Å LOGGE SCORE
+RØLP OVERLOAD!
+NÅDDE LEVEL: ${this.finalLevel}
+IKKE TOPP 10 - PRØV IGJEN!
+IKKE TOPP 10!\nDU MÅ BLI BEDRE!
+FEIL! PRØV IGJEN
+FEIL! PRØV IGJEN
+FEIL! PRØV IGJEN
+Laster... (forsøk ${attempt + 1}/4)
+Ingen scores ennå! Vær den første.
+Ingen highscores enda. Vær først!
+Stokmarknes er under angrep!\nRølp, gris og mongo invaderer.\nKun Eirik kan redde dagen.
+Powered by Kjøttdeig Engine v1.0
+MUSIKK: PÅ
+MUSIKK: PÅ
+Wave 9: Isbjørn chaos
+Veteran av tusen øl-slag
+Født i cockpiten
+Dobbel trøbbel!
+Gutta på Stokken
+Ølgutta
+Sjefinn på brygga
+Ølkjempe
+Rølpemester
+Kurt's Lærling
+Vesterålen Legende
+Øl Admiral
+Rølp General
+Kurt's Høyre Hånd
+Øl Gud
+Vesterålen Konge
+Skål!
+Hæstkuk!
+Bæ bæ mø
+Våt mus
+Hold kjæften!
+Sjøge!
+Hut dæ heim
+Melbu stemning på feil side av midnatt
+Melbu stemning på feil side av midnatt
+Nordlys i blikket, øl i hånda
+Det lukter kai, diesel og dårlige valg
+Småby, store ambisjoner, tomme glass
+Dette hadde aldri gått i Harstad
+Klassisk Vesterålen avgjørelse
+Kurt Edgar godkjente dette etter tredje øl
+Dette er helt innenfor ifølge Kurt Edgar
+Kurt Edgar er stolt nå
+Kurt Edgar overlevde dette på nittitallet
+Eirik gjør det igjen
+Eirik med selvtillit langt over ferdighetsnivå
+Eirik kjører på
+Eirik er i flytsonen nå
+Eirik nekter å gi seg
+Øl nummer som ikke burde telles
+Dette er ikke den første
+Det var en tabbe å bytte type øl
+Nå er det for sent å snu
+Øl først, konsekvenser senere
+Improvisasjon på høyt nivå
+Overlevd på ren vilje
+Ingen vet hva som skjer nå
+Dette blir nevnt i årevis
+Dette var ikke på planen
+Dette går rett i bygdehistorien
+Ingen angrer ennå
+Fremdeles stående
+Ingen lærdom tatt
+Hør her
+Nå skjer det
+Isbjørn status
+Kjøttdeig mode
+gønner
+tuter på
+Kjøttdeig
+Isbjørn
+Rølp
+Skål!
+Hæstkuk!
+Bæ bæ mø
+Våt mus
+Hold kjæften!
+Sjøge!
+Hut dæ heim
+rølp deluxe
+på turbo
+i bøtta
+Skål!
+Hut dæ heim!
+Bæ bæ mø!
+LADER OPP RØLP-MOTOR...
+KOKER KJØTTDEIG...
+Holder til i Melbu, men serveren står i Stokmarknes...
+Laster isbjørn.exe – ${weightedPick(newPhrases, 'loadingNew')}
+KJØR – ${buildShortBurst()}
+100% rølp: ${buildCombo()}
+Rølp-linja: ${buildCombo()}
+RØLP-LAV
+Kjøttdeig bonus: ${buildShortBurst()}
+Ingen scores ennå – ${buildShortBurst()}
+Bli første: ${buildShortBurst()}
+Melbu klokka litt for seint: {TARGET}, du e på feil side av midnatt, og feil side av lista.
+{TAUNTER}: {TARGET}, Hurtigruta gikk, men du blei igjen på bunn.
+Det lukte kai og diesel. {TAUNTER}: {TARGET}, æ trur du mista aimen i råka.
+{TAUNTER} til {TARGET}: Småby, store ambisjoner, men du klarte det ikkje.
+Kurt Edgar sa: {TARGET}, dette hadde ikkje gått i Harstad heller. {TAUNTER} er enig.
+Kurt Edgar nikker til {TAUNTER}, ser på {TARGET} og ryster på hodet.
+{TAUNTER} siterer Kurt: {TARGET}, du må trene mer før du får øl.
+{TARGET}, {TAUNTER} spør: Kødde du bare, eller?
+{TAUNTER}: {TARGET}, æ venta mer, men fikk mindre.
+Fra toppen ser {TAUNTER} ned på {TARGET}: Bæ bæ, lille dutten!
+{TAUNTER} til {TARGET}: Du telte feil øl, du telte feil score.
+Øl nummer som ikkje burde telles: {TARGET}. Mvh {TAUNTER}.
+{TAUNTER}: {TARGET}, jatta jatta, prøv igjen!
+{TARGET}, hut dæ heim! - {TAUNTER}
+{TAUNTER} til {TARGET}: Bæ bæ mø!
+{TARGET}, hold kjæften og spill bedre! - {TAUNTER}
+{TAUNTER}: {TARGET}, dette e hæstkuk!
+Kaia kaller: {TARGET}, du tilhører bunnen. {TAUNTER} på topp.
+{TAUNTER} på brygga, {TARGET} i sjøen.
+{TAUNTER} med selvtillit: {TARGET}, æ e ikkje redd for deg.
+{TARGET}, {TAUNTER} kjører på, du kjører av.
+{TAUNTER}: {TARGET}, æ vant før du starta.
+{TARGET} e våt mus, {TAUNTER} e løve.
+{TAUNTER} til {TARGET}: Du e lille grisegutten, æ e sjefen.
+{TARGET}, {TAUNTER} sa: Sjøge!
+{TAUNTER}: {TARGET}, dette blir nevnt i årevis!
+{TARGET}: Jatta jatta, prøv igjen!
+{TARGET}: Hut dæ heim!
+{TARGET}: Bæ bæ mø!
+{TARGET}: Hold kjæften og spill bedre!
+{TARGET}: Dette e hæstkuk!
+{TARGET}: Amatør!
+{TARGET}: Se og lær!
+Møysalen Klatrer
+Gulstad Gærning
+Børøya Boss
+Vesterålen Vakt

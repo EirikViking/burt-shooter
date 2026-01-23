@@ -5,6 +5,7 @@ import { AudioManager } from './audio/AudioManager.js';
 import { BootWatchdog } from './utils/BootWatchdog.js';
 import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
+import { getLanguage, onLanguageChange, setLanguage } from './i18n/index.ts';
 
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;
@@ -164,6 +165,69 @@ function createPerfOverlay(enabled) {
   update();
   setInterval(update, PERF_SAMPLE_MS);
   return overlay;
+}
+
+function createLanguageToggle() {
+  const existing = document.getElementById('lang-toggle');
+  if (existing) return existing;
+
+  const container = document.createElement('div');
+  container.id = 'lang-toggle';
+
+  const makeButton = (lang, label) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = label;
+    btn.dataset.lang = lang;
+    btn.style.cssText = [
+      'background: rgba(0, 0, 0, 0.6)',
+      'border: 1px solid #00ffff',
+      'color: #00ffff',
+      'font-size: 14px',
+      'padding: 2px 6px',
+      'border-radius: 6px',
+      'cursor: pointer',
+      'line-height: 1',
+      'font-family: "Courier New", monospace'
+    ].join(';');
+    btn.addEventListener('click', () => setLanguage(lang));
+    return btn;
+  };
+
+  const nbBtn = makeButton('nb', '🇳🇴');
+  const enBtn = makeButton('en', '🇬🇧');
+
+  container.appendChild(nbBtn);
+  container.appendChild(enBtn);
+
+  container.style.cssText = [
+    'position: fixed',
+    'display: flex',
+    'gap: 6px',
+    'z-index: 9999',
+    'pointer-events: auto'
+  ].join(';');
+
+  const updatePosition = (layout) => {
+    const safe = layout.safeArea;
+    container.style.top = `${safe.top + 6}px`;
+    container.style.right = `${safe.right + 8}px`;
+  };
+  updatePosition(getCurrentLayout());
+  addResponsiveListener(updatePosition);
+
+  const updateActive = () => {
+    const lang = getLanguage();
+    nbBtn.style.opacity = lang === 'nb' ? '1' : '0.5';
+    enBtn.style.opacity = lang === 'en' ? '1' : '0.5';
+  };
+  updateActive();
+  onLanguageChange(updateActive);
+
+  const parent = document.body || document.documentElement;
+  if (parent) parent.appendChild(container);
+
+  return container;
 }
 
 function updatePerfStats(app, game, delta, clampedDelta) {
@@ -594,6 +658,7 @@ async function init() {
   window.__perfStats = perfState;
 
   await runBootStep(bootLogger, 'dom ready', waitForDomReady, { timeoutMs: DOM_READY_TIMEOUT_MS });
+  createLanguageToggle();
   createPerfOverlay(perfState.enabled);
   registerBootErrorHandlers();
 
