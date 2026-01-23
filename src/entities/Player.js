@@ -4,6 +4,7 @@ import { GameAssets } from '../utils/GameAssets.js';
 import { ShipRegistry } from '../utils/ShipRegistry.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { enhanceShipVisuals } from '../utils/ShipVisualEnhancer.js';
+import { t } from '../i18n/index.ts';
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = 'row2_ship_1.png') {
@@ -1076,27 +1077,27 @@ export class Player {
 
   getPowerupLabel(type) {
     const labels = {
-      isbjorn: 'ISBJORN',
-      kjottdeig: 'KJOTTDEIG',
-      rolp: 'ROLP',
-      deili: 'DEILI',
-      slow_time: 'SLOW TIME',
-      ghost: 'GHOST',
-      shield: 'SHIELD',
-      rapid_fire: 'RAPID FIRE',
-      double_shot: 'DOUBLE SHOT',
-      damage_up: 'DAMAGE UP',
-      speed_up: 'SPEED UP',
-      pierce: 'PIERCE',
-      score_x2: 'SCORE x2',
-      magnet: 'MAGNET',
-      drones: 'DRONES',
-      shockwave: 'SHOCKWAVE',
-      point_defense: 'POINT DEFENSE',
-      bomb: 'BOMB',
-      chain_lightning: 'CHAIN LIGHTNING',
-      orbital_strike: 'ORBITAL STRIKE',
-      vampire: 'VAMPIRE'
+      isbjorn: t('player.powerup.isbjorn'),
+      kjottdeig: t('player.powerup.kjottdeig'),
+      rolp: t('player.powerup.rolp'),
+      deili: t('player.powerup.deili'),
+      slow_time: t('player.powerup.slow_time'),
+      ghost: t('player.powerup.ghost'),
+      shield: t('player.powerup.shield'),
+      rapid_fire: t('player.powerup.rapid_fire'),
+      double_shot: t('player.powerup.double_shot'),
+      damage_up: t('player.powerup.damage_up'),
+      speed_up: t('player.powerup.speed_up'),
+      pierce: t('player.powerup.pierce'),
+      score_x2: t('player.powerup.score_x2'),
+      magnet: t('player.powerup.magnet'),
+      drones: t('player.powerup.drones'),
+      shockwave: t('player.powerup.shockwave'),
+      point_defense: t('player.powerup.point_defense'),
+      bomb: t('player.powerup.bomb'),
+      chain_lightning: t('player.powerup.chain_lightning'),
+      orbital_strike: t('player.powerup.orbital_strike'),
+      vampire: t('player.powerup.vampire')
     };
     return labels[type] || String(type || '').toUpperCase();
   }

@@ -2,6 +2,7 @@ import { BalanceConfig } from '../config/BalanceConfig.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { t } from '../i18n/index.ts';
 
 class Powerup {
   constructor(x, y, type) {
@@ -15,28 +16,28 @@ class Powerup {
     this.lifeTime = 15000; // 15 seconds expiry
 
     const powerupData = {
-      isbjorn: { color: 0xffaa00, label: 'ISBJØRN' },
-      kjottdeig: { color: 0xff6666, label: 'KJØTTDEIG' },
-      rolp: { color: 0xff00ff, label: 'RØLP' },
-      deili: { color: 0x00ff00, label: 'DEILI' },
-      slow_time: { color: 0x00cccc, label: 'SLOW' },
-      ghost: { color: 0xeeeeee, label: 'GHOST' },
-      shield: { color: 0x00aaaa, label: 'SHIELD' },
-      life: { color: 0xff0000, label: 'LIFE' },
-      rapid_fire: { color: 0xffcc00, label: 'RAPID' },
-      double_shot: { color: 0x66ccff, label: 'DOUBLE' },
-      damage_up: { color: 0xff6666, label: 'DMG+' },
-      speed_up: { color: 0x66ff66, label: 'SPEED' },
-      pierce: { color: 0xcc66ff, label: 'PIERCE' },
-      score_x2: { color: 0xffff00, label: 'x2' },
-      magnet: { color: 0x99ffcc, label: 'MAGNET' },
-      drones: { color: 0x66ccff, label: 'DRONES' },
-      shockwave: { color: 0xff9966, label: 'WAVE' },
-      point_defense: { color: 0x00ddff, label: 'P-DEF' },
-      bomb: { color: 0xff3300, label: 'BOMB' },
-      chain_lightning: { color: 0xffff00, label: 'CHAIN' },
-      orbital_strike: { color: 0xff00ff, label: 'ORBITAL' },
-      vampire: { color: 0xff0066, label: 'VAMP' }
+      isbjorn: { color: 0xffaa00, label: t('powerup.label.isbjorn') },
+      kjottdeig: { color: 0xff6666, label: t('powerup.label.kjottdeig') },
+      rolp: { color: 0xff00ff, label: t('powerup.label.rolp') },
+      deili: { color: 0x00ff00, label: t('powerup.label.deili') },
+      slow_time: { color: 0x00cccc, label: t('powerup.label.slow_time') },
+      ghost: { color: 0xeeeeee, label: t('powerup.label.ghost') },
+      shield: { color: 0x00aaaa, label: t('powerup.label.shield') },
+      life: { color: 0xff0000, label: t('powerup.label.life') },
+      rapid_fire: { color: 0xffcc00, label: t('powerup.label.rapid_fire') },
+      double_shot: { color: 0x66ccff, label: t('powerup.label.double_shot') },
+      damage_up: { color: 0xff6666, label: t('powerup.label.damage_up') },
+      speed_up: { color: 0x66ff66, label: t('powerup.label.speed_up') },
+      pierce: { color: 0xcc66ff, label: t('powerup.label.pierce') },
+      score_x2: { color: 0xffff00, label: t('powerup.label.score_x2') },
+      magnet: { color: 0x99ffcc, label: t('powerup.label.magnet') },
+      drones: { color: 0x66ccff, label: t('powerup.label.drones') },
+      shockwave: { color: 0xff9966, label: t('powerup.label.shockwave') },
+      point_defense: { color: 0x00ddff, label: t('powerup.label.point_defense') },
+      bomb: { color: 0xff3300, label: t('powerup.label.bomb') },
+      chain_lightning: { color: 0xffff00, label: t('powerup.label.chain_lightning') },
+      orbital_strike: { color: 0xff00ff, label: t('powerup.label.orbital_strike') },
+      vampire: { color: 0xff0066, label: t('powerup.label.vampire') }
     };
 
     const data = powerupData[type] || powerupData['isbjorn'];
@@ -269,7 +270,7 @@ class Powerup {
         // Score bonus instead
         console.log(`[Lives] pickup extra_life before=${scene.game.lives} after=${scene.game.lives} max=6 applied=false (at max, bonus awarded)`);
         scene.game.addScore(1000);
-        scene.showToast('MAX LIVES BONUS!', { fontSize: 24, fill: '#00ff00' });
+        scene.showToast(t('powerup.bonus.maxLives'), { fontSize: 24, fill: '#00ff00' });
 
         // Play pickup sound for bonus
         if (scene.game && scene.game.audio) {
@@ -362,31 +363,31 @@ class Powerup {
 
   showMessage(scene) {
     const messages = {
-      isbjorn: 'ISBJØRN CAN! Triple Shot!',
-      kjottdeig: 'KJØTTDEIG BOOST! Speed Up!',
-      rolp: 'RØLP MODE! Rapid Fire!',
-      deili: 'DEILI FETTA! Ultimate Power!',
-      slow_time: 'SLOW MOTION!',
-      slow_time: 'SLOW MOTION!',
-      ghost: 'GHOST MODE! Invincible!',
-      shield: 'SHIELD UP!',
-      life: 'EXTRA LIFE!',
-      rapid_fire: 'RAPID FIRE!',
-      double_shot: 'DOUBLE SHOT!',
-      damage_up: 'DAMAGE UP!',
-      speed_up: 'SPEED UP!',
-      pierce: 'PIERCING SHOTS!',
-      score_x2: 'SCORE x2!',
-      magnet: 'MAGNET FIELD!',
-      drones: 'SIDE DRONES!',
-      shockwave: 'SHOCKWAVE!',
-      chain_lightning: 'CHAIN LIGHTNING!',
-      orbital_strike: 'ORBITAL STRIKE!',
-      vampire: 'VAMPIRE MODE!'
+      isbjorn: t('powerup.toast.isbjorn'),
+      kjottdeig: t('powerup.toast.kjottdeig'),
+      rolp: t('powerup.toast.rolp'),
+      deili: t('powerup.toast.deili'),
+      slow_time: t('powerup.toast.slow_time'),
+      slow_time: t('powerup.toast.slow_time'),
+      ghost: t('powerup.toast.ghost'),
+      shield: t('powerup.toast.shield'),
+      life: t('powerup.toast.life'),
+      rapid_fire: t('powerup.toast.rapid_fire'),
+      double_shot: t('powerup.toast.double_shot'),
+      damage_up: t('powerup.toast.damage_up'),
+      speed_up: t('powerup.toast.speed_up'),
+      pierce: t('powerup.toast.pierce'),
+      score_x2: t('powerup.toast.score_x2'),
+      magnet: t('powerup.toast.magnet'),
+      drones: t('powerup.toast.drones'),
+      shockwave: t('powerup.toast.shockwave'),
+      chain_lightning: t('powerup.toast.chain_lightning'),
+      orbital_strike: t('powerup.toast.orbital_strike'),
+      vampire: t('powerup.toast.vampire')
     };
 
     const { width, height } = scene.game.app.screen;
-    const text = new PIXI.Text(messages[this.type] || 'POWERUP!', {
+    const text = new PIXI.Text(messages[this.type] || t('powerup.toast.default'), {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: this.color,

@@ -18,6 +18,7 @@ import { NullTouchControls } from '../input/NullTouchControls.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import { BUILD_ID } from '../buildInfo.js';
+import { t } from '../i18n/index.ts';
 import {
   extendLevelIntroTexts,
   getAchievementPopup,
@@ -329,23 +330,23 @@ export class PlayScene {
   handleDebugKeys(e) {
     if (e.key === 'F1') {
       console.log('DEBUG STATS:', this.debugStats);
-      this.showToast('DEBUG STATS LOGGED (Console)', { fontSize: 20 });
+      this.showToast(t('play.debug.statsLogged'), { fontSize: 20 });
     }
     if (e.key === 'F2') {
       this.powerupManager.spawn(this.player.x, 100);
-      this.showToast('SPAWNED BEER PICKUP', { fontSize: 20 });
+      this.showToast(t('play.debug.spawnedBeer'), { fontSize: 20 });
     }
     if (e.key === 'F3') {
       this.enemyManager.spawnBoss(this.game.level);
-      this.showToast('SPAWNED BOSS', { fontSize: 20 });
+      this.showToast(t('play.debug.spawnedBoss'), { fontSize: 20 });
     }
     if (e.key === 'F4') {
       for (let i = 0; i < 5; i++) this.enemyManager.spawnEnemy();
-      this.showToast('SPAWNED ENEMIES', { fontSize: 20 });
+      this.showToast(t('play.debug.spawnedEnemies'), { fontSize: 20 });
     }
     if (e.key === 'F5') {
       this.spawnEasterEgg();
-      this.showToast('TRIGGERED FLYBY', { fontSize: 20 });
+      this.showToast(t('play.debug.triggeredFlyby'), { fontSize: 20 });
     }
   }
 
@@ -430,19 +431,19 @@ export class PlayScene {
 
   showLevelIntro() {
     const levelTexts = [
-      'Wave 1: Grunnleggende gris',
-      'Wave 2: Mongo intensifiserer',
-      'Wave 3: Deili fetta kommer inn',
-      'Wave 4: R\u00f8lp mode aktiverer',
-      'BOSS: MEGA TUFS',
-      'Wave 6: Tilbake til Melbu',
-      'Wave 7: Stokmarknes raids',
-      'Wave 8: Kj\u00f8ttdeig overload',
-      'Wave 9: Isbjørn chaos',
-      'BOSS: ULTIMATE SVIN'
+      t('play.wave.1'),
+      t('play.wave.2'),
+      t('play.wave.3'),
+      t('play.wave.4'),
+      t('play.wave.boss1'),
+      t('play.wave.6'),
+      t('play.wave.7'),
+      t('play.wave.8'),
+      t('play.wave.9'),
+      t('play.wave.boss2')
     ];
     const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
-    const message = introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`;
+    const message = introList[(this.game.level - 1) % introList.length] || t('play.level.label', { level: this.game.level });
     this.showToast(message, {
       fontSize: 42,
       fill: '#ffff00',
@@ -472,7 +473,7 @@ export class PlayScene {
             this.player.scoreMultiplier = 1;
             this.player.scoreBoostExpiresAt = 0;
           }
-          this.showToast("SCORE BOOST ENDED", { fontSize: 20, fill: '#cccccc', slot: 'corner', type: 'score_boost' });
+          this.showToast(t('play.toast.scoreBoostEnded'), { fontSize: 20, fill: '#cccccc', slot: 'corner', type: 'score_boost' });
           console.log('[Powerup] expire type=SCORE_X2 restored multiplier=1');
           if (this.debugPowerups) {
             console.log('[PowerupTest] expired type=score_x2 restoredOk=true');
@@ -602,7 +603,7 @@ export class PlayScene {
 
         AudioManager.playSfx('levelComplete');
         this.game.addScore(1000); // Completion Bonus
-        this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000 });
+        this.showToast(t('play.toast.levelComplete'), { fontSize: 40, fill: '#00ff00', duration: 2000 });
 
         // Particles
         for (let i = 0; i < 20; i++) {
@@ -780,7 +781,7 @@ export class PlayScene {
     }
 
     // "RANK UP!" trigger reason (clear and prominent)
-    const rankUpText = new PIXI.Text('⬆ RANK UP! ⬆', {
+    const rankUpText = new PIXI.Text(t('play.toast.rankUp'), {
       fontFamily: 'Courier New',
       fontSize: 26,
       fill: '#ffff00',
@@ -861,7 +862,7 @@ export class PlayScene {
   }
 
   // Wave bonus WOW effect with premium arcade feel
-  showWaveBonusEffect(bonusAmount, label = 'WAVE CLEARED!') {
+  showWaveBonusEffect(bonusAmount, label = t('play.wave.cleared')) {
     const { width, height } = this.game.app.screen;
 
     // Create dedicated isolated effect container
@@ -1263,7 +1264,7 @@ export class PlayScene {
               }
             }
             this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00);
-            this.showToast('OUCH!', { fontSize: 20, fill: '#ff0000' });
+            this.showToast(t('play.toast.ouch'), { fontSize: 20, fill: '#ff0000' });
           }
         }
       }
@@ -1285,7 +1286,7 @@ export class PlayScene {
               this.onEnemyKilled(beer);
               this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00);
               AudioManager.playSfx('enemy_explode', { volume: 0.5 });
-              this.showToast('BEER SMASH!', { fontSize: 18, y: beer.y, fill: '#ffff00' });
+              this.showToast(t('play.toast.beerSmash'), { fontSize: 18, y: beer.y, fill: '#ffff00' });
             } else {
               this.particleManager.createHitSpark(beer.x, beer.y);
             }
@@ -1730,7 +1731,7 @@ export class PlayScene {
       this.player.scoreBoostExpiresAt = Date.now() + durationMs;
     }
     if (this.player?.noteScoreMultiplier) this.player.noteScoreMultiplier();
-    this.showToast(`SCORE x${mult}`, { fontSize: 34, fill: '#ffff00', duration: 1800, slot: 'center', type: 'score_boost' });
+    this.showToast(t('play.toast.scoreX', { mult }), { fontSize: 34, fill: '#ffff00', duration: 1800, slot: 'center', type: 'score_boost' });
     console.log(`[Powerup] pickup type=SCORE_X2 durationMs=${durationMs} source=${source}`);
   }
 
@@ -1807,7 +1808,7 @@ export class PlayScene {
       slot: 'top',
       type: 'lore',
       banner: true,
-      title: 'LORE UNLOCKED', // TASK 3: Add title
+      title: t('play.lore.unlocked'), // TASK 3: Add title
       y: this.game.getHeight() * 0.16,
       maxWidth: this.game.getWidth() * 0.7
     });
@@ -2135,7 +2136,7 @@ export class PlayScene {
     else this.comboMultiplier = 1;
 
     if (this.comboMultiplier !== prevMultiplier) {
-      const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
+      const label = this.comboMultiplier >= 4 ? t('play.combo.50') : this.comboMultiplier >= 3 ? t('play.combo.25') : t('play.combo.10');
       this.enqueueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
       AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
       if (this.particleManager && this.player) {
@@ -2146,7 +2147,7 @@ export class PlayScene {
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
       const bonus = this.getComboScore(100 * (this.comboCount / 10));
       this.game.addScore(bonus);
-      this.enqueueToast(`COMBO BONUS +${bonus}`, { fontSize: 18, fill: '#ffff00', slot: 'top', type: 'combo', duration: 1200 });
+      this.enqueueToast(t('play.toast.comboBonus', { bonus }), { fontSize: 18, fill: '#ffff00', slot: 'top', type: 'combo', duration: 1200 });
       AudioManager.playSfx('pickup', { force: true, volume: 0.8 });
     }
 
@@ -2170,7 +2171,7 @@ export class PlayScene {
         this.game.gainLife();
 
         // Visual feedback
-        this.enqueueToast('VAMPIRE HEAL +1 LIFE', {
+        this.enqueueToast(t('play.toast.vampireHeal'), {
           fontSize: 18,
           fill: '#ff3366',
           slot: 'top',
@@ -2188,7 +2189,7 @@ export class PlayScene {
         // Show vampire progress feedback
         const remaining = healsPerLife - this.player.vampireKillCount;
         if (this.player.vampireKillCount % 2 === 0) { // Show every 2 kills to avoid spam
-          this.enqueueToast(`VAMPIRE: ${remaining} kills to heal`, {
+          this.enqueueToast(t('play.toast.vampireRemaining', { remaining }), {
             fontSize: 14,
             fill: '#ff6688',
             slot: 'top',
@@ -2216,7 +2217,7 @@ export class PlayScene {
     if (now < this.nearMissCooldownAt) return;
     this.nearMissCooldownAt = now + 450;
     this.game.addScore(25 * Math.max(1, this.comboMultiplier));
-    this.enqueueToast('NEAR MISS +25', { fontSize: 16, fill: '#ffcc00', slot: 'top', type: 'combo', duration: 900 });
+    this.enqueueToast(t('play.toast.nearMiss'), { fontSize: 16, fill: '#ffcc00', slot: 'top', type: 'combo', duration: 900 });
     if (this.particleManager) {
       this.particleManager.createHitSpark(this.player.x, this.player.y);
     }
@@ -2424,7 +2425,7 @@ export class PlayScene {
           this.spawnAmbientBeer('POWERUP');
           this.lastWhiteCanTime = now;
           this.hasActiveWhiteCan = true;
-          this.showToast("BONUS CAN APPEARED!", { fontSize: 24, fill: '#ffffff', y: 100 });
+          this.showToast(t('play.toast.bonusCan'), { fontSize: 24, fill: '#ffffff', y: 100 });
         }
       }
     }
@@ -2709,7 +2710,7 @@ export class PlayScene {
     this.gameContainer.addChildAt(sprite, 0);
     this.easterEggBeer = egg;
 
-    this.showToast('LEGENDARY SIGHTING!', { fontSize: 24, fill: '#ff00ff' });
+    this.showToast(t('play.toast.legendarySighting'), { fontSize: 24, fill: '#ff00ff' });
     AudioManager.playSfx('pickup');
   }
 
@@ -2749,19 +2750,20 @@ export class PlayScene {
 
     // Lore: Map photo keys to character names from Burt's universe
     const loreLookup = {
-      'kurt2': { name: 'KURT EDGAR', subtitle: 'Havnemann fra Stokmarknes', detail: 'Veteran av tusen øl-slag' },
-      'eirik1': { name: 'EIRIK', subtitle: 'Legendarisk Pilot', detail: 'Født i cockpiten' },
-      'eirik_briller': { name: 'EIRIK', subtitle: 'Nattevaktkongen', detail: 'Skjelven, men uredd' },
-      'eirik_kurt2': { name: 'EIRIK & KURT', subtitle: 'Melbu-Gjengen', detail: 'Dobbel trøbbel!' },
-      'eirikanja': { name: 'EIRIK & ANJA', subtitle: 'Havneduoen', detail: 'Gutta på Stokken' },
-      'burtelurt': { name: 'BURT & ELVIS', subtitle: 'Ølgutta', detail: 'Bedre sammen!' },
-      'eriikviking': { name: 'EIRIK VIKING', subtitle: 'Nordmann i hjertet', detail: 'Iskald og ustoppelig' },
-      'anja': { name: 'ANJA', subtitle: 'Harbor Queen', detail: 'Sjefinn på brygga' },
-      'morten_whale': { name: 'MORTEN', subtitle: 'Hvaljeger', detail: 'Kjenner havet' },
-      'donaldtru': { name: 'DONALD', subtitle: 'Amerikansk Venn', detail: 'Over Atlanteren' },
-      'wieik_shorts': { name: 'WIEIK', subtitle: 'Sommerbukse-Kongen', detail: 'Alltid korte bukser' }
+      'kurt2': { name: t('play.taunt.kurt2.name'), subtitle: t('play.taunt.kurt2.subtitle'), detail: t('play.taunt.kurt2.detail') },
+      'eirik1': { name: t('play.taunt.eirik1.name'), subtitle: t('play.taunt.eirik1.subtitle'), detail: t('play.taunt.eirik1.detail') },
+      'eirik_briller': { name: t('play.taunt.eirik_briller.name'), subtitle: t('play.taunt.eirik_briller.subtitle'), detail: t('play.taunt.eirik_briller.detail') },
+      'eirik_kurt2': { name: t('play.taunt.eirik_kurt2.name'), subtitle: t('play.taunt.eirik_kurt2.subtitle'), detail: t('play.taunt.eirik_kurt2.detail') },
+      'eirikanja': { name: t('play.taunt.eirikanja.name'), subtitle: t('play.taunt.eirikanja.subtitle'), detail: t('play.taunt.eirikanja.detail') },
+      'burtelurt': { name: t('play.taunt.burtelurt.name'), subtitle: t('play.taunt.burtelurt.subtitle'), detail: t('play.taunt.burtelurt.detail') },
+      'eriikviking': { name: t('play.taunt.eriikviking.name'), subtitle: t('play.taunt.eriikviking.subtitle'), detail: t('play.taunt.eriikviking.detail') },
+      'anja': { name: t('play.taunt.anja.name'), subtitle: t('play.taunt.anja.subtitle'), detail: t('play.taunt.anja.detail') },
+      'morten_whale': { name: t('play.taunt.morten_whale.name'), subtitle: t('play.taunt.morten_whale.subtitle'), detail: t('play.taunt.morten_whale.detail') },
+      'donaldtru': { name: t('play.taunt.donaldtru.name'), subtitle: t('play.taunt.donaldtru.subtitle'), detail: t('play.taunt.donaldtru.detail') },
+      'wieik_shorts': { name: t('play.taunt.wieik_shorts.name'), subtitle: t('play.taunt.wieik_shorts.subtitle'), detail: t('play.taunt.wieik_shorts.detail') }
     };
-    const characterData = loreLookup[pickedKey] || { name: 'UKJENT AGENT', subtitle: 'Mystisk fremtid', detail: '???' };
+    const characterData = loreLookup[pickedKey] || { name: t('play.taunt.unknown.name'), subtitle: t('play.taunt.unknown.subtitle'), detail: t('play.taunt.unknown.detail') };
+
     const characterName = characterData.name;
 
     const poster = new PIXI.Container();
@@ -2788,12 +2790,12 @@ export class PlayScene {
     poster.addChild(sprite);
 
     const headerLabel = reason === 'boss_spawn'
-      ? 'BOSS INCOMING'
+      ? t('play.taunt.header.bossIncoming')
       : reason === 'boss_life_lost'
-        ? 'HIT TAKEN'
+        ? t('play.taunt.header.hitTaken')
         : reason === 'boss_defeat'
-          ? 'BOSS DEFEATED'
-          : 'BOSS ALERT';
+          ? t('play.taunt.header.bossDefeated')
+          : t('play.taunt.header.bossAlert');
     const topText = new PIXI.Text(headerLabel, {
       fontFamily: 'Courier New',
       fontSize: 20,
@@ -2881,7 +2883,7 @@ export class PlayScene {
     panel.stroke({ color: 0xff3300, width: 3 });
     card.addChild(panel);
 
-    const title = new PIXI.Text(name || 'BOSS', {
+    const title = new PIXI.Text(name || t('play.boss.nameFallback'), {
       fontFamily: 'Courier New',
       fontSize: 26,
       fill: '#ff3300',
@@ -2892,7 +2894,7 @@ export class PlayScene {
     title.y = -18;
     card.addChild(title);
 
-    const line = new PIXI.Text(taunt || 'LET\'S GO!', {
+    const line = new PIXI.Text(taunt || t('play.boss.tauntFallback'), {
       fontFamily: 'Courier New',
       fontSize: 18,
       fill: '#ffffff',
@@ -2947,7 +2949,7 @@ export class PlayScene {
   }
 
   onBossPhaseChange(phase, boss) {
-    const label = phase === 2 ? 'BOSS PHASE 2' : 'BOSS PHASE 3';
+    const label = phase === 2 ? t('play.boss.phase2') : t('play.boss.phase3');
     this.enqueueToast(label, { fontSize: 22, fill: '#ff3300', slot: 'top', type: 'boss' });
     this.triggerShockwave(boss.x, boss.y, phase === 2 ? 0xffaa00 : 0xff3300);
     AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
@@ -2960,7 +2962,7 @@ export class PlayScene {
   showBossCelebration({ level = this.game.level, type = 'UNKNOWN' } = {}) {
     if (!this.uiOverlay) return;
 
-    this.showToast('BOSS NEDKJEMPET!', { fontSize: 34, fill: '#ffff00', duration: 2000 });
+    this.showToast(t('play.toast.bossDefeated'), { fontSize: 34, fill: '#ffff00', duration: 2000 });
     this.showToast(getAchievementPopup(), { fontSize: 20, y: this.game.getHeight() * 0.28, duration: 2000 });
 
     if (this.screenShake) this.screenShake.shake(12);
@@ -2988,7 +2990,7 @@ export class PlayScene {
     this.introStartTime = Date.now();
 
     const shipMeta = getShipMetadata(spriteKey);
-    const shipName = (shipMeta ? shipMeta.name : 'UNKNOWN SHIP').toUpperCase();
+    const shipName = (shipMeta ? shipMeta.name : t('play.ship.unknown')).toUpperCase();
 
     // Create intro overlay
     this.introOverlay = new PIXI.Container();
@@ -3020,7 +3022,7 @@ export class PlayScene {
     this.introOverlay.addChild(nameText);
 
     // Subtitle
-    const subText = new PIXI.Text("CLASSIFIED COMBAT VESSEL", {
+    const subText = new PIXI.Text(t('play.shipUnlock.classified'), {
       fontFamily: 'Courier New',
       fontSize: 20, // Readable subtitle
       fill: '#aaaaaa',
