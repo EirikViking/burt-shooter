@@ -791,8 +791,8 @@ export class ShipSelectScene {
     const stats = ship?.stats || { speed: 6, fireRate: 150, damage: 1 };
     const ranges = this.statRanges || this.computeStatRanges(this.ships);
     const segments = 5;
-    const barChar = '#';
-    const emptyChar = '.';
+    const barChar = '█';
+    const emptyChar = '░';
     const clamp01 = (value) => Math.max(0, Math.min(1, value));
     const makeBar = (value) => {
       const filled = Math.max(1, Math.min(segments, Math.round(value * segments)));
