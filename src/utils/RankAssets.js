@@ -1,6 +1,4 @@
 import * as PIXI from 'pixi.js';
-import { AssetManifest } from '../assets/assetManifest.js';
-
 const NUM_RANKS = 20;
 const MAX_RANK_INDEX = 19;
 const BUNDLE_NAME = 'rank_badges';
@@ -49,13 +47,13 @@ class RankAssetsManager {
 
     ensureBundleRegistered() {
         if (this.bundleRegistered) return;
-        const manifestList = AssetManifest.sprites.ranks || [];
         const bundle = {};
-        manifestList.forEach((src, idx) => {
+        for (let idx = 0; idx <= MAX_RANK_INDEX; idx += 1) {
+            const src = this.rankSrc(idx);
             if (typeof src === 'string' && src.length > 0) {
                 bundle[this.rankAlias(idx)] = src;
             }
-        });
+        }
         if (Object.keys(bundle).length > 0) {
             PIXI.Assets.addBundle(BUNDLE_NAME, bundle);
         }
@@ -86,7 +84,7 @@ class RankAssetsManager {
 
         const loadTask = (async () => {
             try {
-                const texture = await PIXI.Assets.load({ alias, src });
+                const texture = await PIXI.Assets.load(alias);
                 if (this.isValidTexture(texture)) {
                     this.cache.set(alias, texture);
                     return texture;
@@ -165,20 +163,21 @@ class RankAssetsManager {
     }
 
     async preloadHighscoreBadges() {
-        const entries = Array.from({ length: 19 }, (_, i) => {
-            const idx = i + 1;
-            return {
-                alias: this.rankAlias(idx),
-                src: this.rankSrc(idx)
-            };
-        });
-
+        this.ensureBundleRegistered();
+        const aliases = Array.from({ length: 19 }, (_, i) => this.rankAlias(i + 1));
         const textures = await Promise.all(
-            entries.map(entry => PIXI.Assets.load(entry).catch(() => null))
+            aliases.map(async (alias) => {
+                if (this.cache.has(alias)) return this.cache.get(alias);
+                try {
+                    return await PIXI.Assets.load(alias);
+                } catch {
+                    return null;
+                }
+            })
         );
 
         textures.forEach((texture, index) => {
-            const alias = entries[index]?.alias;
+            const alias = aliases[index];
             if (alias && this.isValidTexture(texture)) {
                 this.cache.set(alias, texture);
             }
