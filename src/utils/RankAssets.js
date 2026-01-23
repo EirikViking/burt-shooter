@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 const NUM_RANKS = 20;
 const MAX_RANK_INDEX = 19;
 const BUNDLE_NAME = 'rank_badges';
@@ -23,9 +24,9 @@ class RankAssetsManager {
         return `rank_${idx.toString().padStart(2, '0')}`;
     }
 
-    rankSrc(place) {
-        const idx = Math.max(1, Math.min(19, Number(place) || 0));
-        return `/sprites/ranks/png/Default%20size/gold/rank${String(idx).padStart(3, '0')}.png`;
+    rankSrc(idx) {
+        const clamped = this.clampIndex(idx);
+        return AssetManifest.sprites.ranks[clamped];
     }
 
     isValidTexture(tex) {
@@ -47,13 +48,13 @@ class RankAssetsManager {
 
     ensureBundleRegistered() {
         if (this.bundleRegistered) return;
+        const manifestList = AssetManifest.sprites.ranks || [];
         const bundle = {};
-        for (let idx = 0; idx <= MAX_RANK_INDEX; idx += 1) {
-            const src = this.rankSrc(idx);
+        manifestList.forEach((src, idx) => {
             if (typeof src === 'string' && src.length > 0) {
                 bundle[this.rankAlias(idx)] = src;
             }
-        }
+        });
         if (Object.keys(bundle).length > 0) {
             PIXI.Assets.addBundle(BUNDLE_NAME, bundle);
         }
@@ -163,27 +164,9 @@ class RankAssetsManager {
     }
 
     async preloadHighscoreBadges() {
-        this.ensureBundleRegistered();
+        await this.preloadAll();
         const aliases = Array.from({ length: 19 }, (_, i) => this.rankAlias(i + 1));
-        const textures = await Promise.all(
-            aliases.map(async (alias) => {
-                if (this.cache.has(alias)) return this.cache.get(alias);
-                try {
-                    return await PIXI.Assets.load(alias);
-                } catch {
-                    return null;
-                }
-            })
-        );
-
-        textures.forEach((texture, index) => {
-            const alias = aliases[index];
-            if (alias && this.isValidTexture(texture)) {
-                this.cache.set(alias, texture);
-            }
-        });
-
-        return this.cache.size > 0 ? textures : null;
+        return aliases.map(alias => this.cache.get(alias)).filter(Boolean);
     }
 }
 
