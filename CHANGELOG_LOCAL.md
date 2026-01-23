@@ -5,6 +5,11 @@ when git commits are not used.
 
 ---
 
+## 2026-01-23
+- Added `difficulty.pressureScalar=0.9` to reduce incoming fire pressure by 10% (enemy + boss projectiles).
+
+---
+
 ## 2026-01-14
 - Fixed rank-up crash (removed require usage in runtime code)
 - Implemented visible rank-up overlay with lore-driven text

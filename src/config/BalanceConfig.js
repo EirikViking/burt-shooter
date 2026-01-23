@@ -30,6 +30,8 @@ export const BalanceConfig = {
 
     // Difficulty (MUCH gentler curve - playable to level 10+)
     difficulty: {
+        // Global incoming-pressure scalar (10% easier overall)
+        pressureScalar: 0.9,
         baseEnemyHealthMultiplier: 0.9, // Lower HP baseline
         hpScalePerLevel: 0.04, // HALVED from 0.08 - much gentler HP growth
 

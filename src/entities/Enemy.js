@@ -571,7 +571,7 @@ export class Enemy {
     if (distance === 0) return null;
 
     const accuracy = 0.8 + Math.random() * 0.2;
-    const speed = BalanceConfig.difficulty.enemyProjectileSpeed;
+    const speed = BalanceConfig.difficulty.enemyProjectileSpeed * BalanceConfig.difficulty.pressureScalar;
     const vx = (dx / distance) * speed * accuracy;
     const vy = (dy / distance) * speed * accuracy;
 

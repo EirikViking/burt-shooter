@@ -448,7 +448,7 @@ export class EnemyManager {
 
     const timeScale = isSlowTime ? 0.5 : 1.0;
     const tier = this.directorState?.tier || 0;
-    const fireChance = BalanceConfig.difficulty.enemyFireChance * (1 + tier * 0.1);
+    const fireChance = BalanceConfig.difficulty.enemyFireChance * BalanceConfig.difficulty.pressureScalar * (1 + tier * 0.1);
     const dt = delta * timeScale;
     const playerX = player ? player.x : 400;
     const playerY = player ? player.y : 300;

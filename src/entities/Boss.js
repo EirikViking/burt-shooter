@@ -361,8 +361,8 @@ export class Boss {
     for (let i = 0; i < shots; i++) {
       const t = (i / (shots - 1)) - 0.5;
       const angle = Math.atan2(playerY - this.y, playerX - this.x) + t * spread;
-      const vx = Math.cos(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase2;
-      const vy = Math.sin(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase2;
+      const vx = Math.cos(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase2 * BalanceConfig.difficulty.pressureScalar;
+      const vy = Math.sin(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase2 * BalanceConfig.difficulty.pressureScalar;
       bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, this.color));
     }
     bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
@@ -373,8 +373,8 @@ export class Boss {
     for (let i = 0; i < count; i++) {
       if (i % gapSize === 0) continue;
       const angle = (i / count) * Math.PI * 2;
-      const vx = Math.cos(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase3;
-      const vy = Math.sin(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase3;
+      const vx = Math.cos(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase3 * BalanceConfig.difficulty.pressureScalar;
+      const vy = Math.sin(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase3 * BalanceConfig.difficulty.pressureScalar;
       bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, this.color));
     }
     bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
@@ -397,7 +397,7 @@ export class Boss {
       const dx = playerX - this.x;
       const dy = playerY - this.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase1;
+      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase1 * BalanceConfig.difficulty.pressureScalar;
       bullets.push(new Bullet(
         this.x,
         this.y,
@@ -412,7 +412,7 @@ export class Boss {
       // 5-shot spread (MORE AGGRESSIVE - wider coverage)
       for (let i = -2; i <= 2; i++) {
         const angle = Math.atan2(playerY - this.y, playerX - this.x) + i * 0.25;
-        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase2;
+        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase2 * BalanceConfig.difficulty.pressureScalar;
         bullets.push(new Bullet(
           this.x,
           this.y,
@@ -428,7 +428,7 @@ export class Boss {
       // 12-bullet spiral (MORE AGGRESSIVE - denser pattern)
       for (let i = 0; i < 12; i++) {
         const angle = (Math.PI * 2 * i) / 12 + this.moveTimer * 0.05;
-        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase3;
+        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase3 * BalanceConfig.difficulty.pressureScalar;
         bullets.push(new Bullet(
           this.x,
           this.y,
