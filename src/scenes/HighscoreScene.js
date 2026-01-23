@@ -525,15 +525,21 @@ export class HighscoreScene {
   }
 
   // Helper to place the VKC footer
-  layoutVkcFooter(layout, rowsEndY) {
+  layoutVkcFooter(layout) {
     if (!this.vkcFooterText) return;
-    const { width, height } = this.game.app.screen;
-    const footerY = Math.min(
-      height - layout.padding * 2.5, // Standard bottom limit
-      rowsEndY + layout.spacing // Just below rows
-    );
+    const { width } = this.game.app.screen;
+
+    // Default to screen bottom if panel not rendered yet
+    let footerY = this.game.app.screen.height - layout.padding;
+
+    // Use panel bottom if available (preferred)
+    if (this.panelBottomY) {
+      footerY = this.panelBottomY - 12; // 12px padding from bottom of frame
+    }
+
     this.vkcFooterText.x = width / 2;
     this.vkcFooterText.y = footerY;
+    this.vkcFooterText.anchor.set(0.5, 1); // Bottom-center anchor
     this.vkcFooterText.visible = this.status === 'LOADED';
   }
 
@@ -840,8 +846,7 @@ export class HighscoreScene {
 
 
       // Position VKC footer
-      const lastRowY = startY + layout.lineHeight * 1.4 * (entriesToDisplay.length + 1);
-      this.layoutVkcFooter(layout, lastRowY);
+      this.layoutVkcFooter(layout);
 
       this.fadeInRows();
     } else {
@@ -1091,6 +1096,9 @@ export class HighscoreScene {
       panelHeight - 8
     );
     this.leaderboardPanel.stroke({ color: 0x0088ff, width: 1, alpha: 0.4 });
+
+    // Store panel bottom for footer layout
+    this.panelBottomY = panelY + panelHeight;
   }
 
   startAnimationLoop() {
