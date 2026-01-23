@@ -334,9 +334,14 @@ export class MenuScene {
       'There are Norwegian jokes and inside humor in this game. It was made for a group of friends. Please ignore that part and focus on the gameplay.',
       {
         fontFamily: 'Courier New',
-        fontSize: 13,
+        fontSize: 14,
         fontWeight: 'bold',
-        fill: ['#ff00ff', '#00ffff', '#ffff00'], // Crazy gradient
+        fill: '#ff00ff', // Solid Magenta for safety and visibility
+        stroke: '#00ffff',
+        strokeThickness: 3,
+        dropShadow: true,
+        dropShadowColor: '#000000',
+        dropShadowBlur: 4,
         align: 'center',
         wordWrap: true,
         wordWrapWidth: clampTextWidth(width * 0.75, layout)
