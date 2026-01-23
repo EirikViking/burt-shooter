@@ -128,6 +128,9 @@ export class PlayScene {
     this.nearMissCooldownAt = 0;
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
+    // Powerup mechanics (orbital strike timer tracked in scene)
+    this.orbitalStrikeTimer = 0;
+
     // Synergy + Meta
     this.synergyBadge = null;
     this.comboDisplay = null;
@@ -646,6 +649,7 @@ export class PlayScene {
       this.updateStarfield(delta); // TASK D: Animate background stars
       this.updateAmbientBeers(delta); // Handles both Red Hazards and White Powerups
       this.applyMagnetPull(delta);
+      this.updateOrbitalStrike(delta);
       this.updateEasterEgg(delta);
       this.updateRandomPopups(delta);
       this.checkLowLives();
@@ -1112,6 +1116,9 @@ export class PlayScene {
             if (!bullet.piercing) bullet.active = false;
             const destroyed = enemy.takeDamage(bullet.damage);
 
+            // Chain Lightning: Arc to nearby enemies
+            this.triggerChainLightning(enemy, bullet.damage);
+
             if (destroyed) {
               // XP Logic handled by score now
 
@@ -1553,6 +1560,14 @@ export class PlayScene {
     }
     if (this.scorePopupManager) {
       this.scorePopupManager.cleanup();
+    }
+    // Clean up magnet field visual
+    if (this.magnetFieldVisual) {
+      if (this.magnetFieldVisual.parent) {
+        this.magnetFieldVisual.parent.removeChild(this.magnetFieldVisual);
+      }
+      this.magnetFieldVisual.destroy();
+      this.magnetFieldVisual = null;
     }
     // Lifecycle hardening
     if (this._deathTimeouts) {
@@ -2140,6 +2155,49 @@ export class PlayScene {
     if (danger && this.powerupManager && Math.random() < clutchChance) {
       this.powerupManager.spawn(enemy.x, enemy.y);
     }
+
+    // Vampire: Heal on kills
+    if (this.player?.vampireActive) {
+      // Increment kill counter (reset to 0 when powerup is picked up in Player.js)
+      this.player.vampireKillCount++;
+
+      // Heal every 8 kills
+      const healsPerLife = 8;
+      if (this.player.vampireKillCount >= healsPerLife) {
+        this.player.vampireKillCount = 0;
+
+        // Gain a life (capped at max)
+        this.game.gainLife();
+
+        // Visual feedback
+        this.enqueueToast('VAMPIRE HEAL +1 LIFE', {
+          fontSize: 18,
+          fill: '#ff3366',
+          slot: 'top',
+          type: 'powerup',
+          duration: 1500
+        });
+
+        // Red healing particles
+        if (this.particleManager && this.player) {
+          this.particleManager.createExplosion(this.player.x, this.player.y, 0xff3366);
+        }
+
+        AudioManager.playSfx('pickup', { volume: 0.8 });
+      } else {
+        // Show vampire progress feedback
+        const remaining = healsPerLife - this.player.vampireKillCount;
+        if (this.player.vampireKillCount % 2 === 0) { // Show every 2 kills to avoid spam
+          this.enqueueToast(`VAMPIRE: ${remaining} kills to heal`, {
+            fontSize: 14,
+            fill: '#ff6688',
+            slot: 'top',
+            type: 'info',
+            duration: 800
+          });
+        }
+      }
+    }
   }
 
   updateComboTimers(delta) {
@@ -2167,6 +2225,95 @@ export class PlayScene {
   getComboScore(points) {
     const base = Number(points) || 0;
     return Math.round(base * Math.max(1, this.comboMultiplier));
+  }
+
+  triggerChainLightning(sourceEnemy, baseDamage) {
+    if (!this.player?.chainLightningActive) return;
+
+    const maxChains = this.player.chainLightningMaxChains || 3;
+    const chainRange = 150; // pixels
+    const damageMultiplier = 0.5; // 50% of original damage per chain
+
+    const chainedEnemies = [sourceEnemy];
+    let currentEnemy = sourceEnemy;
+
+    for (let i = 0; i < maxChains; i++) {
+      // Find nearest unchained enemy
+      let nearest = null;
+      let nearestDist = chainRange;
+
+      this.enemyManager.enemies.forEach(enemy => {
+        if (enemy.active && !chainedEnemies.includes(enemy)) {
+          const dist = Math.hypot(enemy.x - currentEnemy.x, enemy.y - currentEnemy.y);
+          if (dist < nearestDist) {
+            nearest = enemy;
+            nearestDist = dist;
+          }
+        }
+      });
+
+      if (!nearest) break;
+
+      // Draw lightning arc
+      this.drawLightningArc(currentEnemy.x, currentEnemy.y, nearest.x, nearest.y);
+
+      // Deal damage
+      const chainDamage = baseDamage * damageMultiplier;
+      const destroyed = nearest.takeDamage(chainDamage);
+
+      if (destroyed) {
+        // Award score
+        if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
+          const scoreAwarded = this.getComboScore(nearest.scoreValue);
+          this.game.addScore(scoreAwarded);
+          if (this.scorePopupManager) {
+            this.scorePopupManager.addScorePopup(nearest.x, nearest.y, scoreAwarded);
+          }
+        }
+        this.onEnemyKilled(nearest);
+        this.particleManager.createExplosion(nearest.x, nearest.y, nearest.color);
+        AudioManager.playSfx('enemy_explode', { volume: 0.4 });
+      } else {
+        this.particleManager.createHitSpark(nearest.x, nearest.y);
+      }
+
+      chainedEnemies.push(nearest);
+      currentEnemy = nearest;
+    }
+
+    // Play lightning sound if any chains happened
+    if (chainedEnemies.length > 1) {
+      AudioManager.playSfx('powerup', { volume: 0.3 }); // Using powerup sound as placeholder
+    }
+  }
+
+  drawLightningArc(x1, y1, x2, y2) {
+    const graphics = new PIXI.Graphics();
+
+    // Draw jagged lightning effect
+    const segments = 5;
+    const jitter = 8;
+
+    graphics.moveTo(x1, y1);
+
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      const x = x1 + (x2 - x1) * t + (Math.random() - 0.5) * jitter;
+      const y = y1 + (y2 - y1) * t + (Math.random() - 0.5) * jitter;
+      graphics.lineTo(x, y);
+    }
+
+    graphics.lineTo(x2, y2);
+    graphics.stroke({ color: 0x88ffff, width: 2, alpha: 0.8 });
+
+    this.container.addChild(graphics);
+
+    // Fade out and remove
+    setTimeout(() => {
+      if (graphics.parent) {
+        graphics.parent.removeChild(graphics);
+      }
+    }, 100);
   }
 
   initMetaProgress() {
@@ -2300,21 +2447,52 @@ export class PlayScene {
   }
 
   applyMagnetPull(delta) {
-    if (!this.player?.magnetActive) return;
+    if (!this.player?.magnetActive) {
+      // Hide magnet field visual when not active
+      if (this.magnetFieldVisual) {
+        this.magnetFieldVisual.clear();
+        this.magnetFieldVisual.visible = false;
+      }
+      return;
+    }
     const range = this.player.magnetRadius || 140;
     const strength = this.player.magnetStrength || 0.08;
-    const pull = strength * delta;
+    const pull = strength * delta * 15; // MUCH stronger pull (was too weak before)
     const px = this.player.x;
     const py = this.player.y;
+
+    // Draw visual indicator for magnet field
+    if (!this.magnetFieldVisual) {
+      this.magnetFieldVisual = new PIXI.Graphics();
+      this.gameContainer.addChild(this.magnetFieldVisual);
+    }
+
+    // Update magnet field visual
+    this.magnetFieldVisual.visible = true;
+    this.magnetFieldVisual.clear();
+    const now = Date.now();
+    const pulse = Math.sin(now * 0.005) * 0.5 + 0.5;
+    const alpha = 0.15 + pulse * 0.1;
+
+    // Outer ring
+    this.magnetFieldVisual.circle(px, py, range);
+    this.magnetFieldVisual.stroke({ color: 0x99ffcc, width: 2, alpha: alpha * 0.8 });
+    this.magnetFieldVisual.fill({ color: 0x99ffcc, alpha: alpha * 0.15 });
+
+    // Inner ring
+    this.magnetFieldVisual.circle(px, py, range * 0.6);
+    this.magnetFieldVisual.stroke({ color: 0xccffee, width: 1, alpha: alpha * 0.5 });
 
     this.powerupManager?.powerups?.forEach(p => {
       if (!p.active) return;
       const dx = px - p.x;
       const dy = py - p.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < range && dist > 1) {
-        p.x += (dx / dist) * pull * dist * 0.25;
-        p.y += (dy / dist) * pull * dist * 0.25;
+      if (dist < range && dist > 5) {
+        // Stronger pull with distance falloff
+        const pullForce = pull * (1 - dist / range) * 2;
+        p.x += (dx / dist) * pullForce;
+        p.y += (dy / dist) * pullForce;
         p.sprite.x = p.x;
         p.sprite.y = p.y;
       }
@@ -2325,13 +2503,121 @@ export class PlayScene {
       const dx = px - b.x;
       const dy = py - b.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < range && dist > 1) {
-        b.x += (dx / dist) * pull * dist * 0.18;
-        b.y += (dy / dist) * pull * dist * 0.18;
+      if (dist < range && dist > 5) {
+        // Stronger pull with distance falloff
+        const pullForce = pull * (1 - dist / range) * 1.5;
+        b.x += (dx / dist) * pullForce;
+        b.y += (dy / dist) * pullForce;
         b.sprite.x = b.x;
         b.sprite.y = b.y;
       }
     });
+  }
+
+  updateOrbitalStrike(delta) {
+    if (!this.player?.orbitalStrikeActive || !this.player?.orbitalStrikeCharges || this.player.orbitalStrikeCharges <= 0) {
+      return;
+    }
+
+    // Initialize timer if not set
+    if (!this.orbitalStrikeTimer) {
+      this.orbitalStrikeTimer = 0;
+    }
+
+    const strikeInterval = 2500; // Fire every 2.5 seconds
+    this.orbitalStrikeTimer += delta * 16.67;
+
+    if (this.orbitalStrikeTimer >= strikeInterval) {
+      this.orbitalStrikeTimer = 0;
+      this.triggerOrbitalStrike();
+    }
+  }
+
+  triggerOrbitalStrike() {
+    // Find a random active enemy to target
+    const activeEnemies = this.enemyManager.enemies.filter(e => e.active);
+    if (activeEnemies.length === 0) return;
+
+    const target = activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
+    const targetX = target.x;
+    const targetY = target.y;
+
+    // Decrement charges
+    this.player.orbitalStrikeCharges--;
+
+    // Show warning indicator
+    const warning = new PIXI.Graphics();
+    warning.circle(0, 0, 60);
+    warning.stroke({ color: 0xff6600, width: 3, alpha: 0.8 });
+    warning.circle(0, 0, 40);
+    warning.stroke({ color: 0xff6600, width: 2, alpha: 0.5 });
+    warning.position.set(targetX, targetY);
+    this.gameContainer.addChild(warning);
+
+    // Animate warning pulse
+    let pulseTime = 0;
+    const pulseInterval = this.game.app.ticker.add(() => {
+      pulseTime += 16.67;
+      const pulse = Math.sin(pulseTime * 0.01) * 0.5 + 0.5;
+      warning.alpha = 0.5 + pulse * 0.5;
+      warning.scale.set(0.8 + pulse * 0.2);
+    });
+
+    // Fire strike after delay
+    setTimeout(() => {
+      this.game.app.ticker.remove(pulseInterval);
+      if (warning.parent) warning.parent.removeChild(warning);
+
+      // Create beam from top
+      const beam = new PIXI.Graphics();
+      const screenHeight = this.game.app.screen.height;
+      beam.moveTo(targetX, 0);
+      beam.lineTo(targetX, screenHeight);
+      beam.stroke({ color: 0xffaa00, width: 40, alpha: 0.6 });
+
+      // Add glow effect
+      beam.moveTo(targetX, 0);
+      beam.lineTo(targetX, screenHeight);
+      beam.stroke({ color: 0xffff00, width: 20, alpha: 0.8 });
+
+      this.gameContainer.addChild(beam);
+
+      // Deal area damage
+      const damageRadius = 80;
+      const damage = 30;
+
+      this.enemyManager.enemies.forEach(enemy => {
+        if (!enemy.active) return;
+        const dist = Math.hypot(enemy.x - targetX, enemy.y - targetY);
+        if (dist < damageRadius) {
+          const destroyed = enemy.takeDamage(damage);
+          if (destroyed) {
+            if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
+              const scoreAwarded = this.getComboScore(enemy.scoreValue);
+              this.game.addScore(scoreAwarded);
+              if (this.scorePopupManager) {
+                this.scorePopupManager.addScorePopup(enemy.x, enemy.y, scoreAwarded);
+              }
+            }
+            this.onEnemyKilled(enemy);
+            this.particleManager.createExplosion(enemy.x, enemy.y, enemy.color);
+            AudioManager.playSfx('enemy_explode', { volume: 0.4 });
+          }
+        }
+      });
+
+      // Screen shake and sound
+      this.screenShake.shake(4);
+      AudioManager.playSfx('enemy_explode', { volume: 0.7 });
+
+      // Create impact explosion at target
+      this.particleManager.createExplosion(targetX, targetY, 0xffaa00);
+
+      // Remove beam after short duration
+      setTimeout(() => {
+        if (beam.parent) beam.parent.removeChild(beam);
+      }, 150);
+    }, 500); // 0.5 second warning
   }
 
   spawnAmbientBeer(type) {

@@ -33,7 +33,10 @@ class Powerup {
       drones: { color: 0x66ccff, label: 'DRONES' },
       shockwave: { color: 0xff9966, label: 'WAVE' },
       point_defense: { color: 0x00ddff, label: 'P-DEF' },
-      bomb: { color: 0xff3300, label: 'BOMB' }
+      bomb: { color: 0xff3300, label: 'BOMB' },
+      chain_lightning: { color: 0xffff00, label: 'CHAIN' },
+      orbital_strike: { color: 0xff00ff, label: 'ORBITAL' },
+      vampire: { color: 0xff0066, label: 'VAMP' }
     };
 
     const data = powerupData[type] || powerupData['isbjorn'];
@@ -82,6 +85,9 @@ class Powerup {
       else if (this.type === 'shockwave') texture = GameAssets.getXtraPowerup('deili');
       else if (this.type === 'point_defense') texture = GameAssets.getXtraPowerup('shield'); // Reuse shield texture
       else if (this.type === 'bomb') texture = GameAssets.getXtraPowerup('deili'); // Reuse deili for bomb
+      else if (this.type === 'chain_lightning') texture = GameAssets.getXtraPowerup('slow_time');
+      else if (this.type === 'orbital_strike') texture = GameAssets.getXtraPowerup('shield');
+      else if (this.type === 'vampire') texture = GameAssets.getXtraPowerup('rolp');
       else texture = GameAssets.getBeer();
 
       if (GameAssets.isValidTexture(texture)) {
@@ -97,7 +103,8 @@ class Powerup {
           this.type === 'rapid_fire' || this.type === 'double_shot' ||
           this.type === 'damage_up' || this.type === 'speed_up' ||
           this.type === 'pierce' || this.type === 'score_x2' ||
-          this.type === 'magnet' || this.type === 'drones' || this.type === 'shockwave';
+          this.type === 'magnet' || this.type === 'drones' || this.type === 'shockwave' ||
+          this.type === 'chain_lightning' || this.type === 'orbital_strike' || this.type === 'vampire';
 
         if (hasSprite) {
           beerSprite.scale.set(0.8);
@@ -270,24 +277,13 @@ class Powerup {
         }
       }
     } else {
-      // Pass type directly to player (Player handles reset)
-      if (this.type === 'score_x2') {
-        if (scene.applyScoreMultiplier) {
-          scene.applyScoreMultiplier(2, 10000, 'score_x2');
-        }
-      } else if (this.type === 'shockwave') {
-        if (scene.triggerShockwave) {
-          scene.triggerShockwave(player.x, player.y, 0xffaa33);
-        }
-        if (scene.bulletManager) {
-          scene.bulletManager.enemyBullets.forEach(b => {
-            b.active = false;
-            if (b.sprite && b.sprite.parent) b.sprite.parent.removeChild(b.sprite);
-          });
-          scene.bulletManager.enemyBullets = [];
-        }
-      } else {
-        player.applyPowerup(this.type);
+      // Pass type directly to player (Player handles all powerup logic)
+      player.applyPowerup(this.type);
+
+      // shockwave: Also trigger scene effect (player.triggerShockwave handles damage/bullets)
+      if (this.type === 'shockwave') {
+        // Store scene reference for player to use
+        player.lastScene = scene;
       }
     }
 
@@ -354,7 +350,10 @@ class Powerup {
       score_x2: 'ui_open',
       magnet: 'pickup',
       drones: 'pickup',
-      shockwave: 'powerup'
+      shockwave: 'powerup',
+      chain_lightning: 'pickup',
+      orbital_strike: 'powerup',
+      vampire: 'pickup'
     };
 
     const sfxKey = sfxMap[this.type] || 'pickup';
@@ -380,7 +379,10 @@ class Powerup {
       score_x2: 'SCORE x2!',
       magnet: 'MAGNET FIELD!',
       drones: 'SIDE DRONES!',
-      shockwave: 'SHOCKWAVE!'
+      shockwave: 'SHOCKWAVE!',
+      chain_lightning: 'CHAIN LIGHTNING!',
+      orbital_strike: 'ORBITAL STRIKE!',
+      vampire: 'VAMPIRE MODE!'
     };
 
     const { width, height } = scene.game.app.screen;
@@ -446,7 +448,10 @@ export class PowerupManager {
       'score_x2',
       'magnet',
       'drones',
-      'shockwave'
+      'shockwave',
+      'chain_lightning',
+      'orbital_strike',
+      'vampire'
     ];
   }
 
@@ -550,11 +555,31 @@ export class PowerupManager {
       this.extraLifeSpawnedThisLevel = true;
     } else if (rand < 0.15 && !shieldActive) {
       type = 'shield'; // 13% Uncommon, if no shield
-    } else if (rand < 0.2) {
-      type = 'score_x2';
+    } else if (rand < 0.25) {
+      // BOMB & SHOCKWAVE - 10% dedicated chance for most visible powerups
+      type = Math.random() < 0.5 ? 'bomb' : 'shockwave';
+    } else if (rand < 0.50) {
+      // OTHER NEW POWERUPS - 25% chance pool for remaining new powerups
+      const newPowerups = [
+        'chain_lightning',
+        'orbital_strike',
+        'vampire'
+      ];
+      type = newPowerups[Math.floor(Math.random() * newPowerups.length)];
+    } else if (rand < 0.60) {
+      // Combat powerups - 10% chance pool
+      const combatPowerups = [
+        'score_x2',
+        'magnet',
+        'drones',
+        'point_defense',
+        'pierce',
+        'damage_up'
+      ];
+      type = combatPowerups[Math.floor(Math.random() * combatPowerups.length)];
     } else {
-      // Remaining 85% - Standard Powerups
-      const rareTypes = [
+      // Standard powerups - remaining 40%
+      const standardPowerups = [
         'ghost',
         'slow_time',
         'rolp',
@@ -562,17 +587,9 @@ export class PowerupManager {
         'isbjorn',
         'rapid_fire',
         'double_shot',
-        'damage_up',
-        'speed_up',
-        'pierce',
-        'score_x2',
-        'magnet',
-        'drones',
-        'shockwave',
-        'point_defense',
-        'bomb'
+        'speed_up'
       ];
-      type = rareTypes[Math.floor(Math.random() * rareTypes.length)];
+      type = standardPowerups[Math.floor(Math.random() * standardPowerups.length)];
     }
 
     const powerup = new Powerup(x, y, type);

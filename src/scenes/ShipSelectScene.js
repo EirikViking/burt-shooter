@@ -405,7 +405,7 @@ export class ShipSelectScene {
           AudioManager.playSfx('forceField', { volume: 0.3, force: false });
         }
 
-        const animate = () => {
+        const animateFrame = () => {
           const elapsed = Date.now() - startTime;
           const t = Math.min(1, elapsed / duration);
 
@@ -478,13 +478,13 @@ export class ShipSelectScene {
           this.updateParticles(shipContainer, elapsed);
 
           if (t < 1) {
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animateFrame);
           } else {
             this.animating = false;
             this.updateButtons(); // Update buttons after animation
           }
         };
-        animate();
+        animateFrame();
       } else {
         // Immediate positioning
         shipContainer.x = targetX;

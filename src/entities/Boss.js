@@ -191,8 +191,8 @@ export class Boss {
 
     this.moveTimer += delta;
 
-    // Phase transitions
-    if (this.health < this.maxHealth * 0.7 && this.phase === 1) {
+    // Phase transitions (MORE AGGRESSIVE - earlier transitions)
+    if (this.health < this.maxHealth * 0.75 && this.phase === 1) {
       this.phase = 2;
       this.shootDelay = BalanceConfig.difficulty.bossShootDelayPhase2;
       this.color = 0xff8800;
@@ -202,7 +202,7 @@ export class Boss {
         if (playScene?.showBossTaunt) playScene.showBossTaunt('boss_phase2');
         this.tauntPhase2Shown = true;
       }
-    } else if (this.health < this.maxHealth * 0.35 && this.phase === 2) {
+    } else if (this.health < this.maxHealth * 0.40 && this.phase === 2) {
       this.phase = 3;
       this.shootDelay = BalanceConfig.difficulty.bossShootDelayPhase3;
       this.color = 0xff0000;
@@ -252,29 +252,30 @@ export class Boss {
   }
 
   getMoveProfile(bossType) {
+    // MORE AGGRESSIVE - faster, wider movements
     const base = {
       profile: 'sway',
-      swayAmpX: 0.12,
-      swayFreq: 0.6,
-      bobAmpY: 0.01,
-      bobFreq: 0.9,
+      swayAmpX: 0.16, // 33% wider sway
+      swayFreq: 0.8, // 33% faster sway
+      bobAmpY: 0.02, // 100% more bobbing
+      bobFreq: 1.2, // 33% faster bob
       rotateMode: 'slow',
-      rotateSpeed: 0.2,
-      aimStrength: 0.5
+      rotateSpeed: 0.3,
+      aimStrength: 0.6
     };
 
     if (!bossType) return base;
     if (bossType === 'BIG_BEER_CAN') {
-      return { ...base, profile: 'sway', rotateMode: 'slow', rotateSpeed: 0.18 };
+      return { ...base, profile: 'sway', rotateMode: 'slow', rotateSpeed: 0.25 };
     }
     if (bossType === 'ICON_192') {
-      return { ...base, profile: 'orbit', swayAmpX: 0.08, bobAmpY: 0.015, rotateMode: 'slow', rotateSpeed: 0.25 };
+      return { ...base, profile: 'orbit', swayAmpX: 0.12, bobAmpY: 0.025, rotateMode: 'slow', rotateSpeed: 0.35 };
     }
     if (bossType === 'BOSS_SPRITE') {
-      return { ...base, profile: 'charge_tease', swayAmpX: 0.1, bobAmpY: 0.02, rotateMode: 'aimToPlayer', rotateSpeed: 2.2, aimStrength: 0.65 };
+      return { ...base, profile: 'charge_tease', swayAmpX: 0.15, bobAmpY: 0.03, rotateMode: 'aimToPlayer', rotateSpeed: 2.8, aimStrength: 0.75 };
     }
     if (bossType.startsWith('BIG_SHIP')) {
-      return { ...base, profile: 'zigzag', swayAmpX: 0.14, bobAmpY: 0.012, rotateMode: 'aimToPlayer', rotateSpeed: 1.8, aimStrength: 0.55 };
+      return { ...base, profile: 'zigzag', swayAmpX: 0.18, bobAmpY: 0.025, rotateMode: 'aimToPlayer', rotateSpeed: 2.4, aimStrength: 0.65 };
     }
     return base;
   }
@@ -300,7 +301,8 @@ export class Boss {
         this.y = this.bossLaneY + Math.cos(t * profile.bobFreq) * bobAmp;
         break;
       case 'charge_tease': {
-        const push = Math.abs(Math.sin(t * 0.5)) * (gameHeight * 0.03);
+        // MORE AGGRESSIVE - bigger push forward motion
+        const push = Math.abs(Math.sin(t * 0.5)) * (gameHeight * 0.05);
         this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp;
         this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp + push;
         break;
@@ -337,15 +339,18 @@ export class Boss {
       playScene.onBossPhaseChange(phase, this);
     }
     const type = phase === 2 ? 'cone' : 'ring';
-    this.telegraph = { type, start: Date.now(), duration: 700 };
+    // MORE AGGRESSIVE - shorter telegraph warning (500ms instead of 700ms)
+    this.telegraph = { type, start: Date.now(), duration: 500 };
     this.signatureCooldown = 120;
   }
 
   executeSignatureMove(type, playerX, playerY) {
     if (type === 'cone') {
-      this.fireCone(playerX, playerY, 9, 0.65);
+      // MORE AGGRESSIVE - wider, denser cone
+      this.fireCone(playerX, playerY, 12, 0.85);
     } else if (type === 'ring') {
-      this.fireRingBurst(18, 3);
+      // MORE AGGRESSIVE - denser ring burst
+      this.fireRingBurst(24, 3);
       const playScene = this.game?.scenes?.play;
       playScene?.enemyManager?.spawnBossAdds(6);
     }
@@ -404,9 +409,9 @@ export class Boss {
         vConfig
       ));
     } else if (this.phase === 2) {
-      // Triple shot
-      for (let i = -1; i <= 1; i++) {
-        const angle = Math.atan2(playerY - this.y, playerX - this.x) + i * 0.3;
+      // 5-shot spread (MORE AGGRESSIVE - wider coverage)
+      for (let i = -2; i <= 2; i++) {
+        const angle = Math.atan2(playerY - this.y, playerX - this.x) + i * 0.25;
         const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase2;
         bullets.push(new Bullet(
           this.x,
@@ -420,9 +425,9 @@ export class Boss {
         ));
       }
     } else {
-      // Spiral pattern
-      for (let i = 0; i < 8; i++) {
-        const angle = (Math.PI * 2 * i) / 8 + this.moveTimer * 0.05;
+      // 12-bullet spiral (MORE AGGRESSIVE - denser pattern)
+      for (let i = 0; i < 12; i++) {
+        const angle = (Math.PI * 2 * i) / 12 + this.moveTimer * 0.05;
         const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase3;
         bullets.push(new Bullet(
           this.x,

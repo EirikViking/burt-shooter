@@ -136,7 +136,10 @@ export class Game {
 
   addScore(points) {
     const base = Number(points) || 0;
-    const mult = Number(this.scoreMultiplier) || 1;
+    // Check both Game's scoreMultiplier (white beer can) and Player's scoreMultiplier (score_x2)
+    const gameMult = Number(this.scoreMultiplier) || 1;
+    const playerMult = this.scenes?.play?.player?.scoreMultiplier || 1;
+    const mult = gameMult * playerMult;
     const applied = Math.round(base * mult);
     this.score += applied;
 

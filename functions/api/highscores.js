@@ -191,19 +191,41 @@ export async function onRequestOptions() {
 export async function onRequestDelete(context) {
   try {
     const db = context.env.DB;
-    // DELETE ALL
-    await db.prepare('DELETE FROM game_highscores').run();
+    const url = new URL(context.request.url);
+    const entryId = url.searchParams.get('id');
 
-    return new Response(JSON.stringify({ success: true, message: 'Leaderboard reset' }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
+    if (entryId) {
+      // DELETE specific entry by ID
+      const result = await db.prepare('DELETE FROM game_highscores WHERE id = ?')
+        .bind(parseInt(entryId, 10))
+        .run();
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: `Entry ${entryId} deleted`,
+        changes: result.meta.changes
+      }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    } else {
+      // DELETE ALL (reset leaderboard)
+      await db.prepare('DELETE FROM game_highscores').run();
+
+      return new Response(JSON.stringify({ success: true, message: 'Leaderboard reset' }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
   } catch (error) {
-    console.error('Error resetting highscores:', error);
-    return new Response(JSON.stringify({ error: 'Failed to reset' }), {
+    console.error('Error deleting highscores:', error);
+    return new Response(JSON.stringify({ error: 'Failed to delete' }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json',

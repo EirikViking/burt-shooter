@@ -105,6 +105,15 @@ export class Player {
     this.muzzleFlashColor = 0xffffff;
     this.baseMuzzleFlashColor = 0xffffff;
 
+    // New Powerups
+    this.chainLightningActive = false;
+    this.chainLightningMaxChains = 3;
+    this.orbitalStrikeActive = false;
+    this.orbitalStrikeCharges = 0;
+    this.orbitalStrikeCooldown = 0;
+    this.vampireActive = false;
+    this.vampireKillCount = 0;
+
     // Shield State
     this.shieldActive = false;
     this.shieldExpiresAt = 0;
@@ -503,7 +512,7 @@ export class Player {
         g.lineTo(0, 10);
         g.lineTo(15, 15);
         g.closePath();
-        g.fill(0x00ff00);
+        g.fill({ color: 0x00ff00 });
         this.shipSprite = g;
         this.sprite.addChild(g);
         this.baseScale = 1;
@@ -594,6 +603,10 @@ export class Player {
     }
     if (this.dronesActive && now > this.dronesExpiresAt) {
       this.clearDrones();
+    }
+    if (this.scoreMultiplier > 1 && now > this.scoreBoostExpiresAt) {
+      this.scoreMultiplier = 1;
+      this.scoreBoostExpiresAt = 0;
     }
 
     // Shield Logic
@@ -966,6 +979,82 @@ export class Player {
     this.drones = [];
   }
 
+  triggerShockwave() {
+    console.log('[Shockwave] Triggered!');
+    const playScene = this.game?.scenes?.play;
+    if (!playScene) return;
+
+    // Clear all enemy bullets
+    if (playScene.bulletManager) {
+      const cleared = playScene.bulletManager.enemyBullets.length;
+      playScene.bulletManager.enemyBullets.forEach(b => {
+        b.active = false;
+        if (b.sprite && b.sprite.parent) {
+          b.sprite.parent.removeChild(b.sprite);
+        }
+      });
+      playScene.bulletManager.enemyBullets = [];
+      console.log(`[Shockwave] Cleared ${cleared} enemy bullets`);
+    }
+
+    // Damage nearby enemies
+    if (playScene.enemyManager && playScene.enemyManager.enemies) {
+      const shockwaveRadius = 250;
+      const shockwaveDamage = 5;
+      let hitCount = 0;
+
+      playScene.enemyManager.enemies.forEach(enemy => {
+        if (!enemy.active) return;
+        const dx = enemy.x - this.x;
+        const dy = enemy.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < shockwaveRadius) {
+          enemy.takeDamage(shockwaveDamage);
+          hitCount++;
+          // Visual feedback
+          if (playScene.particleManager) {
+            playScene.particleManager.createExplosion(enemy.x, enemy.y, 0xffaa00, 8);
+          }
+        }
+      });
+      console.log(`[Shockwave] Hit ${hitCount} enemies`);
+    }
+
+    // Visual effect - expanding ring
+    if (playScene.gameContainer) {
+      const ring = new PIXI.Graphics();
+      let radius = 0;
+      const maxRadius = 250;
+      const duration = 500;
+      const startTime = Date.now();
+
+      const animateRing = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        radius = maxRadius * progress;
+        const alpha = 1 - progress;
+
+        ring.clear();
+        ring.circle(this.x, this.y, radius);
+        ring.stroke({ color: 0xffaa00, width: 4, alpha: alpha * 0.8 });
+        ring.fill({ color: 0xffaa00, alpha: alpha * 0.2 });
+
+        if (progress < 1) {
+          requestAnimationFrame(animateRing);
+        } else {
+          if (ring.parent) ring.parent.removeChild(ring);
+        }
+      };
+
+      playScene.gameContainer.addChild(ring);
+      animateRing();
+    }
+
+    // Sound effect
+    AudioManager.playSfx('explosionCrunch', { force: true, volume: 1.0 });
+  }
+
   getStatSnapshot() {
     const shots = this.multiShot + this.rankBoostExtraShots;
     return `fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}`;
@@ -990,7 +1079,10 @@ export class Player {
       drones: 'DRONES',
       shockwave: 'SHOCKWAVE',
       point_defense: 'POINT DEFENSE',
-      bomb: 'BOMB'
+      bomb: 'BOMB',
+      chain_lightning: 'CHAIN LIGHTNING',
+      orbital_strike: 'ORBITAL STRIKE',
+      vampire: 'VAMPIRE'
     };
     return labels[type] || String(type || '').toUpperCase();
   }
@@ -1202,6 +1294,32 @@ export class Player {
         this.createBombIndicator();
         AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
         break;
+      case 'score_x2':
+        this.scoreMultiplier = 2;
+        this.scoreBoostExpiresAt = Date.now() + 10000; // 10 seconds
+        this.activePowerup.expiresAt = Date.now() + 10000;
+        break;
+      case 'shockwave':
+        // Clear all enemy bullets and deal damage to nearby enemies
+        this.triggerShockwave();
+        this.activePowerup.type = null; // Instant effect, don't block slot
+        break;
+      case 'chain_lightning':
+        this.chainLightningActive = true;
+        this.chainLightningMaxChains = 3;
+        this.activePowerup.expiresAt = Date.now() + 12000;
+        break;
+      case 'orbital_strike':
+        this.orbitalStrikeActive = true;
+        this.orbitalStrikeCharges = 5;
+        this.orbitalStrikeCooldown = 0;
+        this.activePowerup.expiresAt = Date.now() + 15000;
+        break;
+      case 'vampire':
+        this.vampireActive = true;
+        this.vampireKillCount = 0;
+        this.activePowerup.expiresAt = Date.now() + 20000; // 20 seconds
+        break;
     }
 
     this.notePowerup(type);
@@ -1231,6 +1349,13 @@ export class Player {
     this.magnetExpiresAt = 0;
     this.clearDrones();
     this.deactivatePointDefense();
+    this.scoreMultiplier = 1;
+    this.scoreBoostExpiresAt = 0;
+    this.chainLightningActive = false;
+    this.orbitalStrikeActive = false;
+    this.orbitalStrikeCharges = 0;
+    this.vampireActive = false;
+    this.vampireKillCount = 0;
     this.activePowerup.type = null;
     this.activePowerup.expiresAt = 0;
     const before = this.getStatSnapshot();

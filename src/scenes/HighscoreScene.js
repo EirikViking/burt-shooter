@@ -83,8 +83,9 @@ export class HighscoreScene {
     this.bubbleTimer = 0;
     this.bubbleTimerMs = null;
 
-    // Load beer can texture
+    // Load beer can texture and rank textures
     await BeerAsset.ensureLoaded();
+    await RankAssets.preloadAll();
 
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height);
@@ -152,6 +153,7 @@ export class HighscoreScene {
     this.container.addChild(this.comment);
 
     this.rowsContainer = new PIXI.Container();
+    this.rowsContainer.zIndex = 10; // Above leaderboard panel but below overlays
     this.container.addChild(this.rowsContainer);
 
     this.stateMessage = new PIXI.Text('', {
@@ -432,7 +434,7 @@ export class HighscoreScene {
       name,
       score: safeScore,
       level: safeLevel,
-      rank: safeRank
+      rank_index: safeRank  // CRITICAL FIX: Must be rank_index not rank!
     };
   }
 
@@ -715,17 +717,18 @@ export class HighscoreScene {
         if (rankTexture) {
           const rankSprite = new PIXI.Sprite(rankTexture);
           rankSprite.anchor.set(0, 0.5); // Anchor left-center for consistent positioning
-          const spriteSize = layout.isMobile ? 24 : 28; // Larger for better visibility
-          rankSprite.width = spriteSize;
-          rankSprite.height = spriteSize;
-          rankSprite.x = columns.rank + 35;
-          rankSprite.y = y + (layout.lineHeight * 0.7) / 2; // Center vertically with row
-          rankSprite.alpha = 1; // Ensure visible
+
+          // CRITICAL: Scale by HEIGHT only to maintain aspect ratio
+          const targetHeight = layout.isMobile ? 28 : 36;
+          const scale = targetHeight / rankTexture.height;
+          rankSprite.scale.set(scale);
+
+          rankSprite.x = columns.rank + 40;
+          rankSprite.y = y + rowStyle.fontSize / 2;
+          rankSprite.alpha = 1;
           rankSprite.visible = true;
+
           this.rowsContainer.addChild(rankSprite);
-        } else {
-          // Debug: show if texture failed to load
-          console.warn(`[Highscore] Rank texture missing for index ${index}, entry:`, score);
         }
 
         // TASK 1: Use getRankTitle from RankPolicy (single source of truth)

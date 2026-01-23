@@ -133,6 +133,119 @@ export class Enemy {
         this.spriteKey = 'beer_challenge';
         this.xtraType = 1;
         break;
+
+      // PLAYER SHIP VARIANTS - Visual variety using all player ship textures
+      case 'fighter_0': // STOKMARKNES SKUTA
+        this.color = 0x4488ff;
+        this.health = 3;
+        this.maxHealth = 3;
+        this.scoreValue = 30;
+        this.speed = 0.75;
+        this.shootDelay = 110;
+        this.radius = 16;
+        this.shipTextureIndex = 0;
+        this.xtraType = 1;
+        break;
+
+      case 'fighter_1': // ISBJØRN CLASSIC
+        this.color = 0x88ccff;
+        this.health = 3;
+        this.maxHealth = 3;
+        this.scoreValue = 30;
+        this.speed = 0.9;
+        this.shootDelay = 100;
+        this.radius = 16;
+        this.shipTextureIndex = 1;
+        this.xtraType = 1;
+        break;
+
+      case 'fighter_2': // TUFSINGEN
+        this.color = 0xffaa44;
+        this.health = 4;
+        this.maxHealth = 4;
+        this.scoreValue = 35;
+        this.speed = 1.1;
+        this.shootDelay = 85;
+        this.radius = 16;
+        this.movePattern = 'zigzag';
+        this.shipTextureIndex = 2;
+        this.xtraType = 2;
+        break;
+
+      case 'fighter_3': // DEILI FETTA
+        this.color = 0x44ff88;
+        this.health = 5;
+        this.maxHealth = 5;
+        this.scoreValue = 45;
+        this.speed = 0.8;
+        this.shootDelay = 95;
+        this.radius = 17;
+        this.shipTextureIndex = 3;
+        this.xtraType = 2;
+        break;
+
+      case 'fighter_4': // ROLAND TURBO
+        this.color = 0xaa44ff;
+        this.health = 4;
+        this.maxHealth = 4;
+        this.scoreValue = 40;
+        this.speed = 0.95;
+        this.shootDelay = 90;
+        this.radius = 16;
+        this.shipTextureIndex = 4;
+        this.xtraType = 3;
+        break;
+
+      case 'fighter_5': // GIGA GRIS
+        this.color = 0xff4488;
+        this.health = 8;
+        this.maxHealth = 8;
+        this.scoreValue = 90;
+        this.speed = 0.45;
+        this.shootDelay = 120;
+        this.radius = 20;
+        this.movePattern = 'aggressive';
+        this.shipTextureIndex = 5;
+        this.xtraType = 4;
+        break;
+
+      case 'fighter_6': // MELBU EXPRESS
+        this.color = 0x44ffff;
+        this.health = 3;
+        this.maxHealth = 3;
+        this.scoreValue = 35;
+        this.speed = 1.3;
+        this.shootDelay = 75;
+        this.radius = 15;
+        this.movePattern = 'circle';
+        this.shipTextureIndex = 6;
+        this.xtraType = 3;
+        break;
+
+      case 'fighter_7': // KJØTTDEIG SPECIAL
+        this.color = 0xff8844;
+        this.health = 4;
+        this.maxHealth = 4;
+        this.scoreValue = 40;
+        this.speed = 0.85;
+        this.shootDelay = 95;
+        this.radius = 16;
+        this.shipTextureIndex = 7;
+        this.xtraType = 4;
+        break;
+
+      case 'fighter_8': // BURT PROTOTYPE
+        this.color = 0xffff44;
+        this.health = 5;
+        this.maxHealth = 5;
+        this.scoreValue = 50;
+        this.speed = 0.9;
+        this.shootDelay = 85;
+        this.radius = 16;
+        this.movePattern = 'drunk';
+        this.shipTextureIndex = 8;
+        this.xtraType = 5;
+        break;
     }
 
     // TASK 3: Apply difficulty scalars
@@ -151,6 +264,9 @@ export class Enemy {
     // Sprite Selection
     if (this.type === 'beer_challenge') {
       this.spriteKey = 'beer_challenge';
+    } else if (this.type.startsWith('fighter_')) {
+      // Fighter types use player ship textures - shipTextureIndex already set
+      this.spriteKey = null; // Will use shipTextureIndex in createSprite
     } else {
       const r = Math.random();
       if (this.type === 'gris' || this.type === 'mongo') {
@@ -172,8 +288,11 @@ export class Enemy {
     this.sprite.y = this.y;
 
     let tex;
-    // Check Xtra Assets First
-    if (this.spriteKey === 'beer_challenge') {
+    // Check for fighter type (player ship variant)
+    if (this.type.startsWith('fighter_') && this.shipTextureIndex !== undefined) {
+      tex = GameAssets.getRankShipTexture(this.shipTextureIndex);
+      this.usingPlayerShipTexture = true;
+    } else if (this.spriteKey === 'beer_challenge') {
       tex = GameAssets.getBeer();
     } else {
       // Map Type to Color if not provided
@@ -199,8 +318,15 @@ export class Enemy {
       const targetWidth = 45;
       const scale = targetWidth / tex.width;
       s.scale.set(scale);
-      s.rotation = Math.PI;
-      s.tint = this.usingXtraAsset ? 0xFFFFFF : this.color;
+      s.rotation = Math.PI; // Enemies face downward
+
+      // Fighter enemies (player ships) get subtle tint, xtra assets no tint
+      if (this.usingPlayerShipTexture) {
+        s.tint = this.color; // Tint player ships with their type color
+      } else {
+        s.tint = this.usingXtraAsset ? 0xFFFFFF : this.color;
+      }
+
       this.sprite.addChild(s);
       this.body = s;
     } else {
@@ -502,5 +628,13 @@ export class Enemy {
       return true;
     }
     return false;
+  }
+
+  destroy() {
+    // Clean up visual enhancements
+    if (this.visualEnhancementCleanup) {
+      this.visualEnhancementCleanup();
+      this.visualEnhancementCleanup = null;
+    }
   }
 }

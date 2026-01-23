@@ -1,86 +1,71 @@
 import * as PIXI from 'pixi.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 
 const NUM_RANKS = 20;
 const MAX_RANK_INDEX = 19;
 
 class RankAssetsManager {
     constructor() {
-        this.basePath = '/sprites/ranks/PNG/Default size/Gold';
+        this.cache = new Map();
         this.inflight = new Map();
         this.failedIcons = new Set();
     }
 
     rankSrc(idx) {
-        const pad3 = String(idx).padStart(3, '0');
-        return `${this.basePath}/rank${pad3}.png`;
-    }
-
-    rankAlias(idx) {
-        return `rank_${String(idx).padStart(2, '0')}`;
+        // Use AssetManifest for consistency with other asset loading
+        return AssetManifest.sprites.ranks[idx];
     }
 
     /**
-     * Deterministic async loading using Pixi Assets aliases.
-     * Dedupes concurrent loads and caches failures.
+     * Load rank texture using PIXI Assets
      */
     async loadRankTexture(idx) {
         // Clamp 0 to 19
         if (idx < 0) idx = 0;
         if (idx > MAX_RANK_INDEX) idx = MAX_RANK_INDEX;
 
-        const alias = this.rankAlias(idx);
+        const src = this.rankSrc(idx);
 
-        // 1. Check if already loaded in Pixi Assets
-        try {
-            const existing = PIXI.Assets.get(alias);
-            if (existing) return existing;
-        } catch (e) {
-            // Not in cache, proceed
+        // 1. Check if already in our cache
+        if (this.cache.has(src)) {
+            return this.cache.get(src);
         }
 
-        // 2. Check if we already failed for this icon
-        if (this.failedIcons.has(alias)) return null;
+        // 2. Check if we already failed for this
+        if (this.failedIcons.has(src)) return null;
 
         // 3. Dedupe inflight loads
-        if (this.inflight.has(alias)) {
-            await this.inflight.get(alias);
+        if (this.inflight.has(src)) {
+            return await this.inflight.get(src);
+        }
+
+        // 4. Load using PIXI.Assets.load with simple URL
+        const loadTask = (async () => {
             try {
-                return PIXI.Assets.get(alias);
-            } catch (e) {
+                const texture = await PIXI.Assets.load(src);
+                this.cache.set(src, texture);
+                return texture;
+            } catch (error) {
+                console.warn(`[RankAssets] Failed to load ${src}:`, error.message);
+                this.failedIcons.add(src);
                 return null;
             }
-        }
+        })();
 
-        // 4. Trigger load
-        const src = encodeURI(this.rankSrc(idx));
-        const loadTask = PIXI.Assets.load({ alias, src });
-        this.inflight.set(alias, loadTask);
-
-        try {
-            await loadTask;
-            this.inflight.delete(alias);
-            return PIXI.Assets.get(alias);
-        } catch (error) {
-            // One warning per icon failure
-            console.warn(`[RankAssets] Failed to load ${alias}:`, error.message);
-            this.failedIcons.add(alias);
-            this.inflight.delete(alias);
-            return null;
-        }
+        this.inflight.set(src, loadTask);
+        const result = await loadTask;
+        this.inflight.delete(src);
+        return result;
     }
 
     /**
-     * Sync getter from Assets cache.
+     * Sync getter from our cache.
      */
     getRankTexture(idx) {
         if (idx < 0) idx = 0;
         if (idx > MAX_RANK_INDEX) idx = MAX_RANK_INDEX;
-        const alias = this.rankAlias(idx);
-        try {
-            return PIXI.Assets.get(alias);
-        } catch (e) {
-            return null;
-        }
+        const src = this.rankSrc(idx);
+        return this.cache.get(src) || null;
     }
 
     getRankTextureFallback() {

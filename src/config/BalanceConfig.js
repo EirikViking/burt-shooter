@@ -28,36 +28,36 @@ export const BalanceConfig = {
         }
     },
 
-    // Difficulty (gentler curve and reduced pressure)
+    // Difficulty (MUCH gentler curve - playable to level 10+)
     difficulty: {
-        baseEnemyHealthMultiplier: 0.95, // Slightly lower HP baseline
-        hpScalePerLevel: 0.08, // gentler scaling per level
+        baseEnemyHealthMultiplier: 0.9, // Lower HP baseline
+        hpScalePerLevel: 0.04, // HALVED from 0.08 - much gentler HP growth
 
-        enemySpeedMultiplier: 0.92, // Global speed reduction
-        enemySpeedPerLevel: 0.02, // Gentle speed scaling
+        enemySpeedMultiplier: 0.88, // Lower global speed
+        enemySpeedPerLevel: 0.01, // HALVED from 0.02 - much slower speed increase
 
-        enemyFireDelayPerLevel: 0.04, // Slower firing per level
-        enemyFireChance: 0.006, // Lower shooting chance per tick
-        enemyProjectileSpeed: 3.2, // Slightly slower enemy bullets
+        enemyFireDelayPerLevel: 0.02, // HALVED from 0.04 - slower fire rate increase
+        enemyFireChance: 0.005, // Reduced from 0.006 - less frequent shooting
+        enemyProjectileSpeed: 3.0, // Slower enemy bullets (from 3.2)
 
         waveCountBase: 3, // Base waves per level
-        waveCountPerLevel: 4, // Add wave every N levels
+        waveCountPerLevel: 5, // Add wave every 5 levels (was 4)
         waveCountMax: 5, // Cap waves
 
-        waveEnemyBase: 7, // Base enemies per wave
-        waveEnemyPerLevel: 0.6, // Gentle scaling per level
-        waveEnemyRandom: 2, // Small random add
-        waveEnemyMax: 18, // Cap enemies per wave
-        waveDelayMs: 2400, // Slower pacing between waves
+        waveEnemyBase: 6, // Reduced from 7
+        waveEnemyPerLevel: 0.3, // HALVED from 0.6 - much slower enemy count growth
+        waveEnemyRandom: 1, // Reduced from 2
+        waveEnemyMax: 15, // Reduced cap from 18
+        waveDelayMs: 2800, // Longer pause between waves (from 2400)
 
-        bossBaseHealth: 139, // Balanced boss baseline HP
-        bossHealthPerLevel: 60, // Moderate scaling (Level 2 = 259 HP)
-        bossShootDelayBase: 32, // Faster, more dangerous firing
-        bossShootDelayPhase2: 20, // Much faster in phase 2
-        bossShootDelayPhase3: 14, // Very aggressive in phase 3
-        bossProjectileSpeedPhase1: 3.8, // Faster bullets for challenge
-        bossProjectileSpeedPhase2: 4.2, // Even faster
-        bossProjectileSpeedPhase3: 4.8, // Maximum threat
+        bossBaseHealth: 120, // Reduced from 139
+        bossHealthPerLevel: 35, // REDUCED from 60 - much slower boss HP growth
+        bossShootDelayBase: 24, // AGGRESSIVE - shoots 25% more often
+        bossShootDelayPhase2: 14, // VERY AGGRESSIVE - shoots 30% more often
+        bossShootDelayPhase3: 10, // EXTREMELY AGGRESSIVE - shoots 29% more often
+        bossProjectileSpeedPhase1: 4.0, // Slightly faster bullets
+        bossProjectileSpeedPhase2: 4.5, // Faster spread shots
+        bossProjectileSpeedPhase3: 5.0, // Very fast spiral bullets
 
         precisionPenalty: true, // If true, reduced score for missed shots (concept)
         sprayInefficiency: 0.8 // Damage multiplier if shooting blindly (concept, maybe skip to keep simple)

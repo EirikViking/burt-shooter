@@ -146,7 +146,14 @@ export class EnemyManager {
     const numWaves = Math.min(diff.waveCountBase + Math.floor(level / diff.waveCountPerLevel), diff.waveCountMax);
     const waves = [];
     const patterns = ['GRID', 'V_SHAPE', 'ARC', 'BOX', 'SPIRAL', 'DOUBLE_ARC'];
-    const enemyTypes = ['gris', 'mongo', 'tufs', 'deili', 'rolp'];
+
+    // Mix original enemies with fighter variants (player ships as enemies)
+    const enemyTypes = [
+      'gris', 'mongo', 'tufs', 'deili', 'rolp',  // Original types
+      'fighter_0', 'fighter_1', 'fighter_2',      // Light fighters
+      'fighter_3', 'fighter_4', 'fighter_5',      // Medium fighters
+      'fighter_6', 'fighter_7', 'fighter_8'       // Fast/special fighters
+    ];
 
     for (let i = 0; i < numWaves; i++) {
       let count = diff.waveEnemyBase + Math.floor(level * diff.waveEnemyPerLevel) + Math.floor(Math.random() * diff.waveEnemyRandom);
@@ -155,8 +162,22 @@ export class EnemyManager {
       let typeIndex = Math.min(Math.floor(level / 2) + Math.floor(i / 2), enemyTypes.length - 1);
       const pattern = patterns[Math.floor(Math.random() * patterns.length)];
 
+      // 60% chance for pure fighter squadron (all same ship type for visual cohesion)
+      const useFighterSquadron = Math.random() < 0.6; // Increased from 30% to 60%, starts level 1
+      let selectedType;
+
+      if (useFighterSquadron) {
+        // Pick a random fighter type for the whole squadron
+        const fighterTypes = ['fighter_0', 'fighter_1', 'fighter_2', 'fighter_3', 'fighter_4',
+                              'fighter_5', 'fighter_6', 'fighter_7', 'fighter_8'];
+        selectedType = fighterTypes[Math.floor(Math.random() * fighterTypes.length)];
+      } else {
+        // Normal progression through enemy types
+        selectedType = enemyTypes[typeIndex];
+      }
+
       waves.push({
-        type: enemyTypes[typeIndex],
+        type: selectedType,
         count: count,
         formation: pattern
       });
@@ -409,7 +430,10 @@ export class EnemyManager {
 
     // Remove hijacker if destroyed
     if (this.hijacker && !this.hijacker.active) {
-      this.container.removeChild(this.hijacker.sprite);
+      if (this.hijacker.destroy) this.hijacker.destroy();
+      if (this.hijacker.sprite && this.hijacker.sprite.parent) {
+        this.hijacker.sprite.parent.removeChild(this.hijacker.sprite);
+      }
       this.hijacker = null;
     }
   }
@@ -443,7 +467,10 @@ export class EnemyManager {
 
       if (!enemy.active && !enemy.waitingForEntry) {
         if (enemy.destroy) enemy.destroy();
-        else this.container.removeChild(enemy.sprite);
+        // Always remove sprite from container, regardless of destroy method
+        if (enemy.sprite && enemy.sprite.parent) {
+          enemy.sprite.parent.removeChild(enemy.sprite);
+        }
         return false;
       }
       return true;
@@ -610,8 +637,20 @@ export class EnemyManager {
     const screenW = this.game.getWidth();
     const startX = Math.random() < 0.5 ? -80 : screenW + 80;
     const waveColor = 'Red';
+
+    // 50% chance to spawn fighter squadron instead of standard enemies
+    const useFighters = Math.random() < 0.5;
+    let enemyType = 'gris';
+
+    if (useFighters) {
+      // Random fighter type for variety
+      const fighterTypes = ['fighter_0', 'fighter_1', 'fighter_2', 'fighter_3', 'fighter_4',
+                            'fighter_5', 'fighter_6', 'fighter_7', 'fighter_8'];
+      enemyType = fighterTypes[Math.floor(Math.random() * fighterTypes.length)];
+    }
+
     positions.forEach((pos, i) => {
-      const enemy = new Enemy(startX, -100, 'gris', this.level, this.game, waveColor);
+      const enemy = new Enemy(startX, -100, enemyType, this.level, this.game, waveColor);
       enemy.startEntry(startX, -50, pos.x, pos.y + 40, 1600, i * 120);
       this.enemies.push(enemy);
       this.container.addChild(enemy.sprite);
@@ -778,10 +817,15 @@ export class EnemyManager {
       if (e.kind !== 'beer_can' && e.kind !== 'boss') {
         // Regular enemies get cleared too
         enemyCount++;
+        e.active = false;
+        if (e.destroy) e.destroy(); // Call destroy to clean up tickers
         if (this.game.scenes.play && this.game.scenes.play.particleManager) {
           this.game.scenes.play.particleManager.createExplosion(e.x, e.y, 0xcccccc, 5);
         }
-        this.container.removeChild(e.sprite);
+        // Always remove sprite
+        if (e.sprite && e.sprite.parent) {
+          e.sprite.parent.removeChild(e.sprite);
+        }
       }
     });
     // BOSS FIX: Filter out cleared enemies but keep boss
@@ -797,19 +841,29 @@ export class EnemyManager {
     this.enemies.forEach(e => {
       e.active = false; // Disable update
       if (e.destroy) e.destroy(); // CLEANUP: Call destroy to stop tickers
-      else if (e.sprite && e.sprite.parent) e.sprite.parent.removeChild(e.sprite); // Fallback
+      // Always remove sprite from container
+      if (e.sprite && e.sprite.parent) {
+        e.sprite.parent.removeChild(e.sprite);
+      }
     });
     this.enemies = [];
     if (this.boss) {
       this.boss.active = false;
       if (this.boss.destroy) this.boss.destroy();
+      // Always remove boss sprite
+      if (this.boss.sprite && this.boss.sprite.parent) {
+        this.boss.sprite.parent.removeChild(this.boss.sprite);
+      }
       this.boss = null;
     }
     // Also clear hijacker
     if (this.hijacker) {
       this.hijacker.active = false;
       if (this.hijacker.destroy) this.hijacker.destroy();
-      else if (this.hijacker.sprite && this.hijacker.sprite.parent) this.hijacker.sprite.parent.removeChild(this.hijacker.sprite);
+      // Always remove hijacker sprite
+      if (this.hijacker.sprite && this.hijacker.sprite.parent) {
+        this.hijacker.sprite.parent.removeChild(this.hijacker.sprite);
+      }
       this.hijacker = null;
     }
   }

@@ -631,6 +631,12 @@ export class GameOverScene {
     if (this.state !== 'input' || this.nameInput.length === 0) {
       return;
     }
+    // Prevent double submission
+    if (this.isSubmitting) {
+      console.log('[GameOverScene] Already submitting, ignoring duplicate call');
+      return;
+    }
+    this.isSubmitting = true;
     this.state = 'submitting';
     this.stopCaretBlink();
     this.hideHiddenInput();
@@ -654,9 +660,9 @@ export class GameOverScene {
         rank: this.game.rankIndex
       });
 
-      // Timeout wrapper (5s)
+      // Timeout wrapper (15s - increased to handle slow connections)
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout')), 5000)
+        setTimeout(() => reject(new Error('Timeout')), 15000)
       );
 
       // Attempt API call with submissionId for deduplication
@@ -666,11 +672,13 @@ export class GameOverScene {
       ]);
 
       console.log('[GameOverScene] Submit success.');
+      this.isSubmitting = false;
       this.removeInputOverlay();
       this.game.showHighscores();
 
     } catch (error) {
       console.warn('[GameOverScene] Submit failed:', error.message);
+      this.isSubmitting = false;
 
       this.submitRetries = (this.submitRetries || 0) + 1;
 
