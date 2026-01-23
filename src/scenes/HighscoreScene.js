@@ -85,7 +85,7 @@ export class HighscoreScene {
 
     // Load beer can texture and rank textures
     await BeerAsset.ensureLoaded();
-    await RankAssets.preloadAll();
+    await RankAssets.preloadHighscoreBadges();
 
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height);
@@ -660,16 +660,14 @@ export class HighscoreScene {
       // Preload rank textures for visible entries
       const entriesToRender = entriesToDisplay.slice(0, maxRows);
       const rankTextures = await Promise.all(
-        entriesToRender.map(async (entry) => {
-          const rIndex = (entry.rank_index !== null && entry.rank_index !== undefined)
-            ? entry.rank_index
-            : 0;
-          return RankAssets.loadRankTexture(rIndex).catch(() => null);
+        entriesToRender.map(async (_entry, idx) => {
+          return RankAssets.loadRankTexture(idx + 1).catch(() => null);
         })
       );
 
+      const rowHeight = layout.lineHeight * 1.4;
       entriesToRender.forEach((score, index) => {
-        const y = startY + layout.lineHeight * 1.4 * (index + 1);
+        const y = startY + rowHeight * (index + 1);
         const isTop3 = index < 3 && !score.isPending;
         const isPending = score.isPending || false;
 
@@ -719,53 +717,22 @@ export class HighscoreScene {
           const rankSprite = new PIXI.Sprite(rankTexture);
           rankSprite.anchor.set(0, 0.5); // Anchor left-center for consistent positioning
 
-          // CRITICAL: Scale by HEIGHT only to maintain aspect ratio
-          const targetHeight = layout.isMobile ? 28 : 36;
+          const targetHeight = rowHeight * 0.75;
           const scale = targetHeight / rankTexture.height;
           rankSprite.scale.set(scale);
 
           rankSprite.x = columns.rank + 40;
-          rankSprite.y = y + rowStyle.fontSize / 2;
+          rankSprite.y = y + rowHeight * 0.5;
           rankSprite.alpha = 1;
           rankSprite.visible = true;
 
           this.rowsContainer.addChild(rankSprite);
 
           if (isDebug && index === 0) {
-            const alias = RankAssets.getRankAlias(score.rank_index);
-            const badgePath = RankAssets.getRankPath(score.rank_index);
+            const alias = RankAssets.getRankAlias(index + 1);
+            const badgePath = RankAssets.getRankPath(index + 1);
             const resourceUrl = rankTexture?.baseTexture?.resource?.url || 'unknown';
-            if (!this.rankBadgeProofLogged) {
-              console.log('[HighscoreScene][BadgeProof]', {
-                alias,
-                src: badgePath,
-                x: rankSprite.x,
-                y: rankSprite.y,
-                visible: rankSprite.visible,
-                alpha: rankSprite.alpha,
-                width: rankSprite.texture?.width,
-                height: rankSprite.texture?.height,
-                baseTextureValid: !!rankSprite.texture?.baseTexture?.valid,
-                bounds: rankSprite.getBounds()
-              });
-              this.rankBadgeProofLogged = true;
-            }
-
-            if (this.rankBadgeProofSprite) {
-              this.container.removeChild(this.rankBadgeProofSprite);
-              this.rankBadgeProofSprite.destroy();
-              this.rankBadgeProofSprite = null;
-            }
-
-            const proofSprite = new PIXI.Sprite(rankTexture);
-            const proofHeight = layout.isMobile ? 80 : 120;
-            const proofScale = proofHeight / rankTexture.height;
-            proofSprite.scale.set(proofScale);
-            proofSprite.x = layout.padding;
-            proofSprite.y = layout.padding;
-            proofSprite.zIndex = 200;
-            this.container.addChild(proofSprite);
-            this.rankBadgeProofSprite = proofSprite;
+            console.log(`[HighscoreScene] Rank badge row=${index + 1} alias=${alias} url=${resourceUrl} path=${badgePath}`);
           }
         } else if (isDebug) {
           const placeholder = new PIXI.Sprite(PIXI.Texture.WHITE);
@@ -776,19 +743,8 @@ export class HighscoreScene {
           placeholder.alpha = 0.6;
           placeholder.anchor.set(0, 0.5);
           placeholder.x = columns.rank + 40;
-          placeholder.y = y + rowStyle.fontSize / 2;
+          placeholder.y = y + rowHeight * 0.5;
           this.rowsContainer.addChild(placeholder);
-        }
-        if (isDebug) {
-          const badgeX = columns.rank + 40;
-          const badgeY = y + rowStyle.fontSize / 2;
-          const badgeHeight = layout.isMobile ? 28 : 36;
-          const badgeWidth = badgeHeight;
-          const badgeProof = new PIXI.Graphics();
-          badgeProof.rect(badgeX, badgeY - badgeHeight / 2, badgeWidth, badgeHeight);
-          badgeProof.stroke({ color: 0xff00ff, width: 1, alpha: 0.9 });
-          badgeProof.fill({ color: 0xff00ff, alpha: 0.08 });
-          this.rowsContainer.addChild(badgeProof);
         }
 
         // TASK 1: Use getRankTitle from RankPolicy (single source of truth)

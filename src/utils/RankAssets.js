@@ -25,8 +25,9 @@ class RankAssetsManager {
         return `rank_${idx.toString().padStart(2, '0')}`;
     }
 
-    rankSrc(idx) {
-        return AssetManifest.sprites.ranks[idx];
+    rankSrc(place) {
+        const idx = Math.max(1, Math.min(19, Number(place) || 0));
+        return `/sprites/ranks/png/Default%20size/gold/rank${String(idx).padStart(3, '0')}.png`;
     }
 
     isValidTexture(tex) {
@@ -148,6 +149,29 @@ class RankAssetsManager {
         if (entries.length === 0) {
             return null;
         }
+
+        const textures = await Promise.all(
+            entries.map(entry => PIXI.Assets.load(entry).catch(() => null))
+        );
+
+        textures.forEach((texture, index) => {
+            const alias = entries[index]?.alias;
+            if (alias && this.isValidTexture(texture)) {
+                this.cache.set(alias, texture);
+            }
+        });
+
+        return this.cache.size > 0 ? textures : null;
+    }
+
+    async preloadHighscoreBadges() {
+        const entries = Array.from({ length: 19 }, (_, i) => {
+            const idx = i + 1;
+            return {
+                alias: this.rankAlias(idx),
+                src: this.rankSrc(idx)
+            };
+        });
 
         const textures = await Promise.all(
             entries.map(entry => PIXI.Assets.load(entry).catch(() => null))
