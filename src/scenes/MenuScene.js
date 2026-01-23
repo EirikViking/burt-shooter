@@ -337,12 +337,6 @@ export class MenuScene {
         fontSize: 13,
         fontWeight: 'bold',
         fill: ['#ff00ff', '#00ffff', '#ffff00'], // Crazy gradient
-        fillGradientType: PIXI.TEXT_GRADIENT.LINEAR_HORIZONTAL,
-        stroke: '#ffffff',
-        strokeThickness: 2,
-        dropShadow: true,
-        dropShadowColor: '#000000',
-        dropShadowBlur: 4,
         align: 'center',
         wordWrap: true,
         wordWrapWidth: clampTextWidth(width * 0.75, layout)
