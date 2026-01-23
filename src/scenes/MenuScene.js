@@ -19,6 +19,7 @@ export class MenuScene {
     this.title = null;
     this.subtitle = null;
     this.flavor = null;
+    this.disclaimer = null;
     this.startBtn = null;
     this.highscoreBtn = null;
     this.musicBtn = null;
@@ -326,7 +327,23 @@ export class MenuScene {
     );
     this.flavor.anchor.set(0.5);
     this.flavor.alpha = 0;  // Start invisible
+    this.flavor.alpha = 0;  // Start invisible
     this.container.addChild(this.flavor);
+
+    this.disclaimer = new PIXI.Text(
+      'There are Norwegian jokes and inside humor in this game. It was made for a group of friends. Please ignore that part and focus on the gameplay.',
+      {
+        fontFamily: 'Courier New',
+        fontSize: 10,
+        fill: '#aaaaaa',
+        align: 'center',
+        wordWrap: true,
+        wordWrapWidth: clampTextWidth(width * 0.7, layout)
+      }
+    );
+    this.disclaimer.anchor.set(0.5);
+    this.disclaimer.alpha = 0;
+    this.container.addChild(this.disclaimer);
 
     this.startBtn = this.createButton('START SPILL', layout);
     this.startBtn.alpha = 0;  // Start invisible
@@ -507,10 +524,15 @@ export class MenuScene {
     this.controls.style.fontSize = controlsSize;
     this.controls.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
 
+    const disclaimerSize = Math.max(9, controlsSize - 2);
+    this.disclaimer.style.fontSize = disclaimerSize;
+    this.disclaimer.style.wordWrapWidth = clampTextWidth(width * 0.7, layout);
+
     // Force text measurement update
     this.title.updateText?.(false);
     this.subtitle.updateText?.(false);
     this.flavor.updateText?.(false);
+    this.disclaimer.updateText?.(false);
     this.controls.updateText?.(false);
 
     // Use MEASURED heights instead of estimates
@@ -523,9 +545,10 @@ export class MenuScene {
     const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
     const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
     const buttonsHeight = buttonHeight * 2 + buttonSpacing;
+    const disclaimerHeight = this.disclaimer.height || disclaimerSize * 2;
 
-    // Spacing between sections: title->subtitle, subtitle->flavor, flavor->buttons
-    const totalContentHeight = titleHeight + subtitleHeight + flavorHeight + buttonsHeight + sectionSpacing * 3;
+    // Spacing between sections: title->subtitle, subtitle->flavor, flavor->buttons, buttons->disclaimer
+    const totalContentHeight = titleHeight + subtitleHeight + flavorHeight + buttonsHeight + disclaimerHeight + sectionSpacing * 4;
 
     // Calculate starting Y for better vertical centering
     const footerReserve = layout.isMobile ? 70 : 60; // Space for controls and easter egg
@@ -558,6 +581,10 @@ export class MenuScene {
 
     this.highscoreBtn.x = width / 2;
     this.highscoreBtn.y = stack.getCurrentY();
+    stack.addGap(buttonHeight + sectionSpacing);
+
+    this.disclaimer.x = width / 2;
+    this.disclaimer.y = stack.getCurrentY();
 
     // Footer elements - position from bottom with safe margin
     const easterY = height - safeMargin.bottom - (layout.isMobile ? 8 : 12);
@@ -650,6 +677,7 @@ export class MenuScene {
     this.animateElement(this.flavor, 0.6, 0.5);
     this.animateElement(this.startBtn, 0.9, 0.4);
     this.animateElement(this.highscoreBtn, 1.1, 0.4);
+    this.animateElement(this.disclaimer, 1.3, 0.4);
   }
 
   animateElement(element, delay, duration) {
