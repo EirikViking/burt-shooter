@@ -27,6 +27,7 @@ export class HighscoreScene {
     this.comment = null;
     this.rowsContainer = new PIXI.Container();
     this.stateMessage = null;
+    this.vkcFooterText = null;
     this.statusText = null;
     this.retryBtn = null;
     this.backBtn = null;
@@ -167,7 +168,19 @@ export class HighscoreScene {
       wordWrapWidth: clampTextWidth(width * 0.8, layout)
     });
     this.stateMessage.anchor.set(0.5);
+    this.stateMessage.anchor.set(0.5);
     this.container.addChild(this.stateMessage);
+
+    this.vkcFooterText = new PIXI.Text('$VKC indicates a verified Klever Wallet address and eligibility for VikingCoin prizes', {
+      fontFamily: 'Courier New',
+      fontSize: 10,
+      fill: '#66ff66',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.9, layout)
+    });
+    this.vkcFooterText.anchor.set(0.5, 0); // Top-center anchor
+    this.container.addChild(this.vkcFooterText);
 
     this.statusText = new PIXI.Text('', {
       fontFamily: 'Courier New',
@@ -273,6 +286,9 @@ export class HighscoreScene {
     this.comment.style.fontSize = getResponsiveFontSize(layout, 'body');
     this.comment.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
     this.stateMessage.style.fontSize = getResponsiveFontSize(layout, 'body');
+    this.stateMessage.style.fontSize = getResponsiveFontSize(layout, 'body');
+    this.vkcFooterText.style.fontSize = Math.max(9, getResponsiveFontSize(layout, 'small') - 2);
+    this.vkcFooterText.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
     this.statusText.style.fontSize = getResponsiveFontSize(layout, 'small');
 
     // Title block
@@ -506,6 +522,19 @@ export class HighscoreScene {
       width: layout.width - layout.padding * 2,
       height
     };
+  }
+
+  // Helper to place the VKC footer
+  layoutVkcFooter(layout, rowsEndY) {
+    if (!this.vkcFooterText) return;
+    const { width, height } = this.game.app.screen;
+    const footerY = Math.min(
+      height - layout.padding * 2.5, // Standard bottom limit
+      rowsEndY + layout.spacing // Just below rows
+    );
+    this.vkcFooterText.x = width / 2;
+    this.vkcFooterText.y = footerY;
+    this.vkcFooterText.visible = this.status === 'LOADED';
   }
 
   resolveBubblePlacement(bubble, tableBounds, layout, anchorX, anchorY) {
@@ -808,6 +837,12 @@ export class HighscoreScene {
         more.y = startY + layout.lineHeight * 1.4 * (maxRows + 1);
         this.rowsContainer.addChild(more);
       }
+
+
+      // Position VKC footer
+      const lastRowY = startY + layout.lineHeight * 1.4 * (entriesToDisplay.length + 1);
+      this.layoutVkcFooter(layout, lastRowY);
+
       this.fadeInRows();
     } else {
       this.rowsContainer.alpha = 1;
@@ -823,7 +858,10 @@ export class HighscoreScene {
       empty.anchor.set(0.5, 0);
       empty.x = layout.width / 2;
       empty.y = startY;
+      empty.y = startY;
       this.rowsContainer.addChild(empty);
+
+      if (this.vkcFooterText) this.vkcFooterText.visible = false;
     }
   }
 
