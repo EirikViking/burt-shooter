@@ -334,11 +334,18 @@ export class MenuScene {
       'There are Norwegian jokes and inside humor in this game. It was made for a group of friends. Please ignore that part and focus on the gameplay.',
       {
         fontFamily: 'Courier New',
-        fontSize: 10,
-        fill: '#aaaaaa',
+        fontSize: 13,
+        fontWeight: 'bold',
+        fill: ['#ff00ff', '#00ffff', '#ffff00'], // Crazy gradient
+        fillGradientType: PIXI.TEXT_GRADIENT.LINEAR_HORIZONTAL,
+        stroke: '#ffffff',
+        strokeThickness: 2,
+        dropShadow: true,
+        dropShadowColor: '#000000',
+        dropShadowBlur: 4,
         align: 'center',
         wordWrap: true,
-        wordWrapWidth: clampTextWidth(width * 0.7, layout)
+        wordWrapWidth: clampTextWidth(width * 0.75, layout)
       }
     );
     this.disclaimer.anchor.set(0.5);
@@ -524,9 +531,9 @@ export class MenuScene {
     this.controls.style.fontSize = controlsSize;
     this.controls.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
 
-    const disclaimerSize = Math.max(9, controlsSize - 2);
+    const disclaimerSize = Math.max(12, controlsSize);
     this.disclaimer.style.fontSize = disclaimerSize;
-    this.disclaimer.style.wordWrapWidth = clampTextWidth(width * 0.7, layout);
+    this.disclaimer.style.wordWrapWidth = clampTextWidth(width * 0.75, layout);
 
     // Force text measurement update
     this.title.updateText?.(false);
@@ -769,6 +776,19 @@ export class MenuScene {
           if (beer.x > beer.boundsX.max) beer.driftSpeedX = -Math.abs(beer.driftSpeedX);
         }
       });
+    }
+
+    // Animate Disclaimer (Pulse and Wiggle)
+    if (this.disclaimer && this.disclaimer.alpha > 0) {
+      // Pulse scale
+      const pulse = 1 + Math.sin(this.animationTime * 6) * 0.05;
+      this.disclaimer.scale.set(pulse);
+
+      // Wiggle rotation
+      this.disclaimer.rotation = Math.sin(this.animationTime * 8) * 0.03;
+
+      // Rainbow tint cycle speed
+      // this.disclaimer.tint = ... (Optional, but gradient is already colorful)
     }
   }
 
