@@ -40,6 +40,7 @@ Lore is core identity, not decoration.
 - **RankAssets must clamp to 19**
 - **RankManager must generate 20 thresholds only**
 - **Do NOT change rank count without explicit approval**
+- **Leaderboard badges equal player progression rank, NOT placement**
 
 #### Rank sprite loading rule
 - Scenes must not build rank sprite URLs.

@@ -661,13 +661,13 @@ export class HighscoreScene {
         const scoreValue = Number(entry?.score);
         if (Number.isFinite(scoreValue)) {
           const rankFromScore = getRankFromScore(scoreValue);
-          return Math.max(1, Math.min(19, Math.floor(rankFromScore)));
+          return Math.max(0, Math.min(19, Math.floor(rankFromScore)));
         }
         const fallbackRank = Number(entry?.rank_index ?? entry?.rankIndex ?? entry?.rank);
         if (Number.isFinite(fallbackRank)) {
-          return Math.max(1, Math.min(19, Math.floor(fallbackRank)));
+          return Math.max(0, Math.min(19, Math.floor(fallbackRank)));
         }
-        return 1;
+        return 0;
       };
 
       // Preload rank textures for visible entries
@@ -727,6 +727,7 @@ export class HighscoreScene {
 
         // Add rank sprite using preloaded texture
         const rankTexture = rankTextures[index];
+        // The badge shows player progression rank, not leaderboard placement
         const displayRank = computeDisplayRank(score);
         if (rankTexture) {
           const rankSprite = new PIXI.Sprite(rankTexture);
@@ -744,10 +745,7 @@ export class HighscoreScene {
           this.rowsContainer.addChild(rankSprite);
 
           if (isDebug && index < 2) {
-            const alias = RankAssets.getRankAlias(displayRank);
-            const badgePath = RankAssets.getRankPath(displayRank);
-            const resourceUrl = rankTexture?.baseTexture?.resource?.url || 'unknown';
-            console.log(`[HighscoreScene] Rank badge row=${index + 1} score=${score.score} computedRank=${displayRank} alias=${alias} url=${resourceUrl} path=${badgePath}`);
+            // Debug log removed for stable release
           }
         } else if (isDebug) {
           const placeholder = new PIXI.Sprite(PIXI.Texture.WHITE);

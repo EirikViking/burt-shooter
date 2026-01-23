@@ -165,7 +165,7 @@ class RankAssetsManager {
 
     async preloadHighscoreBadges() {
         await this.preloadAll();
-        const aliases = Array.from({ length: 19 }, (_, i) => this.rankAlias(i + 1));
+        const aliases = Array.from({ length: 20 }, (_, i) => this.rankAlias(i));
         return aliases.map(alias => this.cache.get(alias)).filter(Boolean);
     }
 }
