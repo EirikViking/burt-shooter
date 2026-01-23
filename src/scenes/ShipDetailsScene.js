@@ -15,6 +15,8 @@ export class ShipDetailsScene {
         this.usageText = null;
         this.statsTitleText = null;
         this.statLabelNodes = [];
+        this.loreContainer = null;
+        this.loreLayout = null;
         this.backButtonText = null;
         this.startButtonText = null;
 
@@ -133,6 +135,10 @@ export class ShipDetailsScene {
             this.statLabelNodes[1].text = t('shipdetails.stat.fireRate');
             this.statLabelNodes[2].text = t('shipdetails.stat.damage');
         }
+        if (this.loreContainer && this.loreLayout) {
+            const parent = this.loreContainer.parent || this.container;
+            this.createLoreSection(parent, this.loreLayout.panelWidth, this.loreContainer.y, this.loreLayout.isMobile);
+        }
         if (this.backButtonText) this.backButtonText.text = t('shipdetails.back');
         if (this.startButtonText) this.startButtonText.text = t('shipdetails.start');
     }
@@ -199,6 +205,18 @@ export class ShipDetailsScene {
         const loreLong = this.ship.loreLong || this.ship.description;
         const paragraphs = this.formatLoreIntoParagraphs(loreLong);
 
+        if (!this.loreContainer) {
+            this.loreContainer = new PIXI.Container();
+            container.addChild(this.loreContainer);
+        } else if (this.loreContainer.parent !== container) {
+            container.addChild(this.loreContainer);
+        }
+
+        this.loreContainer.removeChildren();
+        this.loreContainer.position.set(0, yOffset);
+        this.loreLayout = { panelWidth, isMobile };
+
+        let localY = 0;
         paragraphs.forEach((para, index) => {
             const paraText = new PIXI.Text(para, {
                 fontFamily: 'Courier New',
@@ -209,12 +227,12 @@ export class ShipDetailsScene {
                 wordWrapWidth: panelWidth - 80,
                 lineHeight: isMobile ? 16 : 18
             });
-            paraText.position.set(40, yOffset);
-            container.addChild(paraText);
-            yOffset += paraText.height + (isMobile ? 10 : 12);
+            paraText.position.set(40, localY);
+            this.loreContainer.addChild(paraText);
+            localY += paraText.height + (isMobile ? 10 : 12);
         });
 
-        return yOffset;
+        return yOffset + localY;
     }
 
     formatLoreIntoParagraphs(lore) {

@@ -6,6 +6,7 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { AssetManifest } from '../assets/assetManifest.js';
+import { t } from '../i18n/index.ts';
 
 const BOSS_TYPES = {
   BIG_BEER_CAN: 0,
@@ -90,7 +91,7 @@ function createFallbackBoss() {
   gfx.stroke({ color: 0xffffff, width: 4 });
 
   // "BOSS" text
-  const text = new PIXI.Text('BOSS', {
+  const text = new PIXI.Text(t('play.boss.nameFallback'), {
     fontFamily: 'Courier New',
     fontSize: 24,
     fill: '#ffffff',

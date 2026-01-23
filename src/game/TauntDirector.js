@@ -4,7 +4,7 @@
  */
 
 import * as PIXI from 'pixi.js';
-import { t } from '../i18n/index.ts';
+import { onLanguageChange, t } from '../i18n/index.ts';
 
 // Simple helper for random text generation
 function randomChoice(arr) {
@@ -26,7 +26,13 @@ class TauntDirector {
         this.CATEGORY_COOLDOWN = 8000; // 8 seconds per category
 
         // Taunt pools by category
-        this.pools = {
+        this.pools = this.buildPools();
+        this.langUnsubscribe = onLanguageChange(() => {
+            this.pools = this.buildPools();
+        });
+    }
+    buildPools() {
+        return {
             wave_start: [
                 t('taunt.wave_start.0'),
                 t('taunt.wave_start.1'),
@@ -130,6 +136,7 @@ class TauntDirector {
             ]
         };
     }
+
 
     setScene(scene) {
         this.scene = scene;
@@ -344,6 +351,7 @@ class TauntDirector {
 
     cleanup() {
         this._destroyed = true;
+        if (this.langUnsubscribe) this.langUnsubscribe();
         // Stop all active taunt tickers
         if (this.scene && this.scene.game && this.scene.game.app && this.scene.game.app.ticker) {
             this.activeTickers.forEach(ticker => {

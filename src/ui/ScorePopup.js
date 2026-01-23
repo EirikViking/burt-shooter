@@ -2,6 +2,7 @@
  * ScorePopup - Floating score text that appears on enemy kill
  */
 import * as PIXI from 'pixi.js';
+import { t } from '../i18n/index.ts';
 
 export class ScorePopup {
   constructor(x, y, score, color = 0xffff00, isCombo = false) {
@@ -13,7 +14,9 @@ export class ScorePopup {
 
     // Create text
     const fontSize = isCombo ? 24 : 18;
-    const text = isCombo ? `${score} COMBO!` : `+${score}`;
+    const text = isCombo
+      ? t('scorepopup.combo', { score })
+      : t('scorepopup.score', { score });
 
     this.sprite = new PIXI.Text(text, {
       fontFamily: 'Courier New, monospace',

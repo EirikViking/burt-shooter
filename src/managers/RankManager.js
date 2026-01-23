@@ -8,6 +8,7 @@ import {
     getNextRankThreshold
 } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
+import { t } from '../i18n/index.ts';
 
 export class RankManager {
     constructor() {
@@ -44,7 +45,7 @@ export class RankManager {
 
     // TASK 2: Get rank title
     getRankTitle(rankIndex) {
-        return getRankTitle(rankIndex);
+        return t(getRankTitle(rankIndex));
     }
 
     // TASK 4: Get rank texture for display

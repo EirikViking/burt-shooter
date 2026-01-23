@@ -589,6 +589,12 @@ export class ShipSelectScene {
     if (this.detailsButton?.text) this.detailsButton.text.text = t('shipselect.button.details');
     if (this.startButton?.text) this.startButton.text.text = t('shipselect.button.start');
     this.shipCards.forEach((shipContainer) => {
+      if (shipContainer.nameText && shipContainer.shipData) {
+        shipContainer.nameText.text = shipContainer.shipData.name;
+      }
+      if (shipContainer.descText && shipContainer.shipData) {
+        shipContainer.descText.text = this.getShortTeaser(shipContainer.shipData.description);
+      }
       if (shipContainer.statsText && shipContainer.shipData) {
         shipContainer.statsText.text = this.getShipStats(shipContainer.shipData);
       }

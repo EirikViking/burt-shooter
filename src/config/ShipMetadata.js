@@ -10,17 +10,18 @@ export const ShipMetadata = {};
 
 ShipData.forEach(ship => {
   ShipMetadata[ship.spriteKey] = {
+    spriteKey: ship.spriteKey,
     id: ship.id,
-    name: ship.name,
-    description: ship.description,
-    lore: ship.loreShort,
+    get name() { return ship.name; },
+    get description() { return ship.description; },
+    get lore() { return ship.loreShort; },
     textureIndex: ship.textureIndex,
     stats: {
       speed: ship.stats.speed,
       fireRate: ship.stats.fireRate,
       damage: ship.stats.damage
     },
-    loreLong: ship.loreLong
+    get loreLong() { return ship.loreLong; }
   };
 });
 
@@ -28,10 +29,7 @@ ShipData.forEach(ship => {
  * Get list of selectable ships with metadata
  */
 export function getSelectableShips() {
-  return Object.keys(ShipMetadata).map(spriteKey => ({
-    spriteKey,
-    ...ShipMetadata[spriteKey]
-  }));
+  return Object.values(ShipMetadata);
 }
 
 /**

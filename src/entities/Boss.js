@@ -3,6 +3,7 @@ import { Bullet } from './Bullet.js';
 import { extendBossNames } from '../text/phrasePool.js';
 import { createBossVisual } from '../game/BossFactory.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
+import { t } from '../i18n/index.ts';
 
 const ENABLE_BOSS_WEAPON_FX = true;
 const HARD_SCALE_FACTOR = 0.3;
@@ -72,7 +73,7 @@ export class Boss {
       'GIGA GRIS'
     ];
     const namePool = extendBossNames(bossNames);
-    this.name = namePool[(level - 1) % namePool.length] || 'BOSS';
+    this.name = namePool[(level - 1) % namePool.length] || t('play.boss.nameFallback');
 
     // Note: createSprite() must be called manually after construction (it's async)
   }

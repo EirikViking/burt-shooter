@@ -816,7 +816,7 @@ export class HighscoreScene {
           : getRankFromScore(score.score || 0);
         const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
 
-        const rankNameText = new PIXI.Text(getRankTitle(clampedRank), {
+        const rankNameText = new PIXI.Text(t(getRankTitle(clampedRank)), {
           fontFamily: 'Courier New',
           fontSize: Math.max(8, rowStyle.fontSize - 4),
           fill: '#aaaaaa'

@@ -1,4 +1,4 @@
-import { t } from '../i18n/index.ts';
+import { onLanguageChange, t } from '../i18n/index.ts';
 
 const RECENT_LIMIT = 2;
 const recentByKey = new Map();
@@ -43,7 +43,8 @@ function mergeUnique(base, extra) {
   return merged;
 }
 
-const newPhrases = [
+function buildNewPhrases() {
+  return [
   t('phrase.newPhrases.0'),
   t('phrase.newPhrases.1'),
   t('phrase.newPhrases.2'),
@@ -130,9 +131,14 @@ const newPhrases = [
   t('phrase.newPhrases.83'),
   t('phrase.newPhrases.84'),
   t('phrase.newPhrases.85')
-];
 
-const fragments = {
+  ];
+}
+
+let newPhrases = buildNewPhrases();
+
+function buildFragments() {
+  return {
   leads: [
     { value: t('phrase.fragments.leads.0'), weight: 1.5 },
     { value: t('phrase.fragments.leads.1'), weight: 1.2 },
@@ -204,7 +210,16 @@ const fragments = {
     { value: t('phrase.fragments.closers.4'), weight: 1.3 },
     { value: t('phrase.fragments.closers.5'), weight: 1.2 }
   ]
-};
+
+  };
+}
+
+let fragments = buildFragments();
+
+onLanguageChange(() => {
+  newPhrases = buildNewPhrases();
+  fragments = buildFragments();
+});
 
 function buildCombo() {
   const lead = weightedPick(fragments.leads, 'leads');
@@ -214,12 +229,12 @@ function buildCombo() {
   const closer = weightedPick(fragments.closers, 'closers');
 
   const patterns = [
-    `${lead}: ${object} ${closer}`,
-    `${lead} ${verb} ${object}.`,
-    `${object} – ${tag}.`,
-    `${lead} ${verb} ${object} – ${tag}.`,
-    `${object}! ${closer}`,
-    `${lead}. ${object}. ${closer}`
+    t('phrase.combo.patterns.0', { lead, object, closer }),
+    t('phrase.combo.patterns.1', { lead, verb, object }),
+    t('phrase.combo.patterns.2', { object, tag }),
+    t('phrase.combo.patterns.3', { lead, verb, object, tag }),
+    t('phrase.combo.patterns.4', { object, closer }),
+    t('phrase.combo.patterns.5', { lead, object, closer })
   ];
 
   return weightedPick(patterns, 'comboPatterns');
@@ -229,25 +244,27 @@ function buildShortBurst() {
   const object = weightedPick(fragments.objects, 'shortObjects');
   const closer = weightedPick(fragments.closers, 'shortClosers');
   const patterns = [
-    `${object}!`,
-    `${object} ${closer}`,
-    `${closer}`,
-    `${object} – ${closer}`
+    t('phrase.short.patterns.0', { object }),
+    t('phrase.short.patterns.1', { object, closer }),
+    t('phrase.short.patterns.2', { closer }),
+    t('phrase.short.patterns.3', { object, closer })
   ];
   return weightedPick(patterns, 'shortPatterns');
 }
 
 export function extendLevelIntroTexts(base, level, isBossLevel) {
   const baseList = Array.isArray(base) ? base : [];
+  const bossObject = weightedPick(fragments.objects, 'bossObjects');
+  const waveObject = weightedPick(fragments.objects, 'waveObjects');
   const intro = isBossLevel
-    ? `BOSS: ${weightedPick(fragments.objects, 'bossObjects')}`
-    : `Wave ${level}: ${weightedPick(fragments.objects, 'waveObjects')}`;
+    ? t('phrase.levelIntro.boss', { object: bossObject })
+    : t('phrase.levelIntro.wave', { level, content: waveObject });
   const generated = [
     intro,
-    `Wave ${level}: ${buildCombo()}`,
-    `Wave ${level}: ${buildShortBurst()}`,
-    `Wave ${level}: ${weightedPick(newPhrases, 'waveNew')}`,
-    `Wave ${level}: ${weightedPick(fragments.objects, 'waveObjects2')}`
+    t('phrase.levelIntro.wave', { level, content: buildCombo() }),
+    t('phrase.levelIntro.wave', { level, content: buildShortBurst() }),
+    t('phrase.levelIntro.wave', { level, content: weightedPick(newPhrases, 'waveNew') }),
+    t('phrase.levelIntro.wave', { level, content: weightedPick(fragments.objects, 'waveObjects2') })
   ];
   return mergeUnique(baseList, generated);
 }
@@ -255,37 +272,38 @@ export function extendLevelIntroTexts(base, level, isBossLevel) {
 export function extendBossNames(base) {
   const baseList = Array.isArray(base) ? base : [];
   const extras = [
-    `BOSS ${weightedPick(newPhrases, 'bossNew')}`,
-    `BOSS ${weightedPick(fragments.objects, 'bossObjects2')}`,
-    `BOSS ${buildShortBurst()}`
+    t('phrase.bossName', { value: weightedPick(newPhrases, 'bossNew') }),
+    t('phrase.bossName', { value: weightedPick(fragments.objects, 'bossObjects2') }),
+    t('phrase.bossName', { value: buildShortBurst() })
   ];
   return mergeUnique(baseList, extras);
 }
 
 export function extendGameOverTexts(base) {
   const baseList = Array.isArray(base) ? base : [];
+  const overloadObject = weightedPick(fragments.objects, 'gameOverObjects').toUpperCase();
   const extras = [
     buildCombo().toUpperCase(),
     `${weightedPick(newPhrases, 'gameOverNew').toUpperCase()}`,
-    `${weightedPick(fragments.objects, 'gameOverObjects').toUpperCase()} OVERLOAD!`
+    t('phrase.gameOver.overload', { object: overloadObject })
   ];
   return mergeUnique(baseList, extras);
 }
 
 export function getLoadingLines() {
   const titleOptions = [
-    'LASTER INN SPILLET...',
-    'LADER OPP RØLP-MOTOR...',
-    'KOKER KJØTTDEIG...',
-    'POLERER STOKMARKNES...',
-    'SPENNER FAST MELBU...'
+    t('phrase.loading.title.0'),
+    t('phrase.loading.title.1'),
+    t('phrase.loading.title.2'),
+    t('phrase.loading.title.3'),
+    t('phrase.loading.title.4')
   ];
   const subtitleOptions = [
-    'Holder til i Melbu, men serveren står i Stokmarknes...',
-    `Auto-boot: ${buildShortBurst()}`,
-    `Kurt & Eirik tester: ${buildCombo()}`,
-    `Laster isbjørn.exe – ${weightedPick(newPhrases, 'loadingNew')}`,
-    `Stokmarknes sier: ${weightedPick(newPhrases, 'loadingNew2')}`
+    t('phrase.loading.subtitle.0'),
+    t('phrase.loading.subtitle.1', { burst: buildShortBurst() }),
+    t('phrase.loading.subtitle.2', { combo: buildCombo() }),
+    t('phrase.loading.subtitle.3', { phrase: weightedPick(newPhrases, 'loadingNew') }),
+    t('phrase.loading.subtitle.4', { phrase: weightedPick(newPhrases, 'loadingNew2') })
   ];
 
   return {
@@ -299,17 +317,17 @@ export function getMicroMessage(type) {
     case 'levelStart':
       return buildCombo();
     case 'pause':
-      return `PAUSE – ${buildShortBurst()}`;
+      return t('phrase.micro.pause', { burst: buildShortBurst() });
     case 'resume':
-      return `KJØR – ${buildShortBurst()}`;
+      return t('phrase.micro.resume', { burst: buildShortBurst() });
     case 'lowHealth':
-      return `LAVT LIV – ${buildShortBurst()}`;
+      return t('phrase.micro.lowHealth', { burst: buildShortBurst() });
     case 'lifeLost':
-      return `LIV TAPT – ${buildShortBurst()}`;
+      return t('phrase.micro.lifeLost', { burst: buildShortBurst() });
     case 'newWave':
-      return `NY WAVE – ${buildShortBurst()}`;
+      return t('phrase.micro.newWave', { burst: buildShortBurst() });
     case 'bossIntro':
-      return `BOSS – ${buildCombo()}`;
+      return t('phrase.micro.bossIntro', { combo: buildCombo() });
     default:
       return buildShortBurst();
   }
@@ -317,36 +335,40 @@ export function getMicroMessage(type) {
 
 export function getAchievementPopup() {
   const achievements = [
-    `Fake achievement: ${buildShortBurst()}`,
-    `100% rølp: ${buildCombo()}`,
-    `Kjappe fingre – ${buildShortBurst()}`,
-    `Stokmarknes boost – ${buildCombo()}`,
-    `Melbu bonus – ${buildShortBurst()}`,
-    `Kurt/Eirik synergy – ${buildCombo()}`
+    t('phrase.achievement.0', { burst: buildShortBurst() }),
+    t('phrase.achievement.1', { combo: buildCombo() }),
+    t('phrase.achievement.2', { burst: buildShortBurst() }),
+    t('phrase.achievement.3', { combo: buildCombo() }),
+    t('phrase.achievement.4', { burst: buildShortBurst() }),
+    t('phrase.achievement.5', { combo: buildCombo() })
   ];
   return weightedPick(achievements, 'achievement');
 }
 
 export function getEnemyTaunt() {
   const taunts = [
-    `Fiender: ${buildShortBurst()}`,
-    `Rølp-linja: ${buildCombo()}`,
-    `Grisegutten ler – ${buildShortBurst()}`,
-    `Svinete snytt: ${buildCombo()}`,
-    `Mongo roper: ${buildShortBurst()}`,
-    `Tufs mumler: ${buildCombo()}`
+    t('phrase.enemyTaunt.0', { burst: buildShortBurst() }),
+    t('phrase.enemyTaunt.1', { combo: buildCombo() }),
+    t('phrase.enemyTaunt.2', { burst: buildShortBurst() }),
+    t('phrase.enemyTaunt.3', { combo: buildCombo() }),
+    t('phrase.enemyTaunt.4', { burst: buildShortBurst() }),
+    t('phrase.enemyTaunt.5', { combo: buildCombo() })
   ];
   return weightedPick(taunts, 'taunt');
 }
 
 export function getGameOverComment(score, level) {
-  const scoreTag = score >= 10000 ? 'LEGENDARISK' : score >= 5000 ? 'SKAMSTERK' : 'RØLP-LAV';
+  const scoreTag = score >= 10000
+    ? t('phrase.gameOver.scoreTag.legendary')
+    : score >= 5000
+      ? t('phrase.gameOver.scoreTag.strong')
+      : t('phrase.gameOver.scoreTag.low');
   const lines = [
-    `${scoreTag} SCORE – ${buildShortBurst()}`,
-    `Level ${level} stoppet deg – ${buildCombo()}`,
-    `Neste gang: ${buildShortBurst()}`,
-    `Kurt sier: ${buildShortBurst()}`,
-    `Eirik sier: ${buildCombo()}`
+    t('phrase.gameOver.comment.0', { scoreTag, burst: buildShortBurst() }),
+    t('phrase.gameOver.comment.1', { level, combo: buildCombo() }),
+    t('phrase.gameOver.comment.2', { burst: buildShortBurst() }),
+    t('phrase.gameOver.comment.3', { burst: buildShortBurst() }),
+    t('phrase.gameOver.comment.4', { combo: buildCombo() })
   ];
   return weightedPick(lines, 'gameOverComment');
 }
@@ -354,21 +376,29 @@ export function getGameOverComment(score, level) {
 export function getHighscoreComment(hasScores) {
   const lines = hasScores
     ? [
-      `Stokmarknes jubler – ${buildShortBurst()}`,
-      `Melbu applaud – ${buildCombo()}`,
-      `Kjøttdeig bonus: ${buildShortBurst()}`
+      t('phrase.highscore.comment.0', { burst: buildShortBurst() }),
+      t('phrase.highscore.comment.1', { combo: buildCombo() }),
+      t('phrase.highscore.comment.2', { burst: buildShortBurst() })
     ]
     : [
-      `Ingen scores ennå – ${buildShortBurst()}`,
-      `Bli første: ${buildShortBurst()}`,
-      `Jatta jatta, skriv deg inn!`
+      t('phrase.highscore.comment.3', { burst: buildShortBurst() }),
+      t('phrase.highscore.comment.4', { burst: buildShortBurst() }),
+      t('phrase.highscore.comment.5')
     ];
   return weightedPick(lines, 'highscoreComment');
 }
 
 export function extendLocations(base) {
   const baseList = Array.isArray(base) ? base : [];
-  const extras = ['STOKMARKNES', 'MELBU', 'HADSEL', 'SORTLAND', 'LOFOTEN', 'KURT HQ', 'EIRIK ZONE'];
+  const extras = [
+    t('phrase.location.0'),
+    t('phrase.location.1'),
+    t('phrase.location.2'),
+    t('phrase.location.3'),
+    t('phrase.location.4'),
+    t('phrase.location.5'),
+    t('phrase.location.6')
+  ];
   return mergeUnique(baseList, extras);
 }
 
@@ -378,86 +408,65 @@ export function getAllNewPhrases() {
 
 // Trophy Room Taunt System - Top 3 trash talk Bottom 3
 const tauntTemplates = [
-  // Stokmarknes/Melbu energy
-  '{TAUNTER} roper fra kaia i Stokmarknes: {TARGET}, det der e ikkje score, det e symptoma!',
-  'Melbu klokka litt for seint: {TARGET}, du e på feil side av midnatt, og feil side av lista.',
-  '{TAUNTER}: {TARGET}, Hurtigruta gikk, men du blei igjen på bunn.',
-  'Det lukte kai og diesel. {TAUNTER}: {TARGET}, æ trur du mista aimen i råka.',
-  '{TAUNTER} til {TARGET}: Småby, store ambisjoner, men du klarte det ikkje.',
-
-  // Kurt Edgar wisdom
-  'Kurt Edgar sa: {TARGET}, dette hadde ikkje gått i Harstad heller. {TAUNTER} er enig.',
-  '{TAUNTER}: Kurt Edgar ville kalt deg lett oppvarming, {TARGET}.',
-  'Kurt Edgar nikker til {TAUNTER}, ser på {TARGET} og ryster på hodet.',
-  '{TAUNTER} siterer Kurt: {TARGET}, du må trene mer før du får øl.',
-
-  // Arcade taunts
-  '{TAUNTER} smeller bord: {TARGET}, toppen er fin, bunnen e trist!',
-  '{TARGET}, {TAUNTER} spør: Kødde du bare, eller?',
-  '{TAUNTER}: {TARGET}, æ venta mer, men fikk mindre.',
-  'Fra toppen ser {TAUNTER} ned på {TARGET}: Bæ bæ, lille dutten!',
-
-  // Beer/party culture
-  '{TAUNTER} til {TARGET}: Du telte feil øl, du telte feil score.',
-  '{TARGET}, dette e ikkje din fest. Hilsen {TAUNTER}.',
-  '{TAUNTER}: {TARGET}, du blei invitert, men du kom sist.',
-  'Øl nummer som ikkje burde telles: {TARGET}. Mvh {TAUNTER}.',
-
-  // Score comparisons
-  '{TAUNTER} ({SCORE_T}) til {TARGET} ({SCORE_B}): Se differansen?',
-  '{TARGET}, {TAUNTER} e {SCORE_T} poeng bedre. Det e langt.',
-  '{TAUNTER} level {LEVEL_T} til {TARGET} level {LEVEL_B}: Kom deg opp!',
-  '{TARGET}, toppen e {SCORE_T}, bunnen e {SCORE_B}. Du e bunnen. Hilsen {TAUNTER}.',
-
-  // Late night chaos
-  'Nordlys i blikket: {TAUNTER} skinner, {TARGET} slokner.',
-  '{TAUNTER} har full kontroll, {TARGET} har ingen.',
-  '{TARGET}, {TAUNTER} sa: Dette e kaos, men du e verst.',
-  'Klassisk kveld: {TAUNTER} vant, {TARGET} tapte.',
-
-  // Short and punchy
-  '{TAUNTER}: {TARGET}, jatta jatta, prøv igjen!',
-  '{TARGET}, hut dæ heim! - {TAUNTER}',
-  '{TAUNTER} til {TARGET}: Bæ bæ mø!',
-  '{TARGET}, hold kjæften og spill bedre! - {TAUNTER}',
-  '{TAUNTER}: {TARGET}, dette e hæstkuk!',
-
-  // Diesel/harbor vibes
-  '{TAUNTER}: {TARGET}, du lukter diesel og nederlag.',
-  'Kaia kaller: {TARGET}, du tilhører bunnen. {TAUNTER} på topp.',
-  '{TAUNTER} på brygga, {TARGET} i sjøen.',
-
-  // Confidence
-  '{TAUNTER} med selvtillit: {TARGET}, æ e ikkje redd for deg.',
-  '{TARGET}, {TAUNTER} kjører på, du kjører av.',
-  '{TAUNTER}: {TARGET}, æ vant før du starta.',
-
-  // Extra spicy (still playful)
-  '{TAUNTER}: {TARGET}, du e Grandiosa uten ost.',
-  '{TARGET} e våt mus, {TAUNTER} e løve.',
-  '{TAUNTER} til {TARGET}: Du e lille grisegutten, æ e sjefen.',
-  '{TARGET}, {TAUNTER} sa: Sjøge!',
-
-  // Final taunts
-  '{TAUNTER}: {TARGET}, this is Stokmarknes, not amateur hour.',
-  'Melbu stemning: {TAUNTER} vinner, {TARGET} kjemper.',
-  '{TARGET}, alle kjenner alle, men ingen husker deg. - {TAUNTER}',
-  '{TAUNTER}: {TARGET}, dette blir nevnt i årevis!',
-  'Kurt Edgar overlevde nittitallet, {TAUNTER} overlevde deg, {TARGET}.'
+  t('phrase.leaderboard.tauntTemplates.0'),
+  t('phrase.leaderboard.tauntTemplates.1'),
+  t('phrase.leaderboard.tauntTemplates.2'),
+  t('phrase.leaderboard.tauntTemplates.3'),
+  t('phrase.leaderboard.tauntTemplates.4'),
+  t('phrase.leaderboard.tauntTemplates.5'),
+  t('phrase.leaderboard.tauntTemplates.6'),
+  t('phrase.leaderboard.tauntTemplates.7'),
+  t('phrase.leaderboard.tauntTemplates.8'),
+  t('phrase.leaderboard.tauntTemplates.9'),
+  t('phrase.leaderboard.tauntTemplates.10'),
+  t('phrase.leaderboard.tauntTemplates.11'),
+  t('phrase.leaderboard.tauntTemplates.12'),
+  t('phrase.leaderboard.tauntTemplates.13'),
+  t('phrase.leaderboard.tauntTemplates.14'),
+  t('phrase.leaderboard.tauntTemplates.15'),
+  t('phrase.leaderboard.tauntTemplates.16'),
+  t('phrase.leaderboard.tauntTemplates.17'),
+  t('phrase.leaderboard.tauntTemplates.18'),
+  t('phrase.leaderboard.tauntTemplates.19'),
+  t('phrase.leaderboard.tauntTemplates.20'),
+  t('phrase.leaderboard.tauntTemplates.21'),
+  t('phrase.leaderboard.tauntTemplates.22'),
+  t('phrase.leaderboard.tauntTemplates.23'),
+  t('phrase.leaderboard.tauntTemplates.24'),
+  t('phrase.leaderboard.tauntTemplates.25'),
+  t('phrase.leaderboard.tauntTemplates.26'),
+  t('phrase.leaderboard.tauntTemplates.27'),
+  t('phrase.leaderboard.tauntTemplates.28'),
+  t('phrase.leaderboard.tauntTemplates.29'),
+  t('phrase.leaderboard.tauntTemplates.30'),
+  t('phrase.leaderboard.tauntTemplates.31'),
+  t('phrase.leaderboard.tauntTemplates.32'),
+  t('phrase.leaderboard.tauntTemplates.33'),
+  t('phrase.leaderboard.tauntTemplates.34'),
+  t('phrase.leaderboard.tauntTemplates.35'),
+  t('phrase.leaderboard.tauntTemplates.36'),
+  t('phrase.leaderboard.tauntTemplates.37'),
+  t('phrase.leaderboard.tauntTemplates.38'),
+  t('phrase.leaderboard.tauntTemplates.39'),
+  t('phrase.leaderboard.tauntTemplates.40'),
+  t('phrase.leaderboard.tauntTemplates.41'),
+  t('phrase.leaderboard.tauntTemplates.42'),
+  t('phrase.leaderboard.tauntTemplates.43'),
+  t('phrase.leaderboard.tauntTemplates.44')
 ];
 
 export function getLeaderboardTaunt(targetName) {
   const allTaunts = [
-    '{TARGET}: Jatta jatta, prøv igjen!',
-    '{TARGET}: Hut dæ heim!',
-    '{TARGET}: Bæ bæ mø!',
-    '{TARGET}: Hold kjæften og spill bedre!',
-    '{TARGET}: Dette e hæstkuk!',
-    '{TARGET}: Du e for treig!',
-    '{TARGET}: Amatør!',
-    '{TARGET}: Se og lær!',
-    '{TARGET}: Stokmarknes eier deg!',
-    '{TARGET}: Kurt Edgar ville skammet seg!'
+    t('phrase.leaderboard.taunts.0'),
+    t('phrase.leaderboard.taunts.1'),
+    t('phrase.leaderboard.taunts.2'),
+    t('phrase.leaderboard.taunts.3'),
+    t('phrase.leaderboard.taunts.4'),
+    t('phrase.leaderboard.taunts.5'),
+    t('phrase.leaderboard.taunts.6'),
+    t('phrase.leaderboard.taunts.7'),
+    t('phrase.leaderboard.taunts.8'),
+    t('phrase.leaderboard.taunts.9')
   ];
   const taunt = weightedPick(allTaunts, 'leaderboardTaunt');
   return taunt.replace('{TARGET}', targetName);

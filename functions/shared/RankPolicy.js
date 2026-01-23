@@ -46,28 +46,28 @@ function generateThresholds() {
 // Singleton thresholds array
 const THRESHOLDS = generateThresholds();
 
-// TASK 2: Rank titles - lore-friendly, Stokmarknes/Melbu/beer/Kurt/Eirik vibe
-const RANK_TITLES = [
-    "Rekrutt",              // 0 - Recruit
-    "Ølkjempe",             // 1 - Beer Warrior
-    "Rølpemester",          // 2 - Burp Master
-    "Melbu Veteran",        // 3 - Melbu Veteran
-    "Stokmarknes Helt",     // 4 - Stokmarknes Hero
-    "Kurt's Lærling",       // 5 - Kurt's Apprentice
-    "Eirik's Venn",         // 6 - Eirik's Friend
-    "Brusmeister",          // 7 - Soda Master
-    "Grisejeger",           // 8 - Pig Hunter
-    "Mongo Slakter",        // 9 - Mongo Slayer
-    "Vesterålen Legende",   // 10 - Vesterålen Legend
-    "Øl Admiral",           // 11 - Beer Admiral
-    "Rølp General",         // 12 - Burp General
-    "Kurt's Høyre Hånd",    // 13 - Kurt's Right Hand
-    "Eirik's Champion",     // 14 - Eirik's Champion
-    "Nordland Mester",      // 15 - Nordland Master
-    "Lofoten Erobrer",      // 16 - Lofoten Conqueror
-    "Øl Gud",               // 17 - Beer God
-    "Vesterålen Konge",     // 18 - Vesterålen King
-    "Galaga Legende"        // 19 - Galaga Legend
+// Rank title i18n keys (frontend should translate)
+const RANK_TITLE_KEYS = [
+    'rank.title.0',
+    'rank.title.1',
+    'rank.title.2',
+    'rank.title.3',
+    'rank.title.4',
+    'rank.title.5',
+    'rank.title.6',
+    'rank.title.7',
+    'rank.title.8',
+    'rank.title.9',
+    'rank.title.10',
+    'rank.title.11',
+    'rank.title.12',
+    'rank.title.13',
+    'rank.title.14',
+    'rank.title.15',
+    'rank.title.16',
+    'rank.title.17',
+    'rank.title.18',
+    'rank.title.19'
 ];
 
 /**
@@ -98,9 +98,9 @@ export function getRankFromScore(score) {
  */
 export function getRankTitle(rankIndex) {
     if (rankIndex < 0 || rankIndex >= NUM_RANKS) {
-        return RANK_TITLES[0];
+        return RANK_TITLE_KEYS[0];
     }
-    return RANK_TITLES[rankIndex];
+    return RANK_TITLE_KEYS[rankIndex];
 }
 
 /**
