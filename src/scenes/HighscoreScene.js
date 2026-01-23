@@ -1365,6 +1365,14 @@ export class HighscoreScene {
     return { x: rowX, y: rowY };
   }
 
+  formatKeyForDisplay(key) {
+    if (!key) return '';
+    const str = String(key);
+    // Show first 10 and last 10 characters for long keys to fit in panel
+    if (str.length <= 24) return str;
+    return `${str.slice(0, 10)}...${str.slice(-10)}`;
+  }
+
   toggleWalletPanel(rowIndex, walletAddress, anchorX, anchorY, layout) {
     if (!walletAddress) return;
     const existing = this.walletPanels.get(rowIndex);
@@ -1390,7 +1398,8 @@ export class HighscoreScene {
     background.stroke({ color: 0x00ff88, width: 1, alpha: 0.6 });
     panel.addChild(background);
 
-    const walletText = new PIXI.Text(walletAddress, {
+    const displayKey = this.formatKeyForDisplay(walletAddress);
+    const walletText = new PIXI.Text(displayKey, {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#ffffff'
