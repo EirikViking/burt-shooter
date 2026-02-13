@@ -527,18 +527,11 @@ export class HighscoreScene {
   // Helper to place the VKC footer
   layoutVkcFooter(layout) {
     if (!this.vkcFooterText) return;
-    const { width } = this.game.app.screen;
+    const { width, height } = this.game.app.screen;
 
-    // Default to screen bottom if panel not rendered yet
-    let footerY = this.game.app.screen.height - layout.padding;
-
-    // Use panel bottom if available (preferred)
-    if (this.panelBottomY) {
-      footerY = this.panelBottomY - 12; // 12px padding from bottom of frame
-    }
-
+    // Position at very bottom of screen, below the Back button
     this.vkcFooterText.x = width / 2;
-    this.vkcFooterText.y = footerY;
+    this.vkcFooterText.y = height - 10;
     this.vkcFooterText.anchor.set(0.5, 1); // Bottom-center anchor
     this.vkcFooterText.visible = this.status === 'LOADED';
   }
