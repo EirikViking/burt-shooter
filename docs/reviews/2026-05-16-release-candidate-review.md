@@ -2,19 +2,19 @@
 
 ## Verdict
 
-Burt Shooter is now a playable, visually coherent browser arcade shooter with a much stronger first impression than the recovered baseline. It is not Steam-ready yet, but it is moving into release-candidate territory for a web build: the main menu, settings, first combat beats, mobile HUD, pause flow, generated art direction, music state, and wave transition all hold together in the latest smoke run.
+Burt Shooter is now a playable, visually coherent browser arcade shooter with a much stronger first impression than the recovered baseline. It is not Steam-ready yet, but it is moving into release-candidate territory for a web build: the main menu, settings, first combat beats, mobile HUD, pause flow, generated art direction, music state, wave transition, game-over flow, and boss victory path all hold together in the latest checks.
 
 ## Gameplay Analysis
 
 The first minute is understandable: start game, survive enemy waves, shoot upward, watch lives/score/level, and move into wave 2 after clearing the first formation. The new compact wave briefing helps pacing by giving the player a short reward/anticipation beat instead of instantly dumping the next wave. The first-wave `+500` reward is a small but important morale fix.
 
-The biggest gameplay gap is still full-run feel. Game over and return-to-menu were manually checked after this review file was started, but boss gate, victory, and higher-level difficulty still need a real manual play pass, not just smoke automation. The current game has enough systems that balance could become noisy if every joke, powerup, voice line, particle burst, and formation fires at once.
+Boss gate and victory are now materially safer than the first recovery pass: a forced boss start reaches an active boss, boss defeat pays out and shows a clean victory beat, then the game advances into level 2 wave 1 with enemies spawned. The current game still has enough systems that balance could become noisy if every joke, powerup, voice line, particle burst, and formation fires at once.
 
 ## Visual Analysis
 
 The arctic/aurora direction is coherent across menu, gameplay, and game over. The cockpit HUD is readable on desktop and mobile, and the wave-briefing screenshot is now clean enough to read at a glance. Bullets and enemies remain visible against the dark background.
 
-Remaining visual risk: some legacy text/toast moments still compete for attention, especially corner barks. Before a public release, the game should do one focused UI clutter pass with screenshots from the first five minutes.
+Remaining visual risk: some legacy text/toast moments still compete for attention, especially corner barks. Boss labels, level intro wording, game over, and wave transitions are cleaner now, but before a public release the game should still get one focused UI clutter pass with screenshots from the first five minutes.
 
 ## Audio, Music, And SFX
 
@@ -35,9 +35,9 @@ Latest verified commands:
 - `npm run build`
 - `npm run smoke`
 
-Latest smoke output: `test-results/smoke-2026-05-16T16-13-19-304Z/`
+Latest smoke output: `test-results/smoke-2026-05-16T16-38-04-539Z/`
 
-The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gameplay, level 3 debug start, and forced wave transition. It completed with no console errors, page errors, bad responses, or fatal overlay. A separate manual automation forced game over, captured the game-over screen, pressed Escape, and returned to the menu with no console or page errors.
+The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gameplay, level 3 debug start, forced wave transition, and forced boss victory into level 2. It completed with no console errors, page errors, bad responses, or fatal overlay. Separate manual automations forced game over and boss victory; game over returned to menu with Escape, and boss victory advanced to level 2 active gameplay with no console or page errors.
 
 ## Strengths
 
@@ -51,16 +51,16 @@ The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gam
 
 - Still too many production `console.log` diagnostics for a polished public release.
 - Manual audio mix verification remains open.
-- Boss/victory flow is not yet reviewed as thoroughly as first-wave gameplay.
+- Boss/victory flow has automated coverage now, but it still needs a normal-skill human playthrough rather than only debug-forced defeat.
 - Steam readiness is blocked by polish, store-page copy/assets review, input feel, and longer-session balance.
 
 ## Steam Readiness Assessment
 
-Not ready for Steam release. Closer to a polished web release candidate. A credible next Steam-oriented milestone would require a full 10-15 minute playthrough review, boss/victory flow fixes, audio mix pass, release build without noisy logs, and a clear store positioning pass.
+Not ready for Steam release. Closer to a polished web release candidate. A credible next Steam-oriented milestone would require a full 10-15 minute playthrough review, audio mix pass, release build without noisy logs, and a clear store positioning pass.
 
 ## Concrete Next Improvements
 
-- Manual playtest through boss gate, boss defeat, level advance, game over, restart, and return-to-menu.
+- Manual playtest a natural run through boss gate, boss defeat, level advance, game over, restart, and return-to-menu without debug-forced boss damage.
 - Tune audio mix by ear on desktop speakers/headphones.
 - Trim production debug logs or gate them behind a debug flag.
 - Do one UI/text clutter pass across the first five minutes.

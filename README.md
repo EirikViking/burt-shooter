@@ -24,7 +24,7 @@ npm run build
 npm run smoke
 ```
 
-`npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, settings, desktop gameplay/pause, mobil intro/gameplay og debug-start level 3, og lagrer rapporten i `test-results/`.
+`npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, settings, desktop gameplay/pause, mobil intro/gameplay, debug-start level 3, wave-overgang og boss victory, og lagrer rapporten i `test-results/`.
 
 ## Nyeste polish-pass
 
@@ -48,6 +48,7 @@ npm run smoke
 - `docs/visual-asset-pipeline.md` dokumenterer brukte genererte visual assets og runtime-optimalisering.
 - Wave-overganger har naa en kort briefing/score-beat foer neste wave, og smoke-testen verifiserer wave 2, scorebonus og tekst-state.
 - Game over bruker naa samme arktiske visuelle retning og lokal/offline highscore-fallback logger ikke lenger JSON-feil.
+- Boss victory flyter naa rent videre til neste sector, og smoke-testen verifiserer boss gate, aktiv boss, boss defeat og level 2 wave 1.
 - `docs/recovery-note-2026-05-16.md` og `docs/reviews/2026-05-16-release-candidate-review.md` oppsummerer siste recovery/review-pass.
 
 ## Deploy til Cloudflare Pages

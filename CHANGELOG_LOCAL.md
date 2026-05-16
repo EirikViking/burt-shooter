@@ -26,6 +26,9 @@ when git commits are not used.
 - Reduced forced cleanup particle clutter and hardened mobile smoke stability.
 - Added `docs/recovery-note-2026-05-16.md` and `docs/reviews/2026-05-16-release-candidate-review.md`.
 - Quieted local/offline highscore HTML fallback handling and added the generated arctic backdrop to game over.
+- Hardened the debug boss/victory route so forced boss starts advance cleanly to the next level instead of reusing the debug start level.
+- Cleaned up boss victory presentation: no post-defeat wanted poster, safer boss label/health text layout, lighter particle burst, and clearer `Sector` intro text separate from the HUD wave counter.
+- Extended production smoke testing with boss gate, active boss, boss defeat, and level-2 restart screenshots/assertions.
 
 ---
 

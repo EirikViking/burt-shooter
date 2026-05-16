@@ -400,7 +400,10 @@ export class PlayScene {
   startLevel(source = 'unknown') {
     if (Number.isFinite(this.debugStartLevel)) {
       this.game.level = this.debugStartLevel;
+      this.debugStartLevel = null;
     }
+    const startAtBoss = this.debugStartAtBoss;
+    this.debugStartAtBoss = false;
 
     // GUARD: specific level start
     if (this._lastStartedLevel === this.game.level) {
@@ -422,7 +425,7 @@ export class PlayScene {
     this.powerupManager.checkLevelReset(this.game.level); // Reset powerup caps
 
     this.enemyManager.startLevel(this.game.level);
-    if (this.debugStartAtBoss) {
+    if (startAtBoss) {
       this.enemyManager.forceBossStart(this.game.level);
     }
     this.showLevelIntro();
@@ -443,15 +446,15 @@ export class PlayScene {
 
   showLevelIntro() {
     const levelTexts = [
-      'Wave 1: Grunnleggende gris',
-      'Wave 2: Mongo intensifiserer',
-      'Wave 3: Deili fetta kommer inn',
-      'Wave 4: R\u00f8lp mode aktiverer',
+      'Sector 1: Grunnleggende gris',
+      'Sector 2: Mongo intensifiserer',
+      'Sector 3: Deili fetta kommer inn',
+      'Sector 4: R\u00f8lp mode aktiverer',
       'BOSS: MEGA TUFS',
-      'Wave 6: Tilbake til Melbu',
-      'Wave 7: Stokmarknes raids',
-      'Wave 8: Kj\u00f8ttdeig overload',
-      'Wave 9: Isbjørn chaos',
+      'Sector 6: Tilbake til Melbu',
+      'Sector 7: Stokmarknes raids',
+      'Sector 8: Kj\u00f8ttdeig overload',
+      'Sector 9: Isbjørn chaos',
       'BOSS: ULTIMATE SVIN'
     ];
     const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
@@ -632,8 +635,6 @@ export class PlayScene {
             }
           }, i * 100);
         }
-
-        if (this.enemyManager.isBossLevel) this.showWantedPoster();
 
         this.levelAdvanceTimeout = setTimeout(() => {
           this.levelAdvancePending = false;
@@ -3225,10 +3226,10 @@ export class PlayScene {
 
     if (this.screenShake) this.screenShake.shake(12);
     if (this.particleManager) {
-      for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < 8; i++) {
         const x = this.game.getWidth() * 0.2 + Math.random() * this.game.getWidth() * 0.6;
         const y = this.game.getHeight() * 0.2 + Math.random() * this.game.getHeight() * 0.3;
-        this.particleManager.createExplosion(x, y, 0xffff33);
+        this.particleManager.createExplosion(x, y, 0xffff33, 0.75);
       }
     }
 

@@ -287,6 +287,38 @@ async function runSmoke() {
     const waveTransitionState = await collectGameState(transitionPage);
     await transitionPage.close();
 
+    const bossPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    observePage(bossPage, 'boss-victory');
+    await bossPage.goto(`${baseUrl}/?autostart=1&debugBossToken=KURT_DEBUG_2026&startAtBoss=1&startLevel=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
+    await bossPage.screenshot({ path: path.join(outputDir, '08-boss-gate.png'), fullPage: true });
+    await bossPage.waitForFunction(() => {
+      const enemyManager = window.__game?.scenes?.play?.enemyManager;
+      return enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active;
+    }, null, { timeout: 15000 });
+    await stabilizeSmokePlayer(bossPage);
+    await bossPage.waitForTimeout(1800);
+    await bossPage.screenshot({ path: path.join(outputDir, '09-boss-active.png'), fullPage: true });
+    await bossPage.evaluate(() => {
+      const boss = window.__game?.scenes?.play?.enemyManager?.boss;
+      if (!boss) return;
+      boss.invulnerableUntilMs = 0;
+      boss.takeDamage((boss.health || boss.maxHealth || 1) + 9999);
+    });
+    await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'LEVEL_COMPLETE', null, { timeout: 10000 });
+    await bossPage.waitForTimeout(900);
+    await bossPage.screenshot({ path: path.join(outputDir, '10-boss-defeated.png'), fullPage: true });
+    await bossPage.waitForFunction(() => {
+      const game = window.__game;
+      const enemyManager = game?.scenes?.play?.enemyManager;
+      return game?.level >= 2 && enemyManager?.state === 'WAVE_ACTIVE';
+    }, null, { timeout: 12000 });
+    await stabilizeSmokePlayer(bossPage);
+    await bossPage.waitForTimeout(900);
+    await bossPage.screenshot({ path: path.join(outputDir, '11-level-2-start.png'), fullPage: true });
+    const bossVictoryState = await collectGameState(bossPage);
+    await bossPage.close();
+
     const report = {
       baseUrl,
       outputDir,
@@ -297,6 +329,7 @@ async function runSmoke() {
       mobileGameplayState,
       level3State,
       waveTransitionState,
+      bossVictoryState,
       consoleEvents,
       pageErrors,
       badResponses
@@ -318,7 +351,12 @@ async function runSmoke() {
       ...(waveTransitionState.enemyManagerState !== 'WAVE_ACTIVE' ? ['wave transition did not return to active state'] : []),
       ...((waveTransitionState.score || 0) < 500 ? ['wave transition did not award first wave score'] : []),
       ...(waveTransitionState.textState?.wave?.currentWaveNumber !== 2 ? ['wave text state did not expose wave 2'] : []),
-      ...((waveTransitionState.textState?.counts?.enemies || 0) <= 0 ? ['wave transition did not spawn next wave enemies'] : [])
+      ...((waveTransitionState.textState?.counts?.enemies || 0) <= 0 ? ['wave transition did not spawn next wave enemies'] : []),
+      ...(bossVictoryState.fatalOverlay ? ['boss victory path showed fatal overlay'] : []),
+      ...(bossVictoryState.level < 2 ? ['boss victory did not advance to level 2'] : []),
+      ...(bossVictoryState.enemyManagerState !== 'WAVE_ACTIVE' ? ['boss victory did not return to active gameplay'] : []),
+      ...(bossVictoryState.textState?.wave?.currentWaveNumber !== 1 ? ['boss victory did not restart at wave 1 of the next level'] : []),
+      ...((bossVictoryState.textState?.counts?.enemies || 0) <= 0 ? ['boss victory did not spawn level 2 enemies'] : [])
     ];
 
     console.log(JSON.stringify(report, null, 2));

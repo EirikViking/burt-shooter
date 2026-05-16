@@ -129,8 +129,8 @@ export class Boss {
 
     // Health bar overlay
     this.healthBar = new PIXI.Graphics();
-    this.updateHealthBar();
     this.sprite.addChild(this.healthBar);
+    this.updateHealthBar();
 
     // Name display overlay
     this.nameText = createText(this.name, {
@@ -141,7 +141,7 @@ export class Boss {
       strokeThickness: 3
     });
     this.nameText.anchor.set(0.5);
-    this.nameText.y = -this.radius - 30;
+    this.nameText.y = -Math.min(this.radius + 30, 72);
     this.sprite.addChild(this.nameText);
 
     // Force visibility
@@ -155,7 +155,7 @@ export class Boss {
     this.healthBar.clear();
     const barWidth = this.radius * 3;
     const barHeight = 8;
-    const healthPercent = this.health / this.maxHealth;
+    const healthPercent = Math.max(0, Math.min(1, this.health / this.maxHealth));
 
     this.healthBar.rect(-barWidth / 2, this.radius + 10, barWidth, barHeight);
     this.healthBar.fill({ color: 0x333333 });
@@ -165,8 +165,8 @@ export class Boss {
 
     // Health text (no decimals)
     const healthText = `${Math.max(0, Math.ceil(this.health))}/${Math.ceil(this.maxHealth)}`;
-    if (this.healthText) {
-      this.healthBar.removeChild(this.healthText);
+    if (this.healthText?.parent) {
+      this.healthText.parent.removeChild(this.healthText);
     }
     this.healthText = createText(healthText, {
       fontFamily: 'Courier New',
@@ -175,7 +175,9 @@ export class Boss {
     });
     this.healthText.anchor.set(0.5);
     this.healthText.y = this.radius + 14;
-    this.healthBar.addChild(this.healthText);
+    if (this.sprite) {
+      this.sprite.addChild(this.healthText);
+    }
   }
 
   update(delta, playerX, playerY) {
