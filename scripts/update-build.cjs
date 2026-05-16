@@ -62,15 +62,7 @@ const headersContent = `
 fs.writeFileSync(headersPath, headersContent.trim());
 console.log('[Build] Updated public/_headers for strict caching policies.');
 
-// 4. Update index.html
-const indexPath = path.join(__dirname, '../index.html');
-if (fs.existsSync(indexPath)) {
-    let indexContent = fs.readFileSync(indexPath, 'utf8');
-    // Replace content="dev" or content="v..." with new version inside the specific meta tag
-    indexContent = indexContent.replace(
-        /<meta name="build-version" content="[^"]*">/,
-        `<meta name="build-version" content="${buildId}">`
-    );
-    fs.writeFileSync(indexPath, indexContent);
-    console.log(`[Build] Updated index.html meta tag to ${buildId}`);
-}
+// 4. Keep index.html stable in git.
+// The runtime build stamp comes from public/version.json via Vite's __BUILD_ID__.
+// Mutating index.html during every build makes clean checkouts look dirty.
+console.log('[Build] Leaving index.html unchanged; runtime build ID is injected by Vite.');

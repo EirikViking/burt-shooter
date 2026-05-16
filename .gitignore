@@ -9,7 +9,6 @@ RESCUE_*.txt
 test-results/
 tmpclaude-*
 
-# Protected build artifacts - never commit
-index.html
+# Protected generated build artifacts - never commit
 public/sw.js
 public/version.json
