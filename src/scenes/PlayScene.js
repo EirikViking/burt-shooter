@@ -73,6 +73,7 @@ export class PlayScene {
     this.starfieldContainer = null;
     this.starLayers = [];
     this.gameplayBackdrop = null;
+    this.gameplayStormBackdrop = null;
     this.gameplayBackdropShade = null;
 
     // Voice throttle
@@ -417,6 +418,7 @@ export class PlayScene {
 
     // Update music for the new level
     AudioManager.playMusicContext('gameplay');
+    this.applyGameplayBackdropLevel(this.game.level);
     this.powerupManager.checkLevelReset(this.game.level); // Reset powerup caps
 
     this.enemyManager.startLevel(this.game.level);
@@ -1479,25 +1481,54 @@ export class PlayScene {
         alias: 'generated_gameplay_backdrop',
         src: AssetManifest.generated.menuBackdrop
       });
+      const stormTexture = AssetManifest.generated.stormGameplayBackdrop
+        ? await PIXI.Assets.load({
+            alias: 'generated_storm_gameplay_backdrop',
+            src: AssetManifest.generated.stormGameplayBackdrop
+          })
+        : null;
       if (!this.starfieldContainer || !this.starfieldContainer.parent) return;
 
       const backdrop = new PIXI.Sprite(texture);
       backdrop.anchor.set(0.5);
-      backdrop.alpha = 0.28;
       backdrop.label = 'gameplayBackdrop';
       this.fitBackdropToScreen(backdrop, width, height);
+
+      let stormBackdrop = null;
+      if (stormTexture) {
+        stormBackdrop = new PIXI.Sprite(stormTexture);
+        stormBackdrop.anchor.set(0.5);
+        stormBackdrop.label = 'gameplayStormBackdrop';
+        this.fitBackdropToScreen(stormBackdrop, width, height);
+      }
 
       const shade = new PIXI.Graphics();
       shade.label = 'gameplayBackdropShade';
       shade.rect(0, 0, width, height);
-      shade.fill({ color: 0x020713, alpha: 0.58 });
+      shade.fill({ color: 0x020713, alpha: 1 });
 
       this.gameplayBackdrop = backdrop;
+      this.gameplayStormBackdrop = stormBackdrop;
       this.gameplayBackdropShade = shade;
       this.starfieldContainer.addChildAt(backdrop, 0);
-      this.starfieldContainer.addChildAt(shade, 1);
+      if (stormBackdrop) this.starfieldContainer.addChildAt(stormBackdrop, 1);
+      this.starfieldContainer.addChildAt(shade, stormBackdrop ? 2 : 1);
+      this.applyGameplayBackdropLevel(this.game?.level || 1);
     } catch (error) {
       console.warn('[PlayScene] Generated gameplay backdrop failed to load:', error);
+    }
+  }
+
+  applyGameplayBackdropLevel(level = 1) {
+    const stormActive = level >= 3;
+    if (this.gameplayBackdrop) {
+      this.gameplayBackdrop.alpha = stormActive ? 0.16 : 0.28;
+    }
+    if (this.gameplayStormBackdrop) {
+      this.gameplayStormBackdrop.alpha = stormActive ? 0.26 : 0;
+    }
+    if (this.gameplayBackdropShade) {
+      this.gameplayBackdropShade.alpha = stormActive ? 0.63 : 0.58;
     }
   }
 

@@ -1,6 +1,7 @@
 export const AssetManifest = {
     generated: {
-        menuBackdrop: '/art/generated/burt-shooter-arctic-menu-bg.webp'
+        menuBackdrop: '/art/generated/burt-shooter-arctic-menu-bg.webp',
+        stormGameplayBackdrop: '/art/generated/burt-shooter-storm-gameplay-bg.webp'
     },
 
     // Lore & Character Images (Root /public)

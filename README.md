@@ -44,6 +44,8 @@ npm run smoke
 - Mobil har synlige, tekstfrie joystick/autofire-affordanser og ryddigere kompakt HUD/toast-plassering.
 - Level 2-4 har naa egne kuraterte wave-scripts slik at de foerste minuttene foeles mer regissert og mindre tilfeldig.
 - Smoke-testen verifiserer ogsaa `startLevel=3` med debug token, slik at senere kampanje/pacing-endringer fanges tidligere.
+- Ny generert storm/aurora gameplay-bakgrunn ligger i `public/art/generated/` og fades inn fra level 3 for mer kampanjeprogresjon.
+- `docs/visual-asset-pipeline.md` dokumenterer brukte genererte visual assets og runtime-optimalisering.
 
 ## Deploy til Cloudflare Pages
 
