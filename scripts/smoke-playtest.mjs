@@ -209,6 +209,17 @@ function visibleEnemyHealthIssues(state, label) {
   });
 }
 
+function activeToastCount(state) {
+  return state?.textState?.toast?.active?.length || 0;
+}
+
+function describeActiveToasts(state) {
+  const toasts = state?.textState?.toast?.active || [];
+  return toasts
+    .map((toast) => `${toast.slot || 'unknown'}:${toast.type || 'generic'}:${toast.message || ''}`.slice(0, 120))
+    .join(' | ');
+}
+
 async function runSmoke() {
   mkdirSync(outputDir, { recursive: true });
   const server = await startPreviewServer();
@@ -553,6 +564,7 @@ async function runSmoke() {
       ...(musicContext(bossActiveState) !== 'boss' || !trackIncludes(bossActiveState, 'DeathMatch') ? [`boss music did not switch to boss theme: ${musicContext(bossActiveState)} / ${musicTrackName(bossActiveState) || 'none'}`] : []),
       ...visibleEnemyHealthIssues(bossActiveState, 'boss active'),
       ...(musicContext(bossDefeatedState) !== 'victory' || !trackIncludes(bossDefeatedState, 'Victory Tune') ? [`boss defeat did not switch to victory stinger: ${musicContext(bossDefeatedState)} / ${musicTrackName(bossDefeatedState) || 'none'}`] : []),
+      ...(activeToastCount(bossDefeatedState) > 1 ? [`boss defeat displayed overlapping active toasts: ${describeActiveToasts(bossDefeatedState)}`] : []),
       ...(bossVictoryState.level < 2 ? ['boss victory did not advance to level 2'] : []),
       ...(bossVictoryState.enemyManagerState !== 'WAVE_ACTIVE' ? ['boss victory did not return to active gameplay'] : []),
       ...(!isGameplayMusic(bossVictoryState) ? [`post-boss level 2 music did not return to gameplay pool: ${musicContext(bossVictoryState)} / ${musicTrackName(bossVictoryState) || 'none'}`] : []),

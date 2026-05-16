@@ -222,6 +222,7 @@ function buildGameTextState(game) {
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
+    toast: playScene?.getToastDebugState ? playScene.getToastDebugState() : null,
     wave: enemyManager ? {
       phase: enemyManager.phase || null,
       state: enemyManager.state || null,

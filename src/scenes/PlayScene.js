@@ -624,21 +624,24 @@ export class PlayScene {
 
         AudioManager.playSfx('levelComplete');
         this.game.addScore(1000); // Completion Bonus
+        const bossCompletion = Boolean(this.enemyManager?.bossDefeatedThisLevel);
         const compactHud = this.game.getWidth() < 620;
         const repairDelta = this.applyLifeRepair(3, 4500);
         const repairSuffix = repairDelta > 0 ? `  REPAIR +${repairDelta}` : '';
-        this.showToast(`SECTOR CLEAR +1000${repairSuffix}`, {
-          fontSize: compactHud ? 20 : 26,
-          fill: '#8fffd5',
-          stroke: '#001616',
-          strokeThickness: compactHud ? 2 : 3,
-          duration: 1500,
-          slot: 'top',
-          type: 'level_clear',
-          priority: 3,
-          y: this.game.getHeight() * (compactHud ? 0.22 : 0.17),
-          maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.7)
-        });
+        if (!bossCompletion) {
+          this.showToast(`SECTOR CLEAR +1000${repairSuffix}`, {
+            fontSize: compactHud ? 20 : 26,
+            fill: '#8fffd5',
+            stroke: '#001616',
+            strokeThickness: compactHud ? 2 : 3,
+            duration: 1500,
+            slot: 'top',
+            type: 'level_clear',
+            priority: 3,
+            y: this.game.getHeight() * (compactHud ? 0.22 : 0.17),
+            maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.7)
+          });
+        }
 
         // Particles
         for (let i = 0; i < 20; i++) {
@@ -2166,22 +2169,86 @@ export class PlayScene {
     if (!message) return;
     const slot = options.slot || 'center';
     const type = options.type || 'generic';
-    const priorityMap = { rank_up: 3, rank_boost: 2, level_up: 1 };
+    const priorityMap = {
+      boss: 4,
+      level_clear: 3,
+      rank_up: 3,
+      repair: 2,
+      rank_boost: 2,
+      level_up: 1,
+      score_boost: 1
+    };
     const priority = Number.isFinite(options.priority) ? options.priority : (priorityMap[type] || 0);
-    const entry = { message, options: { ...options, type, slot }, priority, createdAt: Date.now() };
+    const entry = { message, options: { ...options, type, slot, priority }, priority, createdAt: Date.now() };
 
-    if (slot === 'corner') {
-      this.toastCornerQueue.push(entry);
-      this.toastCornerQueue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
-    } else if (slot === 'top') {
-      this.toastTopQueue.push(entry);
-      this.toastTopQueue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
+    if (priority >= 3) {
+      this.dropLowerPriorityToastBacklog(priority);
+      this.dismissActiveToastsBelowPriority(priority);
+    }
+
+    const queue = this.getToastQueueForSlot(slot);
+    if (!queue) return;
+
+    const duplicate = queue.find(item => item.message === message && item.options?.type === type);
+    if (duplicate && duplicate.priority >= priority) {
+      duplicate.createdAt = entry.createdAt;
+      duplicate.options = { ...duplicate.options, ...entry.options };
     } else {
-      this.toastQueue.push(entry);
-      this.toastQueue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
+      queue.push(entry);
+      queue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
+      const limit = this.getToastQueueLimit(slot);
+      while (queue.length > limit) queue.pop();
     }
 
     this.processToastQueue();
+  }
+
+  getToastQueueForSlot(slot) {
+    if (slot === 'corner') return this.toastCornerQueue;
+    if (slot === 'top') return this.toastTopQueue;
+    return this.toastQueue;
+  }
+
+  getToastQueueLimit(slot) {
+    if (slot === 'corner') return 2;
+    if (slot === 'top') return 2;
+    return 4;
+  }
+
+  dropLowerPriorityToastBacklog(priority) {
+    this.toastQueue = this.toastQueue.filter(entry => entry.priority >= priority);
+    this.toastTopQueue = this.toastTopQueue.filter(entry => entry.priority >= priority);
+    this.toastCornerQueue = this.toastCornerQueue.filter(entry => entry.priority >= priority);
+  }
+
+  dismissActiveToastsBelowPriority(priority) {
+    [
+      ['center', this.activeCenterToast],
+      ['top', this.activeTopToast],
+      ['corner', this.activeCornerToast]
+    ].forEach(([slot, display]) => {
+      const activePriority = display?.__toastMeta?.priority ?? 0;
+      if (display && activePriority < priority) {
+        this.dismissToastDisplay(display, slot);
+      }
+    });
+  }
+
+  dismissToastDisplay(display, slot) {
+    if (!display) return;
+    if (display.__toastTicker) {
+      this.game.app.ticker.remove(display.__toastTicker);
+      display.__toastTicker = null;
+    }
+    if (display.parent) display.parent.removeChild(display);
+
+    if (slot === 'corner' && this.activeCornerToast === display) {
+      this.activeCornerToast = null;
+    } else if (slot === 'top' && this.activeTopToast === display) {
+      this.activeTopToast = null;
+    } else if (this.activeCenterToast === display) {
+      this.activeCenterToast = null;
+    }
   }
 
   processToastQueue() {
@@ -2198,6 +2265,33 @@ export class PlayScene {
       const entry = this.toastCornerQueue.shift();
       this.activeCornerToast = this.showToastNow(entry.message, entry.options, 'corner');
     }
+  }
+
+  describeToastDisplay(display) {
+    const meta = display?.__toastMeta;
+    if (!meta) return null;
+    return {
+      slot: meta.slot,
+      type: meta.type,
+      message: meta.message,
+      duration: meta.duration,
+      ageMs: Math.max(0, Date.now() - meta.createdAt)
+    };
+  }
+
+  getToastDebugState() {
+    return {
+      active: [
+        this.describeToastDisplay(this.activeCenterToast),
+        this.describeToastDisplay(this.activeTopToast),
+        this.describeToastDisplay(this.activeCornerToast)
+      ].filter(Boolean),
+      queued: {
+        center: this.toastQueue.length,
+        top: this.toastTopQueue.length,
+        corner: this.toastCornerQueue.length
+      }
+    };
   }
 
   initLoreBag() {
@@ -2416,8 +2510,20 @@ export class PlayScene {
 
     const duration = options.duration || (slot === 'corner' ? 1800 : 2200);
     const now = Date.now();
-    if (slot === 'center' && ['rank_up', 'level_up', 'rank_boost'].includes(options.type)) {
+    display.__toastMeta = {
+      message,
+      type: options.type || 'generic',
+      slot,
+      priority: Number.isFinite(options.priority) ? options.priority : 0,
+      duration,
+      createdAt: now
+    };
+
+    const majorTypes = ['boss', 'level_clear', 'rank_up', 'level_up', 'rank_boost'];
+    if (majorTypes.includes(options.type)) {
       this.lastMajorToastAt = now;
+    }
+    if (slot === 'center' && majorTypes.includes(options.type)) {
       this.centerToastLockUntil = Math.max(this.centerToastLockUntil, now + duration);
     }
     if (options.type === 'lore') {
@@ -2444,16 +2550,17 @@ export class PlayScene {
       if (elapsed >= duration) {
         this.game.app.ticker.remove(ticker);
         if (display.parent) display.parent.removeChild(display);
-        if (slot === 'corner') {
+        if (slot === 'corner' && this.activeCornerToast === display) {
           this.activeCornerToast = null;
-        } else if (slot === 'top') {
+        } else if (slot === 'top' && this.activeTopToast === display) {
           this.activeTopToast = null;
-        } else {
+        } else if (this.activeCenterToast === display) {
           this.activeCenterToast = null;
         }
         this.processToastQueue();
       }
     };
+    display.__toastTicker = ticker;
     this.game.app.ticker.add(ticker);
     return display;
   }
@@ -3415,18 +3522,17 @@ export class PlayScene {
     if (!this.uiOverlay) return;
 
     const compactHud = this.game.getWidth() < 620;
-    this.showToast('BOSS NEDKJEMPET!', {
-      fontSize: compactHud ? 24 : 32,
+    this.showToast(`BOSS NEDKJEMPET! +1000\n${getAchievementPopup()}`, {
+      fontSize: compactHud ? 20 : 28,
       fill: '#ffff00',
-      duration: 2000,
-      y: this.game.getHeight() * (compactHud ? 0.32 : 0.3),
-      maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.7)
-    });
-    this.showToast(getAchievementPopup(), {
-      fontSize: compactHud ? 17 : 20,
-      y: this.game.getHeight() * (compactHud ? 0.42 : 0.39),
-      duration: 2000,
-      maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.72)
+      stroke: '#330000',
+      strokeThickness: compactHud ? 3 : 5,
+      duration: 2300,
+      slot: 'center',
+      type: 'boss',
+      priority: 4,
+      y: this.game.getHeight() * (compactHud ? 0.34 : 0.32),
+      maxWidth: this.game.getWidth() * (compactHud ? 0.84 : 0.72)
     });
 
     if (this.screenShake) this.screenShake.shake(12);

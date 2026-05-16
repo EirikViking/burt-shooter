@@ -849,31 +849,18 @@ export class EnemyManager {
       const bonus = 500 * clearedWaveNumber;
       this.game.addScore(bonus);
       if (this.game.scenes.play) {
+        let repairDelta = 0;
+        if (this.game.lives < 3 && typeof this.game.scenes.play.applyLifeRepair === 'function') {
+          repairDelta = this.game.scenes.play.applyLifeRepair(3, 4200);
+        }
         const nextLabel = hasUpcomingWave
           ? `NEXT WAVE ${clearedWaveNumber + 1}/${this.normalWavesTotal}`
           : 'BOSS GATE NEXT';
+        const repairLabel = repairDelta > 0 ? ` - REPAIR +${repairDelta}` : '';
         this.game.scenes.play.showWaveBonusEffect(bonus, 'WAVE CLEARED!', {
           compact: hasUpcomingWave,
-          subtitle: nextLabel
+          subtitle: `${nextLabel}${repairLabel}`
         });
-        if (this.game.lives < 3 && typeof this.game.scenes.play.applyLifeRepair === 'function') {
-          const repairDelta = this.game.scenes.play.applyLifeRepair(3, 4200);
-          if (repairDelta > 0) {
-            const compactHud = this.game.getWidth() < 620;
-            this.game.scenes.play.showToast(`FIELD REPAIR +${repairDelta}`, {
-              fontSize: compactHud ? 16 : 20,
-              fill: '#8fffd5',
-              stroke: '#001616',
-              strokeThickness: compactHud ? 2 : 3,
-              y: this.game.getHeight() * (compactHud ? 0.29 : 0.22),
-              duration: 1300,
-              slot: 'top',
-              type: 'repair',
-              priority: 2,
-              maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.62)
-            });
-          }
-        }
       }
       AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 2600, duckMs: 2200 });
     }
