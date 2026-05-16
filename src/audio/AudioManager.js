@@ -1,6 +1,6 @@
 import { AssetManifest } from '../assets/assetManifest.js';
 import * as Features from '../config/Features.js';
-import { SFX_CATALOG, MUSIC_PLAYLISTS } from './SoundCatalog.js';
+import { SFX_CATALOG, MUSIC_PLAYLISTS, SFX_MIX, VOICE_MIX, VOICE_EVENT_FALLBACKS } from './SoundCatalog.js';
 
 class AudioController {
   constructor() {
@@ -13,7 +13,7 @@ class AudioController {
     this.masterVolume = 0.3;
     this.musicVolume = 0.2;
     this.sfxVolume = 0.4;
-    this.voiceVolume = 0.5;
+    this.voiceVolume = 0.45;
     this.musicDuckFactor = 1;
     this.pauseDuckFactor = 1;
 
@@ -51,6 +51,9 @@ class AudioController {
     this.sfxPoolIndex = {};
     this.lastSfxPlayedAt = {};
     this.lastPowerupVoiceIndex = -1;
+    this.lastVoicePlayedAt = {};
+    this.lastVoiceEvent = null;
+    this.lastVoiceTrack = null;
     this.sfxAssetHealth = new Map();
     this.pooledSfxKeys = new Set([
       'shoot_small',
@@ -91,6 +94,16 @@ class AudioController {
     } catch {
       return fallback;
     }
+  }
+
+  readMixNumber(value, fallback) {
+    if (value === undefined || value === null || value === '') return fallback;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+  }
+
+  clampUnit(value) {
+    return Math.max(0, Math.min(1, Number(value) || 0));
   }
 
   loadPreferences() {
@@ -305,10 +318,11 @@ class AudioController {
       variants = SFX_CATALOG['shoot_small'];
       if (!variants) return false;
     }
+    const mix = SFX_MIX[eventName] || {};
 
     // 2. Cooldown
     const now = Date.now();
-    const minIntervalMs = Number.isFinite(options.minIntervalMs) ? options.minIntervalMs : 50;
+    const minIntervalMs = this.readMixNumber(options.minIntervalMs, mix.minIntervalMs ?? 50);
     if (!options.force && this.sfxCooldowns[eventName] && now < this.sfxCooldowns[eventName]) {
       return false;
     }
@@ -321,7 +335,8 @@ class AudioController {
     if (!src) return false;
 
     const audio = this.getSfxAudio(eventName, src, options);
-    audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.sfxVolume * (options.volume || 1.0)));
+    const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
+    audio.volume = this.clampUnit(this.masterVolume * this.sfxVolume * volumeMultiplier);
     audio.play().catch(e => {
       this.handleSfxPlayFailure(eventName, audio.src, e);
     });
@@ -471,7 +486,7 @@ class AudioController {
 
     this.isSwitchingTrack = true;
     this.musicAudio.src = src;
-    this.musicAudio.volume = Math.max(0, Math.min(1, this.masterVolume * this.musicVolume));
+    this.applyMusicVolume();
 
     console.log(`[Audio] Playing: ${src} (Context: ${this.currentContext})`);
 
@@ -531,7 +546,7 @@ class AudioController {
   }
 
   applyMusicVolume() {
-    this.musicAudio.volume = Math.max(0, Math.min(1, this.masterVolume * this.musicVolume * this.musicDuckFactor * this.pauseDuckFactor));
+    this.musicAudio.volume = this.clampUnit(this.masterVolume * this.musicVolume * this.musicDuckFactor * this.pauseDuckFactor);
   }
 
   duckMusic(factor = 0.55, durationMs = 1700) {
@@ -567,7 +582,9 @@ class AudioController {
       currentMusicContext: this.currentContext,
       musicPlaying: Boolean(this.musicAudio && !this.musicAudio.paused && this.musicAudio.currentTime > 0),
       musicReadyState: this.musicAudio?.readyState || 0,
-      currentMusicTrack: musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null
+      currentMusicTrack: musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
+      lastVoiceEvent: this.lastVoiceEvent,
+      lastVoiceTrack: this.lastVoiceTrack
     };
   }
 
@@ -619,23 +636,46 @@ class AudioController {
 
   // --- VOICE ---
 
+  handleVoicePlayFailure(eventName, srcUrl, error) {
+    const errorName = error?.name || 'Error';
+    if (errorName === 'AbortError' || errorName === 'NotAllowedError') return;
+
+    if (errorName === 'NotSupportedError') {
+      this.checkSfxAsset(srcUrl).then((asset) => {
+        if (!asset.ok || (asset.type && asset.type.includes('text/html'))) {
+          const detail = asset.status ? `HTTP ${asset.status}` : (asset.error || error?.message || 'unknown failure');
+          console.error(`[AudioManager] Voice asset unavailable for key="${eventName}" (${detail}): ${srcUrl}`);
+        } else if (this.isVerboseDiagnostics()) {
+          console.warn(`[AudioManager] Voice decode/playback hiccup for key="${eventName}" src="${srcUrl}" type="${asset.type}"`);
+        }
+      });
+      return;
+    }
+
+    if (this.isVerboseDiagnostics()) {
+      console.warn(`[AudioManager] Voice play failed for key="${eventName}" src="${srcUrl}" error="${errorName}: ${error?.message || ''}"`);
+    }
+  }
+
   playVoice(eventName, options = {}) {
-    if (!this.enabled || !this.voiceEnabled) return;
+    if (!this.enabled || !this.voiceEnabled) return false;
     const now = Date.now();
+    const mix = VOICE_MIX[eventName] || {};
+    const cooldownMs = this.readMixNumber(options.cooldownMs, mix.cooldownMs ?? 1500);
 
     // Celebration Rate Limiting
     const celebrations = ['mission_complete', 'wave_clear', 'round'];
     if (celebrations.includes(eventName)) {
-      if (now < this.globalVoiceCooldown) return; // Respect global
+      if (now < this.globalVoiceCooldown) return false; // Respect global
       // Also enforce a specific celebration lock
       if (this.lastCelebrationTime && now - this.lastCelebrationTime < 20000) {
         console.log('[Audio] Skipping celebration voice due to rate limit');
-        return;
+        return false;
       }
       this.lastCelebrationTime = now;
     } else {
       // Normal voice lines
-      if (now < this.globalVoiceCooldown) return;
+      if (now < this.globalVoiceCooldown) return false;
     }
 
     // 1. Lookup in Catalog first (supports arrays/variants)
@@ -643,26 +683,7 @@ class AudioController {
 
     // 2. Fallback to direct mapping or loose match (Legacy support)
     if (!variants) {
-      const map = {
-        'ready': 'ready.mp3',
-        'go': 'go.mp3',
-        'wave_clear': 'objective_achieved.mp3',
-        'mission_complete': 'mission_completed.mp3',
-        'war_target': 'war_target_engaged.mp3',
-        'round': 'round.mp3',
-        'powerup': 'power_up.mp3',
-        'game_over': 'game_over.mp3',
-        'you_win': 'you_win.mp3',
-        'mission_control_launch': 'mission_control_launch.mp3',
-        'mission_control_level_start': 'mission_control_level_start.mp3',
-        'mission_control_wave_clear': 'mission_control_wave_clear.mp3',
-        'mission_control_boss_inbound': 'mission_control_boss_inbound.mp3',
-        'mission_control_life_low': 'mission_control_life_low.mp3',
-        'mission_control_powerup': 'mission_control_powerup.mp3',
-        'mission_control_victory': 'mission_control_victory.mp3',
-        'mission_control_game_over': 'mission_control_game_over.mp3'
-      };
-      const filename = map[eventName];
+      const filename = VOICE_EVENT_FALLBACKS[eventName];
       if (filename) {
         const found = AssetManifest.audio.voice.find(p => p.endsWith(filename));
         if (found) variants = [found];
@@ -674,10 +695,20 @@ class AudioController {
       const src = variants[Math.floor(Math.random() * variants.length)];
       if (src) {
         const audio = new Audio(src);
-        audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.voiceVolume));
-        audio.play().catch(e => { });
-        this.duckMusic(options.duckFactor || 0.5, options.duckMs || 1900);
-        this.globalVoiceCooldown = now + (options.cooldownMs || 1500);
+        audio.preload = 'auto';
+        const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
+        audio.volume = this.clampUnit(this.masterVolume * this.voiceVolume * volumeMultiplier);
+        audio.play().catch(e => {
+          this.handleVoicePlayFailure(eventName, audio.src, e);
+        });
+        this.duckMusic(
+          this.readMixNumber(options.duckFactor, mix.duckFactor ?? 0.5),
+          this.readMixNumber(options.duckMs, mix.duckMs ?? 1900)
+        );
+        this.globalVoiceCooldown = now + cooldownMs;
+        this.lastVoicePlayedAt[eventName] = now;
+        this.lastVoiceEvent = eventName;
+        this.lastVoiceTrack = decodeURIComponent((src || '').split('/').pop() || '');
         return true;
       }
     } else {
@@ -688,6 +719,9 @@ class AudioController {
 
   playPowerupVoice() {
     if (!this.enabled || !this.voiceEnabled) return false;
+    const now = Date.now();
+    const mix = VOICE_MIX.powerup || {};
+    if (now < this.globalVoiceCooldown) return false;
 
     const candidates = AssetManifest.audio.voice.filter(p => p.includes('power_up'));
     if (!candidates.length) {
@@ -704,8 +738,17 @@ class AudioController {
 
     const src = candidates[index];
     const audio = new Audio(src);
-    audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.voiceVolume));
-    audio.play().catch(e => { });
+    audio.preload = 'auto';
+    const volumeMultiplier = this.readMixNumber(mix.volume, 0.58);
+    audio.volume = this.clampUnit(this.masterVolume * this.voiceVolume * volumeMultiplier);
+    audio.play().catch(e => {
+      this.handleVoicePlayFailure('powerup', audio.src, e);
+    });
+    this.duckMusic(mix.duckFactor ?? 0.66, mix.duckMs ?? 900);
+    this.globalVoiceCooldown = now + (mix.cooldownMs ?? 1600);
+    this.lastVoicePlayedAt.powerup = now;
+    this.lastVoiceEvent = 'powerup';
+    this.lastVoiceTrack = decodeURIComponent((src || '').split('/').pop() || '');
     if (candidates.length > 1) {
       console.log(`[PowerupVoice] picked key=${src} from=${candidates.length}`);
     } else {

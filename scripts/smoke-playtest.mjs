@@ -283,9 +283,71 @@ async function runSmoke() {
     await page.screenshot({ path: path.join(outputDir, '02-gameplay.png'), fullPage: true });
     const gameplayState = await collectGameState(page);
 
+    const gamepadPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    observePage(gamepadPage, 'gamepad');
+    await gamepadPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await gamepadPage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await gamepadPage.waitForFunction(() => window.__game?.scenes?.play?.player, null, { timeout: 15000 });
+    await gamepadPage.evaluate(() => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      if (play) {
+        play.introActive = false;
+        play.introComplete = true;
+      }
+      const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+      buttons[0] = { pressed: true, value: 1 };
+      buttons[7] = { pressed: true, value: 1 };
+      window.__burtGamepadOverride = {
+        id: 'smoke-test-gamepad',
+        connected: true,
+        axes: [0.9, -0.55],
+        buttons
+      };
+    });
+    await gamepadPage.evaluate(() => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      const player = play?.player;
+      if (game) game.lives = Math.max(game.lives || 0, 3);
+      if (player) {
+        player.invulnerable = true;
+        player.invulnerableTime = 45000;
+        player.x = game.getWidth() / 2;
+        player.y = game.getHeight() * 0.78;
+      }
+      if (play?.bulletManager?.enemyBullets) {
+        play.bulletManager.enemyBullets.forEach((bullet) => {
+          bullet.active = false;
+        });
+      }
+    });
+    const gamepadBeforeState = await collectGameState(gamepadPage);
+    await gamepadPage.waitForTimeout(800);
+    const gamepadMoveState = await collectGameState(gamepadPage);
+    await gamepadPage.evaluate(() => {
+      const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+      buttons[9] = { pressed: true, value: 1 };
+      window.__burtGamepadOverride = {
+        id: 'smoke-test-gamepad',
+        connected: true,
+        axes: [0, 0],
+        buttons
+      };
+    });
+    await gamepadPage.waitForTimeout(300);
+    await gamepadPage.screenshot({ path: path.join(outputDir, '03-gamepad-pause.png'), fullPage: true });
+    const gamepadPauseState = await collectGameState(gamepadPage);
+    await gamepadPage.evaluate(() => {
+      if (window.__burtGamepadOverride) {
+        window.__burtGamepadOverride.buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+      }
+    });
+    await gamepadPage.close();
+
     await page.keyboard.press('p');
     await page.waitForTimeout(350);
-    await page.screenshot({ path: path.join(outputDir, '03-pause.png'), fullPage: true });
+    await page.screenshot({ path: path.join(outputDir, '04-pause.png'), fullPage: true });
     const pauseState = await collectGameState(page);
 
     const lorePage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
@@ -309,7 +371,7 @@ async function runSmoke() {
       return true;
     }, null, { timeout: 15000 });
     await lorePage.waitForTimeout(500);
-    await lorePage.screenshot({ path: path.join(outputDir, '04-lore-flyby.png'), fullPage: true });
+    await lorePage.screenshot({ path: path.join(outputDir, '05-lore-flyby.png'), fullPage: true });
     const loreFlybyState = await collectGameState(lorePage);
     await lorePage.close();
 
@@ -345,7 +407,7 @@ async function runSmoke() {
       }
     });
     await gameOverPage.waitForTimeout(900);
-    await gameOverPage.screenshot({ path: path.join(outputDir, '05-game-over.png'), fullPage: true });
+    await gameOverPage.screenshot({ path: path.join(outputDir, '06-game-over.png'), fullPage: true });
     const gameOverState = await collectGameState(gameOverPage);
     await gameOverPage.keyboard.press('Escape');
     await gameOverPage.waitForFunction(() => {
@@ -353,7 +415,7 @@ async function runSmoke() {
       return game?.currentScene === game?.scenes?.menu;
     }, null, { timeout: 10000 });
     await gameOverPage.waitForTimeout(900);
-    await gameOverPage.screenshot({ path: path.join(outputDir, '06-return-menu.png'), fullPage: true });
+    await gameOverPage.screenshot({ path: path.join(outputDir, '07-return-menu.png'), fullPage: true });
     const returnMenuState = await collectGameState(gameOverPage);
     await gameOverPage.close();
 
@@ -367,7 +429,7 @@ async function runSmoke() {
     await mobilePage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 30000 });
     await stabilizeSmokePlayer(mobilePage);
     await mobilePage.waitForTimeout(1800);
-    await mobilePage.screenshot({ path: path.join(outputDir, '07-mobile-intro.png'), fullPage: true });
+    await mobilePage.screenshot({ path: path.join(outputDir, '08-mobile-intro.png'), fullPage: true });
     await mobilePage.waitForFunction(() => {
       try {
         if (typeof window.render_game_to_text !== 'function') return false;
@@ -379,7 +441,7 @@ async function runSmoke() {
     }, null, { timeout: 30000 });
     await stabilizeSmokePlayer(mobilePage);
     await mobilePage.waitForTimeout(700);
-    await mobilePage.screenshot({ path: path.join(outputDir, '08-mobile-gameplay.png'), fullPage: true });
+    await mobilePage.screenshot({ path: path.join(outputDir, '09-mobile-gameplay.png'), fullPage: true });
     const mobileGameplayState = await collectGameState(mobilePage);
     await mobilePage.close();
 
@@ -399,7 +461,7 @@ async function runSmoke() {
     }, null, { timeout: 30000 });
     await stabilizeSmokePlayer(level3Page);
     await level3Page.waitForTimeout(1500);
-    await level3Page.screenshot({ path: path.join(outputDir, '09-level3-gameplay.png'), fullPage: true });
+    await level3Page.screenshot({ path: path.join(outputDir, '10-level3-gameplay.png'), fullPage: true });
     const level3State = await collectGameState(level3Page);
     await level3Page.close();
 
@@ -441,7 +503,7 @@ async function runSmoke() {
         (enemyManager.state === 'WAVE_BRIEFING' || enemyManager.state === 'WAVE_ACTIVE');
     }, null, { timeout: 15000 });
     await transitionPage.waitForTimeout(850);
-    await transitionPage.screenshot({ path: path.join(outputDir, '10-wave-briefing.png'), fullPage: true });
+    await transitionPage.screenshot({ path: path.join(outputDir, '11-wave-briefing.png'), fullPage: true });
     await transitionPage.waitForFunction(() => {
       const play = window.__game?.scenes?.play;
       const enemyManager = play?.enemyManager;
@@ -461,14 +523,14 @@ async function runSmoke() {
     observePage(bossPage, 'boss-victory');
     await bossPage.goto(`${baseUrl}/?autostart=1&debugBossToken=KURT_DEBUG_2026&startAtBoss=1&startLevel=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
-    await bossPage.screenshot({ path: path.join(outputDir, '11-boss-gate.png'), fullPage: true });
+    await bossPage.screenshot({ path: path.join(outputDir, '12-boss-gate.png'), fullPage: true });
     await bossPage.waitForFunction(() => {
       const enemyManager = window.__game?.scenes?.play?.enemyManager;
       return enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active;
     }, null, { timeout: 30000 });
     await stabilizeSmokePlayer(bossPage);
     await bossPage.waitForTimeout(1800);
-    await bossPage.screenshot({ path: path.join(outputDir, '12-boss-active.png'), fullPage: true });
+    await bossPage.screenshot({ path: path.join(outputDir, '13-boss-active.png'), fullPage: true });
     const bossActiveState = await collectGameState(bossPage);
     await bossPage.evaluate(() => {
       const boss = window.__game?.scenes?.play?.enemyManager?.boss;
@@ -490,7 +552,7 @@ async function runSmoke() {
     }, null, { timeout: 5000 });
     const bossDefeatedState = await collectGameState(bossPage);
     await bossPage.waitForTimeout(900);
-    await bossPage.screenshot({ path: path.join(outputDir, '13-boss-defeated.png'), fullPage: true });
+    await bossPage.screenshot({ path: path.join(outputDir, '14-boss-defeated.png'), fullPage: true });
     await bossPage.waitForFunction(() => {
       const game = window.__game;
       const enemyManager = game?.scenes?.play?.enemyManager;
@@ -498,7 +560,7 @@ async function runSmoke() {
     }, null, { timeout: 12000 });
     await stabilizeSmokePlayer(bossPage);
     await bossPage.waitForTimeout(900);
-    await bossPage.screenshot({ path: path.join(outputDir, '14-level-2-start.png'), fullPage: true });
+    await bossPage.screenshot({ path: path.join(outputDir, '15-level-2-start.png'), fullPage: true });
     const bossVictoryState = await collectGameState(bossPage);
     await bossPage.close();
 
@@ -508,6 +570,9 @@ async function runSmoke() {
       menuState,
       settingsState,
       gameplayState,
+      gamepadBeforeState,
+      gamepadMoveState,
+      gamepadPauseState,
       pauseState,
       loreFlybyState,
       gameOverState,
@@ -531,6 +596,13 @@ async function runSmoke() {
       ...(routineConsoleEvents.length ? [`production routine console output was not quiet (${routineConsoleEvents.length} messages)`] : []),
       ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
       ...(!pauseState.isPaused || !pauseState.pauseOverlayVisible ? ['pause overlay did not appear'] : []),
+      ...(gamepadMoveState.textState?.input?.gamepad?.connected !== true ? ['gamepad override did not register as connected'] : []),
+      ...((gamepadMoveState.textState?.input?.gamepad?.moveX || 0) < 0.6 ? ['gamepad right-stick movement was not exposed'] : []),
+      ...((gamepadMoveState.textState?.input?.gamepad?.moveY || 0) > -0.25 ? ['gamepad upward movement was not exposed'] : []),
+      ...((gamepadMoveState.textState?.player?.x || 0) <= (gamepadBeforeState.textState?.player?.x || 0) + 8 ? ['gamepad movement did not move the player right'] : []),
+      ...((gamepadMoveState.textState?.player?.y || 0) >= (gamepadBeforeState.textState?.player?.y || 9999) - 4 ? ['gamepad movement did not move the player upward'] : []),
+      ...((gamepadMoveState.textState?.counts?.playerBullets || 0) <= 0 ? ['gamepad fire did not produce player bullets'] : []),
+      ...(!gamepadPauseState.isPaused || !gamepadPauseState.pauseOverlayVisible ? ['gamepad pause button did not open pause overlay'] : []),
       ...(!loreFlybyState.easterEggActive ? ['forced lore flyby did not become active'] : []),
       ...(!/^burt-shooter-crew-/.test(loreFlybyState.easterEggAlias || '') ? [`lore flyby did not use generated crew portrait: ${loreFlybyState.easterEggAlias || 'none'}`] : []),
       ...(gameOverState.scene !== 'GameOverScene' ? ['forced game over did not reach game over scene'] : []),

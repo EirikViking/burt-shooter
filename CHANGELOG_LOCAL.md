@@ -45,6 +45,9 @@ when git commits are not used.
 - Hardened `npm run playtest:release` target selection so the bot tracks straggler enemies instead of camping center.
 - Latest expanded `npm run smoke` passes with no routine console output, console errors, page errors, bad responses, fatal overlay, generated-portrait failure, or music-routing failure: `test-results/smoke-2026-05-16T20-40-02-924Z/`.
 - Latest strict 10-minute `npm run playtest:release` survived the full duration, reached level 5 boss, ended alive with 3 lives and score 61,890, and reported zero console/page/network failures: `test-results/release-playtest-final-20260516-225000/`.
+- Added central SFX/voice mix defaults plus `npm run check:audio`, now part of prebuild, to catch missing audio files, empty music contexts, invalid mix keys, and broken voice fallback mappings.
+- Fixed the `war_look_out` voice fallback so the special enemy spawn warning can actually resolve to an audible asset.
+- Added browser Gamepad API support for analog/D-pad movement, fire, dodge, and pause, with smoke coverage through a virtual gamepad override.
 
 ---
 

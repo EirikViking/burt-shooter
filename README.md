@@ -21,10 +21,12 @@ Spillet kjører på `http://localhost:3000`
 
 ```bash
 npm run build
+npm run check:audio
 npm run smoke
 ```
 
 `npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, settings, desktop gameplay/pause, mobil intro/gameplay, debug-start level 3, wave-overgang og boss victory, og lagrer rapporten i `test-results/`.
+`npm run check:audio` verifiserer audio-manifest, SFX/voice-katalog, musikk-contexts og mix/fallback-nokler.
 
 ## Nyeste polish-pass
 
@@ -40,6 +42,7 @@ npm run smoke
 - Steam capsule/library art drafts ligger i `release/steam-assets/draft-2026-05-16/`.
 - Ekstra mission-control key-art/promo draft ligger i `release/marketing-assets/mission-control-2026-05-16/`.
 - Smoke-testen dekker naa ogsaa mobil portrait gameplay for aa fange HUD/layout-regresjoner.
+- Smoke-testen dekker naa ogsaa virtuell gamepad med bevegelse, skudd og pause.
 - Level 1 har naa kuratert onboarding med tydelige arc/wing/pincer-formasjoner foer senere levels blander inn mer variasjon.
 - Mobil har synlige, tekstfrie joystick/autofire-affordanser og ryddigere kompakt HUD/toast-plassering.
 - Level 2-4 har naa egne kuraterte wave-scripts slik at de foerste minuttene foeles mer regissert og mindre tilfeldig.
@@ -50,6 +53,7 @@ npm run smoke
 - Game over bruker naa samme arktiske visuelle retning og lokal/offline highscore-fallback logger ikke lenger JSON-feil.
 - Boss victory flyter naa rent videre til neste sector, og smoke-testen verifiserer boss gate, aktiv boss, boss defeat og level 2 wave 1.
 - Musikk er delt i egne context-pools for meny, scoreboard, gameplay, boss, victory og game over; smoke-testen passer paa at boss/game-over/title-musikk ikke lekker inn i vanlig gameplay.
+- SFX og voice har sentrale mix-defaults og en build-time audio-katalogsjekk som fanger manglende lydfiler, tomme music-contexts og brutte voice fallback-nokler.
 - Produksjonsbyggen er roligere i konsollen: vanlige debug logs skjules med mindre `?debug=1`, `?verboseLogs=1` eller `localStorage.burtVerboseLogs=1` brukes, og smoke-testen feiler hvis rutine-logger lekker tilbake.
 - Boss inbound bruker naa en original generert threat-dossier asset, foerste boss er mer rettferdig, og `npm run playtest:release` gir en streng survival/preflight playtest for release-regresjoner.
 - Lore/flyby-overlegg bruker naa originale genererte crew-portretter som standard. Eldre lokale foto kan testes eksplisitt med `?legacyPhotos=1` eller `localStorage.burtLegacyPhotos=1`.
@@ -85,6 +89,12 @@ npx wrangler pages deploy dist
 - **SPACE**: Skyt
 - **SHIFT**: Dodge (kort invulnerability)
 - **P** eller **ESC**: Pause
+
+### Gamepad
+- **Venstre stick/D-pad**: Bevegelse
+- **A / RB / RT**: Skyt
+- **B / LB**: Dodge
+- **Start / Select / Home**: Pause
 
 ### Mobil
 - Touch joystick for bevegelse
@@ -144,7 +154,7 @@ src/
   │   ├── ParticleManager.js  # Particle effects
   │   └── ScreenShake.js      # Screen shake juice
   ├── input/
-  │   └── InputManager.js     # Keyboard + touch input
+  │   └── InputManager.js     # Keyboard + touch + gamepad input
   ├── audio/
   │   └── AudioManager.js     # Sound effects + music
   ├── ui/

@@ -164,3 +164,19 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Latest expanded `npm run smoke` succeeds with no routine console output, console errors, page errors, bad responses, fatal overlay, generated-portrait failure, game-over return-audio failure, boss-victory transition failure, or boss-defeat toast-overlap failure: `test-results/smoke-toast-hygiene-20260516-230900/`.
 - Visual check: `test-results/smoke-toast-hygiene-20260516-230900/10-wave-briefing.png` is readable, and `13-boss-defeated.png` shows one central boss victory message with the HUD intact.
 - Next priority: run a real audio-mix pass by ear, then do a human playthrough judgment pass for late boss pressure and mercy-system generosity.
+- Audio safety pass added central SFX/voice mix defaults in `src/audio/SoundCatalog.js`, applied them in `AudioManager`, and lowered noisy default UI/ambient cues without changing explicit per-call volume overrides.
+- Fixed the existing `playVoice('war_look_out')` path by moving legacy voice fallback filenames into `VOICE_EVENT_FALLBACKS` and mapping the spawn warning to `war_look_out.mp3`.
+- Added `npm run check:audio` plus a prebuild gate to verify manifest audio files, catalog URLs, music contexts, mix-key coverage, and voice fallback mappings.
+- Latest direct `npm run check:audio` succeeds: 124 manifest assets, 39 catalog keys, 6 music contexts.
+- Remaining audio caveat: this was an objective wiring/balance pass, not a true by-ear mix pass. A human still needs to listen through menu, gameplay, wave clear, boss inbound, victory, and game over on speakers/headphones.
+- Gamepad continuation was found in the working tree and kept: `InputManager` now supports left stick/D-pad movement, A/RB/RT fire, B/LB dodge, and Start/Select/Home pause with a deadzone and one-shot pause handling.
+- Smoke now includes a virtual gamepad page that checks connection state, movement, firing, and pause overlay behavior through `render_game_to_text()`.
+- Latest `npm run build` succeeds with build ID `v2026-05-16_23-19-48`; prebuild now includes the audio catalog check.
+- Latest expanded `npm run smoke` succeeds with no routine console output, console errors, page errors, bad responses, fatal overlay, gamepad failure, music-routing failure, or boss-toast overlap: `test-results/smoke-2026-05-16T21-21-27-136Z/`.
+- Visual check: `03-gamepad-pause.png`, `14-boss-defeated.png`, and `15-level-2-start.png` are readable with the HUD intact.
+- Latest `npm run build` succeeds with build ID `v2026-05-16_23-19-48`; prebuild includes the audio catalog gate.
+- Latest expanded `npm run smoke` succeeds with the new virtual gamepad scenario: `test-results/smoke-gamepad-20260516-231700/`. In that run the virtual gamepad moved the player from roughly `(644,558)` to `(827,375)`, fired 14 player bullets, and opened the pause overlay.
+- Visual check: `test-results/smoke-gamepad-20260516-231700/03-gamepad-pause.png` shows the pause menu opened by gamepad input with the HUD/gameplay still readable underneath.
+- Shared `develop-web-game` Playwright client was attempted against a local preview, but this machine still lacks the Playwright headless-shell binary (`chromium_headless_shell-1208`). The repo smoke path remains the working system-Chrome validation route.
+- Short strict release playtest succeeds after the audio/controller pass: `test-results/release-playtest-gamepad-audio-20260516-232100/` survived the requested 60,000 ms, reached the level 1 boss, ended alive with 3 lives and score 3,405, and reported zero routine console events, console warnings/errors, page errors, bad responses, or request failures.
+- Visual check: `test-results/release-playtest-gamepad-audio-20260516-232100/final.png` shows readable boss combat with boss music active and the player visible near the lower center.

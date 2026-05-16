@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/update-build.cjs && node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs",
+    "prebuild": "node scripts/update-build.cjs && node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs && node scripts/check-audio-catalog.mjs",
     "build": "vite build",
+    "check:audio": "node scripts/check-audio-catalog.mjs",
     "preview": "vite preview",
     "smoke": "node scripts/smoke-playtest.mjs",
     "playtest:release": "node scripts/release-playtest.mjs",

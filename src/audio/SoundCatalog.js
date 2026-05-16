@@ -1,7 +1,6 @@
 import { AssetManifest } from '../assets/assetManifest.js';
 
 // Safe lookup helpers
-// Safe lookup helpers
 const getMusic = (partial) => AssetManifest.audio.music.find(p => p.includes(partial)) || `/audio/music/${partial}.mp3`;
 const getSfx = (partial) => {
     const match = AssetManifest.audio.sfx.find(p => p.includes(partial));
@@ -59,6 +58,78 @@ export const MUSIC_PLAYLISTS = {
     victory: VICTORY_POOL
 };
 
+export const SFX_MIX = {
+    shoot_small: { volume: 0.78, minIntervalMs: 42 },
+    shoot_alt: { volume: 0.7, minIntervalMs: 50 },
+    shoot_heavy: { volume: 0.82, minIntervalMs: 80 },
+    enemy_explode: { volume: 0.68, minIntervalMs: 35 },
+    boss_explode: { volume: 0.95, minIntervalMs: 300 },
+    hit: { volume: 0.48, minIntervalMs: 45 },
+    impactMetal: { volume: 0.42, minIntervalMs: 60 },
+    shield: { volume: 0.52, minIntervalMs: 140 },
+    ui_open: { volume: 0.28, minIntervalMs: 120 },
+    ui_close: { volume: 0.24, minIntervalMs: 120 },
+    pickup: { volume: 0.62, minIntervalMs: 90 },
+    achievement: { volume: 0.68, minIntervalMs: 450 },
+    enemy_shoot: { volume: 0.18, minIntervalMs: 90 },
+    computerNoise: { volume: 0.22, minIntervalMs: 350 },
+    thrusterFire: { volume: 0.18, minIntervalMs: 240 },
+    doorClose: { volume: 0.24, minIntervalMs: 120 },
+    spaceEngine: { volume: 0.18, minIntervalMs: 350 },
+    shoot: { volume: 0.72, minIntervalMs: 55 },
+    explosion: { volume: 0.75, minIntervalMs: 80 },
+    powerup: { volume: 0.72, minIntervalMs: 150 },
+    menuSelect: { volume: 0.3, minIntervalMs: 120 },
+    playerHit: { volume: 0.78, minIntervalMs: 220 },
+    levelComplete: { volume: 0.45, minIntervalMs: 700 },
+    forceField: { volume: 0.5, minIntervalMs: 140 },
+    shield_up: { volume: 0.55, minIntervalMs: 140 },
+    spawn_special: { volume: 0.55, minIntervalMs: 600 },
+    life_up: { volume: 0.7, minIntervalMs: 700 },
+    explosionCrunch: { volume: 0.74, minIntervalMs: 80 },
+    boss_spawn: { volume: 0.75, minIntervalMs: 800 }
+};
+
+export const VOICE_MIX = {
+    mission_control_launch: { volume: 0.84, duckFactor: 0.42, duckMs: 2600, cooldownMs: 2600 },
+    mission_control_level_start: { volume: 0.82, duckFactor: 0.46, duckMs: 2200, cooldownMs: 2400 },
+    mission_control_wave_clear: { volume: 0.78, duckFactor: 0.52, duckMs: 1900, cooldownMs: 2800 },
+    mission_control_boss_inbound: { volume: 0.9, duckFactor: 0.38, duckMs: 2800, cooldownMs: 3000 },
+    mission_control_life_low: { volume: 0.86, duckFactor: 0.45, duckMs: 2400, cooldownMs: 5200 },
+    mission_control_powerup: { volume: 0.64, duckFactor: 0.62, duckMs: 1200, cooldownMs: 3800 },
+    mission_control_victory: { volume: 0.86, duckFactor: 0.42, duckMs: 2800, cooldownMs: 3200 },
+    mission_control_game_over: { volume: 0.86, duckFactor: 0.42, duckMs: 2800, cooldownMs: 3200 },
+    mission_complete: { volume: 0.72, duckFactor: 0.56, duckMs: 1500, cooldownMs: 22000 },
+    wave_clear: { volume: 0.68, duckFactor: 0.58, duckMs: 1300, cooldownMs: 22000 },
+    round: { volume: 0.66, duckFactor: 0.6, duckMs: 1200, cooldownMs: 22000 },
+    powerup: { volume: 0.58, duckFactor: 0.66, duckMs: 900, cooldownMs: 1600 },
+    game_over: { volume: 0.84, duckFactor: 0.44, duckMs: 2500, cooldownMs: 3200 },
+    you_win: { volume: 0.84, duckFactor: 0.44, duckMs: 2500, cooldownMs: 3200 },
+    war_target: { volume: 0.58, duckFactor: 0.68, duckMs: 900, cooldownMs: 2600 },
+    war_look_out: { volume: 0.6, duckFactor: 0.66, duckMs: 1000, cooldownMs: 2800 }
+};
+
+export const VOICE_EVENT_FALLBACKS = {
+    ready: 'ready.mp3',
+    go: 'go.mp3',
+    wave_clear: 'objective_achieved.mp3',
+    mission_complete: 'mission_completed.mp3',
+    war_target: 'war_target_engaged.mp3',
+    war_look_out: 'war_look_out.mp3',
+    round: 'round.mp3',
+    powerup: 'power_up.mp3',
+    game_over: 'game_over.mp3',
+    you_win: 'you_win.mp3',
+    mission_control_launch: 'mission_control_launch.mp3',
+    mission_control_level_start: 'mission_control_level_start.mp3',
+    mission_control_wave_clear: 'mission_control_wave_clear.mp3',
+    mission_control_boss_inbound: 'mission_control_boss_inbound.mp3',
+    mission_control_life_low: 'mission_control_life_low.mp3',
+    mission_control_powerup: 'mission_control_powerup.mp3',
+    mission_control_victory: 'mission_control_victory.mp3',
+    mission_control_game_over: 'mission_control_game_over.mp3'
+};
+
 export const SFX_CATALOG = {
     'shoot_small': [
         getSfx('laserSmall_000'), getSfx('laserSmall_001'), getSfx('laserSmall_002'), getSfx('laserSmall_003'), getSfx('laserSmall_004')
@@ -73,7 +144,7 @@ export const SFX_CATALOG = {
         getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002'), getSfx('explosionCrunch_003'), getSfx('explosionCrunch_004')
     ],
     'boss_explode': [
-        getSfx('lowFrequency_explosion_000'), getSfx('lowFrequency_explosion_001') // 001 might not exist in manifest if truncated in my previous tool output, but lookup returns partial if not found, safe enough
+        getSfx('lowFrequency_explosion_000'), getSfx('lowFrequency_explosion_001')
     ],
     'hit': [
         getSfx('impactMetal_000'), getSfx('impactMetal_001'), getSfx('impactMetal_002'), getSfx('impactMetal_003'), getSfx('impactMetal_004')
@@ -110,7 +181,6 @@ export const SFX_CATALOG = {
     // Mappings and Aliases
     'shoot': [getSfx('laserSmall_000')],
     'explosion': [getSfx('explosionCrunch_000')],
-    'powerup': [getSfx('forceField_000')],
     'menuSelect': [getSfx('doorOpen_000')],
     'playerHit': [getSfx('impactMetal_000')],
     'levelComplete': [getSfx('doorOpen_000')],
@@ -118,7 +188,6 @@ export const SFX_CATALOG = {
     // Aliases for inconsistent call sites
     'forceField': [getSfx('forceField_000')], // Alias for shield/pickup reuse
     'shield_up': [getSfx('forceField_000')],
-    'spawn_special': [getSfx('forceField_000')], // Alias for missing key
     'life_up': [getSfx('doorOpen_002')],
     'explosionCrunch': [getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002')],
 
