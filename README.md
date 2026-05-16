@@ -17,6 +17,23 @@ npm run dev
 
 Spillet kjører på `http://localhost:3000`
 
+## Build og smoke test
+
+```bash
+npm run build
+npm run smoke
+```
+
+`npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, gameplay og pause, og lagrer rapporten i `test-results/`.
+
+## Nyeste polish-pass
+
+- Generert arktisk key art og optimalisert WebP-bakgrunn ligger i `public/art/generated/`.
+- Meny og gameplay bruker den nye arktiske/aurora-retningen for mer helhetlig uttrykk.
+- Pauseflyt har modal med resume og quit-to-menu.
+- Produksjonsbundle er splittet i app-, Pixi- og vendor-chunks for bedre caching.
+- Pixi v8 tekstflater er ryddet via `src/utils/pixiText.js`.
+
 ## Deploy til Cloudflare Pages
 
 ### 1. Opprett D1 Database
@@ -46,6 +63,7 @@ npx wrangler pages deploy dist
 - **WASD** eller **Piltaster**: Bevegelse
 - **SPACE**: Skyt
 - **SHIFT**: Dodge (kort invulnerability)
+- **P** eller **ESC**: Pause
 
 ### Mobil
 - Touch joystick for bevegelse
