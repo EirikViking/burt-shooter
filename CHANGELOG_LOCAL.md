@@ -33,6 +33,11 @@ when git commits are not used.
 - Extended smoke reporting to fail if production emits routine console output.
 - Split music into context-specific menu, scoreboard, gameplay, boss, victory, and game-over pools so gameplay no longer rolls title/game-over/boss tracks by accident.
 - Added smoke assertions for music routing: boss theme on boss, victory stinger on boss defeat, and gameplay music after level 2 starts.
+- Added `npm run playtest:release`, a stricter no-debug survival playtest with asset preflight, screenshot capture, and console/network failure gates.
+- Softened the first 60-90 seconds with gentler level-1 fire pressure, fewer final tutorial enemies, fewer early dives, and a fairer first boss projectile ramp.
+- Replaced the boss inbound random-photo poster with original generated boss threat-dossier art and removed the tracked third-party-looking `public/donaldtru.jpg` asset.
+- Hardened SFX playback with resolved-URL pooling and asset-health checks, and updated the service worker to bypass audio/range requests so browser media playback is not served stale full-cache responses.
+- Latest 3-minute `npm run playtest:release` and expanded `npm run smoke` both pass with no console/page/network/fatal failures.
 
 ---
 

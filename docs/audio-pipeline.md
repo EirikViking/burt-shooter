@@ -28,8 +28,11 @@ ELEVENLABS_MODEL_ID=<model id>
 - `src/assets/assetManifest.js` lists all voice assets for catalog lookup.
 - `src/audio/SoundCatalog.js` maps mission-control events to generated MP3 files and keeps separate music pools for menu, scoreboard, gameplay, boss, victory, and game over contexts.
 - `src/audio/AudioManager.js` applies short music ducking while voice lines play.
+- High-traffic SFX are pooled by resolved URL so repeated hits/explosions do not create a new media element for every frame of combat.
+- The service worker bypasses audio and `Range` requests. Letting the browser/network handle media directly avoids stale cache responses and local preview 404/HTML fallbacks during longer playtests.
 - Pause uses `AudioManager.setPauseDucked(true)` so music stays continuous but quieter.
 - `npm run smoke` checks that production gameplay does not accidentally use menu, game-over, boss, or victory music; it also verifies boss theme, victory stinger, and return-to-gameplay music after boss defeat.
+- `npm run playtest:release` runs a longer no-debug survival pass with audio/art asset preflight and fails on console, page, HTTP, or request failures.
 
 ## Current voice events
 

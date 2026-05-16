@@ -34,10 +34,14 @@ Latest verified commands:
 
 - `npm run build`
 - `npm run smoke`
+- `npm run playtest:release`
 
-Latest smoke output: `test-results/smoke-2026-05-16T16-52-18-297Z/`
+Latest smoke output: `test-results/smoke-2026-05-16T17-50-47-594Z/`
+Latest strict release playtest: `test-results/release-playtest-2026-05-16T17-37-05-244Z/`
 
 The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gameplay, level 3 debug start, forced wave transition, forced boss victory into level 2, and music-context routing. It completed with no routine console output, console errors, page errors, bad responses, or fatal overlay. Separate manual automations forced game over and boss victory; game over returned to menu with Escape, and boss victory advanced to level 2 active gameplay with no console or page errors.
+
+The strict no-debug release playtest survived the full 3-minute run, reached level 2, and reported no console events, page errors, bad responses, request failures, or fatal overlay.
 
 ## Strengths
 
