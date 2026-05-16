@@ -103,3 +103,10 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Latest `npm run build` succeeds with no Vite warnings after the console filter pass.
 - Latest expanded `npm run smoke` succeeds with no routine console output, console errors, page errors, bad responses, or fatal overlay. Latest screenshots: `test-results/smoke-2026-05-16T16-45-07-371Z/01-menu.png`, `test-results/smoke-2026-05-16T16-45-07-371Z/09-boss-active.png`, and `test-results/smoke-2026-05-16T16-45-07-371Z/11-level-2-start.png`.
 - Next priority: a real human audio-mix pass for menu/gameplay/wave/boss/game-over moments, then a longer 10-15 minute no-debug playthrough review.
+- Fixed audio routing after smoke showed gameplay could use title/menu/game-over/boss tracks. `SoundCatalog` now has separate menu, scoreboard, gameplay, boss, victory, and game-over music pools.
+- `AudioManager.playMusicContext()` now keeps tracks seamless only between menu and scoreboard; gameplay, boss, victory, and game-over context changes switch to their own music identity.
+- Boss spawn now switches to the boss theme, boss celebration switches to the victory stinger, game over switches to the game-over context, and the next level returns to gameplay music.
+- Extended `npm run smoke` with music-context assertions for menu/gameplay, boss active, boss defeated, and post-boss level 2.
+- Latest `npm run build` succeeds with no Vite warnings after the music routing pass.
+- Latest expanded `npm run smoke` succeeds with no routine console output, console errors, page errors, bad responses, fatal overlay, or music-routing failures. Latest screenshots: `test-results/smoke-2026-05-16T16-52-18-297Z/02-gameplay.png`, `test-results/smoke-2026-05-16T16-52-18-297Z/09-boss-active.png`, `test-results/smoke-2026-05-16T16-52-18-297Z/10-boss-defeated.png`, and `test-results/smoke-2026-05-16T16-52-18-297Z/11-level-2-start.png`.
+- Next priority: longer no-debug playthrough review and then real human audio-mix tuning by ear.

@@ -134,6 +134,25 @@ async function stabilizeSmokePlayer(page) {
   });
 }
 
+function musicTrackName(state) {
+  return state?.textState?.audio?.currentMusicTrack || '';
+}
+
+function musicContext(state) {
+  return state?.textState?.audio?.currentMusicContext || '';
+}
+
+function trackIncludes(state, fragment) {
+  return musicTrackName(state).toLowerCase().includes(fragment.toLowerCase());
+}
+
+function isGameplayMusic(state) {
+  const track = musicTrackName(state).toLowerCase();
+  if (!track) return false;
+  const reservedFragments = ['brave pilots', 'skyfire', 'defeated', 'deathmatch', 'victory tune'];
+  return musicContext(state) === 'gameplay' && !reservedFragments.some((fragment) => track.includes(fragment));
+}
+
 async function runSmoke() {
   mkdirSync(outputDir, { recursive: true });
   const server = await startPreviewServer();
@@ -302,6 +321,7 @@ async function runSmoke() {
     await stabilizeSmokePlayer(bossPage);
     await bossPage.waitForTimeout(1800);
     await bossPage.screenshot({ path: path.join(outputDir, '09-boss-active.png'), fullPage: true });
+    const bossActiveState = await collectGameState(bossPage);
     await bossPage.evaluate(() => {
       const boss = window.__game?.scenes?.play?.enemyManager?.boss;
       if (!boss) return;
@@ -311,6 +331,7 @@ async function runSmoke() {
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'LEVEL_COMPLETE', null, { timeout: 10000 });
     await bossPage.waitForTimeout(900);
     await bossPage.screenshot({ path: path.join(outputDir, '10-boss-defeated.png'), fullPage: true });
+    const bossDefeatedState = await collectGameState(bossPage);
     await bossPage.waitForFunction(() => {
       const game = window.__game;
       const enemyManager = game?.scenes?.play?.enemyManager;
@@ -332,6 +353,8 @@ async function runSmoke() {
       mobileGameplayState,
       level3State,
       waveTransitionState,
+      bossActiveState,
+      bossDefeatedState,
       bossVictoryState,
       routineConsoleEvents,
       consoleEvents,
@@ -346,6 +369,9 @@ async function runSmoke() {
       ...(routineConsoleEvents.length ? [`production routine console output was not quiet (${routineConsoleEvents.length} messages)`] : []),
       ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
       ...(!pauseState.isPaused || !pauseState.pauseOverlayVisible ? ['pause overlay did not appear'] : []),
+      ...(menuState.textState?.audio?.currentMusicContext !== 'menu' ? ['menu music context was not menu'] : []),
+      ...(trackIncludes(menuState, 'Defeated') ? ['menu playlist used game-over music'] : []),
+      ...(!isGameplayMusic(gameplayState) ? [`gameplay music used reserved/non-gameplay track: ${musicTrackName(gameplayState) || 'none'}`] : []),
       ...(gameplayState.fatalOverlay ? ['fatal overlay visible'] : []),
       ...(mobileGameplayState.fatalOverlay ? ['mobile fatal overlay visible'] : []),
       ...(mobileGameplayState.textState?.scene !== 'play' ? ['mobile autostart did not reach play scene'] : []),
@@ -358,8 +384,11 @@ async function runSmoke() {
       ...(waveTransitionState.textState?.wave?.currentWaveNumber !== 2 ? ['wave text state did not expose wave 2'] : []),
       ...((waveTransitionState.textState?.counts?.enemies || 0) <= 0 ? ['wave transition did not spawn next wave enemies'] : []),
       ...(bossVictoryState.fatalOverlay ? ['boss victory path showed fatal overlay'] : []),
+      ...(musicContext(bossActiveState) !== 'boss' || !trackIncludes(bossActiveState, 'DeathMatch') ? [`boss music did not switch to boss theme: ${musicContext(bossActiveState)} / ${musicTrackName(bossActiveState) || 'none'}`] : []),
+      ...(musicContext(bossDefeatedState) !== 'victory' || !trackIncludes(bossDefeatedState, 'Victory Tune') ? [`boss defeat did not switch to victory stinger: ${musicContext(bossDefeatedState)} / ${musicTrackName(bossDefeatedState) || 'none'}`] : []),
       ...(bossVictoryState.level < 2 ? ['boss victory did not advance to level 2'] : []),
       ...(bossVictoryState.enemyManagerState !== 'WAVE_ACTIVE' ? ['boss victory did not return to active gameplay'] : []),
+      ...(!isGameplayMusic(bossVictoryState) ? [`post-boss level 2 music did not return to gameplay pool: ${musicContext(bossVictoryState)} / ${musicTrackName(bossVictoryState) || 'none'}`] : []),
       ...(bossVictoryState.textState?.wave?.currentWaveNumber !== 1 ? ['boss victory did not restart at wave 1 of the next level'] : []),
       ...((bossVictoryState.textState?.counts?.enemies || 0) <= 0 ? ['boss victory did not spawn level 2 enemies'] : [])
     ];

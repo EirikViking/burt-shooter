@@ -3234,6 +3234,7 @@ export class PlayScene {
     }
 
     AudioManager.playSfx('boss_explode', { force: true, volume: 1.0 });
+    AudioManager.playMusicContext('victory', { resetPlaylist: true });
     if (type === 'BIG_BEER_CAN') AudioManager.playSfx('pickup', { force: true, volume: 0.9 });
     else if (type === 'ICON_192') AudioManager.playSfx('ui_open', { force: true, volume: 0.8 });
     else AudioManager.playSfx('powerup', { force: true, volume: 0.8 });

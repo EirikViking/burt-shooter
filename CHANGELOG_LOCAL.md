@@ -31,6 +31,8 @@ when git commits are not used.
 - Extended production smoke testing with boss gate, active boss, boss defeat, and level-2 restart screenshots/assertions.
 - Suppressed routine production `console.log`/`info`/`debug` chatter unless verbose logging is explicitly enabled, while keeping warnings/errors visible.
 - Extended smoke reporting to fail if production emits routine console output.
+- Split music into context-specific menu, scoreboard, gameplay, boss, victory, and game-over pools so gameplay no longer rolls title/game-over/boss tracks by accident.
+- Added smoke assertions for music routing: boss theme on boss, victory stinger on boss defeat, and gameplay music after level 2 starts.
 
 ---
 

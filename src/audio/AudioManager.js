@@ -34,7 +34,10 @@ class AudioController {
     this.lastTrackByContext = {
       menu: null,
       scoreboard: null,
-      gameplay: null
+      gameplay: null,
+      boss: null,
+      gameover: null,
+      victory: null
     };
 
     // Error recovery
@@ -331,24 +334,28 @@ class AudioController {
     }
 
     if (contextChanged) {
+      const keepCurrentTrack = isPlaying && !isReset && this.shouldKeepTrackAcrossContexts(this.currentContext, contextName);
+
       // Just switch state
       this.currentContext = contextName;
 
-      // If playing, we KEEP playing (seamless transition)
-      // Unless user explicitly asked for reset, which we handled above for gameplay-reset.
-      // If logic required random reset on context switch, we'd do it here. 
-      // But requirement "Switching menu <-> scoreboard must NOT restart" means we do NOTHING to audio.
-      if (isPlaying) {
+      // Menu <-> scoreboard can remain seamless. Gameplay, boss, victory, and gameover need explicit identity.
+      if (keepCurrentTrack) {
         console.log(`[Audio] Context changed to ${contextName} but keeping current track.`);
         return;
       }
     }
 
     // If we are here, either context is same OR we are not playing.
-    if (!isPlaying) {
+    if (!isPlaying || contextChanged || isReset) {
       const next = this.getRandomTrack(contextName);
       this.fadeOutAndPlay(next);
     }
+  }
+
+  shouldKeepTrackAcrossContexts(fromContext, toContext) {
+    const seamlessContexts = new Set(['menu', 'scoreboard']);
+    return seamlessContexts.has(fromContext) && seamlessContexts.has(toContext);
   }
 
   getRandomTrack(context) {

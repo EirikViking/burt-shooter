@@ -179,7 +179,7 @@ export class GameOverScene {
 
     AudioManager.playSfx('levelComplete');
     AudioManager.playVoice('mission_control_game_over', { cooldownMs: 2400, duckMs: 2600 });
-    AudioManager.playMusicContext('scoreboard');
+    AudioManager.playMusicContext('gameover', { resetPlaylist: true });
 
     // Fetch scores for qualification check
     API.getHighscores().then(scores => {

@@ -49,6 +49,7 @@ npm run smoke
 - Wave-overganger har naa en kort briefing/score-beat foer neste wave, og smoke-testen verifiserer wave 2, scorebonus og tekst-state.
 - Game over bruker naa samme arktiske visuelle retning og lokal/offline highscore-fallback logger ikke lenger JSON-feil.
 - Boss victory flyter naa rent videre til neste sector, og smoke-testen verifiserer boss gate, aktiv boss, boss defeat og level 2 wave 1.
+- Musikk er delt i egne context-pools for meny, scoreboard, gameplay, boss, victory og game over; smoke-testen passer paa at boss/game-over/title-musikk ikke lekker inn i vanlig gameplay.
 - Produksjonsbyggen er roligere i konsollen: vanlige debug logs skjules med mindre `?debug=1`, `?verboseLogs=1` eller `localStorage.burtVerboseLogs=1` brukes, og smoke-testen feiler hvis rutine-logger lekker tilbake.
 - `docs/recovery-note-2026-05-16.md` og `docs/reviews/2026-05-16-release-candidate-review.md` oppsummerer siste recovery/review-pass.
 

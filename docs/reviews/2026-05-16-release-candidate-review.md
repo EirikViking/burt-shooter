@@ -18,7 +18,7 @@ Remaining visual risk: some legacy text/toast moments still compete for attentio
 
 ## Audio, Music, And SFX
 
-The repo has music, SFX, stock voice clips, and the generated mission-control pack wired through the asset manifest/catalog. The latest smoke report confirms music is enabled, ready, and playing after user gesture/autostart in menu/settings/gameplay states, with ducking state visible in `render_game_to_text()`.
+The repo has music, SFX, stock voice clips, and the generated mission-control pack wired through the asset manifest/catalog. Music routing is now context-specific: menu, scoreboard, gameplay, boss, victory, and game over draw from separate pools. The latest smoke report confirms music is enabled, ready, and playing after user gesture/autostart in menu/settings/gameplay states, with ducking state visible in `render_game_to_text()`. It also verifies the boss theme, boss-victory stinger, and return to gameplay music after level advancement.
 
 Remaining audio risk: smoke can verify playback state, not actual human-perceived mix quality. Manual listening is still needed for menu music, gameplay music, wave clear, incoming wave, low life, boss inbound, game over, and victory levels.
 
@@ -35,9 +35,9 @@ Latest verified commands:
 - `npm run build`
 - `npm run smoke`
 
-Latest smoke output: `test-results/smoke-2026-05-16T16-45-07-371Z/`
+Latest smoke output: `test-results/smoke-2026-05-16T16-52-18-297Z/`
 
-The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gameplay, level 3 debug start, forced wave transition, and forced boss victory into level 2. It completed with no routine console output, console errors, page errors, bad responses, or fatal overlay. Separate manual automations forced game over and boss victory; game over returned to menu with Escape, and boss victory advanced to level 2 active gameplay with no console or page errors.
+The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gameplay, level 3 debug start, forced wave transition, forced boss victory into level 2, and music-context routing. It completed with no routine console output, console errors, page errors, bad responses, or fatal overlay. Separate manual automations forced game over and boss victory; game over returned to menu with Escape, and boss victory advanced to level 2 active gameplay with no console or page errors.
 
 ## Strengths
 

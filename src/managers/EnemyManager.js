@@ -747,6 +747,7 @@ export class EnemyManager {
       const taunt = playScene.getBossTauntCaption ? playScene.getBossTauntCaption('boss_spawn') : getMicroMessage('bossIntro');
       playScene.showBossIntro(boss.name, taunt);
     }
+    AudioManager.playMusicContext('boss', { resetPlaylist: true });
     if (playScene && playScene.bulletManager) {
       const bm = playScene.bulletManager;
       bm.playerBullets.forEach(b => {

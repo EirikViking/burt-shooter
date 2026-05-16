@@ -22,10 +22,12 @@ const getVoice = (partial) => {
 // Music Pools
 const MENU_POOL = [
     getMusic('Brave Pilots'),
-    getMusic('SkyFire'),
+    getMusic('SkyFire')
+];
+
+const SCOREBOARD_POOL = [
     getMusic('Space Heroes'),
-    getMusic('Defeated')
-    // Victory Tune removed - annoying leaderboard entry stinger
+    getMusic('SkyFire')
 ];
 
 const GAMEPLAY_POOL = [
@@ -33,14 +35,28 @@ const GAMEPLAY_POOL = [
     getMusic('Alone Against Enemy'),
     getMusic('Battle in the Stars'),
     getMusic('Rain of Lasers'),
-    getMusic('DeathMatch'),
     getMusic('Without Fear')
+];
+
+const BOSS_POOL = [
+    getMusic('DeathMatch')
+];
+
+const GAME_OVER_POOL = [
+    getMusic('Defeated')
+];
+
+const VICTORY_POOL = [
+    getMusic('Victory Tune')
 ];
 
 export const MUSIC_PLAYLISTS = {
     menu: MENU_POOL,
-    scoreboard: MENU_POOL,
-    gameplay: GAMEPLAY_POOL
+    scoreboard: SCOREBOARD_POOL,
+    gameplay: GAMEPLAY_POOL,
+    boss: BOSS_POOL,
+    gameover: GAME_OVER_POOL,
+    victory: VICTORY_POOL
 };
 
 export const SFX_CATALOG = {
