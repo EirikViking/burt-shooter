@@ -5,7 +5,7 @@ import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { BeerAsset } from '../utils/BeerAsset.js';
-import { AssetManifest } from '../assets/assetManifest.js';
+import { GameAssets } from '../utils/GameAssets.js';
 import { getRankFromScore, getRankTitle } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { createText } from '../utils/pixiText.js';
@@ -986,9 +986,10 @@ export class HighscoreScene {
   setupPartyHeads(width, height) {
     this.partyHeads = [];
     const maxHeads = 10;
-    const images = AssetManifest.loreImages;
+    const images = GameAssets.getLorePhotoList();
+    const headCount = images.length ? maxHeads : 0;
 
-    for (let i = 0; i < Math.min(maxHeads, images.length); i++) {
+    for (let i = 0; i < headCount; i++) {
       const imagePath = images[i % images.length];
       const sprite = PIXI.Sprite.from(imagePath);
       const scale = 0.08 + Math.random() * 0.12; // 0.08-0.2

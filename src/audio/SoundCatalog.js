@@ -85,7 +85,7 @@ export const SFX_CATALOG = {
         getSfx('forceField_000'), getSfx('forceField_001'), getSfx('forceField_002'), getSfx('forceField_003'), getSfx('forceField_004')
     ],
     'ui_open': [
-        getSfx('doorOpen_000'), getSfx('doorOpen_001'), getSfx('doorOpen_002')
+        getSfx('doorOpen_000'), getSfx('doorOpen_001')
     ],
     'ui_close': [
         getSfx('doorClose_000'), getSfx('doorClose_001'), getSfx('doorClose_002')

@@ -2,19 +2,19 @@
 
 ## Verdict
 
-Burt Shooter is now a playable, visually coherent browser arcade shooter with a much stronger first impression than the recovered baseline. It is not Steam-ready yet, but it is moving into release-candidate territory for a web build: the main menu, settings, first combat beats, mobile HUD, pause flow, generated art direction, music state, wave transition, game-over flow, and boss victory path all hold together in the latest checks.
+Burt Shooter is now a playable, visually coherent browser arcade shooter with a much stronger first impression than the recovered baseline. It is not Steam-ready yet, but it is a credible web release-candidate build: the main menu, settings, first combat beats, mobile HUD, pause flow, generated art direction, music state, wave transition, game-over flow, boss victory path, and a 10-minute no-debug survival run all hold together in the latest checks.
 
 ## Gameplay Analysis
 
-The first minute is understandable: start game, survive enemy waves, shoot upward, watch lives/score/level, and move into wave 2 after clearing the first formation. The new compact wave briefing helps pacing by giving the player a short reward/anticipation beat instead of instantly dumping the next wave. The first-wave `+500` reward is a small but important morale fix.
+The first minute is understandable: start game, survive enemy waves, shoot upward, watch lives/score/level, and move into wave 2 after clearing the first formation. The compact wave briefing helps pacing by giving the player a short reward/anticipation beat instead of instantly dumping the next wave. The stronger starter shots, wider player bullets, field repair, respawn shockwave, and last-stand repair make the game feel much less brittle without removing danger.
 
-Boss gate and victory are now materially safer than the first recovery pass: a forced boss start reaches an active boss, boss defeat pays out and shows a clean victory beat, then the game advances into level 2 wave 1 with enemies spawned. The current game still has enough systems that balance could become noisy if every joke, powerup, voice line, particle burst, and formation fires at once.
+Boss gate and victory are now materially safer than the first recovery pass: a forced boss start reaches an active boss, boss defeat pays out and shows a clean victory beat, then the game advances into level 2 wave 1 with enemies spawned. A strict no-debug run now survives the full 10-minute gate, reaches the level 5 boss, and ends alive, which is a major balance improvement over the earlier level 3-4 death spirals.
 
 ## Visual Analysis
 
-The arctic/aurora direction is coherent across menu, gameplay, and game over. The cockpit HUD is readable on desktop and mobile, and the wave-briefing screenshot is now clean enough to read at a glance. Bullets and enemies remain visible against the dark background.
+The arctic/aurora direction is coherent across menu, gameplay, and game over. The cockpit HUD is readable on desktop and mobile, and the wave-briefing screenshot is now clean enough to read at a glance. Bullets and enemies remain visible against the dark background. Lore/flyby surfaces now default to original generated crew portraits instead of local real-person photos, which is cleaner for public presentation.
 
-Remaining visual risk: some legacy text/toast moments still compete for attention, especially corner barks. Boss labels, level intro wording, game over, and wave transitions are cleaner now, but before a public release the game should still get one focused UI clutter pass with screenshots from the first five minutes.
+Remaining visual risk: some toast moments still compete for attention when boss defeat, sector clear, combo, and repair messages arrive together. Boss labels, level intro wording, game over, and wave transitions are cleaner now, but before a public release the game should still get one focused UI clutter pass with screenshots from the first ten minutes.
 
 ## Audio, Music, And SFX
 
@@ -36,18 +36,19 @@ Latest verified commands:
 - `npm run smoke`
 - `npm run playtest:release`
 
-Latest smoke output: `test-results/smoke-2026-05-16T17-50-47-594Z/`
-Latest strict release playtest: `test-results/release-playtest-2026-05-16T17-37-05-244Z/`
+Latest smoke output: `test-results/smoke-2026-05-16T20-40-02-924Z/`
+Latest strict release playtest: `test-results/release-playtest-final-20260516-225000/`
 
-The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gameplay, level 3 debug start, forced wave transition, forced boss victory into level 2, and music-context routing. It completed with no routine console output, console errors, page errors, bad responses, or fatal overlay. Separate manual automations forced game over and boss victory; game over returned to menu with Escape, and boss victory advanced to level 2 active gameplay with no console or page errors.
+The smoke suite covers menu, settings, desktop gameplay, pause, generated crew flyby, forced game over, Escape return to menu, mobile intro/gameplay, level 3 debug start, forced wave transition, forced boss victory into level 2, and music-context routing. It completed with no routine console output, console errors, page errors, bad responses, or fatal overlay.
 
-The strict no-debug release playtest survived the full 3-minute run, reached level 2, and reported no console events, page errors, bad responses, request failures, or fatal overlay.
+The strict no-debug release playtest survived the full 10-minute run, reached the level 5 boss, ended alive with 3 lives and score 61,890, and reported no routine console events, console warnings/errors, page errors, bad responses, request failures, or fatal overlay.
 
 ## Strengths
 
 - Stronger coherent art direction than the original prototype-feeling baseline.
 - Useful automated smoke coverage with screenshots and structured state.
-- Better first-wave pacing and reward feedback.
+- Better first-wave pacing, shooting feel, reward feedback, respawn grace, and wave-to-wave survivability.
+- Original generated crew portraits now replace real-person lore/flyby defaults.
 - Audio pipeline is documented and avoids storing secrets.
 - Mobile layout is actively tested rather than guessed.
 
@@ -55,17 +56,17 @@ The strict no-debug release playtest survived the full 3-minute run, reached lev
 
 - Runtime production logging is now much quieter by default; remaining log risk is mostly making sure future features keep using explicit debug mode for routine telemetry.
 - Manual audio mix verification remains open.
-- Boss/victory flow has automated coverage now, but it still needs a normal-skill human playthrough rather than only debug-forced defeat.
+- Boss/victory flow has automated coverage and survived a natural 10-minute bot run, but it still needs a normal-skill human playthrough.
 - Steam readiness is blocked by polish, store-page copy/assets review, input feel, and longer-session balance.
 
 ## Steam Readiness Assessment
 
-Not ready for Steam release. Closer to a polished web release candidate. A credible next Steam-oriented milestone would require a full 10-15 minute playthrough review, audio mix pass, and a clear store positioning pass.
+Not ready for Steam release. Much closer to a polished web release candidate. A credible next Steam-oriented milestone would require a human 10-15 minute playthrough review, audio mix pass, and a clear store positioning pass.
 
 ## Concrete Next Improvements
 
-- Manual playtest a natural run through boss gate, boss defeat, level advance, game over, restart, and return-to-menu without debug-forced boss damage.
+- Manual playtest a natural run through boss gate, boss defeat, level advance, game over, restart, and return-to-menu.
 - Tune audio mix by ear on desktop speakers/headphones.
 - Keep production routine console output at zero in smoke while preserving warnings/errors.
-- Do one UI/text clutter pass across the first five minutes.
-- Add one smoke scenario for game-over/restart once it can be made deterministic.
+- Do one UI/text clutter pass across the first ten minutes.
+- Decide whether last-stand repair and wave repair are tuned generously enough for fun without making late survival feel automatic.

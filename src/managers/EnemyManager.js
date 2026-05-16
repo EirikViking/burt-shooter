@@ -111,7 +111,7 @@ export class EnemyManager {
     }
 
     // Modifier Logic
-    if (BalanceConfig.modifiers.enabled && level >= 3) {
+    if (BalanceConfig.modifiers.enabled && level >= 5) {
       const mods = BalanceConfig.modifiers.types;
       this.currentModifier = mods[Math.floor(Math.random() * mods.length)];
     } else {
@@ -210,15 +210,15 @@ export class EnemyManager {
         { type: 'tufs', count: 8, formation: 'BOX', entry: 'single', cadence: 1.12 }
       ],
       3: [
-        { type: 'deili', count: 8, formation: 'DOUBLE_ARC', entry: 'split', cadence: 1.03 },
-        { type: 'fighter_4', count: 9, formation: 'SPIRAL', entry: 'alternating', cadence: 1.12 },
-        { type: 'tufs', count: 10, formation: 'PINCER', entry: 'split', cadence: 1.18 }
+        { type: 'deili', count: 6, formation: 'ARC', entry: 'split', cadence: 1.16 },
+        { type: 'fighter_4', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.2 },
+        { type: 'tufs', count: 7, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.28 }
       ],
       4: [
-        { type: 'svin', count: 8, formation: 'PINCER', entry: 'split', cadence: 1.1 },
-        { type: 'rolp', count: 10, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.18 },
-        { type: 'fighter_6', count: 10, formation: 'DOUBLE_ARC', entry: 'split', cadence: 1.2 },
-        { type: 'deili', count: 9, formation: 'SPIRAL', entry: 'alternating', cadence: 1.22 }
+        { type: 'deili', count: 5, formation: 'ARC', entry: 'split', cadence: 1.34 },
+        { type: 'fighter_6', count: 6, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.28 },
+        { type: 'svin', count: 3, formation: 'ARC', entry: 'alternating', cadence: 1.45 },
+        { type: 'rolp', count: 5, formation: 'ARC', entry: 'alternating', cadence: 1.4 }
       ]
     };
     const script = scripts[level];
@@ -270,6 +270,9 @@ export class EnemyManager {
 
           // WAVE FIX: Diagnostic - wave ending start
           const playScene = this.game.scenes.play;
+          if (playScene?.clearEnemyBullets) {
+            playScene.clearEnemyBullets('wave_clear');
+          }
           let beerCount = 0;
           if (playScene && playScene.getWaveCleanupTargets) {
             beerCount = playScene.getWaveCleanupTargets().length;
@@ -376,7 +379,9 @@ export class EnemyManager {
           if (this.boss.health <= 0) {
             console.log(`[BossDefeatAttempt] level=${this.level} hp=${this.boss.health} dt=${dt} reason=hp_zero`);
             if (dt < 1500) {
-              console.warn(`[BossFix] prevented instant boss defeat level=${this.level} dt=${dt}`);
+              if (this.game?.scenes?.play?.debugPowerups) {
+                console.warn(`[BossFix] prevented instant boss defeat level=${this.level} dt=${dt}`);
+              }
               this.boss.health = this.boss.maxHealth;
               this.boss.active = true;
               return;
@@ -385,6 +390,9 @@ export class EnemyManager {
             if (!this.bossDefeatCelebrated) {
               this.bossDefeatCelebrated = true;
               const playScene = this.game.scenes.play;
+              if (playScene?.clearEnemyBullets) {
+                playScene.clearEnemyBullets('boss_defeated');
+              }
               if (playScene?.showBossCelebration) {
                 playScene.showBossCelebration({ level: this.level, type: this.boss?.bossType || 'UNKNOWN' });
               }
@@ -806,6 +814,8 @@ export class EnemyManager {
   applyModifier(enemy) {
     if (this.currentModifier === 'SHIELDED') {
       enemy.health = Math.ceil(enemy.health * 1.5);
+      enemy.maxHealth = Math.max(enemy.maxHealth || enemy.health, enemy.health);
+      enemy.updateHealthBar?.();
       if (enemy.sprite) enemy.sprite.tint = 0x8888ff;
     } else if (this.currentModifier === 'AGGRESSIVE') {
       enemy.shootDelay *= 0.7;
@@ -846,6 +856,24 @@ export class EnemyManager {
           compact: hasUpcomingWave,
           subtitle: nextLabel
         });
+        if (this.game.lives < 3 && typeof this.game.scenes.play.applyLifeRepair === 'function') {
+          const repairDelta = this.game.scenes.play.applyLifeRepair(3, 4200);
+          if (repairDelta > 0) {
+            const compactHud = this.game.getWidth() < 620;
+            this.game.scenes.play.showToast(`FIELD REPAIR +${repairDelta}`, {
+              fontSize: compactHud ? 16 : 20,
+              fill: '#8fffd5',
+              stroke: '#001616',
+              strokeThickness: compactHud ? 2 : 3,
+              y: this.game.getHeight() * (compactHud ? 0.29 : 0.22),
+              duration: 1300,
+              slot: 'top',
+              type: 'repair',
+              priority: 2,
+              maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.62)
+            });
+          }
+        }
       }
       AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 2600, duckMs: 2200 });
     }

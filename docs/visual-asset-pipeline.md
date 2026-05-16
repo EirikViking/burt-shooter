@@ -24,3 +24,14 @@ Prompt summary:
 Prompt summary:
 
 > Original square boss threat dossier UI illustration for a retro arcade sci-fi shooter, fictional enemy battleship silhouette over arctic aurora, red/cyan holographic scan accents, no real people, no celebrities, no logos, no text.
+
+## 2026-05-16 Crew Comms Portraits
+
+- Sources: `public/art/generated/burt-shooter-crew-navigator-source.png`, `public/art/generated/burt-shooter-crew-pilot-source.png`
+- Runtime assets: `public/art/generated/burt-shooter-crew-navigator.png`, `public/art/generated/burt-shooter-crew-pilot.png`
+- Optimization: ImageMagick resize to `512x512`, stripped PNG metadata.
+- Usage: `src/utils/GameAssets.js` loads these original generated crew portraits for lore banners and legendary flybys by default. Legacy local photos remain opt-in with `?legacyPhotos=1` or `localStorage.burtLegacyPhotos=1`.
+
+Prompt summary:
+
+> Original square pixel-adjacent radio crew portrait for a retro arctic sci-fi shooter, headset and flight jacket inside a cockpit, Norwegian fjord and aurora outside, coherent with Burt Shooter mission-control art direction, no real people, no celebrities, no logos, no text.

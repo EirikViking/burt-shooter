@@ -11,11 +11,13 @@ const baseUrl = process.env.PLAYTEST_URL || `http://${host}:${port}`;
 const durationMs = Number(process.env.RELEASE_PLAYTEST_MS || 10 * 60 * 1000);
 const minSurvivalMs = Number(process.env.RELEASE_PLAYTEST_MIN_SURVIVAL_MS || durationMs);
 const allowGameOver = process.env.RELEASE_PLAYTEST_ALLOW_GAME_OVER === '1';
-const sampleMs = Number(process.env.RELEASE_PLAYTEST_SAMPLE_MS || 350);
+const sampleMs = Number(process.env.RELEASE_PLAYTEST_SAMPLE_MS || 150);
 const screenshotMs = Number(process.env.RELEASE_PLAYTEST_SCREENSHOT_MS || 60 * 1000);
 const outputDir = path.resolve(process.env.RELEASE_PLAYTEST_OUTPUT_DIR || `test-results/release-playtest-${timestamp()}`);
 const requiredReleaseAssets = [
   '/art/generated/burt-shooter-boss-dossier.png',
+  '/art/generated/burt-shooter-crew-navigator.png',
+  '/art/generated/burt-shooter-crew-pilot.png',
   '/sprites/boss/boss_battleship_no_bg2.png',
   '/sprites/boss/boss_turret_no_bg2.png',
   '/sprites/boss/boss_crystal_no_bg2.png',
@@ -29,7 +31,9 @@ const requiredReleaseAssets = [
   '/audio/sfx/forceField_002.mp3',
   '/audio/sfx/forceField_003.mp3',
   '/audio/sfx/forceField_004.mp3',
+  '/audio/sfx/impactMetal_000.mp3',
   '/audio/sfx/impactMetal_004.mp3',
+  '/audio/sfx/laserRetro_000.mp3',
   '/audio/sfx/explosionCrunch_003.mp3',
   '/audio/voice/mission-control/mission_control_wave_clear.mp3',
   '/audio/music/bgm_v2.mp3'
@@ -225,8 +229,20 @@ async function collectPlayState(page) {
         : null;
     } catch {}
 
+    const scene = game?.currentScene === game?.scenes?.play
+      ? 'play'
+      : game?.currentScene === game?.scenes?.menu
+        ? 'MenuScene'
+        : game?.currentScene === game?.scenes?.gameOver
+          ? 'GameOverScene'
+          : game?.currentScene === game?.scenes?.highscore
+            ? 'HighscoreScene'
+            : game?.currentScene === game?.scenes?.shipSelect
+              ? 'ShipSelectScene'
+              : textState?.scene || game?.currentScene?.constructor?.name || 'unknown';
+
     return {
-      scene: textState?.scene || game?.currentScene?.constructor?.name || 'unknown',
+      scene,
       score: game?.score ?? null,
       level: game?.level ?? null,
       lives: game?.lives ?? null,
@@ -273,7 +289,7 @@ async function collectPlayState(page) {
   });
 }
 
-function scoreLane(state, x, y) {
+function scoreLane(state, x, y, viewportWidth, viewportHeight) {
   let score = 0;
   for (const bullet of state.enemyBullets || []) {
     const dx = Math.abs((bullet.x ?? 0) - x);
@@ -281,7 +297,29 @@ function scoreLane(state, x, y) {
     if (dy > 360) continue;
     const nearX = Math.max(0, 100 - dx);
     const nearY = Math.max(0, 280 - dy);
-    score -= nearX * nearX * 0.08 + nearY * 0.12;
+    const collisionColumn = dx < 52 && dy < 170;
+    const grazeColumn = dx < 82 && dy < 230;
+    score -= nearX * nearX * 0.16 + nearY * 0.24;
+    if (collisionColumn) score -= 950 + (170 - dy) * 2.8;
+    else if (grazeColumn) score -= 360 + (230 - dy) * 1.2;
+    if ((bullet.y ?? 0) < y && dy < 260 && dx < 100) {
+      score -= (260 - dy) * 2.4;
+    }
+  }
+  for (const enemy of state.enemies || []) {
+    if (enemy.kind === 'boss') continue;
+    const ex = Number(enemy.x) || 0;
+    const ey = Number(enemy.y) || 0;
+    if (ex < -80 || ex > viewportWidth + 80) continue;
+    const dx = Math.abs(ex - x);
+    const dy = Math.abs(ey - y);
+    const lowThreat = ey > viewportHeight * 0.62 ? 1.35 : ey > viewportHeight * 0.52 ? 0.65 : 0.015;
+    const nearX = Math.max(0, 165 - dx);
+    const nearY = Math.max(0, 260 - dy);
+    score -= nearX * nearX * 0.035 * lowThreat + nearY * 0.42 * lowThreat;
+    if (ey > viewportHeight * 0.6 && dy < 130 && dx < 110) {
+      score -= 900 * lowThreat;
+    }
   }
   return score;
 }
@@ -289,9 +327,9 @@ function scoreLane(state, x, y) {
 function chooseIntent(state, viewportWidth, viewportHeight) {
   const playerX = state.player?.x ?? viewportWidth / 2;
   const playerY = state.player?.y ?? viewportHeight * 0.8;
-  const margin = 42;
+  const margin = 46;
   const combatTop = viewportHeight * 0.55;
-  const combatBottom = viewportHeight - 58;
+  const combatBottom = viewportHeight - 92;
 
   const visibleTargets = (state.enemies || []).filter((enemy) => enemy.x >= 0 && enemy.x <= viewportWidth);
   let targetX = viewportWidth / 2;
@@ -300,34 +338,65 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
       visibleTargets.sort((a, b) => (b.radius || 0) - (a.radius || 0));
       targetX = visibleTargets[0].x;
     } else {
-      visibleTargets.sort((a, b) => Math.abs(a.x - playerX) - Math.abs(b.x - playerX));
-      targetX = visibleTargets[0].x;
+      const nonBossTargets = visibleTargets.filter((enemy) => enemy.kind !== 'boss');
+      const weighted = nonBossTargets.reduce((acc, enemy) => {
+        const yWeight = 1 + Math.max(0, Number(enemy.y) || 0) / viewportHeight;
+        const damagedWeight = Math.max(1, (Number(enemy.maxHealth) || 1) - (Number(enemy.health) || 1) + 1);
+        const weight = yWeight * damagedWeight;
+        acc.x += enemy.x * weight;
+        acc.weight += weight;
+        return acc;
+      }, { x: 0, weight: 0 });
+      targetX = weighted.weight > 0 ? weighted.x / weighted.weight : visibleTargets[0].x;
     }
   }
+
+  const nonBossVisibleCount = visibleTargets.filter((enemy) => enemy.kind !== 'boss').length;
+  const pressure = (state.enemyBullets?.length || 0) +
+    visibleTargets.filter((enemy) => enemy.kind !== 'boss' && enemy.y > viewportHeight * 0.48).length * 2;
+  const lowLives = Number.isFinite(state.lives) && state.lives <= 1;
+  const highPressure = lowLives || pressure >= 4;
+  const safeLeft = lowLives ? viewportWidth * 0.18 : highPressure ? viewportWidth * 0.15 : margin;
+  const safeRight = lowLives ? viewportWidth * 0.82 : highPressure ? viewportWidth * 0.85 : viewportWidth - margin;
+  const safeBottom = lowLives ? viewportHeight * 0.82 : highPressure ? viewportHeight * 0.82 : combatBottom;
 
   const candidateXs = [
     playerX,
     playerX - 150,
     playerX + 150,
+    targetX - 180,
     targetX,
+    targetX + 180,
+    viewportWidth * 0.12,
     viewportWidth * 0.25,
+    viewportWidth * 0.38,
     viewportWidth * 0.5,
-    viewportWidth * 0.75
-  ].map((x) => Math.max(margin, Math.min(viewportWidth - margin, x)));
+    viewportWidth * 0.62,
+    viewportWidth * 0.75,
+    viewportWidth * 0.88
+  ].map((x) => Math.max(safeLeft, Math.min(safeRight, x)));
   const candidateYs = [
     playerY,
-    viewportHeight * 0.74,
-    viewportHeight * 0.82,
-    viewportHeight * 0.9
-  ].map((y) => Math.max(combatTop, Math.min(combatBottom, y)));
+    viewportHeight * 0.62,
+    viewportHeight * 0.66,
+    viewportHeight * 0.7,
+    viewportHeight * 0.78,
+    viewportHeight * 0.84
+  ].map((y) => Math.max(combatTop, Math.min(safeBottom, y)));
 
   let best = { x: playerX, y: playerY, score: Number.NEGATIVE_INFINITY };
+  const aimWeight = state.enemyManagerState === 'BOSS_ACTIVE' ? 0.35 : nonBossVisibleCount <= 2 ? 0.34 : lowLives ? 0.1 : pressure >= 5 ? 0.08 : 0.18;
   for (const x of candidateXs) {
     for (const y of candidateYs) {
-      const aimPenalty = Math.abs(x - targetX) * (state.enemyManagerState === 'BOSS_ACTIVE' ? 0.35 : 0.18);
+      const aimPenalty = Math.abs(x - targetX) * aimWeight;
       const movementPenalty = Math.abs(x - playerX) * 0.04 + Math.abs(y - playerY) * 0.03;
-      const verticalPreference = Math.abs(y - viewportHeight * 0.82) * 0.04;
-      const score = scoreLane(state, x, y) - aimPenalty - movementPenalty - verticalPreference;
+      const preferredY = pressure >= 4 || lowLives ? viewportHeight * 0.68 : viewportHeight * 0.78;
+      const verticalPreference = Math.abs(y - preferredY) * 0.06;
+      const centerBias = Math.abs(x - viewportWidth * 0.5) * (lowLives ? 0.028 : 0.018);
+      const edgePenalty = Math.max(0, viewportWidth * 0.18 - x) * (lowLives ? 1.8 : 0.9) +
+        Math.max(0, x - viewportWidth * 0.82) * (lowLives ? 1.8 : 0.9);
+      const bottomPenalty = Math.max(0, y - viewportHeight * (lowLives ? 0.78 : 0.82)) * (lowLives ? 0.8 : 0.25);
+      const score = scoreLane(state, x, y, viewportWidth, viewportHeight) - aimPenalty - movementPenalty - verticalPreference - centerBias - edgePenalty - bottomPenalty;
       if (score > best.score) best = { x, y, score };
     }
   }
@@ -417,10 +486,18 @@ async function runReleasePlaytest() {
 
     const startedAt = Date.now();
     let nextScreenshotAt = screenshotMs;
+    let nextProgressLogAt = 30000;
     while (Date.now() - startedAt < durationMs) {
       const elapsedMs = Date.now() - startedAt;
       const state = await collectPlayState(page);
       timeline.push({ elapsedMs, state });
+
+      if (elapsedMs >= nextProgressLogAt) {
+        const wave = state.wave?.currentWaveNumber ?? ((state.currentWaveIndex ?? 0) + 1);
+        const total = state.wave?.totalWaves ?? state.normalWavesTotal ?? '?';
+        console.log(`[release-playtest] ${Math.round(elapsedMs / 1000)}s level=${state.level} wave=${wave}/${total} lives=${state.lives} score=${state.score} enemies=${state.counts?.enemies ?? state.enemies?.length ?? '?'}`);
+        nextProgressLogAt += 30000;
+      }
 
       if (state.fatalOverlay || state.scene !== 'play' || (Number.isFinite(state.lives) && state.lives <= 0)) {
         finalState = state;

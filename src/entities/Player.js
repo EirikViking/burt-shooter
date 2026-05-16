@@ -712,9 +712,11 @@ export class Player {
     // Clamping
     const width = this.game.getWidth();
     const height = this.game.getHeight();
-    const margin = 20;
-    this.x = Math.max(margin, Math.min(width - margin, this.x));
-    this.y = Math.max(margin, Math.min(height - margin, this.y));
+    const horizontalMargin = Math.max(24, this.radius + 14);
+    const topMargin = Math.max(32, this.radius + 18);
+    const bottomMargin = Math.max(72, (this.baseShipWidth || 64) * 0.9);
+    this.x = Math.max(horizontalMargin, Math.min(width - horizontalMargin, this.x));
+    this.y = Math.max(topMargin, Math.min(height - bottomMargin, this.y));
 
     // Update Sprite Container Position
     this.sprite.x = this.x;
@@ -1699,7 +1701,7 @@ export class Player {
 
     // Invulnerability
     this.invulnerable = true;
-    this.invulnerableTime = 3000;
+    this.invulnerableTime = 5500;
 
     // Reset cooldowns
     this.shootCooldown = 0;

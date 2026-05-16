@@ -98,7 +98,11 @@ export class GameOverScene {
       strokeThickness: layout.isMobile ? 2 : 3,
       dropShadow: true,
       dropShadowColor: '#ff0000',
-      dropShadowBlur: layout.isMobile ? 4 : 8
+      dropShadowBlur: layout.isMobile ? 4 : 8,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.88, layout),
+      lineHeight: Math.round(titleSize * 1.08)
     });
     this.title.anchor.set(0.5);
     this.container.addChild(this.title);
@@ -240,6 +244,9 @@ export class GameOverScene {
 
     this.title.style.fontSize = titleSize;
     this.title.style.stroke = { color: '#880000', width: layout.isMobile ? 2 : 3 };
+    this.title.style.wordWrap = true;
+    this.title.style.wordWrapWidth = clampTextWidth(width * 0.88, layout);
+    this.title.style.lineHeight = Math.round(titleSize * 1.08);
     this.scoreText.style.fontSize = scoreSize;
     this.levelText.style.fontSize = levelSize;
     this.comment.style.fontSize = bodySize;
@@ -273,6 +280,13 @@ export class GameOverScene {
     const stack = createVerticalStack(layout, { startY, spacing });
 
     this.title.x = width / 2;
+    const titleMaxWidth = clampTextWidth(width * 0.9, layout);
+    if (this.title.width > titleMaxWidth) {
+      const minTitleSize = layout.isMobile ? 22 : 30;
+      const fittedSize = Math.max(minTitleSize, Math.floor(titleSize * (titleMaxWidth / this.title.width)));
+      this.title.style.fontSize = fittedSize;
+      this.title.style.lineHeight = Math.round(fittedSize * 1.08);
+    }
     this.title.y = stack.placeElement(this.title, spacing);
 
     this.scoreText.x = width / 2;
@@ -353,7 +367,7 @@ export class GameOverScene {
         if (this.state === 'input') {
           this.exitInputMode();
         } else {
-          this.game.switchScene('menu');
+          this.returnToMenu();
         }
         return;
       }
@@ -467,6 +481,16 @@ export class GameOverScene {
     this.promptText.visible = true;
     this.nameDisplay.visible = false;
     this.updateNameDisplay();
+  }
+
+  returnToMenu() {
+    AudioManager.playMusicContext('menu', { resetPlaylist: true });
+    this.game.switchScene('menu');
+    window.setTimeout(() => {
+      if (this.game?.currentScene === this.game?.scenes?.menu) {
+        AudioManager.playMusicContext('menu', { resetPlaylist: true });
+      }
+    }, 120);
   }
 
   updatePromptMessage(text) {

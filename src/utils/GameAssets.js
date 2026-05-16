@@ -6,6 +6,7 @@ class GameAssetsManager {
         this.beerTexture = null;
         this.photos = {};
         this.photoList = AssetManifest.loreImages;
+        this.crewPortraitList = AssetManifest.generated?.crewPortraits || [];
         this.shipTextures = {};
         this.enemyTextures = {};
         this.rankShipTextures = [];
@@ -43,8 +44,35 @@ class GameAssetsManager {
         return this.ensureBeerTexture();
     }
 
+    useLegacyPhotos() {
+        if (typeof window === 'undefined') return false;
+        try {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('legacyPhotos') === '1' ||
+                window.localStorage?.getItem('burtLegacyPhotos') === '1';
+        } catch {
+            return false;
+        }
+    }
+
+    getLorePhotoList() {
+        if (!this.crewPortraitList.length) return this.photoList;
+        return this.useLegacyPhotos()
+            ? [...this.crewPortraitList, ...this.photoList]
+            : this.crewPortraitList;
+    }
+
     async loadPhotos() {
-        const promises = this.photoList.map(async (filename) => {
+        const lorePhotos = this.getLorePhotoList();
+        const keepAliases = new Set(lorePhotos.map((filename) => {
+            const parts = filename.split('/');
+            return parts[parts.length - 1].split('.')[0];
+        }));
+        for (const alias of Object.keys(this.photos)) {
+            if (!keepAliases.has(alias)) delete this.photos[alias];
+        }
+
+        const promises = lorePhotos.map(async (filename) => {
 
             try {
                 // filename is now full path in manifest, extract alias
@@ -65,7 +93,7 @@ class GameAssetsManager {
         });
 
         await Promise.all(promises);
-        console.log('[GameAssets] Photos loaded:', Object.keys(this.photos));
+        console.log('[GameAssets] Lore portraits loaded:', Object.keys(this.photos));
     }
 
     getBeerTexture() {

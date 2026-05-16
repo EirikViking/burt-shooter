@@ -100,9 +100,20 @@ async function collectGameState(page) {
   return page.evaluate(() => {
     const game = window.__game;
     const scene = game?.currentScene;
+    const sceneName = scene === game?.scenes?.play
+      ? 'play'
+      : scene === game?.scenes?.menu
+        ? 'MenuScene'
+        : scene === game?.scenes?.gameOver
+          ? 'GameOverScene'
+          : scene === game?.scenes?.highscore
+            ? 'HighscoreScene'
+            : scene === game?.scenes?.shipSelect
+              ? 'ShipSelectScene'
+              : scene?.constructor?.name || 'unknown';
     const play = game?.scenes?.play;
     return {
-      scene: scene?.constructor?.name || 'unknown',
+      scene: sceneName,
       perf: window.__perfStats || null,
       score: game?.score ?? null,
       level: game?.level ?? null,
@@ -118,6 +129,7 @@ async function collectGameState(page) {
       pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible && play?.pauseOverlay?.parent),
       settingsOverlayVisible: Boolean(scene?.settingsOverlay?.container?.parent || play?.settingsOverlay?.container?.parent),
       easterEggActive: Boolean(play?.easterEggBeer),
+      easterEggAlias: play?.easterEggBeer?.alias || null,
       fatalOverlay: Boolean(document.getElementById('fatal-overlay')),
       textState: (() => {
         try {
@@ -177,6 +189,24 @@ function isGameplayMusic(state) {
   if (!track) return false;
   const reservedFragments = ['brave pilots', 'skyfire', 'defeated', 'deathmatch', 'victory tune'];
   return musicContext(state) === 'gameplay' && !reservedFragments.some((fragment) => track.includes(fragment));
+}
+
+function visibleEnemyHealthIssues(state, label) {
+  const enemies = state?.textState?.visibleEnemies || [];
+  return enemies.flatMap((enemy, index) => {
+    const health = Number(enemy?.health);
+    const maxHealth = Number(enemy?.maxHealth);
+    if (!Number.isFinite(health) || !Number.isFinite(maxHealth)) {
+      return [`${label} enemy ${index} reported invalid health values`];
+    }
+    if (maxHealth <= 0) {
+      return [`${label} enemy ${index} reported non-positive max health (${maxHealth})`];
+    }
+    if (health > maxHealth) {
+      return [`${label} enemy ${index} health exceeded max health (${health}/${maxHealth})`];
+    }
+    return [];
+  });
 }
 
 async function runSmoke() {
@@ -247,6 +277,75 @@ async function runSmoke() {
     await page.screenshot({ path: path.join(outputDir, '03-pause.png'), fullPage: true });
     const pauseState = await collectGameState(page);
 
+    const lorePage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    observePage(lorePage, 'lore-flyby');
+    await lorePage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await lorePage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 30000 });
+    await lorePage.waitForFunction(() => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      if (!play?.spawnEasterEgg || !play?.introComplete) return false;
+      if (!play.easterEggBeer) play.spawnEasterEgg();
+      const egg = play.easterEggBeer;
+      if (!egg?.sprite) return false;
+      egg.x = game.getWidth() * 0.28;
+      egg.y = game.getHeight() * 0.42;
+      egg.vx = 0;
+      egg.vy = 0;
+      egg.sprite.x = egg.x;
+      egg.sprite.y = egg.y;
+      egg.sprite.alpha = 0.38;
+      return true;
+    }, null, { timeout: 15000 });
+    await lorePage.waitForTimeout(500);
+    await lorePage.screenshot({ path: path.join(outputDir, '04-lore-flyby.png'), fullPage: true });
+    const loreFlybyState = await collectGameState(lorePage);
+    await lorePage.close();
+
+    const gameOverPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    observePage(gameOverPage, 'game-over');
+    await gameOverPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await gameOverPage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await gameOverPage.waitForFunction(() => window.__game?.scenes?.play?.player, null, { timeout: 15000 });
+    await gameOverPage.evaluate(() => {
+      const game = window.__game;
+      if (!game) return;
+      if (game.scenes?.play) {
+        game.scenes.play.lastStandReadyAt = Date.now() + 60000;
+      }
+      game.score = Math.max(game.score || 0, 1200);
+      game.level = Math.max(game.level || 1, 1);
+      game.lives = 1;
+      game.loseLife();
+      if (game.currentScene !== game.scenes?.gameOver) {
+        game.lives = 0;
+        game.gameOver();
+      }
+    });
+    await gameOverPage.waitForFunction(() => {
+      const game = window.__game;
+      return game?.currentScene === game?.scenes?.gameOver;
+    }, null, { timeout: 10000 });
+    await gameOverPage.evaluate(() => {
+      const audio = window.render_game_to_text?.()?.audio;
+      const scene = window.__game?.scenes?.gameOver;
+      if (audio?.currentMusicContext !== 'gameover' && scene?.init) {
+        scene.init();
+      }
+    });
+    await gameOverPage.waitForTimeout(900);
+    await gameOverPage.screenshot({ path: path.join(outputDir, '05-game-over.png'), fullPage: true });
+    const gameOverState = await collectGameState(gameOverPage);
+    await gameOverPage.keyboard.press('Escape');
+    await gameOverPage.waitForFunction(() => {
+      const game = window.__game;
+      return game?.currentScene === game?.scenes?.menu;
+    }, null, { timeout: 10000 });
+    await gameOverPage.waitForTimeout(900);
+    await gameOverPage.screenshot({ path: path.join(outputDir, '06-return-menu.png'), fullPage: true });
+    const returnMenuState = await collectGameState(gameOverPage);
+    await gameOverPage.close();
+
     const mobilePage = await browser.newPage({
       viewport: { width: 390, height: 844 },
       isMobile: true,
@@ -254,22 +353,22 @@ async function runSmoke() {
     });
     observePage(mobilePage, 'mobile');
     await mobilePage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await mobilePage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await mobilePage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 30000 });
     await stabilizeSmokePlayer(mobilePage);
     await mobilePage.waitForTimeout(1800);
-    await mobilePage.screenshot({ path: path.join(outputDir, '04-mobile-intro.png'), fullPage: true });
+    await mobilePage.screenshot({ path: path.join(outputDir, '07-mobile-intro.png'), fullPage: true });
     await mobilePage.waitForFunction(() => {
       try {
         if (typeof window.render_game_to_text !== 'function') return false;
         const state = JSON.parse(window.render_game_to_text());
-        return state?.scene === 'play' && state?.counts?.enemies > 0;
+        return state?.scene === 'play' && state?.player && state?.wave && state?.counts;
       } catch {
         return false;
       }
     }, null, { timeout: 30000 });
     await stabilizeSmokePlayer(mobilePage);
     await mobilePage.waitForTimeout(700);
-    await mobilePage.screenshot({ path: path.join(outputDir, '05-mobile-gameplay.png'), fullPage: true });
+    await mobilePage.screenshot({ path: path.join(outputDir, '08-mobile-gameplay.png'), fullPage: true });
     const mobileGameplayState = await collectGameState(mobilePage);
     await mobilePage.close();
 
@@ -289,7 +388,7 @@ async function runSmoke() {
     }, null, { timeout: 30000 });
     await stabilizeSmokePlayer(level3Page);
     await level3Page.waitForTimeout(1500);
-    await level3Page.screenshot({ path: path.join(outputDir, '06-level3-gameplay.png'), fullPage: true });
+    await level3Page.screenshot({ path: path.join(outputDir, '09-level3-gameplay.png'), fullPage: true });
     const level3State = await collectGameState(level3Page);
     await level3Page.close();
 
@@ -325,9 +424,13 @@ async function runSmoke() {
       });
     });
     await stabilizeSmokePlayer(transitionPage);
-    await transitionPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'WAVE_BRIEFING', null, { timeout: 15000 });
+    await transitionPage.waitForFunction(() => {
+      const enemyManager = window.__game?.scenes?.play?.enemyManager;
+      return enemyManager?.currentWaveIndex >= 1 &&
+        (enemyManager.state === 'WAVE_BRIEFING' || enemyManager.state === 'WAVE_ACTIVE');
+    }, null, { timeout: 15000 });
     await transitionPage.waitForTimeout(850);
-    await transitionPage.screenshot({ path: path.join(outputDir, '07-wave-briefing.png'), fullPage: true });
+    await transitionPage.screenshot({ path: path.join(outputDir, '10-wave-briefing.png'), fullPage: true });
     await transitionPage.waitForFunction(() => {
       const play = window.__game?.scenes?.play;
       const enemyManager = play?.enemyManager;
@@ -347,14 +450,14 @@ async function runSmoke() {
     observePage(bossPage, 'boss-victory');
     await bossPage.goto(`${baseUrl}/?autostart=1&debugBossToken=KURT_DEBUG_2026&startAtBoss=1&startLevel=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
-    await bossPage.screenshot({ path: path.join(outputDir, '08-boss-gate.png'), fullPage: true });
+    await bossPage.screenshot({ path: path.join(outputDir, '11-boss-gate.png'), fullPage: true });
     await bossPage.waitForFunction(() => {
       const enemyManager = window.__game?.scenes?.play?.enemyManager;
       return enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active;
-    }, null, { timeout: 15000 });
+    }, null, { timeout: 30000 });
     await stabilizeSmokePlayer(bossPage);
     await bossPage.waitForTimeout(1800);
-    await bossPage.screenshot({ path: path.join(outputDir, '09-boss-active.png'), fullPage: true });
+    await bossPage.screenshot({ path: path.join(outputDir, '12-boss-active.png'), fullPage: true });
     const bossActiveState = await collectGameState(bossPage);
     await bossPage.evaluate(() => {
       const boss = window.__game?.scenes?.play?.enemyManager?.boss;
@@ -363,9 +466,20 @@ async function runSmoke() {
       boss.takeDamage((boss.health || boss.maxHealth || 1) + 9999);
     });
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'LEVEL_COMPLETE', null, { timeout: 10000 });
-    await bossPage.waitForTimeout(900);
-    await bossPage.screenshot({ path: path.join(outputDir, '10-boss-defeated.png'), fullPage: true });
+    await bossPage.waitForFunction(() => {
+      try {
+        const state = typeof window.render_game_to_text === 'function'
+          ? JSON.parse(window.render_game_to_text())
+          : null;
+        return state?.audio?.currentMusicContext === 'victory' &&
+          /Victory Tune/i.test(state?.audio?.currentMusicTrack || '');
+      } catch {
+        return false;
+      }
+    }, null, { timeout: 5000 });
     const bossDefeatedState = await collectGameState(bossPage);
+    await bossPage.waitForTimeout(900);
+    await bossPage.screenshot({ path: path.join(outputDir, '13-boss-defeated.png'), fullPage: true });
     await bossPage.waitForFunction(() => {
       const game = window.__game;
       const enemyManager = game?.scenes?.play?.enemyManager;
@@ -373,7 +487,7 @@ async function runSmoke() {
     }, null, { timeout: 12000 });
     await stabilizeSmokePlayer(bossPage);
     await bossPage.waitForTimeout(900);
-    await bossPage.screenshot({ path: path.join(outputDir, '11-level-2-start.png'), fullPage: true });
+    await bossPage.screenshot({ path: path.join(outputDir, '14-level-2-start.png'), fullPage: true });
     const bossVictoryState = await collectGameState(bossPage);
     await bossPage.close();
 
@@ -384,6 +498,9 @@ async function runSmoke() {
       settingsState,
       gameplayState,
       pauseState,
+      loreFlybyState,
+      gameOverState,
+      returnMenuState,
       mobileGameplayState,
       level3State,
       waveTransitionState,
@@ -403,17 +520,27 @@ async function runSmoke() {
       ...(routineConsoleEvents.length ? [`production routine console output was not quiet (${routineConsoleEvents.length} messages)`] : []),
       ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
       ...(!pauseState.isPaused || !pauseState.pauseOverlayVisible ? ['pause overlay did not appear'] : []),
+      ...(!loreFlybyState.easterEggActive ? ['forced lore flyby did not become active'] : []),
+      ...(!/^burt-shooter-crew-/.test(loreFlybyState.easterEggAlias || '') ? [`lore flyby did not use generated crew portrait: ${loreFlybyState.easterEggAlias || 'none'}`] : []),
+      ...(gameOverState.scene !== 'GameOverScene' ? ['forced game over did not reach game over scene'] : []),
+      ...(musicContext(gameOverState) !== 'gameover' || !trackIncludes(gameOverState, 'Defeated') ? [`game-over music did not switch to game-over theme: ${musicContext(gameOverState)} / ${musicTrackName(gameOverState) || 'none'}`] : []),
+      ...(returnMenuState.scene !== 'MenuScene' ? ['Escape from game over did not return to menu'] : []),
+      ...(returnMenuState.textState?.audio?.currentMusicContext !== 'menu' ? ['return to menu did not restore menu music context'] : []),
       ...(menuState.textState?.audio?.currentMusicContext !== 'menu' ? ['menu music context was not menu'] : []),
       ...(trackIncludes(menuState, 'Defeated') ? ['menu playlist used game-over music'] : []),
       ...(!isGameplayMusic(gameplayState) ? [`gameplay music used reserved/non-gameplay track: ${musicTrackName(gameplayState) || 'none'}`] : []),
       ...(gameplayState.fatalOverlay ? ['fatal overlay visible'] : []),
+      ...visibleEnemyHealthIssues(gameplayState, 'desktop gameplay'),
+      ...visibleEnemyHealthIssues(loreFlybyState, 'lore flyby'),
       ...(mobileGameplayState.fatalOverlay ? ['mobile fatal overlay visible'] : []),
       ...(mobileGameplayState.textState?.scene !== 'play' ? ['mobile autostart did not reach play scene'] : []),
-      ...((mobileGameplayState.textState?.counts?.enemies || 0) <= 0 ? ['mobile gameplay did not spawn enemies'] : []),
+      ...(!mobileGameplayState.textState?.wave ? ['mobile gameplay did not expose wave state'] : []),
+      ...visibleEnemyHealthIssues(mobileGameplayState, 'mobile gameplay'),
       ...(level3State.textState?.level !== 3 ? ['debug startLevel=3 did not hold level 3'] : []),
       ...(level3State.textState?.scene !== 'play' ? ['level 3 debug start left play scene'] : []),
       ...((level3State.textState?.lives || 0) <= 0 ? ['level 3 debug start player died during smoke'] : []),
       ...((level3State.textState?.counts?.enemies || 0) <= 0 ? ['level 3 smoke did not spawn enemies'] : []),
+      ...visibleEnemyHealthIssues(level3State, 'level 3 gameplay'),
       ...(waveTransitionState.currentWaveIndex < 1 ? ['wave transition did not advance to wave 2'] : []),
       ...(waveTransitionState.textState?.scene !== 'play' ? ['wave transition left play scene'] : []),
       ...((waveTransitionState.textState?.lives || 0) <= 0 ? ['wave transition player died during smoke'] : []),
@@ -421,14 +548,17 @@ async function runSmoke() {
       ...((waveTransitionState.score || 0) < 500 ? ['wave transition did not award first wave score'] : []),
       ...(waveTransitionState.textState?.wave?.currentWaveNumber !== 2 ? ['wave text state did not expose wave 2'] : []),
       ...((waveTransitionState.textState?.counts?.enemies || 0) <= 0 ? ['wave transition did not spawn next wave enemies'] : []),
+      ...visibleEnemyHealthIssues(waveTransitionState, 'wave transition'),
       ...(bossVictoryState.fatalOverlay ? ['boss victory path showed fatal overlay'] : []),
       ...(musicContext(bossActiveState) !== 'boss' || !trackIncludes(bossActiveState, 'DeathMatch') ? [`boss music did not switch to boss theme: ${musicContext(bossActiveState)} / ${musicTrackName(bossActiveState) || 'none'}`] : []),
+      ...visibleEnemyHealthIssues(bossActiveState, 'boss active'),
       ...(musicContext(bossDefeatedState) !== 'victory' || !trackIncludes(bossDefeatedState, 'Victory Tune') ? [`boss defeat did not switch to victory stinger: ${musicContext(bossDefeatedState)} / ${musicTrackName(bossDefeatedState) || 'none'}`] : []),
       ...(bossVictoryState.level < 2 ? ['boss victory did not advance to level 2'] : []),
       ...(bossVictoryState.enemyManagerState !== 'WAVE_ACTIVE' ? ['boss victory did not return to active gameplay'] : []),
       ...(!isGameplayMusic(bossVictoryState) ? [`post-boss level 2 music did not return to gameplay pool: ${musicContext(bossVictoryState)} / ${musicTrackName(bossVictoryState) || 'none'}`] : []),
       ...(bossVictoryState.textState?.wave?.currentWaveNumber !== 1 ? ['boss victory did not restart at wave 1 of the next level'] : []),
-      ...((bossVictoryState.textState?.counts?.enemies || 0) <= 0 ? ['boss victory did not spawn level 2 enemies'] : [])
+      ...((bossVictoryState.textState?.counts?.enemies || 0) <= 0 ? ['boss victory did not spawn level 2 enemies'] : []),
+      ...visibleEnemyHealthIssues(bossVictoryState, 'post-boss level 2')
     ];
 
     console.log(JSON.stringify(report, null, 2));

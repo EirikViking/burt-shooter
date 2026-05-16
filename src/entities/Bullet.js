@@ -11,7 +11,7 @@ export class Bullet {
     this.color = color;
     this.isPlayer = isPlayer;
     this.active = true;
-    this.radius = 5;
+    this.radius = isPlayer ? 7 : 5;
     // Store screen bounds (will be updated dynamically)
     this.screenWidth = 800;
     this.screenHeight = 600;

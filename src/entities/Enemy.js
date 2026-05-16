@@ -477,7 +477,7 @@ export class Enemy {
         this.sprite.rotation = wobbleAngle;
 
         // Chance to dive (low)
-        const diveChance = this.level <= 1 ? 0.00035 : this.level === 2 ? 0.0007 : 0.001;
+        const diveChance = this.level <= 1 ? 0.00035 : this.level === 2 ? 0.00065 : this.level === 3 ? 0.0004 : 0.00035;
         if (this.active && Math.random() < diveChance) {
           this.startDive(playerX, playerY);
         }

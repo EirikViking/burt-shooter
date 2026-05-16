@@ -19,13 +19,13 @@ export const ShipData = [
         loreLong: `The Stokmarknes Skuta is Kurt Edgar's pride and joy, a vessel that's seen more harbor parties than actual combat. Legend has it this ship was originally a ferry between Myre and Stokmarknes, but after one too many late-night beer runs, Kurt decided it needed laser cannons. It's slow, it's steady, and it smells faintly of diesel and regret. The locals say if you listen closely, you can still hear the echo of drunk tourists singing "Sweet Caroline" from its hull. Perfect for beginners who appreciate the finer things in life, like not dying immediately.`,
         stats: {
             speed: 5.5, // Base 5.5 * 1.0
-            fireRate: 160, // Base 160 * 1.0
-            damage: 1.1, // Base 1 * 1.1 (Precision profile)
-            bulletSpeed: 10
+            fireRate: 112, // Starter ship should feel responsive in the first minute.
+            damage: 1.4,
+            bulletSpeed: 11.5
         },
         weapon: {
-            bullets: 1,
-            spread: 0,
+            bullets: 2,
+            spread: 0.1,
             shootSfx: 'shoot_small'
         },
         visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },

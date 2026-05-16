@@ -2,7 +2,11 @@ export const AssetManifest = {
     generated: {
         menuBackdrop: '/art/generated/burt-shooter-arctic-menu-bg.webp',
         stormGameplayBackdrop: '/art/generated/burt-shooter-storm-gameplay-bg.webp',
-        bossDossier: '/art/generated/burt-shooter-boss-dossier.png'
+        bossDossier: '/art/generated/burt-shooter-boss-dossier.png',
+        crewPortraits: [
+            '/art/generated/burt-shooter-crew-navigator.png',
+            '/art/generated/burt-shooter-crew-pilot.png'
+        ]
     },
 
     // Lore & Character Images (Root /public)

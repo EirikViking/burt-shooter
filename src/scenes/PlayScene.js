@@ -136,6 +136,7 @@ export class PlayScene {
     this.killStreak = 0;
     this.lastKillAt = 0;
     this.lastHitAt = 0;
+    this.lastStandReadyAt = 0;
     this.nearMissCooldownAt = 0;
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
@@ -623,7 +624,21 @@ export class PlayScene {
 
         AudioManager.playSfx('levelComplete');
         this.game.addScore(1000); // Completion Bonus
-        this.showToast('LEVEL COMPLETE!', { fontSize: 40, fill: '#00ff00', duration: 2000 });
+        const compactHud = this.game.getWidth() < 620;
+        const repairDelta = this.applyLifeRepair(3, 4500);
+        const repairSuffix = repairDelta > 0 ? `  REPAIR +${repairDelta}` : '';
+        this.showToast(`SECTOR CLEAR +1000${repairSuffix}`, {
+          fontSize: compactHud ? 20 : 26,
+          fill: '#8fffd5',
+          stroke: '#001616',
+          strokeThickness: compactHud ? 2 : 3,
+          duration: 1500,
+          slot: 'top',
+          type: 'level_clear',
+          priority: 3,
+          y: this.game.getHeight() * (compactHud ? 0.22 : 0.17),
+          maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.7)
+        });
 
         // Particles
         for (let i = 0; i < 20; i++) {
@@ -1738,8 +1753,10 @@ export class PlayScene {
   logCap(type) {
     if (!this.capState[type]) {
       this.capState[type] = true;
-      const counts = this.getPerfCounts();
-      console.warn(`CAP bullets=${counts.bullets} enemies=${counts.enemies} particles=${counts.particles}`);
+      if (this.debugCaps) {
+        const counts = this.getPerfCounts();
+        console.warn(`CAP bullets=${counts.bullets} enemies=${counts.enemies} particles=${counts.particles}`);
+      }
     }
   }
 
@@ -1979,11 +1996,30 @@ export class PlayScene {
   }
 
   onLifeLost() {
+    if (this.tryLastStandRepair()) return;
+
     this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
 
     // RESPONDER LOGIC
     if (this.player && this.game.lives > 0) {
       this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
+      this.player.invulnerableTime = Math.max(this.player.invulnerableTime || 0, 8500);
+      const clearedHazards = this.clearRespawnHazards('life_lost');
+      if (clearedHazards > 0) {
+        const compactHud = this.game.getWidth() < 620;
+        this.showToast(`RESPAWN SHOCKWAVE x${clearedHazards}`, {
+          fontSize: compactHud ? 15 : 18,
+          fill: '#8fffd5',
+          stroke: '#001616',
+          strokeThickness: compactHud ? 2 : 3,
+          duration: 1200,
+          slot: 'top',
+          type: 'repair',
+          priority: 2,
+          y: this.game.getHeight() * (compactHud ? 0.28 : 0.2),
+          maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.62)
+        });
+      }
       AudioManager.recoverSfx('respawn');
       // Small screen shake
       if (this.screenShake) this.screenShake.shake(5);
@@ -1995,12 +2031,121 @@ export class PlayScene {
     }
   }
 
+  tryLastStandRepair() {
+    if (!this.player || this.game.lives > 0) return false;
+    const now = Date.now();
+    if (now < this.lastStandReadyAt) return false;
+
+    this.lastStandReadyAt = now + 35000;
+    this.game.lives = 2;
+    this.lowLivesShownFor = null;
+    this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
+    this.player.invulnerableTime = Math.max(this.player.invulnerableTime || 0, 8000);
+    const clearedHazards = this.clearRespawnHazards('last_stand');
+    const compactHud = this.game.getWidth() < 620;
+    const suffix = clearedHazards > 0 ? ` x${clearedHazards}` : '';
+
+    this.showToast(`LAST STAND REPAIR${suffix}`, {
+      fontSize: compactHud ? 16 : 22,
+      fill: '#8fffd5',
+      stroke: '#001616',
+      strokeThickness: compactHud ? 2 : 3,
+      duration: 1500,
+      slot: 'top',
+      type: 'repair',
+      priority: 3,
+      y: this.game.getHeight() * (compactHud ? 0.28 : 0.2),
+      maxWidth: this.game.getWidth() * (compactHud ? 0.84 : 0.64)
+    });
+    AudioManager.playSfx('powerup', { force: true, volume: 0.78, minIntervalMs: 250 });
+    AudioManager.playVoice('mission_control_life_low', { cooldownMs: 5000, duckMs: 2400 });
+    if (this.screenShake) this.screenShake.shake(8);
+    return true;
+  }
+
   getRandomTimer(minMs, maxMs) {
     return minMs + Math.random() * (maxMs - minMs);
   }
 
   showToast(message, options = {}) {
     this.enqueueToast(message, options);
+  }
+
+  applyLifeRepair(targetLives = 3, invulnerabilityMs = 3000) {
+    const before = Number.isFinite(this.game?.lives) ? this.game.lives : 0;
+    if (before <= 0) return 0;
+    const target = Math.max(before, Math.min(3, Math.round(targetLives)));
+    if (target <= before) return 0;
+
+    this.game.lives = target;
+    this.lowLivesShownFor = null;
+
+    if (this.player) {
+      this.player.invulnerable = true;
+      this.player.invulnerableTime = Math.max(this.player.invulnerableTime || 0, invulnerabilityMs);
+    }
+
+    AudioManager.playSfx('powerup', { force: true, volume: 0.72, minIntervalMs: 250 });
+    return target - before;
+  }
+
+  clearEnemyBullets(reason = 'cleanup') {
+    const bullets = this.bulletManager?.enemyBullets;
+    if (!Array.isArray(bullets) || bullets.length === 0) return 0;
+
+    let cleared = 0;
+    for (const bullet of bullets) {
+      if (!bullet) continue;
+      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      if (bullet.active !== false) cleared += 1;
+      bullet.active = false;
+    }
+    this.bulletManager.enemyBullets = [];
+    if (cleared > 0 && this.debugPowerups) {
+      console.log(`[BulletCleanup] reason=${reason} cleared=${cleared}`);
+    }
+    return cleared;
+  }
+
+  clearRespawnHazards(reason = 'respawn') {
+    let cleared = this.clearEnemyBullets(reason);
+    const height = this.game.getHeight();
+    const dangerY = height * 0.62;
+    const playerX = this.player?.x ?? this.game.getWidth() / 2;
+    const playerY = this.player?.y ?? height - 100;
+    const enemies = this.enemyManager?.enemies || [];
+
+    enemies.forEach(enemy => {
+      if (!enemy?.active || enemy.kind === 'boss') return;
+      const dx = enemy.x - playerX;
+      const dy = enemy.y - playerY;
+      const closeToRespawn = Math.sqrt(dx * dx + dy * dy) < 230;
+      const lowDiver = enemy.y > dangerY || enemy.state === 'DIVE';
+      if (!closeToRespawn && !lowDiver) return;
+
+      enemy.active = false;
+      cleared += 1;
+      if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);
+      if (this.particleManager) {
+        this.particleManager.createHitSpark(enemy.x, enemy.y, enemy.color || 0x8fffd5);
+      }
+    });
+
+    this.ambientBeers.forEach(beer => {
+      if (!beer?.active || beer.type !== 'HAZARD') return;
+      if (beer.y <= dangerY) return;
+      beer.active = false;
+      cleared += 1;
+      if (beer.sprite?.parent) beer.sprite.parent.removeChild(beer.sprite);
+      if (this.particleManager) {
+        this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00, 0.65);
+      }
+    });
+
+    if (cleared > 0 && this.debugPowerups) {
+      console.log(`[RespawnCleanup] reason=${reason} cleared=${cleared}`);
+    }
+    return cleared;
   }
 
   applyScoreMultiplier(multiplier, durationMs, source = 'unknown') {
@@ -2961,9 +3106,9 @@ export class PlayScene {
   }
 
   spawnEasterEgg() {
-    // Legendary Flyby - Variety of characters
-    // Use one of the photos
-    const photos = ['eirik_kurt2', 'burtelurt', 'eriikviking', 'anja', 'morten_whale', 'wieik_shorts', 'kurt2', 'eirik1'];
+    // Legendary Flyby - defaults to generated crew portraits; legacy photos are opt-in.
+    const photos = Object.keys(GameAssets.photos || {});
+    if (!photos.length) return;
     const picked = photos[Math.floor(Math.random() * photos.length)];
     const tex = GameAssets.getPhoto(picked);
 
@@ -2983,6 +3128,7 @@ export class PlayScene {
     const startLeft = Math.random() < 0.5;
 
     const egg = {
+      alias: picked,
       sprite: sprite,
       x: startLeft ? -300 : this.game.getWidth() + 300,
       y: Math.random() * (this.game.getHeight() - 200) + 100,
@@ -3268,8 +3414,20 @@ export class PlayScene {
   showBossCelebration({ level = this.game.level, type = 'UNKNOWN' } = {}) {
     if (!this.uiOverlay) return;
 
-    this.showToast('BOSS NEDKJEMPET!', { fontSize: 34, fill: '#ffff00', duration: 2000 });
-    this.showToast(getAchievementPopup(), { fontSize: 20, y: this.game.getHeight() * 0.28, duration: 2000 });
+    const compactHud = this.game.getWidth() < 620;
+    this.showToast('BOSS NEDKJEMPET!', {
+      fontSize: compactHud ? 24 : 32,
+      fill: '#ffff00',
+      duration: 2000,
+      y: this.game.getHeight() * (compactHud ? 0.32 : 0.3),
+      maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.7)
+    });
+    this.showToast(getAchievementPopup(), {
+      fontSize: compactHud ? 17 : 20,
+      y: this.game.getHeight() * (compactHud ? 0.42 : 0.39),
+      duration: 2000,
+      maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.72)
+    });
 
     if (this.screenShake) this.screenShake.shake(12);
     if (this.particleManager) {

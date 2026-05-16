@@ -52,6 +52,7 @@ npm run smoke
 - Musikk er delt i egne context-pools for meny, scoreboard, gameplay, boss, victory og game over; smoke-testen passer paa at boss/game-over/title-musikk ikke lekker inn i vanlig gameplay.
 - Produksjonsbyggen er roligere i konsollen: vanlige debug logs skjules med mindre `?debug=1`, `?verboseLogs=1` eller `localStorage.burtVerboseLogs=1` brukes, og smoke-testen feiler hvis rutine-logger lekker tilbake.
 - Boss inbound bruker naa en original generert threat-dossier asset, foerste boss er mer rettferdig, og `npm run playtest:release` gir en streng survival/preflight playtest for release-regresjoner.
+- Lore/flyby-overlegg bruker naa originale genererte crew-portretter som standard. Eldre lokale foto kan testes eksplisitt med `?legacyPhotos=1` eller `localStorage.burtLegacyPhotos=1`.
 - `docs/recovery-note-2026-05-16.md` og `docs/reviews/2026-05-16-release-candidate-review.md` oppsummerer siste recovery/review-pass.
 
 ## Deploy til Cloudflare Pages
