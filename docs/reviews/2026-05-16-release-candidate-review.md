@@ -8,11 +8,11 @@ Burt Shooter is now a playable, visually coherent browser arcade shooter with a 
 
 The first minute is understandable: start game, survive enemy waves, shoot upward, watch lives/score/level, and move into wave 2 after clearing the first formation. The new compact wave briefing helps pacing by giving the player a short reward/anticipation beat instead of instantly dumping the next wave. The first-wave `+500` reward is a small but important morale fix.
 
-The biggest gameplay gap is still full-run feel. Boss gate, victory, game over, and higher-level difficulty need a real manual play pass, not just smoke automation. The current game has enough systems that balance could become noisy if every joke, powerup, voice line, particle burst, and formation fires at once.
+The biggest gameplay gap is still full-run feel. Game over and return-to-menu were manually checked after this review file was started, but boss gate, victory, and higher-level difficulty still need a real manual play pass, not just smoke automation. The current game has enough systems that balance could become noisy if every joke, powerup, voice line, particle burst, and formation fires at once.
 
 ## Visual Analysis
 
-The arctic/aurora direction is coherent across menu and gameplay. The cockpit HUD is readable on desktop and mobile, and the wave-briefing screenshot is now clean enough to read at a glance. Bullets and enemies remain visible against the dark background.
+The arctic/aurora direction is coherent across menu, gameplay, and game over. The cockpit HUD is readable on desktop and mobile, and the wave-briefing screenshot is now clean enough to read at a glance. Bullets and enemies remain visible against the dark background.
 
 Remaining visual risk: some legacy text/toast moments still compete for attention, especially corner barks. Before a public release, the game should do one focused UI clutter pass with screenshots from the first five minutes.
 
@@ -37,7 +37,7 @@ Latest verified commands:
 
 Latest smoke output: `test-results/smoke-2026-05-16T16-13-19-304Z/`
 
-The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gameplay, level 3 debug start, and forced wave transition. It completed with no console errors, page errors, bad responses, or fatal overlay.
+The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gameplay, level 3 debug start, and forced wave transition. It completed with no console errors, page errors, bad responses, or fatal overlay. A separate manual automation forced game over, captured the game-over screen, pressed Escape, and returned to the menu with no console or page errors.
 
 ## Strengths
 
@@ -51,12 +51,12 @@ The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gam
 
 - Still too many production `console.log` diagnostics for a polished public release.
 - Manual audio mix verification remains open.
-- Boss/victory/game-over flow is not yet reviewed as thoroughly as first-wave gameplay.
+- Boss/victory flow is not yet reviewed as thoroughly as first-wave gameplay.
 - Steam readiness is blocked by polish, store-page copy/assets review, input feel, and longer-session balance.
 
 ## Steam Readiness Assessment
 
-Not ready for Steam release. Closer to a polished web release candidate. A credible next Steam-oriented milestone would require a full 10-15 minute playthrough review, boss-flow fixes, audio mix pass, release build without noisy logs, and a clear store positioning pass.
+Not ready for Steam release. Closer to a polished web release candidate. A credible next Steam-oriented milestone would require a full 10-15 minute playthrough review, boss/victory flow fixes, audio mix pass, release build without noisy logs, and a clear store positioning pass.
 
 ## Concrete Next Improvements
 

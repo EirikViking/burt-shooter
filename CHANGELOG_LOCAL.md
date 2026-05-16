@@ -25,6 +25,7 @@ when git commits are not used.
 - Fixed first-wave clear rewards so the first transition awards score instead of showing `+0`.
 - Reduced forced cleanup particle clutter and hardened mobile smoke stability.
 - Added `docs/recovery-note-2026-05-16.md` and `docs/reviews/2026-05-16-release-candidate-review.md`.
+- Quieted local/offline highscore HTML fallback handling and added the generated arctic backdrop to game over.
 
 ---
 

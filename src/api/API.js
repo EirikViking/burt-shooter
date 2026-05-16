@@ -112,8 +112,14 @@ class APIClient {
       }
 
       // Defensive parsing: handle empty, non-JSON, or wrapped responses
-      if (!text || text.trim() === '') {
-        console.warn('[API] Empty response, returning empty array');
+      const trimmed = text ? text.trim() : '';
+      if (!trimmed) {
+        if (this.debug) console.log('[API] Empty response, returning empty highscore list');
+        return [];
+      }
+
+      if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) {
+        if (this.debug) console.log('[API] HTML fallback response, using offline highscore list');
         return [];
       }
 
@@ -121,7 +127,7 @@ class APIClient {
       try {
         data = JSON.parse(text);
       } catch (parseError) {
-        console.error('[API] Failed to parse JSON:', parseError);
+        if (this.debug) console.warn('[API] Failed to parse highscore JSON:', parseError);
         return [];
       }
 

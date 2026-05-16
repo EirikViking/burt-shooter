@@ -6,6 +6,7 @@ import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { generateUUID } from '../utils/uuid.js';
 import { createText } from '../utils/pixiText.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 
 const ENTRY_PROMPT_DESKTOP = 'TRYKK ENTER FOR Å LOGGE SCORE';
 const ENTRY_PROMPT_MOBILE = 'TRYKK HER FOR Å LOGGE SCORE';
@@ -43,6 +44,8 @@ export class GameOverScene {
     this.walletSubmitButton = null;
     this.walletSkipButton = null;
     this.walletPrompted = false;
+    this.backdrop = null;
+    this.backdropShade = null;
     // Frozen final values
     this.finalScore = 0;
     this.finalLevel = 0;
@@ -53,6 +56,7 @@ export class GameOverScene {
   }
 
   init() {
+    this.container.sortableChildren = true;
     this.container.removeChildren();
     this.removeInputOverlay();
     this.nameInput = '';
@@ -72,6 +76,8 @@ export class GameOverScene {
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
     const layout = createTextLayout(width, height, responsiveLayout);
+    this.createFallbackBackdrop(width, height);
+    this.initBackdrop(width, height);
 
     const gameOverTexts = [
       'MONGO VANT!',
@@ -243,6 +249,7 @@ export class GameOverScene {
     this.promptText.style.wordWrapWidth = clampTextWidth(width * 0.85, layout);
     this.nameDisplay.style.fontSize = nameSize;
     this.instructions.style.fontSize = smallSize;
+    this.layoutBackdrop(width, height);
 
     // Calculate content height for centering
     const spacing = layout.isMobile ? 8 : 14;
@@ -285,6 +292,51 @@ export class GameOverScene {
 
     this.instructions.x = width / 2;
     this.instructions.y = height - safeMargin.bottom - (layout.isMobile ? 16 : 20);
+  }
+
+  createFallbackBackdrop(width, height) {
+    this.backdropShade = new PIXI.Graphics();
+    this.backdropShade.zIndex = -10;
+    this.container.addChild(this.backdropShade);
+    this.layoutBackdrop(width, height);
+  }
+
+  async initBackdrop(width, height) {
+    if (!AssetManifest.generated?.menuBackdrop) return;
+    try {
+      const texture = await PIXI.Assets.load({
+        alias: 'gameover_menu_backdrop',
+        src: AssetManifest.generated.menuBackdrop
+      });
+      if (!this.container?.parent && this.game.currentScene !== this) return;
+      this.backdrop = new PIXI.Sprite(texture);
+      this.backdrop.anchor.set(0.5);
+      this.backdrop.alpha = 0.32;
+      this.backdrop.zIndex = -20;
+      this.container.addChild(this.backdrop);
+      this.layoutBackdrop(width, height);
+    } catch (error) {
+      if (this.game?.currentScene === this) {
+        console.warn('[GameOverScene] Generated backdrop failed to load:', error);
+      }
+    }
+  }
+
+  layoutBackdrop(width = this.game.app.screen.width, height = this.game.app.screen.height) {
+    if (this.backdrop) {
+      const textureWidth = this.backdrop.texture?.width || width;
+      const textureHeight = this.backdrop.texture?.height || height;
+      const scale = Math.max(width / textureWidth, height / textureHeight);
+      this.backdrop.scale.set(scale);
+      this.backdrop.position.set(width / 2, height / 2);
+    }
+    if (this.backdropShade) {
+      this.backdropShade.clear();
+      this.backdropShade.rect(0, 0, width, height);
+      this.backdropShade.fill({ color: 0x020713, alpha: 0.82 });
+      this.backdropShade.rect(0, 0, width, height);
+      this.backdropShade.fill({ color: 0x000000, alpha: 0.28 });
+    }
   }
 
   setupKeyboard() {
