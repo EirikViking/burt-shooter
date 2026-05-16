@@ -402,6 +402,9 @@ export class PlayScene {
   }
 
   startLevel(source = 'unknown') {
+    if (this.game?.currentScene && this.game.currentScene !== this) {
+      return;
+    }
     if (Number.isFinite(this.debugStartLevel)) {
       this.game.level = this.debugStartLevel;
       this.debugStartLevel = null;
@@ -426,7 +429,9 @@ export class PlayScene {
     }
 
     // Update music for the new level
-    AudioManager.playMusicContext('gameplay');
+    AudioManager.playMusicContext('gameplay', {
+      resetForNewRun: this.game.level === 1 && source === 'introComplete'
+    });
     this.applyGameplayBackdropLevel(this.game.level);
     this.powerupManager.checkLevelReset(this.game.level); // Reset powerup caps
 
@@ -3753,6 +3758,9 @@ export class PlayScene {
   completeShipIntro() {
     this.introActive = false;
     this.introComplete = true;
+    if (this.game?.currentScene && this.game.currentScene !== this) {
+      return;
+    }
 
     // Start enemy waves - use startLevel, not startWave
     if (this.enemyManager && this.game.level) {

@@ -128,6 +128,7 @@ async function collectGameState(page) {
       isPaused: Boolean(play?.isPaused),
       pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible && play?.pauseOverlay?.parent),
       settingsOverlayVisible: Boolean(scene?.settingsOverlay?.container?.parent || play?.settingsOverlay?.container?.parent),
+      creditsOverlayVisible: Boolean(scene?.settingsOverlay?.creditsPanel?.parent || play?.settingsOverlay?.creditsPanel?.parent),
       easterEggActive: Boolean(play?.easterEggBeer),
       easterEggAlias: play?.easterEggBeer?.alias || null,
       fatalOverlay: Boolean(document.getElementById('fatal-overlay')),
@@ -170,6 +171,27 @@ async function stabilizeSmokePlayer(page) {
     }
     assist();
   });
+}
+
+async function waitForActiveGameplay(page, timeout = 30000) {
+  await page.waitForFunction(() => {
+    try {
+      if (typeof window.render_game_to_text !== 'function') return false;
+      const state = JSON.parse(window.render_game_to_text());
+      const track = String(state?.audio?.currentMusicTrack || '').toLowerCase();
+      const reservedFragments = ['brave pilots', 'skyfire', 'defeated', 'deathmatch', 'victory tune'];
+      return state?.scene === 'play' &&
+        state?.audio?.currentMusicContext === 'gameplay' &&
+        track &&
+        !reservedFragments.some((fragment) => track.includes(fragment)) &&
+        state?.wave &&
+        state.wave.state !== 'IDLE' &&
+        state.wave.totalWaves > 0 &&
+        state?.counts?.enemies > 0;
+    } catch {
+      return false;
+    }
+  }, null, { timeout });
 }
 
 function musicTrackName(state) {
@@ -272,11 +294,66 @@ async function runSmoke() {
     }, null, { timeout: 5000 });
     await page.waitForTimeout(500);
     await page.screenshot({ path: path.join(outputDir, '01-settings.png'), fullPage: true });
+    const audioTestButtonState = await page.evaluate(() => {
+      const overlay = window.__game?.scenes?.menu?.settingsOverlay;
+      const toPoint = (button) => {
+        if (!button) return null;
+        const point = button.getGlobalPosition?.();
+        const canvas = document.querySelector('canvas');
+        const rect = canvas?.getBoundingClientRect?.();
+        const screen = window.__game?.app?.screen;
+        if (!point || !rect || !screen?.width || !screen?.height) return point ? { x: point.x, y: point.y } : null;
+        return {
+          x: rect.left + (point.x / screen.width) * rect.width,
+          y: rect.top + (point.y / screen.height) * rect.height,
+          gameX: point.x,
+          gameY: point.y
+        };
+      };
+      return {
+        sfx: toPoint(overlay?.audioTestButtons?.sfx),
+        voice: toPoint(overlay?.audioTestButtons?.voice)
+      };
+    });
+    if (audioTestButtonState?.sfx) {
+      await page.mouse.click(audioTestButtonState.sfx.x, audioTestButtonState.sfx.y);
+      await page.waitForFunction(() => {
+        try {
+          return JSON.parse(window.render_game_to_text?.() || '{}')?.audio?.lastSfxEvent === 'achievement';
+        } catch {
+          return false;
+        }
+      }, null, { timeout: 2500 });
+    }
+    if (audioTestButtonState?.voice) {
+      await page.mouse.click(audioTestButtonState.voice.x, audioTestButtonState.voice.y);
+      await page.waitForFunction(() => {
+        try {
+          return JSON.parse(window.render_game_to_text?.() || '{}')?.audio?.lastVoiceEvent === 'mission_control_launch';
+        } catch {
+          return false;
+        }
+      }, null, { timeout: 3500 });
+    }
     const settingsState = await collectGameState(page);
+    await page.evaluate(() => {
+      const menu = window.__game?.scenes?.menu;
+      if (menu?.settingsOverlay?.openCreditsPanel) {
+        menu.settingsOverlay.openCreditsPanel();
+      }
+    });
+    await page.waitForFunction(() => {
+      const menu = window.__game?.scenes?.menu;
+      return Boolean(menu?.settingsOverlay?.creditsPanel?.parent);
+    }, null, { timeout: 5000 });
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: path.join(outputDir, '01-credits.png'), fullPage: true });
+    const creditsState = await collectGameState(page);
 
     await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
     await stabilizeSmokePlayer(page);
+    await waitForActiveGameplay(page);
     await page.waitForTimeout(3200);
     await stabilizeSmokePlayer(page);
     await page.keyboard.down('Space');
@@ -366,7 +443,9 @@ async function runSmoke() {
     await lorePage.waitForFunction(() => {
       const game = window.__game;
       const play = game?.scenes?.play;
-      if (!play?.spawnEasterEgg || !play?.introComplete) return false;
+      if (!play?.spawnEasterEgg || !play?.player) return false;
+      play.introActive = false;
+      play.introComplete = true;
       if (!play.easterEggBeer) play.spawnEasterEgg();
       const egg = play.easterEggBeer;
       if (!egg?.sprite) return false;
@@ -578,6 +657,7 @@ async function runSmoke() {
       outputDir,
       menuState,
       settingsState,
+      creditsState,
       gameplayState,
       gamepadBeforeState,
       gamepadMoveState,
@@ -606,6 +686,10 @@ async function runSmoke() {
       ...(menuState.perf?.scene !== 'menu' ? [`menu perf state used unstable scene name: ${menuState.perf?.scene || 'none'}`] : []),
       ...(menuState.textState?.scene !== 'menu' ? [`menu text state used unstable scene name: ${menuState.textState?.scene || 'none'}`] : []),
       ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
+      ...(!audioTestButtonState?.sfx || !audioTestButtonState?.voice ? ['settings audio test buttons were not exposed'] : []),
+      ...(settingsState.textState?.audio?.lastSfxEvent !== 'achievement' ? [`settings SFX test did not update telemetry: ${settingsState.textState?.audio?.lastSfxEvent || 'none'}`] : []),
+      ...(settingsState.textState?.audio?.lastVoiceEvent !== 'mission_control_launch' ? [`settings voice test did not update telemetry: ${settingsState.textState?.audio?.lastVoiceEvent || 'none'}`] : []),
+      ...(!creditsState.creditsOverlayVisible || creditsState.textState?.overlays?.credits !== true ? ['credits overlay did not appear or was missing from text state'] : []),
       ...(!Number.isFinite(settingsState.textState?.accessibility?.screenShake) ? ['accessibility screen-shake setting was not exposed'] : []),
       ...(!pauseState.isPaused || !pauseState.pauseOverlayVisible ? ['pause overlay did not appear'] : []),
       ...(gamepadMoveState.textState?.input?.gamepad?.connected !== true ? ['gamepad override did not register as connected'] : []),

@@ -52,6 +52,8 @@ class AudioController {
     this.lastSfxPlayedAt = {};
     this.lastPowerupVoiceIndex = -1;
     this.lastVoicePlayedAt = {};
+    this.lastSfxEvent = null;
+    this.lastSfxTrack = null;
     this.lastVoiceEvent = null;
     this.lastVoiceTrack = null;
     this.sfxAssetHealth = new Map();
@@ -73,6 +75,9 @@ class AudioController {
     // Safety lock
     this.isSwitchingTrack = false;
     this.pendingTrackRequest = null;
+    this.pendingTrackTimer = null;
+    this.switchStartedAt = 0;
+    this.trackSwitchToken = 0;
 
     // Idempotency guard
     this._initialized = false;
@@ -188,7 +193,8 @@ class AudioController {
     const unlock = () => {
       console.log('[Audio] User gesture detected. Resuming audio context...');
       this.unlockAudio().then(() => {
-        if (pendingSrc) {
+        const currentPlaylist = MUSIC_PLAYLISTS[this.currentContext] || [];
+        if (pendingSrc && currentPlaylist.includes(pendingSrc)) {
           this.startTrack(pendingSrc);
         } else if (this.currentContext) {
           this.playMusicContext(this.currentContext, { force: true });
@@ -291,7 +297,7 @@ class AudioController {
   }
 
   playSfx(eventName, options = {}) {
-    if (!this.enabled) return;
+    if (!this.enabled) return false;
 
     // Filter "blipp blopp" -> 'computerNoise' usage
     // If eventName is specifically one we hate, mapped here
@@ -342,6 +348,8 @@ class AudioController {
       this.handleSfxPlayFailure(eventName, audio.src, e);
     });
     this.lastSfxPlayedAt[eventName] = now;
+    this.lastSfxEvent = eventName;
+    this.lastSfxTrack = decodeURIComponent((src || '').split('/').pop() || '');
     return true;
   }
 
@@ -400,6 +408,8 @@ class AudioController {
     const isReset = options.resetForNewRun || options.resetPlaylist;
     const contextChanged = this.currentContext !== contextName;
     const isPlaying = !this.musicAudio.paused && this.musicAudio.currentTime > 0;
+    const activeTrackSrc = this.currentTrackSrc || this.musicAudio?.src || '';
+    const currentTrackMatchesContext = this.trackBelongsToPlaylist(activeTrackSrc, newPlaylist);
 
     console.log(`[Audio] Request Context: ${contextName}, Current: ${this.currentContext}, Reset: ${!!isReset}`);
 
@@ -428,7 +438,7 @@ class AudioController {
     }
 
     // If we are here, either context is same OR we are not playing.
-    if (!isPlaying || contextChanged || isReset) {
+    if (!isPlaying || contextChanged || isReset || !currentTrackMatchesContext) {
       const next = this.getRandomTrack(contextName);
       this.fadeOutAndPlay(next);
     }
@@ -437,6 +447,15 @@ class AudioController {
   shouldKeepTrackAcrossContexts(fromContext, toContext) {
     const seamlessContexts = new Set(['menu', 'scoreboard']);
     return seamlessContexts.has(fromContext) && seamlessContexts.has(toContext);
+  }
+
+  trackBelongsToPlaylist(src, playlist) {
+    if (!src || !playlist?.length) return false;
+    let normalizedSrc = src;
+    try {
+      normalizedSrc = decodeURIComponent(src);
+    } catch { }
+    return playlist.some((track) => track === src || track === normalizedSrc || normalizedSrc.endsWith(track));
   }
 
   getRandomTrack(context) {
@@ -482,6 +501,14 @@ class AudioController {
         src,
         context: this.currentContext
       };
+      const switchAgeMs = Date.now() - (this.switchStartedAt || 0);
+      if (this.musicAudio.paused || switchAgeMs > 1200) {
+        this.clearPendingTrackTimer();
+        this.isSwitchingTrack = false;
+        this.playPendingTrackRequest();
+      } else {
+        this.armPendingTrackRetry();
+      }
       return;
     }
 
@@ -492,6 +519,8 @@ class AudioController {
     }
 
     this.isSwitchingTrack = true;
+    this.switchStartedAt = Date.now();
+    const switchToken = ++this.trackSwitchToken;
     this.musicAudio.src = src;
     this.applyMusicVolume();
 
@@ -501,12 +530,16 @@ class AudioController {
 
     if (playPromise !== undefined) {
       playPromise.then(() => {
+        if (switchToken !== this.trackSwitchToken) return;
         this.retryCount = 0; // Success reset
         this.isSwitchingTrack = false;
+        this.switchStartedAt = 0;
         if (this.playPendingTrackRequest()) return;
         console.log("[Audio] Music playback confirmed");
       }).catch(e => {
+        if (switchToken !== this.trackSwitchToken) return;
         this.isSwitchingTrack = false;
+        this.switchStartedAt = 0;
         if (this.playPendingTrackRequest()) return;
         if (e.name === 'AbortError') {
           console.log('[Audio] Play interrupted by new request (AbortError). Ignoring.');
@@ -520,6 +553,7 @@ class AudioController {
       });
     } else {
       this.isSwitchingTrack = false;
+      this.switchStartedAt = 0;
       this.playPendingTrackRequest();
     }
   }
@@ -528,6 +562,7 @@ class AudioController {
     const pending = this.pendingTrackRequest;
     if (!pending?.src) return false;
 
+    this.clearPendingTrackTimer();
     this.pendingTrackRequest = null;
     if (pending.context) {
       this.currentContext = pending.context;
@@ -540,6 +575,22 @@ class AudioController {
 
     this.startTrack(pending.src);
     return true;
+  }
+
+  armPendingTrackRetry(delayMs = 650) {
+    this.clearPendingTrackTimer();
+    this.pendingTrackTimer = setTimeout(() => {
+      if (!this.pendingTrackRequest) return;
+      this.isSwitchingTrack = false;
+      this.switchStartedAt = 0;
+      this.playPendingTrackRequest();
+    }, delayMs);
+  }
+
+  clearPendingTrackTimer() {
+    if (!this.pendingTrackTimer) return;
+    clearTimeout(this.pendingTrackTimer);
+    this.pendingTrackTimer = null;
   }
 
   onTrackEnded() {
@@ -611,6 +662,8 @@ class AudioController {
       musicPlaying: Boolean(this.musicAudio && !this.musicAudio.paused && this.musicAudio.currentTime > 0),
       musicReadyState: this.musicAudio?.readyState || 0,
       currentMusicTrack: musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
+      lastSfxEvent: this.lastSfxEvent,
+      lastSfxTrack: this.lastSfxTrack,
       lastVoiceEvent: this.lastVoiceEvent,
       lastVoiceTrack: this.lastVoiceTrack
     };
@@ -690,20 +743,21 @@ class AudioController {
     const now = Date.now();
     const mix = VOICE_MIX[eventName] || {};
     const cooldownMs = this.readMixNumber(options.cooldownMs, mix.cooldownMs ?? 1500);
+    const force = options.force === true;
 
     // Celebration Rate Limiting
     const celebrations = ['mission_complete', 'wave_clear', 'round'];
     if (celebrations.includes(eventName)) {
-      if (now < this.globalVoiceCooldown) return false; // Respect global
+      if (!force && now < this.globalVoiceCooldown) return false; // Respect global
       // Also enforce a specific celebration lock
-      if (this.lastCelebrationTime && now - this.lastCelebrationTime < 20000) {
+      if (!force && this.lastCelebrationTime && now - this.lastCelebrationTime < 20000) {
         console.log('[Audio] Skipping celebration voice due to rate limit');
         return false;
       }
       this.lastCelebrationTime = now;
     } else {
       // Normal voice lines
-      if (now < this.globalVoiceCooldown) return false;
+      if (!force && now < this.globalVoiceCooldown) return false;
     }
 
     // 1. Lookup in Catalog first (supports arrays/variants)
@@ -741,6 +795,22 @@ class AudioController {
       }
     } else {
       console.warn(`[Audio] No voice asset found for: ${eventName}`);
+    }
+    return false;
+  }
+
+  playAuditionCue(kind) {
+    if (kind === 'sfx') {
+      return this.playSfx('achievement', { force: true, volume: 0.78, minIntervalMs: 0 });
+    }
+    if (kind === 'voice') {
+      return this.playVoice('mission_control_launch', {
+        force: true,
+        volume: 0.78,
+        duckFactor: 0.54,
+        duckMs: 1200,
+        cooldownMs: 0
+      });
     }
     return false;
   }
@@ -792,7 +862,16 @@ class AudioController {
     return;
   }
 
-  update(delta) { }
+  update(delta) {
+    if (!this.pendingTrackRequest?.src) return;
+    const switchAgeMs = Date.now() - (this.switchStartedAt || 0);
+    if (!this.isSwitchingTrack || this.musicAudio.paused || switchAgeMs > 650) {
+      this.clearPendingTrackTimer();
+      this.isSwitchingTrack = false;
+      this.switchStartedAt = 0;
+      this.playPendingTrackRequest();
+    }
+  }
 }
 
 export const AudioManager = new AudioController();

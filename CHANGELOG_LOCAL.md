@@ -5,6 +5,19 @@ when git commits are not used.
 
 ---
 
+## 2026-05-17
+- Added in-menu audio audition controls for SFX and mission-control voice, with smoke-visible last-SFX/last-voice telemetry.
+- Added a Credits overlay with build/provenance text and text-state coverage.
+- Hardened music context switching so stale menu/title tracks cannot leak into gameplay after autoplay unlocks or pending `Audio.play()` requests.
+- Guarded inactive PlayScene intro completion so forced game-over/menu transitions do not restart gameplay audio from an old callback.
+- Expanded smoke coverage for Settings audio tests, Credits, gameplay music-pool routing, and return-menu music routing.
+- Latest build passes with build ID `v2026-05-17_00-30-20`.
+- Latest full smoke passed via external preview + `SMOKE_URL`: `test-results/smoke-audio-audition-external-20260517-003145/`.
+- Latest short release playtest passed: `test-results/release-playtest-audio-audition-20260517-003409/`.
+- Remaining caveat: the real by-ear audio mix pass is still not done.
+
+---
+
 ## 2026-05-16
 - Restored the root Vite entrypoint and made clean local production builds work again.
 - Added generated arctic menu/gameplay art in `public/art/generated/`.

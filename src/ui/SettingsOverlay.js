@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { getAccessibilitySettings, setScreenShakeScale } from '../config/AccessibilitySettings.js';
+import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 
 function percent(value) {
@@ -18,8 +19,11 @@ export class SettingsOverlay {
     this.container = new PIXI.Container();
     this.container.zIndex = 2000000;
     this.container.label = 'ui_settingsOverlay';
+    this.container.sortableChildren = true;
     this.rows = [];
     this.draggingSlider = null;
+    this.audioTestButtons = {};
+    this.creditsPanel = null;
     this.build();
   }
 
@@ -37,8 +41,9 @@ export class SettingsOverlay {
     dim.eventMode = 'static';
     this.container.addChild(dim);
 
+    const isCompact = width < 620 || height < 720;
     const panelWidth = Math.min(560, width * 0.82);
-    const panelHeight = Math.min(580, height * 0.9);
+    const panelHeight = Math.min(isCompact ? 700 : 630, height * (isCompact ? 0.96 : 0.92));
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
 
@@ -50,36 +55,54 @@ export class SettingsOverlay {
 
     const titleText = createText(this.title, {
       fontFamily: 'Courier New',
-      fontSize: 34,
+      fontSize: isCompact ? 28 : 34,
       fontWeight: 'bold',
       fill: '#f6fbff',
       stroke: '#003344',
       strokeThickness: 4
     });
     titleText.anchor.set(0.5);
-    titleText.position.set(width / 2, panelY + 48);
+    titleText.position.set(width / 2, panelY + (isCompact ? 42 : 48));
     this.container.addChild(titleText);
 
-    let y = panelY + 100;
+    const toggleGap = isCompact ? 44 : 54;
+    const testGap = isCompact ? 42 : 50;
+    const sliderGap = isCompact ? 44 : 52;
+    const footerGap = isCompact ? 50 : 64;
+    const footerButtonHeight = isCompact ? 32 : 38;
+    const stackedButtonWidth = Math.min(240, panelWidth - 56);
+    let y = panelY + (isCompact ? 84 : 100);
     this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
-    y += 54;
+    y += toggleGap;
     this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
-    y += 62;
+    y += testGap;
+    this.addAudioTestRow('TEST', y);
+    y += toggleGap;
     this.addSliderRow('MASTER', 'master', settings.masterVolume, y);
-    y += 52;
+    y += sliderGap;
     this.addSliderRow('MUSIC VOL', 'music', settings.musicVolume, y);
-    y += 52;
+    y += sliderGap;
     this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, y);
-    y += 52;
+    y += sliderGap;
     this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, y);
-    y += 52;
+    y += sliderGap;
     this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, y, {
       onChange: setScreenShakeScale
     });
-    y += 64;
+    y += footerGap;
+    const footerY = isCompact ? Math.min(y, panelY + panelHeight - 118) : y;
 
-    this.container.addChild(this.createButton('FULLSCREEN', width / 2, y, () => this.toggleFullscreen()));
-    this.container.addChild(this.createButton('CLOSE', width / 2, panelY + panelHeight - 42, () => this.close()));
+    if (panelWidth >= 500) {
+      this.container.addChild(this.createButton('CREDITS', width / 2 - 126, footerY, () => this.openCreditsPanel(), { width: 220, height: footerButtonHeight }));
+      this.container.addChild(this.createButton('FULLSCREEN', width / 2 + 126, footerY, () => this.toggleFullscreen(), { width: 220, height: footerButtonHeight }));
+    } else {
+      this.container.addChild(this.createButton('CREDITS', width / 2, footerY, () => this.openCreditsPanel(), { width: stackedButtonWidth, height: footerButtonHeight }));
+      this.container.addChild(this.createButton('FULLSCREEN', width / 2, footerY + 38, () => this.toggleFullscreen(), { width: stackedButtonWidth, height: footerButtonHeight }));
+    }
+    this.container.addChild(this.createButton('CLOSE', width / 2, panelY + panelHeight - (isCompact ? 28 : 42), () => this.close(), {
+      width: isCompact ? stackedButtonWidth : 240,
+      height: footerButtonHeight
+    }));
   }
 
   addToggleRow(label, initialValue, y, onChange) {
@@ -109,6 +132,40 @@ export class SettingsOverlay {
 
     this.container.addChild(row);
     this.rows.push(row);
+  }
+
+  addAudioTestRow(label, y) {
+    const width = this.game.getWidth();
+    const row = new PIXI.Container();
+    row.position.set(width / 2, y);
+
+    const labelText = createText(label, {
+      fontFamily: 'Courier New',
+      fontSize: 16,
+      fill: '#9befff'
+    });
+    labelText.anchor.set(1, 0.5);
+    labelText.x = -154;
+    row.addChild(labelText);
+
+    const sfxButton = this.createButton('SFX', -46, 0, () => this.playAudioTest('sfx'), { width: 96, height: 32 });
+    const voiceButton = this.createButton('VOICE', 78, 0, () => this.playAudioTest('voice'), { width: 116, height: 32 });
+    sfxButton.label = 'ui_settingsTestSfx';
+    voiceButton.label = 'ui_settingsTestVoice';
+    this.audioTestButtons.sfx = sfxButton;
+    this.audioTestButtons.voice = voiceButton;
+    row.addChild(sfxButton, voiceButton);
+
+    this.container.addChild(row);
+    this.rows.push(row);
+  }
+
+  playAudioTest(kind) {
+    const played = AudioManager.playAuditionCue(kind);
+    if (!played && kind === 'voice') {
+      AudioManager.playSfx('ui_open', { force: true, volume: 0.18, minIntervalMs: 0 });
+    }
+    return played;
   }
 
   addSliderRow(label, kind, initialValue, y, { onChange = null } = {}) {
@@ -193,6 +250,7 @@ export class SettingsOverlay {
     button.eventMode = 'static';
     button.cursor = 'pointer';
     button.position.set(x, y);
+    button.hitArea = new PIXI.Rectangle(-width / 2, -height / 2, width, height);
 
     const bg = new PIXI.Graphics();
     button.addChild(bg);
@@ -234,7 +292,99 @@ export class SettingsOverlay {
     }
   }
 
+  openCreditsPanel() {
+    this.closeCreditsPanel();
+
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const isCompact = width < 620 || height < 680;
+    const panelWidth = Math.min(620, width * 0.84);
+    const panelHeight = Math.min(isCompact ? 500 : 500, height * 0.86);
+    const panelX = width / 2 - panelWidth / 2;
+    const panelY = height / 2 - panelHeight / 2;
+
+    const overlay = new PIXI.Container();
+    overlay.zIndex = 1000;
+    overlay.label = 'ui_creditsPanel';
+    overlay.eventMode = 'static';
+    overlay.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x00040b, alpha: 0.66 });
+    dim.eventMode = 'static';
+    overlay.addChild(dim);
+
+    const panel = new PIXI.Graphics();
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
+    panel.fill({ color: 0x06111f, alpha: 0.98 });
+    panel.stroke({ color: 0xff55d9, width: 2, alpha: 0.92 });
+    overlay.addChild(panel);
+
+    const title = createText('BURT SHOOTER CREDITS', {
+      fontFamily: 'Courier New',
+      fontSize: isCompact ? 22 : 30,
+      fontWeight: 'bold',
+      fill: '#f6fbff',
+      stroke: '#3a0635',
+      strokeThickness: 4,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, panelY + (isCompact ? 42 : 50));
+    overlay.addChild(title);
+
+    const body = createText([
+      'Design: arctic arcade chaos over Stokmarknes.',
+      'Runtime: PixiJS + Vite.',
+      'Art: generated arctic backdrops, boss dossier, crew portraits.',
+      'Audio: contextual music pools, mission-control voice pack, catalog-gated SFX.',
+      'Controls: keyboard, touch, gamepad.',
+      `Build: ${BUILD_ID}`
+    ].join('\n'), {
+      fontFamily: 'Courier New',
+      fontSize: isCompact ? 13 : 16,
+      fill: '#c9f6ff',
+      lineHeight: isCompact ? 21 : 27,
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 72,
+      align: 'left'
+    });
+    body.anchor.set(0.5, 0);
+    body.position.set(width / 2, panelY + (isCompact ? 82 : 102));
+    overlay.addChild(body);
+
+    const buttonY = panelY + panelHeight - (isCompact ? 34 : 38);
+    const footerBottom = buttonY - (isCompact ? 50 : 56);
+    const footer = createText('Asset provenance is tracked in docs/visual-asset-pipeline.md.', {
+      fontFamily: 'Courier New',
+      fontSize: isCompact ? 11 : 13,
+      fill: '#ffb9ef',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 72,
+      align: 'center'
+    });
+    footer.anchor.set(0.5, 1);
+    footer.position.set(width / 2, footerBottom);
+    overlay.addChild(footer);
+
+    overlay.addChild(this.createButton('BACK', width / 2, buttonY, () => this.closeCreditsPanel(), { width: 220 }));
+    this.creditsPanel = overlay;
+    this.container.addChild(overlay);
+    AudioManager.playSfx('ui_open', { volume: 0.16, minIntervalMs: 120 });
+  }
+
+  closeCreditsPanel() {
+    if (!this.creditsPanel) return;
+    if (this.creditsPanel.parent) {
+      this.creditsPanel.parent.removeChild(this.creditsPanel);
+    }
+    this.creditsPanel.destroy({ children: true });
+    this.creditsPanel = null;
+  }
+
   close() {
+    this.closeCreditsPanel();
     if (this.container.parent) {
       this.container.parent.removeChild(this.container);
     }

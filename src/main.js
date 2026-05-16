@@ -226,6 +226,7 @@ function buildGameTextState(game) {
   const enemies = enemyManager?.enemies || [];
   const playerBullets = playScene?.bulletManager?.playerBullets || playScene?.bulletManager?.bullets || [];
   const enemyBullets = playScene?.bulletManager?.enemyBullets || [];
+  const activeSettingsOverlay = game?.currentScene?.settingsOverlay || playScene?.settingsOverlay || null;
 
   return {
     coordinateSystem: 'origin top-left, x right, y down',
@@ -237,7 +238,8 @@ function buildGameTextState(game) {
     isPaused: Boolean(playScene?.isPaused),
     overlays: {
       pause: Boolean(playScene?.pauseOverlay?.visible && playScene?.pauseOverlay?.parent),
-      settings: Boolean(game?.currentScene?.settingsOverlay?.container?.parent || playScene?.settingsOverlay?.container?.parent),
+      settings: Boolean(activeSettingsOverlay?.container?.parent),
+      credits: Boolean(activeSettingsOverlay?.creditsPanel?.parent),
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
