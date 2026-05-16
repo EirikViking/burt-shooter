@@ -17,6 +17,8 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Stabilized the ship intro and delayed/tamed early easter-egg photo flybys so the first seconds of play are readable.
 - Migrated high-traffic Pixi text surfaces to a shared v8-safe `createText` helper across gameplay, HUD-adjacent overlays, score popups, boss text, ship screens, highscores, and game over.
 - Added `npm run smoke`, a repeatable Playwright/system-Chrome production smoke test that starts Vite preview, captures menu/gameplay screenshots, records console/page/HTTP failures, and saves a JSON report under ignored `test-results/`.
+- Added a real pause overlay with resume and quit-to-menu actions, and hardened input so short pause key taps cannot be missed between frames.
+- Hardened PlayScene replay/scene reuse by recreating the input manager after destroy instead of leaving the next run with dead listeners.
 - Latest `npm run build` succeeds. Remaining build warning: the main app chunk is still larger than 500 kB and should be code-split later.
-- Latest `npm run smoke` succeeds with no console errors, page errors, bad responses, or fatal overlay. Latest screenshots: `test-results/smoke-2026-05-16T12-17-20-347Z/01-menu.png` and `test-results/smoke-2026-05-16T12-17-20-347Z/02-gameplay.png`.
+- Latest `npm run smoke` succeeds with no console errors, page errors, bad responses, or fatal overlay. Latest screenshots: `test-results/smoke-2026-05-16T12-23-56-917Z/01-menu.png`, `test-results/smoke-2026-05-16T12-23-56-917Z/02-gameplay.png`, and `test-results/smoke-2026-05-16T12-23-56-917Z/03-pause.png`.
 - Next priority: commit and push this coherent visual/stability milestone, then continue into gameplay pacing and audio/music polish.

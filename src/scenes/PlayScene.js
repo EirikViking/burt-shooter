@@ -51,6 +51,7 @@ export class PlayScene {
     this.screenShake = null;
     this.hud = null;
     this.isPaused = false;
+    this.pauseOverlay = null;
     this.levelAdvancePending = false;
     this.levelAdvanceTimeout = null;
     this.capState = {
@@ -157,6 +158,12 @@ export class PlayScene {
 
   init() {
     this.isReady = false;
+    if (!this.inputManager || this.inputManager.destroyed) {
+      this.inputManager = new InputManager();
+    }
+    this.isPaused = false;
+    this.pauseOverlay = null;
+    this.pausePressed = false;
     this.gameContainer.removeChildren();
     this.uiContainer.removeChildren();
     this.uiOverlay.removeChildren();
@@ -1596,7 +1603,10 @@ export class PlayScene {
       window.removeEventListener('keydown', this._debugKeyHandler);
       this._debugKeyHandler = null;
     }
-    this.inputManager.destroy();
+    if (this.inputManager) {
+      this.inputManager.destroy();
+      this.inputManager = null;
+    }
     if (this.touchControls) {
       this.touchControls.destroy();
       this.touchControls = null;
@@ -1646,15 +1656,127 @@ export class PlayScene {
   }
 
   handlePauseToggle() {
-    const pressed = this.inputManager.isKeyPressed('KeyP');
-    if (pressed && !this.pausePressed) {
-      this.isPaused = !this.isPaused;
-      this.showToast(getMicroMessage(this.isPaused ? 'pause' : 'resume'), {
-        fontSize: 26,
-        y: this.game.getHeight() * 0.45
-      });
+    const pressed = this.inputManager.consumeKeyPress
+      ? this.inputManager.consumeKeyPress('KeyP', 'p', 'P', 'Escape')
+      : this.inputManager.isKeyPressed('KeyP') ||
+        this.inputManager.isKeyPressed('p') ||
+        this.inputManager.isKeyPressed('P') ||
+        this.inputManager.isKeyPressed('Escape');
+    if (pressed) {
+      this.setPaused(!this.isPaused);
     }
-    this.pausePressed = pressed;
+  }
+
+  setPaused(paused) {
+    if (this.isPaused === paused) return;
+    this.isPaused = paused;
+    if (paused) {
+      this.showPauseOverlay();
+      AudioManager.playSfx('ui_open', { volume: 0.45 });
+    } else {
+      this.hidePauseOverlay();
+      AudioManager.playSfx('ui_open', { volume: 0.25 });
+    }
+  }
+
+  showPauseOverlay() {
+    if (this.pauseOverlay) {
+      this.pauseOverlay.visible = true;
+      return;
+    }
+
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const overlay = new PIXI.Container();
+    overlay.zIndex = 1000000;
+    overlay.label = 'ui_pauseOverlay';
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x020713, alpha: 0.74 });
+    overlay.addChild(dim);
+
+    const panelWidth = Math.min(500, width * 0.72);
+    const panelHeight = 260;
+    const panelX = width / 2 - panelWidth / 2;
+    const panelY = height / 2 - panelHeight / 2;
+    const panel = new PIXI.Graphics();
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
+    panel.fill({ color: 0x06111f, alpha: 0.94 });
+    panel.stroke({ color: 0x00ffff, width: 2, alpha: 0.9 });
+    overlay.addChild(panel);
+
+    const title = createText('PAUSED', {
+      fontFamily: 'Courier New',
+      fontSize: 42,
+      fontWeight: 'bold',
+      fill: '#f6fbff',
+      stroke: '#003344',
+      strokeThickness: 4,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, panelY + 62);
+    overlay.addChild(title);
+
+    const status = createText('STOKMARKNES DEFENSE ON HOLD', {
+      fontFamily: 'Courier New',
+      fontSize: 14,
+      fill: '#7ee9ff',
+      align: 'center'
+    });
+    status.anchor.set(0.5);
+    status.position.set(width / 2, panelY + 102);
+    overlay.addChild(status);
+
+    overlay.addChild(this.createPauseButton('RESUME', width / 2, panelY + 154, () => this.setPaused(false)));
+    overlay.addChild(this.createPauseButton('QUIT TO MENU', width / 2, panelY + 208, () => {
+      this.hidePauseOverlay();
+      this.isPaused = false;
+      this.game.switchScene('menu');
+    }));
+
+    this.pauseOverlay = overlay;
+    this.uiOverlay.addChild(overlay);
+  }
+
+  createPauseButton(label, x, y, onPress) {
+    const button = new PIXI.Container();
+    button.eventMode = 'static';
+    button.cursor = 'pointer';
+
+    const width = 260;
+    const height = 38;
+    const draw = (hovered = false) => {
+      bg.clear();
+      bg.roundRect(-width / 2, -height / 2, width, height, 6);
+      bg.fill({ color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.92 : 0.84 });
+      bg.stroke({ color: hovered ? 0xffffff : 0x00ffff, width: hovered ? 2 : 1, alpha: 0.95 });
+    };
+
+    const bg = new PIXI.Graphics();
+    button.addChild(bg);
+    draw(false);
+
+    const text = createText(label, {
+      fontFamily: 'Courier New',
+      fontSize: 18,
+      fontWeight: 'bold',
+      fill: '#ffffff'
+    });
+    text.anchor.set(0.5);
+    button.addChild(text);
+    button.position.set(x, y);
+    button.on('pointerover', () => draw(true));
+    button.on('pointerout', () => draw(false));
+    button.on('pointertap', onPress);
+    return button;
+  }
+
+  hidePauseOverlay() {
+    if (this.pauseOverlay) {
+      this.pauseOverlay.visible = false;
+    }
   }
 
   resetRandomTimers() {

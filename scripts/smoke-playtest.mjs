@@ -91,6 +91,8 @@ async function collectGameState(page) {
       enemies: play?.enemyManager?.enemies?.length ?? null,
       bullets: play?.bulletManager?.bullets?.length ?? null,
       enemyBullets: play?.bulletManager?.enemyBullets?.length ?? null,
+      isPaused: Boolean(play?.isPaused),
+      pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible && play?.pauseOverlay?.parent),
       easterEggActive: Boolean(play?.easterEggBeer),
       fatalOverlay: Boolean(document.getElementById('fatal-overlay'))
     };
@@ -146,11 +148,17 @@ async function runSmoke() {
     await page.screenshot({ path: path.join(outputDir, '02-gameplay.png'), fullPage: true });
     const gameplayState = await collectGameState(page);
 
+    await page.keyboard.press('p');
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: path.join(outputDir, '03-pause.png'), fullPage: true });
+    const pauseState = await collectGameState(page);
+
     const report = {
       baseUrl,
       outputDir,
       menuState,
       gameplayState,
+      pauseState,
       consoleEvents,
       pageErrors,
       badResponses
@@ -160,6 +168,7 @@ async function runSmoke() {
     const blockingIssues = [
       ...pageErrors.map((message) => `pageerror: ${message}`),
       ...badResponses.map((response) => `HTTP ${response.status}: ${response.url}`),
+      ...(!pauseState.isPaused || !pauseState.pauseOverlayVisible ? ['pause overlay did not appear'] : []),
       ...(gameplayState.fatalOverlay ? ['fatal overlay visible'] : [])
     ];
 

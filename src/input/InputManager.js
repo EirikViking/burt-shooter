@@ -1,8 +1,10 @@
 export class InputManager {
   constructor() {
     this.keys = {};
+    this.justPressed = {};
     this.touches = [];
     this.touchFireActive = false;
+    this.destroyed = false;
     this.setupKeyboard();
     this.setupMouse();
     this.setupFocusHandlers();
@@ -22,6 +24,8 @@ export class InputManager {
 
   setupKeyboard() {
     this.handleKeyDown = (e) => {
+      if (!this.keys[e.code]) this.justPressed[e.code] = true;
+      if (!this.keys[e.key]) this.justPressed[e.key] = true;
       this.keys[e.code] = true;
       this.keys[e.key] = true;
     };
@@ -53,6 +57,7 @@ export class InputManager {
 
   resetAllKeys() {
     this.keys = {};
+    this.justPressed = {};
     this.touchFireActive = false;
   }
 
@@ -70,6 +75,16 @@ export class InputManager {
     this.keys[key] = pressed;
   }
 
+  consumeKeyPress(...keys) {
+    const matched = keys.some(key => this.justPressed[key]);
+    if (matched) {
+      keys.forEach(key => {
+        this.justPressed[key] = false;
+      });
+    }
+    return matched;
+  }
+
   destroy() {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
@@ -78,5 +93,7 @@ export class InputManager {
     document.removeEventListener('pointerdown', this.handleMouseDown);
     document.removeEventListener('pointerup', this.handleMouseUp);
     this.keys = {};
+    this.justPressed = {};
+    this.destroyed = true;
   }
 }
