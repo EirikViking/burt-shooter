@@ -139,7 +139,15 @@ export const AssetManifest = {
             '/audio/voice/war_look_out.mp3', '/audio/voice/war_medic.mp3', '/audio/voice/war_reloading.mp3', '/audio/voice/war_rpg.mp3',
             '/audio/voice/war_sniper.mp3', '/audio/voice/war_suppressing_fire.mp3', '/audio/voice/war_target_destroyed.mp3',
             '/audio/voice/war_target_engaged.mp3', '/audio/voice/war_watch_my_back.mp3', '/audio/voice/wrong.mp3', '/audio/voice/you_lose.mp3',
-            '/audio/voice/you_win.mp3'
+            '/audio/voice/you_win.mp3',
+            '/audio/voice/mission-control/mission_control_launch.mp3',
+            '/audio/voice/mission-control/mission_control_level_start.mp3',
+            '/audio/voice/mission-control/mission_control_wave_clear.mp3',
+            '/audio/voice/mission-control/mission_control_boss_inbound.mp3',
+            '/audio/voice/mission-control/mission_control_life_low.mp3',
+            '/audio/voice/mission-control/mission_control_powerup.mp3',
+            '/audio/voice/mission-control/mission_control_victory.mp3',
+            '/audio/voice/mission-control/mission_control_game_over.mp3'
         ],
         music: [
             '/audio/music/Alone Against Enemy.mp3', '/audio/music/Battle in the Stars.mp3', '/audio/music/Brave Pilots (Menu Screen).mp3',

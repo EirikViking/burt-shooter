@@ -14,6 +14,8 @@ class AudioController {
     this.musicVolume = 0.2;
     this.sfxVolume = 0.4;
     this.voiceVolume = 0.5;
+    this.musicDuckFactor = 1;
+    this.pauseDuckFactor = 1;
 
     // Music State
     this.currentContext = null;
@@ -53,6 +55,7 @@ class AudioController {
     // Idempotency guard
     this._initialized = false;
     this._debugKeyHandler = null;
+    this.duckTimer = null;
 
     // SFX denylist (bad/annoying variants)
     this.sfxDenylist = new Set(['shoot_alt']);
@@ -456,7 +459,26 @@ class AudioController {
   }
 
   applyMusicVolume() {
-    this.musicAudio.volume = Math.max(0, Math.min(1, this.masterVolume * this.musicVolume));
+    this.musicAudio.volume = Math.max(0, Math.min(1, this.masterVolume * this.musicVolume * this.musicDuckFactor * this.pauseDuckFactor));
+  }
+
+  duckMusic(factor = 0.55, durationMs = 1700) {
+    if (!this.enabled || !this.musicEnabled) return;
+    this.musicDuckFactor = Math.max(0.2, Math.min(1, factor));
+    this.applyMusicVolume();
+    if (this.duckTimer) {
+      clearTimeout(this.duckTimer);
+    }
+    this.duckTimer = setTimeout(() => {
+      this.musicDuckFactor = 1;
+      this.duckTimer = null;
+      this.applyMusicVolume();
+    }, durationMs);
+  }
+
+  setPauseDucked(paused) {
+    this.pauseDuckFactor = paused ? 0.42 : 1;
+    this.applyMusicVolume();
   }
 
   getSettings() {
@@ -466,7 +488,10 @@ class AudioController {
       sfxVolume: this.sfxVolume,
       voiceVolume: this.voiceVolume,
       musicEnabled: this.musicEnabled,
-      voiceEnabled: this.voiceEnabled
+      voiceEnabled: this.voiceEnabled,
+      musicDuckFactor: this.musicDuckFactor,
+      pauseDuckFactor: this.pauseDuckFactor,
+      currentMusicContext: this.currentContext
     };
   }
 
@@ -518,7 +543,7 @@ class AudioController {
 
   // --- VOICE ---
 
-  playVoice(eventName) {
+  playVoice(eventName, options = {}) {
     if (!this.enabled || !this.voiceEnabled) return;
     const now = Date.now();
 
@@ -551,7 +576,15 @@ class AudioController {
         'round': 'round.mp3',
         'powerup': 'power_up.mp3',
         'game_over': 'game_over.mp3',
-        'you_win': 'you_win.mp3'
+        'you_win': 'you_win.mp3',
+        'mission_control_launch': 'mission_control_launch.mp3',
+        'mission_control_level_start': 'mission_control_level_start.mp3',
+        'mission_control_wave_clear': 'mission_control_wave_clear.mp3',
+        'mission_control_boss_inbound': 'mission_control_boss_inbound.mp3',
+        'mission_control_life_low': 'mission_control_life_low.mp3',
+        'mission_control_powerup': 'mission_control_powerup.mp3',
+        'mission_control_victory': 'mission_control_victory.mp3',
+        'mission_control_game_over': 'mission_control_game_over.mp3'
       };
       const filename = map[eventName];
       if (filename) {
@@ -567,7 +600,8 @@ class AudioController {
         const audio = new Audio(src);
         audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.voiceVolume));
         audio.play().catch(e => { });
-        this.globalVoiceCooldown = now + 1500;
+        this.duckMusic(options.duckFactor || 0.5, options.duckMs || 1900);
+        this.globalVoiceCooldown = now + (options.cooldownMs || 1500);
         return true;
       }
     } else {

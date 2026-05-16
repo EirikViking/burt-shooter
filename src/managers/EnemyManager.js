@@ -96,8 +96,8 @@ export class EnemyManager {
     if (!this.voiceHistory[level]) {
       console.log(`[IntroVoice] play requested source=EnemyManager level=${level}`);
       AudioManager.playSfx('ui_open');
-      setTimeout(() => AudioManager.playVoice('ready'), 500);
-      setTimeout(() => AudioManager.playVoice('go'), 2000);
+      const briefing = level === 1 ? 'mission_control_launch' : 'mission_control_level_start';
+      setTimeout(() => AudioManager.playVoice(briefing, { cooldownMs: 2300, duckMs: 2400 }), 500);
       this.voiceHistory[level] = true;
     } else {
       console.log(`[IntroVoice] suppressed duplicate for level=${level}`);
@@ -289,7 +289,7 @@ export class EnemyManager {
         if (this.bossGateTimer > 1000 && !this.bossSpawning) {
           this.logBossStatus('boss_gate_spawn');
           console.log(`[BossFlow] spawn boss level=${this.level}`);
-          AudioManager.playVoice('war_target');
+          AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 2500, duckMs: 2400 });
           this.bossSpawning = true;
           this.spawnBoss(this.level).then(() => {
             this.state = 'BOSS_ACTIVE';
@@ -330,7 +330,7 @@ export class EnemyManager {
             this.phase = 'COMPLETE';
             console.log(`[BossPhase] level=${this.level} phase=${this.phase} bossDefeated=true`);
             this.state = 'LEVEL_COMPLETE';
-            AudioManager.playVoice('mission_complete');
+            AudioManager.playVoice('mission_control_victory', { cooldownMs: 2600, duckMs: 2600 });
             return;
           }
         }
@@ -693,7 +693,7 @@ export class EnemyManager {
       if (this.game.scenes.play) {
         this.game.scenes.play.showWaveBonusEffect(bonus, 'WAVE CLEARED!');
       }
-      AudioManager.playVoice('wave_clear');
+      AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 2600, duckMs: 2200 });
     }
 
     // Logic to potentially inject a Challenge Wave
@@ -721,7 +721,7 @@ export class EnemyManager {
       const config = this.waves[this.currentWaveIndex];
       this.spawnWave(config);
       this.state = 'WAVE_ACTIVE';
-      AudioManager.playVoice('round');
+      AudioManager.playVoice('mission_control_level_start', { cooldownMs: 2400, duckMs: 1900 });
       if (this.game.scenes.play) {
         this.game.scenes.play.showToast(`WAVE ${this.currentWaveIndex + 1} / ${this.normalWavesTotal}`, { fontSize: 20, y: 100, duration: 1500 });
       }

@@ -62,6 +62,9 @@ export const SFX_CATALOG = {
     'hit': [
         getSfx('impactMetal_000'), getSfx('impactMetal_001'), getSfx('impactMetal_002'), getSfx('impactMetal_003'), getSfx('impactMetal_004')
     ],
+    'impactMetal': [
+        getSfx('impactMetal_000'), getSfx('impactMetal_001'), getSfx('impactMetal_002'), getSfx('impactMetal_003'), getSfx('impactMetal_004')
+    ],
     'shield': [
         getSfx('forceField_000'), getSfx('forceField_001'), getSfx('forceField_002'), getSfx('forceField_003'), getSfx('forceField_004')
     ],
@@ -74,6 +77,13 @@ export const SFX_CATALOG = {
     'pickup': [
         getSfx('forceField_000'),
         getSfx('forceField_001')
+    ],
+    'achievement': [
+        getSfx('doorOpen_001'),
+        getSfx('forceField_003')
+    ],
+    'enemy_shoot': [
+        getSfx('laserRetro_000'), getSfx('laserRetro_001'), getSfx('laserSmall_003')
     ],
     // Direct matches from manifest
     'computerNoise': [getSfx('computerNoise_000')],
@@ -118,7 +128,31 @@ export const SFX_CATALOG = {
     'intro_voice': [
         getVoice('ready'),
         getVoice('go'),
-        getVoice('mission_started') // Fallback if exists, or use others
+        getVoice('mission_control_launch')
+    ].filter(Boolean),
+    'mission_control_launch': [
+        getVoice('mission_control_launch')
+    ].filter(Boolean),
+    'mission_control_level_start': [
+        getVoice('mission_control_level_start')
+    ].filter(Boolean),
+    'mission_control_wave_clear': [
+        getVoice('mission_control_wave_clear')
+    ].filter(Boolean),
+    'mission_control_boss_inbound': [
+        getVoice('mission_control_boss_inbound')
+    ].filter(Boolean),
+    'mission_control_life_low': [
+        getVoice('mission_control_life_low')
+    ].filter(Boolean),
+    'mission_control_powerup': [
+        getVoice('mission_control_powerup')
+    ].filter(Boolean),
+    'mission_control_victory': [
+        getVoice('mission_control_victory')
+    ].filter(Boolean),
+    'mission_control_game_over': [
+        getVoice('mission_control_game_over')
     ].filter(Boolean),
     'boss_spawn': [
         getSfx('spaceEngineLow_000'),

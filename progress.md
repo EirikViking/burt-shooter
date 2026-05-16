@@ -29,4 +29,13 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Latest `npm run smoke` succeeds with no console errors, page errors, bad responses, or fatal overlay. Latest screenshots: `test-results/smoke-2026-05-16T12-42-29-194Z/01-menu.png`, `test-results/smoke-2026-05-16T12-42-29-194Z/01-settings.png`, `test-results/smoke-2026-05-16T12-42-29-194Z/02-gameplay.png`, and `test-results/smoke-2026-05-16T12-42-29-194Z/03-pause.png`.
 - Generated a second original arctic shooter key-art source and packaged Steam asset drafts under `release/steam-assets/draft-2026-05-16/`.
 - Steam draft set includes store header/small/main/vertical/page-background, library capsule/header/hero/logo, and a README with official Steamworks references checked on 2026-05-16.
-- Next priority: commit and push this coherent visual/stability milestone, then continue into gameplay pacing and audio/music polish.
+- Committed and pushed the visual/stability milestone at `85e64ca`.
+- Generated an original Eight-line ElevenLabs mission-control voicepack in `public/audio/voice/mission-control/` using only the local `ELEVENLABS_API_KEY` environment variable.
+- Added `scripts/generate-mission-control-voicepack.mjs` so the voicepack can be regenerated without committing secrets.
+- Wired mission-control barks into launch, level/wave flow, boss inbound, powerup, low-lives, boss victory, and game-over moments.
+- Added music ducking while voice lines play, pause-state music ducking, and audio state in `window.render_game_to_text()`.
+- Added missing/cleaner SFX aliases for `impactMetal`, `achievement`, and `enemy_shoot`.
+- Added `docs/audio-pipeline.md` with safe audio regeneration notes.
+- Latest `npm run build` succeeds with no Vite warnings.
+- Latest `npm run smoke` succeeds with no console errors, page errors, bad responses, or fatal overlay. Latest screenshots: `test-results/smoke-2026-05-16T12-57-43-692Z/01-menu.png`, `test-results/smoke-2026-05-16T12-57-43-692Z/01-settings.png`, `test-results/smoke-2026-05-16T12-57-43-692Z/02-gameplay.png`, and `test-results/smoke-2026-05-16T12-57-43-692Z/03-pause.png`.
+- Next priority: continue gameplay feel and readability polish, especially projectile telegraphs, first-level pacing, HUD readability, and harsher playtest review loops.

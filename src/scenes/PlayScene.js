@@ -734,7 +734,7 @@ export class PlayScene {
     // TASK 4: Audio - SFX first, then optional voice
     AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
     setTimeout(() => {
-      AudioManager.playVoice('powerup'); // Optional celebratory voice
+      AudioManager.playVoice('mission_control_powerup', { cooldownMs: 3500, duckMs: 1900 });
     }, 200);
 
     // TASK 4: Polished arcade animation
@@ -1677,10 +1677,12 @@ export class PlayScene {
     this.isPaused = paused;
     if (paused) {
       this.showPauseOverlay();
+      AudioManager.setPauseDucked(true);
       AudioManager.playSfx('ui_open', { volume: 0.45 });
     } else {
       this.closeSettingsOverlay();
       this.hidePauseOverlay();
+      AudioManager.setPauseDucked(false);
       AudioManager.playSfx('ui_open', { volume: 0.25 });
     }
   }
@@ -1835,6 +1837,7 @@ export class PlayScene {
     if (this.game.lives <= 1 && this.lowLivesShownFor !== this.game.lives) {
       this.lowLivesShownFor = this.game.lives;
       this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, y: this.game.getHeight() * 0.3 });
+      AudioManager.playVoice('mission_control_life_low', { cooldownMs: 5000, duckMs: 2300 });
     }
   }
 

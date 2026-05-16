@@ -217,6 +217,7 @@ function buildGameTextState(game) {
       settings: Boolean(game?.currentScene?.settingsOverlay?.container?.parent || playScene?.settingsOverlay?.container?.parent),
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
+    audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
     player: player ? {
       x: Math.round(player.x),
       y: Math.round(player.y),

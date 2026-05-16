@@ -32,6 +32,8 @@ npm run smoke
 - Meny og gameplay bruker den nye arktiske/aurora-retningen for mer helhetlig uttrykk.
 - Pauseflyt har modal med resume, settings og quit-to-menu.
 - Settings-panelet har musikk/voice toggles, master/music/SFX/voice volum og fullscreen.
+- ElevenLabs mission-control voicepack ligger i `public/audio/voice/mission-control/` og kan regenereres med `node scripts/generate-mission-control-voicepack.mjs` når `ELEVENLABS_API_KEY` finnes i environment.
+- Voice playback ducker musikken kort under radio calls, og pause overlay senker gameplay-musikken uten aa stoppe tracket.
 - Produksjonsbundle er splittet i app-, Pixi- og vendor-chunks for bedre caching.
 - Pixi v8 tekstflater er ryddet via `src/utils/pixiText.js`.
 - `window.render_game_to_text()` og `window.advanceTime(ms)` finnes for automatisert playtest.

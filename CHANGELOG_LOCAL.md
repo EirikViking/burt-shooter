@@ -15,6 +15,8 @@ when git commits are not used.
 - Migrated high-traffic Pixi text creation to a v8-safe helper.
 - Split production bundles into app, Pixi vendor, and vendor chunks for better caching.
 - Added Steam capsule/library art drafts under `release/steam-assets/draft-2026-05-16/`.
+- Added an ElevenLabs-generated mission-control voicepack, a regeneration script that reads `ELEVENLABS_API_KEY` from the environment only, voice/music ducking, and cleaned up missing SFX aliases.
+- Latest production smoke confirms menu, settings, gameplay, pause, audio state, and pause ducking with no console/page/HTTP failures.
 
 ---
 

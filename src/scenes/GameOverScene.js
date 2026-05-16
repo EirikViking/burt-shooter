@@ -172,7 +172,7 @@ export class GameOverScene {
     this.setupKeyboard();
 
     AudioManager.playSfx('levelComplete');
-    AudioManager.playVoice('mission_complete'); // Best fallback for now
+    AudioManager.playVoice('mission_control_game_over', { cooldownMs: 2400, duckMs: 2600 });
     AudioManager.playMusicContext('scoreboard');
 
     // Fetch scores for qualification check
@@ -351,7 +351,7 @@ export class GameOverScene {
     if (!this.isQualified) {
       console.log('[GameOver] Player not qualified for Top 10. Blocking submission.');
 
-      AudioManager.playVoice('game_over');
+      AudioManager.playVoice('mission_control_game_over', { cooldownMs: 2400, duckMs: 2600 });
 
       // Show feedback
       const { width, height } = this.game.app.screen;
