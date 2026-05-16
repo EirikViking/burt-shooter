@@ -6,6 +6,7 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
+import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
@@ -38,6 +39,7 @@ export class MenuScene {
     this.disclaimer = null;
     this.startBtn = null;
     this.highscoreBtn = null;
+    this.settingsBtn = null;
     this.musicBtn = null;
     this.controls = null;
     this.easter = null;
@@ -46,6 +48,7 @@ export class MenuScene {
     this.buildStamp = null;
     this.backdrop = null;
     this.backdropShade = null;
+    this.settingsOverlay = null;
 
     // PWA install prompt
     this.installPrompt = null;
@@ -422,11 +425,24 @@ export class MenuScene {
     });
     this.container.addChild(this.highscoreBtn);
 
+    this.settingsBtn = this.createButton('SETTINGS', layout);
+    this.settingsBtn.alpha = 0;
+    this.settingsBtn.on('pointerdown', () => {
+      try {
+        AudioManager.init();
+        AudioManager.playSfx('ui_open', { volume: 0.35 });
+        this.openSettingsOverlay();
+      } catch (e) {
+        console.error('[MenuScene] Settings Error:', e);
+      }
+    });
+    this.container.addChild(this.settingsBtn);
+
     // ... (controls and easter code unchanged) ...
 
     const controlsText = layout.isMobile
       ? 'Joystick: Beveg | FIRE-knapp: Skyt'
-      : 'WASD/Piltaster: Beveg | SPACE: Skyt | SHIFT: Dodge';
+      : 'WASD/Piltaster: Beveg | SPACE: Skyt | SHIFT: Dodge | P/ESC: Pause';
     const controlsSize = getResponsiveFontSize(layout, 'small');
     this.controls = createText(controlsText, {
       fontFamily: 'Courier New',
@@ -631,6 +647,10 @@ export class MenuScene {
 
     this.highscoreBtn.x = width / 2;
     this.highscoreBtn.y = stack.getCurrentY();
+    stack.addGap(buttonHeight + buttonSpacing);
+
+    this.settingsBtn.x = width / 2;
+    this.settingsBtn.y = stack.getCurrentY();
     stack.addGap(buttonHeight + sectionSpacing);
 
     this.disclaimer.x = width / 2;
@@ -746,7 +766,32 @@ export class MenuScene {
     this.animateElement(this.flavor, 0.6, 0.5);
     this.animateElement(this.startBtn, 0.9, 0.4);
     this.animateElement(this.highscoreBtn, 1.1, 0.4);
-    this.animateElement(this.disclaimer, 1.3, 0.4);
+    this.animateElement(this.settingsBtn, 1.25, 0.4);
+    this.animateElement(this.disclaimer, 1.4, 0.4);
+  }
+
+  openSettingsOverlay() {
+    if (this.settingsOverlay) {
+      this.closeSettingsOverlay();
+    }
+
+    this.settingsOverlay = new SettingsOverlay(this.game, {
+      title: 'SETTINGS',
+      onClose: () => {
+        this.settingsOverlay = null;
+        if (this.musicBtn?._label) {
+          this.musicBtn._label.text = AudioManager.getSettings().musicEnabled ? 'MUSIKK: PÅ' : 'MUSIKK: AV';
+        }
+      }
+    });
+    this.container.addChild(this.settingsOverlay.container);
+  }
+
+  closeSettingsOverlay() {
+    if (this.settingsOverlay) {
+      this.settingsOverlay.close();
+      this.settingsOverlay = null;
+    }
   }
 
   animateElement(element, delay, duration) {
@@ -849,6 +894,8 @@ export class MenuScene {
   }
 
   destroy() {
+    this.closeSettingsOverlay();
+
     // PART A: Cleanup story rotation
     if (this.storyRotationTimer) {
       clearInterval(this.storyRotationTimer);

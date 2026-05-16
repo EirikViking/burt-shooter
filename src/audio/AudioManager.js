@@ -57,6 +57,36 @@ class AudioController {
     // SFX denylist (bad/annoying variants)
     this.sfxDenylist = new Set(['shoot_alt']);
     this.sfxDenylistLogged = {};
+
+    this.loadPreferences();
+  }
+
+  readStoredFloat(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw === null || raw === '') return fallback;
+      const value = Number(raw);
+      return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  loadPreferences() {
+    if (typeof localStorage === 'undefined') return;
+
+    this.masterVolume = this.readStoredFloat('burt_volume_master', this.masterVolume);
+    this.musicVolume = this.readStoredFloat('burt_volume_music', this.musicVolume);
+    this.sfxVolume = this.readStoredFloat('burt_volume_sfx', this.sfxVolume);
+    this.voiceVolume = this.readStoredFloat('burt_volume_voice', this.voiceVolume);
+
+    const savedMusic = localStorage.getItem('burt_music_enabled');
+    if (savedMusic !== null) this.musicEnabled = savedMusic !== 'false' && Features.MUSIC_ENABLED;
+
+    const savedVoice = localStorage.getItem('burt_voice_enabled');
+    if (savedVoice !== null) this.voiceEnabled = savedVoice !== 'false' && Features.VOICE_ENABLED;
+
+    this.applyMusicVolume();
   }
 
   init() {
@@ -77,10 +107,12 @@ class AudioController {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       this.context = new AudioContext();
       this.enabled = true;
+      this.loadPreferences();
 
       const savedMusic = localStorage.getItem('burt_music_enabled');
       this.musicEnabled = savedMusic !== 'false' && Features.MUSIC_ENABLED;
-      this.voiceEnabled = Features.VOICE_ENABLED;
+      const savedVoice = localStorage.getItem('burt_voice_enabled');
+      this.voiceEnabled = savedVoice !== 'false' && Features.VOICE_ENABLED;
 
       // Add debug key listener globally (only once)
       if (!this._debugKeyHandler) {
@@ -423,9 +455,45 @@ class AudioController {
     this.musicAudio.pause();
   }
 
-  toggleMute() {
-    this.musicEnabled = !this.musicEnabled;
-    localStorage.setItem('burt_music_enabled', this.musicEnabled);
+  applyMusicVolume() {
+    this.musicAudio.volume = Math.max(0, Math.min(1, this.masterVolume * this.musicVolume));
+  }
+
+  getSettings() {
+    return {
+      masterVolume: this.masterVolume,
+      musicVolume: this.musicVolume,
+      sfxVolume: this.sfxVolume,
+      voiceVolume: this.voiceVolume,
+      musicEnabled: this.musicEnabled,
+      voiceEnabled: this.voiceEnabled
+    };
+  }
+
+  setVolume(kind, value) {
+    const clamped = Math.max(0, Math.min(1, Number(value) || 0));
+    const keyMap = {
+      master: 'masterVolume',
+      music: 'musicVolume',
+      sfx: 'sfxVolume',
+      voice: 'voiceVolume'
+    };
+    const prop = keyMap[kind];
+    if (!prop) return this.getSettings();
+
+    this[prop] = clamped;
+    try {
+      localStorage.setItem(`burt_volume_${kind}`, String(clamped));
+    } catch { }
+    this.applyMusicVolume();
+    return this.getSettings();
+  }
+
+  setMusicEnabled(enabled) {
+    this.musicEnabled = Boolean(enabled) && Features.MUSIC_ENABLED;
+    try {
+      localStorage.setItem('burt_music_enabled', this.musicEnabled);
+    } catch { }
 
     if (this.musicEnabled) {
       const ctx = this.currentContext || 'menu';
@@ -434,6 +502,18 @@ class AudioController {
       this.stopMusic();
     }
     return this.musicEnabled;
+  }
+
+  setVoiceEnabled(enabled) {
+    this.voiceEnabled = Boolean(enabled) && Features.VOICE_ENABLED;
+    try {
+      localStorage.setItem('burt_voice_enabled', this.voiceEnabled);
+    } catch { }
+    return this.voiceEnabled;
+  }
+
+  toggleMute() {
+    return this.setMusicEnabled(!this.musicEnabled);
   }
 
   // --- VOICE ---

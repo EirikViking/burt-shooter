@@ -10,6 +10,8 @@ when git commits are not used.
 - Added generated arctic menu/gameplay art in `public/art/generated/`.
 - Added production smoke testing via `npm run smoke` with menu, gameplay, and pause screenshots.
 - Added a real pause overlay with resume and quit-to-menu actions.
+- Added a settings overlay with audio toggles, volume sliders, and fullscreen from menu/pause.
+- Added `render_game_to_text` and `advanceTime` browser hooks for automated playtesting.
 - Migrated high-traffic Pixi text creation to a v8-safe helper.
 - Split production bundles into app, Pixi vendor, and vendor chunks for better caching.
 

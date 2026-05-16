@@ -93,8 +93,18 @@ async function collectGameState(page) {
       enemyBullets: play?.bulletManager?.enemyBullets?.length ?? null,
       isPaused: Boolean(play?.isPaused),
       pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible && play?.pauseOverlay?.parent),
+      settingsOverlayVisible: Boolean(scene?.settingsOverlay?.container?.parent || play?.settingsOverlay?.container?.parent),
       easterEggActive: Boolean(play?.easterEggBeer),
-      fatalOverlay: Boolean(document.getElementById('fatal-overlay'))
+      fatalOverlay: Boolean(document.getElementById('fatal-overlay')),
+      textState: (() => {
+        try {
+          return typeof window.render_game_to_text === 'function'
+            ? JSON.parse(window.render_game_to_text())
+            : null;
+        } catch {
+          return null;
+        }
+      })()
     };
   });
 }
@@ -132,6 +142,10 @@ async function runSmoke() {
     await page.waitForTimeout(2200);
     await page.screenshot({ path: path.join(outputDir, '01-menu.png'), fullPage: true });
     const menuState = await collectGameState(page);
+    await page.mouse.click(683, 495);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: path.join(outputDir, '01-settings.png'), fullPage: true });
+    const settingsState = await collectGameState(page);
 
     await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
@@ -157,6 +171,7 @@ async function runSmoke() {
       baseUrl,
       outputDir,
       menuState,
+      settingsState,
       gameplayState,
       pauseState,
       consoleEvents,
@@ -168,6 +183,7 @@ async function runSmoke() {
     const blockingIssues = [
       ...pageErrors.map((message) => `pageerror: ${message}`),
       ...badResponses.map((response) => `HTTP ${response.status}: ${response.url}`),
+      ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
       ...(!pauseState.isPaused || !pauseState.pauseOverlayVisible ? ['pause overlay did not appear'] : []),
       ...(gameplayState.fatalOverlay ? ['fatal overlay visible'] : [])
     ];

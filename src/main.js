@@ -197,6 +197,51 @@ function updatePerfStats(app, game, delta, clampedDelta) {
   }
 }
 
+function buildGameTextState(game) {
+  const playScene = game?.scenes?.play;
+  const player = playScene?.player;
+  const enemies = playScene?.enemyManager?.enemies || [];
+  const playerBullets = playScene?.bulletManager?.playerBullets || playScene?.bulletManager?.bullets || [];
+  const enemyBullets = playScene?.bulletManager?.enemyBullets || [];
+
+  return {
+    coordinateSystem: 'origin top-left, x right, y down',
+    scene: perfState.scene,
+    score: game?.score ?? 0,
+    level: game?.level ?? 0,
+    lives: game?.lives ?? 0,
+    selectedShipSpriteKey: game?.selectedShipSpriteKey || null,
+    isPaused: Boolean(playScene?.isPaused),
+    overlays: {
+      pause: Boolean(playScene?.pauseOverlay?.visible && playScene?.pauseOverlay?.parent),
+      settings: Boolean(game?.currentScene?.settingsOverlay?.container?.parent || playScene?.settingsOverlay?.container?.parent),
+      fatal: Boolean(document.getElementById('fatal-overlay'))
+    },
+    player: player ? {
+      x: Math.round(player.x),
+      y: Math.round(player.y),
+      active: Boolean(player.active),
+      radius: player.radius || 0,
+      powerup: player.activePowerup?.type || null
+    } : null,
+    counts: {
+      enemies: enemies.filter(enemy => enemy?.active !== false).length,
+      playerBullets: playerBullets.filter(bullet => bullet?.active !== false).length,
+      enemyBullets: enemyBullets.filter(bullet => bullet?.active !== false).length,
+      particles: playScene?.particleManager?.particles?.length || 0
+    },
+    visibleEnemies: enemies
+      .filter(enemy => enemy?.active !== false)
+      .slice(0, 8)
+      .map(enemy => ({
+        x: Math.round(enemy.x || 0),
+        y: Math.round(enemy.y || 0),
+        radius: enemy.radius || 0,
+        type: enemy.type || enemy.constructor?.name || 'enemy'
+      }))
+  };
+}
+
 function createBootLogger(enabled) {
   if (!enabled) {
     return {
@@ -711,6 +756,15 @@ async function init() {
   const game = new Game(app);
   window.__app = app;
   window.__game = game;
+  window.render_game_to_text = () => JSON.stringify(buildGameTextState(game));
+  window.advanceTime = (ms = 1000 / 60) => {
+    const steps = Math.max(1, Math.min(600, Math.round(Number(ms) / (1000 / 60))));
+    for (let i = 0; i < steps; i++) {
+      game.update(1);
+      updatePerfStats(app, game, 1, 1);
+    }
+    return buildGameTextState(game);
+  };
   perfState.renderer = app.renderer?.constructor?.name || perfState.renderer;
   await runBootStep(bootLogger, 'start game', () => {
     game.start();

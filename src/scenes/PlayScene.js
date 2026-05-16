@@ -18,6 +18,7 @@ import { TouchControls } from '../input/TouchControls.js';
 import { NullTouchControls } from '../input/NullTouchControls.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
+import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 import {
@@ -52,6 +53,7 @@ export class PlayScene {
     this.hud = null;
     this.isPaused = false;
     this.pauseOverlay = null;
+    this.settingsOverlay = null;
     this.levelAdvancePending = false;
     this.levelAdvanceTimeout = null;
     this.capState = {
@@ -163,6 +165,7 @@ export class PlayScene {
     }
     this.isPaused = false;
     this.pauseOverlay = null;
+    this.settingsOverlay = null;
     this.pausePressed = false;
     this.gameContainer.removeChildren();
     this.uiContainer.removeChildren();
@@ -1595,6 +1598,8 @@ export class PlayScene {
   }
 
   destroy() {
+    this.closeSettingsOverlay();
+
     if (this.levelAdvanceTimeout) {
       clearTimeout(this.levelAdvanceTimeout);
       this.levelAdvanceTimeout = null;
@@ -1674,6 +1679,7 @@ export class PlayScene {
       this.showPauseOverlay();
       AudioManager.playSfx('ui_open', { volume: 0.45 });
     } else {
+      this.closeSettingsOverlay();
       this.hidePauseOverlay();
       AudioManager.playSfx('ui_open', { volume: 0.25 });
     }
@@ -1697,7 +1703,7 @@ export class PlayScene {
     overlay.addChild(dim);
 
     const panelWidth = Math.min(500, width * 0.72);
-    const panelHeight = 260;
+    const panelHeight = 310;
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const panel = new PIXI.Graphics();
@@ -1729,8 +1735,10 @@ export class PlayScene {
     status.position.set(width / 2, panelY + 102);
     overlay.addChild(status);
 
-    overlay.addChild(this.createPauseButton('RESUME', width / 2, panelY + 154, () => this.setPaused(false)));
-    overlay.addChild(this.createPauseButton('QUIT TO MENU', width / 2, panelY + 208, () => {
+    overlay.addChild(this.createPauseButton('RESUME', width / 2, panelY + 148, () => this.setPaused(false)));
+    overlay.addChild(this.createPauseButton('SETTINGS', width / 2, panelY + 202, () => this.openSettingsOverlay()));
+    overlay.addChild(this.createPauseButton('QUIT TO MENU', width / 2, panelY + 256, () => {
+      this.closeSettingsOverlay();
       this.hidePauseOverlay();
       this.isPaused = false;
       this.game.switchScene('menu');
@@ -1738,6 +1746,27 @@ export class PlayScene {
 
     this.pauseOverlay = overlay;
     this.uiOverlay.addChild(overlay);
+  }
+
+  openSettingsOverlay() {
+    if (this.settingsOverlay) {
+      this.closeSettingsOverlay();
+    }
+
+    this.settingsOverlay = new SettingsOverlay(this.game, {
+      title: 'SETTINGS',
+      onClose: () => {
+        this.settingsOverlay = null;
+      }
+    });
+    this.uiOverlay.addChild(this.settingsOverlay.container);
+  }
+
+  closeSettingsOverlay() {
+    if (this.settingsOverlay) {
+      this.settingsOverlay.close();
+      this.settingsOverlay = null;
+    }
   }
 
   createPauseButton(label, x, y, onPress) {
