@@ -123,18 +123,22 @@ async function runSmoke() {
   const pageErrors = [];
   const badResponses = [];
 
-  page.on('console', (message) => {
-    const type = message.type();
-    if (type === 'error' || type === 'warning') {
-      consoleEvents.push({ type, text: message.text().slice(0, 600) });
-    }
-  });
-  page.on('pageerror', (error) => pageErrors.push(error.message));
-  page.on('response', (response) => {
-    if (response.status() >= 400) {
-      badResponses.push({ status: response.status(), url: response.url() });
-    }
-  });
+  function observePage(targetPage, label) {
+    targetPage.on('console', (message) => {
+      const type = message.type();
+      if (type === 'error' || type === 'warning') {
+        consoleEvents.push({ page: label, type, text: message.text().slice(0, 600) });
+      }
+    });
+    targetPage.on('pageerror', (error) => pageErrors.push(`${label}: ${error.message}`));
+    targetPage.on('response', (response) => {
+      if (response.status() >= 400) {
+        badResponses.push({ page: label, status: response.status(), url: response.url() });
+      }
+    });
+  }
+
+  observePage(page, 'desktop');
 
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -167,6 +171,30 @@ async function runSmoke() {
     await page.screenshot({ path: path.join(outputDir, '03-pause.png'), fullPage: true });
     const pauseState = await collectGameState(page);
 
+    const mobilePage = await browser.newPage({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true
+    });
+    observePage(mobilePage, 'mobile');
+    await mobilePage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await mobilePage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await mobilePage.waitForTimeout(1800);
+    await mobilePage.screenshot({ path: path.join(outputDir, '04-mobile-intro.png'), fullPage: true });
+    await mobilePage.waitForFunction(() => {
+      try {
+        if (typeof window.render_game_to_text !== 'function') return false;
+        const state = JSON.parse(window.render_game_to_text());
+        return state?.counts?.enemies > 0;
+      } catch {
+        return false;
+      }
+    }, null, { timeout: 8000 });
+    await mobilePage.waitForTimeout(700);
+    await mobilePage.screenshot({ path: path.join(outputDir, '05-mobile-gameplay.png'), fullPage: true });
+    const mobileGameplayState = await collectGameState(mobilePage);
+    await mobilePage.close();
+
     const report = {
       baseUrl,
       outputDir,
@@ -174,6 +202,7 @@ async function runSmoke() {
       settingsState,
       gameplayState,
       pauseState,
+      mobileGameplayState,
       consoleEvents,
       pageErrors,
       badResponses
@@ -185,7 +214,10 @@ async function runSmoke() {
       ...badResponses.map((response) => `HTTP ${response.status}: ${response.url}`),
       ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
       ...(!pauseState.isPaused || !pauseState.pauseOverlayVisible ? ['pause overlay did not appear'] : []),
-      ...(gameplayState.fatalOverlay ? ['fatal overlay visible'] : [])
+      ...(gameplayState.fatalOverlay ? ['fatal overlay visible'] : []),
+      ...(mobileGameplayState.fatalOverlay ? ['mobile fatal overlay visible'] : []),
+      ...(mobileGameplayState.textState?.scene !== 'play' ? ['mobile autostart did not reach play scene'] : []),
+      ...((mobileGameplayState.textState?.counts?.enemies || 0) <= 0 ? ['mobile gameplay did not spawn enemies'] : [])
     ];
 
     console.log(JSON.stringify(report, null, 2));

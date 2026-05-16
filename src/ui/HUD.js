@@ -303,12 +303,14 @@ export class HUD {
     const blockSpacing = layout.isMobile ? 24 : 22;
     const scoreFont = layout.isMobile ? 15 : 18;
     const livesFont = layout.isMobile ? 16 : 18;
-    const leftPanelWidth = layout.isMobile ? Math.min(226, canvasWidth * 0.46) : 250;
+    const leftPanelWidth = layout.isMobile ? Math.min(180, canvasWidth * 0.46) : 250;
     const leftPanelHeight = layout.isMobile ? 76 : 82;
-    const rightPanelWidth = layout.isMobile ? 126 : 150;
+    const rightPanelWidth = layout.isMobile ? 118 : 150;
     const rightPanelHeight = layout.isMobile ? 42 : 46;
-    const missionPanelWidth = layout.isMobile ? Math.min(300, canvasWidth * 0.52) : 390;
-    const missionPanelHeight = layout.isMobile ? 40 : 44;
+    const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : 390;
+    const missionPanelHeight = layout.isMobile ? 38 : 44;
+    const missionPanelX = layout.isMobile ? margin : canvasWidth / 2 - missionPanelWidth / 2;
+    const missionPanelY = layout.isMobile ? margin + leftPanelHeight + 7 : margin;
 
     this.scoreText.style.fontSize = scoreFont;
     this.levelText.style.fontSize = scoreFont;
@@ -320,7 +322,7 @@ export class HUD {
 
     this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, leftPanelHeight, 0x00d9ff, 0.16);
     this.drawGlassPanel(this.rightPanel, canvasWidth - margin - rightPanelWidth, margin, rightPanelWidth, rightPanelHeight, 0x75ff8d, 0.14);
-    this.drawGlassPanel(this.missionPanel, canvasWidth / 2 - missionPanelWidth / 2, margin, missionPanelWidth, missionPanelHeight, 0xff55d9, 0.1);
+    this.drawGlassPanel(this.missionPanel, missionPanelX, missionPanelY, missionPanelWidth, missionPanelHeight, 0xff55d9, 0.1);
 
     // Rank Position (Top Left)
     this.rankGroup.x = margin + 10;
@@ -337,13 +339,15 @@ export class HUD {
     this.levelText.x = margin + rankOffset;
     this.levelText.y = margin + blockSpacing + 8;
 
-    this.missionLabel.x = canvasWidth / 2;
-    this.missionLabel.y = margin + 11;
-    this.missionText.x = canvasWidth / 2;
-    this.missionText.y = margin + 29;
+    this.missionLabel.x = missionPanelX + missionPanelWidth / 2;
+    this.missionLabel.y = missionPanelY + 10;
+    this.missionText.x = missionPanelX + missionPanelWidth / 2;
+    this.missionText.y = missionPanelY + 27;
 
     this.locationText.x = canvasWidth - margin;
-    this.locationText.y = margin + blockSpacing * 2.5;
+    this.locationText.y = layout.isMobile
+      ? missionPanelY + missionPanelHeight + 6
+      : margin + blockSpacing * 2.5;
 
     this.updateLivesVisuals();
     this.livesGroup.x = canvasWidth - margin - rightPanelWidth + 10;

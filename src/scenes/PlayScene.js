@@ -461,10 +461,10 @@ export class PlayScene {
     const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
     const message = introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`;
     this.showToast(message, {
-      fontSize: 42,
+      fontSize: this.game.getWidth() < 620 ? 26 : 42,
       fill: '#ffff00',
       stroke: '#ff8800',
-      strokeThickness: 3,
+      strokeThickness: this.game.getWidth() < 620 ? 2 : 3,
       duration: 2000,
       type: 'level_up',
       slot: 'center'
@@ -3192,6 +3192,10 @@ export class PlayScene {
 
     const shipMeta = getShipMetadata(spriteKey);
     const shipName = (shipMeta ? shipMeta.name : 'UNKNOWN SHIP').toUpperCase();
+    const introWidth = this.game.getWidth();
+    const introHeight = this.game.getHeight();
+    const isNarrowIntro = introWidth < 620;
+    const maxTextWidth = Math.max(260, introWidth * 0.9);
 
     // Create intro overlay
     this.introOverlay = new PIXI.Container();
@@ -3199,39 +3203,45 @@ export class PlayScene {
 
     // Dark vignette for readability + Flash Layer
     const overlayBg = new PIXI.Graphics();
-    overlayBg.rect(0, 0, this.game.getWidth(), this.game.getHeight());
+    overlayBg.rect(0, 0, introWidth, introHeight);
     overlayBg.fill({ color: 0x000000, alpha: 0.3 });
     this.introOverlay.addChild(overlayBg);
 
     // Ship name (Big, Readable)
     const nameText = createText(shipName, {
       fontFamily: 'Courier New',
-      fontSize: 52, // 1080p readable
+      fontSize: isNarrowIntro ? 30 : 52, // 1080p readable, mobile-safe
       fill: '#00ff00',
       stroke: '#000000',
-      strokeThickness: 6,
+      strokeThickness: isNarrowIntro ? 4 : 6,
       fontWeight: 'bold',
       dropShadow: true,
       dropShadowColor: '#004400',
       dropShadowBlur: 10,
       dropShadowDistance: 4,
-      align: 'center'
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: maxTextWidth
     });
     nameText.anchor.set(0.5);
-    nameText.position.set(this.game.getWidth() / 2, this.game.getHeight() / 2 - 50); // Start higher
+    const baseNameScale = Math.min(1, maxTextWidth / Math.max(1, nameText.width));
+    nameText.scale.set(baseNameScale);
+    nameText.position.set(introWidth / 2, introHeight / 2 - (isNarrowIntro ? 72 : 50)); // Start higher
     nameText.alpha = 0;
     this.introOverlay.addChild(nameText);
 
     // Subtitle
     const subText = createText("CLASSIFIED COMBAT VESSEL", {
       fontFamily: 'Courier New',
-      fontSize: 20, // Readable subtitle
+      fontSize: isNarrowIntro ? 13 : 20, // Readable subtitle
       fill: '#aaaaaa',
       align: 'center',
-      letterSpacing: 4
+      letterSpacing: isNarrowIntro ? 2 : 4
     });
     subText.anchor.set(0.5);
-    subText.position.set(this.game.getWidth() / 2, this.game.getHeight() / 2 + 10);
+    const baseSubScale = Math.min(1, maxTextWidth / Math.max(1, subText.width));
+    subText.scale.set(baseSubScale);
+    subText.position.set(introWidth / 2, introHeight / 2 + (isNarrowIntro ? -20 : 10));
     subText.alpha = 0;
     this.introOverlay.addChild(subText);
 
@@ -3239,14 +3249,14 @@ export class PlayScene {
 
     // Impact Flash (White overlay)
     const flash = new PIXI.Graphics();
-    flash.rect(0, 0, this.game.getWidth(), this.game.getHeight());
+    flash.rect(0, 0, introWidth, introHeight);
     flash.fill({ color: 0xffffff, alpha: 0.15 });
     flash.alpha = 0;
     this.uiOverlay.addChild(flash);
 
     // Setup Player Sprite State
-    const startY = this.game.getHeight() + 300;
-    const endY = this.game.getHeight() - 150;
+    const startY = introHeight + 300;
+    const endY = introHeight - (isNarrowIntro ? 170 : 150);
     this.player.sprite.y = startY;
     this.player.y = startY;
     this.player.sprite.scale.set(0.7);
@@ -3262,8 +3272,8 @@ export class PlayScene {
     AudioManager.playSfx('ui_open', { volume: 0.8 });
 
     // Animation Config
-    const duration = 1800; // 1.8s
-    const textDuration = 3600; // 3.6s
+    const duration = isNarrowIntro ? 1500 : 1800;
+    const textDuration = isNarrowIntro ? 2600 : 3200;
     const startTime = Date.now();
     let midpointLogged = false;
     let gameplayEnabled = false;
@@ -3327,22 +3337,23 @@ export class PlayScene {
       let tAlpha = 0;
       if (elapsed < 600) {
         tAlpha = elapsed / 600;
-        nameText.y = (this.game.getHeight() / 2 - 50) + (tAlpha * 10);
+        nameText.y = (introHeight / 2 - (isNarrowIntro ? 72 : 50)) + (tAlpha * 10);
       } else if (elapsed < 2800) {
         tAlpha = 1;
-        nameText.y = (this.game.getHeight() / 2 - 40);
+        nameText.y = (introHeight / 2 - (isNarrowIntro ? 62 : 40));
       } else {
         tAlpha = 1 - ((elapsed - 2800) / 800);
-        nameText.y = (this.game.getHeight() / 2 - 40);
+        nameText.y = (introHeight / 2 - (isNarrowIntro ? 62 : 40));
       }
       nameText.alpha = tAlpha;
       subText.alpha = tAlpha;
 
       const pulse = 1.0 + Math.sin(now * 0.005) * 0.025;
-      nameText.scale.set(pulse);
+      nameText.scale.set(baseNameScale * pulse);
+      subText.scale.set(baseSubScale);
 
       // --- Logic Gating ---
-      if (elapsed >= duration && !gameplayEnabled) {
+      if (elapsed >= textDuration && !gameplayEnabled) {
         gameplayEnabled = true;
         this.completeShipIntro();
       }

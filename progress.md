@@ -46,4 +46,8 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Reworked the in-game HUD into cockpit-style glass panels with score/rank/level, lives, and live mission status for wave, hostiles, and incoming shots.
 - Latest `npm run build` succeeds with no Vite warnings after the HUD pass.
 - Latest `npm run smoke` succeeds with no console errors, page errors, bad responses, or fatal overlay. Latest screenshots: `test-results/smoke-2026-05-16T13-07-40-219Z/01-menu.png`, `test-results/smoke-2026-05-16T13-07-40-219Z/01-settings.png`, `test-results/smoke-2026-05-16T13-07-40-219Z/02-gameplay.png`, and `test-results/smoke-2026-05-16T13-07-40-219Z/03-pause.png`.
-- Next priority: continue gameplay feel and readability polish, especially first-level pacing, enemy formation variety, mobile HUD sanity, and harsher playtest review loops.
+- Extended `npm run smoke` with mobile portrait intro and actual mobile gameplay screenshots, plus a blocking check that mobile autostart spawns enemies.
+- Fixed mobile HUD overlap by stacking the mission status panel below the score/lives panels and scaling the ship intro/level-intro typography for narrow screens.
+- Latest `npm run build` succeeds with no Vite warnings after mobile HUD/intro fixes.
+- Latest `npm run smoke` succeeds with no console errors, page errors, bad responses, or fatal overlay. Latest screenshots: `test-results/smoke-2026-05-16T13-13-10-454Z/01-menu.png`, `test-results/smoke-2026-05-16T13-13-10-454Z/01-settings.png`, `test-results/smoke-2026-05-16T13-13-10-454Z/02-gameplay.png`, `test-results/smoke-2026-05-16T13-13-10-454Z/03-pause.png`, `test-results/smoke-2026-05-16T13-13-10-454Z/04-mobile-intro.png`, and `test-results/smoke-2026-05-16T13-13-10-454Z/05-mobile-gameplay.png`.
+- Next priority: continue gameplay feel and readability polish, especially first-level pacing, enemy formation variety, touch-control ergonomics, and harsher playtest review loops.

@@ -24,7 +24,7 @@ npm run build
 npm run smoke
 ```
 
-`npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, gameplay og pause, og lagrer rapporten i `test-results/`.
+`npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, settings, desktop gameplay/pause og mobil intro/gameplay, og lagrer rapporten i `test-results/`.
 
 ## Nyeste polish-pass
 
@@ -39,6 +39,7 @@ npm run smoke
 - `window.render_game_to_text()` og `window.advanceTime(ms)` finnes for automatisert playtest.
 - Steam capsule/library art drafts ligger i `release/steam-assets/draft-2026-05-16/`.
 - Ekstra mission-control key-art/promo draft ligger i `release/marketing-assets/mission-control-2026-05-16/`.
+- Smoke-testen dekker naa ogsaa mobil portrait gameplay for aa fange HUD/layout-regresjoner.
 
 ## Deploy til Cloudflare Pages
 
