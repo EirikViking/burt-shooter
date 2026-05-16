@@ -14,6 +14,7 @@ export class Game {
     this.app = app;
     this.state = GameState.MENU;
     this.currentScene = null;
+    this.currentSceneName = 'boot';
     this.score = 0;
     this.level = 1;
     this.lives = 3;
@@ -45,6 +46,7 @@ export class Game {
     }
 
     this.currentScene = this.scenes[sceneName];
+    this.currentSceneName = sceneName;
     this.app.stage.addChild(this.currentScene.container);
     this.currentScene.init();
   }
@@ -70,6 +72,7 @@ export class Game {
 
     // Show ship select
     this.currentScene = this.scenes.shipSelect;
+    this.currentSceneName = 'shipSelect';
     this.app.stage.addChild(this.currentScene.container);
   }
 
@@ -88,6 +91,7 @@ export class Game {
 
     // Show ship details
     this.currentScene = detailsScene;
+    this.currentSceneName = 'shipDetails';
     this.app.stage.addChild(this.currentScene.container);
   }
 

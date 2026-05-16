@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { getAccessibilitySettings, setScreenShakeScale } from '../config/AccessibilitySettings.js';
 import { createText } from '../utils/pixiText.js';
 
 function percent(value) {
@@ -26,6 +27,7 @@ export class SettingsOverlay {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const settings = AudioManager.getSettings();
+    const accessibility = getAccessibilitySettings();
     this.container.eventMode = 'static';
     this.container.hitArea = new PIXI.Rectangle(0, 0, width, height);
 
@@ -36,7 +38,7 @@ export class SettingsOverlay {
     this.container.addChild(dim);
 
     const panelWidth = Math.min(560, width * 0.82);
-    const panelHeight = Math.min(520, height * 0.86);
+    const panelHeight = Math.min(580, height * 0.9);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
 
@@ -70,6 +72,10 @@ export class SettingsOverlay {
     this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, y);
     y += 52;
     this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, y);
+    y += 52;
+    this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, y, {
+      onChange: setScreenShakeScale
+    });
     y += 64;
 
     this.container.addChild(this.createButton('FULLSCREEN', width / 2, y, () => this.toggleFullscreen()));
@@ -105,7 +111,7 @@ export class SettingsOverlay {
     this.rows.push(row);
   }
 
-  addSliderRow(label, kind, initialValue, y) {
+  addSliderRow(label, kind, initialValue, y, { onChange = null } = {}) {
     const width = this.game.getWidth();
     const row = new PIXI.Container();
     row.position.set(width / 2, y);
@@ -148,8 +154,10 @@ export class SettingsOverlay {
     const setFromGlobal = (globalX) => {
       const local = row.toLocal({ x: globalX, y });
       const value = (local.x + trackWidth / 2) / trackWidth;
-      const settings = AudioManager.setVolume(kind, value);
-      draw(settings[`${kind}Volume`] ?? value);
+      const nextValue = onChange
+        ? onChange(value)
+        : AudioManager.setVolume(kind, value)[`${kind}Volume`];
+      draw(Number.isFinite(nextValue) ? nextValue : value);
     };
 
     track.eventMode = 'static';

@@ -229,17 +229,17 @@ async function collectPlayState(page) {
         : null;
     } catch {}
 
-    const scene = game?.currentScene === game?.scenes?.play
+    const scene = game?.currentSceneName || textState?.scene || (game?.currentScene === game?.scenes?.play
       ? 'play'
       : game?.currentScene === game?.scenes?.menu
-        ? 'MenuScene'
+        ? 'menu'
         : game?.currentScene === game?.scenes?.gameOver
-          ? 'GameOverScene'
+          ? 'gameOver'
           : game?.currentScene === game?.scenes?.highscore
-            ? 'HighscoreScene'
+            ? 'highscore'
             : game?.currentScene === game?.scenes?.shipSelect
-              ? 'ShipSelectScene'
-              : textState?.scene || game?.currentScene?.constructor?.name || 'unknown';
+              ? 'shipSelect'
+              : 'unknown');
 
     return {
       scene,
@@ -251,6 +251,7 @@ async function collectPlayState(page) {
       enemyManagerState: enemyManager?.state ?? null,
       currentWaveIndex: enemyManager?.currentWaveIndex ?? null,
       music: textState?.audio || null,
+      accessibility: textState?.accessibility || null,
       player: player ? {
         x: Math.round(player.x),
         y: Math.round(player.y)
@@ -529,7 +530,9 @@ async function runReleasePlaytest() {
   }
 
   const survivedMs = timeline.length ? timeline[timeline.length - 1].elapsedMs : 0;
-  const survivedFullDuration = survivedMs >= Math.min(durationMs - sampleMs, minSurvivalMs);
+  const survivalGraceMs = Math.max(500, sampleMs * 2);
+  const requiredSurvivalMs = Math.max(0, Math.min(durationMs, minSurvivalMs) - survivalGraceMs);
+  const survivedFullDuration = survivedMs >= requiredSurvivalMs;
   const endedInGameOver = Number.isFinite(finalState?.lives) && finalState.lives <= 0;
   const endedOutsidePlay = finalState?.scene && finalState.scene !== 'play';
   const report = {
@@ -537,6 +540,8 @@ async function runReleasePlaytest() {
     outputDir,
     requestedDurationMs: durationMs,
     minSurvivalMs,
+    requiredSurvivalMs,
+    survivalGraceMs,
     survivedMs,
     survivedFullDuration,
     samples: timeline.length,
@@ -555,6 +560,8 @@ async function runReleasePlaytest() {
     outputDir,
     requestedDurationMs: durationMs,
     minSurvivalMs,
+    requiredSurvivalMs,
+    survivalGraceMs,
     survivedMs,
     survivedFullDuration,
     peakLevel: report.peakLevel,
@@ -579,7 +586,7 @@ async function runReleasePlaytest() {
     ...(finalState?.fatalOverlay ? ['fatal overlay visible'] : [])
   ];
   const playthroughIssues = [
-    ...(!allowGameOver && !survivedFullDuration ? [`ended before minimum survival (${survivedMs}ms < ${minSurvivalMs}ms)`] : []),
+    ...(!allowGameOver && !survivedFullDuration ? [`ended before minimum survival (${survivedMs}ms < ${requiredSurvivalMs}ms required, ${survivalGraceMs}ms timing grace)`] : []),
     ...(!allowGameOver && endedInGameOver ? ['ended in game over'] : []),
     ...(!allowGameOver && endedOutsidePlay ? [`ended outside play scene (${finalState.scene})`] : [])
   ];

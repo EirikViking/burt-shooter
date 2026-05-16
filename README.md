@@ -33,7 +33,7 @@ npm run smoke
 - Generert arktisk key art og optimalisert WebP-bakgrunn ligger i `public/art/generated/`.
 - Meny og gameplay bruker den nye arktiske/aurora-retningen for mer helhetlig uttrykk.
 - Pauseflyt har modal med resume, settings og quit-to-menu.
-- Settings-panelet har musikk/voice toggles, master/music/SFX/voice volum og fullscreen.
+- Settings-panelet har musikk/voice toggles, master/music/SFX/voice volum, screen-shake styrke og fullscreen.
 - ElevenLabs mission-control voicepack ligger i `public/audio/voice/mission-control/` og kan regenereres med `node scripts/generate-mission-control-voicepack.mjs` når `ELEVENLABS_API_KEY` finnes i environment.
 - Voice playback ducker musikken kort under radio calls, og pause overlay senker gameplay-musikken uten aa stoppe tracket.
 - Produksjonsbundle er splittet i app-, Pixi- og vendor-chunks for bedre caching.
@@ -58,6 +58,7 @@ npm run smoke
 - Boss inbound bruker naa en original generert threat-dossier asset, foerste boss er mer rettferdig, og `npm run playtest:release` gir en streng survival/preflight playtest for release-regresjoner.
 - Lore/flyby-overlegg bruker naa originale genererte crew-portretter som standard. Eldre lokale foto kan testes eksplisitt med `?legacyPhotos=1` eller `localStorage.burtLegacyPhotos=1`.
 - Hovedmenyen gjenbruker de genererte crew-portrettene i en subtil mission-console/radar layer, med kontrollhint for keyboard og gamepad.
+- `render_game_to_text()` og release/smoke-rapportene bruker stabile scene-navn som `menu`, `play` og `gameOver`, og eksponerer accessibility-state.
 - `docs/recovery-note-2026-05-16.md` og `docs/reviews/2026-05-16-release-candidate-review.md` oppsummerer siste recovery/review-pass.
 
 ## Deploy til Cloudflare Pages

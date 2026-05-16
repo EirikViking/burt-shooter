@@ -6,6 +6,7 @@ import { BootWatchdog } from './utils/BootWatchdog.js';
 import { installConsoleLogFilter } from './utils/Logger.js';
 import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
+import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
 
 installConsoleLogFilter();
 
@@ -180,7 +181,7 @@ function updatePerfStats(app, game, delta, clampedDelta) {
 
   const playScene = game?.scenes?.play;
   const isPlayScene = playScene && game?.currentScene === playScene;
-  perfState.scene = isPlayScene ? 'play' : (game?.currentScene?.constructor?.name || 'unknown');
+  perfState.scene = getStableSceneName(game);
 
   if (isPlayScene && playScene) {
     const bulletManager = playScene.bulletManager;
@@ -200,6 +201,24 @@ function updatePerfStats(app, game, delta, clampedDelta) {
   }
 }
 
+function getStableSceneName(game) {
+  if (!game?.currentScene) {
+    return game?.currentSceneName || 'boot';
+  }
+
+  if (game.currentSceneName) {
+    return game.currentSceneName;
+  }
+
+  if (game.currentScene === game.scenes?.menu) return 'menu';
+  if (game.currentScene === game.scenes?.play) return 'play';
+  if (game.currentScene === game.scenes?.gameOver) return 'gameOver';
+  if (game.currentScene === game.scenes?.highscore) return 'highscore';
+  if (game.currentScene === game.scenes?.shipSelect) return 'shipSelect';
+  if (game.currentScene?.constructor?.name === 'ShipDetailsScene') return 'shipDetails';
+  return 'unknown';
+}
+
 function buildGameTextState(game) {
   const playScene = game?.scenes?.play;
   const player = playScene?.player;
@@ -210,7 +229,7 @@ function buildGameTextState(game) {
 
   return {
     coordinateSystem: 'origin top-left, x right, y down',
-    scene: perfState.scene,
+    scene: getStableSceneName(game),
     score: game?.score ?? 0,
     level: game?.level ?? 0,
     lives: game?.lives ?? 0,
@@ -222,6 +241,7 @@ function buildGameTextState(game) {
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
+    accessibility: getAccessibilitySettings(),
     input: {
       gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null
     },

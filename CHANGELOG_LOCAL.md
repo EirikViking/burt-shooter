@@ -51,6 +51,10 @@ when git commits are not used.
 - Added a desktop mission-console layer to the main menu with radar sweep and crew comms, and updated the control hint so controller players can discover stick/A/B/Start controls before playing.
 - Fixed a music-switch race where game over could report the game-over context while the audio element was still holding a menu track.
 - Hardened smoke settings-overlay setup away from hardcoded click coordinates and made the desktop controls line more readable.
+- Added a settings screen-shake slider that respects reduced-motion defaults and is exposed through text-state/release reports.
+- Stabilized scene names in perf/text-state smoke output so production telemetry no longer depends on minified constructor names.
+- Tightened post-boss level-intro toasts so the next sector starts with less center-screen clutter.
+- Added a small sample-timing grace to release survival checks so near-full-duration runs do not fail on polling jitter.
 
 ---
 

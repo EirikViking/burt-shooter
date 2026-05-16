@@ -152,7 +152,7 @@ export class PlayScene {
     this.seasonUnlocks = {};
     this.lastScoreSeen = 0;
     this.lastBossDefeatedLevel = 0;
-    this.lastBossDefeatedLevel = 0;
+    this.postBossLevelIntroPending = false;
     this.freezeTimerMs = 0;
 
     // TASK: Fix duplicate wave start
@@ -225,6 +225,7 @@ export class PlayScene {
 
     this.gameTime = 0;
     this.levelAdvancePending = false;
+    this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
     this.capState = { bullets: false, enemies: false, particles: false };
 
@@ -417,6 +418,8 @@ export class PlayScene {
     this._lastStartedLevel = this.game.level;
 
     this.levelAdvancePending = false;
+    const postBossLevelIntro = Boolean(this.postBossLevelIntroPending);
+    this.postBossLevelIntroPending = false;
     if (this.levelAdvanceTimeout) {
       clearTimeout(this.levelAdvanceTimeout);
       this.levelAdvanceTimeout = null;
@@ -431,9 +434,9 @@ export class PlayScene {
     if (startAtBoss) {
       this.enemyManager.forceBossStart(this.game.level);
     }
-    this.showLevelIntro();
+    this.showLevelIntro({ postBoss: postBossLevelIntro });
     const compactHud = this.game.getWidth() < 620;
-    if (!compactHud) {
+    if (!compactHud && !postBossLevelIntro) {
       this.showToast(getMicroMessage('levelStart'), { fontSize: 18, y: this.game.getHeight() * 0.12, slot: 'corner', type: 'level_up' });
       this.showToast(getMicroMessage('newWave'), { fontSize: 18, y: this.game.getHeight() * 0.16, slot: 'corner', type: 'level_up' });
     }
@@ -447,7 +450,7 @@ export class PlayScene {
     this.easterEggTimer = 20000; // Deterministic first flyby at 20s
   }
 
-  showLevelIntro() {
+  showLevelIntro({ postBoss = false } = {}) {
     const levelTexts = [
       'Sector 1: Grunnleggende gris',
       'Sector 2: Mongo intensifiserer',
@@ -463,16 +466,17 @@ export class PlayScene {
     const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
     const message = introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`;
     const compactHud = this.game.getWidth() < 620;
+    const fontSize = compactHud ? (postBoss ? 21 : 25) : (postBoss ? 34 : 42);
     this.showToast(message, {
-      fontSize: compactHud ? 25 : 42,
+      fontSize,
       fill: '#ffff00',
       stroke: '#ff8800',
       strokeThickness: compactHud ? 2 : 3,
-      duration: 2000,
+      duration: postBoss ? 1450 : 2000,
       type: 'level_up',
       slot: 'center',
-      y: compactHud ? this.game.getHeight() * 0.25 : this.game.getHeight() * 0.2,
-      maxWidth: compactHud ? this.game.getWidth() * 0.82 : this.game.getWidth() * 0.9
+      y: compactHud ? this.game.getHeight() * 0.25 : this.game.getHeight() * (postBoss ? 0.18 : 0.2),
+      maxWidth: compactHud ? this.game.getWidth() * 0.82 : this.game.getWidth() * (postBoss ? 0.78 : 0.9)
     });
   }
 
@@ -659,6 +663,7 @@ export class PlayScene {
         this.levelAdvanceTimeout = setTimeout(() => {
           this.levelAdvancePending = false;
           this.levelAdvanceTimeout = null;
+          this.postBossLevelIntroPending = bossCompletion;
           this.game.nextLevel();
           if (this.player) {
             const sprite = this.player.sprite;

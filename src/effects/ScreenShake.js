@@ -1,3 +1,5 @@
+import { getScreenShakeScale } from '../config/AccessibilitySettings.js';
+
 export class ScreenShake {
   constructor(container) {
     this.container = container;
@@ -9,9 +11,16 @@ export class ScreenShake {
   }
 
   shake(intensity, duration = 15) {
+    const scale = getScreenShakeScale();
+    if (scale <= 0.02) {
+      this.shakeAmount = 0;
+      this.shakeDuration = 0;
+      return;
+    }
+
     // Add to existing shake instead of replacing (allows stacking impacts)
-    this.shakeAmount = Math.max(this.shakeAmount, intensity);
-    this.shakeDuration = Math.max(this.shakeDuration, duration);
+    this.shakeAmount = Math.max(this.shakeAmount, intensity * scale);
+    this.shakeDuration = Math.max(this.shakeDuration, Math.max(1, duration * Math.max(0.35, scale)));
   }
 
   // Strong shake for major events (boss death, player death)
@@ -31,7 +40,9 @@ export class ScreenShake {
 
   // Freeze frame effect for dramatic moments
   freezeFrame(frames = 3) {
-    this.freezeFrames = Math.max(this.freezeFrames, frames);
+    const scale = getScreenShakeScale();
+    if (scale <= 0.15) return;
+    this.freezeFrames = Math.max(this.freezeFrames, Math.max(1, Math.round(frames * Math.max(0.35, scale))));
   }
 
   update(delta) {

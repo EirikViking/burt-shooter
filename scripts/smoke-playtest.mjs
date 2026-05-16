@@ -100,17 +100,17 @@ async function collectGameState(page) {
   return page.evaluate(() => {
     const game = window.__game;
     const scene = game?.currentScene;
-    const sceneName = scene === game?.scenes?.play
+    const sceneName = game?.currentSceneName || (scene === game?.scenes?.play
       ? 'play'
       : scene === game?.scenes?.menu
-        ? 'MenuScene'
+        ? 'menu'
         : scene === game?.scenes?.gameOver
-          ? 'GameOverScene'
+          ? 'gameOver'
           : scene === game?.scenes?.highscore
-            ? 'HighscoreScene'
+            ? 'highscore'
             : scene === game?.scenes?.shipSelect
-              ? 'ShipSelectScene'
-              : scene?.constructor?.name || 'unknown';
+              ? 'shipSelect'
+              : 'unknown');
     const play = game?.scenes?.play;
     return {
       scene: sceneName,
@@ -603,7 +603,10 @@ async function runSmoke() {
       ...pageErrors.map((message) => `pageerror: ${message}`),
       ...badResponses.map((response) => `HTTP ${response.status}: ${response.url}`),
       ...(routineConsoleEvents.length ? [`production routine console output was not quiet (${routineConsoleEvents.length} messages)`] : []),
+      ...(menuState.perf?.scene !== 'menu' ? [`menu perf state used unstable scene name: ${menuState.perf?.scene || 'none'}`] : []),
+      ...(menuState.textState?.scene !== 'menu' ? [`menu text state used unstable scene name: ${menuState.textState?.scene || 'none'}`] : []),
       ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
+      ...(!Number.isFinite(settingsState.textState?.accessibility?.screenShake) ? ['accessibility screen-shake setting was not exposed'] : []),
       ...(!pauseState.isPaused || !pauseState.pauseOverlayVisible ? ['pause overlay did not appear'] : []),
       ...(gamepadMoveState.textState?.input?.gamepad?.connected !== true ? ['gamepad override did not register as connected'] : []),
       ...((gamepadMoveState.textState?.input?.gamepad?.moveX || 0) < 0.6 ? ['gamepad right-stick movement was not exposed'] : []),
@@ -614,9 +617,13 @@ async function runSmoke() {
       ...(!gamepadPauseState.isPaused || !gamepadPauseState.pauseOverlayVisible ? ['gamepad pause button did not open pause overlay'] : []),
       ...(!loreFlybyState.easterEggActive ? ['forced lore flyby did not become active'] : []),
       ...(!/^burt-shooter-crew-/.test(loreFlybyState.easterEggAlias || '') ? [`lore flyby did not use generated crew portrait: ${loreFlybyState.easterEggAlias || 'none'}`] : []),
-      ...(gameOverState.scene !== 'GameOverScene' ? ['forced game over did not reach game over scene'] : []),
+      ...(gameOverState.scene !== 'gameOver' ? ['forced game over did not reach game over scene'] : []),
+      ...(gameOverState.perf?.scene !== 'gameOver' ? [`game-over perf state used unstable scene name: ${gameOverState.perf?.scene || 'none'}`] : []),
+      ...(gameOverState.textState?.scene !== 'gameOver' ? [`game-over text state used unstable scene name: ${gameOverState.textState?.scene || 'none'}`] : []),
       ...(musicContext(gameOverState) !== 'gameover' || !trackIncludes(gameOverState, 'Defeated') ? [`game-over music did not switch to game-over theme: ${musicContext(gameOverState)} / ${musicTrackName(gameOverState) || 'none'}`] : []),
-      ...(returnMenuState.scene !== 'MenuScene' ? ['Escape from game over did not return to menu'] : []),
+      ...(returnMenuState.scene !== 'menu' ? ['Escape from game over did not return to menu'] : []),
+      ...(returnMenuState.perf?.scene !== 'menu' ? [`return-menu perf state used unstable scene name: ${returnMenuState.perf?.scene || 'none'}`] : []),
+      ...(returnMenuState.textState?.scene !== 'menu' ? [`return-menu text state used unstable scene name: ${returnMenuState.textState?.scene || 'none'}`] : []),
       ...(returnMenuState.textState?.audio?.currentMusicContext !== 'menu' ? ['return to menu did not restore menu music context'] : []),
       ...(menuState.textState?.audio?.currentMusicContext !== 'menu' ? ['menu music context was not menu'] : []),
       ...(trackIncludes(menuState, 'Defeated') ? ['menu playlist used game-over music'] : []),
@@ -648,6 +655,7 @@ async function runSmoke() {
       ...(activeToastCount(bossDefeatedState) > 1 ? [`boss defeat displayed overlapping active toasts: ${describeActiveToasts(bossDefeatedState)}`] : []),
       ...(bossVictoryState.level < 2 ? ['boss victory did not advance to level 2'] : []),
       ...(bossVictoryState.enemyManagerState !== 'WAVE_ACTIVE' ? ['boss victory did not return to active gameplay'] : []),
+      ...(activeToastCount(bossVictoryState) > 1 ? [`post-boss level start displayed overlapping active toasts: ${describeActiveToasts(bossVictoryState)}`] : []),
       ...(!isGameplayMusic(bossVictoryState) ? [`post-boss level 2 music did not return to gameplay pool: ${musicContext(bossVictoryState)} / ${musicTrackName(bossVictoryState) || 'none'}`] : []),
       ...(bossVictoryState.textState?.wave?.currentWaveNumber !== 1 ? ['boss victory did not restart at wave 1 of the next level'] : []),
       ...((bossVictoryState.textState?.counts?.enemies || 0) <= 0 ? ['boss victory did not spawn level 2 enemies'] : []),
