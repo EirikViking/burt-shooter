@@ -35,9 +35,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
-        manualChunks: undefined
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('pixi.js') || id.includes('@pixi')) return 'vendor-pixi';
+          if (id.includes('howler')) return 'vendor-audio';
+          return 'vendor';
+        }
       }
     }
   },
