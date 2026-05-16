@@ -9,4 +9,14 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Initial `npm run build` failed because Vite could not resolve root `index.html`.
 - Restored tracked root `index.html` from git history and stopped prebuild from mutating tracked HTML on every build.
 - `npm run build` now succeeds. Remaining build warnings: one mixed static/dynamic import around `ShipMetadata.js`, and a >500 kB app chunk.
-- Next priority: run/playtest the current build before larger gameplay and asset changes.
+- Baseline smoke screenshots showed a playable but prototype-feeling menu and a few early-session regressions: missing default ship on autostart, missing favicon, a huge early photo flyby, Pixi v8 text/display warnings, and a caught intro overlay null update.
+- Generated original arctic/Northern Norway key art with the local image generation flow, saved the source in `public/art/generated/`, and added an optimized WebP menu backdrop.
+- Upgraded the menu presentation with the new generated backdrop, toned-down beer-can decoration, cleaner title/subtitle copy, and subtler idle motion.
+- Reused the generated arctic art as a dimmed gameplay backdrop under the parallax starfield so play now visually matches the upgraded menu while keeping bullets/enemies readable.
+- Fixed the default ship path for autostart, hardened ship usage tracking, added missing door SFX manifest entries, fixed a missing `life_up` fallback, added a favicon link, and prevented dev-mode build-ID reload loops.
+- Stabilized the ship intro and delayed/tamed early easter-egg photo flybys so the first seconds of play are readable.
+- Migrated high-traffic Pixi text surfaces to a shared v8-safe `createText` helper across gameplay, HUD-adjacent overlays, score popups, boss text, ship screens, highscores, and game over.
+- Added `npm run smoke`, a repeatable Playwright/system-Chrome production smoke test that starts Vite preview, captures menu/gameplay screenshots, records console/page/HTTP failures, and saves a JSON report under ignored `test-results/`.
+- Latest `npm run build` succeeds. Remaining build warning: the main app chunk is still larger than 500 kB and should be code-split later.
+- Latest `npm run smoke` succeeds with no console errors, page errors, bad responses, or fatal overlay. Latest screenshots: `test-results/smoke-2026-05-16T12-17-20-347Z/01-menu.png` and `test-results/smoke-2026-05-16T12-17-20-347Z/02-gameplay.png`.
+- Next priority: commit and push this coherent visual/stability milestone, then continue into gameplay pacing and audio/music polish.

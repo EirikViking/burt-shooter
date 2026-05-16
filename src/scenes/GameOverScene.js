@@ -5,6 +5,7 @@ import { extendGameOverTexts, getGameOverComment } from '../text/phrasePool.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { generateUUID } from '../utils/uuid.js';
+import { createText } from '../utils/pixiText.js';
 
 const ENTRY_PROMPT_DESKTOP = 'TRYKK ENTER FOR Å LOGGE SCORE';
 const ENTRY_PROMPT_MOBILE = 'TRYKK HER FOR Å LOGGE SCORE';
@@ -83,7 +84,7 @@ export class GameOverScene {
     const randomText = gameOverPool[Math.floor(Math.random() * gameOverPool.length)];
 
     const titleSize = getResponsiveFontSize(layout, 'title');
-    this.title = new PIXI.Text(randomText, {
+    this.title = createText(randomText, {
       fontFamily: 'Courier New',
       fontSize: titleSize,
       fill: '#ff0000',
@@ -97,7 +98,7 @@ export class GameOverScene {
     this.container.addChild(this.title);
 
     const scoreSize = getResponsiveFontSize(layout, 'score');
-    this.scoreText = new PIXI.Text(`SCORE: ${this.finalScore}`, {
+    this.scoreText = createText(`SCORE: ${this.finalScore}`, {
       fontFamily: 'Courier New',
       fontSize: scoreSize,
       fill: '#ffff00'
@@ -106,7 +107,7 @@ export class GameOverScene {
     this.container.addChild(this.scoreText);
 
     const levelSize = getResponsiveFontSize(layout, 'subtitle');
-    this.levelText = new PIXI.Text(`NÅDDE LEVEL: ${this.finalLevel}`, {
+    this.levelText = createText(`NÅDDE LEVEL: ${this.finalLevel}`, {
       fontFamily: 'Courier New',
       fontSize: levelSize,
       fill: '#ffffff'
@@ -115,7 +116,7 @@ export class GameOverScene {
     this.container.addChild(this.levelText);
 
     const bodySize = getResponsiveFontSize(layout, 'body');
-    this.comment = new PIXI.Text(getGameOverComment(this.finalScore, this.finalLevel), {
+    this.comment = createText(getGameOverComment(this.finalScore, this.finalLevel), {
       fontFamily: 'Courier New',
       fontSize: bodySize,
       fill: '#aaaaaa',
@@ -129,7 +130,7 @@ export class GameOverScene {
 
     const promptSize = layout.isMobile ? 18 : 20;
     const promptText = layout.isMobile ? ENTRY_PROMPT_MOBILE : ENTRY_PROMPT_DESKTOP;
-    this.promptText = new PIXI.Text(promptText, {
+    this.promptText = createText(promptText, {
       fontFamily: 'Courier New',
       fontSize: promptSize,
       fill: '#00ffff',
@@ -145,7 +146,7 @@ export class GameOverScene {
     this.container.addChild(this.promptText);
 
     const nameSize = layout.isMobile ? 22 : 26;
-    this.nameDisplay = new PIXI.Text('', {
+    this.nameDisplay = createText('', {
       fontFamily: 'Courier New',
       fontSize: nameSize,
       fill: '#ffffff'
@@ -155,7 +156,7 @@ export class GameOverScene {
     this.container.addChild(this.nameDisplay);
 
     const smallSize = getResponsiveFontSize(layout, 'small');
-    this.instructions = new PIXI.Text('ESC: Tilbake til meny', {
+    this.instructions = createText('ESC: Tilbake til meny', {
       fontFamily: 'Courier New',
       fontSize: smallSize,
       fill: '#666666'
@@ -194,7 +195,7 @@ export class GameOverScene {
         this.promptText.visible = false;
         // Show "not qualified" message
         const { width, height } = this.game.app.screen;
-        const notQualifiedMsg = new PIXI.Text('IKKE TOPP 10 - PRØV IGJEN!', {
+        const notQualifiedMsg = createText('IKKE TOPP 10 - PRØV IGJEN!', {
           fontFamily: 'Courier New',
           fontSize: 24,
           fill: '#888888',
@@ -232,7 +233,7 @@ export class GameOverScene {
     const smallSize = getResponsiveFontSize(layout, 'small');
 
     this.title.style.fontSize = titleSize;
-    this.title.style.strokeThickness = layout.isMobile ? 2 : 3;
+    this.title.style.stroke = { color: '#880000', width: layout.isMobile ? 2 : 3 };
     this.scoreText.style.fontSize = scoreSize;
     this.levelText.style.fontSize = levelSize;
     this.comment.style.fontSize = bodySize;
@@ -354,7 +355,7 @@ export class GameOverScene {
 
       // Show feedback
       const { width, height } = this.game.app.screen;
-      const msg = new PIXI.Text('IKKE TOPP 10!\nDU MÅ BLI BEDRE!', {
+      const msg = createText('IKKE TOPP 10!\nDU MÅ BLI BEDRE!', {
         fontFamily: 'Courier New', fontSize: 32, fill: '#ff0000', align: 'center', stroke: '#ffffff', strokeThickness: 2
       });
       msg.anchor.set(0.5);

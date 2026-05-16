@@ -197,7 +197,7 @@ function getEnemyEnhancementProfile(model, color) {
 
 function createGlowEffect(config) {
   const glow = new PIXI.Graphics();
-  glow.name = 'enemyGlow';
+  glow.label = 'enemyGlow';
   glow.circle(0, 0, config.radius);
   glow.fill({ color: config.color, alpha: config.alpha });
   glow.enhancementConfig = config;
@@ -208,7 +208,7 @@ function createEngineTrails(config) {
   const trails = [];
   for (let i = 0; i < config.count; i++) {
     const trail = new PIXI.Graphics();
-    trail.name = 'engineTrail';
+    trail.label = 'engineTrail';
     const yOffset = config.count === 1 ? 0 : (i - (config.count - 1) / 2) * 5;
     trail.position.set(0, yOffset + 12); // Behind enemy
     trail.enhancementConfig = config;
@@ -219,7 +219,7 @@ function createEngineTrails(config) {
 
 function createWeaponGlow(config) {
   const weaponGlow = new PIXI.Graphics();
-  weaponGlow.name = 'weaponGlow';
+  weaponGlow.label = 'weaponGlow';
   weaponGlow.position.set(0, -10); // Front of enemy
   weaponGlow.enhancementConfig = config;
   return weaponGlow;
@@ -227,7 +227,7 @@ function createWeaponGlow(config) {
 
 function createDangerIndicator(config) {
   const indicator = new PIXI.Graphics();
-  indicator.name = 'dangerIndicator';
+  indicator.label = 'dangerIndicator';
   indicator.position.set(0, -18); // Above enemy
   indicator.enhancementConfig = config;
   return indicator;
@@ -235,7 +235,7 @@ function createDangerIndicator(config) {
 
 function createParticleEmitter(config) {
   const emitter = new PIXI.Container();
-  emitter.name = 'particleEmitter';
+  emitter.label = 'particleEmitter';
   emitter.particles = [];
   emitter.enhancementConfig = config;
   emitter.spawnTimer = 0;
@@ -249,7 +249,7 @@ function animateEnemyEnhancements(enhancements, profile) {
     const config = enhancement.enhancementConfig;
     if (!config) return;
 
-    if (enhancement.name === 'enemyGlow') {
+    if (enhancement.label === 'enemyGlow') {
       if (config.pulse) {
         const pulse = Math.sin(now * 0.004) * 0.5 + 0.5;
         enhancement.alpha = config.alpha * (0.6 + pulse * 0.4);
@@ -257,7 +257,7 @@ function animateEnemyEnhancements(enhancements, profile) {
       }
     }
 
-    if (enhancement.name === 'engineTrail') {
+    if (enhancement.label === 'engineTrail') {
       enhancement.clear();
       const pulse = Math.sin(now * 0.005 + enhancement.y * 0.1) * 0.5 + 0.5;
       const length = config.length;
@@ -267,14 +267,14 @@ function animateEnemyEnhancements(enhancements, profile) {
       enhancement.stroke({ color: config.color, width: config.width, alpha: pulse * 0.7 });
     }
 
-    if (enhancement.name === 'weaponGlow') {
+    if (enhancement.label === 'weaponGlow') {
       enhancement.clear();
       const pulse = Math.sin(now * 0.006) * 0.5 + 0.5;
       enhancement.circle(0, 0, config.size);
       enhancement.fill({ color: config.color, alpha: (0.5 + pulse * 0.5) });
     }
 
-    if (enhancement.name === 'dangerIndicator') {
+    if (enhancement.label === 'dangerIndicator') {
       enhancement.clear();
       if (config.blink) {
         const blink = Math.floor(now / 200) % 2;
@@ -294,7 +294,7 @@ function animateEnemyEnhancements(enhancements, profile) {
       }
     }
 
-    if (enhancement.name === 'particleEmitter') {
+    if (enhancement.label === 'particleEmitter') {
       // Spawn particles
       enhancement.spawnTimer += 0.016;
       if (enhancement.spawnTimer > (1 / config.rate)) {

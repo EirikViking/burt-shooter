@@ -489,6 +489,10 @@ function registerProductionCrashGuard() {
 
 // TASK 3: Force Reload Logic
 async function enforceVersion() {
+  if (import.meta.env.DEV) {
+    return false;
+  }
+
   const storedVersion = localStorage.getItem('app_version');
   const currentVersion = BUILD_ID;
   console.log(`[Version] Current: ${currentVersion}, Stored: ${storedVersion}`);
@@ -695,7 +699,7 @@ async function init() {
     }
 
     app.renderer.resize(canvasWidth, canvasHeight);
-    const view = app.view;
+    const view = app.canvas || app.view;
     if (view) {
       view.style.width = `${canvasWidth}px`;
       view.style.height = `${canvasHeight}px`;

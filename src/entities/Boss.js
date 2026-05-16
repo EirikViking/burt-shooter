@@ -3,6 +3,7 @@ import { Bullet } from './Bullet.js';
 import { extendBossNames } from '../text/phrasePool.js';
 import { createBossVisual } from '../game/BossFactory.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
+import { createText } from '../utils/pixiText.js';
 
 const ENABLE_BOSS_WEAPON_FX = true;
 const HARD_SCALE_FACTOR = 0.3;
@@ -132,7 +133,7 @@ export class Boss {
     this.sprite.addChild(this.healthBar);
 
     // Name display overlay
-    this.nameText = new PIXI.Text(this.name, {
+    this.nameText = createText(this.name, {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: '#ff0000',
@@ -167,7 +168,7 @@ export class Boss {
     if (this.healthText) {
       this.healthBar.removeChild(this.healthText);
     }
-    this.healthText = new PIXI.Text(healthText, {
+    this.healthText = createText(healthText, {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#ffffff'

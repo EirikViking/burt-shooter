@@ -4,6 +4,7 @@ import { BeerAsset } from '../utils/BeerAsset.js';
 import { getSelectableShips, getDefaultShipKey, isValidShipKey } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { createText } from '../utils/pixiText.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -49,7 +50,7 @@ export class ShipSelectScene {
 
     // Fixed header with enhanced styling
     const headerContainer = new PIXI.Container();
-    const title = new PIXI.Text('SELECT YOUR SHIP', {
+    const title = createText('SELECT YOUR SHIP', {
       fontFamily: 'Courier New',
       fontSize: 36,
       fill: '#00ff00',
@@ -66,7 +67,7 @@ export class ShipSelectScene {
     headerContainer.addChild(title);
 
     // Subtitle
-    const subtitle = new PIXI.Text('Choose Your Combat Vessel', {
+    const subtitle = createText('Choose Your Combat Vessel', {
       fontFamily: 'Courier New',
       fontSize: 14,
       fill: '#888888',
@@ -92,7 +93,7 @@ export class ShipSelectScene {
 
     // Fixed footer
     const footerContainer = new PIXI.Container();
-    const instructions = new PIXI.Text(
+    const instructions = createText(
       'Arrow Keys to Navigate | Click DETAILS or START',
       {
         fontFamily: 'Courier New',
@@ -323,7 +324,7 @@ export class ShipSelectScene {
     container.glowEffect = glow;
 
     // Ship name below sprite - LARGER and more readable
-    const name = new PIXI.Text(ship.name, {
+    const name = createText(ship.name, {
       fontFamily: 'Courier New',
       fontSize: 28,
       fill: '#00ff00',
@@ -343,7 +344,7 @@ export class ShipSelectScene {
 
     // Ship description - BETTER spacing and size
     const teaser = this.getShortTeaser(ship.description);
-    const desc = new PIXI.Text(teaser, {
+    const desc = createText(teaser, {
       fontFamily: 'Courier New',
       fontSize: 15,
       fill: '#cccccc',
@@ -359,7 +360,7 @@ export class ShipSelectScene {
 
     // Stats - CLEARER and larger
     const statsText = this.getShipStats(ship);
-    const stats = new PIXI.Text(statsText, {
+    const stats = createText(statsText, {
       fontFamily: 'Courier New',
       fontSize: 14,
       fill: '#00ff00',
@@ -660,7 +661,7 @@ export class ShipSelectScene {
     button.addChild(bg);
     button.bg = bg;
 
-    const text = new PIXI.Text(label, {
+    const text = createText(label, {
       fontFamily: 'Courier New',
       fontSize: 14,
       fill: textColor,

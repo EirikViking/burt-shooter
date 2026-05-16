@@ -5,11 +5,27 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
-import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize, calculateCenteredStartY } from '../ui/textLayout.js';
+import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
+
+function normalizeTextStyle(style = {}) {
+  const next = { ...style };
+  if (next.strokeThickness !== undefined) {
+    next.stroke = {
+      color: next.stroke || '#000000',
+      width: next.strokeThickness
+    };
+    delete next.strokeThickness;
+  }
+  return next;
+}
+
+function createText(text, style) {
+  return new PIXI.Text({ text, style: normalizeTextStyle(style) });
+}
 
 export class MenuScene {
   constructor(game) {
@@ -28,6 +44,8 @@ export class MenuScene {
     this.stars = [];
     this.animationTime = 0;
     this.buildStamp = null;
+    this.backdrop = null;
+    this.backdropShade = null;
 
     // PWA install prompt
     this.installPrompt = null;
@@ -45,6 +63,7 @@ export class MenuScene {
     this.animationTime = 0;
     this.container.sortableChildren = true;
     this.createStarfield();
+    this.initBackdrop();
     // Preload all game assets here for simplicity
     // Preload all game assets here for simplicity
     GameAssets.loadBeer().then(() => {
@@ -159,7 +178,7 @@ export class MenuScene {
 
     // Text
     const textStr = platform === 'iOS' ? 'INSTALL APP' : 'INSTALL APP';
-    const text = new PIXI.Text(textStr, {
+    const text = createText(textStr, {
       fontFamily: 'Courier New',
       fontSize: 16,
       fill: 0x00ffff,
@@ -244,7 +263,7 @@ export class MenuScene {
       console.error('DEBUG: Error loading beervan', e);
       // Fallback visual
       const { width, height } = this.game.app.screen;
-      const errText = new PIXI.Text('LOAD FAIL', { fill: 'red', fontSize: 24 });
+      const errText = createText('LOAD FAIL', { fill: 'red', fontSize: 24 });
       errText.anchor.set(0.5);
       errText.x = width / 2;
       errText.y = height / 2;
@@ -255,12 +274,12 @@ export class MenuScene {
 
   createStarfield() {
     const { width, height } = this.game.app.screen;
-    const starCount = 100;
+    const starCount = 60;
 
     for (let i = 0; i < starCount; i++) {
       const star = new PIXI.Graphics();
       const size = Math.random() * 2 + 0.5;
-      const alpha = Math.random() * 0.5 + 0.3;
+      const alpha = Math.random() * 0.35 + 0.15;
       star.circle(0, 0, size);
       star.fill({ color: 0xffffff, alpha });
 
@@ -269,9 +288,33 @@ export class MenuScene {
       star.speedY = Math.random() * 0.3 + 0.1;
       star.twinkleSpeed = Math.random() * 0.02 + 0.01;
       star.twinkleOffset = Math.random() * Math.PI * 2;
+      star.zIndex = -5;
 
       this.stars.push(star);
       this.container.addChild(star);
+    }
+  }
+
+  async initBackdrop() {
+    try {
+      const texture = await PIXI.Assets.load({
+        alias: 'generated_menu_backdrop',
+        src: AssetManifest.generated.menuBackdrop
+      });
+
+      this.backdrop = new PIXI.Sprite(texture);
+      this.backdrop.anchor.set(0.5);
+      this.backdrop.alpha = 0.68;
+      this.backdrop.zIndex = -20;
+      this.container.addChild(this.backdrop);
+
+      this.backdropShade = new PIXI.Graphics();
+      this.backdropShade.zIndex = -15;
+      this.container.addChild(this.backdropShade);
+
+      this.layoutBackdrop();
+    } catch (error) {
+      console.warn('[MenuScene] Generated menu backdrop failed to load:', error);
     }
   }
 
@@ -283,7 +326,7 @@ export class MenuScene {
     const titleSize = getResponsiveFontSize(layout, 'title');
     const titleBlur = layout.isMobile ? 4 : 8;
 
-    this.title = new PIXI.Text('BURT SHOOTER', {
+    this.title = createText('BURT SHOOTER', {
       fontFamily: 'Courier New',
       fontSize: titleSize,
       fill: '#00ffff',
@@ -301,7 +344,7 @@ export class MenuScene {
     this.container.addChild(this.title);
 
     const subtitleSize = getResponsiveFontSize(layout, 'subtitle');
-    this.subtitle = new PIXI.Text('Kurt Edgar & Eirik sitt Galaga', {
+    this.subtitle = createText('Kurt Edgar & Eirik sitt Galaga', {
       fontFamily: 'Courier New',
       fontSize: subtitleSize,
       fill: '#ff00ff',
@@ -313,7 +356,7 @@ export class MenuScene {
 
     const storySize = getResponsiveFontSize(layout, 'body');
     const storyLineHeight = Math.round(storySize * 1.5);
-    this.flavor = new PIXI.Text(
+    this.flavor = createText(
       'Stokmarknes er under angrep!\nRølp, gris og mongo invaderer.\nKun Eirik kan redde dagen.',
       {
         fontFamily: 'Courier New',
@@ -330,18 +373,18 @@ export class MenuScene {
     this.flavor.alpha = 0;  // Start invisible
     this.container.addChild(this.flavor);
 
-    this.disclaimer = new PIXI.Text(
-      'There are Norwegian jokes and inside humor in this game. It was made for a group of friends. Please ignore that part and focus on the gameplay.',
+    this.disclaimer = createText(
+      'DEFEND STOKMARKNES // SURVIVE THE BOSS WAVES',
       {
         fontFamily: 'Courier New',
         fontSize: 14,
         fontWeight: 'bold',
-        fill: '#ff00ff', // Solid Magenta for safety and visibility
-        stroke: '#00ffff',
-        strokeThickness: 3,
+        fill: '#f6fbff',
+        stroke: '#052c3a',
+        strokeThickness: 4,
         dropShadow: true,
         dropShadowColor: '#000000',
-        dropShadowBlur: 4,
+        dropShadowBlur: 6,
         align: 'center',
         wordWrap: true,
         wordWrapWidth: clampTextWidth(width * 0.75, layout)
@@ -385,10 +428,10 @@ export class MenuScene {
       ? 'Joystick: Beveg | FIRE-knapp: Skyt'
       : 'WASD/Piltaster: Beveg | SPACE: Skyt | SHIFT: Dodge';
     const controlsSize = getResponsiveFontSize(layout, 'small');
-    this.controls = new PIXI.Text(controlsText, {
+    this.controls = createText(controlsText, {
       fontFamily: 'Courier New',
       fontSize: controlsSize,
-      fill: '#666666',
+      fill: '#9fb5c2',
       align: 'center',
       wordWrap: true,
       wordWrapWidth: clampTextWidth(width * 0.9, layout),
@@ -397,10 +440,10 @@ export class MenuScene {
     this.controls.anchor.set(0.5);
     this.container.addChild(this.controls);
 
-    this.easter = new PIXI.Text('Powered by Kjøttdeig Engine v1.0', {
+    this.easter = createText('Burt Shooter // Arctic Arcade Build', {
       fontFamily: 'Courier New',
       fontSize: 10,
-      fill: '#333333'
+      fill: '#58717f'
     });
     this.easter.anchor.set(0.5);
     this.container.addChild(this.easter);
@@ -424,7 +467,7 @@ export class MenuScene {
     this.container.addChild(this.musicBtn);
 
     const stampFont = Math.max(10, getResponsiveFontSize(layout, 'small') - 2);
-    this.buildStamp = new PIXI.Text(`build: ${BUILD_ID}`, {
+    this.buildStamp = createText(`build: ${BUILD_ID}`, {
       fontFamily: 'Courier New',
       fontSize: stampFont,
       fill: '#66fffe',
@@ -443,13 +486,13 @@ export class MenuScene {
       // 1. HERO Beer (LEFT side - large, prominent, animated)
       const hero = new PIXI.Sprite(texture);
       hero.anchor.set(0.5);
-      hero.height = 180; // Much bigger!
+      hero.height = 110;
       hero.scale.x = hero.scale.y; // Maintain aspect ratio
-      hero.x = width * 0.12; // LEFT side, safe from text
+      hero.x = width * 0.08;
       hero.y = height * 0.5;
       hero.rotation = -0.15;
       hero.zIndex = 0; // Behind UI
-      hero.alpha = 0.85; // More visible
+      hero.alpha = 0.42;
       this.container.addChild(hero);
 
       // Store for animation
@@ -459,13 +502,13 @@ export class MenuScene {
       // 2. Secondary Hero Beer (RIGHT side)
       const hero2 = new PIXI.Sprite(texture);
       hero2.anchor.set(0.5);
-      hero2.height = 160;
+      hero2.height = 100;
       hero2.scale.x = hero2.scale.y;
-      hero2.x = width * 0.88;
+      hero2.x = width * 0.92;
       hero2.y = height * 0.55;
       hero2.rotation = 0.2;
       hero2.zIndex = 0;
-      hero2.alpha = 0.75;
+      hero2.alpha = 0.34;
       this.container.addChild(hero2);
 
       // Store for animation
@@ -474,10 +517,10 @@ export class MenuScene {
 
       // 3. Floating cluster (More cans, more variation)
       this.floatingBeers = [];
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 3; i++) {
         const sprite = new PIXI.Sprite(texture);
         sprite.anchor.set(0.5);
-        const scale = 0.25 + Math.random() * 0.4; // Bigger range
+        const scale = 0.18 + Math.random() * 0.18;
         sprite.scale.set(scale);
 
         // Divide screen: left and right columns (avoid center text area)
@@ -494,7 +537,7 @@ export class MenuScene {
 
         sprite.boundsX = { min: isLeft ? -50 : width * 0.75, max: isLeft ? width * 0.25 : width + 50 };
 
-        sprite.alpha = 0.5 + Math.random() * 0.35; // More visible
+        sprite.alpha = 0.22 + Math.random() * 0.14;
         sprite.rotation = Math.random() * Math.PI * 2;
         sprite.zIndex = 1; // Just above stars
 
@@ -514,6 +557,7 @@ export class MenuScene {
     const responsiveLayout = getCurrentLayout();
     const layout = createTextLayout(width, height, responsiveLayout);
     const safeMargin = responsiveLayout.safeArea;
+    this.layoutBackdrop(width, height);
 
     // Update font sizes based on current layout
     const titleSize = getResponsiveFontSize(layout, 'title');
@@ -522,7 +566,7 @@ export class MenuScene {
     const controlsSize = getResponsiveFontSize(layout, 'small');
 
     this.title.style.fontSize = titleSize;
-    this.title.style.strokeThickness = layout.isMobile ? 2 : 3;
+    this.title.style.stroke = { color: '#0088ff', width: layout.isMobile ? 2 : 3 };
     this.subtitle.style.fontSize = subtitleSize;
     this.flavor.style.fontSize = storySize;
     this.flavor.style.lineHeight = Math.round(storySize * 1.5);
@@ -603,7 +647,7 @@ export class MenuScene {
     this.easter.y = easterY;
 
     // Position Music Btn (Top Right)
-    this.musicBtn.x = width - 60;
+    this.musicBtn.x = width - Math.max(88, layout.padding);
     this.musicBtn.y = 40;
 
     if (this.buildStamp) {
@@ -628,6 +672,25 @@ export class MenuScene {
     }
   }
 
+  layoutBackdrop(width = this.game.app.screen.width, height = this.game.app.screen.height) {
+    if (this.backdrop?.texture) {
+      const textureWidth = this.backdrop.texture.width || width;
+      const textureHeight = this.backdrop.texture.height || height;
+      const scale = Math.max(width / textureWidth, height / textureHeight);
+      this.backdrop.scale.set(scale);
+      this.backdrop.x = width / 2;
+      this.backdrop.y = height / 2;
+    }
+
+    if (this.backdropShade) {
+      this.backdropShade.clear();
+      this.backdropShade.rect(0, 0, width, height);
+      this.backdropShade.fill({ color: 0x020711, alpha: 0.46 });
+      this.backdropShade.rect(0, 0, width, height);
+      this.backdropShade.fill({ color: 0x000000, alpha: 0.12 });
+    }
+  }
+
   createButton(text, layout) {
     const container = new PIXI.Container();
     container.eventMode = 'static';
@@ -643,7 +706,7 @@ export class MenuScene {
     bg.stroke({ color: 0x00ffff, width: 2 });
     container.addChild(bg);
 
-    const label = new PIXI.Text(text, {
+    const label = createText(text, {
       fontFamily: 'Courier New',
       fontSize: fontSize,
       fill: '#00ffff'
@@ -777,17 +840,11 @@ export class MenuScene {
       });
     }
 
-    // Animate Disclaimer (Pulse and Wiggle)
+    // Subtle tagline breathing.
     if (this.disclaimer && this.disclaimer.alpha > 0) {
-      // Pulse scale
-      const pulse = 1 + Math.sin(this.animationTime * 6) * 0.05;
+      const pulse = 1 + Math.sin(this.animationTime * 3) * 0.015;
       this.disclaimer.scale.set(pulse);
-
-      // Wiggle rotation
-      this.disclaimer.rotation = Math.sin(this.animationTime * 8) * 0.03;
-
-      // Rainbow tint cycle speed
-      // this.disclaimer.tint = ... (Optional, but gradient is already colorful)
+      this.disclaimer.rotation = 0;
     }
   }
 

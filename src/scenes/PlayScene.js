@@ -4,6 +4,7 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { BeerAsset } from '../utils/BeerAsset.js';
 import { Player } from '../entities/Player.js';
 import { BeerCan } from '../entities/BeerCan.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { COMBO_MILESTONES, COMBO_WINDOW_MS } from '../config/ComboConfig.js';
 import { EnemyManager } from '../managers/EnemyManager.js';
@@ -18,6 +19,7 @@ import { NullTouchControls } from '../input/NullTouchControls.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import { BUILD_ID } from '../buildInfo.js';
+import { createText } from '../utils/pixiText.js';
 import {
   extendLevelIntroTexts,
   getAchievementPopup,
@@ -61,10 +63,14 @@ export class PlayScene {
     this.tauntTimer = 0;
     this.lowLivesShownFor = null;
     this.ambientBeerTimer = 0;
-    this.easterEggTimer = 0;
+    this.easterEggTimer = 20000;
     this.ambientBeers = []; // Lists for update
     this.easterEggBeer = null;
     this.isReady = false;
+    this.starfieldContainer = null;
+    this.starLayers = [];
+    this.gameplayBackdrop = null;
+    this.gameplayBackdropShade = null;
 
     // Voice throttle
     this.lastRankVoiceTime = 0;
@@ -174,17 +180,17 @@ export class PlayScene {
     //   fill: '#66fffe',
     //   align: 'left'
     // };
-    // this.playerDiagText = new PIXI.Text('', diagStyle);
+    // this.playerDiagText = createText('', diagStyle);
     // this.playerDiagText.anchor.set(0, 1);
     // this.playerDiagText.zIndex = 9999;
     // this.uiContainer.addChild(this.playerDiagText);
 
-    // this.rankDiagText = new PIXI.Text('', diagStyle);
+    // this.rankDiagText = createText('', diagStyle);
     // this.rankDiagText.anchor.set(0, 1);
     // this.rankDiagText.zIndex = 9999;
     // this.uiContainer.addChild(this.rankDiagText);
 
-    // this.buildStamp = new PIXI.Text(`build: ${BUILD_ID}`, {
+    // this.buildStamp = createText(`build: ${BUILD_ID}`, {
     //   ...diagStyle,
     //   align: 'right'
     // });
@@ -255,7 +261,8 @@ export class PlayScene {
         console.log(`[ShipDebug] Selected: ${this.game.selectedShipSpriteKey}`);
         console.log(`[ShipDebug] Active: ${this.player.selectedShipSpriteKey}`);
         console.log(`[ShipDebug] PlayerSprite: exists=${!!this.player.sprite} alpha=${this.player.sprite?.alpha} visible=${this.player.sprite?.visible} x=${this.player.sprite?.x} y=${this.player.sprite?.y}`);
-        console.log(`[ShipDebug] Texture: ${this.player.shipSprite?.texture?.baseTexture?.resource?.url || 'unknown'}`);
+        const textureSource = this.player.shipSprite?.texture?.source;
+        console.log(`[ShipDebug] Texture: ${textureSource?.resource?.url || textureSource?.label || 'loaded'}`);
       }
 
       // Start ship intro animation
@@ -780,7 +787,7 @@ export class PlayScene {
     }
 
     // "RANK UP!" trigger reason (clear and prominent)
-    const rankUpText = new PIXI.Text('⬆ RANK UP! ⬆', {
+    const rankUpText = createText('⬆ RANK UP! ⬆', {
       fontFamily: 'Courier New',
       fontSize: 26,
       fill: '#ffff00',
@@ -793,7 +800,7 @@ export class PlayScene {
 
     // Rank title text
     if (rankTitle) {
-      const titleText = new PIXI.Text(rankTitle.toUpperCase(), {
+      const titleText = createText(rankTitle.toUpperCase(), {
         fontFamily: 'Courier New',
         fontSize: 22,
         fill: '#00ffff',
@@ -807,7 +814,7 @@ export class PlayScene {
 
     // Funny lore text from lore system
     const loreText = getAchievementPopup();
-    const lore = new PIXI.Text(loreText, {
+    const lore = createText(loreText, {
       fontFamily: 'Courier New',
       fontSize: 14,
       fill: '#aaaaaa',
@@ -912,7 +919,7 @@ export class PlayScene {
     }
 
     // Main label (WAVE CLEARED!) - Big and bold
-    const labelText = new PIXI.Text(label, {
+    const labelText = createText(label, {
       fontFamily: 'Courier New',
       fontSize: 38,
       fill: '#00ff00',
@@ -928,7 +935,7 @@ export class PlayScene {
     effectContainer.addChild(labelText);
 
     // Bonus amount with coin icon
-    const bonusText = new PIXI.Text(`+${bonusAmount}`, {
+    const bonusText = createText(`+${bonusAmount}`, {
       fontFamily: 'Courier New',
       fontSize: 48,
       fill: '#ffff00',
@@ -1378,8 +1385,8 @@ export class PlayScene {
 
   checkCollision(a, b) {
     if (!this._uiCollisionWarned) {
-      const nameA = a?.name || a?.sprite?.name;
-      const nameB = b?.name || b?.sprite?.name;
+      const nameA = a?.label || a?.sprite?.label;
+      const nameB = b?.label || b?.sprite?.label;
       if ((nameA && nameA.startsWith('ui_')) || (nameB && nameB.startsWith('ui_'))) {
         console.warn('[UI] ERROR poster reached collision loop');
         this._uiCollisionWarned = true;
@@ -1401,6 +1408,7 @@ export class PlayScene {
     this.starfieldContainer.zIndex = -1000;
     this.gameContainer.addChild(this.starfieldContainer);
     this.gameContainer.sortableChildren = true;
+    this.initGameplayBackdrop(width, height);
 
     // 3 parallax layers: far (slow), mid (medium), near (fast)
     this.starLayers = [];
@@ -1454,6 +1462,44 @@ export class PlayScene {
     nebula.circle(width * 0.7, height * 0.6, 200);
     nebula.fill({ color: 0xff4488, alpha: 0.02 });
     this.starfieldContainer.addChildAt(nebula, 0); // Behind stars
+  }
+
+  async initGameplayBackdrop(width, height) {
+    if (!AssetManifest.generated?.menuBackdrop) return;
+
+    try {
+      const texture = await PIXI.Assets.load({
+        alias: 'generated_gameplay_backdrop',
+        src: AssetManifest.generated.menuBackdrop
+      });
+      if (!this.starfieldContainer || !this.starfieldContainer.parent) return;
+
+      const backdrop = new PIXI.Sprite(texture);
+      backdrop.anchor.set(0.5);
+      backdrop.alpha = 0.28;
+      backdrop.label = 'gameplayBackdrop';
+      this.fitBackdropToScreen(backdrop, width, height);
+
+      const shade = new PIXI.Graphics();
+      shade.label = 'gameplayBackdropShade';
+      shade.rect(0, 0, width, height);
+      shade.fill({ color: 0x020713, alpha: 0.58 });
+
+      this.gameplayBackdrop = backdrop;
+      this.gameplayBackdropShade = shade;
+      this.starfieldContainer.addChildAt(backdrop, 0);
+      this.starfieldContainer.addChildAt(shade, 1);
+    } catch (error) {
+      console.warn('[PlayScene] Generated gameplay backdrop failed to load:', error);
+    }
+  }
+
+  fitBackdropToScreen(sprite, width, height) {
+    const textureWidth = sprite.texture?.width || width;
+    const textureHeight = sprite.texture?.height || height;
+    const scale = Math.max(width / textureWidth, height / textureHeight);
+    sprite.scale.set(scale);
+    sprite.position.set(width / 2, height / 2);
   }
 
   updateStarfield(delta) {
@@ -1846,7 +1892,7 @@ export class PlayScene {
     let display = null;
     if (options.banner) {
       const banner = new PIXI.Container();
-      const bannerText = new PIXI.Text(message, {
+      const bannerText = createText(message, {
         fontFamily: 'Courier New',
         fontSize,
         fill: options.fill || '#ffffff',
@@ -1918,7 +1964,7 @@ export class PlayScene {
 
       // TASK 3: Add Title Label if present
       if (options.title) {
-        const titleLabel = new PIXI.Text(String(options.title).toUpperCase(), {
+        const titleLabel = createText(String(options.title).toUpperCase(), {
           fontFamily: 'Courier New',
           fontSize: 14,
           fill: '#ffff00', // Yellow for visibility
@@ -1953,7 +1999,7 @@ export class PlayScene {
       display = banner;
       this.uiOverlay.addChild(banner);
     } else {
-      const text = new PIXI.Text(message, {
+      const text = createText(message, {
         fontFamily: 'Courier New',
         fontSize,
         fill: options.fill || '#ffffff',
@@ -2031,7 +2077,7 @@ export class PlayScene {
 
   createComboDisplay() {
     if (!this.comboDisplay) {
-      this.comboDisplay = new PIXI.Text('', {
+      this.comboDisplay = createText('', {
         fontFamily: 'Courier New',
         fontSize: 26,
         fill: '#00ffff',
@@ -2067,7 +2113,7 @@ export class PlayScene {
 
   createSynergyBadge() {
     if (!this.synergyBadge) {
-      this.synergyBadge = new PIXI.Text('', {
+      this.synergyBadge = createText('', {
         fontFamily: 'Courier New',
         fontSize: 16,
         fill: '#ffff00',
@@ -2372,7 +2418,7 @@ export class PlayScene {
   updateDevOverlay() {
     if (!this.debugOverlayEnabled) return;
     if (!this.devOverlay) {
-      this.devOverlay = new PIXI.Text('', {
+      this.devOverlay = createText('', {
         fontFamily: 'Courier New',
         fontSize: 12,
         fill: '#00ffcc'
@@ -2653,6 +2699,8 @@ export class PlayScene {
   }
 
   updateEasterEgg(delta) {
+    if (this.introActive || !this.introComplete) return;
+
     this.easterEggTimer -= delta * 16.67;
     if (this.easterEggTimer <= 0 && !this.easterEggBeer) {
       this.spawnEasterEgg();
@@ -2687,11 +2735,12 @@ export class PlayScene {
     sprite.anchor.set(0.5);
     // Scale based on photo aspect
     const aspect = tex.width / tex.height;
-    sprite.height = 300;
-    sprite.width = 300 * aspect;
+    const targetHeight = Math.min(180, this.game.getHeight() * 0.22);
+    sprite.height = targetHeight;
+    sprite.width = targetHeight * aspect;
 
-    sprite.alpha = 0.4;
-    sprite.zIndex = 0; // Behind UI
+    sprite.alpha = 0.18;
+    sprite.zIndex = -1;
 
     const startLeft = Math.random() < 0.5;
 
@@ -2765,7 +2814,7 @@ export class PlayScene {
     const characterName = characterData.name;
 
     const poster = new PIXI.Container();
-    poster.name = 'ui_wanted_poster';
+    poster.label = 'ui_wanted_poster';
     poster.eventMode = 'none';
     poster.interactive = false;
 
@@ -2794,7 +2843,7 @@ export class PlayScene {
         : reason === 'boss_defeat'
           ? 'BOSS DEFEATED'
           : 'BOSS ALERT';
-    const topText = new PIXI.Text(headerLabel, {
+    const topText = createText(headerLabel, {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: 'black',
@@ -2804,7 +2853,7 @@ export class PlayScene {
     topText.y = -215;
     poster.addChild(topText);
 
-    const subText = new PIXI.Text(characterData.subtitle, {
+    const subText = createText(characterData.subtitle, {
       fontFamily: 'Courier New',
       fontSize: 13,
       fill: '#555555',
@@ -2815,7 +2864,7 @@ export class PlayScene {
     poster.addChild(subText);
 
     // Additional detail text for context
-    const detailText = new PIXI.Text(characterData.detail, {
+    const detailText = createText(characterData.detail, {
       fontFamily: 'Courier New',
       fontSize: 11,
       fill: '#666666',
@@ -2825,7 +2874,7 @@ export class PlayScene {
     detailText.y = -170;
     poster.addChild(detailText);
 
-    const bottomText = new PIXI.Text(caption, {
+    const bottomText = createText(caption, {
       fontFamily: 'Courier New',
       fontSize: 18,
       fill: '#111111',
@@ -2881,7 +2930,7 @@ export class PlayScene {
     panel.stroke({ color: 0xff3300, width: 3 });
     card.addChild(panel);
 
-    const title = new PIXI.Text(name || 'BOSS', {
+    const title = createText(name || 'BOSS', {
       fontFamily: 'Courier New',
       fontSize: 26,
       fill: '#ff3300',
@@ -2892,7 +2941,7 @@ export class PlayScene {
     title.y = -18;
     card.addChild(title);
 
-    const line = new PIXI.Text(taunt || 'LET\'S GO!', {
+    const line = createText(taunt || 'LET\'S GO!', {
       fontFamily: 'Courier New',
       fontSize: 18,
       fill: '#ffffff',
@@ -3001,7 +3050,7 @@ export class PlayScene {
     this.introOverlay.addChild(overlayBg);
 
     // Ship name (Big, Readable)
-    const nameText = new PIXI.Text(shipName, {
+    const nameText = createText(shipName, {
       fontFamily: 'Courier New',
       fontSize: 52, // 1080p readable
       fill: '#00ff00',
@@ -3020,7 +3069,7 @@ export class PlayScene {
     this.introOverlay.addChild(nameText);
 
     // Subtitle
-    const subText = new PIXI.Text("CLASSIFIED COMBAT VESSEL", {
+    const subText = createText("CLASSIFIED COMBAT VESSEL", {
       fontFamily: 'Courier New',
       fontSize: 20, // Readable subtitle
       fill: '#aaaaaa',
@@ -3164,13 +3213,6 @@ export class PlayScene {
   completeShipIntro() {
     this.introActive = false;
     this.introComplete = true;
-
-    // Remove overlay
-    if (this.introOverlay && this.introOverlay.parent) {
-      this.introOverlay.parent.removeChild(this.introOverlay);
-      this.introOverlay.destroy({ children: true });
-      this.introOverlay = null;
-    }
 
     // Start enemy waves - use startLevel, not startWave
     if (this.enemyManager && this.game.level) {

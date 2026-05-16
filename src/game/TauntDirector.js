@@ -4,6 +4,7 @@
  */
 
 import * as PIXI from 'pixi.js';
+import { createText } from '../utils/pixiText.js';
 
 // Simple helper for random text generation
 function randomChoice(arr) {
@@ -221,7 +222,7 @@ class TauntDirector {
         const colors = [0xff00ff, 0x00ffff, 0xffff00];
 
         for (let i = 0; i < 3; i++) {
-            const glitchText = new PIXI.Text(text, {
+            const glitchText = createText(text, {
                 fontFamily: 'Courier New',
                 fontSize: 32,
                 fill: colors[i],
@@ -238,7 +239,7 @@ class TauntDirector {
         }
 
         // Main text with glow
-        const mainText = new PIXI.Text(text, {
+        const mainText = createText(text, {
             fontFamily: 'Courier New',
             fontSize: 36,
             fill: '#ffffff',

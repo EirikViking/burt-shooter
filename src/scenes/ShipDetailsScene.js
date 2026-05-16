@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { getShipMetadata, getShipUsage, getTotalUsage } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
+import { createText } from '../utils/pixiText.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
@@ -52,7 +53,7 @@ export class ShipDetailsScene {
         let yOffset = 20;
 
         // Title
-        const title = new PIXI.Text(this.ship.name, {
+        const title = createText(this.ship.name, {
             fontFamily: 'Courier New',
             fontSize: isMobile ? 26 : 32,
             fill: '#00ff00',
@@ -85,7 +86,7 @@ export class ShipDetailsScene {
 
         // Usage count
         const usageCount = getShipUsage(this.spriteKey);
-        const usageText = new PIXI.Text(`Used ${usageCount} times by players`, {
+        const usageText = createText(`Used ${usageCount} times by players`, {
             fontFamily: 'Courier New',
             fontSize: 13,
             fill: '#999999',
@@ -111,7 +112,7 @@ export class ShipDetailsScene {
         console.log(`[ShipStats] details shipId=${this.ship.id} damage=${stats.damage} fireRate=${stats.fireRate} speed=${stats.speed}`);
 
         // Stats title
-        const statsTitle = new PIXI.Text('STATS', {
+        const statsTitle = createText('STATS', {
             fontFamily: 'Courier New',
             fontSize: 16,
             fill: '#00ff00',
@@ -137,7 +138,7 @@ export class ShipDetailsScene {
             statContainer.position.set(startX + index * statSpacing, yOffset);
 
             // Stat value
-            const valueText = new PIXI.Text(stat.value, {
+            const valueText = createText(stat.value, {
                 fontFamily: 'Courier New',
                 fontSize: isMobile ? 20 : 24,
                 fill: stat.color,
@@ -147,7 +148,7 @@ export class ShipDetailsScene {
             statContainer.addChild(valueText);
 
             // Stat label
-            const labelText = new PIXI.Text(stat.label, {
+            const labelText = createText(stat.label, {
                 fontFamily: 'Courier New',
                 fontSize: isMobile ? 10 : 11,
                 fill: '#aaaaaa'
@@ -168,7 +169,7 @@ export class ShipDetailsScene {
         const paragraphs = this.formatLoreIntoParagraphs(loreLong);
 
         paragraphs.forEach((para, index) => {
-            const paraText = new PIXI.Text(para, {
+            const paraText = createText(para, {
                 fontFamily: 'Courier New',
                 fontSize: isMobile ? 11 : 13,
                 fill: '#dddddd',
@@ -227,7 +228,7 @@ export class ShipDetailsScene {
         backBg.stroke({ color: 0x00ff00, width: 2 });
         backButton.addChild(backBg);
 
-        const backText = new PIXI.Text('BACK', {
+        const backText = createText('BACK', {
             fontFamily: 'Courier New',
             fontSize: isMobile ? 18 : 22,
             fill: '#00ff00',
@@ -252,7 +253,7 @@ export class ShipDetailsScene {
         startBg.stroke({ color: 0xffffff, width: 2 });
         startButton.addChild(startBg);
 
-        const startText = new PIXI.Text('START GAME', {
+        const startText = createText('START GAME', {
             fontFamily: 'Courier New',
             fontSize: isMobile ? 18 : 22,
             fill: '#000000',

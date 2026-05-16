@@ -5,6 +5,22 @@ import { extendLocations } from '../text/phrasePool.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
 
+function normalizeTextStyle(style = {}) {
+  const next = { ...style };
+  if (next.strokeThickness !== undefined) {
+    next.stroke = {
+      color: next.stroke || '#000000',
+      width: next.strokeThickness
+    };
+    delete next.strokeThickness;
+  }
+  return next;
+}
+
+function createText(text, style) {
+  return new PIXI.Text({ text, style: normalizeTextStyle(style) });
+}
+
 export class HUD {
   constructor(container, game) {
     this.container = container;
@@ -18,7 +34,7 @@ export class HUD {
     this.rankIcon = new PIXI.Sprite();
     this.rankBarBg = new PIXI.Graphics();
     this.rankBarFill = new PIXI.Graphics();
-    this.rankText = new PIXI.Text('', {
+    this.rankText = createText('', {
       fontFamily: 'Courier New',
       fontSize: 10,
       fill: '#ffff00'
@@ -38,13 +54,13 @@ export class HUD {
     this.hudContainer.addChild(this.rankGroup);
 
     // Score
-    this.scoreText = new PIXI.Text('SCORE: 0', {
+    this.scoreText = createText('SCORE: 0', {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: '#ffff00'
     });
     this.hudContainer.addChild(this.scoreText);
-    this.scoreMultiplierText = new PIXI.Text('', {
+    this.scoreMultiplierText = createText('', {
       fontFamily: 'Courier New',
       fontSize: 14,
       fill: '#ffff00',
@@ -55,7 +71,7 @@ export class HUD {
     this.hudContainer.addChild(this.scoreMultiplierText);
 
     // Level
-    this.levelText = new PIXI.Text('LEVEL: 1', {
+    this.levelText = createText('LEVEL: 1', {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: '#00ffff'
@@ -66,13 +82,13 @@ export class HUD {
     this.livesGroup = new PIXI.Container();
     this.livesBg = new PIXI.Graphics();
     this.livesGroup.addChild(this.livesBg);
-    this.livesIcon = new PIXI.Text('♥', {
+    this.livesIcon = createText('\u2665', {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: '#ff8080'
     });
     this.livesGroup.addChild(this.livesIcon);
-    this.livesText = new PIXI.Text('LIVES: 3', {
+    this.livesText = createText('LIVES: 3', {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: '#00ff00', // TASK 4: Start with green (default for >= 2 lives)
@@ -85,14 +101,14 @@ export class HUD {
     // Active powerup indicator
     this.activePowerupGroup = new PIXI.Container();
     this.activePowerupBg = new PIXI.Graphics();
-    this.activePowerupText = new PIXI.Text('', {
+    this.activePowerupText = createText('', {
       fontFamily: 'Courier New',
       fontSize: 14,
       fill: '#ffffff',
       stroke: '#000000',
       strokeThickness: 3
     });
-    this.activePowerupTimer = new PIXI.Text('', {
+    this.activePowerupTimer = createText('', {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#ffff00',
@@ -106,7 +122,7 @@ export class HUD {
     this.hudContainer.addChild(this.activePowerupGroup);
 
     // Easter egg location
-    this.locationText = new PIXI.Text('STOKMARKNES', {
+    this.locationText = createText('STOKMARKNES', {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#888888'
@@ -259,16 +275,6 @@ export class HUD {
     this.livesText.x = this.livesIcon.x + this.livesIcon.width + 6;
     this.livesText.y = height / 2 - this.livesText.height / 2;
     const width = this.livesText.x + this.livesText.width + padding / 2;
-    this.livesBg.clear();
-    this.livesBg.rect(0, 0, width, height); // Corrected syntax for GraphicsContext or classic PIXI? 
-    // PIXI v8 uses .rect().fill() chain or standard drawRect. 
-    // Looking at existing code: this.livesBg.drawRoundedRect(0, 0, width, height, 8).
-    // I should stick to existing style if it's v7/v8.
-    // Wait, the previous view_file for HUD.js showed:
-    // this.livesBg.drawRoundedRect(0, 0, width, height, 8);
-    // this.livesBg.endFill();
-    // I will use that for consistency.
-
     this.livesBg.clear();
     this.livesBg.roundRect(0, 0, width, height, 8); // v8 syntax prefer roundRect
     this.livesBg.fill({ color: 0x000000, alpha: 0.45 });

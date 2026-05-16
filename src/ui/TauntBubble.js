@@ -5,6 +5,7 @@
 
 import * as PIXI from 'pixi.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
+import { createText } from '../utils/pixiText.js';
 
 export class TauntBubble {
     constructor(text, targetX, targetY, screenWidth, screenHeight, speaker = null) {
@@ -44,10 +45,10 @@ export class TauntBubble {
             lineHeight: 26
         };
 
-        this.textObject = new PIXI.Text('', textStyle);
+        this.textObject = createText('', textStyle);
         this.textObject.anchor.set(0.5);
 
-        const tempText = new PIXI.Text(this.text, textStyle);
+        const tempText = createText(this.text, textStyle);
         const textWidth = Math.min(tempText.width + padding * 2, maxWidth);
         const textHeight = tempText.height + padding * 2;
 
@@ -94,7 +95,7 @@ export class TauntBubble {
             bannerBg.fill({ color: 0x00ffff, alpha: 0.2 });
             this.container.addChild(bannerBg);
 
-            const speakerText = new PIXI.Text(this.speaker, {
+            const speakerText = createText(this.speaker, {
                 fontFamily: 'Courier New',
                 fontSize: 16,
                 fill: '#00ffff',

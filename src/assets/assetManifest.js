@@ -1,4 +1,8 @@
 export const AssetManifest = {
+    generated: {
+        menuBackdrop: '/art/generated/burt-shooter-arctic-menu-bg.webp'
+    },
+
     // Lore & Character Images (Root /public)
     loreImages: [
         '/eirik1.jpg',
@@ -147,7 +151,8 @@ export const AssetManifest = {
             // Computer Noise
             '/audio/sfx/computerNoise_000.mp3', '/audio/sfx/computerNoise_001.mp3', '/audio/sfx/computerNoise_002.mp3', '/audio/sfx/computerNoise_003.mp3',
             // Door
-            '/audio/sfx/doorClose_000.mp3', '/audio/sfx/doorOpen_000.mp3',
+            '/audio/sfx/doorClose_000.mp3', '/audio/sfx/doorClose_001.mp3', '/audio/sfx/doorClose_002.mp3',
+            '/audio/sfx/doorOpen_000.mp3', '/audio/sfx/doorOpen_001.mp3', '/audio/sfx/doorOpen_002.mp3',
             // Engine Circular
             '/audio/sfx/engineCircular_000.mp3',
             // Explosions

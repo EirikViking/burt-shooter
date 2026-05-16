@@ -8,6 +8,7 @@ import { BeerAsset } from '../utils/BeerAsset.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { getRankFromScore, getRankTitle } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
+import { createText } from '../utils/pixiText.js';
 // PART B & C: Dynamic text rotation and speech bubbles
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
@@ -120,7 +121,7 @@ export class HighscoreScene {
     this.setupPartyHeads(width, height);
     this.setupConfetti(width, height);
 
-    this.title = new PIXI.Text('HIGHSCORES', {
+    this.title = createText('HIGHSCORES', {
       fontFamily: 'Courier New',
       fontSize: getResponsiveFontSize(layout, 'score'),
       fill: '#ffff00',
@@ -135,7 +136,7 @@ export class HighscoreScene {
     this.title.anchor.set(0.5);
     this.container.addChild(this.title);
 
-    this.subtitle = new PIXI.Text('Stokmarknes sine beste', {
+    this.subtitle = createText('Stokmarknes sine beste', {
       fontFamily: 'Courier New',
       fontSize: getResponsiveFontSize(layout, 'subtitle'),
       fill: '#00ffff'
@@ -143,7 +144,7 @@ export class HighscoreScene {
     this.subtitle.anchor.set(0.5);
     this.container.addChild(this.subtitle);
 
-    this.comment = new PIXI.Text('', {
+    this.comment = createText('', {
       fontFamily: 'Courier New',
       fontSize: getResponsiveFontSize(layout, 'small'),
       fill: '#ffffff',
@@ -159,7 +160,7 @@ export class HighscoreScene {
     this.rowsContainer.zIndex = 10; // Above leaderboard panel but below overlays
     this.container.addChild(this.rowsContainer);
 
-    this.stateMessage = new PIXI.Text('', {
+    this.stateMessage = createText('', {
       fontFamily: 'Courier New',
       fontSize: getResponsiveFontSize(layout, 'body'),
       fill: '#ffdd55',
@@ -171,7 +172,7 @@ export class HighscoreScene {
     this.stateMessage.anchor.set(0.5);
     this.container.addChild(this.stateMessage);
 
-    this.vkcFooterText = new PIXI.Text('$VKC indicates a verified Klever Wallet address and eligibility for VikingCoin prizes', {
+    this.vkcFooterText = createText('$VKC indicates a verified Klever Wallet address and eligibility for VikingCoin prizes', {
       fontFamily: 'Courier New',
       fontSize: 10,
       fill: '#66ff66',
@@ -182,7 +183,7 @@ export class HighscoreScene {
     this.vkcFooterText.anchor.set(0.5, 0); // Top-center anchor
     this.container.addChild(this.vkcFooterText);
 
-    this.statusText = new PIXI.Text('', {
+    this.statusText = createText('', {
       fontFamily: 'Courier New',
       fontSize: getResponsiveFontSize(layout, 'small'),
       fill: '#ffffff',
@@ -203,7 +204,7 @@ export class HighscoreScene {
     this.container.addChild(this.backBtn);
 
     // TASK C: Build stamp removed from HighscoreScene (only allowed on MenuScene)
-    // this.buildStamp = new PIXI.Text(`build: ${BUILD_ID}`, {
+    // this.buildStamp = createText(`build: ${BUILD_ID}`, {
     //   fontFamily: 'Courier New',
     //   fontSize: getResponsiveFontSize(layout, 'small') - 1,
     //   fill: '#66fffe',
@@ -653,7 +654,7 @@ export class HighscoreScene {
       // Calculate the longest name width to ensure proper spacing
       let maxNameWidth = 120; // Minimum name column width
       if (entriesToDisplay.length > 0) {
-        const tempText = new PIXI.Text('', rowStyle);
+        const tempText = createText('', rowStyle);
         entriesToDisplay.forEach(entry => {
           const displayName = (entry.name || 'NoName').slice(0, 20).toUpperCase();
           tempText.text = displayName;
@@ -685,7 +686,7 @@ export class HighscoreScene {
         { text: 'LEVEL', x: columns.level }
       ];
       headers.forEach(entry => {
-        const text = new PIXI.Text(entry.text, headerStyle);
+        const text = createText(entry.text, headerStyle);
         text.x = entry.x;
         text.y = startY;
         if (entry.text === 'SCORE' || entry.text === 'LEVEL') {
@@ -744,10 +745,10 @@ export class HighscoreScene {
         const rankStyle = isTop3 ? { ...rowStyle, fill: '#ffdd00', fontSize: rowStyle.fontSize + 2 } : (isPending ? { ...rowStyle, fill: '#ff8800' } : rowStyle);
         const nameStyle = isTop3 ? { ...rowStyle, fill: '#ffff88', fontSize: rowStyle.fontSize + 1 } : (isPending ? { ...rowStyle, fill: '#ffaa44' } : rowStyle);
 
-        const rankText = new PIXI.Text((index + 1).toString().padStart(2, '0'), rankStyle);
-        const nameText = new PIXI.Text((score.name || '??').slice(0, 20), nameStyle);
-        const scoreText = new PIXI.Text((score.score || 0).toString(), isTop3 ? nameStyle : (isPending ? nameStyle : rowStyle));
-        const levelText = new PIXI.Text((score.level || 0).toString(), isTop3 ? nameStyle : (isPending ? nameStyle : rowStyle));
+        const rankText = createText((index + 1).toString().padStart(2, '0'), rankStyle);
+        const nameText = createText((score.name || '??').slice(0, 20), nameStyle);
+        const scoreText = createText((score.score || 0).toString(), isTop3 ? nameStyle : (isPending ? nameStyle : rowStyle));
+        const levelText = createText((score.level || 0).toString(), isTop3 ? nameStyle : (isPending ? nameStyle : rowStyle));
 
         rankText.x = columns.rank;
         rankText.y = y;
@@ -763,7 +764,7 @@ export class HighscoreScene {
         this.rowsContainer.addChild(rankText, nameText, scoreText, levelText);
 
         if (score.hasWallet && score.walletAddress) {
-          const vkcTag = new PIXI.Text('$VKC', {
+          const vkcTag = createText('$VKC', {
             fontFamily: 'Courier New',
             fontSize: Math.max(10, rowStyle.fontSize - 2),
             fill: '#66ff66'
@@ -820,7 +821,7 @@ export class HighscoreScene {
           : getRankFromScore(score.score || 0);
         const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
 
-        const rankNameText = new PIXI.Text(getRankTitle(clampedRank), {
+        const rankNameText = createText(getRankTitle(clampedRank), {
           fontFamily: 'Courier New',
           fontSize: Math.max(8, rowStyle.fontSize - 4),
           fill: '#aaaaaa'
@@ -831,7 +832,7 @@ export class HighscoreScene {
       });
 
       if (entriesToDisplay.length > maxRows) {
-        const more = new PIXI.Text('...', rowStyle);
+        const more = createText('...', rowStyle);
         more.x = columns.name;
         more.y = startY + layout.lineHeight * 1.4 * (maxRows + 1);
         this.rowsContainer.addChild(more);
@@ -845,7 +846,7 @@ export class HighscoreScene {
     } else {
       this.rowsContainer.alpha = 1;
       const message = this.status === 'EMPTY' ? 'Ingen highscores enda. Vær først!' : 'Ingen data.';
-      const empty = new PIXI.Text(message, {
+      const empty = createText(message, {
         fontFamily: 'Courier New',
         fontSize: getResponsiveFontSize(layout, 'body'),
         fill: '#ffffff',
@@ -1195,7 +1196,7 @@ export class HighscoreScene {
     bg.stroke({ color: 0x00ffff, width: 2 });
     container.addChild(bg);
 
-    const label = new PIXI.Text(text, {
+    const label = createText(text, {
       fontFamily: 'Courier New',
       fontSize: 16,
       fill: '#00ffff'
@@ -1438,7 +1439,7 @@ export class HighscoreScene {
     panel.addChild(background);
 
     const displayKey = this.formatKeyForDisplay(walletAddress);
-    const walletText = new PIXI.Text(displayKey, {
+    const walletText = createText(displayKey, {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#ffffff'
@@ -1447,7 +1448,7 @@ export class HighscoreScene {
     walletText.y = 6;
     panel.addChild(walletText);
 
-    const copyText = new PIXI.Text('COPY', {
+    const copyText = createText('COPY', {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#00ffff'

@@ -4,6 +4,7 @@ import { GameAssets } from '../utils/GameAssets.js';
 import { ShipRegistry } from '../utils/ShipRegistry.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { enhanceShipVisuals } from '../utils/ShipVisualEnhancer.js';
+import { createText } from '../utils/pixiText.js';
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = 'row2_ship_1.png') {
@@ -218,7 +219,7 @@ export class Player {
     }
 
     if (!this.rankBoostText) {
-      this.rankBoostText = new PIXI.Text('', {
+      this.rankBoostText = createText('', {
         fontFamily: 'Courier New',
         fontSize: 14,
         fill: '#66ffff',
@@ -345,7 +346,7 @@ export class Player {
 
     this.shipSprite = new PIXI.Sprite(texture);
     this.shipSprite.anchor.set(0.5);
-    this.shipSprite.name = `player_ship_rank_${index}`;
+    this.shipSprite.label = `player_ship_rank_${index}`;
 
     // STRICT SIZING: Use targetShipWidthPx if set, otherwise compute it
     if (!this.targetShipWidthPx || isNaN(this.targetShipWidthPx)) {
@@ -375,11 +376,12 @@ export class Player {
     );
 
     if (logSwap && import.meta?.env?.DEV) {
-      const textureSource = this.shipSprite?.texture?.baseTexture?.resource?.src
-        || this.shipSprite?.texture?.baseTexture?.resource?.url
-        || this.shipSprite?.texture?.baseTexture?.cacheId
+      const source = this.shipSprite?.texture?.source;
+      const textureSource = source?.resource?.src
+        || source?.resource?.url
+        || source?.label
         || 'unknown';
-      const spriteName = this.shipSprite?.name || 'unnamed';
+      const spriteName = this.shipSprite?.label || 'unnamed';
       console.log(`[PlayerShipSwap] rank=${nr} old=${previousName} new=${shipName} sprite=${spriteName} texture=${textureSource}`);
       console.log(`[PlayerShipScale] texW=${texWidth} targetW=${targetWidth} scale=${this.baseScale}`);
       console.log(`[ShipWeapon] ship=${shipName} shootSfx=${this.weaponSfxKey}`);

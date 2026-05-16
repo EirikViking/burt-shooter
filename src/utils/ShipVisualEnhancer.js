@@ -172,7 +172,7 @@ function getEnhancementProfile(shipId) {
 
 function createGlowEffect(config) {
   const glow = new PIXI.Graphics();
-  glow.name = 'shipGlow';
+  glow.label = 'shipGlow';
   glow.circle(0, 0, config.radius);
   glow.fill({ color: config.color, alpha: config.alpha });
   glow.enhancementConfig = config; // Store config for animation
@@ -183,7 +183,7 @@ function createEngineTrails(config) {
   const trails = [];
   for (let i = 0; i < config.count; i++) {
     const trail = new PIXI.Graphics();
-    trail.name = 'engineTrail';
+    trail.label = 'engineTrail';
     const yOffset = config.count === 1 ? 0 : (i - (config.count - 1) / 2) * 6;
     trail.position.set(0, yOffset + 15); // Behind ship
     trail.enhancementConfig = config;
@@ -194,7 +194,7 @@ function createEngineTrails(config) {
 
 function createShieldDome(config) {
   const shield = new PIXI.Graphics();
-  shield.name = 'shieldDome';
+  shield.label = 'shieldDome';
   shield.circle(0, 0, config.radius);
   shield.stroke({ color: config.color, width: 2, alpha: config.alpha });
   shield.fill({ color: config.color, alpha: config.alpha * 0.3 });
@@ -206,7 +206,7 @@ function createWingLights(config) {
   const lights = [];
   for (let i = 0; i < config.count; i++) {
     const light = new PIXI.Graphics();
-    light.name = 'wingLight';
+    light.label = 'wingLight';
     const side = i % 2 === 0 ? -1 : 1;
     const xOffset = side * (10 + Math.floor(i / 2) * 4);
     light.position.set(xOffset, 5);
@@ -221,7 +221,7 @@ function createWingLights(config) {
 function createParticleEmitter(config, shipContainer) {
   // Particle emitter uses a container
   const emitter = new PIXI.Container();
-  emitter.name = 'particleEmitter';
+  emitter.label = 'particleEmitter';
   emitter.particles = [];
   emitter.enhancementConfig = config;
   emitter.spawnTimer = 0;
@@ -235,7 +235,7 @@ function animateEnhancements(enhancements, profile) {
     const config = enhancement.enhancementConfig;
     if (!config) return;
 
-    if (enhancement.name === 'shipGlow') {
+    if (enhancement.label === 'shipGlow') {
       if (config.pulse) {
         const pulse = Math.sin(now * 0.003) * 0.5 + 0.5;
         enhancement.alpha = config.alpha * (0.7 + pulse * 0.3);
@@ -250,7 +250,7 @@ function animateEnhancements(enhancements, profile) {
       }
     }
 
-    if (enhancement.name === 'engineTrail') {
+    if (enhancement.label === 'engineTrail') {
       enhancement.clear();
       const pulse = config.smoke ? Math.sin(now * 0.004 + enhancement.y * 0.1) * 0.5 + 0.5 : 0.8;
       const length = config.length + (config.speed ? Math.sin(now * 0.01) * 4 : 0);
@@ -266,18 +266,18 @@ function animateEnhancements(enhancements, profile) {
       enhancement.stroke({ color, width: config.width, alpha: pulse * 0.6 });
     }
 
-    if (enhancement.name === 'shieldDome') {
+    if (enhancement.label === 'shieldDome') {
       const pulse = Math.sin(now * 0.005) * 0.5 + 0.5;
       enhancement.alpha = config.alpha * (0.6 + pulse * 0.4);
       enhancement.rotation += 0.01;
     }
 
-    if (enhancement.name === 'wingLight' && config.blink) {
+    if (enhancement.label === 'wingLight' && config.blink) {
       const blink = Math.floor(now / 300) % 2;
       enhancement.alpha = blink ? 0.9 : 0.3;
     }
 
-    if (enhancement.name === 'particleEmitter') {
+    if (enhancement.label === 'particleEmitter') {
       // Spawn particles
       enhancement.spawnTimer += 0.016; // ~60fps
       if (enhancement.spawnTimer > (1 / config.rate)) {

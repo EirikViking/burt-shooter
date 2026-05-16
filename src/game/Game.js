@@ -7,6 +7,7 @@ import { ShipSelectScene } from '../scenes/ShipSelectScene.js';
 import { ShipDetailsScene } from '../scenes/ShipDetailsScene.js';
 import { HighscoreScene } from '../scenes/HighscoreScene.js';
 import { rankManager } from '../managers/RankManager.js';
+import { getDefaultShipKey, incrementShipUsage, isValidShipKey } from '../config/ShipMetadata.js';
 
 export class Game {
   constructor(app) {
@@ -91,12 +92,12 @@ export class Game {
   }
 
   async startGame(spriteKey) {
-    console.log('[Game] starting new game spriteKey=' + spriteKey);
-    this.selectedShipSpriteKey = spriteKey;
+    const selectedSpriteKey = isValidShipKey(spriteKey) ? spriteKey : getDefaultShipKey();
+    console.log('[Game] starting new game spriteKey=' + selectedSpriteKey);
+    this.selectedShipSpriteKey = selectedSpriteKey;
 
     // Increment ship usage count
-    const { incrementShipUsage } = await import('../config/ShipMetadata.js');
-    incrementShipUsage(spriteKey);
+    incrementShipUsage(selectedSpriteKey);
 
     this.score = 0;
     this.level = 1;

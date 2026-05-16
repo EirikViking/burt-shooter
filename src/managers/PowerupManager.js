@@ -2,6 +2,7 @@ import { BalanceConfig } from '../config/BalanceConfig.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { createText } from '../utils/pixiText.js';
 
 class Powerup {
   constructor(x, y, type) {
@@ -60,7 +61,7 @@ class Powerup {
 
     // TASK A: Create breathing aura ring
     this.aura = new PIXI.Graphics();
-    this.aura.name = 'aura';
+    this.aura.label = 'aura';
     this.sprite.addChild(this.aura);
 
     try {
@@ -93,7 +94,7 @@ class Powerup {
       if (GameAssets.isValidTexture(texture)) {
         const beerSprite = new PIXI.Sprite(texture);
         beerSprite.anchor.set(0.5);
-        beerSprite.name = 'mainSprite';
+        beerSprite.label = 'mainSprite';
 
         // PART B: Consistent scale for all powerup sprites
         const hasSprite = this.type === 'shield' || this.type === 'life' ||
@@ -127,7 +128,7 @@ class Powerup {
 
         // No text overlay for icons
         if (this.type !== 'shield' && this.type !== 'life') {
-          const text = new PIXI.Text(this.label[0], {
+          const text = createText(this.label[0], {
             fontFamily: 'Courier New',
             fontSize: 20,
             fill: '#ffffff',
@@ -159,7 +160,7 @@ class Powerup {
     circle.stroke({ color: 0xffffff, width: 2 });
     this.sprite.addChild(circle);
 
-    const text = new PIXI.Text(this.label[0], {
+    const text = createText(this.label[0], {
       fontFamily: 'Courier New',
       fontSize: 14,
       fill: '#ffffff',
@@ -386,7 +387,7 @@ class Powerup {
     };
 
     const { width, height } = scene.game.app.screen;
-    const text = new PIXI.Text(messages[this.type] || 'POWERUP!', {
+    const text = createText(messages[this.type] || 'POWERUP!', {
       fontFamily: 'Courier New',
       fontSize: 20,
       fill: this.color,
