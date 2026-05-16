@@ -1,7 +1,7 @@
 /**
  * Burt Shooter Service Worker
  * Version: __VERSION__
- * Strategy: Network-First for HTML/JS, Cache-First for assets
+ * Strategy: Network-First for HTML/JS, Cache-First for static assets, Network for media
  */
 
 const CACHE_NAME = 'burt-shooter-__VERSION__';
@@ -60,6 +60,15 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     const isHTML = event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/';
     const isJS = url.pathname.endsWith('.js');
+    const isAudio = /\.(mp3|ogg|wav|m4a)$/i.test(url.pathname);
+    const isRangeRequest = event.request.headers.has('range');
+
+    // Media elements often use Range requests. Let the browser/network handle
+    // those directly so cached full responses cannot break audio decoding.
+    if (isAudio || isRangeRequest) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
 
     // TASK 2: Network-First for HTML and JS (Critical for updates)
     if (isHTML || isJS) {
@@ -83,7 +92,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Cache-First for everything else (Assets, Images, Audio)
+    // Cache-First for everything else (Images and other static assets)
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) {

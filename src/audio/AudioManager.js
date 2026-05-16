@@ -51,6 +51,21 @@ class AudioController {
     this.sfxPoolIndex = {};
     this.lastSfxPlayedAt = {};
     this.lastPowerupVoiceIndex = -1;
+    this.sfxAssetHealth = new Map();
+    this.pooledSfxKeys = new Set([
+      'shoot_small',
+      'hit',
+      'impactMetal',
+      'enemy_explode',
+      'explosion',
+      'explosionCrunch',
+      'boss_explode',
+      'enemy_shoot',
+      'powerup',
+      'pickup',
+      'achievement',
+      'forceField'
+    ]);
 
     // Safety lock
     this.isSwitchingTrack = false;
@@ -184,6 +199,83 @@ class AudioController {
 
   // --- SFX ---
 
+  resolveAudioSrc(src) {
+    if (!src || typeof window === 'undefined') return src;
+    try {
+      return new URL(src, window.location.href).href;
+    } catch {
+      return src;
+    }
+  }
+
+  isVerboseDiagnostics() {
+    if (typeof window === 'undefined') return false;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return window.__burtVerboseLogs === true || params.get('debug') === '1' || params.get('verboseLogs') === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  prepareSfxAudio(audio, resolvedSrc) {
+    audio.preload = 'auto';
+    if (audio.src !== resolvedSrc) {
+      audio.src = resolvedSrc;
+    }
+    try {
+      audio.currentTime = 0;
+    } catch { }
+    return audio;
+  }
+
+  checkSfxAsset(srcUrl) {
+    if (!srcUrl) return Promise.resolve({ ok: false, status: 0, type: null });
+    if (!this.sfxAssetHealth.has(srcUrl)) {
+      const check = fetch(srcUrl, {
+        cache: 'no-store',
+        headers: { Range: 'bytes=0-0' }
+      }).then((res) => ({
+        ok: res.ok,
+        status: res.status,
+        type: res.headers.get('content-type') || ''
+      })).catch((error) => ({
+        ok: false,
+        status: 0,
+        type: '',
+        error: error?.message || String(error)
+      }));
+      this.sfxAssetHealth.set(srcUrl, check);
+    }
+    return this.sfxAssetHealth.get(srcUrl);
+  }
+
+  handleSfxPlayFailure(eventName, srcUrl, error) {
+    const errorName = error?.name || 'Error';
+    if (errorName === 'AbortError' || errorName === 'NotAllowedError') return;
+
+    if (!this._warnedUrls) this._warnedUrls = new Set();
+    const warningKey = `${errorName}:${srcUrl}`;
+    if (this._warnedUrls.has(warningKey)) return;
+    this._warnedUrls.add(warningKey);
+
+    if (errorName === 'NotSupportedError') {
+      this.checkSfxAsset(srcUrl).then((asset) => {
+        if (!asset.ok || (asset.type && asset.type.includes('text/html'))) {
+          const detail = asset.status ? `HTTP ${asset.status}` : (asset.error || error?.message || 'unknown failure');
+          console.error(`[AudioManager] SFX asset unavailable for key="${eventName}" (${detail}): ${srcUrl}`);
+        } else if (this.isVerboseDiagnostics()) {
+          console.warn(`[AudioManager] SFX decode/playback hiccup for key="${eventName}" src="${srcUrl}" type="${asset.type}"`);
+        }
+      });
+      return;
+    }
+
+    if (this.isVerboseDiagnostics()) {
+      console.warn(`[AudioManager] Play failed for key="${eventName}" src="${srcUrl}" error="${errorName}: ${error?.message || ''}"`);
+    }
+  }
+
   playSfx(eventName, options = {}) {
     if (!this.enabled) return;
 
@@ -231,33 +323,7 @@ class AudioController {
     const audio = this.getSfxAudio(eventName, src, options);
     audio.volume = Math.max(0, Math.min(1, this.masterVolume * this.sfxVolume * (options.volume || 1.0)));
     audio.play().catch(e => {
-      // Suppress innocuous AbortError
-      if (e.name === 'AbortError') return;
-
-      const srcUrl = audio.src;
-
-      // Anti-spam: Only log typical errors once per session per URL
-      if (!this._warnedUrls) this._warnedUrls = new Set();
-      if (this._warnedUrls.has(srcUrl)) return;
-      this._warnedUrls.add(srcUrl);
-
-      console.warn(`[AudioManager] Play failed for key="${eventName}" src="${srcUrl}" error="${e.name}: ${e.message}"`);
-
-      // Proactive check for 404/Decode errors
-      if (e.name === 'NotSupportedError' || e.name === 'NotAllowedError') {
-        fetch(srcUrl, { method: 'HEAD' })
-          .then(res => {
-            const type = res.headers.get('content-type');
-            if (!res.ok) {
-              console.error(`[AudioManager] Asset MISSING (404): ${srcUrl}`);
-            } else if (type && type.includes('text/html')) {
-              console.error(`[AudioManager] Asset is HTML (Likely 404): ${srcUrl}. Check catalog path.`);
-            } else {
-              console.warn(`[AudioManager] Asset exists but failed to play (decode error): ${srcUrl} type=${type}`);
-            }
-          })
-          .catch(err => console.warn(`[AudioManager] Network check failed for ${srcUrl}`, err));
-      }
+      this.handleSfxPlayFailure(eventName, audio.src, e);
     });
     this.lastSfxPlayedAt[eventName] = now;
     return true;
@@ -268,27 +334,26 @@ class AudioController {
   }
 
   getSfxAudio(eventName, src, options) {
-    const usePool = options.pool || eventName === 'shoot_small';
+    const resolvedSrc = this.resolveAudioSrc(src);
+    const usePool = options.pool || this.pooledSfxKeys.has(eventName);
     if (!usePool) {
-      return new Audio(src);
+      const audio = new Audio(resolvedSrc);
+      audio.preload = 'auto';
+      return audio;
     }
 
-    const poolSize = options.poolSize || 6;
-    if (!this.sfxPools[eventName]) {
-      this.sfxPools[eventName] = Array.from({ length: poolSize }, () => {
-        const audio = new Audio(src);
-        audio.preload = 'auto';
-        return audio;
-      });
-      this.sfxPoolIndex[eventName] = 0;
+    const poolSize = options.poolSize || (eventName === 'shoot_small' ? 8 : 4);
+    const poolKey = `${eventName}:${resolvedSrc}`;
+    if (!this.sfxPools[poolKey]) {
+      this.sfxPools[poolKey] = Array.from({ length: poolSize }, () => this.prepareSfxAudio(new Audio(), resolvedSrc));
+      this.sfxPoolIndex[poolKey] = 0;
     }
 
-    const pool = this.sfxPools[eventName];
-    let index = this.sfxPoolIndex[eventName] || 0;
+    const pool = this.sfxPools[poolKey];
+    let index = this.sfxPoolIndex[poolKey] || 0;
     const audio = pool[index % pool.length];
-    this.sfxPoolIndex[eventName] = (index + 1) % pool.length;
-    if (audio.src !== src) audio.src = src;
-    return audio;
+    this.sfxPoolIndex[poolKey] = (index + 1) % pool.length;
+    return this.prepareSfxAudio(audio, resolvedSrc);
   }
 
   recoverSfx(reason = 'unknown') {

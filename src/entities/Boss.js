@@ -42,7 +42,7 @@ export class Boss {
     this.health = Math.max(this.health, 70);
     this.maxHealth = this.health;
     this.shootCooldown = 0;
-    this.shootDelay = diff.bossShootDelayBase;
+    this.shootDelay = this.getPhaseShootDelay(1);
     this.moveTimer = 0;
     this.entryStartMs = null;
     this.entryDurationMs = 1000;
@@ -194,10 +194,10 @@ export class Boss {
 
     this.moveTimer += delta;
 
-    // Phase transitions (MORE AGGRESSIVE - earlier transitions)
+    // Phase transitions
     if (this.health < this.maxHealth * 0.75 && this.phase === 1) {
       this.phase = 2;
-      this.shootDelay = BalanceConfig.difficulty.bossShootDelayPhase2;
+      this.shootDelay = this.getPhaseShootDelay(2);
       this.color = 0xff8800;
       this.startPhaseChange(2, playerX, playerY);
       if (!this.tauntPhase2Shown) {
@@ -207,7 +207,7 @@ export class Boss {
       }
     } else if (this.health < this.maxHealth * 0.40 && this.phase === 2) {
       this.phase = 3;
-      this.shootDelay = BalanceConfig.difficulty.bossShootDelayPhase3;
+      this.shootDelay = this.getPhaseShootDelay(3);
       this.color = 0xff0000;
       this.startPhaseChange(3, playerX, playerY);
     }
@@ -255,13 +255,12 @@ export class Boss {
   }
 
   getMoveProfile(bossType) {
-    // MORE AGGRESSIVE - faster, wider movements
     const base = {
       profile: 'sway',
-      swayAmpX: 0.16, // 33% wider sway
-      swayFreq: 0.8, // 33% faster sway
-      bobAmpY: 0.02, // 100% more bobbing
-      bobFreq: 1.2, // 33% faster bob
+      swayAmpX: 0.14,
+      swayFreq: 0.72,
+      bobAmpY: 0.018,
+      bobFreq: 1.05,
       rotateMode: 'slow',
       rotateSpeed: 0.3,
       aimStrength: 0.6
@@ -304,8 +303,7 @@ export class Boss {
         this.y = this.bossLaneY + Math.cos(t * profile.bobFreq) * bobAmp;
         break;
       case 'charge_tease': {
-        // MORE AGGRESSIVE - bigger push forward motion
-        const push = Math.abs(Math.sin(t * 0.5)) * (gameHeight * 0.05);
+        const push = Math.abs(Math.sin(t * 0.5)) * (gameHeight * 0.04);
         this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp;
         this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp + push;
         break;
@@ -334,6 +332,23 @@ export class Boss {
     }
   }
 
+  getBossPressureScalar() {
+    if (this.level <= 1) return 0.78;
+    if (this.level === 2) return 0.9;
+    return 1;
+  }
+
+  getPhaseShootDelay(phase) {
+    const diff = BalanceConfig.difficulty;
+    const baseDelay = phase === 1
+      ? diff.bossShootDelayBase
+      : phase === 2
+        ? diff.bossShootDelayPhase2
+        : diff.bossShootDelayPhase3;
+    const openingDelayScalar = this.level <= 1 ? 1.55 : this.level === 2 ? 1.2 : 1;
+    return baseDelay * openingDelayScalar;
+  }
+
   startPhaseChange(phase, playerX, playerY) {
     if (this.phaseNotified[phase]) return;
     this.phaseNotified[phase] = true;
@@ -342,20 +357,19 @@ export class Boss {
       playScene.onBossPhaseChange(phase, this);
     }
     const type = phase === 2 ? 'cone' : 'ring';
-    // MORE AGGRESSIVE - shorter telegraph warning (500ms instead of 700ms)
-    this.telegraph = { type, start: Date.now(), duration: 500 };
+    this.telegraph = { type, start: Date.now(), duration: 750 };
     this.signatureCooldown = 120;
   }
 
   executeSignatureMove(type, playerX, playerY) {
     if (type === 'cone') {
-      // MORE AGGRESSIVE - wider, denser cone
-      this.fireCone(playerX, playerY, 12, 0.85);
+      this.fireCone(playerX, playerY, this.level <= 1 ? 5 : 9, this.level <= 1 ? 0.55 : 0.7);
     } else if (type === 'ring') {
-      // MORE AGGRESSIVE - denser ring burst
-      this.fireRingBurst(24, 3);
+      this.fireRingBurst(this.level <= 1 ? 12 : 18, this.level <= 1 ? 2 : 3);
       const playScene = this.game?.scenes?.play;
-      playScene?.enemyManager?.spawnBossAdds(6);
+      if (this.level > 1) {
+        playScene?.enemyManager?.spawnBossAdds(4);
+      }
     }
   }
 
@@ -364,8 +378,11 @@ export class Boss {
     for (let i = 0; i < shots; i++) {
       const t = (i / (shots - 1)) - 0.5;
       const angle = Math.atan2(playerY - this.y, playerX - this.x) + t * spread;
-      const vx = Math.cos(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase2 * BalanceConfig.difficulty.pressureScalar;
-      const vy = Math.sin(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase2 * BalanceConfig.difficulty.pressureScalar;
+      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase2 *
+        BalanceConfig.difficulty.pressureScalar *
+        this.getBossPressureScalar();
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
       bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, this.color));
     }
     bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
@@ -376,8 +393,11 @@ export class Boss {
     for (let i = 0; i < count; i++) {
       if (i % gapSize === 0) continue;
       const angle = (i / count) * Math.PI * 2;
-      const vx = Math.cos(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase3 * BalanceConfig.difficulty.pressureScalar;
-      const vy = Math.sin(angle) * BalanceConfig.difficulty.bossProjectileSpeedPhase3 * BalanceConfig.difficulty.pressureScalar;
+      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase3 *
+        BalanceConfig.difficulty.pressureScalar *
+        this.getBossPressureScalar();
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
       bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, this.color));
     }
     bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
@@ -400,7 +420,9 @@ export class Boss {
       const dx = playerX - this.x;
       const dy = playerY - this.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase1 * BalanceConfig.difficulty.pressureScalar;
+      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase1 *
+        BalanceConfig.difficulty.pressureScalar *
+        this.getBossPressureScalar();
       bullets.push(new Bullet(
         this.x,
         this.y,
@@ -412,10 +434,12 @@ export class Boss {
         vConfig
       ));
     } else if (this.phase === 2) {
-      // 5-shot spread (MORE AGGRESSIVE - wider coverage)
-      for (let i = -2; i <= 2; i++) {
+      // 3-shot spread keeps the first boss readable while still punishing tunnel vision.
+      for (let i = -1; i <= 1; i++) {
         const angle = Math.atan2(playerY - this.y, playerX - this.x) + i * 0.25;
-        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase2 * BalanceConfig.difficulty.pressureScalar;
+        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase2 *
+          BalanceConfig.difficulty.pressureScalar *
+          this.getBossPressureScalar();
         bullets.push(new Bullet(
           this.x,
           this.y,
@@ -428,10 +452,12 @@ export class Boss {
         ));
       }
     } else {
-      // 12-bullet spiral (MORE AGGRESSIVE - denser pattern)
-      for (let i = 0; i < 12; i++) {
-        const angle = (Math.PI * 2 * i) / 12 + this.moveTimer * 0.05;
-        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase3 * BalanceConfig.difficulty.pressureScalar;
+      // 8-bullet spiral with visible gaps.
+      for (let i = 0; i < 8; i++) {
+        const angle = (Math.PI * 2 * i) / 8 + this.moveTimer * 0.05;
+        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase3 *
+          BalanceConfig.difficulty.pressureScalar *
+          this.getBossPressureScalar();
         bullets.push(new Bullet(
           this.x,
           this.y,

@@ -1,15 +1,35 @@
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
 const host = process.env.SMOKE_HOST || '127.0.0.1';
-const port = Number(process.env.SMOKE_PORT || 4173);
+const explicitPort = process.env.SMOKE_PORT ? Number(process.env.SMOKE_PORT) : null;
+const port = process.env.SMOKE_URL ? null : (explicitPort || await findAvailablePort(Number(process.env.SMOKE_PORT_START || 4173)));
 const baseUrl = process.env.SMOKE_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.SMOKE_OUTPUT_DIR || `test-results/smoke-${timestamp()}`);
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+async function isPortAvailable(candidatePort) {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => {
+      server.close(() => resolve(true));
+    });
+    server.listen(candidatePort, host);
+  });
+}
+
+async function findAvailablePort(startPort) {
+  for (let candidate = startPort; candidate < startPort + 40; candidate++) {
+    if (await isPortAvailable(candidate)) return candidate;
+  }
+  throw new Error(`No available smoke preview port found starting at ${startPort}`);
 }
 
 function findChrome() {
@@ -114,23 +134,29 @@ async function collectGameState(page) {
 
 async function stabilizeSmokePlayer(page) {
   await page.evaluate(() => {
-    const game = window.__game;
-    const play = game?.scenes?.play;
-    const player = play?.player;
-    if (game) {
-      game.lives = Math.max(game.lives || 0, 3);
+    const assist = () => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      const player = play?.player;
+      if (game) {
+        game.lives = Math.max(game.lives || 0, 3);
+      }
+      if (player) {
+        player.invulnerable = true;
+        player.invulnerableTime = 45000;
+        if (typeof game?.getWidth === 'function') player.x = game.getWidth() / 2;
+        if (typeof game?.getHeight === 'function') player.y = game.getHeight() * 0.82;
+      }
+      if (play?.bulletManager?.enemyBullets) {
+        play.bulletManager.enemyBullets.forEach((bullet) => {
+          bullet.active = false;
+        });
+      }
+    };
+    if (!window.__burtSmokePlayerAssist) {
+      window.__burtSmokePlayerAssist = window.setInterval(assist, 100);
     }
-    if (player) {
-      player.invulnerable = true;
-      player.invulnerableTime = 45000;
-      if (typeof game?.getWidth === 'function') player.x = game.getWidth() / 2;
-      if (typeof game?.getHeight === 'function') player.y = game.getHeight() * 0.82;
-    }
-    if (play?.bulletManager?.enemyBullets) {
-      play.bulletManager.enemyBullets.forEach((bullet) => {
-        bullet.active = false;
-      });
-    }
+    assist();
   });
 }
 
@@ -200,7 +226,9 @@ async function runSmoke() {
 
     await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await stabilizeSmokePlayer(page);
     await page.waitForTimeout(3200);
+    await stabilizeSmokePlayer(page);
     await page.keyboard.down('Space');
     await page.keyboard.down('ArrowRight');
     await page.waitForTimeout(450);
@@ -209,6 +237,7 @@ async function runSmoke() {
     await page.waitForTimeout(450);
     await page.keyboard.up('ArrowLeft');
     await page.keyboard.up('Space');
+    await stabilizeSmokePlayer(page);
     await page.waitForTimeout(1500);
     await page.screenshot({ path: path.join(outputDir, '02-gameplay.png'), fullPage: true });
     const gameplayState = await collectGameState(page);
@@ -237,7 +266,7 @@ async function runSmoke() {
       } catch {
         return false;
       }
-    }, null, { timeout: 8000 });
+    }, null, { timeout: 30000 });
     await stabilizeSmokePlayer(mobilePage);
     await mobilePage.waitForTimeout(700);
     await mobilePage.screenshot({ path: path.join(outputDir, '05-mobile-gameplay.png'), fullPage: true });
@@ -248,15 +277,17 @@ async function runSmoke() {
     observePage(level3Page, 'level3');
     await level3Page.goto(`${baseUrl}/?autostart=1&debugBossToken=KURT_DEBUG_2026&startLevel=3`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await level3Page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await stabilizeSmokePlayer(level3Page);
     await level3Page.waitForFunction(() => {
       try {
         if (typeof window.render_game_to_text !== 'function') return false;
         const state = JSON.parse(window.render_game_to_text());
-        return state?.level === 3 && state?.counts?.enemies > 0;
+        return state?.scene === 'play' && state?.lives > 0 && state?.level === 3 && state?.counts?.enemies > 0;
       } catch {
         return false;
       }
-    }, null, { timeout: 8000 });
+    }, null, { timeout: 30000 });
+    await stabilizeSmokePlayer(level3Page);
     await level3Page.waitForTimeout(1500);
     await level3Page.screenshot({ path: path.join(outputDir, '06-level3-gameplay.png'), fullPage: true });
     const level3State = await collectGameState(level3Page);
@@ -266,15 +297,16 @@ async function runSmoke() {
     observePage(transitionPage, 'wave-transition');
     await transitionPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await transitionPage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await stabilizeSmokePlayer(transitionPage);
     await transitionPage.waitForFunction(() => {
       try {
         if (typeof window.render_game_to_text !== 'function') return false;
         const state = JSON.parse(window.render_game_to_text());
-        return state?.counts?.enemies > 0;
+        return state?.scene === 'play' && state?.counts?.enemies > 0;
       } catch {
         return false;
       }
-    }, null, { timeout: 8000 });
+    }, null, { timeout: 30000 });
     await transitionPage.evaluate(() => {
       const play = window.__game?.scenes?.play;
       if (play?.particleManager) {
@@ -292,7 +324,9 @@ async function runSmoke() {
         return false;
       });
     });
-    await transitionPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'WAVE_BRIEFING', null, { timeout: 7000 });
+    await stabilizeSmokePlayer(transitionPage);
+    await transitionPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'WAVE_BRIEFING', null, { timeout: 15000 });
+    await transitionPage.waitForTimeout(850);
     await transitionPage.screenshot({ path: path.join(outputDir, '07-wave-briefing.png'), fullPage: true });
     await transitionPage.waitForFunction(() => {
       const play = window.__game?.scenes?.play;
@@ -301,11 +335,11 @@ async function runSmoke() {
       try {
         if (typeof window.render_game_to_text !== 'function') return false;
         const state = JSON.parse(window.render_game_to_text());
-        return state?.counts?.enemies > 0;
+        return state?.scene === 'play' && state?.lives > 0 && state?.counts?.enemies > 0;
       } catch {
         return false;
       }
-    }, null, { timeout: 7000 });
+    }, null, { timeout: 15000 });
     const waveTransitionState = await collectGameState(transitionPage);
     await transitionPage.close();
 
@@ -377,8 +411,12 @@ async function runSmoke() {
       ...(mobileGameplayState.textState?.scene !== 'play' ? ['mobile autostart did not reach play scene'] : []),
       ...((mobileGameplayState.textState?.counts?.enemies || 0) <= 0 ? ['mobile gameplay did not spawn enemies'] : []),
       ...(level3State.textState?.level !== 3 ? ['debug startLevel=3 did not hold level 3'] : []),
+      ...(level3State.textState?.scene !== 'play' ? ['level 3 debug start left play scene'] : []),
+      ...((level3State.textState?.lives || 0) <= 0 ? ['level 3 debug start player died during smoke'] : []),
       ...((level3State.textState?.counts?.enemies || 0) <= 0 ? ['level 3 smoke did not spawn enemies'] : []),
       ...(waveTransitionState.currentWaveIndex < 1 ? ['wave transition did not advance to wave 2'] : []),
+      ...(waveTransitionState.textState?.scene !== 'play' ? ['wave transition left play scene'] : []),
+      ...((waveTransitionState.textState?.lives || 0) <= 0 ? ['wave transition player died during smoke'] : []),
       ...(waveTransitionState.enemyManagerState !== 'WAVE_ACTIVE' ? ['wave transition did not return to active state'] : []),
       ...((waveTransitionState.score || 0) < 500 ? ['wave transition did not award first wave score'] : []),
       ...(waveTransitionState.textState?.wave?.currentWaveNumber !== 2 ? ['wave text state did not expose wave 2'] : []),

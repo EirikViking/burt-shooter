@@ -75,6 +75,7 @@ export class PlayScene {
     this.gameplayBackdrop = null;
     this.gameplayStormBackdrop = null;
     this.gameplayBackdropShade = null;
+    this.bossDossierTexture = null;
 
     // Voice throttle
     this.lastRankVoiceTime = 0;
@@ -176,6 +177,7 @@ export class PlayScene {
 
     // TASK D: Create procedural starfield background
     this.createStarfield();
+    this.loadBossDossierTexture();
 
     // --- Hud & UI ---
     this.hud = new HUD(this.uiContainer, this.game);
@@ -1548,6 +1550,21 @@ export class PlayScene {
     }
   }
 
+  async loadBossDossierTexture() {
+    if (!AssetManifest.generated?.bossDossier) return;
+    try {
+      const texture = await PIXI.Assets.load({
+        alias: 'generated_boss_dossier',
+        src: AssetManifest.generated.bossDossier
+      });
+      if (GameAssets.isValidTexture(texture)) {
+        this.bossDossierTexture = texture;
+      }
+    } catch (error) {
+      console.warn('[PlayScene] Boss dossier art failed to load:', error);
+    }
+  }
+
   applyGameplayBackdropLevel(level = 1) {
     const stormActive = level >= 3;
     if (this.gameplayBackdrop) {
@@ -1607,6 +1624,9 @@ export class PlayScene {
       played = AudioManager.playSfx(sfxKey, { pool: true, minIntervalMs: 60 }) === true;
       if (played) {
         check.lastSoundTime = now;
+        check.shotsFired = 0;
+        check.recoveryAttempts = 0;
+        check.recoveredLogged = false;
       }
     }
 
@@ -1614,13 +1634,19 @@ export class PlayScene {
     if (!played && now - check.lastSoundTime > 500) {
       AudioManager.playSfx(sfxKey, { force: true, pool: true, volume: 0.8 });
       check.lastSoundTime = now;
+      check.shotsFired = 0;
       if (!check.recoveredLogged) {
         console.warn('[AudioFix] shooting sound recovered');
         check.recoveredLogged = true;
       }
+      return;
     }
 
-    // Health check: If we've fired 10+ shots without sound recovery
+    const lastManagerSoundTime = AudioManager?.lastSfxPlayedAt?.[sfxKey] || AudioManager?.lastSfxPlayedAt?.shoot_small || 0;
+    const recentlyAudible = now - Math.max(check.lastSoundTime, lastManagerSoundTime) <= 500;
+    if (recentlyAudible) return;
+
+    // Health check: If we've fired 10+ shots with no recent sound
     if (check.shotsFired >= 10) {
       const timeSinceRecovery = now - check.lastRecoveryAttempt;
 
@@ -1636,9 +1662,9 @@ export class PlayScene {
         check.recoveryAttempts++;
 
         // Resume AudioContext if suspended
-        if (AudioManager && AudioManager.audioContext) {
-          if (AudioManager.audioContext.state === 'suspended') {
-            AudioManager.audioContext.resume().catch(() => { });
+        if (AudioManager?.context) {
+          if (AudioManager.context.state === 'suspended') {
+            AudioManager.context.resume().catch(() => { });
           }
         }
 
@@ -2937,7 +2963,7 @@ export class PlayScene {
   spawnEasterEgg() {
     // Legendary Flyby - Variety of characters
     // Use one of the photos
-    const photos = ['eirik_kurt2', 'burtelurt', 'eriikviking', 'anja', 'morten_whale', 'donaldtru', 'wieik_shorts', 'kurt2', 'eirik1'];
+    const photos = ['eirik_kurt2', 'burtelurt', 'eriikviking', 'anja', 'morten_whale', 'wieik_shorts', 'kurt2', 'eirik1'];
     const picked = photos[Math.floor(Math.random() * photos.length)];
     const tex = GameAssets.getPhoto(picked);
 
@@ -3001,12 +3027,7 @@ export class PlayScene {
   showBossTaunt(reason = 'boss_spawn') {
     const caption = this.getBossTauntCaption(reason);
     if (!caption) return;
-    const photoKeys = Object.keys(GameAssets.photos || {});
-    const pickedKey = photoKeys.length
-      ? photoKeys[Math.floor(Math.random() * photoKeys.length)]
-      : 'kurt2';
-    const tex = GameAssets.getPhoto(pickedKey) || GameAssets.getPhoto('kurt2');
-    if (!GameAssets.isValidTexture(tex)) return;
+    const tex = this.bossDossierTexture;
 
     // Lore: Map photo keys to character names from Burt's universe
     const loreLookup = {
@@ -3019,34 +3040,57 @@ export class PlayScene {
       'eriikviking': { name: 'EIRIK VIKING', subtitle: 'Nordmann i hjertet', detail: 'Iskald og ustoppelig' },
       'anja': { name: 'ANJA', subtitle: 'Harbor Queen', detail: 'Sjefinn på brygga' },
       'morten_whale': { name: 'MORTEN', subtitle: 'Hvaljeger', detail: 'Kjenner havet' },
-      'donaldtru': { name: 'DONALD', subtitle: 'Amerikansk Venn', detail: 'Over Atlanteren' },
       'wieik_shorts': { name: 'WIEIK', subtitle: 'Sommerbukse-Kongen', detail: 'Alltid korte bukser' }
     };
-    const characterData = loreLookup[pickedKey] || { name: 'UKJENT AGENT', subtitle: 'Mystisk fremtid', detail: '???' };
-    const characterName = characterData.name;
+    const detailLabel = reason === 'boss_life_lost'
+      ? 'ARMOR BREACH'
+      : reason === 'boss_phase2' || reason === 'boss_half'
+        ? 'PATTERN SHIFT'
+        : 'ARCTIC RADAR LOCK';
+    const characterData = { subtitle: 'THREAT DOSSIER', detail: detailLabel };
 
     const poster = new PIXI.Container();
-    poster.label = 'ui_wanted_poster';
+    poster.label = 'ui_boss_dossier';
     poster.eventMode = 'none';
     poster.interactive = false;
 
     const bg = new PIXI.Graphics();
-    bg.rect(-200, -250, 400, 500);
-    bg.fill({ color: 0xffffff });
-    bg.stroke({ color: 0x000000, width: 4 });
+    bg.roundRect(-170, -205, 340, 410, 10);
+    bg.fill({ color: 0x06101a, alpha: 0.94 });
+    bg.stroke({ color: 0xff3030, width: 3, alpha: 0.9 });
+    bg.roundRect(-158, -193, 316, 386, 7);
+    bg.stroke({ color: 0x2ff6ff, width: 1, alpha: 0.45 });
     poster.addChild(bg);
 
-    const sprite = new PIXI.Sprite(tex);
-    sprite.anchor.set(0.5);
-    const aspect = tex.width / tex.height;
-    sprite.width = 360;
-    sprite.height = 360 / aspect;
-    if (sprite.height > 350) {
-      sprite.height = 350;
-      sprite.width = 350 * aspect;
+    if (GameAssets.isValidTexture(tex)) {
+      const sprite = new PIXI.Sprite(tex);
+      sprite.anchor.set(0.5);
+      sprite.y = -20;
+      sprite.width = 270;
+      sprite.height = 270;
+      sprite.alpha = 0.96;
+      poster.addChild(sprite);
+    } else {
+      const fallback = new PIXI.Graphics();
+      fallback.circle(0, -28, 118);
+      fallback.stroke({ color: 0xff3030, width: 3, alpha: 0.8 });
+      fallback.moveTo(-110, -28);
+      fallback.lineTo(110, -28);
+      fallback.moveTo(0, -138);
+      fallback.lineTo(0, 82);
+      fallback.stroke({ color: 0x2ff6ff, width: 2, alpha: 0.7 });
+      poster.addChild(fallback);
     }
-    sprite.y = -20;
-    poster.addChild(sprite);
+
+    const scanOverlay = new PIXI.Graphics();
+    scanOverlay.roundRect(-136, -150, 272, 270, 7);
+    scanOverlay.stroke({ color: 0xff3030, width: 2, alpha: 0.72 });
+    scanOverlay.moveTo(-120, -18);
+    scanOverlay.lineTo(120, -18);
+    scanOverlay.moveTo(0, -138);
+    scanOverlay.lineTo(0, 88);
+    scanOverlay.stroke({ color: 0x2ff6ff, width: 1, alpha: 0.55 });
+    poster.addChild(scanOverlay);
 
     const headerLabel = reason === 'boss_spawn'
       ? 'BOSS INCOMING'
@@ -3057,56 +3101,59 @@ export class PlayScene {
           : 'BOSS ALERT';
     const topText = createText(headerLabel, {
       fontFamily: 'Courier New',
-      fontSize: 20,
-      fill: 'black',
+      fontSize: 18,
+      fill: '#ff4040',
       fontWeight: 'bold'
     });
     topText.anchor.set(0.5);
-    topText.y = -215;
+    topText.y = -178;
     poster.addChild(topText);
 
     const subText = createText(characterData.subtitle, {
       fontFamily: 'Courier New',
-      fontSize: 13,
-      fill: '#555555',
+      fontSize: 12,
+      fill: '#2ff6ff',
       fontWeight: 'bold'
     });
     subText.anchor.set(0.5);
-    subText.y = -190;
+    subText.y = -154;
     poster.addChild(subText);
 
     // Additional detail text for context
     const detailText = createText(characterData.detail, {
       fontFamily: 'Courier New',
       fontSize: 11,
-      fill: '#666666',
-      fontStyle: 'italic'
+      fill: '#d8fbff',
+      fontWeight: 'bold'
     });
     detailText.anchor.set(0.5);
-    detailText.y = -170;
+    detailText.y = 132;
     poster.addChild(detailText);
 
     const bottomText = createText(caption, {
       fontFamily: 'Courier New',
-      fontSize: 18,
-      fill: '#111111',
-      fontWeight: 'bold'
+      fontSize: 15,
+      fill: '#ffffff',
+      fontWeight: 'bold',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: 286
     });
     bottomText.anchor.set(0.5);
-    bottomText.y = 190;
+    bottomText.y = 166;
     poster.addChild(bottomText);
 
-    const margin = 20;
-    poster.x = margin + 90;
-    poster.y = margin + 120;
-    poster.rotation = -0.05;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    poster.x = Math.min(260, Math.max(190, width * 0.18));
+    poster.y = Math.min(height - 205, Math.max(360, height * 0.52));
+    poster.rotation = -0.025;
 
     this.uiOverlay.addChild(poster);
-    console.log('[UI] wanted poster shown uiOnly=true');
+    console.log('[UI] boss dossier shown uiOnly=true');
 
-    // Animate Pop (30% larger)
-    const baseScale = 0.208; // 30% larger than original 0.16
-    const popScale = 0.273; // Pop to 0.273 for bounce effect
+    const baseScale = 0.68;
+    const popScale = 0.74;
     poster.scale.set(baseScale);
     let elapsed = 0;
     const fadeDelay = 1500; // Display longer for readability
@@ -3115,7 +3162,7 @@ export class PlayScene {
       elapsed += delta.deltaTime * 16.67;
       if (elapsed < 200) {
         const t = elapsed / 200;
-        poster.scale.set(baseScale + t * (popScale - baseScale)); // Animate from 0.208 to 0.273
+        poster.scale.set(baseScale + t * (popScale - baseScale));
       } else if (elapsed > fadeDelay) {
         const t = Math.min(1, (elapsed - fadeDelay) / fadeDuration);
         poster.alpha = 1 - t;

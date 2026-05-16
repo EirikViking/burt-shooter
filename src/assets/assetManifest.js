@@ -1,7 +1,8 @@
 export const AssetManifest = {
     generated: {
         menuBackdrop: '/art/generated/burt-shooter-arctic-menu-bg.webp',
-        stormGameplayBackdrop: '/art/generated/burt-shooter-storm-gameplay-bg.webp'
+        stormGameplayBackdrop: '/art/generated/burt-shooter-storm-gameplay-bg.webp',
+        bossDossier: '/art/generated/burt-shooter-boss-dossier.png'
     },
 
     // Lore & Character Images (Root /public)
@@ -12,7 +13,6 @@ export const AssetManifest = {
         '/eirik_kurt2.jpg',
         '/burtelurt.jpg',
         '/anja.png',
-        '/donaldtru.jpg',
         '/eriikviking.webp',
         '/morten_whale.jpg',
         '/wieik_shorts.jpg',

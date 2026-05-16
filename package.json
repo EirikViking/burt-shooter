@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "smoke": "node scripts/smoke-playtest.mjs",
+    "playtest:release": "node scripts/release-playtest.mjs",
     "deploy": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {

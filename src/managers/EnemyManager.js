@@ -201,8 +201,8 @@ export class EnemyManager {
     const scripts = {
       1: [
         { type: 'gris', count: 5, formation: 'TUTORIAL_ARC', entry: 'split', cadence: 0.82 },
-        { type: 'fighter_1', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.94 },
-        { type: 'mongo', count: 7, formation: 'PINCER', entry: 'split', cadence: 1.05 }
+        { type: 'fighter_1', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.88 },
+        { type: 'mongo', count: 5, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.82 }
       ],
       2: [
         { type: 'mongo', count: 7, formation: 'GRID', entry: 'alternating', cadence: 0.96 },
@@ -241,6 +241,7 @@ export class EnemyManager {
   allowBeerCanSpawns() {
     // Only allow during WAVE_ACTIVE, not during wave ending or cleanup
     return this.state === 'WAVE_ACTIVE' &&
+      this.level > 1 &&
       !this.waveEnding &&
       this.cleanupPhase === 'NONE';
   }
@@ -248,6 +249,13 @@ export class EnemyManager {
   setDirectorState(state) {
     if (!state) return;
     this.directorState = state;
+  }
+
+  getOpeningFireScalar() {
+    if (this.level !== 1 || this.state !== 'WAVE_ACTIVE') return 1;
+    if (this.currentWaveIndex === 0) return 0.45;
+    if (this.currentWaveIndex === 1) return 0.6;
+    return 0.72;
   }
 
   update(delta) {
@@ -505,7 +513,10 @@ export class EnemyManager {
 
     const timeScale = isSlowTime ? 0.5 : 1.0;
     const tier = this.directorState?.tier || 0;
-    const fireChance = BalanceConfig.difficulty.enemyFireChance * BalanceConfig.difficulty.pressureScalar * (1 + tier * 0.1);
+    const fireChance = BalanceConfig.difficulty.enemyFireChance *
+      BalanceConfig.difficulty.pressureScalar *
+      this.getOpeningFireScalar() *
+      (1 + tier * 0.1);
     const dt = delta * timeScale;
     const playerX = player ? player.x : 400;
     const playerY = player ? player.y : 300;
@@ -841,7 +852,7 @@ export class EnemyManager {
 
     // Logic to potentially inject a Challenge Wave
     // Criteria: Not boss level, not first wave, chance 8%, not back-to-back
-    if (hasUpcomingWave && this.currentWaveIndex > 0) {
+    if (this.level > 1 && hasUpcomingWave && this.currentWaveIndex > 0) {
       // 8% Chance
       if (Math.random() < 0.08) {
         const wasChallenge = clearedWave && clearedWave.isChallenge;

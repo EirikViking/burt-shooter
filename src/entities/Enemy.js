@@ -477,7 +477,8 @@ export class Enemy {
         this.sprite.rotation = wobbleAngle;
 
         // Chance to dive (low)
-        if (this.active && Math.random() < 0.001) {
+        const diveChance = this.level <= 1 ? 0.00035 : this.level === 2 ? 0.0007 : 0.001;
+        if (this.active && Math.random() < diveChance) {
           this.startDive(playerX, playerY);
         }
         break;
@@ -561,7 +562,7 @@ export class Enemy {
 
   shoot(playerX, playerY) {
     // Higher fire rate during Dive
-    const delayMult = (this.state === 'DIVE') ? 0.3 : 1.0;
+    const delayMult = (this.state === 'DIVE') ? (this.level <= 1 ? 0.6 : 0.3) : 1.0;
     this.shootCooldown = this.shootDelay * delayMult;
 
     const dx = playerX - this.x;
@@ -571,7 +572,10 @@ export class Enemy {
     if (distance === 0) return null;
 
     const accuracy = 0.8 + Math.random() * 0.2;
-    const speed = BalanceConfig.difficulty.enemyProjectileSpeed * BalanceConfig.difficulty.pressureScalar;
+    const openingProjectileScalar = this.level <= 1 ? 0.82 : this.level === 2 ? 0.92 : 1;
+    const speed = BalanceConfig.difficulty.enemyProjectileSpeed *
+      BalanceConfig.difficulty.pressureScalar *
+      openingProjectileScalar;
     const vx = (dx / distance) * speed * accuracy;
     const vy = (dy / distance) * speed * accuracy;
 

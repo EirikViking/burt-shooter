@@ -13,3 +13,14 @@ Prompt summary:
 
 > Original 16:9 arctic space battle over a Norwegian fjord at night, red-magenta aurora storms, teal ion clouds, distant snowy mountains, edge sci-fi wreckage silhouettes, dark uncluttered center, no text, no logos, no UI.
 
+## 2026-05-16 Boss Threat Dossier
+
+- Source: `public/art/generated/burt-shooter-boss-dossier-source.png`
+- Runtime asset: `public/art/generated/burt-shooter-boss-dossier.png`
+- Optimization: ImageMagick resize to `640x640`, stripped PNG metadata.
+- Usage: `src/scenes/PlayScene.js` uses this original generated art inside the boss inbound dossier card instead of random lore photos.
+- Cleanup: removed the tracked `public/donaldtru.jpg` celebrity/third-party-looking asset from shipped public assets.
+
+Prompt summary:
+
+> Original square boss threat dossier UI illustration for a retro arcade sci-fi shooter, fictional enemy battleship silhouette over arctic aurora, red/cyan holographic scan accents, no real people, no celebrities, no logos, no text.

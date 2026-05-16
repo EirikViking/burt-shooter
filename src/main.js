@@ -250,6 +250,9 @@ function buildGameTextState(game) {
         x: Math.round(enemy.x || 0),
         y: Math.round(enemy.y || 0),
         radius: enemy.radius || 0,
+        kind: enemy.kind || null,
+        health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
+        maxHealth: Number.isFinite(enemy.maxHealth) ? Math.max(0, Math.round(enemy.maxHealth)) : null,
         type: enemy.type || enemy.constructor?.name || 'enemy'
       }))
   };

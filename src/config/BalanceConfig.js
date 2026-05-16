@@ -54,12 +54,12 @@ export const BalanceConfig = {
 
         bossBaseHealth: 120, // Reduced from 139
         bossHealthPerLevel: 35, // REDUCED from 60 - much slower boss HP growth
-        bossShootDelayBase: 24, // AGGRESSIVE - shoots 25% more often
-        bossShootDelayPhase2: 14, // VERY AGGRESSIVE - shoots 30% more often
-        bossShootDelayPhase3: 10, // EXTREMELY AGGRESSIVE - shoots 29% more often
-        bossProjectileSpeedPhase1: 4.0, // Slightly faster bullets
-        bossProjectileSpeedPhase2: 4.5, // Faster spread shots
-        bossProjectileSpeedPhase3: 5.0, // Very fast spiral bullets
+        bossShootDelayBase: 30, // Fair first boss cadence
+        bossShootDelayPhase2: 20, // Escalates without becoming instant bullet spam
+        bossShootDelayPhase3: 15, // Still dangerous, but dodgeable
+        bossProjectileSpeedPhase1: 3.4,
+        bossProjectileSpeedPhase2: 3.8,
+        bossProjectileSpeedPhase3: 4.2,
 
         precisionPenalty: true, // If true, reduced score for missed shots (concept)
         sprayInefficiency: 0.8 // Damage multiplier if shooting blindly (concept, maybe skip to keep simple)
