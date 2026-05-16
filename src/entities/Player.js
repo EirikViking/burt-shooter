@@ -5,6 +5,7 @@ import { ShipRegistry } from '../utils/ShipRegistry.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { enhanceShipVisuals } from '../utils/ShipVisualEnhancer.js';
 import { createText } from '../utils/pixiText.js';
+import { getPlayerFocusScale } from '../config/AccessibilitySettings.js';
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = 'row2_ship_1.png') {
@@ -87,6 +88,8 @@ export class Player {
     this.rankBoostExtraShots = 0;
     this.rankBoostBulletFx = false;
     this.currentModel = 1;
+    this.focusRing = null;
+    this.focusPulse = 0;
     this.damageOverlay = null;
     this.boostAura = null;
     this.rankBoostText = null;
@@ -183,6 +186,20 @@ export class Player {
   }
 
   ensureShipOverlays() {
+    if (!this.focusRing) {
+      this.focusRing = new PIXI.Graphics();
+      this.focusRing.label = 'playerFocusRing';
+      this.focusRing.visible = false;
+    }
+
+    if (this.focusRing.parent !== this.sprite) {
+      if (this.focusRing.parent) this.focusRing.parent.removeChild(this.focusRing);
+      this.sprite.addChildAt(this.focusRing, 0);
+    } else if (this.sprite.children[0] !== this.focusRing) {
+      this.sprite.removeChild(this.focusRing);
+      this.sprite.addChildAt(this.focusRing, 0);
+    }
+
     if (!this.damageOverlay) {
       this.damageOverlay = new PIXI.Sprite();
       this.damageOverlay.anchor.set(0.5);
@@ -245,6 +262,43 @@ export class Player {
       this.muzzleFlashColor = muzzleColor;
       this.baseMuzzleFlashColor = muzzleColor;
     }
+  }
+
+  updateFocusRing(deltaSeconds) {
+    if (!this.focusRing) return;
+    const focusScale = getPlayerFocusScale();
+    if (focusScale <= 0.01) {
+      this.focusRing.visible = false;
+      return;
+    }
+
+    this.focusPulse += deltaSeconds;
+    const lowLife = Number.isFinite(this.game?.lives) && this.game.lives <= 1;
+    const dangerBoost = lowLife || this.invulnerable || this.isDodging ? 1.22 : 1;
+    const pulse = (Math.sin(this.focusPulse * 5) + 1) / 2;
+    const shipWidth = this.baseShipWidth || 64;
+    const radius = Math.max(34, shipWidth * (0.62 + focusScale * 0.22)) * dangerBoost;
+    const alpha = Math.min(0.86, 0.18 + focusScale * 0.46 + (lowLife ? 0.12 : 0));
+    const tick = Math.max(8, radius * 0.18);
+    const tickInset = radius + 4;
+    const tickOutset = radius + tick;
+    const color = lowLife ? 0xff55d9 : 0x66f7ff;
+
+    this.focusRing.clear();
+    this.focusRing.circle(0, 0, radius + pulse * 2);
+    this.focusRing.stroke({ color, width: 2 + focusScale * 1.2, alpha });
+    this.focusRing.circle(0, 0, radius * 0.62);
+    this.focusRing.stroke({ color: 0xffffff, width: 1, alpha: alpha * 0.38 });
+    this.focusRing.moveTo(-tickOutset, 0);
+    this.focusRing.lineTo(-tickInset, 0);
+    this.focusRing.moveTo(tickInset, 0);
+    this.focusRing.lineTo(tickOutset, 0);
+    this.focusRing.moveTo(0, -tickOutset);
+    this.focusRing.lineTo(0, -tickInset);
+    this.focusRing.moveTo(0, tickInset);
+    this.focusRing.lineTo(0, tickOutset);
+    this.focusRing.stroke({ color, width: 2, alpha: alpha * 0.82 });
+    this.focusRing.visible = true;
   }
 
   getAvailableRankShipIndices() {
@@ -748,6 +802,7 @@ export class Player {
         }
       }
     }
+    this.updateFocusRing(deltaSeconds);
 
     // Dodge Logic
     if (this.inputManager.isKeyPressed('ShiftLeft') && this.dodgeCooldown <= 0 && !this.isDodging) {

@@ -1,4 +1,5 @@
 const SCREEN_SHAKE_KEY = 'burt_accessibility_screen_shake';
+const PLAYER_FOCUS_KEY = 'burt_accessibility_player_focus';
 
 function clampUnit(value, fallback = 1) {
   const number = Number(value);
@@ -20,6 +21,10 @@ export function getDefaultScreenShakeScale() {
   return prefersReducedMotion() ? 0.45 : 1;
 }
 
+export function getDefaultPlayerFocusScale() {
+  return prefersReducedMotion() ? 0.85 : 0.72;
+}
+
 export function getScreenShakeScale() {
   try {
     const raw = localStorage.getItem(SCREEN_SHAKE_KEY);
@@ -27,6 +32,16 @@ export function getScreenShakeScale() {
     return clampUnit(raw, getDefaultScreenShakeScale());
   } catch {
     return getDefaultScreenShakeScale();
+  }
+}
+
+export function getPlayerFocusScale() {
+  try {
+    const raw = localStorage.getItem(PLAYER_FOCUS_KEY);
+    if (raw === null || raw === '') return getDefaultPlayerFocusScale();
+    return clampUnit(raw, getDefaultPlayerFocusScale());
+  } catch {
+    return getDefaultPlayerFocusScale();
   }
 }
 
@@ -40,9 +55,20 @@ export function setScreenShakeScale(value) {
   return clamped;
 }
 
+export function setPlayerFocusScale(value) {
+  const clamped = clampUnit(value, getDefaultPlayerFocusScale());
+  try {
+    localStorage.setItem(PLAYER_FOCUS_KEY, String(clamped));
+  } catch {
+    // Storage can be unavailable in privacy modes; the current value still applies to callers.
+  }
+  return clamped;
+}
+
 export function getAccessibilitySettings() {
   return {
     screenShake: getScreenShakeScale(),
+    playerFocus: getPlayerFocusScale(),
     prefersReducedMotion: prefersReducedMotion()
   };
 }

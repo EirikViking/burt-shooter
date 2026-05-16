@@ -25,7 +25,7 @@ npm run check:audio
 npm run smoke
 ```
 
-`npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, settings, desktop gameplay/pause, mobil intro/gameplay, debug-start level 3, wave-overgang og boss victory, og lagrer rapporten i `test-results/`.
+`npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, settings, desktop gameplay/pause, mobil intro/gameplay, debug-start level 3, wave-overgang og boss victory, og lagrer rapporten i `test-results/`. Konsollen viser kompakt fremdrift og oppsummering som standard; full JSON ligger i `report.json`, eller kan skrives til stdout med `SMOKE_VERBOSE_REPORT=1`.
 `npm run check:audio` verifiserer audio-manifest, SFX/voice-katalog, musikk-contexts og mix/fallback-nokler.
 
 ## Nyeste polish-pass
@@ -33,7 +33,7 @@ npm run smoke
 - Generert arktisk key art og optimalisert WebP-bakgrunn ligger i `public/art/generated/`.
 - Meny og gameplay bruker den nye arktiske/aurora-retningen for mer helhetlig uttrykk.
 - Pauseflyt har modal med resume, settings og quit-to-menu.
-- Settings-panelet har musikk/voice toggles, SFX/VOICE testknapper, master/music/SFX/voice volum, screen-shake styrke, credits og fullscreen.
+- Settings-panelet har musikk/voice toggles, SFX/VOICE testknapper, master/music/SFX/voice volum, screen-shake styrke, player-focus ring, credits og fullscreen.
 - ElevenLabs mission-control voicepack ligger i `public/audio/voice/mission-control/` og kan regenereres med `node scripts/generate-mission-control-voicepack.mjs` når `ELEVENLABS_API_KEY` finnes i environment.
 - Voice playback ducker musikken kort under radio calls, og pause overlay senker gameplay-musikken uten aa stoppe tracket.
 - Produksjonsbundle er splittet i app-, Pixi- og vendor-chunks for bedre caching.
@@ -60,6 +60,7 @@ npm run smoke
 - Hovedmenyen gjenbruker de genererte crew-portrettene i en subtil mission-console/radar layer, med kontrollhint for keyboard og gamepad.
 - `render_game_to_text()` og release/smoke-rapportene bruker stabile scene-navn som `menu`, `play` og `gameOver`, og eksponerer accessibility-state.
 - Audio smoke dekker naa Settings-audition, credits overlay og at meny/gameplay/boss/victory/game-over bruker riktig musikk-context.
+- Smoke-testen skriver naa kompakt fremdrift og pass/fail-oppsummering i terminalen, mens full rapport fortsatt lagres i `test-results/*/report.json`.
 - `docs/recovery-note-2026-05-16.md` og `docs/reviews/2026-05-16-release-candidate-review.md` oppsummerer siste recovery/review-pass.
 
 ## Deploy til Cloudflare Pages

@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
-import { getAccessibilitySettings, setScreenShakeScale } from '../config/AccessibilitySettings.js';
+import { getAccessibilitySettings, setPlayerFocusScale, setScreenShakeScale } from '../config/AccessibilitySettings.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 
@@ -43,7 +43,7 @@ export class SettingsOverlay {
 
     const isCompact = width < 620 || height < 720;
     const panelWidth = Math.min(560, width * 0.82);
-    const panelHeight = Math.min(isCompact ? 700 : 630, height * (isCompact ? 0.96 : 0.92));
+    const panelHeight = Math.min(isCompact ? 740 : 690, height * (isCompact ? 0.97 : 0.94));
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
 
@@ -89,8 +89,12 @@ export class SettingsOverlay {
     this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, y, {
       onChange: setScreenShakeScale
     });
+    y += sliderGap;
+    this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, y, {
+      onChange: setPlayerFocusScale
+    });
     y += footerGap;
-    const footerY = isCompact ? Math.min(y, panelY + panelHeight - 118) : y;
+    const footerY = isCompact ? Math.min(y, panelY + panelHeight - 128) : y;
 
     if (panelWidth >= 500) {
       this.container.addChild(this.createButton('CREDITS', width / 2 - 126, footerY, () => this.openCreditsPanel(), { width: 220, height: footerButtonHeight }));

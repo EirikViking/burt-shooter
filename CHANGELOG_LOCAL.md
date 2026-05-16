@@ -15,6 +15,11 @@ when git commits are not used.
 - Latest full smoke passed via external preview + `SMOKE_URL`: `test-results/smoke-audio-audition-external-20260517-003145/`.
 - Latest short release playtest passed: `test-results/release-playtest-audio-audition-20260517-003409/`.
 - Remaining caveat: the real by-ear audio mix pass is still not done.
+- Added a player-focus accessibility slider and ship locator ring so players can tune how strongly their ship is marked during busy combat.
+- Smoke now verifies `accessibility.playerFocus` telemetry and prints compact progress plus a pass/fail report by default while preserving the full JSON artifact on disk.
+- Latest direct `npm run smoke` now passes again with compact output and progress heartbeats: `test-results/smoke-focus-compact-20260517-005038/`.
+- Latest build passes with build ID `v2026-05-17_00-49-45`.
+- Latest short release playtest passed with player-focus telemetry: `test-results/release-playtest-player-focus-20260517-005011/`.
 
 ---
 
