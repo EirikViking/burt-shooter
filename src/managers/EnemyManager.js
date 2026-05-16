@@ -55,6 +55,7 @@ export class EnemyManager {
     this.levelStartTime = 0;
     this.bossSpawnedAtMs = 0;
     this.directorState = { tier: 0, spawnCadenceScale: 1, eliteChance: 0.02, clutchDropChance: 0.04 };
+    this.enemyShotCueCooldown = 0;
 
     // TASK 1: Voice history to prevent duplicates
     this.voiceHistory = {};
@@ -462,6 +463,7 @@ export class EnemyManager {
         if (shots) {
           if (Array.isArray(shots)) shots.forEach(s => this.game.scenes.play.bulletManager.addEnemyBullet(s));
           else this.game.scenes.play.bulletManager.addEnemyBullet(shots);
+          this.playEnemyShotFeedback(enemy, playerX, playerY);
         }
       }
 
@@ -475,6 +477,21 @@ export class EnemyManager {
       }
       return true;
     });
+  }
+
+  playEnemyShotFeedback(enemy, playerX, playerY) {
+    const playScene = this.game?.scenes?.play;
+    const angle = Math.atan2(playerY - enemy.y, playerX - enemy.x);
+    playScene?.particleManager?.createMuzzleFlash(enemy.x, enemy.y, angle, enemy.color || 0xff5544);
+
+    const now = Date.now();
+    if (now < this.enemyShotCueCooldown) return;
+    const isBoss = enemy.kind === 'boss';
+    AudioManager.playSfx('enemy_shoot', {
+      volume: isBoss ? 0.22 : 0.11,
+      minIntervalMs: isBoss ? 120 : 180
+    });
+    this.enemyShotCueCooldown = now + (isBoss ? 160 : 220);
   }
 
 

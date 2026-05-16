@@ -19,7 +19,15 @@ export class Bullet {
     // Pulse effect for enemy bullets
     this.pulseTimer = 0;
 
-    this.sprite = null;
+    this.sprite = new PIXI.Container();
+    this.sprite.x = x;
+    this.sprite.y = y;
+    this.sprite.zIndex = isPlayer ? 100 : 90;
+    this.angle = Math.atan2(vy, vx);
+    this.speed = Math.sqrt(vx * vx + vy * vy);
+    this.trail = null;
+    this.warningRing = null;
+    this.core = null;
 
     // Try Sprite First
     if (visualConfig) {
@@ -27,48 +35,67 @@ export class Bullet {
       let idx = visualConfig.index;
       const tex = GameAssets.getXtraLaser(c, idx);
       if (GameAssets.isValidTexture(tex)) {
-        this.sprite = new PIXI.Sprite(tex);
-        this.sprite.anchor.set(0.5);
-        this.sprite.rotation = Math.atan2(vy, vx) + Math.PI / 2;
-        this.sprite.scale.set(0.8);
+        this.core = new PIXI.Sprite(tex);
+        this.core.anchor.set(0.5);
+        this.core.rotation = this.angle + Math.PI / 2;
+        this.core.scale.set(isPlayer ? 0.8 : 0.72);
       }
     }
 
     // Fallback to Graphics
-    if (!this.sprite) {
-      this.sprite = new PIXI.Graphics();
+    if (!this.core) {
+      this.core = new PIXI.Graphics();
 
       if (!isPlayer) {
         // Enemy bullets: larger, more visible with warning color
         const warningRad = this.radius * 1.5;
         // Outer warning glow
-        this.sprite.circle(0, 0, warningRad + 5);
-        this.sprite.fill({ color: 0xff0000, alpha: 0.3 });
+        this.core.circle(0, 0, warningRad + 5);
+        this.core.fill({ color: 0xff0000, alpha: 0.3 });
         // Main bullet larger
-        this.sprite.circle(0, 0, warningRad);
-        this.sprite.fill({ color: this.color, alpha: 1 });
+        this.core.circle(0, 0, warningRad);
+        this.core.fill({ color: this.color, alpha: 1 });
         // Bright center
-        this.sprite.circle(0, 0, warningRad * 0.6);
-        this.sprite.fill({ color: 0xffffff, alpha: 0.9 });
+        this.core.circle(0, 0, warningRad * 0.6);
+        this.core.fill({ color: 0xffffff, alpha: 0.9 });
       } else {
         // Player bullets: original style
         // Draw glow first (behind)
-        this.sprite.circle(0, 0, this.radius + 3);
-        this.sprite.fill({ color: this.color, alpha: 0.4 });
+        this.core.circle(0, 0, this.radius + 3);
+        this.core.fill({ color: this.color, alpha: 0.4 });
         // Draw main bullet (on top)
-        this.sprite.circle(0, 0, this.radius);
-        this.sprite.fill({ color: this.color, alpha: 1 });
+        this.core.circle(0, 0, this.radius);
+        this.core.fill({ color: this.color, alpha: 1 });
         // Add bright center
-        this.sprite.circle(0, 0, this.radius * 0.5);
-        this.sprite.fill({ color: 0xffffff, alpha: 0.8 });
+        this.core.circle(0, 0, this.radius * 0.5);
+        this.core.fill({ color: 0xffffff, alpha: 0.8 });
       }
     }
 
-    this.sprite.x = x;
-    this.sprite.y = y;
+    this.createReadableProjectileShell();
+  }
 
-    // Set zIndex for proper layering (bullets should be above background but below UI)
-    this.sprite.zIndex = isPlayer ? 100 : 90;
+  createReadableProjectileShell() {
+    const trailColor = this.isPlayer ? this.color : 0xff6655;
+    const trailLength = Math.max(this.isPlayer ? 18 : 26, Math.min(this.isPlayer ? 34 : 54, this.speed * (this.isPlayer ? 5 : 8)));
+    const trailWidth = this.isPlayer ? 3 : 5;
+    const backX = -Math.cos(this.angle) * trailLength;
+    const backY = -Math.sin(this.angle) * trailLength;
+
+    this.trail = new PIXI.Graphics();
+    this.trail.moveTo(backX, backY);
+    this.trail.lineTo(0, 0);
+    this.trail.stroke({ color: trailColor, width: trailWidth, alpha: this.isPlayer ? 0.32 : 0.46 });
+    this.sprite.addChild(this.trail);
+
+    if (!this.isPlayer) {
+      this.warningRing = new PIXI.Graphics();
+      this.warningRing.circle(0, 0, this.radius + 9);
+      this.warningRing.stroke({ color: 0xff2f2f, width: 2, alpha: 0.75 });
+      this.sprite.addChild(this.warningRing);
+    }
+
+    this.sprite.addChild(this.core);
   }
 
   setScreenBounds(width, height) {
@@ -88,9 +115,14 @@ export class Bullet {
     // Pulse effect for enemy bullets (more visible)
     if (!this.isPlayer) {
       this.pulseTimer += delta * 0.1;
-      const pulseScale = 1 + Math.sin(this.pulseTimer) * 0.15;
+      const pulseScale = 1 + Math.sin(this.pulseTimer) * 0.1;
       this.sprite.scale.set(pulseScale);
       this.sprite.alpha = 0.9 + Math.sin(this.pulseTimer * 2) * 0.1;
+      if (this.warningRing) {
+        const warningPulse = 1.1 + Math.sin(this.pulseTimer * 1.7) * 0.16;
+        this.warningRing.scale.set(warningPulse);
+        this.warningRing.alpha = 0.58 + Math.sin(this.pulseTimer * 2.2) * 0.22;
+      }
     }
 
     // Deactivate if off-screen (use dynamic bounds with padding)
