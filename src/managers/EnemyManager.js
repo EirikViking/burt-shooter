@@ -144,9 +144,17 @@ export class EnemyManager {
     // GALAGA STYLE: Large Waves
     // 8-16 on early levels, 12-24 on high
     const diff = BalanceConfig.difficulty;
+    if (level === 1) {
+      return [
+        { type: 'gris', count: 5, formation: 'TUTORIAL_ARC', entry: 'split', cadence: 0.82 },
+        { type: 'fighter_1', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.94 },
+        { type: 'mongo', count: 7, formation: 'PINCER', entry: 'split', cadence: 1.05 }
+      ];
+    }
+
     const numWaves = Math.min(diff.waveCountBase + Math.floor(level / diff.waveCountPerLevel), diff.waveCountMax);
     const waves = [];
-    const patterns = ['GRID', 'V_SHAPE', 'ARC', 'BOX', 'SPIRAL', 'DOUBLE_ARC'];
+    const patterns = ['GRID', 'V_SHAPE', 'ARC', 'BOX', 'SPIRAL', 'DOUBLE_ARC', 'STAGGERED_WING', 'PINCER'];
 
     // Mix original enemies with fighter variants (player ships as enemies)
     const enemyTypes = [
@@ -180,7 +188,9 @@ export class EnemyManager {
       waves.push({
         type: selectedType,
         count: count,
-        formation: pattern
+        formation: pattern,
+        entry: Math.random() < 0.4 ? 'alternating' : 'single',
+        cadence: 1 + Math.min(0.35, level * 0.02)
       });
     }
     return waves;
@@ -523,7 +533,6 @@ export class EnemyManager {
     const positions = this.getFormationPositions(formation, count);
     const screenW = this.game.getWidth();
     const startLeft = Math.random() < 0.5;
-    const startX = startLeft ? -100 : screenW + 100;
 
     // Random Color for this wave - Xtra Asset Integration
     const waveColors = ['Blue', 'Green', 'Red', 'Black'];
@@ -540,10 +549,11 @@ export class EnemyManager {
       this.game.scenes.play.showToast(label, { fontSize: 20, fill: '#ffaa00', y: 130, duration: 2000 });
     }
 
-    const cadence = this.directorState?.spawnCadenceScale || 1;
+    const cadence = (this.directorState?.spawnCadenceScale || 1) * (config.cadence || 1);
     const delayStep = Math.max(60, 150 / cadence);
     const eliteChance = this.directorState?.eliteChance || 0.02;
     positions.forEach((pos, i) => {
+      const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
       const enemy = new Enemy(startX, -100, type, this.level, this.game, waveColor);
       this.applyModifier(enemy);
       if (Math.random() < eliteChance) enemy.applyElite?.();
@@ -553,16 +563,63 @@ export class EnemyManager {
     });
   }
 
+  getWaveEntryX(entry, index, startLeft, screenW) {
+    if (entry === 'split') {
+      return index % 2 === 0 ? -100 : screenW + 100;
+    }
+    if (entry === 'alternating') {
+      return (startLeft ? index % 2 === 0 : index % 2 !== 0) ? -100 : screenW + 100;
+    }
+    return startLeft ? -100 : screenW + 100;
+  }
+
   getFormationPositions(type, count) {
     const pos = [];
     const cw = this.game.getWidth() / 2;
     const sw = this.game.getWidth();
+    const clampX = (x) => Math.max(36, Math.min(sw - 36, x));
 
     switch (type) {
+      case 'TUTORIAL_ARC': {
+        const usable = Math.min(sw * 0.66, 520);
+        for (let i = 0; i < count; i++) {
+          const r = count <= 1 ? 0.5 : i / (count - 1);
+          pos.push({
+            x: clampX(cw - usable / 2 + r * usable),
+            y: 92 + Math.sin(r * Math.PI) * 56
+          });
+        }
+        break;
+      }
+      case 'STAGGERED_WING': {
+        const spacing = Math.min(82, Math.max(48, sw / 8));
+        const rows = [88, 130, 172];
+        for (let i = 0; i < count; i++) {
+          const row = i % rows.length;
+          const pair = Math.floor(i / rows.length);
+          const side = i % 2 === 0 ? -1 : 1;
+          pos.push({
+            x: clampX(cw + side * (44 + pair * spacing)),
+            y: rows[row]
+          });
+        }
+        break;
+      }
+      case 'PINCER': {
+        for (let i = 0; i < count; i++) {
+          const side = i % 2 === 0 ? -1 : 1;
+          const row = Math.floor(i / 2);
+          pos.push({
+            x: clampX(cw + side * Math.min(sw * 0.32, 230 - row * 18)),
+            y: 90 + row * 42 + (side > 0 ? 14 : 0)
+          });
+        }
+        break;
+      }
       case 'GRID':
         const cols = 6;
         for (let i = 0; i < count; i++) {
-          const x = cw - 150 + (i % cols) * 60;
+          const x = clampX(cw - 150 + (i % cols) * 60);
           const y = 80 + Math.floor(i / cols) * 60;
           pos.push({ x, y });
         }
@@ -571,7 +628,7 @@ export class EnemyManager {
         for (let i = 0; i < count; i++) {
           const side = i % 2 === 0 ? -1 : 1;
           const row = Math.floor(i / 2);
-          pos.push({ x: cw + (row * 30 + 20) * side, y: 80 + row * 30 });
+          pos.push({ x: clampX(cw + (row * 30 + 20) * side), y: 80 + row * 30 });
         }
         break;
       case 'BOX':
@@ -581,7 +638,7 @@ export class EnemyManager {
           const cx = (i % bCols);
           const cy = Math.floor(i / bCols);
           if (cx === 2 && cy === 1) continue; // Hole
-          pos.push({ x: cw - 100 + cx * 50, y: 80 + cy * 50 });
+          pos.push({ x: clampX(cw - 100 + cx * 50), y: 80 + cy * 50 });
         }
         break;
       case 'SPIRAL':
@@ -589,14 +646,14 @@ export class EnemyManager {
         for (let i = 0; i < count; i++) {
           const angle = (i / count) * Math.PI * 2;
           const r = 50 + (i * 10);
-          pos.push({ x: cw + Math.cos(angle) * r, y: 150 + Math.sin(angle) * r });
+          pos.push({ x: clampX(cw + Math.cos(angle) * r), y: 150 + Math.sin(angle) * r });
         }
         break;
       default:
         // ARC / S_CURVE standard
         for (let i = 0; i < count; i++) {
-          const r = i / (count - 1);
-          pos.push({ x: cw - 250 + r * 500, y: 100 + Math.sin(r * Math.PI) * 100 });
+          const r = count <= 1 ? 0.5 : i / (count - 1);
+          pos.push({ x: clampX(cw - 250 + r * 500), y: 100 + Math.sin(r * Math.PI) * 100 });
         }
         break;
     }

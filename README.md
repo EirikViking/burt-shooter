@@ -40,6 +40,8 @@ npm run smoke
 - Steam capsule/library art drafts ligger i `release/steam-assets/draft-2026-05-16/`.
 - Ekstra mission-control key-art/promo draft ligger i `release/marketing-assets/mission-control-2026-05-16/`.
 - Smoke-testen dekker naa ogsaa mobil portrait gameplay for aa fange HUD/layout-regresjoner.
+- Level 1 har naa kuratert onboarding med tydelige arc/wing/pincer-formasjoner foer senere levels blander inn mer variasjon.
+- Mobil har synlige, tekstfrie joystick/autofire-affordanser og ryddigere kompakt HUD/toast-plassering.
 
 ## Deploy til Cloudflare Pages
 

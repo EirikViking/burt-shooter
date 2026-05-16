@@ -235,15 +235,6 @@ export class PlayScene {
     this.screenShake = new ScreenShake(this.gameContainer);
     this.scorePopupManager = new ScorePopupManager(this.uiContainer);
 
-    // Initialize touch controls for mobile
-    try {
-      this.touchControls = new TouchControls();
-      this.touchControls.init();
-    } catch (error) {
-      console.warn('[PlayScene] TouchControls init failed, using NullTouchControls', error);
-      this.touchControls = new NullTouchControls();
-    }
-
     // Initial load of ships AND Ranks
     Promise.all([
       GameAssets.loadShips(),
@@ -433,8 +424,11 @@ export class PlayScene {
       this.enemyManager.forceBossStart(this.game.level);
     }
     this.showLevelIntro();
-    this.showToast(getMicroMessage('levelStart'), { fontSize: 18, y: this.game.getHeight() * 0.12, slot: 'corner', type: 'level_up' });
-    this.showToast(getMicroMessage('newWave'), { fontSize: 18, y: this.game.getHeight() * 0.16, slot: 'corner', type: 'level_up' });
+    const compactHud = this.game.getWidth() < 620;
+    if (!compactHud) {
+      this.showToast(getMicroMessage('levelStart'), { fontSize: 18, y: this.game.getHeight() * 0.12, slot: 'corner', type: 'level_up' });
+      this.showToast(getMicroMessage('newWave'), { fontSize: 18, y: this.game.getHeight() * 0.16, slot: 'corner', type: 'level_up' });
+    }
 
     if (this.game.level % 5 === 0) {
       this.showToast(getMicroMessage('bossIntro'), { fontSize: 22, y: this.game.getHeight() * 0.25, slot: 'center', type: 'level_up' });
@@ -460,14 +454,17 @@ export class PlayScene {
     ];
     const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
     const message = introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`;
+    const compactHud = this.game.getWidth() < 620;
     this.showToast(message, {
-      fontSize: this.game.getWidth() < 620 ? 26 : 42,
+      fontSize: compactHud ? 25 : 42,
       fill: '#ffff00',
       stroke: '#ff8800',
-      strokeThickness: this.game.getWidth() < 620 ? 2 : 3,
+      strokeThickness: compactHud ? 2 : 3,
       duration: 2000,
       type: 'level_up',
-      slot: 'center'
+      slot: 'center',
+      y: compactHud ? this.game.getHeight() * 0.25 : this.game.getHeight() * 0.2,
+      maxWidth: compactHud ? this.game.getWidth() * 0.82 : this.game.getWidth() * 0.9
     });
   }
 
@@ -2000,16 +1997,17 @@ export class PlayScene {
     if (!text) return;
     if (!this.canShowLore()) return;
     const duration = 2500 + Math.random() * 1000;
+    const compactHud = this.game.getWidth() < 620;
     this.enqueueToast(text, {
-      fontSize: 22,
+      fontSize: compactHud ? 18 : 22,
       fill: '#ffffff',
       duration,
       slot: 'top',
       type: 'lore',
       banner: true,
       title: 'LORE UNLOCKED', // TASK 3: Add title
-      y: this.game.getHeight() * 0.16,
-      maxWidth: this.game.getWidth() * 0.7
+      y: this.game.getHeight() * (compactHud ? 0.24 : 0.16),
+      maxWidth: this.game.getWidth() * (compactHud ? 0.78 : 0.7)
     });
   }
 
@@ -2191,7 +2189,7 @@ export class PlayScene {
       this.lastMajorToastAt = now;
       this.centerToastLockUntil = Math.max(this.centerToastLockUntil, now + duration);
     }
-    if (slot === 'center' && options.type === 'lore') {
+    if (options.type === 'lore') {
       this.lastLoreAt = now;
     }
     console.log(`[Toast] show type=${options.type} ms=${duration} slot=${slot}`);

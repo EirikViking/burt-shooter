@@ -21,6 +21,8 @@ export class TouchControls {
     this.leftZone = null;
     this.joystickBase = null;
     this.joystickStick = null;
+    this.joystickHint = null;
+    this.autoFireHint = null;
 
     // Constants
     this.MAX_MOVE_DELTA = 60; // pixels
@@ -92,9 +94,62 @@ export class TouchControls {
     document.body.appendChild(this.leftZone);
     document.body.appendChild(this.joystickBase);
     document.body.appendChild(this.joystickStick);
+    this.createPassiveHints();
 
     // Bind event listeners
     this.bindMoveEvents();
+  }
+
+  createPassiveHints() {
+    this.joystickHint = document.createElement('div');
+    this.joystickHint.id = 'joystick-hint';
+    this.joystickHint.style.cssText = `
+      position: fixed;
+      left: max(22px, env(safe-area-inset-left));
+      bottom: max(22px, env(safe-area-inset-bottom));
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 255, 255, 0.26);
+      background: radial-gradient(circle, rgba(0,255,255,0.12) 0 18%, rgba(0,255,255,0.05) 19% 48%, transparent 49%);
+      box-shadow: 0 0 24px rgba(0,255,255,0.12);
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0.7;
+    `;
+
+    this.autoFireHint = document.createElement('div');
+    this.autoFireHint.id = 'autofire-hint';
+    this.autoFireHint.style.cssText = `
+      position: fixed;
+      right: max(28px, env(safe-area-inset-right));
+      bottom: max(34px, env(safe-area-inset-bottom));
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 74, 74, 0.32);
+      box-shadow: 0 0 18px rgba(255,74,74,0.16), inset 0 0 18px rgba(255,74,74,0.08);
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0.68;
+    `;
+    const reticle = document.createElement('div');
+    reticle.style.cssText = `
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      margin-left: -9px;
+      margin-top: -9px;
+      border-radius: 50%;
+      background: rgba(255,74,74,0.18);
+      box-shadow: 0 0 10px rgba(255,74,74,0.28);
+    `;
+    this.autoFireHint.appendChild(reticle);
+
+    document.body.appendChild(this.joystickHint);
+    document.body.appendChild(this.autoFireHint);
   }
 
   bindMoveEvents() {
@@ -106,6 +161,7 @@ export class TouchControls {
       this.leftZone.setPointerCapture(e.pointerId);
 
       // Show joystick at touch position
+      if (this.joystickHint) this.joystickHint.style.opacity = '0.25';
       this.joystickBase.style.display = 'block';
       this.joystickBase.style.left = (e.clientX - 50) + 'px';
       this.joystickBase.style.top = (e.clientY - 50) + 'px';
@@ -145,6 +201,7 @@ export class TouchControls {
         // Hide joystick
         this.joystickBase.style.display = 'none';
         this.joystickStick.style.display = 'none';
+        if (this.joystickHint) this.joystickHint.style.opacity = '0.7';
       }
     });
 
@@ -157,6 +214,7 @@ export class TouchControls {
         // Hide joystick
         this.joystickBase.style.display = 'none';
         this.joystickStick.style.display = 'none';
+        if (this.joystickHint) this.joystickHint.style.opacity = '0.7';
       }
     });
   }
@@ -188,6 +246,14 @@ export class TouchControls {
     if (this.joystickStick) {
       document.body.removeChild(this.joystickStick);
       this.joystickStick = null;
+    }
+    if (this.joystickHint) {
+      document.body.removeChild(this.joystickHint);
+      this.joystickHint = null;
+    }
+    if (this.autoFireHint) {
+      document.body.removeChild(this.autoFireHint);
+      this.autoFireHint = null;
     }
     this.active = false;
     this.moveTouch = null;
