@@ -19,6 +19,7 @@ when git commits are not used.
 - Latest production smoke confirms menu, settings, gameplay, pause, audio state, and pause ducking with no console/page/HTTP failures.
 - Improved combat readability with projectile trails, enemy warning rings, muzzle flashes, and throttled incoming-shot audio cues.
 - Added a new generated mission-control key-art draft set under `release/marketing-assets/mission-control-2026-05-16/`.
+- Reworked the in-game HUD into cockpit-style glass panels with mission status, hostiles, shots, score, rank, level, and lives.
 
 ---
 

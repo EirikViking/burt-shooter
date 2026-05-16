@@ -28,6 +28,11 @@ export class HUD {
     this.hudContainer = new PIXI.Container();
     this.layoutUnsubscribe = null;
     this.container.addChild(this.hudContainer);
+    this.leftPanel = new PIXI.Graphics();
+    this.rightPanel = new PIXI.Graphics();
+    this.missionPanel = new PIXI.Graphics();
+    this.missionLabel = null;
+    this.missionText = null;
 
     // Rank Elements
     this.rankGroup = new PIXI.Container();
@@ -46,6 +51,10 @@ export class HUD {
   }
 
   createHUD() {
+    this.hudContainer.addChild(this.leftPanel);
+    this.hudContainer.addChild(this.rightPanel);
+    this.hudContainer.addChild(this.missionPanel);
+
     // Rank Group
     this.rankGroup.addChild(this.rankBarBg);
     this.rankGroup.addChild(this.rankBarFill);
@@ -56,8 +65,11 @@ export class HUD {
     // Score
     this.scoreText = createText('SCORE: 0', {
       fontFamily: 'Courier New',
-      fontSize: 20,
-      fill: '#ffff00'
+      fontSize: 18,
+      fontWeight: 'bold',
+      fill: '#f8fbff',
+      stroke: '#00111d',
+      strokeThickness: 3
     });
     this.hudContainer.addChild(this.scoreText);
     this.scoreMultiplierText = createText('', {
@@ -73,8 +85,11 @@ export class HUD {
     // Level
     this.levelText = createText('LEVEL: 1', {
       fontFamily: 'Courier New',
-      fontSize: 20,
-      fill: '#00ffff'
+      fontSize: 15,
+      fontWeight: 'bold',
+      fill: '#75ecff',
+      stroke: '#00111d',
+      strokeThickness: 3
     });
     this.hudContainer.addChild(this.levelText);
 
@@ -90,7 +105,8 @@ export class HUD {
     this.livesGroup.addChild(this.livesIcon);
     this.livesText = createText('LIVES: 3', {
       fontFamily: 'Courier New',
-      fontSize: 20,
+      fontSize: 18,
+      fontWeight: 'bold',
       fill: '#00ff00', // TASK 4: Start with green (default for >= 2 lives)
       stroke: '#000000',
       strokeThickness: 3
@@ -121,18 +137,40 @@ export class HUD {
     this.activePowerupGroup.visible = false;
     this.hudContainer.addChild(this.activePowerupGroup);
 
+    this.missionLabel = createText('MISSION STATUS', {
+      fontFamily: 'Courier New',
+      fontSize: 10,
+      fontWeight: 'bold',
+      fill: '#7ee9ff',
+      align: 'center'
+    });
+    this.missionLabel.anchor.set(0.5);
+    this.hudContainer.addChild(this.missionLabel);
+
+    this.missionText = createText('WAVE 1 / HOSTILES 0', {
+      fontFamily: 'Courier New',
+      fontSize: 14,
+      fontWeight: 'bold',
+      fill: '#f8fbff',
+      stroke: '#00111d',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    this.missionText.anchor.set(0.5);
+    this.hudContainer.addChild(this.missionText);
+
     // Easter egg location
     this.locationText = createText('STOKMARKNES', {
       fontFamily: 'Courier New',
       fontSize: 12,
-      fill: '#888888'
+      fill: '#9eb7c0'
     });
     this.locationText.anchor.set(1, 0);
     this.hudContainer.addChild(this.locationText);
   }
 
   update() {
-    this.scoreText.text = `SCORE: ${this.game.score}`;
+    this.scoreText.text = `SCORE ${this.formatScore(this.game.score)}`;
     const mult = Number(this.game.scoreMultiplier) || 1;
     if (mult > 1) {
       this.scoreMultiplierText.text = `x${mult}`;
@@ -145,8 +183,9 @@ export class HUD {
       this.scoreMultiplierText.visible = false;
       this.scoreMultiplierText.scale.set(1);
     }
-    this.levelText.text = `LEVEL: ${this.game.level}`;
-    this.livesText.text = `LIVES: ${this.game.lives}`;
+    this.levelText.text = `LEVEL ${this.game.level}`;
+    this.livesText.text = `LIVES ${this.game.lives}`;
+    this.updateMissionStatus();
 
     // TASK 4: Update lives color based on count
     if (this.game.lives === 1) {
@@ -191,6 +230,39 @@ export class HUD {
     this.updateActivePowerup();
   }
 
+  formatScore(score) {
+    const value = Number(score) || 0;
+    return value.toLocaleString('en-US');
+  }
+
+  updateMissionStatus() {
+    if (!this.missionText) return;
+    const play = this.game?.scenes?.play;
+    const manager = play?.enemyManager;
+    const activeEnemies = manager?.enemies?.filter(enemy => enemy?.active !== false && enemy?.kind !== 'beer_can').length || 0;
+    const activeBullets = play?.bulletManager?.enemyBullets?.filter(bullet => bullet?.active !== false).length || 0;
+    const waveTotal = manager?.normalWavesTotal || 0;
+    const waveIndex = Number.isFinite(manager?.currentWaveIndex) ? manager.currentWaveIndex + 1 : 1;
+    const phase = manager?.phase || 'WAVES';
+    const state = manager?.state || 'IDLE';
+
+    if (phase === 'BOSS' || state === 'BOSS_ACTIVE' || state === 'BOSS_GATE') {
+      const bossHealth = manager?.boss ? Math.max(0, Math.ceil(manager.boss.health)) : null;
+      this.missionText.text = bossHealth === null
+        ? 'BOSS SIGNAL INBOUND'
+        : `BOSS HP ${bossHealth}`;
+      return;
+    }
+
+    if (state === 'LEVEL_COMPLETE') {
+      this.missionText.text = 'SECTOR CLEAR';
+      return;
+    }
+
+    const waveText = waveTotal > 0 ? `WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}` : `LEVEL ${this.game.level}`;
+    this.missionText.text = `${waveText}  HOSTILES ${activeEnemies}  SHOTS ${activeBullets}`;
+  }
+
   updateActivePowerup() {
     const player = this.game?.scenes?.play?.player;
     const state = player?.getActivePowerupState ? player.getActivePowerupState() : null;
@@ -227,42 +299,70 @@ export class HUD {
     if (!layout || typeof layout.width !== 'number') return;
 
     const canvasWidth = this.game.getWidth ? this.game.getWidth() : layout.width;
-    const margin = layout.isMobile ? 14 : 10;
-    const blockSpacing = layout.isMobile ? 26 : 22;
-    const scoreFont = layout.isMobile ? 16 : 20;
-    const livesFont = layout.isMobile ? 18 : 20;
+    const margin = layout.isMobile ? 14 : 12;
+    const blockSpacing = layout.isMobile ? 24 : 22;
+    const scoreFont = layout.isMobile ? 15 : 18;
+    const livesFont = layout.isMobile ? 16 : 18;
+    const leftPanelWidth = layout.isMobile ? Math.min(226, canvasWidth * 0.46) : 250;
+    const leftPanelHeight = layout.isMobile ? 76 : 82;
+    const rightPanelWidth = layout.isMobile ? 126 : 150;
+    const rightPanelHeight = layout.isMobile ? 42 : 46;
+    const missionPanelWidth = layout.isMobile ? Math.min(300, canvasWidth * 0.52) : 390;
+    const missionPanelHeight = layout.isMobile ? 40 : 44;
 
     this.scoreText.style.fontSize = scoreFont;
     this.levelText.style.fontSize = scoreFont;
     this.livesText.style.fontSize = livesFont;
     this.locationText.style.fontSize = layout.isMobile ? 10 : 12;
+    this.rankText.style.fontSize = layout.isMobile ? 9 : 10;
+    this.missionLabel.style.fontSize = layout.isMobile ? 8 : 10;
+    this.missionText.style.fontSize = layout.isMobile ? 11 : 14;
+
+    this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, leftPanelHeight, 0x00d9ff, 0.16);
+    this.drawGlassPanel(this.rightPanel, canvasWidth - margin - rightPanelWidth, margin, rightPanelWidth, rightPanelHeight, 0x75ff8d, 0.14);
+    this.drawGlassPanel(this.missionPanel, canvasWidth / 2 - missionPanelWidth / 2, margin, missionPanelWidth, missionPanelHeight, 0xff55d9, 0.1);
 
     // Rank Position (Top Left)
-    this.rankGroup.x = margin;
-    this.rankGroup.y = margin;
+    this.rankGroup.x = margin + 10;
+    this.rankGroup.y = margin + 10;
 
     // Shift Score and Level to the right of Rank
-    const rankOffset = 50;
+    const rankOffset = 66;
 
     this.scoreText.x = margin + rankOffset;
-    this.scoreText.y = margin;
+    this.scoreText.y = margin + 10;
     this.scoreMultiplierText.x = this.scoreText.x + this.scoreText.width + 10;
     this.scoreMultiplierText.y = this.scoreText.y + 2;
 
     this.levelText.x = margin + rankOffset;
-    this.levelText.y = margin + blockSpacing;
+    this.levelText.y = margin + blockSpacing + 8;
+
+    this.missionLabel.x = canvasWidth / 2;
+    this.missionLabel.y = margin + 11;
+    this.missionText.x = canvasWidth / 2;
+    this.missionText.y = margin + 29;
 
     this.locationText.x = canvasWidth - margin;
     this.locationText.y = margin + blockSpacing * 2.5;
 
     this.updateLivesVisuals();
-    this.livesGroup.x = canvasWidth - margin - this.livesGroup.width;
-    this.livesGroup.y = margin;
+    this.livesGroup.x = canvasWidth - margin - rightPanelWidth + 10;
+    this.livesGroup.y = margin + 7;
 
     if (this.activePowerupGroup) {
       this.activePowerupGroup.x = canvasWidth - margin - this.activePowerupGroup.width;
       this.activePowerupGroup.y = this.livesGroup.y + this.livesGroup.height + 6;
     }
+  }
+
+  drawGlassPanel(graphics, x, y, width, height, accent, alpha = 0.14) {
+    if (!graphics) return;
+    graphics.clear();
+    graphics.roundRect(x, y, width, height, 8);
+    graphics.fill({ color: 0x03101d, alpha: 0.58 });
+    graphics.stroke({ color: accent, width: 1.5, alpha: 0.85 });
+    graphics.rect(x + 1, y + 1, Math.max(0, width - 2), Math.max(0, height * 0.38));
+    graphics.fill({ color: accent, alpha });
   }
 
   updateLivesVisuals() {
@@ -277,7 +377,7 @@ export class HUD {
     const width = this.livesText.x + this.livesText.width + padding / 2;
     this.livesBg.clear();
     this.livesBg.roundRect(0, 0, width, height, 8); // v8 syntax prefer roundRect
-    this.livesBg.fill({ color: 0x000000, alpha: 0.45 });
+    this.livesBg.fill({ color: 0x000000, alpha: 0.02 });
   }
 
   destroy() {
