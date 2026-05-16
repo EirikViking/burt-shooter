@@ -35,6 +35,7 @@ npm run smoke
 - Produksjonsbundle er splittet i app-, Pixi- og vendor-chunks for bedre caching.
 - Pixi v8 tekstflater er ryddet via `src/utils/pixiText.js`.
 - `window.render_game_to_text()` og `window.advanceTime(ms)` finnes for automatisert playtest.
+- Steam capsule/library art drafts ligger i `release/steam-assets/draft-2026-05-16/`.
 
 ## Deploy til Cloudflare Pages
 

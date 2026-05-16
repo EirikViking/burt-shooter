@@ -27,4 +27,6 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Attempted the shared develop-web-game Playwright client. It is still blocked by this machine's Playwright Chromium cache/install issue (`ms-playwright` lock / missing chromium headless shell), so the repo smoke path continues to use system Chrome successfully.
 - Latest `npm run build` succeeds with no Vite warnings.
 - Latest `npm run smoke` succeeds with no console errors, page errors, bad responses, or fatal overlay. Latest screenshots: `test-results/smoke-2026-05-16T12-42-29-194Z/01-menu.png`, `test-results/smoke-2026-05-16T12-42-29-194Z/01-settings.png`, `test-results/smoke-2026-05-16T12-42-29-194Z/02-gameplay.png`, and `test-results/smoke-2026-05-16T12-42-29-194Z/03-pause.png`.
+- Generated a second original arctic shooter key-art source and packaged Steam asset drafts under `release/steam-assets/draft-2026-05-16/`.
+- Steam draft set includes store header/small/main/vertical/page-background, library capsule/header/hero/logo, and a README with official Steamworks references checked on 2026-05-16.
 - Next priority: commit and push this coherent visual/stability milestone, then continue into gameplay pacing and audio/music polish.

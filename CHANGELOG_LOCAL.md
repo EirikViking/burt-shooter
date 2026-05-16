@@ -14,6 +14,7 @@ when git commits are not used.
 - Added `render_game_to_text` and `advanceTime` browser hooks for automated playtesting.
 - Migrated high-traffic Pixi text creation to a v8-safe helper.
 - Split production bundles into app, Pixi vendor, and vendor chunks for better caching.
+- Added Steam capsule/library art drafts under `release/steam-assets/draft-2026-05-16/`.
 
 ---
 
