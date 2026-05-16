@@ -48,6 +48,9 @@ when git commits are not used.
 - Added central SFX/voice mix defaults plus `npm run check:audio`, now part of prebuild, to catch missing audio files, empty music contexts, invalid mix keys, and broken voice fallback mappings.
 - Fixed the `war_look_out` voice fallback so the special enemy spawn warning can actually resolve to an audible asset.
 - Added browser Gamepad API support for analog/D-pad movement, fire, dodge, and pause, with smoke coverage through a virtual gamepad override.
+- Added a desktop mission-console layer to the main menu with radar sweep and crew comms, and updated the control hint so controller players can discover stick/A/B/Start controls before playing.
+- Fixed a music-switch race where game over could report the game-over context while the audio element was still holding a menu track.
+- Hardened smoke settings-overlay setup away from hardcoded click coordinates and made the desktop controls line more readable.
 
 ---
 

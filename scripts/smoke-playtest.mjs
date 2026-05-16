@@ -260,7 +260,16 @@ async function runSmoke() {
     await page.waitForTimeout(2200);
     await page.screenshot({ path: path.join(outputDir, '01-menu.png'), fullPage: true });
     const menuState = await collectGameState(page);
-    await page.mouse.click(683, 495);
+    await page.evaluate(() => {
+      const menu = window.__game?.scenes?.menu;
+      if (menu?.openSettingsOverlay) {
+        menu.openSettingsOverlay();
+      }
+    });
+    await page.waitForFunction(() => {
+      const menu = window.__game?.scenes?.menu;
+      return Boolean(menu?.settingsOverlay?.container?.parent);
+    }, null, { timeout: 5000 });
     await page.waitForTimeout(500);
     await page.screenshot({ path: path.join(outputDir, '01-settings.png'), fullPage: true });
     const settingsState = await collectGameState(page);

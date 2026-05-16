@@ -48,6 +48,10 @@ export class MenuScene {
     this.buildStamp = null;
     this.backdrop = null;
     this.backdropShade = null;
+    this.missionConsole = null;
+    this.radarSweep = null;
+    this.radarBlips = [];
+    this.crewComms = [];
     this.settingsOverlay = null;
 
     // PWA install prompt
@@ -67,6 +71,7 @@ export class MenuScene {
     this.container.sortableChildren = true;
     this.createStarfield();
     this.initBackdrop();
+    this.initMissionConsole();
     // Preload all game assets here for simplicity
     // Preload all game assets here for simplicity
     GameAssets.loadBeer().then(() => {
@@ -321,6 +326,173 @@ export class MenuScene {
     }
   }
 
+  async initMissionConsole() {
+    const { width, height } = this.game.app.screen;
+    const responsiveLayout = getCurrentLayout();
+
+    const consoleLayer = new PIXI.Container();
+    consoleLayer.label = 'ui_menuMissionConsole';
+    consoleLayer.zIndex = 2;
+    consoleLayer.eventMode = 'none';
+    consoleLayer.interactiveChildren = false;
+    consoleLayer.alpha = responsiveLayout.isMobile ? 0.42 : 0.78;
+    this.missionConsole = consoleLayer;
+    this.container.addChild(consoleLayer);
+
+    this.createRadarDecoration(consoleLayer, width, height, responsiveLayout);
+    this.createCommsFrames(consoleLayer, width, height, responsiveLayout);
+    this.layoutMissionConsole(width, height);
+
+    const portraits = AssetManifest.generated?.crewPortraits || [];
+    portraits.slice(0, 2).forEach(async (src, index) => {
+      try {
+        const texture = await PIXI.Assets.load({
+          alias: `menu_crew_portrait_${index}`,
+          src
+        });
+        const card = this.crewComms[index];
+        if (card && GameAssets.isValidTexture(texture)) {
+          const sprite = new PIXI.Sprite(texture);
+          sprite.anchor.set(0.5);
+          sprite.width = card.avatarSize;
+          sprite.height = card.avatarSize;
+          sprite.alpha = 0.72;
+          sprite.x = 0;
+          sprite.y = -6;
+          card.avatarSlot.addChild(sprite);
+        }
+      } catch (error) {
+        console.warn('[MenuScene] Crew comm portrait failed to load:', error);
+      }
+    });
+  }
+
+  createRadarDecoration(parent, width, height, layout) {
+    const radar = new PIXI.Container();
+    radar.label = 'ui_menuRadar';
+    radar.zIndex = 0;
+    radar.eventMode = 'none';
+    radar.interactiveChildren = false;
+    parent.addChild(radar);
+    this.radar = radar;
+
+    const radius = layout.isMobile ? Math.min(width, height) * 0.34 : Math.min(width, height) * 0.42;
+    for (let i = 0; i < 4; i++) {
+      const ring = new PIXI.Graphics();
+      ring.circle(0, 0, radius * (0.35 + i * 0.2));
+      ring.stroke({ color: i % 2 ? 0xff55d9 : 0x37f5ff, width: 1, alpha: 0.12 - i * 0.014 });
+      ring.label = 'ui_menuRadarRing';
+      radar.addChild(ring);
+    }
+
+    const cross = new PIXI.Graphics();
+    cross.moveTo(-radius, 0);
+    cross.lineTo(radius, 0);
+    cross.moveTo(0, -radius);
+    cross.lineTo(0, radius);
+    cross.stroke({ color: 0x37f5ff, width: 1, alpha: 0.1 });
+    radar.addChild(cross);
+
+    this.radarSweep = new PIXI.Graphics();
+    this.radarSweep.moveTo(0, 0);
+    this.radarSweep.lineTo(0, -radius * 0.94);
+    this.radarSweep.stroke({ color: 0x7fffd8, width: 2, alpha: 0.28 });
+    radar.addChild(this.radarSweep);
+
+    this.radarBlips = [];
+    const blipLayout = [
+      { x: -0.32, y: -0.08, r: 3.5, phase: 0.1 },
+      { x: 0.26, y: 0.18, r: 2.5, phase: 1.4 },
+      { x: 0.08, y: -0.32, r: 2.8, phase: 2.1 },
+      { x: -0.12, y: 0.34, r: 2.4, phase: 2.9 }
+    ];
+    blipLayout.forEach((item) => {
+      const blip = new PIXI.Graphics();
+      blip.circle(0, 0, item.r);
+      blip.fill({ color: 0xffe76a, alpha: 0.55 });
+      blip.x = item.x * radius;
+      blip.y = item.y * radius;
+      blip.phase = item.phase;
+      radar.addChild(blip);
+      this.radarBlips.push(blip);
+    });
+  }
+
+  createCommsFrames(parent, width, height, layout) {
+    this.crewComms = [];
+    if (layout.isMobile) return;
+
+    const specs = [
+      { align: -1, label: 'NAV', sub: 'ARCTIC LINK' },
+      { align: 1, label: 'PILOT', sub: 'COMMS HOT' }
+    ];
+
+    specs.forEach((spec, index) => {
+      const card = new PIXI.Container();
+      card.label = `ui_menuCrewComms_${index}`;
+      card.zIndex = 2;
+      card.eventMode = 'none';
+      card.interactiveChildren = false;
+      card.avatarSize = 76;
+      card.baseY = 0;
+
+      const bg = new PIXI.Graphics();
+      bg.roundRect(-62, -58, 124, 116, 8);
+      bg.fill({ color: 0x06111d, alpha: 0.58 });
+      bg.stroke({ color: spec.align < 0 ? 0x37f5ff : 0xff55d9, width: 1, alpha: 0.74 });
+      card.addChild(bg);
+
+      const inner = new PIXI.Graphics();
+      inner.roundRect(-46, -46, 92, 78, 5);
+      inner.stroke({ color: 0xffffff, width: 1, alpha: 0.13 });
+      card.addChild(inner);
+
+      const avatarSlot = new PIXI.Container();
+      avatarSlot.y = -4;
+      card.avatarSlot = avatarSlot;
+      card.addChild(avatarSlot);
+
+      const placeholder = new PIXI.Graphics();
+      placeholder.roundRect(-38, -44, 76, 76, 5);
+      placeholder.fill({ color: 0x0b2234, alpha: 0.74 });
+      placeholder.stroke({ color: 0x37f5ff, width: 1, alpha: 0.3 });
+      avatarSlot.addChild(placeholder);
+
+      const scan = new PIXI.Graphics();
+      scan.rect(-42, -18, 84, 2);
+      scan.fill({ color: 0x7fffd8, alpha: 0.3 });
+      scan.label = 'ui_menuCrewScan';
+      scan.phase = index * 1.4;
+      card.scan = scan;
+      card.addChild(scan);
+
+      const label = createText(spec.label, {
+        fontFamily: 'Courier New',
+        fontSize: 14,
+        fill: '#f6fbff',
+        fontWeight: 'bold',
+        align: 'center'
+      });
+      label.anchor.set(0.5);
+      label.y = 35;
+      card.addChild(label);
+
+      const sub = createText(spec.sub, {
+        fontFamily: 'Courier New',
+        fontSize: 9,
+        fill: spec.align < 0 ? '#37f5ff' : '#ff8ae8',
+        align: 'center'
+      });
+      sub.anchor.set(0.5);
+      sub.y = 49;
+      card.addChild(sub);
+
+      card.align = spec.align;
+      parent.addChild(card);
+      this.crewComms.push(card);
+    });
+  }
+
   createElements() {
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
@@ -377,7 +549,7 @@ export class MenuScene {
     this.container.addChild(this.flavor);
 
     this.disclaimer = createText(
-      'DEFEND STOKMARKNES // SURVIVE THE BOSS WAVES',
+      this.getDisclaimerText(layout),
       {
         fontFamily: 'Courier New',
         fontSize: 14,
@@ -440,14 +612,15 @@ export class MenuScene {
 
     // ... (controls and easter code unchanged) ...
 
-    const controlsText = layout.isMobile
-      ? 'Joystick: Beveg | FIRE-knapp: Skyt'
-      : 'WASD/Piltaster: Beveg | SPACE: Skyt | SHIFT: Dodge | P/ESC: Pause';
+    const controlsText = this.getControlsText(layout);
     const controlsSize = getResponsiveFontSize(layout, 'small');
     this.controls = createText(controlsText, {
       fontFamily: 'Courier New',
       fontSize: controlsSize,
-      fill: '#9fb5c2',
+      fill: '#cfefff',
+      fontWeight: 'bold',
+      stroke: '#04121d',
+      strokeThickness: 3,
       align: 'center',
       wordWrap: true,
       wordWrapWidth: clampTextWidth(width * 0.9, layout),
@@ -574,6 +747,7 @@ export class MenuScene {
     const layout = createTextLayout(width, height, responsiveLayout);
     const safeMargin = responsiveLayout.safeArea;
     this.layoutBackdrop(width, height);
+    this.layoutMissionConsole(width, height);
 
     // Update font sizes based on current layout
     const titleSize = getResponsiveFontSize(layout, 'title');
@@ -587,12 +761,14 @@ export class MenuScene {
     this.flavor.style.fontSize = storySize;
     this.flavor.style.lineHeight = Math.round(storySize * 1.5);
     this.flavor.style.wordWrapWidth = clampTextWidth(width * (layout.isMobile ? 0.9 : 0.7), layout);
+    this.disclaimer.text = this.getDisclaimerText(layout);
+    this.controls.text = layout.isMobile ? this.getControlsText(layout) : '';
     this.controls.style.fontSize = controlsSize;
     this.controls.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
 
     const disclaimerSize = Math.max(12, controlsSize);
     this.disclaimer.style.fontSize = disclaimerSize;
-    this.disclaimer.style.wordWrapWidth = clampTextWidth(width * 0.75, layout);
+    this.disclaimer.style.wordWrapWidth = clampTextWidth(width * (layout.isMobile ? 0.75 : 0.86), layout);
 
     // Force text measurement update
     this.title.updateText?.(false);
@@ -617,7 +793,7 @@ export class MenuScene {
     const totalContentHeight = titleHeight + subtitleHeight + flavorHeight + buttonsHeight + disclaimerHeight + sectionSpacing * 4;
 
     // Calculate starting Y for better vertical centering
-    const footerReserve = layout.isMobile ? 70 : 60; // Space for controls and easter egg
+    const footerReserve = layout.isMobile ? 70 : 86; // Space for controls and easter egg
     const availableHeight = height - footerReserve - safeMargin.top;
     const startY = Math.max(
       safeMargin.top,
@@ -658,7 +834,7 @@ export class MenuScene {
 
     // Footer elements - position from bottom with safe margin
     const easterY = height - safeMargin.bottom - (layout.isMobile ? 8 : 12);
-    const controlsY = easterY - (layout.isMobile ? 20 : 28);
+    const controlsY = easterY - (layout.isMobile ? 20 : 46);
 
     this.controls.x = width / 2;
     this.controls.y = controlsY;
@@ -692,6 +868,38 @@ export class MenuScene {
     }
   }
 
+  getControlsText(layout) {
+    return layout.isMobile
+      ? 'Joystick: Beveg | FIRE-knapp: Skyt'
+      : 'WASD/Piler/Stick: Beveg | Space/A: Skyt | Shift/B: Dodge | P/Start: Pause';
+  }
+
+  getDisclaimerText(layout) {
+    const objective = 'DEFEND STOKMARKNES // SURVIVE THE BOSS WAVES';
+    return layout.isMobile ? objective : `${objective}\n${this.getControlsText(layout)}`;
+  }
+
+  layoutMissionConsole(width = this.game.app.screen.width, height = this.game.app.screen.height) {
+    if (!this.missionConsole) return;
+    const responsiveLayout = getCurrentLayout();
+    this.missionConsole.alpha = responsiveLayout.isMobile ? 0.34 : 0.78;
+
+    if (this.radar) {
+      this.radar.x = width / 2;
+      this.radar.y = height * (responsiveLayout.isMobile ? 0.54 : 0.56);
+      this.radar.scale.set(responsiveLayout.isMobile ? 0.84 : 1);
+    }
+
+    this.crewComms.forEach((card) => {
+      const x = card.align < 0 ? width * 0.16 : width * 0.84;
+      const y = height * 0.32;
+      card.x = x;
+      card.y = y;
+      card.baseY = y;
+      card.visible = !responsiveLayout.isMobile && width >= 860;
+    });
+  }
+
   layoutBackdrop(width = this.game.app.screen.width, height = this.game.app.screen.height) {
     if (this.backdrop?.texture) {
       const textureWidth = this.backdrop.texture.width || width;
@@ -715,6 +923,7 @@ export class MenuScene {
     const container = new PIXI.Container();
     container.eventMode = 'static';
     container.cursor = 'pointer';
+    container.zIndex = 10;
 
     const btnWidth = layout?.isMobile ? 200 : 240;
     const btnHeight = layout?.isMobile ? 36 : 40;
@@ -854,6 +1063,26 @@ export class MenuScene {
     if (this.title && this.title.alpha >= 1) {
       const pulse = Math.sin(this.animationTime * 0.5) * 0.3 + 0.7;
       this.title.style.dropShadowAlpha = pulse * 0.8;
+    }
+
+    if (this.radarSweep) {
+      this.radarSweep.rotation += delta * 0.012;
+    }
+    if (this.radarBlips?.length) {
+      this.radarBlips.forEach((blip) => {
+        const pulse = Math.sin(this.animationTime * 3.5 + blip.phase) * 0.5 + 0.5;
+        blip.alpha = 0.22 + pulse * 0.48;
+        blip.scale.set(0.85 + pulse * 0.28);
+      });
+    }
+    if (this.crewComms?.length) {
+      this.crewComms.forEach((card, index) => {
+        card.y = card.baseY + Math.sin(this.animationTime * 1.3 + index) * 5;
+        if (card.scan) {
+          card.scan.y = -36 + ((this.animationTime * 28 + index * 31) % 72);
+          card.scan.alpha = 0.12 + Math.sin(this.animationTime * 4 + index) * 0.08;
+        }
+      });
     }
 
     // Animate Hero Beers

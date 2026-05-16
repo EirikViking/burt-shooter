@@ -72,6 +72,7 @@ class AudioController {
 
     // Safety lock
     this.isSwitchingTrack = false;
+    this.pendingTrackRequest = null;
 
     // Idempotency guard
     this._initialized = false;
@@ -476,7 +477,13 @@ class AudioController {
 
   startTrack(src) {
     if (!src) return;
-    if (this.isSwitchingTrack) return;
+    if (this.isSwitchingTrack) {
+      this.pendingTrackRequest = {
+        src,
+        context: this.currentContext
+      };
+      return;
+    }
 
     // Update state
     this.currentTrackSrc = src;
@@ -496,9 +503,11 @@ class AudioController {
       playPromise.then(() => {
         this.retryCount = 0; // Success reset
         this.isSwitchingTrack = false;
+        if (this.playPendingTrackRequest()) return;
         console.log("[Audio] Music playback confirmed");
       }).catch(e => {
         this.isSwitchingTrack = false;
+        if (this.playPendingTrackRequest()) return;
         if (e.name === 'AbortError') {
           console.log('[Audio] Play interrupted by new request (AbortError). Ignoring.');
         } else if (e.name === 'NotAllowedError') {
@@ -511,7 +520,26 @@ class AudioController {
       });
     } else {
       this.isSwitchingTrack = false;
+      this.playPendingTrackRequest();
     }
+  }
+
+  playPendingTrackRequest() {
+    const pending = this.pendingTrackRequest;
+    if (!pending?.src) return false;
+
+    this.pendingTrackRequest = null;
+    if (pending.context) {
+      this.currentContext = pending.context;
+    }
+
+    if (pending.src === this.currentTrackSrc && !this.musicAudio.paused) {
+      if (pending.context) this.lastTrackByContext[pending.context] = pending.src;
+      return false;
+    }
+
+    this.startTrack(pending.src);
+    return true;
   }
 
   onTrackEnded() {
