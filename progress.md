@@ -42,4 +42,5 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Improved combat readability with projectile trails, enemy warning rings, muzzle flash feedback, and throttled incoming-shot SFX cues.
 - Latest `npm run build` succeeds with no Vite warnings after projectile changes.
 - Latest `npm run smoke` succeeds with no console errors, page errors, bad responses, or fatal overlay. Latest screenshots: `test-results/smoke-2026-05-16T13-00-58-184Z/01-menu.png`, `test-results/smoke-2026-05-16T13-00-58-184Z/01-settings.png`, `test-results/smoke-2026-05-16T13-00-58-184Z/02-gameplay.png`, and `test-results/smoke-2026-05-16T13-00-58-184Z/03-pause.png`.
+- Generated a new mission-control key-art/promo draft with the built-in Codex imagegen path and saved normalized variants under `release/marketing-assets/mission-control-2026-05-16/`.
 - Next priority: continue gameplay feel and readability polish, especially first-level pacing, HUD readability, enemy formation variety, and harsher playtest review loops.

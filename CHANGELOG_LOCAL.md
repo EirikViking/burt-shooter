@@ -18,6 +18,7 @@ when git commits are not used.
 - Added an ElevenLabs-generated mission-control voicepack, a regeneration script that reads `ELEVENLABS_API_KEY` from the environment only, voice/music ducking, and cleaned up missing SFX aliases.
 - Latest production smoke confirms menu, settings, gameplay, pause, audio state, and pause ducking with no console/page/HTTP failures.
 - Improved combat readability with projectile trails, enemy warning rings, muzzle flashes, and throttled incoming-shot audio cues.
+- Added a new generated mission-control key-art draft set under `release/marketing-assets/mission-control-2026-05-16/`.
 
 ---
 

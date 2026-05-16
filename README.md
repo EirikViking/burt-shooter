@@ -38,6 +38,7 @@ npm run smoke
 - Pixi v8 tekstflater er ryddet via `src/utils/pixiText.js`.
 - `window.render_game_to_text()` og `window.advanceTime(ms)` finnes for automatisert playtest.
 - Steam capsule/library art drafts ligger i `release/steam-assets/draft-2026-05-16/`.
+- Ekstra mission-control key-art/promo draft ligger i `release/marketing-assets/mission-control-2026-05-16/`.
 
 ## Deploy til Cloudflare Pages
 
