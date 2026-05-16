@@ -46,6 +46,8 @@ npm run smoke
 - Smoke-testen verifiserer ogsaa `startLevel=3` med debug token, slik at senere kampanje/pacing-endringer fanges tidligere.
 - Ny generert storm/aurora gameplay-bakgrunn ligger i `public/art/generated/` og fades inn fra level 3 for mer kampanjeprogresjon.
 - `docs/visual-asset-pipeline.md` dokumenterer brukte genererte visual assets og runtime-optimalisering.
+- Wave-overganger har naa en kort briefing/score-beat foer neste wave, og smoke-testen verifiserer wave 2, scorebonus og tekst-state.
+- `docs/recovery-note-2026-05-16.md` og `docs/reviews/2026-05-16-release-candidate-review.md` oppsummerer siste recovery/review-pass.
 
 ## Deploy til Cloudflare Pages
 

@@ -482,6 +482,7 @@ class AudioController {
   }
 
   getSettings() {
+    const musicSrc = this.musicAudio?.src || '';
     return {
       masterVolume: this.masterVolume,
       musicVolume: this.musicVolume,
@@ -491,7 +492,10 @@ class AudioController {
       voiceEnabled: this.voiceEnabled,
       musicDuckFactor: this.musicDuckFactor,
       pauseDuckFactor: this.pauseDuckFactor,
-      currentMusicContext: this.currentContext
+      currentMusicContext: this.currentContext,
+      musicPlaying: Boolean(this.musicAudio && !this.musicAudio.paused && this.musicAudio.currentTime > 0),
+      musicReadyState: this.musicAudio?.readyState || 0,
+      currentMusicTrack: musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null
     };
   }
 

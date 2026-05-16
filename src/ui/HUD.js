@@ -259,6 +259,11 @@ export class HUD {
       return;
     }
 
+    if (state === 'WAVE_BRIEFING') {
+      this.missionText.text = `INCOMING WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}`;
+      return;
+    }
+
     const waveText = waveTotal > 0 ? `WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}` : `LEVEL ${this.game.level}`;
     this.missionText.text = `${waveText}  HOSTILES ${activeEnemies}  SHOTS ${activeBullets}`;
   }

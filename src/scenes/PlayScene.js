@@ -877,60 +877,68 @@ export class PlayScene {
   }
 
   // Wave bonus WOW effect with premium arcade feel
-  showWaveBonusEffect(bonusAmount, label = 'WAVE CLEARED!') {
+  showWaveBonusEffect(bonusAmount, label = 'WAVE CLEARED!', options = {}) {
     const { width, height } = this.game.app.screen;
+    const compact = Boolean(options.compact);
+    const panelWidth = compact ? 340 : 400;
+    const panelHeight = compact ? 108 : 130;
+    const panelRadius = compact ? 8 : 10;
+    const ringCount = compact ? 1 : 3;
+    const ringRadius = compact ? 155 : 220;
+    const effectY = compact ? height * 0.38 : height * 0.35;
 
     // Create dedicated isolated effect container
     const effectContainer = new PIXI.Container();
     effectContainer.x = width / 2;
-    effectContainer.y = height * 0.35;
+    effectContainer.y = effectY;
     effectContainer.alpha = 0;
-    effectContainer.scale.set(0.3); // Bigger for more wow factor
+    effectContainer.scale.set(compact ? 0.55 : 0.3); // Bigger for more wow factor
     effectContainer.zIndex = 9999;
     this.uiContainer.addChild(effectContainer);
 
     // Outer glow rings for extra wow
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < ringCount; i++) {
       const outerRing = new PIXI.Graphics();
-      outerRing.circle(0, 0, 220 + i * 30);
-      outerRing.stroke({ color: 0x00ff00, width: 2, alpha: 0.3 - i * 0.1 });
+      outerRing.circle(0, 0, ringRadius + i * 30);
+      outerRing.stroke({ color: 0x00ff00, width: 2, alpha: compact ? 0.22 : 0.3 - i * 0.1 });
       effectContainer.addChild(outerRing);
     }
 
     // Background panel with glow
     const panel = new PIXI.Graphics();
-    panel.roundRect(-200, -65, 400, 130, 10);
+    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, panelRadius);
     panel.fill({ color: 0x000000, alpha: 0.95 });
     panel.stroke({ color: 0x00ff00, width: 4 });
     effectContainer.addChild(panel);
 
     // Inner glow with multiple layers for depth
     const glow = new PIXI.Graphics();
-    glow.roundRect(-195, -60, 390, 120, 8);
+    glow.roundRect(-panelWidth / 2 + 5, -panelHeight / 2 + 5, panelWidth - 10, panelHeight - 10, Math.max(4, panelRadius - 2));
     glow.stroke({ color: 0x00ff00, width: 3, alpha: 0.6 });
     effectContainer.addChild(glow);
 
     const innerGlow = new PIXI.Graphics();
-    innerGlow.roundRect(-190, -55, 380, 110, 7);
+    innerGlow.roundRect(-panelWidth / 2 + 10, -panelHeight / 2 + 10, panelWidth - 20, panelHeight - 20, Math.max(3, panelRadius - 3));
     innerGlow.stroke({ color: 0xffff00, width: 2, alpha: 0.3 });
     effectContainer.addChild(innerGlow);
 
     // Star burst decoration
-    for (let i = 0; i < 8; i++) {
-      const angle = (Math.PI * 2 * i) / 8;
+    const starCount = compact ? 4 : 8;
+    for (let i = 0; i < starCount; i++) {
+      const angle = (Math.PI * 2 * i) / starCount;
       const star = new PIXI.Graphics();
       star.moveTo(0, 0);
-      star.lineTo(Math.cos(angle) * 25, Math.sin(angle) * 25);
-      star.stroke({ color: 0xffff00, width: 2, alpha: 0.7 });
-      star.x = Math.cos(angle) * 180;
-      star.y = Math.sin(angle) * 50;
+      star.lineTo(Math.cos(angle) * (compact ? 18 : 25), Math.sin(angle) * (compact ? 18 : 25));
+      star.stroke({ color: 0xffff00, width: 2, alpha: compact ? 0.45 : 0.7 });
+      star.x = Math.cos(angle) * (compact ? 150 : 180);
+      star.y = Math.sin(angle) * (compact ? 38 : 50);
       effectContainer.addChild(star);
     }
 
     // Main label (WAVE CLEARED!) - Big and bold
     const labelText = createText(label, {
       fontFamily: 'Courier New',
-      fontSize: 38,
+      fontSize: compact ? 28 : 38,
       fill: '#00ff00',
       stroke: '#004400',
       strokeThickness: 6,
@@ -940,13 +948,13 @@ export class PlayScene {
       dropShadowDistance: 3
     });
     labelText.anchor.set(0.5);
-    labelText.y = -30;
+    labelText.y = compact ? -30 : -30;
     effectContainer.addChild(labelText);
 
     // Bonus amount with coin icon
     const bonusText = createText(`+${bonusAmount}`, {
       fontFamily: 'Courier New',
-      fontSize: 48,
+      fontSize: compact ? 34 : 48,
       fill: '#ffff00',
       stroke: '#000000',
       strokeThickness: 8,
@@ -956,8 +964,22 @@ export class PlayScene {
       dropShadowDistance: 4
     });
     bonusText.anchor.set(0.5);
-    bonusText.y = 30;
+    bonusText.y = compact && options.subtitle ? 8 : 30;
     effectContainer.addChild(bonusText);
+
+    if (options.subtitle) {
+      const subtitleText = createText(String(options.subtitle), {
+        fontFamily: 'Courier New',
+        fontSize: compact ? 15 : 18,
+        fill: '#7ee9ff',
+        stroke: '#00111d',
+        strokeThickness: 4,
+        align: 'center'
+      });
+      subtitleText.anchor.set(0.5);
+      subtitleText.y = compact ? 39 : 56;
+      effectContainer.addChild(subtitleText);
+    }
 
     // Isolated flash effect (contained, not global stage)
     const flash = new PIXI.Graphics();
@@ -967,26 +989,30 @@ export class PlayScene {
 
     // Particle burst at center screen
     if (this.particleManager) {
-      this.particleManager.createExplosion(width / 2, height * 0.35, 0x00ff00);
-      this.particleManager.createExplosion(width / 2 - 50, height * 0.35, 0xffff00);
-      this.particleManager.createExplosion(width / 2 + 50, height * 0.35, 0xffff00);
+      if (compact) {
+        this.particleManager.createExplosion(width / 2, effectY, 0x00ff00, 0.35);
+      } else {
+        this.particleManager.createExplosion(width / 2, effectY, 0x00ff00);
+        this.particleManager.createExplosion(width / 2 - 50, effectY, 0xffff00);
+        this.particleManager.createExplosion(width / 2 + 50, effectY, 0xffff00);
+      }
     }
 
     // Screen shake isolated to game container (NOT stage)
     if (this.screenShake) {
-      this.screenShake.shake(8, 20); // Strong but controlled shake
+      this.screenShake.shake(compact ? 4 : 8, compact ? 10 : 20); // Strong but controlled shake
     }
 
     // Satisfying sound (NOT the annoying blip blop)
-    AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
+    AudioManager.playSfx('powerup', { force: true, volume: compact ? 0.65 : 1.0 });
 
     // Animation sequence: explosive entry, hold, smooth exit
     let elapsed = 0;
     const phases = {
-      entry: 400,    // Fast explosive entry
-      hold: 1800,    // Hold for readability
-      exit: 600,     // Smooth fade out
-      flashPeak: 150 // Flash duration
+      entry: compact ? 220 : 400,    // Fast explosive entry
+      hold: compact ? 650 : 1800,    // Hold for readability
+      exit: compact ? 350 : 600,     // Smooth fade out
+      flashPeak: compact ? 90 : 150  // Flash duration
     };
     const totalDuration = phases.entry + phases.hold + phases.exit;
 
@@ -998,13 +1024,15 @@ export class PlayScene {
         const t = elapsed / phases.entry;
         const eased = 1 - Math.pow(1 - t, 4); // Ease out quart
         effectContainer.alpha = Math.min(1, t * 2); // Fade in fast
-        effectContainer.scale.set(0.3 * (1 + eased * 2)); // Scale to 0.9 with overshoot
+        const baseScale = compact ? 0.55 : 0.3;
+        const scaleBoost = compact ? 0.45 : 2;
+        effectContainer.scale.set(baseScale * (1 + eased * scaleBoost)); // Scale to final size with overshoot
         effectContainer.rotation = Math.sin(t * Math.PI * 2) * 0.1 * (1 - t); // Wobble entry
 
         // Flash effect (isolated, peaks early then fades)
         if (elapsed < phases.flashPeak) {
           const flashT = elapsed / phases.flashPeak;
-          flash.alpha = Math.sin(flashT * Math.PI) * 0.4; // Brighter flash
+          flash.alpha = Math.sin(flashT * Math.PI) * (compact ? 0.16 : 0.4); // Brighter flash
         } else {
           flash.alpha = 0;
         }
@@ -1028,7 +1056,7 @@ export class PlayScene {
           this.uiContainer.removeChild(effectContainer);
         }
         // Ensure flash is cleaned up
-        flash.destroy();
+        effectContainer.destroy({ children: true });
       }
     };
 

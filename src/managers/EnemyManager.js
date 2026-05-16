@@ -26,6 +26,9 @@ export class EnemyManager {
     this.normalWavesTotal = 0;
     this.bossWaveIndex = 0;
     this.phase = 'WAVES';
+    this.pendingWaveConfig = null;
+    this.waveBriefingTimer = 0;
+    this.waveBriefingAnnounced = false;
 
     // Debug Stats
     this.totalEnemiesSpawned = 0;
@@ -73,6 +76,9 @@ export class EnemyManager {
     this.bossWaveIndex = 0;
     this.levelStartTime = Date.now();
     this.phase = 'WAVES';
+    this.pendingWaveConfig = null;
+    this.waveBriefingTimer = 0;
+    this.waveBriefingAnnounced = false;
 
     // Reset hijacker state for new level
     this.hijacker = null;
@@ -305,6 +311,23 @@ export class EnemyManager {
         if (this.waveEnding && this.cleanupPhase === 'NONE') {
           this.onWaveCleared();
           this.waveEnding = false; // Reset for next wave
+        }
+        break;
+
+      case 'WAVE_BRIEFING':
+        this.waveBriefingTimer += delta * 16.67;
+        if (!this.waveBriefingAnnounced && this.waveBriefingTimer >= 650) {
+          this.announceWaveBriefing();
+          this.waveBriefingAnnounced = true;
+        }
+        if (this.waveBriefingTimer >= 1600 && this.pendingWaveConfig) {
+          const config = this.pendingWaveConfig;
+          this.pendingWaveConfig = null;
+          this.waveBriefingTimer = 0;
+          this.waveBriefingAnnounced = false;
+          this.spawnWave(config);
+          this.state = 'WAVE_ACTIVE';
+          AudioManager.playVoice('mission_control_level_start', { cooldownMs: 2400, duckMs: 1900 });
         }
         break;
 
@@ -786,10 +809,12 @@ export class EnemyManager {
     console.log(`[BossPhase] level=${this.level} phase=${this.phase} waveCleared waveIndex=${this.currentWaveIndex} of ${this.normalWavesTotal}`);
     if (this.phase !== 'WAVES') return;
 
-    const prevWaveIdx = this.currentWaveIndex - 1;
-    const prevWave = (prevWaveIdx >= 0 && prevWaveIdx < this.normalWavesTotal) ? this.waves[prevWaveIdx] : null;
+    const clearedWaveIndex = this.currentWaveIndex;
+    const clearedWave = (clearedWaveIndex >= 0 && clearedWaveIndex < this.waves.length) ? this.waves[clearedWaveIndex] : null;
+    const clearedWaveNumber = clearedWaveIndex + 1;
+    let hasUpcomingWave = clearedWaveIndex < this.normalWavesTotal - 1;
 
-    if (prevWave && prevWave.isChallenge) {
+    if (clearedWave && clearedWave.isChallenge) {
       // Challenge Bonus
       const bonus = 3000;
       this.game.addScore(bonus);
@@ -799,30 +824,37 @@ export class EnemyManager {
       AudioManager.playVoice('mission_complete');
     } else {
       // Normal Bonus
-      const bonus = 500 * this.currentWaveIndex;
+      const bonus = 500 * clearedWaveNumber;
       this.game.addScore(bonus);
       if (this.game.scenes.play) {
-        this.game.scenes.play.showWaveBonusEffect(bonus, 'WAVE CLEARED!');
+        const nextLabel = hasUpcomingWave
+          ? `NEXT WAVE ${clearedWaveNumber + 1}/${this.normalWavesTotal}`
+          : 'BOSS GATE NEXT';
+        this.game.scenes.play.showWaveBonusEffect(bonus, 'WAVE CLEARED!', {
+          compact: hasUpcomingWave,
+          subtitle: nextLabel
+        });
       }
       AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 2600, duckMs: 2200 });
     }
 
     // Logic to potentially inject a Challenge Wave
     // Criteria: Not boss level, not first wave, chance 8%, not back-to-back
-    const isLevelDone = this.currentWaveIndex >= this.normalWavesTotal;
-
-    if (!isLevelDone && !this.isBossLevel && this.currentWaveIndex > 0) {
+    if (hasUpcomingWave && this.currentWaveIndex > 0) {
       // 8% Chance
       if (Math.random() < 0.08) {
-        const wasChallenge = prevWave && prevWave.isChallenge;
+        const wasChallenge = clearedWave && clearedWave.isChallenge;
         if (!wasChallenge) {
           console.log('[EnemyManager] INJECTING BEER CHALLENGE WAVE!');
-          this.waves.splice(this.currentWaveIndex, 0, {
+          this.waves.splice(this.currentWaveIndex + 1, 0, {
             type: 'beer_challenge',
             count: 24,
             formation: 'GRID',
             isChallenge: true
           });
+          this.normalWavesTotal += 1;
+          this.bossWaveIndex = this.normalWavesTotal;
+          hasUpcomingWave = true;
         }
       }
     }
@@ -830,17 +862,7 @@ export class EnemyManager {
     if (this.currentWaveIndex < this.normalWavesTotal - 1) {
       this.currentWaveIndex += 1;
       const config = this.waves[this.currentWaveIndex];
-      this.spawnWave(config);
-      this.state = 'WAVE_ACTIVE';
-      AudioManager.playVoice('mission_control_level_start', { cooldownMs: 2400, duckMs: 1900 });
-      if (this.game.scenes.play) {
-        const compactHud = this.game.getWidth() < 620;
-        this.game.scenes.play.showToast(`WAVE ${this.currentWaveIndex + 1} / ${this.normalWavesTotal}`, {
-          fontSize: compactHud ? 17 : 20,
-          y: compactHud ? this.game.getHeight() * 0.24 : 100,
-          duration: 1500
-        });
-      }
+      this.beginWaveBriefing(config);
       return;
     }
 
@@ -855,6 +877,42 @@ export class EnemyManager {
     this.phase = 'COMPLETE';
     this.state = 'LEVEL_COMPLETE';
     console.log(`[BossPhase] level=${this.level} phase=${this.phase} bossDefeated=true`);
+  }
+
+  beginWaveBriefing(config) {
+    this.pendingWaveConfig = config;
+    this.waveBriefingTimer = 0;
+    this.waveBriefingAnnounced = false;
+    this.state = 'WAVE_BRIEFING';
+  }
+
+  announceWaveBriefing() {
+    if (this.game.scenes.play) {
+      const compactHud = this.game.getWidth() < 620;
+      const descriptor = this.getWaveDescriptor(this.pendingWaveConfig);
+      const waveLabel = `WAVE ${this.currentWaveIndex + 1}/${this.normalWavesTotal}`;
+      this.game.scenes.play.showToast(`${waveLabel}: ${descriptor}`, {
+        fontSize: compactHud ? 15 : 18,
+        fill: '#7ee9ff',
+        stroke: '#00111d',
+        strokeThickness: 4,
+        y: compactHud ? this.game.getHeight() * 0.25 : 112,
+        duration: 1050,
+        slot: 'top',
+        type: 'level_up',
+        priority: 2,
+        maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.62)
+      });
+      AudioManager.playSfx('ui_open', { volume: 0.25, minIntervalMs: 500 });
+    }
+  }
+
+  getWaveDescriptor(config) {
+    if (!config) return 'INCOMING';
+    if (config.isChallenge || config.type === 'beer_challenge') return 'BONUS CAN RAID';
+    const enemy = String(config.type || 'hostiles').replace(/_/g, ' ').toUpperCase();
+    const formation = String(config.formation || 'formation').replace(/_/g, ' ').toUpperCase();
+    return `${enemy} ${formation}`;
   }
 
   maybeSpawnHijacker() {
@@ -914,7 +972,7 @@ export class EnemyManager {
       // Clear each beer can with particle effect
       beerCans.forEach(target => {
         if (playScene.particleManager) {
-          playScene.particleManager.createExplosion(target.x, target.y, 0xcccccc, 5);
+          playScene.particleManager.createExplosion(target.x, target.y, 0xcccccc, 1.2);
         }
         // Mark as inactive (their managers will clean up sprites)
         target.active = false;
@@ -932,11 +990,12 @@ export class EnemyManager {
     this.enemies.forEach(e => {
       if (e.kind !== 'beer_can' && e.kind !== 'boss') {
         // Regular enemies get cleared too
+        const wasActive = e.active !== false;
         enemyCount++;
         e.active = false;
         if (e.destroy) e.destroy(); // Call destroy to clean up tickers
-        if (this.game.scenes.play && this.game.scenes.play.particleManager) {
-          this.game.scenes.play.particleManager.createExplosion(e.x, e.y, 0xcccccc, 5);
+        if (wasActive && this.game.scenes.play && this.game.scenes.play.particleManager) {
+          this.game.scenes.play.particleManager.createExplosion(e.x, e.y, 0xcccccc, 1.1);
         }
         // Always remove sprite
         if (e.sprite && e.sprite.parent) {

@@ -89,6 +89,9 @@ async function collectGameState(page) {
       lives: game?.lives ?? null,
       selectedShipSpriteKey: game?.selectedShipSpriteKey ?? play?.player?.selectedShipSpriteKey ?? null,
       enemies: play?.enemyManager?.enemies?.length ?? null,
+      enemyManagerState: play?.enemyManager?.state ?? null,
+      currentWaveIndex: play?.enemyManager?.currentWaveIndex ?? null,
+      normalWavesTotal: play?.enemyManager?.normalWavesTotal ?? null,
       bullets: play?.bulletManager?.bullets?.length ?? null,
       enemyBullets: play?.bulletManager?.enemyBullets?.length ?? null,
       isPaused: Boolean(play?.isPaused),
@@ -106,6 +109,28 @@ async function collectGameState(page) {
         }
       })()
     };
+  });
+}
+
+async function stabilizeSmokePlayer(page) {
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const player = play?.player;
+    if (game) {
+      game.lives = Math.max(game.lives || 0, 3);
+    }
+    if (player) {
+      player.invulnerable = true;
+      player.invulnerableTime = 45000;
+      if (typeof game?.getWidth === 'function') player.x = game.getWidth() / 2;
+      if (typeof game?.getHeight === 'function') player.y = game.getHeight() * 0.82;
+    }
+    if (play?.bulletManager?.enemyBullets) {
+      play.bulletManager.enemyBullets.forEach((bullet) => {
+        bullet.active = false;
+      });
+    }
   });
 }
 
@@ -179,17 +204,19 @@ async function runSmoke() {
     observePage(mobilePage, 'mobile');
     await mobilePage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await mobilePage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await stabilizeSmokePlayer(mobilePage);
     await mobilePage.waitForTimeout(1800);
     await mobilePage.screenshot({ path: path.join(outputDir, '04-mobile-intro.png'), fullPage: true });
     await mobilePage.waitForFunction(() => {
       try {
         if (typeof window.render_game_to_text !== 'function') return false;
         const state = JSON.parse(window.render_game_to_text());
-        return state?.counts?.enemies > 0;
+        return state?.scene === 'play' && state?.counts?.enemies > 0;
       } catch {
         return false;
       }
     }, null, { timeout: 8000 });
+    await stabilizeSmokePlayer(mobilePage);
     await mobilePage.waitForTimeout(700);
     await mobilePage.screenshot({ path: path.join(outputDir, '05-mobile-gameplay.png'), fullPage: true });
     const mobileGameplayState = await collectGameState(mobilePage);
@@ -213,6 +240,53 @@ async function runSmoke() {
     const level3State = await collectGameState(level3Page);
     await level3Page.close();
 
+    const transitionPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    observePage(transitionPage, 'wave-transition');
+    await transitionPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await transitionPage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await transitionPage.waitForFunction(() => {
+      try {
+        if (typeof window.render_game_to_text !== 'function') return false;
+        const state = JSON.parse(window.render_game_to_text());
+        return state?.counts?.enemies > 0;
+      } catch {
+        return false;
+      }
+    }, null, { timeout: 8000 });
+    await transitionPage.evaluate(() => {
+      const play = window.__game?.scenes?.play;
+      if (play?.particleManager) {
+        play.particleManager.maxParticles = Math.max(play.particleManager.maxParticles || 0, 1200);
+      }
+      const enemyManager = play?.enemyManager;
+      if (!enemyManager) return;
+      enemyManager.enemies = enemyManager.enemies.filter((enemy) => {
+        const isObjective = typeof enemyManager.isObjectiveEnemy === 'function'
+          ? enemyManager.isObjectiveEnemy(enemy)
+          : enemy?.kind !== 'beer_can' && enemy?.kind !== 'boss' && enemy?.active;
+        if (!isObjective) return true;
+        enemy.active = false;
+        if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);
+        return false;
+      });
+    });
+    await transitionPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'WAVE_BRIEFING', null, { timeout: 7000 });
+    await transitionPage.screenshot({ path: path.join(outputDir, '07-wave-briefing.png'), fullPage: true });
+    await transitionPage.waitForFunction(() => {
+      const play = window.__game?.scenes?.play;
+      const enemyManager = play?.enemyManager;
+      if (!enemyManager || enemyManager.state !== 'WAVE_ACTIVE' || enemyManager.currentWaveIndex < 1) return false;
+      try {
+        if (typeof window.render_game_to_text !== 'function') return false;
+        const state = JSON.parse(window.render_game_to_text());
+        return state?.counts?.enemies > 0;
+      } catch {
+        return false;
+      }
+    }, null, { timeout: 7000 });
+    const waveTransitionState = await collectGameState(transitionPage);
+    await transitionPage.close();
+
     const report = {
       baseUrl,
       outputDir,
@@ -222,6 +296,7 @@ async function runSmoke() {
       pauseState,
       mobileGameplayState,
       level3State,
+      waveTransitionState,
       consoleEvents,
       pageErrors,
       badResponses
@@ -238,7 +313,12 @@ async function runSmoke() {
       ...(mobileGameplayState.textState?.scene !== 'play' ? ['mobile autostart did not reach play scene'] : []),
       ...((mobileGameplayState.textState?.counts?.enemies || 0) <= 0 ? ['mobile gameplay did not spawn enemies'] : []),
       ...(level3State.textState?.level !== 3 ? ['debug startLevel=3 did not hold level 3'] : []),
-      ...((level3State.textState?.counts?.enemies || 0) <= 0 ? ['level 3 smoke did not spawn enemies'] : [])
+      ...((level3State.textState?.counts?.enemies || 0) <= 0 ? ['level 3 smoke did not spawn enemies'] : []),
+      ...(waveTransitionState.currentWaveIndex < 1 ? ['wave transition did not advance to wave 2'] : []),
+      ...(waveTransitionState.enemyManagerState !== 'WAVE_ACTIVE' ? ['wave transition did not return to active state'] : []),
+      ...((waveTransitionState.score || 0) < 500 ? ['wave transition did not award first wave score'] : []),
+      ...(waveTransitionState.textState?.wave?.currentWaveNumber !== 2 ? ['wave text state did not expose wave 2'] : []),
+      ...((waveTransitionState.textState?.counts?.enemies || 0) <= 0 ? ['wave transition did not spawn next wave enemies'] : [])
     ];
 
     console.log(JSON.stringify(report, null, 2));

@@ -200,7 +200,8 @@ function updatePerfStats(app, game, delta, clampedDelta) {
 function buildGameTextState(game) {
   const playScene = game?.scenes?.play;
   const player = playScene?.player;
-  const enemies = playScene?.enemyManager?.enemies || [];
+  const enemyManager = playScene?.enemyManager;
+  const enemies = enemyManager?.enemies || [];
   const playerBullets = playScene?.bulletManager?.playerBullets || playScene?.bulletManager?.bullets || [];
   const enemyBullets = playScene?.bulletManager?.enemyBullets || [];
 
@@ -218,6 +219,14 @@ function buildGameTextState(game) {
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
+    wave: enemyManager ? {
+      phase: enemyManager.phase || null,
+      state: enemyManager.state || null,
+      currentWaveIndex: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex : null,
+      currentWaveNumber: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex + 1 : null,
+      totalWaves: enemyManager.normalWavesTotal || 0,
+      briefingMs: Math.round(enemyManager.waveBriefingTimer || 0)
+    } : null,
     player: player ? {
       x: Math.round(player.x),
       y: Math.round(player.y),
