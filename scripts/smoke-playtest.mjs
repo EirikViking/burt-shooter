@@ -195,6 +195,24 @@ async function runSmoke() {
     const mobileGameplayState = await collectGameState(mobilePage);
     await mobilePage.close();
 
+    const level3Page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    observePage(level3Page, 'level3');
+    await level3Page.goto(`${baseUrl}/?autostart=1&debugBossToken=KURT_DEBUG_2026&startLevel=3`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await level3Page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await level3Page.waitForFunction(() => {
+      try {
+        if (typeof window.render_game_to_text !== 'function') return false;
+        const state = JSON.parse(window.render_game_to_text());
+        return state?.level === 3 && state?.counts?.enemies > 0;
+      } catch {
+        return false;
+      }
+    }, null, { timeout: 8000 });
+    await level3Page.waitForTimeout(1500);
+    await level3Page.screenshot({ path: path.join(outputDir, '06-level3-gameplay.png'), fullPage: true });
+    const level3State = await collectGameState(level3Page);
+    await level3Page.close();
+
     const report = {
       baseUrl,
       outputDir,
@@ -203,6 +221,7 @@ async function runSmoke() {
       gameplayState,
       pauseState,
       mobileGameplayState,
+      level3State,
       consoleEvents,
       pageErrors,
       badResponses
@@ -217,7 +236,9 @@ async function runSmoke() {
       ...(gameplayState.fatalOverlay ? ['fatal overlay visible'] : []),
       ...(mobileGameplayState.fatalOverlay ? ['mobile fatal overlay visible'] : []),
       ...(mobileGameplayState.textState?.scene !== 'play' ? ['mobile autostart did not reach play scene'] : []),
-      ...((mobileGameplayState.textState?.counts?.enemies || 0) <= 0 ? ['mobile gameplay did not spawn enemies'] : [])
+      ...((mobileGameplayState.textState?.counts?.enemies || 0) <= 0 ? ['mobile gameplay did not spawn enemies'] : []),
+      ...(level3State.textState?.level !== 3 ? ['debug startLevel=3 did not hold level 3'] : []),
+      ...((level3State.textState?.counts?.enemies || 0) <= 0 ? ['level 3 smoke did not spawn enemies'] : [])
     ];
 
     console.log(JSON.stringify(report, null, 2));

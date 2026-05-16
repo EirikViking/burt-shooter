@@ -397,6 +397,10 @@ export class PlayScene {
   }
 
   startLevel(source = 'unknown') {
+    if (Number.isFinite(this.debugStartLevel)) {
+      this.game.level = this.debugStartLevel;
+    }
+
     // GUARD: specific level start
     if (this._lastStartedLevel === this.game.level) {
       console.log(`[LevelStart] suppressed duplicate source=${source} level=${this.game.level}`);
@@ -409,10 +413,6 @@ export class PlayScene {
     if (this.levelAdvanceTimeout) {
       clearTimeout(this.levelAdvanceTimeout);
       this.levelAdvanceTimeout = null;
-    }
-
-    if (Number.isFinite(this.debugStartLevel)) {
-      this.game.level = this.debugStartLevel;
     }
 
     // Update music for the new level

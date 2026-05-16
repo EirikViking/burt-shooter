@@ -24,7 +24,7 @@ npm run build
 npm run smoke
 ```
 
-`npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, settings, desktop gameplay/pause og mobil intro/gameplay, og lagrer rapporten i `test-results/`.
+`npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, settings, desktop gameplay/pause, mobil intro/gameplay og debug-start level 3, og lagrer rapporten i `test-results/`.
 
 ## Nyeste polish-pass
 
@@ -42,6 +42,8 @@ npm run smoke
 - Smoke-testen dekker naa ogsaa mobil portrait gameplay for aa fange HUD/layout-regresjoner.
 - Level 1 har naa kuratert onboarding med tydelige arc/wing/pincer-formasjoner foer senere levels blander inn mer variasjon.
 - Mobil har synlige, tekstfrie joystick/autofire-affordanser og ryddigere kompakt HUD/toast-plassering.
+- Level 2-4 har naa egne kuraterte wave-scripts slik at de foerste minuttene foeles mer regissert og mindre tilfeldig.
+- Smoke-testen verifiserer ogsaa `startLevel=3` med debug token, slik at senere kampanje/pacing-endringer fanges tidligere.
 
 ## Deploy til Cloudflare Pages
 

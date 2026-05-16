@@ -144,13 +144,8 @@ export class EnemyManager {
     // GALAGA STYLE: Large Waves
     // 8-16 on early levels, 12-24 on high
     const diff = BalanceConfig.difficulty;
-    if (level === 1) {
-      return [
-        { type: 'gris', count: 5, formation: 'TUTORIAL_ARC', entry: 'split', cadence: 0.82 },
-        { type: 'fighter_1', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.94 },
-        { type: 'mongo', count: 7, formation: 'PINCER', entry: 'split', cadence: 1.05 }
-      ];
-    }
+    const curatedWaves = this.getCuratedWaves(level);
+    if (curatedWaves) return curatedWaves;
 
     const numWaves = Math.min(diff.waveCountBase + Math.floor(level / diff.waveCountPerLevel), diff.waveCountMax);
     const waves = [];
@@ -194,6 +189,34 @@ export class EnemyManager {
       });
     }
     return waves;
+  }
+
+  getCuratedWaves(level) {
+    const scripts = {
+      1: [
+        { type: 'gris', count: 5, formation: 'TUTORIAL_ARC', entry: 'split', cadence: 0.82 },
+        { type: 'fighter_1', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.94 },
+        { type: 'mongo', count: 7, formation: 'PINCER', entry: 'split', cadence: 1.05 }
+      ],
+      2: [
+        { type: 'mongo', count: 7, formation: 'GRID', entry: 'alternating', cadence: 0.96 },
+        { type: 'fighter_2', count: 8, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.08 },
+        { type: 'tufs', count: 8, formation: 'BOX', entry: 'single', cadence: 1.12 }
+      ],
+      3: [
+        { type: 'deili', count: 8, formation: 'DOUBLE_ARC', entry: 'split', cadence: 1.03 },
+        { type: 'fighter_4', count: 9, formation: 'SPIRAL', entry: 'alternating', cadence: 1.12 },
+        { type: 'tufs', count: 10, formation: 'PINCER', entry: 'split', cadence: 1.18 }
+      ],
+      4: [
+        { type: 'svin', count: 8, formation: 'PINCER', entry: 'split', cadence: 1.1 },
+        { type: 'rolp', count: 10, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.18 },
+        { type: 'fighter_6', count: 10, formation: 'DOUBLE_ARC', entry: 'split', cadence: 1.2 },
+        { type: 'deili', count: 9, formation: 'SPIRAL', entry: 'alternating', cadence: 1.22 }
+      ]
+    };
+    const script = scripts[level];
+    return script ? script.map((wave) => ({ ...wave })) : null;
   }
 
   // WAVE FIX: Helper to identify objective enemies (ships, not beer cans)
@@ -641,6 +664,20 @@ export class EnemyManager {
           pos.push({ x: clampX(cw - 100 + cx * 50), y: 80 + cy * 50 });
         }
         break;
+      case 'DOUBLE_ARC': {
+        const laneCount = Math.ceil(count / 2);
+        const usable = Math.min(sw * 0.72, 620);
+        for (let i = 0; i < count; i++) {
+          const lane = i % 2;
+          const index = Math.floor(i / 2);
+          const r = laneCount <= 1 ? 0.5 : index / (laneCount - 1);
+          pos.push({
+            x: clampX(cw - usable / 2 + r * usable),
+            y: 88 + lane * 64 + Math.sin(r * Math.PI) * 42
+          });
+        }
+        break;
+      }
       case 'SPIRAL':
         // Just a circle/spiral
         for (let i = 0; i < count; i++) {
@@ -797,7 +834,12 @@ export class EnemyManager {
       this.state = 'WAVE_ACTIVE';
       AudioManager.playVoice('mission_control_level_start', { cooldownMs: 2400, duckMs: 1900 });
       if (this.game.scenes.play) {
-        this.game.scenes.play.showToast(`WAVE ${this.currentWaveIndex + 1} / ${this.normalWavesTotal}`, { fontSize: 20, y: 100, duration: 1500 });
+        const compactHud = this.game.getWidth() < 620;
+        this.game.scenes.play.showToast(`WAVE ${this.currentWaveIndex + 1} / ${this.normalWavesTotal}`, {
+          fontSize: compactHud ? 17 : 20,
+          y: compactHud ? this.game.getHeight() * 0.24 : 100,
+          duration: 1500
+        });
       }
       return;
     }
