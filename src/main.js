@@ -3,8 +3,11 @@ import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { BootWatchdog } from './utils/BootWatchdog.js';
+import { installConsoleLogFilter } from './utils/Logger.js';
 import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
+
+installConsoleLogFilter();
 
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;

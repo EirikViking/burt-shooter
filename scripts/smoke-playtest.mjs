@@ -144,6 +144,7 @@ async function runSmoke() {
   });
 
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const routineConsoleEvents = [];
   const consoleEvents = [];
   const pageErrors = [];
   const badResponses = [];
@@ -153,6 +154,8 @@ async function runSmoke() {
       const type = message.type();
       if (type === 'error' || type === 'warning') {
         consoleEvents.push({ page: label, type, text: message.text().slice(0, 600) });
+      } else if (type === 'log' || type === 'info' || type === 'debug') {
+        routineConsoleEvents.push({ page: label, type, text: message.text().slice(0, 300) });
       }
     });
     targetPage.on('pageerror', (error) => pageErrors.push(`${label}: ${error.message}`));
@@ -330,6 +333,7 @@ async function runSmoke() {
       level3State,
       waveTransitionState,
       bossVictoryState,
+      routineConsoleEvents,
       consoleEvents,
       pageErrors,
       badResponses
@@ -339,6 +343,7 @@ async function runSmoke() {
     const blockingIssues = [
       ...pageErrors.map((message) => `pageerror: ${message}`),
       ...badResponses.map((response) => `HTTP ${response.status}: ${response.url}`),
+      ...(routineConsoleEvents.length ? [`production routine console output was not quiet (${routineConsoleEvents.length} messages)`] : []),
       ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
       ...(!pauseState.isPaused || !pauseState.pauseOverlayVisible ? ['pause overlay did not appear'] : []),
       ...(gameplayState.fatalOverlay ? ['fatal overlay visible'] : []),

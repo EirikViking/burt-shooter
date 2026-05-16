@@ -35,9 +35,9 @@ Latest verified commands:
 - `npm run build`
 - `npm run smoke`
 
-Latest smoke output: `test-results/smoke-2026-05-16T16-38-04-539Z/`
+Latest smoke output: `test-results/smoke-2026-05-16T16-45-07-371Z/`
 
-The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gameplay, level 3 debug start, forced wave transition, and forced boss victory into level 2. It completed with no console errors, page errors, bad responses, or fatal overlay. Separate manual automations forced game over and boss victory; game over returned to menu with Escape, and boss victory advanced to level 2 active gameplay with no console or page errors.
+The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gameplay, level 3 debug start, forced wave transition, and forced boss victory into level 2. It completed with no routine console output, console errors, page errors, bad responses, or fatal overlay. Separate manual automations forced game over and boss victory; game over returned to menu with Escape, and boss victory advanced to level 2 active gameplay with no console or page errors.
 
 ## Strengths
 
@@ -49,19 +49,19 @@ The smoke suite covers menu, settings, desktop gameplay, pause, mobile intro/gam
 
 ## Weaknesses
 
-- Still too many production `console.log` diagnostics for a polished public release.
+- Runtime production logging is now much quieter by default; remaining log risk is mostly making sure future features keep using explicit debug mode for routine telemetry.
 - Manual audio mix verification remains open.
 - Boss/victory flow has automated coverage now, but it still needs a normal-skill human playthrough rather than only debug-forced defeat.
 - Steam readiness is blocked by polish, store-page copy/assets review, input feel, and longer-session balance.
 
 ## Steam Readiness Assessment
 
-Not ready for Steam release. Closer to a polished web release candidate. A credible next Steam-oriented milestone would require a full 10-15 minute playthrough review, audio mix pass, release build without noisy logs, and a clear store positioning pass.
+Not ready for Steam release. Closer to a polished web release candidate. A credible next Steam-oriented milestone would require a full 10-15 minute playthrough review, audio mix pass, and a clear store positioning pass.
 
 ## Concrete Next Improvements
 
 - Manual playtest a natural run through boss gate, boss defeat, level advance, game over, restart, and return-to-menu without debug-forced boss damage.
 - Tune audio mix by ear on desktop speakers/headphones.
-- Trim production debug logs or gate them behind a debug flag.
+- Keep production routine console output at zero in smoke while preserving warnings/errors.
 - Do one UI/text clutter pass across the first five minutes.
 - Add one smoke scenario for game-over/restart once it can be made deterministic.
