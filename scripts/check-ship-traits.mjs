@@ -25,7 +25,10 @@ function signature(ship) {
     c.dodgeCooldownMult,
     c.dodgeDurationMult,
     c.bonusShotEvery,
-    c.pierceEvery
+    c.pierceEvery,
+    c.critEvery,
+    c.dodgePulseRadius,
+    c.nearMissScoreMult
   ].join('|');
 }
 
@@ -65,7 +68,11 @@ for (const base of ShipData) {
     if (!Number.isFinite(c.dodgeDurationMult) || c.dodgeDurationMult < 1 || c.dodgeDurationMult > 1.18) fail(`${ship.id} dodge duration multiplier out of range: ${c.dodgeDurationMult}`);
     if (!Number.isInteger(c.bonusShotEvery) || c.bonusShotEvery < 0 || c.bonusShotEvery > 5) fail(`${ship.id} bonus shot cadence out of range: ${c.bonusShotEvery}`);
     if (!Number.isInteger(c.pierceEvery) || c.pierceEvery < 0 || c.pierceEvery > 5) fail(`${ship.id} pierce cadence out of range: ${c.pierceEvery}`);
-    if (c.projectileRadiusMult === 1 && c.dodgeCooldownMult === 1 && c.dodgeDurationMult === 1 && !c.bonusShotEvery && !c.pierceEvery) {
+    if (!Number.isInteger(c.critEvery) || c.critEvery < 0 || c.critEvery > 5) fail(`${ship.id} crit cadence out of range: ${c.critEvery}`);
+    if (c.critEvery && (!Number.isFinite(c.critDamageMult) || c.critDamageMult < 1.32 || c.critDamageMult > 1.62)) fail(`${ship.id} crit damage multiplier out of range: ${c.critDamageMult}`);
+    if (!Number.isInteger(c.dodgePulseRadius) || c.dodgePulseRadius < 0 || c.dodgePulseRadius > 96) fail(`${ship.id} dodge pulse radius out of range: ${c.dodgePulseRadius}`);
+    if (!Number.isFinite(c.nearMissScoreMult) || c.nearMissScoreMult < 0.85 || c.nearMissScoreMult > 1.75) fail(`${ship.id} near miss multiplier out of range: ${c.nearMissScoreMult}`);
+    if (c.projectileRadiusMult === 1 && c.dodgeCooldownMult === 1 && c.dodgeDurationMult === 1 && !c.bonusShotEvery && !c.pierceEvery && !c.critEvery && !c.dodgePulseRadius && c.nearMissScoreMult === 1) {
       fail(`${ship.id} has no combat trait effect`);
     }
   }

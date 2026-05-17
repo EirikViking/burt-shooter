@@ -304,6 +304,8 @@ function buildTraitCombatEffects(traitProfile) {
   const bulletSpeedMult = traitProfile.bulletSpeedMult ?? 1;
   const spreadDelta = traitProfile.spreadDelta ?? 0;
   const hitboxMult = traitProfile.hitboxMult ?? 1;
+  const agileScore = Math.max(0, speedMult - 1) + Math.max(0, 1 - hitboxMult) * 1.25;
+  const heavyScore = Math.max(0, damageMult - 1) + Math.max(0, hitboxMult - 1) * 0.6;
   const projectileRadiusMult = roundStat(clampNumber(
     1 + (damageMult - 1) * 0.48 + Math.max(0, spreadDelta) * 1.8 - Math.max(0, 1 - damageMult) * 0.18,
     0.86,
@@ -316,6 +318,10 @@ function buildTraitCombatEffects(traitProfile) {
   ), 2);
   const bonusShotEvery = fireRateMult <= 0.9 || spreadDelta >= 0.055 ? (spreadDelta >= 0.055 ? 4 : 5) : 0;
   const pierceEvery = bulletSpeedMult >= 1.16 || spreadDelta <= -0.035 ? (bulletSpeedMult >= 1.18 ? 4 : 5) : 0;
+  const critEvery = damageMult >= 1.12 ? (damageMult >= 1.18 ? 4 : 5) : 0;
+  const dodgePulseRadius = agileScore >= 0.09
+    ? Math.round(clampNumber(44 + agileScore * 280, 48, 96))
+    : 0;
 
   return {
     projectileRadiusMult,
@@ -324,7 +330,11 @@ function buildTraitCombatEffects(traitProfile) {
     bonusShotEvery,
     bonusShotDamageMult: bonusShotEvery ? 0.5 : 0,
     pierceEvery,
-    pierceDamageMult: pierceEvery ? 0.72 : 0
+    pierceDamageMult: pierceEvery ? 0.72 : 0,
+    critEvery,
+    critDamageMult: critEvery ? roundStat(clampNumber(1.28 + heavyScore * 1.4, 1.32, 1.62), 2) : 0,
+    dodgePulseRadius,
+    nearMissScoreMult: roundStat(clampNumber(1 + agileScore * 2.4 - Math.max(0, hitboxMult - 1) * 1.2, 0.85, 1.75), 2)
   };
 }
 

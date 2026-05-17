@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-17T22:45:37.730Z",
+  "generatedAt": "2026-05-17T23:36:34.758Z",
   "status": "ready_for_steam_upload_and_client_validation",
   "build": {
-    "version": "v2026-05-18_00-25-15",
-    "timestamp": "2026-05-17T22:25:15.370Z"
+    "version": "v2026-05-18_01-15-58",
+    "timestamp": "2026-05-17T23:15:58.597Z"
   },
   "explicitLimit": "This packet proves local upload preflight only. It is not Steam-client validation evidence.",
   "localPayload": {
@@ -11,15 +11,15 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-17T22:33:29.008Z"
+      "modifiedAt": "2026-05-17T23:24:51.519Z"
     },
     "productName": "Nova Swarm",
     "appId": "app.novaswarm.game",
     "packagedExeSmoke": {
-      "reportPath": "test-results/packaged-exe-smoke-2026-05-17T22-33-41-921Z/report.json",
-      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-17T22-33-41-921Z/01-electron-menu.png",
+      "reportPath": "test-results/packaged-exe-smoke-2026-05-17T23-25-03-535Z/report.json",
+      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-17T23-25-03-535Z/01-electron-menu.png",
       "status": "passed",
-      "build": "v2026-05-18_00-25-15",
+      "build": "v2026-05-18_01-15-58",
       "title": "Nova Swarm - Arcade Patrol",
       "scene": "intro",
       "introTitle": "THE COIN SLOT WOKE UP",
@@ -106,7 +106,7 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-17T22:33:29.008Z"
+      "modifiedAt": "2026-05-17T23:24:51.519Z"
     },
     {
       "path": "release/steamworks/app_build_TEMPLATE.vdf",
@@ -124,7 +124,7 @@
       "path": "release/steamworks/desktop_package_review_report.json",
       "exists": true,
       "bytes": 1864,
-      "modifiedAt": "2026-05-17T22:34:05.041Z"
+      "modifiedAt": "2026-05-17T23:25:07.953Z"
     },
     {
       "path": "release/steamworks/full_rc_verification_report.json",

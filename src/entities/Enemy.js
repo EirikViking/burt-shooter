@@ -6,6 +6,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { enhanceEnemyVisuals } from '../utils/EnemyVisualEnhancer.js';
 import { getEnemyVisualVariant } from '../config/VisualVariantCatalog.js';
+import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
@@ -379,12 +380,17 @@ export class Enemy {
     if (!this.healthBar) return;
     this.healthBar.clear();
     const barWidth = this.radius * 2;
-    const barHeight = 3;
+    const colorAssist = getColorAssistEnabled();
+    const barHeight = colorAssist ? 5 : 3;
     const healthPercent = this.health / this.maxHealth;
     this.healthBar.rect(-barWidth / 2, this.radius + 5, barWidth, barHeight);
-    this.healthBar.fill({ color: 0x333333 });
+    this.healthBar.fill({ color: colorAssist ? 0x05070c : 0x333333 });
+    if (colorAssist) {
+      this.healthBar.rect(-barWidth / 2 - 1, this.radius + 4, barWidth + 2, barHeight + 2);
+      this.healthBar.stroke({ color: 0xffffff, width: 1, alpha: 0.7 });
+    }
     this.healthBar.rect(-barWidth / 2, this.radius + 5, barWidth * healthPercent, barHeight);
-    this.healthBar.fill({ color: healthPercent > 0.5 ? 0x00ff00 : healthPercent > 0.25 ? 0xffff00 : 0xff0000 });
+    this.healthBar.fill({ color: colorAssist ? 0xfff45c : healthPercent > 0.5 ? 0x00ff00 : healthPercent > 0.25 ? 0xffff00 : 0xff0000 });
   }
 
   // --- Arcade formation behavior ---

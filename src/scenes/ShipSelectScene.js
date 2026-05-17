@@ -956,7 +956,19 @@ FIR: ${fireRateBar}`;
   getShipTraitText(ship) {
     const trait = ship?.trait || ship?.visuals?.trait;
     if (!trait?.label) return 'TRAIT: BALANCED TUNE';
-    return `TRAIT: ${trait.label} - ${trait.description || 'Balanced arcade handling.'}`;
+    const effectTags = this.getTraitEffectTags(trait);
+    return `TRAIT: ${trait.label} - ${trait.description || 'Balanced arcade handling.'}${effectTags ? ` | ${effectTags}` : ''}`;
+  }
+
+  getTraitEffectTags(trait) {
+    const combat = trait?.effects?.combat || {};
+    const tags = [];
+    if (combat.critEvery) tags.push(`OVERCHARGE/${combat.critEvery}`);
+    if (combat.bonusShotEvery) tags.push(`BONUS/${combat.bonusShotEvery}`);
+    if (combat.pierceEvery) tags.push(`PIERCE/${combat.pierceEvery}`);
+    if (combat.dodgePulseRadius) tags.push(`DODGE PULSE`);
+    if (combat.nearMissScoreMult && combat.nearMissScoreMult !== 1) tags.push(`NEAR x${combat.nearMissScoreMult}`);
+    return tags.slice(0, 3).join(' ');
   }
 
   computeStatRanges(ships) {

@@ -1,6 +1,11 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
-import { getAccessibilitySettings, setPlayerFocusScale, setScreenShakeScale } from '../config/AccessibilitySettings.js';
+import {
+  getAccessibilitySettings,
+  setColorAssistEnabled,
+  setPlayerFocusScale,
+  setScreenShakeScale
+} from '../config/AccessibilitySettings.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 
@@ -65,10 +70,10 @@ export class SettingsOverlay {
     titleText.position.set(width / 2, panelY + (isCompact ? 42 : 48));
     this.container.addChild(titleText);
 
-    const toggleGap = isCompact ? 44 : 54;
-    const testGap = isCompact ? 42 : 50;
-    const sliderGap = isCompact ? 44 : 52;
-    const footerGap = isCompact ? 50 : 64;
+    const toggleGap = isCompact ? 40 : 46;
+    const testGap = isCompact ? 38 : 44;
+    const sliderGap = isCompact ? 40 : 46;
+    const footerGap = isCompact ? 44 : 52;
     const footerButtonHeight = isCompact ? 32 : 38;
     const stackedButtonWidth = Math.min(240, panelWidth - 56);
     let y = panelY + (isCompact ? 84 : 100);
@@ -93,6 +98,8 @@ export class SettingsOverlay {
     this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, y, {
       onChange: setPlayerFocusScale
     });
+    y += toggleGap;
+    this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
     y += footerGap;
     const footerY = isCompact ? Math.min(y, panelY + panelHeight - 128) : y;
 

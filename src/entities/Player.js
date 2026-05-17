@@ -927,6 +927,18 @@ export class Player {
       if (bullet.core) bullet.core.tint = 0xffffff;
     }
 
+    const critEvery = Number(combat.critEvery || 0);
+    if (!bonus && critEvery > 0 && shotCounter % critEvery === 0) {
+      bullet.isTraitCriticalShot = true;
+      bullet.damage = Math.max(1, bullet.damage * (combat.critDamageMult || 1.38));
+      bullet.radius = Math.max(bullet.radius || 7, Math.round((bullet.radius || 7) * 1.18));
+      if (bullet.sprite?.scale) {
+        const currentScale = Number(bullet.sprite.scale.x) || 1;
+        bullet.sprite.scale.set(Math.max(currentScale, 1.12));
+      }
+      if (bullet.core) bullet.core.tint = this.visualVariant?.glow || 0xfff45c;
+    }
+
     if (bonus) {
       bullet.isTraitBonusShot = true;
       bullet.radius = Math.max(4, Math.round((bullet.radius || 7) * 0.78));
@@ -1223,8 +1235,11 @@ export class Player {
     const combat = this.traitCombat || {};
     const bonus = combat.bonusShotEvery ? ` bonusEvery=${combat.bonusShotEvery}` : '';
     const pierce = combat.pierceEvery ? ` pierceEvery=${combat.pierceEvery}` : '';
+    const crit = combat.critEvery ? ` critEvery=${combat.critEvery}` : '';
+    const dodge = combat.dodgePulseRadius ? ` dodgePulse=${combat.dodgePulseRadius}` : '';
+    const nearMiss = combat.nearMissScoreMult && combat.nearMissScoreMult !== 1 ? ` nearMiss=${combat.nearMissScoreMult}x` : '';
     const radius = combat.projectileRadiusMult ? ` radius=${combat.projectileRadiusMult}` : '';
-    return `trait=${trait} fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}${bonus}${pierce}${radius}`;
+    return `trait=${trait} fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}${bonus}${pierce}${crit}${dodge}${nearMiss}${radius}`;
   }
 
   getPowerupLabel(type) {
@@ -1296,6 +1311,45 @@ export class Player {
     this.invulnerable = true;
     this.dodgeDuration = this.dodgeDurationMax;
     this.dodgeCooldown = this.dodgeDelay;
+    this.triggerTraitDodgePulse();
+  }
+
+  triggerTraitDodgePulse() {
+    const radius = Number(this.traitCombat?.dodgePulseRadius || 0);
+    const playScene = this.game?.scenes?.play;
+    if (!Number.isFinite(radius) || radius <= 0 || !playScene?.bulletManager?.enemyBullets) return;
+
+    let cleared = 0;
+    playScene.bulletManager.enemyBullets.forEach((bullet) => {
+      if (!bullet?.active) return;
+      const dist = Math.hypot((bullet.x || 0) - this.x, (bullet.y || 0) - this.y);
+      if (dist > radius) return;
+      bullet.active = false;
+      cleared += 1;
+      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      if (playScene.particleManager) {
+        playScene.particleManager.createHitSpark(bullet.x, bullet.y, this.visualVariant?.accent || 0x66ffff);
+      }
+    });
+
+    if (cleared > 0) {
+      playScene.bulletManager.enemyBullets = playScene.bulletManager.enemyBullets.filter(bullet => bullet?.active !== false);
+      AudioManager.playSfx('forceField', { force: false, volume: 0.35 });
+      if (playScene.enqueueToast) {
+        playScene.enqueueToast(`DODGE PULSE x${cleared}`, { fontSize: 16, fill: '#66ffff', slot: 'top', type: 'trait', duration: 800 });
+      }
+    }
+
+    if (playScene.gameContainer) {
+      const ring = new PIXI.Graphics();
+      const color = this.visualVariant?.accent || 0x66ffff;
+      ring.circle(this.x, this.y, radius);
+      ring.stroke({ color, width: 3, alpha: 0.74 });
+      playScene.gameContainer.addChild(ring);
+      setTimeout(() => {
+        if (ring.parent) ring.parent.removeChild(ring);
+      }, 130);
+    }
   }
 
   takeDamage() {

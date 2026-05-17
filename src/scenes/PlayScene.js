@@ -2832,8 +2832,11 @@ export class PlayScene {
     const now = Date.now();
     if (now < this.nearMissCooldownAt) return;
     this.nearMissCooldownAt = now + 450;
-    this.game.addScore(25 * Math.max(1, this.comboMultiplier));
-    this.enqueueToast('NEAR MISS +25', { fontSize: 16, fill: '#ffcc00', slot: 'top', type: 'combo', duration: 900 });
+    const comboMult = Math.max(1, this.comboMultiplier);
+    const traitMult = Number(this.player?.traitCombat?.nearMissScoreMult || 1);
+    const score = Math.round(25 * comboMult * (Number.isFinite(traitMult) ? traitMult : 1));
+    this.game.addScore(score);
+    this.enqueueToast(`NEAR MISS +${score}`, { fontSize: 16, fill: '#ffcc00', slot: 'top', type: 'combo', duration: 900 });
     if (this.particleManager) {
       this.particleManager.createHitSpark(this.player.x, this.player.y);
     }

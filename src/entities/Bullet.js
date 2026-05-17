@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
+import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 
 export class Bullet {
   constructor(x, y, vx, vy, damage, color, isPlayer, visualConfig = null) {
@@ -76,9 +77,12 @@ export class Bullet {
   }
 
   createReadableProjectileShell() {
-    const trailColor = this.isPlayer ? this.color : 0xff6655;
+    const colorAssist = getColorAssistEnabled();
+    const trailColor = colorAssist
+      ? (this.isPlayer ? 0xfff45c : 0xffffff)
+      : (this.isPlayer ? this.color : 0xff6655);
     const trailLength = Math.max(this.isPlayer ? 18 : 26, Math.min(this.isPlayer ? 34 : 54, this.speed * (this.isPlayer ? 5 : 8)));
-    const trailWidth = this.isPlayer ? 3 : 5;
+    const trailWidth = colorAssist ? (this.isPlayer ? 4 : 7) : (this.isPlayer ? 3 : 5);
     const backX = -Math.cos(this.angle) * trailLength;
     const backY = -Math.sin(this.angle) * trailLength;
 
@@ -90,9 +94,19 @@ export class Bullet {
 
     if (!this.isPlayer) {
       this.warningRing = new PIXI.Graphics();
-      this.warningRing.circle(0, 0, this.radius + 9);
-      this.warningRing.stroke({ color: 0xff2f2f, width: 2, alpha: 0.75 });
+      this.warningRing.circle(0, 0, this.radius + (colorAssist ? 12 : 9));
+      this.warningRing.stroke({ color: colorAssist ? 0xffffff : 0xff2f2f, width: colorAssist ? 3 : 2, alpha: colorAssist ? 0.9 : 0.75 });
       this.sprite.addChild(this.warningRing);
+      if (colorAssist) {
+        const cross = new PIXI.Graphics();
+        const r = this.radius + 12;
+        cross.moveTo(-r, 0);
+        cross.lineTo(r, 0);
+        cross.moveTo(0, -r);
+        cross.lineTo(0, r);
+        cross.stroke({ color: 0x10131c, width: 2, alpha: 0.82 });
+        this.sprite.addChild(cross);
+      }
     }
 
     this.sprite.addChild(this.core);

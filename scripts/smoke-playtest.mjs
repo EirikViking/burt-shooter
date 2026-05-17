@@ -842,6 +842,7 @@ async function runSmoke() {
       ...(!creditsState.creditsOverlayVisible || creditsState.textState?.overlays?.credits !== true ? ['credits overlay did not appear or was missing from text state'] : []),
       ...(!Number.isFinite(settingsState.textState?.accessibility?.screenShake) ? ['accessibility screen-shake setting was not exposed'] : []),
       ...(!Number.isFinite(settingsState.textState?.accessibility?.playerFocus) ? ['accessibility player-focus setting was not exposed'] : []),
+      ...(typeof settingsState.textState?.accessibility?.colorAssist !== 'boolean' ? ['accessibility color-assist setting was not exposed'] : []),
       ...(!pauseState.isPaused || !pauseState.pauseOverlayVisible ? ['pause overlay did not appear'] : []),
       ...(gamepadMoveState.textState?.input?.gamepad?.connected !== true ? ['gamepad override did not register as connected'] : []),
       ...((gamepadMoveState.textState?.input?.gamepad?.moveX || 0) < 0.6 ? ['gamepad right-stick movement was not exposed'] : []),
