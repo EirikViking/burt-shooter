@@ -1,4 +1,4 @@
-# Burt Shooter – Local Agent Changelog
+# Nova Swarm Local Agent Changelog
 
 This file tracks changes made by AI agents or manual hotfixes
 when git commits are not used.
@@ -6,6 +6,7 @@ when git commits are not used.
 ---
 
 ## 2026-05-17
+- Rethemed the public-facing game identity to Nova Swarm: removed shipped real-person joke photos, replaced the old inside-joke README/store copy with public arcade-shooter positioning, swapped visible ship/rank/powerup/boss text toward bonus-core and swarm humor, and verified the production build/smoke flow after the transformation.
 - Added in-menu audio audition controls for SFX and mission-control voice, with smoke-visible last-SFX/last-voice telemetry.
 - Added a Credits overlay with build/provenance text and text-state coverage.
 - Hardened music context switching so stale menu/title tracks cannot leak into gameplay after autoplay unlocks or pending `Audio.play()` requests.
@@ -77,6 +78,9 @@ when git commits are not used.
 - Stabilized scene names in perf/text-state smoke output so production telemetry no longer depends on minified constructor names.
 - Tightened post-boss level-intro toasts so the next sector starts with less center-screen clutter.
 - Added a small sample-timing grace to release survival checks so near-full-duration runs do not fail on polling jitter.
+- Added a first-run Nova Swarm story intro with generated cinematic panels, ElevenLabs narrator lines, intro music, panel stingers, skip/replay controls, and smoke coverage for intro audio routing.
+- Added generated ship-select hangar art and wired generated intro/hangar assets into release preflight checks.
+- Updated `npm run audit:audio-mix` so it refreshes the Markdown and JSON audio evidence files by default.
 
 ---
 

@@ -65,12 +65,12 @@ export class Boss {
 
     // Boss names
     const bossNames = [
-      'MEGA TUFS',
-      'ULTIMATE SVIN',
-      'SUPER MONGO',
-      'HYPER R\u00d8LP',
-      'DEILI FETTA PRIME',
-      'GIGA GRIS'
+      'FORMATION FOREMAN',
+      'QUARTER EATER',
+      'HYPER POPCORN',
+      'NEON OVERLORD',
+      'BULLET AUDITOR PRIME',
+      'GIGA HITBOX'
     ];
     const namePool = extendBossNames(bossNames);
     this.name = namePool[(level - 1) % namePool.length] || 'BOSS';
@@ -267,7 +267,7 @@ export class Boss {
     };
 
     if (!bossType) return base;
-    if (bossType === 'BIG_BEER_CAN') {
+    if (bossType === 'BONUS_CORE') {
       return { ...base, profile: 'sway', rotateMode: 'slow', rotateSpeed: 0.25 };
     }
     if (bossType === 'ICON_192') {
@@ -284,7 +284,7 @@ export class Boss {
 
   getNoseOffset(bossType) {
     // Assumption: art faces right by default.
-    if (bossType === 'BIG_BEER_CAN') return 0;
+    if (bossType === 'BONUS_CORE') return 0;
     if (bossType === 'ICON_192') return 0;
     return 0;
   }

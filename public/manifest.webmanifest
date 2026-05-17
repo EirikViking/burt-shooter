@@ -1,7 +1,7 @@
 {
-    "name": "Burt Shooter - Stokmarknes Galaga",
-    "short_name": "Burt Shooter",
-    "description": "Kurt Edgar & Eirik sitt Galaga - Defend Stokmarknes from invaders!",
+    "name": "Nova Swarm - Arcade Patrol",
+    "short_name": "Nova Swarm",
+    "description": "A polished arcade space shooter about dodging clever formations, chasing high scores, and roasting the swarm.",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#000000",

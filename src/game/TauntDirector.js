@@ -1,15 +1,10 @@
 /**
- * TauntDirector - Central taunt management system
- * Handles cooldowns, anti-spam, and visually stunning taunt presentation
+ * TauntDirector - Central taunt management system.
+ * Keeps public-facing humor focused on arcade shooter tropes.
  */
 
 import * as PIXI from 'pixi.js';
 import { createText } from '../utils/pixiText.js';
-
-// Simple helper for random text generation
-function randomChoice(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
 
 class TauntDirector {
     constructor() {
@@ -18,99 +13,83 @@ class TauntDirector {
         this.categoryCooldowns = new Map();
         this.recentTaunts = [];
         this.maxRecent = 3;
-        this.activeTickers = []; // Track active tickers for cleanup
+        this.activeTickers = [];
         this._destroyed = false;
 
-        // Cooldown durations (ms)
-        this.GLOBAL_COOLDOWN = 3000; // 3 seconds between any taunts
-        this.CATEGORY_COOLDOWN = 8000; // 8 seconds per category
+        this.GLOBAL_COOLDOWN = 3000;
+        this.CATEGORY_COOLDOWN = 8000;
 
-        // Taunt pools by category
         this.pools = {
             wave_start: [
-                'NY WAVE!',
-                'HER KOMMER DEM!',
-                'KLAR FOR KAMP!',
-                'DREKKA!'
+                'NEW WAVE!',
+                'FORMATION PRACTICE!',
+                'BUTTONS READY!',
+                'INSERT COURAGE!'
             ],
             wave_cleared: [
-                'WAVE KLART!',
-                'PERFEKT!',
-                'STOKMARKNES STYLE!',
-                'SKÅL!'
+                'WAVE CLEAR!',
+                'PIXEL PERFECT!',
+                'BONUS ROUTE OPEN!',
+                'THE CABINET APPROVES!'
             ],
             boss_gate: [
                 'BOSS INCOMING!',
-                'STOR FISK PÅ VEI!',
-                'NÅ BLIR DET ALVOR!',
-                'BOSS: KLAR!'
+                'DRAMATIC ENTRANCE!',
+                'BIG HEALTH BAR ENERGY!',
+                'BOSS QUEUE READY!'
             ],
             boss_spawn: [
-                'BOSS ER HER!',
-                'KJØR PÅ!',
-                'FULL GASS!',
-                'JATTA JATTA!'
+                'BOSS IS HERE!',
+                'HOLD THE LINE!',
+                'DODGE WITH STYLE!',
+                'LASERS UP!'
             ],
             boss_defeated: [
-                'BOSS KNUST!',
-                'LEGENDARISK!',
-                'STOKMARKNES VINNER!',
-                'SEIER!'
+                'BOSS DOWN!',
+                'LEGENDARY!',
+                'HIGH-SCORE WEATHER!',
+                'SECTOR SAVED!'
             ],
             rank_up: [
                 'RANK UP!',
-                'LEVEL OPP!',
-                'SKAMSTERK!',
-                'DREKKA SPRIT!'
+                'CABINET PROMOTION!',
+                'BUTTON CONFIDENCE!',
+                'SWARM RESPECT +1!'
             ],
             low_lives: [
-                'KRITISK!',
-                'SISTE SJANSE!',
-                'HOLD UT!',
-                'LAVT LIV!'
+                'LOW LIFE!',
+                'LAST SHIP ENERGY!',
+                'FOCUS THE HITBOX!',
+                'DO NOT BLINK!'
             ],
-            // PART A: New pools for dynamic text rotation
             start_story: [
-                'Stokmarknes og Melbu energi',
-                'Nordlys i blikket, øl i hånda',
-                'Kurt Edgar godkjente dette etter tredje øl',
-                'Eirik med selvtillit langt over ferdighetsnivå',
-                'Hurtigruta gikk, men festen ble igjen',
-                'Klassisk Vesterålen avgjørelse',
-                'Dette hadde aldri gått i Harstad',
-                'Alle kjenner alle, ingen husker noe',
-                'Småby, store ambisjoner, tomme glass',
-                'Drekka sprit!',
-                'Skål!'
+                'The alien formation union has filed a complaint.',
+                'Arcade Control is counting quarters.',
+                'The swarm rehearsed. You improvised.',
+                'Boss music is waiting in the wings.',
+                'Tiny ship. Enormous paperwork.',
+                'Classic cabinet danger, modern panic.'
             ],
             highscore_banner: [
-                'Stokmarknes jubler!',
-                'Melbu applauderer!',
-                'Kurt Edgar nikker anerkjennende',
-                'Eirik er stolt nå',
-                'Arcade-geist i lufta',
-                'Legendene lever',
-                'SKAMSTERK!'
+                'The scoreboard is awake!',
+                'Initials become legends!',
+                'Cabinet royalty detected!',
+                'The swarm remembers!',
+                'High-score orbit achieved!'
             ],
             highscore_comment: [
-                'Dette blir nevnt i årevis',
-                'Klassisk kveld som sporet av',
-                'Ingen angrer ennå',
-                'Fremdeles stående',
-                'Mer flaks enn forstand',
-                'Drekka!',
-                'Jatta jatta!'
+                'One more run fixes everything.',
+                'The cabinet wants a rematch.',
+                'Bonus stage paperwork approved.',
+                'That score has gravity.',
+                'The hitbox survived the audit.'
             ],
-            // PART C: Context-aware highscore taunts (speaker taunts target)
             highscore_taunt: [
-                (ctx) => ctx ? `${ctx.speakerName} sier: ${ctx.targetName} må tilbake til Melbu skolebenk` : 'Jatta jatta, prøv igjen!',
-                (ctx) => ctx ? `${ctx.speakerName} til ${ctx.targetName}: Du skyter som en våt vott` : 'Hut dæ heim!',
-                (ctx) => ctx ? `Rang ${ctx.speakerRank} ler av rang ${ctx.targetRank}: ${ctx.targetName}` : 'Bæ bæ mø!',
-                (ctx) => ctx ? `${ctx.targetName}: "Jeg prøvde"  ${ctx.speakerName}: "Du feila"` : 'Dette e hæstkuk!',
-                (ctx) => ctx ? `${ctx.speakerName}: ${ctx.targetName} e grønn som en Isbjørn` : 'Kurt Edgar ville skammet seg!',
-                (ctx) => ctx ? `${ctx.targetName} burde øvd mer, sier ${ctx.speakerName}` : 'Stokmarknes eier deg!',
-                (ctx) => ctx ? `Rang ${ctx.speakerRank} dominerer rang ${ctx.targetRank}` : 'SKÅL!',
-                (ctx) => ctx ? `${ctx.speakerName} eier ${ctx.targetName} totalt` : 'DREKKA SPRIT!'
+                (ctx) => ctx ? `${ctx.speakerName}: ${ctx.targetName}, your hitbox needs coaching.` : 'Insert coin. Try again.',
+                (ctx) => ctx ? `${ctx.speakerName} sends ${ctx.targetName} a dodge tutorial.` : 'Mind the hitbox.',
+                (ctx) => ctx ? `Rank ${ctx.speakerRank} waves at rank ${ctx.targetRank}: ${ctx.targetName}` : 'Formation reading is fundamental.',
+                (ctx) => ctx ? `${ctx.targetName}: "I tried." ${ctx.speakerName}: "The cabinet noticed."` : 'The swarm is laughing politely.',
+                (ctx) => ctx ? `${ctx.speakerName}: ${ctx.targetName}, boss music was not impressed.` : 'One more run.'
             ]
         };
     }
@@ -124,7 +103,6 @@ class TauntDirector {
             this.globalCooldown -= dt * 16.67;
         }
 
-        // Tick category cooldowns
         for (const [category, cooldown] of this.categoryCooldowns.entries()) {
             if (cooldown > 0) {
                 this.categoryCooldowns.set(category, cooldown - dt * 16.67);
@@ -134,35 +112,23 @@ class TauntDirector {
 
     canEmit(category) {
         if (this.globalCooldown > 0) return false;
-
         const catCooldown = this.categoryCooldowns.get(category) || 0;
-        if (catCooldown > 0) return false;
-
-        return true;
+        return catCooldown <= 0;
     }
 
-    // PART C: Get rotating text for dynamic displays, now with optional context
     getRotatingText(category, ctx = null) {
         const pool = this.pools[category];
         if (!pool || pool.length === 0) return '';
 
-        // Get a random line that's not in recent history
         let attempts = 0;
         let text = '';
-
         while (attempts < 5) {
             const selected = pool[Math.floor(Math.random() * pool.length)];
-            // PART C: Pass context to functions
             text = typeof selected === 'function' ? selected(ctx) : selected;
-
-            // Check if not in recent
-            if (!this.recentTaunts.includes(text)) {
-                break;
-            }
-            attempts++;
+            if (!this.recentTaunts.includes(text)) break;
+            attempts += 1;
         }
 
-        // Update recent taunts
         this.recentTaunts.push(text);
         if (this.recentTaunts.length > this.maxRecent) {
             this.recentTaunts.shift();
@@ -172,10 +138,8 @@ class TauntDirector {
     }
 
     emit(category, customText = null) {
-        if (!this.scene) return;
-        if (!this.canEmit(category)) return;
+        if (!this.scene || !this.canEmit(category)) return;
 
-        // Get taunt text
         let text = customText;
         if (!text) {
             const pool = this.pools[category] || this.pools.wave_start;
@@ -183,41 +147,30 @@ class TauntDirector {
             text = typeof selected === 'function' ? selected() : selected;
         }
 
-        // Anti-repeat check
         if (this.recentTaunts.includes(text)) {
-            // Try one more time
             const pool = this.pools[category] || this.pools.wave_start;
             const selected = pool[Math.floor(Math.random() * pool.length)];
             text = typeof selected === 'function' ? selected() : selected;
         }
 
-        // Update recent taunts
         this.recentTaunts.push(text);
         if (this.recentTaunts.length > this.maxRecent) {
             this.recentTaunts.shift();
         }
 
-        // Set cooldowns
         this.globalCooldown = this.GLOBAL_COOLDOWN;
         this.categoryCooldowns.set(category, this.CATEGORY_COOLDOWN);
-
-        // Show taunt
-        this.showTaunt(text, category);
+        this.showTaunt(text);
     }
 
-    showTaunt(text, category) {
+    showTaunt(text) {
         if (!this.scene || !this.scene.container) return;
 
         const container = new PIXI.Container();
-        container.zIndex = 900; // Above playfield, below HUD
+        container.zIndex = 900;
+        container.x = this.scene.game.getWidth() / 2;
+        container.y = this.scene.game.getHeight() / 2 - 50;
 
-        const screenWidth = this.scene.game.getWidth();
-        const screenHeight = this.scene.game.getHeight();
-
-        container.x = screenWidth / 2;
-        container.y = screenHeight / 2 - 50;
-
-        // Glitch effect - multiple text layers with offsets
         const glitchLayers = [];
         const colors = [0xff00ff, 0x00ffff, 0xffff00];
 
@@ -238,7 +191,6 @@ class TauntDirector {
             glitchLayers.push(glitchText);
         }
 
-        // Main text with glow
         const mainText = createText(text, {
             fontFamily: 'Courier New',
             fontSize: 36,
@@ -250,21 +202,14 @@ class TauntDirector {
         mainText.anchor.set(0.5);
         container.addChild(mainText);
 
-        // Particle burst
         if (this.scene.particleManager) {
-            this.scene.particleManager.createExplosion(
-                container.x,
-                container.y,
-                0xffff00,
-                12
-            );
+            this.scene.particleManager.createExplosion(container.x, container.y, 0xffff00, 12);
         }
 
         this.scene.container.addChild(container);
 
-        // Animation
         let time = 0;
-        const duration = 1500; // 1.5 seconds total
+        const duration = 1500;
         const fadeIn = 250;
         const hold = 1000;
         const fadeOut = 250;
@@ -275,10 +220,8 @@ class TauntDirector {
         const ticker = (delta) => {
             time += delta.deltaTime * 16.67;
 
-            // Glitch jitter with guards for destroyed objects
             if (time < fadeIn + hold) {
                 glitchLayers.forEach((layer, i) => {
-                    // Guard: check if layer is destroyed before setting properties
                     if (layer && !layer.destroyed) {
                         layer.x = (i - 1) * 2 + (Math.random() - 0.5) * 4;
                         layer.y = (i - 1) * 2 + (Math.random() - 0.5) * 4;
@@ -286,7 +229,6 @@ class TauntDirector {
                 });
             }
 
-            // Guard container access during animations
             if (!container || container.destroyed) {
                 this.scene.game.app.ticker.remove(ticker);
                 const idx = this.activeTickers.indexOf(ticker);
@@ -294,25 +236,18 @@ class TauntDirector {
                 return;
             }
 
-            // Fade in
             if (time < fadeIn) {
                 const progress = time / fadeIn;
                 container.alpha = progress;
                 container.scale.set(0.8 + progress * 0.2);
-            }
-            // Hold
-            else if (time < fadeIn + hold) {
+            } else if (time < fadeIn + hold) {
                 container.alpha = 1;
                 container.scale.set(1 + Math.sin(time * 0.01) * 0.05);
-            }
-            // Fade out
-            else if (time < duration) {
+            } else if (time < duration) {
                 const progress = (time - fadeIn - hold) / fadeOut;
                 container.alpha = 1 - progress;
                 container.scale.set(1 + progress * 0.2);
-            }
-            // Remove
-            else {
+            } else {
                 this.scene.game.app.ticker.remove(ticker);
                 const idx = this.activeTickers.indexOf(ticker);
                 if (idx >= 0) this.activeTickers.splice(idx, 1);
@@ -328,9 +263,8 @@ class TauntDirector {
 
     cleanup() {
         this._destroyed = true;
-        // Stop all active taunt tickers
         if (this.scene && this.scene.game && this.scene.game.app && this.scene.game.app.ticker) {
-            this.activeTickers.forEach(ticker => {
+            this.activeTickers.forEach((ticker) => {
                 this.scene.game.app.ticker.remove(ticker);
             });
         }
@@ -343,5 +277,4 @@ class TauntDirector {
     }
 }
 
-// Export singleton instance
 export const tauntDirector = new TauntDirector();

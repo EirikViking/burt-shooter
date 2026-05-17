@@ -71,7 +71,7 @@ for (const url of manifestAudio) {
   checkAssetUrl(url, `manifest:${url}`, manifestSet);
 }
 
-const requiredMusicContexts = ['menu', 'scoreboard', 'gameplay', 'boss', 'gameover', 'victory'];
+const requiredMusicContexts = ['intro', 'menu', 'scoreboard', 'gameplay', 'boss', 'gameover', 'victory'];
 for (const context of requiredMusicContexts) {
   const playlist = MUSIC_PLAYLISTS[context] || [];
   if (!playlist.length) {

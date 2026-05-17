@@ -1,7 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { RankAssets } from '../utils/RankAssets.js';
-import { BeerAsset } from '../utils/BeerAsset.js';
 import { Player } from '../entities/Player.js';
 import { BeerCan } from '../entities/BeerCan.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -292,7 +291,7 @@ export class PlayScene {
 
     const params = new URLSearchParams(window.location.search);
     const debugToken = params.get('debugBossToken');
-    if (debugToken === 'KURT_DEBUG_2026') {
+    if (debugToken === 'NOVA_DEBUG_2026') {
       const startLevel = Number(params.get('startLevel'));
       const startAtBoss = params.get('startAtBoss') === '1';
       const debugPowerups = params.get('debugPowerups') === '1';
@@ -307,11 +306,11 @@ export class PlayScene {
     }
 
     // Ensure Assets are ready for gameplay
-    GameAssets.ensureBeerTexture().then(tex => {
+    GameAssets.ensureBonusCoreTexture().then(tex => {
       if (!GameAssets.isValidTexture(tex)) {
-        console.error('[PlayScene] Beer texture failed to load.');
+        console.error('[PlayScene] Bonus core texture failed to load.');
       } else {
-        console.log('[PlayScene] Beer texture ready.');
+        console.log('[PlayScene] Bonus core texture ready.');
       }
     });
     GameAssets.loadPhotos();
@@ -451,22 +450,22 @@ export class PlayScene {
     }
 
     this.resetRandomTimers();
-    this.ambientBeerTimer = 2000 + Math.random() * 3000; // First drunk beer VERY soon (2-5s)
+    this.ambientBeerTimer = 2000 + Math.random() * 3000;
     this.easterEggTimer = 20000; // Deterministic first flyby at 20s
   }
 
   showLevelIntro({ postBoss = false } = {}) {
     const levelTexts = [
-      'Sector 1: Grunnleggende gris',
-      'Sector 2: Mongo intensifiserer',
-      'Sector 3: Deili fetta kommer inn',
-      'Sector 4: R\u00f8lp mode aktiverer',
-      'BOSS: MEGA TUFS',
-      'Sector 6: Tilbake til Melbu',
-      'Sector 7: Stokmarknes raids',
-      'Sector 8: Kj\u00f8ttdeig overload',
-      'Sector 9: Isbjørn chaos',
-      'BOSS: ULTIMATE SVIN'
+      'Sector 1: Popcorn Patrol',
+      'Sector 2: Spiral Academy',
+      'Sector 3: Laser Lane Union',
+      'Sector 4: Bonus Stage Panic',
+      'BOSS: THE FORMATION FOREMAN',
+      'Sector 6: Meteor Queue',
+      'Sector 7: Neon Swarm',
+      'Sector 8: Hitbox Negotiations',
+      'Sector 9: Cabinet Overdrive',
+      'BOSS: THE QUARTER EATER'
     ];
     const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
     const message = introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`;
@@ -694,7 +693,7 @@ export class PlayScene {
 
       this.hud.update();
       this.updateStarfield(delta); // TASK D: Animate background stars
-      this.updateAmbientBeers(delta); // Handles both Red Hazards and White Powerups
+      this.updateAmbientBeers(delta); // Handles hazard drones and collectible power cores
       this.applyMagnetPull(delta);
       this.updateOrbitalStrike(delta);
       this.updateEasterEgg(delta);
@@ -1310,7 +1309,7 @@ export class PlayScene {
       }
     });
 
-    // Ambient Beers (Hazard RED or Powerup WHITE)
+    // Ambient bonus drones and collectible power cores
     this.ambientBeers.forEach(beer => {
       if (beer.active && this.player.active) {
         if (this.checkCollision(beer, this.player)) {
@@ -1344,14 +1343,13 @@ export class PlayScene {
       }
     });
 
-    // Player bullets vs Ambient Beer (Shoot them down for points - RED HAZARD ONLY)
+    // Player bullets vs ambient hazard drones
     this.bulletManager.playerBullets.forEach(bullet => {
       if (bullet.active) {
         this.ambientBeers.forEach(beer => {
-          // Only damage HAZARD type beers (red cans), not POWERUP (white cans)
+          // Only damage hazard drones, not collectible power cores.
           if (beer.active && beer.type === 'HAZARD' && this.checkCollision(bullet, beer)) {
             if (!bullet.piercing) bullet.active = false;
-            // Use the BeerCan's takeDamage method properly
             const destroyed = beer.takeDamage(bullet.damage || 1);
             if (destroyed) {
               if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
@@ -1360,7 +1358,7 @@ export class PlayScene {
               this.onEnemyKilled(beer);
               this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00);
               AudioManager.playSfx('enemy_explode', { volume: 0.5 });
-              this.showToast('BEER SMASH!', { fontSize: 18, y: beer.y, fill: '#ffff00' });
+              this.showToast('BONUS DRONE DOWN!', { fontSize: 18, y: beer.y, fill: '#ffff00' });
             } else {
               this.particleManager.createHitSpark(beer.x, beer.y);
             }
@@ -1840,7 +1838,7 @@ export class PlayScene {
     title.position.set(width / 2, panelY + 62);
     overlay.addChild(title);
 
-    const status = createText('STOKMARKNES DEFENSE ON HOLD', {
+    const status = createText('ARCADE PATROL ON HOLD', {
       fontFamily: 'Courier New',
       fontSize: 14,
       fill: '#7ee9ff',
@@ -2340,7 +2338,7 @@ export class PlayScene {
       slot: 'top',
       type: 'lore',
       banner: true,
-      title: 'LORE UNLOCKED', // TASK 3: Add title
+      title: 'COMMS BLIP',
       y: this.game.getHeight() * (compactHud ? 0.24 : 0.16),
       maxWidth: this.game.getWidth() * (compactHud ? 0.78 : 0.7)
     });
@@ -2939,7 +2937,7 @@ export class PlayScene {
     // WAVE FIX: Use spawn gate from EnemyManager
     const canSpawn = this.enemyManager && this.enemyManager.allowBeerCanSpawns();
 
-    // 1. Spawning Hazard Beers (Red)
+    // 1. Spawning hazard drones
     // WAVE FIX: Don't spawn during wave ending or cleanup
     if (canSpawn) {
       this.ambientBeerTimer -= delta * 16.67;
@@ -2983,7 +2981,7 @@ export class PlayScene {
       // Check if manually removed or destroyed
       if (!beer.active) {
         if (beer.sprite && beer.sprite.parent) beer.sprite.parent.removeChild(beer.sprite);
-        if (beer.type === 'POWERUP' && !beer.active) this.hasActiveWhiteCan = false; // Reset if despot
+        if (beer.type === 'POWERUP' && !beer.active) this.hasActiveWhiteCan = false;
         return false;
       }
 
@@ -3177,11 +3175,11 @@ export class PlayScene {
   }
 
   // CLEANUP FIX: Authoritative collector for wave cleanup targets
-  // Returns all beer cans across all tracking systems
+  // Returns all bonus-drone cleanup targets across tracking systems
   getWaveCleanupTargets() {
     const targets = [];
 
-    // Collect beer cans from EnemyManager.enemies array (type='beer_challenge')
+    // Collect challenge drones from EnemyManager.enemies.
     if (this.enemyManager && this.enemyManager.enemies) {
       const enemyBeerCans = this.enemyManager.enemies.filter(e =>
         e.active && e.kind === 'beer_can'
@@ -3189,7 +3187,7 @@ export class PlayScene {
       targets.push(...enemyBeerCans);
     }
 
-    // Collect beer cans from PlayScene.ambientBeers array (BeerCan instances)
+    // Collect ambient bonus drones from PlayScene.
     const ambientBeerCans = this.ambientBeers.filter(b =>
       b.active && b.kind === 'beer_can'
     );
@@ -3292,24 +3290,12 @@ export class PlayScene {
     if (!caption) return;
     const tex = this.bossDossierTexture;
 
-    // Lore: Map photo keys to character names from Burt's universe
-    const loreLookup = {
-      'kurt2': { name: 'KURT EDGAR', subtitle: 'Havnemann fra Stokmarknes', detail: 'Veteran av tusen øl-slag' },
-      'eirik1': { name: 'EIRIK', subtitle: 'Legendarisk Pilot', detail: 'Født i cockpiten' },
-      'eirik_briller': { name: 'EIRIK', subtitle: 'Nattevaktkongen', detail: 'Skjelven, men uredd' },
-      'eirik_kurt2': { name: 'EIRIK & KURT', subtitle: 'Melbu-Gjengen', detail: 'Dobbel trøbbel!' },
-      'eirikanja': { name: 'EIRIK & ANJA', subtitle: 'Havneduoen', detail: 'Gutta på Stokken' },
-      'burtelurt': { name: 'BURT & ELVIS', subtitle: 'Ølgutta', detail: 'Bedre sammen!' },
-      'eriikviking': { name: 'EIRIK VIKING', subtitle: 'Nordmann i hjertet', detail: 'Iskald og ustoppelig' },
-      'anja': { name: 'ANJA', subtitle: 'Harbor Queen', detail: 'Sjefinn på brygga' },
-      'morten_whale': { name: 'MORTEN', subtitle: 'Hvaljeger', detail: 'Kjenner havet' },
-      'wieik_shorts': { name: 'WIEIK', subtitle: 'Sommerbukse-Kongen', detail: 'Alltid korte bukser' }
-    };
+    // Generated threat dossier only. No real-person photo lookup is used.
     const detailLabel = reason === 'boss_life_lost'
       ? 'ARMOR BREACH'
       : reason === 'boss_phase2' || reason === 'boss_half'
         ? 'PATTERN SHIFT'
-        : 'ARCTIC RADAR LOCK';
+        : 'NEON RADAR LOCK';
     const characterData = { subtitle: 'THREAT DOSSIER', detail: detailLabel };
 
     const poster = new PIXI.Container();
@@ -3532,7 +3518,7 @@ export class PlayScene {
     if (!this.uiOverlay) return;
 
     const compactHud = this.game.getWidth() < 620;
-    this.showToast(`BOSS NEDKJEMPET! +1000\n${getAchievementPopup()}`, {
+    this.showToast(`BOSS DEFEATED! +1000\n${getAchievementPopup()}`, {
       fontSize: compactHud ? 20 : 28,
       fill: '#ffff00',
       stroke: '#330000',
@@ -3556,7 +3542,7 @@ export class PlayScene {
 
     AudioManager.playSfx('boss_explode', { force: true, volume: 1.0 });
     AudioManager.playMusicContext('victory', { resetPlaylist: true });
-    if (type === 'BIG_BEER_CAN') AudioManager.playSfx('pickup', { force: true, volume: 0.9 });
+    if (type === 'BONUS_CORE') AudioManager.playSfx('pickup', { force: true, volume: 0.9 });
     else if (type === 'ICON_192') AudioManager.playSfx('ui_open', { force: true, volume: 0.8 });
     else AudioManager.playSfx('powerup', { force: true, volume: 0.8 });
     console.log(`[BossCelebration] level=${level} type=${type} fired=true`);

@@ -24,6 +24,10 @@ const MENU_POOL = [
     getMusic('SkyFire')
 ];
 
+const INTRO_POOL = [
+    getMusic('nova_swarm_intro_overture')
+];
+
 const SCOREBOARD_POOL = [
     getMusic('Space Heroes'),
     getMusic('SkyFire')
@@ -50,6 +54,7 @@ const VICTORY_POOL = [
 ];
 
 export const MUSIC_PLAYLISTS = {
+    intro: INTRO_POOL,
     menu: MENU_POOL,
     scoreboard: SCOREBOARD_POOL,
     gameplay: GAMEPLAY_POOL,
@@ -88,9 +93,19 @@ export const SFX_MIX = {
     life_up: { volume: 0.7, minIntervalMs: 700 },
     explosionCrunch: { volume: 0.74, minIntervalMs: 80 },
     boss_spawn: { volume: 0.75, minIntervalMs: 800 }
+    ,
+    intro_panel_whoosh: { volume: 0.58, minIntervalMs: 350 },
+    coin_portal_open: { volume: 0.74, minIntervalMs: 900 },
+    swarm_chatter_stinger: { volume: 0.58, minIntervalMs: 700 },
+    boss_reveal_stinger: { volume: 0.82, minIntervalMs: 1200 },
+    start_game_confirm: { volume: 0.7, minIntervalMs: 500 }
 };
 
 export const VOICE_MIX = {
+    intro_narrator_01: { volume: 0.9, duckFactor: 0.36, duckMs: 5200, cooldownMs: 0 },
+    intro_narrator_02: { volume: 0.9, duckFactor: 0.36, duckMs: 5400, cooldownMs: 0 },
+    intro_narrator_03: { volume: 0.9, duckFactor: 0.36, duckMs: 6200, cooldownMs: 0 },
+    intro_narrator_04: { volume: 0.9, duckFactor: 0.34, duckMs: 5200, cooldownMs: 0 },
     mission_control_launch: { volume: 0.84, duckFactor: 0.42, duckMs: 2600, cooldownMs: 2600 },
     mission_control_level_start: { volume: 0.82, duckFactor: 0.46, duckMs: 2200, cooldownMs: 2400 },
     mission_control_wave_clear: { volume: 0.78, duckFactor: 0.52, duckMs: 1900, cooldownMs: 2800 },
@@ -127,7 +142,11 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_life_low: 'mission_control_life_low.mp3',
     mission_control_powerup: 'mission_control_powerup.mp3',
     mission_control_victory: 'mission_control_victory.mp3',
-    mission_control_game_over: 'mission_control_game_over.mp3'
+    mission_control_game_over: 'mission_control_game_over.mp3',
+    intro_narrator_01: 'intro_narrator_01.mp3',
+    intro_narrator_02: 'intro_narrator_02.mp3',
+    intro_narrator_03: 'intro_narrator_03.mp3',
+    intro_narrator_04: 'intro_narrator_04.mp3'
 };
 
 export const SFX_CATALOG = {
@@ -242,5 +261,32 @@ export const SFX_CATALOG = {
     'boss_spawn': [
         getSfx('spaceEngineLow_000'),
         getSfx('spaceEngineLow_001')
+    ],
+    'intro_panel_whoosh': [
+        getSfx('intro_panel_whoosh')
+    ],
+    'coin_portal_open': [
+        getSfx('coin_portal_open')
+    ],
+    'swarm_chatter_stinger': [
+        getSfx('swarm_chatter_stinger')
+    ],
+    'boss_reveal_stinger': [
+        getSfx('boss_reveal_stinger')
+    ],
+    'start_game_confirm': [
+        getSfx('start_game_confirm')
+    ],
+    'intro_narrator_01': [
+        getVoice('intro_narrator_01')
+    ].filter(Boolean),
+    'intro_narrator_02': [
+        getVoice('intro_narrator_02')
+    ].filter(Boolean),
+    'intro_narrator_03': [
+        getVoice('intro_narrator_03')
+    ].filter(Boolean),
+    'intro_narrator_04': [
+        getVoice('intro_narrator_04')
     ]
 };

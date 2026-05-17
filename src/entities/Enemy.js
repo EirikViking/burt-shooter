@@ -32,7 +32,7 @@ export class Enemy {
     this.scoreValue = 10;
     this.slow_time = 0;
 
-    // GALAGA STATE MACHINE
+    // Arcade formation state machine.
     this.state = 'ENTRY';
     this.formationX = x;
     this.formationY = y;
@@ -134,8 +134,8 @@ export class Enemy {
         this.xtraType = 1;
         break;
 
-      // PLAYER SHIP VARIANTS - Visual variety using all player ship textures
-      case 'fighter_0': // STOKMARKNES SKUTA
+      // Player-ship variants used as enemy silhouettes for visual variety.
+      case 'fighter_0': // NOVA SPARROW
         this.color = 0x4488ff;
         this.health = 3;
         this.maxHealth = 3;
@@ -147,7 +147,7 @@ export class Enemy {
         this.xtraType = 1;
         break;
 
-      case 'fighter_1': // ISBJØRN CLASSIC
+      case 'fighter_1': // COMET TWIN
         this.color = 0x88ccff;
         this.health = 3;
         this.maxHealth = 3;
@@ -159,7 +159,7 @@ export class Enemy {
         this.xtraType = 1;
         break;
 
-      case 'fighter_2': // TUFSINGEN
+      case 'fighter_2': // PIXEL NEEDLE
         this.color = 0xffaa44;
         this.health = 4;
         this.maxHealth = 4;
@@ -172,7 +172,7 @@ export class Enemy {
         this.xtraType = 2;
         break;
 
-      case 'fighter_3': // DEILI FETTA
+      case 'fighter_3': // IRON ORBIT
         this.color = 0x44ff88;
         this.health = 5;
         this.maxHealth = 5;
@@ -184,7 +184,7 @@ export class Enemy {
         this.xtraType = 2;
         break;
 
-      case 'fighter_4': // ROLAND TURBO
+      case 'fighter_4': // ARC STRIKER
         this.color = 0xaa44ff;
         this.health = 4;
         this.maxHealth = 4;
@@ -196,7 +196,7 @@ export class Enemy {
         this.xtraType = 3;
         break;
 
-      case 'fighter_5': // GIGA GRIS
+      case 'fighter_5': // GIGA LANCE
         this.color = 0xff4488;
         this.health = 8;
         this.maxHealth = 8;
@@ -209,7 +209,7 @@ export class Enemy {
         this.xtraType = 4;
         break;
 
-      case 'fighter_6': // MELBU EXPRESS
+      case 'fighter_6': // QUASAR FAN
         this.color = 0x44ffff;
         this.health = 3;
         this.maxHealth = 3;
@@ -222,7 +222,7 @@ export class Enemy {
         this.xtraType = 3;
         break;
 
-      case 'fighter_7': // KJØTTDEIG SPECIAL
+      case 'fighter_7': // STEADY VECTOR
         this.color = 0xff8844;
         this.health = 4;
         this.maxHealth = 4;
@@ -234,7 +234,7 @@ export class Enemy {
         this.xtraType = 4;
         break;
 
-      case 'fighter_8': // BURT PROTOTYPE
+      case 'fighter_8': // AURORA PRIME
         this.color = 0xffff44;
         this.health = 5;
         this.maxHealth = 5;
@@ -293,7 +293,7 @@ export class Enemy {
       tex = GameAssets.getRankShipTexture(this.shipTextureIndex);
       this.usingPlayerShipTexture = true;
     } else if (this.spriteKey === 'beer_challenge') {
-      tex = GameAssets.getBeer();
+      tex = GameAssets.getBonusCoreTexture();
     } else {
       // Map Type to Color if not provided
       let c = this.waveColor;
@@ -369,7 +369,7 @@ export class Enemy {
     this.healthBar.fill({ color: healthPercent > 0.5 ? 0x00ff00 : healthPercent > 0.25 ? 0xffff00 : 0xff0000 });
   }
 
-  // --- GALAGA BEHAVIOR ---
+  // --- Arcade formation behavior ---
 
   startEntry(startX, startY, endX, endY, duration, delay = 0) {
     this.x = startX;
@@ -509,9 +509,7 @@ export class Enemy {
   returnToFormation() {
     this.state = 'RETURN';
     const start = { x: this.x, y: this.y };
-    // Loop back up
-    // If at bottom, wrap to top? Or fly back up? Galaga usually loops top.
-    // Let's fly back up.
+    // Fly back up in a wide arcade loop.
     const end = { x: this.formationX, y: this.formationY };
     const cpVal = (this.x < 400) ? -300 : 1100; // Wide arc outside screen
 

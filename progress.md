@@ -1,5 +1,14 @@
 Original prompt: Continue autonomous development of Burt Shooter toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-17 Nova Swarm Retheme
+
+- Pivoted the game away from the internal-joke identity and toward Nova Swarm, a public arcade shooter built around swarm formations, bonus cores, boss patterns, and high-score humor.
+- Removed shipped real-person/private-joke images from `public/` and disabled legacy lore-photo loading in favor of generated comms portraits.
+- Rewrote the README, manifest copy, store-readiness draft copy, visible menu/gameplay/boss/powerup/rank/ship text, and arcade phrase pool for the new public-facing tone.
+- Replaced visible beer-can/personal-joke labels with bonus core, bonus drone, and arcade-comedy language while leaving a few internal compatibility identifiers in place where changing them would risk wave cleanup or saved local state.
+- Confirmed the local imagegen skill still lacks `OPENAI_API_KEY`; no new live imagegen assets were produced in this pass.
+- Latest verified checks in this pass: `npm run build`, `npm run check:audio`, and `npm run smoke` all pass. Latest smoke report: `test-results/smoke-2026-05-17T07-44-21-859Z/`.
+
 ## 2026-05-16
 
 - Started from `main` at `4b3c598` from `origin/main`.
@@ -217,3 +226,8 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Audit result: default effective peaks are not hot (`music` top -24.4 dB, `sfx` top -20.0 dB, `voice` top -19.4 dB). The only warnings are seven raw music files peaking at 0.0 dB before in-game attenuation.
 - Remaining next priority: do the human by-ear pass for menu/gameplay/wave clear/boss/victory/game-over intelligibility, then continue the final feel playthrough and Steam/store readiness cleanup.
 - Added `docs/reviews/2026-05-17-steam-readiness-checklist.md` after checking local Steam/marketing asset dimensions with ImageMagick and refreshing official Steamworks references. Current state: store/library art drafts exist, but Steam readiness is still blocked by curated gameplay screenshots, trailer/clip, final store copy approval, legal/provenance review, packaging direction, and human audio/feel passes.
+- Confirmed `ELEVENLABS_API_KEY` exists in the local environment and can generate actual TTS, SFX, and music assets, although account/model-read endpoints deny read metadata permissions.
+- Added a first-run Nova Swarm intro scene with four generated cinematic panels, ElevenLabs narrator lines, intro overture, panel whoosh, boss-reveal and start-confirm SFX, skip/next controls, and menu replay.
+- Added a generated ship-select hangar backdrop and release preflight coverage for the generated intro/hangar art plus new voice/music/SFX assets.
+- Updated `npm run audit:audio-mix` to refresh the Markdown/JSON reports by default; latest audit measures 82 files across 13 music rows, 77 SFX rows, and 20 voice rows with zero decode errors and nine raw-peak warnings accepted under in-game attenuation.
+- Latest verification after the intro/audio/art pass: `npm run build` passed with build ID `v2026-05-17_10-09-17`; expanded `npm run smoke` passed at `test-results/smoke-nova-intro-20260517-1022/`; strict 60-second `npm run playtest:release` passed at `test-results/release-playtest-nova-intro-20260517-1024/`; manual screenshots for all four intro panels and ship select are in `test-results/manual-nova-visuals-20260517-1027/`.

@@ -6,7 +6,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 
-TITLE = "BURT SHOOTER"
+TITLE = "NOVA SWARM"
 FONT_CANDIDATES = [
     Path("C:/Windows/Fonts/impact.ttf"),
     Path("C:/Windows/Fonts/bahnschrift.ttf"),

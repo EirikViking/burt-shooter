@@ -28,7 +28,7 @@ if (fs.existsSync(templatePath)) {
     // Replace all instances of __VERSION__
     const swContent = swTemplate.replace(/__VERSION__/g, buildId);
     fs.writeFileSync(swPath, swContent);
-    console.log(`[Build] Generated public/sw.js (CACHE_NAME: burt-shooter-${buildId})`);
+    console.log(`[Build] Generated public/sw.js (CACHE_NAME: nova-swarm-${buildId})`);
 } else {
     console.error('[Build] Error: public/sw-template.js not found!');
     process.exit(1);

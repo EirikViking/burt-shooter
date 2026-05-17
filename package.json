@@ -1,14 +1,14 @@
 {
-  "name": "burt-game",
+  "name": "nova-swarm",
   "version": "1.0.0",
-  "description": "Kurt Edgar og Eirik sitt arkade shooter spill",
+  "description": "A polished arcade space shooter about dodging clever formations, chasing high scores, and roasting the swarm.",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "prebuild": "node scripts/update-build.cjs && node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs && node scripts/check-audio-catalog.mjs",
     "build": "vite build",
     "check:audio": "node scripts/check-audio-catalog.mjs",
-    "audit:audio-mix": "node scripts/audit-audio-mix.mjs",
+    "audit:audio-mix": "node scripts/audit-audio-mix.mjs --md docs/reviews/2026-05-17-audio-mix-audit.md --json docs/reviews/audio-mix-audit-2026-05-17.json",
     "preview": "vite preview",
     "smoke": "node scripts/smoke-playtest.mjs",
     "playtest:release": "node scripts/release-playtest.mjs",

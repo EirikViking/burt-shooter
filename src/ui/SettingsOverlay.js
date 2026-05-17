@@ -325,7 +325,7 @@ export class SettingsOverlay {
     panel.stroke({ color: 0xff55d9, width: 2, alpha: 0.92 });
     overlay.addChild(panel);
 
-    const title = createText('BURT SHOOTER CREDITS', {
+    const title = createText('NOVA SWARM CREDITS', {
       fontFamily: 'Courier New',
       fontSize: isCompact ? 22 : 30,
       fontWeight: 'bold',
@@ -339,9 +339,9 @@ export class SettingsOverlay {
     overlay.addChild(title);
 
     const body = createText([
-      'Design: arctic arcade chaos over Stokmarknes.',
+      'Design: polished arcade chaos in an original starfield.',
       'Runtime: PixiJS + Vite.',
-      'Art: generated arctic backdrops, boss dossier, crew portraits.',
+      'Art: generated arcade backdrops, boss dossier, and comms portraits.',
       'Audio: contextual music pools, mission-control voice pack, catalog-gated SFX.',
       'Controls: keyboard, touch, gamepad.',
       `Build: ${BUILD_ID}`

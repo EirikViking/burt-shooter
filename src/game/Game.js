@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { GameState } from './GameState.js';
 import { MenuScene } from '../scenes/MenuScene.js';
+import { IntroScene } from '../scenes/IntroScene.js';
 import { PlayScene } from '../scenes/PlayScene.js';
 import { GameOverScene } from '../scenes/GameOverScene.js';
 import { ShipSelectScene } from '../scenes/ShipSelectScene.js';
@@ -21,6 +22,7 @@ export class Game {
     this.scoreMultiplier = 1;
 
     this.scenes = {
+      intro: new IntroScene(this),
       menu: new MenuScene(this),
       shipSelect: null, // Created on demand
       play: new PlayScene(this),
@@ -31,6 +33,14 @@ export class Game {
   }
 
   start() {
+    this.switchScene(IntroScene.shouldShow() ? 'intro' : 'menu');
+  }
+
+  showIntro() {
+    this.switchScene('intro');
+  }
+
+  showMenu() {
     this.switchScene('menu');
   }
 
@@ -141,7 +151,7 @@ export class Game {
 
   addScore(points) {
     const base = Number(points) || 0;
-    // Check both Game's scoreMultiplier (white beer can) and Player's scoreMultiplier (score_x2)
+    // Check both Game's scoreMultiplier (bonus core) and Player's scoreMultiplier (score_x2)
     const gameMult = Number(this.scoreMultiplier) || 1;
     const playerMult = this.scenes?.play?.player?.scoreMultiplier || 1;
     const mult = gameMult * playerMult;

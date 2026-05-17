@@ -1,4 +1,4 @@
-# Claude Code Improvement Plan - Burt Shooter
+# Claude Code Improvement Plan - Nova Swarm
 **Date:** 2026-01-20
 **Branch:** cc-improve-20260120
 

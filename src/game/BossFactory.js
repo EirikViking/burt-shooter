@@ -1,6 +1,6 @@
 /**
  * BossFactory - Creates varied boss visuals for each level
- * Cycles through: Big Beer Can, Icon-192, Boss Sprites, and Big Player Ships
+ * Cycles through: Bonus Core, Icon-192, Boss Sprites, and Big Player Ships
  */
 
 import * as PIXI from 'pixi.js';
@@ -9,7 +9,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { createText } from '../utils/pixiText.js';
 
 const BOSS_TYPES = {
-  BIG_BEER_CAN: 0,
+  BONUS_CORE: 0,
   ICON_192: 1,
   BOSS_SPRITE: 2,
   BIG_PLAYER_SHIP: 3 // Will cycle through available ship variants
@@ -27,14 +27,14 @@ const LEVEL_BOSS_SPRITES = {
  */
 function selectBossType(level) {
   if (level === 4) {
-    return { type: BOSS_TYPES.BIG_BEER_CAN };
+    return { type: BOSS_TYPES.BONUS_CORE };
   }
   if (level <= 3) {
     return { type: BOSS_TYPES.BOSS_SPRITE };
   }
   const cycle = (level - 1) % 15; // 15-level cycle
 
-  if (cycle === 0) return { type: BOSS_TYPES.BIG_BEER_CAN };
+  if (cycle === 0) return { type: BOSS_TYPES.BONUS_CORE };
   if (cycle === 1) return { type: BOSS_TYPES.BOSS_SPRITE };
   if (cycle === 2) return { type: BOSS_TYPES.ICON_192 };
 
@@ -114,23 +114,22 @@ function createFallbackBoss() {
 }
 
 /**
- * Creates big beer can boss visual
+ * Creates bonus core boss visual
  */
-async function createBigBeerCanBoss() {
+async function createBonusCoreBoss() {
   const container = new PIXI.Container();
 
   try {
-    const beerTexture = GameAssets.getBeerTexture();
+    const bonusTexture = GameAssets.getBonusCoreTexture();
 
-    if (!beerTexture || beerTexture.width === 0) {
-      console.warn('[BossFactory] Beer texture not loaded, using fallback');
+    if (!bonusTexture || bonusTexture.width === 0) {
+      console.warn('[BossFactory] Bonus core texture not loaded, using fallback');
       return createFallbackBoss();
     }
 
-    // Main beer can sprite (scaled to 30% of previous size)
-    const beerSprite = new PIXI.Sprite(beerTexture);
-    beerSprite.anchor.set(0.5);
-    beerSprite.scale.set(1.05); // Reduced from 3.5 (30% of original)
+    const bonusSprite = new PIXI.Sprite(bonusTexture);
+    bonusSprite.anchor.set(0.5);
+    bonusSprite.scale.set(1.05);
 
     // Glowing aura ring (scaled proportionally)
     const aura = new PIXI.Graphics();
@@ -138,20 +137,20 @@ async function createBigBeerCanBoss() {
     aura.stroke({ color: 0x00ff00, width: 2, alpha: 0.6 });
 
     container.addChild(aura);
-    container.addChild(beerSprite);
+    container.addChild(bonusSprite);
 
     // Pulse animation
     let pulseTime = 0;
     const ticker = createBossTicker(() => {
       pulseTime += 0.05;
       const pulse = 1 + Math.sin(pulseTime) * 0.08;
-      beerSprite.scale.set(1.05 * pulse); // Updated to new base scale
+      bonusSprite.scale.set(1.05 * pulse);
       aura.scale.set(pulse);
     });
 
-    return { container, hitboxRef: beerSprite, ticker }; // Return hitbox reference
+    return { container, hitboxRef: bonusSprite, ticker }; // Return hitbox reference
   } catch (e) {
-    console.error('[BossFactory] Failed to create beer can boss:', e);
+    console.error('[BossFactory] Failed to create bonus core boss:', e);
     return createFallbackBoss();
   }
 }
@@ -336,10 +335,10 @@ export async function createBossVisual(level, maxWidth) {
   let url = '';
 
   switch (selection.type) {
-    case BOSS_TYPES.BIG_BEER_CAN:
-      result = await createBigBeerCanBoss();
-      kind = 'BIG_BEER_CAN';
-      url = 'beer_texture';
+    case BOSS_TYPES.BONUS_CORE:
+      result = await createBonusCoreBoss();
+      kind = 'BONUS_CORE';
+      url = 'bonus_core_texture';
       break;
 
     case BOSS_TYPES.ICON_192:

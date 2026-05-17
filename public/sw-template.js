@@ -1,10 +1,10 @@
 /**
- * Burt Shooter Service Worker
+ * Nova Swarm Service Worker
  * Version: __VERSION__
  * Strategy: Network-First for HTML/JS, Cache-First for static assets, Network for media
  */
 
-const CACHE_NAME = 'burt-shooter-__VERSION__';
+const CACHE_NAME = 'nova-swarm-__VERSION__';
 const APP_SHELL = [
     '/',
     '/index.html',

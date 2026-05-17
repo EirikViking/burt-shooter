@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 
-class BeerAssetManager {
+class BonusAssetManager {
     constructor() {
-        this.alias = 'beervan';
-        this.url = AssetManifest.sprites.beervan;
+        this.alias = 'bonus_core';
+        this.url = AssetManifest.sprites.bonusCore;
         this._texture = null;
         this._loadPromise = null;
     }
@@ -18,7 +18,7 @@ class BeerAssetManager {
         if (this._loadPromise) return this._loadPromise;
 
         // Start loading
-        console.log('[BeerAsset] Starting load...');
+        console.log('[BonusAsset] Starting load...');
         this._loadPromise = (async () => {
             try {
                 const texture = await PIXI.Assets.load({
@@ -29,10 +29,10 @@ class BeerAssetManager {
                 if (!texture) throw new Error('Loaded texture is null');
 
                 this._texture = texture;
-                console.log('[BeerAsset] Load complete', texture.label);
+                console.log('[BonusAsset] Load complete', texture.label);
                 return texture;
             } catch (e) {
-                console.error('[BeerAsset] Load failed', e);
+                console.error('[BonusAsset] Load failed', e);
                 this._loadPromise = null; // Reset promise on failure to allow retry
                 throw e;
             }
@@ -43,11 +43,12 @@ class BeerAssetManager {
 
     getTexture() {
         if (!this._texture) {
-            console.warn('[BeerAsset] getTexture called before load complete. Returning EMPTY.');
+            console.warn('[BonusAsset] getTexture called before load complete. Returning EMPTY.');
             return PIXI.Texture.EMPTY;
         }
         return this._texture;
     }
 }
 
-export const BeerAsset = new BeerAssetManager();
+export const BeerAsset = new BonusAssetManager();
+export const BonusAsset = BeerAsset;

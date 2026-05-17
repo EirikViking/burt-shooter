@@ -3,7 +3,7 @@ import { ShipData } from '../config/ShipData.js';
 export const ShipRegistry = {
     player_01: {
         id: 'player_01',
-        name: 'Burt One',
+        name: 'Nova One',
         texture: 'player_01',
         stats: {
             speed: 6,

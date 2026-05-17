@@ -1,6 +1,6 @@
 # Audio Mix Audit - 2026-05-17
 
-Generated: 2026-05-17T07:19:43.355Z
+Generated: 2026-05-17T08:31:09.739Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -13,11 +13,11 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Coverage
 
-- Measured files: 72
-- Music rows: 12
-- SFX rows: 72
-- Voice rows: 16
-- Warnings: 7
+- Measured files: 82
+- Music rows: 13
+- SFX rows: 77
+- Voice rows: 20
+- Warnings: 9
 - Errors: 0
 
 ## Loudest Effective Peaks
@@ -26,6 +26,7 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
+| music | intro | nova_swarm_intro_overture.mp3 | 0.0 dB | -24.4 dB | -38.7 dB |
 | music | menu | Brave Pilots (Menu Screen).mp3 | 0.0 dB | -24.4 dB | -36.4 dB |
 | music | menu | SkyFire (Title Screen).mp3 | 0.0 dB | -24.4 dB | -35.5 dB |
 | music | scoreboard | Space Heroes.mp3 | 0.0 dB | -24.4 dB | -36.1 dB |
@@ -33,7 +34,6 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | music | gameplay | bgm_v2.mp3 | 0.0 dB | -24.4 dB | -37.3 dB |
 | music | gameplay | Battle in the Stars.mp3 | 0.0 dB | -24.4 dB | -37.9 dB |
 | music | boss | DeathMatch (Boss Theme).mp3 | 0.0 dB | -24.4 dB | -37.4 dB |
-| music | gameplay | Without Fear.mp3 | -0.5 dB | -24.9 dB | -37.1 dB |
 
 ### SFX
 
@@ -41,6 +41,7 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | --- | --- | --- | ---: | ---: | ---: |
 | sfx | boss_explode | lowFrequency_explosion_001.mp3 | -1.1 dB | -20.0 dB | -34.8 dB |
 | sfx | boss_explode | lowFrequency_explosion_000.mp3 | -1.2 dB | -20.1 dB | -37.2 dB |
+| sfx | boss_reveal_stinger | boss_reveal_stinger.mp3 | 0.0 dB | -20.1 dB | -27.5 dB |
 | sfx | shoot_heavy | laserLarge_002.mp3 | -0.3 dB | -20.4 dB | -36.9 dB |
 | sfx | shoot_heavy | laserLarge_004.mp3 | -0.6 dB | -20.7 dB | -37.4 dB |
 | sfx | shoot_heavy | laserLarge_003.mp3 | -1.0 dB | -21.1 dB | -38.3 dB |
@@ -48,7 +49,6 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | sfx | shoot_heavy | laserLarge_000.mp3 | -1.2 dB | -21.3 dB | -37.6 dB |
 | sfx | shoot_alt | laserRetro_000.mp3 | -0.2 dB | -21.7 dB | -29.3 dB |
 | sfx | shoot_alt | laserRetro_003.mp3 | -0.2 dB | -21.7 dB | -29.4 dB |
-| sfx | playerHit | impactMetal_000.mp3 | -1.2 dB | -21.8 dB | -42.9 dB |
 
 ### Voice
 
@@ -60,8 +60,8 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | voice | wave_clear | objective_achieved.mp3 | -0.5 dB | -21.2 dB | -39.2 dB |
 | voice | mission_complete | mission_completed.mp3 | -1.5 dB | -21.7 dB | -35.6 dB |
 | voice | war_look_out | war_look_out.mp3 | -0.7 dB | -22.5 dB | -37.1 dB |
+| voice | intro_narrator_03 | intro_narrator_03.mp3 | -4.6 dB | -22.9 dB | -41.8 dB |
 | voice | powerup | power_up.mp3 | -0.9 dB | -23.0 dB | -35.7 dB |
-| voice | mission_control_life_low | mission_control_life_low.mp3 | -4.9 dB | -23.6 dB | -42.5 dB |
 
 ## Quietest Effective Peaks
 
@@ -83,16 +83,17 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
 | voice | mission_control_game_over | mission_control_game_over.mp3 | -7.4 dB | -26.1 dB | -43.4 dB |
+| voice | intro_narrator_01 | intro_narrator_01.mp3 | -6.9 dB | -25.2 dB | -42.0 dB |
 | voice | mission_control_wave_clear | mission_control_wave_clear.mp3 | -4.7 dB | -24.3 dB | -42.0 dB |
 | voice | mission_control_powerup | mission_control_powerup.mp3 | -2.5 dB | -23.8 dB | -44.7 dB |
 | voice | war_target | war_target_engaged.mp3 | -1.6 dB | -23.7 dB | -40.1 dB |
 | voice | mission_control_level_start | mission_control_level_start.mp3 | -4.6 dB | -23.7 dB | -41.5 dB |
+| voice | intro_narrator_04 | intro_narrator_04.mp3 | -5.3 dB | -23.6 dB | -42.4 dB |
 | voice | mission_control_boss_inbound | mission_control_boss_inbound.mp3 | -5.3 dB | -23.6 dB | -41.4 dB |
-| voice | mission_control_launch | mission_control_launch.mp3 | -4.7 dB | -23.6 dB | -41.9 dB |
-| voice | mission_control_life_low | mission_control_life_low.mp3 | -4.9 dB | -23.6 dB | -42.5 dB |
 
 ## Warnings
 
+- music:intro /audio/music/nova-swarm/nova_swarm_intro_overture.mp3 - raw peak is very close to full scale (0.0 dB)
 - music:menu /audio/music/Brave Pilots (Menu Screen).mp3 - raw peak is very close to full scale (0.0 dB)
 - music:menu /audio/music/SkyFire (Title Screen).mp3 - raw peak is very close to full scale (0.0 dB)
 - music:scoreboard /audio/music/Space Heroes.mp3 - raw peak is very close to full scale (0.0 dB)
@@ -100,6 +101,7 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 - music:gameplay /audio/music/bgm_v2.mp3 - raw peak is very close to full scale (0.0 dB)
 - music:gameplay /audio/music/Battle in the Stars.mp3 - raw peak is very close to full scale (0.0 dB)
 - music:boss /audio/music/DeathMatch (Boss Theme).mp3 - raw peak is very close to full scale (0.0 dB)
+- sfx:boss_reveal_stinger /audio/sfx/nova-swarm/boss_reveal_stinger.mp3 - raw peak is very close to full scale (0.0 dB)
 
 ## Remaining Manual Check
 

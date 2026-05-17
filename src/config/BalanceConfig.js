@@ -18,7 +18,7 @@ export const BalanceConfig = {
         guaranteeWindowEnd: 0.8, // 80% progress
         logDrops: true, // Dev toggle
 
-        // White Beer Can (Special Powerup)
+        // Bonus core special powerup
         whiteCan: {
             spawnChance: 0.0005, // Very rare (approx 1 per 33 secs at 60fps unchecked, but logical checks apply)
             cooldown: 60000, // 60s global cooldown

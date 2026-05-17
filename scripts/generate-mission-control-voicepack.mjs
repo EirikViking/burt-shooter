@@ -9,7 +9,7 @@ const outputDir = path.resolve('public/audio/voice/mission-control');
 const lines = [
   {
     file: 'mission_control_launch.mp3',
-    text: 'Burt control online. Launch when ready.'
+    text: 'Nova control online. Launch when ready.'
   },
   {
     file: 'mission_control_level_start.mp3',
@@ -33,7 +33,7 @@ const lines = [
   },
   {
     file: 'mission_control_victory.mp3',
-    text: 'Sector secured. Burt survives another round.'
+    text: 'Sector secured. Nova patrol survives another round.'
   },
   {
     file: 'mission_control_game_over.mp3',

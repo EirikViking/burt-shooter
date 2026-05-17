@@ -1,8 +1,8 @@
-# Burt Shooter Steam Readiness Checklist - 2026-05-17
+# Nova Swarm Steam Readiness Checklist - 2026-05-17
 
 ## Verdict
 
-Burt Shooter is still not Steam-ready, but the path is now concrete. The current build is a credible web release candidate with deployed proof, repeatable build/smoke/release-playtest gates, draft capsule art, and objective audio-mix evidence. Steam readiness is blocked by store packaging and human review work rather than a known broken core gameplay path.
+Nova Swarm is still not Steam-ready, but the path is now concrete. The current build is a credible web release candidate with deployed proof, repeatable build/smoke/release-playtest gates, draft capsule art, generated cinematic intro art, ElevenLabs narration/SFX/music integration, and objective audio-mix evidence. Steam readiness is blocked by store packaging, final store capture, and human review work rather than a known broken core gameplay path.
 
 Current playable deployment:
 
@@ -12,6 +12,9 @@ Latest pushed evidence:
 
 - Commit: `37020bc chore: add audio mix audit`
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
+- Latest intro/audio/visual smoke: `test-results/smoke-nova-intro-20260517-1022/`
+- Latest intro/audio/visual release playtest: `test-results/release-playtest-nova-intro-20260517-1024/`
+- Manual intro/hangar screenshots: `test-results/manual-nova-visuals-20260517-1027/`
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 
@@ -40,6 +43,8 @@ Checked locally with ImageMagick `magick identify`.
 | Promo widescreen | `release/marketing-assets/mission-control-2026-05-16/mission-control-keyart-1920x1080.jpg` | 1920x1080 | Draft exists |
 | Promo web preview | `release/marketing-assets/mission-control-2026-05-16/mission-control-keyart-1280x720.webp` | 1280x720 | Draft exists |
 | Promo header crop | `release/marketing-assets/mission-control-2026-05-16/mission-control-keyart-920x430.jpg` | 920x430 | Draft exists |
+| Intro panel set | `public/art/generated/nova-swarm/nova-swarm-intro-*.webp` | 1920x1080 each | In game |
+| Ship-select hangar | `public/art/generated/nova-swarm/nova-swarm-ship-hangar.webp` | 1920x1080 | In game |
 
 Steam rules risk:
 
@@ -51,13 +56,13 @@ Steam rules risk:
 
 Short description draft:
 
-> Blast through an arctic arcade space war with punchy ships, chaotic enemy waves, mission-control radio calls, boss fights, and couch-friendly keyboard, gamepad, and touch controls.
+> Blast through a neon arcade swarm with punchy ships, readable bullet patterns, boss fights, bonus-core chaos, and couch-friendly keyboard, gamepad, and touch controls.
 
 Long description draft:
 
-> Burt Shooter is a fast, personal arcade shooter about surviving wave after wave of space nonsense over a frozen northern battlefield. Pick your ship, dodge incoming fire, grab ridiculous powerups, and push through escalating enemy formations toward oversized boss encounters.
+> Nova Swarm is a fast arcade shooter about surviving wave after wave of choreographed space nonsense. Pick your ship, dodge incoming fire, grab ridiculous bonus cores, and push through escalating enemy formations toward oversized boss encounters.
 >
-> The game blends old-school shoot-'em-up clarity with a homemade crew-comms personality: readable bullets, compact wave briefings, generated arctic key art, mission-control voice calls, local highscore fallback, and accessibility sliders for screen shake and player focus.
+> The game blends old-school shoot-'em-up clarity with a public arcade-comedy personality: readable bullets, compact wave briefings, original generated key art, radio callouts, local highscore fallback, and accessibility sliders for screen shake and player focus.
 
 Feature bullets draft:
 
@@ -65,7 +70,8 @@ Feature bullets draft:
 - Boss gates, victory beats, sector transitions, and score rewards.
 - Keyboard, gamepad, and mobile touch control support.
 - Context-aware music pools for menu, gameplay, boss, victory, and game over.
-- Mission-control voice calls with music ducking.
+- First-run narrated story intro with replay from the menu.
+- Radio callouts and narrated beats with music ducking.
 - Accessibility controls for screen shake and player-focus visibility.
 - Offline/local highscore fallback when the network is unavailable.
 
@@ -88,8 +94,9 @@ These are not proven ready in the repo yet:
 
 - Curated Steam screenshot set. Steam screenshot guidance expects actual gameplay imagery, not concept art or marketing copy. Existing smoke screenshots are test artifacts, not final store screenshots.
 - Gameplay trailer or short launch clip.
-- Final store page copy approval, including tone, inside-joke density, localization stance, and whether Norwegian terms should remain as flavor or be explained.
+- Final store page copy approval, including public arcade-comedy tone, localization stance, and confirmation that old inside-joke material has been removed from player-facing surfaces.
 - Legal/provenance review for all shipped art, music, SFX, generated portraits, generated voice, names, and jokes.
+- Final by-ear approval for the ElevenLabs intro music, narrator lines, stingers, and in-game voice/SFX blend.
 - Final capsule thumbnail review at small sizes.
 - Steam build/package plan. The repo is currently a web game; shipping on Steam needs a wrapper/package decision or a native build path.
 - Steamworks setup evidence: app ID, depots, launch options, cloud save decision, achievements decision, and controller compatibility metadata.

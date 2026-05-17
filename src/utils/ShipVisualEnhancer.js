@@ -104,61 +104,61 @@ function findShipSprite(container) {
 function getEnhancementProfile(shipId) {
   const profiles = {
     rank_ship_0: {
-      // Harbor Cruiser - Steady blue glow, classic look
+      // Nova Sparrow - steady blue glow, classic starter look.
       tint: 0xccddff,
       glow: { color: 0x0066ff, radius: 18, alpha: 0.3, pulse: true },
       engineTrails: { count: 1, color: 0x4488ff, length: 12, width: 3 }
     },
     rank_ship_1: {
-      // Isbjorn Classic - Polar bear themed, icy effects
+      // Comet Twin - icy double-shot effects.
       tint: 0xeeffff,
       glow: { color: 0x00ffff, radius: 20, alpha: 0.4, pulse: true },
       wingLights: { color: 0x00ffff, count: 2, size: 3, blink: true },
       engineTrails: { count: 2, color: 0x00ccff, length: 10, width: 2 }
     },
     rank_ship_2: {
-      // Tufsingen - Party mode! Rainbow trails and sparkles
+      // Pixel Needle - loud rainbow trails and sparkles.
       tint: 0xffddff,
       glow: { color: 0xff00ff, radius: 22, alpha: 0.5, pulse: true, rainbow: true },
       particles: { type: 'sparkle', color: 0xff00ff, rate: 0.3, size: 2 },
       engineTrails: { count: 3, color: 0xff00ff, length: 16, width: 4, rainbow: true }
     },
     rank_ship_3: {
-      // Deili Fetta - Greasy orange glow, heavy exhaust
+      // Iron Orbit - heavy orange glow and exhaust.
       tint: 0xffddaa,
       glow: { color: 0xff8800, radius: 24, alpha: 0.4, pulse: false },
       engineTrails: { count: 2, color: 0xff6600, length: 20, width: 5, smoke: true },
       particles: { type: 'smoke', color: 0x444444, rate: 0.4, size: 4 }
     },
     rank_ship_4: {
-      // Roland Turbo - High-tech cyan accents, precision targeting
+      // Arc Striker - high-tech cyan accents, precision targeting.
       tint: 0xddffff,
       glow: { color: 0x00ffcc, radius: 16, alpha: 0.35, pulse: true },
       wingLights: { color: 0x00ffcc, count: 4, size: 2, blink: false },
       shieldDome: { color: 0x00ffcc, alpha: 0.15, radius: 28 }
     },
     rank_ship_5: {
-      // Giga Gris - Massive red glow, intimidating presence
+      // Giga Lance - massive red glow, intimidating presence.
       tint: 0xffcccc,
       glow: { color: 0xff0000, radius: 28, alpha: 0.5, pulse: true },
       engineTrails: { count: 3, color: 0xff3300, length: 18, width: 6 },
       particles: { type: 'fire', color: 0xff3300, rate: 0.5, size: 3 }
     },
     rank_ship_6: {
-      // Melbu Express - Speed trails, motion blur effect
+      // Quasar Fan - speed trails and motion blur effect.
       tint: 0xffffcc,
       glow: { color: 0xffff00, radius: 20, alpha: 0.4, pulse: true },
       engineTrails: { count: 4, color: 0xffff00, length: 24, width: 2, speed: true },
       particles: { type: 'speed', color: 0xffff00, rate: 0.6, size: 2 }
     },
     rank_ship_7: {
-      // Kjøttdeig Special - Meat-themed brown/red glow, steady trails
+      // Steady Vector - warm glow and steady trails.
       tint: 0xffddcc,
       glow: { color: 0xaa4400, radius: 18, alpha: 0.35, pulse: false },
       engineTrails: { count: 2, color: 0xaa4400, length: 14, width: 4 }
     },
     rank_ship_8: {
-      // Burt Prototype - Classic green glow, legendary aura
+      // Aurora Prime - classic green glow, flagship aura.
       tint: 0xeeffee,
       glow: { color: 0x00ff00, radius: 22, alpha: 0.4, pulse: true },
       shieldDome: { color: 0x00ff00, alpha: 0.12, radius: 30 },

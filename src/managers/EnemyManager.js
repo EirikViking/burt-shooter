@@ -37,7 +37,7 @@ export class EnemyManager {
     this.adaptation = { diagonalShotBias: 0, spawnYBias: 0 };
     this.currentModifier = null;
 
-    // Hijacker (Galaga-inspired special enemy, max once per level)
+    // Hijacker capture-style special enemy, max once per level.
     this.hijacker = null;
     this.hijackerSpawnedThisLevel = false;
 
@@ -147,7 +147,7 @@ export class EnemyManager {
   }
 
   generateWaves(level) {
-    // GALAGA STYLE: Large Waves
+    // Classic arcade style: large choreographed waves.
     // 8-16 on early levels, 12-24 on high
     const diff = BalanceConfig.difficulty;
     const curatedWaves = this.getCuratedWaves(level);
@@ -936,7 +936,7 @@ export class EnemyManager {
 
   getWaveDescriptor(config) {
     if (!config) return 'INCOMING';
-    if (config.isChallenge || config.type === 'beer_challenge') return 'BONUS CAN RAID';
+    if (config.isChallenge || config.type === 'beer_challenge' || config.type === 'bonus_challenge') return 'BONUS DRONE RAID';
     const enemy = String(config.type || 'hostiles').replace(/_/g, ' ').toUpperCase();
     const formation = String(config.formation || 'formation').replace(/_/g, ' ').toUpperCase();
     return `${enemy} ${formation}`;

@@ -1,10 +1,11 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { BeerAsset } from '../utils/BeerAsset.js';
+import { BonusAsset } from '../utils/BeerAsset.js';
 import { getSelectableShips, getDefaultShipKey, isValidShipKey } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -42,6 +43,8 @@ export class ShipSelectScene {
     bg.rect(0, 0, width, height);
     bg.fill({ color: 0x000000 });
     this.container.addChild(bg);
+
+    await this.createHangarBackdrop(width, height);
 
     // Animated background layer
     this.bgAnimationContainer = new PIXI.Container();
@@ -160,6 +163,32 @@ export class ShipSelectScene {
     this.game.app.ticker.add(this.selectionAnimTicker);
   }
 
+  async createHangarBackdrop(width, height) {
+    if (!AssetManifest.generated.shipHangar) return;
+    try {
+      const texture = await PIXI.Assets.load(AssetManifest.generated.shipHangar);
+      const sprite = new PIXI.Sprite(texture);
+      sprite.anchor.set(0.5);
+      const scale = Math.max(width / texture.width, height / texture.height);
+      sprite.scale.set(scale);
+      sprite.x = width / 2;
+      sprite.y = height / 2;
+      sprite.alpha = 0.72;
+      this.container.addChild(sprite);
+
+      const shade = new PIXI.Graphics();
+      shade.rect(0, 0, width, height);
+      shade.fill({ color: 0x020711, alpha: 0.54 });
+      shade.rect(0, 0, width, 110);
+      shade.fill({ color: 0x000000, alpha: 0.36 });
+      shade.rect(0, height - 84, width, 84);
+      shade.fill({ color: 0x000000, alpha: 0.42 });
+      this.container.addChild(shade);
+    } catch (error) {
+      console.warn('[ShipSelect] Failed to load hangar backdrop', error);
+    }
+  }
+
   createAnimatedBackground(width, height) {
     // Starfield - drifting stars
     this.stars = [];
@@ -176,23 +205,23 @@ export class ShipSelectScene {
       this.stars.push(star);
     }
 
-    // Drifting beer cans (subtle)
-    this.bgBeerCans = [];
-    const beerTexture = BeerAsset.getTexture();
-    if (beerTexture && beerTexture.width > 0) {
+    // Drifting bonus cores (subtle)
+    this.bgBonusCores = [];
+    const bonusTexture = BonusAsset.getTexture();
+    if (bonusTexture && bonusTexture.width > 0) {
       for (let i = 0; i < 4; i++) {
-        const beer = new PIXI.Sprite(beerTexture);
-        beer.anchor.set(0.5);
-        beer.scale.set(0.15 + Math.random() * 0.1);
-        beer.alpha = 0.2 + Math.random() * 0.15;
-        beer.x = Math.random() * width;
-        beer.y = Math.random() * height;
-        beer.vx = (Math.random() - 0.5) * 0.4;
-        beer.vy = (Math.random() - 0.5) * 0.4;
-        beer.rotation = Math.random() * Math.PI * 2;
-        beer.rotationSpeed = (Math.random() - 0.5) * 0.01;
-        this.bgAnimationContainer.addChild(beer);
-        this.bgBeerCans.push(beer);
+        const core = new PIXI.Sprite(bonusTexture);
+        core.anchor.set(0.5);
+        core.scale.set(0.15 + Math.random() * 0.1);
+        core.alpha = 0.2 + Math.random() * 0.15;
+        core.x = Math.random() * width;
+        core.y = Math.random() * height;
+        core.vx = (Math.random() - 0.5) * 0.4;
+        core.vy = (Math.random() - 0.5) * 0.4;
+        core.rotation = Math.random() * Math.PI * 2;
+        core.rotationSpeed = (Math.random() - 0.5) * 0.01;
+        this.bgAnimationContainer.addChild(core);
+        this.bgBonusCores.push(core);
       }
     }
 
@@ -210,17 +239,17 @@ export class ShipSelectScene {
         if (star.y > height) star.y = 0;
       });
 
-      // Animate beer cans
-      this.bgBeerCans.forEach(beer => {
-        beer.x += beer.vx * delta.deltaTime;
-        beer.y += beer.vy * delta.deltaTime;
-        beer.rotation += beer.rotationSpeed * delta.deltaTime;
+      // Animate bonus cores
+      this.bgBonusCores.forEach(core => {
+        core.x += core.vx * delta.deltaTime;
+        core.y += core.vy * delta.deltaTime;
+        core.rotation += core.rotationSpeed * delta.deltaTime;
 
         // Wrap around
-        if (beer.x < -50) beer.x = width + 50;
-        if (beer.x > width + 50) beer.x = -50;
-        if (beer.y < -50) beer.y = height + 50;
-        if (beer.y > height + 50) beer.y = -50;
+        if (core.x < -50) core.x = width + 50;
+        if (core.x > width + 50) core.x = -50;
+        if (core.y < -50) core.y = height + 50;
+        if (core.y > height + 50) core.y = -50;
       });
     };
 

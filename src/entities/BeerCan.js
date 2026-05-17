@@ -8,20 +8,19 @@ export class BeerCan {
         this.x = x;
         this.y = y;
         this.game = game;
-        this.type = type; // 'HAZARD' or 'POWERUP' (White)
+        this.type = type; // 'HAZARD' or 'POWERUP'
         this.active = true;
         this.radius = 20;
         // CLEANUP FIX: Add kind tag for cleanup targeting
         this.kind = 'beer_can';
-        // HAZARD cans: 1 hp so they die in one hit (was 3, felt indestructible)
-        // POWERUP cans: 999 hp (effectively indestructible, must be collected)
+        // Hazard drones die in one hit; power cores must be collected.
         this.health = type === 'HAZARD' ? 1 : 999;
 
         // Movement
         this.vx = (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random());
-        this.vy = type === 'HAZARD' ? (1.5 + Math.random()) : 0.8; // White cans float slower
+        this.vy = type === 'HAZARD' ? (1.5 + Math.random()) : 0.8;
 
-        // Bobbing for White Can
+        // Bobbing for power cores
         this.bobTimer = 0;
         this.baseY = y;
 
@@ -37,7 +36,7 @@ export class BeerCan {
         this.sprite.x = this.x;
         this.sprite.y = this.y;
 
-        const texture = GameAssets.getBeer();
+        const texture = GameAssets.getBonusCoreTexture();
         if (GameAssets.isValidTexture(texture)) {
             const s = new PIXI.Sprite(texture);
             s.anchor.set(0.5);
@@ -45,8 +44,7 @@ export class BeerCan {
             s.height = 56;
 
             if (this.type === 'POWERUP') {
-                s.tint = 0xffffff; // White/Gold check
-                // Maybe add a glow or separate effect
+                s.tint = 0xffffff;
                 const glow = new PIXI.Graphics();
                 glow.circle(0, 0, 30).fill({ color: 0xffffaa, alpha: 0.3 });
                 this.sprite.addChild(glow);
@@ -89,7 +87,7 @@ export class BeerCan {
             this.vx *= -1;
         }
 
-        // White Can Logic: Special movement (Bobbing / Float)
+        // Power core logic: special movement
         if (this.type === 'POWERUP') {
             this.bobTimer += delta * 0.1;
             // Float down slowly but bob up and down
@@ -98,12 +96,11 @@ export class BeerCan {
 
             // Visual pulse
             if (this.mainSprite) {
-                this.mainSprite.tint = 0xffffff; // Ensure white
+                this.mainSprite.tint = 0xffffff;
                 this.mainSprite.alpha = 0.8 + Math.sin(this.bobTimer * 2) * 0.2;
             }
         } else {
-            // Hazard Logic: Zig Zag drunk
-            // TASK 1: Reduce zigzag amplitude when few cans remain
+            // Hazard drones wobble, then slow down when only a few remain.
             const zigzagAmplitude = speedMultiplier < 1.0 ? 1 : 2;
             this.x += Math.sin(this.y * 0.02) * zigzagAmplitude * delta;
             this.sprite.y = this.y;
@@ -186,7 +183,7 @@ export class BeerCan {
             score_x2: 10000
         };
         const durationMs = durations[picked] || 8000;
-        console.log(`[Powerup] pickup source=beer_can rolled=${picked} durationMs=${durationMs}`);
+        console.log(`[Powerup] pickup source=bonus_core rolled=${picked} durationMs=${durationMs}`);
 
         if (picked === 'score_boost') {
             this.applyScoreBoost(scene);
@@ -195,7 +192,7 @@ export class BeerCan {
         }
         if (picked === 'score_x2') {
             if (scene.applyScoreMultiplier) {
-                scene.applyScoreMultiplier(2, durationMs, 'beer_can');
+                scene.applyScoreMultiplier(2, durationMs, 'bonus_core');
             }
             return;
         }
@@ -203,7 +200,7 @@ export class BeerCan {
         if (player.applyPowerup) {
             player.applyPowerup(picked);
         }
-        scene.showToast(`WHITE CAN: ${picked.toUpperCase()}`, { fontSize: 28, fill: '#00ffff', duration: 1200 });
+        scene.showToast(`BONUS CORE: ${picked.toUpperCase()}`, { fontSize: 28, fill: '#00ffff', duration: 1200 });
     }
 
     applyScoreBoost(scene) {
@@ -211,7 +208,7 @@ export class BeerCan {
         // We need to implement this in Game or Scene
         // For now, let's just trigger the state
         if (scene.applyScoreMultiplier) {
-            scene.applyScoreMultiplier(BalanceConfig.powerups.whiteCan.scoreMultiplier, BalanceConfig.powerups.whiteCan.scoreBoostDuration, 'white_can');
+            scene.applyScoreMultiplier(BalanceConfig.powerups.whiteCan.scoreMultiplier, BalanceConfig.powerups.whiteCan.scoreBoostDuration, 'bonus_core');
         }
     }
 }

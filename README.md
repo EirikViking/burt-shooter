@@ -1,23 +1,19 @@
-# BURT SHOOTER
+# NOVA SWARM
 
-Et klassisk arkade shooter spill inspirert av Galaga, med masse interne referanser til Kurt Edgar og Eirik sitt univers.
+Nova Swarm is a browser arcade shooter about readable bullet patterns, cheeky enemy formations, bonus-core chaos, and high-score runs that feel fair enough to replay.
 
-## 🎮 SPILL NÅ
+**Live demo:** https://db088464.burt-game.pages.dev
 
-**Live Demo:** https://e208f58c.burt-game.pages.dev
-
-Spillet er deployet på Cloudflare Pages og klar til å spilles!
-
-## Kjør lokalt
+## Run Locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Spillet kjører på `http://localhost:3000`
+The dev server runs on `http://localhost:3000`.
 
-## Build og smoke test
+## Build And Smoke Test
 
 ```bash
 npm run build
@@ -26,166 +22,102 @@ npm run audit:audio-mix
 npm run smoke
 ```
 
-`npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, settings, desktop gameplay/pause, mobil intro/gameplay, debug-start level 3, wave-overgang og boss victory, og lagrer rapporten i `test-results/`. Konsollen viser kompakt fremdrift og oppsummering som standard; full JSON ligger i `report.json`, eller kan skrives til stdout med `SMOKE_VERBOSE_REPORT=1`.
-`npm run check:audio` verifiserer audio-manifest, SFX/voice-katalog, musikk-contexts og mix/fallback-nokler.
-`npm run audit:audio-mix` bruker FFmpeg `volumedetect` til aa maale refererte music/SFX/voice-filer og beregne effektiv default loudness. Kommandoen er en release-audio audit og krever at `ffmpeg` finnes paa PATH.
+`npm run smoke` starts a production preview, drives the game through menu, settings, desktop gameplay, mobile gameplay, wave transitions, and boss victory checks, then stores screenshots and a JSON report in `test-results/`.
 
-## Nyeste polish-pass
+`npm run check:audio` verifies audio manifests, SFX/voice catalogs, music contexts, mix keys, and fallbacks.
 
-- Generert arktisk key art og optimalisert WebP-bakgrunn ligger i `public/art/generated/`.
-- Meny og gameplay bruker den nye arktiske/aurora-retningen for mer helhetlig uttrykk.
-- Pauseflyt har modal med resume, settings og quit-to-menu.
-- Settings-panelet har musikk/voice toggles, SFX/VOICE testknapper, master/music/SFX/voice volum, screen-shake styrke, player-focus ring, credits og fullscreen.
-- ElevenLabs mission-control voicepack ligger i `public/audio/voice/mission-control/` og kan regenereres med `node scripts/generate-mission-control-voicepack.mjs` når `ELEVENLABS_API_KEY` finnes i environment.
-- Voice playback ducker musikken kort under radio calls, og pause overlay senker gameplay-musikken uten aa stoppe tracket.
-- Produksjonsbundle er splittet i app-, Pixi- og vendor-chunks for bedre caching.
-- Pixi v8 tekstflater er ryddet via `src/utils/pixiText.js`.
-- `window.render_game_to_text()` og `window.advanceTime(ms)` finnes for automatisert playtest.
-- Steam capsule/library art drafts ligger i `release/steam-assets/draft-2026-05-16/`.
-- Ekstra mission-control key-art/promo draft ligger i `release/marketing-assets/mission-control-2026-05-16/`.
-- Smoke-testen dekker naa ogsaa mobil portrait gameplay for aa fange HUD/layout-regresjoner.
-- Smoke-testen dekker naa ogsaa virtuell gamepad med bevegelse, skudd og pause.
-- Level 1 har naa kuratert onboarding med tydelige arc/wing/pincer-formasjoner foer senere levels blander inn mer variasjon.
-- Mobil har synlige, tekstfrie joystick/autofire-affordanser og ryddigere kompakt HUD/toast-plassering.
-- Level 2-4 har naa egne kuraterte wave-scripts slik at de foerste minuttene foeles mer regissert og mindre tilfeldig.
-- Smoke-testen verifiserer ogsaa `startLevel=3` med debug token, slik at senere kampanje/pacing-endringer fanges tidligere.
-- Ny generert storm/aurora gameplay-bakgrunn ligger i `public/art/generated/` og fades inn fra level 3 for mer kampanjeprogresjon.
-- `docs/visual-asset-pipeline.md` dokumenterer brukte genererte visual assets og runtime-optimalisering.
-- Wave-overganger har naa en kort briefing/score-beat foer neste wave, og smoke-testen verifiserer wave 2, scorebonus og tekst-state.
-- Game over bruker naa samme arktiske visuelle retning og lokal/offline highscore-fallback logger ikke lenger JSON-feil.
-- Boss victory flyter naa rent videre til neste sector, og smoke-testen verifiserer boss gate, aktiv boss, boss defeat og level 2 wave 1.
-- Musikk er delt i egne context-pools for meny, scoreboard, gameplay, boss, victory og game over; smoke-testen passer paa at boss/game-over/title-musikk ikke lekker inn i vanlig gameplay.
-- SFX og voice har sentrale mix-defaults og en build-time audio-katalogsjekk som fanger manglende lydfiler, tomme music-contexts og brutte voice fallback-nokler.
-- Produksjonsbyggen er roligere i konsollen: vanlige debug logs skjules med mindre `?debug=1`, `?verboseLogs=1` eller `localStorage.burtVerboseLogs=1` brukes, og smoke-testen feiler hvis rutine-logger lekker tilbake.
-- Boss inbound bruker naa en original generert threat-dossier asset, foerste boss er mer rettferdig, og `npm run playtest:release` gir en streng survival/preflight playtest for release-regresjoner.
-- Lore/flyby-overlegg bruker naa originale genererte crew-portretter som standard. Eldre lokale foto kan testes eksplisitt med `?legacyPhotos=1` eller `localStorage.burtLegacyPhotos=1`.
-- Hovedmenyen gjenbruker de genererte crew-portrettene i en subtil mission-console/radar layer, med kontrollhint for keyboard og gamepad.
-- `render_game_to_text()` og release/smoke-rapportene bruker stabile scene-navn som `menu`, `play` og `gameOver`, og eksponerer accessibility-state.
-- Audio smoke dekker naa Settings-audition, credits overlay og at meny/gameplay/boss/victory/game-over bruker riktig musikk-context.
-- Smoke-testen skriver naa kompakt fremdrift og pass/fail-oppsummering i terminalen, mens full rapport fortsatt lagres i `test-results/*/report.json`.
-- `docs/recovery-note-2026-05-16.md` og `docs/reviews/2026-05-16-release-candidate-review.md` oppsummerer siste recovery/review-pass.
-- `docs/reviews/2026-05-17-audio-mix-audit.md` og `docs/reviews/audio-mix-audit-2026-05-17.json` dokumenterer objektiv FFmpeg-basert audio-mix audit; by-ear pass gjenstaar fortsatt.
-- `docs/reviews/2026-05-17-steam-readiness-checklist.md` samler Steam-readiness status, asset-inventory, store-copy draft og gjenstaaende blokker.
+`npm run audit:audio-mix` uses FFmpeg `volumedetect` to measure referenced music, SFX, and voice assets. It requires `ffmpeg` on PATH.
 
-## Deploy til Cloudflare Pages
+## Current Direction
 
-### 1. Opprett D1 Database
+- Original generated backdrops, boss dossier art, and comms portraits live in `public/art/generated/`.
+- The first-run story intro uses generated cinematic panels, ElevenLabs narration, custom stingers, and an intro music context.
+- Real-person photos and private-joke assets are not shipped.
+- Player-facing text has moved to a public arcade-comedy voice: coin slots, bonus stages, formation swarms, hitboxes, boss patterns, and leaderboard bravado.
+- Menus, settings, pause, mobile HUD, boss alerts, and high-score flows are covered by the production smoke harness.
+- `window.render_game_to_text()` and `window.advanceTime(ms)` are available for automated playtests.
+- Steam/store readiness notes are tracked under `docs/reviews/`.
 
-```bash
-npx wrangler d1 create burt-game-db
-```
-
-Kopier database ID fra output og oppdater `wrangler.toml`.
-
-### 2. Kjør migrations
-
-```bash
-npx wrangler d1 execute burt-game-db --file=./schema.sql
-```
-
-### 3. Deploy
+## Deploy To Cloudflare Pages
 
 ```bash
 npm run build
 npx wrangler pages deploy dist
 ```
 
-## Spillkontroller
+The high-score API uses Cloudflare Pages Functions and D1. Database setup lives in `schema.sql` and `wrangler.toml`.
+
+## Controls
 
 ### Desktop
-- **WASD** eller **Piltaster**: Bevegelse
-- **SPACE**: Skyt
-- **SHIFT**: Dodge (kort invulnerability)
-- **P** eller **ESC**: Pause
+
+- **WASD** or **Arrow keys**: Move
+- **Space**: Shoot
+- **Shift**: Dodge
+- **P** or **Esc**: Pause
 
 ### Gamepad
-- **Venstre stick/D-pad**: Bevegelse
-- **A / RB / RT**: Skyt
+
+- **Left stick / D-pad**: Move
+- **A / RB / RT**: Shoot
 - **B / LB**: Dodge
 - **Start / Select / Home**: Pause
 
-### Mobil
-- Touch joystick for bevegelse
-- Auto-fire aktivert
+### Mobile
+
+- Touch joystick movement
+- Auto-fire enabled
 
 ## Powerups
 
-- **Isbjørn Can**: Triple shot
-- **Kjøttdeig Boost**: Økt hastighet
-- **Rølp Mode**: Rapid fire med ekstra damage
-- **Deili Fetta**: Ultimate power (5-shot + damage)
+- **Triple Beam**: Wider shot spread
+- **Vector Boost**: Faster movement
+- **Rapid Cabinet**: Higher fire rate
+- **Overdrive Core**: Maximum temporary firepower
+- **Bonus Core**: Random special effect such as shields, score boosts, pierce, slow time, or score multiplier
 
-## Fiender
+## Enemies
 
-- **Gris**: Basic enemy
-- **Mongo**: Tøffere, raskere
-- **Tufs**: Zigzag pattern
-- **Deili**: Sirkel pattern
-- **Rølp**: Drunk pattern
-- **Svin**: Aggressiv, følger spilleren
+- **Scout Drone**: Basic formation fighter
+- **Shield Wasp**: Tougher formation fighter
+- **Zigzag Skimmer**: Side-to-side pressure pattern
+- **Spiral Ace**: Circular movement pattern
+- **Trickster**: Erratic arcade pattern
+- **Hunter**: Aggressive pursuit unit
+- **Bonus Drone Raid**: Optional high-risk bonus wave
 
 ## Boss Fights
 
-Boss hver 5. level med unike navn og progressive faser.
+Boss encounters escalate with larger health pools, phase shifts, signature movement profiles, and loud dossier-style alerts.
 
-## Arkitektur
+## Architecture
 
-- **Frontend**: PixiJS med WebGL rendering
-- **Audio**: Web Audio API for synth sounds
+- **Frontend**: PixiJS with WebGL rendering
+- **Audio**: Web Audio API plus pooled media playback
 - **Backend**: Cloudflare Pages Functions
-- **Database**: Cloudflare D1 (SQLite)
+- **Database**: Cloudflare D1
 - **Build**: Vite
 
-## Filer
+## Project Map
 
-```
+```text
 src/
-  ├── main.js                 # Entry point
-  ├── game/
-  │   ├── Game.js             # Main game controller
-  │   └── GameState.js        # Game states
-  ├── scenes/
-  │   ├── MenuScene.js        # Main menu
-  │   ├── PlayScene.js        # Gameplay scene
-  │   ├── GameOverScene.js    # Game over + score input
-  │   └── HighscoreScene.js   # Highscore leaderboard
-  ├── entities/
-  │   ├── Player.js           # Player ship (Eirik)
-  │   ├── Enemy.js            # Enemy types
-  │   ├── Boss.js             # Boss entities
-  │   └── Bullet.js           # Projectiles
-  ├── managers/
-  │   ├── BulletManager.js    # Bullet pooling
-  │   ├── EnemyManager.js     # Enemy spawning
-  │   └── PowerupManager.js   # Powerup system
-  ├── effects/
-  │   ├── ParticleManager.js  # Particle effects
-  │   └── ScreenShake.js      # Screen shake juice
-  ├── input/
-  │   └── InputManager.js     # Keyboard + touch + gamepad input
-  ├── audio/
-  │   └── AudioManager.js     # Sound effects + music
-  ├── ui/
-  │   └── HUD.js              # Score, lives, level
-  └── api/
-      └── API.js              # Highscore API client
+  main.js                 Entry point
+  game/                   Main game controller, boss factory, game state
+  scenes/                 Menu, play, game over, highscores, ship select
+  entities/               Player, enemy, boss, projectile, bonus drone entities
+  managers/               Bullet, enemy, powerup, particle, and effects systems
+  input/                  Keyboard, touch, and gamepad input
+  audio/                  Sound effects, voices, music contexts
+  ui/                     HUD, overlays, responsive layout
+  api/                    High-score API client
 
 functions/
-  └── api/
-      └── highscores.js       # Cloudflare Pages Function
+  api/                    Cloudflare Pages Functions
 
-schema.sql                    # D1 database schema
+schema.sql                D1 database schema
 ```
 
-## Easter Eggs
+## Arcade Comedy
 
-Spillet er fullpakket med interne referanser:
-
-- Powerup navn
-- Fiende typer
-- Boss navn
-- UI-tekst
-- Loading screens
-- Location displays
-
-Alt er inspirert av Kurt Edgar og Eirik sitt univers med humor og kameratslighet.
+The game keeps the humor broad and genre-native: enemy formations complain about choreography, bosses overcommit to dramatic entrances, bonus stages arrive at inconvenient moments, and the leaderboard treats initials like heroic callsigns.

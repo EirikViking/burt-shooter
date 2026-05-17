@@ -8,10 +8,10 @@ import { generateUUID } from '../utils/uuid.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 
-const ENTRY_PROMPT_DESKTOP = 'TRYKK ENTER FOR Å LOGGE SCORE';
-const ENTRY_PROMPT_MOBILE = 'TRYKK HER FOR Å LOGGE SCORE';
-const INPUT_PROMPT = 'SKRIV NAVN OG TRYKK OK';
-const WALLET_PROMPT = 'VKC WALLET (VALGFRI)';
+const ENTRY_PROMPT_DESKTOP = 'PRESS ENTER TO LOG SCORE';
+const ENTRY_PROMPT_MOBILE = 'TAP HERE TO LOG SCORE';
+const INPUT_PROMPT = 'ENTER INITIALS AND PRESS OK';
+const WALLET_PROMPT = 'VKC WALLET (OPTIONAL)';
 const WALLET_STORAGE_KEY = 'burt.wallet.v1';
 
 export class GameOverScene {
@@ -80,11 +80,11 @@ export class GameOverScene {
     this.initBackdrop(width, height);
 
     const gameOverTexts = [
-      'MONGO VANT!',
-      'RØLP OVERLOAD!',
-      'GRIS DOMINANS!',
-      'DEILI FETTA...',
-      'TILBAKE TIL MELBU!'
+      'SWARM GOT COCKY!',
+      'HITBOX INCIDENT!',
+      'BOSS MUSIC WON!',
+      'QUARTER EJECTED!',
+      'FORMATION OVERLOAD!'
     ];
     const gameOverPool = extendGameOverTexts(gameOverTexts);
     const randomText = gameOverPool[Math.floor(Math.random() * gameOverPool.length)];
@@ -117,7 +117,7 @@ export class GameOverScene {
     this.container.addChild(this.scoreText);
 
     const levelSize = getResponsiveFontSize(layout, 'subtitle');
-    this.levelText = createText(`NÅDDE LEVEL: ${this.finalLevel}`, {
+    this.levelText = createText(`REACHED LEVEL: ${this.finalLevel}`, {
       fontFamily: 'Courier New',
       fontSize: levelSize,
       fill: '#ffffff'

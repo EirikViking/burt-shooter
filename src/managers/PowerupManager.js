@@ -16,10 +16,10 @@ class Powerup {
     this.lifeTime = 15000; // 15 seconds expiry
 
     const powerupData = {
-      isbjorn: { color: 0xffaa00, label: 'ISBJØRN' },
-      kjottdeig: { color: 0xff6666, label: 'KJØTTDEIG' },
-      rolp: { color: 0xff00ff, label: 'RØLP' },
-      deili: { color: 0x00ff00, label: 'DEILI' },
+      isbjorn: { color: 0xffaa00, label: 'TRIPLE' },
+      kjottdeig: { color: 0xff6666, label: 'VECTOR' },
+      rolp: { color: 0xff00ff, label: 'RAPID' },
+      deili: { color: 0x00ff00, label: 'OVERDRIVE' },
       slow_time: { color: 0x00cccc, label: 'SLOW' },
       ghost: { color: 0xeeeeee, label: 'GHOST' },
       shield: { color: 0x00aaaa, label: 'SHIELD' },
@@ -89,12 +89,12 @@ class Powerup {
       else if (this.type === 'chain_lightning') texture = GameAssets.getXtraPowerup('slow_time');
       else if (this.type === 'orbital_strike') texture = GameAssets.getXtraPowerup('shield');
       else if (this.type === 'vampire') texture = GameAssets.getXtraPowerup('rolp');
-      else texture = GameAssets.getBeer();
+      else texture = GameAssets.getBonusCoreTexture();
 
       if (GameAssets.isValidTexture(texture)) {
-        const beerSprite = new PIXI.Sprite(texture);
-        beerSprite.anchor.set(0.5);
-        beerSprite.label = 'mainSprite';
+        const iconSprite = new PIXI.Sprite(texture);
+        iconSprite.anchor.set(0.5);
+        iconSprite.label = 'mainSprite';
 
         // PART B: Consistent scale for all powerup sprites
         const hasSprite = this.type === 'shield' || this.type === 'life' ||
@@ -108,18 +108,18 @@ class Powerup {
           this.type === 'chain_lightning' || this.type === 'orbital_strike' || this.type === 'vampire';
 
         if (hasSprite) {
-          beerSprite.scale.set(0.8);
+          iconSprite.scale.set(0.8);
         } else {
-          beerSprite.width = 24;
-          beerSprite.height = 32;
-          beerSprite.tint = this.color;
+          iconSprite.width = 24;
+          iconSprite.height = 32;
+          iconSprite.tint = this.color;
         }
 
-        this.sprite.addChild(beerSprite);
-        this.mainSprite = beerSprite;
+        this.sprite.addChild(iconSprite);
+        this.mainSprite = iconSprite;
 
         // PART B: Store base scale to prevent runaway scaling
-        this.baseScale = beerSprite.scale.x;
+        this.baseScale = iconSprite.scale.x;
 
         const glow = new PIXI.Graphics();
         glow.circle(0, 0, 15);
@@ -363,10 +363,10 @@ class Powerup {
 
   showMessage(scene) {
     const messages = {
-      isbjorn: 'ISBJØRN CAN! Triple Shot!',
-      kjottdeig: 'KJØTTDEIG BOOST! Speed Up!',
-      rolp: 'RØLP MODE! Rapid Fire!',
-      deili: 'DEILI FETTA! Ultimate Power!',
+      isbjorn: 'TRIPLE BEAM! Triple Shot!',
+      kjottdeig: 'VECTOR BOOST! Speed Up!',
+      rolp: 'RAPID CABINET! Rapid Fire!',
+      deili: 'OVERDRIVE CORE! Ultimate Power!',
       slow_time: 'SLOW MOTION!',
       slow_time: 'SLOW MOTION!',
       ghost: 'GHOST MODE! Invincible!',

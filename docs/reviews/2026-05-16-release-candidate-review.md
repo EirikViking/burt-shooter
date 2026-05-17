@@ -1,8 +1,8 @@
-# Burt Shooter Release-Candidate Review - 2026-05-16
+# Nova Swarm Release-Candidate Review - 2026-05-16
 
 ## Verdict
 
-Burt Shooter is now a playable, visually coherent browser arcade shooter with a much stronger first impression than the recovered baseline. It is not Steam-ready yet, but it is a credible web release-candidate build: the main menu, settings, first combat beats, mobile HUD, pause flow, generated art direction, music state, wave transition, game-over flow, boss victory path, and a 10-minute no-debug survival run all hold together in the latest checks.
+Nova Swarm is now a playable, visually coherent browser arcade shooter with a much stronger first impression than the recovered baseline. It is not Steam-ready yet, but it is a credible web release-candidate build: the main menu, settings, first combat beats, mobile HUD, pause flow, generated art direction, music state, wave transition, game-over flow, boss victory path, and a 10-minute no-debug survival run all hold together in the latest checks.
 
 ## Gameplay Analysis
 

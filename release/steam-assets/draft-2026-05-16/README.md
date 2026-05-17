@@ -1,6 +1,6 @@
-# Burt Shooter Steam Asset Drafts
+# Nova Swarm Steam Asset Drafts
 
-Generated on 2026-05-16 from original AI-created key art for release-readiness exploration.
+Generated on 2026-05-16 from original AI-created key art for release-readiness exploration. These drafts predate the Nova Swarm retheme and need a fresh title/logo pass before Steam submission.
 
 Source image:
 - `key_art_source.png`

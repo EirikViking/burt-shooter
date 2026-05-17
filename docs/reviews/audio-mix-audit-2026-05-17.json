@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T07:19:43.355Z",
+  "generatedAt": "2026-05-17T08:31:09.739Z",
   "defaults": {
     "masterVolume": 0.3,
     "musicVolume": 0.2,
@@ -12,15 +12,29 @@
     }
   },
   "counts": {
-    "measuredFiles": 72,
-    "musicRows": 12,
-    "sfxRows": 72,
-    "voiceRows": 16,
-    "warnings": 7,
+    "measuredFiles": 82,
+    "musicRows": 13,
+    "sfxRows": 77,
+    "voiceRows": 20,
+    "warnings": 9,
     "errors": 0
   },
   "loudestEffectivePeaks": {
     "music": [
+      {
+        "type": "music",
+        "event": "intro",
+        "url": "/audio/music/nova-swarm/nova_swarm_intro_overture.mp3",
+        "durationSeconds": 22,
+        "mixVolume": 1,
+        "duckFactor": null,
+        "effectiveLinear": 0.06,
+        "rawMeanDb": -14.3,
+        "rawPeakDb": 0,
+        "gainDb": -24.4,
+        "effectiveMeanDb": -38.7,
+        "effectivePeakDb": -24.4
+      },
       {
         "type": "music",
         "event": "menu",
@@ -118,20 +132,6 @@
         "gainDb": -24.4,
         "effectiveMeanDb": -37.4,
         "effectivePeakDb": -24.4
-      },
-      {
-        "type": "music",
-        "event": "gameplay",
-        "url": "/audio/music/Without Fear.mp3",
-        "durationSeconds": 99.7,
-        "mixVolume": 1,
-        "duckFactor": null,
-        "effectiveLinear": 0.06,
-        "rawMeanDb": -12.7,
-        "rawPeakDb": -0.5,
-        "gainDb": -24.4,
-        "effectiveMeanDb": -37.1,
-        "effectivePeakDb": -24.9
       }
     ],
     "sfx": [
@@ -161,6 +161,20 @@
         "rawPeakDb": -1.2,
         "gainDb": -18.9,
         "effectiveMeanDb": -37.2,
+        "effectivePeakDb": -20.1
+      },
+      {
+        "type": "sfx",
+        "event": "boss_reveal_stinger",
+        "url": "/audio/sfx/nova-swarm/boss_reveal_stinger.mp3",
+        "durationSeconds": 2.4,
+        "mixVolume": 0.82,
+        "duckFactor": null,
+        "effectiveLinear": 0.0984,
+        "rawMeanDb": -7.4,
+        "rawPeakDb": 0,
+        "gainDb": -20.1,
+        "effectiveMeanDb": -27.5,
         "effectivePeakDb": -20.1
       },
       {
@@ -260,20 +274,6 @@
         "gainDb": -21.5,
         "effectiveMeanDb": -29.4,
         "effectivePeakDb": -21.7
-      },
-      {
-        "type": "sfx",
-        "event": "playerHit",
-        "url": "/audio/sfx/impactMetal_000.mp3",
-        "durationSeconds": 0.63,
-        "mixVolume": 0.78,
-        "duckFactor": null,
-        "effectiveLinear": 0.0936,
-        "rawMeanDb": -22.3,
-        "rawPeakDb": -1.2,
-        "gainDb": -20.6,
-        "effectiveMeanDb": -42.9,
-        "effectivePeakDb": -21.8
       }
     ],
     "voice": [
@@ -363,6 +363,20 @@
       },
       {
         "type": "voice",
+        "event": "intro_narrator_03",
+        "url": "/audio/voice/nova-swarm/intro_narrator_03.mp3",
+        "durationSeconds": 7.11,
+        "mixVolume": 0.9,
+        "duckFactor": 0.36,
+        "effectiveLinear": 0.1215,
+        "rawMeanDb": -23.5,
+        "rawPeakDb": -4.6,
+        "gainDb": -18.3,
+        "effectiveMeanDb": -41.8,
+        "effectivePeakDb": -22.9
+      },
+      {
+        "type": "voice",
         "event": "powerup",
         "url": "/audio/voice/power_up.mp3",
         "durationSeconds": 0.8,
@@ -374,20 +388,6 @@
         "gainDb": -22.1,
         "effectiveMeanDb": -35.7,
         "effectivePeakDb": -23
-      },
-      {
-        "type": "voice",
-        "event": "mission_control_life_low",
-        "url": "/audio/voice/mission-control/mission_control_life_low.mp3",
-        "durationSeconds": 2,
-        "mixVolume": 0.86,
-        "duckFactor": 0.45,
-        "effectiveLinear": 0.1161,
-        "rawMeanDb": -23.8,
-        "rawPeakDb": -4.9,
-        "gainDb": -18.7,
-        "effectiveMeanDb": -42.5,
-        "effectivePeakDb": -23.6
       }
     ]
   },
@@ -523,6 +523,20 @@
       },
       {
         "type": "voice",
+        "event": "intro_narrator_01",
+        "url": "/audio/voice/nova-swarm/intro_narrator_01.mp3",
+        "durationSeconds": 6.08,
+        "mixVolume": 0.9,
+        "duckFactor": 0.36,
+        "effectiveLinear": 0.1215,
+        "rawMeanDb": -23.7,
+        "rawPeakDb": -6.9,
+        "gainDb": -18.3,
+        "effectiveMeanDb": -42,
+        "effectivePeakDb": -25.2
+      },
+      {
+        "type": "voice",
         "event": "mission_control_wave_clear",
         "url": "/audio/voice/mission-control/mission_control_wave_clear.mp3",
         "durationSeconds": 2.28,
@@ -579,6 +593,20 @@
       },
       {
         "type": "voice",
+        "event": "intro_narrator_04",
+        "url": "/audio/voice/nova-swarm/intro_narrator_04.mp3",
+        "durationSeconds": 5.71,
+        "mixVolume": 0.9,
+        "duckFactor": 0.34,
+        "effectiveLinear": 0.1215,
+        "rawMeanDb": -24.1,
+        "rawPeakDb": -5.3,
+        "gainDb": -18.3,
+        "effectiveMeanDb": -42.4,
+        "effectivePeakDb": -23.6
+      },
+      {
+        "type": "voice",
         "event": "mission_control_boss_inbound",
         "url": "/audio/voice/mission-control/mission_control_boss_inbound.mp3",
         "durationSeconds": 2.51,
@@ -590,38 +618,16 @@
         "gainDb": -18.3,
         "effectiveMeanDb": -41.4,
         "effectivePeakDb": -23.6
-      },
-      {
-        "type": "voice",
-        "event": "mission_control_launch",
-        "url": "/audio/voice/mission-control/mission_control_launch.mp3",
-        "durationSeconds": 2.6,
-        "mixVolume": 0.84,
-        "duckFactor": 0.42,
-        "effectiveLinear": 0.1134,
-        "rawMeanDb": -23,
-        "rawPeakDb": -4.7,
-        "gainDb": -18.9,
-        "effectiveMeanDb": -41.9,
-        "effectivePeakDb": -23.6
-      },
-      {
-        "type": "voice",
-        "event": "mission_control_life_low",
-        "url": "/audio/voice/mission-control/mission_control_life_low.mp3",
-        "durationSeconds": 2,
-        "mixVolume": 0.86,
-        "duckFactor": 0.45,
-        "effectiveLinear": 0.1161,
-        "rawMeanDb": -23.8,
-        "rawPeakDb": -4.9,
-        "gainDb": -18.7,
-        "effectiveMeanDb": -42.5,
-        "effectivePeakDb": -23.6
       }
     ]
   },
   "warnings": [
+    {
+      "type": "music",
+      "event": "intro",
+      "url": "/audio/music/nova-swarm/nova_swarm_intro_overture.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
     {
       "type": "music",
       "event": "menu",
@@ -663,10 +669,30 @@
       "event": "boss",
       "url": "/audio/music/DeathMatch (Boss Theme).mp3",
       "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "boss_reveal_stinger",
+      "url": "/audio/sfx/nova-swarm/boss_reveal_stinger.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
     }
   ],
   "errors": [],
   "rows": [
+    {
+      "type": "music",
+      "event": "intro",
+      "url": "/audio/music/nova-swarm/nova_swarm_intro_overture.mp3",
+      "durationSeconds": 22,
+      "mixVolume": 1,
+      "duckFactor": null,
+      "effectiveLinear": 0.06,
+      "rawMeanDb": -14.3,
+      "rawPeakDb": 0,
+      "gainDb": -24.4,
+      "effectiveMeanDb": -38.7,
+      "effectivePeakDb": -24.4
+    },
     {
       "type": "music",
       "event": "menu",
@@ -1842,6 +1868,132 @@
       "gainDb": -20.9,
       "effectiveMeanDb": -28.8,
       "effectivePeakDb": -22.1
+    },
+    {
+      "type": "sfx",
+      "event": "intro_panel_whoosh",
+      "url": "/audio/sfx/nova-swarm/intro_panel_whoosh.mp3",
+      "durationSeconds": 1.2,
+      "mixVolume": 0.58,
+      "duckFactor": null,
+      "effectiveLinear": 0.0696,
+      "rawMeanDb": -23.4,
+      "rawPeakDb": -5.2,
+      "gainDb": -23.1,
+      "effectiveMeanDb": -46.5,
+      "effectivePeakDb": -28.3
+    },
+    {
+      "type": "sfx",
+      "event": "coin_portal_open",
+      "url": "/audio/sfx/nova-swarm/coin_portal_open.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.74,
+      "duckFactor": null,
+      "effectiveLinear": 0.0888,
+      "rawMeanDb": -30.7,
+      "rawPeakDb": -5.3,
+      "gainDb": -21,
+      "effectiveMeanDb": -51.7,
+      "effectivePeakDb": -26.3
+    },
+    {
+      "type": "sfx",
+      "event": "swarm_chatter_stinger",
+      "url": "/audio/sfx/nova-swarm/swarm_chatter_stinger.mp3",
+      "durationSeconds": 1.76,
+      "mixVolume": 0.58,
+      "duckFactor": null,
+      "effectiveLinear": 0.0696,
+      "rawMeanDb": -19.4,
+      "rawPeakDb": -2.6,
+      "gainDb": -23.1,
+      "effectiveMeanDb": -42.5,
+      "effectivePeakDb": -25.7
+    },
+    {
+      "type": "sfx",
+      "event": "boss_reveal_stinger",
+      "url": "/audio/sfx/nova-swarm/boss_reveal_stinger.mp3",
+      "durationSeconds": 2.4,
+      "mixVolume": 0.82,
+      "duckFactor": null,
+      "effectiveLinear": 0.0984,
+      "rawMeanDb": -7.4,
+      "rawPeakDb": 0,
+      "gainDb": -20.1,
+      "effectiveMeanDb": -27.5,
+      "effectivePeakDb": -20.1
+    },
+    {
+      "type": "sfx",
+      "event": "start_game_confirm",
+      "url": "/audio/sfx/nova-swarm/start_game_confirm.mp3",
+      "durationSeconds": 1.08,
+      "mixVolume": 0.7,
+      "duckFactor": null,
+      "effectiveLinear": 0.084,
+      "rawMeanDb": -20.3,
+      "rawPeakDb": -2.6,
+      "gainDb": -21.5,
+      "effectiveMeanDb": -41.8,
+      "effectivePeakDb": -24.1
+    },
+    {
+      "type": "voice",
+      "event": "intro_narrator_01",
+      "url": "/audio/voice/nova-swarm/intro_narrator_01.mp3",
+      "durationSeconds": 6.08,
+      "mixVolume": 0.9,
+      "duckFactor": 0.36,
+      "effectiveLinear": 0.1215,
+      "rawMeanDb": -23.7,
+      "rawPeakDb": -6.9,
+      "gainDb": -18.3,
+      "effectiveMeanDb": -42,
+      "effectivePeakDb": -25.2
+    },
+    {
+      "type": "voice",
+      "event": "intro_narrator_02",
+      "url": "/audio/voice/nova-swarm/intro_narrator_02.mp3",
+      "durationSeconds": 6.55,
+      "mixVolume": 0.9,
+      "duckFactor": 0.36,
+      "effectiveLinear": 0.1215,
+      "rawMeanDb": -23.3,
+      "rawPeakDb": -4.9,
+      "gainDb": -18.3,
+      "effectiveMeanDb": -41.6,
+      "effectivePeakDb": -23.2
+    },
+    {
+      "type": "voice",
+      "event": "intro_narrator_03",
+      "url": "/audio/voice/nova-swarm/intro_narrator_03.mp3",
+      "durationSeconds": 7.11,
+      "mixVolume": 0.9,
+      "duckFactor": 0.36,
+      "effectiveLinear": 0.1215,
+      "rawMeanDb": -23.5,
+      "rawPeakDb": -4.6,
+      "gainDb": -18.3,
+      "effectiveMeanDb": -41.8,
+      "effectivePeakDb": -22.9
+    },
+    {
+      "type": "voice",
+      "event": "intro_narrator_04",
+      "url": "/audio/voice/nova-swarm/intro_narrator_04.mp3",
+      "durationSeconds": 5.71,
+      "mixVolume": 0.9,
+      "duckFactor": 0.34,
+      "effectiveLinear": 0.1215,
+      "rawMeanDb": -24.1,
+      "rawPeakDb": -5.3,
+      "gainDb": -18.3,
+      "effectiveMeanDb": -42.4,
+      "effectivePeakDb": -23.6
     },
     {
       "type": "voice",

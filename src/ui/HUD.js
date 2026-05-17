@@ -159,8 +159,8 @@ export class HUD {
     this.missionText.anchor.set(0.5);
     this.hudContainer.addChild(this.missionText);
 
-    // Easter egg location
-    this.locationText = createText('STOKMARKNES', {
+    // Rotating arcade-sector label.
+    this.locationText = createText('ORBITAL ARCADE', {
       fontFamily: 'Courier New',
       fontSize: 12,
       fill: '#9eb7c0'
@@ -222,7 +222,7 @@ export class HUD {
     this.rankBarFill.clear().rect(0, 42, barW * progress, barH).fill({ color: 0xffff00 });
 
     // Random location updates
-    const locations = extendLocations(['STOKMARKNES', 'MELBU', 'HADSEL', 'SORTLAND', 'LOFOTEN']);
+    const locations = extendLocations(['ORBITAL ARCADE', 'NEON BELT', 'PIXEL DRIFT', 'BONUS SECTOR', 'CABINET CORE']);
     if (Math.random() < 0.001) {
       this.locationText.text = locations[Math.floor(Math.random() * locations.length)];
     }

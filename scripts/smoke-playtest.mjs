@@ -10,6 +10,14 @@ const port = process.env.SMOKE_URL ? null : (explicitPort || await findAvailable
 const baseUrl = process.env.SMOKE_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.SMOKE_OUTPUT_DIR || `test-results/smoke-${timestamp()}`);
 
+function withQuery(url, params) {
+  const next = new URL(url);
+  for (const [key, value] of Object.entries(params)) {
+    next.searchParams.set(key, value);
+  }
+  return next.toString();
+}
+
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
@@ -345,6 +353,28 @@ async function runSmoke() {
 
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForFunction(() => window.__game?.currentSceneName === 'intro' || window.__game?.currentSceneName === 'menu', null, { timeout: 15000 });
+    const bootScene = await page.evaluate(() => window.__game?.currentSceneName || 'unknown');
+    if (bootScene === 'intro') {
+      await page.screenshot({ path: path.join(outputDir, '00-intro-ready.png'), fullPage: true });
+      await page.mouse.click(420, 320);
+      await page.waitForTimeout(1300);
+      await page.screenshot({ path: path.join(outputDir, '00-intro-narrated.png'), fullPage: true });
+      const introState = await collectGameState(page);
+      if (introState?.scene !== 'intro') {
+        throw new Error(`intro scene did not report stable scene name: ${introState?.scene || 'missing'}`);
+      }
+      const introAudio = introState?.textState?.audio || null;
+      if (introAudio?.currentMusicContext !== 'intro') {
+        throw new Error(`intro music context did not start: ${introAudio?.currentMusicContext || 'missing'}`);
+      }
+      if (introAudio?.lastVoiceEvent !== 'intro_narrator_01') {
+        throw new Error(`intro narrator did not update telemetry: ${introAudio?.lastVoiceEvent || 'missing'}`);
+      }
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 8000 });
+      logStep('intro captured and skipped');
+    }
     await page.waitForFunction(() => document.body?.dataset?.menuReady === '1', null, { timeout: 15000 });
     await page.waitForTimeout(2200);
     await page.screenshot({ path: path.join(outputDir, '01-menu.png'), fullPage: true });
@@ -611,7 +641,7 @@ async function runSmoke() {
 
     const level3Page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(level3Page, 'level3');
-    await level3Page.goto(`${baseUrl}/?autostart=1&debugBossToken=KURT_DEBUG_2026&startLevel=3`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await level3Page.goto(withQuery(baseUrl, { autostart: '1', debugBossToken: 'NOVA_DEBUG_2026', startLevel: '3' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
     await level3Page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
     await stabilizeSmokePlayer(level3Page);
     await level3Page.waitForFunction(() => {
@@ -632,8 +662,8 @@ async function runSmoke() {
 
     const transitionPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(transitionPage, 'wave-transition');
-    await transitionPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await transitionPage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
+    await transitionPage.goto(withQuery(baseUrl, { autostart: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await transitionPage.waitForFunction(() => window.__game?.currentSceneName === 'play', null, { timeout: 15000 });
     await stabilizeSmokePlayer(transitionPage);
     await transitionPage.waitForFunction(() => {
       try {
@@ -687,7 +717,7 @@ async function runSmoke() {
 
     const bossPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(bossPage, 'boss-victory');
-    await bossPage.goto(`${baseUrl}/?autostart=1&debugBossToken=KURT_DEBUG_2026&startAtBoss=1&startLevel=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await bossPage.goto(withQuery(baseUrl, { autostart: '1', debugBossToken: 'NOVA_DEBUG_2026', startAtBoss: '1', startLevel: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
     await bossPage.screenshot({ path: path.join(outputDir, '12-boss-gate.png'), fullPage: true });
     await bossPage.waitForFunction(() => {

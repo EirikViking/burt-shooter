@@ -1135,10 +1135,10 @@ export class Player {
 
   getPowerupLabel(type) {
     const labels = {
-      isbjorn: 'ISBJORN',
-      kjottdeig: 'KJOTTDEIG',
-      rolp: 'ROLP',
-      deili: 'DEILI',
+      isbjorn: 'TRIPLE BEAM',
+      kjottdeig: 'VECTOR BOOST',
+      rolp: 'RAPID CABINET',
+      deili: 'OVERDRIVE CORE',
       slow_time: 'SLOW TIME',
       ghost: 'GHOST',
       shield: 'SHIELD',

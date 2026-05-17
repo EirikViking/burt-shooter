@@ -4,7 +4,7 @@ import { getHighscoreComment, getEnhancedLeaderboardTaunt } from '../text/phrase
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
-import { BeerAsset } from '../utils/BeerAsset.js';
+import { BonusAsset } from '../utils/BeerAsset.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { getRankFromScore, getRankTitle } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
@@ -87,14 +87,14 @@ export class HighscoreScene {
     this.bubbleTimerMs = null;
     this.walletPanels = new Map();
 
-    // Load beer can texture and rank textures
-    await BeerAsset.ensureLoaded();
+    // Load bonus-core texture and rank textures
+    await BonusAsset.ensureLoaded();
     await RankAssets.preloadHighscoreBadges();
 
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height);
 
-    // Layer setup: large beer cans -> beer cans -> party heads -> confetti -> leaderboard panel -> content -> taunt banner -> scanline
+    // Layer setup: bonus cores -> comms portraits -> confetti -> leaderboard panel -> content -> taunt banner -> scanline
     this.largeBeerCansContainer = new PIXI.Container();
     this.largeBeerCansContainer.zIndex = -15;
     this.container.addChild(this.largeBeerCansContainer);
@@ -136,7 +136,7 @@ export class HighscoreScene {
     this.title.anchor.set(0.5);
     this.container.addChild(this.title);
 
-    this.subtitle = createText('Stokmarknes sine beste', {
+    this.subtitle = createText('Arcade legends and brave initials', {
       fontFamily: 'Courier New',
       fontSize: getResponsiveFontSize(layout, 'subtitle'),
       fill: '#00ffff'
@@ -914,7 +914,7 @@ export class HighscoreScene {
 
   setupLargeBeerCans(width, height) {
     this.largeBeerCans = [];
-    const texture = BeerAsset.getTexture();
+    const texture = BonusAsset.getTexture();
     if (!texture || texture === PIXI.Texture.EMPTY) return;
 
     const largeCanCount = 3;
@@ -948,7 +948,7 @@ export class HighscoreScene {
 
   setupBeerCans(width, height) {
     this.beerCans = [];
-    const texture = BeerAsset.getTexture();
+    const texture = BonusAsset.getTexture();
     if (!texture || texture === PIXI.Texture.EMPTY) return;
 
     const canCount = 5;
@@ -1107,7 +1107,7 @@ export class HighscoreScene {
       const dtSec = Math.min(0.05, (delta.deltaMS || 16.67) / 1000);
       const { width, height } = this.game.app.screen;
 
-      // Animate large beer cans (background)
+      // Animate large bonus cores (background)
       this.largeBeerCans.forEach(can => {
         can.x += can._driftX * dtSec;
         can.y += can._driftY * dtSec;
@@ -1120,7 +1120,7 @@ export class HighscoreScene {
         if (can.y > height + can.height) can.y = -can.height / 2;
       });
 
-      // Animate beer cans
+      // Animate bonus cores
       this.beerCans.forEach(can => {
         can.x += can._driftX * dtSec;
         can.y += can._driftY * dtSec;

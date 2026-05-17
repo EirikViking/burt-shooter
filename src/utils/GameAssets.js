@@ -3,7 +3,7 @@ import * as PIXI from 'pixi.js';
 
 class GameAssetsManager {
     constructor() {
-        this.beerTexture = null;
+        this.bonusCoreTexture = null;
         this.photos = {};
         this.photoList = AssetManifest.loreImages;
         this.crewPortraitList = AssetManifest.generated?.crewPortraits || [];
@@ -13,53 +13,42 @@ class GameAssetsManager {
         this.rankShipList = AssetManifest.sprites.playerRankShips || [];
     }
 
-    async ensureBeerTexture() {
-        // Alias for compatibility if needed, using the store variable
-        if (this.isValidTexture(this.beerTexture)) return this.beerTexture;
+    async ensureBonusCoreTexture() {
+        if (this.isValidTexture(this.bonusCoreTexture)) return this.bonusCoreTexture;
 
         try {
             const tex = await PIXI.Assets.load({
-                alias: 'beervan',
-                src: AssetManifest.sprites.beervan
+                alias: 'bonus_core',
+                src: AssetManifest.sprites.bonusCore
             });
 
-            this.beerTexture = tex;
+            this.bonusCoreTexture = tex;
 
-            console.log('[BEER][ASSET]', {
-                isTexture: this.beerTexture instanceof PIXI.Texture,
-                w: this.beerTexture?.width,
-                h: this.beerTexture?.height,
-                url: AssetManifest.sprites.beervan
+            console.log('[BONUS][ASSET]', {
+                isTexture: this.bonusCoreTexture instanceof PIXI.Texture,
+                w: this.bonusCoreTexture?.width,
+                h: this.bonusCoreTexture?.height,
+                url: AssetManifest.sprites.bonusCore
             });
 
-            return this.beerTexture;
+            return this.bonusCoreTexture;
         } catch (e) {
-            console.error('[GameAssets] Failed to load beer asset:', e);
+            console.error('[GameAssets] Failed to load bonus core asset:', e);
             return null;
         }
     }
 
-    // Backwards compatibility if other files call loadBeer
-    async loadBeer() {
-        return this.ensureBeerTexture();
+    async ensureBeerTexture() {
+        return this.ensureBonusCoreTexture();
     }
 
-    useLegacyPhotos() {
-        if (typeof window === 'undefined') return false;
-        try {
-            const params = new URLSearchParams(window.location.search);
-            return params.get('legacyPhotos') === '1' ||
-                window.localStorage?.getItem('burtLegacyPhotos') === '1';
-        } catch {
-            return false;
-        }
+    async loadBeer() {
+        return this.ensureBonusCoreTexture();
     }
 
     getLorePhotoList() {
         if (!this.crewPortraitList.length) return this.photoList;
-        return this.useLegacyPhotos()
-            ? [...this.crewPortraitList, ...this.photoList]
-            : this.crewPortraitList;
+        return this.crewPortraitList;
     }
 
     async loadPhotos() {
@@ -93,16 +82,19 @@ class GameAssetsManager {
         });
 
         await Promise.all(promises);
-        console.log('[GameAssets] Lore portraits loaded:', Object.keys(this.photos));
+        console.log('[GameAssets] Comms portraits loaded:', Object.keys(this.photos));
+    }
+
+    getBonusCoreTexture() {
+        return this.bonusCoreTexture;
     }
 
     getBeerTexture() {
-        return this.beerTexture;
+        return this.getBonusCoreTexture();
     }
 
-    // Alias
     getBeer() {
-        return this.getBeerTexture();
+        return this.getBonusCoreTexture();
     }
 
     getPhoto(alias) {
@@ -306,13 +298,13 @@ class GameAssetsManager {
             '/sprites/xtra-sprites/Power-ups/powerupYellow_bolt.png',
             this.xtra.powerups
         ));
-        // Isbjorn powerup - yellow pill
+        // Triple-beam powerup - yellow pill
         powerupPromises.push(this.loadSingleAsset(
             'xtra_powerup_isbjorn',
             '/sprites/xtra-sprites/Power-ups/pill_yellow.png',
             this.xtra.powerups
         ));
-        // Kjottdeig powerup - red pill
+        // Vector-boost powerup - red pill
         powerupPromises.push(this.loadSingleAsset(
             'xtra_powerup_kjottdeig',
             '/sprites/xtra-sprites/Power-ups/pill_red.png',

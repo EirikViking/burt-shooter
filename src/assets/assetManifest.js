@@ -3,26 +3,21 @@ export const AssetManifest = {
         menuBackdrop: '/art/generated/burt-shooter-arctic-menu-bg.webp',
         stormGameplayBackdrop: '/art/generated/burt-shooter-storm-gameplay-bg.webp',
         bossDossier: '/art/generated/burt-shooter-boss-dossier.png',
+        introPanels: [
+            '/art/generated/nova-swarm/nova-swarm-intro-launch.webp',
+            '/art/generated/nova-swarm/nova-swarm-intro-formations.webp',
+            '/art/generated/nova-swarm/nova-swarm-intro-hero-run.webp',
+            '/art/generated/nova-swarm/nova-swarm-intro-boss-arena.webp'
+        ],
+        shipHangar: '/art/generated/nova-swarm/nova-swarm-ship-hangar.webp',
         crewPortraits: [
             '/art/generated/burt-shooter-crew-navigator.png',
             '/art/generated/burt-shooter-crew-pilot.png'
         ]
     },
 
-    // Lore & Character Images (Root /public)
-    loreImages: [
-        '/eirik1.jpg',
-        '/kurt2.jpg',
-        '/eirik_briller.jpg',
-        '/eirik_kurt2.jpg',
-        '/burtelurt.jpg',
-        '/anja.png',
-        '/eriikviking.webp',
-        '/morten_whale.jpg',
-        '/wieik_shorts.jpg',
-        '/eirikanja.jpg',
-        '/19904965_10154611409746437_4832768224138573801_n.jpg'
-    ],
+    // Original generated comms portraits only. Real-person photos are not shipped.
+    loreImages: [],
 
     // Sprites
     sprites: {
@@ -129,7 +124,7 @@ export const AssetManifest = {
         },
 
         // Powerups
-        beervan: '/beervan.png'
+        bonusCore: '/sprites/xtra-sprites/Power-ups/powerupYellow_star.png'
     },
 
     // Audio Assets
@@ -152,13 +147,18 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_life_low.mp3',
             '/audio/voice/mission-control/mission_control_powerup.mp3',
             '/audio/voice/mission-control/mission_control_victory.mp3',
-            '/audio/voice/mission-control/mission_control_game_over.mp3'
+            '/audio/voice/mission-control/mission_control_game_over.mp3',
+            '/audio/voice/nova-swarm/intro_narrator_01.mp3',
+            '/audio/voice/nova-swarm/intro_narrator_02.mp3',
+            '/audio/voice/nova-swarm/intro_narrator_03.mp3',
+            '/audio/voice/nova-swarm/intro_narrator_04.mp3'
         ],
         music: [
             '/audio/music/Alone Against Enemy.mp3', '/audio/music/Battle in the Stars.mp3', '/audio/music/Brave Pilots (Menu Screen).mp3',
             '/audio/music/DeathMatch (Boss Theme).mp3', '/audio/music/Defeated (Game Over Tune).mp3', '/audio/music/Rain of Lasers.mp3',
             '/audio/music/SkyFire (Title Screen).mp3', '/audio/music/Space Heroes.mp3', '/audio/music/Victory Tune.mp3',
-            '/audio/music/Without Fear.mp3', '/audio/music/bgm_v2.mp3'
+            '/audio/music/Without Fear.mp3', '/audio/music/bgm_v2.mp3',
+            '/audio/music/nova-swarm/nova_swarm_intro_overture.mp3'
         ],
         sfx: [
             // Computer Noise
@@ -187,7 +187,13 @@ export const AssetManifest = {
             '/audio/sfx/spaceEngineSmall_000.mp3', '/audio/sfx/spaceEngineSmall_001.mp3', '/audio/sfx/spaceEngineSmall_002.mp3', '/audio/sfx/spaceEngineSmall_003.mp3', '/audio/sfx/spaceEngineSmall_004.mp3',
             '/audio/sfx/spaceEngine_000.mp3', '/audio/sfx/spaceEngine_001.mp3', '/audio/sfx/spaceEngine_002.mp3', '/audio/sfx/spaceEngine_003.mp3',
             // Thrusters
-            '/audio/sfx/thrusterFire_000.mp3', '/audio/sfx/thrusterFire_001.mp3', '/audio/sfx/thrusterFire_002.mp3', '/audio/sfx/thrusterFire_003.mp3', '/audio/sfx/thrusterFire_004.mp3'
+            '/audio/sfx/thrusterFire_000.mp3', '/audio/sfx/thrusterFire_001.mp3', '/audio/sfx/thrusterFire_002.mp3', '/audio/sfx/thrusterFire_003.mp3', '/audio/sfx/thrusterFire_004.mp3',
+            // ElevenLabs original Nova Swarm polish
+            '/audio/sfx/nova-swarm/intro_panel_whoosh.mp3',
+            '/audio/sfx/nova-swarm/coin_portal_open.mp3',
+            '/audio/sfx/nova-swarm/swarm_chatter_stinger.mp3',
+            '/audio/sfx/nova-swarm/boss_reveal_stinger.mp3',
+            '/audio/sfx/nova-swarm/start_game_confirm.mp3'
         ]
     },
 
@@ -198,6 +204,7 @@ export const AssetManifest = {
         'tufs': { projectile: '/sprites/xtra-sprites/Lasers/laserBlue11.png', flashColor: 0x0088ff, impactColor: 0x0088ff, sound: 'enemy_shoot' },
         'deili': { projectile: '/sprites/xtra-sprites/Lasers/laserRed15.png', flashColor: 0xff4400, impactColor: 0xff4400, sound: 'enemy_shoot' },
         'rolp': { projectile: '/sprites/xtra-sprites/Lasers/laserBlue05.png', flashColor: 0xff00ff, impactColor: 0xff00ff, sound: 'enemy_shoot' },
+        'bonus_challenge': { projectile: '/sprites/xtra-sprites/Lasers/laserGreen08.png', flashColor: 0x00ff00, impactColor: 0x00ff00, sound: 'enemy_shoot' },
         'beer_challenge': { projectile: '/sprites/xtra-sprites/Lasers/laserGreen08.png', flashColor: 0x00ff00, impactColor: 0x00ff00, sound: 'enemy_shoot' }
     },
 
@@ -252,7 +259,7 @@ export const AssetManifest = {
             ]
         },
 
-        // Hijacker Enemy Feature (Galaga-inspired, optional)
+        // Hijacker enemy feature (classic arcade formation trick, optional)
         hijacker: {
             ships: [
                 '/sprites/xtra-sprites/ufoBlue.png',

@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { BeerAsset } from '../utils/BeerAsset.js';
+import { BonusAsset } from '../utils/BeerAsset.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { BUILD_ID } from '../buildInfo.js';
@@ -39,6 +39,7 @@ export class MenuScene {
     this.disclaimer = null;
     this.startBtn = null;
     this.highscoreBtn = null;
+    this.storyBtn = null;
     this.settingsBtn = null;
     this.musicBtn = null;
     this.controls = null;
@@ -77,7 +78,7 @@ export class MenuScene {
     GameAssets.loadBeer().then(() => {
       GameAssets.loadPhotos().then(() => {
         GameAssets.loadShips().then(() => {
-          this.initBeerDecorations();
+          this.initBonusDecorations();
         });
       });
     });
@@ -234,8 +235,8 @@ export class MenuScene {
     try {
       // 1. Explicitly load the asset (async/await)
       const texture = await PIXI.Assets.load({
-        alias: 'beervan',
-        src: AssetManifest.sprites.beervan
+        alias: 'bonus_core',
+        src: AssetManifest.sprites.bonusCore
       });
 
       // 2. Validate texture BEFORE using dimensions
@@ -246,7 +247,7 @@ export class MenuScene {
 
       // 3. Create Sprite
       const sprite = new PIXI.Sprite(texture);
-      sprite.label = 'DebugBeerVan';
+      sprite.label = 'DebugBonusCore';
       sprite.anchor.set(0.5);
 
       // 4. Set dimensions safely
@@ -268,7 +269,7 @@ export class MenuScene {
       console.log('DEBUG: Debug sprite added to container at', sprite.x, sprite.y);
 
     } catch (e) {
-      console.error('DEBUG: Error loading beervan', e);
+      console.error('DEBUG: Error loading bonus core', e);
       // Fallback visual
       const { width, height } = this.game.app.screen;
       const errText = createText('LOAD FAIL', { fill: 'red', fontSize: 24 });
@@ -501,7 +502,7 @@ export class MenuScene {
     const titleSize = getResponsiveFontSize(layout, 'title');
     const titleBlur = layout.isMobile ? 4 : 8;
 
-    this.title = createText('BURT SHOOTER', {
+    this.title = createText('NOVA SWARM', {
       fontFamily: 'Courier New',
       fontSize: titleSize,
       fill: '#00ffff',
@@ -519,7 +520,7 @@ export class MenuScene {
     this.container.addChild(this.title);
 
     const subtitleSize = getResponsiveFontSize(layout, 'subtitle');
-    this.subtitle = createText('Kurt Edgar & Eirik sitt Galaga', {
+    this.subtitle = createText('Classic arcade shooting with a modern swarm of jokes', {
       fontFamily: 'Courier New',
       fontSize: subtitleSize,
       fill: '#ff00ff',
@@ -532,7 +533,7 @@ export class MenuScene {
     const storySize = getResponsiveFontSize(layout, 'body');
     const storyLineHeight = Math.round(storySize * 1.5);
     this.flavor = createText(
-      'Stokmarknes er under angrep!\nRølp, gris og mongo invaderer.\nKun Eirik kan redde dagen.',
+      'The alien formation union has gone rogue.\nDodge the patterns, roast the swarm, chase the high score.',
       {
         fontFamily: 'Courier New',
         fontSize: storySize,
@@ -569,7 +570,7 @@ export class MenuScene {
     this.disclaimer.alpha = 0;
     this.container.addChild(this.disclaimer);
 
-    this.startBtn = this.createButton('START SPILL', layout);
+    this.startBtn = this.createButton('START GAME', layout);
     this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
       try {
@@ -596,6 +597,19 @@ export class MenuScene {
       }
     });
     this.container.addChild(this.highscoreBtn);
+
+    this.storyBtn = this.createButton('STORY INTRO', layout);
+    this.storyBtn.alpha = 0;
+    this.storyBtn.on('pointerdown', () => {
+      try {
+        AudioManager.init();
+        AudioManager.playSfx('coin_portal_open', { force: true, volume: 0.55 });
+        this.game.showIntro();
+      } catch (e) {
+        console.error('[MenuScene] Story Intro Error:', e);
+      }
+    });
+    this.container.addChild(this.storyBtn);
 
     this.settingsBtn = this.createButton('SETTINGS', layout);
     this.settingsBtn.alpha = 0;
@@ -629,7 +643,7 @@ export class MenuScene {
     this.controls.anchor.set(0.5);
     this.container.addChild(this.controls);
 
-    this.easter = createText('Burt Shooter // Arctic Arcade Build', {
+    this.easter = createText('Nova Swarm // Arcade Patrol Build', {
       fontFamily: 'Courier New',
       fontSize: 10,
       fill: '#58717f'
@@ -638,7 +652,7 @@ export class MenuScene {
     this.container.addChild(this.easter);
 
     // Mute/Music Toggle (Small corner button)
-    this.musicBtn = this.createButton('MUSIKK: PÅ', layout);
+    this.musicBtn = this.createButton('MUSIC: ON', layout);
     // Overwrite style for small button
     const scale = 0.6;
     this.musicBtn.scale.set(scale);
@@ -647,7 +661,7 @@ export class MenuScene {
         AudioManager.init();
         const enabled = AudioManager.toggleMute();
         const label = this.musicBtn._label;
-        label.text = enabled ? 'MUSIKK: PÅ' : 'MUSIKK: AV';
+        label.text = enabled ? 'MUSIC: ON' : 'MUSIC: OFF';
         label.updateText?.(false);
       } catch (e) {
         console.error('[MenuScene] Music Toggle Error:', e);
@@ -666,13 +680,13 @@ export class MenuScene {
     this.container.addChild(this.buildStamp);
   }
 
-  async initBeerDecorations() {
+  async initBonusDecorations() {
     try {
-      const texture = await BeerAsset.ensureLoaded();
+      const texture = await BonusAsset.ensureLoaded();
 
       const { width, height } = this.game.app.screen;
 
-      // 1. HERO Beer (LEFT side - large, prominent, animated)
+      // 1. Hero bonus core (left side)
       const hero = new PIXI.Sprite(texture);
       hero.anchor.set(0.5);
       hero.height = 110;
@@ -685,10 +699,10 @@ export class MenuScene {
       this.container.addChild(hero);
 
       // Store for animation
-      this.heroBeer = hero;
+      this.heroBonusCore = hero;
       this.heroBaseY = hero.y;
 
-      // 2. Secondary Hero Beer (RIGHT side)
+      // 2. Secondary hero bonus core (right side)
       const hero2 = new PIXI.Sprite(texture);
       hero2.anchor.set(0.5);
       hero2.height = 100;
@@ -701,11 +715,11 @@ export class MenuScene {
       this.container.addChild(hero2);
 
       // Store for animation
-      this.heroBeer2 = hero2;
+      this.heroBonusCore2 = hero2;
       this.heroBaseY2 = hero2.y;
 
-      // 3. Floating cluster (More cans, more variation)
-      this.floatingBeers = [];
+      // 3. Floating bonus-core cluster
+      this.floatingBonusCores = [];
       for (let i = 0; i < 3; i++) {
         const sprite = new PIXI.Sprite(texture);
         sprite.anchor.set(0.5);
@@ -731,11 +745,11 @@ export class MenuScene {
         sprite.zIndex = 1; // Just above stars
 
         this.container.addChild(sprite);
-        this.floatingBeers.push(sprite);
+        this.floatingBonusCores.push(sprite);
       }
 
     } catch (e) {
-      console.error('Menu beer decorations failed:', e);
+      console.error('Menu bonus decorations failed:', e);
     }
   }
 
@@ -786,7 +800,7 @@ export class MenuScene {
     const titleHeight = this.title.height || titleSize * 1.2;
     const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
     const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
-    const buttonsHeight = buttonHeight * 2 + buttonSpacing;
+    const buttonsHeight = buttonHeight * 4 + buttonSpacing * 3;
     const disclaimerHeight = this.disclaimer.height || disclaimerSize * 2;
 
     // Spacing between sections: title->subtitle, subtitle->flavor, flavor->buttons, buttons->disclaimer
@@ -825,6 +839,10 @@ export class MenuScene {
     this.highscoreBtn.y = stack.getCurrentY();
     stack.addGap(buttonHeight + buttonSpacing);
 
+    this.storyBtn.x = width / 2;
+    this.storyBtn.y = stack.getCurrentY();
+    stack.addGap(buttonHeight + buttonSpacing);
+
     this.settingsBtn.x = width / 2;
     this.settingsBtn.y = stack.getCurrentY();
     stack.addGap(buttonHeight + sectionSpacing);
@@ -851,16 +869,6 @@ export class MenuScene {
       this.buildStamp.y = height - layout.padding / 2;
     }
 
-    // Reposition beer cans
-    if (this.leftBeer) {
-      this.leftBeer.x = width * 0.15;
-      this.leftBeer.y = height * 0.3;
-    }
-    if (this.rightBeer) {
-      this.rightBeer.x = width * 0.85;
-      this.rightBeer.y = height * 0.3;
-    }
-
     // Reposition install button if exists
     if (this.installButton && this.installButton.visible) {
       this.installButton.x = width / 2;
@@ -870,12 +878,12 @@ export class MenuScene {
 
   getControlsText(layout) {
     return layout.isMobile
-      ? 'Joystick: Beveg | FIRE-knapp: Skyt'
-      : 'WASD/Piler/Stick: Beveg | Space/A: Skyt | Shift/B: Dodge | P/Start: Pause';
+      ? 'Joystick: Move | FIRE button: Shoot'
+      : 'WASD/Arrows/Stick: Move | Space/A: Shoot | Shift/B: Dodge | P/Start: Pause';
   }
 
   getDisclaimerText(layout) {
-    const objective = 'DEFEND STOKMARKNES // SURVIVE THE BOSS WAVES';
+    const objective = 'DEFEND THE CABINET // SURVIVE THE BOSS WAVES';
     return layout.isMobile ? objective : `${objective}\n${this.getControlsText(layout)}`;
   }
 
@@ -975,8 +983,9 @@ export class MenuScene {
     this.animateElement(this.flavor, 0.6, 0.5);
     this.animateElement(this.startBtn, 0.9, 0.4);
     this.animateElement(this.highscoreBtn, 1.1, 0.4);
-    this.animateElement(this.settingsBtn, 1.25, 0.4);
-    this.animateElement(this.disclaimer, 1.4, 0.4);
+    this.animateElement(this.storyBtn, 1.25, 0.4);
+    this.animateElement(this.settingsBtn, 1.35, 0.4);
+    this.animateElement(this.disclaimer, 1.5, 0.4);
   }
 
   openSettingsOverlay() {
@@ -989,7 +998,7 @@ export class MenuScene {
       onClose: () => {
         this.settingsOverlay = null;
         if (this.musicBtn?._label) {
-          this.musicBtn._label.text = AudioManager.getSettings().musicEnabled ? 'MUSIKK: PÅ' : 'MUSIKK: AV';
+          this.musicBtn._label.text = AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF';
         }
       }
     });
@@ -1085,31 +1094,31 @@ export class MenuScene {
       });
     }
 
-    // Animate Hero Beers
-    if (this.heroBeer) {
-      this.heroBeer.y = this.heroBaseY + Math.sin(this.animationTime * 2) * 12;
-      this.heroBeer.rotation = -0.15 + Math.sin(this.animationTime) * 0.12;
+    // Animate hero bonus cores
+    if (this.heroBonusCore) {
+      this.heroBonusCore.y = this.heroBaseY + Math.sin(this.animationTime * 2) * 12;
+      this.heroBonusCore.rotation = -0.15 + Math.sin(this.animationTime) * 0.12;
     }
-    if (this.heroBeer2) {
-      this.heroBeer2.y = this.heroBaseY2 + Math.sin(this.animationTime * 1.7) * 10;
-      this.heroBeer2.rotation = 0.2 + Math.sin(this.animationTime * 1.3) * 0.1;
+    if (this.heroBonusCore2) {
+      this.heroBonusCore2.y = this.heroBaseY2 + Math.sin(this.animationTime * 1.7) * 10;
+      this.heroBonusCore2.rotation = 0.2 + Math.sin(this.animationTime * 1.3) * 0.1;
     }
 
-    // Animate Floating Beers
-    if (this.floatingBeers) {
-      this.floatingBeers.forEach(beer => {
-        beer.x += beer.driftSpeedX;
-        beer.y += beer.driftSpeedY;
-        beer.rotation += beer.rotSpeed;
+    // Animate floating bonus cores
+    if (this.floatingBonusCores) {
+      this.floatingBonusCores.forEach(core => {
+        core.x += core.driftSpeedX;
+        core.y += core.driftSpeedY;
+        core.rotation += core.rotSpeed;
 
         // Wrap around with respect to side columns
-        if (beer.y < -50) beer.y = this.game.app.screen.height + 50;
-        if (beer.y > this.game.app.screen.height + 50) beer.y = -50;
+        if (core.y < -50) core.y = this.game.app.screen.height + 50;
+        if (core.y > this.game.app.screen.height + 50) core.y = -50;
 
         // Horizontal constraint buffer
-        if (beer.boundsX) {
-          if (beer.x < beer.boundsX.min) beer.driftSpeedX = Math.abs(beer.driftSpeedX);
-          if (beer.x > beer.boundsX.max) beer.driftSpeedX = -Math.abs(beer.driftSpeedX);
+        if (core.boundsX) {
+          if (core.x < core.boundsX.min) core.driftSpeedX = Math.abs(core.driftSpeedX);
+          if (core.x > core.boundsX.max) core.driftSpeedX = -Math.abs(core.driftSpeedX);
         }
       });
     }

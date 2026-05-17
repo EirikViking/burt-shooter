@@ -2,10 +2,8 @@ const RECENT_LIMIT = 2;
 const recentByKey = new Map();
 
 function normalizeWeighted(items) {
-  return items.map(item => {
-    if (typeof item === 'string') {
-      return { value: item, weight: 1 };
-    }
+  return items.map((item) => {
+    if (typeof item === 'string') return { value: item, weight: 1 };
     return { value: item.value, weight: item.weight || 1 };
   });
 }
@@ -14,15 +12,14 @@ function weightedPick(items, key) {
   const list = normalizeWeighted(items);
   const recent = recentByKey.get(key) || [];
   const filtered = list.length > 2
-    ? list.filter(item => !recent.includes(item.value))
+    ? list.filter((item) => !recent.includes(item.value))
     : list;
   const total = filtered.reduce((sum, item) => sum + item.weight, 0);
   let roll = Math.random() * total;
   for (const item of filtered) {
     roll -= item.weight;
     if (roll <= 0) {
-      const nextRecent = [...recent, item.value].slice(-RECENT_LIMIT);
-      recentByKey.set(key, nextRecent);
+      recentByKey.set(key, [...recent, item.value].slice(-RECENT_LIMIT));
       return item.value;
     }
   }
@@ -32,7 +29,7 @@ function weightedPick(items, key) {
 function mergeUnique(base, extra) {
   const seen = new Set(base);
   const merged = [...base];
-  extra.forEach(value => {
+  extra.forEach((value) => {
     if (!seen.has(value)) {
       merged.push(value);
       seen.add(value);
@@ -41,167 +38,79 @@ function mergeUnique(base, extra) {
   return merged;
 }
 
-const newPhrases = [
-  'Drekka!',
-  'Drekka sprit!',
-  'Sprit!',
-  'Skål!',
-  'Hæstkuk!',
-  'Grandiosa',
-  'Bæ bæ mø',
-  'Lille grisegutten',
-  'Våt mus',
-  'Hold kjæften!',
-  'Sjøge!',
-  'Lille dutten',
-  'Hut dæ heim',
-  'Jatta jatta',
-  'Jatta jatta',
-  // New Additions (Boosted)
-  'Stokmarknes og Melbu energi',
-  'Stokmarknes og Melbu energi',
-  'Stokmarknes og Melbu energi',
-  'Stokmarknes klokken litt for sent',
-  'Stokmarknes klokken litt for sent',
-  'Melbu stemning på feil side av midnatt',
-  'Melbu stemning på feil side av midnatt',
-  'Hurtigruta gikk, men festen ble igjen',
-  'Nordlys i blikket, øl i hånda',
-  'Det lukter kai, diesel og dårlige valg',
-  'Småby, store ambisjoner, tomme glass',
-  'Dette hadde aldri gått i Harstad',
-  'Alle kjenner alle, ingen husker noe',
-  'Klassisk Vesterålen avgjørelse',
-  'Kurt Edgar sa dette var en god idé',
-  'Kurt Edgar godkjente dette etter tredje øl',
-  'Dette er helt innenfor ifølge Kurt Edgar',
-  'Kurt Edgar ville kalt dette lett oppvarming',
-  'Kurt Edgar er stolt nå',
-  'Kurt Edgar nikker anerkjennende',
-  'Kurt Edgar har sett verre',
-  'Kurt Edgar overlevde dette på nittitallet',
-  'Kurt Edgar anbefaler én til',
-  'Eirik burde visst bedre',
-  'Eirik gjør det igjen',
-  'Eirik med selvtillit langt over ferdighetsnivå',
-  'Eirik tenkte dette var lurt',
-  'Eirik ignorerte alle varsler',
-  'Eirik kjører på',
-  'Eirik er i flytsonen nå',
-  'Eirik fant rytmen etter tredje runde',
-  'Eirik nekter å gi seg',
-  'Øl nummer som ikke burde telles',
-  'Dette er ikke den første',
-  'Det var en tabbe å bytte type øl',
-  'Kroppen sier nei, hjertet sier ja',
-  'Dette startet uskyldig',
-  'Nå er det for sent å snu',
-  'Klassisk overmot etter pils',
-  'Øl først, konsekvenser senere',
-  'Dette eskalerte raskt',
-  'Litt for god stemning',
-  'Full kontroll, nesten',
-  'Dette var planlagt',
-  'Kaosmodus aktivert',
-  'Null struktur, maks innsats',
-  'Improvisasjon på høyt nivå',
-  'Dette holder akkurat',
-  'Overlevd på ren vilje',
-  'Panikk men med stil',
-  'Ingen vet hva som skjer nå',
-  'Dette burde ikke fungere',
-  'Noen ringte taxisentralen',
-  'Dette forklarer mye',
-  'Historien blir bedre i morgen',
-  'Ingen tar ansvar',
-  'Dette blir nevnt i årevis',
-  'Noen filmet dette',
-  'Klassisk kveld som sporet av',
-  'Dette var ikke på planen',
-  'Dette går rett i bygdehistorien',
-  'Absolutt kaos',
-  'Fullstendig nydelig rot',
-  'Dette er helt feil',
-  'Dette er helt riktig',
-  'Ingen angrer ennå',
-  'Fremdeles stående',
-  'Overraskende solid',
-  'Mer flaks enn forstand',
-  'Ren viljestyrke',
-  'Ingen lærdom tatt'
+const arcadePhrases = [
+  'Insert coin. Regret nothing.',
+  'The formation union filed a complaint.',
+  'Bonus stage detected.',
+  'Pixel insurance expired.',
+  'Cabinet buttons are doing their best.',
+  'The swarm brought choreography.',
+  'Attract mode has opinions.',
+  'One more run. Obviously.',
+  'Boss warning: dramatic entrance pending.',
+  'High score gravity increased.',
+  'The aliens rehearsed this.',
+  'Quarter economy unstable.',
+  'Laser etiquette suspended.',
+  'Formation leader lost the memo.',
+  'Stage manager panicking politely.',
+  'Arcade cabinet running hot.',
+  'Combo goblet filled with sparks.',
+  'Tiny ship. Large responsibilities.',
+  'Enemy pattern thinks it is clever.',
+  'Power pellet paperwork denied.',
+  'Retro danger, modern panic.',
+  'Your hitbox sends its regards.',
+  'The scoreboard is watching.',
+  'Swarm confidence: undeserved.',
+  'Boss cape budget approved.'
 ];
 
 const fragments = {
   leads: [
-    { value: 'Hør her', weight: 1.5 },
-    { value: 'Oi oi', weight: 1.2 },
-    { value: 'Nå skjer det', weight: 1.2 },
-    { value: 'Kurt sier', weight: 1.1 },
-    { value: 'Eirik roper', weight: 1.1 },
-    { value: 'Stokmarknes melder', weight: 1 },
-    { value: 'Melbu svarer', weight: 1 },
-    { value: 'Isbjørn status', weight: 0.9 },
-    { value: 'Kjøttdeig mode', weight: 0.9 },
-    { value: 'Arcade-geist', weight: 0.8 }
+    { value: 'Arcade Control', weight: 1.4 },
+    { value: 'Cabinet Alert', weight: 1.3 },
+    { value: 'Swarm Dispatch', weight: 1.2 },
+    { value: 'Quartermaster', weight: 1.1 },
+    { value: 'Formation Coach', weight: 1.1 },
+    { value: 'Pixel Radio', weight: 1.1 },
+    { value: 'Boss Scheduler', weight: 1 }
   ],
   verbs: [
-    { value: 'slenger', weight: 1.1 },
-    { value: 'gønner', weight: 1 },
-    { value: 'klapper til', weight: 1 },
-    { value: 'spammes', weight: 1 },
-    { value: 'hamrer', weight: 0.9 },
-    { value: 'danser med', weight: 0.8 },
-    { value: 'rister', weight: 0.8 },
-    { value: 'tuter på', weight: 0.8 }
+    { value: 'reports', weight: 1.2 },
+    { value: 'questions', weight: 1 },
+    { value: 'overclocks', weight: 1 },
+    { value: 'misreads', weight: 0.9 },
+    { value: 'reroutes', weight: 0.9 },
+    { value: 'audits', weight: 0.9 },
+    { value: 'taunts', weight: 0.8 }
   ],
   objects: [
-    { value: 'Stokmarknes', weight: 1.1 },
-    { value: 'Melbu', weight: 1.1 },
-    { value: 'Kurt', weight: 1.1 },
-    { value: 'Eirik', weight: 1.1 },
-    { value: 'Kjøttdeig', weight: 1.1 },
-    { value: 'Isbjørn', weight: 1 },
-    { value: 'Rølp', weight: 1 },
-    { value: 'Gris', weight: 1 },
-    { value: 'Mongo', weight: 1 },
-    { value: 'Tufs', weight: 1 },
-    { value: 'Deili', weight: 1 },
-    { value: 'Svin', weight: 1 },
-    { value: 'Drekka!', weight: 2 },
-    { value: 'Drekka sprit!', weight: 2 },
-    { value: 'Sprit!', weight: 2 },
-    { value: 'Skål!', weight: 2 },
-    { value: 'Hæstkuk!', weight: 1.6 },
-    { value: 'Grandiosa', weight: 1.6 },
-    { value: 'Bæ bæ mø', weight: 1.6 },
-    { value: 'Lille grisegutten', weight: 1.6 },
-    { value: 'Våt mus', weight: 1.4 },
-    { value: 'Hold kjæften!', weight: 1.6 },
-    { value: 'Sjøge!', weight: 1.4 },
-    { value: 'Lille dutten', weight: 1.4 },
-    { value: 'Hut dæ heim', weight: 1.4 },
-    { value: 'Jatta jatta', weight: 1.6 }
+    { value: 'the bonus wave', weight: 1.2 },
+    { value: 'the hitbox', weight: 1.2 },
+    { value: 'the laser bill', weight: 1.1 },
+    { value: 'the popcorn formation', weight: 1.1 },
+    { value: 'the boss entrance', weight: 1.1 },
+    { value: 'the coin slot', weight: 1 },
+    { value: 'the swarm choreography', weight: 1 },
+    { value: 'the panic button', weight: 1 },
+    { value: 'the extra life committee', weight: 0.9 }
   ],
   tags: [
-    { value: 'arcade-dust', weight: 1 },
-    { value: 'buddy roast', weight: 1 },
-    { value: 'rølp deluxe', weight: 1 },
-    { value: 'overstyring', weight: 0.9 },
-    { value: 'i melkeskjegg', weight: 0.9 },
-    { value: 'på turbo', weight: 1.1 },
-    { value: 'uten filter', weight: 1.1 },
-    { value: 'med sprut', weight: 0.8 },
-    { value: 'med prikk', weight: 0.8 },
-    { value: 'med svor', weight: 0.8 },
-    { value: 'i bøtta', weight: 0.7 }
+    { value: 'classic cabinet energy', weight: 1.2 },
+    { value: 'maximum pew-pew compliance', weight: 1.1 },
+    { value: 'formation drama', weight: 1 },
+    { value: 'boss music confidence', weight: 1 },
+    { value: 'tiny ship heroics', weight: 1 },
+    { value: 'high-score nonsense', weight: 0.9 }
   ],
   closers: [
-    { value: 'Skål!', weight: 1.5 },
-    { value: 'Jatta jatta!', weight: 1.3 },
-    { value: 'Hut dæ heim!', weight: 1.2 },
-    { value: 'Drekka!', weight: 1.5 },
-    { value: 'Sprit!', weight: 1.3 },
-    { value: 'Bæ bæ mø!', weight: 1.2 }
+    { value: 'Keep firing.', weight: 1.3 },
+    { value: 'Dodge stylishly.', weight: 1.2 },
+    { value: 'Save the quarters.', weight: 1.1 },
+    { value: 'Mind the hitbox.', weight: 1.1 },
+    { value: 'Blame the formation.', weight: 1 },
+    { value: 'Boss soon.', weight: 1 }
   ]
 };
 
@@ -211,16 +120,14 @@ function buildCombo() {
   const object = weightedPick(fragments.objects, 'objects');
   const tag = weightedPick(fragments.tags, 'tags');
   const closer = weightedPick(fragments.closers, 'closers');
-
   const patterns = [
-    `${lead}: ${object} ${closer}`,
+    `${lead}: ${closer}`,
     `${lead} ${verb} ${object}.`,
-    `${object} – ${tag}.`,
-    `${lead} ${verb} ${object} – ${tag}.`,
+    `${object} - ${tag}.`,
+    `${lead} ${verb} ${object} - ${tag}.`,
     `${object}! ${closer}`,
     `${lead}. ${object}. ${closer}`
   ];
-
   return weightedPick(patterns, 'comboPatterns');
 }
 
@@ -229,9 +136,9 @@ function buildShortBurst() {
   const closer = weightedPick(fragments.closers, 'shortClosers');
   const patterns = [
     `${object}!`,
-    `${object} ${closer}`,
+    `${object}. ${closer}`,
     `${closer}`,
-    `${object} – ${closer}`
+    `${object} - ${closer}`
   ];
   return weightedPick(patterns, 'shortPatterns');
 }
@@ -245,7 +152,7 @@ export function extendLevelIntroTexts(base, level, isBossLevel) {
     intro,
     `Wave ${level}: ${buildCombo()}`,
     `Wave ${level}: ${buildShortBurst()}`,
-    `Wave ${level}: ${weightedPick(newPhrases, 'waveNew')}`,
+    `Wave ${level}: ${weightedPick(arcadePhrases, 'wavePhrases')}`,
     `Wave ${level}: ${weightedPick(fragments.objects, 'waveObjects2')}`
   ];
   return mergeUnique(baseList, generated);
@@ -254,7 +161,7 @@ export function extendLevelIntroTexts(base, level, isBossLevel) {
 export function extendBossNames(base) {
   const baseList = Array.isArray(base) ? base : [];
   const extras = [
-    `BOSS ${weightedPick(newPhrases, 'bossNew')}`,
+    `BOSS ${weightedPick(arcadePhrases, 'bossPhrases')}`,
     `BOSS ${weightedPick(fragments.objects, 'bossObjects2')}`,
     `BOSS ${buildShortBurst()}`
   ];
@@ -265,7 +172,7 @@ export function extendGameOverTexts(base) {
   const baseList = Array.isArray(base) ? base : [];
   const extras = [
     buildCombo().toUpperCase(),
-    `${weightedPick(newPhrases, 'gameOverNew').toUpperCase()}`,
+    `${weightedPick(arcadePhrases, 'gameOverPhrases').toUpperCase()}`,
     `${weightedPick(fragments.objects, 'gameOverObjects').toUpperCase()} OVERLOAD!`
   ];
   return mergeUnique(baseList, extras);
@@ -273,20 +180,19 @@ export function extendGameOverTexts(base) {
 
 export function getLoadingLines() {
   const titleOptions = [
-    'LASTER INN SPILLET...',
-    'LADER OPP RØLP-MOTOR...',
-    'KOKER KJØTTDEIG...',
-    'POLERER STOKMARKNES...',
-    'SPENNER FAST MELBU...'
+    'BOOTING ARCADE CABINET...',
+    'CALIBRATING HITBOX...',
+    'COUNTING QUARTERS...',
+    'WARMING LASERS...',
+    'CALLING THE FORMATION COACH...'
   ];
   const subtitleOptions = [
-    'Holder til i Melbu, men serveren står i Stokmarknes...',
+    'Polishing pixels and pretending this is regulation.',
     `Auto-boot: ${buildShortBurst()}`,
-    `Kurt & Eirik tester: ${buildCombo()}`,
-    `Laster isbjørn.exe – ${weightedPick(newPhrases, 'loadingNew')}`,
-    `Stokmarknes sier: ${weightedPick(newPhrases, 'loadingNew2')}`
+    `Cabinet test: ${buildCombo()}`,
+    `Loading bonus stage paperwork - ${weightedPick(arcadePhrases, 'loadingPhrases')}`,
+    `Swarm radio says: ${weightedPick(arcadePhrases, 'loadingPhrases2')}`
   ];
-
   return {
     title: weightedPick(titleOptions, 'loadingTitle'),
     subtitle: weightedPick(subtitleOptions, 'loadingSubtitle')
@@ -298,17 +204,17 @@ export function getMicroMessage(type) {
     case 'levelStart':
       return buildCombo();
     case 'pause':
-      return `PAUSE – ${buildShortBurst()}`;
+      return `PAUSE - ${buildShortBurst()}`;
     case 'resume':
-      return `KJØR – ${buildShortBurst()}`;
+      return `RESUME - ${buildShortBurst()}`;
     case 'lowHealth':
-      return `LAVT LIV – ${buildShortBurst()}`;
+      return `LOW LIFE - ${buildShortBurst()}`;
     case 'lifeLost':
-      return `LIV TAPT – ${buildShortBurst()}`;
+      return `SHIP DOWN - ${buildShortBurst()}`;
     case 'newWave':
-      return `NY WAVE – ${buildShortBurst()}`;
+      return `NEW WAVE - ${buildShortBurst()}`;
     case 'bossIntro':
-      return `BOSS – ${buildCombo()}`;
+      return `BOSS - ${buildCombo()}`;
     default:
       return buildShortBurst();
   }
@@ -317,35 +223,35 @@ export function getMicroMessage(type) {
 export function getAchievementPopup() {
   const achievements = [
     `Fake achievement: ${buildShortBurst()}`,
-    `100% rølp: ${buildCombo()}`,
-    `Kjappe fingre – ${buildShortBurst()}`,
-    `Stokmarknes boost – ${buildCombo()}`,
-    `Melbu bonus – ${buildShortBurst()}`,
-    `Kurt/Eirik synergy – ${buildCombo()}`
+    `Cabinet-approved chaos: ${buildCombo()}`,
+    `Button confidence - ${buildShortBurst()}`,
+    `Bonus multiplier - ${buildCombo()}`,
+    `Formation invoice - ${buildShortBurst()}`,
+    `One more run energy - ${buildCombo()}`
   ];
   return weightedPick(achievements, 'achievement');
 }
 
 export function getEnemyTaunt() {
   const taunts = [
-    `Fiender: ${buildShortBurst()}`,
-    `Rølp-linja: ${buildCombo()}`,
-    `Grisegutten ler – ${buildShortBurst()}`,
-    `Svinete snytt: ${buildCombo()}`,
-    `Mongo roper: ${buildShortBurst()}`,
-    `Tufs mumler: ${buildCombo()}`
+    `Enemy radio: ${buildShortBurst()}`,
+    `Formation line: ${buildCombo()}`,
+    `Popcorn ship laughs - ${buildShortBurst()}`,
+    `Boss intern says: ${buildCombo()}`,
+    `Swarm shouts: ${buildShortBurst()}`,
+    `Alien coach mutters: ${buildCombo()}`
   ];
   return weightedPick(taunts, 'taunt');
 }
 
 export function getGameOverComment(score, level) {
-  const scoreTag = score >= 10000 ? 'LEGENDARISK' : score >= 5000 ? 'SKAMSTERK' : 'RØLP-LAV';
+  const scoreTag = score >= 10000 ? 'CABINET LEGEND' : score >= 5000 ? 'SOLID RUN' : 'WARM-UP';
   const lines = [
-    `${scoreTag} SCORE – ${buildShortBurst()}`,
-    `Level ${level} stoppet deg – ${buildCombo()}`,
-    `Neste gang: ${buildShortBurst()}`,
-    `Kurt sier: ${buildShortBurst()}`,
-    `Eirik sier: ${buildCombo()}`
+    `${scoreTag} - ${buildShortBurst()}`,
+    `Level ${level} cashed in your quarter - ${buildCombo()}`,
+    `Next run: ${buildShortBurst()}`,
+    `Arcade Control says: ${buildShortBurst()}`,
+    `Swarm Dispatch says: ${buildCombo()}`
   ];
   return weightedPick(lines, 'gameOverComment');
 }
@@ -353,110 +259,66 @@ export function getGameOverComment(score, level) {
 export function getHighscoreComment(hasScores) {
   const lines = hasScores
     ? [
-      `Stokmarknes jubler – ${buildShortBurst()}`,
-      `Melbu applaud – ${buildCombo()}`,
-      `Kjøttdeig bonus: ${buildShortBurst()}`
+      `The cabinet remembers - ${buildShortBurst()}`,
+      `High-score orbit - ${buildCombo()}`,
+      `Bonus initials accepted: ${buildShortBurst()}`
     ]
     : [
-      `Ingen scores ennå – ${buildShortBurst()}`,
-      `Bli første: ${buildShortBurst()}`,
-      `Jatta jatta, skriv deg inn!`
+      `No scores yet - ${buildShortBurst()}`,
+      `Claim the first slot: ${buildShortBurst()}`,
+      'The scoreboard is lonely.'
     ];
   return weightedPick(lines, 'highscoreComment');
 }
 
 export function extendLocations(base) {
   const baseList = Array.isArray(base) ? base : [];
-  const extras = ['STOKMARKNES', 'MELBU', 'HADSEL', 'SORTLAND', 'LOFOTEN', 'KURT HQ', 'EIRIK ZONE'];
+  const extras = [
+    'ORBITAL ARCADE',
+    'NEON BELT',
+    'PIXEL DRIFT',
+    'BONUS SECTOR',
+    'CABINET CORE',
+    'LASER LANES',
+    'BOSS QUEUE'
+  ];
   return mergeUnique(baseList, extras);
 }
 
 export function getAllNewPhrases() {
-  return [...newPhrases];
+  return [...arcadePhrases];
 }
 
-// Trophy Room Taunt System - Top 3 trash talk Bottom 3
 const tauntTemplates = [
-  // Stokmarknes/Melbu energy
-  '{TAUNTER} roper fra kaia i Stokmarknes: {TARGET}, det der e ikkje score, det e symptoma!',
-  'Melbu klokka litt for seint: {TARGET}, du e på feil side av midnatt, og feil side av lista.',
-  '{TAUNTER}: {TARGET}, Hurtigruta gikk, men du blei igjen på bunn.',
-  'Det lukte kai og diesel. {TAUNTER}: {TARGET}, æ trur du mista aimen i råka.',
-  '{TAUNTER} til {TARGET}: Småby, store ambisjoner, men du klarte det ikkje.',
-
-  // Kurt Edgar wisdom
-  'Kurt Edgar sa: {TARGET}, dette hadde ikkje gått i Harstad heller. {TAUNTER} er enig.',
-  '{TAUNTER}: Kurt Edgar ville kalt deg lett oppvarming, {TARGET}.',
-  'Kurt Edgar nikker til {TAUNTER}, ser på {TARGET} og ryster på hodet.',
-  '{TAUNTER} siterer Kurt: {TARGET}, du må trene mer før du får øl.',
-
-  // Arcade taunts
-  '{TAUNTER} smeller bord: {TARGET}, toppen er fin, bunnen e trist!',
-  '{TARGET}, {TAUNTER} spør: Kødde du bare, eller?',
-  '{TAUNTER}: {TARGET}, æ venta mer, men fikk mindre.',
-  'Fra toppen ser {TAUNTER} ned på {TARGET}: Bæ bæ, lille dutten!',
-
-  // Beer/party culture
-  '{TAUNTER} til {TARGET}: Du telte feil øl, du telte feil score.',
-  '{TARGET}, dette e ikkje din fest. Hilsen {TAUNTER}.',
-  '{TAUNTER}: {TARGET}, du blei invitert, men du kom sist.',
-  'Øl nummer som ikkje burde telles: {TARGET}. Mvh {TAUNTER}.',
-
-  // Score comparisons
-  '{TAUNTER} ({SCORE_T}) til {TARGET} ({SCORE_B}): Se differansen?',
-  '{TARGET}, {TAUNTER} e {SCORE_T} poeng bedre. Det e langt.',
-  '{TAUNTER} level {LEVEL_T} til {TARGET} level {LEVEL_B}: Kom deg opp!',
-  '{TARGET}, toppen e {SCORE_T}, bunnen e {SCORE_B}. Du e bunnen. Hilsen {TAUNTER}.',
-
-  // Late night chaos
-  'Nordlys i blikket: {TAUNTER} skinner, {TARGET} slokner.',
-  '{TAUNTER} har full kontroll, {TARGET} har ingen.',
-  '{TARGET}, {TAUNTER} sa: Dette e kaos, men du e verst.',
-  'Klassisk kveld: {TAUNTER} vant, {TARGET} tapte.',
-
-  // Short and punchy
-  '{TAUNTER}: {TARGET}, jatta jatta, prøv igjen!',
-  '{TARGET}, hut dæ heim! - {TAUNTER}',
-  '{TAUNTER} til {TARGET}: Bæ bæ mø!',
-  '{TARGET}, hold kjæften og spill bedre! - {TAUNTER}',
-  '{TAUNTER}: {TARGET}, dette e hæstkuk!',
-
-  // Diesel/harbor vibes
-  '{TAUNTER}: {TARGET}, du lukter diesel og nederlag.',
-  'Kaia kaller: {TARGET}, du tilhører bunnen. {TAUNTER} på topp.',
-  '{TAUNTER} på brygga, {TARGET} i sjøen.',
-
-  // Confidence
-  '{TAUNTER} med selvtillit: {TARGET}, æ e ikkje redd for deg.',
-  '{TARGET}, {TAUNTER} kjører på, du kjører av.',
-  '{TAUNTER}: {TARGET}, æ vant før du starta.',
-
-  // Extra spicy (still playful)
-  '{TAUNTER}: {TARGET}, du e Grandiosa uten ost.',
-  '{TARGET} e våt mus, {TAUNTER} e løve.',
-  '{TAUNTER} til {TARGET}: Du e lille grisegutten, æ e sjefen.',
-  '{TARGET}, {TAUNTER} sa: Sjøge!',
-
-  // Final taunts
-  '{TAUNTER}: {TARGET}, this is Stokmarknes, not amateur hour.',
-  'Melbu stemning: {TAUNTER} vinner, {TARGET} kjemper.',
-  '{TARGET}, alle kjenner alle, men ingen husker deg. - {TAUNTER}',
-  '{TAUNTER}: {TARGET}, dette blir nevnt i årevis!',
-  'Kurt Edgar overlevde nittitallet, {TAUNTER} overlevde deg, {TARGET}.'
+  '{TAUNTER}: {TARGET}, your hitbox filed for vacation.',
+  '{TAUNTER}: {TARGET}, the cabinet ate your quarter.',
+  '{TAUNTER} sends {TARGET} a complimentary dodge tutorial.',
+  '{TARGET}, {TAUNTER} says the formation was not that complicated.',
+  '{TAUNTER}: {TARGET}, even the popcorn ships are concerned.',
+  '{TAUNTER} score {SCORE_T} to {TARGET} score {SCORE_B}: the scoreboard has receipts.',
+  '{TAUNTER} reached level {LEVEL_T}; {TARGET} reached level {LEVEL_B}. Boss music noticed.',
+  '{TARGET}, {TAUNTER} recommends more lasers and fewer excuses.',
+  '{TAUNTER}: {TARGET}, insert coin and try having spatial awareness.',
+  '{TARGET}, the bonus stage called. It wants a braver pilot. - {TAUNTER}',
+  '{TAUNTER}: {TARGET}, classic cabinet mistake. Very educational.',
+  '{TAUNTER}: {TARGET}, your ship moved like the joystick was sticky.',
+  '{TARGET}, {TAUNTER} says the swarm enjoyed the warm-up.',
+  '{TAUNTER}: {TARGET}, this was less bullet hell and more bullet oops.',
+  '{TAUNTER}: {TARGET}, boss queue denied your application.'
 ];
 
 export function getLeaderboardTaunt(targetName) {
   const allTaunts = [
-    '{TARGET}: Jatta jatta, prøv igjen!',
-    '{TARGET}: Hut dæ heim!',
-    '{TARGET}: Bæ bæ mø!',
-    '{TARGET}: Hold kjæften og spill bedre!',
-    '{TARGET}: Dette e hæstkuk!',
-    '{TARGET}: Du e for treig!',
-    '{TARGET}: Amatør!',
-    '{TARGET}: Se og lær!',
-    '{TARGET}: Stokmarknes eier deg!',
-    '{TARGET}: Kurt Edgar ville skammet seg!'
+    '{TARGET}: Insert coin. Try again.',
+    '{TARGET}: Mind the hitbox.',
+    '{TARGET}: The swarm is laughing politely.',
+    '{TARGET}: Dodge first, panic second.',
+    '{TARGET}: Your initials need revenge.',
+    '{TARGET}: Boss music was not impressed.',
+    '{TARGET}: Formation reading is fundamental.',
+    '{TARGET}: Pew harder.',
+    '{TARGET}: Arcade Control requests improvement.',
+    '{TARGET}: One more run fixes everything.'
   ];
   const taunt = weightedPick(allTaunts, 'leaderboardTaunt');
   return taunt.replace('{TARGET}', targetName);
