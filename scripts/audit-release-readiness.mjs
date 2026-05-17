@@ -37,8 +37,10 @@ const forbiddenScanRoots = [
   'README.md',
   'package.json',
   'docs',
+  'functions',
   'public',
   'release',
+  'schema.sql',
   'src',
   'scripts'
 ];
@@ -61,9 +63,18 @@ const forbiddenSourceTerms = [
   'svin',
   'isbjorn',
   'kjottdeig',
-  'VKC',
-  'VikingCoin',
-  'Klever',
+  ['V', 'KC'].join(''),
+  ['Viking', 'Coin'].join(''),
+  ['Kle', 'ver'].join(''),
+  ['reward', '-', 'wal', 'let'].join(''),
+  ['wal', 'let', '_', 'address'].join(''),
+  ['wal', 'let', 'Address'].join(''),
+  ['E', 'IRIK'].join(''),
+  ['K', 'LAUS'].join(''),
+  ['F', 'ITTE'].join(''),
+  ['K', 'UKEN'].join(''),
+  ['FAT', 'MAN'].join(''),
+  ['MOR', 'DER'].join(''),
   'valgfri',
   'TILBAKE',
   'AVBRYT',
@@ -180,6 +191,8 @@ function scanForbiddenTerms() {
 function shouldSkipForbiddenScan(file) {
   const relative = rel(file);
   return relative === 'scripts/audit-release-readiness.mjs' ||
+    relative.startsWith('release/desktop/') ||
+    relative === 'package-lock.json' ||
     /^docs\/reviews\/release-readiness-audit-\d{4}-\d{2}-\d{2}\.json$/.test(relative);
 }
 

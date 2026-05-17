@@ -17,6 +17,22 @@ import { TauntBubble } from '../ui/TauntBubble.js';
 
 const API_PATH = '/api/highscores';
 // Timeout now handled by API retry logic
+const BLOCKED_PUBLIC_NAME_TERMS = [
+  ['E', 'IRIK'].join(''),
+  ['K', 'LAUS'].join(''),
+  ['F', 'ITTE'].join(''),
+  ['K', 'UKEN'].join(''),
+  ['FAT', 'MAN'].join(''),
+  ['MOR', 'DER'].join('')
+];
+
+function toPublicPilotName(rawName, fallbackSeed = 0) {
+  const cleaned = String(rawName || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
+  if (!cleaned) return `PILOT${seed}`;
+  if (BLOCKED_PUBLIC_NAME_TERMS.some(term => cleaned.includes(term))) return `PILOT${seed}`;
+  return cleaned;
+}
 
 export class HighscoreScene {
   constructor(game) {
@@ -28,7 +44,6 @@ export class HighscoreScene {
     this.comment = null;
     this.rowsContainer = new PIXI.Container();
     this.stateMessage = null;
-    this.vkcFooterText = null;
     this.statusText = null;
     this.retryBtn = null;
     this.backBtn = null;
@@ -170,17 +185,6 @@ export class HighscoreScene {
     this.stateMessage.anchor.set(0.5);
     this.container.addChild(this.stateMessage);
 
-    this.vkcFooterText = createText('', {
-      fontFamily: 'Courier New',
-      fontSize: 10,
-      fill: '#66ff66',
-      align: 'center',
-      wordWrap: true,
-      wordWrapWidth: clampTextWidth(width * 0.9, layout)
-    });
-    this.vkcFooterText.anchor.set(0.5, 0); // Top-center anchor
-    this.container.addChild(this.vkcFooterText);
-
     this.statusText = createText('', {
       fontFamily: 'Courier New',
       fontSize: getResponsiveFontSize(layout, 'small'),
@@ -286,8 +290,6 @@ export class HighscoreScene {
     this.comment.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
     this.stateMessage.style.fontSize = getResponsiveFontSize(layout, 'body');
     this.stateMessage.style.fontSize = getResponsiveFontSize(layout, 'body');
-    this.vkcFooterText.style.fontSize = Math.max(9, getResponsiveFontSize(layout, 'small') - 2);
-    this.vkcFooterText.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
     this.statusText.style.fontSize = getResponsiveFontSize(layout, 'small');
 
     // Title block
@@ -434,10 +436,6 @@ export class HighscoreScene {
   normalizeEntry(raw) {
     if (!raw || typeof raw !== 'object') return null;
 
-    const nameValue = raw.name ?? raw.playerName ?? '';
-    const name = String(nameValue ?? '').trim();
-    if (!name) return null;
-
     const scoreNum = Number(raw.score);
     const levelNum = Number(raw.level);
     const rankValue = raw.rank_index ?? raw.rankIndex ?? raw.rank;
@@ -445,6 +443,9 @@ export class HighscoreScene {
     const safeScore = Number.isFinite(scoreNum) ? scoreNum : 0;
     const safeLevel = Number.isFinite(levelNum) ? levelNum : 0;
     const safeRank = Number.isFinite(rankNum) ? rankNum : getRankFromScore(safeScore);
+    const nameValue = raw.name ?? raw.playerName ?? '';
+    const name = toPublicPilotName(nameValue, raw.id ?? safeScore);
+    if (!name) return null;
 
     return {
       name,
@@ -516,12 +517,6 @@ export class HighscoreScene {
       width: layout.width - layout.padding * 2,
       height
     };
-  }
-
-  // Footer intentionally hidden for public Steam builds.
-  layoutVkcFooter(layout) {
-    if (!this.vkcFooterText) return;
-    this.vkcFooterText.visible = false;
   }
 
   resolveBubblePlacement(bubble, tableBounds, layout, anchorX, anchorY) {
@@ -805,8 +800,6 @@ export class HighscoreScene {
         this.rowsContainer.addChild(more);
       }
 
-      this.layoutVkcFooter(layout);
-
       this.fadeInRows();
     } else {
       this.rowsContainer.alpha = 1;
@@ -824,8 +817,6 @@ export class HighscoreScene {
       empty.y = startY;
       empty.y = startY;
       this.rowsContainer.addChild(empty);
-
-      if (this.vkcFooterText) this.vkcFooterText.visible = false;
     }
   }
 

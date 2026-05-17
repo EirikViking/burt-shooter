@@ -1,11 +1,10 @@
--- Database schema for BURT SHOOTER highscores
+-- Database schema for Nova Swarm highscores
 
 CREATE TABLE IF NOT EXISTS game_highscores (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   score INTEGER NOT NULL,
   level INTEGER NOT NULL,
-  wallet_address TEXT,
   created_at TEXT NOT NULL
 );
 

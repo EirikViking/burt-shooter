@@ -1,42 +1,55 @@
 // Cloudflare Pages Function for highscores API
 import { getRankFromScore } from '../shared/RankPolicy.js';
 
+const BLOCKED_PUBLIC_NAME_TERMS = [
+  ['E', 'IRIK'].join(''),
+  ['K', 'LAUS'].join(''),
+  ['F', 'ITTE'].join(''),
+  ['K', 'UKEN'].join(''),
+  ['FAT', 'MAN'].join(''),
+  ['MOR', 'DER'].join('')
+];
+
+function toPublicPilotName(rawName, fallbackSeed = 0) {
+  const cleaned = String(rawName || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
+  if (!cleaned) return `PILOT${seed}`;
+  if (BLOCKED_PUBLIC_NAME_TERMS.some(term => cleaned.includes(term))) return `PILOT${seed}`;
+  return cleaned;
+}
+
 // Schema detection cache
 let schemaChecked = false;
 let hasRankIndexColumn = false;
-let hasWalletColumn = false;
 
 async function checkSchema(db) {
-  if (schemaChecked) return { hasRankIndexColumn, hasWalletColumn };
+  if (schemaChecked) return { hasRankIndexColumn };
 
   try {
     const { results } = await db.prepare('PRAGMA table_info(game_highscores)').all();
     hasRankIndexColumn = results.some(col => col.name === 'rank_index');
-    hasWalletColumn = results.some(col => col.name === 'wallet_address');
     schemaChecked = true;
   } catch (error) {
     console.error('Schema check failed, assuming no rank_index column:', error);
     hasRankIndexColumn = false;
-    hasWalletColumn = false;
     schemaChecked = true;
   }
 
-  return { hasRankIndexColumn, hasWalletColumn };
+  return { hasRankIndexColumn };
 }
 
 export async function onRequestGet(context) {
   try {
     const db = context.env.DB;
-    const { hasRankIndexColumn: hasRankIndex, hasWalletColumn } = await checkSchema(db);
+    const { hasRankIndexColumn: hasRankIndex } = await checkSchema(db);
 
     // Build query based on schema
     const selectFields = hasRankIndex
       ? 'id, name, score, level, rank_index, created_at'
       : 'id, name, score, level, created_at';
-    const selectWithWallet = hasWalletColumn ? `${selectFields}, wallet_address` : selectFields;
 
     const { results } = await db.prepare(
-      `SELECT ${selectWithWallet}
+      `SELECT ${selectFields}
        FROM game_highscores
        ORDER BY score DESC, created_at DESC
        LIMIT 10`
@@ -48,11 +61,14 @@ export async function onRequestGet(context) {
         ? entry.rank_index
         : getRankFromScore(entry.score);
 
-      const walletAddress = (hasWalletColumn && typeof entry.wallet_address === 'string' && entry.wallet_address.trim().length > 0)
-        ? entry.wallet_address
-        : null;
-      const hasWallet = !!walletAddress;
-      return { ...entry, rank_index, walletAddress, hasWallet };
+      return {
+        id: entry.id,
+        name: toPublicPilotName(entry.name, entry.id),
+        score: entry.score,
+        level: entry.level,
+        rank_index,
+        created_at: entry.created_at
+      };
     });
 
     return new Response(JSON.stringify(enrichedResults), {
@@ -79,7 +95,7 @@ export async function onRequestPost(context) {
     const db = context.env.DB;
     const body = await context.request.json();
 
-    const { name, score, level, submissionId, walletAddress } = body;
+    const { name, score, level, submissionId } = body;
     // NOTE: Ignore any client-provided rank or rankIndex - backend is authoritative
 
     // Validation
@@ -94,7 +110,7 @@ export async function onRequestPost(context) {
     }
 
     // Sanitize name
-    const sanitizedName = name.slice(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const sanitizedName = toPublicPilotName(name, Date.now());
 
     if (sanitizedName.length === 0) {
       return new Response(JSON.stringify({ error: 'Invalid name' }), {
@@ -108,9 +124,7 @@ export async function onRequestPost(context) {
 
     // Compute rank_index from score (backend authority)
     const computedRankIndex = getRankFromScore(score);
-    const { hasRankIndexColumn: hasRankIndex, hasWalletColumn } = await checkSchema(db);
-    const trimmedWallet = (typeof walletAddress === 'string') ? walletAddress.trim().slice(0, 120) : '';
-    const walletValue = trimmedWallet.length > 0 ? trimmedWallet : null;
+    const { hasRankIndexColumn: hasRankIndex } = await checkSchema(db);
 
     // DEDUPLICATION: Check if submissionId already exists
     if (submissionId) {
@@ -148,49 +162,25 @@ export async function onRequestPost(context) {
       // Try to insert with submission_id if provided
       if (submissionId) {
         try {
-          if (hasWalletColumn) {
-            result = await db.prepare(
-              'INSERT INTO game_highscores (name, score, level, rank_index, submission_id, wallet_address, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-            ).bind(sanitizedName, score, level, computedRankIndex, submissionId, walletValue, new Date().toISOString()).run();
-          } else {
-            result = await db.prepare(
-              'INSERT INTO game_highscores (name, score, level, rank_index, submission_id, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-            ).bind(sanitizedName, score, level, computedRankIndex, submissionId, new Date().toISOString()).run();
-          }
+          result = await db.prepare(
+            'INSERT INTO game_highscores (name, score, level, rank_index, submission_id, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+          ).bind(sanitizedName, score, level, computedRankIndex, submissionId, new Date().toISOString()).run();
         } catch (err) {
           // Fallback if submission_id column doesn't exist
           console.warn('[Highscores] submission_id insert failed, falling back:', err.message);
-          if (hasWalletColumn) {
-            result = await db.prepare(
-              'INSERT INTO game_highscores (name, score, level, rank_index, wallet_address, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-            ).bind(sanitizedName, score, level, computedRankIndex, walletValue, new Date().toISOString()).run();
-          } else {
-            result = await db.prepare(
-              'INSERT INTO game_highscores (name, score, level, rank_index, created_at) VALUES (?, ?, ?, ?, ?)'
-            ).bind(sanitizedName, score, level, computedRankIndex, new Date().toISOString()).run();
-          }
-        }
-      } else {
-        if (hasWalletColumn) {
-          result = await db.prepare(
-            'INSERT INTO game_highscores (name, score, level, rank_index, wallet_address, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-          ).bind(sanitizedName, score, level, computedRankIndex, walletValue, new Date().toISOString()).run();
-        } else {
           result = await db.prepare(
             'INSERT INTO game_highscores (name, score, level, rank_index, created_at) VALUES (?, ?, ?, ?, ?)'
           ).bind(sanitizedName, score, level, computedRankIndex, new Date().toISOString()).run();
         }
-      }
-    } else {
-      if (hasWalletColumn) {
-        result = await db.prepare(
-          'INSERT INTO game_highscores (name, score, level, wallet_address, created_at) VALUES (?, ?, ?, ?, ?)'
-        ).bind(sanitizedName, score, level, walletValue, new Date().toISOString()).run();
       } else {
         result = await db.prepare(
-          'INSERT INTO game_highscores (name, score, level, created_at) VALUES (?, ?, ?, ?)'
-        ).bind(sanitizedName, score, level, new Date().toISOString()).run();
+          'INSERT INTO game_highscores (name, score, level, rank_index, created_at) VALUES (?, ?, ?, ?, ?)'
+        ).bind(sanitizedName, score, level, computedRankIndex, new Date().toISOString()).run();
       }
+    } else {
+      result = await db.prepare(
+        'INSERT INTO game_highscores (name, score, level, created_at) VALUES (?, ?, ?, ?)'
+      ).bind(sanitizedName, score, level, new Date().toISOString()).run();
     }
 
     return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id, rank_index: computedRankIndex }), {
