@@ -14,7 +14,7 @@ Boss gate and victory are now materially safer than the first recovery pass: a f
 
 The arctic/aurora direction is coherent across menu, gameplay, and game over. The cockpit HUD is readable on desktop and mobile, and the wave-briefing screenshot is now clean enough to read at a glance. Bullets and enemies remain visible against the dark background. Lore/flyby surfaces now default to original generated crew portraits instead of local real-person portrait assets, which is cleaner for public presentation.
 
-Historical note: this review originally called out competing toast moments around boss defeat, sector clear, combo, and repair messages. That focused UI clutter pass was completed on 2026-05-17 in build `v2026-05-17_19-42-24`; current evidence is tracked in `test-results/smoke-2026-05-17T17-44-02-942Z/` and `release/steam-screenshots/draft-2026-05-17-19-48/`.
+Historical note: this review originally called out competing toast moments around boss defeat, sector clear, combo, and repair messages. That focused UI clutter pass was completed on 2026-05-17 in build `v2026-05-17_19-42-24`; latest current-build screenshot evidence is tracked in `release/steam-screenshots/draft-2026-05-17-current/`.
 
 ## Audio, Music, And SFX
 

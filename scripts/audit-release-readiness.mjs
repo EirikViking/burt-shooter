@@ -19,7 +19,7 @@ const requiredFiles = [
   'release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_review_report.json',
   'release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png',
   'release/steam-assets/draft-2026-05-17-nova-swarm/review/small_capsule_thumbnail_sheet.png',
-  'release/steam-screenshots/draft-2026-05-17-19-48/report.json',
+  'release/steam-screenshots/draft-2026-05-17-current/report.json',
   'release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md',
   'release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png',
   'release/steam-trailer/draft-2026-05-17-current/report.json',
@@ -233,6 +233,14 @@ function readJson(relativePath) {
   return JSON.parse(readFileSync(full, 'utf8'));
 }
 
+function currentBuildVersion() {
+  try {
+    return readJson('public/version.json')?.version || null;
+  } catch {
+    return null;
+  }
+}
+
 function checkJsonReport(relativePath, verifier) {
   const full = path.resolve(root, relativePath);
   if (!existsSync(full)) return { path: relativePath, ok: false, reason: 'missing' };
@@ -361,16 +369,24 @@ checks.push({
 
 checks.push({
   name: 'steam_screenshot_capture_report_clean',
-  ...checkJsonReport('release/steam-screenshots/draft-2026-05-17-19-48/report.json', (json) => ({
-    ok: Array.isArray(json.shots) && json.shots.length >= 7 &&
+  ...checkJsonReport('release/steam-screenshots/draft-2026-05-17-current/report.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    const actualBuild = json.build?.version || null;
+    return {
+      ok: Array.isArray(json.shots) && json.shots.length >= 7 &&
+      Boolean(expectedBuild) &&
+      actualBuild === expectedBuild &&
       (json.consoleEvents || []).length === 0 &&
       (json.pageErrors || []).length === 0 &&
       (json.badResponses || []).length === 0,
-    shotCount: json.shots?.length || 0,
-    consoleEvents: json.consoleEvents || [],
-    pageErrors: json.pageErrors || [],
-    badResponses: json.badResponses || []
-  }))
+      shotCount: json.shots?.length || 0,
+      expectedBuild,
+      actualBuild,
+      consoleEvents: json.consoleEvents || [],
+      pageErrors: json.pageErrors || [],
+      badResponses: json.badResponses || []
+    };
+  })
 });
 
 checks.push({
@@ -423,20 +439,28 @@ checks.push({
 
 checks.push({
   name: 'desktop_package_report_clean',
-  ...checkJsonReport('release/steamworks/desktop_package_review_report.json', (json) => ({
-    ok: json.status === 'passed' &&
+  ...checkJsonReport('release/steamworks/desktop_package_review_report.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    const actualBuild = json.currentBuild?.version || null;
+    return {
+      ok: json.status === 'passed' &&
+      Boolean(expectedBuild) &&
+      actualBuild === expectedBuild &&
       json.desktopPayload?.path === 'release/desktop/win-unpacked/Nova Swarm.exe' &&
       Number(json.desktopPayload?.sizeBytes || 0) > 0 &&
       json.latestElectronSmoke?.status === 'passed' &&
       json.latestElectronSmoke?.localHighscoreApi?.ok === true &&
       json.latestElectronSmoke?.readyState?.ready === true &&
       (json.latestElectronSmoke?.consoleEvents || []).length === 0,
-    status: json.status || null,
-    desktopPayload: json.desktopPayload || null,
-    latestElectronSmoke: json.latestElectronSmoke || null,
-    errors: json.errors || [],
-    warnings: json.warnings || []
-  }))
+      status: json.status || null,
+      expectedBuild,
+      actualBuild,
+      desktopPayload: json.desktopPayload || null,
+      latestElectronSmoke: json.latestElectronSmoke || null,
+      errors: json.errors || [],
+      warnings: json.warnings || []
+    };
+  })
 });
 
 checks.push({

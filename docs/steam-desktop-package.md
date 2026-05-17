@@ -29,8 +29,8 @@ The web deployment remains unchanged and still uses Cloudflare Pages and D1 at `
 
 Latest verified package evidence:
 
-- `npm run verify:steam-rc` passed at `test-results/steam-rc-verify-2026-05-17T18-52-00-617Z/report.json`.
-- `npm run desktop:smoke:current` passed and wrote `test-results/electron-smoke-2026-05-17T18-53-11-442Z/` for build `v2026-05-17_20-52-01`.
+- `npm run package:steam:win:current`, `npm run desktop:smoke:current`, and `npm run check:desktop-package` passed for build `v2026-05-17_21-02-17`.
+- `npm run desktop:smoke:current` wrote `test-results/electron-smoke-2026-05-17T19-05-29-070Z/`.
 - `npm run package:steam:win:current` produced `release/desktop/win-unpacked/Nova Swarm.exe` at 226,666,496 bytes.
 - `npm run check:desktop-package` passed and wrote `release/steamworks/desktop_package_review_report.json`, confirming the packaged executable, Electron intro/menu render, local highscore API, captured screenshot, matching current build ID, package modified time newer than the build timestamp, and zero Electron smoke console events.
 - `npm audit --omit=dev` reports `found 0 vulnerabilities`.
