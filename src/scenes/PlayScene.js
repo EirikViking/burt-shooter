@@ -121,6 +121,7 @@ export class PlayScene {
     this.activeTopToast = null;
     this.activeCornerToast = null;
     this.centerToastLockUntil = 0;
+    this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
     this.loreBag = [];
     this.loreBagIndex = 0;
     this.lastLoreLine = null;
@@ -1047,6 +1048,7 @@ export class PlayScene {
       flashPeak: compact ? 90 : 150  // Flash duration
     };
     const totalDuration = phases.entry + phases.hold + phases.exit;
+    this.reserveMessageFocus(totalDuration + 300, { priority: 3 });
 
     const animate = (delta) => {
       elapsed += delta.deltaTime * 16.67;
@@ -2209,7 +2211,16 @@ export class PlayScene {
       score_boost: 1
     };
     const priority = Number.isFinite(options.priority) ? options.priority : (priorityMap[type] || 0);
-    const entry = { message, options: { ...options, type, slot, priority }, priority, createdAt: Date.now() };
+    const now = Date.now();
+    const lockUntil = this.getToastSlotLockUntil(slot);
+    const notBefore = priority >= 3 ? 0 : Math.max(Number(options.notBefore) || 0, lockUntil);
+    const entry = {
+      message,
+      options: { ...options, type, slot, priority, notBefore },
+      priority,
+      createdAt: now,
+      notBefore
+    };
 
     if (priority >= 3) {
       this.dropLowerPriorityToastBacklog(priority);
@@ -2252,16 +2263,45 @@ export class PlayScene {
   }
 
   dismissActiveToastsBelowPriority(priority) {
+    this.dismissActiveToastSlotsBelowPriority(['center', 'top', 'corner'], priority);
+  }
+
+  dismissActiveToastSlotsBelowPriority(slots, priority) {
     [
       ['center', this.activeCenterToast],
       ['top', this.activeTopToast],
       ['corner', this.activeCornerToast]
     ].forEach(([slot, display]) => {
+      if (!slots.includes(slot)) return;
       const activePriority = display?.__toastMeta?.priority ?? 0;
       if (display && activePriority < priority) {
         this.dismissToastDisplay(display, slot);
       }
     });
+  }
+
+  getToastSlotLockUntil(slot) {
+    if (slot === 'center') return Math.max(this.centerToastLockUntil || 0, this.toastSlotLockUntil?.center || 0);
+    return this.toastSlotLockUntil?.[slot] || 0;
+  }
+
+  reserveMessageFocus(durationMs, { priority = 3, slots = ['center', 'top', 'corner'] } = {}) {
+    const duration = Math.max(0, Number(durationMs) || 0);
+    if (!duration) return;
+    const until = Date.now() + duration;
+    if (!this.toastSlotLockUntil) this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
+    slots.forEach((slot) => {
+      if (slot === 'center') {
+        this.centerToastLockUntil = Math.max(this.centerToastLockUntil || 0, until);
+      }
+      if (slot in this.toastSlotLockUntil) {
+        this.toastSlotLockUntil[slot] = Math.max(this.toastSlotLockUntil[slot] || 0, until);
+      }
+    });
+    this.dismissActiveToastSlotsBelowPriority(slots, priority);
+    setTimeout(() => {
+      if (this.game?.app) this.processToastQueue();
+    }, duration + 20);
   }
 
   dismissToastDisplay(display, slot) {
@@ -2283,18 +2323,24 @@ export class PlayScene {
 
   processToastQueue() {
     const now = Date.now();
-    if (!this.activeCenterToast && now >= this.centerToastLockUntil && this.toastQueue.length > 0) {
-      const entry = this.toastQueue.shift();
-      this.activeCenterToast = this.showToastNow(entry.message, entry.options, 'center');
+    if (!this.activeCenterToast && now >= this.getToastSlotLockUntil('center') && this.toastQueue.length > 0) {
+      const entry = this.dequeueReadyToast(this.toastQueue, now);
+      if (entry) this.activeCenterToast = this.showToastNow(entry.message, entry.options, 'center');
     }
-    if (!this.activeTopToast && this.toastTopQueue.length > 0) {
-      const entry = this.toastTopQueue.shift();
-      this.activeTopToast = this.showToastNow(entry.message, entry.options, 'top');
+    if (!this.activeTopToast && now >= this.getToastSlotLockUntil('top') && this.toastTopQueue.length > 0) {
+      const entry = this.dequeueReadyToast(this.toastTopQueue, now);
+      if (entry) this.activeTopToast = this.showToastNow(entry.message, entry.options, 'top');
     }
-    if (!this.activeCornerToast && this.toastCornerQueue.length > 0) {
-      const entry = this.toastCornerQueue.shift();
-      this.activeCornerToast = this.showToastNow(entry.message, entry.options, 'corner');
+    if (!this.activeCornerToast && now >= this.getToastSlotLockUntil('corner') && this.toastCornerQueue.length > 0) {
+      const entry = this.dequeueReadyToast(this.toastCornerQueue, now);
+      if (entry) this.activeCornerToast = this.showToastNow(entry.message, entry.options, 'corner');
     }
+  }
+
+  dequeueReadyToast(queue, now) {
+    const index = queue.findIndex(entry => (entry.notBefore || 0) <= now);
+    if (index < 0) return null;
+    return queue.splice(index, 1)[0];
   }
 
   describeToastDisplay(display) {
@@ -2320,6 +2366,11 @@ export class PlayScene {
         center: this.toastQueue.length,
         top: this.toastTopQueue.length,
         corner: this.toastCornerQueue.length
+      },
+      lockedMs: {
+        center: Math.max(0, this.getToastSlotLockUntil('center') - Date.now()),
+        top: Math.max(0, this.getToastSlotLockUntil('top') - Date.now()),
+        corner: Math.max(0, this.getToastSlotLockUntil('corner') - Date.now())
       }
     };
   }
@@ -3551,6 +3602,7 @@ export class PlayScene {
       y: this.game.getHeight() * (compactHud ? 0.34 : 0.32),
       maxWidth: this.game.getWidth() * (compactHud ? 0.84 : 0.72)
     });
+    this.reserveMessageFocus(2800, { priority: 4, slots: ['top', 'corner'] });
 
     if (this.screenShake) this.screenShake.shake(12);
     if (this.particleManager) {
