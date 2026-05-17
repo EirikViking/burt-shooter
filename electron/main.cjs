@@ -205,6 +205,7 @@ async function runSmoke(window) {
         apiStatus: api.status,
         scene: textState?.scene || null,
         build: textState?.buildId || null,
+        gitSha: textState?.gitSha || null,
         introTitle: intro?.title?.text || null,
         readyState: ${JSON.stringify(null)}
       };

@@ -230,6 +230,8 @@ function buildGameTextState(game) {
 
   return {
     coordinateSystem: 'origin top-left, x right, y down',
+    buildId: BUILD_ID,
+    gitSha: GIT_SHA,
     scene: getStableSceneName(game),
     score: game?.score ?? 0,
     level: game?.level ?? 0,

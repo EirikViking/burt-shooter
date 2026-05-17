@@ -16,6 +16,8 @@ const stages = [
   ['check:provenance', ['run', 'check:provenance']],
   ['check:steam-assets', ['run', 'check:steam-assets']],
   ['check:steam-store', ['run', 'check:steam-store']],
+  ['package:steam:win:current', ['run', 'package:steam:win:current']],
+  ['desktop:smoke:current', ['run', 'desktop:smoke:current']],
   ['check:desktop-package', ['run', 'check:desktop-package']],
   ['audit:audio-mix', ['run', 'audit:audio-mix']]
 ];
@@ -23,9 +25,6 @@ const stages = [
 if (full) {
   stages.push(
     ['smoke', ['run', 'smoke']],
-    ['desktop:smoke', ['run', 'desktop:smoke']],
-    ['package:steam:win', ['run', 'package:steam:win']],
-    ['check:desktop-package', ['run', 'check:desktop-package']],
     ['playtest:release', ['run', 'playtest:release']]
   );
 }
@@ -103,8 +102,8 @@ const report = {
   } : null,
   notes: [
     full
-      ? 'Full mode verifies build/static release evidence plus browser smoke, desktop smoke, Windows packaging, and release playtest.'
-      : 'Fast mode verifies build/static release evidence. Use --full for browser smoke, desktop package, and release playtest.',
+      ? 'Full mode verifies build/static release evidence, refreshes the Windows package and Electron smoke from the same build, then runs browser smoke and release playtest.'
+      : 'Fast mode verifies build/static release evidence and refreshes the Windows package plus Electron smoke from the same build. Use --full for browser smoke and release playtest.',
     `A successful ${full ? 'full' : 'fast'} report does not mean Steam-ready while releaseAudit.verdict is not_steam_ready.`
   ]
 };

@@ -4,6 +4,7 @@ import path from 'node:path';
 const root = process.cwd();
 const outputPath = path.resolve(root, 'release/steamworks/desktop_package_review_report.json');
 const desktopPayload = 'release/desktop/win-unpacked/Nova Swarm.exe';
+const versionPath = path.resolve(root, 'public/version.json');
 const smokeRoot = path.resolve(root, 'test-results');
 
 const errors = [];
@@ -52,6 +53,11 @@ if (!payload) {
   errors.push(`Missing ${desktopPayload}`);
 }
 
+const currentBuild = existsSync(versionPath) ? readJson(versionPath) : null;
+if (!currentBuild?.version || !currentBuild?.timestamp) {
+  errors.push('Missing current build metadata in public/version.json');
+}
+
 const latestSmoke = findLatestElectronSmokeReport();
 let smokeReport = null;
 
@@ -78,6 +84,9 @@ if (!latestSmoke) {
   if ((smokeReport.consoleEvents || []).length) {
     errors.push(`Electron smoke reported ${smokeReport.consoleEvents.length} console event(s)`);
   }
+  if (currentBuild?.version && smokeReport.state?.build !== currentBuild.version) {
+    errors.push(`Latest Electron smoke build ${smokeReport.state?.build || 'unknown'} does not match current build ${currentBuild.version}`);
+  }
 
   const ageHours = (Date.now() - statSync(latestSmoke.report).mtimeMs) / 36e5;
   if (ageHours > 72) {
@@ -85,9 +94,21 @@ if (!latestSmoke) {
   }
 }
 
+if (payload && currentBuild?.timestamp) {
+  const packageTime = Date.parse(payload.modifiedAt);
+  const buildTime = Date.parse(currentBuild.timestamp);
+  if (Number.isFinite(packageTime) && Number.isFinite(buildTime) && packageTime < buildTime) {
+    errors.push(`Desktop package is older than current build metadata (${payload.modifiedAt} < ${currentBuild.timestamp})`);
+  }
+}
+
 const report = {
   generatedAt: new Date().toISOString(),
   status: errors.length ? 'failed' : 'passed',
+  currentBuild: currentBuild ? {
+    version: currentBuild.version || null,
+    timestamp: currentBuild.timestamp || null
+  } : null,
   desktopPayload: payload,
   latestElectronSmoke: latestSmoke ? {
     reportPath: rel(latestSmoke.report),
