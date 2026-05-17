@@ -264,6 +264,8 @@ function buildGameTextState(game) {
       active: Boolean(player.active),
       radius: player.radius || 0,
       shipVariant: player.visualVariant?.slug || null,
+      shipTrait: player.shipTrait?.label || null,
+      stats: player.getStatSnapshot ? player.getStatSnapshot() : null,
       powerup: player.activePowerup?.type || null
     } : null,
     counts: {

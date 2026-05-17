@@ -19,11 +19,13 @@ ShipVariantData.forEach(ship => {
     variantCode: ship.variantCode,
     name: ship.name,
     description: ship.description,
+    baseDescription: ship.baseDescription || ship.description,
     lore: ship.loreShort,
     textureIndex: ship.textureIndex,
     weapon: { ...ship.weapon },
     visuals: { ...ship.visuals },
     hitbox: { ...ship.hitbox },
+    trait: ship.trait ? { ...ship.trait } : null,
     stats: {
       speed: ship.stats.speed,
       fireRate: ship.stats.fireRate,

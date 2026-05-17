@@ -72,6 +72,10 @@ export class ShipDetailsScene {
             const sprite = new PIXI.Sprite(shipTexture);
             sprite.anchor.set(0.5);
             sprite.position.set(panelWidth / 2, yOffset + 60);
+            const variant = this.ship.visuals?.variant;
+            if (Number.isFinite(variant?.tint)) {
+                sprite.tint = variant.tint;
+            }
 
             const maxSize = isMobile ? 120 : 140;
             const scale = Math.min(maxSize / sprite.width, maxSize / sprite.height);
@@ -109,7 +113,8 @@ export class ShipDetailsScene {
 
     createStatsSection(container, panelWidth, yOffset, isMobile) {
         const stats = this.ship.stats || { speed: 6, fireRate: 150, damage: 1 };
-        console.log(`[ShipStats] details shipId=${this.ship.id} damage=${stats.damage} fireRate=${stats.fireRate} speed=${stats.speed}`);
+        const trait = this.ship.trait || this.ship.visuals?.trait;
+        console.log(`[ShipStats] details shipId=${this.ship.id} trait=${trait?.label || 'none'} damage=${stats.damage} fireRate=${stats.fireRate} speed=${stats.speed}`);
 
         // Stats title
         const statsTitle = createText('STATS', {
@@ -160,7 +165,29 @@ export class ShipDetailsScene {
             container.addChild(statContainer);
         });
 
-        return yOffset + 60;
+        yOffset += 60;
+
+        const traitText = createText(
+            trait?.label
+                ? `TRAIT: ${trait.label} - ${trait.description || 'Balanced arcade handling.'}`
+                : 'TRAIT: BALANCED TUNE',
+            {
+                fontFamily: 'Courier New',
+                fontSize: isMobile ? 11 : 13,
+                fill: '#00ffff',
+                align: 'center',
+                wordWrap: true,
+                wordWrapWidth: panelWidth - 80,
+                lineHeight: isMobile ? 15 : 17,
+                stroke: '#000000',
+                strokeThickness: 2
+            }
+        );
+        traitText.anchor.set(0.5, 0);
+        traitText.position.set(panelWidth / 2, yOffset);
+        container.addChild(traitText);
+
+        return yOffset + traitText.height + 18;
     }
 
     createLoreSection(container, panelWidth, yOffset, isMobile) {

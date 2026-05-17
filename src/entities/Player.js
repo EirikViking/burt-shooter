@@ -27,16 +27,18 @@ export class Player {
       stats: { ...(selectedMetadata.stats || {}) },
       weapon: { ...(selectedMetadata.weapon || {}) },
       visuals: { ...(selectedMetadata.visuals || {}) },
-      hitbox: { ...(selectedMetadata.hitbox || { radius: 12 }) }
+      hitbox: { ...(selectedMetadata.hitbox || { radius: 12 }) },
+      trait: selectedMetadata.trait ? { ...selectedMetadata.trait } : null
     } : (ShipRegistry[shipId] || ShipRegistry.rank_ship_0);
     this.stats = { ...this.config.stats };
     this.visuals = { ...this.config.visuals };
     this.visualVariant = this.visuals?.variant || null;
+    this.shipTrait = this.config.trait || this.visuals?.trait || null;
     this.selectedShipSpriteKey = selectedMetadata?.spriteKey || spriteKey;
     this.selectedShipTextureIndex = textureIndex;
     this.hasSetInitialRank = false; // Track if initial rank has been set
 
-    console.log(`[ShipStats] applied shipId=${this.config.id} damage=${this.stats.damage} fireRate=${this.stats.fireRate} speed=${this.stats.speed}`);
+    console.log(`[ShipStats] applied shipId=${this.config.id} trait=${this.shipTrait?.label || 'none'} damage=${this.stats.damage} fireRate=${this.stats.fireRate} speed=${this.stats.speed}`);
 
     this.speed = this.stats.speed;
     this.radius = this.config.hitbox.radius;
@@ -104,8 +106,8 @@ export class Player {
     this.dronesActive = false;
     this.dronesExpiresAt = 0;
     this.drones = [];
-    this.muzzleFlashColor = 0xffffff;
-    this.baseMuzzleFlashColor = 0xffffff;
+    this.muzzleFlashColor = this.visualVariant?.glow || this.visualVariant?.accent || 0xffffff;
+    this.baseMuzzleFlashColor = this.muzzleFlashColor;
 
     // New Powerups
     this.chainLightningActive = false;
@@ -968,7 +970,8 @@ export class Player {
       const offsetX = offsets[i] || 0;
       const vx = Math.sin(angle) * this.bulletSpeed;
       const vy = -Math.cos(angle) * this.bulletSpeed;
-      const bullet = new Bullet(this.x + offsetX, spawnY, vx, vy, this.bulletDamage, 0x00ffff, true, vConfig);
+      const bulletColor = this.visualVariant?.accent || 0x00ffff;
+      const bullet = new Bullet(this.x + offsetX, spawnY, vx, vy, this.bulletDamage, bulletColor, true, vConfig);
       if (this.bulletPierce) bullet.piercing = true;
       bullets.push(bullet);
 
@@ -1160,7 +1163,8 @@ export class Player {
 
   getStatSnapshot() {
     const shots = this.multiShot + this.rankBoostExtraShots;
-    return `fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}`;
+    const trait = this.shipTrait?.label ? this.shipTrait.label.replace(/\s+/g, '_') : 'none';
+    return `trait=${trait} fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}`;
   }
 
   getPowerupLabel(type) {

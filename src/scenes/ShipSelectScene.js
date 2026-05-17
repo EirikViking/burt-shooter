@@ -282,6 +282,7 @@ export class ShipSelectScene {
     container.shipIndex = index;
     const variant = ship.visuals?.variant || null;
     const accent = variant?.accent || 0x00ffff;
+    const textAccent = this.getReadableAccent(variant);
     const glowColor = variant?.glow || variant?.tint || 0x00ff00;
 
     // DRAMATIC MULTI-LAYER GLOW SYSTEM
@@ -364,13 +365,13 @@ export class ShipSelectScene {
     const name = createText(ship.name, {
       fontFamily: 'Courier New',
       fontSize: 28,
-      fill: this.toHexText(accent),
+      fill: this.toHexText(textAccent),
       align: 'center',
       fontWeight: 'bold',
       stroke: '#000000',
       strokeThickness: 4,
       dropShadow: true,
-      dropShadowColor: this.toHexText(accent),
+      dropShadowColor: this.toHexText(textAccent),
       dropShadowBlur: 6,
       dropShadowDistance: 0
     });
@@ -380,7 +381,7 @@ export class ShipSelectScene {
     container.nameText = name;
 
     // Ship description - BETTER spacing and size
-    const teaser = this.getShortTeaser(ship.description);
+    const teaser = this.getShortTeaser(ship.baseDescription || ship.description);
     const desc = createText(teaser, {
       fontFamily: 'Courier New',
       fontSize: 15,
@@ -395,19 +396,36 @@ export class ShipSelectScene {
     container.addChild(desc);
     container.descText = desc;
 
+    const traitText = this.getShipTraitText(ship);
+    const trait = createText(traitText, {
+      fontFamily: 'Courier New',
+      fontSize: 13,
+      fill: this.toHexText(textAccent),
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: 620,
+      lineHeight: 17,
+      stroke: '#000000',
+      strokeThickness: 2
+    });
+    trait.anchor.set(0.5, 0);
+    trait.position.set(0, 130);
+    container.addChild(trait);
+    container.traitText = trait;
+
     // Stats - CLEARER and larger
     const statsText = this.getShipStats(ship);
     const stats = createText(statsText, {
       fontFamily: 'Courier New',
-      fontSize: 14,
+      fontSize: 12,
       fill: '#00ff00',
       align: 'center',
-      lineHeight: 18,
+      lineHeight: 14,
       stroke: '#000000',
       strokeThickness: 2
     });
     stats.anchor.set(0.5, 0);
-    stats.position.set(0, 150);
+    stats.position.set(0, 168);
     container.addChild(stats);
     container.statsText = stats;
 
@@ -418,6 +436,19 @@ export class ShipSelectScene {
   toHexText(value) {
     if (!Number.isFinite(value)) return '#00ff00';
     return `#${(value >>> 0).toString(16).padStart(6, '0').slice(-6)}`;
+  }
+
+  getReadableAccent(variant) {
+    const candidates = [variant?.accent, variant?.glow, variant?.tint, 0x00ffcc];
+    return candidates.find(value => Number.isFinite(value) && this.getColorLuma(value) >= 95) || 0x00ffcc;
+  }
+
+  getColorLuma(value) {
+    if (!Number.isFinite(value)) return 255;
+    const r = (value >> 16) & 0xff;
+    const g = (value >> 8) & 0xff;
+    const b = value & 0xff;
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   }
 
   updateCarouselPositions(animate = true) {
@@ -548,6 +579,7 @@ export class ShipSelectScene {
       // Hide/show text based on whether it's center
       if (shipContainer.nameText) shipContainer.nameText.visible = isCenter;
       if (shipContainer.descText) shipContainer.descText.visible = isCenter;
+      if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
       if (shipContainer.statsText) shipContainer.statsText.visible = isCenter;
     });
 
@@ -834,8 +866,8 @@ export class ShipSelectScene {
     const stats = ship?.stats || { speed: 6, fireRate: 150, damage: 1 };
     const ranges = this.statRanges || this.computeStatRanges(this.ships);
     const segments = 5;
-    const barChar = '█';
-    const emptyChar = '░';
+    const barChar = '#';
+    const emptyChar = '-';
     const clamp01 = (value) => Math.max(0, Math.min(1, value));
     const makeBar = (value) => {
       const filled = Math.max(1, Math.min(segments, Math.round(value * segments)));
@@ -858,6 +890,12 @@ export class ShipSelectScene {
     return `DMG: ${damageBar}
 SPD: ${speedBar}
 FIR: ${fireRateBar}`;
+  }
+
+  getShipTraitText(ship) {
+    const trait = ship?.trait || ship?.visuals?.trait;
+    if (!trait?.label) return 'TRAIT: BALANCED TUNE';
+    return `TRAIT: ${trait.label} - ${trait.description || 'Balanced arcade handling.'}`;
   }
 
   computeStatRanges(ships) {

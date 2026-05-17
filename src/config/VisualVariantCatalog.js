@@ -36,6 +36,182 @@ export const SHIP_VISUAL_VARIANTS = SHIP_VARIANT_SETS.map(([name, tint, accent, 
   index
 }));
 
+const SHIP_TRAIT_PROFILES = {
+  ion: {
+    label: 'ION DASH',
+    description: 'Quicker bolts and crisp handling.',
+    speedMult: 1.04,
+    bulletSpeedMult: 1.12,
+    fireRateMult: 0.98
+  },
+  solar: {
+    label: 'SOLAR HAMMER',
+    description: 'Heavier shots with a slower trigger.',
+    damageMult: 1.14,
+    fireRateMult: 1.08,
+    bulletSpeedMult: 1.03
+  },
+  violet: {
+    label: 'VIOLET FEINT',
+    description: 'Smaller hitbox and softer shots.',
+    speedMult: 1.06,
+    damageMult: 0.93,
+    hitboxMult: 0.9
+  },
+  mint: {
+    label: 'MINT BOOST',
+    description: 'High-speed dodging with lighter damage.',
+    speedMult: 1.14,
+    damageMult: 0.9,
+    bulletSpeedMult: 1.05
+  },
+  crimson: {
+    label: 'CRIMSON BITE',
+    description: 'Close-range punch, wider hull.',
+    damageMult: 1.12,
+    fireRateMult: 1.04,
+    hitboxMult: 1.06
+  },
+  quartz: {
+    label: 'QUARTZ NEEDLE',
+    description: 'Tiny collision core, slower reload.',
+    hitboxMult: 0.86,
+    fireRateMult: 1.1,
+    bulletSpeedMult: 1.07
+  },
+  cobalt: {
+    label: 'COBALT GUARD',
+    description: 'Steadier aim with a heavier frame.',
+    speedMult: 0.94,
+    damageMult: 1.08,
+    hitboxMult: 1.04,
+    spreadDelta: -0.025
+  },
+  ember: {
+    label: 'EMBER BURST',
+    description: 'Fast trigger, hotter but lighter shots.',
+    fireRateMult: 0.9,
+    damageMult: 0.94,
+    spreadDelta: 0.018
+  },
+  circuit: {
+    label: 'CIRCUIT TAP',
+    description: 'Rapid rhythm with narrow damage.',
+    fireRateMult: 0.86,
+    damageMult: 0.88,
+    bulletSpeedMult: 1.04
+  },
+  magenta: {
+    label: 'MAGENTA FAN',
+    description: 'Wider spread for lane coverage.',
+    spreadDelta: 0.055,
+    damageMult: 0.94,
+    bulletSpeedMult: 1.05
+  },
+  auric: {
+    label: 'AURIC CORE',
+    description: 'Premium damage with deliberate timing.',
+    damageMult: 1.18,
+    fireRateMult: 1.12,
+    speedMult: 0.97
+  },
+  glacier: {
+    label: 'GLACIER SCOPE',
+    description: 'Precise fast shots, calmer movement.',
+    speedMult: 0.96,
+    bulletSpeedMult: 1.16,
+    spreadDelta: -0.035
+  },
+  plasma: {
+    label: 'PLASMA SKATE',
+    description: 'Fast strafe, brighter angled fire.',
+    speedMult: 1.1,
+    bulletSpeedMult: 1.08,
+    spreadDelta: 0.025,
+    damageMult: 0.95
+  },
+  verdant: {
+    label: 'VERDANT FLOW',
+    description: 'Smooth movement and steady fire.',
+    speedMult: 1.08,
+    fireRateMult: 0.94,
+    damageMult: 0.94
+  },
+  neon: {
+    label: 'NEON STUTTER',
+    description: 'Very fast fire, weaker per hit.',
+    fireRateMult: 0.82,
+    damageMult: 0.84,
+    bulletSpeedMult: 1.08
+  },
+  ruby: {
+    label: 'RUBY SPIKE',
+    description: 'Big damage with a bigger target.',
+    damageMult: 1.2,
+    fireRateMult: 1.14,
+    hitboxMult: 1.08
+  },
+  spectral: {
+    label: 'SPECTRAL SLIP',
+    description: 'Tiny dodge profile, modest output.',
+    speedMult: 1.05,
+    damageMult: 0.9,
+    hitboxMult: 0.84
+  },
+  obsidian: {
+    label: 'OBSIDIAN PLATE',
+    description: 'Heavy frame, heavy bolts.',
+    speedMult: 0.9,
+    damageMult: 1.16,
+    hitboxMult: 1.09,
+    fireRateMult: 1.05
+  },
+  arcade: {
+    label: 'ARCADE SAW',
+    description: 'Chaotic spread for swarm cleanup.',
+    spreadDelta: 0.07,
+    fireRateMult: 0.95,
+    damageMult: 0.9
+  },
+  vector: {
+    label: 'VECTOR LINE',
+    description: 'Straight precision and fast projectiles.',
+    bulletSpeedMult: 1.18,
+    spreadDelta: -0.045,
+    damageMult: 1.02
+  },
+  signal: {
+    label: 'SIGNAL PING',
+    description: 'Quick reload and nimble drift.',
+    fireRateMult: 0.9,
+    speedMult: 1.06,
+    damageMult: 0.92
+  },
+  nova: {
+    label: 'NOVA OVERDRIVE',
+    description: 'Aggressive all-round pressure.',
+    fireRateMult: 0.93,
+    speedMult: 1.04,
+    damageMult: 1.04,
+    hitboxMult: 1.03
+  },
+  chrome: {
+    label: 'CHROME RAIL',
+    description: 'High-speed rounds, deliberate hands.',
+    bulletSpeedMult: 1.2,
+    fireRateMult: 1.06,
+    spreadDelta: -0.04
+  },
+  hazard: {
+    label: 'HAZARD RAM',
+    description: 'Dangerous burst damage, bulky shape.',
+    damageMult: 1.16,
+    speedMult: 0.94,
+    hitboxMult: 1.1,
+    spreadDelta: 0.02
+  }
+};
+
 const ENEMY_VARIANT_SETS = [
   ['zapper', 0x8ffcff, 0x00d9ff, 0.95],
   ['clanker', 0xffd166, 0xff7b00, 1.08],
@@ -112,6 +288,55 @@ function clampScale(value) {
   return Math.max(0.76, Math.min(1.28, value));
 }
 
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function roundStat(value, digits = 2) {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
+function applyShipTrait(base, variant) {
+  const traitProfile = SHIP_TRAIT_PROFILES[variant.slug] || {};
+  const baseStats = base.stats || {};
+  const baseWeapon = base.weapon || {};
+  const baseHitbox = base.hitbox || { radius: 12 };
+  const stats = {
+    speed: roundStat(clampNumber((baseStats.speed ?? 6) * (traitProfile.speedMult ?? 1), 4.8, 8.6), 2),
+    fireRate: Math.round(clampNumber((baseStats.fireRate ?? 150) * (traitProfile.fireRateMult ?? 1), 82, 245)),
+    damage: roundStat(clampNumber((baseStats.damage ?? 1) * (traitProfile.damageMult ?? 1), 0.58, 3.05), 2),
+    bulletSpeed: roundStat(clampNumber((baseStats.bulletSpeed ?? 10) * (traitProfile.bulletSpeedMult ?? 1), 8.5, 14.8), 2)
+  };
+  const weapon = {
+    ...baseWeapon,
+    spread: roundStat(clampNumber((baseWeapon.spread ?? 0) + (traitProfile.spreadDelta ?? 0), 0, 0.34), 3)
+  };
+  const hitbox = {
+    ...baseHitbox,
+    radius: Math.round(clampNumber((baseHitbox.radius ?? 12) * (traitProfile.hitboxMult ?? 1), 10, 15))
+  };
+  const effects = {
+    speedMult: traitProfile.speedMult ?? 1,
+    fireRateMult: traitProfile.fireRateMult ?? 1,
+    damageMult: traitProfile.damageMult ?? 1,
+    bulletSpeedMult: traitProfile.bulletSpeedMult ?? 1,
+    spreadDelta: traitProfile.spreadDelta ?? 0,
+    hitboxMult: traitProfile.hitboxMult ?? 1
+  };
+  return {
+    stats,
+    weapon,
+    hitbox,
+    trait: {
+      slug: variant.slug,
+      label: traitProfile.label || `${variant.name.toUpperCase()} TUNE`,
+      description: traitProfile.description || 'Balanced arcade handling.',
+      effects
+    }
+  };
+}
+
 export const ENEMY_VISUAL_VARIANTS = ENEMY_VARIANT_SETS.flatMap(([slug, tint, accent, scale], baseIndex) =>
   ENEMY_PALETTE_MODES.map(([mode, tintTarget, accentTarget, scaleDelta, alphaBoost], modeIndex) => {
     const index = baseIndex * ENEMY_PALETTE_MODES.length + modeIndex;
@@ -144,27 +369,33 @@ export function pickVariant(seed, variants) {
 }
 
 export function buildSelectableShipVariants(baseShips) {
-  return baseShips.flatMap(base => SHIP_VISUAL_VARIANTS.map(variant => ({
-    ...base,
-    id: `${base.id}_${variant.slug}`,
-    baseId: base.id,
-    baseSpriteKey: base.spriteKey,
-    spriteKey: `${base.spriteKey}::${variant.slug}`,
-    name: `${base.name} ${variant.code}`,
-    description: `${variant.name} trim. ${base.description}`,
-    loreShort: `${base.loreShort}-${variant.slug}`,
-    loreLong: `${base.loreLong} This ${variant.name.toLowerCase()} cabinet variant adds a distinct glow profile for pilots who enjoy looking excellent while dodging nonsense.`,
-    stats: { ...base.stats },
-    weapon: { ...base.weapon },
-    visuals: {
-      ...base.visuals,
-      variant: { ...variant }
-    },
-    hitbox: { ...base.hitbox },
-    variantSlug: variant.slug,
-    variantCode: variant.code,
-    variantIndex: variant.index
-  })));
+  return baseShips.flatMap(base => SHIP_VISUAL_VARIANTS.map(variant => {
+    const tuned = applyShipTrait(base, variant);
+    return {
+      ...base,
+      id: `${base.id}_${variant.slug}`,
+      baseId: base.id,
+      baseSpriteKey: base.spriteKey,
+      spriteKey: `${base.spriteKey}::${variant.slug}`,
+      name: `${base.name} ${variant.code}`,
+      baseDescription: base.description,
+      description: `${tuned.trait.label}: ${tuned.trait.description} ${base.description}`,
+      loreShort: `${base.loreShort}-${variant.slug}`,
+      loreLong: `${base.loreLong} The ${variant.name.toLowerCase()} cabinet trim changes the actual flight profile: ${tuned.trait.description.toLowerCase()}`,
+      stats: tuned.stats,
+      weapon: tuned.weapon,
+      visuals: {
+        ...base.visuals,
+        variant: { ...variant },
+        trait: { ...tuned.trait }
+      },
+      hitbox: tuned.hitbox,
+      trait: tuned.trait,
+      variantSlug: variant.slug,
+      variantCode: variant.code,
+      variantIndex: variant.index
+    };
+  }));
 }
 
 export function getEnemyVisualVariant(type, level, waveColor, x, y) {
