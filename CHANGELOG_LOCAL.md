@@ -20,6 +20,9 @@ when git commits are not used.
 - Latest direct `npm run smoke` now passes again with compact output and progress heartbeats: `test-results/smoke-focus-compact-20260517-005038/`.
 - Latest build passes with build ID `v2026-05-17_00-49-45`.
 - Latest short release playtest passed with player-focus telemetry: `test-results/release-playtest-player-focus-20260517-005011/`.
+- Added `npm run audit:audio-mix`, an FFmpeg-backed release audit that measures referenced music/SFX/voice assets and reports effective in-game loudness from default volume multipliers.
+- Latest audio mix audit measured 72 files across 12 music rows, 72 SFX rows, and 16 voice rows with zero decode errors; the only warnings are raw music files peaking at 0.0 dB before in-game attenuation. Reports: `docs/reviews/2026-05-17-audio-mix-audit.md` and `docs/reviews/audio-mix-audit-2026-05-17.json`.
+- Remaining caveat: objective loudness audit is now repeatable, but the final by-ear audio mix pass is still not done.
 
 ---
 

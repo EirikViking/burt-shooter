@@ -22,11 +22,13 @@ Spillet kjører på `http://localhost:3000`
 ```bash
 npm run build
 npm run check:audio
+npm run audit:audio-mix
 npm run smoke
 ```
 
 `npm run smoke` starter Vite preview av produksjonsbyggen, bruker Playwright/system-Chrome, tar skjermbilder av meny, settings, desktop gameplay/pause, mobil intro/gameplay, debug-start level 3, wave-overgang og boss victory, og lagrer rapporten i `test-results/`. Konsollen viser kompakt fremdrift og oppsummering som standard; full JSON ligger i `report.json`, eller kan skrives til stdout med `SMOKE_VERBOSE_REPORT=1`.
 `npm run check:audio` verifiserer audio-manifest, SFX/voice-katalog, musikk-contexts og mix/fallback-nokler.
+`npm run audit:audio-mix` bruker FFmpeg `volumedetect` til aa maale refererte music/SFX/voice-filer og beregne effektiv default loudness. Kommandoen er en release-audio audit og krever at `ffmpeg` finnes paa PATH.
 
 ## Nyeste polish-pass
 
@@ -62,6 +64,7 @@ npm run smoke
 - Audio smoke dekker naa Settings-audition, credits overlay og at meny/gameplay/boss/victory/game-over bruker riktig musikk-context.
 - Smoke-testen skriver naa kompakt fremdrift og pass/fail-oppsummering i terminalen, mens full rapport fortsatt lagres i `test-results/*/report.json`.
 - `docs/recovery-note-2026-05-16.md` og `docs/reviews/2026-05-16-release-candidate-review.md` oppsummerer siste recovery/review-pass.
+- `docs/reviews/2026-05-17-audio-mix-audit.md` og `docs/reviews/audio-mix-audit-2026-05-17.json` dokumenterer objektiv FFmpeg-basert audio-mix audit; by-ear pass gjenstaar fortsatt.
 
 ## Deploy til Cloudflare Pages
 
