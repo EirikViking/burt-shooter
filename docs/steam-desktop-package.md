@@ -48,9 +48,14 @@ Reference checked on 2026-05-17:
 - SteamPipe uploading docs: https://partner.steamgames.com/doc/sdk/uploading
 - Steam platform support docs: https://partner.steamgames.com/doc/store/application/platforms
 
+Detailed client validation handoff:
+
+- `release/steamworks/steam_client_validation_runbook.md`
+
 ## Remaining Manual Steam Steps
 
 - Confirm the actual Steam app ID and depot ID in Steamworks.
+- Install or locate SteamCMD; it was not found on PATH during the 2026-05-17 local check.
 - Run SteamPipe upload with the edited VDF on a machine with SteamCMD and Steamworks credentials.
 - Run the uploaded build through Steam client install/launch, controller checks, offline launch, and quit/relaunch.
 - Decide whether achievements, cloud saves, and Steam Input metadata are in scope for v1.0 or a later update.
