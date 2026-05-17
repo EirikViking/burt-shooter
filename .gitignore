@@ -10,6 +10,7 @@ test-results/
 tmpclaude-*
 tools/steamcmd/
 release/desktop/
+release/steamworks/app_build_LOCAL.vdf
 release/steam-trailer/*/*.webm
 release/steam-trailer/*/*.mp4
 release/steam-trailer/*/*.m4a

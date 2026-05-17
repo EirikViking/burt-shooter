@@ -250,12 +250,10 @@ checks.push({
 
 checks.push({
   name: 'steamworks_ids_configured',
-  ok: existsSync(path.resolve(root, 'release/steamworks/app_build.vdf')) &&
-    existsSync(path.resolve(root, 'release/steamworks/depot_build.vdf')),
+  ok: existsSync(path.resolve(root, 'release/steamworks/app_build_LOCAL.vdf')),
   requiredForSteamReady: true,
   expectedFiles: [
-    'release/steamworks/app_build.vdf',
-    'release/steamworks/depot_build.vdf'
+    'release/steamworks/app_build_LOCAL.vdf'
   ]
 });
 

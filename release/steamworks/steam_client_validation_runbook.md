@@ -1,13 +1,13 @@
 # Nova Swarm Steam Client Validation Runbook
 
-Status on 2026-05-17: not complete. The Windows package exists locally, but Steam client validation still requires real Steamworks app/depot IDs, SteamCMD, and a credentialed upload.
+Status on 2026-05-17: not complete. The Windows package exists locally and local SteamCMD now runs, but Steam client validation still requires real Steamworks app/depot IDs and a credentialed upload.
 
 ## Current Local Evidence
 
 - Package output exists at `release/desktop/win-unpacked/`.
 - Launch executable exists at `release/desktop/win-unpacked/Nova Swarm.exe`.
 - Latest known package verification remains documented in `docs/steam-desktop-package.md`.
-- `steamcmd` was not found on PATH during the 2026-05-17 check.
+- Local SteamCMD availability is documented in `docs/reviews/2026-05-17-steamcmd-local-check.md`.
 
 ## Required Steamworks Inputs
 
@@ -24,15 +24,22 @@ Fill these before upload:
 ## Upload Steps
 
 1. Install or locate SteamCMD.
-2. Copy `release/steamworks/app_build_TEMPLATE.vdf` to an untracked credentialed file, for example `release/steamworks/app_build_LOCAL.vdf`.
-3. Replace `STEAM_APP_ID_HERE` and `STEAM_DEPOT_ID_HERE`.
+2. Generate an untracked credentialed VDF:
+
+```powershell
+$env:STEAM_APP_ID='<steam app id>'
+$env:STEAM_DEPOT_ID='<windows depot id>'
+npm run steamworks:write-vdf
+```
+
+3. Inspect `release/steamworks/app_build_LOCAL.vdf` and confirm the IDs.
 4. Confirm `ContentRoot` still points at `..\\desktop\\win-unpacked`.
 5. Run SteamCMD with the credentialed VDF.
 
 Example command shape:
 
 ```powershell
-steamcmd +login <steamworks_user> +run_app_build .\release\steamworks\app_build_LOCAL.vdf +quit
+.\tools\steamcmd\steamcmd.exe +login <steamworks_user> +run_app_build .\release\steamworks\app_build_LOCAL.vdf +quit
 ```
 
 Do not commit `app_build_LOCAL.vdf` if it contains private app IDs, branch names, or credentials.

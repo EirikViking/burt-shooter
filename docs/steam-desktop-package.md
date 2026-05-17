@@ -37,6 +37,12 @@ The template at `release/steamworks/app_build_TEMPLATE.vdf` maps all files from 
 - `STEAM_APP_ID_HERE`
 - `STEAM_DEPOT_ID_HERE`
 
+Or generate the ignored local upload VDF:
+
+```bash
+STEAM_APP_ID=<app id> STEAM_DEPOT_ID=<depot id> npm run steamworks:write-vdf
+```
+
 Suggested Steam launch option:
 
 ```text
@@ -55,7 +61,7 @@ Detailed client validation handoff:
 ## Remaining Manual Steam Steps
 
 - Confirm the actual Steam app ID and depot ID in Steamworks.
-- Install or locate SteamCMD; it was not found on PATH during the 2026-05-17 local check.
+- Local SteamCMD now runs from ignored `tools/steamcmd/`; see `docs/reviews/2026-05-17-steamcmd-local-check.md`.
 - Run SteamPipe upload with the edited VDF on a machine with SteamCMD and Steamworks credentials.
 - Run the uploaded build through Steam client install/launch, controller checks, offline launch, and quit/relaunch.
 - Decide whether achievements, cloud saves, and Steam Input metadata are in scope for v1.0 or a later update.

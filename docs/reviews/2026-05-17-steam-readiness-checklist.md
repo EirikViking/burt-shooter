@@ -30,6 +30,7 @@ Current evidence:
 - Steam screenshot upload shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, curated from the clean live capture.
 - Steam client validation runbook: `release/steamworks/steam_client_validation_runbook.md`.
 - SteamCMD local availability: `docs/reviews/2026-05-17-steamcmd-local-check.md`; `tools\steamcmd\steamcmd.exe +quit` now succeeds locally, but the tool folder is ignored and not committed.
+- Steamworks VDF helper: `npm run steamworks:write-vdf` writes ignored `release/steamworks/app_build_LOCAL.vdf` from `STEAM_APP_ID` and `STEAM_DEPOT_ID`.
 - Release readiness audit: `npm run audit:release-readiness` writes `docs/reviews/release-readiness-audit-2026-05-17.json` and currently reports `not_steam_ready` because Steamworks IDs, Steam client validation, and user approval remain open. Use `RELEASE_AUDIT_STRICT=1 npm run audit:release-readiness` to fail on known manual blockers too.
 - Steam RC verification entrypoint: `npm run verify:steam-rc` runs the fast build/static release gates and writes `test-results/steam-rc-verify-*/report.json`; latest full pass is `test-results/steam-rc-verify-2026-05-17T12-12-27-110Z/report.json`. Use `npm run verify:steam-rc -- --full` for smoke, desktop package, and release playtest as part of a full RC pass.
 - Latest full smoke evidence: `test-results/smoke-2026-05-17T12-12-55-257Z/`.

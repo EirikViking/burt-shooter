@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T13:04:48.478Z",
+  "generatedAt": "2026-05-17T13:07:06.880Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 9,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 12646
+          "bytes": 12800
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -29,7 +29,7 @@
         {
           "path": "docs/steam-desktop-package.md",
           "ok": true,
-          "bytes": 2403
+          "bytes": 2559
         },
         {
           "path": "docs/steam-trailer-workflow.md",
@@ -44,7 +44,7 @@
         {
           "path": "release/steamworks/steam_client_validation_runbook.md",
           "ok": true,
-          "bytes": 2691
+          "bytes": 2805
         },
         {
           "path": "docs/reviews/2026-05-17-steamcmd-local-check.md",
@@ -205,8 +205,7 @@
       "ok": false,
       "requiredForSteamReady": true,
       "expectedFiles": [
-        "release/steamworks/app_build.vdf",
-        "release/steamworks/depot_build.vdf"
+        "release/steamworks/app_build_LOCAL.vdf"
       ]
     },
     {
