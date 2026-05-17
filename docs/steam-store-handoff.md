@@ -21,7 +21,7 @@ The draft intentionally uses conservative claims:
 2. Enter the title, short description, long description, feature bullets, tags, categories, and system requirements from `store_metadata_draft.json`.
 3. Upload capsule art from `release/steam-assets/draft-2026-05-17-nova-swarm/`.
 4. Upload screenshots from `release/steam-screenshots/steam-upload-candidates-2026-05-17/`.
-5. Upload the trailer only after the draft in `release/steam-trailer/draft-2026-05-17-12-46/` has by-ear approval.
+5. Upload the trailer only after the editorial candidate in `release/steam-trailer/candidate-2026-05-17-editorial/` has by-ear and store-submission approval.
 6. Keep achievements and Steam Cloud disabled unless implementation and validation are added.
 7. Set the launch executable to `Nova Swarm.exe`.
 8. Run the Steam client validation runbook before changing the release readiness verdict.
@@ -30,7 +30,7 @@ The draft intentionally uses conservative claims:
 
 - Screenshot order and captions.
 - Capsule thumbnail readability and legal/provenance review.
-- Trailer audio/title-card approval.
+- Trailer candidate audio/title-card approval.
 - Store copy tone and localization stance.
 - Controller-support category after a real Steam client install.
 - System requirements sanity check on another Windows machine.

@@ -14,7 +14,9 @@ const scannedRoots = [
   'release/steam-assets/draft-2026-05-17-nova-swarm',
   'release/marketing-assets/mission-control-2026-05-16',
   'release/steam-screenshots',
-  'release/steam-trailer/draft-2026-05-17-12-46'
+  'release/steam-trailer/draft-2026-05-17-12-46',
+  'release/steam-trailer/draft-2026-05-17-17-03',
+  'release/steam-trailer/candidate-2026-05-17-editorial'
 ];
 
 const assetExtensions = new Set([

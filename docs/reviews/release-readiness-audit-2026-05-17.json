@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T15:28:27.548Z",
+  "generatedAt": "2026-05-17T15:35:12.374Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 13,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 18341
+          "bytes": 18998
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -39,7 +39,7 @@
         {
           "path": "docs/steam-store-handoff.md",
           "ok": true,
-          "bytes": 2328
+          "bytes": 2381
         },
         {
           "path": "docs/steam-trailer-workflow.md",
@@ -114,12 +114,12 @@
         {
           "path": "release/provenance/asset_provenance_manifest.json",
           "ok": true,
-          "bytes": 4210
+          "bytes": 4861
         },
         {
           "path": "release/provenance/asset_provenance_report.json",
           "ok": true,
-          "bytes": 900
+          "bytes": 1057
         },
         {
           "path": "release/steamworks/desktop_package_review_report.json",
@@ -129,7 +129,7 @@
         {
           "path": "release/steamworks/store_metadata_draft.json",
           "ok": true,
-          "bytes": 4367
+          "bytes": 4458
         },
         {
           "path": "release/steamworks/store_metadata_review_report.json",
@@ -158,8 +158,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1511,
-      "coveredCount": 1511,
+      "assetCount": 1526,
+      "coveredCount": 1526,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []

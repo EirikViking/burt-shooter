@@ -80,10 +80,22 @@ if (!errors.length) {
   }
 
   const assets = metadata.uploadAssets || {};
+  for (const key of ['screenshots', 'capsules', 'trailerDraft', 'trailerCandidate']) {
+    if (!assets[key]) {
+      errors.push(`uploadAssets.${key} is missing`);
+    }
+  }
   for (const [key, relativePath] of Object.entries(assets)) {
     if (!hasPath(relativePath)) {
       errors.push(`uploadAssets.${key} path is missing: ${relativePath}`);
     }
+  }
+
+  if (assets.trailerCandidate && assets.trailerDraft && assets.trailerCandidate === assets.trailerDraft) {
+    errors.push('uploadAssets.trailerCandidate must point at the rendered editorial candidate, not the raw draft folder');
+  }
+  if (assets.trailerCandidate && !String(assets.trailerCandidate).includes('candidate-')) {
+    errors.push('uploadAssets.trailerCandidate should point at a candidate-* folder');
   }
 }
 

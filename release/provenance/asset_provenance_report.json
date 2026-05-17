@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T15:25:04.660Z",
+  "generatedAt": "2026-05-17T15:32:11.384Z",
   "status": "passed",
   "manifestPath": "release/provenance/asset_provenance_manifest.json",
   "scannedRoots": [
@@ -11,20 +11,23 @@
     "release/steam-assets/draft-2026-05-17-nova-swarm",
     "release/marketing-assets/mission-control-2026-05-16",
     "release/steam-screenshots",
-    "release/steam-trailer/draft-2026-05-17-12-46"
+    "release/steam-trailer/draft-2026-05-17-12-46",
+    "release/steam-trailer/draft-2026-05-17-17-03",
+    "release/steam-trailer/candidate-2026-05-17-editorial"
   ],
-  "assetCount": 1511,
-  "coveredCount": 1511,
+  "assetCount": 1526,
+  "coveredCount": 1526,
   "uncovered": [],
   "deniedMatches": [],
   "ruleCoverage": {
     "app_icons_original_generated": 4,
     "bundled_arcade_asset_pack_sprites": 1225,
     "bundled_arcade_audio_pack": 176,
-    "generated_elevenlabs_voice_and_sfx": 40,
+    "generated_elevenlabs_voice_and_sfx": 43,
     "generated_nova_swarm_runtime_art": 26,
     "generated_steam_store_art": 14,
-    "steam_screenshot_candidates": 26
+    "steam_screenshot_candidates": 26,
+    "steam_trailer_editorial_candidate": 12
   },
   "warnings": [],
   "errors": []

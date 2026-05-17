@@ -44,12 +44,23 @@
         "public/audio/voice/nova-swarm/",
         "public/audio/sfx/nova-swarm/",
         "public/audio/music/nova-swarm/",
-        "release/steam-trailer/draft-2026-05-17-12-46/"
+        "release/steam-trailer/draft-2026-05-17-12-46/",
+        "release/steam-trailer/draft-2026-05-17-17-03/"
       ],
       "sourceType": "ai_generated_audio",
       "provider": "ElevenLabs",
       "licenseStatus": "pending_human_review",
       "notes": "Mission-control voice, narrated intro, bespoke Nova Swarm SFX/music, and rendered trailer draft audio/video. Regeneration instructions are documented in docs/audio-pipeline.md."
+    },
+    {
+      "id": "steam_trailer_editorial_candidate",
+      "prefixes": [
+        "release/steam-trailer/candidate-2026-05-17-editorial/"
+      ],
+      "sourceType": "rendered_release_video_package",
+      "provider": "Local FFmpeg/ImageMagick render from generated Nova Swarm store art, captured gameplay, and shipped audio",
+      "licenseStatus": "pending_human_review",
+      "notes": "Editorial Steam trailer candidate with title/outro cards, contact sheet, extracted review frames, and final MP4. Final upload still requires human by-ear, visual, and legal/provenance approval."
     },
     {
       "id": "bundled_arcade_asset_pack_sprites",

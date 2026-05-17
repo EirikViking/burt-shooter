@@ -17,7 +17,7 @@ gameplayFeel: pending
 
 - Screenshots: review `release/steam-screenshots/steam-upload-candidates-2026-05-17/`.
 - Capsules: review `release/steam-assets/draft-2026-05-17-nova-swarm/review/`.
-- Trailer: watch `release/steam-trailer/draft-2026-05-17-12-46/nova-swarm-steam-trailer-audio-draft.mp4`.
+- Trailer: watch `release/steam-trailer/candidate-2026-05-17-editorial/nova-swarm-steam-trailer-candidate.mp4` and review `release/steam-trailer/candidate-2026-05-17-editorial/candidate-contact-sheet.png`.
 - Audio: listen through menu, intro narration, normal gameplay, powerups, boss inbound, boss fight, victory, and game over.
 - Store copy: approve the text in `docs/reviews/2026-05-17-steam-readiness-checklist.md`.
 - Legal/provenance: approve generated art/audio/voice use, third-party assets, names, jokes, and store materials.

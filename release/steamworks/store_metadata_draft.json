@@ -87,12 +87,13 @@
   "uploadAssets": {
     "screenshots": "release/steam-screenshots/steam-upload-candidates-2026-05-17/",
     "capsules": "release/steam-assets/draft-2026-05-17-nova-swarm/",
-    "trailerDraft": "release/steam-trailer/draft-2026-05-17-12-46/"
+    "trailerDraft": "release/steam-trailer/draft-2026-05-17-17-03/",
+    "trailerCandidate": "release/steam-trailer/candidate-2026-05-17-editorial/"
   },
   "approvalRequired": [
     "final screenshot order and captions",
     "capsule readability and legal/provenance approval",
-    "trailer/title-card/audio approval",
+    "editorial trailer/title-card/audio approval",
     "store copy tone approval",
     "controller support category after Steam client validation",
     "system requirements sanity check on a second Windows machine"
