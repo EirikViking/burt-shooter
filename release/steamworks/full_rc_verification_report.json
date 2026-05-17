@@ -1,0 +1,139 @@
+{
+  "generatedAt": "2026-05-17T21:03:55.744Z",
+  "status": "passed",
+  "currentBuild": {
+    "version": "v2026-05-17_21-41-17",
+    "timestamp": "2026-05-17T19:41:17.128Z"
+  },
+  "latestFullRc": {
+    "reportPath": "test-results/steam-rc-verify-2026-05-17T20-46-38-788Z/report.json",
+    "generatedAt": "2026-05-17T20:59:11.036Z",
+    "mode": "full",
+    "ok": true,
+    "stageCount": 13,
+    "stages": [
+      {
+        "name": "build:current",
+        "ok": true,
+        "durationMs": 14663
+      },
+      {
+        "name": "check:provenance",
+        "ok": true,
+        "durationMs": 642
+      },
+      {
+        "name": "check:steam-assets",
+        "ok": true,
+        "durationMs": 2156
+      },
+      {
+        "name": "check:steam-store",
+        "ok": true,
+        "durationMs": 474
+      },
+      {
+        "name": "package:steam:win:current",
+        "ok": true,
+        "durationMs": 46491
+      },
+      {
+        "name": "desktop:smoke:current",
+        "ok": true,
+        "durationMs": 4342
+      },
+      {
+        "name": "desktop:smoke:packaged",
+        "ok": true,
+        "durationMs": 4557
+      },
+      {
+        "name": "check:desktop-package",
+        "ok": true,
+        "durationMs": 479
+      },
+      {
+        "name": "check:live-deployment",
+        "ok": true,
+        "durationMs": 676
+      },
+      {
+        "name": "audit:audio-mix",
+        "ok": true,
+        "durationMs": 6298
+      },
+      {
+        "name": "smoke",
+        "ok": true,
+        "durationMs": 64245
+      },
+      {
+        "name": "playtest:release",
+        "ok": true,
+        "durationMs": 605504
+      },
+      {
+        "name": "audit:release-readiness",
+        "ok": true,
+        "durationMs": 1408
+      }
+    ],
+    "releaseAudit": {
+      "verdict": "not_steam_ready",
+      "passed": 15,
+      "failed": 3,
+      "hardFailures": 0,
+      "manualBlockers": [
+        "Steamworks app ID and depot ID are still not configured in tracked files.",
+        "SteamPipe upload and Steam-client install/launch validation still require credentials and a real app.",
+        "User/human approval is still required for final screenshots, capsules, trailer, and by-ear audio mix."
+      ]
+    },
+    "audioAudit": {
+      "generatedAt": "2026-05-17T20:47:59.830Z",
+      "decodeErrors": null,
+      "warnings": 0
+    }
+  },
+  "latestLocalSmoke": {
+    "reportPath": "test-results/smoke-2026-05-17T20-48-00-762Z/report.json",
+    "baseUrl": "http://127.0.0.1:4173",
+    "build": "v2026-05-17_21-41-17",
+    "status": "passed",
+    "console": {
+      "warningsOrErrors": 0,
+      "pageErrors": 0,
+      "badResponses": 0
+    },
+    "scenes": null,
+    "coverage": null
+  },
+  "latestReleasePlaytest": {
+    "reportPath": "test-results/release-playtest-2026-05-17T20-49-05-026Z/report.json",
+    "baseUrl": "http://127.0.0.1:4173",
+    "survivedMs": 599882,
+    "requiredSurvivalMs": 599500,
+    "survivedFullDuration": true,
+    "peakLevel": 5,
+    "peakScore": 58720,
+    "finalState": {
+      "scene": "play",
+      "level": 5,
+      "lives": 2,
+      "score": 58720,
+      "enemyManagerState": "BOSS_ACTIVE",
+      "musicContext": "boss",
+      "musicTrack": "DeathMatch (Boss Theme).mp3",
+      "fatalOverlay": false
+    },
+    "console": {
+      "routineMessages": 0,
+      "warningsOrErrors": 0,
+      "pageErrors": 0,
+      "badResponses": 0,
+      "requestFailures": 0
+    }
+  },
+  "errors": [],
+  "warnings": []
+}

@@ -30,6 +30,7 @@ const requiredFiles = [
   'release/provenance/asset_provenance_report.json',
   'release/steamworks/desktop_package_review_report.json',
   'release/steamworks/live_deployment_report.json',
+  'release/steamworks/full_rc_verification_report.json',
   'release/steamworks/release_handoff_packet.json',
   'release/steamworks/release_handoff_packet.md',
   'release/steamworks/store_metadata_draft.json',
@@ -306,6 +307,7 @@ function checkReleaseHandoffPacket() {
         evidence.trailer?.status === 'ready' &&
         evidence.desktop?.status === 'ready' &&
         evidence.liveDeployment?.status === 'ready' &&
+        evidence.fullRc?.status === 'ready' &&
         evidence.provenance?.status === 'ready' &&
         evidence.storeMetadata?.status === 'ready' &&
         manualSteps.length >= 5 &&
@@ -552,6 +554,62 @@ checks.push({
       liveUrl: json.liveUrl || null,
       versionChecks: json.versionChecks || [],
       latestLiveSmoke: json.latestLiveSmoke || null,
+      errors: json.errors || [],
+      warnings: json.warnings || []
+    };
+  })
+});
+
+checks.push({
+  name: 'full_rc_verification_report_clean',
+  ...checkJsonReport('release/steamworks/full_rc_verification_report.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    const stageNames = new Set((json.latestFullRc?.stages || []).filter((stage) => stage.ok).map((stage) => stage.name));
+    const requiredStages = [
+      'build:current',
+      'check:provenance',
+      'check:steam-assets',
+      'check:steam-store',
+      'package:steam:win:current',
+      'desktop:smoke:current',
+      'desktop:smoke:packaged',
+      'check:desktop-package',
+      'check:live-deployment',
+      'audit:audio-mix',
+      'smoke',
+      'playtest:release',
+      'audit:release-readiness'
+    ];
+    const missingStages = requiredStages.filter((stage) => !stageNames.has(stage));
+    return {
+      ok: json.status === 'passed' &&
+      Boolean(expectedBuild) &&
+      json.currentBuild?.version === expectedBuild &&
+      json.latestFullRc?.mode === 'full' &&
+      json.latestFullRc?.ok === true &&
+      missingStages.length === 0 &&
+      json.latestFullRc?.releaseAudit?.hardFailures === 0 &&
+      json.latestFullRc?.audioAudit?.warnings === 0 &&
+      json.latestLocalSmoke?.build === expectedBuild &&
+      json.latestLocalSmoke?.console?.warningsOrErrors === 0 &&
+      json.latestLocalSmoke?.console?.pageErrors === 0 &&
+      json.latestLocalSmoke?.console?.badResponses === 0 &&
+      json.latestReleasePlaytest?.survivedFullDuration === true &&
+      Number(json.latestReleasePlaytest?.survivedMs || 0) >= Number(json.latestReleasePlaytest?.requiredSurvivalMs || 599500) &&
+      Number(json.latestReleasePlaytest?.peakLevel || 0) >= 5 &&
+      Number(json.latestReleasePlaytest?.finalState?.lives || 0) > 0 &&
+      json.latestReleasePlaytest?.finalState?.fatalOverlay === false &&
+      json.latestReleasePlaytest?.console?.routineMessages === 0 &&
+      json.latestReleasePlaytest?.console?.warningsOrErrors === 0 &&
+      json.latestReleasePlaytest?.console?.pageErrors === 0 &&
+      json.latestReleasePlaytest?.console?.badResponses === 0 &&
+      json.latestReleasePlaytest?.console?.requestFailures === 0,
+      status: json.status || null,
+      expectedBuild,
+      latestFullRc: json.latestFullRc || null,
+      latestLocalSmoke: json.latestLocalSmoke || null,
+      latestReleasePlaytest: json.latestReleasePlaytest || null,
+      missingStages,
       errors: json.errors || [],
       warnings: json.warnings || []
     };

@@ -1,9 +1,10 @@
 {
-  "generatedAt": "2026-05-17T20:59:24.710Z",
+  "generatedAt": "2026-05-17T21:04:58.362Z",
   "build": {
     "version": "v2026-05-17_21-41-17",
     "timestamp": "2026-05-17T19:41:17.128Z",
     "evidenceVersions": [
+      "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
@@ -13,7 +14,7 @@
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
-    "passed": 15,
+    "passed": 16,
     "failed": 3,
     "hardFailures": 0,
     "failedChecks": [
@@ -54,6 +55,12 @@
       "path": "release/steamworks/live_deployment_report.json",
       "liveUrl": "https://burt.tinyfoundry.app",
       "liveSmoke": "test-results/smoke-2026-05-17T20-37-53-548Z/report.json"
+    },
+    "fullRc": {
+      "status": "ready",
+      "path": "release/steamworks/full_rc_verification_report.json",
+      "fullRcReport": "test-results/steam-rc-verify-2026-05-17T20-46-38-788Z/report.json",
+      "releasePlaytest": "test-results/release-playtest-2026-05-17T20-49-05-026Z/report.json"
     },
     "audio": {
       "status": "ready",

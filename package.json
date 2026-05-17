@@ -17,6 +17,7 @@
     "check:steam-assets": "node scripts/check-steam-assets.mjs",
     "check:steam-store": "node scripts/check-steam-store-metadata.mjs",
     "check:live-deployment": "node scripts/check-live-deployment.mjs",
+    "check:full-rc": "node scripts/check-full-rc-evidence.mjs",
     "audit:release-readiness": "node scripts/audit-release-readiness.mjs",
     "verify:steam-rc": "node scripts/verify-steam-rc.mjs",
     "steamworks:handoff": "node scripts/write-steam-release-handoff.mjs",
