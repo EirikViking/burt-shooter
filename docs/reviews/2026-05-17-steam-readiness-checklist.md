@@ -2,7 +2,7 @@
 
 ## Verdict
 
-Nova Swarm is still not Steam-ready, but the path is now concrete. The current build is a credible web release candidate with deployed proof, repeatable build/smoke/release-playtest gates, draft capsule art, generated cinematic intro art, ElevenLabs narration/SFX/music integration, and objective audio-mix evidence. Steam readiness is blocked by store packaging, final store capture, and human review work rather than a known broken core gameplay path.
+Nova Swarm is still not Steam-ready, but the path is now concrete. The current build is a credible web release candidate with deployed proof, repeatable build/smoke/release-playtest gates, draft capsule art, generated cinematic intro art, refreshed screenshot/trailer candidates, Windows package evidence, ElevenLabs narration/SFX/music integration, and objective audio-mix evidence. Steam readiness is blocked by real Steamworks IDs, SteamPipe/client validation, and human review rather than a known broken core gameplay path.
 
 Current playable deployment:
 
@@ -34,7 +34,7 @@ Current evidence:
 - Human release approval template: `docs/reviews/2026-05-17-human-release-approval.md`; it is intentionally pending until real approval is recorded.
 - Steam client validation template: `release/steamworks/client_validation_report.template.json`; copy it to `client_validation_report.json` only after real Steam-client validation.
 - Steam store metadata handoff: `docs/steam-store-handoff.md`, `release/steamworks/store_metadata_draft.json`, and `release/steamworks/store_metadata_review_report.json`; `npm run check:steam-store` passes with 15 tags, 8 feature bullets, conservative `Partial Controller Support`, and explicit v1 deferrals for Steam Cloud and Steam achievements.
-- Asset provenance inventory: `docs/asset-provenance.md`, `release/provenance/asset_provenance_manifest.json`, and `release/provenance/asset_provenance_report.json`; `npm run check:provenance` currently covers 1572/1572 scanned public/release assets while intentionally leaving legal approval pending.
+- Asset provenance inventory: `docs/asset-provenance.md`, `release/provenance/asset_provenance_manifest.json`, and `release/provenance/asset_provenance_report.json`; `npm run check:provenance` currently covers 1592/1592 scanned public/release assets while intentionally leaving legal approval pending.
 - Release readiness audit: `npm run audit:release-readiness` writes `docs/reviews/release-readiness-audit-2026-05-17.json` and currently reports `not_steam_ready` because Steamworks IDs, Steam client validation, and user approval remain open. It now validates the tracked desktop package report instead of only checking for an `.exe`. Use `RELEASE_AUDIT_STRICT=1 npm run audit:release-readiness` to fail on known manual blockers too.
 - Steam RC verification entrypoint: `npm run verify:steam-rc` runs the build/static release gates, refreshes the Windows desktop package and Electron smoke from that same build, validates trailer candidate evidence, and writes `test-results/steam-rc-verify-*/report.json`; latest fast pass with provenance, Steam store metadata, same-build desktop package, audio mix, and release-readiness gates is `test-results/steam-rc-verify-2026-05-17T16-16-07-474Z/report.json`, and latest full pass is `test-results/steam-rc-verify-2026-05-17T12-12-27-110Z/report.json`. Use `npm run verify:steam-rc -- --full` when browser smoke and the release playtest should be added after the fast same-build package gates.
 - Latest full smoke evidence: `test-results/smoke-2026-05-17T12-12-55-257Z/`.
