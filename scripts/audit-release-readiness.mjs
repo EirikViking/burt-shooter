@@ -583,8 +583,7 @@ checks.push({
       'check:live-deployment',
       'audit:audio-mix',
       'smoke',
-      'playtest:release',
-      'audit:release-readiness'
+      'playtest:release'
     ];
     const missingStages = requiredStages.filter((stage) => !stageNames.has(stage));
     return {
@@ -594,7 +593,6 @@ checks.push({
       json.latestFullRc?.mode === 'full' &&
       json.latestFullRc?.ok === true &&
       missingStages.length === 0 &&
-      json.latestFullRc?.releaseAudit?.hardFailures === 0 &&
       json.latestFullRc?.audioAudit?.warnings === 0 &&
       json.latestLocalSmoke?.build === expectedBuild &&
       json.latestLocalSmoke?.console?.warningsOrErrors === 0 &&

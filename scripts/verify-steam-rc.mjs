@@ -29,9 +29,9 @@ if (full) {
     ['smoke', ['run', 'smoke']],
     ['playtest:release', ['run', 'playtest:release']]
   );
+} else {
+  stages.push(['audit:release-readiness', ['run', 'audit:release-readiness']]);
 }
-
-stages.push(['audit:release-readiness', ['run', 'audit:release-readiness']]);
 
 function runStage(name, npmArgs) {
   console.log(`[steam-rc] starting ${name}`);
@@ -104,7 +104,7 @@ const report = {
   } : null,
   notes: [
     full
-      ? 'Full mode verifies build/static release evidence, refreshes the Windows package and Electron smoke from the same build, then runs browser smoke and release playtest.'
+      ? 'Full mode verifies independent build/static release evidence, refreshes the Windows package and Electron smoke from the same build, then runs browser smoke and release playtest. Run check:full-rc and audit:release-readiness afterward to refresh the tracked release gate.'
       : 'Fast mode verifies build/static release evidence and refreshes the Windows package plus Electron and packaged-executable smoke from the same build. Use --full for browser smoke and release playtest.',
     `A successful ${full ? 'full' : 'fast'} report does not mean Steam-ready while releaseAudit.verdict is not_steam_ready.`
   ]

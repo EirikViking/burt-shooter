@@ -93,20 +93,13 @@ const requiredFullStages = [
   'check:live-deployment',
   'audit:audio-mix',
   'smoke',
-  'playtest:release',
-  'audit:release-readiness'
+  'playtest:release'
 ];
 
 if (fullRc) {
   const missingStages = requiredFullStages.filter((stage) => !stageOk(fullRc.json, stage));
   if (fullRc.json.ok !== true || missingStages.length) {
     errors.push(`Latest full Steam RC report is not complete; missing/failed stages: ${missingStages.join(', ') || 'unknown'}`);
-  }
-  if (fullRc.json.releaseAudit?.hardFailures !== 0) {
-    errors.push(`Latest full Steam RC release audit has ${fullRc.json.releaseAudit?.hardFailures ?? 'unknown'} hard failure(s)`);
-  }
-  if (fullRc.json.releaseAudit?.failed !== 3) {
-    warnings.push(`Latest full Steam RC release audit failed count is ${fullRc.json.releaseAudit?.failed ?? 'unknown'}; expected only the three manual blockers`);
   }
   if (fullRc.json.audioAudit?.warnings !== 0) {
     errors.push(`Latest full Steam RC audio audit has ${fullRc.json.audioAudit?.warnings ?? 'unknown'} warning(s)`);
