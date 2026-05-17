@@ -1,7 +1,9 @@
 export const AssetManifest = {
     generated: {
         menuBackdrop: '/art/generated/burt-shooter-arctic-menu-bg.webp',
+        gameplayArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
         stormGameplayBackdrop: '/art/generated/burt-shooter-storm-gameplay-bg.webp',
+        bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
         bossDossier: '/art/generated/burt-shooter-boss-dossier.png',
         introPanels: [
             '/art/generated/nova-swarm/nova-swarm-intro-launch.webp',

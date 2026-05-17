@@ -5,6 +5,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 // TASK 3: Import difficulty multiplier
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { enhanceEnemyVisuals } from '../utils/EnemyVisualEnhancer.js';
+import { getEnemyVisualVariant } from '../config/VisualVariantCatalog.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
@@ -45,6 +46,7 @@ export class Enemy {
     this.spriteKey = null;
     this.xtraType = 1; // 1-5
     this.usingXtraAsset = false;
+    this.visualVariant = getEnemyVisualVariant(type, level, waveColor, x, y);
 
     this.setupByType();
     this.createSprite();
@@ -316,17 +318,19 @@ export class Enemy {
       const s = new PIXI.Sprite(tex);
       s.anchor.set(0.5);
       const targetWidth = 45;
-      const scale = targetWidth / tex.width;
+      const variantScale = Number.isFinite(this.visualVariant?.scale) ? this.visualVariant.scale : 1;
+      const scale = (targetWidth / tex.width) * variantScale;
       s.scale.set(scale);
       s.rotation = Math.PI; // Enemies face downward
 
       // Fighter enemies (player ships) get subtle tint, xtra assets no tint
       if (this.usingPlayerShipTexture) {
-        s.tint = this.color; // Tint player ships with their type color
+        s.tint = this.visualVariant?.tint || this.color;
       } else {
-        s.tint = this.usingXtraAsset ? 0xFFFFFF : this.color;
+        s.tint = this.usingXtraAsset ? (this.visualVariant?.tint || 0xFFFFFF) : (this.visualVariant?.tint || this.color);
       }
 
+      this.addVariantGlow();
       this.sprite.addChild(s);
       this.body = s;
     } else {
@@ -351,10 +355,24 @@ export class Enemy {
   }
 
   createFallbackGraphics() {
+    this.addVariantGlow();
     this.body = new PIXI.Graphics();
     this.body.circle(0, 0, this.radius);
-    this.body.fill({ color: this.color });
+    this.body.fill({ color: this.visualVariant?.tint || this.color });
     this.sprite.addChild(this.body);
+  }
+
+  addVariantGlow() {
+    if (!this.visualVariant || this.variantGlow) return;
+    const glow = new PIXI.Graphics();
+    const radius = Math.max(20, this.radius * 1.7);
+    glow.circle(0, 0, radius);
+    glow.fill({ color: this.visualVariant.accent || this.visualVariant.tint, alpha: this.visualVariant.alpha || 0.16 });
+    glow.circle(0, 0, radius * 0.62);
+    glow.stroke({ color: this.visualVariant.tint || 0xffffff, width: 2, alpha: 0.22 });
+    glow.label = `enemyVariantGlow:${this.visualVariant.slug}`;
+    this.variantGlow = glow;
+    this.sprite.addChild(glow);
   }
 
   updateHealthBar() {

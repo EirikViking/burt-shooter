@@ -261,6 +261,7 @@ function buildGameTextState(game) {
       y: Math.round(player.y),
       active: Boolean(player.active),
       radius: player.radius || 0,
+      shipVariant: player.visualVariant?.slug || null,
       powerup: player.activePowerup?.type || null
     } : null,
     counts: {
@@ -277,6 +278,7 @@ function buildGameTextState(game) {
         y: Math.round(enemy.y || 0),
         radius: enemy.radius || 0,
         kind: enemy.kind || null,
+        variant: enemy.visualVariant?.slug || null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
         maxHealth: Number.isFinite(enemy.maxHealth) ? Math.max(0, Math.round(enemy.maxHealth)) : null,
         type: enemy.type || enemy.constructor?.name || 'enemy'

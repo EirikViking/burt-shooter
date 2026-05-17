@@ -73,6 +73,7 @@ export class PlayScene {
     this.starLayers = [];
     this.gameplayBackdrop = null;
     this.gameplayStormBackdrop = null;
+    this.gameplayBossBackdrop = null;
     this.gameplayBackdropShade = null;
     this.bossDossierTexture = null;
 
@@ -610,6 +611,7 @@ export class PlayScene {
       const enemyBulletScale = (this.player && this.player.activePowerup && this.player.activePowerup.type === 'slow_time') ? 0.6 : 1;
       if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
       if (this.enemyManager) this.enemyManager.update(delta);
+      this.applyGameplayBackdropLevel(this.game?.level || 1);
       if (this.powerupManager) this.powerupManager.update(delta, this);
       if (this.particleManager) this.particleManager.update(delta);
       if (this.screenShake) this.screenShake.update(delta);
@@ -1531,17 +1533,24 @@ export class PlayScene {
   }
 
   async initGameplayBackdrop(width, height) {
-    if (!AssetManifest.generated?.menuBackdrop) return;
+    const baseBackdrop = AssetManifest.generated?.gameplayArenaBackdrop || AssetManifest.generated?.menuBackdrop;
+    if (!baseBackdrop) return;
 
     try {
       const texture = await PIXI.Assets.load({
         alias: 'generated_gameplay_backdrop',
-        src: AssetManifest.generated.menuBackdrop
+        src: baseBackdrop
       });
       const stormTexture = AssetManifest.generated.stormGameplayBackdrop
         ? await PIXI.Assets.load({
             alias: 'generated_storm_gameplay_backdrop',
             src: AssetManifest.generated.stormGameplayBackdrop
+          })
+        : null;
+      const bossTexture = AssetManifest.generated.bossArenaBackdrop
+        ? await PIXI.Assets.load({
+            alias: 'generated_boss_gameplay_backdrop',
+            src: AssetManifest.generated.bossArenaBackdrop
           })
         : null;
       if (!this.starfieldContainer || !this.starfieldContainer.parent) return;
@@ -1558,6 +1567,13 @@ export class PlayScene {
         stormBackdrop.label = 'gameplayStormBackdrop';
         this.fitBackdropToScreen(stormBackdrop, width, height);
       }
+      let bossBackdrop = null;
+      if (bossTexture) {
+        bossBackdrop = new PIXI.Sprite(bossTexture);
+        bossBackdrop.anchor.set(0.5);
+        bossBackdrop.label = 'gameplayBossBackdrop';
+        this.fitBackdropToScreen(bossBackdrop, width, height);
+      }
 
       const shade = new PIXI.Graphics();
       shade.label = 'gameplayBackdropShade';
@@ -1566,10 +1582,12 @@ export class PlayScene {
 
       this.gameplayBackdrop = backdrop;
       this.gameplayStormBackdrop = stormBackdrop;
+      this.gameplayBossBackdrop = bossBackdrop;
       this.gameplayBackdropShade = shade;
       this.starfieldContainer.addChildAt(backdrop, 0);
       if (stormBackdrop) this.starfieldContainer.addChildAt(stormBackdrop, 1);
-      this.starfieldContainer.addChildAt(shade, stormBackdrop ? 2 : 1);
+      if (bossBackdrop) this.starfieldContainer.addChildAt(bossBackdrop, stormBackdrop ? 2 : 1);
+      this.starfieldContainer.addChildAt(shade, (stormBackdrop ? 1 : 0) + (bossBackdrop ? 1 : 0) + 1);
       this.applyGameplayBackdropLevel(this.game?.level || 1);
     } catch (error) {
       console.warn('[PlayScene] Generated gameplay backdrop failed to load:', error);
@@ -1593,14 +1611,18 @@ export class PlayScene {
 
   applyGameplayBackdropLevel(level = 1) {
     const stormActive = level >= 3;
+    const bossActive = level % 5 === 0 || this.enemyManager?.state === 'BOSS' || this.enemyManager?.boss?.active;
     if (this.gameplayBackdrop) {
-      this.gameplayBackdrop.alpha = stormActive ? 0.16 : 0.28;
+      this.gameplayBackdrop.alpha = bossActive ? 0.12 : stormActive ? 0.18 : 0.34;
     }
     if (this.gameplayStormBackdrop) {
-      this.gameplayStormBackdrop.alpha = stormActive ? 0.26 : 0;
+      this.gameplayStormBackdrop.alpha = bossActive ? 0.1 : stormActive ? 0.24 : 0;
+    }
+    if (this.gameplayBossBackdrop) {
+      this.gameplayBossBackdrop.alpha = bossActive ? 0.31 : 0;
     }
     if (this.gameplayBackdropShade) {
-      this.gameplayBackdropShade.alpha = stormActive ? 0.63 : 0.58;
+      this.gameplayBackdropShade.alpha = bossActive ? 0.66 : stormActive ? 0.62 : 0.56;
     }
   }
 

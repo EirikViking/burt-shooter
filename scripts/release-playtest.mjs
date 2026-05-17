@@ -23,6 +23,8 @@ const requiredReleaseAssets = [
   '/art/generated/nova-swarm/nova-swarm-intro-hero-run.webp',
   '/art/generated/nova-swarm/nova-swarm-intro-boss-arena.webp',
   '/art/generated/nova-swarm/nova-swarm-ship-hangar.webp',
+  '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
+  '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
   '/audio/music/nova-swarm/nova_swarm_intro_overture.mp3',
   '/audio/voice/nova-swarm/intro_narrator_01.mp3',
   '/audio/voice/nova-swarm/intro_narrator_02.mp3',
@@ -274,7 +276,8 @@ async function collectPlayState(page) {
         kind: enemy.kind || null,
         health: Number.isFinite(enemy.health) ? enemy.health : null,
         maxHealth: Number.isFinite(enemy.maxHealth) ? enemy.maxHealth : null,
-        type: enemy.type
+        type: enemy.type,
+        variant: enemy.variant || null
       })),
       enemyBullets: enemyBullets
         .filter((bullet) => bullet?.active !== false)

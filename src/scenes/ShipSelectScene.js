@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { BonusAsset } from '../utils/BeerAsset.js';
-import { getSelectableShips, getDefaultShipKey, isValidShipKey } from '../config/ShipMetadata.js';
+import { getSelectableShips, getDefaultShipKey, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
@@ -25,7 +25,8 @@ export class ShipSelectScene {
     // Load saved selection
     const saved = this.loadSelection();
     if (saved && isValidShipKey(saved)) {
-      const index = this.ships.findIndex(s => s.spriteKey === saved);
+      const resolvedSaved = resolveShipKey(saved);
+      const index = this.ships.findIndex(s => s.spriteKey === resolvedSaved);
       if (index >= 0) this.selectedIndex = index;
     }
 
@@ -279,6 +280,9 @@ export class ShipSelectScene {
   async createCarouselShip(ship, index) {
     const container = new PIXI.Container();
     container.shipIndex = index;
+    const variant = ship.visuals?.variant || null;
+    const accent = variant?.accent || 0x00ffff;
+    const glowColor = variant?.glow || variant?.tint || 0x00ff00;
 
     // DRAMATIC MULTI-LAYER GLOW SYSTEM
     const glowLayers = new PIXI.Container();
@@ -286,21 +290,21 @@ export class ShipSelectScene {
     // Outer pulse ring (large)
     const outerRing = new PIXI.Graphics();
     outerRing.circle(0, -50, 140);
-    outerRing.stroke({ color: 0x00ffff, width: 3, alpha: 0 });
+    outerRing.stroke({ color: accent, width: 3, alpha: 0 });
     glowLayers.addChild(outerRing);
     container.outerRing = outerRing;
 
     // Mid glow ring
     const midRing = new PIXI.Graphics();
     midRing.circle(0, -50, 110);
-    midRing.fill({ color: 0x00ff00, alpha: 0 });
+    midRing.fill({ color: glowColor, alpha: 0 });
     glowLayers.addChild(midRing);
     container.midRing = midRing;
 
     // Inner intense glow
     const innerGlow = new PIXI.Graphics();
     innerGlow.circle(0, -50, 85);
-    innerGlow.fill({ color: 0xffffff, alpha: 0 });
+    innerGlow.fill({ color: variant?.tint || 0xffffff, alpha: 0 });
     glowLayers.addChild(innerGlow);
     container.innerGlow = innerGlow;
 
@@ -315,7 +319,7 @@ export class ShipSelectScene {
       const angle = (Math.PI * 2 * i) / 8;
       ray.moveTo(0, 0);
       ray.lineTo(Math.cos(angle) * 120, Math.sin(angle) * 120);
-      ray.stroke({ color: 0x00ff00, width: 2, alpha: 0 });
+      ray.stroke({ color: accent, width: 2, alpha: 0 });
       lightRays.addChild(ray);
     }
     container.addChild(lightRays);
@@ -327,6 +331,9 @@ export class ShipSelectScene {
       const sprite = new PIXI.Sprite(shipTexture);
       sprite.anchor.set(0.5);
       sprite.position.set(0, -50);
+      if (Number.isFinite(variant?.tint)) {
+        sprite.tint = variant.tint;
+      }
 
       const maxSize = 150; // Larger base size for center ship
       const scale = Math.min(maxSize / sprite.width, maxSize / sprite.height);
@@ -349,7 +356,7 @@ export class ShipSelectScene {
     // Legacy glow for compatibility
     const glow = new PIXI.Graphics();
     glow.circle(0, -50, 100);
-    glow.fill({ color: 0x00ff00, alpha: 0 });
+    glow.fill({ color: accent, alpha: 0 });
     container.addChild(glow);
     container.glowEffect = glow;
 
@@ -357,13 +364,13 @@ export class ShipSelectScene {
     const name = createText(ship.name, {
       fontFamily: 'Courier New',
       fontSize: 28,
-      fill: '#00ff00',
+      fill: this.toHexText(accent),
       align: 'center',
       fontWeight: 'bold',
       stroke: '#000000',
       strokeThickness: 4,
       dropShadow: true,
-      dropShadowColor: '#00ff00',
+      dropShadowColor: this.toHexText(accent),
       dropShadowBlur: 6,
       dropShadowDistance: 0
     });
@@ -406,6 +413,11 @@ export class ShipSelectScene {
 
     container.shipData = ship;
     return container;
+  }
+
+  toHexText(value) {
+    if (!Number.isFinite(value)) return '#00ff00';
+    return `#${(value >>> 0).toString(16).padStart(6, '0').slice(-6)}`;
   }
 
   updateCarouselPositions(animate = true) {

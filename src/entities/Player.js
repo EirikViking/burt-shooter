@@ -6,36 +6,34 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { enhanceShipVisuals } from '../utils/ShipVisualEnhancer.js';
 import { createText } from '../utils/pixiText.js';
 import { getPlayerFocusScale } from '../config/AccessibilitySettings.js';
+import { getDefaultShipKey, getShipMetadata } from '../config/ShipMetadata.js';
 
 export class Player {
-  constructor(x, y, inputManager, game, spriteKey = 'row2_ship_1.png') {
+  constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
     this.x = x;
     this.y = y;
     this.inputManager = inputManager;
     this.game = game;
 
-    // Map sprite key to texture index for ShipRegistry compatibility
-    const spriteKeyToIndex = {
-      'row2_ship_1.png': 0,
-      'row2_ship_2.png': 1,
-      'row2_ship_3_clean.png': 2,
-      'row2_ship_5.png': 3,
-      'ship_extract_1.png': 4,
-      'ship_extract_2.png': 5,
-      'ship_extract_3.png': 6,
-      'ship_extract_5.png': 7,
-      'ship_new.png': 8
-    };
+    const selectedMetadata = getShipMetadata(spriteKey) || getShipMetadata(getDefaultShipKey());
+    const textureIndex = Number.isFinite(selectedMetadata?.textureIndex) ? selectedMetadata.textureIndex : 0;
+    const shipId = selectedMetadata?.baseId || `rank_ship_${textureIndex}`;
 
-    const textureIndex = spriteKeyToIndex[spriteKey] !== undefined ? spriteKeyToIndex[spriteKey] : 0;
-    const shipId = `rank_ship_${textureIndex}`;
-
-    // Config from Registry
-    this.config = ShipRegistry[shipId] || ShipRegistry.rank_ship_0;
+    this.config = selectedMetadata ? {
+      id: selectedMetadata.id || shipId,
+      baseId: selectedMetadata.baseId || shipId,
+      name: selectedMetadata.name,
+      textureIndex,
+      stats: { ...(selectedMetadata.stats || {}) },
+      weapon: { ...(selectedMetadata.weapon || {}) },
+      visuals: { ...(selectedMetadata.visuals || {}) },
+      hitbox: { ...(selectedMetadata.hitbox || { radius: 12 }) }
+    } : (ShipRegistry[shipId] || ShipRegistry.rank_ship_0);
     this.stats = { ...this.config.stats };
     this.visuals = { ...this.config.visuals };
-    this.selectedShipSpriteKey = spriteKey; // Store the selected sprite key
-    this.selectedShipTextureIndex = textureIndex; // Store texture index
+    this.visualVariant = this.visuals?.variant || null;
+    this.selectedShipSpriteKey = selectedMetadata?.spriteKey || spriteKey;
+    this.selectedShipTextureIndex = textureIndex;
     this.hasSetInitialRank = false; // Track if initial rank has been set
 
     console.log(`[ShipStats] applied shipId=${this.config.id} damage=${this.stats.damage} fireRate=${this.stats.fireRate} speed=${this.stats.speed}`);
@@ -176,6 +174,9 @@ export class Player {
 
     const sprite = new PIXI.Sprite(texture);
     sprite.anchor.set(0.5);
+    if (Number.isFinite(this.visualVariant?.tint)) {
+      sprite.tint = this.visualVariant.tint;
+    }
 
     const targetWidth = this.baseShipWidth || this.computeBaselineShipWidth();
     const scale = texture.width > 0 ? targetWidth / texture.width : 1;
@@ -183,6 +184,20 @@ export class Player {
     this.baseScale = Number.isFinite(scale) ? scale : 1;
 
     return sprite;
+  }
+
+  createVariantGlow() {
+    const variant = this.visualVariant;
+    if (!variant) return null;
+
+    const glow = new PIXI.Graphics();
+    const radius = Math.max(34, (this.baseShipWidth || 60) * 0.7);
+    glow.circle(0, 0, radius);
+    glow.fill({ color: variant.accent || variant.glow || 0x66ffff, alpha: 0.12 });
+    glow.circle(0, 0, radius * 0.55);
+    glow.stroke({ color: variant.glow || variant.accent || 0xffffff, width: 2, alpha: 0.28 });
+    glow.label = 'shipVariantGlow';
+    return glow;
   }
 
   ensureShipOverlays() {
@@ -505,11 +520,15 @@ export class Player {
     if (this.damageOverlay && this.damageOverlay.parent) {
       this.damageOverlay.parent.removeChild(this.damageOverlay);
     }
+    if (this.variantGlow && this.variantGlow.parent) {
+      this.variantGlow.parent.removeChild(this.variantGlow);
+    }
     if (this.shieldSprite && this.shieldSprite.parent) {
       this.shieldSprite.parent.removeChild(this.shieldSprite);
     }
 
     this.damageOverlay = null;
+    this.variantGlow = null;
     this.shieldSprite = null;
 
     if (!this.targetShipWidthPx) {
@@ -525,6 +544,11 @@ export class Player {
       const selectedSprite = this.buildDefaultShipSprite();
       if (selectedSprite) {
         this.shipSprite = selectedSprite;
+        const variantGlow = this.createVariantGlow();
+        if (variantGlow) {
+          this.variantGlow = variantGlow;
+          this.sprite.addChild(this.variantGlow);
+        }
         this.sprite.addChild(this.shipSprite);
         applied = true;
         // Ensure weapon profile matches selection
@@ -575,6 +599,12 @@ export class Player {
       }
     }
     this.ensureShipOverlays();
+    if (Number.isFinite(this.visualVariant?.accent)) {
+      this.setCosmetics({
+        auraColor: this.visualVariant.accent,
+        muzzleColor: this.visualVariant.glow || this.visualVariant.accent
+      });
+    }
 
     // Apply visual enhancements after rebuild
     if (this.visualEnhancementCleanup) {

@@ -5,29 +5,76 @@
  */
 
 import { ShipData } from './ShipData.js';
+import { buildSelectableShipVariants } from './VisualVariantCatalog.js';
 
 export const ShipMetadata = {};
+export const ShipVariantData = buildSelectableShipVariants(ShipData);
 
-ShipData.forEach(ship => {
+ShipVariantData.forEach(ship => {
   ShipMetadata[ship.spriteKey] = {
     id: ship.id,
+    baseId: ship.baseId,
+    baseSpriteKey: ship.baseSpriteKey,
+    variantSlug: ship.variantSlug,
+    variantCode: ship.variantCode,
     name: ship.name,
     description: ship.description,
     lore: ship.loreShort,
     textureIndex: ship.textureIndex,
+    weapon: { ...ship.weapon },
+    visuals: { ...ship.visuals },
+    hitbox: { ...ship.hitbox },
     stats: {
       speed: ship.stats.speed,
       fireRate: ship.stats.fireRate,
-      damage: ship.stats.damage
+      damage: ship.stats.damage,
+      bulletSpeed: ship.stats.bulletSpeed
     },
     loreLong: ship.loreLong
   };
+});
+
+// Preserve old save keys as aliases to the first visual variant of each base ship.
+ShipData.forEach(ship => {
+  const alias = ShipVariantData.find(candidate => candidate.baseSpriteKey === ship.spriteKey);
+  if (alias) {
+    ShipMetadata[ship.spriteKey] = {
+      ...ShipMetadata[alias.spriteKey],
+      spriteKey: ship.spriteKey,
+      aliasFor: alias.spriteKey
+    };
+  }
 });
 
 /**
  * Get list of selectable ships with metadata
  */
 export function getSelectableShips() {
+  return ShipVariantData.map(ship => ({
+    spriteKey: ship.spriteKey,
+    ...ShipMetadata[ship.spriteKey]
+  }));
+}
+
+export function resolveShipKey(spriteKey) {
+  const metadata = ShipMetadata[spriteKey];
+  return metadata?.aliasFor || spriteKey;
+}
+
+export function getShipMetadata(spriteKey) {
+  const resolved = resolveShipKey(spriteKey);
+  const metadata = ShipMetadata[resolved] || null;
+  return metadata ? { spriteKey: resolved, ...metadata } : null;
+}
+
+export function getBaseShipMetadata(spriteKey) {
+  return ShipData.find(ship => ship.spriteKey === spriteKey || ship.id === spriteKey) || null;
+}
+
+/**
+ * Get all metadata entries including legacy aliases
+ */
+export function getAllShipMetadata() {
   return Object.keys(ShipMetadata).map(spriteKey => ({
     spriteKey,
     ...ShipMetadata[spriteKey]
@@ -35,17 +82,10 @@ export function getSelectableShips() {
 }
 
 /**
- * Get ship metadata by sprite key
- */
-export function getShipMetadata(spriteKey) {
-  return ShipMetadata[spriteKey] || null;
-}
-
-/**
  * Get default ship sprite key
  */
 export function getDefaultShipKey() {
-  return 'row2_ship_1.png';
+  return 'row2_ship_1.png::ion';
 }
 
 /**
