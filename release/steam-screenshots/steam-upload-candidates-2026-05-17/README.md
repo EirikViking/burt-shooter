@@ -25,7 +25,7 @@ Review evidence:
 Notes:
 - All candidates are `1280x720`.
 - Source `report.json` had zero console events, page errors, and bad network responses.
-- Source `report.json` records build `v2026-05-17_21-02-17`, matching `public/version.json` at capture time.
+- Source `report.json` records build `v2026-05-17_21-11-41`, matching `public/version.json` at capture time.
 - Boss and wave-transition captures include the quieter message-focus timing and later score-flow/reward cleanup from the current release build.
 - The midgame and boss shots use deterministic debug routes for repeatable store-candidate capture; they still render the actual runtime UI, sprites, backgrounds, and effects.
 - Final upload still needs user approval inside Steamworks.

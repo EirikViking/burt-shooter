@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
@@ -24,6 +24,15 @@ const paths = {
   contactSheet: path.join(outputDir, 'candidate-contact-sheet.png'),
   report: path.join(outputDir, 'report.json')
 };
+
+function readJson(file) {
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch (error) {
+    return { error: error.message };
+  }
+}
 
 function assertFile(file, label) {
   if (!existsSync(file)) throw new Error(`Missing ${label}: ${file}`);
@@ -204,6 +213,7 @@ async function main() {
     status: duration >= 48 && duration <= 52 && probe.streams?.some((stream) => stream.codec_name === 'h264') ? 'passed' : 'needs_review',
     inputVideo,
     outputVideo: paths.outputVideo,
+    build: readJson(path.join(draftDir, 'audio-mix-report.json'))?.build || readJson(path.join(draftDir, 'report.json'))?.build || null,
     titleCards: [
       { image: paths.introPng, durationSeconds: introSeconds, title: 'NOVA SWARM', subtitle: 'ARCADE PATROL' },
       { image: paths.outroPng, durationSeconds: outroSeconds, title: 'CHASE THE SWARM', subtitle: 'DODGE. SCORE. BRAG.' }

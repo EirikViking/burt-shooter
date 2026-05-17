@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const durationSeconds = Number(process.env.TRAILER_AUDIO_DURATION || 43.88);
@@ -8,6 +8,7 @@ const draftDir = path.resolve(process.env.TRAILER_AUDIO_DRAFT_DIR || findLatestD
 const inputVideo = path.resolve(process.env.TRAILER_AUDIO_VIDEO || path.join(draftDir, 'nova-swarm-steam-trailer-visual-draft.webm'));
 const outputVideo = path.resolve(process.env.TRAILER_AUDIO_OUTPUT || path.join(draftDir, 'nova-swarm-steam-trailer-audio-draft.mp4'));
 const reportPath = path.join(draftDir, 'audio-mix-report.json');
+const visualReportPath = path.join(draftDir, 'report.json');
 
 const audio = {
   introMusic: 'public/audio/music/nova-swarm/nova_swarm_intro_overture.mp3',
@@ -70,6 +71,15 @@ function findLatestDraftDir(root) {
     .sort();
   if (!drafts.length) throw new Error(`No trailer draft directories found in ${root}`);
   return drafts[drafts.length - 1];
+}
+
+function readJson(file) {
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch (error) {
+    return { error: error.message };
+  }
 }
 
 function music(key, start, duration, volume, fade = 0.4) {
@@ -178,6 +188,7 @@ async function main() {
     draftDir,
     inputVideo,
     outputVideo,
+    build: readJson(visualReportPath)?.build || null,
     durationSeconds,
     notes: [
       'Audio-mixed Steam trailer draft rendered from captured game footage and shipped Nova Swarm audio assets.',

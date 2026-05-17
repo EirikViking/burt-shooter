@@ -396,45 +396,69 @@ checks.push({
 
 checks.push({
   name: 'steam_trailer_visual_report_clean',
-  ...checkJsonReport('release/steam-trailer/draft-2026-05-17-current/report.json', (json) => ({
-    ok: Array.isArray(json.timeline) && json.timeline.length >= 8 &&
+  ...checkJsonReport('release/steam-trailer/draft-2026-05-17-current/report.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    const actualBuild = json.build?.version || null;
+    return {
+      ok: Array.isArray(json.timeline) && json.timeline.length >= 8 &&
+      Boolean(expectedBuild) &&
+      actualBuild === expectedBuild &&
       (json.consoleEvents || []).length === 0 &&
       (json.pageErrors || []).length === 0 &&
       (json.badResponses || []).length === 0,
-    beatCount: json.timeline?.length || 0,
-    consoleEvents: json.consoleEvents || [],
-    pageErrors: json.pageErrors || [],
-    badResponses: json.badResponses || []
-  }))
+      beatCount: json.timeline?.length || 0,
+      expectedBuild,
+      actualBuild,
+      consoleEvents: json.consoleEvents || [],
+      pageErrors: json.pageErrors || [],
+      badResponses: json.badResponses || []
+    };
+  })
 });
 
 checks.push({
   name: 'steam_trailer_audio_mix_report_present',
-  ...checkJsonReport('release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json', (json) => ({
-    ok: json.ffprobe?.streams?.some((stream) => stream.codec_name === 'h264') &&
+  ...checkJsonReport('release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    const actualBuild = json.build?.version || null;
+    return {
+      ok: json.ffprobe?.streams?.some((stream) => stream.codec_name === 'h264') &&
       json.ffprobe?.streams?.some((stream) => stream.codec_name === 'aac') &&
+      Boolean(expectedBuild) &&
+      actualBuild === expectedBuild &&
       Number(json.ffprobe?.format?.duration || 0) > 40,
-    duration: json.ffprobe?.format?.duration,
-    streams: json.ffprobe?.streams || []
-  }))
+      expectedBuild,
+      actualBuild,
+      duration: json.ffprobe?.format?.duration,
+      streams: json.ffprobe?.streams || []
+    };
+  })
 });
 
 checks.push({
   name: 'steam_trailer_editorial_candidate_clean',
-  ...checkJsonReport('release/steam-trailer/candidate-2026-05-17-current/report.json', (json) => ({
-    ok: json.status === 'passed' &&
+  ...checkJsonReport('release/steam-trailer/candidate-2026-05-17-current/report.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    const actualBuild = json.build?.version || null;
+    return {
+      ok: json.status === 'passed' &&
       Array.isArray(json.titleCards) &&
       json.titleCards.length === 2 &&
       json.ffprobe?.streams?.some((stream) => stream.codec_name === 'h264' && stream.width === 1280 && stream.height === 720) &&
       json.ffprobe?.streams?.some((stream) => stream.codec_name === 'aac') &&
+      Boolean(expectedBuild) &&
+      actualBuild === expectedBuild &&
       Number(json.ffprobe?.format?.duration || 0) >= 48 &&
       existsSync(path.resolve(root, 'release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png')),
-    status: json.status || null,
-    duration: json.ffprobe?.format?.duration || null,
-    titleCards: json.titleCards || [],
-    volume: json.volume || null,
-    contactSheet: json.contactSheet || null
-  }))
+      status: json.status || null,
+      expectedBuild,
+      actualBuild,
+      duration: json.ffprobe?.format?.duration || null,
+      titleCards: json.titleCards || [],
+      volume: json.volume || null,
+      contactSheet: json.contactSheet || null
+    };
+  })
 });
 
 checks.push({

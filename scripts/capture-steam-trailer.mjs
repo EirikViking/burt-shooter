@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -18,6 +18,16 @@ const consoleEvents = [];
 const pageErrors = [];
 const badResponses = [];
 const timeline = [];
+
+function readBuildInfo() {
+  const versionPath = path.resolve('public', 'version.json');
+  if (!existsSync(versionPath)) return null;
+  try {
+    return JSON.parse(readFileSync(versionPath, 'utf8'));
+  } catch (error) {
+    return { error: error.message };
+  }
+}
 
 function dateStamp() {
   const now = new Date();
@@ -331,6 +341,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     baseUrl,
     outputDir,
+    build: readBuildInfo(),
     viewport,
     trailer: trailerName,
     notes: [

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T19:08:56.649Z",
+  "generatedAt": "2026-05-17T19:18:46.989Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 13,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 27854
+          "bytes": 28431
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -84,32 +84,32 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "ok": true,
-          "bytes": 1755
+          "bytes": 1786
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "ok": true,
-          "bytes": 2183489
+          "bytes": 2181504
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2445
+          "bytes": 2546
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json",
           "ok": true,
-          "bytes": 8968
+          "bytes": 9069
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2323
+          "bytes": 2424
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "ok": true,
-          "bytes": 578387
+          "bytes": 583184
         },
         {
           "path": "release/provenance/asset_provenance_manifest.json",
@@ -158,8 +158,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1602,
-      "coveredCount": 1602,
+      "assetCount": 1603,
+      "coveredCount": 1603,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []
@@ -182,8 +182,8 @@
       "name": "steam_screenshot_capture_report_clean",
       "ok": true,
       "shotCount": 10,
-      "expectedBuild": "v2026-05-17_21-02-17",
-      "actualBuild": "v2026-05-17_21-02-17",
+      "expectedBuild": "v2026-05-17_21-11-41",
+      "actualBuild": "v2026-05-17_21-11-41",
       "consoleEvents": [],
       "pageErrors": [],
       "badResponses": []
@@ -247,6 +247,8 @@
       "name": "steam_trailer_visual_report_clean",
       "ok": true,
       "beatCount": 11,
+      "expectedBuild": "v2026-05-17_21-11-41",
+      "actualBuild": "v2026-05-17_21-11-41",
       "consoleEvents": [],
       "pageErrors": [],
       "badResponses": []
@@ -254,6 +256,8 @@
     {
       "name": "steam_trailer_audio_mix_report_present",
       "ok": true,
+      "expectedBuild": "v2026-05-17_21-11-41",
+      "actualBuild": "v2026-05-17_21-11-41",
       "duration": "43.900000",
       "streams": [
         {
@@ -274,6 +278,8 @@
       "name": "steam_trailer_editorial_candidate_clean",
       "ok": true,
       "status": "passed",
+      "expectedBuild": "v2026-05-17_21-11-41",
+      "actualBuild": "v2026-05-17_21-11-41",
       "duration": "49.923333",
       "titleCards": [
         {
@@ -299,16 +305,16 @@
       "name": "desktop_package_report_clean",
       "ok": true,
       "status": "passed",
-      "expectedBuild": "v2026-05-17_21-02-17",
-      "actualBuild": "v2026-05-17_21-02-17",
+      "expectedBuild": "v2026-05-17_21-11-41",
+      "actualBuild": "v2026-05-17_21-11-41",
       "desktopPayload": {
         "path": "release/desktop/win-unpacked/Nova Swarm.exe",
         "sizeBytes": 226666496,
-        "modifiedAt": "2026-05-17T19:05:21.065Z"
+        "modifiedAt": "2026-05-17T19:15:12.994Z"
       },
       "latestElectronSmoke": {
-        "reportPath": "test-results/electron-smoke-2026-05-17T19-05-29-070Z/report.json",
-        "screenshotPath": "test-results/electron-smoke-2026-05-17T19-05-29-070Z/01-electron-menu.png",
+        "reportPath": "test-results/electron-smoke-2026-05-17T19-15-20-075Z/report.json",
+        "screenshotPath": "test-results/electron-smoke-2026-05-17T19-15-20-075Z/01-electron-menu.png",
         "status": "passed",
         "title": "Nova Swarm - Arcade Patrol",
         "scene": "intro",
