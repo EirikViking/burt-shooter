@@ -14,7 +14,7 @@ Current verified web build:
 
 Latest pushed evidence:
 
-- Commit: `159173a feat: add visual variant arsenal`
+- Commit: `c83f4e0 feat: add Steam desktop package path`
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
 - Latest intro/audio/visual smoke: `test-results/smoke-2026-05-17T09-17-13-563Z/`
 - Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
@@ -22,6 +22,7 @@ Latest pushed evidence:
 - Visual variety evidence: 216 selectable ship variants and 48 enemy visual variants from `src/config/VisualVariantCatalog.js`.
 - Desktop package path: `docs/steam-desktop-package.md`, `electron/main.cjs`, `electron-builder.json`, and `release/steamworks/app_build_TEMPLATE.vdf`.
 - Latest desktop package verification: `test-results/electron-smoke-2026-05-17T10-17-05-615Z/`, `npm run package:steam:win`, and generated `release/desktop/win-unpacked/Nova Swarm.exe`.
+- Steam trailer visual draft workflow: `docs/steam-trailer-workflow.md`, `scripts/capture-steam-trailer.mjs`, and evidence in `release/steam-trailer/draft-2026-05-17-12-46/`.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 
@@ -100,7 +101,7 @@ Suggested tags:
 These are not proven ready in the repo yet:
 
 - Final curated Steam screenshot approval. A repeatable live-build candidate set now exists at `release/steam-screenshots/draft-2026-05-17-live-1280/`, but it still needs human selection/caption approval before upload.
-- Gameplay trailer or short launch clip.
+- Final audio-mixed trailer or short launch clip. A clean 43.88 second 1280x720 visual trailer draft now exists at `release/steam-trailer/draft-2026-05-17-12-46/`, but it still needs music/SFX/voice mix, title-card judgment, export, and human upload approval.
 - Final store page copy approval, including public arcade-comedy tone, localization stance, and confirmation that old inside-joke material has been removed from player-facing surfaces.
 - Legal/provenance review for all shipped art, music, SFX, generated portraits, generated voice, names, and jokes.
 - Final by-ear approval for the ElevenLabs intro music, narrator lines, stingers, and in-game voice/SFX blend.
@@ -118,6 +119,7 @@ Do not call this Steam-ready until these are true:
 - `npm run smoke` passes with no routine console output, page errors, bad responses, fatal overlays, music-routing failures, or UI overlap failures.
 - `npm run desktop:smoke` passes and captures an Electron wrapper screenshot.
 - `npm run package:steam:win` produces `release/desktop/win-unpacked/Nova Swarm.exe`.
+- `npm run capture:steam-trailer` produces a clean trailer draft report with no browser or network failures.
 - `npm run playtest:release` survives at least 10 minutes without debug flags.
 - A human 10-15 minute playthrough confirms late boss pressure, repair/mercy generosity, game-over/restart flow, and UI clutter feel right.
 - A human listening pass confirms menu, gameplay, wave clear, boss inbound, boss fight, victory, and game-over mix on headphones or speakers.

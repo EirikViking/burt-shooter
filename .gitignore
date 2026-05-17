@@ -9,6 +9,8 @@ RESCUE_*.txt
 test-results/
 tmpclaude-*
 release/desktop/
+release/steam-trailer/*/*.webm
+release/steam-trailer/*/*.mp4
 
 # Protected generated build artifacts - never commit
 public/sw.js

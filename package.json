@@ -15,6 +15,7 @@
     "smoke": "node scripts/smoke-playtest.mjs",
     "playtest:release": "node scripts/release-playtest.mjs",
     "capture:steam-screenshots": "node scripts/capture-steam-screenshots.mjs",
+    "capture:steam-trailer": "node scripts/capture-steam-trailer.mjs",
     "desktop:smoke": "npm run build && electron electron/main.cjs --smoke",
     "package:steam:win": "npm run build && electron-builder --win dir --x64 --config electron-builder.json",
     "deploy": "npm run build && wrangler pages deploy dist"
