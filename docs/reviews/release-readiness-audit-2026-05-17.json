@@ -1,0 +1,198 @@
+{
+  "generatedAt": "2026-05-17T11:47:34.574Z",
+  "verdict": "not_steam_ready",
+  "summary": {
+    "passed": 8,
+    "failed": 1,
+    "hardFailures": 0,
+    "manualBlockers": [
+      "Steamworks app ID and depot ID are still not configured in tracked files.",
+      "SteamCMD is not on PATH in the current local environment.",
+      "SteamPipe upload and Steam-client install/launch validation still require credentials and a real app.",
+      "User/human approval is still required for final screenshots, capsules, trailer, and by-ear audio mix."
+    ]
+  },
+  "checks": [
+    {
+      "name": "required_release_artifacts_exist",
+      "ok": true,
+      "files": [
+        {
+          "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
+          "ok": true,
+          "bytes": 10768
+        },
+        {
+          "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
+          "ok": true,
+          "bytes": 5901
+        },
+        {
+          "path": "docs/steam-desktop-package.md",
+          "ok": true,
+          "bytes": 2403
+        },
+        {
+          "path": "docs/steam-trailer-workflow.md",
+          "ok": true,
+          "bytes": 2299
+        },
+        {
+          "path": "release/steamworks/app_build_TEMPLATE.vdf",
+          "ok": true,
+          "bytes": 359
+        },
+        {
+          "path": "release/steamworks/steam_client_validation_runbook.md",
+          "ok": true,
+          "bytes": 2691
+        },
+        {
+          "path": "release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_review_report.json",
+          "ok": true,
+          "bytes": 2605
+        },
+        {
+          "path": "release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png",
+          "ok": true,
+          "bytes": 3226184
+        },
+        {
+          "path": "release/steam-assets/draft-2026-05-17-nova-swarm/review/small_capsule_thumbnail_sheet.png",
+          "ok": true,
+          "bytes": 82274
+        },
+        {
+          "path": "release/steam-screenshots/draft-2026-05-17-live-1280/report.json",
+          "ok": true,
+          "bytes": 3108
+        },
+        {
+          "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
+          "ok": true,
+          "bytes": 1240
+        },
+        {
+          "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
+          "ok": true,
+          "bytes": 2117181
+        },
+        {
+          "path": "release/steam-trailer/draft-2026-05-17-12-46/report.json",
+          "ok": true,
+          "bytes": 2443
+        },
+        {
+          "path": "release/steam-trailer/draft-2026-05-17-12-46/audio-mix-report.json",
+          "ok": true,
+          "bytes": 8962
+        }
+      ]
+    },
+    {
+      "name": "no_forbidden_private_player_facing_terms_in_text_files",
+      "ok": true,
+      "matches": []
+    },
+    {
+      "name": "steam_assets_report_clean",
+      "ok": true,
+      "assetCount": 9,
+      "failures": []
+    },
+    {
+      "name": "live_screenshot_capture_report_clean",
+      "ok": true,
+      "shotCount": 9,
+      "consoleEvents": [],
+      "pageErrors": [],
+      "badResponses": []
+    },
+    {
+      "name": "steam_screenshot_upload_candidates_1280x720",
+      "ok": true,
+      "count": 7,
+      "candidates": [
+        {
+          "file": "01-story-intro-cinematic.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        },
+        {
+          "file": "02-ship-select-variety.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        },
+        {
+          "file": "03-first-wave-gameplay.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        },
+        {
+          "file": "04-boss-inbound.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        },
+        {
+          "file": "05-boss-fight.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        },
+        {
+          "file": "06-boss-victory.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        },
+        {
+          "file": "07-game-over-score-flow.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "name": "steam_trailer_visual_report_clean",
+      "ok": true,
+      "beatCount": 11,
+      "consoleEvents": [],
+      "pageErrors": [],
+      "badResponses": []
+    },
+    {
+      "name": "steam_trailer_audio_mix_report_present",
+      "ok": true,
+      "duration": "43.880000",
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1280,
+          "height": 720,
+          "r_frame_rate": "25/1",
+          "duration": "43.880000"
+        },
+        {
+          "codec_name": "aac",
+          "r_frame_rate": "0/0",
+          "duration": "43.871000"
+        }
+      ]
+    },
+    {
+      "name": "desktop_payload_exists",
+      "ok": true,
+      "path": "release/desktop/win-unpacked/Nova Swarm.exe"
+    },
+    {
+      "name": "steamcmd_available",
+      "ok": false,
+      "requiredForSteamReady": true
+    }
+  ]
+}
