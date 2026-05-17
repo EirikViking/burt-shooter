@@ -8,6 +8,7 @@ RESCUE_*.txt
 .wrangler/
 test-results/
 tmpclaude-*
+release/desktop/
 
 # Protected generated build artifacts - never commit
 public/sw.js

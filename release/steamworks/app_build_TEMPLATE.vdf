@@ -1,0 +1,21 @@
+"AppBuild"
+{
+  "AppID" "STEAM_APP_ID_HERE"
+  "Desc" "Nova Swarm Windows release candidate"
+  "BuildOutput" "..\\steam-build-output"
+  "ContentRoot" "..\\desktop\\win-unpacked"
+  "SetLive" ""
+
+  "Depots"
+  {
+    "STEAM_DEPOT_ID_HERE"
+    {
+      "FileMapping"
+      {
+        "LocalPath" "*"
+        "DepotPath" "."
+        "recursive" "1"
+      }
+    }
+  }
+}

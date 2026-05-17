@@ -1,0 +1,28 @@
+{
+  "appId": "app.novaswarm.game",
+  "productName": "Nova Swarm",
+  "directories": {
+    "output": "release/desktop"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "extraMetadata": {
+    "main": "electron/main.cjs"
+  },
+  "win": {
+    "icon": "build/icons/nova-swarm.ico",
+    "target": [
+      {
+        "target": "dir",
+        "arch": [
+          "x64"
+        ]
+      }
+    ]
+  },
+  "asar": true,
+  "compression": "maximum"
+}

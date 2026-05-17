@@ -20,6 +20,8 @@ Latest pushed evidence:
 - Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
 - Steam screenshot candidate capture: `release/steam-screenshots/draft-2026-05-17-11-30/`
 - Visual variety evidence: 216 selectable ship variants and 48 enemy visual variants from `src/config/VisualVariantCatalog.js`.
+- Desktop package path: `docs/steam-desktop-package.md`, `electron/main.cjs`, `electron-builder.json`, and `release/steamworks/app_build_TEMPLATE.vdf`.
+- Latest desktop package verification: `test-results/electron-smoke-2026-05-17T10-17-05-615Z/`, `npm run package:steam:win`, and generated `release/desktop/win-unpacked/Nova Swarm.exe`.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 
@@ -103,7 +105,7 @@ These are not proven ready in the repo yet:
 - Legal/provenance review for all shipped art, music, SFX, generated portraits, generated voice, names, and jokes.
 - Final by-ear approval for the ElevenLabs intro music, narrator lines, stingers, and in-game voice/SFX blend.
 - Final capsule thumbnail review at small sizes.
-- Steam build/package plan. The repo is currently a web game; shipping on Steam needs a wrapper/package decision or a native build path.
+- Steam client upload/install validation. The repo now has an Electron wrapper/package path and a generated Windows payload, but Steam readiness still needs SteamPipe upload and install/launch validation through the Steam client.
 - Steamworks setup evidence: app ID, depots, launch options, cloud save decision, achievements decision, and controller compatibility metadata.
 
 ## Release Gates Before Steam
@@ -114,6 +116,8 @@ Do not call this Steam-ready until these are true:
 - `npm run check:audio` passes.
 - `npm run audit:audio-mix` passes, and any warnings are accepted intentionally.
 - `npm run smoke` passes with no routine console output, page errors, bad responses, fatal overlays, music-routing failures, or UI overlap failures.
+- `npm run desktop:smoke` passes and captures an Electron wrapper screenshot.
+- `npm run package:steam:win` produces `release/desktop/win-unpacked/Nova Swarm.exe`.
 - `npm run playtest:release` survives at least 10 minutes without debug flags.
 - A human 10-15 minute playthrough confirms late boss pressure, repair/mercy generosity, game-over/restart flow, and UI clutter feel right.
 - A human listening pass confirms menu, gameplay, wave clear, boss inbound, boss fight, victory, and game-over mix on headphones or speakers.
@@ -124,6 +128,6 @@ Do not call this Steam-ready until these are true:
 
 - Review the live-build Steam screenshot candidate set in `release/steam-screenshots/draft-2026-05-17-live-1280/` and choose the final 5-8 store uploads.
 - Build a short trailer beat sheet from existing smoke/release states, then record a clean 30-45 second clip.
-- Decide Steam packaging direction: Electron/Tauri/WebView wrapper, native export, or keep this as web-only for now.
+- Generate and inspect the Electron Windows package with `npm run package:steam:win`, then run it via the Steam client after replacing IDs in `release/steamworks/app_build_TEMPLATE.vdf`.
 - Run the human by-ear audio pass using the Settings SFX/VOICE audition buttons plus natural gameplay.
 - Run one normal-skill human playthrough and record specific notes on late boss pressure and whether field repair/last-stand repair feels fair or too generous.

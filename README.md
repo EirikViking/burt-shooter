@@ -19,6 +19,7 @@ The dev server runs on `http://localhost:3000`.
 npm run build
 npm run check:audio
 npm run audit:audio-mix
+npm run desktop:smoke
 npm run capture:steam-screenshots
 npm run smoke
 ```
@@ -30,6 +31,8 @@ npm run smoke
 `npm run audit:audio-mix` uses FFmpeg `volumedetect` to measure referenced music, SFX, and voice assets. It requires `ffmpeg` on PATH.
 
 `npm run capture:steam-screenshots` captures a repeatable 1280x720 candidate screenshot set from `dist/` or from `STEAM_CAPTURE_URL` when supplied.
+
+`npm run desktop:smoke` builds the web game, launches the Electron desktop wrapper, captures a menu screenshot, and verifies the local `/api/highscores` endpoint used by Steam/offline builds.
 
 ## Current Direction
 
@@ -50,6 +53,14 @@ npx wrangler pages deploy dist
 ```
 
 The high-score API uses Cloudflare Pages Functions and D1. Database setup lives in `schema.sql` and `wrangler.toml`.
+
+## Package For Steam
+
+```bash
+npm run package:steam:win
+```
+
+The Windows Steam candidate is written to `release/desktop/win-unpacked/`. See `docs/steam-desktop-package.md` for the SteamPipe handoff template and remaining Steamworks steps.
 
 ## Controls
 

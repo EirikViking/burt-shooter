@@ -8,6 +8,16 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Targeted public-content scan is clean for stale preview URLs, private place/person names, Galaga references, and the patched Norwegian UI terms.
 - Latest checks for this slice: `npm run build`, `npm run smoke`, and a 60-second `npm run playtest:release` with `RELEASE_PLAYTEST_OUTPUT_DIR=test-results/release-playtest-public-text-20260517-1144` all passed with no page errors, bad responses, request failures, or console warnings.
 
+## 2026-05-17 Desktop / Steam Package Path
+
+- Added an Electron wrapper in `electron/main.cjs` that serves the Vite `dist/` build over a local loopback server and implements local `/api/highscores` storage for offline/Steam builds.
+- Added `electron-builder.json`, `npm run desktop:smoke`, `npm run package:steam:win`, and `release/steamworks/app_build_TEMPLATE.vdf`.
+- Replaced the old face-based `public/icons/icon-192.png` with an original Nova Swarm ship icon, added `public/icons/icon-512.png`, and generated `build/icons/nova-swarm.ico` for the Windows executable.
+- `npm run desktop:smoke` passed with generated intro art visible and local highscore API OK. Latest evidence: `test-results/electron-smoke-2026-05-17T10-17-05-615Z/`.
+- `npm run package:steam:win` produced `release/desktop/win-unpacked/Nova Swarm.exe`; generated output remains ignored.
+- `npm audit --omit=dev` now reports `found 0 vulnerabilities`; the remaining full-audit Vite/esbuild finding is dev-server-only and requires a breaking Vite major upgrade according to npm.
+- `npm run smoke` passed after packaging/icon changes. Latest evidence: `test-results/smoke-2026-05-17T10-23-56-254Z/`.
+
 ## 2026-05-17 Nova Swarm Retheme
 
 - Pivoted the game away from the internal-joke identity and toward Nova Swarm, a public arcade shooter built around swarm formations, bonus cores, boss patterns, and high-score humor.
