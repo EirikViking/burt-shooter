@@ -73,7 +73,6 @@ export class HighscoreScene {
     this.bubbleTimerMs = null;
     this.bubbleLifetimeMs = 5000;
     this.lastBubbleErrorAt = 0;
-    this.walletPanels = new Map();
   }
 
   async init() {
@@ -85,7 +84,6 @@ export class HighscoreScene {
     this.currentBubble = null;
     this.bubbleTimer = 0;
     this.bubbleTimerMs = null;
-    this.walletPanels = new Map();
 
     // Load bonus-core texture and rank textures
     await BonusAsset.ensureLoaded();
@@ -172,7 +170,7 @@ export class HighscoreScene {
     this.stateMessage.anchor.set(0.5);
     this.container.addChild(this.stateMessage);
 
-    this.vkcFooterText = createText('$VKC indicates a verified Klever Wallet address and eligibility for VikingCoin prizes', {
+    this.vkcFooterText = createText('', {
       fontFamily: 'Courier New',
       fontSize: 10,
       fill: '#66ff66',
@@ -197,7 +195,7 @@ export class HighscoreScene {
     this.retryBtn.on('pointerdown', () => this.fetchHighscores());
     this.container.addChild(this.retryBtn);
 
-    this.backBtn = this.createButton('TILBAKE');
+    this.backBtn = this.createButton('BACK');
     this.backBtn.on('pointerdown', () => {
       this.game.switchScene('menu');
     });
@@ -444,9 +442,6 @@ export class HighscoreScene {
     const levelNum = Number(raw.level);
     const rankValue = raw.rank_index ?? raw.rankIndex ?? raw.rank;
     const rankNum = Number(rankValue);
-    const walletValue = (raw.walletAddress ?? raw.wallet_address ?? '').toString().trim();
-    const hasWallet = !!walletValue;
-
     const safeScore = Number.isFinite(scoreNum) ? scoreNum : 0;
     const safeLevel = Number.isFinite(levelNum) ? levelNum : 0;
     const safeRank = Number.isFinite(rankNum) ? rankNum : getRankFromScore(safeScore);
@@ -455,9 +450,7 @@ export class HighscoreScene {
       name,
       score: safeScore,
       level: safeLevel,
-      rank_index: safeRank,  // CRITICAL FIX: Must be rank_index not rank!
-      walletAddress: hasWallet ? walletValue : null,
-      hasWallet
+      rank_index: safeRank  // CRITICAL FIX: Must be rank_index not rank!
     };
   }
 
@@ -525,16 +518,10 @@ export class HighscoreScene {
     };
   }
 
-  // Helper to place the VKC footer
+  // Footer intentionally hidden for public Steam builds.
   layoutVkcFooter(layout) {
     if (!this.vkcFooterText) return;
-    const { width, height } = this.game.app.screen;
-
-    // Position at very bottom of screen, below the Back button
-    this.vkcFooterText.x = width / 2;
-    this.vkcFooterText.y = height - 10;
-    this.vkcFooterText.anchor.set(0.5, 1); // Bottom-center anchor
-    this.vkcFooterText.visible = this.status === 'LOADED';
+    this.vkcFooterText.visible = false;
   }
 
   resolveBubblePlacement(bubble, tableBounds, layout, anchorX, anchorY) {
@@ -622,7 +609,6 @@ export class HighscoreScene {
 
   async renderHighscoreRows(startY, layout) {
     this.rowsContainer.removeChildren();
-    this.walletPanels.clear();
     if (this.status === 'LOADED') {
       const isDebug = window.location.search.includes('debug=1');
       // Check for pending highscore and prepare combined list
@@ -636,8 +622,6 @@ export class HighscoreScene {
           score: pending.score || 0,
           level: pending.level || 0,
           rank_index: pending.rankIndex ?? getRankFromScore(pending.score || 0),
-          walletAddress: pending.walletAddress || null,
-          hasWallet: !!pending.walletAddress,
           isPending: true
         };
         // Add pending entry at the start
@@ -763,23 +747,6 @@ export class HighscoreScene {
 
         this.rowsContainer.addChild(rankText, nameText, scoreText, levelText);
 
-        if (score.hasWallet && score.walletAddress) {
-          const vkcTag = createText('$VKC', {
-            fontFamily: 'Courier New',
-            fontSize: Math.max(10, rowStyle.fontSize - 2),
-            fill: '#66ff66'
-          });
-          vkcTag.x = nameText.x + nameText.width + 8;
-          vkcTag.y = y;
-          this.rowsContainer.addChild(vkcTag);
-
-          nameText.eventMode = 'static';
-          nameText.cursor = 'pointer';
-          nameText.on('pointerdown', () => {
-            this.toggleWalletPanel(index, score.walletAddress, nameText.x, y + rowHeight * 0.6, layout);
-          });
-        }
-
         // Add rank sprite using preloaded texture
         const rankTexture = rankTextures[index];
         // The badge shows player progression rank, not leaderboard placement
@@ -838,8 +805,6 @@ export class HighscoreScene {
         this.rowsContainer.addChild(more);
       }
 
-
-      // Position VKC footer
       this.layoutVkcFooter(layout);
 
       this.fadeInRows();
@@ -1405,106 +1370,6 @@ export class HighscoreScene {
 
     return { x: rowX, y: rowY };
   }
-
-  formatKeyForDisplay(key) {
-    if (!key) return '';
-    const str = String(key);
-    // Show first 10 and last 10 characters for long keys to fit in panel
-    if (str.length <= 24) return str;
-    return `${str.slice(0, 10)}...${str.slice(-10)}`;
-  }
-
-  toggleWalletPanel(rowIndex, walletAddress, anchorX, anchorY, layout) {
-    if (!walletAddress) return;
-    const existing = this.walletPanels.get(rowIndex);
-    if (existing) {
-      if (existing.parent) existing.parent.removeChild(existing);
-      this.walletPanels.delete(rowIndex);
-      return;
-    }
-
-    this.walletPanels.forEach((panel) => {
-      if (panel.parent) panel.parent.removeChild(panel);
-    });
-    this.walletPanels.clear();
-
-    const panel = new PIXI.Container();
-    const padding = 10;
-    const maxWidth = Math.max(200, layout.width - layout.padding * 2);
-    const panelWidth = Math.min(380, maxWidth);
-
-    const background = new PIXI.Graphics();
-    background.rect(0, 0, panelWidth, 42);
-    background.fill({ color: 0x111111, alpha: 0.85 });
-    background.stroke({ color: 0x00ff88, width: 1, alpha: 0.6 });
-    panel.addChild(background);
-
-    const displayKey = this.formatKeyForDisplay(walletAddress);
-    const walletText = createText(displayKey, {
-      fontFamily: 'Courier New',
-      fontSize: 12,
-      fill: '#ffffff'
-    });
-    walletText.x = padding;
-    walletText.y = 6;
-    panel.addChild(walletText);
-
-    const copyText = createText('COPY', {
-      fontFamily: 'Courier New',
-      fontSize: 12,
-      fill: '#00ffff'
-    });
-    copyText.eventMode = 'static';
-    copyText.cursor = 'pointer';
-    copyText.x = panelWidth - padding - copyText.width;
-    copyText.y = 24;
-    copyText.on('pointerdown', () => {
-      this.copyWalletToClipboard(walletAddress, copyText);
-    });
-    panel.addChild(copyText);
-
-    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
-    panel.x = clamp(anchorX, layout.padding, layout.width - layout.padding - panelWidth);
-    panel.y = anchorY;
-
-    this.rowsContainer.addChild(panel);
-    this.walletPanels.set(rowIndex, panel);
-  }
-
-  async copyWalletToClipboard(walletAddress, label) {
-    let success = false;
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(walletAddress);
-        success = true;
-      }
-    } catch {
-      success = false;
-    }
-
-    if (!success) {
-      try {
-        const temp = document.createElement('input');
-        temp.value = walletAddress;
-        document.body.appendChild(temp);
-        temp.select();
-        document.execCommand('copy');
-        document.body.removeChild(temp);
-        success = true;
-      } catch {
-        success = false;
-      }
-    }
-
-    if (label) {
-      const original = label.text;
-      label.text = success ? 'COPIED' : 'COPY';
-      setTimeout(() => {
-        label.text = original;
-      }, 1200);
-    }
-  }
-
 
   destroy() {
     // PART B: Cleanup text rotation timers

@@ -60,7 +60,15 @@ const forbiddenSourceTerms = [
   'rolp',
   'svin',
   'isbjorn',
-  'kjottdeig'
+  'kjottdeig',
+  'VKC',
+  'VikingCoin',
+  'Klever',
+  'valgfri',
+  'TILBAKE',
+  'AVBRYT',
+  'FORTSETT',
+  'HOPP OVER'
 ];
 const forbiddenTerms = forbiddenSourceTerms.map((term) => new RegExp(`\\b${term}\\b`, 'i'));
 
