@@ -1,9 +1,10 @@
 {
-  "generatedAt": "2026-05-17T21:08:29.463Z",
+  "generatedAt": "2026-05-17T21:11:35.439Z",
   "build": {
     "version": "v2026-05-17_21-41-17",
     "timestamp": "2026-05-17T19:41:17.128Z",
     "evidenceVersions": [
+      "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
@@ -15,7 +16,7 @@
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
-    "passed": 17,
+    "passed": 18,
     "failed": 3,
     "hardFailures": 0,
     "failedChecks": [
@@ -75,6 +76,11 @@
         "legalProvenance",
         "gameplayFeel"
       ]
+    },
+    "steamClientPreflight": {
+      "status": "ready",
+      "path": "release/steamworks/steam_client_preflight_packet.json",
+      "stillRequiresSteamClientValidation": true
     },
     "audio": {
       "status": "ready",

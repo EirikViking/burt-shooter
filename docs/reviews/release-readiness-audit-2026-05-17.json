@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-17T21:08:30.846Z",
+  "generatedAt": "2026-05-17T21:12:09.865Z",
   "verdict": "not_steam_ready",
   "summary": {
-    "passed": 17,
+    "passed": 18,
     "failed": 3,
     "hardFailures": 0,
     "manualBlockers": [
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 30668
+          "bytes": 31267
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -54,7 +54,7 @@
         {
           "path": "release/steamworks/steam_client_validation_runbook.md",
           "ok": true,
-          "bytes": 3095
+          "bytes": 3188
         },
         {
           "path": "docs/reviews/2026-05-17-steamcmd-local-check.md",
@@ -147,14 +147,24 @@
           "bytes": 3634
         },
         {
+          "path": "release/steamworks/steam_client_preflight_packet.json",
+          "ok": true,
+          "bytes": 4776
+        },
+        {
+          "path": "release/steamworks/steam_client_preflight_packet.md",
+          "ok": true,
+          "bytes": 2029
+        },
+        {
           "path": "release/steamworks/release_handoff_packet.json",
           "ok": true,
-          "bytes": 5574
+          "bytes": 5786
         },
         {
           "path": "release/steamworks/release_handoff_packet.md",
           "ok": true,
-          "bytes": 3341
+          "bytes": 3432
         },
         {
           "path": "release/steamworks/store_metadata_draft.json",
@@ -795,6 +805,39 @@
           "prompt": "Play a normal 10-15 minute session and approve late boss pressure, repair generosity, restart flow, controls, and UI clutter."
         }
       ]
+    },
+    {
+      "name": "steam_client_preflight_packet_current",
+      "ok": true,
+      "status": "ready_for_steam_upload_and_client_validation",
+      "expectedBuild": "v2026-05-17_21-41-17",
+      "actualBuild": "v2026-05-17_21-41-17",
+      "missingChecks": [],
+      "clientValidation": {
+        "template": {
+          "path": "release/steamworks/client_validation_report.template.json",
+          "exists": true,
+          "bytes": 771,
+          "modifiedAt": "2026-05-17T13:11:20.625Z"
+        },
+        "output": "release/steamworks/client_validation_report.json",
+        "requiredChecks": [
+          "installedFromSteamClient",
+          "launchedFromSteamClient",
+          "menuReached",
+          "introAdvanceAndSkip",
+          "keyboardRunControls",
+          "gamepadRunControls",
+          "audioFromSteamInstall",
+          "localHighscoreSave",
+          "settingsPersistence",
+          "offlineLaunch",
+          "steamClientScreenshotCaptured"
+        ],
+        "stillRequired": true
+      },
+      "errors": [],
+      "warnings": []
     },
     {
       "name": "steam_release_handoff_packet_current",

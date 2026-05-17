@@ -1,0 +1,55 @@
+# Nova Swarm Steam Client Preflight Packet
+
+Generated: 2026-05-17T21:11:24.331Z
+Build: `v2026-05-17_21-41-17`
+Status: `ready_for_steam_upload_and_client_validation`
+
+This packet proves local upload preflight only. It is not Steam-client validation evidence.
+
+## Local Payload
+
+- Executable: `release/desktop/win-unpacked/Nova Swarm.exe`
+- Product name: Nova Swarm
+- Electron app id: app.novaswarm.game
+- Packaged smoke report: `test-results/packaged-exe-smoke-2026-05-17T20-47-48-305Z/report.json`
+- Full RC report: `test-results/steam-rc-verify-2026-05-17T20-46-38-788Z/report.json`
+
+## SteamPipe
+
+- Template: `release/steamworks/app_build_TEMPLATE.vdf`
+- ContentRoot: `..\\desktop\\win-unpacked`
+- Local VDF output: `release/steamworks/app_build_LOCAL.vdf`
+- Write command: `STEAM_APP_ID=<id> STEAM_DEPOT_ID=<id> npm run steamworks:write-vdf`
+- Upload command shape: `tools\\steamcmd\\steamcmd.exe +login <steamworks-user> +run_app_build release\\steamworks\\app_build_LOCAL.vdf +quit`
+
+## Steam Client Validation Still Required
+
+Copy `release/steamworks/client_validation_report.template.json` to `release/steamworks/client_validation_report.json` only after real SteamPipe upload and Steam-client install.
+
+- installedFromSteamClient
+- launchedFromSteamClient
+- menuReached
+- introAdvanceAndSkip
+- keyboardRunControls
+- gamepadRunControls
+- audioFromSteamInstall
+- localHighscoreSave
+- settingsPersistence
+- offlineLaunch
+- steamClientScreenshotCaptured
+
+## Artifacts
+
+| Present | Path | Bytes |
+| --- | --- | ---: |
+| yes | `release/desktop/win-unpacked/Nova Swarm.exe` | 226666496 |
+| yes | `release/steamworks/app_build_TEMPLATE.vdf` | 359 |
+| yes | `release/steamworks/client_validation_report.template.json` | 771 |
+| yes | `release/steamworks/desktop_package_review_report.json` | 1864 |
+| yes | `release/steamworks/full_rc_verification_report.json` | 3435 |
+| yes | `release/steamworks/steam_client_validation_runbook.md` | 3188 |
+| yes | `docs/reviews/2026-05-17-steamcmd-local-check.md` | 854 |
+
+## Warnings
+
+- None

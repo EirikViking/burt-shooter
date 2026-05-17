@@ -1,0 +1,150 @@
+{
+  "generatedAt": "2026-05-17T21:11:24.331Z",
+  "status": "ready_for_steam_upload_and_client_validation",
+  "build": {
+    "version": "v2026-05-17_21-41-17",
+    "timestamp": "2026-05-17T19:41:17.128Z"
+  },
+  "explicitLimit": "This packet proves local upload preflight only. It is not Steam-client validation evidence.",
+  "localPayload": {
+    "executable": {
+      "path": "release/desktop/win-unpacked/Nova Swarm.exe",
+      "exists": true,
+      "bytes": 226666496,
+      "modifiedAt": "2026-05-17T20:47:36.805Z"
+    },
+    "productName": "Nova Swarm",
+    "appId": "app.novaswarm.game",
+    "packagedExeSmoke": {
+      "reportPath": "test-results/packaged-exe-smoke-2026-05-17T20-47-48-305Z/report.json",
+      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-17T20-47-48-305Z/01-electron-menu.png",
+      "status": "passed",
+      "build": "v2026-05-17_21-41-17",
+      "title": "Nova Swarm - Arcade Patrol",
+      "scene": "intro",
+      "introTitle": "THE COIN SLOT WOKE UP",
+      "localHighscoreApi": {
+        "ok": true,
+        "status": 200
+      },
+      "readyState": {
+        "scene": "intro",
+        "introTitle": "THE COIN SLOT WOKE UP",
+        "introCaption": "An old arcade cabinet blinked awake between galaxies and found its coin slot full of stars.",
+        "panelTextures": 4,
+        "ready": true
+      },
+      "consoleEvents": []
+    },
+    "fullRc": {
+      "reportPath": "test-results/steam-rc-verify-2026-05-17T20-46-38-788Z/report.json",
+      "releasePlaytest": {
+        "reportPath": "test-results/release-playtest-2026-05-17T20-49-05-026Z/report.json",
+        "baseUrl": "http://127.0.0.1:4173",
+        "survivedMs": 599882,
+        "requiredSurvivalMs": 599500,
+        "survivedFullDuration": true,
+        "peakLevel": 5,
+        "peakScore": 58720,
+        "finalState": {
+          "scene": "play",
+          "level": 5,
+          "lives": 2,
+          "score": 58720,
+          "enemyManagerState": "BOSS_ACTIVE",
+          "musicContext": "boss",
+          "musicTrack": "DeathMatch (Boss Theme).mp3",
+          "fatalOverlay": false
+        },
+        "console": {
+          "routineMessages": 0,
+          "warningsOrErrors": 0,
+          "pageErrors": 0,
+          "badResponses": 0,
+          "requestFailures": 0
+        }
+      }
+    }
+  },
+  "steamPipe": {
+    "template": {
+      "path": "release/steamworks/app_build_TEMPLATE.vdf",
+      "exists": true,
+      "bytes": 359,
+      "modifiedAt": "2026-05-17T09:58:02.948Z"
+    },
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "localVdfOutput": "release/steamworks/app_build_LOCAL.vdf",
+    "writeCommand": "STEAM_APP_ID=<id> STEAM_DEPOT_ID=<id> npm run steamworks:write-vdf",
+    "uploadCommandShape": "tools\\\\steamcmd\\\\steamcmd.exe +login <steamworks-user> +run_app_build release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  },
+  "clientValidation": {
+    "template": {
+      "path": "release/steamworks/client_validation_report.template.json",
+      "exists": true,
+      "bytes": 771,
+      "modifiedAt": "2026-05-17T13:11:20.625Z"
+    },
+    "output": "release/steamworks/client_validation_report.json",
+    "requiredChecks": [
+      "installedFromSteamClient",
+      "launchedFromSteamClient",
+      "menuReached",
+      "introAdvanceAndSkip",
+      "keyboardRunControls",
+      "gamepadRunControls",
+      "audioFromSteamInstall",
+      "localHighscoreSave",
+      "settingsPersistence",
+      "offlineLaunch",
+      "steamClientScreenshotCaptured"
+    ],
+    "stillRequired": true
+  },
+  "artifacts": [
+    {
+      "path": "release/desktop/win-unpacked/Nova Swarm.exe",
+      "exists": true,
+      "bytes": 226666496,
+      "modifiedAt": "2026-05-17T20:47:36.805Z"
+    },
+    {
+      "path": "release/steamworks/app_build_TEMPLATE.vdf",
+      "exists": true,
+      "bytes": 359,
+      "modifiedAt": "2026-05-17T09:58:02.948Z"
+    },
+    {
+      "path": "release/steamworks/client_validation_report.template.json",
+      "exists": true,
+      "bytes": 771,
+      "modifiedAt": "2026-05-17T13:11:20.625Z"
+    },
+    {
+      "path": "release/steamworks/desktop_package_review_report.json",
+      "exists": true,
+      "bytes": 1864,
+      "modifiedAt": "2026-05-17T20:47:52.872Z"
+    },
+    {
+      "path": "release/steamworks/full_rc_verification_report.json",
+      "exists": true,
+      "bytes": 3435,
+      "modifiedAt": "2026-05-17T21:03:55.745Z"
+    },
+    {
+      "path": "release/steamworks/steam_client_validation_runbook.md",
+      "exists": true,
+      "bytes": 3188,
+      "modifiedAt": "2026-05-17T21:11:01.215Z"
+    },
+    {
+      "path": "docs/reviews/2026-05-17-steamcmd-local-check.md",
+      "exists": true,
+      "bytes": 854,
+      "modifiedAt": "2026-05-17T13:04:07.078Z"
+    }
+  ],
+  "errors": [],
+  "warnings": []
+}

@@ -33,6 +33,7 @@ const desktop = readJson('release/steamworks/desktop_package_review_report.json'
 const liveDeployment = readJson('release/steamworks/live_deployment_report.json');
 const fullRc = readJson('release/steamworks/full_rc_verification_report.json');
 const humanReview = readJson('release/steamworks/human_review_packet.json');
+const steamClientPreflight = readJson('release/steamworks/steam_client_preflight_packet.json');
 const provenance = readJson('release/provenance/asset_provenance_report.json');
 const store = readJson('release/steamworks/store_metadata_review_report.json');
 
@@ -43,7 +44,8 @@ const currentBuildEvidence = [
   desktop?.currentBuild?.version,
   liveDeployment?.currentBuild?.version,
   fullRc?.currentBuild?.version,
-  humanReview?.build?.version
+  humanReview?.build?.version,
+  steamClientPreflight?.build?.version
 ].filter(Boolean);
 const staleEvidence = currentBuildEvidence.filter((item) => item !== buildVersion);
 const auditChecks = audit?.checks || [];
@@ -120,6 +122,11 @@ const packet = {
       status: lineForStatus(humanReview?.status === 'ready_for_human_review' && humanReview?.build?.version === buildVersion),
       path: 'release/steamworks/human_review_packet.json',
       pendingGates: humanReview?.approval?.pending || []
+    },
+    steamClientPreflight: {
+      status: lineForStatus(steamClientPreflight?.status === 'ready_for_steam_upload_and_client_validation' && steamClientPreflight?.build?.version === buildVersion),
+      path: 'release/steamworks/steam_client_preflight_packet.json',
+      stillRequiresSteamClientValidation: steamClientPreflight?.clientValidation?.stillRequired !== false
     },
     audio: {
       status: lineForStatus(Boolean(audio) && (audio.decodeErrors || []).length === 0),

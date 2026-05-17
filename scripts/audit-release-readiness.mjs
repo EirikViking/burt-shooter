@@ -33,6 +33,8 @@ const requiredFiles = [
   'release/steamworks/full_rc_verification_report.json',
   'release/steamworks/human_review_packet.json',
   'release/steamworks/human_review_packet.md',
+  'release/steamworks/steam_client_preflight_packet.json',
+  'release/steamworks/steam_client_preflight_packet.md',
   'release/steamworks/release_handoff_packet.json',
   'release/steamworks/release_handoff_packet.md',
   'release/steamworks/store_metadata_draft.json',
@@ -311,6 +313,7 @@ function checkReleaseHandoffPacket() {
         evidence.liveDeployment?.status === 'ready' &&
         evidence.fullRc?.status === 'ready' &&
         evidence.humanReview?.status === 'ready' &&
+        evidence.steamClientPreflight?.status === 'ready' &&
         evidence.provenance?.status === 'ready' &&
         evidence.storeMetadata?.status === 'ready' &&
         manualSteps.length >= 5 &&
@@ -646,6 +649,49 @@ checks.push({
       approval: json.approval || null,
       missingAreas,
       reviewAreas: json.reviewAreas || []
+    };
+  })
+});
+
+checks.push({
+  name: 'steam_client_preflight_packet_current',
+  ...checkJsonReport('release/steamworks/steam_client_preflight_packet.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    const requiredChecks = [
+      'installedFromSteamClient',
+      'launchedFromSteamClient',
+      'menuReached',
+      'introAdvanceAndSkip',
+      'keyboardRunControls',
+      'gamepadRunControls',
+      'audioFromSteamInstall',
+      'localHighscoreSave',
+      'settingsPersistence',
+      'offlineLaunch',
+      'steamClientScreenshotCaptured'
+    ];
+    const missingChecks = requiredChecks.filter((check) => !(json.clientValidation?.requiredChecks || []).includes(check));
+    return {
+      ok: json.status === 'ready_for_steam_upload_and_client_validation' &&
+      Boolean(expectedBuild) &&
+      json.build?.version === expectedBuild &&
+      json.clientValidation?.stillRequired === true &&
+      missingChecks.length === 0 &&
+      json.localPayload?.executable?.exists === true &&
+      Number(json.localPayload?.executable?.bytes || 0) > 0 &&
+      json.localPayload?.packagedExeSmoke?.status === 'passed' &&
+      json.localPayload?.packagedExeSmoke?.build === expectedBuild &&
+      json.localPayload?.fullRc?.releasePlaytest?.survivedFullDuration === true &&
+      json.steamPipe?.contentRoot === '..\\\\desktop\\\\win-unpacked' &&
+      (json.errors || []).length === 0 &&
+      existsSync(path.resolve(root, 'release/steamworks/steam_client_preflight_packet.md')),
+      status: json.status || null,
+      expectedBuild,
+      actualBuild: json.build?.version || null,
+      missingChecks,
+      clientValidation: json.clientValidation || null,
+      errors: json.errors || [],
+      warnings: json.warnings || []
     };
   })
 });
