@@ -8,15 +8,15 @@ Current playable deployment:
 
 - https://burt.tinyfoundry.app
 
-Current verified local build:
+Current deployed and verified build:
 
 - `v2026-05-17_14-31-20`
-
-Latest deployment evidence in this checklist may lag the local RC build until the next Cloudflare Pages publish.
 
 Current evidence:
 
 - Recent milestones are preserved in git history; this checklist tracks the latest verified artifacts rather than a single commit hash.
+- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://burt-game.pages.dev/version.json` both reported `v2026-05-17_14-31-20` after the Cloudflare Pages production deploy `https://ded92b65.burt-game.pages.dev`.
+- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T12-37-58-526Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
 - Latest intro/audio/visual smoke: `test-results/smoke-2026-05-17T09-17-13-563Z/`
 - Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
