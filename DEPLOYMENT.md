@@ -4,8 +4,8 @@
 
 - Primary private domain: https://burt.tinyfoundry.app
 - Cloudflare Pages production URL: https://burt-game.pages.dev
-- Latest verified production deploy: https://ded92b65.burt-game.pages.dev
-- Latest deployed build ID: `v2026-05-17_14-31-20`
+- Latest verified production deploy: https://ce116d23.burt-game.pages.dev
+- Latest deployed build ID: `v2026-05-17_14-42-44`
 
 ## Cloudflare Pages Project
 
