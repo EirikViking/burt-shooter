@@ -117,6 +117,8 @@ export class HUD {
     // Active powerup indicator
     this.activePowerupGroup = new PIXI.Container();
     this.activePowerupBg = new PIXI.Graphics();
+    this.activePowerupBarBg = new PIXI.Graphics();
+    this.activePowerupBarFill = new PIXI.Graphics();
     this.activePowerupText = createText('', {
       fontFamily: 'Courier New',
       fontSize: 14,
@@ -134,6 +136,8 @@ export class HUD {
     this.activePowerupGroup.addChild(this.activePowerupBg);
     this.activePowerupGroup.addChild(this.activePowerupText);
     this.activePowerupGroup.addChild(this.activePowerupTimer);
+    this.activePowerupGroup.addChild(this.activePowerupBarBg);
+    this.activePowerupGroup.addChild(this.activePowerupBarFill);
     this.activePowerupGroup.visible = false;
     this.hudContainer.addChild(this.activePowerupGroup);
 
@@ -284,20 +288,83 @@ export class HUD {
 
     const paddingX = 8;
     const paddingY = 6;
-    const width = this.activePowerupText.width + this.activePowerupTimer.width + paddingX * 2 + 6;
-    const height = Math.max(this.activePowerupText.height, this.activePowerupTimer.height) + paddingY * 2;
+    const barHeight = 4;
+    const barGap = 4;
+    const width = Math.max(
+      132,
+      this.activePowerupText.width + this.activePowerupTimer.width + paddingX * 2 + 6
+    );
+    const textHeight = Math.max(this.activePowerupText.height, this.activePowerupTimer.height);
+    const height = textHeight + barGap + barHeight + paddingY * 2;
     this.activePowerupBg.clear();
     this.activePowerupBg.roundRect(0, 0, width, height, 8);
     this.activePowerupBg.fill({ color: 0x000000, alpha: 0.5 });
 
     this.activePowerupText.x = paddingX;
     this.activePowerupText.y = paddingY - 2;
+    this.activePowerupTimer.x = Math.min(width - paddingX - this.activePowerupTimer.width, this.activePowerupText.x + this.activePowerupText.width + 10);
+    this.activePowerupTimer.y = paddingY - 2;
+
+    const barWidth = Math.max(24, width - paddingX * 2);
+    const barY = paddingY + textHeight + barGap - 2;
+    const totalMs = this.getPowerupDurationMs(state.type, state.remainingMs);
+    const progress = totalMs > 0 ? Math.max(0, Math.min(1, (state.remainingMs || 0) / totalMs)) : 0;
+    const color = this.getPowerupColor(state.type);
+    this.activePowerupBarBg.clear();
+    this.activePowerupBarBg.roundRect(paddingX, barY, barWidth, barHeight, 2);
+    this.activePowerupBarBg.fill({ color: 0x143042, alpha: 0.85 });
+    this.activePowerupBarFill.clear();
+    this.activePowerupBarFill.roundRect(paddingX, barY, Math.max(2, barWidth * progress), barHeight, 2);
+    this.activePowerupBarFill.fill({ color, alpha: 0.95 });
     this.activePowerupGroup.visible = true;
 
     const canvasWidth = this.game.getWidth ? this.game.getWidth() : 0;
     if (canvasWidth) {
-      this.activePowerupGroup.x = canvasWidth - 10 - width;
+      const margin = 10;
+      const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 : 0;
+      const locationBottom = this.locationText ? this.locationText.y + this.locationText.height + 6 : 0;
+      this.activePowerupGroup.x = canvasWidth - margin - width;
+      this.activePowerupGroup.y = Math.max(livesBottom, locationBottom);
     }
+  }
+
+  getPowerupDurationMs(type, remainingMs = 0) {
+    const durations = {
+      slow_time: 8000,
+      ghost: 8000,
+      magnet: 8000,
+      drones: 8000,
+      rapid_fire: 8000,
+      double_shot: 8000,
+      damage_up: 8000,
+      speed_up: 8000,
+      pierce: 7000,
+      shield: 15000,
+      point_defense: 10000,
+      score_x2: 10000,
+      chain_lightning: 12000,
+      orbital_strike: 15000,
+      vampire: 20000
+    };
+    return Math.max(durations[type] || 12000, remainingMs || 0);
+  }
+
+  getPowerupColor(type) {
+    const colors = {
+      shield: 0x66ffff,
+      score_x2: 0xffee66,
+      rapid_fire: 0xff6699,
+      double_shot: 0x66ff99,
+      damage_up: 0xff8844,
+      speed_up: 0x88ff44,
+      slow_time: 0x9a8cff,
+      ghost: 0xd9d9ff,
+      pierce: 0xffffff,
+      magnet: 0x99ffcc,
+      orbital_strike: 0xffaa00,
+      vampire: 0xff4477
+    };
+    return colors[type] || 0x00ffff;
   }
 
   applyLayout(layout = getCurrentLayout()) {

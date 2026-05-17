@@ -346,7 +346,7 @@ export class PlayScene {
     }
     if (e.key === 'F2') {
       this.powerupManager.spawn(this.player.x, 100);
-      this.showToast('SPAWNED BEER PICKUP', { fontSize: 20 });
+      this.showToast('SPAWNED BONUS PICKUP', { fontSize: 20 });
     }
     if (e.key === 'F3') {
       this.enemyManager.spawnBoss(this.game.level);
