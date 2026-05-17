@@ -52,7 +52,15 @@ const forbiddenSourceTerms = [
   ['K', 'urt'].join(''),
   ['E', 'irik'].join(''),
   ['Stok', 'marknes'].join(''),
-  'donald'
+  'donald',
+  'gris',
+  'mongo',
+  'tufs',
+  'deili',
+  'rolp',
+  'svin',
+  'isbjorn',
+  'kjottdeig'
 ];
 const forbiddenTerms = forbiddenSourceTerms.map((term) => new RegExp(`\\b${term}\\b`, 'i'));
 

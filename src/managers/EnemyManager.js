@@ -157,9 +157,9 @@ export class EnemyManager {
     const waves = [];
     const patterns = ['GRID', 'V_SHAPE', 'ARC', 'BOX', 'SPIRAL', 'DOUBLE_ARC', 'STAGGERED_WING', 'PINCER'];
 
-    // Mix original enemies with fighter variants (player ships as enemies)
+    // Mix arcade enemy roles with fighter variants (player ships as enemies)
     const enemyTypes = [
-      'gris', 'mongo', 'tufs', 'deili', 'rolp',  // Original types
+      'chaser', 'bruiser', 'turret', 'striker', 'trickster',
       'fighter_0', 'fighter_1', 'fighter_2',      // Light fighters
       'fighter_3', 'fighter_4', 'fighter_5',      // Medium fighters
       'fighter_6', 'fighter_7', 'fighter_8'       // Fast/special fighters
@@ -200,25 +200,25 @@ export class EnemyManager {
   getCuratedWaves(level) {
     const scripts = {
       1: [
-        { type: 'gris', count: 5, formation: 'TUTORIAL_ARC', entry: 'split', cadence: 0.82 },
+        { type: 'chaser', count: 5, formation: 'TUTORIAL_ARC', entry: 'split', cadence: 0.82 },
         { type: 'fighter_1', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.88 },
-        { type: 'mongo', count: 5, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.82 }
+        { type: 'bruiser', count: 5, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.82 }
       ],
       2: [
-        { type: 'mongo', count: 7, formation: 'GRID', entry: 'alternating', cadence: 0.96 },
+        { type: 'bruiser', count: 7, formation: 'GRID', entry: 'alternating', cadence: 0.96 },
         { type: 'fighter_2', count: 8, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.08 },
-        { type: 'tufs', count: 8, formation: 'BOX', entry: 'single', cadence: 1.12 }
+        { type: 'turret', count: 8, formation: 'BOX', entry: 'single', cadence: 1.12 }
       ],
       3: [
-        { type: 'deili', count: 6, formation: 'ARC', entry: 'split', cadence: 1.16 },
+        { type: 'striker', count: 6, formation: 'ARC', entry: 'split', cadence: 1.16 },
         { type: 'fighter_4', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.2 },
-        { type: 'tufs', count: 7, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.28 }
+        { type: 'turret', count: 7, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.28 }
       ],
       4: [
-        { type: 'deili', count: 5, formation: 'ARC', entry: 'split', cadence: 1.34 },
+        { type: 'striker', count: 5, formation: 'ARC', entry: 'split', cadence: 1.34 },
         { type: 'fighter_6', count: 6, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.28 },
-        { type: 'svin', count: 3, formation: 'ARC', entry: 'alternating', cadence: 1.45 },
-        { type: 'rolp', count: 5, formation: 'ARC', entry: 'alternating', cadence: 1.4 }
+        { type: 'juggernaut', count: 3, formation: 'ARC', entry: 'alternating', cadence: 1.45 },
+        { type: 'trickster', count: 5, formation: 'ARC', entry: 'alternating', cadence: 1.4 }
       ]
     };
     const script = scripts[level];
@@ -794,7 +794,7 @@ export class EnemyManager {
 
     // 50% chance to spawn fighter squadron instead of standard enemies
     const useFighters = Math.random() < 0.5;
-    let enemyType = 'gris';
+    let enemyType = 'chaser';
 
     if (useFighters) {
       // Random fighter type for variety

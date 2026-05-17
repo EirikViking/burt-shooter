@@ -789,7 +789,7 @@ export class Player {
     }
 
     // Apply Speed
-    const speedMultiplier = this.activePowerup.type === 'kjottdeig' ? 1.5 : 1;
+    const speedMultiplier = this.activePowerup.type === 'vector_boost' ? 1.5 : 1;
     this.x += dx * this.speed * speedMultiplier * delta;
     this.y += dy * this.speed * speedMultiplier * delta;
 
@@ -951,9 +951,9 @@ export class Player {
     let vConfig = { color: 'Blue', index: 1 };
     const pType = this.activePowerup.type;
 
-    if (pType === 'rolp') vConfig = { color: 'Red', index: 1 }; // Rapid
-    else if (pType === 'isbjorn') vConfig = { color: 'Green', index: 13 }; // Round spread
-    else if (pType === 'deili') vConfig = { color: 'Blue', index: 8 }; // Strong/Big
+    if (pType === 'rapid_cabinet') vConfig = { color: 'Red', index: 1 };
+    else if (pType === 'triple_beam') vConfig = { color: 'Green', index: 13 };
+    else if (pType === 'overdrive_core') vConfig = { color: 'Blue', index: 8 };
     else if (this.activePowerup.type) vConfig = { color: 'Blue', index: 3 }; // Other powerups slightly different
     if (totalShots > 1) vConfig = { color: 'Green', index: 13 };
     if (this.rankBoostBulletFx) vConfig = { color: 'Red', index: 15 };
@@ -1165,10 +1165,10 @@ export class Player {
 
   getPowerupLabel(type) {
     const labels = {
-      isbjorn: 'TRIPLE BEAM',
-      kjottdeig: 'VECTOR BOOST',
-      rolp: 'RAPID CABINET',
-      deili: 'OVERDRIVE CORE',
+      triple_beam: 'TRIPLE BEAM',
+      vector_boost: 'VECTOR BOOST',
+      rapid_cabinet: 'RAPID CABINET',
+      overdrive_core: 'OVERDRIVE CORE',
       slow_time: 'SLOW TIME',
       ghost: 'GHOST',
       shield: 'SHIELD',
@@ -1544,14 +1544,14 @@ export class Player {
 
     // 4. Apply Powerups (Additive or Multiplicative)
     switch (this.activePowerup.type) {
-      case 'isbjorn':
+      case 'triple_beam':
         this.multiShot = Math.max(this.multiShot, 3);
         break;
-      case 'rolp':
+      case 'rapid_cabinet':
         this.bulletDamage = Math.max(this.bulletDamage, 3);
         this.shootDelay = this.stats.fireRate / 2; // Rapid fire
         break;
-      case 'deili':
+      case 'overdrive_core':
         this.multiShot = Math.max(this.multiShot, 5);
         this.bulletDamage = Math.max(this.bulletDamage, 2);
         break;

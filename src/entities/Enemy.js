@@ -54,7 +54,7 @@ export class Enemy {
 
   setupByType() {
     switch (this.type) {
-      case 'gris':
+      case 'chaser':
         this.color = 0xff69b4;
         this.health = 2;
         this.maxHealth = 2;
@@ -64,7 +64,7 @@ export class Enemy {
         this.xtraType = 1;
         break;
 
-      case 'mongo':
+      case 'bruiser':
         this.color = 0x8b4513;
         this.health = 3;
         this.maxHealth = 3;
@@ -75,7 +75,7 @@ export class Enemy {
         this.xtraType = 2;
         break;
 
-      case 'tufs':
+      case 'turret':
         this.color = 0xffaa00;
         this.health = 4;
         this.maxHealth = 4;
@@ -87,7 +87,7 @@ export class Enemy {
         this.xtraType = 3;
         break;
 
-      case 'deili':
+      case 'striker':
         this.color = 0x00ff00;
         this.health = 5;
         this.maxHealth = 5;
@@ -99,7 +99,7 @@ export class Enemy {
         this.xtraType = 4;
         break;
 
-      case 'rolp':
+      case 'trickster':
         this.color = 0xff00ff;
         this.health = 6;
         this.maxHealth = 6;
@@ -111,7 +111,7 @@ export class Enemy {
         this.xtraType = 5;
         break;
 
-      case 'svin':
+      case 'juggernaut':
         this.color = 0xff0000;
         this.health = 10;
         this.maxHealth = 10;
@@ -271,10 +271,10 @@ export class Enemy {
       this.spriteKey = null; // Will use shipTextureIndex in createSprite
     } else {
       const r = Math.random();
-      if (this.type === 'gris' || this.type === 'mongo') {
+      if (this.type === 'chaser' || this.type === 'bruiser') {
         const idx = 1 + Math.floor(Math.random() * 3);
         this.spriteKey = `spaceShips_00${idx}`;
-      } else if (this.type === 'tufs' || this.type === 'deili') {
+      } else if (this.type === 'turret' || this.type === 'striker') {
         const idx = 4 + Math.floor(Math.random() * 3);
         this.spriteKey = `spaceShips_00${idx}`;
       } else {

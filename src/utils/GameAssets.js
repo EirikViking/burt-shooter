@@ -300,25 +300,25 @@ class GameAssetsManager {
         ));
         // Triple-beam powerup - yellow pill
         powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_isbjorn',
+            'xtra_powerup_triple_beam',
             '/sprites/xtra-sprites/Power-ups/pill_yellow.png',
             this.xtra.powerups
         ));
         // Vector-boost powerup - red pill
         powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_kjottdeig',
+            'xtra_powerup_vector_boost',
             '/sprites/xtra-sprites/Power-ups/pill_red.png',
             this.xtra.powerups
         ));
-        // Rolp powerup - green pill
+        // Rapid-cabinet powerup - green pill
         powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_rolp',
+            'xtra_powerup_rapid_cabinet',
             '/sprites/xtra-sprites/Power-ups/pill_green.png',
             this.xtra.powerups
         ));
-        // Deili powerup - blue pill
+        // Overdrive-core powerup - blue pill
         powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_deili',
+            'xtra_powerup_overdrive_core',
             '/sprites/xtra-sprites/Power-ups/pill_blue.png',
             this.xtra.powerups
         ));

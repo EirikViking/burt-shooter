@@ -16,10 +16,10 @@ class Powerup {
     this.lifeTime = 15000; // 15 seconds expiry
 
     const powerupData = {
-      isbjorn: { color: 0xffaa00, label: 'TRIPLE' },
-      kjottdeig: { color: 0xff6666, label: 'VECTOR' },
-      rolp: { color: 0xff00ff, label: 'RAPID' },
-      deili: { color: 0x00ff00, label: 'OVERDRIVE' },
+      triple_beam: { color: 0xffaa00, label: 'TRIPLE' },
+      vector_boost: { color: 0xff6666, label: 'VECTOR' },
+      rapid_cabinet: { color: 0xff00ff, label: 'RAPID' },
+      overdrive_core: { color: 0x00ff00, label: 'OVERDRIVE' },
       slow_time: { color: 0x00cccc, label: 'SLOW' },
       ghost: { color: 0xeeeeee, label: 'GHOST' },
       shield: { color: 0x00aaaa, label: 'SHIELD' },
@@ -40,7 +40,7 @@ class Powerup {
       vampire: { color: 0xff0066, label: 'VAMP' }
     };
 
-    const data = powerupData[type] || powerupData['isbjorn'];
+    const data = powerupData[type] || powerupData['triple_beam'];
     this.color = data.color;
     this.label = data.label;
 
@@ -71,24 +71,24 @@ class Powerup {
       else if (this.type === 'life') texture = GameAssets.getXtraPowerup('life');
       else if (this.type === 'ghost') texture = GameAssets.getXtraPowerup('ghost');
       else if (this.type === 'slow_time') texture = GameAssets.getXtraPowerup('slow_time');
-      else if (this.type === 'isbjorn') texture = GameAssets.getXtraPowerup('isbjorn');
-      else if (this.type === 'kjottdeig') texture = GameAssets.getXtraPowerup('kjottdeig');
-      else if (this.type === 'rolp') texture = GameAssets.getXtraPowerup('rolp');
-      else if (this.type === 'deili') texture = GameAssets.getXtraPowerup('deili');
-      else if (this.type === 'rapid_fire') texture = GameAssets.getXtraPowerup('rolp');
-      else if (this.type === 'double_shot') texture = GameAssets.getXtraPowerup('isbjorn');
-      else if (this.type === 'damage_up') texture = GameAssets.getXtraPowerup('deili');
-      else if (this.type === 'speed_up') texture = GameAssets.getXtraPowerup('kjottdeig');
+      else if (this.type === 'triple_beam') texture = GameAssets.getXtraPowerup('triple_beam');
+      else if (this.type === 'vector_boost') texture = GameAssets.getXtraPowerup('vector_boost');
+      else if (this.type === 'rapid_cabinet') texture = GameAssets.getXtraPowerup('rapid_cabinet');
+      else if (this.type === 'overdrive_core') texture = GameAssets.getXtraPowerup('overdrive_core');
+      else if (this.type === 'rapid_fire') texture = GameAssets.getXtraPowerup('rapid_cabinet');
+      else if (this.type === 'double_shot') texture = GameAssets.getXtraPowerup('triple_beam');
+      else if (this.type === 'damage_up') texture = GameAssets.getXtraPowerup('overdrive_core');
+      else if (this.type === 'speed_up') texture = GameAssets.getXtraPowerup('vector_boost');
       else if (this.type === 'pierce') texture = GameAssets.getXtraPowerup('ghost');
       else if (this.type === 'score_x2') texture = GameAssets.getXtraPowerup('slow_time');
       else if (this.type === 'magnet') texture = GameAssets.getXtraPowerup('ghost');
-      else if (this.type === 'drones') texture = GameAssets.getXtraPowerup('rolp');
-      else if (this.type === 'shockwave') texture = GameAssets.getXtraPowerup('deili');
+      else if (this.type === 'drones') texture = GameAssets.getXtraPowerup('rapid_cabinet');
+      else if (this.type === 'shockwave') texture = GameAssets.getXtraPowerup('overdrive_core');
       else if (this.type === 'point_defense') texture = GameAssets.getXtraPowerup('shield'); // Reuse shield texture
-      else if (this.type === 'bomb') texture = GameAssets.getXtraPowerup('deili'); // Reuse deili for bomb
+      else if (this.type === 'bomb') texture = GameAssets.getXtraPowerup('overdrive_core');
       else if (this.type === 'chain_lightning') texture = GameAssets.getXtraPowerup('slow_time');
       else if (this.type === 'orbital_strike') texture = GameAssets.getXtraPowerup('shield');
-      else if (this.type === 'vampire') texture = GameAssets.getXtraPowerup('rolp');
+      else if (this.type === 'vampire') texture = GameAssets.getXtraPowerup('rapid_cabinet');
       else texture = GameAssets.getBonusCoreTexture();
 
       if (GameAssets.isValidTexture(texture)) {
@@ -99,8 +99,8 @@ class Powerup {
         // PART B: Consistent scale for all powerup sprites
         const hasSprite = this.type === 'shield' || this.type === 'life' ||
           this.type === 'ghost' || this.type === 'slow_time' ||
-          this.type === 'isbjorn' || this.type === 'kjottdeig' ||
-          this.type === 'rolp' || this.type === 'deili' ||
+          this.type === 'triple_beam' || this.type === 'vector_boost' ||
+          this.type === 'rapid_cabinet' || this.type === 'overdrive_core' ||
           this.type === 'rapid_fire' || this.type === 'double_shot' ||
           this.type === 'damage_up' || this.type === 'speed_up' ||
           this.type === 'pierce' || this.type === 'score_x2' ||
@@ -339,10 +339,10 @@ class Powerup {
       shield: 'forceField',     // Shield - protective sound
       ghost: 'thrusterFire',    // Ghost mode - whoosh
       slow_time: 'forceField',  // Slow time - tech sound (removed annoying computerNoise)
-      isbjorn: 'pickup',        // Weapon powerups - generic pickup
-      kjottdeig: 'pickup',
-      rolp: 'pickup',
-      deili: 'pickup',
+      triple_beam: 'pickup',
+      vector_boost: 'pickup',
+      rapid_cabinet: 'pickup',
+      overdrive_core: 'pickup',
       rapid_fire: 'pickup',
       double_shot: 'pickup',
       damage_up: 'pickup',
@@ -363,10 +363,10 @@ class Powerup {
 
   showMessage(scene) {
     const messages = {
-      isbjorn: 'TRIPLE BEAM! Triple Shot!',
-      kjottdeig: 'VECTOR BOOST! Speed Up!',
-      rolp: 'RAPID CABINET! Rapid Fire!',
-      deili: 'OVERDRIVE CORE! Ultimate Power!',
+      triple_beam: 'TRIPLE BEAM! Triple Shot!',
+      vector_boost: 'VECTOR BOOST! Speed Up!',
+      rapid_cabinet: 'RAPID CABINET! Rapid Fire!',
+      overdrive_core: 'OVERDRIVE CORE! Ultimate Power!',
       slow_time: 'SLOW MOTION!',
       slow_time: 'SLOW MOTION!',
       ghost: 'GHOST MODE! Invincible!',
@@ -434,9 +434,9 @@ export class PowerupManager {
     this.debugPowerupTimer = 0;
     this.debugPowerupIndex = 0;
     this.debugPowerupTypes = [
-      'isbjorn',
-      'rolp',
-      'deili',
+      'triple_beam',
+      'rapid_cabinet',
+      'overdrive_core',
       'slow_time',
       'ghost',
       'life',
@@ -536,7 +536,7 @@ export class PowerupManager {
 
     // Drop selection
     const rand = Math.random();
-    let type = 'isbjorn';
+    let type = 'triple_beam';
 
     // Check if player has shield active
     const shieldActive = player && player.shieldActive;
@@ -583,9 +583,9 @@ export class PowerupManager {
       const standardPowerups = [
         'ghost',
         'slow_time',
-        'rolp',
-        'deili',
-        'isbjorn',
+        'rapid_cabinet',
+        'overdrive_core',
+        'triple_beam',
         'rapid_fire',
         'double_shot',
         'speed_up'

@@ -211,11 +211,11 @@ export const AssetManifest = {
 
     // Weapon Mappings (Gameplay Logic - using keys from above or direct paths)
     enemyWeaponMap: {
-        'gris': { projectile: '/sprites/xtra-sprites/Lasers/laserRed13.png', flashColor: 0xff0000, impactColor: 0xff0000, sound: 'enemy_shoot' },
-        'mongo': { projectile: '/sprites/xtra-sprites/Lasers/laserGreen08.png', flashColor: 0x00ff00, impactColor: 0x00ff00, sound: 'enemy_shoot' },
-        'tufs': { projectile: '/sprites/xtra-sprites/Lasers/laserBlue11.png', flashColor: 0x0088ff, impactColor: 0x0088ff, sound: 'enemy_shoot' },
-        'deili': { projectile: '/sprites/xtra-sprites/Lasers/laserRed15.png', flashColor: 0xff4400, impactColor: 0xff4400, sound: 'enemy_shoot' },
-        'rolp': { projectile: '/sprites/xtra-sprites/Lasers/laserBlue05.png', flashColor: 0xff00ff, impactColor: 0xff00ff, sound: 'enemy_shoot' },
+        'chaser': { projectile: '/sprites/xtra-sprites/Lasers/laserRed13.png', flashColor: 0xff0000, impactColor: 0xff0000, sound: 'enemy_shoot' },
+        'bruiser': { projectile: '/sprites/xtra-sprites/Lasers/laserGreen08.png', flashColor: 0x00ff00, impactColor: 0x00ff00, sound: 'enemy_shoot' },
+        'turret': { projectile: '/sprites/xtra-sprites/Lasers/laserBlue11.png', flashColor: 0x0088ff, impactColor: 0x0088ff, sound: 'enemy_shoot' },
+        'striker': { projectile: '/sprites/xtra-sprites/Lasers/laserRed15.png', flashColor: 0xff4400, impactColor: 0xff4400, sound: 'enemy_shoot' },
+        'trickster': { projectile: '/sprites/xtra-sprites/Lasers/laserBlue05.png', flashColor: 0xff00ff, impactColor: 0xff00ff, sound: 'enemy_shoot' },
         'bonus_challenge': { projectile: '/sprites/xtra-sprites/Lasers/laserGreen08.png', flashColor: 0x00ff00, impactColor: 0x00ff00, sound: 'enemy_shoot' }
     },
 
