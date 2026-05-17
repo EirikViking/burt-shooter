@@ -65,6 +65,7 @@ npm run smoke
 - Smoke-testen skriver naa kompakt fremdrift og pass/fail-oppsummering i terminalen, mens full rapport fortsatt lagres i `test-results/*/report.json`.
 - `docs/recovery-note-2026-05-16.md` og `docs/reviews/2026-05-16-release-candidate-review.md` oppsummerer siste recovery/review-pass.
 - `docs/reviews/2026-05-17-audio-mix-audit.md` og `docs/reviews/audio-mix-audit-2026-05-17.json` dokumenterer objektiv FFmpeg-basert audio-mix audit; by-ear pass gjenstaar fortsatt.
+- `docs/reviews/2026-05-17-steam-readiness-checklist.md` samler Steam-readiness status, asset-inventory, store-copy draft og gjenstaaende blokker.
 
 ## Deploy til Cloudflare Pages
 
