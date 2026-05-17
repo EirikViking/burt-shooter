@@ -58,6 +58,30 @@ const knownManualBlockerNames = new Set([
   'human_release_approvals_recorded'
 ]);
 
+const requiredHumanApprovalKeys = [
+  'screenshots',
+  'capsules',
+  'trailer',
+  'audio',
+  'storeCopy',
+  'legalProvenance',
+  'gameplayFeel'
+];
+
+const requiredSteamClientChecks = [
+  'installedFromSteamClient',
+  'launchedFromSteamClient',
+  'menuReached',
+  'introAdvanceAndSkip',
+  'keyboardRunControls',
+  'gamepadRunControls',
+  'audioFromSteamInstall',
+  'localHighscoreSave',
+  'settingsPersistence',
+  'offlineLaunch',
+  'steamClientScreenshotCaptured'
+];
+
 function rel(file) {
   return path.relative(root, file).replaceAll(path.sep, '/');
 }
@@ -140,6 +164,38 @@ function checkJsonReport(relativePath, verifier) {
   } catch (error) {
     return { path: relativePath, ok: false, reason: error.message };
   }
+}
+
+function checkHumanApprovals() {
+  const relativePath = 'docs/reviews/2026-05-17-human-release-approval.md';
+  const full = path.resolve(root, relativePath);
+  if (!existsSync(full)) return { ok: false, path: relativePath, reason: 'missing' };
+
+  const text = readFileSync(full, 'utf8');
+  const missing = requiredHumanApprovalKeys.filter((key) => !new RegExp(`^${key}:\\s*approved\\b`, 'im').test(text));
+  const hasApprover = /^approvedBy:\s*\S+/im.test(text) && !/^approvedBy:\s*TBD\s*$/im.test(text);
+  const hasDate = /^approvedAt:\s*\d{4}-\d{2}-\d{2}/im.test(text);
+
+  return {
+    ok: missing.length === 0 && hasApprover && hasDate,
+    path: relativePath,
+    missing,
+    hasApprover,
+    hasDate
+  };
+}
+
+function checkSteamClientValidation() {
+  return checkJsonReport('release/steamworks/client_validation_report.json', (json) => {
+    const checks = json.checks || {};
+    const missing = requiredSteamClientChecks.filter((key) => checks[key] !== true);
+    return {
+      ok: json.status === 'passed' && missing.length === 0 && Boolean(json.steamBuildId || json.steamPipeBuildId),
+      status: json.status || null,
+      steamBuildId: json.steamBuildId || json.steamPipeBuildId || null,
+      missing
+    };
+  });
 }
 
 function checkScreenshotCandidates() {
@@ -259,14 +315,14 @@ checks.push({
 
 checks.push({
   name: 'steam_client_validation_evidence',
-  ok: existsSync(path.resolve(root, 'release/steamworks/client_validation_report.json')),
+  ...checkSteamClientValidation(),
   requiredForSteamReady: true,
   expectedFile: 'release/steamworks/client_validation_report.json'
 });
 
 checks.push({
   name: 'human_release_approvals_recorded',
-  ok: existsSync(path.resolve(root, 'docs/reviews/2026-05-17-human-release-approval.md')),
+  ...checkHumanApprovals(),
   requiredForSteamReady: true,
   expectedFile: 'docs/reviews/2026-05-17-human-release-approval.md'
 });

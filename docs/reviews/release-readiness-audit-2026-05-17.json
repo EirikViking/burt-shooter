@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T13:08:25.904Z",
+  "generatedAt": "2026-05-17T13:12:50.017Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 9,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 12800
+          "bytes": 13130
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -44,7 +44,7 @@
         {
           "path": "release/steamworks/steam_client_validation_runbook.md",
           "ok": true,
-          "bytes": 2805
+          "bytes": 3001
         },
         {
           "path": "docs/reviews/2026-05-17-steamcmd-local-check.md",
@@ -210,13 +210,27 @@
     },
     {
       "name": "steam_client_validation_evidence",
+      "path": "release/steamworks/client_validation_report.json",
       "ok": false,
+      "reason": "missing",
       "requiredForSteamReady": true,
       "expectedFile": "release/steamworks/client_validation_report.json"
     },
     {
       "name": "human_release_approvals_recorded",
       "ok": false,
+      "path": "docs/reviews/2026-05-17-human-release-approval.md",
+      "missing": [
+        "screenshots",
+        "capsules",
+        "trailer",
+        "audio",
+        "storeCopy",
+        "legalProvenance",
+        "gameplayFeel"
+      ],
+      "hasApprover": false,
+      "hasDate": false,
       "requiredForSteamReady": true,
       "expectedFile": "docs/reviews/2026-05-17-human-release-approval.md"
     }

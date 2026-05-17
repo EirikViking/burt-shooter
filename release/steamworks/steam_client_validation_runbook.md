@@ -66,5 +66,6 @@ Run these from an installed Steam client build, not from the local unpacked fold
 - Steam client install path and launch result.
 - Screenshot of the Steam-installed build at menu or gameplay.
 - Notes for keyboard, gamepad, audio, high-score persistence, offline launch, and quit/relaunch.
+- Copy `release/steamworks/client_validation_report.template.json` to `release/steamworks/client_validation_report.json`, record the real Steam build ID, and set every validation check to `true`.
 
 This remains a hard Steam-readiness blocker until the client-installed build is verified.

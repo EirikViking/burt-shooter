@@ -1,0 +1,25 @@
+{
+  "status": "pending",
+  "steamBuildId": null,
+  "validatedAt": null,
+  "validatedBy": null,
+  "steamInstallPath": null,
+  "screenshotEvidence": null,
+  "checks": {
+    "installedFromSteamClient": false,
+    "launchedFromSteamClient": false,
+    "menuReached": false,
+    "introAdvanceAndSkip": false,
+    "keyboardRunControls": false,
+    "gamepadRunControls": false,
+    "audioFromSteamInstall": false,
+    "localHighscoreSave": false,
+    "settingsPersistence": false,
+    "offlineLaunch": false,
+    "steamClientScreenshotCaptured": false
+  },
+  "notes": [
+    "Copy this file to client_validation_report.json after a real SteamPipe upload and Steam-client install.",
+    "Set status to passed only when every check is true and a Steam build ID is recorded."
+  ]
+}
