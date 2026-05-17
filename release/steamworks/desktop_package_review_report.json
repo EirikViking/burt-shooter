@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-05-17T14:36:59.978Z",
+  "status": "passed",
+  "desktopPayload": {
+    "path": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "sizeBytes": 226666496,
+    "modifiedAt": "2026-05-17T14:35:32.425Z"
+  },
+  "latestElectronSmoke": {
+    "reportPath": "test-results/electron-smoke-2026-05-17T14-34-26-111Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-05-17T14-34-26-111Z/01-electron-menu.png",
+    "status": "passed",
+    "title": "Nova Swarm - Arcade Patrol",
+    "scene": "intro",
+    "introTitle": "THE COIN SLOT WOKE UP",
+    "localHighscoreApi": {
+      "ok": true,
+      "status": 200
+    },
+    "readyState": {
+      "scene": "intro",
+      "introTitle": "THE COIN SLOT WOKE UP",
+      "introCaption": "An old arcade cabinet blinked awake between galaxies and found its coin slot full of stars.",
+      "panelTextures": 4,
+      "ready": true
+    },
+    "consoleEvents": []
+  },
+  "errors": [],
+  "warnings": []
+}

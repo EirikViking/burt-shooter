@@ -25,8 +25,9 @@ The web deployment remains unchanged and still uses Cloudflare Pages and D1 at `
 
 Latest verified package evidence:
 
-- `npm run desktop:smoke` passed and wrote `test-results/electron-smoke-2026-05-17T10-17-05-615Z/`.
-- `npm run package:steam:win` produced `release/desktop/win-unpacked/Nova Swarm.exe`.
+- `npm run desktop:smoke` passed and wrote `test-results/electron-smoke-2026-05-17T14-34-26-111Z/`.
+- `npm run package:steam:win` produced `release/desktop/win-unpacked/Nova Swarm.exe` at 226,666,496 bytes.
+- `npm run check:desktop-package` passed and wrote `release/steamworks/desktop_package_review_report.json`, confirming the packaged executable, Electron intro/menu render, local highscore API, captured screenshot, and zero Electron smoke console events.
 - `npm audit --omit=dev` reports `found 0 vulnerabilities`.
 - Dev-only audit caveat: the non-omitted audit still reports Vite/esbuild dev-server advisories that npm says require a breaking Vite major upgrade.
 

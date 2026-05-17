@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T14:28:21.612Z",
+  "generatedAt": "2026-05-17T14:37:06.829Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 12,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 14757
+          "bytes": 15590
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -34,7 +34,7 @@
         {
           "path": "docs/steam-desktop-package.md",
           "ok": true,
-          "bytes": 2559
+          "bytes": 2834
         },
         {
           "path": "docs/steam-store-handoff.md",
@@ -110,6 +110,11 @@
           "path": "release/provenance/asset_provenance_report.json",
           "ok": true,
           "bytes": 900
+        },
+        {
+          "path": "release/steamworks/desktop_package_review_report.json",
+          "ok": true,
+          "bytes": 967
         },
         {
           "path": "release/steamworks/store_metadata_draft.json",
@@ -248,9 +253,36 @@
       ]
     },
     {
-      "name": "desktop_payload_exists",
+      "name": "desktop_package_report_clean",
       "ok": true,
-      "path": "release/desktop/win-unpacked/Nova Swarm.exe"
+      "status": "passed",
+      "desktopPayload": {
+        "path": "release/desktop/win-unpacked/Nova Swarm.exe",
+        "sizeBytes": 226666496,
+        "modifiedAt": "2026-05-17T14:35:32.425Z"
+      },
+      "latestElectronSmoke": {
+        "reportPath": "test-results/electron-smoke-2026-05-17T14-34-26-111Z/report.json",
+        "screenshotPath": "test-results/electron-smoke-2026-05-17T14-34-26-111Z/01-electron-menu.png",
+        "status": "passed",
+        "title": "Nova Swarm - Arcade Patrol",
+        "scene": "intro",
+        "introTitle": "THE COIN SLOT WOKE UP",
+        "localHighscoreApi": {
+          "ok": true,
+          "status": 200
+        },
+        "readyState": {
+          "scene": "intro",
+          "introTitle": "THE COIN SLOT WOKE UP",
+          "introCaption": "An old arcade cabinet blinked awake between galaxies and found its coin slot full of stars.",
+          "panelTextures": 4,
+          "ready": true
+        },
+        "consoleEvents": []
+      },
+      "errors": [],
+      "warnings": []
     },
     {
       "name": "steamcmd_available",

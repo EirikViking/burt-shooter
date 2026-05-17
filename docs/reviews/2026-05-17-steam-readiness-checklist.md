@@ -23,7 +23,7 @@ Current evidence:
 - Steam screenshot candidate capture: `release/steam-screenshots/draft-2026-05-17-11-30/`
 - Visual variety evidence: 216 selectable ship variants and 48 enemy visual variants from `src/config/VisualVariantCatalog.js`.
 - Desktop package path: `docs/steam-desktop-package.md`, `electron/main.cjs`, `electron-builder.json`, and `release/steamworks/app_build_TEMPLATE.vdf`.
-- Latest desktop package verification: `test-results/electron-smoke-2026-05-17T10-17-05-615Z/`, `npm run package:steam:win`, and generated `release/desktop/win-unpacked/Nova Swarm.exe`.
+- Latest desktop package verification: `test-results/electron-smoke-2026-05-17T14-34-26-111Z/`, `npm run package:steam:win`, generated `release/desktop/win-unpacked/Nova Swarm.exe`, and tracked package evidence in `release/steamworks/desktop_package_review_report.json`.
 - Steam trailer draft workflow: `docs/steam-trailer-workflow.md`, `scripts/capture-steam-trailer.mjs`, `scripts/render-steam-trailer-audio.mjs`, and evidence in `release/steam-trailer/draft-2026-05-17-12-46/`.
 - Steam store art draft: `release/steam-assets/draft-2026-05-17-nova-swarm/`, replacing the old Burt-era capsule set with public Nova Swarm artwork.
 - Steam asset gate: `npm run check:steam-assets` validates 9 asset dimensions/transparency and regenerates review contact sheets.
@@ -35,8 +35,8 @@ Current evidence:
 - Steam client validation template: `release/steamworks/client_validation_report.template.json`; copy it to `client_validation_report.json` only after real Steam-client validation.
 - Steam store metadata handoff: `docs/steam-store-handoff.md`, `release/steamworks/store_metadata_draft.json`, and `release/steamworks/store_metadata_review_report.json`; `npm run check:steam-store` passes with 15 tags, 8 feature bullets, conservative `Partial Controller Support`, and explicit v1 deferrals for Steam Cloud and Steam achievements.
 - Asset provenance inventory: `docs/asset-provenance.md`, `release/provenance/asset_provenance_manifest.json`, and `release/provenance/asset_provenance_report.json`; `npm run check:provenance` currently covers 1502/1502 scanned public/release assets while intentionally leaving legal approval pending.
-- Release readiness audit: `npm run audit:release-readiness` writes `docs/reviews/release-readiness-audit-2026-05-17.json` and currently reports `not_steam_ready` because Steamworks IDs, Steam client validation, and user approval remain open. Use `RELEASE_AUDIT_STRICT=1 npm run audit:release-readiness` to fail on known manual blockers too.
-- Steam RC verification entrypoint: `npm run verify:steam-rc` runs the fast build/static release gates and writes `test-results/steam-rc-verify-*/report.json`; latest fast pass with provenance and Steam store metadata gates is `test-results/steam-rc-verify-2026-05-17T14-27-56-483Z/report.json`, and latest full pass is `test-results/steam-rc-verify-2026-05-17T12-12-27-110Z/report.json`. Use `npm run verify:steam-rc -- --full` for smoke, desktop package, and release playtest as part of a full RC pass.
+- Release readiness audit: `npm run audit:release-readiness` writes `docs/reviews/release-readiness-audit-2026-05-17.json` and currently reports `not_steam_ready` because Steamworks IDs, Steam client validation, and user approval remain open. It now validates the tracked desktop package report instead of only checking for an `.exe`. Use `RELEASE_AUDIT_STRICT=1 npm run audit:release-readiness` to fail on known manual blockers too.
+- Steam RC verification entrypoint: `npm run verify:steam-rc` runs the fast build/static release gates plus desktop package evidence validation and writes `test-results/steam-rc-verify-*/report.json`; latest fast pass with provenance, Steam store metadata, and desktop package gates is `test-results/steam-rc-verify-2026-05-17T14-36-38-244Z/report.json`, and latest full pass is `test-results/steam-rc-verify-2026-05-17T12-12-27-110Z/report.json`. Use `npm run verify:steam-rc -- --full` for smoke, desktop package, and release playtest as part of a full RC pass.
 - Latest full smoke evidence: `test-results/smoke-2026-05-17T12-12-55-257Z/`.
 - Latest full Electron smoke evidence: `test-results/electron-smoke-2026-05-17T12-14-15-301Z/`.
 - Latest full 10-minute release playtest evidence: `test-results/release-playtest-2026-05-17T12-15-21-253Z/`.
@@ -141,6 +141,7 @@ Do not call this Steam-ready until these are true:
 - `npm run smoke` passes with no routine console output, page errors, bad responses, fatal overlays, music-routing failures, or UI overlap failures.
 - `npm run desktop:smoke` passes and captures an Electron wrapper screenshot.
 - `npm run package:steam:win` produces `release/desktop/win-unpacked/Nova Swarm.exe`.
+- `npm run check:desktop-package` validates the packaged executable against the latest Electron smoke report and writes tracked desktop package evidence.
 - `npm run capture:steam-trailer` produces a clean trailer draft report with no browser or network failures.
 - `npm run render:steam-trailer-audio` produces an audio-mixed MP4 draft report from shipped assets.
 - `npm run check:steam-assets` validates Steam asset dimensions/transparency and regenerates the review contact sheets.

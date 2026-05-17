@@ -26,6 +26,7 @@ const requiredFiles = [
   'release/steam-trailer/draft-2026-05-17-12-46/audio-mix-report.json',
   'release/provenance/asset_provenance_manifest.json',
   'release/provenance/asset_provenance_report.json',
+  'release/steamworks/desktop_package_review_report.json',
   'release/steamworks/store_metadata_draft.json',
   'release/steamworks/store_metadata_review_report.json'
 ];
@@ -372,9 +373,21 @@ checks.push({
 });
 
 checks.push({
-  name: 'desktop_payload_exists',
-  ok: existsSync(path.resolve(root, 'release/desktop/win-unpacked/Nova Swarm.exe')),
-  path: 'release/desktop/win-unpacked/Nova Swarm.exe'
+  name: 'desktop_package_report_clean',
+  ...checkJsonReport('release/steamworks/desktop_package_review_report.json', (json) => ({
+    ok: json.status === 'passed' &&
+      json.desktopPayload?.path === 'release/desktop/win-unpacked/Nova Swarm.exe' &&
+      Number(json.desktopPayload?.sizeBytes || 0) > 0 &&
+      json.latestElectronSmoke?.status === 'passed' &&
+      json.latestElectronSmoke?.localHighscoreApi?.ok === true &&
+      json.latestElectronSmoke?.readyState?.ready === true &&
+      (json.latestElectronSmoke?.consoleEvents || []).length === 0,
+    status: json.status || null,
+    desktopPayload: json.desktopPayload || null,
+    latestElectronSmoke: json.latestElectronSmoke || null,
+    errors: json.errors || [],
+    warnings: json.warnings || []
+  }))
 });
 
 checks.push({

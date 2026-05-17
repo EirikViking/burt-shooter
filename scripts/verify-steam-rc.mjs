@@ -16,8 +16,8 @@ const stages = [
   ['check:provenance', ['run', 'check:provenance']],
   ['check:steam-assets', ['run', 'check:steam-assets']],
   ['check:steam-store', ['run', 'check:steam-store']],
-  ['audit:audio-mix', ['run', 'audit:audio-mix']],
-  ['audit:release-readiness', ['run', 'audit:release-readiness']]
+  ['check:desktop-package', ['run', 'check:desktop-package']],
+  ['audit:audio-mix', ['run', 'audit:audio-mix']]
 ];
 
 if (full) {
@@ -25,9 +25,12 @@ if (full) {
     ['smoke', ['run', 'smoke']],
     ['desktop:smoke', ['run', 'desktop:smoke']],
     ['package:steam:win', ['run', 'package:steam:win']],
+    ['check:desktop-package', ['run', 'check:desktop-package']],
     ['playtest:release', ['run', 'playtest:release']]
   );
 }
+
+stages.push(['audit:release-readiness', ['run', 'audit:release-readiness']]);
 
 function runStage(name, npmArgs) {
   console.log(`[steam-rc] starting ${name}`);
