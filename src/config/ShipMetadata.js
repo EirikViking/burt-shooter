@@ -17,6 +17,7 @@ ShipVariantData.forEach(ship => {
     baseSpriteKey: ship.baseSpriteKey,
     variantSlug: ship.variantSlug,
     variantCode: ship.variantCode,
+    variantIndex: ship.variantIndex,
     name: ship.name,
     description: ship.description,
     baseDescription: ship.baseDescription || ship.description,

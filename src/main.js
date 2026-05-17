@@ -227,6 +227,8 @@ function buildGameTextState(game) {
   const playerBullets = playScene?.bulletManager?.playerBullets || playScene?.bulletManager?.bullets || [];
   const enemyBullets = playScene?.bulletManager?.enemyBullets || [];
   const activeSettingsOverlay = game?.currentScene?.settingsOverlay || playScene?.settingsOverlay || null;
+  const shipSelectScene = getStableSceneName(game) === 'shipSelect' ? game?.currentScene : null;
+  const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
 
   return {
     coordinateSystem: 'origin top-left, x right, y down',
@@ -257,6 +259,16 @@ function buildGameTextState(game) {
       currentWaveNumber: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex + 1 : null,
       totalWaves: enemyManager.normalWavesTotal || 0,
       briefingMs: Math.round(enemyManager.waveBriefingTimer || 0)
+    } : null,
+    shipSelect: selectedShip ? {
+      selectedIndex: shipSelectScene.selectedIndex,
+      totalShips: shipSelectScene.ships.length,
+      modelIndex: Math.max(0, shipSelectScene.baseOrder?.indexOf(selectedShip.baseId) ?? 0) + 1,
+      totalModels: shipSelectScene.baseOrder?.length || 0,
+      trimIndex: Number.isFinite(selectedShip.variantIndex) ? selectedShip.variantIndex + 1 : null,
+      shipName: selectedShip.name || null,
+      spriteKey: selectedShip.spriteKey || null,
+      trait: selectedShip.trait?.label || null
     } : null,
     player: player ? {
       x: Math.round(player.x),

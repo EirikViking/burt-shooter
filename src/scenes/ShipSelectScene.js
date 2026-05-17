@@ -14,13 +14,14 @@ export class ShipSelectScene {
   constructor(game) {
     this.game = game;
     this.container = new PIXI.Container();
-    this.ships = this.shuffleShips(getSelectableShips());
+    this.ships = this.orderShips(getSelectableShips());
     this.selectedIndex = 0;
     this.shipCards = [];
     this.scrollY = 0;
     this.isDragging = false;
     this.lastPointerY = 0;
     this.statRanges = this.computeStatRanges(this.ships);
+    this.baseOrder = [...new Set(this.ships.map(ship => ship.baseId).filter(Boolean))];
 
     // Load saved selection
     const saved = this.loadSelection();
@@ -99,7 +100,7 @@ export class ShipSelectScene {
     // Fixed footer
     const footerContainer = new PIXI.Container();
     const instructions = createText(
-      'Arrow Keys to Navigate | Click DETAILS or START',
+      '< / > TRIM  |  Q / E MODEL  |  R RANDOM  |  ENTER START',
       {
         fontFamily: 'Courier New',
         fontSize: 14,
@@ -111,6 +112,19 @@ export class ShipSelectScene {
     instructions.position.set(width / 2, height - 15);
     footerContainer.addChild(instructions);
     this.container.addChild(footerContainer);
+
+    this.selectionInfoText = createText('', {
+      fontFamily: 'Courier New',
+      fontSize: 13,
+      fill: '#66ffff',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 2
+    });
+    this.selectionInfoText.anchor.set(0.5, 0);
+    this.selectionInfoText.position.set(width / 2, 82);
+    this.container.addChild(this.selectionInfoText);
+    this.updateSelectionInfo();
 
     // Setup carousel navigation
     this.setupScrolling();
@@ -598,6 +612,10 @@ export class ShipSelectScene {
       this.container.removeChild(this.startButton);
       this.startButton = null;
     }
+    if (this.randomButton) {
+      this.container.removeChild(this.randomButton);
+      this.randomButton = null;
+    }
 
     // Create buttons for center ship
     const ship = this.ships[this.selectedIndex];
@@ -606,6 +624,7 @@ export class ShipSelectScene {
     const buttonWidth = 120;
     const buttonHeight = 40;
     const buttonSpacing = 20;
+    const randomWidth = 112;
 
     this.detailsButton = this.createButton(
       'DETAILS',
@@ -646,6 +665,19 @@ export class ShipSelectScene {
       }
     );
     this.container.addChild(this.startButton);
+
+    this.randomButton = this.createButton(
+      'RANDOM',
+      width - randomWidth - 28,
+      height - 53,
+      randomWidth,
+      30,
+      0x101a33,
+      0x66ffff,
+      () => this.navigateRandom()
+    );
+    this.container.addChild(this.randomButton);
+    this.updateSelectionInfo();
   }
 
   createSelectionParticles(shipContainer) {
@@ -701,18 +733,47 @@ export class ShipSelectScene {
     AudioManager.playSfx('thrusterFire', { volume: 0.25 });
 
     this.updateCarouselPositions(true);
+    this.updateSelectionInfo();
   }
 
   navigateLeft() {
-    if (this.selectedIndex > 0) {
-      this.navigateTo(this.selectedIndex - 1);
-    }
+    const next = (this.selectedIndex - 1 + this.ships.length) % this.ships.length;
+    this.navigateTo(next);
   }
 
   navigateRight() {
-    if (this.selectedIndex < this.ships.length - 1) {
-      this.navigateTo(this.selectedIndex + 1);
+    const next = (this.selectedIndex + 1) % this.ships.length;
+    this.navigateTo(next);
+  }
+
+  navigateModel(delta) {
+    if (this.animating || !this.baseOrder.length) return;
+    const current = this.ships[this.selectedIndex];
+    const currentBaseIndex = Math.max(0, this.baseOrder.indexOf(current?.baseId));
+    const nextBase = this.baseOrder[(currentBaseIndex + delta + this.baseOrder.length) % this.baseOrder.length];
+    const currentVariant = current?.variantIndex ?? 0;
+    const nextIndex = this.ships.findIndex(ship => ship.baseId === nextBase && ship.variantIndex === currentVariant);
+    const fallbackIndex = this.ships.findIndex(ship => ship.baseId === nextBase);
+    this.navigateTo(nextIndex >= 0 ? nextIndex : fallbackIndex);
+  }
+
+  navigateRandom() {
+    if (this.animating || this.ships.length <= 1) return;
+    let next = this.selectedIndex;
+    for (let tries = 0; tries < 5 && next === this.selectedIndex; tries += 1) {
+      next = Math.floor(Math.random() * this.ships.length);
     }
+    this.navigateTo(next === this.selectedIndex ? (next + 1) % this.ships.length : next);
+  }
+
+  updateSelectionInfo() {
+    if (!this.selectionInfoText) return;
+    const ship = this.ships[this.selectedIndex];
+    const modelIndex = Math.max(0, this.baseOrder.indexOf(ship?.baseId)) + 1;
+    const modelTotal = Math.max(1, this.baseOrder.length);
+    const trimIndex = Number.isFinite(ship?.variantIndex) ? ship.variantIndex + 1 : 1;
+    const trimTotal = Math.max(1, this.ships.filter(candidate => candidate.baseId === ship?.baseId).length);
+    this.selectionInfoText.text = `SHIP ${this.selectedIndex + 1}/${this.ships.length}  |  MODEL ${modelIndex}/${modelTotal}  |  TRIM ${trimIndex}/${trimTotal}`;
   }
 
   createButton(label, x, y, width, height, bgColor, textColor, onClick) {
@@ -917,15 +978,15 @@ FIR: ${fireRateBar}`;
     };
   }
 
-  shuffleShips(ships) {
+  orderShips(ships) {
     const list = Array.isArray(ships) ? [...ships] : [];
-    for (let i = list.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const temp = list[i];
-      list[i] = list[j];
-      list[j] = temp;
-    }
-    return list;
+    return list.sort((a, b) => {
+      const textureDelta = (a.textureIndex ?? 0) - (b.textureIndex ?? 0);
+      if (textureDelta !== 0) return textureDelta;
+      const variantDelta = (a.variantIndex ?? 0) - (b.variantIndex ?? 0);
+      if (variantDelta !== 0) return variantDelta;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
   }
 
   updateSelection() {
@@ -946,6 +1007,15 @@ FIR: ${fireRateBar}`;
       } else if (e.key === 'ArrowRight' || e.code === 'KeyD') {
         e.preventDefault();
         this.navigateRight();
+      } else if (e.code === 'KeyQ') {
+        e.preventDefault();
+        this.navigateModel(-1);
+      } else if (e.code === 'KeyE') {
+        e.preventDefault();
+        this.navigateModel(1);
+      } else if (e.code === 'KeyR') {
+        e.preventDefault();
+        this.navigateRandom();
       } else if (e.key === 'Enter' || e.code === 'Space') {
         e.preventDefault();
         // Start game with selected ship
