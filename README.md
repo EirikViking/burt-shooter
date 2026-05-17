@@ -38,7 +38,7 @@ npm run smoke
 
 - Original generated backdrops, boss dossier art, and comms portraits live in `public/art/generated/`.
 - The first-run story intro uses generated cinematic panels, ElevenLabs narration, custom stingers, and an intro music context.
-- Ship select now offers 216 visual ship variants, and enemy waves use a 48-style runtime variant catalog for broader arcade variety without changing hitbox fairness.
+- Ship select now offers 216 visual ship variants, and enemy waves use a 288-style runtime variant catalog for broader arcade variety without changing hitbox fairness.
 - Real-person portrait assets and private-joke assets are not shipped.
 - Player-facing text has moved to a public arcade-comedy voice: coin slots, bonus stages, formation swarms, hitboxes, boss patterns, and leaderboard bravado.
 - Menus, settings, pause, mobile HUD, boss alerts, and high-score flows are covered by the production smoke harness.

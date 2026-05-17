@@ -87,15 +87,47 @@ const ENEMY_VARIANT_SETS = [
   ['crown', 0xfff7a8, 0xff35bd, 1.17]
 ];
 
-export const ENEMY_VISUAL_VARIANTS = ENEMY_VARIANT_SETS.map(([slug, tint, accent, scale], index) => ({
-  slug,
-  tint,
-  accent,
-  scale,
-  wobble: 0.8 + (index % 7) * 0.08,
-  alpha: 0.16 + (index % 4) * 0.035,
-  index
-}));
+const ENEMY_PALETTE_MODES = [
+  ['cabinet', null, null, 0, 0],
+  ['neon', 0x00fff0, 0xff3df2, -0.03, 0.018],
+  ['hazard', 0xfff200, 0xff3d00, 0.04, 0.028],
+  ['frost', 0xb9f7ff, 0x4d8dff, -0.06, 0.014],
+  ['royal', 0xb88cff, 0x5dffbf, 0.02, 0.024],
+  ['overdrive', 0xff5c8a, 0xffef6e, 0.07, 0.034]
+];
+
+function mixChannel(a, b, amount) {
+  return Math.round(a + (b - a) * amount);
+}
+
+function mixColor(color, target, amount) {
+  if (!Number.isFinite(target)) return color;
+  const r = mixChannel((color >> 16) & 0xff, (target >> 16) & 0xff, amount);
+  const g = mixChannel((color >> 8) & 0xff, (target >> 8) & 0xff, amount);
+  const b = mixChannel(color & 0xff, target & 0xff, amount);
+  return (r << 16) | (g << 8) | b;
+}
+
+function clampScale(value) {
+  return Math.max(0.76, Math.min(1.28, value));
+}
+
+export const ENEMY_VISUAL_VARIANTS = ENEMY_VARIANT_SETS.flatMap(([slug, tint, accent, scale], baseIndex) =>
+  ENEMY_PALETTE_MODES.map(([mode, tintTarget, accentTarget, scaleDelta, alphaBoost], modeIndex) => {
+    const index = baseIndex * ENEMY_PALETTE_MODES.length + modeIndex;
+    return {
+      slug: mode === 'cabinet' ? slug : `${slug}-${mode}`,
+      tint: mixColor(tint, tintTarget, 0.42),
+      accent: mixColor(accent, accentTarget, 0.5),
+      scale: clampScale(scale + scaleDelta),
+      wobble: 0.78 + (index % 11) * 0.055,
+      alpha: Math.min(0.34, 0.145 + (baseIndex % 4) * 0.032 + alphaBoost),
+      index,
+      baseSlug: slug,
+      paletteMode: mode
+    };
+  })
+);
 
 export function hashString(value = '') {
   let hash = 2166136261;
