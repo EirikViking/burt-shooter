@@ -5,17 +5,19 @@ Nova Swarm now has a Windows desktop package path for Steam release-candidate wo
 ## Build
 
 ```bash
-npm run build
+npm run build:current
 npm run package:steam:win:current
 npm run desktop:smoke:current
+npm run desktop:smoke:packaged
 npm run check:desktop-package
 ```
 
-`npm run verify:steam-rc` runs the same current-build package and Electron-smoke gates as part of the fast RC path. `npm run verify:steam-rc -- --full` also runs browser smoke and the long release playtest.
+`npm run verify:steam-rc` runs the same current-build package, Electron-smoke, packaged-executable-smoke, and desktop package gates as part of the fast RC path without regenerating the build ID. `npm run verify:steam-rc -- --full` also runs browser smoke and the long release playtest.
 
 Outputs:
 
 - Desktop smoke evidence: `test-results/electron-smoke-*/`
+- Packaged executable smoke evidence: `test-results/packaged-exe-smoke-*/`
 - Steam candidate payload: `release/desktop/win-unpacked/`
 - Launch executable: `release/desktop/win-unpacked/Nova Swarm.exe`
 
@@ -29,14 +31,15 @@ The web deployment remains unchanged and still uses Cloudflare Pages and D1 at `
 
 Latest verified package evidence:
 
-- `npm run package:steam:win:current`, `npm run desktop:smoke:current`, and `npm run check:desktop-package` passed for build `v2026-05-17_21-11-41`.
-- `npm run desktop:smoke:current` wrote `test-results/electron-smoke-2026-05-17T19-15-20-075Z/`.
+- `npm run package:steam:win:current`, `npm run desktop:smoke:current`, `npm run desktop:smoke:packaged`, and `npm run check:desktop-package` passed for build `v2026-05-17_21-41-17`.
+- `npm run desktop:smoke:current` wrote `test-results/electron-smoke-2026-05-17T20-27-11-571Z/`.
+- `npm run desktop:smoke:packaged` wrote `test-results/packaged-exe-smoke-2026-05-17T20-28-09-416Z/`.
 - `npm run package:steam:win:current` produced `release/desktop/win-unpacked/Nova Swarm.exe` at 226,666,496 bytes.
-- `npm run check:desktop-package` passed and wrote `release/steamworks/desktop_package_review_report.json`, confirming the packaged executable, Electron intro/menu render, local highscore API, captured screenshot, matching current build ID, package modified time newer than the build timestamp, and zero Electron smoke console events.
+- `npm run check:desktop-package` passed and wrote `release/steamworks/desktop_package_review_report.json`, confirming the packaged executable, Electron intro/menu render, packaged executable intro/menu render, local highscore API, captured screenshots, matching current build ID, package modified time newer than the build timestamp, and zero smoke console events.
 - `npm audit --omit=dev` reports `found 0 vulnerabilities`.
 - Dev-only audit caveat: the non-omitted audit still reports Vite/esbuild dev-server advisories that npm says require a breaking Vite major upgrade.
 
-The desktop package checker intentionally fails stale evidence. The latest Electron smoke `build` must match `public/version.json`, and the packaged executable must be newer than the current build timestamp.
+The desktop package checker intentionally fails stale evidence. The latest Electron smoke and packaged executable smoke `build` values must match `public/version.json`, and the packaged executable must be newer than the current build timestamp.
 
 ## Steamworks Handoff
 

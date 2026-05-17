@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T20:14:05.512Z",
+  "generatedAt": "2026-05-17T20:32:26.050Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 14,
@@ -34,7 +34,7 @@
         {
           "path": "docs/steam-desktop-package.md",
           "ok": true,
-          "bytes": 3546
+          "bytes": 3943
         },
         {
           "path": "docs/steam-store-handoff.md",
@@ -54,7 +54,7 @@
         {
           "path": "release/steamworks/steam_client_validation_runbook.md",
           "ok": true,
-          "bytes": 3001
+          "bytes": 3095
         },
         {
           "path": "docs/reviews/2026-05-17-steamcmd-local-check.md",
@@ -124,12 +124,12 @@
         {
           "path": "release/steamworks/desktop_package_review_report.json",
           "ok": true,
-          "bytes": 1075
+          "bytes": 1864
         },
         {
           "path": "release/steamworks/release_handoff_packet.json",
           "ok": true,
-          "bytes": 4542
+          "bytes": 4640
         },
         {
           "path": "release/steamworks/release_handoff_packet.md",
@@ -168,8 +168,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1614,
-      "coveredCount": 1614,
+      "assetCount": 1604,
+      "coveredCount": 1604,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []
@@ -320,12 +320,34 @@
       "desktopPayload": {
         "path": "release/desktop/win-unpacked/Nova Swarm.exe",
         "sizeBytes": 226666496,
-        "modifiedAt": "2026-05-17T19:56:30.912Z"
+        "modifiedAt": "2026-05-17T20:31:05.434Z"
       },
       "latestElectronSmoke": {
-        "reportPath": "test-results/electron-smoke-2026-05-17T19-56-58-565Z/report.json",
-        "screenshotPath": "test-results/electron-smoke-2026-05-17T19-56-58-565Z/01-electron-menu.png",
+        "reportPath": "test-results/electron-smoke-2026-05-17T20-31-12-949Z/report.json",
+        "screenshotPath": "test-results/electron-smoke-2026-05-17T20-31-12-949Z/01-electron-menu.png",
         "status": "passed",
+        "build": "v2026-05-17_21-41-17",
+        "title": "Nova Swarm - Arcade Patrol",
+        "scene": "intro",
+        "introTitle": "THE COIN SLOT WOKE UP",
+        "localHighscoreApi": {
+          "ok": true,
+          "status": 200
+        },
+        "readyState": {
+          "scene": "intro",
+          "introTitle": "THE COIN SLOT WOKE UP",
+          "introCaption": "An old arcade cabinet blinked awake between galaxies and found its coin slot full of stars.",
+          "panelTextures": 4,
+          "ready": true
+        },
+        "consoleEvents": []
+      },
+      "latestPackagedExeSmoke": {
+        "reportPath": "test-results/packaged-exe-smoke-2026-05-17T20-31-16-900Z/report.json",
+        "screenshotPath": "test-results/packaged-exe-smoke-2026-05-17T20-31-16-900Z/01-electron-menu.png",
+        "status": "passed",
+        "build": "v2026-05-17_21-41-17",
         "title": "Nova Swarm - Arcade Patrol",
         "scene": "intro",
         "introTitle": "THE COIN SLOT WOKE UP",

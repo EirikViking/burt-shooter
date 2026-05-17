@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T20:13:36.312Z",
+  "generatedAt": "2026-05-17T20:32:26.484Z",
   "build": {
     "version": "v2026-05-17_21-41-17",
     "timestamp": "2026-05-17T19:41:17.128Z",
@@ -45,7 +45,8 @@
       "status": "ready",
       "path": "release/steamworks/desktop_package_review_report.json",
       "exeBytes": 226666496,
-      "electronSmoke": "test-results/electron-smoke-2026-05-17T19-56-58-565Z/report.json"
+      "electronSmoke": "test-results/electron-smoke-2026-05-17T20-31-12-949Z/report.json",
+      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-17T20-31-16-900Z/report.json"
     },
     "audio": {
       "status": "ready",
@@ -55,7 +56,7 @@
     "provenance": {
       "status": "ready",
       "path": "release/provenance/asset_provenance_report.json",
-      "covered": "1614/1614"
+      "covered": "1604/1604"
     },
     "storeMetadata": {
       "status": "ready",

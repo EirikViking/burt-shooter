@@ -12,12 +12,13 @@ const reportPath = path.join(outputDir, 'report.json');
 const shellCommand = process.platform === 'win32' ? 'cmd.exe' : 'sh';
 
 const stages = [
-  ['build', ['run', 'build']],
+  ['build:current', ['run', 'build:current']],
   ['check:provenance', ['run', 'check:provenance']],
   ['check:steam-assets', ['run', 'check:steam-assets']],
   ['check:steam-store', ['run', 'check:steam-store']],
   ['package:steam:win:current', ['run', 'package:steam:win:current']],
   ['desktop:smoke:current', ['run', 'desktop:smoke:current']],
+  ['desktop:smoke:packaged', ['run', 'desktop:smoke:packaged']],
   ['check:desktop-package', ['run', 'check:desktop-package']],
   ['audit:audio-mix', ['run', 'audit:audio-mix']]
 ];
@@ -103,7 +104,7 @@ const report = {
   notes: [
     full
       ? 'Full mode verifies build/static release evidence, refreshes the Windows package and Electron smoke from the same build, then runs browser smoke and release playtest.'
-      : 'Fast mode verifies build/static release evidence and refreshes the Windows package plus Electron smoke from the same build. Use --full for browser smoke and release playtest.',
+      : 'Fast mode verifies build/static release evidence and refreshes the Windows package plus Electron and packaged-executable smoke from the same build. Use --full for browser smoke and release playtest.',
     `A successful ${full ? 'full' : 'fast'} report does not mean Steam-ready while releaseAudit.verdict is not_steam_ready.`
   ]
 };

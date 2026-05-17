@@ -95,7 +95,8 @@ const packet = {
       status: lineForStatus(desktop?.status === 'passed' && desktop?.currentBuild?.version === buildVersion),
       path: 'release/steamworks/desktop_package_review_report.json',
       exeBytes: desktop?.desktopPayload?.sizeBytes || 0,
-      electronSmoke: desktop?.latestElectronSmoke?.reportPath || null
+      electronSmoke: desktop?.latestElectronSmoke?.reportPath || null,
+      packagedExeSmoke: desktop?.latestPackagedExeSmoke?.reportPath || null
     },
     audio: {
       status: lineForStatus(Boolean(audio) && (audio.decodeErrors || []).length === 0),

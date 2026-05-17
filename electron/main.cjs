@@ -174,7 +174,9 @@ function createWindow() {
 }
 
 async function runSmoke(window) {
-  const outputDir = path.resolve(__dirname, '..', 'test-results', `electron-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}`);
+  const outputDir = path.resolve(
+    process.env.NOVA_SWARM_ELECTRON_SMOKE_OUTPUT_DIR || path.join(process.cwd(), 'test-results', `electron-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}`)
+  );
   fs.mkdirSync(outputDir, { recursive: true });
   const consoleEvents = [];
   window.webContents.on('console-message', (_event, level, message) => {

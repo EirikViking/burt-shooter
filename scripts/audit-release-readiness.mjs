@@ -508,12 +508,18 @@ checks.push({
       json.latestElectronSmoke?.status === 'passed' &&
       json.latestElectronSmoke?.localHighscoreApi?.ok === true &&
       json.latestElectronSmoke?.readyState?.ready === true &&
-      (json.latestElectronSmoke?.consoleEvents || []).length === 0,
+      (json.latestElectronSmoke?.consoleEvents || []).length === 0 &&
+      json.latestPackagedExeSmoke?.status === 'passed' &&
+      json.latestPackagedExeSmoke?.build === expectedBuild &&
+      json.latestPackagedExeSmoke?.localHighscoreApi?.ok === true &&
+      json.latestPackagedExeSmoke?.readyState?.ready === true &&
+      (json.latestPackagedExeSmoke?.consoleEvents || []).length === 0,
       status: json.status || null,
       expectedBuild,
       actualBuild,
       desktopPayload: json.desktopPayload || null,
       latestElectronSmoke: json.latestElectronSmoke || null,
+      latestPackagedExeSmoke: json.latestPackagedExeSmoke || null,
       errors: json.errors || [],
       warnings: json.warnings || []
     };

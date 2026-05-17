@@ -18,10 +18,10 @@ function readJson(file) {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
-function findLatestElectronSmokeReport() {
+function findLatestSmokeReport(prefix) {
   if (!existsSync(smokeRoot)) return null;
   const dirs = readdirSync(smokeRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith('electron-smoke-'))
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith(prefix))
     .map((entry) => {
       const dir = path.join(smokeRoot, entry.name);
       const report = path.join(dir, 'report.json');
@@ -35,6 +35,46 @@ function findLatestElectronSmokeReport() {
     .sort((a, b) => b.mtimeMs - a.mtimeMs);
 
   return dirs[0] || null;
+}
+
+function checkSmokeReport(label, latestSmoke) {
+  let report = null;
+  const labelName = label === 'packaged executable' ? 'packaged executable smoke' : `${label} smoke`;
+  if (!latestSmoke) {
+    errors.push(`Missing ${labelName} report in test-results/${label === 'Electron' ? 'electron-smoke' : 'packaged-exe-smoke'}-*/report.json`);
+    return { report };
+  }
+
+  report = readJson(latestSmoke.report);
+  const screenshot = path.join(latestSmoke.dir, '01-electron-menu.png');
+  if (!existsSync(screenshot)) {
+    errors.push(`Missing ${labelName} screenshot: ${rel(screenshot)}`);
+  }
+  if (report.status !== 'passed') {
+    errors.push(`Latest ${labelName} status is ${report.status || 'unknown'}`);
+  }
+  if (report.state?.apiOk !== true || report.state?.apiStatus !== 200) {
+    errors.push(`${labelName} local highscore API did not pass`);
+  }
+  if (!report.state?.scene) {
+    errors.push(`${labelName} did not report a rendered scene`);
+  }
+  if (report.state?.readyState?.ready !== true) {
+    errors.push(`${labelName} did not report ready rendered intro/menu state`);
+  }
+  if ((report.consoleEvents || []).length) {
+    errors.push(`${labelName} reported ${report.consoleEvents.length} console event(s)`);
+  }
+  if (currentBuild?.version && report.state?.build !== currentBuild.version) {
+    errors.push(`Latest ${labelName} build ${report.state?.build || 'unknown'} does not match current build ${currentBuild.version}`);
+  }
+
+  const ageHours = (Date.now() - statSync(latestSmoke.report).mtimeMs) / 36e5;
+  if (ageHours > 72) {
+    warnings.push(`Latest ${labelName} report is ${ageHours.toFixed(1)} hours old`);
+  }
+
+  return { report };
 }
 
 function fileInfo(relativePath) {
@@ -58,40 +98,27 @@ if (!currentBuild?.version || !currentBuild?.timestamp) {
   errors.push('Missing current build metadata in public/version.json');
 }
 
-const latestSmoke = findLatestElectronSmokeReport();
-let smokeReport = null;
+const latestSmoke = findLatestSmokeReport('electron-smoke-');
+const latestPackagedSmoke = findLatestSmokeReport('packaged-exe-smoke-');
+const { report: smokeReport } = checkSmokeReport('Electron', latestSmoke);
+const { report: packagedSmokeReport } = checkSmokeReport('packaged executable', latestPackagedSmoke);
 
-if (!latestSmoke) {
-  errors.push('Missing Electron smoke report in test-results/electron-smoke-*/report.json');
-} else {
-  smokeReport = readJson(latestSmoke.report);
-  const screenshot = path.join(latestSmoke.dir, '01-electron-menu.png');
-  if (!existsSync(screenshot)) {
-    errors.push(`Missing Electron smoke screenshot: ${rel(screenshot)}`);
-  }
-  if (smokeReport.status !== 'passed') {
-    errors.push(`Latest Electron smoke status is ${smokeReport.status || 'unknown'}`);
-  }
-  if (smokeReport.state?.apiOk !== true || smokeReport.state?.apiStatus !== 200) {
-    errors.push('Electron local highscore API did not pass');
-  }
-  if (!smokeReport.state?.scene) {
-    errors.push('Electron smoke did not report a rendered scene');
-  }
-  if (smokeReport.state?.readyState?.ready !== true) {
-    errors.push('Electron smoke did not report ready rendered intro/menu state');
-  }
-  if ((smokeReport.consoleEvents || []).length) {
-    errors.push(`Electron smoke reported ${smokeReport.consoleEvents.length} console event(s)`);
-  }
-  if (currentBuild?.version && smokeReport.state?.build !== currentBuild.version) {
-    errors.push(`Latest Electron smoke build ${smokeReport.state?.build || 'unknown'} does not match current build ${currentBuild.version}`);
-  }
-
-  const ageHours = (Date.now() - statSync(latestSmoke.report).mtimeMs) / 36e5;
-  if (ageHours > 72) {
-    warnings.push(`Latest Electron smoke report is ${ageHours.toFixed(1)} hours old`);
-  }
+function smokeSummary(latest, smokeReport) {
+  return latest ? {
+    reportPath: rel(latest.report),
+    screenshotPath: rel(path.join(latest.dir, '01-electron-menu.png')),
+    status: smokeReport?.status || null,
+    build: smokeReport?.state?.build || null,
+    title: smokeReport?.state?.title || null,
+    scene: smokeReport?.state?.scene || null,
+    introTitle: smokeReport?.state?.introTitle || null,
+    localHighscoreApi: {
+      ok: smokeReport?.state?.apiOk === true,
+      status: smokeReport?.state?.apiStatus || null
+    },
+    readyState: smokeReport?.state?.readyState || null,
+    consoleEvents: smokeReport?.consoleEvents || []
+  } : null;
 }
 
 if (payload && currentBuild?.timestamp) {
@@ -110,20 +137,8 @@ const report = {
     timestamp: currentBuild.timestamp || null
   } : null,
   desktopPayload: payload,
-  latestElectronSmoke: latestSmoke ? {
-    reportPath: rel(latestSmoke.report),
-    screenshotPath: rel(path.join(latestSmoke.dir, '01-electron-menu.png')),
-    status: smokeReport?.status || null,
-    title: smokeReport?.state?.title || null,
-    scene: smokeReport?.state?.scene || null,
-    introTitle: smokeReport?.state?.introTitle || null,
-    localHighscoreApi: {
-      ok: smokeReport?.state?.apiOk === true,
-      status: smokeReport?.state?.apiStatus || null
-    },
-    readyState: smokeReport?.state?.readyState || null,
-    consoleEvents: smokeReport?.consoleEvents || []
-  } : null,
+  latestElectronSmoke: smokeSummary(latestSmoke, smokeReport),
+  latestPackagedExeSmoke: smokeSummary(latestPackagedSmoke, packagedSmokeReport),
   errors,
   warnings
 };
