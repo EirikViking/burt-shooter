@@ -2990,7 +2990,7 @@ export class PlayScene {
           this.spawnAmbientBeer('POWERUP');
           this.lastWhiteCanTime = now;
           this.hasActiveWhiteCan = true;
-          this.showToast("BONUS CAN APPEARED!", { fontSize: 24, fill: '#ffffff', y: 100 });
+          this.showToast("BONUS CORE APPEARED!", { fontSize: 24, fill: '#ffffff', y: 100 });
         }
       }
     }
@@ -3187,7 +3187,7 @@ export class PlayScene {
   }
 
   spawnAmbientBeer(type) {
-    // Use BeerCan class
+    // Legacy class name, public identity is bonus core/drone.
     const x = Math.random() * (this.game.getWidth() - 100) + 50;
     const y = -50;
 
@@ -3203,17 +3203,17 @@ export class PlayScene {
 
     // Collect challenge drones from EnemyManager.enemies.
     if (this.enemyManager && this.enemyManager.enemies) {
-      const enemyBeerCans = this.enemyManager.enemies.filter(e =>
+      const challengeDrones = this.enemyManager.enemies.filter(e =>
         e.active && e.kind === 'beer_can'
       );
-      targets.push(...enemyBeerCans);
+      targets.push(...challengeDrones);
     }
 
     // Collect ambient bonus drones from PlayScene.
-    const ambientBeerCans = this.ambientBeers.filter(b =>
+    const ambientBonusDrones = this.ambientBeers.filter(b =>
       b.active && b.kind === 'beer_can'
     );
-    targets.push(...ambientBeerCans);
+    targets.push(...ambientBonusDrones);
 
     return targets;
   }

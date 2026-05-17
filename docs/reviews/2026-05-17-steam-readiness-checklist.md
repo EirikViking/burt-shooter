@@ -6,16 +6,20 @@ Nova Swarm is still not Steam-ready, but the path is now concrete. The current b
 
 Current playable deployment:
 
-- https://bfa6ae62.burt-game.pages.dev
+- https://burt.tinyfoundry.app
+
+Current verified web build:
+
+- `v2026-05-17_11-32-32`
 
 Latest pushed evidence:
 
-- Commit: `37020bc chore: add audio mix audit`
+- Commit: `159173a feat: add visual variant arsenal`
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
-- Latest intro/audio/visual smoke: `test-results/smoke-nova-intro-20260517-1022/`
-- Latest intro/audio/visual release playtest: `test-results/release-playtest-nova-intro-20260517-1024/`
-- Manual intro/hangar screenshots: `test-results/manual-nova-visuals-20260517-1027/`
-- Steam screenshot candidate capture: `release/steam-screenshots/draft-2026-05-17-live-1280/`
+- Latest intro/audio/visual smoke: `test-results/smoke-2026-05-17T09-17-13-563Z/`
+- Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
+- Steam screenshot candidate capture: `release/steam-screenshots/draft-2026-05-17-11-30/`
+- Visual variety evidence: 216 selectable ship variants and 48 enemy visual variants from `src/config/VisualVariantCatalog.js`.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 

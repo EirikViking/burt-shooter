@@ -544,7 +544,7 @@ export class GameOverScene {
 
     // Label
     const label = document.createElement('div');
-    label.textContent = 'SKRIV DITT NAVN';
+    label.textContent = 'ENTER PILOT NAME';
     label.style.cssText = `
       font-family: 'Courier New', monospace;
       font-size: 20px;
@@ -561,7 +561,7 @@ export class GameOverScene {
     this.inputField.autocapitalize = 'characters';
     this.inputField.autocomplete = 'off';
     this.inputField.spellcheck = false;
-    this.inputField.placeholder = 'NAVN';
+    this.inputField.placeholder = 'PILOT';
     this.inputField.style.cssText = `
       font-family: 'Courier New', monospace;
       font-size: 28px;

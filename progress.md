@@ -1,5 +1,13 @@
 Original prompt: Continue autonomous development of Burt Shooter toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-17 Public Text Cleanup
+
+- Removed remaining visible Norwegian high-score/game-over/fatal-error strings (`NAVN`, `SKRIV DITT NAVN`, `Laster`, `Feil`, and empty-state copy) and replaced them with public arcade English.
+- Replaced the last visible old bonus-wave text `BEER CAN CHALLENGE KLART!` with `BONUS DRONE RAID CLEAR!`.
+- Updated README and Steam-readiness notes to point at `https://burt.tinyfoundry.app`, current evidence, and the 216 ship / 48 enemy visual variant catalog.
+- Targeted public-content scan is clean for stale preview URLs, private place/person names, Galaga references, and the patched Norwegian UI terms.
+- Latest checks for this slice: `npm run build`, `npm run smoke`, and a 60-second `npm run playtest:release` with `RELEASE_PLAYTEST_OUTPUT_DIR=test-results/release-playtest-public-text-20260517-1144` all passed with no page errors, bad responses, request failures, or console warnings.
+
 ## 2026-05-17 Nova Swarm Retheme
 
 - Pivoted the game away from the internal-joke identity and toward Nova Swarm, a public arcade shooter built around swarm formations, bonus cores, boss patterns, and high-score humor.

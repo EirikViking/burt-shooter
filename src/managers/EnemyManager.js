@@ -841,7 +841,7 @@ export class EnemyManager {
       const bonus = 3000;
       this.game.addScore(bonus);
       if (this.game.scenes.play) {
-        this.game.scenes.play.showWaveBonusEffect(bonus, 'BEER CAN CHALLENGE KLART!');
+        this.game.scenes.play.showWaveBonusEffect(bonus, 'BONUS DRONE RAID CLEAR!');
       }
       AudioManager.playVoice('mission_complete');
     } else {
@@ -872,7 +872,7 @@ export class EnemyManager {
       if (Math.random() < 0.08) {
         const wasChallenge = clearedWave && clearedWave.isChallenge;
         if (!wasChallenge) {
-          console.log('[EnemyManager] INJECTING BEER CHALLENGE WAVE!');
+          console.log('[EnemyManager] injecting bonus drone challenge wave');
           this.waves.splice(this.currentWaveIndex + 1, 0, {
             type: 'beer_challenge',
             count: 24,
@@ -986,18 +986,16 @@ export class EnemyManager {
   }
 
   forceClearAllEnemies() {
-    // CLEANUP FIX: Use authoritative collector to clear ALL beer cans
+    // CLEANUP FIX: Use authoritative collector to clear all bonus drones.
     const playScene = this.game.scenes.play;
-    let beerCanCount = 0;
+    let bonusDroneCount = 0;
     let enemyCount = 0;
 
     if (playScene && playScene.getWaveCleanupTargets) {
-      // Get all beer cans from all tracking systems
-      const beerCans = playScene.getWaveCleanupTargets();
-      beerCanCount = beerCans.length;
+      const bonusDrones = playScene.getWaveCleanupTargets();
+      bonusDroneCount = bonusDrones.length;
 
-      // Clear each beer can with particle effect
-      beerCans.forEach(target => {
+      bonusDrones.forEach(target => {
         if (playScene.particleManager) {
           playScene.particleManager.createExplosion(target.x, target.y, 0xcccccc, 1.2);
         }
@@ -1036,7 +1034,7 @@ export class EnemyManager {
     this.cleanupPhase = 'NONE';
 
     // CLEANUP FIX: Diagnostic - cleanup complete
-    console.log(`[EnemyManager] Wave cleanup complete: cleared ${enemyCount} enemies + ${beerCanCount} beer cans`);
+    console.log(`[EnemyManager] Wave cleanup complete: cleared ${enemyCount} enemies + ${bonusDroneCount} bonus drones`);
   }
 
   clearEnemies() {

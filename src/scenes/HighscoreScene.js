@@ -352,7 +352,7 @@ export class HighscoreScene {
           this.retryAttempt = attempt;
           // Silent retry - only update state message if not first attempt
           if (attempt > 0) {
-            this.stateMessage.text = `Laster... (forsøk ${attempt + 1}/4)`;
+            this.stateMessage.text = `Loading... (attempt ${attempt + 1}/4)`;
           }
         }
       });
@@ -422,13 +422,13 @@ export class HighscoreScene {
         this.stateMessage.text = 'Highscores loaded.';
         break;
       case 'EMPTY':
-        this.stateMessage.text = 'Ingen scores ennå! Vær den første.';
+        this.stateMessage.text = 'No scores yet. Be the first legend.';
         break;
       case 'ERROR':
-        this.stateMessage.text = `Feil: ${this.lastError}`;
+        this.stateMessage.text = `Error: ${this.lastError}`;
         break;
       default:
-        this.stateMessage.text = 'Laster...';
+        this.stateMessage.text = 'Loading...';
     }
     this.layoutHighscore();
   }
@@ -681,7 +681,7 @@ export class HighscoreScene {
       };
       const headers = [
         { text: 'RANK', x: columns.rank },
-        { text: 'NAVN', x: columns.name },
+        { text: 'PILOT', x: columns.name },
         { text: 'SCORE', x: columns.score },
         { text: 'LEVEL', x: columns.level }
       ];
@@ -845,7 +845,7 @@ export class HighscoreScene {
       this.fadeInRows();
     } else {
       this.rowsContainer.alpha = 1;
-      const message = this.status === 'EMPTY' ? 'Ingen highscores enda. Vær først!' : 'Ingen data.';
+      const message = this.status === 'EMPTY' ? 'No highscores yet. Be first!' : 'No data.';
       const empty = createText(message, {
         fontFamily: 'Courier New',
         fontSize: getResponsiveFontSize(layout, 'body'),

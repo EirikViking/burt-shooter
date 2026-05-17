@@ -385,9 +385,9 @@ function showFatalOverlay(step, error) {
   const message = getErrorMessage(error);
   const stackExcerpt = getStackExcerpt(error);
   const lines = [
-    'Kunne ikke starte spillet.',
-    `Steg: ${step}`,
-    `Feil: ${message}`,
+    'Could not start the game.',
+    `Step: ${step}`,
+    `Error: ${message}`,
     stackExcerpt ? `Stack: ${stackExcerpt}` : null,
     `Build: ${BUILD_ID}`,
     `Git: ${GIT_SHA}`
