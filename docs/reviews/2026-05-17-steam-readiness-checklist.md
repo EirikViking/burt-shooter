@@ -33,8 +33,9 @@ Current evidence:
 - Steamworks VDF helper: `npm run steamworks:write-vdf` writes ignored `release/steamworks/app_build_LOCAL.vdf` from `STEAM_APP_ID` and `STEAM_DEPOT_ID`.
 - Human release approval template: `docs/reviews/2026-05-17-human-release-approval.md`; it is intentionally pending until real approval is recorded.
 - Steam client validation template: `release/steamworks/client_validation_report.template.json`; copy it to `client_validation_report.json` only after real Steam-client validation.
+- Steam store metadata handoff: `docs/steam-store-handoff.md`, `release/steamworks/store_metadata_draft.json`, and `release/steamworks/store_metadata_review_report.json`; `npm run check:steam-store` passes with 15 tags, 8 feature bullets, conservative `Partial Controller Support`, and explicit v1 deferrals for Steam Cloud and Steam achievements.
 - Release readiness audit: `npm run audit:release-readiness` writes `docs/reviews/release-readiness-audit-2026-05-17.json` and currently reports `not_steam_ready` because Steamworks IDs, Steam client validation, and user approval remain open. Use `RELEASE_AUDIT_STRICT=1 npm run audit:release-readiness` to fail on known manual blockers too.
-- Steam RC verification entrypoint: `npm run verify:steam-rc` runs the fast build/static release gates and writes `test-results/steam-rc-verify-*/report.json`; latest full pass is `test-results/steam-rc-verify-2026-05-17T12-12-27-110Z/report.json`. Use `npm run verify:steam-rc -- --full` for smoke, desktop package, and release playtest as part of a full RC pass.
+- Steam RC verification entrypoint: `npm run verify:steam-rc` runs the fast build/static release gates and writes `test-results/steam-rc-verify-*/report.json`; latest fast pass with the Steam store metadata gate is `test-results/steam-rc-verify-2026-05-17T14-11-10-947Z/report.json`, and latest full pass is `test-results/steam-rc-verify-2026-05-17T12-12-27-110Z/report.json`. Use `npm run verify:steam-rc -- --full` for smoke, desktop package, and release playtest as part of a full RC pass.
 - Latest full smoke evidence: `test-results/smoke-2026-05-17T12-12-55-257Z/`.
 - Latest full Electron smoke evidence: `test-results/electron-smoke-2026-05-17T12-14-15-301Z/`.
 - Latest full 10-minute release playtest evidence: `test-results/release-playtest-2026-05-17T12-15-21-253Z/`.
@@ -122,6 +123,7 @@ These are not proven ready in the repo yet:
 - Final Steam screenshot upload approval. A curated 7-shot upload shortlist now exists at `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, but the user still needs to approve the final Steamworks upload choices/captions.
 - Final trailer or short launch clip. A clean 43.88 second 1280x720 visual trailer draft and H.264/AAC audio-mixed MP4 draft now exist at `release/steam-trailer/draft-2026-05-17-12-46/`, but the final clip still needs by-ear approval, title-card judgment, export, and human upload approval.
 - Final store page copy approval, including public arcade-comedy tone, localization stance, and confirmation that old inside-joke material has been removed from player-facing surfaces.
+- Final Steamworks metadata entry/approval. A structured store metadata draft now exists and passes `npm run check:steam-store`, but it is intentionally marked `draft_pending_human_approval`.
 - Legal/provenance review for all shipped art, music, SFX, generated portraits, generated voice, names, and jokes.
 - Final by-ear approval for the ElevenLabs intro music, narrator lines, stingers, and in-game voice/SFX blend.
 - Final human capsule approval before upload. Agent review/contact sheets now exist, but the user still needs to approve the final store submission choices.
@@ -141,6 +143,7 @@ Do not call this Steam-ready until these are true:
 - `npm run capture:steam-trailer` produces a clean trailer draft report with no browser or network failures.
 - `npm run render:steam-trailer-audio` produces an audio-mixed MP4 draft report from shipped assets.
 - `npm run check:steam-assets` validates Steam asset dimensions/transparency and regenerates the review contact sheets.
+- `npm run check:steam-store` validates structured Steam store metadata, supported platform, launch option, tags/categories, conservative controller support, and v1 decisions for Steam Cloud/achievements.
 - `npm run audit:release-readiness` has no hard artifact/content failures and records only known manual blockers.
 - `npm run verify:steam-rc` passes in fast mode and writes a summary report.
 - `npm run verify:steam-rc -- --full` passes and writes a summary report.

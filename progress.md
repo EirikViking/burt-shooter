@@ -11,6 +11,13 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Focused HUD verification passed at `test-results/manual-powerup-hud-20260517-1553/powerup-hud.png`, `npm run build` passed with build ID `v2026-05-17_15-53-16`, full local `npm run smoke` passed at `test-results/smoke-2026-05-17T13-55-24-048Z/`, live-domain smoke passed at `test-results/smoke-2026-05-17T13-59-45-653Z/` after deploying `https://cc7b0b42.burt-game.pages.dev`, and `npm run audit:release-readiness` still reports only known manual blockers.
 - Remaining blockers are still Steam-specific/manual: real Steamworks app/depot IDs, SteamPipe upload and Steam-client install/launch validation, final human approvals for screenshots/capsules/trailer/audio/store copy/legal/gameplay feel, and final email only after those are genuinely complete.
 
+## 2026-05-17 Steam Store Metadata Handoff
+
+- Added `release/steamworks/store_metadata_draft.json` with structured Steam page copy, tags, categories, launch option, platform, system requirements, upload-asset pointers, and explicit v1 decisions to defer Steam Cloud and Steam achievements.
+- Added `docs/steam-store-handoff.md` and `scripts/check-steam-store-metadata.mjs`; package script `npm run check:steam-store` validates the draft and writes `release/steamworks/store_metadata_review_report.json`.
+- Wired `check:steam-store` into `npm run verify:steam-rc` and the release-readiness audit, so Steam page metadata is now a repeatable gate instead of loose notes.
+- Verification: `npm run check:steam-store` passed with 15 tags, 8 feature bullets, `Partial Controller Support`, and no warnings; `npm run audit:release-readiness` now reports 11 passing checks and only the known Steam/manual blockers.
+
 ## 2026-05-17 Public Text Cleanup
 
 - Removed remaining visible Norwegian high-score/game-over/fatal-error strings (`NAVN`, `SKRIV DITT NAVN`, `Laster`, `Feil`, and empty-state copy) and replaced them with public arcade English.

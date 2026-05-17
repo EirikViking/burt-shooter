@@ -1,0 +1,100 @@
+{
+  "status": "draft_pending_human_approval",
+  "title": "Nova Swarm",
+  "releaseState": "release_candidate_prep",
+  "supportedPlatforms": [
+    "windows"
+  ],
+  "launchOptions": [
+    {
+      "description": "Launch Nova Swarm",
+      "executable": "Nova Swarm.exe",
+      "arguments": "",
+      "type": "default"
+    }
+  ],
+  "shortDescription": "Blast through a neon arcade swarm with punchy ships, readable bullet patterns, boss fights, bonus-core chaos, and couch-friendly keyboard, gamepad, and touch controls.",
+  "longDescription": [
+    "Nova Swarm is a fast arcade shooter about surviving wave after wave of choreographed space nonsense. Pick your ship, dodge incoming fire, grab ridiculous bonus cores, and push through escalating enemy formations toward oversized boss encounters.",
+    "The game blends old-school shoot-'em-up clarity with a public arcade-comedy personality: readable bullets, compact wave briefings, original generated key art, radio callouts, local highscore fallback, and accessibility sliders for screen shake and player focus."
+  ],
+  "featureBullets": [
+    "Arcade wave shooting with handcrafted early pacing and escalating late-game pressure.",
+    "Boss gates, victory beats, sector transitions, and score rewards.",
+    "Keyboard, gamepad, and mobile touch control support in the game runtime.",
+    "Context-aware music pools for menu, gameplay, boss, victory, and game over.",
+    "First-run narrated story intro with replay from the menu.",
+    "Radio callouts and narrated beats with music ducking.",
+    "Accessibility controls for screen shake and player-focus visibility.",
+    "Offline/local highscore fallback when the network is unavailable."
+  ],
+  "tags": [
+    "Arcade",
+    "Shoot 'Em Up",
+    "Space",
+    "Retro",
+    "Bullet Hell",
+    "Action",
+    "Casual",
+    "Singleplayer",
+    "Controller",
+    "Colorful",
+    "2D",
+    "Score Attack",
+    "Family Friendly",
+    "Sci-fi",
+    "Old School"
+  ],
+  "categories": [
+    "Single-player",
+    "Partial Controller Support"
+  ],
+  "controllerSupportDecision": {
+    "steamworksCategory": "Partial Controller Support",
+    "reason": "Gameplay, pause, and menus have automated gamepad smoke coverage, but final Steam client text entry and Steam Input metadata are not yet validated through the Steam-installed build."
+  },
+  "steamCloudDecision": {
+    "status": "defer_for_v1",
+    "reason": "Desktop build stores highscores and settings locally. Steam Cloud can be added after the Steam client package path is validated and save-file locations are finalized."
+  },
+  "achievementsDecision": {
+    "status": "defer_for_v1",
+    "reason": "The game has in-run accomplishment beats, but no Steamworks API integration is present. Do not advertise Steam achievements until implemented and tested."
+  },
+  "localizationDecision": {
+    "primaryLanguage": "English",
+    "additionalLanguages": [],
+    "reason": "Player-facing text has been cleaned into public English arcade copy. Additional localization is out of scope until a public English release candidate is approved."
+  },
+  "systemRequirements": {
+    "minimum": {
+      "os": "Windows 10 64-bit",
+      "processor": "Dual-core 2.0 GHz",
+      "memory": "4 GB RAM",
+      "graphics": "WebGL-capable GPU / DirectX 11 class hardware",
+      "storage": "500 MB available space",
+      "notes": "Keyboard supported. Gamepad supported for gameplay pending final Steam client validation."
+    },
+    "recommended": {
+      "os": "Windows 11 64-bit",
+      "processor": "Quad-core 2.5 GHz",
+      "memory": "8 GB RAM",
+      "graphics": "Dedicated or modern integrated GPU with current drivers",
+      "storage": "500 MB available space",
+      "notes": "Gamepad recommended for couch play after Steam client validation."
+    }
+  },
+  "uploadAssets": {
+    "screenshots": "release/steam-screenshots/steam-upload-candidates-2026-05-17/",
+    "capsules": "release/steam-assets/draft-2026-05-17-nova-swarm/",
+    "trailerDraft": "release/steam-trailer/draft-2026-05-17-12-46/"
+  },
+  "approvalRequired": [
+    "final screenshot order and captions",
+    "capsule readability and legal/provenance approval",
+    "trailer/title-card/audio approval",
+    "store copy tone approval",
+    "controller support category after Steam client validation",
+    "system requirements sanity check on a second Windows machine"
+  ]
+}

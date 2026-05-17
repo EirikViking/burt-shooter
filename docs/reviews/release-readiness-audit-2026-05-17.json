@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-17T13:56:44.356Z",
+  "generatedAt": "2026-05-17T14:11:35.546Z",
   "verdict": "not_steam_ready",
   "summary": {
-    "passed": 10,
+    "passed": 11,
     "failed": 3,
     "hardFailures": 0,
     "manualBlockers": [
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 13603
+          "bytes": 14629
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -30,6 +30,11 @@
           "path": "docs/steam-desktop-package.md",
           "ok": true,
           "bytes": 2559
+        },
+        {
+          "path": "docs/steam-store-handoff.md",
+          "ok": true,
+          "bytes": 2328
         },
         {
           "path": "docs/steam-trailer-workflow.md",
@@ -90,6 +95,16 @@
           "path": "release/steam-trailer/draft-2026-05-17-12-46/audio-mix-report.json",
           "ok": true,
           "bytes": 8962
+        },
+        {
+          "path": "release/steamworks/store_metadata_draft.json",
+          "ok": true,
+          "bytes": 4367
+        },
+        {
+          "path": "release/steamworks/store_metadata_review_report.json",
+          "ok": true,
+          "bytes": 376
         }
       ]
     },
@@ -108,6 +123,20 @@
       "ok": true,
       "assetCount": 9,
       "failures": []
+    },
+    {
+      "name": "steam_store_metadata_report_clean",
+      "ok": true,
+      "status": "passed",
+      "warnings": [],
+      "summary": {
+        "tags": 15,
+        "categories": 2,
+        "featureBullets": 8,
+        "controllerSupport": "Partial Controller Support",
+        "achievements": "defer_for_v1",
+        "steamCloud": "defer_for_v1"
+      }
     },
     {
       "name": "live_screenshot_capture_report_clean",

@@ -10,6 +10,7 @@ const requiredFiles = [
   'docs/reviews/2026-05-17-steam-readiness-checklist.md',
   'docs/reviews/2026-05-17-audio-mix-audit.md',
   'docs/steam-desktop-package.md',
+  'docs/steam-store-handoff.md',
   'docs/steam-trailer-workflow.md',
   'release/steamworks/app_build_TEMPLATE.vdf',
   'release/steamworks/steam_client_validation_runbook.md',
@@ -21,7 +22,9 @@ const requiredFiles = [
   'release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md',
   'release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png',
   'release/steam-trailer/draft-2026-05-17-12-46/report.json',
-  'release/steam-trailer/draft-2026-05-17-12-46/audio-mix-report.json'
+  'release/steam-trailer/draft-2026-05-17-12-46/audio-mix-report.json',
+  'release/steamworks/store_metadata_draft.json',
+  'release/steamworks/store_metadata_review_report.json'
 ];
 
 const forbiddenScanRoots = [
@@ -292,6 +295,16 @@ checks.push({
     ok: Array.isArray(json.failures) && json.failures.length === 0 && Array.isArray(json.assets) && json.assets.length === 9,
     assetCount: json.assets?.length || 0,
     failures: json.failures || []
+  }))
+});
+
+checks.push({
+  name: 'steam_store_metadata_report_clean',
+  ...checkJsonReport('release/steamworks/store_metadata_review_report.json', (json) => ({
+    ok: json.status === 'passed' && Array.isArray(json.errors) && json.errors.length === 0,
+    status: json.status,
+    warnings: json.warnings || [],
+    summary: json.summary || {}
   }))
 });
 

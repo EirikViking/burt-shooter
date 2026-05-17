@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-05-17T14:11:28.861Z",
+  "metadataPath": "release/steamworks/store_metadata_draft.json",
+  "status": "passed",
+  "errors": [],
+  "warnings": [],
+  "summary": {
+    "tags": 15,
+    "categories": 2,
+    "featureBullets": 8,
+    "controllerSupport": "Partial Controller Support",
+    "achievements": "defer_for_v1",
+    "steamCloud": "defer_for_v1"
+  }
+}

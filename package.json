@@ -11,6 +11,7 @@
     "build": "vite build",
     "check:audio": "node scripts/check-audio-catalog.mjs",
     "check:steam-assets": "node scripts/check-steam-assets.mjs",
+    "check:steam-store": "node scripts/check-steam-store-metadata.mjs",
     "audit:release-readiness": "node scripts/audit-release-readiness.mjs",
     "verify:steam-rc": "node scripts/verify-steam-rc.mjs",
     "audit:audio-mix": "node scripts/audit-audio-mix.mjs --md docs/reviews/2026-05-17-audio-mix-audit.md --json docs/reviews/audio-mix-audit-2026-05-17.json",
