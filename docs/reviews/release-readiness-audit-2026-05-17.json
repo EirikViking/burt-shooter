@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T15:55:15.998Z",
+  "generatedAt": "2026-05-17T16:01:58.626Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 13,
@@ -89,7 +89,7 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "ok": true,
-          "bytes": 3713829
+          "bytes": 2549768
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-17-03/report.json",
@@ -189,7 +189,7 @@
     {
       "name": "steam_screenshot_upload_candidates_1280x720",
       "ok": true,
-      "count": 11,
+      "count": 8,
       "candidates": [
         {
           "file": "01-story-intro-cinematic.png",
@@ -210,19 +210,7 @@
           "ok": true
         },
         {
-          "file": "04-boss-inbound.png",
-          "width": 1280,
-          "height": 720,
-          "ok": true
-        },
-        {
           "file": "04-midgame-swarm-escalation.png",
-          "width": 1280,
-          "height": 720,
-          "ok": true
-        },
-        {
-          "file": "05-boss-fight.png",
           "width": 1280,
           "height": 720,
           "ok": true
@@ -235,12 +223,6 @@
         },
         {
           "file": "06-boss-fight.png",
-          "width": 1280,
-          "height": 720,
-          "ok": true
-        },
-        {
-          "file": "06-boss-victory.png",
           "width": 1280,
           "height": 720,
           "ok": true

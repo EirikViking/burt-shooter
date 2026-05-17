@@ -266,7 +266,7 @@ function checkScreenshotCandidates() {
     return { file, width, height, ok: out.status === 0 && width === 1280 && height === 720 };
   });
   return {
-    ok: candidates.length >= 5 && identify.every((item) => item.ok),
+    ok: candidates.length >= 5 && candidates.length <= 8 && identify.every((item) => item.ok),
     count: candidates.length,
     candidates: identify
   };
