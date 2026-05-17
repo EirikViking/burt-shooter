@@ -20,6 +20,7 @@
     "capture:steam-screenshots": "node scripts/capture-steam-screenshots.mjs",
     "capture:steam-trailer": "node scripts/capture-steam-trailer.mjs",
     "render:steam-trailer-audio": "node scripts/render-steam-trailer-audio.mjs",
+    "generate:nova-sfx": "node scripts/generate-nova-swarm-sfx.mjs",
     "desktop:smoke": "npm run build && electron electron/main.cjs --smoke",
     "package:steam:win": "npm run build && electron-builder --win dir --x64 --config electron-builder.json",
     "deploy": "npm run build && wrangler pages deploy dist"

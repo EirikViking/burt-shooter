@@ -195,7 +195,12 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/coin_portal_open.mp3',
             '/audio/sfx/nova-swarm/swarm_chatter_stinger.mp3',
             '/audio/sfx/nova-swarm/boss_reveal_stinger.mp3',
-            '/audio/sfx/nova-swarm/start_game_confirm.mp3'
+            '/audio/sfx/nova-swarm/start_game_confirm.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_arrival_alarm.mp3',
+            '/audio/sfx/nova-swarm/nova_bonus_core_jackpot.mp3',
+            '/audio/sfx/nova-swarm/nova_shield_snap.mp3',
+            '/audio/sfx/nova-swarm/nova_rank_fanfare.mp3',
+            '/audio/sfx/nova-swarm/nova_highscore_chime.mp3'
         ]
     },
 

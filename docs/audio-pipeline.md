@@ -14,6 +14,28 @@ To regenerate them, set `ELEVENLABS_API_KEY` in the shell environment and run:
 node scripts/generate-mission-control-voicepack.mjs
 ```
 
+## Nova Swarm SFX pack
+
+The current bespoke arcade SFX layer was generated with ElevenLabs Sound Generation and is stored in:
+
+```text
+public/audio/sfx/nova-swarm/
+```
+
+To regenerate the current five-cue pack, set `ELEVENLABS_API_KEY` in the shell environment and run:
+
+```bash
+npm run generate:nova-sfx
+```
+
+Current generated SFX:
+
+- `nova_boss_arrival_alarm.mp3`
+- `nova_bonus_core_jackpot.mp3`
+- `nova_shield_snap.mp3`
+- `nova_rank_fanfare.mp3`
+- `nova_highscore_chime.mp3`
+
 Do not put the API key in `.env` unless `.env` is confirmed ignored by git, and never commit generated logs or screenshots that contain secrets. The script reads the key only from `process.env.ELEVENLABS_API_KEY` and does not print it.
 
 Optional environment overrides:

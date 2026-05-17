@@ -35,6 +35,7 @@ Current evidence:
 - Latest full Electron smoke evidence: `test-results/electron-smoke-2026-05-17T12-14-15-301Z/`.
 - Latest full 10-minute release playtest evidence: `test-results/release-playtest-2026-05-17T12-15-21-253Z/`.
 - Latest Nova Swarm asset-path cleanup smoke: `test-results/smoke-2026-05-17T12-43-09-328Z/`; latest short release preflight after that cleanup: `test-results/release-playtest-nova-asset-paths-20260517-1444/`.
+- Latest ElevenLabs SFX polish smoke: `test-results/smoke-2026-05-17T12-53-11-080Z/`; latest short release preflight after that SFX pass: `test-results/release-playtest-nova-sfx-20260517-1454/`.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 

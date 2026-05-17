@@ -98,7 +98,12 @@ export const SFX_MIX = {
     coin_portal_open: { volume: 0.74, minIntervalMs: 900 },
     swarm_chatter_stinger: { volume: 0.58, minIntervalMs: 700 },
     boss_reveal_stinger: { volume: 0.82, minIntervalMs: 1200 },
-    start_game_confirm: { volume: 0.7, minIntervalMs: 500 }
+    start_game_confirm: { volume: 0.7, minIntervalMs: 500 },
+    nova_boss_arrival_alarm: { volume: 0.72, minIntervalMs: 1200 },
+    nova_bonus_core_jackpot: { volume: 0.66, minIntervalMs: 180 },
+    nova_shield_snap: { volume: 0.54, minIntervalMs: 140 },
+    nova_rank_fanfare: { volume: 0.62, minIntervalMs: 800 },
+    nova_highscore_chime: { volume: 0.62, minIntervalMs: 500 }
 };
 
 export const VOICE_MIX = {
@@ -181,10 +186,12 @@ export const SFX_CATALOG = {
         getSfx('doorClose_000'), getSfx('doorClose_001'), getSfx('doorClose_002')
     ],
     'pickup': [
+        getSfx('nova_bonus_core_jackpot'),
         getSfx('forceField_000'),
         getSfx('forceField_001')
     ],
     'achievement': [
+        getSfx('nova_highscore_chime'),
         getSfx('doorOpen_001'),
         getSfx('forceField_003')
     ],
@@ -202,11 +209,11 @@ export const SFX_CATALOG = {
     'explosion': [getSfx('explosionCrunch_000')],
     'menuSelect': [getSfx('doorOpen_000')],
     'playerHit': [getSfx('impactMetal_000')],
-    'levelComplete': [getSfx('doorOpen_000')],
+    'levelComplete': [getSfx('nova_rank_fanfare')],
 
     // Aliases for inconsistent call sites
-    'forceField': [getSfx('forceField_000')], // Alias for shield/pickup reuse
-    'shield_up': [getSfx('forceField_000')],
+    'forceField': [getSfx('nova_shield_snap'), getSfx('forceField_000')], // Alias for shield/pickup reuse
+    'shield_up': [getSfx('nova_shield_snap'), getSfx('forceField_000')],
     'life_up': [getSfx('doorOpen_002')],
     'explosionCrunch': [getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002')],
 
@@ -217,6 +224,7 @@ export const SFX_CATALOG = {
         getSfx('forceField_002')
     ],
     'powerup': [
+        getSfx('nova_bonus_core_jackpot'),
         getSfx('forceField_001'), // Sharp
         getSfx('forceField_002'), // Resonant
         getSfx('forceField_003')  // High pitch
@@ -259,6 +267,7 @@ export const SFX_CATALOG = {
         getVoice('mission_control_game_over')
     ].filter(Boolean),
     'boss_spawn': [
+        getSfx('nova_boss_arrival_alarm'),
         getSfx('spaceEngineLow_000'),
         getSfx('spaceEngineLow_001')
     ],
@@ -276,6 +285,21 @@ export const SFX_CATALOG = {
     ],
     'start_game_confirm': [
         getSfx('start_game_confirm')
+    ],
+    'nova_boss_arrival_alarm': [
+        getSfx('nova_boss_arrival_alarm')
+    ],
+    'nova_bonus_core_jackpot': [
+        getSfx('nova_bonus_core_jackpot')
+    ],
+    'nova_shield_snap': [
+        getSfx('nova_shield_snap')
+    ],
+    'nova_rank_fanfare': [
+        getSfx('nova_rank_fanfare')
+    ],
+    'nova_highscore_chime': [
+        getSfx('nova_highscore_chime')
     ],
     'intro_narrator_01': [
         getVoice('intro_narrator_01')

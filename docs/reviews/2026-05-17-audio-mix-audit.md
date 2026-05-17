@@ -1,6 +1,6 @@
 # Audio Mix Audit - 2026-05-17
 
-Generated: 2026-05-17T12:31:47.048Z
+Generated: 2026-05-17T12:52:41.071Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -13,9 +13,9 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Coverage
 
-- Measured files: 82
+- Measured files: 87
 - Music rows: 13
-- SFX rows: 77
+- SFX rows: 88
 - Voice rows: 20
 - Warnings: 9
 - Errors: 0
@@ -70,13 +70,13 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
 | sfx | enemy_shoot | laserSmall_003.mp3 | -7.9 dB | -41.2 dB | -55.7 dB |
+| sfx | forceField | nova_shield_snap.mp3 | -13.7 dB | -38.1 dB | -62.9 dB |
+| sfx | nova_shield_snap | nova_shield_snap.mp3 | -13.7 dB | -37.5 dB | -62.3 dB |
+| sfx | shield_up | nova_shield_snap.mp3 | -13.7 dB | -37.3 dB | -62.1 dB |
 | sfx | spaceEngine | spaceEngine_000.mp3 | -1.3 dB | -34.6 dB | -43.2 dB |
 | sfx | thrusterFire | thrusterFire_000.mp3 | -0.9 dB | -34.2 dB | -52.4 dB |
 | sfx | enemy_shoot | laserRetro_001.mp3 | -0.7 dB | -34.0 dB | -41.0 dB |
 | sfx | enemy_shoot | laserRetro_000.mp3 | -0.2 dB | -33.5 dB | -41.1 dB |
-| sfx | computerNoise | computerNoise_000.mp3 | -1.3 dB | -32.9 dB | -39.5 dB |
-| sfx | ui_close | doorClose_001.mp3 | -1.4 dB | -32.2 dB | -46.6 dB |
-| sfx | ui_close | doorClose_000.mp3 | -1.1 dB | -31.9 dB | -48.8 dB |
 
 ### Voice
 

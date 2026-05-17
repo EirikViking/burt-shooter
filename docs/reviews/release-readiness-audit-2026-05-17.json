@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T12:49:09.756Z",
+  "generatedAt": "2026-05-17T12:56:15.517Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 8,
@@ -20,12 +20,12 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 12257
+          "bytes": 12452
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
           "ok": true,
-          "bytes": 5901
+          "bytes": 5915
         },
         {
           "path": "docs/steam-desktop-package.md",
