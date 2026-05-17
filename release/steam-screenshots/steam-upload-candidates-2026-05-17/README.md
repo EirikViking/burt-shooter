@@ -1,6 +1,6 @@
 # Nova Swarm Steam Screenshot Upload Candidates
 
-Curated on 2026-05-17 from the current release-build capture in `release/steam-screenshots/draft-2026-05-17-current-1280/`.
+Curated on 2026-05-17 from the current post-score-cleanup release-build capture in `release/steam-screenshots/draft-2026-05-17-post-score-cleanup-1280/`.
 
 Source deployment:
 - `https://burt.tinyfoundry.app`

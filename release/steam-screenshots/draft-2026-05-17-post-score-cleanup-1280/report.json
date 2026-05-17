@@ -1,0 +1,130 @@
+{
+  "generatedAt": "2026-05-17T17:29:55.324Z",
+  "baseUrl": "http://127.0.0.1:4273",
+  "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-screenshots\\draft-2026-05-17-post-score-cleanup-1280",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "notes": [
+    "These are Steam screenshot candidates, not final store approval.",
+    "Midgame action uses the deterministic level-three debug route to capture denser representative gameplay.",
+    "Boss screenshots use the deterministic debug boss route for reliable representative capture.",
+    "Final store upload still needs human curation and Steamworks review."
+  ],
+  "shots": [
+    {
+      "file": "01-story-intro.png",
+      "title": "Story intro cinematic",
+      "notes": "Generated intro art with narrator audio after user gesture.",
+      "width": 1280,
+      "height": 720,
+      "scene": "intro",
+      "level": 1,
+      "wave": null,
+      "audioContext": "intro"
+    },
+    {
+      "file": "02-main-menu.png",
+      "title": "Main menu",
+      "notes": "Public Nova Swarm identity and menu controls.",
+      "width": 1280,
+      "height": 720,
+      "scene": "menu",
+      "level": 1,
+      "wave": null,
+      "audioContext": "menu"
+    },
+    {
+      "file": "03-ship-select.png",
+      "title": "Ship select",
+      "notes": "Generated hangar backdrop and ship carousel.",
+      "width": 1280,
+      "height": 720,
+      "scene": "shipSelect",
+      "level": 1,
+      "wave": null,
+      "audioContext": "menu"
+    },
+    {
+      "file": "04-first-wave-gameplay.png",
+      "title": "First wave gameplay",
+      "notes": "Actual level-one combat from production build.",
+      "width": 1280,
+      "height": 720,
+      "scene": "play",
+      "level": 1,
+      "wave": 1,
+      "audioContext": "gameplay"
+    },
+    {
+      "file": "05-wave-clear-briefing.png",
+      "title": "Wave clear briefing",
+      "notes": "Score/reward beat between real waves.",
+      "width": 1280,
+      "height": 720,
+      "scene": "play",
+      "level": 1,
+      "wave": 2,
+      "audioContext": "gameplay"
+    },
+    {
+      "file": "06-midgame-swarm.png",
+      "title": "Midgame swarm escalation",
+      "notes": "Debug start at level three for a denser representative store screenshot.",
+      "width": 1280,
+      "height": 720,
+      "scene": "play",
+      "level": 3,
+      "wave": 1,
+      "audioContext": "gameplay"
+    },
+    {
+      "file": "07-boss-inbound.png",
+      "title": "Boss inbound",
+      "notes": "Deterministic capture route for representative boss warning.",
+      "width": 1280,
+      "height": 720,
+      "scene": "play",
+      "level": 1,
+      "wave": 4,
+      "audioContext": "gameplay"
+    },
+    {
+      "file": "08-boss-fight.png",
+      "title": "Boss fight",
+      "notes": "Representative active boss pattern.",
+      "width": 1280,
+      "height": 720,
+      "scene": "play",
+      "level": 1,
+      "wave": 4,
+      "audioContext": "boss"
+    },
+    {
+      "file": "09-boss-victory.png",
+      "title": "Boss victory",
+      "notes": "Victory beat after boss defeat.",
+      "width": 1280,
+      "height": 720,
+      "scene": "play",
+      "level": 1,
+      "wave": 4,
+      "audioContext": "victory"
+    },
+    {
+      "file": "10-game-over.png",
+      "title": "Game over",
+      "notes": "High-score and restart surface.",
+      "width": 1280,
+      "height": 720,
+      "scene": "gameOver",
+      "level": 1,
+      "wave": 1,
+      "audioContext": "gameover"
+    }
+  ],
+  "consoleEvents": [],
+  "pageErrors": [],
+  "badResponses": []
+}
