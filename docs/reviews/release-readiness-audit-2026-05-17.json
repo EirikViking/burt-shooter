@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T15:35:12.374Z",
+  "generatedAt": "2026-05-17T15:55:15.998Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 13,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 18998
+          "bytes": 19755
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -77,19 +77,19 @@
           "bytes": 82274
         },
         {
-          "path": "release/steam-screenshots/draft-2026-05-17-live-1280/report.json",
+          "path": "release/steam-screenshots/draft-2026-05-17-brighter-1280/report.json",
           "ok": true,
-          "bytes": 3108
+          "bytes": 3538
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "ok": true,
-          "bytes": 1240
+          "bytes": 1500
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "ok": true,
-          "bytes": 2117181
+          "bytes": 3713829
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-17-03/report.json",
@@ -158,8 +158,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1526,
-      "coveredCount": 1526,
+      "assetCount": 1550,
+      "coveredCount": 1550,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []
@@ -179,9 +179,9 @@
       }
     },
     {
-      "name": "live_screenshot_capture_report_clean",
+      "name": "steam_screenshot_capture_report_clean",
       "ok": true,
-      "shotCount": 9,
+      "shotCount": 10,
       "consoleEvents": [],
       "pageErrors": [],
       "badResponses": []
@@ -189,7 +189,7 @@
     {
       "name": "steam_screenshot_upload_candidates_1280x720",
       "ok": true,
-      "count": 7,
+      "count": 11,
       "candidates": [
         {
           "file": "01-story-intro-cinematic.png",
@@ -216,7 +216,25 @@
           "ok": true
         },
         {
+          "file": "04-midgame-swarm-escalation.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        },
+        {
           "file": "05-boss-fight.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        },
+        {
+          "file": "05-boss-inbound.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        },
+        {
+          "file": "06-boss-fight.png",
           "width": 1280,
           "height": 720,
           "ok": true
@@ -228,7 +246,13 @@
           "ok": true
         },
         {
-          "file": "07-game-over-score-flow.png",
+          "file": "07-boss-victory.png",
+          "width": 1280,
+          "height": 720,
+          "ok": true
+        },
+        {
+          "file": "08-game-over-score-flow.png",
           "width": 1280,
           "height": 720,
           "ok": true

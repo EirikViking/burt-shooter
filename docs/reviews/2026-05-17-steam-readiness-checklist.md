@@ -10,13 +10,13 @@ Current playable deployment:
 
 Current deployed and verified build:
 
-- `v2026-05-17_17-31-51`
+- `v2026-05-17_17-48-34`
 
 Current evidence:
 
 - Recent milestones are preserved in git history; this checklist tracks the latest verified artifacts rather than a single commit hash.
-- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://dbb96973.burt-game.pages.dev/version.json` both reported `v2026-05-17_17-31-51` after the Cloudflare Pages production deploy `https://dbb96973.burt-game.pages.dev`.
-- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T15-33-01-368Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
+- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://aecc337d.burt-game.pages.dev/version.json` both reported `v2026-05-17_17-48-34` after the Cloudflare Pages production deploy `https://aecc337d.burt-game.pages.dev`.
+- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T15-52-19-049Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
 - Latest intro/audio/visual smoke: `test-results/smoke-2026-05-17T09-17-13-563Z/`
 - Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
@@ -27,7 +27,7 @@ Current evidence:
 - Steam trailer draft workflow: `docs/steam-trailer-workflow.md`, `scripts/capture-steam-trailer.mjs`, `scripts/render-steam-trailer-audio.mjs`, `scripts/render-steam-trailer-candidate.mjs`, refreshed capture evidence in `release/steam-trailer/draft-2026-05-17-17-03/`, and editorial candidate evidence in `release/steam-trailer/candidate-2026-05-17-editorial/`.
 - Steam store art draft: `release/steam-assets/draft-2026-05-17-nova-swarm/`, replacing the old Burt-era capsule set with public Nova Swarm artwork.
 - Steam asset gate: `npm run check:steam-assets` validates 9 asset dimensions/transparency and regenerates review contact sheets.
-- Steam screenshot upload shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, curated from the clean live capture.
+- Steam screenshot upload shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, curated from the brighter gameplay capture.
 - Steam client validation runbook: `release/steamworks/steam_client_validation_runbook.md`.
 - SteamCMD local availability: `docs/reviews/2026-05-17-steamcmd-local-check.md`; `tools\steamcmd\steamcmd.exe +quit` now succeeds locally, but the tool folder is ignored and not committed.
 - Steamworks VDF helper: `npm run steamworks:write-vdf` writes ignored `release/steamworks/app_build_LOCAL.vdf` from `STEAM_APP_ID` and `STEAM_DEPOT_ID`.
@@ -36,7 +36,7 @@ Current evidence:
 - Steam store metadata handoff: `docs/steam-store-handoff.md`, `release/steamworks/store_metadata_draft.json`, and `release/steamworks/store_metadata_review_report.json`; `npm run check:steam-store` passes with 15 tags, 8 feature bullets, conservative `Partial Controller Support`, and explicit v1 deferrals for Steam Cloud and Steam achievements.
 - Asset provenance inventory: `docs/asset-provenance.md`, `release/provenance/asset_provenance_manifest.json`, and `release/provenance/asset_provenance_report.json`; `npm run check:provenance` currently covers 1507/1507 scanned public/release assets while intentionally leaving legal approval pending.
 - Release readiness audit: `npm run audit:release-readiness` writes `docs/reviews/release-readiness-audit-2026-05-17.json` and currently reports `not_steam_ready` because Steamworks IDs, Steam client validation, and user approval remain open. It now validates the tracked desktop package report instead of only checking for an `.exe`. Use `RELEASE_AUDIT_STRICT=1 npm run audit:release-readiness` to fail on known manual blockers too.
-- Steam RC verification entrypoint: `npm run verify:steam-rc` runs the fast build/static release gates plus desktop package and trailer candidate evidence validation and writes `test-results/steam-rc-verify-*/report.json`; latest fast pass with provenance, Steam store metadata, desktop package, and editorial trailer gates is `test-results/steam-rc-verify-2026-05-17T15-31-51-005Z/report.json`, and latest full pass is `test-results/steam-rc-verify-2026-05-17T12-12-27-110Z/report.json`. Use `npm run verify:steam-rc -- --full` for smoke, desktop package, and release playtest as part of a full RC pass.
+- Steam RC verification entrypoint: `npm run verify:steam-rc` runs the fast build/static release gates plus desktop package and trailer candidate evidence validation and writes `test-results/steam-rc-verify-*/report.json`; latest fast pass with provenance, Steam store metadata, desktop package, and editorial trailer gates is `test-results/steam-rc-verify-2026-05-17T15-48-33-729Z/report.json`, and latest full pass is `test-results/steam-rc-verify-2026-05-17T12-12-27-110Z/report.json`. Use `npm run verify:steam-rc -- --full` for smoke, desktop package, and release playtest as part of a full RC pass.
 - Latest full smoke evidence: `test-results/smoke-2026-05-17T12-12-55-257Z/`.
 - Latest full Electron smoke evidence: `test-results/electron-smoke-2026-05-17T12-14-15-301Z/`.
 - Latest full 10-minute release playtest evidence: `test-results/release-playtest-2026-05-17T12-15-21-253Z/`.
@@ -49,6 +49,7 @@ Current evidence:
 - Latest public-ID cleanup: old private-era enemy/powerup IDs were replaced with public arcade names in source/runtime state, and `scripts/audit-release-readiness.mjs` now blocks those old tokens from tracked player-facing/release text. `npm run build` passed with build ID `v2026-05-17_17-10-09`, `npm run smoke` passed at `test-results/smoke-2026-05-17T15-10-33-460Z/`, a 60-second release playtest passed at `test-results/release-playtest-public-ids-20260517-1712/`, fast RC verification passed at `test-results/steam-rc-verify-2026-05-17T15-13-44-874Z/report.json`, production deploy is `https://b1268ed2.burt-game.pages.dev`, and live-domain smoke passed at `test-results/smoke-2026-05-17T15-15-50-823Z/`.
 - Latest ElevenLabs combo/boss SFX polish: generated and peak-trimmed `nova_combo_tick.mp3`, `nova_combo_breakout.mp3`, `nova_boss_phase_surge.mp3`, and `nova_level_clear_medal.mp3`; `npm run check:audio`, `npm run audit:audio-mix`, `npm run build` (`v2026-05-17_17-22-17`), local smoke (`test-results/smoke-2026-05-17T15-22-38-858Z/`), 60-second release playtest (`test-results/release-playtest-combo-sfx-20260517-1724/`), and live-domain smoke (`test-results/smoke-2026-05-17T15-26-11-417Z/`) passed. The new production deploy is `https://1bf4d215.burt-game.pages.dev`.
 - Latest Steam store/trailer handoff hardening: `release/steamworks/store_metadata_draft.json`, `docs/steam-store-handoff.md`, and `docs/reviews/2026-05-17-human-release-approval.md` now point at the current editorial trailer candidate, `scripts/check-steam-store-metadata.mjs` requires a separate `trailerCandidate` path, and provenance now scans the latest trailer draft plus the editorial candidate package. `npm run verify:steam-rc` passed at `test-results/steam-rc-verify-2026-05-17T15-31-51-005Z/report.json`, production deploy is `https://dbb96973.burt-game.pages.dev`, and live-domain smoke passed at `test-results/smoke-2026-05-17T15-33-01-368Z/`.
+- Latest visual/store screenshot polish: gameplay backdrop brightness was raised for clearer Steam screenshots without changing UI layout, `scripts/capture-steam-screenshots.mjs` now captures a deterministic level-three midgame swarm shot, and the upload shortlist now has 8 candidates including `04-midgame-swarm-escalation.png`. Local smoke passed at `test-results/smoke-2026-05-17T15-46-48-261Z/`, 60-second release playtest passed at `test-results/release-playtest-brighter-screenshots-20260517-1749/`, fast RC verification passed at `test-results/steam-rc-verify-2026-05-17T15-48-33-729Z/report.json`, production deploy is `https://aecc337d.burt-game.pages.dev`, and live-domain smoke passed at `test-results/smoke-2026-05-17T15-52-19-049Z/`.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 
@@ -126,7 +127,7 @@ Suggested tags:
 
 These are not proven ready in the repo yet:
 
-- Final Steam screenshot upload approval. A curated 7-shot upload shortlist now exists at `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, but the user still needs to approve the final Steamworks upload choices/captions.
+- Final Steam screenshot upload approval. A curated 8-shot upload shortlist now exists at `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, but the user still needs to approve the final Steamworks upload choices/captions.
 - Final trailer or short launch clip. A clean refreshed 43.90 second 1280x720 visual/audio trailer draft exists at `release/steam-trailer/draft-2026-05-17-17-03/`, and a 49.92 second H.264/AAC editorial candidate with branded title/outro cards exists at `release/steam-trailer/candidate-2026-05-17-editorial/`, but the final clip still needs by-ear approval and human upload approval.
 - Final store page copy approval, including public arcade-comedy tone, localization stance, and confirmation that old inside-joke material has been removed from player-facing surfaces.
 - Final Steamworks metadata entry/approval. A structured store metadata draft now exists and passes `npm run check:steam-store`, but it is intentionally marked `draft_pending_human_approval`.
@@ -164,7 +165,7 @@ Do not call this Steam-ready until these are true:
 
 ## Next Agent Actions
 
-- Review the live-build Steam screenshot candidate set in `release/steam-screenshots/draft-2026-05-17-live-1280/` and choose the final 5-8 store uploads.
+- Review the brighter Steam screenshot candidate set in `release/steam-screenshots/draft-2026-05-17-brighter-1280/` and choose the final 5-8 store uploads.
 - Build a short trailer beat sheet from existing smoke/release states, then record a clean 30-45 second clip.
 - Generate and inspect the Electron Windows package with `npm run package:steam:win`, then run it via the Steam client after replacing IDs in `release/steamworks/app_build_TEMPLATE.vdf`.
 - Run the human by-ear audio pass using the Settings SFX/VOICE audition buttons plus natural gameplay.

@@ -314,6 +314,32 @@ async function captureGameplay(browser) {
   await page.close();
 }
 
+async function captureMidgameAction(browser) {
+  const page = await browser.newPage({ viewport });
+  observePage(page, 'midgame-action');
+  await page.goto(withQuery(baseUrl, {
+    autostart: '1',
+    debugBossToken: 'NOVA_DEBUG_2026',
+    startLevel: '3'
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(page, 'play', 30000);
+  await page.waitForFunction(() => window.__game?.scenes?.play?.player, null, { timeout: 20000 });
+  await stabilizePlayer(page);
+  await waitForGameplayBackdrop(page);
+  await waitForActiveGameplay(page);
+  await page.keyboard.down('Space');
+  await page.keyboard.down('ArrowRight');
+  await page.waitForTimeout(900);
+  await page.keyboard.up('ArrowRight');
+  await page.keyboard.down('ArrowLeft');
+  await page.waitForTimeout(900);
+  await page.keyboard.up('ArrowLeft');
+  await page.waitForTimeout(900);
+  await page.keyboard.up('Space');
+  await capture(page, '06-midgame-swarm', 'Midgame swarm escalation', 'Debug start at level three for a denser representative store screenshot.');
+  await page.close();
+}
+
 async function captureBossAndGameOver(browser) {
   const page = await browser.newPage({ viewport });
   observePage(page, 'boss');
@@ -326,7 +352,7 @@ async function captureBossAndGameOver(browser) {
   await waitForScene(page, 'play', 30000);
   await waitForGameplayBackdrop(page);
   await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
-  await capture(page, '06-boss-inbound', 'Boss inbound', 'Deterministic capture route for representative boss warning.');
+  await capture(page, '07-boss-inbound', 'Boss inbound', 'Deterministic capture route for representative boss warning.');
   await page.waitForFunction(() => {
     const enemyManager = window.__game?.scenes?.play?.enemyManager;
     return enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active;
@@ -335,7 +361,7 @@ async function captureBossAndGameOver(browser) {
   await page.keyboard.down('Space');
   await page.waitForTimeout(1600);
   await page.keyboard.up('Space');
-  await capture(page, '07-boss-fight', 'Boss fight', 'Representative active boss pattern.');
+  await capture(page, '08-boss-fight', 'Boss fight', 'Representative active boss pattern.');
   await page.evaluate(() => {
     const boss = window.__game?.scenes?.play?.enemyManager?.boss;
     if (!boss) return;
@@ -344,7 +370,7 @@ async function captureBossAndGameOver(browser) {
   });
   await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'LEVEL_COMPLETE', null, { timeout: 10000 });
   await page.waitForTimeout(900);
-  await capture(page, '08-boss-victory', 'Boss victory', 'Victory beat after boss defeat.');
+  await capture(page, '09-boss-victory', 'Boss victory', 'Victory beat after boss defeat.');
   await page.close();
 
   const gameOverPage = await browser.newPage({ viewport });
@@ -363,7 +389,7 @@ async function captureBossAndGameOver(browser) {
   });
   await waitForScene(gameOverPage, 'gameOver', 10000);
   await gameOverPage.waitForTimeout(900);
-  await capture(gameOverPage, '09-game-over', 'Game over', 'High-score and restart surface.');
+  await capture(gameOverPage, '10-game-over', 'Game over', 'High-score and restart surface.');
   await gameOverPage.close();
 }
 
@@ -379,6 +405,7 @@ async function main() {
   try {
     await captureIntroAndMenu(browser);
     await captureGameplay(browser);
+    await captureMidgameAction(browser);
     await captureBossAndGameOver(browser);
   } finally {
     await browser.close();
@@ -392,6 +419,7 @@ async function main() {
     viewport,
     notes: [
       'These are Steam screenshot candidates, not final store approval.',
+      'Midgame action uses the deterministic level-three debug route to capture denser representative gameplay.',
       'Boss screenshots use the deterministic debug boss route for reliable representative capture.',
       'Final store upload still needs human curation and Steamworks review.'
     ],

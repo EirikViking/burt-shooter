@@ -1613,16 +1613,16 @@ export class PlayScene {
     const stormActive = level >= 3;
     const bossActive = level % 5 === 0 || this.enemyManager?.state === 'BOSS' || this.enemyManager?.boss?.active;
     if (this.gameplayBackdrop) {
-      this.gameplayBackdrop.alpha = bossActive ? 0.12 : stormActive ? 0.18 : 0.34;
+      this.gameplayBackdrop.alpha = bossActive ? 0.18 : stormActive ? 0.26 : 0.42;
     }
     if (this.gameplayStormBackdrop) {
-      this.gameplayStormBackdrop.alpha = bossActive ? 0.1 : stormActive ? 0.24 : 0;
+      this.gameplayStormBackdrop.alpha = bossActive ? 0.16 : stormActive ? 0.34 : 0;
     }
     if (this.gameplayBossBackdrop) {
-      this.gameplayBossBackdrop.alpha = bossActive ? 0.31 : 0;
+      this.gameplayBossBackdrop.alpha = bossActive ? 0.4 : 0;
     }
     if (this.gameplayBackdropShade) {
-      this.gameplayBackdropShade.alpha = bossActive ? 0.66 : stormActive ? 0.62 : 0.56;
+      this.gameplayBackdropShade.alpha = bossActive ? 0.54 : stormActive ? 0.5 : 0.46;
     }
   }
 
