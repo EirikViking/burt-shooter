@@ -11,6 +11,7 @@ tmpclaude-*
 release/desktop/
 release/steam-trailer/*/*.webm
 release/steam-trailer/*/*.mp4
+release/steam-trailer/*/*.m4a
 
 # Protected generated build artifacts - never commit
 public/sw.js
