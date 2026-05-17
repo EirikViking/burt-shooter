@@ -8,6 +8,7 @@ RESCUE_*.txt
 .wrangler/
 test-results/
 tmpclaude-*
+tools/steamcmd/
 release/desktop/
 release/steam-trailer/*/*.webm
 release/steam-trailer/*/*.mp4

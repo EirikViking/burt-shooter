@@ -29,7 +29,8 @@ Current evidence:
 - Steam asset gate: `npm run check:steam-assets` validates 9 asset dimensions/transparency and regenerates review contact sheets.
 - Steam screenshot upload shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, curated from the clean live capture.
 - Steam client validation runbook: `release/steamworks/steam_client_validation_runbook.md`.
-- Release readiness audit: `npm run audit:release-readiness` writes `docs/reviews/release-readiness-audit-2026-05-17.json` and currently reports `not_steam_ready` because SteamCMD/client validation and user approval remain open. Use `RELEASE_AUDIT_STRICT=1 npm run audit:release-readiness` to fail on known manual blockers too.
+- SteamCMD local availability: `docs/reviews/2026-05-17-steamcmd-local-check.md`; `tools\steamcmd\steamcmd.exe +quit` now succeeds locally, but the tool folder is ignored and not committed.
+- Release readiness audit: `npm run audit:release-readiness` writes `docs/reviews/release-readiness-audit-2026-05-17.json` and currently reports `not_steam_ready` because Steamworks IDs, Steam client validation, and user approval remain open. Use `RELEASE_AUDIT_STRICT=1 npm run audit:release-readiness` to fail on known manual blockers too.
 - Steam RC verification entrypoint: `npm run verify:steam-rc` runs the fast build/static release gates and writes `test-results/steam-rc-verify-*/report.json`; latest full pass is `test-results/steam-rc-verify-2026-05-17T12-12-27-110Z/report.json`. Use `npm run verify:steam-rc -- --full` for smoke, desktop package, and release playtest as part of a full RC pass.
 - Latest full smoke evidence: `test-results/smoke-2026-05-17T12-12-55-257Z/`.
 - Latest full Electron smoke evidence: `test-results/electron-smoke-2026-05-17T12-14-15-301Z/`.
@@ -119,7 +120,7 @@ These are not proven ready in the repo yet:
 - Legal/provenance review for all shipped art, music, SFX, generated portraits, generated voice, names, and jokes.
 - Final by-ear approval for the ElevenLabs intro music, narrator lines, stingers, and in-game voice/SFX blend.
 - Final human capsule approval before upload. Agent review/contact sheets now exist, but the user still needs to approve the final store submission choices.
-- Steam client upload/install validation. The repo now has an Electron wrapper/package path, a generated Windows payload, and a concrete validation runbook, but `steamcmd` was not on PATH locally and Steam readiness still needs SteamPipe upload plus install/launch validation through the Steam client.
+- Steam client upload/install validation. The repo now has an Electron wrapper/package path, a generated Windows payload, local SteamCMD availability, and a concrete validation runbook, but Steam readiness still needs SteamPipe upload plus install/launch validation through the Steam client.
 - Steamworks setup evidence: app ID, depots, launch options, cloud save decision, achievements decision, and controller compatibility metadata.
 
 ## Release Gates Before Steam

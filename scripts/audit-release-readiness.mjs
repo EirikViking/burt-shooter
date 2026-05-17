@@ -13,6 +13,7 @@ const requiredFiles = [
   'docs/steam-trailer-workflow.md',
   'release/steamworks/app_build_TEMPLATE.vdf',
   'release/steamworks/steam_client_validation_runbook.md',
+  'docs/reviews/2026-05-17-steamcmd-local-check.md',
   'release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_review_report.json',
   'release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png',
   'release/steam-assets/draft-2026-05-17-nova-swarm/review/small_capsule_thumbnail_sheet.png',
@@ -47,10 +48,15 @@ const forbiddenTerms = forbiddenSourceTerms.map((term) => new RegExp(`\\b${term}
 
 const manualBlockers = [
   'Steamworks app ID and depot ID are still not configured in tracked files.',
-  'SteamCMD is not on PATH in the current local environment.',
   'SteamPipe upload and Steam-client install/launch validation still require credentials and a real app.',
   'User/human approval is still required for final screenshots, capsules, trailer, and by-ear audio mix.'
 ];
+
+const knownManualBlockerNames = new Set([
+  'steamworks_ids_configured',
+  'steam_client_validation_evidence',
+  'human_release_approvals_recorded'
+]);
 
 function rel(file) {
   return path.relative(root, file).replaceAll(path.sep, '/');
@@ -64,6 +70,26 @@ function run(command, args) {
     stdout: result.stdout.trim(),
     stderr: result.stderr.trim()
   };
+}
+
+function findSteamCmd() {
+  const candidates = [
+    process.env.STEAMCMD_PATH,
+    path.resolve(root, 'tools/steamcmd/steamcmd.exe')
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return { ok: true, source: candidate, command: candidate };
+    }
+  }
+
+  const lookup = run('powershell', ['-NoProfile', '-Command', '(Get-Command steamcmd -ErrorAction SilentlyContinue).Source']);
+  if (lookup.status === 0 && lookup.stdout) {
+    return { ok: true, source: lookup.stdout, command: 'steamcmd' };
+  }
+
+  return { ok: false, source: null, command: lookup.command, stderr: lookup.stderr };
 }
 
 function walkTextFiles(entry, files = []) {
@@ -218,13 +244,38 @@ checks.push({
 
 checks.push({
   name: 'steamcmd_available',
-  ok: run('powershell', ['-NoProfile', '-Command', 'Get-Command steamcmd -ErrorAction SilentlyContinue']).status === 0,
+  ...findSteamCmd(),
   requiredForSteamReady: true
+});
+
+checks.push({
+  name: 'steamworks_ids_configured',
+  ok: existsSync(path.resolve(root, 'release/steamworks/app_build.vdf')) &&
+    existsSync(path.resolve(root, 'release/steamworks/depot_build.vdf')),
+  requiredForSteamReady: true,
+  expectedFiles: [
+    'release/steamworks/app_build.vdf',
+    'release/steamworks/depot_build.vdf'
+  ]
+});
+
+checks.push({
+  name: 'steam_client_validation_evidence',
+  ok: existsSync(path.resolve(root, 'release/steamworks/client_validation_report.json')),
+  requiredForSteamReady: true,
+  expectedFile: 'release/steamworks/client_validation_report.json'
+});
+
+checks.push({
+  name: 'human_release_approvals_recorded',
+  ok: existsSync(path.resolve(root, 'docs/reviews/2026-05-17-human-release-approval.md')),
+  requiredForSteamReady: true,
+  expectedFile: 'docs/reviews/2026-05-17-human-release-approval.md'
 });
 
 const passed = checks.filter((check) => check.ok).length;
 const failed = checks.filter((check) => !check.ok);
-const hardFailures = failed.filter((check) => check.name !== 'steamcmd_available');
+const hardFailures = failed.filter((check) => !knownManualBlockerNames.has(check.name));
 
 const report = {
   generatedAt: new Date().toISOString(),

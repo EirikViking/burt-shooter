@@ -1,13 +1,12 @@
 {
-  "generatedAt": "2026-05-17T12:59:48.579Z",
+  "generatedAt": "2026-05-17T13:04:48.478Z",
   "verdict": "not_steam_ready",
   "summary": {
-    "passed": 8,
-    "failed": 1,
+    "passed": 9,
+    "failed": 3,
     "hardFailures": 0,
     "manualBlockers": [
       "Steamworks app ID and depot ID are still not configured in tracked files.",
-      "SteamCMD is not on PATH in the current local environment.",
       "SteamPipe upload and Steam-client install/launch validation still require credentials and a real app.",
       "User/human approval is still required for final screenshots, capsules, trailer, and by-ear audio mix."
     ]
@@ -20,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 12452
+          "bytes": 12646
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -46,6 +45,11 @@
           "path": "release/steamworks/steam_client_validation_runbook.md",
           "ok": true,
           "bytes": 2691
+        },
+        {
+          "path": "docs/reviews/2026-05-17-steamcmd-local-check.md",
+          "ok": true,
+          "bytes": 854
         },
         {
           "path": "release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_review_report.json",
@@ -191,8 +195,31 @@
     },
     {
       "name": "steamcmd_available",
-      "ok": false,
+      "ok": true,
+      "source": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe",
+      "command": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe",
       "requiredForSteamReady": true
+    },
+    {
+      "name": "steamworks_ids_configured",
+      "ok": false,
+      "requiredForSteamReady": true,
+      "expectedFiles": [
+        "release/steamworks/app_build.vdf",
+        "release/steamworks/depot_build.vdf"
+      ]
+    },
+    {
+      "name": "steam_client_validation_evidence",
+      "ok": false,
+      "requiredForSteamReady": true,
+      "expectedFile": "release/steamworks/client_validation_report.json"
+    },
+    {
+      "name": "human_release_approvals_recorded",
+      "ok": false,
+      "requiredForSteamReady": true,
+      "expectedFile": "docs/reviews/2026-05-17-human-release-approval.md"
     }
   ]
 }
