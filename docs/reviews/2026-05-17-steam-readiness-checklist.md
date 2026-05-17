@@ -12,9 +12,9 @@ Current verified web build:
 
 - `v2026-05-17_11-32-32`
 
-Latest pushed evidence:
+Current evidence:
 
-- Commit: `c83f4e0 feat: add Steam desktop package path`
+- Recent milestones are preserved in git history; this checklist tracks the latest verified artifacts rather than a single commit hash.
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
 - Latest intro/audio/visual smoke: `test-results/smoke-2026-05-17T09-17-13-563Z/`
 - Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
@@ -23,6 +23,8 @@ Latest pushed evidence:
 - Desktop package path: `docs/steam-desktop-package.md`, `electron/main.cjs`, `electron-builder.json`, and `release/steamworks/app_build_TEMPLATE.vdf`.
 - Latest desktop package verification: `test-results/electron-smoke-2026-05-17T10-17-05-615Z/`, `npm run package:steam:win`, and generated `release/desktop/win-unpacked/Nova Swarm.exe`.
 - Steam trailer draft workflow: `docs/steam-trailer-workflow.md`, `scripts/capture-steam-trailer.mjs`, `scripts/render-steam-trailer-audio.mjs`, and evidence in `release/steam-trailer/draft-2026-05-17-12-46/`.
+- Steam store art draft: `release/steam-assets/draft-2026-05-17-nova-swarm/`, replacing the old Burt-era capsule set with public Nova Swarm artwork.
+- Steam asset gate: `npm run check:steam-assets` validates 9 asset dimensions/transparency and regenerates review contact sheets.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 
@@ -39,15 +41,15 @@ Checked locally with ImageMagick `magick identify`.
 
 | Asset | File | Local size | Status |
 | --- | --- | ---: | --- |
-| Header capsule | `release/steam-assets/draft-2026-05-16/store_header_capsule_920x430.jpg` | 920x430 | Draft exists |
-| Small capsule | `release/steam-assets/draft-2026-05-16/store_small_capsule_462x174.jpg` | 462x174 | Draft exists |
-| Main capsule | `release/steam-assets/draft-2026-05-16/store_main_capsule_1232x706.jpg` | 1232x706 | Draft exists |
-| Vertical capsule | `release/steam-assets/draft-2026-05-16/store_vertical_capsule_748x896.jpg` | 748x896 | Draft exists |
-| Page background | `release/steam-assets/draft-2026-05-16/store_page_background_1438x810.jpg` | 1438x810 | Draft exists |
-| Library capsule | `release/steam-assets/draft-2026-05-16/library_capsule_600x900.png` | 600x900 | Draft exists |
-| Library header | `release/steam-assets/draft-2026-05-16/library_header_capsule_920x430.png` | 920x430 | Draft exists |
-| Library hero | `release/steam-assets/draft-2026-05-16/library_hero_3840x1240.png` | 3840x1240 | Draft exists |
-| Library logo | `release/steam-assets/draft-2026-05-16/library_logo_1280x720.png` | 1280x720 | Draft exists |
+| Header capsule | `release/steam-assets/draft-2026-05-17-nova-swarm/store_header_capsule_920x430.jpg` | 920x430 | Draft exists |
+| Small capsule | `release/steam-assets/draft-2026-05-17-nova-swarm/store_small_capsule_462x174.jpg` | 462x174 | Draft exists |
+| Main capsule | `release/steam-assets/draft-2026-05-17-nova-swarm/store_main_capsule_1232x706.jpg` | 1232x706 | Draft exists |
+| Vertical capsule | `release/steam-assets/draft-2026-05-17-nova-swarm/store_vertical_capsule_748x896.jpg` | 748x896 | Draft exists |
+| Page background | `release/steam-assets/draft-2026-05-17-nova-swarm/store_page_background_1438x810.jpg` | 1438x810 | Draft exists |
+| Library capsule | `release/steam-assets/draft-2026-05-17-nova-swarm/library_capsule_600x900.png` | 600x900 | Draft exists |
+| Library header | `release/steam-assets/draft-2026-05-17-nova-swarm/library_header_capsule_920x430.png` | 920x430 | Draft exists |
+| Library hero | `release/steam-assets/draft-2026-05-17-nova-swarm/library_hero_3840x1240.png` | 3840x1240 | Draft exists |
+| Library logo | `release/steam-assets/draft-2026-05-17-nova-swarm/library_logo_1280x720.png` | 1280x720 | Draft exists with alpha |
 | Promo widescreen | `release/marketing-assets/mission-control-2026-05-16/mission-control-keyart-1920x1080.jpg` | 1920x1080 | Draft exists |
 | Promo web preview | `release/marketing-assets/mission-control-2026-05-16/mission-control-keyart-1280x720.webp` | 1280x720 | Draft exists |
 | Promo header crop | `release/marketing-assets/mission-control-2026-05-16/mission-control-keyart-920x430.jpg` | 920x430 | Draft exists |
@@ -56,9 +58,9 @@ Checked locally with ImageMagick `magick identify`.
 
 Steam rules risk:
 
-- Base capsules should only contain game artwork, the game name, and any official subtitle. The current draft README says the base capsules contain only artwork plus the game name, which is the right direction.
-- The library hero should contain artwork only. The current `library_hero_3840x1240.png` still needs a final visual check before upload.
-- The small capsule must stay readable at tiny generated sizes. This needs a visual thumbnail check, not just dimension validation.
+- Base capsules contain only generated artwork plus `NOVA SWARM`.
+- The library hero and page background contain artwork only.
+- Contact sheets in `release/steam-assets/draft-2026-05-17-nova-swarm/review/` show the small capsule remains readable at 231x87, 154x58, and roughly 120x45.
 
 ## Store Copy Draft
 
@@ -105,7 +107,7 @@ These are not proven ready in the repo yet:
 - Final store page copy approval, including public arcade-comedy tone, localization stance, and confirmation that old inside-joke material has been removed from player-facing surfaces.
 - Legal/provenance review for all shipped art, music, SFX, generated portraits, generated voice, names, and jokes.
 - Final by-ear approval for the ElevenLabs intro music, narrator lines, stingers, and in-game voice/SFX blend.
-- Final capsule thumbnail review at small sizes.
+- Final human capsule approval before upload. Agent review/contact sheets now exist, but the user still needs to approve the final store submission choices.
 - Steam client upload/install validation. The repo now has an Electron wrapper/package path and a generated Windows payload, but Steam readiness still needs SteamPipe upload and install/launch validation through the Steam client.
 - Steamworks setup evidence: app ID, depots, launch options, cloud save decision, achievements decision, and controller compatibility metadata.
 
@@ -121,6 +123,7 @@ Do not call this Steam-ready until these are true:
 - `npm run package:steam:win` produces `release/desktop/win-unpacked/Nova Swarm.exe`.
 - `npm run capture:steam-trailer` produces a clean trailer draft report with no browser or network failures.
 - `npm run render:steam-trailer-audio` produces an audio-mixed MP4 draft report from shipped assets.
+- `npm run check:steam-assets` validates Steam asset dimensions/transparency and regenerates the review contact sheets.
 - `npm run playtest:release` survives at least 10 minutes without debug flags.
 - A human 10-15 minute playthrough confirms late boss pressure, repair/mercy generosity, game-over/restart flow, and UI clutter feel right.
 - A human listening pass confirms menu, gameplay, wave clear, boss inbound, boss fight, victory, and game-over mix on headphones or speakers.

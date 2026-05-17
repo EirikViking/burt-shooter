@@ -1,0 +1,102 @@
+{
+  "generatedAt": "2026-05-17T11:11:32.492Z",
+  "assetDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-assets\\draft-2026-05-17-nova-swarm",
+  "reviewDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-assets\\draft-2026-05-17-nova-swarm\\review",
+  "notes": [
+    "Dimension and transparency checks are objective gates.",
+    "Contact sheets still require human visual review for title readability, Steam rules, and brand fit."
+  ],
+  "assets": [
+    {
+      "filename": "store_header_capsule_920x430.jpg",
+      "expected": "920x430",
+      "width": 920,
+      "height": 430,
+      "channels": "srgb",
+      "opaque": false,
+      "dimensionsOk": true,
+      "alphaOk": true
+    },
+    {
+      "filename": "store_small_capsule_462x174.jpg",
+      "expected": "462x174",
+      "width": 462,
+      "height": 174,
+      "channels": "srgb",
+      "opaque": false,
+      "dimensionsOk": true,
+      "alphaOk": true
+    },
+    {
+      "filename": "store_main_capsule_1232x706.jpg",
+      "expected": "1232x706",
+      "width": 1232,
+      "height": 706,
+      "channels": "srgb",
+      "opaque": false,
+      "dimensionsOk": true,
+      "alphaOk": true
+    },
+    {
+      "filename": "store_vertical_capsule_748x896.jpg",
+      "expected": "748x896",
+      "width": 748,
+      "height": 896,
+      "channels": "srgb",
+      "opaque": false,
+      "dimensionsOk": true,
+      "alphaOk": true
+    },
+    {
+      "filename": "store_page_background_1438x810.jpg",
+      "expected": "1438x810",
+      "width": 1438,
+      "height": 810,
+      "channels": "srgb",
+      "opaque": false,
+      "dimensionsOk": true,
+      "alphaOk": true
+    },
+    {
+      "filename": "library_capsule_600x900.png",
+      "expected": "600x900",
+      "width": 600,
+      "height": 900,
+      "channels": "srgba",
+      "opaque": false,
+      "dimensionsOk": true,
+      "alphaOk": true
+    },
+    {
+      "filename": "library_header_capsule_920x430.png",
+      "expected": "920x430",
+      "width": 920,
+      "height": 430,
+      "channels": "srgba",
+      "opaque": false,
+      "dimensionsOk": true,
+      "alphaOk": true
+    },
+    {
+      "filename": "library_hero_3840x1240.png",
+      "expected": "3840x1240",
+      "width": 3840,
+      "height": 1240,
+      "channels": "srgba",
+      "opaque": false,
+      "dimensionsOk": true,
+      "alphaOk": true
+    },
+    {
+      "filename": "library_logo_1280x720.png",
+      "expected": "1280x720",
+      "width": 1280,
+      "height": 720,
+      "channels": "srgba",
+      "opaque": false,
+      "dimensionsOk": true,
+      "alphaOk": true
+    }
+  ],
+  "failures": []
+}
