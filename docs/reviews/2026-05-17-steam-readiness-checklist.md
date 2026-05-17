@@ -10,13 +10,13 @@ Current playable deployment:
 
 Current deployed and verified build:
 
-- `v2026-05-17_14-42-44`
+- `v2026-05-17_14-52-48`
 
 Current evidence:
 
 - Recent milestones are preserved in git history; this checklist tracks the latest verified artifacts rather than a single commit hash.
-- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://burt-game.pages.dev/version.json` both reported `v2026-05-17_14-42-44` after the Cloudflare Pages production deploy `https://ce116d23.burt-game.pages.dev`.
-- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T12-47-12-881Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
+- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://burt-game.pages.dev/version.json` both reported `v2026-05-17_14-52-48` after the Cloudflare Pages production deploy `https://922eca31.burt-game.pages.dev`.
+- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T12-57-55-084Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
 - Latest intro/audio/visual smoke: `test-results/smoke-2026-05-17T09-17-13-563Z/`
 - Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
