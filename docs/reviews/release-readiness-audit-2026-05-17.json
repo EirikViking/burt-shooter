@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T20:45:41.464Z",
+  "generatedAt": "2026-05-17T20:59:57.026Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 15,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 29431
+          "bytes": 29575
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -325,11 +325,11 @@
       "desktopPayload": {
         "path": "release/desktop/win-unpacked/Nova Swarm.exe",
         "sizeBytes": 226666496,
-        "modifiedAt": "2026-05-17T20:43:55.655Z"
+        "modifiedAt": "2026-05-17T20:47:36.805Z"
       },
       "latestElectronSmoke": {
-        "reportPath": "test-results/electron-smoke-2026-05-17T20-44-02-745Z/report.json",
-        "screenshotPath": "test-results/electron-smoke-2026-05-17T20-44-02-745Z/01-electron-menu.png",
+        "reportPath": "test-results/electron-smoke-2026-05-17T20-47-44-231Z/report.json",
+        "screenshotPath": "test-results/electron-smoke-2026-05-17T20-47-44-231Z/01-electron-menu.png",
         "status": "passed",
         "build": "v2026-05-17_21-41-17",
         "title": "Nova Swarm - Arcade Patrol",
@@ -349,8 +349,8 @@
         "consoleEvents": []
       },
       "latestPackagedExeSmoke": {
-        "reportPath": "test-results/packaged-exe-smoke-2026-05-17T20-44-06-738Z/report.json",
-        "screenshotPath": "test-results/packaged-exe-smoke-2026-05-17T20-44-06-738Z/01-electron-menu.png",
+        "reportPath": "test-results/packaged-exe-smoke-2026-05-17T20-47-48-305Z/report.json",
+        "screenshotPath": "test-results/packaged-exe-smoke-2026-05-17T20-47-48-305Z/01-electron-menu.png",
         "status": "passed",
         "build": "v2026-05-17_21-41-17",
         "title": "Nova Swarm - Arcade Patrol",
