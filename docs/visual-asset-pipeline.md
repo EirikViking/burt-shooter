@@ -70,7 +70,7 @@ Prompt summary:
 
 Prompt summary:
 
-> Magnificent original key art for an arcade space shooter called Nova Swarm, no text or logos, deep space arcade battlefield with a luminous coin-slot portal, neon starfield, colorful swarm formations, stylized enemy drones, a heroic player ship firing clean laser streams, and a huge boss silhouette in the far background. Polished high-end 2D/3D hybrid game key art, cinematic arcade poster, varied neon arcade palette, no real people, no existing game branding, no Galaga name or branding, no internal jokes, no private-name references.
+> Magnificent original key art for an arcade space shooter called Nova Swarm, no text or logos, deep space arcade battlefield with a luminous coin-slot portal, neon starfield, colorful swarm formations, stylized enemy drones, a heroic player ship firing clean laser streams, and a huge boss silhouette in the far background. Polished high-end 2D/3D hybrid game key art, cinematic arcade poster, varied neon arcade palette, no real people, no existing game branding, no internal jokes, no private-name references.
 
 ## 2026-05-17 Generated Bonus Core Drone
 

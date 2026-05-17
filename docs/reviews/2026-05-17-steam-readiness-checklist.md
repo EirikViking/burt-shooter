@@ -25,7 +25,7 @@ Current evidence:
 - Desktop package path: `docs/steam-desktop-package.md`, `electron/main.cjs`, `electron-builder.json`, and `release/steamworks/app_build_TEMPLATE.vdf`.
 - Latest desktop package verification: `test-results/electron-smoke-2026-05-17T19-15-20-075Z/`, `npm run package:steam:win:current`, generated `release/desktop/win-unpacked/Nova Swarm.exe`, and tracked package evidence in `release/steamworks/desktop_package_review_report.json`. `npm run check:desktop-package` now rejects stale evidence when the Electron smoke build ID does not match `public/version.json` or the packaged executable is older than the current build timestamp.
 - Steam trailer draft workflow: `docs/steam-trailer-workflow.md`, `scripts/capture-steam-trailer.mjs`, `scripts/render-steam-trailer-audio.mjs`, `scripts/render-steam-trailer-candidate.mjs`, refreshed current-build capture evidence in `release/steam-trailer/draft-2026-05-17-current/`, and editorial candidate evidence in `release/steam-trailer/candidate-2026-05-17-current/`.
-- Steam store art draft: `release/steam-assets/draft-2026-05-17-nova-swarm/`, replacing the old Burt-era capsule set with public Nova Swarm artwork.
+- Steam store art draft: `release/steam-assets/draft-2026-05-17-nova-swarm/`, replacing the old private-era capsule set with public Nova Swarm artwork.
 - Steam asset gate: `npm run check:steam-assets` validates 9 asset dimensions/transparency and regenerates review contact sheets.
 - Steam screenshot upload shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, refreshed from the current `v2026-05-17_21-41-17` release-build capture.
 - Steam client validation runbook: `release/steamworks/steam_client_validation_runbook.md`.

@@ -1,57 +1,30 @@
-# Burt Shooter Asset Manifest V2
+# Nova Swarm Asset Guide
 
-## Overview
-This document serves as the human-readable registry of all game assets found in the project. The single source of truth for code is `src/assets/assetManifest.js`.
+This file is a human-readable guide. The runtime source of truth is `src/assets/assetManifest.js`; release provenance is tracked in `release/provenance/asset_provenance_manifest.json`.
 
-**Statistics:**
-- **Images/Sprites**: ~500+ files
-- **Audio Files**: ~250+ files (Voice, SFX, Music in mp3/ogg)
+## Runtime Asset Families
 
-## Directory Structure & Categories
+- Generated arcade art: `public/art/generated/nova-swarm/`
+- Sprites and projectiles: `public/sprites/`
+- Rank icons: `public/sprites/ranks/PNG/Default size/Gold/`
+- Music: `public/audio/music/`
+- SFX: `public/audio/sfx/`
+- Voice and narration: `public/audio/voice/`
+- Steam screenshots, capsules, and trailers: `release/steam-*`
 
-### 1. Root Public Assets (`/public`)
-**Lore & Characters**:
-- `eirik1.jpg`, `kurt2.jpg` ... (Main character photos)
-- `burtelurt.jpg` (The Legend)
-- `wieik_shorts.jpg`, `morten_whale.jpg` ... (Extended lore)
+## Release Asset Rules
 
-### 2. Sprites (`/public/sprites`)
-**Core Ships**: `spaceShips_001.png` - `spaceShips_009.png`
-**Player**: `player/player_01.png`
+- No real-person photos or private joke images.
+- No private person names, private place names, or old internal lore in filenames, captions, prompts, or player-facing surfaces.
+- No existing arcade-shooter brand names in store-facing art or copy.
+- Generated images should be original, inspectable, and useful to the actual game surface they support.
+- Steam capsules and library art must be text-readable at their target sizes.
+- Screenshots and trailers must reflect truthful runtime gameplay and current build metadata.
 
-**Xtra-Sprites (`/public/sprites/xtra-sprites`)**:
-- **Enemies**: Color variants (Black, Blue, Green, Red) x 5 types each.
-- **Lasers**: 16 variants per color (Blue, Green, Red).
-- **Damage**: 3 stages of damage for 3 ship types.
-- **Effects**: Fire, Shields, Stars, Speed lines.
-- **UI**: Life icons, buttons, numerals.
+## Implementation Rules
 
-**Missiles**: 40 distinct missile types (`spaceMissiles_001` - `040`).
-**Effects**: 18 generic space effects (`spaceEffects_001` - `018`).
-**Ranks**: 20 rank icons (`rank000` - `rank019`). Only these 20 are used in-game.
-  - **Canonical path**: `/sprites/ranks/PNG/Default size/Gold/rankXXX.png` (note the space in directory name)
-  - **Loading**: Registered as PIXI Assets bundle `rank_badges`, exposing alias `rank_00..rank_19` so loaders can reference `PIXI.Assets.load('rank_XX')`.
-  - **HighscoreScene** preloads the bundle via `RankAssets.preloadAll()` before rendering the table; when `debug=1` it logs the resolved alias + URL for row 1.
-
-### 3. Audio (`/public/audio`)
-**Voice** (`/voice`):
-- Tactical callouts (`war_sniper`, `war_rpg`)
-- Game state (`game_over`, `level_up`, `you_win`)
-- Annoucer (`ready`, `go`, `bgm_v2`?)
-
-**Music** (`/music`):
-- 11 Tracks including "Battle in the Stars", "Space Heroes", "SkyFire".
-- Available in MP3 (primary) and OGG.
-
-**SFX** (`/sfx`):
-- Explosions (`explosionCrunch`)
-- Lasers (`laserLarge`, `laserRetro`, `laserSmall`)
-- UI (`computerNoise`)
-- Engines (`spaceEngine`)
-
-## Usage Protocols
-
-1.  **Code Reference**: Always import `AssetManifest` from `src/assets/assetManifest.js`.
-2.  **Audio Loading**: The `AudioManager` or `GameAssets` loader should iterate over `AssetManifest.audio` categories.
-3.  **Visual Consistency**: Use `AssetManifest.enemyWeaponMap` to ensure enemies use consistent projectiles and colors.
-4.  **No Placeholders**: If an asset exists here, use it. Do not generate `PIXI.Graphics` rects if a sprite exists.
+- Prefer `AssetManifest` keys over hardcoded file paths.
+- Keep fallback graphics simple, temporary, and non-player-facing where possible.
+- Run `npm run check:provenance` after adding, deleting, or moving assets.
+- Run `npm run check:audio` and `npm run audit:audio-mix` after audio changes.
+- Run `npm run audit:release-readiness` before treating an asset milestone as release evidence.
