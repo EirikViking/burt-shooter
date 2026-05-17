@@ -11,7 +11,7 @@ npm run desktop:smoke:current
 npm run check:desktop-package
 ```
 
-`npm run verify:steam-rc` runs the same current-build package and Electron-smoke gates as part of the fast RC path.
+`npm run verify:steam-rc` runs the same current-build package and Electron-smoke gates as part of the fast RC path. `npm run verify:steam-rc -- --full` also runs browser smoke and the long release playtest.
 
 Outputs:
 
@@ -29,8 +29,8 @@ The web deployment remains unchanged and still uses Cloudflare Pages and D1 at `
 
 Latest verified package evidence:
 
-- `npm run verify:steam-rc` passed at `test-results/steam-rc-verify-2026-05-17T16-16-07-474Z/report.json`.
-- `npm run desktop:smoke:current` passed and wrote `test-results/electron-smoke-2026-05-17T16-40-53-251Z/` for build `v2026-05-17_18-38-06`.
+- `npm run verify:steam-rc -- --full` passed at `test-results/steam-rc-verify-2026-05-17T18-05-06-172Z/report.json`.
+- `npm run desktop:smoke:current` passed and wrote `test-results/electron-smoke-2026-05-17T18-06-18-233Z/` for build `v2026-05-17_20-05-06`.
 - `npm run package:steam:win:current` produced `release/desktop/win-unpacked/Nova Swarm.exe` at 226,666,496 bytes.
 - `npm run check:desktop-package` passed and wrote `release/steamworks/desktop_package_review_report.json`, confirming the packaged executable, Electron intro/menu render, local highscore API, captured screenshot, matching current build ID, package modified time newer than the build timestamp, and zero Electron smoke console events.
 - `npm audit --omit=dev` reports `found 0 vulnerabilities`.

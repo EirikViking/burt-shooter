@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-05-17T17:43:37.776Z",
+  "generatedAt": "2026-05-17T18:06:22.317Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-17_19-42-24",
-    "timestamp": "2026-05-17T17:42:24.153Z"
+    "version": "v2026-05-17_20-05-06",
+    "timestamp": "2026-05-17T18:05:06.952Z"
   },
   "desktopPayload": {
     "path": "release/desktop/win-unpacked/Nova Swarm.exe",
     "sizeBytes": 226666496,
-    "modifiedAt": "2026-05-17T17:43:25.725Z"
+    "modifiedAt": "2026-05-17T18:06:10.404Z"
   },
   "latestElectronSmoke": {
-    "reportPath": "test-results/electron-smoke-2026-05-17T17-43-33-729Z/report.json",
-    "screenshotPath": "test-results/electron-smoke-2026-05-17T17-43-33-729Z/01-electron-menu.png",
+    "reportPath": "test-results/electron-smoke-2026-05-17T18-06-18-233Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-05-17T18-06-18-233Z/01-electron-menu.png",
     "status": "passed",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "intro",
