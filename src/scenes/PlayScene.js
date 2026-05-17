@@ -2684,7 +2684,7 @@ export class PlayScene {
           type: 'milestone',
           duration: 1800
         });
-        AudioManager.playSfx('achievement', { force: true, volume: 0.95 });
+        AudioManager.playSfx('combo_breakout', { force: true, volume: 0.95 });
         if (this.particleManager && this.player) {
           this.particleManager.createExplosion(this.player.x, this.player.y - 40, 0xffaa00);
         }
@@ -2703,7 +2703,7 @@ export class PlayScene {
     if (this.comboMultiplier !== prevMultiplier) {
       const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
       this.enqueueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
-      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+      AudioManager.playSfx('combo_breakout', { force: true, volume: 0.82 });
       if (this.particleManager && this.player) {
         this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
       }
@@ -2713,7 +2713,7 @@ export class PlayScene {
       const bonus = this.getComboScore(100 * (this.comboCount / 10));
       this.game.addScore(bonus);
       this.enqueueToast(`COMBO BONUS +${bonus}`, { fontSize: 18, fill: '#ffff00', slot: 'top', type: 'combo', duration: 1200 });
-      AudioManager.playSfx('pickup', { force: true, volume: 0.8 });
+      AudioManager.playSfx('combo_tick', { force: true, volume: 0.8 });
     }
 
     const clutchChance = 0;
@@ -3528,7 +3528,7 @@ export class PlayScene {
     const label = phase === 2 ? 'BOSS PHASE 2' : 'BOSS PHASE 3';
     this.enqueueToast(label, { fontSize: 22, fill: '#ff3300', slot: 'top', type: 'boss' });
     this.triggerShockwave(boss.x, boss.y, phase === 2 ? 0xffaa00 : 0xff3300);
-    AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
+    AudioManager.playSfx('boss_phase_surge', { force: true, volume: 1.0 });
   }
 
   showWantedPoster() {

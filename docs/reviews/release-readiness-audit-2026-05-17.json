@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T15:18:15.615Z",
+  "generatedAt": "2026-05-17T15:28:27.548Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 13,
@@ -19,12 +19,12 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 17769
+          "bytes": 18341
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
           "ok": true,
-          "bytes": 5942
+          "bytes": 5943
         },
         {
           "path": "docs/asset-provenance.md",
@@ -158,8 +158,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1507,
-      "coveredCount": 1507,
+      "assetCount": 1511,
+      "coveredCount": 1511,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []

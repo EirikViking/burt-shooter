@@ -66,6 +66,30 @@ const sounds = [
     text: 'A compact arcade game-over stinger, descending sci-fi synth drop with a tiny coin-slot clack at the end, dramatic but playful, no voice, no melody quote, under two seconds.',
     duration_seconds: 2,
     prompt_influence: 0.58
+  },
+  {
+    file: 'nova_combo_tick.mp3',
+    text: 'A tiny premium arcade combo tick, crisp score counter blip with a little neon sparkle, very short, readable during combat, no voice, no melody.',
+    duration_seconds: 1,
+    prompt_influence: 0.62
+  },
+  {
+    file: 'nova_combo_breakout.mp3',
+    text: 'A short escalating arcade combo breakout flourish, bright rising synth coins and score multiplier energy, satisfying but compact, no voice, no copyrighted melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.6
+  },
+  {
+    file: 'nova_boss_phase_surge.mp3',
+    text: 'A dramatic boss phase surge for a neon arcade shooter, heavy sci-fi power pulse with warning shimmer, intense but clean, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.58
+  },
+  {
+    file: 'nova_level_clear_medal.mp3',
+    text: 'A bright level-clear medal sting for an arcade space shooter, heroic score flourish with coin-slot sparkle, confident and compact, no voice, no copyrighted melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.58
   }
 ];
 

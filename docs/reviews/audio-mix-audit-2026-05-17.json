@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T15:14:12.061Z",
+  "generatedAt": "2026-05-17T15:22:09.252Z",
   "defaults": {
     "masterVolume": 0.3,
     "musicVolume": 0.2,
@@ -12,9 +12,9 @@
     }
   },
   "counts": {
-    "measuredFiles": 92,
+    "measuredFiles": 96,
     "musicRows": 13,
-    "sfxRows": 97,
+    "sfxRows": 102,
     "voiceRows": 20,
     "warnings": 9,
     "errors": 0
@@ -1774,6 +1774,20 @@
     {
       "type": "sfx",
       "event": "levelComplete",
+      "url": "/audio/sfx/nova-swarm/nova_level_clear_medal.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.45,
+      "duckFactor": null,
+      "effectiveLinear": 0.054,
+      "rawMeanDb": -21.8,
+      "rawPeakDb": -3,
+      "gainDb": -25.4,
+      "effectiveMeanDb": -47.2,
+      "effectivePeakDb": -28.4
+    },
+    {
+      "type": "sfx",
+      "event": "levelComplete",
       "url": "/audio/sfx/nova-swarm/nova_wave_clear_sweep.mp3",
       "durationSeconds": 2,
       "mixVolume": 0.45,
@@ -2218,6 +2232,62 @@
       "gainDb": -22.6,
       "effectiveMeanDb": -41.8,
       "effectivePeakDb": -26.1
+    },
+    {
+      "type": "sfx",
+      "event": "combo_tick",
+      "url": "/audio/sfx/nova-swarm/nova_combo_tick.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.42,
+      "duckFactor": null,
+      "effectiveLinear": 0.0504,
+      "rawMeanDb": -12.7,
+      "rawPeakDb": -4.6,
+      "gainDb": -26,
+      "effectiveMeanDb": -38.7,
+      "effectivePeakDb": -30.6
+    },
+    {
+      "type": "sfx",
+      "event": "combo_breakout",
+      "url": "/audio/sfx/nova-swarm/nova_combo_breakout.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.68,
+      "duckFactor": null,
+      "effectiveLinear": 0.0816,
+      "rawMeanDb": -18.8,
+      "rawPeakDb": -0.4,
+      "gainDb": -21.8,
+      "effectiveMeanDb": -40.6,
+      "effectivePeakDb": -22.2
+    },
+    {
+      "type": "sfx",
+      "event": "boss_phase_surge",
+      "url": "/audio/sfx/nova-swarm/nova_boss_phase_surge.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.76,
+      "duckFactor": null,
+      "effectiveLinear": 0.0912,
+      "rawMeanDb": -8.7,
+      "rawPeakDb": -2.8,
+      "gainDb": -20.8,
+      "effectiveMeanDb": -29.5,
+      "effectivePeakDb": -23.6
+    },
+    {
+      "type": "sfx",
+      "event": "level_clear_medal",
+      "url": "/audio/sfx/nova-swarm/nova_level_clear_medal.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.62,
+      "duckFactor": null,
+      "effectiveLinear": 0.0744,
+      "rawMeanDb": -21.8,
+      "rawPeakDb": -3,
+      "gainDb": -22.6,
+      "effectiveMeanDb": -44.4,
+      "effectivePeakDb": -25.6
     },
     {
       "type": "voice",

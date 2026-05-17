@@ -10,13 +10,13 @@ Current playable deployment:
 
 Current deployed and verified build:
 
-- `v2026-05-17_17-13-45`
+- `v2026-05-17_17-22-17`
 
 Current evidence:
 
 - Recent milestones are preserved in git history; this checklist tracks the latest verified artifacts rather than a single commit hash.
-- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://b1268ed2.burt-game.pages.dev/version.json` both reported `v2026-05-17_17-13-45` after the Cloudflare Pages production deploy `https://b1268ed2.burt-game.pages.dev`.
-- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T15-15-50-823Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
+- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://1bf4d215.burt-game.pages.dev/version.json` both reported `v2026-05-17_17-22-17` after the Cloudflare Pages production deploy `https://1bf4d215.burt-game.pages.dev`.
+- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T15-26-11-417Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
 - Latest intro/audio/visual smoke: `test-results/smoke-2026-05-17T09-17-13-563Z/`
 - Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
@@ -47,6 +47,7 @@ Current evidence:
 - Latest ElevenLabs SFX round: five additional original cues for enemy fire, player hit, extra life, wave clear, and game-over drop are wired through `src/audio/SoundCatalog.js`; `npm run smoke` passed at `test-results/smoke-2026-05-17T14-42-08-464Z/`, 60-second release playtest passed at `test-results/release-playtest-nova-sfx-round2-20260517-1646/`, refreshed desktop smoke passed at `test-results/electron-smoke-2026-05-17T14-48-45-481Z/`, production deploy is `https://27ad6da0.burt-game.pages.dev`, and live-domain smoke passed at `test-results/smoke-2026-05-17T14-50-59-402Z/`.
 - Latest trailer editorial candidate: refreshed trailer capture/audio draft in `release/steam-trailer/draft-2026-05-17-17-03/`, branded H.264/AAC candidate in `release/steam-trailer/candidate-2026-05-17-editorial/`, clean contact sheet at `release/steam-trailer/candidate-2026-05-17-editorial/candidate-contact-sheet.png`, and fast RC verification passed at `test-results/steam-rc-verify-2026-05-17T15-00-50-202Z/report.json`.
 - Latest public-ID cleanup: old private-era enemy/powerup IDs were replaced with public arcade names in source/runtime state, and `scripts/audit-release-readiness.mjs` now blocks those old tokens from tracked player-facing/release text. `npm run build` passed with build ID `v2026-05-17_17-10-09`, `npm run smoke` passed at `test-results/smoke-2026-05-17T15-10-33-460Z/`, a 60-second release playtest passed at `test-results/release-playtest-public-ids-20260517-1712/`, fast RC verification passed at `test-results/steam-rc-verify-2026-05-17T15-13-44-874Z/report.json`, production deploy is `https://b1268ed2.burt-game.pages.dev`, and live-domain smoke passed at `test-results/smoke-2026-05-17T15-15-50-823Z/`.
+- Latest ElevenLabs combo/boss SFX polish: generated and peak-trimmed `nova_combo_tick.mp3`, `nova_combo_breakout.mp3`, `nova_boss_phase_surge.mp3`, and `nova_level_clear_medal.mp3`; `npm run check:audio`, `npm run audit:audio-mix`, `npm run build` (`v2026-05-17_17-22-17`), local smoke (`test-results/smoke-2026-05-17T15-22-38-858Z/`), 60-second release playtest (`test-results/release-playtest-combo-sfx-20260517-1724/`), and live-domain smoke (`test-results/smoke-2026-05-17T15-26-11-417Z/`) passed. The new production deploy is `https://1bf4d215.burt-game.pages.dev`.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 

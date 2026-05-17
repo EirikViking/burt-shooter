@@ -205,7 +205,11 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_player_hit_crackle.mp3',
             '/audio/sfx/nova-swarm/nova_life_extend_bloom.mp3',
             '/audio/sfx/nova-swarm/nova_wave_clear_sweep.mp3',
-            '/audio/sfx/nova-swarm/nova_game_over_drop.mp3'
+            '/audio/sfx/nova-swarm/nova_game_over_drop.mp3',
+            '/audio/sfx/nova-swarm/nova_combo_tick.mp3',
+            '/audio/sfx/nova-swarm/nova_combo_breakout.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_phase_surge.mp3',
+            '/audio/sfx/nova-swarm/nova_level_clear_medal.mp3'
         ]
     },
 

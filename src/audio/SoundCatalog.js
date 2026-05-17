@@ -108,7 +108,11 @@ export const SFX_MIX = {
     nova_player_hit_crackle: { volume: 0.72, minIntervalMs: 220 },
     nova_life_extend_bloom: { volume: 0.66, minIntervalMs: 700 },
     nova_wave_clear_sweep: { volume: 0.54, minIntervalMs: 700 },
-    nova_game_over_drop: { volume: 0.62, minIntervalMs: 1000 }
+    nova_game_over_drop: { volume: 0.62, minIntervalMs: 1000 },
+    combo_tick: { volume: 0.42, minIntervalMs: 180 },
+    combo_breakout: { volume: 0.68, minIntervalMs: 650 },
+    boss_phase_surge: { volume: 0.76, minIntervalMs: 900 },
+    level_clear_medal: { volume: 0.62, minIntervalMs: 700 }
 };
 
 export const VOICE_MIX = {
@@ -214,7 +218,7 @@ export const SFX_CATALOG = {
     'explosion': [getSfx('explosionCrunch_000')],
     'menuSelect': [getSfx('doorOpen_000')],
     'playerHit': [getSfx('nova_player_hit_crackle'), getSfx('impactMetal_000')],
-    'levelComplete': [getSfx('nova_wave_clear_sweep'), getSfx('nova_rank_fanfare')],
+    'levelComplete': [getSfx('nova_level_clear_medal'), getSfx('nova_wave_clear_sweep'), getSfx('nova_rank_fanfare')],
 
     // Aliases for inconsistent call sites
     'forceField': [getSfx('nova_shield_snap'), getSfx('forceField_000')], // Alias for shield/pickup reuse
@@ -320,6 +324,18 @@ export const SFX_CATALOG = {
     ],
     'nova_game_over_drop': [
         getSfx('nova_game_over_drop')
+    ],
+    'combo_tick': [
+        getSfx('nova_combo_tick')
+    ],
+    'combo_breakout': [
+        getSfx('nova_combo_breakout')
+    ],
+    'boss_phase_surge': [
+        getSfx('nova_boss_phase_surge')
+    ],
+    'level_clear_medal': [
+        getSfx('nova_level_clear_medal')
     ],
     'intro_narrator_01': [
         getVoice('intro_narrator_01')
