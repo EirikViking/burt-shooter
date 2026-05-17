@@ -19,7 +19,7 @@ export const BalanceConfig = {
         logDrops: true, // Dev toggle
 
         // Bonus core special powerup
-        whiteCan: {
+        bonusCore: {
             spawnChance: 0.0005, // Very rare (approx 1 per 33 secs at 60fps unchecked, but logical checks apply)
             cooldown: 60000, // 60s global cooldown
             minTime: 20000, // No spawn in first 20s

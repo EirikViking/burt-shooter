@@ -45,7 +45,7 @@ export class EnemyManager {
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE'; // NONE, SLOWING, CLEARING
 
-    // WAVE FIX: Wave ending state to prevent beer can spawning
+    // WAVE FIX: Wave ending state to prevent bonus drone spawning
     this.waveEnding = false;
 
     // BOSS FIX: Boss state machine
@@ -225,11 +225,11 @@ export class EnemyManager {
     return script ? script.map((wave) => ({ ...wave })) : null;
   }
 
-  // WAVE FIX: Helper to identify objective enemies (ships, not beer cans)
+  // WAVE FIX: Helper to identify objective enemies (ships, not bonus drones)
   isObjectiveEnemy(enemy) {
     if (!enemy || !enemy.active) return false;
-    // Beer cans and bosses are not objective enemies
-    return enemy.kind !== 'beer_can' && enemy.kind !== 'boss';
+    // bonus drones and bosses are not objective enemies
+    return enemy.kind !== 'bonus_drone' && enemy.kind !== 'boss';
   }
 
   // WAVE FIX: Count objective enemies only
@@ -237,8 +237,8 @@ export class EnemyManager {
     return this.enemies.filter(e => this.isObjectiveEnemy(e)).length;
   }
 
-  // WAVE FIX: Gate for beer can spawning
-  allowBeerCanSpawns() {
+  // WAVE FIX: Gate for bonus drone spawning
+  allowBonusDroneSpawns() {
     // Only allow during WAVE_ACTIVE, not during wave ending or cleanup
     return this.state === 'WAVE_ACTIVE' &&
       this.level > 1 &&
@@ -262,7 +262,7 @@ export class EnemyManager {
     // 1. Update State Machine
     switch (this.state) {
       case 'WAVE_ACTIVE':
-        // WAVE FIX: Check objective enemies only, not beer cans
+        // WAVE FIX: Check objective enemies only, not bonus drones
         const objectiveCount = this.getObjectiveEnemyCount();
         if (objectiveCount === 0 && !this.waveEnding) {
           // Start wave ending immediately when last objective enemy dies
@@ -273,11 +273,11 @@ export class EnemyManager {
           if (playScene?.clearEnemyBullets) {
             playScene.clearEnemyBullets('wave_clear');
           }
-          let beerCount = 0;
+          let bonusDroneCount = 0;
           if (playScene && playScene.getWaveCleanupTargets) {
-            beerCount = playScene.getWaveCleanupTargets().length;
+            bonusDroneCount = playScene.getWaveCleanupTargets().length;
           }
-          console.log(`[WaveCleanup] start objectiveAlive=0 beerAlive=${beerCount} state=${this.state}`);
+          console.log(`[WaveCleanup] start objectiveAlive=0 bonusDroneAlive=${bonusDroneCount} state=${this.state}`);
           this.logBossStatus('wave_cleanup_start');
 
           // Immediately start cleanup phase
@@ -295,9 +295,9 @@ export class EnemyManager {
             allTargets = playScene.getWaveCleanupTargets();
           }
 
-          // Phase 1: Slow beer cans immediately (already in SLOWING)
+          // Phase 1: Slow bonus drones immediately (already in SLOWING)
           if (this.cleanupPhase === 'SLOWING' && this.cleanupTimer > 100) {
-            // Slow beer cans to 20% speed
+            // Slow bonus drones to 20% speed
             allTargets.forEach(t => {
               if (t.vx) t.vx *= 0.2;
               if (t.vy) t.vy *= 0.2;
@@ -305,13 +305,13 @@ export class EnemyManager {
             this.cleanupPhase = 'CLEARING';
           }
 
-          // Phase 2: Clear all beer cans after 2 seconds
+          // Phase 2: Clear all bonus drones after 2 seconds
           if (this.cleanupTimer > 2000 && this.cleanupPhase === 'CLEARING') {
             const clearedCount = allTargets.length;
             this.forceClearAllEnemies();
 
             // WAVE FIX: Diagnostic - cleanup end
-            console.log(`[WaveCleanup] end objectiveAlive=0 beerAlive=0 cleared=${clearedCount}`);
+            console.log(`[WaveCleanup] end objectiveAlive=0 bonusDroneAlive=0 cleared=${clearedCount}`);
             this.logBossStatus('wave_cleanup_end');
 
             this.cleanupPhase = 'NONE';
@@ -423,7 +423,7 @@ export class EnemyManager {
         break;
 
       case 'LEVEL_COMPLETE':
-        // CLEANUP FIX: Check for beer cans across all tracking systems
+        // CLEANUP FIX: Check for bonus drones across all tracking systems
         const playScene = this.game.scenes.play;
         let allTargets = [];
         if (playScene && playScene.getWaveCleanupTargets) {
@@ -437,13 +437,13 @@ export class EnemyManager {
           // Phase 1: Slow down entities after 2 seconds
           if (this.cleanupTimer > 2000 && this.cleanupPhase === 'NONE') {
             this.cleanupPhase = 'SLOWING';
-            console.log(`[EnemyManager] Cleanup Phase 1: Slowing ${this.enemies.length} enemies + ${allTargets.length} beer cans`);
+            console.log(`[EnemyManager] Cleanup Phase 1: Slowing ${this.enemies.length} enemies + ${allTargets.length} bonus drones`);
             // Slow enemies
             this.enemies.forEach(e => {
               if (e.vx) e.vx *= 0.2;
               if (e.vy) e.vy *= 0.2;
             });
-            // Slow beer cans
+            // Slow bonus drones
             allTargets.forEach(t => {
               if (t.vx) t.vx *= 0.2;
               if (t.vy) t.vy *= 0.2;
@@ -453,13 +453,13 @@ export class EnemyManager {
           // Phase 2: Auto-clear after 3 seconds total
           if (this.cleanupTimer > 3000 && this.cleanupPhase === 'SLOWING') {
             this.cleanupPhase = 'CLEARING';
-            console.log(`[EnemyManager] Cleanup Phase 2: Auto-clearing ${this.enemies.length} enemies + ${allTargets.length} beer cans`);
+            console.log(`[EnemyManager] Cleanup Phase 2: Auto-clearing ${this.enemies.length} enemies + ${allTargets.length} bonus drones`);
             this.forceClearAllEnemies();
           }
 
           // TASK C: Emergency failsafe at 10 seconds
           if (this.cleanupTimer > 10000) {
-            console.warn(`[EnemyManager] EMERGENCY CLEANUP: Force clearing ${this.enemies.length} enemies + ${allTargets.length} beer cans after 10s`);
+            console.warn(`[EnemyManager] EMERGENCY CLEANUP: Force clearing ${this.enemies.length} enemies + ${allTargets.length} bonus drones after 10s`);
             this.forceClearAllEnemies();
           }
         } else {
@@ -472,13 +472,13 @@ export class EnemyManager {
 
     this.ensureBossActive();
 
-    // 2. Chance to spawn Beer Can (Rare Powerup Source)
+    // 2. Chance to spawn Bonus Drone (Rare Powerup Source)
     // WAVE FIX: Use spawn gate
-    if (this.allowBeerCanSpawns() && this.enemies.length < 20) {
+    if (this.allowBonusDroneSpawns() && this.enemies.length < 20) {
       const clutchBoost = this.directorState?.clutchDropChance || 0;
       const chance = 0.0005 + clutchBoost * 0.0008;
       if (Math.random() < chance) { // very rare per tick
-        this.spawnBeerCan('bonus');
+        this.spawnBonusDrone('bonus');
       }
     }
 
@@ -571,15 +571,15 @@ export class EnemyManager {
 
 
 
-  spawnBeerCan(reason = 'bonus') {
+  spawnBonusDrone(reason = 'bonus') {
     // WAVE FIX: Double-check gate
-    if (!this.allowBeerCanSpawns()) {
+    if (!this.allowBonusDroneSpawns()) {
       return;
     }
 
-    // Spawn as a standard enemy but with 'beer_challenge' type
+    // Spawn as a standard enemy but with 'bonus_challenge' type
     const x = 50 + Math.random() * (this.game.getWidth() - 100);
-    const enemy = new Enemy(x, -50, 'beer_challenge', this.level, this.game, 'Gold');
+    const enemy = new Enemy(x, -50, 'bonus_challenge', this.level, this.game, 'Gold');
 
     this.enemies.push(enemy);
     this.container.addChild(enemy.sprite);
@@ -874,7 +874,7 @@ export class EnemyManager {
         if (!wasChallenge) {
           console.log('[EnemyManager] injecting bonus drone challenge wave');
           this.waves.splice(this.currentWaveIndex + 1, 0, {
-            type: 'beer_challenge',
+            type: 'bonus_challenge',
             count: 24,
             formation: 'GRID',
             isChallenge: true
@@ -936,7 +936,7 @@ export class EnemyManager {
 
   getWaveDescriptor(config) {
     if (!config) return 'INCOMING';
-    if (config.isChallenge || config.type === 'beer_challenge' || config.type === 'bonus_challenge') return 'BONUS DRONE RAID';
+    if (config.isChallenge || config.type === 'bonus_challenge') return 'BONUS DRONE RAID';
     const enemy = String(config.type || 'hostiles').replace(/_/g, ' ').toUpperCase();
     const formation = String(config.formation || 'formation').replace(/_/g, ' ').toUpperCase();
     return `${enemy} ${formation}`;
@@ -1013,7 +1013,7 @@ export class EnemyManager {
     // Also clear any remaining regular enemies from this.enemies array
     // BOSS FIX: Never clear boss during cleanup
     this.enemies.forEach(e => {
-      if (e.kind !== 'beer_can' && e.kind !== 'boss') {
+      if (e.kind !== 'bonus_drone' && e.kind !== 'boss') {
         // Regular enemies get cleared too
         const wasActive = e.active !== false;
         enemyCount++;
@@ -1029,7 +1029,7 @@ export class EnemyManager {
       }
     });
     // BOSS FIX: Filter out cleared enemies but keep boss
-    this.enemies = this.enemies.filter(e => e.active && (e.kind === 'boss' || e.kind === 'beer_can'));
+    this.enemies = this.enemies.filter(e => e.active && (e.kind === 'boss' || e.kind === 'bonus_drone'));
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE';
 

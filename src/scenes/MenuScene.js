@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { BonusAsset } from '../utils/BeerAsset.js';
+import { BonusAsset } from '../utils/BonusAsset.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { BUILD_ID } from '../buildInfo.js';
@@ -75,8 +75,8 @@ export class MenuScene {
     this.initMissionConsole();
     // Preload all game assets here for simplicity
     // Preload all game assets here for simplicity
-    GameAssets.loadBeer().then(() => {
-      GameAssets.loadPhotos().then(() => {
+    GameAssets.loadBonusCore().then(() => {
+      GameAssets.loadCommsPortraits().then(() => {
         GameAssets.loadShips().then(() => {
           this.initBonusDecorations();
         });

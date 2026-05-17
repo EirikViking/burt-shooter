@@ -18,7 +18,7 @@ export const AssetManifest = {
         ]
     },
 
-    // Original generated comms portraits only. Real-person photos are not shipped.
+    // Original generated comms portraits only. Real-person portrait assets are not shipped.
     loreImages: [],
 
     // Sprites
@@ -126,7 +126,7 @@ export const AssetManifest = {
         },
 
         // Powerups
-        bonusCore: '/sprites/xtra-sprites/Power-ups/powerupYellow_star.png'
+        bonusCore: '/sprites/generated/nova-bonus-core-drone-20260517.png'
     },
 
     // Audio Assets
@@ -211,8 +211,7 @@ export const AssetManifest = {
         'tufs': { projectile: '/sprites/xtra-sprites/Lasers/laserBlue11.png', flashColor: 0x0088ff, impactColor: 0x0088ff, sound: 'enemy_shoot' },
         'deili': { projectile: '/sprites/xtra-sprites/Lasers/laserRed15.png', flashColor: 0xff4400, impactColor: 0xff4400, sound: 'enemy_shoot' },
         'rolp': { projectile: '/sprites/xtra-sprites/Lasers/laserBlue05.png', flashColor: 0xff00ff, impactColor: 0xff00ff, sound: 'enemy_shoot' },
-        'bonus_challenge': { projectile: '/sprites/xtra-sprites/Lasers/laserGreen08.png', flashColor: 0x00ff00, impactColor: 0x00ff00, sound: 'enemy_shoot' },
-        'beer_challenge': { projectile: '/sprites/xtra-sprites/Lasers/laserGreen08.png', flashColor: 0x00ff00, impactColor: 0x00ff00, sound: 'enemy_shoot' }
+        'bonus_challenge': { projectile: '/sprites/xtra-sprites/Lasers/laserGreen08.png', flashColor: 0x00ff00, impactColor: 0x00ff00, sound: 'enemy_shoot' }
     },
 
     // Extras Bundles (Curated, Scene-Scoped)

@@ -1,5 +1,14 @@
 Original prompt: Continue autonomous development of Burt Shooter toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-17 Generated Bonus Core And Public-Term Cleanup
+
+- Finished the public terminology cleanup for legacy photo/beer runtime identifiers: player-facing and release-scanned sources now use comms portraits, bonus cores, and bonus drones instead of old private/internal labels.
+- Added a generated original Nova Swarm bonus-core drone asset with built-in imagegen, removed the chroma-key background locally, saved the source at `public/art/generated/nova-bonus-core-drone-source-20260517.png`, and shipped the alpha runtime sprite at `public/sprites/generated/nova-bonus-core-drone-20260517.png`.
+- Updated `src/assets/assetManifest.js`, bonus drone sizing, release asset preflight, sprite catalog, and visual asset pipeline docs so menu decorations, highscore ambience, hazard drones, and collectible cores share the new original asset.
+- Verification passed: `npm run build` with build ID `v2026-05-17_15-29-53`, local `npm run smoke` at `test-results/smoke-2026-05-17T13-30-19-186Z/`, strict 60-second `npm run playtest:release` at `test-results/release-playtest-bonus-core-20260517-1530/`, and `npm run audit:release-readiness` with only known manual blockers.
+- Deployed the verified build to Cloudflare Pages production at `https://c66a8f98.burt-game.pages.dev`; `https://burt.tinyfoundry.app/version.json` reports `v2026-05-17_15-29-53`, the generated sprite returns `200 image/png`, and live-domain smoke passed at `test-results/smoke-2026-05-17T13-36-30-834Z/`.
+- Remaining blockers are still Steam-specific/manual: real Steamworks app/depot IDs, SteamPipe upload and Steam-client install/launch validation, final human approvals for screenshots/capsules/trailer/audio/store copy/legal/gameplay feel, and final email only after those are genuinely complete.
+
 ## 2026-05-17 Public Text Cleanup
 
 - Removed remaining visible Norwegian high-score/game-over/fatal-error strings (`NAVN`, `SKRIV DITT NAVN`, `Laster`, `Feil`, and empty-state copy) and replaced them with public arcade English.

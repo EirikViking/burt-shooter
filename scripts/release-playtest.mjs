@@ -25,6 +25,7 @@ const requiredReleaseAssets = [
   '/art/generated/nova-swarm/nova-swarm-ship-hangar.webp',
   '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
   '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
+  '/sprites/generated/nova-bonus-core-drone-20260517.png',
   '/audio/music/nova-swarm/nova_swarm_intro_overture.mp3',
   '/audio/voice/nova-swarm/intro_narrator_01.mp3',
   '/audio/voice/nova-swarm/intro_narrator_02.mp3',

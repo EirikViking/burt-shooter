@@ -289,7 +289,7 @@ class Powerup {
     }
 
     if (scene.debugStats) {
-      scene.debugStats.beerPickupsCollected++;
+      scene.debugStats.bonusPickupsCollected++;
     }
     if (scene.debugPowerups) {
       console.log(`[PowerupTest] pickup type=${this.type}`);
@@ -600,7 +600,7 @@ export class PowerupManager {
     console.log(`[PowerupManager] SPAWNED ${type} at ${Math.round(x)},${Math.round(y)}. Chance: ${(cappedChance * 100).toFixed(1)}%`);
 
     if (this.game.scenes.play && this.game.scenes.play.debugStats) {
-      this.game.scenes.play.debugStats.beerPickupsSpawned++;
+      this.game.scenes.play.debugStats.bonusPickupsSpawned++;
     }
     this.dropsThisLevel++;
     this.dropsThisRun++;

@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { Player } from '../entities/Player.js';
-import { BeerCan } from '../entities/BeerCan.js';
+import { BonusDrone } from '../entities/BonusDrone.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { COMBO_MILESTONES, COMBO_WINDOW_MS } from '../config/ComboConfig.js';
@@ -64,10 +64,10 @@ export class PlayScene {
     this.achievementTimer = 0;
     this.tauntTimer = 0;
     this.lowLivesShownFor = null;
-    this.ambientBeerTimer = 0;
+    this.ambientBonusDroneTimer = 0;
     this.easterEggTimer = 20000;
-    this.ambientBeers = []; // Lists for update
-    this.easterEggBeer = null;
+    this.ambientBonusDrones = []; // Lists for update
+    this.legendaryFlyby = null;
     this.isReady = false;
     this.starfieldContainer = null;
     this.starLayers = [];
@@ -84,9 +84,9 @@ export class PlayScene {
     this.scoreMultiplier = 1;
     this.scoreBoostTimer = 0;
 
-    // White Can State
-    this.lastWhiteCanTime = 0;
-    this.hasActiveWhiteCan = false;
+    // Bonus Core State
+    this.lastBonusCoreTime = 0;
+    this.hasActiveBonusCore = false;
 
     this.buildStamp = null;
     this.playerDiagText = null;
@@ -216,10 +216,10 @@ export class PlayScene {
 
     // Internal Debug Stats
     this.debugStats = {
-      beerPickupsSpawned: 0,
-      beerPickupsCollected: 0,
-      beerBossSpawned: 0,
-      photoEnemiesSpawned: 0,
+      bonusPickupsSpawned: 0,
+      bonusPickupsCollected: 0,
+      bonusBossSpawned: 0,
+      commsPortraitsSpawned: 0,
       legendaryFlybyTriggered: 0
     };
 
@@ -314,7 +314,7 @@ export class PlayScene {
         console.log('[PlayScene] Bonus core texture ready.');
       }
     });
-    GameAssets.loadPhotos();
+    GameAssets.loadCommsPortraits();
 
     // Initialize touch controls
     try {
@@ -451,7 +451,7 @@ export class PlayScene {
     }
 
     this.resetRandomTimers();
-    this.ambientBeerTimer = 2000 + Math.random() * 3000;
+    this.ambientBonusDroneTimer = 2000 + Math.random() * 3000;
     this.easterEggTimer = 20000; // Deterministic first flyby at 20s
   }
 
@@ -695,7 +695,7 @@ export class PlayScene {
 
       this.hud.update();
       this.updateStarfield(delta); // TASK D: Animate background stars
-      this.updateAmbientBeers(delta); // Handles hazard drones and collectible power cores
+      this.updateAmbientBonusDrones(delta); // Handles hazard drones and collectible power cores
       this.applyMagnetPull(delta);
       this.updateOrbitalStrike(delta);
       this.updateEasterEgg(delta);
@@ -1312,20 +1312,20 @@ export class PlayScene {
     });
 
     // Ambient bonus drones and collectible power cores
-    this.ambientBeers.forEach(beer => {
-      if (beer.active && this.player.active) {
-        if (this.checkCollision(beer, this.player)) {
-          if (beer.type === 'POWERUP') {
+    this.ambientBonusDrones.forEach(bonusDrone => {
+      if (bonusDrone.active && this.player.active) {
+        if (this.checkCollision(bonusDrone, this.player)) {
+          if (bonusDrone.type === 'POWERUP') {
             // Collect!
-            beer.collect(this.player, this);
-            this.hasActiveWhiteCan = false; // Reset spawn flag
+            bonusDrone.collect(this.player, this);
+            this.hasActiveBonusCore = false; // Reset spawn flag
           } else {
             // HAZARD
             // Feature: Ghost Ship prevents hit
             if (this.player.activePowerup && this.player.activePowerup.type === 'ghost') return;
 
             // FATAL COLLISION
-            beer.active = false;
+            bonusDrone.active = false;
 
             if (!this.player.invulnerable) {
               const damageTaken = this.player.takeDamage();
@@ -1338,7 +1338,7 @@ export class PlayScene {
                 this.particleManager.createHitSpark(this.player.x, this.player.y);
               }
             }
-            this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00);
+            this.particleManager.createExplosion(bonusDrone.x, bonusDrone.y, 0xffaa00);
             this.showToast('OUCH!', { fontSize: 20, fill: '#ff0000' });
           }
         }
@@ -1348,21 +1348,21 @@ export class PlayScene {
     // Player bullets vs ambient hazard drones
     this.bulletManager.playerBullets.forEach(bullet => {
       if (bullet.active) {
-        this.ambientBeers.forEach(beer => {
+        this.ambientBonusDrones.forEach(bonusDrone => {
           // Only damage hazard drones, not collectible power cores.
-          if (beer.active && beer.type === 'HAZARD' && this.checkCollision(bullet, beer)) {
+          if (bonusDrone.active && bonusDrone.type === 'HAZARD' && this.checkCollision(bullet, bonusDrone)) {
             if (!bullet.piercing) bullet.active = false;
-            const destroyed = beer.takeDamage(bullet.damage || 1);
+            const destroyed = bonusDrone.takeDamage(bullet.damage || 1);
             if (destroyed) {
               if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
                 this.game.addScore(this.getComboScore(500));
               }
-              this.onEnemyKilled(beer);
-              this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00);
+              this.onEnemyKilled(bonusDrone);
+              this.particleManager.createExplosion(bonusDrone.x, bonusDrone.y, 0xffaa00);
               AudioManager.playSfx('enemy_explode', { volume: 0.5 });
-              this.showToast('BONUS DRONE DOWN!', { fontSize: 18, y: beer.y, fill: '#ffff00' });
+              this.showToast('BONUS DRONE DOWN!', { fontSize: 18, y: bonusDrone.y, fill: '#ffff00' });
             } else {
-              this.particleManager.createHitSpark(beer.x, beer.y);
+              this.particleManager.createHitSpark(bonusDrone.x, bonusDrone.y);
             }
           }
         });
@@ -2164,14 +2164,14 @@ export class PlayScene {
       }
     });
 
-    this.ambientBeers.forEach(beer => {
-      if (!beer?.active || beer.type !== 'HAZARD') return;
-      if (beer.y <= dangerY) return;
-      beer.active = false;
+    this.ambientBonusDrones.forEach(bonusDrone => {
+      if (!bonusDrone?.active || bonusDrone.type !== 'HAZARD') return;
+      if (bonusDrone.y <= dangerY) return;
+      bonusDrone.active = false;
       cleared += 1;
-      if (beer.sprite?.parent) beer.sprite.parent.removeChild(beer.sprite);
+      if (bonusDrone.sprite?.parent) bonusDrone.sprite.parent.removeChild(bonusDrone.sprite);
       if (this.particleManager) {
-        this.particleManager.createExplosion(beer.x, beer.y, 0xffaa00, 0.65);
+        this.particleManager.createExplosion(bonusDrone.x, bonusDrone.y, 0xffaa00, 0.65);
       }
     });
 
@@ -2417,8 +2417,8 @@ export class PlayScene {
       const minFontSize = 16;
       const maxTextHeight = 80;
 
-      const photos = Object.keys(GameAssets.photos || {});
-      const hasAvatar = photos.length > 0;
+      const commsPortraits = Object.keys(GameAssets.commsPortraits || {});
+      const hasAvatar = commsPortraits.length > 0;
       const avatarSlot = hasAvatar ? 56 : 0;
       const contentWidth = Math.max(140, maxWidth - paddingX * 2 - avatarSlot);
       bannerText.style.wordWrapWidth = contentWidth;
@@ -2486,8 +2486,8 @@ export class PlayScene {
       }
 
       if (hasAvatar) {
-        const pick = photos[Math.floor(Math.random() * photos.length)];
-        const tex = GameAssets.getPhoto(pick);
+        const pick = commsPortraits[Math.floor(Math.random() * commsPortraits.length)];
+        const tex = GameAssets.getCommsPortrait(pick);
         if (GameAssets.isValidTexture(tex)) {
           const sticker = new PIXI.Sprite(tex);
           sticker.anchor.set(0.5);
@@ -2955,59 +2955,59 @@ export class PlayScene {
       `COMBO:${this.comboCount}x${this.comboMultiplier} STREAK:${this.killStreak}\n` +
       `PU:${powerup} SYN:${synergy} WEAPON:${weapon}`;
   }
-  updateAmbientBeers(delta) {
+  updateAmbientBonusDrones(delta) {
     // WAVE FIX: Use spawn gate from EnemyManager
-    const canSpawn = this.enemyManager && this.enemyManager.allowBeerCanSpawns();
+    const canSpawn = this.enemyManager && this.enemyManager.allowBonusDroneSpawns();
 
     // 1. Spawning hazard drones
     // WAVE FIX: Don't spawn during wave ending or cleanup
     if (canSpawn) {
-      this.ambientBeerTimer -= delta * 16.67;
-      if (this.ambientBeerTimer <= 0) {
-        this.spawnAmbientBeer('HAZARD');
-        this.ambientBeerTimer = 4000 + Math.random() * 4000;
+      this.ambientBonusDroneTimer -= delta * 16.67;
+      if (this.ambientBonusDroneTimer <= 0) {
+        this.spawnAmbientBonusDrone('HAZARD');
+        this.ambientBonusDroneTimer = 4000 + Math.random() * 4000;
       }
     }
 
-    // 2. Spawn White Can (Powerup) Logic
+    // 2. Spawn bonus core powerup logic
     // WAVE FIX: Don't spawn during wave ending or cleanup
     if (canSpawn) {
-      const config = BalanceConfig.powerups.whiteCan;
+      const config = BalanceConfig.powerups.bonusCore;
       const now = Date.now();
       const runTime = this.gameTime * 1000; // approx ms
 
       // Conditions:
       // - Not waiting for cooldown
       // - Game time > 20s
-      // - No white can currently exists
+      // - No bonus core currently exists
       // - Player not already boosted (optional, but requested "If player already has the same active effect, do NOT spawn" - checking boost simpler here)
-      if (!this.hasActiveWhiteCan &&
-        now - this.lastWhiteCanTime > config.cooldown &&
+      if (!this.hasActiveBonusCore &&
+        now - this.lastBonusCoreTime > config.cooldown &&
         runTime > config.minTime &&
         this.scoreMultiplier === 1) { // Don't spawn if boost active
 
         if (Math.random() < config.spawnChance) {
-          this.spawnAmbientBeer('POWERUP');
-          this.lastWhiteCanTime = now;
-          this.hasActiveWhiteCan = true;
+          this.spawnAmbientBonusDrone('POWERUP');
+          this.lastBonusCoreTime = now;
+          this.hasActiveBonusCore = true;
           this.showToast("BONUS CORE APPEARED!", { fontSize: 24, fill: '#ffffff', y: 100 });
         }
       }
     }
 
     // Update existing
-    // TASK 1: Count remaining hazard cans for wave easing
-    const hazardCount = this.ambientBeers.filter(b => b.type === 'HAZARD' && b.active).length;
+    // TASK 1: Count remaining hazard drones for wave easing
+    const hazardCount = this.ambientBonusDrones.filter(b => b.type === 'HAZARD' && b.active).length;
 
-    this.ambientBeers = this.ambientBeers.filter(beer => {
+    this.ambientBonusDrones = this.ambientBonusDrones.filter(bonusDrone => {
       // Check if manually removed or destroyed
-      if (!beer.active) {
-        if (beer.sprite && beer.sprite.parent) beer.sprite.parent.removeChild(beer.sprite);
-        if (beer.type === 'POWERUP' && !beer.active) this.hasActiveWhiteCan = false;
+      if (!bonusDrone.active) {
+        if (bonusDrone.sprite && bonusDrone.sprite.parent) bonusDrone.sprite.parent.removeChild(bonusDrone.sprite);
+        if (bonusDrone.type === 'POWERUP' && !bonusDrone.active) this.hasActiveBonusCore = false;
         return false;
       }
 
-      beer.update(delta, hazardCount); // Pass hazard count for wave easing
+      bonusDrone.update(delta, hazardCount); // Pass hazard count for wave easing
       return true;
     });
   }
@@ -3064,7 +3064,7 @@ export class PlayScene {
       }
     });
 
-    this.ambientBeers.forEach(b => {
+    this.ambientBonusDrones.forEach(b => {
       if (!b.active) return;
       const dx = px - b.x;
       const dy = py - b.y;
@@ -3186,14 +3186,13 @@ export class PlayScene {
     }, 500); // 0.5 second warning
   }
 
-  spawnAmbientBeer(type) {
-    // Legacy class name, public identity is bonus core/drone.
+  spawnAmbientBonusDrone(type) {
     const x = Math.random() * (this.game.getWidth() - 100) + 50;
     const y = -50;
 
-    const beer = new BeerCan(x, y, this.game, type);
-    this.gameContainer.addChild(beer.sprite);
-    this.ambientBeers.push(beer);
+    const bonusDrone = new BonusDrone(x, y, this.game, type);
+    this.gameContainer.addChild(bonusDrone.sprite);
+    this.ambientBonusDrones.push(bonusDrone);
   }
 
   // CLEANUP FIX: Authoritative collector for wave cleanup targets
@@ -3204,14 +3203,14 @@ export class PlayScene {
     // Collect challenge drones from EnemyManager.enemies.
     if (this.enemyManager && this.enemyManager.enemies) {
       const challengeDrones = this.enemyManager.enemies.filter(e =>
-        e.active && e.kind === 'beer_can'
+        e.active && e.kind === 'bonus_drone'
       );
       targets.push(...challengeDrones);
     }
 
     // Collect ambient bonus drones from PlayScene.
-    const ambientBonusDrones = this.ambientBeers.filter(b =>
-      b.active && b.kind === 'beer_can'
+    const ambientBonusDrones = this.ambientBonusDrones.filter(b =>
+      b.active && b.kind === 'bonus_drone'
     );
     targets.push(...ambientBonusDrones);
 
@@ -3222,12 +3221,12 @@ export class PlayScene {
     if (this.introActive || !this.introComplete) return;
 
     this.easterEggTimer -= delta * 16.67;
-    if (this.easterEggTimer <= 0 && !this.easterEggBeer) {
+    if (this.easterEggTimer <= 0 && !this.legendaryFlyby) {
       this.spawnEasterEgg();
     }
 
-    if (this.easterEggBeer) {
-      const egg = this.easterEggBeer;
+    if (this.legendaryFlyby) {
+      const egg = this.legendaryFlyby;
       egg.x += egg.vx * delta;
       egg.y += egg.vy * delta;
       egg.sprite.x = egg.x;
@@ -3236,24 +3235,24 @@ export class PlayScene {
 
       if (egg.x > this.game.getWidth() + 200 || egg.y > this.game.getHeight() + 200) {
         this.gameContainer.removeChild(egg.sprite);
-        this.easterEggBeer = null;
+        this.legendaryFlyby = null;
         this.easterEggTimer = 45000 + Math.random() * 30000; // Reset timer
       }
     }
   }
 
   spawnEasterEgg() {
-    // Legendary Flyby - defaults to generated crew portraits; legacy photos are opt-in.
-    const photos = Object.keys(GameAssets.photos || {});
-    if (!photos.length) return;
-    const picked = photos[Math.floor(Math.random() * photos.length)];
-    const tex = GameAssets.getPhoto(picked);
+    // Legendary Flyby - generated comms portraits only.
+    const commsPortraits = Object.keys(GameAssets.commsPortraits || {});
+    if (!commsPortraits.length) return;
+    const picked = commsPortraits[Math.floor(Math.random() * commsPortraits.length)];
+    const tex = GameAssets.getCommsPortrait(picked);
 
     if (!GameAssets.isValidTexture(tex)) return;
 
     const sprite = new PIXI.Sprite(tex);
     sprite.anchor.set(0.5);
-    // Scale based on photo aspect
+    // Scale based on portrait aspect
     const aspect = tex.width / tex.height;
     const targetHeight = Math.min(180, this.game.getHeight() * 0.22);
     sprite.height = targetHeight;
@@ -3277,7 +3276,7 @@ export class PlayScene {
     sprite.y = egg.y;
 
     this.gameContainer.addChildAt(sprite, 0);
-    this.easterEggBeer = egg;
+    this.legendaryFlyby = egg;
 
     this.showToast('LEGENDARY SIGHTING!', { fontSize: 24, fill: '#ff00ff' });
     AudioManager.playSfx('pickup');
@@ -3312,7 +3311,7 @@ export class PlayScene {
     if (!caption) return;
     const tex = this.bossDossierTexture;
 
-    // Generated threat dossier only. No real-person photo lookup is used.
+    // Generated threat dossier only. No legacy portrait lookup is used.
     const detailLabel = reason === 'boss_life_lost'
       ? 'ARMOR BREACH'
       : reason === 'boss_phase2' || reason === 'boss_half'

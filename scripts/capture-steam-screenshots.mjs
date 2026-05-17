@@ -277,7 +277,7 @@ async function captureGameplay(browser) {
     enemyManager.enemies = enemyManager.enemies.filter((enemy) => {
       const isObjective = typeof enemyManager.isObjectiveEnemy === 'function'
         ? enemyManager.isObjectiveEnemy(enemy)
-        : enemy?.kind !== 'beer_can' && enemy?.kind !== 'boss' && enemy?.active;
+        : enemy?.kind !== 'bonus_drone' && enemy?.kind !== 'boss' && enemy?.active;
       if (!isObjective) return true;
       enemy.active = false;
       if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);

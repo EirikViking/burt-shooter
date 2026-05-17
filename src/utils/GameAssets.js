@@ -4,8 +4,8 @@ import * as PIXI from 'pixi.js';
 class GameAssetsManager {
     constructor() {
         this.bonusCoreTexture = null;
-        this.photos = {};
-        this.photoList = AssetManifest.loreImages;
+        this.commsPortraits = {};
+        this.fallbackCommsPortraitList = AssetManifest.loreImages;
         this.crewPortraitList = AssetManifest.generated?.crewPortraits || [];
         this.shipTextures = {};
         this.enemyTextures = {};
@@ -38,30 +38,30 @@ class GameAssetsManager {
         }
     }
 
-    async ensureBeerTexture() {
+    async ensureBonusCoreTextureLoaded() {
         return this.ensureBonusCoreTexture();
     }
 
-    async loadBeer() {
+    async loadBonusCore() {
         return this.ensureBonusCoreTexture();
     }
 
-    getLorePhotoList() {
-        if (!this.crewPortraitList.length) return this.photoList;
+    getCommsPortraitList() {
+        if (!this.crewPortraitList.length) return this.fallbackCommsPortraitList;
         return this.crewPortraitList;
     }
 
-    async loadPhotos() {
-        const lorePhotos = this.getLorePhotoList();
-        const keepAliases = new Set(lorePhotos.map((filename) => {
+    async loadCommsPortraits() {
+        const portraitFiles = this.getCommsPortraitList();
+        const keepAliases = new Set(portraitFiles.map((filename) => {
             const parts = filename.split('/');
             return parts[parts.length - 1].split('.')[0];
         }));
-        for (const alias of Object.keys(this.photos)) {
-            if (!keepAliases.has(alias)) delete this.photos[alias];
+        for (const alias of Object.keys(this.commsPortraits)) {
+            if (!keepAliases.has(alias)) delete this.commsPortraits[alias];
         }
 
-        const promises = lorePhotos.map(async (filename) => {
+        const promises = portraitFiles.map(async (filename) => {
 
             try {
                 // filename is now full path in manifest, extract alias
@@ -74,31 +74,31 @@ class GameAssetsManager {
                 });
 
                 if (this.isValidTexture(texture)) {
-                    this.photos[alias] = texture;
+                    this.commsPortraits[alias] = texture;
                 }
             } catch (e) {
-                console.warn(`[GameAssets] Failed to load photo ${filename}:`, e);
+                console.warn(`[GameAssets] Failed to load comms portrait ${filename}:`, e);
             }
         });
 
         await Promise.all(promises);
-        console.log('[GameAssets] Comms portraits loaded:', Object.keys(this.photos));
+        console.log('[GameAssets] Comms portraits loaded:', Object.keys(this.commsPortraits));
     }
 
     getBonusCoreTexture() {
         return this.bonusCoreTexture;
     }
 
-    getBeerTexture() {
+    getBonusCoreSpriteTexture() {
         return this.getBonusCoreTexture();
     }
 
-    getBeer() {
+    getBonusCore() {
         return this.getBonusCoreTexture();
     }
 
-    getPhoto(alias) {
-        return this.photos[alias];
+    getCommsPortrait(alias) {
+        return this.commsPortraits[alias];
     }
 
     isValidTexture(tex) {

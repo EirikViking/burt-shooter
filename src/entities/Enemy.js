@@ -21,7 +21,7 @@ export class Enemy {
     this.radius = 15;
 
     // CLEANUP FIX: Add kind tag for cleanup targeting
-    this.kind = (type === 'beer_challenge') ? 'beer_can' : 'enemy';
+    this.kind = (type === 'bonus_challenge') ? 'bonus_drone' : 'enemy';
     this.vx = 0;
     this.vy = 0;
     this.health = 1;
@@ -123,7 +123,7 @@ export class Enemy {
         this.xtraType = 5;
         break;
 
-      case 'beer_challenge':
+      case 'bonus_challenge':
         this.color = 0xffd700; // Gold
         this.health = 5;
         this.maxHealth = 5;
@@ -132,7 +132,7 @@ export class Enemy {
         this.shootDelay = 60;
         this.radius = 25;
         this.movePattern = 'aggressive';
-        this.spriteKey = 'beer_challenge';
+        this.spriteKey = 'bonus_challenge';
         this.xtraType = 1;
         break;
 
@@ -264,8 +264,8 @@ export class Enemy {
     this.shootDelay = (this.shootDelay * fireDelayScale) / globalMult;
 
     // Sprite Selection
-    if (this.type === 'beer_challenge') {
-      this.spriteKey = 'beer_challenge';
+    if (this.type === 'bonus_challenge') {
+      this.spriteKey = 'bonus_challenge';
     } else if (this.type.startsWith('fighter_')) {
       // Fighter types use player ship textures - shipTextureIndex already set
       this.spriteKey = null; // Will use shipTextureIndex in createSprite
@@ -294,7 +294,7 @@ export class Enemy {
     if (this.type.startsWith('fighter_') && this.shipTextureIndex !== undefined) {
       tex = GameAssets.getRankShipTexture(this.shipTextureIndex);
       this.usingPlayerShipTexture = true;
-    } else if (this.spriteKey === 'beer_challenge') {
+    } else if (this.spriteKey === 'bonus_challenge') {
       tex = GameAssets.getBonusCoreTexture();
     } else {
       // Map Type to Color if not provided

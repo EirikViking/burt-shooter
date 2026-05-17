@@ -50,5 +50,4 @@ class BonusAssetManager {
     }
 }
 
-export const BeerAsset = new BonusAssetManager();
-export const BonusAsset = BeerAsset;
+export const BonusAsset = new BonusAssetManager();

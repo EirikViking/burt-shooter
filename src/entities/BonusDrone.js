@@ -3,7 +3,7 @@ import { GameAssets } from '../utils/GameAssets.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { AudioManager } from '../audio/AudioManager.js';
 
-export class BeerCan {
+export class BonusDrone {
     constructor(x, y, game, type = 'HAZARD') {
         this.x = x;
         this.y = y;
@@ -12,7 +12,7 @@ export class BeerCan {
         this.active = true;
         this.radius = 20;
         // CLEANUP FIX: Add kind tag for cleanup targeting
-        this.kind = 'beer_can';
+        this.kind = 'bonus_drone';
         // Hazard drones die in one hit; power cores must be collected.
         this.health = type === 'HAZARD' ? 1 : 999;
 
@@ -40,8 +40,9 @@ export class BeerCan {
         if (GameAssets.isValidTexture(texture)) {
             const s = new PIXI.Sprite(texture);
             s.anchor.set(0.5);
-            s.width = 40;
-            s.height = 56;
+            const size = this.type === 'POWERUP' ? 52 : 46;
+            s.width = size;
+            s.height = size;
 
             if (this.type === 'POWERUP') {
                 s.tint = 0xffffff;
@@ -67,8 +68,8 @@ export class BeerCan {
 
         const width = this.game.getWidth();
 
-        // TASK 1: Wave easing - reduce speed when few hazard cans remain
-        // This prevents frustrating ultra-fast cans at wave end
+        // TASK 1: Wave easing - reduce speed when few hazard drones remain
+        // This prevents frustrating ultra-fast drones at wave end
         let speedMultiplier = 1.0;
         if (this.type === 'HAZARD' && remainingHazardCount !== null && remainingHazardCount <= 3) {
             speedMultiplier = 0.5; // Reduce speed to 50% when 3 or fewer remain
@@ -179,7 +180,7 @@ export class BeerCan {
             speed_up: 8000,
             pierce: 7000,
             slow_time: 8000,
-            score_boost: BalanceConfig.powerups.whiteCan.scoreBoostDuration,
+            score_boost: BalanceConfig.powerups.bonusCore.scoreBoostDuration,
             score_x2: 10000
         };
         const durationMs = durations[picked] || 8000;
@@ -208,7 +209,7 @@ export class BeerCan {
         // We need to implement this in Game or Scene
         // For now, let's just trigger the state
         if (scene.applyScoreMultiplier) {
-            scene.applyScoreMultiplier(BalanceConfig.powerups.whiteCan.scoreMultiplier, BalanceConfig.powerups.whiteCan.scoreBoostDuration, 'bonus_core');
+            scene.applyScoreMultiplier(BalanceConfig.powerups.bonusCore.scoreMultiplier, BalanceConfig.powerups.bonusCore.scoreBoostDuration, 'bonus_core');
         }
     }
 }

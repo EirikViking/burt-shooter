@@ -18,7 +18,7 @@ Prompt summary:
 - Source: `public/art/generated/nova-swarm/nova-swarm-boss-dossier-source.png`
 - Runtime asset: `public/art/generated/nova-swarm/nova-swarm-boss-dossier.png`
 - Optimization: ImageMagick resize to `640x640`, stripped PNG metadata.
-- Usage: `src/scenes/PlayScene.js` uses this original generated art inside the boss inbound dossier card instead of random lore photos.
+- Usage: `src/scenes/PlayScene.js` uses this original generated art inside the boss inbound dossier card instead of legacy portrait assets.
 - Cleanup: removed the tracked `public/donaldtru.jpg` celebrity/third-party-looking asset from shipped public assets.
 
 Prompt summary:
@@ -30,7 +30,7 @@ Prompt summary:
 - Sources: `public/art/generated/nova-swarm/nova-swarm-comms-navigator-source.png`, `public/art/generated/nova-swarm/nova-swarm-comms-pilot-source.png`
 - Runtime assets: `public/art/generated/nova-swarm/nova-swarm-comms-navigator.png`, `public/art/generated/nova-swarm/nova-swarm-comms-pilot.png`
 - Optimization: ImageMagick resize to `512x512`, stripped PNG metadata.
-- Usage: `src/utils/GameAssets.js` loads these original generated crew portraits for comms banners and legendary flybys, and `src/scenes/MenuScene.js` reuses them in the main-menu mission-console comm cards. Real-person photos are not shipped.
+- Usage: `src/utils/GameAssets.js` loads these original generated crew portraits for comms banners and legendary flybys, and `src/scenes/MenuScene.js` reuses them in the main-menu mission-console comm cards. Real-person portrait assets are not shipped.
 
 Prompt summary:
 
@@ -71,3 +71,14 @@ Prompt summary:
 Prompt summary:
 
 > Magnificent original key art for an arcade space shooter called Nova Swarm, no text or logos, deep space arcade battlefield with a luminous coin-slot portal, neon starfield, colorful swarm formations, stylized enemy drones, a heroic player ship firing clean laser streams, and a huge boss silhouette in the far background. Polished high-end 2D/3D hybrid game key art, cinematic arcade poster, varied neon arcade palette, no real people, no existing game branding, no Galaga name or branding, no internal jokes, no private-name references.
+
+## 2026-05-17 Generated Bonus Core Drone
+
+- Source: `public/art/generated/nova-bonus-core-drone-source-20260517.png`
+- Runtime asset: `public/sprites/generated/nova-bonus-core-drone-20260517.png`
+- Optimization: built-in Codex imagegen source on a green chroma-key background, local chroma-key removal, ImageMagick trim/resize to `256x256` PNG with alpha.
+- Usage: `src/assets/assetManifest.js` now points the bonus core sprite to this generated sci-fi pickup so menu decorations, highscore background drones, hazard drones, and collectible power cores share a more polished original visual.
+
+Prompt summary:
+
+> Polished 2D arcade collectible sprite for Nova Swarm: glowing golden bonus core drone, star-shaped energy inside a rounded sci-fi capsule, cyan rim lights, tiny thrusters, high contrast, readable at small size, chroma-key background, no text, no logos, no people.

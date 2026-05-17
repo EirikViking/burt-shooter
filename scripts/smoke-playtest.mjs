@@ -137,8 +137,8 @@ async function collectGameState(page) {
       pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible && play?.pauseOverlay?.parent),
       settingsOverlayVisible: Boolean(scene?.settingsOverlay?.container?.parent || play?.settingsOverlay?.container?.parent),
       creditsOverlayVisible: Boolean(scene?.settingsOverlay?.creditsPanel?.parent || play?.settingsOverlay?.creditsPanel?.parent),
-      easterEggActive: Boolean(play?.easterEggBeer),
-      easterEggAlias: play?.easterEggBeer?.alias || null,
+      easterEggActive: Boolean(play?.legendaryFlyby),
+      easterEggAlias: play?.legendaryFlyby?.alias || null,
       fatalOverlay: Boolean(document.getElementById('fatal-overlay')),
       textState: (() => {
         try {
@@ -549,8 +549,8 @@ async function runSmoke() {
       if (!play?.spawnEasterEgg || !play?.player) return false;
       play.introActive = false;
       play.introComplete = true;
-      if (!play.easterEggBeer) play.spawnEasterEgg();
-      const egg = play.easterEggBeer;
+      if (!play.legendaryFlyby) play.spawnEasterEgg();
+      const egg = play.legendaryFlyby;
       if (!egg?.sprite) return false;
       egg.x = game.getWidth() * 0.28;
       egg.y = game.getHeight() * 0.42;
@@ -684,7 +684,7 @@ async function runSmoke() {
       enemyManager.enemies = enemyManager.enemies.filter((enemy) => {
         const isObjective = typeof enemyManager.isObjectiveEnemy === 'function'
           ? enemyManager.isObjectiveEnemy(enemy)
-          : enemy?.kind !== 'beer_can' && enemy?.kind !== 'boss' && enemy?.active;
+          : enemy?.kind !== 'bonus_drone' && enemy?.kind !== 'boss' && enemy?.active;
         if (!isObjective) return true;
         enemy.active = false;
         if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);

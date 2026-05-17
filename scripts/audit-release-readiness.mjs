@@ -42,7 +42,8 @@ const forbiddenSourceTerms = [
   ['Burt', 'Shooter'].join(' '),
   ['K', 'urt'].join(''),
   ['E', 'irik'].join(''),
-  ['Stok', 'marknes'].join('')
+  ['Stok', 'marknes'].join(''),
+  'donald'
 ];
 const forbiddenTerms = forbiddenSourceTerms.map((term) => new RegExp(`\\b${term}\\b`, 'i'));
 
@@ -136,6 +137,7 @@ function scanForbiddenTerms() {
   const matches = [];
   const files = forbiddenScanRoots.flatMap((entry) => walkTextFiles(entry));
   for (const file of files) {
+    if (shouldSkipForbiddenScan(file)) continue;
     const text = readFileSync(file, 'utf8');
     const lines = text.split(/\r?\n/);
     lines.forEach((line, index) => {
@@ -146,6 +148,44 @@ function scanForbiddenTerms() {
         }
       }
     });
+  }
+  return matches;
+}
+
+function shouldSkipForbiddenScan(file) {
+  const relative = rel(file);
+  return relative === 'scripts/audit-release-readiness.mjs' ||
+    /^docs\/reviews\/release-readiness-audit-\d{4}-\d{2}-\d{2}\.json$/.test(relative);
+}
+
+function walkFiles(entry, files = []) {
+  const full = path.resolve(root, entry);
+  if (!existsSync(full)) return files;
+  const stats = statSync(full);
+  if (stats.isFile()) {
+    files.push(full);
+    return files;
+  }
+  if (!stats.isDirectory()) return files;
+  for (const child of readdirSync(full, { withFileTypes: true })) {
+    if (child.name === 'node_modules' || child.name === 'dist' || child.name === '.git') continue;
+    walkFiles(path.join(entry, child.name), files);
+  }
+  return files;
+}
+
+function scanForbiddenFilenames() {
+  const matches = [];
+  const files = forbiddenScanRoots.flatMap((entry) => walkFiles(entry));
+  for (const file of files) {
+    const relative = rel(file);
+    const basename = path.basename(file);
+    for (const pattern of forbiddenTerms) {
+      if (pattern.test(basename)) {
+        matches.push({ file: relative });
+        break;
+      }
+    }
   }
   return matches;
 }
@@ -237,6 +277,13 @@ checks.push({
   name: 'no_forbidden_private_player_facing_terms_in_text_files',
   ok: forbiddenMatches.length === 0,
   matches: forbiddenMatches
+});
+
+const forbiddenFilenameMatches = scanForbiddenFilenames();
+checks.push({
+  name: 'no_forbidden_private_terms_in_release_filenames',
+  ok: forbiddenFilenameMatches.length === 0,
+  matches: forbiddenFilenameMatches
 });
 
 checks.push({

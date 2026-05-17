@@ -1,6 +1,6 @@
 {
-  "generated": "2026-01-17T20:44:20.390Z",
-  "totalSprites": 1225,
+  "generated": "2026-05-17T13:29:52.916Z",
+  "totalSprites": 1226,
   "sprites": [
     "/sprites/Astronauts/spaceAstronauts_001.png",
     "/sprites/Astronauts/spaceAstronauts_002.png",
@@ -285,6 +285,7 @@
     "/sprites/boss/boss_crystal_no_bg2.png",
     "/sprites/boss/boss_insect_no_bg2.png",
     "/sprites/boss/boss_turret_no_bg2.png",
+    "/sprites/generated/nova-bonus-core-drone-20260517.png",
     "/sprites/mobile_img.png",
     "/sprites/player/player_01.png",
     "/sprites/player/row2_ship_1.png",

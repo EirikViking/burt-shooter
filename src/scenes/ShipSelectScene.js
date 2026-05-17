@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { BonusAsset } from '../utils/BeerAsset.js';
+import { BonusAsset } from '../utils/BonusAsset.js';
 import { getSelectableShips, getDefaultShipKey, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';

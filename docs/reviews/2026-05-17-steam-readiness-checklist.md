@@ -10,13 +10,13 @@ Current playable deployment:
 
 Current deployed and verified build:
 
-- `v2026-05-17_14-52-48`
+- `v2026-05-17_15-29-53`
 
 Current evidence:
 
 - Recent milestones are preserved in git history; this checklist tracks the latest verified artifacts rather than a single commit hash.
-- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://burt-game.pages.dev/version.json` both reported `v2026-05-17_14-52-48` after the Cloudflare Pages production deploy `https://922eca31.burt-game.pages.dev`.
-- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T12-57-55-084Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
+- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://c66a8f98.burt-game.pages.dev/version.json` both reported `v2026-05-17_15-29-53` after the Cloudflare Pages production deploy `https://c66a8f98.burt-game.pages.dev`.
+- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T13-36-30-834Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
 - Latest intro/audio/visual smoke: `test-results/smoke-2026-05-17T09-17-13-563Z/`
 - Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
@@ -40,6 +40,7 @@ Current evidence:
 - Latest full 10-minute release playtest evidence: `test-results/release-playtest-2026-05-17T12-15-21-253Z/`.
 - Latest Nova Swarm asset-path cleanup smoke: `test-results/smoke-2026-05-17T12-43-09-328Z/`; latest short release preflight after that cleanup: `test-results/release-playtest-nova-asset-paths-20260517-1444/`.
 - Latest ElevenLabs SFX polish smoke: `test-results/smoke-2026-05-17T12-53-11-080Z/`; latest short release preflight after that SFX pass: `test-results/release-playtest-nova-sfx-20260517-1454/`.
+- Latest generated bonus-core cleanup: built-in imagegen source and runtime sprite at `public/art/generated/nova-bonus-core-drone-source-20260517.png` and `public/sprites/generated/nova-bonus-core-drone-20260517.png`; local smoke passed at `test-results/smoke-2026-05-17T13-30-19-186Z/`, 60-second release playtest passed at `test-results/release-playtest-bonus-core-20260517-1530/`, and live-domain smoke passed at `test-results/smoke-2026-05-17T13-36-30-834Z/`.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 

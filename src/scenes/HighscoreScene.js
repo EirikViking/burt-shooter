@@ -4,7 +4,7 @@ import { getHighscoreComment, getEnhancedLeaderboardTaunt } from '../text/phrase
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
-import { BonusAsset } from '../utils/BeerAsset.js';
+import { BonusAsset } from '../utils/BonusAsset.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { getRankFromScore, getRankTitle } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
@@ -45,17 +45,17 @@ export class HighscoreScene {
     this.retryAttempt = 0; // Track retry attempts for UI feedback
 
     // Trophy Room Assets
-    this.beerCansContainer = new PIXI.Container();
+    this.bonusDronesContainer = new PIXI.Container();
     this.partyHeadsContainer = new PIXI.Container();
-    this.largeBeerCansContainer = new PIXI.Container();
+    this.largeBonusDronesContainer = new PIXI.Container();
     this.confettiContainer = new PIXI.Container();
     this.scanlineOverlay = null;
     this.tauntBanner = null;
     this.tauntTimer = 0;
     this.tauntInterval = 5000 + Math.random() * 3000; // 5-8s
     this.animationTicker = null;
-    this.beerCans = [];
-    this.largeBeerCans = [];
+    this.bonusDrones = [];
+    this.largeBonusDrones = [];
     this.partyHeads = [];
     this.confettiParticles = [];
     this.leaderboardPanel = null;
@@ -95,13 +95,13 @@ export class HighscoreScene {
     const layout = createTextLayout(width, height);
 
     // Layer setup: bonus cores -> comms portraits -> confetti -> leaderboard panel -> content -> taunt banner -> scanline
-    this.largeBeerCansContainer = new PIXI.Container();
-    this.largeBeerCansContainer.zIndex = -15;
-    this.container.addChild(this.largeBeerCansContainer);
+    this.largeBonusDronesContainer = new PIXI.Container();
+    this.largeBonusDronesContainer.zIndex = -15;
+    this.container.addChild(this.largeBonusDronesContainer);
 
-    this.beerCansContainer = new PIXI.Container();
-    this.beerCansContainer.zIndex = -10;
-    this.container.addChild(this.beerCansContainer);
+    this.bonusDronesContainer = new PIXI.Container();
+    this.bonusDronesContainer.zIndex = -10;
+    this.container.addChild(this.bonusDronesContainer);
 
     this.partyHeadsContainer = new PIXI.Container();
     this.partyHeadsContainer.zIndex = -5;
@@ -116,8 +116,8 @@ export class HighscoreScene {
     this.leaderboardPanel.zIndex = -3;
     this.container.addChild(this.leaderboardPanel);
 
-    this.setupLargeBeerCans(width, height);
-    this.setupBeerCans(width, height);
+    this.setupLargeBonusDrones(width, height);
+    this.setupBonusDrones(width, height);
     this.setupPartyHeads(width, height);
     this.setupConfetti(width, height);
 
@@ -912,13 +912,13 @@ export class HighscoreScene {
     this.game.app.ticker.add(ticker);
   }
 
-  setupLargeBeerCans(width, height) {
-    this.largeBeerCans = [];
+  setupLargeBonusDrones(width, height) {
+    this.largeBonusDrones = [];
     const texture = BonusAsset.getTexture();
     if (!texture || texture === PIXI.Texture.EMPTY) return;
 
-    const largeCanCount = 3;
-    for (let i = 0; i < largeCanCount; i++) {
+    const largeBonusCoreCount = 3;
+    for (let i = 0; i < largeBonusCoreCount; i++) {
       const can = new PIXI.Sprite(texture);
       const scale = 0.7 + Math.random() * 0.5; // 0.7-1.2 (much larger)
       can.scale.set(scale);
@@ -936,18 +936,18 @@ export class HighscoreScene {
       }
       can.y = Math.random() * height;
 
-      // Very slow animation for big cans - in units per second
+      // Very slow animation for big bonus cores - in units per second
       can._driftX = (Math.random() - 0.5) * 24; // pixels per second (±12 px/s, slower)
       can._driftY = (Math.random() - 0.5) * 24;
       can._rotSpeed = (Math.random() - 0.5) * 0.06; // radians per second (±0.03 rad/s, very slow)
 
-      this.largeBeerCansContainer.addChild(can);
-      this.largeBeerCans.push(can);
+      this.largeBonusDronesContainer.addChild(can);
+      this.largeBonusDrones.push(can);
     }
   }
 
-  setupBeerCans(width, height) {
-    this.beerCans = [];
+  setupBonusDrones(width, height) {
+    this.bonusDrones = [];
     const texture = BonusAsset.getTexture();
     if (!texture || texture === PIXI.Texture.EMPTY) return;
 
@@ -978,15 +978,15 @@ export class HighscoreScene {
       can._driftY = (Math.random() - 0.5) * 40;
       can._rotSpeed = (Math.random() - 0.5) * 0.08; // radians per second (±0.04 rad/s)
 
-      this.beerCansContainer.addChild(can);
-      this.beerCans.push(can);
+      this.bonusDronesContainer.addChild(can);
+      this.bonusDrones.push(can);
     }
   }
 
   setupPartyHeads(width, height) {
     this.partyHeads = [];
     const maxHeads = 10;
-    const images = GameAssets.getLorePhotoList();
+    const images = GameAssets.getCommsPortraitList();
     const headCount = images.length ? maxHeads : 0;
 
     for (let i = 0; i < headCount; i++) {
@@ -1108,7 +1108,7 @@ export class HighscoreScene {
       const { width, height } = this.game.app.screen;
 
       // Animate large bonus cores (background)
-      this.largeBeerCans.forEach(can => {
+      this.largeBonusDrones.forEach(can => {
         can.x += can._driftX * dtSec;
         can.y += can._driftY * dtSec;
         can.rotation += can._rotSpeed * dtSec;
@@ -1121,7 +1121,7 @@ export class HighscoreScene {
       });
 
       // Animate bonus cores
-      this.beerCans.forEach(can => {
+      this.bonusDrones.forEach(can => {
         can.x += can._driftX * dtSec;
         can.y += can._driftY * dtSec;
         can.rotation += can._rotSpeed * dtSec;
@@ -1539,8 +1539,8 @@ export class HighscoreScene {
       this.game.app.ticker.remove(this.animationTicker);
       this.animationTicker = null;
     }
-    this.largeBeerCans = [];
-    this.beerCans = [];
+    this.largeBonusDrones = [];
+    this.bonusDrones = [];
     this.partyHeads = [];
     this.confettiParticles = [];
   }

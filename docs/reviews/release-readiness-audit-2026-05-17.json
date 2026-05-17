@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-17T13:12:50.017Z",
+  "generatedAt": "2026-05-17T13:39:16.481Z",
   "verdict": "not_steam_ready",
   "summary": {
-    "passed": 9,
+    "passed": 10,
     "failed": 3,
     "hardFailures": 0,
     "manualBlockers": [
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 13130
+          "bytes": 13603
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -95,6 +95,11 @@
     },
     {
       "name": "no_forbidden_private_player_facing_terms_in_text_files",
+      "ok": true,
+      "matches": []
+    },
+    {
+      "name": "no_forbidden_private_terms_in_release_filenames",
       "ok": true,
       "matches": []
     },

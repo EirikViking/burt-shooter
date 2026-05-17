@@ -239,7 +239,7 @@ export class HUD {
     if (!this.missionText) return;
     const play = this.game?.scenes?.play;
     const manager = play?.enemyManager;
-    const activeEnemies = manager?.enemies?.filter(enemy => enemy?.active !== false && enemy?.kind !== 'beer_can').length || 0;
+    const activeEnemies = manager?.enemies?.filter(enemy => enemy?.active !== false && enemy?.kind !== 'bonus_drone').length || 0;
     const activeBullets = play?.bulletManager?.enemyBullets?.filter(bullet => bullet?.active !== false).length || 0;
     const waveTotal = manager?.normalWavesTotal || 0;
     const waveIndex = Number.isFinite(manager?.currentWaveIndex) ? manager.currentWaveIndex + 1 : 1;
