@@ -49,6 +49,7 @@ export class ShipSelectScene {
     // Animated background layer
     this.bgAnimationContainer = new PIXI.Container();
     this.container.addChild(this.bgAnimationContainer);
+    await BonusAsset.ensureLoaded();
     this.createAnimatedBackground(width, height);
 
     // Fixed header with enhanced styling

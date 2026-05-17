@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "smoke": "node scripts/smoke-playtest.mjs",
     "playtest:release": "node scripts/release-playtest.mjs",
+    "capture:steam-screenshots": "node scripts/capture-steam-screenshots.mjs",
     "deploy": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {

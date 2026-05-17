@@ -19,6 +19,7 @@ The dev server runs on `http://localhost:3000`.
 npm run build
 npm run check:audio
 npm run audit:audio-mix
+npm run capture:steam-screenshots
 npm run smoke
 ```
 
@@ -27,6 +28,8 @@ npm run smoke
 `npm run check:audio` verifies audio manifests, SFX/voice catalogs, music contexts, mix keys, and fallbacks.
 
 `npm run audit:audio-mix` uses FFmpeg `volumedetect` to measure referenced music, SFX, and voice assets. It requires `ffmpeg` on PATH.
+
+`npm run capture:steam-screenshots` captures a repeatable 1280x720 candidate screenshot set from `dist/` or from `STEAM_CAPTURE_URL` when supplied.
 
 ## Current Direction
 

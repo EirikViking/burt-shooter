@@ -6,7 +6,7 @@ Nova Swarm is still not Steam-ready, but the path is now concrete. The current b
 
 Current playable deployment:
 
-- https://db088464.burt-game.pages.dev
+- https://bfa6ae62.burt-game.pages.dev
 
 Latest pushed evidence:
 
@@ -15,6 +15,7 @@ Latest pushed evidence:
 - Latest intro/audio/visual smoke: `test-results/smoke-nova-intro-20260517-1022/`
 - Latest intro/audio/visual release playtest: `test-results/release-playtest-nova-intro-20260517-1024/`
 - Manual intro/hangar screenshots: `test-results/manual-nova-visuals-20260517-1027/`
+- Steam screenshot candidate capture: `release/steam-screenshots/draft-2026-05-17-live-1280/`
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 
@@ -92,7 +93,7 @@ Suggested tags:
 
 These are not proven ready in the repo yet:
 
-- Curated Steam screenshot set. Steam screenshot guidance expects actual gameplay imagery, not concept art or marketing copy. Existing smoke screenshots are test artifacts, not final store screenshots.
+- Final curated Steam screenshot approval. A repeatable live-build candidate set now exists at `release/steam-screenshots/draft-2026-05-17-live-1280/`, but it still needs human selection/caption approval before upload.
 - Gameplay trailer or short launch clip.
 - Final store page copy approval, including public arcade-comedy tone, localization stance, and confirmation that old inside-joke material has been removed from player-facing surfaces.
 - Legal/provenance review for all shipped art, music, SFX, generated portraits, generated voice, names, and jokes.
@@ -117,7 +118,7 @@ Do not call this Steam-ready until these are true:
 
 ## Next Agent Actions
 
-- Capture a real store screenshot candidate set from the deployed or local production build: menu, first wave, wave clear, boss inbound, active boss, victory, game over, and mobile/touch only if Steam page wants to mention touch.
+- Review the live-build Steam screenshot candidate set in `release/steam-screenshots/draft-2026-05-17-live-1280/` and choose the final 5-8 store uploads.
 - Build a short trailer beat sheet from existing smoke/release states, then record a clean 30-45 second clip.
 - Decide Steam packaging direction: Electron/Tauri/WebView wrapper, native export, or keep this as web-only for now.
 - Run the human by-ear audio pass using the Settings SFX/VOICE audition buttons plus natural gameplay.

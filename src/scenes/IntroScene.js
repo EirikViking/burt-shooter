@@ -64,6 +64,7 @@ export class IntroScene {
     this.panelElapsedMs = 0;
     this.started = false;
     this.destroyed = false;
+    this.panelTextures = new Map();
     this.unsubLayout = null;
     this.keyHandler = null;
     this.pointerHandler = null;
@@ -185,7 +186,11 @@ export class IntroScene {
 
   async loadPanelTextures() {
     try {
-      await PIXI.Assets.load(PANELS.map(panel => panel.image));
+      const textures = await PIXI.Assets.load(PANELS.map(panel => panel.image));
+      PANELS.forEach((panel, index) => {
+        const texture = Array.isArray(textures) ? textures[index] : textures?.[panel.image];
+        if (texture) this.panelTextures.set(panel.image, texture);
+      });
       if (this.destroyed) return;
       this.showPanel(0, { playAudio: false });
     } catch (error) {
@@ -237,7 +242,7 @@ export class IntroScene {
     if (!panel) return;
     this.panelIndex = index;
     this.panelElapsedMs = 0;
-    const texture = PIXI.Assets.get(panel.image);
+    const texture = this.panelTextures.get(panel.image);
     if (texture) this.backdrop.texture = texture;
     this.eyebrow.text = panel.eyebrow;
     this.title.text = panel.title;
