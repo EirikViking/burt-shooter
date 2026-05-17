@@ -116,7 +116,13 @@ export const SFX_MIX = {
     menu_tick: { volume: 0.2, minIntervalMs: 70 },
     pause_in: { volume: 0.34, minIntervalMs: 250 },
     pause_out: { volume: 0.3, minIntervalMs: 250 },
-    ship_lock_chime: { volume: 0.56, minIntervalMs: 500 }
+    ship_lock_chime: { volume: 0.56, minIntervalMs: 500 },
+    chain_lightning_arc: { volume: 0.45, minIntervalMs: 160 },
+    magnet_pull: { volume: 0.5, minIntervalMs: 260 },
+    ghost_phase_shift: { volume: 0.48, minIntervalMs: 450 },
+    time_slow_warp: { volume: 0.48, minIntervalMs: 450 },
+    drone_launch_blip: { volume: 0.46, minIntervalMs: 220 },
+    orbital_strike_charge: { volume: 0.56, minIntervalMs: 600 }
 };
 
 export const VOICE_MIX = {
@@ -244,6 +250,24 @@ export const SFX_CATALOG = {
         getSfx('forceField_002'), // Resonant
         getSfx('forceField_003')  // High pitch
     ],
+    'chain_lightning_arc': [
+        getSfx('nova_chain_lightning_arc')
+    ],
+    'magnet_pull': [
+        getSfx('nova_magnet_pull_warble')
+    ],
+    'ghost_phase_shift': [
+        getSfx('nova_ghost_phase_shift')
+    ],
+    'time_slow_warp': [
+        getSfx('nova_time_slow_warp')
+    ],
+    'drone_launch_blip': [
+        getSfx('nova_drone_launch_blip')
+    ],
+    'orbital_strike_charge': [
+        getSfx('nova_orbital_strike_charge')
+    ],
     'taunt': [
         getVoice('war_cover_me'),
         getVoice('war_get_down'),
@@ -354,6 +378,24 @@ export const SFX_CATALOG = {
     ],
     'ship_lock_chime': [
         getSfx('nova_ship_lock_chime')
+    ],
+    'nova_chain_lightning_arc': [
+        getSfx('nova_chain_lightning_arc')
+    ],
+    'nova_magnet_pull_warble': [
+        getSfx('nova_magnet_pull_warble')
+    ],
+    'nova_ghost_phase_shift': [
+        getSfx('nova_ghost_phase_shift')
+    ],
+    'nova_time_slow_warp': [
+        getSfx('nova_time_slow_warp')
+    ],
+    'nova_drone_launch_blip': [
+        getSfx('nova_drone_launch_blip')
+    ],
+    'nova_orbital_strike_charge': [
+        getSfx('nova_orbital_strike_charge')
     ],
     'intro_narrator_01': [
         getVoice('intro_narrator_01')

@@ -2849,7 +2849,7 @@ export class PlayScene {
 
     // Play lightning sound if any chains happened
     if (chainedEnemies.length > 1) {
-      AudioManager.playSfx('powerup', { volume: 0.3 }); // Using powerup sound as placeholder
+      AudioManager.playSfx('chain_lightning_arc', { volume: 0.62 });
     }
   }
 

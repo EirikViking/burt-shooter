@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T16:56:46.514Z",
+  "generatedAt": "2026-05-17T17:06:05.131Z",
   "status": "passed",
   "manifestPath": "release/provenance/asset_provenance_manifest.json",
   "scannedRoots": [
@@ -17,15 +17,15 @@
     "release/steam-trailer/candidate-2026-05-17-editorial",
     "release/steam-trailer/candidate-2026-05-17-current"
   ],
-  "assetCount": 1566,
-  "coveredCount": 1566,
+  "assetCount": 1572,
+  "coveredCount": 1572,
   "uncovered": [],
   "deniedMatches": [],
   "ruleCoverage": {
     "app_icons_original_generated": 4,
     "bundled_arcade_asset_pack_sprites": 1225,
     "bundled_arcade_audio_pack": 176,
-    "generated_elevenlabs_voice_and_sfx": 50,
+    "generated_elevenlabs_voice_and_sfx": 56,
     "generated_nova_swarm_runtime_art": 26,
     "generated_steam_store_art": 14,
     "steam_screenshot_candidates": 47,

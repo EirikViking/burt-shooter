@@ -1,6 +1,6 @@
 # Audio Mix Audit - 2026-05-17
 
-Generated: 2026-05-17T16:38:00.871Z
+Generated: 2026-05-17T17:02:45.006Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -13,9 +13,9 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Coverage
 
-- Measured files: 100
+- Measured files: 106
 - Music rows: 13
-- SFX rows: 109
+- SFX rows: 115
 - Voice rows: 20
 - Warnings: 9
 - Errors: 0

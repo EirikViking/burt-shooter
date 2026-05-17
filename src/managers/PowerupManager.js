@@ -335,10 +335,10 @@ class Powerup {
   playPickupSFX(scene) {
     // Category-specific sounds
     const sfxMap = {
-      life: 'ui_open',          // Extra life - positive, distinct
-      shield: 'forceField',     // Shield - protective sound
-      ghost: 'thrusterFire',    // Ghost mode - whoosh
-      slow_time: 'forceField',  // Slow time - tech sound (removed annoying computerNoise)
+      life: 'life_up',
+      shield: 'shield_up',
+      ghost: 'ghost_phase_shift',
+      slow_time: 'time_slow_warp',
       triple_beam: 'pickup',
       vector_boost: 'pickup',
       rapid_cabinet: 'pickup',
@@ -348,12 +348,12 @@ class Powerup {
       damage_up: 'pickup',
       speed_up: 'pickup',
       pierce: 'pickup',
-      score_x2: 'ui_open',
-      magnet: 'pickup',
-      drones: 'pickup',
+      score_x2: 'achievement',
+      magnet: 'magnet_pull',
+      drones: 'drone_launch_blip',
       shockwave: 'powerup',
-      chain_lightning: 'pickup',
-      orbital_strike: 'powerup',
+      chain_lightning: 'chain_lightning_arc',
+      orbital_strike: 'orbital_strike_charge',
       vampire: 'pickup'
     };
 

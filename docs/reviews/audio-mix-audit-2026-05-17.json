@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T16:38:00.871Z",
+  "generatedAt": "2026-05-17T17:02:45.006Z",
   "defaults": {
     "masterVolume": 0.3,
     "musicVolume": 0.2,
@@ -12,9 +12,9 @@
     }
   },
   "counts": {
-    "measuredFiles": 100,
+    "measuredFiles": 106,
     "musicRows": 13,
-    "sfxRows": 109,
+    "sfxRows": 115,
     "voiceRows": 20,
     "warnings": 9,
     "errors": 0
@@ -2386,6 +2386,90 @@
       "gainDb": -23.5,
       "effectiveMeanDb": -44.8,
       "effectivePeakDb": -26.2
+    },
+    {
+      "type": "sfx",
+      "event": "chain_lightning_arc",
+      "url": "/audio/sfx/nova-swarm/nova_chain_lightning_arc.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.45,
+      "duckFactor": null,
+      "effectiveLinear": 0.054,
+      "rawMeanDb": -19.7,
+      "rawPeakDb": -0.6,
+      "gainDb": -25.4,
+      "effectiveMeanDb": -45.1,
+      "effectivePeakDb": -26
+    },
+    {
+      "type": "sfx",
+      "event": "magnet_pull",
+      "url": "/audio/sfx/nova-swarm/nova_magnet_pull_warble.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.5,
+      "duckFactor": null,
+      "effectiveLinear": 0.06,
+      "rawMeanDb": -25.1,
+      "rawPeakDb": -5.2,
+      "gainDb": -24.4,
+      "effectiveMeanDb": -49.5,
+      "effectivePeakDb": -29.6
+    },
+    {
+      "type": "sfx",
+      "event": "ghost_phase_shift",
+      "url": "/audio/sfx/nova-swarm/nova_ghost_phase_shift.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.48,
+      "duckFactor": null,
+      "effectiveLinear": 0.0576,
+      "rawMeanDb": -21.7,
+      "rawPeakDb": -1,
+      "gainDb": -24.8,
+      "effectiveMeanDb": -46.5,
+      "effectivePeakDb": -25.8
+    },
+    {
+      "type": "sfx",
+      "event": "time_slow_warp",
+      "url": "/audio/sfx/nova-swarm/nova_time_slow_warp.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.48,
+      "duckFactor": null,
+      "effectiveLinear": 0.0576,
+      "rawMeanDb": -20.2,
+      "rawPeakDb": -1.2,
+      "gainDb": -24.8,
+      "effectiveMeanDb": -45,
+      "effectivePeakDb": -26
+    },
+    {
+      "type": "sfx",
+      "event": "drone_launch_blip",
+      "url": "/audio/sfx/nova-swarm/nova_drone_launch_blip.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.46,
+      "duckFactor": null,
+      "effectiveLinear": 0.0552,
+      "rawMeanDb": -18.7,
+      "rawPeakDb": -2.7,
+      "gainDb": -25.2,
+      "effectiveMeanDb": -43.9,
+      "effectivePeakDb": -27.9
+    },
+    {
+      "type": "sfx",
+      "event": "orbital_strike_charge",
+      "url": "/audio/sfx/nova-swarm/nova_orbital_strike_charge.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.56,
+      "duckFactor": null,
+      "effectiveLinear": 0.0672,
+      "rawMeanDb": -15.8,
+      "rawPeakDb": -1.8,
+      "gainDb": -23.5,
+      "effectiveMeanDb": -39.3,
+      "effectivePeakDb": -25.3
     },
     {
       "type": "voice",

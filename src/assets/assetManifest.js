@@ -213,7 +213,13 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_menu_tick.mp3',
             '/audio/sfx/nova-swarm/nova_pause_in.mp3',
             '/audio/sfx/nova-swarm/nova_pause_out.mp3',
-            '/audio/sfx/nova-swarm/nova_ship_lock_chime.mp3'
+            '/audio/sfx/nova-swarm/nova_ship_lock_chime.mp3',
+            '/audio/sfx/nova-swarm/nova_chain_lightning_arc.mp3',
+            '/audio/sfx/nova-swarm/nova_magnet_pull_warble.mp3',
+            '/audio/sfx/nova-swarm/nova_ghost_phase_shift.mp3',
+            '/audio/sfx/nova-swarm/nova_time_slow_warp.mp3',
+            '/audio/sfx/nova-swarm/nova_drone_launch_blip.mp3',
+            '/audio/sfx/nova-swarm/nova_orbital_strike_charge.mp3'
         ]
     },
 

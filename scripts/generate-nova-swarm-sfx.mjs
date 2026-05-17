@@ -114,6 +114,42 @@ const sounds = [
     text: 'A premium ship selection confirmation chime, sci-fi hangar lock-on sparkle with tiny thruster bloom, confident and polished, no voice, no melody quote, under two seconds.',
     duration_seconds: 2,
     prompt_influence: 0.6
+  },
+  {
+    file: 'nova_chain_lightning_arc.mp3',
+    text: 'A fast arcade chain lightning zap, crisp electric arc hopping between targets with tiny neon crackles, readable in busy combat, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.62
+  },
+  {
+    file: 'nova_magnet_pull_warble.mp3',
+    text: 'A compact sci-fi magnet pull sound, soft gravitational warble and coin sparkle tug, playful arcade powerup feedback, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.58
+  },
+  {
+    file: 'nova_ghost_phase_shift.mp3',
+    text: 'A short ghost phase shift sound for an arcade spaceship, airy digital cloak shimmer and quick whoosh, clean and not spooky, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.58
+  },
+  {
+    file: 'nova_time_slow_warp.mp3',
+    text: 'A compact slow-time activation sound, rubbery sci-fi time warp with soft tape-stop shimmer, polished arcade feel, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.58
+  },
+  {
+    file: 'nova_drone_launch_blip.mp3',
+    text: 'A small companion drone launch blip, cute robotic thruster chirp with tiny lock-on sparkle, fast and premium, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.6
+  },
+  {
+    file: 'nova_orbital_strike_charge.mp3',
+    text: 'A short orbital strike charge cue, distant sci-fi targeting pulse rising into a clean arcade impact promise, dramatic but compact, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.58
   }
 ];
 

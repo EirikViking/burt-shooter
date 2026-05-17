@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T16:57:22.282Z",
+  "generatedAt": "2026-05-17T17:10:28.964Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 13,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 22955
+          "bytes": 23839
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -158,8 +158,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1566,
-      "coveredCount": 1566,
+      "assetCount": 1572,
+      "coveredCount": 1572,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []
@@ -300,11 +300,11 @@
       "desktopPayload": {
         "path": "release/desktop/win-unpacked/Nova Swarm.exe",
         "sizeBytes": 226666496,
-        "modifiedAt": "2026-05-17T16:40:30.426Z"
+        "modifiedAt": "2026-05-17T17:07:02.512Z"
       },
       "latestElectronSmoke": {
-        "reportPath": "test-results/electron-smoke-2026-05-17T16-40-53-251Z/report.json",
-        "screenshotPath": "test-results/electron-smoke-2026-05-17T16-40-53-251Z/01-electron-menu.png",
+        "reportPath": "test-results/electron-smoke-2026-05-17T17-06-10-987Z/report.json",
+        "screenshotPath": "test-results/electron-smoke-2026-05-17T17-06-10-987Z/01-electron-menu.png",
         "status": "passed",
         "title": "Nova Swarm - Arcade Patrol",
         "scene": "intro",
