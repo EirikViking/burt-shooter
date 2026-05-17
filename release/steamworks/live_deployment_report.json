@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T20:47:53.539Z",
+  "generatedAt": "2026-05-17T21:36:14.427Z",
   "status": "passed",
   "currentBuild": {
     "version": "v2026-05-17_21-41-17",
@@ -16,7 +16,7 @@
     }
   ],
   "latestLiveSmoke": {
-    "reportPath": "test-results/smoke-2026-05-17T20-37-53-548Z/report.json",
+    "reportPath": "test-results/smoke-live-trait-combat-2026-05-17T21-36/report.json",
     "baseUrl": "https://burt.tinyfoundry.app",
     "status": "passed",
     "build": "v2026-05-17_21-41-17",

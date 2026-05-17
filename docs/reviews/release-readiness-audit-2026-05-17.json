@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T21:31:35.008Z",
+  "generatedAt": "2026-05-17T21:36:24.028Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 18,
@@ -129,7 +129,7 @@
         {
           "path": "release/steamworks/live_deployment_report.json",
           "ok": true,
-          "bytes": 1710
+          "bytes": 1720
         },
         {
           "path": "release/steamworks/full_rc_verification_report.json",
@@ -413,7 +413,7 @@
         }
       ],
       "latestLiveSmoke": {
-        "reportPath": "test-results/smoke-2026-05-17T20-37-53-548Z/report.json",
+        "reportPath": "test-results/smoke-live-trait-combat-2026-05-17T21-36/report.json",
         "baseUrl": "https://burt.tinyfoundry.app",
         "status": "passed",
         "build": "v2026-05-17_21-41-17",
