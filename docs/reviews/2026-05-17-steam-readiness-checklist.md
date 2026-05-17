@@ -25,6 +25,7 @@ Current evidence:
 - Steam trailer draft workflow: `docs/steam-trailer-workflow.md`, `scripts/capture-steam-trailer.mjs`, `scripts/render-steam-trailer-audio.mjs`, and evidence in `release/steam-trailer/draft-2026-05-17-12-46/`.
 - Steam store art draft: `release/steam-assets/draft-2026-05-17-nova-swarm/`, replacing the old Burt-era capsule set with public Nova Swarm artwork.
 - Steam asset gate: `npm run check:steam-assets` validates 9 asset dimensions/transparency and regenerates review contact sheets.
+- Steam screenshot upload shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, curated from the clean live capture.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 
@@ -102,7 +103,7 @@ Suggested tags:
 
 These are not proven ready in the repo yet:
 
-- Final curated Steam screenshot approval. A repeatable live-build candidate set now exists at `release/steam-screenshots/draft-2026-05-17-live-1280/`, but it still needs human selection/caption approval before upload.
+- Final Steam screenshot upload approval. A curated 7-shot upload shortlist now exists at `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, but the user still needs to approve the final Steamworks upload choices/captions.
 - Final trailer or short launch clip. A clean 43.88 second 1280x720 visual trailer draft and H.264/AAC audio-mixed MP4 draft now exist at `release/steam-trailer/draft-2026-05-17-12-46/`, but the final clip still needs by-ear approval, title-card judgment, export, and human upload approval.
 - Final store page copy approval, including public arcade-comedy tone, localization stance, and confirmation that old inside-joke material has been removed from player-facing surfaces.
 - Legal/provenance review for all shipped art, music, SFX, generated portraits, generated voice, names, and jokes.
