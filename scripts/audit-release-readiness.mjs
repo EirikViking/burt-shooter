@@ -22,8 +22,10 @@ const requiredFiles = [
   'release/steam-screenshots/draft-2026-05-17-live-1280/report.json',
   'release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md',
   'release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png',
-  'release/steam-trailer/draft-2026-05-17-12-46/report.json',
-  'release/steam-trailer/draft-2026-05-17-12-46/audio-mix-report.json',
+  'release/steam-trailer/draft-2026-05-17-17-03/report.json',
+  'release/steam-trailer/draft-2026-05-17-17-03/audio-mix-report.json',
+  'release/steam-trailer/candidate-2026-05-17-editorial/report.json',
+  'release/steam-trailer/candidate-2026-05-17-editorial/candidate-contact-sheet.png',
   'release/provenance/asset_provenance_manifest.json',
   'release/provenance/asset_provenance_report.json',
   'release/steamworks/desktop_package_review_report.json',
@@ -349,7 +351,7 @@ checks.push({
 
 checks.push({
   name: 'steam_trailer_visual_report_clean',
-  ...checkJsonReport('release/steam-trailer/draft-2026-05-17-12-46/report.json', (json) => ({
+  ...checkJsonReport('release/steam-trailer/draft-2026-05-17-17-03/report.json', (json) => ({
     ok: Array.isArray(json.timeline) && json.timeline.length >= 8 &&
       (json.consoleEvents || []).length === 0 &&
       (json.pageErrors || []).length === 0 &&
@@ -363,12 +365,30 @@ checks.push({
 
 checks.push({
   name: 'steam_trailer_audio_mix_report_present',
-  ...checkJsonReport('release/steam-trailer/draft-2026-05-17-12-46/audio-mix-report.json', (json) => ({
+  ...checkJsonReport('release/steam-trailer/draft-2026-05-17-17-03/audio-mix-report.json', (json) => ({
     ok: json.ffprobe?.streams?.some((stream) => stream.codec_name === 'h264') &&
       json.ffprobe?.streams?.some((stream) => stream.codec_name === 'aac') &&
       Number(json.ffprobe?.format?.duration || 0) > 40,
     duration: json.ffprobe?.format?.duration,
     streams: json.ffprobe?.streams || []
+  }))
+});
+
+checks.push({
+  name: 'steam_trailer_editorial_candidate_clean',
+  ...checkJsonReport('release/steam-trailer/candidate-2026-05-17-editorial/report.json', (json) => ({
+    ok: json.status === 'passed' &&
+      Array.isArray(json.titleCards) &&
+      json.titleCards.length === 2 &&
+      json.ffprobe?.streams?.some((stream) => stream.codec_name === 'h264' && stream.width === 1280 && stream.height === 720) &&
+      json.ffprobe?.streams?.some((stream) => stream.codec_name === 'aac') &&
+      Number(json.ffprobe?.format?.duration || 0) >= 48 &&
+      existsSync(path.resolve(root, 'release/steam-trailer/candidate-2026-05-17-editorial/candidate-contact-sheet.png')),
+    status: json.status || null,
+    duration: json.ffprobe?.format?.duration || null,
+    titleCards: json.titleCards || [],
+    volume: json.volume || null,
+    contactSheet: json.contactSheet || null
   }))
 });
 

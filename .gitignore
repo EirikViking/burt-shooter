@@ -14,6 +14,7 @@ release/steamworks/app_build_LOCAL.vdf
 release/steam-trailer/*/*.webm
 release/steam-trailer/*/*.mp4
 release/steam-trailer/*/*.m4a
+release/steam-trailer/*/concat.txt
 
 # Protected generated build artifacts - never commit
 public/sw.js

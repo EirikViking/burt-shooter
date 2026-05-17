@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-17T14:53:04.268Z",
+  "generatedAt": "2026-05-17T15:02:51.728Z",
   "verdict": "not_steam_ready",
   "summary": {
-    "passed": 12,
+    "passed": 13,
     "failed": 3,
     "hardFailures": 0,
     "manualBlockers": [
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 16194
+          "bytes": 17058
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -44,7 +44,7 @@
         {
           "path": "docs/steam-trailer-workflow.md",
           "ok": true,
-          "bytes": 2299
+          "bytes": 2700
         },
         {
           "path": "release/steamworks/app_build_TEMPLATE.vdf",
@@ -92,14 +92,24 @@
           "bytes": 2117181
         },
         {
-          "path": "release/steam-trailer/draft-2026-05-17-12-46/report.json",
+          "path": "release/steam-trailer/draft-2026-05-17-17-03/report.json",
           "ok": true,
           "bytes": 2443
         },
         {
-          "path": "release/steam-trailer/draft-2026-05-17-12-46/audio-mix-report.json",
+          "path": "release/steam-trailer/draft-2026-05-17-17-03/audio-mix-report.json",
           "ok": true,
           "bytes": 8962
+        },
+        {
+          "path": "release/steam-trailer/candidate-2026-05-17-editorial/report.json",
+          "ok": true,
+          "bytes": 2339
+        },
+        {
+          "path": "release/steam-trailer/candidate-2026-05-17-editorial/candidate-contact-sheet.png",
+          "ok": true,
+          "bytes": 574500
         },
         {
           "path": "release/provenance/asset_provenance_manifest.json",
@@ -236,7 +246,7 @@
     {
       "name": "steam_trailer_audio_mix_report_present",
       "ok": true,
-      "duration": "43.880000",
+      "duration": "43.900000",
       "streams": [
         {
           "codec_name": "h264",
@@ -248,9 +258,34 @@
         {
           "codec_name": "aac",
           "r_frame_rate": "0/0",
-          "duration": "43.871000"
+          "duration": "43.900000"
         }
       ]
+    },
+    {
+      "name": "steam_trailer_editorial_candidate_clean",
+      "ok": true,
+      "status": "passed",
+      "duration": "49.923333",
+      "titleCards": [
+        {
+          "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\01-title-card.png",
+          "durationSeconds": 2.8,
+          "title": "NOVA SWARM",
+          "subtitle": "ARCADE PATROL"
+        },
+        {
+          "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\02-outro-card.png",
+          "durationSeconds": 3.2,
+          "title": "CHASE THE SWARM",
+          "subtitle": "DODGE. SCORE. BRAG."
+        }
+      ],
+      "volume": {
+        "meanVolumeDb": "-19.1",
+        "maxVolumeDb": "-0.8"
+      },
+      "contactSheet": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\candidate-contact-sheet.png"
     },
     {
       "name": "desktop_package_report_clean",

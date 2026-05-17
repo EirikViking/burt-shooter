@@ -23,6 +23,7 @@
     "capture:steam-screenshots": "node scripts/capture-steam-screenshots.mjs",
     "capture:steam-trailer": "node scripts/capture-steam-trailer.mjs",
     "render:steam-trailer-audio": "node scripts/render-steam-trailer-audio.mjs",
+    "render:steam-trailer-candidate": "node scripts/render-steam-trailer-candidate.mjs",
     "generate:nova-sfx": "node scripts/generate-nova-swarm-sfx.mjs",
     "steamworks:write-vdf": "node scripts/write-steamworks-vdf.mjs",
     "desktop:smoke": "npm run build && electron electron/main.cjs --smoke",

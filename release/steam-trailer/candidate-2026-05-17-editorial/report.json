@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-05-17T14:59:44.145Z",
+  "status": "passed",
+  "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-17-03\\nova-swarm-steam-trailer-audio-draft.mp4",
+  "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\nova-swarm-steam-trailer-candidate.mp4",
+  "titleCards": [
+    {
+      "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\01-title-card.png",
+      "durationSeconds": 2.8,
+      "title": "NOVA SWARM",
+      "subtitle": "ARCADE PATROL"
+    },
+    {
+      "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\02-outro-card.png",
+      "durationSeconds": 3.2,
+      "title": "CHASE THE SWARM",
+      "subtitle": "DODGE. SCORE. BRAG."
+    }
+  ],
+  "contactSheet": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\candidate-contact-sheet.png",
+  "frames": [
+    "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\frame-01.jpg",
+    "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\frame-02.jpg",
+    "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\frame-03.jpg",
+    "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\frame-04.jpg",
+    "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\frame-05.jpg"
+  ],
+  "notes": [
+    "Editorial Steam trailer candidate with generated Nova Swarm store art, branded title cards, existing captured gameplay, and shipped audio.",
+    "Still requires human by-ear and store-submission approval before Steam upload."
+  ],
+  "ffprobe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 720,
+        "r_frame_rate": "25/1",
+        "duration": "49.902031"
+      },
+      {
+        "codec_name": "aac",
+        "r_frame_rate": "0/0",
+        "duration": "49.923333"
+      }
+    ],
+    "format": {
+      "duration": "49.923333",
+      "size": "10724357",
+      "bit_rate": "1718532"
+    }
+  },
+  "volume": {
+    "meanVolumeDb": "-19.1",
+    "maxVolumeDb": "-0.8"
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "generatedAt": "2026-05-17T14:59:11.295Z",
+  "baseUrl": "http://127.0.0.1:4373",
+  "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-17-03",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "trailer": "nova-swarm-steam-trailer-visual-draft.webm",
+  "notes": [
+    "Visual trailer draft captured from the production build. Playwright video capture does not include game audio.",
+    "Final Steam trailer still needs edited audio/music mix, title cards, and human approval."
+  ],
+  "timeline": [
+    {
+      "label": "story_intro_open",
+      "durationMs": 4200,
+      "scene": "intro",
+      "level": 1,
+      "wave": null,
+      "audioContext": "intro"
+    },
+    {
+      "label": "story_intro_swarm",
+      "durationMs": 2200,
+      "scene": "intro",
+      "level": 1,
+      "wave": null,
+      "audioContext": "intro"
+    },
+    {
+      "label": "main_menu_identity",
+      "durationMs": 2600,
+      "scene": "menu",
+      "level": 1,
+      "wave": null,
+      "audioContext": "menu"
+    },
+    {
+      "label": "ship_select_variants",
+      "durationMs": 3000,
+      "scene": "shipSelect",
+      "level": 1,
+      "wave": null,
+      "audioContext": "menu"
+    },
+    {
+      "label": "first_wave_lasers",
+      "durationMs": 3200,
+      "scene": "play",
+      "level": 1,
+      "wave": 1,
+      "audioContext": "gameplay"
+    },
+    {
+      "label": "dodge_lane_shift",
+      "durationMs": 2600,
+      "scene": "play",
+      "level": 1,
+      "wave": 1,
+      "audioContext": "gameplay"
+    },
+    {
+      "label": "formation_pressure",
+      "durationMs": 2200,
+      "scene": "play",
+      "level": 1,
+      "wave": 1,
+      "audioContext": "gameplay"
+    },
+    {
+      "label": "boss_inbound",
+      "durationMs": 2600,
+      "scene": "play",
+      "level": 1,
+      "wave": 4,
+      "audioContext": "gameplay"
+    },
+    {
+      "label": "boss_pattern_fire",
+      "durationMs": 4200,
+      "scene": "play",
+      "level": 1,
+      "wave": 4,
+      "audioContext": "boss"
+    },
+    {
+      "label": "boss_victory",
+      "durationMs": 3200,
+      "scene": "play",
+      "level": 1,
+      "wave": 4,
+      "audioContext": "victory"
+    },
+    {
+      "label": "game_over_score_log",
+      "durationMs": 3500,
+      "scene": "gameOver",
+      "level": 2,
+      "wave": 1,
+      "audioContext": "gameover"
+    }
+  ],
+  "consoleEvents": [],
+  "pageErrors": [],
+  "badResponses": []
+}
