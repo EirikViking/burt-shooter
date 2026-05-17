@@ -1,0 +1,103 @@
+{
+  "status": "inventory_pending_human_legal_approval",
+  "updatedAt": "2026-05-17",
+  "policy": {
+    "purpose": "Track source/provenance categories for shipped runtime and release assets before Steam submission.",
+    "humanApprovalRequired": true,
+    "doNotClaimLegalClearanceFromThisFile": true,
+    "deniedPathTermRefs": [
+      "private_person_or_celebrity_1",
+      "private_person_2",
+      "private_person_3",
+      "private_place_1",
+      "legacy_internal_title_slug"
+    ]
+  },
+  "rules": [
+    {
+      "id": "generated_nova_swarm_runtime_art",
+      "prefixes": [
+        "public/art/generated/nova-swarm/",
+        "public/art/generated/nova-bonus-core-drone-source-20260517.png",
+        "public/sprites/generated/nova-bonus-core-drone-20260517.png"
+      ],
+      "sourceType": "ai_generated_visual",
+      "provider": "OpenAI image generation via Codex imagegen",
+      "licenseStatus": "pending_human_review",
+      "notes": "Original generated Nova Swarm backdrops, intro panels, comms portraits, hangar art, boss dossier, and bonus core sprite. Prompt summaries are documented in docs/visual-asset-pipeline.md."
+    },
+    {
+      "id": "generated_steam_store_art",
+      "prefixes": [
+        "release/steam-assets/draft-2026-05-17-nova-swarm/",
+        "release/marketing-assets/mission-control-2026-05-16/"
+      ],
+      "sourceType": "ai_generated_marketing_visual",
+      "provider": "OpenAI image generation via Codex imagegen",
+      "licenseStatus": "pending_human_review",
+      "notes": "Steam capsule drafts and marketing key art. Final upload still requires human approval and Steam template review."
+    },
+    {
+      "id": "generated_elevenlabs_voice_and_sfx",
+      "prefixes": [
+        "public/audio/voice/mission-control/",
+        "public/audio/voice/nova-swarm/",
+        "public/audio/sfx/nova-swarm/",
+        "public/audio/music/nova-swarm/",
+        "release/steam-trailer/draft-2026-05-17-12-46/"
+      ],
+      "sourceType": "ai_generated_audio",
+      "provider": "ElevenLabs",
+      "licenseStatus": "pending_human_review",
+      "notes": "Mission-control voice, narrated intro, bespoke Nova Swarm SFX/music, and rendered trailer draft audio/video. Regeneration instructions are documented in docs/audio-pipeline.md."
+    },
+    {
+      "id": "bundled_arcade_asset_pack_sprites",
+      "prefixes": [
+        "public/sprites/",
+        "public/sprites/xtra-sprites/",
+        "public/sprites/boss/"
+      ],
+      "sourceType": "third_party_or_bundled_asset_pack",
+      "provider": "Existing project asset pack",
+      "licenseStatus": "pending_human_review",
+      "notes": "Sprite sheets and boss sprites were already present in the project. Steam submission needs final license/provenance confirmation."
+    },
+    {
+      "id": "bundled_arcade_audio_pack",
+      "prefixes": [
+        "public/audio/Female/",
+        "public/audio/Male/",
+        "public/audio/mp3/",
+        "public/audio/music/",
+        "public/audio/sfx/",
+        "public/audio/voice/"
+      ],
+      "sourceType": "third_party_or_bundled_audio_pack",
+      "provider": "Existing project audio pack plus generated subfolders covered by more specific rules",
+      "licenseStatus": "pending_human_review",
+      "notes": "Existing music, SFX, and generic voice clips. Generated subfolders are separately identified above. Steam submission needs final license/provenance confirmation."
+    },
+    {
+      "id": "app_icons_original_generated",
+      "prefixes": [
+        "public/icons/",
+        "build/icons/"
+      ],
+      "sourceType": "original_or_generated_icon",
+      "provider": "Project-generated Nova Swarm icon pipeline",
+      "licenseStatus": "pending_human_review",
+      "notes": "Runtime and desktop icons created for Nova Swarm packaging."
+    },
+    {
+      "id": "steam_screenshot_candidates",
+      "prefixes": [
+        "release/steam-screenshots/"
+      ],
+      "sourceType": "captured_gameplay_screenshot",
+      "provider": "Captured from current Nova Swarm build",
+      "licenseStatus": "pending_human_review",
+      "notes": "Steam screenshot drafts and upload candidates captured from the game. Final selection still requires human approval."
+    }
+  ]
+}

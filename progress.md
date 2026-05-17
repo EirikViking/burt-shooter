@@ -19,6 +19,13 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Verification: `npm run check:steam-store` passed with 15 tags, 8 feature bullets, `Partial Controller Support`, and no warnings; `npm run audit:release-readiness` now reports 11 passing checks and only the known Steam/manual blockers.
 - Added repeatable smoke coverage for the active powerup HUD meter. The smoke harness now captures `02-powerup-hud.png`, asserts the `RAPID FIRE` label, checks bounds, and blocks if the badge overlaps the sector label; latest local smoke passed at `test-results/smoke-2026-05-17T14-16-04-304Z/`.
 
+## 2026-05-17 Asset Provenance Gate
+
+- Added `release/provenance/asset_provenance_manifest.json`, `docs/asset-provenance.md`, and `scripts/check-asset-provenance.mjs` so shipped public/release assets must be covered by a provenance rule before Steam-readiness audit passes.
+- The provenance manifest intentionally remains `inventory_pending_human_legal_approval`; it catalogs generated OpenAI visuals, ElevenLabs generated audio, bundled sprite/audio packs, icons, Steam screenshot candidates, capsule drafts, marketing art, and trailer drafts without claiming legal clearance.
+- `npm run check:provenance` now passes with 1502/1502 scanned assets covered and no denied private/internal path terms.
+- Wired `check:provenance` into `npm run verify:steam-rc` and `npm run audit:release-readiness`; latest fast RC pass is `test-results/steam-rc-verify-2026-05-17T14-27-56-483Z/`, with only Steamworks IDs, Steam client validation, and human approvals remaining as blockers.
+
 ## 2026-05-17 Public Text Cleanup
 
 - Removed remaining visible Norwegian high-score/game-over/fatal-error strings (`NAVN`, `SKRIV DITT NAVN`, `Laster`, `Feil`, and empty-state copy) and replaced them with public arcade English.

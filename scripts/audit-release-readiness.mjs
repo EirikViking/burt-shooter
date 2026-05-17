@@ -9,6 +9,7 @@ const strict = process.argv.includes('--strict') || process.env.RELEASE_AUDIT_ST
 const requiredFiles = [
   'docs/reviews/2026-05-17-steam-readiness-checklist.md',
   'docs/reviews/2026-05-17-audio-mix-audit.md',
+  'docs/asset-provenance.md',
   'docs/steam-desktop-package.md',
   'docs/steam-store-handoff.md',
   'docs/steam-trailer-workflow.md',
@@ -23,6 +24,8 @@ const requiredFiles = [
   'release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png',
   'release/steam-trailer/draft-2026-05-17-12-46/report.json',
   'release/steam-trailer/draft-2026-05-17-12-46/audio-mix-report.json',
+  'release/provenance/asset_provenance_manifest.json',
+  'release/provenance/asset_provenance_report.json',
   'release/steamworks/store_metadata_draft.json',
   'release/steamworks/store_metadata_review_report.json'
 ];
@@ -295,6 +298,22 @@ checks.push({
     ok: Array.isArray(json.failures) && json.failures.length === 0 && Array.isArray(json.assets) && json.assets.length === 9,
     assetCount: json.assets?.length || 0,
     failures: json.failures || []
+  }))
+});
+
+checks.push({
+  name: 'asset_provenance_inventory_clean',
+  ...checkJsonReport('release/provenance/asset_provenance_report.json', (json) => ({
+    ok: json.status === 'passed' &&
+      Array.isArray(json.errors) && json.errors.length === 0 &&
+      Number.isFinite(json.assetCount) && json.assetCount > 0 &&
+      json.coveredCount === json.assetCount,
+    status: json.status,
+    assetCount: json.assetCount || 0,
+    coveredCount: json.coveredCount || 0,
+    uncovered: json.uncovered || [],
+    deniedMatches: json.deniedMatches || [],
+    warnings: json.warnings || []
   }))
 });
 

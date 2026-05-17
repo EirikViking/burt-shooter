@@ -10,6 +10,7 @@
     "prebuild": "node scripts/update-build.cjs && node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs && node scripts/check-audio-catalog.mjs",
     "build": "vite build",
     "check:audio": "node scripts/check-audio-catalog.mjs",
+    "check:provenance": "node scripts/check-asset-provenance.mjs",
     "check:steam-assets": "node scripts/check-steam-assets.mjs",
     "check:steam-store": "node scripts/check-steam-store-metadata.mjs",
     "audit:release-readiness": "node scripts/audit-release-readiness.mjs",
