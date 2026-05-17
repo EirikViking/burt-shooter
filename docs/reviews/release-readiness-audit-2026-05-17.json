@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T12:02:59.850Z",
+  "generatedAt": "2026-05-17T12:35:11.068Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 8,
@@ -20,7 +20,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 11121
+          "bytes": 11684
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",

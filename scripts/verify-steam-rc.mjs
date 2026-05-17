@@ -97,8 +97,10 @@ const report = {
     warnings: audioAudit.warnings?.length ?? null
   } : null,
   notes: [
-    'Fast mode verifies build/static release evidence. Use --full for browser smoke, desktop package, and release playtest.',
-    'A successful fast report does not mean Steam-ready while releaseAudit.verdict is not_steam_ready.'
+    full
+      ? 'Full mode verifies build/static release evidence plus browser smoke, desktop smoke, Windows packaging, and release playtest.'
+      : 'Fast mode verifies build/static release evidence. Use --full for browser smoke, desktop package, and release playtest.',
+    `A successful ${full ? 'full' : 'fast'} report does not mean Steam-ready while releaseAudit.verdict is not_steam_ready.`
   ]
 };
 

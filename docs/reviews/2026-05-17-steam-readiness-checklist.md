@@ -8,9 +8,11 @@ Current playable deployment:
 
 - https://burt.tinyfoundry.app
 
-Current verified web build:
+Current verified local build:
 
-- `v2026-05-17_11-32-32`
+- `v2026-05-17_14-31-20`
+
+Latest deployment evidence in this checklist may lag the local RC build until the next Cloudflare Pages publish.
 
 Current evidence:
 
@@ -28,7 +30,10 @@ Current evidence:
 - Steam screenshot upload shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/`, curated from the clean live capture.
 - Steam client validation runbook: `release/steamworks/steam_client_validation_runbook.md`.
 - Release readiness audit: `npm run audit:release-readiness` writes `docs/reviews/release-readiness-audit-2026-05-17.json` and currently reports `not_steam_ready` because SteamCMD/client validation and user approval remain open. Use `RELEASE_AUDIT_STRICT=1 npm run audit:release-readiness` to fail on known manual blockers too.
-- Steam RC verification entrypoint: `npm run verify:steam-rc` runs the fast build/static release gates and writes `test-results/steam-rc-verify-*/report.json`; latest fast pass is `test-results/steam-rc-verify-2026-05-17T12-02-32-091Z/report.json`. Use `npm run verify:steam-rc -- --full` for smoke, desktop package, and release playtest as part of a full RC pass.
+- Steam RC verification entrypoint: `npm run verify:steam-rc` runs the fast build/static release gates and writes `test-results/steam-rc-verify-*/report.json`; latest full pass is `test-results/steam-rc-verify-2026-05-17T12-12-27-110Z/report.json`. Use `npm run verify:steam-rc -- --full` for smoke, desktop package, and release playtest as part of a full RC pass.
+- Latest full smoke evidence: `test-results/smoke-2026-05-17T12-12-55-257Z/`.
+- Latest full Electron smoke evidence: `test-results/electron-smoke-2026-05-17T12-14-15-301Z/`.
+- Latest full 10-minute release playtest evidence: `test-results/release-playtest-2026-05-17T12-15-21-253Z/`.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 
@@ -130,6 +135,7 @@ Do not call this Steam-ready until these are true:
 - `npm run check:steam-assets` validates Steam asset dimensions/transparency and regenerates the review contact sheets.
 - `npm run audit:release-readiness` has no hard artifact/content failures and records only known manual blockers.
 - `npm run verify:steam-rc` passes in fast mode and writes a summary report.
+- `npm run verify:steam-rc -- --full` passes and writes a summary report.
 - `npm run playtest:release` survives at least 10 minutes without debug flags.
 - A human 10-15 minute playthrough confirms late boss pressure, repair/mercy generosity, game-over/restart flow, and UI clutter feel right.
 - A human listening pass confirms menu, gameplay, wave clear, boss inbound, boss fight, victory, and game-over mix on headphones or speakers.
