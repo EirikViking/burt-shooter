@@ -29,6 +29,8 @@ const requiredFiles = [
   'release/provenance/asset_provenance_manifest.json',
   'release/provenance/asset_provenance_report.json',
   'release/steamworks/desktop_package_review_report.json',
+  'release/steamworks/release_handoff_packet.json',
+  'release/steamworks/release_handoff_packet.md',
   'release/steamworks/store_metadata_draft.json',
   'release/steamworks/store_metadata_review_report.json'
 ];
@@ -284,6 +286,37 @@ function checkSteamClientValidation() {
   });
 }
 
+function checkReleaseHandoffPacket() {
+  return checkJsonReport('release/steamworks/release_handoff_packet.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    const manualSteps = json.remainingManualSteps || [];
+    const evidence = json.evidence || {};
+    return {
+      ok: Boolean(expectedBuild) &&
+        json.build?.version === expectedBuild &&
+        Array.isArray(json.build?.staleEvidence) &&
+        json.build.staleEvidence.length === 0 &&
+        json.releaseAudit?.verdict === 'not_steam_ready' &&
+        Array.isArray(json.releaseAudit?.failedChecks) &&
+        json.releaseAudit.failedChecks.includes('steamworks_ids_configured') &&
+        json.releaseAudit.failedChecks.includes('steam_client_validation_evidence') &&
+        json.releaseAudit.failedChecks.includes('human_release_approvals_recorded') &&
+        evidence.screenshots?.status === 'ready' &&
+        evidence.trailer?.status === 'ready' &&
+        evidence.desktop?.status === 'ready' &&
+        evidence.provenance?.status === 'ready' &&
+        evidence.storeMetadata?.status === 'ready' &&
+        manualSteps.length >= 5 &&
+        existsSync(path.resolve(root, 'release/steamworks/release_handoff_packet.md')),
+      expectedBuild,
+      actualBuild: json.build?.version || null,
+      staleEvidence: json.build?.staleEvidence || [],
+      failedChecks: json.releaseAudit?.failedChecks || [],
+      manualStepCount: manualSteps.length
+    };
+  });
+}
+
 function checkScreenshotCandidates() {
   const dir = path.resolve(root, 'release/steam-screenshots/steam-upload-candidates-2026-05-17');
   const candidates = existsSync(dir)
@@ -485,6 +518,11 @@ checks.push({
       warnings: json.warnings || []
     };
   })
+});
+
+checks.push({
+  name: 'steam_release_handoff_packet_current',
+  ...checkReleaseHandoffPacket()
 });
 
 checks.push({

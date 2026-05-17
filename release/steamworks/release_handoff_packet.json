@@ -1,0 +1,131 @@
+{
+  "generatedAt": "2026-05-17T20:13:36.312Z",
+  "build": {
+    "version": "v2026-05-17_21-41-17",
+    "timestamp": "2026-05-17T19:41:17.128Z",
+    "evidenceVersions": [
+      "v2026-05-17_21-41-17",
+      "v2026-05-17_21-41-17",
+      "v2026-05-17_21-41-17"
+    ],
+    "staleEvidence": []
+  },
+  "releaseAudit": {
+    "verdict": "not_steam_ready",
+    "passed": 14,
+    "failed": 3,
+    "hardFailures": 0,
+    "failedChecks": [
+      "steamworks_ids_configured",
+      "steam_client_validation_evidence",
+      "human_release_approvals_recorded"
+    ],
+    "manualBlockers": [
+      "Steamworks app ID and depot ID are still not configured in tracked files.",
+      "SteamPipe upload and Steam-client install/launch validation still require credentials and a real app.",
+      "User/human approval is still required for final screenshots, capsules, trailer, and by-ear audio mix."
+    ]
+  },
+  "evidence": {
+    "screenshots": {
+      "status": "ready",
+      "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
+      "shotCount": 10
+    },
+    "trailer": {
+      "status": "ready",
+      "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
+      "duration": "49.923333",
+      "volume": {
+        "meanVolumeDb": "-19.1",
+        "maxVolumeDb": "-0.8"
+      }
+    },
+    "desktop": {
+      "status": "ready",
+      "path": "release/steamworks/desktop_package_review_report.json",
+      "exeBytes": 226666496,
+      "electronSmoke": "test-results/electron-smoke-2026-05-17T19-56-58-565Z/report.json"
+    },
+    "audio": {
+      "status": "ready",
+      "path": "docs/reviews/audio-mix-audit-2026-05-17.json",
+      "warnings": 9
+    },
+    "provenance": {
+      "status": "ready",
+      "path": "release/provenance/asset_provenance_report.json",
+      "covered": "1614/1614"
+    },
+    "storeMetadata": {
+      "status": "ready",
+      "path": "release/steamworks/store_metadata_review_report.json",
+      "warnings": 0
+    }
+  },
+  "artifacts": [
+    {
+      "path": "release/desktop/win-unpacked/Nova Swarm.exe",
+      "exists": true,
+      "bytes": 226666496
+    },
+    {
+      "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
+      "exists": true,
+      "bytes": 2181504
+    },
+    {
+      "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
+      "exists": true,
+      "bytes": 11358801
+    },
+    {
+      "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
+      "exists": true,
+      "bytes": 578133
+    },
+    {
+      "path": "release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png",
+      "exists": true,
+      "bytes": 3226184
+    },
+    {
+      "path": "release/steamworks/store_metadata_draft.json",
+      "exists": true,
+      "bytes": 4458
+    },
+    {
+      "path": "release/steamworks/app_build_TEMPLATE.vdf",
+      "exists": true,
+      "bytes": 359
+    },
+    {
+      "path": "release/steamworks/client_validation_report.template.json",
+      "exists": true,
+      "bytes": 771
+    },
+    {
+      "path": "docs/reviews/2026-05-17-human-release-approval.md",
+      "exists": true,
+      "bytes": 1239
+    }
+  ],
+  "remainingManualSteps": [
+    "Create or open the real Steamworks app and record the numeric app ID plus Windows depot ID.",
+    "Run `STEAM_APP_ID=<id> STEAM_DEPOT_ID=<id> npm run steamworks:write-vdf` to create `release/steamworks/app_build_LOCAL.vdf`.",
+    "Upload the Windows payload with SteamCMD using the generated local VDF.",
+    "Install and launch the uploaded build from the Steam client, then fill `release/steamworks/client_validation_report.json` from the template.",
+    "Review and approve screenshots, capsules, trailer, audio, store copy, legal/provenance posture, and gameplay feel in `docs/reviews/2026-05-17-human-release-approval.md`."
+  ],
+  "commands": {
+    "fastRc": "npm run verify:steam-rc",
+    "fullRc": "npm run verify:steam-rc -- --full",
+    "writeVdf": "STEAM_APP_ID=<id> STEAM_DEPOT_ID=<id> npm run steamworks:write-vdf",
+    "upload": "tools\\steamcmd\\steamcmd.exe +login <steamworks-user> +run_app_build release\\steamworks\\app_build_LOCAL.vdf +quit",
+    "releaseAudit": "npm run audit:release-readiness"
+  },
+  "notes": [
+    "This packet is a current-build handoff summary, not human approval.",
+    "The release audit must still report not_steam_ready until Steamworks IDs, Steam client validation, and human approval evidence are present."
+  ]
+}

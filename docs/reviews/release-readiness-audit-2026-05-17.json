@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-17T20:02:46.077Z",
+  "generatedAt": "2026-05-17T20:14:05.512Z",
   "verdict": "not_steam_ready",
   "summary": {
-    "passed": 13,
+    "passed": 14,
     "failed": 3,
     "hardFailures": 0,
     "manualBlockers": [
@@ -125,6 +125,16 @@
           "path": "release/steamworks/desktop_package_review_report.json",
           "ok": true,
           "bytes": 1075
+        },
+        {
+          "path": "release/steamworks/release_handoff_packet.json",
+          "ok": true,
+          "bytes": 4542
+        },
+        {
+          "path": "release/steamworks/release_handoff_packet.md",
+          "ok": true,
+          "bytes": 3116
         },
         {
           "path": "release/steamworks/store_metadata_draft.json",
@@ -334,6 +344,19 @@
       },
       "errors": [],
       "warnings": []
+    },
+    {
+      "name": "steam_release_handoff_packet_current",
+      "ok": true,
+      "expectedBuild": "v2026-05-17_21-41-17",
+      "actualBuild": "v2026-05-17_21-41-17",
+      "staleEvidence": [],
+      "failedChecks": [
+        "steamworks_ids_configured",
+        "steam_client_validation_evidence",
+        "human_release_approvals_recorded"
+      ],
+      "manualStepCount": 5
     },
     {
       "name": "steamcmd_available",
