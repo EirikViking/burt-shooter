@@ -270,6 +270,7 @@ function summarizeSmokeReport(report, blockingIssues) {
       '01-settings.png',
       '01-credits.png',
       '02-gameplay.png',
+      '02-powerup-hud.png',
       '03-gamepad-pause.png',
       '06-game-over.png',
       '08-mobile-intro.png',
@@ -295,6 +296,7 @@ function summarizeSmokeReport(report, blockingIssues) {
     },
     coverage: {
       gamepadConnected: Boolean(report.gamepadMoveState?.textState?.input?.gamepad?.connected),
+      powerupHud: report.powerupHudState?.label || null,
       loreFlybyAlias: report.loreFlybyState?.easterEggAlias || null,
       waveTransition: report.waveTransitionState?.textState?.wave?.currentWaveNumber || null,
       bossDefeatMusic: `${musicContext(report.bossDefeatedState) || 'none'} / ${musicTrackName(report.bossDefeatedState) || 'none'}`
@@ -469,6 +471,43 @@ async function runSmoke() {
     await page.screenshot({ path: path.join(outputDir, '02-gameplay.png'), fullPage: true });
     const gameplayState = await collectGameState(page);
     logStep('desktop gameplay captured');
+
+    const powerupHudState = await page.evaluate(() => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      const hud = play?.hud;
+      const player = play?.player;
+      if (!game || !play || !hud || !player) return { ok: false, reason: 'missing play hud or player' };
+      player.activePowerup = { type: 'rapid_fire', expiresAt: Date.now() + 8000 };
+      hud.update();
+      const group = hud.activePowerupGroup;
+      const location = hud.locationText;
+      return {
+        ok: Boolean(group?.visible),
+        label: player.getActivePowerupState?.()?.label || null,
+        group: group ? {
+          x: group.x,
+          y: group.y,
+          width: group.width,
+          height: group.height,
+          right: group.x + group.width,
+          bottom: group.y + group.height
+        } : null,
+        location: location ? {
+          x: location.x,
+          y: location.y,
+          width: location.width,
+          height: location.height,
+          bottom: location.y + location.height
+        } : null,
+        canvas: {
+          width: game.getWidth?.() || window.innerWidth,
+          height: game.getHeight?.() || window.innerHeight
+        }
+      };
+    });
+    await page.screenshot({ path: path.join(outputDir, '02-powerup-hud.png'), fullPage: true });
+    logStep('powerup HUD captured');
 
     const gamepadPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(gamepadPage, 'gamepad');
@@ -768,6 +807,7 @@ async function runSmoke() {
       settingsState,
       creditsState,
       gameplayState,
+      powerupHudState,
       gamepadBeforeState,
       gamepadMoveState,
       gamepadPauseState,
@@ -824,6 +864,11 @@ async function runSmoke() {
       ...(trackIncludes(menuState, 'Defeated') ? ['menu playlist used game-over music'] : []),
       ...(!isGameplayMusic(gameplayState) ? [`gameplay music used reserved/non-gameplay track: ${musicTrackName(gameplayState) || 'none'}`] : []),
       ...(gameplayState.fatalOverlay ? ['fatal overlay visible'] : []),
+      ...(!powerupHudState.ok ? [`powerup HUD did not become visible: ${powerupHudState.reason || 'unknown'}`] : []),
+      ...(powerupHudState.label !== 'RAPID FIRE' ? [`powerup HUD label mismatch: ${powerupHudState.label || 'none'}`] : []),
+      ...((powerupHudState.group?.width || 0) < 120 || (powerupHudState.group?.height || 0) < 20 ? ['powerup HUD bounds were too small'] : []),
+      ...((powerupHudState.group?.right || 0) > (powerupHudState.canvas?.width || 0) ? ['powerup HUD overflowed right edge'] : []),
+      ...((powerupHudState.location && powerupHudState.group?.y < powerupHudState.location.bottom + 3) ? ['powerup HUD overlapped sector/location label'] : []),
       ...visibleEnemyHealthIssues(gameplayState, 'desktop gameplay'),
       ...visibleEnemyHealthIssues(loreFlybyState, 'lore flyby'),
       ...(mobileGameplayState.fatalOverlay ? ['mobile fatal overlay visible'] : []),

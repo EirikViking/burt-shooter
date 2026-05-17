@@ -17,6 +17,7 @@ Original prompt: Continue autonomous development of Burt Shooter toward a polish
 - Added `docs/steam-store-handoff.md` and `scripts/check-steam-store-metadata.mjs`; package script `npm run check:steam-store` validates the draft and writes `release/steamworks/store_metadata_review_report.json`.
 - Wired `check:steam-store` into `npm run verify:steam-rc` and the release-readiness audit, so Steam page metadata is now a repeatable gate instead of loose notes.
 - Verification: `npm run check:steam-store` passed with 15 tags, 8 feature bullets, `Partial Controller Support`, and no warnings; `npm run audit:release-readiness` now reports 11 passing checks and only the known Steam/manual blockers.
+- Added repeatable smoke coverage for the active powerup HUD meter. The smoke harness now captures `02-powerup-hud.png`, asserts the `RAPID FIRE` label, checks bounds, and blocks if the badge overlaps the sector label; latest local smoke passed at `test-results/smoke-2026-05-17T14-16-04-304Z/`.
 
 ## 2026-05-17 Public Text Cleanup
 
