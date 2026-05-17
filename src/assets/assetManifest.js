@@ -1,10 +1,10 @@
 export const AssetManifest = {
     generated: {
-        menuBackdrop: '/art/generated/burt-shooter-arctic-menu-bg.webp',
+        menuBackdrop: '/art/generated/nova-swarm/nova-swarm-menu-backdrop.webp',
         gameplayArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
-        stormGameplayBackdrop: '/art/generated/burt-shooter-storm-gameplay-bg.webp',
+        stormGameplayBackdrop: '/art/generated/nova-swarm/nova-swarm-storm-gameplay-backdrop.webp',
         bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
-        bossDossier: '/art/generated/burt-shooter-boss-dossier.png',
+        bossDossier: '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
         introPanels: [
             '/art/generated/nova-swarm/nova-swarm-intro-launch.webp',
             '/art/generated/nova-swarm/nova-swarm-intro-formations.webp',
@@ -13,8 +13,8 @@ export const AssetManifest = {
         ],
         shipHangar: '/art/generated/nova-swarm/nova-swarm-ship-hangar.webp',
         crewPortraits: [
-            '/art/generated/burt-shooter-crew-navigator.png',
-            '/art/generated/burt-shooter-crew-pilot.png'
+            '/art/generated/nova-swarm/nova-swarm-comms-navigator.png',
+            '/art/generated/nova-swarm/nova-swarm-comms-pilot.png'
         ]
     },
 

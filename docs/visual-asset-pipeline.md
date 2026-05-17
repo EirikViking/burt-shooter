@@ -4,8 +4,8 @@ This project keeps generated visual assets in `public/art/generated/` when they 
 
 ## 2026-05-16 Storm Gameplay Backdrop
 
-- Source: `public/art/generated/burt-shooter-storm-keyart-source.png`
-- Runtime asset: `public/art/generated/burt-shooter-storm-gameplay-bg.webp`
+- Source: `public/art/generated/nova-swarm/nova-swarm-storm-keyart-source.png`
+- Runtime asset: `public/art/generated/nova-swarm/nova-swarm-storm-gameplay-backdrop.webp`
 - Optimization: ImageMagick resize/crop to `1920x1080`, WebP quality `82`.
 - Usage: `src/scenes/PlayScene.js` crossfades this storm layer in from level 3 upward while keeping a dark shade over the playfield for bullet readability.
 
@@ -15,8 +15,8 @@ Prompt summary:
 
 ## 2026-05-16 Boss Threat Dossier
 
-- Source: `public/art/generated/burt-shooter-boss-dossier-source.png`
-- Runtime asset: `public/art/generated/burt-shooter-boss-dossier.png`
+- Source: `public/art/generated/nova-swarm/nova-swarm-boss-dossier-source.png`
+- Runtime asset: `public/art/generated/nova-swarm/nova-swarm-boss-dossier.png`
 - Optimization: ImageMagick resize to `640x640`, stripped PNG metadata.
 - Usage: `src/scenes/PlayScene.js` uses this original generated art inside the boss inbound dossier card instead of random lore photos.
 - Cleanup: removed the tracked `public/donaldtru.jpg` celebrity/third-party-looking asset from shipped public assets.
@@ -27,8 +27,8 @@ Prompt summary:
 
 ## 2026-05-16 Crew Comms Portraits
 
-- Sources: `public/art/generated/burt-shooter-crew-navigator-source.png`, `public/art/generated/burt-shooter-crew-pilot-source.png`
-- Runtime assets: `public/art/generated/burt-shooter-crew-navigator.png`, `public/art/generated/burt-shooter-crew-pilot.png`
+- Sources: `public/art/generated/nova-swarm/nova-swarm-comms-navigator-source.png`, `public/art/generated/nova-swarm/nova-swarm-comms-pilot-source.png`
+- Runtime assets: `public/art/generated/nova-swarm/nova-swarm-comms-navigator.png`, `public/art/generated/nova-swarm/nova-swarm-comms-pilot.png`
 - Optimization: ImageMagick resize to `512x512`, stripped PNG metadata.
 - Usage: `src/utils/GameAssets.js` loads these original generated crew portraits for comms banners and legendary flybys, and `src/scenes/MenuScene.js` reuses them in the main-menu mission-console comm cards. Real-person photos are not shipped.
 
@@ -38,9 +38,15 @@ Prompt summary:
 
 ## 2026-05-16 Menu Mission Console
 
-- Runtime assets reused: `public/art/generated/burt-shooter-crew-navigator.png`, `public/art/generated/burt-shooter-crew-pilot.png`
+- Runtime assets reused: `public/art/generated/nova-swarm/nova-swarm-comms-navigator.png`, `public/art/generated/nova-swarm/nova-swarm-comms-pilot.png`
 - No new generated files were added in this pass because `OPENAI_API_KEY` was not present in the local environment.
 - Usage: `src/scenes/MenuScene.js` layers a non-interactive holographic radar, scan blips, and generated crew comm cards behind the menu controls while keeping the settings overlay and buttons above the decorative layer.
+
+## 2026-05-17 Nova Swarm Asset Path Cleanup
+
+- Public runtime art paths now live under `public/art/generated/nova-swarm/`.
+- Legacy-generated menu, storm, boss-dossier, and comms portrait files were copied to Nova Swarm filenames, and `src/assets/assetManifest.js` now references only the Nova Swarm paths.
+- This was a path/provenance cleanup, not a visual regeneration pass, because `OPENAI_API_KEY` was not present in the current shell for the local imagegen CLI.
 
 ## 2026-05-17 Nova Swarm Cinematic Intro And Hangar
 

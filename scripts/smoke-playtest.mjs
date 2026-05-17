@@ -811,7 +811,7 @@ async function runSmoke() {
       ...((gamepadMoveState.textState?.counts?.playerBullets || 0) <= 0 ? ['gamepad fire did not produce player bullets'] : []),
       ...(!gamepadPauseState.isPaused || !gamepadPauseState.pauseOverlayVisible ? ['gamepad pause button did not open pause overlay'] : []),
       ...(!loreFlybyState.easterEggActive ? ['forced lore flyby did not become active'] : []),
-      ...(!/^burt-shooter-crew-/.test(loreFlybyState.easterEggAlias || '') ? [`lore flyby did not use generated crew portrait: ${loreFlybyState.easterEggAlias || 'none'}`] : []),
+      ...(!/^nova-swarm-comms-/.test(loreFlybyState.easterEggAlias || '') ? [`lore flyby did not use generated comms portrait: ${loreFlybyState.easterEggAlias || 'none'}`] : []),
       ...(gameOverState.scene !== 'gameOver' ? ['forced game over did not reach game over scene'] : []),
       ...(gameOverState.perf?.scene !== 'gameOver' ? [`game-over perf state used unstable scene name: ${gameOverState.perf?.scene || 'none'}`] : []),
       ...(gameOverState.textState?.scene !== 'gameOver' ? [`game-over text state used unstable scene name: ${gameOverState.textState?.scene || 'none'}`] : []),

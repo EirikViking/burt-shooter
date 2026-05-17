@@ -15,9 +15,9 @@ const sampleMs = Number(process.env.RELEASE_PLAYTEST_SAMPLE_MS || 150);
 const screenshotMs = Number(process.env.RELEASE_PLAYTEST_SCREENSHOT_MS || 60 * 1000);
 const outputDir = path.resolve(process.env.RELEASE_PLAYTEST_OUTPUT_DIR || `test-results/release-playtest-${timestamp()}`);
 const requiredReleaseAssets = [
-  '/art/generated/burt-shooter-boss-dossier.png',
-  '/art/generated/burt-shooter-crew-navigator.png',
-  '/art/generated/burt-shooter-crew-pilot.png',
+  '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
+  '/art/generated/nova-swarm/nova-swarm-comms-navigator.png',
+  '/art/generated/nova-swarm/nova-swarm-comms-pilot.png',
   '/art/generated/nova-swarm/nova-swarm-intro-launch.webp',
   '/art/generated/nova-swarm/nova-swarm-intro-formations.webp',
   '/art/generated/nova-swarm/nova-swarm-intro-hero-run.webp',
