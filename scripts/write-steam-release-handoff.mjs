@@ -30,6 +30,7 @@ const audio = readJson('docs/reviews/audio-mix-audit-2026-05-17.json');
 const screenshots = readJson('release/steam-screenshots/draft-2026-05-17-current/report.json');
 const trailer = readJson('release/steam-trailer/candidate-2026-05-17-current/report.json');
 const desktop = readJson('release/steamworks/desktop_package_review_report.json');
+const liveDeployment = readJson('release/steamworks/live_deployment_report.json');
 const provenance = readJson('release/provenance/asset_provenance_report.json');
 const store = readJson('release/steamworks/store_metadata_review_report.json');
 
@@ -37,7 +38,8 @@ const buildVersion = version?.version || null;
 const currentBuildEvidence = [
   screenshots?.build?.version,
   trailer?.build?.version,
-  desktop?.currentBuild?.version
+  desktop?.currentBuild?.version,
+  liveDeployment?.currentBuild?.version
 ].filter(Boolean);
 const staleEvidence = currentBuildEvidence.filter((item) => item !== buildVersion);
 const auditChecks = audit?.checks || [];
@@ -97,6 +99,12 @@ const packet = {
       exeBytes: desktop?.desktopPayload?.sizeBytes || 0,
       electronSmoke: desktop?.latestElectronSmoke?.reportPath || null,
       packagedExeSmoke: desktop?.latestPackagedExeSmoke?.reportPath || null
+    },
+    liveDeployment: {
+      status: lineForStatus(liveDeployment?.status === 'passed' && liveDeployment?.currentBuild?.version === buildVersion),
+      path: 'release/steamworks/live_deployment_report.json',
+      liveUrl: liveDeployment?.liveUrl || null,
+      liveSmoke: liveDeployment?.latestLiveSmoke?.reportPath || null
     },
     audio: {
       status: lineForStatus(Boolean(audio) && (audio.decodeErrors || []).length === 0),

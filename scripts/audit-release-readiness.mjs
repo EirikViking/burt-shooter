@@ -29,6 +29,7 @@ const requiredFiles = [
   'release/provenance/asset_provenance_manifest.json',
   'release/provenance/asset_provenance_report.json',
   'release/steamworks/desktop_package_review_report.json',
+  'release/steamworks/live_deployment_report.json',
   'release/steamworks/release_handoff_packet.json',
   'release/steamworks/release_handoff_packet.md',
   'release/steamworks/store_metadata_draft.json',
@@ -304,6 +305,7 @@ function checkReleaseHandoffPacket() {
         evidence.screenshots?.status === 'ready' &&
         evidence.trailer?.status === 'ready' &&
         evidence.desktop?.status === 'ready' &&
+        evidence.liveDeployment?.status === 'ready' &&
         evidence.provenance?.status === 'ready' &&
         evidence.storeMetadata?.status === 'ready' &&
         manualSteps.length >= 5 &&
@@ -520,6 +522,36 @@ checks.push({
       desktopPayload: json.desktopPayload || null,
       latestElectronSmoke: json.latestElectronSmoke || null,
       latestPackagedExeSmoke: json.latestPackagedExeSmoke || null,
+      errors: json.errors || [],
+      warnings: json.warnings || []
+    };
+  })
+});
+
+checks.push({
+  name: 'live_deployment_report_clean',
+  ...checkJsonReport('release/steamworks/live_deployment_report.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    return {
+      ok: json.status === 'passed' &&
+      json.liveUrl === 'https://burt.tinyfoundry.app' &&
+      Boolean(expectedBuild) &&
+      json.currentBuild?.version === expectedBuild &&
+      Array.isArray(json.versionChecks) &&
+      json.versionChecks.length >= 1 &&
+      json.versionChecks.every((check) => check.ok === true && check.version === expectedBuild) &&
+      json.latestLiveSmoke?.status === 'passed' &&
+      json.latestLiveSmoke?.baseUrl === 'https://burt.tinyfoundry.app' &&
+      json.latestLiveSmoke?.build === expectedBuild &&
+      (json.latestLiveSmoke?.console?.warningsOrErrors || 0) === 0 &&
+      (json.latestLiveSmoke?.console?.pageErrors || 0) === 0 &&
+      (json.latestLiveSmoke?.console?.badResponses || 0) === 0 &&
+      (json.latestLiveSmoke?.screenshots || []).filter((shot) => shot.exists).length >= 6,
+      status: json.status || null,
+      expectedBuild,
+      liveUrl: json.liveUrl || null,
+      versionChecks: json.versionChecks || [],
+      latestLiveSmoke: json.latestLiveSmoke || null,
       errors: json.errors || [],
       warnings: json.warnings || []
     };

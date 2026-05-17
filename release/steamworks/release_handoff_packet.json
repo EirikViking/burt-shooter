@@ -1,9 +1,10 @@
 {
-  "generatedAt": "2026-05-17T20:36:58.568Z",
+  "generatedAt": "2026-05-17T20:44:47.538Z",
   "build": {
     "version": "v2026-05-17_21-41-17",
     "timestamp": "2026-05-17T19:41:17.128Z",
     "evidenceVersions": [
+      "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17"
@@ -12,7 +13,7 @@
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
-    "passed": 14,
+    "passed": 15,
     "failed": 3,
     "hardFailures": 0,
     "failedChecks": [
@@ -45,8 +46,14 @@
       "status": "ready",
       "path": "release/steamworks/desktop_package_review_report.json",
       "exeBytes": 226666496,
-      "electronSmoke": "test-results/electron-smoke-2026-05-17T20-36-37-691Z/report.json",
-      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-17T20-36-37-435Z/report.json"
+      "electronSmoke": "test-results/electron-smoke-2026-05-17T20-44-02-745Z/report.json",
+      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-17T20-44-06-738Z/report.json"
+    },
+    "liveDeployment": {
+      "status": "ready",
+      "path": "release/steamworks/live_deployment_report.json",
+      "liveUrl": "https://burt.tinyfoundry.app",
+      "liveSmoke": "test-results/smoke-2026-05-17T20-37-53-548Z/report.json"
     },
     "audio": {
       "status": "ready",

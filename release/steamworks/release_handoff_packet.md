@@ -1,6 +1,6 @@
 # Nova Swarm Steam Release Handoff Packet
 
-Generated: 2026-05-17T20:36:58.568Z
+Generated: 2026-05-17T20:44:47.538Z
 
 Build: `v2026-05-17_21-41-17`
 Build timestamp: `2026-05-17T19:41:17.128Z`
@@ -10,7 +10,7 @@ This packet summarizes the current release evidence for the final Steamworks/man
 ## Audit State
 
 - Verdict: `not_steam_ready`
-- Automated checks passed: 14
+- Automated checks passed: 15
 - Failed checks: 3
 - Hard failures: 0
 
@@ -27,6 +27,7 @@ Current blockers:
 | screenshots | ready | `release/steam-screenshots/draft-2026-05-17-current/report.json` |
 | trailer | ready | `release/steam-trailer/candidate-2026-05-17-current/report.json` |
 | desktop | ready | `release/steamworks/desktop_package_review_report.json` |
+| liveDeployment | ready | `release/steamworks/live_deployment_report.json` |
 | audio | ready | `docs/reviews/audio-mix-audit-2026-05-17.json` |
 | provenance | ready | `release/provenance/asset_provenance_report.json` |
 | storeMetadata | ready | `release/steamworks/store_metadata_review_report.json` |

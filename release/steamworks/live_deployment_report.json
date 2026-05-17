@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-05-17T20:44:32.254Z",
+  "status": "passed",
+  "currentBuild": {
+    "version": "v2026-05-17_21-41-17",
+    "timestamp": "2026-05-17T19:41:17.128Z"
+  },
+  "liveUrl": "https://burt.tinyfoundry.app",
+  "versionChecks": [
+    {
+      "url": "https://burt.tinyfoundry.app/version.json",
+      "ok": true,
+      "status": 200,
+      "version": "v2026-05-17_21-41-17",
+      "timestamp": "2026-05-17T19:41:17.128Z"
+    }
+  ],
+  "latestLiveSmoke": {
+    "reportPath": "test-results/smoke-2026-05-17T20-37-53-548Z/report.json",
+    "baseUrl": "https://burt.tinyfoundry.app",
+    "status": "passed",
+    "build": "v2026-05-17_21-41-17",
+    "screenshots": [
+      {
+        "file": "01-menu.png",
+        "exists": true
+      },
+      {
+        "file": "01-settings.png",
+        "exists": true
+      },
+      {
+        "file": "01-credits.png",
+        "exists": true
+      },
+      {
+        "file": "02-gameplay.png",
+        "exists": true
+      },
+      {
+        "file": "02-powerup-hud.png",
+        "exists": true
+      },
+      {
+        "file": "03-gamepad-pause.png",
+        "exists": true
+      },
+      {
+        "file": "06-game-over.png",
+        "exists": true
+      },
+      {
+        "file": "08-mobile-intro.png",
+        "exists": true
+      },
+      {
+        "file": "10-level3-gameplay.png",
+        "exists": true
+      },
+      {
+        "file": "14-boss-defeated.png",
+        "exists": true
+      },
+      {
+        "file": "15-level-2-start.png",
+        "exists": true
+      }
+    ],
+    "console": {
+      "warningsOrErrors": 0,
+      "pageErrors": 0,
+      "badResponses": 0
+    },
+    "scenes": null,
+    "coverage": null
+  },
+  "errors": [],
+  "warnings": []
+}

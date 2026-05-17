@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-17T20:36:58.135Z",
+  "generatedAt": "2026-05-17T20:45:41.464Z",
   "verdict": "not_steam_ready",
   "summary": {
-    "passed": 14,
+    "passed": 15,
     "failed": 3,
     "hardFailures": 0,
     "manualBlockers": [
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 28431
+          "bytes": 29431
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -127,14 +127,19 @@
           "bytes": 1864
         },
         {
+          "path": "release/steamworks/live_deployment_report.json",
+          "ok": true,
+          "bytes": 1710
+        },
+        {
           "path": "release/steamworks/release_handoff_packet.json",
           "ok": true,
-          "bytes": 4640
+          "bytes": 4916
         },
         {
           "path": "release/steamworks/release_handoff_packet.md",
           "ok": true,
-          "bytes": 3116
+          "bytes": 3194
         },
         {
           "path": "release/steamworks/store_metadata_draft.json",
@@ -320,11 +325,11 @@
       "desktopPayload": {
         "path": "release/desktop/win-unpacked/Nova Swarm.exe",
         "sizeBytes": 226666496,
-        "modifiedAt": "2026-05-17T20:36:24.752Z"
+        "modifiedAt": "2026-05-17T20:43:55.655Z"
       },
       "latestElectronSmoke": {
-        "reportPath": "test-results/electron-smoke-2026-05-17T20-36-37-691Z/report.json",
-        "screenshotPath": "test-results/electron-smoke-2026-05-17T20-36-37-691Z/01-electron-menu.png",
+        "reportPath": "test-results/electron-smoke-2026-05-17T20-44-02-745Z/report.json",
+        "screenshotPath": "test-results/electron-smoke-2026-05-17T20-44-02-745Z/01-electron-menu.png",
         "status": "passed",
         "build": "v2026-05-17_21-41-17",
         "title": "Nova Swarm - Arcade Patrol",
@@ -344,8 +349,8 @@
         "consoleEvents": []
       },
       "latestPackagedExeSmoke": {
-        "reportPath": "test-results/packaged-exe-smoke-2026-05-17T20-36-37-435Z/report.json",
-        "screenshotPath": "test-results/packaged-exe-smoke-2026-05-17T20-36-37-435Z/01-electron-menu.png",
+        "reportPath": "test-results/packaged-exe-smoke-2026-05-17T20-44-06-738Z/report.json",
+        "screenshotPath": "test-results/packaged-exe-smoke-2026-05-17T20-44-06-738Z/01-electron-menu.png",
         "status": "passed",
         "build": "v2026-05-17_21-41-17",
         "title": "Nova Swarm - Arcade Patrol",
@@ -363,6 +368,83 @@
           "ready": true
         },
         "consoleEvents": []
+      },
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "name": "live_deployment_report_clean",
+      "ok": true,
+      "status": "passed",
+      "expectedBuild": "v2026-05-17_21-41-17",
+      "liveUrl": "https://burt.tinyfoundry.app",
+      "versionChecks": [
+        {
+          "url": "https://burt.tinyfoundry.app/version.json",
+          "ok": true,
+          "status": 200,
+          "version": "v2026-05-17_21-41-17",
+          "timestamp": "2026-05-17T19:41:17.128Z"
+        }
+      ],
+      "latestLiveSmoke": {
+        "reportPath": "test-results/smoke-2026-05-17T20-37-53-548Z/report.json",
+        "baseUrl": "https://burt.tinyfoundry.app",
+        "status": "passed",
+        "build": "v2026-05-17_21-41-17",
+        "screenshots": [
+          {
+            "file": "01-menu.png",
+            "exists": true
+          },
+          {
+            "file": "01-settings.png",
+            "exists": true
+          },
+          {
+            "file": "01-credits.png",
+            "exists": true
+          },
+          {
+            "file": "02-gameplay.png",
+            "exists": true
+          },
+          {
+            "file": "02-powerup-hud.png",
+            "exists": true
+          },
+          {
+            "file": "03-gamepad-pause.png",
+            "exists": true
+          },
+          {
+            "file": "06-game-over.png",
+            "exists": true
+          },
+          {
+            "file": "08-mobile-intro.png",
+            "exists": true
+          },
+          {
+            "file": "10-level3-gameplay.png",
+            "exists": true
+          },
+          {
+            "file": "14-boss-defeated.png",
+            "exists": true
+          },
+          {
+            "file": "15-level-2-start.png",
+            "exists": true
+          }
+        ],
+        "console": {
+          "warningsOrErrors": 0,
+          "pageErrors": 0,
+          "badResponses": 0
+        },
+        "scenes": null,
+        "coverage": null
       },
       "errors": [],
       "warnings": []
