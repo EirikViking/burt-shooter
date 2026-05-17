@@ -1,6 +1,6 @@
 # Nova Swarm Steam Screenshot Upload Candidates
 
-Curated on 2026-05-17 from the brighter gameplay capture in `release/steam-screenshots/draft-2026-05-17-brighter-1280/`.
+Curated on 2026-05-17 from the current release-build capture in `release/steam-screenshots/draft-2026-05-17-current-1280/`.
 
 Source deployment:
 - `https://burt.tinyfoundry.app`
@@ -17,7 +17,7 @@ Candidate set:
 
 Excluded from this upload shortlist:
 - `02-main-menu.png` - useful identity proof, but less valuable as a Steam screenshot than actual play.
-- `05-wave-clear-briefing.png` - representative, but less valuable than the denser midgame action shot.
+- `05-wave-clear-briefing.png` - representative, but less valuable than the denser midgame and boss shots.
 
 Review evidence:
 - `steam_upload_candidate_sheet.png`

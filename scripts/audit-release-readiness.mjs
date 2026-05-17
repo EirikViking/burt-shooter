@@ -19,7 +19,7 @@ const requiredFiles = [
   'release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_review_report.json',
   'release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png',
   'release/steam-assets/draft-2026-05-17-nova-swarm/review/small_capsule_thumbnail_sheet.png',
-  'release/steam-screenshots/draft-2026-05-17-brighter-1280/report.json',
+  'release/steam-screenshots/draft-2026-05-17-current-1280/report.json',
   'release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md',
   'release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png',
   'release/steam-trailer/draft-2026-05-17-17-03/report.json',
@@ -340,7 +340,7 @@ checks.push({
 
 checks.push({
   name: 'steam_screenshot_capture_report_clean',
-  ...checkJsonReport('release/steam-screenshots/draft-2026-05-17-brighter-1280/report.json', (json) => ({
+  ...checkJsonReport('release/steam-screenshots/draft-2026-05-17-current-1280/report.json', (json) => ({
     ok: Array.isArray(json.shots) && json.shots.length >= 7 &&
       (json.consoleEvents || []).length === 0 &&
       (json.pageErrors || []).length === 0 &&

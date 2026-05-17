@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T16:41:10.094Z",
+  "generatedAt": "2026-05-17T16:48:30.990Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 13,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 21307
+          "bytes": 22480
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -77,19 +77,19 @@
           "bytes": 82274
         },
         {
-          "path": "release/steam-screenshots/draft-2026-05-17-brighter-1280/report.json",
+          "path": "release/steam-screenshots/draft-2026-05-17-current-1280/report.json",
           "ok": true,
-          "bytes": 3538
+          "bytes": 3537
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "ok": true,
-          "bytes": 1500
+          "bytes": 1506
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "ok": true,
-          "bytes": 2549768
+          "bytes": 2888134
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-17-03/report.json",
@@ -158,8 +158,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1541,
-      "coveredCount": 1541,
+      "assetCount": 1551,
+      "coveredCount": 1551,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []
