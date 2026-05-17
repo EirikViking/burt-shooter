@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T14:37:05.291Z",
+  "generatedAt": "2026-05-17T14:41:41.583Z",
   "defaults": {
     "masterVolume": 0.3,
     "musicVolume": 0.2,
@@ -12,9 +12,9 @@
     }
   },
   "counts": {
-    "measuredFiles": 87,
+    "measuredFiles": 92,
     "musicRows": 13,
-    "sfxRows": 88,
+    "sfxRows": 97,
     "voiceRows": 20,
     "warnings": 9,
     "errors": 0
@@ -451,6 +451,20 @@
       },
       {
         "type": "sfx",
+        "event": "enemy_shoot",
+        "url": "/audio/sfx/nova-swarm/nova_enemy_pew_cluster.mp3",
+        "durationSeconds": 1,
+        "mixVolume": 0.18,
+        "duckFactor": null,
+        "effectiveLinear": 0.0216,
+        "rawMeanDb": -17.5,
+        "rawPeakDb": -1.8,
+        "gainDb": -33.3,
+        "effectiveMeanDb": -50.8,
+        "effectivePeakDb": -35.1
+      },
+      {
+        "type": "sfx",
         "event": "spaceEngine",
         "url": "/audio/sfx/spaceEngine_000.mp3",
         "durationSeconds": 5,
@@ -479,31 +493,17 @@
       },
       {
         "type": "sfx",
-        "event": "enemy_shoot",
-        "url": "/audio/sfx/laserRetro_001.mp3",
-        "durationSeconds": 0.24,
-        "mixVolume": 0.18,
+        "event": "nova_enemy_pew_cluster",
+        "url": "/audio/sfx/nova-swarm/nova_enemy_pew_cluster.mp3",
+        "durationSeconds": 1,
+        "mixVolume": 0.2,
         "duckFactor": null,
-        "effectiveLinear": 0.0216,
-        "rawMeanDb": -7.7,
-        "rawPeakDb": -0.7,
-        "gainDb": -33.3,
-        "effectiveMeanDb": -41,
-        "effectivePeakDb": -34
-      },
-      {
-        "type": "sfx",
-        "event": "enemy_shoot",
-        "url": "/audio/sfx/laserRetro_000.mp3",
-        "durationSeconds": 0.24,
-        "mixVolume": 0.18,
-        "duckFactor": null,
-        "effectiveLinear": 0.0216,
-        "rawMeanDb": -7.8,
-        "rawPeakDb": -0.2,
-        "gainDb": -33.3,
-        "effectiveMeanDb": -41.1,
-        "effectivePeakDb": -33.5
+        "effectiveLinear": 0.024,
+        "rawMeanDb": -17.5,
+        "rawPeakDb": -1.8,
+        "gainDb": -32.4,
+        "effectiveMeanDb": -49.9,
+        "effectivePeakDb": -34.2
       }
     ],
     "voice": [
@@ -1536,6 +1536,20 @@
     {
       "type": "sfx",
       "event": "enemy_shoot",
+      "url": "/audio/sfx/nova-swarm/nova_enemy_pew_cluster.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.18,
+      "duckFactor": null,
+      "effectiveLinear": 0.0216,
+      "rawMeanDb": -17.5,
+      "rawPeakDb": -1.8,
+      "gainDb": -33.3,
+      "effectiveMeanDb": -50.8,
+      "effectivePeakDb": -35.1
+    },
+    {
+      "type": "sfx",
+      "event": "enemy_shoot",
       "url": "/audio/sfx/laserRetro_000.mp3",
       "durationSeconds": 0.24,
       "mixVolume": 0.18,
@@ -1732,6 +1746,20 @@
     {
       "type": "sfx",
       "event": "playerHit",
+      "url": "/audio/sfx/nova-swarm/nova_player_hit_crackle.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.78,
+      "duckFactor": null,
+      "effectiveLinear": 0.0936,
+      "rawMeanDb": -24.1,
+      "rawPeakDb": -2.3,
+      "gainDb": -20.6,
+      "effectiveMeanDb": -44.7,
+      "effectivePeakDb": -22.9
+    },
+    {
+      "type": "sfx",
+      "event": "playerHit",
       "url": "/audio/sfx/impactMetal_000.mp3",
       "durationSeconds": 0.63,
       "mixVolume": 0.78,
@@ -1742,6 +1770,20 @@
       "gainDb": -20.6,
       "effectiveMeanDb": -42.9,
       "effectivePeakDb": -21.8
+    },
+    {
+      "type": "sfx",
+      "event": "levelComplete",
+      "url": "/audio/sfx/nova-swarm/nova_wave_clear_sweep.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.45,
+      "duckFactor": null,
+      "effectiveLinear": 0.054,
+      "rawMeanDb": -24,
+      "rawPeakDb": -5.8,
+      "gainDb": -25.4,
+      "effectiveMeanDb": -49.4,
+      "effectivePeakDb": -31.2
     },
     {
       "type": "sfx",
@@ -1854,6 +1896,20 @@
       "gainDb": -23.6,
       "effectiveMeanDb": -35.5,
       "effectivePeakDb": -24.8
+    },
+    {
+      "type": "sfx",
+      "event": "life_up",
+      "url": "/audio/sfx/nova-swarm/nova_life_extend_bloom.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.7,
+      "duckFactor": null,
+      "effectiveLinear": 0.084,
+      "rawMeanDb": -16.8,
+      "rawPeakDb": -2.9,
+      "gainDb": -21.5,
+      "effectiveMeanDb": -38.3,
+      "effectivePeakDb": -24.4
     },
     {
       "type": "sfx",
@@ -2092,6 +2148,76 @@
       "gainDb": -22.6,
       "effectiveMeanDb": -44.8,
       "effectivePeakDb": -27.5
+    },
+    {
+      "type": "sfx",
+      "event": "nova_enemy_pew_cluster",
+      "url": "/audio/sfx/nova-swarm/nova_enemy_pew_cluster.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.2,
+      "duckFactor": null,
+      "effectiveLinear": 0.024,
+      "rawMeanDb": -17.5,
+      "rawPeakDb": -1.8,
+      "gainDb": -32.4,
+      "effectiveMeanDb": -49.9,
+      "effectivePeakDb": -34.2
+    },
+    {
+      "type": "sfx",
+      "event": "nova_player_hit_crackle",
+      "url": "/audio/sfx/nova-swarm/nova_player_hit_crackle.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.72,
+      "duckFactor": null,
+      "effectiveLinear": 0.0864,
+      "rawMeanDb": -24.1,
+      "rawPeakDb": -2.3,
+      "gainDb": -21.3,
+      "effectiveMeanDb": -45.4,
+      "effectivePeakDb": -23.6
+    },
+    {
+      "type": "sfx",
+      "event": "nova_life_extend_bloom",
+      "url": "/audio/sfx/nova-swarm/nova_life_extend_bloom.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.66,
+      "duckFactor": null,
+      "effectiveLinear": 0.0792,
+      "rawMeanDb": -16.8,
+      "rawPeakDb": -2.9,
+      "gainDb": -22,
+      "effectiveMeanDb": -38.8,
+      "effectivePeakDb": -24.9
+    },
+    {
+      "type": "sfx",
+      "event": "nova_wave_clear_sweep",
+      "url": "/audio/sfx/nova-swarm/nova_wave_clear_sweep.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.54,
+      "duckFactor": null,
+      "effectiveLinear": 0.0648,
+      "rawMeanDb": -24,
+      "rawPeakDb": -5.8,
+      "gainDb": -23.8,
+      "effectiveMeanDb": -47.8,
+      "effectivePeakDb": -29.6
+    },
+    {
+      "type": "sfx",
+      "event": "nova_game_over_drop",
+      "url": "/audio/sfx/nova-swarm/nova_game_over_drop.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.62,
+      "duckFactor": null,
+      "effectiveLinear": 0.0744,
+      "rawMeanDb": -19.2,
+      "rawPeakDb": -3.5,
+      "gainDb": -22.6,
+      "effectiveMeanDb": -41.8,
+      "effectivePeakDb": -26.1
     },
     {
       "type": "voice",

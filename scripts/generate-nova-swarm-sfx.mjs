@@ -1,8 +1,10 @@
 import { mkdir, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 const apiKey = process.env.ELEVENLABS_API_KEY;
 const outputDir = path.resolve('public/audio/sfx/nova-swarm');
+const force = process.argv.includes('--force');
 
 const sounds = [
   {
@@ -34,6 +36,36 @@ const sounds = [
     text: 'A premium arcade high-score chime, glittering score counter sparkle, confident and clean, no voice, no melody quote, under two seconds.',
     duration_seconds: 2,
     prompt_influence: 0.6
+  },
+  {
+    file: 'nova_enemy_pew_cluster.mp3',
+    text: 'A tiny clustered alien arcade laser shot, quick chirpy pew with digital swarm texture, readable in busy combat, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.62
+  },
+  {
+    file: 'nova_player_hit_crackle.mp3',
+    text: 'A short player ship damage crackle, metallic shield impact and electric fizz, urgent but not harsh, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.6
+  },
+  {
+    file: 'nova_life_extend_bloom.mp3',
+    text: 'A warm arcade extra-life bloom, hopeful rising sparkle and soft coin cabinet reward, compact and premium, no voice, no melody quote, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.6
+  },
+  {
+    file: 'nova_wave_clear_sweep.mp3',
+    text: 'A bright wave-clear sweep for a neon arcade shooter, quick upward shimmer with tiny score-counter sparkle, satisfying but not too loud, no voice, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.58
+  },
+  {
+    file: 'nova_game_over_drop.mp3',
+    text: 'A compact arcade game-over stinger, descending sci-fi synth drop with a tiny coin-slot clack at the end, dramatic but playful, no voice, no melody quote, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.58
   }
 ];
 
@@ -44,6 +76,12 @@ function requireApiKey() {
 }
 
 async function generateSound(sound) {
+  const target = path.join(outputDir, sound.file);
+  if (!force && existsSync(target)) {
+    console.log(`skip existing ${sound.file}`);
+    return;
+  }
+
   const response = await fetch('https://api.elevenlabs.io/v1/sound-generation', {
     method: 'POST',
     headers: {
@@ -64,7 +102,7 @@ async function generateSound(sound) {
   }
 
   const buffer = Buffer.from(await response.arrayBuffer());
-  await writeFile(path.join(outputDir, sound.file), buffer);
+  await writeFile(target, buffer);
   console.log(`generated ${sound.file} (${buffer.length} bytes)`);
 }
 

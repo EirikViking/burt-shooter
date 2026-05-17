@@ -10,13 +10,13 @@ Current playable deployment:
 
 Current deployed and verified build:
 
-- `v2026-05-17_15-53-16`
+- `v2026-05-17_16-48-55`
 
 Current evidence:
 
 - Recent milestones are preserved in git history; this checklist tracks the latest verified artifacts rather than a single commit hash.
-- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://cc7b0b42.burt-game.pages.dev/version.json` both reported `v2026-05-17_15-53-16` after the Cloudflare Pages production deploy `https://cc7b0b42.burt-game.pages.dev`.
-- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T13-59-45-653Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
+- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://27ad6da0.burt-game.pages.dev/version.json` both reported `v2026-05-17_16-48-55` after the Cloudflare Pages production deploy `https://27ad6da0.burt-game.pages.dev`.
+- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T14-50-59-402Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
 - Latest intro/audio/visual smoke: `test-results/smoke-2026-05-17T09-17-13-563Z/`
 - Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
@@ -44,6 +44,7 @@ Current evidence:
 - Latest ElevenLabs SFX polish smoke: `test-results/smoke-2026-05-17T12-53-11-080Z/`; latest short release preflight after that SFX pass: `test-results/release-playtest-nova-sfx-20260517-1454/`.
 - Latest generated bonus-core cleanup: built-in imagegen source and runtime sprite at `public/art/generated/nova-bonus-core-drone-source-20260517.png` and `public/sprites/generated/nova-bonus-core-drone-20260517.png`; local smoke passed at `test-results/smoke-2026-05-17T13-30-19-186Z/`, 60-second release playtest passed at `test-results/release-playtest-bonus-core-20260517-1530/`, and live-domain smoke passed at `test-results/smoke-2026-05-17T13-36-30-834Z/`.
 - Latest powerup HUD meter polish: focused visual check passed at `test-results/manual-powerup-hud-20260517-1553/powerup-hud.png`, local smoke passed at `test-results/smoke-2026-05-17T13-55-24-048Z/`, and live-domain smoke passed at `test-results/smoke-2026-05-17T13-59-45-653Z/`.
+- Latest ElevenLabs SFX round: five additional original cues for enemy fire, player hit, extra life, wave clear, and game-over drop are wired through `src/audio/SoundCatalog.js`; `npm run smoke` passed at `test-results/smoke-2026-05-17T14-42-08-464Z/`, 60-second release playtest passed at `test-results/release-playtest-nova-sfx-round2-20260517-1646/`, refreshed desktop smoke passed at `test-results/electron-smoke-2026-05-17T14-48-45-481Z/`, production deploy is `https://27ad6da0.burt-game.pages.dev`, and live-domain smoke passed at `test-results/smoke-2026-05-17T14-50-59-402Z/`.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 

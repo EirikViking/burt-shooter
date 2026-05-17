@@ -181,7 +181,7 @@ export class GameOverScene {
     this.updateNameDisplay();
     this.setupKeyboard();
 
-    AudioManager.playSfx('levelComplete');
+    AudioManager.playSfx('nova_game_over_drop');
     AudioManager.playVoice('mission_control_game_over', { cooldownMs: 2400, duckMs: 2600 });
     AudioManager.playMusicContext('gameover', { resetPlaylist: true });
 
