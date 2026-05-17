@@ -19,3 +19,4 @@ release/steam-trailer/*/concat.txt
 # Protected generated build artifacts - never commit
 public/sw.js
 public/version.json
+.pw-browsers/

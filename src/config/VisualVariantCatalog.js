@@ -297,6 +297,37 @@ function roundStat(value, digits = 2) {
   return Math.round(value * factor) / factor;
 }
 
+function buildTraitCombatEffects(traitProfile) {
+  const speedMult = traitProfile.speedMult ?? 1;
+  const fireRateMult = traitProfile.fireRateMult ?? 1;
+  const damageMult = traitProfile.damageMult ?? 1;
+  const bulletSpeedMult = traitProfile.bulletSpeedMult ?? 1;
+  const spreadDelta = traitProfile.spreadDelta ?? 0;
+  const hitboxMult = traitProfile.hitboxMult ?? 1;
+  const projectileRadiusMult = roundStat(clampNumber(
+    1 + (damageMult - 1) * 0.48 + Math.max(0, spreadDelta) * 1.8 - Math.max(0, 1 - damageMult) * 0.18,
+    0.86,
+    1.32
+  ), 2);
+  const dodgeCooldownMult = roundStat(clampNumber(
+    1 - Math.max(0, speedMult - 1) * 0.7 - Math.max(0, 1 - hitboxMult) * 0.55 + Math.max(0, hitboxMult - 1) * 0.42,
+    0.74,
+    1.16
+  ), 2);
+  const bonusShotEvery = fireRateMult <= 0.9 || spreadDelta >= 0.055 ? (spreadDelta >= 0.055 ? 4 : 5) : 0;
+  const pierceEvery = bulletSpeedMult >= 1.16 || spreadDelta <= -0.035 ? (bulletSpeedMult >= 1.18 ? 4 : 5) : 0;
+
+  return {
+    projectileRadiusMult,
+    dodgeCooldownMult,
+    dodgeDurationMult: roundStat(clampNumber(1 + Math.max(0, speedMult - 1) * 0.55 + Math.max(0, 1 - hitboxMult) * 0.45, 1, 1.18), 2),
+    bonusShotEvery,
+    bonusShotDamageMult: bonusShotEvery ? 0.5 : 0,
+    pierceEvery,
+    pierceDamageMult: pierceEvery ? 0.72 : 0
+  };
+}
+
 function applyShipTrait(base, variant) {
   const traitProfile = SHIP_TRAIT_PROFILES[variant.slug] || {};
   const baseStats = base.stats || {};
@@ -322,7 +353,8 @@ function applyShipTrait(base, variant) {
     damageMult: traitProfile.damageMult ?? 1,
     bulletSpeedMult: traitProfile.bulletSpeedMult ?? 1,
     spreadDelta: traitProfile.spreadDelta ?? 0,
-    hitboxMult: traitProfile.hitboxMult ?? 1
+    hitboxMult: traitProfile.hitboxMult ?? 1,
+    combat: buildTraitCombatEffects(traitProfile)
   };
   return {
     stats,

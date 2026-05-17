@@ -34,6 +34,7 @@ export class Player {
     this.visuals = { ...this.config.visuals };
     this.visualVariant = this.visuals?.variant || null;
     this.shipTrait = this.config.trait || this.visuals?.trait || null;
+    this.traitCombat = this.shipTrait?.effects?.combat || {};
     this.selectedShipSpriteKey = selectedMetadata?.spriteKey || spriteKey;
     this.selectedShipTextureIndex = textureIndex;
     this.hasSetInitialRank = false; // Track if initial rank has been set
@@ -53,6 +54,7 @@ export class Player {
     this.shootDelay = this.stats.fireRate;
     this.bulletDamage = this.stats.damage;
     this.bulletSpeed = this.stats.bulletSpeed;
+    this.traitShotCounter = 0;
 
     // Weapon Profile (must be set before multiShot)
     this.weaponProfile = this.config.weapon || { bullets: 1, spread: 0, shootSfx: 'shoot_small' };
@@ -64,10 +66,10 @@ export class Player {
 
     // Dodge
     this.dodgeCooldown = 0;
-    this.dodgeDelay = 1000;
+    this.dodgeDelay = Math.round(1000 * (this.traitCombat.dodgeCooldownMult || 1));
     this.isDodging = false;
     this.dodgeDuration = 0;
-    this.dodgeDurationMax = 333;
+    this.dodgeDurationMax = Math.round(333 * (this.traitCombat.dodgeDurationMult || 1));
 
     // Tractor Beam Removed
 
@@ -401,6 +403,9 @@ export class Player {
       this.config = newConfig;
       this.stats = { ...newConfig.stats };
       this.visuals = { ...newConfig.visuals };
+      this.visualVariant = this.visuals?.variant || null;
+      this.shipTrait = newConfig.trait || this.visuals?.trait || null;
+      this.traitCombat = this.shipTrait?.effects?.combat || {};
       this.weaponProfile = { ...newConfig.weapon };
       this.speed = this.stats.speed;
       this.weaponSfxKey = this.weaponProfile.shootSfx;
@@ -903,9 +908,40 @@ export class Player {
     }, 80);
   }
 
+  applyTraitProjectileEffects(bullet, shotCounter, { bonus = false } = {}) {
+    if (!bullet) return bullet;
+    const combat = this.traitCombat || {};
+    const radiusMult = Number.isFinite(combat.projectileRadiusMult) ? combat.projectileRadiusMult : 1;
+    if (radiusMult !== 1) {
+      bullet.radius = Math.max(4, Math.round((bullet.radius || 7) * radiusMult));
+      if (bullet.sprite?.scale) {
+        const visualScale = Math.max(0.82, Math.min(1.26, radiusMult));
+        bullet.sprite.scale.set(visualScale);
+      }
+    }
+
+    const pierceEvery = Number(combat.pierceEvery || 0);
+    if (!bonus && pierceEvery > 0 && shotCounter % pierceEvery === 0) {
+      bullet.piercing = true;
+      bullet.damage = Math.max(0.5, bullet.damage * (combat.pierceDamageMult || 0.72));
+      if (bullet.core) bullet.core.tint = 0xffffff;
+    }
+
+    if (bonus) {
+      bullet.isTraitBonusShot = true;
+      bullet.radius = Math.max(4, Math.round((bullet.radius || 7) * 0.78));
+      bullet.damage = Math.max(0.45, bullet.damage * (combat.bonusShotDamageMult || 0.5));
+      if (bullet.sprite?.scale) bullet.sprite.scale.set(0.82);
+    }
+
+    return bullet;
+  }
+
   shoot() {
     this.shootCooldown = this.shootDelay;
     const bullets = [];
+    this.traitShotCounter += 1;
+    const shotCounter = this.traitShotCounter;
 
     // Check if firing bomb
     if (this.bombShotsLeft > 0) {
@@ -921,6 +957,7 @@ export class Player {
       );
       bomb.isBomb = true;
       bomb.blastRadius = 150; // Blast radius
+      this.applyTraitProjectileEffects(bomb, shotCounter);
       bullets.push(bomb);
 
       this.bombShotsLeft--;
@@ -973,6 +1010,7 @@ export class Player {
       const bulletColor = this.visualVariant?.accent || 0x00ffff;
       const bullet = new Bullet(this.x + offsetX, spawnY, vx, vy, this.bulletDamage, bulletColor, true, vConfig);
       if (this.bulletPierce) bullet.piercing = true;
+      this.applyTraitProjectileEffects(bullet, shotCounter);
       bullets.push(bullet);
 
       const flash = new PIXI.Graphics();
@@ -1001,8 +1039,26 @@ export class Player {
           true,
           { color: 'Blue', index: 7 } // Cyan-ish bullet
         );
+        this.applyTraitProjectileEffects(bullet, shotCounter, { bonus: true });
         bullets.push(bullet);
       });
+    }
+
+    const bonusEvery = Number(this.traitCombat?.bonusShotEvery || 0);
+    if (bonusEvery > 0 && shotCounter % bonusEvery === 0) {
+      const bonusColor = this.visualVariant?.glow || this.visualVariant?.accent || 0xffffff;
+      const bonus = new Bullet(
+        this.x,
+        spawnY - 4,
+        0,
+        -this.bulletSpeed * 1.12,
+        this.bulletDamage,
+        bonusColor,
+        true,
+        { color: 'Green', index: 7 }
+      );
+      this.applyTraitProjectileEffects(bonus, shotCounter, { bonus: true });
+      bullets.push(bonus);
     }
 
     return bullets;
@@ -1164,7 +1220,11 @@ export class Player {
   getStatSnapshot() {
     const shots = this.multiShot + this.rankBoostExtraShots;
     const trait = this.shipTrait?.label ? this.shipTrait.label.replace(/\s+/g, '_') : 'none';
-    return `trait=${trait} fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}`;
+    const combat = this.traitCombat || {};
+    const bonus = combat.bonusShotEvery ? ` bonusEvery=${combat.bonusShotEvery}` : '';
+    const pierce = combat.pierceEvery ? ` pierceEvery=${combat.pierceEvery}` : '';
+    const radius = combat.projectileRadiusMult ? ` radius=${combat.projectileRadiusMult}` : '';
+    return `trait=${trait} fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}${bonus}${pierce}${radius}`;
   }
 
   getPowerupLabel(type) {
@@ -1533,6 +1593,8 @@ export class Player {
     this.bulletDamage = this.stats.damage;
     this.shootDelay = this.stats.fireRate;
     this.bulletSpeed = this.stats.bulletSpeed;
+    this.dodgeDelay = Math.round(1000 * (this.traitCombat?.dodgeCooldownMult || 1));
+    this.dodgeDurationMax = Math.round(333 * (this.traitCombat?.dodgeDurationMult || 1));
 
     // 2. Base Weapon Profile properties
     const weapon = this.weaponProfile || { bullets: 1, spread: 0 };
