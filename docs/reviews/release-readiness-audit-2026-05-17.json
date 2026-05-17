@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-17T21:04:59.828Z",
+  "generatedAt": "2026-05-17T21:08:30.846Z",
   "verdict": "not_steam_ready",
   "summary": {
-    "passed": 16,
+    "passed": 17,
     "failed": 3,
     "hardFailures": 0,
     "manualBlockers": [
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 30212
+          "bytes": 30668
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -137,14 +137,24 @@
           "bytes": 3435
         },
         {
+          "path": "release/steamworks/human_review_packet.json",
+          "ok": true,
+          "bytes": 6460
+        },
+        {
+          "path": "release/steamworks/human_review_packet.md",
+          "ok": true,
+          "bytes": 3634
+        },
+        {
           "path": "release/steamworks/release_handoff_packet.json",
           "ok": true,
-          "bytes": 5248
+          "bytes": 5574
         },
         {
           "path": "release/steamworks/release_handoff_packet.md",
           "ok": true,
-          "bytes": 3269
+          "bytes": 3341
         },
         {
           "path": "release/steamworks/store_metadata_draft.json",
@@ -591,6 +601,200 @@
       "missingStages": [],
       "errors": [],
       "warnings": []
+    },
+    {
+      "name": "human_review_packet_current",
+      "ok": true,
+      "status": "ready_for_human_review",
+      "expectedBuild": "v2026-05-17_21-41-17",
+      "actualBuild": "v2026-05-17_21-41-17",
+      "approval": {
+        "path": "docs/reviews/2026-05-17-human-release-approval.md",
+        "exists": true,
+        "approved": false,
+        "pending": [
+          "screenshots",
+          "capsules",
+          "trailer",
+          "audio",
+          "storeCopy",
+          "legalProvenance",
+          "gameplayFeel"
+        ],
+        "approvedBy": "TBD",
+        "approvedAt": "TBD"
+      },
+      "missingAreas": [],
+      "reviewAreas": [
+        {
+          "key": "screenshots",
+          "label": "Steam Screenshots",
+          "approvalGate": "screenshots",
+          "status": "ready_for_human_review",
+          "artifacts": [
+            {
+              "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
+              "exists": true,
+              "bytes": 2181504
+            },
+            {
+              "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
+              "exists": true,
+              "bytes": 1786
+            },
+            {
+              "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
+              "exists": true,
+              "bytes": 3633
+            }
+          ],
+          "prompt": "Review the 8 screenshot upload candidates for clarity, truthful gameplay representation, UI readability, and public arcade tone."
+        },
+        {
+          "key": "capsules",
+          "label": "Steam Capsules And Library Art",
+          "approvalGate": "capsules",
+          "status": "ready_for_human_review",
+          "artifacts": [
+            {
+              "path": "release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png",
+              "exists": true,
+              "bytes": 3226184
+            },
+            {
+              "path": "release/steam-assets/draft-2026-05-17-nova-swarm/review/small_capsule_thumbnail_sheet.png",
+              "exists": true,
+              "bytes": 82274
+            },
+            {
+              "path": "release/steam-assets/draft-2026-05-17-nova-swarm/README.md",
+              "exists": true,
+              "bytes": 1334
+            }
+          ],
+          "prompt": "Review capsule title readability, thumbnail fit, public brand tone, and whether the art feels original and shippable."
+        },
+        {
+          "key": "trailer",
+          "label": "Steam Trailer Candidate",
+          "approvalGate": "trailer",
+          "status": "ready_for_human_review",
+          "artifacts": [
+            {
+              "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
+              "exists": true,
+              "bytes": 11358801
+            },
+            {
+              "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
+              "exists": true,
+              "bytes": 578133
+            },
+            {
+              "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
+              "exists": true,
+              "bytes": 2424
+            }
+          ],
+          "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."
+        },
+        {
+          "key": "audio",
+          "label": "Audio Mix And Voice",
+          "approvalGate": "audio",
+          "status": "ready_for_human_review",
+          "artifacts": [
+            {
+              "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
+              "exists": true,
+              "bytes": 4982
+            },
+            {
+              "path": "docs/reviews/audio-mix-audit-2026-05-17.json",
+              "exists": true,
+              "bytes": 71893
+            },
+            {
+              "path": "docs/audio-pipeline.md",
+              "exists": true,
+              "bytes": 2812
+            }
+          ],
+          "prompt": "Listen on headphones or speakers through menu, intro narration, combat, powerups, boss, victory, and game over."
+        },
+        {
+          "key": "storeCopy",
+          "label": "Steam Store Copy And Metadata",
+          "approvalGate": "storeCopy",
+          "status": "ready_for_human_review",
+          "artifacts": [
+            {
+              "path": "release/steamworks/store_metadata_draft.json",
+              "exists": true,
+              "bytes": 4458
+            },
+            {
+              "path": "release/steamworks/store_metadata_review_report.json",
+              "exists": true,
+              "bytes": 376
+            },
+            {
+              "path": "docs/steam-store-handoff.md",
+              "exists": true,
+              "bytes": 2379
+            }
+          ],
+          "prompt": "Approve short description, long description, feature bullets, tags, controller claim, and v1 deferrals for Steam Cloud and achievements."
+        },
+        {
+          "key": "legalProvenance",
+          "label": "Legal And Provenance",
+          "approvalGate": "legalProvenance",
+          "status": "ready_for_human_review",
+          "artifacts": [
+            {
+              "path": "docs/asset-provenance.md",
+              "exists": true,
+              "bytes": 1351
+            },
+            {
+              "path": "release/provenance/asset_provenance_manifest.json",
+              "exists": true,
+              "bytes": 4983
+            },
+            {
+              "path": "release/provenance/asset_provenance_report.json",
+              "exists": true,
+              "bytes": 1169
+            }
+          ],
+          "prompt": "Review generated and third-party art/audio provenance, names, jokes, and store materials. Only a human can mark legal approval."
+        },
+        {
+          "key": "gameplayFeel",
+          "label": "Gameplay Feel",
+          "approvalGate": "gameplayFeel",
+          "status": "ready_for_human_review",
+          "artifacts": [
+            {
+              "path": "release/steamworks/full_rc_verification_report.json",
+              "exists": true,
+              "bytes": 3435
+            },
+            {
+              "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
+              "exists": true,
+              "bytes": 30668
+            },
+            {
+              "path": "docs/reviews/2026-05-16-release-candidate-review.md",
+              "exists": true,
+              "bytes": 6682
+            }
+          ],
+          "prompt": "Play a normal 10-15 minute session and approve late boss pressure, repair generosity, restart flow, controls, and UI clutter."
+        }
+      ]
     },
     {
       "name": "steam_release_handoff_packet_current",

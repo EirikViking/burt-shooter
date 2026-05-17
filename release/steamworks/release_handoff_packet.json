@@ -1,9 +1,10 @@
 {
-  "generatedAt": "2026-05-17T21:04:58.362Z",
+  "generatedAt": "2026-05-17T21:08:29.463Z",
   "build": {
     "version": "v2026-05-17_21-41-17",
     "timestamp": "2026-05-17T19:41:17.128Z",
     "evidenceVersions": [
+      "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
       "v2026-05-17_21-41-17",
@@ -14,7 +15,7 @@
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
-    "passed": 16,
+    "passed": 17,
     "failed": 3,
     "hardFailures": 0,
     "failedChecks": [
@@ -61,6 +62,19 @@
       "path": "release/steamworks/full_rc_verification_report.json",
       "fullRcReport": "test-results/steam-rc-verify-2026-05-17T20-46-38-788Z/report.json",
       "releasePlaytest": "test-results/release-playtest-2026-05-17T20-49-05-026Z/report.json"
+    },
+    "humanReview": {
+      "status": "ready",
+      "path": "release/steamworks/human_review_packet.json",
+      "pendingGates": [
+        "screenshots",
+        "capsules",
+        "trailer",
+        "audio",
+        "storeCopy",
+        "legalProvenance",
+        "gameplayFeel"
+      ]
     },
     "audio": {
       "status": "ready",

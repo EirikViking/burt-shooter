@@ -31,6 +31,8 @@ const requiredFiles = [
   'release/steamworks/desktop_package_review_report.json',
   'release/steamworks/live_deployment_report.json',
   'release/steamworks/full_rc_verification_report.json',
+  'release/steamworks/human_review_packet.json',
+  'release/steamworks/human_review_packet.md',
   'release/steamworks/release_handoff_packet.json',
   'release/steamworks/release_handoff_packet.md',
   'release/steamworks/store_metadata_draft.json',
@@ -308,6 +310,7 @@ function checkReleaseHandoffPacket() {
         evidence.desktop?.status === 'ready' &&
         evidence.liveDeployment?.status === 'ready' &&
         evidence.fullRc?.status === 'ready' &&
+        evidence.humanReview?.status === 'ready' &&
         evidence.provenance?.status === 'ready' &&
         evidence.storeMetadata?.status === 'ready' &&
         manualSteps.length >= 5 &&
@@ -612,6 +615,37 @@ checks.push({
       missingStages,
       errors: json.errors || [],
       warnings: json.warnings || []
+    };
+  })
+});
+
+checks.push({
+  name: 'human_review_packet_current',
+  ...checkJsonReport('release/steamworks/human_review_packet.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    const requiredAreas = new Set(['screenshots', 'capsules', 'trailer', 'audio', 'storeCopy', 'legalProvenance', 'gameplayFeel']);
+    const areas = new Set((json.reviewAreas || []).map((area) => area.key));
+    const missingAreas = [...requiredAreas].filter((area) => !areas.has(area));
+    return {
+      ok: json.status === 'ready_for_human_review' &&
+      Boolean(expectedBuild) &&
+      json.build?.version === expectedBuild &&
+      missingAreas.length === 0 &&
+      json.approval?.approved === false &&
+      Array.isArray(json.approval?.pending) &&
+      json.approval.pending.length === requiredAreas.size &&
+      (json.reviewAreas || []).every((area) =>
+        area.status === 'ready_for_human_review' &&
+        Array.isArray(area.artifacts) &&
+        area.artifacts.every((artifact) => artifact.exists === true && Number(artifact.bytes || 0) > 0)
+      ) &&
+      existsSync(path.resolve(root, 'release/steamworks/human_review_packet.md')),
+      status: json.status || null,
+      expectedBuild,
+      actualBuild: json.build?.version || null,
+      approval: json.approval || null,
+      missingAreas,
+      reviewAreas: json.reviewAreas || []
     };
   })
 });

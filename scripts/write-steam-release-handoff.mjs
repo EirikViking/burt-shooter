@@ -32,6 +32,7 @@ const trailer = readJson('release/steam-trailer/candidate-2026-05-17-current/rep
 const desktop = readJson('release/steamworks/desktop_package_review_report.json');
 const liveDeployment = readJson('release/steamworks/live_deployment_report.json');
 const fullRc = readJson('release/steamworks/full_rc_verification_report.json');
+const humanReview = readJson('release/steamworks/human_review_packet.json');
 const provenance = readJson('release/provenance/asset_provenance_report.json');
 const store = readJson('release/steamworks/store_metadata_review_report.json');
 
@@ -41,7 +42,8 @@ const currentBuildEvidence = [
   trailer?.build?.version,
   desktop?.currentBuild?.version,
   liveDeployment?.currentBuild?.version,
-  fullRc?.currentBuild?.version
+  fullRc?.currentBuild?.version,
+  humanReview?.build?.version
 ].filter(Boolean);
 const staleEvidence = currentBuildEvidence.filter((item) => item !== buildVersion);
 const auditChecks = audit?.checks || [];
@@ -113,6 +115,11 @@ const packet = {
       path: 'release/steamworks/full_rc_verification_report.json',
       fullRcReport: fullRc?.latestFullRc?.reportPath || null,
       releasePlaytest: fullRc?.latestReleasePlaytest?.reportPath || null
+    },
+    humanReview: {
+      status: lineForStatus(humanReview?.status === 'ready_for_human_review' && humanReview?.build?.version === buildVersion),
+      path: 'release/steamworks/human_review_packet.json',
+      pendingGates: humanReview?.approval?.pending || []
     },
     audio: {
       status: lineForStatus(Boolean(audio) && (audio.decodeErrors || []).length === 0),
