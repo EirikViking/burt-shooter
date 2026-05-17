@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T20:31:27.750Z",
+  "generatedAt": "2026-05-17T20:33:55.234Z",
   "defaults": {
     "masterVolume": 0.3,
     "musicVolume": 0.2,
@@ -16,24 +16,24 @@
     "musicRows": 13,
     "sfxRows": 115,
     "voiceRows": 20,
-    "warnings": 9,
+    "warnings": 0,
     "errors": 0
   },
   "loudestEffectivePeaks": {
     "music": [
       {
         "type": "music",
-        "event": "intro",
-        "url": "/audio/music/nova-swarm/nova_swarm_intro_overture.mp3",
-        "durationSeconds": 22,
+        "event": "gameplay",
+        "url": "/audio/music/Without Fear.mp3",
+        "durationSeconds": 99.7,
         "mixVolume": 1,
         "duckFactor": null,
         "effectiveLinear": 0.06,
-        "rawMeanDb": -14.3,
-        "rawPeakDb": 0,
+        "rawMeanDb": -12.7,
+        "rawPeakDb": -0.5,
         "gainDb": -24.4,
-        "effectiveMeanDb": -38.7,
-        "effectivePeakDb": -24.4
+        "effectiveMeanDb": -37.1,
+        "effectivePeakDb": -24.9
       },
       {
         "type": "music",
@@ -43,11 +43,11 @@
         "mixVolume": 1,
         "duckFactor": null,
         "effectiveLinear": 0.06,
-        "rawMeanDb": -12,
-        "rawPeakDb": 0,
+        "rawMeanDb": -13.5,
+        "rawPeakDb": -1,
         "gainDb": -24.4,
-        "effectiveMeanDb": -36.4,
-        "effectivePeakDb": -24.4
+        "effectiveMeanDb": -37.9,
+        "effectivePeakDb": -25.4
       },
       {
         "type": "music",
@@ -57,25 +57,11 @@
         "mixVolume": 1,
         "duckFactor": null,
         "effectiveLinear": 0.06,
-        "rawMeanDb": -11.1,
-        "rawPeakDb": 0,
+        "rawMeanDb": -12.6,
+        "rawPeakDb": -1,
         "gainDb": -24.4,
-        "effectiveMeanDb": -35.5,
-        "effectivePeakDb": -24.4
-      },
-      {
-        "type": "music",
-        "event": "scoreboard",
-        "url": "/audio/music/Space Heroes.mp3",
-        "durationSeconds": 126.86,
-        "mixVolume": 1,
-        "duckFactor": null,
-        "effectiveLinear": 0.06,
-        "rawMeanDb": -11.7,
-        "rawPeakDb": 0,
-        "gainDb": -24.4,
-        "effectiveMeanDb": -36.1,
-        "effectivePeakDb": -24.4
+        "effectiveMeanDb": -37,
+        "effectivePeakDb": -25.4
       },
       {
         "type": "music",
@@ -85,11 +71,25 @@
         "mixVolume": 1,
         "duckFactor": null,
         "effectiveLinear": 0.06,
-        "rawMeanDb": -11.1,
-        "rawPeakDb": 0,
+        "rawMeanDb": -12.6,
+        "rawPeakDb": -1,
         "gainDb": -24.4,
-        "effectiveMeanDb": -35.5,
-        "effectivePeakDb": -24.4
+        "effectiveMeanDb": -37,
+        "effectivePeakDb": -25.4
+      },
+      {
+        "type": "music",
+        "event": "scoreboard",
+        "url": "/audio/music/Space Heroes.mp3",
+        "durationSeconds": 126.86,
+        "mixVolume": 1,
+        "duckFactor": null,
+        "effectiveLinear": 0.06,
+        "rawMeanDb": -13.2,
+        "rawPeakDb": -1.1,
+        "gainDb": -24.4,
+        "effectiveMeanDb": -37.6,
+        "effectivePeakDb": -25.5
       },
       {
         "type": "music",
@@ -99,25 +99,11 @@
         "mixVolume": 1,
         "duckFactor": null,
         "effectiveLinear": 0.06,
-        "rawMeanDb": -12.9,
-        "rawPeakDb": 0,
+        "rawMeanDb": -14.4,
+        "rawPeakDb": -1.1,
         "gainDb": -24.4,
-        "effectiveMeanDb": -37.3,
-        "effectivePeakDb": -24.4
-      },
-      {
-        "type": "music",
-        "event": "gameplay",
-        "url": "/audio/music/Battle in the Stars.mp3",
-        "durationSeconds": 105.47,
-        "mixVolume": 1,
-        "duckFactor": null,
-        "effectiveLinear": 0.06,
-        "rawMeanDb": -13.5,
-        "rawPeakDb": 0,
-        "gainDb": -24.4,
-        "effectiveMeanDb": -37.9,
-        "effectivePeakDb": -24.4
+        "effectiveMeanDb": -38.8,
+        "effectivePeakDb": -25.5
       },
       {
         "type": "music",
@@ -127,11 +113,25 @@
         "mixVolume": 1,
         "duckFactor": null,
         "effectiveLinear": 0.06,
-        "rawMeanDb": -13,
-        "rawPeakDb": 0,
+        "rawMeanDb": -14.5,
+        "rawPeakDb": -1.1,
         "gainDb": -24.4,
-        "effectiveMeanDb": -37.4,
-        "effectivePeakDb": -24.4
+        "effectiveMeanDb": -38.9,
+        "effectivePeakDb": -25.5
+      },
+      {
+        "type": "music",
+        "event": "gameplay",
+        "url": "/audio/music/Battle in the Stars.mp3",
+        "durationSeconds": 105.47,
+        "mixVolume": 1,
+        "duckFactor": null,
+        "effectiveLinear": 0.06,
+        "rawMeanDb": -15,
+        "rawPeakDb": -1.2,
+        "gainDb": -24.4,
+        "effectiveMeanDb": -39.4,
+        "effectivePeakDb": -25.6
       }
     ],
     "sfx": [
@@ -171,11 +171,11 @@
         "mixVolume": 0.82,
         "duckFactor": null,
         "effectiveLinear": 0.0984,
-        "rawMeanDb": -7.4,
-        "rawPeakDb": 0,
+        "rawMeanDb": -8.8,
+        "rawPeakDb": -0.2,
         "gainDb": -20.1,
-        "effectiveMeanDb": -27.5,
-        "effectivePeakDb": -20.1
+        "effectiveMeanDb": -28.9,
+        "effectivePeakDb": -20.3
       },
       {
         "type": "sfx",
@@ -621,62 +621,7 @@
       }
     ]
   },
-  "warnings": [
-    {
-      "type": "music",
-      "event": "intro",
-      "url": "/audio/music/nova-swarm/nova_swarm_intro_overture.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "music",
-      "event": "menu",
-      "url": "/audio/music/Brave Pilots (Menu Screen).mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "music",
-      "event": "menu",
-      "url": "/audio/music/SkyFire (Title Screen).mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "music",
-      "event": "scoreboard",
-      "url": "/audio/music/Space Heroes.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "music",
-      "event": "scoreboard",
-      "url": "/audio/music/SkyFire (Title Screen).mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "music",
-      "event": "gameplay",
-      "url": "/audio/music/bgm_v2.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "music",
-      "event": "gameplay",
-      "url": "/audio/music/Battle in the Stars.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "music",
-      "event": "boss",
-      "url": "/audio/music/DeathMatch (Boss Theme).mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "sfx",
-      "event": "boss_reveal_stinger",
-      "url": "/audio/sfx/nova-swarm/boss_reveal_stinger.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    }
-  ],
+  "warnings": [],
   "errors": [],
   "rows": [
     {
@@ -687,11 +632,11 @@
       "mixVolume": 1,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -14.3,
-      "rawPeakDb": 0,
+      "rawMeanDb": -15.8,
+      "rawPeakDb": -1.3,
       "gainDb": -24.4,
-      "effectiveMeanDb": -38.7,
-      "effectivePeakDb": -24.4
+      "effectiveMeanDb": -40.2,
+      "effectivePeakDb": -25.7
     },
     {
       "type": "music",
@@ -701,11 +646,11 @@
       "mixVolume": 1,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -12,
-      "rawPeakDb": 0,
+      "rawMeanDb": -13.5,
+      "rawPeakDb": -1,
       "gainDb": -24.4,
-      "effectiveMeanDb": -36.4,
-      "effectivePeakDb": -24.4
+      "effectiveMeanDb": -37.9,
+      "effectivePeakDb": -25.4
     },
     {
       "type": "music",
@@ -715,11 +660,11 @@
       "mixVolume": 1,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -11.1,
-      "rawPeakDb": 0,
+      "rawMeanDb": -12.6,
+      "rawPeakDb": -1,
       "gainDb": -24.4,
-      "effectiveMeanDb": -35.5,
-      "effectivePeakDb": -24.4
+      "effectiveMeanDb": -37,
+      "effectivePeakDb": -25.4
     },
     {
       "type": "music",
@@ -729,11 +674,11 @@
       "mixVolume": 1,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -11.7,
-      "rawPeakDb": 0,
+      "rawMeanDb": -13.2,
+      "rawPeakDb": -1.1,
       "gainDb": -24.4,
-      "effectiveMeanDb": -36.1,
-      "effectivePeakDb": -24.4
+      "effectiveMeanDb": -37.6,
+      "effectivePeakDb": -25.5
     },
     {
       "type": "music",
@@ -743,11 +688,11 @@
       "mixVolume": 1,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -11.1,
-      "rawPeakDb": 0,
+      "rawMeanDb": -12.6,
+      "rawPeakDb": -1,
       "gainDb": -24.4,
-      "effectiveMeanDb": -35.5,
-      "effectivePeakDb": -24.4
+      "effectiveMeanDb": -37,
+      "effectivePeakDb": -25.4
     },
     {
       "type": "music",
@@ -757,11 +702,11 @@
       "mixVolume": 1,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -12.9,
-      "rawPeakDb": 0,
+      "rawMeanDb": -14.4,
+      "rawPeakDb": -1.1,
       "gainDb": -24.4,
-      "effectiveMeanDb": -37.3,
-      "effectivePeakDb": -24.4
+      "effectiveMeanDb": -38.8,
+      "effectivePeakDb": -25.5
     },
     {
       "type": "music",
@@ -785,11 +730,11 @@
       "mixVolume": 1,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -13.5,
-      "rawPeakDb": 0,
+      "rawMeanDb": -15,
+      "rawPeakDb": -1.2,
       "gainDb": -24.4,
-      "effectiveMeanDb": -37.9,
-      "effectivePeakDb": -24.4
+      "effectiveMeanDb": -39.4,
+      "effectivePeakDb": -25.6
     },
     {
       "type": "music",
@@ -827,11 +772,11 @@
       "mixVolume": 1,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -13,
-      "rawPeakDb": 0,
+      "rawMeanDb": -14.5,
+      "rawPeakDb": -1.1,
       "gainDb": -24.4,
-      "effectiveMeanDb": -37.4,
-      "effectivePeakDb": -24.4
+      "effectiveMeanDb": -38.9,
+      "effectivePeakDb": -25.5
     },
     {
       "type": "music",
@@ -2115,11 +2060,11 @@
       "mixVolume": 0.82,
       "duckFactor": null,
       "effectiveLinear": 0.0984,
-      "rawMeanDb": -7.4,
-      "rawPeakDb": 0,
+      "rawMeanDb": -8.8,
+      "rawPeakDb": -0.2,
       "gainDb": -20.1,
-      "effectiveMeanDb": -27.5,
-      "effectivePeakDb": -20.1
+      "effectiveMeanDb": -28.9,
+      "effectivePeakDb": -20.3
     },
     {
       "type": "sfx",

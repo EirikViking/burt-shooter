@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T20:32:26.484Z",
+  "generatedAt": "2026-05-17T20:36:58.568Z",
   "build": {
     "version": "v2026-05-17_21-41-17",
     "timestamp": "2026-05-17T19:41:17.128Z",
@@ -45,13 +45,13 @@
       "status": "ready",
       "path": "release/steamworks/desktop_package_review_report.json",
       "exeBytes": 226666496,
-      "electronSmoke": "test-results/electron-smoke-2026-05-17T20-31-12-949Z/report.json",
-      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-17T20-31-16-900Z/report.json"
+      "electronSmoke": "test-results/electron-smoke-2026-05-17T20-36-37-691Z/report.json",
+      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-17T20-36-37-435Z/report.json"
     },
     "audio": {
       "status": "ready",
       "path": "docs/reviews/audio-mix-audit-2026-05-17.json",
-      "warnings": 9
+      "warnings": 0
     },
     "provenance": {
       "status": "ready",
