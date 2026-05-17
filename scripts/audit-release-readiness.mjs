@@ -41,8 +41,12 @@ const requiredFiles = [
   'release/steamworks/store_metadata_review_report.json'
 ];
 
+const rootMarkdownDocs = readdirSync(root, { withFileTypes: true })
+  .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.md'))
+  .map((entry) => entry.name);
+
 const forbiddenScanRoots = [
-  'README.md',
+  ...rootMarkdownDocs,
   'package.json',
   'docs',
   'functions',

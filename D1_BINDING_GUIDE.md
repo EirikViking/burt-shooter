@@ -37,8 +37,8 @@ curl https://e208f58c.burt-game.pages.dev/api/highscores
 Skal returnere JSON med test data:
 ```json
 [
-  {"id":1,"name":"KURT","score":15000,"level":8,"created_at":"..."},
-  {"id":2,"name":"EIRIK","score":12000,"level":7,"created_at":"..."},
+  {"id":1,"name":"ACE","score":15000,"level":8,"created_at":"..."},
+  {"id":2,"name":"NOVA","score":12000,"level":7,"created_at":"..."},
   ...
 ]
 ```

@@ -64,7 +64,7 @@ when git commits are not used.
 - Replaced remaining default lore/flyby photos with original generated crew portraits, while leaving legacy local photos opt-in via `?legacyPhotos=1` / `localStorage.burtLegacyPhotos=1`.
 - Added deterministic smoke coverage for generated crew flybys, forced game over, Escape-to-menu music restoration, and boss/victory music routing.
 - Improved survival feel with stronger starter shots, wider player bullets, field repair at wave/sector clears, enemy-bullet cleanup, respawn shockwave cleanup, longer respawn grace, and a last-stand repair mercy.
-- Smoothed the level 3-4 curve by delaying random modifiers until level 5, reducing early Deili/Svin walls, and making late dives less spiky.
+- Smoothed the level 3-4 curve by delaying random modifiers until level 5, reducing early elite/armored walls, and making late dives less spiky.
 - Hardened `npm run playtest:release` target selection so the bot tracks straggler enemies instead of camping center.
 - Latest expanded `npm run smoke` passes with no routine console output, console errors, page errors, bad responses, fatal overlay, generated-portrait failure, or music-routing failure: `test-results/smoke-2026-05-16T20-40-02-924Z/`.
 - Latest strict 10-minute `npm run playtest:release` survived the full duration, reached level 5 boss, ended alive with 3 lives and score 61,890, and reported zero console/page/network failures: `test-results/release-playtest-final-20260516-225000/`.
