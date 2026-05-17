@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T16:17:24.888Z",
+  "generatedAt": "2026-05-17T16:38:00.871Z",
   "defaults": {
     "masterVolume": 0.3,
     "musicVolume": 0.2,
@@ -12,9 +12,9 @@
     }
   },
   "counts": {
-    "measuredFiles": 96,
+    "measuredFiles": 100,
     "musicRows": 13,
-    "sfxRows": 102,
+    "sfxRows": 109,
     "voiceRows": 20,
     "warnings": 9,
     "errors": 0
@@ -409,6 +409,20 @@
       },
       {
         "type": "sfx",
+        "event": "menu_tick",
+        "url": "/audio/sfx/nova-swarm/nova_menu_tick.mp3",
+        "durationSeconds": 1,
+        "mixVolume": 0.2,
+        "duckFactor": null,
+        "effectiveLinear": 0.024,
+        "rawMeanDb": -25,
+        "rawPeakDb": -7.4,
+        "gainDb": -32.4,
+        "effectiveMeanDb": -57.4,
+        "effectivePeakDb": -39.8
+      },
+      {
+        "type": "sfx",
         "event": "forceField",
         "url": "/audio/sfx/nova-swarm/nova_shield_snap.mp3",
         "durationSeconds": 2,
@@ -451,6 +465,34 @@
       },
       {
         "type": "sfx",
+        "event": "ui_open",
+        "url": "/audio/sfx/nova-swarm/nova_menu_tick.mp3",
+        "durationSeconds": 1,
+        "mixVolume": 0.28,
+        "duckFactor": null,
+        "effectiveLinear": 0.0336,
+        "rawMeanDb": -25,
+        "rawPeakDb": -7.4,
+        "gainDb": -29.5,
+        "effectiveMeanDb": -54.5,
+        "effectivePeakDb": -36.9
+      },
+      {
+        "type": "sfx",
+        "event": "menuSelect",
+        "url": "/audio/sfx/nova-swarm/nova_menu_tick.mp3",
+        "durationSeconds": 1,
+        "mixVolume": 0.3,
+        "duckFactor": null,
+        "effectiveLinear": 0.036,
+        "rawMeanDb": -25,
+        "rawPeakDb": -7.4,
+        "gainDb": -28.9,
+        "effectiveMeanDb": -53.9,
+        "effectivePeakDb": -36.3
+      },
+      {
+        "type": "sfx",
         "event": "enemy_shoot",
         "url": "/audio/sfx/nova-swarm/nova_enemy_pew_cluster.mp3",
         "durationSeconds": 1,
@@ -462,48 +504,6 @@
         "gainDb": -33.3,
         "effectiveMeanDb": -50.8,
         "effectivePeakDb": -35.1
-      },
-      {
-        "type": "sfx",
-        "event": "spaceEngine",
-        "url": "/audio/sfx/spaceEngine_000.mp3",
-        "durationSeconds": 5,
-        "mixVolume": 0.18,
-        "duckFactor": null,
-        "effectiveLinear": 0.0216,
-        "rawMeanDb": -9.9,
-        "rawPeakDb": -1.3,
-        "gainDb": -33.3,
-        "effectiveMeanDb": -43.2,
-        "effectivePeakDb": -34.6
-      },
-      {
-        "type": "sfx",
-        "event": "thrusterFire",
-        "url": "/audio/sfx/thrusterFire_000.mp3",
-        "durationSeconds": 5,
-        "mixVolume": 0.18,
-        "duckFactor": null,
-        "effectiveLinear": 0.0216,
-        "rawMeanDb": -19.1,
-        "rawPeakDb": -0.9,
-        "gainDb": -33.3,
-        "effectiveMeanDb": -52.4,
-        "effectivePeakDb": -34.2
-      },
-      {
-        "type": "sfx",
-        "event": "nova_enemy_pew_cluster",
-        "url": "/audio/sfx/nova-swarm/nova_enemy_pew_cluster.mp3",
-        "durationSeconds": 1,
-        "mixVolume": 0.2,
-        "duckFactor": null,
-        "effectiveLinear": 0.024,
-        "rawMeanDb": -17.5,
-        "rawPeakDb": -1.8,
-        "gainDb": -32.4,
-        "effectiveMeanDb": -49.9,
-        "effectivePeakDb": -34.2
       }
     ],
     "voice": [
@@ -1382,6 +1382,20 @@
     {
       "type": "sfx",
       "event": "ui_open",
+      "url": "/audio/sfx/nova-swarm/nova_menu_tick.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.28,
+      "duckFactor": null,
+      "effectiveLinear": 0.0336,
+      "rawMeanDb": -25,
+      "rawPeakDb": -7.4,
+      "gainDb": -29.5,
+      "effectiveMeanDb": -54.5,
+      "effectivePeakDb": -36.9
+    },
+    {
+      "type": "sfx",
+      "event": "ui_open",
       "url": "/audio/sfx/doorOpen_000.mp3",
       "durationSeconds": 0.53,
       "mixVolume": 0.28,
@@ -1406,6 +1420,20 @@
       "gainDb": -29.5,
       "effectiveMeanDb": -45.3,
       "effectivePeakDb": -31.1
+    },
+    {
+      "type": "sfx",
+      "event": "ui_close",
+      "url": "/audio/sfx/nova-swarm/nova_pause_out.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.24,
+      "duckFactor": null,
+      "effectiveLinear": 0.0288,
+      "rawMeanDb": -26.6,
+      "rawPeakDb": -2.5,
+      "gainDb": -30.8,
+      "effectiveMeanDb": -57.4,
+      "effectivePeakDb": -33.3
     },
     {
       "type": "sfx",
@@ -1728,6 +1756,20 @@
       "gainDb": -21.3,
       "effectiveMeanDb": -33.1,
       "effectivePeakDb": -22.5
+    },
+    {
+      "type": "sfx",
+      "event": "menuSelect",
+      "url": "/audio/sfx/nova-swarm/nova_menu_tick.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.3,
+      "duckFactor": null,
+      "effectiveLinear": 0.036,
+      "rawMeanDb": -25,
+      "rawPeakDb": -7.4,
+      "gainDb": -28.9,
+      "effectiveMeanDb": -53.9,
+      "effectivePeakDb": -36.3
     },
     {
       "type": "sfx",
@@ -2288,6 +2330,62 @@
       "gainDb": -22.6,
       "effectiveMeanDb": -44.4,
       "effectivePeakDb": -25.6
+    },
+    {
+      "type": "sfx",
+      "event": "menu_tick",
+      "url": "/audio/sfx/nova-swarm/nova_menu_tick.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.2,
+      "duckFactor": null,
+      "effectiveLinear": 0.024,
+      "rawMeanDb": -25,
+      "rawPeakDb": -7.4,
+      "gainDb": -32.4,
+      "effectiveMeanDb": -57.4,
+      "effectivePeakDb": -39.8
+    },
+    {
+      "type": "sfx",
+      "event": "pause_in",
+      "url": "/audio/sfx/nova-swarm/nova_pause_in.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.34,
+      "duckFactor": null,
+      "effectiveLinear": 0.0408,
+      "rawMeanDb": -21.5,
+      "rawPeakDb": -4.8,
+      "gainDb": -27.8,
+      "effectiveMeanDb": -49.3,
+      "effectivePeakDb": -32.6
+    },
+    {
+      "type": "sfx",
+      "event": "pause_out",
+      "url": "/audio/sfx/nova-swarm/nova_pause_out.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.3,
+      "duckFactor": null,
+      "effectiveLinear": 0.036,
+      "rawMeanDb": -26.6,
+      "rawPeakDb": -2.5,
+      "gainDb": -28.9,
+      "effectiveMeanDb": -55.5,
+      "effectivePeakDb": -31.4
+    },
+    {
+      "type": "sfx",
+      "event": "ship_lock_chime",
+      "url": "/audio/sfx/nova-swarm/nova_ship_lock_chime.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.56,
+      "duckFactor": null,
+      "effectiveLinear": 0.0672,
+      "rawMeanDb": -21.3,
+      "rawPeakDb": -2.7,
+      "gainDb": -23.5,
+      "effectiveMeanDb": -44.8,
+      "effectivePeakDb": -26.2
     },
     {
       "type": "voice",

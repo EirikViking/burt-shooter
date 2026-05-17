@@ -90,6 +90,30 @@ const sounds = [
     text: 'A bright level-clear medal sting for an arcade space shooter, heroic score flourish with coin-slot sparkle, confident and compact, no voice, no copyrighted melody, under two seconds.',
     duration_seconds: 2,
     prompt_influence: 0.58
+  },
+  {
+    file: 'nova_menu_tick.mp3',
+    text: 'A tiny premium arcade menu cursor tick, soft neon button click with faint coin-cabinet sparkle, extremely short, elegant, no voice, no melody.',
+    duration_seconds: 1,
+    prompt_influence: 0.62
+  },
+  {
+    file: 'nova_pause_in.mp3',
+    text: 'A compact arcade pause engage sound, clean synth latch with soft screen-freeze shimmer, satisfying but quiet, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.58
+  },
+  {
+    file: 'nova_pause_out.mp3',
+    text: 'A compact arcade resume sound, bright synth unlock and quick energy return, satisfying but quiet, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.58
+  },
+  {
+    file: 'nova_ship_lock_chime.mp3',
+    text: 'A premium ship selection confirmation chime, sci-fi hangar lock-on sparkle with tiny thruster bloom, confident and polished, no voice, no melody quote, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.6
   }
 ];
 

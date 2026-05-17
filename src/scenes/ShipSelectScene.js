@@ -607,7 +607,7 @@ export class ShipSelectScene {
         this.saveSelection(spriteKey);
 
         // Confirm sound for starting game
-        AudioManager.playSfx('powerup', { force: true, volume: 0.8 });
+        AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.8 });
 
         if (DEBUG) console.log('[ShipSelect] Starting game with:', spriteKey);
         this.game.startGame(spriteKey);

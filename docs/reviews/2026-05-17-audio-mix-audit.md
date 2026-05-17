@@ -1,6 +1,6 @@
 # Audio Mix Audit - 2026-05-17
 
-Generated: 2026-05-17T16:17:24.888Z
+Generated: 2026-05-17T16:38:00.871Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -13,9 +13,9 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Coverage
 
-- Measured files: 96
+- Measured files: 100
 - Music rows: 13
-- SFX rows: 102
+- SFX rows: 109
 - Voice rows: 20
 - Warnings: 9
 - Errors: 0
@@ -70,13 +70,13 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
 | sfx | enemy_shoot | laserSmall_003.mp3 | -7.9 dB | -41.2 dB | -55.7 dB |
+| sfx | menu_tick | nova_menu_tick.mp3 | -7.4 dB | -39.8 dB | -57.4 dB |
 | sfx | forceField | nova_shield_snap.mp3 | -13.7 dB | -38.1 dB | -62.9 dB |
 | sfx | nova_shield_snap | nova_shield_snap.mp3 | -13.7 dB | -37.5 dB | -62.3 dB |
 | sfx | shield_up | nova_shield_snap.mp3 | -13.7 dB | -37.3 dB | -62.1 dB |
+| sfx | ui_open | nova_menu_tick.mp3 | -7.4 dB | -36.9 dB | -54.5 dB |
+| sfx | menuSelect | nova_menu_tick.mp3 | -7.4 dB | -36.3 dB | -53.9 dB |
 | sfx | enemy_shoot | nova_enemy_pew_cluster.mp3 | -1.8 dB | -35.1 dB | -50.8 dB |
-| sfx | spaceEngine | spaceEngine_000.mp3 | -1.3 dB | -34.6 dB | -43.2 dB |
-| sfx | thrusterFire | thrusterFire_000.mp3 | -0.9 dB | -34.2 dB | -52.4 dB |
-| sfx | nova_enemy_pew_cluster | nova_enemy_pew_cluster.mp3 | -1.8 dB | -34.2 dB | -49.9 dB |
 
 ### Voice
 

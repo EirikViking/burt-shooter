@@ -112,7 +112,11 @@ export const SFX_MIX = {
     combo_tick: { volume: 0.42, minIntervalMs: 180 },
     combo_breakout: { volume: 0.68, minIntervalMs: 650 },
     boss_phase_surge: { volume: 0.76, minIntervalMs: 900 },
-    level_clear_medal: { volume: 0.62, minIntervalMs: 700 }
+    level_clear_medal: { volume: 0.62, minIntervalMs: 700 },
+    menu_tick: { volume: 0.2, minIntervalMs: 70 },
+    pause_in: { volume: 0.34, minIntervalMs: 250 },
+    pause_out: { volume: 0.3, minIntervalMs: 250 },
+    ship_lock_chime: { volume: 0.56, minIntervalMs: 500 }
 };
 
 export const VOICE_MIX = {
@@ -189,9 +193,11 @@ export const SFX_CATALOG = {
         getSfx('forceField_000'), getSfx('forceField_001'), getSfx('forceField_002'), getSfx('forceField_003'), getSfx('forceField_004')
     ],
     'ui_open': [
+        getSfx('nova_menu_tick'),
         getSfx('doorOpen_000'), getSfx('doorOpen_001')
     ],
     'ui_close': [
+        getSfx('nova_pause_out'),
         getSfx('doorClose_000'), getSfx('doorClose_001'), getSfx('doorClose_002')
     ],
     'pickup': [
@@ -216,7 +222,7 @@ export const SFX_CATALOG = {
     // Mappings and Aliases
     'shoot': [getSfx('laserSmall_000')],
     'explosion': [getSfx('explosionCrunch_000')],
-    'menuSelect': [getSfx('doorOpen_000')],
+    'menuSelect': [getSfx('nova_menu_tick'), getSfx('doorOpen_000')],
     'playerHit': [getSfx('nova_player_hit_crackle'), getSfx('impactMetal_000')],
     'levelComplete': [getSfx('nova_level_clear_medal'), getSfx('nova_wave_clear_sweep'), getSfx('nova_rank_fanfare')],
 
@@ -336,6 +342,18 @@ export const SFX_CATALOG = {
     ],
     'level_clear_medal': [
         getSfx('nova_level_clear_medal')
+    ],
+    'menu_tick': [
+        getSfx('nova_menu_tick')
+    ],
+    'pause_in': [
+        getSfx('nova_pause_in')
+    ],
+    'pause_out': [
+        getSfx('nova_pause_out')
+    ],
+    'ship_lock_chime': [
+        getSfx('nova_ship_lock_chime')
     ],
     'intro_narrator_01': [
         getVoice('intro_narrator_01')

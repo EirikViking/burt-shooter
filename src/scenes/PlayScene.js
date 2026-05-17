@@ -1811,12 +1811,12 @@ export class PlayScene {
     if (paused) {
       this.showPauseOverlay();
       AudioManager.setPauseDucked(true);
-      AudioManager.playSfx('ui_open', { volume: 0.45 });
+      AudioManager.playSfx('pause_in', { force: true, volume: 0.45 });
     } else {
       this.closeSettingsOverlay();
       this.hidePauseOverlay();
       AudioManager.setPauseDucked(false);
-      AudioManager.playSfx('ui_open', { volume: 0.25 });
+      AudioManager.playSfx('pause_out', { force: true, volume: 0.34 });
     }
   }
 

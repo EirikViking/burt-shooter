@@ -10,20 +10,20 @@ Current playable deployment:
 
 Current deployed and verified build:
 
-- `v2026-05-17_18-24-59`
+- `v2026-05-17_18-38-06`
 
 Current evidence:
 
 - Recent milestones are preserved in git history; this checklist tracks the latest verified artifacts rather than a single commit hash.
-- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://4bad5f8b.burt-game.pages.dev/version.json` both reported `v2026-05-17_18-24-59` after the Cloudflare Pages production deploy `https://4bad5f8b.burt-game.pages.dev`.
-- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T16-31-53-830Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
+- Production deploy verification: `https://burt.tinyfoundry.app/version.json` and `https://cef05b11.burt-game.pages.dev/version.json` both reported `v2026-05-17_18-38-06` after the Cloudflare Pages production deploy `https://cef05b11.burt-game.pages.dev`.
+- Live-domain smoke: `SMOKE_URL=https://burt.tinyfoundry.app npm run smoke` passed at `test-results/smoke-2026-05-17T16-42-11-196Z/` with zero routine console output, console warnings/errors, page errors, or bad responses.
 - Audio audit: `docs/reviews/2026-05-17-audio-mix-audit.md`
 - Latest intro/audio/visual smoke: `test-results/smoke-2026-05-17T09-17-13-563Z/`
 - Latest variant release playtest: `test-results/release-playtest-visual-variants-20260517-1130/`
 - Steam screenshot candidate capture: `release/steam-screenshots/draft-2026-05-17-11-30/`
 - Visual variety evidence: 216 selectable ship variants and 288 enemy visual variants from `src/config/VisualVariantCatalog.js`.
 - Desktop package path: `docs/steam-desktop-package.md`, `electron/main.cjs`, `electron-builder.json`, and `release/steamworks/app_build_TEMPLATE.vdf`.
-- Latest desktop package verification: `test-results/electron-smoke-2026-05-17T16-34-19-392Z/`, `npm run package:steam:win:current`, generated `release/desktop/win-unpacked/Nova Swarm.exe`, and tracked package evidence in `release/steamworks/desktop_package_review_report.json`. `npm run check:desktop-package` now rejects stale evidence when the Electron smoke build ID does not match `public/version.json` or the packaged executable is older than the current build timestamp.
+- Latest desktop package verification: `test-results/electron-smoke-2026-05-17T16-40-53-251Z/`, `npm run package:steam:win:current`, generated `release/desktop/win-unpacked/Nova Swarm.exe`, and tracked package evidence in `release/steamworks/desktop_package_review_report.json`. `npm run check:desktop-package` now rejects stale evidence when the Electron smoke build ID does not match `public/version.json` or the packaged executable is older than the current build timestamp.
 - Steam trailer draft workflow: `docs/steam-trailer-workflow.md`, `scripts/capture-steam-trailer.mjs`, `scripts/render-steam-trailer-audio.mjs`, `scripts/render-steam-trailer-candidate.mjs`, refreshed capture evidence in `release/steam-trailer/draft-2026-05-17-17-03/`, and editorial candidate evidence in `release/steam-trailer/candidate-2026-05-17-editorial/`.
 - Steam store art draft: `release/steam-assets/draft-2026-05-17-nova-swarm/`, replacing the old Burt-era capsule set with public Nova Swarm artwork.
 - Steam asset gate: `npm run check:steam-assets` validates 9 asset dimensions/transparency and regenerates review contact sheets.
@@ -52,6 +52,7 @@ Current evidence:
 - Latest visual/store screenshot polish: gameplay backdrop brightness was raised for clearer Steam screenshots without changing UI layout, `scripts/capture-steam-screenshots.mjs` now captures a deterministic level-three midgame swarm shot, and the upload shortlist now has 8 candidates including `04-midgame-swarm-escalation.png`. Local smoke passed at `test-results/smoke-2026-05-17T15-46-48-261Z/`, 60-second release playtest passed at `test-results/release-playtest-brighter-screenshots-20260517-1749/`, fast RC verification passed at `test-results/steam-rc-verify-2026-05-17T15-48-33-729Z/report.json`, production deploy is `https://aecc337d.burt-game.pages.dev`, and live-domain smoke passed at `test-results/smoke-2026-05-17T15-52-19-049Z/`.
 - Latest desktop package freshness hardening: `npm run verify:steam-rc` now rebuilds, packages `release/desktop/win-unpacked/Nova Swarm.exe`, runs Electron smoke, and validates the package against the same current build before continuing. Fast RC verification passed at `test-results/steam-rc-verify-2026-05-17T16-16-07-474Z/report.json`; refreshed current-build package evidence passed at `test-results/electron-smoke-2026-05-17T16-34-19-392Z/` for build `v2026-05-17_18-24-59`.
 - Latest enemy visual variety polish: enemy runtime variants expanded from 48 to 288 by combining 48 public enemy archetypes with six arcade palette modes while preserving hitboxes and behavior. `npm run build` passed with build ID `v2026-05-17_18-24-59`, local smoke passed at `test-results/smoke-2026-05-17T16-25-22-067Z/`, 60-second release playtest passed at `test-results/release-playtest-enemy-variants-20260517-1831/`, production deploy is `https://4bad5f8b.burt-game.pages.dev`, live-domain smoke passed at `test-results/smoke-2026-05-17T16-31-53-830Z/`, and same-build Electron package smoke passed at `test-results/electron-smoke-2026-05-17T16-34-19-392Z/`.
+- Latest ElevenLabs UI SFX polish: generated `nova_menu_tick.mp3`, `nova_pause_in.mp3`, `nova_pause_out.mp3`, and `nova_ship_lock_chime.mp3`; pause/resume and ship-start confirmation now use bespoke cabinet cues instead of generic door/powerup sounds. `npm run check:audio`, `npm run audit:audio-mix`, `npm run check:provenance`, `npm run build` (`v2026-05-17_18-38-06`), local smoke (`test-results/smoke-2026-05-17T16-38-34-421Z/`), same-build Electron package smoke (`test-results/electron-smoke-2026-05-17T16-40-53-251Z/`), release-readiness audit, and live-domain smoke (`test-results/smoke-2026-05-17T16-42-11-196Z/`) passed. The new production deploy is `https://cef05b11.burt-game.pages.dev`, and the new MP3s return `200 audio/mpeg` from `https://burt.tinyfoundry.app`.
 - Previous RC review: `docs/reviews/2026-05-16-release-candidate-review.md`
 - Strict release playtest evidence remains strongest at `test-results/release-playtest-final-20260516-225000/`
 
