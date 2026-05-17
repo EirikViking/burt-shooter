@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-17T16:48:30.990Z",
+  "generatedAt": "2026-05-17T16:57:22.282Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 13,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 22480
+          "bytes": 22955
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -39,7 +39,7 @@
         {
           "path": "docs/steam-store-handoff.md",
           "ok": true,
-          "bytes": 2381
+          "bytes": 2379
         },
         {
           "path": "docs/steam-trailer-workflow.md",
@@ -92,34 +92,34 @@
           "bytes": 2888134
         },
         {
-          "path": "release/steam-trailer/draft-2026-05-17-17-03/report.json",
+          "path": "release/steam-trailer/draft-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2443
+          "bytes": 2445
         },
         {
-          "path": "release/steam-trailer/draft-2026-05-17-17-03/audio-mix-report.json",
+          "path": "release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json",
           "ok": true,
-          "bytes": 8962
+          "bytes": 8968
         },
         {
-          "path": "release/steam-trailer/candidate-2026-05-17-editorial/report.json",
+          "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2339
+          "bytes": 2323
         },
         {
-          "path": "release/steam-trailer/candidate-2026-05-17-editorial/candidate-contact-sheet.png",
+          "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "ok": true,
-          "bytes": 574500
+          "bytes": 578387
         },
         {
           "path": "release/provenance/asset_provenance_manifest.json",
           "ok": true,
-          "bytes": 4861
+          "bytes": 4983
         },
         {
           "path": "release/provenance/asset_provenance_report.json",
           "ok": true,
-          "bytes": 1057
+          "bytes": 1169
         },
         {
           "path": "release/steamworks/desktop_package_review_report.json",
@@ -158,8 +158,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1551,
-      "coveredCount": 1551,
+      "assetCount": 1566,
+      "coveredCount": 1566,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []
@@ -275,13 +275,13 @@
       "duration": "49.923333",
       "titleCards": [
         {
-          "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\01-title-card.png",
+          "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\01-title-card.png",
           "durationSeconds": 2.8,
           "title": "NOVA SWARM",
           "subtitle": "ARCADE PATROL"
         },
         {
-          "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\02-outro-card.png",
+          "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\02-outro-card.png",
           "durationSeconds": 3.2,
           "title": "CHASE THE SWARM",
           "subtitle": "DODGE. SCORE. BRAG."
@@ -291,7 +291,7 @@
         "meanVolumeDb": "-19.1",
         "maxVolumeDb": "-0.8"
       },
-      "contactSheet": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-editorial\\candidate-contact-sheet.png"
+      "contactSheet": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\candidate-contact-sheet.png"
     },
     {
       "name": "desktop_package_report_clean",

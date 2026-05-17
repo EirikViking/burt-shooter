@@ -16,7 +16,9 @@ const scannedRoots = [
   'release/steam-screenshots',
   'release/steam-trailer/draft-2026-05-17-12-46',
   'release/steam-trailer/draft-2026-05-17-17-03',
-  'release/steam-trailer/candidate-2026-05-17-editorial'
+  'release/steam-trailer/draft-2026-05-17-current',
+  'release/steam-trailer/candidate-2026-05-17-editorial',
+  'release/steam-trailer/candidate-2026-05-17-current'
 ];
 
 const assetExtensions = new Set([

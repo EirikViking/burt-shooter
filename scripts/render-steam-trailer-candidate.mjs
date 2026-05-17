@@ -2,9 +2,9 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-const draftDir = path.resolve(process.env.TRAILER_CANDIDATE_DRAFT_DIR || 'release/steam-trailer/draft-2026-05-17-17-03');
+const draftDir = path.resolve(process.env.TRAILER_CANDIDATE_DRAFT_DIR || 'release/steam-trailer/draft-2026-05-17-current');
 const inputVideo = path.resolve(process.env.TRAILER_CANDIDATE_INPUT || path.join(draftDir, 'nova-swarm-steam-trailer-audio-draft.mp4'));
-const outputDir = path.resolve(process.env.TRAILER_CANDIDATE_OUTPUT_DIR || 'release/steam-trailer/candidate-2026-05-17-editorial');
+const outputDir = path.resolve(process.env.TRAILER_CANDIDATE_OUTPUT_DIR || 'release/steam-trailer/candidate-2026-05-17-current');
 const background = path.resolve(process.env.TRAILER_CANDIDATE_BG || 'release/steam-assets/draft-2026-05-17-nova-swarm/store_page_background_1438x810.jpg');
 const titleFont = process.env.TRAILER_CANDIDATE_TITLE_FONT || 'C:/Windows/Fonts/ariblk.ttf';
 const bodyFont = process.env.TRAILER_CANDIDATE_BODY_FONT || 'C:/Windows/Fonts/bahnschrift.ttf';

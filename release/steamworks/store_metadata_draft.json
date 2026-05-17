@@ -87,8 +87,8 @@
   "uploadAssets": {
     "screenshots": "release/steam-screenshots/steam-upload-candidates-2026-05-17/",
     "capsules": "release/steam-assets/draft-2026-05-17-nova-swarm/",
-    "trailerDraft": "release/steam-trailer/draft-2026-05-17-17-03/",
-    "trailerCandidate": "release/steam-trailer/candidate-2026-05-17-editorial/"
+    "trailerDraft": "release/steam-trailer/draft-2026-05-17-current/",
+    "trailerCandidate": "release/steam-trailer/candidate-2026-05-17-current/"
   },
   "approvalRequired": [
     "final screenshot order and captions",

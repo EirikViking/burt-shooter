@@ -40,12 +40,12 @@ Important limitation: Playwright's video capture records browser pixels only, no
 
 ## Current Draft Evidence
 
-Latest visual capture: `release/steam-trailer/draft-2026-05-17-17-03/`
+Latest visual capture: `release/steam-trailer/draft-2026-05-17-current/`
 
 - `report.json` shows zero console warnings/errors, page errors, and bad network responses.
 - `ffprobe` confirmed `nova-swarm-steam-trailer-audio-draft.mp4` is a 43.90 second 1280x720 H.264/AAC MP4.
 
-Latest editorial candidate: `release/steam-trailer/candidate-2026-05-17-editorial/`
+Latest editorial candidate: `release/steam-trailer/candidate-2026-05-17-current/`
 
 - `report.json` passed with a 49.92 second 1280x720 H.264/AAC candidate.
 - FFmpeg `volumedetect` measured the candidate at `mean_volume: -19.1 dB` and `max_volume: -0.8 dB`.
