@@ -126,6 +126,7 @@ try {
       active: true
     });
     const afterWingImpactScore = game.score;
+    const textState = JSON.parse(window.render_game_to_text?.() || '{}');
     return {
       selectedShipSpriteKey: game.selectedShipSpriteKey,
       traitLabel: player.shipTrait?.label || null,
@@ -134,9 +135,11 @@ try {
       wingImpact: {
         beforeScore: beforeWingImpactScore,
         afterScore: afterWingImpactScore,
-        scoreDelta: afterWingImpactScore - beforeWingImpactScore
+        scoreDelta: afterWingImpactScore - beforeWingImpactScore,
+        lastSfxEvent: textState?.audio?.lastSfxEvent || null,
+        lastSfxTrack: textState?.audio?.lastSfxTrack || null
       },
-      textState: JSON.parse(window.render_game_to_text?.() || '{}')
+      textState
     };
   });
 
@@ -152,6 +155,7 @@ try {
       cadenceShot?.wingShots === 2 &&
       cadenceShot.count >= 4 &&
       result.wingImpact?.scoreDelta > 0 &&
+      result.wingImpact?.lastSfxEvent === 'trait_wing_hit' &&
       result.textState?.player?.traitState?.wingShotEvery === cadence &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0

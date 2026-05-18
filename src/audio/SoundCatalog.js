@@ -122,7 +122,11 @@ export const SFX_MIX = {
     ghost_phase_shift: { volume: 0.48, minIntervalMs: 450 },
     time_slow_warp: { volume: 0.48, minIntervalMs: 450 },
     drone_launch_blip: { volume: 0.46, minIntervalMs: 220 },
-    orbital_strike_charge: { volume: 0.56, minIntervalMs: 600 }
+    orbital_strike_charge: { volume: 0.56, minIntervalMs: 600 },
+    trait_bonus_hit: { volume: 0.26, minIntervalMs: 90 },
+    trait_wing_hit: { volume: 0.34, minIntervalMs: 120 },
+    trait_pierce_hit: { volume: 0.32, minIntervalMs: 120 },
+    trait_crit_splash: { volume: 0.46, minIntervalMs: 350 }
 };
 
 export const VOICE_MIX = {
@@ -267,6 +271,18 @@ export const SFX_CATALOG = {
     ],
     'orbital_strike_charge': [
         getSfx('nova_orbital_strike_charge')
+    ],
+    'trait_bonus_hit': [
+        getSfx('nova_combo_tick')
+    ],
+    'trait_wing_hit': [
+        getSfx('nova_drone_launch_blip')
+    ],
+    'trait_pierce_hit': [
+        getSfx('nova_chain_lightning_arc')
+    ],
+    'trait_crit_splash': [
+        getSfx('nova_boss_phase_surge')
     ],
     'taunt': [
         getVoice('war_cover_me'),

@@ -2883,6 +2883,7 @@ export class PlayScene {
       });
 
       if (splashed > 0) {
+        AudioManager.playSfx('trait_crit_splash', { volume: 0.78 });
         this.enqueueToast(`TRAIT SPLASH x${splashed}`, { fontSize: 15, fill: '#fff45c', slot: 'top', type: 'trait', duration: 700 });
         this.screenShake?.shake(2);
       }
@@ -2891,6 +2892,7 @@ export class PlayScene {
     if (bullet.isTraitPiercingShot) {
       bullet.traitPierceHits = (bullet.traitPierceHits || 0) + 1;
       if (this.particleManager) this.particleManager.createHitSpark(sourceEnemy.x, sourceEnemy.y, 0xffffff);
+      AudioManager.playSfx('trait_pierce_hit', { volume: 0.58 });
       if (bullet.traitPierceHits >= 3) {
         bullet.active = false;
       }
@@ -2900,12 +2902,14 @@ export class PlayScene {
       const bonusScore = Math.max(3, Math.round(8 * Number(combat.nearMissScoreMult || 1)));
       this.game.addScore(bonusScore);
       if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 12, bonusScore);
+      AudioManager.playSfx('trait_bonus_hit', { volume: 0.64 });
     }
 
     if (bullet.isTraitWingShot) {
       const wingScore = Math.max(2, Math.round(5 * Math.max(1, this.comboMultiplier || 1)));
       this.game.addScore(wingScore);
       if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 18, wingScore);
+      AudioManager.playSfx('trait_wing_hit', { volume: 0.68 });
       const now = Date.now();
       if (now - this.lastTraitImpactToastAt > 900) {
         this.lastTraitImpactToastAt = now;
