@@ -67,7 +67,7 @@ const remainingManualSteps = [
   'Create or open the real Steamworks app and record the numeric app ID plus Windows depot ID.',
   'Run `STEAM_APP_ID=<id> STEAM_DEPOT_ID=<id> npm run steamworks:write-vdf` to create `release/steamworks/app_build_LOCAL.vdf`.',
   'Upload the Windows payload with SteamCMD using the generated local VDF.',
-  'Install and launch the uploaded build from the Steam client, then fill `release/steamworks/client_validation_report.json` from the template.',
+  'Install and launch the uploaded build from the Steam client, then run `npm run steamworks:write-client-validation` with the required confirmation environment variables to create `release/steamworks/client_validation_report.json`.',
   'Review and approve screenshots, capsules, trailer, audio, store copy, legal/provenance posture, and gameplay feel in `docs/reviews/2026-05-17-human-release-approval.md`.'
 ];
 
@@ -150,6 +150,7 @@ const packet = {
     fastRc: 'npm run verify:steam-rc',
     fullRc: 'npm run verify:steam-rc -- --full',
     writeVdf: 'STEAM_APP_ID=<id> STEAM_DEPOT_ID=<id> npm run steamworks:write-vdf',
+    writeClientValidation: 'STEAM_CLIENT_VALIDATION_CONFIRM=I_REVIEWED_STEAM_CLIENT_BUILD STEAM_CLIENT_ALL_CHECKS_PASSED=YES STEAM_BUILD_ID=<steam build id> STEAM_VALIDATED_BY=<name> STEAM_INSTALL_PATH=<steam install path> STEAM_SCREENSHOT_EVIDENCE=<screenshot path> npm run steamworks:write-client-validation',
     upload: 'tools\\steamcmd\\steamcmd.exe +login <steamworks-user> +run_app_build release\\steamworks\\app_build_LOCAL.vdf +quit',
     releaseAudit: 'npm run audit:release-readiness'
   },

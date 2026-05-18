@@ -1,6 +1,6 @@
 # Nova Swarm Steam Client Preflight Packet
 
-Generated: 2026-05-18T11:22:27.264Z
+Generated: 2026-05-18T11:32:40.681Z
 Build: `v2026-05-18_11-49-26`
 Status: `ready_for_steam_upload_and_client_validation`
 
@@ -25,7 +25,11 @@ This packet proves local upload preflight only. It is not Steam-client validatio
 
 ## Steam Client Validation Still Required
 
-Copy `release/steamworks/client_validation_report.template.json` to `release/steamworks/client_validation_report.json` only after real SteamPipe upload and Steam-client install.
+After real SteamPipe upload and Steam-client install, either copy `release/steamworks/client_validation_report.template.json` to `release/steamworks/client_validation_report.json` manually or run:
+
+`STEAM_CLIENT_VALIDATION_CONFIRM=I_REVIEWED_STEAM_CLIENT_BUILD STEAM_CLIENT_ALL_CHECKS_PASSED=YES STEAM_BUILD_ID=<steam build id> STEAM_VALIDATED_BY=<name> STEAM_INSTALL_PATH=<steam install path> STEAM_SCREENSHOT_EVIDENCE=<screenshot path> npm run steamworks:write-client-validation`
+
+Only use that command after testing the Steam-installed build.
 
 - installedFromSteamClient
 - launchedFromSteamClient
@@ -45,10 +49,10 @@ Copy `release/steamworks/client_validation_report.template.json` to `release/ste
 | --- | --- | ---: |
 | yes | `release/desktop/win-unpacked/Nova Swarm.exe` | 226666496 |
 | yes | `release/steamworks/app_build_TEMPLATE.vdf` | 359 |
-| yes | `release/steamworks/client_validation_report.template.json` | 771 |
+| yes | `release/steamworks/client_validation_report.template.json` | 929 |
 | yes | `release/steamworks/desktop_package_review_report.json` | 2516 |
 | yes | `release/steamworks/full_rc_verification_report.json` | 3442 |
-| yes | `release/steamworks/steam_client_validation_runbook.md` | 3383 |
+| yes | `release/steamworks/steam_client_validation_runbook.md` | 3902 |
 | yes | `docs/reviews/2026-05-17-steamcmd-local-check.md` | 854 |
 
 ## Warnings

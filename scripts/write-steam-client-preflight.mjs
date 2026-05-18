@@ -103,6 +103,7 @@ const packet = {
   clientValidation: {
     template: artifacts[2],
     output: 'release/steamworks/client_validation_report.json',
+    writeCommand: 'STEAM_CLIENT_VALIDATION_CONFIRM=I_REVIEWED_STEAM_CLIENT_BUILD STEAM_CLIENT_ALL_CHECKS_PASSED=YES STEAM_BUILD_ID=<steam build id> STEAM_VALIDATED_BY=<name> STEAM_INSTALL_PATH=<steam install path> STEAM_SCREENSHOT_EVIDENCE=<screenshot path> npm run steamworks:write-client-validation',
     requiredChecks: expectedChecks,
     stillRequired: true
   },
@@ -145,7 +146,11 @@ ${data.explicitLimit}
 
 ## Steam Client Validation Still Required
 
-Copy \`${data.clientValidation.template.path}\` to \`${data.clientValidation.output}\` only after real SteamPipe upload and Steam-client install.
+After real SteamPipe upload and Steam-client install, either copy \`${data.clientValidation.template.path}\` to \`${data.clientValidation.output}\` manually or run:
+
+\`${data.clientValidation.writeCommand}\`
+
+Only use that command after testing the Steam-installed build.
 
 ${checks}
 

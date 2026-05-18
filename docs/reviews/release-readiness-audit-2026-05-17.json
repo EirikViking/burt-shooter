@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T11:22:30.807Z",
+  "generatedAt": "2026-05-18T11:32:43.015Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 18,
@@ -54,7 +54,7 @@
         {
           "path": "release/steamworks/steam_client_validation_runbook.md",
           "ok": true,
-          "bytes": 3383
+          "bytes": 3902
         },
         {
           "path": "docs/reviews/2026-05-17-steamcmd-local-check.md",
@@ -149,22 +149,22 @@
         {
           "path": "release/steamworks/steam_client_preflight_packet.json",
           "ok": true,
-          "bytes": 5599
+          "bytes": 5904
         },
         {
           "path": "release/steamworks/steam_client_preflight_packet.md",
           "ok": true,
-          "bytes": 2132
+          "bytes": 2500
         },
         {
           "path": "release/steamworks/release_handoff_packet.json",
           "ok": true,
-          "bytes": 5832
+          "bytes": 6189
         },
         {
           "path": "release/steamworks/release_handoff_packet.md",
           "ok": true,
-          "bytes": 3471
+          "bytes": 3830
         },
         {
           "path": "release/steamworks/store_metadata_draft.json",
@@ -839,10 +839,11 @@
         "template": {
           "path": "release/steamworks/client_validation_report.template.json",
           "exists": true,
-          "bytes": 771,
-          "modifiedAt": "2026-05-17T13:11:20.625Z"
+          "bytes": 929,
+          "modifiedAt": "2026-05-18T11:31:50.835Z"
         },
         "output": "release/steamworks/client_validation_report.json",
+        "writeCommand": "STEAM_CLIENT_VALIDATION_CONFIRM=I_REVIEWED_STEAM_CLIENT_BUILD STEAM_CLIENT_ALL_CHECKS_PASSED=YES STEAM_BUILD_ID=<steam build id> STEAM_VALIDATED_BY=<name> STEAM_INSTALL_PATH=<steam install path> STEAM_SCREENSHOT_EVIDENCE=<screenshot path> npm run steamworks:write-client-validation",
         "requiredChecks": [
           "installedFromSteamClient",
           "launchedFromSteamClient",
@@ -890,7 +891,6 @@
       "actualBuild": "v2026-05-18_11-49-26",
       "staleEvidence": [],
       "failedChecks": [
-        "steam_release_handoff_packet_current",
         "steamworks_ids_configured",
         "steam_client_validation_evidence",
         "human_release_approvals_recorded"

@@ -54,7 +54,7 @@ Run these from an installed Steam client build, not from the local unpacked fold
 - Install build from Steam client.
 - Launch through Steam.
 - Confirm the game reaches the menu.
-- Confirm first-run intro can advance and skip.
+- Confirm the optional Story Intro opens from the main menu, can advance, and can skip back to the menu.
 - Start a run, shoot, dodge, pause, and resume with keyboard.
 - Repeat movement/fire/pause with a gamepad.
 - Confirm SFX, voice, and music play from Steam install path.
@@ -69,6 +69,18 @@ Run these from an installed Steam client build, not from the local unpacked fold
 - Steam client install path and launch result.
 - Screenshot of the Steam-installed build at menu or gameplay.
 - Notes for keyboard, gamepad, audio, high-score persistence, offline launch, and quit/relaunch.
-- Copy `release/steamworks/client_validation_report.template.json` to `release/steamworks/client_validation_report.json`, record the real Steam build ID, and set every validation check to `true`.
+- After all checks pass, write the validation report with the guarded helper:
+
+```powershell
+$env:STEAM_CLIENT_VALIDATION_CONFIRM='I_REVIEWED_STEAM_CLIENT_BUILD'
+$env:STEAM_CLIENT_ALL_CHECKS_PASSED='YES'
+$env:STEAM_BUILD_ID='<steam build id>'
+$env:STEAM_VALIDATED_BY='<name>'
+$env:STEAM_INSTALL_PATH='<steam install path>'
+$env:STEAM_SCREENSHOT_EVIDENCE='<path to Steam-client screenshot evidence>'
+npm run steamworks:write-client-validation
+```
+
+- Alternatively, copy `release/steamworks/client_validation_report.template.json` to `release/steamworks/client_validation_report.json`, record the real Steam build ID, and set every validation check to `true`.
 
 This remains a hard Steam-readiness blocker until the client-installed build is verified.

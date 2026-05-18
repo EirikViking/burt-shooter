@@ -20,6 +20,7 @@
   },
   "notes": [
     "Copy this file to client_validation_report.json after a real SteamPipe upload and Steam-client install.",
+    "The introAdvanceAndSkip check means opening the optional Story Intro from the main menu, advancing at least one panel, then skipping back to the menu.",
     "Set status to passed only when every check is true and a Steam build ID is recorded."
   ]
 }
