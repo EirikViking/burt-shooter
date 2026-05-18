@@ -298,6 +298,12 @@ function buildGameTextState(game) {
         variant: enemy.visualVariant?.slug || null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
         maxHealth: Number.isFinite(enemy.maxHealth) ? Math.max(0, Math.round(enemy.maxHealth)) : null,
+        phase: Number.isFinite(enemy.phase) ? enemy.phase : null,
+        telegraph: enemy.telegraph ? {
+          type: enemy.telegraph.type || null,
+          label: enemy.telegraph.label || null,
+          remainingMs: Math.max(0, Math.round((enemy.telegraph.start + enemy.telegraph.duration) - Date.now()))
+        } : null,
         type: enemy.type || enemy.constructor?.name || 'enemy'
       }))
   };

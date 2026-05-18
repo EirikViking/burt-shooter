@@ -80,6 +80,7 @@ export class Boss {
 
   async createSprite() {
     this.sprite = new PIXI.Container();
+    this.sprite.sortableChildren = true;
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
@@ -91,6 +92,7 @@ export class Boss {
     this.hitboxRef = bossVisual.hitboxRef; // Store hitbox reference
     this.visualCleanup = bossVisual.cleanup; // Store cleanup callback for ticker
     this.sprite.addChild(this.visualContainer);
+    this.visualContainer.zIndex = 1;
     this.moveProfile = this.getMoveProfile(this.bossType);
     this.noseOffset = this.getNoseOffset(this.bossType);
 
@@ -129,6 +131,7 @@ export class Boss {
 
     // Health bar overlay
     this.healthBar = new PIXI.Graphics();
+    this.healthBar.zIndex = 5;
     this.sprite.addChild(this.healthBar);
     this.updateHealthBar();
 
@@ -142,6 +145,7 @@ export class Boss {
     });
     this.nameText.anchor.set(0.5);
     this.nameText.y = -Math.min(this.radius + 30, 72);
+    this.nameText.zIndex = 6;
     this.sprite.addChild(this.nameText);
 
     // Force visibility
@@ -237,15 +241,19 @@ export class Boss {
 
     if (this.telegraph) {
       const elapsed = Date.now() - this.telegraph.start;
+      const progress = clamp(elapsed / this.telegraph.duration, 0, 1);
+      this.updateTelegraphVisual(progress, playerX, playerY);
       if (this.nameText) {
-        this.nameText.alpha = 0.6 + Math.sin(elapsed * 0.02) * 0.4;
+        this.nameText.alpha = 1;
       }
       if (elapsed > this.telegraph.duration) {
+        this.clearTelegraphVisual();
         this.executeSignatureMove(this.telegraph.type, playerX, playerY);
         this.telegraph = null;
       }
     } else if (this.nameText) {
       this.nameText.alpha = 1;
+      this.clearTelegraphVisual();
     }
 
     // Shooting cooldown
@@ -357,8 +365,105 @@ export class Boss {
       playScene.onBossPhaseChange(phase, this);
     }
     const type = phase === 2 ? 'cone' : 'ring';
-    this.telegraph = { type, start: Date.now(), duration: 750 };
+    this.startSignatureTelegraph(type, playerX, playerY);
     this.signatureCooldown = 120;
+  }
+
+  getSignatureLabel(type) {
+    if (type === 'cone') return 'FANFIRE WINDUP';
+    if (type === 'ring') return 'RING BURST WINDUP';
+    return 'SIGNATURE WINDUP';
+  }
+
+  startSignatureTelegraph(type, playerX, playerY) {
+    this.telegraph = {
+      type,
+      label: this.getSignatureLabel(type),
+      start: Date.now(),
+      duration: type === 'ring' ? 900 : 800
+    };
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.enqueueToast) {
+      playScene.enqueueToast(this.telegraph.label, {
+        fontSize: 18,
+        fill: '#fff45c',
+        slot: 'top',
+        type: 'boss',
+        duration: 900
+      });
+    }
+    this.updateTelegraphVisual(0, playerX, playerY);
+  }
+
+  updateTelegraphVisual(progress, playerX, playerY) {
+    if (!this.telegraph) return;
+
+    const warningColor = this.telegraph.type === 'ring' ? 0xff3355 : 0xfff45c;
+    const alpha = 0.55 + progress * 0.25;
+    const pulse = 1 + Math.sin(Date.now() * 0.024) * 0.08;
+    const originX = 0;
+    const originY = 0;
+    this.updateHealthBar();
+    const warningLayer = this.healthBar;
+    if (!warningLayer) return;
+
+    if (this.telegraph.type === 'cone') {
+      const angle = Math.atan2(playerY - this.y, playerX - this.x);
+      const spread = this.level <= 1 ? 0.55 : 0.7;
+      const length = Math.max(this.radius * 2.8, 230);
+      const steps = 8;
+      const points = [originX, originY];
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps - 0.5;
+        const a = angle + t * spread;
+        points.push(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
+      }
+      warningLayer.poly(points);
+      warningLayer.fill({ color: warningColor, alpha });
+      warningLayer.poly(points);
+      warningLayer.stroke({ color: 0xffffff, width: 2 + progress * 3, alpha: 0.42 + progress * 0.4 });
+      for (const lane of [-0.5, -0.22, 0.22, 0.5]) {
+        const a = angle + lane * spread;
+        warningLayer.moveTo(originX + Math.cos(a) * this.radius * 0.7, originY + Math.sin(a) * this.radius * 0.7);
+        warningLayer.lineTo(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
+      }
+      warningLayer.stroke({ color: warningColor, width: 2 + progress * 2, alpha: 0.62 + progress * 0.25 });
+    } else {
+      const maxRadius = Math.max(this.radius * 2.15, 170);
+      const innerRadius = maxRadius * 0.46;
+      const outer = maxRadius * (0.72 + progress * 0.34) * pulse;
+      const inner = innerRadius * (0.8 + progress * 0.16);
+      warningLayer.circle(originX, originY + 18, outer);
+      warningLayer.stroke({ color: warningColor, width: 5, alpha: 0.68 + progress * 0.25 });
+      warningLayer.circle(originX, originY + 18, inner);
+      warningLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.5 });
+      for (let i = 0; i < 12; i++) {
+        const a = (Math.PI * 2 * i) / 12 + progress * 0.3;
+        const r1 = inner + 8;
+        const r2 = outer - 8;
+        warningLayer.moveTo(originX + Math.cos(a) * r1, originY + 18 + Math.sin(a) * r1);
+        warningLayer.lineTo(originX + Math.cos(a) * r2, originY + 18 + Math.sin(a) * r2);
+      }
+      warningLayer.stroke({ color: warningColor, width: 2, alpha: 0.36 });
+    }
+
+    if (this.nameText) {
+      const remaining = Math.max(0, Math.ceil((1 - progress) * 3));
+      this.nameText.text = `${this.telegraph.label}\n${remaining}`;
+      this.nameText.alpha = 0.88 + progress * 0.12;
+    }
+
+  }
+
+  clearTelegraphVisual() {
+    const hadTelegraphOverlay = Boolean(this.nameText && this.nameText.text !== this.name);
+    if (this.nameText) {
+      this.nameText.text = this.name;
+      this.nameText.alpha = 1;
+    }
+    if (hadTelegraphOverlay) {
+      this.updateHealthBar();
+    }
   }
 
   executeSignatureMove(type, playerX, playerY) {
@@ -497,6 +602,7 @@ export class Boss {
   }
 
   destroy() {
+    this.clearTelegraphVisual();
     if (this.visualCleanup) {
       this.visualCleanup();
       this.visualCleanup = null;
