@@ -659,15 +659,19 @@ checks.push({
   ...checkJsonReport('release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json', (json) => {
     const expectedBuild = currentBuildVersion();
     const actualBuild = json.build?.version || null;
+    const duration = Number(json.ffprobe?.format?.duration || 0);
     return {
       ok: json.ffprobe?.streams?.some((stream) => stream.codec_name === 'h264') &&
       json.ffprobe?.streams?.some((stream) => stream.codec_name === 'aac') &&
       Boolean(expectedBuild) &&
       actualBuild === expectedBuild &&
-      Number(json.ffprobe?.format?.duration || 0) > 40,
+      duration >= 30 &&
+      duration <= 45 &&
+      Number(json.visualTrimSeconds || 0) > 0,
       expectedBuild,
       actualBuild,
       duration: json.ffprobe?.format?.duration,
+      visualTrimSeconds: json.visualTrimSeconds || 0,
       streams: json.ffprobe?.streams || []
     };
   })
@@ -681,17 +685,20 @@ checks.push({
     return {
       ok: json.status === 'passed' &&
       Array.isArray(json.titleCards) &&
-      json.titleCards.length === 2 &&
+      json.titleCards.length >= 1 &&
+      json.opening === 'gameplay_first' &&
       json.ffprobe?.streams?.some((stream) => stream.codec_name === 'h264' && stream.width === 1280 && stream.height === 720) &&
       json.ffprobe?.streams?.some((stream) => stream.codec_name === 'aac') &&
       Boolean(expectedBuild) &&
       actualBuild === expectedBuild &&
-      Number(json.ffprobe?.format?.duration || 0) >= 48 &&
+      Number(json.ffprobe?.format?.duration || 0) >= 30 &&
+      Number(json.ffprobe?.format?.duration || 0) <= 45 &&
       existsSync(path.resolve(root, 'release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png')),
       status: json.status || null,
       expectedBuild,
       actualBuild,
       duration: json.ffprobe?.format?.duration || null,
+      opening: json.opening || null,
       titleCards: json.titleCards || [],
       volume: json.volume || null,
       contactSheet: json.contactSheet || null

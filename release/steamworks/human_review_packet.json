@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-05-18T12:40:16.267Z",
+  "generatedAt": "2026-05-18T14:59:53.949Z",
   "status": "ready_for_human_review",
   "build": {
-    "version": "v2026-05-18_11-49-26",
-    "timestamp": "2026-05-18T09:49:26.907Z"
+    "version": "v2026-05-18_16-03-56",
+    "timestamp": "2026-05-18T14:03:56.375Z"
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
-    "passed": 20,
-    "failed": 3,
-    "hardFailures": 0
+    "passed": 10,
+    "failed": 13,
+    "hardFailures": 10
   },
   "approval": {
     "path": "docs/reviews/2026-05-17-human-release-approval.md",
@@ -38,17 +38,17 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "exists": true,
-          "bytes": 2181504
+          "bytes": 501899
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "exists": true,
-          "bytes": 1786
+          "bytes": 1784
         },
         {
           "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
           "exists": true,
-          "bytes": 3670
+          "bytes": 3668
         }
       ],
       "prompt": "Review the 8 screenshot upload candidates for clarity, truthful gameplay representation, UI readability, and public arcade tone."
@@ -86,17 +86,17 @@
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
           "exists": true,
-          "bytes": 11192790
+          "bytes": 9985462
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "exists": true,
-          "bytes": 564706
+          "bytes": 565181
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "exists": true,
-          "bytes": 2424
+          "bytes": 2199
         }
       ],
       "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."
@@ -168,7 +168,7 @@
         {
           "path": "release/provenance/asset_provenance_report.json",
           "exists": true,
-          "bytes": 1231
+          "bytes": 1232
         }
       ],
       "prompt": "Review generated and third-party art/audio provenance, names, jokes, and store materials. Only a human can mark legal approval."
@@ -182,12 +182,12 @@
         {
           "path": "release/steamworks/full_rc_verification_report.json",
           "exists": true,
-          "bytes": 3542
+          "bytes": 3538
         },
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "exists": true,
-          "bytes": 31817
+          "bytes": 31910
         },
         {
           "path": "docs/reviews/2026-05-16-release-candidate-review.md",

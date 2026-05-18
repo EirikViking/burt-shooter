@@ -1,22 +1,17 @@
 {
-  "generatedAt": "2026-05-18T10:28:20.034Z",
+  "generatedAt": "2026-05-18T14:38:48.040Z",
   "status": "passed",
-  "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-audio-draft.mp4",
+  "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-18-16-31\\nova-swarm-steam-trailer-audio-draft.mp4",
   "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\nova-swarm-steam-trailer-candidate.mp4",
   "build": {
-    "version": "v2026-05-18_11-49-26",
-    "timestamp": "2026-05-18T09:49:26.907Z"
+    "version": "v2026-05-18_16-03-56",
+    "timestamp": "2026-05-18T14:03:56.375Z"
   },
+  "opening": "gameplay_first",
   "titleCards": [
     {
-      "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\01-title-card.png",
-      "durationSeconds": 2.8,
-      "title": "NOVA SWARM",
-      "subtitle": "ARCADE PATROL"
-    },
-    {
       "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\02-outro-card.png",
-      "durationSeconds": 3.2,
+      "durationSeconds": 4.2,
       "title": "CHASE THE SWARM",
       "subtitle": "DODGE. SCORE. BRAG."
     }
@@ -30,7 +25,7 @@
     "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\frame-05.jpg"
   ],
   "notes": [
-    "Editorial Steam trailer candidate with generated Nova Swarm store art, branded title cards, existing captured gameplay, and shipped audio.",
+    "Editorial Steam trailer candidate starts on captured gameplay: no logo-first opening, no lore card, no menu dwell.",
     "Still requires human by-ear and store-submission approval before Steam upload."
   ],
   "ffprobe": {
@@ -42,22 +37,22 @@
         "width": 1280,
         "height": 720,
         "r_frame_rate": "25/1",
-        "duration": "49.902031"
+        "duration": "38.407969"
       },
       {
         "codec_name": "aac",
         "r_frame_rate": "0/0",
-        "duration": "49.923333"
+        "duration": "38.429333"
       }
     ],
     "format": {
-      "duration": "49.923333",
-      "size": "11192790",
-      "bit_rate": "1793596"
+      "duration": "38.429333",
+      "size": "9985462",
+      "bit_rate": "2078716"
     }
   },
   "volume": {
-    "meanVolumeDb": "-19.1",
-    "maxVolumeDb": "-1.1"
+    "meanVolumeDb": "-19.5",
+    "maxVolumeDb": "-0.9"
   }
 }

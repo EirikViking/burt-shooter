@@ -1,6 +1,6 @@
 # Nova Swarm Steam Screenshot Upload Candidates
 
-Curated on 2026-05-17 from the current release-build capture in `release/steam-screenshots/draft-2026-05-17-current/`.
+Curated on 2026-05-18 from the current release-build capture in `release/steam-screenshots/draft-2026-05-17-current/`.
 
 Source deployment:
 - `https://burt.tinyfoundry.app`
@@ -25,7 +25,7 @@ Review evidence:
 Notes:
 - All candidates are `1280x720`.
 - Source `report.json` had zero console events, page errors, and bad network responses.
-- Source `report.json` records build `v2026-05-17_21-11-41`, matching `public/version.json` at capture time.
+- Source `report.json` records build `v2026-05-18_16-03-56`, matching `public/version.json` at capture time.
 - Boss and wave-transition captures include the quieter message-focus timing and later score-flow/reward cleanup from the current release build.
 - The midgame and boss shots use deterministic debug routes for repeatable store-candidate capture; they still render the actual runtime UI, sprites, backgrounds, and effects.
 - Final upload still needs user approval inside Steamworks.

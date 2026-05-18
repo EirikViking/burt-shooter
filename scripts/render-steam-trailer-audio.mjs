@@ -2,7 +2,8 @@ import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-const durationSeconds = Number(process.env.TRAILER_AUDIO_DURATION || 43.88);
+const durationSeconds = Number(process.env.TRAILER_AUDIO_DURATION || 34.2);
+const visualTrimSeconds = Number(process.env.TRAILER_AUDIO_VISUAL_TRIM || 6.0);
 const trailerRoot = path.resolve(process.env.TRAILER_AUDIO_ROOT || 'release/steam-trailer');
 const draftDir = path.resolve(process.env.TRAILER_AUDIO_DRAFT_DIR || findLatestDraftDir(trailerRoot));
 const inputVideo = path.resolve(process.env.TRAILER_AUDIO_VIDEO || path.join(draftDir, 'nova-swarm-steam-trailer-visual-draft.webm'));
@@ -36,31 +37,25 @@ const audio = {
 };
 
 const clips = [
-  music('introMusic', 0, 6.7, 0.2, 0.7),
-  voice('narrator01', 0.45, 0.86),
-  sfx('portal', 0.65, 0.62),
-  sfx('whoosh', 4.45, 0.45),
-  voice('narrator02', 5.05, 0.78),
-  sfx('swarm', 6.6, 0.46),
-  music('menuMusic', 6.4, 5.7, 0.14, 0.55),
-  sfx('confirm', 11.75, 0.58),
-  music('gameplayMusic', 11.9, 14.7, 0.18, 0.35),
-  voice('launchVoice', 12.25, 0.74),
-  ...repeatSfx('laserSmall', 14.25, 0.48, 10, 0.46),
-  ...repeatSfx('laserLarge', 16.7, 0.34, 5, 0.36),
-  sfx('shield', 17.1, 0.42),
-  sfx('explosion', 19.3, 0.56),
-  sfx('explosion', 23.0, 0.46),
-  sfx('bossReveal', 25.15, 0.8),
-  music('bossMusic', 25.35, 9.2, 0.18, 0.42),
-  voice('bossVoice', 25.85, 0.88),
-  ...repeatSfx('laserLarge', 28.1, 0.33, 8, 0.32),
-  sfx('bossExplosion', 34.0, 0.82),
-  music('victoryMusic', 34.15, 4.4, 0.22, 0.65),
-  voice('victoryVoice', 35.05, 0.76),
-  sfx('confirm', 37.7, 0.46),
-  music('gameOverMusic', 38.6, 5.0, 0.24, 0.7),
-  voice('gameOverVoice', 39.45, 0.74)
+  sfx('confirm', 0.08, 0.58),
+  music('gameplayMusic', 0, 15.0, 0.2, 0.45),
+  voice('launchVoice', 0.6, 0.62),
+  ...repeatSfx('laserSmall', 1.0, 0.46, 12, 0.42),
+  ...repeatSfx('laserLarge', 5.2, 0.32, 5, 0.4),
+  sfx('shield', 6.25, 0.42),
+  sfx('explosion', 7.1, 0.52),
+  sfx('explosion', 9.4, 0.48),
+  sfx('bossReveal', 10.2, 0.8),
+  music('bossMusic', 10.35, 10.8, 0.2, 0.42),
+  voice('bossVoice', 10.75, 0.7),
+  ...repeatSfx('laserLarge', 13.0, 0.32, 10, 0.36),
+  sfx('bossExplosion', 19.1, 0.82),
+  music('victoryMusic', 19.25, 4.0, 0.2, 0.65),
+  voice('victoryVoice', 20.05, 0.72),
+  music('menuMusic', 22.0, 5.0, 0.14, 0.5),
+  sfx('confirm', 23.9, 0.46),
+  music('gameOverMusic', 27.2, 5.8, 0.24, 0.7),
+  voice('gameOverVoice', 28.1, 0.7)
 ];
 
 function findLatestDraftDir(root) {
@@ -159,6 +154,7 @@ async function main() {
   const filterComplex = buildFilter();
   const args = [
     '-y',
+    '-ss', visualTrimSeconds.toFixed(3),
     '-i', inputVideo,
     ...audioInputs.flatMap((file) => ['-i', file]),
     '-filter_complex', filterComplex,
@@ -190,8 +186,10 @@ async function main() {
     outputVideo,
     build: readJson(visualReportPath)?.build || null,
     durationSeconds,
+    visualTrimSeconds,
     notes: [
       'Audio-mixed Steam trailer draft rendered from captured game footage and shipped Nova Swarm audio assets.',
+      'The visual source is trimmed to open on active shooting and visible swarm pressure instead of pre-wave setup.',
       'This is still a draft: final Steam upload needs human by-ear approval and any desired title-card/editorial pass.'
     ],
     clips,

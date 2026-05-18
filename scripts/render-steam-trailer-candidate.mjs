@@ -1,22 +1,19 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-const draftDir = path.resolve(process.env.TRAILER_CANDIDATE_DRAFT_DIR || 'release/steam-trailer/draft-2026-05-17-current');
+const trailerRoot = path.resolve(process.env.TRAILER_CANDIDATE_ROOT || 'release/steam-trailer');
+const draftDir = path.resolve(process.env.TRAILER_CANDIDATE_DRAFT_DIR || findLatestDraftDir(trailerRoot));
 const inputVideo = path.resolve(process.env.TRAILER_CANDIDATE_INPUT || path.join(draftDir, 'nova-swarm-steam-trailer-audio-draft.mp4'));
 const outputDir = path.resolve(process.env.TRAILER_CANDIDATE_OUTPUT_DIR || 'release/steam-trailer/candidate-2026-05-17-current');
 const background = path.resolve(process.env.TRAILER_CANDIDATE_BG || 'release/steam-assets/draft-2026-05-17-nova-swarm/store_page_background_1438x810.jpg');
 const titleFont = process.env.TRAILER_CANDIDATE_TITLE_FONT || 'C:/Windows/Fonts/ariblk.ttf';
 const bodyFont = process.env.TRAILER_CANDIDATE_BODY_FONT || 'C:/Windows/Fonts/bahnschrift.ttf';
-const introMusic = path.resolve('public/audio/music/nova-swarm/nova_swarm_intro_overture.mp3');
 const outroStinger = path.resolve('public/audio/sfx/nova-swarm/nova_highscore_chime.mp3');
-const introSeconds = 2.8;
-const outroSeconds = 3.2;
+const outroSeconds = 4.2;
 
 const paths = {
-  introPng: path.join(outputDir, '01-title-card.png'),
   outroPng: path.join(outputDir, '02-outro-card.png'),
-  introMp4: path.join(outputDir, 'intro-card.mp4'),
   bodyMp4: path.join(outputDir, 'body-trailer.mp4'),
   outroMp4: path.join(outputDir, 'outro-card.mp4'),
   concatList: path.join(outputDir, 'concat.txt'),
@@ -32,6 +29,16 @@ function readJson(file) {
   } catch (error) {
     return { error: error.message };
   }
+}
+
+function findLatestDraftDir(root) {
+  if (!existsSync(root)) throw new Error(`Trailer root missing: ${root}`);
+  const drafts = readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith('draft-'))
+    .map((entry) => path.join(root, entry.name))
+    .sort();
+  if (!drafts.length) throw new Error(`No trailer draft directories found in ${root}`);
+  return drafts[drafts.length - 1];
 }
 
 function assertFile(file, label) {
@@ -133,7 +140,6 @@ async function renderBodyVideo() {
 
 async function concatVideos() {
   writeFileSync(paths.concatList, [
-    `file '${normalize(paths.introMp4)}'`,
     `file '${normalize(paths.bodyMp4)}'`,
     `file '${normalize(paths.outroMp4)}'`
   ].join('\n') + '\n');
@@ -192,13 +198,10 @@ async function extractContactSheet(duration) {
 async function main() {
   assertFile(inputVideo, 'audio trailer draft');
   assertFile(background, 'Steam background art');
-  assertFile(introMusic, 'intro card music');
   assertFile(outroStinger, 'outro card stinger');
   mkdirSync(outputDir, { recursive: true });
 
-  await renderCardPng(paths.introPng, 'NOVA SWARM', 'ARCADE PATROL', 'ORIGINAL COIN-SLOT SPACE CHAOS');
   await renderCardPng(paths.outroPng, 'CHASE THE SWARM', 'DODGE. SCORE. BRAG.', 'STEAM RELEASE CANDIDATE - PENDING HUMAN APPROVAL');
-  await renderCardVideo(paths.introPng, introMusic, paths.introMp4, introSeconds, 0.22);
   await renderBodyVideo();
   await renderCardVideo(paths.outroPng, outroStinger, paths.outroMp4, outroSeconds, 0.42);
   await concatVideos();
@@ -210,18 +213,18 @@ async function main() {
 
   const report = {
     generatedAt: new Date().toISOString(),
-    status: duration >= 48 && duration <= 52 && probe.streams?.some((stream) => stream.codec_name === 'h264') ? 'passed' : 'needs_review',
+    status: duration >= 30 && duration <= 45 && probe.streams?.some((stream) => stream.codec_name === 'h264') ? 'passed' : 'needs_review',
     inputVideo,
     outputVideo: paths.outputVideo,
     build: readJson(path.join(draftDir, 'audio-mix-report.json'))?.build || readJson(path.join(draftDir, 'report.json'))?.build || null,
+    opening: 'gameplay_first',
     titleCards: [
-      { image: paths.introPng, durationSeconds: introSeconds, title: 'NOVA SWARM', subtitle: 'ARCADE PATROL' },
       { image: paths.outroPng, durationSeconds: outroSeconds, title: 'CHASE THE SWARM', subtitle: 'DODGE. SCORE. BRAG.' }
     ],
     contactSheet: paths.contactSheet,
     frames,
     notes: [
-      'Editorial Steam trailer candidate with generated Nova Swarm store art, branded title cards, existing captured gameplay, and shipped audio.',
+      'Editorial Steam trailer candidate starts on captured gameplay: no logo-first opening, no lore card, no menu dwell.',
       'Still requires human by-ear and store-submission approval before Steam upload.'
     ],
     ffprobe: probe,

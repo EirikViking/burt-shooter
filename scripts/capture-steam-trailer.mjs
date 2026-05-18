@@ -220,45 +220,30 @@ async function ensureUnpaused(page) {
   });
 }
 
-async function showIntroAndMenu(page) {
-  await page.goto(withQuery(baseUrl, { resetIntro: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+async function showMenuAndShipSelect(page) {
+  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForScene(page, 'menu', 30000);
-  await page.evaluate(() => {
-    const menu = window.__game?.scenes?.menu;
-    if (typeof menu?.openStoryIntro === 'function') {
-      menu.openStoryIntro();
-      return;
-    }
-    window.__game?.showIntro?.();
-  });
-  await waitForScene(page, 'intro', 30000);
-  await page.mouse.click(viewport.width * 0.5, viewport.height * 0.55);
-  await addBeat(page, 'story_intro_open', 4200);
-  await page.keyboard.press('ArrowRight');
-  await addBeat(page, 'story_intro_swarm', 2200);
-  await page.keyboard.press('Escape');
-  await waitForScene(page, 'menu', 15000);
-  await addBeat(page, 'main_menu_identity', 2600);
+  await addBeat(page, 'main_menu_quick_play', 2000);
   await page.evaluate(() => window.__game?.showShipSelect?.());
   await waitForScene(page, 'shipSelect', 15000);
   await addBeat(page, 'ship_select_variants', 3000);
 }
 
 async function showGameplay(page) {
-  await page.evaluate(() => window.__game?.startGame?.());
+  await page.goto(withQuery(baseUrl, { autostart: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForScene(page, 'play', 30000);
   await waitForGameplayBackdrop(page);
   await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.enemies?.length > 0, null, { timeout: 30000 });
   await stabilizePlayer(page);
   await page.keyboard.down('Space');
   await page.keyboard.down('ArrowRight');
-  await addBeat(page, 'first_wave_lasers', 3200);
+  await addBeat(page, 'first_wave_lasers', 4000);
   await page.keyboard.up('ArrowRight');
   await page.keyboard.down('ArrowLeft');
-  await addBeat(page, 'dodge_lane_shift', 2600);
+  await addBeat(page, 'dodge_lane_shift', 3000);
   await page.keyboard.up('ArrowLeft');
   await page.keyboard.down('ArrowUp');
-  await addBeat(page, 'formation_pressure', 2200);
+  await addBeat(page, 'formation_pressure', 3000);
   await page.keyboard.up('ArrowUp');
   await page.keyboard.up('Space');
 }
@@ -273,14 +258,14 @@ async function showBoss(page) {
   await waitForScene(page, 'play', 30000);
   await waitForGameplayBackdrop(page);
   await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
-  await addBeat(page, 'boss_inbound', 2600);
+  await addBeat(page, 'boss_inbound', 3000);
   await page.waitForFunction(() => {
     const enemyManager = window.__game?.scenes?.play?.enemyManager;
     return enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active;
   }, null, { timeout: 30000 });
   await stabilizePlayer(page);
   await page.keyboard.down('Space');
-  await addBeat(page, 'boss_pattern_fire', 4200);
+  await addBeat(page, 'boss_pattern_fire', 5000);
   await page.keyboard.up('Space');
   await page.evaluate(() => {
     const boss = window.__game?.scenes?.play?.enemyManager?.boss;
@@ -302,7 +287,7 @@ async function showGameOver(page) {
     game.gameOver();
   });
   await waitForScene(page, 'gameOver', 10000);
-  await addBeat(page, 'game_over_score_log', 3500);
+  await addBeat(page, 'game_over_score_log', 4000);
 }
 
 async function main() {
@@ -325,9 +310,9 @@ async function main() {
 
   let videoPath = null;
   try {
-    await showIntroAndMenu(page);
     await showGameplay(page);
     await showBoss(page);
+    await showMenuAndShipSelect(page);
     await showGameOver(page);
     const video = page.video();
     await page.close();
