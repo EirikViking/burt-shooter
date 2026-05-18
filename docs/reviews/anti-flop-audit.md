@@ -96,3 +96,39 @@ After: the first contact-sheet frame already shows active swarm pressure, player
 - Steam screenshot shortlist is technically current and readable, but still needs human taste approval for the actual store page.
 - The trailer is now anti-flop compliant on opening action, but a final human trailer edit could still improve punch and brand polish.
 - Continued gameplay polish should focus on boss telegraph readability and first-run "one more run" feel rather than more content-count expansion.
+
+## Loop 3 - Store Screenshot First Impression
+
+### What Was Tested
+
+- Reviewed the Steam screenshot upload candidate contact sheet as a store-page first impression.
+- Visually inspected `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png`.
+- Ran `npm run audit:release-readiness`.
+
+### What Felt Slow, Confusing, Or Generic
+
+- The screenshot shortlist still led with story intro and ship select. Those are useful supporting shots, but they make the store page feel lore/menu-first instead of action-first.
+
+### What Changed
+
+- Reordered the 8-shot Steam upload shortlist to lead with actual gameplay, midgame swarm pressure, boss fight, boss warning, boss victory, and score-flow evidence.
+- Moved ship select and story intro to the last two supporting slots.
+- Regenerated the upload contact sheet and updated the README candidate order.
+
+### Before And After Feel
+
+Before: the first two screenshot impressions were cinematic/menu context.
+
+After: the first screenshot impression is readable shooting, enemies, score, HUD, and arcade motion.
+
+### Evidence Captured
+
+- Updated screenshot sheet: `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png`.
+- Candidate README: `release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md`.
+- Release audit: `docs/reviews/release-readiness-audit-2026-05-17.json`, automated gates pass with only the three known manual blockers.
+
+### Remaining Top Risks
+
+- Final human screenshot approval is still needed.
+- Steam page capsule/trailer/screenshot ordering should be reviewed together before upload.
+- The first gameplay screenshot is readable, but a future capture could be even more explosive if it catches a pickup/explosion within the same frame.

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T15:03:38.078Z",
+  "generatedAt": "2026-05-18T15:08:29.645Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 20,
@@ -84,12 +84,12 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "ok": true,
-          "bytes": 1784
+          "bytes": 1774
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "ok": true,
-          "bytes": 501899
+          "bytes": 502001
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/report.json",
@@ -246,49 +246,49 @@
       "count": 8,
       "candidates": [
         {
-          "file": "01-story-intro-cinematic.png",
+          "file": "01-first-wave-gameplay.png",
           "width": 1280,
           "height": 720,
           "ok": true
         },
         {
-          "file": "02-ship-select-variety.png",
+          "file": "02-midgame-swarm-escalation.png",
           "width": 1280,
           "height": 720,
           "ok": true
         },
         {
-          "file": "03-first-wave-gameplay.png",
+          "file": "03-boss-fight.png",
           "width": 1280,
           "height": 720,
           "ok": true
         },
         {
-          "file": "04-midgame-swarm-escalation.png",
+          "file": "04-boss-inbound.png",
           "width": 1280,
           "height": 720,
           "ok": true
         },
         {
-          "file": "05-boss-inbound.png",
+          "file": "05-boss-victory.png",
           "width": 1280,
           "height": 720,
           "ok": true
         },
         {
-          "file": "06-boss-fight.png",
+          "file": "06-game-over-score-flow.png",
           "width": 1280,
           "height": 720,
           "ok": true
         },
         {
-          "file": "07-boss-victory.png",
+          "file": "07-ship-select-variety.png",
           "width": 1280,
           "height": 720,
           "ok": true
         },
         {
-          "file": "08-game-over-score-flow.png",
+          "file": "08-story-intro-cinematic.png",
           "width": 1280,
           "height": 720,
           "ok": true

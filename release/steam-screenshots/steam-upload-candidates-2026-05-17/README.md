@@ -6,14 +6,14 @@ Source deployment:
 - `https://burt.tinyfoundry.app`
 
 Candidate set:
-- `01-story-intro-cinematic.png` - first-run cinematic art and public arcade premise.
-- `02-ship-select-variety.png` - ship selection, hangar backdrop, and variant breadth.
-- `03-first-wave-gameplay.png` - readable active wave combat from the release build.
-- `04-midgame-swarm-escalation.png` - denser level-three swarm action and combo feedback.
-- `05-boss-inbound.png` - boss warning/arcade-comedy setup.
-- `06-boss-fight.png` - active boss pattern and HUD readability.
-- `07-boss-victory.png` - boss defeat payoff and score reward.
-- `08-game-over-score-flow.png` - restart/high-score flow.
+- `01-first-wave-gameplay.png` - readable active wave combat from the release build.
+- `02-midgame-swarm-escalation.png` - denser level-three swarm action and combo feedback.
+- `03-boss-fight.png` - active boss pattern and HUD readability.
+- `04-boss-inbound.png` - boss warning/arcade-comedy setup.
+- `05-boss-victory.png` - boss defeat payoff and score reward.
+- `06-game-over-score-flow.png` - restart/high-score flow.
+- `07-ship-select-variety.png` - ship selection, hangar backdrop, and variant breadth.
+- `08-story-intro-cinematic.png` - optional story intro art and public arcade premise.
 
 Excluded from this upload shortlist:
 - `02-main-menu.png` - useful identity proof, but less valuable as a Steam screenshot than actual play.
