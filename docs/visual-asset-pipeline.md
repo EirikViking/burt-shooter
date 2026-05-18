@@ -42,6 +42,13 @@ Prompt summary:
 - No new generated files were added in this pass because `OPENAI_API_KEY` was not present in the local environment.
 - Usage: `src/scenes/MenuScene.js` layers a non-interactive holographic radar, scan blips, and generated crew comm cards behind the menu controls while keeping the settings overlay and buttons above the decorative layer.
 
+## 2026-05-18 Menu Typography And Operator Cards
+
+- Runtime font assets: `public/fonts/orbitron-700.ttf`, `public/fonts/orbitron-800.ttf`, `public/fonts/orbitron-900.ttf`, `public/fonts/rajdhani-600.ttf`, `public/fonts/rajdhani-700.ttf`
+- Source: Google Fonts downloads for Orbitron and Rajdhani.
+- License: SIL Open Font License, bundled as `public/fonts/OFL-Orbitron.txt` and `public/fonts/OFL-Rajdhani.txt`, pending the same final human provenance/legal approval as the rest of the Steam package.
+- Usage: `src/styles.css` defines local `@font-face` rules, and `src/scenes/MenuScene.js` uses the fonts for the title, menu buttons, subtitle, and now-clickable Navigator/Pilot operator cards.
+
 ## 2026-05-17 Nova Swarm Asset Path Cleanup
 
 - Public runtime art paths now live under `public/art/generated/nova-swarm/`.

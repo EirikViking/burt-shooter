@@ -92,6 +92,16 @@
       "notes": "Existing music, SFX, and generic voice clips. Generated subfolders are separately identified above. Steam submission needs final license/provenance confirmation."
     },
     {
+      "id": "bundled_open_font_license_fonts",
+      "prefixes": [
+        "public/fonts/"
+      ],
+      "sourceType": "third_party_open_font",
+      "provider": "Google Fonts: Orbitron and Rajdhani",
+      "licenseStatus": "pending_human_review",
+      "notes": "Bundled menu typography fonts distributed under the SIL Open Font License. Final Steam legal/provenance approval is still required."
+    },
+    {
       "id": "app_icons_original_generated",
       "prefixes": [
         "public/icons/",

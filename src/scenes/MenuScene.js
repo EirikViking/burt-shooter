@@ -28,6 +28,10 @@ function createText(text, style) {
   return new PIXI.Text({ text, style: normalizeTextStyle(style) });
 }
 
+const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, Impact, sans-serif';
+const FONT_ARCADE = 'Rajdhani, Bahnschrift, Eurostile, Trebuchet MS, sans-serif';
+const FONT_MONO = 'Cascadia Mono, Consolas, Courier New, monospace';
+
 export class MenuScene {
   constructor(game) {
     this.game = game;
@@ -50,6 +54,7 @@ export class MenuScene {
     this.backdrop = null;
     this.backdropShade = null;
     this.missionConsole = null;
+    this.menuPanel = null;
     this.radarSweep = null;
     this.radarBlips = [];
     this.crewComms = [];
@@ -83,6 +88,7 @@ export class MenuScene {
       });
     });
     this.createElements();
+    this.warmMenuFonts();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutMenu());
     this.layoutMenu();
     this.startAnimations();
@@ -334,8 +340,8 @@ export class MenuScene {
     const consoleLayer = new PIXI.Container();
     consoleLayer.label = 'ui_menuMissionConsole';
     consoleLayer.zIndex = 2;
-    consoleLayer.eventMode = 'none';
-    consoleLayer.interactiveChildren = false;
+    consoleLayer.eventMode = 'passive';
+    consoleLayer.interactiveChildren = true;
     consoleLayer.alpha = responsiveLayout.isMobile ? 0.42 : 0.78;
     this.missionConsole = consoleLayer;
     this.container.addChild(consoleLayer);
@@ -424,71 +430,119 @@ export class MenuScene {
     if (layout.isMobile) return;
 
     const specs = [
-      { align: -1, label: 'NAV', sub: 'ARCTIC LINK' },
-      { align: 1, label: 'PILOT', sub: 'COMMS HOT' }
+      {
+        align: -1,
+        role: 'NAVIGATOR',
+        action: 'STORY BRIEFING',
+        hint: 'OPEN INTRO',
+        color: 0x37f5ff,
+        accent: 0x7fffd8,
+        onActivate: () => this.openStoryIntro()
+      },
+      {
+        align: 1,
+        role: 'PILOT',
+        action: 'SHIP HANGAR',
+        hint: 'SELECT SHIP',
+        color: 0xff55d9,
+        accent: 0xffd15c,
+        onActivate: () => this.openShipSelect()
+      }
     ];
 
     specs.forEach((spec, index) => {
       const card = new PIXI.Container();
       card.label = `ui_menuCrewComms_${index}`;
       card.zIndex = 2;
-      card.eventMode = 'none';
-      card.interactiveChildren = false;
-      card.avatarSize = 76;
+      card.eventMode = 'static';
+      card.cursor = 'pointer';
+      card.interactiveChildren = true;
+      card.hitArea = new PIXI.Rectangle(-86, -76, 172, 158);
+      card.avatarSize = 82;
       card.baseY = 0;
 
       const bg = new PIXI.Graphics();
-      bg.roundRect(-62, -58, 124, 116, 8);
-      bg.fill({ color: 0x06111d, alpha: 0.58 });
-      bg.stroke({ color: spec.align < 0 ? 0x37f5ff : 0xff55d9, width: 1, alpha: 0.74 });
+      bg.roundRect(-78, -68, 156, 142, 8);
+      bg.fill({ color: 0x051120, alpha: 0.66 });
+      bg.stroke({ color: spec.color, width: 2, alpha: 0.84 });
+      card.bg = bg;
       card.addChild(bg);
 
+      const glow = new PIXI.Graphics();
+      glow.roundRect(-86, -76, 172, 158, 8);
+      glow.stroke({ color: spec.color, width: 1, alpha: 0.22 });
+      card.glow = glow;
+      card.addChild(glow);
+
       const inner = new PIXI.Graphics();
-      inner.roundRect(-46, -46, 92, 78, 5);
-      inner.stroke({ color: 0xffffff, width: 1, alpha: 0.13 });
+      inner.roundRect(-49, -52, 98, 82, 5);
+      inner.stroke({ color: 0xffffff, width: 1, alpha: 0.16 });
       card.addChild(inner);
 
       const avatarSlot = new PIXI.Container();
-      avatarSlot.y = -4;
+      avatarSlot.y = -10;
       card.avatarSlot = avatarSlot;
       card.addChild(avatarSlot);
 
       const placeholder = new PIXI.Graphics();
-      placeholder.roundRect(-38, -44, 76, 76, 5);
+      placeholder.roundRect(-41, -47, 82, 82, 5);
       placeholder.fill({ color: 0x0b2234, alpha: 0.74 });
-      placeholder.stroke({ color: 0x37f5ff, width: 1, alpha: 0.3 });
+      placeholder.stroke({ color: spec.color, width: 1, alpha: 0.36 });
       avatarSlot.addChild(placeholder);
 
       const scan = new PIXI.Graphics();
-      scan.rect(-42, -18, 84, 2);
-      scan.fill({ color: 0x7fffd8, alpha: 0.3 });
+      scan.rect(-48, -22, 96, 2);
+      scan.fill({ color: spec.accent, alpha: 0.34 });
       scan.label = 'ui_menuCrewScan';
       scan.phase = index * 1.4;
       card.scan = scan;
       card.addChild(scan);
 
-      const label = createText(spec.label, {
-        fontFamily: 'Courier New',
-        fontSize: 14,
+      const role = createText(spec.role, {
+        fontFamily: FONT_DISPLAY,
+        fontSize: 13,
         fill: '#f6fbff',
-        fontWeight: 'bold',
+        fontWeight: '800',
+        letterSpacing: 1.2,
         align: 'center'
       });
-      label.anchor.set(0.5);
-      label.y = 35;
-      card.addChild(label);
+      role.anchor.set(0.5);
+      role.y = 38;
+      card.addChild(role);
 
-      const sub = createText(spec.sub, {
-        fontFamily: 'Courier New',
-        fontSize: 9,
+      const action = createText(spec.action, {
+        fontFamily: FONT_ARCADE,
+        fontSize: 12,
+        fontWeight: '700',
         fill: spec.align < 0 ? '#37f5ff' : '#ff8ae8',
         align: 'center'
       });
-      sub.anchor.set(0.5);
-      sub.y = 49;
-      card.addChild(sub);
+      action.anchor.set(0.5);
+      action.y = 54;
+      card.addChild(action);
+
+      const hintBg = new PIXI.Graphics();
+      hintBg.roundRect(-54, 62, 108, 18, 5);
+      hintBg.fill({ color: spec.color, alpha: 0.14 });
+      hintBg.stroke({ color: spec.color, width: 1, alpha: 0.42 });
+      card.addChild(hintBg);
+
+      const hint = createText(spec.hint, {
+        fontFamily: FONT_MONO,
+        fontSize: 9,
+        fontWeight: 'bold',
+        fill: '#f6fbff',
+        align: 'center'
+      });
+      hint.anchor.set(0.5);
+      hint.y = 71;
+      card.addChild(hint);
 
       card.align = spec.align;
+      card.spec = spec;
+      card.on('pointertap', () => spec.onActivate());
+      card.on('pointerover', () => this.setCommsCardHover(card, true));
+      card.on('pointerout', () => this.setCommsCardHover(card, false));
       parent.addChild(card);
       this.crewComms.push(card);
     });
@@ -503,16 +557,19 @@ export class MenuScene {
     const titleBlur = layout.isMobile ? 4 : 8;
 
     this.title = createText('NOVA SWARM', {
-      fontFamily: 'Courier New',
+      fontFamily: FONT_DISPLAY,
       fontSize: titleSize,
-      fill: '#00ffff',
-      stroke: '#0088ff',
-      strokeThickness: layout.isMobile ? 2 : 3,
+      fill: '#dffcff',
+      fontWeight: '900',
+      letterSpacing: layout.isMobile ? 1 : 2,
+      stroke: '#062a54',
+      strokeThickness: layout.isMobile ? 4 : 6,
+      padding: layout.isMobile ? 12 : 26,
       dropShadow: true,
       dropShadowColor: '#00ffff',
-      dropShadowBlur: titleBlur,
+      dropShadowBlur: titleBlur + 6,
       dropShadowDistance: 0,
-      dropShadowAlpha: layout.isMobile ? 0.4 : 0.6
+      dropShadowAlpha: layout.isMobile ? 0.62 : 0.86
     });
     this.title.anchor.set(0.5);
     this.title.alpha = 0;  // Start invisible for fade-in
@@ -520,10 +577,12 @@ export class MenuScene {
     this.container.addChild(this.title);
 
     const subtitleSize = getResponsiveFontSize(layout, 'subtitle');
-    this.subtitle = createText('Classic arcade shooting with a modern swarm of jokes', {
-      fontFamily: 'Courier New',
+    this.subtitle = createText('FORMATION PANIC // COIN-SLOT HEROICS // BOSS-WAVE BRAVADO', {
+      fontFamily: FONT_ARCADE,
       fontSize: subtitleSize,
-      fill: '#ff00ff',
+      fontWeight: '700',
+      fill: '#ff67dc',
+      letterSpacing: 1.4,
       align: 'center'
     });
     this.subtitle.anchor.set(0.5);
@@ -535,9 +594,12 @@ export class MenuScene {
     this.flavor = createText(
       'The alien formation union has gone rogue.\nDodge the patterns, roast the swarm, chase the high score.',
       {
-        fontFamily: 'Courier New',
+        fontFamily: FONT_ARCADE,
         fontSize: storySize,
-        fill: '#ffffff',
+        fontWeight: '600',
+        fill: '#f6fbff',
+        stroke: '#020711',
+        strokeThickness: 3,
         align: 'center',
         wordWrap: true,
         wordWrapWidth: clampTextWidth(width * (layout.isMobile ? 0.9 : 0.7), layout),
@@ -552,7 +614,7 @@ export class MenuScene {
     this.disclaimer = createText(
       this.getDisclaimerText(layout),
       {
-        fontFamily: 'Courier New',
+        fontFamily: FONT_MONO,
         fontSize: 14,
         fontWeight: 'bold',
         fill: '#f6fbff',
@@ -570,17 +632,15 @@ export class MenuScene {
     this.disclaimer.alpha = 0;
     this.container.addChild(this.disclaimer);
 
+    this.menuPanel = new PIXI.Graphics();
+    this.menuPanel.zIndex = 8;
+    this.menuPanel.alpha = 0;
+    this.container.addChild(this.menuPanel);
+
     this.startBtn = this.createButton('START GAME', layout);
     this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
-      try {
-        AudioManager.init();
-        AudioManager.playSfx('ui_open');
-        AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
-        this.game.showShipSelect();
-      } catch (e) {
-        console.error('[MenuScene] Start Game Error:', e);
-      }
+      this.openShipSelect();
     });
     this.container.addChild(this.startBtn);
 
@@ -601,13 +661,7 @@ export class MenuScene {
     this.storyBtn = this.createButton('STORY INTRO', layout);
     this.storyBtn.alpha = 0;
     this.storyBtn.on('pointerdown', () => {
-      try {
-        AudioManager.init();
-        AudioManager.playSfx('coin_portal_open', { force: true, volume: 0.55 });
-        this.game.showIntro();
-      } catch (e) {
-        console.error('[MenuScene] Story Intro Error:', e);
-      }
+      this.openStoryIntro();
     });
     this.container.addChild(this.storyBtn);
 
@@ -629,7 +683,7 @@ export class MenuScene {
     const controlsText = this.getControlsText(layout);
     const controlsSize = getResponsiveFontSize(layout, 'small');
     this.controls = createText(controlsText, {
-      fontFamily: 'Courier New',
+      fontFamily: FONT_MONO,
       fontSize: controlsSize,
       fill: '#cfefff',
       fontWeight: 'bold',
@@ -644,7 +698,7 @@ export class MenuScene {
     this.container.addChild(this.controls);
 
     this.easter = createText('Nova Swarm // Arcade Patrol Build', {
-      fontFamily: 'Courier New',
+      fontFamily: FONT_MONO,
       fontSize: 10,
       fill: '#58717f'
     });
@@ -671,13 +725,46 @@ export class MenuScene {
 
     const stampFont = Math.max(10, getResponsiveFontSize(layout, 'small') - 2);
     this.buildStamp = createText(`build: ${BUILD_ID}`, {
-      fontFamily: 'Courier New',
+      fontFamily: FONT_MONO,
       fontSize: stampFont,
       fill: '#66fffe',
       align: 'right'
     });
     this.buildStamp.anchor.set(1, 1);
     this.container.addChild(this.buildStamp);
+  }
+
+  warmMenuFonts() {
+    if (typeof document === 'undefined' || !document.fonts?.load) return;
+
+    Promise.all([
+      document.fonts.load('900 56px Orbitron'),
+      document.fonts.load('800 20px Orbitron'),
+      document.fonts.load('700 18px Rajdhani')
+    ]).then(() => {
+      this.refreshMenuText();
+    }).catch(() => {
+      // System fallbacks are acceptable if a browser blocks local font loading.
+    });
+  }
+
+  refreshMenuText() {
+    [
+      this.title,
+      this.subtitle,
+      this.flavor,
+      this.disclaimer,
+      this.controls,
+      this.easter,
+      this.buildStamp,
+      this.musicBtn?._label,
+      this.startBtn?._label,
+      this.highscoreBtn?._label,
+      this.storyBtn?._label,
+      this.settingsBtn?._label,
+      ...this.crewComms.flatMap((card) => card.children.filter((child) => child instanceof PIXI.Text))
+    ].filter(Boolean).forEach((text) => text.onViewUpdate?.());
+    this.layoutMenu();
   }
 
   async initBonusDecorations() {
@@ -770,7 +857,9 @@ export class MenuScene {
     const controlsSize = getResponsiveFontSize(layout, 'small');
 
     this.title.style.fontSize = titleSize;
-    this.title.style.stroke = { color: '#0088ff', width: layout.isMobile ? 2 : 3 };
+    this.title.style.stroke = { color: '#062a54', width: layout.isMobile ? 4 : 6 };
+    this.title.style.letterSpacing = layout.isMobile ? 1 : 2;
+    this.title.style.padding = layout.isMobile ? 12 : 26;
     this.subtitle.style.fontSize = subtitleSize;
     this.flavor.style.fontSize = storySize;
     this.flavor.style.lineHeight = Math.round(storySize * 1.5);
@@ -792,8 +881,8 @@ export class MenuScene {
     this.controls.updateText?.(false);
 
     // Use MEASURED heights instead of estimates
-    const buttonHeight = layout.isMobile ? 36 : 40;
-    const buttonSpacing = layout.isMobile ? 8 : 12;
+    const buttonHeight = layout.isMobile ? 38 : 46;
+    const buttonSpacing = layout.isMobile ? 9 : 12;
     const sectionSpacing = layout.isMobile ? 12 : 20;
 
     // Measure actual text heights
@@ -847,6 +936,8 @@ export class MenuScene {
     this.settingsBtn.y = stack.getCurrentY();
     stack.addGap(buttonHeight + sectionSpacing);
 
+    this.drawMenuPanel(layout);
+
     this.disclaimer.x = width / 2;
     this.disclaimer.y = stack.getCurrentY();
 
@@ -885,6 +976,30 @@ export class MenuScene {
   getDisclaimerText(layout) {
     const objective = 'DEFEND THE CABINET // SURVIVE THE BOSS WAVES';
     return layout.isMobile ? objective : `${objective}\n${this.getControlsText(layout)}`;
+  }
+
+  drawMenuPanel(layout) {
+    if (!this.menuPanel || !this.startBtn || !this.settingsBtn) return;
+
+    const panelWidth = layout.isMobile ? 256 : 342;
+    const panelHeight = Math.max(236, (this.settingsBtn.y - this.startBtn.y) + 100);
+    const x = this.game.getWidth() / 2 - panelWidth / 2;
+    const y = this.startBtn.y - 52;
+
+    this.menuPanel.clear();
+    this.menuPanel.roundRect(x, y, panelWidth, panelHeight, 8);
+    this.menuPanel.fill({ color: 0x020915, alpha: 0.48 });
+    this.menuPanel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.28 });
+    this.menuPanel.roundRect(x + 8, y + 8, panelWidth - 16, panelHeight - 16, 6);
+    this.menuPanel.stroke({ color: 0xff55d9, width: 1, alpha: 0.22 });
+    this.menuPanel.rect(x + 22, y + 15, panelWidth - 44, 2);
+    this.menuPanel.fill({ color: 0x37f5ff, alpha: 0.32 });
+    this.menuPanel.rect(x + 22, y + panelHeight - 17, panelWidth - 44, 2);
+    this.menuPanel.fill({ color: 0xffd15c, alpha: 0.28 });
+
+    const notchWidth = 72;
+    this.menuPanel.rect(this.game.getWidth() / 2 - notchWidth / 2, y - 3, notchWidth, 6);
+    this.menuPanel.fill({ color: 0xff55d9, alpha: 0.34 });
   }
 
   layoutMissionConsole(width = this.game.app.screen.width, height = this.game.app.screen.height) {
@@ -933,20 +1048,24 @@ export class MenuScene {
     container.cursor = 'pointer';
     container.zIndex = 10;
 
-    const btnWidth = layout?.isMobile ? 200 : 240;
-    const btnHeight = layout?.isMobile ? 36 : 40;
+    const btnWidth = layout?.isMobile ? 218 : 286;
+    const btnHeight = layout?.isMobile ? 38 : 46;
     const fontSize = getResponsiveFontSize(layout || { isMobile: false }, 'button');
 
     const bg = new PIXI.Graphics();
-    bg.rect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight);
-    bg.fill({ color: 0x0088ff, alpha: 0.3 });
-    bg.stroke({ color: 0x00ffff, width: 2 });
     container.addChild(bg);
 
+    const shine = new PIXI.Graphics();
+    container.addChild(shine);
+
     const label = createText(text, {
-      fontFamily: 'Courier New',
+      fontFamily: FONT_DISPLAY,
       fontSize: fontSize,
-      fill: '#00ffff'
+      fontWeight: '800',
+      letterSpacing: 1.5,
+      fill: '#c9fbff',
+      stroke: '#031323',
+      strokeThickness: 3
     });
     label.anchor.set(0.5);
     container.addChild(label);
@@ -955,25 +1074,49 @@ export class MenuScene {
     container._btnWidth = btnWidth;
     container._btnHeight = btnHeight;
     container._bg = bg;
+    container._shine = shine;
     container._label = label;
+    this.drawMenuButton(container, false);
 
     container.on('pointerover', () => {
-      bg.clear();
-      bg.rect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight);
-      bg.fill({ color: 0x00ffff, alpha: 0.5 });
-      bg.stroke({ color: 0x00ffff, width: 2 });
       label.style.fill = '#ffffff';
+      this.drawMenuButton(container, true);
     });
 
     container.on('pointerout', () => {
-      bg.clear();
-      bg.rect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight);
-      bg.fill({ color: 0x0088ff, alpha: 0.3 });
-      bg.stroke({ color: 0x00ffff, width: 2 });
-      label.style.fill = '#00ffff';
+      label.style.fill = '#c9fbff';
+      this.drawMenuButton(container, false);
     });
 
     return container;
+  }
+
+  drawMenuButton(container, isHover = false) {
+    const bg = container?._bg;
+    const shine = container?._shine;
+    if (!bg || !shine) return;
+
+    const w = container._btnWidth || 286;
+    const h = container._btnHeight || 46;
+    const x = -w / 2;
+    const y = -h / 2;
+    const cyanAlpha = isHover ? 0.72 : 0.48;
+
+    bg.clear();
+    bg.roundRect(x, y, w, h, 7);
+    bg.fill({ color: isHover ? 0x064766 : 0x041c35, alpha: isHover ? 0.76 : 0.62 });
+    bg.stroke({ color: 0x37f5ff, width: isHover ? 3 : 2, alpha: cyanAlpha });
+    bg.rect(x + 9, y + 7, 4, h - 14);
+    bg.fill({ color: 0xff55d9, alpha: isHover ? 0.82 : 0.56 });
+    bg.rect(x + w - 13, y + 7, 4, h - 14);
+    bg.fill({ color: 0xffd15c, alpha: isHover ? 0.76 : 0.48 });
+
+    shine.clear();
+    shine.roundRect(x + 4, y + 4, w - 8, Math.max(8, h * 0.36), 5);
+    shine.fill({ color: 0xffffff, alpha: isHover ? 0.1 : 0.045 });
+    shine.moveTo(x + 22, y + h - 7);
+    shine.lineTo(x + w - 22, y + h - 7);
+    shine.stroke({ color: 0x7fffd8, width: 1, alpha: isHover ? 0.34 : 0.18 });
   }
 
   startAnimations() {
@@ -981,11 +1124,50 @@ export class MenuScene {
     this.animateElement(this.title, 0, 0.5);
     this.animateElement(this.subtitle, 0.3, 0.5);
     this.animateElement(this.flavor, 0.6, 0.5);
+    this.animateElement(this.menuPanel, 0.75, 0.45);
     this.animateElement(this.startBtn, 0.9, 0.4);
     this.animateElement(this.highscoreBtn, 1.1, 0.4);
     this.animateElement(this.storyBtn, 1.25, 0.4);
     this.animateElement(this.settingsBtn, 1.35, 0.4);
     this.animateElement(this.disclaimer, 1.5, 0.4);
+  }
+
+  openShipSelect() {
+    try {
+      AudioManager.init();
+      AudioManager.playSfx('ui_open');
+      AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
+      this.game.showShipSelect();
+    } catch (e) {
+      console.error('[MenuScene] Ship Select Error:', e);
+    }
+  }
+
+  openStoryIntro() {
+    try {
+      AudioManager.init();
+      AudioManager.playSfx('coin_portal_open', { force: true, volume: 0.55 });
+      this.game.showIntro();
+    } catch (e) {
+      console.error('[MenuScene] Story Intro Error:', e);
+    }
+  }
+
+  setCommsCardHover(card, isHover) {
+    if (!card?.spec) return;
+    const color = card.spec.color;
+    if (card.bg) {
+      card.bg.clear();
+      card.bg.roundRect(-78, -68, 156, 142, 8);
+      card.bg.fill({ color: isHover ? 0x082846 : 0x051120, alpha: isHover ? 0.78 : 0.66 });
+      card.bg.stroke({ color, width: isHover ? 3 : 2, alpha: isHover ? 1 : 0.84 });
+    }
+    if (card.glow) {
+      card.glow.clear();
+      card.glow.roundRect(-86, -76, 172, 158, 8);
+      card.glow.stroke({ color, width: isHover ? 2 : 1, alpha: isHover ? 0.46 : 0.22 });
+    }
+    card.scale.set(isHover ? 1.045 : 1);
   }
 
   openSettingsOverlay() {

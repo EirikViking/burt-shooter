@@ -8,6 +8,7 @@ const reportPath = path.resolve(root, 'release/provenance/asset_provenance_repor
 const scannedRoots = [
   'public/art',
   'public/audio',
+  'public/fonts',
   'public/icons',
   'public/sprites',
   'build/icons',
@@ -22,7 +23,7 @@ const scannedRoots = [
 ];
 
 const assetExtensions = new Set([
-  '.aac', '.ico', '.jpg', '.jpeg', '.mp3', '.mp4', '.png', '.svg', '.webm', '.webp', '.wav'
+  '.aac', '.ico', '.jpg', '.jpeg', '.mp3', '.mp4', '.png', '.svg', '.ttf', '.txt', '.webm', '.webp', '.wav'
 ]);
 
 const ignoredPathParts = [

@@ -1,3 +1,43 @@
+@font-face {
+  font-family: 'Orbitron';
+  src: url('/fonts/orbitron-700.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Orbitron';
+  src: url('/fonts/orbitron-800.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Orbitron';
+  src: url('/fonts/orbitron-900.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  src: url('/fonts/rajdhani-600.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  src: url('/fonts/rajdhani-700.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   margin: 0;
   padding: 0;
