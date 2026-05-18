@@ -48,6 +48,7 @@ const rootMarkdownDocs = readdirSync(root, { withFileTypes: true })
 const forbiddenScanRoots = [
   ...rootMarkdownDocs,
   'package.json',
+  'dist',
   'docs',
   'functions',
   'public',
@@ -181,9 +182,9 @@ function walkTextFiles(entry, files = []) {
   return files;
 }
 
-function scanForbiddenTerms() {
+function scanForbiddenTerms(entries = forbiddenScanRoots) {
   const matches = [];
-  const files = forbiddenScanRoots.flatMap((entry) => walkTextFiles(entry));
+  const files = entries.flatMap((entry) => walkTextFiles(entry));
   for (const file of files) {
     if (shouldSkipForbiddenScan(file)) continue;
     const text = readFileSync(file, 'utf8');
@@ -224,9 +225,9 @@ function walkFiles(entry, files = []) {
   return files;
 }
 
-function scanForbiddenFilenames() {
+function scanForbiddenFilenames(entries = forbiddenScanRoots) {
   const matches = [];
-  const files = forbiddenScanRoots.flatMap((entry) => walkFiles(entry));
+  const files = entries.flatMap((entry) => walkFiles(entry));
   for (const file of files) {
     const relative = rel(file);
     const basename = path.basename(file);
@@ -377,6 +378,17 @@ checks.push({
   name: 'no_forbidden_private_terms_in_release_filenames',
   ok: forbiddenFilenameMatches.length === 0,
   matches: forbiddenFilenameMatches
+});
+
+const distRoot = path.resolve(root, 'dist');
+const distForbiddenMatches = scanForbiddenTerms(['dist']);
+const distForbiddenFilenameMatches = scanForbiddenFilenames(['dist']);
+checks.push({
+  name: 'no_forbidden_private_terms_in_built_dist',
+  ok: existsSync(distRoot) && distForbiddenMatches.length === 0 && distForbiddenFilenameMatches.length === 0,
+  distExists: existsSync(distRoot),
+  textMatches: distForbiddenMatches,
+  filenameMatches: distForbiddenFilenameMatches
 });
 
 checks.push({

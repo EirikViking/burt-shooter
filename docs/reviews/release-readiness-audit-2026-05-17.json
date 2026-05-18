@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-18T11:39:33.978Z",
+  "generatedAt": "2026-05-18T11:45:08.112Z",
   "verdict": "not_steam_ready",
   "summary": {
-    "passed": 18,
+    "passed": 19,
     "failed": 3,
     "hardFailures": 0,
     "manualBlockers": [
@@ -187,6 +187,13 @@
       "name": "no_forbidden_private_terms_in_release_filenames",
       "ok": true,
       "matches": []
+    },
+    {
+      "name": "no_forbidden_private_terms_in_built_dist",
+      "ok": true,
+      "distExists": true,
+      "textMatches": [],
+      "filenameMatches": []
     },
     {
       "name": "steam_assets_report_clean",
