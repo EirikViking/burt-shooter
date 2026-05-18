@@ -158,12 +158,18 @@ export class IntroScene {
 
     this.skipButton = this.createTextButton('SKIP');
     this.skipButton.zIndex = 8;
-    this.skipButton.on('pointerdown', () => this.finish());
+    this.skipButton.on('pointerdown', (event) => {
+      event.stopPropagation?.();
+      this.finish();
+    });
     this.container.addChild(this.skipButton);
 
     this.nextButton = this.createTextButton('NEXT');
     this.nextButton.zIndex = 8;
-    this.nextButton.on('pointerdown', () => this.advancePanel());
+    this.nextButton.on('pointerdown', (event) => {
+      event.stopPropagation?.();
+      this.advancePanel();
+    });
     this.container.addChild(this.nextButton);
 
     this.pointerHandler = () => this.handlePrimaryAction();
@@ -253,6 +259,7 @@ export class IntroScene {
       AudioManager.playSfx(panel.sfx, { force: true });
       AudioManager.playVoice(panel.voice, {
         force: true,
+        exclusiveGroup: 'intro_narrator',
         cooldownMs: 0,
         volume: 0.94,
         duckFactor: 0.35,
@@ -278,6 +285,7 @@ export class IntroScene {
     try {
       localStorage.setItem(INTRO_SEEN_KEY, '1');
     } catch { }
+    AudioManager.stopVoiceGroup?.('intro_narrator');
     AudioManager.playSfx('start_game_confirm', { force: true });
     AudioManager.playMusicContext('menu');
     this.game.showMenu();
@@ -358,6 +366,7 @@ export class IntroScene {
       this.container.off('pointerdown', this.pointerHandler);
       this.pointerHandler = null;
     }
+    AudioManager.stopVoiceGroup?.('intro_narrator');
     this.container.removeChildren();
   }
 }

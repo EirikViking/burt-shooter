@@ -52,6 +52,7 @@ class AudioController {
     this.lastSfxPlayedAt = {};
     this.lastPowerupVoiceIndex = -1;
     this.lastVoicePlayedAt = {};
+    this.activeVoiceGroups = {};
     this.lastSfxEvent = null;
     this.lastSfxTrack = null;
     this.lastVoiceEvent = null;
@@ -665,7 +666,13 @@ class AudioController {
       lastSfxEvent: this.lastSfxEvent,
       lastSfxTrack: this.lastSfxTrack,
       lastVoiceEvent: this.lastVoiceEvent,
-      lastVoiceTrack: this.lastVoiceTrack
+      lastVoiceTrack: this.lastVoiceTrack,
+      activeVoiceGroups: Object.fromEntries(Object.entries(this.activeVoiceGroups || {}).map(([group, entry]) => [group, {
+        eventName: entry?.eventName || null,
+        track: decodeURIComponent((entry?.src || '').split('/').pop() || ''),
+        paused: Boolean(entry?.audio?.paused),
+        ended: Boolean(entry?.audio?.ended)
+      }]))
     };
   }
 
@@ -776,11 +783,24 @@ class AudioController {
       // Pick random variant
       const src = variants[Math.floor(Math.random() * variants.length)];
       if (src) {
+        const exclusiveGroup = options.exclusiveGroup || null;
+        if (exclusiveGroup) this.stopVoiceGroup(exclusiveGroup);
         const audio = new Audio(src);
         audio.preload = 'auto';
         const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
         audio.volume = this.clampUnit(this.masterVolume * this.voiceVolume * volumeMultiplier);
+        if (exclusiveGroup) {
+          this.activeVoiceGroups[exclusiveGroup] = { audio, eventName, src };
+          audio.addEventListener('ended', () => {
+            if (this.activeVoiceGroups[exclusiveGroup]?.audio === audio) {
+              delete this.activeVoiceGroups[exclusiveGroup];
+            }
+          }, { once: true });
+        }
         audio.play().catch(e => {
+          if (exclusiveGroup && this.activeVoiceGroups[exclusiveGroup]?.audio === audio) {
+            delete this.activeVoiceGroups[exclusiveGroup];
+          }
           this.handleVoicePlayFailure(eventName, audio.src, e);
         });
         this.duckMusic(
@@ -797,6 +817,17 @@ class AudioController {
       console.warn(`[Audio] No voice asset found for: ${eventName}`);
     }
     return false;
+  }
+
+  stopVoiceGroup(groupName) {
+    const active = this.activeVoiceGroups?.[groupName];
+    if (!active?.audio) return false;
+    try {
+      active.audio.pause();
+      active.audio.currentTime = 0;
+    } catch { }
+    delete this.activeVoiceGroups[groupName];
+    return true;
   }
 
   playAuditionCue(kind) {
