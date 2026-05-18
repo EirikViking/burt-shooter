@@ -319,6 +319,9 @@ function buildTraitCombatEffects(traitProfile) {
   const bonusShotEvery = fireRateMult <= 0.9 || spreadDelta >= 0.055 ? (spreadDelta >= 0.055 ? 4 : 5) : 0;
   const pierceEvery = bulletSpeedMult >= 1.16 || spreadDelta <= -0.035 ? (bulletSpeedMult >= 1.18 ? 4 : 5) : 0;
   const critEvery = damageMult >= 1.12 ? (damageMult >= 1.18 ? 4 : 5) : 0;
+  const wingShotEvery = spreadDelta >= 0.025 || speedMult >= 1.08 || fireRateMult <= 0.9
+    ? (spreadDelta >= 0.055 || fireRateMult <= 0.86 ? 4 : 5)
+    : 0;
   const dodgePulseRadius = agileScore >= 0.09
     ? Math.round(clampNumber(44 + agileScore * 280, 48, 96))
     : 0;
@@ -329,6 +332,9 @@ function buildTraitCombatEffects(traitProfile) {
     dodgeDurationMult: roundStat(clampNumber(1 + Math.max(0, speedMult - 1) * 0.55 + Math.max(0, 1 - hitboxMult) * 0.45, 1, 1.18), 2),
     bonusShotEvery,
     bonusShotDamageMult: bonusShotEvery ? 0.5 : 0,
+    wingShotEvery,
+    wingShotDamageMult: wingShotEvery ? roundStat(clampNumber(0.34 + Math.max(0, spreadDelta) * 2.4 + Math.max(0, 1 - fireRateMult) * 0.9, 0.36, 0.58), 2) : 0,
+    wingShotAngle: wingShotEvery ? roundStat(clampNumber(0.28 + Math.max(0, spreadDelta) * 2.4 + Math.max(0, speedMult - 1) * 0.7, 0.3, 0.48), 2) : 0,
     pierceEvery,
     pierceDamageMult: pierceEvery ? 0.72 : 0,
     critEvery,

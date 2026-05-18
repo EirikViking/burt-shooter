@@ -964,6 +964,7 @@ FIR: ${fireRateBar}`;
     const combat = trait?.effects?.combat || {};
     const tags = [];
     if (combat.critEvery) tags.push(`OVERCHARGE/${combat.critEvery}`);
+    if (combat.wingShotEvery) tags.push(`WING/${combat.wingShotEvery}`);
     if (combat.bonusShotEvery) tags.push(`BONUS/${combat.bonusShotEvery}`);
     if (combat.pierceEvery) tags.push(`PIERCE/${combat.pierceEvery}`);
     if (combat.dodgePulseRadius) tags.push(`DODGE PULSE`);

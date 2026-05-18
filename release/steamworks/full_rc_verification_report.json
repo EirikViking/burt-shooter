@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-18T04:41:58.558Z",
+  "generatedAt": "2026-05-18T05:15:55.173Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-18_05-59-43",
-    "timestamp": "2026-05-18T03:59:43.396Z"
+    "version": "v2026-05-18_06-55-34",
+    "timestamp": "2026-05-18T04:55:34.025Z"
   },
   "latestFullRc": {
-    "reportPath": "test-results/steam-rc-verify-2026-05-18T04-28-43-110Z/report.json",
-    "generatedAt": "2026-05-18T04:41:48.568Z",
+    "reportPath": "test-results/steam-rc-verify-2026-05-18T05-02-59-807Z/report.json",
+    "generatedAt": "2026-05-18T05:15:44.125Z",
     "mode": "full",
     "ok": true,
     "stageCount": 13,
@@ -15,74 +15,74 @@
       {
         "name": "build:current",
         "ok": true,
-        "durationMs": 19753
+        "durationMs": 14646
       },
       {
         "name": "check:provenance",
         "ok": true,
-        "durationMs": 665
+        "durationMs": 638
       },
       {
         "name": "check:steam-assets",
         "ok": true,
-        "durationMs": 2260
+        "durationMs": 2190
       },
       {
         "name": "check:steam-store",
         "ok": true,
-        "durationMs": 504
+        "durationMs": 479
       },
       {
         "name": "package:steam:win:current",
         "ok": true,
-        "durationMs": 54779
+        "durationMs": 50348
       },
       {
         "name": "desktop:smoke:current",
         "ok": true,
-        "durationMs": 4381
+        "durationMs": 4271
       },
       {
         "name": "desktop:smoke:packaged",
         "ok": true,
-        "durationMs": 15483
+        "durationMs": 4417
       },
       {
         "name": "desktop:controls:packaged",
         "ok": true,
-        "durationMs": 10200
+        "durationMs": 10194
       },
       {
         "name": "check:desktop-package",
         "ok": true,
-        "durationMs": 950
+        "durationMs": 588
       },
       {
         "name": "check:live-deployment",
         "ok": true,
-        "durationMs": 1122
+        "durationMs": 723
       },
       {
         "name": "audit:audio-mix",
         "ok": true,
-        "durationMs": 6685
+        "durationMs": 6432
       },
       {
         "name": "smoke",
         "ok": true,
-        "durationMs": 63246
+        "durationMs": 63890
       },
       {
         "name": "playtest:release",
         "ok": true,
-        "durationMs": 605412
+        "durationMs": 605483
       }
     ],
     "releaseAudit": {
       "verdict": "not_steam_ready",
-      "passed": 18,
-      "failed": 3,
-      "hardFailures": 0,
+      "passed": 14,
+      "failed": 7,
+      "hardFailures": 4,
       "manualBlockers": [
         "Steamworks app ID and depot ID are still not configured in tracked files.",
         "SteamPipe upload and Steam-client install/launch validation still require credentials and a real app.",
@@ -90,15 +90,15 @@
       ]
     },
     "audioAudit": {
-      "generatedAt": "2026-05-18T04:30:39.843Z",
+      "generatedAt": "2026-05-18T05:04:34.684Z",
       "decodeErrors": null,
       "warnings": 0
     }
   },
   "latestLocalSmoke": {
-    "reportPath": "test-results/smoke-2026-05-18T04-30-40-809Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-18T05-04-35-727Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "build": "v2026-05-18_05-59-43",
+    "build": "v2026-05-18_06-55-34",
     "status": "passed",
     "console": {
       "warningsOrErrors": 0,
@@ -109,21 +109,21 @@
     "coverage": null
   },
   "latestReleasePlaytest": {
-    "reportPath": "test-results/release-playtest-2026-05-18T04-31-44-050Z/report.json",
+    "reportPath": "test-results/release-playtest-2026-05-18T05-05-39-553Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "survivedMs": 599837,
+    "survivedMs": 599981,
     "requiredSurvivalMs": 599500,
     "survivedFullDuration": true,
-    "peakLevel": 5,
-    "peakScore": 49222,
+    "peakLevel": 6,
+    "peakScore": 50954,
     "finalState": {
       "scene": "play",
-      "level": 5,
-      "lives": 3,
-      "score": 49222,
-      "enemyManagerState": "BOSS_ACTIVE",
-      "musicContext": "boss",
-      "musicTrack": "DeathMatch (Boss Theme).mp3",
+      "level": 6,
+      "lives": 2,
+      "score": 50954,
+      "enemyManagerState": "WAVE_ACTIVE",
+      "musicContext": "gameplay",
+      "musicTrack": "bgm_v2.mp3",
       "fatalOverlay": false
     },
     "console": {

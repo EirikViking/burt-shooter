@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T04:45:27.041Z",
+  "generatedAt": "2026-05-18T05:15:54.057Z",
   "status": "ready_for_steam_upload_and_client_validation",
   "build": {
-    "version": "v2026-05-18_05-59-43",
-    "timestamp": "2026-05-18T03:59:43.396Z"
+    "version": "v2026-05-18_06-55-34",
+    "timestamp": "2026-05-18T04:55:34.025Z"
   },
   "explicitLimit": "This packet proves local upload preflight only. It is not Steam-client validation evidence.",
   "localPayload": {
@@ -11,15 +11,15 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-18T04:29:57.727Z"
+      "modifiedAt": "2026-05-18T05:04:01.174Z"
     },
     "productName": "Nova Swarm",
     "appId": "app.novaswarm.game",
     "packagedExeSmoke": {
-      "reportPath": "test-results/packaged-exe-smoke-2026-05-18T04-30-05-927Z/report.json",
-      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T04-30-05-927Z/01-electron-menu.png",
+      "reportPath": "test-results/packaged-exe-smoke-2026-05-18T05-04-12-824Z/report.json",
+      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T05-04-12-824Z/01-electron-menu.png",
       "status": "passed",
-      "build": "v2026-05-18_05-59-43",
+      "build": "v2026-05-18_06-55-34",
       "title": "Nova Swarm - Arcade Patrol",
       "scene": "intro",
       "introTitle": "THE COIN SLOT WOKE UP",
@@ -37,16 +37,16 @@
       "consoleEvents": []
     },
     "packagedControlsSmoke": {
-      "reportPath": "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/report.json",
+      "reportPath": "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/report.json",
       "screenshotPaths": [
-        "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/00-control-start.png",
-        "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/01-keyboard-run.png",
-        "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/02-keyboard-pause.png",
-        "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/03-gamepad-run.png",
-        "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/04-gamepad-pause.png"
+        "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/00-control-start.png",
+        "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/01-keyboard-run.png",
+        "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/02-keyboard-pause.png",
+        "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/03-gamepad-run.png",
+        "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/04-gamepad-pause.png"
       ],
       "status": "passed",
-      "build": "v2026-05-18_05-59-43",
+      "build": "v2026-05-18_06-55-34",
       "checks": {
         "keyboardMovement": true,
         "keyboardFire": true,
@@ -128,7 +128,7 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-18T04:29:57.727Z"
+      "modifiedAt": "2026-05-18T05:04:01.174Z"
     },
     {
       "path": "release/steamworks/app_build_TEMPLATE.vdf",
@@ -146,7 +146,7 @@
       "path": "release/steamworks/desktop_package_review_report.json",
       "exists": true,
       "bytes": 2782,
-      "modifiedAt": "2026-05-18T04:45:27.024Z"
+      "modifiedAt": "2026-05-18T05:04:27.552Z"
     },
     {
       "path": "release/steamworks/full_rc_verification_report.json",

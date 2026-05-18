@@ -463,6 +463,12 @@ export class HUD {
         color: 0x8eeeff
       },
       {
+        every: Number(state.wingShotEvery || 0),
+        remaining: Number(state.nextWingShotIn || 0),
+        text: 'WING BURST',
+        color: 0x66ff99
+      },
+      {
         every: Number(state.bonusShotEvery || 0),
         remaining: Number(state.nextBonusShotIn || 0),
         text: 'BONUS SHOT',

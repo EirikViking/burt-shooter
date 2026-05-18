@@ -987,6 +987,13 @@ export class Player {
       if (bullet.sprite?.scale) bullet.sprite.scale.set(0.82);
     }
 
+    if (bullet.isTraitWingShot) {
+      bullet.radius = Math.max(4, Math.round((bullet.radius || 7) * 0.72));
+      bullet.damage = Math.max(0.35, bullet.damage * (combat.wingShotDamageMult || 0.42));
+      if (bullet.sprite?.scale) bullet.sprite.scale.set(0.78);
+      if (bullet.core) bullet.core.tint = this.visualVariant?.accent || 0x66ffff;
+    }
+
     return bullet;
   }
 
@@ -1074,6 +1081,29 @@ export class Player {
         if (flash.parent) this.sprite.removeChild(flash);
       }, 80);
     });
+
+    const wingEvery = Number(this.traitCombat?.wingShotEvery || 0);
+    if (wingEvery > 0 && shotCounter % wingEvery === 0) {
+      const wingAngle = Number(this.traitCombat?.wingShotAngle || 0.36);
+      const wingColor = this.visualVariant?.glow || this.visualVariant?.accent || 0xffffff;
+      [-1, 1].forEach((side) => {
+        const vx = Math.sin(wingAngle) * this.bulletSpeed * side;
+        const vy = -Math.cos(wingAngle) * this.bulletSpeed * 1.02;
+        const wing = new Bullet(
+          this.x + side * 18,
+          spawnY + 2,
+          vx,
+          vy,
+          this.bulletDamage,
+          wingColor,
+          true,
+          { color: 'Green', index: 13 }
+        );
+        wing.isTraitWingShot = true;
+        this.applyTraitProjectileEffects(wing, shotCounter);
+        bullets.push(wing);
+      });
+    }
 
     if (this.dronesActive && this.drones.length) {
       this.drones.forEach((drone) => {
@@ -1275,12 +1305,13 @@ export class Player {
     const trait = this.shipTrait?.label ? this.shipTrait.label.replace(/\s+/g, '_') : 'none';
     const combat = this.traitCombat || {};
     const bonus = combat.bonusShotEvery ? ` bonusEvery=${combat.bonusShotEvery}` : '';
+    const wing = combat.wingShotEvery ? ` wingEvery=${combat.wingShotEvery}` : '';
     const pierce = combat.pierceEvery ? ` pierceEvery=${combat.pierceEvery}` : '';
     const crit = combat.critEvery ? ` critEvery=${combat.critEvery}` : '';
     const dodge = combat.dodgePulseRadius ? ` dodgePulse=${combat.dodgePulseRadius}` : '';
     const nearMiss = combat.nearMissScoreMult && combat.nearMissScoreMult !== 1 ? ` nearMiss=${combat.nearMissScoreMult}x` : '';
     const radius = combat.projectileRadiusMult ? ` radius=${combat.projectileRadiusMult}` : '';
-    return `trait=${trait} fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}${bonus}${pierce}${crit}${dodge}${nearMiss}${radius}`;
+    return `trait=${trait} fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}${bonus}${wing}${pierce}${crit}${dodge}${nearMiss}${radius}`;
   }
 
   getTraitState() {
@@ -1298,9 +1329,11 @@ export class Player {
       description: this.shipTrait?.description || null,
       shotsFired: this.traitShotCounter,
       bonusShotEvery: Number(combat.bonusShotEvery || 0),
+      wingShotEvery: Number(combat.wingShotEvery || 0),
       pierceEvery: Number(combat.pierceEvery || 0),
       critEvery: Number(combat.critEvery || 0),
       nextBonusShotIn: countdown(combat.bonusShotEvery),
+      nextWingShotIn: countdown(combat.wingShotEvery),
       nextPierceShotIn: countdown(combat.pierceEvery),
       nextCritShotIn: countdown(combat.critEvery),
       dodgePulseRadius: Number(combat.dodgePulseRadius || 0),
