@@ -245,6 +245,55 @@ async function showGameplay(page) {
   await page.keyboard.up('Space');
 }
 
+async function showHijackerOpening(page) {
+  await page.goto(withQuery(baseUrl, {
+    autostart: '1',
+    debugBossToken: 'NOVA_DEBUG_2026',
+    startLevel: '2'
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(page, 'play', 30000);
+  await waitForGameplayBackdrop(page);
+  await page.waitForFunction(() => window.__game?.scenes?.play?.player?.active, null, { timeout: 30000 });
+  await stabilizePlayer(page);
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const player = play?.player;
+    const enemyManager = play?.enemyManager;
+    if (!game || !play || !player || !enemyManager) return;
+    enemyManager.forceClearAllEnemies?.();
+    enemyManager.spawnHijacker?.();
+    const hijacker = enemyManager.hijacker;
+    if (!hijacker) return;
+    hijacker.x = Math.round(game.getWidth() * 0.52);
+    hijacker.y = 142;
+    hijacker.health = 36;
+    hijacker.maxHealth = 36;
+    hijacker.nextBeamAt = Date.now() - 1;
+    hijacker.beamWarningMs = 180;
+    hijacker.beamActiveMs = 2600;
+    hijacker.updateHealthBar?.();
+    player.x = hijacker.x;
+    player.y = game.getHeight() * 0.8;
+    player.invulnerable = true;
+    player.invulnerableTime = 45000;
+  });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.hijacker?.tractor?.state === 'active' && state.hijacker?.tractor?.pullActive === true;
+  }, null, { timeout: 8000 });
+  await page.keyboard.down('Space');
+  await page.keyboard.down('ArrowRight');
+  await addBeat(page, 'hijacker_tractor_opening', 3200);
+  await page.keyboard.up('ArrowRight');
+  await page.evaluate(() => {
+    const hijacker = window.__game?.scenes?.play?.enemyManager?.hijacker;
+    if (hijacker) hijacker.takeDamage(9999);
+  });
+  await addBeat(page, 'tractor_break_payoff', 900);
+  await page.keyboard.up('Space');
+}
+
 async function showBoss(page) {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
@@ -255,7 +304,7 @@ async function showBoss(page) {
   await waitForScene(page, 'play', 30000);
   await waitForGameplayBackdrop(page);
   await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
-  await addBeat(page, 'boss_inbound', 3000);
+  await addBeat(page, 'boss_inbound', 1800);
   await page.waitForFunction(() => {
     const enemyManager = window.__game?.scenes?.play?.enemyManager;
     return enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active;
@@ -307,8 +356,9 @@ async function main() {
 
   let videoPath = null;
   try {
-    await showGameplay(page);
+    await showHijackerOpening(page);
     await showBoss(page);
+    await showGameplay(page);
     await showMenuAndShipSelect(page);
     await showGameOver(page);
     const video = page.video();
@@ -331,6 +381,7 @@ async function main() {
     trailer: trailerName,
     notes: [
       'Visual trailer draft captured from the production build. Playwright video capture does not include game audio.',
+      'Opening sequence uses the real unranked debug route to show runtime hijacker tractor-beam pressure before boss footage.',
       'Final Steam trailer still needs edited audio/music mix, title cards, and human approval.'
     ],
     timeline,

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T23:37:49.080Z",
+  "generatedAt": "2026-05-18T23:50:40.975Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 20,
@@ -94,22 +94,22 @@
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2058
+          "bytes": 2518
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json",
           "ok": true,
-          "bytes": 8584
+          "bytes": 8050
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2201
+          "bytes": 2500
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "ok": true,
-          "bytes": 475407
+          "bytes": 552497
         },
         {
           "path": "release/provenance/asset_provenance_manifest.json",
@@ -210,8 +210,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1768,
-      "coveredCount": 1768,
+      "assetCount": 1760,
+      "coveredCount": 1760,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []
@@ -298,7 +298,7 @@
     {
       "name": "steam_trailer_visual_report_clean",
       "ok": true,
-      "beatCount": 8,
+      "beatCount": 10,
       "expectedBuild": "v2026-05-19_00-57-09",
       "actualBuild": "v2026-05-19_00-57-09",
       "consoleEvents": [],
@@ -310,20 +310,20 @@
       "ok": true,
       "expectedBuild": "v2026-05-19_00-57-09",
       "actualBuild": "v2026-05-19_00-57-09",
-      "duration": "33.600000",
-      "visualTrimSeconds": 6,
+      "duration": "34.200000",
+      "visualTrimSeconds": 2.6,
       "streams": [
         {
           "codec_name": "h264",
           "width": 1280,
           "height": 720,
           "r_frame_rate": "25/1",
-          "duration": "33.600000"
+          "duration": "34.200000"
         },
         {
           "codec_name": "aac",
           "r_frame_rate": "0/0",
-          "duration": "33.600000"
+          "duration": "34.200000"
         }
       ]
     },
@@ -333,19 +333,24 @@
       "status": "passed",
       "expectedBuild": "v2026-05-19_00-57-09",
       "actualBuild": "v2026-05-19_00-57-09",
-      "duration": "37.821333",
-      "opening": "gameplay_first",
+      "duration": "38.429333",
+      "opening": "hijacker_and_boss_first",
+      "firstTenSeconds": [
+        "runtime hijacker tractor-beam pressure",
+        "boss inbound warning",
+        "active boss pattern fire"
+      ],
       "titleCards": [
         {
           "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\02-outro-card.png",
           "durationSeconds": 4.2,
-          "title": "CHASE THE SWARM",
-          "subtitle": "DODGE. SCORE. BRAG."
+          "title": "ONE MORE RUN?",
+          "subtitle": "BREAK THE BEAM. BLAST THE BOSS."
         }
       ],
       "volume": {
-        "meanVolumeDb": "-20.8",
-        "maxVolumeDb": "-1.6"
+        "meanVolumeDb": "-21.4",
+        "maxVolumeDb": "-2.3"
       },
       "contactSheet": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\candidate-contact-sheet.png"
     },
@@ -700,7 +705,7 @@
             {
               "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
               "exists": true,
-              "bytes": 7922255
+              "bytes": 1937449
             },
             {
               "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
@@ -748,17 +753,17 @@
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
               "exists": true,
-              "bytes": 8500551
+              "bytes": 9890252
             },
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
               "exists": true,
-              "bytes": 475407
+              "bytes": 552497
             },
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
               "exists": true,
-              "bytes": 2201
+              "bytes": 2500
             }
           ],
           "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."

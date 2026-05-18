@@ -10,7 +10,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 |---|---:|---|
 | Store hook | 8 | "Fast modern arcade score-chaser" is focused and avoids clone language. It still needs the proximity-score verb front-loaded harder. |
 | First screenshot | 8 | Upload candidates now lead with current-build gameplay and include the hijacker beam, boss inbound/fight, score flow, and ship variety. The first shot still could show a bigger close-dodge payoff. |
-| First 10 trailer seconds | 7 | Gameplay starts immediately from the current build and the trailer is no longer stale. Boss proof and the surprise mechanic still need to land earlier. |
+| First 10 trailer seconds | 8 | The current trailer opens on the hijacker tractor beam, boss inbound, and active boss fire before menu or score-flow footage. Human by-ear approval is still required. |
 | First 60 seconds of gameplay | 9 | Current smoke/release playtest evidence shows quick play, active waves, a level-2 boss loop, readable HUD, and stable audio. |
 | Input feel | 7 | Keyboard/gamepad movement/fire/pause are proven in packaged smoke; analog movement still behaves mostly digital in runtime code. |
 | Enemy/bullet readability | 8 | Strong art, cleaner HUD, and the new hijacker beam proof show readable danger lanes. Effects/toasts still need monitoring during dense waves. |
@@ -37,8 +37,8 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Current Top Risks
 
-- Trailer candidate is gameplay-first but not yet boss-first enough for the stated differentiator.
-- Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Remaining risk is store-media proof: the trailer still needs earlier, clearer boss variety in the first 10 seconds.
+- Trailer candidate is now hijacker/boss-first, but the final upload still needs human by-ear and Steamworks review.
+- Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Remaining risk is store-media breadth: the trailer proves one boss clearly, but not the full variety of later bosses.
 - The new voice system fixes line structure/repetition, but the local fallback performance is not yet premium enough to be a commercial differentiator.
 - Leaderboard flow now has distinct local/global qualification, local fallback, and a tested global-offline path. Remaining risk is live public-domain verification and by-eye polish of the highscore tab presentation.
 - Public web build and marketing site are live; the latest progression-tempo build and current Steam media/handoff evidence are verified against the private domain.
@@ -58,6 +58,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 - Latest live smoke: `test-results/smoke-live-progression-2026-05-19T00-57/report.json`
 - Current Steam screenshot capture: `release/steam-screenshots/draft-2026-05-17-current/report.json`
 - Current Steam trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`
+- Trailer opening check: `test-results/steam-trailer-opening-2026-05-18T23-49-17-385Z/report.json`
 - Release audit: `docs/reviews/release-readiness-audit-2026-05-17.json`
 - Steam handoff packet: `release/steamworks/release_handoff_packet.json`
 - Live game URL: `https://burt.tinyfoundry.app`
@@ -65,4 +66,4 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Next Best Loop
 
-Do a trailer-first-10-seconds cut next: make the opening show active swarm pressure, a readable boss or hijacker-beam moment, and the local/global score chase faster, without making the store media noisy or overclaimed.
+Do a small in-game surprise-mechanic loop next: add one more readable, score-forward twist in the spirit of the hijacker beam, but keep it rare enough that the first minute stays clean.

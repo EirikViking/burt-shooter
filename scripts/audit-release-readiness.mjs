@@ -682,11 +682,18 @@ checks.push({
   ...checkJsonReport('release/steam-trailer/candidate-2026-05-17-current/report.json', (json) => {
     const expectedBuild = currentBuildVersion();
     const actualBuild = json.build?.version || null;
+    const allowedOpenings = new Set(['gameplay_first', 'hijacker_and_boss_first']);
+    const hasOpeningProof = json.opening === 'hijacker_and_boss_first'
+      ? Array.isArray(json.firstTenSeconds) &&
+        json.firstTenSeconds.some((item) => String(item).toLowerCase().includes('hijacker')) &&
+        json.firstTenSeconds.some((item) => String(item).toLowerCase().includes('boss'))
+      : true;
     return {
       ok: json.status === 'passed' &&
       Array.isArray(json.titleCards) &&
       json.titleCards.length >= 1 &&
-      json.opening === 'gameplay_first' &&
+      allowedOpenings.has(json.opening) &&
+      hasOpeningProof &&
       json.ffprobe?.streams?.some((stream) => stream.codec_name === 'h264' && stream.width === 1280 && stream.height === 720) &&
       json.ffprobe?.streams?.some((stream) => stream.codec_name === 'aac') &&
       Boolean(expectedBuild) &&
@@ -699,6 +706,7 @@ checks.push({
       actualBuild,
       duration: json.ffprobe?.format?.duration || null,
       opening: json.opening || null,
+      firstTenSeconds: json.firstTenSeconds || null,
       titleCards: json.titleCards || [],
       volume: json.volume || null,
       contactSheet: json.contactSheet || null

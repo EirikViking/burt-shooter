@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T23:35:27.624Z",
+  "generatedAt": "2026-05-18T23:48:23.154Z",
   "status": "ready_for_human_review",
   "build": {
     "version": "v2026-05-19_00-57-09",
@@ -38,7 +38,7 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "exists": true,
-          "bytes": 7922255
+          "bytes": 1937449
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
@@ -86,17 +86,17 @@
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
           "exists": true,
-          "bytes": 8500551
+          "bytes": 9890252
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "exists": true,
-          "bytes": 475407
+          "bytes": 552497
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "exists": true,
-          "bytes": 2201
+          "bytes": 2500
         }
       ],
       "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."

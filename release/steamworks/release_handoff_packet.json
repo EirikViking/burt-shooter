@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T23:35:37.190Z",
+  "generatedAt": "2026-05-18T23:49:35.298Z",
   "build": {
     "version": "v2026-05-19_00-57-09",
     "timestamp": "2026-05-18T22:57:09.423Z",
@@ -40,10 +40,10 @@
     "trailer": {
       "status": "ready",
       "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
-      "duration": "37.821333",
+      "duration": "38.429333",
       "volume": {
-        "meanVolumeDb": "-20.8",
-        "maxVolumeDb": "-1.6"
+        "meanVolumeDb": "-21.4",
+        "maxVolumeDb": "-2.3"
       }
     },
     "desktop": {
@@ -98,7 +98,7 @@
     "provenance": {
       "status": "ready",
       "path": "release/provenance/asset_provenance_report.json",
-      "covered": "1768/1768"
+      "covered": "1760/1760"
     },
     "storeMetadata": {
       "status": "ready",
@@ -115,17 +115,17 @@
     {
       "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
       "exists": true,
-      "bytes": 7922255
+      "bytes": 1937449
     },
     {
       "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
       "exists": true,
-      "bytes": 8500551
+      "bytes": 9890252
     },
     {
       "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
       "exists": true,
-      "bytes": 475407
+      "bytes": 552497
     },
     {
       "path": "release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png",

@@ -31,6 +31,7 @@
     "check:desktop-package": "node scripts/check-desktop-package.mjs",
     "check:steam-assets": "node scripts/check-steam-assets.mjs",
     "check:steam-store": "node scripts/check-steam-store-metadata.mjs",
+    "check:steam-trailer-opening": "node scripts/check-steam-trailer-opening.mjs",
     "check:live-deployment": "node scripts/check-live-deployment.mjs",
     "check:full-rc": "node scripts/check-full-rc-evidence.mjs",
     "audit:release-readiness": "node scripts/audit-release-readiness.mjs",

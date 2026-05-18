@@ -176,7 +176,7 @@ async function volumedetect(file) {
 }
 
 async function extractContactSheet(duration) {
-  const times = [1.2, 4.2, 16.0, 31.0, Math.max(1, duration - 1.2)];
+  const times = [1.8, 8.6, 10.4, 16.5, Math.max(1, duration - 1.2)];
   const frames = [];
   for (const [index, time] of times.entries()) {
     const frame = path.join(outputDir, `frame-${String(index + 1).padStart(2, '0')}.jpg`);
@@ -201,7 +201,7 @@ async function main() {
   assertFile(outroStinger, 'outro card stinger');
   mkdirSync(outputDir, { recursive: true });
 
-  await renderCardPng(paths.outroPng, 'CHASE THE SWARM', 'DODGE. SCORE. BRAG.', 'STEAM RELEASE CANDIDATE - PENDING HUMAN APPROVAL');
+  await renderCardPng(paths.outroPng, 'ONE MORE RUN?', 'BREAK THE BEAM. BLAST THE BOSS.', 'STEAM RELEASE CANDIDATE - PENDING HUMAN APPROVAL');
   await renderBodyVideo();
   await renderCardVideo(paths.outroPng, outroStinger, paths.outroMp4, outroSeconds, 0.42);
   await concatVideos();
@@ -217,14 +217,20 @@ async function main() {
     inputVideo,
     outputVideo: paths.outputVideo,
     build: readJson(path.join(draftDir, 'audio-mix-report.json'))?.build || readJson(path.join(draftDir, 'report.json'))?.build || null,
-    opening: 'gameplay_first',
+    opening: 'hijacker_and_boss_first',
+    firstTenSeconds: [
+      'runtime hijacker tractor-beam pressure',
+      'boss inbound warning',
+      'active boss pattern fire'
+    ],
     titleCards: [
-      { image: paths.outroPng, durationSeconds: outroSeconds, title: 'CHASE THE SWARM', subtitle: 'DODGE. SCORE. BRAG.' }
+      { image: paths.outroPng, durationSeconds: outroSeconds, title: 'ONE MORE RUN?', subtitle: 'BREAK THE BEAM. BLAST THE BOSS.' }
     ],
     contactSheet: paths.contactSheet,
     frames,
     notes: [
-      'Editorial Steam trailer candidate starts on captured gameplay: no logo-first opening, no lore card, no menu dwell.',
+      'Editorial Steam trailer candidate starts on captured hijacker/boss gameplay: no logo-first opening, no lore card, no menu dwell.',
+      'The first 10 seconds are intended to prove the surprise mechanic and boss-every-level hook before menu or score-flow footage.',
       'Still requires human by-ear and store-submission approval before Steam upload.'
     ],
     ffprobe: probe,

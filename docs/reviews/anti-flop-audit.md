@@ -548,3 +548,40 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 
 - Steam media is current-build again, but the trailer still needs a more ruthless first-10-seconds cut around boss proof and one surprising mechanic.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 13 - Trailer First-10-Seconds Hook
+
+### What Was Tested
+
+- Reworked only the Steam trailer capture/render pipeline; gameplay tuning and player-facing game logic were not changed.
+- Captured the canonical trailer from build `v2026-05-19_00-57-09`.
+- Reran trailer opening, audio, provenance, Steam asset, handoff, and release-readiness gates.
+
+### What Under-Sold The Game
+
+- The prior trailer was gameplay-first, but its first seconds still looked like ordinary wave shooting.
+- Boss proof arrived too late for a store shopper skimming the first 10 seconds.
+- The hijacker tractor beam existed in-game but was not doing enough Steam-media work.
+
+### What Changed
+
+- The capture now opens on a real unranked runtime hijacker tractor-beam beat, then moves into boss inbound and active boss fire before menu or score-flow footage.
+- Trailer audio was retimed around the hijacker voice, beam/laser SFX, boss reveal stinger, and boss music.
+- The outro card now sells `ONE MORE RUN?` with `BREAK THE BEAM. BLAST THE BOSS.`.
+- The candidate report now records `opening: hijacker_and_boss_first` plus first-10-seconds proof.
+- Added `npm run check:steam-trailer-opening`.
+- The release audit now accepts this stronger opening only if the trailer report names both hijacker and boss proof.
+
+### Evidence Captured
+
+- Trailer opening check: `test-results/steam-trailer-opening-2026-05-18T23-49-17-385Z/report.json`.
+- Trailer visual report: `release/steam-trailer/draft-2026-05-17-current/report.json`.
+- Trailer audio report: `release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json`.
+- Trailer candidate report: `release/steam-trailer/candidate-2026-05-17-current/report.json`.
+- Contact sheet: `release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png`.
+- Release-readiness audit: `docs/reviews/release-readiness-audit-2026-05-17.json`.
+
+### Remaining Top Risks
+
+- The trailer now proves the hook earlier, but it still needs human by-ear approval and a real store-submission review.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.

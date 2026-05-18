@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T23:31:31.325Z",
+  "generatedAt": "2026-05-18T23:47:17.009Z",
   "status": "passed",
   "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-audio-draft.mp4",
   "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\nova-swarm-steam-trailer-candidate.mp4",
@@ -7,13 +7,18 @@
     "version": "v2026-05-19_00-57-09",
     "timestamp": "2026-05-18T22:57:09.423Z"
   },
-  "opening": "gameplay_first",
+  "opening": "hijacker_and_boss_first",
+  "firstTenSeconds": [
+    "runtime hijacker tractor-beam pressure",
+    "boss inbound warning",
+    "active boss pattern fire"
+  ],
   "titleCards": [
     {
       "image": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\02-outro-card.png",
       "durationSeconds": 4.2,
-      "title": "CHASE THE SWARM",
-      "subtitle": "DODGE. SCORE. BRAG."
+      "title": "ONE MORE RUN?",
+      "subtitle": "BREAK THE BEAM. BLAST THE BOSS."
     }
   ],
   "contactSheet": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\candidate-contact-sheet.png",
@@ -25,7 +30,8 @@
     "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\frame-05.jpg"
   ],
   "notes": [
-    "Editorial Steam trailer candidate starts on captured gameplay: no logo-first opening, no lore card, no menu dwell.",
+    "Editorial Steam trailer candidate starts on captured hijacker/boss gameplay: no logo-first opening, no lore card, no menu dwell.",
+    "The first 10 seconds are intended to prove the surprise mechanic and boss-every-level hook before menu or score-flow footage.",
     "Still requires human by-ear and store-submission approval before Steam upload."
   ],
   "ffprobe": {
@@ -37,22 +43,22 @@
         "width": 1280,
         "height": 720,
         "r_frame_rate": "25/1",
-        "duration": "37.800000"
+        "duration": "38.407969"
       },
       {
         "codec_name": "aac",
         "r_frame_rate": "0/0",
-        "duration": "37.821333"
+        "duration": "38.429333"
       }
     ],
     "format": {
-      "duration": "37.821333",
-      "size": "8500551",
-      "bit_rate": "1798043"
+      "duration": "38.429333",
+      "size": "9890252",
+      "bit_rate": "2058896"
     }
   },
   "volume": {
-    "meanVolumeDb": "-20.8",
-    "maxVolumeDb": "-1.6"
+    "meanVolumeDb": "-21.4",
+    "maxVolumeDb": "-2.3"
   }
 }
