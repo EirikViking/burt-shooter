@@ -8,7 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4330));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/ship-trait-combat-${timestamp()}`);
-const wingTraitShip = process.env.TRAIT_TEST_SHIP || 'row2_ship_1.png::magenta';
+const wingTraitShip = process.env.TRAIT_TEST_SHIP || 'nova-player-ship-07.png';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -92,6 +92,9 @@ page.on('console', (message) => {
 try {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.__game?.startGame), { timeout: 30000 });
+  await page.evaluate(() => {
+    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 100000, bestRank: 6, bestLevel: 1 }));
+  });
   await page.evaluate((spriteKey) => window.__game.startGame(spriteKey), wingTraitShip);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');

@@ -1,5 +1,5 @@
 import { ShipData } from '../src/config/ShipData.js';
-import { buildSelectableShipVariants, SHIP_VISUAL_VARIANTS } from '../src/config/VisualVariantCatalog.js';
+import { buildSelectableShipVariants } from '../src/config/VisualVariantCatalog.js';
 
 const ships = buildSelectableShipVariants(ShipData);
 const failures = [];
@@ -33,8 +33,12 @@ function signature(ship) {
   ].join('|');
 }
 
-if (ships.length !== ShipData.length * SHIP_VISUAL_VARIANTS.length) {
-  fail(`expected ${ShipData.length * SHIP_VISUAL_VARIANTS.length} selectable variants, found ${ships.length}`);
+if (ShipData.length !== 25) {
+  fail(`expected 25 playable generated ships, found ${ShipData.length}`);
+}
+
+if (ships.length !== 25) {
+  fail(`expected exactly 25 selectable ships, found ${ships.length}`);
 }
 
 for (const base of ShipData) {
@@ -42,14 +46,14 @@ for (const base of ShipData) {
   const signatures = new Set(variants.map(signature));
   const labels = new Set(variants.map(ship => ship.trait?.label).filter(Boolean));
 
-  if (variants.length !== SHIP_VISUAL_VARIANTS.length) {
-    fail(`${base.id} has ${variants.length} variants, expected ${SHIP_VISUAL_VARIANTS.length}`);
+  if (variants.length !== 1) {
+    fail(`${base.id} has ${variants.length} selectable entries, expected 1`);
   }
-  if (signatures.size < Math.min(20, SHIP_VISUAL_VARIANTS.length)) {
+  if (signatures.size < 1) {
     fail(`${base.id} only has ${signatures.size} distinct gameplay signatures`);
   }
-  if (labels.size !== SHIP_VISUAL_VARIANTS.length) {
-    fail(`${base.id} has ${labels.size} unique trait labels, expected ${SHIP_VISUAL_VARIANTS.length}`);
+  if (labels.size !== 1) {
+    fail(`${base.id} has ${labels.size} trait labels, expected 1`);
   }
 
   for (const ship of variants) {
@@ -82,11 +86,20 @@ for (const base of ShipData) {
   }
 }
 
+const unlockedAtStart = ships.filter(ship => !ship.unlock || (!(ship.unlock.score || 0) && !(ship.unlock.rank || 0)));
+if (unlockedAtStart.length !== 1) {
+  fail(`expected one starter ship, found ${unlockedAtStart.length}`);
+}
+
+const totalSignatures = new Set(ships.map(signature)).size;
+if (totalSignatures < 20) {
+  fail(`expected at least 20 distinct ship combat signatures, found ${totalSignatures}`);
+}
+
 if (failures.length) {
   console.error(`[ShipTraits] FAIL ${failures.length} issue(s)`);
   failures.forEach(message => console.error(`- ${message}`));
   process.exit(1);
 }
 
-const totalSignatures = new Set(ships.map(signature)).size;
-console.log(`[ShipTraits] PASS variants=${ships.length} trims=${SHIP_VISUAL_VARIANTS.length} totalSignatures=${totalSignatures}`);
+console.log(`[ShipTraits] PASS ships=${ships.length} totalSignatures=${totalSignatures} starter=${unlockedAtStart[0]?.name}`);

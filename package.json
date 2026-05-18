@@ -7,10 +7,11 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/update-build.cjs && node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-boss-roster.mjs && node scripts/check-audio-catalog.mjs",
+    "prebuild": "node scripts/update-build.cjs && node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-generated-rosters.mjs && node scripts/check-boss-roster.mjs && node scripts/check-audio-catalog.mjs",
     "build": "vite build",
-    "build:current": "node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-boss-roster.mjs && node scripts/check-audio-catalog.mjs && vite build",
+    "build:current": "node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-generated-rosters.mjs && node scripts/check-boss-roster.mjs && node scripts/check-audio-catalog.mjs && vite build",
     "check:ship-traits": "node scripts/check-ship-traits.mjs",
+    "check:generated-rosters": "node scripts/check-generated-rosters.mjs",
     "check:ship-trait-combat": "node scripts/check-ship-trait-combat.mjs",
     "check:debug-unranked": "node scripts/check-debug-run-unranked.mjs",
     "check:trait-hud": "node scripts/check-trait-hud.mjs",

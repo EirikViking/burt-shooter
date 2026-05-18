@@ -382,8 +382,8 @@ export class Player {
         ? this.selectedShipSpriteKey.split('::').pop()
         : null);
     const baseShip = ShipData[index];
-    if (baseShip && slug) {
-      const metadata = getShipMetadata(`${baseShip.spriteKey}::${slug}`);
+    if (baseShip) {
+      const metadata = getShipMetadata(baseShip.spriteKey) || (slug ? getShipMetadata(`${baseShip.spriteKey}::${slug}`) : null);
       if (metadata) {
         return {
           id: metadata.id || `rank_ship_${index}_${slug}`,

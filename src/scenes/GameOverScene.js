@@ -8,8 +8,8 @@ import { generateUUID } from '../utils/uuid.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 
-const ENTRY_PROMPT_DESKTOP = 'PRESS ENTER TO LOG SCORE';
-const ENTRY_PROMPT_MOBILE = 'TAP HERE TO LOG SCORE';
+const ENTRY_PROMPT_DESKTOP = 'ENTER: LOG SCORE  |  R/SPACE: RESTART';
+const ENTRY_PROMPT_MOBILE = 'TAP SCORE  |  R/SPACE RESTART';
 const INPUT_PROMPT = 'ENTER INITIALS AND PRESS OK';
 
 export class GameOverScene {
@@ -175,10 +175,15 @@ export class GameOverScene {
     this.container.addChild(this.nameDisplay);
 
     const smallSize = getResponsiveFontSize(layout, 'small');
-    this.instructions = createText('ESC: BACK TO MENU', {
+    this.instructions = createText('R / SPACE: RESTART  |  ESC: MENU', {
       fontFamily: 'Courier New',
       fontSize: smallSize,
-      fill: '#666666'
+      fill: '#9cfbff',
+      stroke: '#031323',
+      strokeThickness: 3,
+      dropShadow: true,
+      dropShadowColor: '#00ffff',
+      dropShadowBlur: 5
     });
     this.instructions.anchor.set(0.5);
     this.container.addChild(this.instructions);
@@ -270,6 +275,8 @@ export class GameOverScene {
     this.promptText.style.wordWrapWidth = clampTextWidth(width * 0.85, layout);
     this.nameDisplay.style.fontSize = nameSize;
     this.instructions.style.fontSize = smallSize;
+    this.instructions.style.fill = '#9cfbff';
+    this.instructions.style.stroke = { color: '#031323', width: layout.isMobile ? 2 : 3 };
     this.layoutBackdrop(width, height);
 
     // Calculate content height for centering
@@ -319,7 +326,7 @@ export class GameOverScene {
     this.nameDisplay.y = stack.getCurrentY();
 
     this.instructions.x = width / 2;
-    this.instructions.y = height - safeMargin.bottom - (layout.isMobile ? 16 : 20);
+    this.instructions.y = height - safeMargin.bottom - (layout.isMobile ? 32 : 40);
   }
 
   createFallbackBackdrop(width, height) {
@@ -374,6 +381,7 @@ export class GameOverScene {
       }
 
       const isSubmitKey = e.key === 'Enter' || e.key === 'Return' || e.code === 'NumpadEnter';
+      const isRestartKey = e.code === 'KeyR' || e.key === 'r' || e.key === 'R' || e.code === 'Space';
       const isEscape = e.key === 'Escape';
 
       if (isEscape) {
@@ -383,6 +391,12 @@ export class GameOverScene {
         } else {
           this.returnToMenu();
         }
+        return;
+      }
+
+      if (this.state !== 'input' && isRestartKey) {
+        e.preventDefault();
+        this.restartRun();
         return;
       }
 
@@ -515,6 +529,16 @@ export class GameOverScene {
         AudioManager.playMusicContext('menu', { resetPlaylist: true });
       }
     }, 120);
+  }
+
+  restartRun() {
+    if (this.state === 'submitting') return;
+    this.removeInputOverlay();
+    this.stopCaretBlink();
+    this.hideHiddenInput();
+    AudioManager.playSfx('start_game_confirm');
+    AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
+    this.game.startGame(this.game.selectedShipSpriteKey);
   }
 
   updatePromptMessage(text) {

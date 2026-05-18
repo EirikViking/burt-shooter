@@ -7,7 +7,8 @@ import { createText } from '../utils/pixiText.js';
 export class ScorePopup {
   constructor(x, y, score, color = 0xffff00, isCombo = false) {
     this.x = x;
-    this.y = y;
+    this.minY = 104;
+    this.y = Math.max(this.minY, y);
     this.active = true;
     this.lifetime = 0;
     this.maxLifetime = 800; // 800ms
@@ -27,7 +28,7 @@ export class ScorePopup {
 
     this.sprite.anchor.set(0.5);
     this.sprite.x = x;
-    this.sprite.y = y;
+    this.sprite.y = this.y;
     this.sprite.alpha = 1;
 
     this.vy = -2; // Float upward
@@ -46,7 +47,7 @@ export class ScorePopup {
     }
 
     // Float upward
-    this.y += this.vy * delta;
+    this.y = Math.max(this.minY, this.y + this.vy * delta);
     this.sprite.y = this.y;
 
     // Fade out in second half of lifetime

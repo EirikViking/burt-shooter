@@ -417,7 +417,38 @@ export function pickVariant(seed, variants) {
 }
 
 export function buildSelectableShipVariants(baseShips) {
-  return baseShips.flatMap(base => SHIP_VISUAL_VARIANTS.map(variant => {
+  return baseShips.flatMap(base => {
+    if (base.traitSlug) {
+      const variant = SHIP_VISUAL_VARIANTS.find(candidate => candidate.slug === base.traitSlug) || SHIP_VISUAL_VARIANTS[0];
+      const tuned = applyShipTrait(base, variant);
+      return [{
+        ...base,
+        id: base.id,
+        baseId: base.id,
+        baseSpriteKey: base.spriteKey,
+        spriteKey: base.spriteKey,
+        name: base.name,
+        baseDescription: base.description,
+        description: `${tuned.trait.label}: ${tuned.trait.description} ${base.description}`,
+        loreShort: `${base.loreShort}-${variant.slug}`,
+        loreLong: `${base.loreLong} This hull ships with the ${variant.name.toLowerCase()} combat profile: ${tuned.trait.description.toLowerCase()}`,
+        stats: tuned.stats,
+        weapon: tuned.weapon,
+        visuals: {
+          ...base.visuals,
+          variant: { ...variant },
+          trait: { ...tuned.trait }
+        },
+        hitbox: tuned.hitbox,
+        trait: tuned.trait,
+        variantSlug: variant.slug,
+        variantCode: variant.code,
+        variantIndex: 0,
+        unlock: base.unlock ? { ...base.unlock } : null
+      }];
+    }
+
+    return SHIP_VISUAL_VARIANTS.map(variant => {
     const tuned = applyShipTrait(base, variant);
     return {
       ...base,
@@ -443,7 +474,8 @@ export function buildSelectableShipVariants(baseShips) {
       variantCode: variant.code,
       variantIndex: variant.index
     };
-  }));
+  });
+  });
 }
 
 export function getEnemyVisualVariant(type, level, waveColor, x, y) {

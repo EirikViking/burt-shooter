@@ -1,205 +1,105 @@
 /**
- * Single source of truth for all ship data.
- * Unifies UI metadata (names, lore) and gameplay constants.
+ * Single source of truth for playable ship data.
+ *
+ * The public roster uses 25 original generated Nova Swarm ships. Only the
+ * first craft is available on a fresh profile; the rest unlock through
+ * score/rank progress so ship choice becomes part of long-term mastery.
  */
 
-export const ShipData = [
-    {
-        id: 'rank_ship_0',
-        spriteKey: 'row2_ship_1.png',
-        textureIndex: 0,
-        name: 'NOVA SPARROW',
-        description: 'Balanced starter craft with friendly twin lasers.',
-        loreShort: 'starter',
-        loreLong: 'The Nova Sparrow is the training cabinet favorite: compact, readable, and stubborn enough to survive a messy first wave. Its twin laser rig is tuned for players who want to learn enemy formations before chasing flashier loadouts.',
-        stats: {
-            speed: 5.5,
-            fireRate: 112,
-            damage: 1.4,
-            bulletSpeed: 11.5
-        },
-        weapon: {
-            bullets: 2,
-            spread: 0.1,
-            shootSfx: 'shoot_small'
-        },
-        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
-        hitbox: { radius: 12 }
-    },
-    {
-        id: 'rank_ship_1',
-        spriteKey: 'row2_ship_2.png',
-        textureIndex: 1,
-        name: 'COMET TWIN',
-        description: 'Reliable double-shot ship with smooth handling.',
-        loreShort: 'balanced',
-        loreLong: 'The Comet Twin is built for calm pilots in loud situations. It trades raw punch for a forgiving firing rhythm, making it a strong choice when the swarm starts drawing shapes nobody asked for.',
-        stats: {
-            speed: 6,
-            fireRate: 157.5,
-            damage: 0.85,
-            bulletSpeed: 10
-        },
-        weapon: {
-            bullets: 2,
-            spread: 0.14,
-            shootSfx: 'shoot_small'
-        },
-        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
-        hitbox: { radius: 12 }
-    },
-    {
-        id: 'rank_ship_2',
-        spriteKey: 'row2_ship_3_clean.png',
-        textureIndex: 2,
-        name: 'PIXEL NEEDLE',
-        description: 'Fast single-shot ship for confident dodgers.',
-        loreShort: 'rapid',
-        loreLong: 'The Pixel Needle was designed by someone who looked at a screen full of bullets and said, "I can fit through that." It rewards crisp movement, quick reactions, and the kind of confidence usually found near the last continue screen.',
-        stats: {
-            speed: 7.15,
-            fireRate: 108.75,
-            damage: 0.9,
-            bulletSpeed: 12.1
-        },
-        weapon: {
-            bullets: 1,
-            spread: 0,
-            shootSfx: 'shoot_small'
-        },
-        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
-        hitbox: { radius: 12 }
-    },
-    {
-        id: 'rank_ship_3',
-        spriteKey: 'row2_ship_5.png',
-        textureIndex: 3,
-        name: 'IRON ORBIT',
-        description: 'Heavy shot profile with deliberate movement.',
-        loreShort: 'heavy',
-        loreLong: 'Iron Orbit does not hurry. It arrives, lines up the shot, and asks the enemy formation to reconsider its life choices. Slower fire and heavier damage make it a good fit for players who prefer precision over spray.',
-        stats: {
-            speed: 6.3,
-            fireRate: 168,
-            damage: 1.4,
-            bulletSpeed: 9.9
-        },
-        weapon: {
-            bullets: 1,
-            spread: 0,
-            shootSfx: 'shoot_heavy'
-        },
-        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
-        hitbox: { radius: 12 }
-    },
-    {
-        id: 'rank_ship_4',
-        spriteKey: 'ship_extract_1.png',
-        textureIndex: 4,
-        name: 'ARC STRIKER',
-        description: 'Curved twin fire for formation cleanup.',
-        loreShort: 'arc',
-        loreLong: 'The Arc Striker believes straight lines are a suggestion. Its angled twin shots catch drifting enemies and make tidy work of formations that try to be clever near the edges of the screen.',
-        stats: {
-            speed: 6.3,
-            fireRate: 150,
-            damage: 1.2,
-            bulletSpeed: 12
-        },
-        weapon: {
-            bullets: 2,
-            spread: 0.2,
-            shootSfx: 'shoot_small'
-        },
-        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
-        hitbox: { radius: 12 }
-    },
-    {
-        id: 'rank_ship_5',
-        spriteKey: 'ship_extract_2.png',
-        textureIndex: 5,
-        name: 'GIGA LANCE',
-        description: 'Massive single-shot damage, minimal grace.',
-        loreShort: 'power',
-        loreLong: 'Giga Lance is for pilots who want every shot to feel like a decision. It is not subtle, not delicate, and not especially polite, but when the beam lands the swarm tends to stop making jokes.',
-        stats: {
-            speed: 6.0,
-            fireRate: 207,
-            damage: 2.5,
-            bulletSpeed: 12
-        },
-        weapon: {
-            bullets: 1,
-            spread: 0,
-            shootSfx: 'shoot_heavy'
-        },
-        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
-        hitbox: { radius: 13 }
-    },
-    {
-        id: 'rank_ship_6',
-        spriteKey: 'ship_extract_3.png',
-        textureIndex: 6,
-        name: 'QUASAR FAN',
-        description: 'Triple-shot spread for crowd control.',
-        loreShort: 'spread',
-        loreLong: 'The Quasar Fan throws a bright net across the lane and lets the formation fly into its own bad planning. It is perfect for players who want coverage, rhythm, and a little extra forgiveness when the screen gets busy.',
-        stats: {
-            speed: 7.5,
-            fireRate: 165,
-            damage: 0.7,
-            bulletSpeed: 11
-        },
-        weapon: {
-            bullets: 3,
-            spread: 0.22,
-            shootSfx: 'shoot_small'
-        },
-        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
-        hitbox: { radius: 12 }
-    },
-    {
-        id: 'rank_ship_7',
-        spriteKey: 'ship_extract_5.png',
-        textureIndex: 7,
-        name: 'STEADY VECTOR',
-        description: 'Consistent all-rounder with clean timing.',
-        loreShort: 'steady',
-        loreLong: 'The Steady Vector is the no-drama option in a game full of dramatic aliens. It fires when expected, moves where asked, and makes a strong case that reliability is a powerup of its own.',
-        stats: {
-            speed: 6,
-            fireRate: 126,
-            damage: 1,
-            bulletSpeed: 10
-        },
-        weapon: {
-            bullets: 1,
-            spread: 0,
-            shootSfx: 'shoot_small'
-        },
-        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
-        hitbox: { radius: 12 }
-    },
-    {
-        id: 'rank_ship_8',
-        spriteKey: 'ship_new.png',
-        textureIndex: 8,
-        name: 'AURORA PRIME',
-        description: 'Classic hero ship with polished twin fire.',
-        loreShort: 'classic',
-        loreLong: 'Aurora Prime is the flagship you pick when the arcade cabinet starts humming like it knows something you do not. It is classic, bright, sturdy, and ready to turn one more impossible wave into one more excellent story.',
-        stats: {
-            speed: 6,
-            fireRate: 142.5,
-            damage: 0.95,
-            bulletSpeed: 10
-        },
-        weapon: {
-            bullets: 2,
-            spread: 0.12,
-            shootSfx: 'shoot_small'
-        },
-        visuals: { scale: 0.15, idleAmplitude: 2, idleSpeed: 0.05, tiltMax: 0.2, tiltSpeed: 0.1 },
-        hitbox: { radius: 12 }
-    }
+const LEGACY_PLAYER_SHIP_KEYS = [
+    'row2_ship_1.png',
+    'row2_ship_2.png',
+    'row2_ship_3_clean.png',
+    'row2_ship_5.png',
+    'ship_extract_1.png',
+    'ship_extract_2.png',
+    'ship_extract_3.png',
+    'ship_extract_5.png',
+    'ship_new.png'
 ];
+
+const SHIP_BLUEPRINTS = [
+    ['Nova Sparrow', 'ion', 'Balanced starter craft with friendly twin lasers.', 'starter', 0, 0, 5.75, 122, 1.05, 11.2, 2, 0.1, 12],
+    ['Comet Courier', 'signal', 'Quick courier frame with fast reload discipline.', 'courier', 10000, 1, 6.15, 112, 0.95, 11.8, 2, 0.12, 11],
+    ['Pixel Needle', 'vector', 'Needle-nosed interceptor for precise dodgers.', 'needle', 18000, 1, 6.85, 128, 1.1, 12.7, 1, 0, 10],
+    ['Mint Skater', 'mint', 'Ultra-light hull that wins by never being where expected.', 'skater', 25000, 2, 7.25, 134, 0.92, 12.2, 2, 0.14, 10],
+    ['Crimson Bite', 'crimson', 'Short-range bruiser with mean close-lane damage.', 'biter', 38000, 2, 6.25, 132, 1.28, 10.9, 2, 0.16, 13],
+    ['Iron Orbit', 'obsidian', 'Heavy frame with calm steering and hard bolts.', 'heavy', 50000, 3, 5.55, 154, 1.55, 10.4, 1, 0, 14],
+    ['Quasar Fan', 'magenta', 'Triple-lane crowd cleaner for messy formations.', 'fan', 65000, 3, 6.45, 156, 0.82, 11.1, 3, 0.23, 12],
+    ['Glacier Scope', 'glacier', 'Cold precision platform with fast straight projectiles.', 'scope', 75000, 4, 5.95, 144, 1.22, 13.2, 1, 0, 11],
+    ['Arc Striker', 'arcade', 'Wide arcade spray that punishes smug swarm lanes.', 'arc', 92000, 4, 6.7, 142, 0.92, 11.6, 3, 0.27, 12],
+    ['Solar Hammer', 'solar', 'Slower trigger, heavier shots, very satisfying hits.', 'hammer', 100000, 5, 5.85, 168, 1.75, 11.5, 1, 0, 13],
+    ['Circuit Tap', 'circuit', 'Rhythm ship with rapid weak taps and bonus shot tricks.', 'rhythm', 125000, 5, 6.3, 100, 0.78, 11.7, 2, 0.13, 12],
+    ['Violet Feint', 'violet', 'Small collision core and slippery movement.', 'feint', 150000, 6, 7.15, 138, 0.98, 12.4, 2, 0.09, 10],
+    ['Auric Core', 'auric', 'Premium damage profile with deliberate timing.', 'premium', 176923, 7, 6.0, 170, 1.8, 11.2, 2, 0.08, 13],
+    ['Plasma Skate', 'plasma', 'Fast strafe rig with angled pressure shots.', 'plasma', 203846, 8, 7.3, 132, 1.0, 12.3, 2, 0.2, 11],
+    ['Ruby Spike', 'ruby', 'Big risk hull that cashes in huge spikes.', 'spike', 230769, 9, 5.75, 184, 2.1, 10.8, 1, 0, 14],
+    ['Spectral Slip', 'spectral', 'Ghost-thin dodger made for near-miss hunters.', 'spectral', 257692, 10, 7.45, 148, 0.94, 12.9, 2, 0.08, 10],
+    ['Cobalt Guard', 'cobalt', 'Stable armored craft with tight firing lines.', 'guard', 284615, 11, 5.7, 148, 1.62, 11.5, 2, 0.04, 14],
+    ['Ember Burst', 'ember', 'Hot trigger ship built for combo pressure.', 'ember', 311538, 12, 6.45, 96, 0.86, 11.4, 2, 0.16, 12],
+    ['Neon Stutter', 'neon', 'Very fast fire and a tiny per-shot bite.', 'stutter', 338462, 13, 6.9, 90, 0.72, 12.1, 3, 0.17, 11],
+    ['Quartz Needle', 'quartz', 'Tiny hitbox, strict reload, beautiful threading.', 'quartz', 365385, 14, 6.35, 166, 1.32, 13.4, 1, 0, 10],
+    ['Chrome Rail', 'chrome', 'High-speed rail rounds for pattern readers.', 'rail', 392308, 15, 6.1, 164, 1.52, 13.9, 1, 0, 11],
+    ['Verdant Flow', 'verdant', 'Smooth all-round craft with forgiving rhythm.', 'flow', 419231, 16, 7.0, 122, 1.0, 11.7, 2, 0.13, 11],
+    ['Hazard Ram', 'hazard', 'Dangerous burst hull with a broad body.', 'hazard', 446154, 17, 5.9, 150, 1.88, 11.2, 2, 0.19, 15],
+    ['Nova Overdrive', 'nova', 'Aggressive late-roster all-round pressure machine.', 'overdrive', 473077, 18, 7.1, 112, 1.3, 12.6, 3, 0.16, 12],
+    ['Arcade Legend', 'arcade', 'Final cabinet hero craft with absurd confidence.', 'legend', 500000, 19, 7.25, 108, 1.45, 13.0, 3, 0.22, 12]
+];
+
+function shipSpriteKey(index) {
+    return `nova-player-ship-${String(index + 1).padStart(2, '0')}.png`;
+}
+
+function titleCase(name) {
+    return name.toUpperCase();
+}
+
+export const ShipData = SHIP_BLUEPRINTS.map(([
+    name,
+    traitSlug,
+    description,
+    loreShort,
+    unlockScore,
+    unlockRank,
+    speed,
+    fireRate,
+    damage,
+    bulletSpeed,
+    bullets,
+    spread,
+    radius
+], index) => ({
+    id: `nova_ship_${String(index + 1).padStart(2, '0')}`,
+    spriteKey: shipSpriteKey(index),
+    legacySpriteKeys: index < LEGACY_PLAYER_SHIP_KEYS.length ? [LEGACY_PLAYER_SHIP_KEYS[index]] : [],
+    textureIndex: index,
+    name: titleCase(name),
+    description,
+    loreShort,
+    loreLong: `${name} is a public Nova Swarm hangar build, tuned for arcade clarity and score-chase personality. Its ${loreShort} profile changes real handling, weapon cadence, and hitbox behavior instead of acting like a cosmetic skin.`,
+    traitSlug,
+    unlock: {
+        score: unlockScore,
+        rank: unlockRank,
+        label: index === 0 ? 'Available now' : `Reach ${unlockScore.toLocaleString('en-US')} score or Rank ${unlockRank}`
+    },
+    stats: {
+        speed,
+        fireRate,
+        damage,
+        bulletSpeed
+    },
+    weapon: {
+        bullets,
+        spread,
+        shootSfx: damage >= 1.5 ? 'shoot_heavy' : 'shoot_small'
+    },
+    visuals: {
+        scale: 0.15,
+        idleAmplitude: 2,
+        idleSpeed: 0.05,
+        tiltMax: 0.2,
+        tiltSpeed: 0.1
+    },
+    hitbox: { radius }
+}));

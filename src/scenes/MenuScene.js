@@ -8,6 +8,7 @@ import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
+import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
@@ -637,16 +638,23 @@ export class MenuScene {
     this.menuPanel.alpha = 0;
     this.container.addChild(this.menuPanel);
 
-    this.startBtn = this.createButton('START GAME', layout);
+    this.startBtn = this.createButton('PLAY NOW', layout);
     this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
-      this.openShipSelect();
+      this.quickStartRun();
     });
     this.container.addChild(this.startBtn);
 
-    this.highscoreBtn = this.createButton('HIGHSCORES', layout);
+    this.highscoreBtn = this.createButton('SHIP HANGAR', layout);
     this.highscoreBtn.alpha = 0;  // Start invisible
     this.highscoreBtn.on('pointerdown', () => {
+      this.openShipSelect();
+    });
+    this.container.addChild(this.highscoreBtn);
+
+    this.storyBtn = this.createButton('HIGHSCORES', layout);
+    this.storyBtn.alpha = 0;
+    this.storyBtn.on('pointerdown', () => {
       try {
         AudioManager.init();
         // Removed annoying ui_open sound - no audio needed for viewing leaderboard
@@ -655,13 +663,6 @@ export class MenuScene {
       } catch (e) {
         console.error('[MenuScene] Highscore Error:', e);
       }
-    });
-    this.container.addChild(this.highscoreBtn);
-
-    this.storyBtn = this.createButton('STORY INTRO', layout);
-    this.storyBtn.alpha = 0;
-    this.storyBtn.on('pointerdown', () => {
-      this.openStoryIntro();
     });
     this.container.addChild(this.storyBtn);
 
@@ -1140,6 +1141,30 @@ export class MenuScene {
       this.game.showShipSelect();
     } catch (e) {
       console.error('[MenuScene] Ship Select Error:', e);
+    }
+  }
+
+  getQuickStartShipKey() {
+    try {
+      const saved = localStorage.getItem('burt.selectedShip.v1');
+      if (saved && isValidShipKey(saved)) {
+        const resolved = resolveShipKey(saved);
+        if (isShipUnlocked(resolved)) return resolved;
+      }
+    } catch (e) {
+      console.warn('[MenuScene] Could not read saved ship for quick start:', e);
+    }
+    return getDefaultShipKey();
+  }
+
+  quickStartRun() {
+    try {
+      AudioManager.init();
+      AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.78 });
+      AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
+      this.game.startGame(this.getQuickStartShipKey());
+    } catch (e) {
+      console.error('[MenuScene] Quick Start Error:', e);
     }
   }
 

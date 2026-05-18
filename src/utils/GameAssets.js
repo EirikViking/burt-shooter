@@ -9,6 +9,7 @@ class GameAssetsManager {
         this.crewPortraitList = AssetManifest.generated?.crewPortraits || [];
         this.shipTextures = {};
         this.enemyTextures = {};
+        this.generatedEnemyTextures = [];
         this.rankShipTextures = [];
         this.rankShipList = AssetManifest.sprites.playerRankShips || [];
     }
@@ -179,7 +180,20 @@ class GameAssetsManager {
             }
         }));
 
-        console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length);
+        const generatedEnemies = AssetManifest.generated?.enemies || [];
+        await Promise.all(generatedEnemies.map(async (filepath, index) => {
+            try {
+                const texture = await PIXI.Assets.load({
+                    alias: `nova_generated_enemy_${index + 1}`,
+                    src: filepath
+                });
+                if (this.isValidTexture(texture)) this.generatedEnemyTextures[index] = texture;
+            } catch (e) {
+                console.warn(`[GameAssets] Failed to load generated enemy ${filepath}:`, e);
+            }
+        }));
+
+        console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length, 'GeneratedEnemy:', this.generatedEnemyTextures.filter(Boolean).length);
 
         // Load Xtra Assets
         await this.loadXtraAssets();
@@ -195,6 +209,10 @@ class GameAssetsManager {
 
     getRankShipTexture(index) {
         return this.rankShipTextures ? this.rankShipTextures[index] : null;
+    }
+
+    getGeneratedEnemyTexture(index) {
+        return this.generatedEnemyTextures ? this.generatedEnemyTextures[index] : null;
     }
 
     getRankShipCount() {

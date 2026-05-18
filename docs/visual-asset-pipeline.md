@@ -62,6 +62,20 @@ Prompt summary:
 
 > Four-panel original sci-fi story atlas for Nova Swarm: lost arcade cabinet in space, the swarm learning formation, a small ship breaking rank, and a boss chorus around a scoreboard monolith; no text, no logos, no real people, no existing game branding. Five boss atlas prompts requested exactly ten original alien arcade shooter bosses each on flat `#00ff00`, in strict `5x2` grids, with distinct silhouettes, readable weapon ports, and no labels or copyrighted branding.
 
+## 2026-05-18 Generated Ship And Enemy Rosters
+
+- Player ship source sheet: `public/art/generated/nova-swarm/source/nova-player-ships-25-sheet-20260518-source.png`
+- Player runtime assets: `public/art/generated/nova-swarm/ships/nova-player-ship-01.png` through `nova-player-ship-25.png`, plus `nova-player-ships-contact-sheet-20260518.jpg` for human review.
+- Enemy source sheet: `public/art/generated/nova-swarm/source/nova-enemies-50-sheet-20260518-source.png`
+- Enemy runtime assets: `public/art/generated/nova-swarm/enemies/nova-enemy-01.png` through `nova-enemy-50.png`, plus `nova-enemies-contact-sheet-20260518.jpg` for human review.
+- Optimization: built-in Codex imagegen outputs copied from `C:\Users\cromk\.codex\generated_images\019e34df-5e3d-7ff1-a55a-261de494a1e9`; sheets split with ImageMagick, chroma-keyed against the green background, trimmed, and padded to transparent PNGs at `256x256` for player ships and `192x192` for enemies.
+- Usage: `src/config/ShipData.js` defines the 25 playable generated ships with real trait/stat differences and progression locks; `src/config/GeneratedEnemyProfiles.js`, `src/entities/Enemy.js`, and `src/managers/EnemyManager.js` use the 50 generated enemies as the default wave roster with distinct behavior profiles.
+- Verification: `npm run check:generated-rosters`, `npm run check:ship-traits`, `npm run check:ship-trait-combat`, `npm run build:current`, and `npm run smoke` passed on 2026-05-18 after integration. Visual review screenshots are in `test-results/generated-roster-visual-20260518/` and the latest smoke run is `test-results/smoke-2026-05-18T13-14-15-501Z/`.
+
+Prompt summary:
+
+> Two original sprite-sheet prompts: a `5x5` transparent-background-ready sheet of 25 sleek playable Nova Swarm ships with rising tech tiers, and a `10x5` sheet of 50 varied alien arcade enemies with distinct silhouettes, weapon ports, readable top-down forms, no logos, no text, no real people, and no existing game branding.
+
 ## 2026-05-17 Nova Swarm Asset Path Cleanup
 
 - Public runtime art paths now live under `public/art/generated/nova-swarm/`.

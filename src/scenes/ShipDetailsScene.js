@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { getShipMetadata, getShipUsage, getTotalUsage } from '../config/ShipMetadata.js';
+import { getDefaultShipKey, getShipMetadata, getShipUnlockLabel, getShipUnlockProgress, getShipUsage, getTotalUsage, isShipUnlocked } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { createText } from '../utils/pixiText.js';
 
@@ -13,9 +13,10 @@ export class ShipDetailsScene {
 
         if (!this.ship) {
             console.error('[ShipDetails] Invalid sprite key:', spriteKey);
-            this.ship = getShipMetadata('row2_ship_1.png');
-            this.spriteKey = 'row2_ship_1.png';
+            this.ship = getShipMetadata(getDefaultShipKey());
+            this.spriteKey = getDefaultShipKey();
         }
+        this.unlockProgress = getShipUnlockProgress();
 
         // Ensure state is updated
         setSelectedShipKey(this.spriteKey);
@@ -90,6 +91,7 @@ export class ShipDetailsScene {
 
         // Usage count
         const usageCount = getShipUsage(this.spriteKey);
+        const locked = !isShipUnlocked(this.spriteKey, this.unlockProgress);
         const usageText = createText(`Used ${usageCount} times by players`, {
             fontFamily: 'Courier New',
             fontSize: 13,
@@ -100,6 +102,23 @@ export class ShipDetailsScene {
         usageText.position.set(panelWidth / 2, yOffset);
         contentContainer.addChild(usageText);
         yOffset += 35;
+
+        if (locked) {
+            const unlockText = createText(getShipUnlockLabel(this.spriteKey), {
+                fontFamily: 'Courier New',
+                fontSize: isMobile ? 12 : 14,
+                fill: '#ffcc00',
+                align: 'center',
+                wordWrap: true,
+                wordWrapWidth: panelWidth - 80,
+                stroke: '#000000',
+                strokeThickness: 2
+            });
+            unlockText.anchor.set(0.5, 0);
+            unlockText.position.set(panelWidth / 2, yOffset);
+            contentContainer.addChild(unlockText);
+            yOffset += unlockText.height + 18;
+        }
 
         // Lore section with better formatting
         yOffset = this.createLoreSection(contentContainer, panelWidth, yOffset, isMobile);
@@ -276,14 +295,15 @@ export class ShipDetailsScene {
 
         const startBg = new PIXI.Graphics();
         startBg.rect(0, 0, buttonWidth, buttonHeight);
-        startBg.fill({ color: 0x00ff00 });
+        const locked = !isShipUnlocked(this.spriteKey, this.unlockProgress);
+        startBg.fill({ color: locked ? 0x2a2134 : 0x00ff00 });
         startBg.stroke({ color: 0xffffff, width: 2 });
         startButton.addChild(startBg);
 
-        const startText = createText('START GAME', {
+        const startText = createText(locked ? 'LOCKED' : 'START GAME', {
             fontFamily: 'Courier New',
             fontSize: isMobile ? 18 : 22,
-            fill: '#000000',
+            fill: locked ? '#ffcc00' : '#000000',
             fontWeight: 'bold'
         });
         startText.anchor.set(0.5);
@@ -315,6 +335,9 @@ export class ShipDetailsScene {
     }
 
     startGame() {
+        if (!isShipUnlocked(this.spriteKey, this.unlockProgress)) {
+            return;
+        }
         console.log('[ShipDetails] Starting game with ship:', this.spriteKey);
         // Read from state to ensure we have the latest selection
         this.game.startGame(this.spriteKey);

@@ -6,6 +6,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { enhanceEnemyVisuals } from '../utils/EnemyVisualEnhancer.js';
 import { getEnemyVisualVariant } from '../config/VisualVariantCatalog.js';
+import { getGeneratedEnemyProfile } from '../config/GeneratedEnemyProfiles.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
@@ -47,13 +48,37 @@ export class Enemy {
     this.spriteKey = null;
     this.xtraType = 1; // 1-5
     this.usingXtraAsset = false;
-    this.visualVariant = getEnemyVisualVariant(type, level, waveColor, x, y);
+    this.generatedProfile = getGeneratedEnemyProfile(type, `${level}|${waveColor || 'none'}|${Math.round(x)}|${Math.round(y)}`);
+    this.visualVariant = this.generatedProfile
+      ? {
+        slug: this.generatedProfile.id,
+        tint: this.generatedProfile.tint,
+        accent: this.generatedProfile.accent,
+        scale: 1,
+        wobble: 0.9 + (this.generatedProfile.spriteIndex % 7) * 0.04,
+        alpha: 0.18
+      }
+      : getEnemyVisualVariant(type, level, waveColor, x, y);
 
     this.setupByType();
     this.createSprite();
   }
 
   setupByType() {
+    if (this.generatedProfile) {
+      const profile = this.generatedProfile;
+      this.color = profile.tint;
+      this.health = profile.health;
+      this.maxHealth = profile.health;
+      this.scoreValue = profile.scoreValue;
+      this.speed = profile.speed;
+      this.shootDelay = profile.shootDelay;
+      this.radius = profile.radius;
+      this.movePattern = profile.movementStyle;
+      this.spriteKey = profile.type;
+      this.generatedEnemyIndex = profile.spriteIndex;
+      this.xtraType = (profile.spriteIndex % 5) + 1;
+    } else {
     switch (this.type) {
       case 'chaser':
         this.color = 0xff69b4;
@@ -250,6 +275,7 @@ export class Enemy {
         this.xtraType = 5;
         break;
     }
+    }
 
     // TASK 3: Apply difficulty scalars
     const diff = BalanceConfig.difficulty;
@@ -265,7 +291,9 @@ export class Enemy {
     this.shootDelay = (this.shootDelay * fireDelayScale) / globalMult;
 
     // Sprite Selection
-    if (this.type === 'bonus_challenge') {
+    if (this.generatedProfile) {
+      this.spriteKey = this.generatedProfile.type;
+    } else if (this.type === 'bonus_challenge') {
       this.spriteKey = 'bonus_challenge';
     } else if (this.type.startsWith('fighter_')) {
       // Fighter types use player ship textures - shipTextureIndex already set
@@ -292,7 +320,10 @@ export class Enemy {
 
     let tex;
     // Check for fighter type (player ship variant)
-    if (this.type.startsWith('fighter_') && this.shipTextureIndex !== undefined) {
+    if (this.generatedProfile && Number.isFinite(this.generatedEnemyIndex)) {
+      tex = GameAssets.getGeneratedEnemyTexture(this.generatedEnemyIndex);
+      this.usingGeneratedEnemyTexture = true;
+    } else if (this.type.startsWith('fighter_') && this.shipTextureIndex !== undefined) {
       tex = GameAssets.getRankShipTexture(this.shipTextureIndex);
       this.usingPlayerShipTexture = true;
     } else if (this.spriteKey === 'bonus_challenge') {
@@ -318,14 +349,16 @@ export class Enemy {
     if (GameAssets.isValidTexture(tex)) {
       const s = new PIXI.Sprite(tex);
       s.anchor.set(0.5);
-      const targetWidth = 45;
+      const targetWidth = this.generatedProfile?.targetWidth || 45;
       const variantScale = Number.isFinite(this.visualVariant?.scale) ? this.visualVariant.scale : 1;
       const scale = (targetWidth / tex.width) * variantScale;
       s.scale.set(scale);
       s.rotation = Math.PI; // Enemies face downward
 
       // Fighter enemies (player ships) get subtle tint, xtra assets no tint
-      if (this.usingPlayerShipTexture) {
+      if (this.usingGeneratedEnemyTexture) {
+        s.tint = 0xffffff;
+      } else if (this.usingPlayerShipTexture) {
         s.tint = this.visualVariant?.tint || this.color;
       } else {
         s.tint = this.usingXtraAsset ? (this.visualVariant?.tint || 0xFFFFFF) : (this.visualVariant?.tint || this.color);
@@ -490,9 +523,27 @@ export class Enemy {
 
       case 'FORMATION':
         // Enhanced idle movement - more varied and alive
-        const swaySpeed = 0.04 + (this.idlePhase % 0.02); // Varied speed per enemy
-        const swayX = Math.sin(this.moveTimer * swaySpeed + this.idlePhase) * 12;
-        const swayY = Math.cos(this.moveTimer * (swaySpeed * 0.7) + this.idlePhase) * 6;
+        const profile = this.generatedProfile;
+        const swaySpeed = 0.04 + (this.idlePhase % 0.02) + (profile ? (profile.spriteIndex % 5) * 0.002 : 0);
+        let swayX = Math.sin(this.moveTimer * swaySpeed + this.idlePhase) * (profile?.idleAmpX || 12);
+        let swayY = Math.cos(this.moveTimer * (swaySpeed * 0.7) + this.idlePhase) * (profile?.idleAmpY || 6);
+        if (profile) {
+          const phase = this.moveTimer * (0.018 + (profile.spriteIndex % 4) * 0.002) + this.idlePhase;
+          if (profile.movementStyle === 'zigzag') swayX += Math.sign(Math.sin(phase)) * 10;
+          else if (profile.movementStyle === 'circle' || profile.movementStyle === 'orbit') {
+            swayX += Math.cos(phase) * 12;
+            swayY += Math.sin(phase) * 8;
+          } else if (profile.movementStyle === 'drunk' || profile.movementStyle === 'flutter') {
+            swayX += Math.sin(phase * 2.3) * 8;
+            swayY += Math.cos(phase * 1.7) * 5;
+          } else if (profile.movementStyle === 'snap') {
+            swayX += Math.round(Math.sin(phase) * 2) * 6;
+          } else if (profile.movementStyle === 'pincer') {
+            swayX += Math.sin(phase) * (this.x < playerX ? 10 : -10);
+          } else if (profile.movementStyle === 'weave') {
+            swayX += Math.sin(phase * 1.4) * 14;
+          }
+        }
         this.x = this.formationX + swayX;
         this.y = this.formationY + swayY;
 
@@ -501,7 +552,8 @@ export class Enemy {
         this.sprite.rotation = wobbleAngle;
 
         // Chance to dive (low)
-        const diveChance = this.level <= 1 ? 0.00035 : this.level === 2 ? 0.00065 : this.level === 3 ? 0.0004 : 0.00035;
+        const profileDiveScalar = profile?.diveBias || 1;
+        const diveChance = (this.level <= 1 ? 0.00035 : this.level === 2 ? 0.00065 : this.level === 3 ? 0.0004 : 0.00035) * profileDiveScalar;
         if (this.active && Math.random() < diveChance) {
           this.startDive(playerX, playerY);
         }
@@ -597,7 +649,8 @@ export class Enemy {
     const openingProjectileScalar = this.level <= 1 ? 0.82 : this.level === 2 ? 0.92 : 1;
     const speed = BalanceConfig.difficulty.enemyProjectileSpeed *
       BalanceConfig.difficulty.pressureScalar *
-      openingProjectileScalar;
+      openingProjectileScalar *
+      (this.generatedProfile?.projectileSpeedMult || 1);
     const vx = (dx / distance) * speed * accuracy;
     const vy = (dy / distance) * speed * accuracy;
 
@@ -625,6 +678,30 @@ export class Enemy {
       }
     }
 
+    if (this.generatedProfile) {
+      const profile = this.generatedProfile;
+      const baseAngle = Math.atan2(vy, vx);
+      const count = Math.max(1, profile.shotCount || 1);
+      const spread = profile.spread || 0;
+      const bullets = [];
+      for (let i = 0; i < count; i += 1) {
+        const offset = count === 1 ? 0 : (i - (count - 1) / 2) * spread;
+        const angle = baseAngle + offset;
+        const jitter = profile.fireStyle === 'stutter' ? (Math.random() - 0.5) * 0.08 : 0;
+        bullets.push(new Bullet(
+          this.x,
+          this.y,
+          Math.cos(angle + jitter) * speed * accuracy,
+          Math.sin(angle + jitter) * speed * accuracy,
+          profile.fireStyle === 'slowHeavy' ? 1.25 : 1,
+          profile.accent || this.color,
+          false,
+          vConfig
+        ));
+      }
+      return bullets.length === 1 ? bullets[0] : bullets;
+    }
+
     return new Bullet(this.x, this.y, vx, vy, 1, this.color, false, vConfig);
   }
 
@@ -644,7 +721,9 @@ export class Enemy {
     this.updateHealthBar();
     this.sprite.tint = 0xffffff;
     // Flashing Logic: Restore correct tint
-    const restoreColor = this.usingXtraAsset ? (this.state === 'DIVE' ? 0xffaaaa : 0xffffff) : (this.state === 'DIVE' ? 0xff0000 : this.color);
+    const restoreColor = (this.usingXtraAsset || this.usingGeneratedEnemyTexture)
+      ? (this.state === 'DIVE' ? 0xffaaaa : 0xffffff)
+      : (this.state === 'DIVE' ? 0xff0000 : this.color);
     setTimeout(() => { if (this.sprite) this.sprite.tint = restoreColor; }, 50);
 
     // Spawn debris if dead? (Handled by manager usually)

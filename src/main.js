@@ -7,6 +7,7 @@ import { installConsoleLogFilter } from './utils/Logger.js';
 import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
+import { getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
 
 installConsoleLogFilter();
 
@@ -283,10 +284,11 @@ function buildGameTextState(game) {
       totalShips: shipSelectScene.ships.length,
       modelIndex: Math.max(0, shipSelectScene.baseOrder?.indexOf(selectedShip.baseId) ?? 0) + 1,
       totalModels: shipSelectScene.baseOrder?.length || 0,
-      trimIndex: Number.isFinite(selectedShip.variantIndex) ? selectedShip.variantIndex + 1 : null,
       shipName: selectedShip.name || null,
       spriteKey: selectedShip.spriteKey || null,
-      trait: selectedShip.trait?.label || null
+      trait: selectedShip.trait?.label || null,
+      unlocked: isShipUnlocked(selectedShip.spriteKey, getShipUnlockProgress()),
+      unlock: selectedShip.unlock || null
     } : null,
     player: player ? {
       x: Math.round(player.x),

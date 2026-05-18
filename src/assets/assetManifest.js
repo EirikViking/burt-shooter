@@ -6,6 +6,8 @@ export const AssetManifest = {
         bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
         bossDossier: '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
         bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
+        playerShips: Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
+        enemies: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/enemies/nova-enemy-${String(i + 1).padStart(2, '0')}.png`),
         introPanels: [
             '/art/generated/nova-swarm/nova-swarm-intro-last-arcade.webp',
             '/art/generated/nova-swarm/nova-swarm-intro-swarm-awakens.webp',
@@ -27,17 +29,7 @@ export const AssetManifest = {
         // Core Ships
         ships: Array.from({ length: 9 }, (_, i) => `/sprites/Ships/spaceShips_00${(i + 1).toString()}.png`),
         player: '/sprites/player/player_01.png',
-        playerRankShips: [
-            '/sprites/player/row2_ship_1.png',
-            '/sprites/player/row2_ship_2.png',
-            '/sprites/player/row2_ship_3_clean.png',
-            '/sprites/player/row2_ship_5.png',
-            '/sprites/player/ship_extract_1.png',
-            '/sprites/player/ship_extract_2.png',
-            '/sprites/player/ship_extract_3.png',
-            '/sprites/player/ship_extract_5.png',
-            '/sprites/player/ship_new.png'
-        ],
+        playerRankShips: Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
 
         // Core Enemies
         enemies: {

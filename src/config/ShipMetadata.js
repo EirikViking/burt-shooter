@@ -27,6 +27,7 @@ ShipVariantData.forEach(ship => {
     visuals: { ...ship.visuals },
     hitbox: { ...ship.hitbox },
     trait: ship.trait ? { ...ship.trait } : null,
+    unlock: ship.unlock ? { ...ship.unlock } : null,
     stats: {
       speed: ship.stats.speed,
       fireRate: ship.stats.fireRate,
@@ -37,15 +38,18 @@ ShipVariantData.forEach(ship => {
   };
 });
 
-// Preserve old save keys as aliases to the first visual variant of each base ship.
+// Preserve old save keys as aliases to the matching generated ship.
 ShipData.forEach(ship => {
   const alias = ShipVariantData.find(candidate => candidate.baseSpriteKey === ship.spriteKey);
   if (alias) {
-    ShipMetadata[ship.spriteKey] = {
+    const legacyKeys = [ship.spriteKey, ...(ship.legacySpriteKeys || [])];
+    legacyKeys.forEach(legacyKey => {
+      ShipMetadata[legacyKey] = {
       ...ShipMetadata[alias.spriteKey],
-      spriteKey: ship.spriteKey,
+      spriteKey: legacyKey,
       aliasFor: alias.spriteKey
     };
+    });
   }
 });
 
@@ -88,7 +92,7 @@ export function getAllShipMetadata() {
  * Get default ship sprite key
  */
 export function getDefaultShipKey() {
-  return 'row2_ship_1.png::ion';
+  return 'nova-player-ship-01.png';
 }
 
 /**
@@ -96,6 +100,68 @@ export function getDefaultShipKey() {
  */
 export function isValidShipKey(spriteKey) {
   return !!ShipMetadata[spriteKey];
+}
+
+const UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
+
+function readUnlockProgress() {
+  try {
+    if (typeof localStorage === 'undefined') return { bestScore: 0, bestRank: 0, bestLevel: 1 };
+    const raw = localStorage.getItem(UNLOCK_PROGRESS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return {
+      bestScore: Math.max(0, Number(parsed.bestScore) || 0),
+      bestRank: Math.max(0, Number(parsed.bestRank) || 0),
+      bestLevel: Math.max(1, Number(parsed.bestLevel) || 1)
+    };
+  } catch (e) {
+    console.warn('[ShipMetadata] Failed to read unlock progress:', e);
+    return { bestScore: 0, bestRank: 0, bestLevel: 1 };
+  }
+}
+
+export function getShipUnlockProgress() {
+  return readUnlockProgress();
+}
+
+export function updateShipUnlockProgress({ score = 0, rank = 0, level = 1 } = {}) {
+  try {
+    if (typeof localStorage === 'undefined') return readUnlockProgress();
+    const current = readUnlockProgress();
+    const next = {
+      bestScore: Math.max(current.bestScore, Math.floor(Number(score) || 0)),
+      bestRank: Math.max(current.bestRank, Math.floor(Number(rank) || 0)),
+      bestLevel: Math.max(current.bestLevel, Math.floor(Number(level) || 1))
+    };
+    localStorage.setItem(UNLOCK_PROGRESS_KEY, JSON.stringify(next));
+    return next;
+  } catch (e) {
+    console.warn('[ShipMetadata] Failed to update unlock progress:', e);
+    return readUnlockProgress();
+  }
+}
+
+export function getShipUnlockRequirement(spriteKey) {
+  const ship = getShipMetadata(spriteKey);
+  return ship?.unlock || { score: 0, rank: 0, label: 'Available now' };
+}
+
+export function getShipUnlockLabel(spriteKey) {
+  const requirement = getShipUnlockRequirement(spriteKey);
+  if (!requirement.score && !requirement.rank) return 'AVAILABLE NOW';
+  return `UNLOCK: ${Number(requirement.score || 0).toLocaleString('en-US')} SCORE OR RANK ${requirement.rank || 0}`;
+}
+
+export function isShipUnlocked(spriteKey, progress = readUnlockProgress()) {
+  const resolved = resolveShipKey(spriteKey);
+  const requirement = getShipUnlockRequirement(resolved);
+  if (!requirement.score && !requirement.rank) return true;
+  return progress.bestScore >= (requirement.score || 0) || progress.bestRank >= (requirement.rank || 0);
+}
+
+export function getUnlockedSelectableShips() {
+  const progress = readUnlockProgress();
+  return getSelectableShips().filter(ship => isShipUnlocked(ship.spriteKey, progress));
 }
 
 /**

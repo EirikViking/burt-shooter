@@ -1,7 +1,15 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { BonusAsset } from '../utils/BonusAsset.js';
-import { getSelectableShips, getDefaultShipKey, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
+import {
+  getSelectableShips,
+  getDefaultShipKey,
+  getShipUnlockLabel,
+  getShipUnlockProgress,
+  isShipUnlocked,
+  isValidShipKey,
+  resolveShipKey
+} from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
@@ -22,10 +30,11 @@ export class ShipSelectScene {
     this.lastPointerY = 0;
     this.statRanges = this.computeStatRanges(this.ships);
     this.baseOrder = [...new Set(this.ships.map(ship => ship.baseId).filter(Boolean))];
+    this.unlockProgress = getShipUnlockProgress();
 
     // Load saved selection
     const saved = this.loadSelection();
-    if (saved && isValidShipKey(saved)) {
+    if (saved && isValidShipKey(saved) && isShipUnlocked(saved, this.unlockProgress)) {
       const resolvedSaved = resolveShipKey(saved);
       const index = this.ships.findIndex(s => s.spriteKey === resolvedSaved);
       if (index >= 0) this.selectedIndex = index;
@@ -100,7 +109,7 @@ export class ShipSelectScene {
     // Fixed footer
     const footerContainer = new PIXI.Container();
     const instructions = createText(
-      '< / > TRIM  |  Q / E MODEL  |  R RANDOM  |  ENTER START',
+      '< / > SHIP  |  Q / E TIER JUMP  |  R RANDOM UNLOCKED  |  ENTER START',
       {
         fontFamily: 'Courier New',
         fontSize: 14,
@@ -295,6 +304,7 @@ export class ShipSelectScene {
     const container = new PIXI.Container();
     container.shipIndex = index;
     const variant = ship.visuals?.variant || null;
+    const locked = !isShipUnlocked(ship.spriteKey, this.unlockProgress);
     const accent = variant?.accent || 0x00ffff;
     const textAccent = this.getReadableAccent(variant);
     const glowColor = variant?.glow || variant?.tint || 0x00ff00;
@@ -356,6 +366,29 @@ export class ShipSelectScene {
 
       container.addChild(sprite);
       container.sprite = sprite;
+    }
+
+    if (locked) {
+      const lockPlate = new PIXI.Graphics();
+      lockPlate.roundRect(-108, -158, 216, 216, 10);
+      lockPlate.fill({ color: 0x020711, alpha: 0.62 });
+      lockPlate.stroke({ color: 0xffcc00, width: 2, alpha: 0.7 });
+      container.addChild(lockPlate);
+      container.lockPlate = lockPlate;
+
+      const lockText = createText('LOCKED', {
+        fontFamily: 'Courier New',
+        fontSize: 20,
+        fill: '#ffcc00',
+        align: 'center',
+        fontWeight: 'bold',
+        stroke: '#000000',
+        strokeThickness: 3
+      });
+      lockText.anchor.set(0.5);
+      lockText.position.set(0, -50);
+      container.addChild(lockText);
+      container.lockText = lockText;
     }
 
     // Holographic scan line effect
@@ -444,6 +477,7 @@ export class ShipSelectScene {
     container.statsText = stats;
 
     container.shipData = ship;
+    container.locked = locked;
     return container;
   }
 
@@ -473,7 +507,7 @@ export class ShipSelectScene {
       const targetX = offset * this.shipSpacing;
       const isCenter = (i === this.selectedIndex);
       const targetScale = isCenter ? this.centerScale : this.sideScale;
-      const targetAlpha = isCenter ? 1.0 : this.sideAlpha;
+      const targetAlpha = isCenter ? (shipContainer.locked ? 0.82 : 1.0) : (shipContainer.locked ? 0.34 : this.sideAlpha);
 
       // More dramatic tilt for side ships
       const targetRotation = isCenter ? 0 : (offset < 0 ? -0.15 : 0.15);
@@ -595,6 +629,8 @@ export class ShipSelectScene {
       if (shipContainer.descText) shipContainer.descText.visible = isCenter;
       if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
       if (shipContainer.statsText) shipContainer.statsText.visible = isCenter;
+      if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
+      if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;
     });
 
     if (!animate) {
@@ -619,6 +655,7 @@ export class ShipSelectScene {
 
     // Create buttons for center ship
     const ship = this.ships[this.selectedIndex];
+    const locked = ship ? !isShipUnlocked(ship.spriteKey, this.unlockProgress) : true;
     const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
     const buttonY = height - 80;
     const buttonWidth = 120;
@@ -645,14 +682,19 @@ export class ShipSelectScene {
     this.container.addChild(this.detailsButton);
 
     this.startButton = this.createButton(
-      'START',
+      locked ? 'LOCKED' : 'START',
       (width - buttonWidth * 2 - buttonSpacing) / 2 + buttonWidth + buttonSpacing,
       buttonY,
       buttonWidth,
       buttonHeight,
-      0x00ff00,
-      0x000000,
+      locked ? 0x2a2134 : 0x00ff00,
+      locked ? 0xffcc00 : 0x000000,
       () => {
+        if (locked) {
+          AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.7 });
+          this.updateSelectionInfo();
+          return;
+        }
         const spriteKey = ship.spriteKey;
         setSelectedShipKey(spriteKey);
         this.saveSelection(spriteKey);
@@ -747,21 +789,19 @@ export class ShipSelectScene {
   }
 
   navigateModel(delta) {
-    if (this.animating || !this.baseOrder.length) return;
-    const current = this.ships[this.selectedIndex];
-    const currentBaseIndex = Math.max(0, this.baseOrder.indexOf(current?.baseId));
-    const nextBase = this.baseOrder[(currentBaseIndex + delta + this.baseOrder.length) % this.baseOrder.length];
-    const currentVariant = current?.variantIndex ?? 0;
-    const nextIndex = this.ships.findIndex(ship => ship.baseId === nextBase && ship.variantIndex === currentVariant);
-    const fallbackIndex = this.ships.findIndex(ship => ship.baseId === nextBase);
-    this.navigateTo(nextIndex >= 0 ? nextIndex : fallbackIndex);
+    if (this.animating || this.ships.length <= 1) return;
+    const jump = 5;
+    const next = (this.selectedIndex + delta * jump + this.ships.length) % this.ships.length;
+    this.navigateTo(next);
   }
 
   navigateRandom() {
     if (this.animating || this.ships.length <= 1) return;
     let next = this.selectedIndex;
+    const unlocked = this.ships.filter(ship => isShipUnlocked(ship.spriteKey, this.unlockProgress));
+    const pool = unlocked.length ? unlocked : this.ships;
     for (let tries = 0; tries < 5 && next === this.selectedIndex; tries += 1) {
-      next = Math.floor(Math.random() * this.ships.length);
+      next = this.ships.indexOf(pool[Math.floor(Math.random() * pool.length)]);
     }
     this.navigateTo(next === this.selectedIndex ? (next + 1) % this.ships.length : next);
   }
@@ -771,9 +811,8 @@ export class ShipSelectScene {
     const ship = this.ships[this.selectedIndex];
     const modelIndex = Math.max(0, this.baseOrder.indexOf(ship?.baseId)) + 1;
     const modelTotal = Math.max(1, this.baseOrder.length);
-    const trimIndex = Number.isFinite(ship?.variantIndex) ? ship.variantIndex + 1 : 1;
-    const trimTotal = Math.max(1, this.ships.filter(candidate => candidate.baseId === ship?.baseId).length);
-    this.selectionInfoText.text = `SHIP ${this.selectedIndex + 1}/${this.ships.length}  |  MODEL ${modelIndex}/${modelTotal}  |  TRIM ${trimIndex}/${trimTotal}`;
+    const status = ship && isShipUnlocked(ship.spriteKey, this.unlockProgress) ? 'READY' : getShipUnlockLabel(ship?.spriteKey);
+    this.selectionInfoText.text = `SHIP ${this.selectedIndex + 1}/${this.ships.length}  |  TIER ${modelIndex}/${modelTotal}  |  ${status}`;
   }
 
   createButton(label, x, y, width, height, bgColor, textColor, onClick) {
@@ -1033,6 +1072,11 @@ FIR: ${fireRateBar}`;
         e.preventDefault();
         // Start game with selected ship
         const ship = this.ships[this.selectedIndex];
+        if (!isShipUnlocked(ship.spriteKey, this.unlockProgress)) {
+          AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.7 });
+          this.updateSelectionInfo();
+          return;
+        }
         setSelectedShipKey(ship.spriteKey);
         this.saveSelection(ship.spriteKey);
         this.game.startGame(ship.spriteKey);

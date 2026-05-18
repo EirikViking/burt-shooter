@@ -8,7 +8,7 @@ import { ShipSelectScene } from '../scenes/ShipSelectScene.js';
 import { ShipDetailsScene } from '../scenes/ShipDetailsScene.js';
 import { HighscoreScene } from '../scenes/HighscoreScene.js';
 import { rankManager } from '../managers/RankManager.js';
-import { getDefaultShipKey, incrementShipUsage, isValidShipKey } from '../config/ShipMetadata.js';
+import { getDefaultShipKey, incrementShipUsage, isShipUnlocked, isValidShipKey, updateShipUnlockProgress } from '../config/ShipMetadata.js';
 
 export class Game {
   constructor(app) {
@@ -109,7 +109,8 @@ export class Game {
   }
 
   async startGame(spriteKey) {
-    const selectedSpriteKey = isValidShipKey(spriteKey) ? spriteKey : getDefaultShipKey();
+    const candidateSpriteKey = isValidShipKey(spriteKey) ? spriteKey : getDefaultShipKey();
+    const selectedSpriteKey = isShipUnlocked(candidateSpriteKey) ? candidateSpriteKey : getDefaultShipKey();
     console.log('[Game] starting new game spriteKey=' + selectedSpriteKey);
     this.selectedShipSpriteKey = selectedSpriteKey;
 
@@ -178,6 +179,7 @@ export class Game {
 
     const prevRank = this.rankIndex;
     const computedRank = rankManager.getRankFromScore(this.score);
+    updateShipUnlockProgress({ score: this.score, rank: computedRank, level: this.level });
 
     // Always update current rank index source of truth
     this.rankIndex = computedRank;

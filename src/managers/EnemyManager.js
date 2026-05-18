@@ -7,6 +7,7 @@ import { BalanceConfig } from '../config/BalanceConfig.js';
 import { getMicroMessage } from '../text/phrasePool.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
+import { GENERATED_ENEMY_TYPES } from '../config/GeneratedEnemyProfiles.js';
 
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
@@ -161,13 +162,7 @@ export class EnemyManager {
     const waves = [];
     const patterns = ['GRID', 'V_SHAPE', 'ARC', 'BOX', 'SPIRAL', 'DOUBLE_ARC', 'STAGGERED_WING', 'PINCER'];
 
-    // Mix arcade enemy roles with fighter variants (player ships as enemies)
-    const enemyTypes = [
-      'chaser', 'bruiser', 'turret', 'striker', 'trickster',
-      'fighter_0', 'fighter_1', 'fighter_2',      // Light fighters
-      'fighter_3', 'fighter_4', 'fighter_5',      // Medium fighters
-      'fighter_6', 'fighter_7', 'fighter_8'       // Fast/special fighters
-    ];
+    const enemyTypes = GENERATED_ENEMY_TYPES;
 
     for (let i = 0; i < numWaves; i++) {
       let count = diff.waveEnemyBase + Math.floor(level * diff.waveEnemyPerLevel) + Math.floor(Math.random() * diff.waveEnemyRandom);
@@ -176,14 +171,13 @@ export class EnemyManager {
       let typeIndex = Math.min(Math.floor(level / 2) + Math.floor(i / 2), enemyTypes.length - 1);
       const pattern = patterns[Math.floor(Math.random() * patterns.length)];
 
-      // 60% chance for pure fighter squadron (all same ship type for visual cohesion)
-      const useFighterSquadron = Math.random() < 0.6; // Increased from 30% to 60%, starts level 1
+      // 60% chance for a pure generated squadron for visual cohesion.
+      const useFighterSquadron = Math.random() < 0.6;
       let selectedType;
 
       if (useFighterSquadron) {
-        // Pick a random fighter type for the whole squadron
-        const fighterTypes = ['fighter_0', 'fighter_1', 'fighter_2', 'fighter_3', 'fighter_4',
-                              'fighter_5', 'fighter_6', 'fighter_7', 'fighter_8'];
+        const upper = Math.min(enemyTypes.length, 8 + level * 4);
+        const fighterTypes = enemyTypes.slice(0, Math.max(5, upper));
         selectedType = fighterTypes[Math.floor(Math.random() * fighterTypes.length)];
       } else {
         // Normal progression through enemy types
@@ -204,24 +198,24 @@ export class EnemyManager {
   getCuratedWaves(level) {
     const scripts = {
       1: [
-        { type: 'chaser', count: 5, formation: 'TUTORIAL_ARC', entry: 'split', cadence: 0.82 },
-        { type: 'fighter_1', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.88 },
-        { type: 'bruiser', count: 5, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.82 }
+        { type: 'nova_enemy_01', count: 5, formation: 'TUTORIAL_ARC', entry: 'split', cadence: 0.82 },
+        { type: 'nova_enemy_04', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.88 },
+        { type: 'nova_enemy_07', count: 5, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.82 }
       ],
       2: [
-        { type: 'bruiser', count: 7, formation: 'GRID', entry: 'alternating', cadence: 0.96 },
-        { type: 'fighter_2', count: 8, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.08 },
-        { type: 'turret', count: 8, formation: 'BOX', entry: 'single', cadence: 1.12 }
+        { type: 'nova_enemy_10', count: 7, formation: 'GRID', entry: 'alternating', cadence: 0.96 },
+        { type: 'nova_enemy_13', count: 8, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.08 },
+        { type: 'nova_enemy_16', count: 8, formation: 'BOX', entry: 'single', cadence: 1.12 }
       ],
       3: [
-        { type: 'striker', count: 6, formation: 'ARC', entry: 'split', cadence: 1.16 },
-        { type: 'fighter_4', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.2 },
-        { type: 'turret', count: 7, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.28 }
+        { type: 'nova_enemy_19', count: 6, formation: 'ARC', entry: 'split', cadence: 1.16 },
+        { type: 'nova_enemy_22', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.2 },
+        { type: 'nova_enemy_25', count: 7, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.28 }
       ],
       4: [
-        { type: 'striker', count: 4, formation: 'ARC', entry: 'split', cadence: 1.45 },
-        { type: 'fighter_6', count: 5, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.42 },
-        { type: 'bruiser', count: 4, formation: 'DOUBLE_ARC', entry: 'alternating', cadence: 1.5 }
+        { type: 'nova_enemy_28', count: 4, formation: 'ARC', entry: 'split', cadence: 1.45 },
+        { type: 'nova_enemy_31', count: 5, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.42 },
+        { type: 'nova_enemy_34', count: 4, formation: 'DOUBLE_ARC', entry: 'alternating', cadence: 1.5 }
       ]
     };
     const script = scripts[level];
@@ -815,14 +809,7 @@ export class EnemyManager {
     const startX = startLeft ? -80 : screenW + 80;
     const waveColor = 'Red';
 
-    const addTypes = [
-      'fighter_0',
-      'fighter_1',
-      'fighter_2',
-      'fighter_4',
-      'fighter_6',
-      'chaser'
-    ];
+    const addTypes = ['nova_enemy_02', 'nova_enemy_09', 'nova_enemy_17', 'nova_enemy_26', 'nova_enemy_35', 'nova_enemy_44'];
 
     positions.forEach((pos, i) => {
       const enemyType = addTypes[(this.bossAddWaveCount + i) % addTypes.length];

@@ -19,6 +19,7 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { BUILD_ID } from '../buildInfo.js';
+import { getDefaultShipKey } from '../config/ShipMetadata.js';
 import { createText } from '../utils/pixiText.js';
 import {
   extendLevelIntroTexts,
@@ -254,7 +255,7 @@ export class PlayScene {
       if (this.player) {
         this.gameContainer.removeChild(this.player.sprite);
       }
-      const spriteKey = this.game.selectedShipSpriteKey || 'row2_ship_1.png';
+      const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
       console.log('[PlayScene] Assets ready, creating player with spriteKey=' + spriteKey);
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
       this.gameContainer.addChild(this.player.sprite);
@@ -279,7 +280,7 @@ export class PlayScene {
 
     // Create placeholder player immediately (will be replaced)
     if (!this.player) {
-      const spriteKey = this.game.selectedShipSpriteKey || 'row2_ship_1.png';
+      const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
       this.gameContainer.addChild(this.player.sprite);
       if (this.player.setRank) {
@@ -2455,7 +2456,10 @@ export class PlayScene {
     const maxWidth = Number.isFinite(options.maxWidth)
       ? options.maxWidth
       : (slot === 'corner' ? width * 0.45 : slot === 'top' ? width * 0.7 : width * 0.9);
-    const y = options.y || (slot === 'corner' ? height * 0.12 : slot === 'top' ? height * 0.18 : height * 0.2);
+    const requestedY = options.y || (slot === 'corner' ? height * 0.12 : slot === 'top' ? height * 0.18 : height * 0.2);
+    const y = slot === 'corner'
+      ? Math.min(height - 80, Math.max(requestedY, 156))
+      : requestedY;
 
     let display = null;
     if (options.banner) {
