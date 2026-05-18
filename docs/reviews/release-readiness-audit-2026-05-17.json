@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T11:32:43.015Z",
+  "generatedAt": "2026-05-18T11:39:33.978Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 18,
@@ -139,12 +139,12 @@
         {
           "path": "release/steamworks/human_review_packet.json",
           "ok": true,
-          "bytes": 6460
+          "bytes": 6744
         },
         {
           "path": "release/steamworks/human_review_packet.md",
           "ok": true,
-          "bytes": 3634
+          "bytes": 3948
         },
         {
           "path": "release/steamworks/steam_client_preflight_packet.json",
@@ -159,12 +159,12 @@
         {
           "path": "release/steamworks/release_handoff_packet.json",
           "ok": true,
-          "bytes": 6189
+          "bytes": 6449
         },
         {
           "path": "release/steamworks/release_handoff_packet.md",
           "ok": true,
-          "bytes": 3830
+          "bytes": 4085
         },
         {
           "path": "release/steamworks/store_metadata_draft.json",

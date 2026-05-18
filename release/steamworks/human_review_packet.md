@@ -1,9 +1,13 @@
 # Nova Swarm Human Review Packet
 
-Generated: 2026-05-18T11:22:26.478Z
+Generated: 2026-05-18T11:39:31.693Z
 Build: `v2026-05-18_11-49-26`
 
 This is a review map, not approval. Final approval must be recorded in `docs/reviews/2026-05-17-human-release-approval.md`.
+
+Guarded approval command after all gates are reviewed:
+
+`HUMAN_RELEASE_APPROVAL_CONFIRM=I_REVIEWED_NOVA_SWARM_RELEASE_CANDIDATE HUMAN_RELEASE_ALL_GATES_APPROVED=YES HUMAN_RELEASE_APPROVED_BY=<name> npm run steamworks:write-human-approval`
 
 ## Approval State
 
@@ -46,5 +50,5 @@ Pending gates:
 ## Notes
 
 - Use this packet as the human review map; do not mark approvals without actually reviewing the listed artifact or runtime behavior.
-- Record final decisions in docs/reviews/2026-05-17-human-release-approval.md.
+- Record final decisions in docs/reviews/2026-05-17-human-release-approval.md, or use the guarded approval writer after every gate is actually approved.
 - This packet does not replace Steam client install validation.

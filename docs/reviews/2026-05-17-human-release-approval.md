@@ -1,6 +1,14 @@
 # Human Release Approval - Pending
 
 This file is intentionally not approved yet. Change each gate to `approved` only after a real human review of the listed artifact or runtime behavior.
+After every gate is actually reviewed and approved, the guarded writer can update this file:
+
+```powershell
+$env:HUMAN_RELEASE_APPROVAL_CONFIRM='I_REVIEWED_NOVA_SWARM_RELEASE_CANDIDATE'
+$env:HUMAN_RELEASE_ALL_GATES_APPROVED='YES'
+$env:HUMAN_RELEASE_APPROVED_BY='<name>'
+npm run steamworks:write-human-approval
+```
 
 approvedBy: TBD
 approvedAt: TBD

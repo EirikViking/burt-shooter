@@ -27,6 +27,7 @@
     "verify:steam-rc": "node scripts/verify-steam-rc.mjs",
     "steamworks:handoff": "node scripts/write-steam-release-handoff.mjs",
     "steamworks:human-review": "node scripts/write-human-review-packet.mjs",
+    "steamworks:write-human-approval": "node scripts/write-human-release-approval.mjs",
     "steamworks:client-preflight": "node scripts/write-steam-client-preflight.mjs",
     "steamworks:write-client-validation": "node scripts/write-steam-client-validation-report.mjs",
     "audit:audio-mix": "node scripts/audit-audio-mix.mjs --md docs/reviews/2026-05-17-audio-mix-audit.md --json docs/reviews/audio-mix-audit-2026-05-17.json",

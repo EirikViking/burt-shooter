@@ -45,6 +45,7 @@ const store = readJson('release/steamworks/store_metadata_review_report.json');
 const fullRc = readJson('release/steamworks/full_rc_verification_report.json');
 const audit = readJson('docs/reviews/release-readiness-audit-2026-05-17.json');
 const approval = approvalState();
+const approvalWriteCommand = 'HUMAN_RELEASE_APPROVAL_CONFIRM=I_REVIEWED_NOVA_SWARM_RELEASE_CANDIDATE HUMAN_RELEASE_ALL_GATES_APPROVED=YES HUMAN_RELEASE_APPROVED_BY=<name> npm run steamworks:write-human-approval';
 
 const reviewAreas = [
   {
@@ -147,10 +148,11 @@ const packet = {
     hardFailures: audit.summary?.hardFailures ?? null
   } : null,
   approval,
+  approvalWriteCommand,
   reviewAreas,
   instructions: [
     'Use this packet as the human review map; do not mark approvals without actually reviewing the listed artifact or runtime behavior.',
-    'Record final decisions in docs/reviews/2026-05-17-human-release-approval.md.',
+    'Record final decisions in docs/reviews/2026-05-17-human-release-approval.md, or use the guarded approval writer after every gate is actually approved.',
     'This packet does not replace Steam client install validation.'
   ]
 };
@@ -168,6 +170,10 @@ Generated: ${data.generatedAt}
 Build: \`${data.build.version || 'unknown'}\`
 
 This is a review map, not approval. Final approval must be recorded in \`${data.approval.path}\`.
+
+Guarded approval command after all gates are reviewed:
+
+\`${data.approvalWriteCommand}\`
 
 ## Approval State
 
