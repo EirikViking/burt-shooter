@@ -239,16 +239,19 @@ async function captureIntroAndMenu(browser) {
   const page = await browser.newPage({ viewport });
   observePage(page, 'intro-menu');
   await page.goto(withQuery(baseUrl, { resetIntro: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(page, 'menu');
   await page.evaluate(() => {
-    try {
-      localStorage.removeItem('nova_swarm_intro_seen_v1');
-    } catch { }
+    const menu = window.__game?.scenes?.menu;
+    if (typeof menu?.openStoryIntro === 'function') {
+      menu.openStoryIntro();
+      return;
+    }
+    window.__game?.showIntro?.();
   });
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForScene(page, 'intro');
   await page.mouse.click(viewport.width * 0.5, viewport.height * 0.55);
   await page.waitForTimeout(1400);
-  await capture(page, '01-story-intro', 'Story intro cinematic', 'Generated intro art with narrator audio after user gesture.');
+  await capture(page, '01-story-intro', 'Optional story intro cinematic', 'Generated intro art launched from the main menu with narrator audio after user gesture.');
   await page.keyboard.press('Escape');
   await waitForScene(page, 'menu');
   await page.waitForTimeout(1800);

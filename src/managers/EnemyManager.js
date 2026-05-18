@@ -219,10 +219,9 @@ export class EnemyManager {
         { type: 'turret', count: 7, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.28 }
       ],
       4: [
-        { type: 'striker', count: 5, formation: 'ARC', entry: 'split', cadence: 1.34 },
-        { type: 'fighter_6', count: 6, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.28 },
-        { type: 'juggernaut', count: 3, formation: 'ARC', entry: 'alternating', cadence: 1.45 },
-        { type: 'trickster', count: 5, formation: 'ARC', entry: 'alternating', cadence: 1.4 }
+        { type: 'striker', count: 4, formation: 'ARC', entry: 'split', cadence: 1.45 },
+        { type: 'fighter_6', count: 5, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.42 },
+        { type: 'bruiser', count: 4, formation: 'DOUBLE_ARC', entry: 'alternating', cadence: 1.5 }
       ]
     };
     const script = scripts[level];

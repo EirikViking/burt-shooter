@@ -222,12 +222,15 @@ async function ensureUnpaused(page) {
 
 async function showIntroAndMenu(page) {
   await page.goto(withQuery(baseUrl, { resetIntro: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(page, 'menu', 30000);
   await page.evaluate(() => {
-    try {
-      localStorage.removeItem('nova_swarm_intro_seen_v1');
-    } catch {}
+    const menu = window.__game?.scenes?.menu;
+    if (typeof menu?.openStoryIntro === 'function') {
+      menu.openStoryIntro();
+      return;
+    }
+    window.__game?.showIntro?.();
   });
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForScene(page, 'intro', 30000);
   await page.mouse.click(viewport.width * 0.5, viewport.height * 0.55);
   await addBeat(page, 'story_intro_open', 4200);

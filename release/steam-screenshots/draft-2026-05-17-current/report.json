@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-05-18T05:55:39.705Z",
+  "generatedAt": "2026-05-18T10:25:36.993Z",
   "baseUrl": "http://127.0.0.1:4273",
   "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-screenshots\\draft-2026-05-17-current",
   "build": {
-    "version": "v2026-05-18_07-51-38",
-    "timestamp": "2026-05-18T05:51:38.402Z"
+    "version": "v2026-05-18_11-49-26",
+    "timestamp": "2026-05-18T09:49:26.907Z"
   },
   "viewport": {
     "width": 1280,
@@ -19,8 +19,8 @@
   "shots": [
     {
       "file": "01-story-intro.png",
-      "title": "Story intro cinematic",
-      "notes": "Generated intro art with narrator audio after user gesture.",
+      "title": "Optional story intro cinematic",
+      "notes": "Generated intro art launched from the main menu with narrator audio after user gesture.",
       "width": 1280,
       "height": 720,
       "scene": "intro",

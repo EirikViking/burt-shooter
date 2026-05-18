@@ -1,7 +1,7 @@
 # Nova Swarm Steam Client Preflight Packet
 
-Generated: 2026-05-18T06:10:19.296Z
-Build: `v2026-05-18_07-51-38`
+Generated: 2026-05-18T11:22:27.264Z
+Build: `v2026-05-18_11-49-26`
 Status: `ready_for_steam_upload_and_client_validation`
 
 This packet proves local upload preflight only. It is not Steam-client validation evidence.
@@ -11,9 +11,9 @@ This packet proves local upload preflight only. It is not Steam-client validatio
 - Executable: `release/desktop/win-unpacked/Nova Swarm.exe`
 - Product name: Nova Swarm
 - Electron app id: app.novaswarm.game
-- Packaged smoke report: `test-results/packaged-exe-smoke-2026-05-18T05-58-22-131Z/report.json`
-- Packaged controls report: `test-results/packaged-control-smoke-2026-05-18T05-58-39-428Z/report.json`
-- Full RC report: `test-results/steam-rc-verify-2026-05-18T05-32-30-342Z/report.json`
+- Packaged smoke report: `test-results/packaged-exe-smoke-2026-05-18T11-03-18-773Z/report.json`
+- Packaged controls report: `test-results/packaged-control-smoke-2026-05-18T11-03-54-289Z/report.json`
+- Full RC report: `test-results/steam-rc-verify-2026-05-18T11-01-55-047Z/report.json`
 
 ## SteamPipe
 
@@ -46,8 +46,8 @@ Copy `release/steamworks/client_validation_report.template.json` to `release/ste
 | yes | `release/desktop/win-unpacked/Nova Swarm.exe` | 226666496 |
 | yes | `release/steamworks/app_build_TEMPLATE.vdf` | 359 |
 | yes | `release/steamworks/client_validation_report.template.json` | 771 |
-| yes | `release/steamworks/desktop_package_review_report.json` | 2782 |
-| yes | `release/steamworks/full_rc_verification_report.json` | 3440 |
+| yes | `release/steamworks/desktop_package_review_report.json` | 2516 |
+| yes | `release/steamworks/full_rc_verification_report.json` | 3442 |
 | yes | `release/steamworks/steam_client_validation_runbook.md` | 3383 |
 | yes | `docs/reviews/2026-05-17-steamcmd-local-check.md` | 854 |
 

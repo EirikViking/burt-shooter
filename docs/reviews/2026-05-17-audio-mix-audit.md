@@ -1,6 +1,6 @@
 # Audio Mix Audit - 2026-05-18
 
-Generated: 2026-05-18T05:58:58.928Z
+Generated: 2026-05-18T11:04:15.976Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -15,7 +15,7 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 - Measured files: 106
 - Music rows: 13
-- SFX rows: 115
+- SFX rows: 119
 - Voice rows: 20
 - Warnings: 0
 - Errors: 0
@@ -60,7 +60,7 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | voice | wave_clear | objective_achieved.mp3 | -0.5 dB | -21.2 dB | -39.2 dB |
 | voice | mission_complete | mission_completed.mp3 | -1.5 dB | -21.7 dB | -35.6 dB |
 | voice | war_look_out | war_look_out.mp3 | -0.7 dB | -22.5 dB | -37.1 dB |
-| voice | intro_narrator_03 | intro_narrator_03.mp3 | -4.6 dB | -22.9 dB | -41.8 dB |
+| voice | intro_narrator_04 | intro_narrator_04.mp3 | -4.7 dB | -23.0 dB | -41.7 dB |
 | voice | powerup | power_up.mp3 | -0.9 dB | -23.0 dB | -35.7 dB |
 
 ## Quietest Effective Peaks
@@ -83,12 +83,12 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
 | voice | mission_control_game_over | mission_control_game_over.mp3 | -7.4 dB | -26.1 dB | -43.4 dB |
-| voice | intro_narrator_01 | intro_narrator_01.mp3 | -6.9 dB | -25.2 dB | -42.0 dB |
+| voice | intro_narrator_02 | intro_narrator_02.mp3 | -6.5 dB | -24.8 dB | -42.0 dB |
 | voice | mission_control_wave_clear | mission_control_wave_clear.mp3 | -4.7 dB | -24.3 dB | -42.0 dB |
 | voice | mission_control_powerup | mission_control_powerup.mp3 | -2.5 dB | -23.8 dB | -44.7 dB |
 | voice | war_target | war_target_engaged.mp3 | -1.6 dB | -23.7 dB | -40.1 dB |
 | voice | mission_control_level_start | mission_control_level_start.mp3 | -4.6 dB | -23.7 dB | -41.5 dB |
-| voice | intro_narrator_04 | intro_narrator_04.mp3 | -5.3 dB | -23.6 dB | -42.4 dB |
+| voice | intro_narrator_01 | intro_narrator_01.mp3 | -5.3 dB | -23.6 dB | -42.1 dB |
 | voice | mission_control_boss_inbound | mission_control_boss_inbound.mp3 | -5.3 dB | -23.6 dB | -41.4 dB |
 
 ## Warnings
