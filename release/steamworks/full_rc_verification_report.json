@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-18T02:22:25.079Z",
+  "generatedAt": "2026-05-18T02:59:55.512Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-18_04-04-26",
-    "timestamp": "2026-05-18T02:04:26.712Z"
+    "version": "v2026-05-18_04-37-28",
+    "timestamp": "2026-05-18T02:37:28.237Z"
   },
   "latestFullRc": {
-    "reportPath": "test-results/steam-rc-verify-2026-05-18T02-07-53-648Z/report.json",
-    "generatedAt": "2026-05-18T02:20:36.074Z",
+    "reportPath": "test-results/steam-rc-verify-2026-05-18T02-47-04-767Z/report.json",
+    "generatedAt": "2026-05-18T02:59:44.564Z",
     "mode": "full",
     "ok": true,
     "stageCount": 12,
@@ -15,69 +15,69 @@
       {
         "name": "build:current",
         "ok": true,
-        "durationMs": 14942
+        "durationMs": 14895
       },
       {
         "name": "check:provenance",
         "ok": true,
-        "durationMs": 654
+        "durationMs": 665
       },
       {
         "name": "check:steam-assets",
         "ok": true,
-        "durationMs": 2196
+        "durationMs": 2209
       },
       {
         "name": "check:steam-store",
         "ok": true,
-        "durationMs": 483
+        "durationMs": 491
       },
       {
         "name": "package:steam:win:current",
         "ok": true,
-        "durationMs": 51257
+        "durationMs": 49710
       },
       {
         "name": "desktop:smoke:current",
         "ok": true,
-        "durationMs": 4252
+        "durationMs": 4322
       },
       {
         "name": "desktop:smoke:packaged",
         "ok": true,
-        "durationMs": 12139
+        "durationMs": 11129
       },
       {
         "name": "check:desktop-package",
         "ok": true,
-        "durationMs": 493
+        "durationMs": 496
       },
       {
         "name": "check:live-deployment",
         "ok": true,
-        "durationMs": 709
+        "durationMs": 789
       },
       {
         "name": "audit:audio-mix",
         "ok": true,
-        "durationMs": 6444
+        "durationMs": 6417
       },
       {
         "name": "smoke",
         "ok": true,
-        "durationMs": 63098
+        "durationMs": 63241
       },
       {
         "name": "playtest:release",
         "ok": true,
-        "durationMs": 605738
+        "durationMs": 605405
       }
     ],
     "releaseAudit": {
       "verdict": "not_steam_ready",
-      "passed": 9,
-      "failed": 12,
-      "hardFailures": 9,
+      "passed": 10,
+      "failed": 11,
+      "hardFailures": 8,
       "manualBlockers": [
         "Steamworks app ID and depot ID are still not configured in tracked files.",
         "SteamPipe upload and Steam-client install/launch validation still require credentials and a real app.",
@@ -85,15 +85,15 @@
       ]
     },
     "audioAudit": {
-      "generatedAt": "2026-05-18T02:09:27.149Z",
+      "generatedAt": "2026-05-18T02:48:35.860Z",
       "decodeErrors": null,
       "warnings": 0
     }
   },
   "latestLocalSmoke": {
-    "reportPath": "test-results/smoke-2026-05-18T02-09-28-124Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-18T02-48-36-820Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "build": "v2026-05-18_04-04-26",
+    "build": "v2026-05-18_04-37-28",
     "status": "passed",
     "console": {
       "warningsOrErrors": 0,
@@ -104,18 +104,18 @@
     "coverage": null
   },
   "latestReleasePlaytest": {
-    "reportPath": "test-results/release-playtest-2026-05-18T02-10-31-237Z/report.json",
+    "reportPath": "test-results/release-playtest-2026-05-18T02-49-40-084Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "survivedMs": 599956,
+    "survivedMs": 599903,
     "requiredSurvivalMs": 599500,
     "survivedFullDuration": true,
     "peakLevel": 5,
-    "peakScore": 49645,
+    "peakScore": 59445,
     "finalState": {
       "scene": "play",
       "level": 5,
-      "lives": 2,
-      "score": 49645,
+      "lives": 3,
+      "score": 59445,
       "enemyManagerState": "BOSS_ACTIVE",
       "musicContext": "boss",
       "musicTrack": "DeathMatch (Boss Theme).mp3",

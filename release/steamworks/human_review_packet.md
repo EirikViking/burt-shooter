@@ -1,7 +1,7 @@
 # Nova Swarm Human Review Packet
 
-Generated: 2026-05-18T02:25:59.791Z
-Build: `v2026-05-18_04-04-26`
+Generated: 2026-05-18T02:59:55.978Z
+Build: `v2026-05-18_04-37-28`
 
 This is a review map, not approval. Final approval must be recorded in `docs/reviews/2026-05-17-human-release-approval.md`.
 

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T02:22:49.027Z",
+  "generatedAt": "2026-05-18T02:59:56.438Z",
   "status": "ready_for_steam_upload_and_client_validation",
   "build": {
-    "version": "v2026-05-18_04-04-26",
-    "timestamp": "2026-05-18T02:04:26.712Z"
+    "version": "v2026-05-18_04-37-28",
+    "timestamp": "2026-05-18T02:37:28.237Z"
   },
   "explicitLimit": "This packet proves local upload preflight only. It is not Steam-client validation evidence.",
   "localPayload": {
@@ -11,15 +11,15 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-18T02:08:56.466Z"
+      "modifiedAt": "2026-05-18T02:48:07.130Z"
     },
     "productName": "Nova Swarm",
     "appId": "app.novaswarm.game",
     "packagedExeSmoke": {
-      "reportPath": "test-results/packaged-exe-smoke-2026-05-18T02-09-07-882Z/report.json",
-      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T02-09-07-882Z/01-electron-menu.png",
+      "reportPath": "test-results/packaged-exe-smoke-2026-05-18T02-48-17-512Z/report.json",
+      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T02-48-17-512Z/01-electron-menu.png",
       "status": "passed",
-      "build": "v2026-05-18_04-04-26",
+      "build": "v2026-05-18_04-37-28",
       "title": "Nova Swarm - Arcade Patrol",
       "scene": "intro",
       "introTitle": "THE COIN SLOT WOKE UP",
@@ -37,20 +37,20 @@
       "consoleEvents": []
     },
     "fullRc": {
-      "reportPath": "test-results/steam-rc-verify-2026-05-18T02-07-53-648Z/report.json",
+      "reportPath": "test-results/steam-rc-verify-2026-05-18T02-47-04-767Z/report.json",
       "releasePlaytest": {
-        "reportPath": "test-results/release-playtest-2026-05-18T02-10-31-237Z/report.json",
+        "reportPath": "test-results/release-playtest-2026-05-18T02-49-40-084Z/report.json",
         "baseUrl": "http://127.0.0.1:4173",
-        "survivedMs": 599956,
+        "survivedMs": 599903,
         "requiredSurvivalMs": 599500,
         "survivedFullDuration": true,
         "peakLevel": 5,
-        "peakScore": 49645,
+        "peakScore": 59445,
         "finalState": {
           "scene": "play",
           "level": 5,
-          "lives": 2,
-          "score": 49645,
+          "lives": 3,
+          "score": 59445,
           "enemyManagerState": "BOSS_ACTIVE",
           "musicContext": "boss",
           "musicTrack": "DeathMatch (Boss Theme).mp3",
@@ -106,7 +106,7 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-18T02:08:56.466Z"
+      "modifiedAt": "2026-05-18T02:48:07.130Z"
     },
     {
       "path": "release/steamworks/app_build_TEMPLATE.vdf",
@@ -124,13 +124,13 @@
       "path": "release/steamworks/desktop_package_review_report.json",
       "exists": true,
       "bytes": 1864,
-      "modifiedAt": "2026-05-18T02:09:20.032Z"
+      "modifiedAt": "2026-05-18T02:48:28.661Z"
     },
     {
       "path": "release/steamworks/full_rc_verification_report.json",
       "exists": true,
-      "bytes": 3329,
-      "modifiedAt": "2026-05-18T02:22:25.080Z"
+      "bytes": 3330,
+      "modifiedAt": "2026-05-18T02:59:55.512Z"
     },
     {
       "path": "release/steamworks/steam_client_validation_runbook.md",

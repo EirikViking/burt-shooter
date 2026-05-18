@@ -57,6 +57,8 @@ export class EnemyManager {
     this.bossBlockLogged = false;
     this.levelStartTime = 0;
     this.bossSpawnedAtMs = 0;
+    this.bossAddWaveCooldownUntilMs = 0;
+    this.bossAddWaveCount = 0;
     this.directorState = { tier: 0, spawnCadenceScale: 1, eliteChance: 0.02, clutchDropChance: 0.04 };
     this.enemyShotCueCooldown = 0;
 
@@ -97,6 +99,8 @@ export class EnemyManager {
     this.bossDefeatCelebrated = false;
     this.bossBlockLogged = false;
     this.bossSpawnedAtMs = 0;
+    this.bossAddWaveCooldownUntilMs = 0;
+    this.bossAddWaveCount = 0;
 
     // Play Voice
     // Play Voice (TASK 1: Prevent duplicates per level)
@@ -787,28 +791,69 @@ export class EnemyManager {
   }
 
   spawnBossAdds(count = 6) {
-    const positions = this.getFormationPositions('ARC', count);
-    const screenW = this.game.getWidth();
-    const startX = Math.random() < 0.5 ? -80 : screenW + 80;
-    const waveColor = 'Red';
-
-    // 50% chance to spawn fighter squadron instead of standard enemies
-    const useFighters = Math.random() < 0.5;
-    let enemyType = 'chaser';
-
-    if (useFighters) {
-      // Random fighter type for variety
-      const fighterTypes = ['fighter_0', 'fighter_1', 'fighter_2', 'fighter_3', 'fighter_4',
-                            'fighter_5', 'fighter_6', 'fighter_7', 'fighter_8'];
-      enemyType = fighterTypes[Math.floor(Math.random() * fighterTypes.length)];
+    if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.level <= 1) {
+      return 0;
     }
 
+    const now = Date.now();
+    if (now < this.bossAddWaveCooldownUntilMs) {
+      return 0;
+    }
+
+    const activeAdds = this.enemies.filter(enemy =>
+      enemy?.kind === 'boss_add' && (enemy.active || enemy.waitingForEntry)
+    ).length;
+    const maxActiveAdds = Math.min(6, 3 + Math.floor(this.level / 2));
+    const spawnCount = Math.max(0, Math.min(count, maxActiveAdds - activeAdds));
+    if (spawnCount <= 0) {
+      this.bossAddWaveCooldownUntilMs = now + 1800;
+      return 0;
+    }
+
+    const positions = this.getFormationPositions('ARC', spawnCount);
+    const screenW = this.game.getWidth();
+    const startLeft = Math.random() < 0.5;
+    const startX = startLeft ? -80 : screenW + 80;
+    const waveColor = 'Red';
+
+    const addTypes = [
+      'fighter_0',
+      'fighter_1',
+      'fighter_2',
+      'fighter_4',
+      'fighter_6',
+      'chaser'
+    ];
+
     positions.forEach((pos, i) => {
+      const enemyType = addTypes[(this.bossAddWaveCount + i) % addTypes.length];
       const enemy = new Enemy(startX, -100, enemyType, this.level, this.game, waveColor);
-      enemy.startEntry(startX, -50, pos.x, pos.y + 40, 1600, i * 120);
+      enemy.kind = 'boss_add';
+      enemy.scoreValue = Math.max(25, Math.round((enemy.scoreValue || 30) * 0.75));
+      enemy.health = Math.min(enemy.health, 2 + Math.floor(this.level / 2));
+      enemy.maxHealth = enemy.health;
+      enemy.shootDelay = Math.round((enemy.shootDelay || 100) * 1.2);
+      enemy.radius = Math.max(13, Math.round((enemy.radius || 16) * 0.92));
+      enemy.startEntry(startX, -50, pos.x, pos.y + 40, 1350, i * 110);
       this.enemies.push(enemy);
       this.container.addChild(enemy.sprite);
     });
+
+    this.bossAddWaveCount += 1;
+    this.bossAddWaveCooldownUntilMs = now + 5200;
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.enqueueToast) {
+      playScene.enqueueToast('BOSS SUPPORT SQUAD!', {
+        fontSize: 18,
+        fill: '#ff8844',
+        slot: 'top',
+        type: 'boss_adds',
+        duration: 1200
+      });
+    }
+    AudioManager.playSfx('enemy_shoot', { volume: 0.18, minIntervalMs: 400 });
+    console.log(`[BossAdds] level=${this.level} spawned=${spawnCount} activeBefore=${activeAdds} cap=${maxActiveAdds} side=${startLeft ? 'left' : 'right'}`);
+    return spawnCount;
   }
 
   applyModifier(enemy) {

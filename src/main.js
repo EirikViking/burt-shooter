@@ -284,6 +284,9 @@ function buildGameTextState(game) {
     } : null,
     counts: {
       enemies: enemies.filter(enemy => enemy?.active !== false).length,
+      bossAdds: enemies.filter(enemy =>
+        enemy?.kind === 'boss_add' && (enemy.active !== false || enemy.waitingForEntry)
+      ).length,
       playerBullets: playerBullets.filter(bullet => bullet?.active !== false).length,
       enemyBullets: enemyBullets.filter(bullet => bullet?.active !== false).length,
       particles: playScene?.particleManager?.particles?.length || 0

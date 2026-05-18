@@ -11,6 +11,7 @@
     "build": "vite build",
     "build:current": "node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-audio-catalog.mjs && vite build",
     "check:ship-traits": "node scripts/check-ship-traits.mjs",
+    "check:boss-adds": "node scripts/check-boss-adds.mjs",
     "check:audio": "node scripts/check-audio-catalog.mjs",
     "check:provenance": "node scripts/check-asset-provenance.mjs",
     "check:desktop-package": "node scripts/check-desktop-package.mjs",

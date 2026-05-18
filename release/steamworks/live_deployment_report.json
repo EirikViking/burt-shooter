@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T02:09:20.732Z",
+  "generatedAt": "2026-05-18T02:48:29.444Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-18_04-04-26",
-    "timestamp": "2026-05-18T02:04:26.712Z"
+    "version": "v2026-05-18_04-37-28",
+    "timestamp": "2026-05-18T02:37:28.237Z"
   },
   "liveUrl": "https://burt.tinyfoundry.app",
   "versionChecks": [
@@ -11,15 +11,15 @@
       "url": "https://burt.tinyfoundry.app/version.json",
       "ok": true,
       "status": 200,
-      "version": "v2026-05-18_04-04-26",
-      "timestamp": "2026-05-18T02:04:26.712Z"
+      "version": "v2026-05-18_04-37-28",
+      "timestamp": "2026-05-18T02:37:28.237Z"
     }
   ],
   "latestLiveSmoke": {
-    "reportPath": "test-results/smoke-live-ship-traits-matter-2026-05-18T04-04/report.json",
+    "reportPath": "test-results/smoke-live-boss-adds-2026-05-18T04-37/report.json",
     "baseUrl": "https://burt.tinyfoundry.app",
     "status": "passed",
-    "build": "v2026-05-18_04-04-26",
+    "build": "v2026-05-18_04-37-28",
     "screenshots": [
       {
         "file": "01-menu.png",
