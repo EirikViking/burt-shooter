@@ -798,26 +798,8 @@ async function init() {
   const resizeCanvas = (layout) => {
     if (!app) return;
 
-    // On desktop, limit to reasonable dimensions and 16:9 aspect ratio
-    let canvasWidth = layout.width;
-    let canvasHeight = layout.height;
-
-    if (!layout.isMobile) {
-      // Enforce maximum width of 1280px (BASE_WIDTH) for consistent gameplay
-      const maxWidth = 1280;
-      const targetAspect = 16 / 9;
-
-      if (canvasWidth > maxWidth) {
-        canvasWidth = maxWidth;
-        canvasHeight = Math.round(canvasWidth / targetAspect);
-      } else {
-        const currentAspect = canvasWidth / canvasHeight;
-        if (currentAspect > targetAspect) {
-          // Too wide - limit width to maintain 16:9
-          canvasWidth = Math.round(canvasHeight * targetAspect);
-        }
-      }
-    }
+    const canvasWidth = Math.max(1, Math.round(layout.width));
+    const canvasHeight = Math.max(1, Math.round(layout.height));
 
     app.renderer.resize(canvasWidth, canvasHeight);
     const view = app.canvas || app.view;
