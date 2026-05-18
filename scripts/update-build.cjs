@@ -52,9 +52,9 @@ const headersContent = `
 /sw.js
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 
-# Long cache for immutable assets (vite handles hashing for assets)
+# Keep Vite assets revalidatable. A transient Pages fallback must not poison a module URL.
 /assets/*
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 `;
 
 // Append or create headers

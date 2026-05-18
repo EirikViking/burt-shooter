@@ -1681,21 +1681,26 @@ export class PlayScene {
       }
     }
 
-    // Fail-safe: if firing but no sound in >500ms, force recover once
-    if (!played && now - check.lastSoundTime > 500) {
-      AudioManager.playSfx(sfxKey, { force: true, pool: true, volume: 0.8 });
-      check.lastSoundTime = now;
-      check.shotsFired = 0;
-      if (!check.recoveredLogged) {
-        console.warn('[AudioFix] shooting sound recovered');
-        check.recoveredLogged = true;
+    const lastManagerSoundTime = AudioManager?.lastSfxPlayedAt?.[sfxKey] || AudioManager?.lastSfxPlayedAt?.shoot_small || 0;
+    const recentlyAudible = now - Math.max(check.lastSoundTime, lastManagerSoundTime) <= 500;
+    if (recentlyAudible) {
+      check.lastSoundTime = Math.max(check.lastSoundTime, lastManagerSoundTime);
+      if (played) {
+        check.shotsFired = 0;
+        check.recoveryAttempts = 0;
+        check.recoveredLogged = false;
       }
       return;
     }
 
-    const lastManagerSoundTime = AudioManager?.lastSfxPlayedAt?.[sfxKey] || AudioManager?.lastSfxPlayedAt?.shoot_small || 0;
-    const recentlyAudible = now - Math.max(check.lastSoundTime, lastManagerSoundTime) <= 500;
-    if (recentlyAudible) return;
+    // Fail-safe: if firing but no sound request has landed in >500ms, force recover once.
+    if (!played && now - check.lastSoundTime > 500) {
+      AudioManager.playSfx(sfxKey, { force: true, pool: true, volume: 0.8 });
+      check.lastSoundTime = now;
+      check.shotsFired = 0;
+      check.recoveredLogged = true;
+      return;
+    }
 
     // Health check: If we've fired 10+ shots with no recent sound
     if (check.shotsFired >= 10) {
@@ -1703,7 +1708,7 @@ export class PlayScene {
 
       // If it's been >5s since last recovery attempt and we're still shooting
       if (timeSinceRecovery > 5000) {
-        if (check.recoveryAttempts === 0) {
+        if (check.recoveryAttempts === 0 && AudioManager?.isVerboseDiagnostics?.()) {
           if (!window._hasLoggedAudioHealthCheck) {
             console.log('[PlayScene] Shooting sound health check: Attempting recovery (first attempt)');
             window._hasLoggedAudioHealthCheck = true;
@@ -1724,7 +1729,9 @@ export class PlayScene {
 
         // Rate limit recovery attempts
         if (check.recoveryAttempts > 3) {
-          console.warn('[PlayScene] Too many recovery attempts, stopping health check');
+          if (AudioManager?.isVerboseDiagnostics?.()) {
+            console.warn('[PlayScene] Too many recovery attempts, stopping health check');
+          }
           check.shotsFired = -999; // Disable further checks
         }
       }

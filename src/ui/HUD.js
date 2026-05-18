@@ -141,6 +141,33 @@ export class HUD {
     this.activePowerupGroup.visible = false;
     this.hudContainer.addChild(this.activePowerupGroup);
 
+    this.traitGroup = new PIXI.Container();
+    this.traitBg = new PIXI.Graphics();
+    this.traitBarBg = new PIXI.Graphics();
+    this.traitBarFill = new PIXI.Graphics();
+    this.traitLabel = createText('', {
+      fontFamily: 'Courier New',
+      fontSize: 11,
+      fontWeight: 'bold',
+      fill: '#ffb35c',
+      stroke: '#000000',
+      strokeThickness: 3
+    });
+    this.traitText = createText('', {
+      fontFamily: 'Courier New',
+      fontSize: 12,
+      fill: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 3
+    });
+    this.traitGroup.addChild(this.traitBg);
+    this.traitGroup.addChild(this.traitLabel);
+    this.traitGroup.addChild(this.traitText);
+    this.traitGroup.addChild(this.traitBarBg);
+    this.traitGroup.addChild(this.traitBarFill);
+    this.traitGroup.visible = false;
+    this.hudContainer.addChild(this.traitGroup);
+
     this.missionLabel = createText('MISSION STATUS', {
       fontFamily: 'Courier New',
       fontSize: 10,
@@ -232,6 +259,7 @@ export class HUD {
     }
 
     this.updateActivePowerup();
+    this.updateTraitMeter();
   }
 
   formatScore(score) {
@@ -367,6 +395,129 @@ export class HUD {
     return colors[type] || 0x00ffff;
   }
 
+  updateTraitMeter() {
+    const player = this.game?.scenes?.play?.player;
+    const state = player?.getTraitState ? player.getTraitState() : null;
+    if (!state?.label) {
+      this.traitGroup.visible = false;
+      return;
+    }
+
+    const event = this.getTraitMeterEvent(state);
+    const paddingX = 8;
+    const paddingY = 6;
+    const barHeight = 4;
+    const barGap = 4;
+    const label = `TRAIT: ${this.truncateLabel(state.label, 17)}`;
+    this.traitLabel.text = label;
+    this.traitText.text = event.text;
+    const width = Math.max(154, Math.min(228, Math.max(this.traitLabel.width, this.traitText.width) + paddingX * 2));
+    const textHeight = this.traitLabel.height + this.traitText.height + 1;
+    const height = textHeight + barGap + barHeight + paddingY * 2;
+
+    this.traitBg.clear();
+    this.traitBg.roundRect(0, 0, width, height, 8);
+    this.traitBg.fill({ color: 0x050914, alpha: 0.52 });
+    this.traitBg.stroke({ color: event.color, width: 1.2, alpha: 0.7 });
+
+    this.traitLabel.x = paddingX;
+    this.traitLabel.y = paddingY - 2;
+    this.traitText.x = paddingX;
+    this.traitText.y = paddingY + this.traitLabel.height - 2;
+
+    const barWidth = Math.max(24, width - paddingX * 2);
+    const barY = paddingY + textHeight + barGap - 3;
+    this.traitBarBg.clear();
+    this.traitBarBg.roundRect(paddingX, barY, barWidth, barHeight, 2);
+    this.traitBarBg.fill({ color: 0x231a14, alpha: 0.85 });
+    this.traitBarFill.clear();
+    this.traitBarFill.roundRect(paddingX, barY, Math.max(2, barWidth * event.progress), barHeight, 2);
+    this.traitBarFill.fill({ color: event.color, alpha: 0.96 });
+    this.traitGroup.visible = true;
+
+    const canvasWidth = this.game.getWidth ? this.game.getWidth() : 0;
+    if (canvasWidth) {
+      const margin = 10;
+      const powerupBottom = this.activePowerupGroup?.visible
+        ? this.activePowerupGroup.y + this.activePowerupGroup.height + 6
+        : 0;
+      const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 : 0;
+      const locationBottom = this.locationText ? this.locationText.y + this.locationText.height + 6 : 0;
+      this.traitGroup.x = canvasWidth - margin - width;
+      this.traitGroup.y = Math.max(powerupBottom, livesBottom, locationBottom);
+    }
+  }
+
+  getTraitMeterEvent(state) {
+    const candidates = [
+      {
+        every: Number(state.critEvery || 0),
+        remaining: Number(state.nextCritShotIn || 0),
+        text: 'OVERCHARGE',
+        color: 0xff8844
+      },
+      {
+        every: Number(state.pierceEvery || 0),
+        remaining: Number(state.nextPierceShotIn || 0),
+        text: 'PIERCE',
+        color: 0x8eeeff
+      },
+      {
+        every: Number(state.bonusShotEvery || 0),
+        remaining: Number(state.nextBonusShotIn || 0),
+        text: 'BONUS SHOT',
+        color: 0xffdd55
+      }
+    ].filter(item => item.every > 0 && item.remaining > 0);
+
+    if (candidates.length) {
+      candidates.sort((a, b) => a.remaining - b.remaining || a.every - b.every);
+      const next = candidates[0];
+      const progress = Math.max(0, Math.min(1, 1 - (next.remaining - 1) / next.every));
+      return {
+        text: next.remaining <= 1 ? `${next.text} READY` : `${next.text} IN ${next.remaining}`,
+        progress,
+        color: next.color
+      };
+    }
+
+    if (Number(state.dodgePulseRadius || 0) > 0) {
+      return {
+        text: 'DODGE PULSE READY',
+        progress: 1,
+        color: 0x66f7ff
+      };
+    }
+
+    if (Number(state.nearMissScoreMult || 1) > 1) {
+      return {
+        text: `NEAR MISS x${Number(state.nearMissScoreMult).toFixed(1)}`,
+        progress: 1,
+        color: 0xff66cc
+      };
+    }
+
+    if (Number(state.projectileRadiusMult || 1) !== 1) {
+      return {
+        text: 'WIDE SHOTS ACTIVE',
+        progress: 1,
+        color: 0xffb35c
+      };
+    }
+
+    return {
+      text: 'PASSIVE ACTIVE',
+      progress: 1,
+      color: 0xffb35c
+    };
+  }
+
+  truncateLabel(label, maxLength) {
+    const text = String(label || '').trim();
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, Math.max(1, maxLength - 1))}.`;
+  }
+
   applyLayout(layout = getCurrentLayout()) {
     if (!layout || typeof layout.width !== 'number') return;
 
@@ -428,6 +579,12 @@ export class HUD {
     if (this.activePowerupGroup) {
       this.activePowerupGroup.x = canvasWidth - margin - this.activePowerupGroup.width;
       this.activePowerupGroup.y = this.livesGroup.y + this.livesGroup.height + 6;
+    }
+    if (this.traitGroup) {
+      this.traitGroup.x = canvasWidth - margin - this.traitGroup.width;
+      this.traitGroup.y = this.activePowerupGroup?.visible
+        ? this.activePowerupGroup.y + this.activePowerupGroup.height + 6
+        : this.livesGroup.y + this.livesGroup.height + 6;
     }
   }
 
