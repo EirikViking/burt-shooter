@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T21:54:23.762Z",
+  "generatedAt": "2026-05-18T23:35:27.624Z",
   "status": "ready_for_human_review",
   "build": {
-    "version": "v2026-05-18_23-27-36",
-    "timestamp": "2026-05-18T21:27:36.676Z"
+    "version": "v2026-05-19_00-57-09",
+    "timestamp": "2026-05-18T22:57:09.423Z"
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
@@ -38,12 +38,12 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "exists": true,
-          "bytes": 2011835
+          "bytes": 7922255
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "exists": true,
-          "bytes": 1852
+          "bytes": 1984
         },
         {
           "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
@@ -86,12 +86,12 @@
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
           "exists": true,
-          "bytes": 8394370
+          "bytes": 8500551
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "exists": true,
-          "bytes": 476141
+          "bytes": 475407
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
@@ -134,7 +134,7 @@
         {
           "path": "release/steamworks/store_metadata_draft.json",
           "exists": true,
-          "bytes": 4360
+          "bytes": 4397
         },
         {
           "path": "release/steamworks/store_metadata_review_report.json",
@@ -144,7 +144,7 @@
         {
           "path": "docs/steam-store-handoff.md",
           "exists": true,
-          "bytes": 2379
+          "bytes": 2612
         }
       ],
       "prompt": "Approve short description, long description, feature bullets, tags, controller claim, and v1 deferrals for Steam Cloud and achievements."
@@ -182,7 +182,7 @@
         {
           "path": "release/steamworks/full_rc_verification_report.json",
           "exists": true,
-          "bytes": 3536
+          "bytes": 3539
         },
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",

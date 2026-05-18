@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-05-18T21:52:15.636Z",
+  "generatedAt": "2026-05-18T23:31:04.951Z",
   "baseUrl": "http://127.0.0.1:4373",
   "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current",
   "build": {
-    "version": "v2026-05-18_23-27-36",
-    "timestamp": "2026-05-18T21:27:36.676Z"
+    "version": "v2026-05-19_00-57-09",
+    "timestamp": "2026-05-18T22:57:09.423Z"
   },
   "viewport": {
     "width": 1280,
@@ -37,7 +37,7 @@
       "durationMs": 3000,
       "scene": "play",
       "level": 1,
-      "wave": 4,
+      "wave": 3,
       "audioContext": "gameplay"
     },
     {
@@ -45,7 +45,7 @@
       "durationMs": 5000,
       "scene": "play",
       "level": 1,
-      "wave": 4,
+      "wave": 3,
       "audioContext": "boss"
     },
     {
@@ -53,7 +53,7 @@
       "durationMs": 3200,
       "scene": "play",
       "level": 1,
-      "wave": 4,
+      "wave": 3,
       "audioContext": "victory"
     },
     {

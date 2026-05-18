@@ -28,12 +28,12 @@ export const BalanceConfig = {
         }
     },
 
-    // Difficulty (MUCH gentler curve - playable to level 10+)
+    // Difficulty: fast score-chaser tempo with boss pressure every level.
     difficulty: {
-        // Global incoming-pressure scalar (10% easier overall)
+        // Global incoming-pressure scalar keeps faster progression readable.
         pressureScalar: 0.9,
         baseEnemyHealthMultiplier: 0.9, // Lower HP baseline
-        hpScalePerLevel: 0.04, // HALVED from 0.08 - much gentler HP growth
+        hpScalePerLevel: 0.035, // Gentle HP growth so levels turn over briskly
 
         enemySpeedMultiplier: 0.88, // Lower global speed
         enemySpeedPerLevel: 0.01, // HALVED from 0.02 - much slower speed increase
@@ -42,18 +42,25 @@ export const BalanceConfig = {
         enemyFireChance: 0.005, // Reduced from 0.006 - less frequent shooting
         enemyProjectileSpeed: 3.0, // Slower enemy bullets (from 3.2)
 
-        waveCountBase: 3, // Base waves per level
-        waveCountPerLevel: 5, // Add wave every 5 levels (was 4)
-        waveCountMax: 5, // Cap waves
+        waveCountBase: 2, // Early sectors are short: two waves, then boss
+        waveCountPerLevel: 6, // Add a third wave after level 6
+        waveCountMax: 3, // Keep level 10 reachable in a normal session
 
-        waveEnemyBase: 6, // Reduced from 7
-        waveEnemyPerLevel: 0.3, // HALVED from 0.6 - much slower enemy count growth
+        waveEnemyBase: 4, // Faster waves; boss remains the level anchor
+        waveEnemyPerLevel: 0.25, // Controlled count growth
         waveEnemyRandom: 1, // Reduced from 2
-        waveEnemyMax: 15, // Reduced cap from 18
-        waveDelayMs: 2800, // Longer pause between waves (from 2400)
+        waveEnemyMax: 12, // Prevent late-level filler walls
+        waveDelayMs: 1100, // Briefing duration between normal waves
+        waveBriefingAnnounceMs: 450,
+        waveCleanupMs: 1200,
+        enemyEntryDurationMs: 1450,
+        enemyEntryDelayBaseMs: 115,
+        bossGateMs: 760,
+        challengeWaveChance: 0.035,
+        challengeWaveCount: 14,
 
-        bossBaseHealth: 120, // Reduced from 139
-        bossHealthPerLevel: 35, // REDUCED from 60 - much slower boss HP growth
+        bossBaseHealth: 88,
+        bossHealthPerLevel: 16,
         bossShootDelayBase: 30, // Fair first boss cadence
         bossShootDelayPhase2: 20, // Escalates without becoming instant bullet spam
         bossShootDelayPhase3: 15, // Still dangerous, but dodgeable
@@ -78,6 +85,6 @@ export const BalanceConfig = {
     // Levels
     level: {
         completionBonus: 1000,
-        sequenceDuration: 2000 // ms
+        sequenceDuration: 1750 // ms between boss clear and next sector
     }
 };

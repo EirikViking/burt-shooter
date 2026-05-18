@@ -158,7 +158,10 @@ export class EnemyManager {
     const curatedWaves = this.getCuratedWaves(level);
     if (curatedWaves) return curatedWaves;
 
-    const numWaves = Math.min(diff.waveCountBase + Math.floor(level / diff.waveCountPerLevel), diff.waveCountMax);
+    const numWaves = Math.min(
+      diff.waveCountBase + Math.floor(Math.max(0, level - 1) / diff.waveCountPerLevel),
+      diff.waveCountMax
+    );
     const waves = [];
     const patterns = ['GRID', 'V_SHAPE', 'ARC', 'BOX', 'SPIRAL', 'DOUBLE_ARC', 'STAGGERED_WING', 'PINCER'];
 
@@ -199,23 +202,19 @@ export class EnemyManager {
     const scripts = {
       1: [
         { type: 'nova_enemy_01', count: 5, formation: 'TUTORIAL_ARC', entry: 'split', cadence: 0.82 },
-        { type: 'nova_enemy_04', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.88 },
-        { type: 'nova_enemy_07', count: 5, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.82 }
+        { type: 'nova_enemy_04', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.92 }
       ],
       2: [
-        { type: 'nova_enemy_10', count: 7, formation: 'GRID', entry: 'alternating', cadence: 0.96 },
-        { type: 'nova_enemy_13', count: 8, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.08 },
-        { type: 'nova_enemy_16', count: 8, formation: 'BOX', entry: 'single', cadence: 1.12 }
+        { type: 'nova_enemy_10', count: 6, formation: 'GRID', entry: 'alternating', cadence: 1.02 },
+        { type: 'nova_enemy_13', count: 7, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.12 }
       ],
       3: [
-        { type: 'nova_enemy_19', count: 6, formation: 'ARC', entry: 'split', cadence: 1.16 },
-        { type: 'nova_enemy_22', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.2 },
-        { type: 'nova_enemy_25', count: 7, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 1.28 }
+        { type: 'nova_enemy_19', count: 6, formation: 'ARC', entry: 'split', cadence: 1.18 },
+        { type: 'nova_enemy_22', count: 7, formation: 'PINCER', entry: 'alternating', cadence: 1.28 }
       ],
       4: [
-        { type: 'nova_enemy_28', count: 4, formation: 'ARC', entry: 'split', cadence: 1.45 },
-        { type: 'nova_enemy_31', count: 5, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.42 },
-        { type: 'nova_enemy_34', count: 4, formation: 'DOUBLE_ARC', entry: 'alternating', cadence: 1.5 }
+        { type: 'nova_enemy_28', count: 5, formation: 'ARC', entry: 'split', cadence: 1.4 },
+        { type: 'nova_enemy_31', count: 6, formation: 'DOUBLE_ARC', entry: 'alternating', cadence: 1.48 }
       ]
     };
     const script = scripts[level];
@@ -302,8 +301,8 @@ export class EnemyManager {
             this.cleanupPhase = 'CLEARING';
           }
 
-          // Phase 2: Clear all bonus drones after 2 seconds
-          if (this.cleanupTimer > 2000 && this.cleanupPhase === 'CLEARING') {
+          const waveCleanupMs = BalanceConfig.difficulty.waveCleanupMs || 2000;
+          if (this.cleanupTimer > waveCleanupMs && this.cleanupPhase === 'CLEARING') {
             const clearedCount = allTargets.length;
             this.forceClearAllEnemies();
 
@@ -324,11 +323,14 @@ export class EnemyManager {
 
       case 'WAVE_BRIEFING':
         this.waveBriefingTimer += delta * 16.67;
-        if (!this.waveBriefingAnnounced && this.waveBriefingTimer >= 650) {
+        const diff = BalanceConfig.difficulty;
+        const announceMs = diff.waveBriefingAnnounceMs || 650;
+        const briefingMs = diff.waveDelayMs || 1600;
+        if (!this.waveBriefingAnnounced && this.waveBriefingTimer >= announceMs) {
           this.announceWaveBriefing();
           this.waveBriefingAnnounced = true;
         }
-        if (this.waveBriefingTimer >= 1600 && this.pendingWaveConfig) {
+        if (this.waveBriefingTimer >= briefingMs && this.pendingWaveConfig) {
           const config = this.pendingWaveConfig;
           this.pendingWaveConfig = null;
           this.waveBriefingTimer = 0;
@@ -350,8 +352,8 @@ export class EnemyManager {
           else if (playScene.showWantedPoster) playScene.showWantedPoster();
         }
 
-        // After gate duration (1000ms), spawn boss and enter BOSS_ACTIVE
-        if (this.bossGateTimer > 1000 && !this.bossSpawning) {
+        const bossGateMs = BalanceConfig.difficulty.bossGateMs || 1000;
+        if (this.bossGateTimer > bossGateMs && !this.bossSpawning) {
           this.logBossStatus('boss_gate_spawn');
           console.log(`[BossFlow] spawn boss level=${this.level}`);
           AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 2500, duckMs: 2400 });
@@ -615,15 +617,17 @@ export class EnemyManager {
       this.game.scenes.play.showToast(label, { fontSize: 20, fill: '#ffaa00', y: 130, duration: 2000 });
     }
 
+    const diff = BalanceConfig.difficulty;
     const cadence = (this.directorState?.spawnCadenceScale || 1) * (config.cadence || 1);
-    const delayStep = Math.max(60, 150 / cadence);
+    const delayStep = Math.max(55, (diff.enemyEntryDelayBaseMs || 150) / cadence);
+    const entryDurationMs = diff.enemyEntryDurationMs || 2000;
     const eliteChance = this.directorState?.eliteChance || 0.02;
     positions.forEach((pos, i) => {
       const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
       const enemy = new Enemy(startX, -100, type, this.level, this.game, waveColor);
       this.applyModifier(enemy);
       if (Math.random() < eliteChance) enemy.applyElite?.();
-      enemy.startEntry(startX, -50, pos.x, pos.y, 2000, i * delayStep);
+      enemy.startEntry(startX, -50, pos.x, pos.y, entryDurationMs, i * delayStep);
       this.enemies.push(enemy);
       this.container.addChild(enemy.sprite);
     });
@@ -900,17 +904,16 @@ export class EnemyManager {
       AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 2600, duckMs: 2200 });
     }
 
-    // Logic to potentially inject a Challenge Wave
-    // Criteria: Not boss level, not first wave, chance 8%, not back-to-back
+    // Logic to potentially inject a short score-risk challenge wave.
     if (this.level > 1 && hasUpcomingWave && this.currentWaveIndex > 0) {
-      // 8% Chance
-      if (Math.random() < 0.08) {
+      const challengeWaveChance = BalanceConfig.difficulty.challengeWaveChance ?? 0.08;
+      if (Math.random() < challengeWaveChance) {
         const wasChallenge = clearedWave && clearedWave.isChallenge;
         if (!wasChallenge) {
           console.log('[EnemyManager] injecting bonus drone challenge wave');
           this.waves.splice(this.currentWaveIndex + 1, 0, {
             type: 'bonus_challenge',
-            count: 24,
+            count: BalanceConfig.difficulty.challengeWaveCount || 24,
             formation: 'GRID',
             isChallenge: true
           });

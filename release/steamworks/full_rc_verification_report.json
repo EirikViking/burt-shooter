@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-18T21:54:23.219Z",
+  "generatedAt": "2026-05-18T23:35:23.065Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-18_23-27-36",
-    "timestamp": "2026-05-18T21:27:36.676Z"
+    "version": "v2026-05-19_00-57-09",
+    "timestamp": "2026-05-18T22:57:09.423Z"
   },
   "latestFullRc": {
-    "reportPath": "test-results/steam-rc-verify-2026-05-18T21-34-54-911Z/report.json",
-    "generatedAt": "2026-05-18T21:48:26.388Z",
+    "reportPath": "test-results/steam-rc-verify-2026-05-18T23-12-36-820Z/report.json",
+    "generatedAt": "2026-05-18T23:26:20.158Z",
     "mode": "full",
     "ok": true,
     "stageCount": 14,
@@ -15,72 +15,72 @@
       {
         "name": "build:current",
         "ok": true,
-        "durationMs": 20862
+        "durationMs": 18412
       },
       {
         "name": "check:intro-voice",
         "ok": true,
-        "durationMs": 4001
+        "durationMs": 4007
       },
       {
         "name": "check:provenance",
         "ok": true,
-        "durationMs": 678
+        "durationMs": 682
       },
       {
         "name": "check:steam-assets",
         "ok": true,
-        "durationMs": 2269
+        "durationMs": 3369
       },
       {
         "name": "check:steam-store",
         "ok": true,
-        "durationMs": 524
+        "durationMs": 500
       },
       {
         "name": "package:steam:win:current",
         "ok": true,
-        "durationMs": 52543
+        "durationMs": 57990
       },
       {
         "name": "desktop:smoke:current",
         "ok": true,
-        "durationMs": 2628
+        "durationMs": 4015
       },
       {
         "name": "desktop:smoke:packaged",
         "ok": true,
-        "durationMs": 36632
+        "durationMs": 40720
       },
       {
         "name": "desktop:controls:packaged",
         "ok": true,
-        "durationMs": 5564
+        "durationMs": 7764
       },
       {
         "name": "check:desktop-package",
         "ok": true,
-        "durationMs": 1011
+        "durationMs": 1003
       },
       {
         "name": "check:live-deployment",
         "ok": true,
-        "durationMs": 1435
+        "durationMs": 1400
       },
       {
         "name": "audit:audio-mix",
         "ok": true,
-        "durationMs": 7333
+        "durationMs": 10123
       },
       {
         "name": "smoke",
         "ok": true,
-        "durationMs": 69641
+        "durationMs": 66697
       },
       {
         "name": "playtest:release",
         "ok": true,
-        "durationMs": 606335
+        "durationMs": 606337
       }
     ],
     "releaseAudit": {
@@ -95,15 +95,15 @@
       ]
     },
     "audioAudit": {
-      "generatedAt": "2026-05-18T21:37:10.361Z",
+      "generatedAt": "2026-05-18T23:15:07.062Z",
       "decodeErrors": null,
       "warnings": 0
     }
   },
   "latestLocalSmoke": {
-    "reportPath": "test-results/smoke-2026-05-18T21-37-11-542Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-18T23-15-08-223Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "build": "v2026-05-18_23-27-36",
+    "build": "v2026-05-19_00-57-09",
     "status": "passed",
     "console": {
       "warningsOrErrors": 0,
@@ -114,18 +114,18 @@
     "coverage": null
   },
   "latestReleasePlaytest": {
-    "reportPath": "test-results/release-playtest-2026-05-18T21-38-21-035Z/report.json",
+    "reportPath": "test-results/release-playtest-2026-05-18T23-16-14-801Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "survivedMs": 599940,
+    "survivedMs": 599986,
     "requiredSurvivalMs": 599500,
     "survivedFullDuration": true,
-    "peakLevel": 6,
-    "peakScore": 70008,
+    "peakLevel": 10,
+    "peakScore": 66356,
     "finalState": {
       "scene": "play",
-      "level": 6,
+      "level": 10,
       "lives": 3,
-      "score": 70008,
+      "score": 66356,
       "enemyManagerState": "WAVE_ACTIVE",
       "musicContext": "gameplay",
       "musicTrack": "Rain of Lasers.mp3",

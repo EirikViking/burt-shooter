@@ -707,7 +707,7 @@ export class PlayScene {
               shipSprite.scale.set(baseScale);
             }
           }
-        }, 3000);
+        }, BalanceConfig.level.sequenceDuration || 3000);
       }
 
       this.hud.update();

@@ -468,3 +468,83 @@ After: phase shifts now move the threat shape, change the signature, and preserv
 - Trailer and screenshot capture still need to show the improved boss variety earlier and more clearly.
 - Level-10 pacing remains too slow for the desired arcade tempo.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 11 - Faster Level-10 Progression Tempo
+
+### What Was Tested
+
+- Built the game on build `v2026-05-19_00-57-09`.
+- Added and ran `npm run check:progression-tempo`.
+- Ran local smoke, two 10-minute release playtests during tuning, live private-domain smoke, and live deployment verification.
+
+### What Felt Too Slow
+
+- The previous 10-minute release playtest only peaked at level 6, which made level 10 feel like a 15-20 minute target instead of a normal exciting session.
+- Later sectors carried too many normal waves before the boss, burying the boss-every-level hook behind filler.
+- Boss HP growth was safe but too grindy for a score-chaser that should keep players thinking "one more run."
+
+### What Changed
+
+- Early sectors now use two focused normal waves before the boss.
+- Levels 7-10 cap at three normal waves before the boss instead of drifting toward five-wave sectors.
+- Between-wave briefing, wave cleanup, enemy entry, boss gate, and level-advance waits are now explicit balance constants.
+- Boss HP growth was trimmed from `120 + 35 per level` before the boss loop to `88 + 16 per level` in this tempo pass.
+- Bonus challenge waves are rarer and shorter, preserving their surprise value without dragging the run.
+- Added `scripts/check-progression-tempo.mjs` to enforce 24 or fewer normal waves before level 10, 137 normal enemies in the current plan, and level-10 boss HP under 300.
+
+### Before And After Feel
+
+Before: the game survived well but level 10 was too far away for the intended arcade tempo.
+
+After: a full 10-minute release playtest reached level 10 alive, with 3 lives, score 64,719, zero console/page/network failures, and boss-every-level still intact.
+
+### Evidence Captured
+
+- Progression tempo check: `test-results/progression-tempo-2026-05-18T22-57-10-297Z/report.json`.
+- Local smoke: `test-results/smoke-2026-05-18T22-57-33-823Z/report.json`.
+- Final release playtest: `test-results/release-playtest-2026-05-18T22-58-43-832Z/report.json`.
+- Deployed build: `https://b897b921.burt-game.pages.dev`.
+- Live private-domain smoke: `test-results/smoke-live-progression-2026-05-19T00-57/report.json`.
+- Live deployment check: `release/steamworks/live_deployment_report.json`.
+
+### Remaining Top Risks
+
+- Trailer and screenshot evidence still need to show the faster boss tempo and level-10 ambition more clearly.
+- The current local fallback announcer is structurally better, but not yet the premium licensed voice performance the game ultimately wants.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 12 - Current-Build Steam Media And Handoff Refresh
+
+### What Was Tested
+
+- Refreshed canonical Steam screenshots, upload candidates/contact sheet, trailer visual/audio/candidate evidence, provenance, Steam asset review, release handoff packets, and release-readiness audit for build `v2026-05-19_00-57-09`.
+- Reran the required handoff chain: `npm run steamworks:payload-manifest`, `npm run check:full-rc`, `npm run steamworks:human-review`, `npm run steamworks:client-preflight`, `npm run steamworks:handoff`, and `npm run audit:release-readiness`.
+
+### What Was Stale
+
+- The first handoff attempt after the progression pass correctly rejected stale Steam media evidence because the screenshot and trailer reports still referenced the previous `v2026-05-18_23-27-36` build.
+- The upload-candidate README still named the older build even after the screenshots themselves were refreshed.
+
+### What Changed
+
+- Re-captured `release/steam-screenshots/draft-2026-05-17-current/` from the live current build.
+- Rebuilt `release/steam-screenshots/steam-upload-candidates-2026-05-17/` and regenerated `steam_upload_candidate_sheet.png`.
+- Re-captured `release/steam-trailer/draft-2026-05-17-current/`, rerendered trailer audio, and regenerated `release/steam-trailer/candidate-2026-05-17-current/`.
+- Updated the screenshot shortlist README to record build `v2026-05-19_00-57-09` and the current tractor-beam, typography, voice, boss-variety, and faster-progression state.
+- Regenerated human-review, Steam-client preflight, handoff, and release-readiness evidence after the media refresh.
+
+### Evidence Captured
+
+- Full RC: `test-results/steam-rc-verify-2026-05-18T23-12-36-820Z/report.json`.
+- Full-RC release playtest: `test-results/release-playtest-2026-05-18T23-16-14-801Z/report.json`.
+- Steam screenshots: `release/steam-screenshots/draft-2026-05-17-current/report.json`.
+- Upload shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png`.
+- Trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`.
+- Payload manifest: `release/steamworks/steam_payload_manifest.json`.
+- Handoff packet: `release/steamworks/release_handoff_packet.json`.
+- Release-readiness audit: `docs/reviews/release-readiness-audit-2026-05-17.json`.
+
+### Remaining Top Risks
+
+- Steam media is current-build again, but the trailer still needs a more ruthless first-10-seconds cut around boss proof and one surprising mechanic.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
