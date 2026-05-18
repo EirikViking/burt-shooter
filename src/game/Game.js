@@ -36,7 +36,7 @@ export class Game {
   }
 
   start() {
-    this.switchScene(IntroScene.shouldShow() ? 'intro' : 'menu');
+    this.switchScene('menu');
   }
 
   showIntro() {

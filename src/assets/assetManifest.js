@@ -5,11 +5,12 @@ export const AssetManifest = {
         stormGameplayBackdrop: '/art/generated/nova-swarm/nova-swarm-storm-gameplay-backdrop.webp',
         bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
         bossDossier: '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
+        bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
         introPanels: [
-            '/art/generated/nova-swarm/nova-swarm-intro-launch.webp',
-            '/art/generated/nova-swarm/nova-swarm-intro-formations.webp',
-            '/art/generated/nova-swarm/nova-swarm-intro-hero-run.webp',
-            '/art/generated/nova-swarm/nova-swarm-intro-boss-arena.webp'
+            '/art/generated/nova-swarm/nova-swarm-intro-last-arcade.webp',
+            '/art/generated/nova-swarm/nova-swarm-intro-swarm-awakens.webp',
+            '/art/generated/nova-swarm/nova-swarm-intro-small-ship.webp',
+            '/art/generated/nova-swarm/nova-swarm-intro-boss-chorus.webp'
         ],
         shipHangar: '/art/generated/nova-swarm/nova-swarm-ship-hangar.webp',
         crewPortraits: [

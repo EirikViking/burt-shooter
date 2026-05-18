@@ -49,6 +49,19 @@ Prompt summary:
 - License: SIL Open Font License, bundled as `public/fonts/OFL-Orbitron.txt` and `public/fonts/OFL-Rajdhani.txt`, pending the same final human provenance/legal approval as the rest of the Steam package.
 - Usage: `src/styles.css` defines local `@font-face` rules, and `src/scenes/MenuScene.js` uses the fonts for the title, menu buttons, subtitle, and now-clickable Navigator/Pilot operator cards.
 
+## 2026-05-18 Story Intro And Boss Atlas Regeneration
+
+- Intro source atlas: `public/art/generated/nova-swarm/nova-swarm-intro-story-atlas-20260518-source.png`
+- Intro runtime assets: `public/art/generated/nova-swarm/nova-swarm-intro-last-arcade.webp`, `public/art/generated/nova-swarm/nova-swarm-intro-swarm-awakens.webp`, `public/art/generated/nova-swarm/nova-swarm-intro-small-ship.webp`, `public/art/generated/nova-swarm/nova-swarm-intro-boss-chorus.webp`
+- Boss source atlases: `public/art/generated/nova-swarm/bosses/sheets/nova-boss-atlas-01-source.png` through `nova-boss-atlas-05-source.png`
+- Boss runtime assets: `public/art/generated/nova-swarm/bosses/nova-boss-01.png` through `nova-boss-50.png`, plus `nova-boss-contact-sheet-20260518.jpg` for human review.
+- Optimization: built-in Codex imagegen outputs copied from `C:\Users\cromk\.codex\generated_images\019e34df-5e3d-7ff1-a55a-261de494a1e9`; intro atlas cropped to four `1920x1080` WebP panels at quality `86`; boss sheets split into 50 cells, chroma-keyed with `C:\Users\cromk\.codex\skills\.system\imagegen\scripts\remove_chroma_key.py`, trimmed, and padded to `512x512` PNG with alpha.
+- Usage: `src/scenes/IntroScene.js` uses the regenerated story panels; `src/config/BossRoster.js`, `src/assets/assetManifest.js`, `src/game/BossFactory.js`, and `src/entities/Boss.js` use the 50 generated bosses as the primary boss visual set with distinct roster profiles.
+
+Prompt summary:
+
+> Four-panel original sci-fi story atlas for Nova Swarm: lost arcade cabinet in space, the swarm learning formation, a small ship breaking rank, and a boss chorus around a scoreboard monolith; no text, no logos, no real people, no existing game branding. Five boss atlas prompts requested exactly ten original alien arcade shooter bosses each on flat `#00ff00`, in strict `5x2` grids, with distinct silhouettes, readable weapon ports, and no labels or copyrighted branding.
+
 ## 2026-05-17 Nova Swarm Asset Path Cleanup
 
 - Public runtime art paths now live under `public/art/generated/nova-swarm/`.

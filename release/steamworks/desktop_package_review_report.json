@@ -1,68 +1,68 @@
 {
-  "generatedAt": "2026-05-18T05:58:50.130Z",
+  "generatedAt": "2026-05-18T10:02:25.213Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-18_07-51-38",
-    "timestamp": "2026-05-18T05:51:38.402Z"
+    "version": "v2026-05-18_11-49-26",
+    "timestamp": "2026-05-18T09:49:26.907Z"
   },
   "desktopPayload": {
     "path": "release/desktop/win-unpacked/Nova Swarm.exe",
     "sizeBytes": 226666496,
-    "modifiedAt": "2026-05-18T05:58:13.093Z"
+    "modifiedAt": "2026-05-18T09:58:20.826Z"
   },
   "latestElectronSmoke": {
-    "reportPath": "test-results/electron-smoke-2026-05-18T05-58-17-984Z/report.json",
-    "screenshotPath": "test-results/electron-smoke-2026-05-18T05-58-17-984Z/01-electron-menu.png",
+    "reportPath": "test-results/electron-smoke-2026-05-18T09-56-44-705Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-05-18T09-56-44-705Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-05-18_07-51-38",
+    "build": "v2026-05-18_11-49-26",
     "title": "Nova Swarm - Arcade Patrol",
-    "scene": "intro",
-    "introTitle": "THE COIN SLOT WOKE UP",
+    "scene": "menu",
+    "introTitle": null,
     "localHighscoreApi": {
       "ok": true,
       "status": 200
     },
     "readyState": {
-      "scene": "intro",
-      "introTitle": "THE COIN SLOT WOKE UP",
-      "introCaption": "An old arcade cabinet blinked awake between galaxies and found its coin slot full of stars.",
-      "panelTextures": 4,
+      "scene": "menu",
+      "introTitle": "",
+      "introCaption": "",
+      "panelTextures": 0,
       "ready": true
     },
     "consoleEvents": []
   },
   "latestPackagedExeSmoke": {
-    "reportPath": "test-results/packaged-exe-smoke-2026-05-18T05-58-22-131Z/report.json",
-    "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T05-58-22-131Z/01-electron-menu.png",
+    "reportPath": "test-results/packaged-exe-smoke-2026-05-18T10-00-11-889Z/report.json",
+    "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T10-00-11-889Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-05-18_07-51-38",
+    "build": "v2026-05-18_11-49-26",
     "title": "Nova Swarm - Arcade Patrol",
-    "scene": "intro",
-    "introTitle": "THE COIN SLOT WOKE UP",
+    "scene": "menu",
+    "introTitle": null,
     "localHighscoreApi": {
       "ok": true,
       "status": 200
     },
     "readyState": {
-      "scene": "intro",
-      "introTitle": "THE COIN SLOT WOKE UP",
-      "introCaption": "An old arcade cabinet blinked awake between galaxies and found its coin slot full of stars.",
-      "panelTextures": 4,
+      "scene": "menu",
+      "introTitle": "",
+      "introCaption": "",
+      "panelTextures": 0,
       "ready": true
     },
     "consoleEvents": []
   },
   "latestPackagedControlsSmoke": {
-    "reportPath": "test-results/packaged-control-smoke-2026-05-18T05-58-39-428Z/report.json",
+    "reportPath": "test-results/packaged-control-smoke-2026-05-18T10-01-26-200Z/report.json",
     "screenshotPaths": [
-      "test-results/packaged-control-smoke-2026-05-18T05-58-39-428Z/00-control-start.png",
-      "test-results/packaged-control-smoke-2026-05-18T05-58-39-428Z/01-keyboard-run.png",
-      "test-results/packaged-control-smoke-2026-05-18T05-58-39-428Z/02-keyboard-pause.png",
-      "test-results/packaged-control-smoke-2026-05-18T05-58-39-428Z/03-gamepad-run.png",
-      "test-results/packaged-control-smoke-2026-05-18T05-58-39-428Z/04-gamepad-pause.png"
+      "test-results/packaged-control-smoke-2026-05-18T10-01-26-200Z/00-control-start.png",
+      "test-results/packaged-control-smoke-2026-05-18T10-01-26-200Z/01-keyboard-run.png",
+      "test-results/packaged-control-smoke-2026-05-18T10-01-26-200Z/02-keyboard-pause.png",
+      "test-results/packaged-control-smoke-2026-05-18T10-01-26-200Z/03-gamepad-run.png",
+      "test-results/packaged-control-smoke-2026-05-18T10-01-26-200Z/04-gamepad-pause.png"
     ],
     "status": "passed",
-    "build": "v2026-05-18_07-51-38",
+    "build": "v2026-05-18_11-49-26",
     "checks": {
       "keyboardMovement": true,
       "keyboardFire": true,

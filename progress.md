@@ -1,5 +1,21 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-18 Story Intro, 50 Bosses, And Offline Package Refresh
+
+- Changed boot flow so the game now starts directly at the main menu; story intro is optional and launched from the menu.
+- Generated a new four-panel cinematic story atlas with built-in Codex imagegen, saved the source at `public/art/generated/nova-swarm/nova-swarm-intro-story-atlas-20260518-source.png`, and cropped/runtime-optimized four new `1920x1080` WebP intro panels.
+- Rewrote the intro into a stronger public sci-fi arcade story about the lost cabinet, the swarm learning formation, the player ship breaking rank, and boss rules becoming corrupted enemies.
+- Regenerated the four intro narrator MP3s with the local ElevenLabs environment flow and added `npm run generate:intro-narration`; verified the optional intro opens from the menu, narrator panel 1 advances to narrator panel 2, and only one intro narrator voice group stays active.
+- Generated five boss atlas sheets with built-in Codex imagegen, split/chroma-keyed them into 50 transparent boss PNGs, and saved a review sheet at `public/art/generated/nova-swarm/bosses/nova-boss-contact-sheet-20260518.jpg`.
+- Added `src/config/BossRoster.js` with 50 boss profiles, 10 archetypes, 10 attack styles, 9+ movement styles, and 5 signature styles; wired generated bosses as the primary boss visuals.
+- Made boss traits matter mechanically: roster profiles now affect boss movement, attack patterns, signature telegraphs, colors, and spawned-add behavior.
+- Fixed a Pixi v8 ticker bug in `BossFactory` where visual animation received a ticker object instead of numeric delta time, which could make generated boss sprites scale to `NaN` and disappear.
+- Added `npm run check:boss-roster` and smoke coverage for boss visual bounds so invisible-boss regressions fail automated checks.
+- Prepared and verified the offline Steam-style package at `release/desktop/win-unpacked/Nova Swarm.exe`; current desktop/package checks passed with local loopback highscores and packaged keyboard/gamepad controls.
+- Deployed current build `v2026-05-18_11-49-26` to production and verified `https://burt.tinyfoundry.app` with live smoke plus `npm run check:live-deployment`.
+- Verification passed: `npm run build`, `npm run smoke`, optional story-intro manual browser check, `npm run check:audio`, `npm run check:boss-roster`, `npm run check:provenance`, `npm run desktop:smoke:current`, `npm run package:steam:win:current`, `npm run desktop:smoke:packaged`, `npm run desktop:controls:packaged`, `npm run check:desktop-package`, live-domain smoke, and `npm run check:live-deployment`.
+- Release-readiness audit now has live deployment and desktop package green, but still blocks on refreshed Steam screenshot/trailer/full-RC packets, Steamworks IDs, Steam client validation, and final human approvals. Do not mark the persistent goal complete yet.
+
 ## 2026-05-17 Generated Bonus Core And Public-Term Cleanup
 
 - Finished the public terminology cleanup for legacy photo/beer runtime identifiers: player-facing and release-scanned sources now use comms portraits, bonus cores, and bonus drones instead of old private/internal labels.

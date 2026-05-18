@@ -14,6 +14,20 @@ To regenerate them, set `ELEVENLABS_API_KEY` in the shell environment and run:
 node scripts/generate-mission-control-voicepack.mjs
 ```
 
+## Story intro narration
+
+The current four-panel story intro narration was generated with ElevenLabs TTS and is stored in:
+
+```text
+public/audio/voice/nova-swarm/
+```
+
+To regenerate the current story lines, set `ELEVENLABS_API_KEY` or `ELEVEN_LABS_API_KEY` in the shell environment and run:
+
+```bash
+npm run generate:intro-narration
+```
+
 ## Nova Swarm SFX pack
 
 The current bespoke arcade SFX layer was generated with ElevenLabs Sound Generation and is stored in:

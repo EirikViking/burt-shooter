@@ -4,6 +4,7 @@ import { extendBossNames } from '../text/phrasePool.js';
 import { createBossVisual } from '../game/BossFactory.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { createText } from '../utils/pixiText.js';
+import { getBossProfile } from '../config/BossRoster.js';
 
 const ENABLE_BOSS_WEAPON_FX = true;
 const HARD_SCALE_FACTOR = 0.3;
@@ -56,7 +57,8 @@ export class Boss {
     this.tauntHalfShown = false;
     this.scoreValue = 1000;
     this.phase = 1;
-    this.color = 0xff00ff;
+    this.profile = getBossProfile(level);
+    this.color = this.profile?.palette || 0xff00ff;
     this.signatureCooldown = 0;
     this.telegraph = null;
     this.phaseNotified = { 2: false, 3: false };
@@ -73,7 +75,7 @@ export class Boss {
       'GIGA HITBOX'
     ];
     const namePool = extendBossNames(bossNames);
-    this.name = namePool[(level - 1) % namePool.length] || 'BOSS';
+    this.name = this.profile?.name || namePool[(level - 1) % namePool.length] || 'BOSS';
 
     // Note: createSprite() must be called manually after construction (it's async)
   }
@@ -87,6 +89,9 @@ export class Boss {
     // Load boss visual from factory
     const maxBossWidth = this.game?.getWidth ? this.game.getWidth() * 0.55 : null;
     const bossVisual = await createBossVisual(this.level, maxBossWidth);
+    this.profile = bossVisual.profile || this.profile;
+    this.color = this.profile?.palette || this.color;
+    this.name = this.profile?.name || this.name;
     this.visualContainer = bossVisual.container;
     this.bossType = bossVisual.kind;
     this.hitboxRef = bossVisual.hitboxRef; // Store hitbox reference
@@ -116,7 +121,7 @@ export class Boss {
     this.sprite.y = -bossHeight * 0.6;
     this.x = this.sprite.x;
     this.y = this.sprite.y;
-    this.bossLaneY = gameHeight * 0.18;
+    this.bossLaneY = clamp(gameHeight * 0.27, 155, 230);
     this.entryFromY = this.sprite.y;
     this.entryToY = this.bossLaneY;
     this.entryStartMs = Date.now();
@@ -137,9 +142,9 @@ export class Boss {
 
     // Name display overlay
     this.nameText = createText(this.name, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Orbitron, Rajdhani, Courier New',
       fontSize: 20,
-      fill: '#ff0000',
+      fill: `#${(this.profile?.accent || 0xff4455).toString(16).padStart(6, '0')}`,
       stroke: '#000000',
       strokeThickness: 3
     });
@@ -202,7 +207,7 @@ export class Boss {
     if (this.health < this.maxHealth * 0.75 && this.phase === 1) {
       this.phase = 2;
       this.shootDelay = this.getPhaseShootDelay(2);
-      this.color = 0xff8800;
+      this.color = this.profile?.accent || 0xff8800;
       this.startPhaseChange(2, playerX, playerY);
       if (!this.tauntPhase2Shown) {
         const playScene = this.game?.scenes?.play;
@@ -212,7 +217,7 @@ export class Boss {
     } else if (this.health < this.maxHealth * 0.40 && this.phase === 2) {
       this.phase = 3;
       this.shootDelay = this.getPhaseShootDelay(3);
-      this.color = 0xff0000;
+      this.color = this.profile?.palette || 0xff0000;
       this.startPhaseChange(3, playerX, playerY);
     }
 
@@ -274,6 +279,23 @@ export class Boss {
       aimStrength: 0.6
     };
 
+    const profile = this.profile?.movement;
+    if (profile === 'orchestrate') {
+      return { ...base, profile: 'sway', swayAmpX: 0.19, swayFreq: 0.52, bobAmpY: 0.014, rotateMode: 'slow', rotateSpeed: 0.16 };
+    }
+    if (profile === 'hammer' || profile === 'crush') {
+      return { ...base, profile: 'charge_tease', swayAmpX: 0.1, bobAmpY: 0.035, rotateMode: 'aimToPlayer', rotateSpeed: 2.1, aimStrength: 0.55 };
+    }
+    if (profile === 'phase' || profile === 'orbit') {
+      return { ...base, profile: 'orbit', swayAmpX: 0.16, swayFreq: 0.86, bobAmpY: 0.03, rotateMode: 'slow', rotateSpeed: 0.28 };
+    }
+    if (profile === 'stalk' || profile === 'juke' || profile === 'tick') {
+      return { ...base, profile: 'zigzag', swayAmpX: 0.21, swayFreq: profile === 'tick' ? 1.5 : 1.12, bobAmpY: 0.022, rotateMode: 'aimToPlayer', rotateSpeed: 2.7, aimStrength: 0.7 };
+    }
+    if (profile === 'carrier') {
+      return { ...base, profile: 'carrier', swayAmpX: 0.12, swayFreq: 0.46, bobAmpY: 0.018, rotateMode: 'slow', rotateSpeed: 0.12 };
+    }
+
     if (!bossType) return base;
     if (bossType === 'BONUS_CORE') {
       return { ...base, profile: 'sway', rotateMode: 'slow', rotateSpeed: 0.25 };
@@ -322,6 +344,10 @@ export class Boss {
         this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp;
         break;
       }
+      case 'carrier':
+        this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp + Math.sin(t * 1.7) * (swayAmp * 0.22);
+        this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp;
+        break;
       case 'sway':
       default:
         this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp;
@@ -364,7 +390,8 @@ export class Boss {
     if (playScene?.onBossPhaseChange) {
       playScene.onBossPhaseChange(phase, this);
     }
-    const type = phase === 2 ? 'cone' : 'ring';
+    const signature = this.profile?.signature || (phase === 2 ? 'cone' : 'ring');
+    const type = phase === 2 && signature === 'ring' ? 'cone' : signature;
     this.startSignatureTelegraph(type, playerX, playerY);
     this.signatureCooldown = 120;
   }
@@ -372,6 +399,9 @@ export class Boss {
   getSignatureLabel(type) {
     if (type === 'cone') return 'FANFIRE WINDUP';
     if (type === 'ring') return 'RING BURST WINDUP';
+    if (type === 'mirror') return 'MIRROR SPLIT WINDUP';
+    if (type === 'lance') return 'LANCE LOCK WINDUP';
+    if (type === 'adds') return 'DRONE CALL WINDUP';
     return 'SIGNATURE WINDUP';
   }
 
@@ -380,7 +410,7 @@ export class Boss {
       type,
       label: this.getSignatureLabel(type),
       start: Date.now(),
-      duration: type === 'ring' ? 900 : 800
+      duration: type === 'ring' || type === 'adds' ? 900 : 800
     };
     const playScene = this.game?.scenes?.play;
     if (playScene?.enqueueToast) {
@@ -398,7 +428,9 @@ export class Boss {
   updateTelegraphVisual(progress, playerX, playerY) {
     if (!this.telegraph) return;
 
-    const warningColor = this.telegraph.type === 'ring' ? 0xff3355 : 0xfff45c;
+    const warningColor = this.telegraph.type === 'ring' || this.telegraph.type === 'adds'
+      ? (this.profile?.accent || 0xff3355)
+      : (this.profile?.palette || 0xfff45c);
     const alpha = 0.55 + progress * 0.25;
     const pulse = 1 + Math.sin(Date.now() * 0.024) * 0.08;
     const originX = 0;
@@ -407,9 +439,9 @@ export class Boss {
     const warningLayer = this.healthBar;
     if (!warningLayer) return;
 
-    if (this.telegraph.type === 'cone') {
+    if (this.telegraph.type === 'cone' || this.telegraph.type === 'mirror' || this.telegraph.type === 'lance') {
       const angle = Math.atan2(playerY - this.y, playerX - this.x);
-      const spread = this.level <= 1 ? 0.55 : 0.7;
+      const spread = this.telegraph.type === 'lance' ? 0.18 : this.level <= 1 ? 0.55 : 0.7;
       const length = Math.max(this.radius * 2.8, 230);
       const steps = 8;
       const points = [originX, originY];
@@ -422,7 +454,8 @@ export class Boss {
       warningLayer.fill({ color: warningColor, alpha });
       warningLayer.poly(points);
       warningLayer.stroke({ color: 0xffffff, width: 2 + progress * 3, alpha: 0.42 + progress * 0.4 });
-      for (const lane of [-0.5, -0.22, 0.22, 0.5]) {
+      const lanes = this.telegraph.type === 'lance' ? [-0.08, 0, 0.08] : [-0.5, -0.22, 0.22, 0.5];
+      for (const lane of lanes) {
         const a = angle + lane * spread;
         warningLayer.moveTo(originX + Math.cos(a) * this.radius * 0.7, originY + Math.sin(a) * this.radius * 0.7);
         warningLayer.lineTo(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
@@ -469,6 +502,15 @@ export class Boss {
   executeSignatureMove(type, playerX, playerY) {
     if (type === 'cone') {
       this.fireCone(playerX, playerY, this.level <= 1 ? 5 : 9, this.level <= 1 ? 0.55 : 0.7);
+    } else if (type === 'mirror') {
+      this.fireCone(playerX, playerY, this.level <= 1 ? 5 : 7, 0.42);
+      this.fireRingBurst(this.level <= 1 ? 8 : 12, 3);
+    } else if (type === 'lance') {
+      this.fireCone(playerX, playerY, 3, 0.16);
+    } else if (type === 'adds') {
+      const playScene = this.game?.scenes?.play;
+      playScene?.enemyManager?.spawnBossAdds(this.level <= 1 ? 2 : 5);
+      this.fireRingBurst(this.level <= 1 ? 8 : 14, 3);
     } else if (type === 'ring') {
       this.fireRingBurst(this.level <= 1 ? 12 : 18, this.level <= 1 ? 2 : 3);
       const playScene = this.game?.scenes?.play;
@@ -519,8 +561,64 @@ export class Boss {
     // Boss FX
     const killSwitch = typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_weapon_fx") === "1";
     const vConfig = (ENABLE_BOSS_WEAPON_FX && !killSwitch) ? { color: 'Red', index: 5 } : null;
+    const attack = this.profile?.attack || 'aimed';
+    const pressure = BalanceConfig.difficulty.pressureScalar * this.getBossPressureScalar();
+    const aimAngle = Math.atan2(playerY - this.y, playerX - this.x);
+    const addBullet = (x, y, angle, speed, color = this.color) => {
+      bullets.push(new Bullet(
+        x,
+        y,
+        Math.cos(angle) * speed,
+        Math.sin(angle) * speed,
+        1,
+        color,
+        false,
+        vConfig
+      ));
+    };
 
-    if (this.phase === 1) {
+    if (attack === 'fan' || attack === 'burst' || attack === 'fakeout') {
+      const count = this.phase === 1 ? 1 : attack === 'burst' ? 5 : 3;
+      const spread = this.phase === 1 ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
+      const speed = (this.phase === 1 ? BalanceConfig.difficulty.bossProjectileSpeedPhase1 : BalanceConfig.difficulty.bossProjectileSpeedPhase2) * pressure;
+      for (let i = 0; i < count; i++) {
+        const t = count === 1 ? 0 : (i / (count - 1)) - 0.5;
+        addBullet(this.x, this.y, aimAngle + t * spread, speed);
+      }
+    } else if (attack === 'spiral' || attack === 'clock' || attack === 'chord') {
+      const count = attack === 'chord' ? 6 : this.phase === 1 ? 4 : 8;
+      const speed = (this.phase === 3 ? BalanceConfig.difficulty.bossProjectileSpeedPhase3 : BalanceConfig.difficulty.bossProjectileSpeedPhase2) * pressure;
+      const offset = attack === 'clock'
+        ? Math.floor(this.moveTimer / 26) * (Math.PI / 8)
+        : this.moveTimer * 0.045;
+      for (let i = 0; i < count; i++) {
+        if (attack === 'clock' && this.phase < 3 && i % 4 === 0) continue;
+        addBullet(this.x, this.y, (Math.PI * 2 * i) / count + offset, speed);
+      }
+    } else if (attack === 'split' || attack === 'sniper' || attack === 'wall') {
+      const speed = (this.phase === 1 ? BalanceConfig.difficulty.bossProjectileSpeedPhase1 : BalanceConfig.difficulty.bossProjectileSpeedPhase2) * pressure;
+      if (attack === 'sniper') {
+        addBullet(this.x, this.y, aimAngle, speed * 1.16);
+        if (this.phase >= 3) {
+          addBullet(this.x - 28, this.y, aimAngle + 0.08, speed);
+          addBullet(this.x + 28, this.y, aimAngle - 0.08, speed);
+        }
+      } else if (attack === 'wall') {
+        for (let i = -2; i <= 2; i++) {
+          addBullet(this.x + i * 24, this.y, Math.PI / 2 + i * 0.05, speed * 0.82);
+        }
+      } else {
+        addBullet(this.x - 22, this.y, aimAngle - 0.18, speed);
+        addBullet(this.x + 22, this.y, aimAngle + 0.18, speed);
+      }
+    } else if (attack === 'summon') {
+      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase1 * pressure;
+      addBullet(this.x, this.y, aimAngle, speed);
+      if (this.phase >= 2 && this.signatureCooldown <= 0) {
+        this.game?.scenes?.play?.enemyManager?.spawnBossAdds(this.level <= 1 ? 1 : 2);
+        this.signatureCooldown = 180;
+      }
+    } else if (this.phase === 1) {
       // Single aimed shot
       const dx = playerX - this.x;
       const dy = playerY - this.y;

@@ -9,39 +9,39 @@ const INTRO_SEEN_KEY = 'nova_swarm_intro_seen_v1';
 const PANELS = [
   {
     image: AssetManifest.generated.introPanels[0],
-    eyebrow: 'CABINET SIGNAL DETECTED',
-    title: 'THE COIN SLOT WOKE UP',
-    caption: 'An old arcade cabinet blinked awake between galaxies and found its coin slot full of stars.',
+    eyebrow: 'ARCHIVE SIGNAL // LOST CABINET',
+    title: 'THE LAST ARCADE DRIFTS',
+    caption: 'Long after the star lanes went quiet, a forgotten arcade cabinet kept one promise: if anyone pressed start, it would answer.',
     voice: 'intro_narrator_01',
     sfx: 'coin_portal_open',
-    durationMs: 6600
+    durationMs: 7800
   },
   {
     image: AssetManifest.generated.introPanels[1],
-    eyebrow: 'FORMATION COMEDY INBOUND',
-    title: 'THE SWARM GOT ORGANIZED',
-    caption: 'The Nova Swarm arrived in perfect formation: impressive, dramatic, and just a little too proud of itself.',
+    eyebrow: 'ENEMY CONTACT // PATTERN INTELLIGENCE',
+    title: 'THE SWARM LEARNED FORMATION',
+    caption: 'The Nova Swarm was not an army at first. It was a navigation error that became a choir, then a machine, then a joke with teeth.',
     voice: 'intro_narrator_02',
     sfx: 'swarm_chatter_stinger',
-    durationMs: 7000
+    durationMs: 8200
   },
   {
     image: AssetManifest.generated.introPanels[2],
-    eyebrow: 'ONE SHIP. MANY BAD IDEAS.',
-    title: 'YOU LAUNCHED ANYWAY',
-    caption: 'One tiny ship punched through the lanes with clean lasers, big confidence, and a heroic misunderstanding of odds.',
+    eyebrow: 'PILOT LINK // MANUAL OVERRIDE',
+    title: 'A SMALL SHIP BREAKS RANK',
+    caption: 'Your ship was built for clean lanes and fair odds. The cabinet found neither, so it gave you a dodge thruster and lied about confidence.',
     voice: 'intro_narrator_03',
     sfx: 'intro_panel_whoosh',
-    durationMs: 7600
+    durationMs: 8400
   },
   {
     image: AssetManifest.generated.introPanels[3],
-    eyebrow: 'BOSS QUEUE OPEN',
-    title: 'MAKE THE SCOREBOARD BLINK',
-    caption: 'Survive the patterns. Roast the swarm. Make the scoreboard regret underestimating you.',
+    eyebrow: 'BOSS CHORUS // SCOREBOARD ARMED',
+    title: 'THE CABINET WANTS PROOF',
+    caption: 'Every boss is a corrupted rule of the old game: hitboxes with grudges, patterns with punchlines, and one scoreboard waiting to remember your name.',
     voice: 'intro_narrator_04',
     sfx: 'boss_reveal_stinger',
-    durationMs: 6600
+    durationMs: 8200
   }
 ];
 
@@ -107,33 +107,36 @@ export class IntroScene {
     this.container.addChild(this.textGroup);
 
     this.eyebrow = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Bahnschrift, sans-serif',
       fontSize: 14,
       fontWeight: 'bold',
       fill: '#7ee9ff',
-      letterSpacing: 1
+      letterSpacing: 1.6
     });
     this.eyebrow.anchor.set(0, 0.5);
     this.textGroup.addChild(this.eyebrow);
 
     this.title = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Orbitron, Rajdhani, sans-serif',
       fontSize: 42,
-      fontWeight: 'bold',
+      fontWeight: '900',
       fill: '#ffffff',
       stroke: '#03101d',
       strokeThickness: 5,
+      letterSpacing: 1.2,
+      padding: 18,
       dropShadow: true,
       dropShadowColor: '#00ffff',
-      dropShadowBlur: 8,
+      dropShadowBlur: 12,
       wordWrap: true
     });
     this.title.anchor.set(0, 0.5);
     this.textGroup.addChild(this.title);
 
     this.caption = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Bahnschrift, sans-serif',
       fontSize: 18,
+      fontWeight: '600',
       fill: '#dff9ff',
       stroke: '#02111d',
       strokeThickness: 4,
@@ -143,8 +146,8 @@ export class IntroScene {
     this.caption.anchor.set(0, 0);
     this.textGroup.addChild(this.caption);
 
-    this.prompt = createText('CLICK / PRESS SPACE TO START  ·  ESC SKIPS', {
-      fontFamily: 'Courier New',
+    this.prompt = createText('CLICK / PRESS SPACE TO BEGIN  |  ESC SKIPS', {
+      fontFamily: 'Cascadia Mono, Consolas, Courier New, monospace',
       fontSize: 14,
       fontWeight: 'bold',
       fill: '#ffd66b',
@@ -215,7 +218,7 @@ export class IntroScene {
     bg.stroke({ color: 0x00ffff, width: 1.5, alpha: 0.86 });
     button.addChild(bg);
     const text = createText(label, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Orbitron, Rajdhani, sans-serif',
       fontSize: 15,
       fontWeight: 'bold',
       fill: '#dff9ff'
@@ -234,9 +237,10 @@ export class IntroScene {
   }
 
   beginNarration() {
+    if (this.started) return;
     this.started = true;
     this.panelElapsedMs = 0;
-    this.prompt.text = 'SPACE / CLICK NEXT  ·  ESC SKIPS';
+    this.prompt.text = 'SPACE / CLICK NEXT  |  ESC SKIPS';
     AudioManager.init();
     AudioManager.unlockAudio?.();
     AudioManager.playMusicContext('intro', { resetPlaylist: true });
@@ -256,6 +260,7 @@ export class IntroScene {
     this.nextButton.visible = index < PANELS.length - 1;
 
     if (playAudio) {
+      AudioManager.stopVoiceGroup?.('intro_narrator');
       AudioManager.playSfx(panel.sfx, { force: true });
       AudioManager.playVoice(panel.voice, {
         force: true,
@@ -370,3 +375,4 @@ export class IntroScene {
     this.container.removeChildren();
   }
 }
+

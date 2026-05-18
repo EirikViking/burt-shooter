@@ -1,12 +1,13 @@
 /**
- * BossFactory - Creates varied boss visuals for each level
- * Cycles through: Bonus Core, Icon-192, Boss Sprites, and Big Player Ships
+ * BossFactory - Creates varied boss visuals for each level.
+ * Generated Nova Swarm bosses are preferred; older sprite types remain as fallbacks.
  */
 
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { createText } from '../utils/pixiText.js';
+import { getBossProfile } from '../config/BossRoster.js';
 
 const BOSS_TYPES = {
   BONUS_CORE: 0,
@@ -16,6 +17,7 @@ const BOSS_TYPES = {
 };
 
 const BOSS_SPRITES = AssetManifest.sprites.bosses || [];
+const GENERATED_BOSS_SPRITES = AssetManifest.generated.bosses || [];
 const LEVEL_BOSS_SPRITES = {
   1: '/sprites/boss/boss_battleship_no_bg2.png',
   2: '/sprites/boss/boss_turret_no_bg2.png',
@@ -61,7 +63,10 @@ export function getActiveTickerCount() {
 
 function createBossTicker(fn) {
   const ticker = new PIXI.Ticker();
-  ticker.add(fn);
+  ticker.add((tick) => {
+    const deltaTime = Number.isFinite(tick?.deltaTime) ? tick.deltaTime : 1;
+    fn(deltaTime);
+  });
   ticker.start();
   activeTickers++;
   console.log(`[BossTicker] create activeTickers=${activeTickers}`);
@@ -74,6 +79,70 @@ function safeDestroyTicker(ticker) {
     ticker.destroy();
     activeTickers--;
     console.log(`[BossTicker] destroy activeTickers=${activeTickers}`);
+  }
+}
+
+async function createGeneratedBossVisual(profile, maxWidth) {
+  if (!profile?.art || !GENERATED_BOSS_SPRITES.includes(profile.art)) {
+    return null;
+  }
+
+  try {
+    await PIXI.Assets.load(profile.art);
+    const texture = PIXI.Texture.from(profile.art);
+    const textureValid = texture && texture.width > 0 && texture.height > 0;
+    if (!textureValid) {
+      console.warn(`[BossFactory] Generated boss texture invalid: id=${profile.id} url=${profile.art}`);
+      return null;
+    }
+
+    const container = new PIXI.Container();
+    const aura = new PIXI.Graphics();
+    aura.circle(0, 0, 232);
+    aura.fill({ color: profile.palette || 0xff55d9, alpha: 0.18 });
+    aura.circle(0, 0, 206);
+    aura.stroke({ color: profile.accent || 0x37f5ff, width: 9, alpha: 0.66 });
+    aura.circle(0, 0, 132);
+    aura.stroke({ color: profile.palette || 0xff55d9, width: 4, alpha: 0.46 });
+    aura.moveTo(-210, 0);
+    aura.lineTo(-128, 0);
+    aura.moveTo(128, 0);
+    aura.lineTo(210, 0);
+    aura.moveTo(0, -210);
+    aura.lineTo(0, -128);
+    aura.moveTo(0, 128);
+    aura.lineTo(0, 210);
+    aura.stroke({ color: profile.accent || 0x37f5ff, width: 3, alpha: 0.62 });
+
+    const sprite = new PIXI.Sprite(texture);
+    sprite.anchor.set(0.5);
+    sprite.scale.set(computeBossSpriteScale(texture.width, 1.72, maxWidth));
+
+    const core = new PIXI.Graphics();
+    core.circle(0, 0, 18);
+    core.fill({ color: profile.accent || 0xffffff, alpha: 0.35 });
+    core.circle(0, 0, 38);
+    core.stroke({ color: profile.palette || 0xffffff, width: 3, alpha: 0.5 });
+
+    container.addChild(aura);
+    container.addChild(sprite);
+    container.addChild(core);
+
+    let t = 0;
+    const ticker = createBossTicker((delta) => {
+      t += 0.045 * delta;
+      const pulse = 1 + Math.sin(t) * 0.035;
+      sprite.scale.set(computeBossSpriteScale(texture.width, 1.72 * pulse, maxWidth));
+      aura.scale.set(1 + Math.sin(t * 0.8) * 0.045);
+      aura.alpha = 0.95 + Math.sin(t * 1.1) * 0.05;
+      core.rotation += 0.018 * delta;
+      core.alpha = 0.78 + Math.sin(t * 1.4) * 0.12;
+    });
+
+    return { container, hitboxRef: sprite, url: profile.art, ticker, profile };
+  } catch (e) {
+    console.warn(`[BossFactory] Generated boss load failed id=${profile.id} url=${profile.art}:`, e);
+    return null;
   }
 }
 
@@ -329,6 +398,22 @@ async function createBigPlayerShipBoss(shipNum, shipColor) {
  * @returns {Promise<{container: PIXI.Container, hitboxRef: PIXI.DisplayObject, textureOk: boolean, kind: string, cleanup: Function}>}
  */
 export async function createBossVisual(level, maxWidth) {
+  const profile = getBossProfile(level);
+  const generatedResult = await createGeneratedBossVisual(profile, maxWidth);
+  if (generatedResult) {
+    const bounds = generatedResult.hitboxRef ? generatedResult.hitboxRef.getBounds() : { width: 0, height: 0 };
+    const kind = `GENERATED_${profile.archetype.toUpperCase()}`;
+    console.log(`[BossVisual] level=${level} type=${kind} id=${profile.id} url=${profile.art} textureOk=true w=${Math.round(bounds.width)} h=${Math.round(bounds.height)} usedFallback=false`);
+    return {
+      container: generatedResult.container,
+      hitboxRef: generatedResult.hitboxRef,
+      textureOk: true,
+      kind,
+      profile,
+      cleanup: () => safeDestroyTicker(generatedResult.ticker)
+    };
+  }
+
   const selection = selectBossType(level);
   let result;
   let kind;
@@ -377,6 +462,7 @@ export async function createBossVisual(level, maxWidth) {
     hitboxRef: result.hitboxRef,
     textureOk,
     kind,
+    profile,
     cleanup: () => safeDestroyTicker(result.ticker)
   };
 }

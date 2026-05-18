@@ -892,6 +892,14 @@ async function runSmoke() {
       ...(bossVictoryState.fatalOverlay ? ['boss victory path showed fatal overlay'] : []),
       ...(musicContext(bossActiveState) !== 'boss' || !trackIncludes(bossActiveState, 'DeathMatch') ? [`boss music did not switch to boss theme: ${musicContext(bossActiveState)} / ${musicTrackName(bossActiveState) || 'none'}`] : []),
       ...visibleEnemyHealthIssues(bossActiveState, 'boss active'),
+      ...((bossActiveState.textState?.visibleEnemies || [])
+        .filter(enemy => enemy.bossProfile)
+        .flatMap(enemy => {
+          const bounds = enemy.visualBounds || {};
+          return (bounds.width || 0) < 80 || (bounds.height || 0) < 80
+            ? [`boss active visual bounds too small for ${enemy.bossProfile}: ${bounds.width || 0}x${bounds.height || 0}`]
+            : [];
+        })),
       ...(musicContext(bossDefeatedState) !== 'victory' || !trackIncludes(bossDefeatedState, 'Victory Tune') ? [`boss defeat did not switch to victory stinger: ${musicContext(bossDefeatedState)} / ${musicTrackName(bossDefeatedState) || 'none'}`] : []),
       ...(activeToastCount(bossDefeatedState) > 1 ? [`boss defeat displayed overlapping active toasts: ${describeActiveToasts(bossDefeatedState)}`] : []),
       ...(bossVictoryState.level < 2 ? ['boss victory did not advance to level 2'] : []),

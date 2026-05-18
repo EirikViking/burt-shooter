@@ -229,6 +229,19 @@ function buildGameTextState(game) {
   const activeSettingsOverlay = game?.currentScene?.settingsOverlay || playScene?.settingsOverlay || null;
   const shipSelectScene = getStableSceneName(game) === 'shipSelect' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
+  const visualBoundsFor = (enemy) => {
+    try {
+      const ref = enemy?.hitboxRef || enemy?.sprite;
+      if (!ref?.getBounds) return null;
+      const bounds = ref.getBounds();
+      return {
+        width: Math.round(bounds.width || 0),
+        height: Math.round(bounds.height || 0)
+      };
+    } catch {
+      return null;
+    }
+  };
 
   return {
     coordinateSystem: 'origin top-left, x right, y down',
@@ -308,6 +321,10 @@ function buildGameTextState(game) {
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
         maxHealth: Number.isFinite(enemy.maxHealth) ? Math.max(0, Math.round(enemy.maxHealth)) : null,
         phase: Number.isFinite(enemy.phase) ? enemy.phase : null,
+        bossProfile: enemy.profile?.id || null,
+        bossArchetype: enemy.profile?.archetype || null,
+        bossAttack: enemy.profile?.attack || null,
+        visualBounds: visualBoundsFor(enemy),
         telegraph: enemy.telegraph ? {
           type: enemy.telegraph.type || null,
           label: enemy.telegraph.label || null,
