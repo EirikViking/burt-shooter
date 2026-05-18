@@ -297,6 +297,64 @@ function checkSteamClientValidation() {
   });
 }
 
+function vdfValue(text, key) {
+  const match = text.match(new RegExp(`"${key}"\\s+"([^"]*)"`));
+  return match ? match[1] : null;
+}
+
+function checkSteamworksIdsConfigured() {
+  const relativePath = 'release/steamworks/app_build_LOCAL.vdf';
+  const full = path.resolve(root, relativePath);
+  if (!existsSync(full)) {
+    return {
+      ok: false,
+      path: relativePath,
+      reason: 'missing'
+    };
+  }
+
+  const text = readFileSync(full, 'utf8');
+  const appId = vdfValue(text, 'AppID');
+  const desc = vdfValue(text, 'Desc');
+  const contentRoot = vdfValue(text, 'ContentRoot');
+  const localPath = vdfValue(text, 'LocalPath');
+  const depotPath = vdfValue(text, 'DepotPath');
+  const recursive = vdfValue(text, 'recursive');
+  const depotMatch = text.match(/^\s*"(\d+)"\s*\{/m);
+  const depotId = depotMatch?.[1] || null;
+  const contentRootPath = contentRoot
+    ? path.resolve(path.dirname(full), contentRoot.replace(/\\\\/g, path.sep))
+    : null;
+  const executablePath = contentRootPath ? path.join(contentRootPath, 'Nova Swarm.exe') : null;
+  const errors = [];
+
+  if (!appId || !/^\d+$/.test(appId) || appId === '0') errors.push('AppID must be a non-zero numeric Steamworks app ID');
+  if (!depotId || !/^\d+$/.test(depotId) || depotId === '0') errors.push('Depot ID must be a non-zero numeric Windows depot ID');
+  if (/STEAM_APP_ID_HERE|STEAM_DEPOT_ID_HERE/.test(text)) errors.push('VDF still contains placeholder IDs');
+  if (contentRoot !== '..\\\\desktop\\\\win-unpacked') errors.push('ContentRoot must point at ..\\\\desktop\\\\win-unpacked');
+  if (localPath !== '*') errors.push('LocalPath must map the full payload with *');
+  if (depotPath !== '.') errors.push('DepotPath must be .');
+  if (recursive !== '1') errors.push('FileMapping must be recursive');
+  if (!desc || /TBD|placeholder/i.test(desc)) errors.push('Desc must identify the release-candidate upload');
+  if (!contentRootPath || !existsSync(contentRootPath)) errors.push('ContentRoot directory does not exist');
+  if (!executablePath || !existsSync(executablePath)) errors.push('Nova Swarm.exe is missing from the ContentRoot payload');
+
+  return {
+    ok: errors.length === 0,
+    path: relativePath,
+    appId: appId || null,
+    depotId,
+    desc: desc || null,
+    contentRoot: contentRoot || null,
+    contentRootExists: Boolean(contentRootPath && existsSync(contentRootPath)),
+    executableExists: Boolean(executablePath && existsSync(executablePath)),
+    localPath: localPath || null,
+    depotPath: depotPath || null,
+    recursive: recursive || null,
+    errors
+  };
+}
+
 function checkReleaseHandoffPacket() {
   return checkJsonReport('release/steamworks/release_handoff_packet.json', (json) => {
     const expectedBuild = currentBuildVersion();
@@ -743,7 +801,7 @@ checks.push({
 
 checks.push({
   name: 'steamworks_ids_configured',
-  ok: existsSync(path.resolve(root, 'release/steamworks/app_build_LOCAL.vdf')),
+  ...checkSteamworksIdsConfigured(),
   requiredForSteamReady: true,
   expectedFiles: [
     'release/steamworks/app_build_LOCAL.vdf'

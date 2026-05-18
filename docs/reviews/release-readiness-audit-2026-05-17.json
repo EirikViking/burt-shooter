@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T11:45:08.112Z",
+  "generatedAt": "2026-05-18T11:50:55.112Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 19,
@@ -914,6 +914,8 @@
     {
       "name": "steamworks_ids_configured",
       "ok": false,
+      "path": "release/steamworks/app_build_LOCAL.vdf",
+      "reason": "missing",
       "requiredForSteamReady": true,
       "expectedFiles": [
         "release/steamworks/app_build_LOCAL.vdf"
