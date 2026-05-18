@@ -114,11 +114,28 @@ try {
         traitState: player.getTraitState()
       });
     }
+    const scene = game?.scenes?.play;
+    const beforeWingImpactScore = game.score;
+    scene.applyShipTraitBulletImpact({
+      isPlayer: true,
+      isTraitWingShot: true,
+      damage: 1
+    }, {
+      x: player.x,
+      y: player.y - 180,
+      active: true
+    });
+    const afterWingImpactScore = game.score;
     return {
       selectedShipSpriteKey: game.selectedShipSpriteKey,
       traitLabel: player.shipTrait?.label || null,
       traitCombat: player.traitCombat,
       shots,
+      wingImpact: {
+        beforeScore: beforeWingImpactScore,
+        afterScore: afterWingImpactScore,
+        scoreDelta: afterWingImpactScore - beforeWingImpactScore
+      },
       textState: JSON.parse(window.render_game_to_text?.() || '{}')
     };
   });
@@ -134,6 +151,7 @@ try {
       cadence > 0 &&
       cadenceShot?.wingShots === 2 &&
       cadenceShot.count >= 4 &&
+      result.wingImpact?.scoreDelta > 0 &&
       result.textState?.player?.traitState?.wingShotEvery === cadence &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0

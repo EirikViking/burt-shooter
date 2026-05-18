@@ -1,7 +1,7 @@
 # Nova Swarm Steam Client Preflight Packet
 
-Generated: 2026-05-18T05:45:46.598Z
-Build: `v2026-05-18_07-26-54`
+Generated: 2026-05-18T06:10:19.296Z
+Build: `v2026-05-18_07-51-38`
 Status: `ready_for_steam_upload_and_client_validation`
 
 This packet proves local upload preflight only. It is not Steam-client validation evidence.
@@ -11,8 +11,8 @@ This packet proves local upload preflight only. It is not Steam-client validatio
 - Executable: `release/desktop/win-unpacked/Nova Swarm.exe`
 - Product name: Nova Swarm
 - Electron app id: app.novaswarm.game
-- Packaged smoke report: `test-results/packaged-exe-smoke-2026-05-18T05-33-49-076Z/report.json`
-- Packaged controls report: `test-results/packaged-control-smoke-2026-05-18T05-34-04-992Z/report.json`
+- Packaged smoke report: `test-results/packaged-exe-smoke-2026-05-18T05-58-22-131Z/report.json`
+- Packaged controls report: `test-results/packaged-control-smoke-2026-05-18T05-58-39-428Z/report.json`
 - Full RC report: `test-results/steam-rc-verify-2026-05-18T05-32-30-342Z/report.json`
 
 ## SteamPipe

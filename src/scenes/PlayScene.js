@@ -139,6 +139,7 @@ export class PlayScene {
     this.lastHitAt = 0;
     this.lastStandReadyAt = 0;
     this.nearMissCooldownAt = 0;
+    this.lastTraitImpactToastAt = 0;
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
     // Powerup mechanics (orbital strike timer tracked in scene)
@@ -2899,6 +2900,17 @@ export class PlayScene {
       const bonusScore = Math.max(3, Math.round(8 * Number(combat.nearMissScoreMult || 1)));
       this.game.addScore(bonusScore);
       if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 12, bonusScore);
+    }
+
+    if (bullet.isTraitWingShot) {
+      const wingScore = Math.max(2, Math.round(5 * Math.max(1, this.comboMultiplier || 1)));
+      this.game.addScore(wingScore);
+      if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 18, wingScore);
+      const now = Date.now();
+      if (now - this.lastTraitImpactToastAt > 900) {
+        this.lastTraitImpactToastAt = now;
+        this.enqueueToast(`WING HIT +${wingScore}`, { fontSize: 14, fill: '#66ff99', slot: 'top', type: 'trait', duration: 650 });
+      }
     }
   }
 

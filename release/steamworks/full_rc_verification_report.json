@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-18T05:45:41.710Z",
+  "generatedAt": "2026-05-18T06:10:20.463Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-18_07-26-54",
-    "timestamp": "2026-05-18T05:26:54.758Z"
+    "version": "v2026-05-18_07-51-38",
+    "timestamp": "2026-05-18T05:51:38.402Z"
   },
   "latestFullRc": {
-    "reportPath": "test-results/steam-rc-verify-2026-05-18T05-32-30-342Z/report.json",
-    "generatedAt": "2026-05-18T05:45:33.761Z",
+    "reportPath": "test-results/steam-rc-verify-2026-05-18T05-57-08-361Z/report.json",
+    "generatedAt": "2026-05-18T06:10:08.798Z",
     "mode": "full",
     "ok": true,
     "stageCount": 13,
@@ -15,67 +15,67 @@
       {
         "name": "build:current",
         "ok": true,
-        "durationMs": 19450
+        "durationMs": 14951
       },
       {
         "name": "check:provenance",
         "ok": true,
-        "durationMs": 656
+        "durationMs": 689
       },
       {
         "name": "check:steam-assets",
         "ok": true,
-        "durationMs": 2358
+        "durationMs": 2227
       },
       {
         "name": "check:steam-store",
         "ok": true,
-        "durationMs": 496
+        "durationMs": 484
       },
       {
         "name": "package:steam:win:current",
         "ok": true,
-        "durationMs": 51020
+        "durationMs": 50552
       },
       {
         "name": "desktop:smoke:current",
         "ok": true,
-        "durationMs": 4279
+        "durationMs": 4419
       },
       {
         "name": "desktop:smoke:packaged",
         "ok": true,
-        "durationMs": 15938
+        "durationMs": 17283
       },
       {
         "name": "desktop:controls:packaged",
         "ok": true,
-        "durationMs": 10337
+        "durationMs": 10246
       },
       {
         "name": "check:desktop-package",
         "ok": true,
-        "durationMs": 921
+        "durationMs": 963
       },
       {
         "name": "check:live-deployment",
         "ok": true,
-        "durationMs": 1225
+        "durationMs": 1182
       },
       {
         "name": "audit:audio-mix",
         "ok": true,
-        "durationMs": 7674
+        "durationMs": 7649
       },
       {
         "name": "smoke",
         "ok": true,
-        "durationMs": 63646
+        "durationMs": 63924
       },
       {
         "name": "playtest:release",
         "ok": true,
-        "durationMs": 605400
+        "durationMs": 605851
       }
     ],
     "releaseAudit": {
@@ -90,15 +90,15 @@
       ]
     },
     "audioAudit": {
-      "generatedAt": "2026-05-18T05:34:24.642Z",
+      "generatedAt": "2026-05-18T05:58:58.928Z",
       "decodeErrors": null,
       "warnings": 0
     }
   },
   "latestLocalSmoke": {
-    "reportPath": "test-results/smoke-2026-05-18T05-34-25-602Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-18T05-58-59-914Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "build": "v2026-05-18_07-26-54",
+    "build": "v2026-05-18_07-51-38",
     "status": "passed",
     "console": {
       "warningsOrErrors": 0,
@@ -109,21 +109,21 @@
     "coverage": null
   },
   "latestReleasePlaytest": {
-    "reportPath": "test-results/release-playtest-2026-05-18T05-35-29-239Z/report.json",
+    "reportPath": "test-results/release-playtest-2026-05-18T06-00-03-837Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "survivedMs": 599861,
+    "survivedMs": 599917,
     "requiredSurvivalMs": 599500,
     "survivedFullDuration": true,
     "peakLevel": 5,
-    "peakScore": 51915,
+    "peakScore": 51421,
     "finalState": {
       "scene": "play",
       "level": 5,
-      "lives": 3,
-      "score": 51915,
-      "enemyManagerState": "BOSS_ACTIVE",
-      "musicContext": "boss",
-      "musicTrack": "DeathMatch (Boss Theme).mp3",
+      "lives": 2,
+      "score": 51421,
+      "enemyManagerState": "WAVE_ACTIVE",
+      "musicContext": "gameplay",
+      "musicTrack": "Battle in the Stars.mp3",
       "fatalOverlay": false
     },
     "console": {
