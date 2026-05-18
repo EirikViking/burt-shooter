@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T04:41:59.474Z",
+  "generatedAt": "2026-05-18T04:45:27.041Z",
   "status": "ready_for_steam_upload_and_client_validation",
   "build": {
     "version": "v2026-05-18_05-59-43",
@@ -146,7 +146,7 @@
       "path": "release/steamworks/desktop_package_review_report.json",
       "exists": true,
       "bytes": 2782,
-      "modifiedAt": "2026-05-18T04:30:32.047Z"
+      "modifiedAt": "2026-05-18T04:45:27.024Z"
     },
     {
       "path": "release/steamworks/full_rc_verification_report.json",
@@ -157,8 +157,8 @@
     {
       "path": "release/steamworks/steam_client_validation_runbook.md",
       "exists": true,
-      "bytes": 3188,
-      "modifiedAt": "2026-05-17T21:11:01.215Z"
+      "bytes": 3383,
+      "modifiedAt": "2026-05-18T04:45:12.094Z"
     },
     {
       "path": "docs/reviews/2026-05-17-steamcmd-local-check.md",

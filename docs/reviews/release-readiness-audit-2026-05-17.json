@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T04:42:35.075Z",
+  "generatedAt": "2026-05-18T04:45:34.724Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 18,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 31270
+          "bytes": 31817
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -54,7 +54,7 @@
         {
           "path": "release/steamworks/steam_client_validation_runbook.md",
           "ok": true,
-          "bytes": 3188
+          "bytes": 3383
         },
         {
           "path": "docs/reviews/2026-05-17-steamcmd-local-check.md",
@@ -393,6 +393,28 @@
           "ready": true
         },
         "consoleEvents": []
+      },
+      "latestPackagedControlsSmoke": {
+        "reportPath": "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/report.json",
+        "screenshotPaths": [
+          "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/00-control-start.png",
+          "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/01-keyboard-run.png",
+          "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/02-keyboard-pause.png",
+          "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/03-gamepad-run.png",
+          "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/04-gamepad-pause.png"
+        ],
+        "status": "passed",
+        "build": "v2026-05-18_05-59-43",
+        "checks": {
+          "keyboardMovement": true,
+          "keyboardFire": true,
+          "keyboardPause": true,
+          "gamepadMovement": true,
+          "gamepadFire": true,
+          "gamepadPause": true
+        },
+        "consoleEvents": [],
+        "errors": []
       },
       "errors": [],
       "warnings": []
@@ -835,6 +857,28 @@
           "steamClientScreenshotCaptured"
         ],
         "stillRequired": true
+      },
+      "packagedControlsSmoke": {
+        "reportPath": "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/report.json",
+        "screenshotPaths": [
+          "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/00-control-start.png",
+          "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/01-keyboard-run.png",
+          "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/02-keyboard-pause.png",
+          "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/03-gamepad-run.png",
+          "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/04-gamepad-pause.png"
+        ],
+        "status": "passed",
+        "build": "v2026-05-18_05-59-43",
+        "checks": {
+          "keyboardMovement": true,
+          "keyboardFire": true,
+          "keyboardPause": true,
+          "gamepadMovement": true,
+          "gamepadFire": true,
+          "gamepadPause": true
+        },
+        "consoleEvents": [],
+        "errors": []
       },
       "errors": [],
       "warnings": []

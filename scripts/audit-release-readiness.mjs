@@ -527,13 +527,23 @@ checks.push({
       json.latestPackagedExeSmoke?.build === expectedBuild &&
       json.latestPackagedExeSmoke?.localHighscoreApi?.ok === true &&
       json.latestPackagedExeSmoke?.readyState?.ready === true &&
-      (json.latestPackagedExeSmoke?.consoleEvents || []).length === 0,
+      (json.latestPackagedExeSmoke?.consoleEvents || []).length === 0 &&
+      json.latestPackagedControlsSmoke?.status === 'passed' &&
+      json.latestPackagedControlsSmoke?.build === expectedBuild &&
+      json.latestPackagedControlsSmoke?.checks?.keyboardMovement === true &&
+      json.latestPackagedControlsSmoke?.checks?.keyboardFire === true &&
+      json.latestPackagedControlsSmoke?.checks?.keyboardPause === true &&
+      json.latestPackagedControlsSmoke?.checks?.gamepadMovement === true &&
+      json.latestPackagedControlsSmoke?.checks?.gamepadFire === true &&
+      json.latestPackagedControlsSmoke?.checks?.gamepadPause === true &&
+      (json.latestPackagedControlsSmoke?.consoleEvents || []).length === 0,
       status: json.status || null,
       expectedBuild,
       actualBuild,
       desktopPayload: json.desktopPayload || null,
       latestElectronSmoke: json.latestElectronSmoke || null,
       latestPackagedExeSmoke: json.latestPackagedExeSmoke || null,
+      latestPackagedControlsSmoke: json.latestPackagedControlsSmoke || null,
       errors: json.errors || [],
       warnings: json.warnings || []
     };
@@ -583,6 +593,7 @@ checks.push({
       'package:steam:win:current',
       'desktop:smoke:current',
       'desktop:smoke:packaged',
+      'desktop:controls:packaged',
       'check:desktop-package',
       'check:live-deployment',
       'audit:audio-mix',
@@ -683,6 +694,14 @@ checks.push({
       Number(json.localPayload?.executable?.bytes || 0) > 0 &&
       json.localPayload?.packagedExeSmoke?.status === 'passed' &&
       json.localPayload?.packagedExeSmoke?.build === expectedBuild &&
+      json.localPayload?.packagedControlsSmoke?.status === 'passed' &&
+      json.localPayload?.packagedControlsSmoke?.build === expectedBuild &&
+      json.localPayload?.packagedControlsSmoke?.checks?.keyboardMovement === true &&
+      json.localPayload?.packagedControlsSmoke?.checks?.keyboardFire === true &&
+      json.localPayload?.packagedControlsSmoke?.checks?.keyboardPause === true &&
+      json.localPayload?.packagedControlsSmoke?.checks?.gamepadMovement === true &&
+      json.localPayload?.packagedControlsSmoke?.checks?.gamepadFire === true &&
+      json.localPayload?.packagedControlsSmoke?.checks?.gamepadPause === true &&
       json.localPayload?.fullRc?.releasePlaytest?.survivedFullDuration === true &&
       json.steamPipe?.contentRoot === '..\\\\desktop\\\\win-unpacked' &&
       (json.errors || []).length === 0 &&
@@ -692,6 +711,7 @@ checks.push({
       actualBuild: json.build?.version || null,
       missingChecks,
       clientValidation: json.clientValidation || null,
+      packagedControlsSmoke: json.localPayload?.packagedControlsSmoke || null,
       errors: json.errors || [],
       warnings: json.warnings || []
     };

@@ -1,6 +1,6 @@
 # Nova Swarm Steam Client Preflight Packet
 
-Generated: 2026-05-18T04:41:59.474Z
+Generated: 2026-05-18T04:45:27.041Z
 Build: `v2026-05-18_05-59-43`
 Status: `ready_for_steam_upload_and_client_validation`
 
@@ -48,7 +48,7 @@ Copy `release/steamworks/client_validation_report.template.json` to `release/ste
 | yes | `release/steamworks/client_validation_report.template.json` | 771 |
 | yes | `release/steamworks/desktop_package_review_report.json` | 2782 |
 | yes | `release/steamworks/full_rc_verification_report.json` | 3440 |
-| yes | `release/steamworks/steam_client_validation_runbook.md` | 3188 |
+| yes | `release/steamworks/steam_client_validation_runbook.md` | 3383 |
 | yes | `docs/reviews/2026-05-17-steamcmd-local-check.md` | 854 |
 
 ## Warnings

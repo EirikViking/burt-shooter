@@ -7,6 +7,7 @@ Status on 2026-05-17: not complete. The Windows package exists locally and local
 - Package output exists at `release/desktop/win-unpacked/`.
 - Launch executable exists at `release/desktop/win-unpacked/Nova Swarm.exe`.
 - Packaged executable smoke rehearsal is now automated with `npm run desktop:smoke:packaged`.
+- Packaged controls rehearsal is now automated with `npm run desktop:controls:packaged`, covering keyboard movement/fire/pause plus virtual gamepad movement/fire/pause from the packaged payload.
 - Steam upload/client-test preflight is summarized by `npm run steamworks:client-preflight`.
 - Latest known package verification remains documented in `docs/steam-desktop-package.md`.
 - Local SteamCMD availability is documented in `docs/reviews/2026-05-17-steamcmd-local-check.md`.
