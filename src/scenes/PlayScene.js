@@ -294,6 +294,7 @@ export class PlayScene {
     const params = new URLSearchParams(window.location.search);
     const debugToken = params.get('debugBossToken');
     if (debugToken === 'NOVA_DEBUG_2026') {
+      this.game.markUnrankedRun?.('debug_route');
       const startLevel = Number(params.get('startLevel'));
       const startAtBoss = params.get('startAtBoss') === '1';
       const debugPowerups = params.get('debugPowerups') === '1';

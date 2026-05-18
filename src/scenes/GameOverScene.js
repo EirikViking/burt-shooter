@@ -43,6 +43,8 @@ export class GameOverScene {
     this.finalLevel = 0;
     this.cachedHighscores = null;
     this.isQualified = false;
+    this.isRankedRun = true;
+    this.submitBlockedReason = null;
     // Submission deduplication
     this.submissionId = null;
   }
@@ -54,6 +56,12 @@ export class GameOverScene {
     this.nameInput = '';
     this.state = 'prompt';
     this.caretVisible = true;
+    this.isSubmitting = false;
+    this.submitRetries = 0;
+    this.submitBlockedReason = null;
+    this.isRankedRun = typeof this.game.isScoreSubmissionAllowed === 'function'
+      ? this.game.isScoreSubmissionAllowed()
+      : !this.game.isDebugRun;
 
     // FREEZE final score and level immediately
     this.finalScore = Number(this.game.score) || 0;
@@ -145,6 +153,17 @@ export class GameOverScene {
     this.promptText.on('pointerdown', this.promptPointer);
     this.container.addChild(this.promptText);
 
+    if (!this.isRankedRun) {
+      this.promptText.eventMode = 'none';
+      this.promptText.cursor = 'default';
+      this.promptText.style.fill = '#ffb35c';
+      this.promptText.text = 'PRACTICE RUN - SCORE NOT LOGGED';
+      this.submitBlockedReason = this.game.runModeReason || 'unranked_run';
+      this.isQualified = false;
+      this.cachedHighscores = [];
+      this.state = 'unranked';
+    }
+
     const nameSize = layout.isMobile ? 22 : 26;
     this.nameDisplay = createText('', {
       fontFamily: 'Courier New',
@@ -174,6 +193,11 @@ export class GameOverScene {
     AudioManager.playSfx('nova_game_over_drop');
     AudioManager.playVoice('mission_control_game_over', { cooldownMs: 2400, duckMs: 2600 });
     AudioManager.playMusicContext('gameover', { resetPlaylist: true });
+
+    if (!this.isRankedRun) {
+      console.log(`[GameOver] Unranked run blocked from leaderboard reason=${this.submitBlockedReason}`);
+      return;
+    }
 
     // Fetch scores for qualification check
     API.getHighscores().then(scores => {
@@ -398,6 +422,16 @@ export class GameOverScene {
 
   enterInputMode() {
     if (this.state === 'input' || this.state === 'submitting' || this.state === 'rejected') return;
+
+    if (!this.isRankedRun) {
+      this.submitBlockedReason = this.game.runModeReason || 'unranked_run';
+      console.log(`[GameOver] Blocking score input for unranked run reason=${this.submitBlockedReason}`);
+      if (this.promptText) {
+        this.promptText.visible = true;
+        this.promptText.text = 'PRACTICE RUN - SCORE NOT LOGGED';
+      }
+      return;
+    }
 
     // STRICT Qualification Rule: Only allow name entry if EXPLICITLY qualified for top 10
     // If cachedHighscores is null (fetch failed/pending), default to NOT qualified
@@ -712,6 +746,19 @@ export class GameOverScene {
   }
 
   async submitScoreFinal() {
+    if (!this.isRankedRun) {
+      this.submitBlockedReason = this.game.runModeReason || 'unranked_run';
+      this.isSubmitting = false;
+      this.state = 'unranked';
+      this.game.pendingHighscore = null;
+      console.log(`[GameOverScene] Blocked score submit for unranked run reason=${this.submitBlockedReason}`);
+      if (this.promptText) {
+        this.promptText.visible = true;
+        this.promptText.text = 'PRACTICE RUN - SCORE NOT LOGGED';
+      }
+      return;
+    }
+
     // Prevent double submission
     if (this.isSubmitting) {
       console.log('[GameOverScene] Already submitting, ignoring duplicate call');

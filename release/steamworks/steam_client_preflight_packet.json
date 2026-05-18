@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T05:15:54.057Z",
+  "generatedAt": "2026-05-18T05:45:46.598Z",
   "status": "ready_for_steam_upload_and_client_validation",
   "build": {
-    "version": "v2026-05-18_06-55-34",
-    "timestamp": "2026-05-18T04:55:34.025Z"
+    "version": "v2026-05-18_07-26-54",
+    "timestamp": "2026-05-18T05:26:54.758Z"
   },
   "explicitLimit": "This packet proves local upload preflight only. It is not Steam-client validation evidence.",
   "localPayload": {
@@ -11,15 +11,15 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-18T05:04:01.174Z"
+      "modifiedAt": "2026-05-18T05:33:37.292Z"
     },
     "productName": "Nova Swarm",
     "appId": "app.novaswarm.game",
     "packagedExeSmoke": {
-      "reportPath": "test-results/packaged-exe-smoke-2026-05-18T05-04-12-824Z/report.json",
-      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T05-04-12-824Z/01-electron-menu.png",
+      "reportPath": "test-results/packaged-exe-smoke-2026-05-18T05-33-49-076Z/report.json",
+      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T05-33-49-076Z/01-electron-menu.png",
       "status": "passed",
-      "build": "v2026-05-18_06-55-34",
+      "build": "v2026-05-18_07-26-54",
       "title": "Nova Swarm - Arcade Patrol",
       "scene": "intro",
       "introTitle": "THE COIN SLOT WOKE UP",
@@ -37,16 +37,16 @@
       "consoleEvents": []
     },
     "packagedControlsSmoke": {
-      "reportPath": "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/report.json",
+      "reportPath": "test-results/packaged-control-smoke-2026-05-18T05-34-04-992Z/report.json",
       "screenshotPaths": [
-        "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/00-control-start.png",
-        "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/01-keyboard-run.png",
-        "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/02-keyboard-pause.png",
-        "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/03-gamepad-run.png",
-        "test-results/packaged-control-smoke-2026-05-18T05-04-17-257Z/04-gamepad-pause.png"
+        "test-results/packaged-control-smoke-2026-05-18T05-34-04-992Z/00-control-start.png",
+        "test-results/packaged-control-smoke-2026-05-18T05-34-04-992Z/01-keyboard-run.png",
+        "test-results/packaged-control-smoke-2026-05-18T05-34-04-992Z/02-keyboard-pause.png",
+        "test-results/packaged-control-smoke-2026-05-18T05-34-04-992Z/03-gamepad-run.png",
+        "test-results/packaged-control-smoke-2026-05-18T05-34-04-992Z/04-gamepad-pause.png"
       ],
       "status": "passed",
-      "build": "v2026-05-18_06-55-34",
+      "build": "v2026-05-18_07-26-54",
       "checks": {
         "keyboardMovement": true,
         "keyboardFire": true,
@@ -59,20 +59,20 @@
       "errors": []
     },
     "fullRc": {
-      "reportPath": "test-results/steam-rc-verify-2026-05-18T04-28-43-110Z/report.json",
+      "reportPath": "test-results/steam-rc-verify-2026-05-18T05-32-30-342Z/report.json",
       "releasePlaytest": {
-        "reportPath": "test-results/release-playtest-2026-05-18T04-31-44-050Z/report.json",
+        "reportPath": "test-results/release-playtest-2026-05-18T05-35-29-239Z/report.json",
         "baseUrl": "http://127.0.0.1:4173",
-        "survivedMs": 599837,
+        "survivedMs": 599861,
         "requiredSurvivalMs": 599500,
         "survivedFullDuration": true,
         "peakLevel": 5,
-        "peakScore": 49222,
+        "peakScore": 51915,
         "finalState": {
           "scene": "play",
           "level": 5,
           "lives": 3,
-          "score": 49222,
+          "score": 51915,
           "enemyManagerState": "BOSS_ACTIVE",
           "musicContext": "boss",
           "musicTrack": "DeathMatch (Boss Theme).mp3",
@@ -128,7 +128,7 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-18T05:04:01.174Z"
+      "modifiedAt": "2026-05-18T05:33:37.292Z"
     },
     {
       "path": "release/steamworks/app_build_TEMPLATE.vdf",
@@ -146,13 +146,13 @@
       "path": "release/steamworks/desktop_package_review_report.json",
       "exists": true,
       "bytes": 2782,
-      "modifiedAt": "2026-05-18T05:04:27.552Z"
+      "modifiedAt": "2026-05-18T05:34:15.755Z"
     },
     {
       "path": "release/steamworks/full_rc_verification_report.json",
       "exists": true,
       "bytes": 3440,
-      "modifiedAt": "2026-05-18T04:41:58.558Z"
+      "modifiedAt": "2026-05-18T05:45:41.710Z"
     },
     {
       "path": "release/steamworks/steam_client_validation_runbook.md",

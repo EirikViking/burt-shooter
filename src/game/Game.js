@@ -30,6 +30,9 @@ export class Game {
       highscore: new HighscoreScene(this)
     };
     this.selectedShipId = null;
+    this.isDebugRun = false;
+    this.runMode = 'ranked';
+    this.runModeReason = null;
   }
 
   start() {
@@ -116,6 +119,9 @@ export class Game {
     this.score = 0;
     this.level = 1;
     this.lives = 3;
+    this.isDebugRun = false;
+    this.runMode = 'ranked';
+    this.runModeReason = null;
 
     // Rank System (Per Run)
     // Rank System (Per Run)
@@ -138,6 +144,18 @@ export class Game {
     };
 
     this.switchScene('play');
+  }
+
+  markUnrankedRun(reason = 'debug_route') {
+    this.isDebugRun = true;
+    this.runMode = 'unranked';
+    this.runModeReason = reason;
+    this.pendingHighscore = null;
+    console.log(`[Game] run marked unranked reason=${reason}`);
+  }
+
+  isScoreSubmissionAllowed() {
+    return this.runMode !== 'unranked' && !this.isDebugRun;
   }
 
   gameOver() {

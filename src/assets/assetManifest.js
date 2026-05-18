@@ -1,6 +1,6 @@
 export const AssetManifest = {
     generated: {
-        menuBackdrop: '/art/generated/nova-swarm/nova-swarm-menu-backdrop.webp',
+        menuBackdrop: '/art/generated/nova-swarm/nova-swarm-menu-arcade-backdrop.webp',
         gameplayArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
         stormGameplayBackdrop: '/art/generated/nova-swarm/nova-swarm-storm-gameplay-backdrop.webp',
         bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',

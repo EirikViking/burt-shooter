@@ -238,6 +238,11 @@ function buildGameTextState(game) {
     score: game?.score ?? 0,
     level: game?.level ?? 0,
     lives: game?.lives ?? 0,
+    runMode: game?.runMode || (game?.isDebugRun ? 'unranked' : 'ranked'),
+    runModeReason: game?.runModeReason || null,
+    scoreSubmissionAllowed: typeof game?.isScoreSubmissionAllowed === 'function'
+      ? game.isScoreSubmissionAllowed()
+      : !game?.isDebugRun,
     selectedShipSpriteKey: game?.selectedShipSpriteKey || null,
     isPaused: Boolean(playScene?.isPaused),
     overlays: {
