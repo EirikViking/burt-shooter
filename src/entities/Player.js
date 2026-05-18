@@ -7,6 +7,7 @@ import { enhanceShipVisuals } from '../utils/ShipVisualEnhancer.js';
 import { createText } from '../utils/pixiText.js';
 import { getPlayerFocusScale } from '../config/AccessibilitySettings.js';
 import { getDefaultShipKey, getShipMetadata } from '../config/ShipMetadata.js';
+import { ShipData } from '../config/ShipData.js';
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
@@ -374,6 +375,42 @@ export class Player {
     return fallback ?? pick;
   }
 
+  getRankVariantConfig(index) {
+    const slug = this.visualVariant?.slug
+      || this.shipTrait?.slug
+      || (typeof this.selectedShipSpriteKey === 'string' && this.selectedShipSpriteKey.includes('::')
+        ? this.selectedShipSpriteKey.split('::').pop()
+        : null);
+    const baseShip = ShipData[index];
+    if (baseShip && slug) {
+      const metadata = getShipMetadata(`${baseShip.spriteKey}::${slug}`);
+      if (metadata) {
+        return {
+          id: metadata.id || `rank_ship_${index}_${slug}`,
+          baseId: metadata.baseId || `rank_ship_${index}`,
+          name: metadata.name,
+          textureIndex: index,
+          stats: { ...(metadata.stats || {}) },
+          weapon: { ...(metadata.weapon || {}) },
+          visuals: { ...(metadata.visuals || {}) },
+          hitbox: { ...(metadata.hitbox || { radius: 12 }) },
+          trait: metadata.trait ? { ...metadata.trait } : null,
+          spriteKey: metadata.spriteKey
+        };
+      }
+    }
+
+    const fallback = ShipRegistry[`rank_ship_${index}`];
+    return fallback ? {
+      ...fallback,
+      stats: { ...(fallback.stats || {}) },
+      weapon: { ...(fallback.weapon || {}) },
+      visuals: { ...(fallback.visuals || {}) },
+      hitbox: { ...(fallback.hitbox || { radius: 12 }) },
+      trait: fallback.trait ? { ...fallback.trait } : null
+    } : null;
+  }
+
   swapToRankShip(rank, options = {}) {
     const nr = Number(rank);
     if (!Number.isFinite(nr)) return false;
@@ -395,9 +432,8 @@ export class Player {
     const texture = GameAssets.getRankShipTexture(index);
     if (!GameAssets.isValidTexture(texture)) return false;
 
-    // Load new config from Registry
     const newShipId = `rank_ship_${index}`;
-    const newConfig = ShipRegistry[newShipId];
+    const newConfig = this.getRankVariantConfig(index);
 
     if (newConfig) {
       this.config = newConfig;
@@ -409,6 +445,8 @@ export class Player {
       this.weaponProfile = { ...newConfig.weapon };
       this.speed = this.stats.speed;
       this.weaponSfxKey = this.weaponProfile.shootSfx;
+      this.selectedShipSpriteKey = newConfig.spriteKey || this.selectedShipSpriteKey;
+      this.selectedShipTextureIndex = index;
       this.activePowerup.type = null; // Clear powerups on ship swap to avoid stuck states? No, keep powerups.
       this.recalculateStats();
     }
@@ -911,6 +949,8 @@ export class Player {
   applyTraitProjectileEffects(bullet, shotCounter, { bonus = false } = {}) {
     if (!bullet) return bullet;
     const combat = this.traitCombat || {};
+    bullet.traitSlug = this.shipTrait?.slug || null;
+    bullet.traitLabel = this.shipTrait?.label || null;
     const radiusMult = Number.isFinite(combat.projectileRadiusMult) ? combat.projectileRadiusMult : 1;
     if (radiusMult !== 1) {
       bullet.radius = Math.max(4, Math.round((bullet.radius || 7) * radiusMult));
@@ -922,6 +962,7 @@ export class Player {
 
     const pierceEvery = Number(combat.pierceEvery || 0);
     if (!bonus && pierceEvery > 0 && shotCounter % pierceEvery === 0) {
+      bullet.isTraitPiercingShot = true;
       bullet.piercing = true;
       bullet.damage = Math.max(0.5, bullet.damage * (combat.pierceDamageMult || 0.72));
       if (bullet.core) bullet.core.tint = 0xffffff;
@@ -1240,6 +1281,29 @@ export class Player {
     const nearMiss = combat.nearMissScoreMult && combat.nearMissScoreMult !== 1 ? ` nearMiss=${combat.nearMissScoreMult}x` : '';
     const radius = combat.projectileRadiusMult ? ` radius=${combat.projectileRadiusMult}` : '';
     return `trait=${trait} fire=${Math.round(this.shootDelay)} speed=${this.speed.toFixed(2)} dmg=${this.bulletDamage} proj=${this.bulletSpeed.toFixed(1)} shots=${shots} pierce=${this.bulletPierce}${bonus}${pierce}${crit}${dodge}${nearMiss}${radius}`;
+  }
+
+  getTraitState() {
+    const combat = this.traitCombat || {};
+    const countdown = (every) => {
+      const cadence = Number(every || 0);
+      if (!Number.isFinite(cadence) || cadence <= 0) return 0;
+      const remaining = cadence - (this.traitShotCounter % cadence);
+      return remaining === cadence ? cadence : remaining;
+    };
+
+    return {
+      slug: this.shipTrait?.slug || null,
+      label: this.shipTrait?.label || null,
+      description: this.shipTrait?.description || null,
+      shotsFired: this.traitShotCounter,
+      nextBonusShotIn: countdown(combat.bonusShotEvery),
+      nextPierceShotIn: countdown(combat.pierceEvery),
+      nextCritShotIn: countdown(combat.critEvery),
+      dodgePulseRadius: Number(combat.dodgePulseRadius || 0),
+      nearMissScoreMult: Number(combat.nearMissScoreMult || 1),
+      projectileRadiusMult: Number(combat.projectileRadiusMult || 1)
+    };
   }
 
   getPowerupLabel(type) {

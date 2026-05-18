@@ -1196,6 +1196,7 @@ export class PlayScene {
 
             // Chain Lightning: Arc to nearby enemies
             this.triggerChainLightning(enemy, bullet.damage);
+            this.applyShipTraitBulletImpact(bullet, enemy);
 
             if (destroyed) {
               // XP Logic handled by score now
@@ -2839,6 +2840,57 @@ export class PlayScene {
     this.enqueueToast(`NEAR MISS +${score}`, { fontSize: 16, fill: '#ffcc00', slot: 'top', type: 'combo', duration: 900 });
     if (this.particleManager) {
       this.particleManager.createHitSpark(this.player.x, this.player.y);
+    }
+  }
+
+  applyShipTraitBulletImpact(bullet, sourceEnemy) {
+    if (!bullet?.isPlayer || !sourceEnemy || sourceEnemy.__traitImpactSource) return;
+    const combat = this.player?.traitCombat || {};
+    const accent = this.player?.visualVariant?.accent || this.player?.visualVariant?.glow || 0x66ffff;
+
+    if (bullet.isTraitCriticalShot) {
+      const radius = 68 + Math.round(Math.max(0, Number(combat.critDamageMult || 1.35) - 1.3) * 70);
+      const splashDamage = Math.max(0.35, Number(bullet.damage || 1) * 0.32);
+      let splashed = 0;
+
+      this.enemyManager.enemies.forEach(enemy => {
+        if (!enemy?.active || enemy === sourceEnemy) return;
+        const dist = Math.hypot((enemy.x || 0) - sourceEnemy.x, (enemy.y || 0) - sourceEnemy.y);
+        if (dist > radius) return;
+
+        enemy.__traitImpactSource = true;
+        const destroyed = enemy.takeDamage(splashDamage);
+        enemy.__traitImpactSource = false;
+        splashed += 1;
+        if (this.particleManager) this.particleManager.createHitSpark(enemy.x, enemy.y, accent);
+
+        if (destroyed) {
+          const scoreAwarded = this.getComboScore(enemy.scoreValue);
+          this.game.addScore(scoreAwarded);
+          if (this.scorePopupManager) this.scorePopupManager.addScorePopup(enemy.x, enemy.y, scoreAwarded);
+          this.onEnemyKilled(enemy);
+          this.particleManager?.createExplosion(enemy.x, enemy.y, accent);
+        }
+      });
+
+      if (splashed > 0) {
+        this.enqueueToast(`TRAIT SPLASH x${splashed}`, { fontSize: 15, fill: '#fff45c', slot: 'top', type: 'trait', duration: 700 });
+        this.screenShake?.shake(2);
+      }
+    }
+
+    if (bullet.isTraitPiercingShot) {
+      bullet.traitPierceHits = (bullet.traitPierceHits || 0) + 1;
+      if (this.particleManager) this.particleManager.createHitSpark(sourceEnemy.x, sourceEnemy.y, 0xffffff);
+      if (bullet.traitPierceHits >= 3) {
+        bullet.active = false;
+      }
+    }
+
+    if (bullet.isTraitBonusShot) {
+      const bonusScore = Math.max(3, Math.round(8 * Number(combat.nearMissScoreMult || 1)));
+      this.game.addScore(bonusScore);
+      if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 12, bonusScore);
     }
   }
 

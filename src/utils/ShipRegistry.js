@@ -33,7 +33,8 @@ ShipData.forEach(ship => {
         stats: { ...ship.stats },
         weapon: { ...ship.weapon },
         visuals: { ...ship.visuals },
-        hitbox: { ...ship.hitbox }
+        hitbox: { ...ship.hitbox },
+        trait: ship.trait ? { ...ship.trait } : null
     };
 });
 

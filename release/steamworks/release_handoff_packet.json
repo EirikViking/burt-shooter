@@ -1,29 +1,25 @@
 {
-  "generatedAt": "2026-05-18T01:31:58.525Z",
+  "generatedAt": "2026-05-18T02:27:10.887Z",
   "build": {
-    "version": "v2026-05-18_03-00-05",
-    "timestamp": "2026-05-18T01:00:05.526Z",
+    "version": "v2026-05-18_04-04-26",
+    "timestamp": "2026-05-18T02:04:26.712Z",
     "evidenceVersions": [
-      "v2026-05-18_03-00-05",
-      "v2026-05-18_03-00-05",
-      "v2026-05-18_03-00-05",
-      "v2026-05-18_03-00-05",
-      "v2026-05-18_03-00-05",
-      "v2026-05-18_03-00-05",
-      "v2026-05-18_03-00-05"
+      "v2026-05-18_04-04-26",
+      "v2026-05-18_04-04-26",
+      "v2026-05-18_04-04-26",
+      "v2026-05-18_04-04-26",
+      "v2026-05-18_04-04-26",
+      "v2026-05-18_04-04-26",
+      "v2026-05-18_04-04-26"
     ],
     "staleEvidence": []
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
-    "passed": 14,
-    "failed": 7,
-    "hardFailures": 4,
+    "passed": 18,
+    "failed": 3,
+    "hardFailures": 0,
     "failedChecks": [
-      "full_rc_verification_report_clean",
-      "human_review_packet_current",
-      "steam_client_preflight_packet_current",
-      "steam_release_handoff_packet_current",
       "steamworks_ids_configured",
       "steam_client_validation_evidence",
       "human_release_approvals_recorded"
@@ -53,20 +49,20 @@
       "status": "ready",
       "path": "release/steamworks/desktop_package_review_report.json",
       "exeBytes": 226666496,
-      "electronSmoke": "test-results/electron-smoke-2026-05-18T01-18-51-027Z/report.json",
-      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-18T01-18-55-102Z/report.json"
+      "electronSmoke": "test-results/electron-smoke-2026-05-18T02-09-03-903Z/report.json",
+      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-18T02-09-07-882Z/report.json"
     },
     "liveDeployment": {
       "status": "ready",
       "path": "release/steamworks/live_deployment_report.json",
       "liveUrl": "https://burt.tinyfoundry.app",
-      "liveSmoke": "test-results/smoke-live-boss-telegraph-2026-05-18T03-00/report.json"
+      "liveSmoke": "test-results/smoke-live-ship-traits-matter-2026-05-18T04-04/report.json"
     },
     "fullRc": {
       "status": "ready",
       "path": "release/steamworks/full_rc_verification_report.json",
-      "fullRcReport": "test-results/steam-rc-verify-2026-05-18T01-17-37-434Z/report.json",
-      "releasePlaytest": "test-results/release-playtest-2026-05-18T01-20-32-116Z/report.json"
+      "fullRcReport": "test-results/steam-rc-verify-2026-05-18T02-07-53-648Z/report.json",
+      "releasePlaytest": "test-results/release-playtest-2026-05-18T02-10-31-237Z/report.json"
     },
     "humanReview": {
       "status": "ready",
@@ -94,7 +90,7 @@
     "provenance": {
       "status": "ready",
       "path": "release/provenance/asset_provenance_report.json",
-      "covered": "1619/1619"
+      "covered": "1620/1620"
     },
     "storeMetadata": {
       "status": "ready",
@@ -116,12 +112,12 @@
     {
       "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
       "exists": true,
-      "bytes": 11536443
+      "bytes": 11402809
     },
     {
       "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
       "exists": true,
-      "bytes": 573781
+      "bytes": 580859
     },
     {
       "path": "release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png",

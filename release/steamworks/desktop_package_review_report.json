@@ -1,20 +1,20 @@
 {
-  "generatedAt": "2026-05-18T01:19:19.785Z",
+  "generatedAt": "2026-05-18T02:09:20.032Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-18_03-00-05",
-    "timestamp": "2026-05-18T01:00:05.526Z"
+    "version": "v2026-05-18_04-04-26",
+    "timestamp": "2026-05-18T02:04:26.712Z"
   },
   "desktopPayload": {
     "path": "release/desktop/win-unpacked/Nova Swarm.exe",
     "sizeBytes": 226666496,
-    "modifiedAt": "2026-05-18T01:18:47.485Z"
+    "modifiedAt": "2026-05-18T02:08:56.466Z"
   },
   "latestElectronSmoke": {
-    "reportPath": "test-results/electron-smoke-2026-05-18T01-18-51-027Z/report.json",
-    "screenshotPath": "test-results/electron-smoke-2026-05-18T01-18-51-027Z/01-electron-menu.png",
+    "reportPath": "test-results/electron-smoke-2026-05-18T02-09-03-903Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-05-18T02-09-03-903Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-05-18_03-00-05",
+    "build": "v2026-05-18_04-04-26",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "intro",
     "introTitle": "THE COIN SLOT WOKE UP",
@@ -32,10 +32,10 @@
     "consoleEvents": []
   },
   "latestPackagedExeSmoke": {
-    "reportPath": "test-results/packaged-exe-smoke-2026-05-18T01-18-55-102Z/report.json",
-    "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T01-18-55-102Z/01-electron-menu.png",
+    "reportPath": "test-results/packaged-exe-smoke-2026-05-18T02-09-07-882Z/report.json",
+    "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T02-09-07-882Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-05-18_03-00-05",
+    "build": "v2026-05-18_04-04-26",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "intro",
     "introTitle": "THE COIN SLOT WOKE UP",
