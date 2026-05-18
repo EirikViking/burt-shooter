@@ -11,7 +11,8 @@ This file turns the current release evidence into a Steamworks entry checklist. 
 The draft intentionally uses conservative claims:
 
 - `Partial Controller Support`, not full controller support, until the Steam-installed build validates text entry, pause/menu flow, and Steam Input metadata.
-- Steam Cloud deferred for v1 because the current desktop package uses local settings and local highscore fallback.
+- Steam Cloud deferred for v1 because the current desktop package uses local settings/local leaderboard storage instead of Steam Cloud.
+- Global leaderboard copy is now supportable only as an online/shared leaderboard claim: local/global qualification and offline fallback are implemented and focused-tested, but it is not a Steamworks leaderboard.
 - Steam achievements deferred for v1 because no Steamworks API achievement integration is present.
 - English only until final public copy is approved.
 

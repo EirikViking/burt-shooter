@@ -17,6 +17,7 @@
     "check:trait-hud": "node scripts/check-trait-hud.mjs",
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",
     "check:gameover-motivation": "node scripts/check-gameover-motivation.mjs",
+    "check:leaderboard-split": "node scripts/check-leaderboard-split.mjs",
     "check:boss-telegraph": "node scripts/check-boss-telegraph.mjs",
     "check:boss-contact": "node scripts/check-boss-contact.mjs",
     "check:hijacker-tractor": "node scripts/check-hijacker-tractor.mjs",

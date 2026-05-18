@@ -16,7 +16,7 @@
   "shortDescription": "A fast modern arcade score-chaser: dodge readable swarms, blast a boss every level, grab chaotic bonus cores, and restart instantly for one more run.",
   "longDescription": [
     "Nova Swarm is a fast modern arcade score-chaser about surviving wave after wave of choreographed space nonsense. Pick your ship, dodge incoming fire, grab ridiculous bonus cores, and push through escalating enemy formations toward oversized boss encounters.",
-    "The game blends shoot-'em-up clarity with public arcade-comedy personality: readable bullets, compact wave briefings, original space-cabinet art, punchy radio callouts, local highscore fallback, and accessibility sliders for screen shake and player focus."
+    "The game blends shoot-'em-up clarity with public arcade-comedy personality: readable bullets, compact wave briefings, original space-cabinet art, punchy radio callouts, local and online score chasing, and accessibility sliders for screen shake and player focus."
   ],
   "featureBullets": [
     "Arcade wave shooting with handcrafted early pacing and escalating late-game pressure.",
@@ -26,7 +26,7 @@
     "Optional story intro with replay from the menu, never blocking quick play.",
     "Punchy radio callouts with music ducking.",
     "Accessibility controls for screen shake and player-focus visibility.",
-    "Offline/local highscore fallback when the network is unavailable."
+    "Separate local and online leaderboards, with local score saving when the network is unavailable."
   ],
   "tags": [
     "Arcade",

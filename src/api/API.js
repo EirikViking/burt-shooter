@@ -4,6 +4,37 @@ const DEFAULT_TIMEOUT_MS = 8000; // First attempt: 8 seconds
 const RETRY_TIMEOUT_MS = 10000; // Retry attempts: 10 seconds
 const MAX_RETRIES = 3; // Total: 1 initial + 2 retries
 const RETRY_DELAYS = [0, 500, 1500]; // Faster backoff
+const PUBLIC_GLOBAL_HIGHSCORE_ORIGIN = 'https://burt.tinyfoundry.app';
+
+function stripTrailingSlash(value) {
+  return String(value || '').replace(/\/+$/, '');
+}
+
+function isDesktopMode() {
+  try {
+    const params = new URLSearchParams(window.location.search || '');
+    return params.get('desktop') === '1' || window.__NOVA_SWARM_DESKTOP__ === true;
+  } catch {
+    return false;
+  }
+}
+
+function resolveGlobalHighscoreBaseUrl() {
+  try {
+    const override = window.__novaGlobalLeaderboardBaseUrl;
+    if (typeof override === 'string' && override.trim()) {
+      return stripTrailingSlash(override.trim());
+    }
+  } catch {
+    // Ignore inaccessible test overrides.
+  }
+
+  if (isDesktopMode()) {
+    return PUBLIC_GLOBAL_HIGHSCORE_ORIGIN;
+  }
+
+  return stripTrailingSlash(window.location.origin);
+}
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -72,11 +103,22 @@ class APIClient {
     // Submission deduplication
     this._submissionInFlight = false;
     this._currentSubmissionId = null;
+    this._activeHighscoreBaseUrl = null;
+  }
+
+  getHighscoreBaseUrl() {
+    const nextBaseUrl = resolveGlobalHighscoreBaseUrl();
+    if (this._activeHighscoreBaseUrl !== nextBaseUrl) {
+      this._activeHighscoreBaseUrl = nextBaseUrl;
+      this._cachedHighscores = null;
+      this._cacheTimestamp = 0;
+    }
+    return nextBaseUrl;
   }
 
   async getHighscores(options = {}) {
     const { useCache = true, onRetry = null } = options;
-    const url = `${this.baseUrl}/api/highscores`;
+    const url = `${this.getHighscoreBaseUrl()}/api/highscores`;
 
     // Return cached data if available and fresh
     if (useCache && this._cachedHighscores && (Date.now() - this._cacheTimestamp < this._cacheMaxAge)) {
@@ -193,7 +235,7 @@ class APIClient {
       const payload = { name, score, level, rankIndex, submissionId };
       console.log('[API] Submitting payload:', payload);
 
-      const response = await fetchWithTimeout(`${this.baseUrl}/api/highscores`, {
+      const response = await fetchWithTimeout(`${this.getHighscoreBaseUrl()}/api/highscores`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

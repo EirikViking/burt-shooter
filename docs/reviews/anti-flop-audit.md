@@ -372,3 +372,50 @@ After: the voice layer has a clear arcade-announcer identity, bigger leaderboard
 - The fallback Microsoft Zira voice is less commercially distinctive than a strong ElevenLabs/pro voice take.
 - The leaderboard flow still needs a full local/global split beyond the current global qualification and local fallback voice moments.
 - Steam readiness still requires real Steamworks IDs, Steam-client validation evidence, and human release approvals.
+
+## Loop 9 - Local / Global Leaderboard Split
+
+### What Was Tested
+
+- Built the game after the leaderboard split on build `v2026-05-19_00-13-49`.
+- Ran the new focused leaderboard split check across local+global, local-only, global-offline, and slow-global-restart cases.
+- Reran game-over motivation, debug-unranked, local smoke, and Electron current smoke.
+- Attempted the existing Playwright spec; it was blocked by the missing bundled Playwright Chromium on this machine, while the repo's Chrome-backed scripts passed.
+
+### What Felt Risky
+
+- One `isQualified` boolean was standing in for both local and online leaderboard entry.
+- If the global prefetch failed, the player could lose the chance to record a perfectly good local score.
+- Electron's loopback `/api/highscores` could look like the global board to the frontend, which made the huge global fanfare semantically wrong in the desktop package.
+- Network waits had too much power over the end-of-run flow.
+
+### What Changed
+
+- Added `src/api/LocalLeaderboard.js`, a real local leaderboard stored in `localStorage` with local qualification, cutoff, save, and duplicate-submission handling.
+- Split game-over qualification into `localQualified`, `globalQualified`, `globalStatus`, and `canEnterName`.
+- Added explicit game-over status copy for `LOCAL BOARD` and `GLOBAL BOARD`, so the player can see which board was earned.
+- Local saves now happen immediately after name entry; online/global submission only runs when the global board actually qualifies.
+- Global fetch failure no longer kills the one-more-run flow: local scores are preserved and the UI says the global board is offline.
+- The global fanfare/voice now only fires after an online/global qualification, not merely a local or offline path.
+- Highscore view now has distinct `GLOBAL` and `LOCAL` tabs, defaulting to the local board after a local save.
+- Desktop/Electron launches with `?desktop=1` so the game can distinguish the local loopback API from the public online leaderboard endpoint.
+
+### Before And After Feel
+
+Before: the end-of-run flow behaved like one leaderboard with a fragile network dependency.
+
+After: the player gets a fast local score result, a clearly bigger online/global moment when earned, and a readable fallback when the network is not there.
+
+### Evidence Captured
+
+- Focused leaderboard split: `test-results/leaderboard-split-2026-05-18T22-14-22-735Z/report.json`.
+- Game-over motivation: `test-results/gameover-motivation-2026-05-18T22-16-15-943Z/report.json`.
+- Debug/unranked guard: `test-results/debug-run-unranked-2026-05-18T22-16-15-933Z/report.json`.
+- Local smoke: `test-results/smoke-2026-05-18T22-14-22-702Z/report.json`.
+- Electron current smoke: `test-results/electron-smoke-2026-05-18T22-14-22-276Z/report.json`.
+
+### Remaining Top Risks
+
+- The public domain still needs deployment and live-domain verification for this leaderboard split.
+- Highscore tab visuals are clearer, but they could use a dedicated typography/layout polish pass.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.

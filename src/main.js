@@ -306,7 +306,14 @@ function buildGameTextState(game) {
       unlockSummary: gameOverScene.unlockSummary || null,
       prompt: gameOverScene.promptText?.text || null,
       state: gameOverScene.state || null,
-      qualifiedForHighscore: Boolean(gameOverScene.isQualified)
+      qualifiedForHighscore: Boolean(gameOverScene.isQualified),
+      localQualified: Boolean(gameOverScene.localQualified),
+      globalQualified: Boolean(gameOverScene.globalQualified),
+      globalStatus: gameOverScene.globalStatus || null,
+      canEnterName: Boolean(gameOverScene.canEnterName),
+      globalFanfarePlayed: Boolean(gameOverScene.qualificationFanfarePlayed),
+      leaderboardStatus: gameOverScene.leaderboardStatusText?.text || null,
+      lastLeaderboardResult: game?.lastLeaderboardResult || null
     } : null,
     player: player ? {
       x: Math.round(player.x),

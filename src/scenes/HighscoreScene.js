@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { API } from '../api/API.js';
+import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { getHighscoreComment, getEnhancedLeaderboardTaunt } from '../text/phrasePool.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
@@ -47,8 +48,11 @@ export class HighscoreScene {
     this.statusText = null;
     this.retryBtn = null;
     this.backBtn = null;
+    this.globalBtn = null;
+    this.localBtn = null;
     this.buildStamp = null;
     this.status = 'LOADING';
+    this.activeLeaderboard = 'global';
     this.entries = [];
     this.entriesNormalized = [];
     this.lastError = 'none';
@@ -99,6 +103,7 @@ export class HighscoreScene {
     this.currentBubble = null;
     this.bubbleTimer = 0;
     this.bubbleTimerMs = null;
+    this.activeLeaderboard = this.game.leaderboardView === 'local' ? 'local' : 'global';
 
     // Load bonus-core texture and rank textures
     await BonusAsset.ensureLoaded();
@@ -205,6 +210,14 @@ export class HighscoreScene {
     });
     this.container.addChild(this.backBtn);
 
+    this.globalBtn = this.createButton('GLOBAL');
+    this.globalBtn.on('pointerdown', () => this.setLeaderboardView('global'));
+    this.container.addChild(this.globalBtn);
+
+    this.localBtn = this.createButton('LOCAL');
+    this.localBtn.on('pointerdown', () => this.setLeaderboardView('local'));
+    this.container.addChild(this.localBtn);
+
     // TASK C: Build stamp removed from HighscoreScene (only allowed on MenuScene)
     // this.buildStamp = createText(`build: ${BUILD_ID}`, {
     //   fontFamily: 'Courier New',
@@ -237,7 +250,7 @@ export class HighscoreScene {
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutHighscore());
     this.layoutHighscore();
     console.log(`HighscoreScene build:${BUILD_ID}`);
-    this.fetchHighscores();
+    this.loadActiveLeaderboard();
 
     // PART B & C: Initialize dynamic text and speech bubbles
     this.initDynamicText();
@@ -279,6 +292,47 @@ export class HighscoreScene {
     this.commentTypewriter = new TypewriterText(this.comment, line, { charDelay: 30 });
   }
 
+  setLeaderboardView(view) {
+    const nextView = view === 'local' ? 'local' : 'global';
+    if (this.activeLeaderboard === nextView && this.status !== 'ERROR') return;
+    this.activeLeaderboard = nextView;
+    this.game.leaderboardView = nextView;
+    this.loadActiveLeaderboard();
+  }
+
+  loadActiveLeaderboard() {
+    if (this.activeLeaderboard === 'local') {
+      this.loadLocalHighscores();
+    } else {
+      this.fetchHighscores();
+    }
+    this.updateLeaderboardChrome();
+  }
+
+  loadLocalHighscores() {
+    this.fetchToken += 1;
+    this.lastError = 'none';
+    const scores = LocalLeaderboard.getScores(10);
+    this.entries = scores;
+    this.entriesNormalized = this.normalizeEntries(scores);
+    this.comment.text = scores.length > 0
+      ? 'This machine remembers the damage.'
+      : 'No local scores yet. Make the first mark.';
+    this.setState(scores.length > 0 ? 'LOADED' : 'EMPTY');
+  }
+
+  updateLeaderboardChrome() {
+    if (this.title) {
+      this.title.text = this.activeLeaderboard === 'local' ? 'LOCAL SCORES' : 'GLOBAL SCORES';
+    }
+    this.updateToggleStyles();
+  }
+
+  updateToggleStyles() {
+    this.setButtonActive(this.globalBtn, this.activeLeaderboard === 'global');
+    this.setButtonActive(this.localBtn, this.activeLeaderboard === 'local');
+  }
+
   async layoutHighscore() {
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height);
@@ -298,6 +352,15 @@ export class HighscoreScene {
 
     this.subtitle.x = width / 2;
     this.subtitle.y = stack.placeElement(this.subtitle, layout.spacing * 0.1);
+
+    const toggleY = stack.getCurrentY() + 20;
+    if (this.globalBtn && this.localBtn) {
+      this.globalBtn.x = width / 2 - 90;
+      this.globalBtn.y = toggleY;
+      this.localBtn.x = width / 2 + 90;
+      this.localBtn.y = toggleY;
+      stack.addGap(48);
+    }
 
     this.comment.x = width / 2;
     this.comment.y = stack.placeElement(this.comment, layout.spacing * 0.4);
@@ -333,6 +396,10 @@ export class HighscoreScene {
   }
 
   async fetchHighscores() {
+    if (this.activeLeaderboard === 'local') {
+      this.loadLocalHighscores();
+      return;
+    }
     this.fetchToken += 1;
     const token = this.fetchToken;
     this.setState('LOADING');
@@ -417,19 +484,34 @@ export class HighscoreScene {
 
   setState(newState) {
     this.status = newState;
+    const lastResult = this.game.lastLeaderboardResult || null;
+    const globalResult = lastResult?.globalStatus ? String(lastResult.globalStatus).replace(/_/g, ' ').toUpperCase() : null;
     switch (newState) {
       case 'LOADED':
-        this.stateMessage.text = 'Highscores loaded.';
+        if (this.activeLeaderboard === 'local') {
+          this.stateMessage.text = globalResult
+            ? `Local board loaded. Global: ${globalResult}.`
+            : 'Local board loaded.';
+        } else {
+          this.stateMessage.text = globalResult
+            ? `Global board loaded. Last run: ${globalResult}.`
+            : 'Global board loaded.';
+        }
         break;
       case 'EMPTY':
-        this.stateMessage.text = 'No scores yet. Be the first legend.';
+        this.stateMessage.text = this.activeLeaderboard === 'local'
+          ? 'No local scores yet. Be the first legend here.'
+          : 'No global scores yet. Be the first legend online.';
         break;
       case 'ERROR':
-        this.stateMessage.text = `Error: ${this.lastError}`;
+        this.stateMessage.text = this.activeLeaderboard === 'global'
+          ? `Global board offline. Local scores are safe.`
+          : `Error: ${this.lastError}`;
         break;
       default:
-        this.stateMessage.text = 'Loading...';
+        this.stateMessage.text = this.activeLeaderboard === 'global' ? 'Loading global board...' : 'Loading local board...';
     }
+    this.updateLeaderboardChrome();
     this.layoutHighscore();
   }
 
@@ -606,22 +688,7 @@ export class HighscoreScene {
     this.rowsContainer.removeChildren();
     if (this.status === 'LOADED') {
       const isDebug = window.location.search.includes('debug=1');
-      // Check for pending highscore and prepare combined list
       let entriesToDisplay = [...this.entries];
-      let pendingEntry = null;
-
-      if (this.game.pendingHighscore) {
-        const pending = this.game.pendingHighscore;
-        pendingEntry = {
-          name: `${pending.name} (pending)`,
-          score: pending.score || 0,
-          level: pending.level || 0,
-          rank_index: pending.rankIndex ?? getRankFromScore(pending.score || 0),
-          isPending: true
-        };
-        // Add pending entry at the start
-        entriesToDisplay.unshift(pendingEntry);
-      }
 
       const rowStyle = {
         fontFamily: 'Courier New',
@@ -1166,25 +1233,22 @@ export class HighscoreScene {
     glow.fill({ color: 0x00ffff, alpha: 0 });
     glow.filters = [new PIXI.BlurFilter(8)];
     container.addChildAt(glow, 0);
+    container._bg = bg;
+    container._label = label;
+    container._glow = glow;
 
     container.on('pointerover', () => {
       bg.clear();
       bg.rect(-80, -20, 160, 40);
       bg.fill({ color: 0x00ffff, alpha: 0.5 });
-      bg.stroke({ color: 0x00ffff, width: 2 });
+      bg.stroke({ color: container._active ? 0xffff66 : 0x00ffff, width: container._active ? 3 : 2 });
       glow.clear();
       glow.rect(-80, -20, 160, 40);
       glow.fill({ color: 0x00ffff, alpha: 0.4 });
     });
 
     container.on('pointerout', () => {
-      bg.clear();
-      bg.rect(-80, -20, 160, 40);
-      bg.fill({ color: 0x0088ff, alpha: 0.3 });
-      bg.stroke({ color: 0x00ffff, width: 2 });
-      glow.clear();
-      glow.rect(-80, -20, 160, 40);
-      glow.fill({ color: 0x00ffff, alpha: 0 });
+      this.setButtonActive(container, Boolean(container._active));
     });
 
     container.on('pointerdown', () => {
@@ -1196,6 +1260,19 @@ export class HighscoreScene {
     });
 
     return container;
+  }
+
+  setButtonActive(button, active = false) {
+    if (!button?._bg || !button?._label || !button?._glow) return;
+    button._active = Boolean(active);
+    button._bg.clear();
+    button._bg.rect(-80, -20, 160, 40);
+    button._bg.fill({ color: active ? 0x00ffff : 0x0088ff, alpha: active ? 0.42 : 0.3 });
+    button._bg.stroke({ color: active ? 0xffff66 : 0x00ffff, width: active ? 3 : 2 });
+    button._label.style.fill = active ? '#031323' : '#00ffff';
+    button._glow.clear();
+    button._glow.rect(-80, -20, 160, 40);
+    button._glow.fill({ color: 0x00ffff, alpha: active ? 0.24 : 0 });
   }
 
   // PART A: Update loop for bubble timer and updates

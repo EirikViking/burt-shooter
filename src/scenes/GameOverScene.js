@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { API } from '../api/API.js';
+import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { extendGameOverTexts, getGameOverComment } from '../text/phrasePool.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
@@ -12,6 +13,7 @@ import { getSelectableShips, getShipUnlockProgress, isShipUnlocked, updateShipUn
 const ENTRY_PROMPT_DESKTOP = 'ENTER: LOG SCORE  |  R/SPACE/GAMEPAD A: RESTART';
 const ENTRY_PROMPT_MOBILE = 'TAP SCORE  |  R/SPACE/GAMEPAD A RESTART';
 const INPUT_PROMPT = 'ENTER INITIALS AND PRESS OK';
+const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
 
 export class GameOverScene {
   constructor(game) {
@@ -31,6 +33,8 @@ export class GameOverScene {
     this.levelText = null;
     this.unlockText = null;
     this.comment = null;
+    this.leaderboardStatusText = null;
+    this.notQualifiedText = null;
     this.promptText = null;
     this.nameDisplay = null;
     this.instructions = null;
@@ -45,6 +49,12 @@ export class GameOverScene {
     this.finalLevel = 0;
     this.cachedHighscores = null;
     this.isQualified = false;
+    this.localQualified = false;
+    this.globalQualified = false;
+    this.globalStatus = 'idle';
+    this.canEnterName = false;
+    this.globalQualificationPromise = null;
+    this.leaderboardResult = null;
     this.isRankedRun = true;
     this.submitBlockedReason = null;
     this.isPersonalBest = false;
@@ -65,6 +75,13 @@ export class GameOverScene {
     this.isSubmitting = false;
     this.submitRetries = 0;
     this.submitBlockedReason = null;
+    this.cachedHighscores = null;
+    this.localQualified = false;
+    this.globalQualified = false;
+    this.globalStatus = 'idle';
+    this.canEnterName = false;
+    this.globalQualificationPromise = null;
+    this.leaderboardResult = null;
     this.isRankedRun = typeof this.game.isScoreSubmissionAllowed === 'function'
       ? this.game.isScoreSubmissionAllowed()
       : !this.game.isDebugRun;
@@ -72,6 +89,11 @@ export class GameOverScene {
     // FREEZE final score and level immediately
     this.finalScore = Number(this.game.score) || 0;
     this.finalLevel = Number(this.game.level) || 0;
+    if (this.isRankedRun) {
+      this.localQualified = LocalLeaderboard.qualifies(this.finalScore);
+      this.globalStatus = 'checking';
+      this.updateCanEnterName();
+    }
     const previousProgress = getShipUnlockProgress();
     this.isPersonalBest = this.finalScore > (Number(previousProgress.bestScore) || 0);
     this.qualificationFanfarePlayed = false;
@@ -168,8 +190,37 @@ export class GameOverScene {
     this.comment.anchor.set(0.5);
     this.container.addChild(this.comment);
 
+    const leaderboardStatusSize = layout.isMobile ? 13 : 16;
+    this.leaderboardStatusText = createText(this.getLeaderboardStatusMessage(), {
+      fontFamily: 'Courier New',
+      fontSize: leaderboardStatusSize,
+      fontWeight: 'bold',
+      fill: '#9cfbff',
+      stroke: '#031323',
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.88, layout),
+      lineHeight: Math.round(leaderboardStatusSize * 1.25)
+    });
+    this.leaderboardStatusText.anchor.set(0.5);
+    this.container.addChild(this.leaderboardStatusText);
+
+    this.notQualifiedText = createText('', {
+      fontFamily: 'Courier New',
+      fontSize: layout.isMobile ? 18 : 22,
+      fontWeight: 'bold',
+      fill: '#8fa6b8',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.86, layout)
+    });
+    this.notQualifiedText.anchor.set(0.5);
+    this.notQualifiedText.visible = false;
+    this.container.addChild(this.notQualifiedText);
+
     const promptSize = layout.isMobile ? 18 : 20;
-    const promptText = layout.isMobile ? ENTRY_PROMPT_MOBILE : ENTRY_PROMPT_DESKTOP;
+    const promptText = this.getEntryPromptText(layout);
     this.promptText = createText(promptText, {
       fontFamily: 'Courier New',
       fontSize: promptSize,
@@ -192,8 +243,13 @@ export class GameOverScene {
       this.promptText.text = 'PRACTICE RUN - SCORE NOT LOGGED';
       this.submitBlockedReason = this.game.runModeReason || 'unranked_run';
       this.isQualified = false;
+      this.localQualified = false;
+      this.globalQualified = false;
+      this.globalStatus = 'unranked';
+      this.canEnterName = false;
       this.cachedHighscores = [];
       this.state = 'unranked';
+      this.updateLeaderboardStatusText();
     }
 
     const nameSize = layout.isMobile ? 22 : 26;
@@ -236,55 +292,128 @@ export class GameOverScene {
       return;
     }
 
-    // Fetch scores for qualification check
-    API.getHighscores().then(scores => {
-      this.cachedHighscores = scores || [];
-      // Sort desc
+    this.updateLeaderboardStatusText();
+    this.updateQualificationPromptState();
+    this.globalQualificationPromise = this.checkGlobalQualification();
+  }
+
+  updateCanEnterName() {
+    this.canEnterName = Boolean(this.isRankedRun && (this.localQualified || this.globalQualified));
+    this.isQualified = this.canEnterName;
+    return this.canEnterName;
+  }
+
+  isSceneActive() {
+    return this.game?.currentScene === this;
+  }
+
+  getEntryPromptText(layout = getCurrentLayout()) {
+    const mobile = Boolean(layout?.isMobile);
+    if (!this.isRankedRun) return 'PRACTICE RUN - SCORE NOT LOGGED';
+    if (!this.updateCanEnterName()) {
+      return this.globalStatus === 'checking'
+        ? 'CHECKING GLOBAL BOARD...'
+        : 'NO BOARD SLOT - R/SPACE/GAMEPAD A: RESTART';
+    }
+    if (mobile) {
+      if (this.localQualified && this.globalQualified) return 'TAP SCORE  |  LOCAL + GLOBAL SLOT';
+      if (this.globalQualified) return 'TAP SCORE  |  GLOBAL SLOT';
+      return 'TAP SCORE  |  LOCAL SLOT';
+    }
+    if (this.localQualified && this.globalQualified) {
+      return 'ENTER: LOG LOCAL + GLOBAL SCORE  |  R/SPACE/GAMEPAD A: RESTART';
+    }
+    if (this.globalQualified) {
+      return 'ENTER: LOG GLOBAL SCORE  |  R/SPACE/GAMEPAD A: RESTART';
+    }
+    return 'ENTER: LOG LOCAL SCORE  |  R/SPACE/GAMEPAD A: RESTART';
+  }
+
+  getLeaderboardStatusMessage() {
+    if (!this.isRankedRun) return 'LOCAL BOARD: PRACTICE RUN\nGLOBAL BOARD: PRACTICE RUN';
+    const localLine = this.localQualified
+      ? 'LOCAL BOARD: QUALIFIED'
+      : `LOCAL BOARD: NEED ${Math.max(1, LocalLeaderboard.getCutoff() + 1).toLocaleString('en-US')}`;
+    const globalLine = {
+      idle: 'GLOBAL BOARD: IDLE',
+      checking: 'GLOBAL BOARD: CHECKING...',
+      qualified: 'GLOBAL BOARD: QUALIFIED',
+      missed: 'GLOBAL BOARD: NO SLOT',
+      offline: 'GLOBAL BOARD: OFFLINE - LOCAL STILL WORKS',
+      submitting: 'GLOBAL BOARD: SUBMITTING...',
+      submitted: 'GLOBAL BOARD: SUBMITTED',
+      failed: 'GLOBAL BOARD: FAILED - LOCAL SAVED',
+      unranked: 'GLOBAL BOARD: PRACTICE RUN'
+    }[this.globalStatus] || `GLOBAL BOARD: ${String(this.globalStatus || 'UNKNOWN').toUpperCase()}`;
+    return `${localLine}\n${globalLine}`;
+  }
+
+  updateLeaderboardStatusText() {
+    if (!this.leaderboardStatusText) return;
+    this.leaderboardStatusText.text = this.getLeaderboardStatusMessage();
+    if (this.globalQualified) {
+      this.leaderboardStatusText.style.fill = '#ffe86a';
+    } else if (this.localQualified) {
+      this.leaderboardStatusText.style.fill = '#9cfbff';
+    } else if (this.globalStatus === 'offline' || this.globalStatus === 'failed') {
+      this.leaderboardStatusText.style.fill = '#ffb35c';
+    } else {
+      this.leaderboardStatusText.style.fill = '#8fa6b8';
+    }
+  }
+
+  updateQualificationPromptState() {
+    const layout = getCurrentLayout();
+    this.updateCanEnterName();
+    if (this.promptText) {
+      this.promptText.text = this.getEntryPromptText(layout);
+      this.promptText.visible = true;
+      this.promptText.eventMode = this.canEnterName ? 'static' : 'none';
+      this.promptText.cursor = this.canEnterName ? 'pointer' : 'default';
+      this.promptText.style.fill = this.canEnterName ? '#00ffff' : '#8fa6b8';
+    }
+    if (this.notQualifiedText) {
+      const noSlot = this.isRankedRun && !this.canEnterName && this.globalStatus !== 'checking';
+      this.notQualifiedText.visible = noSlot;
+      this.notQualifiedText.text = noSlot ? 'NO LOCAL OR GLOBAL SLOT\nONE MORE RUN' : '';
+    }
+    this.layoutScreen();
+  }
+
+  async checkGlobalQualification() {
+    try {
+      const scores = await API.getHighscores({ useCache: false });
+      this.cachedHighscores = Array.isArray(scores) ? [...scores] : [];
       this.cachedHighscores.sort((a, b) => b.score - a.score);
-
-      // Determine qualification (Top 10)
       if (this.cachedHighscores.length < 10) {
-        this.isQualified = true;
+        this.globalQualified = this.finalScore > 0;
       } else {
-        const tenth = this.cachedHighscores[9].score; // 10th place
-        this.isQualified = this.finalScore > tenth;
+        const tenth = Number(this.cachedHighscores[9]?.score) || 0;
+        this.globalQualified = this.finalScore > tenth;
       }
-      console.log(`[GameOver] Qualification Check: Score ${this.finalScore} vs 10th ${this.cachedHighscores[9]?.score || 0} -> ${this.isQualified}`);
+      this.globalStatus = this.globalQualified ? 'qualified' : 'missed';
+      console.log(`[GameOver] Global Qualification: Score ${this.finalScore} vs 10th ${this.cachedHighscores[9]?.score || 0} -> ${this.globalQualified}`);
 
-      if (this.isQualified) {
+      if (this.globalQualified && this.isSceneActive()) {
         this.playGlobalQualificationFanfare();
-      } else if (this.isPersonalBest) {
+      } else if (this.isPersonalBest && !this.localQualified && this.isSceneActive()) {
         this.playPersonalBestVoice();
       }
-
-      // Update prompt visibility based on qualification
-      if (!this.isQualified && this.promptText) {
-        this.promptText.visible = false;
-        // Show "not qualified" message
-        const { width, height } = this.game.app.screen;
-        const notQualifiedMsg = createText('NOT TOP 10 - TRY AGAIN!', {
-          fontFamily: 'Courier New',
-          fontSize: 24,
-          fill: '#888888',
-          align: 'center'
-        });
-        notQualifiedMsg.anchor.set(0.5);
-        notQualifiedMsg.x = width / 2;
-        notQualifiedMsg.y = this.promptText.y; // Same position as prompt
-        this.container.addChild(notQualifiedMsg);
-      }
-    }).catch(e => {
-      console.warn('Failed to pre-fetch scores', e);
-      this.isQualified = false; // Default to NOT prompting on fetch failure
-
-      // Hide prompt on fetch failure
-      if (this.promptText) {
-        this.promptText.visible = false;
-      }
-      if (this.isPersonalBest) {
+    } catch (error) {
+      console.warn('Failed to pre-fetch global scores', error);
+      this.cachedHighscores = [];
+      this.globalQualified = false;
+      this.globalStatus = 'offline';
+      if (this.isPersonalBest && !this.localQualified && this.isSceneActive()) {
         this.playPersonalBestVoice();
       }
-    });
+    } finally {
+      this.updateCanEnterName();
+      if (this.isSceneActive()) {
+        this.updateLeaderboardStatusText();
+        this.updateQualificationPromptState();
+      }
+    }
   }
 
   layoutScreen() {
@@ -299,6 +428,7 @@ export class GameOverScene {
     const levelSize = getResponsiveFontSize(layout, 'subtitle');
     const unlockSize = layout.isMobile ? 15 : 18;
     const bodySize = getResponsiveFontSize(layout, 'body');
+    const leaderboardStatusSize = layout.isMobile ? 13 : 16;
     const promptSize = layout.isMobile ? 18 : 20;
     const nameSize = layout.isMobile ? 22 : 26;
     const smallSize = getResponsiveFontSize(layout, 'small');
@@ -317,6 +447,11 @@ export class GameOverScene {
     this.comment.style.fontSize = bodySize;
     this.comment.style.lineHeight = Math.round(bodySize * 1.4);
     this.comment.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
+    this.leaderboardStatusText.style.fontSize = leaderboardStatusSize;
+    this.leaderboardStatusText.style.lineHeight = Math.round(leaderboardStatusSize * 1.25);
+    this.leaderboardStatusText.style.wordWrapWidth = clampTextWidth(width * 0.88, layout);
+    this.notQualifiedText.style.fontSize = layout.isMobile ? 18 : 22;
+    this.notQualifiedText.style.wordWrapWidth = clampTextWidth(width * 0.86, layout);
     this.promptText.style.fontSize = promptSize;
     this.promptText.style.wordWrapWidth = clampTextWidth(width * 0.85, layout);
     this.nameDisplay.style.fontSize = nameSize;
@@ -335,10 +470,11 @@ export class GameOverScene {
     const levelHeight = levelSize * 1.2;
     const unlockHeight = unlockSize * 2.3;
     const commentHeight = bodySize * 2 * 1.4; // ~2 lines
+    const leaderboardStatusHeight = leaderboardStatusSize * 2.5;
     const promptHeight = promptSize * 1.2;
     const nameHeight = nameSize * 1.2;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + commentHeight + promptHeight + nameHeight + spacing * 6 + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + commentHeight + leaderboardStatusHeight + promptHeight + nameHeight + spacing * 7 + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -369,8 +505,14 @@ export class GameOverScene {
     this.comment.x = width / 2;
     this.comment.y = stack.placeText(this.comment, spacing);
 
+    this.leaderboardStatusText.x = width / 2;
+    this.leaderboardStatusText.y = stack.placeText(this.leaderboardStatusText, spacing * 0.8);
+
     this.promptText.x = width / 2;
     this.promptText.y = stack.placeElement(this.promptText, spacing);
+
+    this.notQualifiedText.x = width / 2;
+    this.notQualifiedText.y = this.promptText.y;
 
     this.nameDisplay.x = width / 2;
     this.nameDisplay.y = stack.getCurrentY();
@@ -426,13 +568,13 @@ export class GameOverScene {
 
   setupKeyboard() {
     this.keyHandler = (e) => {
-      if (this.state === 'submitting') {
-        return;
-      }
-
       const isSubmitKey = e.key === 'Enter' || e.key === 'Return' || e.code === 'NumpadEnter';
       const isRestartKey = e.code === 'KeyR' || e.key === 'r' || e.key === 'R' || e.code === 'Space';
       const isEscape = e.key === 'Escape';
+
+      if (this.state === 'submitting' && !isRestartKey && !isEscape) {
+        return;
+      }
 
       if (isEscape) {
         e.preventDefault();
@@ -554,38 +696,25 @@ export class GameOverScene {
       return;
     }
 
-    // STRICT Qualification Rule: Only allow name entry if EXPLICITLY qualified for top 10
-    // If cachedHighscores is null (fetch failed/pending), default to NOT qualified
-    // If cachedHighscores exists but isQualified is false, reject
-    // Only proceed if isQualified === true
-
-    if (!this.isQualified) {
-      console.log('[GameOver] Player not qualified for Top 10. Blocking submission.');
+    if (!this.updateCanEnterName()) {
+      console.log('[GameOver] Player not qualified for local/global board yet. Blocking submission.');
 
       AudioManager.playVoice('mission_control_restart', { cooldownMs: 3600, duckMs: 1100 });
 
-      // Show feedback
-      const { width, height } = this.game.app.screen;
-      const msg = createText('NOT TOP 10!\nTRY ANOTHER RUN!', {
-        fontFamily: 'Courier New', fontSize: 32, fill: '#ff0000', align: 'center', stroke: '#ffffff', strokeThickness: 2
-      });
-      msg.anchor.set(0.5);
-      msg.x = width / 2;
-      msg.y = height / 2;
-      this.container.addChild(msg);
-
-      // Hide prompt
-      if (this.promptText) this.promptText.visible = false;
-      this.state = 'rejected';
-
-      setTimeout(() => {
-        this.game.showHighscores();
-      }, 2000);
+      if (this.globalStatus === 'checking') {
+        this.updatePromptMessage('GLOBAL BOARD CHECKING...');
+        window.setTimeout(() => this.updateQualificationPromptState(), 900);
+      } else {
+        this.updateQualificationPromptState();
+      }
       return;
     }
 
-    // Only reach here if isQualified === true
-    console.log('[GameOver] Player qualified for Top 10. Allowing name entry.');
+    console.log('[GameOver] Player qualified. Allowing name entry.', {
+      localQualified: this.localQualified,
+      globalQualified: this.globalQualified,
+      globalStatus: this.globalStatus
+    });
 
     this.state = 'input';
     this.nameInput = '';
@@ -621,7 +750,7 @@ export class GameOverScene {
     this.removeInputOverlay();
 
     const layout = getCurrentLayout();
-    const promptText = layout.isMobile ? ENTRY_PROMPT_MOBILE : ENTRY_PROMPT_DESKTOP;
+    const promptText = this.getEntryPromptText(layout);
     this.updatePromptMessage(promptText);
     this.promptText.visible = true;
     this.nameDisplay.visible = false;
@@ -639,7 +768,6 @@ export class GameOverScene {
   }
 
   restartRun() {
-    if (this.state === 'submitting') return;
     this.removeInputOverlay();
     this.stopCaretBlink();
     this.hideHiddenInput();
@@ -916,7 +1044,7 @@ export class GameOverScene {
       this.nameDisplay.text = `NAME: ${this.nameInput}${caret}`;
       this.nameDisplay.visible = true;
     } else if (this.state === 'submitting') {
-      this.nameDisplay.text = 'SENDING...';
+      this.nameDisplay.text = 'SAVING...';
       this.nameDisplay.visible = true;
     } else {
       this.nameDisplay.visible = false;
@@ -944,7 +1072,12 @@ export class GameOverScene {
       return;
     }
 
-    // Prevent double submission
+    if (!this.updateCanEnterName()) {
+      console.log('[GameOverScene] Blocked submit because no local/global slot is available');
+      this.updateQualificationPromptState();
+      return;
+    }
+
     if (this.isSubmitting) {
       console.log('[GameOverScene] Already submitting, ignoring duplicate call');
       return;
@@ -957,87 +1090,107 @@ export class GameOverScene {
     // Update UI to show submitting state
     if (this.inputOverlay) {
       if (this.submitButton) {
-        this.submitButton.textContent = 'SENDING...';
+        this.submitButton.textContent = 'SAVING...';
         this.submitButton.disabled = true;
       }
     } else {
-      this.updatePromptMessage('SENDING...');
+      this.updatePromptMessage('SAVING...');
       this.updateNameDisplay();
     }
 
-    try {
-      console.log('[GameOverScene] Submitting score...', {
-        name: this.nameInput,
+    const name = this.nameInput;
+    const result = {
+      name,
+      score: this.finalScore,
+      level: this.finalLevel,
+      rankIndex: this.game.rankIndex || 0,
+      submissionId: this.submissionId,
+      localQualified: this.localQualified,
+      globalQualified: this.globalQualified,
+      localStatus: this.localQualified ? 'saving' : 'not_qualified',
+      globalStatus: this.globalStatus,
+      updatedAt: new Date().toISOString()
+    };
+
+    console.log('[GameOverScene] Saving score...', result);
+
+    if (this.localQualified) {
+      const localSave = LocalLeaderboard.saveScore({
+        name,
         score: this.finalScore,
         level: this.finalLevel,
-        rank: this.game.rankIndex
+        rankIndex: this.game.rankIndex || 0,
+        submissionId: this.submissionId
       });
-
-      // Timeout wrapper (15s - increased to handle slow connections)
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout')), 15000)
-      );
-
-      // Attempt API call with submissionId for deduplication
-      await Promise.race([
-        API.submitScore(this.nameInput, this.finalScore, this.finalLevel, this.game.rankIndex, this.submissionId),
-        timeoutPromise
-      ]);
-
-      console.log('[GameOverScene] Submit success.');
-      this.isSubmitting = false;
-      this.removeInputOverlay();
-      this.game.showHighscores();
-
-    } catch (error) {
-      console.warn('[GameOverScene] Submit failed:', error.message);
-      this.isSubmitting = false;
-
-      this.submitRetries = (this.submitRetries || 0) + 1;
-
-      if (this.submitRetries >= 2) {
-        // Fallback: Offline Save
-        console.log('[GameOverScene] Falling back to offline display.');
-        this.game.pendingHighscore = {
-          name: this.nameInput,
-          score: this.finalScore,
-          level: this.finalLevel,
-          rankIndex: this.game.rankIndex || 0,
-          pending: true
-        };
+      result.localStatus = 'saved';
+      result.localPlacement = localSave.placement;
+      result.localEntry = localSave.entry;
+      if (!this.globalQualified) {
         this.playLocalHighscoreVoice();
-        this.removeInputOverlay();
-        this.game.showHighscores();
+      }
+    }
+
+    this.leaderboardResult = result;
+    this.game.lastLeaderboardResult = result;
+    this.game.leaderboardView = this.localQualified ? 'local' : 'global';
+    this.game.pendingHighscore = null;
+
+    if (this.globalQualified || this.globalStatus === 'checking') {
+      this.startGlobalSubmissionWhenReady(name, result);
+    }
+
+    this.isSubmitting = false;
+    this.state = 'submitted';
+    this.removeInputOverlay();
+    this.stopCaretBlink();
+    this.hideHiddenInput();
+    this.game.showHighscores();
+  }
+
+  async startGlobalSubmissionWhenReady(name, result) {
+    try {
+      if (this.globalStatus === 'checking' && this.globalQualificationPromise) {
+        await this.globalQualificationPromise.catch(() => null);
+      }
+
+      if (!this.globalQualified) {
+        result.globalQualified = false;
+        result.globalStatus = this.globalStatus === 'offline' ? 'offline' : 'not_qualified';
+        result.updatedAt = new Date().toISOString();
+        this.game.lastLeaderboardResult = result;
         return;
       }
 
-      // Retry Mode
-      this.state = 'prompt'; // Or stay in input? Let's stay in input but show error.
-      this.state = 'input'; // User can edit/retry
-      this.startCaretBlink();
-      this.ensureHiddenInput(); // Refocus
+      this.globalStatus = 'submitting';
+      result.globalStatus = 'submitting';
+      result.globalQualified = true;
+      result.updatedAt = new Date().toISOString();
+      this.game.lastLeaderboardResult = result;
+      this.updateLeaderboardStatusText();
 
-      if (this.inputOverlay) {
-        if (this.submitButton) {
-          this.submitButton.textContent = 'ERROR! TRY AGAIN';
-          this.submitButton.style.background = '#ff4444';
-          this.submitButton.disabled = false;
-        }
-        setTimeout(() => {
-          if (this.submitButton) {
-            this.submitButton.textContent = 'OK';
-            this.submitButton.style.background = '#00ffff';
-          }
-        }, 2000);
-      } else {
-        this.updatePromptMessage('ERROR! TRY AGAIN');
-        if (this.nameDisplay) {
-          this.nameDisplay.text = 'ERROR! TRY AGAIN';
-        }
-        setTimeout(() => {
-          if (this.state === 'input') this.updateNameDisplay();
-        }, 2000);
-      }
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Global submit timeout')), GLOBAL_SUBMIT_TIMEOUT_MS)
+      );
+      const response = await Promise.race([
+        API.submitScore(name, this.finalScore, this.finalLevel, this.game.rankIndex, this.submissionId),
+        timeoutPromise
+      ]);
+
+      this.globalStatus = 'submitted';
+      result.globalStatus = 'submitted';
+      result.globalResponse = response || null;
+      result.updatedAt = new Date().toISOString();
+      this.game.lastLeaderboardResult = result;
+      this.updateLeaderboardStatusText();
+      console.log('[GameOverScene] Global submit success.');
+    } catch (error) {
+      console.warn('[GameOverScene] Global submit failed:', error.message);
+      this.globalStatus = 'failed';
+      result.globalStatus = 'failed';
+      result.globalError = error.message || 'unknown';
+      result.updatedAt = new Date().toISOString();
+      this.game.lastLeaderboardResult = result;
+      this.updateLeaderboardStatusText();
     }
   }
 

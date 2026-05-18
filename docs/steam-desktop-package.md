@@ -25,9 +25,14 @@ Outputs:
 
 ## Runtime Shape
 
-The Electron wrapper starts a local loopback server, serves the Vite `dist/` build, and implements `/api/highscores` locally. That means the Steam build can launch and keep a local leaderboard even when the Cloudflare Pages Functions API is not available.
+The Electron wrapper starts a local loopback server, serves the Vite `dist/` build, and implements `/api/highscores` locally for package health checks and offline fallback. The game runtime also keeps its own local leaderboard in `localStorage`, and desktop launches with `?desktop=1` so the online/global leaderboard path points at `https://burt.tinyfoundry.app/api/highscores` instead of mistaking the loopback API for the shared board.
 
-The web deployment remains unchanged and still uses Cloudflare Pages and D1 at `https://burt.tinyfoundry.app`.
+The web deployment uses Cloudflare Pages and D1 at `https://burt.tinyfoundry.app`; the global leaderboard claim should remain phrased as an online/shared leaderboard, not a Steamworks leaderboard.
+
+Latest leaderboard split evidence:
+
+- `npm run check:leaderboard-split` passed at `test-results/leaderboard-split-2026-05-18T22-14-22-735Z/report.json`.
+- `npm run desktop:smoke:current` passed at `test-results/electron-smoke-2026-05-18T22-14-22-276Z/` after the desktop/global endpoint split.
 
 Latest verified package evidence:
 

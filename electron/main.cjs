@@ -170,7 +170,7 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  win.loadURL(baseUrl || pathToFileURL(path.join(distDir, 'index.html')).toString());
+  win.loadURL(baseUrl ? `${baseUrl}/?desktop=1` : pathToFileURL(path.join(distDir, 'index.html')).toString());
   return win;
 }
 
