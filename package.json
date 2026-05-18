@@ -20,6 +20,7 @@
     "check:leaderboard-split": "node scripts/check-leaderboard-split.mjs",
     "check:boss-telegraph": "node scripts/check-boss-telegraph.mjs",
     "check:boss-contact": "node scripts/check-boss-contact.mjs",
+    "check:boss-phase-variety": "node scripts/check-boss-phase-variety.mjs",
     "check:hijacker-tractor": "node scripts/check-hijacker-tractor.mjs",
     "check:intro-voice": "node scripts/check-intro-voice-exclusivity.mjs",
     "check:boss-adds": "node scripts/check-boss-adds.mjs",

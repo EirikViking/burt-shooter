@@ -14,7 +14,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 | First 60 seconds of gameplay | 8 | Current smoke/release playtest evidence shows quick play, active waves, readable HUD, and stable audio. |
 | Input feel | 7 | Keyboard/gamepad movement/fire/pause are proven in packaged smoke; analog movement still behaves mostly digital in runtime code. |
 | Enemy/bullet readability | 8 | Strong art, cleaner HUD, and the new hijacker beam proof show readable danger lanes. Effects/toasts still need monitoring during dense waves. |
-| Boss telegraphs | 7 | Focused checks now prove regular boss attack telegraphs and boss-contact behavior. More pattern variety and trailer-proof boss moments remain valuable. |
+| Boss telegraphs | 8 | Boss phase shifts now remix signatures by archetype, move the arena anchor, expose safe-lane telemetry, and pass focused phase/telegraph/contact/adds checks. Trailer-proof boss shots still need a capture pass. |
 | Powerup clarity | 8 | HUD powerup check exists and smoke validates label/bounds. |
 | Score/combo/restart compulsion | 9 | Danger-dodge streaks, instant restart, next-ship motivation, and separate local/global leaderboard qualification now give the death screen a stronger one-more-run job. |
 | Ship unlock motivation | 8 | 25 ships are unlock-gated with real trait/stat differences; game over now surfaces next/new unlock motivation. |
@@ -30,7 +30,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 ## Top Five Highest-Impact Changes
 
 1. **Licensed premium voice pass:** regenerate the new line pools with working ElevenLabs access or another approved professional voice source.
-2. **Boss variety:** add more authored boss movement/attack/phase pressure differences with screenshot-readable telegraphs.
+2. **Progression tempo:** shorten the path to level 10 without making the first minute messy or unfair.
 3. **Game-over motivation:** strengthen death screen with next/new ship unlock, one-input/gamepad retry, and separate local/global board status. Implemented this loop.
 4. **Store claim cleanup:** remove Bullet Hell from first metadata set and avoid "Controller Ready" language until Steam client validation. Implemented this loop.
 5. **Combat readability:** keep HUD/toasts off danger lanes; rename ambiguous SHOTS label. Implemented the quick HUD label fix, but larger toast/telegraph work remains.
@@ -38,10 +38,10 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 ## Current Top Risks
 
 - Trailer candidate is gameplay-first but not yet boss-first enough for the stated differentiator.
-- Boss attack readability is improved, but boss variety still needs more authored phase/pressure differences before it becomes a store-page strength.
+- Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Remaining risk is store-media proof: the trailer still needs earlier, clearer boss variety in the first 10 seconds.
 - The new voice system fixes line structure/repetition, but the local fallback performance is not yet premium enough to be a commercial differentiator.
 - Leaderboard flow now has distinct local/global qualification, local fallback, and a tested global-offline path. Remaining risk is live public-domain verification and by-eye polish of the highscore tab presentation.
-- Public web build and marketing site are live; the latest hijacker/typography build is deployed and verified at the private domain.
+- Public web build and marketing site are live; the latest boss-variety build is deployed and verified at the private domain.
 - Steam client validation cannot happen until real app/depot IDs and credentials exist.
 - Human approvals are still required for screenshots, trailer, capsules, audio, store copy, and legal/provenance.
 
@@ -52,6 +52,9 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 - Leaderboard split check: `test-results/leaderboard-split-2026-05-18T22-14-22-735Z/report.json`
 - Latest smoke after leaderboard split: `test-results/smoke-2026-05-18T22-14-22-702Z/report.json`
 - Latest Electron current smoke after desktop global endpoint split: `test-results/electron-smoke-2026-05-18T22-14-22-276Z/report.json`
+- Boss phase variety check: `test-results/boss-phase-variety-2026-05-18T22-22-16-003Z/report.json`
+- Latest boss-variety release playtest: `test-results/release-playtest-2026-05-18T22-23-32-068Z/report.json`
+- Latest live smoke: `test-results/smoke-live-boss-variety-2026-05-19T00-21/report.json`
 - Release audit: `docs/reviews/release-readiness-audit-2026-05-17.json`
 - Steam handoff packet: `release/steamworks/release_handoff_packet.json`
 - Live game URL: `https://burt.tinyfoundry.app`
@@ -59,4 +62,4 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Next Best Loop
 
-Do the boss-variety loop next: make boss-every-level feel less like a claim and more like a store-visible reason to play, with distinct phase pressure, safe lanes, and readable screenshots.
+Do the progression-tempo loop next: make level 10 reachable faster in a normal exciting session while preserving readability, boss-every-level, and the current no-frustration first minute.

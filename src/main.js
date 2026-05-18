@@ -357,7 +357,15 @@ function buildGameTextState(game) {
         phase: Number.isFinite(enemy.phase) ? enemy.phase : null,
         bossProfile: enemy.profile?.id || null,
         bossArchetype: enemy.profile?.archetype || null,
+        bossMovement: enemy.profile?.movement || enemy.moveProfile?.profile || null,
         bossAttack: enemy.profile?.attack || null,
+        bossSignature: enemy.getSignatureForPhase ? enemy.getSignatureForPhase(enemy.phase || 1) : (enemy.profile?.signature || null),
+        safeLanes: Array.isArray(enemy.safeLanes) ? enemy.safeLanes : [],
+        phaseShift: enemy.kind === 'boss' ? {
+          anchorOffset: Math.round(enemy.phaseAnchorOffset || 0),
+          targetAnchorOffset: Math.round(enemy.targetPhaseAnchorOffset || 0),
+          laneYOffset: Math.round(enemy.phaseLaneYOffset || 0)
+        } : null,
         visualBounds: visualBoundsFor(enemy),
         telegraph: enemy.telegraph ? {
           type: enemy.telegraph.type || null,

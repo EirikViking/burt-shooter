@@ -419,3 +419,52 @@ After: the player gets a fast local score result, a clearly bigger online/global
 - The public domain still needs deployment and live-domain verification for this leaderboard split.
 - Highscore tab visuals are clearer, but they could use a dedicated typography/layout polish pass.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 10 - Boss Phase Variety And Safe Lanes
+
+### What Was Tested
+
+- Built the game on build `v2026-05-19_00-21-47`.
+- Ran the new 10-archetype boss phase-variety check.
+- Reran boss telegraph, boss contact, boss adds, local smoke, a 10-minute release playtest, live private-domain smoke, and live deployment verification.
+
+### What Felt Samey
+
+- The 50-boss roster had strong names/art, but runtime movement compressed too many bosses into similar top-lane pressure.
+- Phase 2 and phase 3 mostly changed cadence and fired a signature, but did not change arena feel enough.
+- Ring and wall attacks had mathematical gaps but no explicit safe-lane contract for QA or future trailer capture.
+
+### What Changed
+
+- Added archetype-specific phase plans for the 10 boss families.
+- Phase shifts now re-anchor the boss horizontally and adjust the boss lane, creating more varied arena pressure without adding extra enemy clutter.
+- Phase 2 and phase 3 now remix signatures by archetype, so later phases are not just faster repeats.
+- Ring/radial and wall patterns now publish and preserve explicit safe-lane hints.
+- Wall attacks skip a marked column and render a subtle safe-column guide during the tell.
+- Ring bursts skip a player-readable bottom wedge instead of relying only on modulo gaps.
+- `render_game_to_text` now exposes boss movement, planned signature, safe lanes, and phase-shift offsets for automated QA.
+- Added `npm run check:boss-phase-variety`, which forces levels 1-10 through phase 2/3 and verifies telegraphs, safe lanes, arena shifts, archetype coverage, and signature variety.
+
+### Before And After Feel
+
+Before: boss-every-level was real, but phases risked feeling like the same boss getting faster.
+
+After: phase shifts now move the threat shape, change the signature, and preserve a readable escape contract. This better supports the Steam promise without turning bosses into visual soup.
+
+### Evidence Captured
+
+- Boss phase variety: `test-results/boss-phase-variety-2026-05-18T22-22-16-003Z/report.json`.
+- Boss regular telegraph: `test-results/boss-telegraph-2026-05-18T22-22-15-976Z/report.json`.
+- Boss contact survival: `test-results/boss-contact-2026-05-18T22-22-16-072Z/report.json`.
+- Boss support adds: `test-results/boss-adds-2026-05-18T22-22-16-009Z/report.json`.
+- Local smoke: `test-results/smoke-2026-05-18T22-23-32-053Z/report.json`.
+- Release playtest: `test-results/release-playtest-2026-05-18T22-23-32-068Z/report.json`.
+- Deployed build: `https://e100d506.burt-game.pages.dev`.
+- Live private-domain smoke: `test-results/smoke-live-boss-variety-2026-05-19T00-21/report.json`.
+- Live deployment check: `release/steamworks/live_deployment_report.json`.
+
+### Remaining Top Risks
+
+- Trailer and screenshot capture still need to show the improved boss variety earlier and more clearly.
+- Level-10 pacing remains too slow for the desired arcade tempo.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.

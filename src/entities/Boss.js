@@ -8,6 +8,18 @@ import { getBossProfile } from '../config/BossRoster.js';
 
 const ENABLE_BOSS_WEAPON_FX = true;
 const HARD_SCALE_FACTOR = 0.3;
+const BOSS_PHASE_PLANS = {
+  conductor: { signatures: { 2: 'cone', 3: 'ring' }, anchor: { 2: -0.12, 3: 0.14 }, lane: { 2: -0.01, 3: 0.02 } },
+  forge: { signatures: { 2: 'ring', 3: 'cone' }, anchor: { 2: 0.1, 3: -0.12 }, lane: { 2: 0.02, 3: 0.04 } },
+  mirror: { signatures: { 2: 'mirror', 3: 'lance' }, anchor: { 2: -0.14, 3: 0.14 }, lane: { 2: 0.01, 3: 0.03 } },
+  needle: { signatures: { 2: 'lance', 3: 'mirror' }, anchor: { 2: 0.14, 3: -0.08 }, lane: { 2: -0.02, 3: 0.01 } },
+  vortex: { signatures: { 2: 'ring', 3: 'cone' }, anchor: { 2: 0.08, 3: -0.14 }, lane: { 2: 0, 3: 0.03 } },
+  jester: { signatures: { 2: 'cone', 3: 'mirror' }, anchor: { 2: -0.1, 3: 0.12 }, lane: { 2: -0.01, 3: 0.02 } },
+  carrier: { signatures: { 2: 'adds', 3: 'ring' }, anchor: { 2: 0.12, 3: -0.1 }, lane: { 2: 0.02, 3: 0.04 } },
+  monolith: { signatures: { 2: 'ring', 3: 'lance' }, anchor: { 2: 0, 3: 0.13 }, lane: { 2: 0.03, 3: 0.05 } },
+  choir: { signatures: { 2: 'cone', 3: 'ring' }, anchor: { 2: -0.08, 3: 0.1 }, lane: { 2: -0.02, 3: 0.02 } },
+  clock: { signatures: { 2: 'lance', 3: 'ring' }, anchor: { 2: 0.13, 3: -0.13 }, lane: { 2: 0, 3: 0.03 } }
+};
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -51,6 +63,11 @@ export class Boss {
     this.entryToY = 0;
     this.bossLaneY = 0;
     this.baseX = x;
+    this.phaseAnchorOffset = 0;
+    this.targetPhaseAnchorOffset = 0;
+    this.phaseLaneYOffset = 0;
+    this.phaseShiftStartedAt = 0;
+    this.phaseShiftDurationMs = 900;
     this.moveProfile = null;
     this.noseOffset = 0;
     this.tauntPhase2Shown = false;
@@ -62,6 +79,7 @@ export class Boss {
     this.signatureCooldown = 0;
     this.telegraph = null;
     this.regularTelegraph = null;
+    this.safeLanes = [];
     this.phaseNotified = { 2: false, 3: false };
     this.spawnedAtMs = Date.now();
     this.regularAttackReadyAt = this.spawnedAtMs + (level <= 1 ? 1800 : 1400);
@@ -338,34 +356,39 @@ export class Boss {
     const t = this.moveTimer * 0.02;
     const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
     const gameHeight = this.game?.getHeight ? this.game.getHeight() : 600;
-    const swayAmp = gameWidth * profile.swayAmpX;
-    const bobAmp = gameHeight * profile.bobAmpY;
+    const phaseIntensity = 1 + (this.phase - 1) * 0.12;
+    const swayAmp = gameWidth * profile.swayAmpX * phaseIntensity;
+    const bobAmp = gameHeight * profile.bobAmpY * (1 + (this.phase - 1) * 0.08);
+    const shiftStep = clamp(delta / 45, 0, 1);
+    this.phaseAnchorOffset += (this.targetPhaseAnchorOffset - this.phaseAnchorOffset) * shiftStep;
+    const anchorX = clamp(this.baseX + this.phaseAnchorOffset, gameWidth * 0.18, gameWidth * 0.82);
+    const laneY = clamp(this.bossLaneY + this.phaseLaneYOffset, gameHeight * 0.18, gameHeight * 0.36);
 
     switch (profile.profile) {
       case 'orbit':
-        this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp;
-        this.y = this.bossLaneY + Math.cos(t * profile.bobFreq) * bobAmp;
+        this.x = anchorX + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp;
+        this.y = laneY + Math.cos(t * profile.bobFreq * phaseIntensity) * bobAmp;
         break;
       case 'charge_tease': {
-        const push = Math.abs(Math.sin(t * 0.5)) * (gameHeight * 0.04);
-        this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp;
-        this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp + push;
+        const push = Math.abs(Math.sin(t * (0.5 + this.phase * 0.05))) * (gameHeight * 0.04);
+        this.x = anchorX + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp;
+        this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp + push;
         break;
       }
       case 'zigzag': {
-        const zig = Math.sin(t * profile.swayFreq);
-        this.x = this.baseX + zig * swayAmp;
-        this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp;
+        const zig = Math.sin(t * profile.swayFreq * phaseIntensity);
+        this.x = anchorX + zig * swayAmp;
+        this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp;
         break;
       }
       case 'carrier':
-        this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp + Math.sin(t * 1.7) * (swayAmp * 0.22);
-        this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp;
+        this.x = anchorX + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp + Math.sin(t * 1.7) * (swayAmp * 0.22);
+        this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp;
         break;
       case 'sway':
       default:
-        this.x = this.baseX + Math.sin(t * profile.swayFreq) * swayAmp;
-        this.y = this.bossLaneY + Math.sin(t * profile.bobFreq) * bobAmp;
+        this.x = anchorX + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp;
+        this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp;
         break;
     }
 
@@ -408,15 +431,99 @@ export class Boss {
     return this.phase >= 3 ? 460 : 540;
   }
 
+  getPhasePlan() {
+    return BOSS_PHASE_PLANS[this.profile?.archetype] || BOSS_PHASE_PLANS.conductor;
+  }
+
+  applyPhasePlan(phase) {
+    const plan = this.getPhasePlan();
+    const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
+    const gameHeight = this.game?.getHeight ? this.game.getHeight() : 600;
+    this.targetPhaseAnchorOffset = (Number(plan.anchor?.[phase]) || 0) * gameWidth;
+    this.phaseLaneYOffset = (Number(plan.lane?.[phase]) || 0) * gameHeight;
+    this.phaseShiftStartedAt = Date.now();
+  }
+
+  getSignatureForPhase(phase) {
+    const plan = this.getPhasePlan();
+    const planned = plan.signatures?.[phase];
+    if (planned) return planned;
+    const signature = this.profile?.signature || (phase === 2 ? 'cone' : 'ring');
+    return phase === 2 && signature === 'ring' ? 'cone' : signature;
+  }
+
+  getSafeLaneHint(kind, details = {}) {
+    return {
+      kind,
+      phase: this.phase,
+      archetype: this.profile?.archetype || null,
+      attack: details.attack || this.profile?.attack || null,
+      signature: details.signature || this.telegraph?.type || null,
+      ...details
+    };
+  }
+
+  getWallSafeColumn() {
+    const columns = [-2, -1, 0, 1, 2];
+    const archetypeOffset = (this.profile?.index || this.level || 1) % columns.length;
+    return columns[(this.phase + archetypeOffset) % columns.length];
+  }
+
+  getWallColumnOffsets() {
+    const spacing = Math.min(30, (this.game?.getWidth ? this.game.getWidth() : 800) * 0.035);
+    const safeColumn = this.getWallSafeColumn();
+    return [-2, -1, 0, 1, 2]
+      .filter((column) => column !== safeColumn)
+      .map((column) => column * spacing);
+  }
+
+  setWallSafeLane() {
+    const spacing = Math.min(30, (this.game?.getWidth ? this.game.getWidth() : 800) * 0.035);
+    const safeColumn = this.getWallSafeColumn();
+    const x = this.x + safeColumn * spacing;
+    this.safeLanes = [this.getSafeLaneHint('wall-column', {
+      attack: 'wall',
+      x: Math.round(x),
+      width: Math.round(spacing * 0.9),
+      label: 'OPEN COLUMN'
+    })];
+  }
+
+  getRingSafeAngle(count = 16) {
+    const archetypeOffset = ((this.profile?.index || this.level || 1) % Math.max(1, count)) / Math.max(1, count);
+    const drift = (archetypeOffset - 0.5) * 0.5;
+    return Math.PI / 2 + drift;
+  }
+
+  setRingSafeLane(count = 16, wedge = 0.38) {
+    const angle = this.getRingSafeAngle(count);
+    this.safeLanes = [this.getSafeLaneHint('ring-wedge', {
+      signature: 'ring',
+      angle: Number(angle.toFixed(3)),
+      width: Number(wedge.toFixed(3)),
+      label: 'BOTTOM WEDGE'
+    })];
+  }
+
+  setAimedSafeLane(type, playerX, playerY, spread = 0.5) {
+    const angle = Math.atan2(playerY - this.y, playerX - this.x);
+    this.safeLanes = [this.getSafeLaneHint('aimed-edges', {
+      signature: type,
+      angle: Number(angle.toFixed(3)),
+      width: Number(spread.toFixed(3)),
+      label: type === 'lance' ? 'SLIDE OFF LINE' : 'EDGE LANES'
+    })];
+  }
+
   startPhaseChange(phase, playerX, playerY) {
     if (this.phaseNotified[phase]) return;
     this.phaseNotified[phase] = true;
+    this.applyPhasePlan(phase);
     const playScene = this.game?.scenes?.play;
     if (playScene?.onBossPhaseChange) {
       playScene.onBossPhaseChange(phase, this);
     }
-    const signature = this.profile?.signature || (phase === 2 ? 'cone' : 'ring');
-    const type = phase === 2 && signature === 'ring' ? 'cone' : signature;
+    const type = this.getSignatureForPhase(phase);
     this.startSignatureTelegraph(type, playerX, playerY);
     this.signatureCooldown = 120;
   }
@@ -431,6 +538,12 @@ export class Boss {
   }
 
   startSignatureTelegraph(type, playerX, playerY) {
+    if (type === 'ring' || type === 'adds') {
+      this.setRingSafeLane(type === 'adds' ? 14 : 18, type === 'adds' ? 0.42 : 0.48);
+    } else {
+      const spread = type === 'lance' ? 0.18 : type === 'mirror' ? 0.42 : this.level <= 1 ? 0.55 : 0.7;
+      this.setAimedSafeLane(type, playerX, playerY, spread);
+    }
     this.telegraph = {
       type,
       label: this.getSignatureLabel(type),
@@ -539,6 +652,16 @@ export class Boss {
       start: Date.now(),
       duration: this.getRegularTelegraphDurationMs()
     };
+    if (type === 'wall') {
+      this.setWallSafeLane();
+    } else if (type === 'radial') {
+      this.setRingSafeLane(attack === 'chord' ? 6 : this.phase === 1 ? 4 : 8, 0.44);
+    } else {
+      const spread = type === 'fan'
+        ? (this.level <= 1 ? 0.34 : 0.48)
+        : (attack === 'sniper' ? 0.08 : 0.18);
+      this.setAimedSafeLane(type, playerX, playerY, spread);
+    }
     this.updateRegularAttackTelegraphVisual(0, playerX, playerY);
   }
 
@@ -575,14 +698,17 @@ export class Boss {
     }
 
     if (this.regularTelegraph.type === 'wall') {
-      for (let i = -2; i <= 2; i++) {
-        const x = i * Math.min(30, gameWidth * 0.035);
+      const offsets = this.getWallColumnOffsets();
+      for (const x of offsets) {
         layer.roundRect(x - 7, originY + this.radius * 0.35, 14, length * pulse, 8);
         layer.fill({ color: warningColor, alpha });
         layer.moveTo(x, originY + this.radius * 0.2);
         layer.lineTo(x, originY + length * pulse);
       }
       layer.stroke({ color: 0xffffff, width, alpha: 0.34 + progress * 0.26 });
+      const safeColumn = this.getWallSafeColumn() * Math.min(30, gameWidth * 0.035);
+      layer.roundRect(safeColumn - 14, originY + this.radius * 0.4, 28, length * 0.92, 12);
+      layer.stroke({ color: 0x8cffb5, width: 2, alpha: 0.32 + progress * 0.28 });
       return;
     }
 
@@ -652,9 +778,13 @@ export class Boss {
 
   fireRingBurst(count = 16, gapSize = 2) {
     const bullets = [];
+    const safeAngle = this.getRingSafeAngle(count);
+    const safeWedge = this.level <= 1 ? 0.46 : 0.4;
+    this.setRingSafeLane(count, safeWedge);
     for (let i = 0; i < count; i++) {
       if (i % gapSize === 0) continue;
       const angle = (i / count) * Math.PI * 2;
+      if (Math.abs(normalizeAngle(angle - safeAngle)) < safeWedge) continue;
       const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase3 *
         BalanceConfig.difficulty.pressureScalar *
         this.getBossPressureScalar();
@@ -719,9 +849,17 @@ export class Boss {
       const offset = attack === 'clock'
         ? Math.floor(this.moveTimer / 26) * (Math.PI / 8)
         : this.moveTimer * 0.045;
+      const safeAngle = this.safeLanes?.[0]?.kind === 'ring-wedge'
+        ? Number(this.safeLanes[0].angle)
+        : this.getRingSafeAngle(count);
+      const safeWedge = this.safeLanes?.[0]?.kind === 'ring-wedge'
+        ? Number(this.safeLanes[0].width)
+        : 0.38;
       for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count + offset;
         if (attack === 'clock' && this.phase < 3 && i % 4 === 0) continue;
-        addBullet(this.x, this.y, (Math.PI * 2 * i) / count + offset, speed);
+        if (Math.abs(normalizeAngle(angle - safeAngle)) < safeWedge) continue;
+        addBullet(this.x, this.y, angle, speed);
       }
     } else if (attack === 'split' || attack === 'sniper' || attack === 'wall') {
       const speed = (this.phase === 1 ? BalanceConfig.difficulty.bossProjectileSpeedPhase1 : BalanceConfig.difficulty.bossProjectileSpeedPhase2) * pressure;
@@ -732,8 +870,9 @@ export class Boss {
           addBullet(this.x + 28, this.y, aimAngle - 0.08, speed);
         }
       } else if (attack === 'wall') {
-        for (let i = -2; i <= 2; i++) {
-          addBullet(this.x + i * 24, this.y, Math.PI / 2 + i * 0.05, speed * 0.82);
+        this.setWallSafeLane();
+        for (const xOffset of this.getWallColumnOffsets()) {
+          addBullet(this.x + xOffset, this.y, Math.PI / 2 + (xOffset / 480), speed * 0.82);
         }
       } else {
         addBullet(this.x - 22, this.y, aimAngle - 0.18, speed);
