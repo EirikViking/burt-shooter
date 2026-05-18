@@ -37,6 +37,9 @@ After: the player can boot, hit `PLAY NOW`, fail, and press one key for another 
 - Timing report: `test-results/anti-flop-quickstart-20260518-final/report.json`.
 - Screenshot evidence: `01-menu-play-now.png`, `02-quickstart-gameplay.png`, `03-gameover-restart-prompt.png`, and `04-restarted-gameplay.png` in the focused timing folder.
 - Result: `PLAY NOW` click to gameplay in 123 ms; `R` restart from game over to gameplay in 68 ms; zero console events.
+- Production: deployed to Cloudflare Pages at `https://b01166ed.burt-game.pages.dev`; `https://burt.tinyfoundry.app/version.json` reports `v2026-05-18_16-03-56`.
+- Live smoke: `test-results/smoke-live-anti-flop-2026-05-18T16-03/report.json`.
+- Live deployment report: `release/steamworks/live_deployment_report.json`.
 
 ### Remaining Top Risks
 
