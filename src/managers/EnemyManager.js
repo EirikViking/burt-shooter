@@ -530,7 +530,11 @@ export class EnemyManager {
       enemy.update(dt, playerX, playerY);
 
       // Shooting
-      if (enemy.canShoot() && Math.random() < fireChance * timeScale) {
+      const isBoss = enemy.kind === 'boss';
+      const shouldShoot = isBoss
+        ? enemy.canShoot()
+        : enemy.canShoot() && Math.random() < fireChance * timeScale;
+      if (shouldShoot) {
         const shots = enemy.shoot(playerX, playerY);
         if (shots) {
           if (Array.isArray(shots)) shots.forEach(s => this.game.scenes.play.bulletManager.addEnemyBullet(s));
@@ -978,10 +982,10 @@ export class EnemyManager {
     if (!isHijackerEnabled()) return;
     if (this.hijackerSpawnedThisLevel) return;
     if (this.hijacker && this.hijacker.active) return;
-    // TASK 5: Removed boss level restriction - UFO can appear on any level
+    // TASK 5: Removed boss level restriction - the hijacker can appear on any level.
     if (this.currentWaveIndex < 1) return; // Only after wave 1
 
-    // TASK 5: Increased spawn chance from 30% to 40% for more frequent UFO appearances
+    // TASK 5: Increased spawn chance from 30% to 40% for more frequent hijacker appearances.
     if (Math.random() < 0.4) {
       this.spawnHijacker();
     }
@@ -995,7 +999,7 @@ export class EnemyManager {
 
     const centerX = this.game.getWidth() / 2;
     const spawnX = centerX + (Math.random() - 0.5) * 200; // Spawn near center with some variance
-    const spawnY = 50; // Top of screen
+    const spawnY = Math.max(112, Math.min(this.game.getHeight() * 0.18, 132)); // Clear of HUD, still a top-lane threat.
 
     this.hijacker = new Hijacker(spawnX, spawnY, this.level, this.game);
     this.container.addChild(this.hijacker.sprite);

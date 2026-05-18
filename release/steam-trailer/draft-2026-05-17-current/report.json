@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-05-18T17:39:26.775Z",
+  "generatedAt": "2026-05-18T21:07:21.764Z",
   "baseUrl": "http://127.0.0.1:4373",
   "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current",
   "build": {
-    "version": "v2026-05-18_18-57-39",
-    "timestamp": "2026-05-18T16:57:39.428Z"
+    "version": "v2026-05-18_21-29-14",
+    "timestamp": "2026-05-18T19:29:14.082Z"
   },
   "viewport": {
     "width": 1280,
@@ -18,23 +18,15 @@
   "timeline": [
     {
       "label": "first_wave_lasers",
-      "durationMs": 4000,
+      "durationMs": 3200,
       "scene": "play",
       "level": 1,
       "wave": 1,
       "audioContext": "gameplay"
     },
     {
-      "label": "dodge_lane_shift",
-      "durationMs": 3000,
-      "scene": "play",
-      "level": 1,
-      "wave": 1,
-      "audioContext": "gameplay"
-    },
-    {
-      "label": "formation_pressure",
-      "durationMs": 3000,
+      "label": "close_dodge_score_tease",
+      "durationMs": 1700,
       "scene": "play",
       "level": 1,
       "wave": 1,

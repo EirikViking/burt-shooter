@@ -277,13 +277,10 @@ export const AssetManifest = {
             ]
         },
 
-        // Hijacker enemy feature (classic arcade formation trick, optional)
+        // Hijacker enemy feature (tractor-beam special enemy)
         hijacker: {
             ships: [
-                '/sprites/xtra-sprites/ufoBlue.png',
-                '/sprites/xtra-sprites/ufoGreen.png',
-                '/sprites/xtra-sprites/ufoRed.png',
-                '/sprites/xtra-sprites/ufoYellow.png'
+                '/art/generated/nova-swarm/enemies/nova-hijacker-tractor-craft-20260518.png'
             ],
             beams: [
                 '/sprites/xtra-sprites/Parts/beam0.png',

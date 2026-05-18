@@ -667,7 +667,8 @@ export class GameOverScene {
     const label = document.createElement('div');
     label.textContent = 'ENTER PILOT NAME';
     label.style.cssText = `
-      font-family: 'Courier New', monospace;
+      font-family: 'Rajdhani', 'Orbitron', 'Segoe UI', sans-serif;
+      font-weight: 700;
       font-size: 20px;
       color: #00ffff;
       margin-bottom: 16px;
@@ -684,7 +685,8 @@ export class GameOverScene {
     this.inputField.spellcheck = false;
     this.inputField.placeholder = 'PILOT';
     this.inputField.style.cssText = `
-      font-family: 'Courier New', monospace;
+      font-family: 'Rajdhani', 'Orbitron', 'Segoe UI', sans-serif;
+      font-weight: 700;
       font-size: 28px;
       color: #ffffff;
       background: #111111;
@@ -723,7 +725,7 @@ export class GameOverScene {
     this.submitButton = document.createElement('button');
     this.submitButton.textContent = 'OK';
     this.submitButton.style.cssText = `
-      font-family: 'Courier New', monospace;
+      font-family: 'Orbitron', 'Rajdhani', sans-serif;
       font-size: 22px;
       color: #000000;
       background: #00ffff;
@@ -745,7 +747,8 @@ export class GameOverScene {
     const cancelButton = document.createElement('button');
     cancelButton.textContent = 'CANCEL';
     cancelButton.style.cssText = `
-      font-family: 'Courier New', monospace;
+      font-family: 'Rajdhani', 'Orbitron', sans-serif;
+      font-weight: 700;
       font-size: 18px;
       color: #888888;
       background: #333333;

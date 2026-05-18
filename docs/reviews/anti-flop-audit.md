@@ -264,3 +264,59 @@ After: death now creates a concrete "one more run" reason: unlock the next ship,
 - The first 10 seconds of the trailer still need earlier boss proof.
 - Boss regular attack telegraphs need a stronger readability pass.
 - Steam client validation and human approvals remain manual blockers.
+
+## Loop 7 - Hijacker Tractor, Generated Art, And Typography
+
+### What Was Tested
+
+- Reviewed the inherited boss/trailer/readability worktree changes before adding new mechanics.
+- Ran `npm run build:current` on current build `v2026-05-18_21-29-14`.
+- Ran focused hijacker tractor, boss telegraph, boss contact, provenance, and smoke checks.
+- Visually inspected the hijacker tractor screenshot and the desktop/mobile smoke screenshots for readability and text overlap.
+
+### What Felt Slow, Confusing, Or Generic
+
+- The special hijacker enemy was still visually tied to old saucer/UFO language and art, which made it feel like a generic retro leftover.
+- The game needed at least one surprising named in-run mechanic that felt clip-worthy without slowing the score chase.
+- Text still had too much cheap Courier-like DNA across menus, HUD, and overlays.
+- Mobile comms banners could collide with the mission/trait HUD stack, making a good moment look messy in screenshots.
+
+### What Changed
+
+- Added a readable hijacker tractor-beam attack with telegraph, active pull, escape counterplay, and a larger score payoff for breaking the beam.
+- Generated a new original hijacker interceptor craft with built-in imagegen, chroma-keyed it locally, and made it the runtime hijacker asset.
+- Replaced the saucer fallback graphic with an angular interceptor fallback so a failed texture load still avoids the old UFO look.
+- Moved tractor warning copy to the corner lane and tuned hijacker spawn height so the craft, beam, and HUD do not collide.
+- Added `npm run check:hijacker-tractor` to prove pull behavior, score award, and screenshot evidence.
+- Normalized old Courier-style text defaults to premium arcade display/body/mono stacks across Pixi text, menu, HUD, game-over DOM input, loading UI, debug UI, and fatal-error surfaces.
+- Moved compact mobile lore banners below the HUD stack to prevent visible overlap.
+
+### Before And After Feel
+
+Before: the special enemy was a novelty spawn with generic UFO vibes and weak differentiation.
+
+After: the hijacker creates a clear "oh no, break the beam" moment with a screenshot-readable cone, an original craft silhouette, and a score payoff that supports one-more-run play.
+
+### Evidence Captured
+
+- Generated hijacker runtime asset: `public/art/generated/nova-swarm/enemies/nova-hijacker-tractor-craft-20260518.png`.
+- Asset pipeline/provenance note: `docs/visual-asset-pipeline.md`.
+- Tractor check: `test-results/hijacker-tractor-2026-05-18T19-57-45-834Z/report.json`.
+- Boss telegraph check: `test-results/boss-telegraph-2026-05-18T19-58-02-822Z/report.json`.
+- Boss contact check: `test-results/boss-contact-2026-05-18T19-58-18-640Z/report.json`.
+- Local smoke after final typography/control fixes: `test-results/smoke-2026-05-18T20-49-22-704Z/report.json`.
+- Live private-domain smoke after deploy: `test-results/smoke-live-current-2026-05-18T21-29/report.json`.
+- Full Steam RC: `test-results/steam-rc-verify-2026-05-18T20-46-55-786Z/report.json`.
+- Release playtest: `test-results/release-playtest-2026-05-18T20-50-34-771Z/report.json`.
+- Packaged controls: `test-results/packaged-control-smoke-2026-05-18T20-49-06-034Z/report.json`.
+- Canonical Steam screenshots: `release/steam-screenshots/draft-2026-05-17-current/report.json`.
+- Canonical trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`.
+- Steam handoff: `release/steamworks/release_handoff_packet.json` with no stale evidence for build `v2026-05-18_21-29-14`.
+- Provenance: `npm run check:provenance` passed with 1802/1802 scanned assets covered.
+
+### Remaining Top Risks
+
+- Voice/audio identity remains the biggest unresolved differentiator.
+- Local/global leaderboard excitement still needs a clearer split and a premium global-qualification celebration.
+- More boss pattern variety is still valuable, but it should be added in tight, tested slices rather than content bloat.
+- Steam readiness still requires real Steamworks IDs, Steam-client validation evidence, and human release approvals.

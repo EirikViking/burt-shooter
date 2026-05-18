@@ -46,7 +46,7 @@
 html, body {
   background: #000;
   overflow: hidden;
-  font-family: 'Courier New', monospace;
+  font-family: 'Rajdhani', 'Orbitron', 'Segoe UI', sans-serif;
   color: #fff;
   /* Prevent pull-to-refresh and overscroll */
   overscroll-behavior: none;
@@ -91,6 +91,8 @@ canvas {
   transform: translate(-50%, -50%);
   text-align: center;
   font-size: 24px;
+  font-family: 'Orbitron', 'Rajdhani', sans-serif;
+  font-weight: 800;
   color: #0ff;
   text-shadow: 0 0 10px #0ff;
 }

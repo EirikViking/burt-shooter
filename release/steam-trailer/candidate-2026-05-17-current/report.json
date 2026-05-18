@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-18T17:39:45.283Z",
+  "generatedAt": "2026-05-18T21:07:49.285Z",
   "status": "passed",
   "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-audio-draft.mp4",
   "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\nova-swarm-steam-trailer-candidate.mp4",
   "build": {
-    "version": "v2026-05-18_18-57-39",
-    "timestamp": "2026-05-18T16:57:39.428Z"
+    "version": "v2026-05-18_21-29-14",
+    "timestamp": "2026-05-18T19:29:14.082Z"
   },
   "opening": "gameplay_first",
   "titleCards": [
@@ -37,22 +37,22 @@
         "width": 1280,
         "height": 720,
         "r_frame_rate": "25/1",
-        "duration": "38.407969"
+        "duration": "37.680000"
       },
       {
         "codec_name": "aac",
         "r_frame_rate": "0/0",
-        "duration": "38.429333"
+        "duration": "37.701333"
       }
     ],
     "format": {
-      "duration": "38.429333",
-      "size": "10238143",
-      "bit_rate": "2131318"
+      "duration": "37.701333",
+      "size": "8308019",
+      "bit_rate": "1762912"
     }
   },
   "volume": {
-    "meanVolumeDb": "-19.5",
-    "maxVolumeDb": "-0.9"
+    "meanVolumeDb": "-20.7",
+    "maxVolumeDb": "-1.5"
   }
 }

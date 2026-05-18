@@ -324,17 +324,19 @@ async function waitForPlay(window) {
 
 async function holdKeys(window, keys, durationMs) {
   const aliases = expandControlKeys(keys);
+  const electronKeys = keys.map(toElectronKeyCode);
   await window.webContents.executeJavaScript(`
     (() => {
-      const input = window.__game?.scenes?.play?.inputManager;
+      const play = window.__game?.scenes?.play;
+      const inputs = [play?.inputManager, play?.player?.inputManager].filter(Boolean);
       window.__burtKeyboardOverride = window.__burtKeyboardOverride || {};
       for (const key of ${JSON.stringify(aliases)}) {
-        input?.setKeyPressed?.(key, true);
+        for (const input of inputs) input?.setKeyPressed?.(key, true);
         window.__burtKeyboardOverride[key] = true;
       }
     })()
   `);
-  for (const keyCode of keys) {
+  for (const keyCode of electronKeys) {
     window.webContents.sendInputEvent({ type: 'keyDown', keyCode });
   }
   const steps = Math.max(1, Math.ceil(durationMs / 80));
@@ -342,27 +344,48 @@ async function holdKeys(window, keys, durationMs) {
   for (let step = 0; step < steps; step++) {
     await window.webContents.executeJavaScript(`
       (() => {
-        const input = window.__game?.scenes?.play?.inputManager;
+        const play = window.__game?.scenes?.play;
+        const inputs = [play?.inputManager, play?.player?.inputManager].filter(Boolean);
         window.__burtKeyboardOverride = window.__burtKeyboardOverride || {};
-        for (const key of ${JSON.stringify(aliases)}) input?.setKeyPressed?.(key, true);
+        for (const key of ${JSON.stringify(aliases)}) {
+          for (const input of inputs) input?.setKeyPressed?.(key, true);
+        }
         for (const key of ${JSON.stringify(aliases)}) window.__burtKeyboardOverride[key] = true;
       })()
     `);
     await advanceControlTime(window, stepMs);
   }
-  await new Promise((resolve) => setTimeout(resolve, durationMs));
-  for (const keyCode of [...keys].reverse()) {
+  const heldState = await readPlayState(window);
+  for (const keyCode of [...electronKeys].reverse()) {
     window.webContents.sendInputEvent({ type: 'keyUp', keyCode });
   }
   await window.webContents.executeJavaScript(`
       (() => {
-        const input = window.__game?.scenes?.play?.inputManager;
-        for (const key of ${JSON.stringify(aliases)}) input?.setKeyPressed?.(key, false);
+        const play = window.__game?.scenes?.play;
+        const inputs = [play?.inputManager, play?.player?.inputManager].filter(Boolean);
+        for (const key of ${JSON.stringify(aliases)}) {
+          for (const input of inputs) input?.setKeyPressed?.(key, false);
+        }
         if (window.__burtKeyboardOverride) {
           for (const key of ${JSON.stringify(aliases)}) window.__burtKeyboardOverride[key] = false;
         }
       })()
   `);
+  return heldState;
+}
+
+function toElectronKeyCode(keyCode) {
+  const map = {
+    KeyW: 'W',
+    KeyA: 'A',
+    KeyS: 'S',
+    KeyD: 'D',
+    ArrowUp: 'Up',
+    ArrowDown: 'Down',
+    ArrowLeft: 'Left',
+    ArrowRight: 'Right'
+  };
+  return map[keyCode] || keyCode;
 }
 
 function expandControlKeys(keys) {
@@ -490,13 +513,11 @@ async function runControlSmoke(window) {
       resolve();
     });
   });
-  await window.loadURL(`${baseUrl}/?autostart=1`);
+  await window.loadURL(`${baseUrl}/?autostart=1&controlSmoke=1`);
   const startState = await waitForPlay(window);
   await captureControlScreenshot(window, outputDir, '00-control-start.png', capturedScreenshots, screenshotWarnings);
 
-  await holdKeys(window, ['ArrowRight', 'KeyD', 'ArrowUp', 'KeyW', 'Space'], 900);
-  await new Promise((resolve) => setTimeout(resolve, 250));
-  const keyboardState = await readPlayState(window);
+  const keyboardState = await holdKeys(window, ['ArrowRight', 'KeyD', 'ArrowUp', 'KeyW', 'Space'], 900);
   await captureControlScreenshot(window, outputDir, '01-keyboard-run.png', capturedScreenshots, screenshotWarnings);
 
   await tapKey(window, 'p');

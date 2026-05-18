@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-05-18T17:40:10.087Z",
+  "generatedAt": "2026-05-18T21:08:01.524Z",
   "status": "ready_for_human_review",
   "build": {
-    "version": "v2026-05-18_18-57-39",
-    "timestamp": "2026-05-18T16:57:39.428Z"
+    "version": "v2026-05-18_21-29-14",
+    "timestamp": "2026-05-18T19:29:14.082Z"
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
-    "passed": 20,
-    "failed": 3,
-    "hardFailures": 0
+    "passed": 18,
+    "failed": 5,
+    "hardFailures": 2
   },
   "approval": {
     "path": "docs/reviews/2026-05-17-human-release-approval.md",
@@ -38,12 +38,12 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "exists": true,
-          "bytes": 502001
+          "bytes": 1900393
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "exists": true,
-          "bytes": 1774
+          "bytes": 1826
         },
         {
           "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
@@ -86,17 +86,17 @@
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
           "exists": true,
-          "bytes": 10238143
+          "bytes": 8308019
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "exists": true,
-          "bytes": 567346
+          "bytes": 480963
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "exists": true,
-          "bytes": 2202
+          "bytes": 2201
         }
       ],
       "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."
@@ -168,7 +168,7 @@
         {
           "path": "release/provenance/asset_provenance_report.json",
           "exists": true,
-          "bytes": 1232
+          "bytes": 1233
         }
       ],
       "prompt": "Review generated and third-party art/audio provenance, names, jokes, and store materials. Only a human can mark legal approval."
@@ -182,7 +182,7 @@
         {
           "path": "release/steamworks/full_rc_verification_report.json",
           "exists": true,
-          "bytes": 3536
+          "bytes": 3541
         },
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",

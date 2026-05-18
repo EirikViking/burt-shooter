@@ -237,14 +237,11 @@ async function showGameplay(page) {
   await stabilizePlayer(page);
   await page.keyboard.down('Space');
   await page.keyboard.down('ArrowRight');
-  await addBeat(page, 'first_wave_lasers', 4000);
+  await addBeat(page, 'first_wave_lasers', 3200);
   await page.keyboard.up('ArrowRight');
   await page.keyboard.down('ArrowLeft');
-  await addBeat(page, 'dodge_lane_shift', 3000);
+  await addBeat(page, 'close_dodge_score_tease', 1700);
   await page.keyboard.up('ArrowLeft');
-  await page.keyboard.down('ArrowUp');
-  await addBeat(page, 'formation_pressure', 3000);
-  await page.keyboard.up('ArrowUp');
   await page.keyboard.up('Space');
 }
 

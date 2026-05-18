@@ -13,8 +13,21 @@ import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } fro
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
 
+const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, Impact, sans-serif';
+const FONT_ARCADE = 'Rajdhani, Bahnschrift, Eurostile, Trebuchet MS, sans-serif';
+const FONT_MONO = 'Rajdhani, Cascadia Mono, Consolas, Courier New, monospace';
+
+function normalizeFontFamily(fontFamily) {
+  const family = String(fontFamily || '').trim();
+  if (!family) return FONT_ARCADE;
+  if (/orbitron|rajdhani/i.test(family)) return family;
+  if (/courier new|monospace/i.test(family)) return FONT_MONO;
+  return family;
+}
+
 function normalizeTextStyle(style = {}) {
   const next = { ...style };
+  next.fontFamily = normalizeFontFamily(next.fontFamily);
   if (next.strokeThickness !== undefined) {
     next.stroke = {
       color: next.stroke || '#000000',
@@ -28,10 +41,6 @@ function normalizeTextStyle(style = {}) {
 function createText(text, style) {
   return new PIXI.Text({ text, style: normalizeTextStyle(style) });
 }
-
-const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, Impact, sans-serif';
-const FONT_ARCADE = 'Rajdhani, Bahnschrift, Eurostile, Trebuchet MS, sans-serif';
-const FONT_MONO = 'Cascadia Mono, Consolas, Courier New, monospace';
 
 export class MenuScene {
   constructor(game) {

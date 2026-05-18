@@ -75,3 +75,9 @@ The weak commercial pattern is "retro homage with lots of content." The stronger
 5. Make game over sell the next run: score, next ship/unlock, rank/leaderboard, one-input retry.
 6. Keep all controller claims conservative until Steam client validation is recorded.
 7. Treat 25 ships and 50 enemies as flavor and progression proof, not the main sales hook.
+
+## 2026-05-18 Implementation Follow-Up
+
+- The `Enemy Mind` lesson is the right direction: one named, easy-to-understand mechanic is more marketable than another pile of enemies. Nova Swarm now has the hijacker tractor beam as a first step toward that kind of clip-worthy identity.
+- Keep future surprise mechanics in the same lane: readable, short, counterplay-driven, and score-rewarding. Good examples for Nova Swarm would be beam breaks, forced-lane dodges, temporary enemy hijacks, or risky score windows, not long systems that delay instant replay.
+- Store/trailer proof should show the verb, not explain it. A player should understand "the beam is pulling me, I can break it for points" from the shot itself.

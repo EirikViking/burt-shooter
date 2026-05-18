@@ -279,8 +279,15 @@ export class PlayScene {
         console.log(`[ShipDebug] Texture: ${textureSource?.resource?.url || textureSource?.label || 'loaded'}`);
       }
 
-      // Start ship intro animation
-      this.startShipIntro(spriteKey);
+      const controlSmoke = new URLSearchParams(window.location.search).get('controlSmoke') === '1';
+      if (controlSmoke) {
+        this.introActive = false;
+        this.introComplete = true;
+        this.startLevel('controlSmoke');
+      } else {
+        // Start ship intro animation
+        this.startShipIntro(spriteKey);
+      }
     });
 
     // Create placeholder player immediately (will be replaced)
@@ -1185,7 +1192,6 @@ export class PlayScene {
           if (dist < bullet.blastRadius) {
             const destroyed = hijacker.takeDamage(bullet.damage);
             if (destroyed) {
-              this.game.addScore(hijacker.scoreValue);
               if (this.particleManager) {
                 this.particleManager.createExplosion(hijacker.x, hijacker.y, 0xff9900);
               }
@@ -1387,6 +1393,23 @@ export class PlayScene {
         if (this.checkCollision(enemy, this.player)) {
           // Feature: Ghost Ship prevents hit
           if (this.player.activePowerup && this.player.activePowerup.type === 'ghost') return;
+
+          const isBossContact = enemy.kind === 'boss';
+          if (isBossContact) {
+            if (!this.player.invulnerable) {
+              const damageTaken = this.player.takeDamage();
+              if (damageTaken) {
+                this.lastHitAt = Date.now();
+                this.game.loseLife();
+                this.triggerPlayerDeathFeedback();
+              } else {
+                this.screenShake.shake(4);
+                this.particleManager.createHitSpark(this.player.x, this.player.y);
+              }
+              this.particleManager.createHitSpark(this.player.x, this.player.y);
+            }
+            return;
+          }
 
           enemy.active = false;
           if (!this.player.invulnerable) {
@@ -2421,6 +2444,9 @@ export class PlayScene {
     if (!this.canShowLore()) return;
     const duration = 2500 + Math.random() * 1000;
     const compactHud = this.game.getWidth() < 620;
+    const y = compactHud
+      ? Math.min(this.game.getHeight() - 170, Math.max(236, this.game.getHeight() * 0.34))
+      : Math.max(210, this.game.getHeight() * 0.3);
     this.enqueueToast(text, {
       fontSize: compactHud ? 18 : 22,
       fill: '#ffffff',
@@ -2429,7 +2455,7 @@ export class PlayScene {
       type: 'lore',
       banner: true,
       title: 'COMMS BLIP',
-      y: this.game.getHeight() * (compactHud ? 0.24 : 0.16),
+      y,
       maxWidth: this.game.getWidth() * (compactHud ? 0.78 : 0.7)
     });
   }

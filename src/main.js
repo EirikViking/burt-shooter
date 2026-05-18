@@ -89,7 +89,7 @@ function ensureBuildStamp() {
     'background: rgba(0, 0, 0, 0.7)',
     'color: #00ffff',
     'padding: 2px 6px',
-    'font-family: "Courier New", monospace',
+    'font-family: "Rajdhani", "Cascadia Mono", "Segoe UI", sans-serif',
     'font-size: 10px',
     'letter-spacing: 0.5px',
     'pointer-events: none'
@@ -132,7 +132,7 @@ function createPerfOverlay(enabled) {
     'background: rgba(0, 0, 0, 0.75)',
     'color: #00ff88',
     'padding: 8px 10px',
-    'font-family: "Courier New", monospace',
+    'font-family: "Rajdhani", "Cascadia Mono", "Segoe UI", sans-serif',
     'font-size: 12px',
     'white-space: pre',
     'pointer-events: none',
@@ -225,6 +225,7 @@ function buildGameTextState(game) {
   const player = playScene?.player;
   const enemyManager = playScene?.enemyManager;
   const enemies = enemyManager?.enemies || [];
+  const hijacker = enemyManager?.hijacker || null;
   const playerBullets = playScene?.bulletManager?.playerBullets || playScene?.bulletManager?.bullets || [];
   const enemyBullets = playScene?.bulletManager?.enemyBullets || [];
   const activeSettingsOverlay = game?.currentScene?.settingsOverlay || playScene?.settingsOverlay || null;
@@ -319,8 +320,15 @@ function buildGameTextState(game) {
       stats: player.getStatSnapshot ? player.getStatSnapshot() : null,
       powerup: player.activePowerup?.type || null
     } : null,
+    hijacker: hijacker?.active ? {
+      x: Math.round(hijacker.x || 0),
+      y: Math.round(hijacker.y || 0),
+      health: Math.max(0, Math.round(hijacker.health || 0)),
+      maxHealth: Math.max(0, Math.round(hijacker.maxHealth || 0)),
+      tractor: hijacker.getTractorState ? hijacker.getTractorState() : null
+    } : null,
     counts: {
-      enemies: enemies.filter(enemy => enemy?.active !== false).length,
+      enemies: enemies.filter(enemy => enemy?.active !== false).length + (hijacker?.active ? 1 : 0),
       bossAdds: enemies.filter(enemy =>
         enemy?.kind === 'boss_add' && (enemy.active !== false || enemy.waitingForEntry)
       ).length,
@@ -348,6 +356,11 @@ function buildGameTextState(game) {
           type: enemy.telegraph.type || null,
           label: enemy.telegraph.label || null,
           remainingMs: Math.max(0, Math.round((enemy.telegraph.start + enemy.telegraph.duration) - Date.now()))
+        } : enemy.regularTelegraph ? {
+          type: enemy.regularTelegraph.type || null,
+          label: 'REGULAR ATTACK TELL',
+          attack: enemy.regularTelegraph.attack || null,
+          remainingMs: Math.max(0, Math.round((enemy.regularTelegraph.start + enemy.regularTelegraph.duration) - Date.now()))
         } : null,
         type: enemy.type || enemy.constructor?.name || 'enemy'
       }))
@@ -371,7 +384,7 @@ function createBootLogger(enabled) {
     'background: rgba(0, 0, 0, 0.8)',
     'color: #00ffff',
     'padding: 8px 10px',
-    'font-family: "Courier New", monospace',
+    'font-family: "Rajdhani", "Cascadia Mono", "Segoe UI", sans-serif',
     'font-size: 12px',
     'max-width: 70vw',
     'white-space: pre-wrap',
@@ -445,7 +458,7 @@ function showFatalOverlay(step, error) {
     'background: rgba(0, 0, 0, 0.92)',
     'color: #ff5555',
     'padding: 24px',
-    'font-family: "Courier New", monospace',
+    'font-family: "Rajdhani", "Cascadia Mono", "Segoe UI", sans-serif',
     'font-size: 14px',
     'white-space: pre-wrap'
   ].join(';');

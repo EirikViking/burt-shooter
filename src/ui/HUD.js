@@ -5,8 +5,20 @@ import { extendLocations } from '../text/phrasePool.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
 
+const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
+const FONT_MONO = 'Rajdhani, Cascadia Mono, Consolas, Courier New, monospace';
+
+function normalizeFontFamily(fontFamily) {
+  const family = String(fontFamily || '').trim();
+  if (!family) return FONT_BODY;
+  if (/orbitron|rajdhani/i.test(family)) return family;
+  if (/courier new|monospace/i.test(family)) return FONT_MONO;
+  return family;
+}
+
 function normalizeTextStyle(style = {}) {
   const next = { ...style };
+  next.fontFamily = normalizeFontFamily(next.fontFamily);
   if (next.strokeThickness !== undefined) {
     next.stroke = {
       color: next.stroke || '#000000',

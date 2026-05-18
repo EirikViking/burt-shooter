@@ -61,8 +61,10 @@ export class Boss {
     this.color = this.profile?.palette || 0xff00ff;
     this.signatureCooldown = 0;
     this.telegraph = null;
+    this.regularTelegraph = null;
     this.phaseNotified = { 2: false, 3: false };
     this.spawnedAtMs = Date.now();
+    this.regularAttackReadyAt = this.spawnedAtMs + (level <= 1 ? 1800 : 1400);
     this.invulnerableUntilMs = this.spawnedAtMs + 800;
 
     // Boss names
@@ -139,6 +141,10 @@ export class Boss {
     this.healthBar.zIndex = 5;
     this.sprite.addChild(this.healthBar);
     this.updateHealthBar();
+
+    this.attackWarningLayer = new PIXI.Graphics();
+    this.attackWarningLayer.zIndex = 4;
+    this.sprite.addChild(this.attackWarningLayer);
 
     // Name display overlay
     this.nameText = createText(this.name, {
@@ -247,6 +253,7 @@ export class Boss {
     if (this.telegraph) {
       const elapsed = Date.now() - this.telegraph.start;
       const progress = clamp(elapsed / this.telegraph.duration, 0, 1);
+      this.clearRegularAttackTelegraphVisual();
       this.updateTelegraphVisual(progress, playerX, playerY);
       if (this.nameText) {
         this.nameText.alpha = 1;
@@ -259,6 +266,13 @@ export class Boss {
     } else if (this.nameText) {
       this.nameText.alpha = 1;
       this.clearTelegraphVisual();
+      if (this.regularTelegraph) {
+        const elapsed = Date.now() - this.regularTelegraph.start;
+        const progress = clamp(elapsed / this.regularTelegraph.duration, 0, 1);
+        this.updateRegularAttackTelegraphVisual(progress, playerX, playerY);
+      } else {
+        this.clearRegularAttackTelegraphVisual();
+      }
     }
 
     // Shooting cooldown
@@ -383,6 +397,17 @@ export class Boss {
     return baseDelay * openingDelayScalar;
   }
 
+  getRegularAttackIntervalMs() {
+    const base = this.level <= 1 ? 2200 : this.level === 2 ? 2400 : 2700;
+    const phaseScalar = this.phase === 1 ? 1 : this.phase === 2 ? 0.95 : 0.9;
+    return Math.round(base * phaseScalar);
+  }
+
+  getRegularTelegraphDurationMs() {
+    if (this.level <= 1) return 620;
+    return this.phase >= 3 ? 460 : 540;
+  }
+
   startPhaseChange(phase, playerX, playerY) {
     if (this.phaseNotified[phase]) return;
     this.phaseNotified[phase] = true;
@@ -499,6 +524,96 @@ export class Boss {
     }
   }
 
+  startRegularAttackTelegraph(playerX, playerY) {
+    const attack = this.profile?.attack || 'aimed';
+    const type = ['spiral', 'clock', 'chord'].includes(attack)
+      ? 'radial'
+      : attack === 'wall'
+        ? 'wall'
+        : ['fan', 'burst', 'fakeout'].includes(attack)
+          ? 'fan'
+          : 'aim';
+    this.regularTelegraph = {
+      attack,
+      type,
+      start: Date.now(),
+      duration: this.getRegularTelegraphDurationMs()
+    };
+    this.updateRegularAttackTelegraphVisual(0, playerX, playerY);
+  }
+
+  updateRegularAttackTelegraphVisual(progress, playerX, playerY) {
+    if (!this.attackWarningLayer || !this.regularTelegraph || this.telegraph) return;
+    const layer = this.attackWarningLayer;
+    layer.clear();
+
+    const warningColor = this.profile?.accent || this.profile?.palette || 0xfff45c;
+    const pulse = 1 + Math.sin(Date.now() * 0.03) * 0.06;
+    const alpha = 0.18 + progress * 0.34;
+    const width = 2 + progress * 2;
+    const originX = 0;
+    const originY = 18;
+    const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
+    const gameHeight = this.game?.getHeight ? this.game.getHeight() : 600;
+    const length = Math.max(gameHeight * 0.7, 440);
+    const angle = Math.atan2(playerY - this.y, playerX - this.x);
+
+    if (this.regularTelegraph.type === 'radial') {
+      const outer = Math.max(this.radius * 1.85, 145) * (0.78 + progress * 0.24) * pulse;
+      const inner = outer * 0.55;
+      layer.circle(originX, originY, outer);
+      layer.stroke({ color: warningColor, width: 4, alpha: 0.38 + progress * 0.26 });
+      layer.circle(originX, originY, inner);
+      layer.stroke({ color: 0xffffff, width: 2, alpha: 0.28 + progress * 0.24 });
+      for (let i = 0; i < 10; i++) {
+        const a = (Math.PI * 2 * i) / 10 + progress * 0.45;
+        layer.moveTo(originX + Math.cos(a) * (inner + 10), originY + Math.sin(a) * (inner + 10));
+        layer.lineTo(originX + Math.cos(a) * (outer - 10), originY + Math.sin(a) * (outer - 10));
+      }
+      layer.stroke({ color: warningColor, width: 2, alpha: 0.34 + progress * 0.18 });
+      return;
+    }
+
+    if (this.regularTelegraph.type === 'wall') {
+      for (let i = -2; i <= 2; i++) {
+        const x = i * Math.min(30, gameWidth * 0.035);
+        layer.roundRect(x - 7, originY + this.radius * 0.35, 14, length * pulse, 8);
+        layer.fill({ color: warningColor, alpha });
+        layer.moveTo(x, originY + this.radius * 0.2);
+        layer.lineTo(x, originY + length * pulse);
+      }
+      layer.stroke({ color: 0xffffff, width, alpha: 0.34 + progress * 0.26 });
+      return;
+    }
+
+    const spread = this.regularTelegraph.type === 'fan'
+      ? (this.level <= 1 ? 0.34 : 0.48)
+      : (this.regularTelegraph.attack === 'sniper' ? 0.08 : 0.18);
+    const lanes = this.regularTelegraph.type === 'fan' ? [-0.5, -0.25, 0, 0.25, 0.5] : [0];
+    for (const lane of lanes) {
+      const a = angle + lane * spread;
+      const start = this.radius * 0.55;
+      layer.moveTo(originX + Math.cos(a) * start, originY + Math.sin(a) * start);
+      layer.lineTo(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
+    }
+    layer.stroke({ color: warningColor, width, alpha: 0.62 + progress * 0.28 });
+
+    if (this.regularTelegraph.type === 'fan') {
+      const points = [originX, originY];
+      for (let i = 0; i <= 8; i++) {
+        const t = i / 8 - 0.5;
+        const a = angle + t * spread;
+        points.push(originX + Math.cos(a) * length * 0.78 * pulse, originY + Math.sin(a) * length * 0.78 * pulse);
+      }
+      layer.poly(points);
+      layer.fill({ color: warningColor, alpha: 0.08 + progress * 0.1 });
+    }
+  }
+
+  clearRegularAttackTelegraphVisual() {
+    if (this.attackWarningLayer) this.attackWarningLayer.clear();
+  }
+
   executeSignatureMove(type, playerX, playerY) {
     if (type === 'cone') {
       this.fireCone(playerX, playerY, this.level <= 1 ? 5 : 9, this.level <= 1 ? 0.55 : 0.7);
@@ -551,11 +666,24 @@ export class Boss {
   }
 
   canShoot() {
-    return this.shootCooldown <= 0;
+    if (this.shootCooldown > 0 || this.telegraph) return false;
+    const now = Date.now();
+    if (this.entryStartMs && now - this.entryStartMs < this.entryDurationMs + 250) return false;
+    if (now < this.regularAttackReadyAt) return false;
+    if (!this.regularTelegraph) {
+      const playScene = this.game?.scenes?.play;
+      const player = playScene?.player;
+      this.startRegularAttackTelegraph(player?.x ?? this.x, player?.y ?? this.y + 260);
+      return false;
+    }
+    return now - this.regularTelegraph.start >= this.regularTelegraph.duration;
   }
 
   shoot(playerX, playerY) {
     this.shootCooldown = this.shootDelay;
+    this.regularAttackReadyAt = Date.now() + this.getRegularAttackIntervalMs();
+    this.regularTelegraph = null;
+    this.clearRegularAttackTelegraphVisual();
     const bullets = [];
 
     // Boss FX
@@ -701,6 +829,7 @@ export class Boss {
 
   destroy() {
     this.clearTelegraphVisual();
+    this.clearRegularAttackTelegraphVisual();
     if (this.visualCleanup) {
       this.visualCleanup();
       this.visualCleanup = null;

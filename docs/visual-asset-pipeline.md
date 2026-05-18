@@ -76,6 +76,17 @@ Prompt summary:
 
 > Two original sprite-sheet prompts: a `5x5` transparent-background-ready sheet of 25 sleek playable Nova Swarm ships with rising tech tiers, and a `10x5` sheet of 50 varied alien arcade enemies with distinct silhouettes, weapon ports, readable top-down forms, no logos, no text, no real people, and no existing game branding.
 
+## 2026-05-18 Generated Hijacker Tractor Craft
+
+- Source: `public/art/generated/nova-swarm/source/nova-hijacker-tractor-craft-20260518-source.png`
+- Runtime asset: `public/art/generated/nova-swarm/enemies/nova-hijacker-tractor-craft-20260518.png`
+- Optimization: built-in Codex imagegen output copied from `C:\Users\cromk\.codex\generated_images\019e3c8d-67c5-7660-a43a-291d5635e772`, chroma-keyed with `C:\Users\cromk\.codex\skills\.system\imagegen\scripts\remove_chroma_key.py`, stripped, and resized to `384x384` PNG with alpha.
+- Usage: `src/entities/Hijacker.js` loads this original generated interceptor as the tractor-beam hijacker visual instead of the old bundled UFO sprites.
+
+Prompt summary:
+
+> Original Nova Swarm hijacker craft for a tractor-beam arcade enemy: angular crescent prow, split claw-like fins, dark gunmetal armor, cyan and magenta energy accents, underside emitter lens, no active beam, no text, no logo, no existing IP resemblance, generated on a flat green chroma-key background for alpha extraction.
+
 ## 2026-05-17 Nova Swarm Asset Path Cleanup
 
 - Public runtime art paths now live under `public/art/generated/nova-swarm/`.

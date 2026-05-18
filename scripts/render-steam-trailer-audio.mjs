@@ -38,24 +38,23 @@ const audio = {
 
 const clips = [
   sfx('confirm', 0.08, 0.58),
-  music('gameplayMusic', 0, 15.0, 0.2, 0.45),
+  music('gameplayMusic', 0, 6.4, 0.2, 0.45),
   voice('launchVoice', 0.6, 0.62),
   ...repeatSfx('laserSmall', 1.0, 0.46, 12, 0.42),
-  ...repeatSfx('laserLarge', 5.2, 0.32, 5, 0.4),
-  sfx('shield', 6.25, 0.42),
-  sfx('explosion', 7.1, 0.52),
-  sfx('explosion', 9.4, 0.48),
-  sfx('bossReveal', 10.2, 0.8),
-  music('bossMusic', 10.35, 10.8, 0.2, 0.42),
-  voice('bossVoice', 10.75, 0.7),
-  ...repeatSfx('laserLarge', 13.0, 0.32, 10, 0.36),
-  sfx('bossExplosion', 19.1, 0.82),
-  music('victoryMusic', 19.25, 4.0, 0.2, 0.65),
-  voice('victoryVoice', 20.05, 0.72),
-  music('menuMusic', 22.0, 5.0, 0.14, 0.5),
-  sfx('confirm', 23.9, 0.46),
-  music('gameOverMusic', 27.2, 5.8, 0.24, 0.7),
-  voice('gameOverVoice', 28.1, 0.7)
+  ...repeatSfx('laserLarge', 4.9, 0.3, 4, 0.4),
+  sfx('shield', 5.35, 0.42),
+  sfx('explosion', 5.95, 0.52),
+  sfx('bossReveal', 6.05, 0.8),
+  music('bossMusic', 6.18, 11.0, 0.2, 0.42),
+  voice('bossVoice', 6.55, 0.7),
+  ...repeatSfx('laserLarge', 9.0, 0.32, 10, 0.36),
+  sfx('bossExplosion', 15.15, 0.82),
+  music('victoryMusic', 15.3, 4.0, 0.2, 0.65),
+  voice('victoryVoice', 16.0, 0.72),
+  music('menuMusic', 18.6, 5.0, 0.14, 0.5),
+  sfx('confirm', 20.5, 0.46),
+  music('gameOverMusic', 23.8, 5.8, 0.24, 0.7),
+  voice('gameOverVoice', 24.7, 0.7)
 ];
 
 function findLatestDraftDir(root) {
