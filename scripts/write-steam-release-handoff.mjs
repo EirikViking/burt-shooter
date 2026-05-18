@@ -30,6 +30,7 @@ const audio = readJson('docs/reviews/audio-mix-audit-2026-05-17.json');
 const screenshots = readJson('release/steam-screenshots/draft-2026-05-17-current/report.json');
 const trailer = readJson('release/steam-trailer/candidate-2026-05-17-current/report.json');
 const desktop = readJson('release/steamworks/desktop_package_review_report.json');
+const payloadManifest = readJson('release/steamworks/steam_payload_manifest.json');
 const liveDeployment = readJson('release/steamworks/live_deployment_report.json');
 const fullRc = readJson('release/steamworks/full_rc_verification_report.json');
 const humanReview = readJson('release/steamworks/human_review_packet.json');
@@ -42,6 +43,7 @@ const currentBuildEvidence = [
   screenshots?.build?.version,
   trailer?.build?.version,
   desktop?.currentBuild?.version,
+  payloadManifest?.build?.version,
   liveDeployment?.currentBuild?.version,
   fullRc?.currentBuild?.version,
   humanReview?.build?.version,
@@ -58,6 +60,7 @@ const artifacts = [
   existsInfo('release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png'),
   existsInfo('release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png'),
   existsInfo('release/steamworks/store_metadata_draft.json'),
+  existsInfo('release/steamworks/steam_payload_manifest.json'),
   existsInfo('release/steamworks/app_build_TEMPLATE.vdf'),
   existsInfo('release/steamworks/client_validation_report.template.json'),
   existsInfo('docs/reviews/2026-05-17-human-release-approval.md')
@@ -106,6 +109,16 @@ const packet = {
       electronSmoke: desktop?.latestElectronSmoke?.reportPath || null,
       packagedExeSmoke: desktop?.latestPackagedExeSmoke?.reportPath || null
     },
+    payloadManifest: {
+      status: lineForStatus(payloadManifest?.build?.version === buildVersion &&
+        payloadManifest?.contentRoot === 'release/desktop/win-unpacked' &&
+        Number(payloadManifest?.fileCount || 0) > 0 &&
+        /^[a-f0-9]{64}$/.test(String(payloadManifest?.manifestHash || ''))),
+      path: 'release/steamworks/steam_payload_manifest.json',
+      fileCount: payloadManifest?.fileCount || 0,
+      totalBytes: payloadManifest?.totalBytes || 0,
+      manifestHash: payloadManifest?.manifestHash || null
+    },
     liveDeployment: {
       status: lineForStatus(liveDeployment?.status === 'passed' && liveDeployment?.currentBuild?.version === buildVersion),
       path: 'release/steamworks/live_deployment_report.json',
@@ -149,6 +162,7 @@ const packet = {
   commands: {
     fastRc: 'npm run verify:steam-rc',
     fullRc: 'npm run verify:steam-rc -- --full',
+    payloadManifest: 'npm run steamworks:payload-manifest',
     writeVdf: 'STEAM_APP_ID=<id> STEAM_DEPOT_ID=<id> npm run steamworks:write-vdf',
     writeHumanApproval: 'HUMAN_RELEASE_APPROVAL_CONFIRM=I_REVIEWED_NOVA_SWARM_RELEASE_CANDIDATE HUMAN_RELEASE_ALL_GATES_APPROVED=YES HUMAN_RELEASE_APPROVED_BY=<name> npm run steamworks:write-human-approval',
     writeClientValidation: 'STEAM_CLIENT_VALIDATION_CONFIRM=I_REVIEWED_STEAM_CLIENT_BUILD STEAM_CLIENT_ALL_CHECKS_PASSED=YES STEAM_BUILD_ID=<steam build id> STEAM_VALIDATED_BY=<name> STEAM_INSTALL_PATH=<steam install path> STEAM_SCREENSHOT_EVIDENCE=<screenshot path> npm run steamworks:write-client-validation',

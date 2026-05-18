@@ -1,9 +1,10 @@
 {
-  "generatedAt": "2026-05-18T11:57:52.777Z",
+  "generatedAt": "2026-05-18T12:08:29.802Z",
   "build": {
     "version": "v2026-05-18_11-49-26",
     "timestamp": "2026-05-18T09:49:26.907Z",
     "evidenceVersions": [
+      "v2026-05-18_11-49-26",
       "v2026-05-18_11-49-26",
       "v2026-05-18_11-49-26",
       "v2026-05-18_11-49-26",
@@ -16,7 +17,7 @@
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
-    "passed": 19,
+    "passed": 20,
     "failed": 3,
     "hardFailures": 0,
     "failedChecks": [
@@ -51,6 +52,13 @@
       "exeBytes": 226666496,
       "electronSmoke": "test-results/electron-smoke-2026-05-18T11-03-15-120Z/report.json",
       "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-18T11-03-18-773Z/report.json"
+    },
+    "payloadManifest": {
+      "status": "ready",
+      "path": "release/steamworks/steam_payload_manifest.json",
+      "fileCount": 74,
+      "totalBytes": 601470445,
+      "manifestHash": "85a27eb611213cc36b4959d46e76b7404a2aac780a02b9be42962fc6cabd5ba0"
     },
     "liveDeployment": {
       "status": "ready",
@@ -130,6 +138,11 @@
       "bytes": 4458
     },
     {
+      "path": "release/steamworks/steam_payload_manifest.json",
+      "exists": true,
+      "bytes": 15372
+    },
+    {
       "path": "release/steamworks/app_build_TEMPLATE.vdf",
       "exists": true,
       "bytes": 359
@@ -155,6 +168,7 @@
   "commands": {
     "fastRc": "npm run verify:steam-rc",
     "fullRc": "npm run verify:steam-rc -- --full",
+    "payloadManifest": "npm run steamworks:payload-manifest",
     "writeVdf": "STEAM_APP_ID=<id> STEAM_DEPOT_ID=<id> npm run steamworks:write-vdf",
     "writeHumanApproval": "HUMAN_RELEASE_APPROVAL_CONFIRM=I_REVIEWED_NOVA_SWARM_RELEASE_CANDIDATE HUMAN_RELEASE_ALL_GATES_APPROVED=YES HUMAN_RELEASE_APPROVED_BY=<name> npm run steamworks:write-human-approval",
     "writeClientValidation": "STEAM_CLIENT_VALIDATION_CONFIRM=I_REVIEWED_STEAM_CLIENT_BUILD STEAM_CLIENT_ALL_CHECKS_PASSED=YES STEAM_BUILD_ID=<steam build id> STEAM_VALIDATED_BY=<name> STEAM_INSTALL_PATH=<steam install path> STEAM_SCREENSHOT_EVIDENCE=<screenshot path> npm run steamworks:write-client-validation",

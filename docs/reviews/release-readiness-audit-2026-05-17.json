@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-18T11:57:54.912Z",
+  "generatedAt": "2026-05-18T12:09:24.180Z",
   "verdict": "not_steam_ready",
   "summary": {
-    "passed": 19,
+    "passed": 20,
     "failed": 3,
     "hardFailures": 0,
     "manualBlockers": [
@@ -127,6 +127,11 @@
           "bytes": 2516
         },
         {
+          "path": "release/steamworks/steam_payload_manifest.json",
+          "ok": true,
+          "bytes": 15372
+        },
+        {
           "path": "release/steamworks/live_deployment_report.json",
           "ok": true,
           "bytes": 1710
@@ -149,22 +154,22 @@
         {
           "path": "release/steamworks/steam_client_preflight_packet.json",
           "ok": true,
-          "bytes": 5904
+          "bytes": 6441
         },
         {
           "path": "release/steamworks/steam_client_preflight_packet.md",
           "ok": true,
-          "bytes": 2500
+          "bytes": 2756
         },
         {
           "path": "release/steamworks/release_handoff_packet.json",
           "ok": true,
-          "bytes": 6449
+          "bytes": 6925
         },
         {
           "path": "release/steamworks/release_handoff_packet.md",
           "ok": true,
-          "bytes": 4085
+          "bytes": 4288
         },
         {
           "path": "release/steamworks/store_metadata_draft.json",
@@ -425,6 +430,26 @@
       },
       "errors": [],
       "warnings": []
+    },
+    {
+      "name": "steam_payload_manifest_current",
+      "ok": true,
+      "expectedBuild": "v2026-05-18_11-49-26",
+      "actualBuild": "v2026-05-18_11-49-26",
+      "contentRoot": "release/desktop/win-unpacked",
+      "fileCount": 74,
+      "actualFileCount": 74,
+      "totalBytes": 601470445,
+      "actualTotalBytes": 601470445,
+      "executable": {
+        "path": "Nova Swarm.exe",
+        "bytes": 226666496,
+        "sha256": "85ff836ca41d9f6f4c76e3669fe3f31e2c4ffd6f5d645a827014bf550767eea1",
+        "modifiedAt": "2026-05-18T11:03:10.577Z"
+      },
+      "manifestHash": "85a27eb611213cc36b4959d46e76b7404a2aac780a02b9be42962fc6cabd5ba0",
+      "actualManifestHash": "85a27eb611213cc36b4959d46e76b7404a2aac780a02b9be42962fc6cabd5ba0",
+      "errors": []
     },
     {
       "name": "live_deployment_report_clean",

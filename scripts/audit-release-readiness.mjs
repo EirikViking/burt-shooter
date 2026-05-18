@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -29,6 +30,7 @@ const requiredFiles = [
   'release/provenance/asset_provenance_manifest.json',
   'release/provenance/asset_provenance_report.json',
   'release/steamworks/desktop_package_review_report.json',
+  'release/steamworks/steam_payload_manifest.json',
   'release/steamworks/live_deployment_report.json',
   'release/steamworks/full_rc_verification_report.json',
   'release/steamworks/human_review_packet.json',
@@ -246,6 +248,12 @@ function readJson(relativePath) {
   return JSON.parse(readFileSync(full, 'utf8'));
 }
 
+function hashFile(file) {
+  const hash = createHash('sha256');
+  hash.update(readFileSync(file));
+  return hash.digest('hex');
+}
+
 function currentBuildVersion() {
   try {
     return readJson('public/version.json')?.version || null;
@@ -385,6 +393,88 @@ function checkSteamworksIdsConfigured() {
   };
 }
 
+function checkSteamPayloadManifest() {
+  return checkJsonReport('release/steamworks/steam_payload_manifest.json', (json) => {
+    const expectedBuild = currentBuildVersion();
+    const contentRoot = path.resolve(root, 'release/desktop/win-unpacked');
+    const files = Array.isArray(json.files) ? json.files : [];
+    const errors = [];
+    const seen = new Set();
+    const actualFiles = existsSync(contentRoot)
+      ? walkFiles('release/desktop/win-unpacked')
+        .map((file) => path.relative(contentRoot, file).replaceAll(path.sep, '/'))
+        .sort()
+      : [];
+
+    if (!expectedBuild || json.build?.version !== expectedBuild) errors.push('manifest build does not match current build');
+    if (json.contentRoot !== 'release/desktop/win-unpacked') errors.push('manifest contentRoot must be release/desktop/win-unpacked');
+    if (!existsSync(contentRoot)) errors.push('content root is missing');
+    if (!Number.isInteger(json.fileCount) || json.fileCount !== files.length || files.length === 0) errors.push('fileCount does not match files length');
+
+    let totalBytes = 0;
+    const currentManifestLines = [];
+    for (const file of files) {
+      if (!file?.path || typeof file.path !== 'string') {
+        errors.push('manifest contains a file entry without a path');
+        continue;
+      }
+      if (file.path.includes('..') || path.isAbsolute(file.path)) {
+        errors.push(`manifest path is not relative payload content: ${file.path}`);
+        continue;
+      }
+      if (seen.has(file.path)) errors.push(`duplicate manifest path: ${file.path}`);
+      seen.add(file.path);
+
+      const full = path.resolve(contentRoot, file.path);
+      if (!full.startsWith(contentRoot)) {
+        errors.push(`manifest path escapes content root: ${file.path}`);
+        continue;
+      }
+      if (!existsSync(full)) {
+        errors.push(`manifest file missing from payload: ${file.path}`);
+        continue;
+      }
+
+      const stats = statSync(full);
+      const currentHash = hashFile(full);
+      totalBytes += stats.size;
+      currentManifestLines.push(`${file.path}\t${stats.size}\t${currentHash}`);
+      if (file.bytes !== stats.size) errors.push(`size mismatch: ${file.path}`);
+      if (file.sha256 !== currentHash) errors.push(`sha256 mismatch: ${file.path}`);
+      if (!/^[a-f0-9]{64}$/.test(String(file.sha256 || ''))) errors.push(`invalid sha256 format: ${file.path}`);
+    }
+
+    const missingFromManifest = actualFiles.filter((file) => !seen.has(file));
+    for (const file of missingFromManifest) errors.push(`payload file missing from manifest: ${file}`);
+
+    const executable = files.find((file) => file.path === 'Nova Swarm.exe');
+    if (!executable || Number(executable.bytes || 0) <= 0 || !/^[a-f0-9]{64}$/.test(String(executable.sha256 || ''))) {
+      errors.push('Nova Swarm.exe is missing or invalid in manifest');
+    }
+    if (json.totalBytes !== totalBytes) errors.push('totalBytes does not match current payload');
+
+    const manifestHash = createHash('sha256')
+      .update(currentManifestLines.join('\n'))
+      .digest('hex');
+    if (json.manifestHash !== manifestHash) errors.push('manifestHash does not match current payload listing');
+
+    return {
+      ok: errors.length === 0,
+      expectedBuild,
+      actualBuild: json.build?.version || null,
+      contentRoot: json.contentRoot || null,
+      fileCount: json.fileCount || 0,
+      actualFileCount: actualFiles.length,
+      totalBytes: json.totalBytes || 0,
+      actualTotalBytes: totalBytes,
+      executable: executable || null,
+      manifestHash: json.manifestHash || null,
+      actualManifestHash: manifestHash,
+      errors
+    };
+  });
+}
+
 function checkReleaseHandoffPacket() {
   return checkJsonReport('release/steamworks/release_handoff_packet.json', (json) => {
     const expectedBuild = currentBuildVersion();
@@ -403,6 +493,7 @@ function checkReleaseHandoffPacket() {
         evidence.screenshots?.status === 'ready' &&
         evidence.trailer?.status === 'ready' &&
         evidence.desktop?.status === 'ready' &&
+        evidence.payloadManifest?.status === 'ready' &&
         evidence.liveDeployment?.status === 'ready' &&
         evidence.fullRc?.status === 'ready' &&
         evidence.humanReview?.status === 'ready' &&
@@ -651,6 +742,11 @@ checks.push({
 });
 
 checks.push({
+  name: 'steam_payload_manifest_current',
+  ...checkSteamPayloadManifest()
+});
+
+checks.push({
   name: 'live_deployment_report_clean',
   ...checkJsonReport('release/steamworks/live_deployment_report.json', (json) => {
     const expectedBuild = currentBuildVersion();
@@ -792,6 +888,10 @@ checks.push({
       missingChecks.length === 0 &&
       json.localPayload?.executable?.exists === true &&
       Number(json.localPayload?.executable?.bytes || 0) > 0 &&
+      json.localPayload?.payloadManifest?.exists === true &&
+      Number(json.localPayload?.payloadManifest?.bytes || 0) > 0 &&
+      Number(json.localPayload?.payloadManifestSummary?.fileCount || 0) > 0 &&
+      /^[a-f0-9]{64}$/.test(String(json.localPayload?.payloadManifestSummary?.manifestHash || '')) &&
       json.localPayload?.packagedExeSmoke?.status === 'passed' &&
       json.localPayload?.packagedExeSmoke?.build === expectedBuild &&
       json.localPayload?.packagedControlsSmoke?.status === 'passed' &&

@@ -29,6 +29,7 @@ function fileInfo(relativePath) {
 const version = readJson('public/version.json');
 const desktop = readJson('release/steamworks/desktop_package_review_report.json');
 const fullRc = readJson('release/steamworks/full_rc_verification_report.json');
+const payloadManifest = readJson('release/steamworks/steam_payload_manifest.json');
 const template = readText('release/steamworks/app_build_TEMPLATE.vdf');
 const electronBuilder = readJson('electron-builder.json');
 
@@ -54,6 +55,11 @@ if (desktop?.status !== 'passed') errors.push('Desktop package report is not pas
 if (desktop?.currentBuild?.version !== version?.version) errors.push('Desktop package report does not match current build');
 if (desktop?.latestPackagedExeSmoke?.status !== 'passed') errors.push('Packaged executable smoke is not passed');
 if (desktop?.latestPackagedControlsSmoke?.status !== 'passed') errors.push('Packaged controls smoke is not passed');
+if (payloadManifest?.build?.version !== version?.version) errors.push('Steam payload manifest does not match current build');
+if (payloadManifest?.contentRoot !== 'release/desktop/win-unpacked') errors.push('Steam payload manifest contentRoot does not match the SteamPipe payload');
+if (payloadManifest?.executable?.path !== 'Nova Swarm.exe') errors.push('Steam payload manifest does not include Nova Swarm.exe');
+if (!Number.isInteger(payloadManifest?.fileCount) || payloadManifest.fileCount <= 0) errors.push('Steam payload manifest has no file inventory');
+if (!/^[a-f0-9]{64}$/.test(String(payloadManifest?.manifestHash || ''))) errors.push('Steam payload manifest hash is missing or invalid');
 if (fullRc?.status !== 'passed') errors.push('Full RC evidence is not passed');
 if (!template.includes('"ContentRoot" "..\\\\desktop\\\\win-unpacked"')) errors.push('Steam VDF template ContentRoot does not point at desktop win-unpacked payload');
 if (!template.includes('"LocalPath" "*"') || !template.includes('"recursive" "1"')) errors.push('Steam VDF template does not map all payload files recursively');
@@ -62,6 +68,7 @@ if (electronBuilder?.win?.target?.[0]?.target !== 'dir') warnings.push('electron
 
 const artifacts = [
   fileInfo('release/desktop/win-unpacked/Nova Swarm.exe'),
+  fileInfo('release/steamworks/steam_payload_manifest.json'),
   fileInfo('release/steamworks/app_build_TEMPLATE.vdf'),
   fileInfo('release/steamworks/client_validation_report.template.json'),
   fileInfo('release/steamworks/desktop_package_review_report.json'),
@@ -84,6 +91,12 @@ const packet = {
   explicitLimit: 'This packet proves local upload preflight only. It is not Steam-client validation evidence.',
   localPayload: {
     executable: artifacts[0],
+    payloadManifest: artifacts[1],
+    payloadManifestSummary: payloadManifest ? {
+      fileCount: payloadManifest.fileCount || 0,
+      totalBytes: payloadManifest.totalBytes || 0,
+      manifestHash: payloadManifest.manifestHash || null
+    } : null,
     productName: electronBuilder?.productName || null,
     appId: electronBuilder?.appId || null,
     packagedExeSmoke: desktop?.latestPackagedExeSmoke || null,
@@ -94,14 +107,14 @@ const packet = {
     } : null
   },
   steamPipe: {
-    template: artifacts[1],
+    template: artifacts[2],
     contentRoot: '..\\\\desktop\\\\win-unpacked',
     localVdfOutput: 'release/steamworks/app_build_LOCAL.vdf',
     writeCommand: 'STEAM_APP_ID=<id> STEAM_DEPOT_ID=<id> npm run steamworks:write-vdf',
     uploadCommandShape: 'tools\\\\steamcmd\\\\steamcmd.exe +login <steamworks-user> +run_app_build release\\\\steamworks\\\\app_build_LOCAL.vdf +quit'
   },
   clientValidation: {
-    template: artifacts[2],
+    template: artifacts[3],
     output: 'release/steamworks/client_validation_report.json',
     writeCommand: 'STEAM_CLIENT_VALIDATION_CONFIRM=I_REVIEWED_STEAM_CLIENT_BUILD STEAM_CLIENT_ALL_CHECKS_PASSED=YES STEAM_BUILD_ID=<steam build id> STEAM_VALIDATED_BY=<name> STEAM_INSTALL_PATH=<steam install path> STEAM_SCREENSHOT_EVIDENCE=<screenshot path> npm run steamworks:write-client-validation',
     requiredChecks: expectedChecks,
@@ -130,6 +143,9 @@ ${data.explicitLimit}
 ## Local Payload
 
 - Executable: \`${data.localPayload.executable.path}\`
+- Payload manifest: \`${data.localPayload.payloadManifest.path}\`
+- Payload files: ${data.localPayload.payloadManifestSummary?.fileCount || 0}
+- Payload SHA-256 manifest hash: \`${data.localPayload.payloadManifestSummary?.manifestHash || 'missing'}\`
 - Product name: ${data.localPayload.productName || 'unknown'}
 - Electron app id: ${data.localPayload.appId || 'unknown'}
 - Packaged smoke report: \`${data.localPayload.packagedExeSmoke?.reportPath || 'missing'}\`

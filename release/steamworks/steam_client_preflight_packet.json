@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T11:57:52.262Z",
+  "generatedAt": "2026-05-18T12:08:29.985Z",
   "status": "ready_for_steam_upload_and_client_validation",
   "build": {
     "version": "v2026-05-18_11-49-26",
@@ -12,6 +12,17 @@
       "exists": true,
       "bytes": 226666496,
       "modifiedAt": "2026-05-18T11:03:10.577Z"
+    },
+    "payloadManifest": {
+      "path": "release/steamworks/steam_payload_manifest.json",
+      "exists": true,
+      "bytes": 15372,
+      "modifiedAt": "2026-05-18T12:07:19.569Z"
+    },
+    "payloadManifestSummary": {
+      "fileCount": 74,
+      "totalBytes": 601470445,
+      "manifestHash": "85a27eb611213cc36b4959d46e76b7404a2aac780a02b9be42962fc6cabd5ba0"
     },
     "productName": "Nova Swarm",
     "appId": "app.novaswarm.game",
@@ -130,6 +141,12 @@
       "exists": true,
       "bytes": 226666496,
       "modifiedAt": "2026-05-18T11:03:10.577Z"
+    },
+    {
+      "path": "release/steamworks/steam_payload_manifest.json",
+      "exists": true,
+      "bytes": 15372,
+      "modifiedAt": "2026-05-18T12:07:19.569Z"
     },
     {
       "path": "release/steamworks/app_build_TEMPLATE.vdf",

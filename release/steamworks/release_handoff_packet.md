@@ -1,6 +1,6 @@
 # Nova Swarm Steam Release Handoff Packet
 
-Generated: 2026-05-18T11:57:52.777Z
+Generated: 2026-05-18T12:08:29.802Z
 
 Build: `v2026-05-18_11-49-26`
 Build timestamp: `2026-05-18T09:49:26.907Z`
@@ -10,7 +10,7 @@ This packet summarizes the current release evidence for the final Steamworks/man
 ## Audit State
 
 - Verdict: `not_steam_ready`
-- Automated checks passed: 19
+- Automated checks passed: 20
 - Failed checks: 3
 - Hard failures: 0
 
@@ -27,6 +27,7 @@ Current blockers:
 | screenshots | ready | `release/steam-screenshots/draft-2026-05-17-current/report.json` |
 | trailer | ready | `release/steam-trailer/candidate-2026-05-17-current/report.json` |
 | desktop | ready | `release/steamworks/desktop_package_review_report.json` |
+| payloadManifest | ready | `release/steamworks/steam_payload_manifest.json` |
 | liveDeployment | ready | `release/steamworks/live_deployment_report.json` |
 | fullRc | ready | `release/steamworks/full_rc_verification_report.json` |
 | humanReview | ready | `release/steamworks/human_review_packet.json` |
@@ -45,6 +46,7 @@ Current blockers:
 | yes | `release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png` | 564706 |
 | yes | `release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png` | 3226184 |
 | yes | `release/steamworks/store_metadata_draft.json` | 4458 |
+| yes | `release/steamworks/steam_payload_manifest.json` | 15372 |
 | yes | `release/steamworks/app_build_TEMPLATE.vdf` | 359 |
 | yes | `release/steamworks/client_validation_report.template.json` | 994 |
 | yes | `docs/reviews/2026-05-17-human-release-approval.md` | 1553 |
@@ -61,6 +63,7 @@ Current blockers:
 
 - fastRc: `npm run verify:steam-rc`
 - fullRc: `npm run verify:steam-rc -- --full`
+- payloadManifest: `npm run steamworks:payload-manifest`
 - writeVdf: `STEAM_APP_ID=<id> STEAM_DEPOT_ID=<id> npm run steamworks:write-vdf`
 - writeHumanApproval: `HUMAN_RELEASE_APPROVAL_CONFIRM=I_REVIEWED_NOVA_SWARM_RELEASE_CANDIDATE HUMAN_RELEASE_ALL_GATES_APPROVED=YES HUMAN_RELEASE_APPROVED_BY=<name> npm run steamworks:write-human-approval`
 - writeClientValidation: `STEAM_CLIENT_VALIDATION_CONFIRM=I_REVIEWED_STEAM_CLIENT_BUILD STEAM_CLIENT_ALL_CHECKS_PASSED=YES STEAM_BUILD_ID=<steam build id> STEAM_VALIDATED_BY=<name> STEAM_INSTALL_PATH=<steam install path> STEAM_SCREENSHOT_EVIDENCE=<screenshot path> npm run steamworks:write-client-validation`
