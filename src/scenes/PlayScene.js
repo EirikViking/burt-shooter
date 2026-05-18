@@ -140,6 +140,11 @@ export class PlayScene {
     this.lastHitAt = 0;
     this.lastStandReadyAt = 0;
     this.nearMissCooldownAt = 0;
+    this.lastNearMissAt = 0;
+    this.dangerDodgeCount = 0;
+    this.dangerDodgeTimerMs = 0;
+    this.bestDangerDodgeStreak = 0;
+    this.lastDangerDodgeScore = 0;
     this.lastTraitImpactToastAt = 0;
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
@@ -550,6 +555,7 @@ export class PlayScene {
       }
 
       this.updateComboTimers(delta);
+      this.updateDangerDodgeTimer(delta);
       this.updateComboDisplay(delta);
 
       if (this.player?.synergyState?.type) {
@@ -2842,17 +2848,58 @@ export class PlayScene {
     }
   }
 
+  updateDangerDodgeTimer(delta) {
+    if (this.dangerDodgeCount <= 0) return;
+    this.dangerDodgeTimerMs -= delta * 16.67;
+    if (this.dangerDodgeTimerMs <= 0) {
+      this.dangerDodgeCount = 0;
+      this.dangerDodgeTimerMs = 0;
+    }
+  }
+
   applyNearMiss(bullet) {
     const now = Date.now();
     if (now < this.nearMissCooldownAt) return;
     this.nearMissCooldownAt = now + 450;
+    if (now - this.lastNearMissAt > 2200) {
+      this.dangerDodgeCount = 0;
+    }
+    this.lastNearMissAt = now;
+    this.dangerDodgeCount += 1;
+    this.dangerDodgeTimerMs = 2200;
+    this.bestDangerDodgeStreak = Math.max(this.bestDangerDodgeStreak, this.dangerDodgeCount);
     const comboMult = Math.max(1, this.comboMultiplier);
     const traitMult = Number(this.player?.traitCombat?.nearMissScoreMult || 1);
-    const score = Math.round(25 * comboMult * (Number.isFinite(traitMult) ? traitMult : 1));
+    const streakBonus = Math.min(100, 25 + this.dangerDodgeCount * 15);
+    const score = Math.round(streakBonus * comboMult * (Number.isFinite(traitMult) ? traitMult : 1));
+    this.lastDangerDodgeScore = score;
     this.game.addScore(score);
-    this.enqueueToast(`NEAR MISS +${score}`, { fontSize: 16, fill: '#ffcc00', slot: 'top', type: 'combo', duration: 900 });
+    const label = this.dangerDodgeCount >= 2
+      ? `DANGER DODGE x${this.dangerDodgeCount} +${score}`
+      : `CLOSE DODGE +${score}`;
+    this.enqueueToast(label, {
+      fontSize: this.dangerDodgeCount >= 3 ? 18 : 16,
+      fill: '#ffcc00',
+      slot: 'top',
+      type: 'dangerDodge',
+      priority: this.dangerDodgeCount >= 2 ? 3 : 1,
+      duration: 950
+    });
     if (this.particleManager) {
-      this.particleManager.createHitSpark(this.player.x, this.player.y);
+      if (typeof this.particleManager.createNearMissEffect === 'function') {
+        this.particleManager.createNearMissEffect(this.player.x, this.player.y, this.dangerDodgeCount);
+      } else {
+        this.particleManager.createHitSpark(this.player.x, this.player.y);
+      }
+    }
+    if (this.scorePopupManager && this.player) {
+      this.scorePopupManager.addScorePopup(this.player.x, this.player.y - 34, score, {
+        comboEligible: false,
+        color: this.dangerDodgeCount >= 3 ? 0xff66ff : 0xffcc00
+      });
+    }
+    if (this.dangerDodgeCount >= 3) {
+      AudioManager.playSfx('combo_tick', { volume: 0.56 });
     }
   }
 

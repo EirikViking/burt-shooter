@@ -7,9 +7,10 @@ import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFon
 import { generateUUID } from '../utils/uuid.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
+import { getSelectableShips, getShipUnlockProgress, isShipUnlocked, updateShipUnlockProgress } from '../config/ShipMetadata.js';
 
-const ENTRY_PROMPT_DESKTOP = 'ENTER: LOG SCORE  |  R/SPACE: RESTART';
-const ENTRY_PROMPT_MOBILE = 'TAP SCORE  |  R/SPACE RESTART';
+const ENTRY_PROMPT_DESKTOP = 'ENTER: LOG SCORE  |  R/SPACE/GAMEPAD A: RESTART';
+const ENTRY_PROMPT_MOBILE = 'TAP SCORE  |  R/SPACE/GAMEPAD A RESTART';
 const INPUT_PROMPT = 'ENTER INITIALS AND PRESS OK';
 
 export class GameOverScene {
@@ -28,6 +29,7 @@ export class GameOverScene {
     this.title = null;
     this.scoreText = null;
     this.levelText = null;
+    this.unlockText = null;
     this.comment = null;
     this.promptText = null;
     this.nameDisplay = null;
@@ -47,6 +49,7 @@ export class GameOverScene {
     this.submitBlockedReason = null;
     // Submission deduplication
     this.submissionId = null;
+    this.gamepadActionWasPressed = false;
   }
 
   init() {
@@ -66,6 +69,13 @@ export class GameOverScene {
     // FREEZE final score and level immediately
     this.finalScore = Number(this.game.score) || 0;
     this.finalLevel = Number(this.game.level) || 0;
+    const previousProgress = getShipUnlockProgress();
+    const currentProgress = updateShipUnlockProgress({
+      score: this.finalScore,
+      rank: this.game.rankIndex || 0,
+      level: this.finalLevel
+    });
+    this.unlockSummary = this.createUnlockSummary(previousProgress, currentProgress);
 
     // Generate unique submissionId for this run (reused across retries)
     this.submissionId = generateUUID();
@@ -123,6 +133,22 @@ export class GameOverScene {
     this.levelText.anchor.set(0.5);
     this.container.addChild(this.levelText);
 
+    const unlockSize = layout.isMobile ? 15 : 18;
+    this.unlockText = createText(this.unlockSummary, {
+      fontFamily: 'Courier New',
+      fontSize: unlockSize,
+      fontWeight: 'bold',
+      fill: '#9cfbff',
+      stroke: '#031323',
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.9, layout),
+      lineHeight: Math.round(unlockSize * 1.25)
+    });
+    this.unlockText.anchor.set(0.5);
+    this.container.addChild(this.unlockText);
+
     const bodySize = getResponsiveFontSize(layout, 'body');
     this.comment = createText(getGameOverComment(this.finalScore, this.finalLevel), {
       fontFamily: 'Courier New',
@@ -175,7 +201,7 @@ export class GameOverScene {
     this.container.addChild(this.nameDisplay);
 
     const smallSize = getResponsiveFontSize(layout, 'small');
-    this.instructions = createText('R / SPACE: RESTART  |  ESC: MENU', {
+    this.instructions = createText('R / SPACE / GAMEPAD A: RESTART  |  ESC: MENU', {
       fontFamily: 'Courier New',
       fontSize: smallSize,
       fill: '#9cfbff',
@@ -256,6 +282,7 @@ export class GameOverScene {
     const titleSize = getResponsiveFontSize(layout, 'title');
     const scoreSize = getResponsiveFontSize(layout, 'score');
     const levelSize = getResponsiveFontSize(layout, 'subtitle');
+    const unlockSize = layout.isMobile ? 15 : 18;
     const bodySize = getResponsiveFontSize(layout, 'body');
     const promptSize = layout.isMobile ? 18 : 20;
     const nameSize = layout.isMobile ? 22 : 26;
@@ -268,6 +295,10 @@ export class GameOverScene {
     this.title.style.lineHeight = Math.round(titleSize * 1.08);
     this.scoreText.style.fontSize = scoreSize;
     this.levelText.style.fontSize = levelSize;
+    this.unlockText.style.fontSize = unlockSize;
+    this.unlockText.style.wordWrap = true;
+    this.unlockText.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
+    this.unlockText.style.lineHeight = Math.round(unlockSize * 1.25);
     this.comment.style.fontSize = bodySize;
     this.comment.style.lineHeight = Math.round(bodySize * 1.4);
     this.comment.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
@@ -287,11 +318,12 @@ export class GameOverScene {
     const titleHeight = titleSize * 1.2;
     const scoreHeight = scoreSize * 1.2;
     const levelHeight = levelSize * 1.2;
+    const unlockHeight = unlockSize * 2.3;
     const commentHeight = bodySize * 2 * 1.4; // ~2 lines
     const promptHeight = promptSize * 1.2;
     const nameHeight = nameSize * 1.2;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + commentHeight + promptHeight + nameHeight + spacing * 5 + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + commentHeight + promptHeight + nameHeight + spacing * 6 + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -316,8 +348,11 @@ export class GameOverScene {
     this.levelText.x = width / 2;
     this.levelText.y = stack.placeElement(this.levelText, sectionGap);
 
+    this.unlockText.x = width / 2;
+    this.unlockText.y = stack.placeText(this.unlockText, spacing);
+
     this.comment.x = width / 2;
-    this.comment.y = stack.placeText(this.comment, sectionGap);
+    this.comment.y = stack.placeText(this.comment, spacing);
 
     this.promptText.x = width / 2;
     this.promptText.y = stack.placeElement(this.promptText, spacing);
@@ -432,6 +467,63 @@ export class GameOverScene {
     };
 
     window.addEventListener('keydown', this.keyHandler);
+  }
+
+  update() {
+    if (this.state === 'input' || this.state === 'submitting') return;
+    const actionPressed = this.isGamepadActionPressed();
+    if (actionPressed && !this.gamepadActionWasPressed) {
+      this.restartRun();
+    }
+    this.gamepadActionWasPressed = actionPressed;
+  }
+
+  isGamepadActionPressed() {
+    const override = typeof window !== 'undefined' ? window.__burtGamepadOverride : null;
+    const snapshot = override || (typeof navigator !== 'undefined' && navigator.getGamepads
+      ? Array.from(navigator.getGamepads()).find(pad => pad && pad.connected)
+      : null);
+    const buttons = snapshot?.buttons || [];
+    const pressed = (index) => {
+      const button = buttons[index];
+      if (button == null) return false;
+      if (typeof button === 'number') return button > 0.5;
+      return Boolean(button.pressed || button.value > 0.5);
+    };
+    return pressed(0) || pressed(7);
+  }
+
+  createUnlockSummary(previousProgress, currentProgress) {
+    const ships = getSelectableShips();
+    const newlyUnlocked = ships.find(ship =>
+      isShipUnlocked(ship.spriteKey, currentProgress) &&
+      !isShipUnlocked(ship.spriteKey, previousProgress)
+    );
+    if (newlyUnlocked) {
+      return `NEW SHIP UNLOCKED: ${newlyUnlocked.name}\nOPEN HANGAR FROM MENU OR PRESS RESTART`;
+    }
+
+    const nextShip = ships
+      .filter(ship => !isShipUnlocked(ship.spriteKey, currentProgress))
+      .sort((a, b) => {
+        const aScore = Number(a.unlock?.score) || 0;
+        const bScore = Number(b.unlock?.score) || 0;
+        const aRank = Number(a.unlock?.rank) || 0;
+        const bRank = Number(b.unlock?.rank) || 0;
+        return aScore - bScore || aRank - bRank;
+      })[0];
+
+    if (!nextShip) {
+      return 'HANGAR COMPLETE: ALL SHIPS UNLOCKED\nCHASE A CLEANER RUN';
+    }
+
+    const requirement = nextShip.unlock || {};
+    const scoreNeed = Math.max(0, (Number(requirement.score) || 0) - (currentProgress.bestScore || 0));
+    const rankNeed = Math.max(0, (Number(requirement.rank) || 0) - (currentProgress.bestRank || 0));
+    const scorePart = scoreNeed > 0 ? `${scoreNeed.toLocaleString('en-US')} SCORE` : null;
+    const rankPart = rankNeed > 0 ? `${rankNeed} RANK` : null;
+    const needed = [scorePart, rankPart].filter(Boolean).join(' OR ') || 'ONE BETTER RUN';
+    return `NEXT SHIP: ${nextShip.name}\nNEED ${needed}`;
   }
 
   enterInputMode() {

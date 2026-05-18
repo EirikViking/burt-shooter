@@ -297,7 +297,7 @@ export class HUD {
     }
 
     const waveText = waveTotal > 0 ? `WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}` : `LEVEL ${this.game.level}`;
-    this.missionText.text = `${waveText}  HOSTILES ${activeEnemies}  SHOTS ${activeBullets}`;
+    this.missionText.text = `${waveText}  HOSTILES ${activeEnemies}  THREATS ${activeBullets}`;
   }
 
   updateActivePowerup() {

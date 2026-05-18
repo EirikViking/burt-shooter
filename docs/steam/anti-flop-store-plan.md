@@ -34,7 +34,7 @@ No logo-first opening, no lore card, no menu dwell, and no story intro in the op
 
 Arcade, Shoot 'Em Up, Score Attack, Retro, Space, 2D, Controller, Singleplayer, Action, Indie.
 
-Use Bullet Hell only if the current captured patterns remain fair and readable at thumbnail scale.
+Avoid Bullet Hell for the first Steam page pass unless a later trailer/screenshot set clearly proves dense, fair, readable bullet patterns at thumbnail scale.
 
 ## Tags To Avoid
 

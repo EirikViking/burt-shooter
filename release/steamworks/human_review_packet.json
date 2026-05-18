@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T15:15:16.390Z",
+  "generatedAt": "2026-05-18T17:40:10.087Z",
   "status": "ready_for_human_review",
   "build": {
-    "version": "v2026-05-18_16-03-56",
-    "timestamp": "2026-05-18T14:03:56.375Z"
+    "version": "v2026-05-18_18-57-39",
+    "timestamp": "2026-05-18T16:57:39.428Z"
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
@@ -48,7 +48,7 @@
         {
           "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
           "exists": true,
-          "bytes": 3668
+          "bytes": 3670
         }
       ],
       "prompt": "Review the 8 screenshot upload candidates for clarity, truthful gameplay representation, UI readability, and public arcade tone."
@@ -86,17 +86,17 @@
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
           "exists": true,
-          "bytes": 9985462
+          "bytes": 10238143
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "exists": true,
-          "bytes": 565181
+          "bytes": 567346
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "exists": true,
-          "bytes": 2199
+          "bytes": 2202
         }
       ],
       "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."
@@ -134,7 +134,7 @@
         {
           "path": "release/steamworks/store_metadata_draft.json",
           "exists": true,
-          "bytes": 4379
+          "bytes": 4360
         },
         {
           "path": "release/steamworks/store_metadata_review_report.json",
@@ -182,7 +182,7 @@
         {
           "path": "release/steamworks/full_rc_verification_report.json",
           "exists": true,
-          "bytes": 3538
+          "bytes": 3536
         },
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",

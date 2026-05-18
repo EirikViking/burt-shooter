@@ -89,23 +89,26 @@ export class ScorePopupManager {
     this.lastKillTime = 0;
   }
 
-  addScorePopup(x, y, score) {
+  addScorePopup(x, y, score, options = {}) {
+    const comboEligible = options.comboEligible !== false;
     const now = Date.now();
     const timeSinceLastKill = now - this.lastKillTime;
 
-    // Update combo
-    if (timeSinceLastKill < this.comboWindow) {
-      this.comboCount++;
-    } else {
-      this.comboCount = 1;
+    if (comboEligible) {
+      // Update combo
+      if (timeSinceLastKill < this.comboWindow) {
+        this.comboCount++;
+      } else {
+        this.comboCount = 1;
+      }
+      this.lastKillTime = now;
+      this.comboTimer = 0;
     }
-    this.lastKillTime = now;
-    this.comboTimer = 0;
 
     // Determine if this is a combo popup
-    const isCombo = this.comboCount >= 3;
+    const isCombo = comboEligible && this.comboCount >= 3;
     const displayScore = isCombo ? this.comboCount : score;
-    const color = isCombo ? 0xff00ff : (score >= 100 ? 0xffaa00 : 0xffff00);
+    const color = options.color ?? (isCombo ? 0xff00ff : (score >= 100 ? 0xffaa00 : 0xffff00));
 
     const popup = new ScorePopup(x, y, displayScore, color, isCombo);
     this.popups.push(popup);

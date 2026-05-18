@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nova Swarm - Fast Modern Arcade Score-Chaser</title>
+    <meta
+      name="description"
+      content="Dodge readable swarms, blast a boss every level, and restart instantly for one more run in Nova Swarm."
+    />
+    <meta property="og:title" content="Nova Swarm" />
+    <meta property="og:description" content="A fast modern arcade score-chaser with readable swarms, boss fights every level, and instant restarts." />
+    <meta property="og:image" content="assets/boss-fight.png" />
+    <meta name="theme-color" content="#05070c" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="fonts/orbitron-800.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="fonts/rajdhani-600.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header" data-header>
+      <a class="brand" href="#top" aria-label="Nova Swarm home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Nova Swarm</span>
+      </a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="#trailer">Trailer</a>
+        <a href="#combat">Combat</a>
+        <a href="#fleet">Fleet</a>
+        <a href="#screens">Screens</a>
+      </nav>
+      <a class="header-cta" href="https://burt.tinyfoundry.app" rel="noopener">Play Now</a>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-bg" aria-hidden="true"></div>
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <h1>Fast modern arcade score-chaser.</h1>
+            <p>
+              Dodge readable swarms, blast a boss every level, grab the run-saving pickup,
+              and restart instantly when pride meets plasma.
+            </p>
+            <div class="hero-actions" aria-label="Primary actions">
+              <a class="button button-primary" href="https://burt.tinyfoundry.app" rel="noopener">Play Web Build</a>
+              <a class="button button-ghost" href="#trailer">Watch Trailer</a>
+            </div>
+          </div>
+
+          <div class="hero-media" aria-label="Nova Swarm gameplay trailer">
+            <video
+              src="assets/trailer.mp4"
+              poster="assets/boss-fight.png"
+              autoplay
+              muted
+              loop
+              playsinline
+            ></video>
+          </div>
+        </div>
+        <div class="proof-strip" aria-label="Game highlights">
+          <span>Boss Every Level</span>
+          <span>Instant Restart</span>
+          <span>25 Playable Ships</span>
+          <span>50 Enemy Profiles</span>
+          <span>Gamepad-Friendly</span>
+        </div>
+      </section>
+
+      <section class="section section-split" id="trailer">
+        <div class="section-copy">
+          <h2>The first seconds are the game.</h2>
+          <p>
+            Nova Swarm leads with shooting, dodging, score pressure, and visible enemy formations.
+            No lore wall stands between the player and the next run.
+          </p>
+          <ul class="feature-list">
+            <li>Quick play from the start menu.</li>
+            <li>One-input restart from game over.</li>
+            <li>HUD-readable action for store screenshots and actual play.</li>
+          </ul>
+        </div>
+        <div class="media-frame">
+          <img src="assets/first-wave.png" alt="First wave gameplay with player fire, readable enemies, HUD, score, and lives." />
+        </div>
+      </section>
+
+      <section class="section combat-band" id="combat">
+        <div class="section-heading">
+          <h2>Readable chaos. Real arcade pressure.</h2>
+          <p>
+            Formations are built to be parsed at speed: dodge lanes, clear telegraphs,
+            pickups that pop, and bosses that announce danger before the screen gets spicy.
+          </p>
+        </div>
+        <div class="combat-grid">
+          <article>
+            <img src="assets/midgame-swarm.png" alt="Midgame swarm escalation with dense enemy formations." />
+            <h3>Swarms You Can Read</h3>
+            <p>Enemies attack in formations that look dramatic without turning into visual soup.</p>
+          </article>
+          <article>
+            <img src="assets/boss-fight.png" alt="Boss fight with clear health bar and attack telegraph." />
+            <h3>Boss Fights Every Level</h3>
+            <p>Each level pays off with a boss pattern, a warning state, and a clean victory beat.</p>
+          </article>
+          <article>
+            <img src="assets/boss-victory.png" alt="Boss defeated victory moment." />
+            <h3>One More Run Flow</h3>
+            <p>Score, ships, traits, and instant restarts keep the loop focused on improvement.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section fleet" id="fleet">
+        <div class="fleet-copy">
+          <h2>Ships with personality, not menu noise.</h2>
+          <p>
+            Start with one clean craft, then unlock stronger ships as the score climb gets meaner.
+            Traits change the feel: wing bursts, piercing shots, overcharge timing, dodge pulses,
+            and close-dodge score bonuses.
+          </p>
+          <a class="button button-primary" href="https://burt.tinyfoundry.app" rel="noopener">Launch The Hangar</a>
+        </div>
+        <div class="fleet-stack" aria-label="Ship and enemy asset previews">
+          <img src="assets/ship-contact-sheet.jpg" alt="Playable ship variety contact sheet." />
+          <img src="assets/enemy-contact-sheet.jpg" alt="Enemy ship variety contact sheet." />
+        </div>
+      </section>
+
+      <section class="section boss-wall">
+        <div class="section-heading">
+          <h2>The swarm brought management.</h2>
+          <p>
+            Fifty boss profiles give the game a sharper arcade identity: dramatic silhouettes,
+            readable attack signatures, and a little too much confidence.
+          </p>
+        </div>
+        <img src="assets/boss-contact-sheet.jpg" alt="Nova Swarm boss lineup contact sheet." />
+      </section>
+
+      <section class="section screenshots" id="screens">
+        <div class="section-heading">
+          <h2>Store-ready moments.</h2>
+          <p>Gameplay first, boss pressure early, score motivation always visible.</p>
+        </div>
+        <div class="screen-viewer">
+          <button class="screen-thumb is-active" data-shot="assets/first-wave.png">First Wave</button>
+          <button class="screen-thumb" data-shot="assets/midgame-swarm.png">Swarm</button>
+          <button class="screen-thumb" data-shot="assets/boss-fight.png">Boss</button>
+          <button class="screen-thumb" data-shot="assets/boss-victory.png">Victory</button>
+        </div>
+        <img class="screen-main" data-screen-main src="assets/first-wave.png" alt="Selected Nova Swarm screenshot." />
+      </section>
+
+      <section class="final-cta">
+        <div>
+          <h2>Insert coin energy. Browser playable now.</h2>
+          <p>Keyboard, pointer, mobile, and controller paths are already covered by smoke tests.</p>
+        </div>
+        <a class="button button-primary" href="https://burt.tinyfoundry.app" rel="noopener">Play Nova Swarm</a>
+      </section>
+    </main>
+
+    <footer>
+      <span>Nova Swarm</span>
+      <span>Fast modern arcade score-chaser by TinyFoundry.</span>
+      <a href="https://burt.tinyfoundry.app" rel="noopener">Play the game</a>
+    </footer>
+
+    <script src="site.js" type="module"></script>
+  </body>
+</html>

@@ -172,3 +172,95 @@ After: the store draft sells a focused score-chaser with bosses, readable swarms
 - Final human store-copy approval is still required.
 - Bullet Hell remains in the tag set only while captured patterns stay fair/readable; if later boss patterns get noisier, remove that tag.
 - Steam client validation still needs the real uploaded build before controller-support wording can be upgraded.
+
+## Loop 5 - Close-Dodge Score Feel
+
+### What Was Tested
+
+- Played the current build through the focused danger-dodge automation.
+- Ran the standard local smoke path after the gameplay change.
+- Visually inspected `test-results/danger-dodge-2026-05-18T15-30-48-705Z/danger-dodge.png`.
+
+### What Felt Slow, Confusing, Or Generic
+
+- Near-miss dodges were worth points, but the feedback was too modest for a modern score-chaser.
+- Repeated near-miss score popups reused the kill-combo renderer, so the screen could show `COMBO!` when the player had actually chained dodges.
+
+### What Changed
+
+- Close dodges now chain into a short `DANGER DODGE` streak with escalating score rewards.
+- The active ship trait's near-miss multiplier is included in the danger-dodge score.
+- Near misses create a dedicated spark/ring effect at the player, with stronger color on higher streaks.
+- The score popup manager now supports non-combo score popups, so dodge bonuses render as readable bonus points instead of fake kill combos.
+- `render_game_to_text` exposes danger-dodge score/streak telemetry for future checks.
+- Added `npm run check:danger-dodge`.
+
+### Before And After Feel
+
+Before: dodging close to bullets was lightly acknowledged and easy to miss.
+
+After: close dodges create visible score pressure and a clearer "one more run" skill expression without adding menu friction or visual clutter.
+
+### Evidence Captured
+
+- Focused danger-dodge check: `test-results/danger-dodge-2026-05-18T15-30-48-705Z/`.
+- Local smoke: `test-results/smoke-2026-05-18T15-32-38-023Z/`.
+- Current build: `v2026-05-18_17-25-21`.
+
+### Remaining Top Risks
+
+- Danger-dodge feedback should be watched during real play so it does not distract from hazards.
+- The first 10 seconds are stronger, but movement/shooting/audio punch can still be polished further.
+- Current build still needs deployment and refreshed release evidence before it can replace the prior release-candidate evidence.
+
+## Loop 6 - Steam Hit Gap Research And Game-Over Motivation
+
+### What Was Tested
+
+- Live Steam comparable research for fixed shooters, retro shmups, score-attack shooters, and modern arcade hybrids.
+- Store/page critique from the current Steam metadata, screenshot shortlist, trailer report, and marketing site.
+- Game-feel audit focused on first-session compulsion, readability, boss proof, and controller expectations.
+- Fresh local and live smoke paths after the gameplay/copy changes.
+
+### What Felt Slow, Confusing, Or Generic
+
+- The strongest market lesson is that "retro homage" is not enough. The game needs a visible modern compulsion engine.
+- The game-over screen did not clearly cash out next-ship progress or make gamepad retry obvious.
+- HUD mission text used `SHOTS` for active enemy bullets, which could be mistaken for player shots.
+- The Steam metadata still carried `Bullet Hell`, a risky tag while boss/bullet footage is not yet dense-pattern proof.
+- The marketing proof strip said `Controller Ready`, which was louder than the current Steam-client validation evidence.
+
+### What Changed
+
+- Added `docs/steam/galaga-space-invaders-failure-research.md` with a 30-title Steam comparable matrix and Nova Swarm implications.
+- Added `docs/reviews/steam-hit-gap-audit.md` with blunt 0-10 scores and the top five highest-impact changes.
+- Game over now shows new/next ship unlock motivation, exact remaining score/rank need, and `GAMEPAD A` retry copy.
+- Game over now accepts gamepad A/right trigger as a restart input.
+- `render_game_to_text` exposes game-over score, level, prompt, state, and unlock summary for automation.
+- HUD mission status now says `THREATS` for active enemy bullets.
+- Removed `Bullet Hell` from the first Steam metadata tag set.
+- Marketing site proof strip now says `Gamepad-Friendly` instead of `Controller Ready`.
+- Added `npm run check:gameover-motivation`.
+
+### Before And After Feel
+
+Before: death was functional, but it did not make the next run feel materially tempting unless the player already understood unlock thresholds.
+
+After: death now creates a concrete "one more run" reason: unlock the next ship, retry instantly, or go to the hangar from the menu.
+
+### Evidence Captured
+
+- Focused game-over check: `test-results/gameover-motivation-2026-05-18T16-57-59-839Z/`.
+- Local smoke: `test-results/smoke-2026-05-18T16-58-04-809Z/`.
+- Live smoke: `test-results/smoke-2026-05-18T17-00-26-121Z/`.
+- Full Steam RC: `test-results/steam-rc-verify-2026-05-18T17-22-27-089Z/report.json`.
+- Packaged controls: `test-results/packaged-control-smoke-2026-05-18T17-24-33-047Z/report.json`.
+- Final release audit: `docs/reviews/release-readiness-audit-2026-05-17.json`.
+- Live deployment: `https://burt.tinyfoundry.app`, build `v2026-05-18_18-57-39`.
+- Marketing site remains live at `https://burt.tinyfoundry.app/nova-swarm/`.
+
+### Remaining Top Risks
+
+- The first 10 seconds of the trailer still need earlier boss proof.
+- Boss regular attack telegraphs need a stronger readability pass.
+- Steam client validation and human approvals remain manual blockers.

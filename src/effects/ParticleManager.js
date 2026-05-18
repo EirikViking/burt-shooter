@@ -194,6 +194,39 @@ export class ParticleManager {
     }
   }
 
+  createNearMissEffect(x, y, streak = 1) {
+    const count = Math.min(18, 6 + Math.max(0, streak) * 3);
+    const color = streak >= 4 ? 0xff66ff : 0xffcc00;
+    for (let i = 0; i < count; i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      const angle = -Math.PI / 2 + side * (0.45 + Math.random() * 0.65);
+      const speed = 2.4 + Math.random() * 3.8 + Math.min(3, streak) * 0.35;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      const size = 1.4 + Math.random() * 2.4;
+      const lifetime = 18 + Math.random() * 18;
+
+      if (!this.spawnParticle(x + side * 18, y + 4, vx, vy, color, size, lifetime)) {
+        break;
+      }
+    }
+
+    const ringCount = Math.min(12, 4 + Math.max(0, streak));
+    for (let i = 0; i < ringCount; i++) {
+      const angle = (Math.PI * 2 * i) / ringCount;
+      const speed = 1.2 + Math.random() * 1.4;
+      this.spawnParticle(
+        x,
+        y,
+        Math.cos(angle) * speed,
+        Math.sin(angle) * speed,
+        0xffffff,
+        1 + Math.random() * 1.5,
+        14 + Math.random() * 14
+      );
+    }
+  }
+
   createPickupEffect(x, y, color) {
     // Enhanced powerup collection burst
     const particleCount = 25;

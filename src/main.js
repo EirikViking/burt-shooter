@@ -229,6 +229,7 @@ function buildGameTextState(game) {
   const enemyBullets = playScene?.bulletManager?.enemyBullets || [];
   const activeSettingsOverlay = game?.currentScene?.settingsOverlay || playScene?.settingsOverlay || null;
   const shipSelectScene = getStableSceneName(game) === 'shipSelect' ? game?.currentScene : null;
+  const gameOverScene = getStableSceneName(game) === 'gameOver' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
   const visualBoundsFor = (enemy) => {
     try {
@@ -271,6 +272,14 @@ function buildGameTextState(game) {
       gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null
     },
     toast: playScene?.getToastDebugState ? playScene.getToastDebugState() : null,
+    scoring: playScene ? {
+      comboCount: playScene.comboCount || 0,
+      comboMultiplier: playScene.comboMultiplier || 1,
+      dangerDodgeCount: playScene.dangerDodgeCount || 0,
+      dangerDodgeTimerMs: Math.max(0, Math.round(playScene.dangerDodgeTimerMs || 0)),
+      bestDangerDodgeStreak: playScene.bestDangerDodgeStreak || 0,
+      lastDangerDodgeScore: playScene.lastDangerDodgeScore || 0
+    } : null,
     wave: enemyManager ? {
       phase: enemyManager.phase || null,
       state: enemyManager.state || null,
@@ -289,6 +298,14 @@ function buildGameTextState(game) {
       trait: selectedShip.trait?.label || null,
       unlocked: isShipUnlocked(selectedShip.spriteKey, getShipUnlockProgress()),
       unlock: selectedShip.unlock || null
+    } : null,
+    gameOver: gameOverScene ? {
+      score: gameOverScene.finalScore || 0,
+      level: gameOverScene.finalLevel || 0,
+      unlockSummary: gameOverScene.unlockSummary || null,
+      prompt: gameOverScene.promptText?.text || null,
+      state: gameOverScene.state || null,
+      qualifiedForHighscore: Boolean(gameOverScene.isQualified)
     } : null,
     player: player ? {
       x: Math.round(player.x),

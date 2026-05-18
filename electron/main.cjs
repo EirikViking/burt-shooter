@@ -236,11 +236,23 @@ async function readPlayState(window) {
       return {
         textState,
         scene: textState?.scene || null,
+        playReady: Boolean(play?.isReady),
+        hasInputManager: Boolean(play?.inputManager),
+        introActive: Boolean(play?.introActive || play?.introOverlay?.parent),
+        introComplete: Boolean(play?.introComplete),
         isPaused: Boolean(play?.isPaused),
-        pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible || play?.pauseOverlay?.parent),
+        pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible && play?.pauseOverlay?.parent),
         player: textState?.player || null,
         counts: textState?.counts || null,
         input: textState?.input || null,
+        keySnapshot: play?.inputManager?.keys ? {
+          ArrowRight: Boolean(play.inputManager.keys.ArrowRight),
+          KeyD: Boolean(play.inputManager.keys.KeyD),
+          d: Boolean(play.inputManager.keys.d),
+          ArrowUp: Boolean(play.inputManager.keys.ArrowUp),
+          KeyW: Boolean(play.inputManager.keys.KeyW),
+          w: Boolean(play.inputManager.keys.w)
+        } : null,
         build: textState?.buildId || null,
         gitSha: textState?.gitSha || null
       };
@@ -248,51 +260,213 @@ async function readPlayState(window) {
   `);
 }
 
+async function settleShipIntroForControlSmoke(window) {
+  return window.webContents.executeJavaScript(`
+    (() => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      if (!play?.introActive || play?.introComplete || typeof play.completeShipIntro !== 'function') return false;
+      if (play.introOverlay?.parent) {
+        play.introOverlay.parent.removeChild(play.introOverlay);
+      }
+      if (play.player) {
+        const width = typeof game.getWidth === 'function' ? game.getWidth() : 1280;
+        const height = typeof game.getHeight === 'function' ? game.getHeight() : 720;
+        play.player.x = width / 2;
+        play.player.y = height - 150;
+        if (play.player.sprite) {
+          play.player.sprite.x = play.player.x;
+          play.player.sprite.y = play.player.y;
+          play.player.sprite.alpha = 1;
+          play.player.sprite.visible = true;
+          play.player.sprite.renderable = true;
+          play.player.sprite.scale?.set?.(1);
+        }
+      }
+      play.completeShipIntro();
+      return true;
+    })()
+  `);
+}
+
 async function waitForPlay(window) {
   const startedAt = Date.now();
   let lastState = null;
+  let introSettled = false;
   while (Date.now() - startedAt < 20000) {
     lastState = await readPlayState(window);
-    const waveReady = (lastState?.textState?.wave?.totalWaves || 0) > 0 || (lastState?.counts?.enemies || 0) > 0;
-    if (lastState?.scene === 'play' && lastState?.player && waveReady) return lastState;
+    const playerReady = Boolean(lastState?.player?.active && Number.isFinite(lastState?.player?.x) && Number.isFinite(lastState?.player?.y));
+    const controlsReady = Boolean(
+      lastState?.scene === 'play' &&
+      lastState?.playReady &&
+      lastState?.hasInputManager &&
+      playerReady &&
+      lastState?.introComplete &&
+      !lastState?.introActive &&
+      !lastState?.isPaused
+    );
+    if (controlsReady) return lastState;
+    if (
+      !introSettled &&
+      Date.now() - startedAt > 4500 &&
+      lastState?.scene === 'play' &&
+      lastState?.playReady &&
+      playerReady &&
+      lastState?.introActive &&
+      !lastState?.introComplete
+    ) {
+      introSettled = await settleShipIntroForControlSmoke(window);
+    }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  throw new Error(`Control smoke did not reach play scene: ${JSON.stringify(lastState)}`);
+  throw new Error(`Control smoke did not reach controllable play state: ${JSON.stringify(lastState)}`);
 }
 
 async function holdKeys(window, keys, durationMs) {
+  const aliases = expandControlKeys(keys);
   await window.webContents.executeJavaScript(`
     (() => {
       const input = window.__game?.scenes?.play?.inputManager;
-      for (const key of ${JSON.stringify(keys)}) input?.setKeyPressed?.(key, true);
+      window.__burtKeyboardOverride = window.__burtKeyboardOverride || {};
+      for (const key of ${JSON.stringify(aliases)}) {
+        input?.setKeyPressed?.(key, true);
+        window.__burtKeyboardOverride[key] = true;
+      }
     })()
   `);
   for (const keyCode of keys) {
     window.webContents.sendInputEvent({ type: 'keyDown', keyCode });
+  }
+  const steps = Math.max(1, Math.ceil(durationMs / 80));
+  const stepMs = Math.max(16, Math.round(durationMs / steps));
+  for (let step = 0; step < steps; step++) {
+    await window.webContents.executeJavaScript(`
+      (() => {
+        const input = window.__game?.scenes?.play?.inputManager;
+        window.__burtKeyboardOverride = window.__burtKeyboardOverride || {};
+        for (const key of ${JSON.stringify(aliases)}) input?.setKeyPressed?.(key, true);
+        for (const key of ${JSON.stringify(aliases)}) window.__burtKeyboardOverride[key] = true;
+      })()
+    `);
+    await advanceControlTime(window, stepMs);
   }
   await new Promise((resolve) => setTimeout(resolve, durationMs));
   for (const keyCode of [...keys].reverse()) {
     window.webContents.sendInputEvent({ type: 'keyUp', keyCode });
   }
   await window.webContents.executeJavaScript(`
-    (() => {
-      const input = window.__game?.scenes?.play?.inputManager;
-      for (const key of ${JSON.stringify(keys)}) input?.setKeyPressed?.(key, false);
-    })()
+      (() => {
+        const input = window.__game?.scenes?.play?.inputManager;
+        for (const key of ${JSON.stringify(aliases)}) input?.setKeyPressed?.(key, false);
+        if (window.__burtKeyboardOverride) {
+          for (const key of ${JSON.stringify(aliases)}) window.__burtKeyboardOverride[key] = false;
+        }
+      })()
   `);
+}
+
+function expandControlKeys(keys) {
+  const aliases = new Set(keys);
+  for (const key of keys) {
+    if (key === 'KeyW') {
+      aliases.add('w');
+      aliases.add('W');
+      aliases.add('ArrowUp');
+    } else if (key === 'KeyD') {
+      aliases.add('d');
+      aliases.add('D');
+      aliases.add('ArrowRight');
+    } else if (key === 'KeyA') {
+      aliases.add('a');
+      aliases.add('A');
+      aliases.add('ArrowLeft');
+    } else if (key === 'KeyS') {
+      aliases.add('s');
+      aliases.add('S');
+      aliases.add('ArrowDown');
+    } else if (key === 'ArrowUp') {
+      aliases.add('KeyW');
+      aliases.add('w');
+      aliases.add('W');
+    } else if (key === 'ArrowRight') {
+      aliases.add('KeyD');
+      aliases.add('d');
+      aliases.add('D');
+    } else if (key === 'ArrowLeft') {
+      aliases.add('KeyA');
+      aliases.add('a');
+      aliases.add('A');
+    } else if (key === 'ArrowDown') {
+      aliases.add('KeyS');
+      aliases.add('s');
+      aliases.add('S');
+    }
+  }
+  return [...aliases];
 }
 
 async function tapKey(window, keyCode) {
+  const directKeys = [keyCode];
+  if (keyCode.length === 1) {
+    directKeys.push(keyCode.toUpperCase(), `Key${keyCode.toUpperCase()}`);
+  }
+  await window.webContents.executeJavaScript(`
+    (() => {
+      const input = window.__game?.scenes?.play?.inputManager;
+      for (const key of ${JSON.stringify(directKeys)}) {
+        input?.setKeyPressed?.(key, true);
+        if (input?.justPressed) input.justPressed[key] = true;
+      }
+    })()
+  `);
   window.webContents.sendInputEvent({ type: 'keyDown', keyCode });
-  await new Promise((resolve) => setTimeout(resolve, 60));
+  await advanceControlTime(window, 120);
   window.webContents.sendInputEvent({ type: 'keyUp', keyCode });
+  await window.webContents.executeJavaScript(`
+    (() => {
+      const input = window.__game?.scenes?.play?.inputManager;
+      for (const key of ${JSON.stringify(directKeys)}) input?.setKeyPressed?.(key, false);
+    })()
+  `);
+  await advanceControlTime(window, 60);
 }
 
-async function setGamepadOverride(window, override) {
+async function setGamepadOverride(window, override, options = {}) {
+  const pollImmediately = options.pollImmediately !== false;
   await window.webContents.executeJavaScript(`
     window.__burtGamepadOverride = ${JSON.stringify(override)};
-    window.__game?.scenes?.play?.inputManager?.pollGamepad?.(true);
+    if (${JSON.stringify(pollImmediately)}) window.__game?.scenes?.play?.inputManager?.pollGamepad?.(true);
   `);
+}
+
+async function advanceControlTime(window, durationMs) {
+  await window.webContents.executeJavaScript(`
+    window.advanceTime?.(${Math.max(16, Math.round(durationMs))});
+  `);
+}
+
+async function ensureUnpaused(window) {
+  const state = await readPlayState(window);
+  if (!state?.isPaused && !state?.pauseOverlayVisible) return state;
+  await window.webContents.executeJavaScript(`
+    window.__game?.scenes?.play?.setPaused?.(false);
+    window.__game?.scenes?.play?.inputManager?.consumeKeyPress?.('KeyP', 'p', 'P', 'Escape');
+  `);
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  return readPlayState(window);
+}
+
+async function captureControlScreenshot(window, outputDir, fileName, capturedScreenshots, screenshotWarnings) {
+  try {
+    const image = await window.webContents.capturePage();
+    fs.writeFileSync(path.join(outputDir, fileName), image.toPNG());
+    capturedScreenshots.push(fileName);
+  } catch (error) {
+    screenshotWarnings.push({
+      file: fileName,
+      message: error?.message || String(error)
+    });
+  }
 }
 
 async function runControlSmoke(window) {
@@ -301,6 +475,8 @@ async function runControlSmoke(window) {
   );
   fs.mkdirSync(outputDir, { recursive: true });
   const consoleEvents = [];
+  const capturedScreenshots = [];
+  const screenshotWarnings = [];
   window.webContents.on('console-message', (_event, level, message) => {
     const text = String(message);
     if (text.includes('Electron Security Warning') && text.includes('will not show up')) return;
@@ -316,23 +492,21 @@ async function runControlSmoke(window) {
   });
   await window.loadURL(`${baseUrl}/?autostart=1`);
   const startState = await waitForPlay(window);
-  let image = await window.webContents.capturePage();
-  fs.writeFileSync(path.join(outputDir, '00-control-start.png'), image.toPNG());
+  await captureControlScreenshot(window, outputDir, '00-control-start.png', capturedScreenshots, screenshotWarnings);
 
-  await holdKeys(window, ['ArrowRight', 'ArrowUp', 'Space'], 900);
+  await holdKeys(window, ['ArrowRight', 'KeyD', 'ArrowUp', 'KeyW', 'Space'], 900);
   await new Promise((resolve) => setTimeout(resolve, 250));
   const keyboardState = await readPlayState(window);
-  image = await window.webContents.capturePage();
-  fs.writeFileSync(path.join(outputDir, '01-keyboard-run.png'), image.toPNG());
+  await captureControlScreenshot(window, outputDir, '01-keyboard-run.png', capturedScreenshots, screenshotWarnings);
 
   await tapKey(window, 'p');
   await new Promise((resolve) => setTimeout(resolve, 250));
   const keyboardPauseState = await readPlayState(window);
-  image = await window.webContents.capturePage();
-  fs.writeFileSync(path.join(outputDir, '02-keyboard-pause.png'), image.toPNG());
+  await captureControlScreenshot(window, outputDir, '02-keyboard-pause.png', capturedScreenshots, screenshotWarnings);
 
   await tapKey(window, 'p');
   await new Promise((resolve) => setTimeout(resolve, 250));
+  await ensureUnpaused(window);
 
   await setGamepadOverride(window, {
     id: 'packaged-control-smoke-gamepad',
@@ -341,10 +515,9 @@ async function runControlSmoke(window) {
     buttons: [{ pressed: true, value: 1 }],
     connected: true
   });
-  await new Promise((resolve) => setTimeout(resolve, 900));
+  await advanceControlTime(window, 900);
   const gamepadMoveState = await readPlayState(window);
-  image = await window.webContents.capturePage();
-  fs.writeFileSync(path.join(outputDir, '03-gamepad-run.png'), image.toPNG());
+  await captureControlScreenshot(window, outputDir, '03-gamepad-run.png', capturedScreenshots, screenshotWarnings);
 
   await setGamepadOverride(window, {
     id: 'packaged-control-smoke-gamepad',
@@ -352,11 +525,10 @@ async function runControlSmoke(window) {
     axes: [0, 0],
     buttons: Array.from({ length: 10 }, (_button, index) => ({ pressed: index === 9, value: index === 9 ? 1 : 0 })),
     connected: true
-  });
-  await new Promise((resolve) => setTimeout(resolve, 250));
+  }, { pollImmediately: false });
+  await advanceControlTime(window, 250);
   const gamepadPauseState = await readPlayState(window);
-  image = await window.webContents.capturePage();
-  fs.writeFileSync(path.join(outputDir, '04-gamepad-pause.png'), image.toPNG());
+  await captureControlScreenshot(window, outputDir, '04-gamepad-pause.png', capturedScreenshots, screenshotWarnings);
 
   await setGamepadOverride(window, null);
 
@@ -369,7 +541,7 @@ async function runControlSmoke(window) {
     ...((gamepadMoveState.input?.gamepad?.moveX || 0) > 0.6 ? [] : ['gamepad moveX did not register']),
     ...((gamepadMoveState.input?.gamepad?.moveY || 0) < -0.6 ? [] : ['gamepad moveY did not register']),
     ...((gamepadMoveState.counts?.playerBullets || 0) > (keyboardState.counts?.playerBullets || 0) || (gamepadMoveState.player?.traitState?.shotsFired || 0) > (keyboardState.player?.traitState?.shotsFired || 0) ? [] : ['gamepad fire did not produce shots']),
-    ...(gamepadPauseState.pauseOverlayVisible || gamepadPauseState.textState?.overlays?.pause ? [] : ['gamepad pause did not open pause overlay']),
+    ...(gamepadPauseState.isPaused && (gamepadPauseState.pauseOverlayVisible || gamepadPauseState.textState?.overlays?.pause) ? [] : ['gamepad pause did not open pause overlay']),
     ...(consoleEvents.length ? [`${consoleEvents.length} console event(s)`] : [])
   ];
 
@@ -379,20 +551,15 @@ async function runControlSmoke(window) {
     outputDir,
     build: startState.build || null,
     gitSha: startState.gitSha || null,
-    screenshots: [
-      '00-control-start.png',
-      '01-keyboard-run.png',
-      '02-keyboard-pause.png',
-      '03-gamepad-run.png',
-      '04-gamepad-pause.png'
-    ],
+    screenshots: capturedScreenshots,
+    screenshotWarnings,
     checks: {
       keyboardMovement: keyboardState.player?.x > (startState.player?.x || 0) + 8 && keyboardState.player?.y < (startState.player?.y || 9999) - 4,
       keyboardFire: (keyboardState.counts?.playerBullets || 0) > (startState.counts?.playerBullets || 0) || (keyboardState.player?.traitState?.shotsFired || 0) > (startState.player?.traitState?.shotsFired || 0),
       keyboardPause: keyboardPauseState.isPaused && keyboardPauseState.pauseOverlayVisible,
       gamepadMovement: gamepadMoveState.input?.gamepad?.connected === true && (gamepadMoveState.input?.gamepad?.moveX || 0) > 0.6 && (gamepadMoveState.input?.gamepad?.moveY || 0) < -0.6,
       gamepadFire: (gamepadMoveState.counts?.playerBullets || 0) > (keyboardState.counts?.playerBullets || 0) || (gamepadMoveState.player?.traitState?.shotsFired || 0) > (keyboardState.player?.traitState?.shotsFired || 0),
-      gamepadPause: Boolean(gamepadPauseState.pauseOverlayVisible || gamepadPauseState.textState?.overlays?.pause)
+      gamepadPause: Boolean(gamepadPauseState.isPaused && (gamepadPauseState.pauseOverlayVisible || gamepadPauseState.textState?.overlays?.pause))
     },
     states: {
       start: startState,

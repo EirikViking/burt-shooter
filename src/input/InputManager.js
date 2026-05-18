@@ -192,6 +192,8 @@ export class InputManager {
   }
 
   isKeyPressed(key) {
+    const keyboardOverride = typeof window !== 'undefined' ? window.__burtKeyboardOverride : null;
+    if (keyboardOverride && keyboardOverride[key] === true) return true;
     const gamepad = this.pollGamepad();
     if (key === 'ArrowLeft' || key === 'KeyA' || key === 'a' || key === 'A') return !!this.keys[key] || gamepad.moveX < -0.35;
     if (key === 'ArrowRight' || key === 'KeyD' || key === 'd' || key === 'D') return !!this.keys[key] || gamepad.moveX > 0.35;
