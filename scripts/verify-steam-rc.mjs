@@ -19,6 +19,7 @@ const stages = [
   ['package:steam:win:current', ['run', 'package:steam:win:current']],
   ['desktop:smoke:current', ['run', 'desktop:smoke:current']],
   ['desktop:smoke:packaged', ['run', 'desktop:smoke:packaged']],
+  ['desktop:controls:packaged', ['run', 'desktop:controls:packaged']],
   ['check:desktop-package', ['run', 'check:desktop-package']],
   ['check:live-deployment', ['run', 'check:live-deployment']],
   ['audit:audio-mix', ['run', 'audit:audio-mix']]

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T04:17:19.013Z",
+  "generatedAt": "2026-05-18T04:41:59.024Z",
   "status": "ready_for_human_review",
   "build": {
     "version": "v2026-05-18_05-59-43",
@@ -181,7 +181,7 @@
         {
           "path": "release/steamworks/full_rc_verification_report.json",
           "exists": true,
-          "bytes": 3329
+          "bytes": 3440
         },
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",

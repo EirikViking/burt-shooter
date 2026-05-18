@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T04:03:45.321Z",
+  "generatedAt": "2026-05-18T04:30:32.043Z",
   "status": "passed",
   "currentBuild": {
     "version": "v2026-05-18_05-59-43",
@@ -8,11 +8,11 @@
   "desktopPayload": {
     "path": "release/desktop/win-unpacked/Nova Swarm.exe",
     "sizeBytes": 226666496,
-    "modifiedAt": "2026-05-18T04:03:22.672Z"
+    "modifiedAt": "2026-05-18T04:29:57.727Z"
   },
   "latestElectronSmoke": {
-    "reportPath": "test-results/electron-smoke-2026-05-18T04-03-25-875Z/report.json",
-    "screenshotPath": "test-results/electron-smoke-2026-05-18T04-03-25-875Z/01-electron-menu.png",
+    "reportPath": "test-results/electron-smoke-2026-05-18T04-30-01-788Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-05-18T04-30-01-788Z/01-electron-menu.png",
     "status": "passed",
     "build": "v2026-05-18_05-59-43",
     "title": "Nova Swarm - Arcade Patrol",
@@ -32,8 +32,8 @@
     "consoleEvents": []
   },
   "latestPackagedExeSmoke": {
-    "reportPath": "test-results/packaged-exe-smoke-2026-05-18T04-03-30-005Z/report.json",
-    "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T04-03-30-005Z/01-electron-menu.png",
+    "reportPath": "test-results/packaged-exe-smoke-2026-05-18T04-30-05-927Z/report.json",
+    "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T04-30-05-927Z/01-electron-menu.png",
     "status": "passed",
     "build": "v2026-05-18_05-59-43",
     "title": "Nova Swarm - Arcade Patrol",
@@ -51,6 +51,28 @@
       "ready": true
     },
     "consoleEvents": []
+  },
+  "latestPackagedControlsSmoke": {
+    "reportPath": "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/report.json",
+    "screenshotPaths": [
+      "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/00-control-start.png",
+      "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/01-keyboard-run.png",
+      "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/02-keyboard-pause.png",
+      "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/03-gamepad-run.png",
+      "test-results/packaged-control-smoke-2026-05-18T04-30-21-377Z/04-gamepad-pause.png"
+    ],
+    "status": "passed",
+    "build": "v2026-05-18_05-59-43",
+    "checks": {
+      "keyboardMovement": true,
+      "keyboardFire": true,
+      "keyboardPause": true,
+      "gamepadMovement": true,
+      "gamepadFire": true,
+      "gamepadPause": true
+    },
+    "consoleEvents": [],
+    "errors": []
   },
   "errors": [],
   "warnings": []

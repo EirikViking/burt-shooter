@@ -53,6 +53,7 @@ if (!version?.version) errors.push('Missing public/version.json version');
 if (desktop?.status !== 'passed') errors.push('Desktop package report is not passed');
 if (desktop?.currentBuild?.version !== version?.version) errors.push('Desktop package report does not match current build');
 if (desktop?.latestPackagedExeSmoke?.status !== 'passed') errors.push('Packaged executable smoke is not passed');
+if (desktop?.latestPackagedControlsSmoke?.status !== 'passed') errors.push('Packaged controls smoke is not passed');
 if (fullRc?.status !== 'passed') errors.push('Full RC evidence is not passed');
 if (!template.includes('"ContentRoot" "..\\\\desktop\\\\win-unpacked"')) errors.push('Steam VDF template ContentRoot does not point at desktop win-unpacked payload');
 if (!template.includes('"LocalPath" "*"') || !template.includes('"recursive" "1"')) errors.push('Steam VDF template does not map all payload files recursively');
@@ -86,6 +87,7 @@ const packet = {
     productName: electronBuilder?.productName || null,
     appId: electronBuilder?.appId || null,
     packagedExeSmoke: desktop?.latestPackagedExeSmoke || null,
+    packagedControlsSmoke: desktop?.latestPackagedControlsSmoke || null,
     fullRc: fullRc ? {
       reportPath: fullRc.latestFullRc?.reportPath || null,
       releasePlaytest: fullRc.latestReleasePlaytest || null
@@ -130,6 +132,7 @@ ${data.explicitLimit}
 - Product name: ${data.localPayload.productName || 'unknown'}
 - Electron app id: ${data.localPayload.appId || 'unknown'}
 - Packaged smoke report: \`${data.localPayload.packagedExeSmoke?.reportPath || 'missing'}\`
+- Packaged controls report: \`${data.localPayload.packagedControlsSmoke?.reportPath || 'missing'}\`
 - Full RC report: \`${data.localPayload.fullRc?.reportPath || 'missing'}\`
 
 ## SteamPipe

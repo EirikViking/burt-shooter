@@ -100,8 +100,53 @@ if (!currentBuild?.version || !currentBuild?.timestamp) {
 
 const latestSmoke = findLatestSmokeReport('electron-smoke-');
 const latestPackagedSmoke = findLatestSmokeReport('packaged-exe-smoke-');
+const latestPackagedControlSmoke = findLatestSmokeReport('packaged-control-smoke-');
 const { report: smokeReport } = checkSmokeReport('Electron', latestSmoke);
 const { report: packagedSmokeReport } = checkSmokeReport('packaged executable', latestPackagedSmoke);
+
+function checkControlSmokeReport(latestSmoke) {
+  if (!latestSmoke) {
+    errors.push('Missing packaged controls smoke report in test-results/packaged-control-smoke-*/report.json');
+    return null;
+  }
+
+  const report = readJson(latestSmoke.report);
+  if (report.status !== 'passed') {
+    errors.push(`Latest packaged controls smoke status is ${report.status || 'unknown'}`);
+  }
+  if (currentBuild?.version && report.build !== currentBuild.version) {
+    errors.push(`Latest packaged controls smoke build ${report.build || 'unknown'} does not match current build ${currentBuild.version}`);
+  }
+  const requiredChecks = [
+    'keyboardMovement',
+    'keyboardFire',
+    'keyboardPause',
+    'gamepadMovement',
+    'gamepadFire',
+    'gamepadPause'
+  ];
+  for (const check of requiredChecks) {
+    if (report.checks?.[check] !== true) {
+      errors.push(`Packaged controls smoke failed ${check}`);
+    }
+  }
+  for (const screenshot of report.screenshots || []) {
+    const full = path.join(latestSmoke.dir, screenshot);
+    if (!existsSync(full)) errors.push(`Missing packaged controls screenshot: ${rel(full)}`);
+  }
+  if ((report.consoleEvents || []).length) {
+    errors.push(`Packaged controls smoke reported ${report.consoleEvents.length} console event(s)`);
+  }
+
+  const ageHours = (Date.now() - statSync(latestSmoke.report).mtimeMs) / 36e5;
+  if (ageHours > 72) {
+    warnings.push(`Latest packaged controls smoke report is ${ageHours.toFixed(1)} hours old`);
+  }
+
+  return report;
+}
+
+const packagedControlSmokeReport = checkControlSmokeReport(latestPackagedControlSmoke);
 
 function smokeSummary(latest, smokeReport) {
   return latest ? {
@@ -118,6 +163,18 @@ function smokeSummary(latest, smokeReport) {
     },
     readyState: smokeReport?.state?.readyState || null,
     consoleEvents: smokeReport?.consoleEvents || []
+  } : null;
+}
+
+function controlSmokeSummary(latest, report) {
+  return latest ? {
+    reportPath: rel(latest.report),
+    screenshotPaths: (report?.screenshots || []).map((screenshot) => rel(path.join(latest.dir, screenshot))),
+    status: report?.status || null,
+    build: report?.build || null,
+    checks: report?.checks || null,
+    consoleEvents: report?.consoleEvents || [],
+    errors: report?.errors || []
   } : null;
 }
 
@@ -139,6 +196,7 @@ const report = {
   desktopPayload: payload,
   latestElectronSmoke: smokeSummary(latestSmoke, smokeReport),
   latestPackagedExeSmoke: smokeSummary(latestPackagedSmoke, packagedSmokeReport),
+  latestPackagedControlsSmoke: controlSmokeSummary(latestPackagedControlSmoke, packagedControlSmokeReport),
   errors,
   warnings
 };

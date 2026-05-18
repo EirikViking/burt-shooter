@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T04:17:19.914Z",
+  "generatedAt": "2026-05-18T04:41:59.925Z",
   "build": {
     "version": "v2026-05-18_05-59-43",
     "timestamp": "2026-05-18T03:59:43.396Z",
@@ -49,8 +49,8 @@
       "status": "ready",
       "path": "release/steamworks/desktop_package_review_report.json",
       "exeBytes": 226666496,
-      "electronSmoke": "test-results/electron-smoke-2026-05-18T04-03-25-875Z/report.json",
-      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-18T04-03-30-005Z/report.json"
+      "electronSmoke": "test-results/electron-smoke-2026-05-18T04-30-01-788Z/report.json",
+      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-18T04-30-05-927Z/report.json"
     },
     "liveDeployment": {
       "status": "ready",
@@ -61,8 +61,8 @@
     "fullRc": {
       "status": "ready",
       "path": "release/steamworks/full_rc_verification_report.json",
-      "fullRcReport": "test-results/steam-rc-verify-2026-05-18T04-02-16-988Z/report.json",
-      "releasePlaytest": "test-results/release-playtest-2026-05-18T04-04-56-642Z/report.json"
+      "fullRcReport": "test-results/steam-rc-verify-2026-05-18T04-28-43-110Z/report.json",
+      "releasePlaytest": "test-results/release-playtest-2026-05-18T04-31-44-050Z/report.json"
     },
     "humanReview": {
       "status": "ready",
@@ -90,7 +90,7 @@
     "provenance": {
       "status": "ready",
       "path": "release/provenance/asset_provenance_report.json",
-      "covered": "1612/1612"
+      "covered": "1613/1613"
     },
     "storeMetadata": {
       "status": "ready",

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T04:17:21.864Z",
+  "generatedAt": "2026-05-18T04:42:35.075Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 18,
@@ -124,7 +124,7 @@
         {
           "path": "release/steamworks/desktop_package_review_report.json",
           "ok": true,
-          "bytes": 1864
+          "bytes": 2782
         },
         {
           "path": "release/steamworks/live_deployment_report.json",
@@ -134,7 +134,7 @@
         {
           "path": "release/steamworks/full_rc_verification_report.json",
           "ok": true,
-          "bytes": 3329
+          "bytes": 3440
         },
         {
           "path": "release/steamworks/human_review_packet.json",
@@ -149,12 +149,12 @@
         {
           "path": "release/steamworks/steam_client_preflight_packet.json",
           "ok": true,
-          "bytes": 4776
+          "bytes": 5732
         },
         {
           "path": "release/steamworks/steam_client_preflight_packet.md",
           "ok": true,
-          "bytes": 2029
+          "bytes": 2132
         },
         {
           "path": "release/steamworks/release_handoff_packet.json",
@@ -198,8 +198,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1612,
-      "coveredCount": 1612,
+      "assetCount": 1613,
+      "coveredCount": 1613,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []
@@ -350,11 +350,11 @@
       "desktopPayload": {
         "path": "release/desktop/win-unpacked/Nova Swarm.exe",
         "sizeBytes": 226666496,
-        "modifiedAt": "2026-05-18T04:03:22.672Z"
+        "modifiedAt": "2026-05-18T04:29:57.727Z"
       },
       "latestElectronSmoke": {
-        "reportPath": "test-results/electron-smoke-2026-05-18T04-03-25-875Z/report.json",
-        "screenshotPath": "test-results/electron-smoke-2026-05-18T04-03-25-875Z/01-electron-menu.png",
+        "reportPath": "test-results/electron-smoke-2026-05-18T04-30-01-788Z/report.json",
+        "screenshotPath": "test-results/electron-smoke-2026-05-18T04-30-01-788Z/01-electron-menu.png",
         "status": "passed",
         "build": "v2026-05-18_05-59-43",
         "title": "Nova Swarm - Arcade Patrol",
@@ -374,8 +374,8 @@
         "consoleEvents": []
       },
       "latestPackagedExeSmoke": {
-        "reportPath": "test-results/packaged-exe-smoke-2026-05-18T04-03-30-005Z/report.json",
-        "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T04-03-30-005Z/01-electron-menu.png",
+        "reportPath": "test-results/packaged-exe-smoke-2026-05-18T04-30-05-927Z/report.json",
+        "screenshotPath": "test-results/packaged-exe-smoke-2026-05-18T04-30-05-927Z/01-electron-menu.png",
         "status": "passed",
         "build": "v2026-05-18_05-59-43",
         "title": "Nova Swarm - Arcade Patrol",
@@ -480,71 +480,76 @@
       "status": "passed",
       "expectedBuild": "v2026-05-18_05-59-43",
       "latestFullRc": {
-        "reportPath": "test-results/steam-rc-verify-2026-05-18T04-02-16-988Z/report.json",
-        "generatedAt": "2026-05-18T04:15:01.417Z",
+        "reportPath": "test-results/steam-rc-verify-2026-05-18T04-28-43-110Z/report.json",
+        "generatedAt": "2026-05-18T04:41:48.568Z",
         "mode": "full",
         "ok": true,
-        "stageCount": 12,
+        "stageCount": 13,
         "stages": [
           {
             "name": "build:current",
             "ok": true,
-            "durationMs": 14773
+            "durationMs": 19753
           },
           {
             "name": "check:provenance",
             "ok": true,
-            "durationMs": 659
+            "durationMs": 665
           },
           {
             "name": "check:steam-assets",
             "ok": true,
-            "durationMs": 2413
+            "durationMs": 2260
           },
           {
             "name": "check:steam-store",
             "ok": true,
-            "durationMs": 495
+            "durationMs": 504
           },
           {
             "name": "package:steam:win:current",
             "ok": true,
-            "durationMs": 49844
+            "durationMs": 54779
           },
           {
             "name": "desktop:smoke:current",
             "ok": true,
-            "durationMs": 4379
+            "durationMs": 4381
           },
           {
             "name": "desktop:smoke:packaged",
             "ok": true,
-            "durationMs": 15294
+            "durationMs": 15483
+          },
+          {
+            "name": "desktop:controls:packaged",
+            "ok": true,
+            "durationMs": 10200
           },
           {
             "name": "check:desktop-package",
             "ok": true,
-            "durationMs": 490
+            "durationMs": 950
           },
           {
             "name": "check:live-deployment",
             "ok": true,
-            "durationMs": 717
+            "durationMs": 1122
           },
           {
             "name": "audit:audio-mix",
             "ok": true,
-            "durationMs": 6321
+            "durationMs": 6685
           },
           {
             "name": "smoke",
             "ok": true,
-            "durationMs": 63369
+            "durationMs": 63246
           },
           {
             "name": "playtest:release",
             "ok": true,
-            "durationMs": 605654
+            "durationMs": 605412
           }
         ],
         "releaseAudit": {
@@ -559,13 +564,13 @@
           ]
         },
         "audioAudit": {
-          "generatedAt": "2026-05-18T04:03:52.321Z",
+          "generatedAt": "2026-05-18T04:30:39.843Z",
           "decodeErrors": null,
           "warnings": 0
         }
       },
       "latestLocalSmoke": {
-        "reportPath": "test-results/smoke-2026-05-18T04-03-53-297Z/report.json",
+        "reportPath": "test-results/smoke-2026-05-18T04-30-40-809Z/report.json",
         "baseUrl": "http://127.0.0.1:4173",
         "build": "v2026-05-18_05-59-43",
         "status": "passed",
@@ -578,21 +583,21 @@
         "coverage": null
       },
       "latestReleasePlaytest": {
-        "reportPath": "test-results/release-playtest-2026-05-18T04-04-56-642Z/report.json",
+        "reportPath": "test-results/release-playtest-2026-05-18T04-31-44-050Z/report.json",
         "baseUrl": "http://127.0.0.1:4173",
-        "survivedMs": 599910,
+        "survivedMs": 599837,
         "requiredSurvivalMs": 599500,
         "survivedFullDuration": true,
         "peakLevel": 5,
-        "peakScore": 58361,
+        "peakScore": 49222,
         "finalState": {
           "scene": "play",
           "level": 5,
-          "lives": 1,
-          "score": 58361,
-          "enemyManagerState": "WAVE_ACTIVE",
-          "musicContext": "gameplay",
-          "musicTrack": "Alone Against Enemy.mp3",
+          "lives": 3,
+          "score": 49222,
+          "enemyManagerState": "BOSS_ACTIVE",
+          "musicContext": "boss",
+          "musicTrack": "DeathMatch (Boss Theme).mp3",
           "fatalOverlay": false
         },
         "console": {
@@ -784,7 +789,7 @@
             {
               "path": "release/steamworks/full_rc_verification_report.json",
               "exists": true,
-              "bytes": 3329
+              "bytes": 3440
             },
             {
               "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",

@@ -38,6 +38,7 @@
     "desktop:smoke": "npm run build && electron electron/main.cjs --smoke",
     "desktop:smoke:current": "electron electron/main.cjs --smoke",
     "desktop:smoke:packaged": "node scripts/smoke-packaged-desktop.mjs",
+    "desktop:controls:packaged": "node scripts/smoke-packaged-controls.mjs",
     "package:steam:win": "npm run build && electron-builder --win dir --x64 --config electron-builder.json",
     "package:steam:win:current": "electron-builder --win dir --x64 --config electron-builder.json",
     "deploy": "npm run build && wrangler pages deploy dist"

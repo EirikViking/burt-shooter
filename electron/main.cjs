@@ -5,6 +5,7 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
+const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
 const distDir = path.resolve(__dirname, '..', 'dist');
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -227,6 +228,195 @@ async function runSmoke(window) {
   if (!state.apiOk || !state.scene || !readyState.ready || consoleEvents.length) throw new Error('Electron smoke failed');
 }
 
+async function readPlayState(window) {
+  return window.webContents.executeJavaScript(`
+    (() => {
+      const textState = typeof window.render_game_to_text === 'function' ? JSON.parse(window.render_game_to_text()) : null;
+      const play = window.__game?.scenes?.play;
+      return {
+        textState,
+        scene: textState?.scene || null,
+        isPaused: Boolean(play?.isPaused),
+        pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible || play?.pauseOverlay?.parent),
+        player: textState?.player || null,
+        counts: textState?.counts || null,
+        input: textState?.input || null,
+        build: textState?.buildId || null,
+        gitSha: textState?.gitSha || null
+      };
+    })()
+  `);
+}
+
+async function waitForPlay(window) {
+  const startedAt = Date.now();
+  let lastState = null;
+  while (Date.now() - startedAt < 20000) {
+    lastState = await readPlayState(window);
+    const waveReady = (lastState?.textState?.wave?.totalWaves || 0) > 0 || (lastState?.counts?.enemies || 0) > 0;
+    if (lastState?.scene === 'play' && lastState?.player && waveReady) return lastState;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`Control smoke did not reach play scene: ${JSON.stringify(lastState)}`);
+}
+
+async function holdKeys(window, keys, durationMs) {
+  await window.webContents.executeJavaScript(`
+    (() => {
+      const input = window.__game?.scenes?.play?.inputManager;
+      for (const key of ${JSON.stringify(keys)}) input?.setKeyPressed?.(key, true);
+    })()
+  `);
+  for (const keyCode of keys) {
+    window.webContents.sendInputEvent({ type: 'keyDown', keyCode });
+  }
+  await new Promise((resolve) => setTimeout(resolve, durationMs));
+  for (const keyCode of [...keys].reverse()) {
+    window.webContents.sendInputEvent({ type: 'keyUp', keyCode });
+  }
+  await window.webContents.executeJavaScript(`
+    (() => {
+      const input = window.__game?.scenes?.play?.inputManager;
+      for (const key of ${JSON.stringify(keys)}) input?.setKeyPressed?.(key, false);
+    })()
+  `);
+}
+
+async function tapKey(window, keyCode) {
+  window.webContents.sendInputEvent({ type: 'keyDown', keyCode });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  window.webContents.sendInputEvent({ type: 'keyUp', keyCode });
+}
+
+async function setGamepadOverride(window, override) {
+  await window.webContents.executeJavaScript(`
+    window.__burtGamepadOverride = ${JSON.stringify(override)};
+    window.__game?.scenes?.play?.inputManager?.pollGamepad?.(true);
+  `);
+}
+
+async function runControlSmoke(window) {
+  const outputDir = path.resolve(
+    process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE_OUTPUT_DIR || path.join(process.cwd(), 'test-results', `electron-control-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}`)
+  );
+  fs.mkdirSync(outputDir, { recursive: true });
+  const consoleEvents = [];
+  window.webContents.on('console-message', (_event, level, message) => {
+    const text = String(message);
+    if (text.includes('Electron Security Warning') && text.includes('will not show up')) return;
+    if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
+  });
+
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Electron control smoke load timeout')), 20000);
+    window.webContents.once('did-finish-load', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+  });
+  await window.loadURL(`${baseUrl}/?autostart=1`);
+  const startState = await waitForPlay(window);
+  let image = await window.webContents.capturePage();
+  fs.writeFileSync(path.join(outputDir, '00-control-start.png'), image.toPNG());
+
+  await holdKeys(window, ['ArrowRight', 'ArrowUp', 'Space'], 900);
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  const keyboardState = await readPlayState(window);
+  image = await window.webContents.capturePage();
+  fs.writeFileSync(path.join(outputDir, '01-keyboard-run.png'), image.toPNG());
+
+  await tapKey(window, 'p');
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  const keyboardPauseState = await readPlayState(window);
+  image = await window.webContents.capturePage();
+  fs.writeFileSync(path.join(outputDir, '02-keyboard-pause.png'), image.toPNG());
+
+  await tapKey(window, 'p');
+  await new Promise((resolve) => setTimeout(resolve, 250));
+
+  await setGamepadOverride(window, {
+    id: 'packaged-control-smoke-gamepad',
+    index: 0,
+    axes: [1, -1],
+    buttons: [{ pressed: true, value: 1 }],
+    connected: true
+  });
+  await new Promise((resolve) => setTimeout(resolve, 900));
+  const gamepadMoveState = await readPlayState(window);
+  image = await window.webContents.capturePage();
+  fs.writeFileSync(path.join(outputDir, '03-gamepad-run.png'), image.toPNG());
+
+  await setGamepadOverride(window, {
+    id: 'packaged-control-smoke-gamepad',
+    index: 0,
+    axes: [0, 0],
+    buttons: Array.from({ length: 10 }, (_button, index) => ({ pressed: index === 9, value: index === 9 ? 1 : 0 })),
+    connected: true
+  });
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  const gamepadPauseState = await readPlayState(window);
+  image = await window.webContents.capturePage();
+  fs.writeFileSync(path.join(outputDir, '04-gamepad-pause.png'), image.toPNG());
+
+  await setGamepadOverride(window, null);
+
+  const errors = [
+    ...(keyboardState.player?.x > (startState.player?.x || 0) + 8 ? [] : ['keyboard did not move player right']),
+    ...(keyboardState.player?.y < (startState.player?.y || 9999) - 4 ? [] : ['keyboard did not move player upward']),
+    ...((keyboardState.counts?.playerBullets || 0) > (startState.counts?.playerBullets || 0) || (keyboardState.player?.traitState?.shotsFired || 0) > (startState.player?.traitState?.shotsFired || 0) ? [] : ['keyboard fire did not produce shots']),
+    ...(keyboardPauseState.isPaused && keyboardPauseState.pauseOverlayVisible ? [] : ['keyboard pause did not open pause overlay']),
+    ...(gamepadMoveState.input?.gamepad?.connected === true ? [] : ['gamepad override did not register']),
+    ...((gamepadMoveState.input?.gamepad?.moveX || 0) > 0.6 ? [] : ['gamepad moveX did not register']),
+    ...((gamepadMoveState.input?.gamepad?.moveY || 0) < -0.6 ? [] : ['gamepad moveY did not register']),
+    ...((gamepadMoveState.counts?.playerBullets || 0) > (keyboardState.counts?.playerBullets || 0) || (gamepadMoveState.player?.traitState?.shotsFired || 0) > (keyboardState.player?.traitState?.shotsFired || 0) ? [] : ['gamepad fire did not produce shots']),
+    ...(gamepadPauseState.pauseOverlayVisible || gamepadPauseState.textState?.overlays?.pause ? [] : ['gamepad pause did not open pause overlay']),
+    ...(consoleEvents.length ? [`${consoleEvents.length} console event(s)`] : [])
+  ];
+
+  const report = {
+    status: errors.length ? 'failed' : 'passed',
+    baseUrl,
+    outputDir,
+    build: startState.build || null,
+    gitSha: startState.gitSha || null,
+    screenshots: [
+      '00-control-start.png',
+      '01-keyboard-run.png',
+      '02-keyboard-pause.png',
+      '03-gamepad-run.png',
+      '04-gamepad-pause.png'
+    ],
+    checks: {
+      keyboardMovement: keyboardState.player?.x > (startState.player?.x || 0) + 8 && keyboardState.player?.y < (startState.player?.y || 9999) - 4,
+      keyboardFire: (keyboardState.counts?.playerBullets || 0) > (startState.counts?.playerBullets || 0) || (keyboardState.player?.traitState?.shotsFired || 0) > (startState.player?.traitState?.shotsFired || 0),
+      keyboardPause: keyboardPauseState.isPaused && keyboardPauseState.pauseOverlayVisible,
+      gamepadMovement: gamepadMoveState.input?.gamepad?.connected === true && (gamepadMoveState.input?.gamepad?.moveX || 0) > 0.6 && (gamepadMoveState.input?.gamepad?.moveY || 0) < -0.6,
+      gamepadFire: (gamepadMoveState.counts?.playerBullets || 0) > (keyboardState.counts?.playerBullets || 0) || (gamepadMoveState.player?.traitState?.shotsFired || 0) > (keyboardState.player?.traitState?.shotsFired || 0),
+      gamepadPause: Boolean(gamepadPauseState.pauseOverlayVisible || gamepadPauseState.textState?.overlays?.pause)
+    },
+    states: {
+      start: startState,
+      keyboard: keyboardState,
+      keyboardPause: keyboardPauseState,
+      gamepadMove: gamepadMoveState,
+      gamepadPause: gamepadPauseState
+    },
+    consoleEvents,
+    errors
+  };
+
+  fs.writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
+  console.log(JSON.stringify({
+    outputDir,
+    baseUrl,
+    build: report.build,
+    checks: report.checks,
+    consoleEvents,
+    errors
+  }, null, 2));
+  if (errors.length) throw new Error(`Electron control smoke failed: ${errors.join('; ')}`);
+}
+
 async function waitForRenderedScene(window) {
   const startedAt = Date.now();
   let lastState = null;
@@ -259,7 +449,15 @@ app.whenReady().then(async () => {
   }
   await startLocalServer();
   const win = createWindow();
-  if (isSmoke) {
+  if (isControlSmoke) {
+    try {
+      await runControlSmoke(win);
+      app.quit();
+    } catch (error) {
+      console.error(error);
+      app.exit(1);
+    }
+  } else if (isSmoke) {
     try {
       await runSmoke(win);
       app.quit();
