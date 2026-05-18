@@ -7,6 +7,42 @@ const reportPath = path.resolve(root, 'release/steamworks/store_metadata_review_
 
 const errors = [];
 const warnings = [];
+const preferredTags = new Set([
+  'Arcade',
+  "Shoot 'Em Up",
+  'Score Attack',
+  'Retro',
+  'Space',
+  '2D',
+  'Controller',
+  'Singleplayer',
+  'Bullet Hell',
+  'Action',
+  'Indie'
+]);
+const dilutedTags = new Set([
+  'Casual',
+  'Colorful',
+  'Family Friendly',
+  'Old School',
+  'Sci-fi',
+  'Story Rich',
+  'Narration',
+  'Roguelike',
+  'Roguelite',
+  'Procedural Generation',
+  'Twin Stick Shooter',
+  'Arena Shooter',
+  'Psychedelic',
+  'Third Person',
+  'Simulation'
+]);
+const forbiddenMarketingTerms = [
+  /\bAI\b/i,
+  /\bgenerated\b/i,
+  /\bGalaga\b/i,
+  /\bSpace Invaders\b/i
+];
 
 function readJson(file) {
   return JSON.parse(readFileSync(file, 'utf8'));
@@ -45,7 +81,7 @@ const metadata = errors.length ? {} : readJson(metadataPath);
 
 if (!errors.length) {
   requireString(metadata, 'title', 3, 80);
-  requireString(metadata, 'shortDescription', 30, 300);
+  const shortDescription = requireString(metadata, 'shortDescription', 30, 300);
   const longDescription = requireArray(metadata, 'longDescription', 2);
   if (longDescription.join('\n').length < 240) {
     errors.push('longDescription is too short for a useful Steam page draft');
@@ -55,6 +91,35 @@ if (!errors.length) {
   requireArray(metadata, 'categories', 1);
   requireArray(metadata, 'supportedPlatforms', 1);
   requireArray(metadata, 'approvalRequired', 3);
+
+  if (!/fast modern arcade score-chaser/i.test(shortDescription) &&
+      !longDescription.some((paragraph) => /fast modern arcade score-chaser/i.test(String(paragraph)))) {
+    errors.push('store copy must lead with "fast modern arcade score-chaser" positioning');
+  }
+
+  const marketingText = [
+    metadata.shortDescription,
+    ...(metadata.longDescription || []),
+    ...(metadata.featureBullets || [])
+  ].join('\n');
+  for (const pattern of forbiddenMarketingTerms) {
+    if (pattern.test(marketingText)) {
+      errors.push(`store-facing copy contains forbidden marketing term: ${pattern}`);
+    }
+  }
+
+  const tags = Array.isArray(metadata.tags) ? metadata.tags : [];
+  const diluted = tags.filter((tag) => dilutedTags.has(tag));
+  const unsupported = tags.filter((tag) => !preferredTags.has(tag));
+  if (tags.length > 11) {
+    errors.push(`tags are too broad (${tags.length}/11); keep Steam identity focused`);
+  }
+  if (diluted.length) {
+    errors.push(`tags dilute the arcade score-chaser identity: ${diluted.join(', ')}`);
+  }
+  if (unsupported.length) {
+    errors.push(`tags outside the anti-flop approved set: ${unsupported.join(', ')}`);
+  }
 
   if (metadata.status !== 'draft_pending_human_approval') {
     warnings.push('metadata status should remain draft_pending_human_approval until human approval is recorded');

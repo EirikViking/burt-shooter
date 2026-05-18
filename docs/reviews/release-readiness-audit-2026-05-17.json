@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T15:08:29.645Z",
+  "generatedAt": "2026-05-18T15:15:34.346Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 20,
@@ -19,7 +19,7 @@
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
           "ok": true,
-          "bytes": 31910
+          "bytes": 31911
         },
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
@@ -144,7 +144,7 @@
         {
           "path": "release/steamworks/human_review_packet.json",
           "ok": true,
-          "bytes": 6744
+          "bytes": 6742
         },
         {
           "path": "release/steamworks/human_review_packet.md",
@@ -174,7 +174,7 @@
         {
           "path": "release/steamworks/store_metadata_draft.json",
           "ok": true,
-          "bytes": 4458
+          "bytes": 4379
         },
         {
           "path": "release/steamworks/store_metadata_review_report.json",
@@ -222,7 +222,7 @@
       "status": "passed",
       "warnings": [],
       "summary": {
-        "tags": 15,
+        "tags": 11,
         "categories": 2,
         "featureBullets": 8,
         "controllerSupport": "Partial Controller Support",
@@ -700,12 +700,12 @@
             {
               "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
               "exists": true,
-              "bytes": 501899
+              "bytes": 502001
             },
             {
               "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
               "exists": true,
-              "bytes": 1784
+              "bytes": 1774
             },
             {
               "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
@@ -796,7 +796,7 @@
             {
               "path": "release/steamworks/store_metadata_draft.json",
               "exists": true,
-              "bytes": 4458
+              "bytes": 4379
             },
             {
               "path": "release/steamworks/store_metadata_review_report.json",
@@ -849,7 +849,7 @@
             {
               "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",
               "exists": true,
-              "bytes": 31910
+              "bytes": 31911
             },
             {
               "path": "docs/reviews/2026-05-16-release-candidate-review.md",

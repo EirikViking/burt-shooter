@@ -1,6 +1,6 @@
 # Nova Swarm Steam Release Handoff Packet
 
-Generated: 2026-05-18T15:00:45.887Z
+Generated: 2026-05-18T15:15:16.377Z
 
 Build: `v2026-05-18_16-03-56`
 Build timestamp: `2026-05-18T14:03:56.375Z`
@@ -41,11 +41,11 @@ Current blockers:
 | Present | Path | Bytes |
 | --- | --- | ---: |
 | yes | `release/desktop/win-unpacked/Nova Swarm.exe` | 226666496 |
-| yes | `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png` | 501899 |
+| yes | `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png` | 502001 |
 | yes | `release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4` | 9985462 |
 | yes | `release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png` | 565181 |
 | yes | `release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png` | 3226184 |
-| yes | `release/steamworks/store_metadata_draft.json` | 4458 |
+| yes | `release/steamworks/store_metadata_draft.json` | 4379 |
 | yes | `release/steamworks/steam_payload_manifest.json` | 15372 |
 | yes | `release/steamworks/app_build_TEMPLATE.vdf` | 359 |
 | yes | `release/steamworks/client_validation_report.template.json` | 994 |

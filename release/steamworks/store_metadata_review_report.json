@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-18T14:39:56.935Z",
+  "generatedAt": "2026-05-18T15:14:57.843Z",
   "metadataPath": "release/steamworks/store_metadata_draft.json",
   "status": "passed",
   "errors": [],
   "warnings": [],
   "summary": {
-    "tags": 15,
+    "tags": 11,
     "categories": 2,
     "featureBullets": 8,
     "controllerSupport": "Partial Controller Support",

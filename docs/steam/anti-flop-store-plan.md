@@ -67,4 +67,4 @@ Roguelike, Roguelite, Procedural Generation, Story Rich, Narration, Twin Stick S
 
 ## Current Steam Readiness Score
 
-78/100. The game now has stronger arcade identity, quick-start flow, verified generated ship/enemy rosters, controller/package smoke evidence, and current release tooling. The remaining release blockers are not cosmetic: final Steamworks IDs, a real Steam-client install validation pass, refreshed current-build marketing capture after this anti-flop loop, and human approval are still required before calling it a release candidate.
+82/100. The game now has stronger arcade identity, quick-start flow, focused Steam tags/copy, verified generated ship/enemy rosters, controller/package smoke evidence, gameplay-first screenshots, a gameplay-first trailer candidate, and current release tooling. The remaining release blockers are not cosmetic: final Steamworks IDs, a real Steam-client install validation pass, and human approval are still required before calling it a release candidate.

@@ -111,13 +111,13 @@ Steam rules risk:
 
 Short description draft:
 
-> Blast through a neon arcade swarm with punchy ships, readable bullet patterns, boss fights, bonus-core chaos, and couch-friendly keyboard, gamepad, and touch controls.
+> A fast modern arcade score-chaser: dodge readable swarms, blast a boss every level, grab chaotic bonus cores, and restart instantly for one more run.
 
 Long description draft:
 
-> Nova Swarm is a fast arcade shooter about surviving wave after wave of choreographed space nonsense. Pick your ship, dodge incoming fire, grab ridiculous bonus cores, and push through escalating enemy formations toward oversized boss encounters.
+> Nova Swarm is a fast modern arcade score-chaser about surviving wave after wave of choreographed space nonsense. Pick your ship, dodge incoming fire, grab ridiculous bonus cores, and push through escalating enemy formations toward oversized boss encounters.
 >
-> The game blends old-school shoot-'em-up clarity with a public arcade-comedy personality: readable bullets, compact wave briefings, original generated key art, radio callouts, local highscore fallback, and accessibility sliders for screen shake and player focus.
+> The game blends shoot-'em-up clarity with public arcade-comedy personality: readable bullets, compact wave briefings, original space-cabinet art, punchy radio callouts, local highscore fallback, and accessibility sliders for screen shake and player focus.
 
 Feature bullets draft:
 
@@ -125,8 +125,8 @@ Feature bullets draft:
 - Boss gates, victory beats, sector transitions, and score rewards.
 - Keyboard, gamepad, and mobile touch control support.
 - Context-aware music pools for menu, gameplay, boss, victory, and game over.
-- First-run narrated story intro with replay from the menu.
-- Radio callouts and narrated beats with music ducking.
+- Optional story intro with replay from the menu, never blocking quick play.
+- Punchy radio callouts with music ducking.
 - Accessibility controls for screen shake and player-focus visibility.
 - Offline/local highscore fallback when the network is unavailable.
 
@@ -138,10 +138,11 @@ Suggested tags:
 - Retro
 - Bullet Hell
 - Action
-- Casual
 - Singleplayer
 - Controller
-- Colorful
+- 2D
+- Score Attack
+- Indie
 
 ## Missing Store Materials
 

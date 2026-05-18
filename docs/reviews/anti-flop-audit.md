@@ -132,3 +132,43 @@ After: the first screenshot impression is readable shooting, enemies, score, HUD
 - Final human screenshot approval is still needed.
 - Steam page capsule/trailer/screenshot ordering should be reviewed together before upload.
 - The first gameplay screenshot is readable, but a future capture could be even more explosive if it catches a pickup/explosion within the same frame.
+
+## Loop 4 - Store Copy And Tag Focus
+
+### What Was Tested
+
+- Reviewed `release/steamworks/store_metadata_draft.json` against the anti-flop positioning rules.
+- Compared current tags against `docs/steam/anti-flop-store-plan.md`.
+- Ran `npm run check:steam-store`.
+
+### What Felt Slow, Confusing, Or Generic
+
+- The Steam tag list still included broad identity-diluting tags like `Casual`, `Colorful`, `Family Friendly`, `Sci-fi`, and `Old School`.
+- Store copy mentioned "generated key art", which is accurate internally but a weak public-facing signal for a Steam page.
+- The short description did not lead with the preferred "fast modern arcade score-chaser" positioning.
+
+### What Changed
+
+- Short and long Steam descriptions now lead with "fast modern arcade score-chaser".
+- Store-facing copy now avoids generated/AI-ish wording, clone references, and lore-first framing.
+- Tags are restricted to the focused arcade/action set: Arcade, Shoot 'Em Up, Space, Bullet Hell, Action, Singleplayer, Controller, 2D, Score Attack, Retro, Indie.
+- The Steam metadata checker now rejects diluted tags, unsupported tags, over-broad tag counts, and forbidden public marketing terms.
+
+### Before And After Feel
+
+Before: the store draft sounded polished but a bit broad, with tags that could bury the game under generic nostalgia/casual signals.
+
+After: the store draft sells a focused score-chaser with bosses, readable swarms, quick restarts, and arcade flow.
+
+### Evidence Captured
+
+- Store metadata draft: `release/steamworks/store_metadata_draft.json`.
+- Store validator: `scripts/check-steam-store-metadata.mjs`.
+- Store plan: `docs/steam/anti-flop-store-plan.md`.
+- Steam store check: `npm run check:steam-store` passed with 11 tags, 8 bullets, and Partial Controller Support.
+
+### Remaining Top Risks
+
+- Final human store-copy approval is still required.
+- Bullet Hell remains in the tag set only while captured patterns stay fair/readable; if later boss patterns get noisier, remove that tag.
+- Steam client validation still needs the real uploaded build before controller-support wording can be upgraded.
