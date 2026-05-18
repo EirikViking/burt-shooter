@@ -1,463 +1,463 @@
 {
-  "generatedAt": "2026-05-18T21:00:49.646Z",
+  "generatedAt": "2026-05-18T21:54:20.999Z",
   "build": {
-    "version": "v2026-05-18_21-29-14",
-    "timestamp": "2026-05-18T19:29:14.082Z"
+    "version": "v2026-05-18_23-27-36",
+    "timestamp": "2026-05-18T21:27:36.676Z"
   },
   "contentRoot": "release/desktop/win-unpacked",
   "executable": {
     "path": "Nova Swarm.exe",
     "bytes": 226666496,
-    "sha256": "f407f1f3c9f1d8b1bf7166cebea451efc9f5cef17745e4d1983b052a913ec6c4",
-    "modifiedAt": "2026-05-18T20:48:13.697Z"
+    "sha256": "c9a85eb8efae6aa640ea06daa5357a9c04c906c4f200a57f41817b2d0c5aea11",
+    "modifiedAt": "2026-05-18T21:36:08.122Z"
   },
   "fileCount": 74,
-  "totalBytes": 627598068,
-  "manifestHash": "dfdd24095beb2ebe3f5b023f0d2b64e526040a528f4b72199c5cc63bed966a38",
+  "totalBytes": 628171940,
+  "manifestHash": "b446d1cd34bd88611adf90cdcbf5122750270cb9cf68a50ecc8fc301efde236c",
   "files": [
     {
       "path": "chrome_100_percent.pak",
       "bytes": 119889,
       "sha256": "15a5bcb49a5c02d6a4e736e8dfa11dabb0bac0589641a4e25f0c06472ccaae6d",
-      "modifiedAt": "2026-05-18T20:47:33.828Z"
+      "modifiedAt": "2026-05-18T21:35:28.555Z"
     },
     {
       "path": "chrome_200_percent.pak",
       "bytes": 197073,
       "sha256": "b7acfb068fa681f4ecb8f782bd4e3926590076c61fd0de3de4a12dde227cf52b",
-      "modifiedAt": "2026-05-18T20:47:31.001Z"
+      "modifiedAt": "2026-05-18T21:35:25.918Z"
     },
     {
       "path": "d3dcompiler_47.dll",
       "bytes": 4741488,
       "sha256": "a05f99734f7c4822fefc12b367af21fd0976ed6608752fb1e1e80b6ece7ecbbb",
-      "modifiedAt": "2026-05-18T20:47:33.425Z"
+      "modifiedAt": "2026-05-18T21:35:28.467Z"
     },
     {
       "path": "dxcompiler.dll",
       "bytes": 25722880,
       "sha256": "9feb01af5460d69042b715dd2dc8d23faa3a409b07b811e07b7195c044aac1c7",
-      "modifiedAt": "2026-05-18T20:47:33.080Z"
+      "modifiedAt": "2026-05-18T21:35:28.262Z"
     },
     {
       "path": "dxil.dll",
       "bytes": 1509760,
       "sha256": "77e039c905030a641e53658a008b74e90635a5ea9b6b79eabd0f2003bdfca59a",
-      "modifiedAt": "2026-05-18T20:47:32.668Z"
+      "modifiedAt": "2026-05-18T21:35:27.746Z"
     },
     {
       "path": "ffmpeg.dll",
       "bytes": 3046912,
       "sha256": "568b4a799381c45e34f7ecdc73d7ffc4340688153766f5e6d15b7d99ca8a47ee",
-      "modifiedAt": "2026-05-18T20:47:33.881Z"
+      "modifiedAt": "2026-05-18T21:35:28.836Z"
     },
     {
       "path": "icudtl.dat",
       "bytes": 10876464,
       "sha256": "c5da2fc389d1bb0ecb13fe22a8e069b7abc491f8aa5d16eb65d4ff32c85a46b6",
-      "modifiedAt": "2026-05-18T20:47:35.307Z"
+      "modifiedAt": "2026-05-18T21:35:31.159Z"
     },
     {
       "path": "libEGL.dll",
       "bytes": 507904,
       "sha256": "6f7c54b18fd4db3bf1b6ecdb0a013c557fef8b69d3ddc58c1413015830833436",
-      "modifiedAt": "2026-05-18T20:47:31.587Z"
+      "modifiedAt": "2026-05-18T21:35:26.442Z"
     },
     {
       "path": "libGLESv2.dll",
       "bytes": 8106496,
       "sha256": "4edc26548b5d22ff932257ff59e468b9119d6f4c691fa4e1683d94b25d5b46ba",
-      "modifiedAt": "2026-05-18T20:47:31.126Z"
+      "modifiedAt": "2026-05-18T21:35:26.021Z"
     },
     {
       "path": "LICENSE.electron.txt",
       "bytes": 1096,
       "sha256": "5154e165bd6c2cc0cfbcd8916498c7abab0497923bafcd5cb07673fe8480087d",
-      "modifiedAt": "2026-05-18T20:47:32.903Z"
+      "modifiedAt": "2026-05-18T21:35:28.036Z"
     },
     {
       "path": "LICENSES.chromium.html",
       "bytes": 20367095,
       "sha256": "e3c8a6093358521d4512d68945e16338755e687619196e63948d46c9267537b6",
-      "modifiedAt": "2026-05-18T20:47:34.586Z"
+      "modifiedAt": "2026-05-18T21:35:30.494Z"
     },
     {
       "path": "locales/af.pak",
       "bytes": 620482,
       "sha256": "dbf68bf3227181d7c047161c6c704ace32d6880bba6ea02bfbd33475f3356e91",
-      "modifiedAt": "2026-05-18T20:47:33.606Z"
+      "modifiedAt": "2026-05-18T21:35:28.422Z"
     },
     {
       "path": "locales/am.pak",
       "bytes": 1006731,
       "sha256": "8d3d5dfc64acfbb0c35036d74561d09ddf3b22058eeed0f8d26a2e9c0703248e",
-      "modifiedAt": "2026-05-18T20:47:33.130Z"
+      "modifiedAt": "2026-05-18T21:35:28.193Z"
     },
     {
       "path": "locales/ar.pak",
       "bytes": 1109621,
       "sha256": "3c253eebf4207c416fac047f1f0bf425a7d9a12fe63714667c69841d2550b89e",
-      "modifiedAt": "2026-05-18T20:47:35.661Z"
+      "modifiedAt": "2026-05-18T21:35:32.693Z"
     },
     {
       "path": "locales/bg.pak",
       "bytes": 1150764,
       "sha256": "2789212aac5f2133ed23c1f84623bc64eb4cfbd93aef7af751d1221e27a21daa",
-      "modifiedAt": "2026-05-18T20:47:34.988Z"
+      "modifiedAt": "2026-05-18T21:35:30.663Z"
     },
     {
       "path": "locales/bn.pak",
       "bytes": 1479936,
       "sha256": "e72b72977b40fb10472fe1a3fcffcda8b434bf52e2bb2da2935faa80da224812",
-      "modifiedAt": "2026-05-18T20:47:35.821Z"
+      "modifiedAt": "2026-05-18T21:35:32.694Z"
     },
     {
       "path": "locales/ca.pak",
       "bytes": 699590,
       "sha256": "bc36a54e977f67a09090d5565f2c5664d5e01dcc4fa01a9b418fe55f32dd9026",
-      "modifiedAt": "2026-05-18T20:47:31.588Z"
+      "modifiedAt": "2026-05-18T21:35:26.442Z"
     },
     {
       "path": "locales/cs.pak",
       "bytes": 726068,
       "sha256": "7c7e7df2664ef1a37609f43306e06c332d2cdd6983b7c519fd70f208626641cc",
-      "modifiedAt": "2026-05-18T20:47:32.828Z"
+      "modifiedAt": "2026-05-18T21:35:27.975Z"
     },
     {
       "path": "locales/da.pak",
       "bytes": 652593,
       "sha256": "c4a4bcb72297be145525309494e56ef0985be3e4e57df435a65ab7fddc78766f",
-      "modifiedAt": "2026-05-18T20:47:31.123Z"
+      "modifiedAt": "2026-05-18T21:35:25.958Z"
     },
     {
       "path": "locales/de.pak",
       "bytes": 700770,
       "sha256": "7fb0ec938ace5ddc1d094c7877facb94ed33758652d0f4262e2fb1fd2bd34c8f",
-      "modifiedAt": "2026-05-18T20:47:31.402Z"
+      "modifiedAt": "2026-05-18T21:35:26.162Z"
     },
     {
       "path": "locales/el.pak",
       "bytes": 1265039,
       "sha256": "3ee2e46a5a569e411ccf9d77ee4f356e1833bfccbaefcc5e71b7c1517206ab5f",
-      "modifiedAt": "2026-05-18T20:47:34.047Z"
+      "modifiedAt": "2026-05-18T21:35:28.892Z"
     },
     {
       "path": "locales/en-GB.pak",
       "bytes": 565496,
       "sha256": "aac3b4904d021d58d053bdea2d8056a219ecda1e341d87cb70070aea2cee418f",
-      "modifiedAt": "2026-05-18T20:47:30.807Z"
+      "modifiedAt": "2026-05-18T21:35:25.713Z"
     },
     {
       "path": "locales/en-US.pak",
       "bytes": 571518,
       "sha256": "bce3ec06227dba2273c4ff12482cba37b709cc8bf5fd29c4380f9a07b92bf821",
-      "modifiedAt": "2026-05-18T20:47:34.459Z"
+      "modifiedAt": "2026-05-18T21:35:30.019Z"
     },
     {
       "path": "locales/es-419.pak",
       "bytes": 690698,
       "sha256": "97322b7e206b017f3c95733be396df40fca9d68363d8aa4d092c5dd8d1056f14",
-      "modifiedAt": "2026-05-18T20:47:32.346Z"
+      "modifiedAt": "2026-05-18T21:35:26.883Z"
     },
     {
       "path": "locales/es.pak",
       "bytes": 686798,
       "sha256": "cdc1127ed91118648d10a2f3ca71bf1c26ba99ab134426de3f1d1058ca2eccf9",
-      "modifiedAt": "2026-05-18T20:47:30.887Z"
+      "modifiedAt": "2026-05-18T21:35:25.795Z"
     },
     {
       "path": "locales/et.pak",
       "bytes": 627098,
       "sha256": "ecc838878412cc9f28dda9efed2fc60b67315f5fdf64e912db33cee7571a5939",
-      "modifiedAt": "2026-05-18T20:47:32.442Z"
+      "modifiedAt": "2026-05-18T21:35:26.924Z"
     },
     {
       "path": "locales/fa.pak",
       "bytes": 1038159,
       "sha256": "43df61ce1b39a00d5d638d1b9df8aaad9b3a970b2bedf18129ff4d34e0688ccb",
-      "modifiedAt": "2026-05-18T20:47:32.827Z"
+      "modifiedAt": "2026-05-18T21:35:27.802Z"
     },
     {
       "path": "locales/fi.pak",
       "bytes": 638637,
       "sha256": "18d904efd7d15a49ef3638c45a40b3aa604e5ec4b68e017ab3f568e6a8202fd4",
-      "modifiedAt": "2026-05-18T20:47:33.351Z"
+      "modifiedAt": "2026-05-18T21:35:28.258Z"
     },
     {
       "path": "locales/fil.pak",
       "bytes": 723751,
       "sha256": "95ddb0e14b0811476d5d636f0797f3ec7cafe77719b5b4e1140d5bf783556061",
-      "modifiedAt": "2026-05-18T20:47:32.826Z"
+      "modifiedAt": "2026-05-18T21:35:27.974Z"
     },
     {
       "path": "locales/fr.pak",
       "bytes": 746462,
       "sha256": "83ff7dcb48d70e5d3d4880eb3aaa3abebbde6b84e8524fde415701a342946cf0",
-      "modifiedAt": "2026-05-18T20:47:30.808Z"
+      "modifiedAt": "2026-05-18T21:35:25.714Z"
     },
     {
       "path": "locales/gu.pak",
       "bytes": 1462607,
       "sha256": "b207f2046791aa8150015ca78f9f76f2f6509953a00c5e89b155bb40e3a26474",
-      "modifiedAt": "2026-05-18T20:47:32.504Z"
+      "modifiedAt": "2026-05-18T21:35:27.005Z"
     },
     {
       "path": "locales/he.pak",
       "bytes": 908719,
       "sha256": "60513280b46bd34c559bd47ea852ac9e9460e43493e5ab767376883eb26232c2",
-      "modifiedAt": "2026-05-18T20:47:33.046Z"
+      "modifiedAt": "2026-05-18T21:35:28.194Z"
     },
     {
       "path": "locales/hi.pak",
       "bytes": 1549614,
       "sha256": "25277d90750849791096845b912b1820bb2d3b1766ed8d751ffc213d1af74b32",
-      "modifiedAt": "2026-05-18T20:47:31.815Z"
+      "modifiedAt": "2026-05-18T21:35:26.580Z"
     },
     {
       "path": "locales/hr.pak",
       "bytes": 698895,
       "sha256": "704dda9c632246402cbbd12b0c71ebc60b0e53f1af8ba54903d33a50bc7e6ee8",
-      "modifiedAt": "2026-05-18T20:47:33.164Z"
+      "modifiedAt": "2026-05-18T21:35:28.258Z"
     },
     {
       "path": "locales/hu.pak",
       "bytes": 747469,
       "sha256": "b83fc60c6d3ce3a04338ea16ba4627d6dfdf81f4373fe4921ac01c7c9558bcb6",
-      "modifiedAt": "2026-05-18T20:47:32.378Z"
+      "modifiedAt": "2026-05-18T21:35:26.883Z"
     },
     {
       "path": "locales/id.pak",
       "bytes": 618244,
       "sha256": "97f882b538710dac7d3af9518eedb30f680447bc465fcbcf505de776c54c7571",
-      "modifiedAt": "2026-05-18T20:47:34.459Z"
+      "modifiedAt": "2026-05-18T21:35:30.020Z"
     },
     {
       "path": "locales/it.pak",
       "bytes": 675911,
       "sha256": "7e6157c84b655e0363336b89518e64ca15350e81101dc9829d2dc8efd9015b3d",
-      "modifiedAt": "2026-05-18T20:47:34.729Z"
+      "modifiedAt": "2026-05-18T21:35:30.550Z"
     },
     {
       "path": "locales/ja.pak",
       "bytes": 824124,
       "sha256": "423b2562b1ed7c5af8fc3ecd495af1d2437e70d27bc6fdde2d5eec6608ae7151",
-      "modifiedAt": "2026-05-18T20:47:30.889Z"
+      "modifiedAt": "2026-05-18T21:35:25.796Z"
     },
     {
       "path": "locales/kn.pak",
       "bytes": 1680794,
       "sha256": "4ceac5506e0e3f045fe4bea3cff571b44df8d637f40814e9e4fd4cad49955d9a",
-      "modifiedAt": "2026-05-18T20:47:31.255Z"
+      "modifiedAt": "2026-05-18T21:35:25.962Z"
     },
     {
       "path": "locales/ko.pak",
       "bytes": 701209,
       "sha256": "471d660f4099f066ab5cb3b262932645cda59f7e47731ec9ca73381ca49398e3",
-      "modifiedAt": "2026-05-18T20:47:31.587Z"
+      "modifiedAt": "2026-05-18T21:35:26.329Z"
     },
     {
       "path": "locales/lt.pak",
       "bytes": 759941,
       "sha256": "0c755ce72d1b71e77d58ab014228458d8ce2b0c51a9b00769635c6609255c9f2",
-      "modifiedAt": "2026-05-18T20:47:32.339Z"
+      "modifiedAt": "2026-05-18T21:35:26.679Z"
     },
     {
       "path": "locales/lv.pak",
       "bytes": 757295,
       "sha256": "911f922f6ab11d04c4913b04088619276994104979b2c5f132182953fabc24a9",
-      "modifiedAt": "2026-05-18T20:47:32.498Z"
+      "modifiedAt": "2026-05-18T21:35:27.004Z"
     },
     {
       "path": "locales/ml.pak",
       "bytes": 1728748,
       "sha256": "9ffdc8b432d8fed00bad72740fe2d1f3836e4a06ff584d460f8773b7f02a072e",
-      "modifiedAt": "2026-05-18T20:47:32.651Z"
+      "modifiedAt": "2026-05-18T21:35:27.608Z"
     },
     {
       "path": "locales/mr.pak",
       "bytes": 1431694,
       "sha256": "1971da05e4868841c9d9f78be5e17ab09178af99b86a6c07df385015a0c9d9ef",
-      "modifiedAt": "2026-05-18T20:47:32.111Z"
+      "modifiedAt": "2026-05-18T21:35:26.630Z"
     },
     {
       "path": "locales/ms.pak",
       "bytes": 651309,
       "sha256": "b60c552a9ced5d0e1f4ed408f65a04068acad7d80db7cf88528fbebbcd337e23",
-      "modifiedAt": "2026-05-18T20:47:34.967Z"
+      "modifiedAt": "2026-05-18T21:35:31.015Z"
     },
     {
       "path": "locales/nb.pak",
       "bytes": 623206,
       "sha256": "cb50908b03c77263297e63ff75d4d3c58fb0cb491c69a8964239e787c762f52d",
-      "modifiedAt": "2026-05-18T20:47:32.988Z"
+      "modifiedAt": "2026-05-18T21:35:28.124Z"
     },
     {
       "path": "locales/nl.pak",
       "bytes": 649224,
       "sha256": "756cb19043f21eefa77f64d274d950412ef7b0a7d3012da7f12f6821c6eb4c67",
-      "modifiedAt": "2026-05-18T20:47:34.305Z"
+      "modifiedAt": "2026-05-18T21:35:29.753Z"
     },
     {
       "path": "locales/pl.pak",
       "bytes": 725422,
       "sha256": "dee5b710ca72425cd4d1236ce260f8d68b41bfdfceaeb2f98c8e89217b24208f",
-      "modifiedAt": "2026-05-18T20:47:34.203Z"
+      "modifiedAt": "2026-05-18T21:35:29.274Z"
     },
     {
       "path": "locales/pt-BR.pak",
       "bytes": 680477,
       "sha256": "38fee1950ec36b95160aee6a30e76653196afefad085274a77d47746a5255db1",
-      "modifiedAt": "2026-05-18T20:47:35.188Z"
+      "modifiedAt": "2026-05-18T21:35:31.404Z"
     },
     {
       "path": "locales/pt-PT.pak",
       "bytes": 684179,
       "sha256": "8ef7b3105657e21db66cc07a41cb06addb859c788e0f038797c5d08cbef29eb8",
-      "modifiedAt": "2026-05-18T20:47:30.807Z"
+      "modifiedAt": "2026-05-18T21:35:25.713Z"
     },
     {
       "path": "locales/ro.pak",
       "bytes": 710046,
       "sha256": "16b11fb73ea0c5d0336de453d3e2abd2de69b3e6c66dcd72bae318666525bb18",
-      "modifiedAt": "2026-05-18T20:47:30.888Z"
+      "modifiedAt": "2026-05-18T21:35:25.798Z"
     },
     {
       "path": "locales/ru.pak",
       "bytes": 1177875,
       "sha256": "03bd75e603d68c3a29a55f5887bc6d0b921f4365e266f25d579de8810953e823",
-      "modifiedAt": "2026-05-18T20:47:32.660Z"
+      "modifiedAt": "2026-05-18T21:35:27.646Z"
     },
     {
       "path": "locales/sk.pak",
       "bytes": 738142,
       "sha256": "c033373575cc83d84dff00116d504f7a66bdf7ae019c9d5c7c6907b2c808b662",
-      "modifiedAt": "2026-05-18T20:47:32.913Z"
+      "modifiedAt": "2026-05-18T21:35:28.043Z"
     },
     {
       "path": "locales/sl.pak",
       "bytes": 706741,
       "sha256": "69fec14840de7543eccf21c8a77b7c6dfaa0d807b013d61a3fd408a22d20869f",
-      "modifiedAt": "2026-05-18T20:47:31.009Z"
+      "modifiedAt": "2026-05-18T21:35:25.922Z"
     },
     {
       "path": "locales/sr.pak",
       "bytes": 1088559,
       "sha256": "ad0053df35e012ceebdee5db5d39526107cee2d5bce8696d129e782ceba41b66",
-      "modifiedAt": "2026-05-18T20:47:35.386Z"
+      "modifiedAt": "2026-05-18T21:35:31.850Z"
     },
     {
       "path": "locales/sv.pak",
       "bytes": 630691,
       "sha256": "db66a75f740289e14a9e9c93085818cef7f3e006c4b9b66ea0e1d1fb1b353755",
-      "modifiedAt": "2026-05-18T20:47:32.909Z"
+      "modifiedAt": "2026-05-18T21:35:27.974Z"
     },
     {
       "path": "locales/sw.pak",
       "bytes": 667148,
       "sha256": "114da3f568ab205c196cfe44908107929026fee9b28457f53f589f5397685793",
-      "modifiedAt": "2026-05-18T20:47:32.653Z"
+      "modifiedAt": "2026-05-18T21:35:27.645Z"
     },
     {
       "path": "locales/ta.pak",
       "bytes": 1720238,
       "sha256": "2c5f8aaf21c9a035f71d763cfa9a20886892fcde7cf71878168a9df0faa6d417",
-      "modifiedAt": "2026-05-18T20:47:30.892Z"
+      "modifiedAt": "2026-05-18T21:35:25.799Z"
     },
     {
       "path": "locales/te.pak",
       "bytes": 1591909,
       "sha256": "30de9d8e6eaa7c418b15065d6e4b1e5066f81d2b10ba09305270a463a55e6105",
-      "modifiedAt": "2026-05-18T20:47:32.112Z"
+      "modifiedAt": "2026-05-18T21:35:26.631Z"
     },
     {
       "path": "locales/th.pak",
       "bytes": 1337523,
       "sha256": "0684a30ec9e0fe9baeeb215840b6c6b4f04e11c9afbcf9d18687af9a685e0927",
-      "modifiedAt": "2026-05-18T20:47:32.377Z"
+      "modifiedAt": "2026-05-18T21:35:26.834Z"
     },
     {
       "path": "locales/tr.pak",
       "bytes": 679647,
       "sha256": "e427e99465f1fb5e6628868f550d845db79379ed4cd58994d2e5ea3b1881ee6b",
-      "modifiedAt": "2026-05-18T20:47:32.990Z"
+      "modifiedAt": "2026-05-18T21:35:28.126Z"
     },
     {
       "path": "locales/uk.pak",
       "bytes": 1185632,
       "sha256": "1fafb514e4380b430b19b9031b30249e93aaecd71109b125e5b6d99c2be60b43",
-      "modifiedAt": "2026-05-18T20:47:32.910Z"
+      "modifiedAt": "2026-05-18T21:35:28.045Z"
     },
     {
       "path": "locales/ur.pak",
       "bytes": 1021689,
       "sha256": "0c1cfa61d9a9be6338b0a160b43ff362a982003053ae5be3b3ec867e78374d7b",
-      "modifiedAt": "2026-05-18T20:47:34.526Z"
+      "modifiedAt": "2026-05-18T21:35:30.369Z"
     },
     {
       "path": "locales/vi.pak",
       "bytes": 808100,
       "sha256": "bb7d0d58e3807d102b25cfbf3aa951bbe529f956e06a2f943e205f610d1a891a",
-      "modifiedAt": "2026-05-18T20:47:31.814Z"
+      "modifiedAt": "2026-05-18T21:35:26.560Z"
     },
     {
       "path": "locales/zh-CN.pak",
       "bytes": 577808,
       "sha256": "157222d970a2cf1d51a63860bffb6d71f0a6161472a6f3eca3b08fe681ef075c",
-      "modifiedAt": "2026-05-18T20:47:32.986Z"
+      "modifiedAt": "2026-05-18T21:35:28.045Z"
     },
     {
       "path": "locales/zh-TW.pak",
       "bytes": 570087,
       "sha256": "37d183b679fe4a5a0a204ac3b8e5f3e0110e99a784ed0e20ea2eced574142b8f",
-      "modifiedAt": "2026-05-18T20:47:30.808Z"
+      "modifiedAt": "2026-05-18T21:35:25.714Z"
     },
     {
       "path": "Nova Swarm.exe",
       "bytes": 226666496,
-      "sha256": "f407f1f3c9f1d8b1bf7166cebea451efc9f5cef17745e4d1983b052a913ec6c4",
-      "modifiedAt": "2026-05-18T20:48:13.697Z"
+      "sha256": "c9a85eb8efae6aa640ea06daa5357a9c04c906c4f200a57f41817b2d0c5aea11",
+      "modifiedAt": "2026-05-18T21:36:08.122Z"
     },
     {
       "path": "resources.pak",
       "bytes": 6873130,
       "sha256": "74c4be8feca65976312f9ddd6ed8f06b669f6a551c91c9b67f9dc76d84e7e97b",
-      "modifiedAt": "2026-05-18T20:47:34.519Z"
+      "modifiedAt": "2026-05-18T21:35:29.886Z"
     },
     {
       "path": "resources/app.asar",
-      "bytes": 261756656,
-      "sha256": "874a4738c914573c93d094ac5cbe4bd56f440d11ede0bc5ece972e6619ea05e5",
-      "modifiedAt": "2026-05-18T20:48:04.590Z"
+      "bytes": 262330528,
+      "sha256": "7f09b69d4f71e47090a3c03e0dc2b1b003b43b479951aa82a8240a95abbf9542",
+      "modifiedAt": "2026-05-18T21:35:58.736Z"
     },
     {
       "path": "snapshot_blob.bin",
       "bytes": 346432,
       "sha256": "df9a17d5d9929ec6eff408acb080ecd0f2a3a6f4b093a760ef962ec47ae91946",
-      "modifiedAt": "2026-05-18T20:47:34.259Z"
+      "modifiedAt": "2026-05-18T21:35:29.372Z"
     },
     {
       "path": "v8_context_snapshot.bin",
       "bytes": 721176,
       "sha256": "a04efc1404d85595fb2c9c00268f6d49aee41cb63897ecb9ce5408a68dbb041f",
-      "modifiedAt": "2026-05-18T20:47:33.046Z"
+      "modifiedAt": "2026-05-18T21:35:28.126Z"
     },
     {
       "path": "vk_swiftshader_icd.json",
       "bytes": 106,
       "sha256": "32d83ff113fef532a9f97e0d2831f8656628ab1c99e9060f0332b1532839afd9",
-      "modifiedAt": "2026-05-18T20:47:32.981Z"
+      "modifiedAt": "2026-05-18T21:35:28.118Z"
     },
     {
       "path": "vk_swiftshader.dll",
       "bytes": 5611520,
       "sha256": "6be6d3b872a55209e842aae41584d409db3596c72911356fddffc405c3754887",
-      "modifiedAt": "2026-05-18T20:47:31.067Z"
+      "modifiedAt": "2026-05-18T21:35:25.974Z"
     },
     {
       "path": "vulkan-1.dll",
       "bytes": 954368,
       "sha256": "1c01a7dc24b5b6b9cb88026adbdf5e99551e091fbdd9d552e6d472d2692a6aa5",
-      "modifiedAt": "2026-05-18T20:47:32.507Z"
+      "modifiedAt": "2026-05-18T21:35:27.545Z"
     }
   ]
 }

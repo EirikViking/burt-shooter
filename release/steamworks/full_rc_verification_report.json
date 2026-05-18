@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-18T21:01:07.344Z",
+  "generatedAt": "2026-05-18T21:54:23.219Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-18_21-29-14",
-    "timestamp": "2026-05-18T19:29:14.082Z"
+    "version": "v2026-05-18_23-27-36",
+    "timestamp": "2026-05-18T21:27:36.676Z"
   },
   "latestFullRc": {
-    "reportPath": "test-results/steam-rc-verify-2026-05-18T20-46-55-786Z/report.json",
-    "generatedAt": "2026-05-18T21:00:40.724Z",
+    "reportPath": "test-results/steam-rc-verify-2026-05-18T21-34-54-911Z/report.json",
+    "generatedAt": "2026-05-18T21:48:26.388Z",
     "mode": "full",
     "ok": true,
     "stageCount": 14,
@@ -15,72 +15,72 @@
       {
         "name": "build:current",
         "ok": true,
-        "durationMs": 24055
+        "durationMs": 20862
       },
       {
         "name": "check:intro-voice",
         "ok": true,
-        "durationMs": 4341
+        "durationMs": 4001
       },
       {
         "name": "check:provenance",
         "ok": true,
-        "durationMs": 789
+        "durationMs": 678
       },
       {
         "name": "check:steam-assets",
         "ok": true,
-        "durationMs": 2560
+        "durationMs": 2269
       },
       {
         "name": "check:steam-store",
         "ok": true,
-        "durationMs": 534
+        "durationMs": 524
       },
       {
         "name": "package:steam:win:current",
         "ok": true,
-        "durationMs": 52887
+        "durationMs": 52543
       },
       {
         "name": "desktop:smoke:current",
         "ok": true,
-        "durationMs": 5137
+        "durationMs": 2628
       },
       {
         "name": "desktop:smoke:packaged",
         "ok": true,
-        "durationMs": 39345
+        "durationMs": 36632
       },
       {
         "name": "desktop:controls:packaged",
         "ok": true,
-        "durationMs": 6179
+        "durationMs": 5564
       },
       {
         "name": "check:desktop-package",
         "ok": true,
-        "durationMs": 1049
+        "durationMs": 1011
       },
       {
         "name": "check:live-deployment",
         "ok": true,
-        "durationMs": 1552
+        "durationMs": 1435
       },
       {
         "name": "audit:audio-mix",
         "ok": true,
-        "durationMs": 7414
+        "durationMs": 7333
       },
       {
         "name": "smoke",
         "ok": true,
-        "durationMs": 72042
+        "durationMs": 69641
       },
       {
         "name": "playtest:release",
         "ok": true,
-        "durationMs": 607035
+        "durationMs": 606335
       }
     ],
     "releaseAudit": {
@@ -95,15 +95,15 @@
       ]
     },
     "audioAudit": {
-      "generatedAt": "2026-05-18T20:49:21.602Z",
+      "generatedAt": "2026-05-18T21:37:10.361Z",
       "decodeErrors": null,
       "warnings": 0
     }
   },
   "latestLocalSmoke": {
-    "reportPath": "test-results/smoke-2026-05-18T20-49-22-704Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-18T21-37-11-542Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "build": "v2026-05-18_21-29-14",
+    "build": "v2026-05-18_23-27-36",
     "status": "passed",
     "console": {
       "warningsOrErrors": 0,
@@ -114,21 +114,21 @@
     "coverage": null
   },
   "latestReleasePlaytest": {
-    "reportPath": "test-results/release-playtest-2026-05-18T20-50-34-771Z/report.json",
+    "reportPath": "test-results/release-playtest-2026-05-18T21-38-21-035Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "survivedMs": 599880,
+    "survivedMs": 599940,
     "requiredSurvivalMs": 599500,
     "survivedFullDuration": true,
     "peakLevel": 6,
-    "peakScore": 63856,
+    "peakScore": 70008,
     "finalState": {
       "scene": "play",
       "level": 6,
       "lives": 3,
-      "score": 63856,
-      "enemyManagerState": "BOSS_ACTIVE",
-      "musicContext": "boss",
-      "musicTrack": "DeathMatch (Boss Theme).mp3",
+      "score": 70008,
+      "enemyManagerState": "WAVE_ACTIVE",
+      "musicContext": "gameplay",
+      "musicTrack": "Rain of Lasers.mp3",
       "fatalOverlay": false
     },
     "console": {

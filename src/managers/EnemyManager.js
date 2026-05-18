@@ -590,7 +590,7 @@ export class EnemyManager {
 
   spawnWave(config) {
     if (config.type === 'BOSS') {
-      AudioManager.playVoice('war_target');
+      AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 3200, duckMs: 2200 });
       this.spawnBoss(this.level); // Fire and forget
       return;
     }
@@ -878,7 +878,7 @@ export class EnemyManager {
       if (this.game.scenes.play) {
         this.game.scenes.play.showWaveBonusEffect(bonus, 'BONUS DRONE RAID CLEAR!');
       }
-      AudioManager.playVoice('mission_complete');
+      AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 4200, duckMs: 1500 });
     } else {
       // Normal Bonus
       const bonus = 500 * clearedWaveNumber;
@@ -1005,7 +1005,7 @@ export class EnemyManager {
     this.container.addChild(this.hijacker.sprite);
 
     // Play spawn audio
-    AudioManager.playVoice('war_look_out');
+    AudioManager.playVoice('mission_control_hijacker', { cooldownMs: 6500, duckMs: 1600 });
 
     // Show toast
     if (this.game.scenes.play) {

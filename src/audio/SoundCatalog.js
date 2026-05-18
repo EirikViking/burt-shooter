@@ -18,6 +18,22 @@ const getVoice = (partial) => {
     return match || null;
 };
 
+const getVoiceFile = (filename) => {
+    const match = AssetManifest.audio.voice.find(p => p.endsWith(`/${filename}`));
+    return match || null;
+};
+
+const getVoicePool = (...filenames) => filenames.map(getVoiceFile).filter(Boolean);
+
+const missionControlPool = (base, alternateCount = 2) => getVoicePool(
+    `${base}.mp3`,
+    ...Array.from({ length: alternateCount }, (_, index) => `${base}_alt${String(index + 1).padStart(2, '0')}.mp3`)
+);
+
+const numberedVoicePool = (base, count) => getVoicePool(
+    ...Array.from({ length: count }, (_, index) => `${base}_${String(index + 1).padStart(2, '0')}.mp3`)
+);
+
 // Music Pools
 const MENU_POOL = [
     getMusic('Brave Pilots'),
@@ -130,39 +146,27 @@ export const SFX_MIX = {
 };
 
 export const VOICE_MIX = {
-    intro_narrator_01: { volume: 0.9, duckFactor: 0.36, duckMs: 5200, cooldownMs: 0 },
-    intro_narrator_02: { volume: 0.9, duckFactor: 0.36, duckMs: 5400, cooldownMs: 0 },
-    intro_narrator_03: { volume: 0.9, duckFactor: 0.36, duckMs: 6200, cooldownMs: 0 },
-    intro_narrator_04: { volume: 0.9, duckFactor: 0.34, duckMs: 5200, cooldownMs: 0 },
-    mission_control_launch: { volume: 0.84, duckFactor: 0.42, duckMs: 2600, cooldownMs: 2600 },
-    mission_control_level_start: { volume: 0.82, duckFactor: 0.46, duckMs: 2200, cooldownMs: 2400 },
-    mission_control_wave_clear: { volume: 0.78, duckFactor: 0.52, duckMs: 1900, cooldownMs: 2800 },
-    mission_control_boss_inbound: { volume: 0.9, duckFactor: 0.38, duckMs: 2800, cooldownMs: 3000 },
-    mission_control_life_low: { volume: 0.86, duckFactor: 0.45, duckMs: 2400, cooldownMs: 5200 },
-    mission_control_powerup: { volume: 0.64, duckFactor: 0.62, duckMs: 1200, cooldownMs: 3800 },
-    mission_control_victory: { volume: 0.86, duckFactor: 0.42, duckMs: 2800, cooldownMs: 3200 },
-    mission_control_game_over: { volume: 0.86, duckFactor: 0.42, duckMs: 2800, cooldownMs: 3200 },
-    mission_complete: { volume: 0.72, duckFactor: 0.56, duckMs: 1500, cooldownMs: 22000 },
-    wave_clear: { volume: 0.68, duckFactor: 0.58, duckMs: 1300, cooldownMs: 22000 },
-    round: { volume: 0.66, duckFactor: 0.6, duckMs: 1200, cooldownMs: 22000 },
-    powerup: { volume: 0.58, duckFactor: 0.66, duckMs: 900, cooldownMs: 1600 },
-    game_over: { volume: 0.84, duckFactor: 0.44, duckMs: 2500, cooldownMs: 3200 },
-    you_win: { volume: 0.84, duckFactor: 0.44, duckMs: 2500, cooldownMs: 3200 },
-    war_target: { volume: 0.58, duckFactor: 0.68, duckMs: 900, cooldownMs: 2600 },
-    war_look_out: { volume: 0.6, duckFactor: 0.66, duckMs: 1000, cooldownMs: 2800 }
+    intro_narrator_01: { volume: 0.9, duckFactor: 0.36, duckMs: 4200, cooldownMs: 0 },
+    intro_narrator_02: { volume: 0.9, duckFactor: 0.36, duckMs: 3600, cooldownMs: 0 },
+    intro_narrator_03: { volume: 0.9, duckFactor: 0.36, duckMs: 3200, cooldownMs: 0 },
+    intro_narrator_04: { volume: 0.9, duckFactor: 0.34, duckMs: 3600, cooldownMs: 0 },
+    mission_control_launch: { volume: 0.86, duckFactor: 0.42, duckMs: 1900, cooldownMs: 2600 },
+    mission_control_level_start: { volume: 0.76, duckFactor: 0.54, duckMs: 1350, cooldownMs: 3600 },
+    mission_control_wave_clear: { volume: 0.82, duckFactor: 0.46, duckMs: 1500, cooldownMs: 4200 },
+    mission_control_boss_inbound: { volume: 0.92, duckFactor: 0.36, duckMs: 2500, cooldownMs: 3600 },
+    mission_control_life_low: { volume: 0.88, duckFactor: 0.42, duckMs: 2000, cooldownMs: 7200 },
+    mission_control_powerup: { volume: 0.82, duckFactor: 0.42, duckMs: 950, cooldownMs: 4800 },
+    mission_control_victory: { volume: 0.86, duckFactor: 0.42, duckMs: 2300, cooldownMs: 4200 },
+    mission_control_game_over: { volume: 0.84, duckFactor: 0.44, duckMs: 2300, cooldownMs: 4200 },
+    mission_control_combo: { volume: 0.8, duckFactor: 0.46, duckMs: 1100, cooldownMs: 9000 },
+    mission_control_local_highscore: { volume: 0.82, duckFactor: 0.46, duckMs: 2200, cooldownMs: 7000 },
+    mission_control_global_highscore: { volume: 0.96, duckFactor: 0.32, duckMs: 3400, cooldownMs: 9000 },
+    mission_control_personal_best: { volume: 0.82, duckFactor: 0.48, duckMs: 2200, cooldownMs: 7000 },
+    mission_control_restart: { volume: 0.72, duckFactor: 0.6, duckMs: 1100, cooldownMs: 3600 },
+    mission_control_hijacker: { volume: 0.78, duckFactor: 0.54, duckMs: 1600, cooldownMs: 6500 }
 };
 
 export const VOICE_EVENT_FALLBACKS = {
-    ready: 'ready.mp3',
-    go: 'go.mp3',
-    wave_clear: 'objective_achieved.mp3',
-    mission_complete: 'mission_completed.mp3',
-    war_target: 'war_target_engaged.mp3',
-    war_look_out: 'war_look_out.mp3',
-    round: 'round.mp3',
-    powerup: 'power_up.mp3',
-    game_over: 'game_over.mp3',
-    you_win: 'you_win.mp3',
     mission_control_launch: 'mission_control_launch.mp3',
     mission_control_level_start: 'mission_control_level_start.mp3',
     mission_control_wave_clear: 'mission_control_wave_clear.mp3',
@@ -171,6 +175,12 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_powerup: 'mission_control_powerup.mp3',
     mission_control_victory: 'mission_control_victory.mp3',
     mission_control_game_over: 'mission_control_game_over.mp3',
+    mission_control_combo: 'mission_control_combo_01.mp3',
+    mission_control_local_highscore: 'mission_control_local_highscore_01.mp3',
+    mission_control_global_highscore: 'mission_control_global_highscore_01.mp3',
+    mission_control_personal_best: 'mission_control_personal_best_01.mp3',
+    mission_control_restart: 'mission_control_restart_01.mp3',
+    mission_control_hijacker: 'mission_control_hijacker_01.mp3',
     intro_narrator_01: 'intro_narrator_01.mp3',
     intro_narrator_02: 'intro_narrator_02.mp3',
     intro_narrator_03: 'intro_narrator_03.mp3',
@@ -284,43 +294,22 @@ export const SFX_CATALOG = {
     'trait_crit_splash': [
         getSfx('nova_boss_phase_surge')
     ],
-    'taunt': [
-        getVoice('war_cover_me'),
-        getVoice('war_get_down'),
-        getVoice('war_go_go_go'),
-        getVoice('war_look_out'),
-        getVoice('war_watch_my_back'),
-        getVoice('war_target_engaged')
-    ].filter(Boolean),
-    'intro_voice': [
-        getVoice('ready'),
-        getVoice('go'),
-        getVoice('mission_control_launch')
-    ].filter(Boolean),
-    'mission_control_launch': [
-        getVoice('mission_control_launch')
-    ].filter(Boolean),
-    'mission_control_level_start': [
-        getVoice('mission_control_level_start')
-    ].filter(Boolean),
-    'mission_control_wave_clear': [
-        getVoice('mission_control_wave_clear')
-    ].filter(Boolean),
-    'mission_control_boss_inbound': [
-        getVoice('mission_control_boss_inbound')
-    ].filter(Boolean),
-    'mission_control_life_low': [
-        getVoice('mission_control_life_low')
-    ].filter(Boolean),
-    'mission_control_powerup': [
-        getVoice('mission_control_powerup')
-    ].filter(Boolean),
-    'mission_control_victory': [
-        getVoice('mission_control_victory')
-    ].filter(Boolean),
-    'mission_control_game_over': [
-        getVoice('mission_control_game_over')
-    ].filter(Boolean),
+    'taunt': numberedVoicePool('mission_control_combo', 3),
+    'intro_voice': missionControlPool('mission_control_launch'),
+    'mission_control_launch': missionControlPool('mission_control_launch'),
+    'mission_control_level_start': missionControlPool('mission_control_level_start'),
+    'mission_control_wave_clear': missionControlPool('mission_control_wave_clear'),
+    'mission_control_boss_inbound': missionControlPool('mission_control_boss_inbound'),
+    'mission_control_life_low': missionControlPool('mission_control_life_low'),
+    'mission_control_powerup': missionControlPool('mission_control_powerup'),
+    'mission_control_victory': missionControlPool('mission_control_victory'),
+    'mission_control_game_over': missionControlPool('mission_control_game_over'),
+    'mission_control_combo': numberedVoicePool('mission_control_combo', 3),
+    'mission_control_local_highscore': numberedVoicePool('mission_control_local_highscore', 2),
+    'mission_control_global_highscore': numberedVoicePool('mission_control_global_highscore', 2),
+    'mission_control_personal_best': numberedVoicePool('mission_control_personal_best', 2),
+    'mission_control_restart': numberedVoicePool('mission_control_restart', 2),
+    'mission_control_hijacker': numberedVoicePool('mission_control_hijacker', 2),
     'boss_spawn': [
         getSfx('nova_boss_arrival_alarm'),
         getSfx('spaceEngineLow_000'),
@@ -424,5 +413,5 @@ export const SFX_CATALOG = {
     ].filter(Boolean),
     'intro_narrator_04': [
         getVoice('intro_narrator_04')
-    ]
+    ].filter(Boolean)
 };

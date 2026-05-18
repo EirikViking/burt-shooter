@@ -25,7 +25,7 @@ Review evidence:
 Notes:
 - All candidates are `1280x720`.
 - Source `report.json` had zero console events, page errors, and bad network responses.
-- Source `report.json` records build `v2026-05-18_21-29-14`, matching `public/version.json` at capture time.
-- Boss and wave-transition captures include the quieter message-focus timing, later score-flow/reward cleanup, generated hijacker art, tractor-beam mechanic, and the current arcade typography pass.
+- Source `report.json` records build `v2026-05-18_23-27-36`, matching `public/version.json` at capture time.
+- Boss and wave-transition captures include the quieter message-focus timing, later score-flow/reward cleanup, generated hijacker art, tractor-beam mechanic, current arcade typography pass, and announcer voice reboot build.
 - The midgame and boss shots use deterministic debug routes for repeatable store-candidate capture; they still render the actual runtime UI, sprites, backgrounds, and effects.
 - Final upload still needs user approval inside Steamworks.

@@ -1,6 +1,6 @@
 # Audio Mix Audit - 2026-05-18
 
-Generated: 2026-05-18T20:49:21.602Z
+Generated: 2026-05-18T21:37:10.361Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -13,10 +13,10 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Coverage
 
-- Measured files: 106
+- Measured files: 104
 - Music rows: 13
 - SFX rows: 119
-- Voice rows: 20
+- Voice rows: 18
 - Warnings: 0
 - Errors: 0
 
@@ -54,14 +54,14 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
-| voice | you_win | you_win.mp3 | -0.5 dB | -19.4 dB | -33.5 dB |
-| voice | game_over | game_over.mp3 | -0.9 dB | -19.8 dB | -33.9 dB |
-| voice | round | final_round.mp3 | -0.1 dB | -21.1 dB | -38.0 dB |
-| voice | wave_clear | objective_achieved.mp3 | -0.5 dB | -21.2 dB | -39.2 dB |
-| voice | mission_complete | mission_completed.mp3 | -1.5 dB | -21.7 dB | -35.6 dB |
-| voice | war_look_out | war_look_out.mp3 | -0.7 dB | -22.5 dB | -37.1 dB |
-| voice | intro_narrator_04 | intro_narrator_04.mp3 | -4.7 dB | -23.0 dB | -41.7 dB |
-| voice | powerup | power_up.mp3 | -0.9 dB | -23.0 dB | -35.7 dB |
+| voice | mission_control_boss_inbound | mission_control_boss_inbound.mp3 | -3.4 dB | -21.5 dB | -40.2 dB |
+| voice | intro_narrator_02 | intro_narrator_02.mp3 | -3.6 dB | -21.9 dB | -39.7 dB |
+| voice | intro_narrator_04 | intro_narrator_04.mp3 | -3.8 dB | -22.1 dB | -40.9 dB |
+| voice | intro_narrator_01 | intro_narrator_01.mp3 | -4.0 dB | -22.3 dB | -39.2 dB |
+| voice | mission_control_global_highscore | mission_control_global_highscore_01.mp3 | -4.9 dB | -22.6 dB | -41.0 dB |
+| voice | mission_control_victory | mission_control_victory.mp3 | -4.3 dB | -23.0 dB | -42.0 dB |
+| voice | mission_control_game_over | mission_control_game_over.mp3 | -4.1 dB | -23.0 dB | -38.9 dB |
+| voice | mission_control_level_start | mission_control_level_start.mp3 | -3.3 dB | -23.1 dB | -40.7 dB |
 
 ## Quietest Effective Peaks
 
@@ -82,14 +82,14 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
-| voice | mission_control_game_over | mission_control_game_over.mp3 | -7.4 dB | -26.1 dB | -43.4 dB |
-| voice | intro_narrator_02 | intro_narrator_02.mp3 | -6.5 dB | -24.8 dB | -42.0 dB |
-| voice | mission_control_wave_clear | mission_control_wave_clear.mp3 | -4.7 dB | -24.3 dB | -42.0 dB |
-| voice | mission_control_powerup | mission_control_powerup.mp3 | -2.5 dB | -23.8 dB | -44.7 dB |
-| voice | war_target | war_target_engaged.mp3 | -1.6 dB | -23.7 dB | -40.1 dB |
-| voice | mission_control_level_start | mission_control_level_start.mp3 | -4.6 dB | -23.7 dB | -41.5 dB |
-| voice | intro_narrator_01 | intro_narrator_01.mp3 | -5.3 dB | -23.6 dB | -42.1 dB |
-| voice | mission_control_boss_inbound | mission_control_boss_inbound.mp3 | -5.3 dB | -23.6 dB | -41.4 dB |
+| voice | mission_control_wave_clear | mission_control_wave_clear.mp3 | -7.2 dB | -26.3 dB | -41.7 dB |
+| voice | mission_control_restart | mission_control_restart_01.mp3 | -5.5 dB | -25.7 dB | -46.0 dB |
+| voice | mission_control_powerup | mission_control_powerup.mp3 | -6.4 dB | -25.5 dB | -43.1 dB |
+| voice | mission_control_personal_best | mission_control_personal_best_01.mp3 | -5.4 dB | -24.5 dB | -41.7 dB |
+| voice | mission_control_life_low | mission_control_life_low.mp3 | -5.9 dB | -24.4 dB | -40.7 dB |
+| voice | mission_control_hijacker | mission_control_hijacker_01.mp3 | -4.5 dB | -24.1 dB | -42.4 dB |
+| voice | mission_control_combo | mission_control_combo_01.mp3 | -4.6 dB | -23.9 dB | -41.8 dB |
+| voice | mission_control_launch | mission_control_launch.mp3 | -5.2 dB | -23.9 dB | -41.4 dB |
 
 ## Warnings
 

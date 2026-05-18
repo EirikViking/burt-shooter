@@ -19,7 +19,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 | Score/combo/restart compulsion | 8 | Danger-dodge streaks and non-combo bonus popups improved the score loop; game over now teases ship unlock progress and gamepad restart. |
 | Ship unlock motivation | 8 | 25 ships are unlock-gated with real trait/stat differences; game over now surfaces next/new unlock motivation. |
 | UI/text density | 8 | Font normalization now improves menu/HUD/game-over text, and the mobile comms banner no longer collides with the HUD stack. Center-lane toasts still need monitoring during dense waves. |
-| Audio punch | 8 | Full RC passed audio catalog and mix audit; human by-ear approval remains required. |
+| Audio punch | 8 | The announcer now has event pools, no-repeat guards, and global-score fanfare. Current assets are local fallback TTS because ElevenLabs returned HTTP 401, so human by-ear approval and a stronger licensed voice source remain important. |
 | Surprise mechanic freshness | 7 | Hijacker tractor beam adds a named clip-worthy mechanic with counterplay and score payoff. The game needs more of this kind of authored surprise, not more generic enemy count. |
 | Steam tag accuracy | 8 | Tags are now focused and Bullet Hell was removed from the first metadata set. |
 | Controller expectations | 7 | Runtime support and packaged control smoke exist; Steam metadata correctly stays at Partial Controller Support pending Steam client validation. |
@@ -29,8 +29,8 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Top Five Highest-Impact Changes
 
-1. **Voice/audio reboot:** make the female arcade announcer identity memorable, short, replay-safe, and less generic.
-2. **Leaderboard split and celebration:** clearly separate local/global qualification and make global entry feel rare and premium.
+1. **Leaderboard split:** clearly separate local/global qualification end-of-run and test online failure fallback without killing instant restart.
+2. **Licensed premium voice pass:** regenerate the new line pools with working ElevenLabs access or another approved professional voice source.
 3. **Game-over motivation:** strengthen death screen with next/new ship unlock and one-input/gamepad retry. Implemented this loop.
 4. **Store claim cleanup:** remove Bullet Hell from first metadata set and avoid "Controller Ready" language until Steam client validation. Implemented this loop.
 5. **Combat readability:** keep HUD/toasts off danger lanes; rename ambiguous SHOTS label. Implemented the quick HUD label fix, but larger toast/telegraph work remains.
@@ -39,7 +39,8 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 - Trailer candidate is gameplay-first but not yet boss-first enough for the stated differentiator.
 - Boss attack readability is improved, but boss variety still needs more authored phase/pressure differences before it becomes a store-page strength.
-- Voice/audio identity and leaderboard excitement are now the largest unresolved commercial-differentiation risks.
+- The new voice system fixes line structure/repetition, but the local fallback performance is not yet premium enough to be a commercial differentiator.
+- Leaderboard excitement is improved for global qualification, but local/global UI flow is not yet fully split.
 - Public web build and marketing site are live; the latest hijacker/typography build is deployed and verified at the private domain.
 - Steam client validation cannot happen until real app/depot IDs and credentials exist.
 - Human approvals are still required for screenshots, trailer, capsules, audio, store copy, and legal/provenance.
@@ -55,4 +56,4 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Next Best Loop
 
-Do the voice/audio reboot next, while refreshing Steam handoff evidence for the current build first. The announcer should become a memorable arcade identity, not background narration.
+Do the leaderboard split next: make local and global qualification separate, fast, and exciting, with the global fanfare only firing when the global path is actually earned.

@@ -9,35 +9,35 @@ const outputDir = path.resolve('public/audio/voice/mission-control');
 const lines = [
   {
     file: 'mission_control_launch.mp3',
-    text: 'Nova control online. Launch when ready.'
+    text: 'Nova hot. Swarm hotter.'
   },
   {
     file: 'mission_control_level_start.mp3',
-    text: 'New wave corridor opening. Keep your aim clean.'
+    text: 'New wave. Same bad idea.'
   },
   {
     file: 'mission_control_wave_clear.mp3',
-    text: 'Wave clear. Reload your nerves.'
+    text: 'Clean sweep. Keep flirting with danger.'
   },
   {
     file: 'mission_control_boss_inbound.mp3',
-    text: 'Boss signature detected. Break formation.'
+    text: 'Boss gate open. Try not to blink.'
   },
   {
     file: 'mission_control_life_low.mp3',
-    text: 'Hull critical. Fly clean.'
+    text: 'One life. Make it gorgeous.'
   },
   {
     file: 'mission_control_powerup.mp3',
-    text: 'Upgrade locked. Use it now.'
+    text: 'Take the upgrade. Be rude.'
   },
   {
     file: 'mission_control_victory.mp3',
-    text: 'Sector secured. Nova patrol survives another round.'
+    text: 'Boss down. That was stylish.'
   },
   {
     file: 'mission_control_game_over.mp3',
-    text: 'Signal lost. Reset and hit them again.'
+    text: 'One more run. You know you want it.'
   }
 ];
 

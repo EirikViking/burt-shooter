@@ -38,10 +38,19 @@
       "notes": "Steam capsule drafts and marketing key art. Final upload still requires human approval and Steam template review."
     },
     {
-      "id": "generated_elevenlabs_voice_and_sfx",
+      "id": "generated_voice_fallback_pack",
       "prefixes": [
         "public/audio/voice/mission-control/",
-        "public/audio/voice/nova-swarm/",
+        "public/audio/voice/nova-swarm/"
+      ],
+      "sourceType": "local_synthetic_tts_audio",
+      "provider": "Microsoft Zira Desktop via Windows System.Speech fallback",
+      "licenseStatus": "pending_human_review",
+      "notes": "Current 2026-05-18 announcer and intro voice pack. ElevenLabs was checked first but returned HTTP 401, so these files are local fallback TTS exported through FFmpeg. Regeneration instructions are documented in docs/audio-pipeline.md and docs/audio/voice-direction.md."
+    },
+    {
+      "id": "generated_elevenlabs_sfx_music",
+      "prefixes": [
         "public/audio/sfx/nova-swarm/",
         "public/audio/music/nova-swarm/",
         "release/steam-trailer/draft-2026-05-17-12-46/",
@@ -51,7 +60,7 @@
       "sourceType": "ai_generated_audio",
       "provider": "ElevenLabs",
       "licenseStatus": "pending_human_review",
-      "notes": "Mission-control voice, narrated intro, bespoke Nova Swarm SFX/music, and rendered trailer draft audio/video. Regeneration instructions are documented in docs/audio-pipeline.md."
+      "notes": "Bespoke Nova Swarm SFX/music and rendered trailer draft audio/video. Regeneration instructions are documented in docs/audio-pipeline.md."
     },
     {
       "id": "steam_trailer_editorial_candidate",

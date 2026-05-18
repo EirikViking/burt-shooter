@@ -47,6 +47,9 @@ export class GameOverScene {
     this.isQualified = false;
     this.isRankedRun = true;
     this.submitBlockedReason = null;
+    this.isPersonalBest = false;
+    this.qualificationFanfarePlayed = false;
+    this.personalBestVoicePlayed = false;
     // Submission deduplication
     this.submissionId = null;
     this.gamepadActionWasPressed = false;
@@ -70,6 +73,9 @@ export class GameOverScene {
     this.finalScore = Number(this.game.score) || 0;
     this.finalLevel = Number(this.game.level) || 0;
     const previousProgress = getShipUnlockProgress();
+    this.isPersonalBest = this.finalScore > (Number(previousProgress.bestScore) || 0);
+    this.qualificationFanfarePlayed = false;
+    this.personalBestVoicePlayed = false;
     const currentProgress = updateShipUnlockProgress({
       score: this.finalScore,
       rank: this.game.rankIndex || 0,
@@ -245,6 +251,12 @@ export class GameOverScene {
       }
       console.log(`[GameOver] Qualification Check: Score ${this.finalScore} vs 10th ${this.cachedHighscores[9]?.score || 0} -> ${this.isQualified}`);
 
+      if (this.isQualified) {
+        this.playGlobalQualificationFanfare();
+      } else if (this.isPersonalBest) {
+        this.playPersonalBestVoice();
+      }
+
       // Update prompt visibility based on qualification
       if (!this.isQualified && this.promptText) {
         this.promptText.visible = false;
@@ -268,6 +280,9 @@ export class GameOverScene {
       // Hide prompt on fetch failure
       if (this.promptText) {
         this.promptText.visible = false;
+      }
+      if (this.isPersonalBest) {
+        this.playPersonalBestVoice();
       }
     });
   }
@@ -547,7 +562,7 @@ export class GameOverScene {
     if (!this.isQualified) {
       console.log('[GameOver] Player not qualified for Top 10. Blocking submission.');
 
-      AudioManager.playVoice('mission_control_game_over', { cooldownMs: 2400, duckMs: 2600 });
+      AudioManager.playVoice('mission_control_restart', { cooldownMs: 3600, duckMs: 1100 });
 
       // Show feedback
       const { width, height } = this.game.app.screen;
@@ -629,8 +644,59 @@ export class GameOverScene {
     this.stopCaretBlink();
     this.hideHiddenInput();
     AudioManager.playSfx('start_game_confirm');
+    AudioManager.playVoice('mission_control_restart', {
+      force: true,
+      stopOtherVoices: true,
+      cooldownMs: 3200,
+      duckMs: 1100,
+      duckFactor: 0.6,
+      volume: 0.72
+    });
     AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
     this.game.startGame(this.game.selectedShipSpriteKey);
+  }
+
+  playGlobalQualificationFanfare() {
+    if (this.qualificationFanfarePlayed) return;
+    this.qualificationFanfarePlayed = true;
+    AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.95 });
+    window.setTimeout(() => {
+      AudioManager.playVoice('mission_control_global_highscore', {
+        force: true,
+        stopOtherVoices: true,
+        exclusiveGroup: 'announcer',
+        cooldownMs: 9000,
+        duckMs: 3400,
+        duckFactor: 0.32,
+        volume: 0.96
+      });
+    }, 180);
+  }
+
+  playPersonalBestVoice() {
+    if (this.personalBestVoicePlayed || this.qualificationFanfarePlayed) return;
+    this.personalBestVoicePlayed = true;
+    window.setTimeout(() => {
+      AudioManager.playVoice('mission_control_personal_best', {
+        cooldownMs: 7000,
+        duckMs: 2200,
+        duckFactor: 0.48,
+        volume: 0.82
+      });
+    }, 900);
+  }
+
+  playLocalHighscoreVoice() {
+    AudioManager.playSfx('achievement', { force: true, volume: 0.82 });
+    AudioManager.playVoice('mission_control_local_highscore', {
+      force: true,
+      stopOtherVoices: true,
+      exclusiveGroup: 'announcer',
+      cooldownMs: 7000,
+      duckMs: 2200,
+      duckFactor: 0.46,
+      volume: 0.82
+    });
   }
 
   updatePromptMessage(text) {
@@ -939,6 +1005,7 @@ export class GameOverScene {
           rankIndex: this.game.rankIndex || 0,
           pending: true
         };
+        this.playLocalHighscoreVoice();
         this.removeInputOverlay();
         this.game.showHighscores();
         return;

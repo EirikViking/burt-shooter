@@ -320,3 +320,55 @@ After: the hijacker creates a clear "oh no, break the beam" moment with a screen
 - Local/global leaderboard excitement still needs a clearer split and a premium global-qualification celebration.
 - More boss pattern variety is still valuable, but it should be added in tight, tested slices rather than content bloat.
 - Steam readiness still requires real Steamworks IDs, Steam-client validation evidence, and human release approvals.
+
+## Loop 8 - Announcer Voice Reboot
+
+### What Was Tested
+
+- Verified the worktree was clean after the hijacker/typography commit.
+- Checked ElevenLabs access without printing any key; the service returned HTTP 401.
+- Generated the fallback announcer pack locally with `npm run generate:announcer-voicepack`.
+- Ran focused catalog and announcer checks.
+
+### What Felt Weak
+
+- The old game-facing voice layer still carried generic root-level stock voice files and legacy war-callout event names.
+- Common moments had only one line, so the first few runs could repeat the same voice beat.
+- Global leaderboard qualification did not feel bigger than a normal game-over/top-10 prompt.
+- Powerup voice still pulled from the old root `power_up.mp3` path.
+
+### What Changed
+
+- Rewrote mission-control copy into shorter confident female arcade announcer lines.
+- Added 41 local fallback voice assets across launch, waves, bosses, combo, lows, powerups, local/global leaderboard, personal best, game over, restart, hijacker, and intro narration.
+- Removed 36 legacy root voice files from `public/audio/voice`.
+- Added no-repeat voice variant bags and an exclusive `announcer` group in `AudioManager`.
+- Replaced legacy `war_target`, `war_look_out`, `mission_complete`, and root powerup voice references with new announcer events.
+- Added `nova_highscore_chime` plus a special global leaderboard qualification voice line.
+- Added personal-best, local/offline highscore fallback, combo milestone, hijacker warning, and restart voice hooks.
+
+### Before And After Feel
+
+Before: voice was functional but generic, with too much risk of placeholder stock audio and early-run repetition.
+
+After: the voice layer has a clear arcade-announcer identity, bigger leaderboard payoff, replay-safe variation pools, and no shipped root stock voice pack. Because ElevenLabs access failed, this is an honest local fallback rather than final premium voice performance.
+
+### Evidence Captured
+
+- Voice direction: `docs/audio/voice-direction.md`.
+- Voice upgrade audit: `docs/reviews/voice-audio-upgrade-audit.md`.
+- Focused voice validation: `npm run check:announcer-voice`.
+- Audio catalog validation: `npm run check:audio`.
+- Audio mix audit: `npm run audit:audio-mix` passed with no warnings.
+- Local smoke: `test-results/smoke-2026-05-18T21-28-04-507Z/report.json`.
+- Live private-domain smoke: `test-results/smoke-live-announcer-2026-05-18T23-27/report.json`.
+- Full Steam RC: `test-results/steam-rc-verify-2026-05-18T21-34-54-911Z/report.json`.
+- Canonical Steam screenshots: `release/steam-screenshots/draft-2026-05-17-current/report.json`.
+- Canonical trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`.
+- Steam handoff: `release/steamworks/release_handoff_packet.json` with no stale evidence for build `v2026-05-18_23-27-36`.
+
+### Remaining Top Risks
+
+- The fallback Microsoft Zira voice is less commercially distinctive than a strong ElevenLabs/pro voice take.
+- The leaderboard flow still needs a full local/global split beyond the current global qualification and local fallback voice moments.
+- Steam readiness still requires real Steamworks IDs, Steam-client validation evidence, and human release approvals.

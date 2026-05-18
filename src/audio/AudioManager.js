@@ -52,6 +52,8 @@ class AudioController {
     this.lastSfxPlayedAt = {};
     this.lastPowerupVoiceIndex = -1;
     this.lastVoicePlayedAt = {};
+    this.voiceVariantBags = {};
+    this.lastVoiceVariantByEvent = {};
     this.activeVoiceGroups = {};
     this.activeVoices = new Map();
     this.voicePlayId = 0;
@@ -766,7 +768,13 @@ class AudioController {
     }
 
     // Celebration Rate Limiting
-    const celebrations = ['mission_complete', 'wave_clear', 'round'];
+    const celebrations = [
+      'mission_control_wave_clear',
+      'mission_control_victory',
+      'mission_control_local_highscore',
+      'mission_control_global_highscore',
+      'mission_control_personal_best'
+    ];
     if (celebrations.includes(eventName)) {
       if (!force && now < this.globalVoiceCooldown) return false; // Respect global
       // Also enforce a specific celebration lock
@@ -793,10 +801,9 @@ class AudioController {
     }
 
     if (variants && variants.length > 0) {
-      // Pick random variant
-      const src = variants[Math.floor(Math.random() * variants.length)];
+      const src = this.pickVoiceVariant(eventName, variants);
       if (src) {
-        const exclusiveGroup = options.exclusiveGroup || null;
+        const exclusiveGroup = options.exclusiveGroup || (eventName.startsWith('mission_control_') ? 'announcer' : null);
         if (exclusiveGroup) this.stopVoiceGroup(exclusiveGroup);
         const audio = new Audio(src);
         audio.preload = 'auto';
@@ -835,6 +842,23 @@ class AudioController {
       console.warn(`[Audio] No voice asset found for: ${eventName}`);
     }
     return false;
+  }
+
+  pickVoiceVariant(eventName, variants) {
+    const pool = Array.isArray(variants) ? variants.filter(Boolean) : [];
+    if (pool.length <= 1) return pool[0] || null;
+
+    if (!Array.isArray(this.voiceVariantBags[eventName]) || this.voiceVariantBags[eventName].length === 0) {
+      const lastIndex = this.lastVoiceVariantByEvent[eventName];
+      const bag = pool.map((_, index) => index).filter((index) => index !== lastIndex);
+      this.voiceVariantBags[eventName] = bag.length ? bag : pool.map((_, index) => index);
+    }
+
+    const bag = this.voiceVariantBags[eventName];
+    const pick = Math.floor(Math.random() * bag.length);
+    const [index] = bag.splice(pick, 1);
+    this.lastVoiceVariantByEvent[eventName] = index;
+    return pool[index] || pool[0] || null;
   }
 
   stopVoiceGroup(groupName) {
@@ -888,43 +912,12 @@ class AudioController {
   }
 
   playPowerupVoice() {
-    if (!this.enabled || !this.voiceEnabled) return false;
-    const now = Date.now();
-    const mix = VOICE_MIX.powerup || {};
-    if (now < this.globalVoiceCooldown) return false;
-
-    const candidates = AssetManifest.audio.voice.filter(p => p.includes('power_up'));
-    if (!candidates.length) {
-      console.warn('[PowerupVoice] played key=none ok=false');
-      return false;
-    }
-
-    let index = 0;
-    if (candidates.length > 1) {
-      const next = Math.floor(Math.random() * candidates.length);
-      index = next === this.lastPowerupVoiceIndex ? (next + 1) % candidates.length : next;
-      this.lastPowerupVoiceIndex = index;
-    }
-
-    const src = candidates[index];
-    const audio = new Audio(src);
-    audio.preload = 'auto';
-    const volumeMultiplier = this.readMixNumber(mix.volume, 0.58);
-    audio.volume = this.clampUnit(this.masterVolume * this.voiceVolume * volumeMultiplier);
-    audio.play().catch(e => {
-      this.handleVoicePlayFailure('powerup', audio.src, e);
+    return this.playVoice('mission_control_powerup', {
+      cooldownMs: 4800,
+      duckMs: 950,
+      duckFactor: 0.42,
+      volume: 0.82
     });
-    this.duckMusic(mix.duckFactor ?? 0.66, mix.duckMs ?? 900);
-    this.globalVoiceCooldown = now + (mix.cooldownMs ?? 1600);
-    this.lastVoicePlayedAt.powerup = now;
-    this.lastVoiceEvent = 'powerup';
-    this.lastVoiceTrack = decodeURIComponent((src || '').split('/').pop() || '');
-    if (candidates.length > 1) {
-      console.log(`[PowerupVoice] picked key=${src} from=${candidates.length}`);
-    } else {
-      console.log(`[PowerupVoice] played key=${src} ok=true`);
-    }
-    return true;
   }
 
   playTone(freq, duration, type, vol) {

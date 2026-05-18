@@ -9,19 +9,19 @@ const outputDir = path.resolve('public/audio/voice/nova-swarm');
 const lines = [
   {
     file: 'intro_narrator_01.mp3',
-    text: 'Long after the star lanes went quiet, a forgotten arcade cabinet kept one promise: if anyone pressed start, it would answer.'
+    text: 'The last arcade cabinet drifted past the star lanes, still hungry for one more coin.'
   },
   {
     file: 'intro_narrator_02.mp3',
-    text: 'The Nova Swarm was not an army at first. It was a navigation error that became a choir, then a machine, then a joke with teeth.'
+    text: 'Then the swarm learned formation. Cute trick. Bad manners.'
   },
   {
     file: 'intro_narrator_03.mp3',
-    text: 'Your ship was built for clean lanes and fair odds. The cabinet found neither, so it gave you a dodge thruster and lied about confidence.'
+    text: 'Your ship is small, sharp, and extremely underinsured.'
   },
   {
     file: 'intro_narrator_04.mp3',
-    text: 'Every boss is a corrupted rule of the old game: hitboxes with grudges, patterns with punchlines, and one scoreboard waiting to remember your name.'
+    text: 'Every boss guards a score. Break the pattern. Steal the night.'
   }
 ];
 

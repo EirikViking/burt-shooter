@@ -2801,6 +2801,7 @@ export class PlayScene {
       const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
       this.enqueueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
       AudioManager.playSfx('combo_breakout', { force: true, volume: 0.82 });
+      AudioManager.playVoice('mission_control_combo', { cooldownMs: 9000, duckMs: 1100, duckFactor: 0.46, volume: 0.8 });
       if (this.particleManager && this.player) {
         this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
       }
