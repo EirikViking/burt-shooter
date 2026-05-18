@@ -14,6 +14,7 @@
     "check:ship-trait-combat": "node scripts/check-ship-trait-combat.mjs",
     "check:debug-unranked": "node scripts/check-debug-run-unranked.mjs",
     "check:trait-hud": "node scripts/check-trait-hud.mjs",
+    "check:intro-voice": "node scripts/check-intro-voice-exclusivity.mjs",
     "check:boss-adds": "node scripts/check-boss-adds.mjs",
     "check:boss-roster": "node scripts/check-boss-roster.mjs",
     "check:audio": "node scripts/check-audio-catalog.mjs",

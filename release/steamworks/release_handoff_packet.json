@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T12:08:29.802Z",
+  "generatedAt": "2026-05-18T12:40:26.219Z",
   "build": {
     "version": "v2026-05-18_11-49-26",
     "timestamp": "2026-05-18T09:49:26.907Z",
@@ -50,15 +50,15 @@
       "status": "ready",
       "path": "release/steamworks/desktop_package_review_report.json",
       "exeBytes": 226666496,
-      "electronSmoke": "test-results/electron-smoke-2026-05-18T11-03-15-120Z/report.json",
-      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-18T11-03-18-773Z/report.json"
+      "electronSmoke": "test-results/electron-smoke-2026-05-18T12-22-56-322Z/report.json",
+      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-18T12-23-03-331Z/report.json"
     },
     "payloadManifest": {
       "status": "ready",
       "path": "release/steamworks/steam_payload_manifest.json",
       "fileCount": 74,
-      "totalBytes": 601470445,
-      "manifestHash": "85a27eb611213cc36b4959d46e76b7404a2aac780a02b9be42962fc6cabd5ba0"
+      "totalBytes": 601471630,
+      "manifestHash": "f46d315b5e6dd5deedcb949b6c623a832341953efff3ad19611fad7d1b5d5841"
     },
     "liveDeployment": {
       "status": "ready",
@@ -69,8 +69,8 @@
     "fullRc": {
       "status": "ready",
       "path": "release/steamworks/full_rc_verification_report.json",
-      "fullRcReport": "test-results/steam-rc-verify-2026-05-18T11-01-55-047Z/report.json",
-      "releasePlaytest": "test-results/release-playtest-2026-05-18T11-05-26-031Z/report.json"
+      "fullRcReport": "test-results/steam-rc-verify-2026-05-18T12-21-03-738Z/report.json",
+      "releasePlaytest": "test-results/release-playtest-2026-05-18T12-25-08-087Z/report.json"
     },
     "humanReview": {
       "status": "ready",

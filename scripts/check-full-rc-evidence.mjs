@@ -83,6 +83,7 @@ if (!playtest) {
 
 const requiredFullStages = [
   'build:current',
+  'check:intro-voice',
   'check:provenance',
   'check:steam-assets',
   'check:steam-store',

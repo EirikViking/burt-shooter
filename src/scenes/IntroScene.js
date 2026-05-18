@@ -243,6 +243,7 @@ export class IntroScene {
     this.prompt.text = 'SPACE / CLICK NEXT  |  ESC SKIPS';
     AudioManager.init();
     AudioManager.unlockAudio?.();
+    AudioManager.stopAllVoices?.('intro_start');
     AudioManager.playMusicContext('intro', { resetPlaylist: true });
     this.showPanel(this.panelIndex, { playAudio: true });
   }
@@ -260,11 +261,12 @@ export class IntroScene {
     this.nextButton.visible = index < PANELS.length - 1;
 
     if (playAudio) {
-      AudioManager.stopVoiceGroup?.('intro_narrator');
+      AudioManager.stopAllVoices?.('intro_panel_change');
       AudioManager.playSfx(panel.sfx, { force: true });
       AudioManager.playVoice(panel.voice, {
         force: true,
         exclusiveGroup: 'intro_narrator',
+        stopOtherVoices: true,
         cooldownMs: 0,
         volume: 0.94,
         duckFactor: 0.35,
@@ -290,7 +292,7 @@ export class IntroScene {
     try {
       localStorage.setItem(INTRO_SEEN_KEY, '1');
     } catch { }
-    AudioManager.stopVoiceGroup?.('intro_narrator');
+    AudioManager.stopAllVoices?.('intro_finish');
     AudioManager.playSfx('start_game_confirm', { force: true });
     AudioManager.playMusicContext('menu');
     this.game.showMenu();
@@ -371,7 +373,7 @@ export class IntroScene {
       this.container.off('pointerdown', this.pointerHandler);
       this.pointerHandler = null;
     }
-    AudioManager.stopVoiceGroup?.('intro_narrator');
+    AudioManager.stopAllVoices?.('intro_destroy');
     this.container.removeChildren();
   }
 }

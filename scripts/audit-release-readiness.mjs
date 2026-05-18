@@ -783,6 +783,7 @@ checks.push({
     const stageNames = new Set((json.latestFullRc?.stages || []).filter((stage) => stage.ok).map((stage) => stage.name));
     const requiredStages = [
       'build:current',
+      'check:intro-voice',
       'check:provenance',
       'check:steam-assets',
       'check:steam-store',

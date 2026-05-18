@@ -13,6 +13,7 @@ const shellCommand = process.platform === 'win32' ? 'cmd.exe' : 'sh';
 
 const stages = [
   ['build:current', ['run', 'build:current']],
+  ['check:intro-voice', ['run', 'check:intro-voice']],
   ['check:provenance', ['run', 'check:provenance']],
   ['check:steam-assets', ['run', 'check:steam-assets']],
   ['check:steam-store', ['run', 'check:steam-store']],

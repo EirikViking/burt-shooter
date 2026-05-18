@@ -53,6 +53,8 @@ class AudioController {
     this.lastPowerupVoiceIndex = -1;
     this.lastVoicePlayedAt = {};
     this.activeVoiceGroups = {};
+    this.activeVoices = new Map();
+    this.voicePlayId = 0;
     this.lastSfxEvent = null;
     this.lastSfxTrack = null;
     this.lastVoiceEvent = null;
@@ -667,6 +669,14 @@ class AudioController {
       lastSfxTrack: this.lastSfxTrack,
       lastVoiceEvent: this.lastVoiceEvent,
       lastVoiceTrack: this.lastVoiceTrack,
+      activeVoiceCount: this.activeVoices?.size || 0,
+      activeVoiceEvents: Array.from(this.activeVoices?.values?.() || []).map((entry) => ({
+        eventName: entry?.eventName || null,
+        group: entry?.exclusiveGroup || null,
+        track: decodeURIComponent((entry?.src || '').split('/').pop() || ''),
+        paused: Boolean(entry?.audio?.paused),
+        ended: Boolean(entry?.audio?.ended)
+      })),
       activeVoiceGroups: Object.fromEntries(Object.entries(this.activeVoiceGroups || {}).map(([group, entry]) => [group, {
         eventName: entry?.eventName || null,
         track: decodeURIComponent((entry?.src || '').split('/').pop() || ''),
@@ -751,6 +761,9 @@ class AudioController {
     const mix = VOICE_MIX[eventName] || {};
     const cooldownMs = this.readMixNumber(options.cooldownMs, mix.cooldownMs ?? 1500);
     const force = options.force === true;
+    if (options.stopOtherVoices === true) {
+      this.stopAllVoices('exclusive_voice_request');
+    }
 
     // Celebration Rate Limiting
     const celebrations = ['mission_complete', 'wave_clear', 'round'];
@@ -789,18 +802,23 @@ class AudioController {
         audio.preload = 'auto';
         const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
         audio.volume = this.clampUnit(this.masterVolume * this.voiceVolume * volumeMultiplier);
-        if (exclusiveGroup) {
-          this.activeVoiceGroups[exclusiveGroup] = { audio, eventName, src };
-          audio.addEventListener('ended', () => {
-            if (this.activeVoiceGroups[exclusiveGroup]?.audio === audio) {
-              delete this.activeVoiceGroups[exclusiveGroup];
-            }
-          }, { once: true });
-        }
-        audio.play().catch(e => {
+        const voiceId = ++this.voicePlayId;
+        const entry = { audio, eventName, src, exclusiveGroup };
+        this.activeVoices.set(voiceId, entry);
+        const cleanupVoice = () => {
+          if (this.activeVoices.get(voiceId)?.audio === audio) {
+            this.activeVoices.delete(voiceId);
+          }
           if (exclusiveGroup && this.activeVoiceGroups[exclusiveGroup]?.audio === audio) {
             delete this.activeVoiceGroups[exclusiveGroup];
           }
+        };
+        if (exclusiveGroup) {
+          this.activeVoiceGroups[exclusiveGroup] = entry;
+        }
+        audio.addEventListener('ended', cleanupVoice, { once: true });
+        audio.play().catch(e => {
+          cleanupVoice();
           this.handleVoicePlayFailure(eventName, audio.src, e);
         });
         this.duckMusic(
@@ -826,8 +844,31 @@ class AudioController {
       active.audio.pause();
       active.audio.currentTime = 0;
     } catch { }
+    for (const [voiceId, entry] of this.activeVoices || []) {
+      if (entry?.audio === active.audio || entry?.exclusiveGroup === groupName) {
+        this.activeVoices.delete(voiceId);
+      }
+    }
     delete this.activeVoiceGroups[groupName];
     return true;
+  }
+
+  stopAllVoices(reason = 'manual') {
+    let stopped = 0;
+    for (const [voiceId, entry] of this.activeVoices || []) {
+      if (!entry?.audio) continue;
+      try {
+        entry.audio.pause();
+        entry.audio.currentTime = 0;
+      } catch { }
+      this.activeVoices.delete(voiceId);
+      stopped += 1;
+    }
+    this.activeVoiceGroups = {};
+    if (stopped && this.isVerboseDiagnostics()) {
+      console.log(`[Audio] stopped ${stopped} active voice(s): ${reason}`);
+    }
+    return stopped;
   }
 
   playAuditionCue(kind) {
