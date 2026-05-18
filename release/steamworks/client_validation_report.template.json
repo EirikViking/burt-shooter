@@ -1,5 +1,9 @@
 {
   "status": "pending",
+  "gameBuild": {
+    "version": null,
+    "timestamp": null
+  },
   "steamBuildId": null,
   "validatedAt": null,
   "validatedBy": null,

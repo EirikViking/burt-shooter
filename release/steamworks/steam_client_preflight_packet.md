@@ -1,6 +1,6 @@
 # Nova Swarm Steam Client Preflight Packet
 
-Generated: 2026-05-18T11:32:40.681Z
+Generated: 2026-05-18T11:57:52.262Z
 Build: `v2026-05-18_11-49-26`
 Status: `ready_for_steam_upload_and_client_validation`
 
@@ -49,7 +49,7 @@ Only use that command after testing the Steam-installed build.
 | --- | --- | ---: |
 | yes | `release/desktop/win-unpacked/Nova Swarm.exe` | 226666496 |
 | yes | `release/steamworks/app_build_TEMPLATE.vdf` | 359 |
-| yes | `release/steamworks/client_validation_report.template.json` | 929 |
+| yes | `release/steamworks/client_validation_report.template.json` | 994 |
 | yes | `release/steamworks/desktop_package_review_report.json` | 2516 |
 | yes | `release/steamworks/full_rc_verification_report.json` | 3442 |
 | yes | `release/steamworks/steam_client_validation_runbook.md` | 3902 |

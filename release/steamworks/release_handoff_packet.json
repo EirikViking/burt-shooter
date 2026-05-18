@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T11:50:52.799Z",
+  "generatedAt": "2026-05-18T11:57:52.777Z",
   "build": {
     "version": "v2026-05-18_11-49-26",
     "timestamp": "2026-05-18T09:49:26.907Z",
@@ -137,7 +137,7 @@
     {
       "path": "release/steamworks/client_validation_report.template.json",
       "exists": true,
-      "bytes": 929
+      "bytes": 994
     },
     {
       "path": "docs/reviews/2026-05-17-human-release-approval.md",

@@ -1,6 +1,6 @@
 # Nova Swarm Steam Release Handoff Packet
 
-Generated: 2026-05-18T11:50:52.799Z
+Generated: 2026-05-18T11:57:52.777Z
 
 Build: `v2026-05-18_11-49-26`
 Build timestamp: `2026-05-18T09:49:26.907Z`
@@ -46,7 +46,7 @@ Current blockers:
 | yes | `release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png` | 3226184 |
 | yes | `release/steamworks/store_metadata_draft.json` | 4458 |
 | yes | `release/steamworks/app_build_TEMPLATE.vdf` | 359 |
-| yes | `release/steamworks/client_validation_report.template.json` | 929 |
+| yes | `release/steamworks/client_validation_report.template.json` | 994 |
 | yes | `docs/reviews/2026-05-17-human-release-approval.md` | 1553 |
 
 ## Remaining Manual Steps

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T11:50:55.112Z",
+  "generatedAt": "2026-05-18T11:57:54.912Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 19,
@@ -846,8 +846,8 @@
         "template": {
           "path": "release/steamworks/client_validation_report.template.json",
           "exists": true,
-          "bytes": 929,
-          "modifiedAt": "2026-05-18T11:31:50.835Z"
+          "bytes": 994,
+          "modifiedAt": "2026-05-18T11:56:14.282Z"
         },
         "output": "release/steamworks/client_validation_report.json",
         "writeCommand": "STEAM_CLIENT_VALIDATION_CONFIRM=I_REVIEWED_STEAM_CLIENT_BUILD STEAM_CLIENT_ALL_CHECKS_PASSED=YES STEAM_BUILD_ID=<steam build id> STEAM_VALIDATED_BY=<name> STEAM_INSTALL_PATH=<steam install path> STEAM_SCREENSHOT_EVIDENCE=<screenshot path> npm run steamworks:write-client-validation",
@@ -933,6 +933,9 @@
       "name": "human_release_approvals_recorded",
       "ok": false,
       "path": "docs/reviews/2026-05-17-human-release-approval.md",
+      "expectedBuild": "v2026-05-18_11-49-26",
+      "approvedBuild": null,
+      "buildMatches": false,
       "missing": [
         "screenshots",
         "capsules",

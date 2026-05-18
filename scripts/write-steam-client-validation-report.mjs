@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 const templatePath = path.resolve(root, 'release/steamworks/client_validation_report.template.json');
+const versionPath = path.resolve(root, 'public/version.json');
 const outputPath = path.resolve(process.env.STEAM_CLIENT_VALIDATION_OUTPUT || 'release/steamworks/client_validation_report.json');
 const confirmText = 'I_REVIEWED_STEAM_CLIENT_BUILD';
 const allChecksText = 'YES';
@@ -33,6 +34,10 @@ if (!existsSync(templatePath)) {
   throw new Error(`Missing validation template: ${path.relative(root, templatePath).replaceAll(path.sep, '/')}`);
 }
 
+if (!existsSync(versionPath)) {
+  throw new Error('Missing public/version.json; build metadata is required for Steam-client validation evidence.');
+}
+
 if ((process.env.STEAM_CLIENT_VALIDATION_CONFIRM || '').trim() !== confirmText) {
   throw new Error(`Set STEAM_CLIENT_VALIDATION_CONFIRM=${confirmText} after testing the real Steam-installed build.`);
 }
@@ -51,10 +56,15 @@ if (!existsSync(resolvedInstallPath)) {
 
 const screenshotEvidence = fileInfoFromEnv('STEAM_SCREENSHOT_EVIDENCE');
 const template = JSON.parse(readFileSync(templatePath, 'utf8'));
+const version = JSON.parse(readFileSync(versionPath, 'utf8'));
 const checks = Object.fromEntries(Object.keys(template.checks || {}).map((key) => [key, true]));
 const report = {
   ...template,
   status: 'passed',
+  gameBuild: {
+    version: version.version || null,
+    timestamp: version.timestamp || null
+  },
   steamBuildId,
   validatedAt: new Date().toISOString(),
   validatedBy,

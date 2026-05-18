@@ -271,13 +271,19 @@ function checkHumanApprovals() {
   if (!existsSync(full)) return { ok: false, path: relativePath, reason: 'missing' };
 
   const text = readFileSync(full, 'utf8');
+  const expectedBuild = currentBuildVersion();
+  const approvedBuild = (text.match(/^build:\s*(.+)$/im)?.[1] || '').trim();
   const missing = requiredHumanApprovalKeys.filter((key) => !new RegExp(`^${key}:\\s*approved\\b`, 'im').test(text));
   const hasApprover = /^approvedBy:\s*\S+/im.test(text) && !/^approvedBy:\s*TBD\s*$/im.test(text);
   const hasDate = /^approvedAt:\s*\d{4}-\d{2}-\d{2}/im.test(text);
+  const buildMatches = Boolean(expectedBuild) && approvedBuild === expectedBuild;
 
   return {
-    ok: missing.length === 0 && hasApprover && hasDate,
+    ok: missing.length === 0 && hasApprover && hasDate && buildMatches,
     path: relativePath,
+    expectedBuild,
+    approvedBuild: approvedBuild || null,
+    buildMatches,
     missing,
     hasApprover,
     hasDate
@@ -287,11 +293,35 @@ function checkHumanApprovals() {
 function checkSteamClientValidation() {
   return checkJsonReport('release/steamworks/client_validation_report.json', (json) => {
     const checks = json.checks || {};
+    const expectedBuild = currentBuildVersion();
     const missing = requiredSteamClientChecks.filter((key) => checks[key] !== true);
+    const steamBuildId = json.steamBuildId || json.steamPipeBuildId || null;
+    const screenshotEvidence = json.screenshotEvidence || null;
+    const screenshotPath = screenshotEvidence ? path.resolve(root, screenshotEvidence) : null;
+    const installPath = json.steamInstallPath ? path.resolve(root, json.steamInstallPath) : null;
+    const hasValidator = Boolean(String(json.validatedBy || '').trim()) && !/^TBD$/i.test(String(json.validatedBy || '').trim());
+    const hasValidatedAt = /^\d{4}-\d{2}-\d{2}T/.test(String(json.validatedAt || ''));
+    const buildMatches = Boolean(expectedBuild) && json.gameBuild?.version === expectedBuild;
     return {
-      ok: json.status === 'passed' && missing.length === 0 && Boolean(json.steamBuildId || json.steamPipeBuildId),
+      ok: json.status === 'passed' &&
+        missing.length === 0 &&
+        Boolean(steamBuildId) &&
+        buildMatches &&
+        hasValidator &&
+        hasValidatedAt &&
+        Boolean(installPath && existsSync(installPath)) &&
+        Boolean(screenshotPath && existsSync(screenshotPath)),
       status: json.status || null,
-      steamBuildId: json.steamBuildId || json.steamPipeBuildId || null,
+      expectedBuild,
+      actualBuild: json.gameBuild?.version || null,
+      buildMatches,
+      steamBuildId,
+      validatedBy: json.validatedBy || null,
+      validatedAt: json.validatedAt || null,
+      steamInstallPath: json.steamInstallPath || null,
+      steamInstallPathExists: Boolean(installPath && existsSync(installPath)),
+      screenshotEvidence,
+      screenshotEvidenceExists: Boolean(screenshotPath && existsSync(screenshotPath)),
       missing
     };
   });
