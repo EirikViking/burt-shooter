@@ -813,11 +813,8 @@ export class PlayScene {
     const rank = (newRank !== undefined) ? newRank : this.game.rankIndex;
     const rankTitle = this.game.getRankTitle ? this.game.getRankTitle(rank) : '';
 
-    // TASK 4: Audio - SFX first, then optional voice
+    // Keep rank-up feedback punchy without routine announcer chatter.
     AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
-    setTimeout(() => {
-      AudioManager.playVoice('mission_control_powerup', { cooldownMs: 3500, duckMs: 1900 });
-    }, 200);
 
     // TASK 4: Polished arcade animation
     this.createRankUpAnimation(rank, rankTitle);
@@ -2078,7 +2075,7 @@ export class PlayScene {
     if (this.game.lives <= 1 && this.lowLivesShownFor !== this.game.lives) {
       this.lowLivesShownFor = this.game.lives;
       this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, y: this.game.getHeight() * 0.3 });
-      AudioManager.playVoice('mission_control_life_low', { cooldownMs: 5000, duckMs: 2300 });
+      AudioManager.playVoice('mission_control_life_low', { cooldownMs: 18000, duckMs: 1800 });
     }
   }
 
@@ -2199,7 +2196,7 @@ export class PlayScene {
       maxWidth: this.game.getWidth() * (compactHud ? 0.84 : 0.64)
     });
     AudioManager.playSfx('powerup', { force: true, volume: 0.78, minIntervalMs: 250 });
-    AudioManager.playVoice('mission_control_life_low', { cooldownMs: 5000, duckMs: 2400 });
+    AudioManager.playVoice('mission_control_life_low', { cooldownMs: 18000, duckMs: 1800 });
     if (this.screenShake) this.screenShake.shake(8);
     return true;
   }
@@ -2306,7 +2303,7 @@ export class PlayScene {
       this.game.addScore(bonusScore);
       AudioManager.playSfx('shield', { force: true, volume: 0.58, minIntervalMs: 120 });
       AudioManager.playSfx('powerup', { volume: 0.42, minIntervalMs: 120 });
-      AudioManager.playVoice('mission_control_tractor_hijack', { force: true, cooldownMs: 10000, duckMs: 1450 });
+      AudioManager.playVoice('mission_control_tractor_hijack', { cooldownMs: 26000, duckMs: 1300 });
       this.screenShake?.shake(width < 620 ? 5 : 8, 16);
     } else {
       AudioManager.playSfx('forceField', { volume: 0.32, minIntervalMs: 350 });
@@ -3310,7 +3307,6 @@ export class PlayScene {
       const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
       this.enqueueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
       AudioManager.playSfx('combo_breakout', { force: true, volume: 0.82 });
-      AudioManager.playVoice('mission_control_combo', { cooldownMs: 9000, duckMs: 1100, duckFactor: 0.46, volume: 0.8 });
       if (this.particleManager && this.player) {
         this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
       }

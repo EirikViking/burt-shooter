@@ -494,19 +494,19 @@ export class Enemy {
 
     // Choose dive pattern randomly for variety
     const diveType = Math.random();
-    let cp, end, duration = 1500;
+    let cp, end, duration = 1780;
 
     if (preferredDive === 'chain' || preferredDive === 'feint') {
       const side = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
       const feint = preferredDive === 'feint';
       end = { x: playerX + side * (feint ? 210 : 90), y: 730 };
       cp = { x: this.x + side * (feint ? 260 : 150), y: playerY - (feint ? 170 : 40) };
-      duration = feint ? 980 : 1320;
+      duration = feint ? 1280 : 1680;
     } else if (preferredDive === 'sweep') {
       const side = this.waveRole === 'left_flank' ? 1 : -1;
       end = { x: playerX + side * 190, y: 720 };
       cp = { x: this.waveCenterX + side * 330, y: playerY + 20 };
-      duration = 1450;
+      duration = 1820;
     } else if (diveType < 0.4) {
       // Standard dive (40%)
       end = { x: playerX, y: 700 };
@@ -516,18 +516,18 @@ export class Enemy {
       const side = this.x < playerX ? -1 : 1;
       end = { x: playerX + side * 150, y: 700 };
       cp = { x: this.x + side * 300, y: playerY };
-      duration = 1800; // Slower for more dramatic curve
+      duration = 2180;
     } else if (diveType < 0.8) {
       // Flanking dive (20%) - comes from side
       const flankSide = Math.random() < 0.5 ? -1 : 1;
       end = { x: flankSide * 100, y: 700 };
       cp = { x: playerX + flankSide * 250, y: playerY - 50 };
-      duration = 1600;
+      duration = 1980;
     } else {
       // Kamikaze dive (20%) - straight at player then down
       end = { x: playerX, y: 750 };
       cp = { x: playerX, y: playerY + 100 };
-      duration = 1200; // Faster!
+      duration = 1560;
     }
 
     this.diveCurve = {
@@ -586,7 +586,7 @@ export class Enemy {
             swayX += Math.sin(phase * 1.4) * 14;
           }
         }
-        const tacticalWave = this.moveTimer * 0.03 + this.tacticalPhase;
+    const tacticalWave = this.moveTimer * 0.022 + this.tacticalPhase;
         const side = this.waveRole === 'left_flank' ? -1 : this.waveRole === 'right_flank' ? 1 : (this.formationX < screenW / 2 ? -1 : 1);
         if (this.tacticalMoveStyle === 'sweep') {
           swayX += Math.sin(tacticalWave * 0.85) * 34;
@@ -762,7 +762,7 @@ export class Enemy {
 
   shoot(playerX, playerY) {
     // Higher fire rate during Dive
-    const delayMult = (this.state === 'DIVE') ? (this.level <= 1 ? 0.6 : 0.3) : 1.0;
+    const delayMult = (this.state === 'DIVE') ? (this.level <= 1 ? 0.78 : 0.52) : 1.0;
     this.shootCooldown = this.shootDelay * delayMult;
 
     const dx = playerX - this.x;

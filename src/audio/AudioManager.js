@@ -955,10 +955,10 @@ class AudioController {
 
   playPowerupVoice() {
     return this.playVoice('mission_control_powerup', {
-      cooldownMs: 4800,
-      duckMs: 950,
-      duckFactor: 0.42,
-      volume: 0.82
+      cooldownMs: 28000,
+      duckMs: 900,
+      duckFactor: 0.52,
+      volume: 0.72
     });
   }
 

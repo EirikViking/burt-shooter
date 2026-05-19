@@ -19,7 +19,7 @@ const WAVE_TACTICS = [
     move: 'sweep',
     shot: 'sweep',
     volley: 'staggered',
-    fireScalar: 1.05,
+    fireScalar: 1.12,
     fireDelayMult: 1.08,
     diveBias: 0.9,
     entrySpeed: 0.88
@@ -30,7 +30,7 @@ const WAVE_TACTICS = [
     move: 'pincer',
     shot: 'crossfire',
     volley: 'crossfire',
-    fireScalar: 1.1,
+    fireScalar: 1.16,
     fireDelayMult: 1.02,
     diveBias: 1.15,
     entrySpeed: 0.95
@@ -41,7 +41,7 @@ const WAVE_TACTICS = [
     move: 'chain',
     shot: 'burst_pair',
     volley: 'staggered',
-    fireScalar: 0.82,
+    fireScalar: 0.9,
     fireDelayMult: 1.18,
     diveBias: 2.6,
     forcedDive: true,
@@ -53,7 +53,7 @@ const WAVE_TACTICS = [
     move: 'pulse',
     shot: 'net',
     volley: 'pulse',
-    fireScalar: 1.16,
+    fireScalar: 1.22,
     fireDelayMult: 1.0,
     diveBias: 0.55,
     entrySpeed: 1.02
@@ -64,7 +64,7 @@ const WAVE_TACTICS = [
     move: 'orbit',
     shot: 'fan',
     volley: 'staggered',
-    fireScalar: 0.95,
+    fireScalar: 1.02,
     fireDelayMult: 1.12,
     diveBias: 0.72,
     entrySpeed: 1.06
@@ -75,7 +75,7 @@ const WAVE_TACTICS = [
     move: 'needle',
     shot: 'needle',
     volley: 'staggered',
-    fireScalar: 0.86,
+    fireScalar: 0.94,
     fireDelayMult: 1.22,
     diveBias: 0.7,
     entrySpeed: 1.0
@@ -86,7 +86,7 @@ const WAVE_TACTICS = [
     move: 'weave_wall',
     shot: 'fan',
     volley: 'pulse',
-    fireScalar: 0.98,
+    fireScalar: 1.04,
     fireDelayMult: 1.08,
     diveBias: 0.82,
     entrySpeed: 0.92
@@ -97,7 +97,7 @@ const WAVE_TACTICS = [
     move: 'feint',
     shot: 'burst_pair',
     volley: 'crossfire',
-    fireScalar: 0.9,
+    fireScalar: 0.98,
     fireDelayMult: 1.14,
     diveBias: 1.9,
     forcedDive: true,
@@ -109,7 +109,7 @@ const WAVE_TACTICS = [
     move: 'split_sweep',
     shot: 'sweep',
     volley: 'staggered',
-    fireScalar: 1.0,
+    fireScalar: 1.08,
     fireDelayMult: 1.05,
     diveBias: 1.05,
     entrySpeed: 0.84
@@ -120,7 +120,7 @@ const WAVE_TACTICS = [
     move: 'ambush',
     shot: 'net',
     volley: 'pulse',
-    fireScalar: 1.04,
+    fireScalar: 1.12,
     fireDelayMult: 1.1,
     diveBias: 1.2,
     entrySpeed: 0.98
@@ -228,7 +228,9 @@ export class EnemyManager {
       console.log(`[IntroVoice] play requested source=EnemyManager level=${level}`);
       AudioManager.playSfx('ui_open');
       const briefing = level === 1 ? 'mission_control_launch' : 'mission_control_level_start';
-      setTimeout(() => AudioManager.playVoice(briefing, { cooldownMs: 2300, duckMs: 2400 }), 500);
+      if (level === 1 || level % 5 === 0) {
+        setTimeout(() => AudioManager.playVoice(briefing, { cooldownMs: 18000, duckMs: 1700 }), 500);
+      }
       this.voiceHistory[level] = true;
     } else {
       console.log(`[IntroVoice] suppressed duplicate for level=${level}`);
@@ -502,7 +504,6 @@ export class EnemyManager {
           this.waveBriefingAnnounced = false;
           this.spawnWave(config);
           this.state = 'WAVE_ACTIVE';
-          AudioManager.playVoice('mission_control_level_start', { cooldownMs: 2400, duckMs: 1900 });
         }
         break;
 
@@ -521,7 +522,7 @@ export class EnemyManager {
         if (this.bossGateTimer > bossGateMs && !this.bossSpawning) {
           this.logBossStatus('boss_gate_spawn');
           console.log(`[BossFlow] spawn boss level=${this.level}`);
-          AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 2500, duckMs: 2400 });
+          AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800 });
           this.bossSpawning = true;
           this.spawnBoss(this.level).then(() => {
             this.state = 'BOSS_ACTIVE';
@@ -567,7 +568,7 @@ export class EnemyManager {
             this.phase = 'COMPLETE';
             console.log(`[BossPhase] level=${this.level} phase=${this.phase} bossDefeated=true`);
             this.state = 'LEVEL_COMPLETE';
-            AudioManager.playVoice('mission_control_victory', { cooldownMs: 2600, duckMs: 2600 });
+            AudioManager.playVoice('mission_control_victory', { cooldownMs: 18000, duckMs: 1800 });
             return;
           }
         }
@@ -752,7 +753,7 @@ export class EnemyManager {
 
   spawnWave(config) {
     if (config.type === 'BOSS') {
-      AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 3200, duckMs: 2200 });
+      AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800 });
       this.spawnBoss(this.level); // Fire and forget
       return;
     }
@@ -1117,7 +1118,7 @@ export class EnemyManager {
       if (this.game.scenes.play) {
         this.game.scenes.play.showWaveBonusEffect(bonus, 'BONUS DRONE RAID CLEAR!');
       }
-      AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 4200, duckMs: 1500 });
+      AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 30000, duckMs: 1300 });
     } else {
       // Normal Bonus
       const bonus = 500 * clearedWaveNumber;
@@ -1136,7 +1137,6 @@ export class EnemyManager {
           subtitle: `${nextLabel}${repairLabel}`
         });
       }
-      AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 2600, duckMs: 2200 });
     }
 
     this.maybeSpawnHijacker({
@@ -1261,7 +1261,7 @@ export class EnemyManager {
     this.container.addChild(this.hijacker.sprite);
 
     // Play spawn audio
-    AudioManager.playVoice('mission_control_hijacker', { cooldownMs: 6500, duckMs: 1600 });
+    AudioManager.playVoice('mission_control_hijacker', { cooldownMs: 24000, duckMs: 1500 });
 
     // Show toast
     if (this.game.scenes.play) {
