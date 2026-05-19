@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-05-19T03:47:59.499Z",
+  "generatedAt": "2026-05-19T20:01:04.473Z",
   "baseUrl": "http://127.0.0.1:4273",
   "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-screenshots\\draft-2026-05-17-current",
   "build": {
-    "version": "v2026-05-19_05-32-09",
-    "timestamp": "2026-05-19T03:32:09.776Z"
+    "version": "v2026-05-19_21-30-12",
+    "timestamp": "2026-05-19T19:30:12.699Z"
   },
   "viewport": {
     "width": 1280,
@@ -112,9 +112,9 @@
       "width": 1280,
       "height": 720,
       "scene": "play",
-      "level": 1,
-      "wave": 3,
-      "audioContext": "victory"
+      "level": 2,
+      "wave": 1,
+      "audioContext": "gameplay"
     },
     {
       "file": "10-game-over.png",
@@ -125,7 +125,7 @@
       "scene": "gameOver",
       "level": 1,
       "wave": 1,
-      "audioContext": "gameover"
+      "audioContext": "victory"
     }
   ],
   "consoleEvents": [],

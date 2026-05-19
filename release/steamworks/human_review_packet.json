@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-05-19T04:05:33.239Z",
+  "generatedAt": "2026-05-19T20:08:06.077Z",
   "status": "ready_for_human_review",
   "build": {
-    "version": "v2026-05-19_05-32-09",
-    "timestamp": "2026-05-19T03:32:09.776Z"
+    "version": "v2026-05-19_21-30-12",
+    "timestamp": "2026-05-19T19:30:12.699Z"
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
-    "passed": 18,
-    "failed": 5,
-    "hardFailures": 2
+    "passed": 20,
+    "failed": 3,
+    "hardFailures": 0
   },
   "approval": {
     "path": "docs/reviews/2026-05-17-human-release-approval.md",
@@ -38,12 +38,12 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "exists": true,
-          "bytes": 7938329
+          "bytes": 8262663
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "exists": true,
-          "bytes": 2098
+          "bytes": 2170
         },
         {
           "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
@@ -86,17 +86,17 @@
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
           "exists": true,
-          "bytes": 9282514
+          "bytes": 10549905
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "exists": true,
-          "bytes": 517883
+          "bytes": 498594
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "exists": true,
-          "bytes": 2539
+          "bytes": 2540
         }
       ],
       "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."
@@ -110,17 +110,17 @@
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
           "exists": true,
-          "bytes": 5236
+          "bytes": 5292
         },
         {
           "path": "docs/reviews/audio-mix-audit-2026-05-17.json",
           "exists": true,
-          "bytes": 73800
+          "bytes": 82537
         },
         {
           "path": "docs/audio-pipeline.md",
           "exists": true,
-          "bytes": 4252
+          "bytes": 3900
         }
       ],
       "prompt": "Listen on headphones or speakers through menu, intro narration, combat, powerups, boss, victory, and game over."
@@ -163,12 +163,12 @@
         {
           "path": "release/provenance/asset_provenance_manifest.json",
           "exists": true,
-          "bytes": 6004
+          "bytes": 6032
         },
         {
           "path": "release/provenance/asset_provenance_report.json",
           "exists": true,
-          "bytes": 1269
+          "bytes": 1274
         }
       ],
       "prompt": "Review generated and third-party art/audio provenance, names, jokes, and store materials. Only a human can mark legal approval."

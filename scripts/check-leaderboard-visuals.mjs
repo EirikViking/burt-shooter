@@ -76,7 +76,7 @@ function findChrome() {
 
 function seededScores() {
   return Array.from({ length: 10 }, (_, index) => ({
-    name: ['VIKING CAPTAIN', 'VOIDMAN PRIME', 'KURT SIGNAL', 'PANDEMIC ACE', 'VOIDVIKING', 'PILOT41', 'LOVEYOU', 'SCOT', 'PILOT35', 'PILOT37'][index],
+    name: ['NOVA ACE', 'ORBIT QUEEN', 'LASER PILOT', 'STAR RUNNER', 'SWARM BREAKER', 'PILOT41', 'COMBO ROYAL', 'SKY VECTOR', 'PILOT35', 'PILOT37'][index],
     score: 240000 - index * 17321,
     level: 12 - Math.floor(index / 2),
     rank_index: Math.max(0, 12 - index)

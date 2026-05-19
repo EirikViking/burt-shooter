@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T19:38:28.653Z",
+  "generatedAt": "2026-05-19T20:10:02.045Z",
   "status": "passed",
   "currentBuild": {
     "version": "v2026-05-19_21-30-12",
@@ -9,6 +9,13 @@
   "versionChecks": [
     {
       "url": "https://novaswarm.tinyfoundry.app/version.json",
+      "ok": true,
+      "status": 200,
+      "version": "v2026-05-19_21-30-12",
+      "timestamp": "2026-05-19T19:30:12.699Z"
+    },
+    {
+      "url": "https://burt.tinyfoundry.app/version.json",
       "ok": true,
       "status": 200,
       "version": "v2026-05-19_21-30-12",

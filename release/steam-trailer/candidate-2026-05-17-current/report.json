@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-19T04:05:17.083Z",
+  "generatedAt": "2026-05-19T20:04:30.920Z",
   "status": "passed",
   "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-audio-draft.mp4",
   "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\nova-swarm-steam-trailer-candidate.mp4",
   "build": {
-    "version": "v2026-05-19_05-32-09",
-    "timestamp": "2026-05-19T03:32:09.776Z"
+    "version": "v2026-05-19_21-30-12",
+    "timestamp": "2026-05-19T19:30:12.699Z"
   },
   "opening": "hijacker_and_boss_first",
   "firstTenSeconds": [
@@ -43,22 +43,22 @@
         "width": 1280,
         "height": 720,
         "r_frame_rate": "25/1",
-        "duration": "38.407969"
+        "duration": "38.080000"
       },
       {
         "codec_name": "aac",
         "r_frame_rate": "0/0",
-        "duration": "38.429333"
+        "duration": "38.101333"
       }
     ],
     "format": {
-      "duration": "38.429333",
-      "size": "9282514",
-      "bit_rate": "1932380"
+      "duration": "38.101333",
+      "size": "10549905",
+      "bit_rate": "2215125"
     }
   },
   "volume": {
-    "meanVolumeDb": "-22.0",
-    "maxVolumeDb": "-1.8"
+    "meanVolumeDb": "-21.3",
+    "maxVolumeDb": "-2.6"
   }
 }

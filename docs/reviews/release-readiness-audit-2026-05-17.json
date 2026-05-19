@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T04:05:45.041Z",
+  "generatedAt": "2026-05-19T20:10:16.244Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 20,
@@ -24,7 +24,7 @@
         {
           "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
           "ok": true,
-          "bytes": 5236
+          "bytes": 5292
         },
         {
           "path": "docs/asset-provenance.md",
@@ -34,7 +34,7 @@
         {
           "path": "docs/steam-desktop-package.md",
           "ok": true,
-          "bytes": 4507
+          "bytes": 4517
         },
         {
           "path": "docs/steam-store-handoff.md",
@@ -84,42 +84,42 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "ok": true,
-          "bytes": 2098
+          "bytes": 2170
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "ok": true,
-          "bytes": 7938329
+          "bytes": 8262663
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2521
+          "bytes": 2516
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json",
           "ok": true,
-          "bytes": 8077
+          "bytes": 8078
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2539
+          "bytes": 2540
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "ok": true,
-          "bytes": 517883
+          "bytes": 498594
         },
         {
           "path": "release/provenance/asset_provenance_manifest.json",
           "ok": true,
-          "bytes": 6004
+          "bytes": 6032
         },
         {
           "path": "release/provenance/asset_provenance_report.json",
           "ok": true,
-          "bytes": 1269
+          "bytes": 1274
         },
         {
           "path": "release/steamworks/desktop_package_review_report.json",
@@ -134,7 +134,7 @@
         {
           "path": "release/steamworks/live_deployment_report.json",
           "ok": true,
-          "bytes": 1710
+          "bytes": 1922
         },
         {
           "path": "release/steamworks/full_rc_verification_report.json",
@@ -144,7 +144,7 @@
         {
           "path": "release/steamworks/human_review_packet.json",
           "ok": true,
-          "bytes": 6743
+          "bytes": 6744
         },
         {
           "path": "release/steamworks/human_review_packet.md",
@@ -164,12 +164,12 @@
         {
           "path": "release/steamworks/release_handoff_packet.json",
           "ok": true,
-          "bytes": 7015
+          "bytes": 6930
         },
         {
           "path": "release/steamworks/release_handoff_packet.md",
           "ok": true,
-          "bytes": 4364
+          "bytes": 4288
         },
         {
           "path": "release/steamworks/store_metadata_draft.json",
@@ -210,8 +210,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1778,
-      "coveredCount": 1778,
+      "assetCount": 1848,
+      "coveredCount": 1848,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []
@@ -234,8 +234,8 @@
       "name": "steam_screenshot_capture_report_clean",
       "ok": true,
       "shotCount": 10,
-      "expectedBuild": "v2026-05-19_05-32-09",
-      "actualBuild": "v2026-05-19_05-32-09",
+      "expectedBuild": "v2026-05-19_21-30-12",
+      "actualBuild": "v2026-05-19_21-30-12",
       "consoleEvents": [],
       "pageErrors": [],
       "badResponses": []
@@ -299,8 +299,8 @@
       "name": "steam_trailer_visual_report_clean",
       "ok": true,
       "beatCount": 10,
-      "expectedBuild": "v2026-05-19_05-32-09",
-      "actualBuild": "v2026-05-19_05-32-09",
+      "expectedBuild": "v2026-05-19_21-30-12",
+      "actualBuild": "v2026-05-19_21-30-12",
       "consoleEvents": [],
       "pageErrors": [],
       "badResponses": []
@@ -308,9 +308,9 @@
     {
       "name": "steam_trailer_audio_mix_report_present",
       "ok": true,
-      "expectedBuild": "v2026-05-19_05-32-09",
-      "actualBuild": "v2026-05-19_05-32-09",
-      "duration": "34.200000",
+      "expectedBuild": "v2026-05-19_21-30-12",
+      "actualBuild": "v2026-05-19_21-30-12",
+      "duration": "33.880000",
       "visualTrimSeconds": 2.6,
       "streams": [
         {
@@ -318,12 +318,12 @@
           "width": 1280,
           "height": 720,
           "r_frame_rate": "25/1",
-          "duration": "34.200000"
+          "duration": "33.880000"
         },
         {
           "codec_name": "aac",
           "r_frame_rate": "0/0",
-          "duration": "34.200000"
+          "duration": "33.877000"
         }
       ]
     },
@@ -331,9 +331,9 @@
       "name": "steam_trailer_editorial_candidate_clean",
       "ok": true,
       "status": "passed",
-      "expectedBuild": "v2026-05-19_05-32-09",
-      "actualBuild": "v2026-05-19_05-32-09",
-      "duration": "38.429333",
+      "expectedBuild": "v2026-05-19_21-30-12",
+      "actualBuild": "v2026-05-19_21-30-12",
+      "duration": "38.101333",
       "opening": "hijacker_and_boss_first",
       "firstTenSeconds": [
         "runtime hijacker tractor-beam pressure and Tractor Hijack payoff",
@@ -349,8 +349,8 @@
         }
       ],
       "volume": {
-        "meanVolumeDb": "-22.0",
-        "maxVolumeDb": "-1.8"
+        "meanVolumeDb": "-21.3",
+        "maxVolumeDb": "-2.6"
       },
       "contactSheet": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\candidate-contact-sheet.png"
     },
@@ -358,18 +358,18 @@
       "name": "desktop_package_report_clean",
       "ok": true,
       "status": "passed",
-      "expectedBuild": "v2026-05-19_05-32-09",
-      "actualBuild": "v2026-05-19_05-32-09",
+      "expectedBuild": "v2026-05-19_21-30-12",
+      "actualBuild": "v2026-05-19_21-30-12",
       "desktopPayload": {
         "path": "release/desktop/win-unpacked/Nova Swarm.exe",
         "sizeBytes": 226666496,
-        "modifiedAt": "2026-05-19T03:50:58.721Z"
+        "modifiedAt": "2026-05-19T19:56:42.192Z"
       },
       "latestElectronSmoke": {
-        "reportPath": "test-results/electron-smoke-2026-05-19T03-51-07-041Z/report.json",
-        "screenshotPath": "test-results/electron-smoke-2026-05-19T03-51-07-041Z/01-electron-menu.png",
+        "reportPath": "test-results/electron-smoke-2026-05-19T19-57-05-650Z/report.json",
+        "screenshotPath": "test-results/electron-smoke-2026-05-19T19-57-05-650Z/01-electron-menu.png",
         "status": "passed",
-        "build": "v2026-05-19_05-32-09",
+        "build": "v2026-05-19_21-30-12",
         "title": "Nova Swarm - Arcade Patrol",
         "scene": "menu",
         "introTitle": null,
@@ -387,10 +387,10 @@
         "consoleEvents": []
       },
       "latestPackagedExeSmoke": {
-        "reportPath": "test-results/packaged-exe-smoke-2026-05-19T03-51-10-849Z/report.json",
-        "screenshotPath": "test-results/packaged-exe-smoke-2026-05-19T03-51-10-849Z/01-electron-menu.png",
+        "reportPath": "test-results/packaged-exe-smoke-2026-05-19T19-57-24-877Z/report.json",
+        "screenshotPath": "test-results/packaged-exe-smoke-2026-05-19T19-57-24-877Z/01-electron-menu.png",
         "status": "passed",
-        "build": "v2026-05-19_05-32-09",
+        "build": "v2026-05-19_21-30-12",
         "title": "Nova Swarm - Arcade Patrol",
         "scene": "menu",
         "introTitle": null,
@@ -408,16 +408,16 @@
         "consoleEvents": []
       },
       "latestPackagedControlsSmoke": {
-        "reportPath": "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/report.json",
+        "reportPath": "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/report.json",
         "screenshotPaths": [
-          "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/00-control-start.png",
-          "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/01-keyboard-run.png",
-          "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/02-keyboard-pause.png",
-          "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/03-gamepad-run.png",
-          "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/04-gamepad-pause.png"
+          "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/00-control-start.png",
+          "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/01-keyboard-run.png",
+          "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/02-keyboard-pause.png",
+          "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/03-gamepad-run.png",
+          "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/04-gamepad-pause.png"
         ],
         "status": "passed",
-        "build": "v2026-05-19_05-32-09",
+        "build": "v2026-05-19_21-30-12",
         "checks": {
           "keyboardMovement": true,
           "keyboardFire": true,
@@ -435,43 +435,50 @@
     {
       "name": "steam_payload_manifest_current",
       "ok": true,
-      "expectedBuild": "v2026-05-19_05-32-09",
-      "actualBuild": "v2026-05-19_05-32-09",
+      "expectedBuild": "v2026-05-19_21-30-12",
+      "actualBuild": "v2026-05-19_21-30-12",
       "contentRoot": "release/desktop/win-unpacked",
       "fileCount": 74,
       "actualFileCount": 74,
-      "totalBytes": 628266041,
-      "actualTotalBytes": 628266041,
+      "totalBytes": 658636448,
+      "actualTotalBytes": 658636448,
       "executable": {
         "path": "Nova Swarm.exe",
         "bytes": 226666496,
-        "sha256": "084a2cb59a9af34c45fc77e08768e3f11352388b6dbc50c58b639b06e1b5e087",
-        "modifiedAt": "2026-05-19T03:50:58.721Z"
+        "sha256": "c38ec03cc6276f8217f477e2a4eb26ee818450f665fdd2c691c299d7c55735c2",
+        "modifiedAt": "2026-05-19T19:56:42.192Z"
       },
-      "manifestHash": "c4fbab8d939e3d65099deacb1e1ab27fc1da89b1599c508a01a630e816963583",
-      "actualManifestHash": "c4fbab8d939e3d65099deacb1e1ab27fc1da89b1599c508a01a630e816963583",
+      "manifestHash": "c470335024ac2908086b50241997e4abc104c56d71c161682862333b5b82c3cf",
+      "actualManifestHash": "c470335024ac2908086b50241997e4abc104c56d71c161682862333b5b82c3cf",
       "errors": []
     },
     {
       "name": "live_deployment_report_clean",
       "ok": true,
       "status": "passed",
-      "expectedBuild": "v2026-05-19_05-32-09",
-      "liveUrl": "https://burt.tinyfoundry.app",
+      "expectedBuild": "v2026-05-19_21-30-12",
+      "liveUrl": "https://novaswarm.tinyfoundry.app",
       "versionChecks": [
+        {
+          "url": "https://novaswarm.tinyfoundry.app/version.json",
+          "ok": true,
+          "status": 200,
+          "version": "v2026-05-19_21-30-12",
+          "timestamp": "2026-05-19T19:30:12.699Z"
+        },
         {
           "url": "https://burt.tinyfoundry.app/version.json",
           "ok": true,
           "status": 200,
-          "version": "v2026-05-19_05-32-09",
-          "timestamp": "2026-05-19T03:32:09.776Z"
+          "version": "v2026-05-19_21-30-12",
+          "timestamp": "2026-05-19T19:30:12.699Z"
         }
       ],
       "latestLiveSmoke": {
-        "reportPath": "test-results/smoke-2026-05-19T03-45-21-670Z/report.json",
-        "baseUrl": "https://burt.tinyfoundry.app",
+        "reportPath": "test-results/smoke-2026-05-19T19-36-22-593Z/report.json",
+        "baseUrl": "https://novaswarm.tinyfoundry.app",
         "status": "passed",
-        "build": "v2026-05-19_05-32-09",
+        "build": "v2026-05-19_21-30-12",
         "screenshots": [
           {
             "file": "01-menu.png",
@@ -533,7 +540,7 @@
       "name": "full_rc_verification_report_clean",
       "ok": true,
       "status": "passed",
-      "expectedBuild": "v2026-05-19_05-32-09",
+      "expectedBuild": "v2026-05-19_21-30-12",
       "latestFullRc": {
         "reportPath": "test-results/steam-rc-verify-2026-05-19T03-49-43-845Z/report.json",
         "generatedAt": "2026-05-19T04:03:21.089Z",
@@ -630,9 +637,9 @@
         }
       },
       "latestLocalSmoke": {
-        "reportPath": "test-results/smoke-2026-05-19T03-52-08-051Z/report.json",
+        "reportPath": "test-results/smoke-2026-05-19T20-06-41-723Z/report.json",
         "baseUrl": "http://127.0.0.1:4173",
-        "build": "v2026-05-19_05-32-09",
+        "build": "v2026-05-19_21-30-12",
         "status": "passed",
         "console": {
           "warningsOrErrors": 0,
@@ -676,8 +683,8 @@
       "name": "human_review_packet_current",
       "ok": true,
       "status": "ready_for_human_review",
-      "expectedBuild": "v2026-05-19_05-32-09",
-      "actualBuild": "v2026-05-19_05-32-09",
+      "expectedBuild": "v2026-05-19_21-30-12",
+      "actualBuild": "v2026-05-19_21-30-12",
       "approval": {
         "path": "docs/reviews/2026-05-17-human-release-approval.md",
         "exists": true,
@@ -705,12 +712,12 @@
             {
               "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
               "exists": true,
-              "bytes": 7938329
+              "bytes": 8262663
             },
             {
               "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
               "exists": true,
-              "bytes": 2098
+              "bytes": 2170
             },
             {
               "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
@@ -753,17 +760,17 @@
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
               "exists": true,
-              "bytes": 9282514
+              "bytes": 10549905
             },
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
               "exists": true,
-              "bytes": 517883
+              "bytes": 498594
             },
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
               "exists": true,
-              "bytes": 2539
+              "bytes": 2540
             }
           ],
           "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."
@@ -777,17 +784,17 @@
             {
               "path": "docs/reviews/2026-05-17-audio-mix-audit.md",
               "exists": true,
-              "bytes": 5236
+              "bytes": 5292
             },
             {
               "path": "docs/reviews/audio-mix-audit-2026-05-17.json",
               "exists": true,
-              "bytes": 73800
+              "bytes": 82537
             },
             {
               "path": "docs/audio-pipeline.md",
               "exists": true,
-              "bytes": 4252
+              "bytes": 3900
             }
           ],
           "prompt": "Listen on headphones or speakers through menu, intro narration, combat, powerups, boss, victory, and game over."
@@ -830,12 +837,12 @@
             {
               "path": "release/provenance/asset_provenance_manifest.json",
               "exists": true,
-              "bytes": 6004
+              "bytes": 6032
             },
             {
               "path": "release/provenance/asset_provenance_report.json",
               "exists": true,
-              "bytes": 1269
+              "bytes": 1274
             }
           ],
           "prompt": "Review generated and third-party art/audio provenance, names, jokes, and store materials. Only a human can mark legal approval."
@@ -870,8 +877,8 @@
       "name": "steam_client_preflight_packet_current",
       "ok": true,
       "status": "ready_for_steam_upload_and_client_validation",
-      "expectedBuild": "v2026-05-19_05-32-09",
-      "actualBuild": "v2026-05-19_05-32-09",
+      "expectedBuild": "v2026-05-19_21-30-12",
+      "actualBuild": "v2026-05-19_21-30-12",
       "missingChecks": [],
       "clientValidation": {
         "template": {
@@ -898,16 +905,16 @@
         "stillRequired": true
       },
       "packagedControlsSmoke": {
-        "reportPath": "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/report.json",
+        "reportPath": "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/report.json",
         "screenshotPaths": [
-          "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/00-control-start.png",
-          "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/01-keyboard-run.png",
-          "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/02-keyboard-pause.png",
-          "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/03-gamepad-run.png",
-          "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/04-gamepad-pause.png"
+          "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/00-control-start.png",
+          "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/01-keyboard-run.png",
+          "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/02-keyboard-pause.png",
+          "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/03-gamepad-run.png",
+          "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/04-gamepad-pause.png"
         ],
         "status": "passed",
-        "build": "v2026-05-19_05-32-09",
+        "build": "v2026-05-19_21-30-12",
         "checks": {
           "keyboardMovement": true,
           "keyboardFire": true,
@@ -925,12 +932,10 @@
     {
       "name": "steam_release_handoff_packet_current",
       "ok": true,
-      "expectedBuild": "v2026-05-19_05-32-09",
-      "actualBuild": "v2026-05-19_05-32-09",
+      "expectedBuild": "v2026-05-19_21-30-12",
+      "actualBuild": "v2026-05-19_21-30-12",
       "staleEvidence": [],
       "failedChecks": [
-        "steam_trailer_visual_report_clean",
-        "steam_trailer_audio_mix_report_present",
         "steamworks_ids_configured",
         "steam_client_validation_evidence",
         "human_release_approvals_recorded"
@@ -966,7 +971,7 @@
       "name": "human_release_approvals_recorded",
       "ok": false,
       "path": "docs/reviews/2026-05-17-human-release-approval.md",
-      "expectedBuild": "v2026-05-19_05-32-09",
+      "expectedBuild": "v2026-05-19_21-30-12",
       "approvedBuild": null,
       "buildMatches": false,
       "missing": [
