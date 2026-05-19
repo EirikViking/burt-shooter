@@ -279,7 +279,21 @@ function buildGameTextState(game) {
       dangerDodgeCount: playScene.dangerDodgeCount || 0,
       dangerDodgeTimerMs: Math.max(0, Math.round(playScene.dangerDodgeTimerMs || 0)),
       bestDangerDodgeStreak: playScene.bestDangerDodgeStreak || 0,
-      lastDangerDodgeScore: playScene.lastDangerDodgeScore || 0
+      lastDangerDodgeScore: playScene.lastDangerDodgeScore || 0,
+      grazeBreakReady: Boolean(playScene.grazeBreakReady && Date.now() <= (playScene.grazeBreakExpiresAt || 0)),
+      grazeBreakReadyMs: Math.max(0, Math.round((playScene.grazeBreakExpiresAt || 0) - Date.now())),
+      grazeBreakBullets: playerBullets.filter(bullet => bullet?.active !== false && bullet.isGrazeBreaker).length,
+      lastGrazeBreak: playScene.lastGrazeBreak ? {
+        triggered: Boolean(playScene.lastGrazeBreak.triggered),
+        bulletsCleared: playScene.lastGrazeBreak.bulletsCleared || 0,
+        enemiesHit: playScene.lastGrazeBreak.enemiesHit || 0,
+        enemiesDestroyed: playScene.lastGrazeBreak.enemiesDestroyed || 0,
+        bonusScore: playScene.lastGrazeBreak.bonusScore || 0,
+        radius: playScene.lastGrazeBreak.radius || 0,
+        remainingMs: Math.max(0, Math.round(
+          (playScene.lastGrazeBreak.startedAt + playScene.lastGrazeBreak.durationMs) - Date.now()
+        ))
+      } : null
     } : null,
     wave: enemyManager ? {
       phase: enemyManager.phase || null,

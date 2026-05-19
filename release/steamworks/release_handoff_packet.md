@@ -1,9 +1,9 @@
 # Nova Swarm Steam Release Handoff Packet
 
-Generated: 2026-05-19T02:25:56.277Z
+Generated: 2026-05-19T03:27:46.971Z
 
-Build: `v2026-05-19_04-00-07`
-Build timestamp: `2026-05-19T02:00:07.789Z`
+Build: `v2026-05-19_05-06-23`
+Build timestamp: `2026-05-19T03:06:23.635Z`
 
 This packet summarizes the current release evidence for the final Steamworks/manual handoff. It is not a release approval.
 
@@ -41,9 +41,9 @@ Current blockers:
 | Present | Path | Bytes |
 | --- | --- | ---: |
 | yes | `release/desktop/win-unpacked/Nova Swarm.exe` | 226666496 |
-| yes | `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png` | 8891167 |
-| yes | `release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4` | 9092771 |
-| yes | `release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png` | 503503 |
+| yes | `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png` | 8888380 |
+| yes | `release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4` | 9203163 |
+| yes | `release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png` | 505440 |
 | yes | `release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png` | 3226184 |
 | yes | `release/steamworks/store_metadata_draft.json` | 4397 |
 | yes | `release/steamworks/steam_payload_manifest.json` | 15372 |

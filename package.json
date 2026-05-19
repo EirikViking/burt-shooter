@@ -16,6 +16,7 @@
     "check:debug-unranked": "node scripts/check-debug-run-unranked.mjs",
     "check:trait-hud": "node scripts/check-trait-hud.mjs",
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",
+    "check:graze-break": "node scripts/check-graze-break.mjs",
     "check:gameover-motivation": "node scripts/check-gameover-motivation.mjs",
     "check:leaderboard-split": "node scripts/check-leaderboard-split.mjs",
     "check:boss-telegraph": "node scripts/check-boss-telegraph.mjs",

@@ -240,9 +240,92 @@ async function showGameplay(page) {
   await addBeat(page, 'first_wave_lasers', 3200);
   await page.keyboard.up('ArrowRight');
   await page.keyboard.down('ArrowLeft');
+  await stageGrazeBreakPayoff(page);
   await addBeat(page, 'close_dodge_score_tease', 1700);
   await page.keyboard.up('ArrowLeft');
   await page.keyboard.up('Space');
+}
+
+async function stageGrazeBreakPayoff(page) {
+  await page.evaluate(async () => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const player = play?.player;
+    if (!game || !play || !player || !play.bulletManager) throw new Error('Missing play scene for trailer Graze Break');
+
+    player.x = game.getWidth() / 2;
+    player.y = game.getHeight() * 0.78;
+    player.invulnerable = true;
+    player.invulnerableTime = 12000;
+    if (player.sprite) {
+      player.sprite.x = player.x;
+      player.sprite.y = player.y;
+    }
+
+    const impactX = player.x;
+    const impactY = player.y - 170;
+    if (play.bulletManager) {
+      play.bulletManager.playerBullets.forEach((bullet) => {
+        bullet.active = false;
+        if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      });
+      play.bulletManager.enemyBullets.forEach((bullet) => {
+        bullet.active = false;
+        if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      });
+      play.bulletManager.playerBullets = [];
+      play.bulletManager.enemyBullets = [];
+    }
+
+    play.dangerDodgeCount = 0;
+    play.grazeBreakReady = false;
+    play.grazeBreakCooldownAt = 0;
+    const fakeBullet = { x: player.x + player.radius + 9, y: player.y, radius: 5, active: true };
+    for (let i = 0; i < 3; i += 1) {
+      play.nearMissCooldownAt = 0;
+      play.applyNearMiss(fakeBullet);
+      await new Promise((resolve) => setTimeout(resolve, 70));
+    }
+    play.grazeBreakReady = true;
+    play.grazeBreakExpiresAt = Date.now() + 5000;
+
+    player.shootCooldown = 0;
+    const playerBullets = player.shoot();
+    const charged = play.markGrazeBreakShot(playerBullets);
+    for (const bullet of playerBullets) play.bulletManager.addPlayerBullet(bullet);
+    if (charged) {
+      charged.x = impactX;
+      charged.y = impactY;
+      charged.vx = 0;
+      charged.vy = -0.2;
+      if (charged.sprite) {
+        charged.sprite.x = charged.x;
+        charged.sprite.y = charged.y;
+      }
+    }
+    for (let i = 0; i < 5; i += 1) {
+      play.bulletManager.enemyBullets.push({
+        x: impactX + (i - 2) * 34,
+        y: impactY + (i % 2) * 18,
+        vx: 0,
+        vy: 0.2,
+        radius: 6,
+        active: true
+      });
+    }
+    const targetBullet = play.bulletManager.enemyBullets.find((bullet) => bullet?.active !== false);
+    if (!charged) throw new Error('Trailer Graze Break staging could not mark a charged shot');
+    if (!targetBullet) throw new Error('Trailer Graze Break staging has no enemy bullet target');
+    const result = play.triggerGrazeBreak(charged, targetBullet);
+    if (!result?.triggered) {
+      throw new Error(`Trailer Graze Break staging did not trigger: charged=${Boolean(charged?.active)} target=${Boolean(targetBullet?.active)} ready=${Boolean(play.grazeBreakReady)}`);
+    }
+  });
+
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scoring?.lastGrazeBreak?.triggered === true;
+  }, null, { timeout: 5000 });
 }
 
 async function stageTractorHijackSetup(page) {

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-19T02:25:55.270Z",
+  "generatedAt": "2026-05-19T03:27:38.576Z",
   "status": "ready_for_human_review",
   "build": {
-    "version": "v2026-05-19_04-00-07",
-    "timestamp": "2026-05-19T02:00:07.789Z"
+    "version": "v2026-05-19_05-06-23",
+    "timestamp": "2026-05-19T03:06:23.635Z"
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
@@ -38,7 +38,7 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "exists": true,
-          "bytes": 8891167
+          "bytes": 8888380
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
@@ -86,12 +86,12 @@
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
           "exists": true,
-          "bytes": 9092771
+          "bytes": 9203163
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "exists": true,
-          "bytes": 503503
+          "bytes": 505440
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
@@ -182,7 +182,7 @@
         {
           "path": "release/steamworks/full_rc_verification_report.json",
           "exists": true,
-          "bytes": 3543
+          "bytes": 3535
         },
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",

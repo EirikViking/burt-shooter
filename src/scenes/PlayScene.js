@@ -148,6 +148,12 @@ export class PlayScene {
     this.dangerDodgeTimerMs = 0;
     this.bestDangerDodgeStreak = 0;
     this.lastDangerDodgeScore = 0;
+    this.grazeBreakReady = false;
+    this.grazeBreakArmedAt = 0;
+    this.grazeBreakExpiresAt = 0;
+    this.grazeBreakCooldownAt = 0;
+    this.grazeBreakToken = 0;
+    this.lastGrazeBreak = null;
     this.lastTraitImpactToastAt = 0;
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
@@ -572,6 +578,7 @@ export class PlayScene {
 
       this.updateComboTimers(delta);
       this.updateDangerDodgeTimer(delta);
+      this.updateGrazeBreakTimer();
       this.updateComboDisplay(delta);
 
       if (this.player?.synergyState?.type) {
@@ -626,6 +633,7 @@ export class PlayScene {
       if (firePressed && this.player && !this.introActive) {
         if (this.player.canShoot()) {
           const bullets = this.player.shoot();
+          this.markGrazeBreakShot(bullets);
           bullets.forEach(bullet => this.bulletManager.addPlayerBullet(bullet));
 
           // TASK 4: Shooting sound with health check
@@ -1276,13 +1284,17 @@ export class PlayScene {
       });
     }
 
-    // Point Defense: Player bullets vs enemy bullets
-    if (this.player.pointDefenseActive) {
+    // Point Defense and Graze Break: Player bullets vs enemy bullets
+    const hasGrazeBreaker = this.bulletManager.playerBullets.some(playerBullet =>
+      playerBullet?.active !== false && playerBullet.isGrazeBreaker
+    );
+    if (this.player.pointDefenseActive || hasGrazeBreaker) {
       this.bulletManager.playerBullets.forEach(playerBullet => {
         if (!playerBullet.active) return;
 
         this.bulletManager.enemyBullets.forEach(enemyBullet => {
           if (!enemyBullet.active) return;
+          if (!this.player.pointDefenseActive && !playerBullet.isGrazeBreaker) return;
 
           // Check collision between player bullet and enemy bullet
           const dx = playerBullet.x - enemyBullet.x;
@@ -1291,6 +1303,11 @@ export class PlayScene {
           const hitRadius = (playerBullet.radius || 4) + (enemyBullet.radius || 6);
 
           if (dist < hitRadius) {
+            if (playerBullet.isGrazeBreaker) {
+              this.triggerGrazeBreak(playerBullet, enemyBullet);
+              return;
+            }
+
             // Destroy both projectiles
             playerBullet.active = false;
             enemyBullet.active = false;
@@ -3060,6 +3077,146 @@ export class PlayScene {
     }
   }
 
+  updateGrazeBreakTimer() {
+    if (this.grazeBreakReady && Date.now() > this.grazeBreakExpiresAt) {
+      this.grazeBreakReady = false;
+    }
+  }
+
+  armGrazeBreak() {
+    const now = Date.now();
+    if (this.grazeBreakReady || now < this.grazeBreakCooldownAt) return false;
+
+    this.grazeBreakReady = true;
+    this.grazeBreakArmedAt = now;
+    this.grazeBreakExpiresAt = now + 6500;
+    this.grazeBreakCooldownAt = now + 2400;
+    this.showToast('GRAZE BREAK ARMED', {
+      fontSize: this.game.getWidth() < 620 ? 16 : 21,
+      fill: '#ff66ff',
+      stroke: '#130018',
+      strokeThickness: this.game.getWidth() < 620 ? 2 : 3,
+      slot: 'corner',
+      type: 'dangerDodge',
+      priority: 3,
+      duration: 950
+    });
+    AudioManager.playSfx('combo_tick', { force: true, volume: 0.62, minIntervalMs: 180 });
+    return true;
+  }
+
+  markGrazeBreakShot(bullets = []) {
+    if (!this.grazeBreakReady || Date.now() > this.grazeBreakExpiresAt || !Array.isArray(bullets) || !bullets.length) {
+      this.grazeBreakReady = false;
+      return null;
+    }
+
+    const eligible = bullets
+      .filter(bullet => bullet?.active !== false && bullet.isPlayer)
+      .sort((a, b) => Math.abs(a.vx || 0) - Math.abs(b.vx || 0))[0];
+    if (!eligible) return null;
+
+    this.grazeBreakToken += 1;
+    eligible.isGrazeBreaker = true;
+    eligible.grazeBreakToken = this.grazeBreakToken;
+    eligible.damage = Math.max(eligible.damage || 1, (eligible.damage || 1) * 1.18);
+    eligible.radius = Math.max(eligible.radius || 7, 11);
+    if (eligible.core) eligible.core.tint = 0xff66ff;
+    if (eligible.sprite) {
+      const ring = new PIXI.Graphics();
+      ring.circle(0, 0, eligible.radius + 9);
+      ring.stroke({ color: 0xff66ff, width: 3, alpha: 0.85 });
+      eligible.sprite.addChild(ring);
+    }
+    this.grazeBreakReady = false;
+    return eligible;
+  }
+
+  triggerGrazeBreak(playerBullet, enemyBullet) {
+    if (!playerBullet?.active || !enemyBullet?.active) return null;
+
+    const impactX = Number.isFinite(enemyBullet.x) ? enemyBullet.x : playerBullet.x;
+    const impactY = Number.isFinite(enemyBullet.y) ? enemyBullet.y : playerBullet.y;
+    const radius = Math.max(92, Math.min(150, this.game.getWidth() * 0.13));
+    const token = playerBullet.grazeBreakToken || 0;
+
+    playerBullet.active = false;
+    enemyBullet.active = false;
+    if (playerBullet.sprite?.parent) playerBullet.sprite.parent.removeChild(playerBullet.sprite);
+    if (enemyBullet.sprite?.parent) enemyBullet.sprite.parent.removeChild(enemyBullet.sprite);
+    this.bulletManager.playerBullets = this.bulletManager.playerBullets.filter(bullet => bullet?.active !== false);
+
+    const cleared = [{ x: Math.round(enemyBullet.x), y: Math.round(enemyBullet.y) }];
+    for (const bullet of this.bulletManager.enemyBullets || []) {
+      if (!bullet || bullet === enemyBullet || bullet.active === false) continue;
+      const dist = Math.hypot((bullet.x || 0) - impactX, (bullet.y || 0) - impactY);
+      if (dist > radius + (bullet.radius || 6)) continue;
+      bullet.active = false;
+      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      cleared.push({ x: Math.round(bullet.x), y: Math.round(bullet.y) });
+      this.particleManager?.createHitSpark(bullet.x, bullet.y, 0xff66ff);
+    }
+    this.bulletManager.enemyBullets = this.bulletManager.enemyBullets.filter(bullet => bullet?.active !== false);
+
+    let enemiesHit = 0;
+    let enemiesDestroyed = 0;
+    for (const enemy of this.enemyManager?.enemies || []) {
+      if (!enemy?.active || enemy.waitingForEntry || enemy.kind === 'boss') continue;
+      const dist = Math.hypot((enemy.x || 0) - impactX, (enemy.y || 0) - impactY);
+      if (dist > radius + (enemy.radius || 16)) continue;
+      enemiesHit += 1;
+      const destroyed = enemy.takeDamage(Math.max(1.25, Number(playerBullet.damage || 1) * 1.25));
+      this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xff66ff);
+      if (destroyed) {
+        enemiesDestroyed += 1;
+        const scoreAwarded = this.getComboScore(enemy.scoreValue);
+        this.game.addScore(scoreAwarded);
+        this.scorePopupManager?.addScorePopup(enemy.x, enemy.y, scoreAwarded);
+        this.onEnemyKilled(enemy);
+        this.particleManager?.createExplosion(enemy.x, enemy.y, 0xff66ff, 0.72);
+      }
+    }
+
+    const comboMult = Math.max(1, this.comboMultiplier || 1);
+    const bonusScore = Math.round((520 + cleared.length * 85 + enemiesHit * 160 + enemiesDestroyed * 220) * comboMult);
+    this.game.addScore(bonusScore);
+    this.scorePopupManager?.addScorePopup(impactX, impactY, bonusScore, {
+      comboEligible: false,
+      color: 0xff66ff
+    });
+    this.enqueueToast(`GRAZE BREAK +${bonusScore}`, {
+      fontSize: this.game.getWidth() < 620 ? 18 : 24,
+      fill: '#ff66ff',
+      stroke: '#140018',
+      strokeThickness: this.game.getWidth() < 620 ? 2 : 4,
+      slot: 'top',
+      type: 'dangerDodge',
+      priority: 4,
+      duration: 1200
+    });
+    this.triggerShockwave?.(impactX, impactY, 0xff66ff);
+    this.particleManager?.createNearMissEffect(impactX, impactY, Math.max(4, this.dangerDodgeCount + 2));
+    this.screenShake?.shake(this.game.getWidth() < 620 ? 5 : 8, 16);
+    AudioManager.playSfx('combo_breakout', { force: true, volume: 0.82, minIntervalMs: 220 });
+    AudioManager.playSfx('impactMetal', { volume: 0.34, minIntervalMs: 90 });
+
+    this.lastGrazeBreak = {
+      triggered: true,
+      startedAt: Date.now(),
+      durationMs: 950,
+      token,
+      x: Math.round(impactX),
+      y: Math.round(impactY),
+      radius: Math.round(radius),
+      bulletsCleared: cleared.length,
+      enemiesHit,
+      enemiesDestroyed,
+      bonusScore
+    };
+    this.grazeBreakCooldownAt = Date.now() + 5200;
+    return this.lastGrazeBreak;
+  }
+
   applyNearMiss(bullet) {
     const now = Date.now();
     if (now < this.nearMissCooldownAt) return;
@@ -3103,6 +3260,7 @@ export class PlayScene {
     }
     if (this.dangerDodgeCount >= 3) {
       AudioManager.playSfx('combo_tick', { volume: 0.56 });
+      this.armGrazeBreak();
     }
   }
 

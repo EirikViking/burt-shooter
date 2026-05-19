@@ -760,3 +760,43 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 - This is still a local fallback voice, not a true premium licensed performance.
 - Human by-ear approval is required before treating the announcer as a commercial differentiator.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 18 - Graze Break Skill Payoff
+
+### What Was Tested
+
+- Treated the next highest-impact anti-flop issue as authored surprise mechanics after Tractor Hijack.
+- Chose a player-skill mechanic instead of another random powerup: three close dodges arm the next centered shot as a `GRAZE BREAK` round.
+- Kept the mechanic readable by requiring an enemy-bullet parry, one charged-shot visual ring, one payoff toast, and a bounded bullet-clear/damage pulse.
+
+### What Changed
+
+- `applyNearMiss()` now arms `GRAZE BREAK` after a three-dodge streak with a short expiry and cooldown.
+- The next eligible player shot gets a magenta charge ring and can collide with enemy bullets even without point defense.
+- A successful Graze Break clears nearby enemy bullets, damages nearby non-boss enemies, awards a bounded score bonus, shows `GRAZE BREAK +...`, and triggers a magenta shockwave.
+- Runtime telemetry now exposes `scoring.grazeBreakReady`, charged-shot count, and `scoring.lastGrazeBreak`.
+- The Steam trailer capture now stages a Graze Break payoff during the later close-dodge gameplay beat.
+- Added `npm run check:graze-break`.
+
+### Evidence Captured
+
+- Build: `v2026-05-19_05-06-23`.
+- Graze Break proof: `test-results/graze-break-2026-05-19T03-06-55-653Z/report.json` cleared 5 enemy bullets with a `GRAZE BREAK` payoff and a 1,127 score gain.
+- Danger Dodge regression: `test-results/danger-dodge-2026-05-19T03-06-55-692Z/report.json`.
+- Tractor Hijack regression: `test-results/tractor-hijack-2026-05-19T03-06-55-703Z/report.json`.
+- Live private-domain smoke: `test-results/smoke-2026-05-19T03-07-48-633Z/report.json`.
+- Deployed build: `https://d3b8f48a.burt-game.pages.dev`; `https://burt.tinyfoundry.app/version.json` reports `v2026-05-19_05-06-23`.
+- Steam screenshots: `release/steam-screenshots/draft-2026-05-17-current/report.json`.
+- Trailer opening check: `test-results/steam-trailer-opening-2026-05-19T03-11-33-729Z/report.json`.
+- Trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`.
+- Full RC: `test-results/steam-rc-verify-2026-05-19T03-13-45-995Z/report.json`.
+- Full-RC release playtest: `test-results/release-playtest-2026-05-19T03-17-16-274Z/report.json` survived 599,876 ms, reached level 8, ended with 3 lives, score 70,934, and zero console/page/network/request failures.
+- Payload manifest: `release/steamworks/steam_payload_manifest.json` (74 files, 628,266,044 bytes).
+- Release handoff packet: `release/steamworks/release_handoff_packet.json`.
+- Release-readiness audit: `docs/reviews/release-readiness-audit-2026-05-17.json`.
+
+### Remaining Top Risks
+
+- Graze Break is now proven in focused checks and staged in current Steam trailer capture; final human store-media curation is still required.
+- The current full-RC release playtest survived cleanly but reached level 8 on this run, so the next balance loop should watch whether level-10 tempo remains consistently reachable without flattening challenge.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
