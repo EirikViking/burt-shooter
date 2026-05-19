@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-18T23:48:16.333Z",
+  "generatedAt": "2026-05-19T00:45:08.386Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-19_00-57-09",
-    "timestamp": "2026-05-18T22:57:09.423Z"
+    "version": "v2026-05-19_01-59-03",
+    "timestamp": "2026-05-18T23:59:03.093Z"
   },
   "latestFullRc": {
-    "reportPath": "test-results/steam-rc-verify-2026-05-18T23-12-36-820Z/report.json",
-    "generatedAt": "2026-05-18T23:26:20.158Z",
+    "reportPath": "test-results/steam-rc-verify-2026-05-19T00-25-55-206Z/report.json",
+    "generatedAt": "2026-05-19T00:39:29.478Z",
     "mode": "full",
     "ok": true,
     "stageCount": 14,
@@ -15,72 +15,72 @@
       {
         "name": "build:current",
         "ok": true,
-        "durationMs": 18412
+        "durationMs": 24001
       },
       {
         "name": "check:intro-voice",
         "ok": true,
-        "durationMs": 4007
+        "durationMs": 3999
       },
       {
         "name": "check:provenance",
         "ok": true,
-        "durationMs": 682
+        "durationMs": 749
       },
       {
         "name": "check:steam-assets",
         "ok": true,
-        "durationMs": 3369
+        "durationMs": 2353
       },
       {
         "name": "check:steam-store",
         "ok": true,
-        "durationMs": 500
+        "durationMs": 480
       },
       {
         "name": "package:steam:win:current",
         "ok": true,
-        "durationMs": 57990
+        "durationMs": 51476
       },
       {
         "name": "desktop:smoke:current",
         "ok": true,
-        "durationMs": 4015
+        "durationMs": 3319
       },
       {
         "name": "desktop:smoke:packaged",
         "ok": true,
-        "durationMs": 40720
+        "durationMs": 39136
       },
       {
         "name": "desktop:controls:packaged",
         "ok": true,
-        "durationMs": 7764
+        "durationMs": 5806
       },
       {
         "name": "check:desktop-package",
         "ok": true,
-        "durationMs": 1003
+        "durationMs": 899
       },
       {
         "name": "check:live-deployment",
         "ok": true,
-        "durationMs": 1400
+        "durationMs": 1255
       },
       {
         "name": "audit:audio-mix",
         "ok": true,
-        "durationMs": 10123
+        "durationMs": 7375
       },
       {
         "name": "smoke",
         "ok": true,
-        "durationMs": 66697
+        "durationMs": 66959
       },
       {
         "name": "playtest:release",
         "ok": true,
-        "durationMs": 606337
+        "durationMs": 606444
       }
     ],
     "releaseAudit": {
@@ -95,15 +95,15 @@
       ]
     },
     "audioAudit": {
-      "generatedAt": "2026-05-18T23:15:07.062Z",
+      "generatedAt": "2026-05-19T00:28:15.999Z",
       "decodeErrors": null,
       "warnings": 0
     }
   },
   "latestLocalSmoke": {
-    "reportPath": "test-results/smoke-2026-05-18T23-15-08-223Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-19T00-28-17-153Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "build": "v2026-05-19_00-57-09",
+    "build": "v2026-05-19_01-59-03",
     "status": "passed",
     "console": {
       "warningsOrErrors": 0,
@@ -114,21 +114,21 @@
     "coverage": null
   },
   "latestReleasePlaytest": {
-    "reportPath": "test-results/release-playtest-2026-05-18T23-16-14-801Z/report.json",
+    "reportPath": "test-results/release-playtest-2026-05-19T00-29-24-111Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "survivedMs": 599986,
+    "survivedMs": 599977,
     "requiredSurvivalMs": 599500,
     "survivedFullDuration": true,
-    "peakLevel": 10,
-    "peakScore": 66356,
+    "peakLevel": 9,
+    "peakScore": 65152,
     "finalState": {
       "scene": "play",
-      "level": 10,
+      "level": 9,
       "lives": 3,
-      "score": 66356,
-      "enemyManagerState": "WAVE_ACTIVE",
-      "musicContext": "gameplay",
-      "musicTrack": "Rain of Lasers.mp3",
+      "score": 65152,
+      "enemyManagerState": "BOSS_ACTIVE",
+      "musicContext": "boss",
+      "musicTrack": "DeathMatch (Boss Theme).mp3",
       "fatalOverlay": false
     },
     "console": {

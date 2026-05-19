@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T23:14:56.900Z",
+  "generatedAt": "2026-05-19T00:28:08.595Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-19_00-57-09",
-    "timestamp": "2026-05-18T22:57:09.423Z"
+    "version": "v2026-05-19_01-59-03",
+    "timestamp": "2026-05-18T23:59:03.093Z"
   },
   "liveUrl": "https://burt.tinyfoundry.app",
   "versionChecks": [
@@ -11,15 +11,15 @@
       "url": "https://burt.tinyfoundry.app/version.json",
       "ok": true,
       "status": 200,
-      "version": "v2026-05-19_00-57-09",
-      "timestamp": "2026-05-18T22:57:09.423Z"
+      "version": "v2026-05-19_01-59-03",
+      "timestamp": "2026-05-18T23:59:03.093Z"
     }
   ],
   "latestLiveSmoke": {
-    "reportPath": "test-results/smoke-live-progression-2026-05-19T00-57/report.json",
+    "reportPath": "test-results/smoke-2026-05-19T00-24-17-472Z/report.json",
     "baseUrl": "https://burt.tinyfoundry.app",
     "status": "passed",
-    "build": "v2026-05-19_00-57-09",
+    "build": "v2026-05-19_01-59-03",
     "screenshots": [
       {
         "file": "01-menu.png",

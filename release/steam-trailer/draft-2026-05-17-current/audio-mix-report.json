@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-18T23:45:48.842Z",
+  "generatedAt": "2026-05-19T00:43:27.669Z",
   "draftDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current",
   "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-visual-draft.webm",
   "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-audio-draft.mp4",
   "build": {
-    "version": "v2026-05-19_00-57-09",
-    "timestamp": "2026-05-18T22:57:09.423Z"
+    "version": "v2026-05-19_01-59-03",
+    "timestamp": "2026-05-18T23:59:03.093Z"
   },
   "durationSeconds": 34.2,
   "visualTrimSeconds": 2.6,
@@ -377,7 +377,7 @@
     ],
     "format": {
       "duration": "34.200000",
-      "size": "10115780"
+      "size": "10329836"
     }
   }
 }

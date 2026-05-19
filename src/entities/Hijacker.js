@@ -358,18 +358,26 @@ export class Hijacker {
     const playScene = this.game.scenes.play;
     if (playScene) {
       const bonus = brokeBeam ? 1200 : 0;
-      this.game.addScore(this.scoreValue + bonus);
+      const breakAward = this.scoreValue + bonus;
+      this.game.addScore(breakAward);
       if (brokeBeam) {
+        const hijackResult = playScene.triggerTractorHijack?.({
+          x: this.x,
+          y: this.y,
+          level: this.level
+        });
         playScene.clearEnemyBullets?.('tractor_break');
-        playScene.showToast('TRACTOR BREAK +1700', {
+        const hijacked = hijackResult?.triggered;
+        const totalAward = breakAward + (hijackResult?.bonusScore || 0);
+        playScene.showToast(`${hijacked ? 'TRACTOR HIJACK' : 'TRACTOR BREAK'} +${totalAward}`, {
           fontSize: this.game.getWidth() < 620 ? 17 : 24,
-          fill: '#66ffff',
+          fill: hijacked ? '#ffe066' : '#66ffff',
           stroke: '#00111d',
           strokeThickness: 5,
-          duration: 1500,
+          duration: hijacked ? 1650 : 1500,
           slot: 'center',
           type: 'hijacker',
-          priority: 5
+          priority: hijacked ? 6 : 5
         });
       }
     }

@@ -113,6 +113,9 @@ export class PlayScene {
     this.toastTopQueue = [];
     this.toastCornerQueue = [];
     this.activeCenterToast = null;
+    this.tractorHijack = null;
+    this.lastTractorHijack = null;
+    this.tractorHijackLayer = null;
 
     // Ship intro state
     this.introActive = false;
@@ -247,6 +250,12 @@ export class PlayScene {
     this.powerupManager = new PowerupManager(this.gameContainer, this.game);
     this.screenShake = new ScreenShake(this.gameContainer);
     this.scorePopupManager = new ScorePopupManager(this.uiContainer);
+    this.gameContainer.sortableChildren = true;
+    this.tractorHijack = null;
+    this.lastTractorHijack = null;
+    this.tractorHijackLayer = new PIXI.Graphics();
+    this.tractorHijackLayer.zIndex = 65;
+    this.gameContainer.addChild(this.tractorHijackLayer);
 
     // Initial load of ships AND Ranks
     Promise.all([
@@ -630,6 +639,7 @@ export class PlayScene {
       if (this.enemyManager) this.enemyManager.update(delta);
       this.applyGameplayBackdropLevel(this.game?.level || 1);
       if (this.powerupManager) this.powerupManager.update(delta, this);
+      this.updateTractorHijack(delta);
       if (this.particleManager) this.particleManager.update(delta);
       if (this.screenShake) this.screenShake.update(delta);
       if (this.scorePopupManager) this.scorePopupManager.update(delta);
@@ -2162,6 +2172,171 @@ export class PlayScene {
 
     AudioManager.playSfx('powerup', { force: true, volume: 0.72, minIntervalMs: 250 });
     return target - before;
+  }
+
+  triggerTractorHijack({ x, y } = {}) {
+    if (!this.player || !this.enemyManager || !this.game) return null;
+
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const sourceX = Number.isFinite(x) ? x : width / 2;
+    const sourceY = Number.isFinite(y) ? y : height * 0.2;
+    const playerX = Number.isFinite(this.player.x) ? this.player.x : width / 2;
+    const playerY = Number.isFinite(this.player.y) ? this.player.y : height * 0.78;
+    const maxEnemyPulls = 4;
+    const maxBulletPulls = 12;
+    const enemyBand = Math.max(70, Math.min(115, width * 0.11));
+    const bulletBand = Math.max(55, Math.min(90, width * 0.085));
+
+    const enemies = (this.enemyManager.enemies || [])
+      .filter(enemy =>
+        enemy?.active !== false &&
+        !enemy.waitingForEntry &&
+        enemy.kind !== 'boss' &&
+        enemy.kind !== 'hijacker' &&
+        enemy.kind !== 'bonus_drone'
+      )
+      .map(enemy => ({
+        enemy,
+        geometry: this.distanceToSegment(enemy.x, enemy.y, sourceX, sourceY, playerX, playerY)
+      }))
+      .filter(item => item.geometry.t >= -0.05 && item.geometry.t <= 1.08)
+      .filter(item => item.geometry.distance <= enemyBand + (item.enemy.radius || 16))
+      .sort((a, b) => a.geometry.distance - b.geometry.distance)
+      .slice(0, maxEnemyPulls);
+
+    const enemyBullets = this.bulletManager?.enemyBullets || [];
+    const bullets = enemyBullets
+      .filter(bullet => bullet?.active !== false)
+      .map(bullet => ({
+        bullet,
+        geometry: this.distanceToSegment(bullet.x, bullet.y, sourceX, sourceY, playerX, playerY)
+      }))
+      .filter(item => item.geometry.t >= -0.08 && item.geometry.t <= 1.1)
+      .filter(item => item.geometry.distance <= bulletBand + (item.bullet.radius || 6))
+      .sort((a, b) => a.geometry.distance - b.geometry.distance)
+      .slice(0, maxBulletPulls);
+
+    let bonusScore = 0;
+    const captured = [];
+
+    enemies.forEach(({ enemy }) => {
+      const award = 360;
+      bonusScore += award;
+      captured.push({ x: Math.round(enemy.x), y: Math.round(enemy.y), award });
+      enemy.active = false;
+      enemy.destroy?.();
+      if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);
+      this.particleManager?.createExplosion(enemy.x, enemy.y, 0x66ffff, 0.82);
+      this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xffffff);
+      this.scorePopupManager?.addScorePopup(enemy.x, enemy.y, award, {
+        comboEligible: false,
+        color: 0x66ffff
+      });
+    });
+
+    bullets.forEach(({ bullet }) => {
+      bonusScore += 25;
+      bullet.active = false;
+      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      this.particleManager?.createHitSpark(bullet.x, bullet.y, 0x66ffff);
+    });
+    if (bullets.length > 0 && this.bulletManager) {
+      this.bulletManager.enemyBullets = this.bulletManager.enemyBullets.filter(bullet => bullet?.active !== false);
+    }
+
+    if (bonusScore > 0) {
+      bonusScore += 600;
+      this.game.addScore(bonusScore);
+      AudioManager.playSfx('shield', { force: true, volume: 0.58, minIntervalMs: 120 });
+      AudioManager.playSfx('powerup', { volume: 0.42, minIntervalMs: 120 });
+      this.screenShake?.shake(width < 620 ? 5 : 8, 16);
+    } else {
+      AudioManager.playSfx('forceField', { volume: 0.32, minIntervalMs: 350 });
+      this.screenShake?.shake(width < 620 ? 3 : 5, 10);
+    }
+
+    const result = {
+      triggered: bonusScore > 0,
+      startedAt: Date.now(),
+      durationMs: bonusScore > 0 ? 1120 : 680,
+      sourceX: Math.round(sourceX),
+      sourceY: Math.round(sourceY),
+      playerX: Math.round(playerX),
+      playerY: Math.round(playerY),
+      capturedEnemies: captured.length,
+      clearedBullets: bullets.length,
+      bonusScore,
+      captured
+    };
+
+    this.tractorHijack = result;
+    this.lastTractorHijack = { ...result };
+    return result;
+  }
+
+  updateTractorHijack() {
+    const layer = this.tractorHijackLayer;
+    if (!layer) return;
+    layer.clear();
+    const effect = this.tractorHijack;
+    if (!effect) return;
+
+    const elapsed = Date.now() - effect.startedAt;
+    const progress = Math.max(0, Math.min(1, elapsed / effect.durationMs));
+    const fade = Math.sin(progress * Math.PI);
+    const alpha = Math.max(0, fade);
+    if (progress >= 1 || alpha <= 0.02) {
+      this.tractorHijack = null;
+      return;
+    }
+
+    const startX = effect.playerX;
+    const startY = effect.playerY;
+    const endX = effect.sourceX;
+    const endY = effect.sourceY;
+    const pulse = 1 + Math.sin(Date.now() * 0.04) * 0.08;
+
+    layer.moveTo(startX, startY);
+    layer.lineTo(endX, endY);
+    layer.stroke({ color: 0xffffff, width: 10 * pulse, alpha: 0.2 * alpha });
+    layer.moveTo(startX, startY);
+    layer.lineTo(endX, endY);
+    layer.stroke({ color: 0x66ffff, width: 5 * pulse, alpha: 0.72 * alpha });
+    layer.moveTo(startX, startY);
+    layer.lineTo(endX, endY);
+    layer.stroke({ color: 0xff66ff, width: 2, alpha: 0.48 * alpha });
+
+    const ringCount = effect.triggered ? 6 : 4;
+    for (let i = 1; i <= ringCount; i++) {
+      const t = i / (ringCount + 1);
+      const x = startX + (endX - startX) * t;
+      const y = startY + (endY - startY) * t;
+      const radius = (18 + 26 * t + progress * 18) * pulse;
+      layer.circle(x, y, radius);
+      layer.stroke({ color: i % 2 ? 0x66ffff : 0xffffff, width: 2, alpha: 0.42 * alpha });
+    }
+
+    effect.captured?.forEach((target, index) => {
+      const r = 18 + index * 2 + progress * 24;
+      layer.circle(target.x, target.y, r);
+      layer.stroke({ color: 0xffe066, width: 3, alpha: 0.62 * alpha });
+      layer.circle(target.x, target.y, Math.max(5, r * 0.28));
+      layer.fill({ color: 0x66ffff, alpha: 0.18 * alpha });
+    });
+  }
+
+  distanceToSegment(px, py, ax, ay, bx, by) {
+    const abx = bx - ax;
+    const aby = by - ay;
+    const lenSq = abx * abx + aby * aby;
+    if (lenSq <= 0.0001) {
+      return { distance: Math.hypot(px - ax, py - ay), t: 0 };
+    }
+    const t = Math.max(0, Math.min(1, ((px - ax) * abx + (py - ay) * aby) / lenSq));
+    const cx = ax + abx * t;
+    const cy = ay + aby * t;
+    return { distance: Math.hypot(px - cx, py - cy), t };
   }
 
   clearEnemyBullets(reason = 'cleanup') {

@@ -585,3 +585,46 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 
 - The trailer now proves the hook earlier, but it still needs human by-ear approval and a real store-submission review.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 14 - Tractor Hijack Surprise Payoff
+
+### What Was Tested
+
+- Added a tight in-game surprise mechanic rather than new content volume.
+- Proved the mechanic with a focused browser setup that arms a live hijacker beam, seeds enemies and bullets in the lane, breaks the beam, and captures screenshot plus text-state evidence.
+- Reran the existing hijacker tractor regression check, local smoke, and a solo 10-minute release playtest.
+
+### What Was Missing
+
+- The hijacker beam had become a strong store-media hook, but the player payoff was still mostly "break it for points."
+- A Steam shopper could understand the beam, but the mechanic needed a cooler "I turned that against you" moment for clips and one-more-run scoring.
+
+### What Changed
+
+- Destroying a hijacker during a threatening tractor state can now trigger `TRACTOR HIJACK`.
+- The hijacked beam lashes from the player back toward the hijacker lane, captures up to four nearby regular enemies, shatters up to twelve nearby enemy bullets, and adds a bounded rare bonus on top of the existing beam-break award.
+- The effect uses a short cyan/gold beam pulse, score popups, controlled shake, and existing SFX so it reads as a premium arcade payoff without adding voice spam.
+- `render_game_to_text` now exposes `tractorHijack` active/last telemetry for automated checks.
+- Added `npm run check:tractor-hijack`.
+
+### Evidence Captured
+
+- Tractor hijack check: `test-results/tractor-hijack-2026-05-18T23-59-51-037Z/report.json`.
+- Tractor hijack screenshot: `test-results/tractor-hijack-2026-05-18T23-59-51-037Z/tractor-hijack-payoff.png`.
+- Existing tractor regression: `test-results/hijacker-tractor-2026-05-18T23-59-28-095Z/report.json`.
+- Local smoke: `test-results/smoke-2026-05-19T00-00-13-600Z/report.json`.
+- Release playtest: `test-results/release-playtest-2026-05-19T00-10-31-915Z/report.json` survived 599,979 ms, reached level 10, ended with 2 lives, score 67,066, and zero console/page/network/request failures.
+- Deployed build: `https://d7eb3125.burt-game.pages.dev`; private domain `https://burt.tinyfoundry.app/version.json` reports `v2026-05-19_01-59-03`.
+- Current live smoke: `test-results/smoke-2026-05-19T00-24-17-472Z/report.json`.
+- Full RC: `test-results/steam-rc-verify-2026-05-19T00-25-55-206Z/report.json`.
+- Current Steam screenshots: `release/steam-screenshots/draft-2026-05-17-current/report.json`.
+- Current trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`.
+- Trailer opening check: `test-results/steam-trailer-opening-2026-05-19T00-44-16-410Z/report.json`.
+- Payload manifest: `release/steamworks/steam_payload_manifest.json` (74 files, 628,192,827 bytes).
+- Release handoff packet: `release/steamworks/release_handoff_packet.json`.
+- Release-readiness audit: `docs/reviews/release-readiness-audit-2026-05-17.json`.
+
+### Remaining Top Risks
+
+- The focused hijack payoff is stronger than the canonical trailer's quick break beat; final store media still needs human curation for whether to show the full `TRACTOR HIJACK` score moment.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.

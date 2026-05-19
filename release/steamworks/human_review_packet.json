@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-18T23:48:23.154Z",
+  "generatedAt": "2026-05-19T00:45:14.172Z",
   "status": "ready_for_human_review",
   "build": {
-    "version": "v2026-05-19_00-57-09",
-    "timestamp": "2026-05-18T22:57:09.423Z"
+    "version": "v2026-05-19_01-59-03",
+    "timestamp": "2026-05-18T23:59:03.093Z"
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
@@ -38,12 +38,12 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "exists": true,
-          "bytes": 1937449
+          "bytes": 8844353
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "exists": true,
-          "bytes": 1984
+          "bytes": 2004
         },
         {
           "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
@@ -86,17 +86,17 @@
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
           "exists": true,
-          "bytes": 9890252
+          "bytes": 10127570
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "exists": true,
-          "bytes": 552497
+          "bytes": 554607
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "exists": true,
-          "bytes": 2500
+          "bytes": 2501
         }
       ],
       "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."
@@ -182,7 +182,7 @@
         {
           "path": "release/steamworks/full_rc_verification_report.json",
           "exists": true,
-          "bytes": 3539
+          "bytes": 3540
         },
         {
           "path": "docs/reviews/2026-05-17-steam-readiness-checklist.md",

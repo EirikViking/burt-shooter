@@ -334,6 +334,28 @@ function buildGameTextState(game) {
       maxHealth: Math.max(0, Math.round(hijacker.maxHealth || 0)),
       tractor: hijacker.getTractorState ? hijacker.getTractorState() : null
     } : null,
+    tractorHijack: playScene ? {
+      active: Boolean(playScene.tractorHijack),
+      current: playScene.tractorHijack ? {
+        triggered: Boolean(playScene.tractorHijack.triggered),
+        capturedEnemies: playScene.tractorHijack.capturedEnemies || 0,
+        clearedBullets: playScene.tractorHijack.clearedBullets || 0,
+        bonusScore: playScene.tractorHijack.bonusScore || 0,
+        remainingMs: Math.max(0, Math.round(
+          (playScene.tractorHijack.startedAt + playScene.tractorHijack.durationMs) - Date.now()
+        ))
+      } : null,
+      last: playScene.lastTractorHijack ? {
+        triggered: Boolean(playScene.lastTractorHijack.triggered),
+        capturedEnemies: playScene.lastTractorHijack.capturedEnemies || 0,
+        clearedBullets: playScene.lastTractorHijack.clearedBullets || 0,
+        bonusScore: playScene.lastTractorHijack.bonusScore || 0,
+        sourceX: playScene.lastTractorHijack.sourceX || 0,
+        sourceY: playScene.lastTractorHijack.sourceY || 0,
+        playerX: playScene.lastTractorHijack.playerX || 0,
+        playerY: playScene.lastTractorHijack.playerY || 0
+      } : null
+    } : null,
     counts: {
       enemies: enemies.filter(enemy => enemy?.active !== false).length + (hijacker?.active ? 1 : 0),
       bossAdds: enemies.filter(enemy =>
