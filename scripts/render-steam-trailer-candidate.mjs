@@ -176,7 +176,7 @@ async function volumedetect(file) {
 }
 
 async function extractContactSheet(duration) {
-  const times = [0.55, 2.6, 8.6, 16.5, Math.max(1, duration - 1.2)];
+  const times = [0.55, 2.6, 8.6, 18.5, 20.2, 31.0, 34.0, Math.max(1, duration - 1.2)];
   const frames = [];
   for (const [index, time] of times.entries()) {
     const frame = path.join(outputDir, `frame-${String(index + 1).padStart(2, '0')}.jpg`);
@@ -223,6 +223,10 @@ async function main() {
       'boss inbound warning',
       'active boss pattern fire'
     ],
+    laterBossVariety: [
+      'midgame vortex boss telegraph beat',
+      'late-game choir boss ring-burst beat'
+    ],
     titleCards: [
       { image: paths.outroPng, durationSeconds: outroSeconds, title: 'ONE MORE RUN?', subtitle: 'BREAK THE BEAM. BLAST THE BOSS.' }
     ],
@@ -231,6 +235,7 @@ async function main() {
     notes: [
       'Editorial Steam trailer candidate starts on captured hijacker/boss gameplay: no logo-first opening, no lore card, no menu dwell.',
       'The first 10 seconds are intended to prove the Tractor Hijack surprise payoff and boss-every-level hook before menu or score-flow footage.',
+      'The body now includes short midgame and late-game boss telegraph beats so the trailer does not rely on one boss to imply variety.',
       'Still requires human by-ear and store-submission approval before Steam upload.'
     ],
     ffprobe: probe,

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T20:04:30.920Z",
+  "generatedAt": "2026-05-19T21:11:35.301Z",
   "status": "passed",
   "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-audio-draft.mp4",
   "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\nova-swarm-steam-trailer-candidate.mp4",
@@ -12,6 +12,10 @@
     "runtime hijacker tractor-beam pressure and Tractor Hijack payoff",
     "boss inbound warning",
     "active boss pattern fire"
+  ],
+  "laterBossVariety": [
+    "midgame vortex boss telegraph beat",
+    "late-game choir boss ring-burst beat"
   ],
   "titleCards": [
     {
@@ -27,11 +31,15 @@
     "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\frame-02.jpg",
     "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\frame-03.jpg",
     "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\frame-04.jpg",
-    "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\frame-05.jpg"
+    "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\frame-05.jpg",
+    "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\frame-06.jpg",
+    "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\frame-07.jpg",
+    "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\frame-08.jpg"
   ],
   "notes": [
     "Editorial Steam trailer candidate starts on captured hijacker/boss gameplay: no logo-first opening, no lore card, no menu dwell.",
     "The first 10 seconds are intended to prove the Tractor Hijack surprise payoff and boss-every-level hook before menu or score-flow footage.",
+    "The body now includes short midgame and late-game boss telegraph beats so the trailer does not rely on one boss to imply variety.",
     "Still requires human by-ear and store-submission approval before Steam upload."
   ],
   "ffprobe": {
@@ -43,22 +51,22 @@
         "width": 1280,
         "height": 720,
         "r_frame_rate": "25/1",
-        "duration": "38.080000"
+        "duration": "43.400000"
       },
       {
         "codec_name": "aac",
         "r_frame_rate": "0/0",
-        "duration": "38.101333"
+        "duration": "43.421333"
       }
     ],
     "format": {
-      "duration": "38.101333",
-      "size": "10549905",
-      "bit_rate": "2215125"
+      "duration": "43.421333",
+      "size": "12780026",
+      "bit_rate": "2354607"
     }
   },
   "volume": {
-    "meanVolumeDb": "-21.3",
-    "maxVolumeDb": "-2.6"
+    "meanVolumeDb": "-20.5",
+    "maxVolumeDb": "-2.5"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T20:04:09.540Z",
+  "generatedAt": "2026-05-19T21:04:39.404Z",
   "draftDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current",
   "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-visual-draft.webm",
   "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-audio-draft.mp4",
@@ -7,7 +7,7 @@
     "version": "v2026-05-19_21-30-12",
     "timestamp": "2026-05-19T19:30:12.699Z"
   },
-  "durationSeconds": 34.2,
+  "durationSeconds": 39.2,
   "visualTrimSeconds": 2.6,
   "notes": [
     "Audio-mixed Steam trailer draft rendered from captured game footage and shipped Nova Swarm audio assets.",
@@ -289,24 +289,105 @@
       "kind": "music",
       "key": "victoryMusic",
       "start": 15.05,
-      "duration": 3.6,
+      "duration": 3.2,
       "volume": 0.2,
-      "fadeIn": 0.65,
-      "fadeOut": 0.65
+      "fadeIn": 0.55,
+      "fadeOut": 0.55
     },
     {
       "kind": "voice",
       "key": "victoryVoice",
       "start": 15.75,
       "duration": null,
-      "volume": 0.72,
+      "volume": 0.68,
       "fadeIn": 0.02,
       "fadeOut": 0.04
     },
     {
       "kind": "music",
+      "key": "bossMusic",
+      "start": 18.25,
+      "duration": 5,
+      "volume": 0.18,
+      "fadeIn": 0.36,
+      "fadeOut": 0.36
+    },
+    {
+      "kind": "sfx",
+      "key": "bossReveal",
+      "start": 18.7,
+      "duration": null,
+      "volume": 0.46,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 19.2,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 19.72,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 20.24,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 20.759999999999998,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 21.28,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 21.8,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "bossReveal",
+      "start": 20.95,
+      "duration": null,
+      "volume": 0.4,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "music",
       "key": "gameplayMusic",
-      "start": 18.8,
+      "start": 23.4,
       "duration": 4.6,
       "volume": 0.16,
       "fadeIn": 0.45,
@@ -315,16 +396,16 @@
     {
       "kind": "voice",
       "key": "launchVoice",
-      "start": 19.4,
+      "start": 24,
       "duration": null,
-      "volume": 0.54,
+      "volume": 0.5,
       "fadeIn": 0.02,
       "fadeOut": 0.04
     },
     {
       "kind": "music",
       "key": "menuMusic",
-      "start": 23,
+      "start": 27.6,
       "duration": 4.2,
       "volume": 0.14,
       "fadeIn": 0.5,
@@ -333,7 +414,7 @@
     {
       "kind": "sfx",
       "key": "confirm",
-      "start": 24.8,
+      "start": 29.4,
       "duration": null,
       "volume": 0.46,
       "fadeIn": 0.005,
@@ -342,8 +423,8 @@
     {
       "kind": "music",
       "key": "gameOverMusic",
-      "start": 26.8,
-      "duration": 5.5,
+      "start": 31.4,
+      "duration": 5.7,
       "volume": 0.24,
       "fadeIn": 0.7,
       "fadeOut": 0.7
@@ -351,9 +432,9 @@
     {
       "kind": "voice",
       "key": "gameOverVoice",
-      "start": 27.7,
+      "start": 32.3,
       "duration": null,
-      "volume": 0.7,
+      "volume": 0.68,
       "fadeIn": 0.02,
       "fadeOut": 0.04
     }
@@ -367,17 +448,17 @@
         "width": 1280,
         "height": 720,
         "r_frame_rate": "25/1",
-        "duration": "33.880000"
+        "duration": "39.200000"
       },
       {
         "codec_name": "aac",
         "r_frame_rate": "0/0",
-        "duration": "33.877000"
+        "duration": "39.200000"
       }
     ],
     "format": {
-      "duration": "33.880000",
-      "size": "10739364"
+      "duration": "39.200000",
+      "size": "13011497"
     }
   }
 }

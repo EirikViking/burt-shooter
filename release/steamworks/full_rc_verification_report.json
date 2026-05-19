@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T20:42:52.490Z",
+  "generatedAt": "2026-05-19T21:18:20.459Z",
   "status": "passed",
   "currentBuild": {
     "version": "v2026-05-19_21-30-12",
@@ -101,7 +101,7 @@
     }
   },
   "latestLocalSmoke": {
-    "reportPath": "test-results/smoke-2026-05-19T20-06-41-723Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-19T21-14-53-095Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
     "build": "v2026-05-19_21-30-12",
     "status": "passed",

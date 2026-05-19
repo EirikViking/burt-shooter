@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T20:43:30.677Z",
+  "generatedAt": "2026-05-19T21:18:56.693Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 20,
@@ -94,22 +94,22 @@
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2516
+          "bytes": 2975
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json",
           "ok": true,
-          "bytes": 8078
+          "bytes": 9650
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2540
+          "bytes": 3112
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "ok": true,
-          "bytes": 498594
+          "bytes": 786894
         },
         {
           "path": "release/provenance/asset_provenance_manifest.json",
@@ -298,7 +298,7 @@
     {
       "name": "steam_trailer_visual_report_clean",
       "ok": true,
-      "beatCount": 10,
+      "beatCount": 12,
       "expectedBuild": "v2026-05-19_21-30-12",
       "actualBuild": "v2026-05-19_21-30-12",
       "consoleEvents": [],
@@ -310,7 +310,7 @@
       "ok": true,
       "expectedBuild": "v2026-05-19_21-30-12",
       "actualBuild": "v2026-05-19_21-30-12",
-      "duration": "33.880000",
+      "duration": "39.200000",
       "visualTrimSeconds": 2.6,
       "streams": [
         {
@@ -318,12 +318,12 @@
           "width": 1280,
           "height": 720,
           "r_frame_rate": "25/1",
-          "duration": "33.880000"
+          "duration": "39.200000"
         },
         {
           "codec_name": "aac",
           "r_frame_rate": "0/0",
-          "duration": "33.877000"
+          "duration": "39.200000"
         }
       ]
     },
@@ -333,7 +333,7 @@
       "status": "passed",
       "expectedBuild": "v2026-05-19_21-30-12",
       "actualBuild": "v2026-05-19_21-30-12",
-      "duration": "38.101333",
+      "duration": "43.421333",
       "opening": "hijacker_and_boss_first",
       "firstTenSeconds": [
         "runtime hijacker tractor-beam pressure and Tractor Hijack payoff",
@@ -349,8 +349,8 @@
         }
       ],
       "volume": {
-        "meanVolumeDb": "-21.3",
-        "maxVolumeDb": "-2.6"
+        "meanVolumeDb": "-20.5",
+        "maxVolumeDb": "-2.5"
       },
       "contactSheet": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\candidate-contact-sheet.png"
     },
@@ -637,7 +637,7 @@
         }
       },
       "latestLocalSmoke": {
-        "reportPath": "test-results/smoke-2026-05-19T20-06-41-723Z/report.json",
+        "reportPath": "test-results/smoke-2026-05-19T21-14-53-095Z/report.json",
         "baseUrl": "http://127.0.0.1:4173",
         "build": "v2026-05-19_21-30-12",
         "status": "passed",
@@ -760,17 +760,17 @@
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
               "exists": true,
-              "bytes": 10549905
+              "bytes": 12780026
             },
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
               "exists": true,
-              "bytes": 498594
+              "bytes": 786894
             },
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
               "exists": true,
-              "bytes": 2540
+              "bytes": 3112
             }
           ],
           "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."

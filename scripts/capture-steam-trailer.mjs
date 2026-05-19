@@ -220,6 +220,57 @@ async function ensureUnpaused(page) {
   });
 }
 
+async function clearPlayToasts(page) {
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    if (!play) return;
+    play.dismissActiveToastsBelowPriority?.(99);
+    play.toastQueue = [];
+    play.toastTopQueue = [];
+    play.toastCornerQueue = [];
+    play.centerToastLockUntil = 0;
+    if (play.toastSlotLockUntil) {
+      play.toastSlotLockUntil.center = 0;
+      play.toastSlotLockUntil.top = 0;
+      play.toastSlotLockUntil.corner = 0;
+    }
+  });
+  await page.waitForTimeout(250);
+}
+
+async function stageBossTelegraph(page, phase = 3) {
+  await page.evaluate((nextPhase) => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const player = play?.player;
+    const boss = play?.enemyManager?.boss;
+    if (!game || !play || !player || !boss) throw new Error('Missing boss scene for trailer telegraph staging');
+
+    player.x = game.getWidth() / 2;
+    player.y = game.getHeight() * 0.8;
+    player.invulnerable = true;
+    player.invulnerableTime = 45000;
+    if (player.sprite) {
+      player.sprite.x = player.x;
+      player.sprite.y = player.y;
+    }
+
+    boss.entryStartMs = Date.now() - (boss.entryDurationMs || 1) - 1;
+    boss.phase = nextPhase;
+    boss.applyPhasePlan?.(nextPhase);
+    boss.clearTelegraphVisual?.();
+    boss.clearRegularAttackTelegraphVisual?.();
+    const signature = boss.getSignatureForPhase?.(nextPhase) || boss.profile?.signature || 'ring';
+    boss.startSignatureTelegraph?.(signature, player.x, player.y);
+    boss.updateTelegraphVisual?.(0.62, player.x, player.y);
+    if (boss.sprite) {
+      boss.sprite.x = boss.x;
+      boss.sprite.y = boss.y;
+    }
+  }, phase);
+  await clearPlayToasts(page);
+}
+
 async function showMenuAndShipSelect(page) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForScene(page, 'menu', 30000);
@@ -534,6 +585,30 @@ async function showBoss(page) {
   await addBeat(page, 'boss_victory', 3200);
 }
 
+async function showBossVarietyBeat(page, level, label) {
+  await page.goto(withQuery(baseUrl, {
+    autostart: '1',
+    debugBossToken: 'NOVA_DEBUG_2026',
+    startAtBoss: '1',
+    startLevel: String(level)
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(page, 'play', 30000);
+  await waitForGameplayBackdrop(page);
+  await page.waitForFunction(() => {
+    const enemyManager = window.__game?.scenes?.play?.enemyManager;
+    return enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active;
+  }, null, { timeout: 30000 });
+  await stabilizePlayer(page);
+  await page.waitForTimeout(2200);
+  await stageBossTelegraph(page, 3);
+  await addBeat(page, label, 2300);
+}
+
+async function showBossVariety(page) {
+  await showBossVarietyBeat(page, 5, 'boss_variety_vortex_telegraph');
+  await showBossVarietyBeat(page, 9, 'boss_variety_choir_telegraph');
+}
+
 async function showGameOver(page) {
   await page.evaluate(() => {
     const game = window.__game;
@@ -569,6 +644,7 @@ async function main() {
   try {
     await showHijackerOpening(page);
     await showBoss(page);
+    await showBossVariety(page);
     await showGameplay(page);
     await showMenuAndShipSelect(page);
     await showGameOver(page);
@@ -593,6 +669,7 @@ async function main() {
     notes: [
       'Visual trailer draft captured from the production build. Playwright video capture does not include game audio.',
       'Opening sequence uses the real unranked debug route to show runtime hijacker tractor-beam pressure before boss footage.',
+      'Later trailer beats use deterministic boss routes to prove midgame and late-game boss telegraph variety.',
       'Final Steam trailer still needs edited audio/music mix, title cards, and human approval.'
     ],
     timeline,

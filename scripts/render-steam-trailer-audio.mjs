@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-const durationSeconds = Number(process.env.TRAILER_AUDIO_DURATION || 34.2);
+const durationSeconds = Number(process.env.TRAILER_AUDIO_DURATION || 39.2);
 const visualTrimSeconds = Number(process.env.TRAILER_AUDIO_VISUAL_TRIM || 2.6);
 const trailerRoot = path.resolve(process.env.TRAILER_AUDIO_ROOT || 'release/steam-trailer');
 const draftDir = path.resolve(process.env.TRAILER_AUDIO_DRAFT_DIR || findLatestDraftDir(trailerRoot));
@@ -49,14 +49,18 @@ const clips = [
   voice('bossVoice', 4.0, 0.72),
   ...repeatSfx('laserLarge', 7.0, 0.32, 12, 0.36),
   sfx('bossExplosion', 14.95, 0.82),
-  music('victoryMusic', 15.05, 3.6, 0.2, 0.65),
-  voice('victoryVoice', 15.75, 0.72),
-  music('gameplayMusic', 18.8, 4.6, 0.16, 0.45),
-  voice('launchVoice', 19.4, 0.54),
-  music('menuMusic', 23.0, 4.2, 0.14, 0.5),
-  sfx('confirm', 24.8, 0.46),
-  music('gameOverMusic', 26.8, 5.5, 0.24, 0.7),
-  voice('gameOverVoice', 27.7, 0.7)
+  music('victoryMusic', 15.05, 3.2, 0.2, 0.55),
+  voice('victoryVoice', 15.75, 0.68),
+  music('bossMusic', 18.25, 5.0, 0.18, 0.36),
+  sfx('bossReveal', 18.7, 0.46),
+  ...repeatSfx('laserLarge', 19.2, 0.52, 6, 0.24),
+  sfx('bossReveal', 20.95, 0.4),
+  music('gameplayMusic', 23.4, 4.6, 0.16, 0.45),
+  voice('launchVoice', 24.0, 0.5),
+  music('menuMusic', 27.6, 4.2, 0.14, 0.5),
+  sfx('confirm', 29.4, 0.46),
+  music('gameOverMusic', 31.4, 5.7, 0.24, 0.7),
+  voice('gameOverVoice', 32.3, 0.68)
 ];
 
 function findLatestDraftDir(root) {
@@ -168,6 +172,7 @@ async function main() {
     '-c:a', 'aac',
     '-b:a', '192k',
     '-movflags', '+faststart',
+    '-t', durationSeconds.toFixed(3),
     '-shortest',
     outputVideo
   ];

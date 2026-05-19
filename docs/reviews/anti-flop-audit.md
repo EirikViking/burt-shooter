@@ -915,3 +915,33 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 
 - The trailer candidate still proves one boss more strongly than the full boss roster; screenshot evidence is improved, but final trailer curation remains a high-value follow-up.
 - Final screenshot order still needs human Steamworks approval.
+
+## Loop 23 - Steam Trailer Boss Variety Proof
+
+### What Was Tested
+
+- Treated weak trailer breadth as the next highest-impact anti-flop issue after screenshot boss-variety proof.
+- Visually inspected the regenerated trailer contact sheet and found the first sampling pass missed one of the later boss windows.
+- Re-ran focused trailer, audio, boss, and smoke checks against build `v2026-05-19_21-30-12`.
+
+### What Changed
+
+- `scripts/capture-steam-trailer.mjs` now adds deterministic midgame and late-game boss beats after the opening hijacker/level-one boss hook.
+- The added trailer beats stage level-5 `Neon Warden` and level-9 `Hyperglyph` telegraphs so the video body proves more than one boss profile.
+- `scripts/render-steam-trailer-audio.mjs` now keeps the expanded trailer body under the 45-second Steam-candidate gate and shifts the mix around the new boss beats.
+- `scripts/render-steam-trailer-candidate.mjs` now extracts contact-sheet frames at the actual level-5 and level-9 boss proof windows instead of a dead/menu transition.
+
+### Evidence Captured
+
+- Trailer visual report: `release/steam-trailer/draft-2026-05-17-current/report.json` now lists `boss_variety_vortex_telegraph` and `boss_variety_choir_telegraph`.
+- Trailer candidate report: `release/steam-trailer/candidate-2026-05-17-current/report.json` passed at 43.421333 seconds with `laterBossVariety` entries for midgame and late-game boss telegraph beats.
+- Trailer contact sheet: `release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png` now shows the early hijacker/boss hook, level-5 Neon Warden telegraph, level-9 Hyperglyph/overdrive telegraph, and outro card.
+- Trailer opening gate: `test-results/steam-trailer-opening-2026-05-19T21-12-41-687Z/report.json`.
+- Boss telegraph regression: `test-results/boss-telegraph-2026-05-19T21-12-53-294Z/report.json`.
+- Boss movement regression: `test-results/boss-movement-variety-2026-05-19T21-13-53-002Z/report.json`.
+- Local smoke: `test-results/smoke-2026-05-19T21-14-53-095Z/report.json`.
+
+### Remaining Top Risks
+
+- The trailer now proves early, midgame, and late-game boss variety automatically, but it still needs human by-ear/editorial approval before Steam upload.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T20:03:35.244Z",
+  "generatedAt": "2026-05-19T21:02:07.641Z",
   "baseUrl": "http://127.0.0.1:4373",
   "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current",
   "build": {
@@ -14,6 +14,7 @@
   "notes": [
     "Visual trailer draft captured from the production build. Playwright video capture does not include game audio.",
     "Opening sequence uses the real unranked debug route to show runtime hijacker tractor-beam pressure before boss footage.",
+    "Later trailer beats use deterministic boss routes to prove midgame and late-game boss telegraph variety.",
     "Final Steam trailer still needs edited audio/music mix, title cards, and human approval."
   ],
   "timeline": [
@@ -56,6 +57,22 @@
       "level": 1,
       "wave": 3,
       "audioContext": "victory"
+    },
+    {
+      "label": "boss_variety_vortex_telegraph",
+      "durationMs": 2300,
+      "scene": "play",
+      "level": 5,
+      "wave": 3,
+      "audioContext": "boss"
+    },
+    {
+      "label": "boss_variety_choir_telegraph",
+      "durationMs": 2300,
+      "scene": "play",
+      "level": 9,
+      "wave": 3,
+      "audioContext": "boss"
     },
     {
       "label": "first_wave_lasers",
