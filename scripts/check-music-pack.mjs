@@ -106,9 +106,10 @@ try {
   await page.mouse.click(30, 30);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state?.audio?.musicPack === 'generated' && /nova_swarm_menu_/i.test(state?.audio?.currentMusicTrack || '');
+    const track = state?.audio?.currentMusicTrack || '';
+    return state?.audio?.musicPack === 'classic' && !/nova_swarm_menu_/i.test(track) && /Brave Pilots|SkyFire/i.test(track);
   }, null, { timeout: 10000 });
-  const generatedState = await readState(page);
+  const classicState = await readState(page);
 
   await page.evaluate(() => {
     const scene = window.__game?.currentScene || window.__game?.scenes?.menu;
@@ -133,18 +134,17 @@ try {
   await page.mouse.click(buttonBounds.x + buttonBounds.width / 2, buttonBounds.y + buttonBounds.height / 2);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    const track = state?.audio?.currentMusicTrack || '';
-    return state?.audio?.musicPack === 'classic' && !/nova_swarm_menu_/i.test(track) && /Brave Pilots|SkyFire/i.test(track);
+    return state?.audio?.musicPack === 'generated' && /nova_swarm_menu_/i.test(state?.audio?.currentMusicTrack || '');
   }, null, { timeout: 10000 });
-  const classicState = await readState(page);
+  const generatedState = await readState(page);
 
   await page.screenshot({ path: path.join(outputDir, 'music-pack-settings.png'), fullPage: true });
 
   const failures = [
-    generatedState.audio?.musicPack !== 'generated' ? `default music pack was ${generatedState.audio?.musicPack || 'missing'}` : null,
-    !/nova_swarm_menu_/i.test(track(generatedState)) ? `default pack did not play generated menu track: ${track(generatedState) || 'none'}` : null,
-    classicState.audio?.musicPack !== 'classic' ? `settings toggle did not switch to classic pack: ${classicState.audio?.musicPack || 'missing'}` : null,
-    !/Brave Pilots|SkyFire/i.test(track(classicState)) ? `classic pack did not play alternate menu track: ${track(classicState) || 'none'}` : null,
+    classicState.audio?.musicPack !== 'classic' ? `default music pack was ${classicState.audio?.musicPack || 'missing'}` : null,
+    !/Brave Pilots|SkyFire/i.test(track(classicState)) ? `default pack did not play classic menu track: ${track(classicState) || 'none'}` : null,
+    generatedState.audio?.musicPack !== 'generated' ? `settings toggle did not switch to new music pack: ${generatedState.audio?.musicPack || 'missing'}` : null,
+    !/nova_swarm_menu_/i.test(track(generatedState)) ? `new music pack did not play new menu track: ${track(generatedState) || 'none'}` : null,
     ...pageErrors.map((message) => `page error: ${message}`),
     ...consoleErrors.map((message) => `console error: ${message}`)
   ].filter(Boolean);
@@ -152,8 +152,8 @@ try {
   const report = {
     ok: failures.length === 0,
     baseUrl,
-    generated: generatedState.audio,
     classic: classicState.audio,
+    generated: generatedState.audio,
     failures,
     pageErrors,
     consoleErrors
@@ -163,7 +163,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[music-pack] PASS generated=${track(generatedState)} classic=${track(classicState)} report=${path.join(outputDir, 'report.json')}`);
+    console.log(`[music-pack] PASS classicDefault=${track(classicState)} optionalNew=${track(generatedState)} report=${path.join(outputDir, 'report.json')}`);
   }
 } finally {
   await browser.close();

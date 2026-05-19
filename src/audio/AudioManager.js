@@ -9,7 +9,7 @@ class AudioController {
     this.enabled = false;
     this.musicEnabled = false;
     this.voiceEnabled = false;
-    this.musicPack = 'generated';
+    this.musicPack = 'classic';
 
     // Volume
     this.masterVolume = 0.3;

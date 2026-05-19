@@ -134,10 +134,10 @@ export const MUSIC_PLAYLISTS_BY_PACK = {
 };
 
 export function normalizeMusicPack(pack) {
-    return pack === MUSIC_PACKS.classic ? MUSIC_PACKS.classic : MUSIC_PACKS.generated;
+    return pack === MUSIC_PACKS.generated ? MUSIC_PACKS.generated : MUSIC_PACKS.classic;
 }
 
-export function getMusicPlaylists(pack = MUSIC_PACKS.generated) {
+export function getMusicPlaylists(pack = MUSIC_PACKS.classic) {
     return MUSIC_PLAYLISTS_BY_PACK[normalizeMusicPack(pack)];
 }
 

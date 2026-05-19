@@ -240,12 +240,12 @@ export class SettingsOverlay {
     labelText.x = -154;
     row.addChild(labelText);
 
-    let pack = initialPack === 'classic' ? 'classic' : 'generated';
-    const button = this.createButton(pack === 'classic' ? 'CLASSIC' : 'NOVA', 18, 0, () => {
+    let pack = initialPack === 'generated' ? 'generated' : 'classic';
+    const button = this.createButton(pack === 'classic' ? 'CLASSIC' : 'NEW MIX', 18, 0, () => {
       pack = pack === 'classic' ? 'generated' : 'classic';
       const settings = AudioManager.setMusicPack(pack);
-      pack = settings.musicPack === 'classic' ? 'classic' : 'generated';
-      button._label.text = pack === 'classic' ? 'CLASSIC' : 'NOVA';
+      pack = settings.musicPack === 'generated' ? 'generated' : 'classic';
+      button._label.text = pack === 'classic' ? 'CLASSIC' : 'NEW MIX';
       fitTextToWidth(button._label, 132);
       AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
     }, { width: 170, height: 32 });
@@ -254,7 +254,7 @@ export class SettingsOverlay {
     fitTextToWidth(button._label, 132);
     row.addChild(button);
 
-    const hint = createText(pack === 'classic' ? 'ALT TRACKS' : 'ORIGINAL MIX', {
+    const hint = createText(pack === 'classic' ? 'DEFAULT' : 'OPTIONAL MIX', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#ffc96e'
@@ -264,7 +264,7 @@ export class SettingsOverlay {
     row.addChild(hint);
 
     button.on('pointertap', () => {
-      hint.text = pack === 'classic' ? 'ALT TRACKS' : 'ORIGINAL MIX';
+      hint.text = pack === 'classic' ? 'DEFAULT' : 'OPTIONAL MIX';
     });
 
     this.container.addChild(row);
