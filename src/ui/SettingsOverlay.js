@@ -59,7 +59,7 @@ export class SettingsOverlay {
     this.container.addChild(panel);
 
     const titleText = createText(this.title, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: isCompact ? 28 : 34,
       fontWeight: 'bold',
       fill: '#f6fbff',
@@ -122,7 +122,7 @@ export class SettingsOverlay {
     row.position.set(width / 2, y);
 
     const labelText = createText(label, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 18,
       fill: '#9befff'
     });
@@ -151,7 +151,7 @@ export class SettingsOverlay {
     row.position.set(width / 2, y);
 
     const labelText = createText(label, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 16,
       fill: '#9befff'
     });
@@ -185,7 +185,7 @@ export class SettingsOverlay {
     row.position.set(width / 2, y);
 
     const labelText = createText(label, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 16,
       fill: '#9befff'
     });
@@ -197,7 +197,7 @@ export class SettingsOverlay {
     const track = new PIXI.Graphics();
     const knob = new PIXI.Graphics();
     const valueText = createText(percent(initialValue), {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 15,
       fill: '#ffffff'
     });
@@ -267,7 +267,7 @@ export class SettingsOverlay {
     button.addChild(bg);
 
     const text = createText(label, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 17,
       fontWeight: 'bold',
       fill: '#ffffff'
@@ -333,7 +333,7 @@ export class SettingsOverlay {
     overlay.addChild(panel);
 
     const title = createText('NOVA SWARM CREDITS', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: isCompact ? 22 : 30,
       fontWeight: 'bold',
       fill: '#f6fbff',
@@ -353,7 +353,7 @@ export class SettingsOverlay {
       'Controls: keyboard, touch, gamepad.',
       `Build: ${BUILD_ID}`
     ].join('\n'), {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: isCompact ? 13 : 16,
       fill: '#c9f6ff',
       lineHeight: isCompact ? 21 : 27,
@@ -368,7 +368,7 @@ export class SettingsOverlay {
     const buttonY = panelY + panelHeight - (isCompact ? 34 : 38);
     const footerBottom = buttonY - (isCompact ? 50 : 56);
     const footer = createText('Asset provenance is tracked in docs/visual-asset-pipeline.md.', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: isCompact ? 11 : 13,
       fill: '#ffb9ef',
       wordWrap: true,

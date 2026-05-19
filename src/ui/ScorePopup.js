@@ -18,7 +18,7 @@ export class ScorePopup {
     const text = isCombo ? `${score} COMBO!` : `+${score}`;
 
     this.sprite = createText(text, {
-      fontFamily: 'Courier New, monospace',
+      fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
       fontSize: fontSize,
       fill: color,
       stroke: '#000000',

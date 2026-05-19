@@ -200,7 +200,7 @@ export class PlayScene {
 
     // TASK C: Debug diagnostics removed from gameplay screen
     // const diagStyle = {
-    //   fontFamily: 'Courier New',
+    //   fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
     //   fontSize: 12,
     //   fill: '#66fffe',
     //   align: 'left'
@@ -856,7 +856,7 @@ export class PlayScene {
 
     // "RANK UP!" trigger reason (clear and prominent)
     const rankUpText = createText('⬆ RANK UP! ⬆', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 26,
       fill: '#ffff00',
       stroke: '#000000',
@@ -869,7 +869,7 @@ export class PlayScene {
     // Rank title text
     if (rankTitle) {
       const titleText = createText(rankTitle.toUpperCase(), {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: 22,
         fill: '#00ffff',
         stroke: '#000000',
@@ -883,7 +883,7 @@ export class PlayScene {
     // Funny lore text from lore system
     const loreText = getAchievementPopup();
     const lore = createText(loreText, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
       fill: '#aaaaaa',
       stroke: '#000000',
@@ -996,7 +996,7 @@ export class PlayScene {
 
     // Main label (WAVE CLEARED!) - Big and bold
     const labelText = createText(label, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 28 : 38,
       fill: '#00ff00',
       stroke: '#004400',
@@ -1012,7 +1012,7 @@ export class PlayScene {
 
     // Bonus amount with coin icon
     const bonusText = createText(`+${bonusAmount}`, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 34 : 48,
       fill: '#ffff00',
       stroke: '#000000',
@@ -1028,7 +1028,7 @@ export class PlayScene {
 
     if (options.subtitle) {
       const subtitleText = createText(String(options.subtitle), {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: compact ? 15 : 18,
         fill: '#7ee9ff',
         stroke: '#00111d',
@@ -1900,7 +1900,7 @@ export class PlayScene {
     overlay.addChild(panel);
 
     const title = createText('PAUSED', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 42,
       fontWeight: 'bold',
       fill: '#f6fbff',
@@ -1913,7 +1913,7 @@ export class PlayScene {
     overlay.addChild(title);
 
     const status = createText('ARCADE PATROL ON HOLD', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
       fill: '#7ee9ff',
       align: 'center'
@@ -1975,7 +1975,7 @@ export class PlayScene {
     draw(false);
 
     const text = createText(label, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 18,
       fontWeight: 'bold',
       fill: '#ffffff'
@@ -2672,7 +2672,7 @@ export class PlayScene {
     if (options.banner) {
       const banner = new PIXI.Container();
       const bannerText = createText(message, {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize,
         fill: options.fill || '#ffffff',
         stroke: '#000000',
@@ -2744,7 +2744,7 @@ export class PlayScene {
       // TASK 3: Add Title Label if present
       if (options.title) {
         const titleLabel = createText(String(options.title).toUpperCase(), {
-          fontFamily: 'Courier New',
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
           fontSize: 14,
           fill: '#ffff00', // Yellow for visibility
           fontWeight: 'bold',
@@ -2779,7 +2779,7 @@ export class PlayScene {
       this.uiOverlay.addChild(banner);
     } else {
       const text = createText(message, {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize,
         fill: options.fill || '#ffffff',
         stroke: options.stroke,
@@ -2870,7 +2870,7 @@ export class PlayScene {
   createComboDisplay() {
     if (!this.comboDisplay) {
       this.comboDisplay = createText('', {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: 26,
         fill: '#00ffff',
         stroke: '#000000',
@@ -2906,7 +2906,7 @@ export class PlayScene {
   createSynergyBadge() {
     if (!this.synergyBadge) {
       this.synergyBadge = createText('', {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: 16,
         fill: '#ffff00',
         stroke: '#000000',
@@ -3322,7 +3322,7 @@ export class PlayScene {
     if (!this.debugOverlayEnabled) return;
     if (!this.devOverlay) {
       this.devOverlay = createText('', {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: 12,
         fill: '#00ffcc'
       });
@@ -3753,7 +3753,7 @@ export class PlayScene {
           ? 'BOSS DEFEATED'
           : 'BOSS ALERT';
     const topText = createText(headerLabel, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 18,
       fill: '#ff4040',
       fontWeight: 'bold'
@@ -3763,7 +3763,7 @@ export class PlayScene {
     poster.addChild(topText);
 
     const subText = createText(characterData.subtitle, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#2ff6ff',
       fontWeight: 'bold'
@@ -3774,7 +3774,7 @@ export class PlayScene {
 
     // Additional detail text for context
     const detailText = createText(characterData.detail, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 11,
       fill: '#d8fbff',
       fontWeight: 'bold'
@@ -3784,7 +3784,7 @@ export class PlayScene {
     poster.addChild(detailText);
 
     const bottomText = createText(caption, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 15,
       fill: '#ffffff',
       fontWeight: 'bold',
@@ -3843,7 +3843,7 @@ export class PlayScene {
     card.addChild(panel);
 
     const title = createText(name || 'BOSS', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 26,
       fill: '#ff3300',
       stroke: '#000000',
@@ -3854,7 +3854,7 @@ export class PlayScene {
     card.addChild(title);
 
     const line = createText(taunt || 'LET\'S GO!', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 18,
       fill: '#ffffff',
       stroke: '#000000',
@@ -3980,7 +3980,7 @@ export class PlayScene {
 
     // Ship name (Big, Readable)
     const nameText = createText(shipName, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: isNarrowIntro ? 30 : 52, // 1080p readable, mobile-safe
       fill: '#00ff00',
       stroke: '#000000',
@@ -4003,11 +4003,11 @@ export class PlayScene {
 
     // Subtitle
     const subText = createText("CLASSIFIED COMBAT VESSEL", {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: isNarrowIntro ? 13 : 20, // Readable subtitle
       fill: '#aaaaaa',
       align: 'center',
-      letterSpacing: isNarrowIntro ? 2 : 4
+      letterSpacing: 0
     });
     subText.anchor.set(0.5);
     const baseSubScale = Math.min(1, maxTextWidth / Math.max(1, subText.width));

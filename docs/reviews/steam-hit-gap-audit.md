@@ -18,7 +18,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 | Powerup clarity | 8 | HUD powerup check exists and smoke validates label/bounds. |
 | Score/combo/restart compulsion | 9 | Danger-dodge streaks, instant restart, next-ship motivation, and separate local/global leaderboard qualification now give the death screen a stronger one-more-run job. |
 | Ship unlock motivation | 8 | 25 ships are unlock-gated with real trait/stat differences; game over now surfaces next/new unlock motivation. |
-| UI/text density | 8 | Font normalization now improves menu/HUD/game-over text, and the mobile comms banner no longer collides with the HUD stack. Center-lane toasts still need monitoring during dense waves. |
+| UI/text density | 9 | The remaining player-facing Courier/monospace/Impact-style holdouts were removed from Pixi UI, menus, HUD, score popups, game over, highscore, ship screens, overlays, and the public page. Center-lane toasts still need monitoring during dense waves. |
 | Audio punch | 8 | The announcer now has event pools, no-repeat guards, and global-score fanfare. Current assets are local fallback TTS because ElevenLabs returned HTTP 401, so human by-ear approval and a stronger licensed voice source remain important. |
 | Surprise mechanic freshness | 8 | Hijacker tractor beam now has a rare `TRACTOR HIJACK` payoff that turns the beam back on nearby enemies and bullets. More authored surprises would help, but this is now a clearer clip-worthy verb. |
 | Steam tag accuracy | 8 | Tags are now focused and Bullet Hell was removed from the first metadata set. |
@@ -41,27 +41,28 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 - Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Remaining risk is store-media breadth: the trailer proves one boss clearly, but not the full variety of later bosses.
 - The new voice system fixes line structure/repetition, but the local fallback performance is not yet premium enough to be a commercial differentiator.
 - Leaderboard flow now has distinct local/global qualification, local fallback, and a tested global-offline path. Remaining risk is live public-domain verification and by-eye polish of the highscore tab presentation.
-- Public web build and marketing site are live; the latest progression-tempo build and current Steam media/handoff evidence are verified against the private domain.
+- Public web build and marketing site are live; the latest typography build and current Steam media/handoff evidence are verified against the private domain.
 - Steam client validation cannot happen until real app/depot IDs and credentials exist.
 - Human approvals are still required for screenshots, trailer, capsules, audio, store copy, and legal/provenance.
 
 ## Evidence Snapshot
 
-- Latest full RC pass: `test-results/steam-rc-verify-2026-05-19T00-25-55-206Z/report.json`
-- Latest full-RC release playtest: `test-results/release-playtest-2026-05-19T00-29-24-111Z/report.json` (survived 599,977 ms, reached level 9, 3 lives, score 65,152, zero console/page/network/request failures)
+- Latest full RC pass: `test-results/steam-rc-verify-2026-05-19T01-07-25-403Z/report.json`
+- Latest full-RC release playtest: `test-results/release-playtest-2026-05-19T01-10-54-082Z/report.json` (survived 599,952 ms, reached level 10, 2 lives, score 61,166, zero console/page/network/request failures)
 - Progression tempo check: `test-results/progression-tempo-2026-05-18T22-57-10-297Z/report.json`
 - Leaderboard split check: `test-results/leaderboard-split-2026-05-18T22-14-22-735Z/report.json`
-- Latest local smoke: `test-results/smoke-2026-05-18T22-57-33-823Z/report.json`
+- Latest local smoke: `test-results/smoke-2026-05-19T00-52-45-134Z/report.json`
 - Latest Electron current smoke after desktop global endpoint split: `test-results/electron-smoke-2026-05-18T22-14-22-276Z/report.json`
 - Boss phase variety check: `test-results/boss-phase-variety-2026-05-18T22-22-16-003Z/report.json`
 - Latest boss-variety release playtest: `test-results/release-playtest-2026-05-18T22-23-32-068Z/report.json`
-- Latest live smoke: `test-results/smoke-live-progression-2026-05-19T00-57/report.json`
+- Latest live smoke: `test-results/smoke-2026-05-19T01-05-27-085Z/report.json`
 - Current Steam screenshot capture: `release/steam-screenshots/draft-2026-05-17-current/report.json`
 - Current Steam trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`
 - Trailer opening check: `test-results/steam-trailer-opening-2026-05-18T23-49-17-385Z/report.json`
-- Current trailer opening check: `test-results/steam-trailer-opening-2026-05-19T00-44-16-410Z/report.json`
+- Current trailer opening check: `test-results/steam-trailer-opening-2026-05-19T01-03-08-119Z/report.json`
 - Tractor hijack check: `test-results/tractor-hijack-2026-05-18T23-59-51-037Z/report.json`
 - Latest solo release playtest after tractor hijack: `test-results/release-playtest-2026-05-19T00-10-31-915Z/report.json` (survived 599,979 ms, reached level 10, 2 lives, score 67,066, zero console/page/network/request failures)
+- Typography payoff check: `test-results/tractor-hijack-2026-05-19T00-54-16-898Z/report.json`
 - Release audit: `docs/reviews/release-readiness-audit-2026-05-17.json`
 - Steam handoff packet: `release/steamworks/release_handoff_packet.json`
 - Live game URL: `https://burt.tinyfoundry.app`
@@ -69,4 +70,4 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Next Best Loop
 
-Do a ruthless remaining-font sweep on any hardcoded Courier-style in-game text that escaped the typography loop, starting with score popups and any debug/loading overlays still visible in normal play.
+Show the full `TRACTOR HIJACK` score payoff more deliberately in one Steam screenshot or trailer beat, then run a human-curation pass on the first thumbnail and first 10 trailer seconds.

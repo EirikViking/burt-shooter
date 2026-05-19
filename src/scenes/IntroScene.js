@@ -111,7 +111,7 @@ export class IntroScene {
       fontSize: 14,
       fontWeight: 'bold',
       fill: '#7ee9ff',
-      letterSpacing: 1.6
+      letterSpacing: 0
     });
     this.eyebrow.anchor.set(0, 0.5);
     this.textGroup.addChild(this.eyebrow);
@@ -123,7 +123,7 @@ export class IntroScene {
       fill: '#ffffff',
       stroke: '#03101d',
       strokeThickness: 5,
-      letterSpacing: 1.2,
+      letterSpacing: 0,
       padding: 18,
       dropShadow: true,
       dropShadowColor: '#00ffff',
@@ -147,7 +147,7 @@ export class IntroScene {
     this.textGroup.addChild(this.caption);
 
     this.prompt = createText('CLICK / PRESS SPACE TO BEGIN  |  ESC SKIPS', {
-      fontFamily: 'Cascadia Mono, Consolas, Courier New, monospace',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
       fontWeight: 'bold',
       fill: '#ffd66b',

@@ -161,7 +161,7 @@ function createFallbackBoss() {
 
   // "BOSS" text
   const text = createText('BOSS', {
-    fontFamily: 'Courier New',
+    fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
     fontSize: 24,
     fill: '#ffffff',
     fontWeight: 'bold'

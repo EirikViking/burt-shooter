@@ -127,7 +127,7 @@ export class GameOverScene {
 
     const titleSize = getResponsiveFontSize(layout, 'title');
     this.title = createText(randomText, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: titleSize,
       fill: '#ff0000',
       stroke: '#880000',
@@ -145,7 +145,7 @@ export class GameOverScene {
 
     const scoreSize = getResponsiveFontSize(layout, 'score');
     this.scoreText = createText(`SCORE: ${this.finalScore}`, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: scoreSize,
       fill: '#ffff00'
     });
@@ -154,7 +154,7 @@ export class GameOverScene {
 
     const levelSize = getResponsiveFontSize(layout, 'subtitle');
     this.levelText = createText(`REACHED LEVEL: ${this.finalLevel}`, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: levelSize,
       fill: '#ffffff'
     });
@@ -163,7 +163,7 @@ export class GameOverScene {
 
     const unlockSize = layout.isMobile ? 15 : 18;
     this.unlockText = createText(this.unlockSummary, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: unlockSize,
       fontWeight: 'bold',
       fill: '#9cfbff',
@@ -179,7 +179,7 @@ export class GameOverScene {
 
     const bodySize = getResponsiveFontSize(layout, 'body');
     this.comment = createText(getGameOverComment(this.finalScore, this.finalLevel), {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: bodySize,
       fill: '#aaaaaa',
       align: 'center',
@@ -192,7 +192,7 @@ export class GameOverScene {
 
     const leaderboardStatusSize = layout.isMobile ? 13 : 16;
     this.leaderboardStatusText = createText(this.getLeaderboardStatusMessage(), {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: leaderboardStatusSize,
       fontWeight: 'bold',
       fill: '#9cfbff',
@@ -207,7 +207,7 @@ export class GameOverScene {
     this.container.addChild(this.leaderboardStatusText);
 
     this.notQualifiedText = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: layout.isMobile ? 18 : 22,
       fontWeight: 'bold',
       fill: '#8fa6b8',
@@ -222,7 +222,7 @@ export class GameOverScene {
     const promptSize = layout.isMobile ? 18 : 20;
     const promptText = this.getEntryPromptText(layout);
     this.promptText = createText(promptText, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: promptSize,
       fill: '#00ffff',
       align: 'center',
@@ -254,7 +254,7 @@ export class GameOverScene {
 
     const nameSize = layout.isMobile ? 22 : 26;
     this.nameDisplay = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: nameSize,
       fill: '#ffffff'
     });
@@ -264,7 +264,7 @@ export class GameOverScene {
 
     const smallSize = getResponsiveFontSize(layout, 'small');
     this.instructions = createText('R / SPACE / GAMEPAD A: RESTART  |  ESC: MENU', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: smallSize,
       fill: '#9cfbff',
       stroke: '#031323',

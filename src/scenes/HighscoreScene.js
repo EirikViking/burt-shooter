@@ -140,7 +140,7 @@ export class HighscoreScene {
     this.setupConfetti(width, height);
 
     this.title = createText('HIGHSCORES', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: getResponsiveFontSize(layout, 'score'),
       fill: '#ffff00',
       stroke: '#ff8800',
@@ -155,7 +155,7 @@ export class HighscoreScene {
     this.container.addChild(this.title);
 
     this.subtitle = createText('Arcade legends and brave initials', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: getResponsiveFontSize(layout, 'subtitle'),
       fill: '#00ffff'
     });
@@ -163,7 +163,7 @@ export class HighscoreScene {
     this.container.addChild(this.subtitle);
 
     this.comment = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: getResponsiveFontSize(layout, 'small'),
       fill: '#ffffff',
       align: 'center',
@@ -179,7 +179,7 @@ export class HighscoreScene {
     this.container.addChild(this.rowsContainer);
 
     this.stateMessage = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: getResponsiveFontSize(layout, 'body'),
       fill: '#ffdd55',
       align: 'center',
@@ -191,7 +191,7 @@ export class HighscoreScene {
     this.container.addChild(this.stateMessage);
 
     this.statusText = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: getResponsiveFontSize(layout, 'small'),
       fill: '#ffffff',
       align: 'left',
@@ -220,7 +220,7 @@ export class HighscoreScene {
 
     // TASK C: Build stamp removed from HighscoreScene (only allowed on MenuScene)
     // this.buildStamp = createText(`build: ${BUILD_ID}`, {
-    //   fontFamily: 'Courier New',
+    //   fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
     //   fontSize: getResponsiveFontSize(layout, 'small') - 1,
     //   fill: '#66fffe',
     //   align: 'right'
@@ -691,7 +691,7 @@ export class HighscoreScene {
       let entriesToDisplay = [...this.entries];
 
       const rowStyle = {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: getResponsiveFontSize(layout, 'tableRow'),
         fill: '#ffffff'
       };
@@ -851,7 +851,7 @@ export class HighscoreScene {
         const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
 
         const rankNameText = createText(getRankTitle(clampedRank), {
-          fontFamily: 'Courier New',
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
           fontSize: Math.max(8, rowStyle.fontSize - 4),
           fill: '#aaaaaa'
         });
@@ -872,7 +872,7 @@ export class HighscoreScene {
       this.rowsContainer.alpha = 1;
       const message = this.status === 'EMPTY' ? 'No highscores yet. Be first!' : 'No data.';
       const empty = createText(message, {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: getResponsiveFontSize(layout, 'body'),
         fill: '#ffffff',
         align: 'center',
@@ -1221,7 +1221,7 @@ export class HighscoreScene {
     container.addChild(bg);
 
     const label = createText(text, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 16,
       fill: '#00ffff'
     });

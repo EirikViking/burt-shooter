@@ -66,7 +66,7 @@ export class ShipSelectScene {
     // Fixed header with enhanced styling
     const headerContainer = new PIXI.Container();
     const title = createText('SELECT YOUR SHIP', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 36,
       fill: '#00ff00',
       stroke: '#000000',
@@ -83,7 +83,7 @@ export class ShipSelectScene {
 
     // Subtitle
     const subtitle = createText('Choose Your Combat Vessel', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
       fill: '#888888',
       align: 'center'
@@ -111,7 +111,7 @@ export class ShipSelectScene {
     const instructions = createText(
       '< / > SHIP  |  Q / E TIER JUMP  |  R RANDOM UNLOCKED  |  ENTER START',
       {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: 14,
         fill: '#cccccc',
         align: 'center'
@@ -123,7 +123,7 @@ export class ShipSelectScene {
     this.container.addChild(footerContainer);
 
     this.selectionInfoText = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 13,
       fill: '#66ffff',
       align: 'center',
@@ -377,7 +377,7 @@ export class ShipSelectScene {
       container.lockPlate = lockPlate;
 
       const lockText = createText('LOCKED', {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: 20,
         fill: '#ffcc00',
         align: 'center',
@@ -410,7 +410,7 @@ export class ShipSelectScene {
 
     // Ship name below sprite - LARGER and more readable
     const name = createText(ship.name, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 28,
       fill: this.toHexText(textAccent),
       align: 'center',
@@ -430,7 +430,7 @@ export class ShipSelectScene {
     // Ship description - BETTER spacing and size
     const teaser = this.getShortTeaser(ship.baseDescription || ship.description);
     const desc = createText(teaser, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 15,
       fill: '#cccccc',
       align: 'center',
@@ -445,7 +445,7 @@ export class ShipSelectScene {
 
     const traitText = this.getShipTraitText(ship);
     const trait = createText(traitText, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 13,
       fill: this.toHexText(textAccent),
       align: 'center',
@@ -463,7 +463,7 @@ export class ShipSelectScene {
     // Stats - CLEARER and larger
     const statsText = this.getShipStats(ship);
     const stats = createText(statsText, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#00ff00',
       align: 'center',
@@ -836,7 +836,7 @@ export class ShipSelectScene {
     button.bg = bg;
 
     const text = createText(label, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
       fill: textColor,
       fontWeight: 'bold'

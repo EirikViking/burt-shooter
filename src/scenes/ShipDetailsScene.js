@@ -55,7 +55,7 @@ export class ShipDetailsScene {
 
         // Title
         const title = createText(this.ship.name, {
-            fontFamily: 'Courier New',
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: isMobile ? 26 : 32,
             fill: '#00ff00',
             stroke: '#000000',
@@ -93,7 +93,7 @@ export class ShipDetailsScene {
         const usageCount = getShipUsage(this.spriteKey);
         const locked = !isShipUnlocked(this.spriteKey, this.unlockProgress);
         const usageText = createText(`Used ${usageCount} times by players`, {
-            fontFamily: 'Courier New',
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: 13,
             fill: '#999999',
             align: 'center'
@@ -105,7 +105,7 @@ export class ShipDetailsScene {
 
         if (locked) {
             const unlockText = createText(getShipUnlockLabel(this.spriteKey), {
-                fontFamily: 'Courier New',
+                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
                 fontSize: isMobile ? 12 : 14,
                 fill: '#ffcc00',
                 align: 'center',
@@ -137,7 +137,7 @@ export class ShipDetailsScene {
 
         // Stats title
         const statsTitle = createText('STATS', {
-            fontFamily: 'Courier New',
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: 16,
             fill: '#00ff00',
             fontWeight: 'bold'
@@ -163,7 +163,7 @@ export class ShipDetailsScene {
 
             // Stat value
             const valueText = createText(stat.value, {
-                fontFamily: 'Courier New',
+                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
                 fontSize: isMobile ? 20 : 24,
                 fill: stat.color,
                 fontWeight: 'bold'
@@ -173,7 +173,7 @@ export class ShipDetailsScene {
 
             // Stat label
             const labelText = createText(stat.label, {
-                fontFamily: 'Courier New',
+                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
                 fontSize: isMobile ? 10 : 11,
                 fill: '#aaaaaa'
             });
@@ -191,7 +191,7 @@ export class ShipDetailsScene {
                 ? `TRAIT: ${trait.label} - ${trait.description || 'Balanced arcade handling.'}`
                 : 'TRAIT: BALANCED TUNE',
             {
-                fontFamily: 'Courier New',
+                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
                 fontSize: isMobile ? 11 : 13,
                 fill: '#00ffff',
                 align: 'center',
@@ -216,7 +216,7 @@ export class ShipDetailsScene {
 
         paragraphs.forEach((para, index) => {
             const paraText = createText(para, {
-                fontFamily: 'Courier New',
+                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
                 fontSize: isMobile ? 11 : 13,
                 fill: '#dddddd',
                 align: 'left',
@@ -275,7 +275,7 @@ export class ShipDetailsScene {
         backButton.addChild(backBg);
 
         const backText = createText('BACK', {
-            fontFamily: 'Courier New',
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: isMobile ? 18 : 22,
             fill: '#00ff00',
             fontWeight: 'bold'
@@ -301,7 +301,7 @@ export class ShipDetailsScene {
         startButton.addChild(startBg);
 
         const startText = createText(locked ? 'LOCKED' : 'START GAME', {
-            fontFamily: 'Courier New',
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: isMobile ? 18 : 22,
             fill: locked ? '#ffcc00' : '#000000',
             fontWeight: 'bold'

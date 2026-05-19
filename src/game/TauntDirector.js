@@ -176,7 +176,7 @@ class TauntDirector {
 
         for (let i = 0; i < 3; i++) {
             const glitchText = createText(text, {
-                fontFamily: 'Courier New',
+                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
                 fontSize: 32,
                 fill: colors[i],
                 fontWeight: 'bold',
@@ -192,7 +192,7 @@ class TauntDirector {
         }
 
         const mainText = createText(text, {
-            fontFamily: 'Courier New',
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: 36,
             fill: '#ffffff',
             fontWeight: 'bold',

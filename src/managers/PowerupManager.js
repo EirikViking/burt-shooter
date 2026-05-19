@@ -129,7 +129,7 @@ class Powerup {
         // No text overlay for icons
         if (this.type !== 'shield' && this.type !== 'life') {
           const text = createText(this.label[0], {
-            fontFamily: 'Courier New',
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: 20,
             fill: '#ffffff',
             fontWeight: 'bold',
@@ -161,7 +161,7 @@ class Powerup {
     this.sprite.addChild(circle);
 
     const text = createText(this.label[0], {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
       fill: '#ffffff',
       fontWeight: 'bold'
@@ -388,7 +388,7 @@ class Powerup {
 
     const { width, height } = scene.game.app.screen;
     const text = createText(messages[this.type] || 'POWERUP!', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 20,
       fill: this.color,
       stroke: '#000000',

@@ -166,7 +166,7 @@ export class Boss {
 
     // Name display overlay
     this.nameText = createText(this.name, {
-      fontFamily: 'Orbitron, Rajdhani, Courier New',
+      fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
       fontSize: 20,
       fill: `#${(this.profile?.accent || 0xff4455).toString(16).padStart(6, '0')}`,
       stroke: '#000000',
@@ -202,7 +202,7 @@ export class Boss {
       this.healthText.parent.removeChild(this.healthText);
     }
     this.healthText = createText(healthText, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#ffffff'
     });

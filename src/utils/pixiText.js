@@ -1,8 +1,8 @@
 import * as PIXI from 'pixi.js';
 
-export const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, Impact, sans-serif';
+export const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 export const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
-export const FONT_MONO = 'Rajdhani, Cascadia Mono, Consolas, Courier New, monospace';
+export const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 
 function normalizeFontFamily(fontFamily) {
   const family = String(fontFamily || '').trim();

@@ -6,7 +6,7 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
-const FONT_MONO = 'Rajdhani, Cascadia Mono, Consolas, Courier New, monospace';
+const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 
 function normalizeFontFamily(fontFamily) {
   const family = String(fontFamily || '').trim();
@@ -52,7 +52,7 @@ export class HUD {
     this.rankBarBg = new PIXI.Graphics();
     this.rankBarFill = new PIXI.Graphics();
     this.rankText = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 10,
       fill: '#ffff00'
     });
@@ -76,7 +76,7 @@ export class HUD {
 
     // Score
     this.scoreText = createText('SCORE: 0', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 18,
       fontWeight: 'bold',
       fill: '#f8fbff',
@@ -85,7 +85,7 @@ export class HUD {
     });
     this.hudContainer.addChild(this.scoreText);
     this.scoreMultiplierText = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
       fill: '#ffff00',
       stroke: '#000000',
@@ -96,7 +96,7 @@ export class HUD {
 
     // Level
     this.levelText = createText('LEVEL: 1', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 15,
       fontWeight: 'bold',
       fill: '#75ecff',
@@ -110,13 +110,13 @@ export class HUD {
     this.livesBg = new PIXI.Graphics();
     this.livesGroup.addChild(this.livesBg);
     this.livesIcon = createText('\u2665', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 20,
       fill: '#ff8080'
     });
     this.livesGroup.addChild(this.livesIcon);
     this.livesText = createText('LIVES: 3', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 18,
       fontWeight: 'bold',
       fill: '#00ff00', // TASK 4: Start with green (default for >= 2 lives)
@@ -132,14 +132,14 @@ export class HUD {
     this.activePowerupBarBg = new PIXI.Graphics();
     this.activePowerupBarFill = new PIXI.Graphics();
     this.activePowerupText = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
       fill: '#ffffff',
       stroke: '#000000',
       strokeThickness: 3
     });
     this.activePowerupTimer = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#ffff00',
       stroke: '#000000',
@@ -158,7 +158,7 @@ export class HUD {
     this.traitBarBg = new PIXI.Graphics();
     this.traitBarFill = new PIXI.Graphics();
     this.traitLabel = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 11,
       fontWeight: 'bold',
       fill: '#ffb35c',
@@ -166,7 +166,7 @@ export class HUD {
       strokeThickness: 3
     });
     this.traitText = createText('', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#ffffff',
       stroke: '#000000',
@@ -181,7 +181,7 @@ export class HUD {
     this.hudContainer.addChild(this.traitGroup);
 
     this.missionLabel = createText('MISSION STATUS', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 10,
       fontWeight: 'bold',
       fill: '#7ee9ff',
@@ -191,7 +191,7 @@ export class HUD {
     this.hudContainer.addChild(this.missionLabel);
 
     this.missionText = createText('WAVE 1 / HOSTILES 0', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
       fontWeight: 'bold',
       fill: '#f8fbff',
@@ -204,7 +204,7 @@ export class HUD {
 
     // Rotating arcade-sector label.
     this.locationText = createText('ORBITAL ARCADE', {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#9eb7c0'
     });

@@ -257,7 +257,7 @@ export class Player {
 
     if (!this.rankBoostText) {
       this.rankBoostText = createText('', {
-        fontFamily: 'Courier New',
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: 14,
         fill: '#66ffff',
         align: 'center'

@@ -6,7 +6,7 @@ Source deployment:
 - `https://burt.tinyfoundry.app`
 
 Current captured build:
-- `v2026-05-19_01-59-03`
+- `v2026-05-19_02-52-17`
 
 Candidate set:
 - `01-first-wave-gameplay.png` - readable active wave combat from the release build.
@@ -28,7 +28,7 @@ Review evidence:
 Notes:
 - All candidates are `1280x720`.
 - Source `report.json` had zero console events, page errors, and bad network responses.
-- Source `report.json` records build `v2026-05-19_01-59-03`, matching `public/version.json` at capture time.
+- Source `report.json` records build `v2026-05-19_02-52-17`, matching `public/version.json` at capture time.
 - Boss and wave-transition captures include the quieter message-focus timing, later score-flow/reward cleanup, generated hijacker art, tractor-beam and tractor-hijack mechanics, current arcade typography pass, announcer voice reboot build, advanced boss phase variety, and faster level-10 progression build.
 - The midgame and boss shots use deterministic debug routes for repeatable store-candidate capture; they still render the actual runtime UI, sprites, backgrounds, and effects.
 - Final upload still needs user approval inside Steamworks.

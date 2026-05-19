@@ -13,9 +13,9 @@ import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } fro
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
 
-const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, Impact, sans-serif';
-const FONT_ARCADE = 'Rajdhani, Bahnschrift, Eurostile, Trebuchet MS, sans-serif';
-const FONT_MONO = 'Rajdhani, Cascadia Mono, Consolas, Courier New, monospace';
+const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
+const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
+const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 
 function normalizeFontFamily(fontFamily) {
   const family = String(fontFamily || '').trim();
@@ -204,7 +204,7 @@ export class MenuScene {
     // Text
     const textStr = platform === 'iOS' ? 'INSTALL APP' : 'INSTALL APP';
     const text = createText(textStr, {
-      fontFamily: 'Courier New',
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 16,
       fill: 0x00ffff,
       fontWeight: 'bold'
@@ -513,7 +513,7 @@ export class MenuScene {
         fontSize: 13,
         fill: '#f6fbff',
         fontWeight: '800',
-        letterSpacing: 1.2,
+        letterSpacing: 0,
         align: 'center'
       });
       role.anchor.set(0.5);
@@ -571,7 +571,7 @@ export class MenuScene {
       fontSize: titleSize,
       fill: '#dffcff',
       fontWeight: '900',
-      letterSpacing: layout.isMobile ? 1 : 2,
+      letterSpacing: 0,
       stroke: '#062a54',
       strokeThickness: layout.isMobile ? 4 : 6,
       padding: layout.isMobile ? 12 : 26,
@@ -592,7 +592,7 @@ export class MenuScene {
       fontSize: subtitleSize,
       fontWeight: '700',
       fill: '#ff67dc',
-      letterSpacing: 1.4,
+      letterSpacing: 0,
       align: 'center'
     });
     this.subtitle.anchor.set(0.5);
@@ -868,7 +868,7 @@ export class MenuScene {
 
     this.title.style.fontSize = titleSize;
     this.title.style.stroke = { color: '#062a54', width: layout.isMobile ? 4 : 6 };
-    this.title.style.letterSpacing = layout.isMobile ? 1 : 2;
+    this.title.style.letterSpacing = 0;
     this.title.style.padding = layout.isMobile ? 12 : 26;
     this.subtitle.style.fontSize = subtitleSize;
     this.flavor.style.fontSize = storySize;
@@ -1072,7 +1072,7 @@ export class MenuScene {
       fontFamily: FONT_DISPLAY,
       fontSize: fontSize,
       fontWeight: '800',
-      letterSpacing: 1.5,
+      letterSpacing: 0,
       fill: '#c9fbff',
       stroke: '#031323',
       strokeThickness: 3

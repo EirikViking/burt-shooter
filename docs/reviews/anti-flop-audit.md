@@ -628,3 +628,49 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 
 - The focused hijack payoff is stronger than the canonical trailer's quick break beat; final store media still needs human curation for whether to show the full `TRACTOR HIJACK` score moment.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 15 - Remaining Arcade Typography Sweep
+
+### What Was Tested
+
+- Treated typography as the highest-impact remaining anti-cheapness issue after the tractor-hijack payoff.
+- Swept player-visible Pixi text, menu/HUD/game-over/highscore/ship screens, score popups, taunt bubbles, loading/fatal overlays, and the public Nova Swarm page.
+- Refreshed canonical Steam screenshot and trailer evidence so store media reflects the same typography build.
+
+### What Looked Cheap
+
+- Several screens still had direct `Courier New`, generic `monospace`, or `Impact`-style fallback stacks.
+- Score popups and utility overlays could still read as a prototype even after the earlier font-normalizer pass.
+- Some UI labels used stretched letter spacing that made compact HUD text feel less premium.
+
+### What Changed
+
+- Removed player-facing Courier/monospace/Impact-style font holdouts from source styles.
+- Routed visible text through the licensed Orbitron/Rajdhani/Bahnschrift arcade stack.
+- Set visible Pixi `letterSpacing` declarations to `0`.
+- Refreshed the Steam upload shortlist and contact sheet from build `v2026-05-19_02-52-17`.
+- Refreshed the trailer visual/audio/candidate reports; the candidate still opens `hijacker_and_boss_first`.
+- Deployed the same built `dist` to Cloudflare Pages without minting a new build ID.
+
+### Evidence Captured
+
+- Local smoke: `test-results/smoke-2026-05-19T00-52-45-134Z/report.json`.
+- Tractor hijack typography/payoff check: `test-results/tractor-hijack-2026-05-19T00-54-16-898Z/report.json`.
+- Leaderboard split check: `test-results/leaderboard-split-2026-05-19T00-54-38-196Z/report.json`.
+- Game-over motivation check: `test-results/gameover-motivation-2026-05-19T00-54-38-211Z/report.json`.
+- Live smoke: `test-results/smoke-2026-05-19T01-05-27-085Z/report.json`.
+- Deployed build: `https://afa1d93c.burt-game.pages.dev`; private domain `https://burt.tinyfoundry.app/version.json` reports `v2026-05-19_02-52-17`.
+- Current Steam screenshots: `release/steam-screenshots/draft-2026-05-17-current/report.json`.
+- Upload shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png`.
+- Trailer opening check: `test-results/steam-trailer-opening-2026-05-19T01-03-08-119Z/report.json`.
+- Trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`.
+- Full RC: `test-results/steam-rc-verify-2026-05-19T01-07-25-403Z/report.json`.
+- Full-RC release playtest: `test-results/release-playtest-2026-05-19T01-10-54-082Z/report.json` survived 599,952 ms, reached level 10, ended with 2 lives, score 61,166, and zero console/page/network/request failures.
+- Payload manifest: `release/steamworks/steam_payload_manifest.json` (74 files, 628,196,085 bytes).
+- Release handoff packet: `release/steamworks/release_handoff_packet.json`.
+- Release-readiness audit: `docs/reviews/release-readiness-audit-2026-05-17.json`.
+
+### Remaining Top Risks
+
+- Typography now looks materially more premium in tested screens, but Steam screenshots still need final human curation for the strongest possible first thumbnail.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.

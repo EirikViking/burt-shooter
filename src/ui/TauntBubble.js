@@ -36,7 +36,7 @@ export class TauntBubble {
         const maxWidth = Math.min(500, this.screenWidth * 0.85);
 
         const textStyle = {
-            fontFamily: 'Courier New',
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: 20,
             fill: '#ffffff',
             wordWrap: true,
@@ -96,11 +96,11 @@ export class TauntBubble {
             this.container.addChild(bannerBg);
 
             const speakerText = createText(this.speaker, {
-                fontFamily: 'Courier New',
+                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
                 fontSize: 16,
                 fill: '#00ffff',
                 fontWeight: 'bold',
-                letterSpacing: 1
+                letterSpacing: 0
             });
             speakerText.anchor.set(0.5);
             speakerText.x = 0;
