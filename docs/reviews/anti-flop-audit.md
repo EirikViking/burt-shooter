@@ -800,3 +800,43 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 - Graze Break is now proven in focused checks and staged in current Steam trailer capture; final human store-media curation is still required.
 - The current full-RC release playtest survived cleanly but reached level 8 on this run, so the next balance loop should watch whether level-10 tempo remains consistently reachable without flattening challenge.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 19 - Level-10 Tempo Consistency
+
+### What Was Tested
+
+- Treated late-run tempo consistency as the highest-impact issue after Graze Break because the prior full-RC playtest survived cleanly but peaked at level 8.
+- Checked the balance constants and found that levels 7-10 still added a third normal wave and could inject a bonus challenge wave before the boss.
+- Ran focused progression, boss telegraph/contact, Graze Break, smoke, live smoke, Steam media, full RC, and handoff gates after the tuning change.
+
+### What Changed
+
+- Kept levels 1-10 at two focused normal waves before each boss, preserving the boss-every-level identity while removing late filler-wave drag.
+- Shortened between-wave briefing, cleanup, entry, boss-gate, and level-complete waits so dead air drops without hiding telegraphs.
+- Trimmed boss health from `88 + 16 per level` to `84 + 14 per level`, making later bosses punchier without erasing phase pressure.
+- Tightened `npm run check:progression-tempo` so it now enforces 20 or fewer normal waves, 120 or fewer normal enemies, level-10 boss HP under 250, and shorter transition windows.
+
+### Evidence Captured
+
+- Build: `v2026-05-19_05-32-09`.
+- Progression tempo check: `test-results/progression-tempo-2026-05-19T03-32-06-102Z/report.json` (20 waves, 114 normal enemies, level-10 boss HP 224).
+- Boss telegraph regression: `test-results/boss-telegraph-2026-05-19T03-32-47-527Z/report.json`.
+- Boss contact regression: `test-results/boss-contact-2026-05-19T03-32-47-570Z/report.json`.
+- Graze Break regression: `test-results/graze-break-2026-05-19T03-32-47-539Z/report.json`.
+- Local smoke: `test-results/smoke-2026-05-19T03-33-06-582Z/report.json`.
+- Solo release playtest: `test-results/release-playtest-2026-05-19T03-34-18-525Z/report.json` survived 599,880 ms, reached level 10, ended with 2 lives, score 59,488, and zero console/page/network/request failures.
+- Deployed build: `https://67d7668a.burt-game.pages.dev`; `https://burt.tinyfoundry.app/version.json` reports `v2026-05-19_05-32-09`.
+- Live private-domain smoke: `test-results/smoke-2026-05-19T03-45-21-670Z/report.json`.
+- Current Steam screenshots: `release/steam-screenshots/draft-2026-05-17-current/report.json`.
+- Current trailer opening check: `test-results/steam-trailer-opening-2026-05-19T04-05-26-305Z/report.json`.
+- Full RC: `test-results/steam-rc-verify-2026-05-19T03-49-43-845Z/report.json`.
+- Full-RC release playtest: `test-results/release-playtest-2026-05-19T03-53-15-623Z/report.json` survived 599,893 ms, reached level 11, ended with 3 lives, score 61,056, and zero console/page/network/request failures.
+- Payload manifest: `release/steamworks/steam_payload_manifest.json` (74 files, 628,266,041 bytes).
+- Release handoff packet: `release/steamworks/release_handoff_packet.json`.
+- Release-readiness audit: `docs/reviews/release-readiness-audit-2026-05-17.json`.
+
+### Remaining Top Risks
+
+- Level 10 is now reliably reachable in tested 10-minute runs; the next balance watch item is whether the faster late-game feels too compressed to expert players during human play.
+- The current fallback voice pack remains structurally improved but not a premium licensed performance.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.

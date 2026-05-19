@@ -1,26 +1,28 @@
 {
-  "generatedAt": "2026-05-19T03:27:46.971Z",
+  "generatedAt": "2026-05-19T04:05:38.610Z",
   "build": {
-    "version": "v2026-05-19_05-06-23",
-    "timestamp": "2026-05-19T03:06:23.635Z",
+    "version": "v2026-05-19_05-32-09",
+    "timestamp": "2026-05-19T03:32:09.776Z",
     "evidenceVersions": [
-      "v2026-05-19_05-06-23",
-      "v2026-05-19_05-06-23",
-      "v2026-05-19_05-06-23",
-      "v2026-05-19_05-06-23",
-      "v2026-05-19_05-06-23",
-      "v2026-05-19_05-06-23",
-      "v2026-05-19_05-06-23",
-      "v2026-05-19_05-06-23"
+      "v2026-05-19_05-32-09",
+      "v2026-05-19_05-32-09",
+      "v2026-05-19_05-32-09",
+      "v2026-05-19_05-32-09",
+      "v2026-05-19_05-32-09",
+      "v2026-05-19_05-32-09",
+      "v2026-05-19_05-32-09",
+      "v2026-05-19_05-32-09"
     ],
     "staleEvidence": []
   },
   "releaseAudit": {
     "verdict": "not_steam_ready",
-    "passed": 20,
-    "failed": 3,
-    "hardFailures": 0,
+    "passed": 18,
+    "failed": 5,
+    "hardFailures": 2,
     "failedChecks": [
+      "steam_trailer_visual_report_clean",
+      "steam_trailer_audio_mix_report_present",
       "steamworks_ids_configured",
       "steam_client_validation_evidence",
       "human_release_approvals_recorded"
@@ -50,27 +52,27 @@
       "status": "ready",
       "path": "release/steamworks/desktop_package_review_report.json",
       "exeBytes": 226666496,
-      "electronSmoke": "test-results/electron-smoke-2026-05-19T03-15-10-966Z/report.json",
-      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-19T03-15-13-342Z/report.json"
+      "electronSmoke": "test-results/electron-smoke-2026-05-19T03-51-07-041Z/report.json",
+      "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-05-19T03-51-10-849Z/report.json"
     },
     "payloadManifest": {
       "status": "ready",
       "path": "release/steamworks/steam_payload_manifest.json",
       "fileCount": 74,
-      "totalBytes": 628266044,
-      "manifestHash": "ffd9064d91b89614a872a63bd995f712af054ca5b4c2468ab125ef4c72aa5d9d"
+      "totalBytes": 628266041,
+      "manifestHash": "c4fbab8d939e3d65099deacb1e1ab27fc1da89b1599c508a01a630e816963583"
     },
     "liveDeployment": {
       "status": "ready",
       "path": "release/steamworks/live_deployment_report.json",
       "liveUrl": "https://burt.tinyfoundry.app",
-      "liveSmoke": "test-results/smoke-2026-05-19T03-07-48-633Z/report.json"
+      "liveSmoke": "test-results/smoke-2026-05-19T03-45-21-670Z/report.json"
     },
     "fullRc": {
       "status": "ready",
       "path": "release/steamworks/full_rc_verification_report.json",
-      "fullRcReport": "test-results/steam-rc-verify-2026-05-19T03-13-45-995Z/report.json",
-      "releasePlaytest": "test-results/release-playtest-2026-05-19T03-17-16-274Z/report.json"
+      "fullRcReport": "test-results/steam-rc-verify-2026-05-19T03-49-43-845Z/report.json",
+      "releasePlaytest": "test-results/release-playtest-2026-05-19T03-53-15-623Z/report.json"
     },
     "humanReview": {
       "status": "ready",
@@ -98,7 +100,7 @@
     "provenance": {
       "status": "ready",
       "path": "release/provenance/asset_provenance_report.json",
-      "covered": "1777/1777"
+      "covered": "1778/1778"
     },
     "storeMetadata": {
       "status": "ready",
@@ -115,17 +117,17 @@
     {
       "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
       "exists": true,
-      "bytes": 8888380
+      "bytes": 7938329
     },
     {
       "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
       "exists": true,
-      "bytes": 9203163
+      "bytes": 9282514
     },
     {
       "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
       "exists": true,
-      "bytes": 505440
+      "bytes": 517883
     },
     {
       "path": "release/steam-assets/draft-2026-05-17-nova-swarm/review/steam_asset_contact_sheet.png",

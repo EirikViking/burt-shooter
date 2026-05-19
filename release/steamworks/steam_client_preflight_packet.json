@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-19T03:27:43.575Z",
+  "generatedAt": "2026-05-19T04:03:40.204Z",
   "status": "ready_for_steam_upload_and_client_validation",
   "build": {
-    "version": "v2026-05-19_05-06-23",
-    "timestamp": "2026-05-19T03:06:23.635Z"
+    "version": "v2026-05-19_05-32-09",
+    "timestamp": "2026-05-19T03:32:09.776Z"
   },
   "explicitLimit": "This packet proves local upload preflight only. It is not Steam-client validation evidence.",
   "localPayload": {
@@ -11,26 +11,26 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-19T03:15:02.470Z"
+      "modifiedAt": "2026-05-19T03:50:58.721Z"
     },
     "payloadManifest": {
       "path": "release/steamworks/steam_payload_manifest.json",
       "exists": true,
       "bytes": 15372,
-      "modifiedAt": "2026-05-19T03:27:30.949Z"
+      "modifiedAt": "2026-05-19T04:03:27.969Z"
     },
     "payloadManifestSummary": {
       "fileCount": 74,
-      "totalBytes": 628266044,
-      "manifestHash": "ffd9064d91b89614a872a63bd995f712af054ca5b4c2468ab125ef4c72aa5d9d"
+      "totalBytes": 628266041,
+      "manifestHash": "c4fbab8d939e3d65099deacb1e1ab27fc1da89b1599c508a01a630e816963583"
     },
     "productName": "Nova Swarm",
     "appId": "app.novaswarm.game",
     "packagedExeSmoke": {
-      "reportPath": "test-results/packaged-exe-smoke-2026-05-19T03-15-13-342Z/report.json",
-      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-19T03-15-13-342Z/01-electron-menu.png",
+      "reportPath": "test-results/packaged-exe-smoke-2026-05-19T03-51-10-849Z/report.json",
+      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-19T03-51-10-849Z/01-electron-menu.png",
       "status": "passed",
-      "build": "v2026-05-19_05-06-23",
+      "build": "v2026-05-19_05-32-09",
       "title": "Nova Swarm - Arcade Patrol",
       "scene": "menu",
       "introTitle": null,
@@ -48,16 +48,16 @@
       "consoleEvents": []
     },
     "packagedControlsSmoke": {
-      "reportPath": "test-results/packaged-control-smoke-2026-05-19T03-15-51-544Z/report.json",
+      "reportPath": "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/report.json",
       "screenshotPaths": [
-        "test-results/packaged-control-smoke-2026-05-19T03-15-51-544Z/00-control-start.png",
-        "test-results/packaged-control-smoke-2026-05-19T03-15-51-544Z/01-keyboard-run.png",
-        "test-results/packaged-control-smoke-2026-05-19T03-15-51-544Z/02-keyboard-pause.png",
-        "test-results/packaged-control-smoke-2026-05-19T03-15-51-544Z/03-gamepad-run.png",
-        "test-results/packaged-control-smoke-2026-05-19T03-15-51-544Z/04-gamepad-pause.png"
+        "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/00-control-start.png",
+        "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/01-keyboard-run.png",
+        "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/02-keyboard-pause.png",
+        "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/03-gamepad-run.png",
+        "test-results/packaged-control-smoke-2026-05-19T03-51-51-111Z/04-gamepad-pause.png"
       ],
       "status": "passed",
-      "build": "v2026-05-19_05-06-23",
+      "build": "v2026-05-19_05-32-09",
       "checks": {
         "keyboardMovement": true,
         "keyboardFire": true,
@@ -70,23 +70,23 @@
       "errors": []
     },
     "fullRc": {
-      "reportPath": "test-results/steam-rc-verify-2026-05-19T03-13-45-995Z/report.json",
+      "reportPath": "test-results/steam-rc-verify-2026-05-19T03-49-43-845Z/report.json",
       "releasePlaytest": {
-        "reportPath": "test-results/release-playtest-2026-05-19T03-17-16-274Z/report.json",
+        "reportPath": "test-results/release-playtest-2026-05-19T03-53-15-623Z/report.json",
         "baseUrl": "http://127.0.0.1:4173",
-        "survivedMs": 599876,
+        "survivedMs": 599893,
         "requiredSurvivalMs": 599500,
         "survivedFullDuration": true,
-        "peakLevel": 8,
-        "peakScore": 70934,
+        "peakLevel": 11,
+        "peakScore": 61056,
         "finalState": {
           "scene": "play",
-          "level": 8,
+          "level": 11,
           "lives": 3,
-          "score": 70934,
+          "score": 61056,
           "enemyManagerState": "WAVE_ACTIVE",
           "musicContext": "gameplay",
-          "musicTrack": "Rain of Lasers.mp3",
+          "musicTrack": "Alone Against Enemy.mp3",
           "fatalOverlay": false
         },
         "console": {
@@ -140,13 +140,13 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-19T03:15:02.470Z"
+      "modifiedAt": "2026-05-19T03:50:58.721Z"
     },
     {
       "path": "release/steamworks/steam_payload_manifest.json",
       "exists": true,
       "bytes": 15372,
-      "modifiedAt": "2026-05-19T03:27:30.949Z"
+      "modifiedAt": "2026-05-19T04:03:27.969Z"
     },
     {
       "path": "release/steamworks/app_build_TEMPLATE.vdf",
@@ -164,13 +164,13 @@
       "path": "release/steamworks/desktop_package_review_report.json",
       "exists": true,
       "bytes": 2516,
-      "modifiedAt": "2026-05-19T03:15:57.898Z"
+      "modifiedAt": "2026-05-19T03:51:57.497Z"
     },
     {
       "path": "release/steamworks/full_rc_verification_report.json",
       "exists": true,
-      "bytes": 3535,
-      "modifiedAt": "2026-05-19T03:27:35.086Z"
+      "bytes": 3542,
+      "modifiedAt": "2026-05-19T04:03:32.403Z"
     },
     {
       "path": "release/steamworks/steam_client_validation_runbook.md",

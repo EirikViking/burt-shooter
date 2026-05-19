@@ -42,25 +42,25 @@ export const BalanceConfig = {
         enemyFireChance: 0.005, // Reduced from 0.006 - less frequent shooting
         enemyProjectileSpeed: 3.0, // Slower enemy bullets (from 3.2)
 
-        waveCountBase: 2, // Early sectors are short: two waves, then boss
-        waveCountPerLevel: 6, // Add a third wave after level 6
-        waveCountMax: 3, // Keep level 10 reachable in a normal session
+        waveCountBase: 2, // Fast score-chaser cadence: two focused waves, then boss
+        waveCountPerLevel: 99, // Keep level 10 on a normal-session path before adding filler waves
+        waveCountMax: 2, // Boss-every-level stays the anchor, not late-wave padding
 
         waveEnemyBase: 4, // Faster waves; boss remains the level anchor
         waveEnemyPerLevel: 0.25, // Controlled count growth
         waveEnemyRandom: 1, // Reduced from 2
         waveEnemyMax: 12, // Prevent late-level filler walls
-        waveDelayMs: 1100, // Briefing duration between normal waves
-        waveBriefingAnnounceMs: 450,
-        waveCleanupMs: 1200,
-        enemyEntryDurationMs: 1450,
-        enemyEntryDelayBaseMs: 115,
-        bossGateMs: 760,
-        challengeWaveChance: 0.035,
+        waveDelayMs: 950, // Briefing duration between normal waves
+        waveBriefingAnnounceMs: 350,
+        waveCleanupMs: 950,
+        enemyEntryDurationMs: 1280,
+        enemyEntryDelayBaseMs: 95,
+        bossGateMs: 650,
+        challengeWaveChance: 0.02,
         challengeWaveCount: 14,
 
-        bossBaseHealth: 88,
-        bossHealthPerLevel: 16,
+        bossBaseHealth: 84,
+        bossHealthPerLevel: 14,
         bossShootDelayBase: 30, // Fair first boss cadence
         bossShootDelayPhase2: 20, // Escalates without becoming instant bullet spam
         bossShootDelayPhase3: 15, // Still dangerous, but dodgeable
@@ -85,6 +85,6 @@ export const BalanceConfig = {
     // Levels
     level: {
         completionBonus: 1000,
-        sequenceDuration: 1750 // ms between boss clear and next sector
+        sequenceDuration: 1500 // ms between boss clear and next sector
     }
 };

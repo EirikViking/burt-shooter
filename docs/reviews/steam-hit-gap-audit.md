@@ -24,7 +24,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 | Steam tag accuracy | 8 | Tags are now focused and Bullet Hell was removed from the first metadata set. |
 | Controller expectations | 7 | Runtime support and packaged control smoke exist; Steam metadata correctly stays at Partial Controller Support pending Steam client validation. |
 | Steam readiness honesty | 9 | Release audit reports only the three manual blockers instead of pretending release-ready. |
-| Would I wishlist this from the store page? | 8 | Better than generic retro, with Tractor Hijack and Graze Break giving it real "show me that again" hooks. The fallback voice still caps premium feel. |
+| Would I wishlist this from the store page? | 8 | Better than generic retro, with Tractor Hijack, Graze Break, and a now-proven level-10-in-10-minutes pace. The fallback voice still caps premium feel. |
 | Would I play another run after dying? | 9 | Instant restart, local score saving, global qualification fanfare, and separate board status make the score chase clearer and less fragile. |
 
 ## Top Five Highest-Impact Changes
@@ -41,31 +41,31 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 - Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Remaining risk is store-media breadth: the trailer proves one boss clearly, but not the full variety of later bosses.
 - The new voice system fixes line structure/repetition and now has a stronger no-key DSP pass, but the local fallback performance is still not as premium as a licensed pro/neural performance.
 - Leaderboard flow now has distinct local/global qualification, local fallback, and a tested global-offline path. Remaining risk is live public-domain verification and by-eye polish of the highscore tab presentation.
-- Public web build and marketing site are live; the latest Graze Break build and current Tractor Hijack/Graze Break media/handoff evidence are verified against the private domain.
+- Public web build and marketing site are live; the latest tempo build and current Tractor Hijack/Graze Break media/handoff evidence are verified against the private domain.
 - Steam client validation cannot happen until real app/depot IDs and credentials exist.
 - Human approvals are still required for screenshots, trailer, capsules, audio, store copy, and legal/provenance.
 
 ## Evidence Snapshot
 
-- Latest full RC pass: `test-results/steam-rc-verify-2026-05-19T03-13-45-995Z/report.json`
-- Latest full-RC release playtest: `test-results/release-playtest-2026-05-19T03-17-16-274Z/report.json` (survived 599,876 ms, reached level 8, 3 lives, score 70,934, zero console/page/network/request failures)
-- Progression tempo check: `test-results/progression-tempo-2026-05-18T22-57-10-297Z/report.json`
+- Latest full RC pass: `test-results/steam-rc-verify-2026-05-19T03-49-43-845Z/report.json`
+- Latest full-RC release playtest: `test-results/release-playtest-2026-05-19T03-53-15-623Z/report.json` (survived 599,893 ms, reached level 11, 3 lives, score 61,056, zero console/page/network/request failures)
+- Progression tempo check: `test-results/progression-tempo-2026-05-19T03-32-06-102Z/report.json`
 - Leaderboard split check: `test-results/leaderboard-split-2026-05-18T22-14-22-735Z/report.json`
-- Latest local smoke: `test-results/smoke-2026-05-19T03-16-09-334Z/report.json`
+- Latest local smoke: `test-results/smoke-2026-05-19T03-52-08-051Z/report.json`
 - Latest Electron current smoke after desktop global endpoint split: `test-results/electron-smoke-2026-05-18T22-14-22-276Z/report.json`
 - Boss phase variety check: `test-results/boss-phase-variety-2026-05-18T22-22-16-003Z/report.json`
 - Latest boss-variety release playtest: `test-results/release-playtest-2026-05-18T22-23-32-068Z/report.json`
-- Latest live smoke: `test-results/smoke-2026-05-19T03-07-48-633Z/report.json`
+- Latest live smoke: `test-results/smoke-2026-05-19T03-45-21-670Z/report.json`
 - Current Steam screenshot capture: `release/steam-screenshots/draft-2026-05-17-current/report.json`
 - Current Steam trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`
-- Current trailer opening check: `test-results/steam-trailer-opening-2026-05-19T03-11-33-729Z/report.json`
+- Current trailer opening check: `test-results/steam-trailer-opening-2026-05-19T04-05-26-305Z/report.json`
 - Tractor hijack check: `test-results/tractor-hijack-2026-05-18T23-59-51-037Z/report.json`
 - Latest solo release playtest after tractor hijack: `test-results/release-playtest-2026-05-19T00-10-31-915Z/report.json` (survived 599,979 ms, reached level 10, 2 lives, score 67,066, zero console/page/network/request failures)
 - Typography payoff check: `test-results/tractor-hijack-2026-05-19T00-54-16-898Z/report.json`
 - No-key announcer Tractor Hijack proof: `test-results/tractor-hijack-2026-05-19T02-00-44-037Z/report.json`
 - Graze Break proof: `test-results/graze-break-2026-05-19T03-06-55-653Z/report.json`
-- Current deployed build: `v2026-05-19_05-06-23` at `https://burt.tinyfoundry.app`
-- Steam payload manifest: `release/steamworks/steam_payload_manifest.json` (74 files, 628,266,044 bytes)
+- Current deployed build: `v2026-05-19_05-32-09` at `https://burt.tinyfoundry.app`
+- Steam payload manifest: `release/steamworks/steam_payload_manifest.json` (74 files, 628,266,041 bytes)
 - Release audit: `docs/reviews/release-readiness-audit-2026-05-17.json`
 - Steam handoff packet: `release/steamworks/release_handoff_packet.json`
 - Live game URL: `https://burt.tinyfoundry.app`
@@ -73,4 +73,4 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Next Best Loop
 
-Highest remaining anti-flop loop: add one more tight replay-compulsion/readability pass around late-level tempo and score-chase clarity, then replace the local fallback announcer with a licensed premium performance when an approved no-key/pro-source path exists.
+Highest remaining anti-flop loop: by-eye human curation of the final screenshot/trailer/audio package, then replace the local fallback announcer with a licensed premium performance when an approved no-key/pro-source path exists.

@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-05-19T03:27:35.084Z",
+  "generatedAt": "2026-05-19T04:03:32.401Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-19_05-06-23",
-    "timestamp": "2026-05-19T03:06:23.635Z"
+    "version": "v2026-05-19_05-32-09",
+    "timestamp": "2026-05-19T03:32:09.776Z"
   },
   "latestFullRc": {
-    "reportPath": "test-results/steam-rc-verify-2026-05-19T03-13-45-995Z/report.json",
-    "generatedAt": "2026-05-19T03:27:21.713Z",
+    "reportPath": "test-results/steam-rc-verify-2026-05-19T03-49-43-845Z/report.json",
+    "generatedAt": "2026-05-19T04:03:21.089Z",
     "mode": "full",
     "ok": true,
     "stageCount": 14,
@@ -15,72 +15,72 @@
       {
         "name": "build:current",
         "ok": true,
-        "durationMs": 22964
+        "durationMs": 23912
       },
       {
         "name": "check:intro-voice",
         "ok": true,
-        "durationMs": 4048
+        "durationMs": 4055
       },
       {
         "name": "check:provenance",
         "ok": true,
-        "durationMs": 719
+        "durationMs": 680
       },
       {
         "name": "check:steam-assets",
         "ok": true,
-        "durationMs": 2590
+        "durationMs": 2398
       },
       {
         "name": "check:steam-store",
         "ok": true,
-        "durationMs": 546
+        "durationMs": 526
       },
       {
         "name": "package:steam:win:current",
         "ok": true,
-        "durationMs": 53259
+        "durationMs": 50740
       },
       {
         "name": "desktop:smoke:current",
         "ok": true,
-        "durationMs": 2736
+        "durationMs": 4226
       },
       {
         "name": "desktop:smoke:packaged",
         "ok": true,
-        "durationMs": 38203
+        "durationMs": 40226
       },
       {
         "name": "desktop:controls:packaged",
         "ok": true,
-        "durationMs": 5923
+        "durationMs": 5950
       },
       {
         "name": "check:desktop-package",
         "ok": true,
-        "durationMs": 973
+        "durationMs": 987
       },
       {
         "name": "check:live-deployment",
         "ok": true,
-        "durationMs": 2379
+        "durationMs": 1104
       },
       {
         "name": "audit:audio-mix",
         "ok": true,
-        "durationMs": 7917
+        "durationMs": 8377
       },
       {
         "name": "smoke",
         "ok": true,
-        "durationMs": 66915
+        "durationMs": 67517
       },
       {
         "name": "playtest:release",
         "ok": true,
-        "durationMs": 606527
+        "durationMs": 606524
       }
     ],
     "releaseAudit": {
@@ -95,15 +95,15 @@
       ]
     },
     "audioAudit": {
-      "generatedAt": "2026-05-19T03:16:08.187Z",
+      "generatedAt": "2026-05-19T03:52:06.969Z",
       "decodeErrors": null,
       "warnings": 0
     }
   },
   "latestLocalSmoke": {
-    "reportPath": "test-results/smoke-2026-05-19T03-16-09-334Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-19T03-52-08-051Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "build": "v2026-05-19_05-06-23",
+    "build": "v2026-05-19_05-32-09",
     "status": "passed",
     "console": {
       "warningsOrErrors": 0,
@@ -114,21 +114,21 @@
     "coverage": null
   },
   "latestReleasePlaytest": {
-    "reportPath": "test-results/release-playtest-2026-05-19T03-17-16-274Z/report.json",
+    "reportPath": "test-results/release-playtest-2026-05-19T03-53-15-623Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "survivedMs": 599876,
+    "survivedMs": 599893,
     "requiredSurvivalMs": 599500,
     "survivedFullDuration": true,
-    "peakLevel": 8,
-    "peakScore": 70934,
+    "peakLevel": 11,
+    "peakScore": 61056,
     "finalState": {
       "scene": "play",
-      "level": 8,
+      "level": 11,
       "lives": 3,
-      "score": 70934,
+      "score": 61056,
       "enemyManagerState": "WAVE_ACTIVE",
       "musicContext": "gameplay",
-      "musicTrack": "Rain of Lasers.mp3",
+      "musicTrack": "Alone Against Enemy.mp3",
       "fatalOverlay": false
     },
     "console": {
