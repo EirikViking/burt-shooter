@@ -192,6 +192,7 @@ async function capture(page, name, title, notes = '') {
   await page.waitForTimeout(250);
   await page.screenshot({ path: fullPath, fullPage: false });
   const state = await collectState(page);
+  const boss = state?.visibleEnemies?.find((enemy) => enemy.kind === 'boss') || null;
   shots.push({
     file,
     title,
@@ -201,7 +202,10 @@ async function capture(page, name, title, notes = '') {
     scene: state?.scene || windowSceneFallback(state),
     level: state?.level ?? null,
     wave: state?.wave?.currentWaveNumber ?? null,
-    audioContext: state?.audio?.currentMusicContext || null
+    audioContext: state?.audio?.currentMusicContext || null,
+    bossArchetype: boss?.bossArchetype || null,
+    bossMovement: boss?.bossMovement || null,
+    bossPhase: boss?.bossPhase ?? null
   });
   console.log(`[steam-capture] ${file} ${title}`);
 }
@@ -233,6 +237,57 @@ async function stabilizePlayer(page) {
     window.__steamCaptureAssist = window.setInterval(assist, 100);
     assist();
   });
+}
+
+async function clearPlayToasts(page) {
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    if (!play) return;
+    play.dismissActiveToastsBelowPriority?.(99);
+    play.toastQueue = [];
+    play.toastTopQueue = [];
+    play.toastCornerQueue = [];
+    play.centerToastLockUntil = 0;
+    if (play.toastSlotLockUntil) {
+      play.toastSlotLockUntil.center = 0;
+      play.toastSlotLockUntil.top = 0;
+      play.toastSlotLockUntil.corner = 0;
+    }
+  });
+  await page.waitForTimeout(350);
+}
+
+async function stageBossTelegraph(page, phase = 3) {
+  await page.evaluate((nextPhase) => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const player = play?.player;
+    const boss = play?.enemyManager?.boss;
+    if (!game || !play || !player || !boss) throw new Error('Missing boss scene for screenshot telegraph staging');
+
+    player.x = game.getWidth() / 2;
+    player.y = game.getHeight() * 0.8;
+    player.invulnerable = true;
+    player.invulnerableTime = 45000;
+    if (player.sprite) {
+      player.sprite.x = player.x;
+      player.sprite.y = player.y;
+    }
+
+    boss.entryStartMs = Date.now() - (boss.entryDurationMs || 1) - 1;
+    boss.phase = nextPhase;
+    boss.applyPhasePlan?.(nextPhase);
+    boss.clearTelegraphVisual?.();
+    boss.clearRegularAttackTelegraphVisual?.();
+    const signature = boss.getSignatureForPhase?.(nextPhase) || boss.profile?.signature || 'ring';
+    boss.startSignatureTelegraph?.(signature, player.x, player.y);
+    boss.updateTelegraphVisual?.(0.62, player.x, player.y);
+    if (boss.sprite) {
+      boss.sprite.x = boss.x;
+      boss.sprite.y = boss.y;
+    }
+  }, phase);
+  await clearPlayToasts(page);
 }
 
 async function captureIntroAndMenu(browser) {
@@ -480,6 +535,28 @@ async function captureMidgameAction(browser) {
   await page.close();
 }
 
+async function captureBossFightAtLevel(browser, level, name, title, notes) {
+  const page = await browser.newPage({ viewport });
+  observePage(page, `boss-level-${level}`);
+  await page.goto(withQuery(baseUrl, {
+    autostart: '1',
+    debugBossToken: 'NOVA_DEBUG_2026',
+    startAtBoss: '1',
+    startLevel: String(level)
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(page, 'play', 30000);
+  await waitForGameplayBackdrop(page);
+  await page.waitForFunction(() => {
+    const enemyManager = window.__game?.scenes?.play?.enemyManager;
+    return enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active;
+  }, null, { timeout: 30000 });
+  await stabilizePlayer(page);
+  await page.waitForTimeout(2300);
+  await stageBossTelegraph(page, 3);
+  await capture(page, name, title, notes);
+  await page.close();
+}
+
 async function captureBossAndGameOver(browser) {
   const page = await browser.newPage({ viewport });
   observePage(page, 'boss');
@@ -501,6 +578,7 @@ async function captureBossAndGameOver(browser) {
   await page.keyboard.down('Space');
   await page.waitForTimeout(1600);
   await page.keyboard.up('Space');
+  await clearPlayToasts(page);
   await capture(page, '08-boss-fight', 'Boss fight', 'Representative active boss pattern.');
   await page.evaluate(() => {
     const boss = window.__game?.scenes?.play?.enemyManager?.boss;
@@ -512,6 +590,21 @@ async function captureBossAndGameOver(browser) {
   await page.waitForTimeout(900);
   await capture(page, '09-boss-victory', 'Boss victory', 'Victory beat after boss defeat.');
   await page.close();
+
+  await captureBossFightAtLevel(
+    browser,
+    5,
+    '10-boss-vortex-remix',
+    'Boss variety - vortex remix',
+    'Later boss archetype with orbiting movement, phase-three telegraph, and different pressure shape.'
+  );
+  await captureBossFightAtLevel(
+    browser,
+    9,
+    '11-boss-choir-remix',
+    'Boss variety - choir wave',
+    'Late boss archetype with different movement rhythm, phase-three telegraph, and attack silhouette.'
+  );
 
   const gameOverPage = await browser.newPage({ viewport });
   observePage(gameOverPage, 'game-over');
@@ -529,7 +622,7 @@ async function captureBossAndGameOver(browser) {
   });
   await waitForScene(gameOverPage, 'gameOver', 10000);
   await gameOverPage.waitForTimeout(900);
-  await capture(gameOverPage, '10-game-over', 'Game over', 'High-score and restart surface.');
+  await capture(gameOverPage, '12-game-over', 'Game over', 'High-score and restart surface.');
   await gameOverPage.close();
 }
 
@@ -561,7 +654,7 @@ async function main() {
     notes: [
       'These are Steam screenshot candidates, not final store approval.',
       'Midgame action uses the deterministic level-three debug route to capture denser representative gameplay.',
-      'Boss screenshots use the deterministic debug boss route for reliable representative capture.',
+      'Boss screenshots use deterministic debug boss routes for reliable representative capture across early, mid, and late archetypes.',
       'Final store upload still needs human curation and Steamworks review.'
     ],
     shots,

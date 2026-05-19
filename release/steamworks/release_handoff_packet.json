@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T20:10:06.865Z",
+  "generatedAt": "2026-05-19T20:43:09.712Z",
   "build": {
     "version": "v2026-05-19_21-30-12",
     "timestamp": "2026-05-19T19:30:12.699Z",
@@ -35,7 +35,7 @@
     "screenshots": {
       "status": "ready",
       "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
-      "shotCount": 10
+      "shotCount": 12
     },
     "trailer": {
       "status": "ready",
@@ -115,7 +115,7 @@
     {
       "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
       "exists": true,
-      "bytes": 8262663
+      "bytes": 7593959
     },
     {
       "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",

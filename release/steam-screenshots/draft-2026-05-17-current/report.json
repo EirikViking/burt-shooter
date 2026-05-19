@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T20:01:04.473Z",
+  "generatedAt": "2026-05-19T20:32:47.959Z",
   "baseUrl": "http://127.0.0.1:4273",
   "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-screenshots\\draft-2026-05-17-current",
   "build": {
@@ -13,7 +13,7 @@
   "notes": [
     "These are Steam screenshot candidates, not final store approval.",
     "Midgame action uses the deterministic level-three debug route to capture denser representative gameplay.",
-    "Boss screenshots use the deterministic debug boss route for reliable representative capture.",
+    "Boss screenshots use deterministic debug boss routes for reliable representative capture across early, mid, and late archetypes.",
     "Final store upload still needs human curation and Steamworks review."
   ],
   "shots": [
@@ -26,7 +26,10 @@
       "scene": "intro",
       "level": 1,
       "wave": null,
-      "audioContext": "intro"
+      "audioContext": "intro",
+      "bossArchetype": null,
+      "bossMovement": null,
+      "bossPhase": null
     },
     {
       "file": "02-main-menu.png",
@@ -37,7 +40,10 @@
       "scene": "menu",
       "level": 1,
       "wave": null,
-      "audioContext": "menu"
+      "audioContext": "menu",
+      "bossArchetype": null,
+      "bossMovement": null,
+      "bossPhase": null
     },
     {
       "file": "03-ship-select.png",
@@ -48,7 +54,10 @@
       "scene": "shipSelect",
       "level": 1,
       "wave": null,
-      "audioContext": "menu"
+      "audioContext": "menu",
+      "bossArchetype": null,
+      "bossMovement": null,
+      "bossPhase": null
     },
     {
       "file": "04-first-wave-gameplay.png",
@@ -59,7 +68,10 @@
       "scene": "play",
       "level": 1,
       "wave": 1,
-      "audioContext": "gameplay"
+      "audioContext": "gameplay",
+      "bossArchetype": null,
+      "bossMovement": null,
+      "bossPhase": null
     },
     {
       "file": "05-wave-clear-briefing.png",
@@ -70,7 +82,10 @@
       "scene": "play",
       "level": 1,
       "wave": 2,
-      "audioContext": "gameplay"
+      "audioContext": "gameplay",
+      "bossArchetype": null,
+      "bossMovement": null,
+      "bossPhase": null
     },
     {
       "file": "06-midgame-swarm.png",
@@ -81,7 +96,10 @@
       "scene": "play",
       "level": 3,
       "wave": 1,
-      "audioContext": "gameplay"
+      "audioContext": "gameplay",
+      "bossArchetype": null,
+      "bossMovement": null,
+      "bossPhase": null
     },
     {
       "file": "07-boss-inbound.png",
@@ -92,7 +110,10 @@
       "scene": "play",
       "level": 1,
       "wave": 3,
-      "audioContext": "gameplay"
+      "audioContext": "gameplay",
+      "bossArchetype": null,
+      "bossMovement": null,
+      "bossPhase": null
     },
     {
       "file": "08-boss-fight.png",
@@ -103,7 +124,10 @@
       "scene": "play",
       "level": 1,
       "wave": 3,
-      "audioContext": "boss"
+      "audioContext": "boss",
+      "bossArchetype": "conductor",
+      "bossMovement": "conductor_baton",
+      "bossPhase": null
     },
     {
       "file": "09-boss-victory.png",
@@ -112,12 +136,43 @@
       "width": 1280,
       "height": 720,
       "scene": "play",
-      "level": 2,
-      "wave": 1,
-      "audioContext": "gameplay"
+      "level": 1,
+      "wave": 3,
+      "audioContext": "victory",
+      "bossArchetype": null,
+      "bossMovement": null,
+      "bossPhase": null
     },
     {
-      "file": "10-game-over.png",
+      "file": "10-boss-vortex-remix.png",
+      "title": "Boss variety - vortex remix",
+      "notes": "Later boss archetype with orbiting movement, phase-three telegraph, and different pressure shape.",
+      "width": 1280,
+      "height": 720,
+      "scene": "play",
+      "level": 5,
+      "wave": 3,
+      "audioContext": "boss",
+      "bossArchetype": "vortex",
+      "bossMovement": "vortex_orbit",
+      "bossPhase": null
+    },
+    {
+      "file": "11-boss-choir-remix.png",
+      "title": "Boss variety - choir wave",
+      "notes": "Late boss archetype with different movement rhythm, phase-three telegraph, and attack silhouette.",
+      "width": 1280,
+      "height": 720,
+      "scene": "play",
+      "level": 9,
+      "wave": 3,
+      "audioContext": "boss",
+      "bossArchetype": "choir",
+      "bossMovement": "choir_wave",
+      "bossPhase": null
+    },
+    {
+      "file": "12-game-over.png",
       "title": "Game over",
       "notes": "High-score and restart surface.",
       "width": 1280,
@@ -125,7 +180,10 @@
       "scene": "gameOver",
       "level": 1,
       "wave": 1,
-      "audioContext": "victory"
+      "audioContext": "victory",
+      "bossArchetype": null,
+      "bossMovement": null,
+      "bossPhase": null
     }
   ],
   "consoleEvents": [],

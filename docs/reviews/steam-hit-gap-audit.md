@@ -9,12 +9,12 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 | Area | Score | Evidence / Reason |
 |---|---:|---|
 | Store hook | 8 | "Fast modern arcade score-chaser" is focused and avoids clone language. It still needs the proximity-score verb front-loaded harder. |
-| First screenshot | 9 | Upload candidates now lead with current-build gameplay and include a visible `TRACTOR HIJACK` payoff, boss inbound/fight, score flow, and ship variety. Final thumbnail order still needs human curation. |
+| First screenshot | 9 | Upload candidates now lead with current-build gameplay and include `TRACTOR HIJACK`, early/mid/late boss archetype proof, boss inbound/victory, score flow, and ship variety. Final thumbnail order still needs human curation. |
 | First 10 trailer seconds | 9 | The current trailer opens on Tractor Hijack payoff, boss gate, and active boss fire, and now stages Graze Break later in the cut. Human by-ear approval is still required. |
 | First 60 seconds of gameplay | 9 | Current smoke/release playtest evidence shows quick play, active waves, a level-2 boss loop, readable HUD, stable audio, and clean no-error play. |
 | Input feel | 7 | Keyboard/gamepad movement/fire/pause are proven in packaged smoke; analog movement still behaves mostly digital in runtime code. |
 | Enemy/bullet readability | 8 | Strong art, cleaner HUD, and the new hijacker beam proof show readable danger lanes. Effects/toasts still need monitoring during dense waves. |
-| Boss telegraphs | 8 | Boss phase shifts now remix signatures by archetype, move the arena anchor, expose safe-lane telemetry, and pass focused phase/telegraph/contact/adds checks. The faster level tempo makes boss footage easier to capture, but trailer-proof shots still need a pass. |
+| Boss telegraphs | 9 | Boss phase shifts now remix signatures by archetype, move the arena anchor, expose safe-lane telemetry, pass focused phase/telegraph/contact/adds checks, and the Steam screenshot set now shows early, mid, and late boss telegraph variety. Trailer-proof breadth still needs a pass. |
 | Powerup clarity | 8 | HUD powerup check exists and smoke validates label/bounds. |
 | Score/combo/restart compulsion | 9 | Danger-dodge streaks, instant restart, next-ship motivation, and separate local/global leaderboard qualification now give the death screen a stronger one-more-run job. |
 | Ship unlock motivation | 8 | 25 ships are unlock-gated with real trait/stat differences; game over now surfaces next/new unlock motivation. |
@@ -38,7 +38,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 ## Current Top Risks
 
 - Trailer candidate is current-build and shows Tractor Hijack payoff before boss footage; the capture pipeline now also stages Graze Break during the later close-dodge beat. Human by-ear and Steamworks review remain required.
-- Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Remaining risk is store-media breadth: the trailer proves one boss clearly, but not the full variety of later bosses.
+- Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Screenshot media now proves three boss movement/telegraph profiles, but the trailer still proves one boss more strongly than the full variety of later bosses.
 - The voice system now uses the approved ElevenLabs `Female misfit` pack and bigger leaderboard fanfares, but it still needs final human by-ear approval for taste, fatigue, and Steam trailer mix.
 - Leaderboard flow now has distinct local/global qualification, local fallback, and a tested global-offline path. Remaining risk is live public-domain verification and by-eye polish of the highscore tab presentation.
 - Public web build and marketing site are live; the latest tempo build and current Tractor Hijack/Graze Break media/handoff evidence are verified against the private domain.
@@ -57,6 +57,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 - Latest boss-variety release playtest: `test-results/release-playtest-2026-05-18T22-23-32-068Z/report.json`
 - Latest live smoke: `test-results/smoke-2026-05-19T03-45-21-670Z/report.json`
 - Current Steam screenshot capture: `release/steam-screenshots/draft-2026-05-17-current/report.json`
+- Current Steam screenshot shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png` with early/mid/late boss archetype proof.
 - Current Steam trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`
 - Current trailer opening check: `test-results/steam-trailer-opening-2026-05-19T04-05-26-305Z/report.json`
 - Tractor hijack check: `test-results/tractor-hijack-2026-05-18T23-59-51-037Z/report.json`
@@ -73,4 +74,4 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Next Best Loop
 
-Highest remaining anti-flop loop: by-eye human curation of the final screenshot/trailer/audio package, with special attention to whether the ElevenLabs announcer and global-score fanfares feel premium without becoming repetitive.
+Highest remaining anti-flop loop: trailer breadth and by-ear curation of the final media package, with special attention to whether later boss variety and the ElevenLabs/global-score audio feel premium without becoming repetitive.

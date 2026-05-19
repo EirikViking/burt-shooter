@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T20:08:06.077Z",
+  "generatedAt": "2026-05-19T20:42:51.663Z",
   "status": "ready_for_human_review",
   "build": {
     "version": "v2026-05-19_21-30-12",
@@ -38,17 +38,17 @@
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "exists": true,
-          "bytes": 8262663
+          "bytes": 7593959
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "exists": true,
-          "bytes": 2170
+          "bytes": 2674
         },
         {
           "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
           "exists": true,
-          "bytes": 3668
+          "bytes": 5421
         }
       ],
       "prompt": "Review the 8 screenshot upload candidates for clarity, truthful gameplay representation, UI readability, and public arcade tone."

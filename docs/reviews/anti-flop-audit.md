@@ -889,3 +889,29 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 
 - Human by-ear approval is still required before treating the voice/audio package as final Steam upload material.
 - Future voice regeneration must keep ElevenLabs credentials local and out of logs, docs, and commits.
+
+## Loop 22 - Steam Screenshot Boss Variety Proof
+
+### What Was Tested
+
+- Treated weak boss-variety store proof as the next highest-impact anti-flop issue after the voice evidence refresh.
+- Visually inspected the current Steam screenshot contact sheet and found that it relied too heavily on one level-one boss screenshot.
+- Refreshed the screenshot capture path against build `v2026-05-19_21-30-12`.
+
+### What Changed
+
+- `scripts/capture-steam-screenshots.mjs` now records boss archetype, movement profile, and phase metadata for each captured screenshot.
+- Added deterministic level-5 and level-9 boss showcase captures to the Steam screenshot draft.
+- Delayed and cleaned the boss-variety capture setup so boss intro/dossier overlays do not cover the late-boss screenshots.
+- Updated the Steam upload shortlist/contact sheet to include early, mid, and late boss proof: `conductor_baton`, `vortex_orbit`, and `choir_wave`.
+
+### Evidence Captured
+
+- Steam screenshot draft: `release/steam-screenshots/draft-2026-05-17-current/report.json` passed with 12 screenshots, zero console events, zero page errors, and zero bad responses.
+- Boss variety images: `release/steam-screenshots/draft-2026-05-17-current/10-boss-vortex-remix.png` and `release/steam-screenshots/draft-2026-05-17-current/11-boss-choir-remix.png`.
+- Upload shortlist contact sheet: `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png`.
+
+### Remaining Top Risks
+
+- The trailer candidate still proves one boss more strongly than the full boss roster; screenshot evidence is improved, but final trailer curation remains a high-value follow-up.
+- Final screenshot order still needs human Steamworks approval.
