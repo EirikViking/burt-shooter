@@ -412,13 +412,13 @@ export class Boss {
     rightMandible.zIndex = 3;
 
     const weaponNodes = [];
-    const nodeCount = this.profile?.archetype === 'carrier' ? 6 : this.profile?.archetype === 'needle' ? 3 : 4;
+    const nodeCount = this.profile?.archetype === 'carrier' ? 4 : this.profile?.archetype === 'needle' ? 3 : 3;
     for (let i = 0; i < nodeCount; i += 1) {
       const node = new PIXI.Graphics();
       node.circle(0, 0, Math.max(5, radius * 0.055));
-      node.fill({ color: accent, alpha: 0.72 });
+      node.fill({ color: accent, alpha: 0.52 });
       node.circle(0, 0, Math.max(8, radius * 0.085));
-      node.stroke({ color: palette, width: 2, alpha: 0.58 });
+      node.stroke({ color: palette, width: 2, alpha: 0.38 });
       node.zIndex = 4;
       root.addChild(node);
       weaponNodes.push(node);
@@ -491,90 +491,90 @@ export class Boss {
   updateBossAnimation(delta, playerX, playerY) {
     if (!this.animationRig || !this.visualContainer) return;
     const rig = this.animationRig;
-    const t = this.moveTimer * 0.045;
-    const phaseBoost = 1 + (this.phase - 1) * 0.2;
+    const t = this.moveTimer * 0.032;
+    const phaseBoost = 1 + (this.phase - 1) * 0.08;
     const telegraphProgress = this.telegraph
       ? clamp((Date.now() - this.telegraph.start) / this.telegraph.duration, 0, 1)
       : this.regularTelegraph
         ? clamp((Date.now() - this.regularTelegraph.start) / this.regularTelegraph.duration, 0, 1) * 0.65
         : 0;
     const rage = 1 - clamp(this.health / Math.max(1, this.maxHealth), 0, 1);
-    const intensity = 1 + telegraphProgress * 0.45 + rage * 0.24 + (this.phase - 1) * 0.08;
+    const intensity = 1 + telegraphProgress * 0.18 + rage * 0.12 + (this.phase - 1) * 0.04;
     const radius = rig.radius;
     const palette = rig.palette;
     const accent = rig.accent;
     const archetype = this.profile?.archetype || 'boss';
 
-    const bodyPulse = 1 + Math.sin(t * (archetype === 'clock' ? 2.2 : 1.05)) * 0.026 * intensity;
-    const bodyStretch = Math.cos(t * 0.9) * 0.018 * intensity;
+    const bodyPulse = 1 + Math.sin(t * (archetype === 'clock' ? 1.6 : 0.85)) * 0.01 * intensity;
+    const bodyStretch = Math.cos(t * 0.7) * 0.006 * intensity;
     this.visualContainer.scale.set(
       this.visualBaseScale.x * (bodyPulse + bodyStretch),
       this.visualBaseScale.y * (bodyPulse - bodyStretch * 0.5)
     );
-    this.visualContainer.skew.x = Math.sin(t * 0.7 + this.phase) * 0.018 * intensity;
-    this.visualContainer.skew.y = Math.cos(t * 0.55) * 0.012 * intensity;
+    this.visualContainer.skew.x = Math.sin(t * 0.55 + this.phase) * 0.005 * intensity;
+    this.visualContainer.skew.y = Math.cos(t * 0.42) * 0.003 * intensity;
 
-    const finFlap = Math.sin(t * (archetype === 'jester' ? 2.8 : 1.45) + telegraphProgress * Math.PI) * 0.24 * intensity;
-    rig.leftFin.rotation = -0.26 + finFlap;
-    rig.rightFin.rotation = 0.26 - finFlap;
-    rig.leftFin.scale.set(1 + Math.max(0, Math.sin(t * 1.3)) * 0.07 * intensity, 1);
-    rig.rightFin.scale.set(1 + Math.max(0, Math.cos(t * 1.3)) * 0.07 * intensity, 1);
+    const finFlap = Math.sin(t * (archetype === 'jester' ? 1.6 : 0.95) + telegraphProgress * Math.PI * 0.35) * 0.08 * intensity;
+    rig.leftFin.rotation = -0.16 + finFlap;
+    rig.rightFin.rotation = 0.16 - finFlap;
+    rig.leftFin.scale.set(1 + Math.max(0, Math.sin(t * 0.9)) * 0.025 * intensity, 1);
+    rig.rightFin.scale.set(1 + Math.max(0, Math.cos(t * 0.9)) * 0.025 * intensity, 1);
 
-    const bite = 0.12 + telegraphProgress * 0.42 + (archetype === 'needle' ? 0.16 : 0);
+    const bite = 0.045 + telegraphProgress * 0.12 + (archetype === 'needle' ? 0.04 : 0);
     rig.leftMandible.rotation = -0.16 - Math.sin(t * 1.9) * bite;
     rig.rightMandible.rotation = 0.16 + Math.sin(t * 1.9) * bite;
-    rig.leftMandible.y = radius * (0.22 + Math.max(0, Math.sin(t * 1.4)) * 0.06 * intensity);
-    rig.rightMandible.y = radius * (0.22 + Math.max(0, Math.cos(t * 1.4)) * 0.06 * intensity);
+    rig.leftMandible.y = radius * (0.22 + Math.max(0, Math.sin(t * 1.0)) * 0.025 * intensity);
+    rig.rightMandible.y = radius * (0.22 + Math.max(0, Math.cos(t * 1.0)) * 0.025 * intensity);
 
     rig.engineLayer.clear();
-    const exhaust = (0.54 + Math.max(0, Math.sin(t * 2.4)) * 0.34 + telegraphProgress * 0.34) * intensity;
+    const exhaust = (0.46 + Math.max(0, Math.sin(t * 1.4)) * 0.12 + telegraphProgress * 0.12) * intensity;
     for (let i = -1; i <= 1; i += 1) {
       const x = i * radius * 0.18;
-      const len = radius * (0.34 + exhaust * 0.28 + (i === 0 ? 0.08 : 0));
+      const len = radius * (0.24 + exhaust * 0.15 + (i === 0 ? 0.04 : 0));
       rig.engineLayer.moveTo(x, radius * 0.36);
-      rig.engineLayer.lineTo(x + Math.sin(t * 2 + i) * radius * 0.05, radius * 0.36 + len);
-      rig.engineLayer.stroke({ color: i === 0 ? 0xffffff : accent, width: i === 0 ? 5 : 3, alpha: i === 0 ? 0.32 : 0.54 });
-      rig.engineLayer.circle(x, radius * 0.4 + len * 0.82, radius * 0.035 + exhaust * 3);
-      rig.engineLayer.fill({ color: palette, alpha: 0.13 + exhaust * 0.08 });
+      rig.engineLayer.lineTo(x + Math.sin(t * 1.2 + i) * radius * 0.018, radius * 0.36 + len);
+      rig.engineLayer.stroke({ color: i === 0 ? 0xffffff : accent, width: i === 0 ? 3 : 2, alpha: i === 0 ? 0.18 : 0.3 });
+      rig.engineLayer.circle(x, radius * 0.4 + len * 0.82, radius * 0.025 + exhaust * 1.2);
+      rig.engineLayer.fill({ color: palette, alpha: 0.08 + exhaust * 0.04 });
     }
 
     rig.backLayer.clear();
-    const ringCount = archetype === 'vortex' || archetype === 'clock' ? 3 : 2;
+    const ringCount = archetype === 'vortex' || archetype === 'clock' ? 2 : 1;
     for (let i = 0; i < ringCount; i += 1) {
-      const ringRadius = radius * (0.76 + i * 0.22 + Math.sin(t + i) * 0.025 + telegraphProgress * 0.08);
+      const ringRadius = radius * (0.76 + i * 0.2 + Math.sin(t + i) * 0.008 + telegraphProgress * 0.025);
       rig.backLayer.circle(0, 0, ringRadius);
       rig.backLayer.stroke({
         color: i % 2 ? palette : accent,
-        width: i === 0 ? 4 : 2,
-        alpha: (0.2 + telegraphProgress * 0.2) / (i + 1)
+        width: i === 0 ? 2 : 1,
+        alpha: (0.11 + telegraphProgress * 0.1) / (i + 1)
       });
     }
 
     rig.frontLayer.clear();
-    const coreRadius = radius * (0.13 + Math.max(0, Math.sin(t * 1.6)) * 0.035 + telegraphProgress * 0.06);
+    const coreRadius = radius * (0.12 + Math.max(0, Math.sin(t * 1.05)) * 0.012 + telegraphProgress * 0.025);
     rig.frontLayer.circle(0, 0, coreRadius);
-    rig.frontLayer.fill({ color: accent, alpha: 0.24 + telegraphProgress * 0.24 });
+    rig.frontLayer.fill({ color: accent, alpha: 0.18 + telegraphProgress * 0.12 });
     rig.frontLayer.circle(0, 0, coreRadius * 1.9);
-    rig.frontLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.24 + telegraphProgress * 0.32 });
+    rig.frontLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.16 + telegraphProgress * 0.14 });
     this.drawArchetypeBossAnimation(rig, archetype, t, intensity, telegraphProgress, playerX, playerY);
 
     rig.weaponNodes.forEach((node, index) => {
-      const nodePhase = t * (archetype === 'clock' ? 0.82 : 0.62) + index * ((Math.PI * 2) / rig.weaponNodes.length);
-      const orbitRadius = radius * (0.62 + Math.sin(t * 0.9 + index) * 0.045 + telegraphProgress * 0.18);
+      const nodePhase = t * (archetype === 'clock' ? 0.34 : 0.28) + index * ((Math.PI * 2) / rig.weaponNodes.length);
+      const orbitRadius = radius * (0.48 + Math.sin(t * 0.45 + index) * 0.015 + telegraphProgress * 0.06);
       node.x = Math.cos(nodePhase) * orbitRadius;
-      node.y = Math.sin(nodePhase) * orbitRadius * (archetype === 'carrier' ? 0.48 : 0.62);
-      node.scale.set((0.86 + Math.sin(t * 1.8 + index) * 0.12 + telegraphProgress * 0.24) * phaseBoost);
-      node.alpha = 0.58 + Math.sin(t * 1.3 + index) * 0.16 + telegraphProgress * 0.2;
+      node.y = Math.sin(nodePhase) * orbitRadius * (archetype === 'carrier' ? 0.36 : 0.46);
+      node.scale.set((0.78 + Math.sin(t * 0.9 + index) * 0.04 + telegraphProgress * 0.08) * phaseBoost);
+      node.alpha = 0.4 + Math.sin(t * 0.75 + index) * 0.06 + telegraphProgress * 0.1;
       if (archetype === 'needle' && index === 1) {
-        node.y -= radius * (0.18 + telegraphProgress * 0.18);
+        node.y -= radius * (0.08 + telegraphProgress * 0.06);
       }
     });
 
     rig.scanLayer.clear();
-    const scanY = -radius * 0.62 + ((t * 34) % (radius * 1.24));
+    const scanY = -radius * 0.62 + ((t * 15) % (radius * 1.24));
     rig.scanLayer.moveTo(-radius * 0.68, scanY);
-    rig.scanLayer.lineTo(radius * 0.68, scanY + Math.sin(t) * radius * 0.05);
-    rig.scanLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.18 + telegraphProgress * 0.18 });
+    rig.scanLayer.lineTo(radius * 0.68, scanY + Math.sin(t) * radius * 0.018);
+    rig.scanLayer.stroke({ color: 0xffffff, width: 1, alpha: 0.09 + telegraphProgress * 0.09 });
 
     this.animationDebug = {
       archetype,
@@ -595,60 +595,60 @@ export class Boss {
     const layer = rig.frontLayer;
 
     if (archetype === 'conductor' || archetype === 'choir') {
-      const baton = Math.sin(t * 1.5) * 0.55;
-      layer.moveTo(Math.cos(baton) * -radius * 0.62, -radius * 0.2);
-      layer.lineTo(Math.cos(baton) * radius * 0.72, radius * (0.18 + telegraphProgress * 0.16));
-      layer.stroke({ color: accent, width: 4, alpha: 0.48 + telegraphProgress * 0.28 });
+      const baton = Math.sin(t * 0.9) * 0.22;
+      layer.moveTo(Math.cos(baton) * -radius * 0.46, -radius * 0.16);
+      layer.lineTo(Math.cos(baton) * radius * 0.52, radius * (0.12 + telegraphProgress * 0.06));
+      layer.stroke({ color: accent, width: 2, alpha: 0.28 + telegraphProgress * 0.16 });
     } else if (archetype === 'forge' || archetype === 'monolith') {
-      const slam = Math.pow(Math.max(0, Math.sin(t * 1.1)), 5) * radius * 0.22;
+      const slam = Math.pow(Math.max(0, Math.sin(t * 0.72)), 5) * radius * 0.08;
       for (const side of [-1, 1]) {
         layer.roundRect(side * radius * 0.34 - 5, -radius * 0.52 + slam, 10, radius * 0.72, 5);
-        layer.fill({ color: palette, alpha: 0.2 + telegraphProgress * 0.18 });
+        layer.fill({ color: palette, alpha: 0.12 + telegraphProgress * 0.08 });
         layer.roundRect(side * radius * 0.34 - 5, -radius * 0.52 + slam, 10, radius * 0.72, 5);
-        layer.stroke({ color: accent, width: 2, alpha: 0.55 });
+        layer.stroke({ color: accent, width: 1.5, alpha: 0.32 });
       }
     } else if (archetype === 'mirror') {
-      const flicker = 0.16 + Math.max(0, Math.sin(t * 2.6)) * 0.2 + telegraphProgress * 0.2;
+      const flicker = 0.1 + Math.max(0, Math.sin(t * 1.4)) * 0.08 + telegraphProgress * 0.1;
       for (const side of [-1, 1]) {
         const x = side < 0 ? -radius * 0.74 : radius * 0.42;
         layer.roundRect(x, -radius * 0.36, radius * 0.32, radius * 0.72, 10);
-        layer.stroke({ color: side < 0 ? accent : palette, width: 3, alpha: flicker });
+        layer.stroke({ color: side < 0 ? accent : palette, width: 2, alpha: flicker });
       }
     } else if (archetype === 'needle') {
       const aim = Math.atan2(playerY - this.y, playerX - this.x) - this.visualContainer.rotation;
-      const len = radius * (0.68 + telegraphProgress * 0.45);
+      const len = radius * (0.52 + telegraphProgress * 0.22);
       layer.moveTo(Math.cos(aim) * radius * 0.1, Math.sin(aim) * radius * 0.1);
       layer.lineTo(Math.cos(aim) * len, Math.sin(aim) * len);
-      layer.stroke({ color: 0xffffff, width: 5, alpha: 0.24 + telegraphProgress * 0.34 });
+      layer.stroke({ color: 0xffffff, width: 3, alpha: 0.12 + telegraphProgress * 0.18 });
       layer.moveTo(Math.cos(aim) * radius * 0.1, Math.sin(aim) * radius * 0.1);
       layer.lineTo(Math.cos(aim) * len, Math.sin(aim) * len);
-      layer.stroke({ color: accent, width: 2, alpha: 0.62 + telegraphProgress * 0.22 });
+      layer.stroke({ color: accent, width: 1.5, alpha: 0.36 + telegraphProgress * 0.14 });
     } else if (archetype === 'vortex') {
-      for (let i = 0; i < 6; i += 1) {
-        const a = t * 1.2 + i * Math.PI / 3;
+      for (let i = 0; i < 4; i += 1) {
+        const a = t * 0.55 + i * Math.PI / 2;
         layer.moveTo(Math.cos(a) * radius * 0.18, Math.sin(a) * radius * 0.18);
-        layer.lineTo(Math.cos(a + 0.4) * radius * 0.72, Math.sin(a + 0.4) * radius * 0.48);
+        layer.lineTo(Math.cos(a + 0.25) * radius * 0.58, Math.sin(a + 0.25) * radius * 0.38);
       }
-      layer.stroke({ color: accent, width: 2, alpha: 0.38 + telegraphProgress * 0.18 });
+      layer.stroke({ color: accent, width: 1.5, alpha: 0.22 + telegraphProgress * 0.1 });
     } else if (archetype === 'jester') {
       for (let i = 0; i < 3; i += 1) {
-        const x = (i - 1) * radius * 0.24 + Math.sin(t * 3 + i) * radius * 0.04;
-        layer.circle(x, -radius * 0.22 + Math.cos(t * 2 + i) * radius * 0.08, radius * 0.045);
-        layer.fill({ color: i % 2 ? palette : accent, alpha: 0.32 + telegraphProgress * 0.22 });
+        const x = (i - 1) * radius * 0.22 + Math.sin(t * 1.2 + i) * radius * 0.016;
+        layer.circle(x, -radius * 0.22 + Math.cos(t * 1.0 + i) * radius * 0.03, radius * 0.032);
+        layer.fill({ color: i % 2 ? palette : accent, alpha: 0.18 + telegraphProgress * 0.1 });
       }
     } else if (archetype === 'carrier') {
       for (const side of [-1, 1]) {
-        const door = (0.1 + Math.max(0, Math.sin(t * 1.15)) * 0.14 + telegraphProgress * 0.18) * side;
+        const door = (0.05 + Math.max(0, Math.sin(t * 0.8)) * 0.05 + telegraphProgress * 0.08) * side;
         layer.roundRect(side * radius * 0.18 + door * radius, radius * 0.03, radius * 0.18, radius * 0.32, 8);
-        layer.stroke({ color: accent, width: 2, alpha: 0.44 + telegraphProgress * 0.22 });
+        layer.stroke({ color: accent, width: 1.5, alpha: 0.24 + telegraphProgress * 0.12 });
       }
     } else if (archetype === 'clock') {
       for (let i = 0; i < 8; i += 1) {
-        const a = i * Math.PI / 4 + Math.floor(t * 1.8) * 0.2;
+        const a = i * Math.PI / 4 + Math.floor(t * 0.9) * 0.12;
         layer.moveTo(Math.cos(a) * radius * 0.42, Math.sin(a) * radius * 0.42);
         layer.lineTo(Math.cos(a) * radius * 0.58, Math.sin(a) * radius * 0.58);
       }
-      layer.stroke({ color: accent, width: 3, alpha: 0.48 + telegraphProgress * 0.2 });
+      layer.stroke({ color: accent, width: 2, alpha: 0.26 + telegraphProgress * 0.1 });
     }
   }
 

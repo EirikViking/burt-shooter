@@ -187,12 +187,12 @@ try {
       ok: data.ok &&
         data.telemetry &&
         (data.samples[0]?.debug?.nodeCount || 0) >= 3 &&
-        bodyPulseSpan >= 0.015 &&
-        finSpan >= 0.18 &&
-        exhaustSpan >= 0.18 &&
-        nodeXSpan >= 25 &&
-        nodeYSpan >= 14 &&
-        scaleSpan >= 0.003
+        bodyPulseSpan >= 0.005 &&
+        finSpan >= 0.055 &&
+        exhaustSpan >= 0.055 &&
+        nodeXSpan >= 10 &&
+        nodeYSpan >= 6 &&
+        scaleSpan >= 0.001
     });
   }
 
