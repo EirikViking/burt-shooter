@@ -137,6 +137,9 @@ try {
       const beforeLives = game.lives;
       const details = setup();
       const hazard = play.registerBossHazardFromBoss(boss, details.category || 'signature', details);
+      if (hazard) {
+        hazard.startedAt -= (Number(hazard.armingMs) || 0) + 20;
+      }
       play.updateBossHazards(1);
       return {
         name,

@@ -2401,7 +2401,8 @@ export class PlayScene {
       sourceX,
       sourceY,
       startedAt,
-      durationMs: category === 'signature' ? 430 : 360,
+      durationMs: category === 'signature' ? 360 : 320,
+      armingMs: category === 'signature' ? 115 : 90,
       color,
       hit: false
     };
@@ -2417,8 +2418,9 @@ export class PlayScene {
         columns,
         startY: sourceY + Math.max(16, boss.radius * 0.25),
         endY: height + 80,
-        width: Math.max(26, Math.min(40, width * 0.035)),
-        durationMs: 420
+        width: Math.max(20, Math.min(30, width * 0.026)),
+        durationMs: 340,
+        armingMs: 95
       };
     } else if (['ring', 'adds', 'radial', 'spiral', 'clock', 'chord'].includes(type) || ['spiral', 'clock', 'chord'].includes(attack)) {
       const safeLane = Array.isArray(boss.safeLanes)
@@ -2428,17 +2430,18 @@ export class PlayScene {
         ? Number(safeLane.angle)
         : (typeof boss.getRingSafeAngle === 'function' ? boss.getRingSafeAngle(type === 'adds' ? 14 : 16) : Math.PI / 2);
       const safeWedge = Number.isFinite(Number(safeLane?.width))
-        ? Number(safeLane.width)
-        : (type === 'adds' ? 0.42 : 0.4);
-      const outerRadius = Math.max(boss.radius * 2.35, category === 'signature' ? 190 : 160);
+        ? Number(safeLane.width) * 1.18
+        : (type === 'adds' ? 0.52 : 0.5);
+      const outerRadius = Math.max(boss.radius * 2.05, category === 'signature' ? 168 : 142);
       hazard = {
         ...base,
         kind: 'ring',
-        innerRadius: outerRadius * 0.43,
+        innerRadius: outerRadius * 0.48,
         outerRadius,
         safeAngle,
         safeWedge,
-        durationMs: 440
+        durationMs: 350,
+        armingMs: 120
       };
     } else {
       const angle = Number.isFinite(details.angle)
@@ -2447,18 +2450,19 @@ export class PlayScene {
       const isLance = type === 'lance' || attack === 'sniper';
       const isFan = type === 'fan' || ['fan', 'burst', 'fakeout', 'mirror', 'cone'].includes(attack) || ['mirror', 'cone'].includes(type);
       const spread = isLance
-        ? 0.16
+        ? 0.12
         : isFan
-          ? (type === 'mirror' ? 0.46 : type === 'cone' ? 0.66 : 0.48)
-          : 0.2;
+          ? (type === 'mirror' ? 0.38 : type === 'cone' ? 0.54 : 0.4)
+          : 0.17;
       hazard = {
         ...base,
         kind: isLance ? 'beam' : 'cone',
         angle,
         spread,
         length: Math.max(height * 1.05, 560),
-        radius: isLance ? 24 : 42,
-        durationMs: isLance ? 380 : 360
+        radius: isLance ? 16 : 32,
+        durationMs: isLance ? 300 : 320,
+        armingMs: isLance ? 105 : 115
       };
     }
 
@@ -2477,7 +2481,8 @@ export class PlayScene {
       const progress = Math.max(0, Math.min(1, (now - hazard.startedAt) / hazard.durationMs));
       if (progress >= 1) return false;
       this.drawBossHazard(hazard, progress);
-      if (!hazard.hit && this.isPlayerInsideBossHazard(hazard)) {
+      const armed = (now - hazard.startedAt) >= (hazard.armingMs || 0);
+      if (armed && !hazard.hit && this.isPlayerInsideBossHazard(hazard)) {
         hazard.hit = true;
         this.damagePlayerFromBossHazard(hazard);
       }
@@ -2567,14 +2572,14 @@ export class PlayScene {
     if (hazard.kind === 'wall') {
       const py = this.player.y;
       if (py + playerRadius < hazard.startY || py - playerRadius > hazard.endY) return false;
-      return (hazard.columns || []).some((x) => Math.abs(this.player.x - x) <= hazard.width / 2 + playerRadius);
+      return (hazard.columns || []).some((x) => Math.abs(this.player.x - x) <= hazard.width / 2 + playerRadius * 0.65);
     }
 
     const dx = this.player.x - hazard.sourceX;
     const dy = this.player.y - hazard.sourceY;
     const distance = Math.hypot(dx, dy);
     if (hazard.kind === 'ring') {
-      if (distance < hazard.innerRadius - playerRadius || distance > hazard.outerRadius + playerRadius) return false;
+      if (distance < hazard.innerRadius - playerRadius * 0.65 || distance > hazard.outerRadius + playerRadius * 0.65) return false;
       const angle = Math.atan2(dy, dx);
       return Math.abs(this.normalizeBossHazardAngle(angle - hazard.safeAngle)) > hazard.safeWedge;
     }
@@ -2584,8 +2589,8 @@ export class PlayScene {
     const along = Math.cos(diff) * distance;
     if (along < -playerRadius || along > hazard.length + playerRadius) return false;
     const perpendicular = Math.sin(diff) * distance;
-    const angularHit = diff <= hazard.spread / 2;
-    const lineHit = Math.abs(perpendicular) <= (hazard.radius || 24) + playerRadius;
+    const angularHit = diff <= (hazard.spread / 2) * 0.92;
+    const lineHit = Math.abs(perpendicular) <= (hazard.radius || 24) + playerRadius * 0.65;
     return angularHit || lineHit;
   }
 
