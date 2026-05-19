@@ -9,11 +9,12 @@ The highest-impact anti-flop issue after the hijacker/typography loop was voice 
 ## ElevenLabs Status
 
 - Environment key presence was checked without printing the key.
-- ElevenLabs `/v1/user` returned HTTP 401.
-- Current generated assets are therefore local fallback TTS, not ElevenLabs.
-- The blocker is credential/access validity, not missing local tooling.
+- Current loop verification returned HTTP 200 from ElevenLabs `/v1/user` without printing or storing the key.
+- The currently shipped mission-control and intro narration MP3s are ElevenLabs `Female misfit` output using `eleven_v3`.
+- Earlier HTTP 401 and Microsoft Zira fallback notes below are historical evidence from superseded loops, not the current shipped voice state.
+- `Microsoft Zira Desktop` remains only an emergency/offline fallback through `npm run generate:local-announcer-voicepack`.
 
-## What Changed
+## Initial Fallback Pass (Superseded)
 
 - Rewrote weak mission-control and intro lines into shorter arcade-announcer copy.
 - Generated 41 fallback female announcer MP3s with `Microsoft Zira Desktop`.
@@ -26,7 +27,7 @@ The highest-impact anti-flop issue after the hijacker/typography loop was voice 
 - Added local/offline highscore and personal-best voice moments with smaller mix settings.
 - Added combo milestone and instant-restart announcer hooks with cooldowns.
 
-## Tests
+## Initial Tests
 
 - `npm run check:audio` passed after the catalog rewrite.
 - `npm run check:announcer-voice` passed with 14 event pools and 41 manifest voice assets.
@@ -37,9 +38,9 @@ The highest-impact anti-flop issue after the hijacker/typography loop was voice 
 - Full Steam RC verification passed at `test-results/steam-rc-verify-2026-05-18T21-34-54-911Z/report.json`; its release playtest survived 599,940 ms, reached level 6, ended alive with score 70,008, and had zero console/page/network/request failures.
 - Steam handoff passed with no stale evidence for `v2026-05-18_23-27-36`.
 
-## Remaining Risk
+## Initial Remaining Risk (Superseded)
 
-The local fallback voice is usable and female, but it is not as charismatic as a good ElevenLabs or professional performance. Commercially, the next audio pass should restore valid ElevenLabs access or approve another licensed professional voice source, then regenerate the same line pools with stronger performance direction.
+The initial local fallback voice was usable and female, but it was not as charismatic as a good ElevenLabs or professional performance. This risk was superseded when the approved `Female misfit` ElevenLabs pack replaced the Zira output.
 
 ## 2026-05-19 No-Key Follow-Up
 
@@ -87,3 +88,21 @@ The user rejected the local fallback voice and chose the approved Misfit Galaxy 
 - Two restricted keys returned HTTP 401 for `/v1/user`; one restricted key still worked on the Text-to-Speech endpoint.
 - The final unrestricted key passed `/v1/user` with HTTP 200 and generated the new shipped voice pack.
 - No API key was written to tracked files or documentation.
+
+## 2026-05-19 Ralph Loop Verification
+
+### What Was Verified
+
+- Verified `ELEVENLABS_API_KEY` was present and accepted by ElevenLabs `/v1/user` with HTTP 200, without printing the key.
+- Confirmed `npm run generate:announcer-voicepack` points to the ElevenLabs mission-control and intro generators.
+- Confirmed `npm run generate:local-announcer-voicepack` is the separate emergency fallback path.
+
+### Tests
+
+- `npm run check:announcer-voice` passed with 22 event pools and 51 manifest voice assets.
+- `npm run check:intro-voice` passed at `test-results/intro-voice-exclusivity-2026-05-19T20-16-35-635Z/intro-voice-exclusivity.png`.
+
+### Current Remaining Risk
+
+- Human by-ear approval is still required before treating the voice/audio package as final Steam store material.
+- The current provider/access state is good, but future regeneration must keep the key local and must not print, log, or commit it.

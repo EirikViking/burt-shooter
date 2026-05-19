@@ -40,3 +40,5 @@ Nova Swarm's announcer should feel like the arcade cabinet is daring the player 
 ## Current Provenance
 
 The current 2026-05-19 pack is ElevenLabs output generated from the approved Misfit Galaxy `Female misfit` voice (`SIbt9DJkaY96v2K2fQyQ`) using `eleven_v3`. The voice was selected because the previous local fallback sounded too generic for Nova Swarm's arcade-cabinet identity. Keep `Microsoft Zira Desktop` only as an emergency local fallback via `npm run generate:local-announcer-voicepack`.
+
+The current Ralph-loop verification checked that `ELEVENLABS_API_KEY` is present and accepted by ElevenLabs `/v1/user` with HTTP 200, without printing, logging, or committing the key.

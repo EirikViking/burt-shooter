@@ -864,3 +864,28 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 - Powerup asset guard: `npm run check:powerup-assets` passed with 23 generated icons.
 - Powerup runtime visual check: `test-results/powerup-visuals-2026-05-19T08-06-44-485Z/report.json` and `test-results/powerup-visuals-2026-05-19T08-06-44-485Z/powerup-icons-runtime.png`.
 - Local smoke: `test-results/smoke-2026-05-19T08-08-00-245Z/report.json` passed with zero console warnings/errors, page errors, bad responses, or failures.
+
+## Loop 21 - Voice Evidence Truth Refresh
+
+### What Was Tested
+
+- Treated stale voice provenance as the next highest-impact release-honesty issue after the handoff/media refresh.
+- Verified ElevenLabs access without printing the key.
+- Checked that the current runtime voice pack still has the expected event pools, manifest coverage, and intro exclusivity.
+
+### What Changed
+
+- Updated `docs/reviews/voice-audio-upgrade-audit.md` so the top-level status no longer describes the shipped pack as local Zira fallback.
+- Updated `docs/audio/voice-direction.md` with the current ElevenLabs access/provenance verification.
+- Updated `docs/reviews/steam-hit-gap-audit.md` so the audio risk reflects the current ElevenLabs `Female misfit` pack, reduced routine chatter, and global-score fanfare work instead of superseded no-key fallback constraints.
+
+### Evidence Captured
+
+- ElevenLabs access: `ELEVENLABS_API_KEY` present and ElevenLabs `/v1/user` returned HTTP 200 without exposing the key.
+- Announcer validation: `npm run check:announcer-voice` passed with 22 event pools and 51 manifest voice assets.
+- Intro exclusivity: `npm run check:intro-voice` passed at `test-results/intro-voice-exclusivity-2026-05-19T20-16-35-635Z/intro-voice-exclusivity.png`.
+
+### Remaining Top Risks
+
+- Human by-ear approval is still required before treating the voice/audio package as final Steam upload material.
+- Future voice regeneration must keep ElevenLabs credentials local and out of logs, docs, and commits.

@@ -19,17 +19,17 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 | Score/combo/restart compulsion | 9 | Danger-dodge streaks, instant restart, next-ship motivation, and separate local/global leaderboard qualification now give the death screen a stronger one-more-run job. |
 | Ship unlock motivation | 8 | 25 ships are unlock-gated with real trait/stat differences; game over now surfaces next/new unlock motivation. |
 | UI/text density | 9 | The remaining player-facing Courier/monospace/Impact-style holdouts were removed from Pixi UI, menus, HUD, score popups, game over, highscore, ship screens, overlays, and the public page. Center-lane toasts still need monitoring during dense waves. |
-| Audio punch | 8 | The announcer now has event pools, no-repeat guards, global-score fanfare, a Tractor Hijack payoff line, and local FFmpeg arcade-radio processing. Current assets are still local fallback TTS because ElevenLabs returned HTTP 401 and this loop used no API key, so human by-ear approval and a stronger licensed voice source remain important. |
+| Audio punch | 9 | The announcer now has ElevenLabs `Female misfit` mission-control/intro assets, event pools, no-repeat guards, reduced routine chatter, global-score fanfare tiers, and a Tractor Hijack payoff line. Human by-ear approval is still required before final Steam upload. |
 | Surprise mechanic freshness | 9 | Hijacker tractor beam now has a rare `TRACTOR HIJACK` payoff, and the new `GRAZE BREAK` turns close-dodge skill into a charged bullet-parry score burst. The game now has both rare enemy-event reversal and player-authored reversal hooks. |
 | Steam tag accuracy | 8 | Tags are now focused and Bullet Hell was removed from the first metadata set. |
 | Controller expectations | 7 | Runtime support and packaged control smoke exist; Steam metadata correctly stays at Partial Controller Support pending Steam client validation. |
 | Steam readiness honesty | 9 | Release audit reports only the three manual blockers instead of pretending release-ready. |
-| Would I wishlist this from the store page? | 8 | Better than generic retro, with Tractor Hijack, Graze Break, and a now-proven level-10-in-10-minutes pace. The fallback voice still caps premium feel. |
+| Would I wishlist this from the store page? | 8 | Better than generic retro, with Tractor Hijack, Graze Break, level-10-in-10-minutes pacing, ElevenLabs voice identity, and bigger global-score fanfares. Final trailer/audio curation still caps confidence. |
 | Would I play another run after dying? | 9 | Instant restart, local score saving, global qualification fanfare, and separate board status make the score chase clearer and less fragile. |
 
 ## Top Five Highest-Impact Changes
 
-1. **Licensed premium voice pass:** regenerate the new line pools with working ElevenLabs access or another approved professional voice source.
+1. **By-ear voice/audio approval:** the ElevenLabs pack and new fanfares are implemented, but a final human listen pass should catch cringe, fatigue, mix imbalance, or repetition before Steam upload.
 2. **Progression tempo:** shorten the path to level 10 without making the first minute messy or unfair. Implemented this loop; the latest 10-minute playtest reached level 10 alive.
 3. **Game-over motivation:** strengthen death screen with next/new ship unlock, one-input/gamepad retry, and separate local/global board status. Implemented this loop.
 4. **Store claim cleanup:** remove Bullet Hell from first metadata set and avoid "Controller Ready" language until Steam client validation. Implemented this loop.
@@ -39,7 +39,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 - Trailer candidate is current-build and shows Tractor Hijack payoff before boss footage; the capture pipeline now also stages Graze Break during the later close-dodge beat. Human by-ear and Steamworks review remain required.
 - Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Remaining risk is store-media breadth: the trailer proves one boss clearly, but not the full variety of later bosses.
-- The new voice system fixes line structure/repetition and now has a stronger no-key DSP pass, but the local fallback performance is still not as premium as a licensed pro/neural performance.
+- The voice system now uses the approved ElevenLabs `Female misfit` pack and bigger leaderboard fanfares, but it still needs final human by-ear approval for taste, fatigue, and Steam trailer mix.
 - Leaderboard flow now has distinct local/global qualification, local fallback, and a tested global-offline path. Remaining risk is live public-domain verification and by-eye polish of the highscore tab presentation.
 - Public web build and marketing site are live; the latest tempo build and current Tractor Hijack/Graze Break media/handoff evidence are verified against the private domain.
 - Steam client validation cannot happen until real app/depot IDs and credentials exist.
@@ -64,8 +64,8 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 - Typography payoff check: `test-results/tractor-hijack-2026-05-19T00-54-16-898Z/report.json`
 - No-key announcer Tractor Hijack proof: `test-results/tractor-hijack-2026-05-19T02-00-44-037Z/report.json`
 - Graze Break proof: `test-results/graze-break-2026-05-19T03-06-55-653Z/report.json`
-- Current deployed build: `v2026-05-19_05-32-09` at `https://burt.tinyfoundry.app`
-- Steam payload manifest: `release/steamworks/steam_payload_manifest.json` (74 files, 628,266,041 bytes)
+- Current deployed build: `v2026-05-19_21-30-12` at `https://burt.tinyfoundry.app` and `https://novaswarm.tinyfoundry.app`
+- Steam payload manifest: `release/steamworks/steam_payload_manifest.json` (74 files, 658,636,448 bytes)
 - Release audit: `docs/reviews/release-readiness-audit-2026-05-17.json`
 - Steam handoff packet: `release/steamworks/release_handoff_packet.json`
 - Live game URL: `https://burt.tinyfoundry.app`
@@ -73,4 +73,4 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Next Best Loop
 
-Highest remaining anti-flop loop: by-eye human curation of the final screenshot/trailer/audio package, then replace the local fallback announcer with a licensed premium performance when an approved no-key/pro-source path exists.
+Highest remaining anti-flop loop: by-eye human curation of the final screenshot/trailer/audio package, with special attention to whether the ElevenLabs announcer and global-score fanfares feel premium without becoming repetitive.
