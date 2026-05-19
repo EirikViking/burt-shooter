@@ -267,7 +267,7 @@ export const AssetManifest = {
             '/audio/sfx/spaceEngine_000.mp3', '/audio/sfx/spaceEngine_001.mp3', '/audio/sfx/spaceEngine_002.mp3', '/audio/sfx/spaceEngine_003.mp3',
             // Thrusters
             '/audio/sfx/thrusterFire_000.mp3', '/audio/sfx/thrusterFire_001.mp3', '/audio/sfx/thrusterFire_002.mp3', '/audio/sfx/thrusterFire_003.mp3', '/audio/sfx/thrusterFire_004.mp3',
-            // ElevenLabs original Nova Swarm polish
+            // Original Nova Swarm polish
             '/audio/sfx/nova-swarm/intro_panel_whoosh.mp3',
             '/audio/sfx/nova-swarm/coin_portal_open.mp3',
             '/audio/sfx/nova-swarm/swarm_chatter_stinger.mp3',

@@ -5,8 +5,8 @@
 - Primary custom domain: https://novaswarm.tinyfoundry.app
 - Previous custom domain: https://burt.tinyfoundry.app
 - Cloudflare Pages production URL: https://burt-game.pages.dev
-- Latest verified production deploy: https://1056e9b9.burt-game.pages.dev
-- Latest deployed build ID: `v2026-05-19_18-43-29`
+- Latest verified production deploy: https://8bcf47f5.burt-game.pages.dev
+- Latest deployed build ID: `v2026-05-19_19-57-38`
 
 ## Cloudflare Pages Project
 

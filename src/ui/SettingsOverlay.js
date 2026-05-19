@@ -254,7 +254,7 @@ export class SettingsOverlay {
     fitTextToWidth(button._label, 132);
     row.addChild(button);
 
-    const hint = createText(pack === 'classic' ? 'ALT TRACKS' : 'NEW ELEVENLABS', {
+    const hint = createText(pack === 'classic' ? 'ALT TRACKS' : 'ORIGINAL MIX', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#ffc96e'
@@ -264,7 +264,7 @@ export class SettingsOverlay {
     row.addChild(hint);
 
     button.on('pointertap', () => {
-      hint.text = pack === 'classic' ? 'ALT TRACKS' : 'NEW ELEVENLABS';
+      hint.text = pack === 'classic' ? 'ALT TRACKS' : 'ORIGINAL MIX';
     });
 
     this.container.addChild(row);
