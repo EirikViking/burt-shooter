@@ -8,6 +8,31 @@ export const AssetManifest = {
         bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
         playerShips: Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
         enemies: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/enemies/nova-enemy-${String(i + 1).padStart(2, '0')}.png`),
+        powerups: {
+            triple_beam: '/art/generated/nova-swarm/powerups/nova-powerup-triple_beam-20260519.png',
+            vector_boost: '/art/generated/nova-swarm/powerups/nova-powerup-vector_boost-20260519.png',
+            rapid_cabinet: '/art/generated/nova-swarm/powerups/nova-powerup-rapid_cabinet-20260519.png',
+            overdrive_core: '/art/generated/nova-swarm/powerups/nova-powerup-overdrive_core-20260519.png',
+            slow_time: '/art/generated/nova-swarm/powerups/nova-powerup-slow_time-20260519.png',
+            ghost: '/art/generated/nova-swarm/powerups/nova-powerup-ghost-20260519.png',
+            life: '/art/generated/nova-swarm/powerups/nova-powerup-life-20260519.png',
+            shield: '/art/generated/nova-swarm/powerups/nova-powerup-shield-20260519.png',
+            rapid_fire: '/art/generated/nova-swarm/powerups/nova-powerup-rapid_fire-20260519.png',
+            double_shot: '/art/generated/nova-swarm/powerups/nova-powerup-double_shot-20260519.png',
+            damage_up: '/art/generated/nova-swarm/powerups/nova-powerup-damage_up-20260519.png',
+            speed_up: '/art/generated/nova-swarm/powerups/nova-powerup-speed_up-20260519.png',
+            pierce: '/art/generated/nova-swarm/powerups/nova-powerup-pierce-20260519.png',
+            score_x2: '/art/generated/nova-swarm/powerups/nova-powerup-score_x2-20260519.png',
+            magnet: '/art/generated/nova-swarm/powerups/nova-powerup-magnet-20260519.png',
+            drones: '/art/generated/nova-swarm/powerups/nova-powerup-drones-20260519.png',
+            shockwave: '/art/generated/nova-swarm/powerups/nova-powerup-shockwave-20260519.png',
+            point_defense: '/art/generated/nova-swarm/powerups/nova-powerup-point_defense-20260519.png',
+            bomb: '/art/generated/nova-swarm/powerups/nova-powerup-bomb-20260519.png',
+            chain_lightning: '/art/generated/nova-swarm/powerups/nova-powerup-chain_lightning-20260519.png',
+            orbital_strike: '/art/generated/nova-swarm/powerups/nova-powerup-orbital_strike-20260519.png',
+            vampire: '/art/generated/nova-swarm/powerups/nova-powerup-vampire-20260519.png',
+            bonus_core: '/art/generated/nova-swarm/powerups/nova-powerup-bonus_core-20260519.png'
+        },
         introPanels: [
             '/art/generated/nova-swarm/nova-swarm-intro-last-arcade.webp',
             '/art/generated/nova-swarm/nova-swarm-intro-swarm-awakens.webp',
@@ -119,7 +144,7 @@ export const AssetManifest = {
         },
 
         // Powerups
-        bonusCore: '/sprites/generated/nova-bonus-core-drone-20260517.png'
+        bonusCore: '/art/generated/nova-swarm/powerups/nova-powerup-bonus_core-20260519.png'
     },
 
     // Audio Assets

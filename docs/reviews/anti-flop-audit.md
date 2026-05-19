@@ -840,3 +840,27 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 - Level 10 is now reliably reachable in tested 10-minute runs; the next balance watch item is whether the faster late-game feels too compressed to expert players during human play.
 - The current fallback voice pack remains structurally improved but not a premium licensed performance.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 20 - Powerup Visual Redesign
+
+### What Was Tested
+
+- Treated cheap, reused pickup art as the next highest-impact first-minute polish issue after the voice/stat loop.
+- Generated a new Nova Swarm powerup icon atlas with the imagegen skill, then rejected the half-erased green speed icon and regenerated it on a safer magenta key.
+- Checked that every spawned powerup has distinct generated runtime art instead of borrowing the old bundled pill/shield/star sprites.
+
+### What Changed
+
+- Added 23 generated `192x192` transparent powerup icons covering all spawned powerups plus the bonus core.
+- Repointed `AssetManifest.generated.powerups` and `AssetManifest.sprites.bonusCore` to the generated Nova Swarm powerup set.
+- Updated `GameAssets` to preload the generated powerup map.
+- Simplified `PowerupManager` so pickups render the icon art directly, without first-letter text overlays.
+- Added `npm run check:powerup-assets` and wired it into the build guards.
+
+### Evidence Captured
+
+- Build: `v2026-05-19_10-07-11`.
+- Powerup contact sheet: `public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260519.jpg`.
+- Powerup asset guard: `npm run check:powerup-assets` passed with 23 generated icons.
+- Powerup runtime visual check: `test-results/powerup-visuals-2026-05-19T08-06-44-485Z/report.json` and `test-results/powerup-visuals-2026-05-19T08-06-44-485Z/powerup-icons-runtime.png`.
+- Local smoke: `test-results/smoke-2026-05-19T08-08-00-245Z/report.json` passed with zero console warnings/errors, page errors, bad responses, or failures.

@@ -24,7 +24,7 @@
       "sourceType": "ai_generated_visual",
       "provider": "OpenAI image generation via Codex imagegen",
       "licenseStatus": "pending_human_review",
-      "notes": "Original generated Nova Swarm backdrops, intro panels, comms portraits, hangar art, boss dossier, and bonus core sprite. Prompt summaries are documented in docs/visual-asset-pipeline.md."
+      "notes": "Original generated Nova Swarm backdrops, intro panels, comms portraits, hangar art, boss dossier, bonus core sprite, and redesigned powerup icons. Prompt summaries are documented in docs/visual-asset-pipeline.md."
     },
     {
       "id": "generated_steam_store_art",

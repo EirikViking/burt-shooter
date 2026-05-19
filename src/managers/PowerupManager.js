@@ -65,80 +65,26 @@ class Powerup {
     this.sprite.addChild(this.aura);
 
     try {
-      let texture = null;
-      // PART B: Load sprite for each powerup type
-      if (this.type === 'shield') texture = GameAssets.getXtraPowerup('shield');
-      else if (this.type === 'life') texture = GameAssets.getXtraPowerup('life');
-      else if (this.type === 'ghost') texture = GameAssets.getXtraPowerup('ghost');
-      else if (this.type === 'slow_time') texture = GameAssets.getXtraPowerup('slow_time');
-      else if (this.type === 'triple_beam') texture = GameAssets.getXtraPowerup('triple_beam');
-      else if (this.type === 'vector_boost') texture = GameAssets.getXtraPowerup('vector_boost');
-      else if (this.type === 'rapid_cabinet') texture = GameAssets.getXtraPowerup('rapid_cabinet');
-      else if (this.type === 'overdrive_core') texture = GameAssets.getXtraPowerup('overdrive_core');
-      else if (this.type === 'rapid_fire') texture = GameAssets.getXtraPowerup('rapid_cabinet');
-      else if (this.type === 'double_shot') texture = GameAssets.getXtraPowerup('triple_beam');
-      else if (this.type === 'damage_up') texture = GameAssets.getXtraPowerup('overdrive_core');
-      else if (this.type === 'speed_up') texture = GameAssets.getXtraPowerup('vector_boost');
-      else if (this.type === 'pierce') texture = GameAssets.getXtraPowerup('ghost');
-      else if (this.type === 'score_x2') texture = GameAssets.getXtraPowerup('slow_time');
-      else if (this.type === 'magnet') texture = GameAssets.getXtraPowerup('ghost');
-      else if (this.type === 'drones') texture = GameAssets.getXtraPowerup('rapid_cabinet');
-      else if (this.type === 'shockwave') texture = GameAssets.getXtraPowerup('overdrive_core');
-      else if (this.type === 'point_defense') texture = GameAssets.getXtraPowerup('shield'); // Reuse shield texture
-      else if (this.type === 'bomb') texture = GameAssets.getXtraPowerup('overdrive_core');
-      else if (this.type === 'chain_lightning') texture = GameAssets.getXtraPowerup('slow_time');
-      else if (this.type === 'orbital_strike') texture = GameAssets.getXtraPowerup('shield');
-      else if (this.type === 'vampire') texture = GameAssets.getXtraPowerup('rapid_cabinet');
-      else texture = GameAssets.getBonusCoreTexture();
+      const texture = GameAssets.getPowerupTexture(this.type) || GameAssets.getBonusCoreTexture();
 
       if (GameAssets.isValidTexture(texture)) {
         const iconSprite = new PIXI.Sprite(texture);
         iconSprite.anchor.set(0.5);
         iconSprite.label = 'mainSprite';
-
-        // PART B: Consistent scale for all powerup sprites
-        const hasSprite = this.type === 'shield' || this.type === 'life' ||
-          this.type === 'ghost' || this.type === 'slow_time' ||
-          this.type === 'triple_beam' || this.type === 'vector_boost' ||
-          this.type === 'rapid_cabinet' || this.type === 'overdrive_core' ||
-          this.type === 'rapid_fire' || this.type === 'double_shot' ||
-          this.type === 'damage_up' || this.type === 'speed_up' ||
-          this.type === 'pierce' || this.type === 'score_x2' ||
-          this.type === 'magnet' || this.type === 'drones' || this.type === 'shockwave' ||
-          this.type === 'chain_lightning' || this.type === 'orbital_strike' || this.type === 'vampire';
-
-        if (hasSprite) {
-          iconSprite.scale.set(0.8);
-        } else {
-          iconSprite.width = 24;
-          iconSprite.height = 32;
-          iconSprite.tint = this.color;
-        }
+        const maxIconSize = ['orbital_strike', 'shockwave', 'bomb'].includes(this.type) ? 52 : 48;
+        const scale = maxIconSize / Math.max(texture.width, texture.height);
+        iconSprite.scale.set(scale);
 
         this.sprite.addChild(iconSprite);
         this.mainSprite = iconSprite;
 
-        // PART B: Store base scale to prevent runaway scaling
+        // Store base scale to prevent runaway pulsing.
         this.baseScale = iconSprite.scale.x;
 
         const glow = new PIXI.Graphics();
-        glow.circle(0, 0, 15);
+        glow.circle(0, 0, 21);
         glow.fill({ color: this.color, alpha: 0.25 });
         this.sprite.addChildAt(glow, 1);
-
-        // No text overlay for icons
-        if (this.type !== 'shield' && this.type !== 'life') {
-          const text = createText(this.label[0], {
-            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: 20,
-            fill: '#ffffff',
-            fontWeight: 'bold',
-            stroke: 'black',
-            strokeThickness: 2
-          });
-          text.anchor.set(0.5);
-          this.sprite.addChild(text);
-        }
       } else {
         this.createFallbackSprite();
       }

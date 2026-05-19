@@ -87,6 +87,21 @@ Prompt summary:
 
 > Original Nova Swarm hijacker craft for a tractor-beam arcade enemy: angular crescent prow, split claw-like fins, dark gunmetal armor, cyan and magenta energy accents, underside emitter lens, no active beam, no text, no logo, no existing IP resemblance, generated on a flat green chroma-key background for alpha extraction.
 
+## 2026-05-19 Generated Powerup Icon Redesign
+
+- Main source atlas: `public/art/generated/nova-swarm/source/nova-powerups-20-atlas-20260519-source.png`
+- Supplemental source atlas: `public/art/generated/nova-swarm/source/nova-powerups-supplemental-20260519-source.png`
+- Speed replacement source: `public/art/generated/nova-swarm/source/nova-powerup-speed-up-20260519-source.png`
+- Runtime assets: `public/art/generated/nova-swarm/powerups/nova-powerup-*-20260519.png`
+- Review sheet: `public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260519.jpg`
+- Optimization: built-in Codex imagegen outputs copied from `C:\Users\cromk\.codex\generated_images\019e3c8d-67c5-7660-a43a-291d5635e772`, chroma-keyed with `C:\Users\cromk\.codex\skills\.system\imagegen\scripts\remove_chroma_key.py`, split, trimmed, resized, and padded to `192x192` PNGs with alpha.
+- Usage: `src/assets/assetManifest.js` maps every spawned powerup plus the bonus core to generated Nova Swarm icons, and `src/managers/PowerupManager.js` now renders the art directly without first-letter overlays.
+- Verification: `npm run check:powerup-assets` validates manifest coverage and icon dimensions.
+
+Prompt summary:
+
+> Premium Nova Swarm arcade powerup icon atlas with distinct collectible icons for triple beam, vector boost, rapid cabinet, overdrive core, slow time, ghost phase, extra life, shield, rapid fire, double shot, damage up, speed up, pierce shot, score x2, magnet field, side drones, shockwave, chain lightning, orbital strike, vampire drain, plus supplemental bomb, point-defense, and bonus-core icons; flat chroma-key backgrounds, no text, no logos, no old UFO/saucer art, readable at small gameplay sizes.
+
 ## 2026-05-17 Nova Swarm Asset Path Cleanup
 
 - Public runtime art paths now live under `public/art/generated/nova-swarm/`.

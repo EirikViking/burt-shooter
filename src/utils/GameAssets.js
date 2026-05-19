@@ -290,56 +290,16 @@ class GameAssetsManager {
             fxPromises.push(this.loadSingleAsset(`xtra_effect_${name}`, path, this.xtra.effects));
         });
 
-        // PART B: Loading Powerups - All types
+        // Loading generated Nova Swarm powerup icons.
         const powerupPromises = [];
-        // Life powerup - red heart
-        powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_life',
-            '/sprites/xtra-sprites/UI/playerLife1_red.png',
-            this.xtra.powerups
-        ));
-        // Shield powerup - blue shield
-        powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_shield',
-            '/sprites/xtra-sprites/Power-ups/powerupBlue_shield.png',
-            this.xtra.powerups
-        ));
-        // Ghost powerup - star (ethereal)
-        powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_ghost',
-            '/sprites/xtra-sprites/Power-ups/powerupGreen_star.png',
-            this.xtra.powerups
-        ));
-        // Slow time powerup - bolt (speed related)
-        powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_slow_time',
-            '/sprites/xtra-sprites/Power-ups/powerupYellow_bolt.png',
-            this.xtra.powerups
-        ));
-        // Triple-beam powerup - yellow pill
-        powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_triple_beam',
-            '/sprites/xtra-sprites/Power-ups/pill_yellow.png',
-            this.xtra.powerups
-        ));
-        // Vector-boost powerup - red pill
-        powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_vector_boost',
-            '/sprites/xtra-sprites/Power-ups/pill_red.png',
-            this.xtra.powerups
-        ));
-        // Rapid-cabinet powerup - green pill
-        powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_rapid_cabinet',
-            '/sprites/xtra-sprites/Power-ups/pill_green.png',
-            this.xtra.powerups
-        ));
-        // Overdrive-core powerup - blue pill
-        powerupPromises.push(this.loadSingleAsset(
-            'xtra_powerup_overdrive_core',
-            '/sprites/xtra-sprites/Power-ups/pill_blue.png',
-            this.xtra.powerups
-        ));
+        const generatedPowerups = AssetManifest.generated?.powerups || {};
+        Object.entries(generatedPowerups).forEach(([name, src]) => {
+            powerupPromises.push(this.loadSingleAsset(
+                `xtra_powerup_${name}`,
+                src,
+                this.xtra.powerups
+            ));
+        });
 
         await Promise.all([...shipPromises, ...enemyPromises, ...laserPromises, ...dmgPromises, ...fxPromises, ...powerupPromises]);
         console.log('[GameAssets] Xtra Assets Loaded (ships:', Object.keys(this.xtra.ships).length, 'powerups:', Object.keys(this.xtra.powerups).length, ')');
@@ -377,6 +337,10 @@ class GameAssetsManager {
     }
     getXtraPowerup(name) {
         return this.xtra?.powerups[`xtra_powerup_${name}`];
+    }
+
+    getPowerupTexture(name) {
+        return this.getXtraPowerup(name);
     }
 }
 
