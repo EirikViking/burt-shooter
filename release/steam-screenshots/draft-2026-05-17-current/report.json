@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T00:57:13.312Z",
+  "generatedAt": "2026-05-19T01:39:21.899Z",
   "baseUrl": "http://127.0.0.1:4273",
   "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-screenshots\\draft-2026-05-17-current",
   "build": {
@@ -74,8 +74,8 @@
     },
     {
       "file": "06-midgame-swarm.png",
-      "title": "Midgame swarm escalation",
-      "notes": "Debug start at level three for a denser representative store screenshot.",
+      "title": "Tractor hijack payoff",
+      "notes": "Deterministic level-three capture of the rare beam reversal score payoff.",
       "width": 1280,
       "height": 720,
       "scene": "play",

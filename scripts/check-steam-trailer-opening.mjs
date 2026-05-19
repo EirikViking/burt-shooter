@@ -27,6 +27,7 @@ if (report) {
   if (!Array.isArray(report.firstTenSeconds) || report.firstTenSeconds.length < 3) errors.push('firstTenSeconds evidence is missing');
   const firstTenText = (report.firstTenSeconds || []).join(' ').toLowerCase();
   if (!firstTenText.includes('hijacker') || !firstTenText.includes('tractor')) errors.push('firstTenSeconds does not name hijacker tractor-beam proof');
+  if (!firstTenText.includes('hijack') || !firstTenText.includes('payoff')) errors.push('firstTenSeconds does not name Tractor Hijack payoff proof');
   if (!firstTenText.includes('boss')) errors.push('firstTenSeconds does not name boss proof');
   if (!existsSync(path.resolve(report.outputVideo || ''))) errors.push(`missing candidate video: ${report.outputVideo}`);
   if (!existsSync(path.resolve(report.contactSheet || ''))) errors.push(`missing candidate contact sheet: ${report.contactSheet}`);

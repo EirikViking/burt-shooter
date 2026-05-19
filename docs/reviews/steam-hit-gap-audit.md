@@ -9,8 +9,8 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 | Area | Score | Evidence / Reason |
 |---|---:|---|
 | Store hook | 8 | "Fast modern arcade score-chaser" is focused and avoids clone language. It still needs the proximity-score verb front-loaded harder. |
-| First screenshot | 8 | Upload candidates now lead with current-build gameplay and include the hijacker beam, boss inbound/fight, score flow, and ship variety. The first shot still could show a bigger close-dodge payoff. |
-| First 10 trailer seconds | 8 | The current trailer opens on the hijacker tractor beam, boss inbound, and active boss fire before menu or score-flow footage. Human by-ear approval is still required. |
+| First screenshot | 9 | Upload candidates now lead with current-build gameplay and include a visible `TRACTOR HIJACK` payoff, boss inbound/fight, score flow, and ship variety. Final thumbnail order still needs human curation. |
+| First 10 trailer seconds | 9 | The current trailer opens on Tractor Hijack payoff, boss gate, and active boss fire before menu or score-flow footage. Human by-ear approval is still required. |
 | First 60 seconds of gameplay | 9 | Current smoke/release playtest evidence shows quick play, active waves, a level-2 boss loop, readable HUD, and stable audio. |
 | Input feel | 7 | Keyboard/gamepad movement/fire/pause are proven in packaged smoke; analog movement still behaves mostly digital in runtime code. |
 | Enemy/bullet readability | 8 | Strong art, cleaner HUD, and the new hijacker beam proof show readable danger lanes. Effects/toasts still need monitoring during dense waves. |
@@ -24,7 +24,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 | Steam tag accuracy | 8 | Tags are now focused and Bullet Hell was removed from the first metadata set. |
 | Controller expectations | 7 | Runtime support and packaged control smoke exist; Steam metadata correctly stays at Partial Controller Support pending Steam client validation. |
 | Steam readiness honesty | 9 | Release audit reports only the three manual blockers instead of pretending release-ready. |
-| Would I wishlist this from the store page? | 8 | Better than generic retro, and level 10 is now proven reachable in a 10-minute playtest. Trailer first 10 seconds and screenshot peak-action proof still need one more pass. |
+| Would I wishlist this from the store page? | 8 | Better than generic retro, and level 10 is now proven reachable in a 10-minute playtest. Trailer and screenshots now prove the hijack hook, but the fallback voice still caps premium feel. |
 | Would I play another run after dying? | 9 | Instant restart, local score saving, global qualification fanfare, and separate board status make the score chase clearer and less fragile. |
 
 ## Top Five Highest-Impact Changes
@@ -37,11 +37,11 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Current Top Risks
 
-- Trailer candidate is current-build and hijacker/boss-first, but it still shows the quick beam-break beat more clearly than the full focused `TRACTOR HIJACK` payoff. Human by-ear and Steamworks review remain required.
+- Trailer candidate is current-build and now shows Tractor Hijack payoff before boss footage. Human by-ear and Steamworks review remain required.
 - Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Remaining risk is store-media breadth: the trailer proves one boss clearly, but not the full variety of later bosses.
 - The new voice system fixes line structure/repetition, but the local fallback performance is not yet premium enough to be a commercial differentiator.
 - Leaderboard flow now has distinct local/global qualification, local fallback, and a tested global-offline path. Remaining risk is live public-domain verification and by-eye polish of the highscore tab presentation.
-- Public web build and marketing site are live; the latest typography build and current Steam media/handoff evidence are verified against the private domain.
+- Public web build and marketing site are live; the latest typography build and current Tractor Hijack media/handoff evidence are verified against the private domain.
 - Steam client validation cannot happen until real app/depot IDs and credentials exist.
 - Human approvals are still required for screenshots, trailer, capsules, audio, store copy, and legal/provenance.
 
@@ -59,7 +59,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 - Current Steam screenshot capture: `release/steam-screenshots/draft-2026-05-17-current/report.json`
 - Current Steam trailer candidate: `release/steam-trailer/candidate-2026-05-17-current/report.json`
 - Trailer opening check: `test-results/steam-trailer-opening-2026-05-18T23-49-17-385Z/report.json`
-- Current trailer opening check: `test-results/steam-trailer-opening-2026-05-19T01-03-08-119Z/report.json`
+- Current trailer opening check: `test-results/steam-trailer-opening-2026-05-19T01-50-59-970Z/report.json`
 - Tractor hijack check: `test-results/tractor-hijack-2026-05-18T23-59-51-037Z/report.json`
 - Latest solo release playtest after tractor hijack: `test-results/release-playtest-2026-05-19T00-10-31-915Z/report.json` (survived 599,979 ms, reached level 10, 2 lives, score 67,066, zero console/page/network/request failures)
 - Typography payoff check: `test-results/tractor-hijack-2026-05-19T00-54-16-898Z/report.json`
@@ -70,4 +70,4 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Next Best Loop
 
-Show the full `TRACTOR HIJACK` score payoff more deliberately in one Steam screenshot or trailer beat, then run a human-curation pass on the first thumbnail and first 10 trailer seconds.
+Highest remaining anti-flop loop: replace the local fallback announcer with a licensed premium performance, then run a human-curation pass on final screenshot order and first 10 trailer seconds.

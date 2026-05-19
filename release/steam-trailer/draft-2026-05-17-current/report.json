@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T01:02:15.166Z",
+  "generatedAt": "2026-05-19T01:49:08.977Z",
   "baseUrl": "http://127.0.0.1:4373",
   "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current",
   "build": {
@@ -18,20 +18,20 @@
   ],
   "timeline": [
     {
-      "label": "hijacker_tractor_opening",
-      "durationMs": 3200,
+      "label": "hijacker_tractor_setup",
+      "durationMs": 800,
       "scene": "play",
       "level": 1,
       "wave": 1,
       "audioContext": "menu"
     },
     {
-      "label": "tractor_break_payoff",
-      "durationMs": 900,
+      "label": "tractor_hijack_payoff",
+      "durationMs": 1900,
       "scene": "play",
-      "level": 1,
+      "level": 2,
       "wave": 1,
-      "audioContext": "menu"
+      "audioContext": "gameplay"
     },
     {
       "label": "boss_inbound",

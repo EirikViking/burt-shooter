@@ -176,7 +176,7 @@ async function volumedetect(file) {
 }
 
 async function extractContactSheet(duration) {
-  const times = [1.8, 8.6, 10.4, 16.5, Math.max(1, duration - 1.2)];
+  const times = [0.55, 2.6, 8.6, 16.5, Math.max(1, duration - 1.2)];
   const frames = [];
   for (const [index, time] of times.entries()) {
     const frame = path.join(outputDir, `frame-${String(index + 1).padStart(2, '0')}.jpg`);
@@ -219,7 +219,7 @@ async function main() {
     build: readJson(path.join(draftDir, 'audio-mix-report.json'))?.build || readJson(path.join(draftDir, 'report.json'))?.build || null,
     opening: 'hijacker_and_boss_first',
     firstTenSeconds: [
-      'runtime hijacker tractor-beam pressure',
+      'runtime hijacker tractor-beam pressure and Tractor Hijack payoff',
       'boss inbound warning',
       'active boss pattern fire'
     ],
@@ -230,7 +230,7 @@ async function main() {
     frames,
     notes: [
       'Editorial Steam trailer candidate starts on captured hijacker/boss gameplay: no logo-first opening, no lore card, no menu dwell.',
-      'The first 10 seconds are intended to prove the surprise mechanic and boss-every-level hook before menu or score-flow footage.',
+      'The first 10 seconds are intended to prove the Tractor Hijack surprise payoff and boss-every-level hook before menu or score-flow footage.',
       'Still requires human by-ear and store-submission approval before Steam upload.'
     ],
     ffprobe: probe,

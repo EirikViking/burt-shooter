@@ -245,9 +245,114 @@ async function showGameplay(page) {
   await page.keyboard.up('Space');
 }
 
+async function stageTractorHijackSetup(page) {
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const player = play?.player;
+    const enemyManager = play?.enemyManager;
+    if (!game || !play || !player || !enemyManager) throw new Error('Missing play scene for trailer tractor hijack');
+
+    enemyManager.enemies.forEach((enemy) => {
+      if (enemy.kind !== 'boss') {
+        enemy.active = false;
+        enemy.destroy?.();
+        if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);
+      }
+    });
+    enemyManager.enemies = enemyManager.enemies.filter((enemy) => enemy.kind === 'boss' && enemy.active !== false);
+    play.bulletManager?.enemyBullets?.forEach((bullet) => {
+      bullet.active = false;
+      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+    });
+    if (play.bulletManager) play.bulletManager.enemyBullets = [];
+    play.tractorHijack = null;
+    play.lastTractorHijack = null;
+
+    enemyManager.spawnWave({
+      count: 4,
+      formation: 'TUTORIAL_ARC',
+      type: 'chaser',
+      entry: 'single',
+      cadence: 10
+    });
+
+    const width = game.getWidth();
+    const height = game.getHeight();
+    const sourceX = Math.round(width * 0.52);
+    const sourceY = 132;
+    const playerY = Math.round(height * 0.79);
+
+    enemyManager.enemies
+      .filter((enemy) => enemy.kind !== 'boss')
+      .slice(0, 4)
+      .forEach((enemy, index) => {
+        const t = 0.28 + index * 0.13;
+        enemy.waitingForEntry = false;
+        enemy.active = true;
+        enemy.state = 'FORMATION';
+        enemy.health = 1;
+        enemy.maxHealth = 1;
+        enemy.radius = 22;
+        enemy.speed = 0;
+        enemy.vx = 0;
+        enemy.vy = 0;
+        enemy.x = sourceX + (index - 1.5) * 22;
+        enemy.y = sourceY + (playerY - sourceY) * t;
+        enemy.update = () => {};
+        if (enemy.sprite) {
+          enemy.sprite.x = enemy.x;
+          enemy.sprite.y = enemy.y;
+          enemy.sprite.visible = true;
+          enemy.sprite.renderable = true;
+        }
+        enemy.updateHealthBar?.();
+      });
+
+    enemyManager.spawnHijacker();
+    const hijacker = enemyManager.hijacker;
+    if (!hijacker) throw new Error('Hijacker failed to spawn for trailer tractor hijack');
+    hijacker.x = sourceX;
+    hijacker.y = sourceY;
+    hijacker.baseY = sourceY;
+    hijacker.health = 30;
+    hijacker.maxHealth = 30;
+    hijacker.beamActiveMs = 3200;
+    hijacker.beamWarningMs = 120;
+    hijacker.sprite.x = hijacker.x;
+    hijacker.sprite.y = hijacker.y;
+    hijacker.updateHealthBar?.();
+
+    player.x = sourceX;
+    player.y = playerY;
+    player.invulnerable = true;
+    player.invulnerableTime = 45000;
+
+    for (let i = 0; i < 3; i += 1) {
+      const bullet = hijacker.shoot(player.x, player.y);
+      bullet.x = sourceX + (i - 1) * 28;
+      bullet.y = sourceY + 210 + i * 74;
+      if (bullet.sprite) {
+        bullet.sprite.x = bullet.x;
+        bullet.sprite.y = bullet.y;
+      }
+      play.bulletManager?.addEnemyBullet?.(bullet);
+    }
+
+    hijacker.activateBeam(player.x, player.y);
+    hijacker.updateTractorBeam(1, player.x, player.y);
+  });
+
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.hijacker?.tractor?.state === 'active' && state.hijacker?.tractor?.pullActive === true;
+  }, null, { timeout: 5000 });
+}
+
 async function showHijackerOpening(page) {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
+    controlSmoke: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
     startLevel: '2'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -255,53 +360,76 @@ async function showHijackerOpening(page) {
   await waitForGameplayBackdrop(page);
   await page.waitForFunction(() => window.__game?.scenes?.play?.player?.active, null, { timeout: 30000 });
   await stabilizePlayer(page);
-  await page.evaluate(() => {
-    const game = window.__game;
-    const play = game?.scenes?.play;
-    const player = play?.player;
-    const enemyManager = play?.enemyManager;
-    if (!game || !play || !player || !enemyManager) return;
-    enemyManager.forceClearAllEnemies?.();
-    enemyManager.spawnHijacker?.();
-    const hijacker = enemyManager.hijacker;
-    if (!hijacker) return;
-    hijacker.x = Math.round(game.getWidth() * 0.52);
-    hijacker.y = 142;
-    hijacker.health = 36;
-    hijacker.maxHealth = 36;
-    hijacker.nextBeamAt = Date.now() - 1;
-    hijacker.beamWarningMs = 180;
-    hijacker.beamActiveMs = 2600;
-    hijacker.updateHealthBar?.();
-    player.x = hijacker.x;
-    player.y = game.getHeight() * 0.8;
-    player.invulnerable = true;
-    player.invulnerableTime = 45000;
-  });
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.hijacker?.tractor?.state === 'active' && state.hijacker?.tractor?.pullActive === true;
-  }, null, { timeout: 8000 });
-  await page.keyboard.down('Space');
-  await page.keyboard.down('ArrowRight');
-  await addBeat(page, 'hijacker_tractor_opening', 3200);
-  await page.keyboard.up('ArrowRight');
+  await stageTractorHijackSetup(page);
+  await addBeat(page, 'hijacker_tractor_setup', 800);
   await page.evaluate(() => {
     const hijacker = window.__game?.scenes?.play?.enemyManager?.hijacker;
     if (hijacker) hijacker.takeDamage(9999);
   });
-  await addBeat(page, 'tractor_break_payoff', 900);
-  await page.keyboard.up('Space');
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.tractorHijack?.last?.triggered === true && !state.hijacker;
+  }, null, { timeout: 4000 });
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const last = play?.lastTractorHijack;
+    if (!play || !last?.triggered || typeof play.showToastNow !== 'function') return;
+    play.dismissActiveToastsBelowPriority?.(99);
+    play.toastQueue = [];
+    const totalAward = 1700 + (last.bonusScore || 0);
+    const display = play.showToastNow(`TRACTOR HIJACK +${totalAward}`, {
+      fontSize: window.__game?.getWidth?.() < 620 ? 17 : 26,
+      fill: '#ffe066',
+      stroke: '#00111d',
+      strokeThickness: 5,
+      duration: 1650,
+      slot: 'center',
+      type: 'hijacker',
+      priority: 9
+    }, 'center');
+    if (display) play.activeCenterToast = display;
+  });
+  await addBeat(page, 'tractor_hijack_payoff', 1900);
 }
 
 async function showBoss(page) {
-  await page.goto(withQuery(baseUrl, {
-    autostart: '1',
-    debugBossToken: 'NOVA_DEBUG_2026',
-    startAtBoss: '1',
-    startLevel: '1'
-  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await waitForScene(page, 'play', 30000);
+  const alreadyInPlay = await page.evaluate(() => window.__game?.currentSceneName === 'play').catch(() => false);
+  if (!alreadyInPlay) {
+    await page.goto(withQuery(baseUrl, {
+      autostart: '1',
+      debugBossToken: 'NOVA_DEBUG_2026',
+      startAtBoss: '1',
+      startLevel: '1'
+    }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForScene(page, 'play', 30000);
+  } else {
+    await page.evaluate(() => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      const enemyManager = play?.enemyManager;
+      if (!game || !play || !enemyManager) throw new Error('Missing play scene for inline boss trailer setup');
+
+      game.level = 1;
+      play.debugStartLevel = null;
+      play.debugStartAtBoss = false;
+      play.dismissActiveToastsBelowPriority?.(8);
+      if (play.bulletManager) {
+        play.bulletManager.enemyBullets?.forEach((bullet) => {
+          bullet.active = false;
+          if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+        });
+        play.bulletManager.playerBullets?.forEach((bullet) => {
+          bullet.active = false;
+          if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+        });
+        play.bulletManager.enemyBullets = [];
+        play.bulletManager.playerBullets = [];
+      }
+      enemyManager.startLevel(1);
+      enemyManager.forceBossStart(1);
+      play.applyGameplayBackdropLevel?.(1);
+    });
+  }
   await waitForGameplayBackdrop(page);
   await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
   await addBeat(page, 'boss_inbound', 1800);

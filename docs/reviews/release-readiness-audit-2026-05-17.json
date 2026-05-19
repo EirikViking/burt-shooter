@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T01:23:11.650Z",
+  "generatedAt": "2026-05-19T01:52:48.467Z",
   "verdict": "not_steam_ready",
   "summary": {
     "passed": 20,
@@ -79,37 +79,37 @@
         {
           "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 3670
+          "bytes": 3668
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
           "ok": true,
-          "bytes": 2004
+          "bytes": 2066
         },
         {
           "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
           "ok": true,
-          "bytes": 8891516
+          "bytes": 8885515
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2518
+          "bytes": 2521
         },
         {
           "path": "release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json",
           "ok": true,
-          "bytes": 8050
+          "bytes": 8077
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
           "ok": true,
-          "bytes": 2501
+          "bytes": 2539
         },
         {
           "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
           "ok": true,
-          "bytes": 547939
+          "bytes": 500709
         },
         {
           "path": "release/provenance/asset_provenance_manifest.json",
@@ -144,7 +144,7 @@
         {
           "path": "release/steamworks/human_review_packet.json",
           "ok": true,
-          "bytes": 6744
+          "bytes": 6743
         },
         {
           "path": "release/steamworks/human_review_packet.md",
@@ -164,12 +164,12 @@
         {
           "path": "release/steamworks/release_handoff_packet.json",
           "ok": true,
-          "bytes": 6925
+          "bytes": 6924
         },
         {
           "path": "release/steamworks/release_handoff_packet.md",
           "ok": true,
-          "bytes": 4288
+          "bytes": 4287
         },
         {
           "path": "release/steamworks/store_metadata_draft.json",
@@ -210,8 +210,8 @@
       "name": "asset_provenance_inventory_clean",
       "ok": true,
       "status": "passed",
-      "assetCount": 1762,
-      "coveredCount": 1762,
+      "assetCount": 1766,
+      "coveredCount": 1766,
       "uncovered": [],
       "deniedMatches": [],
       "warnings": []
@@ -336,7 +336,7 @@
       "duration": "38.429333",
       "opening": "hijacker_and_boss_first",
       "firstTenSeconds": [
-        "runtime hijacker tractor-beam pressure",
+        "runtime hijacker tractor-beam pressure and Tractor Hijack payoff",
         "boss inbound warning",
         "active boss pattern fire"
       ],
@@ -349,8 +349,8 @@
         }
       ],
       "volume": {
-        "meanVolumeDb": "-21.4",
-        "maxVolumeDb": "-2.3"
+        "meanVolumeDb": "-21.9",
+        "maxVolumeDb": "-1.6"
       },
       "contactSheet": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\candidate-contact-sheet.png"
     },
@@ -705,17 +705,17 @@
             {
               "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png",
               "exists": true,
-              "bytes": 8891516
+              "bytes": 8885515
             },
             {
               "path": "release/steam-screenshots/steam-upload-candidates-2026-05-17/README.md",
               "exists": true,
-              "bytes": 2004
+              "bytes": 2066
             },
             {
               "path": "release/steam-screenshots/draft-2026-05-17-current/report.json",
               "exists": true,
-              "bytes": 3670
+              "bytes": 3668
             }
           ],
           "prompt": "Review the 8 screenshot upload candidates for clarity, truthful gameplay representation, UI readability, and public arcade tone."
@@ -753,17 +753,17 @@
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/nova-swarm-steam-trailer-candidate.mp4",
               "exists": true,
-              "bytes": 10064920
+              "bytes": 9019996
             },
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png",
               "exists": true,
-              "bytes": 547939
+              "bytes": 500709
             },
             {
               "path": "release/steam-trailer/candidate-2026-05-17-current/report.json",
               "exists": true,
-              "bytes": 2501
+              "bytes": 2539
             }
           ],
           "prompt": "Watch the whole trailer with sound. Approve pacing, title cards, gameplay clarity, audio balance, and absence of private/internal material."

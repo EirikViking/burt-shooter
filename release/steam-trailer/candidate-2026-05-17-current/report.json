@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T01:02:56.701Z",
+  "generatedAt": "2026-05-19T01:50:31.984Z",
   "status": "passed",
   "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-audio-draft.mp4",
   "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\candidate-2026-05-17-current\\nova-swarm-steam-trailer-candidate.mp4",
@@ -9,7 +9,7 @@
   },
   "opening": "hijacker_and_boss_first",
   "firstTenSeconds": [
-    "runtime hijacker tractor-beam pressure",
+    "runtime hijacker tractor-beam pressure and Tractor Hijack payoff",
     "boss inbound warning",
     "active boss pattern fire"
   ],
@@ -31,7 +31,7 @@
   ],
   "notes": [
     "Editorial Steam trailer candidate starts on captured hijacker/boss gameplay: no logo-first opening, no lore card, no menu dwell.",
-    "The first 10 seconds are intended to prove the surprise mechanic and boss-every-level hook before menu or score-flow footage.",
+    "The first 10 seconds are intended to prove the Tractor Hijack surprise payoff and boss-every-level hook before menu or score-flow footage.",
     "Still requires human by-ear and store-submission approval before Steam upload."
   ],
   "ffprobe": {
@@ -53,12 +53,12 @@
     ],
     "format": {
       "duration": "38.429333",
-      "size": "10064920",
-      "bit_rate": "2095257"
+      "size": "9019996",
+      "bit_rate": "1877731"
     }
   },
   "volume": {
-    "meanVolumeDb": "-21.4",
-    "maxVolumeDb": "-2.3"
+    "meanVolumeDb": "-21.9",
+    "maxVolumeDb": "-1.6"
   }
 }

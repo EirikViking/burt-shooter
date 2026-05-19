@@ -674,3 +674,48 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 
 - Typography now looks materially more premium in tested screens, but Steam screenshots still need final human curation for the strongest possible first thumbnail.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 16 - Steam Media Tractor Hijack Proof
+
+### What Was Tested
+
+- Treated Steam media proof as the highest-impact remaining anti-flop issue after the typography sweep.
+- Refreshed the canonical Steam screenshot set so the upload shortlist includes a full `TRACTOR HIJACK` score payoff instead of only ordinary swarm pressure.
+- Reworked trailer capture so the first sequence stages the real runtime hijacker beam, triggers the actual hijack payoff path, and rolls straight into the boss gate without an intervening boot/loading screen.
+- Shifted the trailer contact-sheet sampler so the first proof frame shows the Tractor Hijack payoff.
+
+### What Looked Weak
+
+- The game had a cool surprise mechanic, but the store evidence still undersold it.
+- The previous trailer capture could show hijacker/boss proof, but the sampled contact sheet missed the payoff and briefly exposed a loading transition between staged beats.
+- A Steam shopper scanning thumbnails would not immediately understand that the player can turn a hostile beam back through the swarm.
+
+### What Changed
+
+- `06-midgame-swarm.png` now captures `TRACTOR HIJACK +3740` with captured enemies and score popups.
+- The Steam upload contact sheet now includes that same payoff as the second screenshot candidate.
+- The trailer capture stages the boss gate in the same live Play scene after the hijack, removing the first-sequence navigation/loading gap.
+- Trailer candidate contact-sheet timing now samples the hijack payoff first, then boss gate, then active boss fire.
+- The trailer opening/release audit checks now require `hijack` and `payoff` language in the first-ten-seconds report, not only generic hijacker/boss wording.
+
+### Evidence Captured
+
+- Current Steam screenshots: `release/steam-screenshots/draft-2026-05-17-current/report.json`.
+- Upload shortlist: `release/steam-screenshots/steam-upload-candidates-2026-05-17/steam_upload_candidate_sheet.png`.
+- Trailer visual report: `release/steam-trailer/draft-2026-05-17-current/report.json`.
+- Trailer audio report: `release/steam-trailer/draft-2026-05-17-current/audio-mix-report.json`.
+- Trailer candidate report: `release/steam-trailer/candidate-2026-05-17-current/report.json`.
+- Trailer contact sheet: `release/steam-trailer/candidate-2026-05-17-current/candidate-contact-sheet.png`.
+- Trailer opening check: `test-results/steam-trailer-opening-2026-05-19T01-50-59-970Z/report.json`.
+- Steam asset check: `npm run check:steam-assets` passed.
+- Steam store check: `npm run check:steam-store` passed with 10 tags, 8 bullets, and Partial Controller Support.
+- Provenance check: `npm run check:provenance` passed with 1766/1766 assets covered.
+- Payload manifest: `release/steamworks/steam_payload_manifest.json` (74 files, 628,196,085 bytes).
+- Release handoff packet: `release/steamworks/release_handoff_packet.json`.
+- Release-readiness audit: `docs/reviews/release-readiness-audit-2026-05-17.json`.
+
+### Remaining Top Risks
+
+- The media proof is stronger, but final screenshot order and trailer upload still need human Steamworks review.
+- The current voice pack remains a local fallback rather than a premium licensed performance.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.

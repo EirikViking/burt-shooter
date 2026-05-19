@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T01:02:33.229Z",
+  "generatedAt": "2026-05-19T01:49:36.724Z",
   "draftDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current",
   "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-visual-draft.webm",
   "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-17-current\\nova-swarm-steam-trailer-audio-draft.mp4",
@@ -11,7 +11,7 @@
   "visualTrimSeconds": 2.6,
   "notes": [
     "Audio-mixed Steam trailer draft rendered from captured game footage and shipped Nova Swarm audio assets.",
-    "The visual source is trimmed to open on active hijacker tractor-beam pressure, then boss footage, instead of pre-wave setup.",
+    "The visual source is trimmed to open on active hijacker tractor-beam pressure and the Tractor Hijack payoff, then boss footage, instead of pre-wave setup.",
     "This is still a draft: final Steam upload needs human by-ear approval and any desired title-card/editorial pass."
   ],
   "clips": [
@@ -135,7 +135,7 @@
     {
       "kind": "sfx",
       "key": "explosion",
-      "start": 3.65,
+      "start": 2.15,
       "duration": null,
       "volume": 0.58,
       "fadeIn": 0.005,
@@ -144,7 +144,7 @@
     {
       "kind": "sfx",
       "key": "bossReveal",
-      "start": 4.55,
+      "start": 3.35,
       "duration": null,
       "volume": 0.85,
       "fadeIn": 0.005,
@@ -153,7 +153,7 @@
     {
       "kind": "music",
       "key": "bossMusic",
-      "start": 4.7,
+      "start": 3.55,
       "duration": 12.2,
       "volume": 0.2,
       "fadeIn": 0.42,
@@ -162,7 +162,7 @@
     {
       "kind": "voice",
       "key": "bossVoice",
-      "start": 5.05,
+      "start": 4,
       "duration": null,
       "volume": 0.72,
       "fadeIn": 0.02,
@@ -377,7 +377,7 @@
     ],
     "format": {
       "duration": "34.200000",
-      "size": "10286569"
+      "size": "9118528"
     }
   }
 }

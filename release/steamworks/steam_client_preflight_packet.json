@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-19T01:22:45.569Z",
+  "generatedAt": "2026-05-19T01:52:14.758Z",
   "status": "ready_for_steam_upload_and_client_validation",
   "build": {
     "version": "v2026-05-19_02-52-17",
@@ -17,7 +17,7 @@
       "path": "release/steamworks/steam_payload_manifest.json",
       "exists": true,
       "bytes": 15372,
-      "modifiedAt": "2026-05-19T01:22:11.078Z"
+      "modifiedAt": "2026-05-19T01:52:12.814Z"
     },
     "payloadManifestSummary": {
       "fileCount": 74,
@@ -146,7 +146,7 @@
       "path": "release/steamworks/steam_payload_manifest.json",
       "exists": true,
       "bytes": 15372,
-      "modifiedAt": "2026-05-19T01:22:11.078Z"
+      "modifiedAt": "2026-05-19T01:52:12.814Z"
     },
     {
       "path": "release/steamworks/app_build_TEMPLATE.vdf",
@@ -170,7 +170,7 @@
       "path": "release/steamworks/full_rc_verification_report.json",
       "exists": true,
       "bytes": 3538,
-      "modifiedAt": "2026-05-19T01:22:25.084Z"
+      "modifiedAt": "2026-05-19T01:52:13.786Z"
     },
     {
       "path": "release/steamworks/steam_client_validation_runbook.md",

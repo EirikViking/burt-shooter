@@ -686,6 +686,8 @@ checks.push({
     const hasOpeningProof = json.opening === 'hijacker_and_boss_first'
       ? Array.isArray(json.firstTenSeconds) &&
         json.firstTenSeconds.some((item) => String(item).toLowerCase().includes('hijacker')) &&
+        json.firstTenSeconds.some((item) => String(item).toLowerCase().includes('hijack')) &&
+        json.firstTenSeconds.some((item) => String(item).toLowerCase().includes('payoff')) &&
         json.firstTenSeconds.some((item) => String(item).toLowerCase().includes('boss'))
       : true;
     return {

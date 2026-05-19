@@ -43,10 +43,10 @@ const clips = [
   voice('hijackerVoice', 0.48, 0.72),
   sfx('shield', 0.82, 0.52),
   ...repeatSfx('laserSmall', 1.0, 0.34, 9, 0.42),
-  sfx('explosion', 3.65, 0.58),
-  sfx('bossReveal', 4.55, 0.85),
-  music('bossMusic', 4.7, 12.2, 0.2, 0.42),
-  voice('bossVoice', 5.05, 0.72),
+  sfx('explosion', 2.15, 0.58),
+  sfx('bossReveal', 3.35, 0.85),
+  music('bossMusic', 3.55, 12.2, 0.2, 0.42),
+  voice('bossVoice', 4.0, 0.72),
   ...repeatSfx('laserLarge', 7.0, 0.32, 12, 0.36),
   sfx('bossExplosion', 14.95, 0.82),
   music('victoryMusic', 15.05, 3.6, 0.2, 0.65),
@@ -190,7 +190,7 @@ async function main() {
     visualTrimSeconds,
     notes: [
       'Audio-mixed Steam trailer draft rendered from captured game footage and shipped Nova Swarm audio assets.',
-      'The visual source is trimmed to open on active hijacker tractor-beam pressure, then boss footage, instead of pre-wave setup.',
+      'The visual source is trimmed to open on active hijacker tractor-beam pressure and the Tractor Hijack payoff, then boss footage, instead of pre-wave setup.',
       'This is still a draft: final Steam upload needs human by-ear approval and any desired title-card/editorial pass.'
     ],
     clips,
