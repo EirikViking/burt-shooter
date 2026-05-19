@@ -1,6 +1,6 @@
 # Voice Audio Upgrade Audit
 
-Updated: 2026-05-18
+Updated: 2026-05-19
 
 ## Decision
 
@@ -40,3 +40,33 @@ The highest-impact anti-flop issue after the hijacker/typography loop was voice 
 ## Remaining Risk
 
 The local fallback voice is usable and female, but it is not as charismatic as a good ElevenLabs or professional performance. Commercially, the next audio pass should restore valid ElevenLabs access or approve another licensed professional voice source, then regenerate the same line pools with stronger performance direction.
+
+## 2026-05-19 No-Key Follow-Up
+
+User direction changed the implementation constraint to "no api key needed." The project still only has `Microsoft Zira Desktop` installed locally, so this follow-up did not claim a new premium provider. Instead, it improved the fallback path and added one high-value runtime moment.
+
+### What Changed
+
+- `npm run generate:announcer-voicepack` now applies a local FFmpeg arcade-radio chain: subtle pitch/tempo lift, formant preservation, EQ, compression, limiter, subtle echo, and loudness normalization.
+- Added `mission_control_tractor_hijack` with three short payoff lines for the rare beam-reversal mechanic.
+- Wired `PlayScene.triggerTractorHijack()` to force the payoff voice through the exclusive announcer group when the hijack actually captures enemies/bullets.
+- Updated `npm run check:tractor-hijack` so it verifies both the score payoff and the `mission_control_tractor_hijack` voice event.
+- Catalog coverage increased from 14 to 15 event pools and from 41 to 44 manifest voice assets.
+
+### Tests
+
+- `npm run generate:announcer-voicepack` regenerated 44 MP3s with `Microsoft Zira Desktop`.
+- `npm run build` produced `v2026-05-19_04-00-07`.
+- `npm run check:audio` passed with 154 manifest assets, 89 catalog keys, and 7 music contexts.
+- `npm run check:announcer-voice` passed with 15 event pools and 44 manifest voice assets.
+- `npm run check:tractor-hijack` passed at `test-results/tractor-hijack-2026-05-19T02-00-44-037Z/report.json`, including voice proof `mission_control_tractor_hijack_01.mp3`.
+- `npm run audit:audio-mix` passed with no warnings.
+- `npm run smoke` passed at `test-results/smoke-2026-05-19T02-00-55-490Z/report.json`.
+- The current build was deployed to Cloudflare Pages at `https://96a7b6ff.burt-game.pages.dev`; `https://burt.tinyfoundry.app/version.json` reports `v2026-05-19_04-00-07`.
+- Live private-domain smoke passed at `test-results/smoke-2026-05-19T02-07-31-468Z/report.json`.
+- Full `npm run verify:steam-rc -- --full` passed at `test-results/steam-rc-verify-2026-05-19T02-11-21-277Z/report.json`; its release playtest survived 599,937 ms, reached level 10, and reported zero console/page/network/request failures.
+- Final Steam handoff refresh passed with `npm run steamworks:payload-manifest`, `npm run check:full-rc`, `npm run steamworks:human-review`, `npm run steamworks:client-preflight`, `npm run steamworks:handoff`, and `npm run audit:release-readiness`.
+
+### Honest Assessment
+
+This is better than the previous no-key fallback because the line pool has a stronger rare-payoff moment and the audio is less raw. It is still not a substitute for a licensed professional or high-quality neural performance. Keep the current provenance as fallback/pending human review.

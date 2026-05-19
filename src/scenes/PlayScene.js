@@ -2250,6 +2250,7 @@ export class PlayScene {
       this.game.addScore(bonusScore);
       AudioManager.playSfx('shield', { force: true, volume: 0.58, minIntervalMs: 120 });
       AudioManager.playSfx('powerup', { volume: 0.42, minIntervalMs: 120 });
+      AudioManager.playVoice('mission_control_tractor_hijack', { force: true, cooldownMs: 10000, duckMs: 1450 });
       this.screenShake?.shake(width < 620 ? 5 : 8, 16);
     } else {
       AudioManager.playSfx('forceField', { volume: 0.32, minIntervalMs: 350 });

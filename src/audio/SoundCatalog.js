@@ -163,7 +163,8 @@ export const VOICE_MIX = {
     mission_control_global_highscore: { volume: 0.96, duckFactor: 0.32, duckMs: 3400, cooldownMs: 9000 },
     mission_control_personal_best: { volume: 0.82, duckFactor: 0.48, duckMs: 2200, cooldownMs: 7000 },
     mission_control_restart: { volume: 0.72, duckFactor: 0.6, duckMs: 1100, cooldownMs: 3600 },
-    mission_control_hijacker: { volume: 0.78, duckFactor: 0.54, duckMs: 1600, cooldownMs: 6500 }
+    mission_control_hijacker: { volume: 0.78, duckFactor: 0.54, duckMs: 1600, cooldownMs: 6500 },
+    mission_control_tractor_hijack: { volume: 0.82, duckFactor: 0.44, duckMs: 1450, cooldownMs: 10000 }
 };
 
 export const VOICE_EVENT_FALLBACKS = {
@@ -181,6 +182,7 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_personal_best: 'mission_control_personal_best_01.mp3',
     mission_control_restart: 'mission_control_restart_01.mp3',
     mission_control_hijacker: 'mission_control_hijacker_01.mp3',
+    mission_control_tractor_hijack: 'mission_control_tractor_hijack_01.mp3',
     intro_narrator_01: 'intro_narrator_01.mp3',
     intro_narrator_02: 'intro_narrator_02.mp3',
     intro_narrator_03: 'intro_narrator_03.mp3',
@@ -310,6 +312,7 @@ export const SFX_CATALOG = {
     'mission_control_personal_best': numberedVoicePool('mission_control_personal_best', 2),
     'mission_control_restart': numberedVoicePool('mission_control_restart', 2),
     'mission_control_hijacker': numberedVoicePool('mission_control_hijacker', 2),
+    'mission_control_tractor_hijack': numberedVoicePool('mission_control_tractor_hijack', 3),
     'boss_spawn': [
         getSfx('nova_boss_arrival_alarm'),
         getSfx('spaceEngineLow_000'),

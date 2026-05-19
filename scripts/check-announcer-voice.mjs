@@ -21,7 +21,8 @@ const requiredPools = {
   mission_control_global_highscore: 2,
   mission_control_personal_best: 2,
   mission_control_restart: 2,
-  mission_control_hijacker: 2
+  mission_control_hijacker: 2,
+  mission_control_tractor_hijack: 3
 };
 
 function publicPath(url) {
@@ -90,7 +91,8 @@ for (const requiredText of [
   'mission_control_global_highscore',
   'mission_control_local_highscore',
   'mission_control_combo',
-  'mission_control_restart'
+  'mission_control_restart',
+  'mission_control_tractor_hijack'
 ]) {
   if (!runtimeSource.includes(requiredText)) {
     errors.push(`announcer runtime marker missing: ${requiredText}`);

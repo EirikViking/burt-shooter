@@ -719,3 +719,44 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 - The media proof is stronger, but final screenshot order and trailer upload still need human Steamworks review.
 - The current voice pack remains a local fallback rather than a premium licensed performance.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 17 - No-Key Announcer Payoff Polish
+
+### What Was Tested
+
+- Treated the fallback announcer as the next highest-impact gap after Steam media proof.
+- Respected the no-key constraint: no ElevenLabs/API dependency was used.
+- Audited local options and confirmed only `Microsoft Zira Desktop` is installed through Windows System.Speech.
+- Improved the generator rather than pretending a premium provider exists.
+
+### What Changed
+
+- `npm run generate:announcer-voicepack` now runs the local Zira output through FFmpeg `rubberband`, EQ, compression, limiter, subtle echo, and loudness normalization for a sharper arcade-radio feel.
+- Added three `mission_control_tractor_hijack` payoff lines for the rare beam-reversal mechanic.
+- Wired successful Tractor Hijack payoffs to force the new line through the exclusive announcer group.
+- Expanded announcer validation to 15 event pools and 44 manifest voice assets.
+- Updated the Tractor Hijack check so it proves the voice event as well as score/capture behavior.
+
+### Evidence Captured
+
+- Build: `v2026-05-19_04-00-07`.
+- Voice generation: `npm run generate:announcer-voicepack` regenerated 44 MP3 files locally.
+- Audio catalog: `npm run check:audio` passed with 154 manifest assets, 89 catalog keys, and 7 music contexts.
+- Announcer validation: `npm run check:announcer-voice` passed with 15 event pools and 44 manifest voice assets.
+- Tractor Hijack voice/payoff: `test-results/tractor-hijack-2026-05-19T02-00-44-037Z/report.json`.
+- Audio mix: `npm run audit:audio-mix` passed with no warnings.
+- Smoke: `test-results/smoke-2026-05-19T02-00-55-490Z/report.json`.
+- Deployed build: `https://96a7b6ff.burt-game.pages.dev`; private domain `https://burt.tinyfoundry.app/version.json` reports `v2026-05-19_04-00-07`.
+- Live private-domain smoke: `test-results/smoke-2026-05-19T02-07-31-468Z/report.json`.
+- Trailer opening check: `test-results/steam-trailer-opening-2026-05-19T02-11-03-602Z/report.json`.
+- Full RC: `test-results/steam-rc-verify-2026-05-19T02-11-21-277Z/report.json`.
+- Full-RC release playtest: `test-results/release-playtest-2026-05-19T02-15-33-175Z/report.json` survived 599,937 ms, reached level 10, ended with 3 lives, score 65,521, and zero console/page/network/request failures.
+- Payload manifest: `release/steamworks/steam_payload_manifest.json` (74 files, 628,261,111 bytes).
+- Release handoff packet: `release/steamworks/release_handoff_packet.json`.
+- Release-readiness audit: `docs/reviews/release-readiness-audit-2026-05-17.json`.
+
+### Remaining Top Risks
+
+- This is still a local fallback voice, not a true premium licensed performance.
+- Human by-ear approval is required before treating the announcer as a commercial differentiator.
+- Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.

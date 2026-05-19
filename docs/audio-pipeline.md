@@ -9,7 +9,7 @@ public/audio/voice/mission-control/
 public/audio/voice/nova-swarm/
 ```
 
-The current pack was regenerated on 2026-05-18 with the local Windows fallback voice `Microsoft Zira Desktop` because the ElevenLabs access check returned HTTP 401. It is a fallback pack, not ElevenLabs output.
+The current pack was regenerated on 2026-05-19 with the local Windows fallback voice `Microsoft Zira Desktop` because the ElevenLabs access check returned HTTP 401 and the user requested a no-key path. It is a fallback pack, not ElevenLabs output. The generator applies a local FFmpeg arcade-radio chain (`rubberband`, EQ, compression, limiter, subtle echo, and loudness normalization) to make the fallback more energetic while keeping speech readable.
 
 To regenerate the current fallback pack without an API key, run:
 
@@ -24,7 +24,7 @@ node scripts/generate-mission-control-voicepack.mjs
 npm run generate:intro-narration
 ```
 
-Those scripts do not currently generate the new variation pool files. After using them, regenerate or replace the `_alt##`, combo, local/global highscore, personal-best, restart, and hijacker files before shipping.
+Those scripts do not currently generate the new variation pool files. After using them, regenerate or replace the `_alt##`, combo, local/global highscore, personal-best, restart, hijacker, and tractor-hijack files before shipping.
 
 ## Nova Swarm SFX pack
 
@@ -86,3 +86,4 @@ ELEVENLABS_MODEL_ID=<model id>
 - `mission_control_personal_best`
 - `mission_control_restart`
 - `mission_control_hijacker`
+- `mission_control_tractor_hijack`

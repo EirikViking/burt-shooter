@@ -38,6 +38,8 @@ if (-not $ffmpegCmd) {
   throw "ffmpeg is required to export MP3 voice assets."
 }
 
+$arcadeVoiceFilter = "rubberband=tempo=1.035:pitch=1.018:formant=preserved:pitchq=quality,highpass=f=115,lowpass=f=11800,equalizer=f=2600:t=q:w=1.15:g=2.8,equalizer=f=520:t=q:w=1.4:g=-1.2,acompressor=threshold=-20dB:ratio=2.5:attack=7:release=90:makeup=3,aecho=0.20:0.16:46:0.08,alimiter=limit=0.92,loudnorm=I=-18:LRA=8:TP=-1.4"
+
 $lines = @(
   @{ File = "mission-control\mission_control_launch.mp3"; Text = "Nova hot. Swarm hotter."; Rate = 3 },
   @{ File = "mission-control\mission_control_launch_alt01.mp3"; Text = "Cabinet armed. Make it pretty."; Rate = 3 },
@@ -90,6 +92,10 @@ $lines = @(
   @{ File = "mission-control\mission_control_hijacker_01.mp3"; Text = "Hijacker beam hot. Break the lock."; Rate = 3 },
   @{ File = "mission-control\mission_control_hijacker_02.mp3"; Text = "Tractor trap. Slip it clean."; Rate = 3 },
 
+  @{ File = "mission-control\mission_control_tractor_hijack_01.mp3"; Text = "Beam stolen. Gorgeous."; Rate = 3 },
+  @{ File = "mission-control\mission_control_tractor_hijack_02.mp3"; Text = "Trap reversed. Make it hurt."; Rate = 3 },
+  @{ File = "mission-control\mission_control_tractor_hijack_03.mp3"; Text = "Their beam. Your score."; Rate = 3 },
+
   @{ File = "nova-swarm\intro_narrator_01.mp3"; Text = "The last arcade cabinet drifted past the star lanes, still hungry for one more coin."; Rate = 1 },
   @{ File = "nova-swarm\intro_narrator_02.mp3"; Text = "Then the swarm learned formation. Cute trick. Bad manners."; Rate = 1 },
   @{ File = "nova-swarm\intro_narrator_03.mp3"; Text = "Your ship is small, sharp, and extremely underinsured."; Rate = 1 },
@@ -110,7 +116,7 @@ foreach ($line in $lines) {
   $synth.Speak([string]$line.Text)
   $synth.SetOutputToNull()
 
-  & $ffmpegCmd.Source -y -hide_banner -loglevel error -i $wav -codec:a libmp3lame -b:a 128k $target
+  & $ffmpegCmd.Source -y -hide_banner -loglevel error -i $wav -af $arcadeVoiceFilter -ar 44100 -codec:a libmp3lame -b:a 128k $target
   if ($LASTEXITCODE -ne 0) {
     throw "ffmpeg failed for $relative"
   }

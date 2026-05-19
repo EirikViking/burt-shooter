@@ -19,7 +19,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 | Score/combo/restart compulsion | 9 | Danger-dodge streaks, instant restart, next-ship motivation, and separate local/global leaderboard qualification now give the death screen a stronger one-more-run job. |
 | Ship unlock motivation | 8 | 25 ships are unlock-gated with real trait/stat differences; game over now surfaces next/new unlock motivation. |
 | UI/text density | 9 | The remaining player-facing Courier/monospace/Impact-style holdouts were removed from Pixi UI, menus, HUD, score popups, game over, highscore, ship screens, overlays, and the public page. Center-lane toasts still need monitoring during dense waves. |
-| Audio punch | 8 | The announcer now has event pools, no-repeat guards, and global-score fanfare. Current assets are local fallback TTS because ElevenLabs returned HTTP 401, so human by-ear approval and a stronger licensed voice source remain important. |
+| Audio punch | 8 | The announcer now has event pools, no-repeat guards, global-score fanfare, a Tractor Hijack payoff line, and local FFmpeg arcade-radio processing. Current assets are still local fallback TTS because ElevenLabs returned HTTP 401 and this loop used no API key, so human by-ear approval and a stronger licensed voice source remain important. |
 | Surprise mechanic freshness | 8 | Hijacker tractor beam now has a rare `TRACTOR HIJACK` payoff that turns the beam back on nearby enemies and bullets. More authored surprises would help, but this is now a clearer clip-worthy verb. |
 | Steam tag accuracy | 8 | Tags are now focused and Bullet Hell was removed from the first metadata set. |
 | Controller expectations | 7 | Runtime support and packaged control smoke exist; Steam metadata correctly stays at Partial Controller Support pending Steam client validation. |
@@ -39,7 +39,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 - Trailer candidate is current-build and now shows Tractor Hijack payoff before boss footage. Human by-ear and Steamworks review remain required.
 - Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Remaining risk is store-media breadth: the trailer proves one boss clearly, but not the full variety of later bosses.
-- The new voice system fixes line structure/repetition, but the local fallback performance is not yet premium enough to be a commercial differentiator.
+- The new voice system fixes line structure/repetition and now has a stronger no-key DSP pass, but the local fallback performance is still not as premium as a licensed pro/neural performance.
 - Leaderboard flow now has distinct local/global qualification, local fallback, and a tested global-offline path. Remaining risk is live public-domain verification and by-eye polish of the highscore tab presentation.
 - Public web build and marketing site are live; the latest typography build and current Tractor Hijack media/handoff evidence are verified against the private domain.
 - Steam client validation cannot happen until real app/depot IDs and credentials exist.
@@ -63,6 +63,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 - Tractor hijack check: `test-results/tractor-hijack-2026-05-18T23-59-51-037Z/report.json`
 - Latest solo release playtest after tractor hijack: `test-results/release-playtest-2026-05-19T00-10-31-915Z/report.json` (survived 599,979 ms, reached level 10, 2 lives, score 67,066, zero console/page/network/request failures)
 - Typography payoff check: `test-results/tractor-hijack-2026-05-19T00-54-16-898Z/report.json`
+- No-key announcer Tractor Hijack proof: `test-results/tractor-hijack-2026-05-19T02-00-44-037Z/report.json`
 - Release audit: `docs/reviews/release-readiness-audit-2026-05-17.json`
 - Steam handoff packet: `release/steamworks/release_handoff_packet.json`
 - Live game URL: `https://burt.tinyfoundry.app`

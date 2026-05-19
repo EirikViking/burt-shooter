@@ -1,6 +1,6 @@
 # Nova Swarm Voice Direction
 
-Updated: 2026-05-18
+Updated: 2026-05-19
 
 Nova Swarm's announcer should feel like the arcade cabinet is daring the player into one more run: confident female arcade announcer, mission-control hype woman, score-chasing accomplice, boss-fight instigator, stylish sci-fi cabinet personality.
 
@@ -35,7 +35,8 @@ Nova Swarm's announcer should feel like the arcade cabinet is daring the player 
 - `mission_control_game_over`: death/retry temptation.
 - `mission_control_restart`: instant restart.
 - `mission_control_hijacker`: tractor-beam threat.
+- `mission_control_tractor_hijack`: rare tractor-beam reversal payoff.
 
 ## Current Provenance
 
-ElevenLabs was checked first, but the environment returned HTTP 401. The current 2026-05-18 pack is a local fallback generated with Windows System.Speech using `Microsoft Zira Desktop` and exported to MP3 with FFmpeg via `npm run generate:announcer-voicepack`. Do not describe the current pack as ElevenLabs output unless it is regenerated from a valid ElevenLabs account and the provenance is updated.
+ElevenLabs was checked first, but the environment returned HTTP 401. The current 2026-05-19 pack is a local fallback generated with Windows System.Speech using `Microsoft Zira Desktop`, then processed through local FFmpeg pitch/tempo, EQ, compression, limiter, subtle echo, and loudness normalization via `npm run generate:announcer-voicepack`. Do not describe the current pack as ElevenLabs output unless it is regenerated from a valid ElevenLabs account and the provenance is updated.

@@ -85,6 +85,10 @@ const browser = await chromium.launch({
 });
 
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+await page.addInitScript(() => {
+  localStorage.setItem('burt_voice_enabled', 'true');
+  localStorage.setItem('burt_volume_voice', '0.7');
+});
 const pageErrors = [];
 const consoleWarningsOrErrors = [];
 page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -227,6 +231,7 @@ try {
       last.clearedBullets >= 1 &&
       last.bonusScore >= 600 + last.capturedEnemies * 360 + last.clearedBullets * 25 &&
       actualGain >= expectedMinimumGain &&
+      hijackedState.audio?.lastVoiceEvent === 'mission_control_tractor_hijack' &&
       pageErrors.length === 0 &&
       consoleWarningsOrErrors.length === 0,
     baseUrl,
@@ -236,6 +241,11 @@ try {
     expectedMinimumGain,
     tractor: armedState.hijacker?.tractor || null,
     tractorHijack: last,
+    audio: {
+      lastVoiceEvent: hijackedState.audio?.lastVoiceEvent || null,
+      lastVoiceTrack: hijackedState.audio?.lastVoiceTrack || null,
+      activeVoiceEvents: hijackedState.audio?.activeVoiceEvents || []
+    },
     pageErrors,
     consoleWarningsOrErrors,
     screenshot
@@ -246,7 +256,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[tractor-hijack] PASS captured=${last.capturedEnemies} bullets=${last.clearedBullets} gain=${actualGain} screenshot=${screenshot}`);
+    console.log(`[tractor-hijack] PASS captured=${last.capturedEnemies} bullets=${last.clearedBullets} gain=${actualGain} voice=${hijackedState.audio?.lastVoiceTrack || 'none'} screenshot=${screenshot}`);
   }
 } finally {
   await browser.close();
