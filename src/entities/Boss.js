@@ -758,7 +758,9 @@ export class Boss {
 
   getBossPressureScalar() {
     if (this.level <= 1) return 0.78;
-    if (this.level === 2) return 0.9;
+    if (this.level === 2) return 0.88;
+    if (this.level <= 4) return 0.92;
+    if (this.level <= 6) return 0.96;
     return 1;
   }
 
@@ -781,6 +783,7 @@ export class Boss {
 
   getRegularTelegraphDurationMs() {
     if (this.level <= 1) return 620;
+    if (this.level <= 6) return this.phase >= 3 ? 560 : 640;
     return this.phase >= 3 ? 460 : 540;
   }
 
@@ -922,7 +925,8 @@ export class Boss {
     const warningColor = this.telegraph.type === 'ring' || this.telegraph.type === 'adds'
       ? (this.profile?.accent || 0xff3355)
       : (this.profile?.palette || 0xfff45c);
-    const alpha = 0.55 + progress * 0.25;
+    const fillAlpha = 0.28 + progress * 0.16;
+    const laneAlpha = 0.54 + progress * 0.24;
     const pulse = 1 + Math.sin(Date.now() * 0.024) * 0.08;
     const originX = 0;
     const originY = 0;
@@ -942,23 +946,23 @@ export class Boss {
         points.push(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
       }
       warningLayer.poly(points);
-      warningLayer.fill({ color: warningColor, alpha });
+      warningLayer.fill({ color: warningColor, alpha: fillAlpha });
       warningLayer.poly(points);
-      warningLayer.stroke({ color: 0xffffff, width: 2 + progress * 3, alpha: 0.42 + progress * 0.4 });
+      warningLayer.stroke({ color: 0xffffff, width: 2 + progress * 3, alpha: 0.48 + progress * 0.34 });
       const lanes = this.telegraph.type === 'lance' ? [-0.08, 0, 0.08] : [-0.5, -0.22, 0.22, 0.5];
       for (const lane of lanes) {
         const a = angle + lane * spread;
         warningLayer.moveTo(originX + Math.cos(a) * this.radius * 0.7, originY + Math.sin(a) * this.radius * 0.7);
         warningLayer.lineTo(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
       }
-      warningLayer.stroke({ color: warningColor, width: 2 + progress * 2, alpha: 0.62 + progress * 0.25 });
+      warningLayer.stroke({ color: warningColor, width: 2 + progress * 2, alpha: laneAlpha });
     } else {
       const maxRadius = Math.max(this.radius * 2.15, 170);
       const innerRadius = maxRadius * 0.46;
       const outer = maxRadius * (0.72 + progress * 0.34) * pulse;
       const inner = innerRadius * (0.8 + progress * 0.16);
       warningLayer.circle(originX, originY + 18, outer);
-      warningLayer.stroke({ color: warningColor, width: 5, alpha: 0.68 + progress * 0.25 });
+      warningLayer.stroke({ color: warningColor, width: 4, alpha: 0.48 + progress * 0.26 });
       warningLayer.circle(originX, originY + 18, inner);
       warningLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.5 });
       for (let i = 0; i < 12; i++) {
@@ -968,7 +972,7 @@ export class Boss {
         warningLayer.moveTo(originX + Math.cos(a) * r1, originY + 18 + Math.sin(a) * r1);
         warningLayer.lineTo(originX + Math.cos(a) * r2, originY + 18 + Math.sin(a) * r2);
       }
-      warningLayer.stroke({ color: warningColor, width: 2, alpha: 0.36 });
+      warningLayer.stroke({ color: warningColor, width: 2, alpha: 0.28 });
     }
 
     if (this.nameText) {

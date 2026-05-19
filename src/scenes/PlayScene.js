@@ -128,6 +128,7 @@ export class PlayScene {
     this.introActive = false;
     this.introComplete = false;
     this.introOverlay = null;
+    this.shipIntroToken = 0;
     this.introStartTime = 0;
     this.activeTopToast = null;
     this.activeCornerToast = null;
@@ -149,6 +150,7 @@ export class PlayScene {
     this.lastKillAt = 0;
     this.lastHitAt = 0;
     this.lastStandReadyAt = 0;
+    this.bossClutchShieldLevel = null;
     this.nearMissCooldownAt = 0;
     this.lastNearMissAt = 0;
     this.dangerDodgeCount = 0;
@@ -252,6 +254,17 @@ export class PlayScene {
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
     this.capState = { bullets: false, enemies: false, particles: false };
+    this.firstRunKillCount = 0;
+    this.firstRunPickupDropped = false;
+    this.bossClutchShieldLevel = null;
+    this._lastStartedLevel = -1;
+    this.introActive = false;
+    this.introComplete = false;
+    this.shipIntroToken += 1;
+    if (this.introOverlay?.parent) {
+      this.introOverlay.parent.removeChild(this.introOverlay);
+    }
+    this.introOverlay = null;
 
     const { width, height } = this.game.app.screen;
 
@@ -584,7 +597,12 @@ export class PlayScene {
         if (sprite) {
           sprite.visible = true;
           sprite.renderable = true;
-          sprite.alpha = 1;
+          if ((!Number.isFinite(sprite.alpha) || sprite.alpha <= 0) &&
+            !this.player.isDodging &&
+            !this.player.invulnerable &&
+            this.player.activePowerup?.type !== 'ghost') {
+            sprite.alpha = 1;
+          }
           if (!sprite.parent && this.gameContainer) {
             this.gameContainer.addChild(sprite);
           }
@@ -1560,8 +1578,8 @@ export class PlayScene {
     const farStars = [];
     for (let i = 0; i < 100; i++) {
       const star = new PIXI.Graphics();
-      star.circle(0, 0, 0.8 + Math.random() * 0.4); // 0.8-1.2 px
-      star.fill({ color: 0xffffff, alpha: 0.3 + Math.random() * 0.3 }); // 0.3-0.6 alpha
+      star.circle(0, 0, 0.7 + Math.random() * 0.35); // 0.7-1.05 px
+      star.fill({ color: 0x8fb9e6, alpha: 0.16 + Math.random() * 0.18 }); // keep white reserved for threats
       star.x = Math.random() * width;
       star.y = Math.random() * height;
       star._speed = 15 + Math.random() * 10; // 15-25 px/s
@@ -1574,8 +1592,8 @@ export class PlayScene {
     const midStars = [];
     for (let i = 0; i < 50; i++) {
       const star = new PIXI.Graphics();
-      star.circle(0, 0, 1.2 + Math.random() * 0.6); // 1.2-1.8 px
-      star.fill({ color: 0xffffff, alpha: 0.5 + Math.random() * 0.3 }); // 0.5-0.8 alpha
+      star.circle(0, 0, 0.95 + Math.random() * 0.45); // 0.95-1.4 px
+      star.fill({ color: 0xa6d7ff, alpha: 0.2 + Math.random() * 0.2 });
       star.x = Math.random() * width;
       star.y = Math.random() * height;
       star._speed = 40 + Math.random() * 20; // 40-60 px/s
@@ -1588,8 +1606,8 @@ export class PlayScene {
     const nearStars = [];
     for (let i = 0; i < 25; i++) {
       const star = new PIXI.Graphics();
-      star.circle(0, 0, 1.5 + Math.random() * 1); // 1.5-2.5 px
-      star.fill({ color: 0xffffff, alpha: 0.6 + Math.random() * 0.4 }); // 0.6-1.0 alpha
+      star.circle(0, 0, 1.1 + Math.random() * 0.7); // 1.1-1.8 px
+      star.fill({ color: 0xb8ddff, alpha: 0.24 + Math.random() * 0.22 });
       star.x = Math.random() * width;
       star.y = Math.random() * height;
       star._speed = 80 + Math.random() * 40; // 80-120 px/s
@@ -1812,6 +1830,7 @@ export class PlayScene {
 
   destroy() {
     this.closeSettingsOverlay();
+    this.shipIntroToken += 1;
 
     if (this.levelAdvanceTimeout) {
       clearTimeout(this.levelAdvanceTimeout);
@@ -1852,6 +1871,12 @@ export class PlayScene {
       this._activeTickers.forEach(fn => this.game.app.ticker.remove(fn));
       this._activeTickers = [];
     }
+    if (this.introOverlay?.parent) {
+      this.introOverlay.parent.removeChild(this.introOverlay);
+    }
+    this.introOverlay = null;
+    this.introActive = false;
+    this.introComplete = false;
 
     // Music continues to next scene
   }
@@ -2038,7 +2063,7 @@ export class PlayScene {
     }
 
     const shown = this.showStoryTransmission();
-    this.storyTransmissionTimer = shown ? 0 : this.getRandomTimer(3500, 6500);
+    this.storyTransmissionTimer = shown ? this.getRandomTimer(16000, 24000) : this.getRandomTimer(3500, 6500);
   }
 
   queueStoryTransmission(delayMs = 2600) {
@@ -2159,6 +2184,7 @@ export class PlayScene {
         });
       }
       AudioManager.recoverSfx('respawn');
+      this.maybeSpawnBossClutchShield();
       // Small screen shake
       if (this.screenShake) this.screenShake.shake(5);
     }
@@ -2167,6 +2193,38 @@ export class PlayScene {
       console.log(`[BossHP] player_death level=${this.game.level} hp=${boss.health} max=${boss.maxHealth} bossActive=true`);
       this.showBossTaunt('boss_life_lost');
     }
+  }
+
+  maybeSpawnBossClutchShield() {
+    const level = Number(this.game?.level) || 1;
+    const boss = this.enemyManager?.boss;
+    if (!boss?.active || level > 6 || this.game.lives !== 1) return false;
+    if (this.bossClutchShieldLevel === level) return false;
+    if (!this.powerupManager || !this.player) return false;
+
+    this.bossClutchShieldLevel = level;
+    const spawned = this.powerupManager.spawnSpecific(
+      this.player.x,
+      this.player.y,
+      'shield',
+      { source: 'boss_clutch_shield' }
+    );
+    if (!spawned) return false;
+
+    this.enqueueToast('CLUTCH SHIELD CORE', {
+      fontSize: this.game.getWidth() < 620 ? 15 : 18,
+      fill: '#8fffd5',
+      stroke: '#001616',
+      strokeThickness: 3,
+      duration: 1400,
+      slot: 'top',
+      type: 'repair',
+      priority: 3,
+      y: this.game.getHeight() * (this.game.getWidth() < 620 ? 0.28 : 0.2),
+      maxWidth: this.game.getWidth() * 0.72
+    });
+    AudioManager.playSfx('forceField', { force: true, volume: 0.7, minIntervalMs: 250 });
+    return true;
   }
 
   tryLastStandRepair() {
@@ -3279,6 +3337,7 @@ export class PlayScene {
     this.killStreak += 1;
     this.lastKillAt = now;
     this.comboTimerMs = this.comboWindowMs;
+    this.maybeDropFirstRunPickup(enemy);
 
     // Check for milestone bonuses (5x, 10x, 15x, 20x)
     for (const milestone of COMBO_MILESTONES) {
@@ -3383,6 +3442,33 @@ export class PlayScene {
       this.killStreak = 0;
       this.comboMilestonesReached.clear(); // Reset milestones when combo expires
     }
+  }
+
+  maybeDropFirstRunPickup(enemy) {
+    if (this.firstRunPickupDropped || !enemy || this.game?.level !== 1 || this.enemyManager?.currentWaveIndex !== 0) return false;
+    this.firstRunKillCount = (this.firstRunKillCount || 0) + 1;
+    if (this.firstRunKillCount < 3 || !this.powerupManager || !this.player) return false;
+
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const x = Math.max(width * 0.34, Math.min(width * 0.66, enemy.x || width / 2));
+    const y = Math.max(112, Math.min(height * 0.42, (enemy.y || height * 0.2) + 26));
+    const spawned = this.powerupManager.spawnSpecific(x, y, 'rapid_fire', {
+      countDrop: true,
+      source: 'first_run_pickup'
+    });
+    if (!spawned) return false;
+
+    this.firstRunPickupDropped = true;
+    this.enqueueToast('RAPID CORE ONLINE', {
+      fontSize: 18,
+      fill: '#ffd15c',
+      slot: 'corner',
+      type: 'powerup',
+      duration: 1600,
+      priority: 1
+    });
+    return true;
   }
 
   updateDangerDodgeTimer(delta) {
@@ -4384,6 +4470,7 @@ export class PlayScene {
 
     this.introActive = true;
     this.introStartTime = Date.now();
+    const introToken = ++this.shipIntroToken;
 
     const shipMeta = getShipMetadata(spriteKey);
     const shipName = (shipMeta ? shipMeta.name : 'UNKNOWN SHIP').toUpperCase();
@@ -4481,6 +4568,13 @@ export class PlayScene {
     };
 
     const animate = () => {
+      if (introToken !== this.shipIntroToken || this.game?.currentScene !== this) {
+        if (this.introOverlay?.parent) {
+          this.introOverlay.parent.removeChild(this.introOverlay);
+        }
+        if (flash.parent) flash.parent.removeChild(flash);
+        return;
+      }
       const now = Date.now();
       const elapsed = now - startTime;
 

@@ -111,6 +111,9 @@ export class MenuScene {
     this.storyTypewriter = null;
     this.storyRotationTimer = null;
     this.skipHandler = null;
+    this.keyHandler = null;
+    this.menuGamepadActionWasPressed = false;
+    this.launchingRun = false;
   }
 
   init() {
@@ -143,6 +146,26 @@ export class MenuScene {
 
     // PART A: Initialize story rotation
     this.initStoryRotation();
+    this.setupPrimaryInput();
+  }
+
+  setupPrimaryInput() {
+    if (this.keyHandler) {
+      window.removeEventListener('keydown', this.keyHandler);
+    }
+    this.keyHandler = (event) => {
+      const target = event.target;
+      const tagName = String(target?.tagName || '').toLowerCase();
+      if (tagName === 'input' || tagName === 'textarea' || target?.isContentEditable) return;
+      if (this.settingsOverlay) return;
+
+      const isPrimaryStart = event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter' || event.code === 'Space';
+      if (!isPrimaryStart) return;
+
+      event.preventDefault();
+      this.quickStartRun();
+    };
+    window.addEventListener('keydown', this.keyHandler);
   }
 
   // PART A: Story rotation system
@@ -671,7 +694,7 @@ export class MenuScene {
     this.flavor.zIndex = 10;
     this.container.addChild(this.flavor);
 
-    this.primaryHint = createText('SELECT SHIP IN HANGAR // QUICK LAUNCH USES LAST PILOT', {
+    this.primaryHint = createText('ENTER / SPACE / A: LAUNCH // HANGAR CHOOSES SHIP', {
       fontFamily: FONT_MONO,
       fontSize: Math.max(11, getResponsiveFontSize(layout, 'small')),
       fontWeight: '800',
@@ -966,6 +989,7 @@ export class MenuScene {
       if (isPrimary) button._variant = 'primary';
       button._label.style.fontSize = Math.round(getResponsiveFontSize(layout, 'button') * (isPrimary ? 1.08 : 0.96));
       button._label.updateText?.(false);
+      fitTextToWidth(button._label, btnWidth - 34, { minScale: 0.68 });
       this.drawMenuButton(button, false);
     });
 
@@ -1238,7 +1262,8 @@ export class MenuScene {
       letterSpacing: 0,
       fill: '#c9fbff',
       stroke: '#031323',
-      strokeThickness: 3
+      strokeThickness: 3,
+      padding: 10
     });
     label.anchor.set(0.5);
     container.addChild(label);
@@ -1340,6 +1365,8 @@ export class MenuScene {
   }
 
   quickStartRun() {
+    if (this.launchingRun) return;
+    this.launchingRun = true;
     try {
       AudioManager.init();
       AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.78 });
@@ -1347,6 +1374,7 @@ export class MenuScene {
       this.game.startGame(this.getQuickStartShipKey());
     } catch (e) {
       console.error('[MenuScene] Quick Start Error:', e);
+      this.launchingRun = false;
     }
   }
 
@@ -1488,6 +1516,19 @@ export class MenuScene {
       });
     }
 
+    if (!this.settingsOverlay && !this.launchingRun && typeof navigator !== 'undefined' && navigator.getGamepads) {
+      const pads = Array.from(navigator.getGamepads?.() || []).filter(Boolean);
+      const actionPressed = pads.some((pad) => Boolean(
+        pad.buttons?.[0]?.pressed ||
+        pad.buttons?.[7]?.pressed ||
+        pad.buttons?.[9]?.pressed
+      ));
+      if (actionPressed && !this.menuGamepadActionWasPressed) {
+        this.quickStartRun();
+      }
+      this.menuGamepadActionWasPressed = actionPressed;
+    }
+
     // Animate hero bonus cores
     if (this.heroBonusCore) {
       this.heroBonusCore.y = this.heroBaseY + Math.sin(this.animationTime * 2) * 12;
@@ -1537,6 +1578,10 @@ export class MenuScene {
       window.removeEventListener('keydown', this.skipHandler);
       this.container.off('pointerdown', this.skipHandler);
       this.skipHandler = null;
+    }
+    if (this.keyHandler) {
+      window.removeEventListener('keydown', this.keyHandler);
+      this.keyHandler = null;
     }
 
     if (this.layoutUnsubscribe) {

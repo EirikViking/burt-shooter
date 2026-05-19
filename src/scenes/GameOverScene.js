@@ -71,12 +71,30 @@ export class GameOverScene {
     this.qualificationFanfarePlayed = false;
     this.personalBestVoicePlayed = false;
     this.nearMissVoicePlayed = false;
+    this.sceneTimeouts = new Set();
     // Submission deduplication
     this.submissionId = null;
     this.gamepadActionWasPressed = false;
   }
 
+  scheduleSceneTimeout(callback, delayMs) {
+    const id = window.setTimeout(() => {
+      this.sceneTimeouts.delete(id);
+      callback();
+    }, delayMs);
+    this.sceneTimeouts.add(id);
+    return id;
+  }
+
+  clearSceneTimeouts() {
+    for (const id of this.sceneTimeouts || []) {
+      window.clearTimeout(id);
+    }
+    this.sceneTimeouts?.clear();
+  }
+
   init() {
+    this.clearSceneTimeouts();
     this.container.sortableChildren = true;
     this.container.removeChildren();
     this.removeInputOverlay();
@@ -471,11 +489,19 @@ export class GameOverScene {
       const scores = await API.getHighscores({ useCache: false });
       this.cachedHighscores = Array.isArray(scores) ? [...scores] : [];
       this.cachedHighscores.sort((a, b) => b.score - a.score);
-      this.globalPlacement = analyzeGlobalLeaderboardScore(this.finalScore, this.cachedHighscores);
-      this.globalPlacementTier = this.globalPlacement.tier;
-      this.globalQualified = this.globalPlacement.qualified;
-      this.globalStatus = this.globalQualified ? 'qualified' : 'missed';
-      console.log(`[GameOver] Global Qualification: Score ${this.finalScore} vs 10th ${this.cachedHighscores[9]?.score || 0} -> ${this.globalQualified}`, this.globalPlacement);
+      if (this.cachedHighscores.length === 0) {
+        this.globalPlacement = null;
+        this.globalPlacementTier = 'none';
+        this.globalQualified = false;
+        this.globalStatus = 'offline';
+        console.log(`[GameOver] Global Qualification: Score ${this.finalScore} -> offline/empty board, local board only`);
+      } else {
+        this.globalPlacement = analyzeGlobalLeaderboardScore(this.finalScore, this.cachedHighscores);
+        this.globalPlacementTier = this.globalPlacement.tier;
+        this.globalQualified = this.globalPlacement.qualified;
+        this.globalStatus = this.globalQualified ? 'qualified' : 'missed';
+        console.log(`[GameOver] Global Qualification: Score ${this.finalScore} vs 10th ${this.cachedHighscores[9]?.score || 0} -> ${this.globalQualified}`, this.globalPlacement);
+      }
 
       if (this.globalQualified && this.isSceneActive()) {
         this.playGlobalQualificationFanfare();
@@ -939,7 +965,7 @@ export class GameOverScene {
   returnToMenu() {
     AudioManager.playMusicContext('menu', { resetPlaylist: true });
     this.game.switchScene('menu');
-    window.setTimeout(() => {
+    this.scheduleSceneTimeout(() => {
       if (this.game?.currentScene === this.game?.scenes?.menu) {
         AudioManager.playMusicContext('menu', { resetPlaylist: true });
       }
@@ -947,6 +973,7 @@ export class GameOverScene {
   }
 
   restartRun() {
+    this.clearSceneTimeouts();
     this.removeInputOverlay();
     this.stopCaretBlink();
     this.hideHiddenInput();
@@ -982,11 +1009,11 @@ export class GameOverScene {
     AudioManager.duckMusic(placement?.numberOne ? 0.18 : placement?.top3 ? 0.22 : 0.28, fanfareMs);
     AudioManager.playSfx(fanfareKey, { force: true, volume: placement?.numberOne ? 1.0 : placement?.top3 ? 0.94 : 0.88, minIntervalMs: 0 });
     if (placement?.numberOne) {
-      window.setTimeout(() => {
+      this.scheduleSceneTimeout(() => {
         AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.82, minIntervalMs: 0 });
       }, 3200);
     }
-    window.setTimeout(() => {
+    this.scheduleSceneTimeout(() => {
       AudioManager.playVoice(voiceKey, {
         force: true,
         stopOtherVoices: true,
@@ -1004,7 +1031,7 @@ export class GameOverScene {
     this.nearMissVoicePlayed = true;
     AudioManager.duckMusic(0.38, 4000);
     AudioManager.playSfx('nova_global_near_fanfare', { force: true, volume: 0.76, minIntervalMs: 0 });
-    window.setTimeout(() => {
+    this.scheduleSceneTimeout(() => {
       AudioManager.playVoice('mission_control_near_miss', {
         cooldownMs: 9000,
         duckMs: 2300,
@@ -1017,7 +1044,7 @@ export class GameOverScene {
   playPersonalBestVoice() {
     if (this.personalBestVoicePlayed || this.qualificationFanfarePlayed) return;
     this.personalBestVoicePlayed = true;
-    window.setTimeout(() => {
+    this.scheduleSceneTimeout(() => {
       AudioManager.playVoice('mission_control_personal_best', {
         cooldownMs: 7000,
         duckMs: 2200,
@@ -1174,7 +1201,7 @@ export class GameOverScene {
     document.body.appendChild(this.inputOverlay);
 
     // Focus the input field after a short delay (for mobile keyboard)
-    setTimeout(() => {
+    this.scheduleSceneTimeout(() => {
       if (this.inputField) {
         this.inputField.focus();
       }
@@ -1408,6 +1435,7 @@ export class GameOverScene {
   }
 
   destroy() {
+    this.clearSceneTimeouts();
     if (this.promptText && this.promptPointer) {
       this.promptText.off('pointerdown', this.promptPointer);
       this.promptPointer = null;

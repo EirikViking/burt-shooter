@@ -229,7 +229,8 @@ export class EnemyManager {
       AudioManager.playSfx('ui_open');
       const briefing = level === 1 ? 'mission_control_launch' : 'mission_control_level_start';
       if (level === 1 || level % 5 === 0) {
-        setTimeout(() => AudioManager.playVoice(briefing, { cooldownMs: 18000, duckMs: 1700 }), 500);
+        const cooldownMs = level === 1 ? 2600 : 18000;
+        setTimeout(() => AudioManager.playVoice(briefing, { cooldownMs, duckMs: 1700 }), 500);
       }
       this.voiceHistory[level] = true;
     } else {
@@ -522,7 +523,7 @@ export class EnemyManager {
         if (this.bossGateTimer > bossGateMs && !this.bossSpawning) {
           this.logBossStatus('boss_gate_spawn');
           console.log(`[BossFlow] spawn boss level=${this.level}`);
-          AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800 });
+          AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800, bypassGlobalCooldown: true });
           this.bossSpawning = true;
           this.spawnBoss(this.level).then(() => {
             this.state = 'BOSS_ACTIVE';
@@ -568,7 +569,7 @@ export class EnemyManager {
             this.phase = 'COMPLETE';
             console.log(`[BossPhase] level=${this.level} phase=${this.phase} bossDefeated=true`);
             this.state = 'LEVEL_COMPLETE';
-            AudioManager.playVoice('mission_control_victory', { cooldownMs: 18000, duckMs: 1800 });
+            AudioManager.playVoice('mission_control_victory', { cooldownMs: 18000, duckMs: 1800, bypassGlobalCooldown: true });
             return;
           }
         }
@@ -594,7 +595,8 @@ export class EnemyManager {
         if (playScene && playScene.getWaveCleanupTargets) {
           allTargets = playScene.getWaveCleanupTargets();
         }
-        const hasRemainingEntities = this.enemies.length > 0 || allTargets.length > 0;
+        const hasHijacker = Boolean(this.hijacker?.active);
+        const hasRemainingEntities = this.enemies.length > 0 || allTargets.length > 0 || hasHijacker;
 
         if (hasRemainingEntities) {
           this.cleanupTimer += delta * 16.67;
@@ -602,7 +604,7 @@ export class EnemyManager {
           // Phase 1: Slow down entities after 2 seconds
           if (this.cleanupTimer > 2000 && this.cleanupPhase === 'NONE') {
             this.cleanupPhase = 'SLOWING';
-            console.log(`[EnemyManager] Cleanup Phase 1: Slowing ${this.enemies.length} enemies + ${allTargets.length} bonus drones`);
+            console.log(`[EnemyManager] Cleanup Phase 1: Slowing ${this.enemies.length} enemies + ${allTargets.length} bonus drones + hijacker=${hasHijacker}`);
             // Slow enemies
             this.enemies.forEach(e => {
               if (e.vx) e.vx *= 0.2;
@@ -618,13 +620,13 @@ export class EnemyManager {
           // Phase 2: Auto-clear after 3 seconds total
           if (this.cleanupTimer > 3000 && this.cleanupPhase === 'SLOWING') {
             this.cleanupPhase = 'CLEARING';
-            console.log(`[EnemyManager] Cleanup Phase 2: Auto-clearing ${this.enemies.length} enemies + ${allTargets.length} bonus drones`);
+            console.log(`[EnemyManager] Cleanup Phase 2: Auto-clearing ${this.enemies.length} enemies + ${allTargets.length} bonus drones + hijacker=${hasHijacker}`);
             this.forceClearAllEnemies();
           }
 
           // TASK C: Emergency failsafe at 10 seconds
           if (this.cleanupTimer > 10000) {
-            console.warn(`[EnemyManager] EMERGENCY CLEANUP: Force clearing ${this.enemies.length} enemies + ${allTargets.length} bonus drones after 10s`);
+            console.warn(`[EnemyManager] EMERGENCY CLEANUP: Force clearing ${this.enemies.length} enemies + ${allTargets.length} bonus drones + hijacker=${hasHijacker} after 10s`);
             this.forceClearAllEnemies();
           }
         } else {
@@ -753,7 +755,7 @@ export class EnemyManager {
 
   spawnWave(config) {
     if (config.type === 'BOSS') {
-      AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800 });
+      AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800, bypassGlobalCooldown: true });
       this.spawnBoss(this.level); // Fire and forget
       return;
     }
@@ -1273,7 +1275,13 @@ export class EnemyManager {
     // Level is complete when all waves are done and no enemies (including hijacker)
     const noHijacker = !this.hijacker || !this.hijacker.active;
     if (this.phase !== 'COMPLETE') return false;
-    return this.state === 'LEVEL_COMPLETE' && this.enemies.length === 0 && noHijacker;
+    const activeBlockers = this.enemies.filter(enemy => {
+      if (!enemy || enemy.active === false) return false;
+      if (enemy.kind === 'bonus_drone' || enemy.kind === 'boss_add') return false;
+      if (enemy.kind === 'boss' && this.bossDefeatedThisLevel) return false;
+      return true;
+    });
+    return this.state === 'LEVEL_COMPLETE' && activeBlockers.length === 0 && noHijacker;
   }
 
   forceClearAllEnemies() {
@@ -1281,6 +1289,7 @@ export class EnemyManager {
     const playScene = this.game.scenes.play;
     let bonusDroneCount = 0;
     let enemyCount = 0;
+    let hijackerCleared = false;
 
     if (playScene && playScene.getWaveCleanupTargets) {
       const bonusDrones = playScene.getWaveCleanupTargets();
@@ -1319,13 +1328,27 @@ export class EnemyManager {
         }
       }
     });
+
+    if (this.hijacker?.active) {
+      hijackerCleared = true;
+      if (playScene?.particleManager) {
+        playScene.particleManager.createExplosion(this.hijacker.x, this.hijacker.y, 0xff44cc, 1.05);
+      }
+      this.hijacker.active = false;
+      if (this.hijacker.destroy) this.hijacker.destroy();
+      if (this.hijacker.sprite && this.hijacker.sprite.parent) {
+        this.hijacker.sprite.parent.removeChild(this.hijacker.sprite);
+      }
+      this.hijacker = null;
+    }
+
     // BOSS FIX: Filter out cleared enemies but keep boss
     this.enemies = this.enemies.filter(e => e.active && (e.kind === 'boss' || e.kind === 'bonus_drone'));
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE';
 
     // CLEANUP FIX: Diagnostic - cleanup complete
-    console.log(`[EnemyManager] Wave cleanup complete: cleared ${enemyCount} enemies + ${bonusDroneCount} bonus drones`);
+    console.log(`[EnemyManager] Wave cleanup complete: cleared ${enemyCount} enemies + ${bonusDroneCount} bonus drones + hijacker=${hijackerCleared}`);
   }
 
   clearEnemies() {

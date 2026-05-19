@@ -44,6 +44,7 @@ if (!hasFfmpeg()) {
 collectMusicRows();
 collectSfxRows();
 collectVoiceRows();
+assertVoiceAssetCoverage();
 
 for (const row of rows) {
   const measurement = measureUrl(row.url);
@@ -222,15 +223,33 @@ function collectVoiceRows() {
 }
 
 function resolveVoiceUrls(event) {
+  const catalogUrls = uniqueUrls(asArray(SFX_CATALOG[event])
+    .filter(Boolean)
+    .filter((url) => typeof url === 'string' && url.includes('/audio/voice/')));
+  if (catalogUrls.length) return catalogUrls;
+
   const fallback = VOICE_EVENT_FALLBACKS[event];
   if (fallback) {
     const match = AssetManifest.audio.voice.find((url) => url.endsWith(`/${fallback}`) || url.endsWith(fallback));
     if (match) return [match];
   }
 
-  return asArray(SFX_CATALOG[event])
-    .filter(Boolean)
-    .filter((url) => typeof url === 'string' && url.includes('/audio/voice/'));
+  return [];
+}
+
+function uniqueUrls(urls) {
+  return Array.from(new Set(urls));
+}
+
+function assertVoiceAssetCoverage() {
+  const manifestVoices = new Set(AssetManifest.audio.voice.filter((url) => typeof url === 'string' && url.includes('/audio/voice/')));
+  const measuredVoices = new Set(rows
+    .filter((row) => row.type === 'voice')
+    .map((row) => row.url));
+  const missing = [...manifestVoices].filter((url) => !measuredVoices.has(url));
+  if (missing.length) {
+    errors.push(`Voice mix audit missed ${missing.length} manifest voice asset(s): ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? ', ...' : ''}`);
+  }
 }
 
 function asArray(value) {

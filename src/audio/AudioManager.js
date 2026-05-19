@@ -59,6 +59,8 @@ class AudioController {
     this.lastVoiceVariantByEvent = {};
     this.activeVoiceGroups = {};
     this.activeVoices = new Map();
+    this.lastVoiceSuppression = null;
+    this.voiceSuppressionLog = [];
     this.voicePlayId = 0;
     this.lastSfxEvent = null;
     this.lastSfxTrack = null;
@@ -703,6 +705,8 @@ class AudioController {
       lastSfxTrack: this.lastSfxTrack,
       lastVoiceEvent: this.lastVoiceEvent,
       lastVoiceTrack: this.lastVoiceTrack,
+      lastVoiceSuppression: this.lastVoiceSuppression,
+      recentVoiceSuppressions: this.voiceSuppressionLog?.slice(-8) || [],
       activeVoiceCount: this.activeVoices?.size || 0,
       activeVoiceEvents: Array.from(this.activeVoices?.values?.() || []).map(describeVoiceEntry),
       activeVoiceGroups: Object.fromEntries(Object.entries(this.activeVoiceGroups || {}).map(([group, entry]) => [
@@ -774,6 +778,23 @@ class AudioController {
 
   // --- VOICE ---
 
+  recordVoiceSuppression(eventName, reason, now, detail = {}) {
+    const entry = {
+      eventName,
+      reason,
+      at: now,
+      ...detail
+    };
+    this.lastVoiceSuppression = entry;
+    this.voiceSuppressionLog.push(entry);
+    if (this.voiceSuppressionLog.length > 24) {
+      this.voiceSuppressionLog.splice(0, this.voiceSuppressionLog.length - 24);
+    }
+    if (this.isVerboseDiagnostics()) {
+      console.log(`[Audio] Suppressed voice ${eventName}: ${reason}`);
+    }
+  }
+
   handleVoicePlayFailure(eventName, srcUrl, error) {
     const errorName = error?.name || 'Error';
     if (errorName === 'AbortError' || errorName === 'NotAllowedError') return;
@@ -800,7 +821,16 @@ class AudioController {
     const now = Date.now();
     const mix = VOICE_MIX[eventName] || {};
     const cooldownMs = this.readMixNumber(options.cooldownMs, mix.cooldownMs ?? 1500);
+    const eventCooldownMs = Math.max(0, this.readMixNumber(options.eventCooldownMs, mix.eventCooldownMs ?? cooldownMs));
     const force = options.force === true;
+    const bypassGlobalCooldown = options.bypassGlobalCooldown === true;
+    const lastEventAt = this.lastVoicePlayedAt[eventName] || 0;
+    if (eventCooldownMs > 0 && options.bypassEventCooldown !== true && now - lastEventAt < eventCooldownMs) {
+      this.recordVoiceSuppression(eventName, 'event_cooldown', now, {
+        remainingMs: Math.max(0, Math.round(eventCooldownMs - (now - lastEventAt)))
+      });
+      return false;
+    }
     if (options.stopOtherVoices === true) {
       this.stopAllVoices('exclusive_voice_request');
     }
@@ -817,16 +847,29 @@ class AudioController {
       'mission_control_personal_best'
     ];
     if (celebrations.includes(eventName)) {
-      if (!force && now < this.globalVoiceCooldown) return false; // Respect global
+      if (!force && !bypassGlobalCooldown && now < this.globalVoiceCooldown) {
+        this.recordVoiceSuppression(eventName, 'global_cooldown', now, {
+          remainingMs: Math.max(0, Math.round(this.globalVoiceCooldown - now))
+        });
+        return false;
+      }
       // Also enforce a specific celebration lock
       if (!force && this.lastCelebrationTime && now - this.lastCelebrationTime < 20000) {
         console.log('[Audio] Skipping celebration voice due to rate limit');
+        this.recordVoiceSuppression(eventName, 'celebration_rate_limit', now, {
+          remainingMs: Math.max(0, Math.round(20000 - (now - this.lastCelebrationTime)))
+        });
         return false;
       }
       this.lastCelebrationTime = now;
     } else {
       // Normal voice lines
-      if (!force && now < this.globalVoiceCooldown) return false;
+      if (!force && !bypassGlobalCooldown && now < this.globalVoiceCooldown) {
+        this.recordVoiceSuppression(eventName, 'global_cooldown', now, {
+          remainingMs: Math.max(0, Math.round(this.globalVoiceCooldown - now))
+        });
+        return false;
+      }
     }
 
     // 1. Lookup in Catalog first (supports arrays/variants)
@@ -944,6 +987,7 @@ class AudioController {
     if (kind === 'voice') {
       return this.playVoice('mission_control_launch', {
         force: true,
+        eventCooldownMs: 0,
         volume: 0.78,
         duckFactor: 0.54,
         duckMs: 1200,

@@ -587,9 +587,19 @@ export class PowerupManager {
     console.log(`[PowerupTest] spawned type=${type}`);
   }
 
-  spawnSpecific(x, y, type) {
+  spawnSpecific(x, y, type, options = {}) {
     const powerup = new Powerup(x, y, type);
     this.powerups.push(powerup);
     this.container.addChild(powerup.sprite);
+    if (options.countDrop) {
+      this.lastSpawnTime = Date.now();
+      this.dropsThisLevel++;
+      this.dropsThisRun++;
+      if (this.game.scenes.play?.debugStats) {
+        this.game.scenes.play.debugStats.bonusPickupsSpawned++;
+      }
+    }
+    console.log(`[PowerupManager] SPAWNED ${type} at ${Math.round(x)},${Math.round(y)} source=${options.source || 'specific'}`);
+    return powerup;
   }
 }
