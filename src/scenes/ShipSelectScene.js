@@ -14,6 +14,7 @@ import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
+import { computeShipStatRanges, createShipStatPanel } from '../ui/ShipStatPanel.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -28,7 +29,7 @@ export class ShipSelectScene {
     this.scrollY = 0;
     this.isDragging = false;
     this.lastPointerY = 0;
-    this.statRanges = this.computeStatRanges(this.ships);
+    this.statRanges = computeShipStatRanges(this.ships);
     this.baseOrder = [...new Set(this.ships.map(ship => ship.baseId).filter(Boolean))];
     this.unlockProgress = getShipUnlockProgress();
 
@@ -460,21 +461,17 @@ export class ShipSelectScene {
     container.addChild(trait);
     container.traitText = trait;
 
-    // Stats - CLEARER and larger
-    const statsText = this.getShipStats(ship);
-    const stats = createText(statsText, {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 12,
-      fill: '#00ff00',
-      align: 'center',
-      lineHeight: 14,
-      stroke: '#000000',
-      strokeThickness: 2
+    const statPanel = createShipStatPanel(ship, {
+      compact: true,
+      width: 352,
+      accent: textAccent,
+      ranges: this.statRanges,
+      title: 'SHIP TUNE'
     });
-    stats.anchor.set(0.5, 0);
-    stats.position.set(0, 168);
-    container.addChild(stats);
-    container.statsText = stats;
+    statPanel.scale.set(1 / this.centerScale);
+    statPanel.position.set(0, 146);
+    container.addChild(statPanel);
+    container.statPanel = statPanel;
 
     container.shipData = ship;
     container.locked = locked;
@@ -628,7 +625,7 @@ export class ShipSelectScene {
       if (shipContainer.nameText) shipContainer.nameText.visible = isCenter;
       if (shipContainer.descText) shipContainer.descText.visible = isCenter;
       if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
-      if (shipContainer.statsText) shipContainer.statsText.visible = isCenter;
+      if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter;
       if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
       if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;
     });
@@ -657,15 +654,20 @@ export class ShipSelectScene {
     const ship = this.ships[this.selectedIndex];
     const locked = ship ? !isShipUnlocked(ship.spriteKey, this.unlockProgress) : true;
     const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
-    const buttonY = height - 80;
-    const buttonWidth = 120;
-    const buttonHeight = 40;
-    const buttonSpacing = 20;
-    const randomWidth = 112;
+    const isMobile = width < 640;
+    const buttonY = height - (isMobile ? 80 : 80);
+    const buttonWidth = isMobile ? 104 : 120;
+    const buttonHeight = isMobile ? 36 : 40;
+    const buttonSpacing = isMobile ? 10 : 20;
+    const randomWidth = isMobile ? 104 : 112;
+    const rowWidth = isMobile
+      ? buttonWidth * 2 + randomWidth + buttonSpacing * 2
+      : buttonWidth * 2 + buttonSpacing;
+    const rowX = isMobile ? Math.max(12, (width - rowWidth) / 2) : (width - rowWidth) / 2;
 
     this.detailsButton = this.createButton(
       'DETAILS',
-      (width - buttonWidth * 2 - buttonSpacing) / 2,
+      rowX,
       buttonY,
       buttonWidth,
       buttonHeight,
@@ -683,7 +685,7 @@ export class ShipSelectScene {
 
     this.startButton = this.createButton(
       locked ? 'LOCKED' : 'START',
-      (width - buttonWidth * 2 - buttonSpacing) / 2 + buttonWidth + buttonSpacing,
+      rowX + buttonWidth + buttonSpacing,
       buttonY,
       buttonWidth,
       buttonHeight,
@@ -710,10 +712,10 @@ export class ShipSelectScene {
 
     this.randomButton = this.createButton(
       'RANDOM',
-      width - randomWidth - 28,
-      height - 53,
+      isMobile ? rowX + buttonWidth * 2 + buttonSpacing * 2 : width - randomWidth - 28,
+      isMobile ? buttonY : height - 53,
       randomWidth,
-      30,
+      isMobile ? buttonHeight : 30,
       0x101a33,
       0x66ffff,
       () => this.navigateRandom()
@@ -962,36 +964,6 @@ export class ShipSelectScene {
     return lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
   }
 
-  getShipStats(ship) {
-    const stats = ship?.stats || { speed: 6, fireRate: 150, damage: 1 };
-    const ranges = this.statRanges || this.computeStatRanges(this.ships);
-    const segments = 5;
-    const barChar = '#';
-    const emptyChar = '-';
-    const clamp01 = (value) => Math.max(0, Math.min(1, value));
-    const makeBar = (value) => {
-      const filled = Math.max(1, Math.min(segments, Math.round(value * segments)));
-      return barChar.repeat(filled) + emptyChar.repeat(segments - filled);
-    };
-
-    const speedNorm = ranges.speed.max > ranges.speed.min
-      ? (stats.speed - ranges.speed.min) / (ranges.speed.max - ranges.speed.min)
-      : 0.5;
-    const damageNorm = ranges.damage.max > ranges.damage.min
-      ? (stats.damage - ranges.damage.min) / (ranges.damage.max - ranges.damage.min)
-      : 0.5;
-    const fireRateNorm = ranges.fireRate.max > ranges.fireRate.min
-      ? (ranges.fireRate.max - stats.fireRate) / (ranges.fireRate.max - ranges.fireRate.min)
-      : 0.5;
-
-    const speedBar = makeBar(clamp01(speedNorm));
-    const damageBar = makeBar(clamp01(damageNorm));
-    const fireRateBar = makeBar(clamp01(fireRateNorm));
-    return `DMG: ${damageBar}
-SPD: ${speedBar}
-FIR: ${fireRateBar}`;
-  }
-
   getShipTraitText(ship) {
     const trait = ship?.trait || ship?.visuals?.trait;
     if (!trait?.label) return 'TRAIT: BALANCED TUNE';
@@ -1009,25 +981,6 @@ FIR: ${fireRateBar}`;
     if (combat.dodgePulseRadius) tags.push(`DODGE PULSE`);
     if (combat.nearMissScoreMult && combat.nearMissScoreMult !== 1) tags.push(`NEAR x${combat.nearMissScoreMult}`);
     return tags.slice(0, 3).join(' ');
-  }
-
-  computeStatRanges(ships) {
-    const list = Array.isArray(ships) ? ships : [];
-    const defaults = { speed: 6, fireRate: 150, damage: 1 };
-    const values = {
-      speed: list.map(s => Number(s?.stats?.speed ?? defaults.speed)).filter(Number.isFinite),
-      fireRate: list.map(s => Number(s?.stats?.fireRate ?? defaults.fireRate)).filter(Number.isFinite),
-      damage: list.map(s => Number(s?.stats?.damage ?? defaults.damage)).filter(Number.isFinite)
-    };
-    const range = (arr, fallback) => {
-      if (!arr.length) return { min: fallback, max: fallback };
-      return { min: Math.min(...arr), max: Math.max(...arr) };
-    };
-    return {
-      speed: range(values.speed, defaults.speed),
-      fireRate: range(values.fireRate, defaults.fireRate),
-      damage: range(values.damage, defaults.damage)
-    };
   }
 
   orderShips(ships) {

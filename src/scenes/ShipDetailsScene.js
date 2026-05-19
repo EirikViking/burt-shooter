@@ -3,6 +3,7 @@ import { GameAssets } from '../utils/GameAssets.js';
 import { getDefaultShipKey, getShipMetadata, getShipUnlockLabel, getShipUnlockProgress, getShipUsage, getTotalUsage, isShipUnlocked } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { createText } from '../utils/pixiText.js';
+import { createShipStatPanel } from '../ui/ShipStatPanel.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
@@ -135,56 +136,16 @@ export class ShipDetailsScene {
         const trait = this.ship.trait || this.ship.visuals?.trait;
         console.log(`[ShipStats] details shipId=${this.ship.id} trait=${trait?.label || 'none'} damage=${stats.damage} fireRate=${stats.fireRate} speed=${stats.speed}`);
 
-        // Stats title
-        const statsTitle = createText('STATS', {
-            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: 16,
-            fill: '#00ff00',
-            fontWeight: 'bold'
+        const accent = this.ship.visuals?.variant?.accent || this.ship.visuals?.variant?.glow || 0x00eaff;
+        const statPanel = createShipStatPanel(this.ship, {
+            compact: false,
+            width: Math.min(panelWidth - 80, isMobile ? 520 : 620),
+            accent,
+            title: 'COMBAT READOUT'
         });
-        statsTitle.anchor.set(0.5, 0);
-        statsTitle.position.set(panelWidth / 2, yOffset);
-        container.addChild(statsTitle);
-        yOffset += 28;
-
-        // Stats display
-        const statSpacing = isMobile ? 90 : 110;
-        const startX = (panelWidth - statSpacing * 2) / 2;
-
-        const statLabels = [
-            { label: 'SPEED', value: stats.speed.toFixed(1), color: 0x00ffff },
-            { label: 'FIRE RATE', value: `${stats.fireRate}ms`, color: 0xff00ff },
-            { label: 'DAMAGE', value: stats.damage.toFixed(1), color: 0xff0000 }
-        ];
-
-        statLabels.forEach((stat, index) => {
-            const statContainer = new PIXI.Container();
-            statContainer.position.set(startX + index * statSpacing, yOffset);
-
-            // Stat value
-            const valueText = createText(stat.value, {
-                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-                fontSize: isMobile ? 20 : 24,
-                fill: stat.color,
-                fontWeight: 'bold'
-            });
-            valueText.anchor.set(0.5, 0);
-            statContainer.addChild(valueText);
-
-            // Stat label
-            const labelText = createText(stat.label, {
-                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-                fontSize: isMobile ? 10 : 11,
-                fill: '#aaaaaa'
-            });
-            labelText.anchor.set(0.5, 0);
-            labelText.position.set(0, isMobile ? 24 : 30);
-            statContainer.addChild(labelText);
-
-            container.addChild(statContainer);
-        });
-
-        yOffset += 60;
+        statPanel.position.set(panelWidth / 2, yOffset);
+        container.addChild(statPanel);
+        yOffset += statPanel.height + 18;
 
         const traitText = createText(
             trait?.label

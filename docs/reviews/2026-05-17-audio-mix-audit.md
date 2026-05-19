@@ -1,6 +1,6 @@
 # Audio Mix Audit - 2026-05-19
 
-Generated: 2026-05-19T03:52:06.969Z
+Generated: 2026-05-19T07:44:03.871Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -54,14 +54,14 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
-| voice | mission_control_global_highscore | mission_control_global_highscore_01.mp3 | -2.2 dB | -19.9 dB | -37.0 dB |
-| voice | intro_narrator_04 | intro_narrator_04.mp3 | -1.9 dB | -20.2 dB | -37.6 dB |
-| voice | intro_narrator_01 | intro_narrator_01.mp3 | -3.1 dB | -21.4 dB | -36.8 dB |
-| voice | intro_narrator_02 | intro_narrator_02.mp3 | -3.1 dB | -21.4 dB | -37.9 dB |
-| voice | mission_control_boss_inbound | mission_control_boss_inbound.mp3 | -3.3 dB | -21.4 dB | -38.0 dB |
-| voice | mission_control_launch | mission_control_launch.mp3 | -3.1 dB | -21.8 dB | -38.3 dB |
-| voice | mission_control_powerup | mission_control_powerup.mp3 | -2.7 dB | -21.8 dB | -38.9 dB |
-| voice | mission_control_hijacker | mission_control_hijacker_01.mp3 | -2.4 dB | -22.0 dB | -39.7 dB |
+| voice | mission_control_global_highscore | mission_control_global_highscore_01.mp3 | -1.6 dB | -19.3 dB | -32.1 dB |
+| voice | intro_narrator_03 | intro_narrator_03.mp3 | -1.2 dB | -19.5 dB | -32.3 dB |
+| voice | intro_narrator_04 | intro_narrator_04.mp3 | -1.2 dB | -19.5 dB | -33.7 dB |
+| voice | mission_control_boss_inbound | mission_control_boss_inbound.mp3 | -1.4 dB | -19.5 dB | -33.8 dB |
+| voice | mission_control_game_over | mission_control_game_over.mp3 | -0.8 dB | -19.7 dB | -31.3 dB |
+| voice | intro_narrator_02 | intro_narrator_02.mp3 | -1.6 dB | -19.9 dB | -32.8 dB |
+| voice | intro_narrator_01 | intro_narrator_01.mp3 | -1.7 dB | -20.0 dB | -31.6 dB |
+| voice | mission_control_tractor_hijack | mission_control_tractor_hijack_01.mp3 | -0.9 dB | -20.0 dB | -34.7 dB |
 
 ## Quietest Effective Peaks
 
@@ -82,14 +82,14 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
-| voice | mission_control_personal_best | mission_control_personal_best_01.mp3 | -5.6 dB | -24.7 dB | -39.4 dB |
-| voice | mission_control_game_over | mission_control_game_over.mp3 | -5.6 dB | -24.5 dB | -38.5 dB |
-| voice | mission_control_level_start | mission_control_level_start.mp3 | -4.4 dB | -24.2 dB | -39.6 dB |
-| voice | intro_narrator_03 | intro_narrator_03.mp3 | -5.7 dB | -24.0 dB | -37.7 dB |
-| voice | mission_control_tractor_hijack | mission_control_tractor_hijack_01.mp3 | -4.5 dB | -23.6 dB | -38.9 dB |
-| voice | mission_control_combo | mission_control_combo_01.mp3 | -4.2 dB | -23.5 dB | -39.4 dB |
-| voice | mission_control_local_highscore | mission_control_local_highscore_01.mp3 | -4.0 dB | -23.1 dB | -38.8 dB |
-| voice | mission_control_wave_clear | mission_control_wave_clear.mp3 | -3.6 dB | -22.7 dB | -37.2 dB |
+| voice | mission_control_restart | mission_control_restart_01.mp3 | -1.1 dB | -21.3 dB | -36.6 dB |
+| voice | mission_control_level_start | mission_control_level_start.mp3 | -1.5 dB | -21.3 dB | -33.3 dB |
+| voice | mission_control_hijacker | mission_control_hijacker_01.mp3 | -1.6 dB | -21.2 dB | -34.3 dB |
+| voice | mission_control_personal_best | mission_control_personal_best_01.mp3 | -2.0 dB | -21.1 dB | -35.5 dB |
+| voice | mission_control_launch | mission_control_launch.mp3 | -2.4 dB | -21.1 dB | -31.7 dB |
+| voice | mission_control_local_highscore | mission_control_local_highscore_01.mp3 | -1.7 dB | -20.8 dB | -34.1 dB |
+| voice | mission_control_life_low | mission_control_life_low.mp3 | -2.0 dB | -20.5 dB | -32.5 dB |
+| voice | mission_control_combo | mission_control_combo_01.mp3 | -1.1 dB | -20.4 dB | -35.4 dB |
 
 ## Warnings
 

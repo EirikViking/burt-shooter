@@ -70,3 +70,20 @@ User direction changed the implementation constraint to "no api key needed." The
 ### Honest Assessment
 
 This is better than the previous no-key fallback because the line pool has a stronger rare-payoff moment and the audio is less raw. It is still not a substitute for a licensed professional or high-quality neural performance. Keep the current provenance as fallback/pending human review.
+
+## 2026-05-19 Misfit Female Voice Replacement
+
+The user rejected the local fallback voice and chose the approved Misfit Galaxy `Female misfit` voice (`SIbt9DJkaY96v2K2fQyQ`) from the YouTube Uploader voice roster.
+
+### What Changed
+
+- Replaced all shipped mission-control and intro narration MP3s with ElevenLabs `Female misfit` output using `eleven_v3`.
+- Rewrote the optional intro story so it clearly explains Nova Station, the learning swarm, boss-every-sector pressure, score chasing, hijack tricks, and the player's role.
+- Updated `npm run generate:announcer-voicepack` to run the ElevenLabs mission-control and intro generators, and moved the old Zira path to `npm run generate:local-announcer-voicepack`.
+- Updated audio/provenance docs so the current pack is no longer described as a local fallback.
+
+### Key/Access Notes
+
+- Two restricted keys returned HTTP 401 for `/v1/user`; one restricted key still worked on the Text-to-Speech endpoint.
+- The final unrestricted key passed `/v1/user` with HTTP 200 and generated the new shipped voice pack.
+- No API key was written to tracked files or documentation.

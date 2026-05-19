@@ -2,26 +2,26 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const apiKey = process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_LABS_API_KEY;
-const voiceId = process.env.ELEVENLABS_INTRO_VOICE_ID || process.env.ELEVENLABS_VOICE_ID || 'JBFqnCBsd6RMkjVDRZzb';
-const modelId = process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2';
+const voiceId = process.env.ELEVENLABS_INTRO_VOICE_ID || process.env.ELEVENLABS_VOICE_ID || 'SIbt9DJkaY96v2K2fQyQ';
+const modelId = process.env.ELEVENLABS_MODEL_ID || 'eleven_v3';
 const outputDir = path.resolve('public/audio/voice/nova-swarm');
 
 const lines = [
   {
     file: 'intro_narrator_01.mp3',
-    text: 'The last arcade cabinet drifted past the star lanes, still hungry for one more coin.'
+    text: 'Nova Station was built around an impossible arcade cabinet: one coin, one pilot, one clean lane through the dark.'
   },
   {
     file: 'intro_narrator_02.mp3',
-    text: 'Then the swarm learned formation. Cute trick. Bad manners.'
+    text: 'Then the swarm arrived. Not random. Not dumb. It learned your dodges, shaped itself into patterns, and guarded every sector with a boss.'
   },
   {
     file: 'intro_narrator_03.mp3',
-    text: 'Your ship is small, sharp, and extremely underinsured.'
+    text: 'Your ship is not the biggest thing out here. Good. Big things blink late. You thread the lanes, steal the openings, and turn danger into score.'
   },
   {
     file: 'intro_narrator_04.mp3',
-    text: 'Every boss guards a score. Break the pattern. Steal the night.'
+    text: 'The cabinet wants proof. Break the formations, hijack their tricks, crack the boss gates, and put your name where the swarm can see it.'
   }
 ];
 
@@ -46,9 +46,9 @@ async function generateLine(line, index) {
       model_id: modelId,
       seed: 52180 + index,
       voice_settings: {
-        stability: 0.6,
-        similarity_boost: 0.8,
-        style: 0.24,
+        stability: 0.45,
+        similarity_boost: 0.86,
+        style: 0.58,
         use_speaker_boost: true
       }
     })

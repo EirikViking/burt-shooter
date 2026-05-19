@@ -2,42 +2,170 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const apiKey = process.env.ELEVENLABS_API_KEY;
-const voiceId = process.env.ELEVENLABS_VOICE_ID || 'JBFqnCBsd6RMkjVDRZzb';
-const modelId = process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2';
+const voiceId = process.env.ELEVENLABS_VOICE_ID || 'SIbt9DJkaY96v2K2fQyQ';
+const modelId = process.env.ELEVENLABS_MODEL_ID || 'eleven_v3';
 const outputDir = path.resolve('public/audio/voice/mission-control');
 
 const lines = [
   {
     file: 'mission_control_launch.mp3',
-    text: 'Nova hot. Swarm hotter.'
+    text: 'Cabinet live. Nova swarm incoming.'
+  },
+  {
+    file: 'mission_control_launch_alt01.mp3',
+    text: 'Pilot linked. Make the board nervous.'
+  },
+  {
+    file: 'mission_control_launch_alt02.mp3',
+    text: 'One ship. All eyes. Go.'
   },
   {
     file: 'mission_control_level_start.mp3',
-    text: 'New wave. Same bad idea.'
+    text: 'New pattern. Read it fast.'
+  },
+  {
+    file: 'mission_control_level_start_alt01.mp3',
+    text: 'Lane is open. Take it clean.'
+  },
+  {
+    file: 'mission_control_level_start_alt02.mp3',
+    text: 'Swarm is forming. Cute mistake.'
   },
   {
     file: 'mission_control_wave_clear.mp3',
-    text: 'Clean sweep. Keep flirting with danger.'
+    text: 'Wave erased. Score agrees.'
+  },
+  {
+    file: 'mission_control_wave_clear_alt01.mp3',
+    text: 'Clean clear. Keep the heat.'
+  },
+  {
+    file: 'mission_control_wave_clear_alt02.mp3',
+    text: 'That lane belongs to you now.'
   },
   {
     file: 'mission_control_boss_inbound.mp3',
-    text: 'Boss gate open. Try not to blink.'
+    text: 'Boss gate open. Eyes sharp.'
+  },
+  {
+    file: 'mission_control_boss_inbound_alt01.mp3',
+    text: 'Big crown incoming. Do not flinch.'
+  },
+  {
+    file: 'mission_control_boss_inbound_alt02.mp3',
+    text: 'Boss pattern waking. Study the tell.'
   },
   {
     file: 'mission_control_life_low.mp3',
-    text: 'One life. Make it gorgeous.'
+    text: 'Hull is thin. Nerve is not.'
+  },
+  {
+    file: 'mission_control_life_low_alt01.mp3',
+    text: 'One life. Make it count.'
+  },
+  {
+    file: 'mission_control_life_low_alt02.mp3',
+    text: 'Careful now. The board is watching.'
   },
   {
     file: 'mission_control_powerup.mp3',
-    text: 'Take the upgrade. Be rude.'
+    text: 'Powerup live. Use it hard.'
+  },
+  {
+    file: 'mission_control_powerup_alt01.mp3',
+    text: 'Oh, take that.'
+  },
+  {
+    file: 'mission_control_powerup_alt02.mp3',
+    text: 'Upgrade secured. Show off.'
   },
   {
     file: 'mission_control_victory.mp3',
-    text: 'Boss down. That was stylish.'
+    text: 'Boss down. Beautiful read.'
+  },
+  {
+    file: 'mission_control_victory_alt01.mp3',
+    text: 'Crown cracked. Next pattern.'
+  },
+  {
+    file: 'mission_control_victory_alt02.mp3',
+    text: 'That wreckage looks expensive.'
   },
   {
     file: 'mission_control_game_over.mp3',
     text: 'One more run. You know you want it.'
+  },
+  {
+    file: 'mission_control_game_over_alt01.mp3',
+    text: 'Signal lost. Pride recoverable.'
+  },
+  {
+    file: 'mission_control_game_over_alt02.mp3',
+    text: 'Not bad. Not final.'
+  },
+  {
+    file: 'mission_control_combo_01.mp3',
+    text: 'That score just got interesting.'
+  },
+  {
+    file: 'mission_control_combo_02.mp3',
+    text: 'Clean dodge. Filthy score.'
+  },
+  {
+    file: 'mission_control_combo_03.mp3',
+    text: 'Combo is awake.'
+  },
+  {
+    file: 'mission_control_local_highscore_01.mp3',
+    text: 'Local board claimed.'
+  },
+  {
+    file: 'mission_control_local_highscore_02.mp3',
+    text: 'New local mark. Nice trouble.'
+  },
+  {
+    file: 'mission_control_global_highscore_01.mp3',
+    text: 'Global board. You earned that.'
+  },
+  {
+    file: 'mission_control_global_highscore_02.mp3',
+    text: 'That score travels. Global slot secured.'
+  },
+  {
+    file: 'mission_control_personal_best_01.mp3',
+    text: 'New personal best. Delicious.'
+  },
+  {
+    file: 'mission_control_personal_best_02.mp3',
+    text: 'Best run yet. I noticed.'
+  },
+  {
+    file: 'mission_control_restart_01.mp3',
+    text: 'Again. Faster.'
+  },
+  {
+    file: 'mission_control_restart_02.mp3',
+    text: 'Back in. Make it loud.'
+  },
+  {
+    file: 'mission_control_hijacker_01.mp3',
+    text: 'Hijacker beam hot. Break the lock.'
+  },
+  {
+    file: 'mission_control_hijacker_02.mp3',
+    text: 'Tractor trap. Slip it clean.'
+  },
+  {
+    file: 'mission_control_tractor_hijack_01.mp3',
+    text: 'Beam stolen. Gorgeous.'
+  },
+  {
+    file: 'mission_control_tractor_hijack_02.mp3',
+    text: 'Trap reversed. Make it hurt.'
+  },
+  {
+    file: 'mission_control_tractor_hijack_03.mp3',
+    text: 'Their beam. Your score.'
   }
 ];
 
@@ -62,9 +190,9 @@ async function generateLine(line, index) {
       model_id: modelId,
       seed: 42000 + index,
       voice_settings: {
-        stability: 0.58,
-        similarity_boost: 0.78,
-        style: 0.18,
+        stability: 0.42,
+        similarity_boost: 0.86,
+        style: 0.62,
         use_speaker_boost: true
       }
     })

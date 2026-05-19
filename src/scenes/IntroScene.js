@@ -9,9 +9,9 @@ const INTRO_SEEN_KEY = 'nova_swarm_intro_seen_v1';
 const PANELS = [
   {
     image: AssetManifest.generated.introPanels[0],
-    eyebrow: 'ARCHIVE SIGNAL // LOST CABINET',
-    title: 'THE LAST ARCADE DRIFTS',
-    caption: 'Long after the star lanes went quiet, a forgotten arcade cabinet kept one promise: if anyone pressed start, it would answer.',
+    eyebrow: 'NOVA STATION // CABINET ONLINE',
+    title: 'ONE COIN LEFT',
+    caption: 'Nova Station was built around an impossible arcade cabinet: one coin, one pilot, one clean lane through the dark.',
     voice: 'intro_narrator_01',
     sfx: 'coin_portal_open',
     durationMs: 7800
@@ -19,8 +19,8 @@ const PANELS = [
   {
     image: AssetManifest.generated.introPanels[1],
     eyebrow: 'ENEMY CONTACT // PATTERN INTELLIGENCE',
-    title: 'THE SWARM LEARNED FORMATION',
-    caption: 'The Nova Swarm was not an army at first. It was a navigation error that became a choir, then a machine, then a joke with teeth.',
+    title: 'THE SWARM LEARNED YOU',
+    caption: 'Then the swarm arrived. Not random. Not dumb. It learned your dodges, shaped itself into patterns, and guarded every sector with a boss.',
     voice: 'intro_narrator_02',
     sfx: 'swarm_chatter_stinger',
     durationMs: 8200
@@ -28,8 +28,8 @@ const PANELS = [
   {
     image: AssetManifest.generated.introPanels[2],
     eyebrow: 'PILOT LINK // MANUAL OVERRIDE',
-    title: 'A SMALL SHIP BREAKS RANK',
-    caption: 'Your ship was built for clean lanes and fair odds. The cabinet found neither, so it gave you a dodge thruster and lied about confidence.',
+    title: 'SMALL SHIP. FAST HANDS.',
+    caption: 'Your ship is not the biggest thing out here. Good. Big things blink late. You thread the lanes, steal the openings, and turn danger into score.',
     voice: 'intro_narrator_03',
     sfx: 'intro_panel_whoosh',
     durationMs: 8400
@@ -37,8 +37,8 @@ const PANELS = [
   {
     image: AssetManifest.generated.introPanels[3],
     eyebrow: 'BOSS CHORUS // SCOREBOARD ARMED',
-    title: 'THE CABINET WANTS PROOF',
-    caption: 'Every boss is a corrupted rule of the old game: hitboxes with grudges, patterns with punchlines, and one scoreboard waiting to remember your name.',
+    title: 'PUT YOUR NAME IN LIGHTS',
+    caption: 'The cabinet wants proof. Break the formations, hijack their tricks, crack the boss gates, and put your name where the swarm can see it.',
     voice: 'intro_narrator_04',
     sfx: 'boss_reveal_stinger',
     durationMs: 8200

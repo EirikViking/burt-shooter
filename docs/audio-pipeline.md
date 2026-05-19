@@ -9,22 +9,21 @@ public/audio/voice/mission-control/
 public/audio/voice/nova-swarm/
 ```
 
-The current pack was regenerated on 2026-05-19 with the local Windows fallback voice `Microsoft Zira Desktop` because the ElevenLabs access check returned HTTP 401 and the user requested a no-key path. It is a fallback pack, not ElevenLabs output. The generator applies a local FFmpeg arcade-radio chain (`rubberband`, EQ, compression, limiter, subtle echo, and loudness normalization) to make the fallback more energetic while keeping speech readable.
+The current pack was regenerated on 2026-05-19 with the Misfit Galaxy `Female misfit` ElevenLabs voice (`SIbt9DJkaY96v2K2fQyQ`) using `eleven_v3`. This replaces the earlier `Microsoft Zira Desktop` fallback pack. The API key must stay in the local environment and must never be committed, logged, or printed.
 
-To regenerate the current fallback pack without an API key, run:
+To regenerate the current ElevenLabs voice pack, set `ELEVENLABS_API_KEY` in the shell environment and run:
 
 ```bash
 npm run generate:announcer-voicepack
 ```
 
-If ElevenLabs access is restored later, the older scripts can regenerate the canonical launch/level/wave/boss/life/powerup/victory/game-over and intro files:
+To regenerate the old local fallback pack for emergency/offline work, run:
 
 ```bash
-node scripts/generate-mission-control-voicepack.mjs
-npm run generate:intro-narration
+npm run generate:local-announcer-voicepack
 ```
 
-Those scripts do not currently generate the new variation pool files. After using them, regenerate or replace the `_alt##`, combo, local/global highscore, personal-best, restart, hijacker, and tractor-hijack files before shipping.
+The ElevenLabs generator covers the mission-control variation pools plus the four intro narration files.
 
 ## Nova Swarm SFX pack
 

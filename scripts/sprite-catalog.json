@@ -1,6 +1,6 @@
 {
-  "generated": "2026-05-17T13:29:52.916Z",
-  "totalSprites": 1226,
+  "generated": "2026-05-19T07:48:34.803Z",
+  "totalSprites": 1222,
   "sprites": [
     "/sprites/Astronauts/spaceAstronauts_001.png",
     "/sprites/Astronauts/spaceAstronauts_002.png",
@@ -1223,10 +1223,6 @@
     "/sprites/xtra-sprites/playerShip3_blue.png",
     "/sprites/xtra-sprites/playerShip3_green.png",
     "/sprites/xtra-sprites/playerShip3_orange.png",
-    "/sprites/xtra-sprites/playerShip3_red.png",
-    "/sprites/xtra-sprites/ufoBlue.png",
-    "/sprites/xtra-sprites/ufoGreen.png",
-    "/sprites/xtra-sprites/ufoRed.png",
-    "/sprites/xtra-sprites/ufoYellow.png"
+    "/sprites/xtra-sprites/playerShip3_red.png"
   ]
 }
