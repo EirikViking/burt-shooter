@@ -2,10 +2,11 @@
 
 ## Live URLs
 
-- Primary private domain: https://burt.tinyfoundry.app
+- Primary custom domain: https://novaswarm.tinyfoundry.app
+- Previous custom domain: https://burt.tinyfoundry.app
 - Cloudflare Pages production URL: https://burt-game.pages.dev
-- Latest verified production deploy: https://5f0a2609.burt-game.pages.dev
-- Latest deployed build ID: `v2026-05-17_21-41-17`
+- Latest verified production deploy: https://1056e9b9.burt-game.pages.dev
+- Latest deployed build ID: `v2026-05-19_18-43-29`
 
 ## Cloudflare Pages Project
 
@@ -25,7 +26,7 @@ npx wrangler pages deploy dist --project-name=burt-game --branch main
 ## Verify
 
 ```bash
-Invoke-WebRequest -Uri https://burt.tinyfoundry.app/version.json -UseBasicParsing
+Invoke-WebRequest -Uri https://novaswarm.tinyfoundry.app/version.json -UseBasicParsing
 Invoke-WebRequest -Uri https://burt-game.pages.dev/version.json -UseBasicParsing
 ```
 
@@ -34,7 +35,7 @@ Both endpoints should report the same build ID as `public/version.json`.
 ## Highscore API Checks
 
 ```bash
-Invoke-WebRequest -Uri https://burt.tinyfoundry.app/api/highscores -UseBasicParsing
+Invoke-WebRequest -Uri https://novaswarm.tinyfoundry.app/api/highscores -UseBasicParsing
 ```
 
 If highscore writes fail, confirm the Pages project still has the `DB` D1 binding attached to `burt-game-db`.

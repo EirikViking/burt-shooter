@@ -77,6 +77,25 @@ async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
+async function waitForIntroPanel(page, panelIndex, timeout = 18000) {
+  await page.waitForFunction((expectedPanelIndex) => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'intro' && state.intro?.panelIndex === expectedPanelIndex;
+  }, panelIndex, { timeout });
+}
+
+async function waitForIntroVoiceSeen(page, panelIndex, timeout = 7000) {
+  await page.waitForFunction((expectedPanelIndex) => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return (
+      state.scene === 'intro' &&
+      state.intro?.panelIndex === expectedPanelIndex &&
+      state.intro?.waitingForVoice === true &&
+      state.intro?.voiceWasActive === true
+    );
+  }, panelIndex, { timeout });
+}
+
 const server = await startPreviewServer();
 const browser = await chromium.launch({
   headless: true,
@@ -107,11 +126,13 @@ try {
   await page.evaluate(() => window.__game?.showIntro?.());
   await page.waitForFunction(() => window.__game?.currentSceneName === 'intro', { timeout: 30000 });
   await page.mouse.click(640, 360);
-  await page.waitForTimeout(260);
+  await waitForIntroVoiceSeen(page, 0);
   const firstPanel = await readState(page);
 
-  await page.keyboard.press('Space');
-  await page.waitForTimeout(260);
+  await page.waitForTimeout(8500);
+  const heldFirstPanel = await readState(page);
+
+  await waitForIntroPanel(page, 1);
   const secondPanel = await readState(page);
 
   mkdirSync(outputDir, { recursive: true });
@@ -125,9 +146,16 @@ try {
       preIntroVoice &&
       beforeIntro.audio?.lastVoiceEvent === 'mission_control_launch' &&
       firstPanel.scene === 'intro' &&
+      firstPanel.intro?.panelIndex === 0 &&
+      firstPanel.intro?.waitingForVoice === true &&
+      firstPanel.intro?.voiceWasActive === true &&
       firstPanel.audio?.lastVoiceEvent === 'intro_narrator_01' &&
       firstPanel.audio?.activeVoiceCount === 1 &&
       firstVoices[0]?.eventName === 'intro_narrator_01' &&
+      heldFirstPanel.scene === 'intro' &&
+      heldFirstPanel.intro?.panelIndex === 0 &&
+      heldFirstPanel.audio?.lastVoiceEvent === 'intro_narrator_01' &&
+      heldFirstPanel.audio?.activeVoiceGroups?.intro_narrator?.eventName === 'intro_narrator_01' &&
       secondPanel.audio?.lastVoiceEvent === 'intro_narrator_02' &&
       secondPanel.audio?.activeVoiceCount === 1 &&
       secondVoices[0]?.eventName === 'intro_narrator_02' &&
@@ -138,7 +166,11 @@ try {
     preIntroVoice,
     beforeIntroAudio: beforeIntro.audio || null,
     firstPanelAudio: firstPanel.audio || null,
+    firstPanelIntro: firstPanel.intro || null,
+    heldFirstPanelAudio: heldFirstPanel.audio || null,
+    heldFirstPanelIntro: heldFirstPanel.intro || null,
     secondPanelAudio: secondPanel.audio || null,
+    secondPanelIntro: secondPanel.intro || null,
     pageErrors,
     consoleErrors,
     screenshot

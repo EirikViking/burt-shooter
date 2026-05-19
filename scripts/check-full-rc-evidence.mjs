@@ -66,7 +66,7 @@ if (!currentBuild?.version || !currentBuild?.timestamp) {
 }
 
 const fullRc = findLatestReport('steam-rc-verify-', (json) => json.mode === 'full');
-const smoke = findLatestReport('smoke-', (json) => !String(json.baseUrl || '').startsWith('https://burt.tinyfoundry.app'));
+const smoke = findLatestReport('smoke-', (json) => !String(json.baseUrl || '').startsWith('https://'));
 const playtest = findLatestReport('release-playtest-');
 
 if (!fullRc) {

@@ -4,7 +4,7 @@ const DEFAULT_TIMEOUT_MS = 8000; // First attempt: 8 seconds
 const RETRY_TIMEOUT_MS = 10000; // Retry attempts: 10 seconds
 const MAX_RETRIES = 3; // Total: 1 initial + 2 retries
 const RETRY_DELAYS = [0, 500, 1500]; // Faster backoff
-const PUBLIC_GLOBAL_HIGHSCORE_ORIGIN = 'https://burt.tinyfoundry.app';
+const PUBLIC_GLOBAL_HIGHSCORE_ORIGIN = 'https://novaswarm.tinyfoundry.app';
 
 function stripTrailingSlash(value) {
   return String(value || '').replace(/\/+$/, '');

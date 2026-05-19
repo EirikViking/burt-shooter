@@ -2,18 +2,21 @@ import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { API } from '../api/API.js';
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
-import { extendGameOverTexts, getGameOverComment } from '../text/phrasePool.js';
+import { getGameOverComment } from '../text/phrasePool.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { generateUUID } from '../utils/uuid.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { getSelectableShips, getShipUnlockProgress, isShipUnlocked, updateShipUnlockProgress } from '../config/ShipMetadata.js';
+import { getRankFromScore } from '../shared/RankPolicy.js';
+import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
 
 const ENTRY_PROMPT_DESKTOP = 'ENTER: LOG SCORE  |  R/SPACE/GAMEPAD A: RESTART';
 const ENTRY_PROMPT_MOBILE = 'TAP SCORE  |  R/SPACE/GAMEPAD A RESTART';
 const INPUT_PROMPT = 'ENTER INITIALS AND PRESS OK';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
+const PILOT_NAME_MAX_LENGTH = 14;
 
 export class GameOverScene {
   constructor(game) {
@@ -44,6 +47,11 @@ export class GameOverScene {
     this.submitButton = null;
     this.backdrop = null;
     this.backdropShade = null;
+    this.backdropLoaded = false;
+    this.ceremonyFrame = null;
+    this.ceremonyGlow = null;
+    this.fanfareParticles = [];
+    this.ceremonyPulse = 0;
     // Frozen final values
     this.finalScore = 0;
     this.finalLevel = 0;
@@ -52,6 +60,8 @@ export class GameOverScene {
     this.localQualified = false;
     this.globalQualified = false;
     this.globalStatus = 'idle';
+    this.globalPlacement = null;
+    this.globalPlacementTier = 'none';
     this.canEnterName = false;
     this.globalQualificationPromise = null;
     this.leaderboardResult = null;
@@ -60,6 +70,7 @@ export class GameOverScene {
     this.isPersonalBest = false;
     this.qualificationFanfarePlayed = false;
     this.personalBestVoicePlayed = false;
+    this.nearMissVoicePlayed = false;
     // Submission deduplication
     this.submissionId = null;
     this.gamepadActionWasPressed = false;
@@ -76,9 +87,12 @@ export class GameOverScene {
     this.submitRetries = 0;
     this.submitBlockedReason = null;
     this.cachedHighscores = null;
+    this.backdropLoaded = false;
     this.localQualified = false;
     this.globalQualified = false;
     this.globalStatus = 'idle';
+    this.globalPlacement = null;
+    this.globalPlacementTier = 'none';
     this.canEnterName = false;
     this.globalQualificationPromise = null;
     this.leaderboardResult = null;
@@ -98,9 +112,12 @@ export class GameOverScene {
     this.isPersonalBest = this.finalScore > (Number(previousProgress.bestScore) || 0);
     this.qualificationFanfarePlayed = false;
     this.personalBestVoicePlayed = false;
+    this.nearMissVoicePlayed = false;
+    const finalRank = Math.max(Number(this.game.rankIndex) || 0, getRankFromScore(this.finalScore));
+    this.game.rankIndex = finalRank;
     const currentProgress = updateShipUnlockProgress({
       score: this.finalScore,
-      rank: this.game.rankIndex || 0,
+      rank: finalRank,
       level: this.finalLevel
     });
     this.unlockSummary = this.createUnlockSummary(previousProgress, currentProgress);
@@ -114,26 +131,19 @@ export class GameOverScene {
     const layout = createTextLayout(width, height, responsiveLayout);
     this.createFallbackBackdrop(width, height);
     this.initBackdrop(width, height);
+    this.createCeremonyVisuals();
 
-    const gameOverTexts = [
-      'SWARM GOT COCKY!',
-      'HITBOX INCIDENT!',
-      'BOSS MUSIC WON!',
-      'QUARTER EJECTED!',
-      'FORMATION OVERLOAD!'
-    ];
-    const gameOverPool = extendGameOverTexts(gameOverTexts);
-    const randomText = gameOverPool[Math.floor(Math.random() * gameOverPool.length)];
+    const ceremonyTitle = this.getCeremonyTitle();
 
     const titleSize = getResponsiveFontSize(layout, 'title');
-    this.title = createText(randomText, {
+    this.title = createText(ceremonyTitle, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: titleSize,
-      fill: '#ff0000',
-      stroke: '#880000',
+      fill: '#fff3a2',
+      stroke: '#4c2400',
       strokeThickness: layout.isMobile ? 2 : 3,
       dropShadow: true,
-      dropShadowColor: '#ff0000',
+      dropShadowColor: '#ffc94a',
       dropShadowBlur: layout.isMobile ? 4 : 8,
       align: 'center',
       wordWrap: true,
@@ -178,7 +188,7 @@ export class GameOverScene {
     this.container.addChild(this.unlockText);
 
     const bodySize = getResponsiveFontSize(layout, 'body');
-    this.comment = createText(getGameOverComment(this.finalScore, this.finalLevel), {
+    this.comment = createText(this.getCeremonyComment(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: bodySize,
       fill: '#aaaaaa',
@@ -334,7 +344,7 @@ export class GameOverScene {
     const localLine = this.localQualified
       ? 'LOCAL BOARD: QUALIFIED'
       : `LOCAL BOARD: NEED ${Math.max(1, LocalLeaderboard.getCutoff() + 1).toLocaleString('en-US')}`;
-    const globalLine = {
+    let globalLine = {
       idle: 'GLOBAL BOARD: IDLE',
       checking: 'GLOBAL BOARD: CHECKING...',
       qualified: 'GLOBAL BOARD: QUALIFIED',
@@ -345,6 +355,13 @@ export class GameOverScene {
       failed: 'GLOBAL BOARD: FAILED - LOCAL SAVED',
       unranked: 'GLOBAL BOARD: PRACTICE RUN'
     }[this.globalStatus] || `GLOBAL BOARD: ${String(this.globalStatus || 'UNKNOWN').toUpperCase()}`;
+    if (this.globalPlacement?.qualified && this.globalPlacement.placement) {
+      globalLine = `GLOBAL BOARD: RANK #${this.globalPlacement.placement}`;
+      if (this.globalPlacement.numberOne) globalLine += ' - NUMBER ONE';
+      else if (this.globalPlacement.top3) globalLine += ' - TOP THREE';
+    } else if (this.globalPlacement?.nearGlobal) {
+      globalLine = `GLOBAL BOARD: CLOSE - NEED ${this.globalPlacement.scoreToGlobal.toLocaleString('en-US')}`;
+    }
     return `${localLine}\n${globalLine}`;
   }
 
@@ -353,6 +370,8 @@ export class GameOverScene {
     this.leaderboardStatusText.text = this.getLeaderboardStatusMessage();
     if (this.globalQualified) {
       this.leaderboardStatusText.style.fill = '#ffe86a';
+    } else if (this.globalPlacement?.nearGlobal || this.globalPlacement?.nearTop3 || this.globalPlacement?.nearNumberOne) {
+      this.leaderboardStatusText.style.fill = '#ffcf7a';
     } else if (this.localQualified) {
       this.leaderboardStatusText.style.fill = '#9cfbff';
     } else if (this.globalStatus === 'offline' || this.globalStatus === 'failed') {
@@ -360,6 +379,73 @@ export class GameOverScene {
     } else {
       this.leaderboardStatusText.style.fill = '#8fa6b8';
     }
+  }
+
+  getCeremonyTitle() {
+    if (this.globalPlacementTier === 'number1') return 'NUMBER ONE';
+    if (this.globalPlacementTier === 'top3') return 'TOP THREE';
+    if (this.globalPlacementTier === 'global') return 'GLOBAL SLOT SECURED';
+    if (this.globalPlacementTier === 'near_global') return 'GLOBAL BOARD IN SIGHT';
+    if (this.localQualified) return 'LOCAL LEGEND';
+    if (this.isPersonalBest) return 'PERSONAL BEST';
+    return 'RUN COMPLETE';
+  }
+
+  getCeremonyComment() {
+    const placement = this.globalPlacement;
+    if (placement?.numberOne) {
+      return 'The global board has a new name at the top. Let the cabinet remember it loudly.';
+    }
+    if (placement?.top3) {
+      return `Global rank #${placement.placement}. That is the kind of run people pretend was easy.`;
+    }
+    if (placement?.qualified) {
+      return `Global rank #${placement.placement}. Your score now travels farther than the swarm wanted.`;
+    }
+    if (placement?.nearGlobal) {
+      return `Only ${placement.scoreToGlobal.toLocaleString('en-US')} more points for a global slot. This was not a miss, it was a warning shot.`;
+    }
+    if (this.localQualified) {
+      return 'Local board claimed. The machine has been informed who owns this corner of space.';
+    }
+    if (this.isPersonalBest) {
+      return 'Personal best archived. The next run starts with evidence.';
+    }
+    return getGameOverComment(this.finalScore, this.finalLevel);
+  }
+
+  updateCeremonyPresentation() {
+    if (!this.title || !this.comment) return;
+    const placement = this.globalPlacement;
+    this.title.text = this.getCeremonyTitle();
+    this.comment.text = this.getCeremonyComment();
+    if (placement?.numberOne) {
+      this.title.style.fill = '#fff8b8';
+      this.title.style.stroke = { color: '#6b3200', width: 4 };
+      this.title.style.dropShadowColor = '#ffd454';
+      this.comment.style.fill = '#ffeeb0';
+    } else if (placement?.top3) {
+      this.title.style.fill = '#ffe86a';
+      this.title.style.stroke = { color: '#4c2400', width: 4 };
+      this.title.style.dropShadowColor = '#ffb84a';
+      this.comment.style.fill = '#ffd98a';
+    } else if (placement?.qualified) {
+      this.title.style.fill = '#9cfbff';
+      this.title.style.stroke = { color: '#004c58', width: 3 };
+      this.title.style.dropShadowColor = '#00ffff';
+      this.comment.style.fill = '#c8fdff';
+    } else if (placement?.nearGlobal) {
+      this.title.style.fill = '#ffcf7a';
+      this.title.style.stroke = { color: '#5f2500', width: 3 };
+      this.title.style.dropShadowColor = '#ff9b42';
+      this.comment.style.fill = '#ffd7a3';
+    } else {
+      this.title.style.fill = this.localQualified || this.isPersonalBest ? '#9cfbff' : '#d8e6ff';
+      this.title.style.stroke = { color: '#042033', width: 3 };
+      this.title.style.dropShadowColor = '#00aaff';
+      this.comment.style.fill = '#aebed0';
+    }
+    this.layoutScreen();
   }
 
   updateQualificationPromptState() {
@@ -385,17 +471,16 @@ export class GameOverScene {
       const scores = await API.getHighscores({ useCache: false });
       this.cachedHighscores = Array.isArray(scores) ? [...scores] : [];
       this.cachedHighscores.sort((a, b) => b.score - a.score);
-      if (this.cachedHighscores.length < 10) {
-        this.globalQualified = this.finalScore > 0;
-      } else {
-        const tenth = Number(this.cachedHighscores[9]?.score) || 0;
-        this.globalQualified = this.finalScore > tenth;
-      }
+      this.globalPlacement = analyzeGlobalLeaderboardScore(this.finalScore, this.cachedHighscores);
+      this.globalPlacementTier = this.globalPlacement.tier;
+      this.globalQualified = this.globalPlacement.qualified;
       this.globalStatus = this.globalQualified ? 'qualified' : 'missed';
-      console.log(`[GameOver] Global Qualification: Score ${this.finalScore} vs 10th ${this.cachedHighscores[9]?.score || 0} -> ${this.globalQualified}`);
+      console.log(`[GameOver] Global Qualification: Score ${this.finalScore} vs 10th ${this.cachedHighscores[9]?.score || 0} -> ${this.globalQualified}`, this.globalPlacement);
 
       if (this.globalQualified && this.isSceneActive()) {
         this.playGlobalQualificationFanfare();
+      } else if (this.globalPlacement?.nearGlobal && this.isSceneActive()) {
+        this.playNearMissVoice();
       } else if (this.isPersonalBest && !this.localQualified && this.isSceneActive()) {
         this.playPersonalBestVoice();
       }
@@ -410,6 +495,7 @@ export class GameOverScene {
     } finally {
       this.updateCanEnterName();
       if (this.isSceneActive()) {
+        this.updateCeremonyPresentation();
         this.updateLeaderboardStatusText();
         this.updateQualificationPromptState();
       }
@@ -434,7 +520,8 @@ export class GameOverScene {
     const smallSize = getResponsiveFontSize(layout, 'small');
 
     this.title.style.fontSize = titleSize;
-    this.title.style.stroke = { color: '#880000', width: layout.isMobile ? 2 : 3 };
+    const titleStroke = this.globalQualified ? '#4c2400' : '#042033';
+    this.title.style.stroke = { color: titleStroke, width: layout.isMobile ? 2 : 3 };
     this.title.style.wordWrap = true;
     this.title.style.wordWrapWidth = clampTextWidth(width * 0.88, layout);
     this.title.style.lineHeight = Math.round(titleSize * 1.08);
@@ -459,6 +546,7 @@ export class GameOverScene {
     this.instructions.style.fill = '#9cfbff';
     this.instructions.style.stroke = { color: '#031323', width: layout.isMobile ? 2 : 3 };
     this.layoutBackdrop(width, height);
+    this.layoutCeremonyVisuals(width, height, layout);
 
     // Calculate content height for centering
     const spacing = layout.isMobile ? 8 : 14;
@@ -528,19 +616,45 @@ export class GameOverScene {
     this.layoutBackdrop(width, height);
   }
 
+  createCeremonyVisuals() {
+    this.ceremonyGlow = new PIXI.Graphics();
+    this.ceremonyGlow.zIndex = -8;
+    this.container.addChild(this.ceremonyGlow);
+
+    this.ceremonyFrame = new PIXI.Graphics();
+    this.ceremonyFrame.zIndex = -6;
+    this.container.addChild(this.ceremonyFrame);
+
+    this.fanfareParticles = Array.from({ length: 56 }, (_, index) => {
+      const particle = new PIXI.Graphics();
+      particle.zIndex = -4;
+      particle.eventMode = 'none';
+      particle.alpha = 0.25 + (index % 7) * 0.08;
+      particle.__fanfare = {
+        seed: index * 37.7,
+        lane: index % 2 === 0 ? -1 : 1,
+        speed: 0.45 + (index % 9) * 0.035
+      };
+      this.container.addChild(particle);
+      return particle;
+    });
+  }
+
   async initBackdrop(width, height) {
-    if (!AssetManifest.generated?.menuBackdrop) return;
+    const backdropSrc = AssetManifest.generated?.gameOverCeremony || AssetManifest.generated?.menuBackdrop;
+    if (!backdropSrc) return;
     try {
       const texture = await PIXI.Assets.load({
-        alias: 'gameover_menu_backdrop',
-        src: AssetManifest.generated.menuBackdrop
+        alias: 'gameover_ceremony_backdrop',
+        src: backdropSrc
       });
       if (!this.container?.parent && this.game.currentScene !== this) return;
       this.backdrop = new PIXI.Sprite(texture);
       this.backdrop.anchor.set(0.5);
-      this.backdrop.alpha = 0.32;
+      this.backdrop.alpha = 0.72;
       this.backdrop.zIndex = -20;
       this.container.addChild(this.backdrop);
+      this.backdropLoaded = true;
       this.layoutBackdrop(width, height);
     } catch (error) {
       if (this.game?.currentScene === this) {
@@ -560,9 +674,43 @@ export class GameOverScene {
     if (this.backdropShade) {
       this.backdropShade.clear();
       this.backdropShade.rect(0, 0, width, height);
-      this.backdropShade.fill({ color: 0x020713, alpha: 0.82 });
+      this.backdropShade.fill({ color: 0x020713, alpha: 0.34 });
       this.backdropShade.rect(0, 0, width, height);
-      this.backdropShade.fill({ color: 0x000000, alpha: 0.28 });
+      this.backdropShade.fill({ color: 0x000000, alpha: 0.1 });
+    }
+  }
+
+  layoutCeremonyVisuals(width = this.game.app.screen.width, height = this.game.app.screen.height, layout = getCurrentLayout()) {
+    const panelWidth = Math.min(width * (layout.isMobile ? 0.92 : 0.58), layout.isMobile ? 560 : 760);
+    const panelHeight = Math.min(height * (layout.isMobile ? 0.68 : 0.58), layout.isMobile ? 520 : 560);
+    const x = (width - panelWidth) / 2;
+    const y = Math.max(layout.safeArea?.top || 0, (height - panelHeight) * (layout.isMobile ? 0.42 : 0.46));
+    const accent = this.globalPlacement?.numberOne
+      ? 0xffe86a
+      : this.globalPlacement?.top3
+        ? 0xffb84a
+        : this.globalQualified
+          ? 0x00ffff
+          : this.globalPlacement?.nearGlobal
+            ? 0xff9b42
+            : 0x23d8ff;
+
+    if (this.ceremonyGlow) {
+      this.ceremonyGlow.clear();
+      this.ceremonyGlow.ellipse(width / 2, y + panelHeight * 0.5, panelWidth * 0.72, panelHeight * 0.56);
+      this.ceremonyGlow.fill({ color: accent, alpha: this.globalQualified ? 0.14 : 0.08 });
+    }
+
+    if (this.ceremonyFrame) {
+      this.ceremonyFrame.clear();
+      this.ceremonyFrame.roundRect(x, y, panelWidth, panelHeight, 18);
+      this.ceremonyFrame.fill({ color: 0x020914, alpha: 0.52 });
+      this.ceremonyFrame.roundRect(x, y, panelWidth, panelHeight, 18);
+      this.ceremonyFrame.stroke({ color: accent, alpha: 0.82, width: this.globalQualified ? 3 : 2 });
+      this.ceremonyFrame.rect(x + 20, y + 12, panelWidth - 40, 3);
+      this.ceremonyFrame.fill({ color: accent, alpha: 0.54 });
+      this.ceremonyFrame.rect(x + 20, y + panelHeight - 15, panelWidth - 40, 2);
+      this.ceremonyFrame.fill({ color: accent, alpha: 0.38 });
     }
   }
 
@@ -614,7 +762,7 @@ export class GameOverScene {
           return;
         }
         const char = e.key.toUpperCase();
-        if (/^[A-Z0-9 ]$/.test(char) && this.nameInput.length < 10) {
+        if (/^[A-Z0-9 ]$/.test(char) && this.nameInput.length < PILOT_NAME_MAX_LENGTH) {
           e.preventDefault();
           this.nameInput += char;
           this.syncHiddenInput();
@@ -627,12 +775,40 @@ export class GameOverScene {
   }
 
   update() {
+    this.updateCeremonyEffects();
     if (this.state === 'input' || this.state === 'submitting') return;
     const actionPressed = this.isGamepadActionPressed();
     if (actionPressed && !this.gamepadActionWasPressed) {
       this.restartRun();
     }
     this.gamepadActionWasPressed = actionPressed;
+  }
+
+  updateCeremonyEffects() {
+    if (!this.fanfareParticles?.length) return;
+    const { width, height } = this.game.app.screen;
+    this.ceremonyPulse += 1;
+    const activeBoost = this.globalQualified ? 1 : 0.45;
+    const color = this.globalPlacement?.numberOne
+      ? 0xfff08a
+      : this.globalPlacement?.top3
+        ? 0xffba57
+        : this.globalQualified
+          ? 0x65f7ff
+          : 0x7ca6ff;
+    for (const particle of this.fanfareParticles) {
+      const config = particle.__fanfare || { seed: 0, lane: 1, speed: 0.5 };
+      const drift = ((this.ceremonyPulse * config.speed + config.seed) % 220) / 220;
+      const sideBase = config.lane < 0 ? width * 0.12 : width * 0.88;
+      const x = sideBase + Math.sin((this.ceremonyPulse + config.seed) * 0.025) * width * 0.08;
+      const y = height * (0.1 + drift * 0.78);
+      const size = (2 + (config.seed % 5)) * activeBoost;
+      particle.clear();
+      particle.rect(-size * 0.5, -size * 0.5, size * 2.6, size);
+      particle.fill({ color, alpha: (this.globalQualified ? 0.76 : 0.28) * (1 - drift * 0.55) });
+      particle.position.set(x, y);
+      particle.rotation += 0.035 + config.speed * 0.01;
+    }
   }
 
   isGamepadActionPressed() {
@@ -661,7 +837,10 @@ export class GameOverScene {
     }
 
     const nextShip = ships
-      .filter(ship => !isShipUnlocked(ship.spriteKey, currentProgress))
+      .filter(ship =>
+        !isShipUnlocked(ship.spriteKey, currentProgress) &&
+        !isShipUnlocked(ship.spriteKey, previousProgress)
+      )
       .sort((a, b) => {
         const aScore = Number(a.unlock?.score) || 0;
         const bScore = Number(b.unlock?.score) || 0;
@@ -678,7 +857,7 @@ export class GameOverScene {
     const scoreNeed = Math.max(0, (Number(requirement.score) || 0) - (currentProgress.bestScore || 0));
     const rankNeed = Math.max(0, (Number(requirement.rank) || 0) - (currentProgress.bestRank || 0));
     const scorePart = scoreNeed > 0 ? `${scoreNeed.toLocaleString('en-US')} SCORE` : null;
-    const rankPart = rankNeed > 0 ? `${rankNeed} RANK` : null;
+    const rankPart = rankNeed > 0 ? `REACH RANK ${Number(requirement.rank) || 0}` : null;
     const needed = [scorePart, rankPart].filter(Boolean).join(' OR ') || 'ONE BETTER RUN';
     return `NEXT SHIP: ${nextShip.name}\nNEED ${needed}`;
   }
@@ -787,18 +966,52 @@ export class GameOverScene {
   playGlobalQualificationFanfare() {
     if (this.qualificationFanfarePlayed) return;
     this.qualificationFanfarePlayed = true;
-    AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.95 });
+    const placement = this.globalPlacement;
+    const voiceKey = placement?.numberOne
+      ? 'mission_control_number_one_highscore'
+      : placement?.top3
+        ? 'mission_control_top3_highscore'
+        : 'mission_control_global_highscore';
+    AudioManager.playMusicContext('victory', { resetPlaylist: true });
+    const fanfareKey = placement?.numberOne
+      ? 'nova_number_one_fanfare'
+      : placement?.top3
+        ? 'nova_top3_fanfare'
+        : 'nova_global_slot_fanfare';
+    AudioManager.playSfx(fanfareKey, { force: true, volume: placement?.numberOne ? 1.08 : placement?.top3 ? 0.98 : 0.9, minIntervalMs: 0 });
     window.setTimeout(() => {
-      AudioManager.playVoice('mission_control_global_highscore', {
+      AudioManager.playSfx('nova_highscore_chime', { force: true, volume: placement?.top3 ? 1.12 : 0.95, minIntervalMs: 0 });
+    }, 360);
+    if (placement?.numberOne) {
+      window.setTimeout(() => {
+        AudioManager.playSfx('level_clear_medal', { force: true, volume: 1.12, minIntervalMs: 0 });
+      }, 720);
+    }
+    window.setTimeout(() => {
+      AudioManager.playVoice(voiceKey, {
         force: true,
         stopOtherVoices: true,
         exclusiveGroup: 'announcer',
         cooldownMs: 9000,
-        duckMs: 3400,
-        duckFactor: 0.32,
-        volume: 0.96
+        duckMs: placement?.numberOne ? 4300 : placement?.top3 ? 3800 : 3400,
+        duckFactor: placement?.numberOne ? 0.24 : placement?.top3 ? 0.28 : 0.32,
+        volume: placement?.numberOne ? 1.06 : placement?.top3 ? 1.02 : 0.96
       });
-    }, 180);
+    }, 900);
+  }
+
+  playNearMissVoice() {
+    if (this.nearMissVoicePlayed || this.qualificationFanfarePlayed) return;
+    this.nearMissVoicePlayed = true;
+    AudioManager.playSfx('nova_global_near_fanfare', { force: true, volume: 0.72, minIntervalMs: 0 });
+    window.setTimeout(() => {
+      AudioManager.playVoice('mission_control_near_miss', {
+        cooldownMs: 9000,
+        duckMs: 2300,
+        duckFactor: 0.46,
+        volume: 0.84
+      });
+    }, 520);
   }
 
   playPersonalBestVoice() {
@@ -815,7 +1028,7 @@ export class GameOverScene {
   }
 
   playLocalHighscoreVoice() {
-    AudioManager.playSfx('achievement', { force: true, volume: 0.82 });
+    AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.82, minIntervalMs: 0 });
     AudioManager.playVoice('mission_control_local_highscore', {
       force: true,
       stopOtherVoices: true,
@@ -873,7 +1086,7 @@ export class GameOverScene {
     // Input field
     this.inputField = document.createElement('input');
     this.inputField.type = 'text';
-    this.inputField.maxLength = 10;
+    this.inputField.maxLength = PILOT_NAME_MAX_LENGTH;
     this.inputField.autocapitalize = 'characters';
     this.inputField.autocomplete = 'off';
     this.inputField.spellcheck = false;
@@ -896,7 +1109,7 @@ export class GameOverScene {
     `;
     this.inputField.addEventListener('input', (e) => {
       const value = e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
-      e.target.value = value.slice(0, 10);
+      e.target.value = value.slice(0, PILOT_NAME_MAX_LENGTH);
       this.nameInput = e.target.value;
     });
     this.inputField.addEventListener('keydown', (e) => {
@@ -981,7 +1194,7 @@ export class GameOverScene {
     if (this.hiddenInput) return this.hiddenInput;
     const input = document.createElement('input');
     input.type = 'text';
-    input.maxLength = 10;
+    input.maxLength = PILOT_NAME_MAX_LENGTH;
     input.autocapitalize = 'characters';
     input.autocomplete = 'off';
     input.spellcheck = false;
@@ -1003,7 +1216,7 @@ export class GameOverScene {
   handleHiddenInput(event) {
     if (!event.target) return;
     const value = event.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
-    this.nameInput = value.slice(0, 10);
+    this.nameInput = value.slice(0, PILOT_NAME_MAX_LENGTH);
     event.target.value = this.nameInput;
     this.caretVisible = true;
     this.updateNameDisplay();

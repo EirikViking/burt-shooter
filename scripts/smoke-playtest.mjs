@@ -139,6 +139,16 @@ async function collectGameState(page) {
       creditsOverlayVisible: Boolean(scene?.settingsOverlay?.creditsPanel?.parent || play?.settingsOverlay?.creditsPanel?.parent),
       easterEggActive: Boolean(play?.legendaryFlyby),
       easterEggAlias: play?.legendaryFlyby?.alias || null,
+      storyTransmission: (() => {
+        const toasts = (() => {
+          try {
+            return JSON.parse(window.render_game_to_text?.() || '{}')?.toast?.active || [];
+          } catch {
+            return [];
+          }
+        })();
+        return toasts.find((toast) => toast?.type === 'lore') || null;
+      })(),
       fatalOverlay: Boolean(document.getElementById('fatal-overlay')),
       textState: (() => {
         try {
@@ -214,11 +224,28 @@ function trackIncludes(state, fragment) {
   return musicTrackName(state).toLowerCase().includes(fragment.toLowerCase());
 }
 
+function trackHasAny(state, fragments) {
+  const track = musicTrackName(state).toLowerCase();
+  return fragments.some((fragment) => track.includes(fragment.toLowerCase()));
+}
+
 function isGameplayMusic(state) {
   const track = musicTrackName(state).toLowerCase();
   if (!track) return false;
-  const reservedFragments = ['brave pilots', 'skyfire', 'defeated', 'deathmatch', 'victory tune'];
+  const reservedFragments = ['brave pilots', 'skyfire', 'defeated', 'deathmatch', 'victory tune', 'nova_swarm_menu', 'nova_swarm_boss', 'nova_swarm_victory', 'nova_swarm_gameover'];
   return musicContext(state) === 'gameplay' && !reservedFragments.some((fragment) => track.includes(fragment));
+}
+
+function isGameOverMusic(state) {
+  return musicContext(state) === 'gameover' && trackHasAny(state, ['Defeated', 'nova_swarm_gameover']);
+}
+
+function isBossMusic(state) {
+  return musicContext(state) === 'boss' && trackHasAny(state, ['DeathMatch', 'nova_swarm_boss']);
+}
+
+function isVictoryMusic(state) {
+  return musicContext(state) === 'victory' && trackHasAny(state, ['Victory Tune', 'nova_swarm_victory']);
 }
 
 function visibleEnemyHealthIssues(state, label) {
@@ -297,7 +324,7 @@ function summarizeSmokeReport(report, blockingIssues) {
     coverage: {
       gamepadConnected: Boolean(report.gamepadMoveState?.textState?.input?.gamepad?.connected),
       powerupHud: report.powerupHudState?.label || null,
-      loreFlybyAlias: report.loreFlybyState?.easterEggAlias || null,
+      storyTransmission: report.storyTransmissionState?.storyTransmission?.imageAlias || null,
       waveTransition: report.waveTransitionState?.textState?.wave?.currentWaveNumber || null,
       bossDefeatMusic: `${musicContext(report.bossDefeatedState) || 'none'} / ${musicTrackName(report.bossDefeatedState) || 'none'}`
     },
@@ -578,33 +605,26 @@ async function runSmoke() {
     const pauseState = await collectGameState(page);
     logStep('pause captured');
 
-    const lorePage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
-    observePage(lorePage, 'lore-flyby');
-    await lorePage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await lorePage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 30000 });
-    await lorePage.waitForFunction(() => {
+    const storyPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    observePage(storyPage, 'story-transmission');
+    await storyPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await storyPage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 30000 });
+    await storyPage.waitForFunction(() => {
       const game = window.__game;
       const play = game?.scenes?.play;
-      if (!play?.spawnEasterEgg || !play?.player) return false;
+      if (!play?.showStoryTransmission || !play?.player) return false;
       play.introActive = false;
       play.introComplete = true;
-      if (!play.legendaryFlyby) play.spawnEasterEgg();
-      const egg = play.legendaryFlyby;
-      if (!egg?.sprite) return false;
-      egg.x = game.getWidth() * 0.28;
-      egg.y = game.getHeight() * 0.42;
-      egg.vx = 0;
-      egg.vy = 0;
-      egg.sprite.x = egg.x;
-      egg.sprite.y = egg.y;
-      egg.sprite.alpha = 0.38;
-      return true;
+      play.dismissActiveToastSlotsBelowPriority?.(['top'], 99);
+      play.showStoryTransmission({ force: true });
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return (state.toast?.active || []).some((toast) => toast?.type === 'lore' && /^nova-swarm-story-comms-/.test(toast.imageAlias || ''));
     }, null, { timeout: 15000 });
-    await lorePage.waitForTimeout(500);
-    await lorePage.screenshot({ path: path.join(outputDir, '05-lore-flyby.png'), fullPage: true });
-    const loreFlybyState = await collectGameState(lorePage);
-    await lorePage.close();
-    logStep('lore flyby captured');
+    await storyPage.waitForTimeout(500);
+    await storyPage.screenshot({ path: path.join(outputDir, '05-story-transmission.png'), fullPage: true });
+    const storyTransmissionState = await collectGameState(storyPage);
+    await storyPage.close();
+    logStep('story transmission captured');
 
     const gameOverPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(gameOverPage, 'game-over');
@@ -780,7 +800,7 @@ async function runSmoke() {
           ? JSON.parse(window.render_game_to_text())
           : null;
         return state?.audio?.currentMusicContext === 'victory' &&
-          /Victory Tune/i.test(state?.audio?.currentMusicTrack || '');
+          /Victory Tune|nova_swarm_victory/i.test(state?.audio?.currentMusicTrack || '');
       } catch {
         return false;
       }
@@ -812,7 +832,7 @@ async function runSmoke() {
       gamepadMoveState,
       gamepadPauseState,
       pauseState,
-      loreFlybyState,
+      storyTransmissionState,
       gameOverState,
       returnMenuState,
       mobileGameplayState,
@@ -851,18 +871,23 @@ async function runSmoke() {
       ...((gamepadMoveState.textState?.player?.y || 0) >= (gamepadBeforeState.textState?.player?.y || 9999) - 4 ? ['gamepad movement did not move the player upward'] : []),
       ...((gamepadMoveState.textState?.counts?.playerBullets || 0) <= 0 ? ['gamepad fire did not produce player bullets'] : []),
       ...(!gamepadPauseState.isPaused || !gamepadPauseState.pauseOverlayVisible ? ['gamepad pause button did not open pause overlay'] : []),
-      ...(!loreFlybyState.easterEggActive ? ['forced lore flyby did not become active'] : []),
-      ...(!/^nova-swarm-comms-/.test(loreFlybyState.easterEggAlias || '') ? [`lore flyby did not use generated comms portrait: ${loreFlybyState.easterEggAlias || 'none'}`] : []),
+      ...(storyTransmissionState.easterEggActive ? ['removed lore flyby was still active'] : []),
+      ...(!storyTransmissionState.storyTransmission ? ['forced story transmission did not appear'] : []),
+      ...(!/^nova-swarm-story-comms-/.test(storyTransmissionState.storyTransmission?.imageAlias || '') ? [`story transmission did not use generated story art: ${storyTransmissionState.storyTransmission?.imageAlias || 'none'}`] : []),
       ...(gameOverState.scene !== 'gameOver' ? ['forced game over did not reach game over scene'] : []),
       ...(gameOverState.perf?.scene !== 'gameOver' ? [`game-over perf state used unstable scene name: ${gameOverState.perf?.scene || 'none'}`] : []),
       ...(gameOverState.textState?.scene !== 'gameOver' ? [`game-over text state used unstable scene name: ${gameOverState.textState?.scene || 'none'}`] : []),
-      ...(musicContext(gameOverState) !== 'gameover' || !trackIncludes(gameOverState, 'Defeated') ? [`game-over music did not switch to game-over theme: ${musicContext(gameOverState)} / ${musicTrackName(gameOverState) || 'none'}`] : []),
+      ...(
+        gameOverState.textState?.gameOver?.globalQualified
+          ? (musicContext(gameOverState) !== 'victory' ? [`global leaderboard game-over did not switch to victory fanfare music: ${musicContext(gameOverState)} / ${musicTrackName(gameOverState) || 'none'}`] : [])
+          : (!isGameOverMusic(gameOverState) ? [`game-over music did not switch to game-over theme: ${musicContext(gameOverState)} / ${musicTrackName(gameOverState) || 'none'}`] : [])
+      ),
       ...(returnMenuState.scene !== 'menu' ? ['Escape from game over did not return to menu'] : []),
       ...(returnMenuState.perf?.scene !== 'menu' ? [`return-menu perf state used unstable scene name: ${returnMenuState.perf?.scene || 'none'}`] : []),
       ...(returnMenuState.textState?.scene !== 'menu' ? [`return-menu text state used unstable scene name: ${returnMenuState.textState?.scene || 'none'}`] : []),
       ...(returnMenuState.textState?.audio?.currentMusicContext !== 'menu' ? ['return to menu did not restore menu music context'] : []),
       ...(menuState.textState?.audio?.currentMusicContext !== 'menu' ? ['menu music context was not menu'] : []),
-      ...(trackIncludes(menuState, 'Defeated') ? ['menu playlist used game-over music'] : []),
+      ...(trackHasAny(menuState, ['Defeated', 'nova_swarm_gameover']) ? ['menu playlist used game-over music'] : []),
       ...(!isGameplayMusic(gameplayState) ? [`gameplay music used reserved/non-gameplay track: ${musicTrackName(gameplayState) || 'none'}`] : []),
       ...(gameplayState.fatalOverlay ? ['fatal overlay visible'] : []),
       ...(!powerupHudState.ok ? [`powerup HUD did not become visible: ${powerupHudState.reason || 'unknown'}`] : []),
@@ -871,7 +896,7 @@ async function runSmoke() {
       ...((powerupHudState.group?.right || 0) > (powerupHudState.canvas?.width || 0) ? ['powerup HUD overflowed right edge'] : []),
       ...((powerupHudState.location && powerupHudState.group?.y < powerupHudState.location.bottom + 3) ? ['powerup HUD overlapped sector/location label'] : []),
       ...visibleEnemyHealthIssues(gameplayState, 'desktop gameplay'),
-      ...visibleEnemyHealthIssues(loreFlybyState, 'lore flyby'),
+      ...visibleEnemyHealthIssues(storyTransmissionState, 'story transmission'),
       ...(mobileGameplayState.fatalOverlay ? ['mobile fatal overlay visible'] : []),
       ...(mobileGameplayState.textState?.scene !== 'play' ? ['mobile autostart did not reach play scene'] : []),
       ...(!mobileGameplayState.textState?.wave ? ['mobile gameplay did not expose wave state'] : []),
@@ -890,7 +915,7 @@ async function runSmoke() {
       ...((waveTransitionState.textState?.counts?.enemies || 0) <= 0 ? ['wave transition did not spawn next wave enemies'] : []),
       ...visibleEnemyHealthIssues(waveTransitionState, 'wave transition'),
       ...(bossVictoryState.fatalOverlay ? ['boss victory path showed fatal overlay'] : []),
-      ...(musicContext(bossActiveState) !== 'boss' || !trackIncludes(bossActiveState, 'DeathMatch') ? [`boss music did not switch to boss theme: ${musicContext(bossActiveState)} / ${musicTrackName(bossActiveState) || 'none'}`] : []),
+      ...(!isBossMusic(bossActiveState) ? [`boss music did not switch to boss theme: ${musicContext(bossActiveState)} / ${musicTrackName(bossActiveState) || 'none'}`] : []),
       ...visibleEnemyHealthIssues(bossActiveState, 'boss active'),
       ...((bossActiveState.textState?.visibleEnemies || [])
         .filter(enemy => enemy.bossProfile)
@@ -900,7 +925,7 @@ async function runSmoke() {
             ? [`boss active visual bounds too small for ${enemy.bossProfile}: ${bounds.width || 0}x${bounds.height || 0}`]
             : [];
         })),
-      ...(musicContext(bossDefeatedState) !== 'victory' || !trackIncludes(bossDefeatedState, 'Victory Tune') ? [`boss defeat did not switch to victory stinger: ${musicContext(bossDefeatedState)} / ${musicTrackName(bossDefeatedState) || 'none'}`] : []),
+      ...(!isVictoryMusic(bossDefeatedState) ? [`boss defeat did not switch to victory stinger: ${musicContext(bossDefeatedState)} / ${musicTrackName(bossDefeatedState) || 'none'}`] : []),
       ...(activeToastCount(bossDefeatedState) > 1 ? [`boss defeat displayed overlapping active toasts: ${describeActiveToasts(bossDefeatedState)}`] : []),
       ...(bossVictoryState.level < 2 ? ['boss victory did not advance to level 2'] : []),
       ...(bossVictoryState.enemyManagerState !== 'WAVE_ACTIVE' ? ['boss victory did not return to active gameplay'] : []),

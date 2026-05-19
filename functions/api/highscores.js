@@ -9,9 +9,10 @@ const BLOCKED_PUBLIC_NAME_TERMS = [
   ['FAT', 'MAN'].join(''),
   ['MOR', 'DER'].join('')
 ];
+const PUBLIC_PILOT_NAME_MAX_LENGTH = 14;
 
 function toPublicPilotName(rawName, fallbackSeed = 0) {
-  const cleaned = String(rawName || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  const cleaned = String(rawName || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, PUBLIC_PILOT_NAME_MAX_LENGTH);
   const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
   if (!cleaned) return `PILOT${seed}`;
   if (BLOCKED_PUBLIC_NAME_TERMS.some(term => cleaned.includes(term))) return `PILOT${seed}`;

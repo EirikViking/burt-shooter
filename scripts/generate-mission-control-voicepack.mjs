@@ -132,6 +132,30 @@ const lines = [
     text: 'That score travels. Global slot secured.'
   },
   {
+    file: 'mission_control_global_close_01.mp3',
+    text: 'Global board is in reach. Keep the run clean.'
+  },
+  {
+    file: 'mission_control_top3_close_01.mp3',
+    text: 'Top three is visible. This is the run.'
+  },
+  {
+    file: 'mission_control_number_one_close_01.mp3',
+    text: 'Number one is on the scope. Bring it home.'
+  },
+  {
+    file: 'mission_control_top3_highscore_01.mp3',
+    text: 'Top three. That is not a score, that is a statement.'
+  },
+  {
+    file: 'mission_control_number_one_highscore_01.mp3',
+    text: 'Number one. The cabinet is yours.'
+  },
+  {
+    file: 'mission_control_near_miss_01.mp3',
+    text: 'Global board was close. You are right there.'
+  },
+  {
     file: 'mission_control_personal_best_01.mp3',
     text: 'New personal best. Delicious.'
   },
@@ -166,6 +190,10 @@ const lines = [
   {
     file: 'mission_control_tractor_hijack_03.mp3',
     text: 'Their beam. Your score.'
+  },
+  {
+    file: 'mission_control_credits_01.mp3',
+    text: 'Credits protocol open. Tinyfoundry Games denies responsibility for haunted cabinets, boss paperwork, and emotional damage caused by excellent dodging.'
   }
 ];
 

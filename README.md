@@ -2,7 +2,7 @@
 
 Nova Swarm is a browser arcade shooter about readable bullet patterns, cheeky enemy formations, bonus-core chaos, and high-score runs that feel fair enough to replay.
 
-**Live demo:** https://burt.tinyfoundry.app
+**Live demo:** https://novaswarm.tinyfoundry.app
 
 ## Run Locally
 

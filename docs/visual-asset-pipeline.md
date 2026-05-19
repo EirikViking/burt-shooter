@@ -36,9 +36,20 @@ Prompt summary:
 
 > Original square pixel-adjacent radio crew portrait for a retro arcade sci-fi shooter, headset and flight jacket inside a cockpit, aurora outside, coherent with the Nova Swarm comms-console art direction, no real people, no celebrities, no logos, no text.
 
+## 2026-05-19 Story Comms Transmission Art
+
+- Source sheet: `public/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-sheet-20260519.png`
+- Runtime assets: `public/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-01-20260519.webp` through `nova-swarm-story-comms-04-20260519.webp`
+- Optimization: built-in Codex imagegen output copied from `C:\Users\cromk\.codex\generated_images\019e3f5d-8da5-7583-bcf4-99a3482a04bd`; cropped into four `384x384` WebP panels at quality `92`.
+- Usage: `src/assets/assetManifest.js`, `src/text/phrasePool.js`, and `src/scenes/PlayScene.js` use these as quiet level-progress story transmissions. The old rotating/flying background portrait behavior is removed; story art appears only in small low-priority comms popups.
+
+Prompt summary:
+
+> Four-panel game UI transmission art sheet for Nova Swarm: lonely pilot and last coin, intelligent swarm spiral, pilot/drone pattern readout, and boss-gate signal flare; premium painterly sci-fi concept art, no text, no logos, no watermark.
+
 ## 2026-05-16 Menu Mission Console
 
-- Runtime assets reused: `public/art/generated/nova-swarm/nova-swarm-comms-navigator.png`, `public/art/generated/nova-swarm/nova-swarm-comms-pilot.png`
+- Runtime assets reused: current `AssetManifest.generated.crewPortraits` story/comms panels.
 - No new generated files were added in this pass because `OPENAI_API_KEY` was not present in the local environment.
 - Usage: `src/scenes/MenuScene.js` layers a non-interactive holographic radar, scan blips, and generated crew comm cards behind the menu controls while keeping the settings overlay and buttons above the decorative layer.
 
@@ -61,6 +72,31 @@ Prompt summary:
 Prompt summary:
 
 > Four-panel original sci-fi story atlas for Nova Swarm: lost arcade cabinet in space, the swarm learning formation, a small ship breaking rank, and a boss chorus around a scoreboard monolith; no text, no logos, no real people, no existing game branding. Five boss atlas prompts requested exactly ten original alien arcade shooter bosses each on flat `#00ff00`, in strict `5x2` grids, with distinct silhouettes, readable weapon ports, and no labels or copyrighted branding.
+
+## 2026-05-19 Generated Enemy Weapon Redesign
+
+- Source atlas: `public/art/generated/nova-swarm/source/nova-enemy-weapons-atlas-20260519-source.png`
+- Runtime assets: `public/art/generated/nova-swarm/weapons/nova-enemy-weapon-01-crimson-shard-20260519.png` through `nova-enemy-weapon-12-purple-boss-spear-20260519.png`
+- Review sheet: `public/art/generated/nova-swarm/weapons/nova-enemy-weapons-contact-sheet-20260519.png`
+- Optimization: built-in Codex imagegen output copied from `C:\Users\cromk\.codex\generated_images\019e3f5d-8da5-7583-bcf4-99a3482a04bd`, chroma-keyed from green, split into twelve centered transparent `192x192` PNG projectile sprites, and wired through `src/config/EnemyWeaponProfiles.js`.
+- Usage: normal enemies and bosses now use generated weapon profiles with different projectile art, hit radii, trail colors, warning rings, pulse speeds, spin, wobble, speed multipliers, and damage multipliers. `render_game_to_text().enemyWeapons` exposes active projectile profiles for verification.
+- Verification: `npm run check:enemy-weapons`, `npm run build:current`, staged all-profile runtime capture at `test-results/enemy-weapons-2026-05-19/enemy-weapon-showcase-final.png`, and full smoke at `test-results/smoke-2026-05-19T10-41-57-594Z/` passed.
+
+Prompt summary:
+
+> Twelve spectacular Nova Swarm enemy projectile sprites in a `4x3` atlas on chroma green: crimson shard, amber plasma orb, cyan rail needle, magenta crescent blade, toxic splinter seed, violet star mine, white-blue comet lance, orange molten slug, teal fork dart, pink spiral disruptor, lime saw disc, and purple boss spear; no text, no logos, readable at small gameplay sizes.
+
+## 2026-05-19 Generated Start Screen Key Art
+
+- Source: `public/art/generated/nova-swarm/menu/nova-swarm-start-screen-20260519-source.png`
+- Runtime asset: `public/art/generated/nova-swarm/menu/nova-swarm-start-screen-20260519.webp`
+- Optimization: built-in Codex imagegen output copied from `C:\Users\cromk\.codex\generated_images\019e3f5d-8da5-7583-bcf4-99a3482a04bd`, preserved as source PNG, cropped/resized to `1920x1080`, and exported as WebP quality `88`.
+- Usage: `src/assets/assetManifest.js` now maps the menu backdrop to the new full-bleed Nova Swarm launch-deck art, and `src/scenes/MenuScene.js` composes the start screen as a left-side command deck over the generated cockpit/swarm scene.
+- Verification: `npm run build:current`, `npm run smoke`, and dedicated desktop/mobile screenshot review passed with final captures in `test-results/smoke-2026-05-19T10-08-31-390Z/01-menu.png` and `test-results/menu-mobile-2026-05-19/mobile-menu-final.png`.
+
+Prompt summary:
+
+> Full-screen 16:9 Nova Swarm arcade space-shooter key art: neon cockpit command deck, heroic player ship launching toward a vast alien swarm and boss silhouettes around a nova rift, clean negative space for rendered title/menu UI, cyan/magenta/amber accents, no text, no logo, no watermark.
 
 ## 2026-05-18 Generated Ship And Enemy Rosters
 
@@ -101,6 +137,18 @@ Prompt summary:
 Prompt summary:
 
 > Premium Nova Swarm arcade powerup icon atlas with distinct collectible icons for triple beam, vector boost, rapid cabinet, overdrive core, slow time, ghost phase, extra life, shield, rapid fire, double shot, damage up, speed up, pierce shot, score x2, magnet field, side drones, shockwave, chain lightning, orbital strike, vampire drain, plus supplemental bomb, point-defense, and bonus-core icons; flat chroma-key backgrounds, no text, no logos, no old UFO/saucer art, readable at small gameplay sizes.
+
+## 2026-05-19 Generated Credits Artwork
+
+- Source: `public/art/generated/nova-swarm/source/nova-swarm-credits-20260519-source.png`
+- Runtime asset: `public/art/generated/nova-swarm/menu/nova-swarm-credits-20260519.png`
+- Optimization: built-in Codex imagegen output copied from `C:\Users\cromk\.codex\generated_images\019e3f5d-8da5-7583-bcf4-99a3482a04bd` and shipped as a 16:9 credits splash with runtime PIXI overlays.
+- Usage: `src/ui/SettingsOverlay.js` uses the art inside the credits modal, with Tinyfoundry Games story credits, cabinet jokes, and the new mission-control credits voice line.
+- Verification: `npm run check:menu-credits-layout` validates that the credits title, body, art, footer, and back button stay inside the modal frame.
+
+Prompt summary:
+
+> Spectacular 16:9 pixel-art-meets-painted sci-fi credits screen artwork for Nova Swarm by Tinyfoundry Games: heroic player ship, haunted arcade cabinet, tractor beams, boss dossiers, complaint forms, coins, mission-control screens, cyan/magenta/gold highlights, no readable text except abstract labels, dark area for overlay text.
 
 ## 2026-05-17 Nova Swarm Asset Path Cleanup
 

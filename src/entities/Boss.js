@@ -5,6 +5,7 @@ import { createBossVisual } from '../game/BossFactory.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { createText } from '../utils/pixiText.js';
 import { getBossProfile } from '../config/BossRoster.js';
+import { getBossSignatureWeaponProfile, getBossWeaponProfile, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
 
 const ENABLE_BOSS_WEAPON_FX = true;
 const HARD_SCALE_FACTOR = 0.3;
@@ -84,6 +85,9 @@ export class Boss {
     this.spawnedAtMs = Date.now();
     this.regularAttackReadyAt = this.spawnedAtMs + (level <= 1 ? 1800 : 1400);
     this.invulnerableUntilMs = this.spawnedAtMs + 800;
+    this.visualBaseScale = { x: 1, y: 1 };
+    this.animationRig = null;
+    this.animationDebug = null;
 
     // Boss names
     const bossNames = [
@@ -131,6 +135,7 @@ export class Boss {
     const baseScaleX = this.visualContainer.scale?.x || 1;
     const baseScaleY = this.visualContainer.scale?.y || 1;
     this.visualContainer.scale.set(baseScaleX * HARD_SCALE_FACTOR, baseScaleY * HARD_SCALE_FACTOR);
+    this.visualBaseScale = { x: this.visualContainer.scale.x, y: this.visualContainer.scale.y };
     console.log(`[BossScale] type=${this.bossType || 'UNKNOWN'} level=${this.level} finalScale=${this.visualContainer.scale.x.toFixed(3)}`);
 
     const postScaleBounds = this.hitboxRef?.getBounds ? this.hitboxRef.getBounds() : { width: 0, height: 0 };
@@ -153,6 +158,8 @@ export class Boss {
       this.radius = Math.max(bounds.width, bounds.height) / 2;
       console.log(`[Boss] ${this.bossType} hitbox radius computed: ${this.radius.toFixed(1)}`);
     }
+
+    this.createBossAnimationRig();
 
     // Health bar overlay
     this.healthBar = new PIXI.Graphics();
@@ -263,6 +270,7 @@ export class Boss {
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+    this.updateBossAnimation(delta, playerX, playerY);
 
     if (this.signatureCooldown > 0) {
       this.signatureCooldown -= delta;
@@ -306,6 +314,11 @@ export class Boss {
       swayFreq: 0.72,
       bobAmpY: 0.018,
       bobFreq: 1.05,
+      secondaryAmpX: 0.04,
+      secondaryFreq: 1.6,
+      plungeAmpY: 0.04,
+      stalkStrength: 0.16,
+      stepCount: 5,
       rotateMode: 'slow',
       rotateSpeed: 0.3,
       aimStrength: 0.6
@@ -313,19 +326,34 @@ export class Boss {
 
     const profile = this.profile?.movement;
     if (profile === 'orchestrate') {
-      return { ...base, profile: 'sway', swayAmpX: 0.19, swayFreq: 0.52, bobAmpY: 0.014, rotateMode: 'slow', rotateSpeed: 0.16 };
+      return { ...base, profile: 'conductor_baton', swayAmpX: 0.19, swayFreq: 0.46, bobAmpY: 0.016, bobFreq: 1.22, secondaryAmpX: 0.075, secondaryFreq: 1.85, rotateMode: 'slow', rotateSpeed: 0.14 };
     }
-    if (profile === 'hammer' || profile === 'crush') {
-      return { ...base, profile: 'charge_tease', swayAmpX: 0.1, bobAmpY: 0.035, rotateMode: 'aimToPlayer', rotateSpeed: 2.1, aimStrength: 0.55 };
+    if (profile === 'hammer') {
+      return { ...base, profile: 'forge_hammer', swayAmpX: 0.085, swayFreq: 0.62, bobAmpY: 0.018, plungeAmpY: 0.095, rotateMode: 'aimToPlayer', rotateSpeed: 2.0, aimStrength: 0.55 };
     }
-    if (profile === 'phase' || profile === 'orbit') {
-      return { ...base, profile: 'orbit', swayAmpX: 0.16, swayFreq: 0.86, bobAmpY: 0.03, rotateMode: 'slow', rotateSpeed: 0.28 };
+    if (profile === 'phase') {
+      return { ...base, profile: 'mirror_phase', swayAmpX: 0.24, swayFreq: 0.38, bobAmpY: 0.018, bobFreq: 1.6, stepCount: 4, rotateMode: 'slow', rotateSpeed: 0.34 };
     }
-    if (profile === 'stalk' || profile === 'juke' || profile === 'tick') {
-      return { ...base, profile: 'zigzag', swayAmpX: 0.21, swayFreq: profile === 'tick' ? 1.5 : 1.12, bobAmpY: 0.022, rotateMode: 'aimToPlayer', rotateSpeed: 2.7, aimStrength: 0.7 };
+    if (profile === 'stalk') {
+      return { ...base, profile: 'needle_stalk', swayAmpX: 0.09, swayFreq: 1.05, bobAmpY: 0.014, bobFreq: 1.3, stalkStrength: 0.52, rotateMode: 'aimToPlayer', rotateSpeed: 3.0, aimStrength: 0.82 };
+    }
+    if (profile === 'orbit') {
+      return { ...base, profile: 'vortex_orbit', swayAmpX: 0.2, swayFreq: 0.72, bobAmpY: 0.05, bobFreq: 1.15, secondaryAmpX: 0.06, secondaryFreq: 2.2, rotateMode: 'slow', rotateSpeed: 0.34 };
+    }
+    if (profile === 'juke') {
+      return { ...base, profile: 'jester_juke', swayAmpX: 0.24, swayFreq: 1.28, bobAmpY: 0.025, bobFreq: 1.8, secondaryAmpX: 0.09, secondaryFreq: 3.1, rotateMode: 'aimToPlayer', rotateSpeed: 3.2, aimStrength: 0.72 };
     }
     if (profile === 'carrier') {
-      return { ...base, profile: 'carrier', swayAmpX: 0.12, swayFreq: 0.46, bobAmpY: 0.018, rotateMode: 'slow', rotateSpeed: 0.12 };
+      return { ...base, profile: 'carrier_drift', swayAmpX: 0.115, swayFreq: 0.34, bobAmpY: 0.013, bobFreq: 0.62, secondaryAmpX: 0.035, secondaryFreq: 1.1, rotateMode: 'slow', rotateSpeed: 0.1 };
+    }
+    if (profile === 'crush') {
+      return { ...base, profile: 'monolith_crush', swayAmpX: 0.07, swayFreq: 0.5, bobAmpY: 0.012, plungeAmpY: 0.11, stepCount: 3, rotateMode: 'aimToPlayer', rotateSpeed: 1.55, aimStrength: 0.45 };
+    }
+    if (profile === 'sway') {
+      return { ...base, profile: 'choir_wave', swayAmpX: 0.18, swayFreq: 0.78, bobAmpY: 0.034, bobFreq: 1.42, secondaryAmpX: 0.08, secondaryFreq: 2.55, rotateMode: 'slow', rotateSpeed: 0.22 };
+    }
+    if (profile === 'tick') {
+      return { ...base, profile: 'clock_step', swayAmpX: 0.22, swayFreq: 0.88, bobAmpY: 0.02, bobFreq: 1.0, stepCount: 6, rotateMode: 'aimToPlayer', rotateSpeed: 2.6, aimStrength: 0.66 };
     }
 
     if (!bossType) return base;
@@ -351,6 +379,283 @@ export class Boss {
     return 0;
   }
 
+  createBossAnimationRig() {
+    if (!this.sprite) return;
+    if (this.animationRig?.root?.parent) {
+      this.animationRig.root.parent.removeChild(this.animationRig.root);
+    }
+
+    const radius = Math.max(58, Math.min(150, this.radius || 80));
+    const palette = this.profile?.palette || this.color || 0xff55d9;
+    const accent = this.profile?.accent || 0x37f5ff;
+    const root = new PIXI.Container();
+    root.sortableChildren = true;
+    root.zIndex = 2;
+
+    const backLayer = new PIXI.Graphics();
+    backLayer.zIndex = -2;
+    const engineLayer = new PIXI.Graphics();
+    engineLayer.zIndex = -1;
+    const frontLayer = new PIXI.Graphics();
+    frontLayer.zIndex = 3;
+    const scanLayer = new PIXI.Graphics();
+    scanLayer.zIndex = 4;
+
+    const leftFin = this.createBossFin(-1, radius, palette, accent);
+    const rightFin = this.createBossFin(1, radius, palette, accent);
+    leftFin.zIndex = 1;
+    rightFin.zIndex = 1;
+
+    const leftMandible = this.createBossMandible(-1, radius, palette, accent);
+    const rightMandible = this.createBossMandible(1, radius, palette, accent);
+    leftMandible.zIndex = 3;
+    rightMandible.zIndex = 3;
+
+    const weaponNodes = [];
+    const nodeCount = this.profile?.archetype === 'carrier' ? 6 : this.profile?.archetype === 'needle' ? 3 : 4;
+    for (let i = 0; i < nodeCount; i += 1) {
+      const node = new PIXI.Graphics();
+      node.circle(0, 0, Math.max(5, radius * 0.055));
+      node.fill({ color: accent, alpha: 0.72 });
+      node.circle(0, 0, Math.max(8, radius * 0.085));
+      node.stroke({ color: palette, width: 2, alpha: 0.58 });
+      node.zIndex = 4;
+      root.addChild(node);
+      weaponNodes.push(node);
+    }
+
+    root.addChild(backLayer);
+    root.addChild(engineLayer);
+    root.addChild(leftFin);
+    root.addChild(rightFin);
+    root.addChild(leftMandible);
+    root.addChild(rightMandible);
+    root.addChild(frontLayer);
+    root.addChild(scanLayer);
+    this.sprite.addChild(root);
+
+    this.animationRig = {
+      root,
+      backLayer,
+      engineLayer,
+      frontLayer,
+      scanLayer,
+      leftFin,
+      rightFin,
+      leftMandible,
+      rightMandible,
+      weaponNodes,
+      radius,
+      palette,
+      accent
+    };
+  }
+
+  createBossFin(side, radius, palette, accent) {
+    const fin = new PIXI.Graphics();
+    const width = radius * 0.42;
+    const height = radius * 0.72;
+    fin.poly([
+      0, -height * 0.58,
+      side * width, -height * 0.18,
+      side * width * 0.76, height * 0.54,
+      0, height * 0.24
+    ]);
+    fin.fill({ color: palette, alpha: 0.2 });
+    fin.poly([
+      0, -height * 0.58,
+      side * width, -height * 0.18,
+      side * width * 0.76, height * 0.54,
+      0, height * 0.24
+    ]);
+    fin.stroke({ color: accent, width: 3, alpha: 0.62 });
+    fin.x = side * radius * 0.78;
+    fin.y = radius * 0.08;
+    return fin;
+  }
+
+  createBossMandible(side, radius, palette, accent) {
+    const mandible = new PIXI.Graphics();
+    const length = radius * 0.56;
+    const width = radius * 0.13;
+    mandible.roundRect(-width / 2, 0, width, length, Math.max(4, width * 0.45));
+    mandible.fill({ color: palette, alpha: 0.22 });
+    mandible.roundRect(-width / 2, 0, width, length, Math.max(4, width * 0.45));
+    mandible.stroke({ color: accent, width: 2, alpha: 0.72 });
+    mandible.x = side * radius * 0.28;
+    mandible.y = radius * 0.22;
+    mandible.rotation = side * 0.18;
+    return mandible;
+  }
+
+  updateBossAnimation(delta, playerX, playerY) {
+    if (!this.animationRig || !this.visualContainer) return;
+    const rig = this.animationRig;
+    const t = this.moveTimer * 0.045;
+    const phaseBoost = 1 + (this.phase - 1) * 0.2;
+    const telegraphProgress = this.telegraph
+      ? clamp((Date.now() - this.telegraph.start) / this.telegraph.duration, 0, 1)
+      : this.regularTelegraph
+        ? clamp((Date.now() - this.regularTelegraph.start) / this.regularTelegraph.duration, 0, 1) * 0.65
+        : 0;
+    const rage = 1 - clamp(this.health / Math.max(1, this.maxHealth), 0, 1);
+    const intensity = 1 + telegraphProgress * 0.45 + rage * 0.24 + (this.phase - 1) * 0.08;
+    const radius = rig.radius;
+    const palette = rig.palette;
+    const accent = rig.accent;
+    const archetype = this.profile?.archetype || 'boss';
+
+    const bodyPulse = 1 + Math.sin(t * (archetype === 'clock' ? 2.2 : 1.05)) * 0.026 * intensity;
+    const bodyStretch = Math.cos(t * 0.9) * 0.018 * intensity;
+    this.visualContainer.scale.set(
+      this.visualBaseScale.x * (bodyPulse + bodyStretch),
+      this.visualBaseScale.y * (bodyPulse - bodyStretch * 0.5)
+    );
+    this.visualContainer.skew.x = Math.sin(t * 0.7 + this.phase) * 0.018 * intensity;
+    this.visualContainer.skew.y = Math.cos(t * 0.55) * 0.012 * intensity;
+
+    const finFlap = Math.sin(t * (archetype === 'jester' ? 2.8 : 1.45) + telegraphProgress * Math.PI) * 0.24 * intensity;
+    rig.leftFin.rotation = -0.26 + finFlap;
+    rig.rightFin.rotation = 0.26 - finFlap;
+    rig.leftFin.scale.set(1 + Math.max(0, Math.sin(t * 1.3)) * 0.07 * intensity, 1);
+    rig.rightFin.scale.set(1 + Math.max(0, Math.cos(t * 1.3)) * 0.07 * intensity, 1);
+
+    const bite = 0.12 + telegraphProgress * 0.42 + (archetype === 'needle' ? 0.16 : 0);
+    rig.leftMandible.rotation = -0.16 - Math.sin(t * 1.9) * bite;
+    rig.rightMandible.rotation = 0.16 + Math.sin(t * 1.9) * bite;
+    rig.leftMandible.y = radius * (0.22 + Math.max(0, Math.sin(t * 1.4)) * 0.06 * intensity);
+    rig.rightMandible.y = radius * (0.22 + Math.max(0, Math.cos(t * 1.4)) * 0.06 * intensity);
+
+    rig.engineLayer.clear();
+    const exhaust = (0.54 + Math.max(0, Math.sin(t * 2.4)) * 0.34 + telegraphProgress * 0.34) * intensity;
+    for (let i = -1; i <= 1; i += 1) {
+      const x = i * radius * 0.18;
+      const len = radius * (0.34 + exhaust * 0.28 + (i === 0 ? 0.08 : 0));
+      rig.engineLayer.moveTo(x, radius * 0.36);
+      rig.engineLayer.lineTo(x + Math.sin(t * 2 + i) * radius * 0.05, radius * 0.36 + len);
+      rig.engineLayer.stroke({ color: i === 0 ? 0xffffff : accent, width: i === 0 ? 5 : 3, alpha: i === 0 ? 0.32 : 0.54 });
+      rig.engineLayer.circle(x, radius * 0.4 + len * 0.82, radius * 0.035 + exhaust * 3);
+      rig.engineLayer.fill({ color: palette, alpha: 0.13 + exhaust * 0.08 });
+    }
+
+    rig.backLayer.clear();
+    const ringCount = archetype === 'vortex' || archetype === 'clock' ? 3 : 2;
+    for (let i = 0; i < ringCount; i += 1) {
+      const ringRadius = radius * (0.76 + i * 0.22 + Math.sin(t + i) * 0.025 + telegraphProgress * 0.08);
+      rig.backLayer.circle(0, 0, ringRadius);
+      rig.backLayer.stroke({
+        color: i % 2 ? palette : accent,
+        width: i === 0 ? 4 : 2,
+        alpha: (0.2 + telegraphProgress * 0.2) / (i + 1)
+      });
+    }
+
+    rig.frontLayer.clear();
+    const coreRadius = radius * (0.13 + Math.max(0, Math.sin(t * 1.6)) * 0.035 + telegraphProgress * 0.06);
+    rig.frontLayer.circle(0, 0, coreRadius);
+    rig.frontLayer.fill({ color: accent, alpha: 0.24 + telegraphProgress * 0.24 });
+    rig.frontLayer.circle(0, 0, coreRadius * 1.9);
+    rig.frontLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.24 + telegraphProgress * 0.32 });
+    this.drawArchetypeBossAnimation(rig, archetype, t, intensity, telegraphProgress, playerX, playerY);
+
+    rig.weaponNodes.forEach((node, index) => {
+      const nodePhase = t * (archetype === 'clock' ? 0.82 : 0.62) + index * ((Math.PI * 2) / rig.weaponNodes.length);
+      const orbitRadius = radius * (0.62 + Math.sin(t * 0.9 + index) * 0.045 + telegraphProgress * 0.18);
+      node.x = Math.cos(nodePhase) * orbitRadius;
+      node.y = Math.sin(nodePhase) * orbitRadius * (archetype === 'carrier' ? 0.48 : 0.62);
+      node.scale.set((0.86 + Math.sin(t * 1.8 + index) * 0.12 + telegraphProgress * 0.24) * phaseBoost);
+      node.alpha = 0.58 + Math.sin(t * 1.3 + index) * 0.16 + telegraphProgress * 0.2;
+      if (archetype === 'needle' && index === 1) {
+        node.y -= radius * (0.18 + telegraphProgress * 0.18);
+      }
+    });
+
+    rig.scanLayer.clear();
+    const scanY = -radius * 0.62 + ((t * 34) % (radius * 1.24));
+    rig.scanLayer.moveTo(-radius * 0.68, scanY);
+    rig.scanLayer.lineTo(radius * 0.68, scanY + Math.sin(t) * radius * 0.05);
+    rig.scanLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.18 + telegraphProgress * 0.18 });
+
+    this.animationDebug = {
+      archetype,
+      bodyPulse: Number(bodyPulse.toFixed(3)),
+      finFlap: Number(finFlap.toFixed(3)),
+      exhaust: Number(exhaust.toFixed(3)),
+      coreRadius: Math.round(coreRadius),
+      nodeCount: rig.weaponNodes.length,
+      telegraph: Number(telegraphProgress.toFixed(3)),
+      phase: this.phase
+    };
+  }
+
+  drawArchetypeBossAnimation(rig, archetype, t, intensity, telegraphProgress, playerX, playerY) {
+    const radius = rig.radius;
+    const palette = rig.palette;
+    const accent = rig.accent;
+    const layer = rig.frontLayer;
+
+    if (archetype === 'conductor' || archetype === 'choir') {
+      const baton = Math.sin(t * 1.5) * 0.55;
+      layer.moveTo(Math.cos(baton) * -radius * 0.62, -radius * 0.2);
+      layer.lineTo(Math.cos(baton) * radius * 0.72, radius * (0.18 + telegraphProgress * 0.16));
+      layer.stroke({ color: accent, width: 4, alpha: 0.48 + telegraphProgress * 0.28 });
+    } else if (archetype === 'forge' || archetype === 'monolith') {
+      const slam = Math.pow(Math.max(0, Math.sin(t * 1.1)), 5) * radius * 0.22;
+      for (const side of [-1, 1]) {
+        layer.roundRect(side * radius * 0.34 - 5, -radius * 0.52 + slam, 10, radius * 0.72, 5);
+        layer.fill({ color: palette, alpha: 0.2 + telegraphProgress * 0.18 });
+        layer.roundRect(side * radius * 0.34 - 5, -radius * 0.52 + slam, 10, radius * 0.72, 5);
+        layer.stroke({ color: accent, width: 2, alpha: 0.55 });
+      }
+    } else if (archetype === 'mirror') {
+      const flicker = 0.16 + Math.max(0, Math.sin(t * 2.6)) * 0.2 + telegraphProgress * 0.2;
+      for (const side of [-1, 1]) {
+        const x = side < 0 ? -radius * 0.74 : radius * 0.42;
+        layer.roundRect(x, -radius * 0.36, radius * 0.32, radius * 0.72, 10);
+        layer.stroke({ color: side < 0 ? accent : palette, width: 3, alpha: flicker });
+      }
+    } else if (archetype === 'needle') {
+      const aim = Math.atan2(playerY - this.y, playerX - this.x) - this.visualContainer.rotation;
+      const len = radius * (0.68 + telegraphProgress * 0.45);
+      layer.moveTo(Math.cos(aim) * radius * 0.1, Math.sin(aim) * radius * 0.1);
+      layer.lineTo(Math.cos(aim) * len, Math.sin(aim) * len);
+      layer.stroke({ color: 0xffffff, width: 5, alpha: 0.24 + telegraphProgress * 0.34 });
+      layer.moveTo(Math.cos(aim) * radius * 0.1, Math.sin(aim) * radius * 0.1);
+      layer.lineTo(Math.cos(aim) * len, Math.sin(aim) * len);
+      layer.stroke({ color: accent, width: 2, alpha: 0.62 + telegraphProgress * 0.22 });
+    } else if (archetype === 'vortex') {
+      for (let i = 0; i < 6; i += 1) {
+        const a = t * 1.2 + i * Math.PI / 3;
+        layer.moveTo(Math.cos(a) * radius * 0.18, Math.sin(a) * radius * 0.18);
+        layer.lineTo(Math.cos(a + 0.4) * radius * 0.72, Math.sin(a + 0.4) * radius * 0.48);
+      }
+      layer.stroke({ color: accent, width: 2, alpha: 0.38 + telegraphProgress * 0.18 });
+    } else if (archetype === 'jester') {
+      for (let i = 0; i < 3; i += 1) {
+        const x = (i - 1) * radius * 0.24 + Math.sin(t * 3 + i) * radius * 0.04;
+        layer.circle(x, -radius * 0.22 + Math.cos(t * 2 + i) * radius * 0.08, radius * 0.045);
+        layer.fill({ color: i % 2 ? palette : accent, alpha: 0.32 + telegraphProgress * 0.22 });
+      }
+    } else if (archetype === 'carrier') {
+      for (const side of [-1, 1]) {
+        const door = (0.1 + Math.max(0, Math.sin(t * 1.15)) * 0.14 + telegraphProgress * 0.18) * side;
+        layer.roundRect(side * radius * 0.18 + door * radius, radius * 0.03, radius * 0.18, radius * 0.32, 8);
+        layer.stroke({ color: accent, width: 2, alpha: 0.44 + telegraphProgress * 0.22 });
+      }
+    } else if (archetype === 'clock') {
+      for (let i = 0; i < 8; i += 1) {
+        const a = i * Math.PI / 4 + Math.floor(t * 1.8) * 0.2;
+        layer.moveTo(Math.cos(a) * radius * 0.42, Math.sin(a) * radius * 0.42);
+        layer.lineTo(Math.cos(a) * radius * 0.58, Math.sin(a) * radius * 0.58);
+      }
+      layer.stroke({ color: accent, width: 3, alpha: 0.48 + telegraphProgress * 0.2 });
+    }
+  }
+
+  getAnimationDebugState() {
+    return this.animationDebug || null;
+  }
+
   applyBossMovement(delta, playerX, playerY) {
     const profile = this.moveProfile || this.getMoveProfile(this.bossType);
     const t = this.moveTimer * 0.02;
@@ -365,32 +670,80 @@ export class Boss {
     const laneY = clamp(this.bossLaneY + this.phaseLaneYOffset, gameHeight * 0.18, gameHeight * 0.36);
 
     switch (profile.profile) {
-      case 'orbit':
+      case 'vortex_orbit':
         this.x = anchorX + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp;
-        this.y = laneY + Math.cos(t * profile.bobFreq * phaseIntensity) * bobAmp;
+        this.y = laneY + Math.cos(t * profile.bobFreq * phaseIntensity) * bobAmp + Math.sin(t * profile.secondaryFreq) * (gameHeight * 0.012);
         break;
-      case 'charge_tease': {
-        const push = Math.abs(Math.sin(t * (0.5 + this.phase * 0.05))) * (gameHeight * 0.04);
+      case 'forge_hammer': {
+        const windup = Math.max(0, Math.sin(t * (0.72 + this.phase * 0.06)));
+        const push = Math.pow(windup, 5) * (gameHeight * profile.plungeAmpY);
         this.x = anchorX + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp;
         this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp + push;
         break;
       }
-      case 'zigzag': {
-        const zig = Math.sin(t * profile.swayFreq * phaseIntensity);
-        this.x = anchorX + zig * swayAmp;
+      case 'mirror_phase': {
+        const raw = Math.sin(t * profile.swayFreq * phaseIntensity);
+        const phaseStep = Math.round(raw * profile.stepCount) / profile.stepCount;
+        const shimmer = Math.sin(t * profile.secondaryFreq + this.level) * (swayAmp * 0.08);
+        this.x = anchorX + phaseStep * swayAmp + shimmer;
         this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp;
         break;
       }
-      case 'carrier':
-        this.x = anchorX + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp + Math.sin(t * 1.7) * (swayAmp * 0.22);
+      case 'needle_stalk': {
+        const playerBias = clamp((playerX - anchorX) * profile.stalkStrength, -swayAmp * 0.85, swayAmp * 0.85);
+        const scan = Math.sin(t * profile.swayFreq * phaseIntensity) * (swayAmp * 0.42);
+        this.x = anchorX + playerBias + scan;
         this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp;
         break;
-      case 'sway':
+      }
+      case 'jester_juke': {
+        const fast = Math.sin(t * profile.swayFreq * phaseIntensity);
+        const snap = Math.sign(Math.sin(t * 0.42)) * 0.18;
+        const twitch = Math.sin(t * profile.secondaryFreq) * (swayAmp * profile.secondaryAmpX / Math.max(0.01, profile.swayAmpX));
+        this.x = anchorX + (fast + snap) * swayAmp + twitch;
+        this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp + Math.sin(t * 3.7) * (gameHeight * 0.008);
+        break;
+      }
+      case 'carrier_drift':
+        this.x = anchorX + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp + Math.sin(t * profile.secondaryFreq) * (swayAmp * 0.28);
+        this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp;
+        break;
+      case 'monolith_crush': {
+        const lane = Math.round(Math.sin(t * profile.swayFreq) * profile.stepCount) / profile.stepCount;
+        const slam = Math.pow(Math.max(0, Math.sin(t * (0.55 + this.phase * 0.04))), 7) * (gameHeight * profile.plungeAmpY);
+        this.x = anchorX + lane * swayAmp;
+        this.y = laneY + slam + Math.sin(t * profile.bobFreq) * bobAmp;
+        break;
+      }
+      case 'choir_wave':
+        this.x = anchorX
+          + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp
+          + Math.sin(t * profile.secondaryFreq + Math.PI / 3) * (gameWidth * profile.secondaryAmpX);
+        this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp;
+        break;
+      case 'clock_step': {
+        const segment = Math.floor((t * (0.92 + this.phase * 0.08)) % profile.stepCount);
+        const normalized = profile.stepCount <= 1 ? 0 : (segment / (profile.stepCount - 1)) * 2 - 1;
+        const tickEase = Math.pow(Math.abs(Math.sin(t * Math.PI * 0.92)), 0.35);
+        const tickY = (segment % 2 === 0 ? -1 : 1) * bobAmp * 0.7;
+        this.x = anchorX + normalized * swayAmp * tickEase;
+        this.y = laneY + tickY + Math.sin(t * profile.bobFreq) * (bobAmp * 0.35);
+        break;
+      }
+      case 'conductor_baton':
+        this.x = anchorX
+          + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp
+          + Math.sin(t * profile.secondaryFreq) * (gameWidth * profile.secondaryAmpX);
+        this.y = laneY + Math.cos(t * profile.bobFreq * phaseIntensity) * bobAmp;
+        break;
       default:
         this.x = anchorX + Math.sin(t * profile.swayFreq * phaseIntensity) * swayAmp;
         this.y = laneY + Math.sin(t * profile.bobFreq * phaseIntensity) * bobAmp;
         break;
     }
+
+    this.x = clamp(this.x, gameWidth * 0.12, gameWidth * 0.88);
+    this.y = clamp(this.y, gameHeight * 0.13, gameHeight * 0.43);
 
     const deltaSeconds = delta / 60;
     if (profile.rotateMode === 'slow') {
@@ -759,10 +1112,15 @@ export class Boss {
         playScene?.enemyManager?.spawnBossAdds(4);
       }
     }
+    this.game?.scenes?.play?.registerBossHazardFromBoss?.(this, 'signature', { type, playerX, playerY });
   }
 
   fireCone(playerX, playerY, shots = 7, spread = 0.6) {
     const bullets = [];
+    const visualConfig = toBulletVisualConfig(getBossSignatureWeaponProfile(this.telegraph?.type || 'cone'), {
+      sourceEnemyType: 'boss',
+      sourceFireStyle: this.telegraph?.type || 'cone'
+    });
     for (let i = 0; i < shots; i++) {
       const t = (i / (shots - 1)) - 0.5;
       const angle = Math.atan2(playerY - this.y, playerX - this.x) + t * spread;
@@ -771,13 +1129,17 @@ export class Boss {
         this.getBossPressureScalar();
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, this.color));
+      bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig));
     }
     bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
   }
 
   fireRingBurst(count = 16, gapSize = 2) {
     const bullets = [];
+    const visualConfig = toBulletVisualConfig(getBossSignatureWeaponProfile(this.telegraph?.type || 'ring'), {
+      sourceEnemyType: 'boss',
+      sourceFireStyle: this.telegraph?.type || 'ring'
+    });
     const safeAngle = this.getRingSafeAngle(count);
     const safeWedge = this.level <= 1 ? 0.46 : 0.4;
     this.setRingSafeLane(count, safeWedge);
@@ -790,7 +1152,7 @@ export class Boss {
         this.getBossPressureScalar();
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, this.color));
+      bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig));
     }
     bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
   }
@@ -810,6 +1172,10 @@ export class Boss {
   }
 
   shoot(playerX, playerY) {
+    const attack = this.profile?.attack || 'aimed';
+    const regularTelegraph = this.regularTelegraph
+      ? { type: this.regularTelegraph.type, attack: this.regularTelegraph.attack }
+      : null;
     this.shootCooldown = this.shootDelay;
     this.regularAttackReadyAt = Date.now() + this.getRegularAttackIntervalMs();
     this.regularTelegraph = null;
@@ -818,16 +1184,23 @@ export class Boss {
 
     // Boss FX
     const killSwitch = typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_weapon_fx") === "1";
-    const vConfig = (ENABLE_BOSS_WEAPON_FX && !killSwitch) ? { color: 'Red', index: 5 } : null;
-    const attack = this.profile?.attack || 'aimed';
+    const weaponProfile = getBossWeaponProfile(attack, this.phase);
+    const vConfig = (ENABLE_BOSS_WEAPON_FX && !killSwitch)
+      ? toBulletVisualConfig(weaponProfile, {
+        sourceEnemyType: 'boss',
+        sourceFireStyle: attack,
+        spriteScale: (weaponProfile?.spriteScale || 0.5) * (this.phase >= 3 ? 1.08 : 1)
+      })
+      : null;
     const pressure = BalanceConfig.difficulty.pressureScalar * this.getBossPressureScalar();
+    const weaponSpeedMult = weaponProfile?.speedMult || 1;
     const aimAngle = Math.atan2(playerY - this.y, playerX - this.x);
-    const addBullet = (x, y, angle, speed, color = this.color) => {
+    const addBullet = (x, y, angle, speed, color = weaponProfile?.color || this.color) => {
       bullets.push(new Bullet(
         x,
         y,
-        Math.cos(angle) * speed,
-        Math.sin(angle) * speed,
+        Math.cos(angle) * speed * weaponSpeedMult,
+        Math.sin(angle) * speed * weaponSpeedMult,
         1,
         color,
         false,
@@ -896,10 +1269,10 @@ export class Boss {
       bullets.push(new Bullet(
         this.x,
         this.y,
-        (dx / distance) * speed,
-        (dy / distance) * speed,
+        (dx / distance) * speed * weaponSpeedMult,
+        (dy / distance) * speed * weaponSpeedMult,
         1,
-        this.color,
+        weaponProfile?.color || this.color,
         false,
         vConfig
       ));
@@ -913,10 +1286,10 @@ export class Boss {
         bullets.push(new Bullet(
           this.x,
           this.y,
-          Math.cos(angle) * speed,
-          Math.sin(angle) * speed,
+          Math.cos(angle) * speed * weaponSpeedMult,
+          Math.sin(angle) * speed * weaponSpeedMult,
           1,
-          this.color,
+          weaponProfile?.color || this.color,
           false,
           vConfig
         ));
@@ -931,15 +1304,22 @@ export class Boss {
         bullets.push(new Bullet(
           this.x,
           this.y,
-          Math.cos(angle) * speed,
-          Math.sin(angle) * speed,
+          Math.cos(angle) * speed * weaponSpeedMult,
+          Math.sin(angle) * speed * weaponSpeedMult,
           1,
-          this.color,
+          weaponProfile?.color || this.color,
           false,
           vConfig
         ));
       }
     }
+
+    this.game?.scenes?.play?.registerBossHazardFromBoss?.(this, 'regular', {
+      type: regularTelegraph?.type || attack,
+      attack,
+      playerX,
+      playerY
+    });
 
     return bullets;
   }

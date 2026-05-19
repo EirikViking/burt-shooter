@@ -1,6 +1,6 @@
 import { AssetManifest } from '../assets/assetManifest.js';
 import * as Features from '../config/Features.js';
-import { SFX_CATALOG, MUSIC_PLAYLISTS, SFX_MIX, VOICE_MIX, VOICE_EVENT_FALLBACKS } from './SoundCatalog.js';
+import { SFX_CATALOG, SFX_MIX, VOICE_MIX, VOICE_EVENT_FALLBACKS, getMusicPlaylists, normalizeMusicPack } from './SoundCatalog.js';
 import { BUILD_ID } from '../buildInfo.js';
 
 class AudioController {
@@ -9,6 +9,7 @@ class AudioController {
     this.enabled = false;
     this.musicEnabled = false;
     this.voiceEnabled = false;
+    this.musicPack = 'generated';
 
     // Volume
     this.masterVolume = 0.3;
@@ -33,6 +34,7 @@ class AudioController {
 
     // Per-context history
     this.lastTrackByContext = {
+      intro: null,
       menu: null,
       scoreboard: null,
       gameplay: null,
@@ -125,6 +127,7 @@ class AudioController {
     this.musicVolume = this.readStoredFloat('burt_volume_music', this.musicVolume);
     this.sfxVolume = this.readStoredFloat('burt_volume_sfx', this.sfxVolume);
     this.voiceVolume = this.readStoredFloat('burt_volume_voice', this.voiceVolume);
+    this.musicPack = normalizeMusicPack(localStorage.getItem('burt_music_pack') || this.musicPack);
 
     const savedMusic = localStorage.getItem('burt_music_enabled');
     if (savedMusic !== null) this.musicEnabled = savedMusic !== 'false' && Features.MUSIC_ENABLED;
@@ -199,7 +202,7 @@ class AudioController {
     const unlock = () => {
       console.log('[Audio] User gesture detected. Resuming audio context...');
       this.unlockAudio().then(() => {
-        const currentPlaylist = MUSIC_PLAYLISTS[this.currentContext] || [];
+        const currentPlaylist = getMusicPlaylists(this.musicPack)[this.currentContext] || [];
         if (pendingSrc && currentPlaylist.includes(pendingSrc)) {
           this.startTrack(pendingSrc);
         } else if (this.currentContext) {
@@ -415,7 +418,8 @@ class AudioController {
   playMusicContext(contextName, options = {}) {
     if (!this.enabled || !this.musicEnabled) return;
 
-    const newPlaylist = MUSIC_PLAYLISTS[contextName];
+    const playlists = getMusicPlaylists(this.musicPack);
+    const newPlaylist = playlists[contextName];
     if (!newPlaylist || newPlaylist.length === 0) {
       console.warn(`[Audio] Unknown or empty context: ${contextName}`);
       return;
@@ -433,8 +437,8 @@ class AudioController {
     console.log(`[Audio] Request Context: ${contextName}, Current: ${this.currentContext}, Reset: ${!!isReset}`);
 
     if (contextName === 'gameplay' && options.resetForNewRun) {
-      // FORCE RULE: New Run -> bgm_v2.mp3
-      const forcedTrack = AssetManifest.audio.music.find(p => p.includes('bgm_v2.mp3')) || '/audio/music/bgm_v2.mp3';
+      // FORCE RULE: New Run starts on the lead track for the selected music pack.
+      const forcedTrack = newPlaylist[0] || AssetManifest.audio.music.find(p => p.includes('nova_swarm_gameplay_laser_lane')) || '/audio/music/nova-swarm/nova_swarm_gameplay_laser_lane.mp3';
       this.currentContext = 'gameplay';
       // Set last track IMMEDIATELY so it won't be picked next
       this.lastTrackByContext.gameplay = forcedTrack;
@@ -691,6 +695,7 @@ class AudioController {
       musicDuckFactor: this.musicDuckFactor,
       pauseDuckFactor: this.pauseDuckFactor,
       currentMusicContext: this.currentContext,
+      musicPack: this.musicPack,
       musicPlaying: Boolean(this.musicAudio && !this.musicAudio.paused && this.musicAudio.currentTime > 0),
       musicReadyState: this.musicAudio?.readyState || 0,
       currentMusicTrack: musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
@@ -739,6 +744,20 @@ class AudioController {
       this.stopMusic();
     }
     return this.musicEnabled;
+  }
+
+  setMusicPack(pack) {
+    const nextPack = normalizeMusicPack(pack);
+    if (nextPack === this.musicPack) return this.getSettings();
+    this.musicPack = nextPack;
+    this.lastTrackByContext = Object.fromEntries(Object.keys(this.lastTrackByContext).map((context) => [context, null]));
+    try {
+      localStorage.setItem('burt_music_pack', this.musicPack);
+    } catch { }
+    if (this.musicEnabled && this.currentContext) {
+      this.playMusicContext(this.currentContext, { resetPlaylist: true });
+    }
+    return this.getSettings();
   }
 
   setVoiceEnabled(enabled) {
@@ -792,6 +811,9 @@ class AudioController {
       'mission_control_victory',
       'mission_control_local_highscore',
       'mission_control_global_highscore',
+      'mission_control_top3_highscore',
+      'mission_control_number_one_highscore',
+      'mission_control_near_miss',
       'mission_control_personal_best'
     ];
     if (celebrations.includes(eventName)) {

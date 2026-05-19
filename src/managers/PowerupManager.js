@@ -414,11 +414,11 @@ export class PowerupManager {
       // TASK B: Reset extra life flag for new level
       this.extraLifeSpawnedThisLevel = false;
 
-      // TASK B: Force spawn guaranteed extra life if needed
+      // Force spawn guaranteed extra life if needed.
       const levelsSinceLastLife = level - this.lastExtraLifeLevel;
-      if (levelsSinceLastLife >= 2) {
+      const guaranteedLifeLevels = BalanceConfig.powerups.extraLifeGuaranteedEveryLevels || 4;
+      if (levelsSinceLastLife >= guaranteedLifeLevels) {
         console.log(`[PowerupManager] FORCING guaranteed extra life for level ${level} (${levelsSinceLastLife} levels since last)`);
-        // Force spawn immediately at start of level
         this.forceExtraLifeSpawn();
       }
     }
@@ -451,8 +451,14 @@ export class PowerupManager {
 
   spawn(x, y, force = false) {
     // Drop Cap check
-    const MAX_DROPS_PER_LEVEL = 3;
+    const MAX_DROPS_PER_LEVEL = BalanceConfig.powerups.maxPerLevel || 2;
     if (!force && this.dropsThisLevel >= MAX_DROPS_PER_LEVEL) {
+      return;
+    }
+
+    const timeSinceLastMs = Date.now() - this.lastSpawnTime;
+    const cooldownMs = BalanceConfig.powerups.cooldownMs || 18000;
+    if (!force && timeSinceLastMs < cooldownMs) {
       return;
     }
 
@@ -463,12 +469,13 @@ export class PowerupManager {
     }
 
     let shouldSpawn = force;
-    let baseChance = 0.04;
+    let baseChance = BalanceConfig.powerups.dropChance ?? 0.02;
 
     // Dynamic Probability: Increase chance over time since last spawn
-    const timeSinceLast = (Date.now() - this.lastSpawnTime) / 1000; // Seconds
-    const dynamicChance = baseChance + (timeSinceLast * 0.005); // +0.5% per second
-    const cappedChance = Math.min(0.25, dynamicChance); // Cap at 25%
+    const timeSinceLast = timeSinceLastMs / 1000;
+    const growthPerSecond = BalanceConfig.powerups.chanceGrowthPerSecond ?? 0.002;
+    const dynamicChance = baseChance + (timeSinceLast * growthPerSecond);
+    const cappedChance = Math.min(BalanceConfig.powerups.maxDropChance ?? 0.12, dynamicChance);
 
     if (!shouldSpawn) {
       shouldSpawn = Math.random() < cappedChance;
@@ -487,17 +494,18 @@ export class PowerupManager {
     // Check if player has shield active
     const shieldActive = player && player.shieldActive;
 
-    // TASK 2: Guaranteed extra life spawn if >= 2 levels without one
+    // Guaranteed extra life is intentionally rare; normal random life odds are half the old rate.
     const levelsSinceLastLife = this.currentLevel - this.lastExtraLifeLevel;
-    const needsGuaranteedLife = levelsSinceLastLife >= 2 && !this.extraLifeSpawnedThisLevel;
+    const guaranteedLifeLevels = BalanceConfig.powerups.extraLifeGuaranteedEveryLevels || 4;
+    const needsGuaranteedLife = levelsSinceLastLife >= guaranteedLifeLevels && !this.extraLifeSpawnedThisLevel;
 
     if (needsGuaranteedLife) {
       type = 'life';
       console.log(`[PowerupManager] GUARANTEED extra life spawned (${levelsSinceLastLife} levels since last)`);
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;
-    } else if (rand < 0.02) {
-      type = 'life'; // 2% Very Rare
+    } else if (rand < (BalanceConfig.powerups.extraLifeChance ?? 0.01)) {
+      type = 'life';
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;
     } else if (rand < 0.15 && !shieldActive) {

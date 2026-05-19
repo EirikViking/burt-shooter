@@ -118,6 +118,16 @@ try {
   const screenshot = path.join(outputDir, 'gameover-motivation.png');
   await page.screenshot({ path: screenshot, fullPage: true });
   const gameOverState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => window.__game?.scenes?.gameOver?.state === 'input', null, { timeout: 5000 });
+  await page.keyboard.type('ABCDEFGHIJKLMNO');
+  const nameInputState = await page.evaluate(() => ({
+    state: window.__game?.scenes?.gameOver?.state || null,
+    nameInput: window.__game?.scenes?.gameOver?.nameInput || '',
+    hiddenMaxLength: window.__game?.scenes?.gameOver?.hiddenInput?.maxLength || null
+  }));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => window.__game?.scenes?.gameOver?.state === 'prompt', null, { timeout: 5000 });
 
   await page.evaluate(() => {
     window.__burtGamepadOverride = {
@@ -130,11 +140,38 @@ try {
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play', null, { timeout: 5000 });
   const restartedState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
 
+  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
+  await page.evaluate(() => {
+    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 6, bestLevel: 12 }));
+    const game = window.__game;
+    if (!game) return;
+    game.score = 4874;
+    game.level = 2;
+    game.rankIndex = 0;
+    game.lives = 0;
+    game.gameOver();
+  });
+  await page.waitForFunction(() => {
+    try {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'gameOver' && state.gameOver?.unlockSummary;
+    } catch {
+      return false;
+    }
+  }, null, { timeout: 10000 });
+  const alreadyUnlockedState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const alreadyUnlockedSummary = alreadyUnlockedState.gameOver?.unlockSummary || '';
+
   const report = {
     ok: Boolean(
       gameOverState.scene === 'gameOver' &&
       /NEW SHIP UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
+      !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
+      !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
       /GAMEPAD A/i.test(gameOverState.gameOver?.prompt || '') &&
+      nameInputState.nameInput === 'ABCDEFGHIJKLMN' &&
+      nameInputState.hiddenMaxLength === 14 &&
       restartedState.scene === 'play' &&
       restartedState.score === 0 &&
       pageErrors.length === 0 &&
@@ -148,6 +185,8 @@ try {
       level: restartedState.level,
       lives: restartedState.lives
     },
+    nameInput: nameInputState,
+    alreadyUnlocked: alreadyUnlockedState.gameOver,
     pageErrors,
     consoleErrors,
     screenshot

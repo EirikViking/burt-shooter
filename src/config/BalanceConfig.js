@@ -10,10 +10,14 @@ export const BalanceConfig = {
 
     // Powerups
     powerups: {
-        dropChance: 0.05, // Lowered base chance since we have guarantees
-        cooldownMs: 15000, // ~15 seconds global cooldown (12-18s range implemented in logical check)
-        maxPerLevel: 3,
-        minPerLevel: 2,
+        dropChance: 0.02, // Base enemy-drop chance; kept sparse so pickups feel intentional
+        chanceGrowthPerSecond: 0.002,
+        maxDropChance: 0.12,
+        cooldownMs: 18000,
+        maxPerLevel: 2,
+        minPerLevel: 1,
+        extraLifeChance: 0.01,
+        extraLifeGuaranteedEveryLevels: 4,
         guaranteeWindowStart: 0.2, // 20% progress
         guaranteeWindowEnd: 0.8, // 80% progress
         logDrops: true, // Dev toggle

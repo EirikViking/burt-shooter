@@ -9,6 +9,9 @@ import { ShipDetailsScene } from '../scenes/ShipDetailsScene.js';
 import { HighscoreScene } from '../scenes/HighscoreScene.js';
 import { rankManager } from '../managers/RankManager.js';
 import { getDefaultShipKey, incrementShipUsage, isShipUnlocked, isValidShipKey, updateShipUnlockProgress } from '../config/ShipMetadata.js';
+import { API } from '../api/API.js';
+import { AudioManager } from '../audio/AudioManager.js';
+import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
 
 export class Game {
   constructor(app) {
@@ -33,6 +36,13 @@ export class Game {
     this.isDebugRun = false;
     this.runMode = 'ranked';
     this.runModeReason = null;
+    this.globalLeaderboardTargets = null;
+    this.globalLeaderboardTargetPromise = null;
+    this.globalLeaderboardCueState = {
+      global: false,
+      top3: false,
+      number1: false
+    };
   }
 
   start() {
@@ -123,6 +133,7 @@ export class Game {
     this.isDebugRun = false;
     this.runMode = 'ranked';
     this.runModeReason = null;
+    this.resetGlobalLeaderboardCues();
 
     // Rank System (Per Run)
     // Rank System (Per Run)
@@ -145,6 +156,7 @@ export class Game {
     };
 
     this.switchScene('play');
+    this.primeGlobalLeaderboardTargets();
   }
 
   markUnrankedRun(reason = 'debug_route') {
@@ -204,6 +216,65 @@ export class Game {
       if (this.currentScene && typeof this.currentScene.onRankUp === 'function') {
         this.currentScene.onRankUp(computedRank);
       }
+    }
+    this.updateGlobalLeaderboardVoiceCues();
+  }
+
+  resetGlobalLeaderboardCues() {
+    this.globalLeaderboardTargets = null;
+    this.globalLeaderboardTargetPromise = null;
+    this.globalLeaderboardCueState = {
+      global: false,
+      top3: false,
+      number1: false
+    };
+  }
+
+  primeGlobalLeaderboardTargets() {
+    if (this.runMode === 'unranked' || this.globalLeaderboardTargetPromise) return this.globalLeaderboardTargetPromise;
+    this.globalLeaderboardTargetPromise = API.getHighscores({ useCache: true })
+      .then((scores) => {
+        this.globalLeaderboardTargets = Array.isArray(scores) ? scores : [];
+        this.updateGlobalLeaderboardVoiceCues();
+        return this.globalLeaderboardTargets;
+      })
+      .catch((error) => {
+        console.warn('[GlobalLeaderboardCue] Unable to load global targets', error);
+        this.globalLeaderboardTargets = [];
+        return this.globalLeaderboardTargets;
+      });
+    return this.globalLeaderboardTargetPromise;
+  }
+
+  updateGlobalLeaderboardVoiceCues() {
+    if (this.runMode === 'unranked' || !Array.isArray(this.globalLeaderboardTargets)) return;
+    const placement = analyzeGlobalLeaderboardScore(this.score, this.globalLeaderboardTargets);
+    if (!placement.qualified && placement.nearGlobal && !this.globalLeaderboardCueState.global) {
+      this.globalLeaderboardCueState.global = true;
+      AudioManager.playVoice('mission_control_global_close', {
+        cooldownMs: 42000,
+        duckMs: 2100,
+        duckFactor: 0.42,
+        volume: 0.9
+      });
+    }
+    if (!placement.top3 && placement.nearTop3 && !this.globalLeaderboardCueState.top3) {
+      this.globalLeaderboardCueState.top3 = true;
+      AudioManager.playVoice('mission_control_top3_close', {
+        cooldownMs: 42000,
+        duckMs: 2300,
+        duckFactor: 0.38,
+        volume: 0.94
+      });
+    }
+    if (!placement.numberOne && placement.nearNumberOne && !this.globalLeaderboardCueState.number1) {
+      this.globalLeaderboardCueState.number1 = true;
+      AudioManager.playVoice('mission_control_number_one_close', {
+        cooldownMs: 42000,
+        duckMs: 2600,
+        duckFactor: 0.34,
+        volume: 0.98
+      });
     }
   }
 

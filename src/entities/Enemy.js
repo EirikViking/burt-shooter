@@ -1,12 +1,12 @@
 import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { AssetManifest } from '../assets/assetManifest.js';
 // TASK 3: Import difficulty multiplier
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { enhanceEnemyVisuals } from '../utils/EnemyVisualEnhancer.js';
 import { getEnemyVisualVariant } from '../config/VisualVariantCatalog.js';
 import { getGeneratedEnemyProfile } from '../config/GeneratedEnemyProfiles.js';
+import { getEnemyWeaponProfileForEnemy, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
@@ -43,6 +43,20 @@ export class Enemy {
     this.entryCurve = null;
     this.diveCurve = null;
     this.returnCurve = null;
+    this.waveTactic = null;
+    this.waveRole = 'wing';
+    this.waveSlot = 0;
+    this.waveSize = 1;
+    this.waveCenterX = x;
+    this.waveCenterY = y;
+    this.waveFormation = null;
+    this.tacticalFireScalar = 1;
+    this.tacticalShotPattern = 'aimed';
+    this.tacticalMoveStyle = 'standard';
+    this.tacticalDiveBias = 1;
+    this.tacticalDiveAt = 0;
+    this.tacticalDiveUsed = false;
+    this.tacticalPhase = Math.random() * Math.PI * 2;
 
     this.idlePhase = Math.random() * Math.PI * 2;
     this.spriteKey = null;
@@ -428,6 +442,22 @@ export class Enemy {
 
   // --- Arcade formation behavior ---
 
+  applyWaveTactic(tactic = {}, context = {}) {
+    this.waveTactic = tactic;
+    this.waveSlot = Number.isFinite(context.index) ? context.index : 0;
+    this.waveSize = Math.max(1, Number.isFinite(context.count) ? context.count : 1);
+    this.waveCenterX = Number.isFinite(context.centerX) ? context.centerX : this.formationX;
+    this.waveCenterY = Number.isFinite(context.centerY) ? context.centerY : this.formationY;
+    this.waveFormation = context.formation || null;
+    this.waveRole = context.side < 0 ? 'left_flank' : context.side > 0 ? 'right_flank' : 'center';
+    this.tacticalFireScalar = tactic.fireScalar || 1;
+    this.tacticalShotPattern = tactic.shot || 'aimed';
+    this.tacticalMoveStyle = tactic.move || 'standard';
+    this.tacticalDiveBias = tactic.diveBias || 1;
+    this.shootDelay = Math.max(38, this.shootDelay * (tactic.fireDelayMult || 1));
+    this.tacticalPhase = (this.waveSlot / this.waveSize) * Math.PI * 2 + Math.random() * 0.25;
+  }
+
   startEntry(startX, startY, endX, endY, duration, delay = 0) {
     this.x = startX;
     this.y = startY;
@@ -456,7 +486,7 @@ export class Enemy {
     }
   }
 
-  startDive(playerX, playerY) {
+  startDive(playerX, playerY, preferredDive = null) {
     if (this.state !== 'FORMATION') return;
     this.state = 'DIVE';
 
@@ -466,7 +496,18 @@ export class Enemy {
     const diveType = Math.random();
     let cp, end, duration = 1500;
 
-    if (diveType < 0.4) {
+    if (preferredDive === 'chain' || preferredDive === 'feint') {
+      const side = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
+      const feint = preferredDive === 'feint';
+      end = { x: playerX + side * (feint ? 210 : 90), y: 730 };
+      cp = { x: this.x + side * (feint ? 260 : 150), y: playerY - (feint ? 170 : 40) };
+      duration = feint ? 980 : 1320;
+    } else if (preferredDive === 'sweep') {
+      const side = this.waveRole === 'left_flank' ? 1 : -1;
+      end = { x: playerX + side * 190, y: 720 };
+      cp = { x: this.waveCenterX + side * 330, y: playerY + 20 };
+      duration = 1450;
+    } else if (diveType < 0.4) {
       // Standard dive (40%)
       end = { x: playerX, y: 700 };
       cp = { x: (this.x + playerX) / 2 + (Math.random() - 0.5) * 200, y: (this.y + playerY) / 2 };
@@ -524,6 +565,7 @@ export class Enemy {
       case 'FORMATION':
         // Enhanced idle movement - more varied and alive
         const profile = this.generatedProfile;
+        const screenW = this.game?.getWidth ? this.game.getWidth() : 800;
         const swaySpeed = 0.04 + (this.idlePhase % 0.02) + (profile ? (profile.spriteIndex % 5) * 0.002 : 0);
         let swayX = Math.sin(this.moveTimer * swaySpeed + this.idlePhase) * (profile?.idleAmpX || 12);
         let swayY = Math.cos(this.moveTimer * (swaySpeed * 0.7) + this.idlePhase) * (profile?.idleAmpY || 6);
@@ -544,6 +586,39 @@ export class Enemy {
             swayX += Math.sin(phase * 1.4) * 14;
           }
         }
+        const tacticalWave = this.moveTimer * 0.03 + this.tacticalPhase;
+        const side = this.waveRole === 'left_flank' ? -1 : this.waveRole === 'right_flank' ? 1 : (this.formationX < screenW / 2 ? -1 : 1);
+        if (this.tacticalMoveStyle === 'sweep') {
+          swayX += Math.sin(tacticalWave * 0.85) * 34;
+          swayY += Math.cos(tacticalWave * 0.5) * 8;
+        } else if (this.tacticalMoveStyle === 'pincer') {
+          const squeeze = Math.max(0, Math.sin(tacticalWave * 0.75));
+          swayX += -side * (14 + squeeze * 28);
+          swayY += Math.cos(tacticalWave * 1.2) * 7;
+        } else if (this.tacticalMoveStyle === 'chain') {
+          swayX += Math.sin(tacticalWave + this.waveSlot * 0.45) * 18;
+          swayY += Math.sin(tacticalWave * 1.4) * 9;
+        } else if (this.tacticalMoveStyle === 'pulse') {
+          swayY += Math.sin(tacticalWave * 1.8 + this.waveSlot * 0.7) * 18;
+        } else if (this.tacticalMoveStyle === 'orbit') {
+          swayX += Math.cos(tacticalWave + this.waveSlot * 0.5) * 24;
+          swayY += Math.sin(tacticalWave + this.waveSlot * 0.5) * 15;
+        } else if (this.tacticalMoveStyle === 'needle') {
+          swayX += Math.sign(Math.sin(tacticalWave * 1.4)) * 10;
+          swayY += Math.cos(tacticalWave * 0.6) * 5;
+        } else if (this.tacticalMoveStyle === 'weave_wall') {
+          swayX += Math.sin(tacticalWave * 1.2 + this.waveSlot) * 22;
+          swayY += Math.sin(tacticalWave * 1.7 + this.waveSlot * 0.35) * 12;
+        } else if (this.tacticalMoveStyle === 'feint') {
+          const snap = Math.sin(tacticalWave * 1.9);
+          swayX += Math.sign(snap) * 16 + Math.sin(tacticalWave * 0.65) * 10;
+        } else if (this.tacticalMoveStyle === 'split_sweep') {
+          swayX += side * Math.sin(tacticalWave * 0.8) * 32;
+          swayY += Math.cos(tacticalWave * 1.1 + this.waveSlot) * 10;
+        } else if (this.tacticalMoveStyle === 'ambush') {
+          swayX += Math.round(Math.sin(tacticalWave * 1.1) * 2) * 9;
+          swayY += Math.max(0, Math.sin(tacticalWave * 1.5)) * 14;
+        }
         this.x = this.formationX + swayX;
         this.y = this.formationY + swayY;
 
@@ -553,9 +628,15 @@ export class Enemy {
 
         // Chance to dive (low)
         const profileDiveScalar = profile?.diveBias || 1;
-        const diveChance = (this.level <= 1 ? 0.00035 : this.level === 2 ? 0.00065 : this.level === 3 ? 0.0004 : 0.00035) * profileDiveScalar;
+        const diveChance = (this.level <= 1 ? 0.00035 : this.level === 2 ? 0.00065 : this.level === 3 ? 0.0004 : 0.00035) * profileDiveScalar * this.tacticalDiveBias;
+        if (this.tacticalDiveAt && !this.tacticalDiveUsed && Date.now() >= this.tacticalDiveAt) {
+          this.tacticalDiveUsed = true;
+          const diveStyle = this.tacticalMoveStyle === 'feint' ? 'feint' : this.tacticalMoveStyle === 'split_sweep' ? 'sweep' : 'chain';
+          this.startDive(playerX, playerY, diveStyle);
+          break;
+        }
         if (this.active && Math.random() < diveChance) {
-          this.startDive(playerX, playerY);
+          this.startDive(playerX, playerY, this.tacticalMoveStyle === 'split_sweep' ? 'sweep' : null);
         }
         break;
 
@@ -634,6 +715,51 @@ export class Enemy {
     return this.shootCooldown <= 0 && this.y > 0 && this.y < 700 && this.sprite.visible;
   }
 
+  getTacticalFireScalar() {
+    const base = this.tacticalFireScalar || 1;
+    const volley = this.waveTactic?.volley || null;
+    if (volley === 'pulse') {
+      const pulse = Math.sin(Date.now() * 0.006 + this.waveSlot * 0.8);
+      return base * (pulse > 0.55 ? 2.05 : 0.16);
+    }
+    if (volley === 'staggered') {
+      const lane = Math.floor(Date.now() / 850) % 2;
+      return base * ((this.waveSlot % 2) === lane ? 1.55 : 0.3);
+    }
+    if (volley === 'crossfire') {
+      return base * (this.waveRole === 'center' ? 0.42 : 1.38);
+    }
+    return base;
+  }
+
+  getTacticalShotAngles(baseAngle) {
+    const pattern = this.tacticalShotPattern || 'aimed';
+    const side = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
+    if (pattern === 'crossfire') {
+      return [{ angle: baseAngle + side * 0.22, speedMult: 1.02 }];
+    }
+    if (pattern === 'fan') {
+      if (this.waveSlot % 2 !== 0) return [{ angle: baseAngle, speedMult: 0.96 }];
+      return [-0.2, 0, 0.2].map((offset) => ({ angle: baseAngle + offset, speedMult: 0.9 }));
+    }
+    if (pattern === 'net') {
+      if (this.waveSlot % 3 === 1) return [{ angle: baseAngle, speedMult: 0.95 }];
+      return [-0.24, 0.24].map((offset) => ({ angle: baseAngle + offset, speedMult: 0.82 }));
+    }
+    if (pattern === 'needle') {
+      return [{ angle: baseAngle, speedMult: 1.22 }];
+    }
+    if (pattern === 'sweep') {
+      const offset = Math.sin(Date.now() * 0.004 + this.waveSlot) * 0.24;
+      return [{ angle: baseAngle + offset, speedMult: 0.98 }];
+    }
+    if (pattern === 'burst_pair') {
+      if (this.waveSlot % 2 !== 0) return [{ angle: baseAngle, speedMult: 1 }];
+      return [-0.13, 0.13].map((offset) => ({ angle: baseAngle + offset, speedMult: 0.92 }));
+    }
+    return null;
+  }
+
   shoot(playerX, playerY) {
     // Higher fire rate during Dive
     const delayMult = (this.state === 'DIVE') ? (this.level <= 1 ? 0.6 : 0.3) : 1.0;
@@ -647,10 +773,13 @@ export class Enemy {
 
     const accuracy = 0.8 + Math.random() * 0.2;
     const openingProjectileScalar = this.level <= 1 ? 0.82 : this.level === 2 ? 0.92 : 1;
+    const weaponProfile = getEnemyWeaponProfileForEnemy(this);
+    const weaponSpeedMult = weaponProfile?.speedMult || 1;
     const speed = BalanceConfig.difficulty.enemyProjectileSpeed *
       BalanceConfig.difficulty.pressureScalar *
       openingProjectileScalar *
-      (this.generatedProfile?.projectileSpeedMult || 1);
+      (this.generatedProfile?.projectileSpeedMult || 1) *
+      weaponSpeedMult;
     const vx = (dx / distance) * speed * accuracy;
     const vy = (dy / distance) * speed * accuracy;
 
@@ -664,45 +793,70 @@ export class Enemy {
     const killSwitch = typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_weapon_fx") === "1";
 
     if (ENABLE_ENEMY_WEAPON_FX_VARIETY && !killSwitch) {
-      // Look up specific style mapping
-      const style = AssetManifest.enemyWeaponMap[this.type];
-      if (style && style.projectile) {
-        // Parse projectile path: .../laser(Color)(Index).png
-        const match = style.projectile.match(/laser(Red|Green|Blue)(\d+)\./);
-        if (match) {
-          vConfig = {
-            color: match[1],
-            index: parseInt(match[2], 10)
-          };
-        }
-      }
+      vConfig = toBulletVisualConfig(weaponProfile, {
+        sourceEnemyType: this.type,
+        sourceFireStyle: this.generatedProfile?.fireStyle || null
+      });
     }
+
+    const tacticalAngles = this.getTacticalShotAngles(Math.atan2(vy, vx));
+    const makeBullet = ({ angle, speedMult = 1, damage = 1 }, color, damageScale = 1) => {
+      const bullet = new Bullet(
+        this.x,
+        this.y,
+        Math.cos(angle) * speed * accuracy * speedMult,
+        Math.sin(angle) * speed * accuracy * speedMult,
+        damage * damageScale,
+        color,
+        false,
+        vConfig
+      );
+      bullet.weaponProfileId = weaponProfile?.id || bullet.weaponProfileId;
+      bullet.weaponLabel = weaponProfile?.label || bullet.weaponLabel;
+      bullet.waveTactic = this.waveTactic?.id || null;
+      return bullet;
+    };
 
     if (this.generatedProfile) {
       const profile = this.generatedProfile;
       const baseAngle = Math.atan2(vy, vx);
-      const count = Math.max(1, profile.shotCount || 1);
+      const tacticalPattern = tacticalAngles && tacticalAngles.length > 0
+        ? tacticalAngles
+        : null;
+      const count = tacticalPattern ? tacticalPattern.length : Math.max(1, profile.shotCount || 1);
       const spread = profile.spread || 0;
       const bullets = [];
       for (let i = 0; i < count; i += 1) {
+        const tacticalShot = tacticalPattern?.[i] || null;
         const offset = count === 1 ? 0 : (i - (count - 1) / 2) * spread;
-        const angle = baseAngle + offset;
+        const angle = tacticalShot?.angle ?? (baseAngle + offset);
         const jitter = profile.fireStyle === 'stutter' ? (Math.random() - 0.5) * 0.08 : 0;
-        bullets.push(new Bullet(
-          this.x,
-          this.y,
-          Math.cos(angle + jitter) * speed * accuracy,
-          Math.sin(angle + jitter) * speed * accuracy,
-          profile.fireStyle === 'slowHeavy' ? 1.25 : 1,
-          profile.accent || this.color,
-          false,
-          vConfig
-        ));
+        const bullet = makeBullet(
+          {
+            angle: angle + jitter,
+            speedMult: tacticalShot?.speedMult || 1,
+            damage: profile.fireStyle === 'slowHeavy' ? 1.25 : 1
+          },
+          weaponProfile?.color || profile.accent || this.color,
+          tacticalPattern && count > 1 ? 0.9 : 1
+        );
+        bullets.push(bullet);
       }
       return bullets.length === 1 ? bullets[0] : bullets;
     }
 
-    return new Bullet(this.x, this.y, vx, vy, 1, this.color, false, vConfig);
+    if (tacticalAngles && tacticalAngles.length > 0) {
+      const bullets = tacticalAngles.map((shot) =>
+        makeBullet(shot, weaponProfile?.color || this.color, tacticalAngles.length > 1 ? 0.9 : 1)
+      );
+      return bullets.length === 1 ? bullets[0] : bullets;
+    }
+
+    const bullet = new Bullet(this.x, this.y, vx, vy, 1, weaponProfile?.color || this.color, false, vConfig);
+    bullet.weaponProfileId = weaponProfile?.id || bullet.weaponProfileId;
+    bullet.weaponLabel = weaponProfile?.label || bullet.weaponLabel;
+    bullet.waveTactic = this.waveTactic?.id || null;
+    return bullet;
   }
 
   applyElite() {

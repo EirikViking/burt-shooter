@@ -95,6 +95,7 @@ $lines = @(
   @{ File = "mission-control\mission_control_tractor_hijack_01.mp3"; Text = "Beam stolen. Gorgeous."; Rate = 3 },
   @{ File = "mission-control\mission_control_tractor_hijack_02.mp3"; Text = "Trap reversed. Make it hurt."; Rate = 3 },
   @{ File = "mission-control\mission_control_tractor_hijack_03.mp3"; Text = "Their beam. Your score."; Rate = 3 },
+  @{ File = "mission-control\mission_control_credits_01.mp3"; Text = "Credits protocol open. Tinyfoundry Games denies responsibility for haunted cabinets, boss paperwork, and emotional damage caused by excellent dodging."; Rate = 2 },
 
   @{ File = "nova-swarm\intro_narrator_01.mp3"; Text = "The last arcade cabinet drifted past the star lanes, still hungry for one more coin."; Rate = 1 },
   @{ File = "nova-swarm\intro_narrator_02.mp3"; Text = "Then the swarm learned formation. Cute trick. Bad manners."; Rate = 1 },

@@ -14,7 +14,7 @@ const PANELS = [
     caption: 'Nova Station was built around an impossible arcade cabinet: one coin, one pilot, one clean lane through the dark.',
     voice: 'intro_narrator_01',
     sfx: 'coin_portal_open',
-    durationMs: 7800
+    durationMs: 10300
   },
   {
     image: AssetManifest.generated.introPanels[1],
@@ -23,7 +23,7 @@ const PANELS = [
     caption: 'Then the swarm arrived. Not random. Not dumb. It learned your dodges, shaped itself into patterns, and guarded every sector with a boss.',
     voice: 'intro_narrator_02',
     sfx: 'swarm_chatter_stinger',
-    durationMs: 8200
+    durationMs: 10800
   },
   {
     image: AssetManifest.generated.introPanels[2],
@@ -32,7 +32,7 @@ const PANELS = [
     caption: 'Your ship is not the biggest thing out here. Good. Big things blink late. You thread the lanes, steal the openings, and turn danger into score.',
     voice: 'intro_narrator_03',
     sfx: 'intro_panel_whoosh',
-    durationMs: 8400
+    durationMs: 11300
   },
   {
     image: AssetManifest.generated.introPanels[3],
@@ -41,7 +41,7 @@ const PANELS = [
     caption: 'The cabinet wants proof. Break the formations, hijack their tricks, crack the boss gates, and put your name where the swarm can see it.',
     voice: 'intro_narrator_04',
     sfx: 'boss_reveal_stinger',
-    durationMs: 8200
+    durationMs: 11000
   }
 ];
 
@@ -69,6 +69,8 @@ export class IntroScene {
     this.keyHandler = null;
     this.pointerHandler = null;
     this.textGroup = null;
+    this.panelWaitsForVoice = false;
+    this.panelVoiceWasActive = false;
   }
 
   static shouldShow() {
@@ -253,6 +255,8 @@ export class IntroScene {
     if (!panel) return;
     this.panelIndex = index;
     this.panelElapsedMs = 0;
+    this.panelWaitsForVoice = false;
+    this.panelVoiceWasActive = false;
     const texture = this.panelTextures.get(panel.image);
     if (texture) this.backdrop.texture = texture;
     this.eyebrow.text = panel.eyebrow;
@@ -263,7 +267,7 @@ export class IntroScene {
     if (playAudio) {
       AudioManager.stopAllVoices?.('intro_panel_change');
       AudioManager.playSfx(panel.sfx, { force: true });
-      AudioManager.playVoice(panel.voice, {
+      this.panelWaitsForVoice = AudioManager.playVoice(panel.voice, {
         force: true,
         exclusiveGroup: 'intro_narrator',
         stopOtherVoices: true,
@@ -274,6 +278,17 @@ export class IntroScene {
       });
     }
     this.layout();
+  }
+
+  isCurrentNarratorActive() {
+    const panel = PANELS[this.panelIndex];
+    if (!panel) return false;
+    const group = AudioManager.getSettings?.().activeVoiceGroups?.intro_narrator;
+    return Boolean(
+      group &&
+      group.eventName === panel.voice &&
+      group.ended === false
+    );
   }
 
   advancePanel() {
@@ -352,7 +367,26 @@ export class IntroScene {
     }
     this.panelElapsedMs += delta * 16.67;
     const panel = PANELS[this.panelIndex];
-    if (panel && this.panelElapsedMs >= panel.durationMs) {
+    const narratorActive = this.isCurrentNarratorActive();
+    if (narratorActive) {
+      this.panelVoiceWasActive = true;
+    }
+    const panelDoneByDuration = panel && this.panelElapsedMs >= panel.durationMs;
+    const voiceWaitTimedOut = panel && this.panelElapsedMs >= Math.max(panel.durationMs + 3000, 14000);
+    if (panel && this.panelWaitsForVoice && (narratorActive || !this.panelVoiceWasActive)) {
+      const failsafeMs = Math.max(panel.durationMs + 3000, 14000);
+      if (this.panelElapsedMs < failsafeMs) {
+        const pulse = 1 + Math.sin(Date.now() * 0.004) * 0.01;
+        this.textGroup.scale.set(pulse);
+        return;
+      }
+    }
+    if (panel && this.panelWaitsForVoice && (
+      (this.panelVoiceWasActive && ((!narratorActive && panelDoneByDuration) || voiceWaitTimedOut)) ||
+      (!this.panelVoiceWasActive && voiceWaitTimedOut)
+    )) {
+      this.advancePanel();
+    } else if (panel && !this.panelWaitsForVoice && panelDoneByDuration) {
       this.advancePanel();
     }
     const pulse = 1 + Math.sin(Date.now() * 0.004) * 0.01;

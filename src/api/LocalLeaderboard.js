@@ -3,6 +3,7 @@ import { getRankFromScore } from '../shared/RankPolicy.js';
 export const LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v1';
 export const LOCAL_LEADERBOARD_LIMIT = 10;
 const LOCAL_LEADERBOARD_STORAGE_LIMIT = 100;
+const LOCAL_PILOT_NAME_MAX_LENGTH = 14;
 
 function storageAvailable() {
   try {
@@ -17,7 +18,7 @@ export function sanitizeLocalPilotName(rawName, fallbackSeed = 0) {
     .toUpperCase()
     .replace(/[^A-Z0-9 ]/g, '')
     .trim()
-    .slice(0, 10);
+    .slice(0, LOCAL_PILOT_NAME_MAX_LENGTH);
   if (cleaned) return cleaned;
   const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
   return `PILOT${seed}`;

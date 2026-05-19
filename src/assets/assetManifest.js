@@ -1,6 +1,9 @@
 export const AssetManifest = {
     generated: {
-        menuBackdrop: '/art/generated/nova-swarm/nova-swarm-menu-arcade-backdrop.webp',
+        menuBackdrop: '/art/generated/nova-swarm/menu/nova-swarm-start-screen-20260519.webp',
+        menuCredits: '/art/generated/nova-swarm/menu/nova-swarm-credits-20260519.png',
+        leaderboardHall: '/art/generated/nova-swarm/leaderboard/nova-swarm-leaderboard-hall-20260519.png',
+        gameOverCeremony: '/art/generated/nova-swarm/gameover/nova-swarm-gameover-ceremony-20260519.png',
         gameplayArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
         stormGameplayBackdrop: '/art/generated/nova-swarm/nova-swarm-storm-gameplay-backdrop.webp',
         bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
@@ -8,6 +11,20 @@ export const AssetManifest = {
         bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
         playerShips: Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
         enemies: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/enemies/nova-enemy-${String(i + 1).padStart(2, '0')}.png`),
+        enemyWeapons: [
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-01-crimson-shard-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-02-amber-plasma-orb-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-03-cyan-rail-needle-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-04-magenta-crescent-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-05-toxic-splinter-seed-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-06-violet-star-mine-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-07-white-comet-lance-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-08-orange-molten-slug-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-09-teal-fork-dart-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-10-pink-spiral-disruptor-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-11-lime-saw-disc-20260519.png',
+            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-12-purple-boss-spear-20260519.png'
+        ],
         powerups: {
             triple_beam: '/art/generated/nova-swarm/powerups/nova-powerup-triple_beam-20260519.png',
             vector_boost: '/art/generated/nova-swarm/powerups/nova-powerup-vector_boost-20260519.png',
@@ -41,8 +58,10 @@ export const AssetManifest = {
         ],
         shipHangar: '/art/generated/nova-swarm/nova-swarm-ship-hangar.webp',
         crewPortraits: [
-            '/art/generated/nova-swarm/nova-swarm-comms-navigator.png',
-            '/art/generated/nova-swarm/nova-swarm-comms-pilot.png'
+            '/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-01-20260519.webp',
+            '/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-02-20260519.webp',
+            '/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-03-20260519.webp',
+            '/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-04-20260519.webp'
         ]
     },
 
@@ -181,6 +200,12 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_local_highscore_02.mp3',
             '/audio/voice/mission-control/mission_control_global_highscore_01.mp3',
             '/audio/voice/mission-control/mission_control_global_highscore_02.mp3',
+            '/audio/voice/mission-control/mission_control_global_close_01.mp3',
+            '/audio/voice/mission-control/mission_control_top3_close_01.mp3',
+            '/audio/voice/mission-control/mission_control_number_one_close_01.mp3',
+            '/audio/voice/mission-control/mission_control_top3_highscore_01.mp3',
+            '/audio/voice/mission-control/mission_control_number_one_highscore_01.mp3',
+            '/audio/voice/mission-control/mission_control_near_miss_01.mp3',
             '/audio/voice/mission-control/mission_control_personal_best_01.mp3',
             '/audio/voice/mission-control/mission_control_personal_best_02.mp3',
             '/audio/voice/mission-control/mission_control_restart_01.mp3',
@@ -190,6 +215,7 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_tractor_hijack_01.mp3',
             '/audio/voice/mission-control/mission_control_tractor_hijack_02.mp3',
             '/audio/voice/mission-control/mission_control_tractor_hijack_03.mp3',
+            '/audio/voice/mission-control/mission_control_credits_01.mp3',
             '/audio/voice/nova-swarm/intro_narrator_01.mp3',
             '/audio/voice/nova-swarm/intro_narrator_02.mp3',
             '/audio/voice/nova-swarm/intro_narrator_03.mp3',
@@ -200,7 +226,18 @@ export const AssetManifest = {
             '/audio/music/DeathMatch (Boss Theme).mp3', '/audio/music/Defeated (Game Over Tune).mp3', '/audio/music/Rain of Lasers.mp3',
             '/audio/music/SkyFire (Title Screen).mp3', '/audio/music/Space Heroes.mp3', '/audio/music/Victory Tune.mp3',
             '/audio/music/Without Fear.mp3', '/audio/music/bgm_v2.mp3',
-            '/audio/music/nova-swarm/nova_swarm_intro_overture.mp3'
+            '/audio/music/nova-swarm/nova_swarm_intro_overture.mp3',
+            '/audio/music/nova-swarm/nova_swarm_menu_neon_cabinet.mp3',
+            '/audio/music/nova-swarm/nova_swarm_menu_starcoin_parade.mp3',
+            '/audio/music/nova-swarm/nova_swarm_scoreboard_trophy_orbit.mp3',
+            '/audio/music/nova-swarm/nova_swarm_gameplay_laser_lane.mp3',
+            '/audio/music/nova-swarm/nova_swarm_gameplay_comet_chase.mp3',
+            '/audio/music/nova-swarm/nova_swarm_gameplay_orbit_breaker.mp3',
+            '/audio/music/nova-swarm/nova_swarm_gameplay_bonus_heat.mp3',
+            '/audio/music/nova-swarm/nova_swarm_boss_gate_overdrive.mp3',
+            '/audio/music/nova-swarm/nova_swarm_boss_cabinet_judgement.mp3',
+            '/audio/music/nova-swarm/nova_swarm_victory_star_receipts.mp3',
+            '/audio/music/nova-swarm/nova_swarm_gameover_last_coin.mp3'
         ],
         sfx: [
             // Computer Noise
@@ -241,6 +278,10 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_shield_snap.mp3',
             '/audio/sfx/nova-swarm/nova_rank_fanfare.mp3',
             '/audio/sfx/nova-swarm/nova_highscore_chime.mp3',
+            '/audio/sfx/nova-swarm/nova_global_near_fanfare.mp3',
+            '/audio/sfx/nova-swarm/nova_global_slot_fanfare.mp3',
+            '/audio/sfx/nova-swarm/nova_top3_fanfare.mp3',
+            '/audio/sfx/nova-swarm/nova_number_one_fanfare.mp3',
             '/audio/sfx/nova-swarm/nova_enemy_pew_cluster.mp3',
             '/audio/sfx/nova-swarm/nova_player_hit_crackle.mp3',
             '/audio/sfx/nova-swarm/nova_life_extend_bloom.mp3',

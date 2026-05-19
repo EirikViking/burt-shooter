@@ -229,6 +229,8 @@ function buildGameTextState(game) {
   const playerBullets = playScene?.bulletManager?.playerBullets || playScene?.bulletManager?.bullets || [];
   const enemyBullets = playScene?.bulletManager?.enemyBullets || [];
   const activeSettingsOverlay = game?.currentScene?.settingsOverlay || playScene?.settingsOverlay || null;
+  const menuScene = getStableSceneName(game) === 'menu' ? game?.currentScene : null;
+  const introScene = getStableSceneName(game) === 'intro' ? game?.currentScene : null;
   const shipSelectScene = getStableSceneName(game) === 'shipSelect' ? game?.currentScene : null;
   const gameOverScene = getStableSceneName(game) === 'gameOver' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
@@ -256,6 +258,7 @@ function buildGameTextState(game) {
     lives: game?.lives ?? 0,
     runMode: game?.runMode || (game?.isDebugRun ? 'unranked' : 'ranked'),
     runModeReason: game?.runModeReason || null,
+    globalLeaderboardCues: game?.globalLeaderboardCueState || null,
     scoreSubmissionAllowed: typeof game?.isScoreSubmissionAllowed === 'function'
       ? game.isScoreSubmissionAllowed()
       : !game?.isDebugRun,
@@ -267,6 +270,8 @@ function buildGameTextState(game) {
       credits: Boolean(activeSettingsOverlay?.creditsPanel?.parent),
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
+    menu: menuScene?.getLayoutDebugState ? menuScene.getLayoutDebugState() : null,
+    settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
     accessibility: getAccessibilitySettings(),
     input: {
@@ -301,7 +306,29 @@ function buildGameTextState(game) {
       currentWaveIndex: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex : null,
       currentWaveNumber: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex + 1 : null,
       totalWaves: enemyManager.normalWavesTotal || 0,
-      briefingMs: Math.round(enemyManager.waveBriefingTimer || 0)
+      briefingMs: Math.round(enemyManager.waveBriefingTimer || 0),
+      tactic: enemyManager.currentWaveTactic ? {
+        id: enemyManager.currentWaveTactic.id || null,
+        label: enemyManager.currentWaveTactic.label || null,
+        move: enemyManager.currentWaveTactic.move || null,
+        shot: enemyManager.currentWaveTactic.shot || null,
+        volley: enemyManager.currentWaveTactic.volley || null
+      } : null,
+      nextTactic: enemyManager.pendingWaveConfig
+        ? {
+          id: typeof enemyManager.pendingWaveConfig.tactic === 'string'
+            ? enemyManager.pendingWaveConfig.tactic
+            : enemyManager.pendingWaveConfig.tactic?.id || null,
+          formation: enemyManager.pendingWaveConfig.formation || null
+        }
+        : null
+    } : null,
+    intro: introScene ? {
+      panelIndex: introScene.panelIndex,
+      panelElapsedMs: Math.round(introScene.panelElapsedMs || 0),
+      started: Boolean(introScene.started),
+      waitingForVoice: Boolean(introScene.panelWaitsForVoice),
+      voiceWasActive: Boolean(introScene.panelVoiceWasActive)
     } : null,
     shipSelect: selectedShip ? {
       selectedIndex: shipSelectScene.selectedIndex,
@@ -324,6 +351,11 @@ function buildGameTextState(game) {
       localQualified: Boolean(gameOverScene.localQualified),
       globalQualified: Boolean(gameOverScene.globalQualified),
       globalStatus: gameOverScene.globalStatus || null,
+      globalPlacement: gameOverScene.globalPlacement || null,
+      globalPlacementTier: gameOverScene.globalPlacementTier || null,
+      ceremonyTitle: gameOverScene.title?.text || null,
+      ceremonyComment: gameOverScene.comment?.text || null,
+      backdropLoaded: Boolean(gameOverScene.backdropLoaded),
       canEnterName: Boolean(gameOverScene.canEnterName),
       globalFanfarePlayed: Boolean(gameOverScene.qualificationFanfarePlayed),
       leaderboardStatus: gameOverScene.leaderboardStatusText?.text || null,
@@ -379,6 +411,36 @@ function buildGameTextState(game) {
       enemyBullets: enemyBullets.filter(bullet => bullet?.active !== false).length,
       particles: playScene?.particleManager?.particles?.length || 0
     },
+    enemyWeapons: {
+      activeProfiles: [...new Set(enemyBullets
+        .filter(bullet => bullet?.active !== false && bullet.weaponProfileId)
+        .map(bullet => bullet.weaponProfileId))],
+      visibleBullets: enemyBullets
+        .filter(bullet => bullet?.active !== false)
+        .slice(0, 10)
+        .map(bullet => ({
+          x: Math.round(bullet.x || 0),
+          y: Math.round(bullet.y || 0),
+          radius: bullet.radius || 0,
+          profile: bullet.weaponProfileId || null,
+          label: bullet.weaponLabel || null,
+          behavior: bullet.behavior || null,
+          waveTactic: bullet.waveTactic || null,
+          speed: Number.isFinite(bullet.speed) ? Number(bullet.speed.toFixed(2)) : null
+        }))
+    },
+    bossHazards: playScene ? {
+      active: (playScene.bossHazards || [])
+        .slice(0, 8)
+        .map(hazard => ({
+          kind: hazard.kind || null,
+          type: hazard.type || null,
+          category: hazard.category || null,
+          hit: Boolean(hazard.hit),
+          remainingMs: Math.max(0, Math.round((hazard.startedAt + hazard.durationMs) - Date.now()))
+        })),
+      lastHit: playScene.lastBossHazardHit || null
+    } : null,
     visibleEnemies: enemies
       .filter(enemy => enemy?.active !== false)
       .slice(0, 8)
@@ -387,15 +449,24 @@ function buildGameTextState(game) {
         y: Math.round(enemy.y || 0),
         radius: enemy.radius || 0,
         kind: enemy.kind || null,
+        waveTactic: enemy.waveTactic ? {
+          id: enemy.waveTactic.id || null,
+          label: enemy.waveTactic.label || null,
+          move: enemy.waveTactic.move || null,
+          shot: enemy.waveTactic.shot || null,
+          role: enemy.waveRole || null
+        } : null,
         variant: enemy.visualVariant?.slug || null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
         maxHealth: Number.isFinite(enemy.maxHealth) ? Math.max(0, Math.round(enemy.maxHealth)) : null,
         phase: Number.isFinite(enemy.phase) ? enemy.phase : null,
         bossProfile: enemy.profile?.id || null,
         bossArchetype: enemy.profile?.archetype || null,
-        bossMovement: enemy.profile?.movement || enemy.moveProfile?.profile || null,
+        bossMovement: enemy.moveProfile?.profile || enemy.profile?.movement || null,
+        bossMovementFamily: enemy.profile?.movement || null,
         bossAttack: enemy.profile?.attack || null,
         bossSignature: enemy.getSignatureForPhase ? enemy.getSignatureForPhase(enemy.phase || 1) : (enemy.profile?.signature || null),
+        bossAnimation: enemy.getAnimationDebugState ? enemy.getAnimationDebugState() : null,
         safeLanes: Array.isArray(enemy.safeLanes) ? enemy.safeLanes : [],
         phaseShift: enemy.kind === 'boss' ? {
           anchorOffset: Math.round(enemy.phaseAnchorOffset || 0),

@@ -5,7 +5,7 @@ const root = process.cwd();
 const smokeRoot = path.resolve(root, 'test-results');
 const outputPath = path.resolve(root, 'release/steamworks/live_deployment_report.json');
 const versionPath = path.resolve(root, 'public/version.json');
-const liveUrl = process.env.NOVA_SWARM_LIVE_URL || 'https://burt.tinyfoundry.app';
+const liveUrl = process.env.NOVA_SWARM_LIVE_URL || 'https://novaswarm.tinyfoundry.app';
 const extraUrls = (process.env.NOVA_SWARM_DEPLOYMENT_URLS || '')
   .split(',')
   .map((url) => url.trim())

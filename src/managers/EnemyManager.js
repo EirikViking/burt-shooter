@@ -12,6 +12,123 @@ import { GENERATED_ENEMY_TYPES } from '../config/GeneratedEnemyProfiles.js';
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
 
+const WAVE_TACTICS = [
+  {
+    id: 'strafe_sweep',
+    label: 'STRAFE SWEEP',
+    move: 'sweep',
+    shot: 'sweep',
+    volley: 'staggered',
+    fireScalar: 1.05,
+    fireDelayMult: 1.08,
+    diveBias: 0.9,
+    entrySpeed: 0.88
+  },
+  {
+    id: 'crossfire_pincer',
+    label: 'CROSSFIRE PINCER',
+    move: 'pincer',
+    shot: 'crossfire',
+    volley: 'crossfire',
+    fireScalar: 1.1,
+    fireDelayMult: 1.02,
+    diveBias: 1.15,
+    entrySpeed: 0.95
+  },
+  {
+    id: 'dive_chain',
+    label: 'DIVE CHAIN',
+    move: 'chain',
+    shot: 'burst_pair',
+    volley: 'staggered',
+    fireScalar: 0.82,
+    fireDelayMult: 1.18,
+    diveBias: 2.6,
+    forcedDive: true,
+    entrySpeed: 0.86
+  },
+  {
+    id: 'pulse_net',
+    label: 'PULSE NET',
+    move: 'pulse',
+    shot: 'net',
+    volley: 'pulse',
+    fireScalar: 1.16,
+    fireDelayMult: 1.0,
+    diveBias: 0.55,
+    entrySpeed: 1.02
+  },
+  {
+    id: 'orbit_snare',
+    label: 'ORBIT SNARE',
+    move: 'orbit',
+    shot: 'fan',
+    volley: 'staggered',
+    fireScalar: 0.95,
+    fireDelayMult: 1.12,
+    diveBias: 0.72,
+    entrySpeed: 1.06
+  },
+  {
+    id: 'needle_stagger',
+    label: 'NEEDLE STAGGER',
+    move: 'needle',
+    shot: 'needle',
+    volley: 'staggered',
+    fireScalar: 0.86,
+    fireDelayMult: 1.22,
+    diveBias: 0.7,
+    entrySpeed: 1.0
+  },
+  {
+    id: 'weave_wall',
+    label: 'WEAVE WALL',
+    move: 'weave_wall',
+    shot: 'fan',
+    volley: 'pulse',
+    fireScalar: 0.98,
+    fireDelayMult: 1.08,
+    diveBias: 0.82,
+    entrySpeed: 0.92
+  },
+  {
+    id: 'rush_feint',
+    label: 'RUSH FEINT',
+    move: 'feint',
+    shot: 'burst_pair',
+    volley: 'crossfire',
+    fireScalar: 0.9,
+    fireDelayMult: 1.14,
+    diveBias: 1.9,
+    forcedDive: true,
+    entrySpeed: 0.72
+  },
+  {
+    id: 'split_sweep',
+    label: 'SPLIT SWEEP',
+    move: 'split_sweep',
+    shot: 'sweep',
+    volley: 'staggered',
+    fireScalar: 1.0,
+    fireDelayMult: 1.05,
+    diveBias: 1.05,
+    entrySpeed: 0.84
+  },
+  {
+    id: 'ambush_lattice',
+    label: 'AMBUSH LATTICE',
+    move: 'ambush',
+    shot: 'net',
+    volley: 'pulse',
+    fireScalar: 1.04,
+    fireDelayMult: 1.1,
+    diveBias: 1.2,
+    entrySpeed: 0.98
+  }
+];
+
+const TACTIC_BY_ID = Object.fromEntries(WAVE_TACTICS.map((tactic) => [tactic.id, tactic]));
+
 export class EnemyManager {
   constructor(container, game, onCap) {
     this.container = container;
@@ -30,6 +147,7 @@ export class EnemyManager {
     this.pendingWaveConfig = null;
     this.waveBriefingTimer = 0;
     this.waveBriefingAnnounced = false;
+    this.currentWaveTactic = null;
 
     // Debug Stats
     this.totalEnemiesSpawned = 0;
@@ -41,6 +159,7 @@ export class EnemyManager {
     // Hijacker capture-style special enemy, max once per level.
     this.hijacker = null;
     this.hijackerSpawnedThisLevel = false;
+    this.hijackerSpawnAttemptedThisLevel = false;
 
     // TASK 3: Wave cleanup timer to prevent stalls
     this.cleanupTimer = 0;
@@ -61,7 +180,6 @@ export class EnemyManager {
     this.bossAddWaveCooldownUntilMs = 0;
     this.bossAddWaveCount = 0;
     this.directorState = { tier: 0, spawnCadenceScale: 1, eliteChance: 0.02, clutchDropChance: 0.04 };
-    this.enemyShotCueCooldown = 0;
 
     // TASK 1: Voice history to prevent duplicates
     this.voiceHistory = {};
@@ -86,6 +204,7 @@ export class EnemyManager {
     // Reset hijacker state for new level
     this.hijacker = null;
     this.hijackerSpawnedThisLevel = false;
+    this.hijackerSpawnAttemptedThisLevel = false;
 
     // WAVE FIX: Reset wave ending state
     this.waveEnding = false;
@@ -163,7 +282,21 @@ export class EnemyManager {
       diff.waveCountMax
     );
     const waves = [];
-    const patterns = ['GRID', 'V_SHAPE', 'ARC', 'BOX', 'SPIRAL', 'DOUBLE_ARC', 'STAGGERED_WING', 'PINCER'];
+    const patterns = [
+      'GRID',
+      'V_SHAPE',
+      'ARC',
+      'BOX',
+      'SPIRAL',
+      'DOUBLE_ARC',
+      'STAGGERED_WING',
+      'PINCER',
+      'DIAGONAL_RAID',
+      'SIDEWINDER',
+      'ORBIT_RING',
+      'CROSS_STREAM',
+      'SCREEN_DOOR'
+    ];
 
     const enemyTypes = GENERATED_ENEMY_TYPES;
 
@@ -191,6 +324,7 @@ export class EnemyManager {
         type: selectedType,
         count: count,
         formation: pattern,
+        tactic: this.pickWaveTactic(level, i, pattern),
         entry: Math.random() < 0.4 ? 'alternating' : 'single',
         cadence: 1 + Math.min(0.35, level * 0.02)
       });
@@ -201,24 +335,55 @@ export class EnemyManager {
   getCuratedWaves(level) {
     const scripts = {
       1: [
-        { type: 'nova_enemy_01', count: 5, formation: 'TUTORIAL_ARC', entry: 'split', cadence: 0.82 },
-        { type: 'nova_enemy_04', count: 6, formation: 'STAGGERED_WING', entry: 'alternating', cadence: 0.92 }
+        { type: 'nova_enemy_01', count: 5, formation: 'TUTORIAL_ARC', tactic: 'strafe_sweep', entry: 'split', cadence: 0.82 },
+        { type: 'nova_enemy_04', count: 6, formation: 'STAGGERED_WING', tactic: 'dive_chain', entry: 'alternating', cadence: 0.92 }
       ],
       2: [
-        { type: 'nova_enemy_10', count: 6, formation: 'GRID', entry: 'alternating', cadence: 1.02 },
-        { type: 'nova_enemy_13', count: 7, formation: 'STAGGERED_WING', entry: 'split', cadence: 1.12 }
+        { type: 'nova_enemy_10', count: 6, formation: 'GRID', tactic: 'pulse_net', entry: 'alternating', cadence: 1.02 },
+        { type: 'nova_enemy_13', count: 7, formation: 'STAGGERED_WING', tactic: 'crossfire_pincer', entry: 'split', cadence: 1.12 }
       ],
       3: [
-        { type: 'nova_enemy_19', count: 6, formation: 'ARC', entry: 'split', cadence: 1.18 },
-        { type: 'nova_enemy_22', count: 7, formation: 'PINCER', entry: 'alternating', cadence: 1.28 }
+        { type: 'nova_enemy_19', count: 6, formation: 'ARC', tactic: 'orbit_snare', entry: 'split', cadence: 1.18 },
+        { type: 'nova_enemy_22', count: 7, formation: 'PINCER', tactic: 'rush_feint', entry: 'alternating', cadence: 1.28 }
       ],
       4: [
-        { type: 'nova_enemy_28', count: 5, formation: 'ARC', entry: 'split', cadence: 1.4 },
-        { type: 'nova_enemy_31', count: 6, formation: 'DOUBLE_ARC', entry: 'alternating', cadence: 1.48 }
+        { type: 'nova_enemy_28', count: 5, formation: 'SIDEWINDER', tactic: 'split_sweep', entry: 'split', cadence: 1.4 },
+        { type: 'nova_enemy_31', count: 6, formation: 'DOUBLE_ARC', tactic: 'weave_wall', entry: 'alternating', cadence: 1.48 }
       ]
     };
     const script = scripts[level];
     return script ? script.map((wave) => ({ ...wave })) : null;
+  }
+
+  pickWaveTactic(level, waveIndex, formation = 'ARC') {
+    const formationBias = {
+      PINCER: 'crossfire_pincer',
+      STAGGERED_WING: waveIndex % 2 ? 'dive_chain' : 'strafe_sweep',
+      SPIRAL: 'orbit_snare',
+      ORBIT_RING: 'orbit_snare',
+      GRID: 'pulse_net',
+      BOX: 'ambush_lattice',
+      SIDEWINDER: 'split_sweep',
+      SCREEN_DOOR: 'weave_wall',
+      DIAGONAL_RAID: 'rush_feint',
+      CROSS_STREAM: 'crossfire_pincer'
+    };
+    if (formationBias[formation] && (level + waveIndex) % 3 !== 0) {
+      return formationBias[formation];
+    }
+    const index = Math.abs((level * 7 + waveIndex * 3 + String(formation).length) % WAVE_TACTICS.length);
+    return WAVE_TACTICS[index].id;
+  }
+
+  resolveWaveTactic(config) {
+    const id = typeof config?.tactic === 'string'
+      ? config.tactic
+      : config?.tactic?.id;
+    const fallbackId = this.pickWaveTactic(this.level || 1, this.currentWaveIndex || 0, config?.formation || 'ARC');
+    return {
+      ...(TACTIC_BY_ID[id] || TACTIC_BY_ID[fallbackId] || WAVE_TACTICS[0]),
+      ...(typeof config?.tactic === 'object' ? config.tactic : {})
+    };
   }
 
   // WAVE FIX: Helper to identify objective enemies (ships, not bonus drones)
@@ -533,9 +698,10 @@ export class EnemyManager {
 
       // Shooting
       const isBoss = enemy.kind === 'boss';
+      const enemyFireChance = fireChance * (enemy.getTacticalFireScalar?.() || enemy.tacticalFireScalar || 1);
       const shouldShoot = isBoss
         ? enemy.canShoot()
-        : enemy.canShoot() && Math.random() < fireChance * timeScale;
+        : enemy.canShoot() && Math.random() < enemyFireChance * timeScale;
       if (shouldShoot) {
         const shots = enemy.shoot(playerX, playerY);
         if (shots) {
@@ -562,14 +728,8 @@ export class EnemyManager {
     const angle = Math.atan2(playerY - enemy.y, playerX - enemy.x);
     playScene?.particleManager?.createMuzzleFlash(enemy.x, enemy.y, angle, enemy.color || 0xff5544);
 
-    const now = Date.now();
-    if (now < this.enemyShotCueCooldown) return;
-    const isBoss = enemy.kind === 'boss';
-    AudioManager.playSfx('enemy_shoot', {
-      volume: isBoss ? 0.22 : 0.11,
-      minIntervalMs: isBoss ? 120 : 180
-    });
-    this.enemyShotCueCooldown = now + (isBoss ? 160 : 220);
+    // Enemy fire is intentionally visual-only. The old recurring enemy_shoot
+    // chirp became grating during normal play because enemies fire every few seconds.
   }
 
 
@@ -598,9 +758,15 @@ export class EnemyManager {
     }
 
     const { count, formation, type } = config;
+    const tactic = this.resolveWaveTactic(config);
+    this.currentWaveTactic = tactic;
     const positions = this.getFormationPositions(formation, count);
     const screenW = this.game.getWidth();
     const startLeft = Math.random() < 0.5;
+    const center = positions.reduce((acc, pos) => ({
+      x: acc.x + pos.x / Math.max(1, positions.length),
+      y: acc.y + pos.y / Math.max(1, positions.length)
+    }), { x: 0, y: 0 });
 
     // Random Color for this wave - Xtra Asset Integration
     const waveColors = ['Blue', 'Green', 'Red', 'Black'];
@@ -620,17 +786,29 @@ export class EnemyManager {
     const diff = BalanceConfig.difficulty;
     const cadence = (this.directorState?.spawnCadenceScale || 1) * (config.cadence || 1);
     const delayStep = Math.max(55, (diff.enemyEntryDelayBaseMs || 150) / cadence);
-    const entryDurationMs = diff.enemyEntryDurationMs || 2000;
+    const entryDurationMs = Math.max(760, (diff.enemyEntryDurationMs || 2000) * (tactic.entrySpeed || 1));
     const eliteChance = this.directorState?.eliteChance || 0.02;
     positions.forEach((pos, i) => {
       const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
       const enemy = new Enemy(startX, -100, type, this.level, this.game, waveColor);
       this.applyModifier(enemy);
+      enemy.applyWaveTactic?.(tactic, {
+        index: i,
+        count,
+        formation,
+        centerX: center.x || screenW / 2,
+        centerY: center.y || 128,
+        side: pos.x < screenW / 2 ? -1 : 1
+      });
+      if (tactic.forcedDive) {
+        enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (tactic.id === 'dive_chain' ? 260 : 190) + 520;
+      }
       if (Math.random() < eliteChance) enemy.applyElite?.();
       enemy.startEntry(startX, -50, pos.x, pos.y, entryDurationMs, i * delayStep);
       this.enemies.push(enemy);
       this.container.addChild(enemy.sprite);
     });
+    console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count}`);
   }
 
   getWaveEntryX(entry, index, startLeft, screenW) {
@@ -682,6 +860,64 @@ export class EnemyManager {
           pos.push({
             x: clampX(cw + side * Math.min(sw * 0.32, 230 - row * 18)),
             y: 90 + row * 42 + (side > 0 ? 14 : 0)
+          });
+        }
+        break;
+      }
+      case 'DIAGONAL_RAID': {
+        const usable = Math.min(sw * 0.68, 620);
+        for (let i = 0; i < count; i++) {
+          const r = count <= 1 ? 0.5 : i / (count - 1);
+          pos.push({
+            x: clampX(cw - usable / 2 + r * usable),
+            y: 76 + r * 132
+          });
+        }
+        break;
+      }
+      case 'SIDEWINDER': {
+        const usable = Math.min(sw * 0.74, 660);
+        for (let i = 0; i < count; i++) {
+          const r = count <= 1 ? 0.5 : i / (count - 1);
+          pos.push({
+            x: clampX(cw - usable / 2 + r * usable),
+            y: 126 + Math.sin(r * Math.PI * 2) * 50
+          });
+        }
+        break;
+      }
+      case 'ORBIT_RING': {
+        const radiusX = Math.min(230, sw * 0.24);
+        const radiusY = 76;
+        for (let i = 0; i < count; i++) {
+          const angle = (i / Math.max(1, count)) * Math.PI * 2 - Math.PI / 2;
+          pos.push({
+            x: clampX(cw + Math.cos(angle) * radiusX),
+            y: 142 + Math.sin(angle) * radiusY
+          });
+        }
+        break;
+      }
+      case 'CROSS_STREAM': {
+        for (let i = 0; i < count; i++) {
+          const half = Math.ceil(count / 2);
+          const lane = i < half ? -1 : 1;
+          const idx = i < half ? i : i - half;
+          pos.push({
+            x: clampX(cw + lane * (44 + idx * 54)),
+            y: 88 + idx * 30
+          });
+        }
+        break;
+      }
+      case 'SCREEN_DOOR': {
+        const lanes = 4;
+        for (let i = 0; i < count; i++) {
+          const lane = i % lanes;
+          const row = Math.floor(i / lanes);
+          pos.push({
+            x: clampX(cw - 180 + lane * 120 + (row % 2) * 34),
+            y: 78 + row * 44
           });
         }
         break;
@@ -845,7 +1081,6 @@ export class EnemyManager {
         duration: 1200
       });
     }
-    AudioManager.playSfx('enemy_shoot', { volume: 0.18, minIntervalMs: 400 });
     console.log(`[BossAdds] level=${this.level} spawned=${spawnCount} activeBefore=${activeAdds} cap=${maxActiveAdds} side=${startLeft ? 'left' : 'right'}`);
     return spawnCount;
   }
@@ -904,6 +1139,11 @@ export class EnemyManager {
       AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 2600, duckMs: 2200 });
     }
 
+    this.maybeSpawnHijacker({
+      clearedWaveNumber,
+      hasUpcomingWave
+    });
+
     // Logic to potentially inject a short score-risk challenge wave.
     if (this.level > 1 && hasUpcomingWave && this.currentWaveIndex > 0) {
       const challengeWaveChance = BalanceConfig.difficulty.challengeWaveChance ?? 0.08;
@@ -915,6 +1155,7 @@ export class EnemyManager {
             type: 'bonus_challenge',
             count: BalanceConfig.difficulty.challengeWaveCount || 24,
             formation: 'GRID',
+            tactic: 'rush_feint',
             isChallenge: true
           });
           this.normalWavesTotal += 1;
@@ -977,20 +1218,32 @@ export class EnemyManager {
     if (config.isChallenge || config.type === 'bonus_challenge') return 'BONUS DRONE RAID';
     const enemy = String(config.type || 'hostiles').replace(/_/g, ' ').toUpperCase();
     const formation = String(config.formation || 'formation').replace(/_/g, ' ').toUpperCase();
-    return `${enemy} ${formation}`;
+    const tactic = this.resolveWaveTactic(config);
+    return `${tactic.label || 'TACTIC'} / ${enemy} ${formation}`;
   }
 
-  maybeSpawnHijacker() {
+  shouldGuaranteeHijacker(level = this.level) {
+    return level >= 2 && (level - 2) % 3 === 0;
+  }
+
+  maybeSpawnHijacker({ clearedWaveNumber = this.currentWaveIndex + 1, hasUpcomingWave = true } = {}) {
     // Check conditions for hijacker spawn
     if (!isHijackerEnabled()) return;
+    if (this.level < 2) return;
     if (this.hijackerSpawnedThisLevel) return;
+    if (this.hijackerSpawnAttemptedThisLevel) return;
     if (this.hijacker && this.hijacker.active) return;
-    // TASK 5: Removed boss level restriction - the hijacker can appear on any level.
-    if (this.currentWaveIndex < 1) return; // Only after wave 1
+    if (!hasUpcomingWave) return; // Give the beam a full wave before the boss gate.
+    if (clearedWaveNumber < 1) return;
 
-    // TASK 5: Increased spawn chance from 30% to 40% for more frequent hijacker appearances.
-    if (Math.random() < 0.4) {
+    this.hijackerSpawnAttemptedThisLevel = true;
+    const guaranteed = this.shouldGuaranteeHijacker(this.level);
+    const chance = this.level >= 3 ? 0.45 : 0.32;
+    if (guaranteed || Math.random() < chance) {
+      console.log(`[HijackerSpawn] level=${this.level} wave=${clearedWaveNumber} guaranteed=${guaranteed}`);
       this.spawnHijacker();
+    } else {
+      console.log(`[HijackerSpawn] skipped level=${this.level} wave=${clearedWaveNumber} chance=${chance}`);
     }
   }
 

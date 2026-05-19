@@ -66,6 +66,37 @@ const arcadePhrases = [
   'Boss cape budget approved.'
 ];
 
+const storyTransmissions = [
+  {
+    id: 'last-coin',
+    levelMin: 1,
+    title: 'STATIC MEMORY',
+    line: 'One coin woke the cabinet. The pilot still has not decided if that was luck.',
+    imageAlias: 'nova-swarm-story-comms-01-20260519'
+  },
+  {
+    id: 'swarm-spiral',
+    levelMin: 2,
+    title: 'PATTERN DRIFT',
+    line: 'The swarm is not chasing. It is arranging itself around every dodge.',
+    imageAlias: 'nova-swarm-story-comms-02-20260519'
+  },
+  {
+    id: 'pattern-read',
+    levelMin: 4,
+    title: 'QUIET READOUT',
+    line: 'A small drone maps the lanes. The pilot stops firing at noise and starts reading intent.',
+    imageAlias: 'nova-swarm-story-comms-03-20260519'
+  },
+  {
+    id: 'boss-gate',
+    levelMin: 7,
+    title: 'GATE SIGNAL',
+    line: 'Past the boss gate, the lights look less like stars and more like names waiting.',
+    imageAlias: 'nova-swarm-story-comms-04-20260519'
+  }
+];
+
 const fragments = {
   leads: [
     { value: 'Arcade Control', weight: 1.4 },
@@ -286,7 +317,16 @@ export function extendLocations(base) {
 }
 
 export function getAllNewPhrases() {
-  return [...arcadePhrases];
+  return storyTransmissions.map((beat) => beat.line);
+}
+
+export function getStoryTransmission(level = 1) {
+  const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+  let selected = storyTransmissions[0];
+  for (const beat of storyTransmissions) {
+    if (safeLevel >= beat.levelMin) selected = beat;
+  }
+  return { ...selected };
 }
 
 const tauntTemplates = [

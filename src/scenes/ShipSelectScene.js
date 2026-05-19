@@ -14,10 +14,12 @@ import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
-import { computeShipStatRanges, createShipStatPanel } from '../ui/ShipStatPanel.js';
+import { computeShipStatRanges, createShipStatPanel, getShipCombatRole } from '../ui/ShipStatPanel.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
+const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
+const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, sans-serif';
 
 export class ShipSelectScene {
   constructor(game) {
@@ -64,77 +66,48 @@ export class ShipSelectScene {
     await BonusAsset.ensureLoaded();
     this.createAnimatedBackground(width, height);
 
-    // Fixed header with enhanced styling
-    const headerContainer = new PIXI.Container();
-    const title = createText('SELECT YOUR SHIP', {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 36,
-      fill: '#00ff00',
-      stroke: '#000000',
-      strokeThickness: 4,
-      dropShadow: true,
-      dropShadowColor: '#00ff00',
-      dropShadowBlur: 8,
-      dropShadowDistance: 0,
-      fontWeight: 'bold'
-    });
-    title.anchor.set(0.5, 0);
-    title.position.set(width / 2, 20);
-    headerContainer.addChild(title);
+    this.layout = {
+      width,
+      height,
+      isMobile: width < 640,
+      showSideIntel: width >= 980,
+      showLeftIntel: width >= 1120
+    };
 
-    // Subtitle
-    const subtitle = createText('Choose Your Combat Vessel', {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 14,
-      fill: '#888888',
-      align: 'center'
-    });
-    subtitle.anchor.set(0.5, 0);
-    subtitle.position.set(width / 2, 60);
-    headerContainer.addChild(subtitle);
-
-    this.container.addChild(headerContainer);
+    this.createHangarFrame(width, height);
+    this.createHeader(width, height);
 
     // Carousel container
-    const carouselY = 95;
-    const carouselHeight = height - 135;
+    const carouselY = this.layout.isMobile ? 120 : 108;
+    const carouselHeight = height - (this.layout.isMobile ? 250 : 214);
 
     this.carouselContainer = new PIXI.Container();
-    this.carouselContainer.y = carouselY + carouselHeight / 2; // Center vertically
+    this.carouselContainer.y = carouselY + carouselHeight * (this.layout.isMobile ? 0.43 : 0.45);
     this.carouselContainer.x = width / 2; // Center horizontally
+    this.carouselContainer.sortableChildren = true;
     this.container.addChild(this.carouselContainer);
 
     // Create ship carousel
     await this.createShipCarousel(width, carouselHeight);
+    this.createIntelPanels(width, height);
+    this.createRosterStrip(width, height);
+    this.createNavArrows(width, height);
 
     // Fixed footer
     const footerContainer = new PIXI.Container();
     const instructions = createText(
-      '< / > SHIP  |  Q / E TIER JUMP  |  R RANDOM UNLOCKED  |  ENTER START',
+      'A/D OR ARROWS: SHIP  |  Q/E: JUMP 5  |  R: RANDOM READY  |  ENTER: LAUNCH',
       {
-        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: 14,
-        fill: '#cccccc',
+        fontFamily: FONT_BODY,
+        fontSize: this.layout.isMobile ? 11 : 14,
+        fill: '#ccefff',
         align: 'center'
       }
     );
     instructions.anchor.set(0.5, 1);
-    instructions.position.set(width / 2, height - 15);
+    instructions.position.set(width / 2, height - 12);
     footerContainer.addChild(instructions);
     this.container.addChild(footerContainer);
-
-    this.selectionInfoText = createText('', {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 13,
-      fill: '#66ffff',
-      align: 'center',
-      stroke: '#000000',
-      strokeThickness: 2
-    });
-    this.selectionInfoText.anchor.set(0.5, 0);
-    this.selectionInfoText.position.set(width / 2, 82);
-    this.container.addChild(this.selectionInfoText);
-    this.updateSelectionInfo();
 
     // Setup carousel navigation
     this.setupScrolling();
@@ -215,6 +188,194 @@ export class ShipSelectScene {
     }
   }
 
+  createHangarFrame(width, height) {
+    const frame = new PIXI.Graphics();
+    const top = this.layout.isMobile ? 108 : 96;
+    const bottom = height - (this.layout.isMobile ? 146 : 124);
+    const centerX = width / 2;
+
+    frame.rect(0, 0, width, height);
+    frame.fill({ color: 0x01040a, alpha: 0.18 });
+
+    for (let i = 0; i < 9; i += 1) {
+      const y = top + i * ((bottom - top) / 8);
+      const alpha = i % 2 === 0 ? 0.18 : 0.08;
+      frame.moveTo(0, y);
+      frame.lineTo(width, y);
+      frame.stroke({ color: 0x2deeff, width: 1, alpha });
+    }
+
+    for (let i = -5; i <= 5; i += 1) {
+      const x = centerX + i * Math.min(94, width / 10);
+      frame.moveTo(x, top);
+      frame.lineTo(x + i * 18, bottom);
+      frame.stroke({ color: 0x66ffdd, width: 1, alpha: i === 0 ? 0.22 : 0.08 });
+    }
+
+    frame.ellipse(centerX, bottom + 30, Math.min(width * 0.34, 360), 82);
+    frame.stroke({ color: 0x00ffcc, width: 2, alpha: 0.36 });
+    frame.ellipse(centerX, bottom + 30, Math.min(width * 0.22, 250), 50);
+    frame.stroke({ color: 0xffd166, width: 1, alpha: 0.22 });
+    this.container.addChild(frame);
+  }
+
+  createHeader(width, height) {
+    const headerContainer = new PIXI.Container();
+    const capWidth = Math.min(width - 32, this.layout.isMobile ? 420 : 760);
+    const cap = new PIXI.Graphics();
+    cap.roundRect(-capWidth / 2, 12, capWidth, this.layout.isMobile ? 78 : 84, 8);
+    cap.fill({ color: 0x020916, alpha: 0.74 });
+    cap.stroke({ color: 0x00ffcc, width: 1.5, alpha: 0.52 });
+    cap.rect(-capWidth / 2 + 2, 14, capWidth - 4, 18);
+    cap.fill({ color: 0x00ffcc, alpha: 0.08 });
+    cap.x = width / 2;
+    headerContainer.addChild(cap);
+
+    const title = createText('NOVA SWARM HANGAR', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: this.layout.isMobile ? 24 : 34,
+      fill: '#f4fbff',
+      stroke: '#001018',
+      strokeThickness: 5,
+      dropShadow: true,
+      dropShadowColor: '#00ffcc',
+      dropShadowBlur: 8,
+      dropShadowDistance: 0,
+      fontWeight: '900',
+      letterSpacing: 0
+    });
+    title.anchor.set(0.5, 0);
+    title.position.set(width / 2, 20);
+    headerContainer.addChild(title);
+
+    const subtitle = createText('Pick the hull, read the trait, launch the next run.', {
+      fontFamily: FONT_BODY,
+      fontSize: this.layout.isMobile ? 12 : 15,
+      fill: '#9ceeff',
+      align: 'center',
+      fontWeight: '700'
+    });
+    subtitle.anchor.set(0.5, 0);
+    subtitle.position.set(width / 2, this.layout.isMobile ? 52 : 58);
+    headerContainer.addChild(subtitle);
+
+    this.selectionInfoText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: this.layout.isMobile ? 12 : 14,
+      fill: '#ffef7e',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 2,
+      fontWeight: '900'
+    });
+    this.selectionInfoText.anchor.set(0.5, 0);
+    this.selectionInfoText.position.set(width / 2, this.layout.isMobile ? 75 : 82);
+    headerContainer.addChild(this.selectionInfoText);
+
+    this.container.addChild(headerContainer);
+    this.updateSelectionInfo();
+  }
+
+  createPanel(width, height, accent = 0x00ffcc) {
+    const panel = new PIXI.Container();
+    const bg = new PIXI.Graphics();
+    bg.roundRect(0, 0, width, height, 8);
+    bg.fill({ color: 0x020916, alpha: 0.78 });
+    bg.stroke({ color: accent, width: 1.5, alpha: 0.58 });
+    bg.rect(1, 1, width - 2, 28);
+    bg.fill({ color: accent, alpha: 0.1 });
+    panel.addChild(bg);
+    panel.bg = bg;
+    return panel;
+  }
+
+  createIntelText(label, x, y, size = 13, fill = '#d8fbff', weight = '700') {
+    const text = createText(label, {
+      fontFamily: FONT_BODY,
+      fontSize: size,
+      fill,
+      fontWeight: weight,
+      wordWrap: true,
+      wordWrapWidth: 210,
+      lineHeight: Math.round(size * 1.24),
+      letterSpacing: 0
+    });
+    text.position.set(x, y);
+    return text;
+  }
+
+  createIntelPanels(width, height) {
+    this.intelPanels = new PIXI.Container();
+    this.container.addChild(this.intelPanels);
+
+    if (this.layout.showLeftIntel) {
+      const left = this.createPanel(230, 292, 0x66ffdd);
+      left.position.set(22, 128);
+      const title = this.createIntelText('ROSTER SIGNAL', 16, 10, 13, '#ffffff', '900');
+      const count = this.createIntelText('', 16, 46, 14, '#ffef7e', '900');
+      const progress = this.createIntelText('', 16, 78, 13, '#b8fff1');
+      const hint = this.createIntelText('Locked craft stay visible so the next target is obvious before a run starts.', 16, 126, 13, '#9fc8d8');
+      left.addChild(title, count, progress, hint);
+      this.leftIntel = { panel: left, count, progress };
+      this.intelPanels.addChild(left);
+    }
+
+    if (this.layout.showSideIntel) {
+      const right = this.createPanel(262, 380, 0xffd166);
+      right.position.set(width - 284, 128);
+      const title = this.createIntelText('COMBAT READOUT', 16, 10, 13, '#ffffff', '900');
+      const role = this.createIntelText('', 16, 44, 17, '#ffef7e', '900');
+      const weapon = this.createIntelText('', 16, 76, 13, '#d8fbff');
+      const trait = this.createIntelText('', 16, 126, 13, '#9ceeff');
+      const unlock = this.createIntelText('', 16, 302, 13, '#ffd166', '900');
+      const statPanel = createShipStatPanel(this.ships[this.selectedIndex], {
+        compact: true,
+        width: 228,
+        accent: 0xffd166,
+        ranges: this.statRanges,
+        title: 'LIVE TUNE'
+      });
+      statPanel.position.set(131, 186);
+      right.addChild(title, role, weapon, trait, statPanel, unlock);
+      this.rightIntel = { panel: right, role, weapon, trait, statPanel, unlock };
+      this.intelPanels.addChild(right);
+    }
+
+    if (!this.layout.showSideIntel) {
+      const strip = this.createPanel(Math.min(width - 24, 560), 82, 0x00ffcc);
+      strip.position.set((width - strip.width) / 2, height - (this.layout.isMobile ? 224 : 204));
+      const role = this.createIntelText('', 14, 10, this.layout.isMobile ? 13 : 15, '#ffef7e', '900');
+      const weapon = this.createIntelText('', 14, 39, this.layout.isMobile ? 12 : 13, '#d8fbff');
+      role.style.wordWrapWidth = strip.width - 28;
+      weapon.style.wordWrapWidth = strip.width - 28;
+      strip.addChild(role, weapon);
+      this.compactIntel = { panel: strip, role, weapon };
+      this.intelPanels.addChild(strip);
+    }
+
+    this.updateIntelPanels();
+    this.shipCards.forEach((shipCard, index) => {
+      if (shipCard.statPanel) {
+        shipCard.statPanel.visible = index === this.selectedIndex && !this.layout.showSideIntel && !this.compactIntel;
+      }
+    });
+  }
+
+  createRosterStrip(width, height) {
+    this.rosterStrip = new PIXI.Container();
+    this.rosterStrip.position.set(width / 2, height - (this.layout.isMobile ? 138 : 118));
+    this.container.addChild(this.rosterStrip);
+    this.updateRosterStrip();
+  }
+
+  createNavArrows(width, height) {
+    const y = this.carouselContainer.y - (this.layout.isMobile ? 8 : 22);
+    const offset = this.layout.isMobile ? (width / 2 - 64) : Math.min(330, width * 0.28);
+    this.prevButton = this.createButton('<', width / 2 - offset - 22, y, 44, 44, 0x061426, 0x9ceeff, () => this.navigateLeft());
+    this.nextButton = this.createButton('>', width / 2 + offset - 22, y, 44, 44, 0x061426, 0x9ceeff, () => this.navigateRight());
+    this.container.addChild(this.prevButton, this.nextButton);
+  }
+
   createAnimatedBackground(width, height) {
     // Starfield - drifting stars
     this.stars = [];
@@ -283,10 +444,10 @@ export class ShipSelectScene {
   }
 
   async createShipCarousel(width, carouselHeight) {
-    this.shipSpacing = 450; // Horizontal spacing between ships
-    this.centerScale = 1.2; // Center ship is larger
-    this.sideScale = 0.5;   // Side ships are smaller
-    this.sideAlpha = 0.6;   // Side ships are dimmer
+    this.shipSpacing = Math.min(470, Math.max(250, width * (this.layout.isMobile ? 0.72 : 0.38)));
+    this.centerScale = this.layout.isMobile ? 1.02 : 1.22;
+    this.sideScale = this.layout.isMobile ? 0.42 : 0.52;
+    this.sideAlpha = this.layout.isMobile ? 0.38 : 0.54;
     this.animating = false;
 
     // Create ship display containers
@@ -310,26 +471,37 @@ export class ShipSelectScene {
     const textAccent = this.getReadableAccent(variant);
     const glowColor = variant?.glow || variant?.tint || 0x00ff00;
 
+    const heroY = this.layout.isMobile ? -38 : -58;
+    const heroSize = this.layout.isMobile ? 128 : 172;
+    container.heroY = heroY;
+
+    const pedestal = new PIXI.Graphics();
+    pedestal.ellipse(0, this.layout.isMobile ? 55 : 62, heroSize * 0.72, 18);
+    pedestal.fill({ color: accent, alpha: locked ? 0.1 : 0.18 });
+    pedestal.stroke({ color: accent, width: 2, alpha: locked ? 0.28 : 0.46 });
+    container.addChild(pedestal);
+    container.pedestal = pedestal;
+
     // DRAMATIC MULTI-LAYER GLOW SYSTEM
     const glowLayers = new PIXI.Container();
 
     // Outer pulse ring (large)
     const outerRing = new PIXI.Graphics();
-    outerRing.circle(0, -50, 140);
+    outerRing.circle(0, heroY, heroSize * 0.86);
     outerRing.stroke({ color: accent, width: 3, alpha: 0 });
     glowLayers.addChild(outerRing);
     container.outerRing = outerRing;
 
     // Mid glow ring
     const midRing = new PIXI.Graphics();
-    midRing.circle(0, -50, 110);
+    midRing.circle(0, heroY, heroSize * 0.68);
     midRing.fill({ color: glowColor, alpha: 0 });
     glowLayers.addChild(midRing);
     container.midRing = midRing;
 
     // Inner intense glow
     const innerGlow = new PIXI.Graphics();
-    innerGlow.circle(0, -50, 85);
+    innerGlow.circle(0, heroY, heroSize * 0.52);
     innerGlow.fill({ color: variant?.tint || 0xffffff, alpha: 0 });
     glowLayers.addChild(innerGlow);
     container.innerGlow = innerGlow;
@@ -339,12 +511,12 @@ export class ShipSelectScene {
 
     // Light rays container
     const lightRays = new PIXI.Container();
-    lightRays.position.set(0, -50);
+    lightRays.position.set(0, heroY);
     for (let i = 0; i < 8; i++) {
       const ray = new PIXI.Graphics();
       const angle = (Math.PI * 2 * i) / 8;
       ray.moveTo(0, 0);
-      ray.lineTo(Math.cos(angle) * 120, Math.sin(angle) * 120);
+      ray.lineTo(Math.cos(angle) * heroSize * 0.82, Math.sin(angle) * heroSize * 0.82);
       ray.stroke({ color: accent, width: 2, alpha: 0 });
       lightRays.addChild(ray);
     }
@@ -356,13 +528,12 @@ export class ShipSelectScene {
     if (shipTexture && shipTexture.width > 0) {
       const sprite = new PIXI.Sprite(shipTexture);
       sprite.anchor.set(0.5);
-      sprite.position.set(0, -50);
+      sprite.position.set(0, heroY);
       if (Number.isFinite(variant?.tint)) {
         sprite.tint = variant.tint;
       }
 
-      const maxSize = 150; // Larger base size for center ship
-      const scale = Math.min(maxSize / sprite.width, maxSize / sprite.height);
+      const scale = Math.min(heroSize / sprite.width, heroSize / sprite.height);
       sprite.scale.set(scale);
 
       container.addChild(sprite);
@@ -371,7 +542,7 @@ export class ShipSelectScene {
 
     if (locked) {
       const lockPlate = new PIXI.Graphics();
-      lockPlate.roundRect(-108, -158, 216, 216, 10);
+      lockPlate.roundRect(-heroSize * 0.72, heroY - heroSize * 0.52, heroSize * 1.44, heroSize * 1.08, 10);
       lockPlate.fill({ color: 0x020711, alpha: 0.62 });
       lockPlate.stroke({ color: 0xffcc00, width: 2, alpha: 0.7 });
       container.addChild(lockPlate);
@@ -387,14 +558,14 @@ export class ShipSelectScene {
         strokeThickness: 3
       });
       lockText.anchor.set(0.5);
-      lockText.position.set(0, -50);
+      lockText.position.set(0, heroY);
       container.addChild(lockText);
       container.lockText = lockText;
     }
 
     // Holographic scan line effect
     const scanLine = new PIXI.Graphics();
-    scanLine.rect(-80, -50, 160, 3);
+    scanLine.rect(-heroSize * 0.52, heroY, heroSize * 1.04, 3);
     scanLine.fill({ color: 0x00ffff, alpha: 0 });
     container.addChild(scanLine);
     container.scanLine = scanLine;
@@ -404,15 +575,15 @@ export class ShipSelectScene {
 
     // Legacy glow for compatibility
     const glow = new PIXI.Graphics();
-    glow.circle(0, -50, 100);
+    glow.circle(0, heroY, heroSize * 0.62);
     glow.fill({ color: accent, alpha: 0 });
     container.addChild(glow);
     container.glowEffect = glow;
 
     // Ship name below sprite - LARGER and more readable
     const name = createText(ship.name, {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 28,
+      fontFamily: FONT_DISPLAY,
+      fontSize: this.layout.isMobile ? 22 : 30,
       fill: this.toHexText(textAccent),
       align: 'center',
       fontWeight: 'bold',
@@ -424,40 +595,41 @@ export class ShipSelectScene {
       dropShadowDistance: 0
     });
     name.anchor.set(0.5, 0);
-    name.position.set(0, 65);
+    name.position.set(0, this.layout.isMobile ? 77 : 88);
     container.addChild(name);
     container.nameText = name;
 
     // Ship description - BETTER spacing and size
-    const teaser = this.getShortTeaser(ship.baseDescription || ship.description);
+    const teaser = this.getShortTeaser(ship.baseDescription || ship.description, this.layout.isMobile ? 54 : 68);
     const desc = createText(teaser, {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 15,
-      fill: '#cccccc',
+      fontFamily: FONT_BODY,
+      fontSize: this.layout.isMobile ? 14 : 16,
+      fill: '#d8fbff',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: 380,
-      lineHeight: 20
+      wordWrapWidth: this.layout.isMobile ? 310 : 430,
+      lineHeight: this.layout.isMobile ? 18 : 21,
+      fontWeight: '700'
     });
     desc.anchor.set(0.5, 0);
-    desc.position.set(0, 105);
+    desc.position.set(0, this.layout.isMobile ? 108 : 126);
     container.addChild(desc);
     container.descText = desc;
 
     const traitText = this.getShipTraitText(ship);
     const trait = createText(traitText, {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 13,
+      fontFamily: FONT_BODY,
+      fontSize: this.layout.isMobile ? 12 : 13,
       fill: this.toHexText(textAccent),
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: 620,
+      wordWrapWidth: this.layout.isMobile ? 330 : 560,
       lineHeight: 17,
       stroke: '#000000',
       strokeThickness: 2
     });
     trait.anchor.set(0.5, 0);
-    trait.position.set(0, 130);
+    trait.position.set(0, this.layout.isMobile ? 145 : 160);
     container.addChild(trait);
     container.traitText = trait;
 
@@ -469,7 +641,7 @@ export class ShipSelectScene {
       title: 'SHIP TUNE'
     });
     statPanel.scale.set(1 / this.centerScale);
-    statPanel.position.set(0, 146);
+    statPanel.position.set(0, this.layout.isMobile ? 176 : 194);
     container.addChild(statPanel);
     container.statPanel = statPanel;
 
@@ -497,142 +669,106 @@ export class ShipSelectScene {
   }
 
   updateCarouselPositions(animate = true) {
-    const duration = animate ? 500 : 0; // Longer animation for more drama
-
-    this.shipCards.forEach((shipContainer, i) => {
+    const duration = animate ? 460 : 0;
+    const targets = this.shipCards.map((shipContainer, i) => {
       const offset = i - this.selectedIndex;
-      const targetX = offset * this.shipSpacing;
+      const clampedOffset = Math.max(-3, Math.min(3, offset));
       const isCenter = (i === this.selectedIndex);
+      const targetX = clampedOffset * this.shipSpacing;
       const targetScale = isCenter ? this.centerScale : this.sideScale;
       const targetAlpha = isCenter ? (shipContainer.locked ? 0.82 : 1.0) : (shipContainer.locked ? 0.34 : this.sideAlpha);
-
-      // More dramatic tilt for side ships
       const targetRotation = isCenter ? 0 : (offset < 0 ? -0.15 : 0.15);
+      return {
+        shipContainer,
+        isCenter,
+        hidden: Math.abs(offset) > 3,
+        startX: shipContainer.x,
+        startScale: shipContainer.scale.x || targetScale,
+        startAlpha: shipContainer.alpha,
+        startRotation: shipContainer.rotation,
+        targetX,
+        targetScale,
+        targetAlpha: Math.abs(offset) > 3 ? 0 : targetAlpha,
+        targetRotation
+      };
+    });
 
-      if (duration > 0 && !this.animating) {
-        // DRAMATIC animation with elastic bounce
-        this.animating = true;
-        const startX = shipContainer.x;
-        const startScale = shipContainer.scale.x;
-        const startAlpha = shipContainer.alpha;
-        const startRotation = shipContainer.rotation;
-        const startTime = Date.now();
+    const applyTarget = ({ shipContainer, isCenter, hidden, targetX, targetScale, targetAlpha, targetRotation }) => {
+      shipContainer.x = targetX;
+      shipContainer.scale.set(targetScale);
+      shipContainer.alpha = targetAlpha;
+      shipContainer.rotation = targetRotation;
+      shipContainer.visible = !hidden || targetAlpha > 0.01;
+      shipContainer.zIndex = isCenter ? 10 : Math.max(0, 4 - Math.abs(shipContainer.shipIndex - this.selectedIndex));
+      if (shipContainer.nameText) shipContainer.nameText.visible = isCenter;
+      if (shipContainer.descText) shipContainer.descText.visible = isCenter;
+      if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
+      if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter && !this.layout.showSideIntel && !this.compactIntel;
+      if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
+      if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;
+      if (shipContainer.pedestal) shipContainer.pedestal.visible = isCenter;
 
-        // Trigger particle burst for newly selected ship
-        if (isCenter && animate) {
-          this.createSelectionParticles(shipContainer);
-          // Whoosh sound effect
-          AudioManager.playSfx('forceField', { volume: 0.3, force: false });
-        }
-
-        const animateFrame = () => {
-          const elapsed = Date.now() - startTime;
-          const t = Math.min(1, elapsed / duration);
-
-          // ELASTIC EASING for more bounce
-          const eased = t < 0.5
-            ? 0.5 * Math.pow(2 * t, 3)
-            : 1 - 0.5 * Math.pow(-2 * t + 2, 3);
-
-          // Add overshoot for center ship selection
-          const bounceT = isCenter && t > 0.7
-            ? t + Math.sin((t - 0.7) * Math.PI * 4) * 0.03 * (1 - t)
-            : t;
-
-          shipContainer.x = startX + (targetX - startX) * eased;
-          shipContainer.scale.set(startScale + (targetScale - startScale) * bounceT);
-          shipContainer.alpha = startAlpha + (targetAlpha - startAlpha) * eased;
-          shipContainer.rotation = startRotation + (targetRotation - startRotation) * eased;
-
-          // DRAMATIC multi-layer glow animation
-          if (isCenter) {
-            const pulse = Math.sin(elapsed * 0.008) * 0.5 + 0.5;
-
-            // Outer ring pulse
-            if (shipContainer.outerRing) {
-              shipContainer.outerRing.alpha = pulse * 0.4 * eased;
-              shipContainer.outerRing.scale.set(1 + pulse * 0.15);
-            }
-
-            // Mid ring glow
-            if (shipContainer.midRing) {
-              shipContainer.midRing.alpha = pulse * 0.25 * eased;
-            }
-
-            // Inner bright core
-            if (shipContainer.innerGlow) {
-              shipContainer.innerGlow.alpha = pulse * 0.15 * eased;
-            }
-
-            // Light rays rotation
-            if (shipContainer.lightRays) {
-              shipContainer.lightRays.alpha = pulse * 0.6 * eased;
-              shipContainer.lightRays.rotation += 0.02;
-              shipContainer.lightRays.children.forEach((ray, idx) => {
-                ray.alpha = (Math.sin(elapsed * 0.01 + idx) * 0.5 + 0.5) * eased;
-              });
-            }
-
-            // Holographic scan line sweep
-            if (shipContainer.scanLine) {
-              const scanProgress = (elapsed % 1000) / 1000;
-              shipContainer.scanLine.y = -130 + scanProgress * 160;
-              shipContainer.scanLine.alpha = (1 - Math.abs(scanProgress - 0.5) * 2) * 0.6 * eased;
-            }
-
-            // Legacy glow
-            if (shipContainer.glowEffect) {
-              shipContainer.glowEffect.alpha = pulse * 0.2 * eased;
-            }
-          } else {
-            // Hide all effects for non-center ships
-            if (shipContainer.outerRing) shipContainer.outerRing.alpha = 0;
-            if (shipContainer.midRing) shipContainer.midRing.alpha = 0;
-            if (shipContainer.innerGlow) shipContainer.innerGlow.alpha = 0;
-            if (shipContainer.lightRays) shipContainer.lightRays.alpha = 0;
-            if (shipContainer.scanLine) shipContainer.scanLine.alpha = 0;
-            if (shipContainer.glowEffect) shipContainer.glowEffect.alpha = 0;
-          }
-
-          // Animate particles
-          this.updateParticles(shipContainer, elapsed);
-
-          if (t < 1) {
-            requestAnimationFrame(animateFrame);
-          } else {
-            this.animating = false;
-            this.updateButtons(); // Update buttons after animation
-          }
-        };
-        animateFrame();
-      } else {
-        // Immediate positioning
-        shipContainer.x = targetX;
-        shipContainer.scale.set(targetScale);
-        shipContainer.alpha = targetAlpha;
-        shipContainer.rotation = targetRotation;
-
-        // Immediate glow state - hide all effects for non-center
+      if (!isCenter) {
         if (shipContainer.outerRing) shipContainer.outerRing.alpha = 0;
         if (shipContainer.midRing) shipContainer.midRing.alpha = 0;
         if (shipContainer.innerGlow) shipContainer.innerGlow.alpha = 0;
         if (shipContainer.lightRays) shipContainer.lightRays.alpha = 0;
         if (shipContainer.scanLine) shipContainer.scanLine.alpha = 0;
-        if (shipContainer.glowEffect) shipContainer.glowEffect.alpha = isCenter ? 0.15 : 0;
+        if (shipContainer.glowEffect) shipContainer.glowEffect.alpha = 0;
+      } else if (shipContainer.glowEffect) {
+        shipContainer.glowEffect.alpha = 0.16;
       }
+    };
 
-      // Hide/show text based on whether it's center
-      if (shipContainer.nameText) shipContainer.nameText.visible = isCenter;
-      if (shipContainer.descText) shipContainer.descText.visible = isCenter;
-      if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
-      if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter;
-      if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
-      if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;
-    });
-
-    if (!animate) {
+    if (!duration) {
+      targets.forEach(applyTarget);
       this.updateButtons();
+      this.updateIntelPanels();
+      this.updateRosterStrip();
+      return;
     }
+
+    this.animating = true;
+    const centerTarget = targets.find(target => target.isCenter);
+    if (centerTarget) {
+      this.createSelectionParticles(centerTarget.shipContainer);
+      AudioManager.playSfx('forceField', { volume: 0.3, force: false });
+    }
+
+    const startTime = Date.now();
+    const animateFrame = () => {
+      const elapsed = Date.now() - startTime;
+      const t = Math.min(1, elapsed / duration);
+      const eased = t < 0.5
+        ? 0.5 * Math.pow(2 * t, 3)
+        : 1 - 0.5 * Math.pow(-2 * t + 2, 3);
+
+      targets.forEach((target) => {
+        const { shipContainer, isCenter } = target;
+        const bounce = isCenter && t > 0.62
+          ? Math.sin((t - 0.62) * Math.PI * 3.6) * 0.035 * (1 - t)
+          : 0;
+        shipContainer.x = target.startX + (target.targetX - target.startX) * eased;
+        const scale = target.startScale + (target.targetScale - target.startScale) * eased + bounce;
+        shipContainer.scale.set(scale);
+        shipContainer.alpha = target.startAlpha + (target.targetAlpha - target.startAlpha) * eased;
+        shipContainer.rotation = target.startRotation + (target.targetRotation - target.startRotation) * eased;
+        shipContainer.visible = shipContainer.alpha > 0.01;
+        applyTarget({ ...target, targetX: shipContainer.x, targetScale: scale, targetAlpha: shipContainer.alpha, targetRotation: shipContainer.rotation });
+        if (isCenter) this.updateParticles(shipContainer, elapsed);
+      });
+
+      if (t < 1) {
+        requestAnimationFrame(animateFrame);
+      } else {
+        this.animating = false;
+        targets.forEach(applyTarget);
+        this.updateButtons();
+        this.updateIntelPanels();
+        this.updateRosterStrip();
+      }
+    };
+    animateFrame();
   }
 
   updateButtons() {
@@ -737,7 +873,7 @@ export class ShipSelectScene {
       particle.fill({ color: i % 3 === 0 ? 0x00ffff : 0x00ff00, alpha: 0.8 });
 
       particle.x = 0;
-      particle.y = -50;
+      particle.y = shipContainer.heroY ?? -50;
       particle.vx = Math.cos(angle) * speed;
       particle.vy = Math.sin(angle) * speed;
       particle.life = 1.0; // Fade out over time
@@ -814,7 +950,93 @@ export class ShipSelectScene {
     const modelIndex = Math.max(0, this.baseOrder.indexOf(ship?.baseId)) + 1;
     const modelTotal = Math.max(1, this.baseOrder.length);
     const status = ship && isShipUnlocked(ship.spriteKey, this.unlockProgress) ? 'READY' : getShipUnlockLabel(ship?.spriteKey);
-    this.selectionInfoText.text = `SHIP ${this.selectedIndex + 1}/${this.ships.length}  |  TIER ${modelIndex}/${modelTotal}  |  ${status}`;
+    this.selectionInfoText.text = `HULL ${this.selectedIndex + 1}/${this.ships.length}  |  SERIES ${modelIndex}/${modelTotal}  |  ${status}`;
+  }
+
+  updateIntelPanels() {
+    const ship = this.ships[this.selectedIndex];
+    if (!ship) return;
+    const unlocked = isShipUnlocked(ship.spriteKey, this.unlockProgress);
+    const role = getShipCombatRole(ship, this.statRanges);
+    const weapon = this.getWeaponSummary(ship);
+    const unlock = unlocked ? 'STATUS: READY FOR LAUNCH' : getShipUnlockLabel(ship.spriteKey);
+    const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
+
+    if (this.leftIntel) {
+      this.leftIntel.count.text = `${unlockedCount}/${this.ships.length} HULLS READY`;
+      this.leftIntel.progress.text = `BEST SCORE ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}\nBEST RANK ${this.unlockProgress.bestRank || 0}\nBEST LEVEL ${this.unlockProgress.bestLevel || 1}`;
+    }
+
+    if (this.rightIntel) {
+      this.rightIntel.role.text = role;
+      this.rightIntel.weapon.text = weapon;
+      this.rightIntel.trait.text = this.getShipTraitText(ship);
+      this.rightIntel.unlock.text = unlock;
+      if (this.rightIntel.statPanel?.parent) {
+        this.rightIntel.statPanel.parent.removeChild(this.rightIntel.statPanel);
+      }
+      const accent = this.getReadableAccent(ship.visuals?.variant);
+      const statPanel = createShipStatPanel(ship, {
+        compact: true,
+        width: 228,
+        accent,
+        ranges: this.statRanges,
+        title: 'LIVE TUNE'
+      });
+      statPanel.position.set(131, 186);
+      this.rightIntel.panel.addChild(statPanel);
+      this.rightIntel.statPanel = statPanel;
+    }
+
+    if (this.compactIntel) {
+      this.compactIntel.role.text = `${role} | ${unlock}`;
+      this.compactIntel.weapon.text = weapon;
+    }
+  }
+
+  updateRosterStrip() {
+    if (!this.rosterStrip) return;
+    this.rosterStrip.removeChildren();
+    const dotGap = this.layout.isMobile ? 12 : 18;
+    const dotRadius = this.layout.isMobile ? 4 : 5;
+    const totalWidth = (this.ships.length - 1) * dotGap;
+    const rail = new PIXI.Graphics();
+    rail.roundRect(-totalWidth / 2 - 12, -16, totalWidth + 24, 32, 8);
+    rail.fill({ color: 0x020916, alpha: 0.76 });
+    rail.stroke({ color: 0x2deeff, width: 1, alpha: 0.4 });
+    this.rosterStrip.addChild(rail);
+
+    this.ships.forEach((ship, index) => {
+      const unlocked = isShipUnlocked(ship.spriteKey, this.unlockProgress);
+      const isSelected = index === this.selectedIndex;
+      const variant = ship.visuals?.variant;
+      const accent = this.getReadableAccent(variant);
+      const dot = new PIXI.Container();
+      dot.position.set(-totalWidth / 2 + index * dotGap, 0);
+      dot.eventMode = 'static';
+      dot.cursor = 'pointer';
+      const g = new PIXI.Graphics();
+      g.circle(0, 0, isSelected ? dotRadius + 3 : dotRadius);
+      g.fill({ color: unlocked ? accent : 0x3b4963, alpha: unlocked ? 0.96 : 0.68 });
+      g.stroke({ color: isSelected ? 0xffffff : 0x0c2238, width: isSelected ? 2 : 1, alpha: 0.86 });
+      dot.addChild(g);
+      dot.on('pointerdown', (event) => {
+        event.stopPropagation();
+        this.navigateTo(index);
+      });
+      this.rosterStrip.addChild(dot);
+    });
+  }
+
+  getWeaponSummary(ship) {
+    const weapon = ship?.weapon || {};
+    const stats = ship?.stats || {};
+    const bullets = Number(weapon.bullets || 1);
+    const spread = Number(weapon.spread || 0);
+    const fireRate = Math.max(1, Number(stats.fireRate || 150));
+    const cadence = Math.max(1, Math.round(1000 / fireRate));
+    const hitbox = Number(ship?.hitbox?.radius || 0);
+    return `WEAPON: ${bullets} LANE${bullets === 1 ? '' : 'S'} / ${cadence} SHOTS-S  |  SPREAD ${spread.toFixed(2)}  |  CORE ${hitbox.toFixed(0)}PX`;
   }
 
   createButton(label, x, y, width, height, bgColor, textColor, onClick) {
@@ -957,9 +1179,9 @@ export class ShipSelectScene {
     }
   }
 
-  getShortTeaser(description) {
-    if (description.length <= 40) return description;
-    const truncated = description.substring(0, 40);
+  getShortTeaser(description, maxLength = 48) {
+    if (!description || description.length <= maxLength) return description || '';
+    const truncated = description.substring(0, maxLength);
     const lastSpace = truncated.lastIndexOf(' ');
     return lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
   }

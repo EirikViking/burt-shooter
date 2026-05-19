@@ -769,14 +769,14 @@ checks.push({
     const expectedBuild = currentBuildVersion();
     return {
       ok: json.status === 'passed' &&
-      json.liveUrl === 'https://burt.tinyfoundry.app' &&
+      json.liveUrl === 'https://novaswarm.tinyfoundry.app' &&
       Boolean(expectedBuild) &&
       json.currentBuild?.version === expectedBuild &&
       Array.isArray(json.versionChecks) &&
       json.versionChecks.length >= 1 &&
       json.versionChecks.every((check) => check.ok === true && check.version === expectedBuild) &&
       json.latestLiveSmoke?.status === 'passed' &&
-      json.latestLiveSmoke?.baseUrl === 'https://burt.tinyfoundry.app' &&
+      json.latestLiveSmoke?.baseUrl === 'https://novaswarm.tinyfoundry.app' &&
       json.latestLiveSmoke?.build === expectedBuild &&
       (json.latestLiveSmoke?.console?.warningsOrErrors || 0) === 0 &&
       (json.latestLiveSmoke?.console?.pageErrors || 0) === 0 &&

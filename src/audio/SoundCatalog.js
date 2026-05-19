@@ -1,7 +1,12 @@
 import { AssetManifest } from '../assets/assetManifest.js';
 
 // Safe lookup helpers
-const getMusic = (partial) => AssetManifest.audio.music.find(p => p.includes(partial)) || `/audio/music/${partial}.mp3`;
+const getMusic = (partial) => {
+    const match = AssetManifest.audio.music.find(p => p.includes(partial));
+    if (match) return match;
+    const prefix = partial.startsWith('nova_swarm_') ? '/audio/music/nova-swarm' : '/audio/music';
+    return `${prefix}/${partial}.mp3`;
+};
 const getSfx = (partial) => {
     const match = AssetManifest.audio.sfx.find(p => p.includes(partial));
     if (!match) {
@@ -34,22 +39,55 @@ const numberedVoicePool = (base, count) => getVoicePool(
     ...Array.from({ length: count }, (_, index) => `${base}_${String(index + 1).padStart(2, '0')}.mp3`)
 );
 
-// Music Pools
-const MENU_POOL = [
+const GENERATED_MENU_POOL = [
+    getMusic('nova_swarm_menu_neon_cabinet'),
+    getMusic('nova_swarm_menu_starcoin_parade')
+];
+
+const GENERATED_INTRO_POOL = [
+    getMusic('nova_swarm_intro_overture')
+];
+
+const GENERATED_SCOREBOARD_POOL = [
+    getMusic('nova_swarm_scoreboard_trophy_orbit'),
+    getMusic('nova_swarm_menu_neon_cabinet')
+];
+
+const GENERATED_GAMEPLAY_POOL = [
+    getMusic('nova_swarm_gameplay_laser_lane'),
+    getMusic('nova_swarm_gameplay_comet_chase'),
+    getMusic('nova_swarm_gameplay_orbit_breaker'),
+    getMusic('nova_swarm_gameplay_bonus_heat')
+];
+
+const GENERATED_BOSS_POOL = [
+    getMusic('nova_swarm_boss_gate_overdrive'),
+    getMusic('nova_swarm_boss_cabinet_judgement')
+];
+
+const GENERATED_GAME_OVER_POOL = [
+    getMusic('nova_swarm_gameover_last_coin')
+];
+
+const GENERATED_VICTORY_POOL = [
+    getMusic('nova_swarm_victory_star_receipts')
+];
+
+const CLASSIC_MENU_POOL = [
     getMusic('Brave Pilots'),
     getMusic('SkyFire')
 ];
 
-const INTRO_POOL = [
+const CLASSIC_INTRO_POOL = [
     getMusic('nova_swarm_intro_overture')
 ];
 
-const SCOREBOARD_POOL = [
+const CLASSIC_SCOREBOARD_POOL = [
     getMusic('Space Heroes'),
     getMusic('SkyFire')
 ];
 
-const GAMEPLAY_POOL = [
+const CLASSIC_GAMEPLAY_POOL = [
     getMusic('bgm_v2'), // Forced start track
     getMusic('Alone Against Enemy'),
     getMusic('Battle in the Stars'),
@@ -57,26 +95,60 @@ const GAMEPLAY_POOL = [
     getMusic('Without Fear')
 ];
 
-const BOSS_POOL = [
+const CLASSIC_BOSS_POOL = [
     getMusic('DeathMatch')
 ];
 
-const GAME_OVER_POOL = [
+const CLASSIC_GAME_OVER_POOL = [
     getMusic('Defeated')
 ];
 
-const VICTORY_POOL = [
+const CLASSIC_VICTORY_POOL = [
     getMusic('Victory Tune')
 ];
 
+export const MUSIC_PACKS = {
+    generated: 'generated',
+    classic: 'classic'
+};
+
+export const MUSIC_PLAYLISTS_BY_PACK = {
+    generated: {
+        intro: GENERATED_INTRO_POOL,
+        menu: GENERATED_MENU_POOL,
+        scoreboard: GENERATED_SCOREBOARD_POOL,
+        gameplay: GENERATED_GAMEPLAY_POOL,
+        boss: GENERATED_BOSS_POOL,
+        gameover: GENERATED_GAME_OVER_POOL,
+        victory: GENERATED_VICTORY_POOL
+    },
+    classic: {
+        intro: CLASSIC_INTRO_POOL,
+        menu: CLASSIC_MENU_POOL,
+        scoreboard: CLASSIC_SCOREBOARD_POOL,
+        gameplay: CLASSIC_GAMEPLAY_POOL,
+        boss: CLASSIC_BOSS_POOL,
+        gameover: CLASSIC_GAME_OVER_POOL,
+        victory: CLASSIC_VICTORY_POOL
+    }
+};
+
+export function normalizeMusicPack(pack) {
+    return pack === MUSIC_PACKS.classic ? MUSIC_PACKS.classic : MUSIC_PACKS.generated;
+}
+
+export function getMusicPlaylists(pack = MUSIC_PACKS.generated) {
+    return MUSIC_PLAYLISTS_BY_PACK[normalizeMusicPack(pack)];
+}
+
 export const MUSIC_PLAYLISTS = {
-    intro: INTRO_POOL,
-    menu: MENU_POOL,
-    scoreboard: SCOREBOARD_POOL,
-    gameplay: GAMEPLAY_POOL,
-    boss: BOSS_POOL,
-    gameover: GAME_OVER_POOL,
-    victory: VICTORY_POOL
+    intro: [...GENERATED_INTRO_POOL, ...CLASSIC_INTRO_POOL],
+    menu: [...GENERATED_MENU_POOL, ...CLASSIC_MENU_POOL],
+    scoreboard: [...GENERATED_SCOREBOARD_POOL, ...CLASSIC_SCOREBOARD_POOL],
+    gameplay: [...GENERATED_GAMEPLAY_POOL, ...CLASSIC_GAMEPLAY_POOL],
+    boss: [...GENERATED_BOSS_POOL, ...CLASSIC_BOSS_POOL],
+    gameover: [...GENERATED_GAME_OVER_POOL, ...CLASSIC_GAME_OVER_POOL],
+    victory: [...GENERATED_VICTORY_POOL, ...CLASSIC_VICTORY_POOL]
 };
 
 export const SFX_MIX = {
@@ -120,7 +192,10 @@ export const SFX_MIX = {
     nova_shield_snap: { volume: 0.54, minIntervalMs: 140 },
     nova_rank_fanfare: { volume: 0.62, minIntervalMs: 800 },
     nova_highscore_chime: { volume: 0.62, minIntervalMs: 500 },
-    nova_enemy_pew_cluster: { volume: 0.2, minIntervalMs: 80 },
+    nova_global_near_fanfare: { volume: 0.68, minIntervalMs: 900 },
+    nova_global_slot_fanfare: { volume: 0.84, minIntervalMs: 900 },
+    nova_top3_fanfare: { volume: 0.96, minIntervalMs: 900 },
+    nova_number_one_fanfare: { volume: 1.05, minIntervalMs: 900 },
     nova_player_hit_crackle: { volume: 0.72, minIntervalMs: 220 },
     nova_life_extend_bloom: { volume: 0.66, minIntervalMs: 700 },
     nova_wave_clear_sweep: { volume: 0.54, minIntervalMs: 700 },
@@ -161,10 +236,17 @@ export const VOICE_MIX = {
     mission_control_combo: { volume: 0.8, duckFactor: 0.46, duckMs: 1100, cooldownMs: 9000 },
     mission_control_local_highscore: { volume: 0.82, duckFactor: 0.46, duckMs: 2200, cooldownMs: 7000 },
     mission_control_global_highscore: { volume: 0.96, duckFactor: 0.32, duckMs: 3400, cooldownMs: 9000 },
+    mission_control_global_close: { volume: 0.9, duckFactor: 0.42, duckMs: 2100, cooldownMs: 42000 },
+    mission_control_top3_close: { volume: 0.94, duckFactor: 0.38, duckMs: 2300, cooldownMs: 42000 },
+    mission_control_number_one_close: { volume: 0.98, duckFactor: 0.34, duckMs: 2600, cooldownMs: 42000 },
+    mission_control_top3_highscore: { volume: 1.02, duckFactor: 0.28, duckMs: 3800, cooldownMs: 9000 },
+    mission_control_number_one_highscore: { volume: 1.06, duckFactor: 0.24, duckMs: 4300, cooldownMs: 9000 },
+    mission_control_near_miss: { volume: 0.84, duckFactor: 0.46, duckMs: 2300, cooldownMs: 9000 },
     mission_control_personal_best: { volume: 0.82, duckFactor: 0.48, duckMs: 2200, cooldownMs: 7000 },
     mission_control_restart: { volume: 0.72, duckFactor: 0.6, duckMs: 1100, cooldownMs: 3600 },
     mission_control_hijacker: { volume: 0.78, duckFactor: 0.54, duckMs: 1600, cooldownMs: 6500 },
-    mission_control_tractor_hijack: { volume: 0.82, duckFactor: 0.44, duckMs: 1450, cooldownMs: 10000 }
+    mission_control_tractor_hijack: { volume: 0.82, duckFactor: 0.44, duckMs: 1450, cooldownMs: 10000 },
+    mission_control_credits: { volume: 0.9, duckFactor: 0.34, duckMs: 3600, cooldownMs: 0 }
 };
 
 export const VOICE_EVENT_FALLBACKS = {
@@ -179,10 +261,17 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_combo: 'mission_control_combo_01.mp3',
     mission_control_local_highscore: 'mission_control_local_highscore_01.mp3',
     mission_control_global_highscore: 'mission_control_global_highscore_01.mp3',
+    mission_control_global_close: 'mission_control_global_close_01.mp3',
+    mission_control_top3_close: 'mission_control_top3_close_01.mp3',
+    mission_control_number_one_close: 'mission_control_number_one_close_01.mp3',
+    mission_control_top3_highscore: 'mission_control_top3_highscore_01.mp3',
+    mission_control_number_one_highscore: 'mission_control_number_one_highscore_01.mp3',
+    mission_control_near_miss: 'mission_control_near_miss_01.mp3',
     mission_control_personal_best: 'mission_control_personal_best_01.mp3',
     mission_control_restart: 'mission_control_restart_01.mp3',
     mission_control_hijacker: 'mission_control_hijacker_01.mp3',
     mission_control_tractor_hijack: 'mission_control_tractor_hijack_01.mp3',
+    mission_control_credits: 'mission_control_credits_01.mp3',
     intro_narrator_01: 'intro_narrator_01.mp3',
     intro_narrator_02: 'intro_narrator_02.mp3',
     intro_narrator_03: 'intro_narrator_03.mp3',
@@ -233,7 +322,7 @@ export const SFX_CATALOG = {
         getSfx('forceField_003')
     ],
     'enemy_shoot': [
-        getSfx('nova_enemy_pew_cluster'), getSfx('laserRetro_000'), getSfx('laserRetro_001'), getSfx('laserSmall_003')
+        getSfx('laserRetro_000'), getSfx('laserRetro_001'), getSfx('laserSmall_003')
     ],
     // Direct matches from manifest
     'computerNoise': [getSfx('computerNoise_000')],
@@ -309,10 +398,17 @@ export const SFX_CATALOG = {
     'mission_control_combo': numberedVoicePool('mission_control_combo', 3),
     'mission_control_local_highscore': numberedVoicePool('mission_control_local_highscore', 2),
     'mission_control_global_highscore': numberedVoicePool('mission_control_global_highscore', 2),
+    'mission_control_global_close': numberedVoicePool('mission_control_global_close', 1),
+    'mission_control_top3_close': numberedVoicePool('mission_control_top3_close', 1),
+    'mission_control_number_one_close': numberedVoicePool('mission_control_number_one_close', 1),
+    'mission_control_top3_highscore': numberedVoicePool('mission_control_top3_highscore', 1),
+    'mission_control_number_one_highscore': numberedVoicePool('mission_control_number_one_highscore', 1),
+    'mission_control_near_miss': numberedVoicePool('mission_control_near_miss', 1),
     'mission_control_personal_best': numberedVoicePool('mission_control_personal_best', 2),
     'mission_control_restart': numberedVoicePool('mission_control_restart', 2),
     'mission_control_hijacker': numberedVoicePool('mission_control_hijacker', 2),
     'mission_control_tractor_hijack': numberedVoicePool('mission_control_tractor_hijack', 3),
+    'mission_control_credits': numberedVoicePool('mission_control_credits', 1),
     'boss_spawn': [
         getSfx('nova_boss_arrival_alarm'),
         getSfx('spaceEngineLow_000'),
@@ -348,8 +444,17 @@ export const SFX_CATALOG = {
     'nova_highscore_chime': [
         getSfx('nova_highscore_chime')
     ],
-    'nova_enemy_pew_cluster': [
-        getSfx('nova_enemy_pew_cluster')
+    'nova_global_near_fanfare': [
+        getSfx('nova_global_near_fanfare')
+    ],
+    'nova_global_slot_fanfare': [
+        getSfx('nova_global_slot_fanfare')
+    ],
+    'nova_top3_fanfare': [
+        getSfx('nova_top3_fanfare')
+    ],
+    'nova_number_one_fanfare': [
+        getSfx('nova_number_one_fanfare')
     ],
     'nova_player_hit_crackle': [
         getSfx('nova_player_hit_crackle')

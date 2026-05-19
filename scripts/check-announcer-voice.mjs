@@ -19,10 +19,17 @@ const requiredPools = {
   mission_control_combo: 3,
   mission_control_local_highscore: 2,
   mission_control_global_highscore: 2,
+  mission_control_global_close: 1,
+  mission_control_top3_close: 1,
+  mission_control_number_one_close: 1,
+  mission_control_top3_highscore: 1,
+  mission_control_number_one_highscore: 1,
+  mission_control_near_miss: 1,
   mission_control_personal_best: 2,
   mission_control_restart: 2,
   mission_control_hijacker: 2,
-  mission_control_tractor_hijack: 3
+  mission_control_tractor_hijack: 3,
+  mission_control_credits: 1
 };
 
 function publicPath(url) {
@@ -89,10 +96,17 @@ for (const forbidden of [
 for (const requiredText of [
   'voiceVariantBags',
   'mission_control_global_highscore',
+  'mission_control_global_close',
+  'mission_control_top3_close',
+  'mission_control_number_one_close',
+  'mission_control_top3_highscore',
+  'mission_control_number_one_highscore',
+  'mission_control_near_miss',
   'mission_control_local_highscore',
   'mission_control_combo',
   'mission_control_restart',
-  'mission_control_tractor_hijack'
+  'mission_control_tractor_hijack',
+  'mission_control_credits'
 ]) {
   if (!runtimeSource.includes(requiredText)) {
     errors.push(`announcer runtime marker missing: ${requiredText}`);

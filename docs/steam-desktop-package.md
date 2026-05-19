@@ -25,9 +25,9 @@ Outputs:
 
 ## Runtime Shape
 
-The Electron wrapper starts a local loopback server, serves the Vite `dist/` build, and implements `/api/highscores` locally for package health checks and offline fallback. The game runtime also keeps its own local leaderboard in `localStorage`, and desktop launches with `?desktop=1` so the online/global leaderboard path points at `https://burt.tinyfoundry.app/api/highscores` instead of mistaking the loopback API for the shared board.
+The Electron wrapper starts a local loopback server, serves the Vite `dist/` build, and implements `/api/highscores` locally for package health checks and offline fallback. The game runtime also keeps its own local leaderboard in `localStorage`, and desktop launches with `?desktop=1` so the online/global leaderboard path points at `https://novaswarm.tinyfoundry.app/api/highscores` instead of mistaking the loopback API for the shared board.
 
-The web deployment uses Cloudflare Pages and D1 at `https://burt.tinyfoundry.app`; the global leaderboard claim should remain phrased as an online/shared leaderboard, not a Steamworks leaderboard.
+The web deployment uses Cloudflare Pages and D1 at `https://novaswarm.tinyfoundry.app`; the global leaderboard claim should remain phrased as an online/shared leaderboard, not a Steamworks leaderboard.
 
 Latest leaderboard split evidence:
 

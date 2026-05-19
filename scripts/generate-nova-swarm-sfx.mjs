@@ -38,6 +38,30 @@ const sounds = [
     prompt_influence: 0.6
   },
   {
+    file: 'nova_global_near_fanfare.mp3',
+    text: 'A tense near-leaderboard arcade fanfare, rising score counter sparkle and restrained trophy shimmer, motivating and premium, no voice, no copyrighted melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.62
+  },
+  {
+    file: 'nova_global_slot_fanfare.mp3',
+    text: 'A triumphant global leaderboard slot fanfare for a neon arcade space shooter, confident trophy burst with holographic confetti sparkle, no voice, no copyrighted melody, under three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.64
+  },
+  {
+    file: 'nova_top3_fanfare.mp3',
+    text: 'A huge top-three leaderboard achievement fanfare, golden arcade cabinet flourish, space trophy resonance, bright score sparkle, no voice, no copyrighted melody, under four seconds.',
+    duration_seconds: 4,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_number_one_fanfare.mp3',
+    text: 'A massive number-one global leaderboard coronation fanfare for a premium neon arcade shooter, heroic synth brass, cosmic trophy impact, glittering score explosion, no voice, no copyrighted melody, under five seconds.',
+    duration_seconds: 5,
+    prompt_influence: 0.68
+  },
+  {
     file: 'nova_enemy_pew_cluster.mp3',
     text: 'A tiny clustered alien arcade laser shot, quick chirpy pew with digital swarm texture, readable in busy combat, no voice, no melody, under one second.',
     duration_seconds: 1,

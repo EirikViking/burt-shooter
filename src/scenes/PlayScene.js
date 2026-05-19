@@ -26,7 +26,8 @@ import {
   getAchievementPopup,
   getEnemyTaunt,
   getMicroMessage,
-  getAllNewPhrases
+  getAllNewPhrases,
+  getStoryTransmission
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
 
@@ -64,9 +65,12 @@ export class PlayScene {
     this.pausePressed = false;
     this.achievementTimer = 0;
     this.tauntTimer = 0;
+    this.storyTransmissionTimer = 0;
+    this.shownStoryTransmissionIds = new Set();
+    this.commsPortraitsReady = null;
     this.lowLivesShownFor = null;
     this.ambientBonusDroneTimer = 0;
-    this.easterEggTimer = 20000;
+    this.easterEggTimer = 0;
     this.ambientBonusDrones = []; // Lists for update
     this.legendaryFlyby = null;
     this.isReady = false;
@@ -116,6 +120,9 @@ export class PlayScene {
     this.tractorHijack = null;
     this.lastTractorHijack = null;
     this.tractorHijackLayer = null;
+    this.bossHazards = [];
+    this.bossHazardLayer = null;
+    this.lastBossHazardHit = null;
 
     // Ship intro state
     this.introActive = false;
@@ -262,6 +269,11 @@ export class PlayScene {
     this.tractorHijackLayer = new PIXI.Graphics();
     this.tractorHijackLayer.zIndex = 65;
     this.gameContainer.addChild(this.tractorHijackLayer);
+    this.bossHazards = [];
+    this.lastBossHazardHit = null;
+    this.bossHazardLayer = new PIXI.Graphics();
+    this.bossHazardLayer.zIndex = 66;
+    this.gameContainer.addChild(this.bossHazardLayer);
 
     // Initial load of ships AND Ranks
     Promise.all([
@@ -345,7 +357,7 @@ export class PlayScene {
         console.log('[PlayScene] Bonus core texture ready.');
       }
     });
-    GameAssets.loadCommsPortraits();
+    this.commsPortraitsReady = GameAssets.loadCommsPortraits();
 
     // Initialize touch controls
     try {
@@ -376,7 +388,7 @@ export class PlayScene {
       this.showToast('DEBUG STATS LOGGED (Console)', { fontSize: 20 });
     }
     if (e.key === 'F2') {
-      this.powerupManager.spawn(this.player.x, 100);
+      this.powerupManager.spawn(this.player.x, 100, true);
       this.showToast('SPAWNED BONUS PICKUP', { fontSize: 20 });
     }
     if (e.key === 'F3') {
@@ -388,8 +400,8 @@ export class PlayScene {
       this.showToast('SPAWNED ENEMIES', { fontSize: 20 });
     }
     if (e.key === 'F5') {
-      this.spawnEasterEgg();
-      this.showToast('TRIGGERED FLYBY', { fontSize: 20 });
+      this.showStoryTransmission({ force: true });
+      this.showToast('TRIGGERED STORY SIGNAL', { fontSize: 20 });
     }
   }
 
@@ -465,6 +477,9 @@ export class PlayScene {
     });
     this.applyGameplayBackdropLevel(this.game.level);
     this.powerupManager.checkLevelReset(this.game.level); // Reset powerup caps
+    if (this.game.level === 1) {
+      this.shownStoryTransmissionIds.clear();
+    }
 
     this.enemyManager.startLevel(this.game.level);
     if (startAtBoss) {
@@ -483,7 +498,7 @@ export class PlayScene {
 
     this.resetRandomTimers();
     this.ambientBonusDroneTimer = 2000 + Math.random() * 3000;
-    this.easterEggTimer = 20000; // Deterministic first flyby at 20s
+    this.queueStoryTransmission(postBossLevelIntro ? 3200 : 2600);
   }
 
   showLevelIntro({ postBoss = false } = {}) {
@@ -648,6 +663,7 @@ export class PlayScene {
       this.applyGameplayBackdropLevel(this.game?.level || 1);
       if (this.powerupManager) this.powerupManager.update(delta, this);
       this.updateTractorHijack(delta);
+      this.updateBossHazards(delta);
       if (this.particleManager) this.particleManager.update(delta);
       if (this.screenShake) this.screenShake.update(delta);
       if (this.scorePopupManager) this.scorePopupManager.update(delta);
@@ -2013,26 +2029,49 @@ export class PlayScene {
   }
 
   resetRandomTimers() {
-    this.achievementTimer = this.getRandomTimer(8000, 14000);
-    this.tauntTimer = this.getRandomTimer(6000, 11000);
+    this.achievementTimer = 0;
+    this.tauntTimer = 0;
+    this.storyTransmissionTimer = this.getRandomTimer(18000, 26000);
   }
 
   updateRandomPopups(delta) {
-    if (this.achievementTimer > 0) {
-      this.achievementTimer -= delta * 16.67;
-    } else {
-      const line = this.getNextLoreLine();
-      if (line && this.canShowLore()) this.showLoreBanner(line);
-      this.achievementTimer = this.getRandomTimer(18000, 26000);
+    if (this.storyTransmissionTimer > 0) {
+      this.storyTransmissionTimer -= delta * 16.67;
+      return;
     }
 
-    if (this.tauntTimer > 0) {
-      this.tauntTimer -= delta * 16.67;
-    } else {
-      const line = this.getNextLoreLine();
-      if (line && this.canShowLore()) this.showLoreBanner(line);
-      this.tauntTimer = this.getRandomTimer(16000, 24000);
+    const shown = this.showStoryTransmission();
+    this.storyTransmissionTimer = shown ? 0 : this.getRandomTimer(3500, 6500);
+  }
+
+  queueStoryTransmission(delayMs = 2600) {
+    const transmission = getStoryTransmission(this.game.level);
+    if (!transmission?.id || this.shownStoryTransmissionIds.has(transmission.id)) return;
+    this.storyTransmissionTimer = Math.max(500, delayMs);
+  }
+
+  showStoryTransmission({ force = false } = {}) {
+    const transmission = getStoryTransmission(this.game.level);
+    if (!transmission?.line) return false;
+    if (!force && this.shownStoryTransmissionIds.has(transmission.id)) return false;
+    if (!force && !this.canShowLore()) return false;
+    if (transmission.imageAlias && !GameAssets.isValidTexture(GameAssets.getCommsPortrait(transmission.imageAlias))) {
+      this.commsPortraitsReady?.then(() => {
+        if (this.game?.currentScene === this) {
+          this.queueStoryTransmission(500);
+        }
+      }).catch(() => {});
+      return false;
     }
+    const shown = this.showLoreBanner(transmission.line, {
+      title: transmission.title,
+      imageAlias: transmission.imageAlias,
+      force
+    });
+    if (!shown) return false;
+    this.shownStoryTransmissionIds.add(transmission.id);
+    this.lastStoryTransmissionId = transmission.id;
+    return true;
   }
 
   checkLowLives() {
@@ -2344,6 +2383,260 @@ export class PlayScene {
     });
   }
 
+  registerBossHazardFromBoss(boss, category = 'regular', details = {}) {
+    if (!boss || !this.player || !this.game) return null;
+
+    const width = this.game.getWidth ? this.game.getWidth() : this.game.app.screen.width;
+    const height = this.game.getHeight ? this.game.getHeight() : this.game.app.screen.height;
+    const sourceX = Number.isFinite(details.sourceX) ? details.sourceX : boss.x;
+    const sourceY = Number.isFinite(details.sourceY) ? details.sourceY : boss.y + 18;
+    const playerX = Number.isFinite(details.playerX) ? details.playerX : this.player.x;
+    const playerY = Number.isFinite(details.playerY) ? details.playerY : this.player.y;
+    const attack = details.attack || boss.profile?.attack || null;
+    const type = details.type || attack || 'aim';
+    const color = boss.profile?.accent || boss.profile?.palette || boss.color || 0xfff45c;
+    const startedAt = Date.now();
+    const base = {
+      id: `${startedAt}_${Math.random().toString(36).slice(2)}`,
+      category,
+      type,
+      attack,
+      sourceX,
+      sourceY,
+      startedAt,
+      durationMs: category === 'signature' ? 430 : 360,
+      color,
+      hit: false
+    };
+
+    let hazard;
+    if (type === 'wall' || attack === 'wall') {
+      const columns = typeof boss.getWallColumnOffsets === 'function'
+        ? boss.getWallColumnOffsets().map((offset) => sourceX + offset)
+        : [sourceX - 60, sourceX - 30, sourceX + 30, sourceX + 60];
+      hazard = {
+        ...base,
+        kind: 'wall',
+        columns,
+        startY: sourceY + Math.max(16, boss.radius * 0.25),
+        endY: height + 80,
+        width: Math.max(26, Math.min(40, width * 0.035)),
+        durationMs: 420
+      };
+    } else if (['ring', 'adds', 'radial', 'spiral', 'clock', 'chord'].includes(type) || ['spiral', 'clock', 'chord'].includes(attack)) {
+      const safeLane = Array.isArray(boss.safeLanes)
+        ? boss.safeLanes.find((lane) => lane?.kind === 'ring-wedge')
+        : null;
+      const safeAngle = Number.isFinite(Number(safeLane?.angle))
+        ? Number(safeLane.angle)
+        : (typeof boss.getRingSafeAngle === 'function' ? boss.getRingSafeAngle(type === 'adds' ? 14 : 16) : Math.PI / 2);
+      const safeWedge = Number.isFinite(Number(safeLane?.width))
+        ? Number(safeLane.width)
+        : (type === 'adds' ? 0.42 : 0.4);
+      const outerRadius = Math.max(boss.radius * 2.35, category === 'signature' ? 190 : 160);
+      hazard = {
+        ...base,
+        kind: 'ring',
+        innerRadius: outerRadius * 0.43,
+        outerRadius,
+        safeAngle,
+        safeWedge,
+        durationMs: 440
+      };
+    } else {
+      const angle = Number.isFinite(details.angle)
+        ? details.angle
+        : Math.atan2(playerY - sourceY, playerX - sourceX);
+      const isLance = type === 'lance' || attack === 'sniper';
+      const isFan = type === 'fan' || ['fan', 'burst', 'fakeout', 'mirror', 'cone'].includes(attack) || ['mirror', 'cone'].includes(type);
+      const spread = isLance
+        ? 0.16
+        : isFan
+          ? (type === 'mirror' ? 0.46 : type === 'cone' ? 0.66 : 0.48)
+          : 0.2;
+      hazard = {
+        ...base,
+        kind: isLance ? 'beam' : 'cone',
+        angle,
+        spread,
+        length: Math.max(height * 1.05, 560),
+        radius: isLance ? 24 : 42,
+        durationMs: isLance ? 380 : 360
+      };
+    }
+
+    this.bossHazards.push(hazard);
+    return hazard;
+  }
+
+  updateBossHazards() {
+    const layer = this.bossHazardLayer;
+    if (!layer) return;
+    layer.clear();
+    if (!Array.isArray(this.bossHazards) || this.bossHazards.length === 0) return;
+
+    const now = Date.now();
+    this.bossHazards = this.bossHazards.filter((hazard) => {
+      const progress = Math.max(0, Math.min(1, (now - hazard.startedAt) / hazard.durationMs));
+      if (progress >= 1) return false;
+      this.drawBossHazard(hazard, progress);
+      if (!hazard.hit && this.isPlayerInsideBossHazard(hazard)) {
+        hazard.hit = true;
+        this.damagePlayerFromBossHazard(hazard);
+      }
+      return true;
+    });
+  }
+
+  drawBossHazard(hazard, progress) {
+    const layer = this.bossHazardLayer;
+    if (!layer) return;
+    const alpha = Math.max(0, Math.sin((1 - progress) * Math.PI)) * 0.72;
+    const pulse = 1 + Math.sin(Date.now() * 0.05) * 0.08;
+    const color = hazard.color || 0xfff45c;
+
+    if (hazard.kind === 'wall') {
+      for (const x of hazard.columns || []) {
+        layer.roundRect(x - hazard.width / 2, hazard.startY, hazard.width, hazard.endY - hazard.startY, 8);
+        layer.fill({ color, alpha: 0.22 * alpha });
+        layer.moveTo(x, hazard.startY);
+        layer.lineTo(x, hazard.endY);
+      }
+      layer.stroke({ color: 0xffffff, width: 3 * pulse, alpha: 0.64 * alpha });
+      return;
+    }
+
+    if (hazard.kind === 'ring') {
+      layer.circle(hazard.sourceX, hazard.sourceY, hazard.outerRadius * pulse);
+      layer.stroke({ color, width: 9, alpha: 0.54 * alpha });
+      layer.circle(hazard.sourceX, hazard.sourceY, hazard.innerRadius);
+      layer.stroke({ color: 0xffffff, width: 3, alpha: 0.5 * alpha });
+      for (let i = 0; i < 14; i++) {
+        const a = (Math.PI * 2 * i) / 14 + progress * 0.8;
+        if (Math.abs(this.normalizeBossHazardAngle(a - hazard.safeAngle)) < hazard.safeWedge) continue;
+        layer.moveTo(
+          hazard.sourceX + Math.cos(a) * (hazard.innerRadius + 8),
+          hazard.sourceY + Math.sin(a) * (hazard.innerRadius + 8)
+        );
+        layer.lineTo(
+          hazard.sourceX + Math.cos(a) * (hazard.outerRadius - 8) * pulse,
+          hazard.sourceY + Math.sin(a) * (hazard.outerRadius - 8) * pulse
+        );
+      }
+      layer.stroke({ color, width: 3, alpha: 0.48 * alpha });
+      return;
+    }
+
+    const half = Math.max(0.01, hazard.spread / 2);
+    const points = [hazard.sourceX, hazard.sourceY];
+    const steps = hazard.kind === 'beam' ? 1 : 8;
+    for (let i = 0; i <= steps; i++) {
+      const t = steps === 1 ? i - 0.5 : i / steps - 0.5;
+      const a = hazard.angle + t * hazard.spread;
+      points.push(
+        hazard.sourceX + Math.cos(a) * hazard.length,
+        hazard.sourceY + Math.sin(a) * hazard.length
+      );
+    }
+    layer.poly(points);
+    layer.fill({ color, alpha: hazard.kind === 'beam' ? 0.18 * alpha : 0.13 * alpha });
+    const laneAngles = hazard.kind === 'beam' ? [0] : [-half, 0, half];
+    for (const offset of laneAngles) {
+      const a = hazard.angle + offset;
+      layer.moveTo(hazard.sourceX, hazard.sourceY);
+      layer.lineTo(
+        hazard.sourceX + Math.cos(a) * hazard.length,
+        hazard.sourceY + Math.sin(a) * hazard.length
+      );
+    }
+    layer.stroke({ color: 0xffffff, width: hazard.kind === 'beam' ? 8 * pulse : 4 * pulse, alpha: 0.36 * alpha });
+    for (const offset of laneAngles) {
+      const a = hazard.angle + offset;
+      layer.moveTo(hazard.sourceX, hazard.sourceY);
+      layer.lineTo(
+        hazard.sourceX + Math.cos(a) * hazard.length,
+        hazard.sourceY + Math.sin(a) * hazard.length
+      );
+    }
+    layer.stroke({ color, width: hazard.kind === 'beam' ? 4 * pulse : 2 * pulse, alpha: 0.76 * alpha });
+  }
+
+  isPlayerInsideBossHazard(hazard) {
+    if (!this.player?.active) return false;
+    if (this.player.activePowerup?.type === 'ghost') return false;
+    if (this.player.invulnerable) return false;
+
+    const playerRadius = this.player.radius || 12;
+    if (hazard.kind === 'wall') {
+      const py = this.player.y;
+      if (py + playerRadius < hazard.startY || py - playerRadius > hazard.endY) return false;
+      return (hazard.columns || []).some((x) => Math.abs(this.player.x - x) <= hazard.width / 2 + playerRadius);
+    }
+
+    const dx = this.player.x - hazard.sourceX;
+    const dy = this.player.y - hazard.sourceY;
+    const distance = Math.hypot(dx, dy);
+    if (hazard.kind === 'ring') {
+      if (distance < hazard.innerRadius - playerRadius || distance > hazard.outerRadius + playerRadius) return false;
+      const angle = Math.atan2(dy, dx);
+      return Math.abs(this.normalizeBossHazardAngle(angle - hazard.safeAngle)) > hazard.safeWedge;
+    }
+
+    const angleToPlayer = Math.atan2(dy, dx);
+    const diff = Math.abs(this.normalizeBossHazardAngle(angleToPlayer - hazard.angle));
+    const along = Math.cos(diff) * distance;
+    if (along < -playerRadius || along > hazard.length + playerRadius) return false;
+    const perpendicular = Math.sin(diff) * distance;
+    const angularHit = diff <= hazard.spread / 2;
+    const lineHit = Math.abs(perpendicular) <= (hazard.radius || 24) + playerRadius;
+    return angularHit || lineHit;
+  }
+
+  damagePlayerFromBossHazard(hazard) {
+    if (!this.player || this.player.invulnerable) return false;
+    const damageTaken = this.player.takeDamage();
+    this.lastBossHazardHit = {
+      type: hazard.type,
+      kind: hazard.kind,
+      category: hazard.category,
+      at: Date.now(),
+      playerX: Math.round(this.player.x),
+      playerY: Math.round(this.player.y)
+    };
+
+    if (damageTaken) {
+      this.lastHitAt = Date.now();
+      this.game.loseLife();
+      this.triggerPlayerDeathFeedback();
+      this.screenShake?.shake(7, 18);
+      AudioManager.playSfx('impactMetal', { volume: 0.38, minIntervalMs: 180 });
+    } else {
+      this.screenShake?.shake(4, 12);
+      this.particleManager?.createHitSpark(this.player.x, this.player.y, hazard.color || 0xfff45c);
+      AudioManager.playSfx('forceField', { volume: 0.28, minIntervalMs: 180 });
+    }
+
+    this.particleManager?.createHitSpark(this.player.x, this.player.y, hazard.color || 0xfff45c);
+    this.showToast('BOSS WEAPON HIT', {
+      fontSize: this.game.getWidth() < 620 ? 16 : 18,
+      fill: '#ff6b7a',
+      stroke: '#140006',
+      strokeThickness: 2,
+      duration: 720,
+      slot: 'corner',
+      type: 'boss_hazard',
+      priority: 2
+    });
+    return damageTaken;
+  }
+
+  normalizeBossHazardAngle(angle) {
+    let value = angle;
+    while (value > Math.PI) value -= Math.PI * 2;
+    while (value < -Math.PI) value += Math.PI * 2;
+    return value;
+  }
+
   distanceToSegment(px, py, ax, ay, bx, by) {
     const abx = bx - ax;
     const aby = by - ay;
@@ -2583,6 +2876,8 @@ export class PlayScene {
       slot: meta.slot,
       type: meta.type,
       message: meta.message,
+      title: meta.title || null,
+      imageAlias: meta.imageAlias || null,
       duration: meta.duration,
       ageMs: Math.max(0, Date.now() - meta.createdAt)
     };
@@ -2632,25 +2927,30 @@ export class PlayScene {
     return line;
   }
 
-  showLoreBanner(text) {
-    if (!text) return;
-    if (!this.canShowLore()) return;
+  showLoreBanner(text, options = {}) {
+    if (!text) return false;
+    if (!options.force && !this.canShowLore()) return false;
     const duration = 2500 + Math.random() * 1000;
     const compactHud = this.game.getWidth() < 620;
     const y = compactHud
-      ? Math.min(this.game.getHeight() - 170, Math.max(236, this.game.getHeight() * 0.34))
-      : Math.max(210, this.game.getHeight() * 0.3);
+      ? Math.min(this.game.getHeight() - 170, Math.max(220, this.game.getHeight() * 0.32))
+      : Math.max(240, this.game.getHeight() * 0.32);
     this.enqueueToast(text, {
-      fontSize: compactHud ? 18 : 22,
+      fontSize: compactHud ? 17 : 18,
       fill: '#ffffff',
       duration,
       slot: 'top',
       type: 'lore',
       banner: true,
-      title: 'COMMS BLIP',
+      title: options.title || 'QUIET SIGNAL',
+      imageAlias: options.imageAlias || null,
+      align: compactHud ? 'center' : 'right',
       y,
-      maxWidth: this.game.getWidth() * (compactHud ? 0.78 : 0.7)
+      maxWidth: compactHud
+        ? this.game.getWidth() * 0.78
+        : Math.min(360, this.game.getWidth() * 0.32)
     });
+    return true;
   }
 
   canShowLore() {
@@ -2708,8 +3008,12 @@ export class PlayScene {
       const maxTextHeight = 80;
 
       const commsPortraits = Object.keys(GameAssets.commsPortraits || {});
-      const hasAvatar = commsPortraits.length > 0;
-      const avatarSlot = hasAvatar ? 56 : 0;
+      const requestedAvatar = options.imageAlias && GameAssets.isValidTexture(GameAssets.getCommsPortrait(options.imageAlias))
+        ? options.imageAlias
+        : null;
+      const hasAvatar = Boolean(requestedAvatar) || commsPortraits.length > 0;
+      const avatarSize = options.type === 'lore' ? 54 : 44;
+      const avatarSlot = hasAvatar ? avatarSize + 16 : 0;
       const contentWidth = Math.max(140, maxWidth - paddingX * 2 - avatarSlot);
       bannerText.style.wordWrapWidth = contentWidth;
       if (bannerText.updateText) bannerText.updateText(false);
@@ -2736,8 +3040,12 @@ export class PlayScene {
       const panelHeight = Math.max(52, bannerText.height + paddingY * 2);
       const panel = new PIXI.Graphics();
       panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
-      panel.fill({ color: 0x111111, alpha: 0.88 });
-      panel.stroke({ color: 0xffff00, width: 3 });
+      panel.fill({ color: options.type === 'lore' ? 0x05121c : 0x111111, alpha: options.type === 'lore' ? 0.78 : 0.88 });
+      panel.stroke({
+        color: options.type === 'lore' ? 0x6fe7ff : 0xffff00,
+        width: options.type === 'lore' ? 1.5 : 3,
+        alpha: options.type === 'lore' ? 0.78 : 1
+      });
 
       const accent = new PIXI.Graphics();
       accent.roundRect(-panelWidth / 2 + 6, -panelHeight / 2 + 6, panelWidth - 12, panelHeight - 12, 10);
@@ -2763,11 +3071,11 @@ export class PlayScene {
       if (options.title) {
         const titleLabel = createText(String(options.title).toUpperCase(), {
           fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: 14,
-          fill: '#ffff00', // Yellow for visibility
+          fontSize: options.type === 'lore' ? 12 : 14,
+          fill: options.type === 'lore' ? '#7ee9ff' : '#ffff00',
           fontWeight: 'bold',
           stroke: '#000000',
-          strokeThickness: 3
+          strokeThickness: options.type === 'lore' ? 2 : 3
         });
         titleLabel.anchor.set(0, 0.5);
         titleLabel.x = bannerText.x;
@@ -2776,21 +3084,27 @@ export class PlayScene {
       }
 
       if (hasAvatar) {
-        const pick = commsPortraits[Math.floor(Math.random() * commsPortraits.length)];
+        const pick = requestedAvatar || commsPortraits[Math.floor(Math.random() * commsPortraits.length)];
         const tex = GameAssets.getCommsPortrait(pick);
         if (GameAssets.isValidTexture(tex)) {
           const sticker = new PIXI.Sprite(tex);
           sticker.anchor.set(0.5);
-          sticker.width = 44;
-          sticker.height = 44;
+          sticker.width = avatarSize;
+          sticker.height = avatarSize;
           sticker.x = -panelWidth / 2 + paddingX + avatarSlot / 2;
           sticker.y = 0;
-          sticker.alpha = 0.85;
+          sticker.alpha = options.type === 'lore' ? 0.92 : 0.85;
           banner.addChild(sticker);
         }
       }
 
-      banner.x = width / 2;
+      if (options.align === 'right') {
+        banner.x = width - panelWidth / 2 - 18;
+      } else if (options.align === 'left') {
+        banner.x = panelWidth / 2 + 18;
+      } else {
+        banner.x = width / 2;
+      }
       banner.y = y;
       banner.alpha = 0;
       display = banner;
@@ -2836,6 +3150,8 @@ export class PlayScene {
       slot,
       priority: Number.isFinite(options.priority) ? options.priority : 0,
       duration,
+      title: options.title || null,
+      imageAlias: options.imageAlias || null,
       createdAt: now
     };
 
@@ -3760,68 +4076,16 @@ export class PlayScene {
   }
 
   updateEasterEgg(delta) {
-    if (this.introActive || !this.introComplete) return;
-
-    this.easterEggTimer -= delta * 16.67;
-    if (this.easterEggTimer <= 0 && !this.legendaryFlyby) {
-      this.spawnEasterEgg();
-    }
-
     if (this.legendaryFlyby) {
-      const egg = this.legendaryFlyby;
-      egg.x += egg.vx * delta;
-      egg.y += egg.vy * delta;
-      egg.sprite.x = egg.x;
-      egg.sprite.y = egg.y;
-      egg.sprite.rotation += 0.01 * delta;
-
-      if (egg.x > this.game.getWidth() + 200 || egg.y > this.game.getHeight() + 200) {
-        this.gameContainer.removeChild(egg.sprite);
-        this.legendaryFlyby = null;
-        this.easterEggTimer = 45000 + Math.random() * 30000; // Reset timer
+      if (this.legendaryFlyby.sprite?.parent) {
+        this.legendaryFlyby.sprite.parent.removeChild(this.legendaryFlyby.sprite);
       }
+      this.legendaryFlyby = null;
     }
   }
 
   spawnEasterEgg() {
-    // Legendary Flyby - generated comms portraits only.
-    const commsPortraits = Object.keys(GameAssets.commsPortraits || {});
-    if (!commsPortraits.length) return;
-    const picked = commsPortraits[Math.floor(Math.random() * commsPortraits.length)];
-    const tex = GameAssets.getCommsPortrait(picked);
-
-    if (!GameAssets.isValidTexture(tex)) return;
-
-    const sprite = new PIXI.Sprite(tex);
-    sprite.anchor.set(0.5);
-    // Scale based on portrait aspect
-    const aspect = tex.width / tex.height;
-    const targetHeight = Math.min(180, this.game.getHeight() * 0.22);
-    sprite.height = targetHeight;
-    sprite.width = targetHeight * aspect;
-
-    sprite.alpha = 0.18;
-    sprite.zIndex = -1;
-
-    const startLeft = Math.random() < 0.5;
-
-    const egg = {
-      alias: picked,
-      sprite: sprite,
-      x: startLeft ? -300 : this.game.getWidth() + 300,
-      y: Math.random() * (this.game.getHeight() - 200) + 100,
-      vx: startLeft ? 1 : -1,
-      vy: (Math.random() - 0.5) * 0.5
-    };
-
-    sprite.x = egg.x;
-    sprite.y = egg.y;
-
-    this.gameContainer.addChildAt(sprite, 0);
-    this.legendaryFlyby = egg;
-
-    this.showToast('LEGENDARY SIGHTING!', { fontSize: 24, fill: '#ff00ff' });
-    AudioManager.playSfx('pickup');
+    return this.showStoryTransmission({ force: true });
   }
 
   safeGetEnemyTaunt() {
