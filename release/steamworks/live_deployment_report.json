@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-19T19:13:37.297Z",
+  "generatedAt": "2026-05-19T19:38:28.653Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-19_21-06-22",
-    "timestamp": "2026-05-19T19:06:22.222Z"
+    "version": "v2026-05-19_21-30-12",
+    "timestamp": "2026-05-19T19:30:12.699Z"
   },
   "liveUrl": "https://novaswarm.tinyfoundry.app",
   "versionChecks": [
@@ -11,15 +11,15 @@
       "url": "https://novaswarm.tinyfoundry.app/version.json",
       "ok": true,
       "status": 200,
-      "version": "v2026-05-19_21-06-22",
-      "timestamp": "2026-05-19T19:06:22.222Z"
+      "version": "v2026-05-19_21-30-12",
+      "timestamp": "2026-05-19T19:30:12.699Z"
     }
   ],
   "latestLiveSmoke": {
-    "reportPath": "test-results/smoke-2026-05-19T19-11-46-974Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-19T19-36-22-593Z/report.json",
     "baseUrl": "https://novaswarm.tinyfoundry.app",
     "status": "passed",
-    "build": "v2026-05-19_21-06-22",
+    "build": "v2026-05-19_21-30-12",
     "screenshots": [
       {
         "file": "01-menu.png",

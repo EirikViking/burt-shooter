@@ -978,14 +978,13 @@ export class GameOverScene {
       : placement?.top3
         ? 'nova_top3_fanfare'
         : 'nova_global_slot_fanfare';
-    AudioManager.playSfx(fanfareKey, { force: true, volume: placement?.numberOne ? 1.08 : placement?.top3 ? 0.98 : 0.9, minIntervalMs: 0 });
-    window.setTimeout(() => {
-      AudioManager.playSfx('nova_highscore_chime', { force: true, volume: placement?.top3 ? 1.12 : 0.95, minIntervalMs: 0 });
-    }, 360);
+    const fanfareMs = placement?.numberOne ? 10000 : placement?.top3 ? 8000 : 6000;
+    AudioManager.duckMusic(placement?.numberOne ? 0.18 : placement?.top3 ? 0.22 : 0.28, fanfareMs);
+    AudioManager.playSfx(fanfareKey, { force: true, volume: placement?.numberOne ? 1.0 : placement?.top3 ? 0.94 : 0.88, minIntervalMs: 0 });
     if (placement?.numberOne) {
       window.setTimeout(() => {
-        AudioManager.playSfx('level_clear_medal', { force: true, volume: 1.12, minIntervalMs: 0 });
-      }, 720);
+        AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.82, minIntervalMs: 0 });
+      }, 3200);
     }
     window.setTimeout(() => {
       AudioManager.playVoice(voiceKey, {
@@ -997,13 +996,14 @@ export class GameOverScene {
         duckFactor: placement?.numberOne ? 0.24 : placement?.top3 ? 0.28 : 0.32,
         volume: placement?.numberOne ? 1.06 : placement?.top3 ? 1.02 : 0.96
       });
-    }, 900);
+    }, placement?.numberOne ? 2600 : placement?.top3 ? 2200 : 1700);
   }
 
   playNearMissVoice() {
     if (this.nearMissVoicePlayed || this.qualificationFanfarePlayed) return;
     this.nearMissVoicePlayed = true;
-    AudioManager.playSfx('nova_global_near_fanfare', { force: true, volume: 0.72, minIntervalMs: 0 });
+    AudioManager.duckMusic(0.38, 4000);
+    AudioManager.playSfx('nova_global_near_fanfare', { force: true, volume: 0.76, minIntervalMs: 0 });
     window.setTimeout(() => {
       AudioManager.playVoice('mission_control_near_miss', {
         cooldownMs: 9000,
@@ -1011,7 +1011,7 @@ export class GameOverScene {
         duckFactor: 0.46,
         volume: 0.84
       });
-    }, 520);
+    }, 1400);
   }
 
   playPersonalBestVoice() {

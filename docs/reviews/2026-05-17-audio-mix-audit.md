@@ -1,6 +1,6 @@
 # Audio Mix Audit - 2026-05-19
 
-Generated: 2026-05-19T16:46:03.359Z
+Generated: 2026-05-19T19:29:50.633Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -41,14 +41,14 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | --- | --- | --- | ---: | ---: | ---: |
 | sfx | boss_explode | lowFrequency_explosion_001.mp3 | -1.1 dB | -20.0 dB | -34.8 dB |
 | sfx | boss_explode | lowFrequency_explosion_000.mp3 | -1.2 dB | -20.1 dB | -37.2 dB |
-| sfx | nova_number_one_fanfare | nova_number_one_fanfare.mp3 | -2.1 dB | -20.1 dB | -33.4 dB |
 | sfx | boss_reveal_stinger | boss_reveal_stinger.mp3 | -0.2 dB | -20.3 dB | -28.9 dB |
 | sfx | shoot_heavy | laserLarge_002.mp3 | -0.3 dB | -20.4 dB | -36.9 dB |
 | sfx | shoot_heavy | laserLarge_004.mp3 | -0.6 dB | -20.7 dB | -37.4 dB |
-| sfx | nova_top3_fanfare | nova_top3_fanfare.mp3 | -2.2 dB | -21.0 dB | -37.8 dB |
 | sfx | shoot_heavy | laserLarge_003.mp3 | -1.0 dB | -21.1 dB | -38.3 dB |
 | sfx | shoot_heavy | laserLarge_001.mp3 | -1.1 dB | -21.2 dB | -36.9 dB |
 | sfx | shoot_heavy | laserLarge_000.mp3 | -1.2 dB | -21.3 dB | -37.6 dB |
+| sfx | shoot_alt | laserRetro_000.mp3 | -0.2 dB | -21.7 dB | -29.3 dB |
+| sfx | shoot_alt | laserRetro_003.mp3 | -0.2 dB | -21.7 dB | -29.4 dB |
 
 ### Voice
 
@@ -56,9 +56,9 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | --- | --- | --- | ---: | ---: | ---: |
 | voice | mission_control_top3_highscore | mission_control_top3_highscore_01.mp3 | -1.1 dB | -18.3 dB | -32.3 dB |
 | voice | mission_control_number_one_highscore | mission_control_number_one_highscore_01.mp3 | -1.6 dB | -18.5 dB | -30.1 dB |
-| voice | mission_control_boss_inbound | mission_control_boss_inbound.mp3 | -0.9 dB | -19.0 dB | -33.9 dB |
 | voice | intro_narrator_03 | intro_narrator_03.mp3 | -1.0 dB | -19.3 dB | -32.4 dB |
 | voice | mission_control_number_one_close | mission_control_number_one_close_01.mp3 | -1.8 dB | -19.4 dB | -30.7 dB |
+| voice | mission_control_boss_inbound | mission_control_boss_inbound.mp3 | -0.9 dB | -19.4 dB | -34.3 dB |
 | voice | intro_narrator_04 | intro_narrator_04.mp3 | -1.1 dB | -19.4 dB | -33.6 dB |
 | voice | mission_control_global_highscore | mission_control_global_highscore_01.mp3 | -1.8 dB | -19.5 dB | -32.1 dB |
 | voice | intro_narrator_02 | intro_narrator_02.mp3 | -1.3 dB | -19.6 dB | -32.8 dB |
@@ -83,13 +83,13 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
 | voice | mission_control_restart | mission_control_restart_01.mp3 | -2.2 dB | -22.4 dB | -36.8 dB |
-| voice | mission_control_level_start | mission_control_level_start.mp3 | -1.3 dB | -21.1 dB | -33.4 dB |
+| voice | mission_control_level_start | mission_control_level_start.mp3 | -1.3 dB | -21.8 dB | -34.1 dB |
+| voice | mission_control_powerup | mission_control_powerup.mp3 | -1.1 dB | -21.3 dB | -35.2 dB |
+| voice | mission_control_combo | mission_control_combo_01.mp3 | -1.1 dB | -21.3 dB | -36.1 dB |
+| voice | mission_control_hijacker | mission_control_hijacker_01.mp3 | -1.2 dB | -21.0 dB | -34.9 dB |
 | voice | mission_control_local_highscore | mission_control_local_highscore_01.mp3 | -1.8 dB | -20.9 dB | -34.0 dB |
 | voice | mission_control_game_over | mission_control_game_over.mp3 | -2.0 dB | -20.9 dB | -31.3 dB |
 | voice | mission_control_launch | mission_control_launch.mp3 | -2.1 dB | -20.8 dB | -31.9 dB |
-| voice | mission_control_hijacker | mission_control_hijacker_01.mp3 | -1.2 dB | -20.8 dB | -34.7 dB |
-| voice | mission_control_near_miss | mission_control_near_miss_01.mp3 | -1.7 dB | -20.6 dB | -33.8 dB |
-| voice | mission_control_personal_best | mission_control_personal_best_01.mp3 | -1.4 dB | -20.5 dB | -33.6 dB |
 
 ## Warnings
 

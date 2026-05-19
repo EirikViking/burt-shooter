@@ -5,6 +5,10 @@ import path from 'node:path';
 const apiKey = process.env.ELEVENLABS_API_KEY;
 const outputDir = path.resolve('public/audio/sfx/nova-swarm');
 const force = process.argv.includes('--force');
+const onlyArg = process.argv.find((arg) => arg.startsWith('--only='));
+const onlyFiles = onlyArg
+  ? new Set(onlyArg.slice('--only='.length).split(',').map((item) => item.trim()).filter(Boolean))
+  : null;
 
 const sounds = [
   {
@@ -39,27 +43,27 @@ const sounds = [
   },
   {
     file: 'nova_global_near_fanfare.mp3',
-    text: 'A tense near-leaderboard arcade fanfare, rising score counter sparkle and restrained trophy shimmer, motivating and premium, no voice, no copyrighted melody, under two seconds.',
-    duration_seconds: 2,
-    prompt_influence: 0.62
+    text: 'An original epic near-leaderboard achievement fanfare music cue for a neon arcade space shooter. Four seconds, cinematic synth brass swell, rising trophy drums, glittering score counter arpeggios, heroic but still tense because the player almost made the global board, no vocals, no copyrighted melody, polished game award music.',
+    duration_seconds: 4,
+    prompt_influence: 0.74
   },
   {
     file: 'nova_global_slot_fanfare.mp3',
-    text: 'A triumphant global leaderboard slot fanfare for a neon arcade space shooter, confident trophy burst with holographic confetti sparkle, no voice, no copyrighted melody, under three seconds.',
-    duration_seconds: 3,
-    prompt_influence: 0.64
+    text: 'An original epic global leaderboard achievement fanfare music cue for Nova Swarm, a neon arcade space shooter. Six seconds, huge synth brass, heroic arcade trophy melody, pounding cinematic drums, sparkling coin-op score explosion, proud and ego-feeding, no vocals, no copyrighted melody, sounds like entering the global hall of fame.',
+    duration_seconds: 6,
+    prompt_influence: 0.78
   },
   {
     file: 'nova_top3_fanfare.mp3',
-    text: 'A huge top-three leaderboard achievement fanfare, golden arcade cabinet flourish, space trophy resonance, bright score sparkle, no voice, no copyrighted melody, under four seconds.',
-    duration_seconds: 4,
-    prompt_influence: 0.66
+    text: 'An original massive top-three leaderboard fanfare music cue for a premium neon arcade space shooter. Eight seconds, triumphant synth orchestra, gold trophy impact, big rising drums, bright arcade arpeggios, starfield choir pads without vocals, spectacular and proud, no copyrighted melody, sounds like the player became a legend.',
+    duration_seconds: 8,
+    prompt_influence: 0.8
   },
   {
     file: 'nova_number_one_fanfare.mp3',
-    text: 'A massive number-one global leaderboard coronation fanfare for a premium neon arcade shooter, heroic synth brass, cosmic trophy impact, glittering score explosion, no voice, no copyrighted melody, under five seconds.',
-    duration_seconds: 5,
-    prompt_influence: 0.68
+    text: 'An original absurdly epic number-one global leaderboard coronation fanfare music cue for Nova Swarm. Ten seconds, gigantic heroic synth brass theme, thunderous trophy drums, cosmic arcade choir pads without vocals, glittering score explosion, final boss victory energy, proud emotional payoff, no copyrighted melody, sounds like the entire arcade bows to the champion.',
+    duration_seconds: 10,
+    prompt_influence: 0.82
   },
   {
     file: 'nova_enemy_pew_cluster.mp3',
@@ -218,7 +222,7 @@ async function main() {
   requireApiKey();
   await mkdir(outputDir, { recursive: true });
 
-  for (const sound of sounds) {
+  for (const sound of sounds.filter((entry) => !onlyFiles || onlyFiles.has(entry.file))) {
     await generateSound(sound);
   }
 
