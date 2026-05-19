@@ -55,6 +55,11 @@ const headersContent = `
 # Keep Vite assets revalidatable. A transient Pages fallback must not poison a module URL.
 /assets/*
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+# Voice files are overwritten at stable manifest paths. Never let an old announcer
+# survive a new deploy through browser or edge cache.
+/audio/voice/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
 `;
 
 // Append or create headers

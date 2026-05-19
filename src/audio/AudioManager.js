@@ -1,6 +1,7 @@
 import { AssetManifest } from '../assets/assetManifest.js';
 import * as Features from '../config/Features.js';
 import { SFX_CATALOG, MUSIC_PLAYLISTS, SFX_MIX, VOICE_MIX, VOICE_EVENT_FALLBACKS } from './SoundCatalog.js';
+import { BUILD_ID } from '../buildInfo.js';
 
 class AudioController {
   constructor() {
@@ -230,6 +231,19 @@ class AudioController {
       return new URL(src, window.location.href).href;
     } catch {
       return src;
+    }
+  }
+
+  resolveVoiceSrc(src) {
+    const resolved = this.resolveAudioSrc(src);
+    if (!resolved || typeof window === 'undefined') return resolved;
+    try {
+      const url = new URL(resolved, window.location.href);
+      url.searchParams.set('v', BUILD_ID || 'dev');
+      return url.href;
+    } catch {
+      const separator = String(resolved).includes('?') ? '&' : '?';
+      return `${resolved}${separator}v=${encodeURIComponent(BUILD_ID || 'dev')}`;
     }
   }
 
@@ -654,6 +668,19 @@ class AudioController {
 
   getSettings() {
     const musicSrc = this.musicAudio?.src || '';
+    const describeVoiceEntry = (entry) => {
+      const src = entry?.src || '';
+      const filename = decodeURIComponent((src.split('/').pop() || '').split('?')[0] || '');
+      return {
+        eventName: entry?.eventName || null,
+        group: entry?.exclusiveGroup || null,
+        track: filename,
+        src,
+        cacheBust: src.includes('?') ? new URLSearchParams(src.split('?')[1]).get('v') : null,
+        paused: Boolean(entry?.audio?.paused),
+        ended: Boolean(entry?.audio?.ended)
+      };
+    };
     return {
       masterVolume: this.masterVolume,
       musicVolume: this.musicVolume,
@@ -672,19 +699,11 @@ class AudioController {
       lastVoiceEvent: this.lastVoiceEvent,
       lastVoiceTrack: this.lastVoiceTrack,
       activeVoiceCount: this.activeVoices?.size || 0,
-      activeVoiceEvents: Array.from(this.activeVoices?.values?.() || []).map((entry) => ({
-        eventName: entry?.eventName || null,
-        group: entry?.exclusiveGroup || null,
-        track: decodeURIComponent((entry?.src || '').split('/').pop() || ''),
-        paused: Boolean(entry?.audio?.paused),
-        ended: Boolean(entry?.audio?.ended)
-      })),
-      activeVoiceGroups: Object.fromEntries(Object.entries(this.activeVoiceGroups || {}).map(([group, entry]) => [group, {
-        eventName: entry?.eventName || null,
-        track: decodeURIComponent((entry?.src || '').split('/').pop() || ''),
-        paused: Boolean(entry?.audio?.paused),
-        ended: Boolean(entry?.audio?.ended)
-      }]))
+      activeVoiceEvents: Array.from(this.activeVoices?.values?.() || []).map(describeVoiceEntry),
+      activeVoiceGroups: Object.fromEntries(Object.entries(this.activeVoiceGroups || {}).map(([group, entry]) => [
+        group,
+        describeVoiceEntry(entry)
+      ]))
     };
   }
 
@@ -805,12 +824,13 @@ class AudioController {
       if (src) {
         const exclusiveGroup = options.exclusiveGroup || (eventName.startsWith('mission_control_') ? 'announcer' : null);
         if (exclusiveGroup) this.stopVoiceGroup(exclusiveGroup);
-        const audio = new Audio(src);
+        const resolvedSrc = this.resolveVoiceSrc(src);
+        const audio = new Audio(resolvedSrc);
         audio.preload = 'auto';
         const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
         audio.volume = this.clampUnit(this.masterVolume * this.voiceVolume * volumeMultiplier);
         const voiceId = ++this.voicePlayId;
-        const entry = { audio, eventName, src, exclusiveGroup };
+        const entry = { audio, eventName, src: resolvedSrc, exclusiveGroup };
         this.activeVoices.set(voiceId, entry);
         const cleanupVoice = () => {
           if (this.activeVoices.get(voiceId)?.audio === audio) {
@@ -835,7 +855,7 @@ class AudioController {
         this.globalVoiceCooldown = now + cooldownMs;
         this.lastVoicePlayedAt[eventName] = now;
         this.lastVoiceEvent = eventName;
-        this.lastVoiceTrack = decodeURIComponent((src || '').split('/').pop() || '');
+        this.lastVoiceTrack = decodeURIComponent((src || '').split('/').pop()?.split('?')[0] || '');
         return true;
       }
     } else {
