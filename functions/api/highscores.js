@@ -53,7 +53,7 @@ export async function onRequestGet(context) {
       `SELECT ${selectFields}
        FROM game_highscores
        ORDER BY score DESC, created_at DESC
-       LIMIT 10`
+       LIMIT 20`
     ).all();
 
     // Always compute rank_index for response (compute if missing)

@@ -75,7 +75,7 @@ function findChrome() {
 }
 
 function lowGlobalScores() {
-  return Array.from({ length: 10 }, (_, index) => ({
+  return Array.from({ length: 20 }, (_, index) => ({
     name: `CPU${index}`,
     score: 1000 - index * 10,
     level: 1,
@@ -84,7 +84,7 @@ function lowGlobalScores() {
 }
 
 function highGlobalScores() {
-  return Array.from({ length: 10 }, (_, index) => ({
+  return Array.from({ length: 20 }, (_, index) => ({
     name: `PRO${index}`,
     score: 999999 - index * 1000,
     level: 9,

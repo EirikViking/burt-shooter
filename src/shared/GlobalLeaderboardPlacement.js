@@ -1,4 +1,4 @@
-const DEFAULT_MAX_ENTRIES = 10;
+const DEFAULT_MAX_ENTRIES = 20;
 
 export function normalizeGlobalScores(entries = []) {
   return (Array.isArray(entries) ? entries : [])

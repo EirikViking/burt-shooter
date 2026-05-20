@@ -14,6 +14,9 @@ import { AssetManifest } from '../assets/assetManifest.js';
 const API_PATH = '/api/highscores';
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
+const LEADERBOARD_DISPLAY_LIMIT = 20;
+const MOBILE_LEADERBOARD_VISIBLE_LIMIT = 10;
+const DESKTOP_TWO_COLUMN_MIN_WIDTH = 980;
 // Timeout now handled by API retry logic
 const BLOCKED_PUBLIC_NAME_TERMS = [
   ['E', 'IRIK'].join(''),
@@ -345,7 +348,7 @@ export class HighscoreScene {
   loadLocalHighscores() {
     this.fetchToken += 1;
     this.lastError = 'none';
-    const scores = LocalLeaderboard.getScores(10);
+    const scores = LocalLeaderboard.getScores(LEADERBOARD_DISPLAY_LIMIT);
     this.entries = scores;
     this.entriesNormalized = this.normalizeEntries(scores);
     this.comment.text = scores.length > 0
@@ -375,10 +378,10 @@ export class HighscoreScene {
     const isMobile = layout.isMobile || width < 720;
     const deckWidth = isMobile
       ? Math.min(width - 28, 430)
-      : Math.min(Math.max(600, width * 0.42), 820);
+      : Math.min(Math.max(1040, width * 0.68), 1320);
     const deckLeft = isMobile
       ? (width - deckWidth) / 2
-      : Math.max(24, Math.min(width * 0.13, width - deckWidth - 28));
+      : Math.max(24, Math.min(width * 0.06, width - deckWidth - 28));
     const deckTop = isMobile ? Math.max(10, layout.padding * 0.55) : Math.max(28, layout.padding * 0.8);
     const backReserve = isMobile ? 88 : 76;
     const deckBottom = height - backReserve;
@@ -508,10 +511,9 @@ export class HighscoreScene {
 
       const parseStart = Date.now();
 
-      // TASK A: Enforce max 10 entries
       let rawEntries = Array.isArray(data) ? data : [];
       rawEntries.sort((a, b) => (b.score || 0) - (a.score || 0)); // Sort descending by score
-      this.entries = rawEntries.slice(0, 10); // Keep only top 10
+      this.entries = rawEntries.slice(0, LEADERBOARD_DISPLAY_LIMIT);
       this.entriesNormalized = this.normalizeEntries(this.entries);
 
       if (isDev) {
@@ -647,35 +649,26 @@ export class HighscoreScene {
       const isDebug = window.location.search.includes('debug=1');
       let entriesToDisplay = [...this.entries];
 
-      const rowX = metrics.innerX;
-      const rowW = metrics.innerWidth;
-      const rankBlockWidth = isMobile ? 38 : 52;
-      const badgeColumnWidth = isMobile ? 30 : 42;
-      const badgeGap = isMobile ? 8 : 12;
-      const scoreBlockWidth = isMobile ? 96 : 142;
-      const levelBlockWidth = isMobile ? 38 : 46;
-      const rightPad = isMobile ? 8 : 12;
-      const contentX = rowX + rankBlockWidth + badgeColumnWidth + badgeGap;
-      const levelCenterX = rowX + rowW - rightPad - levelBlockWidth / 2;
-      const scoreX = levelCenterX - levelBlockWidth / 2 - (isMobile ? 8 : 12);
-      const nameBlockWidth = Math.max(76, scoreX - contentX - (isMobile ? 10 : 16));
-      const columns = {
-        rank: rowX + rankBlockWidth / 2,
-        badge: rowX + rankBlockWidth + badgeGap + badgeColumnWidth / 2,
-        name: contentX,
-        score: scoreX,
-        level: levelCenterX
-      };
-      const visibleTargetRows = Math.max(1, Math.min(10, entriesToDisplay.length || 10));
+      const desktopTwoColumn = !isMobile && layout.width >= DESKTOP_TWO_COLUMN_MIN_WIDTH && entriesToDisplay.length > MOBILE_LEADERBOARD_VISIBLE_LIMIT;
+      const columnCount = desktopTwoColumn ? 2 : 1;
+      const displayLimit = desktopTwoColumn ? LEADERBOARD_DISPLAY_LIMIT : MOBILE_LEADERBOARD_VISIBLE_LIMIT;
+      entriesToDisplay = entriesToDisplay.slice(0, displayLimit);
+      const rowsPerColumnTarget = desktopTwoColumn
+        ? Math.ceil(displayLimit / columnCount)
+        : Math.min(displayLimit, entriesToDisplay.length || displayLimit);
+      const columnGap = desktopTwoColumn ? (layout.width < 1500 ? 20 : 28) : 0;
+      const columnWidth = (metrics.innerWidth - columnGap * (columnCount - 1)) / columnCount;
       const headerHeight = isMobile ? 22 : 24;
       const rowsBaseY = startY + headerHeight + (isMobile ? 4 : 7);
       const rowsBottom = Math.min(metrics.rowsBottom || metrics.bottom - 48, metrics.bottom - (isMobile ? 44 : 54));
       const availableRowsHeight = Math.max(120, rowsBottom - rowsBaseY);
       const minRowHeight = isMobile ? 45 : 36;
       const maxRowHeight = isMobile ? 52 : (layout.height >= 880 ? 56 : 42);
+      const visibleTargetRows = Math.max(1, Math.min(rowsPerColumnTarget, entriesToDisplay.length || rowsPerColumnTarget));
       const rowSpace = Math.max(minRowHeight, availableRowsHeight / visibleTargetRows);
       const rowHeight = Math.max(minRowHeight, Math.min(maxRowHeight, rowSpace));
-      const maxRows = Math.max(4, Math.min(10, entriesToDisplay.length, Math.floor((availableRowsHeight + 8) / rowHeight)));
+      const maxRowsPerColumn = Math.max(4, Math.min(rowsPerColumnTarget, Math.floor((availableRowsHeight + 8) / rowHeight)));
+      const maxRows = Math.max(4, Math.min(displayLimit, entriesToDisplay.length, maxRowsPerColumn * columnCount));
       const rowStyle = {
         fontFamily: FONT_ARCADE,
         fontSize: isMobile ? 13 : (layout.height < 820 ? 12 : 14),
@@ -690,24 +683,62 @@ export class HighscoreScene {
         fontSize: isMobile ? 9 : (layout.height < 820 ? 9 : 10),
         strokeThickness: 2
       };
-      const headerBar = new PIXI.Graphics();
-      headerBar.rect(rowX, startY + headerHeight - 3, rowW, 1);
-      headerBar.fill({ color: 0x7fffd8, alpha: 0.42 });
-      headerBar.rect(rowX, startY + headerHeight - 1, rowW * 0.38, 2);
-      headerBar.fill({ color: 0xffd15c, alpha: 0.38 });
-      this.rowsContainer.addChild(headerBar);
 
-      const headers = [
-        { text: 'PILOT MANIFEST', x: rowX, anchorX: 0 },
-        { text: 'SCORE / LEVEL', x: rowX + rowW, anchorX: 1 }
-      ];
-      headers.forEach(entry => {
-        const text = createText(entry.text, headerStyle);
-        text.x = entry.x;
-        text.y = startY;
-        text.anchor.set(entry.anchorX, 0);
-        this.rowsContainer.addChild(text);
-      });
+      const getColumnGeometry = (columnIndex = 0) => {
+        const rowX = metrics.innerX + columnIndex * (columnWidth + columnGap);
+        const rowW = columnWidth;
+        const rankBlockWidth = isMobile ? 38 : (desktopTwoColumn ? 42 : 52);
+        const badgeColumnWidth = isMobile ? 30 : (desktopTwoColumn ? 34 : 42);
+        const badgeGap = isMobile ? 8 : (desktopTwoColumn ? 8 : 12);
+        const scoreBlockWidth = isMobile ? 96 : (desktopTwoColumn ? 110 : 142);
+        const levelBlockWidth = isMobile ? 38 : (desktopTwoColumn ? 42 : 46);
+        const rightPad = isMobile ? 8 : 10;
+        const contentX = rowX + rankBlockWidth + badgeColumnWidth + badgeGap;
+        const levelCenterX = rowX + rowW - rightPad - levelBlockWidth / 2;
+        const scoreX = levelCenterX - levelBlockWidth / 2 - (isMobile ? 8 : 10);
+        const nameBlockWidth = Math.max(isMobile ? 76 : 92, scoreX - scoreBlockWidth - contentX - (isMobile ? 10 : 12));
+        return {
+          rowX,
+          rowW,
+          rankBlockWidth,
+          badgeColumnWidth,
+          badgeGap,
+          scoreBlockWidth,
+          levelBlockWidth,
+          rightPad,
+          nameBlockWidth,
+          columns: {
+            rank: rowX + rankBlockWidth / 2,
+            badge: rowX + rankBlockWidth + badgeGap + badgeColumnWidth / 2,
+            name: contentX,
+            score: scoreX,
+            level: levelCenterX
+          }
+        };
+      };
+
+      for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+        const geometry = getColumnGeometry(columnIndex);
+        const headerBar = new PIXI.Graphics();
+        headerBar.rect(geometry.rowX, startY + headerHeight - 3, geometry.rowW, 1);
+        headerBar.fill({ color: 0x7fffd8, alpha: 0.42 });
+        headerBar.rect(geometry.rowX, startY + headerHeight - 1, geometry.rowW * 0.38, 2);
+        headerBar.fill({ color: 0xffd15c, alpha: 0.38 });
+        this.rowsContainer.addChild(headerBar);
+
+        const manifestLabel = desktopTwoColumn && columnIndex === 1 ? 'PILOT MANIFEST 11-20' : 'PILOT MANIFEST';
+        const headers = [
+          { text: manifestLabel, x: geometry.rowX, anchorX: 0 },
+          { text: 'SCORE / LEVEL', x: geometry.rowX + geometry.rowW, anchorX: 1 }
+        ];
+        headers.forEach(entry => {
+          const text = createText(entry.text, headerStyle);
+          text.x = entry.x;
+          text.y = startY;
+          text.anchor.set(entry.anchorX, 0);
+          this.rowsContainer.addChild(text);
+        });
+      }
 
       const computeDisplayRank = (entry) => {
         const scoreValue = Number(entry?.score);
@@ -732,7 +763,18 @@ export class HighscoreScene {
       );
 
       entriesToRender.forEach((score, index) => {
-        const y = rowsBaseY + rowHeight * index;
+        const columnIndex = desktopTwoColumn ? Math.floor(index / maxRowsPerColumn) : 0;
+        const rowIndex = desktopTwoColumn ? index % maxRowsPerColumn : index;
+        const {
+          rowX,
+          rowW,
+          scoreBlockWidth,
+          levelBlockWidth,
+          rightPad,
+          nameBlockWidth,
+          columns
+        } = getColumnGeometry(columnIndex);
+        const y = rowsBaseY + rowHeight * rowIndex;
         const isTop3 = index < 3 && !score.isPending;
         const isPending = score.isPending || false;
         const rowY = y;
@@ -779,7 +821,7 @@ export class HighscoreScene {
 
         const rankText = createText(`#${index + 1}`, {
           ...rankStyle,
-          fontFamily: FONT_DISPLAY,
+          fontFamily: FONT_ARCADE,
           fontSize: rowStyle.fontSize + (isTop3 && !isMobile ? 1 : 0)
         });
         const nameText = createText(displayName, nameStyle);
@@ -894,7 +936,7 @@ export class HighscoreScene {
           scoreLabel: debugBounds(scoreLabel),
           level: debugBounds(levelText),
           scoreGroup: {
-            x: Math.round(scoreX - scoreBlockWidth),
+            x: Math.round(columns.score - scoreBlockWidth),
             y: Math.round(rowY + 4),
             width: Math.round(scoreBlockWidth + levelBlockWidth + 18),
             height: Math.round(rowHeight - 13),
@@ -905,9 +947,10 @@ export class HighscoreScene {
       });
 
       if (entriesToDisplay.length > maxRows) {
+        const moreGeometry = getColumnGeometry(columnCount - 1);
         const more = createText('...', rowStyle);
-        more.x = columns.name;
-        more.y = rowsBaseY + rowHeight * maxRows + 3;
+        more.x = moreGeometry.columns.name;
+        more.y = rowsBaseY + rowHeight * Math.min(maxRowsPerColumn, maxRows) + 3;
         this.rowsContainer.addChild(more);
       }
 

@@ -500,7 +500,7 @@ export class GameOverScene {
         this.globalPlacementTier = this.globalPlacement.tier;
         this.globalQualified = this.globalPlacement.qualified;
         this.globalStatus = this.globalQualified ? 'qualified' : 'missed';
-        console.log(`[GameOver] Global Qualification: Score ${this.finalScore} vs 10th ${this.cachedHighscores[9]?.score || 0} -> ${this.globalQualified}`, this.globalPlacement);
+        console.log(`[GameOver] Global Qualification: Score ${this.finalScore} vs cutoff ${this.globalPlacement.cutoffScore || 0} -> ${this.globalQualified}`, this.globalPlacement);
       }
 
       if (this.globalQualified && this.isSceneActive()) {

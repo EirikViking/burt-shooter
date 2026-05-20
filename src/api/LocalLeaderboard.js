@@ -1,7 +1,7 @@
 import { getRankFromScore } from '../shared/RankPolicy.js';
 
 export const LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v1';
-export const LOCAL_LEADERBOARD_LIMIT = 10;
+export const LOCAL_LEADERBOARD_LIMIT = 20;
 const LOCAL_LEADERBOARD_STORAGE_LIMIT = 100;
 const LOCAL_PILOT_NAME_MAX_LENGTH = 14;
 

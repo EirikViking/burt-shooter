@@ -75,10 +75,16 @@ function findChrome() {
 }
 
 function seededScores() {
-  return Array.from({ length: 10 }, (_, index) => ({
-    name: ['NOVA ACE', 'ORBIT QUEEN', 'LASER PILOT', 'STAR RUNNER', 'SWARM BREAKER', 'PILOT41', 'COMBO ROYAL', 'SKY VECTOR', 'PILOT35', 'PILOT37'][index],
-    score: 240000 - index * 17321,
-    level: 12 - Math.floor(index / 2),
+  const names = [
+    'NOVA ACE', 'ORBIT QUEEN', 'LASER PILOT', 'STAR RUNNER', 'SWARM BREAKER',
+    'PILOT41', 'COMBO ROYAL', 'SKY VECTOR', 'PILOT35', 'PILOT37',
+    'CABINET ACE', 'VOID SPARK', 'NEON RUNNER', 'ORBITAL KID', 'LASER SAGE',
+    'BOSS BAITER', 'NOVA PRIME', 'STAR CLERK', 'SWARM PILOT', 'PIXEL KNIGHT'
+  ];
+  return Array.from({ length: 20 }, (_, index) => ({
+    name: names[index],
+    score: 240000 - index * 9100,
+    level: Math.max(3, 12 - Math.floor(index / 2)),
     rank_index: Math.max(0, 12 - index)
   }));
 }
@@ -188,6 +194,8 @@ try {
       /\b(roast|taunt|mock|boss bait|fixes everything|damage)\b/i.test(result.state.comment) ? `${result.viewport}: taunting comment text is still present` : null,
       result.state.rowChildren < 20 ? `${result.viewport}: row chrome did not render` : null,
       result.state.title !== 'LOCAL SCORE DECK' ? `${result.viewport}: title did not switch to local score deck` : null,
+      result.viewport !== 'mobile' && result.state.rows?.length !== 20 ? `${result.viewport}: desktop leaderboard did not render top 20` : null,
+      result.viewport === 'mobile' && result.state.rows?.length !== 10 ? `${result.viewport}: mobile leaderboard should keep 10 visible rows` : null,
       (() => {
         const rows = result.state.rows || [];
         if (!rows.length || !result.state.tableMetrics) return null;
