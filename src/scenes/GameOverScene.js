@@ -12,9 +12,10 @@ import { getSelectableShips, getShipUnlockProgress, isShipUnlocked, updateShipUn
 import { getRankFromScore } from '../shared/RankPolicy.js';
 import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
 
-const ENTRY_PROMPT_DESKTOP = 'ENTER: LOG SCORE  |  R/SPACE/GAMEPAD A: RESTART';
-const ENTRY_PROMPT_MOBILE = 'TAP SCORE  |  R/SPACE/GAMEPAD A RESTART';
-const INPUT_PROMPT = 'ENTER INITIALS AND PRESS OK';
+const ENTRY_PROMPT_DESKTOP = 'ENTER: LOG SCORE  |  R/SPACE/START: RESTART';
+const ENTRY_PROMPT_MOBILE = 'TAP SCORE  |  R/SPACE/START RESTART';
+const INPUT_PROMPT = 'ENTER INITIALS - A SAVES PILOT';
+const GAMEPAD_DEFAULT_PILOT_NAME = 'PILOT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
 const PILOT_NAME_MAX_LENGTH = 14;
 
@@ -74,7 +75,11 @@ export class GameOverScene {
     this.sceneTimeouts = new Set();
     // Submission deduplication
     this.submissionId = null;
-    this.gamepadActionWasPressed = false;
+    this.gamepadWasPressed = {
+      primary: false,
+      restart: false,
+      back: false
+    };
   }
 
   scheduleSceneTimeout(callback, delayMs) {
@@ -312,7 +317,12 @@ export class GameOverScene {
     this.setupKeyboard();
 
     AudioManager.playSfx('nova_game_over_drop');
-    AudioManager.playVoice('mission_control_game_over', { cooldownMs: 2400, duckMs: 2600 });
+    AudioManager.playVoice('mission_control_game_over', {
+      bypassGlobalCooldown: true,
+      stopOtherVoices: true,
+      cooldownMs: 2400,
+      duckMs: 2600
+    });
     AudioManager.playMusicContext('gameover', { resetPlaylist: true });
 
     if (!this.isRankedRun) {
@@ -341,20 +351,20 @@ export class GameOverScene {
     if (!this.updateCanEnterName()) {
       return this.globalStatus === 'checking'
         ? 'CHECKING GLOBAL BOARD...'
-        : 'NO BOARD SLOT - R/SPACE/GAMEPAD A: RESTART';
+        : 'NO BOARD SLOT - A/START: RESTART';
     }
     if (mobile) {
-      if (this.localQualified && this.globalQualified) return 'TAP SCORE  |  LOCAL + GLOBAL SLOT';
-      if (this.globalQualified) return 'TAP SCORE  |  GLOBAL SLOT';
-      return 'TAP SCORE  |  LOCAL SLOT';
+      if (this.localQualified && this.globalQualified) return 'TAP SCORE  |  A SAVES PILOT  |  LOCAL + GLOBAL SLOT';
+      if (this.globalQualified) return 'TAP SCORE  |  A SAVES PILOT  |  GLOBAL SLOT';
+      return 'TAP SCORE  |  A SAVES PILOT  |  LOCAL SLOT';
     }
     if (this.localQualified && this.globalQualified) {
-      return 'ENTER: LOG LOCAL + GLOBAL SCORE  |  R/SPACE/GAMEPAD A: RESTART';
+      return 'ENTER: EDIT NAME  |  A: SAVE PILOT  |  R/SPACE/START: RETRY';
     }
     if (this.globalQualified) {
-      return 'ENTER: LOG GLOBAL SCORE  |  R/SPACE/GAMEPAD A: RESTART';
+      return 'ENTER: EDIT NAME  |  A: SAVE PILOT  |  R/SPACE/START: RETRY';
     }
-    return 'ENTER: LOG LOCAL SCORE  |  R/SPACE/GAMEPAD A: RESTART';
+    return 'ENTER: EDIT NAME  |  A: SAVE PILOT  |  R/SPACE/START: RETRY';
   }
 
   getLeaderboardStatusMessage() {
@@ -802,12 +812,39 @@ export class GameOverScene {
 
   update() {
     this.updateCeremonyEffects();
-    if (this.state === 'input' || this.state === 'submitting') return;
-    const actionPressed = this.isGamepadActionPressed();
-    if (actionPressed && !this.gamepadActionWasPressed) {
+    const controls = this.readGamepadControls();
+    const primaryPressed = controls.primary && !this.gamepadWasPressed.primary;
+    const restartPressed = controls.restart && !this.gamepadWasPressed.restart;
+    const backPressed = controls.back && !this.gamepadWasPressed.back;
+
+    if (this.state === 'submitting') {
+      this.gamepadWasPressed = controls;
+      return;
+    }
+
+    if (this.state === 'input') {
+      if (primaryPressed) {
+        if (!this.nameInput.trim()) {
+          this.nameInput = GAMEPAD_DEFAULT_PILOT_NAME;
+          this.syncHiddenInput();
+          this.updateNameDisplay();
+        }
+        this.submitScore();
+      } else if (backPressed) {
+        this.exitInputMode();
+      } else if (restartPressed) {
+        this.restartRun();
+      }
+      this.gamepadWasPressed = controls;
+      return;
+    }
+
+    if ((primaryPressed && this.canEnterName) || (primaryPressed && this.updateCanEnterName())) {
+      this.submitDefaultGamepadScore();
+    } else if (primaryPressed || restartPressed) {
       this.restartRun();
     }
-    this.gamepadActionWasPressed = actionPressed;
+    this.gamepadWasPressed = controls;
   }
 
   updateCeremonyEffects() {
@@ -837,7 +874,7 @@ export class GameOverScene {
     }
   }
 
-  isGamepadActionPressed() {
+  readGamepadControls() {
     const override = typeof window !== 'undefined' ? window.__burtGamepadOverride : null;
     const snapshot = override || (typeof navigator !== 'undefined' && navigator.getGamepads
       ? Array.from(navigator.getGamepads()).find(pad => pad && pad.connected)
@@ -849,7 +886,26 @@ export class GameOverScene {
       if (typeof button === 'number') return button > 0.5;
       return Boolean(button.pressed || button.value > 0.5);
     };
-    return pressed(0) || pressed(7);
+    return {
+      primary: pressed(0),
+      restart: pressed(7) || pressed(8) || pressed(9) || pressed(16),
+      back: pressed(1)
+    };
+  }
+
+  submitDefaultGamepadScore() {
+    if (this.state === 'submitting') return;
+    if (!this.updateCanEnterName()) {
+      this.updateQualificationPromptState();
+      return;
+    }
+    this.state = 'input';
+    this.nameInput = GAMEPAD_DEFAULT_PILOT_NAME;
+    this.caretVisible = true;
+    this.syncHiddenInput();
+    this.updatePromptMessage('SAVING PILOT...');
+    this.updateNameDisplay();
+    this.submitScore();
   }
 
   createUnlockSummary(previousProgress, currentProgress) {
@@ -904,7 +960,7 @@ export class GameOverScene {
     if (!this.updateCanEnterName()) {
       console.log('[GameOver] Player not qualified for local/global board yet. Blocking submission.');
 
-      AudioManager.playVoice('mission_control_restart', { cooldownMs: 3600, duckMs: 1100 });
+      AudioManager.playSfx('ui_open', { volume: 0.28, minIntervalMs: 250 });
 
       if (this.globalStatus === 'checking') {
         this.updatePromptMessage('GLOBAL BOARD CHECKING...');

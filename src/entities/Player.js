@@ -886,7 +886,7 @@ export class Player {
 
     if (this.isDodging) {
       this.dodgeDuration -= dt;
-      this.sprite.alpha = 0.3; // Visually indicate dodge
+      this.sprite.alpha = 0.68; // Keep the ship readable while the focus ring sells invulnerability.
       if (this.dodgeDuration <= 0) {
         this.isDodging = false;
         this.invulnerable = false;
@@ -898,10 +898,10 @@ export class Player {
       if (this.invulnerable) {
         this.invulnerableTime -= dt;
 
-        // Strobe logic: Toggle between 1.0 and 0.25 every 150ms
+        // Strobe logic: Toggle between bright and readable every 150ms
         const period = 150;
         const phase = Math.floor(Date.now() / period) % 2;
-        this.sprite.alpha = phase === 0 ? 1.0 : 0.25;
+        this.sprite.alpha = phase === 0 ? 1.0 : 0.65;
 
         if (this.invulnerableTime <= 0) {
           this.invulnerable = false;
@@ -1572,7 +1572,7 @@ export class Player {
       case 'ghost':
         this.activePowerup.expiresAt = Date.now() + 8000; // 8s
         // Ghost mode uses reduced alpha for the CONTAINER only, not destroying visibility
-        this.sprite.alpha = 0.4;
+        this.sprite.alpha = 0.65;
         break;
       case 'magnet':
         this.magnetActive = true;

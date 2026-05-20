@@ -17,6 +17,7 @@ class AudioController {
     this.sfxVolume = 0.4;
     this.voiceVolume = 0.45;
     this.musicDuckFactor = 1;
+    this.musicDuckUntil = 0;
     this.pauseDuckFactor = 1;
 
     // Music State
@@ -655,16 +656,35 @@ class AudioController {
 
   duckMusic(factor = 0.55, durationMs = 1700) {
     if (!this.enabled || !this.musicEnabled) return;
-    this.musicDuckFactor = Math.max(0.2, Math.min(1, factor));
+    const now = Date.now();
+    const requestedFactor = Math.max(0.2, Math.min(1, factor));
+    const requestedUntil = now + Math.max(0, durationMs);
+    if (now < this.musicDuckUntil) {
+      this.musicDuckFactor = Math.min(this.musicDuckFactor, requestedFactor);
+      this.musicDuckUntil = Math.max(this.musicDuckUntil, requestedUntil);
+    } else {
+      this.musicDuckFactor = requestedFactor;
+      this.musicDuckUntil = requestedUntil;
+    }
     this.applyMusicVolume();
     if (this.duckTimer) {
       clearTimeout(this.duckTimer);
     }
     this.duckTimer = setTimeout(() => {
+      if (Date.now() < this.musicDuckUntil - 25) {
+        this.duckTimer = setTimeout(() => {
+          this.musicDuckFactor = 1;
+          this.musicDuckUntil = 0;
+          this.duckTimer = null;
+          this.applyMusicVolume();
+        }, Math.max(0, this.musicDuckUntil - Date.now()));
+        return;
+      }
       this.musicDuckFactor = 1;
+      this.musicDuckUntil = 0;
       this.duckTimer = null;
       this.applyMusicVolume();
-    }, durationMs);
+    }, Math.max(0, this.musicDuckUntil - now));
   }
 
   setPauseDucked(paused) {

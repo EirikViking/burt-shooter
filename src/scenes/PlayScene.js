@@ -63,6 +63,16 @@ export class PlayScene {
       particles: false
     };
     this.pausePressed = false;
+    this.pauseButtons = [];
+    this.pauseSelectionIndex = 0;
+    this.pauseInputReadyAt = 0;
+    this.pauseGamepadWasPressed = {
+      up: false,
+      down: false,
+      action: false,
+      back: false,
+      pause: false
+    };
     this.achievementTimer = 0;
     this.tauntTimer = 0;
     this.storyTransmissionTimer = 0;
@@ -196,6 +206,16 @@ export class PlayScene {
     this.pauseOverlay = null;
     this.settingsOverlay = null;
     this.pausePressed = false;
+    this.pauseButtons = [];
+    this.pauseSelectionIndex = 0;
+    this.pauseInputReadyAt = (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) + 420;
+    this.pauseGamepadWasPressed = {
+      up: false,
+      down: false,
+      action: false,
+      back: false,
+      pause: false
+    };
     this.gameContainer.removeChildren();
     this.uiContainer.removeChildren();
     this.uiOverlay.removeChildren();
@@ -1901,6 +1921,11 @@ export class PlayScene {
   }
 
   handlePauseToggle() {
+    const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    if (now < (this.pauseInputReadyAt || 0)) {
+      this.inputManager?.pollGamepad?.(true);
+      return;
+    }
     const pressed = this.inputManager.consumeKeyPress
       ? this.inputManager.consumeKeyPress('KeyP', 'p', 'P', 'Escape')
       : this.inputManager.isKeyPressed('KeyP') ||
@@ -1909,6 +1934,10 @@ export class PlayScene {
         this.inputManager.isKeyPressed('Escape');
     if (pressed) {
       this.setPaused(!this.isPaused);
+      return;
+    }
+    if (this.isPaused) {
+      this.handlePauseGamepadControls();
     }
   }
 
@@ -1930,6 +1959,7 @@ export class PlayScene {
   showPauseOverlay() {
     if (this.pauseOverlay) {
       this.pauseOverlay.visible = true;
+      this.updatePauseSelectionVisuals();
       return;
     }
 
@@ -1977,17 +2007,68 @@ export class PlayScene {
     status.position.set(width / 2, panelY + 102);
     overlay.addChild(status);
 
-    overlay.addChild(this.createPauseButton('RESUME', width / 2, panelY + 148, () => this.setPaused(false)));
-    overlay.addChild(this.createPauseButton('SETTINGS', width / 2, panelY + 202, () => this.openSettingsOverlay()));
-    overlay.addChild(this.createPauseButton('QUIT TO MENU', width / 2, panelY + 256, () => {
-      this.closeSettingsOverlay();
-      this.hidePauseOverlay();
-      this.isPaused = false;
-      this.game.switchScene('menu');
-    }));
+    this.pauseButtons = [
+      this.createPauseButton('RESUME', width / 2, panelY + 148, () => this.setPaused(false)),
+      this.createPauseButton('SETTINGS', width / 2, panelY + 202, () => this.openSettingsOverlay()),
+      this.createPauseButton('QUIT TO MENU', width / 2, panelY + 256, () => {
+        this.closeSettingsOverlay();
+        this.hidePauseOverlay();
+        this.isPaused = false;
+        this.game.switchScene('menu');
+      })
+    ];
+    this.pauseSelectionIndex = 0;
+    for (const button of this.pauseButtons) {
+      overlay.addChild(button);
+    }
 
     this.pauseOverlay = overlay;
     this.uiOverlay.addChild(overlay);
+    this.updatePauseSelectionVisuals();
+  }
+
+  handlePauseGamepadControls() {
+    const state = this.inputManager?.getGamepadState ? this.inputManager.getGamepadState() : null;
+    const buttons = state?.buttons || {};
+    const pressed = {
+      up: Boolean(buttons.dpadUp || state?.moveY < -0.45),
+      down: Boolean(buttons.dpadDown || state?.moveY > 0.45),
+      action: Boolean(buttons.firing),
+      back: Boolean(buttons.dodge),
+      pause: Boolean(buttons.pause)
+    };
+
+    const just = (name) => pressed[name] && !this.pauseGamepadWasPressed?.[name];
+    if (this.settingsOverlay) {
+      if (just('back') || just('pause')) {
+        this.closeSettingsOverlay();
+      }
+      this.pauseGamepadWasPressed = pressed;
+      return;
+    }
+
+    if (just('up') || just('down')) {
+      const direction = just('up') ? -1 : 1;
+      const count = Math.max(1, this.pauseButtons?.length || 1);
+      this.pauseSelectionIndex = (this.pauseSelectionIndex + direction + count) % count;
+      this.updatePauseSelectionVisuals();
+      AudioManager.playSfx('ui_open', { volume: 0.22, minIntervalMs: 80 });
+    }
+
+    if (just('action')) {
+      const selected = this.pauseButtons?.[this.pauseSelectionIndex];
+      selected?.activate?.();
+    } else if (just('back')) {
+      this.setPaused(false);
+    }
+
+    this.pauseGamepadWasPressed = pressed;
+  }
+
+  updatePauseSelectionVisuals() {
+    this.pauseButtons?.forEach((button, index) => {
+      button.setFocused?.(index === this.pauseSelectionIndex);
+    });
   }
 
   openSettingsOverlay() {
@@ -2041,6 +2122,8 @@ export class PlayScene {
     button.on('pointerover', () => draw(true));
     button.on('pointerout', () => draw(false));
     button.on('pointertap', onPress);
+    button.activate = onPress;
+    button.setFocused = (focused) => draw(focused);
     return button;
   }
 
@@ -2100,7 +2183,12 @@ export class PlayScene {
     if (this.game.lives <= 1 && this.lowLivesShownFor !== this.game.lives) {
       this.lowLivesShownFor = this.game.lives;
       this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, y: this.game.getHeight() * 0.3 });
-      AudioManager.playVoice('mission_control_life_low', { cooldownMs: 18000, duckMs: 1800 });
+      AudioManager.playVoice('mission_control_life_low', {
+        bypassGlobalCooldown: true,
+        stopOtherVoices: true,
+        cooldownMs: 18000,
+        duckMs: 1800
+      });
     }
   }
 
@@ -2203,15 +2291,17 @@ export class PlayScene {
     if (!this.powerupManager || !this.player) return false;
 
     this.bossClutchShieldLevel = level;
+    const spawnX = Math.max(48, Math.min(this.game.getWidth() - 48, this.player.x));
+    const spawnY = Math.max(96, this.player.y - 56);
     const spawned = this.powerupManager.spawnSpecific(
-      this.player.x,
-      this.player.y,
+      spawnX,
+      spawnY,
       'shield',
       { source: 'boss_clutch_shield' }
     );
     if (!spawned) return false;
 
-    this.enqueueToast('CLUTCH SHIELD CORE', {
+    this.enqueueToast('EMERGENCY SHIELD: 1 PER BOSS', {
       fontSize: this.game.getWidth() < 620 ? 15 : 18,
       fill: '#8fffd5',
       stroke: '#001616',
@@ -2254,7 +2344,12 @@ export class PlayScene {
       maxWidth: this.game.getWidth() * (compactHud ? 0.84 : 0.64)
     });
     AudioManager.playSfx('powerup', { force: true, volume: 0.78, minIntervalMs: 250 });
-    AudioManager.playVoice('mission_control_life_low', { cooldownMs: 18000, duckMs: 1800 });
+    AudioManager.playVoice('mission_control_life_low', {
+      bypassGlobalCooldown: true,
+      stopOtherVoices: true,
+      cooldownMs: 18000,
+      duckMs: 1800
+    });
     if (this.screenShake) this.screenShake.shake(8);
     return true;
   }

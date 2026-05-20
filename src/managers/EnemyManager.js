@@ -1146,8 +1146,10 @@ export class EnemyManager {
       hasUpcomingWave
     });
 
+    this.maybeSpawnMinimumPowerupBeforeBoss({ hasUpcomingWave });
+
     // Logic to potentially inject a short score-risk challenge wave.
-    if (this.level > 1 && hasUpcomingWave && this.currentWaveIndex > 0) {
+    if (this.level > 1 && hasUpcomingWave && this.currentWaveIndex >= 0) {
       const challengeWaveChance = BalanceConfig.difficulty.challengeWaveChance ?? 0.08;
       if (Math.random() < challengeWaveChance) {
         const wasChallenge = clearedWave && clearedWave.isChallenge;
@@ -1185,6 +1187,20 @@ export class EnemyManager {
     this.phase = 'COMPLETE';
     this.state = 'LEVEL_COMPLETE';
     console.log(`[BossPhase] level=${this.level} phase=${this.phase} bossDefeated=true`);
+  }
+
+  maybeSpawnMinimumPowerupBeforeBoss({ hasUpcomingWave = false } = {}) {
+    if (hasUpcomingWave || this.level < 2) return false;
+    const play = this.game?.scenes?.play;
+    const manager = play?.powerupManager;
+    if (!manager || typeof manager.spawnMinimumLevelPowerup !== 'function') return false;
+
+    const width = this.game?.getWidth ? this.game.getWidth() : 800;
+    const x = Math.max(width * 0.28, Math.min(width * 0.72, width * (0.38 + Math.random() * 0.24)));
+    return Boolean(manager.spawnMinimumLevelPowerup(x, 120, {
+      source: 'pre_boss_minimum',
+      level: this.level
+    }));
   }
 
   beginWaveBriefing(config) {

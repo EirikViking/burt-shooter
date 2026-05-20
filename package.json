@@ -33,6 +33,8 @@
     "check:hijacker-spawn-cadence": "node scripts/check-hijacker-spawn-cadence.mjs",
     "check:intro-voice": "node scripts/check-intro-voice-exclusivity.mjs",
     "check:voice-cadence": "node scripts/check-voice-cadence.mjs",
+    "check:controller-flow": "node scripts/check-controller-flow.mjs",
+    "check:fairness-telemetry": "node scripts/check-fairness-telemetry.mjs",
     "check:first-30-polish": "node scripts/check-first-30-polish.mjs",
     "check:boss-adds": "node scripts/check-boss-adds.mjs",
     "check:boss-roster": "node scripts/check-boss-roster.mjs",

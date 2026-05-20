@@ -206,7 +206,8 @@ try {
       pickup.powerups.some((powerup) => powerup.type === 'rapid_fire') &&
       dodge.alpha.isDodging === true &&
       dodge.alpha.alpha !== null &&
-      dodge.alpha.alpha < 0.65 &&
+      dodge.alpha.alpha >= 0.65 &&
+      dodge.alpha.alpha < 0.95 &&
       allErrors.length === 0
     ),
     baseUrl,
