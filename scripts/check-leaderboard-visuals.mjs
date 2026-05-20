@@ -200,7 +200,9 @@ try {
         !contains(row.row, row.name, 3) ? `${result.viewport}: row ${index + 1} pilot name escapes row frame` : null,
         !contains(row.row, row.rankTitle, 3) ? `${result.viewport}: row ${index + 1} rank title escapes row frame` : null,
         intersects(row.name, row.rankTitle, -1) ? `${result.viewport}: row ${index + 1} pilot name overlaps rank title` : null,
-        rows[index + 1] && intersects(row.rankTitle, rows[index + 1].name, 2) ? `${result.viewport}: row ${index + 1} rank title overlaps next pilot name` : null
+        rows[index + 1] && intersects(row.rankTitle, rows[index + 1].name, 2) ? `${result.viewport}: row ${index + 1} rank title overlaps next pilot name` : null,
+        !row.scoreRail || row.scoreRail.width < (result.viewport === 'mobile' ? 36 : row.row.width * 0.32) ? `${result.viewport}: row ${index + 1} score vector underuses the middle lane` : null,
+        row.scoreRail && row.score && row.scoreRail.right > row.score.x - (result.viewport === 'mobile' ? 4 : 10) ? `${result.viewport}: row ${index + 1} score vector crowds the score block` : null
       ]))
     ]),
     ...pageErrors.map((message) => `page error: ${message}`),

@@ -945,3 +945,45 @@ After: a full 10-minute release playtest reached level 10 alive, with 3 lives, s
 
 - The trailer now proves early, midgame, and late-game boss variety automatically, but it still needs human by-ear/editorial approval before Steam upload.
 - Steam readiness still requires real Steamworks IDs, real Steam-client validation evidence, and human release approvals.
+
+## Loop 24 - Voice Cadence And Instant Restart
+
+### What Was Tested
+
+- Replayed the fast fail/restart path from the perspective of a player mashing one more run.
+- Verified the announcer does not replay launch chatter immediately after restart.
+- Verified rapid second restart suppresses the restart line instead of stacking voiceover.
+- Verified stale game-over/leaderboard voice callbacks are cleared before the next run.
+- Verified a restarted `PlayScene` starts real waves instead of showing an empty alive arena.
+
+### What Felt Slow, Confusing, Or Generic
+
+- The voice pack had strong identity, but the runtime still allowed too many valid events to compete during rapid retries.
+- A stale game-over callback could play over a fresh run, making the announcer feel tied to the previous attempt.
+- The reused play scene could remember level 1 as already started and suppress the restarted wave plan, breaking the instant-restart promise.
+
+### What Changed
+
+- Added event-level voice cooldowns and suppression telemetry in `AudioManager`.
+- Added explicit launch/restart cooldowns to the shipped mission-control mix.
+- Cleared delayed game-over voice callbacks before restart.
+- Invalidated stale ship-intro animation callbacks and reset the duplicate-level guard on play-scene init.
+- Added `npm run check:voice-cadence`, including failure reports and screenshot evidence.
+
+### Evidence Captured
+
+- Build: `v2026-05-19_23-47-45`.
+- Focused cadence proof: `test-results/voice-cadence-2026-05-19T21-48-17-458Z/report.json`.
+- Cadence screenshot: `test-results/voice-cadence-2026-05-19T21-48-17-458Z/voice-cadence.png`.
+- Audio catalog: `npm run check:audio` passed.
+- Audio mix: `npm run audit:audio-mix` passed with no warnings.
+- Intro voice exclusivity: `test-results/intro-voice-exclusivity-2026-05-19T21-49-35-019Z/intro-voice-exclusivity.png`.
+- Game-over ceremony: `test-results/gameover-ceremony-1779227396861/report.json`.
+- Game-over motivation: `test-results/gameover-motivation-2026-05-19T21-50-12-374Z/gameover-motivation.png`.
+- Smoke: `test-results/smoke-2026-05-19T21-50-23-801Z/report.json`.
+
+### Remaining Top Risks
+
+- Human by-ear approval remains the highest voice/audio risk; automated cadence proof cannot decide taste.
+- The latest public URL is still only proven at the last deployed build until this local loop is pushed and deployed with live evidence.
+- Next anti-flop loop should keep focusing on high-leverage first-session feel, not content quantity.

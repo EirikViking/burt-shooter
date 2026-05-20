@@ -19,7 +19,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 | Score/combo/restart compulsion | 9 | Danger-dodge streaks, instant restart, next-ship motivation, and separate local/global leaderboard qualification now give the death screen a stronger one-more-run job. |
 | Ship unlock motivation | 8 | 25 ships are unlock-gated with real trait/stat differences; game over now surfaces next/new unlock motivation. |
 | UI/text density | 9 | The remaining player-facing Courier/monospace/Impact-style holdouts were removed from Pixi UI, menus, HUD, score popups, game over, highscore, ship screens, overlays, and the public page. Center-lane toasts still need monitoring during dense waves. |
-| Audio punch | 9 | The announcer now has ElevenLabs `Female misfit` mission-control/intro assets, event pools, no-repeat guards, reduced routine chatter, global-score fanfare tiers, and a Tractor Hijack payoff line. Human by-ear approval is still required before final Steam upload. |
+| Audio punch | 9 | The announcer now has ElevenLabs `Female misfit` mission-control/intro assets, event pools, no-repeat guards, event-level cadence suppression, reduced routine chatter, global-score fanfare tiers, and a Tractor Hijack payoff line. Human by-ear approval is still required before final Steam upload. |
 | Surprise mechanic freshness | 9 | Hijacker tractor beam now has a rare `TRACTOR HIJACK` payoff, and the new `GRAZE BREAK` turns close-dodge skill into a charged bullet-parry score burst. The game now has both rare enemy-event reversal and player-authored reversal hooks. |
 | Steam tag accuracy | 8 | Tags are now focused and Bullet Hell was removed from the first metadata set. |
 | Controller expectations | 7 | Runtime support and packaged control smoke exist; Steam metadata correctly stays at Partial Controller Support pending Steam client validation. |
@@ -39,7 +39,7 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 - Trailer candidate is current-build and shows Tractor Hijack payoff before boss footage, then short level-5 and level-9 boss telegraph beats. Human by-ear and Steamworks review remain required.
 - Boss behavior is less samey after phase-specific movement/signature/safe-lane work. Screenshot media and trailer contact-sheet evidence now prove early, mid, and late boss movement/telegraph profiles; remaining risk is human editorial ordering, not automated proof breadth.
-- The voice system now uses the approved ElevenLabs `Female misfit` pack and bigger leaderboard fanfares, but it still needs final human by-ear approval for taste, fatigue, and Steam trailer mix.
+- The voice system now uses the approved ElevenLabs `Female misfit` pack, bigger leaderboard fanfares, and tested launch/restart cadence guards, but it still needs final human by-ear approval for taste, fatigue, and Steam trailer mix.
 - Leaderboard flow now has distinct local/global qualification, local fallback, and a tested global-offline path. Remaining risk is live public-domain verification and by-eye polish of the highscore tab presentation.
 - Public web build and marketing site are live; the latest tempo build and current Tractor Hijack/Graze Break media/handoff evidence are verified against the private domain.
 - Steam client validation cannot happen until real app/depot IDs and credentials exist.
@@ -52,6 +52,9 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 - Progression tempo check: `test-results/progression-tempo-2026-05-19T03-32-06-102Z/report.json`
 - Leaderboard split check: `test-results/leaderboard-split-2026-05-18T22-14-22-735Z/report.json`
 - Latest local smoke: `test-results/smoke-2026-05-19T21-14-53-095Z/report.json`
+- Latest local smoke after voice-cadence loop: `test-results/smoke-2026-05-19T21-50-23-801Z/report.json`
+- Voice cadence/restart proof: `test-results/voice-cadence-2026-05-19T21-48-17-458Z/report.json`
+- Latest intro voice exclusivity proof: `test-results/intro-voice-exclusivity-2026-05-19T21-49-35-019Z/intro-voice-exclusivity.png`
 - Latest Electron current smoke after desktop global endpoint split: `test-results/electron-smoke-2026-05-18T22-14-22-276Z/report.json`
 - Boss phase variety check: `test-results/boss-phase-variety-2026-05-18T22-22-16-003Z/report.json`
 - Latest boss-variety release playtest: `test-results/release-playtest-2026-05-18T22-23-32-068Z/report.json`
@@ -77,4 +80,4 @@ Lens: cynical Steam shopper, retro arcade player, shmup readability reviewer, an
 
 ## Next Best Loop
 
-Highest remaining anti-flop loop: by-ear curation of the final media and voice/audio package, with special attention to whether the ElevenLabs/global-score audio feels premium without becoming repetitive or slowing the one-more-run flow.
+Highest remaining anti-flop loop: by-ear curation of the final media and voice/audio package, now that automated cadence/restart checks prove the announcer does not spam the fast retry path. The listening pass should decide whether the ElevenLabs/global-score audio feels premium without becoming repetitive or slowing the one-more-run flow.

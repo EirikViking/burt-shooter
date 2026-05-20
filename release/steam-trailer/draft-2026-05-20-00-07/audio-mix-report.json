@@ -1,0 +1,464 @@
+{
+  "generatedAt": "2026-05-19T22:09:06.598Z",
+  "draftDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-20-00-07",
+  "inputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-20-00-07\\nova-swarm-steam-trailer-visual-draft.webm",
+  "outputVideo": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-20-00-07\\nova-swarm-steam-trailer-audio-draft.mp4",
+  "build": {
+    "version": "v2026-05-19_23-47-45",
+    "timestamp": "2026-05-19T21:47:45.400Z"
+  },
+  "durationSeconds": 39.2,
+  "visualTrimSeconds": 2.6,
+  "notes": [
+    "Audio-mixed Steam trailer draft rendered from captured game footage and shipped Nova Swarm audio assets.",
+    "The visual source is trimmed to open on active hijacker tractor-beam pressure and the Tractor Hijack payoff, then boss footage, instead of pre-wave setup.",
+    "This is still a draft: final Steam upload needs human by-ear approval and any desired title-card/editorial pass."
+  ],
+  "clips": [
+    {
+      "kind": "sfx",
+      "key": "confirm",
+      "start": 0.08,
+      "duration": null,
+      "volume": 0.58,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "music",
+      "key": "gameplayMusic",
+      "start": 0,
+      "duration": 4.95,
+      "volume": 0.22,
+      "fadeIn": 0.35,
+      "fadeOut": 0.35
+    },
+    {
+      "kind": "voice",
+      "key": "hijackerVoice",
+      "start": 0.48,
+      "duration": null,
+      "volume": 0.72,
+      "fadeIn": 0.02,
+      "fadeOut": 0.04
+    },
+    {
+      "kind": "sfx",
+      "key": "shield",
+      "start": 0.82,
+      "duration": null,
+      "volume": 0.52,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserSmall",
+      "start": 1,
+      "duration": null,
+      "volume": 0.42,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserSmall",
+      "start": 1.34,
+      "duration": null,
+      "volume": 0.42,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserSmall",
+      "start": 1.6800000000000002,
+      "duration": null,
+      "volume": 0.42,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserSmall",
+      "start": 2.02,
+      "duration": null,
+      "volume": 0.42,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserSmall",
+      "start": 2.3600000000000003,
+      "duration": null,
+      "volume": 0.42,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserSmall",
+      "start": 2.7,
+      "duration": null,
+      "volume": 0.42,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserSmall",
+      "start": 3.04,
+      "duration": null,
+      "volume": 0.42,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserSmall",
+      "start": 3.3800000000000003,
+      "duration": null,
+      "volume": 0.42,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserSmall",
+      "start": 3.72,
+      "duration": null,
+      "volume": 0.42,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "explosion",
+      "start": 2.15,
+      "duration": null,
+      "volume": 0.58,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "bossReveal",
+      "start": 3.35,
+      "duration": null,
+      "volume": 0.85,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "music",
+      "key": "bossMusic",
+      "start": 3.55,
+      "duration": 12.2,
+      "volume": 0.2,
+      "fadeIn": 0.42,
+      "fadeOut": 0.42
+    },
+    {
+      "kind": "voice",
+      "key": "bossVoice",
+      "start": 4,
+      "duration": null,
+      "volume": 0.72,
+      "fadeIn": 0.02,
+      "fadeOut": 0.04
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 7,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 7.32,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 7.64,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 7.96,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 8.28,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 8.6,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 8.92,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 9.24,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 9.56,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 9.879999999999999,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 10.2,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 10.52,
+      "duration": null,
+      "volume": 0.36,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "bossExplosion",
+      "start": 14.95,
+      "duration": null,
+      "volume": 0.82,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "music",
+      "key": "victoryMusic",
+      "start": 15.05,
+      "duration": 3.2,
+      "volume": 0.2,
+      "fadeIn": 0.55,
+      "fadeOut": 0.55
+    },
+    {
+      "kind": "voice",
+      "key": "victoryVoice",
+      "start": 15.75,
+      "duration": null,
+      "volume": 0.68,
+      "fadeIn": 0.02,
+      "fadeOut": 0.04
+    },
+    {
+      "kind": "music",
+      "key": "bossMusic",
+      "start": 18.25,
+      "duration": 5,
+      "volume": 0.18,
+      "fadeIn": 0.36,
+      "fadeOut": 0.36
+    },
+    {
+      "kind": "sfx",
+      "key": "bossReveal",
+      "start": 18.7,
+      "duration": null,
+      "volume": 0.46,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 19.2,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 19.72,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 20.24,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 20.759999999999998,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 21.28,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "laserLarge",
+      "start": 21.8,
+      "duration": null,
+      "volume": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "sfx",
+      "key": "bossReveal",
+      "start": 20.95,
+      "duration": null,
+      "volume": 0.4,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "music",
+      "key": "gameplayMusic",
+      "start": 23.4,
+      "duration": 4.6,
+      "volume": 0.16,
+      "fadeIn": 0.45,
+      "fadeOut": 0.45
+    },
+    {
+      "kind": "voice",
+      "key": "launchVoice",
+      "start": 24,
+      "duration": null,
+      "volume": 0.5,
+      "fadeIn": 0.02,
+      "fadeOut": 0.04
+    },
+    {
+      "kind": "music",
+      "key": "menuMusic",
+      "start": 27.6,
+      "duration": 4.2,
+      "volume": 0.14,
+      "fadeIn": 0.5,
+      "fadeOut": 0.5
+    },
+    {
+      "kind": "sfx",
+      "key": "confirm",
+      "start": 29.4,
+      "duration": null,
+      "volume": 0.46,
+      "fadeIn": 0.005,
+      "fadeOut": 0.02
+    },
+    {
+      "kind": "music",
+      "key": "gameOverMusic",
+      "start": 31.4,
+      "duration": 5.7,
+      "volume": 0.24,
+      "fadeIn": 0.7,
+      "fadeOut": 0.7
+    },
+    {
+      "kind": "voice",
+      "key": "gameOverVoice",
+      "start": 32.3,
+      "duration": null,
+      "volume": 0.68,
+      "fadeIn": 0.02,
+      "fadeOut": 0.04
+    }
+  ],
+  "ffprobe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 720,
+        "r_frame_rate": "25/1",
+        "duration": "39.200000"
+      },
+      {
+        "codec_name": "aac",
+        "r_frame_rate": "0/0",
+        "duration": "39.200000"
+      }
+    ],
+    "format": {
+      "duration": "39.200000",
+      "size": "13067265"
+    }
+  }
+}

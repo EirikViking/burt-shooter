@@ -106,3 +106,37 @@ The user rejected the local fallback voice and chose the approved Misfit Galaxy 
 
 - Human by-ear approval is still required before treating the voice/audio package as final Steam store material.
 - The current provider/access state is good, but future regeneration must keep the key local and must not print, log, or commit it.
+
+## 2026-05-19 Voice Cadence And Instant Restart Loop
+
+### What Felt Risky
+
+- Rapid restart could still let a fresh run hear stale game-over/leaderboard voice callbacks.
+- `force: true` voice calls could bypass the intended restart cadence and make repeated retries feel like announcer spam.
+- The reused `PlayScene` kept `_lastStartedLevel` from the previous run, so instant restart could suppress level 1 startup and leave the new run alive but idle.
+
+### What Changed
+
+- `AudioManager.playVoice()` now enforces per-event cooldowns separately from the global voice cooldown and records recent suppression telemetry in `render_game_to_text`.
+- `mission_control_launch` and `mission_control_restart` now have explicit event-level cooldowns so launch/restart lines do not stack during the first minute or rapid retries.
+- Settings voice audition can still intentionally replay the launch line without loosening gameplay cadence.
+- `GameOverScene` tracks delayed callbacks and clears them before instant restart, preventing leaderboard, near-miss, personal-best, and retry lines from bleeding into the next run.
+- `PlayScene` now invalidates stale ship-intro animation callbacks and resets the duplicate-level guard on scene init so a fresh restart reliably starts level 1 waves.
+- Added `npm run check:voice-cadence` with failure-state capture, screenshot capture, launch suppression proof, restart suppression proof, and active-run restart proof.
+
+### Tests
+
+- `npm run build` produced `v2026-05-19_23-47-45`.
+- `npm run check:voice-cadence` passed at `test-results/voice-cadence-2026-05-19T21-48-17-458Z/report.json`.
+- `npm run check:audio` passed with 176 manifest assets, 99 catalog keys, and 7 music contexts.
+- `npm run audit:audio-mix` passed with no warnings.
+- `npm run check:intro-voice` passed at `test-results/intro-voice-exclusivity-2026-05-19T21-49-35-019Z/intro-voice-exclusivity.png`.
+- `npm run check:announcer-voice` passed with 22 event pools and 51 manifest voice assets.
+- `npm run check:gameover-ceremony` passed at `test-results/gameover-ceremony-1779227396861/report.json`.
+- `npm run check:gameover-motivation` passed at `test-results/gameover-motivation-2026-05-19T21-50-12-374Z/gameover-motivation.png`.
+- `npm run smoke` passed at `test-results/smoke-2026-05-19T21-50-23-801Z/report.json`.
+
+### Current Remaining Risk
+
+- This loop proves automated cadence and restart behavior, not final by-ear taste. Human listening is still required before store upload.
+- The current code is local/build-tested until it is committed, pushed, and deployed; do not treat `v2026-05-19_23-47-45` as the latest public build unless deployment evidence is refreshed.

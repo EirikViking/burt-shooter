@@ -15,7 +15,9 @@ Nova Swarm's announcer should feel like the arcade cabinet is daring the player 
 
 - Mission-control lines use the exclusive `announcer` voice group to prevent overlapping chatter.
 - Repeated events use variation pools with per-event no-repeat bags in `AudioManager`.
+- High-frequency moments use event-level cooldowns in addition to the global voice cooldown. Fast restart does not bypass launch/restart replay guards unless a call explicitly opts into `bypassEventCooldown`.
 - Powerup, combo, wave-clear, and hijacker warnings have cooldowns so the first minute stays clean.
+- Game-over delayed voice callbacks are cleared before instant restart so leaderboard, near-miss, personal-best, and retry prompts do not bleed into the next run.
 - Global leaderboard qualification is allowed to interrupt with a bigger fanfare and special voice line because it is rare and score-defining.
 - Optional intro narration remains exclusive to the `intro_narrator` group and is stopped on panel changes.
 
@@ -42,3 +44,5 @@ Nova Swarm's announcer should feel like the arcade cabinet is daring the player 
 The current 2026-05-19 pack is ElevenLabs output generated from the approved Misfit Galaxy `Female misfit` voice (`SIbt9DJkaY96v2K2fQyQ`) using `eleven_v3`. The voice was selected because the previous local fallback sounded too generic for Nova Swarm's arcade-cabinet identity. Keep `Microsoft Zira Desktop` only as an emergency local fallback via `npm run generate:local-announcer-voicepack`.
 
 The current Ralph-loop verification checked that `ELEVENLABS_API_KEY` is present and accepted by ElevenLabs `/v1/user` with HTTP 200, without printing, logging, or committing the key.
+
+The 2026-05-19 voice-cadence loop did not regenerate the voice pack. It added runtime guards and automated proof that first-run launch chatter, instant restart, and rapid restart spam stay separated: `npm run check:voice-cadence` passed at `test-results/voice-cadence-2026-05-19T21-48-17-458Z/report.json`.

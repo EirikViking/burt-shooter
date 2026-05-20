@@ -1,0 +1,121 @@
+{
+  "generatedAt": "2026-05-19T22:08:43.349Z",
+  "baseUrl": "http://127.0.0.1:4373",
+  "outputDir": "D:\\vibe-coding-e\\burt-shooter\\release\\steam-trailer\\draft-2026-05-20-00-07",
+  "build": {
+    "version": "v2026-05-19_23-47-45",
+    "timestamp": "2026-05-19T21:47:45.400Z"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "trailer": "nova-swarm-steam-trailer-visual-draft.webm",
+  "notes": [
+    "Visual trailer draft captured from the production build. Playwright video capture does not include game audio.",
+    "Opening sequence uses the real unranked debug route to show runtime hijacker tractor-beam pressure before boss footage.",
+    "Later trailer beats use deterministic boss routes to prove midgame and late-game boss telegraph variety.",
+    "Final Steam trailer still needs edited audio/music mix, title cards, and human approval."
+  ],
+  "timeline": [
+    {
+      "label": "hijacker_tractor_setup",
+      "durationMs": 800,
+      "scene": "play",
+      "level": 1,
+      "wave": 1,
+      "audioContext": "menu"
+    },
+    {
+      "label": "tractor_hijack_payoff",
+      "durationMs": 1900,
+      "scene": "play",
+      "level": 1,
+      "wave": 1,
+      "audioContext": "menu"
+    },
+    {
+      "label": "boss_inbound",
+      "durationMs": 1800,
+      "scene": "play",
+      "level": 1,
+      "wave": 3,
+      "audioContext": "gameplay"
+    },
+    {
+      "label": "boss_pattern_fire",
+      "durationMs": 5000,
+      "scene": "play",
+      "level": 1,
+      "wave": 3,
+      "audioContext": "boss"
+    },
+    {
+      "label": "boss_victory",
+      "durationMs": 3200,
+      "scene": "play",
+      "level": 1,
+      "wave": 3,
+      "audioContext": "victory"
+    },
+    {
+      "label": "boss_variety_vortex_telegraph",
+      "durationMs": 2300,
+      "scene": "play",
+      "level": 5,
+      "wave": 3,
+      "audioContext": "boss"
+    },
+    {
+      "label": "boss_variety_choir_telegraph",
+      "durationMs": 2300,
+      "scene": "play",
+      "level": 9,
+      "wave": 3,
+      "audioContext": "boss"
+    },
+    {
+      "label": "first_wave_lasers",
+      "durationMs": 3200,
+      "scene": "play",
+      "level": 1,
+      "wave": 1,
+      "audioContext": "gameplay"
+    },
+    {
+      "label": "close_dodge_score_tease",
+      "durationMs": 1700,
+      "scene": "play",
+      "level": 1,
+      "wave": 1,
+      "audioContext": "gameplay"
+    },
+    {
+      "label": "main_menu_quick_play",
+      "durationMs": 2000,
+      "scene": "menu",
+      "level": 1,
+      "wave": null,
+      "audioContext": "menu"
+    },
+    {
+      "label": "ship_select_variants",
+      "durationMs": 3000,
+      "scene": "shipSelect",
+      "level": 1,
+      "wave": null,
+      "audioContext": "menu"
+    },
+    {
+      "label": "game_over_score_log",
+      "durationMs": 4000,
+      "scene": "gameOver",
+      "level": 1,
+      "wave": null,
+      "audioContext": "victory"
+    }
+  ],
+  "consoleEvents": [],
+  "pageErrors": [],
+  "badResponses": []
+}

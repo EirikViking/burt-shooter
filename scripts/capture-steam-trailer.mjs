@@ -371,6 +371,8 @@ async function stageGrazeBreakPayoff(page) {
     if (!result?.triggered) {
       throw new Error(`Trailer Graze Break staging did not trigger: charged=${Boolean(charged?.active)} target=${Boolean(targetBullet?.active)} ready=${Boolean(play.grazeBreakReady)}`);
     }
+    play.bulletManager.enemyBullets = play.bulletManager.enemyBullets
+      .filter((bullet) => typeof bullet?.update === 'function');
   });
 
   await page.waitForFunction(() => {

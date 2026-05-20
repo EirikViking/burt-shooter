@@ -47,6 +47,19 @@ function debugBounds(displayObject) {
   }
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function fitTextToWidth(textObject, maxWidth, minFontSize = 9) {
+  if (!textObject?.style || !Number.isFinite(maxWidth) || maxWidth <= 0) return;
+  let nextSize = Number(textObject.style.fontSize) || 12;
+  while (textObject.width > maxWidth && nextSize > minFontSize) {
+    nextSize -= 1;
+    textObject.style.fontSize = nextSize;
+  }
+}
+
 export class HighscoreScene {
   constructor(game) {
     this.game = game;
@@ -362,16 +375,23 @@ export class HighscoreScene {
     this.subtitle.style.fontSize = Math.min(getResponsiveFontSize(layout, 'subtitle'), layout.isMobile ? 15 : 22);
     this.comment.style.fontSize = Math.min(getResponsiveFontSize(layout, 'body'), layout.isMobile ? 14 : 18);
     this.comment.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
+    this.comment.visible = this.status !== 'LOADED';
     this.stateMessage.style.fontSize = getResponsiveFontSize(layout, 'body');
     this.stateMessage.style.fontSize = getResponsiveFontSize(layout, 'body');
     this.statusText.style.fontSize = getResponsiveFontSize(layout, 'small');
 
     // Title block
     this.title.x = width / 2;
-    this.title.y = stack.placeElement(this.title, layout.spacing * 0.15);
+    {
+      const titleTop = stack.placeElement(this.title, layout.spacing * 0.15);
+      this.title.y = titleTop + this.title.height / 2;
+    }
 
     this.subtitle.x = width / 2;
-    this.subtitle.y = stack.placeElement(this.subtitle, layout.spacing * 0.1);
+    {
+      const subtitleTop = stack.placeElement(this.subtitle, layout.spacing * 0.1);
+      this.subtitle.y = subtitleTop + this.subtitle.height / 2;
+    }
     this.drawTitlePlate(width, layout);
 
     const toggleY = stack.getCurrentY() + (layout.isMobile ? 12 : 20);
@@ -387,17 +407,28 @@ export class HighscoreScene {
     }
 
     this.comment.x = width / 2;
-    this.comment.y = stack.placeElement(this.comment, layout.spacing * 0.4);
+    if (this.comment.visible) {
+      const commentTop = stack.placeElement(this.comment, layout.spacing * 0.4);
+      this.comment.y = commentTop + this.comment.height / 2;
+    } else {
+      this.comment.y = stack.getCurrentY();
+      stack.addGap(layout.spacing * (layout.isMobile ? 0.35 : 0.45));
+    }
 
     this.stateMessage.visible = this.status !== 'LOADED';
-    const headerY = this.stateMessage.visible
-      ? stack.placeElement(this.stateMessage, layout.spacing * 0.2)
-      : stack.getCurrentY() + layout.spacing * 0.25;
-    this.stateMessage.y = headerY;
+    let headerY = stack.getCurrentY() + layout.spacing * 0.25;
+    if (this.stateMessage.visible) {
+      const stateTop = stack.placeElement(this.stateMessage, layout.spacing * 0.2);
+      this.stateMessage.y = stateTop + this.stateMessage.height / 2;
+      headerY = stateTop + this.stateMessage.height;
+    } else {
+      this.stateMessage.y = headerY;
+    }
     this.stateMessage.x = width / 2;
 
     // Rows start after status message
-    const rowsStartY = headerY + (this.stateMessage.visible ? layout.lineHeight * 0.9 : layout.lineHeight * 0.15) + layout.spacing * (layout.isMobile ? 0.2 : 0.35);
+    const baseRowsStartY = headerY + (this.stateMessage.visible ? layout.lineHeight * 0.9 : layout.lineHeight * 0.15) + layout.spacing * (layout.isMobile ? 0.2 : 0.35);
+    const rowsStartY = Math.max(baseRowsStartY, toggleY + (layout.isMobile ? 76 : 78));
 
     // Draw dark panel behind leaderboard for readability
     this.drawLeaderboardPanel(width, height, rowsStartY, layout);
@@ -589,26 +620,18 @@ export class HighscoreScene {
 
       const rowStyle = {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: Math.max(10, Math.min(getResponsiveFontSize(layout, 'tableRow'), layout.isMobile ? 12 : 13)),
+        fontSize: Math.max(
+          layout.isMobile ? 11 : 14,
+          Math.min(
+            getResponsiveFontSize(layout, 'tableRow') - (layout.isMobile ? 3 : 1),
+            layout.isMobile ? 13 : (layout.height < 820 ? 15 : 17)
+          )
+        ),
         fill: '#e8fcff',
         stroke: '#00131b',
         strokeThickness: 2
       };
 
-      // TASK C: Dynamic column positioning based on longest name
-      // Calculate the longest name width to ensure proper spacing
-      let maxNameWidth = 120; // Minimum name column width
-      if (entriesToDisplay.length > 0) {
-        const tempText = createText('', rowStyle);
-        entriesToDisplay.forEach(entry => {
-          const displayName = (entry.name || 'NoName').slice(0, 20).toUpperCase();
-          tempText.text = displayName;
-          maxNameWidth = Math.max(maxNameWidth, tempText.width);
-        });
-        tempText.destroy();
-      }
-
-      // Add buffer space after name column
       const metrics = this.tableMetrics || {
         innerX: layout.padding,
         innerY: startY,
@@ -617,49 +640,70 @@ export class HighscoreScene {
         y: startY,
         bottom: layout.height - layout.padding
       };
-      const contentX = metrics.innerX;
-      const contentWidth = metrics.innerWidth;
-      const nameColumnEnd = contentX + contentWidth * (layout.isMobile ? 0.23 : 0.2) + maxNameWidth + 20;
-      const scoreColumnWidth = layout.isMobile ? 102 : 150;
+      const rowInset = layout.isMobile ? 10 : 18;
+      const rowX = metrics.x + rowInset;
+      const rowW = metrics.width - rowInset * 2;
+      const rightPad = layout.isMobile ? 8 : 18;
+      const rankBlockWidth = layout.isMobile ? 34 : 54;
+      const badgeColumnWidth = layout.isMobile ? 30 : 52;
+      const badgeGap = layout.isMobile ? 8 : 14;
+      const scoreBlockWidth = layout.isMobile ? 82 : 158;
+      const levelBlockWidth = layout.isMobile ? 34 : 58;
+      const nameBlockWidth = clamp(
+        rowW * (layout.isMobile ? 0.32 : 0.24),
+        layout.isMobile ? 92 : 190,
+        layout.isMobile ? 126 : 340
+      );
+      const scoreX = rowX + rowW - rightPad - levelBlockWidth - (layout.isMobile ? 8 : 18);
+      const levelCenterX = rowX + rowW - rightPad - levelBlockWidth / 2;
+      const nameX = rowX + rankBlockWidth + badgeColumnWidth + badgeGap;
+      const railX = nameX + nameBlockWidth + (layout.isMobile ? 8 : 18);
+      const railW = Math.max(44, scoreX - scoreBlockWidth - railX - (layout.isMobile ? 6 : 18));
       const columns = {
-        rank: contentX,
-        badge: contentX + (layout.isMobile ? 32 : 48),
-        name: contentX + contentWidth * (layout.isMobile ? 0.18 : 0.16),
-        score: Math.max(nameColumnEnd + 24, contentX + contentWidth - scoreColumnWidth - (layout.isMobile ? 44 : 82)),
-        level: contentX + contentWidth
+        rank: rowX + rankBlockWidth / 2,
+        badge: rowX + rankBlockWidth + badgeGap + badgeColumnWidth / 2,
+        name: nameX,
+        rail: railX,
+        score: scoreX,
+        level: levelCenterX
       };
       const visibleTargetRows = Math.max(1, Math.min(10, entriesToDisplay.length || 10));
-      const minRowHeight = Math.max(layout.isMobile ? 39 : 38, layout.lineHeight * (layout.isMobile ? 1.55 : 1.45));
-      const maxRowHeight = layout.isMobile ? 46 : 58;
-      const rowSpace = Math.max(minRowHeight, (metrics.bottom - startY - 10) / (visibleTargetRows + 1));
+      const headerHeight = Math.max(layout.isMobile ? 24 : 30, layout.lineHeight * (layout.isMobile ? 1.18 : 1.05));
+      const rowsBaseY = startY + headerHeight + (layout.isMobile ? 4 : 8);
+      const availableRowsHeight = Math.max(120, metrics.bottom - rowsBaseY - (layout.isMobile ? 4 : 8));
+      const minRowHeight = Math.max(layout.isMobile ? 37 : 35, layout.lineHeight * (layout.isMobile ? 1.45 : 1.26));
+      const maxRowHeight = layout.isMobile ? 50 : 64;
+      const rowSpace = Math.max(minRowHeight, availableRowsHeight / visibleTargetRows);
       const rowHeight = Math.max(minRowHeight, Math.min(maxRowHeight, rowSpace));
-      const maxRows = Math.max(4, Math.min(10, Math.floor((metrics.bottom - startY + 4) / rowHeight) - 1));
+      const maxRows = Math.max(4, Math.min(10, Math.floor((metrics.bottom - rowsBaseY + 4) / rowHeight)));
+      const topScore = Math.max(1, ...entriesToDisplay.map(entry => Number(entry?.score) || 0));
 
       const headerStyle = {
         ...rowStyle,
         fill: '#ffdf8a',
-        fontSize: Math.max(10, rowStyle.fontSize - 3),
+        fontSize: Math.max(9, rowStyle.fontSize - (layout.isMobile ? 3 : 4)),
         strokeThickness: 2
       };
       const headerBar = new PIXI.Graphics();
-      headerBar.roundRect(metrics.x + 14, startY - 7, metrics.width - 28, layout.lineHeight * 1.05, 4);
-      headerBar.fill({ color: 0x062845, alpha: 0.72 });
+      headerBar.roundRect(rowX, startY - 7, rowW, headerHeight, 5);
+      headerBar.fill({ color: 0x061f36, alpha: 0.78 });
       headerBar.stroke({ color: 0xffd166, width: 1, alpha: 0.35 });
+      headerBar.rect(columns.rail, startY + headerHeight - 11, railW, 2);
+      headerBar.fill({ color: 0x00f6ff, alpha: 0.42 });
       this.rowsContainer.addChild(headerBar);
 
       const headers = [
-        { text: 'POS', x: columns.rank },
-        { text: 'PILOT', x: columns.name },
-        { text: 'SCORE', x: columns.score },
-        { text: layout.isMobile ? 'LV' : 'LEVEL', x: columns.level }
+        { text: 'POS', x: columns.rank, anchorX: 0.5 },
+        { text: 'PILOT ID', x: columns.name, anchorX: 0 },
+        { text: layout.isMobile ? 'VECTOR' : 'RANK SIGNAL / SCORE VECTOR', x: columns.rail, anchorX: 0 },
+        { text: 'SCORE', x: columns.score, anchorX: 1 },
+        { text: layout.isMobile ? 'LV' : 'LEVEL', x: columns.level, anchorX: 0.5 }
       ];
       headers.forEach(entry => {
         const text = createText(entry.text, headerStyle);
         text.x = entry.x;
         text.y = startY;
-        if (entry.text === 'SCORE' || entry.text === 'LEVEL') {
-          text.anchor.set(1, 0);
-        }
+        text.anchor.set(entry.anchorX, 0);
         this.rowsContainer.addChild(text);
       });
 
@@ -686,80 +730,169 @@ export class HighscoreScene {
       );
 
       entriesToRender.forEach((score, index) => {
-        const y = startY + rowHeight * (index + 1);
+        const y = rowsBaseY + rowHeight * index;
         const isTop3 = index < 3 && !score.isPending;
         const isPending = score.isPending || false;
-        const rowX = metrics.x + 14;
-        const rowW = metrics.width - 28;
-        const rowY = y - 5;
-        const primaryY = rowY + 5;
-        const secondaryY = rowY + 24;
+        const rowY = y;
+        const primaryY = rowY + (layout.isMobile ? 3 : 7);
+        const rowMidY = rowY + rowHeight * 0.5;
         const rowBg = new PIXI.Graphics();
-        const rowColors = [0x5c3604, 0x283c54, 0x4a2719];
-        const rowColor = isTop3 ? rowColors[index] : (index % 2 === 0 ? 0x05192b : 0x06111e);
-        rowBg.roundRect(rowX, rowY, rowW, rowHeight - 4, 5);
-        rowBg.fill({ color: rowColor, alpha: isTop3 ? 0.72 : 0.56 });
+        const medalAccents = [0xffd166, 0x9fefff, 0xff9b5c];
+        const medalFills = [0x4d3107, 0x143650, 0x4a2417];
+        const accent = isPending ? 0xffaa44 : (isTop3 ? medalAccents[index] : (index % 2 === 0 ? 0x00f6ff : 0x59b6ff));
+        const rowColor = isTop3 ? medalFills[index] : (index % 2 === 0 ? 0x041522 : 0x061d2b);
+
+        if (isTop3) {
+          const rowAura = new PIXI.Graphics();
+          rowAura.roundRect(rowX - 3, rowY - 3, rowW + 6, rowHeight - 2, 7);
+          rowAura.fill({ color: accent, alpha: index === 0 ? 0.22 : 0.15 });
+          rowAura.filters = [new PIXI.BlurFilter(index === 0 ? 8 : 5)];
+          this.rowsContainer.addChild(rowAura);
+        }
+
+        rowBg.roundRect(rowX, rowY, rowW, rowHeight - 5, 6);
+        rowBg.fill({ color: rowColor, alpha: isTop3 ? 0.84 : 0.7 });
         rowBg.stroke({
-          color: isTop3 ? [0xffd166, 0xbce9ff, 0xff8f4d][index] : 0x1d6f93,
-          width: isTop3 ? 1.5 : 1,
-          alpha: isTop3 ? 0.78 : 0.28
+          color: accent,
+          width: isTop3 ? 2 : 1,
+          alpha: isTop3 ? 0.9 : 0.36
         });
+        rowBg.roundRect(rowX + 5, rowY + 5, rankBlockWidth - 10, rowHeight - 15, 5);
+        rowBg.fill({ color: accent, alpha: isTop3 ? 0.34 : 0.18 });
+        rowBg.stroke({ color: 0xffffff, width: 1, alpha: isTop3 ? 0.22 : 0.12 });
+        rowBg.rect(rowX + rankBlockWidth + 6, rowY + 8, 1, rowHeight - 21);
+        rowBg.fill({ color: accent, alpha: 0.42 });
+        rowBg.rect(scoreX - scoreBlockWidth + 6, rowY + 8, 1, rowHeight - 21);
+        rowBg.fill({ color: 0xffffff, alpha: 0.1 });
         this.rowsContainer.addChild(rowBg);
 
-        // Premium glow for top 3 (enhanced VIP treatment)
-        if (isTop3) {
-          // Base glow
-          const glow = new PIXI.Graphics();
-          glow.roundRect(rowX, rowY, rowW, rowHeight - 4, 5);
-          glow.fill({ color: index === 0 ? 0xffd166 : (index === 1 ? 0x66e6ff : 0xff7a47), alpha: 0.16 });
-          glow.filters = [new PIXI.BlurFilter(6)];
-          this.rowsContainer.addChild(glow);
-
-          // Extra sparkle for #1
-          if (index === 0) {
-            const sparkle = new PIXI.Graphics();
-            sparkle.roundRect(rowX + 4, rowY + 4, rowW - 8, rowHeight - 12, 5);
-            sparkle.fill({ color: 0xffff9b, alpha: 0.14 });
-            sparkle.filters = [new PIXI.BlurFilter(8)];
-            this.rowsContainer.addChild(sparkle);
+        const scoreRatio = clamp((Number(score.score) || 0) / topScore, 0.04, 1);
+        const railHeight = clamp(rowHeight * 0.27, layout.isMobile ? 8 : 10, layout.isMobile ? 12 : 16);
+        const railY = rowY + rowHeight * (layout.isMobile ? 0.58 : 0.56) - railHeight / 2;
+        const rail = new PIXI.Graphics();
+        rail.roundRect(columns.rail, railY, railW, railHeight, railHeight / 2);
+        rail.fill({ color: 0x010812, alpha: 0.84 });
+        rail.stroke({ color: accent, width: 1, alpha: isTop3 ? 0.66 : 0.36 });
+        const fillWidth = Math.max(8, (railW - 4) * scoreRatio);
+        rail.roundRect(columns.rail + 2, railY + 2, fillWidth, railHeight - 4, Math.max(2, (railHeight - 4) / 2));
+        rail.fill({ color: accent, alpha: isTop3 ? 0.82 : 0.62 });
+        if (railW > 110) {
+          for (let tick = 1; tick < 5; tick += 1) {
+            const tickX = columns.rail + (railW / 5) * tick;
+            rail.rect(tickX, railY - 3, 1, railHeight + 6);
+            rail.fill({ color: 0xffffff, alpha: 0.13 });
           }
         }
+        rail.rect(columns.rail + fillWidth, railY - 4, 2, railHeight + 8);
+        rail.fill({ color: 0xffffff, alpha: isTop3 ? 0.82 : 0.48 });
+        this.rowsContainer.addChild(rail);
 
         const rankStyle = isTop3 ? { ...rowStyle, fill: '#fff3a0' } : (isPending ? { ...rowStyle, fill: '#ffb45a' } : rowStyle);
         const nameStyle = isTop3 ? { ...rowStyle, fill: '#ffffff' } : (isPending ? { ...rowStyle, fill: '#ffaa44' } : rowStyle);
 
-        const rankText = createText(`#${index + 1}`, rankStyle);
-        const nameText = createText((score.name || '??').slice(0, 20), nameStyle);
-        const scoreText = createText((score.score || 0).toLocaleString('en-US'), isTop3 ? nameStyle : (isPending ? nameStyle : rowStyle));
-        const levelText = createText((score.level || 0).toString(), isTop3 ? nameStyle : (isPending ? nameStyle : rowStyle));
+        const playerRankIndex = (score.rank_index !== null && score.rank_index !== undefined)
+          ? score.rank_index
+          : getRankFromScore(score.score || 0);
+        const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
+        const rankTitle = getRankTitle(clampedRank);
+        const displayName = (score.name || '??').slice(0, layout.isMobile ? 14 : 20).toUpperCase();
 
+        const rankText = createText(`#${index + 1}`, {
+          ...rankStyle,
+          fontSize: rowStyle.fontSize + (isTop3 && !layout.isMobile ? 2 : 0)
+        });
+        const nameText = createText(displayName, nameStyle);
+        const rankNameText = createText(rankTitle, {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: Math.max(layout.isMobile ? 8 : 10, rowStyle.fontSize - (layout.isMobile ? 4 : 3)),
+          fill: isTop3 ? '#ffefaa' : '#9fd7e3',
+          stroke: '#00131b',
+          strokeThickness: 1
+        });
+        const scoreText = createText((score.score || 0).toLocaleString('en-US'), {
+          ...(isTop3 ? nameStyle : (isPending ? nameStyle : rowStyle)),
+          fontSize: rowStyle.fontSize + (layout.isMobile ? 0 : 1)
+        });
+        const scoreLabel = createText(index === 0 ? 'LEADER' : 'SCORE', {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: Math.max(8, rowStyle.fontSize - (layout.isMobile ? 5 : 4)),
+          fill: isTop3 ? '#ffe7a8' : '#6fb6c8',
+          stroke: '#00131b',
+          strokeThickness: 1
+        });
+        const levelText = createText((score.level || 0).toString(), {
+          ...rankStyle,
+          fontSize: Math.max(11, rowStyle.fontSize - (layout.isMobile ? 1 : 0))
+        });
+        const levelLabel = createText('LV', {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: Math.max(7, rowStyle.fontSize - (layout.isMobile ? 6 : 5)),
+          fill: '#7fdbe7',
+          stroke: '#00131b',
+          strokeThickness: 1
+        });
+        const ratioText = createText(index === 0 ? 'TOP SIGNAL' : `${Math.round(scoreRatio * 100)}% OF LEAD`, {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: Math.max(layout.isMobile ? 7 : 9, rowStyle.fontSize - (layout.isMobile ? 5 : 4)),
+          fill: isTop3 ? '#fff7c6' : '#b8faff',
+          stroke: '#00131b',
+          strokeThickness: 1
+        });
+
+        rankText.anchor.set(0.5);
         rankText.x = columns.rank;
-        rankText.y = primaryY;
+        rankText.y = rowMidY - 2;
         nameText.x = columns.name;
         nameText.y = primaryY;
+        fitTextToWidth(nameText, nameBlockWidth, layout.isMobile ? 9 : 11);
+
+        const rankOnRail = railW > (layout.isMobile ? 74 : 160);
+        rankNameText.x = rankOnRail ? columns.rail + (layout.isMobile ? 6 : 10) : columns.name;
+        rankNameText.y = rankOnRail ? rowY + 7 : rowY + rowHeight - rankNameText.height - (layout.isMobile ? 3 : 7);
+        fitTextToWidth(rankNameText, rankOnRail ? Math.max(42, railW * (layout.isMobile ? 0.58 : 0.52)) : nameBlockWidth, layout.isMobile ? 7 : 9);
+
         scoreText.x = columns.score;
-        scoreText.y = primaryY;
+        scoreText.y = primaryY - 1;
+        scoreLabel.x = columns.score;
+        scoreLabel.y = rowY + rowHeight - scoreLabel.height - 7;
         levelText.x = columns.level;
-        levelText.y = primaryY;
+        levelText.y = rowMidY + 1;
+        levelLabel.x = columns.level;
+        levelLabel.y = rowY + 7;
         scoreText.anchor.set(1, 0);
-        levelText.anchor.set(1, 0);
+        scoreLabel.anchor.set(1, 0);
+        levelText.anchor.set(0.5);
+        levelLabel.anchor.set(0.5, 0);
+        fitTextToWidth(scoreText, scoreBlockWidth, layout.isMobile ? 10 : 12);
 
-        this.rowsContainer.addChild(rankText, nameText, scoreText, levelText);
+        if (railW > (layout.isMobile ? 120 : 58)) {
+          ratioText.anchor.set(1, 0.5);
+          ratioText.x = columns.rail + railW - 8;
+          ratioText.y = railY + railHeight / 2;
+          fitTextToWidth(ratioText, Math.max(36, railW * 0.42), layout.isMobile ? 6 : 8);
+          this.rowsContainer.addChild(ratioText);
+        }
 
-        // Add rank sprite using preloaded texture
+        const levelPill = new PIXI.Graphics();
+        const pillWidth = layout.isMobile ? 28 : 42;
+        const pillHeight = layout.isMobile ? 24 : 30;
+        levelPill.roundRect(columns.level - pillWidth / 2, rowMidY - pillHeight / 2, pillWidth, pillHeight, 5);
+        levelPill.fill({ color: 0x031725, alpha: 0.8 });
+        levelPill.stroke({ color: accent, width: 1, alpha: isTop3 ? 0.72 : 0.34 });
+        this.rowsContainer.addChild(levelPill);
+
         const rankTexture = rankTextures[index];
-        // The badge shows player progression rank, not leaderboard placement
         const displayRank = computeDisplayRank(score);
         if (rankTexture) {
           const rankSprite = new PIXI.Sprite(rankTexture);
-          rankSprite.anchor.set(0, 0.5); // Anchor left-center for consistent positioning
+          rankSprite.anchor.set(0.5);
 
-          const targetHeight = rowHeight * 0.75;
+          const targetHeight = Math.min(rowHeight * 0.62, layout.isMobile ? 28 : 42);
           const scale = targetHeight / rankTexture.height;
           rankSprite.scale.set(scale);
 
           rankSprite.x = columns.badge;
-          rankSprite.y = y + rowHeight * 0.5;
+          rankSprite.y = rowMidY;
           rankSprite.alpha = 1;
           rankSprite.visible = true;
 
@@ -775,50 +908,43 @@ export class HighscoreScene {
           placeholder.height = size;
           placeholder.tint = 0xff3355;
           placeholder.alpha = 0.6;
-          placeholder.anchor.set(0, 0.5);
+          placeholder.anchor.set(0.5);
           placeholder.x = columns.badge;
-          placeholder.y = y + rowHeight * 0.5;
+          placeholder.y = rowMidY;
           this.rowsContainer.addChild(placeholder);
         }
 
-        // TASK 1: Use getRankTitle from RankPolicy (single source of truth)
-        const playerRankIndex = (score.rank_index !== null && score.rank_index !== undefined)
-          ? score.rank_index
-          : getRankFromScore(score.score || 0);
-        const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
-
-        const rankNameText = createText(getRankTitle(clampedRank), {
-          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: Math.max(layout.isMobile ? 7 : 8, rowStyle.fontSize - (layout.isMobile ? 5 : 4)),
-          fill: isTop3 ? '#ffdf8a' : '#8fb9c4',
-          stroke: '#00131b',
-          strokeThickness: 1
-        });
-        rankNameText.x = columns.name;
-        rankNameText.y = secondaryY;
-        this.rowsContainer.addChild(rankNameText);
+        this.rowsContainer.addChild(rankText, nameText, rankNameText, scoreText, scoreLabel, levelText, levelLabel);
         this.rowLayoutDebug.push({
           index,
           row: {
             x: Math.round(rowX),
             y: Math.round(rowY),
             width: Math.round(rowW),
-            height: Math.round(rowHeight - 4),
+            height: Math.round(rowHeight - 5),
             right: Math.round(rowX + rowW),
-            bottom: Math.round(rowY + rowHeight - 4)
+            bottom: Math.round(rowY + rowHeight - 5)
           },
           rank: debugBounds(rankText),
           name: debugBounds(nameText),
           rankTitle: debugBounds(rankNameText),
           score: debugBounds(scoreText),
-          level: debugBounds(levelText)
+          level: debugBounds(levelText),
+          scoreRail: {
+            x: Math.round(columns.rail),
+            y: Math.round(railY),
+            width: Math.round(railW),
+            height: Math.round(railHeight),
+            right: Math.round(columns.rail + railW),
+            bottom: Math.round(railY + railHeight)
+          }
         });
       });
 
       if (entriesToDisplay.length > maxRows) {
         const more = createText('...', rowStyle);
         more.x = columns.name;
-        more.y = startY + layout.lineHeight * 1.4 * (maxRows + 1);
+        more.y = rowsBaseY + rowHeight * maxRows + 3;
         this.rowsContainer.addChild(more);
       }
 
@@ -854,13 +980,13 @@ export class HighscoreScene {
     children.forEach((child, i) => {
       child.alpha = 0;
       child.y += 10; // Start slightly below final position
-      child._startDelay = i * 35; // Stagger delay (35ms per row)
+      child._startDelay = Math.min(i * 7, 160);
       child._animStart = 0;
       child._finalY = child.y - 10;
     });
 
     let elapsed = 0;
-    const duration = 320;
+    const duration = 220;
     const ticker = (delta) => {
       elapsed += delta.deltaTime * 16.67;
 
@@ -1034,7 +1160,7 @@ export class HighscoreScene {
     if (!this.backdropShade) return;
     this.backdropShade.clear();
     this.backdropShade.rect(0, 0, width, height);
-    this.backdropShade.fill({ color: 0x020611, alpha: 0.38 });
+    this.backdropShade.fill({ color: 0x020611, alpha: 0.46 });
 
     this.backdropShade.rect(0, 0, width, height * 0.26);
     this.backdropShade.fill({ color: 0x000000, alpha: 0.28 });
@@ -1042,9 +1168,12 @@ export class HighscoreScene {
     this.backdropShade.rect(0, height * 0.72, width, height * 0.28);
     this.backdropShade.fill({ color: 0x000000, alpha: 0.34 });
 
-    const centerW = width * 0.58;
-    this.backdropShade.rect((width - centerW) / 2, height * 0.18, centerW, height * 0.62);
-    this.backdropShade.fill({ color: 0x020817, alpha: 0.34 });
+    const centerW = Math.min(width * 0.86, 1480);
+    this.backdropShade.rect((width - centerW) / 2, height * 0.16, centerW, height * 0.68);
+    this.backdropShade.fill({ color: 0x020817, alpha: 0.3 });
+
+    this.backdropShade.rect(0, height * 0.34, width, height * 0.34);
+    this.backdropShade.fill({ color: 0x00162a, alpha: 0.14 });
   }
 
   drawTitlePlate(width, layout) {
@@ -1055,14 +1184,23 @@ export class HighscoreScene {
     const x = width / 2 - plateWidth / 2;
     const y = Math.max(8, this.title.y - plateHeight * 0.42);
 
+    this.titlePlate.roundRect(x - 5, y - 5, plateWidth + 10, plateHeight + 10, 8);
+    this.titlePlate.fill({ color: 0x00f6ff, alpha: 0.06 });
+
     this.titlePlate.roundRect(x, y, plateWidth, plateHeight, 6);
-    this.titlePlate.fill({ color: 0x020b18, alpha: 0.54 });
-    this.titlePlate.stroke({ color: 0x00f6ff, width: 2, alpha: 0.5 });
+    this.titlePlate.fill({ color: 0x020b18, alpha: 0.68 });
+    this.titlePlate.stroke({ color: 0x00f6ff, width: 2, alpha: 0.64 });
 
     this.titlePlate.rect(x + 18, y + 8, plateWidth - 36, 3);
     this.titlePlate.fill({ color: 0xff37d6, alpha: 0.72 });
     this.titlePlate.rect(x + 42, y + plateHeight - 11, plateWidth - 84, 2);
     this.titlePlate.fill({ color: 0xffd166, alpha: 0.8 });
+
+    const notch = layout.isMobile ? 18 : 30;
+    this.titlePlate.rect(x + 10, y + 18, notch, 2);
+    this.titlePlate.fill({ color: 0x00f6ff, alpha: 0.82 });
+    this.titlePlate.rect(x + plateWidth - notch - 10, y + 18, notch, 2);
+    this.titlePlate.fill({ color: 0x00f6ff, alpha: 0.82 });
   }
 
   drawLeaderboardPanel(width, height, rowsStartY, layout) {
@@ -1087,20 +1225,42 @@ export class HighscoreScene {
       bottom: panelY + panelHeight
     };
 
-    this.leaderboardPanel.roundRect(panelPadding - 9, panelY - 9, panelWidth + 18, panelHeight + 18, 8);
-    this.leaderboardPanel.fill({ color: 0x00f6ff, alpha: 0.08 });
+    this.leaderboardPanel.roundRect(panelPadding - 12, panelY - 12, panelWidth + 24, panelHeight + 24, 10);
+    this.leaderboardPanel.fill({ color: 0x00f6ff, alpha: 0.1 });
 
     this.leaderboardPanel.roundRect(panelPadding, panelY, panelWidth, panelHeight, 8);
-    this.leaderboardPanel.fill({ color: 0x020814, alpha: 0.82 });
-    this.leaderboardPanel.stroke({ color: 0x4dfff7, width: 2, alpha: 0.78 });
+    this.leaderboardPanel.fill({ color: 0x020814, alpha: 0.88 });
+    this.leaderboardPanel.stroke({ color: 0x4dfff7, width: 2, alpha: 0.86 });
 
     this.leaderboardPanel.roundRect(panelPadding + 8, panelY + 8, panelWidth - 16, panelHeight - 16, 5);
-    this.leaderboardPanel.stroke({ color: 0xff37d6, width: 1, alpha: 0.42 });
+    this.leaderboardPanel.fill({ color: 0x031729, alpha: 0.22 });
+    this.leaderboardPanel.stroke({ color: 0xff37d6, width: 1, alpha: 0.46 });
 
     this.leaderboardPanel.rect(panelPadding + 16, panelY + 14, panelWidth - 32, 3);
     this.leaderboardPanel.fill({ color: 0xffd166, alpha: 0.86 });
     this.leaderboardPanel.rect(panelPadding + 16, panelY + panelHeight - 17, panelWidth - 32, 2);
     this.leaderboardPanel.fill({ color: 0x00f6ff, alpha: 0.62 });
+
+    const corner = layout.isMobile ? 20 : 34;
+    const cornerAlpha = 0.82;
+    [
+      [panelPadding + 15, panelY + 22, 1, 0],
+      [panelPadding + panelWidth - 15 - corner, panelY + 22, 1, 0],
+      [panelPadding + 15, panelY + panelHeight - 24, 1, 0],
+      [panelPadding + panelWidth - 15 - corner, panelY + panelHeight - 24, 1, 0]
+    ].forEach(([cx, cy]) => {
+      this.leaderboardPanel.rect(cx, cy, corner, 2);
+      this.leaderboardPanel.fill({ color: 0x00f6ff, alpha: cornerAlpha });
+    });
+    [
+      [panelPadding + 22, panelY + 15],
+      [panelPadding + panelWidth - 24, panelY + 15],
+      [panelPadding + 22, panelY + panelHeight - 15 - corner],
+      [panelPadding + panelWidth - 24, panelY + panelHeight - 15 - corner]
+    ].forEach(([cx, cy]) => {
+      this.leaderboardPanel.rect(cx, cy, 2, corner);
+      this.leaderboardPanel.fill({ color: 0xffd166, alpha: 0.58 });
+    });
 
     if (this.holoRails) {
       this.holoRails.clear();
@@ -1129,10 +1289,14 @@ export class HighscoreScene {
     this.statsDeck.clear();
     const metrics = this.tableMetrics;
     const deckWidth = Math.min(metrics.width, layout.isMobile ? width - 30 : 820);
-    const deckHeight = layout.isMobile ? 28 : 34;
+    const deckHeight = layout.isMobile ? 22 : 26;
     const x = width / 2 - deckWidth / 2;
-    const y = Math.max(metrics.y - deckHeight - 10, (this.comment?.y || 0) + layout.lineHeight * 0.55);
+    const minY = this.comment?.visible ? (this.comment.y + layout.lineHeight * 0.55) : 0;
+    const y = Math.max(metrics.y - deckHeight - 8, minY);
     const loadedCount = this.status === 'LOADED' ? this.entries.length : 0;
+    const topScore = loadedCount
+      ? Math.max(...this.entries.map(entry => Number(entry?.score) || 0)).toLocaleString('en-US')
+      : '0';
     const viewColor = this.activeLeaderboard === 'local' ? 0xffd166 : 0x00f6ff;
 
     this.statsDeck.roundRect(x, y, deckWidth, deckHeight, 5);
@@ -1162,7 +1326,7 @@ export class HighscoreScene {
 
     const syncLabel = this.activeLeaderboard === 'local' ? 'LOCAL MEMORY' : 'LIVE ORBIT';
     const countLabel = loadedCount ? `${loadedCount} SIGNALS` : this.status;
-    this.statsText.text = `${syncLabel}  //  ${countLabel}  //  TINYFOUNDRY GAMES`;
+    this.statsText.text = `${syncLabel}  //  ${countLabel}  //  BEST ${topScore}  //  TINYFOUNDRY GAMES`;
     this.statsText.style.fontSize = layout.isMobile ? 10 : 13;
     this.statsText.x = width / 2;
     this.statsText.y = y + deckHeight / 2;
