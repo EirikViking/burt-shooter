@@ -3,7 +3,7 @@ import { API } from '../api/API.js';
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
-import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
+import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { BonusAsset } from '../utils/BonusAsset.js';
 import { getRankFromScore, getRankTitle } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
@@ -12,6 +12,8 @@ import { AssetManifest } from '../assets/assetManifest.js';
 
 
 const API_PATH = '/api/highscores';
+const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
+const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 // Timeout now handled by API retry logic
 const BLOCKED_PUBLIC_NAME_TERMS = [
   ['E', 'IRIK'].join(''),
@@ -185,27 +187,27 @@ export class HighscoreScene {
     this.setupConfetti(width, height);
 
     this.title = createText('NOVA LEADERBOARD', {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontFamily: FONT_DISPLAY,
       fontSize: getResponsiveFontSize(layout, 'score'),
       fill: '#faffd7',
       stroke: '#00f6ff',
-      strokeThickness: 4,
+      strokeThickness: 6,
       dropShadow: true,
-      dropShadowColor: '#ff37d6',
-      dropShadowBlur: 12,
+      dropShadowColor: '#00ffff',
+      dropShadowBlur: 14,
       dropShadowDistance: 0,
-      dropShadowAlpha: 0.7
+      dropShadowAlpha: 0.85
     });
     this.title.anchor.set(0.5);
     this.title.zIndex = 4;
     this.container.addChild(this.title);
 
     this.subtitle = createText('Arcade legends and brave initials', {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontFamily: FONT_ARCADE,
       fontSize: getResponsiveFontSize(layout, 'subtitle'),
-      fill: '#9cfbff',
+      fill: '#ffd15c',
       stroke: '#00131b',
-      strokeThickness: 2
+      strokeThickness: 3
     });
     this.subtitle.anchor.set(0.5);
     this.subtitle.zIndex = 4;
@@ -354,7 +356,7 @@ export class HighscoreScene {
 
   updateLeaderboardChrome() {
     if (this.title) {
-      this.title.text = this.activeLeaderboard === 'local' ? 'LOCAL SCORES' : 'GLOBAL SCORES';
+      this.title.text = this.activeLeaderboard === 'local' ? 'LOCAL SCORE DECK' : 'GLOBAL SCORE DECK';
     }
     this.updateToggleStyles();
   }
@@ -367,82 +369,96 @@ export class HighscoreScene {
   async layoutHighscore() {
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height);
-    const stack = createVerticalStack(layout, { startY: layout.padding, spacing: layout.spacing });
     this.layoutBackdrop(this.backdropSprite, width, height);
     this.drawBackdropShade(width, height);
 
-    this.title.style.fontSize = Math.min(getResponsiveFontSize(layout, 'score'), layout.isMobile ? 34 : 58);
-    this.subtitle.style.fontSize = Math.min(getResponsiveFontSize(layout, 'subtitle'), layout.isMobile ? 15 : 22);
-    this.comment.style.fontSize = Math.min(getResponsiveFontSize(layout, 'body'), layout.isMobile ? 14 : 18);
+    const isMobile = layout.isMobile || width < 720;
+    const deckWidth = isMobile
+      ? Math.min(width - 28, 430)
+      : Math.min(Math.max(600, width * 0.42), 820);
+    const deckLeft = isMobile
+      ? (width - deckWidth) / 2
+      : Math.max(24, Math.min(width * 0.13, width - deckWidth - 28));
+    const deckTop = isMobile ? Math.max(10, layout.padding * 0.55) : Math.max(28, layout.padding * 0.8);
+    const backReserve = isMobile ? 88 : 76;
+    const deckBottom = height - backReserve;
+    const deckHeight = Math.max(320, deckBottom - deckTop);
+    this.tableMetrics = {
+      x: deckLeft,
+      y: deckTop,
+      width: deckWidth,
+      height: deckHeight,
+      innerX: deckLeft + (isMobile ? 14 : 30),
+      innerY: deckTop + (isMobile ? 14 : 24),
+      innerWidth: deckWidth - (isMobile ? 28 : 60),
+      bottom: deckTop + deckHeight,
+      rowsBottom: deckTop + deckHeight - (isMobile ? 48 : 36),
+      footerY: deckTop + deckHeight - (isMobile ? 24 : 20)
+    };
+
+    this.title.style.fontSize = Math.min(getResponsiveFontSize(layout, 'title') * (isMobile ? 0.66 : 0.76), isMobile ? 30 : 48);
+    this.title.style.stroke = { color: '#031527', width: isMobile ? 5 : 8 };
+    this.title.style.dropShadowColor = '#00ffff';
+    this.subtitle.style.fontSize = Math.min(getResponsiveFontSize(layout, 'subtitle') * (isMobile ? 0.88 : 0.96), isMobile ? 15 : 22);
+    this.comment.style.fontSize = Math.min(getResponsiveFontSize(layout, 'body'), isMobile ? 14 : 18);
     this.comment.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
     this.comment.visible = this.status !== 'LOADED';
     this.stateMessage.style.fontSize = getResponsiveFontSize(layout, 'body');
-    this.stateMessage.style.fontSize = getResponsiveFontSize(layout, 'body');
     this.statusText.style.fontSize = getResponsiveFontSize(layout, 'small');
 
-    // Title block
-    this.title.x = width / 2;
-    {
-      const titleTop = stack.placeElement(this.title, layout.spacing * 0.15);
-      this.title.y = titleTop + this.title.height / 2;
-    }
-
-    this.subtitle.x = width / 2;
-    {
-      const subtitleTop = stack.placeElement(this.subtitle, layout.spacing * 0.1);
-      this.subtitle.y = subtitleTop + this.subtitle.height / 2;
-    }
+    const centerX = deckLeft + deckWidth / 2;
+    const titleY = deckTop + (isMobile ? 56 : 70);
+    this.title.x = centerX;
+    this.title.y = titleY;
+    this.subtitle.x = centerX;
+    this.subtitle.y = titleY + (isMobile ? 34 : 42);
     this.drawTitlePlate(width, layout);
 
-    const toggleY = stack.getCurrentY() + (layout.isMobile ? 12 : 20);
+    const toggleY = this.subtitle.y + (isMobile ? 40 : 46);
     if (this.globalBtn && this.localBtn) {
-      const toggleGap = layout.isMobile ? 76 : 96;
-      this.globalBtn.x = width / 2 - toggleGap;
+      const buttonW = isMobile ? Math.min(132, deckWidth * 0.38) : 172;
+      const buttonH = isMobile ? 32 : 38;
+      const toggleGap = buttonW / 2 + (isMobile ? 8 : 14);
+      this.globalBtn.x = centerX - toggleGap;
       this.globalBtn.y = toggleY;
-      this.localBtn.x = width / 2 + toggleGap;
+      this.localBtn.x = centerX + toggleGap;
       this.localBtn.y = toggleY;
-      this.resizeButton(this.globalBtn, layout.isMobile ? 132 : 168, layout.isMobile ? 34 : 40);
-      this.resizeButton(this.localBtn, layout.isMobile ? 132 : 168, layout.isMobile ? 34 : 40);
-      stack.addGap(layout.isMobile ? 42 : 52);
+      this.resizeButton(this.globalBtn, buttonW, buttonH);
+      this.resizeButton(this.localBtn, buttonW, buttonH);
     }
 
-    this.comment.x = width / 2;
+    this.comment.x = centerX;
     if (this.comment.visible) {
-      const commentTop = stack.placeElement(this.comment, layout.spacing * 0.4);
-      this.comment.y = commentTop + this.comment.height / 2;
+      this.comment.y = toggleY + (isMobile ? 42 : 50);
     } else {
-      this.comment.y = stack.getCurrentY();
-      stack.addGap(layout.spacing * (layout.isMobile ? 0.35 : 0.45));
+      this.comment.y = toggleY + 36;
     }
 
     this.stateMessage.visible = this.status !== 'LOADED';
-    let headerY = stack.getCurrentY() + layout.spacing * 0.25;
+    let rowsStartY = toggleY + (isMobile ? 46 : 52);
     if (this.stateMessage.visible) {
-      const stateTop = stack.placeElement(this.stateMessage, layout.spacing * 0.2);
-      this.stateMessage.y = stateTop + this.stateMessage.height / 2;
-      headerY = stateTop + this.stateMessage.height;
+      this.stateMessage.y = this.comment.visible ? this.comment.y + (isMobile ? 34 : 42) : toggleY + (isMobile ? 46 : 52);
+      rowsStartY = this.stateMessage.y + (isMobile ? 30 : 38);
     } else {
-      this.stateMessage.y = headerY;
+      this.stateMessage.y = rowsStartY;
     }
-    this.stateMessage.x = width / 2;
+    this.stateMessage.x = centerX;
+    rowsStartY = Math.min(rowsStartY, this.tableMetrics.rowsBottom - (isMobile ? 410 : 390));
+    rowsStartY = Math.max(rowsStartY, toggleY + (isMobile ? 42 : 48));
 
-    // Rows start after status message
-    const baseRowsStartY = headerY + (this.stateMessage.visible ? layout.lineHeight * 0.9 : layout.lineHeight * 0.15) + layout.spacing * (layout.isMobile ? 0.2 : 0.35);
-    const rowsStartY = Math.max(baseRowsStartY, toggleY + (layout.isMobile ? 76 : 78));
-
-    // Draw dark panel behind leaderboard for readability
     this.drawLeaderboardPanel(width, height, rowsStartY, layout);
     this.drawStatsDeck(width, height, layout);
 
     await this.renderHighscoreRows(rowsStartY, layout);
 
     // Retry/back & diag
-    const buttonY = height - layout.padding - (layout.isMobile ? 70 : 50);
+    const panelBottom = this.tableMetrics?.bottom || (height - (isMobile ? 88 : 76));
+    const buttonY = Math.min(height - (isMobile ? 34 : 28), panelBottom + (isMobile ? 42 : 38));
     this.retryBtn.x = width / 2 - 80;
     this.retryBtn.y = buttonY;
     this.retryBtn.visible = this.status === 'ERROR';
 
-    this.backBtn.x = width / 2 + 80;
+    this.backBtn.x = isMobile ? width / 2 : deckLeft + Math.min(deckWidth - 110, 180);
     this.backBtn.y = buttonY;
 
     this.statusText.x = layout.padding;
@@ -614,90 +630,76 @@ export class HighscoreScene {
   async renderHighscoreRows(startY, layout) {
     this.rowsContainer.removeChildren();
     this.rowLayoutDebug = [];
+    const isMobile = layout.isMobile || layout.width < 720;
+    const metrics = this.tableMetrics || {
+      x: layout.padding,
+      y: startY,
+      width: layout.width - layout.padding * 2,
+      height: layout.height - startY - layout.padding,
+      innerX: layout.padding,
+      innerY: startY,
+      innerWidth: layout.width - layout.padding * 2,
+      bottom: layout.height - layout.padding,
+      rowsBottom: layout.height - layout.padding * 2
+    };
+
     if (this.status === 'LOADED') {
       const isDebug = window.location.search.includes('debug=1');
       let entriesToDisplay = [...this.entries];
 
+      const rowX = metrics.innerX;
+      const rowW = metrics.innerWidth;
+      const rankBlockWidth = isMobile ? 38 : 52;
+      const badgeColumnWidth = isMobile ? 30 : 42;
+      const badgeGap = isMobile ? 8 : 12;
+      const scoreBlockWidth = isMobile ? 96 : 142;
+      const levelBlockWidth = isMobile ? 38 : 46;
+      const rightPad = isMobile ? 8 : 12;
+      const contentX = rowX + rankBlockWidth + badgeColumnWidth + badgeGap;
+      const levelCenterX = rowX + rowW - rightPad - levelBlockWidth / 2;
+      const scoreX = levelCenterX - levelBlockWidth / 2 - (isMobile ? 8 : 12);
+      const nameBlockWidth = Math.max(76, scoreX - contentX - (isMobile ? 10 : 16));
+      const columns = {
+        rank: rowX + rankBlockWidth / 2,
+        badge: rowX + rankBlockWidth + badgeGap + badgeColumnWidth / 2,
+        name: contentX,
+        score: scoreX,
+        level: levelCenterX
+      };
+      const visibleTargetRows = Math.max(1, Math.min(10, entriesToDisplay.length || 10));
+      const headerHeight = isMobile ? 22 : 24;
+      const rowsBaseY = startY + headerHeight + (isMobile ? 4 : 7);
+      const rowsBottom = Math.min(metrics.rowsBottom || metrics.bottom - 48, metrics.bottom - (isMobile ? 44 : 54));
+      const availableRowsHeight = Math.max(120, rowsBottom - rowsBaseY);
+      const minRowHeight = isMobile ? 45 : 36;
+      const maxRowHeight = isMobile ? 52 : (layout.height >= 880 ? 56 : 42);
+      const rowSpace = Math.max(minRowHeight, availableRowsHeight / visibleTargetRows);
+      const rowHeight = Math.max(minRowHeight, Math.min(maxRowHeight, rowSpace));
+      const maxRows = Math.max(4, Math.min(10, entriesToDisplay.length, Math.floor((availableRowsHeight + 8) / rowHeight)));
       const rowStyle = {
-        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: Math.max(
-          layout.isMobile ? 11 : 14,
-          Math.min(
-            getResponsiveFontSize(layout, 'tableRow') - (layout.isMobile ? 3 : 1),
-            layout.isMobile ? 13 : (layout.height < 820 ? 15 : 17)
-          )
-        ),
+        fontFamily: FONT_ARCADE,
+        fontSize: isMobile ? 13 : (layout.height < 820 ? 12 : 14),
         fill: '#e8fcff',
         stroke: '#00131b',
         strokeThickness: 2
       };
 
-      const metrics = this.tableMetrics || {
-        innerX: layout.padding,
-        innerY: startY,
-        innerWidth: layout.width - layout.padding * 2,
-        width: layout.width - layout.padding * 2,
-        y: startY,
-        bottom: layout.height - layout.padding
-      };
-      const rowInset = layout.isMobile ? 10 : 18;
-      const rowX = metrics.x + rowInset;
-      const rowW = metrics.width - rowInset * 2;
-      const rightPad = layout.isMobile ? 8 : 18;
-      const rankBlockWidth = layout.isMobile ? 34 : 54;
-      const badgeColumnWidth = layout.isMobile ? 30 : 52;
-      const badgeGap = layout.isMobile ? 8 : 14;
-      const scoreBlockWidth = layout.isMobile ? 82 : 158;
-      const levelBlockWidth = layout.isMobile ? 34 : 58;
-      const nameBlockWidth = clamp(
-        rowW * (layout.isMobile ? 0.32 : 0.24),
-        layout.isMobile ? 92 : 190,
-        layout.isMobile ? 126 : 340
-      );
-      const scoreX = rowX + rowW - rightPad - levelBlockWidth - (layout.isMobile ? 8 : 18);
-      const levelCenterX = rowX + rowW - rightPad - levelBlockWidth / 2;
-      const nameX = rowX + rankBlockWidth + badgeColumnWidth + badgeGap;
-      const railX = nameX + nameBlockWidth + (layout.isMobile ? 8 : 18);
-      const railW = Math.max(44, scoreX - scoreBlockWidth - railX - (layout.isMobile ? 6 : 18));
-      const columns = {
-        rank: rowX + rankBlockWidth / 2,
-        badge: rowX + rankBlockWidth + badgeGap + badgeColumnWidth / 2,
-        name: nameX,
-        rail: railX,
-        score: scoreX,
-        level: levelCenterX
-      };
-      const visibleTargetRows = Math.max(1, Math.min(10, entriesToDisplay.length || 10));
-      const headerHeight = Math.max(layout.isMobile ? 24 : 30, layout.lineHeight * (layout.isMobile ? 1.18 : 1.05));
-      const rowsBaseY = startY + headerHeight + (layout.isMobile ? 4 : 8);
-      const availableRowsHeight = Math.max(120, metrics.bottom - rowsBaseY - (layout.isMobile ? 4 : 8));
-      const minRowHeight = Math.max(layout.isMobile ? 37 : 35, layout.lineHeight * (layout.isMobile ? 1.45 : 1.26));
-      const maxRowHeight = layout.isMobile ? 50 : 64;
-      const rowSpace = Math.max(minRowHeight, availableRowsHeight / visibleTargetRows);
-      const rowHeight = Math.max(minRowHeight, Math.min(maxRowHeight, rowSpace));
-      const maxRows = Math.max(4, Math.min(10, Math.floor((metrics.bottom - rowsBaseY + 4) / rowHeight)));
-      const topScore = Math.max(1, ...entriesToDisplay.map(entry => Number(entry?.score) || 0));
-
       const headerStyle = {
         ...rowStyle,
         fill: '#ffdf8a',
-        fontSize: Math.max(9, rowStyle.fontSize - (layout.isMobile ? 3 : 4)),
+        fontSize: isMobile ? 9 : (layout.height < 820 ? 9 : 10),
         strokeThickness: 2
       };
       const headerBar = new PIXI.Graphics();
-      headerBar.roundRect(rowX, startY - 7, rowW, headerHeight, 5);
-      headerBar.fill({ color: 0x061f36, alpha: 0.78 });
-      headerBar.stroke({ color: 0xffd166, width: 1, alpha: 0.35 });
-      headerBar.rect(columns.rail, startY + headerHeight - 11, railW, 2);
-      headerBar.fill({ color: 0x00f6ff, alpha: 0.42 });
+      headerBar.rect(rowX, startY + headerHeight - 3, rowW, 1);
+      headerBar.fill({ color: 0x7fffd8, alpha: 0.42 });
+      headerBar.rect(rowX, startY + headerHeight - 1, rowW * 0.38, 2);
+      headerBar.fill({ color: 0xffd15c, alpha: 0.38 });
       this.rowsContainer.addChild(headerBar);
 
       const headers = [
-        { text: 'POS', x: columns.rank, anchorX: 0.5 },
-        { text: 'PILOT ID', x: columns.name, anchorX: 0 },
-        { text: layout.isMobile ? 'VECTOR' : 'RANK SIGNAL / SCORE VECTOR', x: columns.rail, anchorX: 0 },
-        { text: 'SCORE', x: columns.score, anchorX: 1 },
-        { text: layout.isMobile ? 'LV' : 'LEVEL', x: columns.level, anchorX: 0.5 }
+        { text: 'PILOT MANIFEST', x: rowX, anchorX: 0 },
+        { text: 'SCORE / LEVEL', x: rowX + rowW, anchorX: 1 }
       ];
       headers.forEach(entry => {
         const text = createText(entry.text, headerStyle);
@@ -734,58 +736,36 @@ export class HighscoreScene {
         const isTop3 = index < 3 && !score.isPending;
         const isPending = score.isPending || false;
         const rowY = y;
-        const primaryY = rowY + (layout.isMobile ? 3 : 7);
+        const primaryY = rowY + (isMobile ? 6 : 7);
         const rowMidY = rowY + rowHeight * 0.5;
         const rowBg = new PIXI.Graphics();
-        const medalAccents = [0xffd166, 0x9fefff, 0xff9b5c];
-        const medalFills = [0x4d3107, 0x143650, 0x4a2417];
-        const accent = isPending ? 0xffaa44 : (isTop3 ? medalAccents[index] : (index % 2 === 0 ? 0x00f6ff : 0x59b6ff));
-        const rowColor = isTop3 ? medalFills[index] : (index % 2 === 0 ? 0x041522 : 0x061d2b);
+        const medalAccents = [0xffd15c, 0x9fefff, 0xff9b5c];
+        const medalFills = [0x1e1607, 0x081d2d, 0x261109];
+        const accent = isPending ? 0xffaa44 : (isTop3 ? medalAccents[index] : (index % 2 === 0 ? 0x37f5ff : 0x7fffd8));
+        const rowColor = isTop3 ? medalFills[index] : (index % 2 === 0 ? 0x03111f : 0x061827);
 
         if (isTop3) {
           const rowAura = new PIXI.Graphics();
-          rowAura.roundRect(rowX - 3, rowY - 3, rowW + 6, rowHeight - 2, 7);
-          rowAura.fill({ color: accent, alpha: index === 0 ? 0.22 : 0.15 });
-          rowAura.filters = [new PIXI.BlurFilter(index === 0 ? 8 : 5)];
+          rowAura.roundRect(rowX - 2, rowY - 2, rowW + 4, rowHeight - 4, 7);
+          rowAura.fill({ color: accent, alpha: index === 0 ? 0.15 : 0.1 });
+          rowAura.filters = [new PIXI.BlurFilter(index === 0 ? 6 : 4)];
           this.rowsContainer.addChild(rowAura);
         }
 
-        rowBg.roundRect(rowX, rowY, rowW, rowHeight - 5, 6);
-        rowBg.fill({ color: rowColor, alpha: isTop3 ? 0.84 : 0.7 });
+        rowBg.roundRect(rowX, rowY, rowW, rowHeight - 2, 7);
+        rowBg.fill({ color: rowColor, alpha: isTop3 ? 0.8 : 0.66 });
         rowBg.stroke({
           color: accent,
-          width: isTop3 ? 2 : 1,
-          alpha: isTop3 ? 0.9 : 0.36
+          width: isTop3 ? 1.5 : 1,
+          alpha: isTop3 ? 0.74 : 0.32
         });
-        rowBg.roundRect(rowX + 5, rowY + 5, rankBlockWidth - 10, rowHeight - 15, 5);
-        rowBg.fill({ color: accent, alpha: isTop3 ? 0.34 : 0.18 });
-        rowBg.stroke({ color: 0xffffff, width: 1, alpha: isTop3 ? 0.22 : 0.12 });
-        rowBg.rect(rowX + rankBlockWidth + 6, rowY + 8, 1, rowHeight - 21);
-        rowBg.fill({ color: accent, alpha: 0.42 });
-        rowBg.rect(scoreX - scoreBlockWidth + 6, rowY + 8, 1, rowHeight - 21);
+        rowBg.rect(rowX + 8, rowY + 6, 3, rowHeight - 14);
+        rowBg.fill({ color: accent, alpha: isTop3 ? 0.78 : 0.42 });
+        rowBg.rect(rowX + rowW - scoreBlockWidth - levelBlockWidth - 18, rowY + 8, 1, rowHeight - 18);
         rowBg.fill({ color: 0xffffff, alpha: 0.1 });
+        rowBg.rect(rowX + 18, rowY + rowHeight - 10, rowW - 36, 1);
+        rowBg.fill({ color: 0x7fffd8, alpha: isTop3 ? 0.22 : 0.1 });
         this.rowsContainer.addChild(rowBg);
-
-        const scoreRatio = clamp((Number(score.score) || 0) / topScore, 0.04, 1);
-        const railHeight = clamp(rowHeight * 0.27, layout.isMobile ? 8 : 10, layout.isMobile ? 12 : 16);
-        const railY = rowY + rowHeight * (layout.isMobile ? 0.58 : 0.56) - railHeight / 2;
-        const rail = new PIXI.Graphics();
-        rail.roundRect(columns.rail, railY, railW, railHeight, railHeight / 2);
-        rail.fill({ color: 0x010812, alpha: 0.84 });
-        rail.stroke({ color: accent, width: 1, alpha: isTop3 ? 0.66 : 0.36 });
-        const fillWidth = Math.max(8, (railW - 4) * scoreRatio);
-        rail.roundRect(columns.rail + 2, railY + 2, fillWidth, railHeight - 4, Math.max(2, (railHeight - 4) / 2));
-        rail.fill({ color: accent, alpha: isTop3 ? 0.82 : 0.62 });
-        if (railW > 110) {
-          for (let tick = 1; tick < 5; tick += 1) {
-            const tickX = columns.rail + (railW / 5) * tick;
-            rail.rect(tickX, railY - 3, 1, railHeight + 6);
-            rail.fill({ color: 0xffffff, alpha: 0.13 });
-          }
-        }
-        rail.rect(columns.rail + fillWidth, railY - 4, 2, railHeight + 8);
-        rail.fill({ color: 0xffffff, alpha: isTop3 ? 0.82 : 0.48 });
-        this.rowsContainer.addChild(rail);
 
         const rankStyle = isTop3 ? { ...rowStyle, fill: '#fff3a0' } : (isPending ? { ...rowStyle, fill: '#ffb45a' } : rowStyle);
         const nameStyle = isTop3 ? { ...rowStyle, fill: '#ffffff' } : (isPending ? { ...rowStyle, fill: '#ffaa44' } : rowStyle);
@@ -795,48 +775,36 @@ export class HighscoreScene {
           : getRankFromScore(score.score || 0);
         const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
         const rankTitle = getRankTitle(clampedRank);
-        const displayName = (score.name || '??').slice(0, layout.isMobile ? 14 : 20).toUpperCase();
+        const displayName = (score.name || '??').slice(0, isMobile ? 13 : 18).toUpperCase();
 
         const rankText = createText(`#${index + 1}`, {
           ...rankStyle,
-          fontSize: rowStyle.fontSize + (isTop3 && !layout.isMobile ? 2 : 0)
+          fontFamily: FONT_DISPLAY,
+          fontSize: rowStyle.fontSize + (isTop3 && !isMobile ? 1 : 0)
         });
         const nameText = createText(displayName, nameStyle);
         const rankNameText = createText(rankTitle, {
-          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: Math.max(layout.isMobile ? 8 : 10, rowStyle.fontSize - (layout.isMobile ? 4 : 3)),
+          fontFamily: FONT_ARCADE,
+          fontSize: Math.max(isMobile ? 8 : 8, rowStyle.fontSize - (isMobile ? 4 : 4)),
           fill: isTop3 ? '#ffefaa' : '#9fd7e3',
           stroke: '#00131b',
           strokeThickness: 1
         });
         const scoreText = createText((score.score || 0).toLocaleString('en-US'), {
           ...(isTop3 ? nameStyle : (isPending ? nameStyle : rowStyle)),
-          fontSize: rowStyle.fontSize + (layout.isMobile ? 0 : 1)
+          fontFamily: FONT_ARCADE,
+          fontSize: rowStyle.fontSize + (isMobile ? 0 : 1)
         });
-        const scoreLabel = createText(index === 0 ? 'LEADER' : 'SCORE', {
-          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: Math.max(8, rowStyle.fontSize - (layout.isMobile ? 5 : 4)),
+        const scoreLabel = createText(index === 0 ? 'LEAD' : 'SCORE', {
+          fontFamily: FONT_ARCADE,
+          fontSize: Math.max(8, rowStyle.fontSize - (isMobile ? 5 : 4)),
           fill: isTop3 ? '#ffe7a8' : '#6fb6c8',
           stroke: '#00131b',
           strokeThickness: 1
         });
-        const levelText = createText((score.level || 0).toString(), {
+        const levelText = createText(`LV ${score.level || 0}`, {
           ...rankStyle,
-          fontSize: Math.max(11, rowStyle.fontSize - (layout.isMobile ? 1 : 0))
-        });
-        const levelLabel = createText('LV', {
-          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: Math.max(7, rowStyle.fontSize - (layout.isMobile ? 6 : 5)),
-          fill: '#7fdbe7',
-          stroke: '#00131b',
-          strokeThickness: 1
-        });
-        const ratioText = createText(index === 0 ? 'TOP SIGNAL' : `${Math.round(scoreRatio * 100)}% OF LEAD`, {
-          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: Math.max(layout.isMobile ? 7 : 9, rowStyle.fontSize - (layout.isMobile ? 5 : 4)),
-          fill: isTop3 ? '#fff7c6' : '#b8faff',
-          stroke: '#00131b',
-          strokeThickness: 1
+          fontSize: Math.max(10, rowStyle.fontSize - (isMobile ? 3 : 2))
         });
 
         rankText.anchor.set(0.5);
@@ -846,36 +814,30 @@ export class HighscoreScene {
         nameText.y = primaryY;
         fitTextToWidth(nameText, nameBlockWidth, layout.isMobile ? 9 : 11);
 
-        const rankOnRail = railW > (layout.isMobile ? 74 : 160);
-        rankNameText.x = rankOnRail ? columns.rail + (layout.isMobile ? 6 : 10) : columns.name;
-        rankNameText.y = rankOnRail ? rowY + 7 : rowY + rowHeight - rankNameText.height - (layout.isMobile ? 3 : 7);
-        fitTextToWidth(rankNameText, rankOnRail ? Math.max(42, railW * (layout.isMobile ? 0.58 : 0.52)) : nameBlockWidth, layout.isMobile ? 7 : 9);
+        rankNameText.x = columns.name;
+        rankNameText.y = Math.max(
+          nameText.y + nameText.height + 1,
+          rowY + rowHeight - rankNameText.height - (isMobile ? 8 : 5)
+        );
+        fitTextToWidth(rankNameText, nameBlockWidth, isMobile ? 7 : 9);
 
         scoreText.x = columns.score;
         scoreText.y = primaryY - 1;
         scoreLabel.x = columns.score;
-        scoreLabel.y = rowY + rowHeight - scoreLabel.height - 7;
+        scoreLabel.y = Math.max(
+          scoreText.y + scoreText.height + 1,
+          rowY + rowHeight - scoreLabel.height - (isMobile ? 8 : 5)
+        );
         levelText.x = columns.level;
-        levelText.y = rowMidY + 1;
-        levelLabel.x = columns.level;
-        levelLabel.y = rowY + 7;
+        levelText.y = rowMidY;
         scoreText.anchor.set(1, 0);
         scoreLabel.anchor.set(1, 0);
         levelText.anchor.set(0.5);
-        levelLabel.anchor.set(0.5, 0);
-        fitTextToWidth(scoreText, scoreBlockWidth, layout.isMobile ? 10 : 12);
-
-        if (railW > (layout.isMobile ? 120 : 58)) {
-          ratioText.anchor.set(1, 0.5);
-          ratioText.x = columns.rail + railW - 8;
-          ratioText.y = railY + railHeight / 2;
-          fitTextToWidth(ratioText, Math.max(36, railW * 0.42), layout.isMobile ? 6 : 8);
-          this.rowsContainer.addChild(ratioText);
-        }
+        fitTextToWidth(scoreText, scoreBlockWidth, isMobile ? 10 : 12);
 
         const levelPill = new PIXI.Graphics();
-        const pillWidth = layout.isMobile ? 28 : 42;
-        const pillHeight = layout.isMobile ? 24 : 30;
+        const pillWidth = isMobile ? 38 : 46;
+        const pillHeight = isMobile ? 24 : 28;
         levelPill.roundRect(columns.level - pillWidth / 2, rowMidY - pillHeight / 2, pillWidth, pillHeight, 5);
         levelPill.fill({ color: 0x031725, alpha: 0.8 });
         levelPill.stroke({ color: accent, width: 1, alpha: isTop3 ? 0.72 : 0.34 });
@@ -914,29 +876,30 @@ export class HighscoreScene {
           this.rowsContainer.addChild(placeholder);
         }
 
-        this.rowsContainer.addChild(rankText, nameText, rankNameText, scoreText, scoreLabel, levelText, levelLabel);
+        this.rowsContainer.addChild(rankText, nameText, rankNameText, scoreText, scoreLabel, levelText);
         this.rowLayoutDebug.push({
           index,
           row: {
             x: Math.round(rowX),
             y: Math.round(rowY),
             width: Math.round(rowW),
-            height: Math.round(rowHeight - 5),
+            height: Math.round(rowHeight - 2),
             right: Math.round(rowX + rowW),
-            bottom: Math.round(rowY + rowHeight - 5)
+            bottom: Math.round(rowY + rowHeight - 2)
           },
           rank: debugBounds(rankText),
           name: debugBounds(nameText),
           rankTitle: debugBounds(rankNameText),
           score: debugBounds(scoreText),
+          scoreLabel: debugBounds(scoreLabel),
           level: debugBounds(levelText),
-          scoreRail: {
-            x: Math.round(columns.rail),
-            y: Math.round(railY),
-            width: Math.round(railW),
-            height: Math.round(railHeight),
-            right: Math.round(columns.rail + railW),
-            bottom: Math.round(railY + railHeight)
+          scoreGroup: {
+            x: Math.round(scoreX - scoreBlockWidth),
+            y: Math.round(rowY + 4),
+            width: Math.round(scoreBlockWidth + levelBlockWidth + 18),
+            height: Math.round(rowHeight - 13),
+            right: Math.round(rowX + rowW - rightPad),
+            bottom: Math.round(rowY + rowHeight - 9)
           }
         });
       });
@@ -953,16 +916,15 @@ export class HighscoreScene {
       this.rowsContainer.alpha = 1;
       const message = this.status === 'EMPTY' ? 'No highscores yet. Be first!' : 'No data.';
       const empty = createText(message, {
-        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontFamily: FONT_ARCADE,
         fontSize: getResponsiveFontSize(layout, 'body'),
         fill: '#ffffff',
         align: 'center',
         wordWrap: true,
-        wordWrapWidth: clampTextWidth(layout.width * 0.8, layout)
+        wordWrapWidth: clampTextWidth(metrics.innerWidth, layout)
       });
       empty.anchor.set(0.5, 0);
-      empty.x = layout.width / 2;
-      empty.y = startY;
+      empty.x = metrics.x + metrics.width / 2;
       empty.y = startY;
       this.rowsContainer.addChild(empty);
     }
@@ -1116,7 +1078,7 @@ export class HighscoreScene {
   setupConfetti(width, height) {
     this.confettiParticles = [];
     const confettiColors = [0xffaa00, 0xff00ff, 0x00ffff, 0xffff00, 0xff4400, 0x00ff88];
-    const particleCount = 25; // Fixed pool
+    const particleCount = 12; // Fixed pool, intentionally quiet on the score deck
 
     for (let i = 0; i < particleCount; i++) {
       const particle = new PIXI.Graphics();
@@ -1125,7 +1087,7 @@ export class HighscoreScene {
 
       // Simple rectangle confetti
       particle.rect(0, 0, size, size * 1.5);
-      particle.fill({ color, alpha: 0.6 });
+      particle.fill({ color, alpha: 0.34 });
 
       particle.x = Math.random() * width;
       particle.y = Math.random() * -height; // Start above screen
@@ -1160,127 +1122,75 @@ export class HighscoreScene {
     if (!this.backdropShade) return;
     this.backdropShade.clear();
     this.backdropShade.rect(0, 0, width, height);
-    this.backdropShade.fill({ color: 0x020611, alpha: 0.46 });
+    this.backdropShade.fill({ color: 0x020711, alpha: 0.1 });
 
-    this.backdropShade.rect(0, 0, width, height * 0.26);
-    this.backdropShade.fill({ color: 0x000000, alpha: 0.28 });
+    const leftWash = Math.min(width * 0.54, 780);
+    this.backdropShade.rect(0, 0, leftWash, height);
+    this.backdropShade.fill({ color: 0x020711, alpha: width < 720 ? 0.58 : 0.44 });
 
-    this.backdropShade.rect(0, height * 0.72, width, height * 0.28);
-    this.backdropShade.fill({ color: 0x000000, alpha: 0.34 });
-
-    const centerW = Math.min(width * 0.86, 1480);
-    this.backdropShade.rect((width - centerW) / 2, height * 0.16, centerW, height * 0.68);
-    this.backdropShade.fill({ color: 0x020817, alpha: 0.3 });
-
-    this.backdropShade.rect(0, height * 0.34, width, height * 0.34);
-    this.backdropShade.fill({ color: 0x00162a, alpha: 0.14 });
+    this.backdropShade.rect(0, height * 0.68, width, height * 0.32);
+    this.backdropShade.fill({ color: 0x000000, alpha: 0.16 });
   }
 
   drawTitlePlate(width, layout) {
     if (!this.titlePlate || !this.title) return;
     this.titlePlate.clear();
-    const plateWidth = Math.min(width - layout.padding * 2, layout.isMobile ? 460 : 760);
-    const plateHeight = layout.isMobile ? 82 : 108;
-    const x = width / 2 - plateWidth / 2;
-    const y = Math.max(8, this.title.y - plateHeight * 0.42);
+    const metrics = this.tableMetrics;
+    if (!metrics) return;
+    const x = metrics.x;
+    const y = metrics.y;
+    const w = metrics.width;
+    const h = Math.min(metrics.height, layout.isMobile ? 164 : 188);
+    const pad = layout.isMobile ? 18 : 24;
 
-    this.titlePlate.roundRect(x - 5, y - 5, plateWidth + 10, plateHeight + 10, 8);
-    this.titlePlate.fill({ color: 0x00f6ff, alpha: 0.06 });
+    this.titlePlate.rect(x + pad, y + 18, w - pad * 2, 2);
+    this.titlePlate.fill({ color: 0x7fffd8, alpha: 0.36 });
+    this.titlePlate.rect(x + pad, y + h - 16, w - pad * 2, 2);
+    this.titlePlate.fill({ color: 0xffd15c, alpha: 0.34 });
 
-    this.titlePlate.roundRect(x, y, plateWidth, plateHeight, 6);
-    this.titlePlate.fill({ color: 0x020b18, alpha: 0.68 });
-    this.titlePlate.stroke({ color: 0x00f6ff, width: 2, alpha: 0.64 });
-
-    this.titlePlate.rect(x + 18, y + 8, plateWidth - 36, 3);
-    this.titlePlate.fill({ color: 0xff37d6, alpha: 0.72 });
-    this.titlePlate.rect(x + 42, y + plateHeight - 11, plateWidth - 84, 2);
-    this.titlePlate.fill({ color: 0xffd166, alpha: 0.8 });
-
-    const notch = layout.isMobile ? 18 : 30;
-    this.titlePlate.rect(x + 10, y + 18, notch, 2);
-    this.titlePlate.fill({ color: 0x00f6ff, alpha: 0.82 });
-    this.titlePlate.rect(x + plateWidth - notch - 10, y + 18, notch, 2);
-    this.titlePlate.fill({ color: 0x00f6ff, alpha: 0.82 });
+    this.titlePlate.roundRect(x + pad, y - 5, layout.isMobile ? 86 : 118, 10, 4);
+    this.titlePlate.fill({ color: 0xffd15c, alpha: 0.42 });
+    this.titlePlate.rect(x + pad, y + 34, w - pad * 2, 1);
+    this.titlePlate.fill({ color: 0xff55d9, alpha: 0.26 });
   }
 
   drawLeaderboardPanel(width, height, rowsStartY, layout) {
     if (!this.leaderboardPanel) return;
     this.leaderboardPanel.clear();
+    const metrics = this.tableMetrics;
+    if (!metrics) return;
 
-    const panelPadding = Math.max(14, layout.padding * (layout.isMobile ? 0.45 : 1.1));
-    const panelY = rowsStartY - layout.lineHeight * 0.5;
-    const panelWidth = width - panelPadding * 2;
-    const panelHeight = Math.min(
-      height - panelY - layout.padding * 2.5,
-      layout.isMobile ? layout.lineHeight * 16.2 : layout.lineHeight * 17.6
-    );
-    this.tableMetrics = {
-      x: panelPadding,
-      y: panelY,
-      width: panelWidth,
-      height: panelHeight,
-      innerX: panelPadding + Math.max(14, panelWidth * 0.035),
-      innerY: panelY + Math.max(16, layout.lineHeight * 0.75),
-      innerWidth: panelWidth - Math.max(28, panelWidth * 0.07),
-      bottom: panelY + panelHeight
-    };
+    const panelX = metrics.x;
+    const panelY = metrics.y;
+    const panelWidth = metrics.width;
+    const panelHeight = metrics.height;
+    const innerPad = layout.isMobile ? 9 : 10;
 
-    this.leaderboardPanel.roundRect(panelPadding - 12, panelY - 12, panelWidth + 24, panelHeight + 24, 10);
-    this.leaderboardPanel.fill({ color: 0x00f6ff, alpha: 0.1 });
+    this.leaderboardPanel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
+    this.leaderboardPanel.fill({ color: 0x020711, alpha: layout.isMobile ? 0.62 : 0.46 });
+    this.leaderboardPanel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.48 });
 
-    this.leaderboardPanel.roundRect(panelPadding, panelY, panelWidth, panelHeight, 8);
-    this.leaderboardPanel.fill({ color: 0x020814, alpha: 0.88 });
-    this.leaderboardPanel.stroke({ color: 0x4dfff7, width: 2, alpha: 0.86 });
+    this.leaderboardPanel.roundRect(panelX + innerPad, panelY + innerPad, panelWidth - innerPad * 2, panelHeight - innerPad * 2, 6);
+    this.leaderboardPanel.fill({ color: 0x02101e, alpha: 0.16 });
+    this.leaderboardPanel.stroke({ color: 0xff55d9, width: 1, alpha: 0.2 });
 
-    this.leaderboardPanel.roundRect(panelPadding + 8, panelY + 8, panelWidth - 16, panelHeight - 16, 5);
-    this.leaderboardPanel.fill({ color: 0x031729, alpha: 0.22 });
-    this.leaderboardPanel.stroke({ color: 0xff37d6, width: 1, alpha: 0.46 });
-
-    this.leaderboardPanel.rect(panelPadding + 16, panelY + 14, panelWidth - 32, 3);
-    this.leaderboardPanel.fill({ color: 0xffd166, alpha: 0.86 });
-    this.leaderboardPanel.rect(panelPadding + 16, panelY + panelHeight - 17, panelWidth - 32, 2);
-    this.leaderboardPanel.fill({ color: 0x00f6ff, alpha: 0.62 });
-
-    const corner = layout.isMobile ? 20 : 34;
-    const cornerAlpha = 0.82;
-    [
-      [panelPadding + 15, panelY + 22, 1, 0],
-      [panelPadding + panelWidth - 15 - corner, panelY + 22, 1, 0],
-      [panelPadding + 15, panelY + panelHeight - 24, 1, 0],
-      [panelPadding + panelWidth - 15 - corner, panelY + panelHeight - 24, 1, 0]
-    ].forEach(([cx, cy]) => {
-      this.leaderboardPanel.rect(cx, cy, corner, 2);
-      this.leaderboardPanel.fill({ color: 0x00f6ff, alpha: cornerAlpha });
-    });
-    [
-      [panelPadding + 22, panelY + 15],
-      [panelPadding + panelWidth - 24, panelY + 15],
-      [panelPadding + 22, panelY + panelHeight - 15 - corner],
-      [panelPadding + panelWidth - 24, panelY + panelHeight - 15 - corner]
-    ].forEach(([cx, cy]) => {
-      this.leaderboardPanel.rect(cx, cy, 2, corner);
-      this.leaderboardPanel.fill({ color: 0xffd166, alpha: 0.58 });
-    });
+    this.leaderboardPanel.rect(panelX, panelY + 28, 4, panelHeight - 56);
+    this.leaderboardPanel.fill({ color: 0x37f5ff, alpha: 0.56 });
+    this.leaderboardPanel.rect(panelX + panelWidth - 4, panelY + 54, 4, panelHeight - 108);
+    this.leaderboardPanel.fill({ color: 0xff55d9, alpha: 0.42 });
+    this.leaderboardPanel.rect(panelX + 24, panelY + panelHeight - 22, panelWidth - 48, 2);
+    this.leaderboardPanel.fill({ color: 0xffd15c, alpha: 0.32 });
 
     if (this.holoRails) {
       this.holoRails.clear();
-      const railY = panelY + panelHeight * 0.5;
-      const railHeight = Math.min(panelHeight * 0.78, 500);
-      const railTop = railY - railHeight / 2;
-      [
-        { x: panelPadding - 26, color: 0x00f6ff },
-        { x: panelPadding + panelWidth + 26, color: 0xff37d6 }
-      ].forEach((rail) => {
-        this.holoRails.roundRect(rail.x - 4, railTop, 8, railHeight, 4);
-        this.holoRails.fill({ color: rail.color, alpha: 0.22 });
-        this.holoRails.rect(rail.x - 10, railTop + 24, 20, 3);
-        this.holoRails.fill({ color: 0xffd166, alpha: 0.8 });
-        this.holoRails.rect(rail.x - 10, railTop + railHeight - 27, 20, 3);
-        this.holoRails.fill({ color: 0xffd166, alpha: 0.8 });
-      });
+      const railTop = panelY + 42;
+      const railHeight = panelHeight - 84;
+      this.holoRails.roundRect(panelX - 7, railTop, 5, railHeight, 3);
+      this.holoRails.fill({ color: 0x37f5ff, alpha: 0.2 });
+      this.holoRails.roundRect(panelX + panelWidth + 2, railTop + 26, 5, railHeight - 52, 3);
+      this.holoRails.fill({ color: 0xff55d9, alpha: 0.18 });
     }
 
-    // Store panel bottom for footer layout
     this.panelBottomY = panelY + panelHeight;
   }
 
@@ -1288,36 +1198,29 @@ export class HighscoreScene {
     if (!this.statsDeck || !this.tableMetrics) return;
     this.statsDeck.clear();
     const metrics = this.tableMetrics;
-    const deckWidth = Math.min(metrics.width, layout.isMobile ? width - 30 : 820);
-    const deckHeight = layout.isMobile ? 22 : 26;
-    const x = width / 2 - deckWidth / 2;
-    const minY = this.comment?.visible ? (this.comment.y + layout.lineHeight * 0.55) : 0;
-    const y = Math.max(metrics.y - deckHeight - 8, minY);
+    const deckWidth = metrics.innerWidth;
+    const deckHeight = layout.isMobile ? 18 : 22;
+    const x = metrics.innerX;
+    const y = metrics.footerY - deckHeight / 2;
     const loadedCount = this.status === 'LOADED' ? this.entries.length : 0;
     const topScore = loadedCount
       ? Math.max(...this.entries.map(entry => Number(entry?.score) || 0)).toLocaleString('en-US')
       : '0';
     const viewColor = this.activeLeaderboard === 'local' ? 0xffd166 : 0x00f6ff;
 
-    this.statsDeck.roundRect(x, y, deckWidth, deckHeight, 5);
-    this.statsDeck.fill({ color: 0x020814, alpha: 0.72 });
-    this.statsDeck.stroke({ color: viewColor, width: 1.5, alpha: 0.66 });
-
-    const segments = layout.isMobile ? 3 : 5;
-    for (let i = 1; i < segments; i += 1) {
-      const sx = x + (deckWidth / segments) * i;
-      this.statsDeck.rect(sx, y + 6, 1, deckHeight - 12);
-      this.statsDeck.fill({ color: 0xffffff, alpha: 0.12 });
-    }
+    this.statsDeck.rect(x, y, deckWidth, 1);
+    this.statsDeck.fill({ color: 0x7fffd8, alpha: 0.22 });
+    this.statsDeck.rect(x, y + deckHeight, deckWidth * 0.44, 1);
+    this.statsDeck.fill({ color: viewColor, alpha: 0.32 });
 
     if (!this.statsText) {
       this.statsText = createText('', {
-        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontFamily: FONT_ARCADE,
         fontSize: 13,
         fill: '#caffff',
-        align: 'center'
+        align: 'left'
       });
-      this.statsText.anchor.set(0.5);
+      this.statsText.anchor.set(0, 0.5);
       this.statsText.zIndex = 6;
       this.container.addChild(this.statsText);
     } else if (!this.statsText.parent) {
@@ -1326,10 +1229,15 @@ export class HighscoreScene {
 
     const syncLabel = this.activeLeaderboard === 'local' ? 'LOCAL MEMORY' : 'LIVE ORBIT';
     const countLabel = loadedCount ? `${loadedCount} SIGNALS` : this.status;
-    this.statsText.text = `${syncLabel}  //  ${countLabel}  //  BEST ${topScore}  //  TINYFOUNDRY GAMES`;
-    this.statsText.style.fontSize = layout.isMobile ? 10 : 13;
-    this.statsText.x = width / 2;
+    this.statsText.text = layout.isMobile
+      ? `TFG // ${syncLabel} // ${countLabel} // BEST ${topScore}`
+      : `TINYFOUNDRY GAMES // ${syncLabel} // ${countLabel} // BEST ${topScore}`;
+      this.statsText.style.fontSize = layout.isMobile ? 9 : 12;
+    this.statsText.anchor.set(0, 0.5);
+    this.statsText.style.align = 'left';
+    this.statsText.x = x;
     this.statsText.y = y + deckHeight / 2;
+    fitTextToWidth(this.statsText, deckWidth, layout.isMobile ? 7 : 9);
   }
 
   startAnimationLoop() {
@@ -1419,9 +1327,13 @@ export class HighscoreScene {
     container.addChild(bg);
 
     const label = createText(text, {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontFamily: FONT_DISPLAY,
       fontSize: 16,
-      fill: '#00ffff'
+      fontWeight: '800',
+      fill: '#c9fbff',
+      stroke: '#031323',
+      strokeThickness: 3,
+      padding: 8
     });
     label.anchor.set(0.5);
     container.addChild(label);
@@ -1461,7 +1373,7 @@ export class HighscoreScene {
     button._buttonWidth = width;
     button._buttonHeight = height;
     if (button._label) {
-      button._label.style.fontSize = Math.max(12, Math.min(16, height * 0.42));
+      button._label.style.fontSize = Math.max(12, Math.min(18, height * 0.42));
     }
     this.setButtonActive(button, Boolean(button._active));
   }
@@ -1472,27 +1384,35 @@ export class HighscoreScene {
     const height = button._buttonHeight || 40;
     const x = -width / 2;
     const y = -height / 2;
-    const frameColor = active ? 0xffd166 : (hover ? 0xffffff : 0x00f6ff);
-    const fillColor = active ? 0x00f6ff : (hover ? 0x113b52 : 0x06182c);
-    const fillAlpha = active ? 0.48 : (hover ? 0.58 : 0.42);
+    const frameColor = active ? 0xffd15c : (hover ? 0xffffff : 0x37f5ff);
+    const fillColor = active ? 0x10203b : (hover ? 0x06314f : 0x04182d);
+    const fillAlpha = hover ? 0.82 : (active ? 0.74 : 0.6);
 
     button._bg.clear();
-    button._bg.roundRect(x, y, width, height, 5);
+    button._bg.roundRect(x, y, width, height, 7);
     button._bg.fill({ color: fillColor, alpha: fillAlpha });
-    button._bg.stroke({ color: frameColor, width: active ? 3 : 2, alpha: 0.9 });
-    button._bg.rect(x + 10, y + 5, width - 20, 2);
-    button._bg.fill({ color: 0xff37d6, alpha: active || hover ? 0.75 : 0.36 });
+    button._bg.stroke({ color: frameColor, width: active || hover ? 2 : 1.5, alpha: active || hover ? 0.78 : 0.5 });
+    button._bg.rect(x + 10, y + 7, 4, height - 14);
+    button._bg.fill({ color: active ? 0xffd15c : 0xff55d9, alpha: hover ? 0.9 : 0.62 });
+    button._bg.rect(x + width - 14, y + 7, 4, height - 14);
+    button._bg.fill({ color: active ? 0x37f5ff : 0xffd15c, alpha: hover ? 0.82 : 0.48 });
+    button._bg.moveTo(x + 22, y);
+    button._bg.lineTo(x + width - 22, y);
+    button._bg.stroke({ color: 0xffffff, width: 1, alpha: hover ? 0.18 : 0.08 });
+    button._bg.moveTo(x + 22, y + height - 7);
+    button._bg.lineTo(x + width - 22, y + height - 7);
+    button._bg.stroke({ color: 0x7fffd8, width: 1, alpha: hover ? 0.38 : 0.18 });
 
     button._glow.clear();
-    button._glow.roundRect(x - 2, y - 2, width + 4, height + 4, 6);
-    button._glow.fill({ color: active ? 0xffd166 : 0x00f6ff, alpha: active ? 0.24 : (hover ? 0.2 : 0) });
+    button._glow.roundRect(x - 2, y - 2, width + 4, height + 4, 8);
+    button._glow.fill({ color: active ? 0xffd15c : 0x37f5ff, alpha: active ? 0.18 : (hover ? 0.16 : 0) });
   }
 
   setButtonActive(button, active = false) {
     if (!button?._bg || !button?._label || !button?._glow) return;
     button._active = Boolean(active);
     this.drawButtonChrome(button, { active });
-    button._label.style.fill = active ? '#031323' : '#9cfbff';
+    button._label.style.fill = active ? '#faffd7' : '#c9fbff';
   }
 
   update() {}

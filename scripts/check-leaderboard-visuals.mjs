@@ -183,26 +183,31 @@ try {
       result.state.activeLeaderboard !== 'local' ? `${result.viewport}: local view not active` : null,
       result.state.status !== 'LOADED' ? `${result.viewport}: leaderboard not loaded` : null,
       !result.state.backdropLoaded ? `${result.viewport}: generated backdrop not loaded` : null,
-      !/TINYFOUNDRY GAMES/.test(result.state.statsText) ? `${result.viewport}: stats deck missing Tinyfoundry Games mark` : null,
+      !/(TINYFOUNDRY GAMES|TINYFOUNDRY|TFG)/.test(result.state.statsText) ? `${result.viewport}: stats deck missing Tinyfoundry mark` : null,
       result.state.tauntBubbleVisible ? `${result.viewport}: taunt bubble is visible on scoreboard` : null,
       /\b(roast|taunt|mock|boss bait|fixes everything|damage)\b/i.test(result.state.comment) ? `${result.viewport}: taunting comment text is still present` : null,
       result.state.rowChildren < 20 ? `${result.viewport}: row chrome did not render` : null,
-      result.state.title !== 'LOCAL SCORES' ? `${result.viewport}: title did not switch to local scores` : null,
+      result.state.title !== 'LOCAL SCORE DECK' ? `${result.viewport}: title did not switch to local score deck` : null,
       (() => {
         const rows = result.state.rows || [];
         if (!rows.length || !result.state.tableMetrics) return null;
         const lastBottom = rows[rows.length - 1]?.row?.bottom || 0;
-        const gap = result.state.tableMetrics.bottom - lastBottom;
-        const maxGap = result.viewport === 'wide' ? 62 : result.viewport === 'desktop' ? 58 : 48;
+        const targetBottom = result.state.tableMetrics.rowsBottom || result.state.tableMetrics.bottom;
+        const gap = targetBottom - lastBottom;
+        const maxGap = result.viewport === 'wide' ? 32 : result.viewport === 'desktop' ? 34 : 38;
         return gap > maxGap ? `${result.viewport}: leaderboard leaves ${Math.round(gap)}px unused below last row` : null;
       })(),
       ...((result.state.rows || []).flatMap((row, index, rows) => [
         !contains(row.row, row.name, 3) ? `${result.viewport}: row ${index + 1} pilot name escapes row frame` : null,
         !contains(row.row, row.rankTitle, 3) ? `${result.viewport}: row ${index + 1} rank title escapes row frame` : null,
+        !contains(row.row, row.score, 3) ? `${result.viewport}: row ${index + 1} score escapes row frame` : null,
+        !contains(row.row, row.level, 3) ? `${result.viewport}: row ${index + 1} level escapes row frame` : null,
+        row.scoreGroup && !contains(row.row, row.scoreGroup, 3) ? `${result.viewport}: row ${index + 1} score group escapes row frame` : null,
         intersects(row.name, row.rankTitle, -1) ? `${result.viewport}: row ${index + 1} pilot name overlaps rank title` : null,
+        row.scoreGroup && intersects(row.name, row.scoreGroup, 2) ? `${result.viewport}: row ${index + 1} pilot name crowds score group` : null,
+        row.scoreGroup && intersects(row.rankTitle, row.scoreGroup, 2) ? `${result.viewport}: row ${index + 1} rank title crowds score group` : null,
         rows[index + 1] && intersects(row.rankTitle, rows[index + 1].name, 2) ? `${result.viewport}: row ${index + 1} rank title overlaps next pilot name` : null,
-        !row.scoreRail || row.scoreRail.width < (result.viewport === 'mobile' ? 36 : row.row.width * 0.32) ? `${result.viewport}: row ${index + 1} score vector underuses the middle lane` : null,
-        row.scoreRail && row.score && row.scoreRail.right > row.score.x - (result.viewport === 'mobile' ? 4 : 10) ? `${result.viewport}: row ${index + 1} score vector crowds the score block` : null
+        row.scoreGroup && row.scoreGroup.width < (result.viewport === 'mobile' ? 120 : 166) ? `${result.viewport}: row ${index + 1} score group is too cramped` : null
       ]))
     ]),
     ...pageErrors.map((message) => `page error: ${message}`),
