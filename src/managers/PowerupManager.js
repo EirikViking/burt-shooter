@@ -132,6 +132,17 @@ class Powerup {
     // Update position with bob
     this.baseY += this.vy * delta;
     this.y = this.baseY + bobOffset;
+    if (this.source === 'boss_clutch_shield' && scene?.player) {
+      const dx = scene.player.x - this.x;
+      const dy = scene.player.y - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (age > 260 && dist > 4 && dist < 240) {
+        const pullForce = Math.min(7.5, (0.075 * delta) * (1 + (240 - dist) / 90));
+        this.x += (dx / dist) * pullForce;
+        this.y += (dy / dist) * pullForce;
+        this.baseY = this.y - bobOffset;
+      }
+    }
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
@@ -438,6 +449,7 @@ export class PowerupManager {
     }
 
     const powerup = new Powerup(safeX, safeY, 'life');
+    powerup.source = 'guaranteed_life';
     this.powerups.push(powerup);
     this.container.addChild(powerup.sprite);
 
@@ -548,6 +560,7 @@ export class PowerupManager {
     }
 
     const powerup = new Powerup(x, y, type);
+    powerup.source = 'random_drop';
     this.powerups.push(powerup);
     this.container.addChild(powerup.sprite);
 
@@ -587,9 +600,49 @@ export class PowerupManager {
     console.log(`[PowerupTest] spawned type=${type}`);
   }
 
-  spawnSpecific(x, y, type) {
+  spawnSpecific(x, y, type, options = {}) {
     const powerup = new Powerup(x, y, type);
+    powerup.source = options.source || 'specific';
     this.powerups.push(powerup);
     this.container.addChild(powerup.sprite);
+    if (options.countDrop) {
+      this.lastSpawnTime = Date.now();
+      this.dropsThisLevel++;
+      this.dropsThisRun++;
+      if (this.game.scenes.play?.debugStats) {
+        this.game.scenes.play.debugStats.bonusPickupsSpawned++;
+      }
+    }
+    console.log(`[PowerupManager] SPAWNED ${type} at ${Math.round(x)},${Math.round(y)} source=${options.source || 'specific'}`);
+    return powerup;
+  }
+
+  spawnMinimumLevelPowerup(x, y, options = {}) {
+    const minPerLevel = BalanceConfig.powerups.minPerLevel || 0;
+    const maxPerLevel = BalanceConfig.powerups.maxPerLevel || 2;
+    if (minPerLevel <= 0 || this.dropsThisLevel >= minPerLevel || this.dropsThisLevel >= maxPerLevel) {
+      return null;
+    }
+
+    const activePickupExists = this.powerups.some(powerup => powerup?.active);
+    const player = this.game.scenes.play ? this.game.scenes.play.player : null;
+    if (activePickupExists || player?.activePowerup?.type) {
+      return null;
+    }
+
+    const pool = [
+      'rapid_fire',
+      'double_shot',
+      'damage_up',
+      'pierce',
+      'score_x2',
+      'magnet'
+    ];
+    const level = Number(options.level ?? this.currentLevel) || this.currentLevel || 1;
+    const type = pool[(level + this.dropsThisRun) % pool.length];
+    return this.spawnSpecific(x, y, type, {
+      countDrop: true,
+      source: options.source || 'minimum_level_powerup'
+    });
   }
 }

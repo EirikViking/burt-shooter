@@ -64,7 +64,7 @@ export const BalanceConfig = {
         challengeWaveCount: 14,
 
         bossBaseHealth: 92,
-        bossHealthPerLevel: 16,
+        bossHealthPerLevel: 14,
         bossShootDelayBase: 28,
         bossShootDelayPhase2: 19,
         bossShootDelayPhase3: 14,

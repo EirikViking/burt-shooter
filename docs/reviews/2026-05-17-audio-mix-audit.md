@@ -1,6 +1,6 @@
 # Audio Mix Audit - 2026-05-19
 
-Generated: 2026-05-19T19:29:50.633Z
+Generated: 2026-05-19T23:50:04.101Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -13,10 +13,10 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Coverage
 
-- Measured files: 126
+- Measured files: 151
 - Music rows: 26
 - SFX rows: 121
-- Voice rows: 26
+- Voice rows: 51
 - Warnings: 0
 - Errors: 0
 
@@ -56,12 +56,12 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | --- | --- | --- | ---: | ---: | ---: |
 | voice | mission_control_top3_highscore | mission_control_top3_highscore_01.mp3 | -1.1 dB | -18.3 dB | -32.3 dB |
 | voice | mission_control_number_one_highscore | mission_control_number_one_highscore_01.mp3 | -1.6 dB | -18.5 dB | -30.1 dB |
+| voice | mission_control_global_highscore | mission_control_global_highscore_02.mp3 | -0.9 dB | -18.6 dB | -31.9 dB |
 | voice | intro_narrator_03 | intro_narrator_03.mp3 | -1.0 dB | -19.3 dB | -32.4 dB |
 | voice | mission_control_number_one_close | mission_control_number_one_close_01.mp3 | -1.8 dB | -19.4 dB | -30.7 dB |
 | voice | mission_control_boss_inbound | mission_control_boss_inbound.mp3 | -0.9 dB | -19.4 dB | -34.3 dB |
 | voice | intro_narrator_04 | intro_narrator_04.mp3 | -1.1 dB | -19.4 dB | -33.6 dB |
 | voice | mission_control_global_highscore | mission_control_global_highscore_01.mp3 | -1.8 dB | -19.5 dB | -32.1 dB |
-| voice | intro_narrator_02 | intro_narrator_02.mp3 | -1.3 dB | -19.6 dB | -32.8 dB |
 
 ## Quietest Effective Peaks
 
@@ -82,14 +82,14 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
+| voice | mission_control_level_start | mission_control_level_start_alt02.mp3 | -2.7 dB | -23.2 dB | -36.3 dB |
 | voice | mission_control_restart | mission_control_restart_01.mp3 | -2.2 dB | -22.4 dB | -36.8 dB |
+| voice | mission_control_powerup | mission_control_powerup_alt01.mp3 | -2.0 dB | -22.2 dB | -37.2 dB |
+| voice | mission_control_combo | mission_control_combo_02.mp3 | -1.6 dB | -21.8 dB | -35.9 dB |
+| voice | mission_control_combo | mission_control_combo_03.mp3 | -1.6 dB | -21.8 dB | -34.3 dB |
 | voice | mission_control_level_start | mission_control_level_start.mp3 | -1.3 dB | -21.8 dB | -34.1 dB |
-| voice | mission_control_powerup | mission_control_powerup.mp3 | -1.1 dB | -21.3 dB | -35.2 dB |
-| voice | mission_control_combo | mission_control_combo_01.mp3 | -1.1 dB | -21.3 dB | -36.1 dB |
-| voice | mission_control_hijacker | mission_control_hijacker_01.mp3 | -1.2 dB | -21.0 dB | -34.9 dB |
-| voice | mission_control_local_highscore | mission_control_local_highscore_01.mp3 | -1.8 dB | -20.9 dB | -34.0 dB |
-| voice | mission_control_game_over | mission_control_game_over.mp3 | -2.0 dB | -20.9 dB | -31.3 dB |
-| voice | mission_control_launch | mission_control_launch.mp3 | -2.1 dB | -20.8 dB | -31.9 dB |
+| voice | mission_control_powerup | mission_control_powerup_alt02.mp3 | -1.5 dB | -21.7 dB | -37.7 dB |
+| voice | mission_control_level_start | mission_control_level_start_alt01.mp3 | -1.2 dB | -21.7 dB | -34.9 dB |
 
 ## Warnings
 

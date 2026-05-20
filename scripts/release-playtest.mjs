@@ -276,7 +276,11 @@ async function collectPlayState(page) {
       accessibility: textState?.accessibility || null,
       player: player ? {
         x: Math.round(player.x),
-        y: Math.round(player.y)
+        y: Math.round(player.y),
+        isDodging: Boolean(player.isDodging),
+        invulnerable: Boolean(player.invulnerable),
+        shieldActive: Boolean(player.shieldActive),
+        dodgeCooldown: Number(player.dodgeCooldown) || 0
       } : null,
       enemies: (textState?.visibleEnemies || []).map((enemy) => ({
         x: Math.round(enemy.x),
@@ -427,9 +431,28 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
 
   const deadzoneX = 26;
   const deadzoneY = 24;
+  const canDodge = state.player &&
+    !state.player.isDodging &&
+    !state.player.invulnerable &&
+    !state.player.shieldActive &&
+    (Number(state.player.dodgeCooldown) || 0) <= 0;
+  const urgentBullet = canDodge && (state.enemyBullets || []).some((bullet) => {
+    const dx = Math.abs((bullet.x ?? 0) - playerX);
+    const dy = Math.abs((bullet.y ?? 0) - playerY);
+    const incomingFromAbove = (bullet.y ?? 0) < playerY && dy < 260;
+    return (incomingFromAbove && dx < 78) || (dy < 135 && dx < 92);
+  });
+  const urgentEnemy = canDodge && (state.enemies || []).some((enemy) => {
+    if (enemy.kind === 'boss') return false;
+    const dx = Math.abs((enemy.x ?? 0) - playerX);
+    const dy = Math.abs((enemy.y ?? 0) - playerY);
+    return (enemy.y ?? 0) > viewportHeight * 0.55 && dy < 150 && dx < 118;
+  });
+
   return {
     horizontal: best.x < playerX - deadzoneX ? 'left' : best.x > playerX + deadzoneX ? 'right' : 'none',
-    vertical: best.y < playerY - deadzoneY ? 'up' : best.y > playerY + deadzoneY ? 'down' : 'none'
+    vertical: best.y < playerY - deadzoneY ? 'up' : best.y > playerY + deadzoneY ? 'down' : 'none',
+    dodge: Boolean(urgentBullet || urgentEnemy || (canDodge && lowLives && pressure >= 5))
   };
 }
 
@@ -448,7 +471,57 @@ async function applyIntent(page, currentIntent, nextIntent) {
     if (nextIntent.vertical === 'down') await page.keyboard.down('ArrowDown');
   }
 
+  if (currentIntent.dodge !== nextIntent.dodge) {
+    if (currentIntent.dodge) await page.keyboard.up('ShiftLeft');
+    if (nextIntent.dodge) await page.keyboard.down('ShiftLeft');
+  }
+
   return nextIntent;
+}
+
+function findSectorClearStalls(timeline, limitMs = 15000) {
+  const stalls = [];
+  let current = null;
+  const finishCurrent = () => {
+    if (!current) return;
+    const durationMs = Math.max(0, current.lastMs - current.startMs);
+    if (durationMs >= limitMs) {
+      stalls.push({ ...current, durationMs });
+    }
+    current = null;
+  };
+
+  for (const entry of timeline) {
+    const state = entry.state || {};
+    const blockingCount = Number(state.counts?.enemies) || 0;
+    const isBlockedSectorClear = state.scene === 'play' &&
+      state.enemyManagerState === 'LEVEL_COMPLETE' &&
+      state.wave?.phase === 'COMPLETE' &&
+      blockingCount > 0;
+    if (!isBlockedSectorClear) {
+      finishCurrent();
+      continue;
+    }
+
+    const key = `${state.level ?? 'unknown'}:${state.currentWaveIndex ?? 'unknown'}`;
+    if (!current || current.key !== key) {
+      finishCurrent();
+      current = {
+        key,
+        level: state.level ?? null,
+        wave: state.wave?.currentWaveNumber ?? null,
+        startMs: entry.elapsedMs,
+        lastMs: entry.elapsedMs,
+        maxBlockingCount: blockingCount
+      };
+    } else {
+      current.lastMs = entry.elapsedMs;
+      current.maxBlockingCount = Math.max(current.maxBlockingCount, blockingCount);
+    }
+  }
+
+  finishCurrent();
+  return stalls;
 }
 
 async function runReleasePlaytest() {
@@ -496,7 +569,7 @@ async function runReleasePlaytest() {
     });
   });
 
-  let currentIntent = { horizontal: 'none', vertical: 'none' };
+  let currentIntent = { horizontal: 'none', vertical: 'none', dodge: false };
   let heldSpace = false;
   let finalState = null;
 
@@ -548,6 +621,7 @@ async function runReleasePlaytest() {
     if (currentIntent.horizontal === 'right') await page.keyboard.up('ArrowRight').catch(() => {});
     if (currentIntent.vertical === 'up') await page.keyboard.up('ArrowUp').catch(() => {});
     if (currentIntent.vertical === 'down') await page.keyboard.up('ArrowDown').catch(() => {});
+    if (currentIntent.dodge) await page.keyboard.up('ShiftLeft').catch(() => {});
     await browser.close();
     if (server) server.kill();
   }
@@ -558,6 +632,7 @@ async function runReleasePlaytest() {
   const survivedFullDuration = survivedMs >= requiredSurvivalMs;
   const endedInGameOver = Number.isFinite(finalState?.lives) && finalState.lives <= 0;
   const endedOutsidePlay = finalState?.scene && finalState.scene !== 'play';
+  const sectorClearStalls = findSectorClearStalls(timeline);
   const report = {
     baseUrl,
     outputDir,
@@ -576,6 +651,7 @@ async function runReleasePlaytest() {
     pageErrors,
     badResponses,
     requestFailures,
+    sectorClearStalls,
     timeline
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
@@ -611,7 +687,10 @@ async function runReleasePlaytest() {
   const playthroughIssues = [
     ...(!allowGameOver && !survivedFullDuration ? [`ended before minimum survival (${survivedMs}ms < ${requiredSurvivalMs}ms required, ${survivalGraceMs}ms timing grace)`] : []),
     ...(!allowGameOver && endedInGameOver ? ['ended in game over'] : []),
-    ...(!allowGameOver && endedOutsidePlay ? [`ended outside play scene (${finalState.scene})`] : [])
+    ...(!allowGameOver && endedOutsidePlay ? [`ended outside play scene (${finalState.scene})`] : []),
+    ...sectorClearStalls.map((stall) =>
+      `sector clear blocked for ${Math.round(stall.durationMs / 1000)}s at level ${stall.level} wave ${stall.wave} by ${stall.maxBlockingCount} lingering entity`
+    )
   ];
 
   if (technicalIssues.length) {

@@ -225,7 +225,7 @@ export const VOICE_MIX = {
     intro_narrator_02: { volume: 0.9, duckFactor: 0.36, duckMs: 3600, cooldownMs: 0 },
     intro_narrator_03: { volume: 0.9, duckFactor: 0.36, duckMs: 3200, cooldownMs: 0 },
     intro_narrator_04: { volume: 0.9, duckFactor: 0.34, duckMs: 3600, cooldownMs: 0 },
-    mission_control_launch: { volume: 0.86, duckFactor: 0.42, duckMs: 1900, cooldownMs: 2600 },
+    mission_control_launch: { volume: 0.86, duckFactor: 0.42, duckMs: 1900, cooldownMs: 2600, eventCooldownMs: 45000 },
     mission_control_level_start: { volume: 0.7, duckFactor: 0.58, duckMs: 1250, cooldownMs: 18000 },
     mission_control_wave_clear: { volume: 0.76, duckFactor: 0.52, duckMs: 1300, cooldownMs: 30000 },
     mission_control_boss_inbound: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 14000 },
@@ -243,7 +243,7 @@ export const VOICE_MIX = {
     mission_control_number_one_highscore: { volume: 1.06, duckFactor: 0.24, duckMs: 4300, cooldownMs: 9000 },
     mission_control_near_miss: { volume: 0.84, duckFactor: 0.46, duckMs: 2300, cooldownMs: 9000 },
     mission_control_personal_best: { volume: 0.82, duckFactor: 0.48, duckMs: 2200, cooldownMs: 7000 },
-    mission_control_restart: { volume: 0.72, duckFactor: 0.6, duckMs: 1100, cooldownMs: 3600 },
+    mission_control_restart: { volume: 0.72, duckFactor: 0.6, duckMs: 1100, cooldownMs: 7000, eventCooldownMs: 12000 },
     mission_control_hijacker: { volume: 0.76, duckFactor: 0.54, duckMs: 1500, cooldownMs: 24000 },
     mission_control_tractor_hijack: { volume: 0.8, duckFactor: 0.48, duckMs: 1300, cooldownMs: 26000 },
     mission_control_credits: { volume: 0.9, duckFactor: 0.34, duckMs: 3600, cooldownMs: 0 }
