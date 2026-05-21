@@ -63,6 +63,10 @@ function isAutoStartEnabled() {
   return urlParams.get('autostart') === '1';
 }
 
+function isDesktopRuntime() {
+  return urlParams.get('desktop') === '1' || window.__NOVA_SWARM_DESKTOP__ === true;
+}
+
 function ensureBuildStamp() {
   let stamp = document.getElementById('build-stamp');
   if (stamp) {
@@ -893,7 +897,7 @@ async function init() {
   }
 
   // Register service worker in production with version param
-  if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  if ('serviceWorker' in navigator && import.meta.env.PROD && !isDesktopRuntime()) {
     try {
       // TASK 4: Mobile Safety - Cache busting param
       const registration = await navigator.serviceWorker.register(`/sw.js?v=${BUILD_ID}`);

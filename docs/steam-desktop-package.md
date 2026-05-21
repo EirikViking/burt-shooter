@@ -63,6 +63,13 @@ Or generate the ignored local upload VDF:
 STEAM_APP_ID=<app id> STEAM_DEPOT_ID=<depot id> npm run steamworks:write-vdf
 ```
 
+Current known IDs on 2026-05-21:
+
+- Steam App ID: `4765070`
+- Windows depot ID: not present in tracked files or the checked local SteamCMD app/depot cache
+
+Do not generate or upload `app_build_LOCAL.vdf` until the Windows depot ID is confirmed in Steamworks App Admin. The local package can still be built and smoke-tested safely.
+
 Suggested Steam launch option:
 
 ```text
@@ -80,7 +87,7 @@ Detailed client validation handoff:
 
 ## Remaining Manual Steam Steps
 
-- Confirm the actual Steam app ID and depot ID in Steamworks.
+- Confirm the Windows depot ID in Steamworks.
 - Configure the Steam App ID for local bridge testing with `NOVA_SWARM_STEAM_APP_ID`, `STEAM_APP_ID`, or an ignored `steam_appid.txt`.
 - Keep the official SDK redistributables at `steam_sdk/sdk/redistributable_bin/` or set `NOVA_SWARM_STEAMWORKS_SDK_PATH`.
 - Run `npm run check:steam-sdk-ready` and `npm run check:steam-electron-bridge`.
@@ -88,3 +95,14 @@ Detailed client validation handoff:
 - Run SteamPipe upload with the edited VDF on a machine with SteamCMD and Steamworks credentials.
 - Run the uploaded build through Steam client install/launch, controller checks, offline launch, and quit/relaunch.
 - Decide whether achievements, cloud saves, and Steam Input metadata are in scope for v1.0 or a later update.
+
+## Latest Runtime Probe
+
+On 2026-05-21, the packaged executable at `release/desktop/win-unpacked/Nova Swarm.exe` passed:
+
+- `npm run desktop:smoke:packaged`
+- `npm run desktop:controls:packaged`
+- `npm run probe:steam-leaderboard-electron -- --packaged --no-submit`
+- `npm run check:desktop-package`
+
+The packaged Electron leaderboard probe reported bridge `ready`, App ID `4765070`, persona `EvilEirik`, and successful `GLOBAL`/`FRIENDS` reads with zero entries. It also reported `launchedBySteamHint: false`, so this is still not Steam-installed write validation.

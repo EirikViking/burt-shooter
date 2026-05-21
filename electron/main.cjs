@@ -4,11 +4,13 @@ const http = require('node:http');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { createSteamLeaderboardBridge } = require('./steamLeaderboardBridge.cjs');
+const { runSteamLeaderboardRuntimeProbe } = require('./steamLeaderboardRuntimeProbe.cjs');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
+const isSteamLeaderboardProbe = process.argv.includes('--steam-leaderboard-probe') || process.env.NOVA_SWARM_STEAM_LEADERBOARD_PROBE === '1';
 const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
-const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isWindowed;
+const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isSteamLeaderboardProbe && !isWindowed;
 const distDir = path.resolve(__dirname, '..', 'dist');
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -38,6 +40,7 @@ function registerSteamLeaderboardIpc() {
   ipcMain.handle('nova-steam-leaderboard:getTopScores', (_event, payload) => steamLeaderboardBridge.getTopScores(payload));
   ipcMain.handle('nova-steam-leaderboard:getFriendsScores', (_event, payload) => steamLeaderboardBridge.getFriendsScores(payload));
   ipcMain.handle('nova-steam-leaderboard:submitScore', (_event, payload) => steamLeaderboardBridge.submitScore(payload));
+  ipcMain.handle('nova-steam-leaderboard:submitScoreDetailed', (_event, payload) => steamLeaderboardBridge.submitScoreDetailed(payload));
   ipcMain.handle('nova-steam-leaderboard:getStatus', () => steamLeaderboardBridge.getStatus());
 }
 
@@ -173,7 +176,7 @@ function createWindow() {
     minHeight: 540,
     fullscreen: shouldStartFullscreen,
     backgroundColor: '#030714',
-    show: !isSmoke,
+    show: !isSmoke && !isSteamLeaderboardProbe,
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
@@ -190,6 +193,22 @@ function createWindow() {
 
   win.loadURL(baseUrl ? `${baseUrl}/?desktop=1` : pathToFileURL(path.join(distDir, 'index.html')).toString());
   return win;
+}
+
+function getSteamRuntimeInfo() {
+  const steamEnv = {
+    SteamAppId: process.env.SteamAppId || null,
+    SteamGameId: process.env.SteamGameId || null,
+    SteamOverlayGameId: process.env.SteamOverlayGameId || null
+  };
+  return {
+    appIsPackaged: app.isPackaged,
+    defaultApp: Boolean(process.defaultApp),
+    executable: process.execPath,
+    cwd: process.cwd(),
+    launchedBySteamHint: Boolean(steamEnv.SteamAppId || steamEnv.SteamGameId || steamEnv.SteamOverlayGameId),
+    steamEnv
+  };
 }
 
 async function runSmoke(window) {
@@ -536,7 +555,7 @@ async function runControlSmoke(window) {
       resolve();
     });
   });
-  await window.loadURL(`${baseUrl}/?autostart=1&controlSmoke=1`);
+  await window.loadURL(`${baseUrl}/?desktop=1&autostart=1&controlSmoke=1`);
   const startState = await waitForPlay(window);
   await captureControlScreenshot(window, outputDir, '00-control-start.png', capturedScreenshots, screenshotWarnings);
 
@@ -661,7 +680,20 @@ app.whenReady().then(async () => {
   registerSteamLeaderboardIpc();
   await startLocalServer();
   const win = createWindow();
-  if (isControlSmoke) {
+  if (isSteamLeaderboardProbe) {
+    try {
+      await runSteamLeaderboardRuntimeProbe({
+        window: win,
+        baseUrl,
+        args: process.argv.slice(2),
+        runtimeInfo: getSteamRuntimeInfo()
+      });
+      app.quit();
+    } catch (error) {
+      console.error(error);
+      app.exit(1);
+    }
+  } else if (isControlSmoke) {
     try {
       await runControlSmoke(win);
       app.quit();

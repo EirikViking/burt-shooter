@@ -26,6 +26,7 @@
     "check:steam-electron-bridge": "node scripts/check-steam-electron-bridge.mjs",
     "check:steam-sdk-ready": "node scripts/check-steam-sdk-ready.mjs",
     "probe:steam-leaderboard-live": "node scripts/probe-steam-leaderboard-live.mjs",
+    "probe:steam-leaderboard-electron": "node scripts/probe-steam-leaderboard-electron.mjs",
     "check:leaderboard-visuals": "node scripts/check-leaderboard-visuals.mjs",
     "check:boss-telegraph": "node scripts/check-boss-telegraph.mjs",
     "check:boss-contact": "node scripts/check-boss-contact.mjs",

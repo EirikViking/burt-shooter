@@ -84,6 +84,7 @@ Checks:
 - `npm run check:steam-electron-bridge` verifies the native adapter contract with a mocked Steamworks SDK, the preload surface, and renderer isolation.
 - `npm run desktop:smoke:current` verifies the Electron app still runs when Steam is unavailable.
 - `npm run probe:steam-leaderboard-live` is a manual live probe for the real `nova_swarm_global_score` leaderboard. It uses the same native adapter as Electron and writes a JSON report under `test-results/`.
+- `npm run probe:steam-leaderboard-electron` is a manual Electron/preload/IPC probe for the same leaderboard. It can run against local Electron or the packaged executable with `-- --packaged`.
 
 Live probe prerequisites:
 
@@ -102,6 +103,14 @@ The default live probe submits one deliberately low keep-best score of `1` with 
 - `npm run probe:steam-leaderboard-live -- --score=1001` submits a custom keep-best score.
 - `npm run probe:steam-leaderboard-live -- --force-update --score=1` is available only for intentional manual diagnosis. Do not use it casually because it can overwrite an existing better score.
 
+Electron runtime probe examples:
+
+- `npm run probe:steam-leaderboard-electron -- --no-submit` runs read-only checks through the renderer preload bridge.
+- `npm run probe:steam-leaderboard-electron -- --details=none --score=1` submits one low keep-best score through the Electron IPC path.
+- `npm run probe:steam-leaderboard-electron -- --packaged --no-submit` runs the read-only probe against `release/desktop/win-unpacked/Nova Swarm.exe`.
+
+The Electron probe intentionally does not support force update. It records whether the app looks Steam-launched through Steam environment hints, but the only authoritative write validation is still an installed build launched from the Steam client.
+
 Do not spam submissions. Prefer one read-only run, one default keep-best run, then one no-details run if default still fails. Interpret results as:
 
 - Bridge unavailable: check Steam client/login, app access, App ID config, SDK redistributables, and native package install.
@@ -109,6 +118,8 @@ Do not spam submissions. Prefer one read-only run, one default keep-best run, th
 - Friends download works but global download fails: the current Steamworks Reader/Leser setting may be limiting global reads; investigate that before deleting or recreating the leaderboard.
 - Local Node reads work but writes fail: test from a Steam-client-installed launch before overfitting code, then verify Steamworks write settings and wrapper upload mapping.
 - Submit succeeds and entries can be downloaded: Steam leaderboard read/write path is verified locally, but the Steam-installed build still needs the manual runtime checklist below.
+
+SteamPipe status on 2026-05-21: App ID `4765070` is known and local `steam_appid.txt` is ignored, but the Windows depot ID is still not stored in tracked repo files or the local SteamCMD app/depot cache that was checked. Do not run `steamworks:write-vdf` or SteamCMD upload until the Windows depot ID is confirmed in Steamworks App Admin.
 
 For local validation without Steam, open with `?mockSteamLeaderboard=1`. This enables the mock provider and shows `GLOBAL / FRIENDS / LOCAL` tabs.
 

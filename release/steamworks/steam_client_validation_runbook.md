@@ -11,12 +11,13 @@ Status on 2026-05-17: not complete. The Windows package exists locally and local
 - Steam upload/client-test preflight is summarized by `npm run steamworks:client-preflight`.
 - Latest known package verification remains documented in `docs/steam-desktop-package.md`.
 - Local SteamCMD availability is documented in `docs/reviews/2026-05-17-steamcmd-local-check.md`.
+- Electron/preload leaderboard probing is available with `npm run probe:steam-leaderboard-electron -- --packaged --no-submit` for read-only packaged checks and `npm run probe:steam-leaderboard-electron -- --packaged --details=none --score=1` for one keep-best runtime write check.
 
 ## Required Steamworks Inputs
 
 Fill these before upload:
 
-- Steam app ID: `TBD`
+- Steam app ID: `4765070`
 - Windows depot ID: `TBD`
 - Branch target: `default`, `beta`, or a private release-candidate branch
 - Launch option: `Nova Swarm.exe`
@@ -38,6 +39,8 @@ npm run steamworks:write-vdf
 3. Inspect `release/steamworks/app_build_LOCAL.vdf` and confirm the IDs.
 4. Confirm `ContentRoot` still points at `..\\desktop\\win-unpacked`.
 5. Run SteamCMD with the credentialed VDF.
+
+Do not run the upload while the Windows depot ID is `TBD`. On 2026-05-21 the App ID was known, but no Windows depot ID was present in tracked files or the checked local SteamCMD app/depot cache.
 
 Example command shape:
 
