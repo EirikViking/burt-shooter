@@ -29,7 +29,9 @@ The Electron wrapper starts a local loopback server, serves the Vite `dist/` bui
 
 The web deployment uses Cloudflare Pages and D1 at `https://novaswarm.tinyfoundry.app`; the global leaderboard claim should remain phrased as an online/shared leaderboard, not a Steamworks leaderboard.
 
-Steam leaderboard provider support is now prepared behind `src/leaderboard/LeaderboardAdapter.js`; see `docs/steam-leaderboards.md`. The current Electron package still needs a real Steamworks preload/native bridge before the Steam provider is considered live in a Steam-installed build.
+Steam leaderboard provider support now has an Electron preload/native bridge boundary: `electron/main.cjs` registers IPC handlers, `electron/preload.cjs` exposes `window.__novaSteamLeaderboard`, and `electron/steamLeaderboardBridge.cjs` owns optional `steamworks-ffi-node` access. See `docs/steam-leaderboards.md`.
+
+This is SDK-ready, not yet Steam-client-verified live support. The bridge needs a configured numeric Steam App ID and a Steam-client launch before it should be considered live. With no App ID or unavailable Steam runtime, Steam reports unavailable and the game falls back safely.
 
 Latest leaderboard split evidence:
 
@@ -79,6 +81,9 @@ Detailed client validation handoff:
 ## Remaining Manual Steam Steps
 
 - Confirm the actual Steam app ID and depot ID in Steamworks.
+- Configure the Steam App ID for local bridge testing with `NOVA_SWARM_STEAM_APP_ID`, `STEAM_APP_ID`, or an ignored `steam_appid.txt`.
+- Keep the official SDK redistributables at `steam_sdk/sdk/redistributable_bin/` or set `NOVA_SWARM_STEAMWORKS_SDK_PATH`.
+- Run `npm run check:steam-sdk-ready` and `npm run check:steam-electron-bridge`.
 - Local SteamCMD now runs from ignored `tools/steamcmd/`; see `docs/reviews/2026-05-17-steamcmd-local-check.md`.
 - Run SteamPipe upload with the edited VDF on a machine with SteamCMD and Steamworks credentials.
 - Run the uploaded build through Steam client install/launch, controller checks, offline launch, and quit/relaunch.

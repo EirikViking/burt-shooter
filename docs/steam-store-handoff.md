@@ -12,7 +12,7 @@ The draft intentionally uses conservative claims:
 
 - `Partial Controller Support`, not full controller support, until the Steam-installed build validates text entry, pause/menu flow, and Steam Input metadata.
 - Steam Cloud deferred for v1 because the current desktop package uses local settings/local leaderboard storage instead of Steam Cloud.
-- Global leaderboard copy is currently supportable as an online/shared leaderboard claim on web. Steam leaderboard support is prepared behind a provider/bridge boundary, but the real Steam-installed build still needs the native Steamworks bridge validation described in `docs/steam-leaderboards.md`.
+- Global leaderboard copy is currently supportable as an online/shared leaderboard claim on web. Steam leaderboard support now has an SDK-ready Electron bridge, but do not call it live Steam leaderboard support until the Steam-installed build passes the manual Steam runtime checklist in `docs/steam-leaderboards.md`.
 - Steam achievements deferred for v1 because no Steamworks API achievement integration is present.
 - English only until final public copy is approved.
 

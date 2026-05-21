@@ -1,8 +1,9 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { createSteamLeaderboardBridge } = require('./steamLeaderboardBridge.cjs');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
@@ -26,6 +27,19 @@ const mimeTypes = {
 
 let server = null;
 let baseUrl = null;
+const steamLeaderboardBridge = createSteamLeaderboardBridge({
+  rootDir: path.resolve(__dirname, '..'),
+  logger: console
+});
+
+function registerSteamLeaderboardIpc() {
+  ipcMain.handle('nova-steam-leaderboard:isAvailable', () => steamLeaderboardBridge.isAvailable());
+  ipcMain.handle('nova-steam-leaderboard:getPersonaName', () => steamLeaderboardBridge.getPersonaName());
+  ipcMain.handle('nova-steam-leaderboard:getTopScores', (_event, payload) => steamLeaderboardBridge.getTopScores(payload));
+  ipcMain.handle('nova-steam-leaderboard:getFriendsScores', (_event, payload) => steamLeaderboardBridge.getFriendsScores(payload));
+  ipcMain.handle('nova-steam-leaderboard:submitScore', (_event, payload) => steamLeaderboardBridge.submitScore(payload));
+  ipcMain.handle('nova-steam-leaderboard:getStatus', () => steamLeaderboardBridge.getStatus());
+}
 
 function sendJson(response, status, payload) {
   response.writeHead(status, {
@@ -164,7 +178,8 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: true,
+      preload: path.join(__dirname, 'preload.cjs')
     }
   });
 
@@ -205,10 +220,15 @@ async function runSmoke(window) {
       const api = await fetch('/api/highscores').then(r => ({ ok: r.ok, status: r.status, data: r.ok ? r.json() : null }));
       const textState = typeof window.render_game_to_text === 'function' ? JSON.parse(window.render_game_to_text()) : null;
       const intro = window.__game?.scenes?.intro;
+      const steamLeaderboardAvailable = await window.__novaSteamLeaderboard?.isAvailable?.().catch(() => false);
+      const steamBridgeStatus = await window.__novaSteamBridge?.getStatus?.().catch(error => ({ error: error?.message || String(error) }));
       return {
         title: document.title,
         apiOk: api.ok,
         apiStatus: api.status,
+        steamBridgeStatus: steamBridgeStatus || null,
+        steamLeaderboardAvailable: Boolean(steamLeaderboardAvailable),
+        steamLeaderboardBridgePresent: Boolean(window.__novaSteamLeaderboard),
         scene: textState?.scene || null,
         build: textState?.buildId || null,
         gitSha: textState?.gitSha || null,
@@ -638,6 +658,7 @@ app.whenReady().then(async () => {
   if (!fs.existsSync(path.join(distDir, 'index.html'))) {
     throw new Error(`Missing build output at ${distDir}. Run npm run build first.`);
   }
+  registerSteamLeaderboardIpc();
   await startLocalServer();
   const win = createWindow();
   if (isControlSmoke) {
@@ -666,4 +687,5 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   if (server) server.close();
+  steamLeaderboardBridge.shutdown();
 });
