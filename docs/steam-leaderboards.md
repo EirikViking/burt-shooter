@@ -52,6 +52,7 @@ Native dependency status:
 - If `steamworks-ffi-node`, a Steam App ID, the Steam client, or SDK redistributables are missing, `isAvailable()` returns `false` and the game falls back safely.
 - The renderer never gets filesystem, shell, or broad IPC access.
 - Upload diagnostics are available through `window.__novaSteamLeaderboard.getLastUploadDiagnostics()` and are also saved after a Steam submit failure to `localStorage` key `novaSwarm.lastSteamUploadDiagnostics.v1`. `render_game_to_text()` includes the same value for manual Steam-runtime probes.
+- In-game hidden export: press `Ctrl+Alt+Shift+D`, or run `await window.__novaSteamDiagnostics.copy()` in DevTools, to copy the current Steam diagnostics bundle. This does not change the visible leaderboard UI.
 
 ## SDK-Ready Setup
 
@@ -87,6 +88,7 @@ Checks:
 - `npm run desktop:smoke:current` verifies the Electron app still runs when Steam is unavailable.
 - `npm run probe:steam-leaderboard-live` is a manual live probe for the real `nova_swarm_global_score` leaderboard. It uses the same native adapter as Electron and writes a JSON report under `test-results/`.
 - `npm run probe:steam-leaderboard-electron` is a manual Electron/preload/IPC probe for the same leaderboard. It can run against local Electron or the packaged executable with `-- --packaged`.
+- `npm run steamworks:leaderboard-write-diagnose` is a read-only checklist/report command. It reads local build files, Steam install manifests, and recent probe reports, then prints the exact Steamworks values to verify.
 
 Live probe prerequisites:
 
@@ -101,6 +103,12 @@ Current Steam-installed result for build `23351534`: the game launches from Stea
 
 Upload implementation note: `steamworks-ffi-node@0.10.3` documents `uploadScore(leaderboardHandle, score, uploadMethod, details?)`, while the underlying Steamworks SDK function is `UploadLeaderboardScore(handle, method, score, detailsPtr, detailsCount)`. Nova Swarm now uses a direct diagnostic SDK upload path when the wrapper internals are available so failed uploads preserve the raw `LeaderboardScoreUploaded_t` callback fields instead of collapsing to `null`.
 
+Official Steamworks notes relevant to the current failure:
+
+- `LeaderboardScoreUploaded_t.m_bSuccess = 0` is documented for either too many detail values or a leaderboard set to `Trusted`. Nova Swarm's `details=none`, `score=1` probe still returns `m_bSuccess: 0`, so detail length is not the likely blocker.
+- `UploadLeaderboardScore` is rate-limited to 10 uploads per 10 minutes and one outstanding call. Keep probes to one submit per pass.
+- Steam testing depends on package entitlement: the Dev Comp or Beta Testing package used by the account must include App ID `4765070` and Windows depot `4765071`.
+
 The default live probe submits one deliberately low keep-best score of `1` with metadata `[1, 0, 1, 0, 0, 0]`. It does not force-overwrite, reset, or delete leaderboard data. Useful flags:
 
 - `npm run probe:steam-leaderboard-live -- --no-submit` runs read-only global/friends checks.
@@ -114,6 +122,8 @@ Electron runtime probe examples:
 - `npm run probe:steam-leaderboard-electron -- --no-submit` runs read-only checks through the renderer preload bridge.
 - `npm run probe:steam-leaderboard-electron -- --details=none --score=1` submits one low keep-best score through the Electron IPC path.
 - `npm run probe:steam-leaderboard-electron -- --packaged --no-submit` runs the read-only probe against `release/desktop/win-unpacked/Nova Swarm.exe`.
+- `npm run probe:steam-leaderboard-steam-installed -- --dry-run --details=none --score=1` prints the Steam client launch command without starting the game.
+- `npm run probe:steam-leaderboard-steam-installed -- --details=none --score=1` attempts one Steam-launched keep-best submit through `Steam.exe -applaunch 4765070 ...`. If no report appears, Steam likely ignored the extra launch args; set Steam client Properties -> Launch Options to `--steam-leaderboard-probe --submit --details=none --score=1`, launch once, then remove the launch options.
 
 The Electron probe intentionally does not support force update. It records whether the app looks Steam-launched through Steam environment hints, but the only authoritative write validation is still an installed build launched from the Steam client. Packaged/Steam-installed probe reports are written under Electron user data by default, usually `%APPDATA%\\Nova Swarm\\test-results\\steam-leaderboard-electron-*\\report.json`.
 
@@ -126,6 +136,13 @@ Do not spam submissions. Prefer one read-only run, one default keep-best run, th
 - Submit succeeds and entries can be downloaded: Steam leaderboard read/write path is verified locally, but the Steam-installed build still needs the manual runtime checklist below.
 
 SteamPipe status on 2026-05-21: App ID `4765070` and Windows depot ID `4765071` are known. `release/steamworks/app_build_LOCAL.vdf` is ignored and should be regenerated locally for SteamPipe uploads; do not commit it or any Steam credentials.
+
+Current diagnosis as of build `23352036`: installed Steam manifest matches build `23352036`, local and packaged probes can open/read the leaderboard, and the raw upload callback returns `m_bSuccess: 0` with `details=none`. The most likely remaining cause is Steamworks backend/config/entitlement state, not local upload signature. Check only:
+
+- Leaderboard config: `nova_swarm_global_score`, Writes `Client`, Sort `Descending`, Display `Numeric`; do not delete/reset/recreate.
+- Builds: default branch points to `23352036` or newer diagnostics build; do not release/publish or alter pricing/date.
+- Packages: the Dev Comp or Beta Testing package used by `gaunziman` / `EvilEirik` includes app `4765070` and depot `4765071`.
+- Steam client console: `licenses_for_app 4765070` should show the package and depot used by this account.
 
 For local validation without Steam, open with `?mockSteamLeaderboard=1`. This enables the mock provider and shows `GLOBAL / FRIENDS / LOCAL` tabs.
 

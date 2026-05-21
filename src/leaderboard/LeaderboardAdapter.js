@@ -8,6 +8,48 @@ import {
   normalizeLeaderboardEntries
 } from './LeaderboardTypes.js';
 
+const STEAM_UPLOAD_DIAGNOSTICS_KEY = 'novaSwarm.lastSteamUploadDiagnostics.v1';
+
+function safeWindow() {
+  try {
+    return typeof window !== 'undefined' ? window : null;
+  } catch {
+    return null;
+  }
+}
+
+function compactScoreRead(result) {
+  if (!result) return null;
+  return {
+    status: result.status || null,
+    source: result.source || null,
+    sourceLabel: result.sourceLabel || null,
+    message: result.message || null,
+    count: Array.isArray(result.entries) ? result.entries.length : 0,
+    error: result.error || null,
+    currentPlayerObserved: Boolean((result.entries || []).some(entry => entry?.isCurrentPlayer))
+  };
+}
+
+function mergeSteamUploadDiagnostics(extra = {}) {
+  const win = safeWindow();
+  if (!win) return;
+  try {
+    const existing = win.__novaLastSteamUploadDiagnostics ||
+      JSON.parse(win.localStorage?.getItem(STEAM_UPLOAD_DIAGNOSTICS_KEY) || 'null') ||
+      {};
+    const next = {
+      ...existing,
+      ...extra,
+      updatedAt: new Date().toISOString()
+    };
+    win.__novaLastSteamUploadDiagnostics = next;
+    win.localStorage?.setItem(STEAM_UPLOAD_DIAGNOSTICS_KEY, JSON.stringify(next));
+  } catch {
+    // Diagnostics are best effort and must not affect the runback flow.
+  }
+}
+
 export class LeaderboardAdapter {
   constructor() {
     this.localProvider = new LocalLeaderboardProvider();
@@ -176,6 +218,20 @@ export class LeaderboardAdapter {
         result.steamStatus = 'failed';
         result.steamError = error?.message || 'unknown';
       }
+      result.steamPostSubmitDownload = await this.getSteamPostSubmitDownloadSnapshot();
+      mergeSteamUploadDiagnostics({
+        source: 'LeaderboardAdapter.submitScore',
+        steamSubmissionResult: {
+          globalStatus: result.globalStatus,
+          steamStatus: result.steamStatus,
+          steamError: result.steamError || null,
+          steamRank: result.steamRank || null,
+          score: result.score ?? null,
+          level: result.level ?? null,
+          submissionId: result.submissionId || null
+        },
+        postSubmitDownload: result.steamPostSubmitDownload
+      });
       return result;
     }
 
@@ -203,6 +259,22 @@ export class LeaderboardAdapter {
       useCache: options.useCache ?? false
     });
     return normalizeLeaderboardEntries(result.entries || [], { source: result.source || 'global' });
+  }
+
+  async getSteamPostSubmitDownloadSnapshot() {
+    const [globalResult, friendsResult] = await Promise.allSettled([
+      this.steamProvider.getTopScores({ limit: 10, useCache: false }),
+      this.steamProvider.getFriendsScores({ limit: 10, useCache: false })
+    ]);
+    return {
+      generatedAt: new Date().toISOString(),
+      global: globalResult.status === 'fulfilled'
+        ? compactScoreRead(globalResult.value)
+        : { status: 'failed', error: globalResult.reason?.message || String(globalResult.reason) },
+      friends: friendsResult.status === 'fulfilled'
+        ? compactScoreRead(friendsResult.value)
+        : { status: 'failed', error: friendsResult.reason?.message || String(friendsResult.reason) }
+    };
   }
 
   qualifiesLocal(score) {

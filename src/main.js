@@ -50,6 +50,7 @@ window.addEventListener('resize', () => {
 window.addEventListener('orientationchange', () => {
   applyResponsiveLayout(window.innerWidth, window.innerHeight);
 });
+installSteamDiagnosticsExport();
 
 function isBootDebugEnabled() {
   return urlParams.get('debug') === '1';
@@ -75,6 +76,64 @@ function readLastSteamUploadDiagnostics() {
   } catch {
     return null;
   }
+}
+
+async function collectSteamDiagnostics() {
+  const bridge = window.__novaSteamBridge || null;
+  const leaderboards = window.__novaSteamLeaderboard || bridge?.leaderboards || null;
+  const [bridgeStatus, runtimeInfo, personaName, latestUploadDiagnostics] = await Promise.all([
+    bridge?.getStatus?.().catch(error => ({ error: error?.message || String(error) })) || null,
+    (bridge?.getRuntimeInfo?.() || leaderboards?.getRuntimeInfo?.())?.catch?.(error => ({ error: error?.message || String(error) })) || null,
+    leaderboards?.getPersonaName?.().catch(() => null) || null,
+    leaderboards?.getLastUploadDiagnostics?.().catch(() => null) || null
+  ]);
+  return {
+    generatedAt: new Date().toISOString(),
+    buildId: BUILD_ID,
+    gitSha: GIT_SHA,
+    url: window.location.href,
+    scene: getStableSceneName(window.__game),
+    score: window.__game?.score ?? null,
+    level: window.__game?.level ?? null,
+    lastLeaderboardResult: window.__game?.lastLeaderboardResult || null,
+    bridgeStatus,
+    runtimeInfo,
+    launchedBySteamHint: Boolean(runtimeInfo?.launchedBySteamHint),
+    steamEnv: runtimeInfo?.steamEnv || null,
+    personaName,
+    latestUploadDiagnostics,
+    storedUploadDiagnostics: readLastSteamUploadDiagnostics()
+  };
+}
+
+async function copySteamDiagnostics() {
+  const diagnostics = await collectSteamDiagnostics();
+  const text = JSON.stringify(diagnostics, null, 2);
+  try {
+    await navigator.clipboard?.writeText?.(text);
+    console.info('[SteamDiagnostics] copied to clipboard', diagnostics);
+  } catch {
+    console.info('[SteamDiagnostics] clipboard unavailable; diagnostics follow:', diagnostics);
+  }
+  return diagnostics;
+}
+
+function installSteamDiagnosticsExport() {
+  window.__novaSteamDiagnostics = Object.freeze({
+    collect: collectSteamDiagnostics,
+    copy: copySteamDiagnostics,
+    log: async () => {
+      const diagnostics = await collectSteamDiagnostics();
+      console.info('[SteamDiagnostics]', diagnostics);
+      return diagnostics;
+    }
+  });
+  window.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.altKey && event.shiftKey && event.code === 'KeyD') {
+      event.preventDefault();
+      copySteamDiagnostics();
+    }
+  });
 }
 
 function ensureBuildStamp() {

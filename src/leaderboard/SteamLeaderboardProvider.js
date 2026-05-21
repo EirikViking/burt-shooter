@@ -54,6 +54,15 @@ async function readLastUploadDiagnostics(bridge) {
   }
 }
 
+async function readSteamRuntimeInfo(bridge) {
+  if (typeof bridge?.getRuntimeInfo !== 'function') return null;
+  try {
+    return await bridge.getRuntimeInfo();
+  } catch {
+    return null;
+  }
+}
+
 function storeLastUploadDiagnostics(error, diagnostics) {
   const win = safeWindow();
   if (!win) return;
@@ -318,7 +327,14 @@ export class SteamLeaderboardProvider {
         'uploadLeaderboardScore'
       ], payload);
     } catch (error) {
-      storeLastUploadDiagnostics(error, await readLastUploadDiagnostics(this.bridge));
+      const [diagnostics, runtimeInfo] = await Promise.all([
+        readLastUploadDiagnostics(this.bridge),
+        readSteamRuntimeInfo(this.bridge)
+      ]);
+      storeLastUploadDiagnostics(error, {
+        ...(diagnostics || error?.steamUpload || {}),
+        runtimeInfo
+      });
       throw error;
     }
     return {

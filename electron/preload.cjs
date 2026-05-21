@@ -8,7 +8,8 @@ const CHANNELS = {
   submitScore: 'nova-steam-leaderboard:submitScore',
   submitScoreDetailed: 'nova-steam-leaderboard:submitScoreDetailed',
   getLastUploadDiagnostics: 'nova-steam-leaderboard:getLastUploadDiagnostics',
-  getStatus: 'nova-steam-leaderboard:getStatus'
+  getStatus: 'nova-steam-leaderboard:getStatus',
+  getRuntimeInfo: 'nova-steam-leaderboard:getRuntimeInfo'
 };
 
 function safePayload(payload) {
@@ -39,11 +40,13 @@ const leaderboards = Object.freeze({
   getFriendsScores: (payload) => invoke(CHANNELS.getFriendsScores, payload),
   submitScore: (payload) => invoke(CHANNELS.submitScore, payload),
   submitScoreDetailed: (payload) => invoke(CHANNELS.submitScoreDetailed, payload),
-  getLastUploadDiagnostics: () => invoke(CHANNELS.getLastUploadDiagnostics)
+  getLastUploadDiagnostics: () => invoke(CHANNELS.getLastUploadDiagnostics),
+  getRuntimeInfo: () => invoke(CHANNELS.getRuntimeInfo)
 });
 
 contextBridge.exposeInMainWorld('__novaSteamLeaderboard', leaderboards);
 contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
   leaderboards,
-  getStatus: () => invoke(CHANNELS.getStatus)
+  getStatus: () => invoke(CHANNELS.getStatus),
+  getRuntimeInfo: () => invoke(CHANNELS.getRuntimeInfo)
 }));

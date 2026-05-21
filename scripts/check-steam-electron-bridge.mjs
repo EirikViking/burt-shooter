@@ -242,7 +242,7 @@ function checkPreloadSurface() {
   const preload = readFileSync(path.resolve('electron/preload.cjs'), 'utf8');
   assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaSteamLeaderboard'/);
   assert.doesNotMatch(preload, /fs\.|child_process|shell|process\.env/);
-  for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getFriendsScores', 'submitScore', 'submitScoreDetailed', 'getLastUploadDiagnostics']) {
+  for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getFriendsScores', 'submitScore', 'submitScoreDetailed', 'getLastUploadDiagnostics', 'getRuntimeInfo']) {
     assert.match(preload, new RegExp(`${method}:`));
   }
 }
