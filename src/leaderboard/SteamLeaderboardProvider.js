@@ -45,6 +45,32 @@ function writeMockScores(win, scores) {
   }
 }
 
+async function readLastUploadDiagnostics(bridge) {
+  if (typeof bridge?.getLastUploadDiagnostics !== 'function') return null;
+  try {
+    return await bridge.getLastUploadDiagnostics();
+  } catch {
+    return null;
+  }
+}
+
+function storeLastUploadDiagnostics(error, diagnostics) {
+  const win = safeWindow();
+  if (!win) return;
+  const summary = {
+    recordedAt: new Date().toISOString(),
+    error: error?.message || String(error),
+    diagnostics: diagnostics || error?.steamUpload || null
+  };
+  try {
+    win.__novaLastSteamUploadDiagnostics = summary;
+    win.localStorage?.setItem('novaSwarm.lastSteamUploadDiagnostics.v1', JSON.stringify(summary));
+  } catch {
+    // Diagnostics are best effort and must never block game-over flow.
+  }
+  console.warn('[SteamLeaderboardProvider] submit failed diagnostics:', summary);
+}
+
 function createMockSteamBridge(win) {
   const personaName = () => {
     try {
@@ -284,11 +310,17 @@ export class SteamLeaderboardProvider {
         wavesCleared: details[5]
       }
     };
-    const response = await callFirst(this.bridge, [
-      'submitScore',
-      'uploadScore',
-      'uploadLeaderboardScore'
-    ], payload);
+    let response = null;
+    try {
+      response = await callFirst(this.bridge, [
+        'submitScore',
+        'uploadScore',
+        'uploadLeaderboardScore'
+      ], payload);
+    } catch (error) {
+      storeLastUploadDiagnostics(error, await readLastUploadDiagnostics(this.bridge));
+      throw error;
+    }
     return {
       status: 'submitted',
       source: 'steam',

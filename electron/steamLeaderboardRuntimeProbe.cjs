@@ -68,6 +68,7 @@ function publicSummary(report) {
     globalBefore: compactRead(report.globalBefore),
     friendsBefore: compactRead(report.friendsBefore),
     submit: report.submit ? compactSubmit(report.submit) : null,
+    latestUploadDiagnostics: report.latestUploadDiagnostics || null,
     globalAfter: compactRead(report.globalAfter),
     friendsAfter: compactRead(report.friendsAfter),
     currentPlayerObservedAfterSubmit: report.currentPlayerObservedAfterSubmit || false,
@@ -298,6 +299,9 @@ async function runSteamLeaderboardRuntimeProbe({ window, args, baseUrl, runtimeI
           const submitter = api.submitScoreDetailed || bridge?.leaderboards?.submitScoreDetailed || api.submitScore;
           const submitStep = await runStep(() => submitter(payload));
           report.submit = publicSubmitStep(submitStep);
+          report.latestUploadDiagnostics = bridge?.leaderboards?.getLastUploadDiagnostics
+            ? await bridge.leaderboards.getLastUploadDiagnostics().catch(() => null)
+            : null;
 
           const globalAfterStep = await runStep(() => api.getTopScores({
             leaderboardName,

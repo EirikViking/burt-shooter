@@ -9,11 +9,13 @@ RESCUE_*.txt
 test-results/
 tmpclaude-*
 tools/steamcmd/
+tools/dumps/
 steam_sdk/
 steamworks_sdk/
 steamworks_sdk_redist/
 steam_appid.txt
 release/desktop/
+release/steam-build-output/
 release/steamworks/app_build_LOCAL.vdf
 release/steam-trailer/*/*.webm
 release/steam-trailer/*/*.mp4
@@ -22,7 +24,6 @@ release/steam-trailer/*/concat.txt
 release/steam-trailer/draft-*-hq-*/
 release/steam-trailer/hq-*/
 release/steam-screenshots/draft-*-1920/
-release/steamworks/steam-build-output/
 steamworks/
 
 # Protected generated build artifacts - never commit

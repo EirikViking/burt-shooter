@@ -7,6 +7,7 @@ const CHANNELS = {
   getFriendsScores: 'nova-steam-leaderboard:getFriendsScores',
   submitScore: 'nova-steam-leaderboard:submitScore',
   submitScoreDetailed: 'nova-steam-leaderboard:submitScoreDetailed',
+  getLastUploadDiagnostics: 'nova-steam-leaderboard:getLastUploadDiagnostics',
   getStatus: 'nova-steam-leaderboard:getStatus'
 };
 
@@ -37,7 +38,8 @@ const leaderboards = Object.freeze({
   getTopScores: (payload) => invoke(CHANNELS.getTopScores, payload),
   getFriendsScores: (payload) => invoke(CHANNELS.getFriendsScores, payload),
   submitScore: (payload) => invoke(CHANNELS.submitScore, payload),
-  submitScoreDetailed: (payload) => invoke(CHANNELS.submitScoreDetailed, payload)
+  submitScoreDetailed: (payload) => invoke(CHANNELS.submitScoreDetailed, payload),
+  getLastUploadDiagnostics: () => invoke(CHANNELS.getLastUploadDiagnostics)
 });
 
 contextBridge.exposeInMainWorld('__novaSteamLeaderboard', leaderboards);

@@ -9,7 +9,7 @@ const {
   createSteamLeaderboardBridge
 } = require('../electron/steamLeaderboardBridge.cjs');
 
-function createFakeSteamNative({ initResult = true, uploadResult = null } = {}) {
+function createFakeSteamNative({ initResult = true, uploadResult = null, rawUploadResult = null } = {}) {
   const calls = [];
   const fakeSteam = {
     calls,
@@ -43,6 +43,39 @@ function createFakeSteamNative({ initResult = true, uploadResult = null } = {}) 
       }
     },
     leaderboards: {
+      libraryLoader: {
+        SteamAPI_ISteamUserStats_UploadLeaderboardScore(userStatsInterface, handle, method, score, detailsPtr, detailsCount) {
+          calls.push(['rawUploadScore', Boolean(userStatsInterface), handle.toString(), method, score, Boolean(detailsPtr), detailsCount]);
+          return BigInt(77);
+        }
+      },
+      apiCore: {
+        isInitialized() {
+          return true;
+        },
+        getUserStatsInterface() {
+          return { fake: 'userStats' };
+        },
+        getUtilsInterface() {
+          return { fake: 'utils' };
+        },
+        runCallbacks() {
+          calls.push(['apiCore.runCallbacks']);
+        }
+      },
+      callbackPoller: {
+        async poll(callHandle, _resultStruct, callbackId) {
+          calls.push(['callbackPoller.poll', callHandle.toString(), callbackId]);
+          return rawUploadResult || {
+            m_bSuccess: 1,
+            m_hSteamLeaderboard: BigInt(55),
+            m_nScore: 55555,
+            m_bScoreChanged: 1,
+            m_nGlobalRankNew: 3,
+            m_nGlobalRankPrevious: 7
+          };
+        }
+      },
       async findLeaderboard(name) {
         calls.push(['findLeaderboard', name]);
         return { handle: BigInt(55), name, entryCount: 2 };
@@ -122,7 +155,8 @@ async function checkNativeBridgeHappyPath() {
     nativeModule,
     appId: 480,
     sdkPath: 'steamworks_sdk',
-    rootDir: process.cwd()
+    rootDir: process.cwd(),
+    logger: { warn() {}, error() {} }
   });
 
   assert.equal(await bridge.isAvailable(), true);
@@ -157,14 +191,50 @@ async function checkNativeBridgeHappyPath() {
   assert.equal(submit.success, true);
   assert.equal(submit.rank, 3);
   assert.deepEqual(submit.details, [9, 2, 333, 140, 3, 22]);
-  assert.equal(submit.diagnostics.nativeMethodName, 'uploadScore');
+  assert.equal(submit.diagnostics.nativeMethodName, 'SteamAPI_ISteamUserStats_UploadLeaderboardScore');
+  assert.equal(submit.diagnostics.selectedUploadPath, 'raw_sdk_diagnostic');
   assert.equal(submit.diagnostics.uploadMethod.key, 'KeepBest');
   assert.equal(submit.diagnostics.uploadMethod.value, 1);
   assert.equal(submit.interpretedStatus, 'accepted');
 
-  const uploadCall = nativeModule.fakeSteam.calls.find(call => call[0] === 'uploadScore');
-  assert.equal(uploadCall[2], 55555);
-  assert.equal(uploadCall[3], 1, 'Steam upload should use KeepBest');
+  const uploadCall = nativeModule.fakeSteam.calls.find(call => call[0] === 'rawUploadScore');
+  assert.equal(uploadCall[3], 1, 'Steam native upload should use KeepBest');
+  assert.equal(uploadCall[4], 55555, 'Steam native upload should pass score after method');
+  assert.equal(uploadCall[6], 6, 'Steam native upload should include details count');
+  assert.equal(bridge.getLastUploadDiagnostics().success, true);
+  bridge.shutdown();
+}
+
+async function checkRawUploadFailureDiagnostics() {
+  const nativeModule = createFakeSteamNative({
+    rawUploadResult: {
+      m_bSuccess: 0,
+      m_hSteamLeaderboard: BigInt(55),
+      m_nScore: 1,
+      m_bScoreChanged: 0,
+      m_nGlobalRankNew: 0,
+      m_nGlobalRankPrevious: 0
+    }
+  });
+  const bridge = createSteamLeaderboardBridge({
+    nativeModule,
+    appId: 480,
+    sdkPath: 'steamworks_sdk',
+    rootDir: process.cwd(),
+    logger: { warn() {}, error() {} }
+  });
+
+  const submit = await bridge.submitScoreDetailed({
+    leaderboardName: STEAM_LEADERBOARD_NAME,
+    score: 1,
+    uploadMethod: 'keep_best'
+  });
+  assert.equal(submit.success, false);
+  assert.equal(submit.interpretedStatus, 'steam_callback_m_bSuccess_false');
+  assert.equal(submit.diagnostics.selectedUploadPath, 'raw_sdk_diagnostic');
+  assert.equal(submit.diagnostics.detailsMode, 'omitted');
+  assert.equal(submit.rawResult.m_bSuccess, 0);
+  assert.equal(bridge.getLastUploadDiagnostics().rawResult.m_bSuccess, 0);
   bridge.shutdown();
 }
 
@@ -172,7 +242,7 @@ function checkPreloadSurface() {
   const preload = readFileSync(path.resolve('electron/preload.cjs'), 'utf8');
   assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaSteamLeaderboard'/);
   assert.doesNotMatch(preload, /fs\.|child_process|shell|process\.env/);
-  for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getFriendsScores', 'submitScore', 'submitScoreDetailed']) {
+  for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getFriendsScores', 'submitScore', 'submitScoreDetailed', 'getLastUploadDiagnostics']) {
     assert.match(preload, new RegExp(`${method}:`));
   }
 }
@@ -193,6 +263,7 @@ function checkNoRendererNativeImport() {
 await checkUnavailableWithoutNative();
 await checkMissingAppIdDoesNotInitNative();
 await checkNativeBridgeHappyPath();
+await checkRawUploadFailureDiagnostics();
 checkPreloadSurface();
 checkNoRendererNativeImport();
 

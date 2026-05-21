@@ -67,6 +67,16 @@ function isDesktopRuntime() {
   return urlParams.get('desktop') === '1' || window.__NOVA_SWARM_DESKTOP__ === true;
 }
 
+function readLastSteamUploadDiagnostics() {
+  try {
+    if (window.__novaLastSteamUploadDiagnostics) return window.__novaLastSteamUploadDiagnostics;
+    const raw = window.localStorage?.getItem('novaSwarm.lastSteamUploadDiagnostics.v1');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 function ensureBuildStamp() {
   let stamp = document.getElementById('build-stamp');
   if (stamp) {
@@ -282,6 +292,7 @@ function buildGameTextState(game) {
       ? game.isScoreSubmissionAllowed()
       : !game?.isDebugRun,
     selectedShipSpriteKey: game?.selectedShipSpriteKey || null,
+    steamUploadDiagnostics: readLastSteamUploadDiagnostics(),
     isPaused: Boolean(playScene?.isPaused),
     overlays: {
       pause: Boolean(playScene?.pauseOverlay?.visible && playScene?.pauseOverlay?.parent),

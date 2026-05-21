@@ -5,6 +5,7 @@ const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score';
 const INT32_MAX = 2147483647;
 const MAX_STEAM_DOWNLOAD_ENTRIES = 100;
 const CALLBACK_POLL_MS = 250;
+const LEADERBOARD_SCORE_UPLOADED_CALLBACK_ID = 1106;
 
 const FALLBACK_SORT_METHOD = {
   Ascending: 1,
@@ -25,6 +26,9 @@ const FALLBACK_DATA_REQUEST = {
   Friends: 2,
   Users: 3
 };
+
+let koffiModule = undefined;
+let leaderboardScoreUploadedStruct = null;
 
 function integer(value, fallback = 0) {
   const parsed = Number(value);
@@ -85,6 +89,29 @@ function requireNativeSteamworks() {
     if (error?.code === 'MODULE_NOT_FOUND') return null;
     throw error;
   }
+}
+
+function requireKoffi() {
+  if (koffiModule !== undefined) return koffiModule;
+  try {
+    koffiModule = require('koffi');
+  } catch {
+    koffiModule = null;
+  }
+  return koffiModule;
+}
+
+function getLeaderboardScoreUploadedStruct(koffi) {
+  if (leaderboardScoreUploadedStruct) return leaderboardScoreUploadedStruct;
+  leaderboardScoreUploadedStruct = koffi.struct('NovaLeaderboardScoreUploaded_t', {
+    m_bSuccess: 'uint8',
+    m_hSteamLeaderboard: 'uint64',
+    m_nScore: 'int32',
+    m_bScoreChanged: 'uint8',
+    m_nGlobalRankNew: 'int',
+    m_nGlobalRankPrevious: 'int'
+  });
+  return leaderboardScoreUploadedStruct;
 }
 
 function enumValue(nativeModule, enumName, key, fallback) {
@@ -168,6 +195,7 @@ class SteamLeaderboardBridge {
     this.statusReason = this.disabled ? 'disabled_by_env' : 'not_initialized';
     this.leaderboards = new Map();
     this.callbackTimer = null;
+    this.lastUploadDiagnostics = null;
   }
 
   getStatus() {
@@ -179,6 +207,10 @@ class SteamLeaderboardBridge {
       nativeModuleLoaded: Boolean(this.steam),
       leaderboardName: STEAM_LEADERBOARD_NAME
     };
+  }
+
+  getLastUploadDiagnostics() {
+    return this.lastUploadDiagnostics;
   }
 
   loadNativeModule() {
@@ -433,10 +465,12 @@ class SteamLeaderboardBridge {
       detailsMode: hasDetails ? (details.length ? 'array' : 'empty') : 'omitted',
       detailsCount: hasDetails ? details.length : 0,
       detailsSubmitted: hasDetails ? details : null,
-      callbackPollingActive: Boolean(this.callbackTimer)
+      callbackPollingActive: Boolean(this.callbackTimer),
+      wrapperSignature: 'uploadScore(leaderboardHandle, score, uploadMethod, details?)',
+      steamworksSignature: 'UploadLeaderboardScore(hSteamLeaderboard, eLeaderboardUploadScoreMethod, nScore, pScoreDetails, cScoreDetailsCount)'
     };
     if (typeof uploader !== 'function') {
-      return jsonSafe({
+      return this.recordUploadResult(jsonSafe({
         success: false,
         accepted: false,
         interpretedStatus: 'native_upload_method_unavailable',
@@ -444,15 +478,66 @@ class SteamLeaderboardBridge {
         score,
         details: hasDetails ? details : [],
         diagnostics
-      });
+      }));
     }
-    const result = await uploader.call(
-      this.steam.leaderboards,
+
+    let rawSdkUpload = null;
+    try {
+      rawSdkUpload = await this.uploadScoreViaRawSdk({
+        leaderboard,
+        score,
+        uploadMethod,
+        details,
+        hasDetails
+      });
+    } catch (error) {
+      rawSdkUpload = {
+        available: false,
+        reason: 'raw_sdk_exception',
+        diagnostics: {
+          errorMessage: error?.message || String(error)
+        }
+      };
+      this.logger.warn?.('[SteamLeaderboardBridge] raw SDK upload diagnostics unavailable:', error?.message || error);
+    }
+    if (rawSdkUpload.available) {
+      const rawResult = rawSdkUpload.rawResult;
+      const accepted = Boolean(rawResult?.m_bSuccess);
+      const scoreChanged = rawResult?.m_bScoreChanged == null ? null : rawResult.m_bScoreChanged === 1;
+      let interpretedStatus = accepted ? 'accepted' : 'steam_callback_m_bSuccess_false';
+      let nativeErrorMessage = accepted ? null : 'Steam returned LeaderboardScoreUploaded_t.m_bSuccess=0. With detailsCount <= 64, this usually points to Steamworks write policy/state rather than local metadata formatting.';
+      if (accepted && scoreChanged === false) interpretedStatus = 'accepted_keep_best_not_changed';
+      return this.recordUploadResult(jsonSafe({
+        success: accepted,
+        accepted,
+        interpretedStatus,
+        nativeErrorMessage,
+        leaderboardName: payload.leaderboardName || STEAM_LEADERBOARD_NAME,
+        score,
+        details: hasDetails ? details : [],
+        rank: rawResult?.m_nGlobalRankNew ?? null,
+        globalRank: rawResult?.m_nGlobalRankNew ?? null,
+        previousRank: rawResult?.m_nGlobalRankPrevious ?? null,
+        scoreChanged,
+        diagnostics: {
+          ...diagnostics,
+          nativeMethodName: 'SteamAPI_ISteamUserStats_UploadLeaderboardScore',
+          selectedUploadPath: 'raw_sdk_diagnostic',
+          uploadSignatureUsed: 'SteamAPI_ISteamUserStats_UploadLeaderboardScore(userStats, handle, method, score, detailsPtr, detailsCount)',
+          rawSdkDiagnostics: rawSdkUpload.diagnostics
+        },
+        rawResult,
+        response: rawResult
+      }));
+    }
+
+    const uploadArgs = [
       leaderboard.handle,
       score,
-      uploadMethod.value,
-      details
-    );
+      uploadMethod.value
+    ];
+    if (hasDetails) uploadArgs.push(details);
+    const result = await uploader.call(this.steam.leaderboards, ...uploadArgs);
     const accepted = Boolean(result && result.success !== false);
     const scoreChanged = result?.scoreChanged ?? null;
     let interpretedStatus = 'accepted';
@@ -466,7 +551,7 @@ class SteamLeaderboardBridge {
     } else if (scoreChanged === false) {
       interpretedStatus = 'accepted_keep_best_not_changed';
     }
-    return jsonSafe({
+    return this.recordUploadResult(jsonSafe({
       success: accepted,
       accepted,
       interpretedStatus,
@@ -478,10 +563,103 @@ class SteamLeaderboardBridge {
       globalRank: result?.globalRankNew ?? result?.globalRank ?? result?.rank ?? null,
       previousRank: result?.globalRankPrevious ?? null,
       scoreChanged,
-      diagnostics,
+      diagnostics: {
+        ...diagnostics,
+        selectedUploadPath: 'wrapper',
+        rawSdkDiagnostics: rawSdkUpload?.diagnostics || null,
+        rawSdkUnavailableReason: rawSdkUpload?.reason || null,
+        uploadSignatureUsed: hasDetails
+          ? `${nativeMethodName}(leaderboardHandle, score, uploadMethod, details)`
+          : `${nativeMethodName}(leaderboardHandle, score, uploadMethod)`
+      },
       rawResult: result || null,
       response: result || null
+    }));
+  }
+
+  async uploadScoreViaRawSdk({ leaderboard, score, uploadMethod, details, hasDetails }) {
+    const manager = this.steam?.leaderboards;
+    const libraryLoader = manager?.libraryLoader;
+    const apiCore = manager?.apiCore;
+    const callbackPoller = manager?.callbackPoller;
+    const diagnostics = {
+      hasLibraryLoader: Boolean(libraryLoader),
+      hasApiCore: Boolean(apiCore),
+      hasCallbackPoller: Boolean(callbackPoller),
+      hasNativeUploadFunction: typeof libraryLoader?.SteamAPI_ISteamUserStats_UploadLeaderboardScore === 'function'
+    };
+
+    if (!diagnostics.hasLibraryLoader || !diagnostics.hasApiCore || !diagnostics.hasCallbackPoller || !diagnostics.hasNativeUploadFunction) {
+      return { available: false, reason: 'raw_sdk_internals_unavailable', diagnostics };
+    }
+
+    const koffi = requireKoffi();
+    diagnostics.hasKoffi = Boolean(koffi);
+    if (!koffi) return { available: false, reason: 'koffi_unavailable', diagnostics };
+
+    const userStatsInterface = apiCore.getUserStatsInterface?.();
+    diagnostics.userStatsInterfacePresent = Boolean(userStatsInterface);
+    diagnostics.apiCoreInitialized = typeof apiCore.isInitialized === 'function' ? Boolean(apiCore.isInitialized()) : null;
+    if (!userStatsInterface) return { available: false, reason: 'user_stats_interface_unavailable', diagnostics };
+
+    const detailsArray = hasDetails && Array.isArray(details) ? details.slice(0, 64) : [];
+    let detailsPtr = null;
+    let detailsCount = 0;
+    if (detailsArray.length > 0) {
+      detailsPtr = koffi.alloc('int32', detailsArray.length);
+      koffi.encode(detailsPtr, `int32[${detailsArray.length}]`, detailsArray);
+      detailsCount = detailsArray.length;
+    }
+    diagnostics.detailsCount = detailsCount;
+    diagnostics.detailsPointerPresent = Boolean(detailsPtr);
+
+    const callHandle = libraryLoader.SteamAPI_ISteamUserStats_UploadLeaderboardScore(
+      userStatsInterface,
+      leaderboard.handle,
+      uploadMethod.value,
+      score,
+      detailsPtr,
+      detailsCount
+    );
+    diagnostics.callHandle = stringifySteamId(callHandle);
+    if (callHandle === BigInt(0) || callHandle === 0) {
+      return {
+        available: true,
+        rawResult: null,
+        diagnostics: {
+          ...diagnostics,
+          callHandleInvalid: true
+        }
+      };
+    }
+
+    const result = await callbackPoller.poll(
+      callHandle,
+      getLeaderboardScoreUploadedStruct(koffi),
+      LEADERBOARD_SCORE_UPLOADED_CALLBACK_ID
+    );
+    return {
+      available: true,
+      rawResult: result || null,
+      diagnostics: {
+        ...diagnostics,
+        callHandleInvalid: false,
+        callbackId: LEADERBOARD_SCORE_UPLOADED_CALLBACK_ID,
+        callbackReturned: Boolean(result)
+      }
+    };
+  }
+
+  recordUploadResult(result) {
+    this.lastUploadDiagnostics = jsonSafe({
+      ...result,
+      recordedAt: new Date().toISOString(),
+      bridgeStatus: this.getStatus()
     });
+    if (!result?.success) {
+      this.logger.warn?.('[SteamLeaderboardBridge] upload failed diagnostics:', this.lastUploadDiagnostics);
+    }
+    return result;
   }
 
   shutdown() {

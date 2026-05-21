@@ -44,12 +44,14 @@ Expected async methods:
 - `getTopScores({ leaderboardName, request: "global", start, end, limit })`
 - `getFriendsScores({ leaderboardName, request: "friends", limit })`
 - `submitScore({ leaderboardName, score, details, uploadMethod: "keep_best" })`
+- `getLastUploadDiagnostics()`
 
 Native dependency status:
 
 - `steamworks-ffi-node` is an optional dependency and is loaded only by Electron main process code.
 - If `steamworks-ffi-node`, a Steam App ID, the Steam client, or SDK redistributables are missing, `isAvailable()` returns `false` and the game falls back safely.
 - The renderer never gets filesystem, shell, or broad IPC access.
+- Upload diagnostics are available through `window.__novaSteamLeaderboard.getLastUploadDiagnostics()` and are also saved after a Steam submit failure to `localStorage` key `novaSwarm.lastSteamUploadDiagnostics.v1`. `render_game_to_text()` includes the same value for manual Steam-runtime probes.
 
 ## SDK-Ready Setup
 
@@ -94,6 +96,10 @@ Live probe prerequisites:
 - `steamworks-ffi-node` is installed through `npm install`.
 
 Current live result from local Node with `steam_appid.txt`: bridge ready, `nova_swarm_global_score` opens, global download succeeds with `0` entries, friends download succeeds with `0` entries, and keep-best upload of score `1` returned `Score upload was not successful`. The no-details variant failed the same way, so metadata formatting is not the likely first blocker. Steam leaderboard read path is verified locally; write path is pending.
+
+Current Steam-installed result for build `23351534`: the game launches from Steam, shows `GLOBAL / FRIENDS / LOCAL`, friends read works but is empty, local backup saves, and Steam global submission still fails. Steam leaderboard read path is verified in Steam runtime; write path is pending. Upload diagnostics added after this build need a new SteamPipe build before they can prove the raw Steam callback result in the Steam-installed runtime.
+
+Upload implementation note: `steamworks-ffi-node@0.10.3` documents `uploadScore(leaderboardHandle, score, uploadMethod, details?)`, while the underlying Steamworks SDK function is `UploadLeaderboardScore(handle, method, score, detailsPtr, detailsCount)`. Nova Swarm now uses a direct diagnostic SDK upload path when the wrapper internals are available so failed uploads preserve the raw `LeaderboardScoreUploaded_t` callback fields instead of collapsing to `null`.
 
 The default live probe submits one deliberately low keep-best score of `1` with metadata `[1, 0, 1, 0, 0, 0]`. It does not force-overwrite, reset, or delete leaderboard data. Useful flags:
 
