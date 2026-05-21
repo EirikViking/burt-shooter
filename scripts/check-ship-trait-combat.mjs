@@ -155,6 +155,7 @@ try {
   const report = {
     ok: Boolean(
       cadence > 0 &&
+      result.selectedShipSpriteKey === wingTraitShip &&
       cadenceShot?.wingShots === 2 &&
       cadenceShot.count >= 4 &&
       result.wingImpact?.scoreDelta > 0 &&

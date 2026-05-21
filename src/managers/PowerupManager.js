@@ -329,7 +329,7 @@ class Powerup {
       shockwave: 'SHOCKWAVE!',
       chain_lightning: 'CHAIN LIGHTNING!',
       orbital_strike: 'ORBITAL STRIKE!',
-      vampire: 'VAMPIRE MODE!'
+      vampire: 'VAMPIRE DRAIN!'
     };
 
     const { width, height } = scene.game.app.screen;
@@ -415,9 +415,10 @@ export class PowerupManager {
       this.extraLifeSpawnedThisLevel = false;
 
       // Force spawn guaranteed extra life if needed.
+      const extraLifeDropsEnabled = BalanceConfig.powerups.extraLifeDropsEnabled === true;
       const levelsSinceLastLife = level - this.lastExtraLifeLevel;
-      const guaranteedLifeLevels = BalanceConfig.powerups.extraLifeGuaranteedEveryLevels || 4;
-      if (levelsSinceLastLife >= guaranteedLifeLevels) {
+      const guaranteedLifeLevels = Number(BalanceConfig.powerups.extraLifeGuaranteedEveryLevels) || 0;
+      if (extraLifeDropsEnabled && guaranteedLifeLevels > 0 && levelsSinceLastLife >= guaranteedLifeLevels) {
         console.log(`[PowerupManager] FORCING guaranteed extra life for level ${level} (${levelsSinceLastLife} levels since last)`);
         this.forceExtraLifeSpawn();
       }
@@ -494,17 +495,21 @@ export class PowerupManager {
     // Check if player has shield active
     const shieldActive = player && player.shieldActive;
 
-    // Guaranteed extra life is intentionally rare; normal random life odds are half the old rate.
+    // Extra lives are explicit only; ordinary random drops should not quietly add lives.
+    const extraLifeDropsEnabled = BalanceConfig.powerups.extraLifeDropsEnabled === true;
     const levelsSinceLastLife = this.currentLevel - this.lastExtraLifeLevel;
-    const guaranteedLifeLevels = BalanceConfig.powerups.extraLifeGuaranteedEveryLevels || 4;
-    const needsGuaranteedLife = levelsSinceLastLife >= guaranteedLifeLevels && !this.extraLifeSpawnedThisLevel;
+    const guaranteedLifeLevels = Number(BalanceConfig.powerups.extraLifeGuaranteedEveryLevels) || 0;
+    const needsGuaranteedLife = extraLifeDropsEnabled &&
+      guaranteedLifeLevels > 0 &&
+      levelsSinceLastLife >= guaranteedLifeLevels &&
+      !this.extraLifeSpawnedThisLevel;
 
     if (needsGuaranteedLife) {
       type = 'life';
       console.log(`[PowerupManager] GUARANTEED extra life spawned (${levelsSinceLastLife} levels since last)`);
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;
-    } else if (rand < (BalanceConfig.powerups.extraLifeChance ?? 0.01)) {
+    } else if (extraLifeDropsEnabled && rand < (BalanceConfig.powerups.extraLifeChance ?? 0)) {
       type = 'life';
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;
@@ -517,8 +522,7 @@ export class PowerupManager {
       // OTHER NEW POWERUPS - 25% chance pool for remaining new powerups
       const newPowerups = [
         'chain_lightning',
-        'orbital_strike',
-        'vampire'
+        'orbital_strike'
       ];
       type = newPowerups[Math.floor(Math.random() * newPowerups.length)];
     } else if (rand < 0.60) {

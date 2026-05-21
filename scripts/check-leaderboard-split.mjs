@@ -130,10 +130,17 @@ async function submitInitials(page, initials, expectPost = false) {
   const postPromise = expectPost
     ? page.waitForRequest((request) => request.url().includes('/api/highscores') && request.method() === 'POST')
     : null;
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'gameOver' && ['prompt', 'input'].includes(state.gameOver?.state);
+  }, null, { timeout: 10000 });
   await page.keyboard.press('Enter');
   await page.keyboard.type(initials);
   await page.keyboard.press('Enter');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'highscore', null, { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+  }, null, { timeout: 15000 });
   if (postPromise) await postPromise;
 }
 
@@ -201,6 +208,8 @@ try {
     await submitInitials(page, 'LOC', false);
     await page.waitForTimeout(700);
     const localScores = await readLocalScores(page);
+    await page.keyboard.press('KeyL');
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'highscore', null, { timeout: 10000 });
     const activeView = await page.evaluate(() => window.__game?.scenes?.highscore?.activeLeaderboard);
     assert(localScores.some((entry) => entry.name === 'LOC' && entry.score === 12000), 'local-only score was not saved');
     assert(activeView === 'local', `expected local leaderboard view, got ${activeView}`);
@@ -247,7 +256,12 @@ try {
       await route.fulfill({ status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(lowGlobalScores()) });
     });
     await forceGameOver(page, 14000);
-    await page.keyboard.press('KeyR');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+    }, null, { timeout: 5000 });
+    await page.keyboard.press('Enter');
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', null, { timeout: 5000 });
     const restarted = await readTextState(page);
     assert(restarted.scene === 'play' && restarted.score === 0, 'restart was blocked by slow global leaderboard check');

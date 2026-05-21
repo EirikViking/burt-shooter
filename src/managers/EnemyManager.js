@@ -179,6 +179,7 @@ export class EnemyManager {
     this.bossSpawnedAtMs = 0;
     this.bossAddWaveCooldownUntilMs = 0;
     this.bossAddWaveCount = 0;
+    this.bossIntervalExtraWaves = 0;
     this.directorState = { tier: 0, spawnCadenceScale: 1, eliteChance: 0.02, clutchDropChance: 0.04 };
 
     // TASK 1: Voice history to prevent duplicates
@@ -221,6 +222,7 @@ export class EnemyManager {
     this.bossSpawnedAtMs = 0;
     this.bossAddWaveCooldownUntilMs = 0;
     this.bossAddWaveCount = 0;
+    this.bossIntervalExtraWaves = 0;
 
     // Play Voice
     // Play Voice (TASK 1: Prevent duplicates per level)
@@ -274,16 +276,10 @@ export class EnemyManager {
   }
 
   generateWaves(level) {
-    // Classic arcade style: large choreographed waves.
-    // 8-16 on early levels, 12-24 on high
-    const diff = BalanceConfig.difficulty;
     const curatedWaves = this.getCuratedWaves(level);
     if (curatedWaves) return curatedWaves;
 
-    const numWaves = Math.min(
-      diff.waveCountBase + Math.floor(Math.max(0, level - 1) / diff.waveCountPerLevel),
-      diff.waveCountMax
-    );
+    const numWaves = this.getNormalWaveCount(level);
     const waves = [];
     const patterns = [
       'GRID',
@@ -304,11 +300,8 @@ export class EnemyManager {
     const enemyTypes = GENERATED_ENEMY_TYPES;
 
     for (let i = 0; i < numWaves; i++) {
-      let count = diff.waveEnemyBase + Math.floor(level * diff.waveEnemyPerLevel) + Math.floor(Math.random() * diff.waveEnemyRandom);
-      if (count > diff.waveEnemyMax) count = diff.waveEnemyMax;
-
       let typeIndex = Math.min(Math.floor(level / 2) + Math.floor(i / 2), enemyTypes.length - 1);
-      const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+      const pattern = patterns[Math.abs((level * 5 + i * 7 + Math.floor(Math.random() * 3)) % patterns.length)];
 
       // 60% chance for a pure generated squadron for visual cohesion.
       const useFighterSquadron = Math.random() < 0.6;
@@ -325,37 +318,112 @@ export class EnemyManager {
 
       waves.push({
         type: selectedType,
-        count: count,
+        count: this.getWaveEnemyCount(level, i),
         formation: pattern,
         tactic: this.pickWaveTactic(level, i, pattern),
-        entry: Math.random() < 0.4 ? 'alternating' : 'single',
-        cadence: 1 + Math.min(0.35, level * 0.02)
+        entry: i % 3 === 0 ? 'split' : i % 3 === 1 ? 'alternating' : 'single',
+        cadence: 0.9 + Math.min(0.45, level * 0.022 + i * 0.035)
       });
     }
     return waves;
   }
 
+  getNormalWaveCount(level) {
+    const diff = BalanceConfig.difficulty;
+    const base = diff.wavesPerBossBase ?? diff.waveCountBase ?? 4;
+    const perLevel = diff.wavesPerBossPerLevel ?? 0;
+    const max = diff.wavesPerBossMax ?? diff.waveCountMax ?? 6;
+    const min = diff.MIN_WAVES_BETWEEN_BOSSES ?? diff.minWavesBetweenBosses ?? 1;
+    return Math.max(min, Math.min(max, Math.round(base + Math.max(0, level - 1) * perLevel)));
+  }
+
+  getWaveEnemyCount(level, waveIndex = 0) {
+    const diff = BalanceConfig.difficulty;
+    const earlyCounts = diff.earlyWaveEnemyCounts?.[level];
+    if (Array.isArray(earlyCounts) && Number.isFinite(earlyCounts[waveIndex])) {
+      return earlyCounts[waveIndex];
+    }
+
+    const levelScale = Math.max(0, level - 1);
+    const waveScale = Math.max(0, waveIndex);
+    const variance = Math.floor(Math.random() * Math.max(1, diff.waveEnemyRandom ?? 1));
+    const count = Math.round(
+      (diff.waveEnemyBase ?? 7) +
+      levelScale * (diff.waveEnemyPerLevel ?? 0.35) +
+      waveScale * (diff.waveEnemyPerWave ?? 0.45) +
+      variance
+    );
+    return Math.max(4, Math.min(diff.waveEnemyMax ?? 14, count));
+  }
+
   getCuratedWaves(level) {
     const scripts = {
       1: [
-        { type: 'nova_enemy_01', count: 5, formation: 'TUTORIAL_ARC', tactic: 'strafe_sweep', entry: 'split', cadence: 0.82 },
-        { type: 'nova_enemy_04', count: 6, formation: 'STAGGERED_WING', tactic: 'dive_chain', entry: 'alternating', cadence: 0.92 }
+        { type: 'nova_enemy_01', count: 6, formation: 'TUTORIAL_ARC', tactic: 'strafe_sweep', entry: 'split', cadence: 0.78 },
+        { type: 'nova_enemy_04', count: 7, formation: 'STAGGERED_WING', tactic: 'needle_stagger', entry: 'alternating', cadence: 0.86 },
+        { type: 'nova_enemy_07', count: 8, formation: 'GRID', tactic: 'pulse_net', entry: 'single', cadence: 0.94 },
+        { type: 'nova_enemy_10', count: 8, formation: 'DOUBLE_ARC', tactic: 'dive_chain', entry: 'split', cadence: 1.0 },
+        { type: 'nova_enemy_12', count: 8, formation: 'PINCER', tactic: 'crossfire_pincer', entry: 'alternating', cadence: 1.04 },
+        { type: 'nova_enemy_14', count: 9, formation: 'SCREEN_DOOR', tactic: 'weave_wall', entry: 'split', cadence: 1.08 }
       ],
       2: [
-        { type: 'nova_enemy_10', count: 6, formation: 'GRID', tactic: 'pulse_net', entry: 'alternating', cadence: 1.02 },
-        { type: 'nova_enemy_13', count: 7, formation: 'STAGGERED_WING', tactic: 'crossfire_pincer', entry: 'split', cadence: 1.12 }
+        { type: 'nova_enemy_10', count: 7, formation: 'GRID', tactic: 'pulse_net', entry: 'alternating', cadence: 0.98 },
+        { type: 'nova_enemy_13', count: 8, formation: 'STAGGERED_WING', tactic: 'crossfire_pincer', entry: 'split', cadence: 1.04 },
+        { type: 'nova_enemy_16', count: 8, formation: 'PINCER', tactic: 'strafe_sweep', entry: 'alternating', cadence: 1.1 },
+        { type: 'nova_enemy_18', count: 9, formation: 'SIDEWINDER', tactic: 'rush_feint', entry: 'split', cadence: 1.16 },
+        { type: 'nova_enemy_20', count: 9, formation: 'CROSS_STREAM', tactic: 'split_sweep', entry: 'alternating', cadence: 1.2 },
+        { type: 'nova_enemy_22', count: 10, formation: 'ORBIT_RING', tactic: 'orbit_snare', entry: 'single', cadence: 1.24 }
       ],
       3: [
-        { type: 'nova_enemy_19', count: 6, formation: 'ARC', tactic: 'orbit_snare', entry: 'split', cadence: 1.18 },
-        { type: 'nova_enemy_22', count: 7, formation: 'PINCER', tactic: 'rush_feint', entry: 'alternating', cadence: 1.28 }
+        { type: 'nova_enemy_19', count: 7, formation: 'ARC', tactic: 'orbit_snare', entry: 'split', cadence: 1.06 },
+        { type: 'nova_enemy_22', count: 8, formation: 'PINCER', tactic: 'rush_feint', entry: 'alternating', cadence: 1.14 },
+        { type: 'nova_enemy_24', count: 9, formation: 'CROSS_STREAM', tactic: 'crossfire_pincer', entry: 'split', cadence: 1.2 },
+        { type: 'nova_enemy_26', count: 9, formation: 'SCREEN_DOOR', tactic: 'weave_wall', entry: 'alternating', cadence: 1.26 },
+        { type: 'nova_enemy_28', count: 10, formation: 'DIAGONAL_RAID', tactic: 'dive_chain', entry: 'split', cadence: 1.3 },
+        { type: 'nova_enemy_30', count: 10, formation: 'DOUBLE_ARC', tactic: 'needle_stagger', entry: 'alternating', cadence: 1.34 }
       ],
       4: [
-        { type: 'nova_enemy_28', count: 5, formation: 'SIDEWINDER', tactic: 'split_sweep', entry: 'split', cadence: 1.4 },
-        { type: 'nova_enemy_31', count: 6, formation: 'DOUBLE_ARC', tactic: 'weave_wall', entry: 'alternating', cadence: 1.48 }
+        { type: 'nova_enemy_28', count: 8, formation: 'SIDEWINDER', tactic: 'split_sweep', entry: 'split', cadence: 1.16 },
+        { type: 'nova_enemy_31', count: 9, formation: 'DOUBLE_ARC', tactic: 'weave_wall', entry: 'alternating', cadence: 1.22 },
+        { type: 'nova_enemy_33', count: 9, formation: 'ORBIT_RING', tactic: 'orbit_snare', entry: 'single', cadence: 1.28 },
+        { type: 'nova_enemy_35', count: 10, formation: 'DIAGONAL_RAID', tactic: 'rush_feint', entry: 'split', cadence: 1.34 },
+        { type: 'nova_enemy_37', count: 10, formation: 'PINCER', tactic: 'ambush_lattice', entry: 'alternating', cadence: 1.38 },
+        { type: 'nova_enemy_39', count: 11, formation: 'SPIRAL', tactic: 'orbit_snare', entry: 'single', cadence: 1.42 }
       ]
     };
     const script = scripts[level];
     return script ? script.map((wave) => ({ ...wave })) : null;
+  }
+
+  createBossSpacingWave() {
+    const enemyTypes = GENERATED_ENEMY_TYPES;
+    const index = Math.min(enemyTypes.length - 1, 10 + (this.level || 1) * 2 + this.bossIntervalExtraWaves);
+    const formations = ['STAGGERED_WING', 'PINCER', 'DOUBLE_ARC', 'SCREEN_DOOR', 'CROSS_STREAM'];
+    const formation = formations[(this.level + this.bossIntervalExtraWaves) % formations.length];
+    const tactic = this.pickWaveTactic(this.level || 1, this.normalWavesTotal + this.bossIntervalExtraWaves, formation);
+    return {
+      type: enemyTypes[index] || enemyTypes[0],
+      count: this.getWaveEnemyCount(this.level || 1, this.normalWavesTotal + this.bossIntervalExtraWaves),
+      formation,
+      tactic,
+      entry: this.bossIntervalExtraWaves % 2 === 0 ? 'alternating' : 'split',
+      cadence: 1.08 + Math.min(0.32, (this.level || 1) * 0.02 + this.bossIntervalExtraWaves * 0.04),
+      bossSpacingWave: true
+    };
+  }
+
+  shouldAddBossSpacingWave() {
+    if (!this.isBossLevel || this.bossSpawnedThisLevel || this.bossDefeatedThisLevel) return false;
+    const diff = BalanceConfig.difficulty;
+    const minWaves = diff.MIN_WAVES_BETWEEN_BOSSES ?? diff.minWavesBetweenBosses ?? 6;
+    const completedWaves = this.currentWaveIndex + 1;
+    if (completedWaves < minWaves) return true;
+
+    const minSeconds = diff.MIN_SECONDS_BETWEEN_BOSSES ?? diff.minSecondsBetweenBosses ?? 0;
+    if (minSeconds <= 0 || !this.levelStartTime) return false;
+    const elapsedSeconds = (Date.now() - this.levelStartTime) / 1000;
+    const maxCatchup = diff.bossIntervalCatchupWaveMax ?? 4;
+    return elapsedSeconds < minSeconds && this.bossIntervalExtraWaves < maxCatchup;
   }
 
   pickWaveTactic(level, waveIndex, formation = 'ARC') {
@@ -417,9 +485,8 @@ export class EnemyManager {
 
   getOpeningFireScalar() {
     if (this.level !== 1 || this.state !== 'WAVE_ACTIVE') return 1;
-    if (this.currentWaveIndex === 0) return 0.45;
-    if (this.currentWaveIndex === 1) return 0.6;
-    return 0.72;
+    const scalars = [0.32, 0.45, 0.58, 0.68];
+    return scalars[this.currentWaveIndex] ?? 0.74;
   }
 
   update(delta) {
@@ -688,8 +755,14 @@ export class EnemyManager {
 
     const timeScale = isSlowTime ? 0.5 : 1.0;
     const tier = this.directorState?.tier || 0;
-    const fireChance = BalanceConfig.difficulty.enemyFireChance *
-      BalanceConfig.difficulty.pressureScalar *
+    const diff = BalanceConfig.difficulty;
+    const levelScale = Math.max(0, (this.level || 1) - 1);
+    const baseFireChance = Math.min(
+      diff.enemyFireChanceMax ?? Number.POSITIVE_INFINITY,
+      (diff.enemyFireChance ?? 0.0036) + levelScale * (diff.enemyFireChancePerLevel ?? 0)
+    );
+    const fireChance = baseFireChance *
+      diff.pressureScalar *
       this.getOpeningFireScalar() *
       (1 + tier * 0.1);
     const dt = delta * timeScale;
@@ -1113,6 +1186,17 @@ export class EnemyManager {
     const clearedWaveNumber = clearedWaveIndex + 1;
     let hasUpcomingWave = clearedWaveIndex < this.normalWavesTotal - 1;
 
+    if (!hasUpcomingWave && this.shouldAddBossSpacingWave()) {
+      const extraWave = this.createBossSpacingWave();
+      this.waves.push(extraWave);
+      this.normalWavesTotal += 1;
+      this.bossWaveIndex = this.normalWavesTotal;
+      this.bossIntervalExtraWaves += 1;
+      hasUpcomingWave = true;
+      const elapsedSeconds = ((Date.now() - this.levelStartTime) / 1000).toFixed(1);
+      console.log(`[BossSpacing] inserted wave=${this.normalWavesTotal} level=${this.level} elapsed=${elapsedSeconds}s minWaves=${BalanceConfig.difficulty.MIN_WAVES_BETWEEN_BOSSES} minSeconds=${BalanceConfig.difficulty.MIN_SECONDS_BETWEEN_BOSSES}`);
+    }
+
     if (clearedWave && clearedWave.isChallenge) {
       // Challenge Bonus
       const bonus = 3000;
@@ -1123,12 +1207,17 @@ export class EnemyManager {
       AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 30000, duckMs: 1300 });
     } else {
       // Normal Bonus
-      const bonus = 500 * clearedWaveNumber;
+      const rewardConfig = BalanceConfig.rewards || {};
+      const bonus = (rewardConfig.waveClearScoreBase || 500) * clearedWaveNumber;
       this.game.addScore(bonus);
       if (this.game.scenes.play) {
         let repairDelta = 0;
-        if (this.game.lives < 3 && typeof this.game.scenes.play.applyLifeRepair === 'function') {
-          repairDelta = this.game.scenes.play.applyLifeRepair(3, 4200);
+        const repairTarget = rewardConfig.waveClearRepairTargetLives || 0;
+        if (repairTarget > 0 && this.game.lives < repairTarget && typeof this.game.scenes.play.applyLifeRepair === 'function') {
+          repairDelta = this.game.scenes.play.applyLifeRepair(
+            repairTarget,
+            rewardConfig.repairInvulnerabilityMs || 0
+          );
         }
         const nextLabel = hasUpcomingWave
           ? `NEXT WAVE ${clearedWaveNumber + 1}/${this.normalWavesTotal}`
@@ -1447,21 +1536,38 @@ export class EnemyManager {
     const diff = BalanceConfig.difficulty;
     const levelScale = Math.max(0, level - 1);
     return {
-      hpScale: diff.baseEnemyHealthMultiplier + levelScale * diff.hpScalePerLevel,
-      speedScale: diff.enemySpeedMultiplier + levelScale * diff.enemySpeedPerLevel,
-      fireDelayScale: 1 + levelScale * diff.enemyFireDelayPerLevel
+      hpScale: Math.min(
+        diff.enemyHealthMaxMultiplier ?? Number.POSITIVE_INFINITY,
+        diff.baseEnemyHealthMultiplier + levelScale * diff.hpScalePerLevel
+      ),
+      speedScale: Math.min(
+        diff.enemySpeedMaxMultiplier ?? Number.POSITIVE_INFINITY,
+        diff.enemySpeedMultiplier + levelScale * diff.enemySpeedPerLevel
+      ),
+      fireDelayScale: Math.max(
+        diff.enemyFireDelayMinMultiplier ?? 0.85,
+        (diff.enemyFireDelayMultiplier ?? 1) + levelScale * diff.enemyFireDelayPerLevel
+      )
     };
   }
 
   logLevelDifficulty(level, waveCount) {
     const diff = BalanceConfig.difficulty;
     const scalars = this.getDifficultyScalars(level);
-    const bossHp = Math.round(diff.bossBaseHealth + level * diff.bossHealthPerLevel);
+    const bossHp = Math.max(
+      diff.bossMinHealth || 0,
+      Math.round(diff.bossBaseHealth + Math.max(0, level - 1) * diff.bossHealthPerLevel)
+    );
+    const fireChance = Math.min(
+      diff.enemyFireChanceMax ?? Number.POSITIVE_INFINITY,
+      diff.enemyFireChance + Math.max(0, level - 1) * (diff.enemyFireChancePerLevel ?? 0)
+    );
     console.log(
       `[Difficulty] level=${level} waves=${waveCount} waveDelayMs=${diff.waveDelayMs}` +
+      ` wavesPerBossBase=${diff.wavesPerBossBase} wavesPerBossMax=${diff.wavesPerBossMax}` +
       ` countBase=${diff.waveEnemyBase} countScale=${diff.waveEnemyPerLevel} countMax=${diff.waveEnemyMax}` +
       ` hpScale=${scalars.hpScale.toFixed(2)} speedScale=${scalars.speedScale.toFixed(2)} fireDelayScale=${scalars.fireDelayScale.toFixed(2)}` +
-      ` fireChance=${diff.enemyFireChance} projSpeed=${diff.enemyProjectileSpeed}` +
+      ` fireChance=${fireChance.toFixed(4)} projSpeed=${diff.enemyProjectileSpeed}` +
       ` bossHp=${bossHp} bossDelay=${diff.bossShootDelayBase}`
     );
   }

@@ -291,18 +291,27 @@ export class Enemy {
     }
     }
 
-    // TASK 3: Apply difficulty scalars
+    // Apply the linear difficulty model from BalanceConfig.
     const diff = BalanceConfig.difficulty;
     const levelScale = Math.max(0, this.level - 1);
-    const hpScale = diff.baseEnemyHealthMultiplier + levelScale * diff.hpScalePerLevel;
-    const speedScale = diff.enemySpeedMultiplier + levelScale * diff.enemySpeedPerLevel;
-    const fireDelayScale = 1 + levelScale * diff.enemyFireDelayPerLevel;
+    const hpScale = Math.min(
+      diff.enemyHealthMaxMultiplier ?? Number.POSITIVE_INFINITY,
+      diff.baseEnemyHealthMultiplier + levelScale * diff.hpScalePerLevel
+    );
+    const speedScale = Math.min(
+      diff.enemySpeedMaxMultiplier ?? Number.POSITIVE_INFINITY,
+      diff.enemySpeedMultiplier + levelScale * diff.enemySpeedPerLevel
+    );
+    const fireDelayScale = Math.max(
+      diff.enemyFireDelayMinMultiplier ?? 0.85,
+      (diff.enemyFireDelayMultiplier ?? 1) + levelScale * diff.enemyFireDelayPerLevel
+    );
     const globalMult = BalanceConfig.DIFFICULTY_MULTIPLIER;
 
     this.health = Math.ceil(this.health * hpScale);
     this.maxHealth = this.health;
     this.speed *= speedScale * globalMult;
-    this.shootDelay = (this.shootDelay * fireDelayScale) / globalMult;
+    this.shootDelay = this.shootDelay * fireDelayScale;
 
     // Sprite Selection
     if (this.generatedProfile) {
@@ -775,7 +784,13 @@ export class Enemy {
     const openingProjectileScalar = this.level <= 1 ? 0.82 : this.level === 2 ? 0.92 : 1;
     const weaponProfile = getEnemyWeaponProfileForEnemy(this);
     const weaponSpeedMult = weaponProfile?.speedMult || 1;
-    const speed = BalanceConfig.difficulty.enemyProjectileSpeed *
+    const diff = BalanceConfig.difficulty;
+    const levelScale = Math.max(0, this.level - 1);
+    const projectileSpeed = Math.min(
+      diff.enemyProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
+      (diff.enemyProjectileSpeed ?? 1.55) + levelScale * (diff.enemyProjectileSpeedPerLevel ?? 0)
+    );
+    const speed = projectileSpeed *
       BalanceConfig.difficulty.pressureScalar *
       openingProjectileScalar *
       (this.generatedProfile?.projectileSpeedMult || 1) *

@@ -1,6 +1,6 @@
 export const BalanceConfig = {
-    // TASK 3: Global difficulty multiplier (0.85 = 15% easier)
-    DIFFICULTY_MULTIPLIER: 0.85,
+    // Global pressure trim: below 1 keeps Nova Swarm readable while the wave count rises.
+    DIFFICULTY_MULTIPLIER: 0.78,
 
     // Rank System
     ranks: {
@@ -16,8 +16,9 @@ export const BalanceConfig = {
         cooldownMs: 18000,
         maxPerLevel: 2,
         minPerLevel: 1,
-        extraLifeChance: 0.01,
-        extraLifeGuaranteedEveryLevels: 4,
+        extraLifeDropsEnabled: false,
+        extraLifeChance: 0,
+        extraLifeGuaranteedEveryLevels: 0,
         guaranteeWindowStart: 0.2, // 20% progress
         guaranteeWindowEnd: 0.8, // 80% progress
         logDrops: true, // Dev toggle
@@ -32,48 +33,99 @@ export const BalanceConfig = {
         }
     },
 
-    // Difficulty: readable score-chaser tempo with boss pressure every level.
+    // Difficulty: four-wave early sectors, then a steady linear climb.
     difficulty: {
-        // Slower motion, similar threat: fewer twitch spikes, more sustained pressure.
-        pressureScalar: 0.96,
-        baseEnemyHealthMultiplier: 0.96,
-        hpScalePerLevel: 0.04,
+        pressureScalar: 0.72,
+        baseEnemyHealthMultiplier: 0.62,
+        hpScalePerLevel: 0.035,
+        enemyHealthMaxMultiplier: 1.8,
 
-        enemySpeedMultiplier: 0.76,
-        enemySpeedPerLevel: 0.007,
+        enemySpeedMultiplier: 0.72,
+        enemySpeedPerLevel: 0.012,
+        enemySpeedMaxMultiplier: 1.15,
 
-        enemyFireDelayPerLevel: 0.018,
-        enemyFireChance: 0.0057,
-        enemyProjectileSpeed: 2.55,
+        enemyFireDelayMultiplier: 1.32,
+        enemyFireDelayPerLevel: -0.012,
+        enemyFireDelayMinMultiplier: 0.9,
+        enemyFireChance: 0.0036,
+        enemyFireChancePerLevel: 0.00015,
+        enemyFireChanceMax: 0.0072,
+        enemyProjectileSpeed: 1.55,
+        enemyProjectileSpeedPerLevel: 0.04,
+        enemyProjectileSpeedMax: 2.35,
 
-        waveCountBase: 2, // Fast score-chaser cadence: two focused waves, then boss
-        waveCountPerLevel: 99, // Keep level 10 on a normal-session path before adding filler waves
-        waveCountMax: 2, // Boss-every-level stays the anchor, not late-wave padding
+        MIN_WAVES_BETWEEN_BOSSES: 6,
+        MIN_SECONDS_BETWEEN_BOSSES: 75,
+        bossIntervalCatchupWaveMax: 4,
+        wavesPerBossBase: 6,
+        wavesPerBossPerLevel: 0.03,
+        wavesPerBossMax: 8,
+        bossTargetIntervalSeconds: { earlyMin: 60, earlyMax: 90 },
+        estimatedWaveSeconds: 11.5,
 
-        waveEnemyBase: 4, // Boss remains the level anchor
-        waveEnemyPerLevel: 0.25, // Controlled count growth
-        waveEnemyRandom: 1, // Reduced from 2
-        waveEnemyMax: 12, // Prevent late-level filler walls
-        waveDelayMs: 1050, // Briefing duration between normal waves
-        waveBriefingAnnounceMs: 350,
-        waveCleanupMs: 950,
-        enemyEntryDurationMs: 1620,
-        enemyEntryDelayBaseMs: 128,
-        bossGateMs: 760,
-        challengeWaveChance: 0.02,
-        challengeWaveCount: 14,
+        earlyWaveEnemyCounts: {
+            1: [6, 7, 8, 8, 8, 9],
+            2: [7, 8, 8, 9, 9, 10],
+            3: [7, 8, 9, 9, 10, 10],
+            4: [8, 9, 9, 10, 10, 11]
+        },
+        waveEnemyBase: 7,
+        waveEnemyPerLevel: 0.35,
+        waveEnemyPerWave: 0.45,
+        waveEnemyRandom: 2,
+        waveEnemyMax: 14,
+        waveDelayMs: 820,
+        waveBriefingAnnounceMs: 260,
+        waveCleanupMs: 760,
+        enemyEntryDurationMs: 1460,
+        enemyEntryDelayBaseMs: 150,
+        bossGateMs: 950,
+        challengeWaveChance: 0.015,
+        challengeWaveCount: 8,
 
-        bossBaseHealth: 92,
-        bossHealthPerLevel: 16,
-        bossShootDelayBase: 28,
-        bossShootDelayPhase2: 19,
-        bossShootDelayPhase3: 14,
-        bossProjectileSpeedPhase1: 2.95,
-        bossProjectileSpeedPhase2: 3.3,
-        bossProjectileSpeedPhase3: 3.65,
+        bossBaseHealth: 70,
+        bossHealthPerLevel: 10,
+        bossMinHealth: 70,
+        bossShootDelayBase: 38,
+        bossShootDelayPhase2: 29,
+        bossShootDelayPhase3: 23,
+        bossProjectileSpeedPhase1: 1.55,
+        bossProjectileSpeedPhase2: 1.8,
+        bossProjectileSpeedPhase3: 2.05,
+        bossProjectileSpeedPerLevel: 0.018,
+        bossProjectileSpeedMax: 2.8,
+
+        bossFairness: {
+            signatureTelegraphMs: 1120,
+            signatureRingTelegraphMs: 1220,
+            regularTelegraphEarlyMs: 960,
+            regularTelegraphMidMs: 880,
+            regularTelegraphLateMs: 780,
+            netSpeedMultiplier: 0.86,
+            beamSpeedMultiplier: 0.84,
+            wallSpeedMultiplier: 0.78,
+            ringSafeWedgeEarly: 0.58,
+            ringSafeWedge: 0.5,
+            regularRingSafeWedge: 0.5,
+            beamHazardRadius: 13,
+            coneHazardRadius: 27,
+            hazardArmingMs: 240
+        },
 
         precisionPenalty: true, // If true, reduced score for missed shots (concept)
         sprayInefficiency: 0.8 // Damage multiplier if shooting blindly (concept, maybe skip to keep simple)
+    },
+
+    rewards: {
+        waveClearScoreBase: 500,
+        levelClearScore: 1000,
+        waveClearRepairTargetLives: 0,
+        levelClearRepairTargetLives: 0,
+        repairInvulnerabilityMs: 0
+    },
+
+    survival: {
+        lastStandRepairEnabled: false
     },
 
     // Modifiers

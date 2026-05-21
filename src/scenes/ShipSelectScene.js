@@ -34,6 +34,7 @@ export class ShipSelectScene {
     this.statRanges = computeShipStatRanges(this.ships);
     this.baseOrder = [...new Set(this.ships.map(ship => ship.baseId).filter(Boolean))];
     this.unlockProgress = getShipUnlockProgress();
+    this.launchInProgress = false;
 
     // Load saved selection
     const saved = this.loadSelection();
@@ -833,15 +834,7 @@ export class ShipSelectScene {
           this.updateSelectionInfo();
           return;
         }
-        const spriteKey = ship.spriteKey;
-        setSelectedShipKey(spriteKey);
-        this.saveSelection(spriteKey);
-
-        // Confirm sound for starting game
-        AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.8 });
-
-        if (DEBUG) console.log('[ShipSelect] Starting game with:', spriteKey);
-        this.game.startGame(spriteKey);
+        this.launchSelectedShip('button');
       }
     );
     this.container.addChild(this.startButton);
@@ -1044,6 +1037,7 @@ export class ShipSelectScene {
     button.position.set(x, y);
     button.eventMode = 'static';
     button.cursor = 'pointer';
+    button.hitArea = new PIXI.Rectangle(0, 0, width, height);
 
     // Background with glow
     const bgGlow = new PIXI.Graphics();
@@ -1072,13 +1066,14 @@ export class ShipSelectScene {
 
     button.on('pointerdown', (e) => {
       e.stopPropagation();
-      if (!this.isDragging) {
-        // Button press effect
-        button.scale.set(0.95);
-        setTimeout(() => button.scale.set(1), 100);
-        AudioManager.playSfx('powerup', { force: true, volume: 0.4 });
-        onClick();
-      }
+      // Buttons live outside the carousel, so they should not inherit the
+      // carousel's delayed drag flag after a swipe.
+      button.scale.set(0.95);
+      setTimeout(() => {
+        if (button.parent) button.scale.set(1);
+      }, 100);
+      AudioManager.playSfx('powerup', { force: true, volume: 0.4 });
+      onClick();
     });
 
     button.on('pointerover', () => {
@@ -1245,20 +1240,35 @@ export class ShipSelectScene {
         this.navigateRandom();
       } else if (e.key === 'Enter' || e.code === 'Space') {
         e.preventDefault();
-        // Start game with selected ship
-        const ship = this.ships[this.selectedIndex];
-        if (!isShipUnlocked(ship.spriteKey, this.unlockProgress)) {
-          AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.7 });
-          this.updateSelectionInfo();
-          return;
-        }
-        setSelectedShipKey(ship.spriteKey);
-        this.saveSelection(ship.spriteKey);
-        this.game.startGame(ship.spriteKey);
+        this.launchSelectedShip('keyboard');
       }
     };
 
     window.addEventListener('keydown', this.keyHandler);
+  }
+
+  launchSelectedShip(source = 'unknown') {
+    if (this.launchInProgress) return;
+    const ship = this.ships[this.selectedIndex];
+    if (!ship?.spriteKey) return;
+
+    if (!isShipUnlocked(ship.spriteKey, this.unlockProgress)) {
+      AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.7 });
+      this.updateSelectionInfo();
+      return;
+    }
+
+    this.launchInProgress = true;
+    const spriteKey = ship.spriteKey;
+    setSelectedShipKey(spriteKey);
+    this.saveSelection(spriteKey);
+    AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.8 });
+
+    if (DEBUG) console.log(`[ShipSelect] Starting game via ${source}:`, spriteKey);
+    this.game.startGame(spriteKey).catch((error) => {
+      this.launchInProgress = false;
+      console.error('[ShipSelect] Failed to start selected ship:', error);
+    });
   }
 
   saveSelection(spriteKey) {

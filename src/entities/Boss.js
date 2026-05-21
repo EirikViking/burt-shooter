@@ -52,8 +52,8 @@ export class Boss {
     this.vx = 2;
     this.vy = 0;
     const diff = BalanceConfig.difficulty;
-    this.health = Math.round(diff.bossBaseHealth + level * diff.bossHealthPerLevel);
-    this.health = Math.max(this.health, 70);
+    this.health = Math.round(diff.bossBaseHealth + Math.max(0, level - 1) * diff.bossHealthPerLevel);
+    this.health = Math.max(this.health, diff.bossMinHealth || 70);
     this.maxHealth = this.health;
     this.shootCooldown = 0;
     this.shootDelay = this.getPhaseShootDelay(1);
@@ -775,6 +775,35 @@ export class Boss {
     return baseDelay * openingDelayScalar;
   }
 
+  getBossProjectileSpeed(phase) {
+    const diff = BalanceConfig.difficulty;
+    const fairness = diff.bossFairness || {};
+    const baseSpeed = phase === 1
+      ? diff.bossProjectileSpeedPhase1
+      : phase === 2
+        ? diff.bossProjectileSpeedPhase2
+        : diff.bossProjectileSpeedPhase3;
+    const levelScale = Math.max(0, this.level - 1);
+    return Math.min(
+      diff.bossProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
+      baseSpeed + levelScale * (diff.bossProjectileSpeedPerLevel ?? 0)
+    ) * (fairness.globalProjectileMultiplier ?? 1);
+  }
+
+  getBossAttackSpeedMultiplier(attackType = 'normal') {
+    const fairness = BalanceConfig.difficulty.bossFairness || {};
+    if (attackType === 'ring' || attackType === 'mirror' || attackType === 'adds' || attackType === 'radial') {
+      return fairness.netSpeedMultiplier ?? 0.86;
+    }
+    if (attackType === 'lance' || attackType === 'sniper' || attackType === 'beam') {
+      return fairness.beamSpeedMultiplier ?? 0.84;
+    }
+    if (attackType === 'wall') {
+      return fairness.wallSpeedMultiplier ?? 0.78;
+    }
+    return 1;
+  }
+
   getRegularAttackIntervalMs() {
     const base = this.level <= 1 ? 2200 : this.level === 2 ? 2400 : 2700;
     const phaseScalar = this.phase === 1 ? 1 : this.phase === 2 ? 0.95 : 0.9;
@@ -782,9 +811,10 @@ export class Boss {
   }
 
   getRegularTelegraphDurationMs() {
-    if (this.level <= 1) return 620;
-    if (this.level <= 6) return this.phase >= 3 ? 560 : 640;
-    return this.phase >= 3 ? 460 : 540;
+    const fairness = BalanceConfig.difficulty.bossFairness || {};
+    if (this.level <= 2) return fairness.regularTelegraphEarlyMs ?? 960;
+    if (this.level <= 8) return fairness.regularTelegraphMidMs ?? 880;
+    return fairness.regularTelegraphLateMs ?? 780;
   }
 
   getPhasePlan() {
@@ -894,17 +924,20 @@ export class Boss {
   }
 
   startSignatureTelegraph(type, playerX, playerY) {
+    const fairness = BalanceConfig.difficulty.bossFairness || {};
     if (type === 'ring' || type === 'adds') {
-      this.setRingSafeLane(type === 'adds' ? 14 : 18, type === 'adds' ? 0.42 : 0.48);
+      this.setRingSafeLane(type === 'adds' ? 14 : 18, type === 'adds' ? 0.48 : (fairness.ringSafeWedge ?? 0.5));
     } else {
-      const spread = type === 'lance' ? 0.18 : type === 'mirror' ? 0.42 : this.level <= 1 ? 0.55 : 0.7;
+      const spread = type === 'lance' ? 0.16 : type === 'mirror' ? 0.38 : this.level <= 2 ? 0.5 : 0.64;
       this.setAimedSafeLane(type, playerX, playerY, spread);
     }
     this.telegraph = {
       type,
       label: this.getSignatureLabel(type),
       start: Date.now(),
-      duration: type === 'ring' || type === 'adds' ? 900 : 800
+      duration: type === 'ring' || type === 'adds'
+        ? (fairness.signatureRingTelegraphMs ?? 1220)
+        : (fairness.signatureTelegraphMs ?? 1120)
     };
     const playScene = this.game?.scenes?.play;
     if (playScene?.enqueueToast) {
@@ -936,7 +969,7 @@ export class Boss {
 
     if (this.telegraph.type === 'cone' || this.telegraph.type === 'mirror' || this.telegraph.type === 'lance') {
       const angle = Math.atan2(playerY - this.y, playerX - this.x);
-      const spread = this.telegraph.type === 'lance' ? 0.18 : this.level <= 1 ? 0.55 : 0.7;
+      const spread = this.telegraph.type === 'lance' ? 0.16 : this.telegraph.type === 'mirror' ? 0.38 : this.level <= 2 ? 0.5 : 0.64;
       const length = Math.max(this.radius * 2.8, 230);
       const steps = 8;
       const points = [originX, originY];
@@ -995,6 +1028,7 @@ export class Boss {
   }
 
   startRegularAttackTelegraph(playerX, playerY) {
+    const fairness = BalanceConfig.difficulty.bossFairness || {};
     const attack = this.profile?.attack || 'aimed';
     const type = ['spiral', 'clock', 'chord'].includes(attack)
       ? 'radial'
@@ -1012,11 +1046,11 @@ export class Boss {
     if (type === 'wall') {
       this.setWallSafeLane();
     } else if (type === 'radial') {
-      this.setRingSafeLane(attack === 'chord' ? 6 : this.phase === 1 ? 4 : 8, 0.44);
+      this.setRingSafeLane(attack === 'chord' ? 6 : this.phase === 1 ? 4 : 8, fairness.regularRingSafeWedge ?? 0.5);
     } else {
       const spread = type === 'fan'
-        ? (this.level <= 1 ? 0.34 : 0.48)
-        : (attack === 'sniper' ? 0.08 : 0.18);
+        ? (this.level <= 2 ? 0.3 : 0.42)
+        : (attack === 'sniper' ? 0.07 : 0.16);
       this.setAimedSafeLane(type, playerX, playerY, spread);
     }
     this.updateRegularAttackTelegraphVisual(0, playerX, playerY);
@@ -1070,8 +1104,8 @@ export class Boss {
     }
 
     const spread = this.regularTelegraph.type === 'fan'
-      ? (this.level <= 1 ? 0.34 : 0.48)
-      : (this.regularTelegraph.attack === 'sniper' ? 0.08 : 0.18);
+      ? (this.level <= 2 ? 0.3 : 0.42)
+      : (this.regularTelegraph.attack === 'sniper' ? 0.07 : 0.16);
     const lanes = this.regularTelegraph.type === 'fan' ? [-0.5, -0.25, 0, 0.25, 0.5] : [0];
     for (const lane of lanes) {
       const a = angle + lane * spread;
@@ -1099,21 +1133,21 @@ export class Boss {
 
   executeSignatureMove(type, playerX, playerY) {
     if (type === 'cone') {
-      this.fireCone(playerX, playerY, this.level <= 1 ? 5 : 9, this.level <= 1 ? 0.55 : 0.7);
+      this.fireCone(playerX, playerY, this.level <= 2 ? 5 : 8, this.level <= 2 ? 0.5 : 0.64);
     } else if (type === 'mirror') {
-      this.fireCone(playerX, playerY, this.level <= 1 ? 5 : 7, 0.42);
-      this.fireRingBurst(this.level <= 1 ? 8 : 12, 3);
+      this.fireCone(playerX, playerY, this.level <= 2 ? 5 : 7, 0.38);
+      this.fireRingBurst(this.level <= 2 ? 8 : 12, 3);
     } else if (type === 'lance') {
-      this.fireCone(playerX, playerY, 3, 0.16);
+      this.fireCone(playerX, playerY, 3, 0.14);
     } else if (type === 'adds') {
       const playScene = this.game?.scenes?.play;
-      playScene?.enemyManager?.spawnBossAdds(this.level <= 1 ? 2 : 5);
-      this.fireRingBurst(this.level <= 1 ? 8 : 14, 3);
+      playScene?.enemyManager?.spawnBossAdds(this.level <= 2 ? 2 : 4);
+      this.fireRingBurst(this.level <= 2 ? 8 : 13, 3);
     } else if (type === 'ring') {
-      this.fireRingBurst(this.level <= 1 ? 12 : 18, this.level <= 1 ? 2 : 3);
+      this.fireRingBurst(this.level <= 2 ? 10 : 16, this.level <= 2 ? 2 : 3);
       const playScene = this.game?.scenes?.play;
-      if (this.level > 1) {
-        playScene?.enemyManager?.spawnBossAdds(4);
+      if (this.level > 2) {
+        playScene?.enemyManager?.spawnBossAdds(3);
       }
     }
     this.game?.scenes?.play?.registerBossHazardFromBoss?.(this, 'signature', { type, playerX, playerY });
@@ -1128,7 +1162,9 @@ export class Boss {
     for (let i = 0; i < shots; i++) {
       const t = (i / (shots - 1)) - 0.5;
       const angle = Math.atan2(playerY - this.y, playerX - this.x) + t * spread;
-      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase2 *
+      const attackType = this.telegraph?.type || 'cone';
+      const speed = this.getBossProjectileSpeed(2) *
+        this.getBossAttackSpeedMultiplier(attackType) *
         BalanceConfig.difficulty.pressureScalar *
         this.getBossPressureScalar();
       const vx = Math.cos(angle) * speed;
@@ -1145,13 +1181,15 @@ export class Boss {
       sourceFireStyle: this.telegraph?.type || 'ring'
     });
     const safeAngle = this.getRingSafeAngle(count);
-    const safeWedge = this.level <= 1 ? 0.46 : 0.4;
+    const fairness = BalanceConfig.difficulty.bossFairness || {};
+    const safeWedge = this.level <= 2 ? (fairness.ringSafeWedgeEarly ?? 0.58) : (fairness.ringSafeWedge ?? 0.5);
     this.setRingSafeLane(count, safeWedge);
     for (let i = 0; i < count; i++) {
       if (i % gapSize === 0) continue;
       const angle = (i / count) * Math.PI * 2;
       if (Math.abs(normalizeAngle(angle - safeAngle)) < safeWedge) continue;
-      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase3 *
+      const speed = this.getBossProjectileSpeed(3) *
+        this.getBossAttackSpeedMultiplier(this.telegraph?.type || 'ring') *
         BalanceConfig.difficulty.pressureScalar *
         this.getBossPressureScalar();
       const vx = Math.cos(angle) * speed;
@@ -1215,14 +1253,14 @@ export class Boss {
     if (attack === 'fan' || attack === 'burst' || attack === 'fakeout') {
       const count = this.phase === 1 ? 1 : attack === 'burst' ? 5 : 3;
       const spread = this.phase === 1 ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
-      const speed = (this.phase === 1 ? BalanceConfig.difficulty.bossProjectileSpeedPhase1 : BalanceConfig.difficulty.bossProjectileSpeedPhase2) * pressure;
+      const speed = this.getBossProjectileSpeed(this.phase === 1 ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
       for (let i = 0; i < count; i++) {
         const t = count === 1 ? 0 : (i / (count - 1)) - 0.5;
         addBullet(this.x, this.y, aimAngle + t * spread, speed);
       }
     } else if (attack === 'spiral' || attack === 'clock' || attack === 'chord') {
       const count = attack === 'chord' ? 6 : this.phase === 1 ? 4 : 8;
-      const speed = (this.phase === 3 ? BalanceConfig.difficulty.bossProjectileSpeedPhase3 : BalanceConfig.difficulty.bossProjectileSpeedPhase2) * pressure;
+      const speed = this.getBossProjectileSpeed(this.phase === 3 ? 3 : 2) * pressure * this.getBossAttackSpeedMultiplier('radial');
       const offset = attack === 'clock'
         ? Math.floor(this.moveTimer / 26) * (Math.PI / 8)
         : this.moveTimer * 0.045;
@@ -1239,7 +1277,7 @@ export class Boss {
         addBullet(this.x, this.y, angle, speed);
       }
     } else if (attack === 'split' || attack === 'sniper' || attack === 'wall') {
-      const speed = (this.phase === 1 ? BalanceConfig.difficulty.bossProjectileSpeedPhase1 : BalanceConfig.difficulty.bossProjectileSpeedPhase2) * pressure;
+      const speed = this.getBossProjectileSpeed(this.phase === 1 ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
       if (attack === 'sniper') {
         addBullet(this.x, this.y, aimAngle, speed * 1.16);
         if (this.phase >= 3) {
@@ -1256,7 +1294,7 @@ export class Boss {
         addBullet(this.x + 22, this.y, aimAngle + 0.18, speed);
       }
     } else if (attack === 'summon') {
-      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase1 * pressure;
+      const speed = this.getBossProjectileSpeed(1) * pressure * this.getBossAttackSpeedMultiplier('radial');
       addBullet(this.x, this.y, aimAngle, speed);
       if (this.phase >= 2 && this.signatureCooldown <= 0) {
         this.game?.scenes?.play?.enemyManager?.spawnBossAdds(this.level <= 1 ? 1 : 2);
@@ -1267,7 +1305,8 @@ export class Boss {
       const dx = playerX - this.x;
       const dy = playerY - this.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase1 *
+      const speed = this.getBossProjectileSpeed(1) *
+        this.getBossAttackSpeedMultiplier('aim') *
         BalanceConfig.difficulty.pressureScalar *
         this.getBossPressureScalar();
       bullets.push(new Bullet(
@@ -1284,7 +1323,8 @@ export class Boss {
       // 3-shot spread keeps the first boss readable while still punishing tunnel vision.
       for (let i = -1; i <= 1; i++) {
         const angle = Math.atan2(playerY - this.y, playerX - this.x) + i * 0.25;
-        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase2 *
+        const speed = this.getBossProjectileSpeed(2) *
+          this.getBossAttackSpeedMultiplier('fan') *
           BalanceConfig.difficulty.pressureScalar *
           this.getBossPressureScalar();
         bullets.push(new Bullet(
@@ -1302,7 +1342,8 @@ export class Boss {
       // 8-bullet spiral with visible gaps.
       for (let i = 0; i < 8; i++) {
         const angle = (Math.PI * 2 * i) / 8 + this.moveTimer * 0.05;
-        const speed = BalanceConfig.difficulty.bossProjectileSpeedPhase3 *
+        const speed = this.getBossProjectileSpeed(3) *
+          this.getBossAttackSpeedMultiplier('radial') *
           BalanceConfig.difficulty.pressureScalar *
           this.getBossPressureScalar();
         bullets.push(new Bullet(

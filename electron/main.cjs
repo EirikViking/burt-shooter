@@ -6,6 +6,8 @@ const { pathToFileURL } = require('node:url');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
+const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
+const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isWindowed;
 const distDir = path.resolve(__dirname, '..', 'dist');
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -155,6 +157,7 @@ function createWindow() {
     height: 720,
     minWidth: 960,
     minHeight: 540,
+    fullscreen: shouldStartFullscreen,
     backgroundColor: '#030714',
     show: !isSmoke,
     autoHideMenuBar: true,

@@ -11,10 +11,13 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { getSelectableShips, getShipUnlockProgress, isShipUnlocked, updateShipUnlockProgress } from '../config/ShipMetadata.js';
 import { getRankFromScore } from '../shared/RankPolicy.js';
 import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
+import {
+  GAME_OVER_CTA_RECENT_HISTORY_KEY,
+  GAME_OVER_CTA_RECENT_HISTORY_SIZE,
+  gameOverCtaVoiceLines
+} from '../config/GameOverCtaVoiceLines.js';
 
-const ENTRY_PROMPT_DESKTOP = 'ENTER: LOG SCORE  |  R/SPACE/GAMEPAD A: RESTART';
-const ENTRY_PROMPT_MOBILE = 'TAP SCORE  |  R/SPACE/GAMEPAD A RESTART';
-const INPUT_PROMPT = 'ENTER INITIALS AND PRESS OK';
+const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
 const PILOT_NAME_MAX_LENGTH = 14;
 
@@ -41,10 +44,25 @@ export class GameOverScene {
     this.promptText = null;
     this.nameDisplay = null;
     this.instructions = null;
+    this.retryButton = null;
+    this.retryButtonBg = null;
+    this.retryButtonGlow = null;
+    this.retryButtonLabel = null;
+    this.retryButtonHint = null;
+    this.retryButtonWidth = 0;
+    this.retryButtonHeight = 0;
+    this.retryButtonMode = 'restart';
+    this.runbackReason = null;
+    this.selectedCtaLine = null;
+    this.ctaVoicePlayed = false;
+    this.runbackStartedAt = 0;
     // HTML overlay for mobile input
     this.inputOverlay = null;
     this.inputField = null;
     this.submitButton = null;
+    this.boundVisibleInput = null;
+    this.boundVisibleInputKeyDown = null;
+    this.boundHiddenKeyDown = null;
     this.backdrop = null;
     this.backdropShade = null;
     this.backdropLoaded = false;
@@ -100,6 +118,10 @@ export class GameOverScene {
     this.removeInputOverlay();
     this.nameInput = '';
     this.state = 'prompt';
+    this.runbackReason = null;
+    this.selectedCtaLine = null;
+    this.ctaVoicePlayed = false;
+    this.runbackStartedAt = 0;
     this.caretVisible = true;
     this.isSubmitting = false;
     this.submitRetries = 0;
@@ -264,6 +286,9 @@ export class GameOverScene {
     this.promptText.on('pointerdown', this.promptPointer);
     this.container.addChild(this.promptText);
 
+    this.createRetryButton(layout);
+    this.container.addChild(this.retryButton);
+
     if (!this.isRankedRun) {
       this.promptText.eventMode = 'none';
       this.promptText.cursor = 'default';
@@ -291,7 +316,7 @@ export class GameOverScene {
     this.container.addChild(this.nameDisplay);
 
     const smallSize = getResponsiveFontSize(layout, 'small');
-    this.instructions = createText('R / SPACE / GAMEPAD A: RESTART  |  ESC: MENU', {
+    this.instructions = createText('LEADERBOARD FIRST: ENTER / CLICK  |  ESC: SKIP SCORE', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: smallSize,
       fill: '#9cfbff',
@@ -317,11 +342,19 @@ export class GameOverScene {
 
     if (!this.isRankedRun) {
       console.log(`[GameOver] Unranked run blocked from leaderboard reason=${this.submitBlockedReason}`);
+      this.enterRunbackStage('practice');
       return;
     }
 
     this.updateLeaderboardStatusText();
     this.updateQualificationPromptState();
+    if (this.localQualified) {
+      this.scheduleSceneTimeout(() => {
+        if (this.isSceneActive() && this.state === 'prompt' && this.updateCanEnterName()) {
+          this.enterInputMode();
+        }
+      }, 180);
+    }
     this.globalQualificationPromise = this.checkGlobalQualification();
   }
 
@@ -341,7 +374,7 @@ export class GameOverScene {
     if (!this.updateCanEnterName()) {
       return this.globalStatus === 'checking'
         ? 'CHECKING GLOBAL BOARD...'
-        : 'NO BOARD SLOT - R/SPACE/GAMEPAD A: RESTART';
+        : 'NO BOARD SLOT';
     }
     if (mobile) {
       if (this.localQualified && this.globalQualified) return 'TAP SCORE  |  LOCAL + GLOBAL SLOT';
@@ -349,12 +382,12 @@ export class GameOverScene {
       return 'TAP SCORE  |  LOCAL SLOT';
     }
     if (this.localQualified && this.globalQualified) {
-      return 'ENTER: LOG LOCAL + GLOBAL SCORE  |  R/SPACE/GAMEPAD A: RESTART';
+      return 'ENTER: LOG LOCAL + GLOBAL SCORE';
     }
     if (this.globalQualified) {
-      return 'ENTER: LOG GLOBAL SCORE  |  R/SPACE/GAMEPAD A: RESTART';
+      return 'ENTER: LOG GLOBAL SCORE';
     }
-    return 'ENTER: LOG LOCAL SCORE  |  R/SPACE/GAMEPAD A: RESTART';
+    return 'ENTER: LOG LOCAL SCORE';
   }
 
   getLeaderboardStatusMessage() {
@@ -433,6 +466,7 @@ export class GameOverScene {
   }
 
   updateCeremonyPresentation() {
+    if (this.state === 'runback') return;
     if (!this.title || !this.comment) return;
     const placement = this.globalPlacement;
     this.title.text = this.getCeremonyTitle();
@@ -467,6 +501,7 @@ export class GameOverScene {
   }
 
   updateQualificationPromptState() {
+    if (this.state === 'runback') return;
     const layout = getCurrentLayout();
     this.updateCanEnterName();
     if (this.promptText) {
@@ -479,9 +514,13 @@ export class GameOverScene {
     if (this.notQualifiedText) {
       const noSlot = this.isRankedRun && !this.canEnterName && this.globalStatus !== 'checking';
       this.notQualifiedText.visible = noSlot;
-      this.notQualifiedText.text = noSlot ? 'NO LOCAL OR GLOBAL SLOT\nONE MORE RUN' : '';
+      this.notQualifiedText.text = noSlot ? 'NO LOCAL OR GLOBAL SLOT' : '';
     }
+    this.refreshPrimaryCta();
     this.layoutScreen();
+    if (this.state === 'prompt' && this.isRankedRun && !this.canEnterName && this.globalStatus !== 'checking') {
+      this.enterRunbackStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
+    }
   }
 
   async checkGlobalQualification() {
@@ -524,6 +563,11 @@ export class GameOverScene {
         this.updateCeremonyPresentation();
         this.updateLeaderboardStatusText();
         this.updateQualificationPromptState();
+        if (this.state === 'prompt' && this.updateCanEnterName()) {
+          this.scheduleSceneTimeout(() => {
+            if (this.isSceneActive() && this.state === 'prompt') this.enterInputMode();
+          }, 120);
+        }
       }
     }
   }
@@ -573,6 +617,7 @@ export class GameOverScene {
     this.instructions.style.stroke = { color: '#031323', width: layout.isMobile ? 2 : 3 };
     this.layoutBackdrop(width, height);
     this.layoutCeremonyVisuals(width, height, layout);
+    this.drawRetryButton(layout);
 
     // Calculate content height for centering
     const spacing = layout.isMobile ? 8 : 14;
@@ -587,8 +632,9 @@ export class GameOverScene {
     const leaderboardStatusHeight = leaderboardStatusSize * 2.5;
     const promptHeight = promptSize * 1.2;
     const nameHeight = nameSize * 1.2;
+    const retryHeight = this.retryButtonHeight || (layout.isMobile ? 58 : 66);
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + commentHeight + leaderboardStatusHeight + promptHeight + nameHeight + spacing * 7 + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + nameHeight + spacing * 8 + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -628,11 +674,199 @@ export class GameOverScene {
     this.notQualifiedText.x = width / 2;
     this.notQualifiedText.y = this.promptText.y;
 
+    stack.addGap(this.state === 'runback' ? (layout.isMobile ? 22 : 36) : (layout.isMobile ? 8 : 18));
+    this.retryButton.x = width / 2;
+    this.retryButton.y = stack.placeElement(this.retryButton, spacing);
+
     this.nameDisplay.x = width / 2;
     this.nameDisplay.y = stack.getCurrentY();
 
     this.instructions.x = width / 2;
     this.instructions.y = height - safeMargin.bottom - (layout.isMobile ? 32 : 40);
+  }
+
+  createRetryButton(layout) {
+    this.retryButton = new PIXI.Container();
+    this.retryButton.zIndex = 8;
+    this.retryButton.eventMode = 'static';
+    this.retryButton.cursor = 'pointer';
+
+    this.retryButtonGlow = new PIXI.Graphics();
+    this.retryButtonBg = new PIXI.Graphics();
+
+    this.retryButtonLabel = createText('ONE MORE RUN', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 24 : 30,
+      fontWeight: 'bold',
+      fill: '#fff3a2',
+      stroke: '#371800',
+      strokeThickness: layout.isMobile ? 3 : 4,
+      align: 'center',
+      dropShadow: true,
+      dropShadowColor: '#ffc94a',
+      dropShadowBlur: 6
+    });
+    this.retryButtonLabel.anchor.set(0.5);
+
+    this.retryButtonHint = createText('CLICK / R / SPACE / GAMEPAD A', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 11 : 13,
+      fontWeight: 'bold',
+      fill: '#9cfbff',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    this.retryButtonHint.anchor.set(0.5);
+
+    this.retryButton.addChild(this.retryButtonGlow, this.retryButtonBg, this.retryButtonLabel, this.retryButtonHint);
+    this.retryButton.on('pointerdown', () => this.handlePrimaryCtaPress());
+    this.retryButton.on('pointerover', () => this.retryButton.scale.set(1.03));
+    this.retryButton.on('pointerout', () => this.retryButton.scale.set(1));
+    this.drawRetryButton(layout);
+  }
+
+  drawRetryButton(layout) {
+    if (!this.retryButton || !this.retryButtonBg || !this.retryButtonGlow) return;
+
+    const config = this.getPrimaryCtaConfig();
+    this.retryButtonMode = config.mode;
+    const buttonWidth = config.runback
+      ? Math.min(layout.width * (layout.isMobile ? 0.9 : 0.58), layout.isMobile ? 360 : 560)
+      : Math.min(layout.width * (layout.isMobile ? 0.82 : 0.4), layout.isMobile ? 320 : 390);
+    const buttonHeight = config.runback
+      ? (layout.isMobile ? 76 : 94)
+      : (layout.isMobile ? 58 : 66);
+    const radius = layout.isMobile ? 10 : 12;
+    const halfWidth = buttonWidth / 2;
+    const halfHeight = buttonHeight / 2;
+    this.retryButtonWidth = buttonWidth;
+    this.retryButtonHeight = buttonHeight;
+    this.retryButton.hitArea = new PIXI.Rectangle(-halfWidth, -halfHeight, buttonWidth, buttonHeight);
+    this.retryButton.alpha = config.disabled ? 0.72 : 1;
+    this.retryButton.cursor = config.disabled ? 'default' : 'pointer';
+    this.retryButton.eventMode = config.disabled ? 'none' : 'static';
+
+    const frameColor = config.mode === 'restart' ? 0xffd75f : 0x00ffff;
+    const glowColor = config.mode === 'restart' ? 0xffc94a : 0x37f5ff;
+    const pulse = config.runback ? (0.5 + Math.sin(Date.now() * 0.006) * 0.5) : 0;
+
+    this.retryButtonGlow.clear();
+    this.retryButtonGlow.roundRect(-halfWidth - 12, -halfHeight - 8, buttonWidth + 24, buttonHeight + 16, radius + 4);
+    this.retryButtonGlow.fill({ color: glowColor, alpha: config.disabled ? 0.08 : config.runback ? 0.28 + pulse * 0.16 : 0.18 });
+    this.retryButtonGlow.roundRect(-halfWidth - 5, -halfHeight - 4, buttonWidth + 10, buttonHeight + 8, radius + 2);
+    this.retryButtonGlow.stroke({ color: 0x00ffff, width: config.runback ? 4 : 2, alpha: config.disabled ? 0.2 : config.runback ? 0.52 + pulse * 0.22 : 0.42 });
+
+    this.retryButtonBg.clear();
+    this.retryButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.retryButtonBg.fill({ color: 0x091523, alpha: 0.94 });
+    this.retryButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.retryButtonBg.stroke({ color: frameColor, width: 3, alpha: config.disabled ? 0.55 : 0.96 });
+    this.retryButtonBg.rect(-halfWidth + 16, -halfHeight + 7, buttonWidth - 32, 3);
+    this.retryButtonBg.fill({ color: 0x00ffff, alpha: config.disabled ? 0.22 : 0.5 });
+    this.retryButtonBg.rect(-halfWidth + 16, halfHeight - 10, buttonWidth - 32, 2);
+    this.retryButtonBg.fill({ color: frameColor, alpha: config.disabled ? 0.2 : 0.46 });
+
+    if (this.retryButtonLabel) {
+      this.retryButtonLabel.text = config.label;
+      this.retryButtonLabel.style.fontSize = config.runback ? (layout.isMobile ? 30 : 44) : (layout.isMobile ? 24 : 30);
+      this.retryButtonLabel.style.fill = config.mode === 'restart' ? '#fff3a2' : '#d9fdff';
+      this.retryButtonLabel.style.dropShadowColor = config.mode === 'restart' ? '#ffc94a' : '#00ffff';
+      this.retryButtonLabel.y = config.runback ? (layout.isMobile ? -12 : -16) : (layout.isMobile ? -9 : -10);
+    }
+    if (this.retryButtonHint) {
+      this.retryButtonHint.text = config.hint;
+      this.retryButtonHint.style.fontSize = config.runback ? (layout.isMobile ? 12 : 15) : (layout.isMobile ? 11 : 13);
+      this.retryButtonHint.y = config.runback ? (layout.isMobile ? 20 : 24) : (layout.isMobile ? 15 : 17);
+    }
+  }
+
+  getPrimaryCtaConfig() {
+    if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
+      return {
+        mode: 'restart',
+        label: 'ONE MORE RUN',
+        hint: 'ENTER / SPACE / CLICK - SAME SHIP',
+        disabled: false,
+        runback: true
+      };
+    }
+
+    if (this.state === 'submitting') {
+      return {
+        mode: 'submitting',
+        label: 'SAVING SCORE',
+        hint: 'LEADERBOARD FIRST',
+        disabled: true
+      };
+    }
+
+    if (this.state === 'input') {
+      return {
+        mode: 'submit',
+        label: 'SUBMIT SCORE',
+        hint: this.nameInput.length > 0 ? 'ENTER / CLICK' : 'TYPE NAME FIRST',
+        disabled: this.nameInput.length === 0
+      };
+    }
+
+    if (this.isRankedRun && this.globalStatus === 'checking' && !this.localQualified) {
+      return {
+        mode: 'checking',
+        label: 'CHECKING BOARD',
+        hint: 'LEADERBOARD FIRST',
+        disabled: true
+      };
+    }
+
+    if (this.isRankedRun && this.updateCanEnterName()) {
+      const boardSlot = this.localQualified && this.globalQualified
+        ? 'LOCAL + GLOBAL SLOT'
+        : this.globalQualified
+          ? 'GLOBAL SLOT'
+          : 'LOCAL SLOT';
+      return {
+        mode: 'leaderboard',
+        label: 'SUBMIT SCORE',
+        hint: `${boardSlot} - PILOT NAME FIRST`,
+        disabled: false
+      };
+    }
+
+    return {
+      mode: 'restart',
+      label: 'ONE MORE RUN',
+      hint: 'CLICK / R / SPACE / GAMEPAD A',
+      disabled: false
+    };
+  }
+
+  handlePrimaryCtaPress() {
+    const config = this.getPrimaryCtaConfig();
+    if (config.disabled) return;
+
+    if (config.mode === 'leaderboard') {
+      this.enterInputMode();
+      return;
+    }
+
+    if (config.mode === 'submit') {
+      if (this.nameInput.length > 0) {
+        this.submitScore();
+      }
+      return;
+    }
+
+    if (config.mode === 'restart') {
+      this.restartRun();
+    }
+  }
+
+  refreshPrimaryCta() {
+    if (!this.game?.app?.screen || !this.retryButton) return;
+    const { width, height } = this.game.app.screen;
+    const layout = createTextLayout(width, height, getCurrentLayout());
+    this.drawRetryButton(layout);
   }
 
   createFallbackBackdrop(width, height) {
@@ -745,6 +979,11 @@ export class GameOverScene {
       const isSubmitKey = e.key === 'Enter' || e.key === 'Return' || e.code === 'NumpadEnter';
       const isRestartKey = e.code === 'KeyR' || e.key === 'r' || e.key === 'R' || e.code === 'Space';
       const isEscape = e.key === 'Escape';
+      const isLeaderboardKeyTarget = this.isLeaderboardInputFocused();
+
+      if (isLeaderboardKeyTarget) {
+        return;
+      }
 
       if (this.state === 'submitting' && !isRestartKey && !isEscape) {
         return;
@@ -753,15 +992,38 @@ export class GameOverScene {
       if (isEscape) {
         e.preventDefault();
         if (this.state === 'input') {
-          this.exitInputMode();
+          this.skipScoreSubmission('escape_input');
+        } else if (this.state === 'prompt' && this.isRankedRun && this.updateCanEnterName()) {
+          this.skipScoreSubmission('escape_prompt');
         } else {
           this.returnToMenu();
         }
         return;
       }
 
+      if (this.state === 'runback' && (isRestartKey || isSubmitKey)) {
+        e.preventDefault();
+        this.restartRun();
+        return;
+      }
+
+      if (this.state === 'runback' && (e.key === 'l' || e.key === 'L')) {
+        e.preventDefault();
+        this.openLeaderboard();
+        return;
+      }
+
       if (this.state !== 'input' && isRestartKey) {
         e.preventDefault();
+        if (this.state === 'prompt' && this.isRankedRun && this.globalStatus === 'checking' && !this.localQualified) {
+          this.updatePromptMessage('CHECKING GLOBAL BOARD...');
+          this.refreshPrimaryCta();
+          return;
+        }
+        if (this.state === 'prompt' && this.isRankedRun && this.updateCanEnterName()) {
+          this.enterInputMode();
+          return;
+        }
         this.restartRun();
         return;
       }
@@ -769,7 +1031,11 @@ export class GameOverScene {
       if (this.state === 'prompt') {
         if (isSubmitKey) {
           e.preventDefault();
-          this.enterInputMode();
+          if (this.isRankedRun && this.updateCanEnterName()) {
+            this.enterInputMode();
+          } else if (!this.isRankedRun || this.globalStatus !== 'checking') {
+            this.enterRunbackStage('no_slot');
+          }
         }
         return;
       }
@@ -805,7 +1071,14 @@ export class GameOverScene {
     if (this.state === 'input' || this.state === 'submitting') return;
     const actionPressed = this.isGamepadActionPressed();
     if (actionPressed && !this.gamepadActionWasPressed) {
-      this.restartRun();
+      if (this.state === 'prompt' && this.isRankedRun && this.globalStatus === 'checking' && !this.localQualified) {
+        this.updatePromptMessage('CHECKING GLOBAL BOARD...');
+        this.refreshPrimaryCta();
+      } else if (this.state === 'prompt' && this.isRankedRun && this.updateCanEnterName()) {
+        this.enterInputMode();
+      } else {
+        this.restartRun();
+      }
     }
     this.gamepadActionWasPressed = actionPressed;
   }
@@ -834,6 +1107,9 @@ export class GameOverScene {
       particle.fill({ color, alpha: (this.globalQualified ? 0.76 : 0.28) * (1 - drift * 0.55) });
       particle.position.set(x, y);
       particle.rotation += 0.035 + config.speed * 0.01;
+    }
+    if (this.state === 'runback') {
+      this.refreshPrimaryCta();
     }
   }
 
@@ -898,19 +1174,18 @@ export class GameOverScene {
         this.promptText.visible = true;
         this.promptText.text = 'PRACTICE RUN - SCORE NOT LOGGED';
       }
+      this.refreshPrimaryCta();
       return;
     }
 
     if (!this.updateCanEnterName()) {
       console.log('[GameOver] Player not qualified for local/global board yet. Blocking submission.');
 
-      AudioManager.playVoice('mission_control_restart', { cooldownMs: 3600, duckMs: 1100 });
-
       if (this.globalStatus === 'checking') {
         this.updatePromptMessage('GLOBAL BOARD CHECKING...');
-        window.setTimeout(() => this.updateQualificationPromptState(), 900);
+        this.scheduleSceneTimeout(() => this.updateQualificationPromptState(), 900);
       } else {
-        this.updateQualificationPromptState();
+        this.enterRunbackStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
       }
       return;
     }
@@ -945,6 +1220,7 @@ export class GameOverScene {
       this.startCaretBlink();
       this.updateNameDisplay();
     }
+    this.refreshPrimaryCta();
   }
 
   exitInputMode() {
@@ -960,9 +1236,12 @@ export class GameOverScene {
     this.promptText.visible = true;
     this.nameDisplay.visible = false;
     this.updateNameDisplay();
+    this.refreshPrimaryCta();
   }
 
   returnToMenu() {
+    this.clearSceneTimeouts();
+    AudioManager.stopVoiceGroup('runback');
     AudioManager.playMusicContext('menu', { resetPlaylist: true });
     this.game.switchScene('menu');
     this.scheduleSceneTimeout(() => {
@@ -977,6 +1256,7 @@ export class GameOverScene {
     this.removeInputOverlay();
     this.stopCaretBlink();
     this.hideHiddenInput();
+    AudioManager.stopVoiceGroup('runback');
     AudioManager.playSfx('start_game_confirm');
     AudioManager.playVoice('mission_control_restart', {
       force: true,
@@ -1067,9 +1347,164 @@ export class GameOverScene {
     });
   }
 
+  isLeaderboardInputFocused() {
+    if (typeof document === 'undefined') return false;
+    const active = document.activeElement;
+    return Boolean(active && (active === this.inputField || active === this.hiddenInput));
+  }
+
+  readRecentCtaIds() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(GAME_OVER_CTA_RECENT_HISTORY_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed.filter(Boolean).slice(-GAME_OVER_CTA_RECENT_HISTORY_SIZE) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  rememberCtaId(id) {
+    if (!id) return;
+    try {
+      const recent = this.readRecentCtaIds().filter((entry) => entry !== id);
+      recent.push(id);
+      localStorage.setItem(GAME_OVER_CTA_RECENT_HISTORY_KEY, JSON.stringify(recent.slice(-GAME_OVER_CTA_RECENT_HISTORY_SIZE)));
+    } catch { }
+  }
+
+  selectRunbackCtaLine() {
+    const lines = gameOverCtaVoiceLines;
+    const recent = this.readRecentCtaIds();
+    const candidates = lines.filter((line) => !recent.includes(line.id));
+    const pool = candidates.length ? candidates : lines.filter((line) => line.id !== recent[recent.length - 1]);
+    const selected = (pool.length ? pool : lines)[Math.floor(Math.random() * (pool.length || lines.length))] || lines[0];
+    this.rememberCtaId(selected?.id);
+    return selected;
+  }
+
+  getRunbackStatusText(reason = this.runbackReason) {
+    const map = {
+      score_submitted: 'SCORE SUBMITTED',
+      score_saved: 'SCORE SAVED',
+      global_failed: 'LOCAL SCORE SAVED\nGLOBAL SUBMIT FAILED - RUN IT BACK',
+      score_skipped: 'SCORE SUBMISSION SKIPPED',
+      no_slot: 'NO BOARD SLOT THIS TIME',
+      offline_no_slot: 'GLOBAL BOARD OFFLINE\nNO LOCAL SLOT THIS TIME',
+      practice: 'PRACTICE RUN - SCORE NOT LOGGED'
+    };
+    return map[reason] || 'RUN COMPLETE';
+  }
+
+  enterRunbackStage(reason = 'runback') {
+    if (this.state === 'runback') return;
+    this.clearSceneTimeouts();
+    this.removeInputOverlay();
+    this.stopCaretBlink();
+    this.hideHiddenInput();
+
+    this.state = 'runback';
+    this.runbackReason = reason;
+    this.runbackStartedAt = Date.now();
+    this.ctaVoicePlayed = false;
+    this.selectedCtaLine = this.selectRunbackCtaLine();
+
+    if (this.title) {
+      this.title.text = 'ONE MORE RUN?';
+      this.title.style.fill = '#fff3a2';
+      this.title.style.dropShadowColor = '#ffc94a';
+    }
+    if (this.leaderboardStatusText) {
+      this.leaderboardStatusText.text = this.getRunbackStatusText(reason);
+      this.leaderboardStatusText.style.fill = reason === 'global_failed' ? '#ffb35c' : '#ffe86a';
+    }
+    if (this.comment) {
+      this.comment.text = `Score ${Number(this.finalScore || 0).toLocaleString('en-US')} | Level ${this.finalLevel || 0}`;
+      this.comment.style.fill = '#d8e6ff';
+    }
+    if (this.promptText) {
+      this.promptText.visible = true;
+      this.promptText.eventMode = 'none';
+      this.promptText.cursor = 'default';
+      this.promptText.text = this.selectedCtaLine?.text || 'One more run.';
+      this.promptText.style.fill = '#fff3a2';
+    }
+    if (this.notQualifiedText) {
+      this.notQualifiedText.visible = false;
+    }
+    if (this.nameDisplay) {
+      this.nameDisplay.visible = false;
+    }
+    if (this.instructions) {
+      this.instructions.text = 'ENTER / SPACE / CLICK: RELAUNCH  |  L: LEADERBOARD  |  ESC: MENU';
+    }
+
+    AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
+    this.scheduleSceneTimeout(() => this.playRunbackVoice(), 420);
+    this.refreshPrimaryCta();
+    this.layoutScreen();
+  }
+
+  playRunbackVoice() {
+    if (this.ctaVoicePlayed || this.state !== 'runback' || !this.selectedCtaLine?.id) return false;
+    this.ctaVoicePlayed = true;
+    if (AudioManager.isCtaVoiceEnabled && !AudioManager.isCtaVoiceEnabled()) return false;
+    return AudioManager.playVoice(this.selectedCtaLine.id, {
+      force: true,
+      stopOtherVoices: true,
+      exclusiveGroup: 'runback',
+      cooldownMs: 0,
+      eventCooldownMs: 0,
+      duckMs: 2200,
+      duckFactor: 0.38,
+      volume: 0.92
+    });
+  }
+
+  skipScoreSubmission(reason = 'skip') {
+    if (this.state === 'submitting') return;
+    this.game.pendingHighscore = null;
+    this.leaderboardResult = {
+      name: null,
+      score: this.finalScore,
+      level: this.finalLevel,
+      skipped: true,
+      reason,
+      updatedAt: new Date().toISOString()
+    };
+    this.game.lastLeaderboardResult = this.leaderboardResult;
+    this.enterRunbackStage('score_skipped');
+  }
+
+  openLeaderboard() {
+    this.clearSceneTimeouts();
+    AudioManager.stopVoiceGroup('runback');
+    this.game.showHighscores();
+  }
+
   updatePromptMessage(text) {
     if (this.promptText) {
       this.promptText.text = text;
+    }
+  }
+
+  getRetryCtaDebugState() {
+    const fallback = {
+      label: this.retryButtonLabel?.text || null,
+      hint: this.retryButtonHint?.text || null,
+      mode: this.retryButtonMode || null,
+      visible: Boolean(this.retryButton?.visible && this.retryButton?.parent)
+    };
+    try {
+      if (!this.retryButton?.getBounds) return fallback;
+      const bounds = this.retryButton.getBounds();
+      return {
+        ...fallback,
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width: Math.round(bounds.width || 0),
+        height: Math.round(bounds.height || 0)
+      };
+    } catch {
+      return fallback;
     }
   }
 
@@ -1134,17 +1569,24 @@ export class GameOverScene {
       outline: none;
       box-sizing: border-box;
     `;
-    this.inputField.addEventListener('input', (e) => {
+    this.boundVisibleInput = (e) => {
       const value = e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
       e.target.value = value.slice(0, PILOT_NAME_MAX_LENGTH);
       this.nameInput = e.target.value;
-    });
-    this.inputField.addEventListener('keydown', (e) => {
+      this.refreshPrimaryCta();
+    };
+    this.boundVisibleInputKeyDown = (e) => {
+      e.stopPropagation();
       if (e.key === 'Enter' && this.nameInput.length > 0) {
         e.preventDefault();
         this.submitScore();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        this.skipScoreSubmission('visible_input_escape');
       }
-    });
+    };
+    this.inputField.addEventListener('input', this.boundVisibleInput);
+    this.inputField.addEventListener('keydown', this.boundVisibleInputKeyDown);
     this.inputOverlay.appendChild(this.inputField);
 
     // Button container
@@ -1157,7 +1599,7 @@ export class GameOverScene {
 
     // Submit button
     this.submitButton = document.createElement('button');
-    this.submitButton.textContent = 'OK';
+    this.submitButton.textContent = 'SUBMIT SCORE';
     this.submitButton.style.cssText = `
       font-family: 'Orbitron', 'Rajdhani', sans-serif;
       font-size: 22px;
@@ -1177,9 +1619,9 @@ export class GameOverScene {
     });
     btnContainer.appendChild(this.submitButton);
 
-    // Cancel button
+    // Skip button
     const cancelButton = document.createElement('button');
-    cancelButton.textContent = 'CANCEL';
+    cancelButton.textContent = 'SKIP';
     cancelButton.style.cssText = `
       font-family: 'Rajdhani', 'Orbitron', sans-serif;
       font-weight: 700;
@@ -1192,7 +1634,7 @@ export class GameOverScene {
       cursor: pointer;
     `;
     cancelButton.addEventListener('click', () => {
-      this.exitInputMode();
+      this.skipScoreSubmission('visible_skip_button');
     });
     btnContainer.appendChild(cancelButton);
 
@@ -1209,12 +1651,18 @@ export class GameOverScene {
   }
 
   removeInputOverlay() {
+    if (this.inputField) {
+      if (this.boundVisibleInput) this.inputField.removeEventListener('input', this.boundVisibleInput);
+      if (this.boundVisibleInputKeyDown) this.inputField.removeEventListener('keydown', this.boundVisibleInputKeyDown);
+    }
     if (this.inputOverlay && this.inputOverlay.parentNode) {
       this.inputOverlay.parentNode.removeChild(this.inputOverlay);
     }
     this.inputOverlay = null;
     this.inputField = null;
     this.submitButton = null;
+    this.boundVisibleInput = null;
+    this.boundVisibleInputKeyDown = null;
   }
 
   ensureHiddenInput() {
@@ -1234,10 +1682,26 @@ export class GameOverScene {
     input.style.width = '1px';
     input.style.height = '1px';
     this.boundHiddenInput = this.boundHiddenInput || this.handleHiddenInput.bind(this);
+    this.boundHiddenKeyDown = this.boundHiddenKeyDown || this.handleHiddenKeyDown.bind(this);
     input.addEventListener('input', this.boundHiddenInput);
+    input.addEventListener('keydown', this.boundHiddenKeyDown);
     document.body.appendChild(input);
     this.hiddenInput = input;
     return input;
+  }
+
+  handleHiddenKeyDown(event) {
+    event.stopPropagation();
+    const isSubmitKey = event.key === 'Enter' || event.key === 'Return' || event.code === 'NumpadEnter';
+    if (isSubmitKey) {
+      event.preventDefault();
+      if (this.nameInput.length > 0) this.submitScore();
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.skipScoreSubmission('hidden_input_escape');
+    }
   }
 
   handleHiddenInput(event) {
@@ -1247,6 +1711,7 @@ export class GameOverScene {
     event.target.value = this.nameInput;
     this.caretVisible = true;
     this.updateNameDisplay();
+    this.refreshPrimaryCta();
   }
 
   syncHiddenInput() {
@@ -1289,6 +1754,7 @@ export class GameOverScene {
     } else {
       this.nameDisplay.visible = false;
     }
+    this.refreshPrimaryCta();
   }
 
   async submitScore() {
@@ -1309,6 +1775,7 @@ export class GameOverScene {
         this.promptText.visible = true;
         this.promptText.text = 'PRACTICE RUN - SCORE NOT LOGGED';
       }
+      this.refreshPrimaryCta();
       return;
     }
 
@@ -1326,6 +1793,7 @@ export class GameOverScene {
     this.state = 'submitting';
     this.stopCaretBlink();
     this.hideHiddenInput();
+    this.refreshPrimaryCta();
 
     // Update UI to show submitting state
     if (this.inputOverlay) {
@@ -1376,7 +1844,8 @@ export class GameOverScene {
     this.game.pendingHighscore = null;
 
     if (this.globalQualified || this.globalStatus === 'checking') {
-      this.startGlobalSubmissionWhenReady(name, result);
+      await this.startGlobalSubmissionWhenReady(name, result);
+      if (!this.isSceneActive()) return;
     }
 
     this.isSubmitting = false;
@@ -1384,10 +1853,16 @@ export class GameOverScene {
     this.removeInputOverlay();
     this.stopCaretBlink();
     this.hideHiddenInput();
-    this.game.showHighscores();
+    const reason = result.globalStatus === 'failed'
+      ? 'global_failed'
+      : result.globalStatus === 'submitted'
+        ? 'score_submitted'
+        : 'score_saved';
+    this.enterRunbackStage(reason);
   }
 
   async startGlobalSubmissionWhenReady(name, result) {
+    let timeoutId = null;
     try {
       if (this.globalStatus === 'checking' && this.globalQualificationPromise) {
         await this.globalQualificationPromise.catch(() => null);
@@ -1408,13 +1883,14 @@ export class GameOverScene {
       this.game.lastLeaderboardResult = result;
       this.updateLeaderboardStatusText();
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Global submit timeout')), GLOBAL_SUBMIT_TIMEOUT_MS)
-      );
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error('Global submit timeout')), GLOBAL_SUBMIT_TIMEOUT_MS);
+      });
       const response = await Promise.race([
         API.submitScore(name, this.finalScore, this.finalLevel, this.game.rankIndex, this.submissionId),
         timeoutPromise
       ]);
+      if (timeoutId) window.clearTimeout(timeoutId);
 
       this.globalStatus = 'submitted';
       result.globalStatus = 'submitted';
@@ -1424,6 +1900,7 @@ export class GameOverScene {
       this.updateLeaderboardStatusText();
       console.log('[GameOverScene] Global submit success.');
     } catch (error) {
+      if (timeoutId) window.clearTimeout(timeoutId);
       console.warn('[GameOverScene] Global submit failed:', error.message);
       this.globalStatus = 'failed';
       result.globalStatus = 'failed';
@@ -1448,6 +1925,9 @@ export class GameOverScene {
       if (this.boundHiddenInput) {
         this.hiddenInput.removeEventListener('input', this.boundHiddenInput);
       }
+      if (this.boundHiddenKeyDown) {
+        this.hiddenInput.removeEventListener('keydown', this.boundHiddenKeyDown);
+      }
       if (this.hiddenInput.parentNode) {
         this.hiddenInput.parentNode.removeChild(this.hiddenInput);
       }
@@ -1455,6 +1935,7 @@ export class GameOverScene {
     }
     this.removeInputOverlay();
     this.stopCaretBlink();
+    AudioManager.stopVoiceGroup('runback');
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = null;
   }

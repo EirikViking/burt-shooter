@@ -216,6 +216,7 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_tractor_hijack_02.mp3',
             '/audio/voice/mission-control/mission_control_tractor_hijack_03.mp3',
             '/audio/voice/mission-control/mission_control_credits_01.mp3',
+            ...Array.from({ length: 50 }, (_, i) => `/audio/voice/cta/one_more_run_${String(i + 1).padStart(2, '0')}.mp3`),
             '/audio/voice/nova-swarm/intro_narrator_01.mp3',
             '/audio/voice/nova-swarm/intro_narrator_02.mp3',
             '/audio/voice/nova-swarm/intro_narrator_03.mp3',

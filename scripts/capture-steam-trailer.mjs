@@ -529,43 +529,13 @@ async function showHijackerOpening(page) {
 }
 
 async function showBoss(page) {
-  const alreadyInPlay = await page.evaluate(() => window.__game?.currentSceneName === 'play').catch(() => false);
-  if (!alreadyInPlay) {
-    await page.goto(withQuery(baseUrl, {
-      autostart: '1',
-      debugBossToken: 'NOVA_DEBUG_2026',
-      startAtBoss: '1',
-      startLevel: '1'
-    }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await waitForScene(page, 'play', 30000);
-  } else {
-    await page.evaluate(() => {
-      const game = window.__game;
-      const play = game?.scenes?.play;
-      const enemyManager = play?.enemyManager;
-      if (!game || !play || !enemyManager) throw new Error('Missing play scene for inline boss trailer setup');
-
-      game.level = 1;
-      play.debugStartLevel = null;
-      play.debugStartAtBoss = false;
-      play.dismissActiveToastsBelowPriority?.(8);
-      if (play.bulletManager) {
-        play.bulletManager.enemyBullets?.forEach((bullet) => {
-          bullet.active = false;
-          if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
-        });
-        play.bulletManager.playerBullets?.forEach((bullet) => {
-          bullet.active = false;
-          if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
-        });
-        play.bulletManager.enemyBullets = [];
-        play.bulletManager.playerBullets = [];
-      }
-      enemyManager.startLevel(1);
-      enemyManager.forceBossStart(1);
-      play.applyGameplayBackdropLevel?.(1);
-    });
-  }
+  await page.goto(withQuery(baseUrl, {
+    autostart: '1',
+    debugBossToken: 'NOVA_DEBUG_2026',
+    startAtBoss: '1',
+    startLevel: '1'
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(page, 'play', 30000);
   await waitForGameplayBackdrop(page);
   await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
   await addBeat(page, 'boss_inbound', 1800);

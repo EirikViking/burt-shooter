@@ -663,6 +663,13 @@ async function runSmoke() {
     await gameOverPage.keyboard.press('Escape');
     await gameOverPage.waitForFunction(() => {
       const game = window.__game;
+      return game?.currentScene === game?.scenes?.menu || game?.scenes?.gameOver?.state === 'runback';
+    }, null, { timeout: 10000 });
+    if (await gameOverPage.evaluate(() => window.__game?.currentScene === window.__game?.scenes?.gameOver)) {
+      await gameOverPage.keyboard.press('Escape');
+    }
+    await gameOverPage.waitForFunction(() => {
+      const game = window.__game;
       return game?.currentScene === game?.scenes?.menu;
     }, null, { timeout: 10000 });
     await gameOverPage.waitForTimeout(900);

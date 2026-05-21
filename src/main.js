@@ -234,6 +234,20 @@ function buildGameTextState(game) {
   const shipSelectScene = getStableSceneName(game) === 'shipSelect' ? game?.currentScene : null;
   const gameOverScene = getStableSceneName(game) === 'gameOver' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
+  const getBoundsDebug = (displayObject) => {
+    try {
+      if (!displayObject?.getBounds) return null;
+      const bounds = displayObject.getBounds();
+      return {
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width: Math.round(bounds.width || 0),
+        height: Math.round(bounds.height || 0)
+      };
+    } catch {
+      return null;
+    }
+  };
   const visualBoundsFor = (enemy) => {
     try {
       const ref = enemy?.hitboxRef || enemy?.sprite;
@@ -339,14 +353,26 @@ function buildGameTextState(game) {
       spriteKey: selectedShip.spriteKey || null,
       trait: selectedShip.trait?.label || null,
       unlocked: isShipUnlocked(selectedShip.spriteKey, getShipUnlockProgress()),
-      unlock: selectedShip.unlock || null
+      unlock: selectedShip.unlock || null,
+      launchInProgress: Boolean(shipSelectScene.launchInProgress),
+      startButton: getBoundsDebug(shipSelectScene.startButton)
     } : null,
     gameOver: gameOverScene ? {
       score: gameOverScene.finalScore || 0,
       level: gameOverScene.finalLevel || 0,
       unlockSummary: gameOverScene.unlockSummary || null,
       prompt: gameOverScene.promptText?.text || null,
+      retryPrompt: gameOverScene.instructions?.text || null,
+      primaryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
+      retryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       state: gameOverScene.state || null,
+      runbackReason: gameOverScene.runbackReason || null,
+      selectedCtaLine: gameOverScene.selectedCtaLine ? {
+        id: gameOverScene.selectedCtaLine.id,
+        text: gameOverScene.selectedCtaLine.text,
+        audioPath: gameOverScene.selectedCtaLine.audioPath || null
+      } : null,
+      ctaVoicePlayed: Boolean(gameOverScene.ctaVoicePlayed),
       qualifiedForHighscore: Boolean(gameOverScene.isQualified),
       localQualified: Boolean(gameOverScene.localQualified),
       globalQualified: Boolean(gameOverScene.globalQualified),

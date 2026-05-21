@@ -15,6 +15,11 @@ release/steam-trailer/*/*.webm
 release/steam-trailer/*/*.mp4
 release/steam-trailer/*/*.m4a
 release/steam-trailer/*/concat.txt
+release/steam-trailer/draft-*-hq-*/
+release/steam-trailer/hq-*/
+release/steam-screenshots/draft-*-1920/
+release/steamworks/steam-build-output/
+steamworks/
 
 # Protected generated build artifacts - never commit
 public/sw.js

@@ -1364,7 +1364,7 @@ export class Player {
       bomb: 'BOMB',
       chain_lightning: 'CHAIN LIGHTNING',
       orbital_strike: 'ORBITAL STRIKE',
-      vampire: 'VAMPIRE'
+      vampire: 'VAMPIRE DRAIN'
     };
     return labels[type] || String(type || '').toUpperCase();
   }

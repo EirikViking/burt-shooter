@@ -124,6 +124,8 @@ export class MenuScene {
     this.heroBonusCore = null;
     this.heroBonusCore2 = null;
     this.animationTime = 0;
+    this.launchingRun = false;
+    this.menuGamepadActionWasPressed = false;
     this.container.sortableChildren = true;
     this.createStarfield();
     this.initBackdrop();

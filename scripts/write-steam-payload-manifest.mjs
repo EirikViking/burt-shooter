@@ -43,6 +43,11 @@ if (!existsSync(executablePath)) {
   throw new Error(`Missing Steam payload executable: ${rel(executablePath)}`);
 }
 
+const forbiddenLegacyExecutable = path.join(contentRoot, 'game.exe');
+if (existsSync(forbiddenLegacyExecutable)) {
+  throw new Error(`Forbidden legacy Steam payload executable found: ${rel(forbiddenLegacyExecutable)}`);
+}
+
 const version = JSON.parse(readFileSync(versionPath, 'utf8'));
 const files = walkFiles(contentRoot)
   .sort((a, b) => rel(a, contentRoot).localeCompare(rel(b, contentRoot)))
@@ -58,6 +63,10 @@ const files = walkFiles(contentRoot)
 
 const totalBytes = files.reduce((sum, file) => sum + file.bytes, 0);
 const executable = files.find((file) => file.path === exeRelativePath);
+const legacyExecutable = files.find((file) => file.path.toLowerCase() === 'game.exe');
+if (legacyExecutable) {
+  throw new Error(`Forbidden legacy Steam payload executable listed in payload: ${legacyExecutable.path}`);
+}
 const manifestHash = createHash('sha256')
   .update(files.map((file) => `${file.path}\t${file.bytes}\t${file.sha256}`).join('\n'))
   .digest('hex');

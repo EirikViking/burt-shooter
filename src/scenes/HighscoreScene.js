@@ -78,6 +78,7 @@ export class HighscoreScene {
     this.statusText = null;
     this.retryBtn = null;
     this.backBtn = null;
+    this.runAgainBtn = null;
     this.globalBtn = null;
     this.localBtn = null;
     this.buildStamp = null;
@@ -265,6 +266,12 @@ export class HighscoreScene {
       this.game.switchScene('menu');
     });
     this.container.addChild(this.backBtn);
+
+    this.runAgainBtn = this.createButton('ONE MORE RUN');
+    this.runAgainBtn.on('pointerdown', () => {
+      this.game.startGame(this.game.selectedShipSpriteKey);
+    });
+    this.container.addChild(this.runAgainBtn);
 
     this.globalBtn = this.createButton('GLOBAL');
     this.globalBtn.on('pointerdown', () => this.setLeaderboardView('global'));
@@ -461,8 +468,23 @@ export class HighscoreScene {
     this.retryBtn.y = buttonY;
     this.retryBtn.visible = this.status === 'ERROR';
 
-    this.backBtn.x = isMobile ? width / 2 : deckLeft + Math.min(deckWidth - 110, 180);
+    const backButtonW = isMobile ? 112 : 140;
+    const runAgainButtonW = isMobile ? Math.min(176, deckWidth * 0.5) : 210;
+    this.resizeButton(this.backBtn, backButtonW, isMobile ? 36 : 40);
+    this.resizeButton(this.runAgainBtn, runAgainButtonW, isMobile ? 40 : 44);
+
+    if (isMobile) {
+      const buttonGap = 10;
+      const totalButtonWidth = backButtonW + runAgainButtonW + buttonGap;
+      this.backBtn.x = width / 2 - totalButtonWidth / 2 + backButtonW / 2;
+      this.runAgainBtn.x = width / 2 + totalButtonWidth / 2 - runAgainButtonW / 2;
+    } else {
+      this.backBtn.x = deckLeft + Math.min(deckWidth - 110, 155);
+      this.runAgainBtn.x = deckLeft + deckWidth - Math.min(deckWidth - 130, 165);
+    }
     this.backBtn.y = buttonY;
+    this.runAgainBtn.y = buttonY;
+    this.setButtonActive(this.runAgainBtn, true);
 
     this.statusText.x = layout.padding;
     this.statusText.y = height - layout.padding * 1.5;

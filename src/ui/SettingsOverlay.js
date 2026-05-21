@@ -125,6 +125,8 @@ export class SettingsOverlay {
     this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
     y += toggleGap;
     this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
+    y += toggleGap;
+    this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
     y += testGap;
     this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
     y += testGap;
@@ -490,7 +492,7 @@ export class SettingsOverlay {
       'Tinyfoundry Games: proudly blamed for every tasteful explosion.',
       'Cabinet Ghost: promoted after eating seven coins and one meeting agenda.',
       'The Swarm: choreography by angry triangles with suspiciously good dental.',
-      'Boss Scheduler: fifty bosses, zero breaks, one tractor-beam learning moment.',
+      'Boss Scheduler: fewer ambushes, better entrances, one tractor-beam learning moment.',
       'Mission Control: sarcasm, volume ducking, snack authority.',
       'Popcorn Formation Union: filed fourteen complaints. All were dodged.',
       'You: pilot, auditor, apocalypse consultant, and the only adult in the room.',

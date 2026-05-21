@@ -1,4 +1,5 @@
 import { AssetManifest } from '../assets/assetManifest.js';
+import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
 
 // Safe lookup helpers
 const getMusic = (partial) => {
@@ -37,6 +38,10 @@ const missionControlPool = (base, alternateCount = 2) => getVoicePool(
 
 const numberedVoicePool = (base, count) => getVoicePool(
     ...Array.from({ length: count }, (_, index) => `${base}_${String(index + 1).padStart(2, '0')}.mp3`)
+);
+
+const GAME_OVER_CTA_VOICE_CATALOG = Object.fromEntries(
+    gameOverCtaVoiceLines.map((line) => [line.id, [getVoiceFile(`${line.id}.mp3`)].filter(Boolean)])
 );
 
 const GENERATED_MENU_POOL = [
@@ -409,6 +414,7 @@ export const SFX_CATALOG = {
     'mission_control_hijacker': numberedVoicePool('mission_control_hijacker', 2),
     'mission_control_tractor_hijack': numberedVoicePool('mission_control_tractor_hijack', 3),
     'mission_control_credits': numberedVoicePool('mission_control_credits', 1),
+    ...GAME_OVER_CTA_VOICE_CATALOG,
     'boss_spawn': [
         getSfx('nova_boss_arrival_alarm'),
         getSfx('spaceEngineLow_000'),

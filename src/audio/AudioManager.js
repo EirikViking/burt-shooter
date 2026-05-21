@@ -9,6 +9,7 @@ class AudioController {
     this.enabled = false;
     this.musicEnabled = false;
     this.voiceEnabled = false;
+    this.ctaVoiceEnabled = true;
     this.musicPack = 'classic';
 
     // Volume
@@ -136,6 +137,8 @@ class AudioController {
 
     const savedVoice = localStorage.getItem('burt_voice_enabled');
     if (savedVoice !== null) this.voiceEnabled = savedVoice !== 'false' && Features.VOICE_ENABLED;
+    const savedCtaVoice = localStorage.getItem('burt_cta_voice_enabled');
+    if (savedCtaVoice !== null) this.ctaVoiceEnabled = savedCtaVoice !== 'false';
 
     this.applyMusicVolume();
   }
@@ -164,6 +167,8 @@ class AudioController {
       this.musicEnabled = savedMusic !== 'false' && Features.MUSIC_ENABLED;
       const savedVoice = localStorage.getItem('burt_voice_enabled');
       this.voiceEnabled = savedVoice !== 'false' && Features.VOICE_ENABLED;
+      const savedCtaVoice = localStorage.getItem('burt_cta_voice_enabled');
+      this.ctaVoiceEnabled = savedCtaVoice !== 'false';
 
       // Add debug key listener globally (only once)
       if (!this._debugKeyHandler) {
@@ -694,6 +699,7 @@ class AudioController {
       voiceVolume: this.voiceVolume,
       musicEnabled: this.musicEnabled,
       voiceEnabled: this.voiceEnabled,
+      ctaVoiceEnabled: this.ctaVoiceEnabled,
       musicDuckFactor: this.musicDuckFactor,
       pauseDuckFactor: this.pauseDuckFactor,
       currentMusicContext: this.currentContext,
@@ -770,6 +776,18 @@ class AudioController {
       localStorage.setItem('burt_voice_enabled', this.voiceEnabled);
     } catch { }
     return this.voiceEnabled;
+  }
+
+  setCtaVoiceEnabled(enabled) {
+    this.ctaVoiceEnabled = Boolean(enabled);
+    try {
+      localStorage.setItem('burt_cta_voice_enabled', this.ctaVoiceEnabled);
+    } catch { }
+    return this.ctaVoiceEnabled;
+  }
+
+  isCtaVoiceEnabled() {
+    return this.ctaVoiceEnabled !== false;
   }
 
   toggleMute() {

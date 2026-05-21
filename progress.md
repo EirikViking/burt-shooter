@@ -1,5 +1,33 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-21 Runback, Boss Fairness, And Six-Wave Boss Spacing Pass
+
+- Current user request: fix mouse start in ship select, split game over into leaderboard-first debrief then big runback CTA, add 50 non-repeating CTA lines/voice support, make boss nets/beams fairer, verify ship traits, and require at least six real waves between bosses.
+- Done: ship-select Start now uses a shared guarded click/touch/keyboard launch path with explicit hit bounds; game over now runs as a leaderboard-first debrief followed by a big runback stage; Enter/Space while typing are protected from accidental restarts; the runback CTA uses 50 non-repeating lines with matching optional voice assets and a CTA voice toggle.
+- Done: generated 50 ElevenLabs CTA MP3 files under `public/audio/voice/cta/` using environment-only credentials; added the optional generation script without storing keys; boss progression now requires at least six meaningful non-boss waves and 75 seconds between boss encounters; boss net/beam/fishnet-style attacks have longer telegraphs, softer tracking/speeds, more forgiving hitboxes, and safer gaps.
+- Verification passed: `npm run build`, `npm run check:ship-selector-start`, `npm run check:gameover-motivation`, `npm run check:leaderboard-split`, `npm run check:leaderboard-visuals`, `npm run check:voice-cadence`, `npm run check:progression-tempo`, `npm run check:first-30-polish`, `npm run check:boss-telegraph`, `npm run check:boss-special-hazards`, `npm run check:ship-traits`, `npm run check:ship-trait-combat`, `npm run check:audio`, `npm run check:announcer-voice`, and `npm run smoke` at `test-results/smoke-2026-05-21T13-12-47-390Z/`.
+
+## 2026-05-21 Opening Pacing And Boss Interval Pass
+
+- Current user request: make the first 15 minutes more exciting and better paced, increase early wave action, stop bosses from arriving every roughly 30 seconds, smooth difficulty through level 10 and beyond, and remove automatic level-clear life rewards.
+- Implemented a new configurable pacing model: early sectors now run four regular waves before the boss, with level 10 sitting around five waves and later sectors scaling toward six. Early curated waves now put 29-36 enemies on screen across varied formations instead of two short waves.
+- Difficulty is now a readable linear model in `BalanceConfig`: enemy health, speed, fire chance, projectile speed, boss health, and boss projectile speed scale gradually from level to level with explicit caps.
+- Removed automatic life repair from normal wave clear and sector clear by moving both reward paths behind `BalanceConfig.rewards.*RepairTargetLives`, defaulting them to 0. Starting lives and intentional rare pickup/reward systems remain separate.
+- Verification passed: syntax checks on touched modules, `npm run check:progression-tempo`, `npm run check:powerup-balance`, `npm run check:enemy-wave-patterns`, `npm run build`, `npm run check:first-30-polish`, `npm run check:gameover-motivation`, `npm run smoke`, and a 120-second release playtest at `test-results/release-playtest-2026-05-21T10-00-32-449Z/`.
+
+## 2026-05-21 Steam Fullscreen And Replay Loop Fixes
+
+- Current user request: clean repo, then investigate Steam fullscreen, random extra-life powerups, dead Launch Run after returning to menu, and the missing/weak "one more run" restart urge.
+- In progress: Electron desktop launches now default to fullscreen except smoke/control-smoke/windowed override; MenuScene resets its launch guard on each init; ordinary random drops no longer grant lives; hidden last-stand repair is disabled by default; Vampire now gives score-drain feedback instead of adding lives; GameOverScene now exposes an explicit ONE MORE RUN retry prompt in UI/test state.
+- Verification passed: `npm run build`, `npm run check:powerup-balance`, `npm run check:gameover-motivation`, `npm run desktop:smoke:current`, and `npm run smoke`. Latest broad smoke: `test-results/smoke-2026-05-21T07-47-15-993Z/`.
+
+## 2026-05-21 Web Difficulty And Leaderboard-First CTA Pass
+
+- Current user request: reduce web difficulty by about 50% for testing, make the post-death CTA visible, and ensure it does not encourage skipping leaderboard entry.
+- Done: central difficulty pressure is cut roughly in half across enemy health, speed, fire chance, projectile speed, wave counts, challenge waves, boss health, boss fire cadence, and boss projectile speed; GameOverScene now uses a large primary CTA that says `LOG SCORE FIRST` for leaderboard-qualified runs, opens name entry on click/gamepad, and only switches to `ONE MORE RUN` restart when no board slot is available; HighscoreScene adds a `ONE MORE RUN` button after scores are shown.
+- Verification passed: `npm run build`, `npm run check:progression-tempo`, `npm run check:gameover-motivation`, `npm run smoke`, `npm run check:leaderboard-visuals`, live-domain smoke, live-domain `npm run check:gameover-motivation`, and `NOVA_SWARM_LIVE_URL=https://novaswarm.tinyfoundry.app npm run check:live-deployment`.
+- Published web build `v2026-05-21_11-23-14` to Cloudflare Pages at `https://48c43d1c.burt-game.pages.dev`; stable test URL `https://novaswarm.tinyfoundry.app` reports the same build. Steam packaging/upload was intentionally not run.
+
 ## 2026-05-19 NovaSwarm Domain And Ship Selector Revamp
 
 - Current user request: use `novaswarm.tinyfoundry.app` and vastly improve the ship selector.

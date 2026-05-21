@@ -702,13 +702,18 @@ export class PlayScene {
         this.levelAdvancePending = true;
 
         AudioManager.playSfx('levelComplete');
-        this.game.addScore(1000); // Completion Bonus
+        const rewardConfig = BalanceConfig.rewards || {};
+        const levelClearScore = rewardConfig.levelClearScore || BalanceConfig.level.completionBonus || 1000;
+        this.game.addScore(levelClearScore);
         const bossCompletion = Boolean(this.enemyManager?.bossDefeatedThisLevel);
         const compactHud = this.game.getWidth() < 620;
-        const repairDelta = this.applyLifeRepair(3, 4500);
+        const repairTarget = rewardConfig.levelClearRepairTargetLives || 0;
+        const repairDelta = repairTarget > 0
+          ? this.applyLifeRepair(repairTarget, rewardConfig.repairInvulnerabilityMs || 0)
+          : 0;
         const repairSuffix = repairDelta > 0 ? `  REPAIR +${repairDelta}` : '';
         if (!bossCompletion) {
-          this.showToast(`SECTOR CLEAR +1000${repairSuffix}`, {
+          this.showToast(`SECTOR CLEAR +${levelClearScore}${repairSuffix}`, {
             fontSize: compactHud ? 20 : 26,
             fill: '#8fffd5',
             stroke: '#001616',
@@ -2228,6 +2233,7 @@ export class PlayScene {
   }
 
   tryLastStandRepair() {
+    if (BalanceConfig.survival?.lastStandRepairEnabled !== true) return false;
     if (!this.player || this.game.lives > 0) return false;
     const now = Date.now();
     if (now < this.lastStandReadyAt) return false;
@@ -2451,6 +2457,8 @@ export class PlayScene {
     const type = details.type || attack || 'aim';
     const color = boss.profile?.accent || boss.profile?.palette || boss.color || 0xfff45c;
     const startedAt = Date.now();
+    const fairness = BalanceConfig.difficulty?.bossFairness || {};
+    const hazardArmingMs = fairness.hazardArmingMs ?? 240;
     const base = {
       id: `${startedAt}_${Math.random().toString(36).slice(2)}`,
       category,
@@ -2459,8 +2467,8 @@ export class PlayScene {
       sourceX,
       sourceY,
       startedAt,
-      durationMs: category === 'signature' ? 360 : 320,
-      armingMs: category === 'signature' ? 115 : 90,
+      durationMs: category === 'signature' ? 520 : 460,
+      armingMs: hazardArmingMs,
       color,
       hit: false
     };
@@ -2476,9 +2484,9 @@ export class PlayScene {
         columns,
         startY: sourceY + Math.max(16, boss.radius * 0.25),
         endY: height + 80,
-        width: Math.max(20, Math.min(30, width * 0.026)),
-        durationMs: 340,
-        armingMs: 95
+        width: Math.max(18, Math.min(26, width * 0.022)),
+        durationMs: 500,
+        armingMs: hazardArmingMs
       };
     } else if (['ring', 'adds', 'radial', 'spiral', 'clock', 'chord'].includes(type) || ['spiral', 'clock', 'chord'].includes(attack)) {
       const safeLane = Array.isArray(boss.safeLanes)
@@ -2488,8 +2496,8 @@ export class PlayScene {
         ? Number(safeLane.angle)
         : (typeof boss.getRingSafeAngle === 'function' ? boss.getRingSafeAngle(type === 'adds' ? 14 : 16) : Math.PI / 2);
       const safeWedge = Number.isFinite(Number(safeLane?.width))
-        ? Number(safeLane.width) * 1.18
-        : (type === 'adds' ? 0.52 : 0.5);
+        ? Number(safeLane.width) * 1.28
+        : (type === 'adds' ? 0.58 : 0.56);
       const outerRadius = Math.max(boss.radius * 2.05, category === 'signature' ? 168 : 142);
       hazard = {
         ...base,
@@ -2498,8 +2506,8 @@ export class PlayScene {
         outerRadius,
         safeAngle,
         safeWedge,
-        durationMs: 350,
-        armingMs: 120
+        durationMs: 520,
+        armingMs: hazardArmingMs
       };
     } else {
       const angle = Number.isFinite(details.angle)
@@ -2510,17 +2518,17 @@ export class PlayScene {
       const spread = isLance
         ? 0.12
         : isFan
-          ? (type === 'mirror' ? 0.38 : type === 'cone' ? 0.54 : 0.4)
-          : 0.17;
+          ? (type === 'mirror' ? 0.34 : type === 'cone' ? 0.48 : 0.36)
+          : 0.15;
       hazard = {
         ...base,
         kind: isLance ? 'beam' : 'cone',
         angle,
         spread,
         length: Math.max(height * 1.05, 560),
-        radius: isLance ? 16 : 32,
-        durationMs: isLance ? 300 : 320,
-        armingMs: isLance ? 105 : 115
+        radius: isLance ? (fairness.beamHazardRadius ?? 13) : (fairness.coneHazardRadius ?? 27),
+        durationMs: isLance ? 500 : 520,
+        armingMs: hazardArmingMs
       };
     }
 
@@ -2630,14 +2638,14 @@ export class PlayScene {
     if (hazard.kind === 'wall') {
       const py = this.player.y;
       if (py + playerRadius < hazard.startY || py - playerRadius > hazard.endY) return false;
-      return (hazard.columns || []).some((x) => Math.abs(this.player.x - x) <= hazard.width / 2 + playerRadius * 0.65);
+      return (hazard.columns || []).some((x) => Math.abs(this.player.x - x) <= hazard.width / 2 + playerRadius * 0.55);
     }
 
     const dx = this.player.x - hazard.sourceX;
     const dy = this.player.y - hazard.sourceY;
     const distance = Math.hypot(dx, dy);
     if (hazard.kind === 'ring') {
-      if (distance < hazard.innerRadius - playerRadius * 0.65 || distance > hazard.outerRadius + playerRadius * 0.65) return false;
+      if (distance < hazard.innerRadius - playerRadius * 0.55 || distance > hazard.outerRadius + playerRadius * 0.55) return false;
       const angle = Math.atan2(dy, dx);
       return Math.abs(this.normalizeBossHazardAngle(angle - hazard.safeAngle)) > hazard.safeWedge;
     }
@@ -2647,8 +2655,8 @@ export class PlayScene {
     const along = Math.cos(diff) * distance;
     if (along < -playerRadius || along > hazard.length + playerRadius) return false;
     const perpendicular = Math.sin(diff) * distance;
-    const angularHit = diff <= (hazard.spread / 2) * 0.92;
-    const lineHit = Math.abs(perpendicular) <= (hazard.radius || 24) + playerRadius * 0.65;
+    const angularHit = diff <= (hazard.spread / 2) * 0.82;
+    const lineHit = Math.abs(perpendicular) <= (hazard.radius || 24) + playerRadius * 0.55;
     return angularHit || lineHit;
   }
 
@@ -3389,21 +3397,20 @@ export class PlayScene {
       this.powerupManager.spawn(enemy.x, enemy.y);
     }
 
-    // Vampire: Heal on kills
+    // Vampire: score drain on kills without changing lives.
     if (this.player?.vampireActive) {
       // Increment kill counter (reset to 0 when powerup is picked up in Player.js)
       this.player.vampireKillCount++;
 
-      // Heal every 8 kills
-      const healsPerLife = 8;
-      if (this.player.vampireKillCount >= healsPerLife) {
+      const killsPerDrain = 8;
+      if (this.player.vampireKillCount >= killsPerDrain) {
         this.player.vampireKillCount = 0;
 
-        // Gain a life (capped at max)
-        this.game.gainLife();
+        const drainScore = 650;
+        this.game.addScore(drainScore);
 
         // Visual feedback
-        this.enqueueToast('VAMPIRE HEAL +1 LIFE', {
+        this.enqueueToast(`VAMPIRE DRAIN +${drainScore}`, {
           fontSize: 18,
           fill: '#ff3366',
           slot: 'top',
@@ -3419,9 +3426,9 @@ export class PlayScene {
         AudioManager.playSfx('pickup', { volume: 0.8 });
       } else {
         // Show vampire progress feedback
-        const remaining = healsPerLife - this.player.vampireKillCount;
+        const remaining = killsPerDrain - this.player.vampireKillCount;
         if (this.player.vampireKillCount % 2 === 0) { // Show every 2 kills to avoid spam
-          this.enqueueToast(`VAMPIRE: ${remaining} kills to heal`, {
+          this.enqueueToast(`VAMPIRE: ${remaining} kills to drain`, {
             fontSize: 14,
             fill: '#ff6688',
             slot: 'top',
