@@ -92,11 +92,22 @@ Live probe prerequisites:
 - Steamworks SDK redistributables exist at `steam_sdk/sdk/redistributable_bin/`.
 - `steamworks-ffi-node` is installed through `npm install`.
 
-The live probe submits one deliberately low keep-best score of `1` with metadata `[1, 0, 1, 0, 0, 0]`. It does not force-overwrite, reset, or delete leaderboard data. Interpret results as:
+Current live result from local Node with `steam_appid.txt`: bridge ready, `nova_swarm_global_score` opens, global download succeeds with `0` entries, friends download succeeds with `0` entries, and keep-best upload of score `1` returned `Score upload was not successful`. The no-details variant failed the same way, so metadata formatting is not the likely first blocker. Steam leaderboard read path is verified locally; write path is pending.
+
+The default live probe submits one deliberately low keep-best score of `1` with metadata `[1, 0, 1, 0, 0, 0]`. It does not force-overwrite, reset, or delete leaderboard data. Useful flags:
+
+- `npm run probe:steam-leaderboard-live -- --no-submit` runs read-only global/friends checks.
+- `npm run probe:steam-leaderboard-live -- --details=none --score=1` submits without metadata to isolate details formatting.
+- `npm run probe:steam-leaderboard-live -- --details=empty --score=1` submits an empty details array.
+- `npm run probe:steam-leaderboard-live -- --score=1001` submits a custom keep-best score.
+- `npm run probe:steam-leaderboard-live -- --force-update --score=1` is available only for intentional manual diagnosis. Do not use it casually because it can overwrite an existing better score.
+
+Do not spam submissions. Prefer one read-only run, one default keep-best run, then one no-details run if default still fails. Interpret results as:
 
 - Bridge unavailable: check Steam client/login, app access, App ID config, SDK redistributables, and native package install.
 - Leaderboard open failed: confirm `nova_swarm_global_score` exists for App ID `4765070`.
 - Friends download works but global download fails: the current Steamworks Reader/Leser setting may be limiting global reads; investigate that before deleting or recreating the leaderboard.
+- Local Node reads work but writes fail: test from a Steam-client-installed launch before overfitting code, then verify Steamworks write settings and wrapper upload mapping.
 - Submit succeeds and entries can be downloaded: Steam leaderboard read/write path is verified locally, but the Steam-installed build still needs the manual runtime checklist below.
 
 For local validation without Steam, open with `?mockSteamLeaderboard=1`. This enables the mock provider and shows `GLOBAL / FRIENDS / LOCAL` tabs.

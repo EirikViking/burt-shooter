@@ -12,9 +12,42 @@ const root = process.cwd();
 const outputDir = path.resolve(root, 'test-results', `steam-leaderboard-live-${timestamp()}`);
 const TEST_SCORE = 1;
 const TEST_DETAILS = [1, 0, 1, 0, 0, 0];
+const ALLOWED_DETAILS_MODES = new Set(['basic', 'none', 'empty']);
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+function readArgValue(args, name, fallback = null) {
+  const prefix = `${name}=`;
+  const inline = args.find(arg => arg.startsWith(prefix));
+  if (inline) return inline.slice(prefix.length);
+  const index = args.indexOf(name);
+  if (index >= 0 && args[index + 1] && !args[index + 1].startsWith('--')) return args[index + 1];
+  return fallback;
+}
+
+function parseOptions(args) {
+  const score = Math.max(0, Math.min(2147483647, Math.floor(Number(readArgValue(args, '--score', TEST_SCORE)) || TEST_SCORE)));
+  const detailsMode = String(readArgValue(args, '--details', 'basic')).toLowerCase();
+  const uploadMethod = args.includes('--force-update') ? 'force_update' : 'keep_best';
+  const submit = !args.includes('--no-submit') || args.includes('--submit');
+  if (!ALLOWED_DETAILS_MODES.has(detailsMode)) {
+    throw new Error(`Unsupported --details mode "${detailsMode}". Use basic, none, or empty.`);
+  }
+  return {
+    submit,
+    score,
+    detailsMode,
+    uploadMethod,
+    forceUpdate: uploadMethod === 'force_update'
+  };
+}
+
+function detailsForMode(mode) {
+  if (mode === 'none') return undefined;
+  if (mode === 'empty') return [];
+  return [...TEST_DETAILS];
 }
 
 function jsonSafe(value) {
@@ -93,6 +126,34 @@ function publicStep(step, mapper = value => value) {
   };
 }
 
+function publicSubmitStep(step) {
+  if (!step) return null;
+  if (!step.ok) {
+    return {
+      callCompleted: false,
+      success: false,
+      durationMs: step.durationMs,
+      error: step.error
+    };
+  }
+  const value = step.value || {};
+  return {
+    callCompleted: true,
+    success: Boolean(value.success),
+    accepted: Boolean(value.accepted),
+    durationMs: step.durationMs,
+    interpretedStatus: value.interpretedStatus || null,
+    nativeErrorMessage: value.nativeErrorMessage || null,
+    score: value.score ?? null,
+    rank: value.rank ?? value.globalRank ?? null,
+    previousRank: value.previousRank ?? null,
+    scoreChanged: value.scoreChanged ?? null,
+    details: value.details ?? [],
+    diagnostics: value.diagnostics || null,
+    rawResult: value.rawResult || null
+  };
+}
+
 function findCurrentPlayerEntry(...entrySets) {
   for (const entries of entrySets) {
     const match = Array.isArray(entries) ? entries.find(entry => entry?.isCurrentPlayer) : null;
@@ -124,7 +185,8 @@ function deriveFinalStatus(report) {
     if (friendsFailedGlobalWorked) return 'friends_failed_global_worked';
     return 'read_probe_completed_without_submit';
   }
-  if (!report.submit?.ok) return 'submit_failed';
+  if (!report.submit?.callCompleted) return 'submit_call_failed';
+  if (!report.submit?.success) return report.submit?.interpretedStatus || 'submit_failed';
   if (!report.globalAfter?.ok && !report.friendsAfter?.ok) return 'submit_succeeded_post_download_failed';
   if (report.currentPlayerObservedAfterSubmit) {
     if (globalFailedFriendsWorked) return 'read_write_verified_current_player_observed_global_failed_friends_worked';
@@ -140,6 +202,8 @@ const bridge = createSteamLeaderboardBridge({
   rootDir: root,
   logger: console
 });
+const options = parseOptions(process.argv.slice(2));
+const selectedDetails = detailsForMode(options.detailsMode);
 
 mkdirSync(outputDir, { recursive: true });
 
@@ -147,14 +211,23 @@ const report = {
   status: 'pending',
   leaderboardName: STEAM_LEADERBOARD_NAME,
   outputDir,
+  options,
   testSubmission: {
-    score: TEST_SCORE,
-    details: TEST_DETAILS,
-    uploadMethod: 'keep_best',
-    note: 'One deliberately low nonzero keep-best probe score. This does not force-overwrite better existing scores.'
+    enabled: options.submit,
+    score: options.score,
+    detailsMode: options.detailsMode,
+    details: selectedDetails ?? null,
+    uploadMethod: options.uploadMethod,
+    note: options.forceUpdate
+      ? 'Force update was explicitly requested. Do not use this mode casually.'
+      : 'One deliberately low nonzero keep-best probe score. This does not force-overwrite better existing scores.'
   },
   warnings: []
 };
+
+if (options.forceUpdate) {
+  report.warnings.push('Force update mode was explicitly requested. This can overwrite an existing better score.');
+}
 
 try {
   report.initialBridgeStatus = jsonSafe(bridge.getStatus());
@@ -196,21 +269,15 @@ try {
       entries: sanitizeEntries(entries)
     }));
 
-    if (report.openLeaderboard?.ok) {
-      const submitStep = await runStep('submit', () => bridge.submitScore({
+    if (report.openLeaderboard?.ok && options.submit) {
+      const payload = {
         leaderboardName: STEAM_LEADERBOARD_NAME,
-        score: TEST_SCORE,
-        details: TEST_DETAILS,
-        uploadMethod: 'keep_best'
-      }));
-      report.submit = publicStep(submitStep, value => ({
-        success: Boolean(value?.success),
-        score: value?.score ?? TEST_SCORE,
-        rank: value?.rank ?? value?.globalRank ?? null,
-        previousRank: value?.previousRank ?? null,
-        scoreChanged: value?.scoreChanged ?? null,
-        details: value?.details ?? TEST_DETAILS
-      }));
+        score: options.score,
+        uploadMethod: options.uploadMethod
+      };
+      if (selectedDetails !== undefined) payload.details = selectedDetails;
+      const submitStep = await runStep('submit', () => bridge.submitScoreDetailed(payload));
+      report.submit = publicSubmitStep(submitStep);
 
       const globalAfterStep = await runStep('globalAfter', () => bridge.getTopScores({
         leaderboardName: STEAM_LEADERBOARD_NAME,
@@ -239,6 +306,10 @@ try {
       const currentPlayerEntry = findCurrentPlayerEntry(globalAfterEntries, friendsAfterEntries);
       report.currentPlayerObservedAfterSubmit = Boolean(currentPlayerEntry);
       report.currentPlayerEntry = currentPlayerEntry ? sanitizeEntry(currentPlayerEntry) : null;
+    } else {
+      report.submit = null;
+      report.currentPlayerObservedAfterSubmit = false;
+      report.currentPlayerEntry = null;
     }
 
     if (!report.globalBefore?.ok && report.friendsBefore?.ok) {
@@ -250,7 +321,7 @@ try {
 
     report.status = deriveFinalStatus(report);
     const readOk = Boolean(report.globalBefore?.ok || report.friendsBefore?.ok || report.globalAfter?.ok || report.friendsAfter?.ok);
-    const submitOk = Boolean(report.submit?.ok && report.submit?.success);
+    const submitOk = options.submit ? Boolean(report.submit?.callCompleted && report.submit?.success) : true;
     process.exitCode = report.openLeaderboard?.ok && readOk && submitOk ? 0 : 1;
   }
 } finally {

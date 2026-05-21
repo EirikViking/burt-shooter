@@ -157,6 +157,10 @@ async function checkNativeBridgeHappyPath() {
   assert.equal(submit.success, true);
   assert.equal(submit.rank, 3);
   assert.deepEqual(submit.details, [9, 2, 333, 140, 3, 22]);
+  assert.equal(submit.diagnostics.nativeMethodName, 'uploadScore');
+  assert.equal(submit.diagnostics.uploadMethod.key, 'KeepBest');
+  assert.equal(submit.diagnostics.uploadMethod.value, 1);
+  assert.equal(submit.interpretedStatus, 'accepted');
 
   const uploadCall = nativeModule.fakeSteam.calls.find(call => call[0] === 'uploadScore');
   assert.equal(uploadCall[2], 55555);

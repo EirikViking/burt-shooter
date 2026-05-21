@@ -141,6 +141,18 @@ function asEntryArray(value) {
   return [];
 }
 
+function resolveUploadMethod(nativeModule, requestedMethod) {
+  const forceUpdate = String(requestedMethod || '').toLowerCase() === 'force_update';
+  const key = forceUpdate ? 'ForceUpdate' : 'KeepBest';
+  const value = enumValue(nativeModule, 'LeaderboardUploadScoreMethod', key, FALLBACK_UPLOAD_METHOD[key]);
+  return {
+    requested: requestedMethod || 'keep_best',
+    key,
+    label: forceUpdate ? 'force_update' : 'keep_best',
+    value
+  };
+}
+
 class SteamLeaderboardBridge {
   constructor(options = {}) {
     this.rootDir = options.rootDir || path.resolve(__dirname, '..');
@@ -393,38 +405,82 @@ class SteamLeaderboardBridge {
   }
 
   async submitScore(payload = {}) {
+    const result = await this.submitScoreDetailed(payload);
+    if (!result.success) {
+      const error = new Error(result.interpretedStatus || 'Steam leaderboard upload failed');
+      error.steamUpload = result;
+      throw error;
+    }
+    return result;
+  }
+
+  async submitScoreDetailed(payload = {}) {
     const leaderboard = await this.getLeaderboard(payload.leaderboardName);
     const nativeModule = this.loadNativeModule();
     const score = clampInt32(payload.score);
-    const details = sanitizeDetails(payload.details);
-    const uploadMethod = String(payload.uploadMethod || '').toLowerCase() === 'force_update'
-      ? enumValue(nativeModule, 'LeaderboardUploadScoreMethod', 'ForceUpdate', FALLBACK_UPLOAD_METHOD.ForceUpdate)
-      : enumValue(nativeModule, 'LeaderboardUploadScoreMethod', 'KeepBest', FALLBACK_UPLOAD_METHOD.KeepBest);
-
+    const hasDetails = Object.prototype.hasOwnProperty.call(payload, 'details');
+    const details = hasDetails ? sanitizeDetails(payload.details) : undefined;
+    const uploadMethod = resolveUploadMethod(nativeModule, payload.uploadMethod);
     const uploader = this.steam.leaderboards.uploadScore || this.steam.leaderboards.uploadLeaderboardScore;
+    const nativeMethodName = this.steam.leaderboards.uploadScore ? 'uploadScore' : 'uploadLeaderboardScore';
+    const diagnostics = {
+      leaderboardName: payload.leaderboardName || STEAM_LEADERBOARD_NAME,
+      leaderboardHandlePresent: Boolean(leaderboard?.handle),
+      leaderboardHandle: stringifySteamId(leaderboard?.handle),
+      nativeMethodName,
+      uploadMethod,
+      score,
+      detailsMode: hasDetails ? (details.length ? 'array' : 'empty') : 'omitted',
+      detailsCount: hasDetails ? details.length : 0,
+      detailsSubmitted: hasDetails ? details : null,
+      callbackPollingActive: Boolean(this.callbackTimer)
+    };
     if (typeof uploader !== 'function') {
-      throw new Error('Steam leaderboard upload method unavailable');
+      return jsonSafe({
+        success: false,
+        accepted: false,
+        interpretedStatus: 'native_upload_method_unavailable',
+        leaderboardName: payload.leaderboardName || STEAM_LEADERBOARD_NAME,
+        score,
+        details: hasDetails ? details : [],
+        diagnostics
+      });
     }
     const result = await uploader.call(
       this.steam.leaderboards,
       leaderboard.handle,
       score,
-      uploadMethod,
+      uploadMethod.value,
       details
     );
-    if (!result || result.success === false) {
-      throw new Error('Steam leaderboard upload failed');
+    const accepted = Boolean(result && result.success !== false);
+    const scoreChanged = result?.scoreChanged ?? null;
+    let interpretedStatus = 'accepted';
+    let nativeErrorMessage = null;
+    if (!result) {
+      interpretedStatus = 'steam_rejected_or_wrapper_returned_null';
+      nativeErrorMessage = 'steamworks-ffi-node returned null after UploadLeaderboardScore; its native callback reported the upload was not successful.';
+    } else if (result.success === false) {
+      interpretedStatus = 'wrapper_reported_success_false';
+      nativeErrorMessage = result.error || result.message || 'steamworks-ffi-node returned success=false.';
+    } else if (scoreChanged === false) {
+      interpretedStatus = 'accepted_keep_best_not_changed';
     }
     return jsonSafe({
-      success: true,
+      success: accepted,
+      accepted,
+      interpretedStatus,
+      nativeErrorMessage,
       leaderboardName: payload.leaderboardName || STEAM_LEADERBOARD_NAME,
       score,
-      details,
-      rank: result.globalRankNew ?? result.globalRank ?? result.rank ?? null,
-      globalRank: result.globalRankNew ?? result.globalRank ?? result.rank ?? null,
-      previousRank: result.globalRankPrevious ?? null,
-      scoreChanged: Boolean(result.scoreChanged ?? true),
-      response: result
+      details: hasDetails ? details : [],
+      rank: result?.globalRankNew ?? result?.globalRank ?? result?.rank ?? null,
+      globalRank: result?.globalRankNew ?? result?.globalRank ?? result?.rank ?? null,
+      previousRank: result?.globalRankPrevious ?? null,
+      scoreChanged,
+      diagnostics,
+      rawResult: result || null,
+      response: result || null
     });
   }
 
