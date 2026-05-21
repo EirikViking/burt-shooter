@@ -83,6 +83,21 @@ Checks:
 - `npm run check:steam-sdk-ready` verifies the SDK redistributables and optional native package.
 - `npm run check:steam-electron-bridge` verifies the native adapter contract with a mocked Steamworks SDK, the preload surface, and renderer isolation.
 - `npm run desktop:smoke:current` verifies the Electron app still runs when Steam is unavailable.
+- `npm run probe:steam-leaderboard-live` is a manual live probe for the real `nova_swarm_global_score` leaderboard. It uses the same native adapter as Electron and writes a JSON report under `test-results/`.
+
+Live probe prerequisites:
+
+- Steam client is running and the account has access to App ID `4765070`.
+- `steam_appid.txt` contains `4765070`, or `NOVA_SWARM_STEAM_APP_ID` / `STEAM_APP_ID` is set.
+- Steamworks SDK redistributables exist at `steam_sdk/sdk/redistributable_bin/`.
+- `steamworks-ffi-node` is installed through `npm install`.
+
+The live probe submits one deliberately low keep-best score of `1` with metadata `[1, 0, 1, 0, 0, 0]`. It does not force-overwrite, reset, or delete leaderboard data. Interpret results as:
+
+- Bridge unavailable: check Steam client/login, app access, App ID config, SDK redistributables, and native package install.
+- Leaderboard open failed: confirm `nova_swarm_global_score` exists for App ID `4765070`.
+- Friends download works but global download fails: the current Steamworks Reader/Leser setting may be limiting global reads; investigate that before deleting or recreating the leaderboard.
+- Submit succeeds and entries can be downloaded: Steam leaderboard read/write path is verified locally, but the Steam-installed build still needs the manual runtime checklist below.
 
 For local validation without Steam, open with `?mockSteamLeaderboard=1`. This enables the mock provider and shows `GLOBAL / FRIENDS / LOCAL` tabs.
 
