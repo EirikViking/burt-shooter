@@ -29,6 +29,8 @@ The Electron wrapper starts a local loopback server, serves the Vite `dist/` bui
 
 The web deployment uses Cloudflare Pages and D1 at `https://novaswarm.tinyfoundry.app`; the global leaderboard claim should remain phrased as an online/shared leaderboard, not a Steamworks leaderboard.
 
+Steam leaderboard provider support is now prepared behind `src/leaderboard/LeaderboardAdapter.js`; see `docs/steam-leaderboards.md`. The current Electron package still needs a real Steamworks preload/native bridge before the Steam provider is considered live in a Steam-installed build.
+
 Latest leaderboard split evidence:
 
 - `npm run check:leaderboard-split` passed at `test-results/leaderboard-split-2026-05-18T22-14-22-735Z/report.json`.

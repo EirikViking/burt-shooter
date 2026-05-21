@@ -1,6 +1,4 @@
 import * as PIXI from 'pixi.js';
-import { API } from '../api/API.js';
-import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
@@ -9,31 +7,18 @@ import { getRankFromScore, getRankTitle } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
+import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
+import {
+  LEADERBOARD_DISPLAY_LIMIT,
+  LeaderboardView,
+  normalizeLeaderboardEntry
+} from '../leaderboard/LeaderboardTypes.js';
 
 
-const API_PATH = '/api/highscores';
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
-const LEADERBOARD_DISPLAY_LIMIT = 20;
 const MOBILE_LEADERBOARD_VISIBLE_LIMIT = 10;
 const DESKTOP_TWO_COLUMN_MIN_WIDTH = 980;
-// Timeout now handled by API retry logic
-const BLOCKED_PUBLIC_NAME_TERMS = [
-  ['E', 'IRIK'].join(''),
-  ['K', 'LAUS'].join(''),
-  ['F', 'ITTE'].join(''),
-  ['K', 'UKEN'].join(''),
-  ['FAT', 'MAN'].join(''),
-  ['MOR', 'DER'].join('')
-];
-
-function toPublicPilotName(rawName, fallbackSeed = 0) {
-  const cleaned = String(rawName || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 14);
-  const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
-  if (!cleaned) return `PILOT${seed}`;
-  if (BLOCKED_PUBLIC_NAME_TERMS.some(term => cleaned.includes(term))) return `PILOT${seed}`;
-  return cleaned;
-}
 
 function debugBounds(displayObject) {
   if (!displayObject?.getBounds) return null;
@@ -80,15 +65,19 @@ export class HighscoreScene {
     this.backBtn = null;
     this.runAgainBtn = null;
     this.globalBtn = null;
+    this.friendsBtn = null;
     this.localBtn = null;
+    this.tabButtons = {};
+    this.leaderboardTabs = [];
+    this.leaderboardAdapter = null;
+    this.activeLeaderboardResult = null;
     this.buildStamp = null;
     this.status = 'LOADING';
-    this.activeLeaderboard = 'global';
+    this.activeLeaderboard = LeaderboardView.GLOBAL;
     this.entries = [];
     this.entriesNormalized = [];
     this.lastError = 'none';
     this.loadingTimer = null;
-    this.apiUrl = new URL(API_PATH, window.location.origin).toString();
     this.fetchToken = 0;
     this.fetchController = null;
     this.rowsFadeTicker = null;
@@ -130,10 +119,17 @@ export class HighscoreScene {
     this.rowLayoutDebug = [];
     this.entries = [];
     this.entriesNormalized = [];
+    this.activeLeaderboardResult = null;
     this.status = 'LOADING';
     this.lastError = 'none';
     this.boardOpenTime = Date.now();
-    this.activeLeaderboard = this.game.leaderboardView === 'local' ? 'local' : 'global';
+    this.leaderboardAdapter = typeof this.game.getLeaderboardAdapter === 'function'
+      ? this.game.getLeaderboardAdapter()
+      : createLeaderboardAdapter();
+    await this.leaderboardAdapter.refreshAvailability();
+    this.leaderboardTabs = this.leaderboardAdapter.getTabs();
+    this.activeLeaderboard = this.leaderboardAdapter.normalizeView(this.game.leaderboardView || LeaderboardView.GLOBAL);
+    this.game.leaderboardView = this.activeLeaderboard;
 
     // Load bonus-core texture and rank textures
     await BonusAsset.ensureLoaded();
@@ -274,14 +270,24 @@ export class HighscoreScene {
     this.container.addChild(this.runAgainBtn);
 
     this.globalBtn = this.createButton('GLOBAL');
-    this.globalBtn.on('pointerdown', () => this.setLeaderboardView('global'));
+    this.globalBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.GLOBAL));
     this.globalBtn.zIndex = 5;
     this.container.addChild(this.globalBtn);
 
+    this.friendsBtn = this.createButton('FRIENDS');
+    this.friendsBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.FRIENDS));
+    this.friendsBtn.zIndex = 5;
+    this.container.addChild(this.friendsBtn);
+
     this.localBtn = this.createButton('LOCAL');
-    this.localBtn.on('pointerdown', () => this.setLeaderboardView('local'));
+    this.localBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.LOCAL));
     this.localBtn.zIndex = 5;
     this.container.addChild(this.localBtn);
+    this.tabButtons = {
+      [LeaderboardView.GLOBAL]: this.globalBtn,
+      [LeaderboardView.FRIENDS]: this.friendsBtn,
+      [LeaderboardView.LOCAL]: this.localBtn
+    };
 
     // TASK C: Build stamp removed from HighscoreScene (only allowed on MenuScene)
     // this.buildStamp = createText(`build: ${BUILD_ID}`, {
@@ -336,7 +342,9 @@ export class HighscoreScene {
   }
 
   setLeaderboardView(view) {
-    const nextView = view === 'local' ? 'local' : 'global';
+    const nextView = this.leaderboardAdapter?.normalizeView
+      ? this.leaderboardAdapter.normalizeView(view)
+      : (view === LeaderboardView.LOCAL ? LeaderboardView.LOCAL : LeaderboardView.GLOBAL);
     if (this.activeLeaderboard === nextView && this.status !== 'ERROR') return;
     this.activeLeaderboard = nextView;
     this.game.leaderboardView = nextView;
@@ -344,36 +352,35 @@ export class HighscoreScene {
   }
 
   loadActiveLeaderboard() {
-    if (this.activeLeaderboard === 'local') {
-      this.loadLocalHighscores();
-    } else {
-      this.fetchHighscores();
-    }
+    this.fetchHighscores();
     this.updateLeaderboardChrome();
   }
 
-  loadLocalHighscores() {
+  async loadLocalHighscores() {
     this.fetchToken += 1;
     this.lastError = 'none';
-    const scores = LocalLeaderboard.getScores(LEADERBOARD_DISPLAY_LIMIT);
-    this.entries = scores;
-    this.entriesNormalized = this.normalizeEntries(scores);
-    this.comment.text = scores.length > 0
-      ? 'Local cabinet records loaded.'
-      : 'No local scores yet. First entry is open.';
-    this.setState(scores.length > 0 ? 'LOADED' : 'EMPTY');
+    const result = await this.leaderboardAdapter.getScores(LeaderboardView.LOCAL, { limit: LEADERBOARD_DISPLAY_LIMIT });
+    this.applyLeaderboardResult(result);
   }
 
   updateLeaderboardChrome() {
+    const tabs = this.leaderboardAdapter?.getTabs?.() || this.leaderboardTabs || [];
+    this.leaderboardTabs = tabs;
+    const activeTab = this.leaderboardAdapter?.getTab?.(this.activeLeaderboard) || tabs.find(tab => tab.id === this.activeLeaderboard);
     if (this.title) {
-      this.title.text = this.activeLeaderboard === 'local' ? 'LOCAL SCORE DECK' : 'GLOBAL SCORE DECK';
+      this.title.text = activeTab?.title || (this.activeLeaderboard === LeaderboardView.LOCAL ? 'LOCAL SCORE DECK' : 'GLOBAL SCORE DECK');
     }
+    Object.entries(this.tabButtons || {}).forEach(([view, button]) => {
+      if (!button) return;
+      button.visible = tabs.some(tab => tab.id === view);
+    });
     this.updateToggleStyles();
   }
 
   updateToggleStyles() {
-    this.setButtonActive(this.globalBtn, this.activeLeaderboard === 'global');
-    this.setButtonActive(this.localBtn, this.activeLeaderboard === 'local');
+    Object.entries(this.tabButtons || {}).forEach(([view, button]) => {
+      this.setButtonActive(button, this.activeLeaderboard === view);
+    });
   }
 
   async layoutHighscore() {
@@ -425,16 +432,21 @@ export class HighscoreScene {
     this.drawTitlePlate(width, layout);
 
     const toggleY = this.subtitle.y + (isMobile ? 40 : 46);
-    if (this.globalBtn && this.localBtn) {
-      const buttonW = isMobile ? Math.min(132, deckWidth * 0.38) : 172;
+    const visibleTabs = (this.leaderboardTabs || []).filter(tab => this.tabButtons?.[tab.id]?.visible !== false);
+    if (visibleTabs.length > 0) {
+      const buttonW = isMobile
+        ? Math.min(118, Math.max(92, deckWidth / Math.max(3.5, visibleTabs.length + 0.7)))
+        : (visibleTabs.length > 2 ? 150 : 172);
       const buttonH = isMobile ? 32 : 38;
-      const toggleGap = buttonW / 2 + (isMobile ? 8 : 14);
-      this.globalBtn.x = centerX - toggleGap;
-      this.globalBtn.y = toggleY;
-      this.localBtn.x = centerX + toggleGap;
-      this.localBtn.y = toggleY;
-      this.resizeButton(this.globalBtn, buttonW, buttonH);
-      this.resizeButton(this.localBtn, buttonW, buttonH);
+      const gap = isMobile ? 8 : 14;
+      const totalWidth = visibleTabs.length * buttonW + (visibleTabs.length - 1) * gap;
+      visibleTabs.forEach((tab, index) => {
+        const button = this.tabButtons?.[tab.id];
+        if (!button) return;
+        button.x = centerX - totalWidth / 2 + buttonW / 2 + index * (buttonW + gap);
+        button.y = toggleY;
+        this.resizeButton(button, buttonW, buttonH);
+      });
     }
 
     this.comment.x = centerX;
@@ -496,10 +508,6 @@ export class HighscoreScene {
   }
 
   async fetchHighscores() {
-    if (this.activeLeaderboard === 'local') {
-      this.loadLocalHighscores();
-      return;
-    }
     this.fetchToken += 1;
     const token = this.fetchToken;
     this.setState('LOADING');
@@ -511,8 +519,8 @@ export class HighscoreScene {
     if (isDev) console.log('[HighscoreScene] Fetching highscores with retry logic');
 
     try {
-      // Use cache for fast display - 30 second TTL in API client
-      const data = await API.getHighscores({
+      const result = await this.leaderboardAdapter.getScores(this.activeLeaderboard, {
+        limit: LEADERBOARD_DISPLAY_LIMIT,
         useCache: true, // Fast path: use cached data if available
         onRetry: (attempt, delay) => {
           if (token !== this.fetchToken) return;
@@ -530,38 +538,31 @@ export class HighscoreScene {
       }
 
       if (token !== this.fetchToken) return;
-
-      const parseStart = Date.now();
-
-      let rawEntries = Array.isArray(data) ? data : [];
-      rawEntries.sort((a, b) => (b.score || 0) - (a.score || 0)); // Sort descending by score
-      this.entries = rawEntries.slice(0, LEADERBOARD_DISPLAY_LIMIT);
-      this.entriesNormalized = this.normalizeEntries(this.entries);
+      this.applyLeaderboardResult(result);
 
       if (isDev) {
-        const parseTime = Date.now() - parseStart;
-        console.log(`[HighscoreScene] Parse/normalize completed in ${parseTime}ms`);
-      }
-
-      const renderStart = Date.now();
-
-      this.comment.text = this.entries.length > 0
-        ? 'Global leaderboard records loaded.'
-        : 'Global board is ready for its first signal.';
-      if (this.entries.length > 0) {
-        this.setState('LOADED');
-      } else {
-        this.setState('EMPTY');
-      }
-
-      if (isDev) {
-        const renderTime = Date.now() - renderStart;
         const totalTime = Date.now() - startTime;
-        console.log(`[HighscoreScene] Render completed in ${renderTime}ms, Total: ${totalTime}ms`);
+        console.log(`[HighscoreScene] Render completed. Total: ${totalTime}ms`);
       }
     } catch (error) {
       this.handleFetchError(error, token);
     }
+  }
+
+  applyLeaderboardResult(result = {}) {
+    this.activeLeaderboardResult = result;
+    this.entries = Array.isArray(result.entries) ? result.entries.slice(0, LEADERBOARD_DISPLAY_LIMIT) : [];
+    this.entriesNormalized = this.normalizeEntries(this.entries);
+    this.comment.text = result.message || (this.entries.length > 0
+      ? `${result.sourceLabel || 'Leaderboard'} records loaded.`
+      : `${result.sourceLabel || 'Leaderboard'} has no scores yet.`);
+    const status = result.status === 'available'
+      ? 'LOADED'
+      : result.status === 'empty'
+        ? 'EMPTY'
+        : 'ERROR';
+    this.lastError = result.error || 'none';
+    this.setState(status);
   }
 
   handleFetchError(error, token) {
@@ -587,54 +588,52 @@ export class HighscoreScene {
     this.status = newState;
     const lastResult = this.game.lastLeaderboardResult || null;
     const globalResult = lastResult?.globalStatus ? String(lastResult.globalStatus).replace(/_/g, ' ').toUpperCase() : null;
+    const sourceLabel = this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Leaderboard';
     switch (newState) {
       case 'LOADED':
-        if (this.activeLeaderboard === 'local') {
+        if (this.activeLeaderboard === LeaderboardView.LOCAL) {
           this.stateMessage.text = globalResult
             ? `Local board loaded. Global: ${globalResult}.`
             : 'Local board loaded.';
         } else {
           this.stateMessage.text = globalResult
-            ? `Global board loaded. Last run: ${globalResult}.`
-            : 'Global board loaded.';
+            ? `${sourceLabel} loaded. Last run: ${globalResult}.`
+            : `${sourceLabel} loaded.`;
         }
         break;
       case 'EMPTY':
-        this.stateMessage.text = this.activeLeaderboard === 'local'
-          ? 'No local scores yet. Be the first legend here.'
-          : 'No global scores yet. Be the first legend online.';
+        if (this.activeLeaderboard === LeaderboardView.FRIENDS) {
+          this.stateMessage.text = 'No friends scores yet.';
+        } else {
+          this.stateMessage.text = this.activeLeaderboard === LeaderboardView.LOCAL
+            ? 'No local scores yet. Be the first legend here.'
+            : 'No global scores yet. Be the first legend online.';
+        }
         break;
       case 'ERROR':
-        this.stateMessage.text = this.activeLeaderboard === 'global'
-          ? `Global board offline. Local scores are safe.`
-          : `Error: ${this.lastError}`;
+        this.stateMessage.text = this.activeLeaderboard === LeaderboardView.LOCAL
+          ? `Local scores unavailable.`
+          : this.activeLeaderboard === LeaderboardView.FRIENDS
+            ? 'Could not load Steam friends scores.'
+            : `Global board offline. Local scores are safe.`;
         break;
       default:
-        this.stateMessage.text = this.activeLeaderboard === 'global' ? 'Loading global board...' : 'Loading local board...';
+        this.stateMessage.text = this.activeLeaderboard === LeaderboardView.FRIENDS
+          ? 'Loading Steam friends scores...'
+          : this.activeLeaderboard === LeaderboardView.LOCAL
+            ? 'Loading local board...'
+            : `Loading ${sourceLabel.toLowerCase()}...`;
     }
     this.updateLeaderboardChrome();
     this.layoutHighscore();
   }
 
   normalizeEntry(raw) {
-    if (!raw || typeof raw !== 'object') return null;
-
-    const scoreNum = Number(raw.score);
-    const levelNum = Number(raw.level);
-    const rankValue = raw.rank_index ?? raw.rankIndex ?? raw.rank;
-    const rankNum = Number(rankValue);
-    const safeScore = Number.isFinite(scoreNum) ? scoreNum : 0;
-    const safeLevel = Number.isFinite(levelNum) ? levelNum : 0;
-    const safeRank = Number.isFinite(rankNum) ? rankNum : getRankFromScore(safeScore);
-    const nameValue = raw.name ?? raw.playerName ?? '';
-    const name = toPublicPilotName(nameValue, raw.id ?? safeScore);
-    if (!name) return null;
-
+    const normalized = normalizeLeaderboardEntry(raw, { source: this.activeLeaderboard });
+    if (!normalized) return null;
     return {
-      name,
-      score: safeScore,
-      level: safeLevel,
-      rank_index: safeRank  // CRITICAL FIX: Must be rank_index not rank!
+      ...normalized,
+      rank_index: normalized.rank_index ?? getRankFromScore(normalized.score)
     };
   }
 
@@ -1271,7 +1270,11 @@ export class HighscoreScene {
     const topScore = loadedCount
       ? Math.max(...this.entries.map(entry => Number(entry?.score) || 0)).toLocaleString('en-US')
       : '0';
-    const viewColor = this.activeLeaderboard === 'local' ? 0xffd166 : 0x00f6ff;
+    const viewColor = this.activeLeaderboard === LeaderboardView.LOCAL
+      ? 0xffd166
+      : this.activeLeaderboard === LeaderboardView.FRIENDS
+        ? 0xff55d9
+        : 0x00f6ff;
 
     this.statsDeck.rect(x, y, deckWidth, 1);
     this.statsDeck.fill({ color: 0x7fffd8, alpha: 0.22 });
@@ -1292,7 +1295,9 @@ export class HighscoreScene {
       this.container.addChild(this.statsText);
     }
 
-    const syncLabel = this.activeLeaderboard === 'local' ? 'LOCAL MEMORY' : 'LIVE ORBIT';
+    const syncLabel = (this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || (
+      this.activeLeaderboard === LeaderboardView.LOCAL ? 'LOCAL MEMORY' : 'LIVE ORBIT'
+    )).toUpperCase();
     const countLabel = loadedCount ? `${loadedCount} SIGNALS` : this.status;
     this.statsText.text = layout.isMobile
       ? `TFG // ${syncLabel} // ${countLabel} // BEST ${topScore}`

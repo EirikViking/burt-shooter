@@ -623,6 +623,9 @@ export class EnemyManager {
             if (!this.bossDefeatCelebrated) {
               this.bossDefeatCelebrated = true;
               const playScene = this.game.scenes.play;
+              if (playScene) {
+                playScene.bossKills = (Number(playScene.bossKills) || 0) + 1;
+              }
               if (playScene?.clearEnemyBullets) {
                 playScene.clearEnemyBullets('boss_defeated');
               }
@@ -1184,6 +1187,9 @@ export class EnemyManager {
     const clearedWaveIndex = this.currentWaveIndex;
     const clearedWave = (clearedWaveIndex >= 0 && clearedWaveIndex < this.waves.length) ? this.waves[clearedWaveIndex] : null;
     const clearedWaveNumber = clearedWaveIndex + 1;
+    if (this.game?.scenes?.play) {
+      this.game.scenes.play.wavesCleared = (Number(this.game.scenes.play.wavesCleared) || 0) + 1;
+    }
     let hasUpcomingWave = clearedWaveIndex < this.normalWavesTotal - 1;
 
     if (!hasUpcomingWave && this.shouldAddBossSpacingWave()) {

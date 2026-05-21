@@ -1,7 +1,5 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
-import { API } from '../api/API.js';
-import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { getGameOverComment } from '../text/phrasePool.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
@@ -16,6 +14,7 @@ import {
   GAME_OVER_CTA_RECENT_HISTORY_SIZE,
   gameOverCtaVoiceLines
 } from '../config/GameOverCtaVoiceLines.js';
+import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
@@ -83,6 +82,10 @@ export class GameOverScene {
     this.canEnterName = false;
     this.globalQualificationPromise = null;
     this.leaderboardResult = null;
+    this.leaderboardAdapter = null;
+    this.leaderboardRuntime = null;
+    this.steamSubmissionMode = false;
+    this.steamPlayerName = null;
     this.isRankedRun = true;
     this.submitBlockedReason = null;
     this.isPersonalBest = false;
@@ -111,7 +114,7 @@ export class GameOverScene {
     this.sceneTimeouts?.clear();
   }
 
-  init() {
+  async init() {
     this.clearSceneTimeouts();
     this.container.sortableChildren = true;
     this.container.removeChildren();
@@ -136,6 +139,15 @@ export class GameOverScene {
     this.canEnterName = false;
     this.globalQualificationPromise = null;
     this.leaderboardResult = null;
+    this.leaderboardAdapter = typeof this.game.getLeaderboardAdapter === 'function'
+      ? this.game.getLeaderboardAdapter()
+      : createLeaderboardAdapter();
+    await this.leaderboardAdapter.refreshAvailability();
+    this.leaderboardRuntime = this.leaderboardAdapter.getRuntimeSummary();
+    this.steamSubmissionMode = Boolean(this.leaderboardAdapter.shouldUseSteamSubmission());
+    this.steamPlayerName = this.steamSubmissionMode
+      ? await this.leaderboardAdapter.getSteamPlayerName().catch(() => null)
+      : null;
     this.isRankedRun = typeof this.game.isScoreSubmissionAllowed === 'function'
       ? this.game.isScoreSubmissionAllowed()
       : !this.game.isDebugRun;
@@ -144,8 +156,10 @@ export class GameOverScene {
     this.finalScore = Number(this.game.score) || 0;
     this.finalLevel = Number(this.game.level) || 0;
     if (this.isRankedRun) {
-      this.localQualified = LocalLeaderboard.qualifies(this.finalScore);
-      this.globalStatus = 'checking';
+      this.localQualified = this.steamSubmissionMode
+        ? this.finalScore > 0
+        : this.leaderboardAdapter.qualifiesLocal(this.finalScore);
+      this.globalStatus = this.steamSubmissionMode ? 'steam_ready' : 'checking';
       this.updateCanEnterName();
     }
     const previousProgress = getShipUnlockProgress();
@@ -346,6 +360,17 @@ export class GameOverScene {
       return;
     }
 
+    if (this.steamSubmissionMode) {
+      this.state = 'submitting';
+      this.globalStatus = 'submitting';
+      this.updateLeaderboardStatusText();
+      this.updatePromptMessage('STEAM SCORE SYNC');
+      this.refreshPrimaryCta();
+      this.layoutScreen();
+      this.scheduleSceneTimeout(() => this.submitSteamScore(), 220);
+      return;
+    }
+
     this.updateLeaderboardStatusText();
     this.updateQualificationPromptState();
     if (this.localQualified) {
@@ -359,7 +384,7 @@ export class GameOverScene {
   }
 
   updateCanEnterName() {
-    this.canEnterName = Boolean(this.isRankedRun && (this.localQualified || this.globalQualified));
+    this.canEnterName = Boolean(!this.steamSubmissionMode && this.isRankedRun && (this.localQualified || this.globalQualified));
     this.isQualified = this.canEnterName;
     return this.canEnterName;
   }
@@ -392,9 +417,20 @@ export class GameOverScene {
 
   getLeaderboardStatusMessage() {
     if (!this.isRankedRun) return 'LOCAL BOARD: PRACTICE RUN\nGLOBAL BOARD: PRACTICE RUN';
+    if (this.steamSubmissionMode) {
+      const pilot = this.steamPlayerName ? ` (${this.steamPlayerName})` : '';
+      const steamLine = {
+        steam_ready: `STEAM BOARD: READY${pilot}`,
+        submitting: `STEAM BOARD: SUBMITTING${pilot}`,
+        submitted: 'STEAM BOARD: SUBMITTED',
+        failed: 'STEAM BOARD: FAILED - LOCAL SAVED'
+      }[this.globalStatus] || `STEAM BOARD: ${String(this.globalStatus || 'READY').replace(/_/g, ' ').toUpperCase()}`;
+      const localLine = this.finalScore > 0 ? 'LOCAL BOARD: BACKUP READY' : 'LOCAL BOARD: NO SCORE';
+      return `${localLine}\n${steamLine}`;
+    }
     const localLine = this.localQualified
       ? 'LOCAL BOARD: QUALIFIED'
-      : `LOCAL BOARD: NEED ${Math.max(1, LocalLeaderboard.getCutoff() + 1).toLocaleString('en-US')}`;
+      : `LOCAL BOARD: NEED ${Math.max(1, this.leaderboardAdapter.getLocalCutoff() + 1).toLocaleString('en-US')}`;
     let globalLine = {
       idle: 'GLOBAL BOARD: IDLE',
       checking: 'GLOBAL BOARD: CHECKING...',
@@ -525,7 +561,7 @@ export class GameOverScene {
 
   async checkGlobalQualification() {
     try {
-      const scores = await API.getHighscores({ useCache: false });
+      const scores = await this.leaderboardAdapter.getGlobalScoresForPlacement({ useCache: false });
       this.cachedHighscores = Array.isArray(scores) ? [...scores] : [];
       this.cachedHighscores.sort((a, b) => b.score - a.score);
       if (this.cachedHighscores.length === 0) {
@@ -1665,6 +1701,57 @@ export class GameOverScene {
     this.boundVisibleInputKeyDown = null;
   }
 
+  async submitSteamScore() {
+    if (!this.steamSubmissionMode || !this.isRankedRun || this.isSubmitting || this.state === 'runback') return;
+    if (this.finalScore <= 0) {
+      this.game.pendingHighscore = null;
+      this.enterRunbackStage('no_slot');
+      return;
+    }
+
+    this.isSubmitting = true;
+    this.state = 'submitting';
+    this.globalStatus = 'submitting';
+    this.stopCaretBlink();
+    this.hideHiddenInput();
+    this.updatePromptMessage('SAVING TO STEAM...');
+    this.updateNameDisplay();
+    this.updateLeaderboardStatusText();
+    this.refreshPrimaryCta();
+
+    const playerName = this.steamPlayerName || await this.leaderboardAdapter.getSteamPlayerName().catch(() => null) || 'STEAM PILOT';
+    const runResult = this.leaderboardAdapter.createRunResult(this.game, {
+      name: playerName,
+      playerName,
+      score: this.finalScore,
+      level: this.finalLevel,
+      rankIndex: this.game.rankIndex || 0,
+      submissionId: this.submissionId
+    });
+
+    const result = await this.leaderboardAdapter.submitScore(runResult, {
+      target: 'steam',
+      saveLocal: true,
+      name: playerName
+    });
+
+    this.globalStatus = result.steamStatus === 'submitted' ? 'submitted' : 'failed';
+    result.globalStatus = this.globalStatus === 'submitted' ? 'submitted' : 'failed';
+    result.globalQualified = true;
+    result.localQualified = true;
+    result.steamSubmissionMode = true;
+    result.updatedAt = new Date().toISOString();
+    this.leaderboardResult = result;
+    this.game.lastLeaderboardResult = result;
+    this.game.leaderboardView = this.globalStatus === 'submitted' ? 'global' : 'local';
+    this.game.pendingHighscore = null;
+    this.isSubmitting = false;
+    this.state = 'submitted';
+    this.removeInputOverlay();
+    this.updateLeaderboardStatusText();
+    this.enterRunbackStage(this.globalStatus === 'submitted' ? 'score_submitted' : 'global_failed');
+  }
+
   ensureHiddenInput() {
     if (this.hiddenInput) return this.hiddenInput;
     const input = document.createElement('input');
@@ -1822,17 +1909,24 @@ export class GameOverScene {
 
     console.log('[GameOverScene] Saving score...', result);
 
+    const runResult = this.leaderboardAdapter.createRunResult(this.game, {
+      name,
+      playerName: name,
+      score: this.finalScore,
+      level: this.finalLevel,
+      rankIndex: this.game.rankIndex || 0,
+      submissionId: this.submissionId
+    });
+
     if (this.localQualified) {
-      const localSave = LocalLeaderboard.saveScore({
-        name,
-        score: this.finalScore,
-        level: this.finalLevel,
-        rankIndex: this.game.rankIndex || 0,
-        submissionId: this.submissionId
+      const localSave = await this.leaderboardAdapter.submitScore(runResult, {
+        target: 'local',
+        saveLocal: true,
+        name
       });
-      result.localStatus = 'saved';
-      result.localPlacement = localSave.placement;
-      result.localEntry = localSave.entry;
+      result.localStatus = localSave.localStatus || 'saved';
+      result.localPlacement = localSave.localPlacement;
+      result.localEntry = localSave.localEntry;
       if (!this.globalQualified) {
         this.playLocalHighscoreVoice();
       }
@@ -1886,8 +1980,20 @@ export class GameOverScene {
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = window.setTimeout(() => reject(new Error('Global submit timeout')), GLOBAL_SUBMIT_TIMEOUT_MS);
       });
+      const runResult = this.leaderboardAdapter.createRunResult(this.game, {
+        name,
+        playerName: name,
+        score: this.finalScore,
+        level: this.finalLevel,
+        rankIndex: this.game.rankIndex,
+        submissionId: this.submissionId
+      });
       const response = await Promise.race([
-        API.submitScore(name, this.finalScore, this.finalLevel, this.game.rankIndex, this.submissionId),
+        this.leaderboardAdapter.submitScore(runResult, {
+          target: 'cloud',
+          saveLocal: false,
+          name
+        }),
         timeoutPromise
       ]);
       if (timeoutId) window.clearTimeout(timeoutId);

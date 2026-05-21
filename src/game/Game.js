@@ -9,9 +9,9 @@ import { ShipDetailsScene } from '../scenes/ShipDetailsScene.js';
 import { HighscoreScene } from '../scenes/HighscoreScene.js';
 import { rankManager } from '../managers/RankManager.js';
 import { getDefaultShipKey, incrementShipUsage, isShipUnlocked, isValidShipKey, updateShipUnlockProgress } from '../config/ShipMetadata.js';
-import { API } from '../api/API.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
+import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 
 export class Game {
   constructor(app) {
@@ -43,6 +43,7 @@ export class Game {
       top3: false,
       number1: false
     };
+    this.leaderboardAdapter = createLeaderboardAdapter();
   }
 
   start() {
@@ -180,6 +181,13 @@ export class Game {
     this.switchScene('highscore');
   }
 
+  getLeaderboardAdapter() {
+    if (!this.leaderboardAdapter) {
+      this.leaderboardAdapter = createLeaderboardAdapter();
+    }
+    return this.leaderboardAdapter;
+  }
+
   addScore(points) {
     const base = Number(points) || 0;
     // Check both Game's scoreMultiplier (bonus core) and Player's scoreMultiplier (score_x2)
@@ -232,7 +240,7 @@ export class Game {
 
   primeGlobalLeaderboardTargets() {
     if (this.runMode === 'unranked' || this.globalLeaderboardTargetPromise) return this.globalLeaderboardTargetPromise;
-    this.globalLeaderboardTargetPromise = API.getHighscores({ useCache: true })
+    this.globalLeaderboardTargetPromise = this.getLeaderboardAdapter().getGlobalScoresForPlacement({ useCache: true })
       .then((scores) => {
         this.globalLeaderboardTargets = Array.isArray(scores) ? scores : [];
         this.updateGlobalLeaderboardVoiceCues();

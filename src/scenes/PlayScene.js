@@ -147,6 +147,9 @@ export class PlayScene {
     this.comboTimerMs = 0;
     this.comboWindowMs = COMBO_WINDOW_MS;
     this.killStreak = 0;
+    this.totalKills = 0;
+    this.bossKills = 0;
+    this.wavesCleared = 0;
     this.lastKillAt = 0;
     this.lastHitAt = 0;
     this.lastStandReadyAt = 0;
@@ -250,6 +253,9 @@ export class PlayScene {
     };
 
     this.gameTime = 0;
+    this.totalKills = 0;
+    this.bossKills = 0;
+    this.wavesCleared = 0;
     this.levelAdvancePending = false;
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
@@ -3343,6 +3349,7 @@ export class PlayScene {
     }
     this.comboCount += 1;
     this.killStreak += 1;
+    this.totalKills += 1;
     this.lastKillAt = now;
     this.comboTimerMs = this.comboWindowMs;
     this.maybeDropFirstRunPickup(enemy);

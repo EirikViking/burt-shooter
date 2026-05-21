@@ -36,6 +36,12 @@ function normalizeEntry(raw, fallbackIndex = 0) {
     level,
     rankIndex,
     rank_index: rankIndex,
+    shipId: raw.shipId ?? raw.ship_id ?? null,
+    shipName: raw.shipName ?? raw.ship_name ?? null,
+    runTimeSeconds: raw.runTimeSeconds ?? raw.runtimeSeconds ?? null,
+    kills: raw.kills ?? null,
+    bossKills: raw.bossKills ?? null,
+    wavesCleared: raw.wavesCleared ?? null,
     submissionId: raw.submissionId || null,
     timestamp,
     source: 'local'
@@ -94,6 +100,12 @@ export const LocalLeaderboard = {
       score,
       level: entry.level,
       rankIndex: entry.rankIndex ?? entry.rank_index ?? getRankFromScore(score),
+      shipId: entry.shipId,
+      shipName: entry.shipName,
+      runTimeSeconds: entry.runTimeSeconds,
+      kills: entry.kills,
+      bossKills: entry.bossKills,
+      wavesCleared: entry.wavesCleared,
       submissionId,
       timestamp: new Date().toISOString()
     }, score);

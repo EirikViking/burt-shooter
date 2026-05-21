@@ -233,6 +233,7 @@ function buildGameTextState(game) {
   const introScene = getStableSceneName(game) === 'intro' ? game?.currentScene : null;
   const shipSelectScene = getStableSceneName(game) === 'shipSelect' ? game?.currentScene : null;
   const gameOverScene = getStableSceneName(game) === 'gameOver' ? game?.currentScene : null;
+  const highscoreScene = getStableSceneName(game) === 'highscore' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
   const getBoundsDebug = (displayObject) => {
     try {
@@ -367,6 +368,8 @@ function buildGameTextState(game) {
       retryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       state: gameOverScene.state || null,
       runbackReason: gameOverScene.runbackReason || null,
+      steamSubmissionMode: Boolean(gameOverScene.steamSubmissionMode),
+      steamPlayerName: gameOverScene.steamPlayerName || null,
       selectedCtaLine: gameOverScene.selectedCtaLine ? {
         id: gameOverScene.selectedCtaLine.id,
         text: gameOverScene.selectedCtaLine.text,
@@ -386,6 +389,20 @@ function buildGameTextState(game) {
       globalFanfarePlayed: Boolean(gameOverScene.qualificationFanfarePlayed),
       leaderboardStatus: gameOverScene.leaderboardStatusText?.text || null,
       lastLeaderboardResult: game?.lastLeaderboardResult || null
+    } : null,
+    highscore: highscoreScene ? {
+      activeLeaderboard: highscoreScene.activeLeaderboard || null,
+      tabs: highscoreScene.leaderboardTabs?.map(tab => tab.id) || [],
+      status: highscoreScene.status || null,
+      sourceLabel: highscoreScene.activeLeaderboardResult?.sourceLabel || null,
+      rows: highscoreScene.entries?.map(entry => ({
+        rank: entry.rank || null,
+        name: entry.name || entry.playerName || null,
+        score: entry.score || 0,
+        level: entry.level || 0,
+        source: entry.source || null
+      })) || [],
+      runtime: game?.leaderboardAdapter?.getRuntimeSummary ? game.leaderboardAdapter.getRuntimeSummary() : null
     } : null,
     player: player ? {
       x: Math.round(player.x),

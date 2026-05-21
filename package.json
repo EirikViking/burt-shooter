@@ -21,6 +21,8 @@
     "check:ship-selector-start": "node scripts/check-ship-selector-start.mjs",
     "check:gameover-ceremony": "node scripts/check-gameover-ceremony.mjs",
     "check:leaderboard-split": "node scripts/check-leaderboard-split.mjs",
+    "check:leaderboard-adapter": "node scripts/check-leaderboard-adapter.mjs",
+    "check:steam-leaderboard-mock": "node scripts/check-steam-leaderboard-mock.mjs",
     "check:leaderboard-visuals": "node scripts/check-leaderboard-visuals.mjs",
     "check:boss-telegraph": "node scripts/check-boss-telegraph.mjs",
     "check:boss-contact": "node scripts/check-boss-contact.mjs",
