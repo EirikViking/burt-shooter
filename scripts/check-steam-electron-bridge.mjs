@@ -107,7 +107,7 @@ async function checkMissingAppIdDoesNotInitNative() {
   const nativeModule = createFakeSteamNative();
   const bridge = createSteamLeaderboardBridge({
     nativeModule,
-    appId: null,
+    appId: '',
     rootDir: process.cwd()
   });
   assert.equal(await bridge.isAvailable(), false);
