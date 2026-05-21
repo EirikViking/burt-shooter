@@ -140,6 +140,7 @@ try {
     'introButton',
     'highscoresButton',
     'settingsButton',
+    'exitButton',
     'disclaimer'
   ]);
 

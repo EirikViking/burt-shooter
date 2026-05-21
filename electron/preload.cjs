@@ -12,6 +12,10 @@ const CHANNELS = {
   getRuntimeInfo: 'nova-steam-leaderboard:getRuntimeInfo'
 };
 
+const APP_CHANNELS = {
+  exitGame: 'nova-app:exitGame'
+};
+
 function safePayload(payload) {
   if (payload == null) return {};
   return JSON.parse(JSON.stringify(payload));
@@ -49,4 +53,8 @@ contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
   leaderboards,
   getStatus: () => invoke(CHANNELS.getStatus),
   getRuntimeInfo: () => invoke(CHANNELS.getRuntimeInfo)
+}));
+
+contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
+  exitGame: () => invoke(APP_CHANNELS.exitGame)
 }));

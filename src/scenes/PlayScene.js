@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { RankAssets } from '../utils/RankAssets.js';
-import { Player } from '../entities/Player.js';
+import { Player, RESPAWN_INVULNERABILITY_MS } from '../entities/Player.js';
 import { BonusDrone } from '../entities/BonusDrone.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
@@ -2177,7 +2177,7 @@ export class PlayScene {
     // RESPONDER LOGIC
     if (this.player && this.game.lives > 0) {
       this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
-      this.player.invulnerableTime = Math.max(this.player.invulnerableTime || 0, 8500);
+      this.player.invulnerableTime = RESPAWN_INVULNERABILITY_MS;
       const clearedHazards = this.clearRespawnHazards('life_lost');
       if (clearedHazards > 0) {
         const compactHud = this.game.getWidth() < 620;
@@ -2248,7 +2248,7 @@ export class PlayScene {
     this.game.lives = 2;
     this.lowLivesShownFor = null;
     this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
-    this.player.invulnerableTime = Math.max(this.player.invulnerableTime || 0, 8000);
+    this.player.invulnerableTime = RESPAWN_INVULNERABILITY_MS;
     const clearedHazards = this.clearRespawnHazards('last_stand');
     const compactHud = this.game.getWidth() < 620;
     const suffix = clearedHazards > 0 ? ` x${clearedHazards}` : '';

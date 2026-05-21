@@ -46,6 +46,13 @@ function registerSteamLeaderboardIpc() {
   ipcMain.handle('nova-steam-leaderboard:getRuntimeInfo', () => getSteamRuntimeInfo());
 }
 
+function registerAppIpc() {
+  ipcMain.handle('nova-app:exitGame', () => {
+    setImmediate(() => app.quit());
+    return { ok: true };
+  });
+}
+
 function sendJson(response, status, payload) {
   response.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -680,6 +687,7 @@ app.whenReady().then(async () => {
     throw new Error(`Missing build output at ${distDir}. Run npm run build first.`);
   }
   registerSteamLeaderboardIpc();
+  registerAppIpc();
   await startLocalServer();
   const win = createWindow();
   if (isSteamLeaderboardProbe) {

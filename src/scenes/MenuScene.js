@@ -86,6 +86,9 @@ export class MenuScene {
     this.introBtn = null;
     this.storyBtn = null;
     this.settingsBtn = null;
+    this.exitBtn = null;
+    this.exitNotice = null;
+    this.exitNoticeTimeout = null;
     this.musicBtn = null;
     this.controls = null;
     this.easter = null;
@@ -786,6 +789,28 @@ export class MenuScene {
     });
     this.container.addChild(this.settingsBtn);
 
+    this.exitBtn = this.createButton('EXIT GAME', layout, { accent: 0xff6b6b });
+    this.exitBtn.alpha = 0;
+    this.exitBtn.on('pointerdown', () => {
+      this.exitGame();
+    });
+    this.container.addChild(this.exitBtn);
+
+    this.exitNotice = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: Math.max(11, getResponsiveFontSize(layout, 'small')),
+      fill: '#ffd15c',
+      fontWeight: 'bold',
+      stroke: '#04121d',
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.7, layout)
+    });
+    this.exitNotice.anchor.set(0.5);
+    this.exitNotice.alpha = 0;
+    this.container.addChild(this.exitNotice);
+
     // ... (controls and easter code unchanged) ...
 
     const controlsText = this.getControlsText(layout);
@@ -873,6 +898,8 @@ export class MenuScene {
       this.introBtn?._label,
       this.storyBtn?._label,
       this.settingsBtn?._label,
+      this.exitBtn?._label,
+      this.exitNotice,
       ...this.crewComms.flatMap((card) => card.children.filter((child) => child instanceof PIXI.Text))
     ].filter(Boolean).forEach((text) => text.onViewUpdate?.());
     this.layoutMenu();
@@ -971,19 +998,21 @@ export class MenuScene {
     fitTextToWidth(this.primaryHint, fitWidth, { minScale: 0.74 });
     fitTextToWidth(this.disclaimer, fitWidth, { minScale: 0.72 });
 
-    const buttonHeight = isMobileLayout ? 42 : 48;
-    const primaryButtonHeight = isMobileLayout ? 48 : 58;
+    const isShortLayout = !isMobileLayout && height < 760;
+    const buttonHeight = isMobileLayout ? 42 : (isShortLayout ? 42 : 48);
+    const primaryButtonHeight = isMobileLayout ? 48 : (isShortLayout ? 52 : 58);
     const buttonWidth = isMobileLayout ? Math.min(276, contentWidth - 18) : Math.min(362, contentWidth - 58);
     const primaryButtonWidth = isMobileLayout ? Math.min(296, contentWidth) : Math.min(420, contentWidth - 18);
-    const buttonSpacing = isMobileLayout ? 10 : 12;
-    const sectionSpacing = isMobileLayout ? 13 : 18;
+    const buttonSpacing = isMobileLayout ? 10 : (isShortLayout ? 8 : 12);
+    const sectionSpacing = isMobileLayout ? 13 : (isShortLayout ? 12 : 18);
 
     [
       [this.startBtn, primaryButtonWidth, primaryButtonHeight, true],
       [this.highscoreBtn, buttonWidth, buttonHeight, false],
       [this.introBtn, buttonWidth, buttonHeight, false],
       [this.storyBtn, buttonWidth, buttonHeight, false],
-      [this.settingsBtn, buttonWidth, buttonHeight, false]
+      [this.settingsBtn, buttonWidth, buttonHeight, false],
+      [this.exitBtn, buttonWidth, buttonHeight, false]
     ].forEach(([button, btnWidth, btnHeight, isPrimary]) => {
       if (!button) return;
       button._btnWidth = btnWidth;
@@ -1000,11 +1029,12 @@ export class MenuScene {
     const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
     const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
     const primaryHintHeight = this.primaryHint.height || controlsSize * 1.5;
-    const buttonsHeight = primaryButtonHeight + buttonHeight * 4 + buttonSpacing * 4;
+    const buttonsHeight = primaryButtonHeight + buttonHeight * 5 + buttonSpacing * 5;
+    const exitNoticeHeight = this.exitNotice?.text ? (this.exitNotice.height || controlsSize * 1.2) : 0;
     const disclaimerHeight = this.disclaimer.height || disclaimerSize * 2;
-    const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + buttonsHeight + disclaimerHeight + sectionSpacing * 6;
+    const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + buttonsHeight + exitNoticeHeight + disclaimerHeight + sectionSpacing * 6;
 
-    const footerReserve = isMobileLayout ? 86 : 64;
+    const footerReserve = isMobileLayout ? 86 : (isShortLayout ? 16 : 64);
     const availableHeight = height - footerReserve - safeMargin.top;
     const startY = Math.max(
       safeMargin.top + (isMobileLayout ? 18 : 38),
@@ -1044,7 +1074,25 @@ export class MenuScene {
     placeCentered(this.storyBtn, buttonHeight, buttonSpacing);
 
     this.settingsBtn.x = buttonX;
-    placeCentered(this.settingsBtn, buttonHeight, sectionSpacing);
+    placeCentered(this.settingsBtn, buttonHeight, buttonSpacing);
+
+    this.exitBtn.x = buttonX;
+    placeCentered(this.exitBtn, buttonHeight, this.exitNotice?.text ? 6 : sectionSpacing);
+
+    if (this.exitNotice) {
+      this.exitNotice.style.fontSize = Math.max(11, controlsSize);
+      this.exitNotice.style.align = align;
+      this.exitNotice.style.wordWrapWidth = clampTextWidth(isMobileLayout ? contentWidth : buttonWidth, layout);
+      this.exitNotice.updateText?.(false);
+      fitTextToWidth(this.exitNotice, buttonWidth, { minScale: 0.72 });
+      if (this.exitNotice.text) {
+        this.exitNotice.x = buttonX;
+        placeCentered(this.exitNotice, exitNoticeHeight, sectionSpacing);
+      } else {
+        this.exitNotice.x = buttonX;
+        this.exitNotice.y = this.exitBtn.y + buttonHeight / 2 + 6;
+      }
+    }
 
     placeCentered(this.disclaimer, disclaimerHeight, 0);
 
@@ -1059,7 +1107,7 @@ export class MenuScene {
     const overflow = this.disclaimer.y + disclaimerHeight / 2 - (height - footerReserve);
     if (overflow > 0) {
       const lift = Math.min(overflow + 10, isMobileLayout ? 56 : 90);
-      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.startBtn, this.highscoreBtn, this.introBtn, this.storyBtn, this.settingsBtn, this.disclaimer].forEach((item) => {
+      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.startBtn, this.highscoreBtn, this.introBtn, this.storyBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
         if (item) item.y -= lift;
       });
     }
@@ -1114,6 +1162,7 @@ export class MenuScene {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const isMobileLayout = layout.isMobile || width < 720;
+    const isShortLayout = !isMobileLayout && height < 760;
     const contentItems = [
       this.kicker,
       this.title,
@@ -1125,6 +1174,8 @@ export class MenuScene {
       this.introBtn,
       this.storyBtn,
       this.settingsBtn,
+      this.exitBtn,
+      this.exitNotice?.text ? this.exitNotice : null,
       this.disclaimer
     ].filter(Boolean);
     const itemBounds = contentItems.map(boundsForDisplayObject).filter(Boolean);
@@ -1133,7 +1184,7 @@ export class MenuScene {
     const minY = itemBounds.length ? Math.min(...itemBounds.map((bounds) => bounds.y)) : this.startBtn.y - 180;
     const maxY = itemBounds.length ? Math.max(...itemBounds.map((bounds) => bounds.bottom)) : this.settingsBtn.y + 60;
     const padX = isMobileLayout ? 18 : 34;
-    const padTop = isMobileLayout ? 16 : 20;
+    const padTop = isMobileLayout ? 16 : (isShortLayout ? 46 : 20);
     const padBottom = isMobileLayout ? 18 : 24;
     let x = Math.max(12, minX - padX);
     let y = Math.max(8, minY - padTop);
@@ -1185,6 +1236,8 @@ export class MenuScene {
       introButton: this.introBtn,
       highscoresButton: this.storyBtn,
       settingsButton: this.settingsBtn,
+      exitButton: this.exitBtn,
+      exitNotice: this.exitNotice,
       musicButton: this.musicBtn
     };
     return {
@@ -1193,6 +1246,7 @@ export class MenuScene {
         height: Math.round(this.game.getHeight())
       },
       panel: this.lastMenuPanelBounds,
+      exitNoticeText: this.exitNotice?.text || '',
       items: Object.fromEntries(
         Object.entries(textItems).map(([key, item]) => [key, boundsForDisplayObject(item)])
       )
@@ -1339,7 +1393,8 @@ export class MenuScene {
     this.animateElement(this.introBtn, 1.16, 0.4);
     this.animateElement(this.storyBtn, 1.3, 0.4);
     this.animateElement(this.settingsBtn, 1.42, 0.4);
-    this.animateElement(this.disclaimer, 1.54, 0.4);
+    this.animateElement(this.exitBtn, 1.54, 0.4);
+    this.animateElement(this.disclaimer, 1.66, 0.4);
   }
 
   openShipSelect() {
@@ -1388,6 +1443,40 @@ export class MenuScene {
     } catch (e) {
       console.error('[MenuScene] Story Intro Error:', e);
     }
+  }
+
+  async exitGame() {
+    try {
+      AudioManager.init();
+      AudioManager.playSfx('ui_open', { volume: 0.28 });
+      if (window.__novaApp?.exitGame) {
+        await window.__novaApp.exitGame();
+        return;
+      }
+      this.showExitNotice('EXIT IS ONLY AVAILABLE IN DESKTOP BUILD');
+    } catch (e) {
+      console.error('[MenuScene] Exit Game Error:', e);
+      this.showExitNotice('EXIT IS ONLY AVAILABLE IN DESKTOP BUILD');
+    }
+  }
+
+  showExitNotice(message) {
+    if (!this.exitNotice) return;
+    this.exitNotice.text = message;
+    this.exitNotice.alpha = 1;
+    this.exitNotice.updateText?.(false);
+    this.layoutMenu();
+
+    if (this.exitNoticeTimeout) {
+      clearTimeout(this.exitNoticeTimeout);
+    }
+    this.exitNoticeTimeout = setTimeout(() => {
+      if (!this.exitNotice) return;
+      this.exitNotice.text = '';
+      this.exitNotice.alpha = 0;
+      this.exitNoticeTimeout = null;
+      this.layoutMenu();
+    }, 2600);
   }
 
   setCommsCardHover(card, isHover) {
@@ -1575,6 +1664,10 @@ export class MenuScene {
     if (this.storyRotationTimer) {
       clearInterval(this.storyRotationTimer);
       this.storyRotationTimer = null;
+    }
+    if (this.exitNoticeTimeout) {
+      clearTimeout(this.exitNoticeTimeout);
+      this.exitNoticeTimeout = null;
     }
     if (this.skipHandler) {
       window.removeEventListener('keydown', this.skipHandler);

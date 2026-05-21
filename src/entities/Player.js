@@ -9,6 +9,8 @@ import { getPlayerFocusScale } from '../config/AccessibilitySettings.js';
 import { getDefaultShipKey, getShipMetadata } from '../config/ShipMetadata.js';
 import { ShipData } from '../config/ShipData.js';
 
+export const RESPAWN_INVULNERABILITY_MS = 1000;
+
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
     this.x = x;
@@ -2006,7 +2008,7 @@ export class Player {
 
     // Invulnerability
     this.invulnerable = true;
-    this.invulnerableTime = 5500;
+    this.invulnerableTime = RESPAWN_INVULNERABILITY_MS;
 
     // Reset cooldowns
     this.shootCooldown = 0;
