@@ -12,13 +12,14 @@ Status on 2026-05-17: not complete. The Windows package exists locally and local
 - Latest known package verification remains documented in `docs/steam-desktop-package.md`.
 - Local SteamCMD availability is documented in `docs/reviews/2026-05-17-steamcmd-local-check.md`.
 - Electron/preload leaderboard probing is available with `npm run probe:steam-leaderboard-electron -- --packaged --no-submit` for read-only packaged checks and `npm run probe:steam-leaderboard-electron -- --packaged --details=none --score=1` for one keep-best runtime write check.
+- Steam-installed probe reports are expected under `%APPDATA%\\Nova Swarm\\test-results\\steam-leaderboard-electron-*\\report.json`.
 
 ## Required Steamworks Inputs
 
 Fill these before upload:
 
 - Steam app ID: `4765070`
-- Windows depot ID: `TBD`
+- Windows depot ID: `4765071`
 - Branch target: `default`, `beta`, or a private release-candidate branch
 - Launch option: `Nova Swarm.exe`
 - Steam Cloud decision: local-only for v1.0 unless explicitly enabled
@@ -40,7 +41,7 @@ npm run steamworks:write-vdf
 4. Confirm `ContentRoot` still points at `..\\desktop\\win-unpacked`.
 5. Run SteamCMD with the credentialed VDF.
 
-Do not run the upload while the Windows depot ID is `TBD`. On 2026-05-21 the App ID was known, but no Windows depot ID was present in tracked files or the checked local SteamCMD app/depot cache.
+The ignored local VDF should use App ID `4765070`, depot ID `4765071`, content root `..\\desktop\\win-unpacked`, and an empty `SetLive` unless a private branch is intentionally selected.
 
 Example command shape:
 

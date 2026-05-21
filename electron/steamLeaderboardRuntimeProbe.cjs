@@ -104,13 +104,14 @@ function deriveProcessExitCode(report, options) {
   return 0;
 }
 
-async function runSteamLeaderboardRuntimeProbe({ window, args, baseUrl, runtimeInfo = {}, outputDir }) {
+async function runSteamLeaderboardRuntimeProbe({ window, args, baseUrl, runtimeInfo = {}, outputDir, outputRoot }) {
   const options = parseSteamLeaderboardProbeOptions(args || []);
   const selectedDetails = detailsForMode(options.detailsMode);
+  const rootDir = outputRoot || process.cwd();
   const reportDir = path.resolve(
     outputDir ||
     process.env.NOVA_SWARM_STEAM_LEADERBOARD_PROBE_OUTPUT_DIR ||
-    path.join(process.cwd(), 'test-results', `steam-leaderboard-electron-${timestamp()}`)
+    path.join(rootDir, 'test-results', `steam-leaderboard-electron-${timestamp()}`)
   );
   const reportPath = path.join(reportDir, 'report.json');
   fs.mkdirSync(reportDir, { recursive: true });

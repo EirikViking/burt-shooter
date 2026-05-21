@@ -109,7 +109,7 @@ Electron runtime probe examples:
 - `npm run probe:steam-leaderboard-electron -- --details=none --score=1` submits one low keep-best score through the Electron IPC path.
 - `npm run probe:steam-leaderboard-electron -- --packaged --no-submit` runs the read-only probe against `release/desktop/win-unpacked/Nova Swarm.exe`.
 
-The Electron probe intentionally does not support force update. It records whether the app looks Steam-launched through Steam environment hints, but the only authoritative write validation is still an installed build launched from the Steam client.
+The Electron probe intentionally does not support force update. It records whether the app looks Steam-launched through Steam environment hints, but the only authoritative write validation is still an installed build launched from the Steam client. Packaged/Steam-installed probe reports are written under Electron user data by default, usually `%APPDATA%\\Nova Swarm\\test-results\\steam-leaderboard-electron-*\\report.json`.
 
 Do not spam submissions. Prefer one read-only run, one default keep-best run, then one no-details run if default still fails. Interpret results as:
 
@@ -119,7 +119,7 @@ Do not spam submissions. Prefer one read-only run, one default keep-best run, th
 - Local Node reads work but writes fail: test from a Steam-client-installed launch before overfitting code, then verify Steamworks write settings and wrapper upload mapping.
 - Submit succeeds and entries can be downloaded: Steam leaderboard read/write path is verified locally, but the Steam-installed build still needs the manual runtime checklist below.
 
-SteamPipe status on 2026-05-21: App ID `4765070` is known and local `steam_appid.txt` is ignored, but the Windows depot ID is still not stored in tracked repo files or the local SteamCMD app/depot cache that was checked. Do not run `steamworks:write-vdf` or SteamCMD upload until the Windows depot ID is confirmed in Steamworks App Admin.
+SteamPipe status on 2026-05-21: App ID `4765070` and Windows depot ID `4765071` are known. `release/steamworks/app_build_LOCAL.vdf` is ignored and should be regenerated locally for SteamPipe uploads; do not commit it or any Steam credentials.
 
 For local validation without Steam, open with `?mockSteamLeaderboard=1`. This enables the mock provider and shows `GLOBAL / FRIENDS / LOCAL` tabs.
 

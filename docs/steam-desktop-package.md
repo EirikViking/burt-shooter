@@ -66,9 +66,16 @@ STEAM_APP_ID=<app id> STEAM_DEPOT_ID=<depot id> npm run steamworks:write-vdf
 Current known IDs on 2026-05-21:
 
 - Steam App ID: `4765070`
-- Windows depot ID: not present in tracked files or the checked local SteamCMD app/depot cache
+- Windows depot ID: `4765071`
 
-Do not generate or upload `app_build_LOCAL.vdf` until the Windows depot ID is confirmed in Steamworks App Admin. The local package can still be built and smoke-tested safely.
+`app_build_LOCAL.vdf` is ignored and can be regenerated for SteamPipe upload with:
+
+```powershell
+$env:STEAM_APP_ID='4765070'
+$env:STEAM_DEPOT_ID='4765071'
+$env:STEAM_BUILD_DESC='Nova Swarm Steam leaderboard runtime test'
+npm run steamworks:write-vdf
+```
 
 Suggested Steam launch option:
 
@@ -87,12 +94,12 @@ Detailed client validation handoff:
 
 ## Remaining Manual Steam Steps
 
-- Confirm the Windows depot ID in Steamworks.
+- Run the SteamPipe upload with a Steamworks account that has package/depot upload permission.
 - Configure the Steam App ID for local bridge testing with `NOVA_SWARM_STEAM_APP_ID`, `STEAM_APP_ID`, or an ignored `steam_appid.txt`.
 - Keep the official SDK redistributables at `steam_sdk/sdk/redistributable_bin/` or set `NOVA_SWARM_STEAMWORKS_SDK_PATH`.
 - Run `npm run check:steam-sdk-ready` and `npm run check:steam-electron-bridge`.
 - Local SteamCMD now runs from ignored `tools/steamcmd/`; see `docs/reviews/2026-05-17-steamcmd-local-check.md`.
-- Run SteamPipe upload with the edited VDF on a machine with SteamCMD and Steamworks credentials.
+- Run SteamPipe upload with the generated ignored VDF on a machine with SteamCMD and Steamworks credentials.
 - Run the uploaded build through Steam client install/launch, controller checks, offline launch, and quit/relaunch.
 - Decide whether achievements, cloud saves, and Steam Input metadata are in scope for v1.0 or a later update.
 
@@ -106,3 +113,5 @@ On 2026-05-21, the packaged executable at `release/desktop/win-unpacked/Nova Swa
 - `npm run check:desktop-package`
 
 The packaged Electron leaderboard probe reported bridge `ready`, App ID `4765070`, persona `EvilEirik`, and successful `GLOBAL`/`FRIENDS` reads with zero entries. It also reported `launchedBySteamHint: false`, so this is still not Steam-installed write validation.
+
+For a Steam-installed probe, set Steam launch options to `--steam-leaderboard-probe --details=none --score=1` and launch the app from Steam. The probe exits after one keep-best submit attempt and writes its JSON report under `%APPDATA%\\Nova Swarm\\test-results\\`.

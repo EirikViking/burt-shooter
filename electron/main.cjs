@@ -686,7 +686,8 @@ app.whenReady().then(async () => {
         window: win,
         baseUrl,
         args: process.argv.slice(2),
-        runtimeInfo: getSteamRuntimeInfo()
+        runtimeInfo: getSteamRuntimeInfo(),
+        outputRoot: app.isPackaged ? app.getPath('userData') : process.cwd()
       });
       app.quit();
     } catch (error) {
