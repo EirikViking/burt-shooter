@@ -14,6 +14,7 @@ const allowGameOver = process.env.RELEASE_PLAYTEST_ALLOW_GAME_OVER === '1';
 const sampleMs = Number(process.env.RELEASE_PLAYTEST_SAMPLE_MS || 150);
 const screenshotMs = Number(process.env.RELEASE_PLAYTEST_SCREENSHOT_MS || 60 * 1000);
 const outputDir = path.resolve(process.env.RELEASE_PLAYTEST_OUTPUT_DIR || `test-results/release-playtest-${timestamp()}`);
+const selectedShipKey = process.env.RELEASE_PLAYTEST_SHIP_KEY || null;
 const requiredReleaseAssets = [
   '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
   '/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-01-20260519.webp',
@@ -574,8 +575,19 @@ async function runReleasePlaytest() {
   let finalState = null;
 
   try {
-    await gotoWithRetry(page, `${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 10000 });
+    await gotoWithRetry(page, selectedShipKey ? baseUrl : `${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 10000 });
     await assertPreviewAssetsInPage(page);
+    if (selectedShipKey) {
+      await page.waitForFunction(() => Boolean(window.__game), null, { timeout: 15000 });
+      await page.evaluate((shipKey) => {
+        localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({
+          bestScore: 0,
+          bestRank: 19,
+          bestLevel: 60
+        }));
+        window.__game.startGame(shipKey);
+      }, selectedShipKey);
+    }
     await page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
     await page.keyboard.down('Space');
     heldSpace = true;
@@ -638,6 +650,7 @@ async function runReleasePlaytest() {
     outputDir,
     requestedDurationMs: durationMs,
     minSurvivalMs,
+    selectedShipKey,
     requiredSurvivalMs,
     survivalGraceMs,
     survivedMs,
@@ -659,6 +672,7 @@ async function runReleasePlaytest() {
     outputDir,
     requestedDurationMs: durationMs,
     minSurvivalMs,
+    selectedShipKey,
     requiredSurvivalMs,
     survivalGraceMs,
     survivedMs,

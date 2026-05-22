@@ -162,9 +162,9 @@ try {
         { score: 7000 }, { score: 6800 }, { score: 6600 }, { score: 6400 },
         { score: 6250 }, { score: 6150 }, { score: 6050 }, { score: 6000 }
       ];
-      game.addScore(5200);
-      game.addScore(25000);
-      game.addScore(18000);
+      game.addScore(52000);
+      game.addScore(250000);
+      game.addScore(180000);
     });
     const cueState = await page.evaluate(() => JSON.parse(window.render_game_to_text()).globalLeaderboardCues);
     assert(cueState.global === true, 'near-global voice cue did not arm');

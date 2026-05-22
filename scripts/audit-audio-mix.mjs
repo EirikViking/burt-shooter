@@ -44,6 +44,7 @@ if (!hasFfmpeg()) {
 collectMusicRows();
 collectSfxRows();
 collectVoiceRows();
+collectCatalogOnlyVoiceRows();
 assertVoiceAssetCoverage();
 
 for (const row of rows) {
@@ -218,6 +219,33 @@ function collectVoiceRows() {
         cooldownMs: numeric(mix.cooldownMs, 0),
         effectiveLinear: defaultMix.masterVolume * defaultMix.voiceVolume * numeric(mix.volume, 1)
       });
+    }
+  }
+}
+
+function collectCatalogOnlyVoiceRows() {
+  const coveredUrls = new Set(rows
+    .filter((row) => row.type === 'voice')
+    .map((row) => row.url));
+
+  for (const [event, urls] of Object.entries(SFX_CATALOG)) {
+    const voiceUrls = uniqueUrls(asArray(urls)
+      .filter((url) => typeof url === 'string' && url.includes('/audio/voice/')))
+      .filter((url) => !coveredUrls.has(url));
+    if (!voiceUrls.length) continue;
+
+    const mix = VOICE_MIX[event] || {};
+    for (const url of voiceUrls) {
+      rows.push({
+        type: 'voice',
+        event,
+        url,
+        mixVolume: numeric(mix.volume, 1),
+        duckFactor: numeric(mix.duckFactor, 1),
+        cooldownMs: numeric(mix.cooldownMs, 0),
+        effectiveLinear: defaultMix.masterVolume * defaultMix.voiceVolume * numeric(mix.volume, 1)
+      });
+      coveredUrls.add(url);
     }
   }
 }

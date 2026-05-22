@@ -1,6 +1,6 @@
-# Audio Mix Audit - 2026-05-19
+# Audio Mix Audit - 2026-05-22
 
-Generated: 2026-05-19T23:50:04.101Z
+Generated: 2026-05-22T17:48:44.120Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -13,11 +13,11 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Coverage
 
-- Measured files: 151
+- Measured files: 211
 - Music rows: 26
-- SFX rows: 121
-- Voice rows: 51
-- Warnings: 0
+- SFX rows: 131
+- Voice rows: 101
+- Warnings: 6
 - Errors: 0
 
 ## Loudest Effective Peaks
@@ -46,22 +46,22 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | sfx | shoot_heavy | laserLarge_004.mp3 | -0.6 dB | -20.7 dB | -37.4 dB |
 | sfx | shoot_heavy | laserLarge_003.mp3 | -1.0 dB | -21.1 dB | -38.3 dB |
 | sfx | shoot_heavy | laserLarge_001.mp3 | -1.1 dB | -21.2 dB | -36.9 dB |
+| sfx | boss_beam_fire | nova_boss_beam_fire.mp3 | 0.0 dB | -21.3 dB | -28.0 dB |
 | sfx | shoot_heavy | laserLarge_000.mp3 | -1.2 dB | -21.3 dB | -37.6 dB |
 | sfx | shoot_alt | laserRetro_000.mp3 | -0.2 dB | -21.7 dB | -29.3 dB |
-| sfx | shoot_alt | laserRetro_003.mp3 | -0.2 dB | -21.7 dB | -29.4 dB |
 
 ### Voice
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
+| voice | one_more_run_13 | one_more_run_13.mp3 | -0.8 dB | -18.2 dB | -33.1 dB |
+| voice | one_more_run_39 | one_more_run_39.mp3 | -0.8 dB | -18.2 dB | -31.5 dB |
+| voice | one_more_run_40 | one_more_run_40.mp3 | -0.8 dB | -18.2 dB | -32.0 dB |
+| voice | one_more_run_22 | one_more_run_22.mp3 | -0.9 dB | -18.3 dB | -30.2 dB |
+| voice | one_more_run_31 | one_more_run_31.mp3 | -0.9 dB | -18.3 dB | -35.2 dB |
+| voice | one_more_run_47 | one_more_run_47.mp3 | -0.9 dB | -18.3 dB | -31.7 dB |
 | voice | mission_control_top3_highscore | mission_control_top3_highscore_01.mp3 | -1.1 dB | -18.3 dB | -32.3 dB |
-| voice | mission_control_number_one_highscore | mission_control_number_one_highscore_01.mp3 | -1.6 dB | -18.5 dB | -30.1 dB |
-| voice | mission_control_global_highscore | mission_control_global_highscore_02.mp3 | -0.9 dB | -18.6 dB | -31.9 dB |
-| voice | intro_narrator_03 | intro_narrator_03.mp3 | -1.0 dB | -19.3 dB | -32.4 dB |
-| voice | mission_control_number_one_close | mission_control_number_one_close_01.mp3 | -1.8 dB | -19.4 dB | -30.7 dB |
-| voice | mission_control_boss_inbound | mission_control_boss_inbound.mp3 | -0.9 dB | -19.4 dB | -34.3 dB |
-| voice | intro_narrator_04 | intro_narrator_04.mp3 | -1.1 dB | -19.4 dB | -33.6 dB |
-| voice | mission_control_global_highscore | mission_control_global_highscore_01.mp3 | -1.8 dB | -19.5 dB | -32.1 dB |
+| voice | one_more_run_14 | one_more_run_14.mp3 | -1.0 dB | -18.4 dB | -31.6 dB |
 
 ## Quietest Effective Peaks
 
@@ -69,6 +69,7 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
+| sfx | trait_bonus_hit | nova_combo_tick.mp3 | -4.6 dB | -45.0 dB | -53.1 dB |
 | sfx | enemy_shoot | laserSmall_003.mp3 | -7.9 dB | -41.2 dB | -55.7 dB |
 | sfx | menu_tick | nova_menu_tick.mp3 | -7.4 dB | -39.8 dB | -57.4 dB |
 | sfx | forceField | nova_shield_snap.mp3 | -13.7 dB | -38.1 dB | -62.9 dB |
@@ -76,7 +77,6 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | sfx | shield_up | nova_shield_snap.mp3 | -13.7 dB | -37.3 dB | -62.1 dB |
 | sfx | ui_open | nova_menu_tick.mp3 | -7.4 dB | -36.9 dB | -54.5 dB |
 | sfx | menuSelect | nova_menu_tick.mp3 | -7.4 dB | -36.3 dB | -53.9 dB |
-| sfx | trait_bonus_hit | nova_combo_tick.mp3 | -4.6 dB | -34.7 dB | -42.8 dB |
 
 ### Voice
 
@@ -93,7 +93,12 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Warnings
 
-- None.
+- sfx:tractor_break_bloom /audio/sfx/nova-swarm/nova_tractor_break_bloom.mp3 - raw peak is very close to full scale (0.0 dB)
+- sfx:boss_beam_telegraph /audio/sfx/nova-swarm/nova_boss_beam_telegraph.mp3 - raw peak is very close to full scale (0.0 dB)
+- sfx:boss_beam_fire /audio/sfx/nova-swarm/nova_boss_beam_fire.mp3 - raw peak is very close to full scale (0.0 dB)
+- sfx:boss_web_telegraph /audio/sfx/nova-swarm/nova_boss_web_telegraph.mp3 - raw peak is very close to full scale (0.0 dB)
+- sfx:boss_web_fire /audio/sfx/nova-swarm/nova_boss_web_snap.mp3 - raw peak is very close to full scale (0.0 dB)
+- sfx:boss_hazard_impact /audio/sfx/nova-swarm/nova_boss_hazard_impact.mp3 - raw peak is very close to full scale (0.0 dB)
 
 ## Remaining Manual Check
 
