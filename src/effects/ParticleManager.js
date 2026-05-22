@@ -178,17 +178,17 @@ export class ParticleManager {
     }
   }
 
-  createHitSpark(x, y) {
-    const particleCount = 5;
+  createHitSpark(x, y, color = 0xffff00, intensity = 1) {
+    const particleCount = Math.max(3, Math.floor(5 * Math.max(0.6, intensity)));
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 1 + Math.random() * 2;
+      const speed = (1 + Math.random() * 2) * Math.max(0.75, intensity);
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      const size = 1 + Math.random() * 2;
+      const size = (1 + Math.random() * 2) * Math.max(0.75, intensity);
       const lifetime = 15 + Math.random() * 15;
 
-      if (!this.spawnParticle(x, y, vx, vy, 0xffff00, size, lifetime)) {
+      if (!this.spawnParticle(x, y, vx, vy, color, size, lifetime)) {
         break;
       }
     }

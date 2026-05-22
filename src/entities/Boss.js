@@ -23,6 +23,10 @@ const BOSS_PHASE_PLANS = {
   clock: { signatures: { 2: 'lance', 3: 'ring' }, anchor: { 2: 0.13, 3: -0.13 }, lane: { 2: 0, 3: 0.03 } }
 };
 
+const BOSS_HURT_FLASH_MS = 180;
+const BOSS_FIRE_RECOIL_MS = 260;
+const BOSS_PHASE_PULSE_MS = 860;
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -89,6 +93,15 @@ export class Boss {
     this.visualBaseScale = { x: 1, y: 1 };
     this.animationRig = null;
     this.animationDebug = null;
+    this.presentationState = 'idle';
+    this.presentationStateUntil = 0;
+    this.hurtFlashUntil = 0;
+    this.phasePulseUntil = 0;
+    this.fireRecoilUntil = 0;
+    this.lastHurtFxAt = 0;
+    this.lastFireFxAt = 0;
+    this.lastFireAngle = -Math.PI / 2;
+    this.defeatPresentationAt = 0;
 
     // Boss names
     const bossNames = [
@@ -401,6 +414,9 @@ export class Boss {
     frontLayer.zIndex = 3;
     const scanLayer = new PIXI.Graphics();
     scanLayer.zIndex = 4;
+    const impactLayer = new PIXI.Graphics();
+    impactLayer.zIndex = 5;
+    impactLayer.blendMode = 'add';
 
     const leftFin = this.createBossFin(-1, radius, palette, accent);
     const rightFin = this.createBossFin(1, radius, palette, accent);
@@ -433,6 +449,7 @@ export class Boss {
     root.addChild(rightMandible);
     root.addChild(frontLayer);
     root.addChild(scanLayer);
+    root.addChild(impactLayer);
     this.sprite.addChild(root);
 
     this.animationRig = {
@@ -441,6 +458,7 @@ export class Boss {
       engineLayer,
       frontLayer,
       scanLayer,
+      impactLayer,
       leftFin,
       rightFin,
       leftMandible,
@@ -489,29 +507,102 @@ export class Boss {
     return mandible;
   }
 
+  setPresentationState(state, durationMs = 240) {
+    const until = Date.now() + Math.max(0, durationMs);
+    this.presentationState = state;
+    this.presentationStateUntil = Math.max(this.presentationStateUntil || 0, until);
+  }
+
+  getPresentationState(now = Date.now()) {
+    if (this.health <= 0 || this.defeatPresentationAt > 0) return 'death';
+    if (now < this.phasePulseUntil) return 'phaseChange';
+    if (this.telegraph) return 'charge';
+    if (now < this.fireRecoilUntil) return 'firing';
+    if (now < this.hurtFlashUntil) return 'hurt';
+    if (now < this.presentationStateUntil) return this.presentationState;
+    return 'idle';
+  }
+
+  triggerFirePresentation(type = 'attack', signature = false, playerX = this.x, playerY = this.y + 300) {
+    const now = Date.now();
+    const angle = Math.atan2(playerY - this.y, playerX - this.x);
+    this.lastFireAngle = Number.isFinite(angle) ? angle : this.lastFireAngle;
+    this.fireRecoilUntil = now + (signature ? BOSS_FIRE_RECOIL_MS + 120 : BOSS_FIRE_RECOIL_MS);
+    this.setPresentationState('firing', signature ? 380 : 240);
+
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.particleManager && now - this.lastFireFxAt > 90) {
+      this.lastFireFxAt = now;
+      const color = signature ? (this.profile?.accent || 0xffffff) : (this.profile?.palette || this.color || 0xffffff);
+      playScene.particleManager.createMuzzleFlash(this.x, this.y + 18, this.lastFireAngle, color);
+    }
+    if (signature && playScene?.screenShake) {
+      playScene.screenShake.shake(4, 12);
+    }
+  }
+
+  triggerHurtPresentation(amount = 1) {
+    const now = Date.now();
+    this.hurtFlashUntil = now + BOSS_HURT_FLASH_MS;
+    this.setPresentationState('hurt', BOSS_HURT_FLASH_MS);
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.particleManager && now - this.lastHurtFxAt > 80) {
+      this.lastHurtFxAt = now;
+      const radius = Math.max(40, this.radius || 70);
+      const angle = ((now * 0.017) % (Math.PI * 2)) + amount * 0.11;
+      const x = this.x + Math.cos(angle) * radius * 0.42;
+      const y = this.y + Math.sin(angle) * radius * 0.28;
+      playScene.particleManager.createHitSpark(x, y, this.profile?.accent || 0xffff00, 1.15);
+    }
+  }
+
+  triggerDefeatPresentation() {
+    if (this.defeatPresentationAt > 0) return;
+    this.defeatPresentationAt = Date.now();
+    this.setPresentationState('death', 640);
+    const playScene = this.game?.scenes?.play;
+    const color = this.profile?.accent || this.color || 0xffff33;
+    playScene?.particleManager?.createBossExplosion(this.x, this.y, color);
+    playScene?.triggerShockwave?.(this.x, this.y, color);
+    playScene?.screenShake?.shake(8, 20);
+  }
+
   updateBossAnimation(delta, playerX, playerY) {
     if (!this.animationRig || !this.visualContainer) return;
     const rig = this.animationRig;
+    const now = Date.now();
     const t = this.moveTimer * 0.032;
     const phaseBoost = 1 + (this.phase - 1) * 0.08;
     const telegraphProgress = this.telegraph
-      ? clamp((Date.now() - this.telegraph.start) / this.telegraph.duration, 0, 1)
+      ? clamp((now - this.telegraph.start) / this.telegraph.duration, 0, 1)
       : this.regularTelegraph
-        ? clamp((Date.now() - this.regularTelegraph.start) / this.regularTelegraph.duration, 0, 1) * 0.65
+        ? clamp((now - this.regularTelegraph.start) / this.regularTelegraph.duration, 0, 1) * 0.65
         : 0;
+    const hurtProgress = clamp((this.hurtFlashUntil - now) / BOSS_HURT_FLASH_MS, 0, 1);
+    const recoilProgress = clamp((this.fireRecoilUntil - now) / BOSS_FIRE_RECOIL_MS, 0, 1);
+    const phaseProgress = clamp((this.phasePulseUntil - now) / BOSS_PHASE_PULSE_MS, 0, 1);
+    const presentationState = this.getPresentationState(now);
     const rage = 1 - clamp(this.health / Math.max(1, this.maxHealth), 0, 1);
-    const intensity = 1 + telegraphProgress * 0.18 + rage * 0.12 + (this.phase - 1) * 0.04;
+    const intensity = 1 + telegraphProgress * 0.18 + hurtProgress * 0.22 + recoilProgress * 0.12 + phaseProgress * 0.18 + rage * 0.12 + (this.phase - 1) * 0.04;
     const radius = rig.radius;
     const palette = rig.palette;
     const accent = rig.accent;
     const archetype = this.profile?.archetype || 'boss';
 
-    const bodyPulse = 1 + Math.sin(t * (archetype === 'clock' ? 1.6 : 0.85)) * 0.01 * intensity;
-    const bodyStretch = Math.cos(t * 0.7) * 0.006 * intensity;
+    const fireSquash = recoilProgress * 0.045;
+    const hurtSnap = hurtProgress * 0.055;
+    const phaseSwell = phaseProgress * 0.035;
+    const bodyPulse = 1 + Math.sin(t * (archetype === 'clock' ? 1.6 : 0.85)) * 0.01 * intensity + hurtSnap + phaseSwell;
+    const bodyStretch = Math.cos(t * 0.7) * 0.006 * intensity + fireSquash;
     this.visualContainer.scale.set(
       this.visualBaseScale.x * (bodyPulse + bodyStretch),
-      this.visualBaseScale.y * (bodyPulse - bodyStretch * 0.5)
+      this.visualBaseScale.y * (bodyPulse - bodyStretch * 0.5 + recoilProgress * 0.018)
     );
+    const recoilDistance = recoilProgress * radius * 0.045;
+    const hurtJitter = hurtProgress * radius * 0.018;
+    this.visualContainer.x = -Math.cos(this.lastFireAngle) * recoilDistance + Math.sin(now * 0.09) * hurtJitter;
+    this.visualContainer.y = -Math.sin(this.lastFireAngle) * recoilDistance + Math.cos(now * 0.11) * hurtJitter;
+    this.visualContainer.alpha = clamp(1 - hurtProgress * 0.14 + phaseProgress * 0.05, 0.82, 1);
     this.visualContainer.skew.x = Math.sin(t * 0.55 + this.phase) * 0.005 * intensity;
     this.visualContainer.skew.y = Math.cos(t * 0.42) * 0.003 * intensity;
 
@@ -570,6 +661,13 @@ export class Boss {
         node.y -= radius * (0.08 + telegraphProgress * 0.06);
       }
     });
+    this.drawBossPresentationLayer(rig, t, {
+      hurtProgress,
+      recoilProgress,
+      phaseProgress,
+      telegraphProgress,
+      presentationState
+    });
 
     rig.scanLayer.clear();
     const scanY = -radius * 0.62 + ((t * 15) % (radius * 1.24));
@@ -585,6 +683,10 @@ export class Boss {
       coreRadius: Math.round(coreRadius),
       nodeCount: rig.weaponNodes.length,
       telegraph: Number(telegraphProgress.toFixed(3)),
+      state: presentationState,
+      hurt: Number(hurtProgress.toFixed(3)),
+      recoil: Number(recoilProgress.toFixed(3)),
+      phasePulse: Number(phaseProgress.toFixed(3)),
       phase: this.phase
     };
   }
@@ -594,29 +696,39 @@ export class Boss {
     const palette = rig.palette;
     const accent = rig.accent;
     const layer = rig.frontLayer;
+    const state = this.getPresentationState();
+    const action = telegraphProgress + (state === 'firing' ? 0.55 : 0) + (state === 'phaseChange' ? 0.35 : 0);
 
     if (archetype === 'conductor' || archetype === 'choir') {
-      const baton = Math.sin(t * 0.9) * 0.22;
+      const baton = Math.sin(t * (0.9 + action * 0.5)) * (0.22 + action * 0.08);
       layer.moveTo(Math.cos(baton) * -radius * 0.46, -radius * 0.16);
       layer.lineTo(Math.cos(baton) * radius * 0.52, radius * (0.12 + telegraphProgress * 0.06));
-      layer.stroke({ color: accent, width: 2, alpha: 0.28 + telegraphProgress * 0.16 });
+      layer.stroke({ color: accent, width: 2 + action * 1.2, alpha: 0.28 + telegraphProgress * 0.16 });
+      for (let i = 0; i < 3; i += 1) {
+        const y = -radius * 0.32 + i * radius * 0.18;
+        layer.moveTo(-radius * 0.36, y + Math.sin(t + i) * radius * 0.012);
+        layer.lineTo(radius * 0.36, y + Math.cos(t + i) * radius * 0.012);
+      }
+      layer.stroke({ color: palette, width: 1, alpha: 0.1 + action * 0.08 });
     } else if (archetype === 'forge' || archetype === 'monolith') {
-      const slam = Math.pow(Math.max(0, Math.sin(t * 0.72)), 5) * radius * 0.08;
+      const slam = Math.pow(Math.max(0, Math.sin(t * 0.72)), 5) * radius * (0.08 + action * 0.04);
       for (const side of [-1, 1]) {
         layer.roundRect(side * radius * 0.34 - 5, -radius * 0.52 + slam, 10, radius * 0.72, 5);
         layer.fill({ color: palette, alpha: 0.12 + telegraphProgress * 0.08 });
         layer.roundRect(side * radius * 0.34 - 5, -radius * 0.52 + slam, 10, radius * 0.72, 5);
-        layer.stroke({ color: accent, width: 1.5, alpha: 0.32 });
+        layer.stroke({ color: accent, width: 1.5 + action, alpha: 0.32 + action * 0.14 });
       }
+      layer.circle(0, radius * 0.28 + slam, radius * (0.08 + action * 0.04));
+      layer.fill({ color: accent, alpha: 0.08 + action * 0.1 });
     } else if (archetype === 'mirror') {
       const flicker = 0.1 + Math.max(0, Math.sin(t * 1.4)) * 0.08 + telegraphProgress * 0.1;
       for (const side of [-1, 1]) {
-        const x = side < 0 ? -radius * 0.74 : radius * 0.42;
+        const x = (side < 0 ? -radius * 0.74 : radius * 0.42) + Math.sin(t * 1.7 + side) * radius * 0.02 * (1 + action);
         layer.roundRect(x, -radius * 0.36, radius * 0.32, radius * 0.72, 10);
-        layer.stroke({ color: side < 0 ? accent : palette, width: 2, alpha: flicker });
+        layer.stroke({ color: side < 0 ? accent : palette, width: 2 + action, alpha: flicker + action * 0.08 });
       }
     } else if (archetype === 'needle') {
-      const aim = Math.atan2(playerY - this.y, playerX - this.x) - this.visualContainer.rotation;
+      const aim = Math.atan2(playerY - this.y, playerX - this.x) - this.visualContainer.rotation + Math.sin(t * 4.7) * 0.018 * (1 + action);
       const len = radius * (0.52 + telegraphProgress * 0.22);
       layer.moveTo(Math.cos(aim) * radius * 0.1, Math.sin(aim) * radius * 0.1);
       layer.lineTo(Math.cos(aim) * len, Math.sin(aim) * len);
@@ -626,15 +738,16 @@ export class Boss {
       layer.stroke({ color: accent, width: 1.5, alpha: 0.36 + telegraphProgress * 0.14 });
     } else if (archetype === 'vortex') {
       for (let i = 0; i < 4; i += 1) {
-        const a = t * 0.55 + i * Math.PI / 2;
+        const a = t * (0.55 + action * 0.35) + i * Math.PI / 2;
         layer.moveTo(Math.cos(a) * radius * 0.18, Math.sin(a) * radius * 0.18);
-        layer.lineTo(Math.cos(a + 0.25) * radius * 0.58, Math.sin(a + 0.25) * radius * 0.38);
+        layer.lineTo(Math.cos(a + 0.25) * radius * (0.58 + action * 0.08), Math.sin(a + 0.25) * radius * (0.38 + action * 0.05));
       }
       layer.stroke({ color: accent, width: 1.5, alpha: 0.22 + telegraphProgress * 0.1 });
     } else if (archetype === 'jester') {
       for (let i = 0; i < 3; i += 1) {
+        const bounce = Math.abs(Math.sin(t * 1.2 + i)) * radius * 0.05 * (1 + action);
         const x = (i - 1) * radius * 0.22 + Math.sin(t * 1.2 + i) * radius * 0.016;
-        layer.circle(x, -radius * 0.22 + Math.cos(t * 1.0 + i) * radius * 0.03, radius * 0.032);
+        layer.circle(x, -radius * 0.22 + Math.cos(t * 1.0 + i) * radius * 0.03 - bounce, radius * 0.032);
         layer.fill({ color: i % 2 ? palette : accent, alpha: 0.18 + telegraphProgress * 0.1 });
       }
     } else if (archetype === 'carrier') {
@@ -643,6 +756,12 @@ export class Boss {
         layer.roundRect(side * radius * 0.18 + door * radius, radius * 0.03, radius * 0.18, radius * 0.32, 8);
         layer.stroke({ color: accent, width: 1.5, alpha: 0.24 + telegraphProgress * 0.12 });
       }
+      for (let i = 0; i < 4; i += 1) {
+        const x = (i - 1.5) * radius * 0.16;
+        const y = radius * (0.24 + Math.sin(t * 1.1 + i) * 0.025);
+        layer.circle(x, y, radius * (0.018 + action * 0.008));
+      }
+      layer.fill({ color: accent, alpha: 0.18 + action * 0.12 });
     } else if (archetype === 'clock') {
       for (let i = 0; i < 8; i += 1) {
         const a = i * Math.PI / 4 + Math.floor(t * 0.9) * 0.12;
@@ -650,6 +769,89 @@ export class Boss {
         layer.lineTo(Math.cos(a) * radius * 0.58, Math.sin(a) * radius * 0.58);
       }
       layer.stroke({ color: accent, width: 2, alpha: 0.26 + telegraphProgress * 0.1 });
+      const hand = Math.floor(t * 1.2) * (Math.PI / 6);
+      layer.moveTo(0, 0);
+      layer.lineTo(Math.cos(hand) * radius * 0.48, Math.sin(hand) * radius * 0.48);
+      layer.stroke({ color: 0xffffff, width: 2 + action, alpha: 0.22 + action * 0.16 });
+    }
+  }
+
+  drawBossPresentationLayer(rig, t, state) {
+    const layer = rig.impactLayer;
+    if (!layer) return;
+    layer.clear();
+
+    const radius = rig.radius;
+    const palette = rig.palette;
+    const accent = rig.accent;
+    const {
+      hurtProgress = 0,
+      recoilProgress = 0,
+      phaseProgress = 0,
+      telegraphProgress = 0,
+      presentationState = 'idle'
+    } = state || {};
+
+    if (phaseProgress > 0) {
+      const phaseAge = 1 - phaseProgress;
+      for (let i = 0; i < 3; i += 1) {
+        const p = clamp(phaseAge + i * 0.18, 0, 1);
+        const r = radius * (0.58 + p * 0.72);
+        layer.circle(0, 0, r);
+        layer.stroke({ color: i % 2 ? palette : accent, width: 3 - i * 0.4, alpha: (0.32 - i * 0.06) * phaseProgress });
+      }
+    }
+
+    if (telegraphProgress > 0.2) {
+      for (const node of rig.weaponNodes || []) {
+        const spark = 1 + Math.sin(t * 2.6 + node.x * 0.02) * 0.12;
+        layer.circle(node.x, node.y, radius * (0.035 + telegraphProgress * 0.018) * spark);
+      }
+      layer.fill({ color: 0xffffff, alpha: 0.06 + telegraphProgress * 0.12 });
+    }
+
+    if (recoilProgress > 0) {
+      const length = radius * (0.5 + recoilProgress * 0.52);
+      const spread = 0.18 + recoilProgress * 0.08;
+      const start = radius * 0.14;
+      const angle = this.lastFireAngle;
+      const points = [
+        Math.cos(angle) * start,
+        Math.sin(angle) * start,
+        Math.cos(angle - spread) * length,
+        Math.sin(angle - spread) * length,
+        Math.cos(angle) * length * 1.12,
+        Math.sin(angle) * length * 1.12,
+        Math.cos(angle + spread) * length,
+        Math.sin(angle + spread) * length
+      ];
+      layer.poly(points);
+      layer.fill({ color: presentationState === 'charge' ? accent : palette, alpha: 0.08 + recoilProgress * 0.14 });
+      layer.moveTo(Math.cos(angle) * start, Math.sin(angle) * start);
+      layer.lineTo(Math.cos(angle) * length * 1.18, Math.sin(angle) * length * 1.18);
+      layer.stroke({ color: 0xffffff, width: 4 + recoilProgress * 4, alpha: 0.18 + recoilProgress * 0.28 });
+      layer.moveTo(Math.cos(angle) * start, Math.sin(angle) * start);
+      layer.lineTo(Math.cos(angle) * length, Math.sin(angle) * length);
+      layer.stroke({ color: accent, width: 2 + recoilProgress * 3, alpha: 0.38 + recoilProgress * 0.3 });
+    }
+
+    if (hurtProgress > 0) {
+      layer.circle(0, 0, radius * (0.48 + hurtProgress * 0.08));
+      layer.fill({ color: 0xffffff, alpha: 0.08 * hurtProgress });
+      const shards = 7;
+      for (let i = 0; i < shards; i += 1) {
+        const angle = (Math.PI * 2 * i) / shards + Math.sin(t + i) * 0.18;
+        const r1 = radius * (0.34 + 0.04 * (i % 2));
+        const r2 = radius * (0.76 + hurtProgress * 0.18);
+        layer.moveTo(Math.cos(angle) * r1, Math.sin(angle) * r1);
+        layer.lineTo(Math.cos(angle + 0.05) * r2, Math.sin(angle + 0.05) * r2);
+      }
+      layer.stroke({ color: 0xffffff, width: 2.4, alpha: 0.38 * hurtProgress });
+      for (let i = 0; i < 4; i += 1) {
+        const angle = t * 0.9 + i * Math.PI * 0.5;
+        layer.circle(Math.cos(angle) * radius * 0.62, Math.sin(angle) * radius * 0.38, 3 + hurtProgress * 4);
+      }
+      layer.fill({ color: accent, alpha: 0.28 * hurtProgress });
     }
   }
 
@@ -910,6 +1112,8 @@ export class Boss {
     if (playScene?.onBossPhaseChange) {
       playScene.onBossPhaseChange(phase, this);
     }
+    this.phasePulseUntil = Date.now() + BOSS_PHASE_PULSE_MS;
+    this.setPresentationState('phaseChange', BOSS_PHASE_PULSE_MS);
     const type = this.getSignatureForPhase(phase);
     this.startSignatureTelegraph(type, playerX, playerY);
     this.signatureCooldown = 120;
@@ -954,6 +1158,7 @@ export class Boss {
         ? (fairness.signatureRingTelegraphMs ?? 1220)
         : (fairness.signatureTelegraphMs ?? 1120)
     };
+    this.setPresentationState('charge', this.telegraph.duration);
     const playScene = this.game?.scenes?.play;
     if (playScene?.enqueueToast) {
       playScene.enqueueToast(this.telegraph.label, {
@@ -1177,6 +1382,7 @@ export class Boss {
   }
 
   executeSignatureMove(type, playerX, playerY) {
+    this.triggerFirePresentation(type, true, playerX, playerY);
     if (type === 'cone') {
       this.fireCone(playerX, playerY, this.level <= 2 ? 5 : 8, this.level <= 2 ? 0.5 : 0.64);
     } else if (type === 'mirror') {
@@ -1267,6 +1473,7 @@ export class Boss {
     this.regularAttackReadyAt = Date.now() + this.getRegularAttackIntervalMs();
     this.regularTelegraph = null;
     this.clearRegularAttackTelegraphVisual();
+    this.triggerFirePresentation(attack, false, playerX, playerY);
     const bullets = [];
 
     // Boss FX
@@ -1422,14 +1629,10 @@ export class Boss {
     this.health -= amount;
     this.updateHealthBar();
     console.log(`[BossDamage] level=${this.level} hpBefore=${hpBefore} dmg=${amount} hpAfter=${this.health} invuln=${invuln}`);
-
-    // Hit flash
-    this.sprite.tint = 0xffffff;
-    setTimeout(() => {
-      if (this.sprite) this.sprite.tint = 0xffffff;
-    }, 50);
+    this.triggerHurtPresentation(amount);
 
     if (this.health <= 0) {
+      this.triggerDefeatPresentation();
       this.active = false;
       return true; // Destroyed
     }

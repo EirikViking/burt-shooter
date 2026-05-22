@@ -87,6 +87,7 @@
     "playtest:release": "node scripts/release-playtest.mjs",
     "capture:steam-screenshots": "node scripts/capture-steam-screenshots.mjs",
     "capture:steam-trailer": "node scripts/capture-steam-trailer.mjs",
+    "capture:boss-vfx-polish": "node scripts/capture-boss-vfx-polish.mjs",
     "render:steam-trailer-audio": "node scripts/render-steam-trailer-audio.mjs",
     "render:steam-trailer-candidate": "node scripts/render-steam-trailer-candidate.mjs",
     "generate:announcer-voicepack": "node scripts/generate-mission-control-voicepack.mjs && node scripts/generate-intro-narration.mjs",

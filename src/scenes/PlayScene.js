@@ -2696,6 +2696,20 @@ export class PlayScene {
       layer.fill({ color: i % 2 ? 0xff66ff : 0x66ffff, alpha: 0.2 * alpha });
     }
 
+    const chevronCount = effect.triggered ? 7 : 4;
+    for (let i = 0; i < chevronCount; i += 1) {
+      const t = (progress * 1.25 + i / chevronCount) % 1;
+      const x = startX + dx * t;
+      const y = startY + dy * t;
+      const size = (10 + t * 8) * pulse;
+      const forwardX = dx / length;
+      const forwardY = dy / length;
+      layer.moveTo(x - forwardX * size - nx * size * 0.62, y - forwardY * size - ny * size * 0.62);
+      layer.lineTo(x + forwardX * size * 0.7, y + forwardY * size * 0.7);
+      layer.lineTo(x - forwardX * size + nx * size * 0.62, y - forwardY * size + ny * size * 0.62);
+    }
+    layer.stroke({ color: 0xffffff, width: 2.2, alpha: 0.28 * alpha });
+
     effect.captured?.forEach((target, index) => {
       const r = 20 + index * 3 + progress * 28;
       layer.circle(target.x, target.y, r);
@@ -2985,6 +2999,27 @@ export class PlayScene {
         hazard.sourceY + Math.sin(coreA) * hazard.length
       );
       layer.stroke({ color: hotColor, width: 2.2 + shimmer * 2, alpha: 0.78 * alpha });
+      const px = -Math.sin(coreA);
+      const py = Math.cos(coreA);
+      for (let i = 1; i <= 6; i += 1) {
+        const t = i / 7;
+        const cx = hazard.sourceX + Math.cos(coreA) * hazard.length * t;
+        const cy = hazard.sourceY + Math.sin(coreA) * hazard.length * t;
+        const band = 10 + t * 26 + shimmer * 8;
+        layer.moveTo(cx - px * band, cy - py * band);
+        layer.lineTo(cx + px * band, cy + py * band);
+      }
+      layer.stroke({ color: 0xffffff, width: 1.8, alpha: 0.26 * alpha });
+      for (let i = 0; i < 5; i += 1) {
+        const t = ((progress * 1.8 + i / 5) % 1);
+        const cx = hazard.sourceX + Math.cos(coreA) * hazard.length * t;
+        const cy = hazard.sourceY + Math.sin(coreA) * hazard.length * t;
+        const arrow = 9 + shimmer * 4;
+        layer.moveTo(cx - Math.cos(coreA) * arrow + px * arrow * 0.55, cy - Math.sin(coreA) * arrow + py * arrow * 0.55);
+        layer.lineTo(cx + Math.cos(coreA) * arrow, cy + Math.sin(coreA) * arrow);
+        layer.lineTo(cx - Math.cos(coreA) * arrow - px * arrow * 0.55, cy - Math.sin(coreA) * arrow - py * arrow * 0.55);
+      }
+      layer.stroke({ color, width: 2, alpha: 0.34 * alpha });
     } else {
       for (let i = 1; i <= 5; i++) {
         const t = i / 6;
@@ -2997,6 +3032,18 @@ export class PlayScene {
         layer.lineTo(cx + px * bandWidth, cy + py * bandWidth);
       }
       layer.stroke({ color: hotColor, width: 1.5, alpha: 0.28 * alpha });
+      for (let i = 1; i <= 4; i += 1) {
+        const t = i / 5;
+        const cx = hazard.sourceX + Math.cos(hazard.angle) * hazard.length * t;
+        const cy = hazard.sourceY + Math.sin(hazard.angle) * hazard.length * t;
+        const webWidth = hazard.length * t * Math.sin(half) * 0.34;
+        for (const side of [-1, 1]) {
+          const x = cx + -Math.sin(hazard.angle) * webWidth * side;
+          const y = cy + Math.cos(hazard.angle) * webWidth * side;
+          layer.circle(x, y, 3 + shimmer * 2);
+        }
+      }
+      layer.fill({ color: hotColor, alpha: 0.18 * alpha });
     }
 
     layer.circle(hazard.sourceX, hazard.sourceY, hazard.kind === 'beam' ? 14 + shimmer * 5 : 11 + shimmer * 4);
@@ -4906,9 +4953,20 @@ export class PlayScene {
 
     if (this.screenShake) this.screenShake.shake(12);
     if (this.particleManager) {
+      const boss = this.enemyManager?.boss;
+      const bossX = Number.isFinite(boss?.x) ? boss.x : this.game.getWidth() * 0.5;
+      const bossY = Number.isFinite(boss?.y) ? boss.y : this.game.getHeight() * 0.26;
+      const bossColor = boss?.profile?.accent || boss?.color || 0xffff33;
+      if (!boss?.defeatPresentationAt) {
+        this.particleManager.createBossExplosion(bossX, bossY, bossColor);
+        this.triggerShockwave(bossX, bossY, bossColor);
+      }
       for (let i = 0; i < 8; i++) {
-        const x = this.game.getWidth() * 0.2 + Math.random() * this.game.getWidth() * 0.6;
-        const y = this.game.getHeight() * 0.2 + Math.random() * this.game.getHeight() * 0.3;
+        const a = (Math.PI * 2 * i) / 8 + Math.random() * 0.25;
+        const spreadX = this.game.getWidth() * (0.08 + Math.random() * 0.16);
+        const spreadY = this.game.getHeight() * (0.04 + Math.random() * 0.1);
+        const x = Math.max(40, Math.min(this.game.getWidth() - 40, bossX + Math.cos(a) * spreadX));
+        const y = Math.max(70, Math.min(this.game.getHeight() * 0.56, bossY + Math.sin(a) * spreadY));
         this.particleManager.createExplosion(x, y, 0xffff33, 0.75);
       }
     }
