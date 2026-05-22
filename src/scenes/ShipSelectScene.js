@@ -281,17 +281,50 @@ export class ShipSelectScene {
 
   createBackButton(width, height) {
     const isMobile = width < 640;
+    const capWidth = Math.min(width - 32, isMobile ? 420 : 760);
+    const buttonWidth = isMobile ? 76 : 90;
+    const buttonHeight = isMobile ? 26 : 30;
+    const buttonX = width / 2 - capWidth / 2 + (isMobile ? 12 : 16);
+    const buttonY = isMobile ? 94 : 34;
 
-    this.backButton = this.createButton(
-      'MAIN MENU',
-      isMobile ? 12 : 24,
-      isMobile ? 18 : 24,
-      isMobile ? 106 : 126,
-      isMobile ? 30 : 32,
-      0x101a33,
-      0x66ffff,
-      () => this.returnToMenu('button')
-    );
+    this.backButton = new PIXI.Container();
+    this.backButton.position.set(buttonX, buttonY);
+    this.backButton.eventMode = 'static';
+    this.backButton.cursor = 'pointer';
+    this.backButton.hitArea = new PIXI.Rectangle(0, 0, buttonWidth, buttonHeight);
+
+    const drawButton = (hovered = false) => {
+      bg.clear();
+      bg.roundRect(0, 0, buttonWidth, buttonHeight, 6);
+      bg.fill({ color: hovered ? 0x123c52 : 0x051527, alpha: hovered ? 0.92 : 0.82 });
+      bg.stroke({ color: hovered ? 0x9ceeff : 0x2deeff, width: hovered ? 2 : 1.5, alpha: hovered ? 0.95 : 0.72 });
+    };
+
+    const bg = new PIXI.Graphics();
+    drawButton(false);
+    this.backButton.addChild(bg);
+
+    const label = createText('< MENU', {
+      fontFamily: FONT_BODY,
+      fontSize: isMobile ? 11 : 13,
+      fill: '#ccefff',
+      fontWeight: '900',
+      letterSpacing: 0
+    });
+    label.anchor.set(0.5);
+    label.position.set(buttonWidth / 2, buttonHeight / 2);
+    this.backButton.addChild(label);
+
+    this.backButton.on('pointerdown', (e) => {
+      e.stopPropagation();
+      AudioManager.playSfx('powerup', { force: true, volume: 0.28 });
+      this.returnToMenu('button');
+    });
+    this.backButton.on('pointerover', () => {
+      drawButton(true);
+      AudioManager.playSfx('thrusterFire', { volume: 0.08 });
+    });
+    this.backButton.on('pointerout', () => drawButton(false));
 
     this.container.addChild(this.backButton);
   }
