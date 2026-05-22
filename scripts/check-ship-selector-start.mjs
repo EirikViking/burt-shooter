@@ -79,7 +79,9 @@ async function showShipSelect(page) {
   });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'shipSelect' && state.shipSelect?.startButton?.width > 0;
+    return state.scene === 'shipSelect'
+      && state.shipSelect?.backButton?.width > 0
+      && state.shipSelect?.startButton?.width > 0;
   }, { timeout: 10000 });
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
@@ -103,6 +105,12 @@ try {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.__game?.showShipSelect), { timeout: 30000 });
 
+  const beforeBack = await showShipSelect(page);
+  const backTarget = beforeBack.shipSelect.backButton;
+  await page.mouse.click(backTarget.x + backTarget.width / 2, backTarget.y + backTarget.height / 2);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'menu', { timeout: 10000 });
+  const afterBack = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+
   const beforeClick = await showShipSelect(page);
   const clickTarget = beforeClick.shipSelect.startButton;
   await page.mouse.click(clickTarget.x + clickTarget.width / 2, clickTarget.y + clickTarget.height / 2);
@@ -121,6 +129,8 @@ try {
 
   const report = {
     ok: Boolean(
+      beforeBack.shipSelect?.backButton?.width > 0 &&
+      afterBack.scene === 'menu' &&
       beforeClick.shipSelect?.spriteKey &&
       afterClick.scene === 'play' &&
       afterClick.selectedShipSpriteKey === beforeClick.shipSelect.spriteKey &&
@@ -133,6 +143,10 @@ try {
       consoleErrors.length === 0
     ),
     baseUrl,
+    beforeBack: beforeBack.shipSelect,
+    afterBack: {
+      scene: afterBack.scene
+    },
     beforeClick: beforeClick.shipSelect,
     afterClick: {
       scene: afterClick.scene,
@@ -157,7 +171,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[ship-selector-start] PASS click=${afterClick.selectedShipSpriteKey} keyboard=${afterKeyboard.selectedShipSpriteKey} screenshot=${screenshot}`);
+    console.log(`[ship-selector-start] PASS back=${afterBack.scene} click=${afterClick.selectedShipSpriteKey} keyboard=${afterKeyboard.selectedShipSpriteKey} screenshot=${screenshot}`);
   }
 } finally {
   await browser.close();

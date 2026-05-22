@@ -430,6 +430,7 @@ function buildGameTextState(game) {
       unlocked: isShipUnlocked(selectedShip.spriteKey, getShipUnlockProgress()),
       unlock: selectedShip.unlock || null,
       launchInProgress: Boolean(shipSelectScene.launchInProgress),
+      backButton: getBoundsDebug(shipSelectScene.backButton),
       startButton: getBoundsDebug(shipSelectScene.startButton)
     } : null,
     gameOver: gameOverScene ? {

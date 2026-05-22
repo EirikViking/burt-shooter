@@ -35,6 +35,7 @@ export class ShipSelectScene {
     this.baseOrder = [...new Set(this.ships.map(ship => ship.baseId).filter(Boolean))];
     this.unlockProgress = getShipUnlockProgress();
     this.launchInProgress = false;
+    this.backButton = null;
 
     // Load saved selection
     const saved = this.loadSelection();
@@ -77,6 +78,7 @@ export class ShipSelectScene {
 
     this.createHangarFrame(width, height);
     this.createHeader(width, height);
+    this.createBackButton(width, height);
 
     // Carousel container
     const carouselY = this.layout.isMobile ? 120 : 108;
@@ -97,7 +99,7 @@ export class ShipSelectScene {
     // Fixed footer
     const footerContainer = new PIXI.Container();
     const instructions = createText(
-      'A/D OR ARROWS: SHIP  |  Q/E: JUMP 5  |  R: RANDOM READY  |  ENTER: LAUNCH',
+      'A/D OR ARROWS: SHIP  |  Q/E: JUMP 5  |  R: RANDOM READY  |  ENTER: LAUNCH  |  ESC: MENU',
       {
         fontFamily: FONT_BODY,
         fontSize: this.layout.isMobile ? 11 : 14,
@@ -275,6 +277,23 @@ export class ShipSelectScene {
 
     this.container.addChild(headerContainer);
     this.updateSelectionInfo();
+  }
+
+  createBackButton(width, height) {
+    const isMobile = width < 640;
+
+    this.backButton = this.createButton(
+      'MAIN MENU',
+      isMobile ? 12 : 24,
+      isMobile ? 18 : 24,
+      isMobile ? 106 : 126,
+      isMobile ? 30 : 32,
+      0x101a33,
+      0x66ffff,
+      () => this.returnToMenu('button')
+    );
+
+    this.container.addChild(this.backButton);
   }
 
   createPanel(width, height, accent = 0x00ffcc) {
@@ -1238,6 +1257,9 @@ export class ShipSelectScene {
       } else if (e.code === 'KeyR') {
         e.preventDefault();
         this.navigateRandom();
+      } else if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault();
+        this.returnToMenu('keyboard');
       } else if (e.key === 'Enter' || e.code === 'Space') {
         e.preventDefault();
         this.launchSelectedShip('keyboard');
@@ -1245,6 +1267,14 @@ export class ShipSelectScene {
     };
 
     window.addEventListener('keydown', this.keyHandler);
+  }
+
+  returnToMenu(source = 'unknown') {
+    if (this.launchInProgress) return;
+
+    if (DEBUG) console.log(`[ShipSelect] Returning to main menu via ${source}`);
+
+    this.game.showMenu();
   }
 
   launchSelectedShip(source = 'unknown') {
