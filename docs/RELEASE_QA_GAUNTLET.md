@@ -277,6 +277,148 @@ Not covered:
 14. Listen specifically for boss/tractor SFX headroom and harshness.
 15. Recheck game-over career copy when a lower-level run follows a higher saved career best.
 
-## Release Readiness
+## Follow-up: first boss manual difficulty regression
 
-The game is closer to release-ready because the QA gauntlet is now repeatable, score/progression/name/enemy-variety gates are covered, and two stale QA checks were fixed. I would not call the release fully cleared from this pass alone because the default 10-minute automation died before target duration, some selected-ship probes need human interpretation, raw audio peak warnings remain, and real Steam/global production validation is still outside this local pass.
+Manual finding: after the release QA gauntlet, a human test reported that the game felt much harder again and that the first boss had become a wall. That manual report was treated as higher priority than the earlier automation result.
+
+Root cause found:
+
+- Pre-boss attrition was too high: the current branch required six curated normal waves, plus optional timing spacer waves, before the first boss. This contradicted older release-ready tempo evidence where levels 1-10 used two focused normal waves before each boss.
+- Boss 1 also had an extra damaging aimed hazard layer on top of the visible boss shot pattern. The first-boss probe reproduced a three-life loss from `boss_hazard:signature:cone`, `enemy_bullet`, and `boss_contact`.
+- Active boss-combat notices could still use large boss dossier overlays, making phase and hit feedback heavier than intended during combat.
+
+Exact changes:
+
+- `BalanceConfig.difficulty.MIN_WAVES_BETWEEN_BOSSES` changed from `6` to `2`.
+- `BalanceConfig.difficulty.MIN_SECONDS_BETWEEN_BOSSES` changed from `75` to `0`, removing extra spacer waves before the first boss.
+- `BalanceConfig.difficulty.wavesPerBossBase` changed from `6` to `2`; levels 1-10 now stay at two focused waves, then later levels scale upward.
+- Curated level 1-4 scripts are sliced to the configured normal-wave count instead of always playing all six waves.
+- Boss 1 aimed regular/signature cone/fan/fakeout hazard registrations are suppressed; the first boss still fires its actual shot pattern.
+- Boss phase/half/life-lost combat notices now use compact top-lane toasts during active boss combat instead of large dossier overlays.
+- Boss spawn waits for the dossier/focus window to finish before combat begins.
+
+Values confirmed still present:
+
+- Boss HP: `44 + 4 per level`, min `44`.
+- Boss shoot delays: `44 / 42 / 38`.
+- Boss projectile speeds: `1.45 / 1.52 / 1.68`.
+- Boss telegraph/fairness values remain increased, including safe wedge `0.6`, hazard arming `320ms`, boss-clear repair `+1` capped at `5`, and repair invulnerability `1000ms`.
+
+New first-boss evidence:
+
+- `npm run check:first-boss-balance` passed at `test-results/first-boss-balance-2026-05-22T21-55-46-098Z/report.json`.
+- Result: lives `3 -> 4`, duration `25s`, damage `{}`.
+- Expected effect: boss 1 should feel tense but should no longer drain most lives through stacked cone/fan hazard damage or long pre-boss attrition.
+
+Remaining manual checklist:
+
+1. Start a fresh default-ship run.
+2. Confirm the first boss is reached after two readable normal waves.
+3. Fight boss 1 without relying on extra-life drops.
+4. Confirm strong play can clear it without life loss and average play loses no more than one life.
+5. Confirm the boss still feels tense and visually readable.
+
+## Follow-up: level 5 endurance failure
+
+Original failure: the QA gauntlet default 10-minute release playtest ended by normal game over at `498.764s`, peak level `5`, score `13,595`.
+
+Root cause found:
+
+- The old six-wave-plus-spacer early pacing caused too much pre-boss and pre-midgame attrition.
+- New high-pressure wave tactics were available too early for the release endurance path.
+- The release automation did not model boss hazard lanes and hugged the bottom edge too often, creating false contact/hazard losses.
+
+Exact changes:
+
+- Early boss pacing restored to two focused normal waves through level 10.
+- Harsh wave tactics are now gated later:
+  - `crossfire_pincer`: level 4
+  - `rush_feint`: level 7
+  - `orbit_snare`: level 8
+  - `weave_wall`: level 10
+  - `split_sweep`: level 12
+  - `ambush_lattice`: level 16
+- `release-playtest.mjs` now reads active boss hazards and scores candidate lanes against beams, cones, rings, and wall columns.
+- The release bot now avoids the very bottom edge more deliberately.
+
+New release playtest result:
+
+- `npm run playtest:release` passed at `test-results/release-playtest-followup-default-10min-tactic-gate/report.json`.
+- Survival: `599.926s`.
+- Final state: alive in play scene, level `13`, score `14,235`, lives `1`.
+- Console/page/network/request failures: `0`.
+
+Status: the 600s gate now passes. The final level is higher than the human target of "around level 10", so manual play should still judge whether the midgame feels too accelerated for humans.
+
+## Follow-up: selected-ship wave-1 probes
+
+Original finding: the fastest and highest-damage selected-ship probes were technically stable but did not clear wave 1 under the first QA harness.
+
+Root cause found:
+
+- This was a harness and pacing issue, not a confirmed ship bug. The bot could fire between far-lane enemies and the old long pre-boss wave plan made the issue more visible.
+
+New probe results:
+
+- Fastest ship `nova-player-ship-16.png`: passed 120s at `test-results/release-playtest-followup-fastest-2min-final/report.json`, reached level `4`, score `2,391`, lives `5`.
+- Highest-damage ship `nova-player-ship-15.png`: passed 120s at `test-results/release-playtest-followup-highdamage-2min-final/report.json`, reached level `4`, score `2,984`, lives `5`.
+
+Status: fixed in automation. No ship stats, weapons, traits, or wave-1 enemy stats were changed.
+
+## Follow-up: game-over progression copy
+
+Problem: the end screen could read like a level 5 run was expected to reach level 22/23, because this-run results and saved career-best milestones were visually mixed.
+
+Exact changes:
+
+- The post-run copy now separates `THIS RUN`, `CAREER BEST`, `NEXT CAREER GOAL`, and `NEXT SHIP`.
+- Regression coverage now checks `thisRunLevel=5` with saved career best `21`, and expects `NEXT SHIP: VIOLET FEINT` plus `CAREER LEVEL 21/23 - 2 LEVELS TO GO`.
+
+Validation:
+
+- `npm run check:gameover-motivation` passed at `test-results/gameover-motivation-2026-05-22T21-55-46-010Z/`.
+- `npm run check:gameover-ceremony` passed at `test-results/gameover-ceremony-1779486946095/report.json`.
+
+## Follow-up: audio peak warnings
+
+Original finding: six boss/tractor SFX raw-peaked at `0.0 dB`.
+
+Files reduced by 2 dB:
+
+- `public/audio/sfx/nova-swarm/nova_tractor_break_bloom.mp3`
+- `public/audio/sfx/nova-swarm/nova_boss_beam_telegraph.mp3`
+- `public/audio/sfx/nova-swarm/nova_boss_beam_fire.mp3`
+- `public/audio/sfx/nova-swarm/nova_boss_web_telegraph.mp3`
+- `public/audio/sfx/nova-swarm/nova_boss_web_snap.mp3`
+- `public/audio/sfx/nova-swarm/nova_boss_hazard_impact.mp3`
+
+Validation:
+
+- `npm run audit:audio-mix` passed with warnings: none.
+- Latest audit measured 211 files across 26 music, 131 SFX, and 101 voice rows.
+
+## Follow-up: Vite chunk warning
+
+Status: still present.
+
+- Latest `npm run build:current` passed, with main app chunk `712.74 kB`.
+- Pixi is already split into `vendor-pixi`; further code-splitting did not look like a safe release-follow-up change.
+- This remains low severity and should be handled after release-critical playability and QA gates.
+
+## Follow-up Release Readiness
+
+The follow-up pass moves the game materially closer to release-ready:
+
+- First-boss regression is understood and has a targeted probe.
+- The default 600s release playtest now passes.
+- Selected-ship probes no longer fail wave 1.
+- Game-over career copy is clearer.
+- Audio peak warnings are resolved.
+- Normal enemy variety expansion remains intact: 120 profiles, 28 movement families, 23 attack families, level 11 still exposes only 39/120 profiles, and level 40 exposes the full pool.
+
+Remaining risks:
+
+- Manual human play should verify that the level-13 automation outcome does not mean the game now progresses too fast for real players.
+- Real production global backend reset/write and real Steam leaderboard write are still outside this local pass.
+- The Vite chunk warning remains a known low-risk build warning.
+- Physical controller disconnect, real mobile device, and 20-minute survival remain untested.

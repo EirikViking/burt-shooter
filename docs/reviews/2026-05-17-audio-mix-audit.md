@@ -1,6 +1,6 @@
 # Audio Mix Audit - 2026-05-22
 
-Generated: 2026-05-22T17:48:44.120Z
+Generated: 2026-05-22T21:56:20.744Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -17,7 +17,7 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 - Music rows: 26
 - SFX rows: 131
 - Voice rows: 101
-- Warnings: 6
+- Warnings: 0
 - Errors: 0
 
 ## Loudest Effective Peaks
@@ -46,9 +46,9 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | sfx | shoot_heavy | laserLarge_004.mp3 | -0.6 dB | -20.7 dB | -37.4 dB |
 | sfx | shoot_heavy | laserLarge_003.mp3 | -1.0 dB | -21.1 dB | -38.3 dB |
 | sfx | shoot_heavy | laserLarge_001.mp3 | -1.1 dB | -21.2 dB | -36.9 dB |
-| sfx | boss_beam_fire | nova_boss_beam_fire.mp3 | 0.0 dB | -21.3 dB | -28.0 dB |
 | sfx | shoot_heavy | laserLarge_000.mp3 | -1.2 dB | -21.3 dB | -37.6 dB |
 | sfx | shoot_alt | laserRetro_000.mp3 | -0.2 dB | -21.7 dB | -29.3 dB |
+| sfx | shoot_alt | laserRetro_003.mp3 | -0.2 dB | -21.7 dB | -29.4 dB |
 
 ### Voice
 
@@ -93,12 +93,7 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Warnings
 
-- sfx:tractor_break_bloom /audio/sfx/nova-swarm/nova_tractor_break_bloom.mp3 - raw peak is very close to full scale (0.0 dB)
-- sfx:boss_beam_telegraph /audio/sfx/nova-swarm/nova_boss_beam_telegraph.mp3 - raw peak is very close to full scale (0.0 dB)
-- sfx:boss_beam_fire /audio/sfx/nova-swarm/nova_boss_beam_fire.mp3 - raw peak is very close to full scale (0.0 dB)
-- sfx:boss_web_telegraph /audio/sfx/nova-swarm/nova_boss_web_telegraph.mp3 - raw peak is very close to full scale (0.0 dB)
-- sfx:boss_web_fire /audio/sfx/nova-swarm/nova_boss_web_snap.mp3 - raw peak is very close to full scale (0.0 dB)
-- sfx:boss_hazard_impact /audio/sfx/nova-swarm/nova_boss_hazard_impact.mp3 - raw peak is very close to full scale (0.0 dB)
+- None.
 
 ## Remaining Manual Check
 

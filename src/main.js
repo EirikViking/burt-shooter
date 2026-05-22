@@ -437,6 +437,7 @@ function buildGameTextState(game) {
     gameOver: gameOverScene ? {
       score: gameOverScene.finalScore || 0,
       level: gameOverScene.finalLevel || 0,
+      levelSummary: gameOverScene.levelSummary || gameOverScene.levelText?.text || null,
       unlockSummary: gameOverScene.unlockSummary || null,
       nextGoal: gameOverScene.nextGoal?.text || gameOverScene.nextGoalText?.text || null,
       prompt: gameOverScene.promptText?.text || null,

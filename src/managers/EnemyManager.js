@@ -19,6 +19,7 @@ import {
 const WAVE_TACTICS = [
   {
     id: 'strafe_sweep',
+    minLevel: 1,
     label: 'STRAFE SWEEP',
     move: 'sweep',
     shot: 'sweep',
@@ -30,6 +31,7 @@ const WAVE_TACTICS = [
   },
   {
     id: 'crossfire_pincer',
+    minLevel: 4,
     label: 'CROSSFIRE PINCER',
     move: 'pincer',
     shot: 'crossfire',
@@ -41,6 +43,7 @@ const WAVE_TACTICS = [
   },
   {
     id: 'dive_chain',
+    minLevel: 1,
     label: 'DIVE CHAIN',
     move: 'chain',
     shot: 'burst_pair',
@@ -53,6 +56,7 @@ const WAVE_TACTICS = [
   },
   {
     id: 'pulse_net',
+    minLevel: 2,
     label: 'PULSE NET',
     move: 'pulse',
     shot: 'net',
@@ -64,6 +68,7 @@ const WAVE_TACTICS = [
   },
   {
     id: 'orbit_snare',
+    minLevel: 8,
     label: 'ORBIT SNARE',
     move: 'orbit',
     shot: 'fan',
@@ -75,6 +80,7 @@ const WAVE_TACTICS = [
   },
   {
     id: 'needle_stagger',
+    minLevel: 1,
     label: 'NEEDLE STAGGER',
     move: 'needle',
     shot: 'needle',
@@ -86,6 +92,7 @@ const WAVE_TACTICS = [
   },
   {
     id: 'weave_wall',
+    minLevel: 10,
     label: 'WEAVE WALL',
     move: 'weave_wall',
     shot: 'fan',
@@ -97,6 +104,7 @@ const WAVE_TACTICS = [
   },
   {
     id: 'rush_feint',
+    minLevel: 7,
     label: 'RUSH FEINT',
     move: 'feint',
     shot: 'burst_pair',
@@ -109,6 +117,7 @@ const WAVE_TACTICS = [
   },
   {
     id: 'split_sweep',
+    minLevel: 12,
     label: 'SPLIT SWEEP',
     move: 'split_sweep',
     shot: 'sweep',
@@ -120,6 +129,7 @@ const WAVE_TACTICS = [
   },
   {
     id: 'ambush_lattice',
+    minLevel: 16,
     label: 'AMBUSH LATTICE',
     move: 'ambush',
     shot: 'net',
@@ -403,7 +413,9 @@ export class EnemyManager {
       ]
     };
     const script = scripts[level];
-    return script ? script.map((wave) => ({ ...wave })) : null;
+    if (!script) return null;
+    const waveCount = Math.max(1, Math.min(script.length, this.getNormalWaveCount(level)));
+    return script.slice(0, waveCount).map((wave) => ({ ...wave }));
   }
 
   createBossSpacingWave() {
@@ -438,6 +450,7 @@ export class EnemyManager {
   }
 
   pickWaveTactic(level, waveIndex, formation = 'ARC') {
+    const safeLevel = Math.max(1, Number(level) || 1);
     const formationBias = {
       PINCER: 'crossfire_pincer',
       STAGGERED_WING: waveIndex % 2 ? 'dive_chain' : 'strafe_sweep',
@@ -450,11 +463,14 @@ export class EnemyManager {
       DIAGONAL_RAID: 'rush_feint',
       CROSS_STREAM: 'crossfire_pincer'
     };
-    if (formationBias[formation] && (level + waveIndex) % 3 !== 0) {
-      return formationBias[formation];
+    if (formationBias[formation] && (safeLevel + waveIndex) % 3 !== 0) {
+      const biased = TACTIC_BY_ID[formationBias[formation]];
+      if (!biased || (Number(biased.minLevel) || 1) <= safeLevel) return formationBias[formation];
     }
-    const index = Math.abs((level * 7 + waveIndex * 3 + String(formation).length) % WAVE_TACTICS.length);
-    return WAVE_TACTICS[index].id;
+    const allowed = WAVE_TACTICS.filter((tactic) => (Number(tactic.minLevel) || 1) <= safeLevel);
+    const pool = allowed.length ? allowed : WAVE_TACTICS;
+    const index = Math.abs((safeLevel * 7 + waveIndex * 3 + String(formation).length) % pool.length);
+    return pool[index].id;
   }
 
   resolveWaveTactic(config) {
@@ -462,8 +478,16 @@ export class EnemyManager {
       ? config.tactic
       : config?.tactic?.id;
     const fallbackId = this.pickWaveTactic(this.level || 1, this.currentWaveIndex || 0, config?.formation || 'ARC');
+    const level = Math.max(1, Number(this.level) || 1);
+    const requested = TACTIC_BY_ID[id] || null;
+    const fallback = TACTIC_BY_ID[fallbackId] || WAVE_TACTICS[0];
+    const allowed = requested && (Number(requested.minLevel) || 1) <= level
+      ? requested
+      : ((Number(fallback.minLevel) || 1) <= level
+        ? fallback
+        : WAVE_TACTICS.find((tactic) => (Number(tactic.minLevel) || 1) <= level) || WAVE_TACTICS[0]);
     return {
-      ...(TACTIC_BY_ID[id] || TACTIC_BY_ID[fallbackId] || WAVE_TACTICS[0]),
+      ...allowed,
       ...(typeof config?.tactic === 'object' ? config.tactic : {})
     };
   }
@@ -607,7 +631,7 @@ export class EnemyManager {
         }
 
         const bossGateMs = BalanceConfig.difficulty.bossGateMs || 1000;
-        const resolvedBossGateMs = Math.max(bossGateMs, this.bossGateTauntDelayMs + 900);
+        const resolvedBossGateMs = Math.max(bossGateMs, this.bossGateTauntDelayMs + 2300);
         if (this.bossGateTimer > resolvedBossGateMs && !this.bossSpawning) {
           this.logBossStatus('boss_gate_spawn');
           console.log(`[BossFlow] spawn boss level=${this.level}`);

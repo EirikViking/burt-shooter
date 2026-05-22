@@ -187,6 +187,7 @@ export class GameOverScene {
       rank: finalRank,
       level: this.finalLevel
     });
+    this.levelSummary = this.createLevelSummary(previousProgress, currentProgress);
     this.unlockSummary = this.createUnlockSummary(previousProgress, currentProgress);
     this.nextGoal = this.createNextGoal(previousProgress, currentProgress);
 
@@ -231,10 +232,12 @@ export class GameOverScene {
     this.container.addChild(this.scoreText);
 
     const levelSize = getResponsiveFontSize(layout, 'subtitle');
-    this.levelText = createText(`REACHED LEVEL: ${this.finalLevel}`, {
+    this.levelText = createText(this.levelSummary, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: levelSize,
-      fill: '#ffffff'
+      fill: '#ffffff',
+      align: 'center',
+      lineHeight: Math.round(levelSize * 1.12)
     });
     this.levelText.anchor.set(0.5);
     this.container.addChild(this.levelText);
@@ -682,6 +685,8 @@ export class GameOverScene {
     this.title.style.lineHeight = Math.round(titleSize * 1.08);
     this.scoreText.style.fontSize = scoreSize;
     this.levelText.style.fontSize = levelSize;
+    this.levelText.style.align = 'center';
+    this.levelText.style.lineHeight = Math.round(levelSize * 1.12);
     this.unlockText.style.fontSize = unlockSize;
     this.unlockText.style.wordWrap = true;
     this.unlockText.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
@@ -1405,16 +1410,19 @@ export class GameOverScene {
       })[0];
 
     if (!nextShip) {
-      return 'HANGAR COMPLETE: ALL SHIPS UNLOCKED\nCHASE A CLEANER RUN';
+      const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestLevel) || 1));
+      return `HANGAR COMPLETE: ALL SHIPS UNLOCKED\nCAREER BEST: LEVEL ${bestLevel}`;
     }
 
     const requirement = nextShip.unlock || {};
     const requiredLevel = Math.max(1, Math.floor(Number(requirement.level) || 1));
     const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestLevel) || 1));
-    const needed = requiredLevel > bestLevel
-      ? `REACH LEVEL ${requiredLevel}`
-      : 'ONE BETTER RUN';
-    return `NEXT SHIP: ${nextShip.name}\nNEED ${needed}`;
+    const remaining = Math.max(0, requiredLevel - bestLevel);
+    if (remaining > 0) {
+      const unit = remaining === 1 ? 'LEVEL' : 'LEVELS';
+      return `NEXT SHIP: ${nextShip.name}\nCAREER LEVEL ${bestLevel}/${requiredLevel} - ${remaining} ${unit} TO GO`;
+    }
+    return `NEXT SHIP: ${nextShip.name}\nCAREER LEVEL ${bestLevel}/${requiredLevel} - ONE BETTER RUN`;
   }
 
   createNextGoal(previousProgress = {}, currentProgress = {}) {
@@ -1431,10 +1439,18 @@ export class GameOverScene {
     const bestLevel = Math.max(1, Number(currentProgress.bestLevel) || this.finalLevel || 1);
     const nextLevel = this.getNextLevelGoal(bestLevel);
     if (nextLevel > bestLevel) {
-      return { text: `NEXT GOAL: REACH LEVEL ${nextLevel}`, tone: 'level' };
+      return { text: `NEXT CAREER GOAL: REACH LEVEL ${nextLevel}`, tone: 'level' };
     }
 
     return { text: 'NEXT GOAL: CLIMB THE GLOBAL BOARD', tone: 'leaderboard' };
+  }
+
+  createLevelSummary(previousProgress = {}, currentProgress = {}) {
+    const previousBestLevel = Math.max(1, Math.floor(Number(previousProgress.bestLevel) || 1));
+    const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestLevel) || this.finalLevel || 1));
+    const newBest = bestLevel > previousBestLevel && this.finalLevel >= bestLevel;
+    const suffix = newBest ? ' - NEW BEST' : '';
+    return `THIS RUN: LEVEL ${this.finalLevel}\nCAREER BEST: LEVEL ${bestLevel}${suffix}`;
   }
 
   getNextLevelGoal(bestLevel) {

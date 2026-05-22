@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-22T17:48:44.120Z",
+  "generatedAt": "2026-05-22T21:56:20.744Z",
   "defaults": {
     "masterVolume": 0.3,
     "musicVolume": 0.2,
@@ -16,7 +16,7 @@
     "musicRows": 26,
     "sfxRows": 131,
     "voiceRows": 101,
-    "warnings": 6,
+    "warnings": 0,
     "errors": 0
   },
   "loudestEffectivePeaks": {
@@ -235,20 +235,6 @@
       },
       {
         "type": "sfx",
-        "event": "boss_beam_fire",
-        "url": "/audio/sfx/nova-swarm/nova_boss_beam_fire.mp3",
-        "durationSeconds": 2,
-        "mixVolume": 0.72,
-        "duckFactor": null,
-        "effectiveLinear": 0.0864,
-        "rawMeanDb": -6.7,
-        "rawPeakDb": 0,
-        "gainDb": -21.3,
-        "effectiveMeanDb": -28,
-        "effectivePeakDb": -21.3
-      },
-      {
-        "type": "sfx",
         "event": "shoot_heavy",
         "url": "/audio/sfx/laserLarge_000.mp3",
         "durationSeconds": 0.68,
@@ -273,6 +259,20 @@
         "rawPeakDb": -0.2,
         "gainDb": -21.5,
         "effectiveMeanDb": -29.3,
+        "effectivePeakDb": -21.7
+      },
+      {
+        "type": "sfx",
+        "event": "shoot_alt",
+        "url": "/audio/sfx/laserRetro_003.mp3",
+        "durationSeconds": 0.25,
+        "mixVolume": 0.7,
+        "duckFactor": null,
+        "effectiveLinear": 0.084,
+        "rawMeanDb": -7.9,
+        "rawPeakDb": -0.2,
+        "gainDb": -21.5,
+        "effectiveMeanDb": -29.4,
         "effectivePeakDb": -21.7
       }
     ],
@@ -621,44 +621,7 @@
       }
     ]
   },
-  "warnings": [
-    {
-      "type": "sfx",
-      "event": "tractor_break_bloom",
-      "url": "/audio/sfx/nova-swarm/nova_tractor_break_bloom.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "sfx",
-      "event": "boss_beam_telegraph",
-      "url": "/audio/sfx/nova-swarm/nova_boss_beam_telegraph.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "sfx",
-      "event": "boss_beam_fire",
-      "url": "/audio/sfx/nova-swarm/nova_boss_beam_fire.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "sfx",
-      "event": "boss_web_telegraph",
-      "url": "/audio/sfx/nova-swarm/nova_boss_web_telegraph.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "sfx",
-      "event": "boss_web_fire",
-      "url": "/audio/sfx/nova-swarm/nova_boss_web_snap.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    },
-    {
-      "type": "sfx",
-      "event": "boss_hazard_impact",
-      "url": "/audio/sfx/nova-swarm/nova_boss_hazard_impact.mp3",
-      "message": "raw peak is very close to full scale (0.0 dB)"
-    }
-  ],
+  "warnings": [],
   "errors": [],
   "rows": [
     {
@@ -2699,11 +2662,11 @@
       "mixVolume": 0.68,
       "duckFactor": null,
       "effectiveLinear": 0.0816,
-      "rawMeanDb": -7.6,
-      "rawPeakDb": 0,
+      "rawMeanDb": -9.5,
+      "rawPeakDb": -0.2,
       "gainDb": -21.8,
-      "effectiveMeanDb": -29.4,
-      "effectivePeakDb": -21.8
+      "effectiveMeanDb": -31.3,
+      "effectivePeakDb": -22
     },
     {
       "type": "sfx",
@@ -2713,11 +2676,11 @@
       "mixVolume": 0.56,
       "duckFactor": null,
       "effectiveLinear": 0.0672,
-      "rawMeanDb": -11.2,
-      "rawPeakDb": 0,
+      "rawMeanDb": -13.2,
+      "rawPeakDb": -1.8,
       "gainDb": -23.5,
-      "effectiveMeanDb": -34.7,
-      "effectivePeakDb": -23.5
+      "effectiveMeanDb": -36.7,
+      "effectivePeakDb": -25.3
     },
     {
       "type": "sfx",
@@ -2727,11 +2690,11 @@
       "mixVolume": 0.72,
       "duckFactor": null,
       "effectiveLinear": 0.0864,
-      "rawMeanDb": -6.7,
-      "rawPeakDb": 0,
+      "rawMeanDb": -8.7,
+      "rawPeakDb": -0.5,
       "gainDb": -21.3,
-      "effectiveMeanDb": -28,
-      "effectivePeakDb": -21.3
+      "effectiveMeanDb": -30,
+      "effectivePeakDb": -21.8
     },
     {
       "type": "sfx",
@@ -2741,11 +2704,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -20.9,
-      "rawPeakDb": 0,
+      "rawMeanDb": -22.9,
+      "rawPeakDb": -1.8,
       "gainDb": -24.8,
-      "effectiveMeanDb": -45.7,
-      "effectivePeakDb": -24.8
+      "effectiveMeanDb": -47.7,
+      "effectivePeakDb": -26.6
     },
     {
       "type": "sfx",
@@ -2755,11 +2718,11 @@
       "mixVolume": 0.62,
       "duckFactor": null,
       "effectiveLinear": 0.0744,
-      "rawMeanDb": -3.4,
-      "rawPeakDb": 0,
+      "rawMeanDb": -5.4,
+      "rawPeakDb": -0.8,
       "gainDb": -22.6,
-      "effectiveMeanDb": -26,
-      "effectivePeakDb": -22.6
+      "effectiveMeanDb": -28,
+      "effectivePeakDb": -23.4
     },
     {
       "type": "sfx",
@@ -2797,11 +2760,11 @@
       "mixVolume": 0.58,
       "duckFactor": null,
       "effectiveLinear": 0.0696,
-      "rawMeanDb": -13.7,
-      "rawPeakDb": 0,
+      "rawMeanDb": -15.7,
+      "rawPeakDb": -1.2,
       "gainDb": -23.1,
-      "effectiveMeanDb": -36.8,
-      "effectivePeakDb": -23.1
+      "effectiveMeanDb": -38.8,
+      "effectivePeakDb": -24.3
     },
     {
       "type": "sfx",

@@ -2751,6 +2751,13 @@ export class PlayScene {
     const startedAt = Date.now();
     const fairness = BalanceConfig.difficulty?.bossFairness || {};
     const hazardArmingMs = fairness.hazardArmingMs ?? 240;
+    const earlyHazardType = type || attack;
+    const earlyAimedHazard = (category === 'regular' || category === 'signature') &&
+      (Number(boss.level) || Number(this.game?.level) || 1) <= 1 &&
+      ['aim', 'fan', 'burst', 'fakeout', 'cone', 'mirror'].includes(earlyHazardType);
+    if (earlyAimedHazard) {
+      return null;
+    }
     const base = {
       id: `${startedAt}_${Math.random().toString(36).slice(2)}`,
       category,
@@ -4621,6 +4628,12 @@ export class PlayScene {
   showBossTaunt(reason = 'boss_spawn') {
     const caption = this.getBossTauntCaption(reason);
     if (!caption) return;
+
+    if (reason !== 'boss_spawn' && this.enemyManager?.state === 'BOSS_ACTIVE') {
+      this.showBossCombatNotice(reason, caption);
+      return;
+    }
+
     const tex = this.bossDossierTexture;
 
     // Generated threat dossier only. No legacy portrait lookup is used.
@@ -4756,6 +4769,28 @@ export class PlayScene {
     };
     this.game.app.ticker.add(animate);
     AudioManager.play('menuSelect');
+  }
+
+  showBossCombatNotice(reason, caption) {
+    const compactHud = this.game.getWidth() < 620;
+    const label = reason === 'boss_life_lost'
+      ? 'HIT TAKEN'
+      : reason === 'boss_half'
+        ? 'BOSS WEAKENING'
+        : 'PATTERN SHIFT';
+    const text = reason === 'boss_life_lost' ? label : `${label}: ${caption}`;
+    this.enqueueToast(text, {
+      fontSize: compactHud ? 15 : 18,
+      fill: reason === 'boss_life_lost' ? '#ff8f9c' : '#fff45c',
+      stroke: '#140006',
+      strokeThickness: compactHud ? 2 : 3,
+      slot: 'top',
+      type: 'boss',
+      priority: 3,
+      duration: reason === 'boss_life_lost' ? 850 : 1250,
+      y: this.game.getHeight() * (compactHud ? 0.28 : 0.2),
+      maxWidth: this.game.getWidth() * (compactHud ? 0.84 : 0.64)
+    });
   }
 
   showBossIntro(name, taunt) {

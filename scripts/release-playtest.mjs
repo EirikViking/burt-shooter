@@ -312,10 +312,41 @@ async function collectPlayState(page) {
           x: Math.round(bullet.x),
           y: Math.round(bullet.y)
         })),
+      bossHazards: (play?.bossHazards || [])
+        .filter((hazard) => hazard && hazard.hit !== true)
+        .slice(0, 12)
+        .map((hazard) => ({
+          kind: hazard.kind || null,
+          type: hazard.type || null,
+          category: hazard.category || null,
+          sourceX: Number(hazard.sourceX) || 0,
+          sourceY: Number(hazard.sourceY) || 0,
+          angle: Number(hazard.angle) || 0,
+          spread: Number(hazard.spread) || 0,
+          length: Number(hazard.length) || 0,
+          radius: Number(hazard.radius) || 0,
+          columns: Array.isArray(hazard.columns) ? hazard.columns.map((x) => Number(x) || 0) : [],
+          width: Number(hazard.width) || 0,
+          startY: Number(hazard.startY) || 0,
+          endY: Number(hazard.endY) || 0,
+          innerRadius: Number(hazard.innerRadius) || 0,
+          outerRadius: Number(hazard.outerRadius) || 0,
+          safeAngle: Number(hazard.safeAngle) || 0,
+          safeWedge: Number(hazard.safeWedge) || 0,
+          armed: (Date.now() - (Number(hazard.startedAt) || 0)) >= (Number(hazard.armingMs) || 0),
+          remainingMs: Math.max(0, Math.round(((Number(hazard.startedAt) || 0) + (Number(hazard.durationMs) || 0)) - Date.now()))
+        })),
       counts: textState?.counts || null,
       wave: textState?.wave || null
     };
   });
+}
+
+function normalizeAngle(angle) {
+  let result = angle;
+  while (result > Math.PI) result -= Math.PI * 2;
+  while (result < -Math.PI) result += Math.PI * 2;
+  return result;
 }
 
 function scoreLane(state, x, y, viewportWidth, viewportHeight) {
@@ -350,6 +381,49 @@ function scoreLane(state, x, y, viewportWidth, viewportHeight) {
       score -= 900 * lowThreat;
     }
   }
+  for (const hazard of state.bossHazards || []) {
+    if (!hazard || hazard.remainingMs <= 0) continue;
+    const armedWeight = hazard.armed ? 1 : 0.45;
+    const categoryWeight = hazard.category === 'signature' ? 1.2 : 1;
+    if (hazard.kind === 'wall') {
+      if (y >= hazard.startY - 40 && y <= hazard.endY + 40) {
+        for (const columnX of hazard.columns || []) {
+          const dx = Math.abs(x - columnX);
+          const dangerWidth = Math.max(28, (hazard.width || 20) * 0.7 + 28);
+          if (dx <= dangerWidth) score -= 2200 * armedWeight * categoryWeight;
+          else if (dx <= dangerWidth + 54) score -= (dangerWidth + 54 - dx) * 8 * armedWeight;
+        }
+      }
+      continue;
+    }
+
+    const dx = x - hazard.sourceX;
+    const dy = y - hazard.sourceY;
+    const distance = Math.hypot(dx, dy);
+    if (hazard.kind === 'ring') {
+      const inner = hazard.innerRadius || 0;
+      const outer = hazard.outerRadius || 0;
+      if (distance >= inner - 30 && distance <= outer + 30) {
+        const angle = Math.atan2(dy, dx);
+        const inSafeWedge = Math.abs(normalizeAngle(angle - hazard.safeAngle)) <= (hazard.safeWedge || 0);
+        if (inSafeWedge) score += 80;
+        else score -= 1800 * armedWeight * categoryWeight;
+      }
+      continue;
+    }
+
+    const angleToPoint = Math.atan2(dy, dx);
+    const diff = Math.abs(normalizeAngle(angleToPoint - hazard.angle));
+    const along = Math.cos(diff) * distance;
+    if (along < -32 || along > (hazard.length || viewportHeight * 1.1) + 32) continue;
+    const perpendicular = Math.abs(Math.sin(diff) * distance);
+    const spread = Math.max(0.02, hazard.spread || 0.12);
+    const radius = Math.max(18, hazard.radius || 24);
+    const angularHit = diff <= (spread / 2) * 0.92;
+    const lineHit = perpendicular <= radius + 18;
+    if (angularHit || lineHit) score -= (hazard.kind === 'beam' ? 2300 : 1800) * armedWeight * categoryWeight;
+    else if (diff <= spread / 2 + 0.1 || perpendicular <= radius + 58) score -= 480 * armedWeight;
+  }
   return score;
 }
 
@@ -358,7 +432,7 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
   const playerY = state.player?.y ?? viewportHeight * 0.8;
   const margin = 46;
   const combatTop = viewportHeight * 0.55;
-  const combatBottom = viewportHeight - 92;
+  const combatBottom = viewportHeight * 0.78;
 
   const visibleTargets = (state.enemies || []).filter((enemy) => enemy.x >= 0 && enemy.x <= viewportWidth);
   let targetX = viewportWidth / 2;
@@ -368,15 +442,29 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
       targetX = visibleTargets[0].x;
     } else {
       const nonBossTargets = visibleTargets.filter((enemy) => enemy.kind !== 'boss');
-      const weighted = nonBossTargets.reduce((acc, enemy) => {
-        const yWeight = 1 + Math.max(0, Number(enemy.y) || 0) / viewportHeight;
-        const damagedWeight = Math.max(1, (Number(enemy.maxHealth) || 1) - (Number(enemy.health) || 1) + 1);
-        const weight = yWeight * damagedWeight;
-        acc.x += enemy.x * weight;
-        acc.weight += weight;
-        return acc;
-      }, { x: 0, weight: 0 });
-      targetX = weighted.weight > 0 ? weighted.x / weighted.weight : visibleTargets[0].x;
+      if (nonBossTargets.length > 0 && nonBossTargets.length <= 3) {
+        const focused = [...nonBossTargets].sort((a, b) => {
+          const aY = Number(a.y) || 0;
+          const bY = Number(b.y) || 0;
+          const aDamage = Math.max(0, (Number(a.maxHealth) || 1) - (Number(a.health) || 1));
+          const bDamage = Math.max(0, (Number(b.maxHealth) || 1) - (Number(b.health) || 1));
+          const aScore = aY * 1.5 + aDamage * 28 - Math.abs((Number(a.x) || 0) - playerX) * 0.28;
+          const bScore = bY * 1.5 + bDamage * 28 - Math.abs((Number(b.x) || 0) - playerX) * 0.28;
+          return bScore - aScore;
+        })[0];
+        targetX = focused?.x ?? visibleTargets[0].x;
+      } else {
+        const weighted = nonBossTargets.reduce((acc, enemy) => {
+          const yWeight = 1 + Math.max(0, Number(enemy.y) || 0) / viewportHeight;
+          const damagedWeight = Math.max(1, (Number(enemy.maxHealth) || 1) - (Number(enemy.health) || 1) + 1);
+          const edgeWeight = Math.abs((Number(enemy.x) || 0) - viewportWidth * 0.5) > viewportWidth * 0.34 ? 1.18 : 1;
+          const weight = yWeight * damagedWeight * edgeWeight;
+          acc.x += enemy.x * weight;
+          acc.weight += weight;
+          return acc;
+        }, { x: 0, weight: 0 });
+        targetX = weighted.weight > 0 ? weighted.x / weighted.weight : visibleTargets[0].x;
+      }
     }
   }
 
@@ -387,14 +475,16 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
   const highPressure = lowLives || pressure >= 4;
   const safeLeft = lowLives ? viewportWidth * 0.18 : highPressure ? viewportWidth * 0.15 : margin;
   const safeRight = lowLives ? viewportWidth * 0.82 : highPressure ? viewportWidth * 0.85 : viewportWidth - margin;
-  const safeBottom = lowLives ? viewportHeight * 0.82 : highPressure ? viewportHeight * 0.82 : combatBottom;
+  const safeBottom = lowLives ? viewportHeight * 0.76 : highPressure ? viewportHeight * 0.77 : combatBottom;
 
   const candidateXs = [
     playerX,
     playerX - 150,
     playerX + 150,
     targetX - 180,
+    targetX - 90,
     targetX,
+    targetX + 90,
     targetX + 180,
     viewportWidth * 0.12,
     viewportWidth * 0.25,
@@ -406,15 +496,16 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
   ].map((x) => Math.max(safeLeft, Math.min(safeRight, x)));
   const candidateYs = [
     playerY,
+    viewportHeight * 0.58,
     viewportHeight * 0.62,
     viewportHeight * 0.66,
     viewportHeight * 0.7,
-    viewportHeight * 0.78,
-    viewportHeight * 0.84
+    viewportHeight * 0.74,
+    viewportHeight * 0.78
   ].map((y) => Math.max(combatTop, Math.min(safeBottom, y)));
 
   let best = { x: playerX, y: playerY, score: Number.NEGATIVE_INFINITY };
-  const aimWeight = state.enemyManagerState === 'BOSS_ACTIVE' ? 0.35 : nonBossVisibleCount <= 2 ? 0.34 : lowLives ? 0.1 : pressure >= 5 ? 0.08 : 0.18;
+  const aimWeight = state.enemyManagerState === 'BOSS_ACTIVE' ? 0.35 : nonBossVisibleCount <= 2 ? 0.5 : nonBossVisibleCount <= 3 ? 0.42 : lowLives ? 0.1 : pressure >= 5 ? 0.08 : 0.18;
   for (const x of candidateXs) {
     for (const y of candidateYs) {
       const aimPenalty = Math.abs(x - targetX) * aimWeight;
@@ -424,7 +515,7 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
       const centerBias = Math.abs(x - viewportWidth * 0.5) * (lowLives ? 0.028 : 0.018);
       const edgePenalty = Math.max(0, viewportWidth * 0.18 - x) * (lowLives ? 1.8 : 0.9) +
         Math.max(0, x - viewportWidth * 0.82) * (lowLives ? 1.8 : 0.9);
-      const bottomPenalty = Math.max(0, y - viewportHeight * (lowLives ? 0.78 : 0.82)) * (lowLives ? 0.8 : 0.25);
+      const bottomPenalty = Math.max(0, y - viewportHeight * (lowLives ? 0.74 : 0.78)) * (lowLives ? 1.2 : 0.55);
       const score = scoreLane(state, x, y, viewportWidth, viewportHeight) - aimPenalty - movementPenalty - verticalPreference - centerBias - edgePenalty - bottomPenalty;
       if (score > best.score) best = { x, y, score };
     }

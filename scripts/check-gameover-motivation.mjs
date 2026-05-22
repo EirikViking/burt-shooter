@@ -208,6 +208,31 @@ try {
   const alreadyUnlockedState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const alreadyUnlockedSummary = alreadyUnlockedState.gameOver?.unlockSummary || '';
 
+  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
+  await page.evaluate(() => {
+    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 8, bestLevel: 21 }));
+    const game = window.__game;
+    if (!game) return;
+    game.score = 24668;
+    game.level = 5;
+    game.rankIndex = 2;
+    game.lives = 0;
+    game.gameOver();
+  });
+  await page.waitForFunction(() => {
+    try {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'gameOver' && state.gameOver?.unlockSummary;
+    } catch {
+      return false;
+    }
+  }, null, { timeout: 10000 });
+  const careerGoalState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const careerLevelSummary = careerGoalState.gameOver?.levelSummary || '';
+  const careerUnlockSummary = careerGoalState.gameOver?.unlockSummary || '';
+  const careerNextGoal = careerGoalState.gameOver?.nextGoal || '';
+
   const retryCtaPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   observePage(retryCtaPage);
   await retryCtaPage.addInitScript((scores) => {
@@ -281,6 +306,11 @@ try {
       gameOverState.scene === 'gameOver' &&
       /NEW SHIP UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
       !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
+      /THIS RUN:\s*LEVEL 5/i.test(careerLevelSummary) &&
+      /CAREER BEST:\s*LEVEL 21/i.test(careerLevelSummary) &&
+      /NEXT SHIP:\s*VIOLET FEINT/i.test(careerUnlockSummary) &&
+      /CAREER LEVEL 21\/23 - 2 LEVELS TO GO/i.test(careerUnlockSummary) &&
+      /NEXT CAREER GOAL:\s*REACH LEVEL 22/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
       /LEADERBOARD FIRST/i.test(gameOverState.gameOver?.retryPrompt || '') &&
       /SUBMIT SCORE/i.test(gameOverState.gameOver?.primaryCta?.label || '') &&
@@ -336,6 +366,7 @@ try {
     },
     nameInput: nameInputState,
     alreadyUnlocked: alreadyUnlockedState.gameOver,
+    careerGoal: careerGoalState.gameOver,
     pageErrors,
     consoleErrors,
     screenshot,

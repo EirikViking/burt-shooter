@@ -39,6 +39,7 @@
     "check:boss-animation": "node scripts/check-boss-animation.mjs",
     "check:boss-movement-variety": "node scripts/check-boss-movement-variety.mjs",
     "check:boss-special-hazards": "node scripts/check-boss-special-hazards.mjs",
+    "check:first-boss-balance": "node scripts/check-first-boss-balance.mjs",
     "check:progression-tempo": "node scripts/check-progression-tempo.mjs",
     "check:hijacker-tractor": "node scripts/check-hijacker-tractor.mjs",
     "check:tractor-hijack": "node scripts/check-tractor-hijack.mjs",
