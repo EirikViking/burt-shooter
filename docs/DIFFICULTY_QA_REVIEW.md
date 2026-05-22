@@ -9,7 +9,7 @@ Scope: full first-pass difficulty QA and conservative balance patch. This review
 | System | Location | Notes |
 | --- | --- | --- |
 | Global balance constants | `src/config/BalanceConfig.js` | Owns enemy HP/speed/fire scaling, wave counts, boss HP/cadence/projectile speed, boss fairness telegraphs/safe lanes, powerup rates, rewards, and survival repair toggles. |
-| Generated normal enemy stats | `src/config/GeneratedEnemyProfiles.js` | 50 generated profiles. Each profile defines HP, speed, fire cadence, movement style, fire style, projectile count/spread, projectile speed multiplier, radius, score value, and dive bias. |
+| Generated normal enemy stats | `src/config/GeneratedEnemyProfiles.js` | 120 generated profiles paced through level 40. Each profile defines unlock level, role, HP, speed, fire cadence, movement style, fire style, projectile count/spread, projectile speed multiplier, radius, score value, and dive bias. |
 | Enemy runtime scaling | `src/entities/Enemy.js` | Applies `BalanceConfig.difficulty` HP, speed, and fire-delay scalars. Runtime speed is profile speed multiplied by difficulty speed scalar and global `DIFFICULTY_MULTIPLIER`. Normal projectile speed uses base enemy projectile speed, level scaling, `pressureScalar`, early opening scalar, profile projectile multiplier, and weapon profile multiplier. |
 | Wave and spawn pacing | `src/managers/EnemyManager.js` | Creates curated early waves for levels 1-4, dynamic waves later, boss spacing gates, enemy fire chance, wave cleanup, challenge wave chance, boss spawn, and boss adds. |
 | Boss roster | `src/config/BossRoster.js` | 50 bosses mapped across 10 archetypes. Archetype defines movement, regular attack, signature attack, palette, and accent. |

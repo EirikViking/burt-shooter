@@ -1,3 +1,5 @@
+import { ENEMY_ATTACK_STYLE_DEFS } from './EnemyAttackStyles.js';
+
 export const ENEMY_WEAPON_PROFILES = [
   {
     id: 'crimson_shard',
@@ -244,18 +246,9 @@ const TYPE_WEAPON_IDS = {
   bonus_challenge: 'lime_saw_disc'
 };
 
-const FIRE_STYLE_WEAPON_IDS = {
-  single: 'crimson_shard',
-  double: 'teal_fork_dart',
-  wide: 'magenta_crescent',
-  needle: 'cyan_rail_needle',
-  fan: 'white_comet_lance',
-  slowHeavy: 'amber_plasma_orb',
-  quickChip: 'toxic_splinter_seed',
-  offsetPair: 'teal_fork_dart',
-  triad: 'purple_boss_spear',
-  stutter: 'pink_spiral_disruptor'
-};
+export const FIRE_STYLE_WEAPON_IDS = Object.fromEntries(
+  ENEMY_ATTACK_STYLE_DEFS.map((style) => [style.id, style.weaponId || 'crimson_shard'])
+);
 
 const BOSS_ATTACK_WEAPON_IDS = {
   fan: 'magenta_crescent',

@@ -1,5 +1,13 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-22 Normal Enemy Variety Expansion
+
+- Current user request: expand normal enemy profile, movement, and attack variety so the normal roster keeps introducing content until level 40, while preserving boss, score, leaderboard, ship unlock, and rank systems.
+- Safety backup pushed before edits: `backup/pre-enemy-variety-expansion-20260522-1847` at `6f8df38e7992baec735e7c3d247ee779c4c3aef6`.
+- Implemented 120 generated normal enemy profiles, 28 movement families, 23 attack families, explicit `unlockLevel` pacing, and weighted selection that favors recently unlocked profiles. Level 11 now exposes 39/120 profiles; level 40 exposes the full pool.
+- Added `npm run check:normal-enemy-variety` and wired it into build gates. Documented the pacing and manual checklist in `docs/NORMAL_ENEMY_VARIETY_PLAN.md`.
+- Verification so far: `npm run check:normal-enemy-variety`, `npm run check:generated-rosters`, `npm run check:enemy-weapons`, `npm run build:current`, `npm run check:enemy-wave-patterns`, boss contact/telegraph/special-hazards checks, `npm run smoke`, and a 120-second `npm run playtest:release` pass with no console/page/network failures.
+
 ## 2026-05-21 Steam Leaderboard Adapter Pass
 
 - Current user request: first commit/push the latest build state, then add Steam leaderboard support without redesigning the existing visual leaderboard screen.

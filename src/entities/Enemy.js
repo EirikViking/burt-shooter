@@ -6,6 +6,8 @@ import { BalanceConfig } from '../config/BalanceConfig.js';
 import { enhanceEnemyVisuals } from '../utils/EnemyVisualEnhancer.js';
 import { getEnemyVisualVariant } from '../config/VisualVariantCatalog.js';
 import { getGeneratedEnemyProfile } from '../config/GeneratedEnemyProfiles.js';
+import { getEnemyAttackPattern } from '../config/EnemyAttackStyles.js';
+import { getEnemyMovementOffset } from '../config/EnemyMovementStyles.js';
 import { getEnemyWeaponProfileForEnemy, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 
@@ -68,9 +70,9 @@ export class Enemy {
         slug: this.generatedProfile.id,
         tint: this.generatedProfile.tint,
         accent: this.generatedProfile.accent,
-        scale: 1,
+        scale: this.generatedProfile.spriteScale || 1,
         wobble: 0.9 + (this.generatedProfile.spriteIndex % 7) * 0.04,
-        alpha: 0.18
+        alpha: this.generatedProfile.glowAlpha || 0.18
       }
       : getEnemyVisualVariant(type, level, waveColor, x, y);
 
@@ -380,7 +382,7 @@ export class Enemy {
 
       // Fighter enemies (player ships) get subtle tint, xtra assets no tint
       if (this.usingGeneratedEnemyTexture) {
-        s.tint = 0xffffff;
+        s.tint = this.generatedProfile?.hullTint || 0xffffff;
       } else if (this.usingPlayerShipTexture) {
         s.tint = this.visualVariant?.tint || this.color;
       } else {
@@ -580,20 +582,18 @@ export class Enemy {
         let swayY = Math.cos(this.moveTimer * (swaySpeed * 0.7) + this.idlePhase) * (profile?.idleAmpY || 6);
         if (profile) {
           const phase = this.moveTimer * (0.018 + (profile.spriteIndex % 4) * 0.002) + this.idlePhase;
-          if (profile.movementStyle === 'zigzag') swayX += Math.sign(Math.sin(phase)) * 10;
-          else if (profile.movementStyle === 'circle' || profile.movementStyle === 'orbit') {
-            swayX += Math.cos(phase) * 12;
-            swayY += Math.sin(phase) * 8;
-          } else if (profile.movementStyle === 'drunk' || profile.movementStyle === 'flutter') {
-            swayX += Math.sin(phase * 2.3) * 8;
-            swayY += Math.cos(phase * 1.7) * 5;
-          } else if (profile.movementStyle === 'snap') {
-            swayX += Math.round(Math.sin(phase) * 2) * 6;
-          } else if (profile.movementStyle === 'pincer') {
-            swayX += Math.sin(phase) * (this.x < playerX ? 10 : -10);
-          } else if (profile.movementStyle === 'weave') {
-            swayX += Math.sin(phase * 1.4) * 14;
-          }
+          const offset = getEnemyMovementOffset(profile.movementStyle, {
+            phase,
+            tacticalWave: this.moveTimer * 0.022 + this.tacticalPhase,
+            side: this.waveRole === 'left_flank' ? -1 : this.waveRole === 'right_flank' ? 1 : (this.formationX < screenW / 2 ? -1 : 1),
+            slot: this.waveSlot,
+            size: this.waveSize,
+            x: this.x,
+            formationX: this.formationX,
+            playerX
+          });
+          swayX += offset.x || 0;
+          swayY += offset.y || 0;
         }
     const tacticalWave = this.moveTimer * 0.022 + this.tacticalPhase;
         const side = this.waveRole === 'left_flank' ? -1 : this.waveRole === 'right_flank' ? 1 : (this.formationX < screenW / 2 ? -1 : 1);
@@ -838,11 +838,25 @@ export class Enemy {
       const tacticalPattern = tacticalAngles && tacticalAngles.length > 0
         ? tacticalAngles
         : null;
-      const count = tacticalPattern ? tacticalPattern.length : Math.max(1, profile.shotCount || 1);
+      const profilePattern = getEnemyAttackPattern(profile.fireStyle, {
+        baseAngle,
+        side: this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1),
+        slot: this.waveSlot,
+        now: Date.now(),
+        playerX,
+        playerY,
+        enemyX: this.x,
+        enemyY: this.y
+      });
+      const useProfilePatternFirst = (profile.unlockLevel || 1) > 11;
+      const shotPattern = useProfilePatternFirst
+        ? (profilePattern || tacticalPattern)
+        : (tacticalPattern || profilePattern);
+      const count = shotPattern ? shotPattern.length : Math.max(1, profile.shotCount || 1);
       const spread = profile.spread || 0;
       const bullets = [];
       for (let i = 0; i < count; i += 1) {
-        const tacticalShot = tacticalPattern?.[i] || null;
+        const tacticalShot = shotPattern?.[i] || null;
         const offset = count === 1 ? 0 : (i - (count - 1) / 2) * spread;
         const angle = tacticalShot?.angle ?? (baseAngle + offset);
         const jitter = profile.fireStyle === 'stutter' ? (Math.random() - 0.5) * 0.08 : 0;
@@ -850,10 +864,10 @@ export class Enemy {
           {
             angle: angle + jitter,
             speedMult: tacticalShot?.speedMult || 1,
-            damage: profile.fireStyle === 'slowHeavy' ? 1.25 : 1
+            damage: tacticalShot?.damage || profile.damageMult || (profile.fireStyle === 'slowHeavy' ? 1.25 : 1)
           },
           weaponProfile?.color || profile.accent || this.color,
-          tacticalPattern && count > 1 ? 0.9 : 1
+          shotPattern && count > 1 ? 0.9 : 1
         );
         bullets.push(bullet);
       }
@@ -891,7 +905,7 @@ export class Enemy {
     this.sprite.tint = 0xffffff;
     // Flashing Logic: Restore correct tint
     const restoreColor = (this.usingXtraAsset || this.usingGeneratedEnemyTexture)
-      ? (this.state === 'DIVE' ? 0xffaaaa : 0xffffff)
+      ? (this.state === 'DIVE' ? 0xffaaaa : (this.generatedProfile?.hullTint || 0xffffff))
       : (this.state === 'DIVE' ? 0xff0000 : this.color);
     setTimeout(() => { if (this.sprite) this.sprite.tint = restoreColor; }, 50);
 
