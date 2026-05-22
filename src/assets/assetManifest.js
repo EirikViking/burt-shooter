@@ -122,8 +122,8 @@ export const AssetManifest = {
             '/sprites/boss/boss_turret_no_bg2.png'
         ],
 
-        // Ranks (Default to Gold for consistency) - 20 ranks total (0-19)
-        ranks: Array.from({ length: 20 }, (_, i) => `/sprites/ranks/PNG/Default size/Gold/rank${i.toString().padStart(3, '0')}.png`),
+        // Nova Swarm rank badges - 20 ranks total (0-19)
+        ranks: Array.from({ length: 20 }, (_, i) => `/art/generated/nova-swarm/ranks/nova-rank-badge-${i.toString().padStart(2, '0')}-20260522.png`),
 
         // Damage Overlays
         damage: {
@@ -301,7 +301,17 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_ghost_phase_shift.mp3',
             '/audio/sfx/nova-swarm/nova_time_slow_warp.mp3',
             '/audio/sfx/nova-swarm/nova_drone_launch_blip.mp3',
-            '/audio/sfx/nova-swarm/nova_orbital_strike_charge.mp3'
+            '/audio/sfx/nova-swarm/nova_orbital_strike_charge.mp3',
+            '/audio/sfx/nova-swarm/nova_tractor_lock_charge.mp3',
+            '/audio/sfx/nova-swarm/nova_tractor_beam_active.mp3',
+            '/audio/sfx/nova-swarm/nova_tractor_break_bloom.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_beam_telegraph.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_beam_fire.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_web_telegraph.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_web_snap.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_net_telegraph.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_net_burst.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_hazard_impact.mp3'
         ]
     },
 

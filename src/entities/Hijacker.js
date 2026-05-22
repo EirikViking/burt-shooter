@@ -67,6 +67,7 @@ export class Hijacker {
 
     this.beamLayer = new PIXI.Graphics();
     this.beamLayer.zIndex = -2;
+    this.beamLayer.blendMode = 'add';
     this.sprite.addChild(this.beamLayer);
 
     // Use the generated Nova Swarm hijacker craft instead of legacy UFO pack art.
@@ -172,14 +173,14 @@ export class Hijacker {
     this.beamState = 'telegraph';
     this.beamStartedAt = Date.now();
     this.beamTarget = { x: playerX, y: playerY };
-    AudioManager.playSfx('forceField', { volume: 0.24, minIntervalMs: 900 });
+    AudioManager.playSfx('tractor_lock_charge', { volume: 0.58, minIntervalMs: 900 });
   }
 
   activateBeam(playerX, playerY) {
     this.beamState = 'active';
     this.beamStartedAt = Date.now();
     this.beamTarget = { x: playerX, y: playerY };
-    AudioManager.playSfx('shield', { volume: 0.34, minIntervalMs: 900 });
+    AudioManager.playSfx('tractor_beam_active', { volume: 0.56, minIntervalMs: 900 });
   }
 
   interruptBeam(reason = 'interrupted') {
@@ -188,7 +189,7 @@ export class Hijacker {
     this.beamPullActive = false;
     this.clearBeamVisual();
     if (reason === 'hit') {
-      AudioManager.playSfx('impactMetal', { volume: 0.32, minIntervalMs: 180 });
+      AudioManager.playSfx('tractor_break_bloom', { volume: 0.5, minIntervalMs: 180 });
     }
   }
 
@@ -286,35 +287,84 @@ export class Hijacker {
     const relX = (active ? playerX : this.beamTarget.x) - this.x;
     const relY = Math.max(160, (active ? playerY : this.beamTarget.y) - this.y);
     const halfWidth = Math.max(56, 30 + relY * 0.25);
-    const pulse = 1 + Math.sin(Date.now() * 0.028) * 0.06;
+    const now = Date.now();
+    const pulse = 1 + Math.sin(now * 0.028) * 0.06;
+    const shimmer = 0.5 + Math.sin(now * 0.05) * 0.5;
     const coreColor = active ? 0x66ffff : 0xff66ff;
     const edgeColor = active ? 0xffffff : 0xffe066;
+    const warningColor = active ? 0x28dfff : 0xff3fcf;
+    const hotColor = active ? 0x9cfff7 : 0xfff090;
     const startY = this.radius * 0.62;
     const endX = relX;
     const endY = relY;
 
-    layer.moveTo(0, startY);
-    layer.lineTo(endX - halfWidth * pulse, endY);
-    layer.lineTo(endX + halfWidth * pulse, endY);
-    layer.closePath();
-    layer.fill({ color: coreColor, alpha: active ? 0.18 : 0.08 + progress * 0.12 });
+    const coneWidth = halfWidth * pulse;
+    const innerWidth = coneWidth * (active ? 0.55 : 0.42 + progress * 0.08);
+    const tipY = startY + 4;
+    const drawCone = (width, color, alpha) => {
+      layer.moveTo(0, tipY);
+      layer.lineTo(endX - width, endY);
+      layer.lineTo(endX + width, endY);
+      layer.closePath();
+      layer.fill({ color, alpha });
+    };
 
-    layer.moveTo(0, startY);
-    layer.lineTo(endX - halfWidth * pulse, endY);
-    layer.moveTo(0, startY);
-    layer.lineTo(endX + halfWidth * pulse, endY);
-    layer.moveTo(0, startY);
-    layer.lineTo(endX, endY);
-    layer.stroke({ color: edgeColor, width: active ? 4 : 2 + progress * 2, alpha: active ? 0.72 : 0.34 + progress * 0.38 });
+    drawCone(coneWidth * 1.18, warningColor, active ? 0.1 : 0.06 + progress * 0.08);
+    drawCone(coneWidth, coreColor, active ? 0.19 : 0.09 + progress * 0.13);
+    drawCone(innerWidth, 0xffffff, active ? 0.06 + shimmer * 0.04 : 0.04 + progress * 0.05);
 
-    const rings = active ? 4 : 3;
+    const edgePoints = [
+      [endX - coneWidth, endY],
+      [endX + coneWidth, endY]
+    ];
+    for (const [x, y] of edgePoints) {
+      layer.moveTo(0, tipY);
+      layer.lineTo(x, y);
+    }
+    layer.stroke({ color: 0xffffff, width: active ? 8 : 4 + progress * 3, alpha: active ? 0.2 : 0.12 + progress * 0.26 });
+    for (const [x, y] of edgePoints) {
+      layer.moveTo(0, tipY);
+      layer.lineTo(x, y);
+    }
+    layer.stroke({ color: edgeColor, width: active ? 3.5 : 2 + progress * 1.8, alpha: active ? 0.68 : 0.28 + progress * 0.42 });
+
+    const strandCount = active ? 7 : 5;
+    for (let i = 0; i < strandCount; i++) {
+      const lane = strandCount === 1 ? 0 : (i / (strandCount - 1) - 0.5);
+      const phase = now * (0.006 + i * 0.0006) + i * 1.7;
+      const widthAtEnd = innerWidth * (0.18 + Math.abs(lane) * 1.15);
+      const targetX = endX + lane * widthAtEnd + Math.sin(phase) * (active ? 10 : 5);
+      const targetY = endY - Math.sin(phase * 0.8) * 10;
+      layer.moveTo(Math.sin(phase) * 4, tipY + 3);
+      layer.lineTo(targetX, targetY);
+    }
+    layer.stroke({ color: hotColor, width: active ? 2.2 : 1.6, alpha: active ? 0.42 + shimmer * 0.18 : 0.18 + progress * 0.28 });
+
+    const rings = active ? 6 : 4;
     for (let i = 1; i <= rings; i++) {
       const t = i / (rings + 1);
       const x = endX * t;
       const y = startY + (endY - startY) * t;
-      const r = (halfWidth * t * 0.58 + 10) * (0.85 + progress * 0.24) * pulse;
+      const ringPulse = 0.88 + progress * 0.2 + Math.sin(now * 0.012 + i) * 0.08;
+      const r = (halfWidth * t * 0.58 + 10) * ringPulse * pulse;
       layer.ellipse(x, y, r, Math.max(8, r * 0.22));
-      layer.stroke({ color: i % 2 ? coreColor : edgeColor, width: active ? 2 : 1.5, alpha: active ? 0.52 : 0.24 + progress * 0.24 });
+      layer.stroke({ color: i % 2 ? coreColor : edgeColor, width: active ? 2.5 : 1.5, alpha: active ? 0.5 : 0.22 + progress * 0.26 });
+      if (active) {
+        const nodeA = now * 0.006 + i;
+        layer.circle(x + Math.cos(nodeA) * r, y + Math.sin(nodeA) * r * 0.22, 3.5 + shimmer * 2);
+        layer.fill({ color: 0xffffff, alpha: 0.34 });
+      }
+    }
+
+    if (active) {
+      layer.ellipse(endX, endY, coneWidth * 0.64, Math.max(14, coneWidth * 0.14));
+      layer.stroke({ color: 0xffffff, width: 3, alpha: 0.46 });
+      layer.ellipse(endX, endY, coneWidth * 0.46, Math.max(10, coneWidth * 0.1));
+      layer.stroke({ color: coreColor, width: 3, alpha: 0.62 });
+      layer.circle(0, tipY, 13 + shimmer * 5);
+      layer.fill({ color: coreColor, alpha: 0.2 });
+      layer.circle(0, tipY, 6 + shimmer * 2);
+      layer.fill({ color: 0xffffff, alpha: 0.42 });
     }
   }
 
@@ -361,6 +411,7 @@ export class Hijacker {
       const breakAward = this.scoreValue + bonus;
       this.game.addScore(breakAward);
       if (brokeBeam) {
+        AudioManager.playSfx('tractor_break_bloom', { force: true, volume: 0.72, minIntervalMs: 120 });
         const hijackResult = playScene.triggerTractorHijack?.({
           x: this.x,
           y: this.y,

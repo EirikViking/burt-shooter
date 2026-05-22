@@ -51,6 +51,13 @@ export class GameOverScene {
     this.retryButtonWidth = 0;
     this.retryButtonHeight = 0;
     this.retryButtonMode = 'restart';
+    this.leaderboardButton = null;
+    this.leaderboardButtonBg = null;
+    this.leaderboardButtonGlow = null;
+    this.leaderboardButtonLabel = null;
+    this.leaderboardButtonHint = null;
+    this.leaderboardButtonWidth = 0;
+    this.leaderboardButtonHeight = 0;
     this.runbackReason = null;
     this.selectedCtaLine = null;
     this.ctaVoicePlayed = false;
@@ -96,6 +103,7 @@ export class GameOverScene {
     // Submission deduplication
     this.submissionId = null;
     this.gamepadActionWasPressed = false;
+    this.gamepadLeaderboardWasPressed = false;
   }
 
   scheduleSceneTimeout(callback, delayMs) {
@@ -302,6 +310,8 @@ export class GameOverScene {
 
     this.createRetryButton(layout);
     this.container.addChild(this.retryButton);
+    this.createLeaderboardButton(layout);
+    this.container.addChild(this.leaderboardButton);
 
     if (!this.isRankedRun) {
       this.promptText.eventMode = 'none';
@@ -654,6 +664,7 @@ export class GameOverScene {
     this.layoutBackdrop(width, height);
     this.layoutCeremonyVisuals(width, height, layout);
     this.drawRetryButton(layout);
+    this.drawLeaderboardButton(layout);
 
     // Calculate content height for centering
     const spacing = layout.isMobile ? 8 : 14;
@@ -669,8 +680,10 @@ export class GameOverScene {
     const promptHeight = promptSize * 1.2;
     const nameHeight = nameSize * 1.2;
     const retryHeight = this.retryButtonHeight || (layout.isMobile ? 58 : 66);
+    const leaderboardVisible = this.shouldShowLeaderboardButton();
+    const leaderboardHeight = leaderboardVisible ? (this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48)) : 0;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + nameHeight + spacing * 8 + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + nameHeight + spacing * (leaderboardVisible ? 9 : 8) + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -713,6 +726,12 @@ export class GameOverScene {
     stack.addGap(this.state === 'runback' ? (layout.isMobile ? 22 : 36) : (layout.isMobile ? 8 : 18));
     this.retryButton.x = width / 2;
     this.retryButton.y = stack.placeElement(this.retryButton, spacing);
+
+    if (this.leaderboardButton) {
+      this.leaderboardButton.visible = leaderboardVisible;
+      this.leaderboardButton.x = width / 2;
+      this.leaderboardButton.y = leaderboardVisible ? stack.placeElement(this.leaderboardButton, spacing * 0.8) : this.retryButton.y;
+    }
 
     this.nameDisplay.x = width / 2;
     this.nameDisplay.y = stack.getCurrentY();
@@ -817,6 +836,93 @@ export class GameOverScene {
     }
   }
 
+  createLeaderboardButton(layout) {
+    this.leaderboardButton = new PIXI.Container();
+    this.leaderboardButton.zIndex = 8;
+    this.leaderboardButton.eventMode = 'static';
+    this.leaderboardButton.cursor = 'pointer';
+
+    this.leaderboardButtonGlow = new PIXI.Graphics();
+    this.leaderboardButtonBg = new PIXI.Graphics();
+
+    this.leaderboardButtonLabel = createText('VIEW LEADERBOARD', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 18 : 22,
+      fontWeight: 'bold',
+      fill: '#d9fdff',
+      stroke: '#031323',
+      strokeThickness: layout.isMobile ? 2 : 3,
+      align: 'center',
+      dropShadow: true,
+      dropShadowColor: '#00ffff',
+      dropShadowBlur: 4
+    });
+    this.leaderboardButtonLabel.anchor.set(0.5);
+
+    this.leaderboardButtonHint = createText('L / GAMEPAD Y', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 10 : 12,
+      fontWeight: 'bold',
+      fill: '#ffd15c',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    this.leaderboardButtonHint.anchor.set(0.5);
+
+    this.leaderboardButton.addChild(this.leaderboardButtonGlow, this.leaderboardButtonBg, this.leaderboardButtonLabel, this.leaderboardButtonHint);
+    this.leaderboardButton.on('pointerdown', () => this.openLeaderboard());
+    this.leaderboardButton.on('pointerover', () => this.leaderboardButton.scale.set(1.02));
+    this.leaderboardButton.on('pointerout', () => this.leaderboardButton.scale.set(1));
+    this.drawLeaderboardButton(layout);
+  }
+
+  shouldShowLeaderboardButton() {
+    return this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked';
+  }
+
+  drawLeaderboardButton(layout) {
+    if (!this.leaderboardButton || !this.leaderboardButtonBg || !this.leaderboardButtonGlow) return;
+    const visible = this.shouldShowLeaderboardButton();
+    const buttonWidth = Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
+    const buttonHeight = layout.isMobile ? 48 : 54;
+    const halfWidth = buttonWidth / 2;
+    const halfHeight = buttonHeight / 2;
+    const radius = layout.isMobile ? 8 : 10;
+    this.leaderboardButtonWidth = buttonWidth;
+    this.leaderboardButtonHeight = buttonHeight;
+    this.leaderboardButton.hitArea = new PIXI.Rectangle(-halfWidth, -halfHeight, buttonWidth, buttonHeight);
+    this.leaderboardButton.visible = visible;
+    this.leaderboardButton.alpha = visible ? 0.94 : 0;
+    this.leaderboardButton.cursor = visible ? 'pointer' : 'default';
+    this.leaderboardButton.eventMode = visible ? 'static' : 'none';
+
+    this.leaderboardButtonGlow.clear();
+    this.leaderboardButtonGlow.roundRect(-halfWidth - 7, -halfHeight - 5, buttonWidth + 14, buttonHeight + 10, radius + 4);
+    this.leaderboardButtonGlow.fill({ color: 0x00ffff, alpha: visible ? 0.11 : 0 });
+    this.leaderboardButtonGlow.roundRect(-halfWidth - 2, -halfHeight - 2, buttonWidth + 4, buttonHeight + 4, radius + 2);
+    this.leaderboardButtonGlow.stroke({ color: 0xff55d9, width: 1.5, alpha: visible ? 0.34 : 0 });
+
+    this.leaderboardButtonBg.clear();
+    this.leaderboardButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.leaderboardButtonBg.fill({ color: 0x041323, alpha: 0.92 });
+    this.leaderboardButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.leaderboardButtonBg.stroke({ color: 0x37f5ff, width: 2, alpha: 0.82 });
+    this.leaderboardButtonBg.rect(-halfWidth + 14, -halfHeight + 7, buttonWidth - 28, 2);
+    this.leaderboardButtonBg.fill({ color: 0x37f5ff, alpha: 0.34 });
+    this.leaderboardButtonBg.rect(-halfWidth + 18, halfHeight - 8, buttonWidth - 36, 1);
+    this.leaderboardButtonBg.fill({ color: 0xffd15c, alpha: 0.34 });
+
+    if (this.leaderboardButtonLabel) {
+      this.leaderboardButtonLabel.style.fontSize = layout.isMobile ? 18 : 22;
+      this.leaderboardButtonLabel.y = layout.isMobile ? -7 : -8;
+    }
+    if (this.leaderboardButtonHint) {
+      this.leaderboardButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
+      this.leaderboardButtonHint.y = layout.isMobile ? 14 : 16;
+    }
+  }
+
   getPrimaryCtaConfig() {
     if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
       return {
@@ -903,6 +1009,7 @@ export class GameOverScene {
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height, getCurrentLayout());
     this.drawRetryButton(layout);
+    this.drawLeaderboardButton(layout);
   }
 
   createFallbackBackdrop(width, height) {
@@ -1043,7 +1150,7 @@ export class GameOverScene {
         return;
       }
 
-      if (this.state === 'runback' && (e.key === 'l' || e.key === 'L')) {
+      if (this.shouldShowLeaderboardButton() && (e.key === 'l' || e.key === 'L')) {
         e.preventDefault();
         this.openLeaderboard();
         return;
@@ -1105,6 +1212,14 @@ export class GameOverScene {
   update() {
     this.updateCeremonyEffects();
     if (this.state === 'input' || this.state === 'submitting') return;
+    const leaderboardPressed = this.isGamepadLeaderboardPressed();
+    if (leaderboardPressed && !this.gamepadLeaderboardWasPressed && this.shouldShowLeaderboardButton()) {
+      this.openLeaderboard();
+      this.gamepadLeaderboardWasPressed = leaderboardPressed;
+      return;
+    }
+    this.gamepadLeaderboardWasPressed = leaderboardPressed;
+
     const actionPressed = this.isGamepadActionPressed();
     if (actionPressed && !this.gamepadActionWasPressed) {
       if (this.state === 'prompt' && this.isRankedRun && this.globalStatus === 'checking' && !this.localQualified) {
@@ -1162,6 +1277,18 @@ export class GameOverScene {
       return Boolean(button.pressed || button.value > 0.5);
     };
     return pressed(0) || pressed(7);
+  }
+
+  isGamepadLeaderboardPressed() {
+    const override = typeof window !== 'undefined' ? window.__burtGamepadOverride : null;
+    const snapshot = override || (typeof navigator !== 'undefined' && navigator.getGamepads
+      ? Array.from(navigator.getGamepads()).find(pad => pad && pad.connected)
+      : null);
+    const buttons = snapshot?.buttons || [];
+    const button = buttons[3];
+    if (button == null) return false;
+    if (typeof button === 'number') return button > 0.5;
+    return Boolean(button.pressed || button.value > 0.5);
   }
 
   createUnlockSummary(previousProgress, currentProgress) {
@@ -1470,7 +1597,7 @@ export class GameOverScene {
       this.nameDisplay.visible = false;
     }
     if (this.instructions) {
-      this.instructions.text = 'ENTER / SPACE / CLICK: RELAUNCH  |  L: LEADERBOARD  |  ESC: MENU';
+      this.instructions.text = 'ENTER / SPACE / CLICK: RELAUNCH  |  L / GAMEPAD Y: LEADERBOARD  |  ESC: MENU';
     }
 
     AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
@@ -1532,6 +1659,27 @@ export class GameOverScene {
     try {
       if (!this.retryButton?.getBounds) return fallback;
       const bounds = this.retryButton.getBounds();
+      return {
+        ...fallback,
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width: Math.round(bounds.width || 0),
+        height: Math.round(bounds.height || 0)
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
+  getLeaderboardCtaDebugState() {
+    const fallback = {
+      label: this.leaderboardButtonLabel?.text || null,
+      hint: this.leaderboardButtonHint?.text || null,
+      visible: Boolean(this.leaderboardButton?.visible && this.leaderboardButton?.parent)
+    };
+    try {
+      if (!this.leaderboardButton?.getBounds) return fallback;
+      const bounds = this.leaderboardButton.getBounds();
       return {
         ...fallback,
         x: Math.round(bounds.x || 0),

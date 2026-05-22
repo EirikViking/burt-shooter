@@ -370,6 +370,10 @@ export class HighscoreScene {
     if (this.title) {
       this.title.text = activeTab?.title || (this.activeLeaderboard === LeaderboardView.LOCAL ? 'LOCAL SCORE DECK' : 'GLOBAL SCORE DECK');
     }
+    if (this.subtitle) {
+      const source = (activeTab?.sourceLabel || this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Score Signal').toUpperCase();
+      this.subtitle.text = `PILOT RANK SIGNAL // ${source}`;
+    }
     Object.entries(this.tabButtons || {}).forEach(([view, button]) => {
       if (!button) return;
       button.visible = tabs.some(tab => tab.id === view);
@@ -909,10 +913,18 @@ export class HighscoreScene {
         const rankTexture = rankTextures[index];
         const displayRank = computeDisplayRank(score);
         if (rankTexture) {
+          const badgeGlow = new PIXI.Graphics();
+          const glowSize = Math.min(rowHeight * 0.82, layout.isMobile ? 34 : 52);
+          badgeGlow.circle(columns.badge, rowMidY, glowSize * 0.54);
+          badgeGlow.fill({ color: accent, alpha: isTop3 ? 0.18 : 0.09 });
+          badgeGlow.circle(columns.badge, rowMidY, glowSize * 0.36);
+          badgeGlow.stroke({ color: 0xffffff, width: 1, alpha: isTop3 ? 0.26 : 0.14 });
+          this.rowsContainer.addChild(badgeGlow);
+
           const rankSprite = new PIXI.Sprite(rankTexture);
           rankSprite.anchor.set(0.5);
 
-          const targetHeight = Math.min(rowHeight * 0.62, layout.isMobile ? 28 : 42);
+          const targetHeight = Math.min(rowHeight * 0.72, layout.isMobile ? 32 : 48);
           const scale = targetHeight / rankTexture.height;
           rankSprite.scale.set(scale);
 
@@ -1206,16 +1218,61 @@ export class HighscoreScene {
     const w = metrics.width;
     const h = Math.min(metrics.height, layout.isMobile ? 164 : 188);
     const pad = layout.isMobile ? 18 : 24;
+    const plateX = x + pad;
+    const plateY = y + (layout.isMobile ? 12 : 10);
+    const plateW = w - pad * 2;
+    const plateH = layout.isMobile ? 108 : 126;
+    const centerX = plateX + plateW / 2;
+    const accent = this.activeLeaderboard === LeaderboardView.LOCAL
+      ? 0xffd166
+      : this.activeLeaderboard === LeaderboardView.FRIENDS
+        ? 0xff55d9
+        : 0x00f6ff;
 
-    this.titlePlate.rect(x + pad, y + 18, w - pad * 2, 2);
-    this.titlePlate.fill({ color: 0x7fffd8, alpha: 0.36 });
-    this.titlePlate.rect(x + pad, y + h - 16, w - pad * 2, 2);
-    this.titlePlate.fill({ color: 0xffd15c, alpha: 0.34 });
+    this.titlePlate.roundRect(plateX - 10, plateY - 8, plateW + 20, plateH + 16, 10);
+    this.titlePlate.fill({ color: accent, alpha: 0.06 });
+    this.titlePlate.roundRect(plateX, plateY, plateW, plateH, 8);
+    this.titlePlate.fill({ color: 0x02101e, alpha: 0.42 });
+    this.titlePlate.roundRect(plateX, plateY, plateW, plateH, 8);
+    this.titlePlate.stroke({ color: 0x37f5ff, width: 1.5, alpha: 0.5 });
+    this.titlePlate.roundRect(plateX + 8, plateY + 8, plateW - 16, plateH - 16, 6);
+    this.titlePlate.stroke({ color: 0xff55d9, width: 1, alpha: 0.22 });
 
-    this.titlePlate.roundRect(x + pad, y - 5, layout.isMobile ? 86 : 118, 10, 4);
-    this.titlePlate.fill({ color: 0xffd15c, alpha: 0.42 });
-    this.titlePlate.rect(x + pad, y + 34, w - pad * 2, 1);
-    this.titlePlate.fill({ color: 0xff55d9, alpha: 0.26 });
+    this.titlePlate.rect(plateX + 24, plateY + 14, plateW - 48, 2);
+    this.titlePlate.fill({ color: 0x7fffd8, alpha: 0.42 });
+    this.titlePlate.rect(plateX + 52, plateY + plateH - 18, plateW - 104, 2);
+    this.titlePlate.fill({ color: accent, alpha: 0.42 });
+    this.titlePlate.rect(plateX + 24, plateY + 38, plateW - 48, 1);
+    this.titlePlate.fill({ color: 0xff55d9, alpha: 0.2 });
+
+    const bracketW = layout.isMobile ? 34 : 48;
+    const bracketH = layout.isMobile ? 24 : 32;
+    const cornerY = plateY + plateH * 0.5;
+    this.titlePlate.poly([
+      plateX + 16, cornerY,
+      plateX + 16 + bracketW, cornerY - bracketH,
+      plateX + 16 + bracketW + 10, cornerY - bracketH + 8,
+      plateX + 28, cornerY,
+      plateX + 16 + bracketW + 10, cornerY + bracketH - 8,
+      plateX + 16 + bracketW, cornerY + bracketH
+    ]);
+    this.titlePlate.stroke({ color: accent, width: 2, alpha: 0.48 });
+    this.titlePlate.poly([
+      plateX + plateW - 16, cornerY,
+      plateX + plateW - 16 - bracketW, cornerY - bracketH,
+      plateX + plateW - 16 - bracketW - 10, cornerY - bracketH + 8,
+      plateX + plateW - 28, cornerY,
+      plateX + plateW - 16 - bracketW - 10, cornerY + bracketH - 8,
+      plateX + plateW - 16 - bracketW, cornerY + bracketH
+    ]);
+    this.titlePlate.stroke({ color: 0xff55d9, width: 2, alpha: 0.38 });
+
+    this.titlePlate.circle(centerX, plateY + 16, layout.isMobile ? 4 : 5);
+    this.titlePlate.fill({ color: accent, alpha: 0.64 });
+    this.titlePlate.circle(centerX, plateY + plateH - 16, layout.isMobile ? 3 : 4);
+    this.titlePlate.fill({ color: 0xffd15c, alpha: 0.54 });
+    this.titlePlate.roundRect(centerX - (layout.isMobile ? 58 : 74), plateY + plateH - 7, layout.isMobile ? 116 : 148, 6, 3);
+    this.titlePlate.fill({ color: 0xffd15c, alpha: 0.2 });
   }
 
   drawLeaderboardPanel(width, height, rowsStartY, layout) {

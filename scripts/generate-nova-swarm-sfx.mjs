@@ -178,6 +178,66 @@ const sounds = [
     text: 'A short orbital strike charge cue, distant sci-fi targeting pulse rising into a clean arcade impact promise, dramatic but compact, no voice, no melody, under two seconds.',
     duration_seconds: 2,
     prompt_influence: 0.58
+  },
+  {
+    file: 'nova_tractor_lock_charge.mp3',
+    text: 'A premium sci-fi tractor beam lock-on charge for a neon arcade space shooter, rising magnetic hum, crisp targeting chirps, ominous but readable, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.64
+  },
+  {
+    file: 'nova_tractor_beam_active.mp3',
+    text: 'A compact active tractor beam sound, powerful graviton pull, pulsing energy cable, clean arcade sci-fi texture, satisfying but not muddy, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.64
+  },
+  {
+    file: 'nova_tractor_break_bloom.mp3',
+    text: 'A satisfying tractor beam break sound, magnetic cable snaps into a bright reward bloom, electric shards and score payoff sparkle, punchy arcade sci-fi, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_boss_beam_telegraph.mp3',
+    text: 'A boss beam telegraph warning sound, sharp lance lock-on, rising high-energy rail charge, dangerous and readable, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_boss_beam_fire.mp3',
+    text: 'A boss beam firing sound, heavy neon rail-lance discharge, bright plasma crack, powerful but clean in a busy arcade mix, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_boss_web_telegraph.mp3',
+    text: 'A boss web attack telegraph, shimmering energy filaments stretching into place, tense cyber web windup, readable warning texture, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.64
+  },
+  {
+    file: 'nova_boss_web_snap.mp3',
+    text: 'A boss web attack release, snapping neon filaments and quick plasma lash, agile threatening arcade sci-fi sound, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_boss_net_telegraph.mp3',
+    text: 'A boss net attack telegraph, circular energy lattice charging, resonant grid pulses and warning ticks, tense but readable, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.64
+  },
+  {
+    file: 'nova_boss_net_burst.mp3',
+    text: 'A boss net burst sound, expanding energy ring and snapping plasma grid, strong arcade impact with clean high-frequency sparkle, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_boss_hazard_impact.mp3',
+    text: 'A boss special weapon impact on a player shield or hull, hot plasma hit, metallic crackle, brief low thump, urgent but not harsh, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.64
   }
 ];
 

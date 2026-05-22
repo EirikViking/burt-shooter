@@ -219,6 +219,16 @@ export const SFX_MIX = {
     time_slow_warp: { volume: 0.48, minIntervalMs: 450 },
     drone_launch_blip: { volume: 0.46, minIntervalMs: 220 },
     orbital_strike_charge: { volume: 0.56, minIntervalMs: 600 },
+    tractor_lock_charge: { volume: 0.5, minIntervalMs: 700 },
+    tractor_beam_active: { volume: 0.46, minIntervalMs: 850 },
+    tractor_break_bloom: { volume: 0.68, minIntervalMs: 300 },
+    boss_beam_telegraph: { volume: 0.56, minIntervalMs: 700 },
+    boss_beam_fire: { volume: 0.72, minIntervalMs: 700 },
+    boss_web_telegraph: { volume: 0.48, minIntervalMs: 700 },
+    boss_web_fire: { volume: 0.62, minIntervalMs: 700 },
+    boss_net_telegraph: { volume: 0.5, minIntervalMs: 700 },
+    boss_net_fire: { volume: 0.66, minIntervalMs: 700 },
+    boss_hazard_impact: { volume: 0.58, minIntervalMs: 180 },
     trait_bonus_hit: { volume: 0.26, minIntervalMs: 90 },
     trait_wing_hit: { volume: 0.34, minIntervalMs: 120 },
     trait_pierce_hit: { volume: 0.32, minIntervalMs: 120 },
@@ -378,6 +388,36 @@ export const SFX_CATALOG = {
     'orbital_strike_charge': [
         getSfx('nova_orbital_strike_charge')
     ],
+    'tractor_lock_charge': [
+        getSfx('nova_tractor_lock_charge')
+    ],
+    'tractor_beam_active': [
+        getSfx('nova_tractor_beam_active')
+    ],
+    'tractor_break_bloom': [
+        getSfx('nova_tractor_break_bloom')
+    ],
+    'boss_beam_telegraph': [
+        getSfx('nova_boss_beam_telegraph')
+    ],
+    'boss_beam_fire': [
+        getSfx('nova_boss_beam_fire')
+    ],
+    'boss_web_telegraph': [
+        getSfx('nova_boss_web_telegraph')
+    ],
+    'boss_web_fire': [
+        getSfx('nova_boss_web_snap')
+    ],
+    'boss_net_telegraph': [
+        getSfx('nova_boss_net_telegraph')
+    ],
+    'boss_net_fire': [
+        getSfx('nova_boss_net_burst')
+    ],
+    'boss_hazard_impact': [
+        getSfx('nova_boss_hazard_impact')
+    ],
     'trait_bonus_hit': [
         getSfx('nova_combo_tick')
     ],
@@ -515,6 +555,36 @@ export const SFX_CATALOG = {
     ],
     'nova_orbital_strike_charge': [
         getSfx('nova_orbital_strike_charge')
+    ],
+    'nova_tractor_lock_charge': [
+        getSfx('nova_tractor_lock_charge')
+    ],
+    'nova_tractor_beam_active': [
+        getSfx('nova_tractor_beam_active')
+    ],
+    'nova_tractor_break_bloom': [
+        getSfx('nova_tractor_break_bloom')
+    ],
+    'nova_boss_beam_telegraph': [
+        getSfx('nova_boss_beam_telegraph')
+    ],
+    'nova_boss_beam_fire': [
+        getSfx('nova_boss_beam_fire')
+    ],
+    'nova_boss_web_telegraph': [
+        getSfx('nova_boss_web_telegraph')
+    ],
+    'nova_boss_web_snap': [
+        getSfx('nova_boss_web_snap')
+    ],
+    'nova_boss_net_telegraph': [
+        getSfx('nova_boss_net_telegraph')
+    ],
+    'nova_boss_net_burst': [
+        getSfx('nova_boss_net_burst')
+    ],
+    'nova_boss_hazard_impact': [
+        getSfx('nova_boss_hazard_impact')
     ],
     'intro_narrator_01': [
         getVoice('intro_narrator_01')

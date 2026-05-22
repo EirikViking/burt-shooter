@@ -16,9 +16,9 @@ export const BalanceConfig = {
         cooldownMs: 18000,
         maxPerLevel: 2,
         minPerLevel: 1,
-        extraLifeDropsEnabled: false,
-        extraLifeChance: 0,
-        extraLifeGuaranteedEveryLevels: 0,
+        extraLifeDropsEnabled: true,
+        extraLifeChance: 0.08,
+        extraLifeGuaranteedEveryLevels: 6,
         guaranteeWindowStart: 0.2, // 20% progress
         guaranteeWindowEnd: 0.8, // 80% progress
         logDrops: true, // Dev toggle
@@ -83,33 +83,33 @@ export const BalanceConfig = {
         challengeWaveChance: 0.015,
         challengeWaveCount: 8,
 
-        bossBaseHealth: 70,
-        bossHealthPerLevel: 10,
-        bossMinHealth: 70,
-        bossShootDelayBase: 38,
-        bossShootDelayPhase2: 29,
-        bossShootDelayPhase3: 23,
-        bossProjectileSpeedPhase1: 1.55,
-        bossProjectileSpeedPhase2: 1.8,
-        bossProjectileSpeedPhase3: 2.05,
+        bossBaseHealth: 44,
+        bossHealthPerLevel: 4,
+        bossMinHealth: 44,
+        bossShootDelayBase: 44,
+        bossShootDelayPhase2: 42,
+        bossShootDelayPhase3: 38,
+        bossProjectileSpeedPhase1: 1.45,
+        bossProjectileSpeedPhase2: 1.52,
+        bossProjectileSpeedPhase3: 1.68,
         bossProjectileSpeedPerLevel: 0.018,
         bossProjectileSpeedMax: 2.8,
 
         bossFairness: {
-            signatureTelegraphMs: 1120,
-            signatureRingTelegraphMs: 1220,
-            regularTelegraphEarlyMs: 960,
-            regularTelegraphMidMs: 880,
-            regularTelegraphLateMs: 780,
-            netSpeedMultiplier: 0.86,
-            beamSpeedMultiplier: 0.84,
-            wallSpeedMultiplier: 0.78,
+            signatureTelegraphMs: 1240,
+            signatureRingTelegraphMs: 1340,
+            regularTelegraphEarlyMs: 1040,
+            regularTelegraphMidMs: 960,
+            regularTelegraphLateMs: 900,
+            netSpeedMultiplier: 0.8,
+            beamSpeedMultiplier: 0.78,
+            wallSpeedMultiplier: 0.74,
             ringSafeWedgeEarly: 0.58,
-            ringSafeWedge: 0.5,
-            regularRingSafeWedge: 0.5,
-            beamHazardRadius: 13,
-            coneHazardRadius: 27,
-            hazardArmingMs: 240
+            ringSafeWedge: 0.6,
+            regularRingSafeWedge: 0.6,
+            beamHazardRadius: 11,
+            coneHazardRadius: 23,
+            hazardArmingMs: 320
         },
 
         precisionPenalty: true, // If true, reduced score for missed shots (concept)
@@ -121,6 +121,9 @@ export const BalanceConfig = {
         levelClearScore: 1000,
         waveClearRepairTargetLives: 0,
         levelClearRepairTargetLives: 0,
+        bossClearRepairLives: 1,
+        bossClearRepairMaxLives: 5,
+        bossClearRepairInvulnerabilityMs: 1000,
         repairInvulnerabilityMs: 0
     },
 

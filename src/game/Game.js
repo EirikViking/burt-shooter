@@ -320,8 +320,7 @@ export class Game {
 
   gainLife() {
     const before = this.lives;
-    // PART C: Clamp lives to max of 6
-    const MAX_LIVES = 6;
+    const MAX_LIVES = 5;
     this.lives = Math.min(this.lives + 1, MAX_LIVES);
     const after = this.lives;
     const applied = after > before;

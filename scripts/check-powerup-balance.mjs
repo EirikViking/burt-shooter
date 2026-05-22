@@ -15,14 +15,20 @@ if ((powerups.cooldownMs ?? 0) < 18000) {
 if ((powerups.maxPerLevel ?? 99) > 2) {
   errors.push(`maxPerLevel should stay at or below 2, got ${powerups.maxPerLevel}`);
 }
-if (powerups.extraLifeDropsEnabled === true) {
-  errors.push('extraLifeDropsEnabled should stay false so random drops do not grant lives');
+if (powerups.extraLifeDropsEnabled !== true) {
+  errors.push('extraLifeDropsEnabled should be true so rare life powerups can drop');
 }
-if ((powerups.extraLifeChance ?? 1) !== 0) {
-  errors.push(`extraLifeChance should be 0, got ${powerups.extraLifeChance}`);
+if ((powerups.extraLifeChance ?? 99) > 0.08) {
+  errors.push(`extraLifeChance should stay at or below 0.08, got ${powerups.extraLifeChance}`);
 }
-if ((powerups.extraLifeGuaranteedEveryLevels ?? 1) !== 0) {
-  errors.push(`extraLifeGuaranteedEveryLevels should be 0, got ${powerups.extraLifeGuaranteedEveryLevels}`);
+if ((powerups.extraLifeChance ?? -1) < 0.04) {
+  errors.push(`extraLifeChance should stay at or above 0.04 so life drops can appear, got ${powerups.extraLifeChance}`);
+}
+if ((powerups.extraLifeGuaranteedEveryLevels ?? 0) < 6) {
+  errors.push(`extraLifeGuaranteedEveryLevels should stay at or above 6 for rare pacing, got ${powerups.extraLifeGuaranteedEveryLevels}`);
+}
+if ((powerups.extraLifeGuaranteedEveryLevels ?? 99) > 8) {
+  errors.push(`extraLifeGuaranteedEveryLevels should stay at or below 8 so life drops are not absent, got ${powerups.extraLifeGuaranteedEveryLevels}`);
 }
 if (BalanceConfig.survival?.lastStandRepairEnabled === true) {
   errors.push('lastStandRepairEnabled should stay false for Steam score-chaser fairness');
@@ -40,4 +46,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('[powerup-balance] PASS sparse drops, max 2 per level, no random or level-clear life grants');
+console.log('[powerup-balance] PASS sparse drops, max 2 per level, rare extra lives, no level-clear life grants');

@@ -442,6 +442,7 @@ function buildGameTextState(game) {
       retryPrompt: gameOverScene.instructions?.text || null,
       primaryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       retryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
+      leaderboardCta: gameOverScene.getLeaderboardCtaDebugState ? gameOverScene.getLeaderboardCtaDebugState() : null,
       state: gameOverScene.state || null,
       runbackReason: gameOverScene.runbackReason || null,
       steamSubmissionMode: Boolean(gameOverScene.steamSubmissionMode),

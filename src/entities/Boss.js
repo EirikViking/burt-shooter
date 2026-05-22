@@ -6,6 +6,7 @@ import { BalanceConfig } from '../config/BalanceConfig.js';
 import { createText } from '../utils/pixiText.js';
 import { getBossProfile } from '../config/BossRoster.js';
 import { getBossSignatureWeaponProfile, getBossWeaponProfile, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
+import { AudioManager } from '../audio/AudioManager.js';
 
 const ENABLE_BOSS_WEAPON_FX = true;
 const HARD_SCALE_FACTOR = 0.3;
@@ -923,6 +924,20 @@ export class Boss {
     return 'SIGNATURE WINDUP';
   }
 
+  getSignatureSfxFamily(type) {
+    if (type === 'lance') return 'beam';
+    if (type === 'ring' || type === 'adds') return 'net';
+    return 'web';
+  }
+
+  playSignatureTelegraphSfx(type) {
+    const family = this.getSignatureSfxFamily(type);
+    AudioManager.playSfx(`boss_${family}_telegraph`, {
+      volume: family === 'beam' ? 0.6 : 0.52,
+      minIntervalMs: 640
+    });
+  }
+
   startSignatureTelegraph(type, playerX, playerY) {
     const fairness = BalanceConfig.difficulty.bossFairness || {};
     if (type === 'ring' || type === 'adds') {
@@ -949,6 +964,7 @@ export class Boss {
         duration: 900
       });
     }
+    this.playSignatureTelegraphSfx(type);
     this.updateTelegraphVisual(0, playerX, playerY);
   }
 
@@ -979,7 +995,9 @@ export class Boss {
         points.push(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
       }
       warningLayer.poly(points);
-      warningLayer.fill({ color: warningColor, alpha: fillAlpha });
+      warningLayer.fill({ color: warningColor, alpha: fillAlpha * 0.58 });
+      warningLayer.poly(points);
+      warningLayer.fill({ color: 0xffffff, alpha: 0.04 + progress * 0.05 });
       warningLayer.poly(points);
       warningLayer.stroke({ color: 0xffffff, width: 2 + progress * 3, alpha: 0.48 + progress * 0.34 });
       const lanes = this.telegraph.type === 'lance' ? [-0.08, 0, 0.08] : [-0.5, -0.22, 0.22, 0.5];
@@ -989,23 +1007,50 @@ export class Boss {
         warningLayer.lineTo(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
       }
       warningLayer.stroke({ color: warningColor, width: 2 + progress * 2, alpha: laneAlpha });
+      const crossCount = this.telegraph.type === 'lance' ? 5 : 4;
+      for (let i = 1; i <= crossCount; i++) {
+        const t = i / (crossCount + 1);
+        const a = angle;
+        const cx = originX + Math.cos(a) * length * t;
+        const cy = originY + Math.sin(a) * length * t;
+        const band = Math.max(10, spread * length * t * 0.18);
+        const px = -Math.sin(a);
+        const py = Math.cos(a);
+        warningLayer.moveTo(cx - px * band, cy - py * band);
+        warningLayer.lineTo(cx + px * band, cy + py * band);
+      }
+      warningLayer.stroke({ color: 0xffffff, width: 1.4 + progress, alpha: 0.2 + progress * 0.18 });
+      warningLayer.circle(originX, originY, this.radius * (0.32 + progress * 0.16));
+      warningLayer.fill({ color: warningColor, alpha: 0.18 + progress * 0.1 });
+      warningLayer.circle(originX, originY, this.radius * (0.18 + progress * 0.08));
+      warningLayer.fill({ color: 0xffffff, alpha: 0.18 + progress * 0.16 });
     } else {
       const maxRadius = Math.max(this.radius * 2.15, 170);
       const innerRadius = maxRadius * 0.46;
       const outer = maxRadius * (0.72 + progress * 0.34) * pulse;
       const inner = innerRadius * (0.8 + progress * 0.16);
+      warningLayer.circle(originX, originY + 18, outer * 1.08);
+      warningLayer.stroke({ color: warningColor, width: 8, alpha: 0.1 + progress * 0.14 });
       warningLayer.circle(originX, originY + 18, outer);
-      warningLayer.stroke({ color: warningColor, width: 4, alpha: 0.48 + progress * 0.26 });
+      warningLayer.stroke({ color: warningColor, width: 5, alpha: 0.48 + progress * 0.26 });
       warningLayer.circle(originX, originY + 18, inner);
       warningLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.5 });
-      for (let i = 0; i < 12; i++) {
-        const a = (Math.PI * 2 * i) / 12 + progress * 0.3;
+      warningLayer.circle(originX, originY + 18, inner * 0.58);
+      warningLayer.stroke({ color: warningColor, width: 2, alpha: 0.3 + progress * 0.2 });
+      for (let i = 0; i < 18; i++) {
+        const a = (Math.PI * 2 * i) / 18 + progress * 0.65;
         const r1 = inner + 8;
         const r2 = outer - 8;
         warningLayer.moveTo(originX + Math.cos(a) * r1, originY + 18 + Math.sin(a) * r1);
         warningLayer.lineTo(originX + Math.cos(a) * r2, originY + 18 + Math.sin(a) * r2);
       }
-      warningLayer.stroke({ color: warningColor, width: 2, alpha: 0.28 });
+      warningLayer.stroke({ color: warningColor, width: 2, alpha: 0.28 + progress * 0.16 });
+      for (let i = 0; i < 8; i++) {
+        const a = (Math.PI * 2 * i) / 8 - progress * 0.9;
+        const nodeR = outer * 0.88;
+        warningLayer.circle(originX + Math.cos(a) * nodeR, originY + 18 + Math.sin(a) * nodeR, 4 + progress * 3);
+      }
+      warningLayer.fill({ color: 0xffffff, alpha: 0.16 + progress * 0.16 });
     }
 
     if (this.nameText) {

@@ -33,19 +33,19 @@ The current bespoke arcade SFX layer was generated with ElevenLabs Sound Generat
 public/audio/sfx/nova-swarm/
 ```
 
-To regenerate the current five-cue pack, set `ELEVENLABS_API_KEY` in the shell environment and run:
+To regenerate the current generated SFX pack, set `ELEVENLABS_API_KEY` in the shell environment and run:
 
 ```bash
 npm run generate:nova-sfx
 ```
 
-Current generated SFX:
+Current generated SFX include boss arrival, leaderboard/highscore fanfares, powerup and trait cues, UI/pause/ship-select cues, and the 2026-05-22 tractor/boss-special attack cues:
 
-- `nova_boss_arrival_alarm.mp3`
-- `nova_bonus_core_jackpot.mp3`
-- `nova_shield_snap.mp3`
-- `nova_rank_fanfare.mp3`
-- `nova_highscore_chime.mp3`
+- `nova_tractor_lock_charge.mp3`, `nova_tractor_beam_active.mp3`, `nova_tractor_break_bloom.mp3`
+- `nova_boss_beam_telegraph.mp3`, `nova_boss_beam_fire.mp3`
+- `nova_boss_web_telegraph.mp3`, `nova_boss_web_snap.mp3`
+- `nova_boss_net_telegraph.mp3`, `nova_boss_net_burst.mp3`
+- `nova_boss_hazard_impact.mp3`
 
 Do not put the API key in `.env` unless `.env` is confirmed ignored by git, and never commit generated logs or screenshots that contain secrets. The script reads the key only from `process.env.ELEVENLABS_API_KEY` and does not print it.
 

@@ -96,12 +96,18 @@ try {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
-    startLevel: '2'
+    startLevel: '2',
+    controlSmoke: '1'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
 
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state?.scene === 'play' && state?.player?.active;
+  }, { timeout: 30000 });
+
+  await page.waitForFunction(() => {
+    const play = window.__game?.scenes?.play;
+    return play && play.isReady && play.introActive !== true && play.introComplete === true && play.player?.sprite?.parent;
   }, { timeout: 30000 });
 
   await page.evaluate(() => {

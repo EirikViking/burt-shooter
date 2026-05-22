@@ -47,6 +47,17 @@ Prompt summary:
 
 > Four-panel game UI transmission art sheet for Nova Swarm: lonely pilot and last coin, intelligent swarm spiral, pilot/drone pattern readout, and boss-gate signal flare; premium painterly sci-fi concept art, no text, no logos, no watermark.
 
+## 2026-05-22 Generated Leaderboard Rank Badges
+
+- Source atlas: `public/art/generated/nova-swarm/source/nova-rank-badge-atlas-20260522-source.png`
+- Runtime assets: `public/art/generated/nova-swarm/ranks/nova-rank-badge-00-20260522.png` through `nova-rank-badge-19-20260522.png`
+- Optimization: built-in Codex imagegen output copied from `C:\Users\cromk\.codex\generated_images\019e4ca4-8508-7b52-adaf-13db37a41d56`, split into 20 cells, chroma-keyed from green, trimmed, and padded to transparent `192x192` PNGs.
+- Usage: `src/assets/assetManifest.js` maps leaderboard rank sprites to these Nova Swarm badges, and `src/scenes/HighscoreScene.js` displays them with a small neon badge aura in each row.
+
+Prompt summary:
+
+> Single `5x4` atlas of 20 premium sci-fi arcade rank badges on flat `#00ff00`: no text, no numbers, cohesive neon metal medallions progressing from cadet to elite champion, cyan/magenta/gold energy trims, strong silhouettes, no logos, no watermark.
+
 ## 2026-05-16 Menu Mission Console
 
 - Runtime assets reused: current `AssetManifest.generated.crewPortraits` story/comms panels.

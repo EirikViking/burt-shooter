@@ -188,6 +188,8 @@ export class PlayScene {
     this._lastStartedLevel = -1;
     this._deathTimeouts = [];
     this._activeTickers = [];
+    this.balanceDebug = null;
+    this.bossClearRecoveryLevels = new Set();
   }
 
   init() {
@@ -196,6 +198,7 @@ export class PlayScene {
       this.inputManager = new InputManager();
     }
     this.isPaused = false;
+    this.bossClearRecoveryLevels.clear();
     this.pauseOverlay = null;
     this.settingsOverlay = null;
     this.pausePressed = false;
@@ -287,6 +290,7 @@ export class PlayScene {
     this.lastTractorHijack = null;
     this.tractorHijackLayer = new PIXI.Graphics();
     this.tractorHijackLayer.zIndex = 65;
+    this.tractorHijackLayer.blendMode = 'add';
     this.gameContainer.addChild(this.tractorHijackLayer);
     this.bossHazards = [];
     this.lastBossHazardHit = null;
@@ -352,6 +356,7 @@ export class PlayScene {
     this.enemyManager = new EnemyManager(this.gameContainer, this.game, capHandler);
 
     const params = new URLSearchParams(window.location.search);
+    this.initBalanceDebug(params);
     const debugToken = params.get('debugBossToken');
     if (debugToken === 'NOVA_DEBUG_2026') {
       this.game.markUnrankedRun?.('debug_route');
@@ -461,6 +466,196 @@ export class PlayScene {
     if (this.devOverlay) {
       this.devOverlay.y = height - margin;
     }
+  }
+
+  initBalanceDebug(params = null) {
+    const enabled = this.isBalanceDebugRequested(params);
+    this.balanceDebug = null;
+    if (!enabled) return;
+
+    this.game?.markUnrankedRun?.('balance_debug');
+    this.balanceDebug = {
+      startedAt: Date.now(),
+      selectedShip: this.game?.selectedShipSpriteKey || getDefaultShipKey(),
+      runMode: this.game?.runMode || 'unranked',
+      killsByEnemyType: {},
+      damageTakenBySource: {},
+      pickupsCollected: {},
+      deaths: 0,
+      respawns: 0,
+      lastDamageSource: null,
+      lastDeathSource: null,
+      finalDeathSource: null,
+      bossEncounters: [],
+      currentBossEncounter: null,
+      currentBossRef: null,
+      lastBossSampleAt: 0,
+      flushed: false
+    };
+    console.log('[BalanceDebug] enabled; run marked unranked. Use ?balanceDebug=1 or localStorage nova.balanceDebug=1.');
+  }
+
+  isBalanceDebugRequested(params = null) {
+    const queryEnabled = params?.get?.('balanceDebug') === '1' || params?.get?.('balance_debug') === '1';
+    if (queryEnabled) return true;
+    try {
+      return typeof localStorage !== 'undefined' && localStorage.getItem('nova.balanceDebug') === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  recordBalanceKill(enemy) {
+    const stats = this.balanceDebug;
+    if (!stats || !enemy) return;
+    const key = enemy.type || enemy.id || enemy.kind || enemy.bossType || 'unknown';
+    stats.killsByEnemyType[key] = (stats.killsByEnemyType[key] || 0) + 1;
+  }
+
+  recordBalanceDamage(source = 'unknown') {
+    const stats = this.balanceDebug;
+    if (!stats) return;
+    const key = String(source || 'unknown');
+    stats.damageTakenBySource[key] = (stats.damageTakenBySource[key] || 0) + 1;
+    stats.lastDamageSource = key;
+    if ((Number(this.game?.lives) || 0) <= 1) {
+      stats.finalDeathSource = key;
+    }
+  }
+
+  recordBalanceLifeLost() {
+    const stats = this.balanceDebug;
+    if (!stats) return;
+    stats.deaths += 1;
+    stats.lastDeathSource = stats.lastDamageSource || 'unknown';
+    if ((Number(this.game?.lives) || 0) <= 0) {
+      stats.finalDeathSource = stats.lastDeathSource;
+    }
+  }
+
+  recordBalanceRespawn() {
+    if (this.balanceDebug) this.balanceDebug.respawns += 1;
+  }
+
+  recordBalancePickup(powerup) {
+    const stats = this.balanceDebug;
+    if (!stats || !powerup) return;
+    const key = powerup.type || 'unknown';
+    stats.pickupsCollected[key] = (stats.pickupsCollected[key] || 0) + 1;
+  }
+
+  recordBalanceBossStart(boss) {
+    const stats = this.balanceDebug;
+    if (!stats || !boss || stats.currentBossRef === boss) return;
+    const now = Date.now();
+    const encounter = {
+      level: Number(boss.level || this.game?.level || 1),
+      name: boss.name || boss.bossType || 'UNKNOWN BOSS',
+      archetype: boss.profile?.archetype || null,
+      startedAt: now,
+      timeToBossMs: now - stats.startedAt,
+      hpMax: Math.round(Number(boss.maxHealth) || 0),
+      playerLivesAtStart: Number(this.game?.lives) || 0,
+      playerShieldAtStart: Boolean(this.player?.shieldActive),
+      phases: [],
+      hpSamples: []
+    };
+    stats.currentBossRef = boss;
+    stats.currentBossEncounter = encounter;
+    stats.bossEncounters.push(encounter);
+    this.recordBalanceBossHp(boss, true);
+  }
+
+  recordBalanceBossHp(boss, force = false) {
+    const stats = this.balanceDebug;
+    const encounter = stats?.currentBossEncounter;
+    if (!stats || !encounter || !boss) return;
+    const now = Date.now();
+    if (!force && now - stats.lastBossSampleAt < 1000) return;
+    stats.lastBossSampleAt = now;
+    encounter.hpSamples.push({
+      tSec: Number(((now - encounter.startedAt) / 1000).toFixed(1)),
+      hp: Math.max(0, Number((Number(boss.health) || 0).toFixed(2)))
+    });
+  }
+
+  sampleBalanceBoss() {
+    const stats = this.balanceDebug;
+    if (!stats) return;
+    const boss = this.enemyManager?.boss;
+    if (!boss) return;
+    if (boss.active && stats.currentBossRef !== boss) {
+      this.recordBalanceBossStart(boss);
+    }
+    if (boss.active) {
+      this.recordBalanceBossHp(boss);
+    }
+  }
+
+  recordBalanceBossPhase(phase, boss) {
+    const stats = this.balanceDebug;
+    if (!stats) return;
+    if (boss && stats.currentBossRef !== boss) {
+      this.recordBalanceBossStart(boss);
+    }
+    const encounter = stats.currentBossEncounter;
+    if (!encounter) return;
+    encounter.phases.push({
+      phase,
+      tSec: Number(((Date.now() - encounter.startedAt) / 1000).toFixed(1)),
+      hp: Math.max(0, Math.round(Number(boss?.health) || 0))
+    });
+  }
+
+  recordBalanceBossEnd() {
+    const stats = this.balanceDebug;
+    const encounter = stats?.currentBossEncounter;
+    if (!stats || !encounter) return;
+    const now = Date.now();
+    encounter.durationMs = now - encounter.startedAt;
+    if (stats.currentBossRef) {
+      this.recordBalanceBossHp(stats.currentBossRef, true);
+    }
+    stats.currentBossRef = null;
+    stats.currentBossEncounter = null;
+  }
+
+  flushBalanceDebugSummary(reason = 'scene_end') {
+    const stats = this.balanceDebug;
+    if (!stats || stats.flushed) return;
+    stats.flushed = true;
+    if (stats.currentBossEncounter) {
+      this.recordBalanceBossEnd();
+    }
+    const summary = {
+      reason,
+      runDurationSec: Number(((Date.now() - stats.startedAt) / 1000).toFixed(1)),
+      waveOrLevelReached: Number(this.game?.level) || 1,
+      selectedShip: stats.selectedShip,
+      runMode: stats.runMode,
+      killsByEnemyType: stats.killsByEnemyType,
+      damageTakenBySource: stats.damageTakenBySource,
+      deathSource: stats.finalDeathSource || stats.lastDeathSource || stats.lastDamageSource || null,
+      timeToFirstBossSec: stats.bossEncounters[0]
+        ? Number((stats.bossEncounters[0].timeToBossMs / 1000).toFixed(1))
+        : null,
+      bossEncounters: stats.bossEncounters.map((encounter) => ({
+        level: encounter.level,
+        name: encounter.name,
+        archetype: encounter.archetype,
+        durationSec: Number(((encounter.durationMs || Date.now() - encounter.startedAt) / 1000).toFixed(1)),
+        hpMax: encounter.hpMax,
+        playerLivesAtStart: encounter.playerLivesAtStart,
+        playerShieldAtStart: encounter.playerShieldAtStart,
+        phases: encounter.phases,
+        hpSamples: encounter.hpSamples
+      })),
+      pickupsCollected: stats.pickupsCollected,
+      deaths: stats.deaths,
+      respawns: stats.respawns,
+      score: Number(this.game?.score) || 0
+    };
+    console.log('[BalanceDebugSummary]', summary);
   }
 
   startLevel(source = 'unknown') {
@@ -684,6 +879,8 @@ export class PlayScene {
       const enemyBulletScale = (this.player && this.player.activePowerup && this.player.activePowerup.type === 'slow_time') ? 0.6 : 1;
       if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
       if (this.enemyManager) this.enemyManager.update(delta);
+      this.sampleBalanceBoss();
+      this.maybeSpawnBossClutchShield();
       this.applyGameplayBackdropLevel(this.game?.level || 1);
       if (this.powerupManager) this.powerupManager.update(delta, this);
       this.updateTractorHijack(delta);
@@ -1385,6 +1582,7 @@ export class PlayScene {
           if (!this.player.invulnerable) {
             const damageTaken = this.player.takeDamage();
             if (damageTaken) {
+              this.recordBalanceDamage('enemy_bullet');
               this.lastHitAt = Date.now();
               this.game.loseLife();
               this.triggerPlayerDeathFeedback();
@@ -1404,6 +1602,7 @@ export class PlayScene {
         if (this.checkCollision(bonusDrone, this.player)) {
           if (bonusDrone.type === 'POWERUP') {
             // Collect!
+            this.recordBalancePickup({ type: 'bonus_core' });
             bonusDrone.collect(this.player, this);
             this.hasActiveBonusCore = false; // Reset spawn flag
           } else {
@@ -1417,6 +1616,7 @@ export class PlayScene {
             if (!this.player.invulnerable) {
               const damageTaken = this.player.takeDamage();
               if (damageTaken) {
+                this.recordBalanceDamage('ambient_hazard_contact');
                 this.lastHitAt = Date.now();
                 this.game.loseLife();
                 this.triggerPlayerDeathFeedback();
@@ -1468,6 +1668,7 @@ export class PlayScene {
             if (!this.player.invulnerable) {
               const damageTaken = this.player.takeDamage();
               if (damageTaken) {
+                this.recordBalanceDamage('boss_contact');
                 this.lastHitAt = Date.now();
                 this.game.loseLife();
                 this.triggerPlayerDeathFeedback();
@@ -1484,6 +1685,7 @@ export class PlayScene {
           if (!this.player.invulnerable) {
             const damageTaken = this.player.takeDamage();
             if (damageTaken) {
+              this.recordBalanceDamage('enemy_contact');
               this.lastHitAt = Date.now();
               this.game.loseLife();
               this.triggerPlayerDeathFeedback();
@@ -1501,6 +1703,7 @@ export class PlayScene {
     this.powerupManager.powerups.forEach(powerup => {
       if (powerup.active && this.player.active) {
         if (this.checkCollision(powerup, this.player)) {
+          this.recordBalancePickup(powerup);
           powerup.collect(this.player, this);
           AudioManager.playSfx('pickup');
           const pickupColor = this.player?.synergyState?.type === 'cash_vacuum' ? 0xffff00 : powerup.color;
@@ -1840,6 +2043,7 @@ export class PlayScene {
   }
 
   destroy() {
+    this.flushBalanceDebugSummary('scene_destroy');
     this.closeSettingsOverlay();
     this.shipIntroToken += 1;
 
@@ -2170,7 +2374,11 @@ export class PlayScene {
   }
 
   onLifeLost() {
+    this.recordBalanceLifeLost();
     if (this.tryLastStandRepair()) return;
+    if (this.game.lives <= 0) {
+      this.flushBalanceDebugSummary('game_over');
+    }
 
     this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
 
@@ -2178,6 +2386,7 @@ export class PlayScene {
     if (this.player && this.game.lives > 0) {
       this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
       this.player.invulnerableTime = RESPAWN_INVULNERABILITY_MS;
+      this.recordBalanceRespawn();
       const clearedHazards = this.clearRespawnHazards('life_lost');
       if (clearedHazards > 0) {
         const compactHud = this.game.getWidth() < 620;
@@ -2249,6 +2458,7 @@ export class PlayScene {
     this.lowLivesShownFor = null;
     this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
     this.player.invulnerableTime = RESPAWN_INVULNERABILITY_MS;
+    this.recordBalanceRespawn();
     const clearedHazards = this.clearRespawnHazards('last_stand');
     const compactHud = this.game.getWidth() < 620;
     const suffix = clearedHazards > 0 ? ` x${clearedHazards}` : '';
@@ -2282,7 +2492,7 @@ export class PlayScene {
   applyLifeRepair(targetLives = 3, invulnerabilityMs = 3000) {
     const before = Number.isFinite(this.game?.lives) ? this.game.lives : 0;
     if (before <= 0) return 0;
-    const target = Math.max(before, Math.min(3, Math.round(targetLives)));
+    const target = Math.max(before, Math.min(5, Math.round(targetLives)));
     if (target <= before) return 0;
 
     this.game.lives = target;
@@ -2295,6 +2505,24 @@ export class PlayScene {
 
     AudioManager.playSfx('powerup', { force: true, volume: 0.72, minIntervalMs: 250 });
     return target - before;
+  }
+
+  applyBossClearRecovery(level = this.game?.level || 1) {
+    const rewardConfig = BalanceConfig.rewards || {};
+    const repairLives = Math.max(0, Number(rewardConfig.bossClearRepairLives) || 0);
+    const maxLives = Math.max(1, Number(rewardConfig.bossClearRepairMaxLives) || 5);
+    const levelKey = Number(level) || Number(this.game?.level) || 1;
+    if (repairLives <= 0 || this.bossClearRecoveryLevels.has(levelKey)) return 0;
+
+    this.bossClearRecoveryLevels.add(levelKey);
+    const before = Number.isFinite(this.game?.lives) ? this.game.lives : 0;
+    if (before <= 0 || before >= maxLives) return 0;
+
+    const targetLives = Math.min(maxLives, before + repairLives);
+    return this.applyLifeRepair(
+      targetLives,
+      rewardConfig.bossClearRepairInvulnerabilityMs || RESPAWN_INVULNERABILITY_MS
+    );
   }
 
   triggerTractorHijack({ x, y } = {}) {
@@ -2371,12 +2599,20 @@ export class PlayScene {
     if (bonusScore > 0) {
       bonusScore += 600;
       this.game.addScore(bonusScore);
-      AudioManager.playSfx('shield', { force: true, volume: 0.58, minIntervalMs: 120 });
-      AudioManager.playSfx('powerup', { volume: 0.42, minIntervalMs: 120 });
-      AudioManager.playVoice('mission_control_tractor_hijack', { cooldownMs: 26000, duckMs: 1300 });
+      AudioManager.playSfx('tractor_break_bloom', { force: true, volume: 0.76, minIntervalMs: 120 });
+      AudioManager.playSfx('tractor_beam_active', { volume: 0.34, minIntervalMs: 120 });
+      AudioManager.playVoice('mission_control_tractor_hijack', {
+        force: true,
+        stopOtherVoices: true,
+        exclusiveGroup: 'announcer',
+        bypassEventCooldown: true,
+        bypassGlobalCooldown: true,
+        cooldownMs: 26000,
+        duckMs: 1300
+      });
       this.screenShake?.shake(width < 620 ? 5 : 8, 16);
     } else {
-      AudioManager.playSfx('forceField', { volume: 0.32, minIntervalMs: 350 });
+      AudioManager.playSfx('tractor_lock_charge', { volume: 0.34, minIntervalMs: 350 });
       this.screenShake?.shake(width < 620 ? 3 : 5, 10);
     }
 
@@ -2419,34 +2655,82 @@ export class PlayScene {
     const startY = effect.playerY;
     const endX = effect.sourceX;
     const endY = effect.sourceY;
-    const pulse = 1 + Math.sin(Date.now() * 0.04) * 0.08;
+    const now = Date.now();
+    const pulse = 1 + Math.sin(now * 0.04) * 0.08;
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const length = Math.max(1, Math.hypot(dx, dy));
+    const nx = -dy / length;
+    const ny = dx / length;
+    const drawSegment = (offset, width, color, strokeAlpha) => {
+      const wobble = Math.sin(now * 0.015 + offset * 0.4) * Math.min(18, length * 0.018);
+      layer.moveTo(startX + nx * (offset + wobble * 0.3), startY + ny * (offset + wobble * 0.3));
+      layer.lineTo(endX + nx * (offset - wobble), endY + ny * (offset - wobble));
+      layer.stroke({ color, width, alpha: strokeAlpha * alpha });
+    };
 
-    layer.moveTo(startX, startY);
-    layer.lineTo(endX, endY);
-    layer.stroke({ color: 0xffffff, width: 10 * pulse, alpha: 0.2 * alpha });
-    layer.moveTo(startX, startY);
-    layer.lineTo(endX, endY);
-    layer.stroke({ color: 0x66ffff, width: 5 * pulse, alpha: 0.72 * alpha });
-    layer.moveTo(startX, startY);
-    layer.lineTo(endX, endY);
-    layer.stroke({ color: 0xff66ff, width: 2, alpha: 0.48 * alpha });
+    drawSegment(0, 26 * pulse, 0x00f6ff, 0.11);
+    drawSegment(0, 17 * pulse, 0xff55d9, 0.12);
+    drawSegment(0, 11 * pulse, 0xffffff, 0.22);
+    drawSegment(-9, 4.2 * pulse, 0x66ffff, 0.58);
+    drawSegment(9, 4.2 * pulse, 0xff66ff, 0.48);
+    drawSegment(0, 3.2 * pulse, 0xffffff, 0.78);
 
-    const ringCount = effect.triggered ? 6 : 4;
+    for (let strand = -2; strand <= 2; strand++) {
+      if (strand === 0) continue;
+      const strandOffset = strand * 6 + Math.sin(now * 0.01 + strand) * 4;
+      drawSegment(strandOffset, 1.6, strand > 0 ? 0xffe066 : 0x66ffff, 0.34);
+    }
+
+    const ringCount = effect.triggered ? 8 : 5;
     for (let i = 1; i <= ringCount; i++) {
       const t = i / (ringCount + 1);
       const x = startX + (endX - startX) * t;
       const y = startY + (endY - startY) * t;
-      const radius = (18 + 26 * t + progress * 18) * pulse;
+      const radius = (16 + 32 * t + progress * 20 + Math.sin(now * 0.012 + i) * 5) * pulse;
       layer.circle(x, y, radius);
-      layer.stroke({ color: i % 2 ? 0x66ffff : 0xffffff, width: 2, alpha: 0.42 * alpha });
+      layer.stroke({ color: i % 2 ? 0x66ffff : 0xffffff, width: 2.5, alpha: 0.38 * alpha });
+      layer.circle(x, y, Math.max(3, radius * 0.08));
+      layer.fill({ color: i % 2 ? 0xff66ff : 0x66ffff, alpha: 0.2 * alpha });
     }
 
     effect.captured?.forEach((target, index) => {
-      const r = 18 + index * 2 + progress * 24;
+      const r = 20 + index * 3 + progress * 28;
       layer.circle(target.x, target.y, r);
-      layer.stroke({ color: 0xffe066, width: 3, alpha: 0.62 * alpha });
+      layer.stroke({ color: 0xffe066, width: 4, alpha: 0.62 * alpha });
+      layer.circle(target.x, target.y, r * 0.62);
+      layer.stroke({ color: 0xff66ff, width: 2, alpha: 0.38 * alpha });
       layer.circle(target.x, target.y, Math.max(5, r * 0.28));
-      layer.fill({ color: 0x66ffff, alpha: 0.18 * alpha });
+      layer.fill({ color: 0x66ffff, alpha: 0.22 * alpha });
+      for (let spoke = 0; spoke < 4; spoke++) {
+        const a = now * 0.006 + index + spoke * Math.PI * 0.5;
+        layer.moveTo(target.x + Math.cos(a) * r * 0.28, target.y + Math.sin(a) * r * 0.28);
+        layer.lineTo(target.x + Math.cos(a) * r, target.y + Math.sin(a) * r);
+      }
+      layer.stroke({ color: 0xffffff, width: 1.4, alpha: 0.3 * alpha });
+    });
+
+    layer.circle(startX, startY, 18 + Math.sin(now * 0.03) * 5);
+    layer.fill({ color: 0x66ffff, alpha: 0.18 * alpha });
+    layer.circle(endX, endY, 22 + Math.cos(now * 0.026) * 6);
+    layer.fill({ color: 0xff66ff, alpha: 0.16 * alpha });
+  }
+
+  getBossHazardSfxFamily(hazard) {
+    const type = hazard?.type || hazard?.attack || '';
+    if (hazard?.kind === 'beam' || type === 'lance' || type === 'sniper') return 'beam';
+    if (hazard?.kind === 'ring' || hazard?.kind === 'wall' || ['ring', 'adds', 'radial', 'spiral', 'clock', 'chord', 'wall'].includes(type)) {
+      return 'net';
+    }
+    return 'web';
+  }
+
+  playBossHazardFireSfx(hazard) {
+    if (!hazard || hazard.category !== 'signature') return;
+    const family = this.getBossHazardSfxFamily(hazard);
+    AudioManager.playSfx(`boss_${family}_fire`, {
+      volume: family === 'beam' ? 0.78 : family === 'net' ? 0.68 : 0.62,
+      minIntervalMs: 620
     });
   }
 
@@ -2539,6 +2823,7 @@ export class PlayScene {
     }
 
     this.bossHazards.push(hazard);
+    this.playBossHazardFireSfx(hazard);
     return hazard;
   }
 
@@ -2565,45 +2850,92 @@ export class PlayScene {
   drawBossHazard(hazard, progress) {
     const layer = this.bossHazardLayer;
     if (!layer) return;
-    const alpha = Math.max(0, Math.sin((1 - progress) * Math.PI)) * 0.72;
-    const pulse = 1 + Math.sin(Date.now() * 0.05) * 0.08;
+    const now = Date.now();
+    const alpha = Math.max(0, Math.sin((1 - progress) * Math.PI)) * 0.82;
+    const pulse = 1 + Math.sin(now * 0.05) * 0.08;
+    const shimmer = 0.5 + Math.sin(now * 0.07) * 0.5;
     const color = hazard.color || 0xfff45c;
+    const hotColor = hazard.kind === 'beam'
+      ? 0x9cfff7
+      : hazard.kind === 'ring' || hazard.kind === 'wall'
+        ? 0xffe066
+        : 0xffffff;
 
     if (hazard.kind === 'wall') {
       for (const x of hazard.columns || []) {
-        layer.roundRect(x - hazard.width / 2, hazard.startY, hazard.width, hazard.endY - hazard.startY, 8);
-        layer.fill({ color, alpha: 0.22 * alpha });
+        const h = hazard.endY - hazard.startY;
+        layer.roundRect(x - hazard.width * 1.35, hazard.startY - 8, hazard.width * 2.7, h + 16, 12);
+        layer.fill({ color, alpha: 0.08 * alpha });
+        layer.roundRect(x - hazard.width * 0.72, hazard.startY, hazard.width * 1.44, h, 8);
+        layer.fill({ color, alpha: 0.24 * alpha });
+        layer.roundRect(x - hazard.width * 0.24, hazard.startY, hazard.width * 0.48, h, 5);
+        layer.fill({ color: 0xffffff, alpha: 0.18 * alpha });
         layer.moveTo(x, hazard.startY);
         layer.lineTo(x, hazard.endY);
+        for (let y = hazard.startY + 24; y < hazard.endY; y += 48) {
+          const tick = hazard.width * (0.75 + shimmer * 0.25);
+          layer.moveTo(x - tick, y);
+          layer.lineTo(x + tick, y + 12);
+        }
       }
-      layer.stroke({ color: 0xffffff, width: 3 * pulse, alpha: 0.64 * alpha });
+      layer.stroke({ color: 0xffffff, width: 2.4 * pulse, alpha: 0.52 * alpha });
+      for (const x of hazard.columns || []) {
+        layer.moveTo(x - hazard.width * 0.62, hazard.startY);
+        layer.lineTo(x - hazard.width * 0.62, hazard.endY);
+        layer.moveTo(x + hazard.width * 0.62, hazard.startY);
+        layer.lineTo(x + hazard.width * 0.62, hazard.endY);
+      }
+      layer.stroke({ color: hotColor, width: 1.8, alpha: 0.44 * alpha });
       return;
     }
 
     if (hazard.kind === 'ring') {
-      layer.circle(hazard.sourceX, hazard.sourceY, hazard.outerRadius * pulse);
-      layer.stroke({ color, width: 9, alpha: 0.54 * alpha });
-      layer.circle(hazard.sourceX, hazard.sourceY, hazard.innerRadius);
-      layer.stroke({ color: 0xffffff, width: 3, alpha: 0.5 * alpha });
-      for (let i = 0; i < 14; i++) {
-        const a = (Math.PI * 2 * i) / 14 + progress * 0.8;
+      const outer = hazard.outerRadius * pulse;
+      const inner = hazard.innerRadius * (0.96 + shimmer * 0.04);
+      const mid = (outer + inner) * 0.5;
+      layer.circle(hazard.sourceX, hazard.sourceY, outer * 1.06);
+      layer.stroke({ color, width: 16, alpha: 0.08 * alpha });
+      layer.circle(hazard.sourceX, hazard.sourceY, outer);
+      layer.stroke({ color, width: 9, alpha: 0.46 * alpha });
+      layer.circle(hazard.sourceX, hazard.sourceY, mid);
+      layer.stroke({ color: hotColor, width: 3, alpha: 0.28 * alpha });
+      layer.circle(hazard.sourceX, hazard.sourceY, inner);
+      layer.stroke({ color: 0xffffff, width: 3, alpha: 0.46 * alpha });
+      for (let i = 0; i < 22; i++) {
+        const a = (Math.PI * 2 * i) / 22 + progress * 1.1;
         if (Math.abs(this.normalizeBossHazardAngle(a - hazard.safeAngle)) < hazard.safeWedge) continue;
         layer.moveTo(
-          hazard.sourceX + Math.cos(a) * (hazard.innerRadius + 8),
-          hazard.sourceY + Math.sin(a) * (hazard.innerRadius + 8)
+          hazard.sourceX + Math.cos(a) * (inner + 8),
+          hazard.sourceY + Math.sin(a) * (inner + 8)
         );
         layer.lineTo(
-          hazard.sourceX + Math.cos(a) * (hazard.outerRadius - 8) * pulse,
-          hazard.sourceY + Math.sin(a) * (hazard.outerRadius - 8) * pulse
+          hazard.sourceX + Math.cos(a) * (outer - 8),
+          hazard.sourceY + Math.sin(a) * (outer - 8)
         );
       }
-      layer.stroke({ color, width: 3, alpha: 0.48 * alpha });
+      layer.stroke({ color, width: 2.4, alpha: 0.48 * alpha });
+      for (let i = 0; i < 10; i++) {
+        const a = (Math.PI * 2 * i) / 10 - progress * 1.4;
+        if (Math.abs(this.normalizeBossHazardAngle(a - hazard.safeAngle)) < hazard.safeWedge) continue;
+        layer.circle(
+          hazard.sourceX + Math.cos(a) * mid,
+          hazard.sourceY + Math.sin(a) * mid,
+          3.5 + shimmer * 2
+        );
+      }
+      layer.fill({ color: 0xffffff, alpha: 0.2 * alpha });
+      for (const offset of [-hazard.safeWedge, hazard.safeWedge]) {
+        const a = hazard.safeAngle + offset;
+        layer.moveTo(hazard.sourceX + Math.cos(a) * (inner - 4), hazard.sourceY + Math.sin(a) * (inner - 4));
+        layer.lineTo(hazard.sourceX + Math.cos(a) * (outer + 6), hazard.sourceY + Math.sin(a) * (outer + 6));
+      }
+      layer.stroke({ color: 0x8cffb5, width: 2, alpha: 0.42 * alpha });
       return;
     }
 
     const half = Math.max(0.01, hazard.spread / 2);
     const points = [hazard.sourceX, hazard.sourceY];
-    const steps = hazard.kind === 'beam' ? 1 : 8;
+    const steps = hazard.kind === 'beam' ? 2 : 10;
     for (let i = 0; i <= steps; i++) {
       const t = steps === 1 ? i - 0.5 : i / steps - 0.5;
       const a = hazard.angle + t * hazard.spread;
@@ -2613,8 +2945,10 @@ export class PlayScene {
       );
     }
     layer.poly(points);
-    layer.fill({ color, alpha: hazard.kind === 'beam' ? 0.18 * alpha : 0.13 * alpha });
-    const laneAngles = hazard.kind === 'beam' ? [0] : [-half, 0, half];
+    layer.fill({ color, alpha: hazard.kind === 'beam' ? 0.16 * alpha : 0.1 * alpha });
+    layer.poly(points);
+    layer.fill({ color: 0xffffff, alpha: hazard.kind === 'beam' ? 0.05 * alpha : 0.035 * alpha });
+    const laneAngles = hazard.kind === 'beam' ? [-0.035, 0, 0.035] : [-half, -half * 0.42, 0, half * 0.42, half];
     for (const offset of laneAngles) {
       const a = hazard.angle + offset;
       layer.moveTo(hazard.sourceX, hazard.sourceY);
@@ -2623,7 +2957,7 @@ export class PlayScene {
         hazard.sourceY + Math.sin(a) * hazard.length
       );
     }
-    layer.stroke({ color: 0xffffff, width: hazard.kind === 'beam' ? 8 * pulse : 4 * pulse, alpha: 0.36 * alpha });
+    layer.stroke({ color: 0xffffff, width: hazard.kind === 'beam' ? 12 * pulse : 5 * pulse, alpha: 0.18 * alpha });
     for (const offset of laneAngles) {
       const a = hazard.angle + offset;
       layer.moveTo(hazard.sourceX, hazard.sourceY);
@@ -2632,7 +2966,34 @@ export class PlayScene {
         hazard.sourceY + Math.sin(a) * hazard.length
       );
     }
-    layer.stroke({ color, width: hazard.kind === 'beam' ? 4 * pulse : 2 * pulse, alpha: 0.76 * alpha });
+    layer.stroke({ color, width: hazard.kind === 'beam' ? 4.4 * pulse : 2.2 * pulse, alpha: 0.72 * alpha });
+
+    if (hazard.kind === 'beam') {
+      const coreA = hazard.angle;
+      layer.moveTo(hazard.sourceX, hazard.sourceY);
+      layer.lineTo(
+        hazard.sourceX + Math.cos(coreA) * hazard.length,
+        hazard.sourceY + Math.sin(coreA) * hazard.length
+      );
+      layer.stroke({ color: hotColor, width: 2.2 + shimmer * 2, alpha: 0.78 * alpha });
+    } else {
+      for (let i = 1; i <= 5; i++) {
+        const t = i / 6;
+        const bandWidth = hazard.length * t * Math.sin(half) * 0.58;
+        const cx = hazard.sourceX + Math.cos(hazard.angle) * hazard.length * t;
+        const cy = hazard.sourceY + Math.sin(hazard.angle) * hazard.length * t;
+        const px = -Math.sin(hazard.angle);
+        const py = Math.cos(hazard.angle);
+        layer.moveTo(cx - px * bandWidth, cy - py * bandWidth);
+        layer.lineTo(cx + px * bandWidth, cy + py * bandWidth);
+      }
+      layer.stroke({ color: hotColor, width: 1.5, alpha: 0.28 * alpha });
+    }
+
+    layer.circle(hazard.sourceX, hazard.sourceY, hazard.kind === 'beam' ? 14 + shimmer * 5 : 11 + shimmer * 4);
+    layer.fill({ color, alpha: 0.24 * alpha });
+    layer.circle(hazard.sourceX, hazard.sourceY, hazard.kind === 'beam' ? 6 + shimmer * 3 : 5 + shimmer * 2);
+    layer.fill({ color: 0xffffff, alpha: 0.32 * alpha });
   }
 
   isPlayerInsideBossHazard(hazard) {
@@ -2679,15 +3040,16 @@ export class PlayScene {
     };
 
     if (damageTaken) {
+      this.recordBalanceDamage(`boss_hazard:${hazard.category || 'unknown'}:${hazard.type || hazard.kind || 'unknown'}`);
       this.lastHitAt = Date.now();
       this.game.loseLife();
       this.triggerPlayerDeathFeedback();
       this.screenShake?.shake(7, 18);
-      AudioManager.playSfx('impactMetal', { volume: 0.38, minIntervalMs: 180 });
+      AudioManager.playSfx('boss_hazard_impact', { volume: 0.62, minIntervalMs: 180 });
     } else {
       this.screenShake?.shake(4, 12);
       this.particleManager?.createHitSpark(this.player.x, this.player.y, hazard.color || 0xfff45c);
-      AudioManager.playSfx('forceField', { volume: 0.28, minIntervalMs: 180 });
+      AudioManager.playSfx('boss_hazard_impact', { volume: 0.34, minIntervalMs: 180 });
     }
 
     this.particleManager?.createHitSpark(this.player.x, this.player.y, hazard.color || 0xfff45c);
@@ -3341,6 +3703,7 @@ export class PlayScene {
 
   onEnemyKilled(enemy) {
     const now = Date.now();
+    this.recordBalanceKill(enemy);
     if (now - this.lastKillAt > this.comboWindowMs) {
       this.comboCount = 0;
       this.comboMultiplier = 1;
@@ -4432,6 +4795,7 @@ export class PlayScene {
   }
 
   onBossPhaseChange(phase, boss) {
+    this.recordBalanceBossPhase(phase, boss);
     const label = phase === 2 ? 'BOSS PHASE 2' : 'BOSS PHASE 3';
     this.enqueueToast(label, { fontSize: 22, fill: '#ff3300', slot: 'top', type: 'boss' });
     this.triggerShockwave(boss.x, boss.y, phase === 2 ? 0xffaa00 : 0xff3300);
@@ -4444,9 +4808,12 @@ export class PlayScene {
 
   showBossCelebration({ level = this.game.level, type = 'UNKNOWN' } = {}) {
     if (!this.uiOverlay) return;
+    this.recordBalanceBossEnd();
+    const repairDelta = this.applyBossClearRecovery(level);
 
     const compactHud = this.game.getWidth() < 620;
-    this.showToast(`BOSS DEFEATED! +1000\n${getAchievementPopup()}`, {
+    const repairLine = repairDelta > 0 ? `\nHULL REPAIR +${repairDelta}` : '';
+    this.showToast(`BOSS DEFEATED! +1000${repairLine}\n${getAchievementPopup()}`, {
       fontSize: compactHud ? 20 : 28,
       fill: '#ffff00',
       stroke: '#330000',
@@ -4474,7 +4841,7 @@ export class PlayScene {
     if (type === 'BONUS_CORE') AudioManager.playSfx('pickup', { force: true, volume: 0.9 });
     else if (type === 'ICON_192') AudioManager.playSfx('ui_open', { force: true, volume: 0.8 });
     else AudioManager.playSfx('powerup', { force: true, volume: 0.8 });
-    console.log(`[BossCelebration] level=${level} type=${type} fired=true`);
+    console.log(`[BossCelebration] level=${level} type=${type} fired=true repairDelta=${repairDelta}`);
   }
 
   startShipIntro(spriteKey) {

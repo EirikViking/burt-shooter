@@ -203,7 +203,7 @@ class Powerup {
     // Pass type directly to player (Player handles reset)
     // Life Powerup Logic
     if (this.type === 'life') {
-      const maxLives = 6; // TASK 3: Increased from 3 to 6
+      const maxLives = 5;
       if (scene.game.lives < maxLives) {
         scene.game.gainLife(); // Use the new gainLife() method
         scene.onLifeGained ? scene.onLifeGained() : null; // Optional hook
@@ -214,7 +214,7 @@ class Powerup {
         }
       } else {
         // Score bonus instead
-        console.log(`[Lives] pickup extra_life before=${scene.game.lives} after=${scene.game.lives} max=6 applied=false (at max, bonus awarded)`);
+        console.log(`[Lives] pickup extra_life before=${scene.game.lives} after=${scene.game.lives} max=${maxLives} applied=false (at max, bonus awarded)`);
         scene.game.addScore(1000);
         scene.showToast('MAX LIVES BONUS!', { fontSize: 24, fill: '#00ff00' });
 
@@ -372,7 +372,7 @@ export class PowerupManager {
     this.currentLevel = 1;
     this.lastSpawnTime = Date.now();
 
-    // TASK 2: Track extra life spawns for guaranteed spawn every 2 levels
+    // Track extra life spawns for the rare long-gap guarantee.
     this.lastExtraLifeLevel = 0;
     this.extraLifeSpawnedThisLevel = false;
 
