@@ -211,7 +211,7 @@ try {
   const retryCtaPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   observePage(retryCtaPage);
   await retryCtaPage.addInitScript((scores) => {
-    localStorage.setItem('novaSwarm.localLeaderboard.v1', JSON.stringify(scores));
+    localStorage.setItem('novaSwarm.localLeaderboard.v2', JSON.stringify(scores));
   }, fullLocalLeaderboard());
   await retryCtaPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await retryCtaPage.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });

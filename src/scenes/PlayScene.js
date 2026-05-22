@@ -907,7 +907,7 @@ export class PlayScene {
         AudioManager.playSfx('levelComplete');
         const rewardConfig = BalanceConfig.rewards || {};
         const levelClearScore = rewardConfig.levelClearScore || BalanceConfig.level.completionBonus || 1000;
-        this.game.addScore(levelClearScore);
+        const appliedLevelClearScore = this.game.addScore(levelClearScore);
         const bossCompletion = Boolean(this.enemyManager?.bossDefeatedThisLevel);
         const compactHud = this.game.getWidth() < 620;
         const repairTarget = rewardConfig.levelClearRepairTargetLives || 0;
@@ -916,7 +916,7 @@ export class PlayScene {
           : 0;
         const repairSuffix = repairDelta > 0 ? `  REPAIR +${repairDelta}` : '';
         if (!bossCompletion) {
-          this.showToast(`SECTOR CLEAR +${levelClearScore}${repairSuffix}`, {
+          this.showToast(`SECTOR CLEAR +${appliedLevelClearScore}${repairSuffix}`, {
             fontSize: compactHud ? 20 : 26,
             fill: '#8fffd5',
             stroke: '#001616',
@@ -1476,10 +1476,10 @@ export class PlayScene {
               // Feature: Slow Time Trade-off
               if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
                 const scoreAwarded = this.getComboScore(enemy.scoreValue);
-                this.game.addScore(scoreAwarded);
+                const appliedScore = this.game.addScore(scoreAwarded);
                 // Score popup with combo
                 if (this.scorePopupManager) {
-                  this.scorePopupManager.addScorePopup(enemy.x, enemy.y, scoreAwarded);
+                  this.scorePopupManager.addScorePopup(enemy.x, enemy.y, appliedScore);
                 }
               }
               this.onEnemyKilled(enemy);
@@ -2573,14 +2573,15 @@ export class PlayScene {
 
     enemies.forEach(({ enemy }) => {
       const award = 360;
+      const displayAward = this.game.getScoreAward?.(award) || award;
       bonusScore += award;
-      captured.push({ x: Math.round(enemy.x), y: Math.round(enemy.y), award });
+      captured.push({ x: Math.round(enemy.x), y: Math.round(enemy.y), award: displayAward });
       enemy.active = false;
       enemy.destroy?.();
       if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);
       this.particleManager?.createExplosion(enemy.x, enemy.y, 0x66ffff, 0.82);
       this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xffffff);
-      this.scorePopupManager?.addScorePopup(enemy.x, enemy.y, award, {
+      this.scorePopupManager?.addScorePopup(enemy.x, enemy.y, displayAward, {
         comboEligible: false,
         color: 0x66ffff
       });
@@ -2596,9 +2597,10 @@ export class PlayScene {
       this.bulletManager.enemyBullets = this.bulletManager.enemyBullets.filter(bullet => bullet?.active !== false);
     }
 
+    let appliedBonusScore = 0;
     if (bonusScore > 0) {
       bonusScore += 600;
-      this.game.addScore(bonusScore);
+      appliedBonusScore = this.game.addScore(bonusScore);
       AudioManager.playSfx('tractor_break_bloom', { force: true, volume: 0.76, minIntervalMs: 120 });
       AudioManager.playSfx('tractor_beam_active', { volume: 0.34, minIntervalMs: 120 });
       AudioManager.playVoice('mission_control_tractor_hijack', {
@@ -2626,7 +2628,7 @@ export class PlayScene {
       playerY: Math.round(playerY),
       capturedEnemies: captured.length,
       clearedBullets: bullets.length,
-      bonusScore,
+      bonusScore: appliedBonusScore,
       captured
     };
 
@@ -3175,7 +3177,8 @@ export class PlayScene {
     const priority = Number.isFinite(options.priority) ? options.priority : (priorityMap[type] || 0);
     const now = Date.now();
     const lockUntil = this.getToastSlotLockUntil(slot);
-    const notBefore = priority >= 3 ? 0 : Math.max(Number(options.notBefore) || 0, lockUntil);
+    const bypassFocusLock = options.bypassFocusLock === true || priority > 3;
+    const notBefore = bypassFocusLock ? (Number(options.notBefore) || 0) : Math.max(Number(options.notBefore) || 0, lockUntil);
     const entry = {
       message,
       options: { ...options, type, slot, priority, notBefore },
@@ -3266,6 +3269,16 @@ export class PlayScene {
     }, duration + 20);
   }
 
+  getTransitionMessageDelayMs({ minMs = 900, maxMs = 1400 } = {}) {
+    const now = Date.now();
+    const lockRemaining = ['center', 'top', 'corner']
+      .map(slot => Math.max(0, this.getToastSlotLockUntil(slot) - now))
+      .reduce((max, value) => Math.max(max, value), 0);
+    const activeRemaining = (this.activeCenterToast || this.activeTopToast) ? minMs : 0;
+    const desired = Math.max(lockRemaining, activeRemaining);
+    return Math.max(0, Math.min(Math.max(minMs, maxMs), desired));
+  }
+
   dismissToastDisplay(display, slot) {
     if (!display) return;
     if (display.__toastTicker) {
@@ -3285,6 +3298,19 @@ export class PlayScene {
 
   processToastQueue() {
     const now = Date.now();
+    const centerReady = !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
+      ? this.peekReadyToast(this.toastQueue, now)
+      : null;
+    const topReady = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
+      ? this.peekReadyToast(this.toastTopQueue, now)
+      : null;
+    if (centerReady && topReady && this.isTransitionToastEntry(centerReady) && this.isTransitionToastEntry(topReady)) {
+      if ((centerReady.priority || 0) >= (topReady.priority || 0)) {
+        this.delayReadyToast(this.toastTopQueue, topReady, 600, now);
+      } else {
+        this.delayReadyToast(this.toastQueue, centerReady, 600, now);
+      }
+    }
     if (!this.activeCenterToast && now >= this.getToastSlotLockUntil('center') && this.toastQueue.length > 0) {
       const entry = this.dequeueReadyToast(this.toastQueue, now);
       if (entry) this.activeCenterToast = this.showToastNow(entry.message, entry.options, 'center');
@@ -3303,6 +3329,22 @@ export class PlayScene {
     const index = queue.findIndex(entry => (entry.notBefore || 0) <= now);
     if (index < 0) return null;
     return queue.splice(index, 1)[0];
+  }
+
+  peekReadyToast(queue, now) {
+    return queue.find(entry => (entry.notBefore || 0) <= now) || null;
+  }
+
+  isTransitionToastEntry(entry) {
+    const type = entry?.options?.type;
+    return type === 'level_clear' || type === 'level_up' || type === 'boss' || entry?.options?.transition === true;
+  }
+
+  delayReadyToast(queue, entry, delayMs, now = Date.now()) {
+    if (!entry) return;
+    entry.notBefore = now + Math.max(0, Number(delayMs) || 0);
+    entry.options = { ...entry.options, notBefore: entry.notBefore };
+    queue.sort((a, b) => b.priority - a.priority || (a.notBefore || 0) - (b.notBefore || 0) || a.createdAt - b.createdAt);
   }
 
   describeToastDisplay(display) {
@@ -3721,8 +3763,8 @@ export class PlayScene {
     for (const milestone of COMBO_MILESTONES) {
       if (this.comboCount === milestone.threshold && !this.comboMilestonesReached.has(milestone.threshold)) {
         this.comboMilestonesReached.add(milestone.threshold);
-        this.game.addScore(milestone.bonus);
-        this.enqueueToast(`${milestone.label} +${milestone.bonus}`, {
+        const appliedBonus = this.game.addScore(milestone.bonus);
+        this.enqueueToast(`${milestone.label} +${appliedBonus}`, {
           fontSize: 26,
           fill: '#ffaa00',
           slot: 'center',
@@ -3756,8 +3798,8 @@ export class PlayScene {
 
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
       const bonus = this.getComboScore(100 * (this.comboCount / 10));
-      this.game.addScore(bonus);
-      this.enqueueToast(`COMBO BONUS +${bonus}`, { fontSize: 18, fill: '#ffff00', slot: 'top', type: 'combo', duration: 1200 });
+      const appliedBonus = this.game.addScore(bonus);
+      this.enqueueToast(`COMBO BONUS +${appliedBonus}`, { fontSize: 18, fill: '#ffff00', slot: 'top', type: 'combo', duration: 1200 });
       AudioManager.playSfx('combo_tick', { force: true, volume: 0.8 });
     }
 
@@ -3777,10 +3819,10 @@ export class PlayScene {
         this.player.vampireKillCount = 0;
 
         const drainScore = 650;
-        this.game.addScore(drainScore);
+        const appliedDrainScore = this.game.addScore(drainScore);
 
         // Visual feedback
-        this.enqueueToast(`VAMPIRE DRAIN +${drainScore}`, {
+        this.enqueueToast(`VAMPIRE DRAIN +${appliedDrainScore}`, {
           fontSize: 18,
           fill: '#ff3366',
           slot: 'top',
@@ -3950,8 +3992,8 @@ export class PlayScene {
       if (destroyed) {
         enemiesDestroyed += 1;
         const scoreAwarded = this.getComboScore(enemy.scoreValue);
-        this.game.addScore(scoreAwarded);
-        this.scorePopupManager?.addScorePopup(enemy.x, enemy.y, scoreAwarded);
+        const appliedScore = this.game.addScore(scoreAwarded);
+        this.scorePopupManager?.addScorePopup(enemy.x, enemy.y, appliedScore);
         this.onEnemyKilled(enemy);
         this.particleManager?.createExplosion(enemy.x, enemy.y, 0xff66ff, 0.72);
       }
@@ -3959,12 +4001,12 @@ export class PlayScene {
 
     const comboMult = Math.max(1, this.comboMultiplier || 1);
     const bonusScore = Math.round((520 + cleared.length * 85 + enemiesHit * 160 + enemiesDestroyed * 220) * comboMult);
-    this.game.addScore(bonusScore);
-    this.scorePopupManager?.addScorePopup(impactX, impactY, bonusScore, {
+    const appliedBonusScore = this.game.addScore(bonusScore);
+    this.scorePopupManager?.addScorePopup(impactX, impactY, appliedBonusScore, {
       comboEligible: false,
       color: 0xff66ff
     });
-    this.enqueueToast(`GRAZE BREAK +${bonusScore}`, {
+    this.enqueueToast(`GRAZE BREAK +${appliedBonusScore}`, {
       fontSize: this.game.getWidth() < 620 ? 18 : 24,
       fill: '#ff66ff',
       stroke: '#140018',
@@ -4012,11 +4054,11 @@ export class PlayScene {
     const traitMult = Number(this.player?.traitCombat?.nearMissScoreMult || 1);
     const streakBonus = Math.min(100, 25 + this.dangerDodgeCount * 15);
     const score = Math.round(streakBonus * comboMult * (Number.isFinite(traitMult) ? traitMult : 1));
-    this.lastDangerDodgeScore = score;
-    this.game.addScore(score);
+    const appliedScore = this.game.addScore(score);
+    this.lastDangerDodgeScore = appliedScore;
     const label = this.dangerDodgeCount >= 2
-      ? `DANGER DODGE x${this.dangerDodgeCount} +${score}`
-      : `CLOSE DODGE +${score}`;
+      ? `DANGER DODGE x${this.dangerDodgeCount} +${appliedScore}`
+      : `CLOSE DODGE +${appliedScore}`;
     this.enqueueToast(label, {
       fontSize: this.dangerDodgeCount >= 3 ? 18 : 16,
       fill: '#ffcc00',
@@ -4033,7 +4075,7 @@ export class PlayScene {
       }
     }
     if (this.scorePopupManager && this.player) {
-      this.scorePopupManager.addScorePopup(this.player.x, this.player.y - 34, score, {
+      this.scorePopupManager.addScorePopup(this.player.x, this.player.y - 34, appliedScore, {
         comboEligible: false,
         color: this.dangerDodgeCount >= 3 ? 0xff66ff : 0xffcc00
       });
@@ -4067,8 +4109,8 @@ export class PlayScene {
 
         if (destroyed) {
           const scoreAwarded = this.getComboScore(enemy.scoreValue);
-          this.game.addScore(scoreAwarded);
-          if (this.scorePopupManager) this.scorePopupManager.addScorePopup(enemy.x, enemy.y, scoreAwarded);
+          const appliedScore = this.game.addScore(scoreAwarded);
+          if (this.scorePopupManager) this.scorePopupManager.addScorePopup(enemy.x, enemy.y, appliedScore);
           this.onEnemyKilled(enemy);
           this.particleManager?.createExplosion(enemy.x, enemy.y, accent);
         }
@@ -4092,20 +4134,20 @@ export class PlayScene {
 
     if (bullet.isTraitBonusShot) {
       const bonusScore = Math.max(3, Math.round(8 * Number(combat.nearMissScoreMult || 1)));
-      this.game.addScore(bonusScore);
-      if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 12, bonusScore);
-      AudioManager.playSfx('trait_bonus_hit', { volume: 0.64 });
+      const appliedBonusScore = this.game.addScore(bonusScore);
+      if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 12, appliedBonusScore);
+      AudioManager.playSfx('trait_bonus_hit', { volume: 0.12, minIntervalMs: 650 });
     }
 
     if (bullet.isTraitWingShot) {
       const wingScore = Math.max(2, Math.round(5 * Math.max(1, this.comboMultiplier || 1)));
-      this.game.addScore(wingScore);
-      if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 18, wingScore);
+      const appliedWingScore = this.game.addScore(wingScore);
+      if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 18, appliedWingScore);
       AudioManager.playSfx('trait_wing_hit', { volume: 0.68 });
       const now = Date.now();
       if (now - this.lastTraitImpactToastAt > 900) {
         this.lastTraitImpactToastAt = now;
-        this.enqueueToast(`WING HIT +${wingScore}`, { fontSize: 14, fill: '#66ff99', slot: 'top', type: 'trait', duration: 650 });
+        this.enqueueToast(`WING HIT +${appliedWingScore}`, { fontSize: 14, fill: '#66ff99', slot: 'top', type: 'trait', duration: 650 });
       }
     }
   }
@@ -4153,9 +4195,9 @@ export class PlayScene {
         // Award score
         if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
           const scoreAwarded = this.getComboScore(nearest.scoreValue);
-          this.game.addScore(scoreAwarded);
+          const appliedScore = this.game.addScore(scoreAwarded);
           if (this.scorePopupManager) {
-            this.scorePopupManager.addScorePopup(nearest.x, nearest.y, scoreAwarded);
+            this.scorePopupManager.addScorePopup(nearest.x, nearest.y, appliedScore);
           }
         }
         this.onEnemyKilled(nearest);
@@ -4482,9 +4524,9 @@ export class PlayScene {
           if (destroyed) {
             if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
               const scoreAwarded = this.getComboScore(enemy.scoreValue);
-              this.game.addScore(scoreAwarded);
+              const appliedScore = this.game.addScore(scoreAwarded);
               if (this.scorePopupManager) {
-                this.scorePopupManager.addScorePopup(enemy.x, enemy.y, scoreAwarded);
+                this.scorePopupManager.addScorePopup(enemy.x, enemy.y, appliedScore);
               }
             }
             this.onEnemyKilled(enemy);

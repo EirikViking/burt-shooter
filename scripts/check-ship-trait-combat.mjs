@@ -93,7 +93,7 @@ try {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.__game?.startGame), { timeout: 30000 });
   await page.evaluate(() => {
-    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 100000, bestRank: 6, bestLevel: 1 }));
+    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 100000, bestRank: 6, bestLevel: 60 }));
   });
   await page.evaluate((spriteKey) => window.__game.startGame(spriteKey), wingTraitShip);
   await page.waitForFunction(() => {

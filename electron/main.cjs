@@ -62,7 +62,40 @@ function sendJson(response, status, payload) {
 }
 
 function getScorePath() {
-  return path.join(app.getPath('userData'), 'local-highscores.json');
+  return path.join(app.getPath('userData'), 'local-highscores-v2.json');
+}
+
+const RANK_LEVEL_THRESHOLDS = [1, 2, 3, 5, 7, 9, 11, 14, 17, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60];
+const PRE_RELEASE_SEED_SCORES = [
+  { name: 'NOVAROOK', score: 500, level: 2 },
+  { name: 'VOIDCADET', score: 900, level: 3 },
+  { name: 'PIXELPILOT', score: 1200, level: 4 },
+  { name: 'ORBITKID', score: 1800, level: 5 },
+  { name: 'COMETACE', score: 2400, level: 6 },
+  { name: 'NEONRIDER', score: 3100, level: 7 },
+  { name: 'STARRUNNER', score: 3900, level: 8 },
+  { name: 'QUANTUMQ', score: 4800, level: 9 },
+  { name: 'SIGNALACE', score: 6200, level: 10 },
+  { name: 'ARCADEZERO', score: 7900, level: 11 }
+];
+
+function getRankFromLevel(level) {
+  const normalized = Math.max(1, Math.floor(Number(level) || 1));
+  for (let i = RANK_LEVEL_THRESHOLDS.length - 1; i >= 0; i -= 1) {
+    if (normalized >= RANK_LEVEL_THRESHOLDS[i]) return i;
+  }
+  return 0;
+}
+
+function getSeedScores() {
+  return PRE_RELEASE_SEED_SCORES.map((entry, index) => ({
+    ...entry,
+    rankIndex: getRankFromLevel(entry.level),
+    timestamp: new Date(Date.UTC(2026, 0, index + 1)).toISOString(),
+    source: 'pre_release_seed',
+    seed: true,
+    local: true
+  }));
 }
 
 function readLocalScores() {
@@ -81,10 +114,10 @@ function writeLocalScores(scores) {
 }
 
 function sanitizeScoreEntry(entry = {}) {
-  const name = String(entry.name || 'PILOT').trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 10) || 'PILOT';
+  const name = String(entry.name || 'PILOT').trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 14) || 'PILOT';
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
   const level = Math.max(1, Math.floor(Number(entry.level) || 1));
-  const rankIndex = Math.max(0, Math.min(19, Math.floor(Number(entry.rankIndex ?? entry.rank_index) || 0)));
+  const rankIndex = Math.max(0, Math.min(19, Math.floor(Number(entry.rankIndex ?? entry.rank_index) || getRankFromLevel(level))));
   return {
     name,
     score,
@@ -110,7 +143,10 @@ async function handleApi(request, response) {
   }
 
   if (request.method === 'GET') {
-    const scores = readLocalScores().sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10);
+    const storedScores = readLocalScores();
+    const scores = (storedScores.length > 0 ? storedScores : getSeedScores())
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, 10);
     sendJson(response, 200, scores);
     return;
   }

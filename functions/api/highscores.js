@@ -1,8 +1,7 @@
 // Cloudflare Pages Function for highscores API
-import { getRankFromScore } from '../shared/RankPolicy.js';
+import { getRankFromLevel } from '../shared/RankPolicy.js';
 
 const BLOCKED_PUBLIC_NAME_TERMS = [
-  ['E', 'IRIK'].join(''),
   ['K', 'LAUS'].join(''),
   ['F', 'ITTE'].join(''),
   ['K', 'UKEN'].join(''),
@@ -11,12 +10,29 @@ const BLOCKED_PUBLIC_NAME_TERMS = [
 ];
 const PUBLIC_PILOT_NAME_MAX_LENGTH = 14;
 
+function validatePublicPilotName(rawName, { allowBlank = false } = {}) {
+  const cleaned = String(rawName || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, '')
+    .trim()
+    .slice(0, PUBLIC_PILOT_NAME_MAX_LENGTH);
+  if (!cleaned) {
+    return allowBlank
+      ? { valid: true, publicName: '', reason: null }
+      : { valid: false, publicName: '', reason: 'blank' };
+  }
+  const compact = cleaned.replace(/\s+/g, '');
+  if (BLOCKED_PUBLIC_NAME_TERMS.some(term => compact.includes(term))) {
+    return { valid: false, publicName: cleaned, reason: 'blocked' };
+  }
+  return { valid: true, publicName: cleaned, reason: null };
+}
+
 function toPublicPilotName(rawName, fallbackSeed = 0) {
-  const cleaned = String(rawName || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, PUBLIC_PILOT_NAME_MAX_LENGTH);
   const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
-  if (!cleaned) return `PILOT${seed}`;
-  if (BLOCKED_PUBLIC_NAME_TERMS.some(term => cleaned.includes(term))) return `PILOT${seed}`;
-  return cleaned;
+  const validation = validatePublicPilotName(rawName, { allowBlank: false });
+  if (!validation.valid) return `PILOT${seed}`;
+  return validation.publicName;
 }
 
 // Schema detection cache
@@ -60,7 +76,7 @@ export async function onRequestGet(context) {
     const enrichedResults = results.map(entry => {
       const rank_index = (hasRankIndex && entry.rank_index !== null && entry.rank_index !== undefined)
         ? entry.rank_index
-        : getRankFromScore(entry.score);
+        : getRankFromLevel(entry.level);
 
       return {
         id: entry.id,
@@ -110,11 +126,9 @@ export async function onRequestPost(context) {
       });
     }
 
-    // Sanitize name
-    const sanitizedName = toPublicPilotName(name, Date.now());
-
-    if (sanitizedName.length === 0) {
-      return new Response(JSON.stringify({ error: 'Invalid name' }), {
+    const nameValidation = validatePublicPilotName(name);
+    if (!nameValidation.valid) {
+      return new Response(JSON.stringify({ error: nameValidation.reason === 'blocked' ? 'Name not available' : 'Invalid name' }), {
         status: 400,
         headers: {
           'Content-Type': 'application/json',
@@ -122,9 +136,10 @@ export async function onRequestPost(context) {
         }
       });
     }
+    const sanitizedName = nameValidation.publicName;
 
-    // Compute rank_index from score (backend authority)
-    const computedRankIndex = getRankFromScore(score);
+    // Compute rank_index from level (backend authority)
+    const computedRankIndex = getRankFromLevel(level);
     const { hasRankIndexColumn: hasRankIndex } = await checkSchema(db);
 
     // DEDUPLICATION: Check if submissionId already exists

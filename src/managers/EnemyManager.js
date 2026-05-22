@@ -171,6 +171,9 @@ export class EnemyManager {
     // BOSS FIX: Boss state machine
     this.boss = null;
     this.bossGateTimer = 0;
+    this.bossGateTauntShown = false;
+    this.bossGateTauntDelayMs = 0;
+    this.bossGateTauntDelayResolved = false;
     this.bossSpawnedThisLevel = false;
     this.bossDefeatedThisLevel = false;
     this.bossDefeatCelebrated = false;
@@ -215,6 +218,7 @@ export class EnemyManager {
     // BOSS FIX: Reset boss state
     this.boss = null;
     this.bossGateTimer = 0;
+    this.resetBossGateMessaging();
     this.bossSpawnedThisLevel = false;
     this.bossDefeatedThisLevel = false;
     this.bossDefeatCelebrated = false;
@@ -268,11 +272,18 @@ export class EnemyManager {
       this.phase = 'BOSS';
       this.state = 'BOSS_GATE';
       this.bossGateTimer = 0;
+      this.resetBossGateMessaging();
     } else {
       this.phase = 'COMPLETE';
       this.state = 'LEVEL_COMPLETE';
       console.log(`[BossPhase] level=${level} phase=${this.phase} bossDefeated=true`);
     }
+  }
+
+  resetBossGateMessaging() {
+    this.bossGateTauntShown = false;
+    this.bossGateTauntDelayMs = 0;
+    this.bossGateTauntDelayResolved = false;
   }
 
   generateWaves(level) {
@@ -579,15 +590,25 @@ export class EnemyManager {
         // BOSS FIX: Show wanted poster, wait for gate duration, then spawn boss
         this.bossGateTimer += delta * 16.67;
 
-        // Show wanted poster at start of gate
-        if (this.bossGateTimer < 100 && this.game.scenes.play) {
+        if (!this.bossGateTauntDelayResolved) {
+          const playScene = this.game.scenes.play;
+          this.bossGateTauntDelayMs = playScene?.getTransitionMessageDelayMs
+            ? playScene.getTransitionMessageDelayMs({ minMs: 900, maxMs: 1400 })
+            : 900;
+          this.bossGateTauntDelayResolved = true;
+        }
+
+        // Show wanted poster after transition reward messaging has had focus.
+        if (!this.bossGateTauntShown && this.bossGateTimer >= this.bossGateTauntDelayMs && this.game.scenes.play) {
           const playScene = this.game.scenes.play;
           if (playScene.showBossTaunt) playScene.showBossTaunt('boss_spawn');
           else if (playScene.showWantedPoster) playScene.showWantedPoster();
+          this.bossGateTauntShown = true;
         }
 
         const bossGateMs = BalanceConfig.difficulty.bossGateMs || 1000;
-        if (this.bossGateTimer > bossGateMs && !this.bossSpawning) {
+        const resolvedBossGateMs = Math.max(bossGateMs, this.bossGateTauntDelayMs + 900);
+        if (this.bossGateTimer > resolvedBossGateMs && !this.bossSpawning) {
           this.logBossStatus('boss_gate_spawn');
           console.log(`[BossFlow] spawn boss level=${this.level}`);
           AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800, bypassGlobalCooldown: true });
@@ -1206,16 +1227,16 @@ export class EnemyManager {
     if (clearedWave && clearedWave.isChallenge) {
       // Challenge Bonus
       const bonus = 3000;
-      this.game.addScore(bonus);
+      const appliedBonus = this.game.addScore(bonus);
       if (this.game.scenes.play) {
-        this.game.scenes.play.showWaveBonusEffect(bonus, 'BONUS DRONE RAID CLEAR!');
+        this.game.scenes.play.showWaveBonusEffect(appliedBonus, 'BONUS DRONE RAID CLEAR!');
       }
       AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 30000, duckMs: 1300 });
     } else {
       // Normal Bonus
       const rewardConfig = BalanceConfig.rewards || {};
       const bonus = (rewardConfig.waveClearScoreBase || 500) * clearedWaveNumber;
-      this.game.addScore(bonus);
+      const appliedBonus = this.game.addScore(bonus);
       if (this.game.scenes.play) {
         let repairDelta = 0;
         const repairTarget = rewardConfig.waveClearRepairTargetLives || 0;
@@ -1229,7 +1250,8 @@ export class EnemyManager {
           ? `NEXT WAVE ${clearedWaveNumber + 1}/${this.normalWavesTotal}`
           : 'BOSS GATE NEXT';
         const repairLabel = repairDelta > 0 ? ` - REPAIR +${repairDelta}` : '';
-        this.game.scenes.play.showWaveBonusEffect(bonus, 'WAVE CLEARED!', {
+        const transitionLabel = hasUpcomingWave ? 'WAVE CLEARED!' : 'SECTOR CLEAR';
+        this.game.scenes.play.showWaveBonusEffect(appliedBonus, transitionLabel, {
           compact: hasUpcomingWave,
           subtitle: `${nextLabel}${repairLabel}`
         });
@@ -1274,6 +1296,7 @@ export class EnemyManager {
       console.log(`[BossFlow] spawning boss level=${this.level} waveIndex=${this.currentWaveIndex + 1} bossWaveIndex=${this.bossWaveIndex}`);
       this.state = 'BOSS_GATE';
       this.bossGateTimer = 0;
+      this.resetBossGateMessaging();
       return;
     }
 
@@ -1491,6 +1514,7 @@ export class EnemyManager {
     this.cleanupPhase = 'NONE';
     this.cleanupTimer = 0;
     this.bossGateTimer = 0;
+    this.resetBossGateMessaging();
     this.bossSpawnedThisLevel = false;
     this.bossDefeatedThisLevel = false;
     console.log(`[BossPhase] level=${level} phase=${this.phase} forced boss start`);

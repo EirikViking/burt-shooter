@@ -3,40 +3,31 @@
 
 export const NUM_RANKS = 20;
 export const MAX_RANK_INDEX = 19;
-export const START_SCORE = 10000;
-export const END_SCORE = 500000;
+export const START_LEVEL = 1;
+export const END_LEVEL = 60;
 
-function generateThresholds() {
-    const thresholds = new Array(NUM_RANKS);
-
-    thresholds[0] = 0;
-    thresholds[1] = 10000;
-    thresholds[2] = 25000;
-    thresholds[3] = 50000;
-    thresholds[4] = 75000;
-    thresholds[5] = 100000;
-    thresholds[6] = 150000;
-
-    const startScore = 150000;
-    const endScore = 500000;
-    const numSteps = MAX_RANK_INDEX - 6;
-
-    for (let i = 7; i <= MAX_RANK_INDEX; i++) {
-        const step = i - 6;
-        const raw = startScore + (step * (endScore - startScore) / numSteps);
-        thresholds[i] = Math.round(raw);
-    }
-
-    for (let i = 1; i < NUM_RANKS; i++) {
-        if (thresholds[i] <= thresholds[i - 1]) {
-            thresholds[i] = thresholds[i - 1] + 1;
-        }
-    }
-
-    return thresholds;
-}
-
-const THRESHOLDS = generateThresholds();
+const LEVEL_THRESHOLDS = [
+    1,
+    2,
+    3,
+    5,
+    7,
+    9,
+    11,
+    14,
+    17,
+    20,
+    24,
+    28,
+    32,
+    36,
+    40,
+    44,
+    48,
+    52,
+    56,
+    60
+];
 
 const RANK_TITLES = [
     "Cadet",
@@ -61,15 +52,24 @@ const RANK_TITLES = [
     "Arcade Legend"
 ];
 
-export function getRankFromScore(score) {
-    if (typeof score !== 'number' || !Number.isFinite(score) || score < 0) {
-        return 0;
+function sanitizeLevel(level) {
+    if (typeof level !== 'number' || !Number.isFinite(level) || level < START_LEVEL) {
+        return START_LEVEL;
+    }
+    return Math.floor(level);
+}
+
+export function getRankFromLevel(level) {
+    const normalizedLevel = sanitizeLevel(level);
+
+    for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+        if (normalizedLevel >= LEVEL_THRESHOLDS[i]) return i;
     }
 
-    for (let i = THRESHOLDS.length - 1; i >= 0; i--) {
-        if (score >= THRESHOLDS[i]) return i;
-    }
+    return 0;
+}
 
+export function getRankFromScore(_score) {
     return 0;
 }
 
@@ -81,19 +81,27 @@ export function getRankTitle(rankIndex) {
 }
 
 export function getThresholds() {
-    return [...THRESHOLDS];
+    return [...LEVEL_THRESHOLDS];
 }
 
 export function getRankThreshold(rankIndex) {
     if (rankIndex < 0 || rankIndex >= NUM_RANKS) {
-        return 0;
+        return START_LEVEL;
     }
-    return THRESHOLDS[rankIndex];
+    return LEVEL_THRESHOLDS[rankIndex];
+}
+
+export function getRankLevelThreshold(rankIndex) {
+    return getRankThreshold(rankIndex);
 }
 
 export function getNextRankThreshold(currentRankIndex) {
     if (currentRankIndex >= MAX_RANK_INDEX) {
-        return THRESHOLDS[MAX_RANK_INDEX];
+        return LEVEL_THRESHOLDS[MAX_RANK_INDEX];
     }
-    return THRESHOLDS[currentRankIndex + 1];
+    return LEVEL_THRESHOLDS[currentRankIndex + 1];
+}
+
+export function getNextRankLevelThreshold(currentRankIndex) {
+    return getNextRankThreshold(currentRankIndex);
 }

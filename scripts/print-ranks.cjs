@@ -1,34 +1,34 @@
-// Print rank thresholds and verify rank calculations
-const { getThresholds, getRankFromScore, NUM_RANKS, MAX_RANK_INDEX, START_SCORE, END_SCORE } = require('../src/shared/RankPolicy.js');
+#!/usr/bin/env node
 
-console.log('=== RANK POLICY VERIFICATION ===\n');
-console.log(`NUM_RANKS: ${NUM_RANKS}`);
-console.log(`MAX_RANK_INDEX: ${MAX_RANK_INDEX}`);
-console.log(`START_SCORE: ${START_SCORE}`);
-console.log(`END_SCORE: ${END_SCORE}\n`);
+(async () => {
+  const {
+    getThresholds,
+    getRankFromLevel,
+    getRankTitle,
+    NUM_RANKS,
+    MAX_RANK_INDEX,
+    START_LEVEL,
+    END_LEVEL
+  } = await import('../src/shared/RankPolicy.js');
 
-console.log('=== RANK THRESHOLDS ===');
-const thresholds = getThresholds();
-thresholds.forEach((threshold, index) => {
-    console.log(`Rank ${index.toString().padStart(2, '0')}: ${threshold.toLocaleString()}`);
+  const thresholds = getThresholds();
+
+  console.log('Rank Policy Summary');
+  console.log(`NUM_RANKS: ${NUM_RANKS}`);
+  console.log(`MAX_RANK_INDEX: ${MAX_RANK_INDEX}`);
+  console.log(`START_LEVEL: ${START_LEVEL}`);
+  console.log(`END_LEVEL: ${END_LEVEL}\n`);
+
+  thresholds.forEach((level, index) => {
+    console.log(`Rank ${String(index).padStart(2, '0')} ${getRankTitle(index)}: Level ${level}`);
+  });
+
+  console.log('\nTest Levels:');
+  [1, 2, 11, 25, 45, 60, 80].forEach((level) => {
+    const rank = getRankFromLevel(level);
+    console.log(`Level ${level} -> Rank ${rank} ${getRankTitle(rank)}`);
+  });
+})().catch((error) => {
+  console.error(error);
+  process.exit(1);
 });
-
-console.log('\n=== RANK CALCULATION TESTS ===');
-const tests = [
-    { score: 0, expected: 0 },
-    { score: 4999, expected: 0 },
-    { score: 5000, expected: 1 },
-    { score: 10000, expected: null }, // Will compute
-    { score: 100000, expected: null },
-    { score: 500000, expected: null },
-    { score: 1000000, expected: 19 },
-    { score: 2000000, expected: 19 } // Clamped to max
-];
-
-tests.forEach(test => {
-    const result = getRankFromScore(test.score);
-    const status = test.expected === null || result === test.expected ? '✅' : '❌';
-    console.log(`${status} Score ${test.score.toLocaleString()} → Rank ${result} ${test.expected !== null ? `(expected ${test.expected})` : ''}`);
-});
-
-console.log('\n=== VERIFICATION COMPLETE ===');

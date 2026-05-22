@@ -1,5 +1,5 @@
 import { BUILD_ID } from '../buildInfo.js';
-import { getRankFromScore } from '../shared/RankPolicy.js';
+import { getRankFromLevel } from '../shared/RankPolicy.js';
 import { getSelectableShips, getShipMetadata } from '../config/ShipMetadata.js';
 
 export const LEADERBOARD_DISPLAY_LIMIT = 20;
@@ -13,24 +13,41 @@ export const LeaderboardView = {
 };
 
 const BLOCKED_PUBLIC_NAME_TERMS = [
-  ['E', 'IRIK'].join(''),
   ['K', 'LAUS'].join(''),
   ['F', 'ITTE'].join(''),
   ['K', 'UKEN'].join(''),
   ['FAT', 'MAN'].join(''),
   ['MOR', 'DER'].join('')
 ];
+const PUBLIC_PILOT_NAME_MAX_LENGTH = 14;
 
-export function toPublicPilotName(rawName, fallbackSeed = 0) {
-  const cleaned = String(rawName || '')
+export function sanitizePilotName(rawName) {
+  return String(rawName || '')
     .toUpperCase()
     .replace(/[^A-Z0-9 ]/g, '')
     .trim()
-    .slice(0, 14);
+    .slice(0, PUBLIC_PILOT_NAME_MAX_LENGTH);
+}
+
+export function getPilotNameValidation(rawName, { allowBlank = false } = {}) {
+  const cleaned = sanitizePilotName(rawName);
+  if (!cleaned) {
+    return allowBlank
+      ? { valid: true, publicName: '', reason: null }
+      : { valid: false, publicName: '', reason: 'blank' };
+  }
+  const compact = cleaned.replace(/\s+/g, '');
+  if (BLOCKED_PUBLIC_NAME_TERMS.some(term => compact.includes(term))) {
+    return { valid: false, publicName: cleaned, reason: 'blocked' };
+  }
+  return { valid: true, publicName: cleaned, reason: null };
+}
+
+export function toPublicPilotName(rawName, fallbackSeed = 0) {
+  const validation = getPilotNameValidation(rawName, { allowBlank: false });
   const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
-  if (!cleaned) return `PILOT${seed}`;
-  if (BLOCKED_PUBLIC_NAME_TERMS.some(term => cleaned.replace(/\s+/g, '').includes(term))) return `PILOT${seed}`;
-  return cleaned;
+  if (!validation.valid) return `PILOT${seed}`;
+  return validation.publicName;
 }
 
 function numeric(value, fallback = 0) {
@@ -58,7 +75,7 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
 
   const level = Math.max(1, numericInt(raw.level ?? raw.levelReached ?? raw.metadata?.levelReached, 1));
   const rank = rawRank != null ? Math.max(1, numericInt(rawRank, fallbackRank || 1)) : fallbackRank;
-  const rankIndex = Math.max(0, Math.min(19, numericInt(raw.rankIndex ?? raw.rank_index ?? raw.rank_index, getRankFromScore(score))));
+  const rankIndex = Math.max(0, Math.min(19, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
   const playerName = toPublicPilotName(
     raw.playerName ?? raw.name ?? raw.personaName ?? raw.displayName ?? raw.steamName,
     raw.id ?? raw.steamId ?? score

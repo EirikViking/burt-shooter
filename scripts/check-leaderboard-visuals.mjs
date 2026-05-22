@@ -8,7 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4360));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/leaderboard-visuals-${timestamp()}`);
-const localKey = 'novaSwarm.localLeaderboard.v1';
+const localKey = 'novaSwarm.localLeaderboard.v2';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');

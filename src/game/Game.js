@@ -12,6 +12,7 @@ import { getDefaultShipKey, incrementShipUsage, isShipUnlocked, isValidShipKey, 
 import { AudioManager } from '../audio/AudioManager.js';
 import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
+import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
 
 export class Game {
   constructor(app) {
@@ -137,12 +138,11 @@ export class Game {
     this.resetGlobalLeaderboardCues();
 
     // Rank System (Per Run)
-    // Rank System (Per Run)
-    const initialRank = rankManager.getRankFromScore(this.score);
+    const initialRank = rankManager.getRankFromLevel(this.level);
     this.rankIndex = initialRank;
     this.lastRankIndex = 0; // Explicitly 0 at start to ensure consistent progression logic
     if (this.rankIndex > 0) this.lastRankIndex = this.rankIndex; // Sync if starting non-zero (unlikely but safe)
-    // Removed legacy rankXp, we now derive from score
+    // Rank progression follows max level reached; score is only the leaderboard value.
     this.pendingHighscore = null;
 
     // Diagnostics
@@ -189,16 +189,10 @@ export class Game {
   }
 
   addScore(points) {
-    const base = Number(points) || 0;
-    // Check both Game's scoreMultiplier (bonus core) and Player's scoreMultiplier (score_x2)
-    const gameMult = Number(this.scoreMultiplier) || 1;
-    const playerMult = this.scenes?.play?.player?.scoreMultiplier || 1;
-    const mult = gameMult * playerMult;
-    const applied = Math.round(base * mult);
+    const applied = this.getScoreAward(points);
     this.score += applied;
 
-    const prevRank = this.rankIndex;
-    const computedRank = rankManager.getRankFromScore(this.score);
+    const computedRank = rankManager.getRankFromLevel(this.level);
     updateShipUnlockProgress({ score: this.score, rank: computedRank, level: this.level });
 
     // Always update current rank index source of truth
@@ -206,26 +200,21 @@ export class Game {
 
     // Diag Update
     this.diag.asEv++;
-    this.diag.asPts = base;
+    this.diag.asPts = Number(points) || 0;
     this.diag.asComp = computedRank;
     this.diag.asBefore = this.lastRankIndex;
-
-    // Strict Rank Up Event Logic
-    // Only fire if we have strictly exceeded the last SEEN rank index
-    if (computedRank > this.lastRankIndex) {
-      this.diag.rkFromAdd++;
-
-      // Update lastRankIndex to the new high water mark
-      this.lastRankIndex = computedRank;
-      this.diag.asAfter = this.lastRankIndex;
-
-      console.log('[RankUp]', { score: this.score, newRank: computedRank, prevRank });
-
-      if (this.currentScene && typeof this.currentScene.onRankUp === 'function') {
-        this.currentScene.onRankUp(computedRank);
-      }
-    }
+    this.diag.asAfter = this.lastRankIndex;
     this.updateGlobalLeaderboardVoiceCues();
+    return applied;
+  }
+
+  getScoreAward(points) {
+    const base = Number(points) || 0;
+    // Check both Game's scoreMultiplier (bonus core) and Player's scoreMultiplier (score_x2)
+    const gameMult = Number(this.scoreMultiplier) || 1;
+    const playerMult = this.scenes?.play?.player?.scoreMultiplier || 1;
+    const mult = gameMult * playerMult;
+    return normalizeScoreDelta(base, mult);
   }
 
   resetGlobalLeaderboardCues() {
@@ -296,7 +285,7 @@ export class Game {
 
   // --- Rank System ---
 
-  // Legacy addRankXp removed - Rank is purely score based now.
+  // Legacy addRankXp removed - progression rank is level based now.
   // Compatibility shim if needed by old calls, redirect to addScore if appropriate
   // or just return true/false to prevent crash, but better to update callsites.
   addRankXp(amount) {
@@ -305,7 +294,7 @@ export class Game {
   }
 
   getRankProgress() {
-    return rankManager.getRankProgress(this.score, this.rankIndex);
+    return rankManager.getRankProgress(this.level, this.rankIndex);
   }
 
   loseLife() {
@@ -333,7 +322,18 @@ export class Game {
   }
 
   nextLevel() {
+    const prevRank = this.rankIndex;
     this.level++;
+    const computedRank = rankManager.getRankFromLevel(this.level);
+    this.rankIndex = computedRank;
+    updateShipUnlockProgress({ score: this.score, rank: computedRank, level: this.level });
+    if (computedRank > this.lastRankIndex) {
+      this.lastRankIndex = computedRank;
+      console.log('[RankUp]', { level: this.level, score: this.score, newRank: computedRank, prevRank });
+      if (this.currentScene && typeof this.currentScene.onRankUp === 'function') {
+        this.currentScene.onRankUp(computedRank);
+      }
+    }
     if (this.currentScene && this.currentScene.startLevel) {
       this.currentScene.startLevel();
     }

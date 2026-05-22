@@ -48,20 +48,19 @@ FILES_TO_CHECK.forEach(filePath => {
 const rankPolicyPath = path.join(process.cwd(), 'src/shared/RankPolicy.js');
 if (fs.existsSync(rankPolicyPath)) {
     const rankPolicyContent = fs.readFileSync(rankPolicyPath, 'utf8');
-    // TASK 3: Updated to new threshold values
-    if (!rankPolicyContent.includes('START_SCORE = 10000')) {
-        console.error('❌ ERROR: RankPolicy missing START_SCORE = 10000');
+    if (!rankPolicyContent.includes('START_LEVEL = 1')) {
+        console.error('❌ ERROR: RankPolicy missing START_LEVEL = 1');
         hasErrors = true;
     }
-    if (!rankPolicyContent.includes('END_SCORE = 500000')) {
-        console.error('❌ ERROR: RankPolicy missing END_SCORE = 500000');
+    if (!rankPolicyContent.includes('END_LEVEL = 60')) {
+        console.error('❌ ERROR: RankPolicy missing END_LEVEL = 60');
         hasErrors = true;
     }
 }
 
 if (hasErrors) {
     console.error('❌ RANK GUARD FAILED: Rank system violations detected!');
-    console.error('   The game uses 20 ranks (0-19) with thresholds 10000-500000.');
+    console.error('   The game uses 20 ranks (0-19) with level thresholds 1-60.');
     console.error('   Check src/shared/RankPolicy.js for the source of truth.');
     console.error('');
     process.exit(1);

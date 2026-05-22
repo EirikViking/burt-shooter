@@ -8,7 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4350));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/leaderboard-split-${timestamp()}`);
-const localKey = 'novaSwarm.localLeaderboard.v1';
+const localKey = 'novaSwarm.localLeaderboard.v2';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -181,7 +181,12 @@ try {
     assert(qualifiedState.gameOver.globalFanfarePlayed === true, 'global fanfare did not fire for global qualification');
     await submitInitials(page, 'ACE', true);
     const localScores = await readLocalScores(page);
-    assert(localScores.some((entry) => entry.name === 'ACE' && entry.score === 12000), 'same-run local score was not saved');
+    const debugState = await page.evaluate((storageKey) => ({
+      lastLeaderboardResult: window.__game?.lastLeaderboardResult || null,
+      rawLocal: localStorage.getItem(storageKey),
+      text: JSON.parse(window.render_game_to_text?.() || '{}')
+    }), localKey);
+    assert(localScores.some((entry) => entry.name === 'ACE' && entry.score === 12000), `same-run local score was not saved: ${JSON.stringify({ localScores, debugState })}`);
     assert(postCount === 1, `expected one global POST, got ${postCount}`);
     assert(pageErrors.length === 0, `page errors in both-qualified scenario: ${pageErrors.join('; ')}`);
     results.push({ scenario: 'local_and_global', ok: true, postCount, localCount: localScores.length });
@@ -211,7 +216,7 @@ try {
     await page.keyboard.press('KeyL');
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'highscore', null, { timeout: 10000 });
     const activeView = await page.evaluate(() => window.__game?.scenes?.highscore?.activeLeaderboard);
-    assert(localScores.some((entry) => entry.name === 'LOC' && entry.score === 12000), 'local-only score was not saved');
+    assert(localScores.some((entry) => entry.name === 'LOC' && entry.score === 12000), `local-only score was not saved: ${JSON.stringify(localScores)}`);
     assert(activeView === 'local', `expected local leaderboard view, got ${activeView}`);
     assert(postCount === 0, `expected no global POST for local-only qualification, got ${postCount}`);
     assert(pageErrors.length === 0, `page errors in local-only scenario: ${pageErrors.join('; ')}`);
@@ -239,7 +244,7 @@ try {
     await submitInitials(page, 'OFF', false);
     await page.waitForTimeout(700);
     const localScores = await readLocalScores(page);
-    assert(localScores.some((entry) => entry.name === 'OFF' && entry.score === 13000), 'offline local score was not preserved');
+    assert(localScores.some((entry) => entry.name === 'OFF' && entry.score === 13000), `offline local score was not preserved: ${JSON.stringify(localScores)}`);
     assert(postCount === 0, `expected no global POST when global qualification fetch failed, got ${postCount}`);
     assert(pageErrors.length === 0, `page errors in offline scenario: ${pageErrors.join('; ')}`);
     results.push({ scenario: 'global_offline_local_saved', ok: true, postCount });

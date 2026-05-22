@@ -7,7 +7,7 @@ import { generateUUID } from '../utils/uuid.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { getSelectableShips, getShipUnlockProgress, isShipUnlocked, updateShipUnlockProgress } from '../config/ShipMetadata.js';
-import { getRankFromScore } from '../shared/RankPolicy.js';
+import { getRankFromLevel } from '../shared/RankPolicy.js';
 import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
 import {
   GAME_OVER_CTA_RECENT_HISTORY_KEY,
@@ -15,6 +15,7 @@ import {
   gameOverCtaVoiceLines
 } from '../config/GameOverCtaVoiceLines.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
+import { getPilotNameValidation } from '../leaderboard/LeaderboardTypes.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
@@ -179,7 +180,7 @@ export class GameOverScene {
     this.qualificationFanfarePlayed = false;
     this.personalBestVoicePlayed = false;
     this.nearMissVoicePlayed = false;
-    const finalRank = Math.max(Number(this.game.rankIndex) || 0, getRankFromScore(this.finalScore));
+    const finalRank = getRankFromLevel(this.finalLevel);
     this.game.rankIndex = finalRank;
     const currentProgress = updateShipUnlockProgress({
       score: this.finalScore,
@@ -1383,25 +1384,24 @@ export class GameOverScene {
 
   createUnlockSummary(previousProgress, currentProgress) {
     const ships = getSelectableShips();
-    const newlyUnlocked = ships.find(ship =>
+    const newlyUnlocked = ships.filter(ship =>
       isShipUnlocked(ship.spriteKey, currentProgress) &&
       !isShipUnlocked(ship.spriteKey, previousProgress)
     );
-    if (newlyUnlocked) {
-      return `NEW SHIP UNLOCKED: ${newlyUnlocked.name}\nOPEN HANGAR FROM MENU OR PRESS RESTART`;
+    if (newlyUnlocked.length > 0) {
+      const names = newlyUnlocked.slice(0, 2).map(ship => ship.name).join(' + ');
+      const suffix = newlyUnlocked.length > 2 ? ` +${newlyUnlocked.length - 2} MORE` : '';
+      return `NEW SHIP UNLOCKED: ${names}${suffix}\nOPEN HANGAR FROM MENU OR PRESS RESTART`;
     }
 
     const nextShip = ships
       .filter(ship =>
-        !isShipUnlocked(ship.spriteKey, currentProgress) &&
-        !isShipUnlocked(ship.spriteKey, previousProgress)
+        !isShipUnlocked(ship.spriteKey, currentProgress)
       )
       .sort((a, b) => {
-        const aScore = Number(a.unlock?.score) || 0;
-        const bScore = Number(b.unlock?.score) || 0;
-        const aRank = Number(a.unlock?.rank) || 0;
-        const bRank = Number(b.unlock?.rank) || 0;
-        return aScore - bScore || aRank - bRank;
+        const aLevel = Number(a.unlock?.level) || 1;
+        const bLevel = Number(b.unlock?.level) || 1;
+        return aLevel - bLevel;
       })[0];
 
     if (!nextShip) {
@@ -1409,11 +1409,11 @@ export class GameOverScene {
     }
 
     const requirement = nextShip.unlock || {};
-    const scoreNeed = Math.max(0, (Number(requirement.score) || 0) - (currentProgress.bestScore || 0));
-    const rankNeed = Math.max(0, (Number(requirement.rank) || 0) - (currentProgress.bestRank || 0));
-    const scorePart = scoreNeed > 0 ? `${scoreNeed.toLocaleString('en-US')} SCORE` : null;
-    const rankPart = rankNeed > 0 ? `REACH RANK ${Number(requirement.rank) || 0}` : null;
-    const needed = [scorePart, rankPart].filter(Boolean).join(' OR ') || 'ONE BETTER RUN';
+    const requiredLevel = Math.max(1, Math.floor(Number(requirement.level) || 1));
+    const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestLevel) || 1));
+    const needed = requiredLevel > bestLevel
+      ? `REACH LEVEL ${requiredLevel}`
+      : 'ONE BETTER RUN';
     return `NEXT SHIP: ${nextShip.name}\nNEED ${needed}`;
   }
 
@@ -2113,8 +2113,35 @@ export class GameOverScene {
     this.refreshPrimaryCta();
   }
 
+  validatePilotNameForSubmit() {
+    const validation = getPilotNameValidation(this.nameInput);
+    if (!validation.valid) {
+      this.isSubmitting = false;
+      this.state = 'input';
+      const message = validation.reason === 'blocked'
+        ? 'NAME NOT AVAILABLE - TRY ANOTHER'
+        : 'ENTER A VALID PILOT NAME';
+      if (this.inputOverlay && this.submitButton) {
+        this.submitButton.textContent = message;
+        this.submitButton.disabled = false;
+      }
+      this.updatePromptMessage(message);
+      this.updateNameDisplay();
+      this.refreshPrimaryCta();
+      return null;
+    }
+    this.nameInput = validation.publicName;
+    this.syncHiddenInput();
+    if (this.inputField) this.inputField.value = this.nameInput;
+    this.updateNameDisplay();
+    return validation.publicName;
+  }
+
   async submitScore() {
     if (this.state !== 'input' || this.nameInput.length === 0) {
+      return;
+    }
+    if (!this.validatePilotNameForSubmit()) {
       return;
     }
     await this.submitScoreFinal();
@@ -2162,7 +2189,10 @@ export class GameOverScene {
       this.updateNameDisplay();
     }
 
-    const name = this.nameInput;
+    const name = this.validatePilotNameForSubmit();
+    if (!name) {
+      return;
+    }
     const result = {
       name,
       score: this.finalScore,

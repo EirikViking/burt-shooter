@@ -86,7 +86,7 @@ for (const base of ShipData) {
   }
 }
 
-const unlockedAtStart = ships.filter(ship => !ship.unlock || (!(ship.unlock.score || 0) && !(ship.unlock.rank || 0)));
+const unlockedAtStart = ships.filter(ship => !ship.unlock || (Number(ship.unlock.level) || 1) <= 1);
 if (unlockedAtStart.length !== 1) {
   fail(`expected one starter ship, found ${unlockedAtStart.length}`);
 }

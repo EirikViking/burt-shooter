@@ -3,7 +3,7 @@ import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { BonusAsset } from '../utils/BonusAsset.js';
-import { getRankFromScore, getRankTitle } from '../shared/RankPolicy.js';
+import { getRankFromLevel, getRankTitle } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -637,7 +637,7 @@ export class HighscoreScene {
     if (!normalized) return null;
     return {
       ...normalized,
-      rank_index: normalized.rank_index ?? getRankFromScore(normalized.score)
+      rank_index: normalized.rank_index ?? getRankFromLevel(normalized.level || 1)
     };
   }
 
@@ -766,14 +766,13 @@ export class HighscoreScene {
       }
 
       const computeDisplayRank = (entry) => {
-        const scoreValue = Number(entry?.score);
-        if (Number.isFinite(scoreValue)) {
-          const rankFromScore = getRankFromScore(scoreValue);
-          return Math.max(0, Math.min(19, Math.floor(rankFromScore)));
-        }
         const fallbackRank = Number(entry?.rank_index ?? entry?.rankIndex ?? entry?.rank);
         if (Number.isFinite(fallbackRank)) {
           return Math.max(0, Math.min(19, Math.floor(fallbackRank)));
+        }
+        const levelValue = Number(entry?.level ?? entry?.levelReached);
+        if (Number.isFinite(levelValue)) {
+          return Math.max(0, Math.min(19, Math.floor(getRankFromLevel(levelValue))));
         }
         return 0;
       };
@@ -839,7 +838,7 @@ export class HighscoreScene {
 
         const playerRankIndex = (score.rank_index !== null && score.rank_index !== undefined)
           ? score.rank_index
-          : getRankFromScore(score.score || 0);
+          : getRankFromLevel(score.level || 1);
         const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
         const rankTitle = getRankTitle(clampedRank);
         const displayName = (score.name || '??').slice(0, isMobile ? 13 : 18).toUpperCase();

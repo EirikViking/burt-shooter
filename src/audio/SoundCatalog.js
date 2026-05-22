@@ -229,7 +229,7 @@ export const SFX_MIX = {
     boss_net_telegraph: { volume: 0.5, minIntervalMs: 700 },
     boss_net_fire: { volume: 0.66, minIntervalMs: 700 },
     boss_hazard_impact: { volume: 0.58, minIntervalMs: 180 },
-    trait_bonus_hit: { volume: 0.26, minIntervalMs: 90 },
+    trait_bonus_hit: { volume: 0.08, minIntervalMs: 650 },
     trait_wing_hit: { volume: 0.34, minIntervalMs: 120 },
     trait_pierce_hit: { volume: 0.32, minIntervalMs: 120 },
     trait_crit_splash: { volume: 0.46, minIntervalMs: 350 }

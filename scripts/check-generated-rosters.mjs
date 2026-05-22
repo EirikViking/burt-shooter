@@ -29,7 +29,7 @@ for (const ship of ships) {
   if (!ship.unlock) fail(`${ship.id} missing unlock rule`);
 }
 
-const starterCount = ships.filter(ship => !(ship.unlock?.score || 0) && !(ship.unlock?.rank || 0)).length;
+const starterCount = ships.filter(ship => (Number(ship.unlock?.level) || 1) <= 1).length;
 if (starterCount !== 1) fail(`expected exactly one starter ship, found ${starterCount}`);
 
 const enemyAssets = AssetManifest.generated?.enemies || [];

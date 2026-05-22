@@ -1,6 +1,7 @@
 import {
     NUM_RANKS,
     MAX_RANK_INDEX,
+    getRankFromLevel,
     getRankFromScore,
     getRankTitle,
     getThresholds,
@@ -18,6 +19,10 @@ export class RankManager {
         return getRankFromScore(score);
     }
 
+    getRankFromLevel(level) {
+        return getRankFromLevel(level);
+    }
+
     getRankThreshold(rankIndex) {
         return getRankThreshold(rankIndex);
     }
@@ -30,14 +35,14 @@ export class RankManager {
         return `RANK ${rankIndex.toString().padStart(3, '0')}`;
     }
 
-    getRankProgress(score, rankIndex) {
+    getRankProgress(level, rankIndex) {
         const currentThresh = this.getRankThreshold(rankIndex);
         const nextThresh = this.getNextRankThreshold(rankIndex);
 
         if (nextThresh === currentThresh) return 1.0; // Max rank
 
         const spread = nextThresh - currentThresh;
-        const currentInRank = score - currentThresh;
+        const currentInRank = level - currentThresh;
 
         return Math.max(0, Math.min(1, currentInRank / spread));
     }

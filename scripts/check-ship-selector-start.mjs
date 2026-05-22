@@ -74,7 +74,7 @@ function findChrome() {
 
 async function showShipSelect(page) {
   await page.evaluate(() => {
-    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 19, bestLevel: 20 }));
+    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 19, bestLevel: 60 }));
     window.__game?.showShipSelect?.();
   });
   await page.waitForFunction(() => {

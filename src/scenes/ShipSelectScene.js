@@ -1289,7 +1289,7 @@ export class ShipSelectScene {
 
     if (this.leftIntel) {
       this.leftIntel.count.text = `${unlockedCount}/${this.ships.length} HULLS READY`;
-      this.leftIntel.progress.text = `BEST SCORE ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}\nBEST RANK ${this.unlockProgress.bestRank || 0}\nBEST LEVEL ${this.unlockProgress.bestLevel || 1}`;
+      this.leftIntel.progress.text = `BEST LEVEL ${this.unlockProgress.bestLevel || 1}\nPROGRESSION RANK ${this.unlockProgress.bestRank || 0}\nBEST SCORE ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}`;
     }
 
     if (this.rightIntel) {

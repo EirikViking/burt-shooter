@@ -1,9 +1,22 @@
-import { getRankFromScore } from '../shared/RankPolicy.js';
+import { getRankFromLevel } from '../shared/RankPolicy.js';
 
-export const LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v1';
+export const LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
 export const LOCAL_LEADERBOARD_LIMIT = 20;
 const LOCAL_LEADERBOARD_STORAGE_LIMIT = 100;
 const LOCAL_PILOT_NAME_MAX_LENGTH = 14;
+
+export const PRE_RELEASE_SEED_SCORES = [
+  { name: 'NOVAROOK', score: 500, level: 2 },
+  { name: 'VOIDCADET', score: 900, level: 3 },
+  { name: 'PIXELPILOT', score: 1200, level: 4 },
+  { name: 'ORBITKID', score: 1800, level: 5 },
+  { name: 'COMETACE', score: 2400, level: 6 },
+  { name: 'NEONRIDER', score: 3100, level: 7 },
+  { name: 'STARRUNNER', score: 3900, level: 8 },
+  { name: 'QUANTUMQ', score: 4800, level: 9 },
+  { name: 'SIGNALACE', score: 6200, level: 10 },
+  { name: 'ARCADEZERO', score: 7900, level: 11 }
+];
 
 function storageAvailable() {
   try {
@@ -28,7 +41,10 @@ function normalizeEntry(raw, fallbackIndex = 0) {
   if (!raw || typeof raw !== 'object') return null;
   const score = Math.max(0, Math.floor(Number(raw.score) || 0));
   const level = Math.max(1, Math.floor(Number(raw.level) || 1));
-  const rankIndex = Math.max(0, Math.min(19, Math.floor(Number(raw.rankIndex ?? raw.rank_index) || getRankFromScore(score))));
+  const rawRankIndex = Number(raw.rankIndex ?? raw.rank_index);
+  const rankIndex = Math.max(0, Math.min(19, Number.isFinite(rawRankIndex)
+    ? Math.floor(rawRankIndex)
+    : getRankFromLevel(level)));
   const timestamp = String(raw.timestamp || raw.created_at || new Date(0).toISOString());
   return {
     name: sanitizeLocalPilotName(raw.name, fallbackIndex),
@@ -44,8 +60,20 @@ function normalizeEntry(raw, fallbackIndex = 0) {
     wavesCleared: raw.wavesCleared ?? null,
     submissionId: raw.submissionId || null,
     timestamp,
-    source: 'local'
+    source: raw.source || 'local',
+    seed: Boolean(raw.seed)
   };
+}
+
+function getSeedScores() {
+  return PRE_RELEASE_SEED_SCORES.map((entry, index) => normalizeEntry({
+    ...entry,
+    rankIndex: getRankFromLevel(entry.level),
+    submissionId: `pre-release-seed-${index + 1}`,
+    timestamp: new Date(Date.UTC(2026, 0, index + 1)).toISOString(),
+    source: 'pre_release_seed',
+    seed: true
+  }, index)).filter(Boolean);
 }
 
 function sortScores(scores) {
@@ -64,7 +92,8 @@ export const LocalLeaderboard = {
       const normalized = Array.isArray(parsed)
         ? parsed.map((entry, index) => normalizeEntry(entry, index)).filter(Boolean)
         : [];
-      return sortScores(normalized).slice(0, Math.max(1, limit));
+      const scores = normalized.length > 0 ? normalized : getSeedScores();
+      return sortScores(scores).slice(0, Math.max(1, limit));
     } catch {
       return [];
     }
@@ -72,15 +101,17 @@ export const LocalLeaderboard = {
 
   getCutoff(limit = LOCAL_LEADERBOARD_LIMIT) {
     const scores = this.getScores(limit);
-    if (scores.length < limit) return 0;
-    return Number(scores[limit - 1]?.score) || 0;
+    if (scores.length === 0) return 0;
+    const cutoffIndex = Math.max(0, Math.min(scores.length, limit) - 1);
+    return Number(scores[cutoffIndex]?.score) || 0;
   },
 
   qualifies(score, limit = LOCAL_LEADERBOARD_LIMIT) {
     const numericScore = Math.max(0, Math.floor(Number(score) || 0));
     const scores = this.getScores(limit);
-    if (scores.length < limit) return numericScore > 0;
-    return numericScore > (Number(scores[limit - 1]?.score) || 0);
+    if (scores.length === 0) return numericScore > 0;
+    const cutoffIndex = Math.max(0, Math.min(scores.length, limit) - 1);
+    return numericScore > (Number(scores[cutoffIndex]?.score) || 0);
   },
 
   saveScore(entry = {}) {
@@ -99,7 +130,7 @@ export const LocalLeaderboard = {
       name: entry.name,
       score,
       level: entry.level,
-      rankIndex: entry.rankIndex ?? entry.rank_index ?? getRankFromScore(score),
+      rankIndex: entry.rankIndex ?? entry.rank_index ?? getRankFromLevel(entry.level),
       shipId: entry.shipId,
       shipName: entry.shipName,
       runTimeSeconds: entry.runTimeSeconds,

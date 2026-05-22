@@ -31,15 +31,16 @@ function installWindow({ search = '', origin = 'https://novaswarm.tinyfoundry.ap
 }
 
 function installCloudFetch() {
-  let postCount = 0;
+  const state = { postCount: 0, lastPost: null };
   globalThis.fetch = async (url, options = {}) => {
     const method = String(options.method || 'GET').toUpperCase();
     if (!String(url).includes('/api/highscores')) {
       return new Response(JSON.stringify({ error: 'not found' }), { status: 404 });
     }
     if (method === 'POST') {
-      postCount += 1;
-      return new Response(JSON.stringify({ success: true, id: 100 + postCount, rank_index: 3 }), {
+      state.postCount += 1;
+      state.lastPost = JSON.parse(String(options.body || '{}'));
+      return new Response(JSON.stringify({ success: true, id: 100 + state.postCount, rank_index: 3 }), {
         status: 201,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -52,16 +53,18 @@ function installCloudFetch() {
       headers: { 'Content-Type': 'application/json' }
     });
   };
+  return state;
 }
 
 installWindow();
 installCloudFetch();
 
 const { createLeaderboardAdapter } = await import('../src/leaderboard/LeaderboardAdapter.js');
+const { getPilotNameValidation, toPublicPilotName } = await import('../src/leaderboard/LeaderboardTypes.js');
 
 async function checkWebRuntime() {
   const win = installWindow();
-  installCloudFetch();
+  const cloudState = installCloudFetch();
   const adapter = createLeaderboardAdapter();
   await adapter.refreshAvailability();
   assert.equal(adapter.isSteamAvailable(), false, 'web runtime should not use Steam without a bridge');
@@ -80,7 +83,22 @@ async function checkWebRuntime() {
     submissionId: 'web-local-1'
   }, { target: 'local', saveLocal: true, name: 'WEB ACE' });
   assert.equal(localSubmit.localStatus, 'saved');
-  assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v1')?.includes('WEB ACE'), true);
+  assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('WEB ACE'), true);
+
+  assert.equal(getPilotNameValidation('Eirik').valid, true, 'Eirik should be a valid pilot name');
+  assert.equal(toPublicPilotName('Eirik', 553006), 'EIRIK', 'Eirik must not fall back to Pilot06');
+  const eirikRun = {
+    score: 55301,
+    level: 11,
+    rankIndex: 6,
+    playerName: 'Eirik',
+    submissionId: 'eirik-name-regression'
+  };
+  const eirikLocal = await adapter.submitScore(eirikRun, { target: 'local', saveLocal: true, name: 'Eirik' });
+  assert.equal(eirikLocal.localEntry.name, 'EIRIK');
+  assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('PILOT06'), false);
+  await adapter.submitScore(eirikRun, { target: 'cloud', saveLocal: false, name: 'Eirik' });
+  assert.equal(cloudState.lastPost.name, 'EIRIK');
 }
 
 async function checkMockSteamRuntime() {
@@ -114,7 +132,7 @@ async function checkMockSteamRuntime() {
   assert.equal(friends.source, 'steam-friends');
   assert.equal(global.entries[0].score, 12345);
   assert.equal(friends.entries[0].playerName, 'STEAM ACE');
-  assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v1')?.includes('STEAM ACE'), true);
+  assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('STEAM ACE'), true);
 }
 
 await checkWebRuntime();

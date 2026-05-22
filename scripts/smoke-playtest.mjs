@@ -917,7 +917,7 @@ async function runSmoke() {
       ...(waveTransitionState.textState?.scene !== 'play' ? ['wave transition left play scene'] : []),
       ...((waveTransitionState.textState?.lives || 0) <= 0 ? ['wave transition player died during smoke'] : []),
       ...(waveTransitionState.enemyManagerState !== 'WAVE_ACTIVE' ? ['wave transition did not return to active state'] : []),
-      ...((waveTransitionState.score || 0) < 500 ? ['wave transition did not award first wave score'] : []),
+      ...((waveTransitionState.score || 0) < 50 ? ['wave transition did not award first wave score'] : []),
       ...(waveTransitionState.textState?.wave?.currentWaveNumber !== 2 ? ['wave text state did not expose wave 2'] : []),
       ...((waveTransitionState.textState?.counts?.enemies || 0) <= 0 ? ['wave transition did not spawn next wave enemies'] : []),
       ...visibleEnemyHealthIssues(waveTransitionState, 'wave transition'),

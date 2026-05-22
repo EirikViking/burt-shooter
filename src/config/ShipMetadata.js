@@ -143,20 +143,21 @@ export function updateShipUnlockProgress({ score = 0, rank = 0, level = 1 } = {}
 
 export function getShipUnlockRequirement(spriteKey) {
   const ship = getShipMetadata(spriteKey);
-  return ship?.unlock || { score: 0, rank: 0, label: 'Available now' };
+  return ship?.unlock || { level: 1, label: 'Available now' };
 }
 
 export function getShipUnlockLabel(spriteKey) {
   const requirement = getShipUnlockRequirement(spriteKey);
-  if (!requirement.score && !requirement.rank) return 'AVAILABLE NOW';
-  return `UNLOCK: ${Number(requirement.score || 0).toLocaleString('en-US')} SCORE OR RANK ${requirement.rank || 0}`;
+  const level = Math.max(1, Math.floor(Number(requirement.level) || 1));
+  if (level <= 1) return 'AVAILABLE NOW';
+  return `UNLOCK: REACH LEVEL ${level}`;
 }
 
 export function isShipUnlocked(spriteKey, progress = readUnlockProgress()) {
   const resolved = resolveShipKey(spriteKey);
   const requirement = getShipUnlockRequirement(resolved);
-  if (!requirement.score && !requirement.rank) return true;
-  return progress.bestScore >= (requirement.score || 0) || progress.bestRank >= (requirement.rank || 0);
+  const requiredLevel = Math.max(1, Math.floor(Number(requirement.level) || 1));
+  return Math.max(1, Number(progress.bestLevel) || 1) >= requiredLevel;
 }
 
 export function getUnlockedSelectableShips() {

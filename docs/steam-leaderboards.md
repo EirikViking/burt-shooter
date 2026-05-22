@@ -9,6 +9,9 @@ The leaderboard screen keeps the same visual deck. Data now flows through `src/l
 - Web: `GLOBAL` uses the existing Cloudflare/D1 `/api/highscores`; `LOCAL` uses browser local storage.
 - Steam-capable Electron runtime: `GLOBAL` uses Steam global scores, `FRIENDS` uses Steam friends scores, and `LOCAL` remains available as a backup/history board.
 - Offline/fallback: if no cloud or Steam provider is available, local scores still load and score submission failure never blocks `ONE MORE RUN`.
+- Pre-release score normalization: gameplay score awards are stored, displayed, and submitted at `0.1x` the previous scale using `Math.round`. Local browser and Electron boards moved to v2 storage with low fictional seed scores (`500` through `7900`) so old inflated local rows are not mixed with new runs.
+- App-owned global reset: run `NOVA_SWARM_RESET_LEADERBOARD=I_UNDERSTAND_PRE_RELEASE_RESET npm run leaderboard:reset-pre-release` to delete D1 pre-release rows and seed the same low fictional board. Do this only for pre-release cleanup.
+- Steam migration: no Steam leaderboard migration is required until Steam writes are accepted. Future Steam submissions receive the already-normalized run score from `Game.score`.
 
 ## Steamworks Setup
 
