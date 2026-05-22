@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-22T16:45:44.833Z",
+  "generatedAt": "2026-05-22T17:35:31.421Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-22_18-41-36",
-    "timestamp": "2026-05-22T16:41:36.104Z"
+    "version": "v2026-05-22_19-31-44",
+    "timestamp": "2026-05-22T17:31:44.117Z"
   },
   "liveUrl": "https://novaswarm.tinyfoundry.app",
   "versionChecks": [
@@ -11,29 +11,29 @@
       "url": "https://novaswarm.tinyfoundry.app/version.json",
       "ok": true,
       "status": 200,
-      "version": "v2026-05-22_18-41-36",
-      "timestamp": "2026-05-22T16:41:36.104Z"
+      "version": "v2026-05-22_19-31-44",
+      "timestamp": "2026-05-22T17:31:44.117Z"
     },
     {
       "url": "https://burt-game.pages.dev/version.json",
       "ok": true,
       "status": 200,
-      "version": "v2026-05-22_18-41-36",
-      "timestamp": "2026-05-22T16:41:36.104Z"
+      "version": "v2026-05-22_19-31-44",
+      "timestamp": "2026-05-22T17:31:44.117Z"
     },
     {
-      "url": "https://b55c27ae.burt-game.pages.dev/version.json",
+      "url": "https://e3400920.burt-game.pages.dev/version.json",
       "ok": true,
       "status": 200,
-      "version": "v2026-05-22_18-41-36",
-      "timestamp": "2026-05-22T16:41:36.104Z"
+      "version": "v2026-05-22_19-31-44",
+      "timestamp": "2026-05-22T17:31:44.117Z"
     }
   ],
   "latestLiveSmoke": {
-    "reportPath": "test-results/smoke-2026-05-22T16-42-54-436Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-22T17-33-27-787Z/report.json",
     "baseUrl": "https://novaswarm.tinyfoundry.app",
     "status": "passed",
-    "build": "v2026-05-22_18-41-36",
+    "build": "v2026-05-22_19-31-44",
     "screenshots": [
       {
         "file": "01-menu.png",
