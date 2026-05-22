@@ -37,6 +37,10 @@ export class GameOverScene {
     this.scoreText = null;
     this.levelText = null;
     this.unlockText = null;
+    this.nextGoal = null;
+    this.nextGoalGroup = null;
+    this.nextGoalBg = null;
+    this.nextGoalText = null;
     this.comment = null;
     this.leaderboardStatusText = null;
     this.notQualifiedText = null;
@@ -183,6 +187,7 @@ export class GameOverScene {
       level: this.finalLevel
     });
     this.unlockSummary = this.createUnlockSummary(previousProgress, currentProgress);
+    this.nextGoal = this.createNextGoal(previousProgress, currentProgress);
 
     // Generate unique submissionId for this run (reused across retries)
     this.submissionId = generateUUID();
@@ -248,6 +253,23 @@ export class GameOverScene {
     });
     this.unlockText.anchor.set(0.5);
     this.container.addChild(this.unlockText);
+
+    this.nextGoalGroup = new PIXI.Container();
+    this.nextGoalBg = new PIXI.Graphics();
+    this.nextGoalText = createText(this.nextGoal?.text || '', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 14 : 17,
+      fontWeight: 'bold',
+      fill: '#fff3a2',
+      stroke: '#031323',
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.78, layout)
+    });
+    this.nextGoalText.anchor.set(0.5);
+    this.nextGoalGroup.addChild(this.nextGoalBg, this.nextGoalText);
+    this.container.addChild(this.nextGoalGroup);
 
     const bodySize = getResponsiveFontSize(layout, 'body');
     this.comment = createText(this.getCeremonyComment(), {
@@ -515,6 +537,7 @@ export class GameOverScene {
     if (this.state === 'runback') return;
     if (!this.title || !this.comment) return;
     const placement = this.globalPlacement;
+    this.refreshNextGoalFromLeaderboard();
     this.title.text = this.getCeremonyTitle();
     this.comment.text = this.getCeremonyComment();
     if (placement?.numberOne) {
@@ -544,6 +567,21 @@ export class GameOverScene {
       this.comment.style.fill = '#aebed0';
     }
     this.layoutScreen();
+  }
+
+  refreshNextGoalFromLeaderboard() {
+    const placement = this.globalPlacement;
+    if (!placement || !this.isRankedRun) return;
+    if (placement.nearNumberOne && placement.scoreToNumberOne > 0) {
+      this.nextGoal = { text: `NUMBER ONE: ${this.formatGoalNumber(placement.scoreToNumberOne)} MORE`, tone: 'leaderboard' };
+    } else if (placement.nearTop3 && placement.scoreToTop3 > 0) {
+      this.nextGoal = { text: `TOP THREE: ${this.formatGoalNumber(placement.scoreToTop3)} MORE`, tone: 'leaderboard' };
+    } else if (placement.nearGlobal && placement.scoreToGlobal > 0) {
+      this.nextGoal = { text: `GLOBAL SLOT: ${this.formatGoalNumber(placement.scoreToGlobal)} MORE`, tone: 'leaderboard' };
+    } else if (placement.qualified && placement.placement && placement.placement > 1) {
+      this.nextGoal = { text: 'NEXT GOAL: CLIMB ONE GLOBAL RANK', tone: 'leaderboard' };
+    }
+    if (this.nextGoalText) this.nextGoalText.text = this.nextGoal?.text || '';
   }
 
   updateQualificationPromptState() {
@@ -647,6 +685,11 @@ export class GameOverScene {
     this.unlockText.style.wordWrap = true;
     this.unlockText.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
     this.unlockText.style.lineHeight = Math.round(unlockSize * 1.25);
+    if (this.nextGoalText) {
+      this.nextGoalText.style.fontSize = layout.isMobile ? 14 : 17;
+      this.nextGoalText.style.wordWrap = true;
+      this.nextGoalText.style.wordWrapWidth = clampTextWidth(width * (layout.isMobile ? 0.78 : 0.54), layout);
+    }
     this.comment.style.fontSize = bodySize;
     this.comment.style.lineHeight = Math.round(bodySize * 1.4);
     this.comment.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
@@ -665,6 +708,7 @@ export class GameOverScene {
     this.layoutCeremonyVisuals(width, height, layout);
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
+    this.drawNextGoalStrip(layout);
 
     // Calculate content height for centering
     const spacing = layout.isMobile ? 8 : 14;
@@ -675,6 +719,7 @@ export class GameOverScene {
     const scoreHeight = scoreSize * 1.2;
     const levelHeight = levelSize * 1.2;
     const unlockHeight = unlockSize * 2.3;
+    const nextGoalHeight = this.nextGoalGroup?.visible ? Math.max(this.nextGoalGroup.height || 0, layout.isMobile ? 32 : 38) : 0;
     const commentHeight = bodySize * 2 * 1.4; // ~2 lines
     const leaderboardStatusHeight = leaderboardStatusSize * 2.5;
     const promptHeight = promptSize * 1.2;
@@ -683,7 +728,7 @@ export class GameOverScene {
     const leaderboardVisible = this.shouldShowLeaderboardButton();
     const leaderboardHeight = leaderboardVisible ? (this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48)) : 0;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + nameHeight + spacing * (leaderboardVisible ? 9 : 8) + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + nameHeight + spacing * (leaderboardVisible ? 10 : 9) + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -710,6 +755,11 @@ export class GameOverScene {
 
     this.unlockText.x = width / 2;
     this.unlockText.y = stack.placeText(this.unlockText, spacing);
+
+    if (this.nextGoalGroup?.visible) {
+      this.nextGoalGroup.x = width / 2;
+      this.nextGoalGroup.y = stack.placeElement(this.nextGoalGroup, spacing);
+    }
 
     this.comment.x = width / 2;
     this.comment.y = stack.placeText(this.comment, spacing);
@@ -921,6 +971,46 @@ export class GameOverScene {
       this.leaderboardButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
       this.leaderboardButtonHint.y = layout.isMobile ? 14 : 16;
     }
+  }
+
+  drawNextGoalStrip(layout) {
+    if (!this.nextGoalGroup || !this.nextGoalBg || !this.nextGoalText) return;
+    const text = String(this.nextGoal?.text || '').trim();
+    this.nextGoalGroup.visible = Boolean(text);
+    if (!text) {
+      this.nextGoalBg.clear();
+      this.nextGoalText.text = '';
+      return;
+    }
+
+    const tone = this.nextGoal?.tone || 'level';
+    const accent = {
+      score: 0xffd75f,
+      level: 0x37f5ff,
+      unlock: 0x9cfbff,
+      rank: 0xffd15c,
+      leaderboard: 0xff55d9,
+      practice: 0xffb35c
+    }[tone] || 0x37f5ff;
+    const stripWidth = Math.min(layout.width * (layout.isMobile ? 0.82 : 0.52), layout.isMobile ? 340 : 500);
+    const stripHeight = layout.isMobile ? 34 : 40;
+    const halfWidth = stripWidth / 2;
+    const halfHeight = stripHeight / 2;
+
+    this.nextGoalText.text = text;
+    this.nextGoalText.style.fontSize = layout.isMobile ? 14 : 17;
+    this.nextGoalText.style.wordWrapWidth = Math.max(160, stripWidth - 28);
+    this.nextGoalText.y = -1;
+
+    this.nextGoalBg.clear();
+    this.nextGoalBg.roundRect(-halfWidth, -halfHeight, stripWidth, stripHeight, layout.isMobile ? 8 : 10);
+    this.nextGoalBg.fill({ color: 0x041323, alpha: 0.78 });
+    this.nextGoalBg.roundRect(-halfWidth, -halfHeight, stripWidth, stripHeight, layout.isMobile ? 8 : 10);
+    this.nextGoalBg.stroke({ color: accent, width: 1.8, alpha: 0.86 });
+    this.nextGoalBg.rect(-halfWidth + 14, -halfHeight + 5, stripWidth - 28, 2);
+    this.nextGoalBg.fill({ color: accent, alpha: 0.28 });
+    this.nextGoalBg.rect(-halfWidth + 18, halfHeight - 6, stripWidth - 36, 1);
+    this.nextGoalBg.fill({ color: 0xffffff, alpha: 0.14 });
   }
 
   getPrimaryCtaConfig() {
@@ -1325,6 +1415,37 @@ export class GameOverScene {
     const rankPart = rankNeed > 0 ? `REACH RANK ${Number(requirement.rank) || 0}` : null;
     const needed = [scorePart, rankPart].filter(Boolean).join(' OR ') || 'ONE BETTER RUN';
     return `NEXT SHIP: ${nextShip.name}\nNEED ${needed}`;
+  }
+
+  createNextGoal(previousProgress = {}, currentProgress = {}) {
+    if (!this.isRankedRun) {
+      return { text: 'NEXT GOAL: RUN RANKED FOR THE BOARDS', tone: 'practice' };
+    }
+
+    const previousBestScore = Math.max(0, Number(previousProgress.bestScore) || 0);
+    const scoreGap = previousBestScore - this.finalScore;
+    if (previousBestScore > 0 && scoreGap > 0 && scoreGap <= Math.max(1000, previousBestScore * 0.18)) {
+      return { text: `BEAT YOUR BEST: ${this.formatGoalNumber(scoreGap)} MORE`, tone: 'score' };
+    }
+
+    const bestLevel = Math.max(1, Number(currentProgress.bestLevel) || this.finalLevel || 1);
+    const nextLevel = this.getNextLevelGoal(bestLevel);
+    if (nextLevel > bestLevel) {
+      return { text: `NEXT GOAL: REACH LEVEL ${nextLevel}`, tone: 'level' };
+    }
+
+    return { text: 'NEXT GOAL: CLIMB THE GLOBAL BOARD', tone: 'leaderboard' };
+  }
+
+  getNextLevelGoal(bestLevel) {
+    const level = Math.max(1, Math.floor(Number(bestLevel) || 1));
+    if (level < 3) return level + 1;
+    if (level < 10) return Math.min(10, level + 2);
+    return level + 1;
+  }
+
+  formatGoalNumber(value) {
+    return Math.max(0, Math.ceil(Number(value) || 0)).toLocaleString('en-US');
   }
 
   enterInputMode() {

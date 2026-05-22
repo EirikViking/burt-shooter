@@ -438,6 +438,7 @@ function buildGameTextState(game) {
       score: gameOverScene.finalScore || 0,
       level: gameOverScene.finalLevel || 0,
       unlockSummary: gameOverScene.unlockSummary || null,
+      nextGoal: gameOverScene.nextGoal?.text || gameOverScene.nextGoalText?.text || null,
       prompt: gameOverScene.promptText?.text || null,
       retryPrompt: gameOverScene.instructions?.text || null,
       primaryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,

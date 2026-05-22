@@ -12,7 +12,8 @@ const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/gam
 fs.mkdirSync(outputDir, { recursive: true });
 
 const board = [
-  50000, 42000, 36000, 30000, 24000, 20000, 16000, 12000, 9000, 6000
+  50000, 42000, 36000, 30000, 24000, 20000, 16000, 12000, 9000, 8000,
+  7600, 7300, 7000, 6800, 6600, 6400, 6250, 6150, 6050, 6000
 ].map((score, index) => ({
   name: `GLB${index + 1}`,
   score,
@@ -157,7 +158,9 @@ try {
       game.globalLeaderboardTargets = [
         { score: 50000 }, { score: 42000 }, { score: 36000 }, { score: 30000 },
         { score: 24000 }, { score: 20000 }, { score: 16000 }, { score: 12000 },
-        { score: 9000 }, { score: 6000 }
+        { score: 9000 }, { score: 8000 }, { score: 7600 }, { score: 7300 },
+        { score: 7000 }, { score: 6800 }, { score: 6600 }, { score: 6400 },
+        { score: 6250 }, { score: 6150 }, { score: 6050 }, { score: 6000 }
       ];
       game.addScore(5200);
       game.addScore(25000);
