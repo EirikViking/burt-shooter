@@ -105,11 +105,44 @@ try {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.__game?.showShipSelect), { timeout: 30000 });
 
-  const beforeBack = await showShipSelect(page);
-  const backTarget = beforeBack.shipSelect.backButton;
-  await page.mouse.click(backTarget.x + backTarget.width / 2, backTarget.y + backTarget.height / 2);
+  const beforeMenuButton = await showShipSelect(page);
+  const menuTarget = beforeMenuButton.shipSelect.backButton;
+  await page.mouse.click(menuTarget.x + menuTarget.width / 2, menuTarget.y + menuTarget.height / 2);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === true, { timeout: 10000 });
+  const afterMenuButton = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+
+  const exitTarget = afterMenuButton.shipSelect.hangarMenu.buttons.exitGame;
+  await page.mouse.click(exitTarget.x + exitTarget.width / 2, exitTarget.y + exitTarget.height / 2);
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return /DESKTOP BUILD/.test(state.shipSelect?.hangarMenu?.notice || '');
+  }, { timeout: 10000 });
+  const afterExitFallback = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+
+  const resumeTarget = afterExitFallback.shipSelect.hangarMenu.buttons.resume;
+  await page.mouse.click(resumeTarget.x + resumeTarget.width / 2, resumeTarget.y + resumeTarget.height / 2);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === false, { timeout: 10000 });
+  const afterResume = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+
+  const beforeKeyboardMenu = await showShipSelect(page);
+  await page.keyboard.press('Tab');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.mainMenuFocused === true, { timeout: 10000 });
+  const afterTabFocus = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === true, { timeout: 10000 });
+  const afterKeyboardMenu = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === false, { timeout: 10000 });
+  const afterKeyboardResume = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+
+  const beforeEscapeMenu = await showShipSelect(page);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === true, { timeout: 10000 });
+  const afterEscapeMenu = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const mainMenuTarget = afterEscapeMenu.shipSelect.hangarMenu.buttons.mainMenu;
+  await page.mouse.click(mainMenuTarget.x + mainMenuTarget.width / 2, mainMenuTarget.y + mainMenuTarget.height / 2);
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'menu', { timeout: 10000 });
-  const afterBack = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const afterMainMenu = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 
   const beforeClick = await showShipSelect(page);
   const clickTarget = beforeClick.shipSelect.startButton;
@@ -129,8 +162,22 @@ try {
 
   const report = {
     ok: Boolean(
-      beforeBack.shipSelect?.backButton?.width > 0 &&
-      afterBack.scene === 'menu' &&
+      beforeMenuButton.shipSelect?.backButton?.width > 0 &&
+      afterMenuButton.scene === 'shipSelect' &&
+      afterMenuButton.shipSelect?.hangarMenu?.visible === true &&
+      afterExitFallback.shipSelect?.hangarMenu?.visible === true &&
+      /DESKTOP BUILD/.test(afterExitFallback.shipSelect?.hangarMenu?.notice || '') &&
+      afterResume.scene === 'shipSelect' &&
+      afterResume.shipSelect?.hangarMenu?.visible === false &&
+      beforeKeyboardMenu.shipSelect?.backButton?.width > 0 &&
+      afterTabFocus.shipSelect?.hangarMenu?.mainMenuFocused === true &&
+      afterKeyboardMenu.shipSelect?.hangarMenu?.visible === true &&
+      afterKeyboardResume.scene === 'shipSelect' &&
+      afterKeyboardResume.shipSelect?.hangarMenu?.visible === false &&
+      beforeEscapeMenu.shipSelect?.backButton?.width > 0 &&
+      afterEscapeMenu.scene === 'shipSelect' &&
+      afterEscapeMenu.shipSelect?.hangarMenu?.visible === true &&
+      afterMainMenu.scene === 'menu' &&
       beforeClick.shipSelect?.spriteKey &&
       afterClick.scene === 'play' &&
       afterClick.selectedShipSpriteKey === beforeClick.shipSelect.spriteKey &&
@@ -143,9 +190,18 @@ try {
       consoleErrors.length === 0
     ),
     baseUrl,
-    beforeBack: beforeBack.shipSelect,
-    afterBack: {
-      scene: afterBack.scene
+    beforeMenuButton: beforeMenuButton.shipSelect,
+    afterMenuButton: afterMenuButton.shipSelect,
+    afterExitFallback: afterExitFallback.shipSelect?.hangarMenu,
+    afterResume: afterResume.shipSelect?.hangarMenu,
+    beforeKeyboardMenu: beforeKeyboardMenu.shipSelect,
+    afterTabFocus: afterTabFocus.shipSelect?.hangarMenu,
+    afterKeyboardMenu: afterKeyboardMenu.shipSelect?.hangarMenu,
+    afterKeyboardResume: afterKeyboardResume.shipSelect?.hangarMenu,
+    beforeEscapeMenu: beforeEscapeMenu.shipSelect,
+    afterEscapeMenu: afterEscapeMenu.shipSelect?.hangarMenu,
+    afterMainMenu: {
+      scene: afterMainMenu.scene
     },
     beforeClick: beforeClick.shipSelect,
     afterClick: {
@@ -171,7 +227,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[ship-selector-start] PASS back=${afterBack.scene} click=${afterClick.selectedShipSpriteKey} keyboard=${afterKeyboard.selectedShipSpriteKey} screenshot=${screenshot}`);
+    console.log(`[ship-selector-start] PASS menuOverlay=${afterMenuButton.shipSelect.hangarMenu.visible} escape=${afterEscapeMenu.shipSelect.hangarMenu.visible}->${afterMainMenu.scene} click=${afterClick.selectedShipSpriteKey} keyboard=${afterKeyboard.selectedShipSpriteKey} screenshot=${screenshot}`);
   }
 } finally {
   await browser.close();

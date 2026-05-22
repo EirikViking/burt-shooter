@@ -7,6 +7,7 @@ import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
+import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
@@ -1449,14 +1450,11 @@ export class MenuScene {
     try {
       AudioManager.init();
       AudioManager.playSfx('ui_open', { volume: 0.28 });
-      if (window.__novaApp?.exitGame) {
-        await window.__novaApp.exitGame();
-        return;
-      }
-      this.showExitNotice('EXIT IS ONLY AVAILABLE IN DESKTOP BUILD');
+      const result = await requestExitGame();
+      if (!result.ok) this.showExitNotice(result.message);
     } catch (e) {
       console.error('[MenuScene] Exit Game Error:', e);
-      this.showExitNotice('EXIT IS ONLY AVAILABLE IN DESKTOP BUILD');
+      this.showExitNotice(EXIT_GAME_WEB_MESSAGE);
     }
   }
 

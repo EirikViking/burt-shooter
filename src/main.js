@@ -431,6 +431,7 @@ function buildGameTextState(game) {
       unlock: selectedShip.unlock || null,
       launchInProgress: Boolean(shipSelectScene.launchInProgress),
       backButton: getBoundsDebug(shipSelectScene.backButton),
+      hangarMenu: shipSelectScene.getHangarMenuDebugState ? shipSelectScene.getHangarMenuDebugState(getBoundsDebug) : null,
       startButton: getBoundsDebug(shipSelectScene.startButton)
     } : null,
     gameOver: gameOverScene ? {

@@ -13,6 +13,7 @@ import {
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
+import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { computeShipStatRanges, createShipStatPanel, getShipCombatRole } from '../ui/ShipStatPanel.js';
 
@@ -36,6 +37,15 @@ export class ShipSelectScene {
     this.unlockProgress = getShipUnlockProgress();
     this.launchInProgress = false;
     this.backButton = null;
+    this.hangarMenuOverlay = null;
+    this.overlayButtons = [];
+    this.overlayFocusedIndex = 0;
+    this.mainMenuButtonFocused = false;
+    this.gamepadMenuWasPressed = false;
+    this.gamepadActionWasPressed = false;
+    this.gamepadCancelWasPressed = false;
+    this.gamepadVerticalWasPressed = false;
+    this.exitNoticeTimeout = null;
 
     // Load saved selection
     const saved = this.loadSelection();
@@ -163,6 +173,8 @@ export class ShipSelectScene {
     };
 
     this.game.app.ticker.add(this.selectionAnimTicker);
+    this.menuInputTicker = () => this.pollHangarMenuGamepad();
+    this.game.app.ticker.add(this.menuInputTicker);
   }
 
   async createHangarBackdrop(width, height) {
@@ -282,51 +294,319 @@ export class ShipSelectScene {
   createBackButton(width, height) {
     const isMobile = width < 640;
     const capWidth = Math.min(width - 32, isMobile ? 420 : 760);
-    const buttonWidth = isMobile ? 76 : 90;
-    const buttonHeight = isMobile ? 26 : 30;
-    const buttonX = width / 2 - capWidth / 2 + (isMobile ? 12 : 16);
-    const buttonY = isMobile ? 94 : 34;
+    const buttonWidth = isMobile ? 132 : 154;
+    const buttonHeight = isMobile ? 34 : 38;
+    const buttonX = isMobile
+      ? Math.max(12, width - buttonWidth - 12)
+      : Math.min(width - buttonWidth - 24, width / 2 + capWidth / 2 + 14);
+    const buttonY = isMobile ? 92 : 34;
 
     this.backButton = new PIXI.Container();
+    this.backButton.label = 'ui_hangarMainMenuButton';
     this.backButton.position.set(buttonX, buttonY);
     this.backButton.eventMode = 'static';
     this.backButton.cursor = 'pointer';
     this.backButton.hitArea = new PIXI.Rectangle(0, 0, buttonWidth, buttonHeight);
+    this.backButton.hovered = false;
+    this.backButton.active = false;
 
-    const drawButton = (hovered = false) => {
+    const drawButton = () => {
+      const hovered = Boolean(this.backButton.hovered);
+      const focused = Boolean(this.mainMenuButtonFocused);
+      const active = Boolean(this.backButton.active);
       bg.clear();
-      bg.roundRect(0, 0, buttonWidth, buttonHeight, 6);
-      bg.fill({ color: hovered ? 0x123c52 : 0x051527, alpha: hovered ? 0.92 : 0.82 });
-      bg.stroke({ color: hovered ? 0x9ceeff : 0x2deeff, width: hovered ? 2 : 1.5, alpha: hovered ? 0.95 : 0.72 });
+      bg.roundRect(0, 0, buttonWidth, buttonHeight, 7);
+      bg.fill({ color: active ? 0x1d6a77 : (hovered || focused ? 0x103a54 : 0x06172d), alpha: hovered || focused ? 0.94 : 0.84 });
+      bg.stroke({ color: hovered || focused ? 0xffffff : 0x2deeff, width: hovered || focused ? 2.5 : 1.5, alpha: hovered || focused ? 0.95 : 0.76 });
+      bg.rect(7, 6, 4, buttonHeight - 12);
+      bg.fill({ color: 0xff55d9, alpha: hovered || focused ? 0.9 : 0.58 });
+      bg.rect(buttonWidth - 11, 6, 4, buttonHeight - 12);
+      bg.fill({ color: 0xffd15c, alpha: hovered || focused ? 0.82 : 0.5 });
+      bg.moveTo(20, buttonHeight - 6);
+      bg.lineTo(buttonWidth - 20, buttonHeight - 6);
+      bg.stroke({ color: 0x7fffd8, width: 1, alpha: hovered || focused ? 0.42 : 0.18 });
+
+      focusRing.clear();
+      if (focused) {
+        focusRing.roundRect(-5, -5, buttonWidth + 10, buttonHeight + 10, 9);
+        focusRing.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
+      }
     };
 
     const bg = new PIXI.Graphics();
-    drawButton(false);
+    const focusRing = new PIXI.Graphics();
+    this.backButton.addChild(focusRing);
     this.backButton.addChild(bg);
+    drawButton();
 
-    const label = createText('< MENU', {
+    const label = createText('☰ MAIN MENU', {
       fontFamily: FONT_BODY,
-      fontSize: isMobile ? 11 : 13,
-      fill: '#ccefff',
+      fontSize: isMobile ? 12 : 15,
+      fill: '#f4fbff',
       fontWeight: '900',
       letterSpacing: 0
     });
     label.anchor.set(0.5);
     label.position.set(buttonWidth / 2, buttonHeight / 2);
     this.backButton.addChild(label);
+    this.backButton.redraw = drawButton;
 
     this.backButton.on('pointerdown', (e) => {
       e.stopPropagation();
-      AudioManager.playSfx('powerup', { force: true, volume: 0.28 });
-      this.returnToMenu('button');
+      this.backButton.active = true;
+      drawButton();
+      AudioManager.playSfx('powerup', { force: true, volume: 0.24 });
+    });
+    this.backButton.on('pointerup', (e) => {
+      e.stopPropagation();
+      this.backButton.active = false;
+      drawButton();
+      this.openHangarMenu('button');
+    });
+    this.backButton.on('pointerupoutside', () => {
+      this.backButton.active = false;
+      drawButton();
     });
     this.backButton.on('pointerover', () => {
-      drawButton(true);
+      this.backButton.hovered = true;
+      this.setMainMenuButtonFocus(true);
       AudioManager.playSfx('thrusterFire', { volume: 0.08 });
     });
-    this.backButton.on('pointerout', () => drawButton(false));
+    this.backButton.on('pointerout', () => {
+      this.backButton.hovered = false;
+      drawButton();
+    });
 
     this.container.addChild(this.backButton);
+  }
+
+  setMainMenuButtonFocus(focused) {
+    this.mainMenuButtonFocused = Boolean(focused);
+    this.backButton?.redraw?.();
+  }
+
+  openHangarMenu(source = 'unknown') {
+    if (this.launchInProgress) return;
+
+    this.setMainMenuButtonFocus(true);
+    if (!this.hangarMenuOverlay) {
+      this.createHangarMenuOverlay(this.game.getWidth(), this.game.getHeight());
+    }
+
+    this.hangarMenuOverlay.visible = true;
+    this.setOverlayFocus(0);
+    this.showHangarMenuNotice('');
+    AudioManager.playSfx('pause_in', { force: true, volume: source === 'button' ? 0.32 : 0.4 });
+  }
+
+  closeHangarMenu(source = 'unknown') {
+    if (!this.hangarMenuOverlay?.visible) return;
+    this.hangarMenuOverlay.visible = false;
+    this.showHangarMenuNotice('');
+    AudioManager.playSfx('pause_out', { force: true, volume: source === 'keyboard' ? 0.28 : 0.24 });
+  }
+
+  createHangarMenuOverlay(width, height) {
+    const overlay = new PIXI.Container();
+    overlay.label = 'ui_hangarMenuOverlay';
+    overlay.visible = false;
+    overlay.zIndex = 1000000;
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x020713, alpha: 0.72 });
+    overlay.addChild(dim);
+
+    const panelWidth = Math.min(460, width * 0.78);
+    const panelHeight = 318;
+    const panelX = width / 2 - panelWidth / 2;
+    const panelY = height / 2 - panelHeight / 2;
+    const panel = new PIXI.Graphics();
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
+    panel.fill({ color: 0x06111f, alpha: 0.95 });
+    panel.stroke({ color: 0x00ffff, width: 2, alpha: 0.88 });
+    panel.rect(panelX + 12, panelY + 12, 5, panelHeight - 24);
+    panel.fill({ color: 0xff55d9, alpha: 0.58 });
+    panel.rect(panelX + panelWidth - 17, panelY + 12, 5, panelHeight - 24);
+    panel.fill({ color: 0xffd15c, alpha: 0.48 });
+    overlay.addChild(panel);
+
+    const title = createText('HANGAR MENU', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: width < 640 ? 28 : 34,
+      fontWeight: '900',
+      fill: '#f6fbff',
+      stroke: '#003344',
+      strokeThickness: 4,
+      align: 'center',
+      letterSpacing: 0
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, panelY + 54);
+    overlay.addChild(title);
+
+    const subtitle = createText('SHIP SELECTION ON HOLD', {
+      fontFamily: FONT_BODY,
+      fontSize: 14,
+      fontWeight: '800',
+      fill: '#7ee9ff',
+      align: 'center'
+    });
+    subtitle.anchor.set(0.5);
+    subtitle.position.set(width / 2, panelY + 88);
+    overlay.addChild(subtitle);
+
+    this.overlayButtons = [
+      this.createHangarMenuOption('resume', 'RESUME', width / 2, panelY + 134, 0, () => this.closeHangarMenu('overlay')),
+      this.createHangarMenuOption('mainMenu', 'MAIN MENU', width / 2, panelY + 184, 1, () => this.returnToMenu('overlay')),
+      this.createHangarMenuOption('exitGame', 'EXIT GAME', width / 2, panelY + 234, 2, () => this.exitGameFromHangar())
+    ];
+    this.overlayButtons.forEach(button => overlay.addChild(button));
+
+    this.overlayNoticeText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 13,
+      fontWeight: '800',
+      fill: '#ffef7e',
+      align: 'center'
+    });
+    this.overlayNoticeText.anchor.set(0.5);
+    this.overlayNoticeText.position.set(width / 2, panelY + panelHeight - 28);
+    overlay.addChild(this.overlayNoticeText);
+
+    this.hangarMenuOverlay = overlay;
+    this.container.addChild(overlay);
+  }
+
+  createHangarMenuOption(id, label, x, y, index, onPress) {
+    const button = new PIXI.Container();
+    button.label = `ui_hangarMenuOption_${id}`;
+    button.eventMode = 'static';
+    button.cursor = 'pointer';
+    button.id = id;
+    button.activate = onPress;
+
+    const width = 260;
+    const height = 38;
+    button.hitArea = new PIXI.Rectangle(-width / 2, -height / 2, width, height);
+
+    const bg = new PIXI.Graphics();
+    const focus = new PIXI.Graphics();
+    button.addChild(focus);
+    button.addChild(bg);
+
+    button.redraw = () => {
+      const hovered = Boolean(button.hovered);
+      const focused = this.overlayFocusedIndex === index;
+      const active = Boolean(button.active);
+      bg.clear();
+      bg.roundRect(-width / 2, -height / 2, width, height, 6);
+      bg.fill({ color: active ? 0x1d6a77 : (hovered || focused ? 0x0b6f8f : 0x07334e), alpha: hovered || focused ? 0.92 : 0.84 });
+      bg.stroke({ color: hovered || focused ? 0xffffff : 0x00ffff, width: hovered || focused ? 2 : 1, alpha: 0.95 });
+      bg.rect(-width / 2 + 9, -height / 2 + 7, 4, height - 14);
+      bg.fill({ color: id === 'exitGame' ? 0xffd15c : 0xff55d9, alpha: hovered || focused ? 0.86 : 0.52 });
+
+      focus.clear();
+      if (focused) {
+        focus.roundRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, 8);
+        focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.82 });
+      }
+    };
+
+    const text = createText(label, {
+      fontFamily: FONT_BODY,
+      fontSize: 18,
+      fontWeight: '900',
+      fill: '#ffffff',
+      letterSpacing: 0
+    });
+    text.anchor.set(0.5);
+    button.addChild(text);
+    button.position.set(x, y);
+    button.redraw();
+
+    button.on('pointerover', () => {
+      button.hovered = true;
+      this.setOverlayFocus(index);
+      AudioManager.playSfx('thrusterFire', { volume: 0.07 });
+    });
+    button.on('pointerout', () => {
+      button.hovered = false;
+      button.redraw();
+    });
+    button.on('pointerdown', (e) => {
+      e.stopPropagation();
+      button.active = true;
+      button.redraw();
+    });
+    button.on('pointerup', (e) => {
+      e.stopPropagation();
+      button.active = false;
+      button.redraw();
+      button.activate();
+    });
+    button.on('pointerupoutside', () => {
+      button.active = false;
+      button.redraw();
+    });
+
+    return button;
+  }
+
+  setOverlayFocus(index) {
+    if (!this.overlayButtons?.length) return;
+    const count = this.overlayButtons.length;
+    this.overlayFocusedIndex = (index + count) % count;
+    this.overlayButtons.forEach(button => button.redraw?.());
+  }
+
+  activateOverlayFocus() {
+    const button = this.overlayButtons?.[this.overlayFocusedIndex];
+    if (!button?.activate) return;
+    AudioManager.playSfx('powerup', { force: true, volume: 0.26 });
+    button.activate();
+  }
+
+  showHangarMenuNotice(message) {
+    if (!this.overlayNoticeText) return;
+    this.overlayNoticeText.text = message || '';
+    this.overlayNoticeText.alpha = message ? 1 : 0;
+    this.overlayNoticeText.updateText?.(false);
+
+    if (this.exitNoticeTimeout) {
+      clearTimeout(this.exitNoticeTimeout);
+      this.exitNoticeTimeout = null;
+    }
+    if (message) {
+      this.exitNoticeTimeout = setTimeout(() => {
+        this.showHangarMenuNotice('');
+      }, 2600);
+    }
+  }
+
+  async exitGameFromHangar() {
+    try {
+      const result = await requestExitGame();
+      if (!result.ok) this.showHangarMenuNotice(result.message || EXIT_GAME_WEB_MESSAGE);
+    } catch (e) {
+      console.error('[ShipSelect] Exit Game Error:', e);
+      this.showHangarMenuNotice(EXIT_GAME_WEB_MESSAGE);
+    }
+  }
+
+  getHangarMenuDebugState(getBounds) {
+    const bounds = typeof getBounds === 'function' ? getBounds : () => null;
+    return {
+      visible: Boolean(this.hangarMenuOverlay?.visible),
+      mainMenuFocused: Boolean(this.mainMenuButtonFocused),
+      focusedOption: this.overlayButtons?.[this.overlayFocusedIndex]?.id || null,
+      notice: this.overlayNoticeText?.text || '',
+      buttons: {
+        resume: bounds(this.overlayButtons?.find(button => button.id === 'resume')),
+        mainMenu: bounds(this.overlayButtons?.find(button => button.id === 'mainMenu')),
+        exitGame: bounds(this.overlayButtons?.find(button => button.id === 'exitGame'))
+      }
+    };
   }
 
   createPanel(width, height, accent = 0x00ffcc) {
@@ -1275,31 +1555,137 @@ export class ShipSelectScene {
       // Log first key press for debug
       if (DEBUG) console.log(`[ShipSelectInput] key=${e.key} code=${e.code}`);
 
-      if (e.key === 'ArrowLeft' || e.code === 'KeyA') {
+      const handledKey = this.hangarMenuOverlay?.visible ||
+        e.key === 'Tab' ||
+        e.key === 'ArrowUp' ||
+        e.key === 'ArrowDown' ||
+        e.key === 'ArrowLeft' ||
+        e.key === 'ArrowRight' ||
+        e.key === 'Escape' ||
+        e.key === 'Enter' ||
+        e.code === 'KeyA' ||
+        e.code === 'KeyD' ||
+        e.code === 'KeyQ' ||
+        e.code === 'KeyE' ||
+        e.code === 'KeyR' ||
+        e.code === 'Space' ||
+        e.code === 'Enter' ||
+        e.code === 'NumpadEnter';
+      if (handledKey) e.stopImmediatePropagation();
+
+      if (this.hangarMenuOverlay?.visible) {
+        this.handleHangarMenuKey(e);
+        return;
+      }
+
+      if (e.key === 'Tab') {
         e.preventDefault();
+        this.setMainMenuButtonFocus(true);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        this.setMainMenuButtonFocus(true);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        this.setMainMenuButtonFocus(false);
+      } else if (e.key === 'ArrowLeft' || e.code === 'KeyA') {
+        e.preventDefault();
+        this.setMainMenuButtonFocus(false);
         this.navigateLeft();
       } else if (e.key === 'ArrowRight' || e.code === 'KeyD') {
         e.preventDefault();
+        this.setMainMenuButtonFocus(false);
         this.navigateRight();
       } else if (e.code === 'KeyQ') {
         e.preventDefault();
+        this.setMainMenuButtonFocus(false);
         this.navigateModel(-1);
       } else if (e.code === 'KeyE') {
         e.preventDefault();
+        this.setMainMenuButtonFocus(false);
         this.navigateModel(1);
       } else if (e.code === 'KeyR') {
         e.preventDefault();
+        this.setMainMenuButtonFocus(false);
         this.navigateRandom();
       } else if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault();
-        this.returnToMenu('keyboard');
-      } else if (e.key === 'Enter' || e.code === 'Space') {
+        this.openHangarMenu('keyboard');
+      } else if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space') {
         e.preventDefault();
+        if (this.mainMenuButtonFocused) {
+          this.openHangarMenu('keyboard');
+          return;
+        }
         this.launchSelectedShip('keyboard');
       }
     };
 
-    window.addEventListener('keydown', this.keyHandler);
+    window.addEventListener('keydown', this.keyHandler, true);
+  }
+
+  handleHangarMenuKey(e) {
+    if (e.key === 'Escape' || e.code === 'Escape') {
+      e.preventDefault();
+      this.closeHangarMenu('keyboard');
+      return true;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.setOverlayFocus(this.overlayFocusedIndex - 1);
+      return true;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'Tab') {
+      e.preventDefault();
+      this.setOverlayFocus(this.overlayFocusedIndex + (e.shiftKey ? -1 : 1));
+      return true;
+    }
+    if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space') {
+      e.preventDefault();
+      this.activateOverlayFocus();
+      return true;
+    }
+    return false;
+  }
+
+  pollHangarMenuGamepad() {
+    if (typeof navigator === 'undefined' || !navigator.getGamepads) return;
+    const pad = Array.from(navigator.getGamepads() || []).find(candidate => candidate && candidate.connected);
+    if (!pad) return;
+
+    const buttons = pad.buttons || [];
+    const menuPressed = Boolean(buttons[9]?.pressed || buttons[8]?.pressed);
+    const actionPressed = Boolean(buttons[0]?.pressed || buttons[7]?.pressed);
+    const cancelPressed = Boolean(buttons[1]?.pressed);
+    const axisY = Number(pad.axes?.[1] || 0);
+    const upPressed = Boolean(buttons[12]?.pressed || axisY < -0.45);
+    const downPressed = Boolean(buttons[13]?.pressed || axisY > 0.45);
+    const verticalPressed = upPressed || downPressed;
+
+    if (menuPressed && !this.gamepadMenuWasPressed) {
+      this.setMainMenuButtonFocus(true);
+      if (this.hangarMenuOverlay?.visible) {
+        this.closeHangarMenu('controller');
+      } else {
+        this.openHangarMenu('controller');
+      }
+    }
+
+    if (this.hangarMenuOverlay?.visible) {
+      if (verticalPressed && !this.gamepadVerticalWasPressed) {
+        this.setOverlayFocus(this.overlayFocusedIndex + (downPressed ? 1 : -1));
+      }
+      if (actionPressed && !this.gamepadActionWasPressed) {
+        this.activateOverlayFocus();
+      }
+      if (cancelPressed && !this.gamepadCancelWasPressed) {
+        this.closeHangarMenu('controller');
+      }
+    }
+
+    this.gamepadMenuWasPressed = menuPressed;
+    this.gamepadActionWasPressed = actionPressed;
+    this.gamepadCancelWasPressed = cancelPressed;
+    this.gamepadVerticalWasPressed = verticalPressed;
   }
 
   returnToMenu(source = 'unknown') {
@@ -1307,6 +1693,7 @@ export class ShipSelectScene {
 
     if (DEBUG) console.log(`[ShipSelect] Returning to main menu via ${source}`);
 
+    if (this.hangarMenuOverlay) this.hangarMenuOverlay.visible = false;
     this.game.showMenu();
   }
 
@@ -1354,7 +1741,7 @@ export class ShipSelectScene {
   cleanup() {
     console.log('[ShipSelectInput] detached');
     if (this.keyHandler) {
-      window.removeEventListener('keydown', this.keyHandler);
+      window.removeEventListener('keydown', this.keyHandler, true);
     }
     if (this.wheelHandler) {
       window.removeEventListener('wheel', this.wheelHandler);
@@ -1370,6 +1757,14 @@ export class ShipSelectScene {
     if (this.selectionAnimTicker) {
       this.game.app.ticker.remove(this.selectionAnimTicker);
       this.selectionAnimTicker = null;
+    }
+    if (this.menuInputTicker) {
+      this.game.app.ticker.remove(this.menuInputTicker);
+      this.menuInputTicker = null;
+    }
+    if (this.exitNoticeTimeout) {
+      clearTimeout(this.exitNoticeTimeout);
+      this.exitNoticeTimeout = null;
     }
   }
 
