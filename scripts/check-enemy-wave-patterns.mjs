@@ -116,7 +116,7 @@ try {
     player.invulnerableTime = 60000;
     const samples = [];
 
-    for (let level = 1; level <= 10; level += 1) {
+    for (let level = 1; level <= 16; level += 1) {
       enemyManager.level = level;
       const waves = enemyManager.generateWaves(level);
       for (let waveIndex = 0; waveIndex < waves.length; waveIndex += 1) {

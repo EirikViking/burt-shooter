@@ -1,5 +1,11 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-23 Wave Pacing And Boss Presentation Polish
+
+- Current user request: Phase 0 fix wave pacing before any boss presentation polish. Manual finding was that normal levels seemed to boss-gate after only one wave, with a possible memory of nine waves; git/docs/code search found no 9-wave intended default, but did verify a six-real-wave boss-spacing target from the May 21 boss pacing pass. User clarified the roughly 75-second cadence is an estimate, not a hard rule.
+- Safety branches pushed before edits: backup `backup/pre-wave-boss-polish-20260523-0036` and work branch `polish/wave-boss-polish-20260523-0036`, both starting from `900740d6117d7ca645f7fbc971d1917bf9e2f0da`.
+- Phase 0 verified: restored `BalanceConfig` wave pacing to six normal waves before the boss, added `npm run check:wave-pacing`, and updated tempo docs so normal gameplay cannot silently regress to a one-wave or immediate boss gate while keeping 75 seconds as an estimate only. Validation passed through wave pacing, generated rosters, normal enemy variety, enemy weapons, enemy wave patterns, boss contact/telegraph/special/roster/animation/movement/phase/adds checks, first-boss balance, progression tempo, release QA, build, smoke, a shortened release playtest, and `git diff --check`.
+
 ## 2026-05-22 Normal Enemy Variety Expansion
 
 - Current user request: expand normal enemy profile, movement, and attack variety so the normal roster keeps introducing content until level 40, while preserving boss, score, leaderboard, ship unlock, and rank systems.

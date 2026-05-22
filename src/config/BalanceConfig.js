@@ -33,7 +33,7 @@ export const BalanceConfig = {
         }
     },
 
-    // Difficulty: focused early sectors, then a steady linear climb.
+    // Difficulty: six-wave early sectors, then a steady linear climb.
     difficulty: {
         pressureScalar: 0.72,
         baseEnemyHealthMultiplier: 0.62,
@@ -54,20 +54,20 @@ export const BalanceConfig = {
         enemyProjectileSpeedPerLevel: 0.04,
         enemyProjectileSpeedMax: 2.35,
 
-        MIN_WAVES_BETWEEN_BOSSES: 2,
+        MIN_WAVES_BETWEEN_BOSSES: 6,
         MIN_SECONDS_BETWEEN_BOSSES: 0,
         bossIntervalCatchupWaveMax: 0,
-        wavesPerBossBase: 2,
-        wavesPerBossPerLevel: 0.05,
-        wavesPerBossMax: 4,
+        wavesPerBossBase: 6,
+        wavesPerBossPerLevel: 0.03,
+        wavesPerBossMax: 8,
         bossTargetIntervalSeconds: { earlyMin: 60, earlyMax: 90 },
         estimatedWaveSeconds: 11.5,
 
         earlyWaveEnemyCounts: {
-            1: [6, 7],
-            2: [7, 8],
-            3: [7, 8],
-            4: [8, 9]
+            1: [6, 7, 8, 8, 8, 9],
+            2: [7, 8, 8, 9, 9, 10],
+            3: [7, 8, 9, 9, 10, 10],
+            4: [8, 9, 9, 10, 10, 11]
         },
         waveEnemyBase: 7,
         waveEnemyPerLevel: 0.35,
