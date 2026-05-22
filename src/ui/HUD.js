@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { extendLocations } from '../text/phrasePool.js';
 
+import { GameAssets } from '../utils/GameAssets.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
 
@@ -45,6 +46,7 @@ export class HUD {
     this.missionPanel = new PIXI.Graphics();
     this.missionLabel = null;
     this.missionText = null;
+    this.activePowerupRows = [];
 
     // Rank Elements
     this.rankGroup = new PIXI.Container();
@@ -129,6 +131,15 @@ export class HUD {
     // Active powerup indicator
     this.activePowerupGroup = new PIXI.Container();
     this.activePowerupBg = new PIXI.Graphics();
+    this.activePowerupTitle = createText('POWERUPS ONLINE', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 10,
+      fontWeight: 'bold',
+      fill: '#7ee9ff',
+      stroke: '#00111d',
+      strokeThickness: 2
+    });
+    this.activePowerupList = new PIXI.Container();
     this.activePowerupBarBg = new PIXI.Graphics();
     this.activePowerupBarFill = new PIXI.Graphics();
     this.activePowerupText = createText('', {
@@ -138,6 +149,7 @@ export class HUD {
       stroke: '#000000',
       strokeThickness: 3
     });
+    this.activePowerupText.visible = false;
     this.activePowerupTimer = createText('', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
@@ -145,7 +157,10 @@ export class HUD {
       stroke: '#000000',
       strokeThickness: 3
     });
+    this.activePowerupTimer.visible = false;
     this.activePowerupGroup.addChild(this.activePowerupBg);
+    this.activePowerupGroup.addChild(this.activePowerupTitle);
+    this.activePowerupGroup.addChild(this.activePowerupList);
     this.activePowerupGroup.addChild(this.activePowerupText);
     this.activePowerupGroup.addChild(this.activePowerupTimer);
     this.activePowerupGroup.addChild(this.activePowerupBarBg);
@@ -314,48 +329,54 @@ export class HUD {
 
   updateActivePowerup() {
     const player = this.game?.scenes?.play?.player;
-    const state = player?.getActivePowerupState ? player.getActivePowerupState() : null;
-    if (!state || !state.label) {
+    const states = player?.getActivePowerupStates
+      ? player.getActivePowerupStates()
+      : (player?.getActivePowerupState ? [player.getActivePowerupState()] : []);
+    const activeStates = states.filter(state => state?.label);
+    if (!activeStates.length) {
+      this.activePowerupRows.forEach(row => { row.container.visible = false; });
       this.activePowerupGroup.visible = false;
       return;
     }
 
-    const remaining = Math.max(0, Math.ceil((state.remainingMs || 0) / 1000));
-    this.activePowerupText.text = `POWERUP: ${state.label}`;
-    this.activePowerupTimer.text = remaining ? `${remaining}s` : '';
-    this.activePowerupTimer.x = this.activePowerupText.width + 10;
-    this.activePowerupTimer.y = 0;
+    const layout = getCurrentLayout();
+    const isMobile = Boolean(layout?.isMobile);
+    const width = isMobile ? 184 : 232;
+    const paddingX = 7;
+    const paddingTop = 6;
+    const rowGap = 5;
+    const rowHeight = isMobile ? 31 : 34;
+    const titleHeight = 16;
+    const height = paddingTop + titleHeight + activeStates.length * rowHeight + Math.max(0, activeStates.length - 1) * rowGap + 7;
 
-    const paddingX = 8;
-    const paddingY = 6;
-    const barHeight = 4;
-    const barGap = 4;
-    const width = Math.max(
-      132,
-      this.activePowerupText.width + this.activePowerupTimer.width + paddingX * 2 + 6
-    );
-    const textHeight = Math.max(this.activePowerupText.height, this.activePowerupTimer.height);
-    const height = textHeight + barGap + barHeight + paddingY * 2;
     this.activePowerupBg.clear();
     this.activePowerupBg.roundRect(0, 0, width, height, 8);
-    this.activePowerupBg.fill({ color: 0x000000, alpha: 0.5 });
+    this.activePowerupBg.fill({ color: 0x020914, alpha: 0.62 });
+    this.activePowerupBg.stroke({ color: 0x00e5ff, width: 1.2, alpha: 0.7 });
+    this.activePowerupBg.rect(1, 1, Math.max(0, width - 2), 14);
+    this.activePowerupBg.fill({ color: 0x00e5ff, alpha: 0.11 });
 
-    this.activePowerupText.x = paddingX;
-    this.activePowerupText.y = paddingY - 2;
-    this.activePowerupTimer.x = Math.min(width - paddingX - this.activePowerupTimer.width, this.activePowerupText.x + this.activePowerupText.width + 10);
-    this.activePowerupTimer.y = paddingY - 2;
+    this.activePowerupTitle.text = activeStates.length > 1 ? 'POWERUPS ONLINE' : 'POWERUP ONLINE';
+    this.activePowerupTitle.style.fontSize = isMobile ? 9 : 10;
+    this.activePowerupTitle.x = paddingX + 1;
+    this.activePowerupTitle.y = paddingTop - 2;
+    this.activePowerupTitle.visible = true;
 
-    const barWidth = Math.max(24, width - paddingX * 2);
-    const barY = paddingY + textHeight + barGap - 2;
-    const totalMs = this.getPowerupDurationMs(state.type, state.remainingMs);
-    const progress = totalMs > 0 ? Math.max(0, Math.min(1, (state.remainingMs || 0) / totalMs)) : 0;
-    const color = this.getPowerupColor(state.type);
+    activeStates.forEach((state, index) => {
+      const row = this.getActivePowerupRow(index);
+      row.container.visible = true;
+      row.container.x = paddingX;
+      row.container.y = paddingTop + titleHeight + index * (rowHeight + rowGap);
+      this.updateActivePowerupRow(row, state, width - paddingX * 2, rowHeight, isMobile);
+    });
+    this.activePowerupRows.slice(activeStates.length).forEach(row => {
+      row.container.visible = false;
+    });
+
+    this.activePowerupText.text = activeStates[0]?.label || '';
+    this.activePowerupTimer.text = this.formatPowerupMeta(activeStates[0] || {});
     this.activePowerupBarBg.clear();
-    this.activePowerupBarBg.roundRect(paddingX, barY, barWidth, barHeight, 2);
-    this.activePowerupBarBg.fill({ color: 0x143042, alpha: 0.85 });
     this.activePowerupBarFill.clear();
-    this.activePowerupBarFill.roundRect(paddingX, barY, Math.max(2, barWidth * progress), barHeight, 2);
-    this.activePowerupBarFill.fill({ color, alpha: 0.95 });
     this.activePowerupGroup.visible = true;
 
     const canvasWidth = this.game.getWidth ? this.game.getWidth() : 0;
@@ -363,13 +384,156 @@ export class HUD {
       const margin = 10;
       const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 : 0;
       const locationBottom = this.locationText ? this.locationText.y + this.locationText.height + 6 : 0;
+      const groupX = canvasWidth - margin - width;
+      const overlayBottom = this.getBlockingToastBottom(groupX, width);
+      const desiredY = Math.max(livesBottom, locationBottom, overlayBottom);
+      const canvasHeight = this.game.getHeight ? this.game.getHeight() : 0;
+      const maxY = canvasHeight ? Math.max(margin, canvasHeight - height - margin) : desiredY;
       this.activePowerupGroup.x = canvasWidth - margin - width;
-      this.activePowerupGroup.y = Math.max(livesBottom, locationBottom);
+      this.activePowerupGroup.y = Math.min(desiredY, maxY);
     }
   }
 
+  getBlockingToastBottom(groupX, groupWidth) {
+    const toast = this.game?.scenes?.play?.activeTopToast;
+    if (!toast?.parent || toast.alpha <= 0.05 || toast.__toastMeta?.type !== 'lore') return 0;
+    const bounds = toast.getBounds ? toast.getBounds() : null;
+    const left = Number.isFinite(bounds?.x) ? bounds.x : toast.x - (toast.width || 0) / 2;
+    const top = Number.isFinite(bounds?.y) ? bounds.y : toast.y - (toast.height || 0) / 2;
+    const width = Number.isFinite(bounds?.width) ? bounds.width : (toast.width || 0);
+    const height = Number.isFinite(bounds?.height) ? bounds.height : (toast.height || 0);
+    const right = left + width;
+    const groupRight = groupX + groupWidth;
+    const overlaps = right >= groupX && left <= groupRight;
+    return overlaps ? top + height + 8 : 0;
+  }
+
+  getActivePowerupRow(index) {
+    if (this.activePowerupRows[index]) return this.activePowerupRows[index];
+
+    const container = new PIXI.Container();
+    const bg = new PIXI.Graphics();
+    const iconGlow = new PIXI.Graphics();
+    const iconFrame = new PIXI.Graphics();
+    const icon = new PIXI.Sprite();
+    icon.anchor.set(0.5);
+    const label = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 12,
+      fontWeight: 'bold',
+      fill: '#f8fbff',
+      stroke: '#00111d',
+      strokeThickness: 2
+    });
+    const meta = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 11,
+      fontWeight: 'bold',
+      fill: '#ffff66',
+      stroke: '#00111d',
+      strokeThickness: 2
+    });
+    const barBg = new PIXI.Graphics();
+    const barFill = new PIXI.Graphics();
+
+    container.addChild(bg);
+    container.addChild(iconGlow);
+    container.addChild(iconFrame);
+    container.addChild(icon);
+    container.addChild(label);
+    container.addChild(meta);
+    container.addChild(barBg);
+    container.addChild(barFill);
+    this.activePowerupList.addChild(container);
+
+    const row = { container, bg, iconGlow, iconFrame, icon, label, meta, barBg, barFill };
+    this.activePowerupRows[index] = row;
+    return row;
+  }
+
+  updateActivePowerupRow(row, state, width, height, isMobile) {
+    const color = this.getPowerupColor(state.type);
+    const iconSize = isMobile ? 20 : 23;
+    const iconX = 17;
+    const iconY = height / 2 - 1;
+    const texture = GameAssets.getPowerupTexture(state.iconType || state.type);
+    row.bg.clear();
+    row.bg.roundRect(0, 0, width, height, 7);
+    row.bg.fill({ color: 0x03101d, alpha: 0.58 });
+    row.bg.stroke({ color, width: 1, alpha: 0.65 });
+
+    row.iconGlow.clear();
+    row.iconGlow.circle(iconX, iconY, iconSize * 0.62);
+    row.iconGlow.fill({ color, alpha: 0.16 });
+    row.iconFrame.clear();
+    row.iconFrame.circle(iconX, iconY, iconSize * 0.58);
+    row.iconFrame.stroke({ color, width: 1.4, alpha: 0.82 });
+
+    if (texture) {
+      row.icon.visible = true;
+      row.icon.texture = texture;
+      const scale = Math.min(iconSize / texture.width, iconSize / texture.height);
+      row.icon.scale.set(Number.isFinite(scale) ? scale : 1);
+      row.icon.x = iconX;
+      row.icon.y = iconY;
+    } else {
+      row.icon.visible = false;
+    }
+
+    row.label.style.fontSize = isMobile ? 10 : 12;
+    row.meta.style.fontSize = isMobile ? 10 : 11;
+    row.label.text = this.truncateLabel(state.label, isMobile ? 15 : 19);
+    row.meta.text = this.formatPowerupMeta(state);
+    row.label.x = 34;
+    row.label.y = 4;
+    row.meta.x = Math.max(row.label.x + 42, width - 7 - row.meta.width);
+    row.meta.y = 4;
+
+    const barX = 34;
+    const barY = height - 8;
+    const barWidth = Math.max(34, width - barX - 7);
+    const progress = this.getPowerupProgress(state);
+    row.barBg.clear();
+    row.barBg.roundRect(barX, barY, barWidth, 4, 2);
+    row.barBg.fill({ color: 0x143042, alpha: 0.9 });
+    row.barFill.clear();
+    row.barFill.roundRect(barX, barY, Math.max(2, barWidth * progress), 4, 2);
+    row.barFill.fill({ color, alpha: 0.98 });
+  }
+
+  formatPowerupMeta(state) {
+    const remaining = Math.max(0, Math.ceil((state.remainingMs || 0) / 1000));
+    const detail = String(state.detail || '').trim();
+    const charges = Number(state.charges || 0);
+    if (remaining && detail) return `${remaining}s | ${detail}`;
+    if (remaining && charges) return `${remaining}s | ${charges}`;
+    if (remaining) return `${remaining}s`;
+    if (detail) return detail;
+    if (charges) return `${charges} LEFT`;
+    return 'ACTIVE';
+  }
+
+  getPowerupProgress(state) {
+    const charges = Number(state.charges || 0);
+    const maxCharges = Number(state.maxCharges || 0);
+    if ((state.remainingMs || 0) > 0) {
+      const totalMs = this.getPowerupDurationMs(state.type, state.remainingMs);
+      return totalMs > 0 ? Math.max(0, Math.min(1, (state.remainingMs || 0) / totalMs)) : 1;
+    }
+    if (charges > 0 && maxCharges > 0) {
+      return Math.max(0, Math.min(1, charges / maxCharges));
+    }
+    return 1;
+  }
+
   getPowerupDurationMs(type, remainingMs = 0) {
+    if (String(type || '').startsWith('rank_')) return Math.max(12000, remainingMs || 0);
+    if (String(type || '').startsWith('synergy_')) return Math.max(6000, remainingMs || 0);
     const durations = {
+      triple_beam: 12000,
+      vector_boost: 12000,
+      rapid_cabinet: 12000,
+      overdrive_core: 12000,
       slow_time: 8000,
       ghost: 8000,
       magnet: 8000,
@@ -390,7 +554,13 @@ export class HUD {
   }
 
   getPowerupColor(type) {
+    if (String(type || '').startsWith('rank_')) return 0xffdd66;
+    if (String(type || '').startsWith('synergy_')) return 0xff66cc;
     const colors = {
+      triple_beam: 0x55ddff,
+      vector_boost: 0x7cff72,
+      rapid_cabinet: 0xff55aa,
+      overdrive_core: 0xffcc33,
       shield: 0x66ffff,
       score_x2: 0xffee66,
       rapid_fire: 0xff6699,
@@ -401,6 +571,10 @@ export class HUD {
       ghost: 0xd9d9ff,
       pierce: 0xffffff,
       magnet: 0x99ffcc,
+      drones: 0x66ddff,
+      point_defense: 0x00ddff,
+      bomb: 0xff8844,
+      chain_lightning: 0xaaeeff,
       orbital_strike: 0xffaa00,
       vampire: 0xff4477
     };

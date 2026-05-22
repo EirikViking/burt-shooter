@@ -72,6 +72,7 @@ export class SettingsOverlay {
     this.draggingSlider = null;
     this.audioTestButtons = {};
     this.musicPackButton = null;
+    this.footerButtons = {};
     this.creditsPanel = null;
     this.creditsDebugState = null;
     this.build();
@@ -91,7 +92,7 @@ export class SettingsOverlay {
     dim.eventMode = 'static';
     this.container.addChild(dim);
 
-    const isCompact = width < 620 || height < 720;
+    const isCompact = width < 620 || height < 820;
     const panelWidth = Math.min(560, width * 0.82);
     const panelHeight = Math.min(isCompact ? 740 : 690, height * (isCompact ? 0.97 : 0.94));
     const panelX = width / 2 - panelWidth / 2;
@@ -118,7 +119,6 @@ export class SettingsOverlay {
     const toggleGap = isCompact ? 40 : 46;
     const testGap = isCompact ? 38 : 44;
     const sliderGap = isCompact ? 40 : 46;
-    const footerGap = isCompact ? 44 : 52;
     const footerButtonHeight = isCompact ? 32 : 38;
     const stackedButtonWidth = Math.min(240, panelWidth - 56);
     let y = panelY + (isCompact ? 84 : 100);
@@ -149,20 +149,40 @@ export class SettingsOverlay {
     });
     y += toggleGap;
     this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
-    y += footerGap;
-    const footerY = isCompact ? Math.min(y, panelY + panelHeight - 128) : y;
 
+    const footerY = panelY + panelHeight - (isCompact ? 26 : 38);
     if (panelWidth >= 500) {
-      this.container.addChild(this.createButton('CREDITS', width / 2 - 126, footerY, () => this.openCreditsPanel(), { width: 220, height: footerButtonHeight }));
-      this.container.addChild(this.createButton('FULLSCREEN', width / 2 + 126, footerY, () => this.toggleFullscreen(), { width: 220, height: footerButtonHeight }));
+      const footerButtonGap = isCompact ? 12 : 16;
+      const availableFooterWidth = panelWidth - (isCompact ? 44 : 64);
+      const footerButtonWidth = Math.min(isCompact ? 154 : 168, Math.floor((availableFooterWidth - footerButtonGap * 2) / 3));
+      const footerStep = footerButtonWidth + footerButtonGap;
+      this.addFooterButton('credits', 'CREDITS', width / 2 - footerStep, footerY, () => this.openCreditsPanel(), {
+        width: footerButtonWidth,
+        height: footerButtonHeight
+      });
+      this.addFooterButton('close', 'CLOSE', width / 2, footerY, () => this.close(), {
+        width: footerButtonWidth,
+        height: footerButtonHeight
+      });
+      this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2 + footerStep, footerY, () => this.toggleFullscreen(), {
+        width: footerButtonWidth,
+        height: footerButtonHeight
+      });
     } else {
-      this.container.addChild(this.createButton('CREDITS', width / 2, footerY, () => this.openCreditsPanel(), { width: stackedButtonWidth, height: footerButtonHeight }));
-      this.container.addChild(this.createButton('FULLSCREEN', width / 2, footerY + 38, () => this.toggleFullscreen(), { width: stackedButtonWidth, height: footerButtonHeight }));
+      const stackGap = footerButtonHeight + 8;
+      this.addFooterButton('credits', 'CREDITS', width / 2, footerY - stackGap * 2, () => this.openCreditsPanel(), {
+        width: stackedButtonWidth,
+        height: footerButtonHeight
+      });
+      this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2, footerY - stackGap, () => this.toggleFullscreen(), {
+        width: stackedButtonWidth,
+        height: footerButtonHeight
+      });
+      this.addFooterButton('close', 'CLOSE', width / 2, footerY, () => this.close(), {
+        width: stackedButtonWidth,
+        height: footerButtonHeight
+      });
     }
-    this.container.addChild(this.createButton('CLOSE', width / 2, panelY + panelHeight - (isCompact ? 28 : 42), () => this.close(), {
-      width: isCompact ? stackedButtonWidth : 240,
-      height: footerButtonHeight
-    }));
   }
 
   addToggleRow(label, initialValue, y, onChange) {
@@ -367,6 +387,7 @@ export class SettingsOverlay {
       fill: '#ffffff'
     });
     text.anchor.set(0.5);
+    fitTextToWidth(text, width - 18, { minScale: 0.72 });
     button.addChild(text);
     button._label = text;
 
@@ -381,6 +402,14 @@ export class SettingsOverlay {
     button.on('pointerover', () => draw(true));
     button.on('pointerout', () => draw(false));
     button.on('pointertap', onPress);
+    return button;
+  }
+
+  addFooterButton(key, label, x, y, onPress, options) {
+    const button = this.createButton(label, x, y, onPress, options);
+    button.label = `ui_settingsFooter_${key}`;
+    this.footerButtons[key] = button;
+    this.container.addChild(button);
     return button;
   }
 
@@ -716,6 +745,7 @@ export class SettingsOverlay {
         button: debugBounds(this.musicPackButton),
         label: this.musicPackButton?._label?.text || null
       },
+      footer: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button)])),
       credits: this.creditsDebugState
     };
   }

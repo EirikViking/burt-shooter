@@ -491,7 +491,8 @@ function buildGameTextState(game) {
       traitCombat: player.traitCombat || null,
       traitState: player.getTraitState ? player.getTraitState() : null,
       stats: player.getStatSnapshot ? player.getStatSnapshot() : null,
-      powerup: player.activePowerup?.type || null
+      powerup: player.activePowerup?.type || null,
+      powerups: player.getActivePowerupStates ? player.getActivePowerupStates() : []
     } : null,
     hijacker: hijacker?.active ? {
       x: Math.round(hijacker.x || 0),

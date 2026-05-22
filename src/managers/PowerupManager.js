@@ -396,6 +396,7 @@ export class PowerupManager {
       'magnet',
       'drones',
       'shockwave',
+      'point_defense',
       'chain_lightning',
       'orbital_strike',
       'vampire'

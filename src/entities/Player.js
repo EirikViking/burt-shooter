@@ -1371,37 +1371,122 @@ export class Player {
     return labels[type] || String(type || '').toUpperCase();
   }
 
-  getActivePowerupState() {
+  getActivePowerupStates() {
     const now = Date.now();
+    const states = [];
+    const seen = new Set();
+    const addTimedState = (type, expiresAt, extra = {}) => {
+      if (!type || seen.has(type)) return;
+      const remainingMs = Math.max(0, (Number(expiresAt) || 0) - now);
+      if (remainingMs <= 0 && !extra.charges) return;
+      seen.add(type);
+      states.push({
+        type,
+        label: this.getPowerupLabel(type),
+        remainingMs,
+        ...extra
+      });
+    };
+    const getPrimaryStateDetail = (type) => {
+      switch (type) {
+        case 'bomb':
+          return {
+            charges: Math.max(0, this.bombShotsLeft || 0),
+            maxCharges: 3,
+            detail: `${Math.max(0, this.bombShotsLeft || 0)} SHOTS`
+          };
+        case 'orbital_strike':
+          return {
+            charges: Math.max(0, this.orbitalStrikeCharges || 0),
+            maxCharges: 5,
+            detail: `${Math.max(0, this.orbitalStrikeCharges || 0)} STRIKES`
+          };
+        case 'vampire':
+          return {
+            detail: `${Math.max(0, this.vampireKillCount || 0)} KILLS`
+          };
+        default:
+          return {};
+      }
+    };
 
     if (this.activePowerup?.type) {
-      const remainingMs = Math.max(0, this.activePowerup.expiresAt - now);
-      return {
-        type: this.activePowerup.type,
-        label: this.getPowerupLabel(this.activePowerup.type),
-        remainingMs
-      };
+      addTimedState(this.activePowerup.type, this.activePowerup.expiresAt, getPrimaryStateDetail(this.activePowerup.type));
     }
 
     if (this.shieldActive) {
-      const remainingMs = Math.max(0, this.shieldExpiresAt - now);
-      return {
-        type: 'shield',
-        label: this.getPowerupLabel('shield'),
-        remainingMs
-      };
+      addTimedState('shield', this.shieldExpiresAt);
     }
 
     if (this.scoreMultiplier > 1) {
-      const remainingMs = Math.max(0, this.scoreBoostExpiresAt - now);
-      return {
-        type: 'score_x2',
-        label: this.getPowerupLabel('score_x2'),
-        remainingMs
-      };
+      addTimedState('score_x2', this.scoreBoostExpiresAt);
     }
 
-    return null;
+    if (this.magnetActive) {
+      addTimedState('magnet', this.magnetExpiresAt);
+    }
+
+    if (this.dronesActive) {
+      addTimedState('drones', this.dronesExpiresAt);
+    }
+
+    if (this.pointDefenseActive) {
+      addTimedState('point_defense', this.pointDefenseExpiresAt);
+    }
+
+    if (this.bombShotsLeft > 0) {
+      addTimedState('bomb', 0, {
+        remainingMs: 0,
+        charges: this.bombShotsLeft,
+        maxCharges: 3,
+        detail: `${this.bombShotsLeft} SHOTS`
+      });
+    }
+
+    if (this.chainLightningActive) {
+      addTimedState('chain_lightning', this.activePowerup?.type === 'chain_lightning' ? this.activePowerup.expiresAt : 0);
+    }
+
+    if (this.orbitalStrikeActive) {
+      addTimedState('orbital_strike', this.activePowerup?.type === 'orbital_strike' ? this.activePowerup.expiresAt : 0, {
+        charges: this.orbitalStrikeCharges,
+        maxCharges: 5,
+        detail: `${Math.max(0, this.orbitalStrikeCharges || 0)} STRIKES`
+      });
+    }
+
+    if (this.vampireActive) {
+      addTimedState('vampire', this.activePowerup?.type === 'vampire' ? this.activePowerup.expiresAt : 0, {
+        detail: `${Math.max(0, this.vampireKillCount || 0)} KILLS`
+      });
+    }
+
+    if (this.rankBoost?.type) {
+      const rankLabels = {
+        fire_rate: 'RANK FIRE',
+        speed: 'RANK SPEED',
+        damage: 'RANK DAMAGE'
+      };
+      const type = `rank_${this.rankBoost.type}`;
+      addTimedState(type, this.rankBoost.expiresAt, {
+        label: rankLabels[this.rankBoost.type] || 'RANK BOOST',
+        iconType: 'overdrive_core'
+      });
+    }
+
+    if (this.synergyState?.type) {
+      addTimedState(`synergy_${this.synergyState.type}`, this.synergyState.expiresAt, {
+        label: `SYNC ${String(this.synergyState.label || this.synergyState.type).toUpperCase()}`,
+        iconType: 'bonus_core'
+      });
+    }
+
+    return states;
+  }
+
+  getActivePowerupState() {
+    const states = this.getActivePowerupStates();
+    return states.length ? states[0] : null;
   }
 
   canShoot() {
