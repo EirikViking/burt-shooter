@@ -7,12 +7,15 @@ import { GameOverScene } from '../scenes/GameOverScene.js';
 import { ShipSelectScene } from '../scenes/ShipSelectScene.js';
 import { ShipDetailsScene } from '../scenes/ShipDetailsScene.js';
 import { HighscoreScene } from '../scenes/HighscoreScene.js';
+import { AchievementsScene } from '../scenes/AchievementsScene.js';
 import { rankManager } from '../managers/RankManager.js';
 import { getDefaultShipKey, incrementShipUsage, isShipUnlocked, isValidShipKey, updateShipUnlockProgress } from '../config/ShipMetadata.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
+import { AchievementManager } from '../achievements/AchievementManager.js';
+import { getAchievementById, getRankAchievementId } from '../achievements/AchievementCatalog.js';
 
 export class Game {
   constructor(app) {
@@ -31,7 +34,8 @@ export class Game {
       shipSelect: null, // Created on demand
       play: new PlayScene(this),
       gameOver: new GameOverScene(this),
-      highscore: new HighscoreScene(this)
+      highscore: new HighscoreScene(this),
+      achievements: new AchievementsScene(this)
     };
     this.selectedShipId = null;
     this.isDebugRun = false;
@@ -45,6 +49,14 @@ export class Game {
       number1: false
     };
     this.leaderboardAdapter = createLeaderboardAdapter();
+    this.pendingAchievementToasts = [];
+    this.achievementManager = new AchievementManager({
+      getRunState: () => ({
+        runMode: this.runMode,
+        isDebugRun: this.isDebugRun
+      }),
+      onUnlock: (unlock) => this.handleAchievementUnlocked(unlock)
+    });
   }
 
   start() {
@@ -179,6 +191,79 @@ export class Game {
 
   showHighscores() {
     this.switchScene('highscore');
+  }
+
+  showAchievements() {
+    this.switchScene('achievements');
+  }
+
+  unlockAchievement(id, payload = {}) {
+    return this.achievementManager?.unlock(id, {
+      ...payload,
+      runMode: payload.runMode ?? this.runMode,
+      isDebugRun: payload.isDebugRun ?? this.isDebugRun
+    }) || null;
+  }
+
+  unlockRankAchievement(rankIndex, payload = {}) {
+    const id = getRankAchievementId(rankIndex);
+    if (!id) return null;
+    return this.unlockAchievement(id, {
+      ...payload,
+      source: payload.source || 'rank_up',
+      rankIndex,
+      rankTitle: this.getRankTitle(rankIndex)
+    });
+  }
+
+  handleAchievementUnlocked(unlock) {
+    const achievement = unlock?.achievement || getAchievementById(unlock?.id);
+    if (!achievement) return;
+    const toast = {
+      id: achievement.id,
+      name: achievement.name,
+      achievement,
+      unlockedAt: unlock.unlockedAt || new Date().toISOString()
+    };
+    if (this.displayAchievementToast(toast)) return;
+    if (!this.pendingAchievementToasts.some((entry) => entry.id === toast.id)) {
+      this.pendingAchievementToasts.push(toast);
+    }
+  }
+
+  displayAchievementToast(toast) {
+    const scene = this.currentScene;
+    if (scene && typeof scene.showAchievementToast === 'function') {
+      try {
+        scene.showAchievementToast(toast);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  flushAchievementToasts(scene = this.currentScene) {
+    if (!scene || typeof scene.showAchievementToast !== 'function') return [];
+    const pending = this.pendingAchievementToasts.splice(0);
+    pending.forEach((toast) => {
+      try {
+        scene.showAchievementToast(toast);
+      } catch {
+        this.pendingAchievementToasts.push(toast);
+      }
+    });
+    return pending;
+  }
+
+  getAchievementDebugState() {
+    return this.achievementManager?.getDebugState?.() || {
+      unlocked: [],
+      lastUnlocked: null,
+      count: 0,
+      total: 0
+    };
   }
 
   getLeaderboardAdapter() {
@@ -328,10 +413,17 @@ export class Game {
     this.rankIndex = computedRank;
     updateShipUnlockProgress({ score: this.score, rank: computedRank, level: this.level });
     if (computedRank > this.lastRankIndex) {
+      const previousRankIndex = this.lastRankIndex;
       this.lastRankIndex = computedRank;
       console.log('[RankUp]', { level: this.level, score: this.score, newRank: computedRank, prevRank });
       if (this.currentScene && typeof this.currentScene.onRankUp === 'function') {
         this.currentScene.onRankUp(computedRank);
+      }
+      for (let rankIndex = previousRankIndex + 1; rankIndex <= computedRank; rankIndex++) {
+        this.unlockRankAchievement(rankIndex, {
+          level: this.level,
+          score: this.score
+        });
       }
     }
     if (this.currentScene && this.currentScene.startLevel) {

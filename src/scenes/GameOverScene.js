@@ -8,18 +8,40 @@ import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { getSelectableShips, getShipUnlockProgress, isShipUnlocked, updateShipUnlockProgress } from '../config/ShipMetadata.js';
 import { getRankFromLevel } from '../shared/RankPolicy.js';
-import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
+import { analyzeGlobalLeaderboardScore, normalizeGlobalScores } from '../shared/GlobalLeaderboardPlacement.js';
 import {
   GAME_OVER_CTA_RECENT_HISTORY_KEY,
   GAME_OVER_CTA_RECENT_HISTORY_SIZE,
   gameOverCtaVoiceLines
 } from '../config/GameOverCtaVoiceLines.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
-import { getPilotNameValidation } from '../leaderboard/LeaderboardTypes.js';
+import { LEADERBOARD_DISPLAY_LIMIT, getPilotNameValidation } from '../leaderboard/LeaderboardTypes.js';
+import {
+  GLOBAL_LEADERBOARD_ACHIEVEMENT_ID,
+  GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID
+} from '../achievements/AchievementCatalog.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
 const PILOT_NAME_MAX_LENGTH = 14;
+
+function getConfirmedGlobalPlacement(score, entries = []) {
+  const finalScore = Math.max(0, Number(score) || 0);
+  const scores = normalizeGlobalScores(entries);
+  const scoreAppears = finalScore > 0 && scores.some((entryScore) => entryScore === finalScore);
+  const placement = scoreAppears
+    ? scores.filter((entryScore) => entryScore > finalScore).length + 1
+    : null;
+  const qualified = Boolean(scoreAppears && placement && placement <= LEADERBOARD_DISPLAY_LIMIT);
+  return {
+    score: finalScore,
+    placement,
+    qualified,
+    numberOne: Boolean(qualified && placement === 1),
+    source: 'post_submit_global_read',
+    scoresCount: scores.length
+  };
+}
 
 export class GameOverScene {
   constructor(game) {
@@ -109,6 +131,9 @@ export class GameOverScene {
     this.submissionId = null;
     this.gamepadActionWasPressed = false;
     this.gamepadLeaderboardWasPressed = false;
+    this.achievementToast = null;
+    this.achievementToastTicker = null;
+    this.achievementToastQueue = [];
   }
 
   scheduleSceneTimeout(callback, delayMs) {
@@ -1621,6 +1646,154 @@ export class GameOverScene {
     }, 1400);
   }
 
+  showAchievementToast(toast) {
+    const achievement = toast?.achievement || toast;
+    if (!achievement?.name) return;
+    if (this.achievementToast) {
+      const id = achievement.id || toast?.id || achievement.name;
+      const duplicateQueued = this.achievementToastQueue.some((queued) => {
+        const queuedAchievement = queued?.achievement || queued;
+        return (queuedAchievement?.id || queued?.id || queuedAchievement?.name) === id;
+      });
+      if (!duplicateQueued) this.achievementToastQueue.push(toast);
+      return;
+    }
+
+    const { width, height } = this.game.app.screen;
+    const compact = width < 720;
+    const bannerWidth = Math.min(width * 0.86, compact ? 430 : 520);
+    const bannerHeight = compact ? 70 : 78;
+    const banner = new PIXI.Container();
+    banner.zIndex = 60;
+    banner.x = width / 2;
+    banner.y = Math.max(52, height * 0.09);
+    banner.alpha = 0;
+
+    const bg = new PIXI.Graphics();
+    bg.roundRect(-bannerWidth / 2, -bannerHeight / 2, bannerWidth, bannerHeight, 8);
+    bg.fill({ color: 0x041323, alpha: 0.94 });
+    bg.roundRect(-bannerWidth / 2, -bannerHeight / 2, bannerWidth, bannerHeight, 8);
+    bg.stroke({ color: 0xffd15c, width: 2, alpha: 0.9 });
+    bg.rect(-bannerWidth / 2 + 18, -bannerHeight / 2 + 8, bannerWidth - 36, 2);
+    bg.fill({ color: 0x37f5ff, alpha: 0.42 });
+    banner.addChild(bg);
+
+    const title = createText('ACHIEVEMENT UNLOCKED', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 14 : 16,
+      fontWeight: 'bold',
+      fill: '#fff3a2',
+      stroke: '#031323',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.y = compact ? -14 : -17;
+    banner.addChild(title);
+
+    const name = createText(achievement.name, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 18 : 22,
+      fontWeight: 'bold',
+      fill: '#9cfbff',
+      stroke: '#031323',
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: bannerWidth - 44
+    });
+    name.anchor.set(0.5);
+    name.y = compact ? 13 : 15;
+    banner.addChild(name);
+
+    this.container.addChild(banner);
+    this.achievementToast = banner;
+
+    let elapsed = 0;
+    const duration = 3400;
+    this.achievementToastTicker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      if (!this.achievementToast) return;
+      if (elapsed < 240) {
+        banner.alpha = elapsed / 240;
+      } else if (elapsed > duration - 420) {
+        banner.alpha = Math.max(0, (duration - elapsed) / 420);
+      } else {
+        banner.alpha = 1;
+      }
+      if (elapsed >= duration) {
+        this.removeAchievementToast({ showNext: true });
+      }
+    };
+    this.game.app.ticker.add(this.achievementToastTicker);
+  }
+
+  removeAchievementToast({ showNext = false } = {}) {
+    if (this.achievementToastTicker && this.game?.app?.ticker) {
+      this.game.app.ticker.remove(this.achievementToastTicker);
+    }
+    this.achievementToastTicker = null;
+    if (this.achievementToast?.parent) {
+      this.achievementToast.parent.removeChild(this.achievementToast);
+    }
+    this.achievementToast = null;
+    if (showNext && this.achievementToastQueue.length > 0) {
+      const next = this.achievementToastQueue.shift();
+      this.scheduleSceneTimeout(() => this.showAchievementToast(next), 120);
+    }
+  }
+
+  unlockConfirmedLeaderboardAchievements(placement, provider) {
+    if (!placement?.qualified) return;
+    const payload = {
+      source: 'global_leaderboard_submit',
+      globalProvider: provider,
+      placement: placement.placement,
+      numberOne: Boolean(placement.numberOne),
+      score: this.finalScore,
+      level: this.finalLevel
+    };
+    this.game.unlockAchievement?.(GLOBAL_LEADERBOARD_ACHIEVEMENT_ID, payload);
+    if (placement.numberOne) {
+      this.game.unlockAchievement?.(GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID, payload);
+    }
+  }
+
+  async confirmGlobalLeaderboardAchievements(result) {
+    if (!this.isRankedRun || this.game?.runMode === 'unranked' || this.game?.isDebugRun) return null;
+    if (result?.globalStatus !== 'submitted') return null;
+
+    const provider = result.globalProvider || (this.steamSubmissionMode ? 'steam' : null);
+    if (provider === 'steam') {
+      const steamRank = Number(result.steamRank ?? result.rank ?? result.globalRank);
+      const placement = {
+        score: this.finalScore,
+        placement: Number.isFinite(steamRank) && steamRank > 0 ? Math.floor(steamRank) : null,
+        qualified: true,
+        numberOne: Number.isFinite(steamRank) && Math.floor(steamRank) === 1,
+        source: 'steam_submit_result'
+      };
+      result.confirmedGlobalPlacement = placement;
+      this.unlockConfirmedLeaderboardAchievements(placement, provider);
+      return placement;
+    }
+
+    if (provider !== 'cloud') return null;
+
+    try {
+      const entries = await this.leaderboardAdapter.getGlobalScoresForPlacement({ useCache: false });
+      const placement = getConfirmedGlobalPlacement(this.finalScore, entries);
+      result.confirmedGlobalPlacement = placement;
+      result.achievementConfirmationStatus = placement.qualified ? 'confirmed' : 'not_qualified_after_submit';
+      this.unlockConfirmedLeaderboardAchievements(placement, provider);
+      return placement;
+    } catch (error) {
+      result.achievementConfirmationStatus = 'post_submit_global_read_failed';
+      result.achievementConfirmationError = error?.message || 'unknown';
+      return null;
+    }
+  }
+
   playPersonalBestVoice() {
     if (this.personalBestVoicePlayed || this.qualificationFanfarePlayed) return;
     this.personalBestVoicePlayed = true;
@@ -2026,6 +2199,7 @@ export class GameOverScene {
     result.localQualified = true;
     result.steamSubmissionMode = true;
     result.updatedAt = new Date().toISOString();
+    await this.confirmGlobalLeaderboardAchievements(result);
     this.leaderboardResult = result;
     this.game.lastLeaderboardResult = result;
     this.game.leaderboardView = this.globalStatus === 'submitted' ? 'global' : 'local';
@@ -2315,8 +2489,10 @@ export class GameOverScene {
 
       this.globalStatus = 'submitted';
       result.globalStatus = 'submitted';
+      result.globalProvider = response?.globalProvider || response?.source || 'cloud';
       result.globalResponse = response || null;
       result.updatedAt = new Date().toISOString();
+      await this.confirmGlobalLeaderboardAchievements(result);
       this.game.lastLeaderboardResult = result;
       this.updateLeaderboardStatusText();
       console.log('[GameOverScene] Global submit success.');
@@ -2356,6 +2532,8 @@ export class GameOverScene {
     }
     this.removeInputOverlay();
     this.stopCaretBlink();
+    this.removeAchievementToast();
+    this.achievementToastQueue = [];
     AudioManager.stopVoiceGroup('runback');
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = null;

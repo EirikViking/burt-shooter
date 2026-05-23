@@ -86,6 +86,7 @@ export class MenuScene {
     this.highscoreBtn = null;
     this.introBtn = null;
     this.storyBtn = null;
+    this.achievementsBtn = null;
     this.settingsBtn = null;
     this.exitBtn = null;
     this.exitNotice = null;
@@ -777,6 +778,19 @@ export class MenuScene {
     });
     this.container.addChild(this.storyBtn);
 
+    this.achievementsBtn = this.createButton('ACHIEVEMENTS', layout, { accent: 0xffd15c });
+    this.achievementsBtn.alpha = 0;
+    this.achievementsBtn.on('pointerdown', () => {
+      try {
+        AudioManager.init();
+        AudioManager.playSfx('ui_open', { volume: 0.28 });
+        this.game.showAchievements();
+      } catch (e) {
+        console.error('[MenuScene] Achievements Error:', e);
+      }
+    });
+    this.container.addChild(this.achievementsBtn);
+
     this.settingsBtn = this.createButton('SETTINGS', layout, { accent: 0x7fffd8 });
     this.settingsBtn.alpha = 0;
     this.settingsBtn.on('pointerdown', () => {
@@ -898,6 +912,7 @@ export class MenuScene {
       this.highscoreBtn?._label,
       this.introBtn?._label,
       this.storyBtn?._label,
+      this.achievementsBtn?._label,
       this.settingsBtn?._label,
       this.exitBtn?._label,
       this.exitNotice,
@@ -1012,6 +1027,7 @@ export class MenuScene {
       [this.highscoreBtn, buttonWidth, buttonHeight, false],
       [this.introBtn, buttonWidth, buttonHeight, false],
       [this.storyBtn, buttonWidth, buttonHeight, false],
+      [this.achievementsBtn, buttonWidth, buttonHeight, false],
       [this.settingsBtn, buttonWidth, buttonHeight, false],
       [this.exitBtn, buttonWidth, buttonHeight, false]
     ].forEach(([button, btnWidth, btnHeight, isPrimary]) => {
@@ -1030,7 +1046,7 @@ export class MenuScene {
     const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
     const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
     const primaryHintHeight = this.primaryHint.height || controlsSize * 1.5;
-    const buttonsHeight = primaryButtonHeight + buttonHeight * 5 + buttonSpacing * 5;
+    const buttonsHeight = primaryButtonHeight + buttonHeight * 6 + buttonSpacing * 6;
     const exitNoticeHeight = this.exitNotice?.text ? (this.exitNotice.height || controlsSize * 1.2) : 0;
     const disclaimerHeight = this.disclaimer.height || disclaimerSize * 2;
     const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + buttonsHeight + exitNoticeHeight + disclaimerHeight + sectionSpacing * 6;
@@ -1074,6 +1090,9 @@ export class MenuScene {
     this.storyBtn.x = buttonX;
     placeCentered(this.storyBtn, buttonHeight, buttonSpacing);
 
+    this.achievementsBtn.x = buttonX;
+    placeCentered(this.achievementsBtn, buttonHeight, buttonSpacing);
+
     this.settingsBtn.x = buttonX;
     placeCentered(this.settingsBtn, buttonHeight, buttonSpacing);
 
@@ -1108,7 +1127,7 @@ export class MenuScene {
     const overflow = this.disclaimer.y + disclaimerHeight / 2 - (height - footerReserve);
     if (overflow > 0) {
       const lift = Math.min(overflow + 10, isMobileLayout ? 56 : 90);
-      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.startBtn, this.highscoreBtn, this.introBtn, this.storyBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
+      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.startBtn, this.highscoreBtn, this.introBtn, this.storyBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
         if (item) item.y -= lift;
       });
     }
@@ -1174,6 +1193,7 @@ export class MenuScene {
       this.highscoreBtn,
       this.introBtn,
       this.storyBtn,
+      this.achievementsBtn,
       this.settingsBtn,
       this.exitBtn,
       this.exitNotice?.text ? this.exitNotice : null,
@@ -1235,6 +1255,7 @@ export class MenuScene {
       launchButton: this.startBtn,
       hangarButton: this.highscoreBtn,
       introButton: this.introBtn,
+      achievementsButton: this.achievementsBtn,
       highscoresButton: this.storyBtn,
       settingsButton: this.settingsBtn,
       exitButton: this.exitBtn,
@@ -1393,9 +1414,10 @@ export class MenuScene {
     this.animateElement(this.highscoreBtn, 1.02, 0.4);
     this.animateElement(this.introBtn, 1.16, 0.4);
     this.animateElement(this.storyBtn, 1.3, 0.4);
-    this.animateElement(this.settingsBtn, 1.42, 0.4);
-    this.animateElement(this.exitBtn, 1.54, 0.4);
-    this.animateElement(this.disclaimer, 1.66, 0.4);
+    this.animateElement(this.achievementsBtn, 1.42, 0.4);
+    this.animateElement(this.settingsBtn, 1.54, 0.4);
+    this.animateElement(this.exitBtn, 1.66, 0.4);
+    this.animateElement(this.disclaimer, 1.78, 0.4);
   }
 
   openShipSelect() {

@@ -288,6 +288,7 @@ function getStableSceneName(game) {
   if (game.currentScene === game.scenes?.play) return 'play';
   if (game.currentScene === game.scenes?.gameOver) return 'gameOver';
   if (game.currentScene === game.scenes?.highscore) return 'highscore';
+  if (game.currentScene === game.scenes?.achievements) return 'achievements';
   if (game.currentScene === game.scenes?.shipSelect) return 'shipSelect';
   if (game.currentScene?.constructor?.name === 'ShipDetailsScene') return 'shipDetails';
   return 'unknown';
@@ -307,6 +308,7 @@ function buildGameTextState(game) {
   const shipSelectScene = getStableSceneName(game) === 'shipSelect' ? game?.currentScene : null;
   const gameOverScene = getStableSceneName(game) === 'gameOver' ? game?.currentScene : null;
   const highscoreScene = getStableSceneName(game) === 'highscore' ? game?.currentScene : null;
+  const achievementsScene = getStableSceneName(game) === 'achievements' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
   const getBoundsDebug = (displayObject) => {
     try {
@@ -352,6 +354,7 @@ function buildGameTextState(game) {
       : !game?.isDebugRun,
     selectedShipSpriteKey: game?.selectedShipSpriteKey || null,
     steamUploadDiagnostics: readLastSteamUploadDiagnostics(),
+    achievements: game?.getAchievementDebugState ? game.getAchievementDebugState() : null,
     isPaused: Boolean(playScene?.isPaused),
     overlays: {
       pause: Boolean(playScene?.pauseOverlay?.visible && playScene?.pauseOverlay?.parent),
@@ -483,6 +486,7 @@ function buildGameTextState(game) {
       })) || [],
       runtime: game?.leaderboardAdapter?.getRuntimeSummary ? game.leaderboardAdapter.getRuntimeSummary() : null
     } : null,
+    achievementsScreen: achievementsScene?.getDebugState ? achievementsScene.getDebugState() : null,
     player: player ? {
       x: Math.round(player.x),
       y: Math.round(player.y),

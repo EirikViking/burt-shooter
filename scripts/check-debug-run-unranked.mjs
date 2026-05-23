@@ -142,6 +142,7 @@ try {
     const game = window.__game;
     const scene = game?.scenes?.gameOver;
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    const achievements = state?.achievements || {};
     return {
       textState: state,
       gameRunMode: game?.runMode || null,
@@ -153,7 +154,8 @@ try {
       isQualified: scene?.isQualified ?? null,
       submitBlockedReason: scene?.submitBlockedReason || null,
       promptText: scene?.promptText?.text || null,
-      finalScore: scene?.finalScore || 0
+      finalScore: scene?.finalScore || 0,
+      achievements
     };
   });
 
@@ -163,13 +165,15 @@ try {
 
   const report = {
     ok: Boolean(
-      result.textState?.scene === 'gameOver' &&
       result.textState?.runMode === 'unranked' &&
       result.scoreSubmissionAllowed === false &&
       result.isRankedRun === false &&
-      result.gameOverState === 'unranked' &&
-      result.promptText === 'PRACTICE RUN - SCORE NOT LOGGED' &&
+      ['unranked', 'runback'].includes(result.gameOverState) &&
+      result.submitBlockedReason === 'debug_route' &&
       result.pendingHighscore === null &&
+      Array.isArray(result.achievements?.unlocked) &&
+      result.achievements.unlocked.length === 0 &&
+      result.achievements?.lastUnlocked === null &&
       highscorePostCount === 0 &&
       highscoreGetCount === 0 &&
       pageErrors.length === 0 &&

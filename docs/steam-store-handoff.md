@@ -14,7 +14,7 @@ The draft intentionally uses conservative claims:
 - The current repo supports controller gameplay, pause, and some menu/game-over shortcuts, but does not yet have a game-specific Steam Input action manifest/config, controller glyph coverage, or full controller navigation through settings/highscores.
 - Steam Cloud deferred for v1 because the current desktop package uses local settings/local leaderboard storage instead of Steam Cloud.
 - Avoid public Steam leaderboard wording for now. Steam leaderboard support has an SDK-ready Electron bridge, but do not call it live Steam leaderboard support until the Steam-installed build passes the manual Steam runtime checklist in `docs/steam-leaderboards.md`.
-- Steam achievements deferred for v1 because no Steamworks API achievement integration is present.
+- Steam achievements deferred for v1 because no Steamworks API achievement integration is present. The game now has a local/in-game achievement screen with Steam-ready IDs; see `docs/achievements.md`.
 - English only until final public copy is approved.
 
 ## Steamworks Entry Checklist

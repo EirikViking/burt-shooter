@@ -354,6 +354,7 @@ export class PlayScene {
 
     // Create enemy manager
     this.enemyManager = new EnemyManager(this.gameContainer, this.game, capHandler);
+    this.game.flushAchievementToasts?.(this);
 
     const params = new URLSearchParams(window.location.search);
     this.initBalanceDebug(params);
@@ -2490,6 +2491,21 @@ export class PlayScene {
 
   showToast(message, options = {}) {
     this.enqueueToast(message, options);
+  }
+
+  showAchievementToast(toast) {
+    const achievement = toast?.achievement || toast;
+    if (!achievement?.name) return;
+    this.showToast(`ACHIEVEMENT UNLOCKED\n${achievement.name}`, {
+      fontSize: 20,
+      fill: '#fff3a2',
+      y: this.game.getHeight() * 0.16,
+      duration: 3200,
+      slot: 'top',
+      type: 'achievement',
+      priority: 2,
+      notBefore: Date.now() + 650
+    });
   }
 
   applyLifeRepair(targetLives = 3, invulnerabilityMs = 3000) {

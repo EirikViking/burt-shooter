@@ -7,7 +7,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/update-build.cjs && node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-generated-rosters.mjs && node scripts/check-normal-enemy-variety.mjs && node scripts/check-boss-roster.mjs && node scripts/check-powerup-balance.mjs && node scripts/check-powerup-assets.mjs && node scripts/check-enemy-weapons.mjs && node scripts/check-elite-ships.mjs && node scripts/check-tractor-debuffs.mjs && node scripts/check-audio-catalog.mjs",
+    "prebuild": "node scripts/update-build.cjs && node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-achievements-catalog.mjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-generated-rosters.mjs && node scripts/check-normal-enemy-variety.mjs && node scripts/check-boss-roster.mjs && node scripts/check-powerup-balance.mjs && node scripts/check-powerup-assets.mjs && node scripts/check-enemy-weapons.mjs && node scripts/check-elite-ships.mjs && node scripts/check-tractor-debuffs.mjs && node scripts/check-audio-catalog.mjs",
     "build": "vite build",
     "build:current": "node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-generated-rosters.mjs && node scripts/check-normal-enemy-variety.mjs && node scripts/check-boss-roster.mjs && node scripts/check-powerup-balance.mjs && node scripts/check-powerup-assets.mjs && node scripts/check-enemy-weapons.mjs && node scripts/check-elite-ships.mjs && node scripts/check-tractor-debuffs.mjs && node scripts/check-audio-catalog.mjs && vite build",
     "check:ship-traits": "node scripts/check-ship-traits.mjs",
@@ -15,6 +15,7 @@
     "check:normal-enemy-variety": "node scripts/check-normal-enemy-variety.mjs",
     "check:ship-trait-combat": "node scripts/check-ship-trait-combat.mjs",
     "check:debug-unranked": "node scripts/check-debug-run-unranked.mjs",
+    "check:achievements": "node scripts/check-achievements-catalog.mjs",
     "check:trait-hud": "node scripts/check-trait-hud.mjs",
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",
     "check:graze-break": "node scripts/check-graze-break.mjs",
