@@ -1,5 +1,14 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-23 Elite Ship Production Deploy And Steam Package
+
+- Deployed production web build `v2026-05-23_11-05-56` from commit `e742aacc97b912196fb7e609371b492fa4c41c9e` to Cloudflare Pages production branch `main`; verified `https://novaswarm.tinyfoundry.app`, `https://burt-game.pages.dev`, and deployment URL `https://2351d381.burt-game.pages.dev` all report the same build.
+- Live-domain smoke passed at `test-results/smoke-2026-05-23T09-07-35-176Z/` with zero console/page/network failures, and `npm run check:live-deployment` refreshed `release/steamworks/live_deployment_report.json`.
+- Fixed a small optional-intro race discovered during Steam RC verification: late intro-art loading no longer clears the narrator wait flag after narration starts. `npm run check:intro-voice` now passes for build `v2026-05-23_11-05-56`.
+- Prepared a new Windows Steam payload at `release/desktop/win-unpacked/` for build `v2026-05-23_11-05-56`; desktop smoke, packaged executable smoke, packaged controls smoke, `npm run check:desktop-package`, `npm run check:steam-sdk-ready`, and `npm run check:steam-electron-bridge` passed.
+- Generated ignored SteamPipe upload VDF `release/steamworks/app_build_LOCAL.vdf` for App ID `4765070`, depot ID `4765071`, and build description `Nova Swarm v2026-05-23_11-05-56 elite middle ships and generated SFX`; refreshed `release/steamworks/steam_payload_manifest.json` with 334 files and 708,838,973 bytes.
+- Full Steam RC verifier is not green: all stages passed except `playtest:release`; the latest full run died at 584,672ms on level 6 versus the 599,500ms gate, and a preceding full run died at 469,462ms. The refreshed Steam client preflight packet is therefore `failed` until the 10-minute playtest/balance blocker is addressed or explicitly waived.
+
 ## 2026-05-23 Elite Middle Ships And Tractor Debuffs
 
 - Current user request: add 20 elite middle ships between normal enemies and bosses, upgrade tractor beams to apply one of 10 temporary negative status effects, preserve the restored six-to-eight-wave boss pacing and all guarded boss/score/leaderboard/unlock/player-stat systems, create backups, validate thoroughly, then commit and push only if safe.

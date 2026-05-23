@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-19T21:18:36.396Z",
-  "status": "ready_for_steam_upload_and_client_validation",
+  "generatedAt": "2026-05-23T09:32:38.184Z",
+  "status": "failed",
   "build": {
-    "version": "v2026-05-19_21-30-12",
-    "timestamp": "2026-05-19T19:30:12.699Z"
+    "version": "v2026-05-23_11-05-56",
+    "timestamp": "2026-05-23T09:05:56.402Z"
   },
   "explicitLimit": "This packet proves local upload preflight only. It is not Steam-client validation evidence.",
   "localPayload": {
@@ -11,26 +11,26 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-19T19:56:42.192Z"
+      "modifiedAt": "2026-05-23T09:11:04.773Z"
     },
     "payloadManifest": {
       "path": "release/steamworks/steam_payload_manifest.json",
       "exists": true,
-      "bytes": 15372,
-      "modifiedAt": "2026-05-19T21:18:00.297Z"
+      "bytes": 85380,
+      "modifiedAt": "2026-05-23T09:32:28.468Z"
     },
     "payloadManifestSummary": {
-      "fileCount": 74,
-      "totalBytes": 658636448,
-      "manifestHash": "c470335024ac2908086b50241997e4abc104c56d71c161682862333b5b82c3cf"
+      "fileCount": 334,
+      "totalBytes": 708838973,
+      "manifestHash": "03ab5eebd948a4b46899de3830042430dabb8ed6cd09d6016a3628758047eafd"
     },
     "productName": "Nova Swarm",
     "appId": "app.novaswarm.game",
     "packagedExeSmoke": {
-      "reportPath": "test-results/packaged-exe-smoke-2026-05-19T19-57-24-877Z/report.json",
-      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-19T19-57-24-877Z/01-electron-menu.png",
+      "reportPath": "test-results/packaged-exe-smoke-2026-05-23T09-11-15-217Z/report.json",
+      "screenshotPath": "test-results/packaged-exe-smoke-2026-05-23T09-11-15-217Z/01-electron-menu.png",
       "status": "passed",
-      "build": "v2026-05-19_21-30-12",
+      "build": "v2026-05-23_11-05-56",
       "title": "Nova Swarm - Arcade Patrol",
       "scene": "menu",
       "introTitle": null,
@@ -48,16 +48,16 @@
       "consoleEvents": []
     },
     "packagedControlsSmoke": {
-      "reportPath": "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/report.json",
+      "reportPath": "test-results/packaged-control-smoke-2026-05-23T09-11-50-759Z/report.json",
       "screenshotPaths": [
-        "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/00-control-start.png",
-        "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/01-keyboard-run.png",
-        "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/02-keyboard-pause.png",
-        "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/03-gamepad-run.png",
-        "test-results/packaged-control-smoke-2026-05-19T19-57-56-763Z/04-gamepad-pause.png"
+        "test-results/packaged-control-smoke-2026-05-23T09-11-50-759Z/00-control-start.png",
+        "test-results/packaged-control-smoke-2026-05-23T09-11-50-759Z/01-keyboard-run.png",
+        "test-results/packaged-control-smoke-2026-05-23T09-11-50-759Z/02-keyboard-pause.png",
+        "test-results/packaged-control-smoke-2026-05-23T09-11-50-759Z/03-gamepad-run.png",
+        "test-results/packaged-control-smoke-2026-05-23T09-11-50-759Z/04-gamepad-pause.png"
       ],
       "status": "passed",
-      "build": "v2026-05-19_21-30-12",
+      "build": "v2026-05-23_11-05-56",
       "checks": {
         "keyboardMovement": true,
         "keyboardFire": true,
@@ -70,23 +70,23 @@
       "errors": []
     },
     "fullRc": {
-      "reportPath": "test-results/steam-rc-verify-2026-05-19T03-49-43-845Z/report.json",
+      "reportPath": "test-results/steam-rc-verify-2026-05-23T09-09-28-674Z/report.json",
       "releasePlaytest": {
-        "reportPath": "test-results/release-playtest-2026-05-19T03-53-15-623Z/report.json",
+        "reportPath": "test-results/release-playtest-2026-05-23T09-21-40-940Z/report.json",
         "baseUrl": "http://127.0.0.1:4173",
-        "survivedMs": 599893,
+        "survivedMs": 584672,
         "requiredSurvivalMs": 599500,
-        "survivedFullDuration": true,
-        "peakLevel": 11,
-        "peakScore": 61056,
+        "survivedFullDuration": false,
+        "peakLevel": 6,
+        "peakScore": 14363,
         "finalState": {
-          "scene": "play",
-          "level": 11,
-          "lives": 3,
-          "score": 61056,
+          "scene": "gameOver",
+          "level": 6,
+          "lives": 0,
+          "score": 14363,
           "enemyManagerState": "WAVE_ACTIVE",
-          "musicContext": "gameplay",
-          "musicTrack": "Alone Against Enemy.mp3",
+          "musicContext": "gameover",
+          "musicTrack": "Defeated (Game Over Tune).mp3",
           "fatalOverlay": false
         },
         "console": {
@@ -140,13 +140,13 @@
       "path": "release/desktop/win-unpacked/Nova Swarm.exe",
       "exists": true,
       "bytes": 226666496,
-      "modifiedAt": "2026-05-19T19:56:42.192Z"
+      "modifiedAt": "2026-05-23T09:11:04.773Z"
     },
     {
       "path": "release/steamworks/steam_payload_manifest.json",
       "exists": true,
-      "bytes": 15372,
-      "modifiedAt": "2026-05-19T21:18:00.297Z"
+      "bytes": 85380,
+      "modifiedAt": "2026-05-23T09:32:28.468Z"
     },
     {
       "path": "release/steamworks/app_build_TEMPLATE.vdf",
@@ -164,19 +164,19 @@
       "path": "release/steamworks/desktop_package_review_report.json",
       "exists": true,
       "bytes": 2516,
-      "modifiedAt": "2026-05-19T19:58:08.699Z"
+      "modifiedAt": "2026-05-23T09:11:58.158Z"
     },
     {
       "path": "release/steamworks/full_rc_verification_report.json",
       "exists": true,
-      "bytes": 3542,
-      "modifiedAt": "2026-05-19T21:18:20.460Z"
+      "bytes": 3790,
+      "modifiedAt": "2026-05-23T09:32:33.683Z"
     },
     {
       "path": "release/steamworks/steam_client_validation_runbook.md",
       "exists": true,
-      "bytes": 3902,
-      "modifiedAt": "2026-05-18T11:31:35.642Z"
+      "bytes": 4512,
+      "modifiedAt": "2026-05-21T17:04:08.447Z"
     },
     {
       "path": "docs/reviews/2026-05-17-steamcmd-local-check.md",
@@ -185,6 +185,8 @@
       "modifiedAt": "2026-05-17T13:04:07.078Z"
     }
   ],
-  "errors": [],
+  "errors": [
+    "Full RC evidence is not passed"
+  ],
   "warnings": []
 }
