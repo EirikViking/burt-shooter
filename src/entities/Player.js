@@ -8,6 +8,10 @@ import { createText } from '../utils/pixiText.js';
 import { getPlayerFocusScale } from '../config/AccessibilitySettings.js';
 import { getDefaultShipKey, getShipMetadata } from '../config/ShipMetadata.js';
 import { ShipData } from '../config/ShipData.js';
+import {
+  TRACTOR_DEBUFF_IMMUNITY_MS,
+  pickTractorDebuff
+} from '../config/TractorDebuffs.js';
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
@@ -113,6 +117,12 @@ export class Player {
     this.drones = [];
     this.muzzleFlashColor = this.visualVariant?.glow || this.visualVariant?.accent || 0xffffff;
     this.baseMuzzleFlashColor = this.muzzleFlashColor;
+    this.statusEffects = new Map();
+    this.tractorDebuffImmunityUntil = 0;
+    this.lastTractorDebuff = null;
+    this.statusVfxPulse = 0;
+    this.statusDriftVelocity = { x: 0, y: 0 };
+    this.statusEffectLayer = null;
 
     // New Powerups
     this.chainLightningActive = false;
@@ -147,7 +157,7 @@ export class Player {
   // ... (existing code) ...
 
   canShoot() {
-    return this.shootCooldown <= 0;
+    return this.shootCooldown <= 0 && !this.hasStatusEffect?.('weapon_jam');
   }
 
   createSprite() {
@@ -255,6 +265,15 @@ export class Player {
       this.sprite.addChild(this.boostAura);
     } else if (!this.boostAura.parent) {
       this.sprite.addChild(this.boostAura);
+    }
+
+    if (!this.statusEffectLayer) {
+      this.statusEffectLayer = new PIXI.Graphics();
+      this.statusEffectLayer.label = 'playerStatusEffectLayer';
+      this.statusEffectLayer.visible = false;
+      this.sprite.addChild(this.statusEffectLayer);
+    } else if (!this.statusEffectLayer.parent) {
+      this.sprite.addChild(this.statusEffectLayer);
     }
 
     if (!this.rankBoostText) {
@@ -741,6 +760,7 @@ export class Player {
       this.scoreMultiplier = 1;
       this.scoreBoostExpiresAt = 0;
     }
+    this.updateStatusEffects(now, deltaSeconds);
 
     // Shield Logic
     if (this.shieldActive) {
@@ -748,12 +768,15 @@ export class Player {
       if (now > this.shieldExpiresAt) {
         this.deactivateShield();
       } else {
+        const shieldSuppressed = this.isDefenseSuppressed();
         // Visuals
         if (this.shieldSprite) {
           this.shieldSprite.visible = true;
-          this.shieldSprite.scale.set(1 + Math.sin(now * 0.005) * 0.05);
+          this.shieldSprite.scale.set(1 + Math.sin(now * 0.005) * (shieldSuppressed ? 0.16 : 0.05));
           this.shieldSprite.rotation += deltaSeconds * 0.5;
-          this.shieldSprite.alpha = 0.8 + Math.sin(now * 0.01) * 0.2;
+          this.shieldSprite.alpha = shieldSuppressed
+            ? 0.16 + Math.max(0, Math.sin(now * 0.04)) * 0.24
+            : 0.8 + Math.sin(now * 0.01) * 0.2;
         }
       }
     } else {
@@ -768,15 +791,16 @@ export class Player {
       } else {
         // Animate ring
         if (this.pointDefenseRing) {
+          const pointDefenseSuppressed = this.isPowerupSuppressed();
           this.pointDefenseRing.clear();
           const radius = 35 + Math.sin(now * 0.008) * 5;
           this.pointDefenseRing.circle(0, 0, radius);
-          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 2, alpha: 0.6 + Math.sin(now * 0.01) * 0.2 });
+          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 2, alpha: pointDefenseSuppressed ? 0.18 : 0.6 + Math.sin(now * 0.01) * 0.2 });
 
           // Inner ring
           const innerRadius = radius - 8;
           this.pointDefenseRing.circle(0, 0, innerRadius);
-          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 1, alpha: 0.4 });
+          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 1, alpha: pointDefenseSuppressed ? 0.1 : 0.4 });
         }
       }
     } else {
@@ -784,7 +808,7 @@ export class Player {
     }
 
     // Spawn Fade-In
-    if (this.sprite.alpha < 1 && !this.isDodging && this.activePowerup.type !== 'ghost') {
+    if (this.sprite.alpha < 1 && !this.isDodging && !this.isGhostActive()) {
       this.sprite.alpha += deltaSeconds * (1000 / this.spawnFadeDuration);
       if (this.sprite.alpha > 1) this.sprite.alpha = 1;
     }
@@ -792,16 +816,19 @@ export class Player {
     // Damage Flash Effect
     if (this.flashTimer < this.flashDuration) {
       this.flashTimer += dt;
-      const progress = this.flashTimer / this.flashDuration;
+      const progress = Math.max(0, Math.min(1, this.flashTimer / this.flashDuration));
       // Flash intensity fades out
-      const flashIntensity = 1 - progress;
+      const flashIntensity = Math.max(0, 1 - progress);
       // Apply tint to ship sprite
       if (this.shipSprite && !this.shipSprite.destroyed) {
         // Blend flash color with white based on intensity
         const r = Math.floor(((this.flashColor >> 16) & 0xff) * flashIntensity + 255 * (1 - flashIntensity));
         const g = Math.floor(((this.flashColor >> 8) & 0xff) * flashIntensity + 255 * (1 - flashIntensity));
         const b = Math.floor((this.flashColor & 0xff) * flashIntensity + 255 * (1 - flashIntensity));
-        this.shipSprite.tint = (r << 16) | (g << 8) | b;
+        const safeR = Math.max(0, Math.min(255, r));
+        const safeG = Math.max(0, Math.min(255, g));
+        const safeB = Math.max(0, Math.min(255, b));
+        this.shipSprite.tint = (safeR << 16) | (safeG << 8) | safeB;
       }
     } else if (this.shipSprite && !this.shipSprite.destroyed) {
       // Reset tint to white (no flash)
@@ -835,10 +862,26 @@ export class Player {
       }
     }
 
-    // Apply Speed
-    const speedMultiplier = this.activePowerup.type === 'vector_boost' ? 1.5 : 1;
-    this.x += dx * this.speed * speedMultiplier * delta;
-    this.y += dy * this.speed * speedMultiplier * delta;
+    // Apply Speed. Tractor debuffs never invert controls; drift only adds mild inertia.
+    const vectorBoostActive = this.activePowerup.type === 'vector_boost' && !this.isPowerupSuppressed();
+    const engineDrag = this.getStatusEffect('engine_drag');
+    const controlDrift = this.getStatusEffect('control_drift');
+    const speedMultiplier = (vectorBoostActive ? 1.5 : 1) * (engineDrag?.movementSpeedMult || 1);
+    const targetMoveX = dx * this.speed * speedMultiplier;
+    const targetMoveY = dy * this.speed * speedMultiplier;
+    if (controlDrift) {
+      const driftStrength = Math.max(0.12, Math.min(0.55, controlDrift.driftStrength || 0.28));
+      const lerp = Math.max(0.03, Math.min(0.18, (1 - driftStrength) * 0.2)) * delta;
+      this.statusDriftVelocity.x += (targetMoveX - this.statusDriftVelocity.x) * lerp;
+      this.statusDriftVelocity.y += (targetMoveY - this.statusDriftVelocity.y) * lerp;
+      this.x += this.statusDriftVelocity.x * delta;
+      this.y += this.statusDriftVelocity.y * delta;
+    } else {
+      this.statusDriftVelocity.x = 0;
+      this.statusDriftVelocity.y = 0;
+      this.x += targetMoveX * delta;
+      this.y += targetMoveY * delta;
+    }
 
     // Clamping
     const width = this.game.getWidth();
@@ -880,6 +923,7 @@ export class Player {
       }
     }
     this.updateFocusRing(deltaSeconds);
+    this.updateStatusEffectVisuals(deltaSeconds);
 
     // Dodge Logic
     if (this.inputManager.isKeyPressed('ShiftLeft') && this.dodgeCooldown <= 0 && !this.isDodging) {
@@ -892,7 +936,7 @@ export class Player {
       if (this.dodgeDuration <= 0) {
         this.isDodging = false;
         this.invulnerable = false;
-        if (this.activePowerup.type !== 'ghost') this.sprite.alpha = 1;
+        if (!this.isGhostActive()) this.sprite.alpha = 1;
       }
     } else {
       // Invulnerable blinking
@@ -907,7 +951,7 @@ export class Player {
 
         if (this.invulnerableTime <= 0) {
           this.invulnerable = false;
-          if (this.activePowerup.type !== 'ghost') this.sprite.alpha = 1;
+          if (!this.isGhostActive()) this.sprite.alpha = 1;
         }
       }
     }
@@ -1000,6 +1044,7 @@ export class Player {
   }
 
   shoot() {
+    if (!this.canShoot()) return [];
     this.shootCooldown = this.shootDelay;
     const bullets = [];
     this.traitShotCounter += 1;
@@ -1033,7 +1078,9 @@ export class Player {
       return bullets;
     }
 
-    const spread = this.weaponProfile?.spread ?? 0.15;
+    const scramble = this.getStatusEffect('target_scramble');
+    const spread = (this.weaponProfile?.spread ?? 0.15) * (scramble?.shotSpreadMult || 1);
+    const jitterRange = scramble?.shotJitter || 0;
     const totalShots = Math.max(1, this.multiShot + this.rankBoostExtraShots);
     const spreadAngles = totalShots > 1 ?
       Array.from({ length: totalShots }, (_, i) => (i - (totalShots - 1) / 2) * spread) :
@@ -1067,8 +1114,9 @@ export class Player {
 
     spreadAngles.forEach((angle, i) => {
       const offsetX = offsets[i] || 0;
-      const vx = Math.sin(angle) * this.bulletSpeed;
-      const vy = -Math.cos(angle) * this.bulletSpeed;
+      const adjustedAngle = angle + (jitterRange ? (Math.random() - 0.5) * jitterRange : 0);
+      const vx = Math.sin(adjustedAngle) * this.bulletSpeed;
+      const vy = -Math.cos(adjustedAngle) * this.bulletSpeed;
       const bulletColor = this.visualVariant?.accent || 0x00ffff;
       const bullet = new Bullet(this.x + offsetX, spawnY, vx, vy, this.bulletDamage, bulletColor, true, vConfig);
       if (this.bulletPierce) bullet.piercing = true;
@@ -1344,6 +1392,220 @@ export class Player {
     };
   }
 
+  getStatusEffect(id) {
+    if (!id || !this.statusEffects) return null;
+    return this.statusEffects.get(id) || null;
+  }
+
+  hasStatusEffect(id) {
+    return Boolean(this.getStatusEffect(id));
+  }
+
+  getActiveStatusEffects() {
+    const now = Date.now();
+    return [...(this.statusEffects?.values?.() || [])]
+      .filter((effect) => effect && effect.expiresAt > now)
+      .map((effect) => ({
+        id: effect.id,
+        label: effect.label,
+        category: effect.category,
+        severity: effect.severity,
+        remainingMs: Math.max(0, effect.expiresAt - now),
+        durationMs: effect.durationMs,
+        detail: effect.detail,
+        color: effect.color,
+        iconType: effect.iconType
+      }));
+  }
+
+  getTractorDebuffState() {
+    const now = Date.now();
+    return {
+      immune: now < this.tractorDebuffImmunityUntil,
+      immunityRemainingMs: Math.max(0, this.tractorDebuffImmunityUntil - now),
+      last: this.lastTractorDebuff ? { ...this.lastTractorDebuff } : null,
+      active: this.getActiveStatusEffects()
+    };
+  }
+
+  isPowerupSuppressed() {
+    return this.hasStatusEffect('powerup_nullification');
+  }
+
+  isGhostActive() {
+    return this.activePowerup?.type === 'ghost' && !this.isPowerupSuppressed();
+  }
+
+  isDefenseSuppressed() {
+    return this.hasStatusEffect('shield_flicker') || this.isPowerupSuppressed();
+  }
+
+  applyTractorDebuff({ source = 'tractor', x = this.x, y = this.y, random = Math.random } = {}) {
+    const now = Date.now();
+    if (now < this.tractorDebuffImmunityUntil) {
+      return {
+        applied: false,
+        immune: true,
+        remainingMs: Math.max(0, this.tractorDebuffImmunityUntil - now)
+      };
+    }
+
+    const baseEffect = pickTractorDebuff(random);
+    if (!baseEffect) return { applied: false, immune: false, reason: 'no_effect' };
+    const effect = {
+      ...baseEffect,
+      source,
+      startedAt: now,
+      expiresAt: now + baseEffect.durationMs
+    };
+    this.statusEffects.set(effect.id, effect);
+    this.tractorDebuffImmunityUntil = now + TRACTOR_DEBUFF_IMMUNITY_MS;
+    this.lastTractorDebuff = {
+      id: effect.id,
+      label: effect.label,
+      appliedAt: now,
+      durationMs: effect.durationMs,
+      immunityMs: TRACTOR_DEBUFF_IMMUNITY_MS
+    };
+    this.statusVfxPulse = 0.85;
+
+    if (Number.isFinite(effect.instantDodgeDelayMs)) {
+      this.dodgeCooldown = Math.max(this.dodgeCooldown || 0, effect.instantDodgeDelayMs);
+    }
+    if (Number.isFinite(effect.instantShootDelayMs)) {
+      this.shootCooldown = Math.max(this.shootCooldown || 0, effect.instantShootDelayMs);
+    }
+
+    this.recalculateStats();
+    this.triggerFlash(effect.color || 0xff66ff, 180);
+    this.createStatusBurst(effect, x, y);
+    AudioManager.playSfx('tractor_capture_sting', { force: false, volume: 0.64, minIntervalMs: 180 });
+    AudioManager.playSfx('tractor_debuff_apply', { force: false, volume: 0.58, minIntervalMs: 160 });
+
+    const playScene = this.game?.scenes?.play;
+    playScene?.enqueueToast?.(`${effect.label} ${Math.ceil(effect.durationMs / 100) / 10}s`, {
+      fontSize: this.game.getWidth() < 620 ? 14 : 17,
+      fill: '#ffdde8',
+      stroke: '#250012',
+      strokeThickness: 4,
+      duration: 1100,
+      slot: 'corner',
+      type: 'tractor_debuff',
+      priority: 5
+    });
+
+    return { applied: true, effect };
+  }
+
+  updateStatusEffects(now = Date.now(), deltaSeconds = 1 / 60) {
+    if (!this.statusEffects?.size) return;
+    let expired = false;
+    this.statusEffects.forEach((effect, id) => {
+      if (!effect || now <= effect.expiresAt) return;
+      this.statusEffects.delete(id);
+      expired = true;
+    });
+    if (expired) {
+      this.recalculateStats();
+      AudioManager.playSfx('tractor_debuff_expire', { volume: 0.34, minIntervalMs: 280 });
+    }
+    if (this.statusVfxPulse > 0) {
+      this.statusVfxPulse = Math.max(0, this.statusVfxPulse - deltaSeconds * 1.35);
+    }
+  }
+
+  clearStatusEffects(reason = 'clear') {
+    const shouldRecalculate = reason !== 'destroy';
+    if (this.statusEffects?.size) {
+      this.statusEffects.clear();
+      if (shouldRecalculate) this.recalculateStats();
+    }
+    this.tractorDebuffImmunityUntil = 0;
+    this.lastTractorDebuff = reason === 'new_run' ? null : this.lastTractorDebuff;
+    this.statusVfxPulse = 0;
+    this.statusDriftVelocity = { x: 0, y: 0 };
+    if (this.statusEffectLayer) {
+      this.statusEffectLayer.clear();
+      this.statusEffectLayer.visible = false;
+    }
+  }
+
+  createStatusBurst(effect, sourceX = this.x, sourceY = this.y) {
+    const playScene = this.game?.scenes?.play;
+    const container = playScene?.gameContainer;
+    const color = effect?.color || 0xff66ff;
+    if (playScene?.particleManager) {
+      playScene.particleManager.createHitSpark(this.x, this.y, color);
+      playScene.particleManager.createHitSpark(sourceX, sourceY, color);
+    }
+    if (!container) return;
+
+    const ring = new PIXI.Graphics();
+    ring.circle(this.x, this.y, Math.max(26, this.radius * 2.2));
+    ring.stroke({ color, width: 4, alpha: 0.72 });
+    ring.circle(this.x, this.y, Math.max(14, this.radius * 1.25));
+    ring.stroke({ color: 0xffffff, width: 2, alpha: 0.4 });
+    ring.blendMode = 'add';
+    container.addChild(ring);
+    setTimeout(() => {
+      if (ring.parent) ring.parent.removeChild(ring);
+    }, 160);
+  }
+
+  updateStatusEffectVisuals(deltaSeconds = 1 / 60) {
+    if (!this.statusEffectLayer) return;
+    const activeEffects = this.getActiveStatusEffects();
+    if (!activeEffects.length) {
+      this.statusEffectLayer.clear();
+      this.statusEffectLayer.visible = false;
+      return;
+    }
+
+    const now = Date.now();
+    const layer = this.statusEffectLayer;
+    const primary = activeEffects[0];
+    const color = primary.color || 0xff66ff;
+    const pulse = 0.5 + Math.sin(now * 0.018) * 0.5;
+    const radius = Math.max(28, (this.baseShipWidth || 62) * 0.55) + pulse * 3 + this.statusVfxPulse * 12;
+
+    layer.clear();
+    layer.visible = true;
+    layer.circle(0, 0, radius);
+    layer.stroke({ color, width: 2.4, alpha: 0.56 });
+    layer.circle(0, 0, radius * 0.72);
+    layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.18 + this.statusVfxPulse * 0.22 });
+
+    activeEffects.slice(0, 3).forEach((effect, index) => {
+      const phase = now * 0.004 + index * 2.1;
+      const arcRadius = radius + index * 5;
+      const x1 = Math.cos(phase) * arcRadius;
+      const y1 = Math.sin(phase) * arcRadius;
+      const x2 = Math.cos(phase + 0.72) * arcRadius;
+      const y2 = Math.sin(phase + 0.72) * arcRadius;
+      layer.moveTo(x1, y1);
+      layer.lineTo(x2, y2);
+    });
+    layer.stroke({ color: 0xffffff, width: 2, alpha: 0.34 });
+
+    if (this.hasStatusEffect('sensor_glitch')) {
+      const glitchAlpha = 0.18 + pulse * 0.16;
+      for (let i = 0; i < 4; i += 1) {
+        const y = -radius * 0.55 + i * radius * 0.34 + Math.sin(now * 0.02 + i) * 2;
+        layer.moveTo(-radius * 0.75, y);
+        layer.lineTo(radius * 0.75, y + Math.sin(now * 0.03 + i) * 3);
+      }
+      layer.stroke({ color: 0xc77dff, width: 1.4, alpha: glitchAlpha });
+    }
+
+    if (this.hasStatusEffect('weapon_jam')) {
+      layer.moveTo(-radius * 0.55, -radius * 0.32);
+      layer.lineTo(radius * 0.55, radius * 0.32);
+      layer.moveTo(radius * 0.55, -radius * 0.32);
+      layer.lineTo(-radius * 0.55, radius * 0.32);
+      layer.stroke({ color: 0xff6b7a, width: 2.8, alpha: 0.62 });
+    }
+  }
+
   getPowerupLabel(type) {
     const labels = {
       triple_beam: 'TRIPLE BEAM',
@@ -1481,6 +1743,18 @@ export class Player {
       });
     }
 
+    this.getActiveStatusEffects().forEach((effect) => {
+      addTimedState(`debuff_${effect.id}`, now + effect.remainingMs, {
+        label: effect.label,
+        detail: effect.detail,
+        iconType: effect.iconType,
+        color: effect.color,
+        durationMs: effect.durationMs,
+        category: effect.category,
+        severity: effect.severity
+      });
+    });
+
     return states;
   }
 
@@ -1490,7 +1764,7 @@ export class Player {
   }
 
   canShoot() {
-    return this.shootCooldown <= 0;
+    return this.shootCooldown <= 0 && !this.hasStatusEffect('weapon_jam');
   }
 
   startDodge() {
@@ -1540,7 +1814,7 @@ export class Player {
   }
 
   takeDamage() {
-    if (this.shieldActive) {
+    if (this.shieldActive && !this.isDefenseSuppressed()) {
       this.deactivateShield();
       // Play Break Sound
       if (this.game && this.game.scenes && this.game.scenes.play) {
@@ -1846,47 +2120,72 @@ export class Player {
     this.rankBoostExtraShots = 0;
     this.rankBoostBulletFx = false;
     this.magnetActive = false;
+    this.dronesActive = false;
     this.magnetRadius = 140;
     this.magnetStrength = 0.08;
 
-    // 4. Apply Powerups (Additive or Multiplicative)
-    switch (this.activePowerup.type) {
-      case 'triple_beam':
-        this.multiShot = Math.max(this.multiShot, 3);
-        break;
-      case 'rapid_cabinet':
-        this.bulletDamage = Math.max(this.bulletDamage, 3);
-        this.shootDelay = this.stats.fireRate / 2; // Rapid fire
-        break;
-      case 'overdrive_core':
-        this.multiShot = Math.max(this.multiShot, 5);
-        this.bulletDamage = Math.max(this.bulletDamage, 2);
-        break;
-      case 'rapid_fire':
-        this.shootDelay = this.stats.fireRate * 0.5;
-        break;
-      case 'double_shot':
-        this.multiShot = Math.max(this.multiShot, 2);
-        break;
-      case 'damage_up':
-        this.bulletDamage = Math.max(2, Math.round(this.bulletDamage * 1.6));
-        break;
-      case 'speed_up':
-        this.speed = this.speed * 1.3;
-        break;
-      case 'pierce':
-        this.bulletPierce = true;
-        break;
-      case 'magnet':
-        this.magnetActive = true;
-        break;
-      case 'drones':
-        this.dronesActive = true;
-        break;
+    // 4. Apply Powerups (Additive or Multiplicative). Tractor nullification
+    // suppresses active effects briefly, but keeps their timers intact.
+    const powerupsSuppressed = this.isPowerupSuppressed();
+    if (!powerupsSuppressed) {
+      switch (this.activePowerup.type) {
+        case 'triple_beam':
+          this.multiShot = Math.max(this.multiShot, 3);
+          break;
+        case 'rapid_cabinet':
+          this.bulletDamage = Math.max(this.bulletDamage, 3);
+          this.shootDelay = this.stats.fireRate / 2; // Rapid fire
+          break;
+        case 'overdrive_core':
+          this.multiShot = Math.max(this.multiShot, 5);
+          this.bulletDamage = Math.max(this.bulletDamage, 2);
+          break;
+        case 'rapid_fire':
+          this.shootDelay = this.stats.fireRate * 0.5;
+          break;
+        case 'double_shot':
+          this.multiShot = Math.max(this.multiShot, 2);
+          break;
+        case 'damage_up':
+          this.bulletDamage = Math.max(2, Math.round(this.bulletDamage * 1.6));
+          break;
+        case 'speed_up':
+          this.speed = this.speed * 1.3;
+          break;
+        case 'pierce':
+          this.bulletPierce = true;
+          break;
+        case 'magnet':
+          this.magnetActive = true;
+          break;
+        case 'drones':
+          this.dronesActive = true;
+          if (!this.drones.length && this.sprite) this.createDrones();
+          break;
+      }
     }
 
     this.applyRankBoostModifiers();
     this.applySynergyModifiers();
+    this.applyStatusEffectModifiers();
+  }
+
+  applyStatusEffectModifiers() {
+    this.statusEffects?.forEach((effect) => {
+      if (!effect) return;
+      if (Number.isFinite(effect.fireDelayMult)) {
+        this.shootDelay = Math.max(55, this.shootDelay * effect.fireDelayMult);
+      }
+      if (Number.isFinite(effect.damageMult)) {
+        this.bulletDamage = Math.max(0.65, this.bulletDamage * effect.damageMult);
+      }
+      if (Number.isFinite(effect.bulletSpeedMult)) {
+        this.bulletSpeed = Math.max(2.5, this.bulletSpeed * effect.bulletSpeedMult);
+      }
+      if (Number.isFinite(effect.dodgeDelayMult)) {
+        this.dodgeDelay = Math.round(Math.max(450, this.dodgeDelay * effect.dodgeDelayMult));
+      }
+    });
   }
 
   applyRankBoostModifiers() {
@@ -2087,6 +2386,7 @@ export class Player {
     this.sprite.y = this.y;
 
     this.resetPowerups();
+    this.clearStatusEffects('respawn');
 
     // Force Visible
     this.active = true;
@@ -2116,6 +2416,7 @@ export class Player {
   }
 
   destroy() {
+    this.clearStatusEffects('destroy');
     // Clean up visual enhancements
     if (this.visualEnhancementCleanup) {
       this.visualEnhancementCleanup();
@@ -2147,7 +2448,7 @@ export class Player {
 
     // 3. STRICT: Force alpha to 1 unless in specific valid states
     // Ghost = 0.4, Dodge = 0.3, Invulnerable = blinking (handled by update)
-    if (this.activePowerup.type === 'ghost') {
+    if (this.isGhostActive()) {
       // Ghost mode: alpha should be 0.4, not 0 or undefined
       if (this.sprite.alpha === 0 || !Number.isFinite(this.sprite.alpha)) {
         this.sprite.alpha = 0.4;

@@ -10,6 +10,7 @@ class GameAssetsManager {
         this.shipTextures = {};
         this.enemyTextures = {};
         this.generatedEnemyTextures = [];
+        this.eliteMiddleShipTextures = [];
         this.enemyWeaponTextures = [];
         this.rankShipTextures = [];
         this.rankShipList = AssetManifest.sprites.playerRankShips || [];
@@ -207,7 +208,20 @@ class GameAssetsManager {
             }
         }));
 
-        console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length, 'GeneratedEnemy:', this.generatedEnemyTextures.filter(Boolean).length, 'EnemyWeapons:', this.enemyWeaponTextures.filter(Boolean).length);
+        const eliteMiddleShips = AssetManifest.generated?.eliteMiddleShips || [];
+        await Promise.all(eliteMiddleShips.map(async (filepath, index) => {
+            try {
+                const texture = await PIXI.Assets.load({
+                    alias: `nova_elite_middle_ship_${index + 1}`,
+                    src: filepath
+                });
+                if (this.isValidTexture(texture)) this.eliteMiddleShipTextures[index] = texture;
+            } catch (e) {
+                console.warn(`[GameAssets] Failed to load elite middle ship ${filepath}:`, e);
+            }
+        }));
+
+        console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length, 'GeneratedEnemy:', this.generatedEnemyTextures.filter(Boolean).length, 'EliteMiddle:', this.eliteMiddleShipTextures.filter(Boolean).length, 'EnemyWeapons:', this.enemyWeaponTextures.filter(Boolean).length);
 
         // Load Xtra Assets
         await this.loadXtraAssets();
@@ -227,6 +241,10 @@ class GameAssetsManager {
 
     getGeneratedEnemyTexture(index) {
         return this.generatedEnemyTextures ? this.generatedEnemyTextures[index] : null;
+    }
+
+    getEliteMiddleShipTexture(index) {
+        return this.eliteMiddleShipTextures ? this.eliteMiddleShipTextures[index] : null;
     }
 
     getEnemyWeaponTexture(index) {

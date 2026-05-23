@@ -47,6 +47,18 @@ Current generated SFX include boss arrival, leaderboard/highscore fanfares, powe
 - `nova_boss_net_telegraph.mp3`, `nova_boss_net_burst.mp3`
 - `nova_boss_hazard_impact.mp3`
 
+The 2026-05-23 elite middle ship and tractor debuff pass did not add new audio files. It added lightweight event aliases in `src/audio/SoundCatalog.js` that reuse existing balanced SFX so the mix stays small:
+
+- `elite_spawn_alert`
+- `elite_special_charge`
+- `elite_special_active`
+- `elite_death`
+- `tractor_capture_sting`
+- `tractor_debuff_apply`
+- `tractor_debuff_expire`
+
+Role-specific elite cues reuse existing generated tractor, boss beam, net/web, drone, shield, phase, EMP/time-warp, and heavy-shot SFX with per-event throttling to avoid spam.
+
 Do not put the API key in `.env` unless `.env` is confirmed ignored by git, and never commit generated logs or screenshots that contain secrets. The script reads the key only from `process.env.ELEVENLABS_API_KEY` and does not print it.
 
 Optional environment overrides:

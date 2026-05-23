@@ -356,7 +356,10 @@ export class HUD {
     this.activePowerupBg.rect(1, 1, Math.max(0, width - 2), 14);
     this.activePowerupBg.fill({ color: 0x00e5ff, alpha: 0.11 });
 
-    this.activePowerupTitle.text = activeStates.length > 1 ? 'POWERUPS ONLINE' : 'POWERUP ONLINE';
+    const hasDebuff = activeStates.some((state) => String(state.type || '').startsWith('debuff_'));
+    this.activePowerupTitle.text = hasDebuff
+      ? 'SYSTEM STATUS'
+      : activeStates.length > 1 ? 'POWERUPS ONLINE' : 'POWERUP ONLINE';
     this.activePowerupTitle.style.fontSize = isMobile ? 9 : 10;
     this.activePowerupTitle.x = paddingX + 1;
     this.activePowerupTitle.y = paddingTop - 2;
@@ -452,7 +455,7 @@ export class HUD {
   }
 
   updateActivePowerupRow(row, state, width, height, isMobile) {
-    const color = this.getPowerupColor(state.type);
+    const color = Number.isFinite(state.color) ? state.color : this.getPowerupColor(state.type);
     const iconSize = isMobile ? 20 : 23;
     const iconX = 17;
     const iconY = height / 2 - 1;
@@ -517,7 +520,7 @@ export class HUD {
     const charges = Number(state.charges || 0);
     const maxCharges = Number(state.maxCharges || 0);
     if ((state.remainingMs || 0) > 0) {
-      const totalMs = this.getPowerupDurationMs(state.type, state.remainingMs);
+      const totalMs = Number(state.durationMs || 0) || this.getPowerupDurationMs(state.type, state.remainingMs);
       return totalMs > 0 ? Math.max(0, Math.min(1, (state.remainingMs || 0) / totalMs)) : 1;
     }
     if (charges > 0 && maxCharges > 0) {
@@ -529,6 +532,7 @@ export class HUD {
   getPowerupDurationMs(type, remainingMs = 0) {
     if (String(type || '').startsWith('rank_')) return Math.max(12000, remainingMs || 0);
     if (String(type || '').startsWith('synergy_')) return Math.max(6000, remainingMs || 0);
+    if (String(type || '').startsWith('debuff_')) return Math.max(1, remainingMs || 0);
     const durations = {
       triple_beam: 12000,
       vector_boost: 12000,
@@ -556,6 +560,7 @@ export class HUD {
   getPowerupColor(type) {
     if (String(type || '').startsWith('rank_')) return 0xffdd66;
     if (String(type || '').startsWith('synergy_')) return 0xff66cc;
+    if (String(type || '').startsWith('debuff_')) return 0xff6688;
     const colors = {
       triple_beam: 0x55ddff,
       vector_boost: 0x7cff72,

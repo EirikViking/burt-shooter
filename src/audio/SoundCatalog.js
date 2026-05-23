@@ -222,6 +222,13 @@ export const SFX_MIX = {
     tractor_lock_charge: { volume: 0.5, minIntervalMs: 700 },
     tractor_beam_active: { volume: 0.46, minIntervalMs: 850 },
     tractor_break_bloom: { volume: 0.68, minIntervalMs: 300 },
+    tractor_capture_sting: { volume: 0.54, minIntervalMs: 650 },
+    tractor_debuff_apply: { volume: 0.5, minIntervalMs: 700 },
+    tractor_debuff_expire: { volume: 0.28, minIntervalMs: 700 },
+    elite_spawn_alert: { volume: 0.62, minIntervalMs: 1400 },
+    elite_special_charge: { volume: 0.46, minIntervalMs: 700 },
+    elite_special_active: { volume: 0.48, minIntervalMs: 650 },
+    elite_death: { volume: 0.58, minIntervalMs: 180 },
     boss_beam_telegraph: { volume: 0.56, minIntervalMs: 700 },
     boss_beam_fire: { volume: 0.72, minIntervalMs: 700 },
     boss_web_telegraph: { volume: 0.48, minIntervalMs: 700 },
@@ -395,6 +402,34 @@ export const SFX_CATALOG = {
         getSfx('nova_tractor_beam_active')
     ],
     'tractor_break_bloom': [
+        getSfx('nova_tractor_break_bloom')
+    ],
+    'tractor_capture_sting': [
+        getSfx('nova_tractor_beam_active'),
+        getSfx('forceField_002')
+    ],
+    'tractor_debuff_apply': [
+        getSfx('nova_player_hit_crackle'),
+        getSfx('nova_magnet_pull_warble')
+    ],
+    'tractor_debuff_expire': [
+        getSfx('nova_shield_snap'),
+        getSfx('forceField_000')
+    ],
+    'elite_spawn_alert': [
+        getSfx('nova_boss_arrival_alarm'),
+        getSfx('swarm_chatter_stinger')
+    ],
+    'elite_special_charge': [
+        getSfx('nova_tractor_lock_charge'),
+        getSfx('nova_boss_beam_telegraph')
+    ],
+    'elite_special_active': [
+        getSfx('nova_enemy_pew_cluster'),
+        getSfx('nova_boss_phase_surge')
+    ],
+    'elite_death': [
+        getSfx('explosionCrunch_003'),
         getSfx('nova_tractor_break_bloom')
     ],
     'boss_beam_telegraph': [

@@ -801,7 +801,7 @@ export class PlayScene {
           if ((!Number.isFinite(sprite.alpha) || sprite.alpha <= 0) &&
             !this.player.isDodging &&
             !this.player.invulnerable &&
-            this.player.activePowerup?.type !== 'ghost') {
+            !this.player.isGhostActive?.()) {
             sprite.alpha = 1;
           }
           if (!sprite.parent && this.gameContainer) {
@@ -876,7 +876,8 @@ export class PlayScene {
       }
 
       // Managers update
-      const enemyBulletScale = (this.player && this.player.activePowerup && this.player.activePowerup.type === 'slow_time') ? 0.6 : 1;
+      const slowTimeActive = this.player?.activePowerup?.type === 'slow_time' && !this.player?.isPowerupSuppressed?.();
+      const enemyBulletScale = slowTimeActive ? 0.6 : 1;
       if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
       if (this.enemyManager) this.enemyManager.update(delta);
       this.sampleBalanceBoss();
@@ -1474,7 +1475,7 @@ export class PlayScene {
               // XP Logic handled by score now
 
               // Feature: Slow Time Trade-off
-              if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
+              if (!(this.player.activePowerup?.type === 'slow_time' && !this.player.isPowerupSuppressed?.())) {
                 const scoreAwarded = this.getComboScore(enemy.scoreValue);
                 const appliedScore = this.game.addScore(scoreAwarded);
                 // Score popup with combo
@@ -1527,13 +1528,14 @@ export class PlayScene {
     const hasGrazeBreaker = this.bulletManager.playerBullets.some(playerBullet =>
       playerBullet?.active !== false && playerBullet.isGrazeBreaker
     );
-    if (this.player.pointDefenseActive || hasGrazeBreaker) {
+    const pointDefenseActive = this.player.pointDefenseActive && !this.player.isPowerupSuppressed?.();
+    if (pointDefenseActive || hasGrazeBreaker) {
       this.bulletManager.playerBullets.forEach(playerBullet => {
         if (!playerBullet.active) return;
 
         this.bulletManager.enemyBullets.forEach(enemyBullet => {
           if (!enemyBullet.active) return;
-          if (!this.player.pointDefenseActive && !playerBullet.isGrazeBreaker) return;
+          if (!pointDefenseActive && !playerBullet.isGrazeBreaker) return;
 
           // Check collision between player bullet and enemy bullet
           const dx = playerBullet.x - enemyBullet.x;
@@ -1576,7 +1578,7 @@ export class PlayScene {
         }
         if (this.checkCollision(bullet, this.player)) {
           // Feature: Ghost Ship prevents hit
-          if (this.player.activePowerup && this.player.activePowerup.type === 'ghost') return;
+          if (this.player.isGhostActive?.()) return;
 
           bullet.active = false;
           if (!this.player.invulnerable) {
@@ -1608,7 +1610,7 @@ export class PlayScene {
           } else {
             // HAZARD
             // Feature: Ghost Ship prevents hit
-            if (this.player.activePowerup && this.player.activePowerup.type === 'ghost') return;
+            if (this.player.isGhostActive?.()) return;
 
             // FATAL COLLISION
             bonusDrone.active = false;
@@ -1641,7 +1643,7 @@ export class PlayScene {
             if (!bullet.piercing) bullet.active = false;
             const destroyed = bonusDrone.takeDamage(bullet.damage || 1);
             if (destroyed) {
-              if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
+              if (!(this.player.activePowerup?.type === 'slow_time' && !this.player.isPowerupSuppressed?.())) {
                 this.game.addScore(this.getComboScore(500));
               }
               this.onEnemyKilled(bonusDrone);
@@ -1661,7 +1663,7 @@ export class PlayScene {
       if (enemy.active && this.player.active) {
         if (this.checkCollision(enemy, this.player)) {
           // Feature: Ghost Ship prevents hit
-          if (this.player.activePowerup && this.player.activePowerup.type === 'ghost') return;
+          if (this.player.isGhostActive?.()) return;
 
           const isBossContact = enemy.kind === 'boss';
           if (isBossContact) {
@@ -2375,6 +2377,7 @@ export class PlayScene {
 
   onLifeLost() {
     this.recordBalanceLifeLost();
+    this.player?.clearStatusEffects?.('life_lost');
     if (this.tryLastStandRepair()) return;
     if (this.game.lives <= 0) {
       this.flushBalanceDebugSummary('game_over');
@@ -3054,7 +3057,7 @@ export class PlayScene {
 
   isPlayerInsideBossHazard(hazard) {
     if (!this.player?.active) return false;
-    if (this.player.activePowerup?.type === 'ghost') return false;
+    if (this.player.isGhostActive?.()) return false;
     if (this.player.invulnerable) return false;
 
     const playerRadius = this.player.radius || 12;
@@ -4247,7 +4250,7 @@ export class PlayScene {
 
       if (destroyed) {
         // Award score
-        if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
+        if (!(this.player.activePowerup?.type === 'slow_time' && !this.player.isPowerupSuppressed?.())) {
           const scoreAwarded = this.getComboScore(nearest.scoreValue);
           const appliedScore = this.game.addScore(scoreAwarded);
           if (this.scorePopupManager) {
@@ -4576,7 +4579,7 @@ export class PlayScene {
         if (dist < damageRadius) {
           const destroyed = enemy.takeDamage(damage);
           if (destroyed) {
-            if (this.player.activePowerup && this.player.activePowerup.type !== 'slow_time') {
+            if (!(this.player.activePowerup?.type === 'slow_time' && !this.player.isPowerupSuppressed?.())) {
               const scoreAwarded = this.getComboScore(enemy.scoreValue);
               const appliedScore = this.game.addScore(scoreAwarded);
               if (this.scorePopupManager) {

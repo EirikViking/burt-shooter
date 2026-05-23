@@ -264,6 +264,25 @@ export class Hijacker {
     player.y = Math.max(this.y + this.radius + 76, playerY - pullY);
     this.beamPullActive = true;
 
+    const debuffResult = player.applyTractorDebuff?.({
+      source: 'hijacker_tractor',
+      x: this.x,
+      y: this.y
+    });
+    if (debuffResult?.applied) {
+      playScene.showToast(`${debuffResult.effect.label} - BREAK AWAY!`, {
+        fontSize: this.game.getWidth() < 620 ? 15 : 19,
+        fill: '#ffdde8',
+        stroke: '#250012',
+        strokeThickness: 4,
+        duration: 1000,
+        slot: 'corner',
+        type: 'hijacker',
+        priority: 5
+      });
+      this.lastBeamToastAt = nowish();
+    }
+
     if (nowish() - this.lastBeamToastAt > 1300) {
       playScene.showToast('TRACTOR LOCK - STRAFE OUT!', {
         fontSize: this.game.getWidth() < 620 ? 15 : 19,

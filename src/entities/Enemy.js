@@ -6,10 +6,12 @@ import { BalanceConfig } from '../config/BalanceConfig.js';
 import { enhanceEnemyVisuals } from '../utils/EnemyVisualEnhancer.js';
 import { getEnemyVisualVariant } from '../config/VisualVariantCatalog.js';
 import { getGeneratedEnemyProfile } from '../config/GeneratedEnemyProfiles.js';
+import { getEliteMiddleShipProfile } from '../config/EliteMiddleShips.js';
 import { getEnemyAttackPattern } from '../config/EnemyAttackStyles.js';
 import { getEnemyMovementOffset } from '../config/EnemyMovementStyles.js';
 import { getEnemyWeaponProfileForEnemy, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
+import { AudioManager } from '../audio/AudioManager.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
@@ -24,8 +26,11 @@ export class Enemy {
     this.active = true;
     this.radius = 15;
 
+    this.middleShipProfile = getEliteMiddleShipProfile(type);
+
     // CLEANUP FIX: Add kind tag for cleanup targeting
-    this.kind = (type === 'bonus_challenge') ? 'bonus_drone' : 'enemy';
+    this.kind = this.middleShipProfile ? 'elite_middle_ship' : (type === 'bonus_challenge') ? 'bonus_drone' : 'enemy';
+    this.isEliteMiddleShip = Boolean(this.middleShipProfile);
     this.vx = 0;
     this.vy = 0;
     this.health = 1;
@@ -64,8 +69,17 @@ export class Enemy {
     this.spriteKey = null;
     this.xtraType = 1; // 1-5
     this.usingXtraAsset = false;
-    this.generatedProfile = getGeneratedEnemyProfile(type, `${level}|${waveColor || 'none'}|${Math.round(x)}|${Math.round(y)}`);
-    this.visualVariant = this.generatedProfile
+    this.generatedProfile = this.middleShipProfile ? null : getGeneratedEnemyProfile(type, `${level}|${waveColor || 'none'}|${Math.round(x)}|${Math.round(y)}`);
+    this.visualVariant = this.middleShipProfile
+      ? {
+        slug: this.middleShipProfile.id,
+        tint: this.middleShipProfile.tint,
+        accent: this.middleShipProfile.accent,
+        scale: this.middleShipProfile.spriteScale || 1,
+        wobble: 1.05,
+        alpha: this.middleShipProfile.glowAlpha || 0.24
+      }
+      : this.generatedProfile
       ? {
         slug: this.generatedProfile.id,
         tint: this.generatedProfile.tint,
@@ -75,13 +89,39 @@ export class Enemy {
         alpha: this.generatedProfile.glowAlpha || 0.18
       }
       : getEnemyVisualVariant(type, level, waveColor, x, y);
+    this.eliteAbility = this.middleShipProfile ? {
+      state: 'cooldown',
+      startedAt: Date.now(),
+      nextAt: Date.now() + 2100 + Math.random() * 1600,
+      activeUntil: 0,
+      lastTriggeredAt: 0
+    } : null;
+    this.eliteStatusUntil = 0;
+    this.eliteShieldUntil = 0;
+    this.phaseShiftUntil = 0;
+    this.commandAuraUntil = 0;
+    this.splitterReleased = false;
 
     this.setupByType();
     this.createSprite();
   }
 
   setupByType() {
-    if (this.generatedProfile) {
+    if (this.middleShipProfile) {
+      const profile = this.middleShipProfile;
+      this.color = profile.tint;
+      this.health = profile.health;
+      this.maxHealth = profile.health;
+      this.scoreValue = profile.scoreValue;
+      this.speed = profile.speed;
+      this.shootDelay = profile.shootDelay;
+      this.radius = profile.radius;
+      this.movePattern = profile.movementStyle;
+      this.spriteKey = profile.type;
+      this.eliteMiddleShipIndex = profile.spriteIndex;
+      this.xtraType = (profile.spriteIndex % 5) + 1;
+      this.targetWidth = profile.targetWidth;
+    } else if (this.generatedProfile) {
       const profile = this.generatedProfile;
       this.color = profile.tint;
       this.health = profile.health;
@@ -316,7 +356,9 @@ export class Enemy {
     this.shootDelay = this.shootDelay * fireDelayScale;
 
     // Sprite Selection
-    if (this.generatedProfile) {
+    if (this.middleShipProfile) {
+      this.spriteKey = this.middleShipProfile.type;
+    } else if (this.generatedProfile) {
       this.spriteKey = this.generatedProfile.type;
     } else if (this.type === 'bonus_challenge') {
       this.spriteKey = 'bonus_challenge';
@@ -342,10 +384,14 @@ export class Enemy {
     this.sprite = new PIXI.Container();
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+    this.sprite.sortableChildren = true;
 
     let tex;
     // Check for fighter type (player ship variant)
-    if (this.generatedProfile && Number.isFinite(this.generatedEnemyIndex)) {
+    if (this.middleShipProfile && Number.isFinite(this.eliteMiddleShipIndex)) {
+      tex = GameAssets.getEliteMiddleShipTexture(this.eliteMiddleShipIndex);
+      this.usingEliteMiddleShipTexture = true;
+    } else if (this.generatedProfile && Number.isFinite(this.generatedEnemyIndex)) {
       tex = GameAssets.getGeneratedEnemyTexture(this.generatedEnemyIndex);
       this.usingGeneratedEnemyTexture = true;
     } else if (this.type.startsWith('fighter_') && this.shipTextureIndex !== undefined) {
@@ -374,14 +420,16 @@ export class Enemy {
     if (GameAssets.isValidTexture(tex)) {
       const s = new PIXI.Sprite(tex);
       s.anchor.set(0.5);
-      const targetWidth = this.generatedProfile?.targetWidth || 45;
+      const targetWidth = this.middleShipProfile?.targetWidth || this.generatedProfile?.targetWidth || 45;
       const variantScale = Number.isFinite(this.visualVariant?.scale) ? this.visualVariant.scale : 1;
       const scale = (targetWidth / tex.width) * variantScale;
       s.scale.set(scale);
       s.rotation = Math.PI; // Enemies face downward
 
       // Fighter enemies (player ships) get subtle tint, xtra assets no tint
-      if (this.usingGeneratedEnemyTexture) {
+      if (this.usingEliteMiddleShipTexture) {
+        s.tint = this.middleShipProfile?.hullTint || 0xffffff;
+      } else if (this.usingGeneratedEnemyTexture) {
         s.tint = this.generatedProfile?.hullTint || 0xffffff;
       } else if (this.usingPlayerShipTexture) {
         s.tint = this.visualVariant?.tint || this.color;
@@ -399,6 +447,13 @@ export class Enemy {
     this.healthBar = new PIXI.Graphics();
     this.updateHealthBar();
     this.sprite.addChild(this.healthBar);
+
+    if (this.middleShipProfile) {
+      this.eliteVfxLayer = new PIXI.Graphics();
+      this.eliteVfxLayer.zIndex = -1;
+      this.eliteVfxLayer.blendMode = 'add';
+      this.sprite.addChildAt(this.eliteVfxLayer, 0);
+    }
 
     // Apply visual enhancements to make enemies look distinct and menacing
     if (this.usingXtraAsset && this.game?.app) {
@@ -575,7 +630,7 @@ export class Enemy {
 
       case 'FORMATION':
         // Enhanced idle movement - more varied and alive
-        const profile = this.generatedProfile;
+        const profile = this.middleShipProfile || this.generatedProfile;
         const screenW = this.game?.getWidth ? this.game.getWidth() : 800;
         const swaySpeed = 0.04 + (this.idlePhase % 0.02) + (profile ? (profile.spriteIndex % 5) * 0.002 : 0);
         let swayX = Math.sin(this.moveTimer * swaySpeed + this.idlePhase) * (profile?.idleAmpX || 12);
@@ -665,6 +720,10 @@ export class Enemy {
         break;
     }
 
+    if (this.middleShipProfile) {
+      this.updateEliteMiddleShip(delta, playerX, playerY);
+    }
+
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
@@ -720,12 +779,355 @@ export class Enemy {
     }
   }
 
+  updateEliteMiddleShip(delta, playerX, playerY) {
+    if (!this.middleShipProfile || !this.eliteAbility || this.waitingForEntry) return;
+
+    const now = Date.now();
+    const profile = this.middleShipProfile;
+    const telegraphMs = profile.specialTelegraphMs || 700;
+    const activeMs = profile.specialActiveMs || 800;
+    const cooldownMs = profile.specialCooldownMs || 9000;
+
+    if (this.eliteAbility.state === 'cooldown' && now >= this.eliteAbility.nextAt && this.state !== 'ENTRY') {
+      this.eliteAbility.state = 'telegraph';
+      this.eliteAbility.startedAt = now;
+      this.eliteAbility.triggered = false;
+      AudioManager.playSfx(profile.sfx?.charge || 'elite_special_charge', { volume: 0.42, minIntervalMs: 360 });
+    }
+
+    if (this.eliteAbility.state === 'telegraph') {
+      const progress = Math.min(1, (now - this.eliteAbility.startedAt) / telegraphMs);
+      this.drawEliteAbilityVfx(progress, false, playerX, playerY);
+      if (progress >= 1) {
+        this.eliteAbility.state = 'active';
+        this.eliteAbility.startedAt = now;
+        this.eliteAbility.activeUntil = now + activeMs;
+        this.eliteAbility.triggered = false;
+      }
+      return;
+    }
+
+    if (this.eliteAbility.state === 'active') {
+      if (!this.eliteAbility.triggered) {
+        this.eliteAbility.triggered = true;
+        this.eliteAbility.lastTriggeredAt = now;
+        this.triggerEliteMiddleShipAbility(playerX, playerY);
+        AudioManager.playSfx(profile.sfx?.active || 'elite_special_active', { volume: 0.46, minIntervalMs: 220 });
+      }
+      const progress = Math.min(1, (now - this.eliteAbility.startedAt) / activeMs);
+      this.applySustainedEliteAbility(delta, playerX, playerY);
+      this.drawEliteAbilityVfx(progress, true, playerX, playerY);
+      if (now >= this.eliteAbility.activeUntil) {
+        this.eliteAbility.state = 'cooldown';
+        this.eliteAbility.nextAt = now + cooldownMs + Math.random() * 900;
+        this.eliteVfxLayer?.clear();
+      }
+      return;
+    }
+
+    this.eliteVfxLayer?.clear();
+  }
+
+  triggerEliteMiddleShipAbility(playerX, playerY) {
+    const ability = this.middleShipProfile?.specialAbility;
+    const now = Date.now();
+    switch (ability) {
+      case 'shield_projector':
+      case 'barrier_projector':
+        this.eliteShieldUntil = now + (this.middleShipProfile.specialActiveMs || 2500);
+        this.buffNearbyAllies({ shield: true, radius: ability === 'barrier_projector' ? 135 : 160 });
+        break;
+      case 'drone_carrier':
+        this.game?.scenes?.play?.enemyManager?.spawnEliteSupportDrone?.(this, { count: 2 });
+        break;
+      case 'mine_layer':
+        this.fireElitePattern('mine', playerX, playerY);
+        break;
+      case 'sniper_rail':
+        this.fireElitePattern('rail', playerX, playerY);
+        break;
+      case 'jammer_disruptor':
+      case 'pulse_emp':
+        this.applyLocalCooldownPulse(ability === 'pulse_emp' ? 150 : 105);
+        break;
+      case 'repair_healer':
+        this.repairNearbyAllies();
+        break;
+      case 'phase_raider':
+        this.phaseShiftUntil = now + (this.middleShipProfile.specialActiveMs || 1500);
+        break;
+      case 'mirror_decoy':
+        this.spawnMirrorDecoys();
+        break;
+      case 'escort_commander':
+        this.commandNearbyAllies();
+        break;
+      case 'burst_artillery':
+        this.fireElitePattern('burst', playerX, playerY);
+        break;
+      case 'lane_blocker':
+        this.fireElitePattern('lane', playerX, playerY);
+        break;
+      case 'orb_webber':
+        this.fireElitePattern('web', playerX, playerY);
+        break;
+      case 'missile_frigate':
+        this.fireElitePattern('missile', playerX, playerY);
+        break;
+      case 'anchor_turret':
+        this.fireElitePattern('anchor', playerX, playerY);
+        break;
+      case 'elite_hunter':
+        this.fireElitePattern('hunter', playerX, playerY);
+        break;
+      default:
+        break;
+    }
+  }
+
+  applySustainedEliteAbility(delta, playerX, playerY) {
+    const ability = this.middleShipProfile?.specialAbility;
+    if (ability === 'tractor_pull') {
+      this.applyEliteTractorPull(delta, playerX, playerY);
+    } else if (ability === 'vortex_gravity') {
+      this.applyEliteVortexPull(delta, playerX, playerY);
+    }
+  }
+
+  drawEliteAbilityVfx(progress, active, playerX, playerY) {
+    if (!this.eliteVfxLayer || !this.middleShipProfile) return;
+    const layer = this.eliteVfxLayer;
+    const now = Date.now();
+    const profile = this.middleShipProfile;
+    const ability = profile.specialAbility;
+    const color = profile.accent || 0x66ffff;
+    const pulse = 0.5 + Math.sin(now * 0.018) * 0.5;
+    const radius = this.radius * (active ? 2.1 : 1.45 + progress * 0.9);
+
+    layer.clear();
+    layer.circle(0, 0, radius);
+    layer.stroke({ color, width: active ? 3 : 2, alpha: active ? 0.62 : 0.24 + progress * 0.48 });
+    layer.circle(0, 0, radius * 0.68);
+    layer.stroke({ color: 0xffffff, width: 1.3, alpha: active ? 0.24 : 0.12 + progress * 0.24 });
+
+    const drawAimLine = (width = 3, alpha = 0.62) => {
+      const relX = playerX - this.x;
+      const relY = playerY - this.y;
+      layer.moveTo(0, this.radius * 0.2);
+      layer.lineTo(relX, relY);
+      layer.stroke({ color, width, alpha });
+      layer.circle(relX, relY, 12 + pulse * 4);
+      layer.stroke({ color: 0xffffff, width: 1.5, alpha: alpha * 0.7 });
+    };
+
+    if (ability === 'sniper_rail' || ability === 'elite_hunter') {
+      drawAimLine(active ? 4 : 2, active ? 0.72 : 0.26 + progress * 0.42);
+    } else if (ability === 'tractor_pull' || ability === 'vortex_gravity') {
+      const relY = Math.max(150, playerY - this.y);
+      const relX = playerX - this.x;
+      const halfWidth = ability === 'tractor_pull' ? 48 + relY * 0.16 : 70 + relY * 0.1;
+      layer.moveTo(0, this.radius);
+      layer.lineTo(relX - halfWidth, relY);
+      layer.lineTo(relX + halfWidth, relY);
+      layer.closePath();
+      layer.fill({ color, alpha: active ? 0.13 : 0.05 + progress * 0.1 });
+      for (let i = 1; i <= 4; i += 1) {
+        const t = i / 5;
+        layer.ellipse(relX * t, this.radius + (relY - this.radius) * t, halfWidth * t * (0.42 + pulse * 0.06), 8 + i * 2);
+        layer.stroke({ color: i % 2 ? color : 0xffffff, width: 1.5, alpha: active ? 0.38 : 0.18 + progress * 0.24 });
+      }
+    } else if (ability === 'shield_projector' || ability === 'barrier_projector' || ability === 'escort_commander' || ability === 'repair_healer') {
+      for (let i = 0; i < 5; i += 1) {
+        const a = now * 0.003 + i * Math.PI * 0.4;
+        layer.circle(Math.cos(a) * radius * 0.82, Math.sin(a) * radius * 0.82, 3 + pulse * 2);
+      }
+      layer.fill({ color: 0xffffff, alpha: active ? 0.32 : 0.16 + progress * 0.2 });
+    } else {
+      for (let i = 0; i < 6; i += 1) {
+        const a = now * 0.004 + i * Math.PI / 3;
+        layer.moveTo(Math.cos(a) * radius * 0.42, Math.sin(a) * radius * 0.42);
+        layer.lineTo(Math.cos(a) * radius * 1.16, Math.sin(a) * radius * 1.16);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 2.2 : 1.4, alpha: active ? 0.38 : 0.14 + progress * 0.26 });
+    }
+  }
+
+  applyEliteTractorPull(delta, playerX, playerY) {
+    const player = this.game?.scenes?.play?.player;
+    if (!player?.active) return;
+    const relX = player.x - this.x;
+    const relY = player.y - this.y;
+    if (relY < this.radius || relY > (this.game?.getHeight?.() || 600) * 0.8) return;
+    const halfWidth = Math.max(44, 22 + relY * 0.18);
+    if (Math.abs(relX) > halfWidth) return;
+
+    const frameScale = Math.max(0.5, Math.min(2.2, delta));
+    const playerRadius = Number(player.radius) || 14;
+    const width = this.game?.getWidth?.() || 800;
+    player.x = Math.max(playerRadius, Math.min(width - playerRadius, player.x + (this.x - player.x) * 0.014 * frameScale));
+    player.y = Math.max(this.y + this.radius + 70, player.y - 0.78 * frameScale);
+    player.applyTractorDebuff?.({ source: this.type, x: this.x, y: this.y });
+  }
+
+  applyEliteVortexPull(delta) {
+    const player = this.game?.scenes?.play?.player;
+    if (!player?.active) return;
+    const dx = this.x - player.x;
+    const dy = this.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= 1 || dist > 260) return;
+    const frameScale = Math.max(0.4, Math.min(2.0, delta));
+    const strength = Math.max(0, 1 - dist / 260) * 0.72 * frameScale;
+    const radius = Number(player.radius) || 14;
+    const width = this.game?.getWidth?.() || 800;
+    const height = this.game?.getHeight?.() || 600;
+    player.x = Math.max(radius, Math.min(width - radius, player.x + (dx / dist) * strength));
+    player.y = Math.max(32, Math.min(height - 74, player.y + (dy / dist) * strength));
+  }
+
+  fireElitePattern(pattern, playerX, playerY) {
+    const profile = this.middleShipProfile;
+    const color = profile?.accent || this.color || 0xff6666;
+    const baseAngle = Math.atan2(playerY - this.y, playerX - this.x);
+    const add = (angle, speed = 2.2, damage = 1, extra = {}) => this.addEliteBullet(angle, speed, damage, color, extra);
+
+    if (pattern === 'rail') {
+      add(baseAngle, 4.2, 1.2, { radius: 6, trailLength: 44, warningColor: 0xff55ff, haloColor: color });
+    } else if (pattern === 'mine') {
+      [-0.22, 0, 0.22].forEach((offset, index) => add(Math.PI / 2 + offset, 1.05 + index * 0.06, 1, { radius: 10, pulseRate: 0.75, haloColor: color }));
+    } else if (pattern === 'burst') {
+      [-0.32, -0.16, 0, 0.16, 0.32].forEach((offset) => add(Math.PI / 2 + offset, 2.05, 1, { radius: 6, trailLength: 30 }));
+    } else if (pattern === 'lane') {
+      [-150, -75, 0, 75, 150].forEach((offset) => {
+        const laneAngle = Math.atan2(playerY - this.y, (playerX + offset) - this.x);
+        add(laneAngle, 1.75, 1, { radius: 7, warningColor: 0xffd166, haloColor: color });
+      });
+    } else if (pattern === 'web') {
+      [-0.42, -0.2, 0.2, 0.42].forEach((offset) => add(baseAngle + offset, 1.62, 1, { radius: 8, spin: 0.05, wobble: 0.08, haloColor: color }));
+    } else if (pattern === 'missile') {
+      [-0.18, 0.18].forEach((offset) => add(baseAngle + offset, 1.72, 1.15, { radius: 9, trailLength: 42, accel: 0.002, haloColor: 0xff3355 }));
+    } else if (pattern === 'anchor') {
+      [-0.42, -0.21, 0, 0.21, 0.42].forEach((offset) => add(baseAngle + offset, 1.9, 1, { radius: 7, trailLength: 28, haloColor: color }));
+    } else if (pattern === 'hunter') {
+      [-0.13, 0.13].forEach((offset) => add(baseAngle + offset, 3.15, 1, { radius: 6, trailLength: 36, warningColor: 0x7cff44, haloColor: color }));
+    }
+  }
+
+  addEliteBullet(angle, speed, damage, color, visualConfig = {}) {
+    const bullet = new Bullet(
+      this.x,
+      this.y + this.radius * 0.4,
+      Math.cos(angle) * speed,
+      Math.sin(angle) * speed,
+      damage,
+      color,
+      false,
+      {
+        color: 'Red',
+        index: 8,
+        warningColor: color,
+        trailColor: color,
+        weaponProfileId: this.middleShipProfile?.id,
+        weaponLabel: this.middleShipProfile?.displayName,
+        ...visualConfig
+      }
+    );
+    bullet.eliteMiddleShipId = this.middleShipProfile?.id || null;
+    this.game?.scenes?.play?.bulletManager?.addEnemyBullet?.(bullet);
+    return bullet;
+  }
+
+  buffNearbyAllies({ shield = false, radius = 150 } = {}) {
+    const now = Date.now();
+    const allies = this.game?.scenes?.play?.enemyManager?.enemies || [];
+    allies.forEach((ally) => {
+      if (!ally?.active || ally === this || ally.kind === 'boss') return;
+      const dist = Math.hypot((ally.x || 0) - this.x, (ally.y || 0) - this.y);
+      if (dist > radius) return;
+      if (shield) ally.eliteShieldUntil = Math.max(ally.eliteShieldUntil || 0, now + 1800);
+      if (ally.sprite) {
+        ally.sprite.alpha = Math.max(ally.sprite.alpha || 1, 0.92);
+      }
+    });
+  }
+
+  repairNearbyAllies() {
+    const allies = this.game?.scenes?.play?.enemyManager?.enemies || [];
+    allies.forEach((ally) => {
+      if (!ally?.active || ally === this || ally.kind === 'boss') return;
+      const dist = Math.hypot((ally.x || 0) - this.x, (ally.y || 0) - this.y);
+      if (dist > 160 || !Number.isFinite(ally.health) || !Number.isFinite(ally.maxHealth)) return;
+      ally.health = Math.min(ally.maxHealth, ally.health + Math.max(1, ally.maxHealth * 0.18));
+      ally.updateHealthBar?.();
+    });
+  }
+
+  applyLocalCooldownPulse(radius = 120) {
+    const player = this.game?.scenes?.play?.player;
+    if (!player?.active) return;
+    const dist = Math.hypot(player.x - this.x, player.y - this.y);
+    if (dist > radius) return;
+    player.shootCooldown = Math.max(player.shootCooldown || 0, 260);
+    player.dodgeCooldown = Math.max(player.dodgeCooldown || 0, radius > 130 ? 520 : 360);
+    player.triggerFlash?.(this.middleShipProfile?.accent || 0x66ffff, 120);
+  }
+
+  spawnMirrorDecoys() {
+    const container = this.sprite?.parent;
+    if (!container || !this.body?.texture) return;
+    const color = this.middleShipProfile?.accent || 0xb388ff;
+    [-1, 1].forEach((side) => {
+      const decoy = new PIXI.Sprite(this.body.texture);
+      decoy.anchor.set(0.5);
+      decoy.x = this.x + side * 48;
+      decoy.y = this.y + 18;
+      decoy.rotation = this.body.rotation;
+      decoy.scale.set(this.body.scale.x, this.body.scale.y);
+      decoy.tint = color;
+      decoy.alpha = 0.34;
+      decoy.blendMode = 'add';
+      container.addChild(decoy);
+      setTimeout(() => {
+        if (decoy.parent) decoy.parent.removeChild(decoy);
+      }, this.middleShipProfile?.specialActiveMs || 1300);
+    });
+  }
+
+  commandNearbyAllies() {
+    const now = Date.now();
+    const allies = this.game?.scenes?.play?.enemyManager?.enemies || [];
+    allies.forEach((ally) => {
+      if (!ally?.active || ally === this || ally.kind === 'boss') return;
+      const dist = Math.hypot((ally.x || 0) - this.x, (ally.y || 0) - this.y);
+      if (dist > 180) return;
+      ally.eliteCommandUntil = Math.max(ally.eliteCommandUntil || 0, now + 1800);
+    });
+  }
+
+  getEliteDebugState() {
+    if (!this.middleShipProfile) return null;
+    const now = Date.now();
+    return {
+      id: this.middleShipProfile.id,
+      name: this.middleShipProfile.displayName,
+      role: this.middleShipProfile.role,
+      ability: this.middleShipProfile.specialAbility,
+      abilityState: this.eliteAbility?.state || null,
+      abilityRemainingMs: this.eliteAbility?.state === 'cooldown'
+        ? Math.max(0, (this.eliteAbility.nextAt || 0) - now)
+        : Math.max(0, ((this.eliteAbility.activeUntil || this.eliteAbility.startedAt || now) - now)),
+      shielded: now < (this.eliteShieldUntil || 0),
+      phased: now < (this.phaseShiftUntil || 0)
+    };
+  }
+
   canShoot() {
     return this.shootCooldown <= 0 && this.y > 0 && this.y < 700 && this.sprite.visible;
   }
 
   getTacticalFireScalar() {
-    const base = this.tacticalFireScalar || 1;
+    const commandBoost = Date.now() < (this.eliteCommandUntil || 0) ? 1.28 : 1;
+    const base = (this.tacticalFireScalar || 1) * commandBoost;
     const volley = this.waveTactic?.volley || null;
     if (volley === 'pulse') {
       const pulse = Math.sin(Date.now() * 0.006 + this.waveSlot * 0.8);
@@ -793,7 +1195,7 @@ export class Enemy {
     const speed = projectileSpeed *
       BalanceConfig.difficulty.pressureScalar *
       openingProjectileScalar *
-      (this.generatedProfile?.projectileSpeedMult || 1) *
+      ((this.middleShipProfile || this.generatedProfile)?.projectileSpeedMult || 1) *
       weaponSpeedMult;
     const vx = (dx / distance) * speed * accuracy;
     const vy = (dy / distance) * speed * accuracy;
@@ -810,7 +1212,7 @@ export class Enemy {
     if (ENABLE_ENEMY_WEAPON_FX_VARIETY && !killSwitch) {
       vConfig = toBulletVisualConfig(weaponProfile, {
         sourceEnemyType: this.type,
-        sourceFireStyle: this.generatedProfile?.fireStyle || null
+        sourceFireStyle: (this.middleShipProfile || this.generatedProfile)?.fireStyle || null
       });
     }
 
@@ -832,8 +1234,8 @@ export class Enemy {
       return bullet;
     };
 
-    if (this.generatedProfile) {
-      const profile = this.generatedProfile;
+    if (this.middleShipProfile || this.generatedProfile) {
+      const profile = this.middleShipProfile || this.generatedProfile;
       const baseAngle = Math.atan2(vy, vx);
       const tacticalPattern = tacticalAngles && tacticalAngles.length > 0
         ? tacticalAngles
@@ -900,18 +1302,27 @@ export class Enemy {
   }
 
   takeDamage(amount) {
-    this.health -= amount;
+    let resolvedAmount = amount;
+    const now = Date.now();
+    if (this.middleShipProfile && now < this.phaseShiftUntil) resolvedAmount *= 0.45;
+    if (this.middleShipProfile && now < this.eliteShieldUntil) resolvedAmount *= 0.6;
+    this.health -= resolvedAmount;
     this.updateHealthBar();
     this.sprite.tint = 0xffffff;
     // Flashing Logic: Restore correct tint
-    const restoreColor = (this.usingXtraAsset || this.usingGeneratedEnemyTexture)
-      ? (this.state === 'DIVE' ? 0xffaaaa : (this.generatedProfile?.hullTint || 0xffffff))
+    const profileTint = (this.middleShipProfile || this.generatedProfile)?.hullTint || 0xffffff;
+    const restoreColor = (this.usingEliteMiddleShipTexture || this.usingXtraAsset || this.usingGeneratedEnemyTexture)
+      ? (this.state === 'DIVE' ? 0xffaaaa : profileTint)
       : (this.state === 'DIVE' ? 0xff0000 : this.color);
     setTimeout(() => { if (this.sprite) this.sprite.tint = restoreColor; }, 50);
 
     // Spawn debris if dead? (Handled by manager usually)
 
     if (this.health <= 0) {
+      if (this.middleShipProfile?.specialAbility === 'splitter_clone' && !this.splitterReleased) {
+        this.splitterReleased = true;
+        this.game?.scenes?.play?.enemyManager?.spawnEliteSupportDrone?.(this, { count: 2, split: true });
+      }
       this.active = false;
       return true;
     }
@@ -919,6 +1330,9 @@ export class Enemy {
   }
 
   destroy() {
+    if (this.middleShipProfile) {
+      AudioManager.playSfx(this.middleShipProfile.sfx?.death || 'elite_death', { volume: 0.58, minIntervalMs: 120 });
+    }
     // Clean up visual enhancements
     if (this.visualEnhancementCleanup) {
       this.visualEnhancementCleanup();

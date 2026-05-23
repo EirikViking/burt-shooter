@@ -279,9 +279,9 @@ export function getEnemyWeaponProfileById(id) {
 }
 
 export function getEnemyWeaponProfileForEnemy(enemy) {
-  const generated = enemy?.generatedProfile;
+  const generated = enemy?.middleShipProfile || enemy?.generatedProfile;
   const id = generated
-    ? FIRE_STYLE_WEAPON_IDS[generated.fireStyle] || ENEMY_WEAPON_PROFILES[generated.spriteIndex % ENEMY_WEAPON_PROFILES.length].id
+    ? generated.weaponId || FIRE_STYLE_WEAPON_IDS[generated.fireStyle] || ENEMY_WEAPON_PROFILES[generated.spriteIndex % ENEMY_WEAPON_PROFILES.length].id
     : TYPE_WEAPON_IDS[enemy?.type] || ENEMY_WEAPON_PROFILES[(enemy?.xtraType || 1) % ENEMY_WEAPON_PROFILES.length].id;
   return getEnemyWeaponProfileById(id);
 }

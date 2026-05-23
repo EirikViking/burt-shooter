@@ -494,7 +494,9 @@ function buildGameTextState(game) {
       traitState: player.getTraitState ? player.getTraitState() : null,
       stats: player.getStatSnapshot ? player.getStatSnapshot() : null,
       powerup: player.activePowerup?.type || null,
-      powerups: player.getActivePowerupStates ? player.getActivePowerupStates() : []
+      powerups: player.getActivePowerupStates ? player.getActivePowerupStates() : [],
+      statusEffects: player.getActiveStatusEffects ? player.getActiveStatusEffects() : [],
+      tractorDebuff: player.getTractorDebuffState ? player.getTractorDebuffState() : null
     } : null,
     hijacker: hijacker?.active ? {
       x: Math.round(hijacker.x || 0),
@@ -525,10 +527,23 @@ function buildGameTextState(game) {
         playerY: playScene.lastTractorHijack.playerY || 0
       } : null
     } : null,
+    eliteMiddleShips: enemies
+      .filter(enemy => enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry))
+      .map(enemy => ({
+        x: Math.round(enemy.x || 0),
+        y: Math.round(enemy.y || 0),
+        health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
+        maxHealth: Number.isFinite(enemy.maxHealth) ? Math.max(0, Math.round(enemy.maxHealth)) : null,
+        state: enemy.state || null,
+        profile: enemy.getEliteDebugState ? enemy.getEliteDebugState() : null
+      })),
     counts: {
       enemies: enemies.filter(enemy => enemy?.active !== false).length + (hijacker?.active ? 1 : 0),
       bossAdds: enemies.filter(enemy =>
         enemy?.kind === 'boss_add' && (enemy.active !== false || enemy.waitingForEntry)
+      ).length,
+      eliteMiddleShips: enemies.filter(enemy =>
+        enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry)
       ).length,
       playerBullets: playerBullets.filter(bullet => bullet?.active !== false).length,
       enemyBullets: enemyBullets.filter(bullet => bullet?.active !== false).length,
@@ -580,6 +595,7 @@ function buildGameTextState(game) {
           role: enemy.waveRole || null
         } : null,
         variant: enemy.visualVariant?.slug || null,
+        eliteMiddleShip: enemy.getEliteDebugState ? enemy.getEliteDebugState() : null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
         maxHealth: Number.isFinite(enemy.maxHealth) ? Math.max(0, Math.round(enemy.maxHealth)) : null,
         phase: Number.isFinite(enemy.phase) ? enemy.phase : null,

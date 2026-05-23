@@ -2,6 +2,19 @@
 
 This project keeps generated visual assets in `public/art/generated/` when they are used by the game. Keep the original generated source alongside the optimized runtime asset so later passes can crop, recompress, or replace it without hunting through local Codex caches.
 
+## 2026-05-23 Elite Middle Ships
+
+- Source sheet: `public/art/generated/nova-swarm/source/nova-elite-middle-ships-20-sheet-20260523-source.png`
+- Runtime assets: `public/art/generated/nova-swarm/elites/nova-elite-middle-01-tractor-puller-20260523.png` through `nova-elite-middle-20-late-game-elite-hunter-20260523.png`
+- Review sheet: `public/art/generated/nova-swarm/elites/nova-elite-middle-ships-contact-sheet-20260523.jpg`
+- Optimization: built-in Codex imagegen produced a 5x4 atlas on flat chroma green; the atlas was split into 20 transparent PNGs, trimmed, padded, and normalized for the existing Pixi loader.
+- Usage: `src/config/EliteMiddleShips.js`, `src/assets/assetManifest.js`, `src/utils/GameAssets.js`, `src/entities/Enemy.js`, and `src/managers/EnemyManager.js` use these as rare priority threats between normal waves and bosses.
+- Verification: `npm run check:elite-ships`, `npm run build:current`, and evidence capture under `test-results/elite-middle-ships/`.
+
+Prompt summary:
+
+> Original `5x4` atlas of twenty Nova Swarm sci-fi elite middle ships on flat `#00ff00`, no text/logos/watermarks, readable silhouettes for tractor, shield, drone, mine, sniper, jammer, healer, splitter, barrier, vortex, artillery, phase, lane, orb, missile, mirror, EMP, turret, commander, and hunter roles.
+
 ## 2026-05-16 Storm Gameplay Backdrop
 
 - Source: `public/art/generated/nova-swarm/nova-swarm-storm-keyart-source.png`

@@ -1,5 +1,14 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-23 Elite Middle Ships And Tractor Debuffs
+
+- Current user request: add 20 elite middle ships between normal enemies and bosses, upgrade tractor beams to apply one of 10 temporary negative status effects, preserve the restored six-to-eight-wave boss pacing and all guarded boss/score/leaderboard/unlock/player-stat systems, create backups, validate thoroughly, then commit and push only if safe.
+- Safety branches pushed before edits: backup `backup/pre_elite_middle_ships_20260523_0925` and work branch `feature/elite_middle_ships_20260523_0925`, both starting from `73a8e5c70f4bc02e286ac777ac8ee6ecc4f02bf9`.
+- Implemented 20 elite middle ship profiles with generated transparent runtime art, level-gated progression, rare wave-plan spawning, max-active caps, role-specific telegraphs/VFX, existing balanced SFX aliases, and explicit validation in `npm run check:elite-ships`.
+- Implemented tractor debuffs with a small player status manager, 10 temporary effects, HUD timers, capture/status VFX, SFX feedback, a 5.5s debuff immunity window, and cleanup on life loss/respawn/destroy. Added `npm run check:tractor-debuffs`.
+- Verification passed: `npm run check:elite-ships`, `npm run check:tractor-debuffs`, `npm run check:wave-pacing`, `npm run check:generated-rosters`, `npm run check:normal-enemy-variety`, `npm run check:enemy-weapons`, `npm run check:enemy-wave-patterns`, `npm run check:boss-roster`, `npm run check:boss-contact`, `npm run check:boss-telegraph`, `npm run check:boss-special-hazards`, `npm run check:first-boss-balance`, `npm run audit:audio-mix`, `npm run build:current`, `npm run smoke`, `npm run qa:release`, `npm run playtest:release`, and `git diff --check`. Evidence captured under `test-results/elite-middle-ships/2026-05-23T08-07-43-629Z/`.
+- Commit: `Add elite middle ships and tractor beam debuffs` on `feature/elite_middle_ships_20260523_0925`, pushed after validation.
+
 ## 2026-05-23 Wave Pacing And Boss Presentation Polish
 
 - Current user request: Phase 0 fix wave pacing before any boss presentation polish. Manual finding was that normal levels seemed to boss-gate after only one wave, with a possible memory of nine waves; git/docs/code search found no 9-wave intended default, but did verify a six-real-wave boss-spacing target from the May 21 boss pacing pass. User clarified the roughly 75-second cadence is an estimate, not a hard rule.

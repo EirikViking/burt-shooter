@@ -12,6 +12,11 @@ import {
   getGeneratedEnemyTypeAtLevelProgress,
   pickGeneratedEnemyTypeForLevel
 } from '../config/GeneratedEnemyProfiles.js';
+import {
+  getEliteMiddleShipMaxActive,
+  getEliteMiddleShipProfile,
+  planEliteMiddleShipSpawns
+} from '../config/EliteMiddleShips.js';
 
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
@@ -174,6 +179,8 @@ export class EnemyManager {
     this.hijacker = null;
     this.hijackerSpawnedThisLevel = false;
     this.hijackerSpawnAttemptedThisLevel = false;
+    this.eliteMiddleShipPlan = [];
+    this.eliteMiddleShipsSpawnedThisLevel = 0;
 
     // TASK 3: Wave cleanup timer to prevent stalls
     this.cleanupTimer = 0;
@@ -223,6 +230,8 @@ export class EnemyManager {
     this.hijacker = null;
     this.hijackerSpawnedThisLevel = false;
     this.hijackerSpawnAttemptedThisLevel = false;
+    this.eliteMiddleShipPlan = [];
+    this.eliteMiddleShipsSpawnedThisLevel = 0;
 
     // WAVE FIX: Reset wave ending state
     this.waveEnding = false;
@@ -302,7 +311,7 @@ export class EnemyManager {
 
   generateWaves(level) {
     const curatedWaves = this.getCuratedWaves(level);
-    if (curatedWaves) return curatedWaves;
+    if (curatedWaves) return this.applyEliteMiddleShipPlan(curatedWaves, level);
 
     const numWaves = this.getNormalWaveCount(level);
     const waves = [];
@@ -346,7 +355,24 @@ export class EnemyManager {
         cadence: 0.9 + Math.min(0.45, level * 0.022 + i * 0.035)
       });
     }
-    return waves;
+    return this.applyEliteMiddleShipPlan(waves, level);
+  }
+
+  applyEliteMiddleShipPlan(waves, level) {
+    const plannedWaves = waves.map((wave) => ({ ...wave }));
+    const plan = planEliteMiddleShipSpawns(level, plannedWaves.length);
+    this.eliteMiddleShipPlan = plan;
+    plan.forEach(({ waveIndex, eliteMiddleShipId }) => {
+      if (!plannedWaves[waveIndex]) return;
+      plannedWaves[waveIndex] = {
+        ...plannedWaves[waveIndex],
+        eliteMiddleShipId
+      };
+    });
+    if (plan.length) {
+      console.log(`[EliteMiddleShipPlan] level=${level} waves=${plannedWaves.length} plan=${plan.map(item => `${item.waveIndex + 1}:${item.eliteMiddleShipId}`).join(',')}`);
+    }
+    return plannedWaves;
   }
 
   getNormalWaveCount(level) {
@@ -799,7 +825,8 @@ export class EnemyManager {
     // SAFEGUARD: Check for active powerup correctly
     const isSlowTime = player &&
       player.activePowerup &&
-      player.activePowerup.type === 'slow_time';
+      player.activePowerup.type === 'slow_time' &&
+      !player.isPowerupSuppressed?.();
 
     const timeScale = isSlowTime ? 0.5 : 1.0;
     const tier = this.directorState?.tier || 0;
@@ -911,7 +938,6 @@ export class EnemyManager {
     const cadence = (this.directorState?.spawnCadenceScale || 1) * (config.cadence || 1);
     const delayStep = Math.max(55, (diff.enemyEntryDelayBaseMs || 150) / cadence);
     const entryDurationMs = Math.max(760, (diff.enemyEntryDurationMs || 2000) * (tactic.entrySpeed || 1));
-    const eliteChance = this.directorState?.eliteChance || 0.02;
     positions.forEach((pos, i) => {
       const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
       const enemy = new Enemy(startX, -100, type, this.level, this.game, waveColor);
@@ -927,11 +953,19 @@ export class EnemyManager {
       if (tactic.forcedDive) {
         enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (tactic.id === 'dive_chain' ? 260 : 190) + 520;
       }
-      if (Math.random() < eliteChance) enemy.applyElite?.();
       enemy.startEntry(startX, -50, pos.x, pos.y, entryDurationMs, i * delayStep);
       this.enemies.push(enemy);
       this.container.addChild(enemy.sprite);
     });
+    if (config.eliteMiddleShipId) {
+      this.spawnEliteMiddleShip(config.eliteMiddleShipId, {
+        formation,
+        tactic,
+        waveColor,
+        entry: config.entry || 'single',
+        delayMs: Math.min(900, Math.max(220, positions.length * delayStep * 0.35))
+      });
+    }
     console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count}`);
   }
 
@@ -943,6 +977,95 @@ export class EnemyManager {
       return (startLeft ? index % 2 === 0 : index % 2 !== 0) ? -100 : screenW + 100;
     }
     return startLeft ? -100 : screenW + 100;
+  }
+
+  spawnEliteMiddleShip(profileId, context = {}) {
+    const profile = getEliteMiddleShipProfile(profileId);
+    if (!profile) return null;
+    if ((Number(this.level) || 1) < profile.minLevel) return null;
+
+    const activeElites = this.enemies.filter(enemy =>
+      enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry)
+    ).length;
+    const maxActive = getEliteMiddleShipMaxActive(this.level);
+    if (activeElites >= maxActive) {
+      console.log(`[EliteMiddleShipSpawn] skipped id=${profile.id} active=${activeElites} cap=${maxActive}`);
+      return null;
+    }
+
+    const screenW = this.game.getWidth();
+    const screenH = this.game.getHeight();
+    const startLeft = Math.random() < 0.5;
+    const startX = this.getWaveEntryX(context.entry || 'single', this.eliteMiddleShipsSpawnedThisLevel, startLeft, screenW);
+    const targetX = Math.max(74, Math.min(screenW - 74, screenW * (0.32 + Math.random() * 0.36)));
+    const targetY = Math.max(92, Math.min(screenH * 0.34, 118 + Math.random() * 72));
+    const enemy = new Enemy(startX, -124, profile.id, this.level, this.game, context.waveColor || 'Black');
+    enemy.kind = 'elite_middle_ship';
+    enemy.applyWaveTactic?.(context.tactic || { id: 'elite_priority', fireScalar: 0.86, fireDelayMult: 1.16 }, {
+      index: 0,
+      count: 1,
+      formation: context.formation || 'ELITE',
+      centerX: targetX,
+      centerY: targetY,
+      side: targetX < screenW / 2 ? -1 : 1
+    });
+    enemy.startEntry(startX, -124, targetX, targetY, 1450, context.delayMs || 260);
+    this.enemies.push(enemy);
+    this.container.addChild(enemy.sprite);
+    this.eliteMiddleShipsSpawnedThisLevel += 1;
+
+    AudioManager.playSfx(profile.sfx?.spawn || 'elite_spawn_alert', { volume: 0.54, minIntervalMs: 900 });
+    const playScene = this.game.scenes?.play;
+    playScene?.showToast?.(`ELITE SIGNAL: ${profile.displayName}`, {
+      fontSize: this.game.getWidth() < 620 ? 14 : 18,
+      fill: '#ffd166',
+      stroke: '#1c0b00',
+      strokeThickness: 4,
+      duration: 1500,
+      slot: 'top',
+      type: 'elite_middle_ship',
+      priority: 4,
+      maxWidth: this.game.getWidth() * 0.76
+    });
+    console.log(`[EliteMiddleShipSpawn] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} id=${profile.id} role=${profile.role}`);
+    return enemy;
+  }
+
+  spawnEliteSupportDrone(source, { count = 2, split = false } = {}) {
+    if (!source?.active && !split) return 0;
+    const screenW = this.game.getWidth();
+    const type = pickGeneratedEnemyTypeForLevel(Math.max(1, Math.min(this.level || 1, 18)));
+    const spawnCount = Math.max(1, Math.min(3, count));
+    let spawned = 0;
+    for (let i = 0; i < spawnCount; i += 1) {
+      const side = i % 2 === 0 ? -1 : 1;
+      const startX = Math.max(42, Math.min(screenW - 42, (source.x || screenW / 2) + side * (42 + i * 18)));
+      const enemy = new Enemy(startX, (source.y || 90) + 12, type, this.level, this.game, source.waveColor || 'Blue');
+      enemy.kind = 'elite_support';
+      enemy.health = Math.max(1, Math.min(enemy.health, split ? 3 : 4));
+      enemy.maxHealth = enemy.health;
+      enemy.scoreValue = split ? 45 : 70;
+      enemy.shootDelay *= split ? 1.45 : 1.25;
+      enemy.radius = Math.max(12, Math.round(enemy.radius * 0.82));
+      enemy.updateHealthBar?.();
+      enemy.applyWaveTactic?.({ id: 'elite_support', fireScalar: split ? 0.35 : 0.5, fireDelayMult: 1.2, entrySpeed: 0.8 }, {
+        index: i,
+        count: spawnCount,
+        formation: 'ELITE_SUPPORT',
+        centerX: source.x || screenW / 2,
+        centerY: (source.y || 90) + 70,
+        side
+      });
+      enemy.startEntry(startX, (source.y || 90) - 24, startX + side * 36, (source.y || 90) + 78 + i * 22, 780, i * 120);
+      this.enemies.push(enemy);
+      this.container.addChild(enemy.sprite);
+      spawned += 1;
+    }
+    if (spawned > 0) {
+      AudioManager.playSfx('drone_launch_blip', { volume: 0.44, minIntervalMs: 260 });
+      console.log(`[EliteSupportDrone] source=${source.type} spawned=${spawned} split=${Boolean(split)}`);
+    }
+    return spawned;
   }
 
   getFormationPositions(type, count) {
@@ -1363,7 +1486,9 @@ export class EnemyManager {
     const enemy = String(config.type || 'hostiles').replace(/_/g, ' ').toUpperCase();
     const formation = String(config.formation || 'formation').replace(/_/g, ' ').toUpperCase();
     const tactic = this.resolveWaveTactic(config);
-    return `${tactic.label || 'TACTIC'} / ${enemy} ${formation}`;
+    const elite = getEliteMiddleShipProfile(config.eliteMiddleShipId);
+    const suffix = elite ? ` + ELITE ${String(elite.role || '').toUpperCase()}` : '';
+    return `${tactic.label || 'TACTIC'} / ${enemy} ${formation}${suffix}`;
   }
 
   shouldGuaranteeHijacker(level = this.level) {
