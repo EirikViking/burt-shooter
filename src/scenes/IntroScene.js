@@ -200,13 +200,20 @@ export class IntroScene {
       const textures = await PIXI.Assets.load(PANELS.map(panel => panel.image));
       PANELS.forEach((panel, index) => {
         const texture = Array.isArray(textures) ? textures[index] : textures?.[panel.image];
-        if (texture) this.panelTextures.set(panel.image, texture);
+      if (texture) this.panelTextures.set(panel.image, texture);
       });
       if (this.destroyed) return;
-      this.showPanel(0, { playAudio: false });
+      if (!this.started) {
+        this.showPanel(0, { playAudio: false });
+      } else {
+        const panel = PANELS[this.panelIndex];
+        const texture = panel ? this.panelTextures.get(panel.image) : null;
+        if (texture) this.backdrop.texture = texture;
+        this.layout();
+      }
     } catch (error) {
       console.warn('[IntroScene] Failed to load intro art', error);
-      if (!this.destroyed) this.showPanel(0, { playAudio: false });
+      if (!this.destroyed && !this.started) this.showPanel(0, { playAudio: false });
     }
   }
 
