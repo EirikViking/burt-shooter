@@ -1,0 +1,238 @@
+{
+  "generatedAt": "2026-05-23T12:50:20.279Z",
+  "baseUrl": "http://127.0.0.1:4298",
+  "build": "v2026-05-23_11-05-56",
+  "report": [
+    {
+      "file": "13-heavy-grid-swarm.png",
+      "title": "Heavy grid swarm",
+      "notes": "Late-level challenge-style wave staged through current enemy manager with dense enemies and bullets.",
+      "stagedCounts": {
+        "enemies": 24,
+        "bossAdds": 0,
+        "eliteMiddleShips": 0,
+        "playerBullets": 0,
+        "enemyBullets": 40,
+        "particles": 0
+      },
+      "finalCounts": {
+        "enemies": 24,
+        "bossAdds": 0,
+        "eliteMiddleShips": 0,
+        "playerBullets": 0,
+        "enemyBullets": 38,
+        "particles": 18
+      },
+      "level": 18,
+      "wave": {
+        "phase": "WAVES",
+        "state": "WAVE_ACTIVE",
+        "currentWaveIndex": 3,
+        "currentWaveNumber": 4,
+        "totalWaves": 6,
+        "briefingMs": 0,
+        "tactic": {
+          "id": "pulse_net",
+          "label": "PULSE NET",
+          "move": "pulse",
+          "shot": "net",
+          "volley": "pulse"
+        },
+        "nextTactic": null
+      },
+      "events": []
+    },
+    {
+      "file": "14-crossfire-pincer-swarm.png",
+      "title": "Crossfire pincer swarm",
+      "notes": "Wide pincer pressure with player fire and enemy crossfire from the current build.",
+      "stagedCounts": {
+        "enemies": 22,
+        "bossAdds": 0,
+        "eliteMiddleShips": 0,
+        "playerBullets": 0,
+        "enemyBullets": 22,
+        "particles": 0
+      },
+      "finalCounts": {
+        "enemies": 22,
+        "bossAdds": 0,
+        "eliteMiddleShips": 0,
+        "playerBullets": 0,
+        "enemyBullets": 20,
+        "particles": 0
+      },
+      "level": 22,
+      "wave": {
+        "phase": "WAVES",
+        "state": "WAVE_ACTIVE",
+        "currentWaveIndex": 4,
+        "currentWaveNumber": 5,
+        "totalWaves": 6,
+        "briefingMs": 0,
+        "tactic": {
+          "id": "crossfire_pincer",
+          "label": "CROSSFIRE PINCER",
+          "move": "pincer",
+          "shot": "crossfire",
+          "volley": "crossfire"
+        },
+        "nextTactic": null
+      },
+      "events": []
+    },
+    {
+      "file": "15-elite-swarm-overload.png",
+      "title": "Elite swarm overload",
+      "notes": "Elite midgame ship plus escort swarm from the current build.",
+      "stagedCounts": {
+        "enemies": 19,
+        "bossAdds": 0,
+        "eliteMiddleShips": 1,
+        "playerBullets": 0,
+        "enemyBullets": 19,
+        "particles": 0
+      },
+      "finalCounts": {
+        "enemies": 19,
+        "bossAdds": 0,
+        "eliteMiddleShips": 1,
+        "playerBullets": 0,
+        "enemyBullets": 17,
+        "particles": 12
+      },
+      "level": 34,
+      "wave": {
+        "phase": "WAVES",
+        "state": "WAVE_ACTIVE",
+        "currentWaveIndex": 5,
+        "currentWaveNumber": 6,
+        "totalWaves": 6,
+        "briefingMs": 0,
+        "tactic": {
+          "id": "weave_wall",
+          "label": "WEAVE WALL",
+          "move": "weave_wall",
+          "shot": "fan",
+          "volley": "pulse"
+        },
+        "nextTactic": null
+      },
+      "events": []
+    },
+    {
+      "file": "16-orbit-ring-chaos.png",
+      "title": "Orbit ring chaos",
+      "notes": "Circular swarm pressure and readable bullets from a late-level current build route.",
+      "stagedCounts": {
+        "enemies": 20,
+        "bossAdds": 0,
+        "eliteMiddleShips": 0,
+        "playerBullets": 0,
+        "enemyBullets": 40,
+        "particles": 0
+      },
+      "finalCounts": {
+        "enemies": 20,
+        "bossAdds": 0,
+        "eliteMiddleShips": 0,
+        "playerBullets": 0,
+        "enemyBullets": 40,
+        "particles": 0
+      },
+      "level": 28,
+      "wave": {
+        "phase": "WAVES",
+        "state": "WAVE_ACTIVE",
+        "currentWaveIndex": 4,
+        "currentWaveNumber": 5,
+        "totalWaves": 6,
+        "briefingMs": 0,
+        "tactic": {
+          "id": "orbit_snare",
+          "label": "ORBIT SNARE",
+          "move": "orbit",
+          "shot": "fan",
+          "volley": "staggered"
+        },
+        "nextTactic": null
+      },
+      "events": []
+    },
+    {
+      "file": "17-boss-bullet-pressure.png",
+      "title": "Boss bullet pressure",
+      "notes": "Live late-level boss pressure from current build debug route.",
+      "finalCounts": {
+        "enemies": 1,
+        "bossAdds": 0,
+        "eliteMiddleShips": 0,
+        "playerBullets": 0,
+        "enemyBullets": 8,
+        "particles": 1
+      },
+      "level": 20,
+      "boss": {
+        "x": 429,
+        "y": 210,
+        "radius": 105.60000000000002,
+        "kind": "boss",
+        "waveTactic": null,
+        "variant": null,
+        "eliteMiddleShip": null,
+        "health": 120,
+        "maxHealth": 120,
+        "phase": 3,
+        "bossProfile": "nova_boss_20",
+        "bossArchetype": "clock",
+        "bossMovement": "clock_step",
+        "bossMovementFamily": "tick",
+        "bossAttack": "clock",
+        "bossSignature": "ring",
+        "bossAnimation": {
+          "archetype": "clock",
+          "bodyPulse": 0.989,
+          "finFlap": 0.012,
+          "exhaust": 0.558,
+          "coreRadius": 13,
+          "nodeCount": 3,
+          "telegraph": 0.251,
+          "state": "firing",
+          "hurt": 0,
+          "recoil": 0.108,
+          "phasePulse": 0,
+          "phase": 3
+        },
+        "safeLanes": [
+          {
+            "kind": "ring-wedge",
+            "phase": 3,
+            "archetype": "clock",
+            "attack": "clock",
+            "signature": "ring",
+            "angle": 1.571,
+            "width": 0.6,
+            "label": "BOTTOM WEDGE"
+          }
+        ],
+        "phaseShift": {
+          "anchorOffset": -144,
+          "targetAnchorOffset": -166,
+          "laneYOffset": 22
+        },
+        "visualBounds": {
+          "width": 294,
+          "height": 293
+        },
+        "telegraph": {
+          "type": "radial",
+          "label": "REGULAR ATTACK TELL",
+          "attack": "clock",
+          "remainingMs": 534
+        },
+        "type": "Ln"
+      },
+      "events": []
+    }
+  ]
+}

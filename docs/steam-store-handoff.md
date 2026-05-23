@@ -11,8 +11,9 @@ This file turns the current release evidence into a Steamworks entry checklist. 
 The draft intentionally uses conservative claims:
 
 - `Partial Controller Support`, not full controller support, until the Steam-installed build validates text entry, pause/menu flow, and Steam Input metadata.
+- The current repo supports controller gameplay, pause, and some menu/game-over shortcuts, but does not yet have a game-specific Steam Input action manifest/config, controller glyph coverage, or full controller navigation through settings/highscores.
 - Steam Cloud deferred for v1 because the current desktop package uses local settings/local leaderboard storage instead of Steam Cloud.
-- Global leaderboard copy is currently supportable as an online/shared leaderboard claim on web. Steam leaderboard support now has an SDK-ready Electron bridge, but do not call it live Steam leaderboard support until the Steam-installed build passes the manual Steam runtime checklist in `docs/steam-leaderboards.md`.
+- Avoid public Steam leaderboard wording for now. Steam leaderboard support has an SDK-ready Electron bridge, but do not call it live Steam leaderboard support until the Steam-installed build passes the manual Steam runtime checklist in `docs/steam-leaderboards.md`.
 - Steam achievements deferred for v1 because no Steamworks API achievement integration is present.
 - English only until final public copy is approved.
 
@@ -21,7 +22,7 @@ The draft intentionally uses conservative claims:
 1. Create or open the real Steam app.
 2. Enter the title, short description, long description, feature bullets, tags, categories, and system requirements from `store_metadata_draft.json`.
 3. Upload capsule art from `release/steam-assets/draft-2026-05-17-nova-swarm/`.
-4. Upload screenshots from `release/steam-screenshots/steam-upload-candidates-2026-05-17/`.
+4. Upload screenshots from `release/steam-screenshots/steam-upload-candidates-2026-05-23-action/`.
 5. Upload the trailer only after the editorial candidate in `release/steam-trailer/candidate-2026-05-17-current/` has by-ear and store-submission approval.
 6. Keep achievements and Steam Cloud disabled unless implementation and validation are added.
 7. Set the launch executable to `Nova Swarm.exe`.

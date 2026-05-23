@@ -1,0 +1,602 @@
+[
+  {
+    "file": "13-dense-late-swarm.png",
+    "title": "Dense late-wave swarm",
+    "best": {
+      "score": 82,
+      "state": {
+        "coordinateSystem": "origin top-left, x right, y down",
+        "buildId": "v2026-05-23_11-05-56",
+        "gitSha": "74ed9c2",
+        "scene": "play",
+        "score": 415,
+        "level": 11,
+        "lives": 5,
+        "runMode": "unranked",
+        "runModeReason": "debug_route",
+        "globalLeaderboardCues": {
+          "global": false,
+          "top3": false,
+          "number1": false
+        },
+        "scoreSubmissionAllowed": false,
+        "selectedShipSpriteKey": "nova-player-ship-01.png",
+        "steamUploadDiagnostics": null,
+        "isPaused": false,
+        "overlays": {
+          "pause": false,
+          "settings": false,
+          "credits": false,
+          "fatal": false
+        },
+        "menu": null,
+        "settingsOverlay": null,
+        "audio": {
+          "masterVolume": 0.3,
+          "musicVolume": 0.2,
+          "sfxVolume": 0.4,
+          "voiceVolume": 0.45,
+          "musicEnabled": true,
+          "voiceEnabled": true,
+          "ctaVoiceEnabled": true,
+          "musicDuckFactor": 1,
+          "pauseDuckFactor": 1,
+          "currentMusicContext": "gameplay",
+          "musicPack": "classic",
+          "musicPlaying": true,
+          "musicReadyState": 4,
+          "currentMusicTrack": "Alone Against Enemy.mp3",
+          "lastSfxEvent": "shoot_small",
+          "lastSfxTrack": "laserSmall_003.mp3",
+          "lastVoiceEvent": "mission_control_hijacker",
+          "lastVoiceTrack": "mission_control_hijacker_01.mp3",
+          "lastVoiceSuppression": null,
+          "recentVoiceSuppressions": [],
+          "activeVoiceCount": 1,
+          "activeVoiceEvents": [
+            {
+              "eventName": "mission_control_hijacker",
+              "group": "announcer",
+              "track": "mission_control_hijacker_01.mp3",
+              "src": "http://127.0.0.1:4297/audio/voice/mission-control/mission_control_hijacker_01.mp3?v=v2026-05-23_11-05-56",
+              "cacheBust": "v2026-05-23_11-05-56",
+              "paused": false,
+              "ended": false
+            }
+          ],
+          "activeVoiceGroups": {
+            "announcer": {
+              "eventName": "mission_control_hijacker",
+              "group": "announcer",
+              "track": "mission_control_hijacker_01.mp3",
+              "src": "http://127.0.0.1:4297/audio/voice/mission-control/mission_control_hijacker_01.mp3?v=v2026-05-23_11-05-56",
+              "cacheBust": "v2026-05-23_11-05-56",
+              "paused": false,
+              "ended": false
+            }
+          }
+        },
+        "accessibility": {
+          "screenShake": 1,
+          "playerFocus": 0.72,
+          "colorAssist": false,
+          "prefersReducedMotion": false
+        },
+        "input": {
+          "gamepad": {
+            "connected": false,
+            "id": null,
+            "index": null,
+            "moveX": 0,
+            "moveY": 0,
+            "firing": false,
+            "dodge": false,
+            "pause": false,
+            "pauseJustPressed": false,
+            "buttons": {},
+            "updatedAt": 0
+          }
+        },
+        "toast": {
+          "active": [
+            {
+              "slot": "top",
+              "type": "hijacker",
+              "message": "BEAM BROKEN +250",
+              "title": null,
+              "imageAlias": null,
+              "duration": 900,
+              "ageMs": 77
+            }
+          ],
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          }
+        },
+        "scoring": {
+          "comboCount": 11,
+          "comboMultiplier": 2,
+          "dangerDodgeCount": 0,
+          "dangerDodgeTimerMs": 0,
+          "bestDangerDodgeStreak": 0,
+          "lastDangerDodgeScore": 0,
+          "grazeBreakReady": false,
+          "grazeBreakReadyMs": 0,
+          "grazeBreakBullets": 0,
+          "lastGrazeBreak": null
+        },
+        "wave": {
+          "phase": "WAVES",
+          "state": "WAVE_ACTIVE",
+          "currentWaveIndex": 1,
+          "currentWaveNumber": 2,
+          "totalWaves": 6,
+          "briefingMs": 0,
+          "tactic": {
+            "id": "orbit_snare",
+            "label": "ORBIT SNARE",
+            "move": "orbit",
+            "shot": "fan",
+            "volley": "staggered"
+          },
+          "nextTactic": null
+        },
+        "intro": null,
+        "shipSelect": null,
+        "gameOver": null,
+        "highscore": null,
+        "player": {
+          "x": 563,
+          "y": 598,
+          "active": true,
+          "radius": 11,
+          "shipVariant": "ion",
+          "shipTrait": "ION DASH",
+          "traitCombat": {
+            "projectileRadiusMult": 1,
+            "dodgeCooldownMult": 0.97,
+            "dodgeDurationMult": 1.02,
+            "bonusShotEvery": 0,
+            "bonusShotDamageMult": 0,
+            "wingShotEvery": 0,
+            "wingShotDamageMult": 0,
+            "wingShotAngle": 0,
+            "pierceEvery": 0,
+            "pierceDamageMult": 0,
+            "critEvery": 0,
+            "critDamageMult": 0,
+            "dodgePulseRadius": 0,
+            "nearMissScoreMult": 1.1
+          },
+          "traitState": {
+            "slug": "ion",
+            "label": "ION DASH",
+            "description": "Quicker bolts and crisp handling.",
+            "shotsFired": 64,
+            "bonusShotEvery": 0,
+            "wingShotEvery": 0,
+            "pierceEvery": 0,
+            "critEvery": 0,
+            "nextBonusShotIn": 0,
+            "nextWingShotIn": 0,
+            "nextPierceShotIn": 0,
+            "nextCritShotIn": 0,
+            "dodgePulseRadius": 0,
+            "nearMissScoreMult": 1.1,
+            "projectileRadiusMult": 1
+          },
+          "stats": "trait=ION_DASH fire=120 speed=5.98 dmg=1.05 proj=12.5 shots=2 pierce=false nearMiss=1.1x radius=1",
+          "powerup": null,
+          "powerups": [],
+          "statusEffects": [],
+          "tractorDebuff": {
+            "immune": false,
+            "immunityRemainingMs": 0,
+            "last": null,
+            "active": []
+          }
+        },
+        "hijacker": {
+          "x": 646,
+          "y": 141,
+          "health": 81,
+          "maxHealth": 85,
+          "tractor": {
+            "state": "cooldown",
+            "remainingMs": 1562,
+            "pullActive": false,
+            "target": {
+              "x": 611,
+              "y": 598
+            }
+          }
+        },
+        "tractorHijack": {
+          "active": false,
+          "current": null,
+          "last": null
+        },
+        "eliteMiddleShips": [],
+        "counts": {
+          "enemies": 10,
+          "bossAdds": 0,
+          "eliteMiddleShips": 0,
+          "playerBullets": 9,
+          "enemyBullets": 2,
+          "particles": 18
+        },
+        "enemyWeapons": {
+          "activeProfiles": [],
+          "visibleBullets": [
+            {
+              "x": 640,
+              "y": 497,
+              "radius": 5,
+              "profile": null,
+              "label": null,
+              "behavior": "straight",
+              "waveTactic": null,
+              "speed": 5
+            },
+            {
+              "x": 644,
+              "y": 284,
+              "radius": 5,
+              "profile": null,
+              "label": null,
+              "behavior": "straight",
+              "waveTactic": null,
+              "speed": 5
+            }
+          ]
+        },
+        "bossHazards": {
+          "active": [],
+          "lastHit": null
+        },
+        "visibleEnemies": [
+          {
+            "x": 359,
+            "y": 187,
+            "radius": 12,
+            "kind": "enemy",
+            "waveTactic": {
+              "id": "orbit_snare",
+              "label": "ORBIT SNARE",
+              "move": "orbit",
+              "shot": "fan",
+              "role": "left_flank"
+            },
+            "variant": "nova_enemy_012",
+            "eliteMiddleShip": null,
+            "health": 1,
+            "maxHealth": 1,
+            "phase": null,
+            "bossProfile": null,
+            "bossArchetype": null,
+            "bossMovement": null,
+            "bossMovementFamily": null,
+            "bossAttack": null,
+            "bossSignature": null,
+            "bossAnimation": null,
+            "safeLanes": [],
+            "phaseShift": null,
+            "visualBounds": {
+              "width": 46,
+              "height": 46
+            },
+            "telegraph": null,
+            "type": "nova_enemy_012"
+          },
+          {
+            "x": 932,
+            "y": 203,
+            "radius": 12,
+            "kind": "enemy",
+            "waveTactic": {
+              "id": "orbit_snare",
+              "label": "ORBIT SNARE",
+              "move": "orbit",
+              "shot": "fan",
+              "role": "left_flank"
+            },
+            "variant": "nova_enemy_012",
+            "eliteMiddleShip": null,
+            "health": 1,
+            "maxHealth": 1,
+            "phase": null,
+            "bossProfile": null,
+            "bossArchetype": null,
+            "bossMovement": null,
+            "bossMovementFamily": null,
+            "bossAttack": null,
+            "bossSignature": null,
+            "bossAnimation": null,
+            "safeLanes": [],
+            "phaseShift": null,
+            "visualBounds": {
+              "width": 43,
+              "height": 43
+            },
+            "telegraph": null,
+            "type": "nova_enemy_012"
+          },
+          {
+            "x": 207,
+            "y": 203,
+            "radius": 12,
+            "kind": "enemy",
+            "waveTactic": {
+              "id": "orbit_snare",
+              "label": "ORBIT SNARE",
+              "move": "orbit",
+              "shot": "fan",
+              "role": "left_flank"
+            },
+            "variant": "nova_enemy_012",
+            "eliteMiddleShip": null,
+            "health": 1,
+            "maxHealth": 1,
+            "phase": null,
+            "bossProfile": null,
+            "bossArchetype": null,
+            "bossMovement": null,
+            "bossMovementFamily": null,
+            "bossAttack": null,
+            "bossSignature": null,
+            "bossAnimation": null,
+            "safeLanes": [],
+            "phaseShift": null,
+            "visualBounds": {
+              "width": 51,
+              "height": 51
+            },
+            "telegraph": null,
+            "type": "nova_enemy_012"
+          },
+          {
+            "x": 1048,
+            "y": 191,
+            "radius": 12,
+            "kind": "enemy",
+            "waveTactic": {
+              "id": "orbit_snare",
+              "label": "ORBIT SNARE",
+              "move": "orbit",
+              "shot": "fan",
+              "role": "left_flank"
+            },
+            "variant": "nova_enemy_012",
+            "eliteMiddleShip": null,
+            "health": 1,
+            "maxHealth": 1,
+            "phase": null,
+            "bossProfile": null,
+            "bossArchetype": null,
+            "bossMovement": null,
+            "bossMovementFamily": null,
+            "bossAttack": null,
+            "bossSignature": null,
+            "bossAnimation": null,
+            "safeLanes": [],
+            "phaseShift": null,
+            "visualBounds": {
+              "width": 52,
+              "height": 52
+            },
+            "telegraph": null,
+            "type": "nova_enemy_012"
+          },
+          {
+            "x": 98,
+            "y": 166,
+            "radius": 12,
+            "kind": "enemy",
+            "waveTactic": {
+              "id": "orbit_snare",
+              "label": "ORBIT SNARE",
+              "move": "orbit",
+              "shot": "fan",
+              "role": "left_flank"
+            },
+            "variant": "nova_enemy_012",
+            "eliteMiddleShip": null,
+            "health": 1,
+            "maxHealth": 1,
+            "phase": null,
+            "bossProfile": null,
+            "bossArchetype": null,
+            "bossMovement": null,
+            "bossMovementFamily": null,
+            "bossAttack": null,
+            "bossSignature": null,
+            "bossAnimation": null,
+            "safeLanes": [],
+            "phaseShift": null,
+            "visualBounds": {
+              "width": 57,
+              "height": 57
+            },
+            "telegraph": null,
+            "type": "nova_enemy_012"
+          },
+          {
+            "x": 1186,
+            "y": 128,
+            "radius": 12,
+            "kind": "enemy",
+            "waveTactic": {
+              "id": "orbit_snare",
+              "label": "ORBIT SNARE",
+              "move": "orbit",
+              "shot": "fan",
+              "role": "left_flank"
+            },
+            "variant": "nova_enemy_012",
+            "eliteMiddleShip": null,
+            "health": 1,
+            "maxHealth": 1,
+            "phase": null,
+            "bossProfile": null,
+            "bossArchetype": null,
+            "bossMovement": null,
+            "bossMovementFamily": null,
+            "bossAttack": null,
+            "bossSignature": null,
+            "bossAnimation": null,
+            "safeLanes": [],
+            "phaseShift": null,
+            "visualBounds": {
+              "width": 56,
+              "height": 56
+            },
+            "telegraph": null,
+            "type": "nova_enemy_012"
+          },
+          {
+            "x": 23,
+            "y": 80,
+            "radius": 12,
+            "kind": "enemy",
+            "waveTactic": {
+              "id": "orbit_snare",
+              "label": "ORBIT SNARE",
+              "move": "orbit",
+              "shot": "fan",
+              "role": "right_flank"
+            },
+            "variant": "nova_enemy_012",
+            "eliteMiddleShip": null,
+            "health": 1,
+            "maxHealth": 1,
+            "phase": null,
+            "bossProfile": null,
+            "bossArchetype": null,
+            "bossMovement": null,
+            "bossMovementFamily": null,
+            "bossAttack": null,
+            "bossSignature": null,
+            "bossAnimation": null,
+            "safeLanes": [],
+            "phaseShift": null,
+            "visualBounds": {
+              "width": 57,
+              "height": 57
+            },
+            "telegraph": null,
+            "type": "nova_enemy_012"
+          },
+          {
+            "x": 1315,
+            "y": 29,
+            "radius": 12,
+            "kind": "enemy",
+            "waveTactic": {
+              "id": "orbit_snare",
+              "label": "ORBIT SNARE",
+              "move": "orbit",
+              "shot": "fan",
+              "role": "right_flank"
+            },
+            "variant": "nova_enemy_012",
+            "eliteMiddleShip": null,
+            "health": 1,
+            "maxHealth": 1,
+            "phase": null,
+            "bossProfile": null,
+            "bossArchetype": null,
+            "bossMovement": null,
+            "bossMovementFamily": null,
+            "bossAttack": null,
+            "bossSignature": null,
+            "bossAnimation": null,
+            "safeLanes": [],
+            "phaseShift": null,
+            "visualBounds": {
+              "width": 58,
+              "height": 58
+            },
+            "telegraph": null,
+            "type": "nova_enemy_012"
+          }
+        ]
+      },
+      "elapsed": 7200
+    }
+  },
+  {
+    "file": "14-late-boss-pressure.png",
+    "title": "Late boss pressure",
+    "state": {
+      "level": 15,
+      "enemies": 1,
+      "bullets": 0,
+      "boss": {
+        "x": 766,
+        "y": 229,
+        "radius": 105.60000000000002,
+        "kind": "boss",
+        "waveTactic": null,
+        "variant": null,
+        "eliteMiddleShip": null,
+        "health": 100,
+        "maxHealth": 100,
+        "phase": 3,
+        "bossProfile": "nova_boss_15",
+        "bossArchetype": "vortex",
+        "bossMovement": "vortex_orbit",
+        "bossMovementFamily": "orbit",
+        "bossAttack": "spiral",
+        "bossSignature": "cone",
+        "bossAnimation": {
+          "archetype": "vortex",
+          "bodyPulse": 1.012,
+          "finFlap": 0.063,
+          "exhaust": 0.807,
+          "coreRadius": 16,
+          "nodeCount": 3,
+          "telegraph": 0.841,
+          "state": "charge",
+          "hurt": 0,
+          "recoil": 0,
+          "phasePulse": 0,
+          "phase": 3
+        },
+        "safeLanes": [
+          {
+            "kind": "aimed-edges",
+            "phase": 3,
+            "archetype": "vortex",
+            "attack": "spiral",
+            "signature": "cone",
+            "angle": 1.571,
+            "width": 0.64,
+            "label": "EDGE LANES"
+          }
+        ],
+        "phaseShift": {
+          "anchorOffset": -121,
+          "targetAnchorOffset": -179,
+          "laneYOffset": 22
+        },
+        "visualBounds": {
+          "width": 266,
+          "height": 265
+        },
+        "telegraph": {
+          "type": "cone",
+          "label": "FANFIRE WINDUP",
+          "remainingMs": 179
+        },
+        "type": "Ln"
+      }
+    }
+  }
+]

@@ -41,7 +41,9 @@ const forbiddenMarketingTerms = [
   /\bAI\b/i,
   /\bgenerated\b/i,
   /\bGalaga\b/i,
-  /\bSpace Invaders\b/i
+  /\bSpace Invaders\b/i,
+  /\bSteam leaderboards?\b/i,
+  /Separate local and online leaderboards/i
 ];
 
 function readJson(file) {
@@ -127,6 +129,12 @@ if (!errors.length) {
   if (metadata.categories?.includes('Full Controller Support')) {
     errors.push('Do not claim Full Controller Support until Steam client text entry/controller metadata are validated');
   }
+  if (!metadata.categories?.includes('Partial Controller Support')) {
+    errors.push('Steam store categories must keep Partial Controller Support until full menu/settings/highscore navigation, text-entry behavior, controller glyphs, and Steam Input metadata are validated');
+  }
+  if (metadata.controllerSupportDecision?.steamworksCategory !== 'Partial Controller Support') {
+    errors.push('controllerSupportDecision.steamworksCategory must remain Partial Controller Support until Full Controller Support is validated');
+  }
   if (metadata.achievementsDecision?.status !== 'defer_for_v1') {
     warnings.push('Achievements decision differs from current no-Steamworks-API implementation');
   }
@@ -142,6 +150,13 @@ if (!errors.length) {
   const min = metadata.systemRequirements?.minimum || {};
   for (const key of ['os', 'processor', 'memory', 'graphics', 'storage']) {
     if (!min[key]) errors.push(`minimum systemRequirements.${key} is missing`);
+  }
+  if (min.storage && !/1\s*GB/i.test(min.storage)) {
+    errors.push('minimum systemRequirements.storage must be at least 1 GB to match the current packaged payload');
+  }
+  const rec = metadata.systemRequirements?.recommended || {};
+  if (rec.storage && !/1\s*GB/i.test(rec.storage)) {
+    errors.push('recommended systemRequirements.storage must be at least 1 GB to match the current packaged payload');
   }
 
   const assets = metadata.uploadAssets || {};
@@ -161,6 +176,12 @@ if (!errors.length) {
   }
   if (assets.trailerCandidate && !String(assets.trailerCandidate).includes('candidate-')) {
     errors.push('uploadAssets.trailerCandidate should point at a candidate-* folder');
+  }
+  if (assets.screenshots && String(assets.screenshots).includes('2026-05-17')) {
+    errors.push('uploadAssets.screenshots still points at the stale 2026-05-17 screenshot set');
+  }
+  if (assets.screenshots && !String(assets.screenshots).includes('2026-05-23-action')) {
+    errors.push('uploadAssets.screenshots should point at the current action-heavy 2026-05-23 screenshot set');
   }
 }
 

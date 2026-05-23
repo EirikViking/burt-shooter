@@ -16,7 +16,7 @@
   "shortDescription": "A fast modern arcade score-chaser: dodge readable swarms, blast a boss every level, grab chaotic bonus cores, and restart instantly for one more run.",
   "longDescription": [
     "Nova Swarm is a fast modern arcade score-chaser about surviving wave after wave of choreographed space nonsense. Pick your ship, dodge incoming fire, grab ridiculous bonus cores, and push through escalating enemy formations toward oversized boss encounters.",
-    "The game blends shoot-'em-up clarity with public arcade-comedy personality: readable bullets, compact wave briefings, original space-cabinet art, punchy radio callouts, local and online score chasing, and accessibility sliders for screen shake and player focus."
+    "The game blends shoot-'em-up clarity with public arcade-comedy personality: readable bullets, compact wave briefings, original space-cabinet art, punchy radio callouts, local score chasing, and accessibility sliders for screen shake and player focus."
   ],
   "featureBullets": [
     "Arcade wave shooting with handcrafted early pacing and escalating late-game pressure.",
@@ -26,7 +26,7 @@
     "Optional story intro with replay from the menu, never blocking quick play.",
     "Punchy radio callouts with music ducking.",
     "Accessibility controls for screen shake and player-focus visibility.",
-    "Separate local and online leaderboards, with local score saving when the network is unavailable."
+    "Local score saving for quick retries and one-more-run improvement."
   ],
   "tags": [
     "Arcade",
@@ -46,7 +46,7 @@
   ],
   "controllerSupportDecision": {
     "steamworksCategory": "Partial Controller Support",
-    "reason": "Gameplay, pause, and menus have automated gamepad smoke coverage, but final Steam client text entry and Steam Input metadata are not yet validated through the Steam-installed build."
+    "reason": "Controller gameplay, pause, and some menu/game-over shortcuts are implemented, but do not claim Full Controller Support until the Steam-installed build validates full menu/settings/highscore navigation, text-entry behavior, controller glyphs, and Steam Input metadata."
   },
   "steamCloudDecision": {
     "status": "defer_for_v1",
@@ -67,7 +67,7 @@
       "processor": "Dual-core 2.0 GHz",
       "memory": "4 GB RAM",
       "graphics": "WebGL-capable GPU / DirectX 11 class hardware",
-      "storage": "500 MB available space",
+      "storage": "1 GB available space",
       "notes": "Keyboard supported. Gamepad supported for gameplay pending final Steam client validation."
     },
     "recommended": {
@@ -75,12 +75,12 @@
       "processor": "Quad-core 2.5 GHz",
       "memory": "8 GB RAM",
       "graphics": "Dedicated or modern integrated GPU with current drivers",
-      "storage": "500 MB available space",
+      "storage": "1 GB available space",
       "notes": "Gamepad recommended for couch play after Steam client validation."
     }
   },
   "uploadAssets": {
-    "screenshots": "release/steam-screenshots/steam-upload-candidates-2026-05-17/",
+    "screenshots": "release/steam-screenshots/steam-upload-candidates-2026-05-23-action/",
     "capsules": "release/steam-assets/draft-2026-05-17-nova-swarm/",
     "trailerDraft": "release/steam-trailer/draft-2026-05-17-current/",
     "trailerCandidate": "release/steam-trailer/candidate-2026-05-17-current/"
