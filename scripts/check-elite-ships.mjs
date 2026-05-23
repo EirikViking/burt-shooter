@@ -48,6 +48,7 @@ if (manifestAssets.length !== 20) fail(`AssetManifest.generated.eliteMiddleShips
 
 const ids = new Set();
 const roles = new Set();
+const activeSfxKeys = new Set();
 const validMovement = new Set(ENEMY_MOVEMENT_STYLE_IDS);
 const validAttack = new Set(ENEMY_ATTACK_STYLE_IDS);
 const validSfx = new Set(Object.keys(SFX_CATALOG));
@@ -72,12 +73,22 @@ for (const profile of ELITE_MIDDLE_SHIPS) {
   if (!Number.isFinite(profile.spawnWeight) || profile.spawnWeight <= 0) fail(`${profile.id} invalid spawnWeight`);
   if (!profile.asset || !manifestAssets.includes(profile.asset)) fail(`${profile.id} asset not listed in manifest: ${profile.asset}`);
   if (!existsPublic(profile.asset)) fail(`${profile.id} missing asset file ${profile.asset}`);
+  if (!profile.sfx?.active) {
+    fail(`${profile.id} missing unique active SFX key`);
+  } else {
+    if (activeSfxKeys.has(profile.sfx.active)) fail(`${profile.id} reuses active SFX key ${profile.sfx.active}`);
+    activeSfxKeys.add(profile.sfx.active);
+    if (!/^elite_[a-z0-9_]+_active$/.test(profile.sfx.active)) {
+      fail(`${profile.id} active SFX should use a generated elite role key, got ${profile.sfx.active}`);
+    }
+  }
   for (const [event, key] of Object.entries(profile.sfx || {})) {
     if (!validSfx.has(key)) fail(`${profile.id} sfx.${event} references missing SFX key ${key}`);
   }
 }
 
 if (roles.size !== 20) fail(`expected 20 distinct roles, found ${roles.size}`);
+if (activeSfxKeys.size !== 20) fail(`expected 20 unique elite active SFX keys, found ${activeSfxKeys.size}`);
 const level11 = getEliteMiddleShipsForLevel(11);
 const level40 = getEliteMiddleShipsForLevel(40);
 if (level11.length >= 20) fail('level 11 must not expose all 20 elite middle ships');

@@ -229,6 +229,26 @@ export const SFX_MIX = {
     elite_special_charge: { volume: 0.46, minIntervalMs: 700 },
     elite_special_active: { volume: 0.48, minIntervalMs: 650 },
     elite_death: { volume: 0.58, minIntervalMs: 180 },
+    elite_tractor_puller_active: { volume: 0.48, minIntervalMs: 650 },
+    elite_shield_projector_active: { volume: 0.48, minIntervalMs: 650 },
+    elite_drone_carrier_active: { volume: 0.48, minIntervalMs: 650 },
+    elite_mine_layer_active: { volume: 0.48, minIntervalMs: 650 },
+    elite_sniper_rail_active: { volume: 0.54, minIntervalMs: 650 },
+    elite_jammer_disruptor_active: { volume: 0.46, minIntervalMs: 650 },
+    elite_repair_healer_active: { volume: 0.44, minIntervalMs: 650 },
+    elite_splitter_clone_active: { volume: 0.46, minIntervalMs: 650 },
+    elite_barrier_projector_active: { volume: 0.48, minIntervalMs: 650 },
+    elite_vortex_gravity_active: { volume: 0.5, minIntervalMs: 650 },
+    elite_burst_artillery_active: { volume: 0.52, minIntervalMs: 650 },
+    elite_phase_raider_active: { volume: 0.46, minIntervalMs: 650 },
+    elite_lane_blocker_active: { volume: 0.5, minIntervalMs: 650 },
+    elite_orb_webber_active: { volume: 0.48, minIntervalMs: 650 },
+    elite_missile_frigate_active: { volume: 0.52, minIntervalMs: 650 },
+    elite_mirror_decoy_active: { volume: 0.44, minIntervalMs: 650 },
+    elite_pulse_emp_active: { volume: 0.5, minIntervalMs: 650 },
+    elite_anchor_turret_active: { volume: 0.52, minIntervalMs: 650 },
+    elite_escort_commander_active: { volume: 0.46, minIntervalMs: 650 },
+    elite_hunter_active: { volume: 0.52, minIntervalMs: 650 },
     boss_beam_telegraph: { volume: 0.56, minIntervalMs: 700 },
     boss_beam_fire: { volume: 0.72, minIntervalMs: 700 },
     boss_web_telegraph: { volume: 0.48, minIntervalMs: 700 },
@@ -405,32 +425,86 @@ export const SFX_CATALOG = {
         getSfx('nova_tractor_break_bloom')
     ],
     'tractor_capture_sting': [
-        getSfx('nova_tractor_beam_active'),
-        getSfx('forceField_002')
+        getSfx('nova_tractor_capture_sting')
     ],
     'tractor_debuff_apply': [
-        getSfx('nova_player_hit_crackle'),
-        getSfx('nova_magnet_pull_warble')
+        getSfx('nova_tractor_debuff_apply')
     ],
     'tractor_debuff_expire': [
-        getSfx('nova_shield_snap'),
-        getSfx('forceField_000')
+        getSfx('nova_tractor_debuff_expire')
     ],
     'elite_spawn_alert': [
-        getSfx('nova_boss_arrival_alarm'),
-        getSfx('swarm_chatter_stinger')
+        getSfx('nova_elite_spawn_alert')
     ],
     'elite_special_charge': [
-        getSfx('nova_tractor_lock_charge'),
-        getSfx('nova_boss_beam_telegraph')
+        getSfx('nova_elite_special_charge')
     ],
     'elite_special_active': [
         getSfx('nova_enemy_pew_cluster'),
         getSfx('nova_boss_phase_surge')
     ],
     'elite_death': [
-        getSfx('explosionCrunch_003'),
-        getSfx('nova_tractor_break_bloom')
+        getSfx('nova_elite_death')
+    ],
+    'elite_tractor_puller_active': [
+        getSfx('nova_elite_tractor_puller_active')
+    ],
+    'elite_shield_projector_active': [
+        getSfx('nova_elite_shield_projector_active')
+    ],
+    'elite_drone_carrier_active': [
+        getSfx('nova_elite_drone_carrier_active')
+    ],
+    'elite_mine_layer_active': [
+        getSfx('nova_elite_mine_layer_active')
+    ],
+    'elite_sniper_rail_active': [
+        getSfx('nova_elite_sniper_rail_active')
+    ],
+    'elite_jammer_disruptor_active': [
+        getSfx('nova_elite_jammer_disruptor_active')
+    ],
+    'elite_repair_healer_active': [
+        getSfx('nova_elite_repair_healer_active')
+    ],
+    'elite_splitter_clone_active': [
+        getSfx('nova_elite_splitter_clone_active')
+    ],
+    'elite_barrier_projector_active': [
+        getSfx('nova_elite_barrier_projector_active')
+    ],
+    'elite_vortex_gravity_active': [
+        getSfx('nova_elite_vortex_gravity_active')
+    ],
+    'elite_burst_artillery_active': [
+        getSfx('nova_elite_burst_artillery_active')
+    ],
+    'elite_phase_raider_active': [
+        getSfx('nova_elite_phase_raider_active')
+    ],
+    'elite_lane_blocker_active': [
+        getSfx('nova_elite_lane_blocker_active')
+    ],
+    'elite_orb_webber_active': [
+        getSfx('nova_elite_orb_webber_active')
+    ],
+    'elite_missile_frigate_active': [
+        getSfx('nova_elite_missile_frigate_active')
+    ],
+    'elite_mirror_decoy_active': [
+        getSfx('nova_elite_mirror_decoy_active')
+    ],
+    'elite_pulse_emp_active': [
+        getSfx('nova_elite_pulse_emp_active')
+    ],
+    'elite_anchor_turret_active': [
+        getSfx('nova_elite_anchor_turret_active')
+    ],
+    'elite_escort_commander_active': [
+        getSfx('nova_elite_escort_commander_active')
+    ],
+    'elite_hunter_active': [
+        getSfx('nova_elite_hunter_active')
     ],
     'boss_beam_telegraph': [
         getSfx('nova_boss_beam_telegraph')

@@ -10,6 +10,165 @@ const onlyFiles = onlyArg
   ? new Set(onlyArg.slice('--only='.length).split(',').map((item) => item.trim()).filter(Boolean))
   : null;
 
+const eliteMiddleShipSounds = [
+  {
+    file: 'nova_elite_spawn_alert.mp3',
+    text: 'A compact elite enemy arrival alert for a neon arcade space shooter, urgent priority-threat sting, crisp synthetic alarm and bass pulse, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_elite_special_charge.mp3',
+    text: 'A short elite enemy special-ability charge cue, rising sci-fi capacitor whine with readable warning ticks, polished arcade combat sound, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_elite_death.mp3',
+    text: 'A punchy elite enemy destruction sound for a neon arcade shooter, compact metal hull collapse, bright plasma crackle, premium score payoff sparkle, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_tractor_capture_sting.mp3',
+    text: 'A sharp tractor beam capture sting, magnetic lock snap, short graviton cable clamp, urgent but clean in a busy arcade mix, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_tractor_debuff_apply.mp3',
+    text: 'A brief negative status effect apply sound, corrupt sci-fi sparkle and electric status glitch, readable danger feedback, not harsh, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_tractor_debuff_expire.mp3',
+    text: 'A short status effect recovery sound, clean shield reboot chirp and soft upward shimmer, reassuring but subtle, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.62
+  },
+  {
+    file: 'nova_elite_tractor_puller_active.mp3',
+    text: 'A unique tractor puller elite active sound, magnetic hook lashes out, pulsing gravity cable locks onto a target, tense neon arcade sci-fi, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.7
+  },
+  {
+    file: 'nova_elite_shield_projector_active.mp3',
+    text: 'A unique shield projector elite active sound, crystalline force halo blooms outward with glassy blue energy, defensive and readable, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_drone_carrier_active.mp3',
+    text: 'A unique drone carrier elite active sound, tiny hangar clamps open, robotic launch chirps and miniature thrusters burst out, playful but threatening, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_mine_layer_active.mp3',
+    text: 'A unique mine layer elite active sound, hot mine pod ejects with metallic clack, warning beep arms, small plasma fuse spark, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_sniper_rail_active.mp3',
+    text: 'A unique sniper rail ship active sound, needle-thin railgun lance fires, bright electric crack and fast high-energy snap, clean and precise, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.7
+  },
+  {
+    file: 'nova_elite_jammer_disruptor_active.mp3',
+    text: 'A unique jammer disruptor elite active sound, corrupt radio static pulse, crunchy digital interference burst and short warning buzz, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_repair_healer_active.mp3',
+    text: 'A unique repair healer elite active sound, green repair lattice pulse, soft robotic welders and restorative energy sparkle, supportive but still alien, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_elite_splitter_clone_active.mp3',
+    text: 'A unique splitter clone elite active sound, shell splits with elastic metal pop, twin hologram chirps and quick duplicate shimmer, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_barrier_projector_active.mp3',
+    text: 'A unique barrier projector elite active sound, hardlight wall slams into place, bright rectangular energy shield thump and lattice shimmer, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_vortex_gravity_active.mp3',
+    text: 'A unique vortex gravity elite active sound, swirling gravity well opens, low circular pull with sparkling particles orbiting inward, readable and not muddy, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.7
+  },
+  {
+    file: 'nova_elite_burst_artillery_active.mp3',
+    text: 'A unique burst artillery elite active sound, three compact plasma mortar launches in staggered rhythm, heavy but clean arcade impacts, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_phase_raider_active.mp3',
+    text: 'A unique phase raider elite active sound, glassy ship flicker, airy phase blink and quick dimensional shimmer, elegant and slippery, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_lane_blocker_active.mp3',
+    text: 'A unique lane blocker elite active sound, heavy energy barricade clamps deploy, metallic lock and warning tone, readable lane-denial cue, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_orb_webber_active.mp3',
+    text: 'A unique orb webber elite active sound, sticky plasma orbs weave filaments, elastic cyber web snap and glowing thread shimmer, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_missile_frigate_active.mp3',
+    text: 'A unique missile frigate elite active sound, dual missile lock chirps, compact rocket ignition and guided launch whoosh, punchy but not huge, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_mirror_decoy_active.mp3',
+    text: 'A unique mirror decoy elite active sound, holographic duplicate shimmer, prismatic mirror flicker and quick misdirection sparkle, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_pulse_emp_active.mp3',
+    text: 'A unique pulse EMP elite active sound, blue electric ring discharges outward, crisp electromagnetic zap and short system-glitch tail, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.7
+  },
+  {
+    file: 'nova_elite_anchor_turret_active.mp3',
+    text: 'A unique anchor turret elite active sound, heavy turret braces deploy, servo clunk and fan-burst weapon spin-up, weighty but compact, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_escort_commander_active.mp3',
+    text: 'A unique escort commander elite active sound, tactical command ping, synchronized squadron lock-on chirps and confident energy pulse, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_elite_hunter_active.mp3',
+    text: 'A unique late game elite hunter active sound, predatory vector dash, sharp plasma claws and fast lock-on burst, dangerous but clean, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.7
+  }
+];
+
 const sounds = [
   {
     file: 'nova_boss_arrival_alarm.mp3',
@@ -238,7 +397,8 @@ const sounds = [
     text: 'A boss special weapon impact on a player shield or hull, hot plasma hit, metallic crackle, brief low thump, urgent but not harsh, no voice, no melody, under one second.',
     duration_seconds: 1,
     prompt_influence: 0.64
-  }
+  },
+  ...eliteMiddleShipSounds
 ];
 
 function requireApiKey() {

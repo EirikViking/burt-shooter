@@ -36,8 +36,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.22,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'tractor_lock_charge',
-      active: 'tractor_beam_active',
+      charge: 'elite_special_charge',
+      active: 'elite_tractor_puller_active',
       death: 'elite_death'
     },
     vfx: ['tractorForceField', 'captureBurst', 'playerDebuffRing'],
@@ -75,7 +75,7 @@ export const ELITE_MIDDLE_SHIPS = [
     sfx: {
       spawn: 'elite_spawn_alert',
       charge: 'elite_special_charge',
-      active: 'forceField',
+      active: 'elite_shield_projector_active',
       death: 'elite_death'
     },
     vfx: ['shieldAura', 'allyHalo'],
@@ -113,7 +113,7 @@ export const ELITE_MIDDLE_SHIPS = [
     sfx: {
       spawn: 'elite_spawn_alert',
       charge: 'elite_special_charge',
-      active: 'drone_launch_blip',
+      active: 'elite_drone_carrier_active',
       death: 'elite_death'
     },
     vfx: ['droneBayGlow', 'launchSparks'],
@@ -151,7 +151,7 @@ export const ELITE_MIDDLE_SHIPS = [
     sfx: {
       spawn: 'elite_spawn_alert',
       charge: 'elite_special_charge',
-      active: 'boss_net_fire',
+      active: 'elite_mine_layer_active',
       death: 'elite_death'
     },
     vfx: ['mineDropWarning', 'podFlash'],
@@ -188,8 +188,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.19,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'boss_beam_telegraph',
-      active: 'boss_beam_fire',
+      charge: 'elite_special_charge',
+      active: 'elite_sniper_rail_active',
       death: 'elite_death'
     },
     vfx: ['sniperAimLine', 'railMuzzle'],
@@ -227,7 +227,7 @@ export const ELITE_MIDDLE_SHIPS = [
     sfx: {
       spawn: 'elite_spawn_alert',
       charge: 'elite_special_charge',
-      active: 'trait_bonus_hit',
+      active: 'elite_jammer_disruptor_active',
       death: 'elite_death'
     },
     vfx: ['jammerPulse', 'antennaStatic'],
@@ -265,7 +265,7 @@ export const ELITE_MIDDLE_SHIPS = [
     sfx: {
       spawn: 'elite_spawn_alert',
       charge: 'elite_special_charge',
-      active: 'shield_up',
+      active: 'elite_repair_healer_active',
       death: 'elite_death'
     },
     vfx: ['repairBeam', 'greenPulse'],
@@ -302,8 +302,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.22,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'ghost_phase_shift',
-      active: 'drone_launch_blip',
+      charge: 'elite_special_charge',
+      active: 'elite_splitter_clone_active',
       death: 'elite_death'
     },
     vfx: ['cloneShimmer', 'splitDeathBurst'],
@@ -341,7 +341,7 @@ export const ELITE_MIDDLE_SHIPS = [
     sfx: {
       spawn: 'elite_spawn_alert',
       charge: 'elite_special_charge',
-      active: 'forceField',
+      active: 'elite_barrier_projector_active',
       death: 'elite_death'
     },
     vfx: ['barrierPanels', 'edgeShimmer'],
@@ -378,8 +378,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.25,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'time_slow_warp',
-      active: 'magnet_pull',
+      charge: 'elite_special_charge',
+      active: 'elite_vortex_gravity_active',
       death: 'elite_death'
     },
     vfx: ['vortexRings', 'gravityPullLines'],
@@ -416,8 +416,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.2,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'orbital_strike_charge',
-      active: 'shoot_heavy',
+      charge: 'elite_special_charge',
+      active: 'elite_burst_artillery_active',
       death: 'elite_death'
     },
     vfx: ['artilleryCharge', 'mortarMuzzles'],
@@ -454,8 +454,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.23,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'ghost_phase_shift',
-      active: 'ghost_phase_shift',
+      charge: 'elite_special_charge',
+      active: 'elite_phase_raider_active',
       death: 'elite_death'
     },
     vfx: ['phaseShimmer', 'afterImage'],
@@ -492,8 +492,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.21,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'boss_net_telegraph',
-      active: 'boss_net_fire',
+      charge: 'elite_special_charge',
+      active: 'elite_lane_blocker_active',
       death: 'elite_death'
     },
     vfx: ['laneBlockWarning', 'hardlightBars'],
@@ -530,8 +530,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.24,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'boss_web_telegraph',
-      active: 'boss_web_fire',
+      charge: 'elite_special_charge',
+      active: 'elite_orb_webber_active',
       death: 'elite_death'
     },
     vfx: ['orbWebLines', 'nodePulse'],
@@ -569,7 +569,7 @@ export const ELITE_MIDDLE_SHIPS = [
     sfx: {
       spawn: 'elite_spawn_alert',
       charge: 'elite_special_charge',
-      active: 'shoot_heavy',
+      active: 'elite_missile_frigate_active',
       death: 'elite_death'
     },
     vfx: ['missileTubeFlash', 'redWarningDots'],
@@ -606,8 +606,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.24,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'ghost_phase_shift',
-      active: 'ghost_phase_shift',
+      charge: 'elite_special_charge',
+      active: 'elite_mirror_decoy_active',
       death: 'elite_death'
     },
     vfx: ['mirrorDecoyShimmer', 'afterImage'],
@@ -645,7 +645,7 @@ export const ELITE_MIDDLE_SHIPS = [
     sfx: {
       spawn: 'elite_spawn_alert',
       charge: 'elite_special_charge',
-      active: 'time_slow_warp',
+      active: 'elite_pulse_emp_active',
       death: 'elite_death'
     },
     vfx: ['empPulse', 'capacitorArc'],
@@ -682,8 +682,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.2,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'orbital_strike_charge',
-      active: 'shoot_heavy',
+      charge: 'elite_special_charge',
+      active: 'elite_anchor_turret_active',
       death: 'elite_death'
     },
     vfx: ['turretCharge', 'anchorRing'],
@@ -721,7 +721,7 @@ export const ELITE_MIDDLE_SHIPS = [
     sfx: {
       spawn: 'elite_spawn_alert',
       charge: 'elite_special_charge',
-      active: 'achievement',
+      active: 'elite_escort_commander_active',
       death: 'elite_death'
     },
     vfx: ['commandAura', 'escortPips'],
@@ -758,8 +758,8 @@ export const ELITE_MIDDLE_SHIPS = [
     glowAlpha: 0.23,
     sfx: {
       spawn: 'elite_spawn_alert',
-      charge: 'boss_beam_telegraph',
-      active: 'boss_beam_fire',
+      charge: 'elite_special_charge',
+      active: 'elite_hunter_active',
       death: 'elite_death'
     },
     vfx: ['hunterLock', 'greenPredatorDash'],

@@ -71,16 +71,39 @@ Tractor capture now rolls one temporary status effect, then grants a 5.5 second 
 
 ## SFX Notes
 
-No new audio files were added for this pass. New gameplay events reuse existing balanced/generated Nova Swarm SFX through `src/audio/SoundCatalog.js`:
+The elite audio pass uses ElevenLabs Sound Generation and stores runtime files in `public/audio/sfx/nova-swarm/`. Shared generated cues cover elite arrival, special charge, elite death, tractor capture, debuff apply, and debuff recovery:
 
-- `elite_spawn_alert`
-- `elite_special_charge`
-- `elite_special_active`
-- `elite_death`
-- `tractor_capture_sting`
-- `tractor_debuff_apply`
-- `tractor_debuff_expire`
-- Existing role cues such as `tractor_lock_charge`, `tractor_beam_active`, `boss_beam_telegraph`, `boss_beam_fire`, `drone_launch_blip`, `forceField`, `boss_net_fire`, `boss_web_fire`, `orbital_strike_charge`, `ghost_phase_shift`, and `time_slow_warp`.
+- `nova_elite_spawn_alert.mp3`
+- `nova_elite_special_charge.mp3`
+- `nova_elite_death.mp3`
+- `nova_tractor_capture_sting.mp3`
+- `nova_tractor_debuff_apply.mp3`
+- `nova_tractor_debuff_expire.mp3`
+
+Each elite middle ship also has its own generated active/special cue wired through `src/config/EliteMiddleShips.js` and `src/audio/SoundCatalog.js`:
+
+- `nova_elite_tractor_puller_active.mp3`
+- `nova_elite_shield_projector_active.mp3`
+- `nova_elite_drone_carrier_active.mp3`
+- `nova_elite_mine_layer_active.mp3`
+- `nova_elite_sniper_rail_active.mp3`
+- `nova_elite_jammer_disruptor_active.mp3`
+- `nova_elite_repair_healer_active.mp3`
+- `nova_elite_splitter_clone_active.mp3`
+- `nova_elite_barrier_projector_active.mp3`
+- `nova_elite_vortex_gravity_active.mp3`
+- `nova_elite_burst_artillery_active.mp3`
+- `nova_elite_phase_raider_active.mp3`
+- `nova_elite_lane_blocker_active.mp3`
+- `nova_elite_orb_webber_active.mp3`
+- `nova_elite_missile_frigate_active.mp3`
+- `nova_elite_mirror_decoy_active.mp3`
+- `nova_elite_pulse_emp_active.mp3`
+- `nova_elite_anchor_turret_active.mp3`
+- `nova_elite_escort_commander_active.mp3`
+- `nova_elite_hunter_active.mp3`
+
+`npm run check:elite-ships` requires all 20 active elite SFX keys to be unique so this cannot silently regress to shared role audio.
 
 ## Validation
 
@@ -95,5 +118,5 @@ No new audio files were added for this pass. New gameplay events reuse existing 
 ## Known Risks And Follow Ups
 
 - Some elite abilities intentionally reuse existing projectile behavior rather than adding bespoke physics. This keeps the release surface small but leaves room for later role-specific refinements.
-- Elite audio uses event aliases to avoid file bloat. A future pass could add a small custom SFX pack if the mix needs stronger role separation.
+- The new SFX were generated quickly from role prompts and validated structurally by the audio audit. A manual listening pass is still recommended before release freeze.
 - Late-game two-elite combinations should be watched in longer playtests; the cap is conservative, but the commander, repairer, and barrier roles are the highest-risk pairings.
