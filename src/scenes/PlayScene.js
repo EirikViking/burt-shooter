@@ -129,6 +129,9 @@ export class PlayScene {
     this.introComplete = false;
     this.introOverlay = null;
     this.shipIntroToken = 0;
+    this.startupToken = 0;
+    this.startupSequenceStarted = false;
+    this.startupAssetTimeout = null;
     this.introStartTime = 0;
     this.activeTopToast = null;
     this.activeCornerToast = null;
@@ -270,6 +273,13 @@ export class PlayScene {
     this.introActive = false;
     this.introComplete = false;
     this.shipIntroToken += 1;
+    this.startupToken += 1;
+    this.startupSequenceStarted = false;
+    if (this.startupAssetTimeout) {
+      clearTimeout(this.startupAssetTimeout);
+      this.startupAssetTimeout = null;
+    }
+    const startupToken = this.startupToken;
     if (this.introOverlay?.parent) {
       this.introOverlay.parent.removeChild(this.introOverlay);
     }
@@ -298,46 +308,26 @@ export class PlayScene {
     this.bossHazardLayer.zIndex = 66;
     this.gameContainer.addChild(this.bossHazardLayer);
 
-    // Initial load of ships AND Ranks
-    Promise.all([
+    // Initial load of ships AND ranks. Gameplay must not wait forever on
+    // non-critical visual preloads, especially on first prod launch.
+    const startupAssetsReady = Promise.allSettled([
       GameAssets.loadShips(),
       RankAssets.preloadAll()
-    ]).then(() => {
-      // Sync rank state to prevent immediate spam if starting with score > 0 (handled in Game, but good safety)
-      this._lastRankUpSeen = this.game.rankIndex;
-
-      // Create player AFTER ships are loaded to ensure texture is ready
-      if (this.player) {
-        this.gameContainer.removeChild(this.player.sprite);
+    ]);
+    this.startupAssetTimeout = setTimeout(() => {
+      console.warn('[PlayScene] Startup asset preload timed out; starting gameplay with available textures.');
+      this.startInitialGameplay(startupToken, 'asset_timeout');
+    }, 5000);
+    startupAssetsReady.then((results) => {
+      if (this.startupAssetTimeout) {
+        clearTimeout(this.startupAssetTimeout);
+        this.startupAssetTimeout = null;
       }
-      const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
-      console.log('[PlayScene] Assets ready, creating player with spriteKey=' + spriteKey);
-      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
-      this.gameContainer.addChild(this.player.sprite);
-      const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
-      this.player.setRank(initialRank, 'init');
-
-      this.applySeasonCosmetics();
-
-      // DEBUG: Log ship selection details
-      if (this.player) {
-        console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
-        console.log(`[ShipDebug] Selected: ${this.game.selectedShipSpriteKey}`);
-        console.log(`[ShipDebug] Active: ${this.player.selectedShipSpriteKey}`);
-        console.log(`[ShipDebug] PlayerSprite: exists=${!!this.player.sprite} alpha=${this.player.sprite?.alpha} visible=${this.player.sprite?.visible} x=${this.player.sprite?.x} y=${this.player.sprite?.y}`);
-        const textureSource = this.player.shipSprite?.texture?.source;
-        console.log(`[ShipDebug] Texture: ${textureSource?.resource?.url || textureSource?.label || 'loaded'}`);
+      const failed = results.filter(result => result.status === 'rejected');
+      if (failed.length > 0) {
+        console.warn('[PlayScene] Startup asset preload completed with failures:', failed.length);
       }
-
-      const controlSmoke = new URLSearchParams(window.location.search).get('controlSmoke') === '1';
-      if (controlSmoke) {
-        this.introActive = false;
-        this.introComplete = true;
-        this.startLevel('controlSmoke');
-      } else {
-        // Start ship intro animation
-        this.startShipIntro(spriteKey);
-      }
+      this.startInitialGameplay(startupToken, 'assets_ready');
     });
 
     // Create placeholder player immediately (will be replaced)
@@ -405,6 +395,80 @@ export class PlayScene {
 
     console.log(`PlayScene build:${BUILD_ID}`);
     this.isReady = true;
+  }
+
+  startInitialGameplay(startupToken, source = 'unknown') {
+    if (startupToken !== this.startupToken) {
+      return;
+    }
+    if (this.game?.currentScene && this.game.currentScene !== this) {
+      return;
+    }
+    if (this.startupSequenceStarted) {
+      if (source === 'assets_ready') {
+        this.refreshPlayerSpriteAfterStartupAssets();
+      }
+      return;
+    }
+
+    this.startupSequenceStarted = true;
+
+    // Sync rank state to prevent immediate spam if starting with score > 0.
+    this._lastRankUpSeen = this.game.rankIndex;
+
+    const { width, height } = this.game.app.screen;
+    const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
+    const shouldRebuildPlayer = source === 'assets_ready' || !this.player;
+    if (shouldRebuildPlayer) {
+      if (this.player?.sprite?.parent) {
+        this.player.sprite.parent.removeChild(this.player.sprite);
+      }
+      console.log(`[PlayScene] Startup ready source=${source}, creating player with spriteKey=${spriteKey}`);
+      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
+      this.gameContainer.addChild(this.player.sprite);
+    } else if (this.player?.sprite && !this.player.sprite.parent) {
+      this.gameContainer.addChild(this.player.sprite);
+    }
+
+    const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
+    if (this.player?.setRank) {
+      this.player.setRank(initialRank, source === 'assets_ready' ? 'init' : 'init_asset_timeout');
+    }
+
+    this.applySeasonCosmetics();
+
+    // DEBUG: Log ship selection details
+    if (this.player) {
+      console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
+      console.log(`[ShipDebug] Selected: ${this.game.selectedShipSpriteKey}`);
+      console.log(`[ShipDebug] Active: ${this.player.selectedShipSpriteKey}`);
+      console.log(`[ShipDebug] PlayerSprite: exists=${!!this.player.sprite} alpha=${this.player.sprite?.alpha} visible=${this.player.sprite?.visible} x=${this.player.sprite?.x} y=${this.player.sprite?.y}`);
+      const textureSource = this.player.shipSprite?.texture?.source;
+      console.log(`[ShipDebug] Texture: ${textureSource?.resource?.url || textureSource?.label || 'loaded'}`);
+    }
+
+    const controlSmoke = new URLSearchParams(window.location.search).get('controlSmoke') === '1';
+    if (controlSmoke) {
+      this.introActive = false;
+      this.introComplete = true;
+      this.startLevel('controlSmoke');
+    } else {
+      this.startShipIntro(spriteKey);
+    }
+  }
+
+  refreshPlayerSpriteAfterStartupAssets() {
+    if (!this.player || this.game?.currentScene !== this) {
+      return;
+    }
+    const hasValidTexture = GameAssets.isValidTexture(this.player.shipSprite?.texture);
+    if (hasValidTexture) {
+      return;
+    }
+    this.player.rebuildShipSprite?.('startup_assets_ready');
+    const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
+    this.player.setRank?.(initialRank, 'startup_assets_ready');
+    this.applySeasonCosmetics();
   }
 
   handleDebugKeys(e) {
@@ -2049,10 +2113,15 @@ export class PlayScene {
     this.flushBalanceDebugSummary('scene_destroy');
     this.closeSettingsOverlay();
     this.shipIntroToken += 1;
+    this.startupToken += 1;
 
     if (this.levelAdvanceTimeout) {
       clearTimeout(this.levelAdvanceTimeout);
       this.levelAdvanceTimeout = null;
+    }
+    if (this.startupAssetTimeout) {
+      clearTimeout(this.startupAssetTimeout);
+      this.startupAssetTimeout = null;
     }
     if (this._debugKeyHandler) {
       window.removeEventListener('keydown', this._debugKeyHandler);
