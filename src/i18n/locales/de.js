@@ -536,6 +536,11 @@ const patterns = Object.freeze([
     replace: (match, helpers) => `BOSS BESIEGT! +1000\nRUMPFREPARATUR +${match[1]}\n${helpers.translate(match[2])}`
   },
   {
+    id: 'hullRepairValue',
+    regex: /^HULL REPAIR \+(\d+)$/,
+    replace: (match) => `RUMPFREPARATUR +${match[1]}`
+  },
+  {
     id: 'bossDefeated',
     regex: /^BOSS DEFEATED! \+1000\n(.+)$/,
     replace: (match, helpers) => `BOSS BESIEGT! +1000\n${helpers.translate(match[1])}`

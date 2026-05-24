@@ -27,6 +27,18 @@ Future localization or deploy work must start from a clean baseline that include
 
 Store page localization and Steamworks language support settings are managed outside the game code and are not changed by this runtime localization layer.
 
+## Adding or Changing Text
+
+English source text lives in the i18n source locale/pattern system. New player-facing text must be added through i18n keys, source text, or dynamic patterns/helpers, not as unmanaged hardcoded scene/UI copy.
+
+When a change adds or edits visible text, update every supported locale in the same commit. If a translation cannot be completed immediately, add an explicit localization TODO that is detected by `npm run check:i18n` and report it; do not silently leave English fallback in non-English locales.
+
+Dynamic/interpolated strings should use locale patterns/helpers so numbers, ranks, ship names, player names, and score values keep their formatting. `phrasePool` combat/story flavor text is player-facing too and must be localized with the rest of the interface.
+
+After any player-facing text change, run `npm run check:i18n`. When layout or visible text changes, also run `npm run check:i18n-ui`. Visual QA is mandatory for CJK, Korean, Japanese, Russian, and other scripts where font/glyph/layout issues are likely.
+
+Steamworks support remains Interface only unless localized audio or complete subtitles are actually implemented. Future deploys must not happen from stale branches and must verify the temporary marketing hotkeys are still present.
+
 ## 2026-05-24 Top 3 Polish Pass
 
 The top 3 polish branch fixes Spanish punctuation/naturalness, shortens cramped Russian Settings labels, lightly polishes Simplified Chinese HUD wording, and fixes empty leaderboard overlap across English, German, Spanish Spain, Russian, and Simplified Chinese. Evidence is stored locally under `test-results/i18n-top3-polish-report/`.

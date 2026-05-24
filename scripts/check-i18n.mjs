@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { de } from '../src/i18n/locales/de.js';
 import { en } from '../src/i18n/locales/en.js';
 import { es } from '../src/i18n/locales/es.js';
@@ -35,6 +35,143 @@ for (const [code, locale] of locales) {
   const missingKeys = enKeys.filter((key) => !localeKeys.has(key));
   assert.deepEqual(missingKeys, [], `${code} locale is missing keys: ${missingKeys.join(', ')}`);
 }
+
+const sourceLocales = locales.map(([, locale]) => locale);
+const sourceTextKeys = new Set(sourceLocales.flatMap((locale) => Object.keys(locale.sourceText || {})));
+const allowTodos = process.argv.includes('--allow-i18n-todo');
+const todoMarkers = [];
+for (const [code, locale] of locales) {
+  for (const [key, value] of Object.entries(locale.sourceText || {})) {
+    if (/\b(TODO|TBD|TRANSLATE|UNLOCALIZED)\b/i.test(String(value))) {
+      todoMarkers.push(`${code}.sourceText.${key}`);
+    }
+  }
+}
+assert.ok(
+  allowTodos || todoMarkers.length === 0,
+  `New player-facing text requires localization updates. Update all locales or add an explicit tracked TODO. TODO markers found: ${todoMarkers.join(', ')}`
+);
+
+const patternIds = locales.map(([code, locale]) => [code, (locale.patterns || []).map((pattern) => pattern.id)]);
+const referencePatternIds = patternIds[0]?.[1] || [];
+for (const [code, ids] of patternIds) {
+  assert.deepEqual(ids, referencePatternIds, `${code} locale pattern ids differ from reference pattern ids`);
+}
+
+const phrasePool = readFileSync('src/text/phrasePool.js', 'utf8');
+for (const marker of [
+  'arcadePhrasesDe',
+  'storyTransmissionsDe',
+  'localizedArcadePhrases',
+  'localizedStoryTransmissions',
+  'localizedFragments',
+  'localizedLabels'
+]) {
+  assert.match(phrasePool, new RegExp(marker), `phrasePool localization marker missing: ${marker}`);
+}
+
+const hardcodedTextAllowlist = new Set([
+  '${unlockedCount} / ${this.rows.length} UNLOCKED',
+  'SCORE: ${this.finalScore}',
+  'Score ${Number(this.finalScore || 0).toLocaleString(\'en-US\')} | Level ${this.finalLevel || 0}',
+  'NAME: ${this.nameInput}${caret}',
+  '${translateText(\'PILOT RANK SIGNAL\')} // ${translateText(source)}',
+  'Loading... (attempt ${attempt + 1}/4)',
+  'Last error: ${this.lastError}',
+  'build: ${BUILD_ID}',
+  '#${index + 1}',
+  'LV ${score.level || 0}',
+  '+${bonusAmount}',
+  'pVis:${vis} a:${alpha} tex:${texOk} parent:${parent}',
+  'S:${score} R:${rank} (seen:${seen}) REV:${rankEv} UI:${uiRankEv}',
+  '${trimmed}...',
+  'COMBO x${this.comboMultiplier}  (${this.comboCount})',
+  'COMBO:${this.comboCount}x${this.comboMultiplier} STREAK:${this.killStreak}',
+  'Used ${usageCount} times by players',
+  'HULL ${this.selectedIndex + 1}/${this.ships.length}  |  SERIES ${modelIndex}/${modelTotal}  |  ${status}',
+  '${unlockedCount}/${this.ships.length} HULLS READY',
+  '${role} | ${unlock}',
+  '\\u2665',
+  'SCORE ${this.formatScore(this.game.score)}',
+  'x${mult}',
+  'LEVEL ${this.game.level}',
+  'LIVES ${this.game.lives}',
+  'INCOMING WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}',
+  '${waveText}  HOSTILES ${activeEnemies}  THREATS ${activeBullets}',
+  'Arcade legends and brave initials',
+  'The swarm is not invading. It is answering an old arcade signal.\nLaunch before the broadcast learns your name.',
+  '⬆ RANK UP! ⬆',
+  'ARROWS/STICK: SHIP  |  A/ENTER: LAUNCH  |  X: DETAILS  |  Y/R: RANDOM  |  B/ESC: MENU',
+  '☰ MAIN MENU',
+  'CREDITS: THE CABINET DENIES EVERYTHING',
+  'A Tinyfoundry Games incident report, lightly redacted by mission control.',
+  'No cabinets were harmed. One cabinet was promoted to lore compliance.',
+  'TINYFOUNDRY GAMES'
+]);
+
+function walkJsFiles(dir, files = []) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const file = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) {
+      walkJsFiles(file, files);
+    } else if (entry.isFile() && file.endsWith('.js')) {
+      files.push(file);
+    }
+  }
+  return files;
+}
+
+function lineForOffset(text, offset) {
+  return text.slice(0, offset).split(/\r?\n/).length;
+}
+
+function normalizeLiteral(raw) {
+  return String(raw || '')
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .trim();
+}
+
+function isSuspiciousPlayerText(value) {
+  if (!value || value.length < 3 || value.length > 120) return false;
+  if (!/[A-Za-z]/.test(value)) return false;
+  if (/^\w+$/.test(value)) return false;
+  if (/^[\w./:-]+\.(png|jpg|jpeg|webp|mp3|wav|json|js|css|html)$/i.test(value)) return false;
+  return /[a-z]/.test(value) || /\s/.test(value);
+}
+
+const hardcodedTextHits = [];
+const rootsToScan = ['src/scenes', 'src/ui', 'src/managers', 'src/text'];
+const literalPatterns = [
+  /(?:createText|makeText|new\s+PIXI\.Text)\s*\(\s*(['"`])([\s\S]*?)\1/g,
+  /\.text\s*=\s*(['"`])([\s\S]*?)\1/g
+];
+
+for (const root of rootsToScan) {
+  try {
+    statSync(root);
+  } catch {
+    continue;
+  }
+  for (const file of walkJsFiles(root)) {
+    if (file.includes('/i18n/')) continue;
+    const text = readFileSync(file, 'utf8');
+    for (const pattern of literalPatterns) {
+      for (let match = pattern.exec(text); match; match = pattern.exec(text)) {
+        const value = normalizeLiteral(match[2]);
+        if (!isSuspiciousPlayerText(value)) continue;
+        if (sourceTextKeys.has(value) || hardcodedTextAllowlist.has(value)) continue;
+        hardcodedTextHits.push(`${file}:${lineForOffset(text, match.index)} "${value.replace(/\s+/g, ' ')}"`);
+      }
+    }
+  }
+}
+
+assert.deepEqual(
+  hardcodedTextHits,
+  [],
+  `New player-facing text requires localization updates. Update all locales or add an explicit tracked TODO. Suspicious hardcoded text found:\n${hardcodedTextHits.join('\n')}`
+);
 
 assert.equal(normalizeLanguageCode('english'), 'en');
 assert.equal(normalizeLanguageCode('en-US'), 'en');

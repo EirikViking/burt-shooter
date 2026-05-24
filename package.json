@@ -11,6 +11,7 @@
     "build": "vite build",
     "build:current": "node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-i18n.mjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-generated-rosters.mjs && node scripts/check-normal-enemy-variety.mjs && node scripts/check-boss-roster.mjs && node scripts/check-powerup-balance.mjs && node scripts/check-powerup-assets.mjs && node scripts/check-enemy-weapons.mjs && node scripts/check-elite-ships.mjs && node scripts/check-tractor-debuffs.mjs && node scripts/check-audio-catalog.mjs && vite build",
     "check:i18n": "node scripts/check-i18n.mjs",
+    "check:localization": "npm run check:i18n && npm run check:i18n-ui",
     "check:ship-traits": "node scripts/check-ship-traits.mjs",
     "check:generated-rosters": "node scripts/check-generated-rosters.mjs",
     "check:normal-enemy-variety": "node scripts/check-normal-enemy-variety.mjs",
