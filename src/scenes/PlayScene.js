@@ -560,6 +560,15 @@ export class PlayScene {
 
   spawnMarketingDebugBoss() {
     if (!this.activateMarketingSpawnMode()) return;
+    this.showToast('BOSS INBOUND...', {
+      fontSize: 18,
+      fill: '#ff8fdf',
+      duration: 1100,
+      slot: 'corner',
+      type: 'debug',
+      priority: 4,
+      maxWidth: this.game.getWidth() * 0.46
+    });
     this.enemyManager.spawnMarketingDebugBoss?.().then((result) => {
       this.showToast(result?.name ? `BOSS: ${result.name}` : 'BOSS SPAWNED', {
         fontSize: 18,

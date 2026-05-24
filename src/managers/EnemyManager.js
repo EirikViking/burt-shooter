@@ -383,7 +383,16 @@ export class EnemyManager {
   async spawnMarketingDebugBoss() {
     this.enableMarketingDebugMode();
     const level = this.pickMarketingDebugLevel();
-    const boss = await this.spawnBoss(level, { marketingDebug: true });
+    const bossIndex = this.enemies.filter(enemy => enemy?.kind === 'boss' && enemy?.active !== false).length;
+    const width = this.game?.getWidth ? this.game.getWidth() : 800;
+    const height = this.game?.getHeight ? this.game.getHeight() : 600;
+    const columns = [0.22, 0.42, 0.62, 0.78];
+    const lanes = [0.18, 0.24, 0.30];
+    const xJitter = (Math.random() - 0.5) * Math.min(130, width * 0.08);
+    const yJitter = (Math.random() - 0.5) * Math.min(58, height * 0.045);
+    const x = Math.max(140, Math.min(width - 140, width * columns[bossIndex % columns.length] + xJitter));
+    const y = Math.max(100, Math.min(height * 0.36, height * lanes[Math.floor(bossIndex / columns.length) % lanes.length] + yJitter));
+    const boss = await this.spawnBoss(level, { marketingDebug: true, x, y });
     console.log(`[MarketingDebug] boss level=${level} name=${boss?.name || 'unknown'}`);
     return {
       kind: 'boss',
@@ -1337,6 +1346,19 @@ export class EnemyManager {
     await boss.createSprite();
 
     boss.marketingDebug = marketingDebug;
+    if (marketingDebug) {
+      boss.baseX = centerX;
+      boss.bossLaneY = spawnY;
+      boss.entryStartMs = null;
+      boss.entryFromY = spawnY;
+      boss.entryToY = spawnY;
+      boss.x = centerX;
+      boss.y = spawnY;
+      if (boss.sprite) {
+        boss.sprite.x = centerX;
+        boss.sprite.y = spawnY;
+      }
+    }
     if (!marketingDebug) {
       this.boss = boss;
       this.bossSpawnedThisLevel = true;
