@@ -20,6 +20,12 @@ const INPUT_CHANNELS = {
   getNativeGamepads: 'nova-input:getNativeGamepads'
 };
 
+const STEAM_CLOUD_CHANNELS = {
+  getDiagnostics: 'nova-steam-cloud:getDiagnostics',
+  readSave: 'nova-steam-cloud:readSave',
+  mergeRendererState: 'nova-steam-cloud:mergeRendererState'
+};
+
 function safePayload(payload) {
   if (payload == null) return {};
   return JSON.parse(JSON.stringify(payload));
@@ -61,6 +67,12 @@ contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
 
 contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
   exitGame: () => invoke(APP_CHANNELS.exitGame)
+}));
+
+contextBridge.exposeInMainWorld('__novaSteamCloud', Object.freeze({
+  getDiagnostics: () => invoke(STEAM_CLOUD_CHANNELS.getDiagnostics),
+  readSave: () => invoke(STEAM_CLOUD_CHANNELS.readSave),
+  mergeRendererState: (payload) => invoke(STEAM_CLOUD_CHANNELS.mergeRendererState, payload)
 }));
 
 let nativeGamepadCache = [];

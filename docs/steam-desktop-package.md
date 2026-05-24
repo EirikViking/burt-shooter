@@ -29,6 +29,32 @@ The Electron wrapper starts a local loopback server, serves the Vite `dist/` bui
 
 The web deployment uses Cloudflare Pages and D1 at `https://novaswarm.tinyfoundry.app`; the global leaderboard claim should remain phrased as an online/shared leaderboard, not a Steamworks leaderboard.
 
+## Steam Cloud Auto Cloud setup
+
+Nova Swarm is prepared for Steam Auto Cloud with one explicit JSON save file. Do not sync Chromium localStorage, the full Electron profile, logs, renderer caches, window state, graphics settings, or debug flags.
+
+The file is created under Electron `app.getPath('userData')`:
+
+```text
+steam-cloud/nova-swarm-save.json
+```
+
+It contains `version`, `localHighscores`, `selectedShipKey`, ship unlock/progression bests, and safe accessibility settings for screen shake, player focus, and color assist. The legacy Electron fallback file `local-highscores-v2.json` remains in place for backward compatibility and is mirrored into the cloud save.
+
+Recommended Steamworks Auto Cloud values:
+
+| Field | Value |
+| --- | --- |
+| Byte quota | `1048576` |
+| File count | `20` |
+| Root | `WinAppDataRoaming` |
+| Subdirectory | `nova-swarm/steam-cloud` |
+| Pattern | `nova-swarm-save.json` |
+| Recursive | `No` |
+| Dynamic Cloud Sync | Leave off for now |
+
+Run `npm run steamworks:cloud-diagnose` to print the resolved local `userData` path, cloud save path, and the exact Steamworks values from the current Electron runtime. After `npm run package:steam:win:current`, run `npm run steamworks:cloud-diagnose:packaged` for the packaged app identity; that is the value to copy into Steamworks.
+
 Steam leaderboard provider support now has an Electron preload/native bridge boundary: `electron/main.cjs` registers IPC handlers, `electron/preload.cjs` exposes `window.__novaSteamLeaderboard`, and `electron/steamLeaderboardBridge.cjs` owns optional `steamworks-ffi-node` access. See `docs/steam-leaderboards.md`.
 
 This is SDK-ready, not yet Steam-client-verified live support. The bridge needs a configured numeric Steam App ID and a Steam-client launch before it should be considered live. With no App ID or unavailable Steam runtime, Steam reports unavailable and the game falls back safely.

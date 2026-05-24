@@ -134,6 +134,7 @@ export function updateShipUnlockProgress({ score = 0, rank = 0, level = 1 } = {}
       bestLevel: Math.max(current.bestLevel, Math.floor(Number(level) || 1))
     };
     localStorage.setItem(UNLOCK_PROGRESS_KEY, JSON.stringify(next));
+    if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
     return next;
   } catch (e) {
     console.warn('[ShipMetadata] Failed to update unlock progress:', e);

@@ -6,12 +6,14 @@ const { pathToFileURL } = require('node:url');
 const { createSteamLeaderboardBridge } = require('./steamLeaderboardBridge.cjs');
 const { runSteamLeaderboardRuntimeProbe } = require('./steamLeaderboardRuntimeProbe.cjs');
 const { createNativeGamepadBridge } = require('./nativeGamepadBridge.cjs');
+const { createSteamCloudSave } = require('./steamCloudSave.cjs');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
 const isSteamLeaderboardProbe = process.argv.includes('--steam-leaderboard-probe') || process.env.NOVA_SWARM_STEAM_LEADERBOARD_PROBE === '1';
+const isSteamCloudDiagnostics = process.argv.includes('--steam-cloud-diagnostics') || process.env.NOVA_SWARM_STEAM_CLOUD_DIAGNOSTICS === '1';
 const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
-const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isSteamLeaderboardProbe && !isWindowed;
+const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isWindowed;
 const distDir = path.resolve(__dirname, '..', 'dist');
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -35,6 +37,7 @@ const steamLeaderboardBridge = createSteamLeaderboardBridge({
   logger: console
 });
 const nativeGamepadBridge = createNativeGamepadBridge();
+let steamCloudSave = null;
 
 function registerSteamLeaderboardIpc() {
   ipcMain.handle('nova-steam-leaderboard:isAvailable', () => steamLeaderboardBridge.isAvailable());
@@ -60,6 +63,12 @@ function registerInputIpc() {
     status: nativeGamepadBridge.getStatus(),
     gamepads: nativeGamepadBridge.getGamepads()
   }));
+}
+
+function registerSteamCloudIpc() {
+  ipcMain.handle('nova-steam-cloud:getDiagnostics', () => steamCloudSave?.getDiagnostics() || null);
+  ipcMain.handle('nova-steam-cloud:readSave', () => steamCloudSave?.readSave() || null);
+  ipcMain.handle('nova-steam-cloud:mergeRendererState', (_event, payload) => steamCloudSave?.mergeRendererState(payload) || null);
 }
 
 function sendJson(response, status, payload) {
@@ -120,6 +129,7 @@ function readLocalScores() {
 function writeLocalScores(scores) {
   fs.mkdirSync(path.dirname(getScorePath()), { recursive: true });
   fs.writeFileSync(getScorePath(), JSON.stringify(scores.slice(0, 100), null, 2));
+  steamCloudSave?.mirrorLocalHighscores(scores);
 }
 
 function sanitizeScoreEntry(entry = {}) {
@@ -272,6 +282,10 @@ async function getSteamRuntimeInfo() {
   };
 }
 
+function getSteamCloudDiagnostics() {
+  return steamCloudSave?.getDiagnostics() || null;
+}
+
 async function runSmoke(window) {
   const outputDir = path.resolve(
     process.env.NOVA_SWARM_ELECTRON_SMOKE_OUTPUT_DIR || path.join(process.cwd(), 'test-results', `electron-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}`)
@@ -302,6 +316,7 @@ async function runSmoke(window) {
       const intro = window.__game?.scenes?.intro;
       const steamLeaderboardAvailable = await window.__novaSteamLeaderboard?.isAvailable?.().catch(() => false);
       const steamBridgeStatus = await window.__novaSteamBridge?.getStatus?.().catch(error => ({ error: error?.message || String(error) }));
+      const steamCloudDiagnostics = await window.__novaSteamCloud?.getDiagnostics?.().catch(error => ({ error: error?.message || String(error) }));
       return {
         title: document.title,
         apiOk: api.ok,
@@ -309,6 +324,7 @@ async function runSmoke(window) {
         steamBridgeStatus: steamBridgeStatus || null,
         steamLeaderboardAvailable: Boolean(steamLeaderboardAvailable),
         steamLeaderboardBridgePresent: Boolean(window.__novaSteamLeaderboard),
+        steamCloudDiagnostics,
         scene: textState?.scene || null,
         build: textState?.buildId || null,
         gitSha: textState?.gitSha || null,
@@ -738,9 +754,20 @@ app.whenReady().then(async () => {
   if (!fs.existsSync(path.join(distDir, 'index.html'))) {
     throw new Error(`Missing build output at ${distDir}. Run npm run build first.`);
   }
+  steamCloudSave = createSteamCloudSave(app.getPath('userData'), console);
+  const initializedCloudSave = steamCloudSave.ensureInitialized();
+  if (isSteamCloudDiagnostics) {
+    console.log(JSON.stringify({
+      ...getSteamCloudDiagnostics(),
+      save: initializedCloudSave
+    }, null, 2));
+    app.quit();
+    return;
+  }
   registerSteamLeaderboardIpc();
   registerAppIpc();
   registerInputIpc();
+  registerSteamCloudIpc();
   await startLocalServer();
   const win = createWindow();
   if (isSteamLeaderboardProbe) {

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-23T21:39:40.953Z",
-  "status": "passed",
+  "generatedAt": "2026-05-24T15:44:38.266Z",
+  "status": "failed",
   "currentBuild": {
-    "version": "v2026-05-23_23-31-46",
-    "timestamp": "2026-05-23T21:31:46.030Z"
+    "version": "v2026-05-24_17-26-01",
+    "timestamp": "2026-05-24T15:26:01.075Z"
   },
   "liveUrl": "https://novaswarm.tinyfoundry.app",
   "versionChecks": [
@@ -11,21 +11,14 @@
       "url": "https://novaswarm.tinyfoundry.app/version.json",
       "ok": true,
       "status": 200,
-      "version": "v2026-05-23_23-31-46",
-      "timestamp": "2026-05-23T21:31:46.030Z"
-    },
-    {
-      "url": "https://ab903865.burt-game.pages.dev/version.json",
-      "ok": true,
-      "status": 200,
-      "version": "v2026-05-23_23-31-46",
-      "timestamp": "2026-05-23T21:31:46.030Z"
+      "version": "v2026-05-24_14-41-37",
+      "timestamp": "2026-05-24T12:41:37.998Z"
     }
   ],
   "latestLiveSmoke": {
     "reportPath": "test-results/smoke-2026-05-23T21-35-47-765Z/report.json",
     "baseUrl": "https://novaswarm.tinyfoundry.app",
-    "status": "passed",
+    "status": null,
     "build": "v2026-05-23_23-31-46",
     "screenshots": [
       {
@@ -81,6 +74,9 @@
     "scenes": null,
     "coverage": null
   },
-  "errors": [],
+  "errors": [
+    "Live version v2026-05-24_14-41-37 at https://novaswarm.tinyfoundry.app/version.json does not match current build v2026-05-24_17-26-01",
+    "Latest live smoke build v2026-05-23_23-31-46 does not match current build v2026-05-24_17-26-01"
+  ],
   "warnings": []
 }

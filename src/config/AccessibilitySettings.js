@@ -50,6 +50,7 @@ export function setScreenShakeScale(value) {
   const clamped = clampUnit(value, getDefaultScreenShakeScale());
   try {
     localStorage.setItem(SCREEN_SHAKE_KEY, String(clamped));
+    if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
   } catch {
     // Storage can be unavailable in privacy modes; the current value still applies to callers.
   }
@@ -60,6 +61,7 @@ export function setPlayerFocusScale(value) {
   const clamped = clampUnit(value, getDefaultPlayerFocusScale());
   try {
     localStorage.setItem(PLAYER_FOCUS_KEY, String(clamped));
+    if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
   } catch {
     // Storage can be unavailable in privacy modes; the current value still applies to callers.
   }
@@ -78,6 +80,7 @@ export function setColorAssistEnabled(enabled) {
   const next = Boolean(enabled);
   try {
     localStorage.setItem(COLOR_ASSIST_KEY, next ? '1' : '0');
+    if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
   } catch {
     // Storage can be unavailable in privacy modes; callers can still use the returned value.
   }

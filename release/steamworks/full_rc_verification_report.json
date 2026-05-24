@@ -1,86 +1,71 @@
 {
-  "generatedAt": "2026-05-23T09:32:33.683Z",
+  "generatedAt": "2026-05-24T15:44:58.022Z",
   "status": "failed",
   "currentBuild": {
-    "version": "v2026-05-23_11-05-56",
-    "timestamp": "2026-05-23T09:05:56.402Z"
+    "version": "v2026-05-24_17-26-01",
+    "timestamp": "2026-05-24T15:26:01.075Z"
   },
   "latestFullRc": {
-    "reportPath": "test-results/steam-rc-verify-2026-05-23T09-09-28-674Z/report.json",
-    "generatedAt": "2026-05-23T09:21:23.437Z",
+    "reportPath": "test-results/steam-rc-verify-2026-05-24T15-42-20-885Z/report.json",
+    "generatedAt": "2026-05-24T15:44:38.360Z",
     "mode": "full",
     "ok": false,
-    "stageCount": 14,
+    "stageCount": 11,
     "stages": [
       {
         "name": "build:current",
         "ok": true,
-        "durationMs": 26638
+        "durationMs": 28104
       },
       {
         "name": "check:intro-voice",
         "ok": true,
-        "durationMs": 13994
+        "durationMs": 14002
       },
       {
         "name": "check:provenance",
         "ok": true,
-        "durationMs": 731
+        "durationMs": 740
       },
       {
         "name": "check:steam-assets",
         "ok": true,
-        "durationMs": 3323
+        "durationMs": 3164
       },
       {
         "name": "check:steam-store",
         "ok": true,
-        "durationMs": 540
+        "durationMs": 541
       },
       {
         "name": "package:steam:win:current",
         "ok": true,
-        "durationMs": 57845
+        "durationMs": 59092
       },
       {
         "name": "desktop:smoke:current",
         "ok": true,
-        "durationMs": 2979
+        "durationMs": 3723
       },
       {
         "name": "desktop:smoke:packaged",
         "ok": true,
-        "durationMs": 35539
+        "durationMs": 16504
       },
       {
         "name": "desktop:controls:packaged",
         "ok": true,
-        "durationMs": 6792
+        "durationMs": 8776
       },
       {
         "name": "check:desktop-package",
         "ok": true,
-        "durationMs": 1146
+        "durationMs": 1410
       },
       {
         "name": "check:live-deployment",
-        "ok": true,
-        "durationMs": 1248
-      },
-      {
-        "name": "audit:audio-mix",
-        "ok": true,
-        "durationMs": 14620
-      },
-      {
-        "name": "smoke",
-        "ok": true,
-        "durationMs": 73035
-      },
-      {
-        "name": "playtest:release",
         "ok": false,
-        "durationMs": 476310
+        "durationMs": 1306
       }
     ],
     "releaseAudit": {
@@ -101,9 +86,9 @@
     }
   },
   "latestLocalSmoke": {
-    "reportPath": "test-results/smoke-2026-05-23T09-12-15-085Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-24T15-30-35-482Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "build": "v2026-05-23_11-05-56",
+    "build": "v2026-05-24_17-26-01",
     "status": "passed",
     "console": {
       "warningsOrErrors": 0,
@@ -114,21 +99,21 @@
     "coverage": null
   },
   "latestReleasePlaytest": {
-    "reportPath": "test-results/release-playtest-2026-05-23T09-21-40-940Z/report.json",
+    "reportPath": "test-results/release-playtest-2026-05-24T15-32-02-117Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "survivedMs": 584672,
+    "survivedMs": 599898,
     "requiredSurvivalMs": 599500,
-    "survivedFullDuration": false,
-    "peakLevel": 6,
-    "peakScore": 14363,
+    "survivedFullDuration": true,
+    "peakLevel": 7,
+    "peakScore": 18341,
     "finalState": {
-      "scene": "gameOver",
-      "level": 6,
-      "lives": 0,
-      "score": 14363,
+      "scene": "play",
+      "level": 7,
+      "lives": 4,
+      "score": 18341,
       "enemyManagerState": "WAVE_ACTIVE",
-      "musicContext": "gameover",
-      "musicTrack": "Defeated (Game Over Tune).mp3",
+      "musicContext": "gameplay",
+      "musicTrack": "Rain of Lasers.mp3",
       "fatalOverlay": false
     },
     "console": {
@@ -140,9 +125,7 @@
     }
   },
   "errors": [
-    "Latest full Steam RC report is not complete; missing/failed stages: playtest:release",
-    "Latest release playtest did not survive required duration (584672/599500 ms)",
-    "Latest release playtest ended with no lives (0)"
+    "Latest full Steam RC report is not complete; missing/failed stages: check:live-deployment, audit:audio-mix, smoke, playtest:release"
   ],
   "warnings": []
 }
