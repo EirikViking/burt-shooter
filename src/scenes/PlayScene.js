@@ -21,6 +21,7 @@ import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { getDefaultShipKey } from '../config/ShipMetadata.js';
 import { createText } from '../utils/pixiText.js';
+import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import {
   extendLevelIntroTexts,
   getAchievementPopup,
@@ -54,6 +55,9 @@ export class PlayScene {
     this.hud = null;
     this.isPaused = false;
     this.pauseOverlay = null;
+    this.pauseButtons = [];
+    this.pauseFocusedIndex = 0;
+    this.pauseGamepadNavigator = new GamepadNavigator();
     this.settingsOverlay = null;
     this.levelAdvancePending = false;
     this.levelAdvanceTimeout = null;
@@ -775,7 +779,10 @@ export class PlayScene {
       }
 
       this.handlePauseToggle();
-      if (this.isPaused) return;
+      if (this.isPaused) {
+        this.updatePauseMenuControls(delta);
+        return;
+      }
 
       // Mobile inputs
       if (this.touchControls && this.touchControls.active) {
@@ -2146,8 +2153,10 @@ export class PlayScene {
   }
 
   showPauseOverlay() {
+    this.pauseGamepadNavigator.suppressUntilReleased();
     if (this.pauseOverlay) {
       this.pauseOverlay.visible = true;
+      this.setPauseFocus(this.pauseFocusedIndex || 0);
       return;
     }
 
@@ -2195,17 +2204,21 @@ export class PlayScene {
     status.position.set(width / 2, panelY + 102);
     overlay.addChild(status);
 
-    overlay.addChild(this.createPauseButton('RESUME', width / 2, panelY + 148, () => this.setPaused(false)));
-    overlay.addChild(this.createPauseButton('SETTINGS', width / 2, panelY + 202, () => this.openSettingsOverlay()));
-    overlay.addChild(this.createPauseButton('QUIT TO MENU', width / 2, panelY + 256, () => {
+    this.pauseButtons = [
+      this.createPauseButton('RESUME', width / 2, panelY + 148, () => this.setPaused(false)),
+      this.createPauseButton('SETTINGS', width / 2, panelY + 202, () => this.openSettingsOverlay()),
+      this.createPauseButton('QUIT TO MENU', width / 2, panelY + 256, () => {
       this.closeSettingsOverlay();
       this.hidePauseOverlay();
       this.isPaused = false;
       this.game.switchScene('menu');
-    }));
+      })
+    ];
+    this.pauseButtons.forEach((button) => overlay.addChild(button));
 
     this.pauseOverlay = overlay;
     this.uiOverlay.addChild(overlay);
+    this.setPauseFocus(0);
   }
 
   openSettingsOverlay() {
@@ -2217,6 +2230,7 @@ export class PlayScene {
       title: 'SETTINGS',
       onClose: () => {
         this.settingsOverlay = null;
+        this.pauseGamepadNavigator.suppressUntilReleased();
       }
     });
     this.uiOverlay.addChild(this.settingsOverlay.container);
@@ -2233,19 +2247,27 @@ export class PlayScene {
     const button = new PIXI.Container();
     button.eventMode = 'static';
     button.cursor = 'pointer';
+    button.activate = onPress;
 
     const width = 260;
     const height = 38;
     const draw = (hovered = false) => {
+      focus.clear();
+      if (button._focused) {
+        focus.roundRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, 8);
+        focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
+      }
       bg.clear();
       bg.roundRect(-width / 2, -height / 2, width, height, 6);
       bg.fill({ color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.92 : 0.84 });
-      bg.stroke({ color: hovered ? 0xffffff : 0x00ffff, width: hovered ? 2 : 1, alpha: 0.95 });
+      bg.stroke({ color: hovered || button._focused ? 0xffffff : 0x00ffff, width: hovered || button._focused ? 2 : 1, alpha: 0.95 });
     };
 
+    const focus = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
-    button.addChild(bg);
+    button.addChild(focus, bg);
     draw(false);
+    button.redraw = draw;
 
     const text = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -2256,10 +2278,51 @@ export class PlayScene {
     text.anchor.set(0.5);
     button.addChild(text);
     button.position.set(x, y);
-    button.on('pointerover', () => draw(true));
+    button.on('pointerover', () => {
+      this.setPauseFocusByButton(button);
+      draw(true);
+    });
     button.on('pointerout', () => draw(false));
     button.on('pointertap', onPress);
     return button;
+  }
+
+  setPauseFocusByButton(button) {
+    const index = this.pauseButtons.findIndex((candidate) => candidate === button);
+    if (index >= 0) this.setPauseFocus(index);
+  }
+
+  setPauseFocus(index) {
+    if (!this.pauseButtons?.length) return;
+    const count = this.pauseButtons.length;
+    const next = ((index % count) + count) % count;
+    this.pauseButtons.forEach((button, buttonIndex) => {
+      button._focused = buttonIndex === next;
+      button.redraw?.(false);
+    });
+    this.pauseFocusedIndex = next;
+  }
+
+  movePauseFocus(delta) {
+    this.setPauseFocus(this.pauseFocusedIndex + delta);
+    AudioManager.playSfx('thrusterFire', { volume: 0.07, minIntervalMs: 90 });
+  }
+
+  updatePauseMenuControls(delta) {
+    if (this.settingsOverlay) {
+      this.settingsOverlay.update?.(delta);
+      return;
+    }
+    const nav = this.pauseGamepadNavigator.update();
+    if (!nav.connected || !nav.active) return;
+    if (nav.pressed.up) this.movePauseFocus(-1);
+    if (nav.pressed.down) this.movePauseFocus(1);
+    if (nav.pressed.confirm) {
+      this.pauseButtons[this.pauseFocusedIndex]?.activate?.();
+    }
+    if (nav.pressed.cancel || nav.pressed.back) {
+      this.setPaused(false);
+    }
   }
 
   hidePauseOverlay() {

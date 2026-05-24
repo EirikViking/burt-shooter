@@ -42,11 +42,16 @@
   ],
   "categories": [
     "Single-player",
-    "Partial Controller Support"
+    "Full Controller Support"
   ],
   "controllerSupportDecision": {
-    "steamworksCategory": "Partial Controller Support",
-    "reason": "Controller gameplay, pause, and some menu/game-over shortcuts are implemented, but do not claim Full Controller Support until the Steam-installed build validates full menu/settings/highscore navigation, text-entry behavior, controller glyphs, and Steam Input metadata."
+    "steamworksCategory": "Full Controller Support",
+    "status": "accepted_for_v1",
+    "reason": "Steamworks now uses Full Controller Support for Nova Swarm. The runtime has a locally validated controller-only path through menu, hangar/details, gameplay, pause/settings, game-over initials entry, highscores, and return-to-menu, and the owner has accepted the Full Controller Support claim for v1.",
+    "steamInputLayoutDecision": {
+      "status": "native_xinput_plain_prompts_accepted",
+      "reason": "Nova Swarm uses native XInput/gamepad input and plain text controller prompts such as A/B/X/Y/LB/RB/Start. No official Steam Input action manifest or custom recommended Steam Input layout is published for v1; that tradeoff is intentionally accepted, and store copy must not claim device-specific controller glyph polish or a custom Steam Input configuration."
+    }
   },
   "steamCloudDecision": {
     "status": "defer_for_v1",
@@ -68,7 +73,7 @@
       "memory": "4 GB RAM",
       "graphics": "WebGL-capable GPU / DirectX 11 class hardware",
       "storage": "1 GB available space",
-      "notes": "Keyboard supported. Gamepad supported for gameplay pending final Steam client validation."
+      "notes": "Keyboard and controller supported."
     },
     "recommended": {
       "os": "Windows 11 64-bit",
@@ -76,7 +81,7 @@
       "memory": "8 GB RAM",
       "graphics": "Dedicated or modern integrated GPU with current drivers",
       "storage": "1 GB available space",
-      "notes": "Gamepad recommended for couch play after Steam client validation."
+      "notes": "Gamepad recommended for couch play."
     }
   },
   "uploadAssets": {
@@ -90,7 +95,7 @@
     "capsule readability and legal/provenance approval",
     "editorial trailer/title-card/audio approval",
     "store copy tone approval",
-    "controller support category after Steam client validation",
+    "final controller QA notes for the release candidate",
     "system requirements sanity check on a second Windows machine"
   ]
 }

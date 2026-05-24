@@ -16,6 +16,7 @@ import {
 } from '../config/GameOverCtaVoiceLines.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import { LEADERBOARD_DISPLAY_LIMIT, getPilotNameValidation } from '../leaderboard/LeaderboardTypes.js';
+import { GamepadNavigator, hasConnectedGamepad } from '../input/GamepadNavigator.js';
 import {
   GLOBAL_LEADERBOARD_ACHIEVEMENT_ID,
   GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID
@@ -24,6 +25,9 @@ import {
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
 const PILOT_NAME_MAX_LENGTH = 14;
+const CONTROLLER_NAME_STORAGE_KEY = 'nova.controllerPilotName.v1';
+const CONTROLLER_NAME_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+const CONTROLLER_INITIALS_LENGTH = 3;
 
 function getConfirmedGlobalPlacement(score, entries = []) {
   const finalScore = Math.max(0, Number(score) || 0);
@@ -131,6 +135,10 @@ export class GameOverScene {
     this.submissionId = null;
     this.gamepadActionWasPressed = false;
     this.gamepadLeaderboardWasPressed = false;
+    this.gamepadNavigator = new GamepadNavigator();
+    this.lastInputDevice = 'keyboard';
+    this.controllerNameCursor = 0;
+    this.controllerNameAlphabet = CONTROLLER_NAME_ALPHABET;
     this.achievementToast = null;
     this.achievementToastTicker = null;
     this.achievementToastQueue = [];
@@ -154,6 +162,7 @@ export class GameOverScene {
 
   async init() {
     this.clearSceneTimeouts();
+    this.gamepadNavigator.suppressUntilReleased();
     this.container.sortableChildren = true;
     this.container.removeChildren();
     this.removeInputOverlay();
@@ -189,6 +198,8 @@ export class GameOverScene {
     this.isRankedRun = typeof this.game.isScoreSubmissionAllowed === 'function'
       ? this.game.isScoreSubmissionAllowed()
       : !this.game.isDebugRun;
+    this.lastInputDevice = hasConnectedGamepad() ? 'controller' : 'keyboard';
+    this.controllerNameCursor = 0;
 
     // FREEZE final score and level immediately
     this.finalScore = Number(this.game.score) || 0;
@@ -355,7 +366,10 @@ export class GameOverScene {
     this.promptText.anchor.set(0.5);
     this.promptText.eventMode = 'static';
     this.promptText.cursor = 'pointer';
-    this.promptPointer = () => this.enterInputMode();
+    this.promptPointer = () => {
+      this.setInputDevice('keyboard');
+      this.enterInputMode();
+    };
     this.promptText.on('pointerdown', this.promptPointer);
     this.container.addChild(this.promptText);
 
@@ -391,7 +405,7 @@ export class GameOverScene {
     this.container.addChild(this.nameDisplay);
 
     const smallSize = getResponsiveFontSize(layout, 'small');
-    this.instructions = createText('LEADERBOARD FIRST: ENTER / CLICK  |  ESC: SKIP SCORE', {
+    this.instructions = createText(this.getInstructionsText(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: smallSize,
       fill: '#9cfbff',
@@ -454,6 +468,57 @@ export class GameOverScene {
     return this.game?.currentScene === this;
   }
 
+  setInputDevice(device) {
+    if (device !== 'controller' && device !== 'keyboard') return;
+    if (this.lastInputDevice === device) return;
+    this.lastInputDevice = device;
+    this.updateInputPrompts();
+  }
+
+  updateInputPrompts() {
+    const layout = getCurrentLayout();
+    if (this.promptText) {
+      if (this.state === 'prompt') {
+        this.promptText.text = this.getEntryPromptText(layout);
+      } else if (this.state === 'input') {
+        this.promptText.text = this.lastInputDevice === 'controller'
+          ? 'PICK PILOT INITIALS'
+          : INPUT_PROMPT;
+      }
+    }
+    if (this.instructions) {
+      this.instructions.text = this.getInstructionsText();
+    }
+    this.updateNameDisplay();
+    this.refreshPrimaryCta();
+  }
+
+  getInstructionsText() {
+    if (this.lastInputDevice === 'controller') {
+      if (this.state === 'input') {
+        return 'D-PAD/STICK: LETTER  |  LB/RB: SLOT  |  A/Y: SUBMIT  |  B: BACK';
+      }
+      if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
+        return 'A: RELAUNCH  |  Y: LEADERBOARD  |  B/START: MENU';
+      }
+      if (this.state === 'submitting') {
+        return 'SAVING SCORE...';
+      }
+      if (this.isRankedRun && this.updateCanEnterName()) {
+        return 'A: PICK PILOT NAME  |  B: SKIP SCORE';
+      }
+      return 'A: RELAUNCH  |  B/START: MENU';
+    }
+
+    if (this.state === 'input') {
+      return 'TYPE NAME  |  ENTER: SUBMIT  |  ESC: SKIP SCORE';
+    }
+    if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
+      return 'ENTER / SPACE / CLICK: RELAUNCH  |  L / GAMEPAD Y: LEADERBOARD  |  ESC: MENU';
+    }
+    return 'LEADERBOARD FIRST: ENTER / CLICK  |  ESC: SKIP SCORE';
+  }
+
   getEntryPromptText(layout = getCurrentLayout()) {
     const mobile = Boolean(layout?.isMobile);
     if (!this.isRankedRun) return 'PRACTICE RUN - SCORE NOT LOGGED';
@@ -461,6 +526,11 @@ export class GameOverScene {
       return this.globalStatus === 'checking'
         ? 'CHECKING GLOBAL BOARD...'
         : 'NO BOARD SLOT';
+    }
+    if (this.lastInputDevice === 'controller') {
+      if (this.localQualified && this.globalQualified) return 'A: PICK PILOT INITIALS  |  LOCAL + GLOBAL SLOT';
+      if (this.globalQualified) return 'A: PICK PILOT INITIALS  |  GLOBAL SLOT';
+      return 'A: PICK PILOT INITIALS  |  LOCAL SLOT';
     }
     if (mobile) {
       if (this.localQualified && this.globalQualified) return 'TAP SCORE  |  LOCAL + GLOBAL SLOT';
@@ -474,6 +544,62 @@ export class GameOverScene {
       return 'ENTER: LOG GLOBAL SCORE';
     }
     return 'ENTER: LOG LOCAL SCORE';
+  }
+
+  sanitizeControllerName(value) {
+    return String(value || '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, CONTROLLER_INITIALS_LENGTH);
+  }
+
+  getControllerDefaultName() {
+    let stored = '';
+    try {
+      stored = localStorage.getItem(CONTROLLER_NAME_STORAGE_KEY) || '';
+    } catch {
+      stored = '';
+    }
+    const fromStored = this.sanitizeControllerName(stored);
+    if (fromStored.length === CONTROLLER_INITIALS_LENGTH) return fromStored;
+
+    const fromSteam = this.sanitizeControllerName(this.steamPlayerName);
+    if (fromSteam.length > 0) {
+      return (fromSteam + 'ACE').slice(0, CONTROLLER_INITIALS_LENGTH);
+    }
+    return 'ACE';
+  }
+
+  storeControllerName(name) {
+    const sanitized = this.sanitizeControllerName(name);
+    if (sanitized.length !== CONTROLLER_INITIALS_LENGTH) return;
+    try {
+      localStorage.setItem(CONTROLLER_NAME_STORAGE_KEY, sanitized);
+    } catch {
+      // Best-effort convenience only; score submission should continue.
+    }
+  }
+
+  formatControllerNameDisplay() {
+    const chars = (this.sanitizeControllerName(this.nameInput) + 'ACE').slice(0, CONTROLLER_INITIALS_LENGTH).split('');
+    return `PILOT: ${chars.map((char, index) => (index === this.controllerNameCursor ? `[${char}]` : ` ${char} `)).join(' ')}`;
+  }
+
+  moveControllerNameCursor(delta) {
+    const next = (this.controllerNameCursor + delta + CONTROLLER_INITIALS_LENGTH) % CONTROLLER_INITIALS_LENGTH;
+    this.controllerNameCursor = next;
+    this.updateNameDisplay();
+  }
+
+  cycleControllerNameChar(delta) {
+    const chars = (this.sanitizeControllerName(this.nameInput) + 'ACE').slice(0, CONTROLLER_INITIALS_LENGTH).split('');
+    const current = chars[this.controllerNameCursor] || 'A';
+    const alphabetIndex = Math.max(0, this.controllerNameAlphabet.indexOf(current));
+    const nextIndex = (alphabetIndex + delta + this.controllerNameAlphabet.length) % this.controllerNameAlphabet.length;
+    chars[this.controllerNameCursor] = this.controllerNameAlphabet[nextIndex];
+    this.nameInput = chars.join('');
+    this.syncHiddenInput();
+    this.updateNameDisplay();
   }
 
   getLeaderboardStatusMessage() {
@@ -628,6 +754,9 @@ export class GameOverScene {
       const noSlot = this.isRankedRun && !this.canEnterName && this.globalStatus !== 'checking';
       this.notQualifiedText.visible = noSlot;
       this.notQualifiedText.text = noSlot ? 'NO LOCAL OR GLOBAL SLOT' : '';
+    }
+    if (this.instructions) {
+      this.instructions.text = this.getInstructionsText();
     }
     this.refreshPrimaryCta();
     this.layoutScreen();
@@ -856,7 +985,10 @@ export class GameOverScene {
     this.retryButtonHint.anchor.set(0.5);
 
     this.retryButton.addChild(this.retryButtonGlow, this.retryButtonBg, this.retryButtonLabel, this.retryButtonHint);
-    this.retryButton.on('pointerdown', () => this.handlePrimaryCtaPress());
+    this.retryButton.on('pointerdown', () => {
+      this.setInputDevice('keyboard');
+      this.handlePrimaryCtaPress();
+    });
     this.retryButton.on('pointerover', () => this.retryButton.scale.set(1.03));
     this.retryButton.on('pointerout', () => this.retryButton.scale.set(1));
     this.drawRetryButton(layout);
@@ -952,7 +1084,10 @@ export class GameOverScene {
     this.leaderboardButtonHint.anchor.set(0.5);
 
     this.leaderboardButton.addChild(this.leaderboardButtonGlow, this.leaderboardButtonBg, this.leaderboardButtonLabel, this.leaderboardButtonHint);
-    this.leaderboardButton.on('pointerdown', () => this.openLeaderboard());
+    this.leaderboardButton.on('pointerdown', () => {
+      this.setInputDevice('keyboard');
+      this.openLeaderboard();
+    });
     this.leaderboardButton.on('pointerover', () => this.leaderboardButton.scale.set(1.02));
     this.leaderboardButton.on('pointerout', () => this.leaderboardButton.scale.set(1));
     this.drawLeaderboardButton(layout);
@@ -1049,7 +1184,7 @@ export class GameOverScene {
       return {
         mode: 'restart',
         label: 'ONE MORE RUN',
-        hint: 'ENTER / SPACE / CLICK - SAME SHIP',
+        hint: this.lastInputDevice === 'controller' ? 'A: SAME SHIP  |  Y: LEADERBOARD' : 'ENTER / SPACE / CLICK - SAME SHIP',
         disabled: false,
         runback: true
       };
@@ -1059,7 +1194,7 @@ export class GameOverScene {
       return {
         mode: 'submitting',
         label: 'SAVING SCORE',
-        hint: 'LEADERBOARD FIRST',
+        hint: this.lastInputDevice === 'controller' ? 'SAVING...' : 'LEADERBOARD FIRST',
         disabled: true
       };
     }
@@ -1068,7 +1203,9 @@ export class GameOverScene {
       return {
         mode: 'submit',
         label: 'SUBMIT SCORE',
-        hint: this.nameInput.length > 0 ? 'ENTER / CLICK' : 'TYPE NAME FIRST',
+        hint: this.lastInputDevice === 'controller'
+          ? (this.nameInput.length > 0 ? 'A / Y: SUBMIT  |  B: BACK' : 'D-PAD: PICK NAME')
+          : (this.nameInput.length > 0 ? 'ENTER / CLICK' : 'TYPE NAME FIRST'),
         disabled: this.nameInput.length === 0
       };
     }
@@ -1077,7 +1214,7 @@ export class GameOverScene {
       return {
         mode: 'checking',
         label: 'CHECKING BOARD',
-        hint: 'LEADERBOARD FIRST',
+        hint: this.lastInputDevice === 'controller' ? 'WAITING FOR BOARD' : 'LEADERBOARD FIRST',
         disabled: true
       };
     }
@@ -1091,7 +1228,7 @@ export class GameOverScene {
       return {
         mode: 'leaderboard',
         label: 'SUBMIT SCORE',
-        hint: `${boardSlot} - PILOT NAME FIRST`,
+        hint: this.lastInputDevice === 'controller' ? `${boardSlot} - A: PICK NAME` : `${boardSlot} - PILOT NAME FIRST`,
         disabled: false
       };
     }
@@ -1099,7 +1236,7 @@ export class GameOverScene {
     return {
       mode: 'restart',
       label: 'ONE MORE RUN',
-      hint: 'CLICK / R / SPACE / GAMEPAD A',
+      hint: this.lastInputDevice === 'controller' ? 'A: RESTART  |  B: MENU' : 'CLICK / R / SPACE / GAMEPAD A',
       disabled: false
     };
   }
@@ -1249,6 +1386,8 @@ export class GameOverScene {
         return;
       }
 
+      this.setInputDevice('keyboard');
+
       if (this.state === 'submitting' && !isRestartKey && !isEscape) {
         return;
       }
@@ -1332,27 +1471,86 @@ export class GameOverScene {
 
   update() {
     this.updateCeremonyEffects();
-    if (this.state === 'input' || this.state === 'submitting') return;
-    const leaderboardPressed = this.isGamepadLeaderboardPressed();
-    if (leaderboardPressed && !this.gamepadLeaderboardWasPressed && this.shouldShowLeaderboardButton()) {
-      this.openLeaderboard();
-      this.gamepadLeaderboardWasPressed = leaderboardPressed;
+    const nav = this.gamepadNavigator.update();
+    if (nav.connected && nav.active) {
+      this.setInputDevice('controller');
+      this.handleGamepadNavigation(nav);
+    }
+  }
+
+  handleGamepadNameInput(nav) {
+    if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) {
+      this.exitInputMode();
+      return true;
+    }
+    if (nav.pressed.left || nav.pressed.lb) {
+      this.moveControllerNameCursor(-1);
+      return true;
+    }
+    if (nav.pressed.right || nav.pressed.rb) {
+      this.moveControllerNameCursor(1);
+      return true;
+    }
+    if (nav.pressed.up) {
+      this.cycleControllerNameChar(-1);
+      return true;
+    }
+    if (nav.pressed.down) {
+      this.cycleControllerNameChar(1);
+      return true;
+    }
+    if (nav.pressed.confirm || nav.pressed.y) {
+      if (this.nameInput.length > 0) this.submitScore();
+      return true;
+    }
+    return false;
+  }
+
+  handleGamepadNavigation(nav) {
+    if (this.state === 'submitting') return;
+    if (this.state === 'input') {
+      this.handleGamepadNameInput(nav);
       return;
     }
-    this.gamepadLeaderboardWasPressed = leaderboardPressed;
 
-    const actionPressed = this.isGamepadActionPressed();
-    if (actionPressed && !this.gamepadActionWasPressed) {
-      if (this.state === 'prompt' && this.isRankedRun && this.globalStatus === 'checking' && !this.localQualified) {
-        this.updatePromptMessage('CHECKING GLOBAL BOARD...');
-        this.refreshPrimaryCta();
-      } else if (this.state === 'prompt' && this.isRankedRun && this.updateCanEnterName()) {
-        this.enterInputMode();
-      } else {
-        this.restartRun();
-      }
+    if (nav.pressed.y && this.shouldShowLeaderboardButton()) {
+      this.openLeaderboard();
+      return;
     }
-    this.gamepadActionWasPressed = actionPressed;
+
+    if (nav.pressed.menu || nav.pressed.back) {
+      this.returnToMenu();
+      return;
+    }
+
+    if (nav.pressed.cancel) {
+      if (this.state === 'prompt' && this.isRankedRun && this.updateCanEnterName()) {
+        this.skipScoreSubmission('controller_cancel_prompt');
+      } else {
+        this.returnToMenu();
+      }
+      return;
+    }
+
+    if (!nav.pressed.confirm) return;
+
+    if (this.state === 'prompt' && this.isRankedRun && this.globalStatus === 'checking' && !this.localQualified) {
+      this.updatePromptMessage('CHECKING GLOBAL BOARD...');
+      this.refreshPrimaryCta();
+      return;
+    }
+
+    if (this.state === 'prompt' && this.isRankedRun && this.updateCanEnterName()) {
+      this.enterInputMode();
+      return;
+    }
+
+    if (this.state === 'prompt' && this.isRankedRun && !this.updateCanEnterName()) {
+      this.enterRunbackStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
+      return;
+    }
+
+    this.restartRun();
   }
 
   updateCeremonyEffects() {
@@ -1522,28 +1720,38 @@ export class GameOverScene {
     });
 
     this.state = 'input';
-    this.nameInput = '';
+    const usingController = this.lastInputDevice === 'controller';
+    this.nameInput = usingController ? this.getControllerDefaultName() : '';
+    this.controllerNameCursor = 0;
     this.caretVisible = true;
     this.submitRetries = 0;
 
     const layout = getCurrentLayout();
 
-    if (layout.isMobile) {
+    if (layout.isMobile && !usingController) {
       // Show HTML overlay for mobile
       this.showInputOverlay();
       this.promptText.visible = false;
       this.nameDisplay.visible = false;
     } else {
       // Desktop: use PIXI text display with hidden input
-      this.updatePromptMessage(INPUT_PROMPT);
+      this.updatePromptMessage(usingController ? 'PICK PILOT INITIALS' : INPUT_PROMPT);
       this.nameDisplay.visible = true;
-      this.ensureHiddenInput();
-      if (this.hiddenInput) {
-        this.hiddenInput.value = '';
-        this.hiddenInput.focus();
+      if (!usingController) {
+        this.ensureHiddenInput();
+        if (this.hiddenInput) {
+          this.hiddenInput.value = '';
+          this.hiddenInput.focus();
+        }
+        this.startCaretBlink();
+      } else {
+        this.hideHiddenInput();
+        this.stopCaretBlink();
       }
-      this.startCaretBlink();
       this.updateNameDisplay();
+    }
+    if (this.instructions) {
+      this.instructions.text = this.getInstructionsText();
     }
     this.refreshPrimaryCta();
   }
@@ -1561,6 +1769,9 @@ export class GameOverScene {
     this.promptText.visible = true;
     this.nameDisplay.visible = false;
     this.updateNameDisplay();
+    if (this.instructions) {
+      this.instructions.text = this.getInstructionsText();
+    }
     this.refreshPrimaryCta();
   }
 
@@ -1907,7 +2118,7 @@ export class GameOverScene {
       this.nameDisplay.visible = false;
     }
     if (this.instructions) {
-      this.instructions.text = 'ENTER / SPACE / CLICK: RELAUNCH  |  L / GAMEPAD Y: LEADERBOARD  |  ESC: MENU';
+      this.instructions.text = this.getInstructionsText();
     }
 
     AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
@@ -2064,6 +2275,7 @@ export class GameOverScene {
       box-sizing: border-box;
     `;
     this.boundVisibleInput = (e) => {
+      this.setInputDevice('keyboard');
       const value = e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
       e.target.value = value.slice(0, PILOT_NAME_MAX_LENGTH);
       this.nameInput = e.target.value;
@@ -2071,6 +2283,7 @@ export class GameOverScene {
     };
     this.boundVisibleInputKeyDown = (e) => {
       e.stopPropagation();
+      this.setInputDevice('keyboard');
       if (e.key === 'Enter' && this.nameInput.length > 0) {
         e.preventDefault();
         this.submitScore();
@@ -2107,6 +2320,7 @@ export class GameOverScene {
       min-width: 120px;
     `;
     this.submitButton.addEventListener('click', () => {
+      this.setInputDevice('keyboard');
       if (this.nameInput.length > 0) {
         this.submitScore();
       }
@@ -2128,6 +2342,7 @@ export class GameOverScene {
       cursor: pointer;
     `;
     cancelButton.addEventListener('click', () => {
+      this.setInputDevice('keyboard');
       this.skipScoreSubmission('visible_skip_button');
     });
     btnContainer.appendChild(cancelButton);
@@ -2238,6 +2453,7 @@ export class GameOverScene {
 
   handleHiddenKeyDown(event) {
     event.stopPropagation();
+    this.setInputDevice('keyboard');
     const isSubmitKey = event.key === 'Enter' || event.key === 'Return' || event.code === 'NumpadEnter';
     if (isSubmitKey) {
       event.preventDefault();
@@ -2252,6 +2468,7 @@ export class GameOverScene {
 
   handleHiddenInput(event) {
     if (!event.target) return;
+    this.setInputDevice('keyboard');
     const value = event.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
     this.nameInput = value.slice(0, PILOT_NAME_MAX_LENGTH);
     event.target.value = this.nameInput;
@@ -2291,6 +2508,12 @@ export class GameOverScene {
   updateNameDisplay() {
     if (!this.nameDisplay) return;
     if (this.state === 'input') {
+      if (this.lastInputDevice === 'controller') {
+        this.nameDisplay.text = this.formatControllerNameDisplay();
+        this.nameDisplay.visible = true;
+        this.refreshPrimaryCta();
+        return;
+      }
       const caret = this.caretVisible ? '|' : '';
       this.nameDisplay.text = `NAME: ${this.nameInput}${caret}`;
       this.nameDisplay.visible = true;
@@ -2382,6 +2605,9 @@ export class GameOverScene {
     const name = this.validatePilotNameForSubmit();
     if (!name) {
       return;
+    }
+    if (this.lastInputDevice === 'controller') {
+      this.storeControllerName(name);
     }
     const result = {
       name,

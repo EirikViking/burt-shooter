@@ -3,6 +3,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
+import { GamepadNavigator } from '../input/GamepadNavigator.js';
 
 const INTRO_SEEN_KEY = 'nova_swarm_intro_seen_v1';
 
@@ -71,6 +72,8 @@ export class IntroScene {
     this.textGroup = null;
     this.panelWaitsForVoice = false;
     this.panelVoiceWasActive = false;
+    this.gamepadNavigator = new GamepadNavigator();
+    this.lastInputDevice = 'keyboard';
   }
 
   static shouldShow() {
@@ -85,6 +88,7 @@ export class IntroScene {
   }
 
   init() {
+    this.gamepadNavigator.suppressUntilReleased();
     this.destroyed = false;
     this.started = false;
     this.panelIndex = 0;
@@ -148,7 +152,7 @@ export class IntroScene {
     this.caption.anchor.set(0, 0);
     this.textGroup.addChild(this.caption);
 
-    this.prompt = createText('CLICK / PRESS SPACE TO BEGIN  |  ESC SKIPS', {
+    this.prompt = createText(this.getPromptText(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
       fontWeight: 'bold',
@@ -179,6 +183,7 @@ export class IntroScene {
 
     this.pointerHandler = () => this.handlePrimaryAction();
     this.keyHandler = (event) => {
+      this.setInputDevice('keyboard');
       if (event.key === 'Escape') {
         this.finish();
       } else if (event.key === ' ' || event.key === 'Enter' || event.key === 'ArrowRight') {
@@ -249,7 +254,7 @@ export class IntroScene {
     if (this.started) return;
     this.started = true;
     this.panelElapsedMs = 0;
-    this.prompt.text = 'SPACE / CLICK NEXT  |  ESC SKIPS';
+    this.prompt.text = this.getPromptText();
     AudioManager.init();
     AudioManager.unlockAudio?.();
     AudioManager.stopAllVoices?.('intro_start');
@@ -367,7 +372,31 @@ export class IntroScene {
     this.nextButton.y = height - (layout.isMobile ? 74 : 88);
   }
 
+  getPromptText() {
+    if (!this.started) {
+      return this.lastInputDevice === 'controller'
+        ? 'A: BEGIN  |  B: SKIP'
+        : 'CLICK / PRESS SPACE TO BEGIN  |  ESC SKIPS';
+    }
+    return this.lastInputDevice === 'controller'
+      ? 'A: NEXT  |  B: SKIP'
+      : 'SPACE / CLICK NEXT  |  ESC SKIPS';
+  }
+
+  setInputDevice(device) {
+    if (this.lastInputDevice === device) return;
+    this.lastInputDevice = device;
+    if (this.prompt) this.prompt.text = this.getPromptText();
+  }
+
   update(delta = 1) {
+    const nav = this.gamepadNavigator.update();
+    if (nav.connected && nav.active) {
+      this.setInputDevice('controller');
+      if (nav.pressed.confirm || nav.pressed.right) this.handlePrimaryAction();
+      if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.finish();
+    }
+
     if (!this.started) {
       this.prompt.alpha = 0.74 + Math.sin(Date.now() * 0.006) * 0.18;
       return;

@@ -4,6 +4,7 @@ import { getDefaultShipKey, getShipMetadata, getShipUnlockLabel, getShipUnlockPr
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { createText } from '../utils/pixiText.js';
 import { createShipStatPanel } from '../ui/ShipStatPanel.js';
+import { GamepadNavigator } from '../input/GamepadNavigator.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
@@ -11,6 +12,9 @@ export class ShipDetailsScene {
         this.spriteKey = spriteKey;
         this.container = new PIXI.Container();
         this.ship = getShipMetadata(spriteKey);
+        this.gamepadNavigator = new GamepadNavigator();
+        this.buttons = [];
+        this.focusedButtonIndex = 1;
 
         if (!this.ship) {
             console.error('[ShipDetails] Invalid sprite key:', spriteKey);
@@ -24,6 +28,7 @@ export class ShipDetailsScene {
     }
 
     async create() {
+        this.gamepadNavigator.suppressUntilReleased();
         const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
 
         // Background
@@ -228,12 +233,11 @@ export class ShipDetailsScene {
         backButton.position.set(panelX + panelWidth / 2 - buttonWidth - spacing / 2, buttonY);
         backButton.eventMode = 'static';
         backButton.cursor = 'pointer';
+        backButton.activate = () => this.goBack();
 
+        const backFocus = new PIXI.Graphics();
         const backBg = new PIXI.Graphics();
-        backBg.rect(0, 0, buttonWidth, buttonHeight);
-        backBg.fill({ color: 0x333333 });
-        backBg.stroke({ color: 0x00ff00, width: 2 });
-        backButton.addChild(backBg);
+        backButton.addChild(backFocus, backBg);
 
         const backText = createText('BACK', {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -245,6 +249,23 @@ export class ShipDetailsScene {
         backText.position.set(buttonWidth / 2, buttonHeight / 2);
         backButton.addChild(backText);
 
+        backButton.redraw = (hovered = false) => {
+            backFocus.clear();
+            if (backButton._focused) {
+                backFocus.roundRect(-5, -5, buttonWidth + 10, buttonHeight + 10, 8);
+                backFocus.stroke({ color: 0xffef7e, width: 2, alpha: 0.88 });
+            }
+            backBg.clear();
+            backBg.rect(0, 0, buttonWidth, buttonHeight);
+            backBg.fill({ color: hovered ? 0x144455 : 0x333333 });
+            backBg.stroke({ color: hovered || backButton._focused ? 0xffffff : 0x00ff00, width: 2 });
+        };
+        backButton.redraw(false);
+        backButton.on('pointerover', () => {
+            this.setButtonFocus(0);
+            backButton.redraw(true);
+        });
+        backButton.on('pointerout', () => backButton.redraw(false));
         backButton.on('pointerdown', () => this.goBack());
         this.container.addChild(backButton);
 
@@ -253,13 +274,12 @@ export class ShipDetailsScene {
         startButton.position.set(panelX + panelWidth / 2 + spacing / 2, buttonY);
         startButton.eventMode = 'static';
         startButton.cursor = 'pointer';
+        startButton.activate = () => this.startGame();
 
+        const startFocus = new PIXI.Graphics();
         const startBg = new PIXI.Graphics();
-        startBg.rect(0, 0, buttonWidth, buttonHeight);
         const locked = !isShipUnlocked(this.spriteKey, this.unlockProgress);
-        startBg.fill({ color: locked ? 0x2a2134 : 0x00ff00 });
-        startBg.stroke({ color: 0xffffff, width: 2 });
-        startButton.addChild(startBg);
+        startButton.addChild(startFocus, startBg);
 
         const startText = createText(locked ? 'LOCKED' : 'START GAME', {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -271,23 +291,63 @@ export class ShipDetailsScene {
         startText.position.set(buttonWidth / 2, buttonHeight / 2);
         startButton.addChild(startText);
 
+        startButton.redraw = (hovered = false) => {
+            startFocus.clear();
+            if (startButton._focused) {
+                startFocus.roundRect(-5, -5, buttonWidth + 10, buttonHeight + 10, 8);
+                startFocus.stroke({ color: 0xffef7e, width: 2, alpha: 0.88 });
+            }
+            startBg.clear();
+            startBg.rect(0, 0, buttonWidth, buttonHeight);
+            startBg.fill({ color: locked ? 0x2a2134 : (hovered ? 0x66ffff : 0x00ff00) });
+            startBg.stroke({ color: hovered || startButton._focused ? 0xffffff : 0xffffff, width: 2 });
+        };
+        startButton.redraw(false);
+        startButton.on('pointerover', () => {
+            this.setButtonFocus(1);
+            startButton.redraw(true);
+        });
+        startButton.on('pointerout', () => startButton.redraw(false));
         startButton.on('pointerdown', () => this.startGame());
         this.container.addChild(startButton);
 
         this.backButton = backButton;
         this.startButton = startButton;
+        this.buttons = [backButton, startButton];
+        this.setButtonFocus(locked ? 0 : 1);
     }
 
     setupInput() {
         this.keyHandler = (e) => {
             if (e.key === 'Escape') {
                 this.goBack();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.setButtonFocus(this.focusedButtonIndex === 0 ? 1 : 0);
             } else if (e.key === 'Enter') {
-                this.startGame();
+                this.buttons[this.focusedButtonIndex]?.activate?.();
             }
         };
 
         window.addEventListener('keydown', this.keyHandler);
+    }
+
+    setButtonFocus(index) {
+        if (!this.buttons?.length) return;
+        const next = ((index % this.buttons.length) + this.buttons.length) % this.buttons.length;
+        this.buttons.forEach((button, buttonIndex) => {
+            button._focused = buttonIndex === next;
+            button.redraw?.(false);
+        });
+        this.focusedButtonIndex = next;
+    }
+
+    update() {
+        const nav = this.gamepadNavigator.update();
+        if (!nav.connected || !nav.active) return;
+        if (nav.pressed.left || nav.pressed.right) this.setButtonFocus(this.focusedButtonIndex === 0 ? 1 : 0);
+        if (nav.pressed.confirm) this.buttons[this.focusedButtonIndex]?.activate?.();
+        if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.goBack();
     }
 
     goBack() {

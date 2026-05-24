@@ -5,6 +5,7 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { createSteamLeaderboardBridge } = require('./steamLeaderboardBridge.cjs');
 const { runSteamLeaderboardRuntimeProbe } = require('./steamLeaderboardRuntimeProbe.cjs');
+const { createNativeGamepadBridge } = require('./nativeGamepadBridge.cjs');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
@@ -33,6 +34,7 @@ const steamLeaderboardBridge = createSteamLeaderboardBridge({
   rootDir: path.resolve(__dirname, '..'),
   logger: console
 });
+const nativeGamepadBridge = createNativeGamepadBridge();
 
 function registerSteamLeaderboardIpc() {
   ipcMain.handle('nova-steam-leaderboard:isAvailable', () => steamLeaderboardBridge.isAvailable());
@@ -51,6 +53,13 @@ function registerAppIpc() {
     setImmediate(() => app.quit());
     return { ok: true };
   });
+}
+
+function registerInputIpc() {
+  ipcMain.handle('nova-input:getNativeGamepads', () => ({
+    status: nativeGamepadBridge.getStatus(),
+    gamepads: nativeGamepadBridge.getGamepads()
+  }));
 }
 
 function sendJson(response, status, payload) {
@@ -724,6 +733,7 @@ app.whenReady().then(async () => {
   }
   registerSteamLeaderboardIpc();
   registerAppIpc();
+  registerInputIpc();
   await startLocalServer();
   const win = createWindow();
   if (isSteamLeaderboardProbe) {

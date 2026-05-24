@@ -13,6 +13,7 @@ import {
   LeaderboardView,
   normalizeLeaderboardEntry
 } from '../leaderboard/LeaderboardTypes.js';
+import { GamepadNavigator } from '../input/GamepadNavigator.js';
 
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
@@ -82,6 +83,10 @@ export class HighscoreScene {
     this.fetchController = null;
     this.rowsFadeTicker = null;
     this.retryAttempt = 0; // Track retry attempts for UI feedback
+    this.gamepadNavigator = new GamepadNavigator();
+    this.focusableControls = [];
+    this.focusedControlIndex = 0;
+    this.keyHandler = null;
 
     // Trophy Room Assets
     this.bonusDronesContainer = new PIXI.Container();
@@ -108,6 +113,7 @@ export class HighscoreScene {
   }
 
   async init() {
+    this.gamepadNavigator.suppressUntilReleased();
     this.container.removeChildren();
     this.backdropSprite = null;
     this.backdropShade = null;
@@ -288,6 +294,17 @@ export class HighscoreScene {
       [LeaderboardView.FRIENDS]: this.friendsBtn,
       [LeaderboardView.LOCAL]: this.localBtn
     };
+    this.focusableControls = [
+      { id: LeaderboardView.GLOBAL, button: this.globalBtn, activate: () => this.setLeaderboardView(LeaderboardView.GLOBAL) },
+      { id: LeaderboardView.FRIENDS, button: this.friendsBtn, activate: () => this.setLeaderboardView(LeaderboardView.FRIENDS) },
+      { id: LeaderboardView.LOCAL, button: this.localBtn, activate: () => this.setLeaderboardView(LeaderboardView.LOCAL) },
+      { id: 'retry', button: this.retryBtn, activate: () => this.fetchHighscores() },
+      { id: 'back', button: this.backBtn, activate: () => this.game.switchScene('menu') },
+      { id: 'runAgain', button: this.runAgainBtn, activate: () => this.game.startGame(this.game.selectedShipSpriteKey) }
+    ];
+    this.focusableControls.forEach((control) => {
+      if (control.button) control.button.activate = control.activate;
+    });
 
     // TASK C: Build stamp removed from HighscoreScene (only allowed on MenuScene)
     // this.buildStamp = createText(`build: ${BUILD_ID}`, {
@@ -314,6 +331,8 @@ export class HighscoreScene {
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutHighscore());
     this.layoutHighscore();
+    this.setupKeyboardNavigation();
+    this.setHighscoreFocus(0);
     console.log(`HighscoreScene build:${BUILD_ID}`);
     this.loadActiveLeaderboard();
   }
@@ -1466,13 +1485,17 @@ export class HighscoreScene {
 
     const glow = new PIXI.Graphics();
     glow.filters = [new PIXI.BlurFilter(8)];
+    const focus = new PIXI.Graphics();
+    container.addChildAt(focus, 0);
     container.addChildAt(glow, 0);
     container._bg = bg;
     container._label = label;
     container._glow = glow;
+    container._focus = focus;
     this.setButtonActive(container, false);
 
     container.on('pointerover', () => {
+      this.setHighscoreFocusByButton(container);
       this.drawButtonChrome(container, {
         active: Boolean(container._active),
         hover: true
@@ -1513,11 +1536,20 @@ export class HighscoreScene {
     const frameColor = active ? 0xffd15c : (hover ? 0xffffff : 0x37f5ff);
     const fillColor = active ? 0x10203b : (hover ? 0x06314f : 0x04182d);
     const fillAlpha = hover ? 0.82 : (active ? 0.74 : 0.6);
+    const focused = Boolean(button._focused);
+
+    if (button._focus) {
+      button._focus.clear();
+      if (focused) {
+        button._focus.roundRect(x - 5, y - 5, width + 10, height + 10, 8);
+        button._focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
+      }
+    }
 
     button._bg.clear();
     button._bg.roundRect(x, y, width, height, 7);
     button._bg.fill({ color: fillColor, alpha: fillAlpha });
-    button._bg.stroke({ color: frameColor, width: active || hover ? 2 : 1.5, alpha: active || hover ? 0.78 : 0.5 });
+    button._bg.stroke({ color: focused ? 0xffffff : frameColor, width: active || hover || focused ? 2 : 1.5, alpha: active || hover || focused ? 0.82 : 0.5 });
     button._bg.rect(x + 10, y + 7, 4, height - 14);
     button._bg.fill({ color: active ? 0xffd15c : 0xff55d9, alpha: hover ? 0.9 : 0.62 });
     button._bg.rect(x + width - 14, y + 7, 4, height - 14);
@@ -1541,7 +1573,69 @@ export class HighscoreScene {
     button._label.style.fill = active ? '#faffd7' : '#c9fbff';
   }
 
-  update() {}
+  getVisibleControls() {
+    return (this.focusableControls || []).filter((control) =>
+      control?.button && control.button.visible !== false && control.button.eventMode !== 'none'
+    );
+  }
+
+  setHighscoreFocusByButton(button) {
+    const visible = this.getVisibleControls();
+    const index = visible.findIndex((control) => control.button === button);
+    if (index >= 0) this.setHighscoreFocus(index);
+  }
+
+  setHighscoreFocus(index) {
+    const visible = this.getVisibleControls();
+    if (!visible.length) return;
+    const next = ((index % visible.length) + visible.length) % visible.length;
+    this.focusableControls.forEach((control) => {
+      if (!control.button) return;
+      control.button._focused = visible[next]?.button === control.button;
+      this.drawButtonChrome(control.button, { active: Boolean(control.button._active) });
+    });
+    this.focusedControlIndex = next;
+  }
+
+  moveHighscoreFocus(delta) {
+    this.setHighscoreFocus(this.focusedControlIndex + delta);
+  }
+
+  activateHighscoreFocus() {
+    const visible = this.getVisibleControls();
+    visible[this.focusedControlIndex]?.activate?.();
+  }
+
+  setupKeyboardNavigation() {
+    if (this.keyHandler) window.removeEventListener('keydown', this.keyHandler, true);
+    this.keyHandler = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        this.game.switchScene('menu');
+        return;
+      }
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        this.moveHighscoreFocus(-1);
+      } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown' || event.key === 'Tab') {
+        event.preventDefault();
+        this.moveHighscoreFocus(event.shiftKey ? -1 : 1);
+      } else if (event.key === 'Enter' || event.code === 'Space') {
+        event.preventDefault();
+        this.activateHighscoreFocus();
+      }
+    };
+    window.addEventListener('keydown', this.keyHandler, true);
+  }
+
+  update() {
+    const nav = this.gamepadNavigator.update();
+    if (!nav.connected || !nav.active) return;
+    if (nav.pressed.left || nav.pressed.up) this.moveHighscoreFocus(-1);
+    if (nav.pressed.right || nav.pressed.down) this.moveHighscoreFocus(1);
+    if (nav.pressed.confirm) this.activateHighscoreFocus();
+    if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.game.switchScene('menu');
+  }
 
   destroy() {
     if (this.layoutUnsubscribe) {
@@ -1559,6 +1653,10 @@ export class HighscoreScene {
     if (this.animationTicker && this.game?.app?.ticker) {
       this.game.app.ticker.remove(this.animationTicker);
       this.animationTicker = null;
+    }
+    if (this.keyHandler) {
+      window.removeEventListener('keydown', this.keyHandler, true);
+      this.keyHandler = null;
     }
     this.largeBonusDrones = [];
     this.bonusDrones = [];

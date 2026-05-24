@@ -13,3 +13,8 @@
 - Root cause: commit `2bed30a` intentionally changed the previous six-wave/75-second boss-spacing plan to two focused waves and no timing guard after a first-boss difficulty report. That made normal boss gates arrive much earlier than the May 21 boss-spacing pass promised.
 - Restored values: `MIN_WAVES_BETWEEN_BOSSES=6`, `MIN_SECONDS_BETWEEN_BOSSES=0`, `bossIntervalCatchupWaveMax=0`, `wavesPerBossBase=6`, `wavesPerBossPerLevel=0.03`, and `wavesPerBossMax=8`.
 - Guard: `npm run check:wave-pacing` verifies generated normal levels do not produce a one-wave boss gate, wave 1 transitions to the next wave instead of `BOSS_GATE`, six-wave pacing estimates near 75 seconds without enforcing a hard seconds rule, and the immediate boss route remains debug-token-only.
+
+## 2026-05-23 Post-First Boss Ease
+
+- Boss 1 remains unchanged. Starting with boss number 2, `bossPostFirstDifficultyScalar=0.8` applies a 20% overall difficulty reduction across boss health, boss projectile pressure, and boss regular/phase shooting cadence.
+- The focused guard is `npm run check:boss-post-first-difficulty`; it verifies level 1 stays unscaled while later bosses receive the 0.8 scalar.

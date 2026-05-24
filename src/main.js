@@ -434,6 +434,7 @@ function buildGameTextState(game) {
       unlock: selectedShip.unlock || null,
       launchInProgress: Boolean(shipSelectScene.launchInProgress),
       backButton: getBoundsDebug(shipSelectScene.backButton),
+      mainMenuButtonFocused: Boolean(shipSelectScene.mainMenuButtonFocused),
       hangarMenu: shipSelectScene.getHangarMenuDebugState ? shipSelectScene.getHangarMenuDebugState(getBoundsDebug) : null,
       startButton: getBoundsDebug(shipSelectScene.startButton)
     } : null,
@@ -445,6 +446,9 @@ function buildGameTextState(game) {
       nextGoal: gameOverScene.nextGoal?.text || gameOverScene.nextGoalText?.text || null,
       prompt: gameOverScene.promptText?.text || null,
       retryPrompt: gameOverScene.instructions?.text || null,
+      nameInput: gameOverScene.nameInput || '',
+      controllerNameCursor: Number.isFinite(gameOverScene.controllerNameCursor) ? gameOverScene.controllerNameCursor : null,
+      inputDevice: gameOverScene.lastInputDevice || null,
       primaryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       retryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       leaderboardCta: gameOverScene.getLeaderboardCtaDebugState ? gameOverScene.getLeaderboardCtaDebugState() : null,
@@ -474,6 +478,7 @@ function buildGameTextState(game) {
     } : null,
     highscore: highscoreScene ? {
       activeLeaderboard: highscoreScene.activeLeaderboard || null,
+      focusedControl: highscoreScene.getVisibleControls?.()[highscoreScene.focusedControlIndex]?.id || null,
       tabs: highscoreScene.leaderboardTabs?.map(tab => tab.id) || [],
       status: highscoreScene.status || null,
       sourceLabel: highscoreScene.activeLeaderboardResult?.sourceLabel || null,

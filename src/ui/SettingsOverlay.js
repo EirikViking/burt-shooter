@@ -9,6 +9,7 @@ import {
 import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
+import { GamepadNavigator } from '../input/GamepadNavigator.js';
 
 function percent(value) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
@@ -74,11 +75,20 @@ export class SettingsOverlay {
     this.musicPackButton = null;
     this.footerButtons = {};
     this.creditsPanel = null;
+    this.creditsBackButton = null;
     this.creditsDebugState = null;
+    this.controls = [];
+    this.focusedControlIndex = 0;
+    this.gamepadNavigator = new GamepadNavigator();
+    this.gamepadNavigator.suppressUntilReleased();
+    this.keyHandler = null;
     this.build();
+    this.setupKeyboardNavigation();
+    this.setControlFocus(0);
   }
 
   build() {
+    this.controls = [];
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const settings = AudioManager.getSettings();
@@ -209,6 +219,12 @@ export class SettingsOverlay {
     }, { width: 132, height: 34 });
     button._label.style.fill = enabled ? '#ffffff' : '#9fb5c2';
     row.addChild(button);
+    this.registerControl({
+      type: 'button',
+      id: `toggle_${label.toLowerCase().replace(/\s+/g, '_')}`,
+      button,
+      label
+    });
 
     this.container.addChild(row);
     this.rows.push(row);
@@ -235,6 +251,8 @@ export class SettingsOverlay {
     this.audioTestButtons.sfx = sfxButton;
     this.audioTestButtons.voice = voiceButton;
     row.addChild(sfxButton, voiceButton);
+    this.registerControl({ type: 'button', id: 'test_sfx', button: sfxButton, label: 'TEST SFX' });
+    this.registerControl({ type: 'button', id: 'test_voice', button: voiceButton, label: 'TEST VOICE' });
 
     this.container.addChild(row);
     this.rows.push(row);
@@ -275,6 +293,7 @@ export class SettingsOverlay {
     this.musicPackButton = button;
     fitTextToWidth(button._label, 132);
     row.addChild(button);
+    this.registerControl({ type: 'button', id: 'music_pack', button, label: 'MUSIC SET' });
 
     const hint = createText(pack === 'classic' ? 'DEFAULT' : 'OPTIONAL MIX', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -310,6 +329,7 @@ export class SettingsOverlay {
     const trackWidth = 250;
     const track = new PIXI.Graphics();
     const knob = new PIXI.Graphics();
+    const focus = new PIXI.Graphics();
     const valueText = createText(percent(initialValue), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 15,
@@ -317,10 +337,16 @@ export class SettingsOverlay {
     });
     valueText.anchor.set(0, 0.5);
     valueText.x = 160;
-    row.addChild(track, knob, valueText);
+    row.addChild(focus, track, knob, valueText);
+    let sliderEntry = null;
 
     const draw = (value) => {
       const clamped = Math.max(0, Math.min(1, value));
+      focus.clear();
+      if (sliderEntry?.focused) {
+        focus.roundRect(-trackWidth / 2 - 18, -18, trackWidth + 104, 36, 8);
+        focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
+      }
       track.clear();
       track.roundRect(-trackWidth / 2, -5, trackWidth, 10, 5);
       track.fill({ color: 0x11354a, alpha: 0.95 });
@@ -333,13 +359,21 @@ export class SettingsOverlay {
       valueText.text = percent(clamped);
     };
 
-    const setFromGlobal = (globalX) => {
-      const local = row.toLocal({ x: globalX, y });
-      const value = (local.x + trackWidth / 2) / trackWidth;
+    const applyValue = (value) => {
       const nextValue = onChange
         ? onChange(value)
         : AudioManager.setVolume(kind, value)[`${kind}Volume`];
-      draw(Number.isFinite(nextValue) ? nextValue : value);
+      const applied = Math.max(0, Math.min(1, Number.isFinite(nextValue) ? nextValue : value));
+      if (sliderEntry) sliderEntry.value = applied;
+      draw(applied);
+      AudioManager.playSfx('ui_open', { volume: 0.1, minIntervalMs: 90 });
+      return applied;
+    };
+
+    const setFromGlobal = (globalX) => {
+      const local = row.toLocal({ x: globalX, y });
+      const value = (local.x + trackWidth / 2) / trackWidth;
+      applyValue(value);
     };
 
     track.eventMode = 'static';
@@ -368,6 +402,15 @@ export class SettingsOverlay {
     draw(initialValue);
     this.container.addChild(row);
     this.rows.push(row);
+    sliderEntry = this.registerControl({
+      type: 'slider',
+      id: `slider_${kind}`,
+      row,
+      label,
+      value: Math.max(0, Math.min(1, Number(initialValue) || 0)),
+      setValue: applyValue,
+      redraw: () => draw(sliderEntry?.value ?? initialValue)
+    });
   }
 
   createButton(label, x, y, onPress, { width = 240, height = 38 } = {}) {
@@ -376,9 +419,11 @@ export class SettingsOverlay {
     button.cursor = 'pointer';
     button.position.set(x, y);
     button.hitArea = new PIXI.Rectangle(-width / 2, -height / 2, width, height);
+    button.activate = onPress;
 
+    const focus = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
-    button.addChild(bg);
+    button.addChild(focus, bg);
 
     const text = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -392,14 +437,23 @@ export class SettingsOverlay {
     button._label = text;
 
     const draw = (hovered = false) => {
+      focus.clear();
+      if (button._focused) {
+        focus.roundRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, 8);
+        focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
+      }
       bg.clear();
       bg.roundRect(-width / 2, -height / 2, width, height, 6);
       bg.fill({ color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.95 : 0.84 });
       bg.stroke({ color: hovered ? 0xffffff : 0x00ffff, width: hovered ? 2 : 1, alpha: 0.95 });
     };
     draw(false);
+    button._drawButton = draw;
 
-    button.on('pointerover', () => draw(true));
+    button.on('pointerover', () => {
+      this.setControlFocusByButton(button);
+      draw(true);
+    });
     button.on('pointerout', () => draw(false));
     button.on('pointertap', onPress);
     return button;
@@ -410,7 +464,115 @@ export class SettingsOverlay {
     button.label = `ui_settingsFooter_${key}`;
     this.footerButtons[key] = button;
     this.container.addChild(button);
+    this.registerControl({ type: 'button', id: `footer_${key}`, button, label });
     return button;
+  }
+
+  registerControl(control) {
+    const entry = {
+      ...control,
+      focused: false
+    };
+    this.controls.push(entry);
+    return entry;
+  }
+
+  setControlFocusByButton(button) {
+    const index = this.controls.findIndex((control) => control.button === button);
+    if (index >= 0) this.setControlFocus(index);
+  }
+
+  setControlFocus(index) {
+    if (!this.controls.length) return;
+    const count = this.controls.length;
+    const next = ((index % count) + count) % count;
+    this.controls.forEach((control, controlIndex) => {
+      control.focused = controlIndex === next;
+      if (control.button) {
+        control.button._focused = control.focused;
+        control.button._drawButton?.(false);
+      }
+      if (control.type === 'slider') {
+        control.redraw?.();
+      }
+    });
+    this.focusedControlIndex = next;
+  }
+
+  getFocusedControl() {
+    return this.controls[this.focusedControlIndex] || null;
+  }
+
+  moveControlFocus(delta) {
+    this.setControlFocus(this.focusedControlIndex + delta);
+    AudioManager.playSfx('thrusterFire', { volume: 0.07, minIntervalMs: 80 });
+  }
+
+  activateFocusedControl() {
+    const control = this.getFocusedControl();
+    if (!control) return;
+    if (control.type === 'slider') {
+      this.adjustFocusedControl(1);
+      return;
+    }
+    control.button?.activate?.();
+  }
+
+  adjustFocusedControl(direction) {
+    const control = this.getFocusedControl();
+    if (!control) return false;
+    if (control.type !== 'slider') {
+      this.moveControlFocus(direction > 0 ? 1 : -1);
+      return true;
+    }
+    const step = control.id === 'slider_screenShake' || control.id === 'slider_playerFocus' ? 0.05 : 0.08;
+    control.setValue?.((Number(control.value) || 0) + step * Math.sign(direction || 1));
+    return true;
+  }
+
+  setupKeyboardNavigation() {
+    this.keyHandler = (event) => {
+      const key = event.key || event.code;
+      const handled = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' ', 'Escape'].includes(key) ||
+        event.code === 'Space';
+      if (!handled) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      if (key === 'Escape') {
+        if (this.creditsPanel) this.closeCreditsPanel();
+        else this.close();
+        return;
+      }
+      if (key === 'ArrowUp') this.moveControlFocus(-1);
+      else if (key === 'ArrowDown') this.moveControlFocus(1);
+      else if (key === 'ArrowLeft') this.adjustFocusedControl(-1);
+      else if (key === 'ArrowRight') this.adjustFocusedControl(1);
+      else this.activateFocusedControl();
+    };
+    window.addEventListener('keydown', this.keyHandler, true);
+  }
+
+  update() {
+    const nav = this.gamepadNavigator.update();
+    if (!nav.connected || !nav.active) return;
+
+    if (this.creditsPanel) {
+      if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
+        this.closeCreditsPanel();
+      }
+      return;
+    }
+
+    if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
+      this.close();
+      return;
+    }
+    if (nav.pressed.up) this.moveControlFocus(-1);
+    if (nav.pressed.down) this.moveControlFocus(1);
+    if (nav.pressed.left) this.adjustFocusedControl(-1);
+    if (nav.pressed.right) this.adjustFocusedControl(1);
+    if (nav.pressed.confirm) this.activateFocusedControl();
   }
 
   toggleFullscreen() {
@@ -560,7 +722,10 @@ export class SettingsOverlay {
       width: isCompact ? Math.min(260, panelWidth - margin * 2) : 280,
       height: isCompact ? 34 : 38
     });
+    backButton._focused = true;
+    backButton._drawButton?.(false);
     overlay.addChild(backButton);
+    this.creditsBackButton = backButton;
     this.creditsPanel = overlay;
     this.creditsDebugState = {
       panel: { x: Math.round(panelX), y: Math.round(panelY), width: Math.round(panelWidth), height: Math.round(panelHeight) },
@@ -735,6 +900,7 @@ export class SettingsOverlay {
     }
     this.creditsPanel.destroy({ children: true });
     this.creditsPanel = null;
+    this.creditsBackButton = null;
     this.creditsDebugState = null;
   }
 
@@ -746,12 +912,17 @@ export class SettingsOverlay {
         label: this.musicPackButton?._label?.text || null
       },
       footer: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button)])),
-      credits: this.creditsDebugState
+      credits: this.creditsDebugState,
+      focus: this.getFocusedControl()?.id || null
     };
   }
 
   close() {
     this.closeCreditsPanel();
+    if (this.keyHandler) {
+      window.removeEventListener('keydown', this.keyHandler, true);
+      this.keyHandler = null;
+    }
     if (this.container.parent) {
       this.container.parent.removeChild(this.container);
     }

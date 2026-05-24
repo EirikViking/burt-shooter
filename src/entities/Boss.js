@@ -57,8 +57,10 @@ export class Boss {
     this.vx = 2;
     this.vy = 0;
     const diff = BalanceConfig.difficulty;
-    this.health = Math.round(diff.bossBaseHealth + Math.max(0, level - 1) * diff.bossHealthPerLevel);
-    this.health = Math.max(this.health, diff.bossMinHealth || 70);
+    const rawHealth = Math.round(diff.bossBaseHealth + Math.max(0, level - 1) * diff.bossHealthPerLevel);
+    const healthBeforePostFirstEase = Math.max(rawHealth, diff.bossMinHealth || 70);
+    this.difficultyScalar = this.getPostFirstBossDifficultyScalar();
+    this.health = Math.max(1, Math.round(healthBeforePostFirstEase * this.difficultyScalar));
     this.maxHealth = this.health;
     this.shootCooldown = 0;
     this.shootDelay = this.getPhaseShootDelay(1);
@@ -959,12 +961,21 @@ export class Boss {
     }
   }
 
+  getPostFirstBossDifficultyScalar() {
+    const diff = BalanceConfig.difficulty || {};
+    const startsAt = Math.max(2, Math.round(Number(diff.bossPostFirstDifficultyStartsAt) || 2));
+    if (this.level < startsAt) return 1;
+    const scalar = Number(diff.bossPostFirstDifficultyScalar);
+    return Number.isFinite(scalar) ? clamp(scalar, 0.2, 1) : 1;
+  }
+
   getBossPressureScalar() {
-    if (this.level <= 1) return 0.78;
-    if (this.level === 2) return 0.88;
-    if (this.level <= 4) return 0.92;
-    if (this.level <= 6) return 0.96;
-    return 1;
+    let scalar = 1;
+    if (this.level <= 1) scalar = 0.78;
+    else if (this.level === 2) scalar = 0.88;
+    else if (this.level <= 4) scalar = 0.92;
+    else if (this.level <= 6) scalar = 0.96;
+    return scalar * this.getPostFirstBossDifficultyScalar();
   }
 
   getPhaseShootDelay(phase) {
@@ -975,7 +986,7 @@ export class Boss {
         ? diff.bossShootDelayPhase2
         : diff.bossShootDelayPhase3;
     const openingDelayScalar = this.level <= 1 ? 1.55 : this.level === 2 ? 1.2 : 1;
-    return baseDelay * openingDelayScalar;
+    return (baseDelay * openingDelayScalar) / this.getPostFirstBossDifficultyScalar();
   }
 
   getBossProjectileSpeed(phase) {
@@ -1010,7 +1021,7 @@ export class Boss {
   getRegularAttackIntervalMs() {
     const base = this.level <= 1 ? 2200 : this.level === 2 ? 2400 : 2700;
     const phaseScalar = this.phase === 1 ? 1 : this.phase === 2 ? 0.95 : 0.9;
-    return Math.round(base * phaseScalar);
+    return Math.round((base * phaseScalar) / this.getPostFirstBossDifficultyScalar());
   }
 
   getRegularTelegraphDurationMs() {

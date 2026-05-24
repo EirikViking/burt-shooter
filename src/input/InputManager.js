@@ -112,10 +112,25 @@ export class InputManager {
       };
     }
 
+    const nativePads = typeof window !== 'undefined' && window.__novaNativeGamepads?.getGamepads
+      ? window.__novaNativeGamepads.getGamepads().filter(Boolean)
+      : [];
+    const nativeActivePad = nativePads.find((pad) => pad && pad.connected && (
+      (pad.axes || []).some((axis) => Math.abs(Number(axis) || 0) >= this.gamepadDeadzone) ||
+      (pad.buttons || []).some((button) => this.buttonLikePressed(button))
+    ));
+    if (nativeActivePad) return nativeActivePad;
+
     const pads = typeof navigator !== 'undefined' && navigator.getGamepads
       ? Array.from(navigator.getGamepads()).filter(Boolean)
       : [];
-    return pads.find(pad => pad && pad.connected) || null;
+    return pads.find(pad => pad && pad.connected) || nativePads.find(pad => pad && pad.connected) || null;
+  }
+
+  buttonLikePressed(button) {
+    if (button == null) return false;
+    if (typeof button === 'number') return button > 0.5;
+    return Boolean(button.pressed || button.value > 0.5);
   }
 
   pollGamepad(force = false) {

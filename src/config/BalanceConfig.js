@@ -86,6 +86,8 @@ export const BalanceConfig = {
         bossBaseHealth: 44,
         bossHealthPerLevel: 4,
         bossMinHealth: 44,
+        bossPostFirstDifficultyStartsAt: 2,
+        bossPostFirstDifficultyScalar: 0.8,
         bossShootDelayBase: 44,
         bossShootDelayPhase2: 42,
         bossShootDelayPhase3: 38,

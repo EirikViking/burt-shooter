@@ -16,6 +16,7 @@ import { createText } from '../utils/pixiText.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { computeShipStatRanges, createShipStatPanel, getShipCombatRole } from '../ui/ShipStatPanel.js';
+import { GamepadNavigator } from '../input/GamepadNavigator.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -45,6 +46,7 @@ export class ShipSelectScene {
     this.gamepadActionWasPressed = false;
     this.gamepadCancelWasPressed = false;
     this.gamepadVerticalWasPressed = false;
+    this.gamepadNavigator = new GamepadNavigator();
     this.exitNoticeTimeout = null;
 
     // Load saved selection
@@ -62,6 +64,7 @@ export class ShipSelectScene {
   }
 
   async create() {
+    this.gamepadNavigator.suppressUntilReleased();
     const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
 
     // Background
@@ -109,7 +112,7 @@ export class ShipSelectScene {
     // Fixed footer
     const footerContainer = new PIXI.Container();
     const instructions = createText(
-      'A/D OR ARROWS: SHIP  |  Q/E: JUMP 5  |  R: RANDOM READY  |  ENTER: LAUNCH  |  ESC: MENU',
+      'ARROWS/STICK: SHIP  |  A/ENTER: LAUNCH  |  X: DETAILS  |  Y/R: RANDOM  |  B/ESC: MENU',
       {
         fontFamily: FONT_BODY,
         fontSize: this.layout.isMobile ? 11 : 14,
@@ -120,6 +123,7 @@ export class ShipSelectScene {
     instructions.anchor.set(0.5, 1);
     instructions.position.set(width / 2, height - 12);
     footerContainer.addChild(instructions);
+    this.footerInstructions = instructions;
     this.container.addChild(footerContainer);
 
     // Setup carousel navigation
@@ -1143,11 +1147,7 @@ export class ShipSelectScene {
       0x333333,
       0x00ff00,
       () => {
-        const spriteKey = ship.spriteKey;
-        setSelectedShipKey(spriteKey);
-        this.saveSelection(spriteKey);
-        if (DEBUG) console.log('[ShipSelect] Opening details for:', spriteKey);
-        this.game.showShipDetails(spriteKey);
+        this.openSelectedShipDetails();
       }
     );
     this.container.addChild(this.detailsButton);
@@ -1648,44 +1648,65 @@ export class ShipSelectScene {
   }
 
   pollHangarMenuGamepad() {
-    if (typeof navigator === 'undefined' || !navigator.getGamepads) return;
-    const pad = Array.from(navigator.getGamepads() || []).find(candidate => candidate && candidate.connected);
-    if (!pad) return;
+    const nav = this.gamepadNavigator.update();
+    if (!nav.connected || !nav.active) return;
 
-    const buttons = pad.buttons || [];
-    const menuPressed = Boolean(buttons[9]?.pressed || buttons[8]?.pressed);
-    const actionPressed = Boolean(buttons[0]?.pressed || buttons[7]?.pressed);
-    const cancelPressed = Boolean(buttons[1]?.pressed);
-    const axisY = Number(pad.axes?.[1] || 0);
-    const upPressed = Boolean(buttons[12]?.pressed || axisY < -0.45);
-    const downPressed = Boolean(buttons[13]?.pressed || axisY > 0.45);
-    const verticalPressed = upPressed || downPressed;
-
-    if (menuPressed && !this.gamepadMenuWasPressed) {
+    if (nav.pressed.menu || nav.pressed.back) {
       this.setMainMenuButtonFocus(true);
       if (this.hangarMenuOverlay?.visible) {
         this.closeHangarMenu('controller');
       } else {
         this.openHangarMenu('controller');
       }
+      return;
     }
 
     if (this.hangarMenuOverlay?.visible) {
-      if (verticalPressed && !this.gamepadVerticalWasPressed) {
-        this.setOverlayFocus(this.overlayFocusedIndex + (downPressed ? 1 : -1));
-      }
-      if (actionPressed && !this.gamepadActionWasPressed) {
-        this.activateOverlayFocus();
-      }
-      if (cancelPressed && !this.gamepadCancelWasPressed) {
-        this.closeHangarMenu('controller');
-      }
+      if (nav.pressed.up) this.setOverlayFocus(this.overlayFocusedIndex - 1);
+      if (nav.pressed.down) this.setOverlayFocus(this.overlayFocusedIndex + 1);
+      if (nav.pressed.confirm) this.activateOverlayFocus();
+      if (nav.pressed.cancel) this.closeHangarMenu('controller');
+      return;
     }
 
-    this.gamepadMenuWasPressed = menuPressed;
-    this.gamepadActionWasPressed = actionPressed;
-    this.gamepadCancelWasPressed = cancelPressed;
-    this.gamepadVerticalWasPressed = verticalPressed;
+    if (nav.pressed.cancel) {
+      this.setMainMenuButtonFocus(true);
+      this.openHangarMenu('controller');
+      return;
+    }
+    if (nav.pressed.up) this.setMainMenuButtonFocus(true);
+    if (nav.pressed.down) this.setMainMenuButtonFocus(false);
+    if (nav.pressed.left) {
+      this.setMainMenuButtonFocus(false);
+      this.navigateLeft();
+    }
+    if (nav.pressed.right) {
+      this.setMainMenuButtonFocus(false);
+      this.navigateRight();
+    }
+    if (nav.pressed.lb) {
+      this.setMainMenuButtonFocus(false);
+      this.navigateModel(-1);
+    }
+    if (nav.pressed.rb) {
+      this.setMainMenuButtonFocus(false);
+      this.navigateModel(1);
+    }
+    if (nav.pressed.y) {
+      this.setMainMenuButtonFocus(false);
+      this.navigateRandom();
+    }
+    if (nav.pressed.x) {
+      this.setMainMenuButtonFocus(false);
+      this.openSelectedShipDetails();
+    }
+    if (nav.pressed.confirm) {
+      if (this.mainMenuButtonFocused) {
+        this.openHangarMenu('controller');
+      } else {
+        this.launchSelectedShip('controller');
+      }
+    }
   }
 
   returnToMenu(source = 'unknown') {
@@ -1719,6 +1740,16 @@ export class ShipSelectScene {
       this.launchInProgress = false;
       console.error('[ShipSelect] Failed to start selected ship:', error);
     });
+  }
+
+  openSelectedShipDetails() {
+    const ship = this.ships[this.selectedIndex];
+    if (!ship?.spriteKey) return;
+    const spriteKey = ship.spriteKey;
+    setSelectedShipKey(spriteKey);
+    this.saveSelection(spriteKey);
+    if (DEBUG) console.log('[ShipSelect] Opening details for:', spriteKey);
+    this.game.showShipDetails(spriteKey);
   }
 
   saveSelection(spriteKey) {

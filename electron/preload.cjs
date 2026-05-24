@@ -16,6 +16,10 @@ const APP_CHANNELS = {
   exitGame: 'nova-app:exitGame'
 };
 
+const INPUT_CHANNELS = {
+  getNativeGamepads: 'nova-input:getNativeGamepads'
+};
+
 function safePayload(payload) {
   if (payload == null) return {};
   return JSON.parse(JSON.stringify(payload));
@@ -57,4 +61,26 @@ contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
 
 contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
   exitGame: () => invoke(APP_CHANNELS.exitGame)
+}));
+
+let nativeGamepadCache = [];
+let nativeGamepadStatus = { available: false, reason: 'not_polled' };
+
+async function refreshNativeGamepads() {
+  try {
+    const result = await ipcRenderer.invoke(INPUT_CHANNELS.getNativeGamepads);
+    nativeGamepadStatus = safePayload(result?.status || {});
+    nativeGamepadCache = Array.isArray(result?.gamepads) ? safePayload(result.gamepads) : [];
+  } catch (error) {
+    nativeGamepadStatus = { available: false, reason: 'ipc_error', error: error?.message || String(error) };
+    nativeGamepadCache = [];
+  }
+}
+
+refreshNativeGamepads();
+setInterval(refreshNativeGamepads, 16);
+
+contextBridge.exposeInMainWorld('__novaNativeGamepads', Object.freeze({
+  getGamepads: () => safePayload(nativeGamepadCache),
+  getStatus: () => safePayload(nativeGamepadStatus)
 }));

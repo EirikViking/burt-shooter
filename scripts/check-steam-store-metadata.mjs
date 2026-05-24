@@ -126,14 +126,30 @@ if (!errors.length) {
   if (metadata.status !== 'draft_pending_human_approval') {
     warnings.push('metadata status should remain draft_pending_human_approval until human approval is recorded');
   }
-  if (metadata.categories?.includes('Full Controller Support')) {
-    errors.push('Do not claim Full Controller Support until Steam client text entry/controller metadata are validated');
+  if (!metadata.categories?.includes('Full Controller Support')) {
+    errors.push('Steam store categories must include Full Controller Support to match the current Steamworks setup');
   }
-  if (!metadata.categories?.includes('Partial Controller Support')) {
-    errors.push('Steam store categories must keep Partial Controller Support until full menu/settings/highscore navigation, text-entry behavior, controller glyphs, and Steam Input metadata are validated');
+  if (metadata.categories?.includes('Partial Controller Support')) {
+    errors.push('Steam store categories must not include Partial Controller Support when Steamworks uses Full Controller Support');
   }
-  if (metadata.controllerSupportDecision?.steamworksCategory !== 'Partial Controller Support') {
-    errors.push('controllerSupportDecision.steamworksCategory must remain Partial Controller Support until Full Controller Support is validated');
+  if (metadata.controllerSupportDecision?.steamworksCategory !== 'Full Controller Support') {
+    errors.push('controllerSupportDecision.steamworksCategory must be Full Controller Support to match Steamworks');
+  }
+  if (metadata.controllerSupportDecision?.status !== 'accepted_for_v1') {
+    errors.push('controllerSupportDecision.status must record the accepted v1 Full Controller Support decision');
+  }
+  const steamInputLayoutDecision = metadata.controllerSupportDecision?.steamInputLayoutDecision || {};
+  if (steamInputLayoutDecision.status !== 'native_xinput_plain_prompts_accepted') {
+    errors.push('controllerSupportDecision.steamInputLayoutDecision.status must record the accepted native XInput/plain-prompt tradeoff');
+  }
+  const controllerDecisionText = [
+    metadata.controllerSupportDecision?.reason,
+    steamInputLayoutDecision.reason
+  ].filter(Boolean).join('\n');
+  for (const required of ['native XInput', 'plain text', 'No official Steam Input']) {
+    if (!controllerDecisionText.includes(required)) {
+      errors.push(`controllerSupportDecision must document "${required}"`);
+    }
   }
   if (metadata.achievementsDecision?.status !== 'defer_for_v1') {
     warnings.push('Achievements decision differs from current no-Steamworks-API implementation');
