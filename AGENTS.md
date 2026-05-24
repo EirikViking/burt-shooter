@@ -6,6 +6,7 @@
 - Do not work from stale, behind, dirty, or unexplained branches.
 - Start from a clean branch based on the verified authoritative baseline.
 - Before localization, deploy, or build work, verify that German localization, top3 localization polish, and temporary marketing hotkeys are present.
+- Before Steam packaging, SteamPipe VDF generation, Steam upload, or deploy work, run `npm run check:release-line`; do not proceed if it fails.
 - Do not deploy unless explicitly instructed.
 - Do not change Steamworks settings unless explicitly instructed.
 
