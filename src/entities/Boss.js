@@ -88,6 +88,8 @@ export class Boss {
     this.telegraph = null;
     this.regularTelegraph = null;
     this.safeLanes = [];
+    this.chaosPressureReliefUntilMs = 0;
+    this.delayedSignature = null;
     this.phaseNotified = { 2: false, 3: false };
     this.spawnedAtMs = Date.now();
     this.regularAttackReadyAt = this.spawnedAtMs + (level <= 1 ? 1800 : 1400);
@@ -290,6 +292,17 @@ export class Boss {
 
     if (this.signatureCooldown > 0) {
       this.signatureCooldown -= delta;
+    }
+    if (
+      this.delayedSignature &&
+      !this.telegraph &&
+      Date.now() >= this.delayedSignature.dueAt
+    ) {
+      const delayed = this.delayedSignature;
+      this.delayedSignature = null;
+      this.startSignatureTelegraph(delayed.type, playerX, playerY);
+      this.signatureCooldown = 120;
+      console.log(`[BossChaos] delayedSignature phase=${delayed.phase} type=${delayed.type}`);
     }
 
     if (this.telegraph) {
@@ -975,7 +988,8 @@ export class Boss {
     else if (this.level === 2) scalar = 0.88;
     else if (this.level <= 4) scalar = 0.92;
     else if (this.level <= 6) scalar = 0.96;
-    return scalar * this.getPostFirstBossDifficultyScalar();
+    const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 0.72 : 1;
+    return scalar * this.getPostFirstBossDifficultyScalar() * chaosRelief;
   }
 
   getPhaseShootDelay(phase) {
@@ -1021,7 +1035,8 @@ export class Boss {
   getRegularAttackIntervalMs() {
     const base = this.level <= 1 ? 2200 : this.level === 2 ? 2400 : 2700;
     const phaseScalar = this.phase === 1 ? 1 : this.phase === 2 ? 0.95 : 0.9;
-    return Math.round((base * phaseScalar) / this.getPostFirstBossDifficultyScalar());
+    const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
+    return Math.round((base * phaseScalar * chaosRelief) / this.getPostFirstBossDifficultyScalar());
   }
 
   getRegularTelegraphDurationMs() {
@@ -1126,6 +1141,16 @@ export class Boss {
     this.phasePulseUntil = Date.now() + BOSS_PHASE_PULSE_MS;
     this.setPresentationState('phaseChange', BOSS_PHASE_PULSE_MS);
     const type = this.getSignatureForPhase(phase);
+    if (Date.now() < (this.chaosPressureReliefUntilMs || 0)) {
+      this.delayedSignature = {
+        phase,
+        type,
+        dueAt: this.chaosPressureReliefUntilMs + 500
+      };
+      this.signatureCooldown = Math.max(this.signatureCooldown || 0, 180);
+      console.log(`[BossChaos] delaySignature phase=${phase} type=${type} until=${this.delayedSignature.dueAt}`);
+      return;
+    }
     this.startSignatureTelegraph(type, playerX, playerY);
     this.signatureCooldown = 120;
   }

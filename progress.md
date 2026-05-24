@@ -1,5 +1,13 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-24 Desktop Wave Width And Controlled Chaos
+
+- Current user request: make desktop enemy formations use more screen width, add conservative random boss chaos events, and allow compensated multi-mini-boss normal wave variants without globally increasing difficulty; commit and push the branch without merging to main.
+- Implemented width-aware parked formation spacing for all requested EnemyManager formations and removed the 800px/400px assumptions from Enemy entry/return arcs.
+- Added capped boss chaos events after an 8-12s safe window: support waves, softened elite mini-bosses, and rare late-level combined events with bullet/enemy/player-hit gates plus boss pressure relief and delayed signatures.
+- Added rare compensated multi-elite normal wave variants that reduce normal enemy count/fire pressure, soften/stagger elites, delay special abilities, and place elites wide.
+- Verification evidence: `npm run build`, `npm run build:current`, `npm run check:i18n`, `npm run check:i18n-ui`, `npm run check:enemy-wave-patterns`, `npm run check:boss-adds`, targeted Playwright probe under `test-results/desktop-wave-chaos-targeted/`, `npm run smoke`, `npm run desktop:smoke`, and `npm run capture:steam-screenshots` passed. Generated release screenshot draft was removed from the branch to keep the commit focused; ignored test evidence remains local.
+
 ## 2026-05-24 Achievement Toasts And Marketing Spawn Debug
 
 - Current user request: make rank achievement notifications obvious in-game, add temporary marketing hotkeys where `1` spawns a random enemy wave, `2` spawns a random mini-boss/elite middle ship, and `3` spawns a random boss, then deploy to web prod.

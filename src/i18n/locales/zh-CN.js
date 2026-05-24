@@ -39,6 +39,11 @@ const sourceText = Object.freeze({
   'FULLSCREEN': '全屏',
   'BACK': '返回',
   'BACK TO CABINET': '返回 Cabinet',
+  'BOSS CHAOS: SUPPORT WAVE!': '首领混战：支援波！',
+  'BOSS CHAOS: ELITE SIGNAL!': '首领混战：精英信号！',
+  'BOSS CHAOS: SUPPORT + ELITE!': '首领混战：支援 + 精英！',
+  'ELITE DUO INBOUND!': '精英双机入场！',
+  'ELITE TRIO INBOUND!': '精英三机入场！',
 
   'TINYFOUNDRY GAMES // NOVA RESPONSE DECK': 'TINYFOUNDRY GAMES // NOVA 响应台',
   'NOVA SWARM': 'NOVA SWARM',

@@ -7,6 +7,7 @@ import { BalanceConfig } from '../config/BalanceConfig.js';
 import { getMicroMessage } from '../text/phrasePool.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
+import { translateText } from '../i18n/index.js';
 import {
   GENERATED_ENEMY_TYPES,
   getGeneratedEnemyTypeAtLevelProgress,
@@ -207,6 +208,10 @@ export class EnemyManager {
     this.bossAddWaveCooldownUntilMs = 0;
     this.bossAddWaveCount = 0;
     this.bossIntervalExtraWaves = 0;
+    this.bossChaosEventsThisBoss = 0;
+    this.bossChaosNextCheckAtMs = 0;
+    this.bossChaosCooldownUntilMs = 0;
+    this.bossChaosPressureReliefUntilMs = 0;
     this.directorState = { tier: 0, spawnCadenceScale: 1, eliteChance: 0.02, clutchDropChance: 0.04 };
 
     // TASK 1: Voice history to prevent duplicates
@@ -255,6 +260,10 @@ export class EnemyManager {
     this.bossAddWaveCooldownUntilMs = 0;
     this.bossAddWaveCount = 0;
     this.bossIntervalExtraWaves = 0;
+    this.bossChaosEventsThisBoss = 0;
+    this.bossChaosNextCheckAtMs = 0;
+    this.bossChaosCooldownUntilMs = 0;
+    this.bossChaosPressureReliefUntilMs = 0;
 
     // Play Voice
     // Play Voice (TASK 1: Prevent duplicates per level)
@@ -476,7 +485,86 @@ export class EnemyManager {
     if (plan.length) {
       console.log(`[EliteMiddleShipPlan] level=${level} waves=${plannedWaves.length} plan=${plan.map(item => `${item.waveIndex + 1}:${item.eliteMiddleShipId}`).join(',')}`);
     }
+    this.applyMultiEliteWaveVariant(plannedWaves, level, new Set(plan.map((item) => item.waveIndex)));
     return plannedWaves;
+  }
+
+  getEligibleEliteMiddleShipIds(level, { includeGentleFallback = false } = {}) {
+    const safeLevel = Math.max(1, Number(level) || 1);
+    const eligible = ELITE_MIDDLE_SHIP_IDS
+      .map((id) => getEliteMiddleShipProfile(id))
+      .filter(Boolean)
+      .filter((profile) => profile.minLevel <= safeLevel)
+      .map((profile) => profile.id);
+    if (eligible.length || !includeGentleFallback) return eligible;
+    return ELITE_MIDDLE_SHIP_IDS
+      .map((id) => getEliteMiddleShipProfile(id))
+      .filter(Boolean)
+      .filter((profile) => profile.minLevel <= safeLevel + 1)
+      .slice(0, 2)
+      .map((profile) => profile.id);
+  }
+
+  pickEliteMiddleShipIds(level, count, { includeGentleFallback = false } = {}) {
+    const pool = this.getEligibleEliteMiddleShipIds(level, { includeGentleFallback });
+    const picked = [];
+    const used = new Set();
+    while (picked.length < count && used.size < pool.length) {
+      const id = pool[Math.floor(Math.random() * pool.length)];
+      if (!id || used.has(id)) continue;
+      used.add(id);
+      picked.push(id);
+    }
+    return picked;
+  }
+
+  applyMultiEliteWaveVariant(plannedWaves, level, reservedWaveIndices = new Set()) {
+    const safeLevel = Math.max(1, Number(level) || 1);
+    if (safeLevel < 2 || plannedWaves.length < 4) return;
+
+    const chance = safeLevel <= 4 ? 0.045 : safeLevel < 10 ? 0.11 : 0.15;
+    if (Math.random() > chance) return;
+
+    const eliteCount = safeLevel >= 10 && Math.random() < 0.14 ? 3 : 2;
+    const ids = this.pickEliteMiddleShipIds(safeLevel, eliteCount, { includeGentleFallback: safeLevel <= 4 });
+    if (ids.length < 2) return;
+
+    const eligibleWaveIndices = plannedWaves
+      .map((wave, index) => ({ wave, index }))
+      .filter(({ wave, index }) =>
+        index > 0 &&
+        index < plannedWaves.length - 1 &&
+        !reservedWaveIndices.has(index) &&
+        !wave.eliteMiddleShipId &&
+        !wave.isChallenge &&
+        wave.type !== 'bonus_challenge'
+      )
+      .map(({ index }) => index);
+    if (!eligibleWaveIndices.length) return;
+
+    const waveIndex = eligibleWaveIndices[Math.floor(Math.random() * eligibleWaveIndices.length)];
+    const wave = plannedWaves[waveIndex];
+    const originalCount = Math.max(4, Number(wave.count) || this.getWaveEnemyCount(safeLevel, waveIndex));
+    const normalCountScalar = ids.length >= 3 ? 0.42 : safeLevel <= 4 ? 0.5 : 0.58;
+    const compensatedCount = Math.max(3, Math.round(originalCount * normalCountScalar));
+    const compensation = {
+      normalCountBefore: originalCount,
+      normalCountAfter: compensatedCount,
+      normalFireScalar: ids.length >= 3 ? 0.48 : 0.58,
+      normalFireDelayMult: ids.length >= 3 ? 1.36 : 1.24,
+      eliteHealthScalar: ids.length >= 3 ? 0.44 : safeLevel <= 4 ? 0.48 : 0.58,
+      eliteFireDelayMult: ids.length >= 3 ? 1.85 : 1.58,
+      eliteTacticFireScalar: ids.length >= 3 ? 0.38 : 0.48,
+      specialDelayStepMs: ids.length >= 3 ? 3000 : 2500
+    };
+
+    plannedWaves[waveIndex] = {
+      ...wave,
+      count: compensatedCount,
+      multiEliteMiddleShipIds: ids,
+      multiEliteCompensation: compensation
+    };
+    console.log(`[MultiEliteWave] level=${safeLevel} wave=${waveIndex + 1} elites=${ids.length} compensation=count:${originalCount}->${compensatedCount},normalFire:${compensation.normalFireScalar},eliteHp:${compensation.eliteHealthScalar}`);
   }
 
   getNormalWaveCount(level) {
@@ -831,6 +919,7 @@ export class EnemyManager {
             });
           }
         }
+        this.maybeTriggerBossChaos();
         break;
 
       case 'LEVEL_COMPLETE':
@@ -1013,7 +1102,17 @@ export class EnemyManager {
     }
 
     const { count, formation, type } = config;
-    const tactic = this.resolveWaveTactic(config);
+    let tactic = { ...this.resolveWaveTactic(config) };
+    const multiEliteIds = Array.isArray(config.multiEliteMiddleShipIds) ? config.multiEliteMiddleShipIds : [];
+    const multiEliteCompensation = config.multiEliteCompensation || null;
+    if (multiEliteIds.length && multiEliteCompensation) {
+      tactic = {
+        ...tactic,
+        fireScalar: (tactic.fireScalar || 1) * (multiEliteCompensation.normalFireScalar || 0.58),
+        fireDelayMult: (tactic.fireDelayMult || 1) * (multiEliteCompensation.normalFireDelayMult || 1.24),
+        entrySpeed: (tactic.entrySpeed || 1) * 1.08
+      };
+    }
     this.currentWaveTactic = tactic;
     const positions = this.getFormationPositions(formation, count);
     const screenW = this.game.getWidth();
@@ -1070,6 +1169,15 @@ export class EnemyManager {
         delayMs: Math.min(900, Math.max(220, positions.length * delayStep * 0.35))
       });
     }
+    if (multiEliteIds.length) {
+      this.spawnMultiEliteMiddleShips(multiEliteIds, {
+        formation,
+        tactic,
+        waveColor,
+        entry: 'split',
+        compensation: multiEliteCompensation
+      });
+    }
     console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count}`);
   }
 
@@ -1102,8 +1210,12 @@ export class EnemyManager {
     const screenH = this.game.getHeight();
     const startLeft = Math.random() < 0.5;
     const startX = this.getWaveEntryX(context.entry || 'single', this.eliteMiddleShipsSpawnedThisLevel, startLeft, screenW);
-    const targetX = Math.max(74, Math.min(screenW - 74, screenW * (0.32 + Math.random() * 0.36)));
-    const targetY = Math.max(92, Math.min(screenH * 0.34, 118 + Math.random() * 72));
+    const targetX = Number.isFinite(context.targetX)
+      ? Math.max(74, Math.min(screenW - 74, context.targetX))
+      : Math.max(74, Math.min(screenW - 74, screenW * (0.32 + Math.random() * 0.36)));
+    const targetY = Number.isFinite(context.targetY)
+      ? Math.max(88, Math.min(screenH * 0.36, context.targetY))
+      : Math.max(92, Math.min(screenH * 0.34, 118 + Math.random() * 72));
     const enemy = new Enemy(startX, -124, profile.id, this.level, this.game, context.waveColor || 'Black');
     enemy.kind = 'elite_middle_ship';
     enemy.marketingDebug = marketingDebug;
@@ -1115,7 +1227,20 @@ export class EnemyManager {
       centerY: targetY,
       side: targetX < screenW / 2 ? -1 : 1
     });
-    enemy.startEntry(startX, -124, targetX, targetY, 1450, context.delayMs || 260);
+    if (Number.isFinite(context.healthScalar)) {
+      enemy.health = Math.max(1, Math.round((enemy.health || 1) * context.healthScalar));
+      enemy.maxHealth = enemy.health;
+      enemy.updateHealthBar?.();
+    }
+    if (Number.isFinite(context.fireDelayMult)) {
+      enemy.shootDelay = Math.round((enemy.shootDelay || 120) * context.fireDelayMult);
+    }
+    if (enemy.eliteAbility && Number.isFinite(context.specialDelayMs)) {
+      const now = Date.now();
+      enemy.eliteAbility.state = 'cooldown';
+      enemy.eliteAbility.nextAt = now + context.specialDelayMs;
+    }
+    enemy.startEntry(startX, -124, targetX, targetY, context.entryDurationMs || 1450, context.delayMs || 260);
     this.enemies.push(enemy);
     this.container.addChild(enemy.sprite);
     this.eliteMiddleShipsSpawnedThisLevel += 1;
@@ -1135,6 +1260,66 @@ export class EnemyManager {
     });
     console.log(`[EliteMiddleShipSpawn] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} id=${profile.id} role=${profile.role} marketing=${marketingDebug}`);
     return enemy;
+  }
+
+  spawnMultiEliteMiddleShips(profileIds, context = {}) {
+    const ids = Array.isArray(profileIds) ? profileIds.filter(Boolean) : [];
+    if (ids.length < 2) return [];
+
+    const screenW = this.game.getWidth();
+    const screenH = this.game.getHeight();
+    const span = Math.min(screenW * 0.72, Math.max(screenW * 0.52, screenW - Math.max(160, screenW * 0.16)));
+    const left = screenW / 2 - span / 2;
+    const compensation = context.compensation || {};
+    const spawned = [];
+    ids.forEach((id, index) => {
+      const r = ids.length <= 1 ? 0.5 : index / (ids.length - 1);
+      const targetX = left + r * span;
+      const targetY = Math.max(102, Math.min(screenH * 0.32, 118 + (index % 2) * 54));
+      const enemy = this.spawnEliteMiddleShip(id, {
+        formation: context.formation || 'MULTI_ELITE',
+        tactic: {
+          ...(context.tactic || {}),
+          id: 'multi_elite_pressure',
+          fireScalar: compensation.eliteTacticFireScalar || 0.48,
+          fireDelayMult: compensation.eliteFireDelayMult || 1.58,
+          entrySpeed: 0.9
+        },
+        waveColor: context.waveColor || 'Black',
+        entry: context.entry || 'split',
+        ignoreCaps: true,
+        ignoreLevelGate: true,
+        targetX,
+        targetY,
+        delayMs: 420 + index * 620,
+        entryDurationMs: 1550 + index * 140,
+        healthScalar: compensation.eliteHealthScalar || 0.55,
+        fireDelayMult: compensation.eliteFireDelayMult || 1.58,
+        specialDelayMs: 2200 + index * (compensation.specialDelayStepMs || 2500)
+      });
+      if (enemy) spawned.push(enemy);
+    });
+
+    const playScene = this.game?.scenes?.play;
+    if (spawned.length >= 2) {
+      playScene?.showToast?.(translateText(spawned.length >= 3 ? 'ELITE TRIO INBOUND!' : 'ELITE DUO INBOUND!'), {
+        fontSize: this.game.getWidth() < 620 ? 15 : 19,
+        fill: '#ffd166',
+        stroke: '#1c0b00',
+        strokeThickness: 4,
+        duration: 1500,
+        slot: 'top',
+        type: 'elite_middle_ship',
+        priority: 4,
+        maxWidth: this.game.getWidth() * 0.76
+      });
+    }
+    console.log(`[MultiEliteWave] level=${this.level} wave=${this.currentWaveIndex + 1} elites=${spawned.length} compensation=${JSON.stringify({
+      count: `${compensation.normalCountBefore}->${compensation.normalCountAfter}`,
+      eliteHp: compensation.eliteHealthScalar,
+      eliteFireDelay: compensation.eliteFireDelayMult
+    })}`);
+    return spawned;
   }
 
   spawnEliteSupportDrone(source, { count = 2, split = false } = {}) {
@@ -1178,69 +1363,83 @@ export class EnemyManager {
     const pos = [];
     const cw = this.game.getWidth() / 2;
     const sw = this.game.getWidth();
-    const clampX = (x) => Math.max(36, Math.min(sw - 36, x));
+    const edgeMargin = Math.max(72, Math.min(170, sw * 0.075));
+    const clampX = (x) => Math.max(edgeMargin, Math.min(sw - edgeMargin, x));
+    const available = Math.max(0, sw - edgeMargin * 2);
+    const spanFor = (fraction, min = 0, max = Number.POSITIVE_INFINITY) => {
+      const desired = sw * fraction;
+      const floor = Math.min(min, available);
+      return Math.max(0, Math.min(available, max, Math.max(floor, desired)));
+    };
+    const xAt = (index, total, span, center = cw) => {
+      const r = total <= 1 ? 0.5 : index / (total - 1);
+      return clampX(center - span / 2 + r * span);
+    };
 
     switch (type) {
       case 'TUTORIAL_ARC': {
-        const usable = Math.min(sw * 0.66, 520);
+        const usable = spanFor(0.66, 620);
         for (let i = 0; i < count; i++) {
           const r = count <= 1 ? 0.5 : i / (count - 1);
           pos.push({
-            x: clampX(cw - usable / 2 + r * usable),
+            x: xAt(i, count, usable),
             y: 92 + Math.sin(r * Math.PI) * 56
           });
         }
         break;
       }
       case 'STAGGERED_WING': {
-        const spacing = Math.min(82, Math.max(48, sw / 8));
+        const usable = spanFor(0.74, 760);
         const rows = [88, 130, 172];
         for (let i = 0; i < count; i++) {
+          const r = count <= 1 ? 0.5 : i / (count - 1);
           const row = i % rows.length;
-          const pair = Math.floor(i / rows.length);
-          const side = i % 2 === 0 ? -1 : 1;
           pos.push({
-            x: clampX(cw + side * (44 + pair * spacing)),
-            y: rows[row]
+            x: xAt(i, count, usable),
+            y: rows[row] + Math.abs(r - 0.5) * 36
           });
         }
         break;
       }
       case 'PINCER': {
+        const usable = spanFor(0.78, 860);
+        const left = cw - usable / 2;
+        const right = cw + usable / 2;
+        const step = Math.max(44, Math.min(92, usable / Math.max(8, count)));
         for (let i = 0; i < count; i++) {
           const side = i % 2 === 0 ? -1 : 1;
           const row = Math.floor(i / 2);
           pos.push({
-            x: clampX(cw + side * Math.min(sw * 0.32, 230 - row * 18)),
+            x: clampX(side < 0 ? left + row * step : right - row * step),
             y: 90 + row * 42 + (side > 0 ? 14 : 0)
           });
         }
         break;
       }
       case 'DIAGONAL_RAID': {
-        const usable = Math.min(sw * 0.68, 620);
+        const usable = spanFor(0.72, 760);
         for (let i = 0; i < count; i++) {
           const r = count <= 1 ? 0.5 : i / (count - 1);
           pos.push({
-            x: clampX(cw - usable / 2 + r * usable),
+            x: xAt(i, count, usable),
             y: 76 + r * 132
           });
         }
         break;
       }
       case 'SIDEWINDER': {
-        const usable = Math.min(sw * 0.74, 660);
+        const usable = spanFor(0.76, 820);
         for (let i = 0; i < count; i++) {
           const r = count <= 1 ? 0.5 : i / (count - 1);
           pos.push({
-            x: clampX(cw - usable / 2 + r * usable),
+            x: xAt(i, count, usable),
             y: 126 + Math.sin(r * Math.PI * 2) * 50
           });
         }
         break;
       }
       case 'ORBIT_RING': {
-        const radiusX = Math.min(230, sw * 0.24);
+        const radiusX = spanFor(0.52, 560) / 2;
         const radiusY = 76;
         for (let i = 0; i < count; i++) {
           const angle = (i / Math.max(1, count)) * Math.PI * 2 - Math.PI / 2;
@@ -1252,81 +1451,97 @@ export class EnemyManager {
         break;
       }
       case 'CROSS_STREAM': {
+        const usable = spanFor(0.74, 760);
+        const left = cw - usable / 2;
+        const right = cw + usable / 2;
         for (let i = 0; i < count; i++) {
           const half = Math.ceil(count / 2);
           const lane = i < half ? -1 : 1;
           const idx = i < half ? i : i - half;
+          const r = half <= 1 ? 0.5 : idx / (half - 1);
           pos.push({
-            x: clampX(cw + lane * (44 + idx * 54)),
+            x: clampX(lane < 0 ? left + r * usable * 0.46 : right - r * usable * 0.46),
             y: 88 + idx * 30
           });
         }
         break;
       }
       case 'SCREEN_DOOR': {
-        const lanes = 4;
+        const lanes = Math.min(5, Math.max(3, Math.ceil(Math.sqrt(Math.max(1, count))) + 1));
+        const usable = spanFor(0.78, 840);
         for (let i = 0; i < count; i++) {
           const lane = i % lanes;
           const row = Math.floor(i / lanes);
           pos.push({
-            x: clampX(cw - 180 + lane * 120 + (row % 2) * 34),
+            x: xAt(lane, lanes, usable) + (row % 2 ? Math.min(34, usable / lanes * 0.22) : 0),
             y: 78 + row * 44
           });
         }
         break;
       }
-      case 'GRID':
-        const cols = 6;
+      case 'GRID': {
+        const cols = Math.min(6, Math.max(3, Math.ceil(Math.sqrt(Math.max(1, count))) + 1));
+        const usable = spanFor(0.72, 760);
         for (let i = 0; i < count; i++) {
-          const x = clampX(cw - 150 + (i % cols) * 60);
+          const x = xAt(i % cols, cols, usable);
           const y = 80 + Math.floor(i / cols) * 60;
           pos.push({ x, y });
         }
         break;
-      case 'V_SHAPE':
+      }
+      case 'V_SHAPE': {
+        const usable = spanFor(0.70, 720);
+        const maxRow = Math.max(1, Math.ceil(count / 2));
         for (let i = 0; i < count; i++) {
           const side = i % 2 === 0 ? -1 : 1;
-          const row = Math.floor(i / 2);
-          pos.push({ x: clampX(cw + (row * 30 + 20) * side), y: 80 + row * 30 });
+          const row = Math.floor((i + 1) / 2);
+          const offset = row <= 0 ? 0 : (row / maxRow) * usable / 2;
+          pos.push({ x: clampX(cw + offset * side), y: 80 + row * 30 });
         }
         break;
+      }
       case 'BOX':
         // Box with hole
         const bCols = 5;
-        for (let i = 0; i < count; i++) {
+        const boxSpan = spanFor(0.68, 700);
+        for (let i = 0, placed = 0; placed < count && i < count + 4; i++) {
           const cx = (i % bCols);
           const cy = Math.floor(i / bCols);
           if (cx === 2 && cy === 1) continue; // Hole
-          pos.push({ x: clampX(cw - 100 + cx * 50), y: 80 + cy * 50 });
+          pos.push({ x: xAt(cx, bCols, boxSpan), y: 80 + cy * 50 });
+          placed += 1;
         }
         break;
       case 'DOUBLE_ARC': {
         const laneCount = Math.ceil(count / 2);
-        const usable = Math.min(sw * 0.72, 620);
+        const usable = spanFor(0.76, 820);
         for (let i = 0; i < count; i++) {
           const lane = i % 2;
           const index = Math.floor(i / 2);
           const r = laneCount <= 1 ? 0.5 : index / (laneCount - 1);
           pos.push({
-            x: clampX(cw - usable / 2 + r * usable),
+            x: xAt(index, laneCount, usable),
             y: 88 + lane * 64 + Math.sin(r * Math.PI) * 42
           });
         }
         break;
       }
-      case 'SPIRAL':
+      case 'SPIRAL': {
         // Just a circle/spiral
+        const radiusXMax = spanFor(0.56, 580) / 2;
         for (let i = 0; i < count; i++) {
-          const angle = (i / count) * Math.PI * 2;
-          const r = 50 + (i * 10);
-          pos.push({ x: clampX(cw + Math.cos(angle) * r), y: 150 + Math.sin(angle) * r });
+          const angle = (i / Math.max(1, count)) * Math.PI * 2;
+          const r = count <= 1 ? 0 : 0.24 + (i / Math.max(1, count - 1)) * 0.76;
+          pos.push({ x: clampX(cw + Math.cos(angle) * radiusXMax * r), y: 150 + Math.sin(angle) * 92 * r });
         }
         break;
+      }
       default:
         // ARC / S_CURVE standard
+        const usable = spanFor(0.72, 760);
         for (let i = 0; i < count; i++) {
           const r = count <= 1 ? 0.5 : i / (count - 1);
-          pos.push({ x: clampX(cw - 250 + r * 500), y: 100 + Math.sin(r * Math.PI) * 100 });
+          pos.push({ x: xAt(i, count, usable), y: 100 + Math.sin(r * Math.PI) * 100 });
         }
         break;
     }
@@ -1368,6 +1583,10 @@ export class EnemyManager {
       this.boss = boss;
       this.bossSpawnedThisLevel = true;
       this.bossSpawnedAtMs = Date.now();
+      this.bossChaosEventsThisBoss = 0;
+      this.bossChaosNextCheckAtMs = Date.now() + 8000 + Math.random() * 4000;
+      this.bossChaosCooldownUntilMs = 0;
+      this.bossChaosPressureReliefUntilMs = 0;
     } else {
       this.boss = boss;
     }
@@ -1411,6 +1630,181 @@ export class EnemyManager {
     console.log(`[BossPhase] level=${level} phase=${this.phase} spawned bossSpawned=true bossActive=${boss.active}`);
     this.logBossStatus('boss_spawn_complete');
     return boss;
+  }
+
+  getBossChaosMaxEvents(level = this.level) {
+    const safeLevel = Math.max(1, Number(level) || 1);
+    if (safeLevel <= 1) return 0;
+    if (safeLevel <= 4) return 1;
+    if (safeLevel <= 9) return 2;
+    return 3;
+  }
+
+  getActiveBossChaosEnemies() {
+    return this.enemies.filter((enemy) =>
+      enemy?.active !== false &&
+      (enemy.waitingForEntry || enemy.active) &&
+      enemy.kind !== 'boss' &&
+      enemy.kind !== 'bonus_drone'
+    );
+  }
+
+  maybeTriggerBossChaos() {
+    if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) return;
+    const level = Math.max(1, Number(this.level) || 1);
+    const maxEvents = this.getBossChaosMaxEvents(level);
+    if (maxEvents <= 0 || this.bossChaosEventsThisBoss >= maxEvents) return;
+
+    const now = Date.now();
+    if (now < (this.bossSpawnedAtMs || this.boss.spawnedAtMs || now) + 8000) return;
+    if (now < this.bossChaosCooldownUntilMs || now < this.bossChaosNextCheckAtMs) return;
+
+    this.bossChaosNextCheckAtMs = now + 2200 + Math.random() * 1600;
+    if (this.boss.telegraph || this.boss.regularTelegraph || this.boss.health <= 0) return;
+
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.lastHitAt && now - playScene.lastHitAt < 5200) return;
+
+    const activeChaosEnemies = this.getActiveBossChaosEnemies();
+    const activeBullets = playScene?.bulletManager?.enemyBullets?.filter((bullet) => bullet?.active !== false).length || 0;
+    const enemyCap = level <= 4 ? 2 : level <= 9 ? 5 : 7;
+    const bulletCap = level <= 4 ? 14 : level <= 9 ? 22 : 30;
+    if (activeChaosEnemies.length > enemyCap || activeBullets > bulletCap) return;
+
+    const chance = level <= 4 ? 0.11 : level <= 9 ? 0.18 : 0.24;
+    if (Math.random() > chance) return;
+
+    const roll = Math.random();
+    const event = level >= 10 && roll < 0.12
+      ? 'BOTH'
+      : level >= 5 && roll < 0.42
+        ? 'MINI_BOSS'
+        : 'SUPPORT_WAVE';
+    this.triggerBossChaosEvent(event);
+  }
+
+  triggerBossChaosEvent(event) {
+    const level = Math.max(1, Number(this.level) || 1);
+    const now = Date.now();
+    let supportCount = 0;
+    let elite = null;
+
+    if (event === 'SUPPORT_WAVE' || event === 'BOTH') {
+      supportCount = this.spawnBossChaosSupportWave();
+    }
+    if (event === 'MINI_BOSS' || event === 'BOTH') {
+      elite = this.spawnBossChaosMiniBoss();
+    }
+
+    const spawned = supportCount + (elite ? 1 : 0);
+    if (spawned <= 0) {
+      this.bossChaosCooldownUntilMs = now + 4500;
+      return;
+    }
+
+    this.bossChaosEventsThisBoss += 1;
+    const reliefMs = event === 'BOTH' ? 9800 : event === 'MINI_BOSS' ? 8500 : 6500;
+    this.bossChaosPressureReliefUntilMs = Math.max(this.bossChaosPressureReliefUntilMs || 0, now + reliefMs);
+    if (this.boss) {
+      this.boss.chaosPressureReliefUntilMs = this.bossChaosPressureReliefUntilMs;
+      this.boss.regularAttackReadyAt = Math.max(this.boss.regularAttackReadyAt || 0, now + 1300);
+      this.boss.signatureCooldown = Math.max(this.boss.signatureCooldown || 0, 90);
+    }
+    this.bossChaosCooldownUntilMs = now + (level >= 10 ? 14000 : 18000) + Math.random() * 3500;
+
+    const playScene = this.game?.scenes?.play;
+    const toastKey = event === 'BOTH'
+      ? 'BOSS CHAOS: SUPPORT + ELITE!'
+      : event === 'MINI_BOSS'
+        ? 'BOSS CHAOS: ELITE SIGNAL!'
+        : 'BOSS CHAOS: SUPPORT WAVE!';
+    playScene?.showToast?.(translateText(toastKey), {
+      fontSize: this.game.getWidth() < 620 ? 15 : 18,
+      fill: '#ffcc66',
+      stroke: '#1c0b00',
+      strokeThickness: 4,
+      duration: 1350,
+      slot: 'top',
+      type: 'boss',
+      priority: 4,
+      maxWidth: this.game.getWidth() * 0.76
+    });
+    console.log(`[BossChaos] event=${event} level=${level} count=${spawned}`);
+    if (elite) console.log(`[BossChaos] event=MINI_BOSS level=${level} id=${elite.type || elite.middleShipProfile?.id || 'unknown'}`);
+    if (supportCount > 0) console.log(`[BossChaos] event=SUPPORT_WAVE level=${level} count=${supportCount}`);
+    console.log(`[BossChaos] pressureReliefUntil=${this.bossChaosPressureReliefUntilMs}`);
+  }
+
+  spawnBossChaosSupportWave() {
+    const level = Math.max(1, Number(this.level) || 1);
+    const activeBossAdds = this.enemies.filter((enemy) =>
+      enemy?.kind === 'boss_chaos_support' && (enemy.active || enemy.waitingForEntry)
+    ).length;
+    const maxActive = level <= 4 ? 3 : level <= 9 ? 4 : 5;
+    const desired = level <= 4 ? 2 : level <= 9 ? 3 : 4;
+    const spawnCount = Math.max(0, Math.min(desired, maxActive - activeBossAdds));
+    if (spawnCount <= 0) return 0;
+
+    const positions = this.getFormationPositions(level >= 7 ? 'STAGGERED_WING' : 'ARC', spawnCount);
+    const screenW = this.game.getWidth();
+    const startLeft = Math.random() < 0.5;
+    const type = pickGeneratedEnemyTypeForLevel(Math.max(1, Math.min(level, 18)));
+    const tactic = { id: 'boss_chaos_support', fireScalar: 0.34, fireDelayMult: 1.46, entrySpeed: 0.92, volley: 'staggered', shot: 'needle' };
+    let spawned = 0;
+    positions.forEach((pos, index) => {
+      const startX = this.getWaveEntryX(index % 2 === 0 ? 'split' : 'alternating', index, startLeft, screenW);
+      const enemy = new Enemy(startX, -118, type, level, this.game, 'Red');
+      enemy.kind = 'boss_chaos_support';
+      enemy.health = Math.max(1, Math.min(enemy.health, level <= 4 ? 2 : 3));
+      enemy.maxHealth = enemy.health;
+      enemy.scoreValue = Math.max(30, Math.round((enemy.scoreValue || 60) * 0.7));
+      enemy.shootDelay = Math.round((enemy.shootDelay || 120) * 1.45);
+      enemy.radius = Math.max(12, Math.round((enemy.radius || 16) * 0.88));
+      enemy.updateHealthBar?.();
+      enemy.applyWaveTactic?.(tactic, {
+        index,
+        count: spawnCount,
+        formation: 'BOSS_CHAOS_SUPPORT',
+        centerX: screenW / 2,
+        centerY: 150,
+        side: pos.x < screenW / 2 ? -1 : 1
+      });
+      enemy.startEntry(startX, -70, pos.x, pos.y + 54, 1280, index * 180);
+      this.enemies.push(enemy);
+      this.container.addChild(enemy.sprite);
+      spawned += 1;
+    });
+    return spawned;
+  }
+
+  spawnBossChaosMiniBoss() {
+    const level = Math.max(1, Number(this.level) || 1);
+    const activeElites = this.enemies.filter((enemy) =>
+      enemy?.kind === 'elite_middle_ship' && (enemy.active || enemy.waitingForEntry)
+    ).length;
+    if (activeElites > 0) return null;
+
+    const ids = this.pickEliteMiddleShipIds(level, 1, { includeGentleFallback: true });
+    const id = ids[0];
+    if (!id) return null;
+
+    const screenW = this.game.getWidth();
+    const side = Math.random() < 0.5 ? 0.24 : 0.76;
+    return this.spawnEliteMiddleShip(id, {
+      formation: 'BOSS_CHAOS_ELITE',
+      tactic: { id: 'boss_chaos_elite', fireScalar: 0.42, fireDelayMult: 1.65, entrySpeed: 0.88 },
+      waveColor: 'Black',
+      entry: 'split',
+      ignoreCaps: true,
+      ignoreLevelGate: level < 3,
+      targetX: screenW * side,
+      targetY: Math.max(108, Math.min(this.game.getHeight() * 0.31, 128 + Math.random() * 56)),
+      delayMs: 360,
+      entryDurationMs: 1600,
+      healthScalar: level <= 4 ? 0.46 : 0.58,
+      fireDelayMult: level <= 4 ? 1.8 : 1.58,
+      specialDelayMs: 3600
+    });
   }
 
   spawnBossAdds(count = 6) {

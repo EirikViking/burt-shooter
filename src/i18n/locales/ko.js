@@ -43,6 +43,11 @@ const sourceText = Object.freeze({
   'FULLSCREEN': '전체 화면',
   'BACK': '뒤로',
   'BACK TO CABINET': 'Cabinet으로',
+  'BOSS CHAOS: SUPPORT WAVE!': '보스 혼전: 지원 웨이브!',
+  'BOSS CHAOS: ELITE SIGNAL!': '보스 혼전: 엘리트 신호!',
+  'BOSS CHAOS: SUPPORT + ELITE!': '보스 혼전: 지원 + 엘리트!',
+  'ELITE DUO INBOUND!': '엘리트 2기 진입!',
+  'ELITE TRIO INBOUND!': '엘리트 3기 진입!',
 
   'NOVA SWARM': 'NOVA SWARM',
   'TINYFOUNDRY GAMES // NOVA RESPONSE DECK': 'TINYFOUNDRY GAMES // NOVA 대응 덱',

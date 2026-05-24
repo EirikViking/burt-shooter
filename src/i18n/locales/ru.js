@@ -39,6 +39,11 @@ const sourceText = Object.freeze({
   'FULLSCREEN': 'НА ВЕСЬ ЭКРАН',
   'BACK': 'НАЗАД',
   'BACK TO CABINET': 'НАЗАД К CABINET',
+  'BOSS CHAOS: SUPPORT WAVE!': 'ХАОС БОССА: ВОЛНА ПОДДЕРЖКИ!',
+  'BOSS CHAOS: ELITE SIGNAL!': 'ХАОС БОССА: ЭЛИТНЫЙ СИГНАЛ!',
+  'BOSS CHAOS: SUPPORT + ELITE!': 'ХАОС БОССА: ПОДДЕРЖКА + ЭЛИТА!',
+  'ELITE DUO INBOUND!': 'ЭЛИТНАЯ ДВОЙКА ВХОДИТ!',
+  'ELITE TRIO INBOUND!': 'ЭЛИТНАЯ ТРОЙКА ВХОДИТ!',
 
   'TINYFOUNDRY GAMES // NOVA RESPONSE DECK': 'TINYFOUNDRY GAMES // ПУЛЬТ РЕАГИРОВАНИЯ NOVA',
   'NOVA SWARM': 'NOVA SWARM',

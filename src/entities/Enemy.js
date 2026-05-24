@@ -532,8 +532,10 @@ export class Enemy {
     this.state = 'ENTRY';
 
     // Randomized Control Point based on side
-    const centerX = 400; // Game Width / 2 roughly
-    const cpX = (startX < centerX) ? startX + 300 : startX - 300;
+    const width = this.game?.getWidth?.() || 800;
+    const centerX = width / 2;
+    const curvePull = Math.max(260, Math.min(460, width * 0.2));
+    const cpX = (startX < centerX) ? startX + curvePull : startX - curvePull;
     const cpY = startY + 400;
 
     this.entryCurve = {
@@ -736,7 +738,10 @@ export class Enemy {
     const start = { x: this.x, y: this.y };
     // Fly back up in a wide arcade loop.
     const end = { x: this.formationX, y: this.formationY };
-    const cpVal = (this.x < 400) ? -300 : 1100; // Wide arc outside screen
+    const width = this.game?.getWidth?.() || 800;
+    const centerX = width / 2;
+    const outsidePull = Math.max(240, Math.min(520, width * 0.22));
+    const cpVal = (this.x < centerX) ? -outsidePull : width + outsidePull; // Wide arc outside screen
 
     this.returnCurve = {
       p0: start,
