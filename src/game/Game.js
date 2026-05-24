@@ -16,6 +16,7 @@ import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
 import { AchievementManager } from '../achievements/AchievementManager.js';
 import { getAchievementById, getRankAchievementId } from '../achievements/AchievementCatalog.js';
+import { onLanguageChange } from '../i18n/index.js';
 
 export class Game {
   constructor(app) {
@@ -57,6 +58,7 @@ export class Game {
       }),
       onUnlock: (unlock) => this.handleAchievementUnlocked(unlock)
     });
+    this.languageUnsubscribe = onLanguageChange(() => this.handleLanguageChanged());
   }
 
   start() {
@@ -228,6 +230,12 @@ export class Game {
     if (this.displayAchievementToast(toast)) return;
     if (!this.pendingAchievementToasts.some((entry) => entry.id === toast.id)) {
       this.pendingAchievementToasts.push(toast);
+    }
+  }
+
+  handleLanguageChanged() {
+    if (this.currentScene && typeof this.currentScene.handleLanguageChanged === 'function') {
+      this.currentScene.handleLanguageChanged();
     }
   }
 

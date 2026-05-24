@@ -10,6 +10,12 @@ import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
+import {
+  getLanguageOptions,
+  getLanguagePreferenceMode,
+  onLanguageChange,
+  setLanguagePreference
+} from '../i18n/index.js';
 
 function percent(value) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
@@ -74,6 +80,8 @@ export class SettingsOverlay {
     this.audioTestButtons = {};
     this.musicPackButton = null;
     this.footerButtons = {};
+    this.languageButton = null;
+    this.languageHint = null;
     this.creditsPanel = null;
     this.creditsBackButton = null;
     this.creditsDebugState = null;
@@ -81,6 +89,7 @@ export class SettingsOverlay {
     this.focusedControlIndex = 0;
     this.gamepadNavigator = new GamepadNavigator();
     this.gamepadNavigator.suppressUntilReleased();
+    this.languageUnsubscribe = onLanguageChange(() => this.rebuild());
     this.keyHandler = null;
     this.build();
     this.setupKeyboardNavigation();
@@ -104,7 +113,7 @@ export class SettingsOverlay {
 
     const isCompact = width < 620 || height < 820;
     const panelWidth = Math.min(560, width * 0.82);
-    const panelHeight = Math.min(isCompact ? 740 : 690, height * (isCompact ? 0.97 : 0.94));
+    const panelHeight = Math.min(isCompact ? 790 : 730, height * (isCompact ? 0.98 : 0.97));
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
 
@@ -126,9 +135,9 @@ export class SettingsOverlay {
     titleText.position.set(width / 2, panelY + (isCompact ? 42 : 48));
     this.container.addChild(titleText);
 
-    const toggleGap = isCompact ? 40 : 46;
-    const testGap = isCompact ? 38 : 44;
-    const sliderGap = isCompact ? 40 : 46;
+    const toggleGap = isCompact ? 38 : 42;
+    const testGap = isCompact ? 36 : 40;
+    const sliderGap = isCompact ? 38 : 42;
     const footerButtonHeight = isCompact ? 32 : 38;
     const stackedButtonWidth = Math.min(240, panelWidth - 56);
     let y = panelY + (isCompact ? 84 : 100);
@@ -141,6 +150,8 @@ export class SettingsOverlay {
     this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
     y += testGap;
     this.addAudioTestRow('TEST', y);
+    y += testGap;
+    this.addLanguageRow('LANGUAGE', y);
     y += toggleGap;
     this.addSliderRow('MASTER', 'master', settings.masterVolume, y);
     y += sliderGap;
@@ -264,6 +275,71 @@ export class SettingsOverlay {
       AudioManager.playSfx('ui_open', { force: true, volume: 0.18, minIntervalMs: 0 });
     }
     return played;
+  }
+
+  addLanguageRow(label, y) {
+    const width = this.game.getWidth();
+    const row = new PIXI.Container();
+    row.position.set(width / 2, y);
+
+    const labelText = createText(label, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 16,
+      fill: '#9befff'
+    });
+    labelText.anchor.set(1, 0.5);
+    labelText.x = -154;
+    row.addChild(labelText);
+
+    const options = getLanguageOptions();
+    let selectedIndex = Math.max(0, options.findIndex((option) => option.value === getLanguagePreferenceMode()));
+    const selected = () => options[selectedIndex] || options[0];
+    const cycle = async (direction = 1) => {
+      selectedIndex = ((selectedIndex + Math.sign(direction || 1)) % options.length + options.length) % options.length;
+      const option = selected();
+      this.updateLanguageButton(option);
+      await setLanguagePreference(option.value);
+      AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+    };
+
+    const button = this.createButton(selected().label, 18, 0, () => {
+      cycle(1).catch((error) => console.warn('[SettingsOverlay] Language change failed:', error));
+    }, { width: 170, height: 32 });
+    button.label = 'ui_settingsLanguage';
+    this.languageButton = button;
+    row.addChild(button);
+
+    const hint = createText(selected().hint, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 12,
+      fill: '#ffc96e'
+    });
+    hint.anchor.set(0, 0.5);
+    hint.x = 116;
+    this.languageHint = hint;
+    row.addChild(hint);
+
+    this.container.addChild(row);
+    this.rows.push(row);
+    this.updateLanguageButton(selected());
+    this.registerControl({
+      type: 'choice',
+      id: 'language',
+      button,
+      label,
+      cycle: (direction) => cycle(direction).catch((error) => console.warn('[SettingsOverlay] Language cycle failed:', error))
+    });
+  }
+
+  updateLanguageButton(option) {
+    if (this.languageButton?._label && option?.label) {
+      this.languageButton._label.text = option.label;
+      fitTextToWidth(this.languageButton._label, 132);
+    }
+    if (this.languageHint && option?.hint) {
+      this.languageHint.text = option.hint;
+      fitTextToWidth(this.languageHint, 118, { minScale: 0.68 });
+    }
   }
 
   addMusicPackRow(label, initialPack, y) {
@@ -515,12 +591,20 @@ export class SettingsOverlay {
       this.adjustFocusedControl(1);
       return;
     }
+    if (control.type === 'choice') {
+      control.cycle?.(1);
+      return;
+    }
     control.button?.activate?.();
   }
 
   adjustFocusedControl(direction) {
     const control = this.getFocusedControl();
     if (!control) return false;
+    if (control.type === 'choice') {
+      control.cycle?.(direction);
+      return true;
+    }
     if (control.type !== 'slider') {
       this.moveControlFocus(direction > 0 ? 1 : -1);
       return true;
@@ -551,6 +635,26 @@ export class SettingsOverlay {
       else this.activateFocusedControl();
     };
     window.addEventListener('keydown', this.keyHandler, true);
+  }
+
+  rebuild() {
+    const focusedId = this.getFocusedControl()?.id || null;
+    this.closeCreditsPanel();
+    const children = this.container.removeChildren();
+    children.forEach((child) => child?.destroy?.({ children: true }));
+    this.rows = [];
+    this.draggingSlider = null;
+    this.audioTestButtons = {};
+    this.musicPackButton = null;
+    this.footerButtons = {};
+    this.languageButton = null;
+    this.languageHint = null;
+    this.creditsPanel = null;
+    this.creditsBackButton = null;
+    this.creditsDebugState = null;
+    this.build();
+    const nextIndex = Math.max(0, this.controls.findIndex((control) => control.id === focusedId));
+    this.setControlFocus(nextIndex);
   }
 
   update() {
@@ -919,6 +1023,10 @@ export class SettingsOverlay {
 
   close() {
     this.closeCreditsPanel();
+    if (this.languageUnsubscribe) {
+      this.languageUnsubscribe();
+      this.languageUnsubscribe = null;
+    }
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler, true);
       this.keyHandler = null;

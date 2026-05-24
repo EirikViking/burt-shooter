@@ -4,11 +4,12 @@
  */
 
 import * as PIXI from 'pixi.js';
+import { translateText } from '../i18n/index.js';
 
 export class TypewriterText {
     constructor(textObject, fullText, options = {}) {
         this.textObject = textObject;
-        this.fullText = fullText;
+        this.fullText = translateText(fullText);
         this.currentIndex = 0;
         this.charDelay = options.charDelay || 30; // 30ms per character
         this.timer = 0;

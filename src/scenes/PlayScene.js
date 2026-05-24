@@ -2236,6 +2236,21 @@ export class PlayScene {
     this.uiOverlay.addChild(this.settingsOverlay.container);
   }
 
+  handleLanguageChanged() {
+    this.hud?.update?.();
+    this.settingsOverlay?.rebuild?.();
+    if (this.pauseOverlay?.parent && this.pauseOverlay.visible) {
+      const focusedIndex = this.pauseFocusedIndex || 0;
+      this.pauseOverlay.parent.removeChild(this.pauseOverlay);
+      this.pauseOverlay.destroy({ children: true });
+      this.pauseOverlay = null;
+      this.pauseButtons = [];
+      this.pauseFocusedIndex = focusedIndex;
+      this.showPauseOverlay();
+      this.setPauseFocus(focusedIndex);
+    }
+  }
+
   closeSettingsOverlay() {
     if (this.settingsOverlay) {
       this.settingsOverlay.close();

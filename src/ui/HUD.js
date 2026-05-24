@@ -5,6 +5,7 @@ import { extendLocations } from '../text/phrasePool.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
+import { formatNumber } from '../i18n/index.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
@@ -290,8 +291,7 @@ export class HUD {
   }
 
   formatScore(score) {
-    const value = Number(score) || 0;
-    return value.toLocaleString('en-US');
+    return formatNumber(score);
   }
 
   updateMissionStatus() {

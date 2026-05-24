@@ -249,17 +249,24 @@ function createWindow() {
   return win;
 }
 
-function getSteamRuntimeInfo() {
+async function getSteamRuntimeInfo() {
+  const currentGameLanguage = await steamLeaderboardBridge.getCurrentGameLanguage?.();
   const steamEnv = {
     SteamAppId: process.env.SteamAppId || null,
     SteamGameId: process.env.SteamGameId || null,
-    SteamOverlayGameId: process.env.SteamOverlayGameId || null
+    SteamOverlayGameId: process.env.SteamOverlayGameId || null,
+    SteamLanguage: process.env.SteamLanguage || null,
+    STEAM_LANGUAGE: process.env.STEAM_LANGUAGE || null
   };
   return {
     appIsPackaged: app.isPackaged,
     defaultApp: Boolean(process.defaultApp),
     executable: process.execPath,
     cwd: process.cwd(),
+    currentGameLanguage: currentGameLanguage || null,
+    steamLanguage: currentGameLanguage || steamEnv.SteamLanguage || steamEnv.STEAM_LANGUAGE || null,
+    appLocale: typeof app.getLocale === 'function' ? app.getLocale() : null,
+    systemLocale: typeof app.getSystemLocale === 'function' ? app.getSystemLocale() : null,
     launchedBySteamHint: Boolean(steamEnv.SteamAppId || steamEnv.SteamGameId || steamEnv.SteamOverlayGameId),
     steamEnv
   };
@@ -742,7 +749,7 @@ app.whenReady().then(async () => {
         window: win,
         baseUrl,
         args: process.argv.slice(2),
-        runtimeInfo: getSteamRuntimeInfo(),
+        runtimeInfo: await getSteamRuntimeInfo(),
         outputRoot: app.isPackaged ? app.getPath('userData') : process.cwd()
       });
       app.quit();

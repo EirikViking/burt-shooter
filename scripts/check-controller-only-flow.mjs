@@ -145,7 +145,7 @@ function assert(condition, message) {
 }
 
 async function steerMenuTo(page, optionId) {
-  const order = ['launch', 'hangar', 'intro', 'highscores', 'settings', 'exit', 'music'];
+  const order = ['launch', 'hangar', 'intro', 'highscores', 'achievements', 'settings', 'exit', 'music'];
   for (let i = 0; i < 8; i += 1) {
     const state = await readState(page);
     if (state.menu?.focusedOption === optionId) return state;
@@ -231,6 +231,9 @@ try {
 
   const masterBefore = settingsOpen.audio?.masterVolume;
   for (let i = 0; i < 6; i += 1) await tapButton(page, 13);
+  const languageFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'language', 'language selector focus');
+  checkpoint('menu-settings-language-focus', languageFocused);
+  await tapButton(page, 13);
   const masterFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'slider_master', 'master slider focus');
   await tapButton(page, 14);
   const masterAfter = await waitForState(page, (state) => state.settingsOverlay?.focus === 'slider_master', 'master slider after adjustment');
@@ -306,6 +309,9 @@ try {
   const pauseSettings = await waitForState(page, (state) => state.overlays?.pause && state.overlays?.settings && state.settingsOverlay?.focus, 'pause settings opened by controller');
   const pauseMasterBefore = pauseSettings.audio?.masterVolume;
   for (let i = 0; i < 6; i += 1) await tapButton(page, 13);
+  const pauseLanguageFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'language', 'pause language selector focus');
+  checkpoint('pause-settings-language-focus', pauseLanguageFocused);
+  await tapButton(page, 13);
   await tapButton(page, 15);
   const pauseMasterAfter = await waitForState(page, (state) => state.overlays?.settings && state.settingsOverlay?.focus === 'slider_master', 'pause settings slider adjusted');
   checkpoint('pause-settings-slider-adjusted', pauseMasterAfter, {

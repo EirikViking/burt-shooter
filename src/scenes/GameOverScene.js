@@ -21,6 +21,7 @@ import {
   GLOBAL_LEADERBOARD_ACHIEVEMENT_ID,
   GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID
 } from '../achievements/AchievementCatalog.js';
+import { translateText } from '../i18n/index.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
@@ -2239,7 +2240,7 @@ export class GameOverScene {
 
     // Label
     const label = document.createElement('div');
-    label.textContent = 'ENTER PILOT NAME';
+    label.textContent = translateText('ENTER PILOT NAME');
     label.style.cssText = `
       font-family: 'Rajdhani', 'Orbitron', 'Segoe UI', sans-serif;
       font-weight: 700;
@@ -2257,7 +2258,7 @@ export class GameOverScene {
     this.inputField.autocapitalize = 'characters';
     this.inputField.autocomplete = 'off';
     this.inputField.spellcheck = false;
-    this.inputField.placeholder = 'PILOT';
+    this.inputField.placeholder = translateText('PILOT');
     this.inputField.style.cssText = `
       font-family: 'Rajdhani', 'Orbitron', 'Segoe UI', sans-serif;
       font-weight: 700;
@@ -2306,7 +2307,7 @@ export class GameOverScene {
 
     // Submit button
     this.submitButton = document.createElement('button');
-    this.submitButton.textContent = 'SUBMIT SCORE';
+    this.submitButton.textContent = translateText('SUBMIT SCORE');
     this.submitButton.style.cssText = `
       font-family: 'Orbitron', 'Rajdhani', sans-serif;
       font-size: 22px;
@@ -2329,7 +2330,7 @@ export class GameOverScene {
 
     // Skip button
     const cancelButton = document.createElement('button');
-    cancelButton.textContent = 'SKIP';
+    cancelButton.textContent = translateText('SKIP');
     cancelButton.style.cssText = `
       font-family: 'Rajdhani', 'Orbitron', sans-serif;
       font-weight: 700;

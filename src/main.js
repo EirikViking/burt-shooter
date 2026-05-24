@@ -8,8 +8,17 @@ import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
 import { getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
+import {
+  getCurrentLanguage,
+  getLanguagePreferenceMode,
+  getSupportedLanguages,
+  initLocalization,
+  translateText
+} from './i18n/index.js';
+import { installPixiTextLocalization } from './i18n/pixiTextLocalization.js';
 
 installConsoleLogFilter();
+installPixiTextLocalization(PIXI);
 
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;
@@ -342,6 +351,11 @@ function buildGameTextState(game) {
     coordinateSystem: 'origin top-left, x right, y down',
     buildId: BUILD_ID,
     gitSha: GIT_SHA,
+    language: {
+      current: getCurrentLanguage(),
+      preference: getLanguagePreferenceMode(),
+      supported: getSupportedLanguages()
+    },
     scene: getStableSceneName(game),
     score: game?.score ?? 0,
     level: game?.level ?? 0,
@@ -1028,10 +1042,14 @@ async function init() {
   // ---------------------------
 
   const bootLogger = createBootLogger(isBootDebugEnabled());
+  await runBootStep(bootLogger, 'init localization', () => initLocalization(), {
+    timeoutMs: 1200,
+    logFailure: false
+  });
   const loadingEl = document.getElementById('loading');
   if (loadingEl) {
     const { title, subtitle } = getLoadingLines();
-    loadingEl.innerHTML = `${title}<br><small>${subtitle}</small>`;
+    loadingEl.innerHTML = `${translateText(title)}<br><small>${translateText(subtitle)}</small>`;
   }
 
   perfState.enabled = isPerfEnabled();

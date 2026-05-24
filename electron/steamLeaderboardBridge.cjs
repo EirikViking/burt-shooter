@@ -340,6 +340,18 @@ class SteamLeaderboardBridge {
     }
   }
 
+  async getCurrentGameLanguage() {
+    if (!await this.initialize()) return null;
+    try {
+      const language = this.steam?.getCurrentGameLanguage?.() ||
+        this.steam?.apps?.getCurrentGameLanguage?.() ||
+        null;
+      return typeof language === 'string' && language.trim() ? language.trim() : null;
+    } catch {
+      return null;
+    }
+  }
+
   async getLeaderboard(leaderboardName = STEAM_LEADERBOARD_NAME) {
     const safeName = String(leaderboardName || STEAM_LEADERBOARD_NAME);
     if (this.leaderboards.has(safeName)) return this.leaderboards.get(safeName);

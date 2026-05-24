@@ -1672,6 +1672,17 @@ export class MenuScene {
     this.container.addChild(this.settingsOverlay.container);
   }
 
+  handleLanguageChanged() {
+    if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
+    if (this.disclaimer) this.disclaimer.text = this.getDisclaimerText(getCurrentLayout());
+    if (this.controls) this.controls.text = getCurrentLayout().isMobile ? this.getControlsText(getCurrentLayout()) : '';
+    if (this.musicBtn?._label) {
+      this.musicBtn._label.text = AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF';
+    }
+    this.settingsOverlay?.rebuild?.();
+    this.layoutMenu();
+  }
+
   closeSettingsOverlay() {
     if (this.settingsOverlay) {
       this.settingsOverlay.close();

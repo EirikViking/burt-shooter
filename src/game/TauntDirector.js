@@ -5,6 +5,7 @@
 
 import * as PIXI from 'pixi.js';
 import { createText } from '../utils/pixiText.js';
+import { translateText } from '../i18n/index.js';
 
 class TauntDirector {
     constructor() {
@@ -134,7 +135,7 @@ class TauntDirector {
             this.recentTaunts.shift();
         }
 
-        return text;
+        return translateText(text);
     }
 
     emit(category, customText = null) {
@@ -160,7 +161,7 @@ class TauntDirector {
 
         this.globalCooldown = this.GLOBAL_COOLDOWN;
         this.categoryCooldowns.set(category, this.CATEGORY_COOLDOWN);
-        this.showTaunt(text);
+        this.showTaunt(translateText(text));
     }
 
     showTaunt(text) {
