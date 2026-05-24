@@ -63,6 +63,7 @@ export class Game {
 
   start() {
     this.switchScene('menu');
+    this.achievementManager?.syncWithSteam?.().catch?.(() => {});
   }
 
   showIntro() {

@@ -4,6 +4,7 @@ const http = require('node:http');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { createSteamLeaderboardBridge } = require('./steamLeaderboardBridge.cjs');
+const { createSteamAchievementsBridge } = require('./steamAchievementsBridge.cjs');
 const { runSteamLeaderboardRuntimeProbe } = require('./steamLeaderboardRuntimeProbe.cjs');
 const { createNativeGamepadBridge } = require('./nativeGamepadBridge.cjs');
 const { createSteamCloudSave } = require('./steamCloudSave.cjs');
@@ -36,6 +37,10 @@ const steamLeaderboardBridge = createSteamLeaderboardBridge({
   rootDir: path.resolve(__dirname, '..'),
   logger: console
 });
+const steamAchievementsBridge = createSteamAchievementsBridge({
+  steamClientBridge: steamLeaderboardBridge,
+  logger: console
+});
 const nativeGamepadBridge = createNativeGamepadBridge();
 let steamCloudSave = null;
 
@@ -49,6 +54,15 @@ function registerSteamLeaderboardIpc() {
   ipcMain.handle('nova-steam-leaderboard:getLastUploadDiagnostics', () => steamLeaderboardBridge.getLastUploadDiagnostics());
   ipcMain.handle('nova-steam-leaderboard:getStatus', () => steamLeaderboardBridge.getStatus());
   ipcMain.handle('nova-steam-leaderboard:getRuntimeInfo', () => getSteamRuntimeInfo());
+}
+
+function registerSteamAchievementsIpc() {
+  ipcMain.handle('nova-steam-achievements:getStatus', () => steamAchievementsBridge.getStatus());
+  ipcMain.handle('nova-steam-achievements:requestCurrentStats', () => steamAchievementsBridge.requestCurrentStats());
+  ipcMain.handle('nova-steam-achievements:getAchievement', (_event, payload) => steamAchievementsBridge.getAchievement(payload?.id ?? payload));
+  ipcMain.handle('nova-steam-achievements:unlockAchievement', (_event, payload) => steamAchievementsBridge.unlockAchievement(payload?.id ?? payload));
+  ipcMain.handle('nova-steam-achievements:syncUnlockedAchievements', (_event, payload) => steamAchievementsBridge.syncUnlockedAchievements(payload));
+  ipcMain.handle('nova-steam-achievements:getUnlockedAchievements', (_event, payload) => steamAchievementsBridge.getUnlockedAchievements(payload));
 }
 
 function registerAppIpc() {
@@ -279,7 +293,8 @@ async function getSteamRuntimeInfo() {
     appLocale: typeof app.getLocale === 'function' ? app.getLocale() : null,
     systemLocale: typeof app.getSystemLocale === 'function' ? app.getSystemLocale() : null,
     launchedBySteamHint: Boolean(steamEnv.SteamAppId || steamEnv.SteamGameId || steamEnv.SteamOverlayGameId),
-    steamEnv
+    steamEnv,
+    achievements: steamAchievementsBridge.getStatus()
   };
 }
 
@@ -766,6 +781,7 @@ app.whenReady().then(async () => {
     return;
   }
   registerSteamLeaderboardIpc();
+  registerSteamAchievementsIpc();
   registerAppIpc();
   registerInputIpc();
   registerSteamCloudIpc();

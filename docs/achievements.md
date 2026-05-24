@@ -1,18 +1,49 @@
 # Nova Swarm Achievements
 
-This is the first-round local/in-game achievement implementation. It proves unlock, save, toast, debug, and player-facing display flow before any native Steamworks achievement API is wired.
+Steam App ID: `4765070`
 
-## Current Scope
+The canonical achievement list is `src/achievements/AchievementCatalog.js`. Generate the Steamworks setup list from code with:
 
-- One achievement for each real rank-up after the starting Cadet rank.
-- `ACH_GLOBAL_LEADERBOARD` for a confirmed global leaderboard qualification.
-- `ACH_GLOBAL_NUMBER_ONE` for a confirmed global leaderboard rank #1.
-- A main-menu Achievements screen that reads local achievement state.
+```bash
+node scripts/export-steam-achievements.mjs --json
+```
 
-Achievement state is stored in browser/Electron localStorage under `nova_swarm_achievements_v1`.
+## Runtime Flow
 
-## Steamworks Boundary
+- Local achievement state remains stored in localStorage under `nova_swarm_achievements_v1`.
+- Electron exposes a narrow Steam achievement bridge through `window.__novaSteamBridge.achievements` and `window.__novaSteamAchievements`.
+- Local unlocks attempt Steam unlocks with `steamworks-ffi-node` via the shared Steamworks client already used by the leaderboard bridge.
+- Steam unavailable, missing App ID, missing stats, or logged-out states are returned as diagnostics and never block gameplay.
+- Failed Steam unlocks are queued under `nova_swarm_steam_achievement_queue_v1` and retried on startup/sync.
+- Startup sync mirrors local unlocked achievements to Steam and imports already-unlocked Steam achievements locally without duplicate toast popups.
 
-Steamworks achievements are not implemented in this round. The achievement IDs are Steam-ready and can later be mirrored in Steamworks, but the runtime does not call the Steamworks achievement APIs and does not require Steam to be running.
+## Steamworks Setup
 
-Leaderboard achievements must come from confirmed global/shared leaderboard results. They must not unlock from local-only leaderboard saves, offline fallback, debug/unranked runs, debug boss routes, or near-global voice cues. The current cloud path confirms with a post-submit global board read; if that read is unavailable or stale, the achievement is skipped rather than guessed.
+Create or verify every Steamworks achievement from the generated catalog list:
+
+- API Name: exact `achievement.id`
+- Display Name: `achievement.name`
+- Description: `achievement.description`
+- Hidden: `false` unless the catalog says otherwise
+
+Achievement icon assets are staged in `release/steamworks/achievement-icons/`. The current icons are generated Nova Swarm placeholder art and can be replaced later with final hand-authored achievement art without changing API names.
+
+## Local Testing
+
+```bash
+npm run check:achievements
+npm run check:steam-achievements-mock
+npm run build
+npm run desktop:smoke
+```
+
+## Live Checklist
+
+1. Launch the packaged build through Steam with App ID `4765070`.
+2. Confirm the Steam overlay/session is active.
+3. Unlock a rank achievement in a ranked, non-debug run.
+4. Verify Steam shows the unlocked achievement.
+5. Export hidden Steam diagnostics with `Ctrl+Alt+Shift+D` and confirm achievement status appears beside leaderboard status.
+
+Known limitations: the runtime never clears Steam achievements except through explicit external/debug Steam tooling, and live unlock validation still depends on Steamworks approval/account state for App ID `4765070`.
+Live Steam client validation also requires the official Steamworks SDK redistributables at `steam_sdk/sdk/redistributable_bin/` or `steamworks_sdk/redistributable_bin/`; they are intentionally not committed.

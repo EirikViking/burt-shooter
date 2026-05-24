@@ -27,6 +27,15 @@ const STEAM_CLOUD_CHANNELS = {
   mergeRendererState: 'nova-steam-cloud:mergeRendererState'
 };
 
+const ACHIEVEMENT_CHANNELS = {
+  getStatus: 'nova-steam-achievements:getStatus',
+  requestCurrentStats: 'nova-steam-achievements:requestCurrentStats',
+  getAchievement: 'nova-steam-achievements:getAchievement',
+  unlockAchievement: 'nova-steam-achievements:unlockAchievement',
+  syncUnlockedAchievements: 'nova-steam-achievements:syncUnlockedAchievements',
+  getUnlockedAchievements: 'nova-steam-achievements:getUnlockedAchievements'
+};
+
 function safePayload(payload) {
   if (payload == null) return {};
   return JSON.parse(JSON.stringify(payload));
@@ -59,9 +68,20 @@ const leaderboards = Object.freeze({
   getRuntimeInfo: () => invoke(CHANNELS.getRuntimeInfo)
 });
 
+const achievements = Object.freeze({
+  getStatus: () => invoke(ACHIEVEMENT_CHANNELS.getStatus),
+  requestCurrentStats: () => invoke(ACHIEVEMENT_CHANNELS.requestCurrentStats),
+  getAchievement: (id) => invoke(ACHIEVEMENT_CHANNELS.getAchievement, { id }),
+  unlockAchievement: (id) => invoke(ACHIEVEMENT_CHANNELS.unlockAchievement, { id }),
+  syncUnlockedAchievements: (payload) => invoke(ACHIEVEMENT_CHANNELS.syncUnlockedAchievements, payload),
+  getUnlockedAchievements: (payload) => invoke(ACHIEVEMENT_CHANNELS.getUnlockedAchievements, payload)
+});
+
 contextBridge.exposeInMainWorld('__novaSteamLeaderboard', leaderboards);
+contextBridge.exposeInMainWorld('__novaSteamAchievements', achievements);
 contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
   leaderboards,
+  achievements,
   getStatus: () => invoke(CHANNELS.getStatus),
   getRuntimeInfo: () => invoke(CHANNELS.getRuntimeInfo)
 }));

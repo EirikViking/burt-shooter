@@ -18,6 +18,7 @@
     "check:ship-trait-combat": "node scripts/check-ship-trait-combat.mjs",
     "check:debug-unranked": "node scripts/check-debug-run-unranked.mjs",
     "check:achievements": "node scripts/check-achievements-catalog.mjs",
+    "check:steam-achievements-mock": "node scripts/check-steam-achievements-mock.mjs",
     "check:trait-hud": "node scripts/check-trait-hud.mjs",
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",
     "check:graze-break": "node scripts/check-graze-break.mjs",
