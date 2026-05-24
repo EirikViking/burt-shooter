@@ -31,6 +31,7 @@ import {
   getStoryTransmission
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
+import { translateText } from '../i18n/index.js';
 
 export class PlayScene {
   constructor(game) {
@@ -825,9 +826,10 @@ export class PlayScene {
     ];
     const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
     const message = introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`;
+    const localizedMessage = translateText(message);
     const compactHud = this.game.getWidth() < 620;
     const fontSize = compactHud ? (postBoss ? 21 : 25) : (postBoss ? 34 : 42);
-    this.showToast(message, {
+    this.showToast(localizedMessage, {
       fontSize,
       fill: '#ffff00',
       stroke: '#ff8800',

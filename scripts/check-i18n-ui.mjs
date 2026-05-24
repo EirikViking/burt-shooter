@@ -31,6 +31,58 @@ const forbiddenPlaceholderMarkers = [
   'FALLBACK:',
   'UNTRANSLATED:'
 ];
+const englishLeakLanguageCodes = new Set(['pt-BR', 'ko', 'ja']);
+const forbiddenEnglishFragments = [
+  'Sector 1:',
+  'Sector 2:',
+  'Sector 3:',
+  'Sector 4:',
+  'Sector 6:',
+  'Sector 7:',
+  'Sector 8:',
+  'Sector 9:',
+  'One coin woke the cabinet',
+  'The pilot still has not decided',
+  'The popcorn formation',
+  'Formation Coach reports',
+  'Quartermaster, the hitbox',
+  'Mind the hitbox'
+];
+const allowedEnglishPhrases = [
+  'Nova Swarm',
+  'Tinyfoundry Games',
+  'Cabinet',
+  'Popcorn Patrol',
+  'Spiral Academy',
+  'Laser Lane Union',
+  'Bonus Stage Panic',
+  'Meteor Queue',
+  'Neon Swarm',
+  'Hitbox Negotiations',
+  'Cabinet Overdrive',
+  'THE FORMATION FOREMAN',
+  'THE QUARTER EATER',
+  'ENTER',
+  'ESC',
+  'WASD',
+  'SPACE',
+  'Space',
+  'SFX',
+  'FIRE',
+  'A',
+  'B',
+  'Y',
+  'START',
+  'GAMEPAD',
+  'GLOBAL',
+  'LOCAL'
+];
+const englishLeakWords = new Set([
+  'one', 'coin', 'woke', 'the', 'cabinet', 'pilot', 'still', 'has', 'not', 'decided', 'if', 'that', 'was', 'luck',
+  'popcorn', 'formation', 'coach', 'reports', 'quartermaster', 'hitbox', 'mind', 'sector', 'level', 'wave',
+  'local', 'board', 'loaded', 'global', 'score', 'scores', 'yet', 'claim', 'first', 'slot', 'scoreboard', 'lonely',
+  'arcade', 'control', 'says', 'swarm', 'dispatch', 'next', 'run', 'bonus', 'stage', 'called', 'braver', 'pilot'
+]);
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -225,6 +277,7 @@ async function snapshot(page) {
         rowChildCount: highscore?.rowsContainer?.children?.length || 0,
         firstRowBounds: bounds(highscore?.rowsContainer?.children?.[0])
       },
+      toasts: play?.getToastDebugState?.() || null,
       glyphs: {
         sans: document.fonts?.check?.('18px sans-serif', {
           'zh-CN': '设置排行榜游戏结束',
@@ -273,6 +326,55 @@ function collectPlaceholderHits(value, pathLabel = 'snapshot', hits = []) {
   return hits;
 }
 
+function stripAllowedEnglish(text) {
+  let stripped = String(text ?? '');
+  for (const phrase of allowedEnglishPhrases) {
+    stripped = stripped.split(phrase).join(' ');
+  }
+  return stripped;
+}
+
+function collectEnglishLeakHits(value, pathLabel = 'snapshot', localeCode = null, hits = []) {
+  if (!englishLeakLanguageCodes.has(localeCode) || value == null) return hits;
+  if (typeof value === 'string') {
+    const lowered = value.toLowerCase();
+    for (const fragment of forbiddenEnglishFragments) {
+      if (lowered.includes(fragment.toLowerCase())) hits.push(`${pathLabel}: forbidden English phrase "${fragment}" in "${value}"`);
+    }
+    const stripped = stripAllowedEnglish(value);
+    const tokens = stripped.match(/\b[A-Za-z][A-Za-z'’.-]*\b/g) || [];
+    let sequence = [];
+    for (const token of tokens) {
+      const normalized = token.toLowerCase().replace(/[^a-z]/g, '');
+      if (englishLeakWords.has(normalized)) {
+        sequence.push(token);
+      } else {
+        if (sequence.length >= 2) hits.push(`${pathLabel}: English phrase "${sequence.join(' ')}" in "${value}"`);
+        sequence = [];
+      }
+    }
+    if (sequence.length >= 2) hits.push(`${pathLabel}: English phrase "${sequence.join(' ')}" in "${value}"`);
+    return hits;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => collectEnglishLeakHits(entry, `${pathLabel}[${index}]`, localeCode, hits));
+    return hits;
+  }
+  if (typeof value === 'object') {
+    for (const [key, entry] of Object.entries(value)) {
+      collectEnglishLeakHits(entry, `${pathLabel}.${key}`, localeCode, hits);
+    }
+  }
+  return hits;
+}
+
+function assertSnapshotClean(snapshotValue, language, pathLabel) {
+  const placeholderHits = collectPlaceholderHits(snapshotValue, pathLabel);
+  assert(placeholderHits.length === 0, `${pathLabel} contains placeholder marker: ${placeholderHits.join('; ')}`);
+  const englishLeakHits = collectEnglishLeakHits(snapshotValue, pathLabel, language.code);
+  assert(englishLeakHits.length === 0, `${pathLabel} contains English text leakage: ${englishLeakHits.join('; ')}`);
+}
+
 async function captureLanguage(page, language, index) {
   const prefix = `${String(index + 1).padStart(2, '0')}-${language.slug}`;
   const shots = {};
@@ -282,7 +384,7 @@ async function captureLanguage(page, language, index) {
   await page.evaluate(() => window.__game?.currentScene?.openSettingsOverlay?.());
   await page.waitForFunction(() => Boolean(window.__game?.currentScene?.settingsOverlay), null, { timeout: 10000 });
   snaps.settings = await snapshot(page);
-  assert(collectPlaceholderHits(snaps.settings, `${language.slug}.settings`).length === 0, `${language.slug} Settings contains placeholder marker`);
+  assertSnapshotClean(snaps.settings, language, `${language.slug}.settings`);
   shots.settings = await screenshot(page, `${prefix}-settings.png`);
   assert(snaps.settings.language.current === language.code, `${language.slug} did not resolve to ${language.code}`);
   assert(snaps.settings.settings.language === language.settingsLabel, `${language.slug} Settings language label mismatch`);
@@ -290,7 +392,7 @@ async function captureLanguage(page, language, index) {
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !window.__game?.currentScene?.settingsOverlay, null, { timeout: 10000 });
   snaps.menu = await snapshot(page);
-  assert(collectPlaceholderHits(snaps.menu, `${language.slug}.menu`).length === 0, `${language.slug} menu contains placeholder marker`);
+  assertSnapshotClean(snaps.menu, language, `${language.slug}.menu`);
   shots.menu = await screenshot(page, `${prefix}-main-menu.png`);
   assert(snaps.menu.menu.settings === language.menuSettings, `${language.slug} menu Settings label mismatch`);
   assert(snaps.menu.menu.launch === language.launch, `${language.slug} launch label mismatch`);
@@ -302,17 +404,20 @@ async function captureLanguage(page, language, index) {
     if (play?.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
     play?.completeShipIntro?.();
     play?.hud?.update?.();
+    play?.showStoryTransmission?.({ force: true });
+    play?.processToastQueue?.();
   });
+  await page.waitForTimeout(350);
   await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.hud?.scoreText?.text), null, { timeout: 10000 });
   snaps.hud = await snapshot(page);
-  assert(collectPlaceholderHits(snaps.hud, `${language.slug}.hud`).length === 0, `${language.slug} HUD contains placeholder marker`);
+  assertSnapshotClean(snaps.hud, language, `${language.slug}.hud`);
   shots.hud = await screenshot(page, `${prefix}-hud.png`);
   assert(String(snaps.hud.hud.score || '').startsWith(language.scorePrefix), `${language.slug} HUD score label mismatch: ${snaps.hud.hud.score}`);
 
   await page.keyboard.press('KeyP');
   await page.waitForTimeout(300);
   snaps.pause = await snapshot(page);
-  assert(collectPlaceholderHits(snaps.pause, `${language.slug}.pause`).length === 0, `${language.slug} pause contains placeholder marker`);
+  assertSnapshotClean(snaps.pause, language, `${language.slug}.pause`);
   shots.pause = await screenshot(page, `${prefix}-pause.png`);
 
   await page.evaluate(() => {
@@ -322,7 +427,7 @@ async function captureLanguage(page, language, index) {
   });
   await waitForScene(page, 'gameOver');
   snaps.gameOver = await snapshot(page);
-  assert(collectPlaceholderHits(snaps.gameOver, `${language.slug}.gameOver`).length === 0, `${language.slug} game over contains placeholder marker`);
+  assertSnapshotClean(snaps.gameOver, language, `${language.slug}.gameOver`);
   shots.gameOver = await screenshot(page, `${prefix}-game-over.png`);
   assert(String(snaps.gameOver.gameOver.score || '').startsWith(language.scorePrefix), `${language.slug} game-over score label mismatch`);
 
@@ -330,7 +435,7 @@ async function captureLanguage(page, language, index) {
   await waitForScene(page, 'highscore');
   await page.waitForTimeout(600);
   snaps.leaderboard = await snapshot(page);
-  assert(collectPlaceholderHits(snaps.leaderboard, `${language.slug}.leaderboard`).length === 0, `${language.slug} leaderboard contains placeholder marker`);
+  assertSnapshotClean(snaps.leaderboard, language, `${language.slug}.leaderboard`);
   shots.leaderboard = await screenshot(page, `${prefix}-leaderboard.png`);
   assert(snaps.leaderboard.leaderboard.title === language.leaderboard, `${language.slug} leaderboard title mismatch: ${snaps.leaderboard.leaderboard.title}`);
   assert(!boxesOverlap(snaps.leaderboard.leaderboard.commentBounds, snaps.leaderboard.leaderboard.stateBounds, 4), `${language.slug} leaderboard empty-state text overlaps`);
@@ -352,7 +457,7 @@ async function captureLanguage(page, language, index) {
   });
   await page.waitForTimeout(500);
   snaps.leaderboardPopulated = await snapshot(page);
-  assert(collectPlaceholderHits(snaps.leaderboardPopulated, `${language.slug}.leaderboardPopulated`).length === 0, `${language.slug} populated leaderboard contains placeholder marker`);
+  assertSnapshotClean(snaps.leaderboardPopulated, language, `${language.slug}.leaderboardPopulated`);
   shots.leaderboardPopulated = await screenshot(page, `${prefix}-leaderboard-populated.png`);
   assert(snaps.leaderboardPopulated.leaderboard.rowChildCount > 3, `${language.slug} populated leaderboard did not render rows`);
 
@@ -403,7 +508,8 @@ try {
 
 const report = {
   placeholderHits: collectPlaceholderHits(snapshots),
-  status: consoleEvents.length || pageErrors.length || collectPlaceholderHits(snapshots).length ? 'failed' : 'passed',
+  englishLeakHits: languages.flatMap((language) => collectEnglishLeakHits(snapshots[language.slug], language.slug, language.code)),
+  status: consoleEvents.length || pageErrors.length || collectPlaceholderHits(snapshots).length || languages.flatMap((language) => collectEnglishLeakHits(snapshots[language.slug], language.slug, language.code)).length ? 'failed' : 'passed',
   baseUrl,
   outputDir,
   screenshots,
@@ -413,7 +519,7 @@ const report = {
 };
 
 writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
-console.log(JSON.stringify({ outputDir, status: report.status, languages: languages.map((language) => language.code), consoleEvents, pageErrors, placeholderHits: report.placeholderHits }, null, 2));
+console.log(JSON.stringify({ outputDir, status: report.status, languages: languages.map((language) => language.code), consoleEvents, pageErrors, placeholderHits: report.placeholderHits, englishLeakHits: report.englishLeakHits }, null, 2));
 
 if (report.status !== 'passed') {
   throw new Error('i18n UI check failed');

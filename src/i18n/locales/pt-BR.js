@@ -75,6 +75,17 @@ const sourceText = Object.freeze({
   'RESUME': 'CONTINUAR',
   'QUIT TO MENU': 'VOLTAR AO MENU',
 
+  'Sector 1: Popcorn Patrol': 'Setor 1: Popcorn Patrol',
+  'Sector 2: Spiral Academy': 'Setor 2: Spiral Academy',
+  'Sector 3: Laser Lane Union': 'Setor 3: Laser Lane Union',
+  'Sector 4: Bonus Stage Panic': 'Setor 4: Bonus Stage Panic',
+  'BOSS: THE FORMATION FOREMAN': 'CHEFE: THE FORMATION FOREMAN',
+  'Sector 6: Meteor Queue': 'Setor 6: Meteor Queue',
+  'Sector 7: Neon Swarm': 'Setor 7: Neon Swarm',
+  'Sector 8: Hitbox Negotiations': 'Setor 8: Hitbox Negotiations',
+  'Sector 9: Cabinet Overdrive': 'Setor 9: Cabinet Overdrive',
+  'BOSS: THE QUARTER EATER': 'CHEFE: THE QUARTER EATER',
+
   'SCORE': 'PONTUAÇÃO',
   'PONTUAÇÃO': 'PONTUAÇÃO',
   'SCORE: 0': 'PONTUAÇÃO: 0',

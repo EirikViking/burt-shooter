@@ -275,13 +275,37 @@ const localizedFragments = {
     objects: [{ value: '奖励波次', weight: 1.2 }, { value: 'hitbox', weight: 1.2 }, { value: '激光账单', weight: 1.1 }, { value: 'Boss 登场', weight: 1.1 }, { value: '虫群编舞', weight: 1 }],
     tags: [{ value: '经典 cabinet 能量', weight: 1.2 }, { value: '阵型戏剧性', weight: 1 }, { value: 'Boss 音乐自信', weight: 1 }, { value: '小飞船英雄时刻', weight: 1 }],
     closers: [{ value: '继续开火。', weight: 1.3 }, { value: '漂亮地闪避。', weight: 1.2 }, { value: '省下硬币。', weight: 1.1 }, { value: '注意 hitbox。', weight: 1.1 }, { value: 'Boss 快来了。', weight: 1 }]
+  },
+  'pt-BR': {
+    leads: [{ value: 'Controle Arcade', weight: 1.4 }, { value: 'Alerta Cabinet', weight: 1.3 }, { value: 'Rádio do enxame', weight: 1.2 }, { value: 'Técnico de formação', weight: 1.1 }],
+    verbs: [{ value: 'relata', weight: 1.2 }, { value: 'questiona', weight: 1 }, { value: 'sobrecarrega', weight: 1 }, { value: 'provoca', weight: 0.8 }],
+    objects: [{ value: 'a onda bônus', weight: 1.2 }, { value: 'a hitbox', weight: 1.2 }, { value: 'a conta do laser', weight: 1.1 }, { value: 'a formação pipoca', weight: 1.1 }, { value: 'a entrada do chefe', weight: 1.1 }, { value: 'a fenda de ficha', weight: 1 }, { value: 'a coreografia do enxame', weight: 1 }],
+    tags: [{ value: 'energia de cabinet clássico', weight: 1.2 }, { value: 'drama de formação', weight: 1 }, { value: 'confiança de música de chefe', weight: 1 }, { value: 'heroísmo de nave pequena', weight: 1 }],
+    closers: [{ value: 'Continue atirando.', weight: 1.3 }, { value: 'Desvie com estilo.', weight: 1.2 }, { value: 'Guarde as fichas.', weight: 1.1 }, { value: 'Cuidado com a hitbox.', weight: 1.1 }, { value: 'Chefe em breve.', weight: 1 }]
+  },
+  ko: {
+    leads: [{ value: '아케이드 관제', weight: 1.4 }, { value: 'Cabinet 경보', weight: 1.3 }, { value: '군단 통신', weight: 1.2 }, { value: '편대 코치', weight: 1.1 }],
+    verbs: [{ value: '보고합니다', weight: 1.2 }, { value: '의심합니다', weight: 1 }, { value: '과부하시킵니다', weight: 1 }, { value: '도발합니다', weight: 0.8 }],
+    objects: [{ value: '보너스 웨이브', weight: 1.2 }, { value: '히트박스', weight: 1.2 }, { value: '레이저 청구서', weight: 1.1 }, { value: '팝콘 편대', weight: 1.1 }, { value: '보스 등장', weight: 1.1 }, { value: '코인 투입구', weight: 1 }, { value: '군단 안무', weight: 1 }],
+    tags: [{ value: '고전 cabinet 에너지', weight: 1.2 }, { value: '편대 드라마', weight: 1 }, { value: '보스 음악 자신감', weight: 1 }, { value: '작은 함선의 영웅담', weight: 1 }],
+    closers: [{ value: '계속 쏴라.', weight: 1.3 }, { value: '멋지게 피해라.', weight: 1.2 }, { value: '코인을 아껴라.', weight: 1.1 }, { value: '히트박스를 조심해라.', weight: 1.1 }, { value: '곧 보스다.', weight: 1 }]
+  },
+  ja: {
+    leads: [{ value: 'アーケード管制', weight: 1.4 }, { value: 'Cabinet 警報', weight: 1.3 }, { value: 'スウォーム通信', weight: 1.2 }, { value: 'フォーメーションコーチ', weight: 1.1 }],
+    verbs: [{ value: '報告', weight: 1.2 }, { value: '疑問視', weight: 1 }, { value: '過負荷', weight: 1 }, { value: '挑発', weight: 0.8 }],
+    objects: [{ value: 'ボーナスウェーブ', weight: 1.2 }, { value: 'ヒットボックス', weight: 1.2 }, { value: 'レーザー請求書', weight: 1.1 }, { value: 'ポップコーン編隊', weight: 1.1 }, { value: 'ボス登場', weight: 1.1 }, { value: 'コイン投入口', weight: 1 }, { value: 'スウォームの振り付け', weight: 1 }],
+    tags: [{ value: 'クラシック cabinet エネルギー', weight: 1.2 }, { value: '編隊ドラマ', weight: 1 }, { value: 'ボス曲の自信', weight: 1 }, { value: '小さな機体の英雄芸', weight: 1 }],
+    closers: [{ value: '撃ち続けろ。', weight: 1.3 }, { value: '華麗に避けろ。', weight: 1.2 }, { value: 'コインを守れ。', weight: 1.1 }, { value: 'ヒットボックスに注意。', weight: 1.1 }, { value: 'もうすぐボス。', weight: 1 }]
   }
 };
 
 const localizedArcadePhrases = {
   es: ['Mete moneda. No te arrepientas.', 'Fase bonus detectada.', 'El enjambre trae coreografía.', 'Otra partida. Obviamente.', 'Aviso de jefe: entrada dramática pendiente.', 'El marcador está mirando.', 'Tu hitbox manda saludos.'],
   ru: ['Вставь монету. Ни о чем не жалей.', 'Бонусная стадия обнаружена.', 'Рой принес хореографию.', 'Еще один забег. Конечно.', 'Предупреждение: босс готовит драматичный выход.', 'Таблица смотрит.', 'Твой hitbox передает привет.'],
-  'zh-CN': ['投币。不要后悔。', '检测到奖励关。', '虫群带来了编队舞步。', '再来一局。当然。', 'Boss 警告：即将隆重登场。', '计分板正在看着你。', '你的 hitbox 向你问好。']
+  'zh-CN': ['投币。不要后悔。', '检测到奖励关。', '虫群带来了编队舞步。', '再来一局。当然。', 'Boss 警告：即将隆重登场。', '计分板正在看着你。', '你的 hitbox 向你问好。'],
+  'pt-BR': ['Insira ficha. Sem arrependimento.', 'Fase bônus detectada.', 'O enxame trouxe coreografia.', 'Mais uma partida. Óbvio.', 'Aviso de chefe: entrada dramática a caminho.', 'O placar está de olho.', 'Sua hitbox mandou lembranças.'],
+  ko: ['코인을 넣어라. 후회는 없다.', '보너스 스테이지 감지.', '군단이 안무를 가져왔다.', '한 판 더. 당연하지.', '보스 경고: 극적인 등장 대기 중.', '점수판이 지켜본다.', '히트박스가 안부를 전한다.'],
+  ja: ['コイン投入。後悔なし。', 'ボーナスステージ検出。', 'スウォームが編隊ダンスを持ってきた。', 'もう1回。当然。', 'ボス警告：派手な登場待ち。', 'スコアボードが見ている。', 'ヒットボックスからよろしく。']
 };
 
 const localizedStoryTransmissions = {
@@ -302,6 +326,24 @@ const localizedStoryTransmissions = {
     { id: 'swarm-spiral', levelMin: 2, title: '弹幕漂移', line: '虫群不是在追你。它正在围绕每一次闪避重新排布。', imageAlias: 'nova-swarm-story-comms-02-20260519' },
     { id: 'pattern-read', levelMin: 4, title: '安静读数', line: '小型无人机标出航道。飞行员不再朝噪声开火，而是开始读懂意图。', imageAlias: 'nova-swarm-story-comms-03-20260519' },
     { id: 'boss-gate', levelMin: 7, title: '大门信号', line: 'Boss 大门后面的光不像星星，更像等待被写下的名字。', imageAlias: 'nova-swarm-story-comms-04-20260519' }
+  ],
+  'pt-BR': [
+    { id: 'last-coin', levelMin: 1, title: 'MEMÓRIA ESTÁTICA', line: 'Uma ficha acordou o cabinet. O piloto ainda não decidiu se isso foi sorte.', imageAlias: 'nova-swarm-story-comms-01-20260519' },
+    { id: 'swarm-spiral', levelMin: 2, title: 'DERIVA DE PADRÃO', line: 'O enxame não está perseguindo. Ele se organiza em volta de cada desvio.', imageAlias: 'nova-swarm-story-comms-02-20260519' },
+    { id: 'pattern-read', levelMin: 4, title: 'LEITURA BAIXA', line: 'Um drone pequeno mapeia as rotas. O piloto para de atirar no ruído e começa a ler intenção.', imageAlias: 'nova-swarm-story-comms-03-20260519' },
+    { id: 'boss-gate', levelMin: 7, title: 'SINAL DO PORTÃO', line: 'Depois do portão do chefe, as luzes parecem menos estrelas e mais nomes à espera.', imageAlias: 'nova-swarm-story-comms-04-20260519' }
+  ],
+  ko: [
+    { id: 'last-coin', levelMin: 1, title: '정전기 기억', line: '동전 하나가 cabinet을 깨웠다. 조종사는 아직 그게 운이었는지 결정하지 못했다.', imageAlias: 'nova-swarm-story-comms-01-20260519' },
+    { id: 'swarm-spiral', levelMin: 2, title: '패턴 표류', line: '군단은 쫓아오는 게 아니다. 모든 회피 주변으로 다시 배열된다.', imageAlias: 'nova-swarm-story-comms-02-20260519' },
+    { id: 'pattern-read', levelMin: 4, title: '조용한 판독', line: '작은 드론이 경로를 그린다. 조종사는 소음에 쏘는 일을 멈추고 의도를 읽기 시작한다.', imageAlias: 'nova-swarm-story-comms-03-20260519' },
+    { id: 'boss-gate', levelMin: 7, title: '게이트 신호', line: '보스 게이트 너머의 빛은 별보다 기다리는 이름에 더 가깝다.', imageAlias: 'nova-swarm-story-comms-04-20260519' }
+  ],
+  ja: [
+    { id: 'last-coin', levelMin: 1, title: '静電メモリー', line: '1枚のコインが cabinet を起こした。パイロットはまだ、それが運だったのか決めかねている。', imageAlias: 'nova-swarm-story-comms-01-20260519' },
+    { id: 'swarm-spiral', levelMin: 2, title: 'パターンドリフト', line: 'スウォームは追っていない。すべての回避を囲むように並び直している。', imageAlias: 'nova-swarm-story-comms-02-20260519' },
+    { id: 'pattern-read', levelMin: 4, title: '静かな読取', line: '小型ドローンがレーンを描く。パイロットは雑音を撃つのをやめ、意図を読み始める。', imageAlias: 'nova-swarm-story-comms-03-20260519' },
+    { id: 'boss-gate', levelMin: 7, title: 'ゲート信号', line: 'ボスゲートの先の光は、星というより待機中の名前に見える。', imageAlias: 'nova-swarm-story-comms-04-20260519' }
   ]
 };
 
@@ -309,7 +351,10 @@ const localizedLabels = {
   de: { wave: 'Welle', overload: 'ÜBERLASTUNG!', pause: 'PAUSE', resume: 'WEITER', lowHealth: 'WENIG LEBEN', lifeLost: 'SCHIFF VERLOREN - HITBOX GETROFFEN!', newWave: 'NEUE WELLE' },
   es: { wave: 'Oleada', overload: 'SOBRECARGA!', pause: 'PAUSA', resume: 'CONTINUAR', lowHealth: 'POCA VIDA', lifeLost: 'NAVE PERDIDA - HITBOX TOCADA!', newWave: 'NUEVA OLEADA' },
   ru: { wave: 'Волна', overload: 'ПЕРЕГРУЗКА!', pause: 'ПАУЗА', resume: 'ПРОДОЛЖИТЬ', lowHealth: 'МАЛО ЖИЗНИ', lifeLost: 'КОРАБЛЬ СБИТ - HITBOX ЗАДЕТ!', newWave: 'НОВАЯ ВОЛНА' },
-  'zh-CN': { wave: '波次', overload: '过载！', pause: '暂停', resume: '继续', lowHealth: '生命偏低', lifeLost: '飞船损毁 - 命中 HITBOX！', newWave: '新波次' }
+  'zh-CN': { wave: '波次', overload: '过载！', pause: '暂停', resume: '继续', lowHealth: '生命偏低', lifeLost: '飞船损毁 - 命中 HITBOX！', newWave: '新波次' },
+  'pt-BR': { wave: 'Onda', overload: 'SOBRECARGA!', pause: 'PAUSA', resume: 'CONTINUAR', lowHealth: 'VIDA BAIXA', lifeLost: 'NAVE PERDIDA - HITBOX ATINGIDA!', newWave: 'NOVA ONDA' },
+  ko: { wave: '웨이브', overload: '과부하!', pause: '일시정지', resume: '계속', lowHealth: '체력 낮음', lifeLost: '함선 격추 - 히트박스 피격!', newWave: '새 웨이브' },
+  ja: { wave: 'ウェーブ', overload: 'オーバーロード！', pause: '一時停止', resume: '続ける', lowHealth: 'ライフ低下', lifeLost: '機体撃墜 - ヒットボックス被弾！', newWave: '新ウェーブ' }
 };
 
 function isGerman() {
@@ -429,6 +474,18 @@ export function getLoadingLines() {
     'zh-CN': {
       titles: ['正在启动街机 CABINET...', '正在校准 HITBOX...', '正在数硬币...', '正在预热激光...', '正在呼叫阵型教练...'],
       subtitles: ['正在擦亮像素，并假装这是标准流程。', `自动启动：${buildShortBurst()}`, `Cabinet 测试：${buildCombo()}`, `正在加载奖励关文件 - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`, `虫群通讯说：${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`]
+    },
+    'pt-BR': {
+      titles: ['INICIANDO CABINET ARCADE...', 'CALIBRANDO HITBOX...', 'CONTANDO FICHAS...', 'AQUECENDO LASERS...', 'CHAMANDO O TÉCNICO DE FORMAÇÃO...'],
+      subtitles: ['Polindo pixels e fingindo que isso é protocolo.', `Auto-início: ${buildShortBurst()}`, `Teste do cabinet: ${buildCombo()}`, `Carregando papelada da fase bônus - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`, `Rádio do enxame diz: ${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`]
+    },
+    ko: {
+      titles: ['아케이드 CABINET 부팅 중...', '히트박스 보정 중...', '코인 집계 중...', '레이저 예열 중...', '편대 코치 호출 중...'],
+      subtitles: ['픽셀을 닦고 규정인 척하는 중.', `자동 부팅: ${buildShortBurst()}`, `Cabinet 테스트: ${buildCombo()}`, `보너스 스테이지 서류 로드 중 - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`, `군단 통신: ${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`]
+    },
+    ja: {
+      titles: ['アーケード CABINET 起動中...', 'ヒットボックス調整中...', 'コイン集計中...', 'レーザー予熱中...', 'フォーメーションコーチ呼び出し中...'],
+      subtitles: ['ピクセルを磨きつつ、規定どおりのふりをしています。', `自動起動：${buildShortBurst()}`, `Cabinet テスト：${buildCombo()}`, `ボーナスステージ書類をロード中 - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`, `スウォーム通信：${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`]
     }
   };
   const localized = localizedLoading[getCurrentLanguage()];
@@ -475,6 +532,33 @@ export function getMicroMessage(type) {
 }
 
 export function getAchievementPopup() {
+  const localized = {
+    'pt-BR': [
+      `Conquista falsa: ${buildShortBurst()}`,
+      `Caos aprovado pelo cabinet: ${buildCombo()}`,
+      `Confiança nos botões - ${buildShortBurst()}`,
+      `Multiplicador bônus - ${buildCombo()}`,
+      `Conta da formação - ${buildShortBurst()}`,
+      `Energia de mais uma partida - ${buildCombo()}`
+    ],
+    ko: [
+      `가짜 업적: ${buildShortBurst()}`,
+      `Cabinet 승인 혼돈: ${buildCombo()}`,
+      `버튼 자신감 - ${buildShortBurst()}`,
+      `보너스 배율 - ${buildCombo()}`,
+      `편대 청구서 - ${buildShortBurst()}`,
+      `한 판 더 에너지 - ${buildCombo()}`
+    ],
+    ja: [
+      `フェイク実績：${buildShortBurst()}`,
+      `Cabinet 承認カオス：${buildCombo()}`,
+      `ボタン信頼度 - ${buildShortBurst()}`,
+      `ボーナス倍率 - ${buildCombo()}`,
+      `編隊請求書 - ${buildShortBurst()}`,
+      `もう1回エネルギー - ${buildCombo()}`
+    ]
+  }[getCurrentLanguage()];
+  if (localized) return weightedPick(localized, 'achievement');
   const achievements = isGerman()
     ? [
       `Fake-Erfolg: ${buildShortBurst()}`,
@@ -496,6 +580,33 @@ export function getAchievementPopup() {
 }
 
 export function getEnemyTaunt() {
+  const localized = {
+    'pt-BR': [
+      `Rádio inimigo: ${buildShortBurst()}`,
+      `Linha de formação: ${buildCombo()}`,
+      `Nave pipoca ri - ${buildShortBurst()}`,
+      `Estagiário do chefe diz: ${buildCombo()}`,
+      `Enxame grita: ${buildShortBurst()}`,
+      `Técnico alien murmura: ${buildCombo()}`
+    ],
+    ko: [
+      `적 통신: ${buildShortBurst()}`,
+      `편대 라인: ${buildCombo()}`,
+      `팝콘 함선이 웃는다 - ${buildShortBurst()}`,
+      `보스 인턴: ${buildCombo()}`,
+      `군단이 외친다: ${buildShortBurst()}`,
+      `외계 코치가 중얼거린다: ${buildCombo()}`
+    ],
+    ja: [
+      `敵通信：${buildShortBurst()}`,
+      `編隊ライン：${buildCombo()}`,
+      `ポップコーン機が笑う - ${buildShortBurst()}`,
+      `ボス見習い：${buildCombo()}`,
+      `スウォームが叫ぶ：${buildShortBurst()}`,
+      `エイリアンコーチのつぶやき：${buildCombo()}`
+    ]
+  }[getCurrentLanguage()];
+  if (localized) return weightedPick(localized, 'taunt');
   const taunts = isGerman()
     ? [
       `Gegnerfunk: ${buildShortBurst()}`,
@@ -547,6 +658,36 @@ export function getGameOverComment(score, level) {
         `街机控制台说：${buildShortBurst()}`,
         `虫群通讯说：${buildCombo()}`
       ]
+    },
+    'pt-BR': {
+      tag: score >= 10000 ? 'LENDA DO CABINET' : score >= 5000 ? 'BOA PARTIDA' : 'AQUECIMENTO',
+      lines: (tag) => [
+        `${tag} - ${buildShortBurst()}`,
+        `O nível ${level} ficou com sua ficha - ${buildCombo()}`,
+        `Próxima partida: ${buildShortBurst()}`,
+        `Controle Arcade diz: ${buildShortBurst()}`,
+        `Rádio do enxame diz: ${buildCombo()}`
+      ]
+    },
+    ko: {
+      tag: score >= 10000 ? 'CABINET 전설' : score >= 5000 ? '좋은 런' : '워밍업',
+      lines: (tag) => [
+        `${tag} - ${buildShortBurst()}`,
+        `레벨 ${level}이 코인을 가져갔다 - ${buildCombo()}`,
+        `다음 런: ${buildShortBurst()}`,
+        `아케이드 관제: ${buildShortBurst()}`,
+        `군단 통신: ${buildCombo()}`
+      ]
+    },
+    ja: {
+      tag: score >= 10000 ? 'CABINET レジェンド' : score >= 5000 ? '好ラン' : 'ウォームアップ',
+      lines: (tag) => [
+        `${tag} - ${buildShortBurst()}`,
+        `レベル ${level} がコインを回収 - ${buildCombo()}`,
+        `次のラン：${buildShortBurst()}`,
+        `アーケード管制：${buildShortBurst()}`,
+        `スウォーム通信：${buildCombo()}`
+      ]
     }
   }[getCurrentLanguage()];
   if (localized) return weightedPick(localized.lines(localized.tag), 'gameOverComment');
@@ -581,7 +722,16 @@ export function getHighscoreComment(hasScores) {
       : [`Очков пока нет - ${buildShortBurst()}`, `Забери первое место: ${buildShortBurst()}`, 'Таблица одинока.'],
     'zh-CN': hasScores
       ? [`Cabinet 记住了 - ${buildShortBurst()}`, `高分轨道 - ${buildCombo()}`, `奖励缩写已接受：${buildShortBurst()}`]
-      : [`还没有分数 - ${buildShortBurst()}`, `拿下第一个席位：${buildShortBurst()}`, '排行榜很孤单。']
+      : [`还没有分数 - ${buildShortBurst()}`, `拿下第一个席位：${buildShortBurst()}`, '排行榜很孤单。'],
+    'pt-BR': hasScores
+      ? [`O cabinet lembra - ${buildShortBurst()}`, `Órbita de recorde - ${buildCombo()}`, `Iniciais bônus aceitas: ${buildShortBurst()}`]
+      : [`Ainda sem pontuações - ${buildShortBurst()}`, `Pegue a primeira posição: ${buildShortBurst()}`, 'O ranking está sozinho.'],
+    ko: hasScores
+      ? [`Cabinet이 기억한다 - ${buildShortBurst()}`, `최고 점수 궤도 - ${buildCombo()}`, `보너스 이니셜 승인: ${buildShortBurst()}`]
+      : [`아직 점수가 없다 - ${buildShortBurst()}`, `첫 자리를 차지해라: ${buildShortBurst()}`, '순위표가 외롭다.'],
+    ja: hasScores
+      ? [`Cabinet は覚えている - ${buildShortBurst()}`, `ハイスコア軌道 - ${buildCombo()}`, `ボーナスイニシャル承認：${buildShortBurst()}`]
+      : [`まだスコアなし - ${buildShortBurst()}`, `最初の枠を取れ：${buildShortBurst()}`, 'ランキングがひとりぼっち。']
   }[getCurrentLanguage()];
   if (localized) return weightedPick(localized, 'highscoreComment');
   const lines = isGerman()
@@ -615,7 +765,10 @@ export function extendLocations(base) {
   const extras = ({
     es: ['ARCADE ORBITAL', 'CINTURÓN NEÓN', 'DERIVA PÍXEL', 'SECTOR EXTRA', 'NÚCLEO CABINET', 'CARRILES LÁSER', 'COLA DE JEFES'],
     ru: ['ОРБИТАЛЬНАЯ АРКАДА', 'НЕОНОВЫЙ ПОЯС', 'ПИКСЕЛЬНЫЙ ДРИФТ', 'БОНУСНЫЙ СЕКТОР', 'ЯДРО CABINET', 'ЛАЗЕРНЫЕ КОРИДОРЫ', 'ОЧЕРЕДЬ БОССОВ'],
-    'zh-CN': ['轨道街机', '霓虹带', '像素漂移', '奖励区域', 'Cabinet 核心', '激光航道', 'Boss 队列']
+    'zh-CN': ['轨道街机', '霓虹带', '像素漂移', '奖励区域', 'Cabinet 核心', '激光航道', 'Boss 队列'],
+    'pt-BR': ['ARCADE ORBITAL', 'CINTURÃO NÉON', 'DERIVA PIXEL', 'SETOR BÔNUS', 'NÚCLEO CABINET', 'ROTAS LASER', 'FILA DE CHEFES'],
+    ko: ['궤도 아케이드', '네온 벨트', '픽셀 표류', '보너스 섹터', 'Cabinet 코어', '레이저 항로', '보스 대기열'],
+    ja: ['オービタルアーケード', 'ネオンベルト', 'ピクセルドリフト', 'ボーナスセクター', 'Cabinet コア', 'レーザーレーン', 'ボス待機列']
   })[getCurrentLanguage()] || (isGerman()
     ? [
       'ORBITAL-ARCADE',
@@ -671,6 +824,48 @@ const tauntTemplates = [
 ];
 
 export function getLeaderboardTaunt(targetName) {
+  const localized = {
+    'pt-BR': [
+      '{TARGET}: Insira ficha. Tente de novo.',
+      '{TARGET}: Cuidado com a hitbox.',
+      '{TARGET}: O enxame está rindo com educação.',
+      '{TARGET}: Primeiro desvie, depois entre em pânico.',
+      '{TARGET}: Suas iniciais querem revanche.',
+      '{TARGET}: A música do chefe não ficou impressionada.',
+      '{TARGET}: Ler formações ajuda.',
+      '{TARGET}: Mais pew-pew.',
+      '{TARGET}: Controle Arcade exige melhora.',
+      '{TARGET}: Mais uma partida resolve tudo.'
+    ],
+    ko: [
+      '{TARGET}: 코인을 넣어라. 다시 시도.',
+      '{TARGET}: 히트박스를 조심해라.',
+      '{TARGET}: 군단이 정중하게 웃고 있다.',
+      '{TARGET}: 먼저 피하고, 그다음 당황해라.',
+      '{TARGET}: 네 이니셜이 복수를 원한다.',
+      '{TARGET}: 보스 음악은 감동하지 않았다.',
+      '{TARGET}: 편대 읽기는 기본이다.',
+      '{TARGET}: 더 세게 pew.',
+      '{TARGET}: 아케이드 관제가 개선을 요청한다.',
+      '{TARGET}: 한 판 더 하면 다 고쳐진다.'
+    ],
+    ja: [
+      '{TARGET}: コイン投入。もう一度。',
+      '{TARGET}: ヒットボックスに注意。',
+      '{TARGET}: スウォームが礼儀正しく笑っている。',
+      '{TARGET}: まず避けて、それから慌てろ。',
+      '{TARGET}: イニシャルがリベンジを求めている。',
+      '{TARGET}: ボス曲は感心していない。',
+      '{TARGET}: 編隊を読むのは基本。',
+      '{TARGET}: もっと pew しろ。',
+      '{TARGET}: アーケード管制が改善を要求。',
+      '{TARGET}: もう1回で全部直る。'
+    ]
+  }[getCurrentLanguage()];
+  if (localized) {
+    const taunt = weightedPick(localized, `leaderboardTaunt-${getCurrentLanguage()}`);
+    return taunt.replace('{TARGET}', targetName);
+  }
   const allTaunts = isGerman()
     ? [
       '{TARGET}: Münze einwerfen. Nochmal versuchen.',
@@ -701,6 +896,45 @@ export function getLeaderboardTaunt(targetName) {
 }
 
 export function getEnhancedLeaderboardTaunt(taunterName, targetName, taunterScore, targetScore, taunterLevel, targetLevel) {
+  const localizedTemplates = {
+    'pt-BR': [
+      '{TAUNTER}: {TARGET}, sua hitbox precisa de treino.',
+      '{TAUNTER} envia um tutorial de desvio grátis para {TARGET}.',
+      '{TARGET}, {TAUNTER} diz: a formação nem era tão complicada.',
+      '{TAUNTER} pontuação {SCORE_T} contra {TARGET} pontuação {SCORE_B}: o ranking tem recibos.',
+      '{TAUNTER} chegou ao nível {LEVEL_T}; {TARGET} chegou ao nível {LEVEL_B}. A música do chefe percebeu.',
+      '{TARGET}, {TAUNTER} recomenda mais lasers e menos desculpas.',
+      '{TAUNTER}: {TARGET}, erro clássico de cabinet. Bem educativo.'
+    ],
+    ko: [
+      '{TAUNTER}: {TARGET}, 네 히트박스는 코칭이 필요하다.',
+      '{TAUNTER}가 {TARGET}에게 무료 회피 튜토리얼을 보냈다.',
+      '{TARGET}, {TAUNTER}의 말: 편대는 그렇게 어렵지 않았다.',
+      '{TAUNTER} 점수 {SCORE_T}, {TARGET} 점수 {SCORE_B}: 순위표에 영수증이 있다.',
+      '{TAUNTER} 레벨 {LEVEL_T}; {TARGET} 레벨 {LEVEL_B}. 보스 음악이 눈치챘다.',
+      '{TARGET}, {TAUNTER}는 더 많은 레이저와 더 적은 변명을 추천한다.',
+      '{TAUNTER}: {TARGET}, 고전적인 cabinet 실수. 아주 교육적이다.'
+    ],
+    ja: [
+      '{TAUNTER}: {TARGET}、ヒットボックスにコーチが必要。',
+      '{TAUNTER} が {TARGET} に無料回避チュートリアルを送信。',
+      '{TARGET}、{TAUNTER} いわく編隊はそこまで複雑ではない。',
+      '{TAUNTER} スコア {SCORE_T} 対 {TARGET} スコア {SCORE_B}: ランキングに証拠あり。',
+      '{TAUNTER} はレベル {LEVEL_T} 到達、{TARGET} はレベル {LEVEL_B}。ボス曲が気づいた。',
+      '{TARGET}、{TAUNTER} はレーザー増量と言い訳削減を推奨。',
+      '{TAUNTER}: {TARGET}、クラシック cabinet ミス。かなり勉強になる。'
+    ]
+  }[getCurrentLanguage()];
+  if (localizedTemplates) {
+    const template = weightedPick(localizedTemplates, `enhancedTaunt-${getCurrentLanguage()}`);
+    return template
+      .replace('{TAUNTER}', taunterName)
+      .replace('{TARGET}', targetName)
+      .replace('{SCORE_T}', taunterScore)
+      .replace('{SCORE_B}', targetScore)
+      .replace('{LEVEL_T}', taunterLevel)
+      .replace('{LEVEL_B}', targetLevel);
+  }
   if (isGerman()) {
     const deTemplates = [
       '{TAUNTER}: {TARGET}, deine Hitbox braucht Coaching.',

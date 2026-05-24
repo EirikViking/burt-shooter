@@ -75,6 +75,17 @@ const sourceText = Object.freeze({
   'RESUME': '계속',
   'QUIT TO MENU': '메뉴로 나가기',
 
+  'Sector 1: Popcorn Patrol': '섹터 1: Popcorn Patrol',
+  'Sector 2: Spiral Academy': '섹터 2: Spiral Academy',
+  'Sector 3: Laser Lane Union': '섹터 3: Laser Lane Union',
+  'Sector 4: Bonus Stage Panic': '섹터 4: Bonus Stage Panic',
+  'BOSS: THE FORMATION FOREMAN': '보스: THE FORMATION FOREMAN',
+  'Sector 6: Meteor Queue': '섹터 6: Meteor Queue',
+  'Sector 7: Neon Swarm': '섹터 7: Neon Swarm',
+  'Sector 8: Hitbox Negotiations': '섹터 8: Hitbox Negotiations',
+  'Sector 9: Cabinet Overdrive': '섹터 9: Cabinet Overdrive',
+  'BOSS: THE QUARTER EATER': '보스: THE QUARTER EATER',
+
   'SCORE': '점수',
   '점수': '점수',
   'SCORE: 0': '점수: 0',

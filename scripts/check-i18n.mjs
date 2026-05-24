@@ -11,9 +11,16 @@ import { zhCN } from '../src/i18n/locales/zh-CN.js';
 import {
   normalizeLanguageCode,
   resolveLanguage,
+  setLanguagePreference,
   t,
   translateTextForLocale
 } from '../src/i18n/index.js';
+import {
+  getGameOverComment,
+  getHighscoreComment,
+  getMicroMessage,
+  getStoryTransmission
+} from '../src/text/phrasePool.js';
 
 function flattenKeys(value, prefix = '') {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
@@ -45,10 +52,82 @@ const forbiddenPlaceholderMarkers = [
   'FALLBACK:',
   'UNTRANSLATED:'
 ];
+const forbiddenEnglishFragments = [
+  'Sector 1:',
+  'Sector 2:',
+  'Sector 3:',
+  'Sector 4:',
+  'Sector 6:',
+  'Sector 7:',
+  'Sector 8:',
+  'Sector 9:',
+  'One coin woke the cabinet',
+  'The pilot still has not decided',
+  'The popcorn formation',
+  'Formation Coach reports',
+  'Quartermaster, the hitbox',
+  'Mind the hitbox'
+];
+const allowedEnglishPhrases = [
+  'Nova Swarm',
+  'Tinyfoundry Games',
+  'Cabinet',
+  'Popcorn Patrol',
+  'Spiral Academy',
+  'Laser Lane Union',
+  'Bonus Stage Panic',
+  'Meteor Queue',
+  'Neon Swarm',
+  'Hitbox Negotiations',
+  'Cabinet Overdrive',
+  'THE FORMATION FOREMAN',
+  'THE QUARTER EATER',
+  'ENTER',
+  'ESC',
+  'WASD',
+  'SPACE',
+  'Space',
+  'SFX',
+  'FIRE',
+  'A',
+  'B',
+  'Y',
+  'START',
+  'GAMEPAD',
+  'GLOBAL',
+  'LOCAL'
+];
+const englishLeakWords = new Set([
+  'one', 'coin', 'woke', 'the', 'cabinet', 'pilot', 'still', 'has', 'not', 'decided', 'if', 'that', 'was', 'luck',
+  'popcorn', 'formation', 'coach', 'reports', 'quartermaster', 'hitbox', 'mind', 'sector', 'level', 'wave',
+  'local', 'board', 'loaded', 'global', 'score', 'scores', 'yet', 'claim', 'first', 'slot', 'scoreboard', 'lonely',
+  'arcade', 'control', 'says', 'swarm', 'dispatch', 'next', 'run', 'bonus', 'stage', 'called', 'braver', 'pilot'
+]);
 
 function findForbiddenPlaceholderMarkers(value) {
   const text = String(value ?? '');
   return forbiddenPlaceholderMarkers.filter((marker) => text.includes(marker));
+}
+
+function findEnglishLeakMarkers(value) {
+  const text = String(value ?? '');
+  const hits = forbiddenEnglishFragments.filter((fragment) => text.toLowerCase().includes(fragment.toLowerCase()));
+  let stripped = text;
+  for (const phrase of allowedEnglishPhrases) stripped = stripped.split(phrase).join(' ');
+  const tokens = stripped.match(/\b[A-Za-z][A-Za-z'’.-]*\b/g) || [];
+  let sequence = [];
+  const sequences = [];
+  for (const token of tokens) {
+    const normalized = token.toLowerCase().replace(/[^a-z]/g, '');
+    if (englishLeakWords.has(normalized)) {
+      sequence.push(token);
+    } else {
+      if (sequence.length >= 2) sequences.push(sequence.join(' '));
+      sequence = [];
+    }
+  }
+  if (sequence.length >= 2) sequences.push(sequence.join(' '));
+  return [...hits, ...sequences];
 }
 
 const enKeys = flattenKeys(en);
@@ -411,8 +490,42 @@ assert.match(Object.values(ja.sourceText).join('\n'), /[\u3040-\u30ff\u4e00-\u9f
 assert.equal(translateTextForLocale('pt-BR', '1 point'), '1 point');
 assert.equal(translateTextForLocale('ko', '1 point'), '1 point');
 assert.equal(translateTextForLocale('ja', '1 point'), '1 point');
+assert.equal(translateTextForLocale('pt-BR', 'Sector 1: Popcorn Patrol'), 'Setor 1: Popcorn Patrol');
+assert.equal(translateTextForLocale('ko', 'Sector 1: Popcorn Patrol'), '섹터 1: Popcorn Patrol');
+assert.equal(translateTextForLocale('ja', 'Sector 1: Popcorn Patrol'), 'セクター1：Popcorn Patrol');
 assert.notEqual(translateTextForLocale('ko', 'No scores yet. Start the first legend.'), 'No scores yet. Start the first legend.');
 assert.notEqual(translateTextForLocale('ja', 'No scores yet. Start the first legend.'), 'No scores yet. Start the first legend.');
+
+const phrasePoolEnglishLeaks = [];
+for (const code of ['pt-BR', 'ko', 'ja']) {
+  await setLanguagePreference(code);
+  const samples = [
+    getStoryTransmission(1).title,
+    getStoryTransmission(1).line,
+    getMicroMessage('levelStart'),
+    getMicroMessage('newWave'),
+    getMicroMessage('pause'),
+    getGameOverComment(1234, 3),
+    getHighscoreComment(false),
+    getHighscoreComment(true)
+  ];
+  for (let i = 0; i < 12; i += 1) {
+    samples.push(getMicroMessage('levelStart'));
+    samples.push(getMicroMessage('pause'));
+    samples.push(getGameOverComment(9876, 4));
+    samples.push(getHighscoreComment(i % 2 === 0));
+  }
+  for (const sample of samples) {
+    const hits = findEnglishLeakMarkers(sample);
+    if (hits.length) phrasePoolEnglishLeaks.push(`${code}: ${hits.join(', ')} in "${sample}"`);
+  }
+}
+await setLanguagePreference('en');
+assert.deepEqual(
+  phrasePoolEnglishLeaks,
+  [],
+  `Phrase pool samples for pt-BR, ko, and ja must not leak English player-facing text:\n${phrasePoolEnglishLeaks.join('\n')}`
+);
 
 const spanishValues = [
   ...Object.values(es.sourceText),
