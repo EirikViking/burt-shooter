@@ -53,38 +53,64 @@ function viteCommand() {
   return { command: process.platform === 'win32' ? 'npx.cmd' : 'npx', baseArgs: ['vite'] };
 }
 
-async function canFetch(url) {
+async function fetchStatus(url) {
   try {
     const response = await fetch(url, { cache: 'no-store' });
-    return response.ok;
-  } catch {
-    return false;
+    const text = response.ok ? '' : (await response.text()).slice(0, 500);
+    return { ok: response.ok, status: response.status, statusText: response.statusText, body: text };
+  } catch (error) {
+    return { ok: false, status: 0, statusText: error.message, body: '' };
   }
+}
+
+async function canFetch(url) {
+  return (await fetchStatus(url)).ok;
 }
 
 async function waitForServer(url, timeoutMs = 15000) {
   const start = Date.now();
+  let lastStatus = null;
   while (Date.now() - start < timeoutMs) {
-    if (await canFetch(url)) return true;
+    lastStatus = await fetchStatus(url);
+    if (lastStatus.ok) return { ok: true, lastStatus };
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  return false;
+  return { ok: false, lastStatus };
 }
 
 async function startPreviewServer() {
-  if (await canFetch(baseUrl)) return null;
+  const probeUrl = withQuery({ skipIntro: '1' });
+  if (await canFetch(probeUrl)) return null;
   const { command, baseArgs } = viteCommand();
   const args = [...baseArgs, 'preview', '--host', host, '--port', String(port), '--strictPort'];
+  const output = [];
   const server = spawn(command, args, {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
   });
-  server.stdout.on('data', (chunk) => process.stdout.write(`[preview] ${chunk}`));
-  server.stderr.on('data', (chunk) => process.stderr.write(`[preview] ${chunk}`));
-  if (!(await waitForServer(baseUrl))) {
+  let exitCode = null;
+  server.on('exit', (code, signal) => {
+    exitCode = { code, signal };
+  });
+  server.stdout.on('data', (chunk) => {
+    output.push(chunk.toString());
+    process.stdout.write(`[preview] ${chunk}`);
+  });
+  server.stderr.on('data', (chunk) => {
+    output.push(chunk.toString());
+    process.stderr.write(`[preview] ${chunk}`);
+  });
+  const ready = await waitForServer(probeUrl);
+  if (!ready.ok) {
     server.kill();
-    throw new Error(`Preview server did not become ready at ${baseUrl}`);
+    throw new Error([
+      `Preview server did not become ready at ${probeUrl}`,
+      `Last HTTP status: ${ready.lastStatus?.status || 'n/a'} ${ready.lastStatus?.statusText || ''}`,
+      ready.lastStatus?.body ? `Response body: ${ready.lastStatus.body}` : null,
+      exitCode ? `Preview process exited: ${JSON.stringify(exitCode)}` : null,
+      output.length ? `Preview output:\n${output.join('').slice(-2000)}` : null
+    ].filter(Boolean).join('\n'));
   }
   return server;
 }
@@ -107,7 +133,16 @@ async function waitForLanguage(page, code) {
 }
 
 async function openFreshMenu(page, code) {
-  await page.goto(withQuery({ skipIntro: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const url = withQuery({ skipIntro: '1' });
+  let response = null;
+  try {
+    response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  } catch (error) {
+    if (!String(error.message || '').includes('ERR_HTTP_RESPONSE_CODE_FAILURE')) throw error;
+    await page.waitForTimeout(500);
+    response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  }
+  assert(response?.ok(), `Navigation failed for ${url}: HTTP ${response?.status() || 'no response'}`);
   await waitForScene(page, 'menu');
   await page.evaluate((language) => window.__novaI18n?.setLanguagePreference?.(language), code);
   await waitForLanguage(page, code);
