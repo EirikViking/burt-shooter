@@ -360,7 +360,7 @@ const patterns = buildArcadePatterns({
   thisRunCareerBest: (run, best, isNew) => `ESTA PARTIDA: NIVEL ${run}\nMEJOR CARRERA: NIVEL ${best}${isNew ? ' - NUEVA MARCA' : ''}`,
   newShipUnlocked: (ship) => `NUEVA NAVE DESBLOQUEADA: ${ship}\nABRE EL HANGAR DESDE EL MENÚ O PULSA REINICIAR`,
   nextShip: 'SIGUIENTE NAVE',
-  careerLevelProgress: (current, target, count) => `NIVEL DE CARRERA ${current}/${target} - FALTAN ${count} NIVELES`,
+  careerLevelProgress: (current, target, count) => `NIVEL DE CARRERA ${current}/${target} - ${count === 1 ? 'FALTA 1 NIVEL' : `FALTAN ${count} NIVELES`}`,
   careerLevelBetterRun: (current, target) => `NIVEL DE CARRERA ${current}/${target} - UNA PARTIDA MEJOR`,
   hangarComplete: (level) => `HANGAR COMPLETO: TODAS LAS NAVES DESBLOQUEADAS\nMEJOR CARRERA: NIVEL ${level}`,
   nextCareerGoal: (level) => `SIGUIENTE OBJETIVO DE CARRERA: ALCANZA NIVEL ${level}`,
