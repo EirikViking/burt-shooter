@@ -409,6 +409,7 @@ function buildGameTextState(game) {
     wave: enemyManager ? {
       phase: enemyManager.phase || null,
       state: enemyManager.state || null,
+      marketingDebug: Boolean(enemyManager.marketingDebugMode),
       currentWaveIndex: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex : null,
       currentWaveNumber: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex + 1 : null,
       totalWaves: enemyManager.normalWavesTotal || 0,
@@ -564,6 +565,9 @@ function buildGameTextState(game) {
       enemies: enemies.filter(enemy => enemy?.active !== false).length + (hijacker?.active ? 1 : 0),
       bossAdds: enemies.filter(enemy =>
         enemy?.kind === 'boss_add' && (enemy.active !== false || enemy.waitingForEntry)
+      ).length,
+      bosses: enemies.filter(enemy =>
+        enemy?.kind === 'boss' && (enemy.active !== false || enemy.waitingForEntry)
       ).length,
       eliteMiddleShips: enemies.filter(enemy =>
         enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry)

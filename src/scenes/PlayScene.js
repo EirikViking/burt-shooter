@@ -136,6 +136,9 @@ export class PlayScene {
     this.introStartTime = 0;
     this.activeTopToast = null;
     this.activeCornerToast = null;
+    this.activeAchievementToast = null;
+    this.achievementToastQueue = [];
+    this.achievementToastTicker = null;
     this.centerToastLockUntil = 0;
     this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
     this.loreBag = [];
@@ -412,6 +415,11 @@ export class PlayScene {
   }
 
   handleDebugKeys(e) {
+    if (e.repeat) return;
+    if (this.handleMarketingSpawnKey(e)) {
+      e.preventDefault?.();
+      return;
+    }
     if (e.key === 'F1') {
       console.log('DEBUG STATS:', this.debugStats);
       this.showToast('DEBUG STATS LOGGED (Console)', { fontSize: 20 });
@@ -432,6 +440,79 @@ export class PlayScene {
       this.showStoryTransmission({ force: true });
       this.showToast('TRIGGERED STORY SIGNAL', { fontSize: 20 });
     }
+  }
+
+  handleMarketingSpawnKey(e) {
+    const key = e.code || e.key;
+    if (key === 'Digit1' || key === 'Numpad1' || e.key === '1') {
+      this.spawnMarketingDebugWave();
+      return true;
+    }
+    if (key === 'Digit2' || key === 'Numpad2' || e.key === '2') {
+      this.spawnMarketingDebugMiniBoss();
+      return true;
+    }
+    if (key === 'Digit3' || key === 'Numpad3' || e.key === '3') {
+      this.spawnMarketingDebugBoss();
+      return true;
+    }
+    return false;
+  }
+
+  activateMarketingSpawnMode(reason = 'marketing_spawn_debug') {
+    if (!this.enemyManager || !this.game || this.game?.currentScene !== this || !this.isReady) {
+      return false;
+    }
+    this.game.markUnrankedRun?.(reason);
+    this.enemyManager.enableMarketingDebugMode?.();
+    this.introActive = false;
+    this.introComplete = true;
+    return true;
+  }
+
+  spawnMarketingDebugWave() {
+    if (!this.activateMarketingSpawnMode()) return;
+    const result = this.enemyManager.spawnMarketingDebugWave?.();
+    const count = result?.count || 0;
+    this.showToast(`MARKETING WAVE +${count}`, {
+      fontSize: 18,
+      fill: '#8fffd5',
+      duration: 1200,
+      slot: 'corner',
+      type: 'debug',
+      priority: 4
+    });
+  }
+
+  spawnMarketingDebugMiniBoss() {
+    if (!this.activateMarketingSpawnMode()) return;
+    const result = this.enemyManager.spawnMarketingDebugMiniBoss?.();
+    this.showToast(result?.displayName ? `MINI-BOSS: ${result.displayName}` : 'MINI-BOSS SPAWNED', {
+      fontSize: 18,
+      fill: '#ffd166',
+      duration: 1300,
+      slot: 'corner',
+      type: 'debug',
+      priority: 4,
+      maxWidth: this.game.getWidth() * 0.46
+    });
+  }
+
+  spawnMarketingDebugBoss() {
+    if (!this.activateMarketingSpawnMode()) return;
+    this.enemyManager.spawnMarketingDebugBoss?.().then((result) => {
+      this.showToast(result?.name ? `BOSS: ${result.name}` : 'BOSS SPAWNED', {
+        fontSize: 18,
+        fill: '#ff8fdf',
+        duration: 1500,
+        slot: 'corner',
+        type: 'debug',
+        priority: 4,
+        maxWidth: this.game.getWidth() * 0.46
+      });
+    }).catch((error) => {
+      console.warn('[MarketingDebug] boss spawn failed:', error?.message || error);
+    });
   }
 
   updateDiagnosticsLayout() {
@@ -2102,6 +2183,8 @@ export class PlayScene {
     this.introOverlay = null;
     this.introActive = false;
     this.introComplete = false;
+    this.removeAchievementToast();
+    this.achievementToastQueue = [];
 
     // Music continues to next scene
   }
@@ -2574,16 +2657,126 @@ export class PlayScene {
   showAchievementToast(toast) {
     const achievement = toast?.achievement || toast;
     if (!achievement?.name) return;
-    this.showToast(`ACHIEVEMENT UNLOCKED\n${achievement.name}`, {
-      fontSize: 20,
-      fill: '#fff3a2',
-      y: this.game.getHeight() * 0.16,
-      duration: 3200,
-      slot: 'top',
-      type: 'achievement',
-      priority: 2,
-      notBefore: Date.now() + 650
+    const id = achievement.id || toast?.id || achievement.name;
+    const alreadyActive = this.activeAchievementToast?.__achievementToastId === id;
+    const duplicateQueued = this.achievementToastQueue.some((entry) => entry.id === id);
+    if (alreadyActive || duplicateQueued) return;
+
+    const entry = {
+      id,
+      achievement,
+      createdAt: Date.now()
+    };
+    if (this.activeAchievementToast) {
+      this.achievementToastQueue.push(entry);
+      return;
+    }
+    this.showAchievementToastNow(entry);
+  }
+
+  showAchievementToastNow(entry) {
+    const achievement = entry?.achievement;
+    if (!achievement?.name || !this.uiOverlay || !this.game?.app?.ticker) return;
+
+    const { width, height } = this.game.app.screen;
+    const compact = width < 620;
+    const panelWidth = Math.min(compact ? width - 28 : 470, width * 0.82);
+    const panelHeight = compact ? 78 : 86;
+    const banner = new PIXI.Container();
+    banner.x = width / 2;
+    banner.y = Math.max(compact ? 92 : 96, height * 0.13);
+    banner.alpha = 0;
+    banner.scale.set(0.94);
+    banner.zIndex = 11000;
+    banner.__achievementToastId = entry.id;
+
+    const panel = new PIXI.Graphics();
+    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 8);
+    panel.fill({ color: 0x04131d, alpha: 0.9 });
+    panel.stroke({ color: 0xffd15c, width: 2, alpha: 0.95 });
+    banner.addChild(panel);
+
+    const glow = new PIXI.Graphics();
+    glow.roundRect(-panelWidth / 2 + 5, -panelHeight / 2 + 5, panelWidth - 10, panelHeight - 10, 6);
+    glow.stroke({ color: 0x00f6ff, width: 1, alpha: 0.72 });
+    banner.addChild(glow);
+
+    const accent = new PIXI.Graphics();
+    accent.roundRect(-panelWidth / 2 + 14, -panelHeight / 2 + 14, 5, panelHeight - 28, 3);
+    accent.fill({ color: 0xffd15c, alpha: 1 });
+    banner.addChild(accent);
+
+    const title = createText('ACHIEVEMENT UNLOCKED', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 12 : 14,
+      fill: '#ffd15c',
+      stroke: '#000000',
+      strokeThickness: 2,
+      align: 'left'
     });
+    title.anchor.set(0, 0.5);
+    title.x = -panelWidth / 2 + 34;
+    title.y = compact ? -18 : -20;
+    banner.addChild(title);
+
+    const name = createText(achievement.name, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 18 : 22,
+      fill: '#ffffff',
+      stroke: '#00131c',
+      strokeThickness: 3,
+      align: 'left',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 68
+    });
+    name.anchor.set(0, 0.5);
+    name.x = title.x;
+    name.y = compact ? 12 : 12;
+    if (name.width > panelWidth - 68) {
+      name.scale.set((panelWidth - 68) / name.width);
+    }
+    banner.addChild(name);
+
+    this.uiOverlay.addChild(banner);
+    this.activeAchievementToast = banner;
+    AudioManager.playSfx('achievement', { force: true, volume: 0.82, minIntervalMs: 0 });
+
+    const duration = 3400;
+    let elapsed = 0;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      if (elapsed < 220) {
+        const t = elapsed / 220;
+        banner.alpha = t;
+        banner.scale.set(0.94 + t * 0.06);
+      } else if (elapsed > duration - 420) {
+        banner.alpha = Math.max(0, (duration - elapsed) / 420);
+      } else {
+        banner.alpha = 1;
+        banner.scale.set(1);
+      }
+
+      if (elapsed >= duration) {
+        this.removeAchievementToast({ showNext: true });
+      }
+    };
+    this.achievementToastTicker = ticker;
+    this.game.app.ticker.add(ticker);
+  }
+
+  removeAchievementToast({ showNext = false } = {}) {
+    if (this.achievementToastTicker && this.game?.app?.ticker) {
+      this.game.app.ticker.remove(this.achievementToastTicker);
+    }
+    this.achievementToastTicker = null;
+    if (this.activeAchievementToast?.parent) {
+      this.activeAchievementToast.parent.removeChild(this.activeAchievementToast);
+    }
+    this.activeAchievementToast = null;
+    if (showNext && this.achievementToastQueue.length > 0) {
+      const next = this.achievementToastQueue.shift();
+      setTimeout(() => this.showAchievementToastNow(next), 160);
+    }
   }
 
   applyLifeRepair(targetLives = 3, invulnerabilityMs = 3000) {
@@ -3519,6 +3712,13 @@ export class PlayScene {
         this.describeToastDisplay(this.activeTopToast),
         this.describeToastDisplay(this.activeCornerToast)
       ].filter(Boolean),
+      achievement: this.activeAchievementToast ? {
+        id: this.activeAchievementToast.__achievementToastId,
+        queued: this.achievementToastQueue.length
+      } : {
+        id: null,
+        queued: this.achievementToastQueue.length
+      },
       queued: {
         center: this.toastQueue.length,
         top: this.toastTopQueue.length,

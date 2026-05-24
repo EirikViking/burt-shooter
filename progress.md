@@ -1,5 +1,10 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-24 Achievement Toasts And Marketing Spawn Debug
+
+- Current user request: make rank achievement notifications obvious in-game, add temporary marketing hotkeys where `1` spawns a random enemy wave, `2` spawns a random mini-boss/elite middle ship, and `3` spawns a random boss, then deploy to web prod.
+- Implementation direction: keep the hotkeys temporary and unranked. The first marketing spawn marks the run `unranked` with reason `marketing_spawn_debug`, preventing score submission and achievement unlocks during mayhem capture.
+
 ## 2026-05-23 Elite Ship Production Deploy And Steam Package
 
 - Deployed production web build `v2026-05-23_11-05-56` from commit `e742aacc97b912196fb7e609371b492fa4c41c9e` to Cloudflare Pages production branch `main`; verified `https://novaswarm.tinyfoundry.app`, `https://burt-game.pages.dev`, and deployment URL `https://2351d381.burt-game.pages.dev` all report the same build.
