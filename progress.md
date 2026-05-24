@@ -12,6 +12,13 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Voice audio remains English and subtitles were not added. Steamworks language support should only mark these languages as Interface after human QA; do not mark Full Audio or Subtitles.
 - Evidence is stored locally under `test-results/i18n-top3-report/`, including screenshots and `nova-swarm-localization-qa-top3.pdf`.
 
+## 2026-05-24 Top 3 Localization Polish
+
+- Polish branch `codex/top3-localization-polish` starts from top 3 localization commit `355ae84` and keeps the German localization plus temporary marketing hotkeys intact.
+- Fixed empty leaderboard overlap across English, German, Simplified Chinese, Russian, and Spanish Spain with a layout-level adjustment rather than language-specific text hacks.
+- Polished Spanish punctuation and naturalness, shortened cramped Russian Settings/power labels, lightly cleaned Simplified Chinese HUD/status wording, and improved i18n checks for Spanish punctuation and leaderboard empty-state overlap.
+- New ignored QA evidence is stored locally under `test-results/i18n-top3-polish-report/`. Steamworks settings were not changed, and no deploy was performed.
+
 ## 2026-05-23 Elite Ship Production Deploy And Steam Package
 
 - Deployed production web build `v2026-05-23_11-05-56` from commit `e742aacc97b912196fb7e609371b492fa4c41c9e` to Cloudflare Pages production branch `main`; verified `https://novaswarm.tinyfoundry.app`, `https://burt-game.pages.dev`, and deployment URL `https://2351d381.burt-game.pages.dev` all report the same build.

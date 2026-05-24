@@ -115,6 +115,22 @@ async function openFreshMenu(page, code) {
 
 async function snapshot(page) {
   return page.evaluate(() => {
+    const bounds = (displayObject) => {
+      if (!displayObject?.getBounds) return null;
+      try {
+        const box = displayObject.getBounds();
+        return {
+          x: Math.round(box.x),
+          y: Math.round(box.y),
+          width: Math.round(box.width),
+          height: Math.round(box.height),
+          right: Math.round(box.x + box.width),
+          bottom: Math.round(box.y + box.height)
+        };
+      } catch {
+        return null;
+      }
+    };
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     const game = window.__game;
     const scene = game?.currentScene;
@@ -152,7 +168,13 @@ async function snapshot(page) {
       leaderboard: {
         title: highscore?.title?.text || null,
         retry: highscore?.retryButton?._label?.text || null,
-        board: highscore?.boardTitle?.text || null
+        board: highscore?.boardTitle?.text || null,
+        comment: highscore?.comment?.text || null,
+        stateMessage: highscore?.stateMessage?.text || null,
+        commentBounds: bounds(highscore?.comment),
+        stateBounds: bounds(highscore?.stateMessage),
+        rowChildCount: highscore?.rowsContainer?.children?.length || 0,
+        firstRowBounds: bounds(highscore?.rowsContainer?.children?.[0])
       },
       glyphs: {
         sans: document.fonts?.check?.('18px sans-serif', state.language?.current === 'zh-CN' ? '设置排行榜游戏结束' : 'Nova Swarm') ?? null,
@@ -160,6 +182,11 @@ async function snapshot(page) {
       }
     };
   });
+}
+
+function boxesOverlap(a, b, gap = 0) {
+  if (!a || !b || a.width <= 0 || a.height <= 0 || b.width <= 0 || b.height <= 0) return false;
+  return !(a.right + gap <= b.x || b.right + gap <= a.x || a.bottom + gap <= b.y || b.bottom + gap <= a.y);
 }
 
 async function screenshot(page, name) {
@@ -226,6 +253,27 @@ async function captureLanguage(page, language, index) {
   snaps.leaderboard = await snapshot(page);
   shots.leaderboard = await screenshot(page, `${prefix}-leaderboard.png`);
   assert(snaps.leaderboard.leaderboard.title === language.leaderboard, `${language.slug} leaderboard title mismatch: ${snaps.leaderboard.leaderboard.title}`);
+  assert(!boxesOverlap(snaps.leaderboard.leaderboard.commentBounds, snaps.leaderboard.leaderboard.stateBounds, 4), `${language.slug} leaderboard empty-state text overlaps`);
+  assert(!boxesOverlap(snaps.leaderboard.leaderboard.stateBounds, snaps.leaderboard.leaderboard.firstRowBounds, 4), `${language.slug} leaderboard empty rows overlap state message`);
+
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.highscore;
+    scene?.applyLeaderboardResult?.({
+      status: 'available',
+      source: 'local',
+      sourceLabel: 'Local Memory',
+      entries: [
+        { name: 'ACE', score: 98765, level: 12, rank_index: 5 },
+        { name: 'NOVA', score: 54321, level: 8, rank_index: 3 },
+        { name: 'TFG', score: 32010, level: 5, rank_index: 2 }
+      ],
+      message: 'Local board loaded.'
+    });
+  });
+  await page.waitForTimeout(500);
+  snaps.leaderboardPopulated = await snapshot(page);
+  shots.leaderboardPopulated = await screenshot(page, `${prefix}-leaderboard-populated.png`);
+  assert(snaps.leaderboardPopulated.leaderboard.rowChildCount > 3, `${language.slug} populated leaderboard did not render rows`);
 
   return { shots, snaps };
 }

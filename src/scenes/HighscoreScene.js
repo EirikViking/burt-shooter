@@ -442,9 +442,11 @@ export class HighscoreScene {
     this.title.style.dropShadowColor = '#00ffff';
     this.subtitle.style.fontSize = Math.min(getResponsiveFontSize(layout, 'subtitle') * (isMobile ? 0.88 : 0.96), isMobile ? 15 : 22);
     this.comment.style.fontSize = Math.min(getResponsiveFontSize(layout, 'body'), isMobile ? 14 : 18);
-    this.comment.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
+    this.comment.style.wordWrapWidth = Math.min(clampTextWidth(width * 0.86, layout), this.tableMetrics.innerWidth * 0.74);
     this.comment.visible = this.status !== 'LOADED';
     this.stateMessage.style.fontSize = getResponsiveFontSize(layout, 'body');
+    this.stateMessage.style.wordWrap = true;
+    this.stateMessage.style.wordWrapWidth = Math.min(clampTextWidth(width * 0.86, layout), this.tableMetrics.innerWidth * 0.78);
     this.statusText.style.fontSize = getResponsiveFontSize(layout, 'small');
 
     const centerX = deckLeft + deckWidth / 2;
@@ -483,8 +485,10 @@ export class HighscoreScene {
     this.stateMessage.visible = this.status !== 'LOADED';
     let rowsStartY = toggleY + (isMobile ? 46 : 52);
     if (this.stateMessage.visible) {
-      this.stateMessage.y = this.comment.visible ? this.comment.y + (isMobile ? 34 : 42) : toggleY + (isMobile ? 46 : 52);
-      rowsStartY = this.stateMessage.y + (isMobile ? 30 : 38);
+      this.stateMessage.y = this.comment.visible
+        ? this.comment.y + Math.max(isMobile ? 28 : 34, this.comment.height + (isMobile ? 10 : 12))
+        : toggleY + (isMobile ? 46 : 52);
+      rowsStartY = this.stateMessage.y + Math.max(isMobile ? 30 : 38, this.stateMessage.height + (isMobile ? 14 : 18));
     } else {
       this.stateMessage.y = rowsStartY;
     }
@@ -1009,6 +1013,7 @@ export class HighscoreScene {
       this.fadeInRows();
     } else {
       this.rowsContainer.alpha = 1;
+      if (this.status === 'EMPTY') return;
       const message = translateText(this.status === 'EMPTY' ? 'No highscores yet. Be first!' : 'No data.');
       const empty = createText(message, {
         fontFamily: FONT_ARCADE,

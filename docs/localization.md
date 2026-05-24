@@ -26,3 +26,7 @@ German, Spanish Spain, Russian, and Simplified Chinese support is interface text
 Future localization or deploy work must start from a clean baseline that includes both the German in-game localization line and the temporary marketing hotkeys. Do not build or deploy from stale branches that omit either path.
 
 Store page localization and Steamworks language support settings are managed outside the game code and are not changed by this runtime localization layer.
+
+## 2026-05-24 Top 3 Polish Pass
+
+The top 3 polish branch fixes Spanish punctuation/naturalness, shortens cramped Russian Settings labels, lightly polishes Simplified Chinese HUD wording, and fixes empty leaderboard overlap across English, German, Spanish Spain, Russian, and Simplified Chinese. Evidence is stored locally under `test-results/i18n-top3-polish-report/`.

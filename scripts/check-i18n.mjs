@@ -173,6 +173,17 @@ assert.match(Object.values(es.sourceText).join('\n'), /ñ|á|é|í|ó|ú|Á|É|�
 assert.match(Object.values(ru.sourceText).join('\n'), /[А-Яа-я]/);
 assert.match(Object.values(zhCN.sourceText).join('\n'), /[\u4e00-\u9fff]/);
 
+const spanishValues = [
+  ...Object.values(es.sourceText),
+  ...Object.values(es.settings.language),
+  ...Object.values(es.diagnostics)
+].map((value) => String(value));
+const spanishBadQuestions = spanishValues.filter((value) => value.includes('?') && !value.includes('¿'));
+const spanishBadExclamations = spanishValues.filter((value) => value.includes('!') && !value.includes('¡'));
+assert.deepEqual(spanishBadQuestions, [], `Spanish strings contain closing ? without opening ¿: ${spanishBadQuestions.join(' | ')}`);
+assert.deepEqual(spanishBadExclamations, [], `Spanish strings contain closing ! without opening ¡: ${spanishBadExclamations.join(' | ')}`);
+assert.equal(translateTextForLocale('es', 'BOSS DEFEATED! +1000\nHULL REPAIR +1\nMAX LIVES BONUS!'), 'JEFE DERROTADO +1000\nREPARACIÓN DE CASCO +1\nBONUS DE VIDAS MÁXIMAS');
+
 const playScene = readFileSync('src/scenes/PlayScene.js', 'utf8');
 const enemyManager = readFileSync('src/managers/EnemyManager.js', 'utf8');
 for (const marker of ['handleMarketingSpawnKey', 'activateMarketingSpawnMode']) {

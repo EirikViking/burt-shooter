@@ -192,12 +192,17 @@ export function buildArcadePatterns(labels) {
     {
       id: 'bossDefeatedRepair',
       regex: /^BOSS DEFEATED! \+1000\nHULL REPAIR \+(\d+)\n(.+)$/,
-      replace: (match, helpers) => `${labels.bossDefeated}! +1000\n${labels.hullRepair} +${match[1]}\n${helpers.translate(match[2])}`
+      replace: (match, helpers) => `${labels.bossDefeatedAward?.() || `${labels.bossDefeated}! +1000`}\n${labels.hullRepair} +${match[1]}\n${helpers.translate(match[2])}`
+    },
+    {
+      id: 'hullRepairValue',
+      regex: /^HULL REPAIR \+(\d+)$/,
+      replace: (match) => `${labels.hullRepair} +${match[1]}`
     },
     {
       id: 'bossDefeated',
       regex: /^BOSS DEFEATED! \+1000\n(.+)$/,
-      replace: (match, helpers) => `${labels.bossDefeated}! +1000\n${helpers.translate(match[1])}`
+      replace: (match, helpers) => `${labels.bossDefeatedAward?.() || `${labels.bossDefeated}! +1000`}\n${helpers.translate(match[1])}`
     },
     {
       id: 'rankBoost',
