@@ -55,6 +55,13 @@ assert.equal(translateTextForLocale('de', 'WAVE 2/5  HOSTILES 8  THREATS 3'), 'W
 assert.equal(translateTextForLocale('de', 'Reach Level 7'), 'Level 7 erreichen');
 assert.equal(translateTextForLocale('de', 'Rank Up: ACE'), 'Rangaufstieg: ASS');
 assert.equal(translateTextForLocale('de', 'LOCAL BOARD: QUALIFIED\nGLOBAL BOARD: OFFLINE - LOCAL STILL WORKS'), 'LOKALE LISTE: QUALIFIZIERT\nGLOBALE LISTE: OFFLINE - LOKAL FUNKTIONIERT');
+assert.equal(translateTextForLocale('de', 'NEXT SHIP: COMET COURIER'), 'NÄCHSTES SCHIFF: COMET COURIER');
+assert.equal(translateTextForLocale('de', 'CAREER LEVEL 21/23 - 2 LEVELS TO GO'), 'KARRIERELEVEL 21/23 - NOCH 2 LEVEL');
+assert.equal(translateTextForLocale('de', 'NEXT GOAL: CLIMB ONE GLOBAL RANK'), 'NÄCHSTES ZIEL: EINEN GLOBALEN RANG AUFSTEIGEN');
+assert.equal(translateTextForLocale('de', 'SCORE SUBMITTED'), 'PUNKTZAHL GESENDET');
+assert.equal(translateTextForLocale('de', 'TYPE NAME FIRST'), 'ZUERST NAMEN EINGEBEN');
+assert.equal(translateTextForLocale('de', 'ENTER / SPACE / CLICK - SAME SHIP'), 'ENTER / LEERTASTE / KLICK - GLEICHES SCHIFF');
+assert.equal(translateTextForLocale('de', 'Systems reset. Pride damaged. Go again.'), 'Systeme zurückgesetzt. Stolz beschädigt. Weiter.');
 assert.match(translateTextForLocale('de', 'Nova Station was built around an impossible arcade cabinet: one coin, one pilot, one clean lane through the dark.'), /Nova Station/);
 
 const glyphProbe = [

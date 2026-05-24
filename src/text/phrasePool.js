@@ -132,7 +132,7 @@ const storyTransmissionsDe = [
     id: 'last-coin',
     levelMin: 1,
     title: 'STATISCHE ERINNERUNG',
-    line: 'Eine Münze weckte das Cabinet. Der Pilot weiß immer noch nicht, ob das Glück war.',
+    line: 'Eine Münze hat das Cabinet geweckt. Der Pilot weiß immer noch nicht, ob das Glück war.',
     imageAlias: 'nova-swarm-story-comms-01-20260519'
   },
   {
@@ -247,7 +247,7 @@ const fragmentsDe = {
   closers: [
     { value: 'Weiterfeuern.', weight: 1.3 },
     { value: 'Stilvoll ausweichen.', weight: 1.2 },
-    { value: 'Münzen retten.', weight: 1.1 },
+    { value: 'Münzen retten dich.', weight: 1.1 },
     { value: 'Hitbox beachten.', weight: 1.1 },
     { value: 'Formation beschuldigen.', weight: 1 },
     { value: 'Boss bald.', weight: 1 }
@@ -391,9 +391,9 @@ export function getMicroMessage(type) {
     case 'resume':
       return `${isGerman() ? 'WEITER' : 'RESUME'} - ${buildShortBurst()}`;
     case 'lowHealth':
-      return `${isGerman() ? 'NIEDRIGES LEBEN' : 'LOW LIFE'} - ${buildShortBurst()}`;
+      return isGerman() ? `WENIG LEBEN – ${buildShortBurst()}` : `LOW LIFE - ${buildShortBurst()}`;
     case 'lifeLost':
-      return `${isGerman() ? 'SCHIFF VERLOREN' : 'SHIP DOWN'} - ${buildShortBurst()}`;
+      return isGerman() ? 'SCHIFF VERLOREN – HITBOX GETROFFEN!' : `SHIP DOWN - ${buildShortBurst()}`;
     case 'newWave':
       return `${isGerman() ? 'NEUE WELLE' : 'NEW WAVE'} - ${buildShortBurst()}`;
     case 'bossIntro':

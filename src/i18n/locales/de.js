@@ -11,8 +11,8 @@ const sourceText = Object.freeze({
   'SETTINGS': 'EINSTELLUNGEN',
   'MUSIC': 'MUSIK',
   'VOICE': 'STIMME',
-  'CTA VOICE': 'RETRY-STIMME',
-  'MUSIC SET': 'MUSIKSET',
+  'CTA VOICE': 'RETRY-ANSAGEN',
+  'MUSIC SET': 'MUSIKSTIL',
   'TEST': 'TEST',
   'TEST SFX': 'SFX TESTEN',
   'TEST VOICE': 'STIMME TESTEN',
@@ -110,6 +110,8 @@ const sourceText = Object.freeze({
   'VIEW LEADERBOARD': 'BESTENLISTE ANSEHEN',
   'SUBMIT SCORE': 'PUNKTZAHL SENDEN',
   'SAVING SCORE': 'PUNKTZAHL WIRD GESPEICHERT',
+  'SCORE SUBMITTED': 'PUNKTZAHL GESENDET',
+  'PUNKTZAHL SUBMITTED': 'PUNKTZAHL GESENDET',
   'CHECKING BOARD': 'BESTENLISTE WIRD GEPRÜFT',
   'ENTER PILOT NAME': 'PILOTENNAMEN EINGEBEN',
   'ENTER PILOT NAME AND SUBMIT': 'PILOTENNAMEN EINGEBEN UND SENDEN',
@@ -148,10 +150,13 @@ const sourceText = Object.freeze({
   'A: RELAUNCH  |  B/START: MENU': 'A: NEUSTART  |  B/START: MENÜ',
   'TYPE NAME  |  ENTER: SUBMIT  |  ESC: SKIP SCORE': 'NAMEN EINGEBEN  |  ENTER: SENDEN  |  ESC: ÜBERSPRINGEN',
   'ENTER / SPACE / CLICK: RELAUNCH  |  L / GAMEPAD Y: LEADERBOARD  |  ESC: MENU': 'ENTER / LEERTASTE / KLICK: NEUSTART  |  L / GAMEPAD Y: BESTENLISTE  |  ESC: MENÜ',
+  'ENTER / SPACE / CLICK - SAME SHIP': 'ENTER / LEERTASTE / KLICK - GLEICHES SCHIFF',
+  'A: SAME SHIP  |  Y: LEADERBOARD': 'A: GLEICHES SCHIFF  |  Y: BESTENLISTE',
+  'TYPE NAME FIRST': 'ZUERST NAMEN EINGEBEN',
   'LEADERBOARD FIRST: ENTER / CLICK  |  ESC: SKIP SCORE': 'ZUERST BESTENLISTE: ENTER / KLICK  |  ESC: ÜBERSPRINGEN',
   'LOCAL SLOT': 'LOKALER PLATZ',
   'GLOBAL SLOT': 'GLOBALER PLATZ',
-  'LOCAL SLOT - PILOT NAME FIRST': 'LOKALER PLATZ - ERST PILOTENNAME',
+  'LOCAL SLOT - PILOT NAME FIRST': 'LOKALER PLATZ - ZUERST NAMEN EINGEBEN',
   'Local board claimed. The machine has been informed who owns this corner of space.': 'Lokale Liste gesichert. Die Maschine weiß jetzt, wem diese Ecke des Alls gehört.',
   'The global board has a new name at the top. Let the cabinet remember it loudly.': 'Die globale Bestenliste hat einen neuen Namen an der Spitze. Das Cabinet soll ihn laut behalten.',
   'That is the kind of run people pretend was easy.': 'Das ist die Art Run, bei der alle so tun, als wäre er leicht gewesen.',
@@ -304,7 +309,8 @@ const sourceText = Object.freeze({
   'Classic cabinet danger, modern panic.': 'Klassische Cabinet-Gefahr, moderne Panik.',
   'The scoreboard is awake!': 'Die Bestenliste ist wach!',
   'Initials become legends!': 'Initialen werden zu Legenden!',
-  'High-score orbit achieved!': 'Highscore-Orbit erreicht!'
+  'High-score orbit achieved!': 'Highscore-Orbit erreicht!',
+  'Systems reset. Pride damaged. Go again.': 'Systeme zurückgesetzt. Stolz beschädigt. Weiter.'
 });
 
 function keepValue(match, label) {
@@ -428,6 +434,21 @@ const patterns = Object.freeze([
     replace: (match) => `NEUES SCHIFF FREIGESCHALTET: ${match[1]}\nHANGAR IM MENÜ ÖFFNEN ODER NEUSTART DRÜCKEN`
   },
   {
+    id: 'nextShip',
+    regex: /^NEXT SHIP: (.+)$/,
+    replace: (match) => `NÄCHSTES SCHIFF: ${match[1]}`
+  },
+  {
+    id: 'careerLevelProgress',
+    regex: /^CAREER LEVEL (.+?)\/(.+?) - (\d+) (LEVEL|LEVELS) TO GO$/,
+    replace: (match) => `KARRIERELEVEL ${match[1]}/${match[2]} - NOCH ${match[3]} LEVEL`
+  },
+  {
+    id: 'careerLevelBetterRun',
+    regex: /^CAREER LEVEL (.+?)\/(.+?) - ONE BETTER RUN$/,
+    replace: (match) => `KARRIERELEVEL ${match[1]}/${match[2]} - EIN BESSERER RUN`
+  },
+  {
     id: 'hangarComplete',
     regex: /^HANGAR COMPLETE: ALL SHIPS UNLOCKED\nCAREER BEST: LEVEL (.+)$/,
     replace: (match) => `HANGAR KOMPLETT: ALLE SCHIFFE FREI\nKARRIEREBESTWERT: LEVEL ${match[1]}`
@@ -441,6 +462,11 @@ const patterns = Object.freeze([
     id: 'nextGoalGlobal',
     regex: /^NEXT GOAL: CLIMB THE GLOBAL BOARD$/,
     replace: () => 'NÄCHSTES ZIEL: GLOBALE BESTENLISTE ERKLIMMEN'
+  },
+  {
+    id: 'nextGoalGlobalRank',
+    regex: /^NEXT GOAL: CLIMB ONE GLOBAL RANK$/,
+    replace: () => 'NÄCHSTES ZIEL: EINEN GLOBALEN RANG AUFSTEIGEN'
   },
   {
     id: 'localNeed',
