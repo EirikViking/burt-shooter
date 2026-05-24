@@ -1144,8 +1144,10 @@ export class EnemyManager {
     positions.forEach((pos, i) => {
       const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
       const enemy = new Enemy(startX, -100, type, this.level, this.game, waveColor);
+      const lanePressure = this.getLanePressureForPosition(pos.x, formation);
+      const enemyTactic = this.applyLanePressureToTactic(tactic, lanePressure);
       this.applyModifier(enemy);
-      enemy.applyWaveTactic?.(tactic, {
+      enemy.applyWaveTactic?.(enemyTactic, {
         index: i,
         count,
         formation,
@@ -1153,8 +1155,8 @@ export class EnemyManager {
         centerY: center.y || 128,
         side: pos.x < screenW / 2 ? -1 : 1
       });
-      if (tactic.forcedDive) {
-        enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (tactic.id === 'dive_chain' ? 260 : 190) + 520;
+      if (enemyTactic.forcedDive) {
+        enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
       }
       enemy.startEntry(startX, -50, pos.x, pos.y, entryDurationMs, i * delayStep);
       this.enemies.push(enemy);
@@ -1177,6 +1179,11 @@ export class EnemyManager {
         entry: 'split',
         compensation: multiEliteCompensation
       });
+    }
+    if (positions.length > 1) {
+      const xs = positions.map((pos) => pos.x);
+      const span = Math.max(...xs) - Math.min(...xs);
+      console.log(`[FormationWidth] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} formation=${formation} count=${count} spanPct=${(span / screenW).toFixed(2)} policy=engagement_band`);
     }
     console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count}`);
   }
@@ -1268,7 +1275,10 @@ export class EnemyManager {
 
     const screenW = this.game.getWidth();
     const screenH = this.game.getHeight();
-    const span = Math.min(screenW * 0.72, Math.max(screenW * 0.52, screenW - Math.max(160, screenW * 0.16)));
+    const level = Math.max(1, Number(this.level) || 1);
+    const levelBonus = Math.min(0.04, Math.max(0, level - 1) * 0.004);
+    const desiredFraction = (ids.length >= 3 ? 0.49 : 0.42) + levelBonus;
+    const span = Math.min(screenW * 0.6, Math.max(screenW * 0.38, screenW * desiredFraction));
     const left = screenW / 2 - span / 2;
     const compensation = context.compensation || {};
     const spawned = [];
@@ -1359,6 +1369,35 @@ export class EnemyManager {
     return spawned;
   }
 
+  getLanePressureForPosition(x, formation = 'ARC') {
+    const screenW = Math.max(1, this.game.getWidth());
+    const centerOffset = Math.abs(x - screenW / 2) / (screenW / 2);
+    const formationName = String(formation || 'ARC');
+    const tacticalWideFormation = ['PINCER', 'SCREEN_DOOR', 'CROSS_STREAM', 'SIDEWINDER'].includes(formationName);
+
+    if (centerOffset >= 0.54) {
+      return { label: 'outer', fireScalar: tacticalWideFormation ? 0.72 : 0.66, fireDelayMult: 1.18, diveBias: 0.62 };
+    }
+    if (centerOffset >= 0.42) {
+      return { label: 'wide', fireScalar: tacticalWideFormation ? 0.84 : 0.78, fireDelayMult: 1.1, diveBias: 0.76 };
+    }
+    if (centerOffset >= 0.3) {
+      return { label: 'mid', fireScalar: 0.92, fireDelayMult: 1.04, diveBias: 0.9 };
+    }
+    return { label: 'center', fireScalar: 1, fireDelayMult: 1, diveBias: 1 };
+  }
+
+  applyLanePressureToTactic(tactic = {}, lanePressure = null) {
+    if (!lanePressure) return tactic;
+    return {
+      ...tactic,
+      fireScalar: (tactic.fireScalar || 1) * lanePressure.fireScalar,
+      fireDelayMult: (tactic.fireDelayMult || 1) * lanePressure.fireDelayMult,
+      diveBias: (tactic.diveBias || 1) * lanePressure.diveBias,
+      lanePressure: lanePressure.label
+    };
+  }
+
   getFormationPositions(type, count) {
     const pos = [];
     const cw = this.game.getWidth() / 2;
@@ -1366,10 +1405,47 @@ export class EnemyManager {
     const edgeMargin = Math.max(72, Math.min(170, sw * 0.075));
     const clampX = (x) => Math.max(edgeMargin, Math.min(sw - edgeMargin, x));
     const available = Math.max(0, sw - edgeMargin * 2);
-    const spanFor = (fraction, min = 0, max = Number.POSITIVE_INFINITY) => {
+    const level = Math.max(1, Number(this.level) || 1);
+    const baseFractions = {
+      TUTORIAL_ARC: 0.48,
+      GRID: 0.52,
+      V_SHAPE: 0.5,
+      BOX: 0.5,
+      STAGGERED_WING: 0.54,
+      PINCER: 0.56,
+      DIAGONAL_RAID: 0.53,
+      SIDEWINDER: 0.54,
+      ORBIT_RING: 0.38,
+      CROSS_STREAM: 0.55,
+      SCREEN_DOOR: 0.56,
+      DOUBLE_ARC: 0.54,
+      SPIRAL: 0.34,
+      ARC: 0.52
+    };
+    const maxFractions = {
+      TUTORIAL_ARC: 0.52,
+      GRID: 0.58,
+      V_SHAPE: 0.56,
+      BOX: 0.56,
+      STAGGERED_WING: 0.61,
+      PINCER: 0.63,
+      DIAGONAL_RAID: 0.6,
+      SIDEWINDER: 0.61,
+      ORBIT_RING: 0.44,
+      CROSS_STREAM: 0.62,
+      SCREEN_DOOR: 0.63,
+      DOUBLE_ARC: 0.6,
+      SPIRAL: 0.4,
+      ARC: 0.58
+    };
+    const spanFor = (formation, min = 0) => {
+      const key = baseFractions[formation] ? formation : 'ARC';
+      const levelBonus = Math.min(0.055, Math.max(0, level - 1) * 0.005);
+      const countScale = count <= 5 ? 0.82 : count <= 7 ? 0.9 : count <= 9 ? 0.96 : 1;
+      const fraction = Math.min(maxFractions[key], (baseFractions[key] + levelBonus) * countScale);
       const desired = sw * fraction;
       const floor = Math.min(min, available);
-      return Math.max(0, Math.min(available, max, Math.max(floor, desired)));
+      return Math.max(0, Math.min(available, Math.max(floor, desired)));
     };
     const xAt = (index, total, span, center = cw) => {
       const r = total <= 1 ? 0.5 : index / (total - 1);
@@ -1378,7 +1454,7 @@ export class EnemyManager {
 
     switch (type) {
       case 'TUTORIAL_ARC': {
-        const usable = spanFor(0.66, 620);
+        const usable = spanFor(type, 420);
         for (let i = 0; i < count; i++) {
           const r = count <= 1 ? 0.5 : i / (count - 1);
           pos.push({
@@ -1389,7 +1465,7 @@ export class EnemyManager {
         break;
       }
       case 'STAGGERED_WING': {
-        const usable = spanFor(0.74, 760);
+        const usable = spanFor(type, 520);
         const rows = [88, 130, 172];
         for (let i = 0; i < count; i++) {
           const r = count <= 1 ? 0.5 : i / (count - 1);
@@ -1402,7 +1478,7 @@ export class EnemyManager {
         break;
       }
       case 'PINCER': {
-        const usable = spanFor(0.78, 860);
+        const usable = spanFor(type, 560);
         const left = cw - usable / 2;
         const right = cw + usable / 2;
         const step = Math.max(44, Math.min(92, usable / Math.max(8, count)));
@@ -1417,7 +1493,7 @@ export class EnemyManager {
         break;
       }
       case 'DIAGONAL_RAID': {
-        const usable = spanFor(0.72, 760);
+        const usable = spanFor(type, 520);
         for (let i = 0; i < count; i++) {
           const r = count <= 1 ? 0.5 : i / (count - 1);
           pos.push({
@@ -1428,7 +1504,7 @@ export class EnemyManager {
         break;
       }
       case 'SIDEWINDER': {
-        const usable = spanFor(0.76, 820);
+        const usable = spanFor(type, 540);
         for (let i = 0; i < count; i++) {
           const r = count <= 1 ? 0.5 : i / (count - 1);
           pos.push({
@@ -1439,7 +1515,7 @@ export class EnemyManager {
         break;
       }
       case 'ORBIT_RING': {
-        const radiusX = spanFor(0.52, 560) / 2;
+        const radiusX = spanFor(type, 420) / 2;
         const radiusY = 76;
         for (let i = 0; i < count; i++) {
           const angle = (i / Math.max(1, count)) * Math.PI * 2 - Math.PI / 2;
@@ -1451,7 +1527,7 @@ export class EnemyManager {
         break;
       }
       case 'CROSS_STREAM': {
-        const usable = spanFor(0.74, 760);
+        const usable = spanFor(type, 540);
         const left = cw - usable / 2;
         const right = cw + usable / 2;
         for (let i = 0; i < count; i++) {
@@ -1468,7 +1544,7 @@ export class EnemyManager {
       }
       case 'SCREEN_DOOR': {
         const lanes = Math.min(5, Math.max(3, Math.ceil(Math.sqrt(Math.max(1, count))) + 1));
-        const usable = spanFor(0.78, 840);
+        const usable = spanFor(type, 560);
         for (let i = 0; i < count; i++) {
           const lane = i % lanes;
           const row = Math.floor(i / lanes);
@@ -1481,7 +1557,7 @@ export class EnemyManager {
       }
       case 'GRID': {
         const cols = Math.min(6, Math.max(3, Math.ceil(Math.sqrt(Math.max(1, count))) + 1));
-        const usable = spanFor(0.72, 760);
+        const usable = spanFor(type, 500);
         for (let i = 0; i < count; i++) {
           const x = xAt(i % cols, cols, usable);
           const y = 80 + Math.floor(i / cols) * 60;
@@ -1490,7 +1566,7 @@ export class EnemyManager {
         break;
       }
       case 'V_SHAPE': {
-        const usable = spanFor(0.70, 720);
+        const usable = spanFor(type, 480);
         const maxRow = Math.max(1, Math.ceil(count / 2));
         for (let i = 0; i < count; i++) {
           const side = i % 2 === 0 ? -1 : 1;
@@ -1503,7 +1579,7 @@ export class EnemyManager {
       case 'BOX':
         // Box with hole
         const bCols = 5;
-        const boxSpan = spanFor(0.68, 700);
+        const boxSpan = spanFor(type, 500);
         for (let i = 0, placed = 0; placed < count && i < count + 4; i++) {
           const cx = (i % bCols);
           const cy = Math.floor(i / bCols);
@@ -1514,7 +1590,7 @@ export class EnemyManager {
         break;
       case 'DOUBLE_ARC': {
         const laneCount = Math.ceil(count / 2);
-        const usable = spanFor(0.76, 820);
+        const usable = spanFor(type, 540);
         for (let i = 0; i < count; i++) {
           const lane = i % 2;
           const index = Math.floor(i / 2);
@@ -1528,7 +1604,7 @@ export class EnemyManager {
       }
       case 'SPIRAL': {
         // Just a circle/spiral
-        const radiusXMax = spanFor(0.56, 580) / 2;
+        const radiusXMax = spanFor(type, 380) / 2;
         for (let i = 0; i < count; i++) {
           const angle = (i / Math.max(1, count)) * Math.PI * 2;
           const r = count <= 1 ? 0 : 0.24 + (i / Math.max(1, count - 1)) * 0.76;
@@ -1538,7 +1614,7 @@ export class EnemyManager {
       }
       default:
         // ARC / S_CURVE standard
-        const usable = spanFor(0.72, 760);
+        const usable = spanFor('ARC', 500);
         for (let i = 0; i < count; i++) {
           const r = count <= 1 ? 0.5 : i / (count - 1);
           pos.push({ x: xAt(i, count, usable), y: 100 + Math.sin(r * Math.PI) * 100 });
@@ -1754,6 +1830,8 @@ export class EnemyManager {
     positions.forEach((pos, index) => {
       const startX = this.getWaveEntryX(index % 2 === 0 ? 'split' : 'alternating', index, startLeft, screenW);
       const enemy = new Enemy(startX, -118, type, level, this.game, 'Red');
+      const lanePressure = this.getLanePressureForPosition(pos.x, 'BOSS_CHAOS_SUPPORT');
+      const supportTactic = this.applyLanePressureToTactic(tactic, lanePressure);
       enemy.kind = 'boss_chaos_support';
       enemy.health = Math.max(1, Math.min(enemy.health, level <= 4 ? 2 : 3));
       enemy.maxHealth = enemy.health;
@@ -1761,7 +1839,7 @@ export class EnemyManager {
       enemy.shootDelay = Math.round((enemy.shootDelay || 120) * 1.45);
       enemy.radius = Math.max(12, Math.round((enemy.radius || 16) * 0.88));
       enemy.updateHealthBar?.();
-      enemy.applyWaveTactic?.(tactic, {
+      enemy.applyWaveTactic?.(supportTactic, {
         index,
         count: spawnCount,
         formation: 'BOSS_CHAOS_SUPPORT',
@@ -1789,7 +1867,7 @@ export class EnemyManager {
     if (!id) return null;
 
     const screenW = this.game.getWidth();
-    const side = Math.random() < 0.5 ? 0.24 : 0.76;
+    const side = (Math.random() < 0.5 ? 0.36 : 0.64) + (Math.random() - 0.5) * 0.04;
     return this.spawnEliteMiddleShip(id, {
       formation: 'BOSS_CHAOS_ELITE',
       tactic: { id: 'boss_chaos_elite', fireScalar: 0.42, fireDelayMult: 1.65, entrySpeed: 0.88 },

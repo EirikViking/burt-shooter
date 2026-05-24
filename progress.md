@@ -8,6 +8,12 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Added rare compensated multi-elite normal wave variants that reduce normal enemy count/fire pressure, soften/stagger elites, delay special abilities, and place elites wide.
 - Verification evidence: `npm run build`, `npm run build:current`, `npm run check:i18n`, `npm run check:i18n-ui`, `npm run check:enemy-wave-patterns`, `npm run check:boss-adds`, targeted Playwright probe under `test-results/desktop-wave-chaos-targeted/`, `npm run smoke`, `npm run desktop:smoke`, and `npm run capture:steam-screenshots` passed. Generated release screenshot draft was removed from the branch to keep the commit focused; ignored test evidence remains local.
 
+## 2026-05-24 Engagement-Band Wave Spacing Follow-Up
+
+- Current user feedback: production desktop spacing went too wide and made wave threats feel scattered. Research direction: use desktop width through readable shmup lanes, keep edges from becoming awkward traps, and adapt pressure when enemies occupy wider lanes.
+- Tuned parked formations from raw desktop-span scaling to an engagement-band policy that grows by level and enemy count while keeping early/small waves in a readable central band. Wide identities such as `PINCER`, `SCREEN_DOOR`, and `CROSS_STREAM` still read wide, but no longer push ordinary level-1 waves toward both edges.
+- Added per-lane pressure adaptation: outer-lane enemies get reduced fire/dive pressure and longer fire delays, while multi-elite and boss-chaos mini-boss placement now uses playable flanking lanes instead of extreme sides.
+
 ## 2026-05-24 Achievement Toasts And Marketing Spawn Debug
 
 - Current user request: make rank achievement notifications obvious in-game, add temporary marketing hotkeys where `1` spawns a random enemy wave, `2` spawns a random mini-boss/elite middle ship, and `3` spawns a random boss, then deploy to web prod.
