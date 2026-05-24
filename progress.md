@@ -18,7 +18,7 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 
 - Current user feedback: even the engagement-band deployment still felt far too wide in real play, especially on level 1 where a few enemies could occupy most of the desktop.
 - Tightened normal-wave parked spans to a centered combat envelope: early/default waves now favor roughly one-third to two-fifths of a 1920px screen, with wide identities reserved for controlled flanking rather than full-screen parking.
-- Added combat bounds to normal wave enemies so idle sway, dives, flanking dives, and return arcs stay inside readable fight lanes. Entry paths can still originate offscreen for arcade drama, but ordinary enemies should no longer live in far-edge zip codes.
+- Added combat bounds to normal wave enemies so entry paths, idle sway, dives, flanking dives, and return arcs stay inside readable fight lanes. Ordinary enemies should no longer live in far-edge zip codes.
 
 ## 2026-05-24 Achievement Toasts And Marketing Spawn Debug
 

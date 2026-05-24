@@ -536,6 +536,17 @@ export class Enemy {
   }
 
   startEntry(startX, startY, endX, endY, duration, delay = 0) {
+    const width = this.game?.getWidth?.() || 800;
+    const centerX = width / 2;
+    if (Number.isFinite(this.combatBounds?.minX) && Number.isFinite(this.combatBounds?.maxX)) {
+      const entryOffset = Math.max(104, Math.min(170, width * 0.07));
+      const fromLeft = startX < centerX;
+      const boundedStartX = fromLeft
+        ? this.combatBounds.minX - entryOffset
+        : this.combatBounds.maxX + entryOffset;
+      startX = Math.max(24, Math.min(width - 24, boundedStartX));
+    }
+
     this.x = startX;
     this.y = startY;
     this.formationX = endX;
@@ -543,8 +554,6 @@ export class Enemy {
     this.state = 'ENTRY';
 
     // Randomized Control Point based on side
-    const width = this.game?.getWidth?.() || 800;
-    const centerX = width / 2;
     const curvePull = Math.max(260, Math.min(460, width * 0.2));
     const cpX = (startX < centerX) ? startX + curvePull : startX - curvePull;
     const cpY = startY + 400;
