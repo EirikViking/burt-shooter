@@ -14,6 +14,7 @@ import {
   normalizeLeaderboardEntry
 } from '../leaderboard/LeaderboardTypes.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
+import { translateText } from '../i18n/index.js';
 
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
@@ -387,11 +388,11 @@ export class HighscoreScene {
     this.leaderboardTabs = tabs;
     const activeTab = this.leaderboardAdapter?.getTab?.(this.activeLeaderboard) || tabs.find(tab => tab.id === this.activeLeaderboard);
     if (this.title) {
-      this.title.text = activeTab?.title || (this.activeLeaderboard === LeaderboardView.LOCAL ? 'LOCAL SCORE DECK' : 'GLOBAL SCORE DECK');
+      this.title.text = translateText(activeTab?.title || (this.activeLeaderboard === LeaderboardView.LOCAL ? 'LOCAL SCORE DECK' : 'GLOBAL SCORE DECK'));
     }
     if (this.subtitle) {
       const source = (activeTab?.sourceLabel || this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Score Signal').toUpperCase();
-      this.subtitle.text = `PILOT RANK SIGNAL // ${source}`;
+      this.subtitle.text = `${translateText('PILOT RANK SIGNAL')} // ${translateText(source)}`;
     }
     Object.entries(this.tabButtons || {}).forEach(([view, button]) => {
       if (!button) return;
@@ -576,9 +577,9 @@ export class HighscoreScene {
     this.activeLeaderboardResult = result;
     this.entries = Array.isArray(result.entries) ? result.entries.slice(0, LEADERBOARD_DISPLAY_LIMIT) : [];
     this.entriesNormalized = this.normalizeEntries(this.entries);
-    this.comment.text = result.message || (this.entries.length > 0
+    this.comment.text = translateText(result.message || (this.entries.length > 0
       ? `${result.sourceLabel || 'Leaderboard'} records loaded.`
-      : `${result.sourceLabel || 'Leaderboard'} has no scores yet.`);
+      : `${result.sourceLabel || 'Leaderboard'} has no scores yet.`));
     const status = result.status === 'available'
       ? 'LOADED'
       : result.status === 'empty'
@@ -616,36 +617,36 @@ export class HighscoreScene {
       case 'LOADED':
         if (this.activeLeaderboard === LeaderboardView.LOCAL) {
           this.stateMessage.text = globalResult
-            ? `Local board loaded. Global: ${globalResult}.`
-            : 'Local board loaded.';
+            ? translateText('Local board loaded. Global: {status}.', { status: globalResult })
+            : translateText('Local board loaded.');
         } else {
           this.stateMessage.text = globalResult
-            ? `${sourceLabel} loaded. Last run: ${globalResult}.`
-            : `${sourceLabel} loaded.`;
+            ? translateText('{source} loaded. Last run: {status}.', { source: translateText(sourceLabel), status: globalResult })
+            : translateText('{source} loaded.', { source: translateText(sourceLabel) });
         }
         break;
       case 'EMPTY':
         if (this.activeLeaderboard === LeaderboardView.FRIENDS) {
-          this.stateMessage.text = 'No friends scores yet.';
+          this.stateMessage.text = translateText('No friends scores yet.');
         } else {
-          this.stateMessage.text = this.activeLeaderboard === LeaderboardView.LOCAL
+          this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.LOCAL
             ? 'No local scores yet. Be the first legend here.'
-            : 'No global scores yet. Be the first legend online.';
+            : 'No global scores yet. Be the first legend online.');
         }
         break;
       case 'ERROR':
-        this.stateMessage.text = this.activeLeaderboard === LeaderboardView.LOCAL
+        this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.LOCAL
           ? `Local scores unavailable.`
           : this.activeLeaderboard === LeaderboardView.FRIENDS
             ? 'Could not load Steam friends scores.'
-            : `Global board offline. Local scores are safe.`;
+            : `Global board offline. Local scores are safe.`);
         break;
       default:
-        this.stateMessage.text = this.activeLeaderboard === LeaderboardView.FRIENDS
+        this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.FRIENDS
           ? 'Loading Steam friends scores...'
           : this.activeLeaderboard === LeaderboardView.LOCAL
             ? 'Loading local board...'
-            : `Loading ${sourceLabel.toLowerCase()}...`;
+            : `Loading ${sourceLabel.toLowerCase()}...`);
     }
     this.updateLeaderboardChrome();
     this.layoutHighscore();
@@ -1008,7 +1009,7 @@ export class HighscoreScene {
       this.fadeInRows();
     } else {
       this.rowsContainer.alpha = 1;
-      const message = this.status === 'EMPTY' ? 'No highscores yet. Be first!' : 'No data.';
+      const message = translateText(this.status === 'EMPTY' ? 'No highscores yet. Be first!' : 'No data.');
       const empty = createText(message, {
         fontFamily: FONT_ARCADE,
         fontSize: getResponsiveFontSize(layout, 'body'),
@@ -1373,10 +1374,12 @@ export class HighscoreScene {
     const syncLabel = (this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || (
       this.activeLeaderboard === LeaderboardView.LOCAL ? 'LOCAL MEMORY' : 'LIVE ORBIT'
     )).toUpperCase();
-    const countLabel = loadedCount ? `${loadedCount} SIGNALS` : this.status;
+    const countLabel = loadedCount ? `${loadedCount} ${translateText('SIGNALS')}` : translateText(this.status);
+    const translatedSyncLabel = translateText(syncLabel);
+    const bestLabel = translateText('BEST');
     this.statsText.text = layout.isMobile
-      ? `TFG // ${syncLabel} // ${countLabel} // BEST ${topScore}`
-      : `TINYFOUNDRY GAMES // ${syncLabel} // ${countLabel} // BEST ${topScore}`;
+      ? `TFG // ${translatedSyncLabel} // ${countLabel} // ${bestLabel} ${topScore}`
+      : `TINYFOUNDRY GAMES // ${translatedSyncLabel} // ${countLabel} // ${bestLabel} ${topScore}`;
       this.statsText.style.fontSize = layout.isMobile ? 9 : 12;
     this.statsText.anchor.set(0, 0.5);
     this.statsText.style.align = 'left';

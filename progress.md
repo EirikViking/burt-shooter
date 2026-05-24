@@ -5,6 +5,13 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Current user request: make rank achievement notifications obvious in-game, add temporary marketing hotkeys where `1` spawns a random enemy wave, `2` spawns a random mini-boss/elite middle ship, and `3` spawns a random boss, then deploy to web prod.
 - Implementation direction: keep the hotkeys temporary and unranked. The first marketing spawn marks the run `unranked` with reason `marketing_spawn_debug`, preventing score submission and achievement unlocks during mayhem capture.
 
+## 2026-05-24 Top 3 In-Game Localization Baseline
+
+- Started from clean baseline commit `9ee6d70`, which includes both German in-game localization and the temporary marketing hotkey recovery line. Future deploys should verify both are present before building or publishing.
+- Added interface-only runtime localization for Simplified Chinese (`zh-CN` / Steam `schinese`), Russian (`ru` / Steam `russian`), and Spanish Spain (`es` / Steam `spanish`). `latam` currently falls back to `es` only and is not separately reviewed.
+- Voice audio remains English and subtitles were not added. Steamworks language support should only mark these languages as Interface after human QA; do not mark Full Audio or Subtitles.
+- Evidence is stored locally under `test-results/i18n-top3-report/`, including screenshots and `nova-swarm-localization-qa-top3.pdf`.
+
 ## 2026-05-23 Elite Ship Production Deploy And Steam Package
 
 - Deployed production web build `v2026-05-23_11-05-56` from commit `e742aacc97b912196fb7e609371b492fa4c41c9e` to Cloudflare Pages production branch `main`; verified `https://novaswarm.tinyfoundry.app`, `https://burt-game.pages.dev`, and deployment URL `https://2351d381.burt-game.pages.dev` all report the same build.

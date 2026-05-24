@@ -10,6 +10,14 @@ const port = process.env.I18N_UI_URL ? null : (explicitPort || await findAvailab
 const baseUrl = process.env.I18N_UI_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.I18N_UI_OUTPUT_DIR || `test-results/i18n-ui-${timestamp()}`);
 
+const languages = [
+  { code: 'en', slug: 'english', settingsLabel: 'English', menuSettings: 'SETTINGS', launch: 'LAUNCH RUN', scorePrefix: 'SCORE', gameOver: 'GAME OVER', leaderboard: 'GLOBAL SCORE DECK', glyphProbe: 'Nova Swarm' },
+  { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'RUN STARTEN', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'GLOBALES SCORE-DECK', glyphProbe: 'äöüÄÖÜß' },
+  { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: '开始游戏', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: '全球计分榜', glyphProbe: '设置排行榜游戏结束' },
+  { code: 'ru', slug: 'russian', settingsLabel: 'Русский', menuSettings: 'НАСТРОЙКИ', launch: 'НАЧАТЬ ЗАБЕГ', scorePrefix: 'ОЧКИ', gameOver: 'ИГРА ОКОНЧЕНА', leaderboard: 'ГЛОБАЛЬНАЯ ТАБЛИЦА', glyphProbe: 'Настройки Очки Игра' },
+  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'INICIAR PARTIDA', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'MARCADOR GLOBAL', glyphProbe: 'Ajustes Puntuación ñáéíóú' }
+];
+
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
@@ -18,9 +26,7 @@ async function isPortAvailable(candidatePort) {
   return new Promise((resolve) => {
     const server = createServer();
     server.once('error', () => resolve(false));
-    server.once('listening', () => {
-      server.close(() => resolve(true));
-    });
+    server.once('listening', () => server.close(() => resolve(true)));
     server.listen(candidatePort, host);
   });
 }
@@ -89,33 +95,41 @@ function withQuery(params = {}) {
   return url.toString();
 }
 
-async function waitForGame(page, expectedScene = 'menu') {
+async function waitForScene(page, expectedScene = 'menu') {
   await page.waitForFunction((scene) => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return Boolean(window.__game && state.scene === scene);
   }, expectedScene, { timeout: 20000 });
 }
 
-async function state(page) {
-  return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+async function waitForLanguage(page, code) {
+  await page.waitForFunction((expected) => JSON.parse(window.render_game_to_text?.() || '{}').language?.current === expected, code, { timeout: 10000 });
 }
 
-async function uiSnapshot(page) {
+async function openFreshMenu(page, code) {
+  await page.goto(withQuery({ skipIntro: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(page, 'menu');
+  await page.evaluate((language) => window.__novaI18n?.setLanguagePreference?.(language), code);
+  await waitForLanguage(page, code);
+}
+
+async function snapshot(page) {
   return page.evaluate(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
     const game = window.__game;
     const scene = game?.currentScene;
     const play = game?.scenes?.play;
     const settings = scene?.settingsOverlay || play?.settingsOverlay || null;
+    const highscore = game?.scenes?.highscore;
+    const pause = play?.pauseOverlay || play?.settingsOverlay || null;
     return {
-      language: JSON.parse(window.render_game_to_text?.() || '{}').language,
-      scene: game?.currentSceneName || null,
+      language: state.language,
+      scene: state.scene,
       menu: {
         launch: game?.scenes?.menu?.startBtn?._label?.text || null,
-        settings: game?.scenes?.menu?.settingsBtn?._label?.text || null,
-        music: game?.scenes?.menu?.musicBtn?._label?.text || null
+        settings: game?.scenes?.menu?.settingsBtn?._label?.text || null
       },
       settings: {
-        focus: settings?.getDebugState?.()?.focus || null,
         language: settings?.languageButton?._label?.text || null,
         languageHint: settings?.languageHint?.text || null,
         close: settings?.footerButtons?.close?._label?.text || null
@@ -123,8 +137,11 @@ async function uiSnapshot(page) {
       hud: {
         score: play?.hud?.scoreText?.text || null,
         lives: play?.hud?.livesText?.text || null,
-        mission: play?.hud?.missionLabel?.text || null,
-        missionText: play?.hud?.missionText?.text || null
+        mission: play?.hud?.missionLabel?.text || null
+      },
+      pause: {
+        title: pause?.title?.text || scene?.pauseTitle?.text || null,
+        resume: pause?.resumeButton?._label?.text || null
       },
       gameOver: {
         title: game?.scenes?.gameOver?.title?.text || null,
@@ -132,9 +149,14 @@ async function uiSnapshot(page) {
         score: game?.scenes?.gameOver?.scoreText?.text || null,
         cta: game?.scenes?.gameOver?.retryButtonLabel?.text || null
       },
+      leaderboard: {
+        title: highscore?.title?.text || null,
+        retry: highscore?.retryButton?._label?.text || null,
+        board: highscore?.boardTitle?.text || null
+      },
       glyphs: {
-        rajdhani: document.fonts?.check?.('18px Rajdhani', 'äöüÄÖÜß') ?? null,
-        orbitron: document.fonts?.check?.('18px Orbitron', 'äöüÄÖÜß') ?? null
+        sans: document.fonts?.check?.('18px sans-serif', state.language?.current === 'zh-CN' ? '设置排行榜游戏结束' : 'Nova Swarm') ?? null,
+        rajdhani: document.fonts?.check?.('18px Rajdhani', 'Nova Swarm') ?? null
       }
     };
   });
@@ -148,6 +170,64 @@ async function screenshot(page, name) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+async function captureLanguage(page, language, index) {
+  const prefix = `${String(index + 1).padStart(2, '0')}-${language.slug}`;
+  const shots = {};
+  const snaps = {};
+
+  await openFreshMenu(page, language.code);
+  await page.evaluate(() => window.__game?.currentScene?.openSettingsOverlay?.());
+  await page.waitForFunction(() => Boolean(window.__game?.currentScene?.settingsOverlay), null, { timeout: 10000 });
+  snaps.settings = await snapshot(page);
+  shots.settings = await screenshot(page, `${prefix}-settings.png`);
+  assert(snaps.settings.language.current === language.code, `${language.slug} did not resolve to ${language.code}`);
+  assert(snaps.settings.settings.language === language.settingsLabel, `${language.slug} Settings language label mismatch`);
+
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !window.__game?.currentScene?.settingsOverlay, null, { timeout: 10000 });
+  snaps.menu = await snapshot(page);
+  shots.menu = await screenshot(page, `${prefix}-main-menu.png`);
+  assert(snaps.menu.menu.settings === language.menuSettings, `${language.slug} menu Settings label mismatch`);
+  assert(snaps.menu.menu.launch === language.launch, `${language.slug} launch label mismatch`);
+
+  await page.evaluate(() => window.__game?.startGame?.());
+  await waitForScene(page, 'play');
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    if (play?.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
+    play?.completeShipIntro?.();
+    play?.hud?.update?.();
+  });
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.hud?.scoreText?.text), null, { timeout: 10000 });
+  snaps.hud = await snapshot(page);
+  shots.hud = await screenshot(page, `${prefix}-hud.png`);
+  assert(String(snaps.hud.hud.score || '').startsWith(language.scorePrefix), `${language.slug} HUD score label mismatch: ${snaps.hud.hud.score}`);
+
+  await page.keyboard.press('KeyP');
+  await page.waitForTimeout(300);
+  snaps.pause = await snapshot(page);
+  shots.pause = await screenshot(page, `${prefix}-pause.png`);
+
+  await page.evaluate(() => {
+    window.__game.score = 1234;
+    window.__game.level = 3;
+    window.__game.gameOver();
+  });
+  await waitForScene(page, 'gameOver');
+  snaps.gameOver = await snapshot(page);
+  shots.gameOver = await screenshot(page, `${prefix}-game-over.png`);
+  assert(String(snaps.gameOver.gameOver.score || '').startsWith(language.scorePrefix), `${language.slug} game-over score label mismatch`);
+
+  await page.evaluate(() => window.__game?.showHighscores?.());
+  await waitForScene(page, 'highscore');
+  await page.waitForTimeout(600);
+  snaps.leaderboard = await snapshot(page);
+  shots.leaderboard = await screenshot(page, `${prefix}-leaderboard.png`);
+  assert(snaps.leaderboard.leaderboard.title === language.leaderboard, `${language.slug} leaderboard title mismatch: ${snaps.leaderboard.leaderboard.title}`);
+
+  return { shots, snaps };
 }
 
 const server = await startPreviewServer();
@@ -173,68 +253,19 @@ const screenshots = {};
 const snapshots = {};
 
 try {
-  await page.goto(withQuery({ skipIntro: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await waitForGame(page, 'menu');
-  await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('en'));
-  await page.evaluate(() => window.__game?.currentScene?.openSettingsOverlay?.());
-  await page.waitForFunction(() => Boolean(window.__game?.currentScene?.settingsOverlay), null, { timeout: 10000 });
-  snapshots.englishSettings = await uiSnapshot(page);
-  screenshots.englishSettings = await screenshot(page, '01-english-settings.png');
-  assert(snapshots.englishSettings.language.current === 'en', 'English language did not resolve to en');
-  assert(snapshots.englishSettings.menu.settings === 'SETTINGS', 'English menu settings label changed unexpectedly');
-
-  await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('de'));
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').language?.current === 'de', null, { timeout: 10000 });
-  snapshots.germanSettings = await uiSnapshot(page);
-  screenshots.germanSettings = await screenshot(page, '02-german-settings.png');
-  assert(snapshots.germanSettings.settings.language === 'Deutsch', 'German Settings language button did not show Deutsch');
-  assert(snapshots.germanSettings.settings.close === 'SCHLIESSEN', 'German Settings close button was not localized');
-
-  await page.keyboard.press('Escape');
-  await page.waitForFunction(() => !window.__game?.currentScene?.settingsOverlay, null, { timeout: 10000 });
-  snapshots.germanMenu = await uiSnapshot(page);
-  screenshots.germanMenu = await screenshot(page, '03-german-main-menu.png');
-  assert(snapshots.germanMenu.menu.launch === 'RUN STARTEN', 'German launch label missing');
-  assert(snapshots.germanMenu.menu.settings === 'EINSTELLUNGEN', 'German settings label missing');
-
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await waitForGame(page, 'menu');
-  snapshots.germanPersisted = await uiSnapshot(page);
-  assert(snapshots.germanPersisted.language.current === 'de', 'German language did not persist after reload');
-
-  await page.evaluate(() => window.__game?.startGame?.());
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', null, { timeout: 10000 });
-  await page.evaluate(() => {
-    const play = window.__game?.scenes?.play;
-    if (play?.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
-    play?.completeShipIntro?.();
-    play?.hud?.update?.();
-  });
-  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.hud?.scoreText?.text), null, { timeout: 10000 });
-  snapshots.germanHud = await uiSnapshot(page);
-  screenshots.germanHud = await screenshot(page, '04-german-hud.png');
-  assert(/^PUNKTZAHL/.test(snapshots.germanHud.hud.score || ''), 'German HUD score label missing');
-  assert(/^LEBEN/.test(snapshots.germanHud.hud.lives || ''), 'German HUD lives label missing');
-  assert(snapshots.germanHud.hud.mission === 'MISSION', 'German HUD mission label missing');
-
-  await page.evaluate(() => {
-    window.__game.score = 1234;
-    window.__game.level = 3;
-    window.__game.gameOver();
-  });
-  await waitForGame(page, 'gameOver');
-  snapshots.germanGameOver = await uiSnapshot(page);
-  screenshots.germanGameOver = await screenshot(page, '05-german-game-over.png');
-  assert(['SPIEL VORBEI', 'LOKALE LEGENDE', 'PERSÖNLICHER BESTWERT', 'RUN ABGESCHLOSSEN'].includes(snapshots.germanGameOver.gameOver.title), 'German game-over title missing');
-  assert(/^PUNKTZAHL/.test(snapshots.germanGameOver.gameOver.score || ''), 'German game-over score label missing');
+  for (let i = 0; i < languages.length; i += 1) {
+    const result = await captureLanguage(page, languages[i], i);
+    screenshots[languages[i].slug] = result.shots;
+    snapshots[languages[i].slug] = result.snaps;
+  }
 
   await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('system'));
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').language?.preference === 'system', null, { timeout: 10000 });
-  snapshots.systemFallback = await uiSnapshot(page);
+  snapshots.systemFallback = await snapshot(page);
   assert(snapshots.systemFallback.language.current === 'en', 'System default fallback should resolve to English in this test runtime');
 
   await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('en'));
-  snapshots.englishRestored = await uiSnapshot(page);
+  snapshots.englishRestored = await snapshot(page);
   assert(snapshots.englishRestored.language.current === 'en', 'English restore failed');
 } finally {
   await browser.close();
@@ -252,7 +283,7 @@ const report = {
 };
 
 writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
-console.log(JSON.stringify({ outputDir, status: report.status, screenshots, consoleEvents, pageErrors }, null, 2));
+console.log(JSON.stringify({ outputDir, status: report.status, languages: languages.map((language) => language.code), consoleEvents, pageErrors }, null, 2));
 
 if (report.status !== 'passed') {
   throw new Error('i18n UI check failed');

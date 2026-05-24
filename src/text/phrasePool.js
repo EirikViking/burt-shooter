@@ -254,20 +254,84 @@ const fragmentsDe = {
   ]
 };
 
+const localizedFragments = {
+  es: {
+    leads: [{ value: 'Control Arcade', weight: 1.4 }, { value: 'Alerta Cabinet', weight: 1.3 }, { value: 'Radio del enjambre', weight: 1.2 }, { value: 'Entrenador de formación', weight: 1.1 }],
+    verbs: [{ value: 'informa de', weight: 1.2 }, { value: 'cuestiona', weight: 1 }, { value: 'sobrecarga', weight: 1 }, { value: 'se burla de', weight: 0.8 }],
+    objects: [{ value: 'la oleada bonus', weight: 1.2 }, { value: 'la hitbox', weight: 1.2 }, { value: 'la factura láser', weight: 1.1 }, { value: 'la entrada del jefe', weight: 1.1 }, { value: 'la coreografía del enjambre', weight: 1 }],
+    tags: [{ value: 'energía de cabinet clásico', weight: 1.2 }, { value: 'drama de formación', weight: 1 }, { value: 'confianza de música de jefe', weight: 1 }, { value: 'heroísmo de nave pequeña', weight: 1 }],
+    closers: [{ value: 'Sigue disparando.', weight: 1.3 }, { value: 'Esquiva con estilo.', weight: 1.2 }, { value: 'Guarda las monedas.', weight: 1.1 }, { value: 'Cuida la hitbox.', weight: 1.1 }, { value: 'Jefe pronto.', weight: 1 }]
+  },
+  ru: {
+    leads: [{ value: 'Аркадный контроль', weight: 1.4 }, { value: 'Сигнал cabinet', weight: 1.3 }, { value: 'Радио роя', weight: 1.2 }, { value: 'Тренер формаций', weight: 1.1 }],
+    verbs: [{ value: 'сообщает про', weight: 1.2 }, { value: 'проверяет', weight: 1 }, { value: 'перегружает', weight: 1 }, { value: 'дразнит', weight: 0.8 }],
+    objects: [{ value: 'бонусную волну', weight: 1.2 }, { value: 'hitbox', weight: 1.2 }, { value: 'лазерный счет', weight: 1.1 }, { value: 'выход босса', weight: 1.1 }, { value: 'хореографию роя', weight: 1 }],
+    tags: [{ value: 'классическая энергия cabinet', weight: 1.2 }, { value: 'драма формации', weight: 1 }, { value: 'уверенность музыки босса', weight: 1 }, { value: 'героизм малого корабля', weight: 1 }],
+    closers: [{ value: 'Продолжай стрелять.', weight: 1.3 }, { value: 'Уклоняйся красиво.', weight: 1.2 }, { value: 'Береги монеты.', weight: 1.1 }, { value: 'Следи за hitbox.', weight: 1.1 }, { value: 'Босс скоро.', weight: 1 }]
+  },
+  'zh-CN': {
+    leads: [{ value: '街机控制台', weight: 1.4 }, { value: 'Cabinet 警报', weight: 1.3 }, { value: '虫群通讯', weight: 1.2 }, { value: '阵型教练', weight: 1.1 }],
+    verbs: [{ value: '报告', weight: 1.2 }, { value: '质疑', weight: 1 }, { value: '过载', weight: 1 }, { value: '嘲讽', weight: 0.8 }],
+    objects: [{ value: '奖励波次', weight: 1.2 }, { value: 'hitbox', weight: 1.2 }, { value: '激光账单', weight: 1.1 }, { value: 'Boss 登场', weight: 1.1 }, { value: '虫群编舞', weight: 1 }],
+    tags: [{ value: '经典 cabinet 能量', weight: 1.2 }, { value: '阵型戏剧性', weight: 1 }, { value: 'Boss 音乐自信', weight: 1 }, { value: '小飞船英雄时刻', weight: 1 }],
+    closers: [{ value: '继续开火。', weight: 1.3 }, { value: '漂亮地闪避。', weight: 1.2 }, { value: '省下硬币。', weight: 1.1 }, { value: '注意 hitbox。', weight: 1.1 }, { value: 'Boss 快来了。', weight: 1 }]
+  }
+};
+
+const localizedArcadePhrases = {
+  es: ['Mete moneda. No te arrepientas.', 'Fase bonus detectada.', 'El enjambre trae coreografía.', 'Otra partida. Obviamente.', 'Aviso de jefe: entrada dramática pendiente.', 'El marcador está mirando.', 'Tu hitbox manda saludos.'],
+  ru: ['Вставь монету. Ни о чем не жалей.', 'Бонусная стадия обнаружена.', 'Рой принес хореографию.', 'Еще один забег. Конечно.', 'Предупреждение: босс готовит драматичный выход.', 'Таблица смотрит.', 'Твой hitbox передает привет.'],
+  'zh-CN': ['投币。不要后悔。', '检测到奖励关。', '虫群带来了编队舞步。', '再来一局。当然。', 'Boss 警告：即将隆重登场。', '计分板正在看着你。', '你的 hitbox 向你问好。']
+};
+
+const localizedStoryTransmissions = {
+  es: [
+    { id: 'last-coin', levelMin: 1, title: 'MEMORIA ESTÁTICA', line: 'Una moneda despertó el cabinet. El piloto aún no sabe si aquello fue suerte.', imageAlias: 'nova-swarm-story-comms-01-20260519' },
+    { id: 'swarm-spiral', levelMin: 2, title: 'DERIVA DE PATRÓN', line: 'El enjambre no persigue. Se ordena alrededor de cada esquiva.', imageAlias: 'nova-swarm-story-comms-02-20260519' },
+    { id: 'pattern-read', levelMin: 4, title: 'LECTURA SILENCIOSA', line: 'Un dron pequeño mapea los carriles. El piloto deja de disparar al ruido y empieza a leer intención.', imageAlias: 'nova-swarm-story-comms-03-20260519' },
+    { id: 'boss-gate', levelMin: 7, title: 'SEÑAL DE PUERTA', line: 'Tras la puerta del jefe, las luces parecen menos estrellas y más nombres esperando.', imageAlias: 'nova-swarm-story-comms-04-20260519' }
+  ],
+  ru: [
+    { id: 'last-coin', levelMin: 1, title: 'СТАТИЧНАЯ ПАМЯТЬ', line: 'Одна монета разбудила cabinet. Пилот до сих пор не решил, было ли это везением.', imageAlias: 'nova-swarm-story-comms-01-20260519' },
+    { id: 'swarm-spiral', levelMin: 2, title: 'ДРЕЙФ ПАТТЕРНА', line: 'Рой не гонится. Он выстраивается вокруг каждого уклонения.', imageAlias: 'nova-swarm-story-comms-02-20260519' },
+    { id: 'pattern-read', levelMin: 4, title: 'ТИХАЯ СВОДКА', line: 'Малый дрон чертит коридоры. Пилот перестает стрелять по шуму и начинает читать намерение.', imageAlias: 'nova-swarm-story-comms-03-20260519' },
+    { id: 'boss-gate', levelMin: 7, title: 'СИГНАЛ ВОРОТ', line: 'За воротами босса огни меньше похожи на звезды и больше на ожидающие имена.', imageAlias: 'nova-swarm-story-comms-04-20260519' }
+  ],
+  'zh-CN': [
+    { id: 'last-coin', levelMin: 1, title: '静态记忆', line: '一枚硬币唤醒了 cabinet。飞行员还没决定那是不是运气。', imageAlias: 'nova-swarm-story-comms-01-20260519' },
+    { id: 'swarm-spiral', levelMin: 2, title: '弹幕漂移', line: '虫群不是在追你。它正在围绕每一次闪避重新排布。', imageAlias: 'nova-swarm-story-comms-02-20260519' },
+    { id: 'pattern-read', levelMin: 4, title: '安静读数', line: '小型无人机标出航道。飞行员不再朝噪声开火，而是开始读懂意图。', imageAlias: 'nova-swarm-story-comms-03-20260519' },
+    { id: 'boss-gate', levelMin: 7, title: '大门信号', line: 'Boss 大门后面的光不像星星，更像等待被写下的名字。', imageAlias: 'nova-swarm-story-comms-04-20260519' }
+  ]
+};
+
+const localizedLabels = {
+  de: { wave: 'Welle', overload: 'ÜBERLASTUNG!', pause: 'PAUSE', resume: 'WEITER', lowHealth: 'WENIG LEBEN', lifeLost: 'SCHIFF VERLOREN - HITBOX GETROFFEN!', newWave: 'NEUE WELLE' },
+  es: { wave: 'Oleada', overload: 'SOBRECARGA!', pause: 'PAUSA', resume: 'CONTINUAR', lowHealth: 'POCA VIDA', lifeLost: 'NAVE PERDIDA - HITBOX TOCADA!', newWave: 'NUEVA OLEADA' },
+  ru: { wave: 'Волна', overload: 'ПЕРЕГРУЗКА!', pause: 'ПАУЗА', resume: 'ПРОДОЛЖИТЬ', lowHealth: 'МАЛО ЖИЗНИ', lifeLost: 'КОРАБЛЬ СБИТ - HITBOX ЗАДЕТ!', newWave: 'НОВАЯ ВОЛНА' },
+  'zh-CN': { wave: '波次', overload: '过载！', pause: '暂停', resume: '继续', lowHealth: '生命偏低', lifeLost: '飞船损毁 - 命中 HITBOX！', newWave: '新波次' }
+};
+
 function isGerman() {
   return getCurrentLanguage() === 'de';
 }
 
 function currentFragments() {
-  return isGerman() ? fragmentsDe : fragments;
+  const language = getCurrentLanguage();
+  if (language === 'de') return fragmentsDe;
+  return localizedFragments[language] || fragments;
 }
 
 function currentArcadePhrases() {
-  return isGerman() ? arcadePhrasesDe : arcadePhrases;
+  const language = getCurrentLanguage();
+  if (language === 'de') return arcadePhrasesDe;
+  return localizedArcadePhrases[language] || arcadePhrases;
 }
 
 function currentStoryTransmissions() {
-  return isGerman() ? storyTransmissionsDe : storyTransmissions;
+  const language = getCurrentLanguage();
+  if (language === 'de') return storyTransmissionsDe;
+  return localizedStoryTransmissions[language] || storyTransmissions;
 }
 
 function buildCombo() {
@@ -312,15 +376,16 @@ function buildShortBurst() {
 
 export function extendLevelIntroTexts(base, level, isBossLevel) {
   const baseList = Array.isArray(base) ? base : [];
+  const waveLabel = localizedLabels[getCurrentLanguage()]?.wave || (isGerman() ? 'Welle' : 'Wave');
   const intro = isBossLevel
     ? `BOSS: ${weightedPick(currentFragments().objects, 'bossObjects')}`
-    : `${isGerman() ? 'Welle' : 'Wave'} ${level}: ${weightedPick(currentFragments().objects, 'waveObjects')}`;
+    : `${waveLabel} ${level}: ${weightedPick(currentFragments().objects, 'waveObjects')}`;
   const generated = [
     intro,
-    `${isGerman() ? 'Welle' : 'Wave'} ${level}: ${buildCombo()}`,
-    `${isGerman() ? 'Welle' : 'Wave'} ${level}: ${buildShortBurst()}`,
-    `${isGerman() ? 'Welle' : 'Wave'} ${level}: ${weightedPick(currentArcadePhrases(), 'wavePhrases')}`,
-    `${isGerman() ? 'Welle' : 'Wave'} ${level}: ${weightedPick(currentFragments().objects, 'waveObjects2')}`
+    `${waveLabel} ${level}: ${buildCombo()}`,
+    `${waveLabel} ${level}: ${buildShortBurst()}`,
+    `${waveLabel} ${level}: ${weightedPick(currentArcadePhrases(), 'wavePhrases')}`,
+    `${waveLabel} ${level}: ${weightedPick(currentFragments().objects, 'waveObjects2')}`
   ];
   return mergeUnique(baseList, generated);
 }
@@ -337,45 +402,50 @@ export function extendBossNames(base) {
 
 export function extendGameOverTexts(base) {
   const baseList = Array.isArray(base) ? base : [];
+  const labels = localizedLabels[getCurrentLanguage()];
+  const upper = (value) => (getCurrentLanguage() === 'zh-CN' ? value : value.toUpperCase());
   const extras = [
-    buildCombo().toUpperCase(),
-    `${weightedPick(currentArcadePhrases(), 'gameOverPhrases').toUpperCase()}`,
-    `${weightedPick(currentFragments().objects, 'gameOverObjects').toUpperCase()} ${isGerman() ? 'ÜBERLASTUNG!' : 'OVERLOAD!'}`
+    upper(buildCombo()),
+    `${upper(weightedPick(currentArcadePhrases(), 'gameOverPhrases'))}`,
+    `${upper(weightedPick(currentFragments().objects, 'gameOverObjects'))} ${labels?.overload || (isGerman() ? 'ÜBERLASTUNG!' : 'OVERLOAD!')}`
   ];
   return mergeUnique(baseList, extras);
 }
 
 export function getLoadingLines() {
-  const titleOptions = isGerman()
-    ? [
-      'ARCADE-CABINET STARTET...',
-      'HITBOX WIRD KALIBRIERT...',
-      'MÜNZEN WERDEN GEZÄHLT...',
-      'LASER WERDEN AUFGEWÄRMT...',
-      'FORMATIONSTRAINER WIRD GERUFEN...'
-    ]
-    : [
-      'BOOTING ARCADE CABINET...',
-      'CALIBRATING HITBOX...',
-      'COUNTING QUARTERS...',
-      'WARMING LASERS...',
-      'CALLING THE FORMATION COACH...'
-    ];
-  const subtitleOptions = isGerman()
-    ? [
-      'Pixel werden poliert und alle tun so, als wäre das Vorschrift.',
-      `Auto-Start: ${buildShortBurst()}`,
-      `Cabinet-Test: ${buildCombo()}`,
-      `Bonusphasen-Papierkram lädt - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`,
-      `Schwarmfunk sagt: ${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`
-    ]
-    : [
-      'Polishing pixels and pretending this is regulation.',
-      `Auto-boot: ${buildShortBurst()}`,
-      `Cabinet test: ${buildCombo()}`,
-      `Loading bonus stage paperwork - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`,
-      `Swarm radio says: ${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`
-    ];
+  const localizedLoading = {
+    de: {
+      titles: ['ARCADE-CABINET STARTET...', 'HITBOX WIRD KALIBRIERT...', 'MÜNZEN WERDEN GEZÄHLT...', 'LASER WERDEN AUFGEWÄRMT...', 'FORMATIONSTRAINER WIRD GERUFEN...'],
+      subtitles: ['Pixel werden poliert und alle tun so, als wäre das Vorschrift.', `Auto-Start: ${buildShortBurst()}`, `Cabinet-Test: ${buildCombo()}`, `Bonusphasen-Papierkram lädt - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`, `Schwarmfunk sagt: ${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`]
+    },
+    es: {
+      titles: ['ARRANCANDO CABINET ARCADE...', 'CALIBRANDO HITBOX...', 'CONTANDO MONEDAS...', 'CALENTANDO LÁSERES...', 'LLAMANDO AL ENTRENADOR DE FORMACIONES...'],
+      subtitles: ['Puliendo píxeles y fingiendo que es reglamentario.', `Autoarranque: ${buildShortBurst()}`, `Prueba de cabinet: ${buildCombo()}`, `Cargando papeleo de fase bonus - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`, `Radio del enjambre dice: ${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`]
+    },
+    ru: {
+      titles: ['ЗАПУСК ARCADE CABINET...', 'КАЛИБРОВКА HITBOX...', 'СЧИТАЕМ МОНЕТЫ...', 'РАЗОГРЕВАЕМ ЛАЗЕРЫ...', 'ВЫЗЫВАЕМ ТРЕНЕРА ФОРМАЦИЙ...'],
+      subtitles: ['Полируем пиксели и делаем вид, что так положено.', `Автозапуск: ${buildShortBurst()}`, `Тест cabinet: ${buildCombo()}`, `Грузим бумаги бонусной стадии - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`, `Радио роя сообщает: ${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`]
+    },
+    'zh-CN': {
+      titles: ['正在启动街机 CABINET...', '正在校准 HITBOX...', '正在数硬币...', '正在预热激光...', '正在呼叫阵型教练...'],
+      subtitles: ['正在擦亮像素，并假装这是标准流程。', `自动启动：${buildShortBurst()}`, `Cabinet 测试：${buildCombo()}`, `正在加载奖励关文件 - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`, `虫群通讯说：${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`]
+    }
+  };
+  const localized = localizedLoading[getCurrentLanguage()];
+  const titleOptions = localized?.titles || [
+    'BOOTING ARCADE CABINET...',
+    'CALIBRATING HITBOX...',
+    'COUNTING QUARTERS...',
+    'WARMING LASERS...',
+    'CALLING THE FORMATION COACH...'
+  ];
+  const subtitleOptions = localized?.subtitles || [
+    'Polishing pixels and pretending this is regulation.',
+    `Auto-boot: ${buildShortBurst()}`,
+    `Cabinet test: ${buildCombo()}`,
+    `Loading bonus stage paperwork - ${weightedPick(currentArcadePhrases(), 'loadingPhrases')}`,
+    `Swarm radio says: ${weightedPick(currentArcadePhrases(), 'loadingPhrases2')}`
+  ];
   return {
     title: weightedPick(titleOptions, 'loadingTitle'),
     subtitle: weightedPick(subtitleOptions, 'loadingSubtitle')
@@ -383,19 +453,20 @@ export function getLoadingLines() {
 }
 
 export function getMicroMessage(type) {
+  const labels = localizedLabels[getCurrentLanguage()];
   switch (type) {
     case 'levelStart':
       return buildCombo();
     case 'pause':
-      return `${isGerman() ? 'PAUSE' : 'PAUSE'} - ${buildShortBurst()}`;
+      return `${labels?.pause || 'PAUSE'} - ${buildShortBurst()}`;
     case 'resume':
-      return `${isGerman() ? 'WEITER' : 'RESUME'} - ${buildShortBurst()}`;
+      return `${labels?.resume || 'RESUME'} - ${buildShortBurst()}`;
     case 'lowHealth':
-      return isGerman() ? `WENIG LEBEN – ${buildShortBurst()}` : `LOW LIFE - ${buildShortBurst()}`;
+      return labels ? `${labels.lowHealth} - ${buildShortBurst()}` : `LOW LIFE - ${buildShortBurst()}`;
     case 'lifeLost':
-      return isGerman() ? 'SCHIFF VERLOREN – HITBOX GETROFFEN!' : `SHIP DOWN - ${buildShortBurst()}`;
+      return labels?.lifeLost || `SHIP DOWN - ${buildShortBurst()}`;
     case 'newWave':
-      return `${isGerman() ? 'NEUE WELLE' : 'NEW WAVE'} - ${buildShortBurst()}`;
+      return `${labels?.newWave || 'NEW WAVE'} - ${buildShortBurst()}`;
     case 'bossIntro':
       return `BOSS - ${buildCombo()}`;
     default:
@@ -446,6 +517,39 @@ export function getEnemyTaunt() {
 }
 
 export function getGameOverComment(score, level) {
+  const localized = {
+    es: {
+      tag: score >= 10000 ? 'LEYENDA CABINET' : score >= 5000 ? 'BUENA PARTIDA' : 'CALENTAMIENTO',
+      lines: (tag) => [
+        `${tag} - ${buildShortBurst()}`,
+        `El nivel ${level} se llevó tu moneda - ${buildCombo()}`,
+        `Siguiente partida: ${buildShortBurst()}`,
+        `Control Arcade dice: ${buildShortBurst()}`,
+        `Radio del enjambre dice: ${buildCombo()}`
+      ]
+    },
+    ru: {
+      tag: score >= 10000 ? 'ЛЕГЕНДА CABINET' : score >= 5000 ? 'ХОРОШИЙ ЗАБЕГ' : 'РАЗМИНКА',
+      lines: (tag) => [
+        `${tag} - ${buildShortBurst()}`,
+        `Уровень ${level} забрал твою монету - ${buildCombo()}`,
+        `Следующий забег: ${buildShortBurst()}`,
+        `Аркадный контроль говорит: ${buildShortBurst()}`,
+        `Радио роя говорит: ${buildCombo()}`
+      ]
+    },
+    'zh-CN': {
+      tag: score >= 10000 ? 'CABINET 传奇' : score >= 5000 ? '漂亮一局' : '热身局',
+      lines: (tag) => [
+        `${tag} - ${buildShortBurst()}`,
+        `等级 ${level} 吃掉了你的硬币 - ${buildCombo()}`,
+        `下一局：${buildShortBurst()}`,
+        `街机控制台说：${buildShortBurst()}`,
+        `虫群通讯说：${buildCombo()}`
+      ]
+    }
+  }[getCurrentLanguage()];
+  if (localized) return weightedPick(localized.lines(localized.tag), 'gameOverComment');
   const scoreTag = isGerman()
     ? (score >= 10000 ? 'CABINET-LEGENDE' : score >= 5000 ? 'SOLIDER RUN' : 'AUFWÄRMEN')
     : (score >= 10000 ? 'CABINET LEGEND' : score >= 5000 ? 'SOLID RUN' : 'WARM-UP');
@@ -468,6 +572,18 @@ export function getGameOverComment(score, level) {
 }
 
 export function getHighscoreComment(hasScores) {
+  const localized = {
+    es: hasScores
+      ? [`El cabinet recuerda - ${buildShortBurst()}`, `Órbita de récord - ${buildCombo()}`, `Iniciales bonus aceptadas: ${buildShortBurst()}`]
+      : [`Aún no hay puntuaciones - ${buildShortBurst()}`, `Reclama el primer puesto: ${buildShortBurst()}`, 'La clasificación está sola.'],
+    ru: hasScores
+      ? [`Cabinet помнит - ${buildShortBurst()}`, `Орбита рекорда - ${buildCombo()}`, `Бонусные инициалы приняты: ${buildShortBurst()}`]
+      : [`Очков пока нет - ${buildShortBurst()}`, `Забери первое место: ${buildShortBurst()}`, 'Таблица одинока.'],
+    'zh-CN': hasScores
+      ? [`Cabinet 记住了 - ${buildShortBurst()}`, `高分轨道 - ${buildCombo()}`, `奖励缩写已接受：${buildShortBurst()}`]
+      : [`还没有分数 - ${buildShortBurst()}`, `拿下第一个席位：${buildShortBurst()}`, '排行榜很孤单。']
+  }[getCurrentLanguage()];
+  if (localized) return weightedPick(localized, 'highscoreComment');
   const lines = isGerman()
     ? (hasScores
       ? [
@@ -496,7 +612,11 @@ export function getHighscoreComment(hasScores) {
 
 export function extendLocations(base) {
   const baseList = Array.isArray(base) ? base : [];
-  const extras = isGerman()
+  const extras = ({
+    es: ['ARCADE ORBITAL', 'CINTURÓN NEÓN', 'DERIVA PÍXEL', 'SECTOR EXTRA', 'NÚCLEO CABINET', 'CARRILES LÁSER', 'COLA DE JEFES'],
+    ru: ['ОРБИТАЛЬНАЯ АРКАДА', 'НЕОНОВЫЙ ПОЯС', 'ПИКСЕЛЬНЫЙ ДРИФТ', 'БОНУСНЫЙ СЕКТОР', 'ЯДРО CABINET', 'ЛАЗЕРНЫЕ КОРИДОРЫ', 'ОЧЕРЕДЬ БОССОВ'],
+    'zh-CN': ['轨道街机', '霓虹带', '像素漂移', '奖励区域', 'Cabinet 核心', '激光航道', 'Boss 队列']
+  })[getCurrentLanguage()] || (isGerman()
     ? [
       'ORBITAL-ARCADE',
       'NEONGÜRTEL',
@@ -514,7 +634,7 @@ export function extendLocations(base) {
       'CABINET CORE',
       'LASER LANES',
       'BOSS QUEUE'
-    ];
+    ]);
   return mergeUnique(baseList, extras);
 }
 

@@ -8,6 +8,9 @@ export const en = {
       system: 'System default',
       en: 'English',
       de: 'Deutsch',
+      es: 'Español',
+      ru: 'Русский',
+      zhCN: '简体中文',
       systemHint: 'Steam/system',
       manualHint: 'Saved choice'
     }

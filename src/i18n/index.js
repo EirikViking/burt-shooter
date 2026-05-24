@@ -1,12 +1,15 @@
 import { en } from './locales/en.js';
 import { de } from './locales/de.js';
+import { es } from './locales/es.js';
+import { ru } from './locales/ru.js';
+import { zhCN } from './locales/zh-CN.js';
 
 export const LANGUAGE_PREFERENCE_KEY = 'novaSwarm.languagePreference.v1';
 export const LANGUAGE_CHANGE_EVENT = 'novaSwarm:languageChanged';
 export const SYSTEM_LANGUAGE = 'system';
 
-const locales = Object.freeze({ en, de });
-const supportedLanguages = Object.freeze(['en', 'de']);
+const locales = Object.freeze({ en, de, es, ru, 'zh-CN': zhCN });
+const supportedLanguages = Object.freeze(['en', 'de', 'es', 'ru', 'zh-CN']);
 
 let currentLanguage = 'en';
 let preferenceMode = SYSTEM_LANGUAGE;
@@ -78,12 +81,25 @@ export function normalizeLanguageCode(value) {
   if (raw === SYSTEM_LANGUAGE || raw === 'auto') return SYSTEM_LANGUAGE;
   if (raw === 'english' || raw === 'en' || raw.startsWith('en-') || raw === 'eng') return 'en';
   if (raw === 'german' || raw === 'de' || raw.startsWith('de-') || raw === 'deu' || raw === 'ger') return 'de';
+  if (raw === 'spanish' || raw === 'spanish-spain' || raw === 'castilian' || raw === 'es' || raw === 'es-es' || raw === 'spa') return 'es';
+  if (raw === 'latam' || raw === 'spanish-latin-america' || raw === 'es-419') return 'es';
+  if (raw === 'russian' || raw === 'ru' || raw.startsWith('ru-') || raw === 'rus') return 'ru';
+  if (
+    raw === 'schinese'
+    || raw === 'simplified chinese'
+    || raw === 'simplified-chinese'
+    || raw === 'zh-cn'
+    || raw === 'zh-hans'
+    || raw === 'zh'
+    || raw === 'chi'
+    || raw === 'zho'
+  ) return 'zh-CN';
   return null;
 }
 
 export function normalizePreferenceMode(value) {
   const normalized = normalizeLanguageCode(value);
-  if (normalized === 'en' || normalized === 'de') return normalized;
+  if (isSupportedLanguage(normalized)) return normalized;
   return SYSTEM_LANGUAGE;
 }
 
@@ -110,7 +126,7 @@ export function resolveLanguage({
   navigatorLanguage = null
 } = {}) {
   const manual = normalizeLanguageCode(preference);
-  if (manual === 'en' || manual === 'de') return manual;
+  if (isSupportedLanguage(manual)) return manual;
 
   const candidates = [
     steamLanguage,
@@ -121,7 +137,7 @@ export function resolveLanguage({
 
   for (const candidate of candidates) {
     const normalized = normalizeLanguageCode(candidate);
-    if (normalized === 'en' || normalized === 'de') return normalized;
+    if (isSupportedLanguage(normalized)) return normalized;
   }
   return 'en';
 }
@@ -195,7 +211,10 @@ export function getLanguageOptions() {
   return [
     { value: SYSTEM_LANGUAGE, label: 'System default', hint: 'Steam/system' },
     { value: 'en', label: 'English', hint: 'Saved choice' },
-    { value: 'de', label: 'Deutsch', hint: 'Saved choice' }
+    { value: 'de', label: 'Deutsch', hint: 'Saved choice' },
+    { value: 'es', label: 'Español', hint: 'Saved choice' },
+    { value: 'ru', label: 'Русский', hint: 'Saved choice' },
+    { value: 'zh-CN', label: '简体中文', hint: 'Saved choice' }
   ];
 }
 
@@ -270,7 +289,12 @@ export function translateText(source, vars = {}) {
 }
 
 export function formatNumber(value) {
-  const locale = currentLanguage === 'de' ? 'de-DE' : 'en-US';
+  const locale = {
+    de: 'de-DE',
+    es: 'es-ES',
+    ru: 'ru-RU',
+    'zh-CN': 'zh-CN'
+  }[currentLanguage] || 'en-US';
   return Number(value || 0).toLocaleString(locale);
 }
 
