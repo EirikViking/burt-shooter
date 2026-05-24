@@ -169,6 +169,7 @@ export class EnemyManager {
     this.waveBriefingAnnounced = false;
     this.currentWaveTactic = null;
     this.marketingDebugMode = false;
+    this.marketingDebugBossSpawnCount = 0;
 
     // Debug Stats
     this.totalEnemiesSpawned = 0;
@@ -215,6 +216,7 @@ export class EnemyManager {
   startLevel(level) {
     console.log(`[EnemyManager] STARTING LEVEL ${level}`);
     this.marketingDebugMode = false;
+    this.marketingDebugBossSpawnCount = 0;
     this.level = level;
     this.clearEnemies();
 
@@ -307,6 +309,9 @@ export class EnemyManager {
   }
 
   enableMarketingDebugMode() {
+    if (!this.marketingDebugMode) {
+      this.marketingDebugBossSpawnCount = this.enemies.filter(enemy => enemy?.kind === 'boss' && enemy?.active !== false).length;
+    }
     this.marketingDebugMode = true;
     this.state = 'MARKETING_DEBUG';
     this.phase = 'MARKETING';
@@ -383,7 +388,7 @@ export class EnemyManager {
   async spawnMarketingDebugBoss() {
     this.enableMarketingDebugMode();
     const level = this.pickMarketingDebugLevel();
-    const bossIndex = this.enemies.filter(enemy => enemy?.kind === 'boss' && enemy?.active !== false).length;
+    const bossIndex = this.marketingDebugBossSpawnCount++;
     const width = this.game?.getWidth ? this.game.getWidth() : 800;
     const height = this.game?.getHeight ? this.game.getHeight() : 600;
     const columns = [0.22, 0.42, 0.62, 0.78];
