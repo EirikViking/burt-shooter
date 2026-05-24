@@ -3,6 +3,9 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { de } from '../src/i18n/locales/de.js';
 import { en } from '../src/i18n/locales/en.js';
 import { es } from '../src/i18n/locales/es.js';
+import { ja } from '../src/i18n/locales/ja.js';
+import { ko } from '../src/i18n/locales/ko.js';
+import { ptBR } from '../src/i18n/locales/pt-BR.js';
 import { ru } from '../src/i18n/locales/ru.js';
 import { zhCN } from '../src/i18n/locales/zh-CN.js';
 import {
@@ -27,7 +30,10 @@ const locales = [
   ['de', de],
   ['es', es],
   ['ru', ru],
-  ['zh-CN', zhCN]
+  ['zh-CN', zhCN],
+  ['pt-BR', ptBR],
+  ['ko', ko],
+  ['ja', ja]
 ];
 const enKeys = flattenKeys(en);
 for (const [code, locale] of locales) {
@@ -184,6 +190,12 @@ assert.equal(normalizeLanguageCode('russian'), 'ru');
 assert.equal(normalizeLanguageCode('ru-RU'), 'ru');
 assert.equal(normalizeLanguageCode('schinese'), 'zh-CN');
 assert.equal(normalizeLanguageCode('zh-Hans'), 'zh-CN');
+assert.equal(normalizeLanguageCode('brazilian'), 'pt-BR');
+assert.equal(normalizeLanguageCode('pt-BR'), 'pt-BR');
+assert.equal(normalizeLanguageCode('portuguese'), null);
+assert.equal(normalizeLanguageCode('koreana'), 'ko');
+assert.equal(normalizeLanguageCode('korean'), 'ko');
+assert.equal(normalizeLanguageCode('japanese'), 'ja');
 assert.equal(normalizeLanguageCode('french'), null);
 
 assert.equal(resolveLanguage({
@@ -206,6 +218,18 @@ assert.equal(resolveLanguage({
   preference: 'system',
   runtimeInfo: { steamLanguage: 'spanish' }
 }), 'es');
+assert.equal(resolveLanguage({
+  preference: 'system',
+  runtimeInfo: { steamLanguage: 'brazilian' }
+}), 'pt-BR');
+assert.equal(resolveLanguage({
+  preference: 'system',
+  runtimeInfo: { steamLanguage: 'koreana' }
+}), 'ko');
+assert.equal(resolveLanguage({
+  preference: 'system',
+  runtimeInfo: { steamLanguage: 'japanese' }
+}), 'ja');
 assert.equal(resolveLanguage({
   preference: 'en',
   runtimeInfo: { currentGameLanguage: 'german' }
@@ -271,6 +295,45 @@ const criticalSamples = {
     'NEXT GOAL: CLIMB ONE GLOBAL RANK': '下一目标：全球排名上升一位',
     'NOVA LEADERBOARD': 'NOVA 排行榜',
     'GLOBAL SCORE DECK': '全球计分榜'
+  },
+  'pt-BR': {
+    'SETTINGS': 'CONFIGURAÇÕES',
+    'LAUNCH RUN': 'INICIAR PARTIDA',
+    'SCORE 1,234': 'PONTUAÇÃO 1,234',
+    'WAVE 2/5  HOSTILES 8  THREATS 3': 'ONDA 2/5  INIMIGOS 8  AMEAÇAS 3',
+    'GAME OVER': 'FIM DE JOGO',
+    'SUBMIT SCORE': 'ENVIAR PONTUAÇÃO',
+    'SCORE SUBMITTED': 'PONTUAÇÃO ENVIADA',
+    'TYPE NAME FIRST': 'DIGITE O NOME PRIMEIRO',
+    'NEXT GOAL: CLIMB ONE GLOBAL RANK': 'PRÓXIMO OBJETIVO: SUBIR UM RANK GLOBAL',
+    'NOVA LEADERBOARD': 'RANKING NOVA',
+    'GLOBAL SCORE DECK': 'RANKING GLOBAL'
+  },
+  ko: {
+    'SETTINGS': '설정',
+    'LAUNCH RUN': '게임 시작',
+    'SCORE 1,234': '점수 1,234',
+    'WAVE 2/5  HOSTILES 8  THREATS 3': '웨이브 2/5  적 8  위협 3',
+    'GAME OVER': '게임 오버',
+    'SUBMIT SCORE': '점수 제출',
+    'SCORE SUBMITTED': '점수 제출됨',
+    'TYPE NAME FIRST': '먼저 이름을 입력하세요',
+    'NEXT GOAL: CLIMB ONE GLOBAL RANK': '다음 목표: 글로벌 랭크 하나 상승',
+    'NOVA LEADERBOARD': 'NOVA 순위표',
+    'GLOBAL SCORE DECK': '글로벌 순위표'
+  },
+  ja: {
+    'SETTINGS': '設定',
+    'LAUNCH RUN': 'ゲーム開始',
+    'SCORE 1,234': 'スコア 1,234',
+    'WAVE 2/5  HOSTILES 8  THREATS 3': 'ウェーブ 2/5  敵 8  脅威 3',
+    'GAME OVER': 'ゲームオーバー',
+    'SUBMIT SCORE': 'スコア送信',
+    'SCORE SUBMITTED': 'スコア送信済み',
+    'TYPE NAME FIRST': '先に名前を入力',
+    'NEXT GOAL: CLIMB ONE GLOBAL RANK': '次の目標: グローバルランクを1つ上げる',
+    'NOVA LEADERBOARD': 'NOVAランキング',
+    'GLOBAL SCORE DECK': 'グローバルランキング'
   }
 };
 
@@ -309,6 +372,12 @@ assert.match(`${Object.values(de.sourceText).join('\n')}\n${glyphProbe}`, /äö�
 assert.match(Object.values(es.sourceText).join('\n'), /ñ|á|é|í|ó|ú|Á|É|Í|Ó|Ú/);
 assert.match(Object.values(ru.sourceText).join('\n'), /[А-Яа-я]/);
 assert.match(Object.values(zhCN.sourceText).join('\n'), /[\u4e00-\u9fff]/);
+assert.match(Object.values(ptBR.sourceText).join('\n'), /á|à|â|ã|ç|é|ê|í|ó|ô|õ|ú/i);
+assert.match(Object.values(ko.sourceText).join('\n'), /[가-힣]/);
+assert.match(Object.values(ja.sourceText).join('\n'), /[\u3040-\u30ff\u4e00-\u9fff]/);
+assert.equal(translateTextForLocale('pt-BR', '1 point'), 'Texto: 1');
+assert.notEqual(translateTextForLocale('ko', 'No scores yet. Start the first legend.'), 'No scores yet. Start the first legend.');
+assert.notEqual(translateTextForLocale('ja', 'No scores yet. Start the first legend.'), 'No scores yet. Start the first legend.');
 
 const spanishValues = [
   ...Object.values(es.sourceText),

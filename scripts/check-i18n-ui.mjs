@@ -15,7 +15,10 @@ const languages = [
   { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'RUN STARTEN', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'GLOBALES SCORE-DECK', glyphProbe: 'äöüÄÖÜß' },
   { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: '开始游戏', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: '全球计分榜', glyphProbe: '设置排行榜游戏结束' },
   { code: 'ru', slug: 'russian', settingsLabel: 'Русский', menuSettings: 'НАСТРОЙКИ', launch: 'НАЧАТЬ ЗАБЕГ', scorePrefix: 'ОЧКИ', gameOver: 'ИГРА ОКОНЧЕНА', leaderboard: 'ГЛОБАЛЬНАЯ ТАБЛИЦА', glyphProbe: 'Настройки Очки Игра' },
-  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'INICIAR PARTIDA', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'MARCADOR GLOBAL', glyphProbe: 'Ajustes Puntuación ñáéíóú' }
+  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'INICIAR PARTIDA', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'MARCADOR GLOBAL', glyphProbe: 'Ajustes Puntuación ñáéíóú' },
+  { code: 'pt-BR', slug: 'portuguese-brazil', settingsLabel: 'Português do Brasil', menuSettings: 'CONFIGURAÇÕES', launch: 'INICIAR PARTIDA', scorePrefix: 'PONTUAÇÃO', gameOver: 'FIM DE JOGO', leaderboard: 'RANKING GLOBAL', glyphProbe: 'Configurações pontuação á à â ã ç é ê í ó ô õ ú' },
+  { code: 'ko', slug: 'korean', settingsLabel: '한국어', menuSettings: '설정', launch: '게임 시작', scorePrefix: '점수', gameOver: '게임 오버', leaderboard: '글로벌 순위표', glyphProbe: '한국어 설정 점수 순위표' },
+  { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'ゲーム開始', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'グローバルランキング', glyphProbe: '日本語 設定 スコア ランキング' }
 ];
 
 function timestamp() {
@@ -212,7 +215,12 @@ async function snapshot(page) {
         firstRowBounds: bounds(highscore?.rowsContainer?.children?.[0])
       },
       glyphs: {
-        sans: document.fonts?.check?.('18px sans-serif', state.language?.current === 'zh-CN' ? '设置排行榜游戏结束' : 'Nova Swarm') ?? null,
+        sans: document.fonts?.check?.('18px sans-serif', {
+          'zh-CN': '设置排行榜游戏结束',
+          ko: '한국어 설정 점수 순위표',
+          ja: '日本語 設定 スコア ランキング',
+          'pt-BR': 'Configurações pontuação á à â ã ç é ê í ó ô õ ú'
+        }[state.language?.current] || 'Nova Swarm') ?? null,
         rajdhani: document.fonts?.check?.('18px Rajdhani', 'Nova Swarm') ?? null
       }
     };

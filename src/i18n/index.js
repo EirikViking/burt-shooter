@@ -1,6 +1,9 @@
 import { en } from './locales/en.js';
 import { de } from './locales/de.js';
 import { es } from './locales/es.js';
+import { ja } from './locales/ja.js';
+import { ko } from './locales/ko.js';
+import { ptBR } from './locales/pt-BR.js';
 import { ru } from './locales/ru.js';
 import { zhCN } from './locales/zh-CN.js';
 
@@ -8,8 +11,8 @@ export const LANGUAGE_PREFERENCE_KEY = 'novaSwarm.languagePreference.v1';
 export const LANGUAGE_CHANGE_EVENT = 'novaSwarm:languageChanged';
 export const SYSTEM_LANGUAGE = 'system';
 
-const locales = Object.freeze({ en, de, es, ru, 'zh-CN': zhCN });
-const supportedLanguages = Object.freeze(['en', 'de', 'es', 'ru', 'zh-CN']);
+const locales = Object.freeze({ en, de, es, ru, 'zh-CN': zhCN, 'pt-BR': ptBR, ko, ja });
+const supportedLanguages = Object.freeze(['en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']);
 
 let currentLanguage = 'en';
 let preferenceMode = SYSTEM_LANGUAGE;
@@ -84,6 +87,9 @@ export function normalizeLanguageCode(value) {
   if (raw === 'spanish' || raw === 'spanish-spain' || raw === 'castilian' || raw === 'es' || raw === 'es-es' || raw === 'spa') return 'es';
   if (raw === 'latam' || raw === 'spanish-latin-america' || raw === 'es-419') return 'es';
   if (raw === 'russian' || raw === 'ru' || raw.startsWith('ru-') || raw === 'rus') return 'ru';
+  if (raw === 'brazilian' || raw === 'portuguese-brazil' || raw === 'brazilian-portuguese' || raw === 'pt-br') return 'pt-BR';
+  if (raw === 'koreana' || raw === 'korean' || raw === 'ko' || raw.startsWith('ko-') || raw === 'kor') return 'ko';
+  if (raw === 'japanese' || raw === 'ja' || raw.startsWith('ja-') || raw === 'jpn') return 'ja';
   if (
     raw === 'schinese'
     || raw === 'simplified chinese'
@@ -214,7 +220,10 @@ export function getLanguageOptions() {
     { value: 'de', label: 'Deutsch', hint: 'Saved choice' },
     { value: 'es', label: 'Español', hint: 'Saved choice' },
     { value: 'ru', label: 'Русский', hint: 'Saved choice' },
-    { value: 'zh-CN', label: '简体中文', hint: 'Saved choice' }
+    { value: 'zh-CN', label: '简体中文', hint: 'Saved choice' },
+    { value: 'pt-BR', label: 'Português do Brasil', hint: 'Saved choice' },
+    { value: 'ko', label: '한국어', hint: 'Saved choice' },
+    { value: 'ja', label: '日本語', hint: 'Saved choice' }
   ];
 }
 
@@ -274,6 +283,13 @@ export function translateTextForLocale(localeCode, source, vars = {}) {
     return interpolate(replacement, vars);
   }
 
+  if (typeof locale.fallbackText === 'function') {
+    const fallbackText = locale.fallbackText(sourceText, vars);
+    if (fallbackText != null && fallbackText !== sourceText) {
+      return interpolate(fallbackText, vars);
+    }
+  }
+
   if (isDev()) {
     const warningKey = `${localeCode}:${sourceText}`;
     if (!warnedMissingKeys.has(warningKey) && /[A-Za-z]{3,}/.test(sourceText)) {
@@ -293,7 +309,10 @@ export function formatNumber(value) {
     de: 'de-DE',
     es: 'es-ES',
     ru: 'ru-RU',
-    'zh-CN': 'zh-CN'
+    'zh-CN': 'zh-CN',
+    'pt-BR': 'pt-BR',
+    ko: 'ko-KR',
+    ja: 'ja-JP'
   }[currentLanguage] || 'en-US';
   return Number(value || 0).toLocaleString(locale);
 }

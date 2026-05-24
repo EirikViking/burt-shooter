@@ -383,6 +383,9 @@ export const zhCN = {
       es: '西班牙语',
       ru: '俄语',
       zhCN: '简体中文',
+      ptBR: '巴西葡萄牙语',
+      ko: '韩语',
+      ja: '日语',
       systemHint: 'Steam/系统',
       manualHint: '已保存'
     }

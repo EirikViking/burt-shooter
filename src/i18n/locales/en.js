@@ -11,6 +11,9 @@ export const en = {
       es: 'Español',
       ru: 'Русский',
       zhCN: '简体中文',
+      ptBR: 'Português do Brasil',
+      ko: '한국어',
+      ja: '日本語',
       systemHint: 'Steam/system',
       manualHint: 'Saved choice'
     }

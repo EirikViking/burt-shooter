@@ -394,6 +394,9 @@ export const es = {
       es: 'Español',
       ru: 'Ruso',
       zhCN: 'Chino simplificado',
+      ptBR: 'Portugués de Brasil',
+      ko: 'Coreano',
+      ja: 'Japonés',
       systemHint: 'Steam/sistema',
       manualHint: 'Guardado'
     }

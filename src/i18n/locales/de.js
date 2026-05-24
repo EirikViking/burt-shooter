@@ -575,6 +575,9 @@ export const de = {
       es: 'Spanisch',
       ru: 'Russisch',
       zhCN: 'Vereinfachtes Chinesisch',
+      ptBR: 'Brasilianisches Portugiesisch',
+      ko: 'Koreanisch',
+      ja: 'Japanisch',
       systemHint: 'Steam/System',
       manualHint: 'Gespeichert'
     }

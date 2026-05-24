@@ -19,6 +19,14 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Polished Spanish punctuation and naturalness, shortened cramped Russian Settings/power labels, lightly cleaned Simplified Chinese HUD/status wording, and improved i18n checks for Spanish punctuation and leaderboard empty-state overlap.
 - New ignored QA evidence is stored locally under `test-results/i18n-top3-polish-report/`. Steamworks settings were not changed, and no deploy was performed.
 
+## 2026-05-24 Next 3 In-Game Localization
+
+- Added interface-only Portuguese Brazil (`pt-BR`), Korean (`ko`), and Japanese (`ja`) on a baseline that includes German localization, top3 polish, marketing hotkeys, and the `check:i18n-ui` reliability fix `de264e1`.
+- Settings now lists System default, English, Deutsch, Español, Русский, 简体中文, Português do Brasil, 한국어, and 日本語; manual choices persist locally and System default clears the manual preference.
+- Steam runtime language detection now maps `brazilian -> pt-BR`, `koreana -> ko`, and `japanese -> ja`. Portuguese Portugal is not mapped to Portuguese Brazil.
+- Voice audio remains English and subtitles were not added. Steamworks should only mark the new languages as Interface after human QA; no Steamworks settings or deploy actions were performed.
+- Future deploys should verify the production baseline includes German localization, top3 polish, the i18n UI reliability fix, and temporary marketing hotkeys before building or publishing.
+
 ## 2026-05-23 Elite Ship Production Deploy And Steam Package
 
 - Deployed production web build `v2026-05-23_11-05-56` from commit `e742aacc97b912196fb7e609371b492fa4c41c9e` to Cloudflare Pages production branch `main`; verified `https://novaswarm.tinyfoundry.app`, `https://burt-game.pages.dev`, and deployment URL `https://2351d381.burt-game.pages.dev` all report the same build.
