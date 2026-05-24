@@ -39,7 +39,7 @@ The file is created under Electron `app.getPath('userData')`:
 steam-cloud/nova-swarm-save.json
 ```
 
-It contains `version`, `localHighscores`, `selectedShipKey`, ship unlock/progression bests, and safe accessibility settings for screen shake, player focus, and color assist. The legacy Electron fallback file `local-highscores-v2.json` remains in place for backward compatibility and is mirrored into the cloud save.
+It contains `version`, `updatedAt`, `language` (`system` is preserved as a valid preference), `localHighscores`, a local `achievements` mirror, `selectedShipKey`, ship unlock/progression bests, and safe player settings: screen shake, player focus, color assist, audio volumes/toggles, and music pack. It intentionally excludes resolution, window state, renderer details, absolute paths, debug flags, logs, Steam diagnostics, and the Chromium profile. The legacy Electron fallback file `local-highscores-v2.json` remains in place for backward compatibility and is mirrored into the cloud save.
 
 Recommended Steamworks Auto Cloud values:
 
@@ -53,7 +53,7 @@ Recommended Steamworks Auto Cloud values:
 | Recursive | `No` |
 | Dynamic Cloud Sync | Leave off for now |
 
-Run `npm run steamworks:cloud-diagnose` to print the resolved local `userData` path, cloud save path, and the exact Steamworks values from the current Electron runtime. After `npm run package:steam:win:current`, run `npm run steamworks:cloud-diagnose:packaged` for the packaged app identity; that is the value to copy into Steamworks.
+Run `npm run steamworks:cloud-diagnose` to print the resolved local `userData` path, cloud save path, persistence summary, and the exact Steamworks values from the current Electron runtime. After `npm run package:steam:win:current`, run `npm run steamworks:cloud-diagnose:packaged` for the packaged app identity; that is the value to copy into Steamworks.
 
 Steam leaderboard provider support now has an Electron preload/native bridge boundary: `electron/main.cjs` registers IPC handlers, `electron/preload.cjs` exposes `window.__novaSteamLeaderboard`, and `electron/steamLeaderboardBridge.cjs` owns optional `steamworks-ffi-node` access. See `docs/steam-leaderboards.md`.
 

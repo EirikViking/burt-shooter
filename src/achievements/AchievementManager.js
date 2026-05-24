@@ -90,6 +90,7 @@ export class AchievementManager {
         unlocked: this.getUnlocked(),
         updatedAt: new Date().toISOString()
       }));
+      if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.()?.catch?.(() => {});
     } catch {
       // Achievement persistence is best effort and must never affect gameplay.
     }

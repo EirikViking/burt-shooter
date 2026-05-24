@@ -68,6 +68,7 @@ function registerInputIpc() {
 function registerSteamCloudIpc() {
   ipcMain.handle('nova-steam-cloud:getDiagnostics', () => steamCloudSave?.getDiagnostics() || null);
   ipcMain.handle('nova-steam-cloud:readSave', () => steamCloudSave?.readSave() || null);
+  ipcMain.handle('nova-steam-cloud:getPersistenceSummary', () => steamCloudSave?.getPersistenceSummary() || null);
   ipcMain.handle('nova-steam-cloud:mergeRendererState', (_event, payload) => steamCloudSave?.mergeRendererState(payload) || null);
 }
 

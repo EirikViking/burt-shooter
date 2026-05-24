@@ -23,6 +23,7 @@ const INPUT_CHANNELS = {
 const STEAM_CLOUD_CHANNELS = {
   getDiagnostics: 'nova-steam-cloud:getDiagnostics',
   readSave: 'nova-steam-cloud:readSave',
+  getPersistenceSummary: 'nova-steam-cloud:getPersistenceSummary',
   mergeRendererState: 'nova-steam-cloud:mergeRendererState'
 };
 
@@ -72,6 +73,7 @@ contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
 contextBridge.exposeInMainWorld('__novaSteamCloud', Object.freeze({
   getDiagnostics: () => invoke(STEAM_CLOUD_CHANNELS.getDiagnostics),
   readSave: () => invoke(STEAM_CLOUD_CHANNELS.readSave),
+  getPersistenceSummary: () => invoke(STEAM_CLOUD_CHANNELS.getPersistenceSummary),
   mergeRendererState: (payload) => invoke(STEAM_CLOUD_CHANNELS.mergeRendererState, payload)
 }));
 

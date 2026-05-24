@@ -1,11 +1,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 const CLOUD_SUBDIR = 'steam-cloud';
 const CLOUD_SAVE_FILE = 'nova-swarm-save.json';
 const LEGACY_HIGHSCORE_FILE = 'local-highscores-v2.json';
 const OLD_HIGHSCORE_FILE = 'local-highscores.json';
+const SUPPORTED_LANGUAGE_MODES = new Set(['system', 'en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']);
+const MUSIC_PACKS = new Set(['classic', 'generated']);
 
 function nowIso() {
   return new Date().toISOString();
@@ -106,6 +108,50 @@ function sanitizeUnlockProgress(progress = {}) {
   };
 }
 
+function sanitizeLanguageState(language = {}) {
+  const preference = SUPPORTED_LANGUAGE_MODES.has(language.preference) ? language.preference : 'system';
+  const current = SUPPORTED_LANGUAGE_MODES.has(language.current) && language.current !== 'system'
+    ? language.current
+    : null;
+  return { preference, current };
+}
+
+function sanitizeAchievements(raw = {}) {
+  const ids = Array.isArray(raw) ? raw : raw?.unlocked;
+  const unlocked = Array.isArray(ids)
+    ? [...new Set(ids
+      .map((id) => String(id || '').trim())
+      .filter(Boolean)
+      .map((id) => id.slice(0, 120)))]
+    : [];
+  return {
+    version: Math.max(1, Math.floor(Number(raw?.version) || 1)),
+    unlocked,
+    updatedAt: raw?.updatedAt ? String(raw.updatedAt) : null
+  };
+}
+
+function sanitizeAudioSettings(audio = {}) {
+  const clampUnit = (value, fallback) => {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.max(0, Math.min(1, number));
+  };
+  const next = {};
+  if (audio.masterVolume !== undefined) next.masterVolume = clampUnit(audio.masterVolume, 0.3);
+  if (audio.musicVolume !== undefined) next.musicVolume = clampUnit(audio.musicVolume, 0.2);
+  if (audio.sfxVolume !== undefined) next.sfxVolume = clampUnit(audio.sfxVolume, 0.4);
+  if (audio.voiceVolume !== undefined) next.voiceVolume = clampUnit(audio.voiceVolume, 0.45);
+  if (audio.musicEnabled !== undefined) next.musicEnabled = Boolean(audio.musicEnabled);
+  if (audio.voiceEnabled !== undefined) next.voiceEnabled = Boolean(audio.voiceEnabled);
+  if (audio.ctaVoiceEnabled !== undefined) next.ctaVoiceEnabled = Boolean(audio.ctaVoiceEnabled);
+  if (audio.musicPack !== undefined) {
+    const musicPack = String(audio.musicPack || '').trim();
+    if (MUSIC_PACKS.has(musicPack)) next.musicPack = musicPack;
+  }
+  return next;
+}
+
 function sanitizeSettings(settings = {}) {
   const clampUnit = (value, fallback) => {
     const number = Number(value);
@@ -115,7 +161,8 @@ function sanitizeSettings(settings = {}) {
   return {
     screenShake: clampUnit(settings.screenShake, 1),
     playerFocus: clampUnit(settings.playerFocus, 0.72),
-    colorAssist: Boolean(settings.colorAssist)
+    colorAssist: Boolean(settings.colorAssist),
+    audio: sanitizeAudioSettings(settings.audio || {})
   };
 }
 
@@ -124,6 +171,12 @@ function sanitizeRendererState(state = {}) {
     ? state.selectedShipKey.trim().slice(0, 160)
     : null;
   return {
+    language: sanitizeLanguageState(state.language || {
+      preference: state.languagePreference,
+      current: state.currentLanguage
+    }),
+    localHighscores: sanitizeScores(state.localHighscores),
+    achievements: sanitizeAchievements(state.achievements || state.achievementMirror),
     selectedShipKey,
     progression: sanitizeUnlockProgress(state.progression || state.unlockProgress || {}),
     settings: sanitizeSettings(state.settings || {})
@@ -134,7 +187,9 @@ function createEmptySave() {
   return {
     version: SAVE_VERSION,
     updatedAt: nowIso(),
+    language: sanitizeLanguageState(),
     localHighscores: [],
+    achievements: sanitizeAchievements(),
     selectedShipKey: null,
     progression: sanitizeUnlockProgress(),
     settings: sanitizeSettings()
@@ -146,7 +201,9 @@ function normalizeSave(rawSave = {}, localHighscores = null) {
   return {
     version: SAVE_VERSION,
     updatedAt: String(rawSave.updatedAt || nowIso()),
+    language: rendererState.language,
     localHighscores: sanitizeScores(localHighscores ?? rawSave.localHighscores),
+    achievements: rendererState.achievements,
     selectedShipKey: rendererState.selectedShipKey,
     progression: rendererState.progression,
     settings: rendererState.settings
@@ -205,10 +262,33 @@ function createSteamCloudSave(userDataPath, logger = console) {
     const rendererState = sanitizeRendererState(state);
     return writeSave({
       ...current,
+      language: Object.hasOwn(state, 'language') || Object.hasOwn(state, 'languagePreference')
+        ? rendererState.language
+        : current.language,
+      localHighscores: Object.hasOwn(state, 'localHighscores')
+        ? rendererState.localHighscores
+        : current.localHighscores,
+      achievements: Object.hasOwn(state, 'achievements') || Object.hasOwn(state, 'achievementMirror')
+        ? rendererState.achievements
+        : current.achievements,
       selectedShipKey: rendererState.selectedShipKey || current.selectedShipKey || null,
       progression: rendererState.progression,
       settings: rendererState.settings
     });
+  }
+
+  function getPersistenceSummary() {
+    const save = readSave();
+    return {
+      cloudSavePath: paths.cloudSavePath,
+      languagePreference: save.language?.preference || 'system',
+      currentLanguage: save.language?.current || null,
+      localHighscoresCount: save.localHighscores.length,
+      achievementMirrorCount: save.achievements.unlocked.length,
+      selectedShipKey: save.selectedShipKey,
+      progression: save.progression,
+      updatedAt: save.updatedAt
+    };
   }
 
   function getDiagnostics() {
@@ -217,6 +297,7 @@ function createSteamCloudSave(userDataPath, logger = console) {
       userDataPath: paths.userDataPath,
       cloudDir: paths.cloudDir,
       cloudSavePath: paths.cloudSavePath,
+      persistenceSummary: getPersistenceSummary(),
       steamworksAutoCloud: {
         byteQuota: 1048576,
         fileCount: 20,
@@ -236,6 +317,7 @@ function createSteamCloudSave(userDataPath, logger = console) {
     writeSave,
     mirrorLocalHighscores,
     mergeRendererState,
+    getPersistenceSummary,
     getDiagnostics
   };
 }
@@ -249,5 +331,6 @@ module.exports = {
   createSteamCloudSave,
   getPaths,
   sanitizeScores,
+  sanitizeAchievements,
   sanitizeRendererState
 };

@@ -1,0 +1,327 @@
+export const CLOUD_LANGUAGE_KEY = 'novaSwarm.languagePreference.v1';
+export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
+export const CLOUD_ACHIEVEMENT_KEY = 'nova_swarm_achievements_v1';
+export const CLOUD_SELECTED_SHIP_KEY = 'burt.selectedShip.v1';
+export const CLOUD_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
+
+const SCREEN_SHAKE_KEY = 'burt_accessibility_screen_shake';
+const PLAYER_FOCUS_KEY = 'burt_accessibility_player_focus';
+const COLOR_ASSIST_KEY = 'nova_accessibility_color_assist';
+const AUDIO_KEYS = Object.freeze({
+  masterVolume: 'burt_volume_master',
+  musicVolume: 'burt_volume_music',
+  sfxVolume: 'burt_volume_sfx',
+  voiceVolume: 'burt_volume_voice',
+  musicEnabled: 'burt_music_enabled',
+  voiceEnabled: 'burt_voice_enabled',
+  ctaVoiceEnabled: 'burt_cta_voice_enabled',
+  musicPack: 'burt_music_pack'
+});
+const SUPPORTED_LANGUAGE_MODES = new Set(['system', 'en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']);
+
+function getDefaultStorage() {
+  try {
+    return typeof window !== 'undefined' ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+function readStorage(storage, key) {
+  try {
+    return storage?.getItem?.(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(storage, key, value) {
+  try {
+    storage?.setItem?.(key, String(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function removeStorage(storage, key) {
+  try {
+    storage?.removeItem?.(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function readJsonStorage(storage, key, fallback) {
+  try {
+    const raw = readStorage(storage, key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+function clampUnit(value, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(0, Math.min(1, number));
+}
+
+function normalizeLanguagePreference(value) {
+  if (SUPPORTED_LANGUAGE_MODES.has(value)) return value;
+  return 'system';
+}
+
+function normalizeScoreEntry(entry = {}, fallbackIndex = 0) {
+  if (!entry || typeof entry !== 'object') return null;
+  const score = Math.max(0, Math.floor(Number(entry.score) || 0));
+  const level = Math.max(1, Math.floor(Number(entry.level) || 1));
+  const rawRankIndex = Number(entry.rankIndex ?? entry.rank_index);
+  const rankIndex = Math.max(0, Math.min(19, Number.isFinite(rawRankIndex) ? Math.floor(rawRankIndex) : 0));
+  const name = String(entry.name || `PILOT${String(fallbackIndex).slice(-2).padStart(2, '0')}`)
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, '')
+    .trim()
+    .slice(0, 14) || 'PILOT';
+  return {
+    name,
+    score,
+    level,
+    rankIndex,
+    rank_index: rankIndex,
+    shipId: entry.shipId ?? entry.ship_id ?? null,
+    shipName: entry.shipName ?? entry.ship_name ?? null,
+    runTimeSeconds: entry.runTimeSeconds ?? entry.runtimeSeconds ?? null,
+    kills: entry.kills ?? null,
+    bossKills: entry.bossKills ?? null,
+    wavesCleared: entry.wavesCleared ?? null,
+    submissionId: entry.submissionId || null,
+    timestamp: String(entry.timestamp || entry.created_at || new Date(0).toISOString()),
+    source: entry.source || 'local',
+    seed: Boolean(entry.seed)
+  };
+}
+
+function normalizeScores(scores) {
+  if (!Array.isArray(scores)) return [];
+  return scores
+    .map((entry, index) => normalizeScoreEntry(entry, index))
+    .filter(Boolean)
+    .filter((entry) => !entry.seed)
+    .sort((a, b) => {
+      const scoreDelta = (b.score || 0) - (a.score || 0);
+      if (scoreDelta !== 0) return scoreDelta;
+      return String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
+    })
+    .slice(0, 100);
+}
+
+function scoreKey(entry) {
+  return entry.submissionId || [
+    entry.name,
+    entry.score,
+    entry.level,
+    entry.rankIndex,
+    entry.timestamp,
+    entry.shipId || ''
+  ].join('|');
+}
+
+function mergeScores(localScores, cloudScores) {
+  const merged = new Map();
+  for (const entry of [...normalizeScores(localScores), ...normalizeScores(cloudScores)]) {
+    merged.set(scoreKey(entry), entry);
+  }
+  return normalizeScores([...merged.values()]);
+}
+
+function normalizeProgression(progress = {}) {
+  return {
+    bestScore: Math.max(0, Math.floor(Number(progress.bestScore) || 0)),
+    bestRank: Math.max(0, Math.floor(Number(progress.bestRank) || 0)),
+    bestLevel: Math.max(1, Math.floor(Number(progress.bestLevel) || 1))
+  };
+}
+
+function mergeProgression(localProgress, cloudProgress) {
+  const local = normalizeProgression(localProgress);
+  const cloud = normalizeProgression(cloudProgress);
+  return {
+    bestScore: Math.max(local.bestScore, cloud.bestScore),
+    bestRank: Math.max(local.bestRank, cloud.bestRank),
+    bestLevel: Math.max(local.bestLevel, cloud.bestLevel)
+  };
+}
+
+function normalizeAchievementPayload(raw = {}) {
+  const ids = Array.isArray(raw) ? raw : raw?.unlocked;
+  const unlocked = Array.isArray(ids)
+    ? [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))]
+    : [];
+  return {
+    version: Math.max(1, Math.floor(Number(raw?.version) || 1)),
+    unlocked,
+    updatedAt: raw?.updatedAt ? String(raw.updatedAt) : null
+  };
+}
+
+function collectAudioSettings(storage) {
+  const has = (key) => readStorage(storage, key) !== null;
+  const audio = {};
+  if (has(AUDIO_KEYS.masterVolume)) audio.masterVolume = clampUnit(readStorage(storage, AUDIO_KEYS.masterVolume), 0.3);
+  if (has(AUDIO_KEYS.musicVolume)) audio.musicVolume = clampUnit(readStorage(storage, AUDIO_KEYS.musicVolume), 0.2);
+  if (has(AUDIO_KEYS.sfxVolume)) audio.sfxVolume = clampUnit(readStorage(storage, AUDIO_KEYS.sfxVolume), 0.4);
+  if (has(AUDIO_KEYS.voiceVolume)) audio.voiceVolume = clampUnit(readStorage(storage, AUDIO_KEYS.voiceVolume), 0.45);
+  if (has(AUDIO_KEYS.musicEnabled)) audio.musicEnabled = readStorage(storage, AUDIO_KEYS.musicEnabled) !== 'false';
+  if (has(AUDIO_KEYS.voiceEnabled)) audio.voiceEnabled = readStorage(storage, AUDIO_KEYS.voiceEnabled) !== 'false';
+  if (has(AUDIO_KEYS.ctaVoiceEnabled)) audio.ctaVoiceEnabled = readStorage(storage, AUDIO_KEYS.ctaVoiceEnabled) !== 'false';
+  if (has(AUDIO_KEYS.musicPack)) audio.musicPack = String(readStorage(storage, AUDIO_KEYS.musicPack) || '').slice(0, 64);
+  return audio;
+}
+
+function restoreAudioSettings(storage, audio = {}) {
+  if (!audio || typeof audio !== 'object') return 0;
+  let changed = 0;
+  for (const key of ['masterVolume', 'musicVolume', 'sfxVolume', 'voiceVolume']) {
+    if (audio[key] !== undefined && writeStorage(storage, AUDIO_KEYS[key], clampUnit(audio[key], 1))) changed += 1;
+  }
+  for (const key of ['musicEnabled', 'voiceEnabled', 'ctaVoiceEnabled']) {
+    if (audio[key] !== undefined && writeStorage(storage, AUDIO_KEYS[key], Boolean(audio[key]))) changed += 1;
+  }
+  if (audio.musicPack !== undefined && writeStorage(storage, AUDIO_KEYS.musicPack, String(audio.musicPack).slice(0, 64))) {
+    changed += 1;
+  }
+  return changed;
+}
+
+export function collectSteamCloudPersistenceState({
+  storage = getDefaultStorage(),
+  game = typeof window !== 'undefined' ? window.__game : null,
+  getShipUnlockProgress = null,
+  getAccessibilitySettings = null,
+  getLanguagePreferenceMode = null,
+  getCurrentLanguage = null
+} = {}) {
+  const selectedShipKey = readStorage(storage, CLOUD_SELECTED_SHIP_KEY) || game?.selectedShipSpriteKey || null;
+  const achievementPayload = normalizeAchievementPayload(readJsonStorage(storage, CLOUD_ACHIEVEMENT_KEY, {}));
+  const settings = typeof getAccessibilitySettings === 'function'
+    ? getAccessibilitySettings()
+    : {
+      screenShake: clampUnit(readStorage(storage, SCREEN_SHAKE_KEY), 1),
+      playerFocus: clampUnit(readStorage(storage, PLAYER_FOCUS_KEY), 0.72),
+      colorAssist: readStorage(storage, COLOR_ASSIST_KEY) === '1'
+    };
+
+  return {
+    language: {
+      preference: normalizeLanguagePreference(
+        typeof getLanguagePreferenceMode === 'function'
+          ? getLanguagePreferenceMode()
+          : readStorage(storage, CLOUD_LANGUAGE_KEY)
+      ),
+      current: typeof getCurrentLanguage === 'function' ? getCurrentLanguage() : null
+    },
+    localHighscores: normalizeScores(readJsonStorage(storage, CLOUD_LOCAL_LEADERBOARD_KEY, [])),
+    achievements: achievementPayload,
+    selectedShipKey,
+    progression: typeof getShipUnlockProgress === 'function'
+      ? normalizeProgression(getShipUnlockProgress())
+      : normalizeProgression(readJsonStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, {})),
+    settings: {
+      screenShake: clampUnit(settings.screenShake, 1),
+      playerFocus: clampUnit(settings.playerFocus, 0.72),
+      colorAssist: Boolean(settings.colorAssist),
+      audio: collectAudioSettings(storage)
+    }
+  };
+}
+
+export function restoreSteamCloudPersistenceToStorage(save, {
+  storage = getDefaultStorage()
+} = {}) {
+  const summary = {
+    restored: false,
+    language: null,
+    localHighscores: 0,
+    achievements: 0,
+    selectedShipKey: null,
+    progression: null,
+    settings: 0
+  };
+  if (!storage || !save || typeof save !== 'object') return summary;
+
+  const languagePreference = normalizeLanguagePreference(save.language?.preference ?? save.languagePreference);
+  summary.language = languagePreference;
+  if (languagePreference === 'system') {
+    summary.restored = removeStorage(storage, CLOUD_LANGUAGE_KEY) || summary.restored;
+  } else {
+    summary.restored = writeStorage(storage, CLOUD_LANGUAGE_KEY, languagePreference) || summary.restored;
+  }
+
+  const cloudScores = normalizeScores(save.localHighscores);
+  if (cloudScores.length > 0) {
+    const mergedScores = mergeScores(readJsonStorage(storage, CLOUD_LOCAL_LEADERBOARD_KEY, []), cloudScores);
+    summary.localHighscores = mergedScores.length;
+    summary.restored = writeStorage(storage, CLOUD_LOCAL_LEADERBOARD_KEY, JSON.stringify(mergedScores)) || summary.restored;
+  }
+
+  const cloudAchievements = normalizeAchievementPayload(save.achievements || save.achievementMirror);
+  if (cloudAchievements.unlocked.length > 0) {
+    const localAchievements = normalizeAchievementPayload(readJsonStorage(storage, CLOUD_ACHIEVEMENT_KEY, {}));
+    const unlocked = [...new Set([...localAchievements.unlocked, ...cloudAchievements.unlocked])];
+    const payload = {
+      version: Math.max(localAchievements.version, cloudAchievements.version, 1),
+      unlocked,
+      updatedAt: cloudAchievements.updatedAt || localAchievements.updatedAt || new Date().toISOString()
+    };
+    summary.achievements = unlocked.length;
+    summary.restored = writeStorage(storage, CLOUD_ACHIEVEMENT_KEY, JSON.stringify(payload)) || summary.restored;
+  }
+
+  if (typeof save.selectedShipKey === 'string' && save.selectedShipKey.trim()) {
+    summary.selectedShipKey = save.selectedShipKey.trim();
+    summary.restored = writeStorage(storage, CLOUD_SELECTED_SHIP_KEY, summary.selectedShipKey) || summary.restored;
+  }
+
+  if (save.progression || save.unlockProgress) {
+    const mergedProgression = mergeProgression(
+      readJsonStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, {}),
+      save.progression || save.unlockProgress
+    );
+    summary.progression = mergedProgression;
+    summary.restored = writeStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, JSON.stringify(mergedProgression)) || summary.restored;
+  }
+
+  const settings = save.settings || {};
+  if (settings.screenShake !== undefined && writeStorage(storage, SCREEN_SHAKE_KEY, clampUnit(settings.screenShake, 1))) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
+  if (settings.playerFocus !== undefined && writeStorage(storage, PLAYER_FOCUS_KEY, clampUnit(settings.playerFocus, 0.72))) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
+  if (settings.colorAssist !== undefined && writeStorage(storage, COLOR_ASSIST_KEY, Boolean(settings.colorAssist) ? '1' : '0')) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
+  summary.settings += restoreAudioSettings(storage, settings.audio || save.audioSettings);
+  if (summary.settings > 0) summary.restored = true;
+
+  return summary;
+}
+
+export function summarizeSteamCloudPersistence(save = {}) {
+  const achievements = normalizeAchievementPayload(save.achievements || save.achievementMirror);
+  return {
+    updatedAt: save?.updatedAt || null,
+    languagePreference: normalizeLanguagePreference(save?.language?.preference ?? save?.languagePreference),
+    currentLanguage: save?.language?.current || null,
+    localHighscoresCount: normalizeScores(save?.localHighscores).length,
+    achievementMirrorCount: achievements.unlocked.length,
+    selectedShipKey: save?.selectedShipKey || null,
+    progression: normalizeProgression(save?.progression || save?.unlockProgress || {})
+  };
+}

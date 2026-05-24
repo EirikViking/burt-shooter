@@ -9,6 +9,7 @@ import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from '
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
 import { getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
 import {
+  LANGUAGE_CHANGE_EVENT,
   getCurrentLanguage,
   getLanguagePreferenceMode,
   getSupportedLanguages,
@@ -16,6 +17,11 @@ import {
   translateText
 } from './i18n/index.js';
 import { installPixiTextLocalization } from './i18n/pixiTextLocalization.js';
+import {
+  collectSteamCloudPersistenceState,
+  restoreSteamCloudPersistenceToStorage,
+  summarizeSteamCloudPersistence
+} from './steamCloudPersistence.js';
 
 installConsoleLogFilter();
 installPixiTextLocalization(PIXI);
@@ -117,17 +123,13 @@ async function collectSteamDiagnostics() {
 }
 
 function collectSteamCloudRendererState() {
-  let selectedShipKey = null;
-  try {
-    selectedShipKey = window.localStorage?.getItem('burt.selectedShip.v1') || window.__game?.selectedShipSpriteKey || null;
-  } catch {
-    selectedShipKey = window.__game?.selectedShipSpriteKey || null;
-  }
-  return {
-    selectedShipKey,
-    progression: getShipUnlockProgress(),
-    settings: getAccessibilitySettings()
-  };
+  return collectSteamCloudPersistenceState({
+    game: window.__game,
+    getShipUnlockProgress,
+    getAccessibilitySettings,
+    getLanguagePreferenceMode,
+    getCurrentLanguage
+  });
 }
 
 async function syncSteamCloudRendererState() {
@@ -147,6 +149,7 @@ async function collectSteamCloudDiagnostics() {
     buildId: BUILD_ID,
     gitSha: GIT_SHA,
     rendererState: collectSteamCloudRendererState(),
+    persistenceSummary: summarizeSteamCloudPersistence(save),
     electron,
     save
   };
@@ -167,12 +170,22 @@ function installSteamCloudStateExport() {
   window.addEventListener('pagehide', () => {
     syncSteamCloudRendererState().catch(() => {});
   });
+  window.addEventListener(LANGUAGE_CHANGE_EVENT, () => {
+    syncSteamCloudRendererState().catch(() => {});
+  });
   window.addEventListener('keydown', (event) => {
     if (event.ctrlKey && event.altKey && event.shiftKey && event.code === 'KeyC') {
       event.preventDefault();
       logSteamCloudDiagnostics();
     }
   });
+}
+
+async function restoreSteamCloudPersistence() {
+  const api = window.__novaSteamCloud;
+  if (!api?.readSave) return null;
+  const save = await api.readSave();
+  return restoreSteamCloudPersistenceToStorage(save);
 }
 
 async function copySteamDiagnostics() {
@@ -1106,6 +1119,10 @@ async function init() {
   // ---------------------------
 
   const bootLogger = createBootLogger(isBootDebugEnabled());
+  await runBootStep(bootLogger, 'restore Steam Cloud persistence', () => restoreSteamCloudPersistence(), {
+    timeoutMs: 900,
+    logFailure: false
+  });
   await runBootStep(bootLogger, 'init localization', () => initLocalization(), {
     timeoutMs: 1200,
     logFailure: false

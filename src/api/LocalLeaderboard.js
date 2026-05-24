@@ -144,6 +144,7 @@ export const LocalLeaderboard = {
     const nextScores = sortScores([savedEntry, ...existingScores]).slice(0, LOCAL_LEADERBOARD_STORAGE_LIMIT);
     if (storageAvailable()) {
       window.localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(nextScores));
+      window.__novaSteamCloudDiagnostics?.sync?.()?.catch?.(() => {});
     }
     const placement = nextScores.findIndex((scoreEntry) => scoreEntry === savedEntry) + 1;
     return { entry: savedEntry, placement, duplicate: false };
@@ -152,6 +153,7 @@ export const LocalLeaderboard = {
   clear() {
     if (storageAvailable()) {
       window.localStorage.removeItem(LOCAL_LEADERBOARD_KEY);
+      window.__novaSteamCloudDiagnostics?.sync?.()?.catch?.(() => {});
     }
   }
 };
