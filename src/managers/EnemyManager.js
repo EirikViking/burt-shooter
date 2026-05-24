@@ -1117,6 +1117,7 @@ export class EnemyManager {
     const positions = this.getFormationPositions(formation, count);
     const screenW = this.game.getWidth();
     const startLeft = Math.random() < 0.5;
+    const combatBounds = this.getCombatBoundsForPositions(positions, formation);
     const center = positions.reduce((acc, pos) => ({
       x: acc.x + pos.x / Math.max(1, positions.length),
       y: acc.y + pos.y / Math.max(1, positions.length)
@@ -1153,7 +1154,8 @@ export class EnemyManager {
         formation,
         centerX: center.x || screenW / 2,
         centerY: center.y || 128,
-        side: pos.x < screenW / 2 ? -1 : 1
+        side: pos.x < screenW / 2 ? -1 : 1,
+        combatBounds
       });
       if (enemyTactic.forcedDive) {
         enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
@@ -1398,6 +1400,39 @@ export class EnemyManager {
     };
   }
 
+  getCombatBoundsForPositions(positions = [], formation = 'ARC') {
+    const screenW = this.game.getWidth();
+    const centerX = screenW / 2;
+    const xs = positions.map((pos) => pos.x).filter(Number.isFinite);
+    if (!xs.length) {
+      return {
+        minX: centerX - screenW * 0.2,
+        maxX: centerX + screenW * 0.2,
+        swayScalar: 0.72
+      };
+    }
+
+    const level = Math.max(1, Number(this.level) || 1);
+    const wideFormation = ['PINCER', 'SCREEN_DOOR', 'CROSS_STREAM', 'SIDEWINDER'].includes(String(formation || 'ARC'));
+    const padding = Math.max(42, Math.min(82, screenW * (wideFormation ? 0.035 : 0.028)));
+    const levelCap = Math.min(
+      screenW * (wideFormation ? 0.6 : 0.5),
+      screenW * ((wideFormation ? 0.46 : 0.4) + Math.min(0.1, Math.max(0, level - 1) * 0.006))
+    );
+    const rawMin = Math.min(...xs) - padding;
+    const rawMax = Math.max(...xs) + padding;
+    const rawSpan = rawMax - rawMin;
+    const span = Math.min(rawSpan, levelCap);
+    const mid = (rawMin + rawMax) / 2;
+    const minX = Math.max(72, mid - span / 2);
+    const maxX = Math.min(screenW - 72, mid + span / 2);
+    return {
+      minX,
+      maxX,
+      swayScalar: level <= 2 ? 0.58 : level <= 5 ? 0.7 : 0.82
+    };
+  }
+
   getFormationPositions(type, count) {
     const pos = [];
     const cw = this.game.getWidth() / 2;
@@ -1407,41 +1442,41 @@ export class EnemyManager {
     const available = Math.max(0, sw - edgeMargin * 2);
     const level = Math.max(1, Number(this.level) || 1);
     const baseFractions = {
-      TUTORIAL_ARC: 0.48,
-      GRID: 0.52,
-      V_SHAPE: 0.5,
-      BOX: 0.5,
-      STAGGERED_WING: 0.54,
-      PINCER: 0.56,
-      DIAGONAL_RAID: 0.53,
-      SIDEWINDER: 0.54,
-      ORBIT_RING: 0.38,
-      CROSS_STREAM: 0.55,
-      SCREEN_DOOR: 0.56,
-      DOUBLE_ARC: 0.54,
-      SPIRAL: 0.34,
-      ARC: 0.52
+      TUTORIAL_ARC: 0.34,
+      GRID: 0.36,
+      V_SHAPE: 0.34,
+      BOX: 0.35,
+      STAGGERED_WING: 0.38,
+      PINCER: 0.42,
+      DIAGONAL_RAID: 0.37,
+      SIDEWINDER: 0.38,
+      ORBIT_RING: 0.3,
+      CROSS_STREAM: 0.42,
+      SCREEN_DOOR: 0.44,
+      DOUBLE_ARC: 0.39,
+      SPIRAL: 0.28,
+      ARC: 0.36
     };
     const maxFractions = {
-      TUTORIAL_ARC: 0.52,
-      GRID: 0.58,
-      V_SHAPE: 0.56,
-      BOX: 0.56,
-      STAGGERED_WING: 0.61,
-      PINCER: 0.63,
-      DIAGONAL_RAID: 0.6,
-      SIDEWINDER: 0.61,
-      ORBIT_RING: 0.44,
-      CROSS_STREAM: 0.62,
-      SCREEN_DOOR: 0.63,
-      DOUBLE_ARC: 0.6,
-      SPIRAL: 0.4,
-      ARC: 0.58
+      TUTORIAL_ARC: 0.42,
+      GRID: 0.48,
+      V_SHAPE: 0.46,
+      BOX: 0.46,
+      STAGGERED_WING: 0.52,
+      PINCER: 0.58,
+      DIAGONAL_RAID: 0.5,
+      SIDEWINDER: 0.52,
+      ORBIT_RING: 0.38,
+      CROSS_STREAM: 0.56,
+      SCREEN_DOOR: 0.58,
+      DOUBLE_ARC: 0.52,
+      SPIRAL: 0.34,
+      ARC: 0.48
     };
     const spanFor = (formation, min = 0) => {
       const key = baseFractions[formation] ? formation : 'ARC';
-      const levelBonus = Math.min(0.055, Math.max(0, level - 1) * 0.005);
-      const countScale = count <= 5 ? 0.82 : count <= 7 ? 0.9 : count <= 9 ? 0.96 : 1;
+      const levelBonus = Math.min(0.085, Math.max(0, level - 1) * 0.0045);
+      const countScale = count <= 5 ? 0.88 : count <= 7 ? 0.95 : count <= 9 ? 1 : 1.04;
       const fraction = Math.min(maxFractions[key], (baseFractions[key] + levelBonus) * countScale);
       const desired = sw * fraction;
       const floor = Math.min(min, available);

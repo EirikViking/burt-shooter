@@ -14,6 +14,12 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Tuned parked formations from raw desktop-span scaling to an engagement-band policy that grows by level and enemy count while keeping early/small waves in a readable central band. Wide identities such as `PINCER`, `SCREEN_DOOR`, and `CROSS_STREAM` still read wide, but no longer push ordinary level-1 waves toward both edges.
 - Added per-lane pressure adaptation: outer-lane enemies get reduced fire/dive pressure and longer fire delays, while multi-elite and boss-chaos mini-boss placement now uses playable flanking lanes instead of extreme sides.
 
+## 2026-05-24 Tight Combat Lane Correction
+
+- Current user feedback: even the engagement-band deployment still felt far too wide in real play, especially on level 1 where a few enemies could occupy most of the desktop.
+- Tightened normal-wave parked spans to a centered combat envelope: early/default waves now favor roughly one-third to two-fifths of a 1920px screen, with wide identities reserved for controlled flanking rather than full-screen parking.
+- Added combat bounds to normal wave enemies so idle sway, dives, flanking dives, and return arcs stay inside readable fight lanes. Entry paths can still originate offscreen for arcade drama, but ordinary enemies should no longer live in far-edge zip codes.
+
 ## 2026-05-24 Achievement Toasts And Marketing Spawn Debug
 
 - Current user request: make rank achievement notifications obvious in-game, add temporary marketing hotkeys where `1` spawns a random enemy wave, `2` spawns a random mini-boss/elite middle ship, and `3` spawns a random boss, then deploy to web prod.

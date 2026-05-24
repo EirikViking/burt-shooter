@@ -64,6 +64,8 @@ export class Enemy {
     this.tacticalDiveAt = 0;
     this.tacticalDiveUsed = false;
     this.tacticalPhase = Math.random() * Math.PI * 2;
+    this.combatBounds = null;
+    this.tacticalSwayScalar = 1;
 
     this.idlePhase = Math.random() * Math.PI * 2;
     this.spriteKey = null;
@@ -520,8 +522,17 @@ export class Enemy {
     this.tacticalShotPattern = tactic.shot || 'aimed';
     this.tacticalMoveStyle = tactic.move || 'standard';
     this.tacticalDiveBias = tactic.diveBias || 1;
+    this.combatBounds = context.combatBounds || null;
+    this.tacticalSwayScalar = Number.isFinite(this.combatBounds?.swayScalar) ? this.combatBounds.swayScalar : 1;
     this.shootDelay = Math.max(38, this.shootDelay * (tactic.fireDelayMult || 1));
     this.tacticalPhase = (this.waveSlot / this.waveSize) * Math.PI * 2 + Math.random() * 0.25;
+  }
+
+  clampCombatX(x, padding = 0) {
+    const minX = Number.isFinite(this.combatBounds?.minX) ? this.combatBounds.minX + padding : null;
+    const maxX = Number.isFinite(this.combatBounds?.maxX) ? this.combatBounds.maxX - padding : null;
+    if (minX === null || maxX === null || minX >= maxX) return x;
+    return Math.max(minX, Math.min(maxX, x));
   }
 
   startEntry(startX, startY, endX, endY, duration, delay = 0) {
@@ -567,34 +578,35 @@ export class Enemy {
     if (preferredDive === 'chain' || preferredDive === 'feint') {
       const side = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
       const feint = preferredDive === 'feint';
-      end = { x: playerX + side * (feint ? 210 : 90), y: 730 };
-      cp = { x: this.x + side * (feint ? 260 : 150), y: playerY - (feint ? 170 : 40) };
+      end = { x: this.clampCombatX(playerX + side * (feint ? 150 : 70)), y: 730 };
+      cp = { x: this.clampCombatX(this.x + side * (feint ? 190 : 120)), y: playerY - (feint ? 170 : 40) };
       duration = feint ? 1280 : 1680;
     } else if (preferredDive === 'sweep') {
       const side = this.waveRole === 'left_flank' ? 1 : -1;
-      end = { x: playerX + side * 190, y: 720 };
-      cp = { x: this.waveCenterX + side * 330, y: playerY + 20 };
+      end = { x: this.clampCombatX(playerX + side * 140), y: 720 };
+      cp = { x: this.clampCombatX(this.waveCenterX + side * 210), y: playerY + 20 };
       duration = 1820;
     } else if (diveType < 0.4) {
       // Standard dive (40%)
-      end = { x: playerX, y: 700 };
-      cp = { x: (this.x + playerX) / 2 + (Math.random() - 0.5) * 200, y: (this.y + playerY) / 2 };
+      end = { x: this.clampCombatX(playerX), y: 700 };
+      cp = { x: this.clampCombatX((this.x + playerX) / 2 + (Math.random() - 0.5) * 140), y: (this.y + playerY) / 2 };
     } else if (diveType < 0.6) {
       // Spiral dive (20%) - wide arc
       const side = this.x < playerX ? -1 : 1;
-      end = { x: playerX + side * 150, y: 700 };
-      cp = { x: this.x + side * 300, y: playerY };
+      end = { x: this.clampCombatX(playerX + side * 115), y: 700 };
+      cp = { x: this.clampCombatX(this.x + side * 190), y: playerY };
       duration = 2180;
     } else if (diveType < 0.8) {
-      // Flanking dive (20%) - comes from side
+      // Flanking dive (20%) - readable side pressure inside the combat lane.
       const flankSide = Math.random() < 0.5 ? -1 : 1;
-      end = { x: flankSide * 100, y: 700 };
-      cp = { x: playerX + flankSide * 250, y: playerY - 50 };
+      const laneEdge = flankSide < 0 ? this.combatBounds?.minX : this.combatBounds?.maxX;
+      end = { x: this.clampCombatX(Number.isFinite(laneEdge) ? laneEdge : playerX + flankSide * 170, 8), y: 700 };
+      cp = { x: this.clampCombatX(playerX + flankSide * 180), y: playerY - 50 };
       duration = 1980;
     } else {
       // Kamikaze dive (20%) - straight at player then down
-      end = { x: playerX, y: 750 };
-      cp = { x: playerX, y: playerY + 100 };
+      end = { x: this.clampCombatX(playerX), y: 750 };
+      cp = { x: this.clampCombatX(playerX), y: playerY + 100 };
       duration = 1560;
     }
 
@@ -685,7 +697,8 @@ export class Enemy {
           swayX += Math.round(Math.sin(tacticalWave * 1.1) * 2) * 9;
           swayY += Math.max(0, Math.sin(tacticalWave * 1.5)) * 14;
         }
-        this.x = this.formationX + swayX;
+        const swayScalar = this.tacticalSwayScalar || 1;
+        this.x = this.clampCombatX(this.formationX + swayX * swayScalar);
         this.y = this.formationY + swayY;
 
         // Subtle rotation wobble
@@ -740,8 +753,8 @@ export class Enemy {
     const end = { x: this.formationX, y: this.formationY };
     const width = this.game?.getWidth?.() || 800;
     const centerX = width / 2;
-    const outsidePull = Math.max(240, Math.min(520, width * 0.22));
-    const cpVal = (this.x < centerX) ? -outsidePull : width + outsidePull; // Wide arc outside screen
+    const outsidePull = Math.max(160, Math.min(340, width * 0.15));
+    const cpVal = this.clampCombatX((this.x < centerX) ? centerX - outsidePull : centerX + outsidePull);
 
     this.returnCurve = {
       p0: start,
