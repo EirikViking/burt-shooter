@@ -1264,6 +1264,7 @@ export class ShipSelectScene {
   saveSelection(spriteKey) {
     try {
       localStorage.setItem(STORAGE_KEY, spriteKey);
+      if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
     } catch (e) {
       console.warn('[ShipSelect] Failed to save selection:', e);
     }

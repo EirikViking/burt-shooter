@@ -1,11 +1,13 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { createSteamCloudSave } = require('./steamCloudSave.cjs');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
+const isSteamCloudDiagnostics = process.argv.includes('--steam-cloud-diagnostics') || process.env.NOVA_SWARM_STEAM_CLOUD_DIAGNOSTICS === '1';
 const distDir = path.resolve(__dirname, '..', 'dist');
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -24,6 +26,13 @@ const mimeTypes = {
 
 let server = null;
 let baseUrl = null;
+let steamCloudSave = null;
+
+function registerSteamCloudIpc() {
+  ipcMain.handle('nova-steam-cloud:getDiagnostics', () => steamCloudSave?.getDiagnostics() || null);
+  ipcMain.handle('nova-steam-cloud:readSave', () => steamCloudSave?.readSave() || null);
+  ipcMain.handle('nova-steam-cloud:mergeRendererState', (_event, payload) => steamCloudSave?.mergeRendererState(payload) || null);
+}
 
 function sendJson(response, status, payload) {
   response.writeHead(status, {
@@ -50,6 +59,7 @@ function readLocalScores() {
 function writeLocalScores(scores) {
   fs.mkdirSync(path.dirname(getScorePath()), { recursive: true });
   fs.writeFileSync(getScorePath(), JSON.stringify(scores.slice(0, 100), null, 2));
+  steamCloudSave?.mirrorLocalHighscores(scores);
 }
 
 function sanitizeScoreEntry(entry = {}) {
@@ -161,7 +171,8 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: true,
+      preload: path.join(__dirname, 'preload.cjs')
     }
   });
 
@@ -172,6 +183,10 @@ function createWindow() {
 
   win.loadURL(baseUrl ? `${baseUrl}/?desktop=1` : pathToFileURL(path.join(distDir, 'index.html')).toString());
   return win;
+}
+
+function getSteamCloudDiagnostics() {
+  return steamCloudSave?.getDiagnostics() || null;
 }
 
 async function runSmoke(window) {
@@ -202,10 +217,12 @@ async function runSmoke(window) {
       const api = await fetch('/api/highscores').then(r => ({ ok: r.ok, status: r.status, data: r.ok ? r.json() : null }));
       const textState = typeof window.render_game_to_text === 'function' ? JSON.parse(window.render_game_to_text()) : null;
       const intro = window.__game?.scenes?.intro;
+      const steamCloudDiagnostics = await window.__novaSteamCloud?.getDiagnostics?.().catch(error => ({ error: error?.message || String(error) }));
       return {
         title: document.title,
         apiOk: api.ok,
         apiStatus: api.status,
+        steamCloudDiagnostics,
         scene: textState?.scene || null,
         build: textState?.buildId || null,
         gitSha: textState?.gitSha || null,
@@ -635,6 +652,17 @@ app.whenReady().then(async () => {
   if (!fs.existsSync(path.join(distDir, 'index.html'))) {
     throw new Error(`Missing build output at ${distDir}. Run npm run build first.`);
   }
+  steamCloudSave = createSteamCloudSave(app.getPath('userData'), console);
+  const initializedCloudSave = steamCloudSave.ensureInitialized();
+  if (isSteamCloudDiagnostics) {
+    console.log(JSON.stringify({
+      ...getSteamCloudDiagnostics(),
+      save: initializedCloudSave
+    }, null, 2));
+    app.quit();
+    return;
+  }
+  registerSteamCloudIpc();
   await startLocalServer();
   const win = createWindow();
   if (isControlSmoke) {

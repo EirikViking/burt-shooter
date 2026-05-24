@@ -50,6 +50,7 @@ window.addEventListener('resize', () => {
 window.addEventListener('orientationchange', () => {
   applyResponsiveLayout(window.innerWidth, window.innerHeight);
 });
+installSteamCloudStateExport();
 
 function isBootDebugEnabled() {
   return urlParams.get('debug') === '1';
@@ -61,6 +62,65 @@ function isPerfEnabled() {
 
 function isAutoStartEnabled() {
   return urlParams.get('autostart') === '1';
+}
+
+function collectSteamCloudRendererState() {
+  let selectedShipKey = null;
+  try {
+    selectedShipKey = window.localStorage?.getItem('burt.selectedShip.v1') || window.__game?.selectedShipSpriteKey || null;
+  } catch {
+    selectedShipKey = window.__game?.selectedShipSpriteKey || null;
+  }
+  return {
+    selectedShipKey,
+    progression: getShipUnlockProgress(),
+    settings: getAccessibilitySettings()
+  };
+}
+
+async function syncSteamCloudRendererState() {
+  const api = window.__novaSteamCloud;
+  if (!api?.mergeRendererState) return null;
+  return api.mergeRendererState(collectSteamCloudRendererState());
+}
+
+async function collectSteamCloudDiagnostics() {
+  const api = window.__novaSteamCloud;
+  const [electron, save] = await Promise.all([
+    api?.getDiagnostics?.().catch(error => ({ error: error?.message || String(error) })) || null,
+    api?.readSave?.().catch(error => ({ error: error?.message || String(error) })) || null
+  ]);
+  return {
+    generatedAt: new Date().toISOString(),
+    buildId: BUILD_ID,
+    gitSha: GIT_SHA,
+    rendererState: collectSteamCloudRendererState(),
+    electron,
+    save
+  };
+}
+
+async function logSteamCloudDiagnostics() {
+  const diagnostics = await collectSteamCloudDiagnostics();
+  console.info('[SteamCloudDiagnostics]', diagnostics);
+  return diagnostics;
+}
+
+function installSteamCloudStateExport() {
+  window.__novaSteamCloudDiagnostics = Object.freeze({
+    collect: collectSteamCloudDiagnostics,
+    log: logSteamCloudDiagnostics,
+    sync: syncSteamCloudRendererState
+  });
+  window.addEventListener('pagehide', () => {
+    syncSteamCloudRendererState().catch(() => {});
+  });
+  window.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.altKey && event.shiftKey && event.code === 'KeyC') {
+      event.preventDefault();
+      logSteamCloudDiagnostics();
+    }
+  });
 }
 
 function ensureBuildStamp() {
@@ -1000,6 +1060,7 @@ async function init() {
     if (document.body) {
       document.body.dataset.menuReady = '1';
     }
+    syncSteamCloudRendererState().catch(() => {});
     if (isAutoStartEnabled() && !autoStartTriggered) {
       autoStartTriggered = true;
       setTimeout(() => {
