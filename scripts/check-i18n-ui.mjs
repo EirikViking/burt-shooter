@@ -21,6 +21,17 @@ const languages = [
   { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'ゲーム開始', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'グローバルランキング', glyphProbe: '日本語 設定 スコア ランキング' }
 ];
 
+const forbiddenPlaceholderMarkers = [
+  'Texto:',
+  '문구:',
+  '文言:',
+  'Text:',
+  'TODO:',
+  'MISSING:',
+  'FALLBACK:',
+  'UNTRANSLATED:'
+];
+
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
@@ -242,6 +253,26 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function collectPlaceholderHits(value, pathLabel = 'snapshot', hits = []) {
+  if (value == null) return hits;
+  if (typeof value === 'string') {
+    for (const marker of forbiddenPlaceholderMarkers) {
+      if (value.includes(marker)) hits.push(`${pathLabel}: ${marker} in "${value}"`);
+    }
+    return hits;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => collectPlaceholderHits(entry, `${pathLabel}[${index}]`, hits));
+    return hits;
+  }
+  if (typeof value === 'object') {
+    for (const [key, entry] of Object.entries(value)) {
+      collectPlaceholderHits(entry, `${pathLabel}.${key}`, hits);
+    }
+  }
+  return hits;
+}
+
 async function captureLanguage(page, language, index) {
   const prefix = `${String(index + 1).padStart(2, '0')}-${language.slug}`;
   const shots = {};
@@ -251,6 +282,7 @@ async function captureLanguage(page, language, index) {
   await page.evaluate(() => window.__game?.currentScene?.openSettingsOverlay?.());
   await page.waitForFunction(() => Boolean(window.__game?.currentScene?.settingsOverlay), null, { timeout: 10000 });
   snaps.settings = await snapshot(page);
+  assert(collectPlaceholderHits(snaps.settings, `${language.slug}.settings`).length === 0, `${language.slug} Settings contains placeholder marker`);
   shots.settings = await screenshot(page, `${prefix}-settings.png`);
   assert(snaps.settings.language.current === language.code, `${language.slug} did not resolve to ${language.code}`);
   assert(snaps.settings.settings.language === language.settingsLabel, `${language.slug} Settings language label mismatch`);
@@ -258,6 +290,7 @@ async function captureLanguage(page, language, index) {
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !window.__game?.currentScene?.settingsOverlay, null, { timeout: 10000 });
   snaps.menu = await snapshot(page);
+  assert(collectPlaceholderHits(snaps.menu, `${language.slug}.menu`).length === 0, `${language.slug} menu contains placeholder marker`);
   shots.menu = await screenshot(page, `${prefix}-main-menu.png`);
   assert(snaps.menu.menu.settings === language.menuSettings, `${language.slug} menu Settings label mismatch`);
   assert(snaps.menu.menu.launch === language.launch, `${language.slug} launch label mismatch`);
@@ -272,12 +305,14 @@ async function captureLanguage(page, language, index) {
   });
   await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.hud?.scoreText?.text), null, { timeout: 10000 });
   snaps.hud = await snapshot(page);
+  assert(collectPlaceholderHits(snaps.hud, `${language.slug}.hud`).length === 0, `${language.slug} HUD contains placeholder marker`);
   shots.hud = await screenshot(page, `${prefix}-hud.png`);
   assert(String(snaps.hud.hud.score || '').startsWith(language.scorePrefix), `${language.slug} HUD score label mismatch: ${snaps.hud.hud.score}`);
 
   await page.keyboard.press('KeyP');
   await page.waitForTimeout(300);
   snaps.pause = await snapshot(page);
+  assert(collectPlaceholderHits(snaps.pause, `${language.slug}.pause`).length === 0, `${language.slug} pause contains placeholder marker`);
   shots.pause = await screenshot(page, `${prefix}-pause.png`);
 
   await page.evaluate(() => {
@@ -287,6 +322,7 @@ async function captureLanguage(page, language, index) {
   });
   await waitForScene(page, 'gameOver');
   snaps.gameOver = await snapshot(page);
+  assert(collectPlaceholderHits(snaps.gameOver, `${language.slug}.gameOver`).length === 0, `${language.slug} game over contains placeholder marker`);
   shots.gameOver = await screenshot(page, `${prefix}-game-over.png`);
   assert(String(snaps.gameOver.gameOver.score || '').startsWith(language.scorePrefix), `${language.slug} game-over score label mismatch`);
 
@@ -294,6 +330,7 @@ async function captureLanguage(page, language, index) {
   await waitForScene(page, 'highscore');
   await page.waitForTimeout(600);
   snaps.leaderboard = await snapshot(page);
+  assert(collectPlaceholderHits(snaps.leaderboard, `${language.slug}.leaderboard`).length === 0, `${language.slug} leaderboard contains placeholder marker`);
   shots.leaderboard = await screenshot(page, `${prefix}-leaderboard.png`);
   assert(snaps.leaderboard.leaderboard.title === language.leaderboard, `${language.slug} leaderboard title mismatch: ${snaps.leaderboard.leaderboard.title}`);
   assert(!boxesOverlap(snaps.leaderboard.leaderboard.commentBounds, snaps.leaderboard.leaderboard.stateBounds, 4), `${language.slug} leaderboard empty-state text overlaps`);
@@ -315,6 +352,7 @@ async function captureLanguage(page, language, index) {
   });
   await page.waitForTimeout(500);
   snaps.leaderboardPopulated = await snapshot(page);
+  assert(collectPlaceholderHits(snaps.leaderboardPopulated, `${language.slug}.leaderboardPopulated`).length === 0, `${language.slug} populated leaderboard contains placeholder marker`);
   shots.leaderboardPopulated = await screenshot(page, `${prefix}-leaderboard-populated.png`);
   assert(snaps.leaderboardPopulated.leaderboard.rowChildCount > 3, `${language.slug} populated leaderboard did not render rows`);
 
@@ -364,7 +402,8 @@ try {
 }
 
 const report = {
-  status: consoleEvents.length || pageErrors.length ? 'failed' : 'passed',
+  placeholderHits: collectPlaceholderHits(snapshots),
+  status: consoleEvents.length || pageErrors.length || collectPlaceholderHits(snapshots).length ? 'failed' : 'passed',
   baseUrl,
   outputDir,
   screenshots,
@@ -374,7 +413,7 @@ const report = {
 };
 
 writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
-console.log(JSON.stringify({ outputDir, status: report.status, languages: languages.map((language) => language.code), consoleEvents, pageErrors }, null, 2));
+console.log(JSON.stringify({ outputDir, status: report.status, languages: languages.map((language) => language.code), consoleEvents, pageErrors, placeholderHits: report.placeholderHits }, null, 2));
 
 if (report.status !== 'passed') {
   throw new Error('i18n UI check failed');

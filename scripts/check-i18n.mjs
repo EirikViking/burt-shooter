@@ -35,6 +35,22 @@ const locales = [
   ['ko', ko],
   ['ja', ja]
 ];
+const forbiddenPlaceholderMarkers = [
+  'Texto:',
+  '문구:',
+  '文言:',
+  'Text:',
+  'TODO:',
+  'MISSING:',
+  'FALLBACK:',
+  'UNTRANSLATED:'
+];
+
+function findForbiddenPlaceholderMarkers(value) {
+  const text = String(value ?? '');
+  return forbiddenPlaceholderMarkers.filter((marker) => text.includes(marker));
+}
+
 const enKeys = flattenKeys(en);
 for (const [code, locale] of locales) {
   const localeKeys = new Set(flattenKeys(locale));
@@ -46,16 +62,33 @@ const sourceLocales = locales.map(([, locale]) => locale);
 const sourceTextKeys = new Set(sourceLocales.flatMap((locale) => Object.keys(locale.sourceText || {})));
 const allowTodos = process.argv.includes('--allow-i18n-todo');
 const todoMarkers = [];
+const placeholderMarkers = [];
 for (const [code, locale] of locales) {
   for (const [key, value] of Object.entries(locale.sourceText || {})) {
     if (/\b(TODO|TBD|TRANSLATE|UNLOCALIZED)\b/i.test(String(value))) {
       todoMarkers.push(`${code}.sourceText.${key}`);
+    }
+    const markers = findForbiddenPlaceholderMarkers(value);
+    if (markers.length) {
+      placeholderMarkers.push(`${code}.sourceText.${key}: ${markers.join(', ')}`);
+    }
+  }
+  for (const key of flattenKeys(locale)) {
+    const value = key.split('.').reduce((node, part) => node?.[part], locale);
+    const markers = findForbiddenPlaceholderMarkers(value);
+    if (markers.length) {
+      placeholderMarkers.push(`${code}.${key}: ${markers.join(', ')}`);
     }
   }
 }
 assert.ok(
   allowTodos || todoMarkers.length === 0,
   `New player-facing text requires localization updates. Update all locales or add an explicit tracked TODO. TODO markers found: ${todoMarkers.join(', ')}`
+);
+assert.deepEqual(
+  placeholderMarkers,
+  [],
+  `Player-facing placeholder markers are forbidden in locale data:\n${placeholderMarkers.join('\n')}`
 );
 
 const patternIds = locales.map(([code, locale]) => [code, (locale.patterns || []).map((pattern) => pattern.id)]);
@@ -375,7 +408,9 @@ assert.match(Object.values(zhCN.sourceText).join('\n'), /[\u4e00-\u9fff]/);
 assert.match(Object.values(ptBR.sourceText).join('\n'), /á|à|â|ã|ç|é|ê|í|ó|ô|õ|ú/i);
 assert.match(Object.values(ko.sourceText).join('\n'), /[가-힣]/);
 assert.match(Object.values(ja.sourceText).join('\n'), /[\u3040-\u30ff\u4e00-\u9fff]/);
-assert.equal(translateTextForLocale('pt-BR', '1 point'), 'Texto: 1');
+assert.equal(translateTextForLocale('pt-BR', '1 point'), '1 point');
+assert.equal(translateTextForLocale('ko', '1 point'), '1 point');
+assert.equal(translateTextForLocale('ja', '1 point'), '1 point');
 assert.notEqual(translateTextForLocale('ko', 'No scores yet. Start the first legend.'), 'No scores yet. Start the first legend.');
 assert.notEqual(translateTextForLocale('ja', 'No scores yet. Start the first legend.'), 'No scores yet. Start the first legend.');
 

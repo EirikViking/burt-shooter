@@ -1,5 +1,4 @@
 import { buildArcadePatterns } from './patterns.js';
-import { makeFallback } from './next3Helpers.js';
 
 const sourceText = Object.freeze({
   'Language': '언어',
@@ -380,6 +379,5 @@ export const ko = {
     interfaceLanguage: '인터페이스 언어'
   },
   sourceText,
-  patterns,
-  fallbackText: makeFallback('문구')
+  patterns
 };

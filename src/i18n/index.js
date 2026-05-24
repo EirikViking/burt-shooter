@@ -283,13 +283,6 @@ export function translateTextForLocale(localeCode, source, vars = {}) {
     return interpolate(replacement, vars);
   }
 
-  if (typeof locale.fallbackText === 'function') {
-    const fallbackText = locale.fallbackText(sourceText, vars);
-    if (fallbackText != null && fallbackText !== sourceText) {
-      return interpolate(fallbackText, vars);
-    }
-  }
-
   if (isDev()) {
     const warningKey = `${localeCode}:${sourceText}`;
     if (!warnedMissingKeys.has(warningKey) && /[A-Za-z]{3,}/.test(sourceText)) {
