@@ -13,6 +13,7 @@ import {
   pickGeneratedEnemyTypeForLevel
 } from '../config/GeneratedEnemyProfiles.js';
 import {
+  ELITE_MIDDLE_SHIP_IDS,
   getEliteMiddleShipMaxActive,
   getEliteMiddleShipProfile,
   planEliteMiddleShipSpawns
@@ -167,6 +168,7 @@ export class EnemyManager {
     this.waveBriefingTimer = 0;
     this.waveBriefingAnnounced = false;
     this.currentWaveTactic = null;
+    this.marketingDebugMode = false;
 
     // Debug Stats
     this.totalEnemiesSpawned = 0;
@@ -212,6 +214,7 @@ export class EnemyManager {
 
   startLevel(level) {
     console.log(`[EnemyManager] STARTING LEVEL ${level}`);
+    this.marketingDebugMode = false;
     this.level = level;
     this.clearEnemies();
 
@@ -301,6 +304,93 @@ export class EnemyManager {
       this.state = 'LEVEL_COMPLETE';
       console.log(`[BossPhase] level=${level} phase=${this.phase} bossDefeated=true`);
     }
+  }
+
+  enableMarketingDebugMode() {
+    this.marketingDebugMode = true;
+    this.state = 'MARKETING_DEBUG';
+    this.phase = 'MARKETING';
+    this.pendingWaveConfig = null;
+    this.waveEnding = false;
+    this.cleanupTimer = 0;
+    this.cleanupPhase = 'NONE';
+  }
+
+  pickMarketingDebugLevel() {
+    const current = Math.max(1, Number(this.game?.level || this.level) || 1);
+    const maxLevel = 40;
+    const spread = Math.min(maxLevel, Math.max(current + 4, 12));
+    return 1 + Math.floor(Math.random() * spread);
+  }
+
+  spawnMarketingDebugWave() {
+    this.enableMarketingDebugMode();
+    const previousLevel = this.level || 1;
+    const level = this.pickMarketingDebugLevel();
+    const waves = this.generateWaves(level).filter((wave) => wave?.type && wave.type !== 'BOSS');
+    const picked = waves[Math.floor(Math.random() * Math.max(1, waves.length))] || {
+      type: pickGeneratedEnemyTypeForLevel(level),
+      count: this.getWaveEnemyCount(level, 0),
+      formation: 'PINCER',
+      tactic: this.pickWaveTactic(level, 0, 'PINCER'),
+      entry: 'split',
+      cadence: 1.18
+    };
+    const config = {
+      ...picked,
+      eliteMiddleShipId: null,
+      count: Math.max(picked.count || 0, 10 + Math.floor(Math.random() * 7)),
+      cadence: Math.max(1.05, (picked.cadence || 1) + 0.2)
+    };
+
+    this.level = level;
+    this.spawnWave(config);
+    this.level = previousLevel;
+    console.log(`[MarketingDebug] wave level=${level} type=${config.type} formation=${config.formation} count=${config.count}`);
+    return {
+      kind: 'wave',
+      level,
+      type: config.type,
+      formation: config.formation,
+      count: config.count
+    };
+  }
+
+  spawnMarketingDebugMiniBoss() {
+    this.enableMarketingDebugMode();
+    const ids = Array.isArray(ELITE_MIDDLE_SHIP_IDS) ? ELITE_MIDDLE_SHIP_IDS : [];
+    const profileId = ids[Math.floor(Math.random() * Math.max(1, ids.length))];
+    const profile = getEliteMiddleShipProfile(profileId);
+    const previousLevel = this.level || 1;
+    this.level = Math.max(previousLevel, profile?.minLevel || 1, this.pickMarketingDebugLevel());
+    const enemy = this.spawnEliteMiddleShip(profileId, {
+      marketingDebug: true,
+      ignoreCaps: true,
+      ignoreLevelGate: true,
+      entry: Math.random() < 0.5 ? 'split' : 'alternating',
+      delayMs: 80
+    });
+    this.level = previousLevel;
+    console.log(`[MarketingDebug] miniBoss id=${profileId} spawned=${!!enemy}`);
+    return {
+      kind: 'mini_boss',
+      id: profileId,
+      displayName: profile?.displayName || profileId,
+      spawned: Boolean(enemy)
+    };
+  }
+
+  async spawnMarketingDebugBoss() {
+    this.enableMarketingDebugMode();
+    const level = this.pickMarketingDebugLevel();
+    const boss = await this.spawnBoss(level, { marketingDebug: true });
+    console.log(`[MarketingDebug] boss level=${level} name=${boss?.name || 'unknown'}`);
+    return {
+      kind: 'boss',
+      level,
+      name: boss?.name || null,
+      spawned: Boolean(boss)
+    };
   }
 
   resetBossGateMessaging() {
@@ -982,13 +1072,14 @@ export class EnemyManager {
   spawnEliteMiddleShip(profileId, context = {}) {
     const profile = getEliteMiddleShipProfile(profileId);
     if (!profile) return null;
-    if ((Number(this.level) || 1) < profile.minLevel) return null;
+    const marketingDebug = context.marketingDebug === true;
+    if (!marketingDebug && !context.ignoreLevelGate && (Number(this.level) || 1) < profile.minLevel) return null;
 
     const activeElites = this.enemies.filter(enemy =>
       enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry)
     ).length;
     const maxActive = getEliteMiddleShipMaxActive(this.level);
-    if (activeElites >= maxActive) {
+    if (!marketingDebug && !context.ignoreCaps && activeElites >= maxActive) {
       console.log(`[EliteMiddleShipSpawn] skipped id=${profile.id} active=${activeElites} cap=${maxActive}`);
       return null;
     }
@@ -1001,6 +1092,7 @@ export class EnemyManager {
     const targetY = Math.max(92, Math.min(screenH * 0.34, 118 + Math.random() * 72));
     const enemy = new Enemy(startX, -124, profile.id, this.level, this.game, context.waveColor || 'Black');
     enemy.kind = 'elite_middle_ship';
+    enemy.marketingDebug = marketingDebug;
     enemy.applyWaveTactic?.(context.tactic || { id: 'elite_priority', fireScalar: 0.86, fireDelayMult: 1.16 }, {
       index: 0,
       count: 1,
@@ -1027,7 +1119,7 @@ export class EnemyManager {
       priority: 4,
       maxWidth: this.game.getWidth() * 0.76
     });
-    console.log(`[EliteMiddleShipSpawn] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} id=${profile.id} role=${profile.role}`);
+    console.log(`[EliteMiddleShipSpawn] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} id=${profile.id} role=${profile.role} marketing=${marketingDebug}`);
     return enemy;
   }
 
@@ -1227,16 +1319,31 @@ export class EnemyManager {
     return pos;
   }
 
-  async spawnBoss(level) {
-    const centerX = this.game.getWidth() / 2;
-    const boss = new Boss(centerX, 100, level, this.game); // VISIBILITY FIX: Spawn at visible position
+  async spawnBoss(level, options = {}) {
+    const marketingDebug = options.marketingDebug === true;
+    const centerX = Number.isFinite(options.x)
+      ? options.x
+      : marketingDebug
+        ? Math.max(140, Math.min(this.game.getWidth() - 140, this.game.getWidth() * (0.22 + Math.random() * 0.56)))
+        : this.game.getWidth() / 2;
+    const spawnY = Number.isFinite(options.y)
+      ? options.y
+      : marketingDebug
+        ? Math.max(82, Math.min(this.game.getHeight() * 0.32, 82 + Math.random() * 110))
+        : 100;
+    const boss = new Boss(centerX, spawnY, level, this.game); // VISIBILITY FIX: Spawn at visible position
 
     // Wait for boss visual to load
     await boss.createSprite();
 
-    this.boss = boss;
-    this.bossSpawnedThisLevel = true;
-    this.bossSpawnedAtMs = Date.now();
+    boss.marketingDebug = marketingDebug;
+    if (!marketingDebug) {
+      this.boss = boss;
+      this.bossSpawnedThisLevel = true;
+      this.bossSpawnedAtMs = Date.now();
+    } else {
+      this.boss = boss;
+    }
     this.enemies.push(boss);
     this.container.addChild(boss.sprite);
 
@@ -1250,12 +1357,16 @@ export class EnemyManager {
     console.log(`[BossFlow] boss active level=${level} bossSpawned=true bossActive=${boss.active}`);
     let bulletsCleared = false;
     const playScene = this.game.scenes && this.game.scenes.play ? this.game.scenes.play : null;
-    if (playScene?.showBossIntro) {
+    if (!marketingDebug && playScene?.showBossIntro) {
       const taunt = playScene.getBossTauntCaption ? playScene.getBossTauntCaption('boss_spawn') : getMicroMessage('bossIntro');
       playScene.showBossIntro(boss.name, taunt);
     }
-    AudioManager.playMusicContext('boss', { resetPlaylist: true });
-    if (playScene && playScene.bulletManager) {
+    if (!marketingDebug) {
+      AudioManager.playMusicContext('boss', { resetPlaylist: true });
+    } else {
+      AudioManager.playSfx('boss_reveal_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
+    }
+    if (!marketingDebug && playScene && playScene.bulletManager) {
       const bm = playScene.bulletManager;
       bm.playerBullets.forEach(b => {
         b.active = false;
@@ -1269,9 +1380,10 @@ export class EnemyManager {
       bm.enemyBullets = [];
       bulletsCleared = true;
     }
-    console.log(`[BossSpawnProof] level=${level} hp=${boss.health} x=${Math.round(boss.x)} y=${Math.round(boss.y)} invulnMs=${boss.invulnerableUntilMs - boss.spawnedAtMs} bulletsCleared=${bulletsCleared}`);
+    console.log(`[BossSpawnProof] level=${level} hp=${boss.health} x=${Math.round(boss.x)} y=${Math.round(boss.y)} invulnMs=${boss.invulnerableUntilMs - boss.spawnedAtMs} bulletsCleared=${bulletsCleared} marketing=${marketingDebug}`);
     console.log(`[BossPhase] level=${level} phase=${this.phase} spawned bossSpawned=true bossActive=${boss.active}`);
     this.logBossStatus('boss_spawn_complete');
+    return boss;
   }
 
   spawnBossAdds(count = 6) {
