@@ -38,50 +38,50 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_04',
-    label: 'Reach sector 3',
-    requirements: { bestSector: 3 },
+    label: 'Reach sector 4',
+    requirements: { bestSector: 4 },
     legacyLevel: 4
   },
   {
     shipId: 'nova_ship_05',
-    label: 'Score 25,000 in one run',
-    requirements: { bestScore: 25000 },
+    label: 'Score 50,000 in one run',
+    requirements: { bestScore: 50000 },
     legacyLevel: 5
   },
   {
     shipId: 'nova_ship_06',
-    label: 'Defeat 3 total bosses',
-    requirements: { totalBossesDefeated: 3 },
+    label: 'Defeat 6 total bosses',
+    requirements: { totalBossesDefeated: 6 },
     legacyLevel: 7
   },
   {
     shipId: 'nova_ship_07',
-    label: 'Discover 5 Threat Codex entries',
-    requirements: { codexDiscoveries: 5 },
+    label: 'Discover 40 Threat Codex entries',
+    requirements: { codexDiscoveries: 40 },
     legacyLevel: 9
   },
   {
     shipId: 'nova_ship_08',
-    label: 'Reach sector 5',
-    requirements: { bestSector: 5 },
+    label: 'Reach sector 6',
+    requirements: { bestSector: 6 },
     legacyLevel: 11
   },
   {
     shipId: 'nova_ship_09',
-    label: 'Clear 10 total waves',
-    requirements: { totalWavesCleared: 10 },
+    label: 'Clear 30 total waves',
+    requirements: { totalWavesCleared: 30 },
     legacyLevel: 14
   },
   {
     shipId: 'nova_ship_10',
-    label: 'Score 75,000 in one run',
-    requirements: { bestScore: 75000 },
+    label: 'Score 100,000 in one run',
+    requirements: { bestScore: 100000 },
     legacyLevel: 17
   },
   {
     shipId: 'nova_ship_11',
-    label: 'Reach pilot rank 6',
-    requirements: { pilotRank: 6 },
+    label: 'Reach pilot rank 8',
+    requirements: { pilotRank: 8 },
     legacyLevel: 20
   },
   {
@@ -92,20 +92,20 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_13',
-    label: 'Defeat 10 total bosses',
-    requirements: { totalBossesDefeated: 10 },
+    label: 'Defeat 18 total bosses',
+    requirements: { totalBossesDefeated: 18 },
     legacyLevel: 26
   },
   {
     shipId: 'nova_ship_14',
-    label: 'Discover 15 Threat Codex entries',
-    requirements: { codexDiscoveries: 15 },
+    label: 'Discover 75 Threat Codex entries',
+    requirements: { codexDiscoveries: 75 },
     legacyLevel: 29
   },
   {
     shipId: 'nova_ship_15',
-    label: 'Score 150,000 in one run',
-    requirements: { bestScore: 150000 },
+    label: 'Score 175,000 in one run',
+    requirements: { bestScore: 175000 },
     legacyLevel: 32
   },
   {
@@ -122,8 +122,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_18',
-    label: 'Defeat 20 total bosses',
-    requirements: { totalBossesDefeated: 20 },
+    label: 'Defeat 35 total bosses',
+    requirements: { totalBossesDefeated: 35 },
     legacyLevel: 41
   },
   {
@@ -134,8 +134,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_20',
-    label: 'Score 250,000 in one run',
-    requirements: { bestScore: 250000 },
+    label: 'Score 300,000 in one run',
+    requirements: { bestScore: 300000 },
     legacyLevel: 47
   },
   {
@@ -146,8 +146,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_22',
-    label: 'Discover 35 Threat Codex entries',
-    requirements: { codexDiscoveries: 35 },
+    label: 'Discover 120 Threat Codex entries',
+    requirements: { codexDiscoveries: 120 },
     legacyLevel: 53
   },
   {
@@ -158,14 +158,14 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_24',
-    label: 'Clear with 2 lives remaining or score 400,000',
-    requirementsAny: [{ clearWithLivesRemaining: 2 }, { bestScore: 400000 }],
+    label: 'Clear with 2 lives remaining or score 500,000',
+    requirementsAny: [{ clearWithLivesRemaining: 2 }, { bestScore: 500000 }],
     legacyLevel: 58
   },
   {
     shipId: 'nova_ship_25',
-    label: 'Clear the run and discover 50 threats',
-    requirements: { runClears: 1, codexDiscoveries: 50 },
+    label: 'Clear the run and discover 145 threats',
+    requirements: { runClears: 1, codexDiscoveries: 145 },
     legacyLevel: 60
   }
 ]);

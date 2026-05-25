@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { _electron as electron } from 'playwright';
 import { getAchievementIds } from '../src/achievements/AchievementCatalog.js';
+import { createDefaultHangarProgress, HANGAR_PROGRESS_KEY } from '../src/progression/HangarProgressState.js';
+import { THREAT_DISCOVERY_KEY } from '../src/progression/ThreatDiscoveryState.js';
 
 const appData = process.env.APPDATA || path.join(process.env.USERPROFILE || '', 'AppData', 'Roaming');
 const userDataCandidates = [
@@ -22,6 +24,23 @@ const resetAchievements = {
   unlocked: [],
   updatedAt: new Date().toISOString()
 };
+const resetHangarProgress = createDefaultHangarProgress();
+const resetThreatDiscovery = {
+  version: 1,
+  items: {
+    enemies: {},
+    attackPatterns: {},
+    waveTactics: {},
+    elites: {},
+    bosses: {},
+    runThemes: {},
+    rareModifiers: {}
+  },
+  discoveriesThisRun: [],
+  recentRunThemes: [],
+  unreadIds: [],
+  updatedAt: new Date().toISOString()
+};
 
 function backupFile(filePath) {
   if (!fs.existsSync(filePath)) return null;
@@ -40,7 +59,9 @@ function resetCloudSave(userDataPath) {
     updatedAt: new Date().toISOString(),
     achievements: resetAchievements,
     selectedShipKey: STARTER_SHIP,
-    progression: resetProgress
+    progression: resetProgress,
+    hangarProgress: resetHangarProgress,
+    threatDiscovery: resetThreatDiscovery
   };
   fs.writeFileSync(filePath, `${JSON.stringify(next, null, 2)}\n`);
   return {
@@ -70,8 +91,10 @@ async function resetElectronLocalStorage() {
     const win = await app.firstWindow({ timeout: 30000 });
     await win.waitForLoadState('domcontentloaded', { timeout: 30000 }).catch(() => {});
     await win.waitForFunction(() => Boolean(window.localStorage), null, { timeout: 15000 });
-    return await win.evaluate(async ({ achievementKey, progressKey, selectedShipKey, rotationKey, starterShip, progress, achievements, achievementIds }) => {
+    return await win.evaluate(async ({ achievementKey, progressKey, hangarProgressKey, threatDiscoveryKey, selectedShipKey, rotationKey, starterShip, progress, hangarProgress, threatDiscovery, achievements, achievementIds }) => {
       localStorage.setItem(progressKey, JSON.stringify(progress));
+      localStorage.setItem(hangarProgressKey, JSON.stringify(hangarProgress));
+      localStorage.setItem(threatDiscoveryKey, JSON.stringify(threatDiscovery));
       localStorage.setItem(achievementKey, JSON.stringify(achievements));
       localStorage.setItem(selectedShipKey, starterShip);
       localStorage.removeItem(rotationKey);
@@ -93,6 +116,8 @@ async function resetElectronLocalStorage() {
       return {
         achievementCount: JSON.parse(localStorage.getItem(achievementKey) || '{}')?.unlocked?.length || 0,
         progression: JSON.parse(localStorage.getItem(progressKey) || '{}'),
+        hangarProgress: JSON.parse(localStorage.getItem(hangarProgressKey) || '{}'),
+        threatDiscovery: JSON.parse(localStorage.getItem(threatDiscoveryKey) || '{}'),
         selectedShipKey: localStorage.getItem(selectedShipKey),
         steamBefore,
         steamClear,
@@ -101,10 +126,14 @@ async function resetElectronLocalStorage() {
     }, {
       achievementKey: ACHIEVEMENT_KEY,
       progressKey: UNLOCK_PROGRESS_KEY,
+      hangarProgressKey: HANGAR_PROGRESS_KEY,
+      threatDiscoveryKey: THREAT_DISCOVERY_KEY,
       selectedShipKey: SELECTED_SHIP_KEY,
       rotationKey: ROTATION_KEY,
       starterShip: STARTER_SHIP,
       progress: resetProgress,
+      hangarProgress: resetHangarProgress,
+      threatDiscovery: resetThreatDiscovery,
       achievements: resetAchievements,
       achievementIds: getAchievementIds()
     });
@@ -127,7 +156,7 @@ const report = {
   cloudResults,
   electronResult,
   electronError,
-  note: 'This resets Nova Swarm ship unlock progress, local achievement mirrors, Steam Cloud mirrors, and attempts to clear Steam backend achievements when Steam is available.'
+  note: 'This resets Nova Swarm legacy unlock progress, hangar progress, Threat Codex discovery, local achievement mirrors, Steam Cloud mirrors, and attempts to clear Steam backend achievements when Steam is available.'
 };
 
 console.log(JSON.stringify(report, null, 2));

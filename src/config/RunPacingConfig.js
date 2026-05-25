@@ -108,17 +108,17 @@ export const RunPacingConfig = {
   },
 
   pilotXp: {
-    scoreDivisor: 250,
-    sectorReachedBase: 120,
-    waveClear: 20,
-    bossDefeat: 150,
-    codexDiscovery: 120,
-    newThreatDefeat: 160,
-    runThemeDiscovery: 100,
-    noHitWave: 80,
-    noHitSector: 250,
-    runClear: 1000,
-    clearWithLivesRemaining: 300
+    scoreDivisor: 300,
+    sectorReachedBase: 90,
+    waveClear: 12,
+    bossDefeat: 110,
+    codexDiscovery: 28,
+    newThreatDefeat: 80,
+    runThemeDiscovery: 60,
+    noHitWave: 70,
+    noHitSector: 220,
+    runClear: 900,
+    clearWithLivesRemaining: 250
   }
 };
 

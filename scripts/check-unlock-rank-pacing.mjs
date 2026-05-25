@@ -5,7 +5,9 @@ import {
   ShipUnlockConfig
 } from '../src/config/ShipUnlockConfig.js';
 import {
+  HANGAR_PROGRESS_KEY,
   createDefaultHangarProgress,
+  readHangarProgressState,
   recalculateUnlockedShipIds
 } from '../src/progression/HangarProgressState.js';
 import {
@@ -60,21 +62,50 @@ const firstSession = unlockedFor({
   totalRuns: 1,
   bestSector: 3,
   bestScore: 25000,
-  totalBossesDefeated: 1
+  totalBossesDefeated: 1,
+  totalWavesCleared: 10,
+  totalCodexDiscoveries: 28,
+  pilotRank: 6
 });
-assert(firstSession.length >= 5 && firstSession.length <= 7, `first-session milestones should unlock an early hangar set, got ${firstSession.length}`);
-['nova_ship_02', 'nova_ship_03', 'nova_ship_04', 'nova_ship_05'].forEach((shipId) => {
+assert(firstSession.length >= 2 && firstSession.length <= 3, `short first-session milestones should reveal only a small hangar set, got ${firstSession.length}`);
+['nova_ship_02', 'nova_ship_03'].forEach((shipId) => {
   assert(firstSession.includes(shipId), `first-session profile should unlock ${shipId}`);
 });
+['nova_ship_04', 'nova_ship_05', 'nova_ship_07', 'nova_ship_11'].forEach((shipId) => {
+  assert(!firstSession.includes(shipId), `sector-3 first-session profile should not unlock ${shipId}`);
+});
+
+const fakeStorage = new Map();
+globalThis.localStorage = {
+  getItem: (key) => fakeStorage.get(key) ?? null,
+  setItem: (key, value) => fakeStorage.set(key, String(value)),
+  removeItem: (key) => fakeStorage.delete(key)
+};
+fakeStorage.set(HANGAR_PROGRESS_KEY, JSON.stringify({
+  version: 1,
+  unlockTuningVersion: 1,
+  pilotXp: 5940,
+  pilotRank: 6,
+  totalRuns: 1,
+  bestSector: 3,
+  bestScore: 12621,
+  totalBossesDefeated: 1,
+  totalWavesCleared: 10,
+  totalCodexDiscoveries: 28,
+  unlockedShipIds: ['nova_ship_01', 'nova_ship_02', 'nova_ship_03', 'nova_ship_04', 'nova_ship_07', 'nova_ship_11']
+}));
+const migratedFastProfile = readHangarProgressState();
+assert(migratedFastProfile.pilotRank <= 1, `old over-fast pilot XP should be softened during migration, got rank ${migratedFastProfile.pilotRank}`);
+assert(migratedFastProfile.unlockedShipIds.length <= 3, `old over-fast profile should be pruned to a small early hangar, got ${migratedFastProfile.unlockedShipIds.length}`);
 
 const midCareer = unlockedFor({
-  totalRuns: 6,
+  totalRuns: 10,
   bestSector: 8,
-  bestScore: 150000,
-  pilotRank: 6,
-  totalBossesDefeated: 10,
-  totalWavesCleared: 30,
-  totalCodexDiscoveries: 15,
+  bestScore: 175000,
+  pilotRank: 8,
+  totalBossesDefeated: 18,
+  totalWavesCleared: 45,
+  totalCodexDiscoveries: 75,
   survivedSeconds: 900,
   noHitWaves: 1
 });
@@ -84,13 +115,13 @@ assert(midCareer.length >= 16 && midCareer.length < 23, `mid-career profile shou
 });
 
 const mastery = unlockedFor({
-  totalRuns: 30,
+  totalRuns: 50,
   bestSector: 10,
-  bestScore: 500000,
+  bestScore: 550000,
   pilotRank: MAX_RANK_INDEX,
-  totalBossesDefeated: 30,
-  totalWavesCleared: 120,
-  totalCodexDiscoveries: 50,
+  totalBossesDefeated: 40,
+  totalWavesCleared: 160,
+  totalCodexDiscoveries: 145,
   runClears: 1,
   noHitWaves: 5,
   noHitSectors: 1,

@@ -59,7 +59,8 @@ if (getRankFromPilotXp(result.next.pilotXp) !== result.next.pilotRank) fail('pil
 fakeStorage.set(LEGACY_UNLOCK_PROGRESS_KEY, JSON.stringify({ bestLevel: 20, bestRank: 6, bestScore: 100000 }));
 fakeStorage.delete(HANGAR_PROGRESS_KEY);
 const migrated = readHangarProgressState();
-if (migrated.bestLevel < 20 || migrated.bestRank < 6) fail('old bestLevel/bestRank migration should preserve reasonable progress');
+if (migrated.bestSector < 4 || migrated.bestRank < 6) fail('old bestLevel/bestRank migration should preserve reasonable progress');
+if (migrated.unlockedShipIds.length > 5) fail('old bestLevel migration should not over-unlock the hangar');
 
 if (errors.length) {
   console.error(`[rank-progression] FAIL ${errors.length} issue(s)`);

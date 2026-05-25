@@ -13,6 +13,7 @@ import {
 export const HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const LEGACY_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
 export const HANGAR_PROGRESS_VERSION = 1;
+export const HANGAR_UNLOCK_TUNING_VERSION = 2;
 
 function storage() {
   try {
@@ -52,6 +53,7 @@ function writeJson(key, value) {
 export function createDefaultHangarProgress() {
   return {
     version: HANGAR_PROGRESS_VERSION,
+    unlockTuningVersion: HANGAR_UNLOCK_TUNING_VERSION,
     pilotXp: 0,
     pilotRank: 0,
     highestPilotRank: 0,
@@ -92,27 +94,34 @@ export function readLegacyUnlockProgress() {
 }
 
 function legacyUnlockedShipIds(bestLevel = 1) {
+  return bestLevel > 0 ? ['nova_ship_01'] : [];
+}
+
+function legacyLevelToSector(bestLevel = 1) {
   const level = Math.max(1, floor(bestLevel, 1));
-  return ShipUnlockConfig
-    .filter((entry) => level >= (Number(entry.legacyLevel) || 1))
-    .map((entry) => entry.shipId);
+  return Math.max(1, Math.min(10, Math.ceil(level / 6)));
 }
 
 export function normalizeHangarProgress(raw = {}) {
   const defaults = createDefaultHangarProgress();
   const legacy = readLegacyUnlockProgress();
-  const pilotXp = floor(raw.pilotXp);
-  const pilotRank = Math.min(MAX_RANK_INDEX, floor(raw.pilotRank, getRankFromPilotXp(pilotXp)));
-  const bestLevel = Math.max(1, floor(raw.bestLevel ?? raw.bestSector ?? legacy.bestLevel, legacy.bestLevel || 1));
-  const bestSector = Math.max(1, floor(raw.bestSector ?? raw.bestLevel ?? legacy.bestLevel, bestLevel));
+  const previousTuningVersion = floor(raw.unlockTuningVersion);
+  const rawPilotXp = floor(raw.pilotXp);
+  const pilotXp = previousTuningVersion > 0 && previousTuningVersion < HANGAR_UNLOCK_TUNING_VERSION
+    ? Math.floor(rawPilotXp * 0.25)
+    : rawPilotXp;
+  const pilotRank = Math.min(MAX_RANK_INDEX, getRankFromPilotXp(pilotXp));
+  const legacySector = legacyLevelToSector(legacy.bestLevel);
+  const bestLevel = Math.max(1, floor(raw.bestLevel ?? raw.bestSector ?? legacySector, legacySector));
+  const bestSector = Math.max(1, Math.min(10, floor(raw.bestSector ?? raw.bestLevel ?? legacySector, bestLevel)));
   const unlocked = new Set([
     ...defaults.unlockedShipIds,
-    ...legacyUnlockedShipIds(legacy.bestLevel),
-    ...(Array.isArray(raw.unlockedShipIds) ? raw.unlockedShipIds : [])
+    ...legacyUnlockedShipIds(legacy.bestLevel)
   ]);
   const normalized = {
     ...defaults,
     ...raw,
+    unlockTuningVersion: HANGAR_UNLOCK_TUNING_VERSION,
     pilotXp,
     pilotRank,
     highestPilotRank: Math.max(pilotRank, floor(raw.highestPilotRank)),
@@ -188,7 +197,6 @@ export function requirementsMet(progress, requirements = {}) {
 export function shipUnlockMet(shipId, progress = readHangarProgressState()) {
   const definition = getShipUnlockDefinition(shipId);
   if (!definition) return false;
-  if (Array.isArray(progress.unlockedShipIds) && progress.unlockedShipIds.includes(shipId)) return true;
   const requirements = definition.requirements || {};
   const hasAllRequirements = Object.keys(requirements).length > 0;
   const hasAnyRequirements = Array.isArray(definition.requirementsAny) && definition.requirementsAny.length > 0;
@@ -200,7 +208,7 @@ export function shipUnlockMet(shipId, progress = readHangarProgressState()) {
 
 export function recalculateUnlockedShipIds(progress = readHangarProgressState()) {
   const normalized = { ...progress };
-  const unlocked = new Set(['nova_ship_01', ...(Array.isArray(progress.unlockedShipIds) ? progress.unlockedShipIds : [])]);
+  const unlocked = new Set(['nova_ship_01']);
   for (const entry of ShipUnlockConfig) {
     if (shipUnlockMet(entry.shipId, normalized)) unlocked.add(entry.shipId);
   }

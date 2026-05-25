@@ -37,8 +37,11 @@ for (const entry of ShipUnlockConfig) {
 }
 
 const early = updateHangarProgress({ totalRuns: 1, bestSector: 3, totalBossesDefeated: 1, bestScore: 25000 });
-for (const shipId of ['nova_ship_02', 'nova_ship_03', 'nova_ship_04', 'nova_ship_05']) {
+for (const shipId of ['nova_ship_02', 'nova_ship_03']) {
   if (!shipUnlockMet(shipId, early)) fail(`${shipId} should unlock from early milestones`);
+}
+for (const shipId of ['nova_ship_04', 'nova_ship_05', 'nova_ship_07', 'nova_ship_11']) {
+  if (shipUnlockMet(shipId, early)) fail(`${shipId} should stay locked after a short sector-3 profile`);
 }
 
 const details = getShipUnlockProgressDetails('nova_ship_22', early);
@@ -47,7 +50,8 @@ if (!details.label || !Array.isArray(details.requirements)) fail('locked ship pr
 fakeStorage.set(LEGACY_UNLOCK_PROGRESS_KEY, JSON.stringify({ bestScore: 999, bestRank: 2, bestLevel: 20 }));
 fakeStorage.delete(HANGAR_PROGRESS_KEY);
 const migrated = readHangarProgressState();
-if (!migrated.unlockedShipIds.includes('nova_ship_11')) fail('old bestLevel progress should migrate into reasonable unlocked ships');
+if (migrated.bestSector !== 4) fail(`old bestLevel progress should map to arcade sectors conservatively, got sector ${migrated.bestSector}`);
+if (migrated.unlockedShipIds.length > 4) fail(`old bestLevel progress should not over-unlock ships after retuning, got ${migrated.unlockedShipIds.length}`);
 
 if (errors.length) {
   console.error(`[ship-unlocks] FAIL ${errors.length} issue(s)`);
