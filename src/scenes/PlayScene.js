@@ -5628,13 +5628,27 @@ export class PlayScene {
 
   showBossIntro(name, taunt) {
     const { width, height } = this.game.app.screen;
+    const compact = width < 720;
+    const panelWidth = Math.max(300, Math.min(compact ? width - 36 : 540, width * 0.72));
+    const panelHeight = compact ? 154 : 148;
+    const fitText = (text, maxWidth, maxHeight, minScale = 0.68) => {
+      if (!text) return;
+      text.scale.set(1);
+      text.style.wordWrap = true;
+      text.style.wordWrapWidth = maxWidth;
+      text.style.align = 'center';
+      text.updateText?.(false);
+      const widthScale = maxWidth / Math.max(1, text.width || maxWidth);
+      const heightScale = maxHeight / Math.max(1, text.height || maxHeight);
+      text.scale.set(Math.max(minScale, Math.min(1, widthScale, heightScale)));
+    };
     const card = new PIXI.Container();
     card.x = width / 2;
     card.y = height * 0.28;
     card.alpha = 0;
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(-220, -70, 440, 140, 12);
+    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 12);
     panel.fill({ color: 0x111111, alpha: 0.9 });
     panel.stroke({ color: 0xff3300, width: 3 });
     card.addChild(panel);
@@ -5644,21 +5658,31 @@ export class PlayScene {
       fontSize: 26,
       fill: '#ff3300',
       stroke: '#000000',
-      strokeThickness: 4
+      strokeThickness: 4,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 38,
+      lineHeight: compact ? 25 : 29
     });
     title.anchor.set(0.5);
-    title.y = -18;
+    title.y = -24;
+    fitText(title, panelWidth - 38, 56, 0.6);
     card.addChild(title);
 
     const line = createText(taunt || 'LET\'S GO!', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 18,
+      fontSize: compact ? 16 : 18,
       fill: '#ffffff',
       stroke: '#000000',
-      strokeThickness: 3
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 48,
+      lineHeight: compact ? 18 : 21
     });
     line.anchor.set(0.5);
-    line.y = 22;
+    line.y = 28;
+    fitText(line, panelWidth - 48, 54, 0.68);
     card.addChild(line);
 
     this.uiOverlay.addChild(card);

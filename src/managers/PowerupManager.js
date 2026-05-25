@@ -328,7 +328,7 @@ class Powerup {
       speed_up: 'SPEED UP!',
       pierce: 'PIERCING SHOTS!',
       score_x2: 'SCORE x2!',
-      magnet: 'MAGNET FIELD!',
+      magnet: 'MAGNET FIELD: PULLS PICKUPS',
       drones: 'SIDE DRONES!',
       shockwave: 'SHOCKWAVE!',
       chain_lightning: 'CHAIN LIGHTNING!',
@@ -337,7 +337,7 @@ class Powerup {
     };
 
     const { width, height } = scene.game.app.screen;
-    const text = createText(messages[this.type] || 'POWERUP!', {
+    const text = createText(translateText(messages[this.type] || 'POWERUP!'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 20,
       fill: this.color,

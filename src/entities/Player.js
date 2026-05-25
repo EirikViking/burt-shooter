@@ -1690,7 +1690,7 @@ export class Player {
       speed_up: 'SPEED UP',
       pierce: 'PIERCE',
       score_x2: 'SCORE x2',
-      magnet: 'MAGNET',
+      magnet: 'MAGNET: PICKUPS',
       drones: 'DRONES',
       shockwave: 'SHOCKWAVE',
       point_defense: 'POINT DEFENSE',

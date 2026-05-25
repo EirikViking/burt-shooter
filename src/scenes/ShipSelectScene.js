@@ -26,6 +26,10 @@ const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, sans-serif';
+const CAREER_INTEL_BODY = 'Your career profile grows between runs. Score, sectors, bosses, Codex discoveries, clean waves, and clears feed Career XP.';
+const CAREER_INTEL_RANK_COPY = 'Pilot Rank is your long-term arcade signal. Rank progress unlocks achievements and helps open the hangar.';
+const CAREER_INTEL_HANGAR_COPY = 'Ship unlocks read milestones from this profile, so even a failed run can move the roster forward.';
+const CAREER_INTEL_CODEX_COPY = 'Codex scans are discoveries from your own profile. New threats are knowledge, score, XP, and future ship progress.';
 
 export class ShipSelectScene {
   constructor(game) {
@@ -620,17 +624,30 @@ export class ShipSelectScene {
     dim.fill({ color: 0x010711, alpha: 0.76 });
     overlay.addChild(dim);
 
-    const panelWidth = Math.min(620, width - 44);
-    const panelHeight = Math.min(420, height - 56);
+    const panelWidth = Math.min(760, width - 44);
+    const panelHeight = Math.min(500, height - 56);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
+    const stackCards = panelWidth < 560;
+    const progress = getPilotRankProgress(this.unlockProgress.pilotXp || 0);
+    const nextRank = progress.rankIndex >= MAX_RANK_INDEX
+      ? translateText('MAX')
+      : getRankTitle(Math.min(MAX_RANK_INDEX, progress.rankIndex + 1)).toUpperCase();
 
     const panel = new PIXI.Graphics();
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x041321, alpha: 0.96 });
+    panel.fill({ color: 0x041321, alpha: 0.97 });
     panel.stroke({ color: 0x66ffdd, width: 2, alpha: 0.9 });
     panel.rect(panelX + 12, panelY + 14, 5, panelHeight - 28);
-    panel.fill({ color: 0xffd15c, alpha: 0.74 });
+    panel.fill({ color: 0xffd15c, alpha: 0.8 });
+    panel.rect(panelX + panelWidth - 18, panelY + 14, 5, panelHeight - 28);
+    panel.fill({ color: 0x37f5ff, alpha: 0.54 });
+    for (let i = 0; i < 7; i += 1) {
+      const y = panelY + 72 + i * 44;
+      panel.moveTo(panelX + 28, y);
+      panel.lineTo(panelX + panelWidth - 28, y + 10);
+    }
+    panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.08 });
     overlay.addChild(panel);
 
     const title = createText(translateText('CAREER INTEL'), {
@@ -647,9 +664,9 @@ export class ShipSelectScene {
     title.position.set(width / 2, panelY + 28);
     overlay.addChild(title);
 
-    const body = createText(translateText('CAREER INTEL BODY'), {
+    const body = createText(translateText(CAREER_INTEL_BODY), {
       fontFamily: FONT_BODY,
-      fontSize: width < 720 ? 13 : 15,
+      fontSize: width < 720 ? 13 : 16,
       fontWeight: '700',
       fill: '#d8fbff',
       align: 'left',
@@ -659,7 +676,70 @@ export class ShipSelectScene {
       letterSpacing: 0
     });
     body.position.set(panelX + 36, panelY + 88);
+    body.visible = !stackCards;
     overlay.addChild(body);
+
+    const cardTop = panelY + (stackCards ? 94 : width < 720 ? 158 : 166);
+    const cardGap = 10;
+    const cardW = stackCards ? panelWidth - 72 : Math.max(142, (panelWidth - 72 - cardGap * 2) / 3);
+    const cardH = stackCards ? 48 : (width < 720 ? 82 : 96);
+    const cardData = [
+      ['EARN XP', CAREER_INTEL_CODEX_COPY, 0xffe76a],
+      ['PILOT RANK', CAREER_INTEL_RANK_COPY, 0x66ffdd],
+      ['HANGAR UNLOCKS', CAREER_INTEL_HANGAR_COPY, 0xff55d9]
+    ];
+    cardData.forEach(([heading, copy, accent], index) => {
+      const card = new PIXI.Container();
+      card.x = stackCards ? panelX + 36 : panelX + 36 + index * (cardW + cardGap);
+      card.y = cardTop + (stackCards ? index * (cardH + 8) : 0);
+      const bg = new PIXI.Graphics();
+      bg.roundRect(0, 0, cardW, cardH, 8);
+      bg.fill({ color: 0x071b2a, alpha: 0.86 });
+      bg.stroke({ color: accent, width: 1.4, alpha: 0.68 });
+      bg.rect(0, 0, 6, cardH);
+      bg.fill({ color: accent, alpha: 0.78 });
+      card.addChild(bg);
+      const h = createText(translateText(heading), {
+        fontFamily: FONT_BODY,
+        fontSize: width < 720 ? 12 : 14,
+        fontWeight: '900',
+        fill: `#${accent.toString(16).padStart(6, '0')}`,
+        letterSpacing: 0
+      });
+      h.position.set(16, 10);
+      const p = createText(translateText(copy), {
+        fontFamily: FONT_BODY,
+        fontSize: stackCards ? 9 : width < 720 ? 10 : 12,
+        fontWeight: '700',
+        fill: '#d8fbff',
+        wordWrap: true,
+        wordWrapWidth: cardW - 28,
+        lineHeight: stackCards ? 11 : width < 720 ? 13 : 15,
+        letterSpacing: 0
+      });
+      p.position.set(16, 32);
+      card.addChild(h, p);
+      overlay.addChild(card);
+    });
+
+    const snapshot = createText(
+      `${translateText('PROFILE SNAPSHOT')}: ${translateText('RANK')} ${progress.rankIndex} / ${translateText('NEXT RANK')} ${nextRank} / ${translateText('XP TO NEXT')} ${Number(progress.xpToNextRank || 0).toLocaleString('en-US')} / ${translateText('CODEX SCANS')} ${this.unlockProgress.totalCodexDiscoveries || 0} / ${translateText('BEST SCORE')} ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}`,
+      {
+        fontFamily: FONT_BODY,
+        fontSize: width < 720 ? 11 : 13,
+        fontWeight: '900',
+        fill: '#fff3a2',
+        align: 'center',
+        wordWrap: true,
+        wordWrapWidth: panelWidth - 74,
+        lineHeight: width < 720 ? 14 : 16,
+        letterSpacing: 0
+      }
+    );
+    snapshot.anchor.set(0.5, 0);
+    snapshot.position.set(width / 2, cardTop + (stackCards ? cardData.length * (cardH + 8) : cardH) + 18);
+    snapshot.visible = !stackCards;
+    overlay.addChild(snapshot);
 
     const close = this.createHangarMenuOption('careerClose', translateText('BACK'), width / 2, panelY + panelHeight - 46, 0, () => this.closeCareerInfoOverlay('button'));
     close.redraw?.();
@@ -1402,9 +1482,9 @@ export class ShipSelectScene {
       const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
       const rankLine = isMaxRank
         ? [rankTitle, translateText('MAX RANK')].join('  ')
-        : [rankTitle, `${Math.round((rankProgress.progress || 0) * 100)}%`].join('  ');
+        : `${Math.round((rankProgress.progress || 0) * 100)}% ${translateText('TO')} ${nextTitle}`;
       this.leftIntel.count.text = `${unlockedCount}/${this.ships.length} HULLS READY`;
-      this.leftIntel.progress.text = `${translateText('PILOT RANK')} ${rankProgress.rankIndex}\n${rankLine}\n${translateText('NEXT RANK')}: ${isMaxRank ? translateText('MAX') : nextTitle}\n${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
+      this.leftIntel.progress.text = `${translateText('PILOT RANK')} ${rankProgress.rankIndex}: ${rankTitle}\n${rankLine}\n${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
       if (this.leftIntel.stats) {
         this.leftIntel.stats.text = `${translateText('CODEX SCANS')}: ${this.unlockProgress.totalCodexDiscoveries || 0}\n${translateText('BEST SCORE')}: ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}\n${translateText('LOCAL PROFILE')}`;
       }

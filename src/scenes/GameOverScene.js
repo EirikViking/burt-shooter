@@ -891,23 +891,35 @@ export class GameOverScene {
     this.drawLeaderboardButton(layout);
     this.drawNextGoalStrip(layout);
     this.drawShipUnlockReveal(layout);
+    [
+      this.title,
+      this.scoreText,
+      this.levelText,
+      this.unlockText,
+      this.nextGoalText,
+      this.comment,
+      this.leaderboardStatusText,
+      this.promptText,
+      this.notQualifiedText,
+      this.nameDisplay
+    ].forEach(node => node?.updateText?.(false));
 
     // Calculate content height for centering
-    const spacing = layout.isMobile ? 8 : 14;
-    const sectionGap = layout.isMobile ? 16 : 24;
+    const spacing = layout.isMobile ? 7 : 11;
+    const sectionGap = layout.isMobile ? 12 : 18;
 
-    // Estimate heights
-    const titleHeight = titleSize * 1.2;
-    const scoreHeight = scoreSize * 1.2;
-    const levelHeight = levelSize * 1.2;
+    // Use measured text heights so extra unlock/rank lines cannot collide.
+    const titleHeight = Math.max(titleSize * 1.2, this.title.height || 0);
+    const scoreHeight = Math.max(scoreSize * 1.2, this.scoreText.height || 0);
+    const levelHeight = Math.max(levelSize * 1.2, this.levelText.height || 0);
     const unlockRevealVisible = Boolean(this.shipUnlockReveal?.visible);
     const unlockRevealHeight = unlockRevealVisible ? (layout.isMobile ? 48 : 62) : 0;
-    const unlockHeight = unlockSize * 2.3 + unlockRevealHeight;
+    const unlockHeight = Math.max(unlockSize * 1.3, this.unlockText.height || 0) + unlockRevealHeight;
     const nextGoalHeight = this.nextGoalGroup?.visible ? Math.max(this.nextGoalGroup.height || 0, layout.isMobile ? 32 : 38) : 0;
-    const commentHeight = bodySize * 2 * 1.4; // ~2 lines
-    const leaderboardStatusHeight = leaderboardStatusSize * 2.5;
-    const promptHeight = promptSize * 1.2;
-    const nameHeight = nameSize * 1.2;
+    const commentHeight = Math.max(bodySize * 1.4, this.comment.height || 0);
+    const leaderboardStatusHeight = Math.max(leaderboardStatusSize * 1.5, this.leaderboardStatusText.height || 0);
+    const promptHeight = Math.max(promptSize * 1.2, this.promptText.height || 0);
+    const nameHeight = Math.max(nameSize * 1.2, this.nameDisplay.height || 0);
     const retryHeight = this.retryButtonHeight || (layout.isMobile ? 58 : 66);
     const leaderboardVisible = this.shouldShowLeaderboardButton();
     const leaderboardHeight = leaderboardVisible ? (this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48)) : 0;
@@ -1751,14 +1763,12 @@ export class GameOverScene {
 
   createUnlockSummary(previousProgress, currentProgress, newlyUnlocked = this.getNewlyUnlockedShips(previousProgress, currentProgress)) {
     const ships = getSelectableShips();
-    const summary = this.game?.runSummary || {};
-    const rankLine = this.createPilotRankLine(currentProgress);
     if (newlyUnlocked.length > 0) {
       const names = newlyUnlocked.slice(0, 2).map(ship => ship.name).join(' + ');
       const suffix = newlyUnlocked.length > 2 ? ` +${newlyUnlocked.length - 2} MORE` : '';
       const verb = newlyUnlocked.length === 1 ? 'SHIP' : 'SHIPS';
       const cta = newlyUnlocked.length === 1 ? 'VISIT THE HANGAR TO TRY IT' : 'VISIT THE HANGAR TO TRY THEM';
-      return `NEW ${verb} UNLOCKED: ${names}${suffix}\n${cta}\nPILOT XP +${summary.pilotXpGained || 0}  ${rankLine}`;
+      return `NEW ${verb} UNLOCKED: ${names}${suffix}\n${cta}`;
     }
 
     const nextShip = ships
@@ -1795,6 +1805,12 @@ export class GameOverScene {
     const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
     const percent = Math.max(0, Math.min(99, Math.round((rankProgress.progress || 0) * 100)));
     return `${translateText('RANK')} ${rankProgress.rankIndex}: ${rankTitle} ${percent}% ${translateText('TO')} ${nextTitle}`;
+  }
+
+  createPilotXpLine(currentProgress = {}) {
+    const summary = this.game?.runSummary || {};
+    const gained = Math.max(0, Number(summary.pilotXpGained) || 0);
+    return `${translateText('CAREER XP')} +${gained.toLocaleString('en-US')}  ${this.createPilotRankLine(currentProgress)}`;
   }
 
   playShipUnlockVoice() {
@@ -1858,7 +1874,7 @@ export class GameOverScene {
     const newBest = bestLevel > previousBestLevel && this.finalLevel >= bestLevel;
     const suffix = newBest ? ' - NEW BEST' : '';
     const clearLabel = summary.runCleared ? 'CLEAR' : 'GAME OVER';
-    return `${clearLabel}: SECTOR ${this.finalLevel}  ${Math.floor(summary.runElapsedSeconds || 0)}s\nCAREER BEST: SECTOR ${bestLevel}${suffix}\nPILOT XP +${summary.pilotXpGained || 0}  ${this.createPilotRankLine(currentProgress)}`;
+    return `${clearLabel}: SECTOR ${this.finalLevel}  ${Math.floor(summary.runElapsedSeconds || 0)}s\nCAREER BEST: SECTOR ${bestLevel}${suffix}\n${this.createPilotXpLine(currentProgress)}\n${translateText('XP FUELS PILOT RANK AND HANGAR UNLOCKS')}`;
   }
 
   getNextLevelGoal(bestLevel) {

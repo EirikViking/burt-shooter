@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
-import { THREAT_CODEX_CATEGORIES, getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
+import { CODEX_TEXT_TEMPLATES, THREAT_CODEX_CATEGORIES, getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
 import {
   clearThreatCodexUnread,
   getCodexCompletionCounts,
@@ -266,7 +266,7 @@ export class ThreatCodexScene {
         name: item.name || titleCaseSignal(id),
         rarity: item.metadata?.rarity || 'Discovered',
         role: item.metadata?.role || 'Runtime signal',
-        description: item.metadata?.description || 'The archive caught this signal in the wild, but the spectrometer is still making dramatic noises. Expect a readable tell, an attitude problem, and a better note once the swarm repeats itself.',
+        description: item.metadata?.description || translateText(CODEX_TEXT_TEMPLATES.runtimeDescription),
         tip: item.metadata?.tip || 'Watch the first tell, then move once. The scanner believes in you, suspiciously.'
       });
     });

@@ -44,6 +44,20 @@ function lerpAngle(current, target, maxStep) {
   return normalizeAngle(current + step);
 }
 
+function fitPixiTextToBox(text, maxWidth, maxHeight, minScale = 0.62) {
+  if (!text) return;
+  text.scale.set(1);
+  if (text.style) {
+    text.style.wordWrap = true;
+    text.style.wordWrapWidth = maxWidth;
+    text.style.align = 'center';
+  }
+  text.updateText?.(false);
+  const widthScale = maxWidth / Math.max(1, text.width || maxWidth);
+  const heightScale = maxHeight / Math.max(1, text.height || maxHeight);
+  text.scale.set(Math.max(minScale, Math.min(1, widthScale, heightScale)));
+}
+
 export class Boss {
   constructor(x, y, level, game) {
     this.x = x;
@@ -199,16 +213,27 @@ export class Boss {
       fontSize: 20,
       fill: `#${(this.profile?.accent || 0xff4455).toString(16).padStart(6, '0')}`,
       stroke: '#000000',
-      strokeThickness: 3
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: Math.max(120, Math.min(240, gameWidth * 0.26)),
+      lineHeight: 22
     });
     this.nameText.anchor.set(0.5);
     this.nameText.y = -Math.min(this.radius + 30, 72);
     this.nameText.zIndex = 6;
     this.sprite.addChild(this.nameText);
+    this.fitNameText();
 
     // Force visibility
     this.sprite.visible = true;
     this.sprite.alpha = 1;
+  }
+
+  fitNameText(maxHeight = 52) {
+    const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
+    const maxWidth = Math.max(120, Math.min(240, gameWidth * 0.26));
+    fitPixiTextToBox(this.nameText, maxWidth, maxHeight, 0.58);
   }
 
   updateHealthBar() {
@@ -1315,6 +1340,7 @@ export class Boss {
       const remaining = Math.max(0, Math.ceil((1 - progress) * 3));
       this.nameText.text = `${this.telegraph.label}\n${remaining}`;
       this.nameText.alpha = 0.88 + progress * 0.12;
+      this.fitNameText(58);
     }
 
   }
@@ -1324,6 +1350,7 @@ export class Boss {
     if (this.nameText) {
       this.nameText.text = this.name;
       this.nameText.alpha = 1;
+      this.fitNameText();
     }
     if (hadTelegraphOverlay) {
       this.updateHealthBar();

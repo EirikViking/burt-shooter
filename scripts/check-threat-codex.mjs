@@ -28,6 +28,12 @@ if ((catalog.enemies?.length || 0) < 180) fail(`expected at least 180 enemy code
 if ((catalog.attackPatterns?.length || 0) < 40) fail(`expected at least 40 attack pattern codex entries, found ${catalog.attackPatterns?.length || 0}`);
 if ((catalog.waveTactics?.length || 0) < 35) fail(`expected at least 35 wave tactic codex entries, found ${catalog.waveTactics?.length || 0}`);
 if ((catalog.runThemes?.length || 0) < 18) fail(`expected at least 18 run theme codex entries, found ${catalog.runThemes?.length || 0}`);
+const waveArt = catalog.waveTactics?.map(entry => entry.art).filter(Boolean) || [];
+if (waveArt.length !== catalog.waveTactics.length) fail('every wave tactic should have unique Codex art');
+if (new Set(waveArt).size !== waveArt.length) fail('wave tactic Codex art should be unique per tactic');
+if (!catalog.bosses?.every(entry => /runtime boss profile/i.test(entry.description))) {
+  fail('boss Codex descriptions should be data-driven from runtime boss profiles');
+}
 
 const seen = recordThreatSeen('telegraph_rail_lance', 'attackPatterns', { name: 'Rail Lance' });
 if (!seen.isNew) fail('new discovery should be marked new');

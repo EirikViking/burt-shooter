@@ -378,7 +378,7 @@ export class HUD {
       row.container.visible = false;
     });
 
-    this.activePowerupText.text = activeStates[0]?.label || '';
+    this.activePowerupText.text = translateText(activeStates[0]?.label || '');
     this.activePowerupTimer.text = this.formatPowerupMeta(activeStates[0] || {});
     this.activePowerupBarBg.clear();
     this.activePowerupBarFill.clear();
@@ -487,7 +487,7 @@ export class HUD {
 
     row.label.style.fontSize = isMobile ? 10 : 12;
     row.meta.style.fontSize = isMobile ? 10 : 11;
-    row.label.text = this.truncateLabel(state.label, isMobile ? 15 : 19);
+    row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 15 : 19);
     row.meta.text = this.formatPowerupMeta(state);
     row.label.x = 34;
     row.label.y = 4;

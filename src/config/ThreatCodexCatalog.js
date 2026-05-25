@@ -6,6 +6,21 @@ import { RunContentDirectorConfig } from './RunContentDirectorConfig.js';
 import { ENEMY_WEAPON_PROFILES } from './EnemyWeaponProfiles.js';
 import { BOSS_ROSTER } from './BossRoster.js';
 import { AssetManifest } from '../assets/assetManifest.js';
+import { translateText } from '../i18n/index.js';
+
+export const CODEX_TEXT_TEMPLATES = Object.freeze({
+  enemyDescription: '{name} is catalogued as a {role}: {roleDescription}. The hull signature shows {movement} and {fire}. In a themed formation it edits your escape route instead of simply chasing you.',
+  actionDescription: '{name} is a readable attack pattern. The scanner marks a {telegraph} tell for about {readWindow} ms, then spends {budget} danger budget on the hit. Early previews are slower and wider; late-run versions get sharper.',
+  waveDescription: '{name} is a wave tactic: {role}. It controls entry timing, lane ownership, and synchronized pressure so ordinary enemies behave like a rehearsed formation.',
+  eliteDescription: '{name} is an elite middle ship. It mixes {movement} movement, {fire} fire, and the {ability} system. Clear nearby fodder, then focus the elite before the wave becomes a target-priority problem.',
+  bossDescription: '{name} uses the runtime boss profile {title}: {movement} movement, {attack} pressure, and {signature} as its signature read. The Codex summary is data-driven, then dressed up for arcade drama.',
+  themeDescription: 'Run theme {name} changes enemy and attack weights for a run. Director weights favor {threats} and formations such as {formations}.',
+  runtimeDescription: 'The archive caught this signal in the wild, but the spectrometer is still making dramatic noises. Expect a readable tell, an attitude problem, and a better note once the swarm repeats itself.'
+});
+
+function codexText(key, vars = {}) {
+  return translateText(CODEX_TEXT_TEMPLATES[key] || '', vars);
+}
 
 export const THREAT_CODEX_CATEGORIES = Object.freeze([
   { id: 'enemies', label: 'Enemies' },
@@ -33,6 +48,64 @@ function titleCaseSignal(id = '') {
   return String(id)
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function hashString(value = '') {
+  let hash = 2166136261;
+  for (const char of String(value)) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function hexColor(value) {
+  return `#${(value & 0xffffff).toString(16).padStart(6, '0')}`;
+}
+
+function xmlEscape(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function createWaveTacticArtDataUri(id, name, role) {
+  const seed = hashString(`${id}:${name}:${role}`);
+  const accent = 0x37f5ff ^ (seed & 0x3f3fff);
+  const hot = 0xffe76a ^ ((seed >>> 7) & 0x5f5f5f);
+  const alt = 0xa77dff ^ ((seed >>> 13) & 0x3f3f3f);
+  const lanes = 4 + (seed % 5);
+  const nodes = 5 + ((seed >>> 4) % 7);
+  const angle = ((seed >>> 9) % 34) - 17;
+  const laneLines = Array.from({ length: lanes }, (_, index) => {
+    const x = 84 + index * (632 / Math.max(1, lanes - 1));
+    const dash = 10 + ((seed >>> (index + 2)) % 18);
+    return `<path d="M${x.toFixed(1)} 48 L${(x + angle * 2).toFixed(1)} 352" stroke="${hexColor(accent)}" stroke-width="3" stroke-opacity="0.34" stroke-dasharray="${dash} ${dash + 8}"/>`;
+  }).join('');
+  const nodeShapes = Array.from({ length: nodes }, (_, index) => {
+    const t = index / Math.max(1, nodes - 1);
+    const wobble = ((seed >>> (index % 16)) & 31) - 15;
+    const x = 108 + t * 584;
+    const y = 92 + ((index * 53 + seed) % 214) + wobble * 0.8;
+    const r = 8 + ((seed >>> (index + 6)) % 10);
+    const color = index % 3 === 0 ? hot : index % 3 === 1 ? accent : alt;
+    const diamond = index % 2 === 0
+      ? `<polygon points="${x},${y - r * 1.25} ${x + r * 1.25},${y} ${x},${y + r * 1.25} ${x - r * 1.25},${y}" fill="${hexColor(color)}" fill-opacity="0.82"/>`
+      : `<circle cx="${x}" cy="${y}" r="${r}" fill="${hexColor(color)}" fill-opacity="0.78"/>`;
+    return `<g>${diamond}<circle cx="${x}" cy="${y}" r="${r + 10}" fill="none" stroke="${hexColor(color)}" stroke-opacity="0.22"/></g>`;
+  }).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420">
+<defs><radialGradient id="g" cx="50%" cy="50%" r="70%"><stop offset="0%" stop-color="${hexColor(accent)}" stop-opacity="0.22"/><stop offset="70%" stop-color="#03101b" stop-opacity="0.96"/><stop offset="100%" stop-color="#01060b"/></radialGradient></defs>
+<rect width="800" height="420" fill="url(#g)"/>
+<rect x="28" y="30" width="744" height="360" rx="24" fill="#030b13" fill-opacity="0.42" stroke="${hexColor(accent)}" stroke-opacity="0.72" stroke-width="3"/>
+${laneLines}
+<path d="M72 320 C210 ${(seed % 120) + 76}, 420 ${((seed >>> 5) % 170) + 72}, 728 98" fill="none" stroke="${hexColor(hot)}" stroke-width="5" stroke-opacity="0.72"/>
+${nodeShapes}
+<text x="400" y="380" text-anchor="middle" font-family="Rajdhani, Orbitron, sans-serif" font-size="26" font-weight="900" fill="${hexColor(hot)}" fill-opacity="0.9">${xmlEscape(name.toUpperCase())}</text>
+</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 const BASE_WAVE_TACTIC_ENTRIES = Object.freeze([
@@ -157,7 +230,13 @@ function enemyEntry(profile) {
     name,
     rarity,
     role: roleLabel,
-    description: `${name} is catalogued as a ${roleLabel.toLowerCase()}: ${roleDescription}. The hull signature shows ${movement} and ${fire}, which means the ship is not just flying at you, it is trying to edit your escape route. When the director places it in a themed formation, treat it like a tiny argument from deep space: simple on its own, rude in a group.`,
+    description: codexText('enemyDescription', {
+      name,
+      role: roleLabel.toLowerCase(),
+      roleDescription,
+      movement,
+      fire
+    }),
     tip: ROLE_TIPS[profile.role] || 'Destroy it before the formation finishes shaping the lane.',
     art: AssetManifest.generated.enemies?.[profile.spriteIndex] || null,
     accent: profile.accent,
@@ -177,7 +256,12 @@ function actionEntry(action) {
     name: action.label || action.id,
     rarity: action.minLevel <= 2 ? 'Common' : action.minLevel <= 8 ? 'Uncommon' : 'Rare',
     role: action.tags?.[0] || 'Attack pattern',
-    description: action.description || `${action.label || action.id} is a weaponized little physics lesson. The scanner marks a ${action.telegraph || 'visual'} tell, gives you about ${readWindow} ms to disagree with it, then spends ${budget} danger budget on the actual problem. Early previews are deliberately slower and wider; late-run versions trust you less and the swarm much more.`,
+    description: codexText('actionDescription', {
+      name: action.label || action.id,
+      telegraph: action.telegraph || 'visual',
+      readWindow,
+      budget
+    }),
     tip: ACTION_TIPS[action.id] || action.codexTip || 'Read the tell first, then move once with purpose.',
     art: Number.isFinite(weapon?.assetIndex) ? AssetManifest.generated.enemyWeapons?.[weapon.assetIndex] : null,
     accent: weapon?.warningColor || weapon?.color || 0x7dffcc,
@@ -187,16 +271,17 @@ function actionEntry(action) {
 }
 
 function waveEntry([id, name, role, tip]) {
+  const seed = hashString(id);
   return {
     id,
     category: 'waveTactics',
     name,
     rarity: 'Common',
     role,
-    description: `${name} is not a single ship. It is the swarm's dance card: entry timing, lane ownership, and just enough synchronized nonsense to make ordinary enemies feel like they rehearsed. Learn the shape and the wave stops looking like chaos with a costume budget.`,
+    description: codexText('waveDescription', { name, role }),
     tip,
-    art: null,
-    accent: 0x37f5ff,
+    art: createWaveTacticArtDataUri(id, name, role),
+    accent: 0x37f5ff ^ (seed & 0x3f3fff),
     signalClass: 'formation script'
   };
 }
@@ -210,7 +295,12 @@ function eliteEntry(profile) {
     name,
     rarity: profile.minLevel <= 8 ? 'Uncommon' : 'Rare',
     role: profile.role || profile.specialAbility || 'Elite',
-    description: `${name} is what happens when the swarm gives a middle ship a clipboard and too much confidence. It mixes ${profile.movementStyle || 'special'} movement, ${profile.fireStyle || 'elite'} fire, and the ${ability} system. ${profile.designNote || 'It changes the wave from crowd control into target priority.'}`,
+    description: codexText('eliteDescription', {
+      name,
+      movement: profile.movementStyle || 'special',
+      fire: profile.fireStyle || 'elite',
+      ability
+    }),
     tip: profile.designNote || 'Clear nearby fodder, then focus the elite during its cooldown.',
     art: profile.asset || AssetManifest.generated.eliteMiddleShips?.[profile.spriteIndex] || null,
     accent: profile.accent,
@@ -227,7 +317,13 @@ function bossEntry(profile) {
     name: profile.name,
     rarity: 'Boss',
     role: profile.title,
-    description: `${profile.name} is a ${profile.title.toLowerCase()} boss signal, which is a polite way of saying the cabinet found a large problem and gave it stage lighting. Its core loop is ${profile.movement} movement with ${profile.attack} pressure, and the scanner flags ${profile.signature} as the signature read. Win by learning the rhythm, then shooting during the boss's dramatic thinking pauses.`,
+    description: codexText('bossDescription', {
+      name: profile.name,
+      title: profile.title.toLowerCase(),
+      movement: profile.movement,
+      attack: profile.attack,
+      signature: profile.signature
+    }),
     tip: 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.',
     art: profile.art,
     accent: profile.accent,
@@ -245,7 +341,11 @@ function runThemeEntry(theme) {
     name: theme.label,
     rarity: 'Run Theme',
     role: theme.description || 'Content rotation',
-    description: `${theme.description || `${theme.label} changes enemy and attack weights for a run.`} The director loads this theme like a mixtape for trouble: primary threats include ${threats}, while favored formations include ${formations}. If the run feels different, congratulations, the machine is showing you a new bad idea on purpose.`,
+    description: codexText('themeDescription', {
+      name: theme.label,
+      threats,
+      formations
+    }),
     tip: theme.codexTip || 'Use the first sector to identify what this run wants you to respect.',
     art: THEME_ART[theme.id] || AssetManifest.generated.gameplayArenaBackdrop,
     accent: 0x7dffcc,
