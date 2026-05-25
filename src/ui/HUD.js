@@ -644,7 +644,7 @@ export class HUD {
       {
         every: Number(state.critEvery || 0),
         remaining: Number(state.nextCritShotIn || 0),
-        text: 'OVERCHARGE',
+        text: 'CRIT',
         color: 0xff8844
       },
       {
@@ -656,7 +656,7 @@ export class HUD {
       {
         every: Number(state.wingShotEvery || 0),
         remaining: Number(state.nextWingShotIn || 0),
-        text: 'WING BURST',
+        text: 'WING SHOT',
         color: 0x66ff99
       },
       {
@@ -672,7 +672,7 @@ export class HUD {
       const next = candidates[0];
       const progress = Math.max(0, Math.min(1, 1 - (next.remaining - 1) / next.every));
       return {
-        text: next.remaining <= 1 ? `${next.text} READY` : `${next.text} IN ${next.remaining}`,
+        text: next.remaining <= 1 ? `${next.text} READY` : `${next.text} IN ${next.remaining} SHOTS`,
         progress,
         color: next.color
       };

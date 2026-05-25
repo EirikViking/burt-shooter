@@ -34,6 +34,8 @@ export class Bullet {
     this.visualConfig = visualConfig || {};
     this.weaponProfileId = this.visualConfig.weaponProfileId || null;
     this.weaponLabel = this.visualConfig.weaponLabel || null;
+    this.sourceEnemyType = this.visualConfig.sourceEnemyType || null;
+    this.sourceFireStyle = this.visualConfig.sourceFireStyle || null;
     this.baseAngle = this.angle;
     this.baseScale = 1;
     this.wobble = !isPlayer ? (this.visualConfig.wobble || 0) : 0;

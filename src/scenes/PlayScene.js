@@ -4,7 +4,7 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { Player, RESPAWN_INVULNERABILITY_MS } from '../entities/Player.js';
 import { BonusDrone } from '../entities/BonusDrone.js';
 import { AssetManifest } from '../assets/assetManifest.js';
-import { BalanceConfig } from '../config/BalanceConfig.js';
+import { BalanceConfig, MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { COMBO_MILESTONES, COMBO_WINDOW_MS } from '../config/ComboConfig.js';
 import { EnemyManager } from '../managers/EnemyManager.js';
 import { BulletManager } from '../managers/BulletManager.js';
@@ -74,6 +74,10 @@ export class PlayScene {
     this.shownStoryTransmissionIds = new Set();
     this.commsPortraitsReady = null;
     this.lowLivesShownFor = null;
+    this.lastMaxLivesVoiceAt = 0;
+    this.bossMercyUntilMs = 0;
+    this.lastBossMercyBlockLogAt = 0;
+    this.lastBossMercyFeedbackAt = 0;
     this.ambientBonusDroneTimer = 0;
     this.easterEggTimer = 0;
     this.ambientBonusDrones = []; // Lists for update
@@ -1681,6 +1685,14 @@ export class PlayScene {
           if (this.player.isGhostActive?.()) return;
 
           bullet.active = false;
+          if (this.isBossOwnedBullet(bullet)) {
+            this.handleBossCausedPlayerHit('boss_bullet', this.enemyManager?.boss, {
+              balanceSource: `boss_bullet:${bullet.sourceFireStyle || bullet.weaponProfileId || 'unknown'}`,
+              shieldShake: 4
+            });
+            return;
+          }
+
           if (!this.player.invulnerable) {
             const damageTaken = this.player.takeDamage();
             if (damageTaken) {
@@ -1767,19 +1779,10 @@ export class PlayScene {
 
           const isBossContact = enemy.kind === 'boss';
           if (isBossContact) {
-            if (!this.player.invulnerable) {
-              const damageTaken = this.player.takeDamage();
-              if (damageTaken) {
-                this.recordBalanceDamage('boss_contact');
-                this.lastHitAt = Date.now();
-                this.game.loseLife();
-                this.triggerPlayerDeathFeedback();
-              } else {
-                this.screenShake.shake(4);
-                this.particleManager.createHitSpark(this.player.x, this.player.y);
-              }
-              this.particleManager.createHitSpark(this.player.x, this.player.y);
-            }
+            this.handleBossCausedPlayerHit('boss_contact', enemy, {
+              balanceSource: 'boss_contact',
+              shieldShake: 4
+            });
             return;
           }
 
@@ -2561,7 +2564,7 @@ export class PlayScene {
     // RESPONDER LOGIC
     if (this.player && this.game.lives > 0) {
       this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
-      this.player.invulnerableTime = RESPAWN_INVULNERABILITY_MS;
+      this.player.grantInvulnerability?.(RESPAWN_INVULNERABILITY_MS, 'respawn');
       this.recordBalanceRespawn();
       const clearedHazards = this.clearRespawnHazards('life_lost');
       if (clearedHazards > 0) {
@@ -2623,6 +2626,216 @@ export class PlayScene {
     return true;
   }
 
+  getBossMercyCooldownMs(level = this.game?.level || 1) {
+    const config = BalanceConfig.bossMercy || {};
+    if (config.enabled !== true) return 0;
+
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const maxProtectedLevel = Math.max(1, Math.floor(Number(config.maxProtectedLevel) || 10));
+    const earlyCooldownMs = Math.max(0, Number(config.earlyCooldownMs) || 7000);
+    const lateCooldownMs = Math.max(0, Number(config.lateCooldownMs) || 5000);
+    const minimumCooldownMs = Math.max(0, Number(config.minimumCooldownMs) || 2500);
+    const levelReductionMs = Math.max(0, Number(config.levelReductionMs) || 250);
+
+    if (safeLevel <= maxProtectedLevel) {
+      return Math.max(lateCooldownMs, earlyCooldownMs - (safeLevel - 1) * levelReductionMs);
+    }
+    return Math.max(minimumCooldownMs, lateCooldownMs - (safeLevel - maxProtectedLevel) * levelReductionMs);
+  }
+
+  canBossCauseLifeLoss(source = 'boss_damage', boss = this.enemyManager?.boss) {
+    const config = BalanceConfig.bossMercy || {};
+    if (config.enabled !== true) return true;
+    const now = Date.now();
+    const remainingMs = Math.max(0, (this.bossMercyUntilMs || 0) - now);
+    if (remainingMs <= 0) return true;
+
+    const feedbackCooldownMs = Math.max(0, Number(config.blockedHitFeedbackCooldownMs) || 600);
+    if (now - (this.lastBossMercyBlockLogAt || 0) >= feedbackCooldownMs) {
+      this.lastBossMercyBlockLogAt = now;
+      console.log(`[BossMercy] block source=${source} level=${Number(boss?.level) || Number(this.game?.level) || 1} remainingMs=${Math.round(remainingMs)}`);
+    }
+    this.showBossMercyBlockedFeedback(source);
+    return false;
+  }
+
+  startBossMercyWindow(source = 'boss_damage', boss = this.enemyManager?.boss, cooldownMs = this.getBossMercyCooldownMs(boss?.level || this.game?.level || 1)) {
+    const duration = Math.max(0, Number(cooldownMs) || 0);
+    if (duration <= 0) return 0;
+    const now = Date.now();
+    this.bossMercyUntilMs = Math.max(this.bossMercyUntilMs || 0, now + duration);
+    const level = Number(boss?.level) || Number(this.game?.level) || 1;
+    console.log(`[BossMercy] trigger source=${source} level=${level} cooldownMs=${Math.round(duration)}`);
+    return duration;
+  }
+
+  applyBossRecoverySeparation(boss = this.enemyManager?.boss) {
+    if (!this.player || !boss || !this.game) return false;
+    const config = BalanceConfig.bossMercy || {};
+    const pushback = Math.max(0, Number(config.contactPushbackPx) || 72);
+    const width = this.game.getWidth ? this.game.getWidth() : this.game.app.screen.width;
+    const height = this.game.getHeight ? this.game.getHeight() : this.game.app.screen.height;
+    const margin = Math.max(24, (this.player.radius || 12) + 12);
+    let dx = this.player.x - boss.x;
+    const baseDy = this.player.y - boss.y;
+    let dy = baseDy + 0.85 * Math.max(1, Math.abs(dx) + Math.abs(baseDy));
+    let length = Math.hypot(dx, dy);
+    if (!Number.isFinite(length) || length < 0.01) {
+      dx = 0;
+      dy = 1;
+      length = 1;
+    }
+    const nx = dx / length;
+    const ny = dy / length;
+    const targetX = Math.max(margin, Math.min(width - margin, this.player.x + nx * pushback));
+    const targetY = Math.max(margin, Math.min(height - margin, this.player.y + ny * pushback));
+    this.player.x = targetX;
+    this.player.y = targetY;
+    this.player.sprite.x = targetX;
+    this.player.sprite.y = targetY;
+    this.particleManager?.createHitSpark(targetX, targetY, boss.color || 0xfff45c);
+    return true;
+  }
+
+  showBossMercyBlockedFeedback(source = 'boss_damage') {
+    const config = BalanceConfig.bossMercy || {};
+    const cooldownMs = Math.max(0, Number(config.blockedHitFeedbackCooldownMs) || 600);
+    const now = Date.now();
+    if (now - (this.lastBossMercyFeedbackAt || 0) < cooldownMs) return false;
+    this.lastBossMercyFeedbackAt = now;
+    this.enqueueToast(translateText('RECOVERING'), {
+      fontSize: this.game.getWidth() < 620 ? 13 : 15,
+      fill: '#8fffd5',
+      stroke: '#001616',
+      strokeThickness: 2,
+      duration: 520,
+      slot: 'corner',
+      type: 'repair',
+      priority: 1
+    });
+    if (source === 'boss_contact') this.screenShake?.shake(2, 8);
+    return true;
+  }
+
+  handleBossCausedPlayerHit(source, boss = this.enemyManager?.boss, options = {}) {
+    if (!this.player?.active || this.player.isGhostActive?.()) return false;
+    if (!this.canBossCauseLifeLoss(source, boss)) {
+      this.particleManager?.createHitSpark(this.player.x, this.player.y, boss?.color || 0x8fffd5);
+      return false;
+    }
+    if (this.player.invulnerable) {
+      this.showBossMercyBlockedFeedback(source);
+      return false;
+    }
+
+    const damageTaken = this.player.takeDamage();
+    if (!damageTaken) {
+      this.screenShake?.shake(options.shieldShake || 4);
+      this.particleManager?.createHitSpark(this.player.x, this.player.y, boss?.color || 0x8fffd5);
+      return false;
+    }
+
+    const cooldownMs = this.startBossMercyWindow(source, boss);
+    this.player.grantInvulnerability?.(cooldownMs, 'boss_mercy');
+    if (source === 'boss_contact') this.applyBossRecoverySeparation(boss);
+    this.recordBalanceDamage(options.balanceSource || source);
+    this.lastHitAt = Date.now();
+    this.game.loseLife();
+    this.triggerPlayerDeathFeedback();
+    return true;
+  }
+
+  isBossOwnedBullet(bullet) {
+    return bullet?.sourceEnemyType === 'boss' || bullet?.visualConfig?.sourceEnemyType === 'boss';
+  }
+
+  getMaxLives() {
+    return Math.max(1, Number(BalanceConfig.survival?.maxLives) || MAX_PLAYER_LIVES);
+  }
+
+  onLifeGained(lives, context = {}) {
+    const maxLives = Math.max(1, Number(context.maxLives) || this.getMaxLives());
+    const before = Number.isFinite(context.before) ? context.before : maxLives - 1;
+    const currentLives = Number.isFinite(lives) ? lives : Number(this.game?.lives) || 0;
+    if (currentLives >= maxLives && before < maxLives) {
+      this.showMaxLivesNotification({ maxLives });
+    }
+  }
+
+  showMaxLivesNotification({ maxLives = this.getMaxLives() } = {}) {
+    const compactHud = this.game.getWidth() < 620;
+    this.enqueueToast(translateText('MAX LIVES REACHED!'), {
+      fontSize: compactHud ? 18 : 28,
+      fill: '#7dffcc',
+      stroke: '#001616',
+      strokeThickness: compactHud ? 3 : 4,
+      duration: 1900,
+      slot: 'top',
+      type: 'repair',
+      priority: 4,
+      y: this.game.getHeight() * (compactHud ? 0.24 : 0.18),
+      maxWidth: this.game.getWidth() * (compactHud ? 0.86 : 0.62)
+    });
+    this.spawnMaxLivesVfx();
+
+    const now = Date.now();
+    if (now - this.lastMaxLivesVoiceAt > 30000) {
+      this.lastMaxLivesVoiceAt = now;
+      AudioManager.playVoice('mission_control_lives_max', {
+        force: true,
+        bypassGlobalCooldown: true,
+        stopOtherVoices: true,
+        cooldownMs: 30000,
+        duckMs: 1500,
+        duckFactor: 0.48
+      });
+    }
+    console.log(`[Lives] max_reached lives=${maxLives}`);
+  }
+
+  spawnMaxLivesVfx() {
+    if (!this.player || !this.gameContainer || !this.game?.app?.ticker) return;
+
+    const burst = new PIXI.Container();
+    burst.x = this.player.x;
+    burst.y = this.player.y;
+    burst.zIndex = 9000;
+
+    const rings = [0, 1, 2].map((index) => {
+      const ring = new PIXI.Graphics();
+      ring.__delay = index * 110;
+      burst.addChild(ring);
+      return ring;
+    });
+    this.gameContainer.addChild(burst);
+
+    let elapsed = 0;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      burst.x = this.player?.x ?? burst.x;
+      burst.y = this.player?.y ?? burst.y;
+      rings.forEach((ring, index) => {
+        const t = Math.max(0, Math.min(1, (elapsed - ring.__delay) / 640));
+        ring.clear();
+        if (t <= 0 || t >= 1) return;
+        const radius = 20 + t * (48 + index * 10);
+        ring.circle(0, 0, radius);
+        ring.stroke({
+          color: index === 1 ? 0xffffff : 0x7dffcc,
+          width: 3 - t * 1.6,
+          alpha: 0.78 * (1 - t)
+        });
+      });
+
+      if (elapsed >= 980) {
+        this.game.app.ticker.remove(ticker);
+        if (burst.parent) burst.parent.removeChild(burst);
+      }
+    };
+    this.game.app.ticker.add(ticker);
+    AudioManager.playSfx('life_up', { force: true, volume: 0.82, minIntervalMs: 250 });
+  }
+
   tryLastStandRepair() {
     if (BalanceConfig.survival?.lastStandRepairEnabled !== true) return false;
     if (!this.player || this.game.lives > 0) return false;
@@ -2633,7 +2846,7 @@ export class PlayScene {
     this.game.lives = 2;
     this.lowLivesShownFor = null;
     this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
-    this.player.invulnerableTime = RESPAWN_INVULNERABILITY_MS;
+    this.player.grantInvulnerability?.(RESPAWN_INVULNERABILITY_MS, 'last_stand');
     this.recordBalanceRespawn();
     const clearedHazards = this.clearRespawnHazards('last_stand');
     const compactHud = this.game.getWidth() < 620;
@@ -2793,15 +3006,22 @@ export class PlayScene {
   applyLifeRepair(targetLives = 3, invulnerabilityMs = 3000) {
     const before = Number.isFinite(this.game?.lives) ? this.game.lives : 0;
     if (before <= 0) return 0;
-    const target = Math.max(before, Math.min(5, Math.round(targetLives)));
+    const maxLives = this.getMaxLives();
+    const target = Math.max(before, Math.min(maxLives, Math.round(targetLives)));
     if (target <= before) return 0;
 
     this.game.lives = target;
     this.lowLivesShownFor = null;
+    this.onLifeGained(target, {
+      before,
+      after: target,
+      maxLives,
+      source: 'life_repair',
+      reachedMax: target >= maxLives
+    });
 
     if (this.player) {
-      this.player.invulnerable = true;
-      this.player.invulnerableTime = Math.max(this.player.invulnerableTime || 0, invulnerabilityMs);
+      this.player.grantInvulnerability?.(invulnerabilityMs, 'life_repair');
     }
 
     AudioManager.playSfx('powerup', { force: true, volume: 0.72, minIntervalMs: 250 });
@@ -2811,7 +3031,7 @@ export class PlayScene {
   applyBossClearRecovery(level = this.game?.level || 1) {
     const rewardConfig = BalanceConfig.rewards || {};
     const repairLives = Math.max(0, Number(rewardConfig.bossClearRepairLives) || 0);
-    const maxLives = Math.max(1, Number(rewardConfig.bossClearRepairMaxLives) || 5);
+    const maxLives = Math.max(1, Number(rewardConfig.bossClearRepairMaxLives) || this.getMaxLives());
     const levelKey = Number(level) || Number(this.game?.level) || 1;
     if (repairLives <= 0 || this.bossClearRecoveryLevels.has(levelKey)) return 0;
 
@@ -3356,7 +3576,6 @@ export class PlayScene {
   isPlayerInsideBossHazard(hazard) {
     if (!this.player?.active) return false;
     if (this.player.isGhostActive?.()) return false;
-    if (this.player.invulnerable) return false;
 
     const playerRadius = this.player.radius || 12;
     if (hazard.kind === 'wall') {
@@ -3385,8 +3604,7 @@ export class PlayScene {
   }
 
   damagePlayerFromBossHazard(hazard) {
-    if (!this.player || this.player.invulnerable) return false;
-    const damageTaken = this.player.takeDamage();
+    if (!this.player) return false;
     this.lastBossHazardHit = {
       type: hazard.type,
       kind: hazard.kind,
@@ -3396,11 +3614,12 @@ export class PlayScene {
       playerY: Math.round(this.player.y)
     };
 
+    const damageTaken = this.handleBossCausedPlayerHit('boss_hazard', this.enemyManager?.boss, {
+      balanceSource: `boss_hazard:${hazard.category || 'unknown'}:${hazard.type || hazard.kind || 'unknown'}`,
+      shieldShake: 4
+    });
+
     if (damageTaken) {
-      this.recordBalanceDamage(`boss_hazard:${hazard.category || 'unknown'}:${hazard.type || hazard.kind || 'unknown'}`);
-      this.lastHitAt = Date.now();
-      this.game.loseLife();
-      this.triggerPlayerDeathFeedback();
       this.screenShake?.shake(7, 18);
       AudioManager.playSfx('boss_hazard_impact', { volume: 0.62, minIntervalMs: 180 });
     } else {
@@ -3409,17 +3628,19 @@ export class PlayScene {
       AudioManager.playSfx('boss_hazard_impact', { volume: 0.34, minIntervalMs: 180 });
     }
 
-    this.particleManager?.createHitSpark(this.player.x, this.player.y, hazard.color || 0xfff45c);
-    this.showToast('BOSS WEAPON HIT', {
-      fontSize: this.game.getWidth() < 620 ? 16 : 18,
-      fill: '#ff6b7a',
-      stroke: '#140006',
-      strokeThickness: 2,
-      duration: 720,
-      slot: 'corner',
-      type: 'boss_hazard',
-      priority: 2
-    });
+    if (damageTaken) {
+      this.particleManager?.createHitSpark(this.player.x, this.player.y, hazard.color || 0xfff45c);
+      this.showToast('BOSS WEAPON HIT', {
+        fontSize: this.game.getWidth() < 620 ? 16 : 18,
+        fill: '#ff6b7a',
+        stroke: '#140006',
+        strokeThickness: 2,
+        duration: 720,
+        slot: 'corner',
+        type: 'boss_hazard',
+        priority: 2
+      });
+    }
     return damageTaken;
   }
 

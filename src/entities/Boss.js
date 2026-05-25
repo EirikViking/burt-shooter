@@ -1456,7 +1456,7 @@ export class Boss {
         this.getBossPressureScalar();
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig));
+      bullets.push(this.markBossBullet(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig), attackType));
     }
     bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
   }
@@ -1481,9 +1481,18 @@ export class Boss {
         this.getBossPressureScalar();
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig));
+      bullets.push(this.markBossBullet(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig), this.telegraph?.type || 'ring'));
     }
     bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
+  }
+
+  markBossBullet(bullet, fireStyle = 'boss') {
+    if (!bullet) return bullet;
+    bullet.sourceEnemyType = 'boss';
+    bullet.sourceFireStyle = fireStyle;
+    bullet.sourceBossLevel = this.level;
+    bullet.sourceBossName = this.name || null;
+    return bullet;
   }
 
   canShoot() {
@@ -1526,7 +1535,7 @@ export class Boss {
     const weaponSpeedMult = weaponProfile?.speedMult || 1;
     const aimAngle = Math.atan2(playerY - this.y, playerX - this.x);
     const addBullet = (x, y, angle, speed, color = weaponProfile?.color || this.color) => {
-      bullets.push(new Bullet(
+      bullets.push(this.markBossBullet(new Bullet(
         x,
         y,
         Math.cos(angle) * speed * weaponSpeedMult,
@@ -1535,7 +1544,7 @@ export class Boss {
         color,
         false,
         vConfig
-      ));
+      ), attack));
     };
 
     if (attack === 'fan' || attack === 'burst' || attack === 'fakeout') {
@@ -1597,7 +1606,7 @@ export class Boss {
         this.getBossAttackSpeedMultiplier('aim') *
         BalanceConfig.difficulty.pressureScalar *
         this.getBossPressureScalar();
-      bullets.push(new Bullet(
+      bullets.push(this.markBossBullet(new Bullet(
         this.x,
         this.y,
         (dx / distance) * speed * weaponSpeedMult,
@@ -1606,7 +1615,7 @@ export class Boss {
         weaponProfile?.color || this.color,
         false,
         vConfig
-      ));
+      ), attack));
     } else if (this.phase === 2) {
       // 3-shot spread keeps the first boss readable while still punishing tunnel vision.
       for (let i = -1; i <= 1; i++) {
@@ -1615,7 +1624,7 @@ export class Boss {
           this.getBossAttackSpeedMultiplier('fan') *
           BalanceConfig.difficulty.pressureScalar *
           this.getBossPressureScalar();
-        bullets.push(new Bullet(
+        bullets.push(this.markBossBullet(new Bullet(
           this.x,
           this.y,
           Math.cos(angle) * speed * weaponSpeedMult,
@@ -1624,7 +1633,7 @@ export class Boss {
           weaponProfile?.color || this.color,
           false,
           vConfig
-        ));
+        ), attack));
       }
     } else {
       // 8-bullet spiral with visible gaps.
@@ -1634,7 +1643,7 @@ export class Boss {
           this.getBossAttackSpeedMultiplier('radial') *
           BalanceConfig.difficulty.pressureScalar *
           this.getBossPressureScalar();
-        bullets.push(new Bullet(
+        bullets.push(this.markBossBullet(new Bullet(
           this.x,
           this.y,
           Math.cos(angle) * speed * weaponSpeedMult,
@@ -1643,7 +1652,7 @@ export class Boss {
           weaponProfile?.color || this.color,
           false,
           vConfig
-        ));
+        ), attack));
       }
     }
 
