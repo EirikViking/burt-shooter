@@ -39,6 +39,12 @@ function normalizeAxis(value, deadzone = DEFAULT_DEADZONE) {
   return Math.abs(axis) >= deadzone ? axis : 0;
 }
 
+function readDirectionalAxis(axes, primaryIndex, fallbackIndex, deadzone = DEFAULT_DEADZONE) {
+  const primary = normalizeAxis(axes?.[primaryIndex], deadzone);
+  if (primary !== 0) return primary;
+  return normalizeAxis(axes?.[fallbackIndex], deadzone);
+}
+
 export class GamepadNavigator {
   constructor({ deadzone = DEFAULT_DEADZONE } = {}) {
     this.deadzone = deadzone;
@@ -73,8 +79,8 @@ export class GamepadNavigator {
     }
 
     const buttons = pad.buttons || [];
-    const axisX = normalizeAxis(pad.axes?.[0], this.deadzone);
-    const axisY = normalizeAxis(pad.axes?.[1], this.deadzone);
+    const axisX = readDirectionalAxis(pad.axes, 0, 2, this.deadzone);
+    const axisY = readDirectionalAxis(pad.axes, 1, 3, this.deadzone);
     const down = {
       up: isPressed(buttons, 12) || axisY < 0,
       down: isPressed(buttons, 13) || axisY > 0,

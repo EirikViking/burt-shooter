@@ -1015,15 +1015,6 @@ export class PlayScene {
         return;
       }
 
-      // Mobile inputs
-      if (this.touchControls && this.touchControls.active) {
-        const movement = this.touchControls.getMovement();
-        this.inputManager.setKeyPressed('KeyA', movement.dx < -0.3);
-        this.inputManager.setKeyPressed('KeyD', movement.dx > 0.3);
-        this.inputManager.setKeyPressed('KeyW', movement.dy < -0.3);
-        this.inputManager.setKeyPressed('KeyS', movement.dy > 0.3);
-      }
-
       // Player update
       if (this.game.lives > 0 && this.player) {
         // Pass touch input to player
