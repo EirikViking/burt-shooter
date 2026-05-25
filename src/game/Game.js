@@ -17,6 +17,7 @@ import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
 import { AchievementManager } from '../achievements/AchievementManager.js';
 import { getAchievementById, getRankAchievementId } from '../achievements/AchievementCatalog.js';
+import { getMilestoneAchievementUnlocks } from '../achievements/MilestoneAchievements.js';
 import { onLanguageChange } from '../i18n/index.js';
 import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { RunPacingConfig, getRunPacingDebugState } from '../config/RunPacingConfig.js';
@@ -570,6 +571,7 @@ export class Game {
       newRanksThisRun: result.newRanksThisRun || [],
       rankProgress: result.rankProgress || null,
       rankAchievementsUnlocked: [],
+      milestoneAchievementsUnlocked: [],
       newlyUnlockedShips: result.newlyUnlockedShipIds || [],
       hangarProgress: getHangarProgressSummary(result.next)
     };
@@ -580,6 +582,25 @@ export class Game {
         source: 'pilot_rank_progression'
       });
       if (unlock?.id) this.runSummary.rankAchievementsUnlocked.push(unlock.id);
+    }
+    const milestoneUnlocks = getMilestoneAchievementUnlocks({
+      summary: this.runSummary,
+      progress: result.next
+    });
+    for (const entry of milestoneUnlocks) {
+      const achievement = entry.achievement;
+      const unlock = this.unlockAchievement(achievement.id, {
+        level: this.level,
+        score: this.score,
+        source: 'milestone_progression',
+        achievementType: achievement.type,
+        metric: entry.metric,
+        progressValue: entry.value,
+        target: entry.target,
+        runCleared: this.runSummary.runCleared,
+        livesRemaining: this.runSummary.livesRemaining
+      });
+      if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);
     }
     return result;
   }

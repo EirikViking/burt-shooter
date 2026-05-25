@@ -2,7 +2,13 @@
 
 Steam App ID: `4765070`
 
-The canonical achievement list is `src/achievements/AchievementCatalog.js`. Generate the Steamworks setup list from code with:
+The canonical achievement list is `src/achievements/AchievementCatalog.js`. The Steam launch set currently contains 30 achievements:
+
+- 19 pilot-rank achievements generated from `src/shared/RankPolicy.js`.
+- 2 leaderboard achievements for global qualification and global #1.
+- 9 medium-to-very-hard milestone achievements for sector progress, run clears, clean play, score mastery, boss wins, Codex discovery, and hangar growth.
+
+Generate the Steamworks setup list from code with:
 
 ```bash
 node scripts/export-steam-achievements.mjs --json
@@ -16,6 +22,7 @@ node scripts/export-steam-achievements.mjs --json
 - Steam unavailable, missing App ID, missing stats, or logged-out states are returned as diagnostics and never block gameplay.
 - Failed Steam unlocks are queued under `nova_swarm_steam_achievement_queue_v1` and retried on startup/sync.
 - Startup sync mirrors local unlocked achievements to Steam and imports already-unlocked Steam achievements locally without duplicate toast popups.
+- Milestone achievements are evaluated once the run progression summary is committed, so career totals, newly unlocked ships, and the run's latest score/sector/lives all agree.
 
 ## Steamworks Setup
 
@@ -26,12 +33,13 @@ Create or verify every Steamworks achievement from the generated catalog list:
 - Description: `achievement.description`
 - Hidden: `false` unless the catalog says otherwise
 
-Achievement icon assets are staged in `release/steamworks/achievement-icons/`. The current icons are generated Nova Swarm placeholder art and can be replaced later with final hand-authored achievement art without changing API names.
+Achievement icon assets are staged in `release/steamworks/achievement-icons/`. The manifest maps every API name to achieved and locked 256x256 JPG icons. The current milestone icons were generated with Codex imagegen from the 2026-05-26 3x3 milestone sheet and can be replaced later without changing API names.
 
 ## Local Testing
 
 ```bash
 npm run check:achievements
+npm run check:milestone-achievements
 npm run check:steam-achievements-mock
 npm run build
 npm run desktop:smoke

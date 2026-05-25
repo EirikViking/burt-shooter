@@ -47,7 +47,7 @@ const gameSource = readFileSync('src/game/Game.js', 'utf8');
 const sceneSource = readFileSync('src/scenes/ThreatCodexScene.js', 'utf8');
 if (!menuSource.includes('THREAT CODEX')) fail('Threat Codex must be visible in main menu');
 if (!gameSource.includes('showThreatCodex')) fail('Game must expose showThreatCodex');
-for (const token of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'pointerdown', 'gamepad']) {
+for (const token of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'pointerdown', 'gamepad', 'PageUp', 'PageDown', 'wheelNavigation', 'entryScroll']) {
   if (!sceneSource.includes(token)) fail(`ThreatCodexScene missing ${token} navigation support`);
 }
 for (const token of ['UNKNOWN SIGNAL', 'NEW THREAT SCANNED', 'THREAT CODEX UPDATED']) {

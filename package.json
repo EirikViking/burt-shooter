@@ -20,6 +20,7 @@
     "check:debug-unranked": "node scripts/check-debug-run-unranked.mjs",
     "check:debug-tools": "node scripts/check-debug-tools.mjs",
     "check:achievements": "node scripts/check-achievements-catalog.mjs",
+    "check:milestone-achievements": "node scripts/check-milestone-achievements.mjs",
     "check:steam-achievements-mock": "node scripts/check-steam-achievements-mock.mjs",
     "check:trait-hud": "node scripts/check-trait-hud.mjs",
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",

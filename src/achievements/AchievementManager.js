@@ -39,7 +39,13 @@ function compactPayload(payload = {}) {
     'runMode',
     'globalProvider',
     'placement',
-    'numberOne'
+    'numberOne',
+    'achievementType',
+    'metric',
+    'progressValue',
+    'target',
+    'runCleared',
+    'livesRemaining'
   ];
   return Object.fromEntries(
     allowed

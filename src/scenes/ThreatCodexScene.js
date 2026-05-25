@@ -214,6 +214,7 @@ export class ThreatCodexScene {
     this.categoryIndex = 0;
     this.entryIndex = 0;
     this.keyHandler = null;
+    this.wheelHandler = null;
     this.gamepadLatchUntil = 0;
     this.catalog = getThreatCodexCatalog();
     this.discoveryState = getThreatCodexState();
@@ -224,6 +225,7 @@ export class ThreatCodexScene {
     this.titlePlate = null;
     this.holoRails = null;
     this.animationTime = 0;
+    this.lastEntryListDebug = null;
   }
 
   init() {
@@ -236,12 +238,16 @@ export class ThreatCodexScene {
     this.renderToken += 1;
     this.createLayout(this.renderToken);
     this.keyHandler = (event) => this.handleKeyDown(event);
+    this.wheelHandler = (event) => this.handleWheel(event);
     window.addEventListener('keydown', this.keyHandler);
+    window.addEventListener('wheel', this.wheelHandler, { passive: false });
   }
 
   cleanup() {
     if (this.keyHandler) window.removeEventListener('keydown', this.keyHandler);
+    if (this.wheelHandler) window.removeEventListener('wheel', this.wheelHandler);
     this.keyHandler = null;
+    this.wheelHandler = null;
   }
 
   destroy() {
@@ -573,11 +579,23 @@ export class ThreatCodexScene {
     const listW = compact ? width * 0.39 : Math.min(520, width * 0.38);
     const rowH = compact ? 48 : 56;
     const maxRows = Math.max(6, Math.floor((height - listY - 82) / rowH));
+    const visibleRows = Math.min(maxRows, entries.length);
     const start = Math.max(0, Math.min(this.entryIndex - Math.floor(maxRows / 2), Math.max(0, entries.length - maxRows)));
+    this.lastEntryListDebug = {
+      x: listX - 14,
+      y: listY - 16,
+      width: listW + 28,
+      height: visibleRows * rowH + 28,
+      start,
+      visibleRows,
+      maxRows,
+      totalRows: entries.length,
+      scrollable: entries.length > maxRows
+    };
 
     const frame = new PIXI.Graphics();
     frame.zIndex = 3;
-    drawPanel(frame, listX - 14, listY - 16, listW + 28, Math.min(entries.length, maxRows) * rowH + 28, {
+    drawPanel(frame, listX - 14, listY - 16, listW + 28, visibleRows * rowH + 28, {
       fill: 0x030b13,
       alpha: 0.58,
       stroke: 0x24435b,
@@ -586,7 +604,11 @@ export class ThreatCodexScene {
     });
     this.container.addChild(frame);
 
-    for (let rowIndex = 0; rowIndex < Math.min(maxRows, entries.length); rowIndex += 1) {
+    if (entries.length > maxRows) {
+      this.drawEntryScrollBar(listX, listY, listW, visibleRows * rowH - 8, entries.length, maxRows, start, compact);
+    }
+
+    for (let rowIndex = 0; rowIndex < visibleRows; rowIndex += 1) {
       const entryIndex = start + rowIndex;
       const entry = entries[entryIndex];
       const discovered = this.isDiscovered(entry, category.id);
@@ -653,6 +675,32 @@ export class ThreatCodexScene {
 
       this.container.addChild(row);
     }
+  }
+
+  drawEntryScrollBar(listX, listY, listW, listH, totalRows, maxRows, start, compact) {
+    const railX = listX + listW + (compact ? 8 : 11);
+    const railY = listY + 2;
+    const railH = Math.max(24, listH - 4);
+    const maxStart = Math.max(1, totalRows - maxRows);
+    const thumbH = clamp((maxRows / totalRows) * railH, 34, railH);
+    const thumbY = railY + ((railH - thumbH) * clamp(start / maxStart, 0, 1));
+    const scroll = new PIXI.Graphics();
+    scroll.zIndex = 7;
+    scroll.roundRect(railX, railY, compact ? 5 : 6, railH, 3);
+    scroll.fill({ color: 0x071a27, alpha: 0.86 });
+    scroll.stroke({ color: 0x24435b, width: 1, alpha: 0.56 });
+    scroll.roundRect(railX, thumbY, compact ? 5 : 6, thumbH, 3);
+    scroll.fill({ color: AQUA, alpha: 0.88 });
+    this.container.addChild(scroll);
+
+    const count = addText(this.container, `${this.entryIndex + 1}/${totalRows}`, {
+      fontSize: compact ? 10 : 12,
+      fontWeight: '900',
+      fill: '#9cfbff',
+      stroke: '#001016',
+      strokeThickness: 2
+    }, listX + listW - 2, listY - (compact ? 15 : 18), { x: 1, y: 0 });
+    count.zIndex = 8;
   }
 
   drawEntryThumb(parent, entry, categoryId, x, y, size, accent, seed, discovered) {
@@ -943,6 +991,31 @@ export class ThreatCodexScene {
     this.refresh();
   }
 
+  moveEntryTo(index) {
+    const entries = this.getEntriesForCategory();
+    if (!entries.length) return;
+    this.entryIndex = Math.max(0, Math.min(entries.length - 1, index));
+    AudioManager.playSfx('menuMove', { volume: 0.45 });
+    this.refresh();
+  }
+
+  getPageStep() {
+    return Math.max(4, Number(this.lastEntryListDebug?.visibleRows) || 8);
+  }
+
+  handleWheel(event) {
+    const bounds = this.lastEntryListDebug;
+    if (!bounds) return;
+    const x = Number(event.clientX);
+    const y = Number(event.clientY);
+    const insideList = x >= bounds.x && x <= bounds.x + bounds.width + 24 && y >= bounds.y && y <= bounds.y + bounds.height;
+    if (!insideList) return;
+    const direction = Math.sign(Number(event.deltaY) || 0);
+    if (!direction) return;
+    event.preventDefault();
+    this.moveEntry(direction > 0 ? 1 : -1);
+  }
+
   handleKeyDown(event) {
     if (event.key === 'Escape' || event.key === 'Backspace') {
       event.preventDefault();
@@ -959,6 +1032,18 @@ export class ThreatCodexScene {
     } else if (event.key === 'ArrowDown') {
       event.preventDefault();
       this.moveEntry(1);
+    } else if (event.key === 'PageUp') {
+      event.preventDefault();
+      this.moveEntry(-this.getPageStep());
+    } else if (event.key === 'PageDown') {
+      event.preventDefault();
+      this.moveEntry(this.getPageStep());
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      this.moveEntryTo(0);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      this.moveEntryTo(this.getEntriesForCategory().length - 1);
     }
   }
 
@@ -1008,6 +1093,9 @@ export class ThreatCodexScene {
       keyboardNavigation: true,
       controllerNavigation: true,
       mouseSelection: true,
+      wheelNavigation: true,
+      pageNavigation: true,
+      entryScroll: this.lastEntryListDebug,
       artfulEmptyState: true
     };
   }
