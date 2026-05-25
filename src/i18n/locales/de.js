@@ -267,6 +267,11 @@ const sourceText = Object.freeze({
   'Hidden achievement': 'Verborgener Erfolg',
 
   'DEBUG STATS LOGGED (Console)': 'DEBUG-STATS GESPEICHERT (Konsole)',
+  'DEBUG INVINCIBLE ON': 'DEBUG UNVERWUNDBAR EIN',
+  'DEBUG INVINCIBLE OFF': 'DEBUG UNVERWUNDBAR AUS',
+  'DEBUG SHIELD': 'DEBUG-SCHILD',
+  'Debug jump to level': 'Debug-Sprung zu Level',
+  'DEBUG LEVEL {level}': ({ level }) => `DEBUG LEVEL ${level}`,
   'SPAWNED BONUS PICKUP': 'BONUS-PICKUP ERZEUGT',
   'SPAWNED BOSS': 'BOSS ERZEUGT',
   'SPAWNED ENEMIES': 'GEGNER ERZEUGT',
@@ -464,8 +469,8 @@ const patterns = Object.freeze([
   },
   {
     id: 'newShipUnlocked',
-    regex: /^NEW SHIP UNLOCKED: (.+)\nOPEN HANGAR FROM MENU OR PRESS RESTART$/,
-    replace: (match) => `NEUES SCHIFF FREIGESCHALTET: ${match[1]}\nHANGAR IM MENÜ ÖFFNEN ODER NEUSTART DRÜCKEN`
+    regex: /^NEW (SHIP|SHIPS) UNLOCKED: (.+)\nVISIT THE HANGAR TO TRY (IT|THEM)$/,
+    replace: (match) => `${match[1] === 'SHIPS' ? 'NEUE SCHIFFE' : 'NEUES SCHIFF'} FREIGESCHALTET: ${match[2]}\nBESUCHE DEN HANGAR ZUM AUSPROBIEREN`
   },
   {
     id: 'nextShip',

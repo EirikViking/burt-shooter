@@ -116,8 +116,8 @@ export function buildArcadePatterns(labels) {
     },
     {
       id: 'newShipUnlocked',
-      regex: /^NEW SHIP UNLOCKED: (.+)\nOPEN HANGAR FROM MENU OR PRESS RESTART$/,
-      replace: (match) => labels.newShipUnlocked(match[1])
+      regex: /^NEW (SHIP|SHIPS) UNLOCKED: (.+)\nVISIT THE HANGAR TO TRY (IT|THEM)$/,
+      replace: (match) => labels.newShipUnlocked(match[2], match[1] === 'SHIPS')
     },
     {
       id: 'nextShip',

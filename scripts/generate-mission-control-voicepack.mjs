@@ -108,6 +108,14 @@ const lines = [
     text: 'Not bad. Not final.'
   },
   {
+    file: 'mission_control_ship_unlocked_01.mp3',
+    text: 'Congratulations, pilot. New ship unlocked. The hangar says do not scratch the paint yet.'
+  },
+  {
+    file: 'mission_control_ships_unlocked_01.mp3',
+    text: 'Congratulations, pilot. Several ships unlocked. The hangar is showing off. Go pick a favorite.'
+  },
+  {
     file: 'mission_control_combo_01.mp3',
     text: 'That score just got interesting.'
   },

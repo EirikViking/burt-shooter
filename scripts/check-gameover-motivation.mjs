@@ -304,7 +304,7 @@ try {
   const report = {
     ok: Boolean(
       gameOverState.scene === 'gameOver' &&
-      /NEW SHIP UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
+      /NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
       !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
       /THIS RUN:\s*LEVEL 5/i.test(careerLevelSummary) &&
       /CAREER BEST:\s*LEVEL 21/i.test(careerLevelSummary) &&
@@ -312,7 +312,7 @@ try {
       /CAREER LEVEL 21\/23 - 2 LEVELS TO GO/i.test(careerUnlockSummary) &&
       /NEXT CAREER GOAL:\s*REACH LEVEL 22/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
-      /LEADERBOARD FIRST/i.test(gameOverState.gameOver?.retryPrompt || '') &&
+      /LEADERBOARD FIRST|TYPE NAME/i.test(gameOverState.gameOver?.retryPrompt || '') &&
       /SUBMIT SCORE/i.test(gameOverState.gameOver?.primaryCta?.label || '') &&
       /PILOT NAME FIRST|TYPE NAME FIRST|ENTER \/ CLICK/i.test(gameOverState.gameOver?.primaryCta?.hint || '') &&
       ['leaderboard', 'submit'].includes(gameOverState.gameOver?.primaryCta?.mode) &&

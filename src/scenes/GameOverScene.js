@@ -7,6 +7,7 @@ import { generateUUID } from '../utils/uuid.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { getSelectableShips, getShipUnlockProgress, isShipUnlocked, updateShipUnlockProgress } from '../config/ShipMetadata.js';
+import { GameAssets } from '../utils/GameAssets.js';
 import { getRankFromLevel } from '../shared/RankPolicy.js';
 import { analyzeGlobalLeaderboardScore, normalizeGlobalScores } from '../shared/GlobalLeaderboardPlacement.js';
 import {
@@ -65,6 +66,13 @@ export class GameOverScene {
     this.scoreText = null;
     this.levelText = null;
     this.unlockText = null;
+    this.newlyUnlockedShips = [];
+    this.shipUnlockReveal = null;
+    this.shipUnlockRevealGlow = null;
+    this.shipUnlockRevealBg = null;
+    this.shipUnlockRevealSprites = [];
+    this.shipUnlockRevealCountText = null;
+    this.shipUnlockVoicePlayed = false;
     this.nextGoal = null;
     this.nextGoalGroup = null;
     this.nextGoalBg = null;
@@ -131,6 +139,7 @@ export class GameOverScene {
     this.qualificationFanfarePlayed = false;
     this.personalBestVoicePlayed = false;
     this.nearMissVoicePlayed = false;
+    this.shipUnlockVoicePlayed = false;
     this.sceneTimeouts = new Set();
     // Submission deduplication
     this.submissionId = null;
@@ -173,6 +182,8 @@ export class GameOverScene {
     this.selectedCtaLine = null;
     this.ctaVoicePlayed = false;
     this.runbackStartedAt = 0;
+    this.newlyUnlockedShips = [];
+    this.shipUnlockVoicePlayed = false;
     this.caretVisible = true;
     this.isSubmitting = false;
     this.submitRetries = 0;
@@ -224,8 +235,9 @@ export class GameOverScene {
       rank: finalRank,
       level: this.finalLevel
     });
+    this.newlyUnlockedShips = this.getNewlyUnlockedShips(previousProgress, currentProgress);
     this.levelSummary = this.createLevelSummary(previousProgress, currentProgress);
-    this.unlockSummary = this.createUnlockSummary(previousProgress, currentProgress);
+    this.unlockSummary = this.createUnlockSummary(previousProgress, currentProgress, this.newlyUnlockedShips);
     this.nextGoal = this.createNextGoal(previousProgress, currentProgress);
 
     // Generate unique submissionId for this run (reused across retries)
@@ -294,6 +306,8 @@ export class GameOverScene {
     });
     this.unlockText.anchor.set(0.5);
     this.container.addChild(this.unlockText);
+
+    this.createShipUnlockReveal(layout);
 
     this.nextGoalGroup = new PIXI.Container();
     this.nextGoalBg = new PIXI.Graphics();
@@ -427,7 +441,12 @@ export class GameOverScene {
     this.setupKeyboard();
 
     AudioManager.playSfx('nova_game_over_drop');
-    AudioManager.playVoice('mission_control_game_over', { cooldownMs: 2400, duckMs: 2600 });
+    if (this.newlyUnlockedShips.length > 0) {
+      AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.72, minIntervalMs: 0 });
+      this.scheduleSceneTimeout(() => this.playShipUnlockVoice(), 720);
+    } else {
+      AudioManager.playVoice('mission_control_game_over', { cooldownMs: 2400, duckMs: 2600 });
+    }
     AudioManager.playMusicContext('gameover', { resetPlaylist: true });
 
     if (!this.isRankedRun) {
@@ -870,6 +889,7 @@ export class GameOverScene {
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
     this.drawNextGoalStrip(layout);
+    this.drawShipUnlockReveal(layout);
 
     // Calculate content height for centering
     const spacing = layout.isMobile ? 8 : 14;
@@ -879,7 +899,9 @@ export class GameOverScene {
     const titleHeight = titleSize * 1.2;
     const scoreHeight = scoreSize * 1.2;
     const levelHeight = levelSize * 1.2;
-    const unlockHeight = unlockSize * 2.3;
+    const unlockRevealVisible = Boolean(this.shipUnlockReveal?.visible);
+    const unlockRevealHeight = unlockRevealVisible ? (layout.isMobile ? 48 : 62) : 0;
+    const unlockHeight = unlockSize * 2.3 + unlockRevealHeight;
     const nextGoalHeight = this.nextGoalGroup?.visible ? Math.max(this.nextGoalGroup.height || 0, layout.isMobile ? 32 : 38) : 0;
     const commentHeight = bodySize * 2 * 1.4; // ~2 lines
     const leaderboardStatusHeight = leaderboardStatusSize * 2.5;
@@ -916,6 +938,11 @@ export class GameOverScene {
 
     this.unlockText.x = width / 2;
     this.unlockText.y = stack.placeText(this.unlockText, spacing);
+
+    if (unlockRevealVisible) {
+      this.shipUnlockReveal.x = width / 2;
+      this.shipUnlockReveal.y = stack.placeElement(this.shipUnlockReveal, spacing * 0.5);
+    }
 
     if (this.nextGoalGroup?.visible) {
       this.nextGoalGroup.x = width / 2;
@@ -1178,6 +1205,103 @@ export class GameOverScene {
     this.nextGoalBg.fill({ color: accent, alpha: 0.28 });
     this.nextGoalBg.rect(-halfWidth + 18, halfHeight - 6, stripWidth - 36, 1);
     this.nextGoalBg.fill({ color: 0xffffff, alpha: 0.14 });
+  }
+
+  createShipUnlockReveal(layout) {
+    this.shipUnlockReveal = new PIXI.Container();
+    this.shipUnlockReveal.visible = this.newlyUnlockedShips.length > 0;
+    this.shipUnlockReveal.zIndex = 7;
+    this.shipUnlockRevealGlow = new PIXI.Graphics();
+    this.shipUnlockRevealBg = new PIXI.Graphics();
+    this.shipUnlockReveal.addChild(this.shipUnlockRevealGlow, this.shipUnlockRevealBg);
+
+    this.shipUnlockRevealSprites = [];
+    this.newlyUnlockedShips.slice(0, 4).forEach((ship) => {
+      const shipPath = GameAssets.getRankShipPath(ship.textureIndex)
+        || AssetManifest.sprites.playerRankShips?.[ship.textureIndex]
+        || null;
+      const texture = GameAssets.getRankShipTexture(ship.textureIndex)
+        || PIXI.Texture.EMPTY;
+      const sprite = new PIXI.Sprite(texture);
+      sprite.anchor.set(0.5);
+      sprite.alpha = 0.98;
+      if ((!texture || texture === PIXI.Texture.EMPTY || texture.width <= 1 || texture.height <= 1) && shipPath) {
+        PIXI.Assets.load(shipPath)
+          .then((loadedTexture) => {
+            if (loadedTexture && loadedTexture.width > 0 && loadedTexture.height > 0) sprite.texture = loadedTexture;
+          })
+          .catch((error) => console.warn('[GameOverScene] Ship unlock texture failed:', shipPath, error));
+      }
+      this.shipUnlockRevealSprites.push(sprite);
+      this.shipUnlockReveal.addChild(sprite);
+    });
+
+    this.shipUnlockRevealCountText = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 15 : 18,
+      fontWeight: 'bold',
+      fill: '#fff3a2',
+      stroke: '#371800',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    this.shipUnlockRevealCountText.anchor.set(0.5);
+    this.shipUnlockReveal.addChild(this.shipUnlockRevealCountText);
+    this.container.addChild(this.shipUnlockReveal);
+  }
+
+  drawShipUnlockReveal(layout) {
+    if (!this.shipUnlockReveal || !this.shipUnlockRevealBg || !this.shipUnlockRevealGlow) return;
+    const count = this.newlyUnlockedShips.length;
+    this.shipUnlockReveal.visible = count > 0;
+    if (count <= 0) {
+      this.shipUnlockRevealBg.clear();
+      this.shipUnlockRevealGlow.clear();
+      return;
+    }
+
+    const width = Math.min(layout.width * (layout.isMobile ? 0.78 : 0.48), layout.isMobile ? 330 : 460);
+    const height = layout.isMobile ? 44 : 56;
+    const halfWidth = width / 2;
+    const halfHeight = height / 2;
+    const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
+
+    this.shipUnlockRevealGlow.clear();
+    this.shipUnlockRevealGlow.roundRect(-halfWidth - 10, -halfHeight - 6, width + 20, height + 12, layout.isMobile ? 12 : 14);
+    this.shipUnlockRevealGlow.fill({ color: 0xffd75f, alpha: 0.12 + pulse * 0.12 });
+    this.shipUnlockRevealGlow.roundRect(-halfWidth - 4, -halfHeight - 3, width + 8, height + 6, layout.isMobile ? 10 : 12);
+    this.shipUnlockRevealGlow.stroke({ color: 0x37f5ff, width: 2, alpha: 0.5 + pulse * 0.22 });
+
+    this.shipUnlockRevealBg.clear();
+    this.shipUnlockRevealBg.roundRect(-halfWidth, -halfHeight, width, height, layout.isMobile ? 8 : 10);
+    this.shipUnlockRevealBg.fill({ color: 0x06101c, alpha: 0.86 });
+    this.shipUnlockRevealBg.stroke({ color: 0xffd75f, width: 2, alpha: 0.9 });
+    this.shipUnlockRevealBg.rect(-halfWidth + 16, -halfHeight + 7, width - 32, 2);
+    this.shipUnlockRevealBg.fill({ color: 0x37f5ff, alpha: 0.38 });
+
+    const spriteSize = layout.isMobile ? 32 : 42;
+    const gap = layout.isMobile ? 42 : 54;
+    const sprites = this.shipUnlockRevealSprites || [];
+    const totalSpriteWidth = Math.max(0, (sprites.length - 1) * gap);
+    const startX = -totalSpriteWidth / 2;
+    sprites.forEach((sprite, index) => {
+      const textureWidth = Math.max(1, sprite.texture.width || sprite.width || spriteSize);
+      const textureHeight = Math.max(1, sprite.texture.height || sprite.height || spriteSize);
+      const scale = Math.min(spriteSize / textureWidth, spriteSize / textureHeight);
+      sprite.scale.set(scale);
+      sprite.x = startX + index * gap;
+      sprite.y = 1 + Math.sin(Date.now() * 0.004 + index) * 2;
+      sprite.rotation = Math.sin(Date.now() * 0.003 + index) * 0.035;
+    });
+
+    const remaining = Math.max(0, count - sprites.length);
+    if (this.shipUnlockRevealCountText) {
+      this.shipUnlockRevealCountText.visible = remaining > 0;
+      this.shipUnlockRevealCountText.text = remaining > 0 ? `+${remaining}` : '';
+      this.shipUnlockRevealCountText.style.fontSize = layout.isMobile ? 15 : 18;
+      this.shipUnlockRevealCountText.x = startX + sprites.length * gap + (layout.isMobile ? 8 : 10);
+      this.shipUnlockRevealCountText.y = 0;
+    }
   }
 
   getPrimaryCtaConfig() {
@@ -1472,6 +1596,9 @@ export class GameOverScene {
 
   update() {
     this.updateCeremonyEffects();
+    if (this.shipUnlockReveal?.visible) {
+      this.drawShipUnlockReveal(createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout()));
+    }
     const nav = this.gamepadNavigator.update();
     if (nav.connected && nav.active) {
       this.setInputDevice('controller');
@@ -1611,16 +1738,24 @@ export class GameOverScene {
     return Boolean(button.pressed || button.value > 0.5);
   }
 
-  createUnlockSummary(previousProgress, currentProgress) {
+  getNewlyUnlockedShips(previousProgress, currentProgress) {
     const ships = getSelectableShips();
-    const newlyUnlocked = ships.filter(ship =>
-      isShipUnlocked(ship.spriteKey, currentProgress) &&
-      !isShipUnlocked(ship.spriteKey, previousProgress)
-    );
+    return ships
+      .filter(ship =>
+        isShipUnlocked(ship.spriteKey, currentProgress) &&
+        !isShipUnlocked(ship.spriteKey, previousProgress)
+      )
+      .sort((a, b) => (Number(a.unlock?.level) || 1) - (Number(b.unlock?.level) || 1));
+  }
+
+  createUnlockSummary(previousProgress, currentProgress, newlyUnlocked = this.getNewlyUnlockedShips(previousProgress, currentProgress)) {
+    const ships = getSelectableShips();
     if (newlyUnlocked.length > 0) {
       const names = newlyUnlocked.slice(0, 2).map(ship => ship.name).join(' + ');
       const suffix = newlyUnlocked.length > 2 ? ` +${newlyUnlocked.length - 2} MORE` : '';
-      return `NEW SHIP UNLOCKED: ${names}${suffix}\nOPEN HANGAR FROM MENU OR PRESS RESTART`;
+      const verb = newlyUnlocked.length === 1 ? 'SHIP' : 'SHIPS';
+      const cta = newlyUnlocked.length === 1 ? 'VISIT THE HANGAR TO TRY IT' : 'VISIT THE HANGAR TO TRY THEM';
+      return `NEW ${verb} UNLOCKED: ${names}${suffix}\n${cta}`;
     }
 
     const nextShip = ships
@@ -1647,6 +1782,40 @@ export class GameOverScene {
       return `NEXT SHIP: ${nextShip.name}\nCAREER LEVEL ${bestLevel}/${requiredLevel} - ${remaining} ${unit} TO GO`;
     }
     return `NEXT SHIP: ${nextShip.name}\nCAREER LEVEL ${bestLevel}/${requiredLevel} - ONE BETTER RUN`;
+  }
+
+  playShipUnlockVoice() {
+    if (this.shipUnlockVoicePlayed || this.newlyUnlockedShips.length <= 0) return false;
+    this.shipUnlockVoicePlayed = true;
+    const voiceKey = this.newlyUnlockedShips.length === 1
+      ? 'mission_control_ship_unlocked'
+      : 'mission_control_ships_unlocked';
+    return AudioManager.playVoice(voiceKey, {
+      force: true,
+      stopOtherVoices: true,
+      exclusiveGroup: 'announcer',
+      cooldownMs: 8000,
+      eventCooldownMs: 0,
+      duckMs: 3200,
+      duckFactor: 0.34,
+      volume: 0.98
+    });
+  }
+
+  getShipUnlockRevealDebugState() {
+    const ships = this.newlyUnlockedShips || [];
+    return {
+      count: ships.length,
+      names: ships.map(ship => ship.name),
+      spriteKeys: ships.map(ship => ship.spriteKey),
+      visible: Boolean(this.shipUnlockReveal?.visible),
+      voiceKey: ships.length === 1
+        ? 'mission_control_ship_unlocked'
+        : ships.length > 1
+          ? 'mission_control_ships_unlocked'
+          : null,
+      voicePlayed: Boolean(this.shipUnlockVoicePlayed)
+    };
   }
 
   createNextGoal(previousProgress = {}, currentProgress = {}) {

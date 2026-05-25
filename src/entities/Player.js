@@ -760,9 +760,10 @@ export class Player {
       console.log(`[RankUpSprite] before rank=${this.rankIndex} texW=${tex.width} scale=${this.shipSprite.scale.x.toFixed(4)}`);
     }
 
-    // 4. Swap Sprite
-    // We trust swapToRankShip to maintain the correct targetShipWidthPx
-    const swapped = this.swapToRankShip(newRank, { force: true, log: true });
+    // 4. Preserve the hangar-selected ship and trait.
+    // Rank-up should add power, not silently swap the player's chosen loadout.
+    const preservedTrait = this.shipTrait?.label || 'none';
+    console.log(`[RankUpSprite] preserved selected=${this.selectedShipSpriteKey || 'unknown'} trait=${preservedTrait}`);
 
     // 5. Verification Logs (REQUIRED)
     if (this.shipSprite && this.shipSprite.texture) {
@@ -778,7 +779,7 @@ export class Player {
     // 6. Apply Stats/Boost (Shields, etc)
     this.applyRankUpBoost();
 
-    console.log(`[RankUp] complete. Swapped=${swapped}`);
+    console.log(`[RankUp] complete. Preserved selected ship trait=${preservedTrait}`);
   }
 
   update(delta) {
@@ -1872,6 +1873,12 @@ export class Player {
   }
 
   takeDamage() {
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.isDebugInvincibleActive?.()) {
+      playScene.onDebugDamageBlocked?.('player_take_damage');
+      return false;
+    }
+
     if (this.shieldActive && !this.isDefenseSuppressed()) {
       this.deactivateShield();
       // Play Break Sound

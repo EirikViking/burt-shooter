@@ -460,6 +460,11 @@ function buildGameTextState(game) {
     input: {
       gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null
     },
+    debugTools: playScene ? {
+      invincible: Boolean(playScene.debugInvincible),
+      levelToolsUsed: Boolean(playScene.debugLevelToolsUsed),
+      levelJumpAvailable: typeof playScene.debugJumpToLevel === 'function'
+    } : null,
     toast: playScene?.getToastDebugState ? playScene.getToastDebugState() : null,
     scoring: playScene ? {
       comboCount: playScene.comboCount || 0,
@@ -535,6 +540,7 @@ function buildGameTextState(game) {
       level: gameOverScene.finalLevel || 0,
       levelSummary: gameOverScene.levelSummary || gameOverScene.levelText?.text || null,
       unlockSummary: gameOverScene.unlockSummary || null,
+      shipUnlocks: gameOverScene.getShipUnlockRevealDebugState ? gameOverScene.getShipUnlockRevealDebugState() : null,
       nextGoal: gameOverScene.nextGoal?.text || gameOverScene.nextGoalText?.text || null,
       prompt: gameOverScene.promptText?.text || null,
       retryPrompt: gameOverScene.instructions?.text || null,

@@ -393,6 +393,11 @@ export class Game {
   }
 
   loseLife() {
+    if (this.currentScene?.isDebugInvincibleActive?.()) {
+      this.currentScene.onDebugDamageBlocked?.('game_lose_life');
+      return;
+    }
+
     this.lives--;
     if (this.currentScene && this.currentScene.onLifeLost) {
       this.currentScene.onLifeLost(this.lives);

@@ -9,6 +9,7 @@ import { COMBO_MILESTONES, COMBO_WINDOW_MS } from '../config/ComboConfig.js';
 import { EnemyManager } from '../managers/EnemyManager.js';
 import { BulletManager } from '../managers/BulletManager.js';
 import { PowerupManager } from '../managers/PowerupManager.js';
+import { rankManager } from '../managers/RankManager.js';
 import { ParticleManager } from '../effects/ParticleManager.js';
 import { ScreenShake } from '../effects/ScreenShake.js';
 import { ScorePopupManager } from '../ui/ScorePopup.js';
@@ -78,6 +79,9 @@ export class PlayScene {
     this.bossMercyUntilMs = 0;
     this.lastBossMercyBlockLogAt = 0;
     this.lastBossMercyFeedbackAt = 0;
+    this.debugInvincible = false;
+    this.debugLastBlockedDamageAt = 0;
+    this.debugLevelToolsUsed = false;
     this.ambientBonusDroneTimer = 0;
     this.easterEggTimer = 0;
     this.ambientBonusDrones = []; // Lists for update
@@ -421,7 +425,7 @@ export class PlayScene {
 
   handleDebugKeys(e) {
     if (e.repeat) return;
-    if (this.handleMarketingSpawnKey(e)) {
+    if (this.handleDebugNumberKey(e)) {
       e.preventDefault?.();
       return;
     }
@@ -447,21 +451,129 @@ export class PlayScene {
     }
   }
 
-  handleMarketingSpawnKey(e) {
+  handleDebugNumberKey(e) {
     const key = e.code || e.key;
     if (key === 'Digit1' || key === 'Numpad1' || e.key === '1') {
-      this.spawnMarketingDebugWave();
+      this.toggleDebugInvincibility();
       return true;
     }
-    if (key === 'Digit2' || key === 'Numpad2' || e.key === '2') {
-      this.spawnMarketingDebugMiniBoss();
+    if (key === 'KeyL' || e.key?.toLowerCase?.() === 'l') {
+      this.promptDebugLevelJump();
       return true;
     }
-    if (key === 'Digit3' || key === 'Numpad3' || e.key === '3') {
-      this.spawnMarketingDebugBoss();
+    if (key === 'PageUp') {
+      this.debugJumpToLevel((Number(this.game?.level) || 1) + 1, 'debug_level_up_key');
+      return true;
+    }
+    if (key === 'PageDown') {
+      this.debugJumpToLevel((Number(this.game?.level) || 1) - 1, 'debug_level_down_key');
       return true;
     }
     return false;
+  }
+
+  handleMarketingSpawnKey() {
+    // Retired: number keys are reserved for debug survival/level tooling now.
+    // Keep the marker for release-line guards until the old marketing hotkeys are fully removed.
+    return false;
+  }
+
+  isDebugInvincibleActive() {
+    return this.debugInvincible === true;
+  }
+
+  toggleDebugInvincibility() {
+    this.debugInvincible = !this.debugInvincible;
+    this.game?.markUnrankedRun?.('debug_invincible');
+    if (this.debugInvincible && this.player?.grantInvulnerability) {
+      this.player.grantInvulnerability(1200, 'debug_invincible_toggle');
+    }
+    this.showToast(translateText(this.debugInvincible ? 'DEBUG INVINCIBLE ON' : 'DEBUG INVINCIBLE OFF'), {
+      fontSize: 18,
+      fill: this.debugInvincible ? '#7dffcc' : '#ffb35c',
+      duration: 1400,
+      slot: 'corner',
+      type: 'debug',
+      priority: 4
+    });
+    console.log(`[DebugTools] invincible=${this.debugInvincible}`);
+  }
+
+  onDebugDamageBlocked(source = 'damage') {
+    const now = Date.now();
+    if (now - (this.debugLastBlockedDamageAt || 0) < 900) return false;
+    this.debugLastBlockedDamageAt = now;
+    this.particleManager?.createHitSpark(this.player?.x || 0, this.player?.y || 0, 0x7dffcc);
+    this.showToast(translateText('DEBUG SHIELD'), {
+      fontSize: 14,
+      fill: '#7dffcc',
+      duration: 650,
+      slot: 'corner',
+      type: 'debug',
+      priority: 2
+    });
+    console.log(`[DebugTools] blocked_damage source=${source}`);
+    return true;
+  }
+
+  promptDebugLevelJump() {
+    const current = Math.max(1, Number(this.game?.level) || 1);
+    const input = window.prompt?.(translateText('Debug jump to level'), String(current));
+    if (input == null) return false;
+    return this.debugJumpToLevel(Number(input), 'debug_level_prompt');
+  }
+
+  clearDebugProjectiles() {
+    const removeBullets = (bullets = []) => {
+      bullets.forEach((bullet) => {
+        bullet.active = false;
+        if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      });
+    };
+    removeBullets(this.bulletManager?.playerBullets || []);
+    removeBullets(this.bulletManager?.enemyBullets || []);
+    if (this.bulletManager) {
+      this.bulletManager.playerBullets = [];
+      this.bulletManager.enemyBullets = [];
+    }
+  }
+
+  debugJumpToLevel(level, reason = 'debug_level_jump') {
+    const targetLevel = Math.max(1, Math.min(999, Math.floor(Number(level) || 1)));
+    if (!this.game || !this.enemyManager) return false;
+    this.game.markUnrankedRun?.(reason);
+    this.debugLevelToolsUsed = true;
+    this.introActive = false;
+    this.introComplete = true;
+    this.levelAdvancePending = false;
+    this.postBossLevelIntroPending = false;
+    this.debugStartLevel = null;
+    this.debugStartAtBoss = false;
+    if (this.levelAdvanceTimeout) {
+      clearTimeout(this.levelAdvanceTimeout);
+      this.levelAdvanceTimeout = null;
+    }
+    this.clearDebugProjectiles();
+    this.bossHazards = [];
+    this.lastBossHazardHit = null;
+    this.bossMercyUntilMs = 0;
+    this.game.level = targetLevel;
+    const computedRank = rankManager.getRankFromLevel(targetLevel);
+    this.game.rankIndex = computedRank;
+    this.game.lastRankIndex = Math.max(Number(this.game.lastRankIndex) || 0, computedRank);
+    this.player?.setRank?.(computedRank, reason);
+    this._lastStartedLevel = null;
+    this.startLevel(reason);
+    this.showToast(translateText('DEBUG LEVEL {level}', { level: targetLevel }), {
+      fontSize: 18,
+      fill: '#7ee9ff',
+      duration: 1400,
+      slot: 'corner',
+      type: 'debug',
+      priority: 4
+    });
+    console.log(`[DebugTools] jump_level=${targetLevel} rank=${computedRank} reason=${reason}`);
+    return true;
   }
 
   activateMarketingSpawnMode(reason = 'marketing_spawn_debug') {
@@ -2765,18 +2877,20 @@ export class PlayScene {
   showMaxLivesNotification({ maxLives = this.getMaxLives() } = {}) {
     const compactHud = this.game.getWidth() < 620;
     this.enqueueToast(translateText('MAX LIVES REACHED!'), {
-      fontSize: compactHud ? 18 : 28,
+      fontSize: compactHud ? 21 : 34,
       fill: '#7dffcc',
       stroke: '#001616',
-      strokeThickness: compactHud ? 3 : 4,
-      duration: 1900,
+      strokeThickness: compactHud ? 4 : 5,
+      duration: 2800,
       slot: 'top',
       type: 'repair',
-      priority: 4,
-      y: this.game.getHeight() * (compactHud ? 0.24 : 0.18),
-      maxWidth: this.game.getWidth() * (compactHud ? 0.86 : 0.62)
+      priority: 6,
+      y: this.game.getHeight() * (compactHud ? 0.26 : 0.2),
+      maxWidth: this.game.getWidth() * (compactHud ? 0.9 : 0.7)
     });
     this.spawnMaxLivesVfx();
+    this.screenShake?.smallShake?.();
+    AudioManager.playSfx('achievement', { force: true, volume: 1.0, minIntervalMs: 250 });
 
     const now = Date.now();
     if (now - this.lastMaxLivesVoiceAt > 30000) {
@@ -2786,8 +2900,9 @@ export class PlayScene {
         bypassGlobalCooldown: true,
         stopOtherVoices: true,
         cooldownMs: 30000,
-        duckMs: 1500,
-        duckFactor: 0.48
+        duckMs: 2600,
+        duckFactor: 0.28,
+        volume: 1.75
       });
     }
     console.log(`[Lives] max_reached lives=${maxLives}`);
@@ -2801,9 +2916,9 @@ export class PlayScene {
     burst.y = this.player.y;
     burst.zIndex = 9000;
 
-    const rings = [0, 1, 2].map((index) => {
+    const rings = [0, 1, 2, 3].map((index) => {
       const ring = new PIXI.Graphics();
-      ring.__delay = index * 110;
+      ring.__delay = index * 120;
       burst.addChild(ring);
       return ring;
     });
@@ -2815,25 +2930,25 @@ export class PlayScene {
       burst.x = this.player?.x ?? burst.x;
       burst.y = this.player?.y ?? burst.y;
       rings.forEach((ring, index) => {
-        const t = Math.max(0, Math.min(1, (elapsed - ring.__delay) / 640));
+        const t = Math.max(0, Math.min(1, (elapsed - ring.__delay) / 900));
         ring.clear();
         if (t <= 0 || t >= 1) return;
-        const radius = 20 + t * (48 + index * 10);
+        const radius = 24 + t * (72 + index * 14);
         ring.circle(0, 0, radius);
         ring.stroke({
-          color: index === 1 ? 0xffffff : 0x7dffcc,
-          width: 3 - t * 1.6,
-          alpha: 0.78 * (1 - t)
+          color: index % 2 === 1 ? 0xffffff : 0x7dffcc,
+          width: 4 - t * 2,
+          alpha: 0.92 * (1 - t)
         });
       });
 
-      if (elapsed >= 980) {
+      if (elapsed >= 1480) {
         this.game.app.ticker.remove(ticker);
         if (burst.parent) burst.parent.removeChild(burst);
       }
     };
     this.game.app.ticker.add(ticker);
-    AudioManager.playSfx('life_up', { force: true, volume: 0.82, minIntervalMs: 250 });
+    AudioManager.playSfx('life_up', { force: true, volume: 1.0, minIntervalMs: 250 });
   }
 
   tryLastStandRepair() {
