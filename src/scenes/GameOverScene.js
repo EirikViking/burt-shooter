@@ -27,6 +27,7 @@ import {
   GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID
 } from '../achievements/AchievementCatalog.js';
 import { translateText } from '../i18n/index.js';
+import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
@@ -1751,12 +1752,13 @@ export class GameOverScene {
   createUnlockSummary(previousProgress, currentProgress, newlyUnlocked = this.getNewlyUnlockedShips(previousProgress, currentProgress)) {
     const ships = getSelectableShips();
     const summary = this.game?.runSummary || {};
+    const rankLine = this.createPilotRankLine(currentProgress);
     if (newlyUnlocked.length > 0) {
       const names = newlyUnlocked.slice(0, 2).map(ship => ship.name).join(' + ');
       const suffix = newlyUnlocked.length > 2 ? ` +${newlyUnlocked.length - 2} MORE` : '';
       const verb = newlyUnlocked.length === 1 ? 'SHIP' : 'SHIPS';
       const cta = newlyUnlocked.length === 1 ? 'VISIT THE HANGAR TO TRY IT' : 'VISIT THE HANGAR TO TRY THEM';
-      return `NEW ${verb} UNLOCKED: ${names}${suffix}\n${cta}\nPILOT XP +${summary.pilotXpGained || 0}  RANK ${currentProgress.pilotRank || 0}`;
+      return `NEW ${verb} UNLOCKED: ${names}${suffix}\n${cta}\nPILOT XP +${summary.pilotXpGained || 0}  ${rankLine}`;
     }
 
     const nextShip = ships
@@ -1782,6 +1784,17 @@ export class GameOverScene {
         .join('  ')
       : details.label;
     return `NEXT SHIP: ${nextShip.name}\n${details.label.toUpperCase()}\n${requirementLine}`;
+  }
+
+  createPilotRankLine(currentProgress = {}) {
+    const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
+    const rankTitle = String(rankProgress.title || getRankTitle(currentProgress.pilotRank || 0)).toUpperCase();
+    if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
+      return `${translateText('RANK')} ${rankProgress.rankIndex}: ${rankTitle} ${translateText('MAX')}`;
+    }
+    const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
+    const percent = Math.max(0, Math.min(99, Math.round((rankProgress.progress || 0) * 100)));
+    return `${translateText('RANK')} ${rankProgress.rankIndex}: ${rankTitle} ${percent}% ${translateText('TO')} ${nextTitle}`;
   }
 
   playShipUnlockVoice() {
@@ -1845,7 +1858,7 @@ export class GameOverScene {
     const newBest = bestLevel > previousBestLevel && this.finalLevel >= bestLevel;
     const suffix = newBest ? ' - NEW BEST' : '';
     const clearLabel = summary.runCleared ? 'CLEAR' : 'GAME OVER';
-    return `${clearLabel}: SECTOR ${this.finalLevel}  ${Math.floor(summary.runElapsedSeconds || 0)}s\nCAREER BEST: SECTOR ${bestLevel}${suffix}\nPILOT XP +${summary.pilotXpGained || 0}  RANK ${summary.pilotRank ?? currentProgress.pilotRank ?? 0}`;
+    return `${clearLabel}: SECTOR ${this.finalLevel}  ${Math.floor(summary.runElapsedSeconds || 0)}s\nCAREER BEST: SECTOR ${bestLevel}${suffix}\nPILOT XP +${summary.pilotXpGained || 0}  ${this.createPilotRankLine(currentProgress)}`;
   }
 
   getNextLevelGoal(bestLevel) {

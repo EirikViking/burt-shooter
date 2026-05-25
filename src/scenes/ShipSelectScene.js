@@ -19,6 +19,8 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { computeShipStatRanges, createShipStatPanel, getShipCombatRole } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitHudHint } from '../config/ShipTraitDescriptions.js';
+import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
+import { translateText } from '../i18n/index.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -1299,8 +1301,15 @@ export class ShipSelectScene {
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
 
     if (this.leftIntel) {
+      const rankProgress = getPilotRankProgress(this.unlockProgress.pilotXp || 0);
+      const rankTitle = String(rankProgress.title || getRankTitle(this.unlockProgress.pilotRank || 0)).toUpperCase();
+      const isMaxRank = rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1;
+      const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
+      const rankLine = isMaxRank
+        ? [rankTitle, translateText('MAX RANK')].join('  ')
+        : [rankTitle, `${Math.round((rankProgress.progress || 0) * 100)}%`, translateText('TO'), nextTitle].join(' ');
       this.leftIntel.count.text = `${unlockedCount}/${this.ships.length} HULLS READY`;
-      this.leftIntel.progress.text = `PILOT RANK ${this.unlockProgress.pilotRank || 0}\nPILOT XP ${Number(this.unlockProgress.pilotXp || 0).toLocaleString('en-US')}\nCODEX ${this.unlockProgress.totalCodexDiscoveries || 0}  BEST SCORE ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}`;
+      this.leftIntel.progress.text = `${translateText('PILOT RANK SIGNAL')} ${rankProgress.rankIndex}: ${rankLine}\n${translateText('XP TO NEXT')} ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}\n${translateText('CODEX')} ${this.unlockProgress.totalCodexDiscoveries || 0}  ${translateText('BEST SCORE')} ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}`;
     }
 
     if (this.rightIntel) {

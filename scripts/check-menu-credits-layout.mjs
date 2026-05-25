@@ -135,10 +135,11 @@ try {
     'subtitle',
     'flavor',
     'primaryHint',
+    'careerChip',
     'launchButton',
     'hangarButton',
-    'introButton',
     'highscoresButton',
+    'threatCodexButton',
     'settingsButton',
     'exitButton',
     'disclaimer'

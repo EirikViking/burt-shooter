@@ -145,7 +145,7 @@ function assert(condition, message) {
 }
 
 async function steerMenuTo(page, optionId) {
-  const order = ['launch', 'hangar', 'intro', 'highscores', 'achievements', 'settings', 'exit', 'music'];
+  const order = ['launch', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings', 'exit', 'music'];
   for (let i = 0; i < 8; i += 1) {
     const state = await readState(page);
     if (state.menu?.focusedOption === optionId) return state;
