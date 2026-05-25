@@ -105,6 +105,35 @@ function makeSignalSeed(id = '') {
   return String(id).split('').reduce((sum, char, index) => sum + char.charCodeAt(0) * (index + 3), 17);
 }
 
+function getCodexStatLabels(categoryId) {
+  if (categoryId === 'enemies' || categoryId === 'elites') {
+    return {
+      primary: 'ENCOUNTERS',
+      secondary: 'DESTROYED',
+      rowCount: 'timesDefeated'
+    };
+  }
+  if (categoryId === 'bosses') {
+    return {
+      primary: 'ENCOUNTERS',
+      secondary: 'DEFEATED',
+      rowCount: 'timesDefeated'
+    };
+  }
+  if (categoryId === 'runThemes') {
+    return {
+      primary: 'RUNS',
+      secondary: null,
+      rowCount: 'timesSeen'
+    };
+  }
+  return {
+    primary: 'SCANS',
+    secondary: null,
+    rowCount: 'timesSeen'
+  };
+}
+
 function drawUnknownSignal(parent, x, y, width, height, accent, seed, intensity = 1) {
   const cx = x + width / 2;
   const cy = y + height / 2;
@@ -612,7 +641,10 @@ export class ThreatCodexScene {
       }, rowH - 1, compact ? 29 : 34);
 
       const stateItem = getStateItem(this.discoveryState, category.id, entry.id);
-      const count = stateItem?.timesSeen || 0;
+      const labels = getCodexStatLabels(category.id);
+      const count = labels.rowCount === 'timesDefeated'
+        ? (stateItem?.timesDefeated ?? 0)
+        : (stateItem?.timesSeen ?? 0);
       addText(row, discovered ? String(count) : '--', {
         fontSize: compact ? 12 : 14,
         fontWeight: '900',
@@ -768,8 +800,13 @@ export class ThreatCodexScene {
       lineHeight: compact ? 15 : 19
     }, 32, tipY);
 
-    const defeatedLabel = localize('DEFEATED');
-    addText(panel, `${localize('SEEN')}: ${discovered ? stateItem?.timesSeen || 0 : '--'}    ${defeatedLabel}: ${discovered ? stateItem?.timesDefeated || stateItem?.timesSurvived || 0 : '--'}`, {
+    const statLabels = getCodexStatLabels(category.id);
+    const primaryValue = discovered ? (stateItem?.timesSeen ?? 0) : '--';
+    const secondaryValue = discovered ? (stateItem?.timesDefeated ?? 0) : '--';
+    const statText = statLabels.secondary
+      ? `${localize(statLabels.primary)}: ${primaryValue}    ${localize(statLabels.secondary)}: ${secondaryValue}`
+      : `${localize(statLabels.primary)}: ${primaryValue}`;
+    addText(panel, statText, {
       fontSize: compact ? 12 : 15,
       fontWeight: '900',
       fill: '#9cfbff'
