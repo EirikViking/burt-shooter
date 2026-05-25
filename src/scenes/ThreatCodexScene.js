@@ -6,6 +6,7 @@ import {
   getCodexCompletionCounts,
   getThreatCodexState
 } from '../progression/ThreatDiscoveryState.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
 
@@ -189,6 +190,11 @@ export class ThreatCodexScene {
     this.discoveryState = getThreatCodexState();
     this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
     this.renderToken = 0;
+    this.backdropSprite = null;
+    this.backdropShade = null;
+    this.titlePlate = null;
+    this.holoRails = null;
+    this.animationTime = 0;
   }
 
   init() {
@@ -251,11 +257,25 @@ export class ThreatCodexScene {
     return colorValue(entry?.accent ?? entry?.tint, CATEGORY_ACCENTS[categoryId] || AQUA);
   }
 
+  getEntryArt(entry = null, categoryId = this.getCategory().id) {
+    if (entry?.art) return entry.art;
+    const fallback = {
+      enemies: AssetManifest.generated.gameplayArenaBackdrop,
+      attackPatterns: AssetManifest.generated.enemyWeapons?.[2],
+      waveTactics: AssetManifest.generated.stormGameplayBackdrop,
+      elites: AssetManifest.generated.eliteMiddleShips?.[0],
+      bosses: AssetManifest.generated.bossDossier || AssetManifest.generated.bossArenaBackdrop,
+      runThemes: AssetManifest.generated.menuBackdrop
+    };
+    return fallback[categoryId] || AssetManifest.generated.leaderboardHall;
+  }
+
   createLayout(token) {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const compact = width < 920;
-    this.drawBackground(width, height);
+    this.drawBackground(width, height, token);
+    this.createTitlePlate(width, height, compact);
     this.createHeader(width, height, compact);
     this.createCategories(width, compact);
     this.createEntryList(width, height, compact);
@@ -263,22 +283,39 @@ export class ThreatCodexScene {
     this.createBackButton(width, height, compact);
   }
 
-  drawBackground(width, height) {
+  drawBackground(width, height, token) {
     const bg = new PIXI.Graphics();
     bg.rect(0, 0, width, height);
     bg.fill({ color: CODEX_BG, alpha: 1 });
+    bg.zIndex = -90;
     this.container.addChild(bg);
 
+    this.loadCodexBackdrop(width, height, token);
+
+    this.backdropShade = new PIXI.Graphics();
+    this.backdropShade.zIndex = -70;
+    this.backdropShade.rect(0, 0, width, height);
+    this.backdropShade.fill({ color: 0x020711, alpha: 0.18 });
+    this.backdropShade.rect(0, 0, width * 0.47, height);
+    this.backdropShade.fill({ color: 0x020711, alpha: 0.48 });
+    this.backdropShade.rect(width * 0.42, 0, width * 0.58, height);
+    this.backdropShade.fill({ color: 0x020711, alpha: 0.26 });
+    this.backdropShade.rect(0, height * 0.76, width, height * 0.24);
+    this.backdropShade.fill({ color: 0x000000, alpha: 0.18 });
+    this.container.addChild(this.backdropShade);
+
     const haze = new PIXI.Graphics();
-    haze.circle(width * 0.18, height * 0.25, Math.max(width, height) * 0.24);
-    haze.fill({ color: 0x0b3140, alpha: 0.28 });
-    haze.circle(width * 0.82, height * 0.2, Math.max(width, height) * 0.2);
-    haze.fill({ color: 0x27134b, alpha: 0.2 });
-    haze.circle(width * 0.62, height * 0.86, Math.max(width, height) * 0.22);
-    haze.fill({ color: 0x3a171d, alpha: 0.15 });
+    haze.zIndex = -64;
+    haze.circle(width * 0.18, height * 0.23, Math.max(width, height) * 0.22);
+    haze.fill({ color: 0x0b3140, alpha: 0.18 });
+    haze.circle(width * 0.82, height * 0.2, Math.max(width, height) * 0.18);
+    haze.fill({ color: 0xff55d9, alpha: 0.07 });
+    haze.circle(width * 0.58, height * 0.82, Math.max(width, height) * 0.2);
+    haze.fill({ color: 0xffd15c, alpha: 0.055 });
     this.container.addChild(haze);
 
     const grid = new PIXI.Graphics();
+    grid.zIndex = -58;
     const step = width < 900 ? 34 : 44;
     for (let x = -step; x < width + step; x += step) {
       grid.moveTo(x, 0);
@@ -292,6 +329,7 @@ export class ThreatCodexScene {
     this.container.addChild(grid);
 
     const scan = new PIXI.Graphics();
+    scan.zIndex = -54;
     for (let i = 0; i < 28; i += 1) {
       const x = ((i * 89) % Math.max(1, Math.floor(width))) + ((i % 3) * 7);
       const y = 92 + ((i * 53) % Math.max(1, Math.floor(height - 130)));
@@ -300,6 +338,84 @@ export class ThreatCodexScene {
       scan.fill({ color: i % 2 ? CYAN : AQUA, alpha });
     }
     this.container.addChild(scan);
+
+    this.holoRails = new PIXI.Graphics();
+    this.holoRails.zIndex = -5;
+    this.holoRails.roundRect(width * 0.046 - 7, height * 0.16, 5, height * 0.69, 3);
+    this.holoRails.fill({ color: CYAN, alpha: 0.18 });
+    this.holoRails.roundRect(width * 0.952 + 2, height * 0.2, 5, height * 0.62, 3);
+    this.holoRails.fill({ color: 0xff55d9, alpha: 0.15 });
+    this.container.addChild(this.holoRails);
+  }
+
+  loadCodexBackdrop(width, height, token) {
+    const src = AssetManifest.generated.leaderboardHall || AssetManifest.generated.menuBackdrop;
+    PIXI.Assets.load(src)
+      .then((texture) => {
+        if (token !== this.renderToken || !texture) return;
+        const sprite = new PIXI.Sprite(texture);
+        sprite.anchor.set(0.5);
+        sprite.alpha = 0.88;
+        sprite.zIndex = -82;
+        const scale = Math.max(width / Math.max(1, texture.width || 1), height / Math.max(1, texture.height || 1));
+        sprite.scale.set(scale);
+        sprite.position.set(width / 2, height / 2);
+        this.backdropSprite = sprite;
+        this.container.addChild(sprite);
+        this.container.sortChildren?.();
+      })
+      .catch((error) => console.warn('[ThreatCodexScene] Codex backdrop failed to load:', error));
+  }
+
+  createTitlePlate(width, height, compact) {
+    const x = width * 0.045;
+    const y = compact ? 18 : 22;
+    const w = width * 0.91;
+    const h = compact ? 106 : 124;
+    const plate = new PIXI.Graphics();
+    plate.zIndex = 1;
+    plate.roundRect(x - 10, y - 8, w + 20, h + 16, 10);
+    plate.fill({ color: CYAN, alpha: 0.055 });
+    plate.roundRect(x, y, w, h, 8);
+    plate.fill({ color: 0x02101e, alpha: 0.38 });
+    plate.stroke({ color: CYAN, width: 1.5, alpha: 0.42 });
+    plate.roundRect(x + 8, y + 8, w - 16, h - 16, 6);
+    plate.stroke({ color: 0xff55d9, width: 1, alpha: 0.2 });
+    plate.rect(x + 24, y + 14, w - 48, 2);
+    plate.fill({ color: AQUA, alpha: 0.34 });
+    plate.rect(x + 48, y + h - 17, w - 96, 2);
+    plate.fill({ color: GOLD, alpha: 0.34 });
+    plate.rect(x + 24, y + 38, w - 48, 1);
+    plate.fill({ color: 0xff55d9, alpha: 0.16 });
+
+    const centerX = x + w / 2;
+    const bracketW = compact ? 34 : 48;
+    const bracketH = compact ? 22 : 30;
+    const cornerY = y + h * 0.52;
+    plate.poly([
+      x + 16, cornerY,
+      x + 16 + bracketW, cornerY - bracketH,
+      x + 16 + bracketW + 10, cornerY - bracketH + 8,
+      x + 28, cornerY,
+      x + 16 + bracketW + 10, cornerY + bracketH - 8,
+      x + 16 + bracketW, cornerY + bracketH
+    ]);
+    plate.stroke({ color: GOLD, width: 2, alpha: 0.42 });
+    plate.poly([
+      x + w - 16, cornerY,
+      x + w - 16 - bracketW, cornerY - bracketH,
+      x + w - 16 - bracketW - 10, cornerY - bracketH + 8,
+      x + w - 28, cornerY,
+      x + w - 16 - bracketW - 10, cornerY + bracketH - 8,
+      x + w - 16 - bracketW, cornerY + bracketH
+    ]);
+    plate.stroke({ color: 0xff55d9, width: 2, alpha: 0.36 });
+    plate.circle(centerX, y + 16, compact ? 4 : 5);
+    plate.fill({ color: CYAN, alpha: 0.58 });
+    plate.circle(centerX, y + h - 16, compact ? 3 : 4);
+    plate.fill({ color: GOLD, alpha: 0.48 });
+    this.titlePlate = plate;
+    this.container.addChild(plate);
   }
 
   createHeader(width, height, compact) {
@@ -308,6 +424,7 @@ export class ThreatCodexScene {
     const discovered = Object.values(counts).reduce((sum, item) => sum + (item.discovered || 0), 0);
     const header = new PIXI.Container();
     header.position.set(width * 0.05, compact ? 20 : 26);
+    header.zIndex = 8;
     this.container.addChild(header);
 
     const title = addText(header, localize('THREAT CODEX'), {
@@ -334,6 +451,7 @@ export class ThreatCodexScene {
     const meterY = compact ? 26 : 34;
     const meterW = width - meterX - width * 0.05;
     const meter = new PIXI.Graphics();
+    meter.zIndex = 8;
     drawPanel(meter, meterX, meterY, meterW, compact ? 48 : 54, {
       fill: 0x04111d,
       alpha: 0.72,
@@ -348,14 +466,16 @@ export class ThreatCodexScene {
     meter.fill({ color: AQUA, alpha: 0.86 });
     this.container.addChild(meter);
 
-    addText(this.container, `${discovered}/${total}`, {
+    const meterLabel = addText(this.container, `${discovered}/${total}`, {
       fontSize: compact ? 19 : 23,
       fontWeight: '900',
       fill: '#ffffff',
       align: 'right'
     }, meterX + meterW - 18, meterY + 9, { x: 1, y: 0 });
+    meterLabel.zIndex = 10;
 
     const signal = new PIXI.Graphics();
+    signal.zIndex = 10;
     signal.circle(meterX + 26, meterY + 21, 8);
     signal.fill({ color: discovered ? AQUA : MUTED, alpha: 0.95 });
     signal.circle(meterX + 26, meterY + 21, 15);
@@ -374,6 +494,7 @@ export class ThreatCodexScene {
       const button = new PIXI.Container();
       button.eventMode = 'static';
       button.cursor = 'pointer';
+      button.zIndex = 9;
       button.position.set(width * 0.05 + buttonWidth * index, startY);
       button.on('pointerdown', () => {
         this.categoryIndex = index;
@@ -426,6 +547,7 @@ export class ThreatCodexScene {
     const start = Math.max(0, Math.min(this.entryIndex - Math.floor(maxRows / 2), Math.max(0, entries.length - maxRows)));
 
     const frame = new PIXI.Graphics();
+    frame.zIndex = 3;
     drawPanel(frame, listX - 14, listY - 16, listW + 28, Math.min(entries.length, maxRows) * rowH + 28, {
       fill: 0x030b13,
       alpha: 0.58,
@@ -445,6 +567,7 @@ export class ThreatCodexScene {
       const row = new PIXI.Container();
       row.eventMode = 'static';
       row.cursor = 'pointer';
+      row.zIndex = 6;
       row.position.set(listX, listY + rowIndex * rowH);
       row.on('pointerdown', () => {
         this.entryIndex = entryIndex;
@@ -467,7 +590,7 @@ export class ThreatCodexScene {
       }
       row.addChild(bg);
 
-      drawMiniGlyph(row, 12, 8, rowH - 24, accent, seed, discovered);
+      this.drawEntryThumb(row, entry, category.id, 12, 8, rowH - 24, accent, seed, discovered);
 
       const label = discovered ? entry.name.toUpperCase() : localize('UNKNOWN SIGNAL');
       addText(row, label, {
@@ -500,6 +623,51 @@ export class ThreatCodexScene {
     }
   }
 
+  drawEntryThumb(parent, entry, categoryId, x, y, size, accent, seed, discovered) {
+    const thumb = new PIXI.Container();
+    thumb.position.set(x, y);
+    parent.addChild(thumb);
+
+    const bg = new PIXI.Graphics();
+    bg.roundRect(0, 0, size, size, 7);
+    bg.fill({ color: discovered ? 0x082231 : 0x050d15, alpha: 0.96 });
+    bg.stroke({ color: accent, width: discovered ? 2 : 1, alpha: discovered ? 0.72 : 0.42 });
+    bg.rect(4, size - 6, size - 8, 2);
+    bg.fill({ color: discovered ? accent : MUTED, alpha: discovered ? 0.64 : 0.28 });
+    thumb.addChild(bg);
+
+    const art = this.getEntryArt(entry, categoryId);
+    const token = this.renderToken;
+    if (art) {
+      PIXI.Assets.load(art)
+        .then((texture) => {
+          if (token !== this.renderToken || !texture || thumb.destroyed) return;
+          const sprite = new PIXI.Sprite(texture);
+          sprite.anchor.set(0.5);
+          fitSprite(sprite, size * 0.72, size * 0.72, 2.2);
+          sprite.position.set(size / 2, size / 2);
+          sprite.alpha = discovered ? 0.88 : 0.44;
+          sprite.tint = discovered ? 0xffffff : accent;
+          thumb.addChildAt(sprite, 1);
+        })
+        .catch(() => drawMiniGlyph(thumb, 0, 0, size, accent, seed, discovered));
+    } else {
+      drawMiniGlyph(thumb, 0, 0, size, accent, seed, discovered);
+    }
+
+    if (!discovered) {
+      const lock = new PIXI.Graphics();
+      lock.circle(size * 0.5, size * 0.5, size * 0.32);
+      lock.stroke({ color: GOLD, width: 1, alpha: 0.38 });
+      lock.moveTo(size * 0.34, size * 0.5);
+      lock.lineTo(size * 0.66, size * 0.5);
+      lock.moveTo(size * 0.5, size * 0.34);
+      lock.lineTo(size * 0.5, size * 0.66);
+      lock.stroke({ color: GOLD, width: 1, alpha: 0.46 });
+      thumb.addChild(lock);
+    }
+  }
+
   createDetailPanel(width, height, compact, token) {
     const category = this.getCategory();
     const entry = this.getSelectedEntry();
@@ -513,6 +681,7 @@ export class ThreatCodexScene {
 
     const panel = new PIXI.Container();
     panel.position.set(panelX, panelY);
+    panel.zIndex = 6;
     this.container.addChild(panel);
 
     const bg = new PIXI.Graphics();
@@ -631,26 +800,45 @@ export class ThreatCodexScene {
     }
     parent.addChild(backdrop);
 
-    if (!discovered || !entry?.art) {
+    const art = this.getEntryArt(entry, entry?.category || this.getCategory().id);
+    drawUnknownSignal(parent, x + width * 0.15, y + height * 0.08, width * 0.7, height * 0.75, accent, seed, discovered ? 0.42 : 0.58);
+    if (!art) {
       drawUnknownSignal(parent, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, discovered ? 0.86 : 1);
       return;
     }
 
-    drawUnknownSignal(parent, x + width * 0.15, y + height * 0.08, width * 0.7, height * 0.75, accent, seed, 0.42);
-    PIXI.Assets.load(entry.art)
+    PIXI.Assets.load(art)
       .then((texture) => {
         if (token !== this.renderToken || !texture || !parent || parent.destroyed) return;
         const sprite = new PIXI.Sprite(texture);
         sprite.anchor.set(0.5);
-        fitSprite(sprite, width * 0.66, height * 0.72, 2.8);
+        fitSprite(sprite, width * (discovered ? 0.66 : 0.72), height * (discovered ? 0.72 : 0.78), 2.8);
         sprite.position.set(x + width * 0.5, y + height * 0.5);
-        sprite.alpha = 0.96;
+        sprite.alpha = discovered ? 0.96 : 0.42;
+        sprite.tint = discovered ? 0xffffff : accent;
         parent.addChild(sprite);
 
         const rim = new PIXI.Graphics();
         rim.circle(x + width * 0.5, y + height * 0.5, Math.min(width, height) * 0.34);
-        rim.stroke({ color: accent, width: 2, alpha: 0.16 });
+        rim.stroke({ color: accent, width: 2, alpha: discovered ? 0.16 : 0.34 });
         parent.addChild(rim);
+
+        if (!discovered) {
+          const lock = new PIXI.Graphics();
+          lock.roundRect(x + width * 0.5 - 74, y + height * 0.5 - 22, 148, 44, 8);
+          lock.fill({ color: 0x020711, alpha: 0.72 });
+          lock.stroke({ color: GOLD, width: 2, alpha: 0.68 });
+          lock.circle(x + width * 0.5 - 46, y + height * 0.5, 10);
+          lock.stroke({ color: GOLD, width: 2, alpha: 0.72 });
+          parent.addChild(lock);
+          addText(parent, localize('LOCKED'), {
+            fontSize: 18,
+            fontWeight: '900',
+            fill: '#ffe76a',
+            stroke: '#001016',
+            strokeThickness: 3
+          }, x + width * 0.5 + 14, y + height * 0.5, { x: 0.5, y: 0.5 });
+        }
       })
       .catch(() => {
         if (token !== this.renderToken || !parent || parent.destroyed) return;
@@ -662,24 +850,37 @@ export class ThreatCodexScene {
     const button = new PIXI.Container();
     button.eventMode = 'static';
     button.cursor = 'pointer';
+    button.zIndex = 10;
     button.position.set(width * 0.05, height - (compact ? 54 : 60));
     button.on('pointerdown', () => this.goBack());
 
     const bg = new PIXI.Graphics();
-    drawPanel(bg, 0, 0, compact ? 104 : 126, compact ? 36 : 42, {
-      fill: AQUA,
-      alpha: 0.95,
-      stroke: 0xffffff,
-      strokeAlpha: 0.7,
+    const buttonW = compact ? 112 : 136;
+    const buttonH = compact ? 38 : 44;
+    drawPanel(bg, 0, 0, buttonW, buttonH, {
+      fill: 0x04182d,
+      alpha: 0.84,
+      stroke: CYAN,
+      strokeAlpha: 0.82,
+      strokeWidth: 2,
       radius: 8
     });
+    bg.rect(10, 7, 4, buttonH - 14);
+    bg.fill({ color: 0xff55d9, alpha: 0.62 });
+    bg.rect(buttonW - 14, 7, 4, buttonH - 14);
+    bg.fill({ color: GOLD, alpha: 0.5 });
+    bg.moveTo(22, buttonH - 7);
+    bg.lineTo(buttonW - 22, buttonH - 7);
+    bg.stroke({ color: AQUA, width: 1, alpha: 0.28 });
     button.addChild(bg);
 
     addText(button, localize('BACK'), {
       fontSize: compact ? 17 : 21,
       fontWeight: '900',
-      fill: '#031323'
-    }, (compact ? 104 : 126) / 2, (compact ? 36 : 42) / 2, { x: 0.5, y: 0.5 });
+      fill: '#c9fbff',
+      stroke: '#031323',
+      strokeThickness: 3
+    }, buttonW / 2, buttonH / 2, { x: 0.5, y: 0.5 });
     this.container.addChild(button);
   }
 
