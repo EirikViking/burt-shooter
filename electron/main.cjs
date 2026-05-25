@@ -157,9 +157,26 @@ function sanitizeScoreEntry(entry = {}) {
     score,
     level,
     rankIndex,
+    rank_index: rankIndex,
+    shipId: entry.shipId ?? entry.ship_id ?? null,
+    shipName: entry.shipName ?? entry.ship_name ?? null,
+    runTimeSeconds: entry.runTimeSeconds ?? entry.runtimeSeconds ?? null,
+    kills: entry.kills ?? null,
+    bossKills: entry.bossKills ?? null,
+    wavesCleared: entry.wavesCleared ?? null,
+    submissionId: entry.submissionId || null,
     timestamp: new Date().toISOString(),
+    source: entry.source || 'local',
     local: true
   };
+}
+
+function sortScores(scores) {
+  return scores.sort((a, b) => {
+    const scoreDelta = (b.score || 0) - (a.score || 0);
+    if (scoreDelta !== 0) return scoreDelta;
+    return String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
+  });
 }
 
 async function readRequestJson(request) {
@@ -171,16 +188,18 @@ async function readRequestJson(request) {
 }
 
 async function handleApi(request, response) {
-  if (request.url !== '/api/highscores') {
+  const requestUrl = new URL(request.url || '/', 'http://127.0.0.1');
+  if (requestUrl.pathname !== '/api/highscores') {
     sendJson(response, 404, { error: 'Not found' });
     return;
   }
 
   if (request.method === 'GET') {
+    const limit = Math.max(1, Math.min(100, Math.floor(Number(requestUrl.searchParams.get('limit')) || 20)));
     const storedScores = readLocalScores();
     const scores = (storedScores.length > 0 ? storedScores : getSeedScores())
       .sort((a, b) => (b.score || 0) - (a.score || 0))
-      .slice(0, 10);
+      .slice(0, limit);
     sendJson(response, 200, scores);
     return;
   }
@@ -190,10 +209,15 @@ async function handleApi(request, response) {
       const payload = await readRequestJson(request);
       const scores = readLocalScores();
       const entry = sanitizeScoreEntry(payload);
-      scores.push(entry);
-      scores.sort((a, b) => (b.score || 0) - (a.score || 0));
-      writeLocalScores(scores);
-      sendJson(response, 200, { ok: true, score: entry });
+      const duplicateIndex = entry.submissionId
+        ? scores.findIndex((scoreEntry) => scoreEntry.submissionId === entry.submissionId)
+        : -1;
+      const nextScores = duplicateIndex >= 0 ? scores : [...scores, entry];
+      sortScores(nextScores);
+      writeLocalScores(nextScores);
+      const savedEntry = duplicateIndex >= 0 ? scores[duplicateIndex] : entry;
+      const placement = nextScores.findIndex((scoreEntry) => scoreEntry === savedEntry) + 1;
+      sendJson(response, 200, { ok: true, score: savedEntry, placement, duplicate: duplicateIndex >= 0 });
     } catch (error) {
       sendJson(response, 400, { error: error?.message || 'Invalid score payload' });
     }
