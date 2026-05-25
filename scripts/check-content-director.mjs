@@ -40,6 +40,7 @@ const makeDirector = () => {
 };
 
 const first = makeDirector();
+fakeStorage.clear();
 const second = makeDirector();
 if (first.runTheme?.id !== second.runTheme?.id) fail('seeded run theme selection must be deterministic');
 const shaped = first.shapeWaveConfig({ formation: 'GRID', tactic: 'pulse_net', type: 'x', count: 6 }, { level: 1, waveIndex: 0 });

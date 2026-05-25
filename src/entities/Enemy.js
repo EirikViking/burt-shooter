@@ -1226,15 +1226,16 @@ export class Enemy {
   }
 
   getThreatLockedTarget(action, playerX, playerY) {
+    const handlerId = action.handlerId || action.id;
     const width = this.game?.getWidth?.() || 800;
     const height = this.game?.getHeight?.() || 600;
     const safePlayerY = Math.max(80, Math.min(height - 96, playerY));
-    if (action.id === 'lane_cutter') {
+    if (handlerId === 'lane_cutter') {
       const laneLean = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
       const laneX = Math.max(58, Math.min(width - 58, playerX + laneLean * Math.min(120, width * 0.09)));
       return { x: laneX, y: height + 60, laneLean };
     }
-    if (action.id === 'crossfire_pair') {
+    if (handlerId === 'crossfire_pair') {
       const side = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
       return {
         x: Math.max(60, Math.min(width - 60, playerX + side * Math.min(96, width * 0.075))),
@@ -1249,6 +1250,7 @@ export class Enemy {
   }
 
   drawThreatTelegraph(action, progress, state = {}) {
+    const handlerId = action.handlerId || action.id;
     const layer = this.threatTelegraphLayer;
     if (!layer) return;
     const colorAssist = getColorAssistEnabled();
@@ -1260,7 +1262,7 @@ export class Enemy {
     const alpha = colorAssist ? 0.82 : 0.28 + progress * 0.44;
     layer.clear();
 
-    if (action.telegraph === 'cone' || action.id === 'shotgun_fan_feint') {
+    if (action.telegraph === 'cone' || handlerId === 'shotgun_fan_feint') {
       const angle = Math.atan2(relY, relX);
       const length = Math.max(180, Math.hypot(relX, relY));
       const spread = state.fakeout ? 0.18 : 0.46;
@@ -1274,7 +1276,7 @@ export class Enemy {
       layer.moveTo(0, this.radius * 0.3);
       layer.lineTo(Math.cos(angle + spread) * length, Math.sin(angle + spread) * length);
       layer.stroke({ color: colorAssist ? 0xffffff : color, width: colorAssist ? 3 : 2, alpha });
-    } else if (action.telegraph === 'lane' || action.id === 'lane_cutter') {
+    } else if (action.telegraph === 'lane' || handlerId === 'lane_cutter') {
       const laneWidth = 24 + progress * 18;
       layer.rect(relX - laneWidth / 2, -this.y - 30, laneWidth, (this.game?.getHeight?.() || 600) + 120);
       layer.fill({ color, alpha: colorAssist ? 0.07 : 0.055 + progress * 0.04 });
@@ -1283,13 +1285,13 @@ export class Enemy {
       layer.moveTo(relX + laneWidth / 2, -this.y - 30);
       layer.lineTo(relX + laneWidth / 2, (this.game?.getHeight?.() || 600) + 80 - this.y);
       layer.stroke({ color: colorAssist ? 0xffffff : color, width: colorAssist ? 3 : 2, alpha });
-    } else if (action.telegraph === 'ring' || action.id === 'pulse_ring_bloom' || action.id === 'mine_drop' || action.id === 'orbiting_satellites') {
-      const ring = this.radius + 14 + progress * (action.id === 'pulse_ring_bloom' ? 42 : 24);
+    } else if (action.telegraph === 'ring' || handlerId === 'pulse_ring_bloom' || handlerId === 'mine_drop' || handlerId === 'orbiting_satellites') {
+      const ring = this.radius + 14 + progress * (handlerId === 'pulse_ring_bloom' ? 42 : 24);
       layer.circle(0, 0, ring);
       layer.stroke({ color, width: colorAssist ? 3 : 2, alpha });
       layer.circle(0, 0, ring * (0.56 + pulse * 0.08));
       layer.stroke({ color: colorAssist ? 0x10131c : 0xffffff, width: 1.2, alpha: colorAssist ? 0.64 : 0.22 + progress * 0.18 });
-    } else if (action.telegraph === 'arc' || action.id === 'boomerang_crescent') {
+    } else if (action.telegraph === 'arc' || handlerId === 'boomerang_crescent') {
       const side = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
       for (let i = 0; i < 16; i += 1) {
         const t = i / 15;
@@ -1323,8 +1325,9 @@ export class Enemy {
     };
     const aimAngle = Math.atan2(lockedTarget.y - this.y, lockedTarget.x - this.x);
     const levelBonus = Math.min(0.45, Math.max(0, this.level - 1) * 0.025);
+    const handlerId = action.handlerId || action.id;
 
-    switch (action.id) {
+    switch (handlerId) {
       case 'telegraph_rail_lance':
         add(aimAngle, 4.35 + levelBonus, { radius: 4, trailLength: 72, trailWidth: 3, behavior: 'lance_blink', damage: 1.05 });
         add(aimAngle + 0.025, 4.15 + levelBonus, { radius: 3.5, trailLength: 58, trailWidth: 2, damage: 0.65 });

@@ -1,4 +1,6 @@
-export const ENEMY_THREAT_ACTIONS = [
+import { ENEMY_THREAT_ACTION_VARIANTS } from './EnemyThreatActionVariants.js';
+
+const BASE_ENEMY_THREAT_ACTIONS = [
   {
     id: 'pulse_ring_bloom',
     label: 'Pulse Ring Bloom',
@@ -182,6 +184,11 @@ export const ENEMY_THREAT_ACTIONS = [
     telegraph: 'ring'
   }
 ];
+
+export const ENEMY_THREAT_ACTIONS = Object.freeze([
+  ...BASE_ENEMY_THREAT_ACTIONS,
+  ...ENEMY_THREAT_ACTION_VARIANTS
+]);
 
 const ACTION_CODEX_TIPS = {
   telegraph_rail_lance: 'The warning line locks before the shot. Dodge after lock, not before.',

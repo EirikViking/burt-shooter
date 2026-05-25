@@ -24,11 +24,12 @@ import {
   getEliteMiddleShipProfile,
   planEliteMiddleShipSpawns
 } from '../config/EliteMiddleShips.js';
+import { WAVE_TACTIC_VARIANTS } from '../config/WaveTacticVariants.js';
 
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
 
-const WAVE_TACTICS = [
+const BASE_WAVE_TACTICS = [
   {
     id: 'strafe_sweep',
     minLevel: 1,
@@ -151,6 +152,11 @@ const WAVE_TACTICS = [
     diveBias: 1.2,
     entrySpeed: 0.98
   }
+];
+
+const WAVE_TACTICS = [
+  ...BASE_WAVE_TACTICS,
+  ...WAVE_TACTIC_VARIANTS
 ];
 
 const TACTIC_BY_ID = Object.fromEntries(WAVE_TACTICS.map((tactic) => [tactic.id, tactic]));
@@ -1278,17 +1284,21 @@ export class EnemyManager {
   applyThreatPressureCompensation(tactic = {}, threatPlan = {}) {
     const ids = new Set(threatPlan.assignedIds || []);
     if (!ids.size) return tactic;
+    const handlers = new Set([...ids].map((id) => {
+      const action = getEnemyThreatAction(id);
+      return action?.handlerId || id;
+    }));
     let fireScalar = tactic.fireScalar || 1;
     let fireDelayMult = tactic.fireDelayMult || 1;
-    if (ids.has('mine_drop') || ids.has('orbiting_satellites')) {
+    if (handlers.has('mine_drop') || handlers.has('orbiting_satellites')) {
       fireScalar *= 0.86;
       fireDelayMult *= 1.1;
     }
-    if (ids.has('telegraph_rail_lance') || ids.has('lane_cutter')) {
+    if (handlers.has('telegraph_rail_lance') || handlers.has('lane_cutter')) {
       fireScalar *= 0.9;
       fireDelayMult *= 1.08;
     }
-    if (ids.has('pulse_ring_bloom') && ids.has('shotgun_fan_feint')) {
+    if (handlers.has('pulse_ring_bloom') && handlers.has('shotgun_fan_feint')) {
       fireScalar *= 0.88;
       fireDelayMult *= 1.06;
     }

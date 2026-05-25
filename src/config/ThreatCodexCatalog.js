@@ -1,4 +1,5 @@
 import { ENEMY_THREAT_ACTIONS } from './EnemyThreatActions.js';
+import { WAVE_TACTIC_VARIANTS } from './WaveTacticVariants.js';
 import { GENERATED_ENEMY_PROFILES } from './GeneratedEnemyProfiles.js';
 import { ELITE_MIDDLE_SHIPS } from './EliteMiddleShips.js';
 import { RunContentDirectorConfig } from './RunContentDirectorConfig.js';
@@ -28,7 +29,13 @@ const ACTION_TIPS = Object.freeze({
   orbiting_satellites: 'Wait for satellites to release before crossing the enemy lane.'
 });
 
-const WAVE_TACTIC_ENTRIES = Object.freeze([
+function titleCaseSignal(id = '') {
+  return String(id)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+const BASE_WAVE_TACTIC_ENTRIES = Object.freeze([
   ['strafe_sweep', 'Strafe Sweep', 'Sweeping formation pressure', 'Track the formation edge before committing to a lane.'],
   ['crossfire_pincer', 'Crossfire Pincer', 'Flank pressure', 'Watch both wings; the crossing shots arrive after the turn.'],
   ['dive_chain', 'Dive Chain', 'Aggressive dive sequence', 'Move sideways early and keep a return lane open.'],
@@ -36,7 +43,19 @@ const WAVE_TACTIC_ENTRIES = Object.freeze([
   ['orbit_snare', 'Orbit Snare', 'Orbiting space control', 'Do not chase the first gap; it rotates.'],
   ['needle_stagger', 'Needle Stagger', 'Staggered precision fire', 'Small nudges beat big panic dodges.'],
   ['weave_wall', 'Weave Wall', 'Lane weave pressure', 'Read the wall direction and move with it.'],
-  ['rush_feint', 'Rush Feint', 'Fake-out rush', 'Hold your dodge until the feint resolves.']
+  ['rush_feint', 'Rush Feint', 'Fake-out rush', 'Hold your dodge until the feint resolves.'],
+  ['split_sweep', 'Split Sweep', 'Two-sided sweep pressure', 'Track the side that is quiet; it is usually about to speak.'],
+  ['ambush_lattice', 'Ambush Lattice', 'Delayed grid attack', 'Do not trust the empty square. It has plans.']
+]);
+
+const WAVE_TACTIC_ENTRIES = Object.freeze([
+  ...BASE_WAVE_TACTIC_ENTRIES,
+  ...WAVE_TACTIC_VARIANTS.map((tactic) => [
+    tactic.id,
+    titleCaseSignal(String(tactic.label || tactic.id).toLowerCase()),
+    tactic.role || 'Director tactic',
+    tactic.tip || 'Read the formation rhythm before crossing the lane.'
+  ])
 ]);
 
 const ROLE_COPY = Object.freeze({
@@ -158,7 +177,7 @@ function actionEntry(action) {
     name: action.label || action.id,
     rarity: action.minLevel <= 2 ? 'Common' : action.minLevel <= 8 ? 'Uncommon' : 'Rare',
     role: action.tags?.[0] || 'Attack pattern',
-    description: `${action.label || action.id} is a weaponized little physics lesson. The scanner marks a ${action.telegraph || 'visual'} tell, gives you about ${readWindow} ms to disagree with it, then spends ${budget} danger budget on the actual problem. Early previews are deliberately slower and wider; late-run versions trust you less and the swarm much more.`,
+    description: action.description || `${action.label || action.id} is a weaponized little physics lesson. The scanner marks a ${action.telegraph || 'visual'} tell, gives you about ${readWindow} ms to disagree with it, then spends ${budget} danger budget on the actual problem. Early previews are deliberately slower and wider; late-run versions trust you less and the swarm much more.`,
     tip: ACTION_TIPS[action.id] || action.codexTip || 'Read the tell first, then move once with purpose.',
     art: Number.isFinite(weapon?.assetIndex) ? AssetManifest.generated.enemyWeapons?.[weapon.assetIndex] : null,
     accent: weapon?.warningColor || weapon?.color || 0x7dffcc,
@@ -236,7 +255,7 @@ function runThemeEntry(theme) {
 
 export function getThreatCodexCatalog() {
   return {
-    enemies: GENERATED_ENEMY_PROFILES.slice(0, 60).map(enemyEntry),
+    enemies: GENERATED_ENEMY_PROFILES.map(enemyEntry),
     attackPatterns: ENEMY_THREAT_ACTIONS.map(actionEntry),
     waveTactics: WAVE_TACTIC_ENTRIES.map(waveEntry),
     elites: ELITE_MIDDLE_SHIPS.map(eliteEntry),

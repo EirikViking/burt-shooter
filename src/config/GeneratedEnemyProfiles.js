@@ -2,7 +2,7 @@ import { hashString } from './VisualVariantCatalog.js';
 import { ENEMY_ATTACK_STYLE_DEFS, getEnemyAttackStyle } from './EnemyAttackStyles.js';
 import { ENEMY_MOVEMENT_STYLE_DEFS } from './EnemyMovementStyles.js';
 
-export const GENERATED_ENEMY_TOTAL = 120;
+export const GENERATED_ENEMY_TOTAL = 180;
 export const GENERATED_ENEMY_ASSET_COUNT = 50;
 export const GENERATED_ENEMY_STARTER_COUNT = 10;
 export const GENERATED_ENEMY_FULL_UNLOCK_LEVEL = 40;

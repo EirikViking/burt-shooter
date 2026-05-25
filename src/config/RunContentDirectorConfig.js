@@ -1,3 +1,5 @@
+import { ADDITIONAL_RUN_THEMES } from './RunThemeExpansions.js';
+
 export const RunContentDirectorConfig = {
   enabled: true,
   unseenWeightMult: 2.2,
@@ -85,7 +87,8 @@ export const RunContentDirectorConfig = {
       enemyFamilies: ['disruptor', 'evasive', 'elite_tactical'],
       eliteRoles: ['Disruptor', 'Trickster'],
       bossArchetypes: ['jester', 'mirror', 'clock']
-    }
+    },
+    ...ADDITIONAL_RUN_THEMES
   ],
 
   contentPools: {
@@ -95,8 +98,8 @@ export const RunContentDirectorConfig = {
       enemyLevelMin: 1,
       enemyLevelMax: 8,
       enemyFamilies: ['basic_fodder', 'fast_scout', 'simple_shooter'],
-      threatActions: ['pulse_ring_bloom', 'splitter_seed', 'crossfire_pair'],
-      waveTactics: ['strafe_sweep', 'needle_stagger', 'dive_chain', 'pulse_net'],
+      threatActions: ['pulse_ring_bloom', 'splitter_seed', 'crossfire_pair', 'seed_of_regret', 'forklift_crossfire', 'hesitation_bolt'],
+      waveTactics: ['strafe_sweep', 'needle_stagger', 'dive_chain', 'pulse_net', 'receipt_spiral', 'velvet_sawtooth', 'paperclip_parade'],
       formations: ['TUTORIAL_ARC', 'ARC', 'GRID', 'STAGGERED_WING', 'DOUBLE_ARC']
     },
     mid_run: {
@@ -105,8 +108,8 @@ export const RunContentDirectorConfig = {
       enemyLevelMin: 5,
       enemyLevelMax: 22,
       enemyFamilies: ['slow_tank', 'sniper', 'spread_shooter', 'space_denial'],
-      threatActions: ['lane_cutter', 'mine_drop', 'brake_dash_bolt', 'boomerang_crescent'],
-      waveTactics: ['crossfire_pincer', 'rush_feint', 'orbit_snare', 'weave_wall'],
+      threatActions: ['lane_cutter', 'mine_drop', 'brake_dash_bolt', 'boomerang_crescent', 'turnstile_cutter', 'parking_violation', 'crescent_errand', 'missing_slice_fan', 'tiny_moons'],
+      waveTactics: ['crossfire_pincer', 'rush_feint', 'orbit_snare', 'weave_wall', 'traffic_court', 'lunar_turnpike', 'static_mandala', 'forklift_lattice', 'comet_queue'],
       formations: ['PINCER', 'SCREEN_DOOR', 'DIAGONAL_RAID', 'ORBIT_RING', 'CROSS_STREAM']
     },
     late_run: {
@@ -115,8 +118,8 @@ export const RunContentDirectorConfig = {
       enemyLevelMin: 16,
       enemyLevelMax: 36,
       enemyFamilies: ['space_denial', 'charger', 'evasive', 'escort', 'disruptor'],
-      threatActions: ['telegraph_rail_lance', 'shotgun_fan_feint', 'orbiting_satellites'],
-      waveTactics: ['split_sweep', 'ambush_lattice', 'orbit_snare', 'weave_wall'],
+      threatActions: ['telegraph_rail_lance', 'shotgun_fan_feint', 'orbiting_satellites', 'ion_pin_lance', 'neon_tax_lane', 'confetti_grenade', 'sleepy_satchel', 'halo_tax', 'argument_from_both_sides', 'boomerang_invoice', 'redlight_greenlight', 'paperclip_orbit'],
+      waveTactics: ['split_sweep', 'ambush_lattice', 'orbit_snare', 'weave_wall', 'gravity_minute', 'mirror_zipper', 'neon_jury', 'orbit_receiving_line', 'cinder_trellis', 'sidewinder_choir'],
       formations: ['SIDEWINDER', 'SPIRAL', 'SCREEN_DOOR', 'CROSS_STREAM', 'PINCER']
     },
     climax: {
@@ -125,8 +128,8 @@ export const RunContentDirectorConfig = {
       enemyLevelMin: 28,
       enemyLevelMax: 44,
       enemyFamilies: ['escort', 'disruptor', 'elite_fodder', 'elite_tactical'],
-      threatActions: ['telegraph_rail_lance', 'orbiting_satellites', 'mine_drop', 'shotgun_fan_feint'],
-      waveTactics: ['ambush_lattice', 'split_sweep', 'crossfire_pincer'],
+      threatActions: ['telegraph_rail_lance', 'orbiting_satellites', 'mine_drop', 'shotgun_fan_feint', 'blueprint_lance', 'hush_pod', 'hazard_receipt', 'crown_bloom', 'parallax_trial', 'lunar_backhand', 'false_curtain', 'auditor_fan', 'royal_satellites'],
+      waveTactics: ['ambush_lattice', 'split_sweep', 'crossfire_pincer', 'taxiway_squeeze', 'cryptic_horseshoe', 'plasma_bookclub', 'auction_house', 'solar_abacus', 'blackbox_minuet', 'starline_bureaucracy'],
       formations: ['CROSS_STREAM', 'SCREEN_DOOR', 'SPIRAL', 'PINCER', 'ORBIT_RING']
     },
     overrun: {
@@ -135,8 +138,8 @@ export const RunContentDirectorConfig = {
       enemyLevelMin: 40,
       enemyLevelMax: 60,
       enemyFamilies: ['elite_fodder', 'elite_tactical', 'disruptor', 'evasive'],
-      threatActions: ['telegraph_rail_lance', 'orbiting_satellites', 'mine_drop', 'boomerang_crescent'],
-      waveTactics: ['ambush_lattice', 'split_sweep', 'rush_feint', 'weave_wall'],
+      threatActions: ['telegraph_rail_lance', 'orbiting_satellites', 'mine_drop', 'boomerang_crescent', 'prism_verdict', 'closing_argument', 'hazard_receipt', 'crown_bloom', 'afterburner_receipt', 'auditor_fan', 'royal_satellites'],
+      waveTactics: ['ambush_lattice', 'split_sweep', 'rush_feint', 'weave_wall', 'violet_switchboard', 'hazard_square_dance', 'orbiting_small_claims', 'needle_accordion', 'glitch_carousel', 'auric_bottleneck', 'crystal_subcommittee', 'overrun_turntable'],
       formations: ['PINCER', 'CROSS_STREAM', 'SCREEN_DOOR', 'SPIRAL', 'ORBIT_RING']
     }
   }

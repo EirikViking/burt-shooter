@@ -19,9 +19,15 @@ globalThis.localStorage = {
 resetDiscoveryStateForTests();
 
 const catalog = getThreatCodexCatalog();
+const totalEntries = Object.values(catalog).reduce((sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0), 0);
 for (const category of THREAT_CODEX_CATEGORIES) {
   if (!Array.isArray(catalog[category.id]) || catalog[category.id].length === 0) fail(`missing codex category ${category.id}`);
 }
+if (totalEntries < 300) fail(`Threat Codex should support long-term discovery, found only ${totalEntries} entries`);
+if ((catalog.enemies?.length || 0) < 180) fail(`expected at least 180 enemy codex entries, found ${catalog.enemies?.length || 0}`);
+if ((catalog.attackPatterns?.length || 0) < 40) fail(`expected at least 40 attack pattern codex entries, found ${catalog.attackPatterns?.length || 0}`);
+if ((catalog.waveTactics?.length || 0) < 35) fail(`expected at least 35 wave tactic codex entries, found ${catalog.waveTactics?.length || 0}`);
+if ((catalog.runThemes?.length || 0) < 18) fail(`expected at least 18 run theme codex entries, found ${catalog.runThemes?.length || 0}`);
 
 const seen = recordThreatSeen('telegraph_rail_lance', 'attackPatterns', { name: 'Rail Lance' });
 if (!seen.isNew) fail('new discovery should be marked new');
@@ -48,4 +54,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`[threat-codex] PASS categories=${THREAT_CODEX_CATEGORIES.length} attackPatterns=${catalog.attackPatterns.length}`);
+console.log(`[threat-codex] PASS categories=${THREAT_CODEX_CATEGORIES.length} total=${totalEntries} enemies=${catalog.enemies.length} attackPatterns=${catalog.attackPatterns.length} waveTactics=${catalog.waveTactics.length} runThemes=${catalog.runThemes.length}`);
