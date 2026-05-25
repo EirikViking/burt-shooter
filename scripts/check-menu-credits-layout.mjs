@@ -135,7 +135,6 @@ try {
     'subtitle',
     'flavor',
     'primaryHint',
-    'careerChip',
     'launchButton',
     'hangarButton',
     'highscoresButton',

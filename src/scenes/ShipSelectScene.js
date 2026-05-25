@@ -43,6 +43,7 @@ export class ShipSelectScene {
     this.launchInProgress = false;
     this.backButton = null;
     this.hangarMenuOverlay = null;
+    this.careerInfoOverlay = null;
     this.overlayButtons = [];
     this.overlayFocusedIndex = 0;
     this.mainMenuButtonFocused = false;
@@ -592,6 +593,89 @@ export class ShipSelectScene {
     }
   }
 
+  openCareerInfoOverlay(source = 'unknown') {
+    if (!this.careerInfoOverlay) {
+      this.createCareerInfoOverlay(this.game.getWidth(), this.game.getHeight());
+    }
+    this.careerInfoOverlay.visible = true;
+    AudioManager.playSfx('powerup', { force: true, volume: source === 'pointer' ? 0.18 : 0.22 });
+  }
+
+  closeCareerInfoOverlay(source = 'unknown') {
+    if (!this.careerInfoOverlay?.visible) return;
+    this.careerInfoOverlay.visible = false;
+    AudioManager.playSfx('pause_out', { force: true, volume: source === 'keyboard' ? 0.24 : 0.2 });
+  }
+
+  createCareerInfoOverlay(width, height) {
+    const overlay = new PIXI.Container();
+    overlay.label = 'ui_careerInfoOverlay';
+    overlay.visible = false;
+    overlay.zIndex = 1000001;
+    overlay.eventMode = 'static';
+    overlay.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x010711, alpha: 0.76 });
+    overlay.addChild(dim);
+
+    const panelWidth = Math.min(620, width - 44);
+    const panelHeight = Math.min(420, height - 56);
+    const panelX = width / 2 - panelWidth / 2;
+    const panelY = height / 2 - panelHeight / 2;
+
+    const panel = new PIXI.Graphics();
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
+    panel.fill({ color: 0x041321, alpha: 0.96 });
+    panel.stroke({ color: 0x66ffdd, width: 2, alpha: 0.9 });
+    panel.rect(panelX + 12, panelY + 14, 5, panelHeight - 28);
+    panel.fill({ color: 0xffd15c, alpha: 0.74 });
+    overlay.addChild(panel);
+
+    const title = createText(translateText('CAREER INTEL'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: width < 720 ? 24 : 30,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#003344',
+      strokeThickness: 4,
+      align: 'center',
+      letterSpacing: 0
+    });
+    title.anchor.set(0.5, 0);
+    title.position.set(width / 2, panelY + 28);
+    overlay.addChild(title);
+
+    const body = createText(translateText('CAREER INTEL BODY'), {
+      fontFamily: FONT_BODY,
+      fontSize: width < 720 ? 13 : 15,
+      fontWeight: '700',
+      fill: '#d8fbff',
+      align: 'left',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 72,
+      lineHeight: width < 720 ? 18 : 21,
+      letterSpacing: 0
+    });
+    body.position.set(panelX + 36, panelY + 88);
+    overlay.addChild(body);
+
+    const close = this.createHangarMenuOption('careerClose', translateText('BACK'), width / 2, panelY + panelHeight - 46, 0, () => this.closeCareerInfoOverlay('button'));
+    close.redraw?.();
+    overlay.addChild(close);
+
+    overlay.on('pointerdown', (e) => {
+      if (e.target === overlay || e.target === dim) {
+        e.stopPropagation();
+        this.closeCareerInfoOverlay('pointer');
+      }
+    });
+
+    this.careerInfoOverlay = overlay;
+    this.container.addChild(overlay);
+  }
+
   async exitGameFromHangar() {
     try {
       const result = await requestExitGame();
@@ -652,12 +736,23 @@ export class ShipSelectScene {
     if (this.layout.showLeftIntel) {
       const left = this.createPanel(230, 292, 0x66ffdd);
       left.position.set(22, 128);
-      const title = this.createIntelText('ROSTER SIGNAL', 16, 10, 13, '#ffffff', '900');
+      left.eventMode = 'static';
+      left.cursor = 'pointer';
+      left.hitArea = new PIXI.Rectangle(0, 0, 230, 292);
+      left.on('pointerdown', (e) => {
+        e.stopPropagation();
+        this.openCareerInfoOverlay('pointer');
+      });
+      const title = this.createIntelText('CAREER SIGNAL', 16, 10, 13, '#ffffff', '900');
       const count = this.createIntelText('', 16, 46, 14, '#ffef7e', '900');
-      const progress = this.createIntelText('', 16, 78, 13, '#b8fff1');
-      const hint = this.createIntelText('Locked craft stay visible so the next target is obvious before a run starts.', 16, 126, 13, '#9fc8d8');
-      left.addChild(title, count, progress, hint);
-      this.leftIntel = { panel: left, count, progress };
+      const progress = this.createIntelText('', 16, 82, 12, '#b8fff1');
+      const stats = this.createIntelText('', 16, 158, 12, '#d8fbff');
+      const hint = this.createIntelText('CLICK FOR CAREER INTEL', 16, 238, 12, '#ffef7e', '900');
+      [progress, stats, hint].forEach(text => {
+        text.style.wordWrapWidth = 196;
+      });
+      left.addChild(title, count, progress, stats, hint);
+      this.leftIntel = { panel: left, count, progress, stats, hint };
       this.intelPanels.addChild(left);
     }
 
@@ -1307,9 +1402,15 @@ export class ShipSelectScene {
       const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
       const rankLine = isMaxRank
         ? [rankTitle, translateText('MAX RANK')].join('  ')
-        : [rankTitle, `${Math.round((rankProgress.progress || 0) * 100)}%`, translateText('TO'), nextTitle].join(' ');
+        : [rankTitle, `${Math.round((rankProgress.progress || 0) * 100)}%`].join('  ');
       this.leftIntel.count.text = `${unlockedCount}/${this.ships.length} HULLS READY`;
-      this.leftIntel.progress.text = `${translateText('PILOT RANK SIGNAL')} ${rankProgress.rankIndex}: ${rankLine}\n${translateText('XP TO NEXT')} ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}\n${translateText('CODEX')} ${this.unlockProgress.totalCodexDiscoveries || 0}  ${translateText('BEST SCORE')} ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}`;
+      this.leftIntel.progress.text = `${translateText('PILOT RANK')} ${rankProgress.rankIndex}\n${rankLine}\n${translateText('NEXT RANK')}: ${isMaxRank ? translateText('MAX') : nextTitle}\n${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
+      if (this.leftIntel.stats) {
+        this.leftIntel.stats.text = `${translateText('CODEX SCANS')}: ${this.unlockProgress.totalCodexDiscoveries || 0}\n${translateText('BEST SCORE')}: ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}\n${translateText('LOCAL PROFILE')}`;
+      }
+      if (this.leftIntel.hint) {
+        this.leftIntel.hint.text = translateText('CLICK FOR CAREER INTEL');
+      }
     }
 
     if (this.rightIntel) {
@@ -1575,6 +1676,7 @@ export class ShipSelectScene {
       if (DEBUG) console.log(`[ShipSelectInput] key=${e.key} code=${e.code}`);
 
       const handledKey = this.hangarMenuOverlay?.visible ||
+        this.careerInfoOverlay?.visible ||
         e.key === 'Tab' ||
         e.key === 'ArrowUp' ||
         e.key === 'ArrowDown' ||
@@ -1586,6 +1688,7 @@ export class ShipSelectScene {
         e.code === 'KeyD' ||
         e.code === 'KeyQ' ||
         e.code === 'KeyE' ||
+        e.code === 'KeyI' ||
         e.code === 'KeyR' ||
         e.code === 'Space' ||
         e.code === 'Enter' ||
@@ -1594,6 +1697,11 @@ export class ShipSelectScene {
 
       if (this.hangarMenuOverlay?.visible) {
         this.handleHangarMenuKey(e);
+        return;
+      }
+
+      if (this.careerInfoOverlay?.visible) {
+        this.handleCareerInfoKey(e);
         return;
       }
 
@@ -1626,6 +1734,9 @@ export class ShipSelectScene {
         e.preventDefault();
         this.setMainMenuButtonFocus(false);
         this.navigateRandom();
+      } else if (e.code === 'KeyI') {
+        e.preventDefault();
+        this.openCareerInfoOverlay('keyboard');
       } else if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault();
         this.openHangarMenu('keyboard');
@@ -1666,9 +1777,32 @@ export class ShipSelectScene {
     return false;
   }
 
+  handleCareerInfoKey(e) {
+    if (
+      e.key === 'Escape' ||
+      e.code === 'Escape' ||
+      e.key === 'Enter' ||
+      e.code === 'Enter' ||
+      e.code === 'NumpadEnter' ||
+      e.code === 'Space'
+    ) {
+      e.preventDefault();
+      this.closeCareerInfoOverlay('keyboard');
+      return true;
+    }
+    return false;
+  }
+
   pollHangarMenuGamepad() {
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+
+    if (this.careerInfoOverlay?.visible) {
+      if (nav.pressed.cancel || nav.pressed.confirm || nav.pressed.menu || nav.pressed.back) {
+        this.closeCareerInfoOverlay('controller');
+      }
+      return;
+    }
 
     if (nav.pressed.menu || nav.pressed.back) {
       this.setMainMenuButtonFocus(true);
@@ -1734,6 +1868,7 @@ export class ShipSelectScene {
     if (DEBUG) console.log(`[ShipSelect] Returning to main menu via ${source}`);
 
     if (this.hangarMenuOverlay) this.hangarMenuOverlay.visible = false;
+    if (this.careerInfoOverlay) this.careerInfoOverlay.visible = false;
     this.game.showMenu();
   }
 

@@ -9,8 +9,6 @@ import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
-import { getHangarProgressSummary } from '../progression/HangarProgressState.js';
-import { MAX_RANK_INDEX, getRankTitle } from '../shared/RankPolicy.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
 // PART A: Dynamic story rotation
@@ -85,7 +83,6 @@ export class MenuScene {
     this.subtitle = null;
     this.flavor = null;
     this.primaryHint = null;
-    this.careerChip = null;
     this.disclaimer = null;
     this.startBtn = null;
     this.highscoreBtn = null;
@@ -739,11 +736,6 @@ export class MenuScene {
     this.primaryHint.zIndex = 10;
     this.container.addChild(this.primaryHint);
 
-    this.careerChip = this.createCareerChip(layout);
-    this.careerChip.alpha = 0;
-    this.careerChip.zIndex = 10;
-    this.container.addChild(this.careerChip);
-
     this.disclaimer = createText(
       this.getDisclaimerText(layout),
       {
@@ -941,8 +933,6 @@ export class MenuScene {
       this.controls,
       this.easter,
       this.buildStamp,
-      this.careerChip?._title,
-      this.careerChip?._detail,
       this.musicBtn?._label,
       this.startBtn?._label,
       this.highscoreBtn?._label,
@@ -1025,7 +1015,6 @@ export class MenuScene {
     this.primaryHint.text = this.getPrimaryHintText();
     this.primaryHint.style.align = align;
     this.primaryHint.style.wordWrapWidth = clampTextWidth(contentWidth, layout);
-    this.updateCareerChip(layout, contentWidth);
     this.disclaimer.text = this.getDisclaimerText(layout);
     this.controls.text = layout.isMobile ? this.getControlsText(layout) : '';
     this.controls.style.fontSize = controlsSize;
@@ -1041,8 +1030,6 @@ export class MenuScene {
     this.subtitle.updateText?.(false);
     this.flavor.updateText?.(false);
     this.primaryHint.updateText?.(false);
-    this.careerChip?._title?.updateText?.(false);
-    this.careerChip?._detail?.updateText?.(false);
     this.disclaimer.updateText?.(false);
     this.controls.updateText?.(false);
 
@@ -1089,12 +1076,11 @@ export class MenuScene {
     const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
     const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
     const primaryHintHeight = this.primaryHint.height || controlsSize * 1.5;
-    const careerChipHeight = this.careerChip?._chipHeight || (isMobileLayout ? 50 : 58);
     const buttonCount = 1 + secondaryButtons.length;
     const buttonsHeight = primaryButtonHeight + buttonHeight * secondaryButtons.length + buttonSpacing * Math.max(0, buttonCount - 1);
     const exitNoticeHeight = this.exitNotice?.text ? (this.exitNotice.height || controlsSize * 1.2) : 0;
     const disclaimerHeight = this.disclaimer.height || disclaimerSize * 2;
-    const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + careerChipHeight + buttonsHeight + exitNoticeHeight + disclaimerHeight + sectionSpacing * 7;
+    const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + buttonsHeight + exitNoticeHeight + disclaimerHeight + sectionSpacing * 7;
 
     const footerReserve = isMobileLayout ? 86 : (isShortLayout ? 16 : 64);
     const availableHeight = height - footerReserve - safeMargin.top;
@@ -1120,11 +1106,7 @@ export class MenuScene {
     placeCentered(this.title, titleHeight, isMobileLayout ? 8 : 10);
     placeCentered(this.subtitle, subtitleHeight, isMobileLayout ? 10 : 18);
     placeCentered(this.flavor, flavorHeight, isMobileLayout ? 12 : 18);
-    placeCentered(this.primaryHint, primaryHintHeight, isMobileLayout ? 8 : 10);
-    if (this.careerChip) {
-      this.careerChip.x = isMobileLayout ? contentX : leftX + (this.careerChip._chipWidth || contentWidth) / 2;
-      placeCentered(this.careerChip, careerChipHeight, sectionSpacing);
-    }
+    placeCentered(this.primaryHint, primaryHintHeight, sectionSpacing);
 
     const buttonX = isMobileLayout ? contentX : leftX + primaryButtonWidth / 2;
     this.startBtn.x = buttonX;
@@ -1176,7 +1158,7 @@ export class MenuScene {
     const overflow = this.disclaimer.y + disclaimerHeight / 2 - (height - footerReserve);
     if (overflow > 0) {
       const lift = Math.min(overflow + 10, isMobileLayout ? 56 : 90);
-      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.careerChip, this.startBtn, this.highscoreBtn, this.storyBtn, this.threatCodexBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
+      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.startBtn, this.highscoreBtn, this.storyBtn, this.threatCodexBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
         if (item) item.y -= lift;
       });
     }
@@ -1245,7 +1227,6 @@ export class MenuScene {
       this.subtitle,
       this.flavor,
       this.primaryHint,
-      this.careerChip,
       this.startBtn,
       this.highscoreBtn,
       this.storyBtn,
@@ -1310,7 +1291,6 @@ export class MenuScene {
       controls: this.controls,
       launchButton: this.startBtn,
       hangarButton: this.highscoreBtn,
-      careerChip: this.careerChip,
       highscoresButton: this.storyBtn,
       threatCodexButton: this.threatCodexBtn,
       achievementsButton: this.achievementsBtn,
@@ -1374,99 +1354,6 @@ export class MenuScene {
       this.backdropShade.rect(0, height * 0.68, width, height * 0.32);
       this.backdropShade.fill({ color: 0x000000, alpha: 0.16 });
     }
-  }
-
-  createCareerChip(layout) {
-    const chip = new PIXI.Container();
-    chip._bg = new PIXI.Graphics();
-    chip._barBg = new PIXI.Graphics();
-    chip._barFill = new PIXI.Graphics();
-    chip.addChild(chip._bg);
-
-    chip._title = createText('', {
-      fontFamily: FONT_DISPLAY,
-      fontSize: Math.max(12, getResponsiveFontSize(layout || { isMobile: false }, 'small') + 1),
-      fontWeight: '900',
-      letterSpacing: 0,
-      fill: '#ffffff',
-      stroke: '#031323',
-      strokeThickness: 3,
-      padding: 6
-    });
-    chip._title.anchor.set(0, 0.5);
-    chip.addChild(chip._title);
-
-    chip._detail = createText('', {
-      fontFamily: FONT_MONO,
-      fontSize: Math.max(10, getResponsiveFontSize(layout || { isMobile: false }, 'small') - 1),
-      fontWeight: '800',
-      letterSpacing: 0,
-      fill: '#8ffcff',
-      stroke: '#020711',
-      strokeThickness: 3,
-      padding: 6
-    });
-    chip._detail.anchor.set(0, 0.5);
-    chip.addChild(chip._detail);
-    chip.addChild(chip._barBg);
-    chip.addChild(chip._barFill);
-    return chip;
-  }
-
-  updateCareerChip(layout, contentWidth) {
-    const chip = this.careerChip;
-    if (!chip?._bg) return;
-
-    const summary = getHangarProgressSummary();
-    const rankProgress = summary.rankProgress || {};
-    const rankIndex = Math.max(0, Math.floor(Number(rankProgress.rankIndex ?? summary.pilotRank) || 0));
-    const rankTitle = String(rankProgress.title || getRankTitle(rankIndex)).toUpperCase();
-    const isMaxRank = rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1;
-    const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankIndex + 1)).toUpperCase();
-    const percent = Math.max(0, Math.min(99, Math.round((Number(rankProgress.progress) || 0) * 100)));
-    const xpToNext = Math.max(0, Math.floor(Number(rankProgress.xpToNextRank) || 0));
-    const width = layout.isMobile
-      ? Math.min(296, contentWidth - 12)
-      : Math.min(386, contentWidth - 18);
-    const height = layout.isMobile ? 50 : 58;
-    const barWidth = Math.max(120, width - 34);
-    const barProgress = isMaxRank ? 1 : Math.max(0.04, Math.min(0.98, Number(rankProgress.progress) || 0));
-
-    chip._chipWidth = width;
-    chip._chipHeight = height;
-    chip._title.text = [
-      translateText('PILOT RANK SIGNAL'),
-      String(rankIndex) + ':',
-      rankTitle
-    ].join(' ');
-    chip._detail.text = isMaxRank
-      ? [Number(summary.pilotXp || 0).toLocaleString('en-US'), 'XP', '//', 'MAX', 'RANK'].join(' ')
-      : [String(percent) + '%', 'TO', nextTitle, '//', xpToNext.toLocaleString('en-US'), 'XP'].join(' ');
-    chip._title.style.fontSize = Math.max(12, getResponsiveFontSize(layout, 'small') + 1);
-    chip._detail.style.fontSize = Math.max(10, getResponsiveFontSize(layout, 'small') - 1);
-    chip._title.updateText?.(false);
-    chip._detail.updateText?.(false);
-    fitTextToWidth(chip._title, width - 34, { minScale: 0.68 });
-    fitTextToWidth(chip._detail, width - 34, { minScale: 0.68 });
-
-    chip._title.position.set(-width / 2 + 16, -height * 0.22);
-    chip._detail.position.set(-width / 2 + 16, height * 0.15);
-
-    chip._bg.clear();
-    chip._bg.roundRect(-width / 2, -height / 2, width, height, 7);
-    chip._bg.fill({ color: 0x031424, alpha: 0.74 });
-    chip._bg.stroke({ color: 0x37f5ff, width: 1, alpha: 0.56 });
-    chip._bg.rect(-width / 2 + 8, -height / 2 + 8, 3, height - 16);
-    chip._bg.fill({ color: 0xffd15c, alpha: 0.78 });
-
-    const barY = height / 2 - 10;
-    chip._barBg.clear();
-    chip._barBg.roundRect(-barWidth / 2, barY, barWidth, 4, 2);
-    chip._barBg.fill({ color: 0x102844, alpha: 0.9 });
-
-    chip._barFill.clear();
-    chip._barFill.roundRect(-barWidth / 2, barY, barWidth * barProgress, 4, 2);
-    chip._barFill.fill({ color: 0x7fffd8, alpha: 0.95 });
   }
 
   createButton(text, layout, options = {}) {
@@ -1574,16 +1461,15 @@ export class MenuScene {
     this.animateElement(this.subtitle, 0.35, 0.5);
     this.animateElement(this.flavor, 0.55, 0.5);
     this.animateElement(this.primaryHint, 0.68, 0.42);
-    this.animateElement(this.careerChip, 0.74, 0.42);
-    this.animateElement(this.menuPanel, 0.78, 0.45);
-    this.animateElement(this.startBtn, 0.9, 0.4);
-    this.animateElement(this.highscoreBtn, 1.04, 0.4);
-    this.animateElement(this.storyBtn, 1.18, 0.4);
-    this.animateElement(this.threatCodexBtn, 1.3, 0.4);
-    this.animateElement(this.achievementsBtn, 1.42, 0.4);
-    this.animateElement(this.settingsBtn, 1.54, 0.4);
-    this.animateElement(this.exitBtn, 1.66, 0.4);
-    this.animateElement(this.disclaimer, 1.78, 0.4);
+    this.animateElement(this.menuPanel, 0.72, 0.45);
+    this.animateElement(this.startBtn, 0.86, 0.4);
+    this.animateElement(this.highscoreBtn, 1.02, 0.4);
+    this.animateElement(this.storyBtn, 1.16, 0.4);
+    this.animateElement(this.threatCodexBtn, 1.28, 0.4);
+    this.animateElement(this.achievementsBtn, 1.4, 0.4);
+    this.animateElement(this.settingsBtn, 1.52, 0.4);
+    this.animateElement(this.exitBtn, 1.64, 0.4);
+    this.animateElement(this.disclaimer, 1.76, 0.4);
   }
 
   buildMenuNavigation() {

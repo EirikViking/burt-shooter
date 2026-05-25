@@ -6,6 +6,7 @@ import { createText } from '../utils/pixiText.js';
 import { createShipStatPanel } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitExplanation } from '../config/ShipTraitDescriptions.js';
+import { translateText } from '../i18n/index.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
@@ -99,7 +100,7 @@ export class ShipDetailsScene {
         // Usage count
         const usageCount = getShipUsage(this.spriteKey);
         const locked = !isShipUnlocked(this.spriteKey, this.unlockProgress);
-        const usageText = createText(`Used ${usageCount} times by players`, {
+        const usageText = createText([translateText('YOUR LAUNCHES') + ':', usageCount, '//', translateText('LOCAL PROFILE')].join(' '), {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: 13,
             fill: '#999999',
