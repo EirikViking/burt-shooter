@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -8,6 +8,11 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4320));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/trait-hud-${timestamp()}`);
+const hudSource = readFileSync(new URL('../src/ui/HUD.js', import.meta.url), 'utf8');
+if (hudSource.includes("text: 'WING BURST'") || !hudSource.includes('IN ${next.remaining} SHOTS')) {
+  console.error('[trait-hud] FAIL HUD cadence labels must say shot counters, for example WING SHOT IN N SHOTS');
+  process.exit(1);
+}
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -128,6 +133,8 @@ try {
       result.traitVisible &&
       result.hudLabel?.startsWith('TRAIT: ') &&
       result.hudText &&
+      !/WING BURST/.test(result.hudText) &&
+      (!/ IN \d+/.test(result.hudText) || / SHOTS$/.test(result.hudText)) &&
       result.width >= 120 &&
       result.height >= 30 &&
       pageErrors.length === 0 &&

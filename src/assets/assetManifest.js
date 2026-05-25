@@ -206,6 +206,7 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_life_low.mp3',
             '/audio/voice/mission-control/mission_control_life_low_alt01.mp3',
             '/audio/voice/mission-control/mission_control_life_low_alt02.mp3',
+            '/audio/voice/mission-control/mission_control_lives_max.mp3',
             '/audio/voice/mission-control/mission_control_powerup.mp3',
             '/audio/voice/mission-control/mission_control_powerup_alt01.mp3',
             '/audio/voice/mission-control/mission_control_powerup_alt02.mp3',

@@ -6,6 +6,7 @@
 
 import { ShipData } from './ShipData.js';
 import { buildSelectableShipVariants } from './VisualVariantCatalog.js';
+import { getTraitExplanation } from './ShipTraitDescriptions.js';
 
 export const ShipMetadata = {};
 export const ShipVariantData = buildSelectableShipVariants(ShipData);
@@ -27,6 +28,7 @@ ShipVariantData.forEach(ship => {
     visuals: { ...ship.visuals },
     hitbox: { ...ship.hitbox },
     trait: ship.trait ? { ...ship.trait } : null,
+    traitExplanation: ship.trait ? getTraitExplanation(ship.trait, ship) : null,
     unlock: ship.unlock ? { ...ship.unlock } : null,
     stats: {
       speed: ship.stats.speed,

@@ -15,6 +15,34 @@ import {
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
+const GENERATED_SHIP_VISUAL_CENTER_OFFSETS = [
+  { x: 24.5, y: 40.9 },
+  { x: -0.4, y: 18.6 },
+  { x: -0.7, y: 16.9 },
+  { x: -0.6, y: 14.9 },
+  { x: -0.4, y: 16.6 },
+  { x: -0.5, y: 29.4 },
+  { x: -0.8, y: 26.8 },
+  { x: -1.2, y: 24.0 },
+  { x: -0.7, y: 24.4 },
+  { x: -0.6, y: 29.4 },
+  { x: 0.0, y: -15.5 },
+  { x: -1.0, y: -13.9 },
+  { x: -0.3, y: -16.8 },
+  { x: -0.4, y: -10.7 },
+  { x: -0.2, y: -11.3 },
+  { x: -0.5, y: -16.7 },
+  { x: -0.7, y: -16.4 },
+  { x: -1.5, y: -7.8 },
+  { x: -0.3, y: -14.1 },
+  { x: -0.8, y: -5.3 },
+  { x: 7.8, y: -34.6 },
+  { x: -0.6, y: 0.3 },
+  { x: -0.9, y: -0.4 },
+  { x: -1.6, y: -9.8 },
+  { x: -0.5, y: 0.9 }
+];
+
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
     this.x = x;
@@ -199,8 +227,24 @@ export class Player {
     const scale = texture.width > 0 ? targetWidth / texture.width : 1;
     sprite.scale.set(scale);
     this.baseScale = Number.isFinite(scale) ? scale : 1;
+    this.applyShipVisualCentering(sprite, this.selectedShipTextureIndex);
 
     return sprite;
+  }
+
+  getShipVisualCenterOffset(textureIndex = this.selectedShipTextureIndex) {
+    const index = Math.max(0, Math.floor(Number(textureIndex) || 0));
+    const offset = GENERATED_SHIP_VISUAL_CENTER_OFFSETS[index];
+    if (!offset) return { x: 0, y: 0 };
+    return offset;
+  }
+
+  applyShipVisualCentering(sprite = this.shipSprite, textureIndex = this.selectedShipTextureIndex) {
+    if (!sprite?.position || !sprite?.scale) return;
+    const offset = this.getShipVisualCenterOffset(textureIndex);
+    const scaleX = Number.isFinite(sprite.scale.x) ? sprite.scale.x : this.baseScale || 1;
+    const scaleY = Number.isFinite(sprite.scale.y) ? sprite.scale.y : this.baseScale || 1;
+    sprite.position.set(-offset.x * scaleX, -offset.y * scaleY);
   }
 
   createVariantGlow() {
@@ -493,6 +537,7 @@ export class Player {
     const scale = targetWidth / texWidth;
     this.shipSprite.scale.set(scale);
     this.baseScale = Number.isFinite(scale) ? scale : 1;
+    this.applyShipVisualCentering(this.shipSprite, index);
 
     this.sprite.addChildAt(this.shipSprite, 0);
     this.rankShipIndex = index;
@@ -526,8 +571,12 @@ export class Player {
       // Pulse relative to baseScale, not 1
       const pulseScale = this.baseScale * 1.5; // Bigger pulse for visibility
       this.shipSprite.scale.set(pulseScale);
+      this.applyShipVisualCentering(this.shipSprite, index);
       setTimeout(() => {
-        if (this.shipSprite) this.shipSprite.scale.set(this.baseScale);
+        if (this.shipSprite) {
+          this.shipSprite.scale.set(this.baseScale);
+          this.applyShipVisualCentering(this.shipSprite, this.rankShipIndex);
+        }
       }, 180);
     }
 
@@ -1775,6 +1824,15 @@ export class Player {
     this.triggerTraitDodgePulse();
   }
 
+  grantInvulnerability(ms, reason = 'generic') {
+    const duration = Math.max(0, Number(ms) || 0);
+    if (duration <= 0) return this.invulnerableTime || 0;
+    this.invulnerable = true;
+    this.invulnerableTime = Math.max(this.invulnerableTime || 0, duration);
+    this.lastInvulnerabilityReason = reason;
+    return this.invulnerableTime;
+  }
+
   triggerTraitDodgePulse() {
     const radius = Number(this.traitCombat?.dodgePulseRadius || 0);
     const playScene = this.game?.scenes?.play;
@@ -1827,8 +1885,7 @@ export class Player {
     }
 
     if (this.invulnerable) return false;
-    this.invulnerable = true;
-    this.invulnerableTime = 2000;
+    this.grantInvulnerability(2000, 'damage');
 
     // Trigger damage flash effect
     this.triggerFlash(0xff0000, 300);

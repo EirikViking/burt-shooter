@@ -1,8 +1,9 @@
-import { BalanceConfig } from '../config/BalanceConfig.js';
+import { BalanceConfig, MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
+import { translateText } from '../i18n/index.js';
 
 class Powerup {
   constructor(x, y, type) {
@@ -195,18 +196,21 @@ class Powerup {
     // TASK 1: Premium powerup pickup effects
     this.showPickupEffect(scene);
     this.playPickupSFX(scene);
-    const voiceOk = AudioManager.playPowerupVoice();
-    if (!voiceOk) {
+
+    const maxLives = this.type === 'life'
+      ? Math.max(1, Number(BalanceConfig.survival?.maxLives) || MAX_PLAYER_LIVES)
+      : null;
+    const reachesMaxLives = this.type === 'life' && scene.game.lives < maxLives && scene.game.lives + 1 >= maxLives;
+    const voiceOk = reachesMaxLives ? false : AudioManager.playPowerupVoice();
+    if (!voiceOk && !reachesMaxLives) {
       AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
     }
 
     // Pass type directly to player (Player handles reset)
     // Life Powerup Logic
     if (this.type === 'life') {
-      const maxLives = 5;
       if (scene.game.lives < maxLives) {
         scene.game.gainLife(); // Use the new gainLife() method
-        scene.onLifeGained ? scene.onLifeGained() : null; // Optional hook
 
         // Play distinct audio for life gain (not achievement audio per AUDIO_RULES.md)
         if (scene.game && scene.game.audio) {
@@ -216,7 +220,7 @@ class Powerup {
         // Score bonus instead
         console.log(`[Lives] pickup extra_life before=${scene.game.lives} after=${scene.game.lives} max=${maxLives} applied=false (at max, bonus awarded)`);
         scene.game.addScore(1000);
-        scene.showToast('MAX LIVES BONUS!', { fontSize: 24, fill: '#00ff00' });
+        scene.showToast(translateText('MAX LIVES BONUS!'), { fontSize: 24, fill: '#00ff00' });
 
         // Play pickup sound for bonus
         if (scene.game && scene.game.audio) {

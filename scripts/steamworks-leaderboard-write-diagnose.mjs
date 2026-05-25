@@ -212,6 +212,15 @@ function hasLocalSdkReady(summary) {
   return Boolean(status?.available && status?.nativeModuleLoaded && (diagnostics?.hasNativeUploadFunction !== false));
 }
 
+function buildIdIsExpectedOrNewer(installedBuildId, expectedBuildId) {
+  const installed = Number(installedBuildId);
+  const expected = Number(expectedBuildId);
+  if (!Number.isFinite(installed) || !Number.isFinite(expected)) {
+    return installedBuildId === expectedBuildId;
+  }
+  return installed >= expected;
+}
+
 function readLocalState() {
   const version = readJson(path.join(root, 'public', 'version.json'));
   const packageJson = readJson(path.join(root, 'package.json'));
@@ -279,7 +288,7 @@ function buildInterpretation(latestSummary, steamInstall) {
   const localSdkReady = hasLocalSdkReady(latestSummary);
   const latestProbeWasSteamLaunched = Boolean(latestSummary?.launchedBySteamHint);
   const installedBuildId = steamInstall?.manifest?.buildid || null;
-  const latestDiagnosticsBuildInstalled = installedBuildId === EXPECTED_LATEST_BUILD_ID;
+  const latestDiagnosticsBuildInstalled = buildIdIsExpectedOrNewer(installedBuildId, EXPECTED_LATEST_BUILD_ID);
 
   const remainingSuspects = [];
   if (writeRejectedBySteamBackend) {
@@ -292,7 +301,7 @@ function buildInterpretation(latestSummary, steamInstall) {
     remainingSuspects.push('Latest local report was not Steam-launched. Use the Steam-installed probe before treating local runtime evidence as authoritative.');
   }
   if (steamInstall?.manifest && !latestDiagnosticsBuildInstalled) {
-    remainingSuspects.push(`Steam installed build ${installedBuildId || 'unknown'} does not match expected diagnostics build ${EXPECTED_LATEST_BUILD_ID}.`);
+    remainingSuspects.push(`Steam installed build ${installedBuildId || 'unknown'} is older than expected diagnostics build ${EXPECTED_LATEST_BUILD_ID}.`);
   }
   if (!steamInstall?.manifest) {
     remainingSuspects.push('Steam app manifest for 4765070 was not found locally; installed package/build state could not be verified.');

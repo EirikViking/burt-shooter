@@ -9,6 +9,7 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/leaderboard-visuals-${timestamp()}`);
 const localKey = 'novaSwarm.localLeaderboard.v2';
+const currentPlayerIndex = 7;
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -85,7 +86,8 @@ function seededScores() {
     name: names[index],
     score: 240000 - index * 9100,
     level: Math.max(3, 12 - Math.floor(index / 2)),
-    rank_index: Math.max(0, 12 - index)
+    rank_index: Math.max(0, 12 - index),
+    isCurrentPlayer: index === currentPlayerIndex
   }));
 }
 
@@ -113,12 +115,20 @@ async function openLeaderboard(page, viewport) {
   await page.setViewportSize(viewport);
   await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
-  await page.evaluate(({ storageKey, scores }) => {
+  await page.evaluate(({ storageKey, scores, currentPlayerIndex }) => {
     localStorage.setItem(storageKey, JSON.stringify(scores));
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 240000, bestRank: 12, bestLevel: 12 }));
+    window.__game.lastLeaderboardResult = {
+      name: scores[currentPlayerIndex].name,
+      score: scores[currentPlayerIndex].score,
+      level: scores[currentPlayerIndex].level,
+      localPlacement: currentPlayerIndex + 1,
+      localStatus: 'saved',
+      localEntry: scores[currentPlayerIndex]
+    };
     window.__game.leaderboardView = 'local';
     window.__game.switchScene('highscore');
-  }, { storageKey: localKey, scores: seededScores() });
+  }, { storageKey: localKey, scores: seededScores(), currentPlayerIndex });
   await page.waitForFunction(() => {
     const scene = window.__game?.scenes?.highscore;
     return window.__game?.currentSceneName === 'highscore' &&
@@ -140,6 +150,7 @@ async function openLeaderboard(page, viewport) {
       tauntBubbleVisible: Boolean(scene?.currentBubble?.container?.visible),
       tableMetrics: scene?.tableMetrics || null,
       rows: scene?.rowLayoutDebug || [],
+      highlightedRows: (scene?.rowLayoutDebug || []).filter((row) => row.featured).map((row) => row.index),
       rowChildren: scene?.rowsContainer?.children?.length || 0,
       title: scene?.title?.text || ''
     };
@@ -196,6 +207,7 @@ try {
       result.state.title !== 'LOCAL SCORE DECK' ? `${result.viewport}: title did not switch to local score deck` : null,
       result.viewport !== 'mobile' && result.state.rows?.length !== 20 ? `${result.viewport}: desktop leaderboard did not render top 20` : null,
       result.viewport === 'mobile' && result.state.rows?.length !== 10 ? `${result.viewport}: mobile leaderboard should keep 10 visible rows` : null,
+      !result.state.highlightedRows?.includes(currentPlayerIndex) ? `${result.viewport}: current player row was not highlighted` : null,
       (() => {
         const rows = result.state.rows || [];
         if (!rows.length || !result.state.tableMetrics) return null;

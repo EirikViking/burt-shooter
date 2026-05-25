@@ -25,6 +25,9 @@ release/steam-trailer/draft-*-hq-*/
 release/steam-trailer/hq-*/
 release/steam-screenshots/draft-*-1920/
 steamworks/
+!release/steamworks/
+!release/steamworks/achievement-icons/
+!release/steamworks/achievement-icons/**
 
 # Protected generated build artifacts - never commit
 public/sw.js

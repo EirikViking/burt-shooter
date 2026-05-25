@@ -1,3 +1,5 @@
+export const MAX_PLAYER_LIVES = 6;
+
 export const BalanceConfig = {
     // Global pressure trim: below 1 keeps Nova Swarm readable while the wave count rises.
     DIFFICULTY_MULTIPLIER: 0.78,
@@ -124,13 +126,25 @@ export const BalanceConfig = {
         waveClearRepairTargetLives: 0,
         levelClearRepairTargetLives: 0,
         bossClearRepairLives: 1,
-        bossClearRepairMaxLives: 5,
+        bossClearRepairMaxLives: MAX_PLAYER_LIVES,
         bossClearRepairInvulnerabilityMs: 1000,
         repairInvulnerabilityMs: 0
     },
 
     survival: {
+        maxLives: MAX_PLAYER_LIVES,
         lastStandRepairEnabled: false
+    },
+
+    bossMercy: {
+        enabled: true,
+        maxProtectedLevel: 10,
+        earlyCooldownMs: 7000,
+        lateCooldownMs: 5000,
+        minimumCooldownMs: 2500,
+        levelReductionMs: 250,
+        contactPushbackPx: 72,
+        blockedHitFeedbackCooldownMs: 600
     },
 
     // Modifiers

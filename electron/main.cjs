@@ -4,6 +4,7 @@ const http = require('node:http');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { createSteamLeaderboardBridge } = require('./steamLeaderboardBridge.cjs');
+const { createSteamAchievementsBridge } = require('./steamAchievementsBridge.cjs');
 const { runSteamLeaderboardRuntimeProbe } = require('./steamLeaderboardRuntimeProbe.cjs');
 const { createNativeGamepadBridge } = require('./nativeGamepadBridge.cjs');
 const { createSteamCloudSave } = require('./steamCloudSave.cjs');
@@ -36,6 +37,10 @@ const steamLeaderboardBridge = createSteamLeaderboardBridge({
   rootDir: path.resolve(__dirname, '..'),
   logger: console
 });
+const steamAchievementsBridge = createSteamAchievementsBridge({
+  steamClientBridge: steamLeaderboardBridge,
+  logger: console
+});
 const nativeGamepadBridge = createNativeGamepadBridge();
 let steamCloudSave = null;
 
@@ -49,6 +54,15 @@ function registerSteamLeaderboardIpc() {
   ipcMain.handle('nova-steam-leaderboard:getLastUploadDiagnostics', () => steamLeaderboardBridge.getLastUploadDiagnostics());
   ipcMain.handle('nova-steam-leaderboard:getStatus', () => steamLeaderboardBridge.getStatus());
   ipcMain.handle('nova-steam-leaderboard:getRuntimeInfo', () => getSteamRuntimeInfo());
+}
+
+function registerSteamAchievementsIpc() {
+  ipcMain.handle('nova-steam-achievements:getStatus', () => steamAchievementsBridge.getStatus());
+  ipcMain.handle('nova-steam-achievements:requestCurrentStats', () => steamAchievementsBridge.requestCurrentStats());
+  ipcMain.handle('nova-steam-achievements:getAchievement', (_event, payload) => steamAchievementsBridge.getAchievement(payload?.id ?? payload));
+  ipcMain.handle('nova-steam-achievements:unlockAchievement', (_event, payload) => steamAchievementsBridge.unlockAchievement(payload?.id ?? payload));
+  ipcMain.handle('nova-steam-achievements:syncUnlockedAchievements', (_event, payload) => steamAchievementsBridge.syncUnlockedAchievements(payload));
+  ipcMain.handle('nova-steam-achievements:getUnlockedAchievements', (_event, payload) => steamAchievementsBridge.getUnlockedAchievements(payload));
 }
 
 function registerAppIpc() {
@@ -143,9 +157,26 @@ function sanitizeScoreEntry(entry = {}) {
     score,
     level,
     rankIndex,
+    rank_index: rankIndex,
+    shipId: entry.shipId ?? entry.ship_id ?? null,
+    shipName: entry.shipName ?? entry.ship_name ?? null,
+    runTimeSeconds: entry.runTimeSeconds ?? entry.runtimeSeconds ?? null,
+    kills: entry.kills ?? null,
+    bossKills: entry.bossKills ?? null,
+    wavesCleared: entry.wavesCleared ?? null,
+    submissionId: entry.submissionId || null,
     timestamp: new Date().toISOString(),
+    source: entry.source || 'local',
     local: true
   };
+}
+
+function sortScores(scores) {
+  return scores.sort((a, b) => {
+    const scoreDelta = (b.score || 0) - (a.score || 0);
+    if (scoreDelta !== 0) return scoreDelta;
+    return String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
+  });
 }
 
 async function readRequestJson(request) {
@@ -157,16 +188,18 @@ async function readRequestJson(request) {
 }
 
 async function handleApi(request, response) {
-  if (request.url !== '/api/highscores') {
+  const requestUrl = new URL(request.url || '/', 'http://127.0.0.1');
+  if (requestUrl.pathname !== '/api/highscores') {
     sendJson(response, 404, { error: 'Not found' });
     return;
   }
 
   if (request.method === 'GET') {
+    const limit = Math.max(1, Math.min(100, Math.floor(Number(requestUrl.searchParams.get('limit')) || 20)));
     const storedScores = readLocalScores();
     const scores = (storedScores.length > 0 ? storedScores : getSeedScores())
       .sort((a, b) => (b.score || 0) - (a.score || 0))
-      .slice(0, 10);
+      .slice(0, limit);
     sendJson(response, 200, scores);
     return;
   }
@@ -176,10 +209,15 @@ async function handleApi(request, response) {
       const payload = await readRequestJson(request);
       const scores = readLocalScores();
       const entry = sanitizeScoreEntry(payload);
-      scores.push(entry);
-      scores.sort((a, b) => (b.score || 0) - (a.score || 0));
-      writeLocalScores(scores);
-      sendJson(response, 200, { ok: true, score: entry });
+      const duplicateIndex = entry.submissionId
+        ? scores.findIndex((scoreEntry) => scoreEntry.submissionId === entry.submissionId)
+        : -1;
+      const nextScores = duplicateIndex >= 0 ? scores : [...scores, entry];
+      sortScores(nextScores);
+      writeLocalScores(nextScores);
+      const savedEntry = duplicateIndex >= 0 ? scores[duplicateIndex] : entry;
+      const placement = nextScores.findIndex((scoreEntry) => scoreEntry === savedEntry) + 1;
+      sendJson(response, 200, { ok: true, score: savedEntry, placement, duplicate: duplicateIndex >= 0 });
     } catch (error) {
       sendJson(response, 400, { error: error?.message || 'Invalid score payload' });
     }
@@ -279,7 +317,8 @@ async function getSteamRuntimeInfo() {
     appLocale: typeof app.getLocale === 'function' ? app.getLocale() : null,
     systemLocale: typeof app.getSystemLocale === 'function' ? app.getSystemLocale() : null,
     launchedBySteamHint: Boolean(steamEnv.SteamAppId || steamEnv.SteamGameId || steamEnv.SteamOverlayGameId),
-    steamEnv
+    steamEnv,
+    achievements: steamAchievementsBridge.getStatus()
   };
 }
 
@@ -766,6 +805,7 @@ app.whenReady().then(async () => {
     return;
   }
   registerSteamLeaderboardIpc();
+  registerSteamAchievementsIpc();
   registerAppIpc();
   registerInputIpc();
   registerSteamCloudIpc();

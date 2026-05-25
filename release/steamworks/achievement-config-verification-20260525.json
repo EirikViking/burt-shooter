@@ -1,0 +1,51 @@
+{
+  "appId": 4765070,
+  "verifiedAt": "2026-05-24T22:53:40Z",
+  "verifiedIn": "Steamworks achievements page after reload",
+  "canonicalSource": "src/achievements/AchievementCatalog.js",
+  "achievementCount": 21,
+  "iconStatus": "Each achievement has an achieved and locked Steam CDN icon.",
+  "publishStatus": "Published through Steamworks publishing tab; result included 'Publish to steam OK' and 'Publishing successful!'. Steamworks noted the app is not released, so changes are only available to app owners with release-state override packages.",
+  "hidden": false,
+  "apiNames": [
+    "ACH_RANK_01",
+    "ACH_RANK_02",
+    "ACH_RANK_03",
+    "ACH_RANK_04",
+    "ACH_RANK_05",
+    "ACH_RANK_06",
+    "ACH_RANK_07",
+    "ACH_RANK_08",
+    "ACH_RANK_09",
+    "ACH_RANK_10",
+    "ACH_RANK_11",
+    "ACH_RANK_12",
+    "ACH_RANK_13",
+    "ACH_RANK_14",
+    "ACH_RANK_15",
+    "ACH_RANK_16",
+    "ACH_RANK_17",
+    "ACH_RANK_18",
+    "ACH_RANK_19",
+    "ACH_GLOBAL_LEADERBOARD",
+    "ACH_GLOBAL_NUMBER_ONE"
+  ],
+  "missingApiNames": [],
+  "extraApiNames": [],
+  "iconProblems": [],
+  "steamworksChanges": [
+    "Created and saved 21 Steamworks achievements for app 4765070.",
+    "Set API Name, English Display Name, English Description, client permission, no progress stat, hidden=false.",
+    "Uploaded unique achieved and locked icons from release/steamworks/achievement-icons/.",
+    "Published the achievements/stat metadata changes through Steamworks publishing."
+  ],
+  "unchanged": [
+    "Pricing",
+    "Release date",
+    "Store page copy",
+    "Screenshots",
+    "Trailer",
+    "Controller support claims",
+    "Public release state"
+  ]
+}

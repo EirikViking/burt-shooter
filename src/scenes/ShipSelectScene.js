@@ -17,6 +17,7 @@ import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { computeShipStatRanges, createShipStatPanel, getShipCombatRole } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
+import { getTraitHudHint } from '../config/ShipTraitDescriptions.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -1516,8 +1517,7 @@ export class ShipSelectScene {
   getShipTraitText(ship) {
     const trait = ship?.trait || ship?.visuals?.trait;
     if (!trait?.label) return 'TRAIT: BALANCED TUNE';
-    const effectTags = this.getTraitEffectTags(trait);
-    return `TRAIT: ${trait.label} - ${trait.description || 'Balanced arcade handling.'}${effectTags ? ` | ${effectTags}` : ''}`;
+    return `TRAIT: ${trait.label} - ${getTraitHudHint(trait, ship)}`;
   }
 
   getTraitEffectTags(trait) {

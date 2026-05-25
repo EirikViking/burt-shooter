@@ -135,6 +135,63 @@ async function checkMockSteamRuntime() {
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('STEAM ACE'), true);
 }
 
+async function checkDesktopLocalPersistenceRuntime() {
+  const desktopScores = [{ name: 'TYSKER', score: 2028, level: 2, rankIndex: 1, submissionId: 'desktop-seed' }];
+  globalThis.fetch = async (url, options = {}) => {
+    const parsedUrl = new URL(String(url));
+    assert.equal(parsedUrl.pathname, '/api/highscores');
+    const method = String(options.method || 'GET').toUpperCase();
+    if (method === 'POST') {
+      const entry = JSON.parse(String(options.body || '{}'));
+      const saved = {
+        ...entry,
+        name: String(entry.name || 'PILOT').toUpperCase(),
+        timestamp: new Date().toISOString(),
+        local: true
+      };
+      desktopScores.push(saved);
+      desktopScores.sort((a, b) => (b.score || 0) - (a.score || 0));
+      return new Response(JSON.stringify({
+        ok: true,
+        score: saved,
+        placement: desktopScores.findIndex(score => score === saved) + 1,
+        duplicate: false
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    const limit = Number(parsedUrl.searchParams.get('limit')) || 20;
+    return new Response(JSON.stringify(desktopScores.slice(0, limit)), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  };
+
+  const firstWindow = installWindow({ search: '?desktop=1', origin: 'http://127.0.0.1:41001' });
+  const firstAdapter = createLeaderboardAdapter();
+  await firstAdapter.refreshAvailability();
+  const submitted = await firstAdapter.submitScore({
+    score: 56,
+    level: 1,
+    rankIndex: 0,
+    playerName: 'evileirik',
+    submissionId: 'evileirik-local-restart'
+  }, { target: 'local', saveLocal: true, name: 'evileirik' });
+  assert.equal(submitted.localStatus, 'saved');
+  assert.equal(desktopScores.some(entry => entry.name === 'EVILEIRIK' && entry.score === 56), true);
+  assert.equal(firstWindow.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('EVILEIRIK'), true);
+
+  const secondWindow = installWindow({ search: '?desktop=1', origin: 'http://127.0.0.1:41099' });
+  const secondAdapter = createLeaderboardAdapter();
+  await secondAdapter.refreshAvailability();
+  const local = await secondAdapter.getScores('local', { useCache: false });
+  assert.equal(local.source, 'local');
+  assert.equal(local.entries.some(entry => entry.playerName === 'EVILEIRIK' && entry.score === 56), true);
+  assert.equal(secondWindow.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('EVILEIRIK'), true);
+}
+
 await checkWebRuntime();
 await checkMockSteamRuntime();
+await checkDesktopLocalPersistenceRuntime();
 console.log('[leaderboard-adapter] PASS web cloud/local, mock Steam global/friends/local, fallback-safe provider selection');

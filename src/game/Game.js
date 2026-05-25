@@ -17,6 +17,7 @@ import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
 import { AchievementManager } from '../achievements/AchievementManager.js';
 import { getAchievementById, getRankAchievementId } from '../achievements/AchievementCatalog.js';
 import { onLanguageChange } from '../i18n/index.js';
+import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 
 export class Game {
   constructor(app) {
@@ -63,6 +64,7 @@ export class Game {
 
   start() {
     this.switchScene('menu');
+    this.achievementManager?.syncWithSteam?.().catch?.(() => {});
   }
 
   showIntro() {
@@ -402,15 +404,21 @@ export class Game {
 
   gainLife() {
     const before = this.lives;
-    const MAX_LIVES = 5;
-    this.lives = Math.min(this.lives + 1, MAX_LIVES);
+    const maxLives = MAX_PLAYER_LIVES;
+    this.lives = Math.min(this.lives + 1, maxLives);
     const after = this.lives;
     const applied = after > before;
-    console.log(`[Lives] pickup extra_life before=${before} after=${after} max=${MAX_LIVES} applied=${applied}`);
+    console.log(`[Lives] pickup extra_life before=${before} after=${after} max=${maxLives} applied=${applied}`);
 
     // Notify scene if needed
     if (this.currentScene && this.currentScene.onLifeGained) {
-      this.currentScene.onLifeGained(this.lives);
+      this.currentScene.onLifeGained(this.lives, {
+        before,
+        after,
+        maxLives,
+        source: 'extra_life',
+        reachedMax: applied && after >= maxLives
+      });
     }
   }
 

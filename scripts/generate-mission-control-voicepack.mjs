@@ -68,6 +68,10 @@ const lines = [
     text: 'Careful now. The board is watching.'
   },
   {
+    file: 'mission_control_lives_max.mp3',
+    text: 'Maximum lives reached. Cabinet says you are fully stocked.'
+  },
+  {
     file: 'mission_control_powerup.mp3',
     text: 'Powerup live. Use it hard.'
   },

@@ -3,6 +3,7 @@
 ## Baseline safety
 
 - Always run git fetch/status/branch/log/worktree checks before coding.
+- Never run multiple agents in the same working directory. Use one branch and one git worktree per agent, then integrate through a dedicated integration branch.
 - Do not work from stale, behind, dirty, or unexplained branches.
 - Start from a clean branch based on the verified authoritative baseline.
 - Before localization, deploy, or build work, verify that German localization, top3 localization polish, and temporary marketing hotkeys are present.

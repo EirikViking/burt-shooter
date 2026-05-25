@@ -97,11 +97,13 @@ function readLastSteamUploadDiagnostics() {
 async function collectSteamDiagnostics() {
   const bridge = window.__novaSteamBridge || null;
   const leaderboards = window.__novaSteamLeaderboard || bridge?.leaderboards || null;
-  const [bridgeStatus, runtimeInfo, personaName, latestUploadDiagnostics] = await Promise.all([
+  const achievements = bridge?.achievements || window.__novaSteamAchievements || null;
+  const [bridgeStatus, runtimeInfo, personaName, latestUploadDiagnostics, achievementStatus] = await Promise.all([
     bridge?.getStatus?.().catch(error => ({ error: error?.message || String(error) })) || null,
     (bridge?.getRuntimeInfo?.() || leaderboards?.getRuntimeInfo?.())?.catch?.(error => ({ error: error?.message || String(error) })) || null,
     leaderboards?.getPersonaName?.().catch(() => null) || null,
-    leaderboards?.getLastUploadDiagnostics?.().catch(() => null) || null
+    leaderboards?.getLastUploadDiagnostics?.().catch(() => null) || null,
+    achievements?.getStatus?.().catch(error => ({ error: error?.message || String(error) })) || null
   ]);
   return {
     generatedAt: new Date().toISOString(),
@@ -117,6 +119,8 @@ async function collectSteamDiagnostics() {
     launchedBySteamHint: Boolean(runtimeInfo?.launchedBySteamHint),
     steamEnv: runtimeInfo?.steamEnv || null,
     personaName,
+    achievementStatus,
+    achievementState: window.__game?.getAchievementDebugState?.() || null,
     latestUploadDiagnostics,
     storedUploadDiagnostics: readLastSteamUploadDiagnostics()
   };

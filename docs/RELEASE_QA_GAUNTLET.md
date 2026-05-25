@@ -20,8 +20,12 @@ New or updated repeatable QA entrypoints:
 - `npm run qa:enemy-variety`: normal enemy variety, enemy weapons, and wave-pattern checks.
 - `npm run qa:audio`: audio catalog plus objective mix audit.
 - `npm run qa:ui-flow`: menu/credits, game-over motivation, and full browser smoke.
+- `npm run check:boss-mercy`: boss recovery-window regression check.
+- `npm run check:ship-trait-explanations`: hangar trait explanation coverage check.
 
 The deeper QA pass found no technical crash, fatal overlay, console error, page error, request failure, sector-clear stall, or known popup overlap in the main smoke run. It did find one gameplay endurance concern: the 10-minute default release playtest ended in game over at 498.764 seconds, peak level 5, score 13,595, with no technical failures.
+
+Follow-up combat readability changes added a Boss Mercy System that prevents repeated boss-caused life loss during recovery windows. The window scales down with progression and exists to preserve player agency after a hit, not to make boss attacks harmless. Hangar ship details also now explain the actual trait mechanics, shot-based counters, visible effects, and tradeoffs before launch.
 
 ## Checks Run
 
@@ -302,7 +306,7 @@ Values confirmed still present:
 - Boss HP: `44 + 4 per level`, min `44`.
 - Boss shoot delays: `44 / 42 / 38`.
 - Boss projectile speeds: `1.45 / 1.52 / 1.68`.
-- Boss telegraph/fairness values remain increased, including safe wedge `0.6`, hazard arming `320ms`, boss-clear repair `+1` capped at `5`, and repair invulnerability `1000ms`.
+- Boss telegraph/fairness values remain increased, including safe wedge `0.6`, hazard arming `320ms`, boss-clear repair `+1` capped at `6`, and repair invulnerability `1000ms`.
 
 New first-boss evidence:
 
