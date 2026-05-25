@@ -62,7 +62,9 @@ function registerSteamAchievementsIpc() {
   ipcMain.handle('nova-steam-achievements:requestCurrentStats', () => steamAchievementsBridge.requestCurrentStats());
   ipcMain.handle('nova-steam-achievements:getAchievement', (_event, payload) => steamAchievementsBridge.getAchievement(payload?.id ?? payload));
   ipcMain.handle('nova-steam-achievements:unlockAchievement', (_event, payload) => steamAchievementsBridge.unlockAchievement(payload?.id ?? payload));
+  ipcMain.handle('nova-steam-achievements:clearAchievement', (_event, payload) => steamAchievementsBridge.clearAchievement(payload?.id ?? payload));
   ipcMain.handle('nova-steam-achievements:syncUnlockedAchievements', (_event, payload) => steamAchievementsBridge.syncUnlockedAchievements(payload));
+  ipcMain.handle('nova-steam-achievements:clearAchievements', (_event, payload) => steamAchievementsBridge.clearAchievements(payload));
   ipcMain.handle('nova-steam-achievements:getUnlockedAchievements', (_event, payload) => steamAchievementsBridge.getUnlockedAchievements(payload));
 }
 

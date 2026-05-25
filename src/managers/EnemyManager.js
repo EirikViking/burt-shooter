@@ -14,6 +14,10 @@ import {
   pickGeneratedEnemyTypeForLevel
 } from '../config/GeneratedEnemyProfiles.js';
 import {
+  getEnemyThreatAction,
+  pickThreatActionsForWave
+} from '../config/EnemyThreatActions.js';
+import {
   ELITE_MIDDLE_SHIP_IDS,
   getEliteMiddleShipMaxActive,
   getEliteMiddleShipProfile,
@@ -192,6 +196,7 @@ export class EnemyManager {
 
     // WAVE FIX: Wave ending state to prevent bonus drone spawning
     this.waveEnding = false;
+    this.currentWaveThreatState = null;
 
     // BOSS FIX: Boss state machine
     this.boss = null;
@@ -1113,8 +1118,10 @@ export class EnemyManager {
         entrySpeed: (tactic.entrySpeed || 1) * 1.08
       };
     }
-    this.currentWaveTactic = tactic;
     const positions = this.getFormationPositions(formation, count);
+    const threatPlan = this.createThreatActionPlan({ count, formation, tactic, config });
+    tactic = this.applyThreatPressureCompensation(tactic, threatPlan);
+    this.currentWaveTactic = tactic;
     const screenW = this.game.getWidth();
     const startLeft = Math.random() < 0.5;
     const combatBounds = this.getCombatBoundsForPositions(positions, formation);
@@ -1157,6 +1164,14 @@ export class EnemyManager {
         side: pos.x < screenW / 2 ? -1 : 1,
         combatBounds
       });
+      const threatAction = threatPlan.assignmentBySlot.get(i) || null;
+      if (threatAction) {
+        enemy.applyThreatAction?.(threatAction, {
+          index: i,
+          waveIndex: this.currentWaveIndex,
+          count
+        });
+      }
       if (enemyTactic.forcedDive) {
         enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
       }
@@ -1187,7 +1202,99 @@ export class EnemyManager {
       const span = Math.max(...xs) - Math.min(...xs);
       console.log(`[FormationWidth] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} formation=${formation} count=${count} spanPct=${(span / screenW).toFixed(2)} policy=engagement_band`);
     }
-    console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count}`);
+    console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count} threats=${threatPlan.assignedIds.join(',') || 'none'}`);
+  }
+
+  createThreatActionPlan({ count, formation, tactic, config } = {}) {
+    const result = pickThreatActionsForWave({
+      level: this.level,
+      formation,
+      tactic,
+      waveIndex: this.currentWaveIndex || 0,
+      count
+    });
+    const assignmentBySlot = new Map();
+    const assignedIds = [];
+    for (const assignment of result.assignments || []) {
+      const action = getEnemyThreatAction(assignment.actionId);
+      if (!action) continue;
+      assignmentBySlot.set(assignment.slot, action);
+      assignedIds.push(action.id);
+    }
+    this.currentWaveThreatState = {
+      maxActive: result.budget?.maxActive || 0,
+      dangerBudget: result.budget?.dangerBudget || 0,
+      activeCount: 0,
+      activeCost: 0,
+      activeById: {},
+      assignedIds,
+      assignmentCount: assignedIds.length,
+      level: this.level,
+      waveIndex: this.currentWaveIndex || 0,
+      formation,
+      tacticId: tactic?.id || config?.tactic || null
+    };
+    return {
+      budget: result.budget,
+      assignments: result.assignments || [],
+      assignmentBySlot,
+      assignedIds
+    };
+  }
+
+  applyThreatPressureCompensation(tactic = {}, threatPlan = {}) {
+    const ids = new Set(threatPlan.assignedIds || []);
+    if (!ids.size) return tactic;
+    let fireScalar = tactic.fireScalar || 1;
+    let fireDelayMult = tactic.fireDelayMult || 1;
+    if (ids.has('mine_drop') || ids.has('orbiting_satellites')) {
+      fireScalar *= 0.86;
+      fireDelayMult *= 1.1;
+    }
+    if (ids.has('telegraph_rail_lance') || ids.has('lane_cutter')) {
+      fireScalar *= 0.9;
+      fireDelayMult *= 1.08;
+    }
+    if (ids.has('pulse_ring_bloom') && ids.has('shotgun_fan_feint')) {
+      fireScalar *= 0.88;
+      fireDelayMult *= 1.06;
+    }
+    return {
+      ...tactic,
+      fireScalar,
+      fireDelayMult,
+      threatActions: [...ids]
+    };
+  }
+
+  tryReserveThreatAction(enemy, action) {
+    const state = this.currentWaveThreatState;
+    if (!state || !action || enemy?.kind !== 'enemy') return false;
+    const cost = action.dangerBudgetCost || 1;
+    const activeForId = state.activeById[action.id] || 0;
+    if (state.maxActive <= 0 || state.activeCount >= state.maxActive) return false;
+    if (state.activeCost + cost > state.dangerBudget) return false;
+    if (activeForId >= (action.maxActivePerWave || 1)) return false;
+    if (action.activeBulletCap && this.countActiveThreatBullets(action.id) >= action.activeBulletCap) return false;
+
+    state.activeCount += 1;
+    state.activeCost += cost;
+    state.activeById[action.id] = activeForId + 1;
+    return true;
+  }
+
+  releaseThreatAction(_enemy, action) {
+    const state = this.currentWaveThreatState;
+    if (!state || !action) return;
+    const cost = action.dangerBudgetCost || 1;
+    state.activeCount = Math.max(0, state.activeCount - 1);
+    state.activeCost = Math.max(0, state.activeCost - cost);
+    state.activeById[action.id] = Math.max(0, (state.activeById[action.id] || 0) - 1);
+  }
+
+  countActiveThreatBullets(actionId) {
+    const bullets = this.game?.scenes?.play?.bulletManager?.enemyBullets || [];
+    return bullets.filter((bullet) => bullet?.active !== false && bullet.threatActionId === actionId).length;
   }
 
   getWaveEntryX(entry, index, startLeft, screenW) {
@@ -1222,9 +1329,10 @@ export class EnemyManager {
     const targetX = Number.isFinite(context.targetX)
       ? Math.max(74, Math.min(screenW - 74, context.targetX))
       : Math.max(74, Math.min(screenW - 74, screenW * (0.32 + Math.random() * 0.36)));
+    const eliteMinY = Math.max(126, Math.min(156, screenH * 0.12));
     const targetY = Number.isFinite(context.targetY)
-      ? Math.max(88, Math.min(screenH * 0.36, context.targetY))
-      : Math.max(92, Math.min(screenH * 0.34, 118 + Math.random() * 72));
+      ? Math.max(eliteMinY, Math.min(screenH * 0.38, context.targetY))
+      : Math.max(eliteMinY, Math.min(screenH * 0.36, 138 + Math.random() * 72));
     const enemy = new Enemy(startX, -124, profile.id, this.level, this.game, context.waveColor || 'Black');
     enemy.kind = 'elite_middle_ship';
     enemy.marketingDebug = marketingDebug;
@@ -1287,7 +1395,7 @@ export class EnemyManager {
     ids.forEach((id, index) => {
       const r = ids.length <= 1 ? 0.5 : index / (ids.length - 1);
       const targetX = left + r * span;
-      const targetY = Math.max(102, Math.min(screenH * 0.32, 118 + (index % 2) * 54));
+      const targetY = Math.max(Math.max(132, screenH * 0.125), Math.min(screenH * 0.34, 138 + (index % 2) * 58));
       const enemy = this.spawnEliteMiddleShip(id, {
         formation: context.formation || 'MULTI_ELITE',
         tactic: {
@@ -1656,7 +1764,12 @@ export class EnemyManager {
         }
         break;
     }
-    return pos;
+    const minFormationY = this.game.getHeight() < 620 ? 88 : 104;
+    const maxFormationY = Math.max(minFormationY + 40, this.game.getHeight() * 0.34);
+    return pos.map(({ x, y }) => ({
+      x: clampX(x),
+      y: Math.max(minFormationY, Math.min(maxFormationY, y))
+    }));
   }
 
   async spawnBoss(level, options = {}) {

@@ -94,6 +94,10 @@ export class Boss {
     this.spawnedAtMs = Date.now();
     this.regularAttackReadyAt = this.spawnedAtMs + (level <= 1 ? 1800 : 1400);
     this.invulnerableUntilMs = this.spawnedAtMs + 800;
+    this.minimumFightMs = Math.max(7200, Math.min(9800, 7600 + Math.max(0, level - 1) * 140));
+    this.finishGateUntilMs = 0;
+    this.finishGateFxAt = 0;
+    this.finishGateLogged = false;
     this.visualBaseScale = { x: 1, y: 1 };
     this.animationRig = null;
     this.animationDebug = null;
@@ -580,6 +584,19 @@ export class Boss {
     playScene?.particleManager?.createBossExplosion(this.x, this.y, color);
     playScene?.triggerShockwave?.(this.x, this.y, color);
     playScene?.screenShake?.shake(8, 20);
+  }
+
+  triggerFinishGatePresentation(untilMs = Date.now() + 1200) {
+    const now = Date.now();
+    if (now - this.finishGateFxAt < 520) return;
+    this.finishGateFxAt = now;
+    this.setPresentationState('phaseChange', Math.max(420, Math.min(1400, untilMs - now)));
+    const playScene = this.game?.scenes?.play;
+    const color = this.profile?.accent || this.color || 0xffff33;
+    playScene?.triggerShockwave?.(this.x, this.y, color);
+    playScene?.particleManager?.createHitSpark(this.x, this.y, color, 1.25);
+    playScene?.screenShake?.shake(3, 10);
+    AudioManager.playSfx('boss_phase_surge', { volume: 0.45, minIntervalMs: 900 });
   }
 
   updateBossAnimation(delta, playerX, playerY) {
@@ -1498,6 +1515,7 @@ export class Boss {
   canShoot() {
     if (this.shootCooldown > 0 || this.telegraph) return false;
     const now = Date.now();
+    if (now < this.finishGateUntilMs) return false;
     if (this.entryStartMs && now - this.entryStartMs < this.entryDurationMs + 250) return false;
     if (now < this.regularAttackReadyAt) return false;
     if (!this.regularTelegraph) {
@@ -1671,7 +1689,38 @@ export class Boss {
     const invuln = now < this.invulnerableUntilMs;
     if (invuln) return false;
     const hpBefore = this.health;
-    this.health -= amount;
+    const elapsed = now - (this.spawnedAtMs || now);
+    const gateActive = now < this.finishGateUntilMs;
+    const minFightMs = Math.max(0, Number(this.minimumFightMs) || 0);
+    const incomingHealth = this.health - amount;
+    if (incomingHealth <= 0 && elapsed < minFightMs) {
+      const floor = Math.max(1, Math.ceil(this.maxHealth * 0.055));
+      this.health = Math.min(Math.max(floor, this.health), Math.max(floor, this.maxHealth));
+      this.finishGateUntilMs = Math.max(this.finishGateUntilMs || 0, (this.spawnedAtMs || now) + minFightMs);
+      this.shootCooldown = Math.max(this.shootCooldown || 0, 80);
+      this.signatureCooldown = Math.max(this.signatureCooldown || 0, 180);
+      this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500);
+      this.telegraph = null;
+      this.regularTelegraph = null;
+      this.clearTelegraphVisual();
+      this.clearRegularAttackTelegraphVisual();
+      this.updateHealthBar();
+      this.triggerHurtPresentation(amount);
+      this.triggerFinishGatePresentation(this.finishGateUntilMs);
+      if (!this.finishGateLogged) {
+        this.finishGateLogged = true;
+        console.log(`[BossDamageGate] level=${this.level} elapsedMs=${Math.round(elapsed)} minFightMs=${Math.round(minFightMs)} floor=${floor}`);
+      }
+      return false;
+    }
+    if (gateActive) {
+      const floor = Math.max(1, Math.ceil(this.maxHealth * 0.055));
+      this.health = Math.max(floor, incomingHealth);
+      this.updateHealthBar();
+      this.triggerFinishGatePresentation(this.finishGateUntilMs);
+      return false;
+    }
+    this.health = incomingHealth;
     this.updateHealthBar();
     console.log(`[BossDamage] level=${this.level} hpBefore=${hpBefore} dmg=${amount} hpAfter=${this.health} invuln=${invuln}`);
     this.triggerHurtPresentation(amount);

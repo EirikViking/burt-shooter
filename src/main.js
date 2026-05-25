@@ -8,6 +8,7 @@ import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
 import { getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
+import { getSectorInfo } from './config/SectorCatalog.js';
 import {
   LANGUAGE_CHANGE_EVENT,
   getCurrentLanguage,
@@ -396,6 +397,7 @@ function buildGameTextState(game) {
   const highscoreScene = getStableSceneName(game) === 'highscore' ? game?.currentScene : null;
   const achievementsScene = getStableSceneName(game) === 'achievements' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
+  const sector = getSectorInfo(game?.level || 1);
   const getBoundsDebug = (displayObject) => {
     try {
       if (!displayObject?.getBounds) return null;
@@ -436,6 +438,7 @@ function buildGameTextState(game) {
     scene: getStableSceneName(game),
     score: game?.score ?? 0,
     level: game?.level ?? 0,
+    sector,
     lives: game?.lives ?? 0,
     runMode: game?.runMode || (game?.isDebugRun ? 'unranked' : 'ranked'),
     runModeReason: game?.runModeReason || null,
@@ -501,7 +504,17 @@ function buildGameTextState(game) {
         label: enemyManager.currentWaveTactic.label || null,
         move: enemyManager.currentWaveTactic.move || null,
         shot: enemyManager.currentWaveTactic.shot || null,
-        volley: enemyManager.currentWaveTactic.volley || null
+        volley: enemyManager.currentWaveTactic.volley || null,
+        threatActions: Array.isArray(enemyManager.currentWaveTactic.threatActions)
+          ? enemyManager.currentWaveTactic.threatActions
+          : []
+      } : null,
+      threatBudget: enemyManager.currentWaveThreatState ? {
+        maxActive: enemyManager.currentWaveThreatState.maxActive || 0,
+        dangerBudget: enemyManager.currentWaveThreatState.dangerBudget || 0,
+        activeCount: enemyManager.currentWaveThreatState.activeCount || 0,
+        activeCost: enemyManager.currentWaveThreatState.activeCost || 0,
+        assignedIds: enemyManager.currentWaveThreatState.assignedIds || []
       } : null,
       nextTactic: enemyManager.pendingWaveConfig
         ? {
@@ -674,6 +687,7 @@ function buildGameTextState(game) {
           label: bullet.weaponLabel || null,
           behavior: bullet.behavior || null,
           waveTactic: bullet.waveTactic || null,
+          threatAction: bullet.threatActionId || null,
           speed: Number.isFinite(bullet.speed) ? Number(bullet.speed.toFixed(2)) : null
         }))
     },
@@ -704,6 +718,7 @@ function buildGameTextState(game) {
           shot: enemy.waveTactic.shot || null,
           role: enemy.waveRole || null
         } : null,
+        threatAction: enemy.getThreatDebugState ? enemy.getThreatDebugState() : null,
         variant: enemy.visualVariant?.slug || null,
         eliteMiddleShip: enemy.getEliteDebugState ? enemy.getEliteDebugState() : null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,

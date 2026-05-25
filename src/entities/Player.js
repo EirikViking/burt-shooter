@@ -1114,6 +1114,10 @@ export class Player {
       );
       bomb.isBomb = true;
       bomb.blastRadius = 150; // Blast radius
+      bomb.radius = 11;
+      bomb.trailLength = Math.max(bomb.trailLength || 0, 42);
+      bomb.pulseRate = Math.max(bomb.pulseRate || 0, 0.82);
+      bomb.haloColor = 0xffaa00;
       this.applyTraitProjectileEffects(bomb, shotCounter);
       bullets.push(bomb);
 
@@ -1517,7 +1521,7 @@ export class Player {
       durationMs: effect.durationMs,
       immunityMs: TRACTOR_DEBUFF_IMMUNITY_MS
     };
-    this.statusVfxPulse = 0.85;
+    this.statusVfxPulse = 1.45;
 
     if (Number.isFinite(effect.instantDodgeDelayMs)) {
       this.dodgeCooldown = Math.max(this.dodgeCooldown || 0, effect.instantDodgeDelayMs);
@@ -1527,7 +1531,7 @@ export class Player {
     }
 
     this.recalculateStats();
-    this.triggerFlash(effect.color || 0xff66ff, 180);
+    this.triggerFlash(effect.color || 0xff66ff, 320);
     this.createStatusBurst(effect, x, y);
     AudioManager.playSfx('tractor_capture_sting', { force: false, volume: 0.64, minIntervalMs: 180 });
     AudioManager.playSfx('tractor_debuff_apply', { force: false, volume: 0.58, minIntervalMs: 160 });
@@ -1538,7 +1542,7 @@ export class Player {
       fill: '#ffdde8',
       stroke: '#250012',
       strokeThickness: 4,
-      duration: 1100,
+      duration: 1500,
       slot: 'corner',
       type: 'tractor_debuff',
       priority: 5
@@ -1597,9 +1601,24 @@ export class Player {
     ring.stroke({ color: 0xffffff, width: 2, alpha: 0.4 });
     ring.blendMode = 'add';
     container.addChild(ring);
-    setTimeout(() => {
-      if (ring.parent) ring.parent.removeChild(ring);
-    }, 160);
+    const start = Date.now();
+    const duration = 680;
+    const baseRadius = Math.max(30, this.radius * 2.35);
+    const animate = () => {
+      const t = Math.min(1, (Date.now() - start) / duration);
+      const alpha = (1 - t) * 0.74;
+      ring.clear();
+      ring.circle(this.x, this.y, baseRadius + t * 78);
+      ring.stroke({ color, width: 5, alpha });
+      ring.circle(this.x, this.y, baseRadius * 0.58 + t * 38);
+      ring.stroke({ color: 0xffffff, width: 2, alpha: alpha * 0.65 });
+      if (t >= 1) {
+        playScene?.game?.app?.ticker?.remove(animate);
+        if (ring.parent) ring.parent.removeChild(ring);
+        ring.destroy();
+      }
+    };
+    playScene?.game?.app?.ticker?.add(animate);
   }
 
   updateStatusEffectVisuals(deltaSeconds = 1 / 60) {
@@ -1616,14 +1635,14 @@ export class Player {
     const primary = activeEffects[0];
     const color = primary.color || 0xff66ff;
     const pulse = 0.5 + Math.sin(now * 0.018) * 0.5;
-    const radius = Math.max(28, (this.baseShipWidth || 62) * 0.55) + pulse * 3 + this.statusVfxPulse * 12;
+    const radius = Math.max(30, (this.baseShipWidth || 62) * 0.62) + pulse * 5 + this.statusVfxPulse * 18;
 
     layer.clear();
     layer.visible = true;
     layer.circle(0, 0, radius);
-    layer.stroke({ color, width: 2.4, alpha: 0.56 });
+    layer.stroke({ color, width: 3.2, alpha: 0.68 });
     layer.circle(0, 0, radius * 0.72);
-    layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.18 + this.statusVfxPulse * 0.22 });
+    layer.stroke({ color: 0xffffff, width: 1.8, alpha: 0.24 + this.statusVfxPulse * 0.26 });
 
     activeEffects.slice(0, 3).forEach((effect, index) => {
       const phase = now * 0.004 + index * 2.1;

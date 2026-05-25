@@ -33,7 +33,9 @@ const ACHIEVEMENT_CHANNELS = {
   requestCurrentStats: 'nova-steam-achievements:requestCurrentStats',
   getAchievement: 'nova-steam-achievements:getAchievement',
   unlockAchievement: 'nova-steam-achievements:unlockAchievement',
+  clearAchievement: 'nova-steam-achievements:clearAchievement',
   syncUnlockedAchievements: 'nova-steam-achievements:syncUnlockedAchievements',
+  clearAchievements: 'nova-steam-achievements:clearAchievements',
   getUnlockedAchievements: 'nova-steam-achievements:getUnlockedAchievements'
 };
 
@@ -75,7 +77,9 @@ const achievements = Object.freeze({
   requestCurrentStats: () => invoke(ACHIEVEMENT_CHANNELS.requestCurrentStats),
   getAchievement: (id) => invoke(ACHIEVEMENT_CHANNELS.getAchievement, { id }),
   unlockAchievement: (id) => invoke(ACHIEVEMENT_CHANNELS.unlockAchievement, { id }),
+  clearAchievement: (id) => invoke(ACHIEVEMENT_CHANNELS.clearAchievement, { id }),
   syncUnlockedAchievements: (payload) => invoke(ACHIEVEMENT_CHANNELS.syncUnlockedAchievements, payload),
+  clearAchievements: (payload) => invoke(ACHIEVEMENT_CHANNELS.clearAchievements, payload),
   getUnlockedAchievements: (payload) => invoke(ACHIEVEMENT_CHANNELS.getUnlockedAchievements, payload)
 });
 

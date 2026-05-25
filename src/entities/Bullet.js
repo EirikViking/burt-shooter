@@ -20,6 +20,7 @@ export class Bullet {
     // Pulse effect for enemy bullets
     this.pulseTimer = 0;
     this.age = 0;
+    this.ageMs = 0;
     this.behaviorPhase = Math.random() * Math.PI * 2;
 
     this.sprite = new PIXI.Container();
@@ -36,6 +37,21 @@ export class Bullet {
     this.weaponLabel = this.visualConfig.weaponLabel || null;
     this.sourceEnemyType = this.visualConfig.sourceEnemyType || null;
     this.sourceFireStyle = this.visualConfig.sourceFireStyle || null;
+    this.threatActionId = this.visualConfig.threatActionId || null;
+    this.threatActionKind = this.visualConfig.threatActionKind || null;
+    this.splitAfterMs = Number.isFinite(this.visualConfig.splitAfterMs) ? this.visualConfig.splitAfterMs : null;
+    this.maxLifetimeMs = Number.isFinite(this.visualConfig.maxLifetimeMs) ? this.visualConfig.maxLifetimeMs : null;
+    this.releaseAfterMs = Number.isFinite(this.visualConfig.releaseAfterMs) ? this.visualConfig.releaseAfterMs : null;
+    this.brakeMs = Number.isFinite(this.visualConfig.brakeMs) ? this.visualConfig.brakeMs : null;
+    this.dashSpeed = Number.isFinite(this.visualConfig.dashSpeed) ? this.visualConfig.dashSpeed : null;
+    this.orbitHost = this.visualConfig.orbitHost || null;
+    this.orbitCenter = this.visualConfig.orbitCenter || null;
+    this.orbitRadius = Number.isFinite(this.visualConfig.orbitRadius) ? this.visualConfig.orbitRadius : 34;
+    this.orbitSpeed = Number.isFinite(this.visualConfig.orbitSpeed) ? this.visualConfig.orbitSpeed : 0.12;
+    this.orbitAngle = Number.isFinite(this.visualConfig.orbitAngle) ? this.visualConfig.orbitAngle : this.angle;
+    this.releaseAngle = Number.isFinite(this.visualConfig.releaseAngle) ? this.visualConfig.releaseAngle : this.angle;
+    this.threatSplitTriggered = false;
+    this.threatReleaseTriggered = false;
     this.baseAngle = this.angle;
     this.baseScale = 1;
     this.wobble = !isPlayer ? (this.visualConfig.wobble || 0) : 0;
@@ -157,6 +173,7 @@ export class Bullet {
     if (!this.active) return;
 
     this.age += delta;
+    this.ageMs += delta * 16.67;
     if (!this.isPlayer) this.applyEnemyWeaponBehavior(delta);
 
     this.x += this.vx * delta;
@@ -195,6 +212,8 @@ export class Bullet {
       }
     }
 
+    this.handleTimedThreatBehavior();
+
     // Deactivate if off-screen (use dynamic bounds with padding)
     const padding = 30;
     if (
@@ -204,6 +223,23 @@ export class Bullet {
       this.x > this.screenWidth + padding
     ) {
       this.active = false;
+    }
+  }
+
+  handleTimedThreatBehavior() {
+    if (this.isPlayer || !this.active) return;
+    if (this.maxLifetimeMs && this.ageMs >= this.maxLifetimeMs) {
+      this.active = false;
+      return;
+    }
+    if (this.splitAfterMs && !this.threatSplitTriggered && this.ageMs >= this.splitAfterMs) {
+      this.threatSplitTriggered = true;
+      if (typeof this.visualConfig.onThreatSplit === 'function') {
+        this.visualConfig.onThreatSplit(this);
+      }
+      if (this.visualConfig.deactivateOnSplit !== false) {
+        this.active = false;
+      }
     }
   }
 
@@ -271,6 +307,54 @@ export class Bullet {
       case 'spear_track':
         this.rotateVelocity(Math.sin(phase * 0.55) * strength * delta);
         break;
+      case 'split_after_ms':
+        this.applyPerpendicularForce(Math.sin(phase * 0.8) * 0.035 * delta);
+        this.vx *= 0.997;
+        this.vy *= 0.997;
+        break;
+      case 'mine_arming':
+        this.vx *= 0.988;
+        this.vy *= 0.992;
+        if (this.core) this.core.alpha = 0.72 + Math.max(0, Math.sin(phase * 2.4)) * 0.28;
+        break;
+      case 'brake_then_accelerate':
+        if (!this.threatReleaseTriggered && this.brakeMs && this.ageMs < this.brakeMs) {
+          this.vx *= 0.9;
+          this.vy *= 0.9;
+          if (this.core) this.core.alpha = 0.58 + Math.max(0, Math.sin(phase * 3)) * 0.42;
+        } else if (!this.threatReleaseTriggered) {
+          this.threatReleaseTriggered = true;
+          const angle = this.releaseAngle || this.baseAngle || Math.atan2(this.vy, this.vx);
+          const speed = this.dashSpeed || Math.max(3.2, this.speed * 2.4);
+          this.vx = Math.cos(angle) * speed;
+          this.vy = Math.sin(angle) * speed;
+        }
+        break;
+      case 'boomerang_arc': {
+        const sign = this.visualConfig.arcSign || 1;
+        const curve = this.ageMs < (this.visualConfig.arcReverseMs || 650) ? sign : -sign * 0.55;
+        this.rotateVelocity(curve * (this.visualConfig.arcStrength || 0.006) * delta);
+        break;
+      }
+      case 'orbit_then_release': {
+        if (this.releaseAfterMs && this.ageMs < this.releaseAfterMs) {
+          const host = this.orbitHost?.active !== false ? this.orbitHost : null;
+          const centerX = host?.x ?? this.orbitCenter?.x ?? this.x;
+          const centerY = host?.y ?? this.orbitCenter?.y ?? this.y;
+          this.orbitAngle += this.orbitSpeed * delta;
+          this.x = centerX + Math.cos(this.orbitAngle) * this.orbitRadius;
+          this.y = centerY + Math.sin(this.orbitAngle) * this.orbitRadius;
+          this.vx = 0;
+          this.vy = 0;
+        } else if (!this.threatReleaseTriggered) {
+          this.threatReleaseTriggered = true;
+          const angle = this.releaseAngle || this.orbitAngle || this.baseAngle;
+          const speed = this.visualConfig.releaseSpeed || 2.45;
+          this.vx = Math.cos(angle) * speed;
+          this.vy = Math.sin(angle) * speed;
+        }
+        break;
+      }
       default:
         break;
     }

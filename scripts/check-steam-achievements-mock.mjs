@@ -41,6 +41,12 @@ function createFakeSteamBridge({ available = true, steamUnlocked = [] } = {}) {
       unlocked.add(id);
       calls.push(['StoreStats', id]);
       return true;
+    },
+    async clearAchievement(id) {
+      calls.push(['ClearAchievement', id]);
+      unlocked.delete(id);
+      calls.push(['StoreStats', id]);
+      return true;
     }
   };
   const steamClientBridge = {
@@ -175,4 +181,18 @@ const [firstId, secondId, thirdId] = getAchievementIds();
   assert.equal(stats.count, getAchievementIds().length);
 }
 
-console.log('[steam-achievements-mock] PASS local sync, queueing, Steam merge, StoreStats, diagnostics');
+{
+  const fake = createFakeSteamBridge({ steamUnlocked: [firstId, secondId] });
+  const result = await fake.bridge.clearAchievements({ ids: [firstId, secondId, thirdId] });
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.cleared, [firstId, secondId]);
+  assert.deepEqual(result.skipped, [thirdId]);
+  assert.deepEqual(result.steamUnlockedIds, []);
+  assert.equal(fake.unlocked.size, 0);
+  assert.deepEqual(fake.calls.filter(([name]) => name === 'ClearAchievement'), [
+    ['ClearAchievement', firstId],
+    ['ClearAchievement', secondId]
+  ]);
+}
+
+console.log('[steam-achievements-mock] PASS local sync, queueing, Steam merge, StoreStats, clear, diagnostics');

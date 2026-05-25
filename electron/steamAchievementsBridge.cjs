@@ -33,7 +33,7 @@ class SteamAchievementsBridge {
       nativeModuleLoaded: Boolean(steamStatus?.nativeModuleLoaded),
       achievementManagerPresent: Boolean(achievementManager),
       leaderboardBridgeStatus: steamStatus,
-      lastDiagnostics: this.lastDiagnostics
+      lastDiagnostics: extra.includeLastDiagnostics === false ? null : this.lastDiagnostics
     };
   }
 
@@ -175,6 +175,86 @@ class SteamAchievementsBridge {
       this.logger.warn?.('[SteamAchievementsBridge] unlock exception:', result);
       return result;
     }
+  }
+
+  async clearAchievement(id) {
+    const achievementId = normalizeAchievementId(id);
+    if (!achievementId) return { ok: false, ignored: true, reason: 'invalid_achievement_id' };
+    const manager = await this.getAchievementManager();
+    if (!manager) return { ok: false, achievementId, reason: this.statusReason, status: this.getStatus({ includeLastDiagnostics: false }) };
+    try {
+      const alreadyUnlocked = typeof manager.isAchievementUnlocked === 'function'
+        ? Boolean(await manager.isAchievementUnlocked(achievementId))
+        : true;
+      if (!alreadyUnlocked) {
+        const result = {
+          ok: true,
+          achievementId,
+          cleared: true,
+          alreadyCleared: true,
+          stored: false,
+          status: this.getStatus({ includeLastDiagnostics: false })
+        };
+        this.lastDiagnostics = { ...result, recordedAt: new Date().toISOString() };
+        return result;
+      }
+      if (typeof manager.clearAchievement !== 'function') {
+        return { ok: false, achievementId, reason: 'clear_method_missing', status: this.getStatus({ includeLastDiagnostics: false }) };
+      }
+      const success = Boolean(await manager.clearAchievement(achievementId));
+      const result = {
+        ok: success,
+        achievementId,
+        cleared: success,
+        alreadyCleared: false,
+        stored: success,
+        nativeMethodName: 'ClearAchievement+StoreStats',
+        status: this.getStatus({ includeLastDiagnostics: false })
+      };
+      this.lastDiagnostics = { ...result, recordedAt: new Date().toISOString() };
+      if (!success) this.logger.warn?.('[SteamAchievementsBridge] clear failed:', result);
+      return result;
+    } catch (error) {
+      const result = {
+        ok: false,
+        achievementId,
+        reason: 'clear_failed',
+        error: error?.message || String(error),
+        status: this.getStatus({ includeLastDiagnostics: false })
+      };
+      this.lastDiagnostics = { ...result, recordedAt: new Date().toISOString() };
+      this.logger.warn?.('[SteamAchievementsBridge] clear exception:', result);
+      return result;
+    }
+  }
+
+  async clearAchievements(payload = {}) {
+    const ids = [...new Set((Array.isArray(payload.ids) ? payload.ids : []).map(normalizeAchievementId).filter(Boolean))];
+    const manager = await this.getAchievementManager();
+    if (!manager) {
+      return { ok: false, reason: this.statusReason, cleared: [], skipped: [], failed: ids, status: this.getStatus({ includeLastDiagnostics: false }) };
+    }
+    const cleared = [];
+    const skipped = [];
+    const failed = [];
+    for (const id of ids) {
+      const result = await this.clearAchievement(id);
+      if (result.ok && result.alreadyCleared) skipped.push(id);
+      else if (result.ok) cleared.push(id);
+      else failed.push(id);
+    }
+    const steamUnlockedIds = await this.getUnlockedAchievements({ ids }).catch(() => []);
+    const result = {
+      ok: failed.length === 0,
+      requested: ids,
+      cleared,
+      skipped,
+      failed,
+      steamUnlockedIds,
+      status: this.getStatus({ includeLastDiagnostics: false })
+    };
+    this.lastDiagnostics = { ...result, recordedAt: new Date().toISOString() };
+    return result;
   }
 
   async syncUnlockedAchievements(payload = {}) {

@@ -220,7 +220,7 @@ class Powerup {
         // Score bonus instead
         console.log(`[Lives] pickup extra_life before=${scene.game.lives} after=${scene.game.lives} max=${maxLives} applied=false (at max, bonus awarded)`);
         scene.game.addScore(1000);
-        scene.showToast(translateText('MAX LIVES BONUS!'), { fontSize: 24, fill: '#00ff00' });
+        scene.showToast(translateText('MAX LIVES REACHED!'), { fontSize: 24, fill: '#00ff00' });
 
         // Play pickup sound for bonus
         if (scene.game && scene.game.audio) {

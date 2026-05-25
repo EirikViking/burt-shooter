@@ -798,6 +798,8 @@ async function runSmoke() {
       const boss = window.__game?.scenes?.play?.enemyManager?.boss;
       if (!boss) return;
       boss.invulnerableUntilMs = 0;
+      boss.minimumFightMs = 0;
+      boss.finishGateUntilMs = 0;
       boss.takeDamage((boss.health || boss.maxHealth || 1) + 9999);
     });
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'LEVEL_COMPLETE', null, { timeout: 10000 });

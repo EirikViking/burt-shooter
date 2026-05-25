@@ -87,6 +87,7 @@ const sourceText = Object.freeze({
   'POWERUP ONLINE': '强化已就绪',
   'SYSTEM STATUS': '系统',
   'BOSS SIGNAL INBOUND': 'Boss 信号接近',
+  'SECTOR': '\u533A\u57DF',
   'SECTOR CLEAR': '区域已清空',
   'ORBITAL ARCADE': '轨道街机',
   'NEON BELT': '霓虹带',

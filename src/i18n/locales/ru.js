@@ -87,6 +87,7 @@ const sourceText = Object.freeze({
   'POWERUP ONLINE': 'УСИЛЕНИЕ ГОТОВО',
   'SYSTEM STATUS': 'СТАТУС СИСТЕМЫ',
   'BOSS SIGNAL INBOUND': 'СИГНАЛ БОССА ПРИБЛИЖАЕТСЯ',
+  'SECTOR': '\u0421\u0415\u041A\u0422\u041E\u0420',
   'SECTOR CLEAR': 'СЕКТОР ЗАЧИЩЕН',
   'ORBITAL ARCADE': 'ОРБИТАЛЬНАЯ АРКАДА',
   'NEON BELT': 'НЕОНОВЫЙ ПОЯС',

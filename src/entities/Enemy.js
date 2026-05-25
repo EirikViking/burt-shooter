@@ -9,7 +9,8 @@ import { getGeneratedEnemyProfile } from '../config/GeneratedEnemyProfiles.js';
 import { getEliteMiddleShipProfile } from '../config/EliteMiddleShips.js';
 import { getEnemyAttackPattern } from '../config/EnemyAttackStyles.js';
 import { getEnemyMovementOffset } from '../config/EnemyMovementStyles.js';
-import { getEnemyWeaponProfileForEnemy, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
+import { getEnemyWeaponProfileById, getEnemyWeaponProfileForEnemy, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
+import { getEnemyThreatAction } from '../config/EnemyThreatActions.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 import { AudioManager } from '../audio/AudioManager.js';
 
@@ -66,6 +67,14 @@ export class Enemy {
     this.tacticalPhase = Math.random() * Math.PI * 2;
     this.combatBounds = null;
     this.tacticalSwayScalar = 1;
+    this.threatActionDefinition = null;
+    this.currentThreatAction = null;
+    this.threatTelegraphStartedAt = 0;
+    this.nextThreatActionAt = 0;
+    this.threatActionCooldown = 0;
+    this.threatActionLockedTarget = null;
+    this.threatTelegraphLayer = null;
+    this.threatActionExecutionCount = 0;
 
     this.idlePhase = Math.random() * Math.PI * 2;
     this.spriteKey = null;
@@ -455,6 +464,11 @@ export class Enemy {
       this.eliteVfxLayer.zIndex = -1;
       this.eliteVfxLayer.blendMode = 'add';
       this.sprite.addChildAt(this.eliteVfxLayer, 0);
+    } else {
+      this.threatTelegraphLayer = new PIXI.Graphics();
+      this.threatTelegraphLayer.zIndex = -2;
+      this.threatTelegraphLayer.blendMode = 'add';
+      this.sprite.addChildAt(this.threatTelegraphLayer, 0);
     }
 
     // Apply visual enhancements to make enemies look distinct and menacing
@@ -526,6 +540,19 @@ export class Enemy {
     this.tacticalSwayScalar = Number.isFinite(this.combatBounds?.swayScalar) ? this.combatBounds.swayScalar : 1;
     this.shootDelay = Math.max(38, this.shootDelay * (tactic.fireDelayMult || 1));
     this.tacticalPhase = (this.waveSlot / this.waveSize) * Math.PI * 2 + Math.random() * 0.25;
+  }
+
+  applyThreatAction(actionOrId = null, context = {}) {
+    const action = typeof actionOrId === 'string' ? getEnemyThreatAction(actionOrId) : actionOrId;
+    if (!action || this.kind !== 'enemy' || this.middleShipProfile) {
+      this.threatActionDefinition = null;
+      return;
+    }
+    this.threatActionDefinition = action;
+    this.threatActionCooldown = action.cooldownMs || 8000;
+    const slotDelay = (Number(context.index) || this.waveSlot || 0) * 230;
+    const waveDelay = (Number(context.waveIndex) || 0) * 140;
+    this.nextThreatActionAt = Date.now() + 1450 + slotDelay + waveDelay + Math.random() * 550;
   }
 
   clampCombatX(x, padding = 0) {
@@ -746,6 +773,8 @@ export class Enemy {
 
     if (this.middleShipProfile) {
       this.updateEliteMiddleShip(delta, playerX, playerY);
+    } else {
+      this.updateThreatAction(delta, playerX, playerY);
     }
 
     this.sprite.x = this.x;
@@ -991,8 +1020,8 @@ export class Enemy {
     const frameScale = Math.max(0.5, Math.min(2.2, delta));
     const playerRadius = Number(player.radius) || 14;
     const width = this.game?.getWidth?.() || 800;
-    player.x = Math.max(playerRadius, Math.min(width - playerRadius, player.x + (this.x - player.x) * 0.014 * frameScale));
-    player.y = Math.max(this.y + this.radius + 70, player.y - 0.78 * frameScale);
+    player.x = Math.max(playerRadius, Math.min(width - playerRadius, player.x + (this.x - player.x) * 0.034 * frameScale));
+    player.y = Math.max(this.y + this.radius + 70, player.y - 1.9 * frameScale);
     player.applyTractorDebuff?.({ source: this.type, x: this.x, y: this.y });
   }
 
@@ -1148,8 +1177,326 @@ export class Enemy {
     };
   }
 
+  updateThreatAction(_delta, playerX, playerY) {
+    if (!this.threatActionDefinition || this.waitingForEntry || this.state === 'ENTRY' || this.state === 'DIVE') {
+      this.threatTelegraphLayer?.clear();
+      return;
+    }
+    const now = Date.now();
+    const action = this.threatActionDefinition;
+    const manager = this.game?.scenes?.play?.enemyManager;
+
+    if (!this.currentThreatAction && now >= this.nextThreatActionAt && this.active && this.state === 'FORMATION') {
+      if (!manager?.tryReserveThreatAction?.(this, action)) {
+        this.nextThreatActionAt = now + 520 + Math.random() * 460;
+        return;
+      }
+      const locked = this.getThreatLockedTarget(action, playerX, playerY);
+      this.currentThreatAction = {
+        id: action.id,
+        action,
+        startedAt: now,
+        executed: false,
+        lockedTarget: locked,
+        fakeout: action.id === 'shotgun_fan_feint' && ((this.waveSlot + Math.floor(now / 1000)) % 5 === 0)
+      };
+      this.threatTelegraphStartedAt = now;
+      this.threatActionLockedTarget = locked;
+      AudioManager.playSfx('elite_special_charge', { volume: 0.18, minIntervalMs: 520 });
+    }
+
+    if (!this.currentThreatAction) {
+      this.threatTelegraphLayer?.clear();
+      return;
+    }
+
+    const telegraphMs = action.telegraphMs || 600;
+    const progress = Math.min(1, (now - this.currentThreatAction.startedAt) / telegraphMs);
+    this.drawThreatTelegraph(action, progress, this.currentThreatAction);
+    if (progress < 1 || this.currentThreatAction.executed) return;
+
+    this.currentThreatAction.executed = true;
+    this.executeThreatAction(action, this.currentThreatAction.lockedTarget, this.currentThreatAction);
+    this.threatActionExecutionCount += 1;
+    this.nextThreatActionAt = now + this.threatActionCooldown + Math.random() * 1200;
+    manager?.releaseThreatAction?.(this, action);
+    this.currentThreatAction = null;
+    this.threatActionLockedTarget = null;
+    this.threatTelegraphLayer?.clear();
+  }
+
+  getThreatLockedTarget(action, playerX, playerY) {
+    const width = this.game?.getWidth?.() || 800;
+    const height = this.game?.getHeight?.() || 600;
+    const safePlayerY = Math.max(80, Math.min(height - 96, playerY));
+    if (action.id === 'lane_cutter') {
+      const laneLean = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
+      const laneX = Math.max(58, Math.min(width - 58, playerX + laneLean * Math.min(120, width * 0.09)));
+      return { x: laneX, y: height + 60, laneLean };
+    }
+    if (action.id === 'crossfire_pair') {
+      const side = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
+      return {
+        x: Math.max(60, Math.min(width - 60, playerX + side * Math.min(96, width * 0.075))),
+        y: Math.max(height * 0.58, Math.min(height - 118, safePlayerY - 56)),
+        side
+      };
+    }
+    return {
+      x: Math.max(42, Math.min(width - 42, playerX)),
+      y: safePlayerY
+    };
+  }
+
+  drawThreatTelegraph(action, progress, state = {}) {
+    const layer = this.threatTelegraphLayer;
+    if (!layer) return;
+    const colorAssist = getColorAssistEnabled();
+    const color = colorAssist ? 0xffffff : (this.visualVariant?.accent || action.color || this.color || 0xff6688);
+    const target = state.lockedTarget || this.threatActionLockedTarget || { x: this.x, y: this.y + 180 };
+    const relX = target.x - this.x;
+    const relY = target.y - this.y;
+    const pulse = 0.5 + Math.sin(Date.now() * 0.022) * 0.5;
+    const alpha = colorAssist ? 0.82 : 0.28 + progress * 0.44;
+    layer.clear();
+
+    if (action.telegraph === 'cone' || action.id === 'shotgun_fan_feint') {
+      const angle = Math.atan2(relY, relX);
+      const length = Math.max(180, Math.hypot(relX, relY));
+      const spread = state.fakeout ? 0.18 : 0.46;
+      layer.moveTo(0, this.radius * 0.3);
+      layer.lineTo(Math.cos(angle - spread) * length, Math.sin(angle - spread) * length);
+      layer.lineTo(Math.cos(angle + spread) * length, Math.sin(angle + spread) * length);
+      layer.closePath();
+      layer.fill({ color, alpha: colorAssist ? 0.08 : 0.045 + progress * 0.06 });
+      layer.moveTo(0, this.radius * 0.3);
+      layer.lineTo(Math.cos(angle - spread) * length, Math.sin(angle - spread) * length);
+      layer.moveTo(0, this.radius * 0.3);
+      layer.lineTo(Math.cos(angle + spread) * length, Math.sin(angle + spread) * length);
+      layer.stroke({ color: colorAssist ? 0xffffff : color, width: colorAssist ? 3 : 2, alpha });
+    } else if (action.telegraph === 'lane' || action.id === 'lane_cutter') {
+      const laneWidth = 24 + progress * 18;
+      layer.rect(relX - laneWidth / 2, -this.y - 30, laneWidth, (this.game?.getHeight?.() || 600) + 120);
+      layer.fill({ color, alpha: colorAssist ? 0.07 : 0.055 + progress * 0.04 });
+      layer.moveTo(relX - laneWidth / 2, -this.y - 30);
+      layer.lineTo(relX - laneWidth / 2, (this.game?.getHeight?.() || 600) + 80 - this.y);
+      layer.moveTo(relX + laneWidth / 2, -this.y - 30);
+      layer.lineTo(relX + laneWidth / 2, (this.game?.getHeight?.() || 600) + 80 - this.y);
+      layer.stroke({ color: colorAssist ? 0xffffff : color, width: colorAssist ? 3 : 2, alpha });
+    } else if (action.telegraph === 'ring' || action.id === 'pulse_ring_bloom' || action.id === 'mine_drop' || action.id === 'orbiting_satellites') {
+      const ring = this.radius + 14 + progress * (action.id === 'pulse_ring_bloom' ? 42 : 24);
+      layer.circle(0, 0, ring);
+      layer.stroke({ color, width: colorAssist ? 3 : 2, alpha });
+      layer.circle(0, 0, ring * (0.56 + pulse * 0.08));
+      layer.stroke({ color: colorAssist ? 0x10131c : 0xffffff, width: 1.2, alpha: colorAssist ? 0.64 : 0.22 + progress * 0.18 });
+    } else if (action.telegraph === 'arc' || action.id === 'boomerang_crescent') {
+      const side = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
+      for (let i = 0; i < 16; i += 1) {
+        const t = i / 15;
+        const x = relX * t + side * Math.sin(t * Math.PI) * 90;
+        const y = relY * t;
+        if (i === 0) layer.moveTo(0, this.radius * 0.4);
+        else layer.lineTo(x, y);
+      }
+      layer.stroke({ color, width: colorAssist ? 4 : 2.4, alpha });
+    } else {
+      layer.moveTo(0, this.radius * 0.3);
+      layer.lineTo(relX, relY);
+      layer.stroke({ color: colorAssist ? 0xffffff : color, width: colorAssist ? 3 : 2, alpha });
+      layer.circle(relX, relY, 10 + pulse * 5);
+      layer.stroke({ color: colorAssist ? 0x10131c : 0xffffff, width: 1.5, alpha: 0.35 + progress * 0.35 });
+    }
+  }
+
+  executeThreatAction(actionOrId, target = null, state = {}) {
+    const action = typeof actionOrId === 'string' ? getEnemyThreatAction(actionOrId) : actionOrId;
+    if (!action || !this.active) return [];
+    const lockedTarget = target || this.getThreatLockedTarget(action, this.game?.scenes?.play?.player?.x || this.x, this.game?.scenes?.play?.player?.y || this.y + 220);
+    const bullets = [];
+    const add = (angle, speed, options = {}) => {
+      const bullet = this.createThreatBullet(action, angle, speed, options);
+      if (bullet) {
+        bullets.push(bullet);
+        this.game?.scenes?.play?.bulletManager?.addEnemyBullet?.(bullet);
+      }
+      return bullet;
+    };
+    const aimAngle = Math.atan2(lockedTarget.y - this.y, lockedTarget.x - this.x);
+    const levelBonus = Math.min(0.45, Math.max(0, this.level - 1) * 0.025);
+
+    switch (action.id) {
+      case 'telegraph_rail_lance':
+        add(aimAngle, 4.35 + levelBonus, { radius: 4, trailLength: 72, trailWidth: 3, behavior: 'lance_blink', damage: 1.05 });
+        add(aimAngle + 0.025, 4.15 + levelBonus, { radius: 3.5, trailLength: 58, trailWidth: 2, damage: 0.65 });
+        break;
+      case 'lane_cutter': {
+        const laneAngle = Math.atan2((this.game?.getHeight?.() || 600) + 40 - this.y, lockedTarget.x - this.x);
+        add(laneAngle, 3.75 + levelBonus, { radius: 4, trailLength: 82, trailWidth: 4, behavior: 'lane_locked', damage: 0.95 });
+        break;
+      }
+      case 'splitter_seed':
+        add(aimAngle, 1.05, {
+          radius: 7,
+          behavior: 'split_after_ms',
+          splitAfterMs: 850,
+          onThreatSplit: (seed) => this.spawnThreatFragments(action, seed, this.level >= 6 ? 5 : 3)
+        });
+        break;
+      case 'mine_drop':
+        add(Math.PI / 2 + ((this.waveSlot % 3) - 1) * 0.08, 0.88, {
+          radius: 8,
+          behavior: 'mine_arming',
+          splitAfterMs: this.level <= 3 ? 1150 : 950,
+          maxLifetimeMs: 3600,
+          onThreatSplit: (mine) => this.spawnThreatRing(action, mine, this.level >= 8 ? 10 : 7, 1.35)
+        });
+        break;
+      case 'pulse_ring_bloom':
+        this.spawnThreatRing(action, { x: this.x, y: this.y }, this.level <= 2 ? 7 : this.level <= 8 ? 9 : 11, 1.55, { gapIndex: this.waveSlot % 4 });
+        break;
+      case 'crossfire_pair': {
+        const side = lockedTarget.side || (this.waveRole === 'left_flank' ? 1 : -1);
+        add(aimAngle + side * 0.18, 2.55 + levelBonus * 0.45, { radius: 5, behavior: 'fork_zig', behaviorStrength: 0.08 });
+        break;
+      }
+      case 'boomerang_crescent': {
+        const side = this.waveRole === 'left_flank' ? 1 : this.waveRole === 'right_flank' ? -1 : (this.waveSlot % 2 ? -1 : 1);
+        add(aimAngle + side * 0.32, 1.95 + levelBonus * 0.35, { radius: 6, behavior: 'boomerang_arc', arcSign: side, arcStrength: 0.0055, arcReverseMs: 640, maxLifetimeMs: 4200 });
+        break;
+      }
+      case 'brake_dash_bolt':
+        add(aimAngle, 1.45, { radius: 4.5, behavior: 'brake_then_accelerate', brakeMs: 520, dashSpeed: 4.1 + levelBonus, releaseAngle: aimAngle, trailLength: 48 });
+        break;
+      case 'shotgun_fan_feint': {
+        const fakeout = Boolean(state.fakeout);
+        if (fakeout) {
+          add(aimAngle, 3.05 + levelBonus * 0.3, { radius: 4, trailLength: 54 });
+        } else {
+          const count = this.level >= 10 ? 6 : 5;
+          const safeGap = (this.waveSlot + Math.floor(this.level / 2)) % count;
+          for (let i = 0; i < count; i += 1) {
+            if (i === safeGap) continue;
+            const offset = (i - (count - 1) / 2) * 0.15;
+            add(aimAngle + offset, 2.35 + levelBonus * 0.25, { radius: 4.5, trailLength: 38, damage: 0.82 });
+          }
+        }
+        break;
+      }
+      case 'orbiting_satellites': {
+        const count = this.level >= 12 ? 3 : 2;
+        for (let i = 0; i < count; i += 1) {
+          const orbitAngle = (Math.PI * 2 * i) / count + this.tacticalPhase;
+          add(orbitAngle, 0, {
+            radius: 5,
+            behavior: 'orbit_then_release',
+            orbitHost: this,
+            orbitCenter: { x: this.x, y: this.y },
+            orbitAngle,
+            orbitRadius: 32 + i * 4,
+            orbitSpeed: 0.08 + i * 0.015,
+            releaseAfterMs: 760,
+            releaseAngle: aimAngle + (i - (count - 1) / 2) * 0.22,
+            releaseSpeed: 2.45 + levelBonus * 0.35,
+            maxLifetimeMs: 3800
+          });
+        }
+        break;
+      }
+      default:
+        break;
+    }
+
+    this.game?.scenes?.play?.particleManager?.createMuzzleFlash?.(this.x, this.y, aimAngle, this.visualVariant?.accent || this.color || 0xffffff);
+    return bullets;
+  }
+
+  createThreatBullet(action, angle, speed, options = {}) {
+    const weaponProfile = getEnemyWeaponProfileById(action.weaponId || 'crimson_shard');
+    const visualConfig = toBulletVisualConfig(weaponProfile, {
+      sourceEnemyType: this.type,
+      sourceFireStyle: this.generatedProfile?.fireStyle || null,
+      threatActionId: action.id,
+      threatActionKind: action.tags?.[0] || 'threat',
+      warningColor: options.warningColor || weaponProfile.warningColor,
+      haloColor: options.haloColor || weaponProfile.haloColor || this.visualVariant?.accent,
+      trailColor: options.trailColor || weaponProfile.trailColor,
+      ...options
+    });
+    const bullet = new Bullet(
+      this.x,
+      this.y + Math.max(4, this.radius * 0.35),
+      Math.cos(angle) * speed,
+      Math.sin(angle) * speed,
+      options.damage || 1,
+      weaponProfile.color || this.color,
+      false,
+      visualConfig
+    );
+    bullet.weaponProfileId = weaponProfile.id;
+    bullet.weaponLabel = weaponProfile.label;
+    bullet.waveTactic = this.waveTactic?.id || null;
+    bullet.threatActionId = action.id;
+    bullet.threatActionKind = action.tags?.[0] || 'threat';
+    return bullet;
+  }
+
+  spawnThreatFragments(action, sourceBullet, count = 3) {
+    const baseAngle = Math.atan2(sourceBullet.vy || 1, sourceBullet.vx || 0);
+    const spread = count >= 5 ? 0.68 : 0.42;
+    for (let i = 0; i < count; i += 1) {
+      const offset = count === 1 ? 0 : (i - (count - 1) / 2) * (spread / Math.max(1, count - 1));
+      const bullet = this.createThreatBullet(action, baseAngle + offset, 1.85, {
+        radius: 4,
+        behavior: 'seed_sway',
+        behaviorStrength: 0.05,
+        trailLength: 28,
+        maxLifetimeMs: 3600,
+        damage: 0.65
+      });
+      bullet.x = sourceBullet.x;
+      bullet.y = sourceBullet.y;
+      bullet.sprite.x = bullet.x;
+      bullet.sprite.y = bullet.y;
+      this.game?.scenes?.play?.bulletManager?.addEnemyBullet?.(bullet);
+    }
+  }
+
+  spawnThreatRing(action, source, count = 8, speed = 1.4, options = {}) {
+    const gapIndex = Number.isFinite(options.gapIndex) ? options.gapIndex : -1;
+    for (let i = 0; i < count; i += 1) {
+      const gap = gapIndex >= 0 && Math.abs(i - gapIndex) <= 0;
+      if (gap) continue;
+      const angle = -Math.PI * 0.05 + Math.PI * (i / Math.max(1, count - 1));
+      const bullet = this.createThreatBullet(action, angle, speed, {
+        radius: 4.5,
+        behavior: 'straight',
+        trailLength: 26,
+        maxLifetimeMs: 3800,
+        damage: 0.72
+      });
+      bullet.x = source.x;
+      bullet.y = source.y;
+      bullet.sprite.x = bullet.x;
+      bullet.sprite.y = bullet.y;
+      this.game?.scenes?.play?.bulletManager?.addEnemyBullet?.(bullet);
+    }
+  }
+
+  getThreatDebugState() {
+    if (!this.threatActionDefinition) return null;
+    const now = Date.now();
+    return {
+      id: this.threatActionDefinition.id,
+      state: this.currentThreatAction ? 'telegraph' : 'cooldown',
+      remainingMs: this.currentThreatAction
+        ? Math.max(0, (this.currentThreatAction.startedAt + (this.threatActionDefinition.telegraphMs || 600)) - now)
+        : Math.max(0, this.nextThreatActionAt - now),
+      executions: this.threatActionExecutionCount
+    };
+  }
+
   canShoot() {
-    return this.shootCooldown <= 0 && this.y > 0 && this.y < 700 && this.sprite.visible;
+    return !this.currentThreatAction && this.shootCooldown <= 0 && this.y > 0 && this.y < 700 && this.sprite.visible;
   }
 
   getTacticalFireScalar() {
@@ -1364,6 +1711,10 @@ export class Enemy {
     if (this.visualEnhancementCleanup) {
       this.visualEnhancementCleanup();
       this.visualEnhancementCleanup = null;
+    }
+    this.threatTelegraphLayer?.clear();
+    if (this.currentThreatAction && this.threatActionDefinition) {
+      this.game?.scenes?.play?.enemyManager?.releaseThreatAction?.(this, this.threatActionDefinition);
     }
   }
 }

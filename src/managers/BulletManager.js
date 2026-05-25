@@ -8,6 +8,8 @@ export class BulletManager {
     this.onCap = onCap;
     this.screenWidth = 800;
     this.screenHeight = 600;
+    this.updatingEnemyBullets = false;
+    this.pendingEnemyBullets = [];
 
     // Enable zIndex sorting on container
     this.container.sortableChildren = true;
@@ -30,11 +32,16 @@ export class BulletManager {
 
   addEnemyBullet(bullet) {
     if (!bullet) return;
-    if (this.enemyBullets.length >= this.maxEnemyBullets) {
+    const currentCount = this.enemyBullets.length + this.pendingEnemyBullets.length;
+    if (currentCount >= this.maxEnemyBullets) {
       if (this.onCap) this.onCap('bullets');
       return;
     }
     bullet.setScreenBounds(this.screenWidth, this.screenHeight);
+    if (this.updatingEnemyBullets) {
+      this.pendingEnemyBullets.push(bullet);
+      return;
+    }
     this.enemyBullets.push(bullet);
     this.container.addChild(bullet.sprite);
   }
@@ -51,6 +58,7 @@ export class BulletManager {
     });
 
     // Update enemy bullets
+    this.updatingEnemyBullets = true;
     this.enemyBullets = this.enemyBullets.filter(bullet => {
       bullet.update(delta * enemyScale);
       if (!bullet.active) {
@@ -59,6 +67,14 @@ export class BulletManager {
       }
       return true;
     });
+    this.updatingEnemyBullets = false;
+    if (this.pendingEnemyBullets.length) {
+      for (const bullet of this.pendingEnemyBullets) {
+        this.enemyBullets.push(bullet);
+        this.container.addChild(bullet.sprite);
+      }
+      this.pendingEnemyBullets = [];
+    }
   }
 
   getTotalCount() {

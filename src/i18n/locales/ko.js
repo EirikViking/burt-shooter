@@ -104,6 +104,7 @@ const sourceText = Object.freeze({
   'POWERUP ONLINE': '파워업 준비',
   'SYSTEM STATUS': '시스템 상태',
   'BOSS SIGNAL INBOUND': '보스 신호 접근',
+  'SECTOR': '\uAD6C\uC5ED',
   'SECTOR CLEAR': '구역 클리어',
   'ORBITAL ARCADE': '궤도 아케이드',
   'NEON BELT': '네온 벨트',

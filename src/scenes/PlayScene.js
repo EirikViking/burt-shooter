@@ -24,7 +24,6 @@ import { getDefaultShipKey } from '../config/ShipMetadata.js';
 import { createText } from '../utils/pixiText.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import {
-  extendLevelIntroTexts,
   getAchievementPopup,
   getEnemyTaunt,
   getMicroMessage,
@@ -32,6 +31,7 @@ import {
   getStoryTransmission
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
+import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { translateText } from '../i18n/index.js';
 
 export class PlayScene {
@@ -928,21 +928,9 @@ export class PlayScene {
   }
 
   showLevelIntro({ postBoss = false } = {}) {
-    const levelTexts = [
-      'Sector 1: Popcorn Patrol',
-      'Sector 2: Spiral Academy',
-      'Sector 3: Laser Lane Union',
-      'Sector 4: Bonus Stage Panic',
-      'BOSS: THE FORMATION FOREMAN',
-      'Sector 6: Meteor Queue',
-      'Sector 7: Neon Swarm',
-      'Sector 8: Hitbox Negotiations',
-      'Sector 9: Cabinet Overdrive',
-      'BOSS: THE QUARTER EATER'
-    ];
-    const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
-    const message = introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`;
-    const localizedMessage = translateText(message);
+    const localizedMessage = formatSectorLabel(this.game.level, {
+      sectorWord: translateText('SECTOR')
+    });
     const compactHud = this.game.getWidth() < 620;
     const fontSize = compactHud ? (postBoss ? 21 : 25) : (postBoss ? 34 : 42);
     this.showToast(localizedMessage, {
@@ -1602,6 +1590,60 @@ export class PlayScene {
     document.body.appendChild(div);
   }
 
+  detonateBombBullet(bullet, reason = 'unknown') {
+    if (!bullet?.active || !bullet.isBomb || bullet.bombDetonated) return false;
+    bullet.bombDetonated = true;
+    bullet.active = false;
+
+    const radius = Math.max(110, Number(bullet.blastRadius) || 150);
+    const damage = Math.max(1, Number(bullet.damage) || 1);
+    const x = Number.isFinite(bullet.x) ? bullet.x : this.player?.x || this.game.getWidth() / 2;
+    const y = Number.isFinite(bullet.y) ? bullet.y : this.player?.y || this.game.getHeight() * 0.45;
+
+    if (this.particleManager) {
+      const burstCount = this.game.getWidth() < 620 ? 9 : 14;
+      for (let i = 0; i < burstCount; i += 1) {
+        const angle = (Math.PI * 2 * i) / burstCount;
+        const distance = radius * (0.28 + Math.random() * 0.68);
+        this.particleManager.createExplosion(
+          x + Math.cos(angle) * distance,
+          y + Math.sin(angle) * distance,
+          i % 3 === 0 ? 0xffff66 : 0xff6600,
+          0.72
+        );
+      }
+      this.particleManager.createExplosion(x, y, 0xffff00, 1.15);
+    }
+    this.triggerShockwave?.(x, y, 0xffaa00);
+    this.screenShake?.shake(reason === 'apex' ? 12 : 16, 28);
+    AudioManager.playSfx('explosion', { force: true, volume: 1.0 });
+
+    this.enemyManager.enemies.forEach(enemy => {
+      if (!enemy?.active) return;
+      const dist = Math.hypot((enemy.x || 0) - x, (enemy.y || 0) - y);
+      if (dist > radius + (enemy.radius || 16)) return;
+      const destroyed = enemy.takeDamage(damage);
+      this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xffaa00);
+      if (destroyed) {
+        this.game.addScore(enemy.scoreValue || 0);
+        this.particleManager?.createExplosion(enemy.x, enemy.y, 0xff6600);
+      }
+    });
+
+    const hijacker = this.enemyManager.hijacker;
+    if (hijacker?.active) {
+      const dist = Math.hypot((hijacker.x || 0) - x, (hijacker.y || 0) - y);
+      if (dist <= radius + (hijacker.radius || 18)) {
+        const destroyed = hijacker.takeDamage(damage);
+        this.particleManager?.createHitSpark(hijacker.x, hijacker.y, 0xffaa00);
+        if (destroyed) this.particleManager?.createExplosion(hijacker.x, hijacker.y, 0xff9900);
+      }
+    }
+
+    console.log(`[BombPowerup] detonated reason=${reason} x=${Math.round(x)} y=${Math.round(y)} radius=${Math.round(radius)}`);
+    return true;
+  }
+
   checkCollisions() {
     const { width, height } = this.game.app.screen;
 
@@ -1613,65 +1655,7 @@ export class PlayScene {
     const detonationY = screenHeight * 0.45; // Detonate at 45% of screen height
     this.bulletManager.playerBullets.forEach(bullet => {
       if (bullet.active && bullet.isBomb && bullet.y <= detonationY) {
-        // Detonate bomb
-        bullet.active = false;
-
-        // Visual explosion
-        if (this.particleManager) {
-          for (let i = 0; i < 10; i++) {
-            const angle = (Math.PI * 2 * i) / 10;
-            const distance = Math.random() * bullet.blastRadius;
-            this.particleManager.createExplosion(
-              bullet.x + Math.cos(angle) * distance,
-              bullet.y + Math.sin(angle) * distance,
-              0xff3300
-            );
-          }
-          // Center explosion
-          this.particleManager.createExplosion(bullet.x, bullet.y, 0xffff00);
-        }
-
-        // Screen shake
-        if (this.screenShake) {
-          this.screenShake.shake(15, 30);
-        }
-
-        // Explosion sound
-        AudioManager.playSfx('explosion', { force: true, volume: 1.0 });
-
-        // Damage all enemies in blast radius
-        this.enemyManager.enemies.forEach(enemy => {
-          if (enemy.active) {
-            const dx = enemy.x - bullet.x;
-            const dy = enemy.y - bullet.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < bullet.blastRadius) {
-              const destroyed = enemy.takeDamage(bullet.damage);
-              if (destroyed) {
-                this.game.addScore(enemy.scoreValue);
-                if (this.particleManager) {
-                  this.particleManager.createExplosion(enemy.x, enemy.y, 0xff6600);
-                }
-              }
-            }
-          }
-        });
-
-        // Also damage hijacker if active
-        if (this.enemyManager.hijacker && this.enemyManager.hijacker.active) {
-          const hijacker = this.enemyManager.hijacker;
-          const dx = hijacker.x - bullet.x;
-          const dy = hijacker.y - bullet.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < bullet.blastRadius) {
-            const destroyed = hijacker.takeDamage(bullet.damage);
-            if (destroyed) {
-              if (this.particleManager) {
-                this.particleManager.createExplosion(hijacker.x, hijacker.y, 0xff9900);
-              }
-            }
-          }
-        }
+        this.detonateBombBullet(bullet, 'apex');
       }
     });
 
@@ -1679,7 +1663,12 @@ export class PlayScene {
     this.bulletManager.playerBullets.forEach(bullet => {
       if (bullet.active) {
         this.enemyManager.enemies.forEach(enemy => {
+          if (!bullet.active) return;
           if (enemy.active && this.checkCollision(bullet, enemy)) {
+            if (bullet.isBomb) {
+              this.detonateBombBullet(bullet, 'impact');
+              return;
+            }
             if (!bullet.piercing) bullet.active = false;
             const destroyed = enemy.takeDamage(bullet.damage);
 
@@ -1721,6 +1710,10 @@ export class PlayScene {
         if (bullet.active) {
           const hijacker = this.enemyManager.hijacker;
           if (this.checkCollision(bullet, hijacker)) {
+            if (bullet.isBomb) {
+              this.detonateBombBullet(bullet, 'hijacker_impact');
+              return;
+            }
             if (!bullet.piercing) bullet.active = false;
             const destroyed = hijacker.takeDamage(bullet.damage);
 
