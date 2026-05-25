@@ -1,14 +1,180 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { THREAT_CODEX_CATEGORIES, getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
-import { clearThreatCodexUnread, getThreatCodexState } from '../progression/ThreatDiscoveryState.js';
+import {
+  clearThreatCodexUnread,
+  getCodexCompletionCounts,
+  getThreatCodexState
+} from '../progression/ThreatDiscoveryState.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
+
+const FONT_FAMILY = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
+const CODEX_BG = 0x02070c;
+const PANEL_BG = 0x06101a;
+const AQUA = 0x7dffcc;
+const CYAN = 0x37f5ff;
+const GOLD = 0xffe76a;
+const MUTED = 0x6f879a;
+const CATEGORY_ACCENTS = Object.freeze({
+  enemies: 0x7dffcc,
+  attackPatterns: 0xffe76a,
+  waveTactics: 0x37f5ff,
+  elites: 0xff55d9,
+  bosses: 0xff6a2a,
+  runThemes: 0xa77dff
+});
+
+function localize(source) {
+  return translateText(source);
+}
 
 function titleCaseSignal(id = '') {
   return String(id)
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function colorValue(value, fallback = AQUA) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().replace(/^#/, '');
+    const parsed = Number.parseInt(normalized, 16);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+}
+
+function colorCss(value, fallback = '#7dffcc') {
+  const numeric = colorValue(value, Number.parseInt(fallback.slice(1), 16));
+  return `#${numeric.toString(16).padStart(6, '0').slice(-6)}`;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function fitSprite(sprite, width, height, maxScale = 2) {
+  const textureWidth = Math.max(1, sprite.texture?.width || sprite.width || 1);
+  const textureHeight = Math.max(1, sprite.texture?.height || sprite.height || 1);
+  const scale = Math.min(width / textureWidth, height / textureHeight, maxScale);
+  sprite.scale.set(scale);
+}
+
+function fitTextHeight(node, maxHeight, minScale = 0.76) {
+  if (!node || !Number.isFinite(maxHeight) || maxHeight <= 0 || node.height <= maxHeight) return;
+  const scale = Math.max(minScale, maxHeight / Math.max(1, node.height));
+  node.scale.set(scale);
+}
+
+function drawPanel(graphics, x, y, width, height, {
+  fill = PANEL_BG,
+  alpha = 0.9,
+  stroke = CYAN,
+  strokeAlpha = 0.5,
+  strokeWidth = 1,
+  radius = 8
+} = {}) {
+  graphics.roundRect(x, y, width, height, radius);
+  graphics.fill({ color: fill, alpha });
+  graphics.stroke({ color: stroke, alpha: strokeAlpha, width: strokeWidth });
+}
+
+function addText(parent, text, style, x, y, anchor = null) {
+  const node = createText(text, {
+    fontFamily: FONT_FAMILY,
+    letterSpacing: 0,
+    ...style
+  });
+  if (anchor) node.anchor.set(anchor.x ?? anchor, anchor.y ?? anchor);
+  node.position.set(x, y);
+  parent.addChild(node);
+  return node;
+}
+
+function getStateItem(state, categoryId, entryId) {
+  return state.items?.[categoryId]?.[entryId] || null;
+}
+
+function entryDiscovered(state, categoryId, entry) {
+  return Boolean(getStateItem(state, categoryId, entry.id));
+}
+
+function makeSignalSeed(id = '') {
+  return String(id).split('').reduce((sum, char, index) => sum + char.charCodeAt(0) * (index + 3), 17);
+}
+
+function drawUnknownSignal(parent, x, y, width, height, accent, seed, intensity = 1) {
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+  const radius = Math.min(width, height) * 0.36;
+  const glow = new PIXI.Graphics();
+  glow.circle(cx, cy, radius * 1.18);
+  glow.fill({ color: accent, alpha: 0.08 * intensity });
+  glow.stroke({ color: accent, width: 2, alpha: 0.22 * intensity });
+  parent.addChild(glow);
+
+  const rings = new PIXI.Graphics();
+  for (let i = 0; i < 4; i += 1) {
+    rings.circle(cx, cy, radius * (0.38 + i * 0.23));
+    rings.stroke({ color: i % 2 ? CYAN : accent, width: 1, alpha: (0.26 - i * 0.04) * intensity });
+  }
+  for (let spoke = 0; spoke < 9; spoke += 1) {
+    const angle = (spoke / 9) * Math.PI * 2 + seed * 0.006;
+    const inner = radius * (0.18 + (spoke % 3) * 0.05);
+    const outer = radius * (0.85 + (spoke % 2) * 0.12);
+    rings.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
+    rings.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
+    rings.stroke({ color: spoke % 2 ? accent : CYAN, width: 1, alpha: 0.18 * intensity });
+  }
+  parent.addChild(rings);
+
+  const shard = new PIXI.Graphics();
+  const points = [];
+  const sides = 5 + (seed % 4);
+  for (let i = 0; i < sides; i += 1) {
+    const angle = -Math.PI / 2 + (i / sides) * Math.PI * 2;
+    const wobble = 0.72 + ((seed + i * 13) % 25) / 100;
+    points.push(cx + Math.cos(angle) * radius * wobble, cy + Math.sin(angle) * radius * wobble);
+  }
+  shard.poly(points);
+  shard.fill({ color: 0x071a27, alpha: 0.82 });
+  shard.stroke({ color: accent, width: 2, alpha: 0.72 * intensity });
+  parent.addChild(shard);
+
+  const core = new PIXI.Graphics();
+  core.circle(cx, cy, radius * 0.18);
+  core.fill({ color: CODEX_BG, alpha: 0.9 });
+  core.stroke({ color: GOLD, width: 2, alpha: 0.72 * intensity });
+  parent.addChild(core);
+}
+
+function drawMiniGlyph(parent, x, y, size, accent, seed, discovered = false) {
+  const g = new PIXI.Graphics();
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  g.roundRect(x, y, size, size, 7);
+  g.fill({ color: discovered ? 0x082231 : 0x050d15, alpha: 0.94 });
+  g.stroke({ color: accent, width: discovered ? 2 : 1, alpha: discovered ? 0.72 : 0.38 });
+  parent.addChild(g);
+
+  const mark = new PIXI.Graphics();
+  const sides = 3 + (seed % 5);
+  const radius = size * (discovered ? 0.27 : 0.23);
+  const points = [];
+  for (let i = 0; i < sides; i += 1) {
+    const angle = -Math.PI / 2 + seed * 0.01 + (i / sides) * Math.PI * 2;
+    points.push(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+  }
+  mark.poly(points);
+  mark.fill({ color: discovered ? accent : MUTED, alpha: discovered ? 0.78 : 0.42 });
+  mark.stroke({ color: discovered ? 0xffffff : accent, width: 1, alpha: discovered ? 0.48 : 0.25 });
+  parent.addChild(mark);
+
+  const ring = new PIXI.Graphics();
+  ring.circle(cx, cy, size * 0.37);
+  ring.stroke({ color: discovered ? accent : MUTED, width: 1, alpha: discovered ? 0.36 : 0.2 });
+  parent.addChild(ring);
 }
 
 export class ThreatCodexScene {
@@ -17,22 +183,23 @@ export class ThreatCodexScene {
     this.container = new PIXI.Container();
     this.categoryIndex = 0;
     this.entryIndex = 0;
-    this.categoryButtons = [];
-    this.entryRows = [];
     this.keyHandler = null;
     this.gamepadLatchUntil = 0;
     this.catalog = getThreatCodexCatalog();
     this.discoveryState = getThreatCodexState();
+    this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
+    this.renderToken = 0;
   }
 
   init() {
+    this.cleanup();
     this.container.removeChildren();
     this.container.sortableChildren = true;
     this.catalog = getThreatCodexCatalog();
     this.discoveryState = clearThreatCodexUnread();
-    this.categoryButtons = [];
-    this.entryRows = [];
-    this.createLayout();
+    this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
+    this.renderToken += 1;
+    this.createLayout(this.renderToken);
     this.keyHandler = (event) => this.handleKeyDown(event);
     window.addEventListener('keydown', this.keyHandler);
   }
@@ -64,15 +231,15 @@ export class ThreatCodexScene {
         name: item.name || titleCaseSignal(id),
         rarity: item.metadata?.rarity || 'Discovered',
         role: item.metadata?.role || 'Runtime signal',
-        description: item.metadata?.description || 'Scanned during a run.',
-        tip: item.metadata?.tip || 'Review the tell next time it appears.'
+        description: item.metadata?.description || 'The archive caught this signal in the wild, but the spectrometer is still making dramatic noises. Expect a readable tell, an attitude problem, and a better note once the swarm repeats itself.',
+        tip: item.metadata?.tip || 'Watch the first tell, then move once. The scanner believes in you, suspiciously.'
       });
     });
     return merged;
   }
 
-  isDiscovered(entry) {
-    return Boolean(this.discoveryState.items?.[entry.category || this.getCategory().id]?.[entry.id]);
+  isDiscovered(entry, categoryId = this.getCategory().id) {
+    return entryDiscovered(this.discoveryState, categoryId, entry);
   }
 
   getSelectedEntry() {
@@ -80,56 +247,134 @@ export class ThreatCodexScene {
     return entries[Math.max(0, Math.min(entries.length - 1, this.entryIndex))] || null;
   }
 
-  createLayout() {
-    const width = this.game.getWidth();
-    const height = this.game.getHeight();
-    const compact = width < 760;
-    const bg = new PIXI.Graphics();
-    bg.rect(0, 0, width, height);
-    bg.fill({ color: 0x03070d, alpha: 1 });
-    this.container.addChild(bg);
-
-    const title = createText(translateText('THREAT CODEX'), {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 28 : 42,
-      fontWeight: 'bold',
-      fill: '#7dffcc',
-      stroke: '#001616',
-      strokeThickness: 4,
-      align: 'center'
-    });
-    title.anchor.set(0.5, 0);
-    title.position.set(width / 2, compact ? 18 : 24);
-    this.container.addChild(title);
-
-    const subtitle = createText(translateText('DISCOVERED SIGNALS AND SWARM PATTERNS'), {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 12 : 15,
-      fontWeight: 'bold',
-      fill: '#9cfbff',
-      align: 'center'
-    });
-    subtitle.anchor.set(0.5, 0);
-    subtitle.position.set(width / 2, compact ? 54 : 74);
-    this.container.addChild(subtitle);
-
-    this.createCategories(compact);
-    this.createEntryList(compact);
-    this.createDetailPanel(compact);
-    this.createBackButton(compact);
+  getAccent(entry = null, categoryId = this.getCategory().id) {
+    return colorValue(entry?.accent ?? entry?.tint, CATEGORY_ACCENTS[categoryId] || AQUA);
   }
 
-  createCategories(compact) {
+  createLayout(token) {
     const width = this.game.getWidth();
-    const startY = compact ? 78 : 106;
-    const availableWidth = width * 0.92;
+    const height = this.game.getHeight();
+    const compact = width < 920;
+    this.drawBackground(width, height);
+    this.createHeader(width, height, compact);
+    this.createCategories(width, compact);
+    this.createEntryList(width, height, compact);
+    this.createDetailPanel(width, height, compact, token);
+    this.createBackButton(width, height, compact);
+  }
+
+  drawBackground(width, height) {
+    const bg = new PIXI.Graphics();
+    bg.rect(0, 0, width, height);
+    bg.fill({ color: CODEX_BG, alpha: 1 });
+    this.container.addChild(bg);
+
+    const haze = new PIXI.Graphics();
+    haze.circle(width * 0.18, height * 0.25, Math.max(width, height) * 0.24);
+    haze.fill({ color: 0x0b3140, alpha: 0.28 });
+    haze.circle(width * 0.82, height * 0.2, Math.max(width, height) * 0.2);
+    haze.fill({ color: 0x27134b, alpha: 0.2 });
+    haze.circle(width * 0.62, height * 0.86, Math.max(width, height) * 0.22);
+    haze.fill({ color: 0x3a171d, alpha: 0.15 });
+    this.container.addChild(haze);
+
+    const grid = new PIXI.Graphics();
+    const step = width < 900 ? 34 : 44;
+    for (let x = -step; x < width + step; x += step) {
+      grid.moveTo(x, 0);
+      grid.lineTo(x + height * 0.18, height);
+    }
+    for (let y = 0; y < height + step; y += step) {
+      grid.moveTo(0, y);
+      grid.lineTo(width, y + width * 0.03);
+    }
+    grid.stroke({ color: 0x143549, alpha: 0.22, width: 1 });
+    this.container.addChild(grid);
+
+    const scan = new PIXI.Graphics();
+    for (let i = 0; i < 28; i += 1) {
+      const x = ((i * 89) % Math.max(1, Math.floor(width))) + ((i % 3) * 7);
+      const y = 92 + ((i * 53) % Math.max(1, Math.floor(height - 130)));
+      const alpha = 0.12 + (i % 4) * 0.035;
+      scan.circle(x, y, 1.5 + (i % 3));
+      scan.fill({ color: i % 2 ? CYAN : AQUA, alpha });
+    }
+    this.container.addChild(scan);
+  }
+
+  createHeader(width, height, compact) {
+    const counts = this.completionCounts;
+    const total = Object.values(counts).reduce((sum, item) => sum + (item.total || 0), 0);
+    const discovered = Object.values(counts).reduce((sum, item) => sum + (item.discovered || 0), 0);
+    const header = new PIXI.Container();
+    header.position.set(width * 0.05, compact ? 20 : 26);
+    this.container.addChild(header);
+
+    const title = addText(header, localize('THREAT CODEX'), {
+      fontSize: compact ? 34 : 46,
+      fontWeight: '900',
+      fill: '#eaffff',
+      stroke: '#001016',
+      strokeThickness: 5,
+      align: 'left'
+    }, 0, 0);
+    title.style.dropShadow = true;
+    title.style.dropShadowColor = '#37f5ff';
+    title.style.dropShadowDistance = 0;
+    title.style.dropShadowBlur = 9;
+
+    addText(header, localize('DISCOVERED SIGNALS AND SWARM PATTERNS'), {
+      fontSize: compact ? 12 : 15,
+      fontWeight: '800',
+      fill: '#9cfbff',
+      align: 'left'
+    }, 3, compact ? 42 : 56);
+
+    const meterX = compact ? width * 0.5 : width * 0.62;
+    const meterY = compact ? 26 : 34;
+    const meterW = width - meterX - width * 0.05;
+    const meter = new PIXI.Graphics();
+    drawPanel(meter, meterX, meterY, meterW, compact ? 48 : 54, {
+      fill: 0x04111d,
+      alpha: 0.72,
+      stroke: CYAN,
+      strokeAlpha: 0.34,
+      radius: 10
+    });
+    const fillW = total ? clamp(discovered / total, 0, 1) * (meterW - 22) : 0;
+    meter.roundRect(meterX + 11, meterY + (compact ? 29 : 32), meterW - 22, 8, 4);
+    meter.fill({ color: 0x071a27, alpha: 0.95 });
+    meter.roundRect(meterX + 11, meterY + (compact ? 29 : 32), fillW, 8, 4);
+    meter.fill({ color: AQUA, alpha: 0.86 });
+    this.container.addChild(meter);
+
+    addText(this.container, `${discovered}/${total}`, {
+      fontSize: compact ? 19 : 23,
+      fontWeight: '900',
+      fill: '#ffffff',
+      align: 'right'
+    }, meterX + meterW - 18, meterY + 9, { x: 1, y: 0 });
+
+    const signal = new PIXI.Graphics();
+    signal.circle(meterX + 26, meterY + 21, 8);
+    signal.fill({ color: discovered ? AQUA : MUTED, alpha: 0.95 });
+    signal.circle(meterX + 26, meterY + 21, 15);
+    signal.stroke({ color: discovered ? AQUA : MUTED, width: 1, alpha: 0.36 });
+    this.container.addChild(signal);
+  }
+
+  createCategories(width, compact) {
+    const startY = compact ? 92 : 112;
+    const availableWidth = width * 0.9;
     const buttonWidth = availableWidth / THREAT_CODEX_CATEGORIES.length;
     THREAT_CODEX_CATEGORIES.forEach((category, index) => {
       const selected = index === this.categoryIndex;
+      const counts = this.completionCounts[category.id] || { discovered: 0, total: 0 };
+      const accent = CATEGORY_ACCENTS[category.id] || AQUA;
       const button = new PIXI.Container();
       button.eventMode = 'static';
       button.cursor = 'pointer';
-      button.position.set(width * 0.04 + buttonWidth * index, startY);
+      button.position.set(width * 0.05 + buttonWidth * index, startY);
       button.on('pointerdown', () => {
         this.categoryIndex = index;
         this.entryIndex = 0;
@@ -138,44 +383,65 @@ export class ThreatCodexScene {
       });
 
       const bg = new PIXI.Graphics();
-      bg.roundRect(0, 0, buttonWidth - 6, compact ? 30 : 36, 6);
-      bg.fill({ color: selected ? 0x123936 : 0x07131f, alpha: selected ? 0.96 : 0.84 });
-      bg.stroke({ color: selected ? 0x7dffcc : 0x315169, width: selected ? 2 : 1, alpha: 0.9 });
+      drawPanel(bg, 0, 0, buttonWidth - 7, compact ? 42 : 48, {
+        fill: selected ? 0x102738 : 0x06111c,
+        alpha: selected ? 0.98 : 0.82,
+        stroke: selected ? accent : 0x294258,
+        strokeAlpha: selected ? 0.95 : 0.72,
+        strokeWidth: selected ? 2 : 1,
+        radius: 8
+      });
+      bg.rect(0, compact ? 35 : 41, buttonWidth - 7, selected ? 3 : 1);
+      bg.fill({ color: accent, alpha: selected ? 0.95 : 0.35 });
       button.addChild(bg);
 
-      const label = createText(translateText(category.label.toUpperCase()), {
-        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: compact ? 10 : 13,
-        fontWeight: 'bold',
-        fill: selected ? '#ffffff' : '#9cfbff',
+      addText(button, localize(category.label.toUpperCase()), {
+        fontSize: compact ? 10 : 12,
+        fontWeight: '900',
+        fill: selected ? '#ffffff' : '#b9f7ff',
         align: 'center',
         wordWrap: true,
-        wordWrapWidth: buttonWidth - 18
-      });
-      label.anchor.set(0.5);
-      label.position.set((buttonWidth - 6) / 2, (compact ? 30 : 36) / 2);
-      button.addChild(label);
-      this.categoryButtons.push(button);
+        wordWrapWidth: buttonWidth - 20
+      }, (buttonWidth - 7) / 2, compact ? 9 : 10, { x: 0.5, y: 0 });
+
+      addText(button, `${counts.discovered}/${counts.total}`, {
+        fontSize: compact ? 10 : 12,
+        fontWeight: '800',
+        fill: selected ? colorCss(accent) : '#6f879a',
+        align: 'center'
+      }, (buttonWidth - 7) / 2, compact ? 27 : 30, { x: 0.5, y: 0 });
+
       this.container.addChild(button);
     });
   }
 
-  createEntryList(compact) {
-    const width = this.game.getWidth();
-    const height = this.game.getHeight();
+  createEntryList(width, height, compact) {
+    const category = this.getCategory();
+    const entries = this.getEntriesForCategory(category.id);
     const listX = width * 0.05;
-    const listY = compact ? 124 : 160;
-    const listW = compact ? width * 0.42 : width * 0.36;
-    const rowH = compact ? 32 : 38;
-    const maxRows = Math.max(6, Math.floor((height - listY - 88) / rowH));
-    const entries = this.getEntriesForCategory();
+    const listY = compact ? 154 : 182;
+    const listW = compact ? width * 0.39 : Math.min(520, width * 0.38);
+    const rowH = compact ? 48 : 56;
+    const maxRows = Math.max(6, Math.floor((height - listY - 82) / rowH));
     const start = Math.max(0, Math.min(this.entryIndex - Math.floor(maxRows / 2), Math.max(0, entries.length - maxRows)));
+
+    const frame = new PIXI.Graphics();
+    drawPanel(frame, listX - 14, listY - 16, listW + 28, Math.min(entries.length, maxRows) * rowH + 28, {
+      fill: 0x030b13,
+      alpha: 0.58,
+      stroke: 0x24435b,
+      strokeAlpha: 0.45,
+      radius: 12
+    });
+    this.container.addChild(frame);
 
     for (let rowIndex = 0; rowIndex < Math.min(maxRows, entries.length); rowIndex += 1) {
       const entryIndex = start + rowIndex;
       const entry = entries[entryIndex];
-      const discovered = this.isDiscovered(entry);
+      const discovered = this.isDiscovered(entry, category.id);
       const selected = entryIndex === this.entryIndex;
+      const accent = this.getAccent(entry, category.id);
+      const seed = makeSignalSeed(entry.id);
       const row = new PIXI.Container();
       row.eventMode = 'static';
       row.cursor = 'pointer';
@@ -187,143 +453,238 @@ export class ThreatCodexScene {
       });
 
       const bg = new PIXI.Graphics();
-      bg.roundRect(0, 0, listW, rowH - 5, 5);
-      bg.fill({ color: selected ? 0x163145 : 0x07101a, alpha: selected ? 0.98 : 0.76 });
-      bg.stroke({ color: selected ? 0x7dffcc : 0x233a50, width: selected ? 2 : 1, alpha: 0.9 });
+      drawPanel(bg, 0, 0, listW, rowH - 8, {
+        fill: selected ? 0x102637 : 0x06101a,
+        alpha: selected ? 0.98 : 0.8,
+        stroke: selected ? accent : 0x20394e,
+        strokeAlpha: selected ? 0.95 : 0.62,
+        strokeWidth: selected ? 2 : 1,
+        radius: 8
+      });
+      if (selected) {
+        bg.rect(0, 0, 5, rowH - 8);
+        bg.fill({ color: accent, alpha: 0.95 });
+      }
       row.addChild(bg);
 
-      const label = createText(discovered ? entry.name.toUpperCase() : translateText('UNKNOWN SIGNAL'), {
-        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: compact ? 12 : 15,
-        fontWeight: 'bold',
-        fill: discovered ? '#ffffff' : '#7b91a4',
+      drawMiniGlyph(row, 12, 8, rowH - 24, accent, seed, discovered);
+
+      const label = discovered ? entry.name.toUpperCase() : localize('UNKNOWN SIGNAL');
+      addText(row, label, {
+        fontSize: compact ? 13 : 16,
+        fontWeight: '900',
+        fill: discovered ? '#f3fdff' : '#8fa6b8',
         wordWrap: true,
-        wordWrapWidth: listW - 58
-      });
-      label.anchor.set(0, 0.5);
-      label.position.set(14, (rowH - 5) / 2);
-      row.addChild(label);
+        wordWrapWidth: listW - 118,
+        lineHeight: compact ? 14 : 17
+      }, rowH - 2, compact ? 9 : 10);
 
-      const count = this.discoveryState.items?.[entry.category || this.getCategory().id]?.[entry.id]?.timesSeen || 0;
-      const seen = createText(discovered ? String(count) : '--', {
-        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: compact ? 11 : 13,
-        fontWeight: 'bold',
-        fill: discovered ? '#7dffcc' : '#43576a'
-      });
-      seen.anchor.set(1, 0.5);
-      seen.position.set(listW - 12, (rowH - 5) / 2);
-      row.addChild(seen);
+      const role = discovered ? String(entry.role || entry.rarity || '').toUpperCase() : String(category.label || '').toUpperCase();
+      addText(row, role, {
+        fontSize: compact ? 9 : 10,
+        fontWeight: '800',
+        fill: discovered ? colorCss(accent) : '#53697a',
+        wordWrap: true,
+        wordWrapWidth: listW - 132
+      }, rowH - 1, compact ? 29 : 34);
 
-      this.entryRows.push(row);
+      const stateItem = getStateItem(this.discoveryState, category.id, entry.id);
+      const count = stateItem?.timesSeen || 0;
+      addText(row, discovered ? String(count) : '--', {
+        fontSize: compact ? 12 : 14,
+        fontWeight: '900',
+        fill: discovered ? '#ffffff' : '#4e6374'
+      }, listW - 14, (rowH - 8) / 2, { x: 1, y: 0.5 });
+
       this.container.addChild(row);
     }
   }
 
-  createDetailPanel(compact) {
-    const width = this.game.getWidth();
-    const height = this.game.getHeight();
-    const entry = this.getSelectedEntry();
+  createDetailPanel(width, height, compact, token) {
     const category = this.getCategory();
-    const discovered = entry && this.isDiscovered(entry);
-    const stateItem = entry ? this.discoveryState.items?.[entry.category || category.id]?.[entry.id] : null;
-    const panelX = compact ? width * 0.5 : width * 0.45;
-    const panelY = compact ? 124 : 160;
+    const entry = this.getSelectedEntry();
+    const discovered = entry ? this.isDiscovered(entry, category.id) : false;
+    const stateItem = entry ? getStateItem(this.discoveryState, category.id, entry.id) : null;
+    const accent = this.getAccent(entry, category.id);
+    const panelX = compact ? width * 0.47 : width * 0.47;
+    const panelY = compact ? 154 : 182;
     const panelW = width - panelX - width * 0.05;
-    const panelH = height - panelY - 88;
+    const panelH = height - panelY - 82;
 
-    const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelW, panelH, 8);
-    panel.fill({ color: 0x07101a, alpha: 0.88 });
-    panel.stroke({ color: discovered ? 0x7dffcc : 0x315169, width: 2, alpha: 0.8 });
+    const panel = new PIXI.Container();
+    panel.position.set(panelX, panelY);
     this.container.addChild(panel);
 
-    const name = createText(discovered ? entry.name.toUpperCase() : translateText('UNKNOWN SIGNAL'), {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 20 : 29,
-      fontWeight: 'bold',
-      fill: discovered ? '#ffffff' : '#7b91a4',
-      wordWrap: true,
-      wordWrapWidth: panelW - 38,
-      lineHeight: compact ? 22 : 31
+    const bg = new PIXI.Graphics();
+    drawPanel(bg, 0, 0, panelW, panelH, {
+      fill: 0x06101a,
+      alpha: 0.92,
+      stroke: discovered ? accent : 0x2c4b62,
+      strokeAlpha: discovered ? 0.8 : 0.58,
+      strokeWidth: 2,
+      radius: 12
     });
-    name.position.set(panelX + 22, panelY + 22);
-    this.container.addChild(name);
+    bg.rect(0, 0, panelW, Math.max(7, panelH * 0.012));
+    bg.fill({ color: discovered ? accent : 0x34566d, alpha: discovered ? 0.85 : 0.52 });
+    panel.addChild(bg);
 
-    const role = createText(discovered ? `${entry.rarity}  |  ${entry.role}` : category.label.toUpperCase(), {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 13 : 16,
-      fontWeight: 'bold',
-      fill: '#7dffcc',
+    const shortPanel = panelH < 560;
+    const sideBySide = shortPanel && panelW >= 520;
+    const artX = 18;
+    const artY = 22;
+    const artW = sideBySide ? panelW * 0.42 : panelW - 36;
+    const artH = sideBySide ? clamp(panelH * 0.42, 150, 205) : shortPanel ? clamp(panelH * 0.28, 108, 155) : clamp(panelH * 0.34, 180, 275);
+    this.drawDetailArt(panel, entry, discovered, accent, artX, artY, artW, artH, token);
+
+    const textX = sideBySide ? artX + artW + 18 : 24;
+    const textW = sideBySide ? panelW - textX - 24 : panelW - 46;
+    const nameY = sideBySide ? 28 : artH + 42;
+    const name = entry && discovered ? entry.name.toUpperCase() : localize('UNKNOWN SIGNAL');
+    const nameNode = addText(panel, name, {
+      fontSize: sideBySide ? 22 : compact ? 19 : 31,
+      fontWeight: '900',
+      fill: discovered ? '#ffffff' : '#a7bac8',
+      stroke: '#001016',
+      strokeThickness: 3,
       wordWrap: true,
-      wordWrapWidth: panelW - 38
-    });
-    role.position.set(panelX + 22, panelY + (compact ? 80 : 100));
-    this.container.addChild(role);
+      wordWrapWidth: textW,
+      lineHeight: sideBySide ? 23 : compact ? 21 : 33
+    }, textX, nameY);
+    fitTextHeight(nameNode, shortPanel ? 52 : 74, 0.74);
 
-    const description = createText(discovered ? entry.description : translateText('SIGNAL DATA LOCKED'), {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 14 : 18,
+    const meta = discovered
+      ? `${entry.rarity || 'Signal'}  |  ${entry.role || category.label}`
+      : `${localize('SIGNAL DATA LOCKED')}  |  ${localize(category.label.toUpperCase())}`;
+    addText(panel, meta, {
+      fontSize: shortPanel ? 12 : compact ? 13 : 16,
+      fontWeight: '900',
+      fill: discovered ? colorCss(accent) : '#8fa6b8',
+      wordWrap: true,
+      wordWrapWidth: textW
+    }, textX, nameY + (shortPanel ? 56 : compact ? 54 : 70));
+
+    const bodyY = shortPanel ? nameY + 84 : nameY + (compact ? 82 : 104);
+    const bodyText = discovered
+      ? localize(entry.description)
+      : localize('The scanner has the outline, the static has the attitude, and the swarm is refusing to sign the paperwork. Find this signal in a run to unlock the full field note.');
+    const tipY = panelH - (compact ? 116 : 138);
+    const bodyMaxHeight = Math.max(54, tipY - bodyY - 24);
+    const bodyNode = addText(panel, bodyText, {
+      fontSize: shortPanel ? 13 : compact ? 13 : 17,
       fill: '#d8fbff',
       wordWrap: true,
-      wordWrapWidth: panelW - 38,
-      lineHeight: compact ? 18 : 23
-    });
-    description.position.set(panelX + 22, panelY + (compact ? 116 : 142));
-    this.container.addChild(description);
+      wordWrapWidth: textW,
+      lineHeight: shortPanel ? 16 : compact ? 17 : 22
+    }, textX, bodyY);
+    fitTextHeight(bodyNode, bodyMaxHeight, shortPanel ? 0.72 : 0.78);
 
-    const tip = createText(discovered ? `${translateText('TIP')}: ${entry.tip}` : translateText('DISCOVER THIS SIGNAL DURING A RUN'), {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 13 : 16,
-      fontWeight: 'bold',
-      fill: '#fff3a2',
+    const tipBox = new PIXI.Graphics();
+    drawPanel(tipBox, 20, tipY - 14, panelW - 40, compact ? 60 : 72, {
+      fill: 0x0b1b23,
+      alpha: 0.86,
+      stroke: discovered ? GOLD : accent,
+      strokeAlpha: 0.42,
+      radius: 8
+    });
+    panel.addChild(tipBox);
+    const tipText = discovered
+      ? `${localize('TIP')}: ${localize(entry.tip)}`
+      : `${localize('TIP')}: ${localize('DISCOVER THIS SIGNAL DURING A RUN')}`;
+    addText(panel, tipText, {
+      fontSize: compact ? 12 : 15,
+      fontWeight: '800',
+      fill: discovered ? '#fff3a2' : '#9cfbff',
       wordWrap: true,
-      wordWrapWidth: panelW - 38,
-      lineHeight: compact ? 17 : 21
-    });
-    tip.position.set(panelX + 22, panelY + panelH * 0.55);
-    this.container.addChild(tip);
+      wordWrapWidth: panelW - 62,
+      lineHeight: compact ? 15 : 19
+    }, 32, tipY);
 
-    const stats = createText(discovered
-      ? `${translateText('SEEN')}: ${stateItem?.timesSeen || 0}   ${translateText('DEFEATED')}: ${stateItem?.timesDefeated || 0}`
-      : `${translateText('SEEN')}: --   ${translateText('DEFEATED')}: --`, {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 13 : 16,
-      fontWeight: 'bold',
+    const defeatedLabel = localize('DEFEATED');
+    addText(panel, `${localize('SEEN')}: ${discovered ? stateItem?.timesSeen || 0 : '--'}    ${defeatedLabel}: ${discovered ? stateItem?.timesDefeated || stateItem?.timesSurvived || 0 : '--'}`, {
+      fontSize: compact ? 12 : 15,
+      fontWeight: '900',
       fill: '#9cfbff'
-    });
-    stats.position.set(panelX + 22, panelY + panelH - 46);
-    this.container.addChild(stats);
+    }, 24, panelH - 42);
   }
 
-  createBackButton(compact) {
-    const width = this.game.getWidth();
-    const height = this.game.getHeight();
-    const label = createText(translateText('BACK'), {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 17 : 21,
-      fontWeight: 'bold',
-      fill: '#031323'
+  drawDetailArt(parent, entry, discovered, accent, x, y, width, height, token) {
+    const frame = new PIXI.Graphics();
+    drawPanel(frame, x, y, width, height, {
+      fill: 0x020a12,
+      alpha: 0.96,
+      stroke: accent,
+      strokeAlpha: discovered ? 0.55 : 0.34,
+      strokeWidth: 1,
+      radius: 12
     });
+    frame.rect(x + 10, y + height - 18, width - 20, 2);
+    frame.fill({ color: accent, alpha: discovered ? 0.5 : 0.25 });
+    parent.addChild(frame);
+
+    const seed = makeSignalSeed(entry?.id || 'unknown');
+    const backdrop = new PIXI.Graphics();
+    for (let i = 0; i < 9; i += 1) {
+      const px = x + 24 + ((seed + i * 53) % Math.max(1, Math.floor(width - 48)));
+      const py = y + 22 + ((seed * 3 + i * 41) % Math.max(1, Math.floor(height - 44)));
+      backdrop.circle(px, py, 1 + (i % 3));
+      backdrop.fill({ color: i % 2 ? accent : CYAN, alpha: discovered ? 0.18 : 0.1 });
+    }
+    parent.addChild(backdrop);
+
+    if (!discovered || !entry?.art) {
+      drawUnknownSignal(parent, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, discovered ? 0.86 : 1);
+      return;
+    }
+
+    drawUnknownSignal(parent, x + width * 0.15, y + height * 0.08, width * 0.7, height * 0.75, accent, seed, 0.42);
+    PIXI.Assets.load(entry.art)
+      .then((texture) => {
+        if (token !== this.renderToken || !texture || !parent || parent.destroyed) return;
+        const sprite = new PIXI.Sprite(texture);
+        sprite.anchor.set(0.5);
+        fitSprite(sprite, width * 0.66, height * 0.72, 2.8);
+        sprite.position.set(x + width * 0.5, y + height * 0.5);
+        sprite.alpha = 0.96;
+        parent.addChild(sprite);
+
+        const rim = new PIXI.Graphics();
+        rim.circle(x + width * 0.5, y + height * 0.5, Math.min(width, height) * 0.34);
+        rim.stroke({ color: accent, width: 2, alpha: 0.16 });
+        parent.addChild(rim);
+      })
+      .catch(() => {
+        if (token !== this.renderToken || !parent || parent.destroyed) return;
+        drawUnknownSignal(parent, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, 0.76);
+      });
+  }
+
+  createBackButton(width, height, compact) {
     const button = new PIXI.Container();
     button.eventMode = 'static';
     button.cursor = 'pointer';
     button.position.set(width * 0.05, height - (compact ? 54 : 60));
     button.on('pointerdown', () => this.goBack());
+
     const bg = new PIXI.Graphics();
-    bg.roundRect(0, 0, compact ? 96 : 120, compact ? 34 : 40, 7);
-    bg.fill({ color: 0x7dffcc, alpha: 0.95 });
-    bg.stroke({ color: 0xffffff, width: 1, alpha: 0.7 });
+    drawPanel(bg, 0, 0, compact ? 104 : 126, compact ? 36 : 42, {
+      fill: AQUA,
+      alpha: 0.95,
+      stroke: 0xffffff,
+      strokeAlpha: 0.7,
+      radius: 8
+    });
     button.addChild(bg);
-    label.anchor.set(0.5);
-    label.position.set((compact ? 96 : 120) / 2, (compact ? 34 : 40) / 2);
-    button.addChild(label);
+
+    addText(button, localize('BACK'), {
+      fontSize: compact ? 17 : 21,
+      fontWeight: '900',
+      fill: '#031323'
+    }, (compact ? 104 : 126) / 2, (compact ? 36 : 42) / 2, { x: 0.5, y: 0.5 });
     this.container.addChild(button);
   }
 
   refresh() {
     this.cleanup();
-    this.container.removeChildren();
     const entries = this.getEntriesForCategory();
     this.entryIndex = Math.max(0, Math.min(this.entryIndex, Math.max(0, entries.length - 1)));
     this.init();
@@ -404,10 +765,12 @@ export class ThreatCodexScene {
       categories: THREAT_CODEX_CATEGORIES.map((item) => item.id),
       selectedEntryId: this.getSelectedEntry()?.id || null,
       entryCount: entries.length,
-      discoveredCount: entries.filter((entry) => this.isDiscovered(entry)).length,
+      discoveredCount: entries.filter((entry) => this.isDiscovered(entry, category.id)).length,
+      completionCounts: this.completionCounts,
       keyboardNavigation: true,
       controllerNavigation: true,
-      mouseSelection: true
+      mouseSelection: true,
+      artfulEmptyState: true
     };
   }
 }

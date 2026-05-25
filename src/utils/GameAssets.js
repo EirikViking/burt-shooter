@@ -112,17 +112,7 @@ class GameAssetsManager {
         // Load Rank Player Ships
         const rankShips = this.rankShipList;
         await Promise.all(rankShips.map(async (filename, index) => {
-            const parts = filename.split('/');
-            const alias = `rank_ship_${index}_${parts[parts.length - 1].split('.')[0]}`;
-            try {
-                const texture = await PIXI.Assets.load({
-                    alias: alias,
-                    src: filename
-                });
-                if (this.isValidTexture(texture)) this.rankShipTextures[index] = texture;
-            } catch (e) {
-                console.warn(`[GameAssets] Failed to load rank ship ${filename}:`, e);
-            }
+            await this.ensureRankShipTexture(index);
         }));
 
         // Load Player Ships
@@ -225,6 +215,33 @@ class GameAssetsManager {
 
         // Load Xtra Assets
         await this.loadXtraAssets();
+    }
+
+    async ensureRankShipTexture(index) {
+        const safeIndex = Math.max(0, Math.floor(Number(index) || 0));
+        if (this.isValidTexture(this.rankShipTextures[safeIndex])) {
+            return this.rankShipTextures[safeIndex];
+        }
+
+        const filename = this.rankShipList[safeIndex];
+        if (!filename) return null;
+
+        const parts = filename.split('/');
+        const alias = `rank_ship_${safeIndex}_${parts[parts.length - 1].split('.')[0]}`;
+        try {
+            const texture = await PIXI.Assets.load({
+                alias,
+                src: filename
+            });
+            if (this.isValidTexture(texture)) {
+                this.rankShipTextures[safeIndex] = texture;
+                return texture;
+            }
+        } catch (e) {
+            console.warn(`[GameAssets] Failed to load rank ship ${filename}:`, e);
+        }
+
+        return null;
     }
 
     getShipTexture(alias) {

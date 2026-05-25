@@ -333,55 +333,65 @@ export class PlayScene {
     this.bossHazardLayer.zIndex = 66;
     this.gameContainer.addChild(this.bossHazardLayer);
 
-    // Initial load of ships AND Ranks
-    Promise.all([
-      GameAssets.loadShips(),
-      RankAssets.preloadAll()
-    ]).then(() => {
-      // Sync rank state to prevent immediate spam if starting with score > 0 (handled in Game, but good safety)
+    const params = new URLSearchParams(window.location.search);
+    const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
+    const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
+    const selectedShipTextureIndex = getShipMetadata(spriteKey)?.textureIndex ?? 0;
+    const controlSmoke = params.get('controlSmoke') === '1';
+    const logShipDebug = () => {
+      if (!this.player) return;
+      console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
+      console.log(`[ShipDebug] Selected: ${this.game.selectedShipSpriteKey}`);
+      console.log(`[ShipDebug] Active: ${this.player.selectedShipSpriteKey}`);
+      console.log(`[ShipDebug] PlayerSprite: exists=${!!this.player.sprite} alpha=${this.player.sprite?.alpha} visible=${this.player.sprite?.visible} x=${this.player.sprite?.x} y=${this.player.sprite?.y}`);
+      const textureSource = this.player.shipSprite?.texture?.source;
+      console.log(`[ShipDebug] Texture: ${textureSource?.resource?.url || textureSource?.label || 'loaded'}`);
+    };
+    const startIntroFromPlayer = (source) => {
+      if (this.game?.currentScene !== this || !this.player || this.introActive || this.introComplete) return;
       this._lastRankUpSeen = this.game.rankIndex;
-
-      // Create player AFTER ships are loaded to ensure texture is ready
-      if (this.player) {
-        this.gameContainer.removeChild(this.player.sprite);
-      }
-      const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
-      console.log('[PlayScene] Assets ready, creating player with spriteKey=' + spriteKey);
-      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
-      this.gameContainer.addChild(this.player.sprite);
-      const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
-      this.player.setRank(initialRank, 'init');
-
+      this.player.setRank(initialRank, source);
       this.applySeasonCosmetics();
-
-      // DEBUG: Log ship selection details
-      if (this.player) {
-        console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
-        console.log(`[ShipDebug] Selected: ${this.game.selectedShipSpriteKey}`);
-        console.log(`[ShipDebug] Active: ${this.player.selectedShipSpriteKey}`);
-        console.log(`[ShipDebug] PlayerSprite: exists=${!!this.player.sprite} alpha=${this.player.sprite?.alpha} visible=${this.player.sprite?.visible} x=${this.player.sprite?.x} y=${this.player.sprite?.y}`);
-        const textureSource = this.player.shipSprite?.texture?.source;
-        console.log(`[ShipDebug] Texture: ${textureSource?.resource?.url || textureSource?.label || 'loaded'}`);
-      }
-
-      const controlSmoke = new URLSearchParams(window.location.search).get('controlSmoke') === '1';
+      logShipDebug();
       if (controlSmoke) {
         this.introActive = false;
         this.introComplete = true;
         this.startLevel('controlSmoke');
       } else {
-        // Start ship intro animation
         this.startShipIntro(spriteKey);
       }
+    };
+    const selectedShipReady = GameAssets.ensureRankShipTexture(selectedShipTextureIndex)
+      .then(() => {
+        if (this.game?.currentScene === this && this.player?.rebuildShipSprite) {
+          this.player.rebuildShipSprite('selected_ship_ready');
+        }
+      })
+      .catch((error) => {
+        console.warn('[PlayScene] Selected ship texture preload failed:', error);
+      });
+    Promise.race([
+      selectedShipReady,
+      new Promise((resolve) => setTimeout(resolve, 2500))
+    ]).then(() => startIntroFromPlayer('selected_ship_ready'));
+    selectedShipReady.finally(() => {
+      GameAssets.loadShips()
+        .then(() => {
+          if (this.game?.currentScene !== this || !this.player?.rebuildShipSprite) return;
+          this.player.rebuildShipSprite('ship_catalog_ready');
+          console.log('[PlayScene] Ship catalog ready for current run');
+        })
+        .catch((error) => console.warn('[PlayScene] Ship catalog preload failed:', error));
+      RankAssets.preloadAll().catch((error) => {
+        console.warn('[PlayScene] Rank badge preload failed:', error);
+      });
     });
 
     // Create placeholder player immediately (will be replaced)
     if (!this.player) {
-      const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
       this.gameContainer.addChild(this.player.sprite);
       if (this.player.setRank) {
-        const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
         this.player.setRank(initialRank, 'init_placeholder');
       }
       this.applySeasonCosmetics();
@@ -391,7 +401,6 @@ export class PlayScene {
     this.enemyManager = new EnemyManager(this.gameContainer, this.game, capHandler);
     this.game.flushAchievementToasts?.(this);
 
-    const params = new URLSearchParams(window.location.search);
     this.initBalanceDebug(params);
     const debugToken = params.get('debugBossToken');
     if (debugToken === 'NOVA_DEBUG_2026') {
@@ -4570,19 +4579,18 @@ export class PlayScene {
 
   onEnemyKilled(enemy) {
     const now = Date.now();
-    this.recordThreatDiscovery(enemy?.type, 'enemies', {
-      name: enemy?.generatedProfile?.name || enemy?.middleShipProfile?.label || enemy?.type,
-      role: enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy'
-    });
     if (enemy?.kind === 'boss') {
-      const bossId = enemy?.bossType || enemy?.profile?.id || `boss_${this.game.level}`;
+      const bossId = enemy?.profile?.id || enemy?.bossType || `boss_${this.game.level}`;
       this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
       this.recordThreatDefeat(bossId, 'bosses', {
-        name: enemy?.profile?.name || bossId,
+        name: enemy?.profile?.name || enemy?.name || bossId,
+        role: enemy?.profile?.title || 'boss',
         sector: this.game.level
       });
     } else {
       this.recordThreatDefeat(enemy?.type, 'enemies', {
+        name: enemy?.generatedProfile?.displayName || enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || enemy?.type,
+        role: enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy',
         sector: this.game.level
       });
     }
@@ -5720,14 +5728,12 @@ export class PlayScene {
   showBossCelebration({ level = this.game.level, type = 'UNKNOWN' } = {}) {
     if (!this.uiOverlay) return;
     this.recordBalanceBossEnd();
-    const bossId = String(type || `boss_${level}`).toLowerCase();
+    const bossId = this.enemyManager?.boss?.profile?.id || String(type || `boss_${level}`).toLowerCase();
+    const bossName = this.enemyManager?.boss?.profile?.name || String(type || 'Boss').replace(/_/g, ' ');
     this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
-    this.recordThreatDiscovery(bossId, 'bosses', {
-      name: String(type || 'Boss').replace(/_/g, ' '),
-      sector: level
-    });
     this.recordThreatDefeat(bossId, 'bosses', {
-      name: String(type || 'Boss').replace(/_/g, ' '),
+      name: bossName,
+      role: this.enemyManager?.boss?.profile?.title || 'boss',
       sector: level
     });
     const repairDelta = this.applyBossClearRecovery(level);

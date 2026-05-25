@@ -10,6 +10,7 @@ import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
 import { translateText } from '../i18n/index.js';
 import {
   GENERATED_ENEMY_TYPES,
+  getGeneratedEnemyProfile,
   getGeneratedEnemyTypeAtLevelProgress,
   pickGeneratedEnemyTypeForLevel
 } from '../config/GeneratedEnemyProfiles.js';
@@ -611,33 +612,33 @@ export class EnemyManager {
       1: [
         { type: 'nova_enemy_001', count: 6, formation: 'TUTORIAL_ARC', tactic: 'strafe_sweep', entry: 'split', cadence: 0.78 },
         { type: 'nova_enemy_003', count: 7, formation: 'STAGGERED_WING', tactic: 'needle_stagger', entry: 'alternating', cadence: 0.86 },
-        { type: 'nova_enemy_005', count: 8, formation: 'GRID', tactic: 'pulse_net', entry: 'single', cadence: 0.94 },
-        { type: 'nova_enemy_007', count: 8, formation: 'DOUBLE_ARC', tactic: 'dive_chain', entry: 'split', cadence: 1.0 },
-        { type: 'nova_enemy_009', count: 8, formation: 'PINCER', tactic: 'crossfire_pincer', entry: 'alternating', cadence: 1.04 },
-        { type: 'nova_enemy_010', count: 9, formation: 'SCREEN_DOOR', tactic: 'weave_wall', entry: 'split', cadence: 1.08 }
+        { type: 'nova_enemy_001', count: 8, formation: 'GRID', tactic: 'pulse_net', entry: 'single', cadence: 0.94 },
+        { type: 'nova_enemy_005', count: 8, formation: 'DOUBLE_ARC', tactic: 'dive_chain', entry: 'split', cadence: 1.0 },
+        { type: 'nova_enemy_003', count: 8, formation: 'PINCER', tactic: 'crossfire_pincer', entry: 'alternating', cadence: 1.04 },
+        { type: 'nova_enemy_005', count: 9, formation: 'SCREEN_DOOR', tactic: 'weave_wall', entry: 'split', cadence: 1.08 }
       ],
       2: [
-        { type: 'nova_enemy_008', count: 7, formation: 'GRID', tactic: 'pulse_net', entry: 'alternating', cadence: 0.98 },
-        { type: 'nova_enemy_010', count: 8, formation: 'STAGGERED_WING', tactic: 'crossfire_pincer', entry: 'split', cadence: 1.04 },
-        { type: 'nova_enemy_011', count: 8, formation: 'PINCER', tactic: 'strafe_sweep', entry: 'alternating', cadence: 1.1 },
-        { type: 'nova_enemy_012', count: 9, formation: 'SIDEWINDER', tactic: 'rush_feint', entry: 'split', cadence: 1.16 },
-        { type: 'nova_enemy_013', count: 9, formation: 'CROSS_STREAM', tactic: 'split_sweep', entry: 'alternating', cadence: 1.2 },
+        { type: 'nova_enemy_003', count: 7, formation: 'GRID', tactic: 'pulse_net', entry: 'alternating', cadence: 0.98 },
+        { type: 'nova_enemy_005', count: 8, formation: 'STAGGERED_WING', tactic: 'crossfire_pincer', entry: 'split', cadence: 1.04 },
+        { type: 'nova_enemy_007', count: 8, formation: 'PINCER', tactic: 'strafe_sweep', entry: 'alternating', cadence: 1.1 },
+        { type: 'nova_enemy_008', count: 9, formation: 'SIDEWINDER', tactic: 'rush_feint', entry: 'split', cadence: 1.16 },
+        { type: 'nova_enemy_007', count: 9, formation: 'CROSS_STREAM', tactic: 'split_sweep', entry: 'alternating', cadence: 1.2 },
         { type: 'nova_enemy_009', count: 10, formation: 'ORBIT_RING', tactic: 'orbit_snare', entry: 'single', cadence: 1.24 }
       ],
       3: [
-        { type: 'nova_enemy_012', count: 7, formation: 'ARC', tactic: 'orbit_snare', entry: 'split', cadence: 1.06 },
-        { type: 'nova_enemy_013', count: 8, formation: 'PINCER', tactic: 'rush_feint', entry: 'alternating', cadence: 1.14 },
-        { type: 'nova_enemy_014', count: 9, formation: 'CROSS_STREAM', tactic: 'crossfire_pincer', entry: 'split', cadence: 1.2 },
-        { type: 'nova_enemy_015', count: 9, formation: 'SCREEN_DOOR', tactic: 'weave_wall', entry: 'alternating', cadence: 1.26 },
-        { type: 'nova_enemy_016', count: 10, formation: 'DIAGONAL_RAID', tactic: 'dive_chain', entry: 'split', cadence: 1.3 },
-        { type: 'nova_enemy_010', count: 10, formation: 'DOUBLE_ARC', tactic: 'needle_stagger', entry: 'alternating', cadence: 1.34 }
+        { type: 'nova_enemy_005', count: 7, formation: 'ARC', tactic: 'orbit_snare', entry: 'split', cadence: 1.06 },
+        { type: 'nova_enemy_008', count: 8, formation: 'PINCER', tactic: 'rush_feint', entry: 'alternating', cadence: 1.14 },
+        { type: 'nova_enemy_010', count: 9, formation: 'CROSS_STREAM', tactic: 'crossfire_pincer', entry: 'split', cadence: 1.2 },
+        { type: 'nova_enemy_011', count: 9, formation: 'SCREEN_DOOR', tactic: 'weave_wall', entry: 'alternating', cadence: 1.26 },
+        { type: 'nova_enemy_010', count: 10, formation: 'DIAGONAL_RAID', tactic: 'dive_chain', entry: 'split', cadence: 1.3 },
+        { type: 'nova_enemy_011', count: 10, formation: 'DOUBLE_ARC', tactic: 'needle_stagger', entry: 'alternating', cadence: 1.34 }
       ],
       4: [
-        { type: 'nova_enemy_015', count: 8, formation: 'SIDEWINDER', tactic: 'split_sweep', entry: 'split', cadence: 1.16 },
-        { type: 'nova_enemy_016', count: 9, formation: 'DOUBLE_ARC', tactic: 'weave_wall', entry: 'alternating', cadence: 1.22 },
-        { type: 'nova_enemy_017', count: 9, formation: 'ORBIT_RING', tactic: 'orbit_snare', entry: 'single', cadence: 1.28 },
-        { type: 'nova_enemy_018', count: 10, formation: 'DIAGONAL_RAID', tactic: 'rush_feint', entry: 'split', cadence: 1.34 },
-        { type: 'nova_enemy_019', count: 10, formation: 'PINCER', tactic: 'ambush_lattice', entry: 'alternating', cadence: 1.38 },
+        { type: 'nova_enemy_008', count: 8, formation: 'SIDEWINDER', tactic: 'split_sweep', entry: 'split', cadence: 1.16 },
+        { type: 'nova_enemy_010', count: 9, formation: 'DOUBLE_ARC', tactic: 'weave_wall', entry: 'alternating', cadence: 1.22 },
+        { type: 'nova_enemy_012', count: 9, formation: 'ORBIT_RING', tactic: 'orbit_snare', entry: 'single', cadence: 1.28 },
+        { type: 'nova_enemy_013', count: 10, formation: 'DIAGONAL_RAID', tactic: 'rush_feint', entry: 'split', cadence: 1.34 },
+        { type: 'nova_enemy_012', count: 10, formation: 'PINCER', tactic: 'ambush_lattice', entry: 'alternating', cadence: 1.38 },
         { type: 'nova_enemy_013', count: 11, formation: 'SPIRAL', tactic: 'orbit_snare', entry: 'single', cadence: 1.42 }
       ]
     };
@@ -1216,10 +1217,15 @@ export class EnemyManager {
       role: tactic.move || 'formation pressure',
       sector: this.level
     });
+    const enemyProfile = getGeneratedEnemyProfile(type);
     playScene?.recordThreatDiscovery?.(type, 'enemies', {
-      name: type,
-      role: config.type || 'wave enemy',
-      sector: this.level
+      name: enemyProfile?.displayName || type,
+      role: enemyProfile?.role || config.type || 'wave enemy',
+      movementStyle: enemyProfile?.movementStyle || null,
+      fireStyle: enemyProfile?.fireStyle || null,
+      rarity: enemyProfile?.tier || null,
+      sector: this.level,
+      waveIndex: this.currentWaveIndex || 0
     });
     threatPlan.assignedIds.forEach((actionId) => {
       const action = getEnemyThreatAction(actionId);
@@ -1860,9 +1866,10 @@ export class EnemyManager {
     let bulletsCleared = false;
     const playScene = this.game.scenes && this.game.scenes.play ? this.game.scenes.play : null;
     if (!marketingDebug) {
-      playScene?.recordThreatDiscovery?.(boss.bossType || `boss_${level}`, 'bosses', {
-        name: boss.name || boss.bossType || `Boss ${level}`,
-        role: 'boss',
+      const bossId = boss.profile?.id || boss.bossType || `boss_${level}`;
+      playScene?.recordThreatDiscovery?.(bossId, 'bosses', {
+        name: boss.profile?.name || boss.name || boss.bossType || `Boss ${level}`,
+        role: boss.profile?.title || 'boss',
         sector: level
       });
     }

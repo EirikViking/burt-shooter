@@ -99,7 +99,7 @@ export function writeThreatDiscoveryState(state) {
   return normalized;
 }
 
-function record(category, id, metadata = {}, mutate = null) {
+function record(category, id, metadata = {}, mutate = null, options = {}) {
   if (!DISCOVERY_CATEGORIES.includes(category) || !id) {
     return { state: readThreatDiscoveryState(), item: null, isNew: false };
   }
@@ -116,7 +116,9 @@ function record(category, id, metadata = {}, mutate = null) {
   }, { id: key, category });
   item.name = String(metadata.name || metadata.label || item.name || key);
   item.lastSeenAt = nowIso();
-  item.timesSeen += 1;
+  if (options.countSeen !== false || isNew) {
+    item.timesSeen += 1;
+  }
   item.metadata = {
     ...item.metadata,
     ...metadata
@@ -153,9 +155,15 @@ export function recordThreatSeen(threatId, category, metadata = {}) {
 }
 
 export function recordThreatDefeated(threatId, category = 'enemies', metadata = {}) {
-  return record(category, threatId, metadata, (item) => {
+  const previous = readThreatDiscoveryState().items?.[category]?.[String(threatId)] || null;
+  const previousDefeats = Math.max(0, Math.floor(Number(previous?.timesDefeated) || 0));
+  const result = record(category, threatId, metadata, (item) => {
     item.timesDefeated += 1;
-  });
+  }, { countSeen: false });
+  return {
+    ...result,
+    isFirstDefeat: previousDefeats === 0
+  };
 }
 
 export function recordThreatSurvived(threatId, category = 'enemies', metadata = {}) {
