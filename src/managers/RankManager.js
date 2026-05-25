@@ -3,10 +3,15 @@ import {
     MAX_RANK_INDEX,
     getRankFromLevel,
     getRankFromScore,
+    getRankFromPilotXp,
     getRankTitle,
     getThresholds,
+    getPilotXpThresholds,
     getRankThreshold,
-    getNextRankThreshold
+    getNextRankThreshold,
+    getPilotXpThreshold,
+    getNextPilotXpThreshold,
+    getPilotRankProgress
 } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
 
@@ -23,12 +28,24 @@ export class RankManager {
         return getRankFromLevel(level);
     }
 
+    getRankFromPilotXp(pilotXp) {
+        return getRankFromPilotXp(pilotXp);
+    }
+
     getRankThreshold(rankIndex) {
         return getRankThreshold(rankIndex);
     }
 
+    getPilotXpThreshold(rankIndex) {
+        return getPilotXpThreshold(rankIndex);
+    }
+
     getNextRankThreshold(rankIndex) {
         return getNextRankThreshold(rankIndex);
+    }
+
+    getNextPilotXpThreshold(rankIndex) {
+        return getNextPilotXpThreshold(rankIndex);
     }
 
     getRankString(rankIndex) {
@@ -45,6 +62,14 @@ export class RankManager {
         const currentInRank = level - currentThresh;
 
         return Math.max(0, Math.min(1, currentInRank / spread));
+    }
+
+    getPilotXpThresholds() {
+        return getPilotXpThresholds();
+    }
+
+    getPilotRankProgress(pilotXp) {
+        return getPilotRankProgress(pilotXp);
     }
 
     // TASK 2: Get rank title

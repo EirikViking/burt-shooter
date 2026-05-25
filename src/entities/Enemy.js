@@ -1562,7 +1562,10 @@ export class Enemy {
     const weaponSpeedMult = weaponProfile?.speedMult || 1;
     const diff = BalanceConfig.difficulty;
     const levelScale = Math.max(0, this.level - 1);
-    const projectileSpeed = Math.min(
+    const projectileSpeed = this.game?.runPressureDirector?.scaleProjectileSpeed?.(Math.min(
+      diff.enemyProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
+      (diff.enemyProjectileSpeed ?? 1.55) + levelScale * (diff.enemyProjectileSpeedPerLevel ?? 0)
+    )) ?? Math.min(
       diff.enemyProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
       (diff.enemyProjectileSpeed ?? 1.55) + levelScale * (diff.enemyProjectileSpeedPerLevel ?? 0)
     );

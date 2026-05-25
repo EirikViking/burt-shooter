@@ -3,6 +3,8 @@ export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
 export const CLOUD_ACHIEVEMENT_KEY = 'nova_swarm_achievements_v1';
 export const CLOUD_SELECTED_SHIP_KEY = 'burt.selectedShip.v1';
 export const CLOUD_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
+export const CLOUD_HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
+export const CLOUD_THREAT_DISCOVERY_KEY = 'nova.threatDiscovery.v1';
 
 const SCREEN_SHAKE_KEY = 'burt_accessibility_screen_shake';
 const PLAYER_FOCUS_KEY = 'burt_accessibility_player_focus';
@@ -155,6 +157,83 @@ function mergeProgression(localProgress, cloudProgress) {
   };
 }
 
+function mergeNumberMax(local, cloud, key, fallback = 0) {
+  return Math.max(
+    fallback,
+    Math.floor(Number(local?.[key]) || fallback),
+    Math.floor(Number(cloud?.[key]) || fallback)
+  );
+}
+
+function mergeArrayUnique(local, cloud, key) {
+  return [...new Set([
+    ...(Array.isArray(local?.[key]) ? local[key] : []),
+    ...(Array.isArray(cloud?.[key]) ? cloud[key] : [])
+  ].map(String).filter(Boolean))];
+}
+
+function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
+  const local = localProgress && typeof localProgress === 'object' ? localProgress : {};
+  const cloud = cloudProgress && typeof cloudProgress === 'object' ? cloudProgress : {};
+  return {
+    ...local,
+    ...cloud,
+    pilotXp: mergeNumberMax(local, cloud, 'pilotXp'),
+    pilotRank: mergeNumberMax(local, cloud, 'pilotRank'),
+    highestPilotRank: mergeNumberMax(local, cloud, 'highestPilotRank'),
+    totalRuns: mergeNumberMax(local, cloud, 'totalRuns'),
+    bestScore: mergeNumberMax(local, cloud, 'bestScore'),
+    bestSector: mergeNumberMax(local, cloud, 'bestSector', 1),
+    bestLevel: mergeNumberMax(local, cloud, 'bestLevel', 1),
+    bestRank: mergeNumberMax(local, cloud, 'bestRank'),
+    bestRunTimeSeconds: mergeNumberMax(local, cloud, 'bestRunTimeSeconds'),
+    survivedSeconds: mergeNumberMax(local, cloud, 'survivedSeconds'),
+    totalBossesDefeated: mergeNumberMax(local, cloud, 'totalBossesDefeated'),
+    totalWavesCleared: mergeNumberMax(local, cloud, 'totalWavesCleared'),
+    totalCodexDiscoveries: mergeNumberMax(local, cloud, 'totalCodexDiscoveries'),
+    runClears: mergeNumberMax(local, cloud, 'runClears'),
+    noHitWaves: mergeNumberMax(local, cloud, 'noHitWaves'),
+    noHitSectors: mergeNumberMax(local, cloud, 'noHitSectors'),
+    clearWithLivesRemaining: mergeNumberMax(local, cloud, 'clearWithLivesRemaining'),
+    highestScoreMultiplier: Math.max(Number(local.highestScoreMultiplier) || 1, Number(cloud.highestScoreMultiplier) || 1),
+    discoveredThreatIds: mergeArrayUnique(local, cloud, 'discoveredThreatIds'),
+    defeatedBossIds: mergeArrayUnique(local, cloud, 'defeatedBossIds'),
+    runThemesSurvived: mergeArrayUnique(local, cloud, 'runThemesSurvived'),
+    unlockedShipIds: mergeArrayUnique(local, cloud, 'unlockedShipIds'),
+    lastNewlyUnlockedShipIds: Array.isArray(local.lastNewlyUnlockedShipIds) ? local.lastNewlyUnlockedShipIds : []
+  };
+}
+
+function mergeThreatDiscovery(localState = {}, cloudState = {}) {
+  const local = localState && typeof localState === 'object' ? localState : {};
+  const cloud = cloudState && typeof cloudState === 'object' ? cloudState : {};
+  const categories = [...new Set([
+    ...Object.keys(local.items || {}),
+    ...Object.keys(cloud.items || {})
+  ])];
+  const items = {};
+  for (const category of categories) {
+    items[category] = {
+      ...(local.items?.[category] || {}),
+      ...(cloud.items?.[category] || {})
+    };
+  }
+  return {
+    ...local,
+    ...cloud,
+    items,
+    discoveriesThisRun: Array.isArray(local.discoveriesThisRun) ? local.discoveriesThisRun : [],
+    recentRunThemes: [...new Set([
+      ...(Array.isArray(local.recentRunThemes) ? local.recentRunThemes : []),
+      ...(Array.isArray(cloud.recentRunThemes) ? cloud.recentRunThemes : [])
+    ])].slice(-8),
+    unreadIds: [...new Set([
+      ...(Array.isArray(local.unreadIds) ? local.unreadIds : []),
+      ...(Array.isArray(cloud.unreadIds) ? cloud.unreadIds : [])
+    ])]
+  };
+}
+
 function normalizeAchievementPayload(raw = {}) {
   const ids = Array.isArray(raw) ? raw : raw?.unlocked;
   const unlocked = Array.isArray(ids)
@@ -229,6 +308,10 @@ export function collectSteamCloudPersistenceState({
     progression: typeof getShipUnlockProgress === 'function'
       ? normalizeProgression(getShipUnlockProgress())
       : normalizeProgression(readJsonStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, {})),
+    hangarProgress: typeof getShipUnlockProgress === 'function'
+      ? getShipUnlockProgress()
+      : readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {}),
+    threatDiscovery: readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {}),
     settings: {
       screenShake: clampUnit(settings.screenShake, 1),
       playerFocus: clampUnit(settings.playerFocus, 0.72),
@@ -294,6 +377,29 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     summary.restored = writeStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, JSON.stringify(mergedProgression)) || summary.restored;
   }
 
+  if (save.hangarProgress) {
+    const mergedHangar = mergeHangarProgress(
+      readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {}),
+      save.hangarProgress
+    );
+    summary.hangarProgress = mergedHangar;
+    summary.restored = writeStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, JSON.stringify(mergedHangar)) || summary.restored;
+    summary.restored = writeStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, JSON.stringify({
+      bestScore: mergedHangar.bestScore,
+      bestRank: mergedHangar.bestRank,
+      bestLevel: mergedHangar.bestLevel
+    })) || summary.restored;
+  }
+
+  if (save.threatDiscovery) {
+    const mergedDiscovery = mergeThreatDiscovery(
+      readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {}),
+      save.threatDiscovery
+    );
+    summary.threatDiscovery = true;
+    summary.restored = writeStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify(mergedDiscovery)) || summary.restored;
+  }
+
   const settings = save.settings || {};
   if (settings.screenShake !== undefined && writeStorage(storage, SCREEN_SHAKE_KEY, clampUnit(settings.screenShake, 1))) {
     summary.settings += 1;
@@ -322,6 +428,8 @@ export function summarizeSteamCloudPersistence(save = {}) {
     localHighscoresCount: normalizeScores(save?.localHighscores).length,
     achievementMirrorCount: achievements.unlocked.length,
     selectedShipKey: save?.selectedShipKey || null,
-    progression: normalizeProgression(save?.progression || save?.unlockProgress || {})
+    progression: normalizeProgression(save?.progression || save?.unlockProgress || {}),
+    hangarPilotXp: Math.max(0, Math.floor(Number(save?.hangarProgress?.pilotXp) || 0)),
+    threatDiscoveryCategories: Object.keys(save?.threatDiscovery?.items || {}).length
   };
 }

@@ -183,6 +183,34 @@ export const ENEMY_THREAT_ACTIONS = [
   }
 ];
 
+const ACTION_CODEX_TIPS = {
+  telegraph_rail_lance: 'The warning line locks before the shot. Dodge after lock, not before.',
+  lane_cutter: 'Treat the lane marker as a closing door. Step across early or wait.',
+  splitter_seed: 'Do not chase the seed. Read the split ring and pass through a gap.',
+  mine_drop: 'Clear small enemies before mines shrink your escape lanes.',
+  pulse_ring_bloom: 'The ring has intentional gaps. Move once, then hold the lane.',
+  crossfire_pair: 'Watch the side ships first. The center lane is often bait.',
+  boomerang_crescent: 'Let the curve pass instead of trying to outrun the arc.',
+  brake_dash_bolt: 'The hover is the tell. Dodge on the pulse, not on launch.',
+  shotgun_fan_feint: 'Find the safe wedge before the fan appears.',
+  orbiting_satellites: 'Wait for satellites to release before crossing the enemy lane.'
+};
+
+ENEMY_THREAT_ACTIONS.forEach((action) => {
+  if (!action.scaledPreviewConfig) {
+    action.scaledPreviewConfig = {
+      minSeconds: 0,
+      telegraphMs: Math.round((action.telegraphMs || 600) * 1.35),
+      projectileSpeedMult: 0.78,
+      bulletCountMult: 0.65,
+      activeCap: Math.max(1, Math.min(action.maxActivePerWave || 1, 1))
+    };
+  }
+  if (!action.codexTip) {
+    action.codexTip = ACTION_CODEX_TIPS[action.id] || 'Read the tell first, then move once with purpose.';
+  }
+});
+
 const ACTION_BY_ID = new Map(ENEMY_THREAT_ACTIONS.map((action) => [action.id, action]));
 
 export function getEnemyThreatAction(id) {

@@ -85,6 +85,8 @@ async function preparePage(browser, bestLevel) {
     await route.fulfill({ status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([]) });
   });
   await page.addInitScript((level) => {
+    localStorage.removeItem('nova.hangarProgress.v1');
+    localStorage.removeItem('nova.threatDiscovery.v1');
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 0, bestRank: 0, bestLevel: level }));
   }, bestLevel);
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -92,14 +94,14 @@ async function preparePage(browser, bestLevel) {
   return { page, pageErrors };
 }
 
-async function forceGameOver(page, finalLevel) {
-  await page.evaluate((level) => {
+async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000) {
+  await page.evaluate(({ level, score }) => {
     const game = window.__game;
-    game.score = level * 5000;
+    game.score = score;
     game.level = level;
     game.rankIndex = Math.max(0, level - 1);
     game.gameOver();
-  }, finalLevel);
+  }, { level: finalLevel, score: finalScore });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'gameOver' && state.gameOver?.shipUnlocks?.visible === true;
@@ -110,7 +112,7 @@ async function forceGameOver(page, finalLevel) {
 
 async function runScenario(browser, scenario) {
   const { page, pageErrors } = await preparePage(browser, scenario.bestLevel);
-  const state = await forceGameOver(page, scenario.finalLevel);
+  const state = await forceGameOver(page, scenario.finalLevel, scenario.finalScore);
   const unlocks = state.gameOver?.shipUnlocks || {};
   assert(unlocks.count === scenario.expectedCount, `${scenario.name}: expected ${scenario.expectedCount} unlock(s), got ${unlocks.count}`);
   assert(unlocks.visible === true, `${scenario.name}: unlock reveal was not visible`);
@@ -142,7 +144,8 @@ try {
   results.push(await runScenario(browser, {
     name: 'single',
     bestLevel: 4,
-    finalLevel: 5,
+    finalLevel: 4,
+    finalScore: 25000,
     expectedCount: 1,
     expectedVoiceKey: 'mission_control_ship_unlocked',
     expectedSummary: 'NEW SHIP UNLOCKED'

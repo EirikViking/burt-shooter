@@ -22,6 +22,20 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Added `npm run check:normal-enemy-attack-variety` and wired it into `npm run qa:enemy-variety`.
 - Verification passed: syntax checks, `npm run build`, `npm run qa:enemy-variety`, `npm run smoke`, and `git diff --check`. Evidence lives under `test-results/normal-enemy-attack-variety-*` and `test-results/smoke-2026-05-25T15-30-16-770Z/`.
 
+## 2026-05-25 Arcade Score Attack Progression Pass
+
+- Baseline audit before coding: fetched/pruned origin, confirmed a clean worktree, created backup branch `backup/pre-arcade-score-attack-*`, and switched to `codex/arcade-score-attack-20260525` from `a209039dc9e54b1f8f039f3364a6c789dc023a1f`.
+- Authoritative baseline includes `origin/main` at `9c2410f`, Steam Cloud/leaderboard/achievement recovery commits above main, German/top3/next3 localization ancestry, the i18n UI reliability fix, and the prior normal enemy threat-action layer.
+- Current pacing structure: default play is level/sector based, each level generates six to eight normal waves and then one boss, with no finite run clear. Earlier guards protect against a one-wave boss gate and keep the historical six-wave minimum.
+- Current sustain sources: sparse random powerups, rare/guaranteed extra-life drops, boss-clear repair, boss mercy, clutch shields, and powerup/boss checks. Sustain is level based rather than run-time pressure based.
+- Current ship unlock logic: 25 generated ships exist, but unlocks are level-threshold based through `ShipData`/`ShipMetadata` and persisted under `burt.shipUnlockProgress.v1`.
+- Current rank progression: `RankPolicy` maps level thresholds 1-60 to 20 ranks; rank achievements are generated from stable `ACH_RANK_XX` IDs and unlocked on level-based rank-up.
+- Current enemy attack variety: the existing branch already has 10 normal enemy threat actions with telegraphs, danger budgets, bullet tags, and `check:normal-enemy-attack-variety`.
+- Current post-run flow: `GameOverScene` is leaderboard-first, shows score, level/career best, next goal, ship unlock reveal, CTA/restart, and achievement toasts. It does not yet show run clear, codex discoveries, pilot XP, or score breakdown.
+- Current menu structure: main menu has Launch Run, Ship Hangar, Story Intro, Highscores, Achievements, Settings, Exit, and a music toggle. Threat Codex is not present.
+- Current save keys relevant to this pass: `burt.shipUnlockProgress.v1`, `burt.selectedShip.v1`, `nova_swarm_achievements_v1`, `novaSwarm.localLeaderboard.v2`, accessibility/audio/language keys, and Steam Cloud persistence in `src/steamCloudPersistence.js`.
+- Relevant tests/scripts: build/current build, i18n/i18n-ui, wave pacing, progression tempo, enemy wave/pattern/weapon/variety checks, normal enemy attack variety, ship selector start, ship traits, achievements catalog, Steam achievement mock, leaderboard checks, smoke, controller flow, release line, live deployment.
+
 ## 2026-05-24 Engagement-Band Wave Spacing Follow-Up
 
 - Current user feedback: production desktop spacing went too wide and made wave threats feel scattered. Research direction: use desktop width through readable shmup lanes, keep edges from becoming awkward traps, and adapt pressure when enemies occupy wider lanes.

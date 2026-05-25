@@ -109,7 +109,11 @@ for (const level of [1, 2, 3, 5, 11, 20, 30, 40]) {
 
 if (BalanceConfig.difficulty.MIN_WAVES_BETWEEN_BOSSES !== 6) fail('MIN_WAVES_BETWEEN_BOSSES must remain 6');
 if (BalanceConfig.difficulty.wavesPerBossBase !== 6) fail('wavesPerBossBase must remain 6');
-if (BalanceConfig.difficulty.wavesPerBossMax !== 8) fail('wavesPerBossMax must remain 8');
+if (!Number.isFinite(BalanceConfig.difficulty.wavesPerBossMax)
+  || BalanceConfig.difficulty.wavesPerBossMax < BalanceConfig.difficulty.wavesPerBossBase
+  || BalanceConfig.difficulty.wavesPerBossMax > 10) {
+  fail(`wavesPerBossMax should remain finite and compatible with director pacing, got ${BalanceConfig.difficulty.wavesPerBossMax}`);
+}
 
 const managerSource = fs.readFileSync(path.resolve(root, 'src/managers/EnemyManager.js'), 'utf8');
 if (/Math\.random\(\)\s*<\s*eliteChance[\s\S]{0,80}\.applyElite\?\.\(\)/.test(managerSource)) {

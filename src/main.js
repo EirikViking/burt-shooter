@@ -9,6 +9,10 @@ import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from '
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
 import { getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
 import { getSectorInfo } from './config/SectorCatalog.js';
+import { getRunPacingDebugState } from './config/RunPacingConfig.js';
+import { getThreatCodexCatalog } from './config/ThreatCodexCatalog.js';
+import { getCodexCompletionCounts, getDiscoveriesThisRun, getDiscoveryStats } from './progression/ThreatDiscoveryState.js';
+import { getHangarProgressSummary } from './progression/HangarProgressState.js';
 import {
   LANGUAGE_CHANGE_EVENT,
   getCurrentLanguage,
@@ -396,7 +400,11 @@ function buildGameTextState(game) {
   const gameOverScene = getStableSceneName(game) === 'gameOver' ? game?.currentScene : null;
   const highscoreScene = getStableSceneName(game) === 'highscore' ? game?.currentScene : null;
   const achievementsScene = getStableSceneName(game) === 'achievements' ? game?.currentScene : null;
+  const threatCodexScene = getStableSceneName(game) === 'threatCodex' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
+  const pacingDebug = getRunPacingDebugState(game);
+  const hangarProgressSummary = getHangarProgressSummary();
+  const threatCodexCatalog = getThreatCodexCatalog();
   const sector = getSectorInfo(game?.level || 1);
   const getBoundsDebug = (displayObject) => {
     try {
@@ -491,6 +499,39 @@ function buildGameTextState(game) {
         ))
       } : null
     } : null,
+    arcadeRun: {
+      runElapsedSeconds: pacingDebug.runElapsedSeconds,
+      targetRunSeconds: pacingDebug.targetRunSeconds,
+      currentSector: pacingDebug.currentSector,
+      targetSectors: pacingDebug.targetSectors,
+      sectorElapsedSeconds: pacingDebug.sectorElapsedSeconds,
+      averageSectorSeconds: pacingDebug.averageSectorSeconds,
+      estimatedRunCompletionSeconds: pacingDebug.estimatedRunCompletionSeconds,
+      pressurePhase: pacingDebug.pressurePhase,
+      pressureMultipliers: pacingDebug.pressureMultipliers,
+      runTheme: game?.contentDirector?.runTheme?.id || null,
+      contentDirectorState: game?.contentDirector?.getDebugState?.() || null,
+      discoveriesThisRun: getDiscoveriesThisRun(),
+      codexCompletionCounts: getCodexCompletionCounts(threatCodexCatalog),
+      discoveryStats: getDiscoveryStats(),
+      livesGainedThisRun: playScene?.repairsGrantedThisRun || 0,
+      repairsGrantedThisRun: playScene?.repairsGrantedThisRun || 0,
+      extraLifeDropsThisRun: playScene?.powerupManager?.powerups?.filter?.(powerup => powerup?.type === 'life')?.length || 0,
+      bossesKilled: playScene?.bossKills || 0,
+      wavesCleared: playScene?.wavesCleared || 0,
+      runCleared: Boolean(game?.runCleared || game?.runSummary?.runCleared),
+      score: game?.score || 0,
+      scoreBreakdown: game?.scoreBreakdown || null,
+      currentEnemyBulletCount: enemyBullets.filter(bullet => bullet?.active !== false).length,
+      peakEnemyBulletCount: playScene?.peakEnemyBulletCount || null,
+      pilotXp: hangarProgressSummary.pilotXp,
+      pilotRank: hangarProgressSummary.pilotRank,
+      highestPilotRank: hangarProgressSummary.highestPilotRank,
+      newRanksThisRun: game?.runSummary?.newRanksThisRun || [],
+      rankAchievementsUnlocked: game?.runSummary?.rankAchievementsUnlocked || [],
+      newlyUnlockedShips: game?.runSummary?.newlyUnlockedShips || [],
+      shipUnlockProgressSummary: hangarProgressSummary
+    },
     wave: enemyManager ? {
       phase: enemyManager.phase || null,
       state: enemyManager.state || null,
@@ -603,6 +644,7 @@ function buildGameTextState(game) {
       runtime: game?.leaderboardAdapter?.getRuntimeSummary ? game.leaderboardAdapter.getRuntimeSummary() : null
     } : null,
     achievementsScreen: achievementsScene?.getDebugState ? achievementsScene.getDebugState() : null,
+    threatCodexScreen: threatCodexScene?.getDebugState ? threatCodexScene.getDebugState() : null,
     player: player ? {
       x: Math.round(player.x),
       y: Math.round(player.y),

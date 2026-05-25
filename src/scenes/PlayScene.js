@@ -33,6 +33,11 @@ import {
 import { getShipMetadata } from '../config/ShipMetadata.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { translateText } from '../i18n/index.js';
+import { RunPacingConfig } from '../config/RunPacingConfig.js';
+import {
+  recordThreatDefeated,
+  recordThreatSeen
+} from '../progression/ThreatDiscoveryState.js';
 
 export class PlayScene {
   constructor(game) {
@@ -166,6 +171,13 @@ export class PlayScene {
     this.totalKills = 0;
     this.bossKills = 0;
     this.wavesCleared = 0;
+    this.noHitWavesThisRun = 0;
+    this.noHitSectorsThisRun = 0;
+    this.damageTakenThisWave = 0;
+    this.damageTakenThisSector = 0;
+    this.discoveryBonus = 0;
+    this.defeatedBossIds = [];
+    this.repairsGrantedThisRun = 0;
     this.lastKillAt = 0;
     this.lastHitAt = 0;
     this.lastStandReadyAt = 0;
@@ -275,6 +287,13 @@ export class PlayScene {
     this.totalKills = 0;
     this.bossKills = 0;
     this.wavesCleared = 0;
+    this.noHitWavesThisRun = 0;
+    this.noHitSectorsThisRun = 0;
+    this.damageTakenThisWave = 0;
+    this.damageTakenThisSector = 0;
+    this.discoveryBonus = 0;
+    this.defeatedBossIds = [];
+    this.repairsGrantedThisRun = 0;
     this.levelAdvancePending = false;
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
@@ -933,6 +952,10 @@ export class PlayScene {
     });
     const compactHud = this.game.getWidth() < 620;
     const fontSize = compactHud ? (postBoss ? 21 : 25) : (postBoss ? 34 : 42);
+    this.reserveMessageFocus(postBoss ? 1550 : 800, {
+      priority: 2,
+      slots: ['center', 'top', 'corner']
+    });
     this.showToast(localizedMessage, {
       fontSize,
       fill: '#ffff00',
@@ -940,6 +963,9 @@ export class PlayScene {
       strokeThickness: compactHud ? 2 : 3,
       duration: postBoss ? 1450 : 2000,
       type: 'level_up',
+      priority: 2,
+      bypassFocusLock: true,
+      transition: true,
       slot: 'center',
       y: compactHud ? this.game.getHeight() * 0.25 : this.game.getHeight() * (postBoss ? 0.18 : 0.2),
       maxWidth: compactHud ? this.game.getWidth() * 0.82 : this.game.getWidth() * (postBoss ? 0.78 : 0.9)
@@ -1112,8 +1138,19 @@ export class PlayScene {
         AudioManager.playSfx('levelComplete');
         const rewardConfig = BalanceConfig.rewards || {};
         const levelClearScore = rewardConfig.levelClearScore || BalanceConfig.level.completionBonus || 1000;
-        const appliedLevelClearScore = this.game.addScore(levelClearScore);
+        const appliedLevelClearScore = this.game.addScore(levelClearScore, 'sectorClearBonus');
         const bossCompletion = Boolean(this.enemyManager?.bossDefeatedThisLevel);
+        if (bossCompletion && this.damageTakenThisSector === 0) {
+          this.noHitSectorsThisRun += 1;
+          const appliedNoHitSector = this.game.addScore(1500, 'noHitBonus');
+          this.enqueueToast(`${translateText('NO-HIT SECTOR')} +${appliedNoHitSector}`, {
+            fontSize: 18,
+            fill: '#7dffcc',
+            slot: 'top',
+            type: 'bonus',
+            duration: 1400
+          });
+        }
         const compactHud = this.game.getWidth() < 620;
         const repairTarget = rewardConfig.levelClearRepairTargetLives || 0;
         const repairDelta = repairTarget > 0
@@ -1152,6 +1189,17 @@ export class PlayScene {
           this.levelAdvancePending = false;
           this.levelAdvanceTimeout = null;
           this.postBossLevelIntroPending = bossCompletion;
+          if (bossCompletion && this.game.level >= RunPacingConfig.targetSectors) {
+            const clearBonus = 10000;
+            const livesBonus = Math.max(0, Number(this.game.lives) || 0) * 2500;
+            if (clearBonus > 0) this.game.addScore(clearBonus, 'runClearBonus');
+            if (livesBonus > 0) this.game.addScore(livesBonus, 'remainingLivesBonus');
+            this.game.completeRun?.('target_sector_clear');
+            return;
+          }
+          if (bossCompletion) {
+            this.damageTakenThisSector = 0;
+          }
           this.game.nextLevel();
           if (this.player) {
             const sprite = this.player.sprite;
@@ -2657,6 +2705,8 @@ export class PlayScene {
   }
 
   onLifeLost() {
+    this.damageTakenThisWave = (Number(this.damageTakenThisWave) || 0) + 1;
+    this.damageTakenThisSector = (Number(this.damageTakenThisSector) || 0) + 1;
     this.recordBalanceLifeLost();
     this.player?.clearStatusEffects?.('life_lost');
     if (this.tryLastStandRepair()) return;
@@ -3138,20 +3188,28 @@ export class PlayScene {
 
   applyBossClearRecovery(level = this.game?.level || 1) {
     const rewardConfig = BalanceConfig.rewards || {};
+    const sustainConfig = RunPacingConfig.sustain || {};
     const repairLives = Math.max(0, Number(rewardConfig.bossClearRepairLives) || 0);
-    const maxLives = Math.max(1, Number(rewardConfig.bossClearRepairMaxLives) || this.getMaxLives());
+    const maxLives = Math.min(
+      Math.max(1, Number(rewardConfig.bossClearRepairMaxLives) || this.getMaxLives()),
+      Math.max(1, Number(sustainConfig.bossRepairMaxLives) || 3)
+    );
     const levelKey = Number(level) || Number(this.game?.level) || 1;
     if (repairLives <= 0 || this.bossClearRecoveryLevels.has(levelKey)) return 0;
 
     this.bossClearRecoveryLevels.add(levelKey);
     const before = Number.isFinite(this.game?.lives) ? this.game.lives : 0;
+    if (before > (Number(sustainConfig.bossRepairOnlyAtOrBelowLives) || 1)) return 0;
+    if ((Number(this.repairsGrantedThisRun) || 0) >= (Number(sustainConfig.controlledRecoveryMaxPerRun) || 1)) return 0;
     if (before <= 0 || before >= maxLives) return 0;
 
     const targetLives = Math.min(maxLives, before + repairLives);
-    return this.applyLifeRepair(
+    const applied = this.applyLifeRepair(
       targetLives,
       rewardConfig.bossClearRepairInvulnerabilityMs || RESPAWN_INVULNERABILITY_MS
     );
+    if (applied > 0) this.repairsGrantedThisRun = (Number(this.repairsGrantedThisRun) || 0) + applied;
+    return applied;
   }
 
   triggerTractorHijack({ x, y } = {}) {
@@ -3995,9 +4053,43 @@ export class PlayScene {
         this.delayReadyToast(this.toastQueue, centerReady, 600, now);
       }
     }
+    const activeCenterMeta = this.activeCenterToast?.__toastMeta || null;
+    if (activeCenterMeta && this.isTransitionToastType(activeCenterMeta.type)) {
+      const centerPriority = activeCenterMeta.priority || 0;
+      if (topReady && (topReady.priority || 0) < centerPriority) {
+        this.delayReadyToast(this.toastTopQueue, topReady, 500, now);
+      }
+      const cornerReady = !this.activeCornerToast && now >= this.getToastSlotLockUntil('corner')
+        ? this.peekReadyToast(this.toastCornerQueue, now)
+        : null;
+      if (cornerReady && (cornerReady.priority || 0) < centerPriority) {
+        this.delayReadyToast(this.toastCornerQueue, cornerReady, 500, now);
+      }
+    }
     if (!this.activeCenterToast && now >= this.getToastSlotLockUntil('center') && this.toastQueue.length > 0) {
       const entry = this.dequeueReadyToast(this.toastQueue, now);
       if (entry) this.activeCenterToast = this.showToastNow(entry.message, entry.options, 'center');
+    }
+    const blockingCenterMeta = this.activeCenterToast?.__toastMeta || null;
+    if (blockingCenterMeta && this.isTransitionToastType(blockingCenterMeta.type)) {
+      const centerPriority = blockingCenterMeta.priority || 0;
+      this.dismissActiveToastSlotsBelowPriority(['top', 'corner'], centerPriority);
+      const delayedTop = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
+        ? this.peekReadyToast(this.toastTopQueue, now)
+        : null;
+      const delayedCorner = !this.activeCornerToast && now >= this.getToastSlotLockUntil('corner')
+        ? this.peekReadyToast(this.toastCornerQueue, now)
+        : null;
+      if (delayedTop && (delayedTop.priority || 0) < centerPriority) {
+        this.delayReadyToast(this.toastTopQueue, delayedTop, 500, now);
+      }
+      if (delayedCorner && (delayedCorner.priority || 0) < centerPriority) {
+        this.delayReadyToast(this.toastCornerQueue, delayedCorner, 500, now);
+      }
+      if ((delayedTop && (delayedTop.priority || 0) < centerPriority) ||
+        (delayedCorner && (delayedCorner.priority || 0) < centerPriority)) {
+        return;
+      }
     }
     if (!this.activeTopToast && now >= this.getToastSlotLockUntil('top') && this.toastTopQueue.length > 0) {
       const entry = this.dequeueReadyToast(this.toastTopQueue, now);
@@ -4021,7 +4113,11 @@ export class PlayScene {
 
   isTransitionToastEntry(entry) {
     const type = entry?.options?.type;
-    return type === 'level_clear' || type === 'level_up' || type === 'boss' || entry?.options?.transition === true;
+    return this.isTransitionToastType(type) || entry?.options?.transition === true;
+  }
+
+  isTransitionToastType(type) {
+    return type === 'level_clear' || type === 'level_up' || type === 'boss';
   }
 
   delayReadyToast(queue, entry, delayMs, now = Date.now()) {
@@ -4434,8 +4530,62 @@ export class PlayScene {
     this.synergyBadge.visible = true;
   }
 
+  recordThreatDiscovery(id, category, metadata = {}) {
+    if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
+    const result = recordThreatSeen(id, category, metadata);
+    if (!result?.isNew) return result;
+
+    const bonus = category === 'runThemes'
+      ? RunPacingConfig.discovery.firstRunThemeBonus
+      : RunPacingConfig.discovery.firstSeenBonus;
+    const appliedBonus = this.game.addScore(bonus, 'discoveryBonus');
+    this.discoveryBonus = (Number(this.discoveryBonus) || 0) + appliedBonus;
+    const label = String(metadata.name || metadata.label || id).replace(/_/g, ' ').toUpperCase();
+    this.enqueueToast(`${translateText('NEW THREAT SCANNED')}: ${label}\n${translateText('THREAT CODEX UPDATED')} +${appliedBonus}`, {
+      fontSize: this.game.getWidth() < 620 ? 14 : 17,
+      fill: '#7dffcc',
+      stroke: '#001616',
+      strokeThickness: 2,
+      slot: 'corner',
+      type: 'discovery',
+      duration: RunPacingConfig.discovery.toastDurationMs,
+      priority: 1,
+      maxWidth: this.game.getWidth() * (this.game.getWidth() < 620 ? 0.72 : 0.38)
+    });
+    return result;
+  }
+
+  recordThreatDefeat(id, category, metadata = {}) {
+    if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
+    const result = recordThreatDefeated(id, category, metadata);
+    if (result?.isFirstDefeat) {
+      const bonus = category === 'bosses'
+        ? RunPacingConfig.discovery.firstBossDefeatBonus
+        : RunPacingConfig.discovery.firstDefeatBonus;
+      const appliedBonus = this.game.addScore(bonus, category === 'bosses' ? 'bossBonus' : 'discoveryBonus');
+      if (category !== 'bosses') this.discoveryBonus = (Number(this.discoveryBonus) || 0) + appliedBonus;
+    }
+    return result;
+  }
+
   onEnemyKilled(enemy) {
     const now = Date.now();
+    this.recordThreatDiscovery(enemy?.type, 'enemies', {
+      name: enemy?.generatedProfile?.name || enemy?.middleShipProfile?.label || enemy?.type,
+      role: enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy'
+    });
+    if (enemy?.kind === 'boss') {
+      const bossId = enemy?.bossType || enemy?.profile?.id || `boss_${this.game.level}`;
+      this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
+      this.recordThreatDefeat(bossId, 'bosses', {
+        name: enemy?.profile?.name || bossId,
+        sector: this.game.level
+      });
+    } else {
+      this.recordThreatDefeat(enemy?.type, 'enemies', {
+        sector: this.game.level
+      });
+    }
     this.recordBalanceKill(enemy);
     if (now - this.lastKillAt > this.comboWindowMs) {
       this.comboCount = 0;
@@ -5570,6 +5720,16 @@ export class PlayScene {
   showBossCelebration({ level = this.game.level, type = 'UNKNOWN' } = {}) {
     if (!this.uiOverlay) return;
     this.recordBalanceBossEnd();
+    const bossId = String(type || `boss_${level}`).toLowerCase();
+    this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
+    this.recordThreatDiscovery(bossId, 'bosses', {
+      name: String(type || 'Boss').replace(/_/g, ' '),
+      sector: level
+    });
+    this.recordThreatDefeat(bossId, 'bosses', {
+      name: String(type || 'Boss').replace(/_/g, ' '),
+      sector: level
+    });
     const repairDelta = this.applyBossClearRecovery(level);
 
     const compactHud = this.game.getWidth() < 620;

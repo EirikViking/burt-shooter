@@ -5,6 +5,7 @@ import {
   getSelectableShips,
   getDefaultShipKey,
   getShipUnlockLabel,
+  getShipUnlockProgressDetails,
   getShipUnlockProgress,
   isShipUnlocked,
   isValidShipKey,
@@ -1285,12 +1286,21 @@ export class ShipSelectScene {
     const unlocked = isShipUnlocked(ship.spriteKey, this.unlockProgress);
     const role = getShipCombatRole(ship, this.statRanges);
     const weapon = this.getWeaponSummary(ship);
-    const unlock = unlocked ? 'STATUS: READY FOR LAUNCH' : getShipUnlockLabel(ship.spriteKey);
+    const unlockDetails = getShipUnlockProgressDetails(ship.spriteKey, this.unlockProgress);
+    const progressLine = !unlocked && Array.isArray(unlockDetails.requirements) && unlockDetails.requirements.length
+      ? unlockDetails.requirements
+        .slice(0, 2)
+        .map(item => `${Math.min(Number(item.current) || 0, Number(item.target) || 0)}/${item.target}`)
+        .join('  ')
+      : '';
+    const unlock = unlocked
+      ? 'STATUS: READY FOR LAUNCH'
+      : `${getShipUnlockLabel(ship.spriteKey)}${progressLine ? `\nPROGRESS: ${progressLine}` : ''}`;
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
 
     if (this.leftIntel) {
       this.leftIntel.count.text = `${unlockedCount}/${this.ships.length} HULLS READY`;
-      this.leftIntel.progress.text = `BEST LEVEL ${this.unlockProgress.bestLevel || 1}\nPROGRESSION RANK ${this.unlockProgress.bestRank || 0}\nBEST SCORE ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}`;
+      this.leftIntel.progress.text = `PILOT RANK ${this.unlockProgress.pilotRank || 0}\nPILOT XP ${Number(this.unlockProgress.pilotXp || 0).toLocaleString('en-US')}\nCODEX ${this.unlockProgress.totalCodexDiscoveries || 0}  BEST SCORE ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}`;
     }
 
     if (this.rightIntel) {

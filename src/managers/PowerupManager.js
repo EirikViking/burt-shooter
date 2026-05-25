@@ -475,13 +475,14 @@ export class PowerupManager {
     }
 
     let shouldSpawn = force;
-    let baseChance = BalanceConfig.powerups.dropChance ?? 0.02;
+    const sustainMult = this.game?.runPressureDirector?.getSustainMultiplier?.() || 1;
+    let baseChance = (BalanceConfig.powerups.dropChance ?? 0.02) * sustainMult;
 
     // Dynamic Probability: Increase chance over time since last spawn
     const timeSinceLast = timeSinceLastMs / 1000;
-    const growthPerSecond = BalanceConfig.powerups.chanceGrowthPerSecond ?? 0.002;
+    const growthPerSecond = (BalanceConfig.powerups.chanceGrowthPerSecond ?? 0.002) * sustainMult;
     const dynamicChance = baseChance + (timeSinceLast * growthPerSecond);
-    const cappedChance = Math.min(BalanceConfig.powerups.maxDropChance ?? 0.12, dynamicChance);
+    const cappedChance = Math.min((BalanceConfig.powerups.maxDropChance ?? 0.12) * sustainMult, dynamicChance);
 
     if (!shouldSpawn) {
       shouldSpawn = Math.random() < cappedChance;
@@ -514,7 +515,7 @@ export class PowerupManager {
       console.log(`[PowerupManager] GUARANTEED extra life spawned (${levelsSinceLastLife} levels since last)`);
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;
-    } else if (extraLifeDropsEnabled && rand < (BalanceConfig.powerups.extraLifeChance ?? 0)) {
+    } else if (extraLifeDropsEnabled && rand < ((BalanceConfig.powerups.extraLifeChance ?? 0) * sustainMult)) {
       type = 'life';
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;

@@ -10,6 +10,7 @@ import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
+import { translateText } from '../i18n/index.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
@@ -87,6 +88,7 @@ export class MenuScene {
     this.highscoreBtn = null;
     this.introBtn = null;
     this.storyBtn = null;
+    this.threatCodexBtn = null;
     this.achievementsBtn = null;
     this.settingsBtn = null;
     this.exitBtn = null;
@@ -808,6 +810,19 @@ export class MenuScene {
     });
     this.container.addChild(this.achievementsBtn);
 
+    this.threatCodexBtn = this.createButton(translateText('THREAT CODEX'), layout, { accent: 0x7dffcc });
+    this.threatCodexBtn.alpha = 0;
+    this.threatCodexBtn.on('pointerdown', () => {
+      try {
+        AudioManager.init();
+        AudioManager.playSfx('ui_open', { volume: 0.32 });
+        this.game.showThreatCodex();
+      } catch (e) {
+        console.error('[MenuScene] Threat Codex Error:', e);
+      }
+    });
+    this.container.addChild(this.threatCodexBtn);
+
     this.settingsBtn = this.createButton('SETTINGS', layout, { accent: 0x7fffd8 });
     this.settingsBtn.alpha = 0;
     this.settingsBtn.on('pointerdown', () => {
@@ -1046,6 +1061,7 @@ export class MenuScene {
       [this.highscoreBtn, buttonWidth, buttonHeight, false],
       [this.introBtn, buttonWidth, buttonHeight, false],
       [this.storyBtn, buttonWidth, buttonHeight, false],
+      [this.threatCodexBtn, buttonWidth, buttonHeight, false],
       [this.achievementsBtn, buttonWidth, buttonHeight, false],
       [this.settingsBtn, buttonWidth, buttonHeight, false],
       [this.exitBtn, buttonWidth, buttonHeight, false]
@@ -1065,10 +1081,10 @@ export class MenuScene {
     const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
     const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
     const primaryHintHeight = this.primaryHint.height || controlsSize * 1.5;
-    const buttonsHeight = primaryButtonHeight + buttonHeight * 6 + buttonSpacing * 6;
+    const buttonsHeight = primaryButtonHeight + buttonHeight * 7 + buttonSpacing * 7;
     const exitNoticeHeight = this.exitNotice?.text ? (this.exitNotice.height || controlsSize * 1.2) : 0;
     const disclaimerHeight = this.disclaimer.height || disclaimerSize * 2;
-    const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + buttonsHeight + exitNoticeHeight + disclaimerHeight + sectionSpacing * 6;
+    const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + buttonsHeight + exitNoticeHeight + disclaimerHeight + sectionSpacing * 7;
 
     const footerReserve = isMobileLayout ? 86 : (isShortLayout ? 16 : 64);
     const availableHeight = height - footerReserve - safeMargin.top;
@@ -1109,6 +1125,9 @@ export class MenuScene {
     this.storyBtn.x = buttonX;
     placeCentered(this.storyBtn, buttonHeight, buttonSpacing);
 
+    this.threatCodexBtn.x = buttonX;
+    placeCentered(this.threatCodexBtn, buttonHeight, buttonSpacing);
+
     this.achievementsBtn.x = buttonX;
     placeCentered(this.achievementsBtn, buttonHeight, buttonSpacing);
 
@@ -1146,7 +1165,7 @@ export class MenuScene {
     const overflow = this.disclaimer.y + disclaimerHeight / 2 - (height - footerReserve);
     if (overflow > 0) {
       const lift = Math.min(overflow + 10, isMobileLayout ? 56 : 90);
-      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.startBtn, this.highscoreBtn, this.introBtn, this.storyBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
+      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.startBtn, this.highscoreBtn, this.introBtn, this.storyBtn, this.threatCodexBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
         if (item) item.y -= lift;
       });
     }
@@ -1282,6 +1301,7 @@ export class MenuScene {
       hangarButton: this.highscoreBtn,
       introButton: this.introBtn,
       highscoresButton: this.storyBtn,
+      threatCodexButton: this.threatCodexBtn,
       achievementsButton: this.achievementsBtn,
       settingsButton: this.settingsBtn,
       exitButton: this.exitBtn,
@@ -1455,10 +1475,11 @@ export class MenuScene {
     this.animateElement(this.highscoreBtn, 1.02, 0.4);
     this.animateElement(this.introBtn, 1.16, 0.4);
     this.animateElement(this.storyBtn, 1.3, 0.4);
-    this.animateElement(this.achievementsBtn, 1.42, 0.4);
-    this.animateElement(this.settingsBtn, 1.54, 0.4);
-    this.animateElement(this.exitBtn, 1.66, 0.4);
-    this.animateElement(this.disclaimer, 1.78, 0.4);
+    this.animateElement(this.threatCodexBtn, 1.42, 0.4);
+    this.animateElement(this.achievementsBtn, 1.54, 0.4);
+    this.animateElement(this.settingsBtn, 1.66, 0.4);
+    this.animateElement(this.exitBtn, 1.78, 0.4);
+    this.animateElement(this.disclaimer, 1.9, 0.4);
   }
 
   buildMenuNavigation() {
@@ -1473,6 +1494,15 @@ export class MenuScene {
           AudioManager.init();
           AudioManager.playMusicContext('scoreboard');
           this.game.showHighscores();
+        }
+      },
+      {
+        id: 'threatCodex',
+        button: this.threatCodexBtn,
+        activate: () => {
+          AudioManager.init();
+          AudioManager.playSfx('ui_open', { volume: 0.32 });
+          this.game.showThreatCodex();
         }
       },
       {
@@ -1678,6 +1708,9 @@ export class MenuScene {
     if (this.controls) this.controls.text = getCurrentLayout().isMobile ? this.getControlsText(getCurrentLayout()) : '';
     if (this.musicBtn?._label) {
       this.musicBtn._label.text = AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF';
+    }
+    if (this.threatCodexBtn?._label) {
+      this.threatCodexBtn._label.text = translateText('THREAT CODEX');
     }
     this.settingsOverlay?.rebuild?.();
     this.layoutMenu();

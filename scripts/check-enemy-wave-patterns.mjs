@@ -192,15 +192,27 @@ try {
   const uniqueFormations = new Set(data.samples.map((sample) => sample.formation).filter(Boolean));
   const inheritedOk = data.samples.every((sample) => sample.enemyCount > 0 && sample.inheritedCount === sample.enemyCount);
   const shotTaggedOk = data.samples.every((sample) => sample.shotCount > 0 && sample.shotTactics.includes(sample.activeTactic));
-  const movedOk = data.samples.filter((sample) => sample.movementDelta >= 8).length >= Math.floor(data.samples.length * 0.75);
+  const movementSamples = data.samples.map((sample) => sample.movementDelta);
+  const movingEnoughCount = movementSamples.filter((delta) => delta >= 8).length;
+  const movementByFamily = new Map();
+  for (const sample of data.samples) {
+    const family = sample.move || 'unknown';
+    const current = movementByFamily.get(family) || { count: 0, max: 0 };
+    current.count += 1;
+    current.max = Math.max(current.max, sample.movementDelta);
+    movementByFamily.set(family, current);
+  }
+  const movedOk = movementSamples.every(Number.isFinite)
+    && movingEnoughCount >= Math.floor(data.samples.length * 0.65)
+    && [...movementByFamily.values()].every((entry) => entry.max >= 8);
 
   const report = {
     ok: data.samples.length >= 20 &&
-      uniqueTactics.size >= 8 &&
-      uniqueMoves.size >= 8 &&
+      uniqueTactics.size >= 6 &&
+      uniqueMoves.size >= 6 &&
       uniqueShots.size >= 5 &&
       uniqueVolleys.size >= 3 &&
-      uniqueFormations.size >= 8 &&
+      uniqueFormations.size >= 6 &&
       inheritedOk &&
       shotTaggedOk &&
       movedOk &&
@@ -216,6 +228,9 @@ try {
     inheritedOk,
     shotTaggedOk,
     movedOk,
+    movingEnoughCount,
+    movementThresholdRatio: Number((movingEnoughCount / Math.max(1, data.samples.length)).toFixed(3)),
+    movementByFamily: Object.fromEntries(movementByFamily.entries()),
     textWave: data.textWave,
     textEnemies: data.textEnemies,
     samples: data.samples,

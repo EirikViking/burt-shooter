@@ -6,9 +6,13 @@ import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFon
 import { generateUUID } from '../utils/uuid.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
-import { getSelectableShips, getShipUnlockProgress, isShipUnlocked, updateShipUnlockProgress } from '../config/ShipMetadata.js';
+import {
+  getSelectableShips,
+  getShipUnlockProgress,
+  getShipUnlockProgressDetails,
+  isShipUnlocked
+} from '../config/ShipMetadata.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { getRankFromLevel } from '../shared/RankPolicy.js';
 import { analyzeGlobalLeaderboardScore, normalizeGlobalScores } from '../shared/GlobalLeaderboardPlacement.js';
 import {
   GAME_OVER_CTA_RECENT_HISTORY_KEY,
@@ -223,18 +227,13 @@ export class GameOverScene {
       this.globalStatus = this.steamSubmissionMode ? 'steam_ready' : 'checking';
       this.updateCanEnterName();
     }
-    const previousProgress = getShipUnlockProgress();
+    const previousProgress = this.game.runProgressionResult?.previous || getShipUnlockProgress();
     this.isPersonalBest = this.finalScore > (Number(previousProgress.bestScore) || 0);
     this.qualificationFanfarePlayed = false;
     this.personalBestVoicePlayed = false;
     this.nearMissVoicePlayed = false;
-    const finalRank = getRankFromLevel(this.finalLevel);
-    this.game.rankIndex = finalRank;
-    const currentProgress = updateShipUnlockProgress({
-      score: this.finalScore,
-      rank: finalRank,
-      level: this.finalLevel
-    });
+    const currentProgress = this.game.runProgressionResult?.next || getShipUnlockProgress();
+    this.game.rankIndex = currentProgress.pilotRank || this.game.rankIndex || 0;
     this.newlyUnlockedShips = this.getNewlyUnlockedShips(previousProgress, currentProgress);
     this.levelSummary = this.createLevelSummary(previousProgress, currentProgress);
     this.unlockSummary = this.createUnlockSummary(previousProgress, currentProgress, this.newlyUnlockedShips);
@@ -676,6 +675,7 @@ export class GameOverScene {
   }
 
   getCeremonyTitle() {
+    if (this.game?.runSummary?.runCleared) return 'RUN CLEAR';
     if (this.globalPlacementTier === 'number1') return 'NUMBER ONE';
     if (this.globalPlacementTier === 'top3') return 'TOP THREE';
     if (this.globalPlacementTier === 'global') return 'GLOBAL SLOT SECURED';
@@ -1750,12 +1750,13 @@ export class GameOverScene {
 
   createUnlockSummary(previousProgress, currentProgress, newlyUnlocked = this.getNewlyUnlockedShips(previousProgress, currentProgress)) {
     const ships = getSelectableShips();
+    const summary = this.game?.runSummary || {};
     if (newlyUnlocked.length > 0) {
       const names = newlyUnlocked.slice(0, 2).map(ship => ship.name).join(' + ');
       const suffix = newlyUnlocked.length > 2 ? ` +${newlyUnlocked.length - 2} MORE` : '';
       const verb = newlyUnlocked.length === 1 ? 'SHIP' : 'SHIPS';
       const cta = newlyUnlocked.length === 1 ? 'VISIT THE HANGAR TO TRY IT' : 'VISIT THE HANGAR TO TRY THEM';
-      return `NEW ${verb} UNLOCKED: ${names}${suffix}\n${cta}`;
+      return `NEW ${verb} UNLOCKED: ${names}${suffix}\n${cta}\nPILOT XP +${summary.pilotXpGained || 0}  RANK ${currentProgress.pilotRank || 0}`;
     }
 
     const nextShip = ships
@@ -1770,18 +1771,17 @@ export class GameOverScene {
 
     if (!nextShip) {
       const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestLevel) || 1));
-      return `HANGAR COMPLETE: ALL SHIPS UNLOCKED\nCAREER BEST: LEVEL ${bestLevel}`;
+      return `HANGAR COMPLETE: ALL SHIPS UNLOCKED\nCAREER BEST: SECTOR ${bestLevel}`;
     }
 
-    const requirement = nextShip.unlock || {};
-    const requiredLevel = Math.max(1, Math.floor(Number(requirement.level) || 1));
-    const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestLevel) || 1));
-    const remaining = Math.max(0, requiredLevel - bestLevel);
-    if (remaining > 0) {
-      const unit = remaining === 1 ? 'LEVEL' : 'LEVELS';
-      return `NEXT SHIP: ${nextShip.name}\nCAREER LEVEL ${bestLevel}/${requiredLevel} - ${remaining} ${unit} TO GO`;
-    }
-    return `NEXT SHIP: ${nextShip.name}\nCAREER LEVEL ${bestLevel}/${requiredLevel} - ONE BETTER RUN`;
+    const details = getShipUnlockProgressDetails(nextShip.spriteKey, currentProgress);
+    const requirementLine = details.requirements?.length
+      ? details.requirements
+        .slice(0, 2)
+        .map(item => `${item.key.toUpperCase()} ${Math.min(Number(item.current) || 0, Number(item.target) || 0)}/${item.target}`)
+        .join('  ')
+      : details.label;
+    return `NEXT SHIP: ${nextShip.name}\n${details.label.toUpperCase()}\n${requirementLine}`;
   }
 
   playShipUnlockVoice() {
@@ -1829,21 +1829,23 @@ export class GameOverScene {
       return { text: `BEAT YOUR BEST: ${this.formatGoalNumber(scoreGap)} MORE`, tone: 'score' };
     }
 
-    const bestLevel = Math.max(1, Number(currentProgress.bestLevel) || this.finalLevel || 1);
-    const nextLevel = this.getNextLevelGoal(bestLevel);
-    if (nextLevel > bestLevel) {
-      return { text: `NEXT CAREER GOAL: REACH LEVEL ${nextLevel}`, tone: 'level' };
+    const bestSector = Math.max(1, Number(currentProgress.bestSector || currentProgress.bestLevel) || this.finalLevel || 1);
+    const nextSector = this.getNextLevelGoal(bestSector);
+    if (nextSector > bestSector) {
+      return { text: `NEXT CAREER GOAL: REACH SECTOR ${nextSector}`, tone: 'level' };
     }
 
     return { text: 'NEXT GOAL: CLIMB THE GLOBAL BOARD', tone: 'leaderboard' };
   }
 
   createLevelSummary(previousProgress = {}, currentProgress = {}) {
-    const previousBestLevel = Math.max(1, Math.floor(Number(previousProgress.bestLevel) || 1));
-    const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestLevel) || this.finalLevel || 1));
+    const summary = this.game?.runSummary || {};
+    const previousBestLevel = Math.max(1, Math.floor(Number(previousProgress.bestSector || previousProgress.bestLevel) || 1));
+    const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestSector || currentProgress.bestLevel) || this.finalLevel || 1));
     const newBest = bestLevel > previousBestLevel && this.finalLevel >= bestLevel;
     const suffix = newBest ? ' - NEW BEST' : '';
-    return `THIS RUN: LEVEL ${this.finalLevel}\nCAREER BEST: LEVEL ${bestLevel}${suffix}`;
+    const clearLabel = summary.runCleared ? 'CLEAR' : 'GAME OVER';
+    return `${clearLabel}: SECTOR ${this.finalLevel}  ${Math.floor(summary.runElapsedSeconds || 0)}s\nCAREER BEST: SECTOR ${bestLevel}${suffix}\nPILOT XP +${summary.pilotXpGained || 0}  RANK ${summary.pilotRank ?? currentProgress.pilotRank ?? 0}`;
   }
 
   getNextLevelGoal(bestLevel) {
