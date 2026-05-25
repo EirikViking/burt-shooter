@@ -30,6 +30,7 @@ function readArgValue(args, name, fallback = null) {
 function parseOptions(args) {
   const score = Math.max(0, Math.min(2147483647, Math.floor(Number(readArgValue(args, '--score', TEST_SCORE)) || TEST_SCORE)));
   const detailsMode = String(readArgValue(args, '--details', 'basic')).toLowerCase();
+  const leaderboardName = String(readArgValue(args, '--leaderboard', process.env.NOVA_SWARM_STEAM_LEADERBOARD_NAME || STEAM_LEADERBOARD_NAME)).trim() || STEAM_LEADERBOARD_NAME;
   const uploadMethod = args.includes('--force-update') ? 'force_update' : 'keep_best';
   const submit = !args.includes('--no-submit') || args.includes('--submit');
   if (!ALLOWED_DETAILS_MODES.has(detailsMode)) {
@@ -37,6 +38,7 @@ function parseOptions(args) {
   }
   return {
     submit,
+    leaderboardName,
     score,
     detailsMode,
     uploadMethod,
@@ -149,6 +151,7 @@ function publicSubmitStep(step) {
     previousRank: value.previousRank ?? null,
     scoreChanged: value.scoreChanged ?? null,
     details: value.details ?? [],
+    requestCurrentStats: value.requestCurrentStats || value.diagnostics?.requestCurrentStats || null,
     diagnostics: value.diagnostics || null,
     rawResult: value.rawResult || null
   };
@@ -209,7 +212,7 @@ mkdirSync(outputDir, { recursive: true });
 
 const report = {
   status: 'pending',
-  leaderboardName: STEAM_LEADERBOARD_NAME,
+  leaderboardName: options.leaderboardName,
   outputDir,
   options,
   testSubmission: {
@@ -240,15 +243,29 @@ try {
     report.status = deriveFinalStatus(report);
     process.exitCode = 1;
   } else {
-    const openStep = await runStep('openLeaderboard', () => bridge.getLeaderboard(STEAM_LEADERBOARD_NAME));
+    const requestCurrentStatsStep = await runStep('requestCurrentStats', () => bridge.requestCurrentStats());
+    report.requestCurrentStats = requestCurrentStatsStep.ok
+      ? requestCurrentStatsStep.value
+      : {
+          attempted: false,
+          available: false,
+          returned: false,
+          callbackObserved: false,
+          ok: false,
+          result: null,
+          durationMs: requestCurrentStatsStep.durationMs,
+          error: requestCurrentStatsStep.error?.message || requestCurrentStatsStep.error || 'request_current_stats_step_failed'
+        };
+
+    const openStep = await runStep('openLeaderboard', () => bridge.getLeaderboard(options.leaderboardName));
     report.openLeaderboard = publicStep(openStep, value => ({
-      leaderboardName: value?.name || STEAM_LEADERBOARD_NAME,
+      leaderboardName: value?.name || options.leaderboardName,
       handlePresent: Boolean(value?.handle),
       entryCount: value?.entryCount ?? null
     }));
 
     const globalBeforeStep = await runStep('globalBefore', () => bridge.getTopScores({
-      leaderboardName: STEAM_LEADERBOARD_NAME,
+      leaderboardName: options.leaderboardName,
       request: 'global',
       start: 1,
       end: 10,
@@ -260,7 +277,7 @@ try {
     }));
 
     const friendsBeforeStep = await runStep('friendsBefore', () => bridge.getFriendsScores({
-      leaderboardName: STEAM_LEADERBOARD_NAME,
+      leaderboardName: options.leaderboardName,
       request: 'friends',
       limit: 10
     }));
@@ -271,7 +288,7 @@ try {
 
     if (report.openLeaderboard?.ok && options.submit) {
       const payload = {
-        leaderboardName: STEAM_LEADERBOARD_NAME,
+        leaderboardName: options.leaderboardName,
         score: options.score,
         uploadMethod: options.uploadMethod
       };
@@ -280,7 +297,7 @@ try {
       report.submit = publicSubmitStep(submitStep);
 
       const globalAfterStep = await runStep('globalAfter', () => bridge.getTopScores({
-        leaderboardName: STEAM_LEADERBOARD_NAME,
+        leaderboardName: options.leaderboardName,
         request: 'global',
         start: 1,
         end: 10,
@@ -293,7 +310,7 @@ try {
       }));
 
       const friendsAfterStep = await runStep('friendsAfter', () => bridge.getFriendsScores({
-        leaderboardName: STEAM_LEADERBOARD_NAME,
+        leaderboardName: options.leaderboardName,
         request: 'friends',
         limit: 10
       }));
@@ -334,6 +351,7 @@ try {
     bridgeStatus: report.bridgeStatus,
     personaName: report.personaName,
     openLeaderboard: report.openLeaderboard,
+    requestCurrentStats: report.requestCurrentStats || null,
     globalBefore: report.globalBefore ? {
       ok: report.globalBefore.ok,
       count: report.globalBefore.count,

@@ -166,6 +166,7 @@ function compactSubmit(step, latestUploadDiagnostics = null) {
     success: Boolean(step?.success),
     interpretedStatus: step?.interpretedStatus || latestUploadDiagnostics?.interpretedStatus || null,
     nativeErrorMessage: step?.nativeErrorMessage || latestUploadDiagnostics?.nativeErrorMessage || null,
+    requestCurrentStats: step?.requestCurrentStats || latestUploadDiagnostics?.requestCurrentStats || latestUploadDiagnostics?.diagnostics?.requestCurrentStats || null,
     rawResult,
     diagnostics: step?.diagnostics || latestUploadDiagnostics?.diagnostics || null
   };
@@ -184,6 +185,7 @@ function summarizeProbeReport(entry) {
     launchedBySteamHint: Boolean(data.runtimeInfo?.launchedBySteamHint || data.runtime?.launchedBySteamHint),
     bridgeStatus: data.bridgeStatus || null,
     personaName: data.personaName || null,
+    requestCurrentStats: data.requestCurrentStats || null,
     openLeaderboard: data.openLeaderboard || null,
     globalBefore: compactRead(data.globalBefore),
     friendsBefore: compactRead(data.friendsBefore),
@@ -202,6 +204,7 @@ function hasSuccessfulRead(summary) {
 function hasBackendWriteRejection(summary) {
   const raw = summary?.submit?.rawResult;
   return summary?.submit?.interpretedStatus === 'steam_callback_m_bSuccess_false' ||
+    summary?.submit?.interpretedStatus === 'steam_backend_rejected_unknown_reason' ||
     raw?.m_bSuccess === 0 ||
     raw?.m_bSuccess === '0';
 }
@@ -282,18 +285,30 @@ function currentRuntimeEnv() {
   };
 }
 
+function requestCurrentStatsOk(summary) {
+  const status = summary?.submit?.requestCurrentStats || summary?.requestCurrentStats || null;
+  return status?.ok === true && status?.result?.m_eResult === 1;
+}
+
 function buildInterpretation(latestSummary, steamInstall) {
   const readPathVerified = hasSuccessfulRead(latestSummary);
   const writeRejectedBySteamBackend = hasBackendWriteRejection(latestSummary);
   const localSdkReady = hasLocalSdkReady(latestSummary);
   const latestProbeWasSteamLaunched = Boolean(latestSummary?.launchedBySteamHint);
+  const statsReady = requestCurrentStatsOk(latestSummary);
   const installedBuildId = steamInstall?.manifest?.buildid || null;
   const latestDiagnosticsBuildInstalled = buildIdIsExpectedOrNewer(installedBuildId, EXPECTED_LATEST_BUILD_ID);
 
   const remainingSuspects = [];
   if (writeRejectedBySteamBackend) {
-    remainingSuspects.push('Steam backend rejected UploadLeaderboardScore after returning a valid call result. With details=none/score=1, this is not explained by metadata length.');
-    remainingSuspects.push('Leaderboard write setting may still be effectively Trusted, stale, or unpublished despite the visible UI showing Client.');
+    remainingSuspects.push('Steam accepted UploadLeaderboardScore and returned LeaderboardScoreUploaded_t, but m_bSuccess was 0. With details=none/score=1, this is not explained by metadata length.');
+    remainingSuspects.push('Steamworks screenshot evidence now shows Writer/Skriver "-", so visible Trusted configuration is no longer the leading explanation.');
+    if (statsReady) {
+      remainingSuspects.push('RequestCurrentStats/UserStatsReceived_t readiness was observed with m_eResult=1 in the latest evidence, so it is no longer the leading explanation.');
+      remainingSuspects.push('Steam client launch context, app/package entitlement, wrapper upload behavior, or backend rejection remain the leading explanations.');
+    } else {
+      remainingSuspects.push('RequestCurrentStats/UserStatsReceived_t readiness, Steam client launch context, app/package entitlement, wrapper upload behavior, or backend rejection remain the leading explanations.');
+    }
     remainingSuspects.push('App/package entitlement or unreleased app state may allow reads but reject client writes for this account/build.');
     remainingSuspects.push('Steamworks backend propagation delay remains possible after leaderboard/build/package changes.');
   }
@@ -317,7 +332,9 @@ function buildInterpretation(latestSummary, steamInstall) {
     installedBuildId,
     latestDiagnosticsBuildInstalled,
     mostLikelyCause: writeRejectedBySteamBackend
-      ? 'Steamworks backend/config/entitlement state, not the local upload signature'
+      ? (statsReady
+          ? 'Steam client launch context, app/package entitlement, native wrapper upload behavior, or Steam backend rejection'
+          : 'RequestCurrentStats readiness, Steam client launch context, app/package entitlement, native wrapper upload behavior, or Steam backend rejection')
       : latestSummary
         ? 'No backend write rejection found in latest report'
         : 'No live/probe report found yet',
@@ -330,8 +347,8 @@ function manualChecks() {
     {
       label: 'Leaderboard configuration',
       page: 'Steamworks App Admin -> Nova Swarm (4765070) -> Stats & Achievements -> Leaderboards -> nova_swarm_global_score',
-      expected: ['Writes = Client, not Trusted', 'Sort = Descending', 'Display = Numeric', 'Internal name = nova_swarm_global_score'],
-      doNotClick: ['Do not delete, reset, or recreate the leaderboard', 'Do not change Writes to Trusted']
+      expected: ['Writer / Skriver = "-"', 'Reader / Leser = "-"', 'Lobby = "-"', 'Sort = Descending / Synkende', 'Display = Numeric / Numerisk', 'Internal name = nova_swarm_global_score'],
+      doNotClick: ['Do not delete, reset, or recreate the leaderboard', 'Do not change release/store state']
     },
     {
       label: 'Default branch build',
@@ -371,7 +388,8 @@ const report = {
     depotId: DEPOT_ID,
     leaderboardName: LEADERBOARD_NAME,
     writes: 'Client',
-    writesMustNotBe: 'Trusted',
+    writerUiValue: '-',
+    readerUiValue: '-',
     sort: 'Descending',
     display: 'Numeric',
     defaultBranchBuildForCurrentTest: EXPECTED_LATEST_BUILD_ID
@@ -385,8 +403,9 @@ const report = {
   interpretation,
   manualChecks: manualChecks(),
   sourceNotes: [
-    'Steam docs: UploadLeaderboardScore m_bSuccess=0 is documented for too many details or Trusted leaderboard write mode.',
+    'Steam docs: UploadLeaderboardScore m_bSuccess=0 is documented for too many details or Trusted leaderboard write mode, but current screenshot evidence shows Writer/Skriver "-".',
     'Steam docs: UploadLeaderboardScore is limited to 10 uploads per 10 minutes and one outstanding call.',
+    'Steam user stats readiness is now explicitly reported through requestCurrentStats/UserStatsReceived_t diagnostics.',
     'Steam docs: Dev Comp or testing packages control app/depot entitlement for unreleased testing.'
   ]
 };
@@ -401,7 +420,9 @@ console.log('Expected Steamworks values:');
 console.log(`- App ID: ${APP_ID}`);
 console.log(`- Depot ID: ${DEPOT_ID}`);
 console.log(`- Leaderboard: ${LEADERBOARD_NAME}`);
-console.log('- Writes: Client, not Trusted');
+console.log('- Writer / Skriver: "-"');
+console.log('- Reader / Leser: "-"');
+console.log('- Lobby: "-"');
 console.log('- Sort: Descending');
 console.log('- Display: Numeric');
 console.log(`- Default branch build while testing: ${EXPECTED_LATEST_BUILD_ID} or newer diagnostics build`);
@@ -422,6 +443,7 @@ console.log(`- Global read: ${latestSummary?.globalBefore?.ok ?? false} count=${
 console.log(`- Friends read: ${latestSummary?.friendsBefore?.ok ?? false} count=${latestSummary?.friendsBefore?.count ?? 'n/a'}`);
 console.log(`- Submit status: ${latestSummary?.submit?.interpretedStatus || 'not tested'}`);
 console.log(`- Raw m_bSuccess: ${latestSummary?.submit?.rawResult?.m_bSuccess ?? 'n/a'}`);
+console.log(`- RequestCurrentStats ok: ${latestSummary?.submit?.requestCurrentStats?.ok ?? latestSummary?.requestCurrentStats?.ok ?? 'n/a'}`);
 if (latestSubmitSummary && latestSubmitSummary.path !== latestSummary?.path) {
   console.log('');
   console.log('Latest submit evidence:');
@@ -433,6 +455,7 @@ if (latestSubmitSummary && latestSubmitSummary.path !== latestSummary?.path) {
   console.log(`- Friends read: ${latestSubmitSummary.friendsBefore?.ok ?? false} count=${latestSubmitSummary.friendsBefore?.count ?? 'n/a'}`);
   console.log(`- Submit status: ${latestSubmitSummary.submit?.interpretedStatus || 'not tested'}`);
   console.log(`- Raw m_bSuccess: ${latestSubmitSummary.submit?.rawResult?.m_bSuccess ?? 'n/a'}`);
+  console.log(`- RequestCurrentStats ok: ${latestSubmitSummary.submit?.requestCurrentStats?.ok ?? latestSubmitSummary.requestCurrentStats?.ok ?? 'n/a'}`);
 }
 console.log('');
 console.log('Interpretation:');

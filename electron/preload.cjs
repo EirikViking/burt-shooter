@@ -7,6 +7,7 @@ const CHANNELS = {
   getFriendsScores: 'nova-steam-leaderboard:getFriendsScores',
   submitScore: 'nova-steam-leaderboard:submitScore',
   submitScoreDetailed: 'nova-steam-leaderboard:submitScoreDetailed',
+  requestCurrentStats: 'nova-steam-leaderboard:requestCurrentStats',
   getLastUploadDiagnostics: 'nova-steam-leaderboard:getLastUploadDiagnostics',
   getStatus: 'nova-steam-leaderboard:getStatus',
   getRuntimeInfo: 'nova-steam-leaderboard:getRuntimeInfo'
@@ -64,6 +65,7 @@ const leaderboards = Object.freeze({
   getFriendsScores: (payload) => invoke(CHANNELS.getFriendsScores, payload),
   submitScore: (payload) => invoke(CHANNELS.submitScore, payload),
   submitScoreDetailed: (payload) => invoke(CHANNELS.submitScoreDetailed, payload),
+  requestCurrentStats: () => invoke(CHANNELS.requestCurrentStats),
   getLastUploadDiagnostics: () => invoke(CHANNELS.getLastUploadDiagnostics),
   getRuntimeInfo: () => invoke(CHANNELS.getRuntimeInfo)
 });
