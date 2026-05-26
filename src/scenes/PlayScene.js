@@ -71,6 +71,7 @@ export class PlayScene {
     this.settingsOverlay = null;
     this.hadGameplayGamepadConnection = false;
     this.lastGameplayGamepadConnected = false;
+    this.controlSmokeMode = false;
     this.autoPauseHandlersInstalled = false;
     this.visibilityPauseHandler = null;
     this.blurPauseHandler = null;
@@ -362,6 +363,7 @@ export class PlayScene {
     const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
     const selectedShipTextureIndex = getShipMetadata(spriteKey)?.textureIndex ?? 0;
     const controlSmoke = params.get('controlSmoke') === '1';
+    this.controlSmokeMode = controlSmoke;
     const logShipDebug = () => {
       if (!this.player) return;
       console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
@@ -1033,8 +1035,8 @@ export class PlayScene {
         this.game.scoreMultiplier = this.scoreMultiplier;
       }
 
-      this.updateControllerPresencePause();
       this.handlePauseToggle();
+      this.updateControllerPresencePause();
       if (this.isPaused) {
         this.updatePauseMenuControls(delta);
         return;
@@ -2496,6 +2498,7 @@ export class PlayScene {
   }
 
   pauseForExternalInterruption(reason = 'external_interruption') {
+    if (this.controlSmokeMode) return;
     if (this.game?.currentScene !== this || !this.isReady || this.isPaused || (this.game?.lives || 0) <= 0) return;
     this.pauseReason = reason;
     this.setPaused(true);
