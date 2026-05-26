@@ -1163,22 +1163,29 @@ async function init() {
   if ('serviceWorker' in navigator && import.meta.env.PROD && !isDesktopRuntime()) {
     try {
       // TASK 4: Mobile Safety - Cache busting param
-      const registration = await navigator.serviceWorker.register(`/sw.js?v=${BUILD_ID}`);
-      console.log('[SW] Service worker registered:', registration.scope);
+      const swUrl = `/sw.js?v=${BUILD_ID}`;
+      const swProbe = await fetch(swUrl, { method: 'HEAD', cache: 'no-store' });
+      const swContentType = swProbe.headers.get('content-type') || '';
+      if (!swProbe.ok || !/(java|ecma)script/i.test(swContentType)) {
+        console.warn('[SW] Service worker script missing or invalid, skipping registration.');
+      } else {
+        const registration = await navigator.serviceWorker.register(swUrl);
+        console.log('[SW] Service worker registered:', registration.scope);
 
-      // Force update if found
-      registration.onupdatefound = () => {
-        const installingWorker = registration.installing;
-        if (installingWorker) {
-          installingWorker.onstatechange = () => {
-            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New content available
-              console.log('[SW] New content available, reloading...');
-              window.location.reload(true);
-            }
-          };
-        }
-      };
+        // Force update if found
+        registration.onupdatefound = () => {
+          const installingWorker = registration.installing;
+          if (installingWorker) {
+            installingWorker.onstatechange = () => {
+              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New content available
+                console.log('[SW] New content available, reloading...');
+                window.location.reload(true);
+              }
+            };
+          }
+        };
+      }
     } catch (error) {
       console.warn('[SW] Service worker registration failed:', error);
     }
