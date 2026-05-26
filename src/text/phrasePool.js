@@ -158,6 +158,224 @@ const storyTransmissionsDe = [
   }
 ];
 
+const cabinetLogsEn = Object.freeze([
+  {
+    id: 'first-boss-spawn',
+    title: 'CABINET LOG: BOSS RECEIPT',
+    role: 'Boss read',
+    line: 'First boss this run. Useful read: the entrance is theater. Reset low-center and wait for the first real tell.',
+    description: 'Filed when the first boss enters a run. The Cabinet reminds the pilot to use the boss reveal as a reset window instead of drifting into the opening pattern.',
+    tip: 'During the boss reveal, settle low-center, stop panic drifting, then dodge after the tell locks.',
+    imageAlias: 'nova-swarm-story-comms-04-20260519',
+    accent: 0xff6a2a
+  },
+  {
+    id: 'codex-discovery',
+    title: 'CABINET LOG: NEW RECEIPT',
+    role: 'Codex value',
+    line: 'New Codex signal archived: {name}. It pays score now and Career XP later. Knowledge is just currency with worse lighting.',
+    description: 'Filed the first time the run discovers a new Codex signal. It explains why scanning new threats is practical progression, not just flavor.',
+    tip: 'New signals grant score immediately, count toward Career XP, and can help unlock future ships.',
+    imageAlias: 'nova-swarm-story-comms-03-20260519',
+    accent: 0x7dffcc
+  },
+  {
+    id: 'near-miss-streak',
+    title: 'CABINET LOG: HITBOX BRAG',
+    role: 'Near-miss read',
+    line: 'Three close dodges in a row. Tiny fact: graze streaks are score, not armor. Stylish panic still has to move.',
+    description: 'Filed after the first dangerous near-miss streak in a run. The Cabinet celebrates the score value while warning that close dodges never make the ship safer.',
+    tip: 'Use near misses for score, then leave the lane. A graze bonus is not invulnerability.',
+    imageAlias: 'nova-swarm-story-comms-02-20260519',
+    accent: 0xffd15c
+  },
+  {
+    id: 'wing-trait-hit',
+    title: 'CABINET LOG: SIDE HUSTLE',
+    role: 'Trait read',
+    line: 'Wing shot connected. Those side bullets are not decoration. Let messy waves drift into angled lanes and invoice them.',
+    description: 'Filed when a wing-shot trait first lands during a run. It calls out that some ship traits reward positioning enemies into side lanes.',
+    tip: 'Wing traits work best when you hold a lane that lets angled shots catch flanks.',
+    imageAlias: 'nova-swarm-story-comms-03-20260519',
+    accent: 0x66ff99
+  },
+  {
+    id: 'bonus-trait-hit',
+    title: 'CABINET LOG: COUNTER AUDIT',
+    role: 'Trait timing',
+    line: 'Bonus shot landed. The counter counts shots fired, not seconds. Counting while screaming is legally recognized.',
+    description: 'Filed when a bonus-shot trait first lands during a run. It teaches that shot counters are driven by firing cadence.',
+    tip: 'Fast, steady firing reaches shot-counter traits sooner than waiting for a timer.',
+    imageAlias: 'nova-swarm-story-comms-01-20260519',
+    accent: 0xa77dff
+  },
+  {
+    id: 'low-life-read',
+    title: 'CABINET LOG: ONE HULL LEFT',
+    role: 'Survival read',
+    line: 'One life left. Useful read: stop chasing coins unless they repair you. The Cabinet cannot refund heroism.',
+    description: 'Filed the first time a run reaches one life. It nudges the player away from greedy pickups and back toward survival.',
+    tip: 'On one life, prioritize open lanes and recovery pickups over damage greed.',
+    imageAlias: 'nova-swarm-story-comms-01-20260519',
+    accent: 0xff8f9c
+  },
+  {
+    id: 'boss-mercy-read',
+    title: 'CABINET LOG: MERCY WINDOW',
+    role: 'Recovery read',
+    line: 'Boss mercy triggered. That recovery window is real. Move away now, then shoot after the drama stops standing on you.',
+    description: 'Filed when boss mercy prevents immediate follow-up damage. It teaches the player that the recovery window exists and should be spent repositioning.',
+    tip: 'After a boss hit, use the mercy window to separate first and fire second.',
+    imageAlias: 'nova-swarm-story-comms-04-20260519',
+    accent: 0x37f5ff
+  },
+  {
+    id: 'max-lives-read',
+    title: 'CABINET LOG: HULL SURPLUS',
+    role: 'Sustain read',
+    line: 'Max lives reached. Excellent. Now spend that confidence on reading patterns, not auditioning for the next explosion.',
+    description: 'Filed when the player reaches the life cap. It turns a reward moment into a reminder that sustain is breathing room, not permission to ignore patterns.',
+    tip: 'At max lives, keep collecting score safely. The extra buffer is for mistakes, not for standing still.',
+    imageAlias: 'nova-swarm-story-comms-02-20260519',
+    accent: 0x7dffcc
+  }
+]);
+
+const localizedCabinetLogs = {
+  de: [
+    {
+      id: 'first-boss-spawn',
+      title: 'CABINET-LOG: BOSS-BELEG',
+      role: 'Boss-Lesart',
+      line: 'Erster Boss in diesem Run. NÃ¼tzlicher Read: Der Auftritt ist Theater. Tief mittig sammeln und auf das erste echte Signal warten.',
+      description: 'Wird abgelegt, wenn der erste Boss in einem Run erscheint. Das Cabinet erinnert daran, den Bossauftritt als Reset-Fenster zu nutzen.',
+      tip: 'Beim Boss-Intro tief mittig bleiben, Panikdrift stoppen und erst ausweichen, wenn das Signal einrastet.'
+    },
+    {
+      id: 'codex-discovery',
+      title: 'CABINET-LOG: NEUER BELEG',
+      role: 'Codex-Wert',
+      line: 'Neues Codex-Signal archiviert: {name}. Es gibt jetzt Punkte und spÃ¤ter Karriere-XP. Wissen ist nur WÃ¤hrung mit schlechterem Licht.',
+      description: 'Wird bei der ersten neuen Codex-Entdeckung eines Runs abgelegt. Es erklÃ¤rt, warum Scans echte Progression sind.',
+      tip: 'Neue Signale geben sofort Punkte, zÃ¤hlen fÃ¼r Karriere-XP und helfen bei spÃ¤teren Schiffsfreischaltungen.'
+    },
+    {
+      id: 'near-miss-streak',
+      title: 'CABINET-LOG: HITBOX-PROTOKOLL',
+      role: 'Near-Miss-Read',
+      line: 'Drei knappe AusweichmanÃ¶ver am StÃ¼ck. Kurzfakt: Graze-Serien sind Punkte, keine Panzerung. Stilvolle Panik muss trotzdem wegfliegen.',
+      description: 'Wird nach der ersten gefÃ¤hrlichen Near-Miss-Serie abgelegt. Das Cabinet feiert Punkte und warnt vor falscher Sicherheit.',
+      tip: 'Near Misses fÃ¼r Punkte nutzen, dann die Lane verlassen. Graze-Bonus ist keine Unverwundbarkeit.'
+    },
+    {
+      id: 'wing-trait-hit',
+      title: 'CABINET-LOG: SEITENJOB',
+      role: 'Trait-Read',
+      line: 'FlÃ¼gelschuss getroffen. Diese Seitenkugeln sind keine Deko. Lass chaotische Wellen in die SchrÃ¤gbahnen treiben und stell Rechnung.',
+      description: 'Wird abgelegt, wenn ein FlÃ¼gelschuss-Trait erstmals trifft. Manche Traits belohnen gutes Positionieren in Seitenbahnen.',
+      tip: 'FlÃ¼gel-Traits wirken am besten, wenn Gegner in die schrÃ¤gen Flankenlinien geraten.'
+    },
+    {
+      id: 'bonus-trait-hit',
+      title: 'CABINET-LOG: ZÃ„HLERPRÃœFUNG',
+      role: 'Trait-Timing',
+      line: 'Bonusschuss getroffen. Der ZÃ¤hler misst abgefeuerte SchÃ¼sse, nicht Sekunden. ZÃ¤hlen beim Schreien ist rechtlich anerkannt.',
+      description: 'Wird abgelegt, wenn ein Bonusschuss-Trait erstmals trifft. Es erklÃ¤rt, dass SchusszÃ¤hler durch Feuerrhythmus laufen.',
+      tip: 'Schnelles, gleichmÃ¤ÃŸiges Feuern erreicht ZÃ¤hler-Traits frÃ¼her als Warten auf einen Timer.'
+    },
+    {
+      id: 'low-life-read',
+      title: 'CABINET-LOG: EIN RUMPF ÃœBRIG',
+      role: 'Ãœberlebens-Read',
+      line: 'Ein Leben Ã¼brig. NÃ¼tzlicher Read: Keine MÃ¼nzen jagen, auÃŸer sie reparieren dich. Das Cabinet erstattet keinen Heldentod.',
+      description: 'Wird abgelegt, wenn ein Run erstmals auf ein Leben fÃ¤llt. Es lenkt von Gier zurÃ¼ck zu Ãœberleben.',
+      tip: 'Bei einem Leben offene Lanes und Reparatur-Pickups vor Schadensgier priorisieren.'
+    },
+    {
+      id: 'boss-mercy-read',
+      title: 'CABINET-LOG: GNADENFENSTER',
+      role: 'Erholungs-Read',
+      line: 'Boss-Mercy ausgelÃ¶st. Dieses Erholungsfenster ist echt. Jetzt Abstand schaffen, danach schieÃŸen.',
+      description: 'Wird abgelegt, wenn Boss-Mercy direkten Folgeschaden verhindert. Es erklÃ¤rt, dass das Fenster zum Umpositionieren da ist.',
+      tip: 'Nach einem Bosstreffer zuerst trennen, dann feuern.'
+    },
+    {
+      id: 'max-lives-read',
+      title: 'CABINET-LOG: RUMPFÃœBERSCHUSS',
+      role: 'Sustain-Read',
+      line: 'Maximale Leben erreicht. Ausgezeichnet. Gib dieses Selbstvertrauen fÃ¼r Musterlesen aus, nicht fÃ¼r die nÃ¤chste Explosion.',
+      description: 'Wird beim Erreichen des Lebencaps abgelegt. Der Bonus ist Atemraum, keine Erlaubnis, Muster zu ignorieren.',
+      tip: 'Bei maximalen Leben sicher weiter punkten. Der Puffer ist fÃ¼r Fehler da, nicht fÃ¼r Stillstand.'
+    }
+  ]
+};
+
+localizedCabinetLogs.es = [
+  ['CABINET LOG: RECIBO DE JEFE', 'Lectura de jefe', 'Primer jefe de esta partida. Lectura Ãºtil: la entrada es teatro. Baja al centro y espera la primera seÃ±al real.', 'Archivado cuando aparece el primer jefe. Recuerda usar la entrada como ventana para recomponerte.', 'Durante la entrada del jefe, colÃ³cate abajo y al centro; esquiva cuando la seÃ±al se fije.'],
+  ['CABINET LOG: NUEVO RECIBO', 'Valor del Codex', 'Nueva seÃ±al del Codex archivada: {name}. Da puntos ahora y XP de carrera despuÃ©s. El conocimiento es moneda con peor iluminaciÃ³n.', 'Archivado con la primera seÃ±al nueva del Codex. Explica por quÃ© escanear amenazas es progreso real.', 'Las seÃ±ales nuevas dan puntos, XP de carrera y progreso de hangares futuros.'],
+  ['CABINET LOG: PRESUMIR HITBOX', 'Lectura de roce', 'Tres esquivas cercanas seguidas. Dato breve: las rachas de roce son puntos, no armadura. El pÃ¡nico elegante aÃºn debe moverse.', 'Archivado tras la primera racha peligrosa de near miss.', 'Usa los roces para puntuar y sal del carril. No son invulnerabilidad.'],
+  ['CABINET LOG: NEGOCIO LATERAL', 'Lectura de rasgo', 'Disparo de ala conectado. Esas balas laterales no son adorno. Deja que las oleadas entren en los Ã¡ngulos.', 'Archivado cuando un rasgo de disparo lateral impacta por primera vez.', 'Los rasgos de ala brillan cuando colocas enemigos en los flancos.'],
+  ['CABINET LOG: AUDITORÃA DE CONTADOR', 'Tiempo de rasgo', 'Disparo extra conectado. El contador cuenta disparos, no segundos. Contar gritando es legal.', 'Archivado cuando un rasgo de disparo extra impacta por primera vez.', 'Disparar con ritmo llena contadores antes que esperar un temporizador.'],
+  ['CABINET LOG: UN CASCO RESTANTE', 'Lectura de supervivencia', 'Una vida restante. Lectura Ãºtil: no persigas monedas salvo que reparen. El Cabinet no reembolsa heroÃ­smo.', 'Archivado al caer a una vida por primera vez.', 'Con una vida, prioriza carriles abiertos y reparaciones.'],
+  ['CABINET LOG: VENTANA DE PIEDAD', 'Lectura de recuperaciÃ³n', 'Piedad del jefe activada. Esa ventana es real. AlÃ©jate ahora; dispara cuando el drama deje de pisarte.', 'Archivado cuando la piedad del jefe evita daÃ±o seguido.', 'Tras un golpe de jefe, separa primero y dispara despuÃ©s.'],
+  ['CABINET LOG: SUPERÃVIT DE CASCO', 'Lectura de sustain', 'Vidas al mÃ¡ximo. Excelente. Usa esa confianza para leer patrones, no para audicionar para la prÃ³xima explosiÃ³n.', 'Archivado al llegar al lÃ­mite de vidas.', 'Con vidas mÃ¡ximas, puntÃºa seguro. El colchÃ³n es para errores.']
+].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
+
+localizedCabinetLogs['pt-BR'] = [
+  ['CABINET LOG: RECIBO DE CHEFE', 'Leitura de chefe', 'Primeiro chefe desta partida. Leitura Ãºtil: a entrada Ã© teatro. Fique baixo no centro e espere o primeiro sinal real.', 'Arquivado quando o primeiro chefe entra. Lembra que a entrada Ã© uma janela de reset.', 'Na revelaÃ§Ã£o do chefe, fique baixo no centro e desvie depois do sinal travar.'],
+  ['CABINET LOG: NOVO RECIBO', 'Valor do Codex', 'Novo sinal do Codex arquivado: {name}. DÃ¡ pontos agora e XP de carreira depois. Conhecimento Ã© moeda com iluminaÃ§Ã£o pior.', 'Arquivado na primeira descoberta nova do Codex.', 'Novos sinais dÃ£o pontos, XP de carreira e progresso para futuras naves.'],
+  ['CABINET LOG: HITBOX ORGULHOSA', 'Leitura de raspÃ£o', 'TrÃªs desvios por pouco seguidos. Fato curto: sequÃªncia de raspÃ£o Ã© pontuaÃ§Ã£o, nÃ£o armadura. PÃ¢nico estiloso ainda precisa sair do lugar.', 'Arquivado apÃ³s a primeira sequÃªncia perigosa de near miss.', 'Use near misses para pontuar, depois saia da rota. NÃ£o Ã© invulnerabilidade.'],
+  ['CABINET LOG: BICO LATERAL', 'Leitura de traÃ§o', 'Disparo de asa acertou. Essas balas laterais nÃ£o sÃ£o enfeite. Deixe ondas bagunÃ§adas entrarem nos Ã¢ngulos.', 'Arquivado quando um traÃ§o de disparo lateral acerta pela primeira vez.', 'TraÃ§os de asa funcionam melhor quando inimigos entram pelas laterais.'],
+  ['CABINET LOG: AUDITORIA DO CONTADOR', 'Tempo de traÃ§o', 'Disparo bÃ´nus acertou. O contador conta tiros disparados, nÃ£o segundos. Contar enquanto grita Ã© reconhecido.', 'Arquivado quando um traÃ§o de disparo bÃ´nus acerta.', 'Disparo constante enche contadores antes que esperar temporizadores.'],
+  ['CABINET LOG: UM CASCO SOBRANDO', 'Leitura de sobrevivÃªncia', 'Uma vida restante. Leitura Ãºtil: nÃ£o persiga fichas a menos que reparem vocÃª. O Cabinet nÃ£o reembolsa heroÃ­smo.', 'Arquivado ao chegar a uma vida pela primeira vez.', 'Com uma vida, priorize rotas abertas e reparos.'],
+  ['CABINET LOG: JANELA DE MISERICÃ“RDIA', 'Leitura de recuperaÃ§Ã£o', 'MisericÃ³rdia do chefe ativada. Essa janela Ã© real. Afaste-se agora, atire depois.', 'Arquivado quando a misericÃ³rdia do chefe evita dano em sequÃªncia.', 'Depois de um golpe de chefe, separe primeiro e atire depois.'],
+  ['CABINET LOG: CASCO EM EXCESSO', 'Leitura de sustain', 'Vidas no mÃ¡ximo. Excelente. Use essa confianÃ§a para ler padrÃµes, nÃ£o para testar a prÃ³xima explosÃ£o.', 'Arquivado ao atingir o limite de vidas.', 'Com vidas no mÃ¡ximo, pontue em seguranÃ§a. O colchÃ£o Ã© para erros.']
+].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
+
+localizedCabinetLogs.ru = [
+  ['CABINET LOG: ЧЕК БОССА', 'Чтение босса', 'Первый босс в этом забеге. Полезно: выход это театр. Встань низко по центру и жди первый настоящий сигнал.', 'Архивируется при появлении первого босса. Напоминает использовать выход босса как окно для сброса.', 'На выходе босса держись низко по центру и уклоняйся после фиксации сигнала.'],
+  ['CABINET LOG: НОВЫЙ ЧЕК', 'Ценность Codex', 'Новый сигнал Codex в архиве: {name}. Он дает очки сейчас и карьерный XP позже. Знание это валюта с худшим светом.', 'Архивируется при первой новой находке Codex.', 'Новые сигналы дают очки, карьерный XP и прогресс для будущих кораблей.'],
+  ['CABINET LOG: ХИТБОКС ХВАСТАЕТСЯ', 'Чтение near miss', 'Три близких уклонения подряд. Факт: серия graze дает очки, не броню. Красивой панике все равно надо двигаться.', 'Архивируется после первой опасной серии near miss.', 'Используй near miss для очков и уходи из линии. Это не неуязвимость.'],
+  ['CABINET LOG: БОКОВОЙ БИЗНЕС', 'Чтение трейта', 'Боковой выстрел попал. Эти пули не декор. Заводи грязные волны в угловые линии.', 'Архивируется при первом попадании бокового трейта.', 'Боковые трейты сильнее, когда враги заходят во фланги.'],
+  ['CABINET LOG: АУДИТ СЧЕТЧИКА', 'Тайминг трейта', 'Бонусный выстрел попал. Счетчик считает выстрелы, а не секунды. Считать во время крика разрешено.', 'Архивируется при первом попадании бонусного трейта.', 'Ровная стрельба быстрее заполняет счетчики, чем ожидание таймера.'],
+  ['CABINET LOG: ОДИН КОРПУС', 'Выживание', 'Одна жизнь. Полезно: не гонись за монетами, если они тебя не чинят. Cabinet не возвращает героизм.', 'Архивируется при первой одной жизни.', 'На одной жизни выбирай свободные линии и ремонт.'],
+  ['CABINET LOG: ОКНО ПОЩАДЫ', 'Восстановление', 'Пощада босса сработала. Окно настоящее. Отойди сейчас, стреляй потом.', 'Архивируется, когда пощада босса предотвращает повторный урон.', 'После удара босса сначала разорви дистанцию, потом стреляй.'],
+  ['CABINET LOG: ЗАПАС КОРПУСОВ', 'Sustain', 'Жизни на максимуме. Отлично. Трать уверенность на чтение паттернов, а не на кастинг для следующего взрыва.', 'Архивируется при достижении лимита жизней.', 'На максимуме жизней набирай очки безопасно. Запас нужен для ошибок.']
+].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
+
+localizedCabinetLogs['zh-CN'] = [
+  ['CABINET 日志：Boss 收据', 'Boss 阅读', '本局第一个 Boss。实用提示：登场只是演出。待在下方中线，等第一个真正预警锁定。', '第一个 Boss 出现时归档。提醒玩家把登场当作重整窗口。', 'Boss 登场时保持下方中线，等预警锁定后再躲。'],
+  ['CABINET 日志：新收据', 'Codex 价值', '新的 Codex 信号已归档：{name}。现在给分，之后给职业 XP。知识只是灯光更差的货币。', '首次发现新 Codex 信号时归档。', '新信号会给分、职业 XP，并推进未来飞船解锁。'],
+  ['CABINET 日志：Hitbox 炫耀', '擦弹阅读', '连续三次贴身闪避。小事实：擦弹连段给分，不给护甲。帅气慌张也要移动。', '首次危险 near miss 连段后归档。', '用 near miss 得分，然后离开航道。它不是无敌。'],
+  ['CABINET 日志：侧翼生意', '特性阅读', '翼侧弹命中。那些侧弹不是装饰。让混乱波次进入斜线航道再收账。', '翼侧射击特性首次命中时归档。', '翼侧特性在敌人进入侧翼航道时最强。'],
+  ['CABINET 日志：计数审计', '特性时机', '奖励弹命中。计数器数的是开火次数，不是秒数。边喊边数也合法。', '奖励射击特性首次命中时归档。', '稳定开火比等计时器更快触发计数特性。'],
+  ['CABINET 日志：最后一层 hull', '生存阅读', '只剩一条命。实用提示：除非能修你，否则别追硬币。Cabinet 不报销英雄主义。', '首次掉到一条命时归档。', '一条命时优先开放航道和修复拾取物。'],
+  ['CABINET 日志：宽恕窗口', '恢复阅读', 'Boss 宽恕触发。这个恢复窗口是真的。先离开，再等戏剧别踩你时开火。', 'Boss mercy 阻止连续伤害时归档。', '被 Boss 打中后，先拉开距离，再开火。'],
+  ['CABINET 日志：hull 盈余', '续航阅读', '生命已满。很好。把信心花在读模式上，不要报名下一次爆炸。', '达到生命上限时归档。', '满生命时安全得分。缓冲是给失误用的。']
+].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
+
+localizedCabinetLogs.ko = [
+  ['CABINET 로그: 보스 영수증', '보스 읽기', '이번 런 첫 보스다. 쓸모 있는 읽기: 등장은 연극이다. 아래 중앙에 잡고 첫 진짜 신호를 기다려라.', '첫 보스가 등장할 때 보관된다. 보스 등장을 리셋 창으로 쓰라는 기록.', '보스 등장 중 아래 중앙을 잡고 신호가 고정된 뒤 피하라.'],
+  ['CABINET 로그: 새 영수증', 'Codex 가치', '새 Codex 신호 보관: {name}. 지금은 점수, 나중에는 경력 XP다. 지식은 조명이 나쁜 화폐다.', '새 Codex 신호를 처음 발견할 때 보관된다.', '새 신호는 점수, 경력 XP, 미래 함선 해금에 도움이 된다.'],
+  ['CABINET 로그: 히트박스 자랑', '근접 회피 읽기', '근접 회피 세 번 연속. 작은 사실: graze 연속은 점수이지 방어구가 아니다. 멋진 패닉도 움직여야 한다.', '첫 위험한 near miss 연속 후 보관된다.', 'near miss로 점수를 얻고 즉시 라인을 떠나라. 무적이 아니다.'],
+  ['CABINET 로그: 측면 영업', '특성 읽기', '윙 샷 명중. 그 측면 탄은 장식이 아니다. 지저분한 웨이브를 비스듬한 라인에 넣어라.', '윙 샷 특성이 처음 명중할 때 보관된다.', '윙 특성은 적을 측면 라인에 두면 가장 좋다.'],
+  ['CABINET 로그: 카운터 감사', '특성 타이밍', '보너스 샷 명중. 카운터는 초가 아니라 발사한 탄을 센다. 비명 중 계산도 인정된다.', '보너스 샷 특성이 처음 명중할 때 보관된다.', '꾸준한 발사가 타이머를 기다리는 것보다 카운터를 빨리 채운다.'],
+  ['CABINET 로그: 선체 하나 남음', '생존 읽기', '목숨 하나 남았다. 쓸모 있는 읽기: 수리하지 않는 코인은 쫓지 마라. Cabinet은 영웅심을 환불하지 않는다.', '목숨 하나가 되었을 때 보관된다.', '목숨 하나일 때는 열린 라인과 수리 픽업을 우선하라.'],
+  ['CABINET 로그: 자비 창', '회복 읽기', '보스 mercy 발동. 이 회복 창은 진짜다. 지금 떨어지고, 드라마가 비킬 때 쏴라.', '보스 mercy가 연속 피해를 막을 때 보관된다.', '보스에게 맞은 뒤 먼저 거리를 벌리고 나중에 쏴라.'],
+  ['CABINET 로그: 선체 여유', '유지 읽기', '목숨 최대치. 훌륭하다. 그 자신감은 패턴 읽기에 쓰고 다음 폭발 오디션에는 쓰지 마라.', '목숨 상한에 도달할 때 보관된다.', '최대 목숨일 때 안전하게 점수를 벌어라. 여유분은 실수용이다.']
+].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
+
+localizedCabinetLogs.ja = [
+  ['CABINETログ: ボス領収書', 'ボス読み', 'このラン最初のボス。役立つ読み: 登場は演出。下中央で立て直し、最初の本物の予告を待て。', '最初のボス登場時に保存される。登場演出をリセット時間として使うための記録。', 'ボス登場中は下中央に構え、予告が固定されてから避ける。'],
+  ['CABINETログ: 新規領収書', 'Codex価値', '新しいCodex信号を保存: {name}。今はスコア、後でキャリアXP。知識は照明の悪い通貨だ。', '新しいCodex信号を初発見した時に保存される。', '新信号はスコア、キャリアXP、将来の機体解放に効く。'],
+  ['CABINETログ: ヒットボックス自慢', 'ニアミス読み', '近接回避3回連続。小さな事実: graze連続はスコアであって装甲ではない。華麗な混乱も動け。', '最初の危険なnear miss連続後に保存される。', 'near missで稼いだらレーンを離れる。無敵ではない。'],
+  ['CABINETログ: サイド稼業', '特性読み', 'ウィングショット命中。側面弾は飾りではない。乱れたウェーブを斜めレーンに入れて請求しろ。', 'ウィングショット特性が初命中した時に保存される。', 'ウィング特性は敵を側面レーンに置くと強い。'],
+  ['CABINETログ: カウンター監査', '特性タイミング', 'ボーナスショット命中。カウンターは秒ではなく発射数を数える。叫びながら数えるのも認定済み。', 'ボーナスショット特性が初命中した時に保存される。', '安定して撃つ方がタイマー待ちより早くカウンターを進める。'],
+  ['CABINETログ: 残り1船体', '生存読み', '残機1。役立つ読み: 修理しないコインは追うな。Cabinetは英雄行為を返金しない。', '初めて残機1になった時に保存される。', '残機1では開いたレーンと修理ピックアップを優先。'],
+  ['CABINETログ: 慈悲ウィンドウ', '回復読み', 'ボスmercy発動。その回復時間は本物だ。今は離れ、演出が足をどけてから撃て。', 'ボスmercyが連続ダメージを防いだ時に保存される。', 'ボス被弾後はまず距離を取り、それから撃つ。'],
+  ['CABINETログ: 船体余剰', '維持読み', '残機最大。素晴らしい。その自信はパターン読みへ。次の爆発オーディションには使うな。', '残機上限に到達した時に保存される。', '最大残機では安全に稼ぐ。余裕はミス用だ。']
+].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
+
 const fragments = {
   leads: [
     { value: 'Arcade Control', weight: 1.4 },
@@ -803,6 +1021,34 @@ export function getStoryTransmission(level = 1) {
     if (safeLevel >= beat.levelMin) selected = beat;
   }
   return { ...selected };
+}
+
+function fillCabinetTemplate(text, context = {}) {
+  return String(text || '').replace(/\{([a-zA-Z0-9_]+)\}/g, (full, key) => (
+    Object.prototype.hasOwnProperty.call(context, key) ? String(context[key]) : full
+  ));
+}
+
+function currentCabinetLogs() {
+  const localized = localizedCabinetLogs[getCurrentLanguage()] || null;
+  return cabinetLogsEn.map((entry, index) => ({
+    ...entry,
+    ...(localized?.[index] || {})
+  }));
+}
+
+export function getCabinetLogEntries(context = {}) {
+  return currentCabinetLogs().map((entry) => ({
+    ...entry,
+    line: fillCabinetTemplate(entry.line, context),
+    description: fillCabinetTemplate(entry.description, context),
+    tip: fillCabinetTemplate(entry.tip, context)
+  }));
+}
+
+export function getCabinetLogEntry(id, context = {}) {
+  const entry = getCabinetLogEntries(context).find((item) => item.id === id);
+  return entry ? { ...entry } : null;
 }
 
 const tauntTemplates = [

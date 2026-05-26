@@ -23,7 +23,8 @@ const CATEGORY_ACCENTS = Object.freeze({
   waveTactics: 0x37f5ff,
   elites: 0xff55d9,
   bosses: 0xff6a2a,
-  runThemes: 0xa77dff
+  runThemes: 0xa77dff,
+  cabinetLogs: 0xffd15c
 });
 
 function localize(source) {
@@ -300,7 +301,8 @@ export class ThreatCodexScene {
       waveTactics: AssetManifest.generated.stormGameplayBackdrop,
       elites: AssetManifest.generated.eliteMiddleShips?.[0],
       bosses: AssetManifest.generated.bossDossier || AssetManifest.generated.bossArenaBackdrop,
-      runThemes: AssetManifest.generated.menuBackdrop
+      runThemes: AssetManifest.generated.menuBackdrop,
+      cabinetLogs: AssetManifest.generated.menuCredits
     };
     return fallback[categoryId] || AssetManifest.generated.leaderboardHall;
   }

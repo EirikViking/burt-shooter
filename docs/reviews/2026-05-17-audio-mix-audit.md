@@ -1,6 +1,6 @@
-# Audio Mix Audit - 2026-05-23
+# Audio Mix Audit - 2026-05-26
 
-Generated: 2026-05-23T09:12:14.007Z
+Generated: 2026-05-26T10:41:24.070Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -13,10 +13,10 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Coverage
 
-- Measured files: 238
+- Measured files: 244
 - Music rows: 26
-- SFX rows: 159
-- Voice rows: 101
+- SFX rows: 161
+- Voice rows: 105
 - Warnings: 0
 - Errors: 0
 
@@ -40,6 +40,7 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
 | sfx | boss_explode | lowFrequency_explosion_001.mp3 | -1.1 dB | -20.0 dB | -34.8 dB |
+| sfx | overrun_clear_shockwave | nova_overrun_clear_shockwave.mp3 | -0.3 dB | -20.0 dB | -39.5 dB |
 | sfx | boss_explode | lowFrequency_explosion_000.mp3 | -1.2 dB | -20.1 dB | -37.2 dB |
 | sfx | boss_reveal_stinger | boss_reveal_stinger.mp3 | -0.2 dB | -20.3 dB | -28.9 dB |
 | sfx | shoot_heavy | laserLarge_002.mp3 | -0.3 dB | -20.4 dB | -36.9 dB |
@@ -47,13 +48,13 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | sfx | shoot_heavy | laserLarge_003.mp3 | -1.0 dB | -21.1 dB | -38.3 dB |
 | sfx | shoot_heavy | laserLarge_001.mp3 | -1.1 dB | -21.2 dB | -36.9 dB |
 | sfx | shoot_heavy | laserLarge_000.mp3 | -1.2 dB | -21.3 dB | -37.6 dB |
-| sfx | shoot_alt | laserRetro_000.mp3 | -0.2 dB | -21.7 dB | -29.3 dB |
-| sfx | shoot_alt | laserRetro_003.mp3 | -0.2 dB | -21.7 dB | -29.4 dB |
+| sfx | overrun_clear_coronation | nova_overrun_clear_coronation.mp3 | -2.1 dB | -21.6 dB | -36.4 dB |
 
 ### Voice
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
+| voice | mission_control_overrun_clear | mission_control_overrun_clear_01.mp3 | -1.1 dB | -18.1 dB | -30.8 dB |
 | voice | one_more_run_13 | one_more_run_13.mp3 | -0.8 dB | -18.2 dB | -33.1 dB |
 | voice | one_more_run_39 | one_more_run_39.mp3 | -0.8 dB | -18.2 dB | -31.5 dB |
 | voice | one_more_run_40 | one_more_run_40.mp3 | -0.8 dB | -18.2 dB | -32.0 dB |
@@ -61,7 +62,6 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | voice | one_more_run_31 | one_more_run_31.mp3 | -0.9 dB | -18.3 dB | -35.2 dB |
 | voice | one_more_run_47 | one_more_run_47.mp3 | -0.9 dB | -18.3 dB | -31.7 dB |
 | voice | mission_control_top3_highscore | mission_control_top3_highscore_01.mp3 | -1.1 dB | -18.3 dB | -32.3 dB |
-| voice | one_more_run_14 | one_more_run_14.mp3 | -1.0 dB | -18.4 dB | -31.6 dB |
 
 ## Quietest Effective Peaks
 

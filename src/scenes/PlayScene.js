@@ -28,6 +28,7 @@ import {
   getEnemyTaunt,
   getMicroMessage,
   getAllNewPhrases,
+  getCabinetLogEntry,
   getStoryTransmission
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
@@ -38,6 +39,8 @@ import {
   recordThreatDefeated,
   recordThreatSeen
 } from '../progression/ThreatDiscoveryState.js';
+
+const OVERRUN_CLEAR_VFX_MS = 5600;
 
 export class PlayScene {
   constructor(game) {
@@ -78,6 +81,7 @@ export class PlayScene {
     this.tauntTimer = 0;
     this.storyTransmissionTimer = 0;
     this.shownStoryTransmissionIds = new Set();
+    this.shownCabinetLogIds = new Set();
     this.commsPortraitsReady = null;
     this.lowLivesShownFor = null;
     this.lastMaxLivesVoiceAt = 0;
@@ -138,6 +142,9 @@ export class PlayScene {
     this.tractorHijack = null;
     this.lastTractorHijack = null;
     this.tractorHijackLayer = null;
+    this.overrunClearLayer = null;
+    this.overrunClearEffects = [];
+    this.overrunSealTexture = null;
     this.bossHazards = [];
     this.bossHazardLayer = null;
     this.lastBossHazardHit = null;
@@ -159,7 +166,8 @@ export class PlayScene {
     this.loreBagIndex = 0;
     this.lastLoreLine = null;
     this.lastLoreAt = 0;
-    this.loreCooldownMs = 10000;
+    this.loreCooldownMs = 7200;
+    this.lastCabinetLog = null;
     this.lastMajorToastAt = 0;
     this.majorToastCooldownMs = 3500;
 
@@ -235,10 +243,16 @@ export class PlayScene {
     this.uiOverlay.removeChildren();
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
+    this.overrunClearEffects = [];
+    this.overrunClearLayer = new PIXI.Container();
+    this.overrunClearLayer.zIndex = 9600;
+    this.overrunClearLayer.sortableChildren = true;
+    this.uiOverlay.addChild(this.overrunClearLayer);
 
     // TASK D: Create procedural starfield background
     this.createStarfield();
     this.loadBossDossierTexture();
+    this.loadOverrunSealTexture();
 
     // --- Hud & UI ---
     this.hud = new HUD(this.uiContainer, this.game);
@@ -284,6 +298,8 @@ export class PlayScene {
     };
 
     this.gameTime = 0;
+    this.shownCabinetLogIds.clear();
+    this.lastCabinetLog = null;
     this.totalKills = 0;
     this.bossKills = 0;
     this.wavesCleared = 0;
@@ -933,6 +949,7 @@ export class PlayScene {
     this.powerupManager.checkLevelReset(this.game.level); // Reset powerup caps
     if (this.game.level === 1) {
       this.shownStoryTransmissionIds.clear();
+      this.shownCabinetLogIds.clear();
     }
 
     this.enemyManager.startLevel(this.game.level);
@@ -952,7 +969,6 @@ export class PlayScene {
 
     this.resetRandomTimers();
     this.ambientBonusDroneTimer = 2000 + Math.random() * 3000;
-    this.queueStoryTransmission(postBossLevelIntro ? 3200 : 2600);
   }
 
   showLevelIntro({ postBoss = false } = {}) {
@@ -1130,6 +1146,7 @@ export class PlayScene {
       this.updatePlayerMetrics(delta);
 
       this.checkCollisions();
+      this.updateOverrunClearCelebrations();
 
       // Level progression
       if (this.enemyManager.isLevelComplete() && !this.enemyManager.spawning && !this.levelAdvancePending) {
@@ -1189,13 +1206,37 @@ export class PlayScene {
           this.levelAdvancePending = false;
           this.levelAdvanceTimeout = null;
           this.postBossLevelIntroPending = bossCompletion;
-          if (bossCompletion && this.game.level >= RunPacingConfig.targetSectors) {
+          if (bossCompletion && !this.game.runCleared && this.game.level >= RunPacingConfig.targetSectors) {
             const clearBonus = 10000;
             const livesBonus = Math.max(0, Number(this.game.lives) || 0) * 2500;
             if (clearBonus > 0) this.game.addScore(clearBonus, 'runClearBonus');
             if (livesBonus > 0) this.game.addScore(livesBonus, 'remainingLivesBonus');
-            this.game.completeRun?.('target_sector_clear');
-            return;
+            const markedClear = this.game.markRunClear?.('target_sector_clear');
+            if (markedClear) {
+              const nextSector = this.game.level + 1;
+              this.triggerOverrunClearCelebration({ nextSector });
+              this.showToast([
+                translateText('RUN CLEAR! OVERRUN UNLOCKED'),
+                translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
+                  clearBonus: clearBonus.toLocaleString('en-US'),
+                  livesBonus: livesBonus.toLocaleString('en-US')
+                }),
+                translateText('SECTOR {sector} WILL NOT BE POLITE', { sector: nextSector })
+              ].join('\n'), {
+                fontSize: compactHud ? 21 : 32,
+                fill: '#fff3a2',
+                stroke: '#150318',
+                strokeThickness: compactHud ? 4 : 6,
+                duration: 4300,
+                slot: 'center',
+                type: 'run_clear',
+                priority: 10,
+                transition: true,
+                y: this.game.getHeight() * (compactHud ? 0.29 : 0.37),
+                maxWidth: this.game.getWidth() * (compactHud ? 0.9 : 0.78)
+              });
+              this.reserveMessageFocus(4400, { priority: 10, slots: ['top', 'corner'] });
+            }
           }
           if (bossCompletion) {
             this.damageTakenThisSector = 0;
@@ -2174,6 +2215,22 @@ export class PlayScene {
     }
   }
 
+  async loadOverrunSealTexture() {
+    const src = AssetManifest.generated?.vfx?.overrunVictorySeal;
+    if (!src) return;
+    try {
+      const texture = await PIXI.Assets.load({
+        alias: 'generated_overrun_victory_seal',
+        src
+      });
+      if (GameAssets.isValidTexture(texture)) {
+        this.overrunSealTexture = texture;
+      }
+    } catch (error) {
+      console.warn('[PlayScene] Overrun victory seal art failed to load:', error);
+    }
+  }
+
   applyGameplayBackdropLevel(level = 1) {
     const stormActive = level >= 3;
     const bossActive = level % 5 === 0 || this.enemyManager?.state === 'BOSS' || this.enemyManager?.boss?.active;
@@ -2599,17 +2656,11 @@ export class PlayScene {
   resetRandomTimers() {
     this.achievementTimer = 0;
     this.tauntTimer = 0;
-    this.storyTransmissionTimer = this.getRandomTimer(18000, 26000);
+    this.storyTransmissionTimer = 0;
   }
 
   updateRandomPopups(delta) {
-    if (this.storyTransmissionTimer > 0) {
-      this.storyTransmissionTimer -= delta * 16.67;
-      return;
-    }
-
-    const shown = this.showStoryTransmission();
-    this.storyTransmissionTimer = shown ? this.getRandomTimer(16000, 24000) : this.getRandomTimer(3500, 6500);
+    if (this.storyTransmissionTimer > 0) this.storyTransmissionTimer -= delta * 16.67;
   }
 
   queueStoryTransmission(delayMs = 2600) {
@@ -2619,6 +2670,11 @@ export class PlayScene {
   }
 
   showStoryTransmission({ force = false } = {}) {
+    if (this.triggerCabinetLog('codex-discovery', {
+      name: translateText('Cabinet Log')
+    }, { force, debug: true })) {
+      return true;
+    }
     const transmission = getStoryTransmission(this.game.level);
     if (!transmission?.line) return false;
     if (!force && this.shownStoryTransmissionIds.has(transmission.id)) return false;
@@ -2639,6 +2695,60 @@ export class PlayScene {
     if (!shown) return false;
     this.shownStoryTransmissionIds.add(transmission.id);
     this.lastStoryTransmissionId = transmission.id;
+    return true;
+  }
+
+  triggerCabinetLog(id, context = {}, options = {}) {
+    if (!id) return false;
+    if (!options.force && this.shownCabinetLogIds.has(id)) return false;
+    if (!options.force && !this.canShowLore()) return false;
+
+    const entry = getCabinetLogEntry(id, {
+      level: this.game?.level || 1,
+      score: this.game?.score || 0,
+      streak: this.dangerDodgeCount || 0,
+      ship: this.player?.shipName || this.player?.shipTrait?.label || 'SHIP',
+      ...context
+    });
+    if (!entry?.line) return false;
+
+    let appliedBonus = 0;
+    const discovery = this.recordThreatDiscovery(entry.id, 'cabinetLogs', {
+      name: entry.title,
+      label: entry.title,
+      role: entry.role || translateText('Cabinet Log'),
+      description: entry.description,
+      tip: entry.tip,
+      line: entry.line,
+      sector: this.game?.level || 1,
+      source: context.source || id
+    }, { silent: true });
+    if (discovery?.isNew && Number.isFinite(discovery.appliedBonus)) {
+      appliedBonus = discovery.appliedBonus;
+    }
+
+    const archiveLine = appliedBonus > 0
+      ? `\n${translateText('CABINET LOG ARCHIVED')} +${appliedBonus}`
+      : '';
+    const shown = this.showLoreBanner(`${entry.line}${archiveLine}`, {
+      title: entry.title || translateText('CABINET LOG'),
+      imageAlias: entry.imageAlias,
+      force: options.force,
+      accent: entry.accent,
+      duration: options.duration || (appliedBonus > 0 ? 4200 : 3600),
+      maxWidth: this.game.getWidth() < 620
+        ? this.game.getWidth() * 0.82
+        : Math.min(460, this.game.getWidth() * 0.38)
+    });
+    if (!shown) return false;
+    this.shownCabinetLogIds.add(id);
+    this.lastCabinetLog = {
+      id,
+      title: entry.title,
+      line: entry.line,
+      archived: Boolean(discovery?.isNew),
+      appliedBonus
+    };
     return true;
   }
 
@@ -2715,6 +2825,11 @@ export class PlayScene {
     }
 
     this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
+    if (this.game.lives === 1) {
+      this.triggerCabinetLog('low-life-read', {
+        source: 'one_life_left'
+      });
+    }
 
     // RESPONDER LOGIC
     if (this.player && this.game.lives > 0) {
@@ -2893,6 +3008,9 @@ export class PlayScene {
     const cooldownMs = this.startBossMercyWindow(source, boss);
     this.player.grantInvulnerability?.(cooldownMs, 'boss_mercy');
     if (source === 'boss_contact') this.applyBossRecoverySeparation(boss);
+    this.triggerCabinetLog('boss-mercy-read', {
+      source: 'boss_mercy'
+    });
     this.recordBalanceDamage(options.balanceSource || source);
     this.lastHitAt = Date.now();
     this.game.loseLife();
@@ -2948,6 +3066,9 @@ export class PlayScene {
         volume: 1.75
       });
     }
+    this.triggerCabinetLog('max-lives-read', {
+      source: 'max_lives'
+    });
     console.log(`[Lives] max_reached lives=${maxLives}`);
   }
 
@@ -3903,12 +4024,174 @@ export class PlayScene {
     console.log(`[Powerup] pickup type=SCORE_X2 durationMs=${durationMs} source=${source}`);
   }
 
+  triggerOverrunClearCelebration({ nextSector = (this.game?.level || 10) + 1 } = {}) {
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const centerX = width * 0.5;
+    const centerY = height * (width < 620 ? 0.36 : 0.42);
+    const container = new PIXI.Container();
+    container.zIndex = 9600 + this.overrunClearEffects.length;
+    container.sortableChildren = true;
+    container.blendMode = 'add';
+
+    const flash = new PIXI.Graphics();
+    flash.zIndex = 0;
+    container.addChild(flash);
+
+    const rays = new PIXI.Graphics();
+    rays.zIndex = 2;
+    container.addChild(rays);
+
+    const sealTexture = this.overrunSealTexture;
+    let seal = null;
+    if (sealTexture && GameAssets.isValidTexture(sealTexture)) {
+      seal = new PIXI.Sprite(sealTexture);
+      seal.anchor.set(0.5);
+      seal.x = centerX;
+      seal.y = centerY;
+      seal.alpha = 0;
+      seal.blendMode = 'add';
+      seal.zIndex = 1;
+      container.addChild(seal);
+    }
+
+    const rings = new PIXI.Graphics();
+    rings.zIndex = 3;
+    container.addChild(rings);
+
+    const shards = Array.from({ length: width < 620 ? 28 : 46 }, (_, index) => ({
+      angle: (Math.PI * 2 * index) / (width < 620 ? 28 : 46) + Math.random() * 0.16,
+      speed: 0.72 + Math.random() * 0.55,
+      size: 4 + Math.random() * 10,
+      drift: Math.random() * 0.9,
+      color: Math.random() < 0.5 ? 0xffd15c : 0x61f6ff
+    }));
+
+    const effect = {
+      startedAt: Date.now(),
+      durationMs: OVERRUN_CLEAR_VFX_MS,
+      centerX,
+      centerY,
+      nextSector,
+      container,
+      flash,
+      rays,
+      rings,
+      seal,
+      shards
+    };
+    this.overrunClearLayer?.addChild(container);
+    this.overrunClearEffects.push(effect);
+
+    this.screenShake?.shake(width < 620 ? 16 : 24, width < 620 ? 24 : 34);
+    AudioManager.duckMusic?.(0.28, 4300);
+    AudioManager.playSfx('overrun_clear_shockwave', { force: true, volume: 1.0, minIntervalMs: 0 });
+    AudioManager.playSfx('overrun_clear_coronation', { force: true, volume: 1.0, minIntervalMs: 0 });
+    setTimeout(() => {
+      if (this.game?.currentScene !== this) return;
+      AudioManager.playVoice('mission_control_overrun_clear', {
+        force: true,
+        stopOtherVoices: true,
+        exclusiveGroup: 'announcer',
+        bypassEventCooldown: true,
+        bypassGlobalCooldown: true,
+        cooldownMs: 60000,
+        duckFactor: 0.28,
+        duckMs: 4200,
+        volume: 1.08
+      });
+    }, 520);
+  }
+
+  updateOverrunClearCelebrations() {
+    if (!this.overrunClearEffects?.length) return;
+    const now = Date.now();
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+
+    this.overrunClearEffects = this.overrunClearEffects.filter((effect) => {
+      const elapsed = now - effect.startedAt;
+      const progress = Math.max(0, Math.min(1, elapsed / effect.durationMs));
+      if (progress >= 1) {
+        effect.container?.parent?.removeChild(effect.container);
+        effect.container?.destroy?.({ children: true });
+        return false;
+      }
+
+      const burst = 1 - Math.pow(1 - Math.min(1, progress * 2.2), 3);
+      const fade = Math.sin(progress * Math.PI);
+      const lateFade = Math.max(0, 1 - Math.max(0, progress - 0.72) / 0.28);
+      const pulse = 1 + Math.sin(now * 0.012) * 0.025;
+      const maxRadius = Math.hypot(width, height) * 0.68;
+
+      effect.flash.clear();
+      const flashAlpha = Math.max(0, (1 - progress * 5.8) * 0.34);
+      if (flashAlpha > 0) {
+        effect.flash.rect(0, 0, width, height);
+        effect.flash.fill({ color: 0xfff2a6, alpha: flashAlpha });
+      }
+
+      if (effect.seal) {
+        const baseScale = Math.min(width, height) / 1024;
+        const introScale = 0.18 + burst * 0.82;
+        effect.seal.x = effect.centerX;
+        effect.seal.y = effect.centerY;
+        effect.seal.scale.set(baseScale * introScale * (1.08 + Math.sin(now * 0.006) * 0.025));
+        effect.seal.rotation = -0.1 + progress * 0.34;
+        effect.seal.alpha = Math.min(0.82, burst * 0.9) * lateFade;
+      }
+
+      effect.rays.clear();
+      effect.rings.clear();
+
+      for (let i = 0; i < 4; i += 1) {
+        const local = (progress * 1.7 + i * 0.22) % 1;
+        const radius = 48 + local * maxRadius;
+        const alpha = Math.max(0, 1 - local) * 0.34 * lateFade;
+        effect.rings.circle(effect.centerX, effect.centerY, radius * pulse);
+        effect.rings.stroke({ color: i % 2 ? 0x61f6ff : 0xffd15c, width: 4 - i * 0.55, alpha });
+      }
+
+      for (let i = 0; i < 24; i += 1) {
+        const angle = (Math.PI * 2 * i) / 24 + progress * 0.32;
+        const inner = 34 + burst * 70;
+        const outer = inner + maxRadius * (0.36 + Math.sin(i + now * 0.004) * 0.04);
+        const alpha = (0.1 + 0.16 * Math.sin(progress * Math.PI)) * lateFade;
+        effect.rays.moveTo(effect.centerX + Math.cos(angle) * inner, effect.centerY + Math.sin(angle) * inner);
+        effect.rays.lineTo(effect.centerX + Math.cos(angle) * outer, effect.centerY + Math.sin(angle) * outer);
+        effect.rays.stroke({ color: i % 3 === 0 ? 0xffffff : (i % 2 ? 0x61f6ff : 0xffd15c), width: i % 3 === 0 ? 2.2 : 1.3, alpha });
+      }
+
+      for (const shard of effect.shards) {
+        const t = Math.min(1, progress * shard.speed);
+        const distance = 70 + t * Math.min(width, height) * (0.42 + shard.drift * 0.25);
+        const spin = now * 0.004 + shard.drift * 3;
+        const x = effect.centerX + Math.cos(shard.angle) * distance;
+        const y = effect.centerY + Math.sin(shard.angle) * distance;
+        const dx = Math.cos(shard.angle + Math.PI * 0.5 + spin) * shard.size;
+        const dy = Math.sin(shard.angle + Math.PI * 0.5 + spin) * shard.size;
+        effect.rays.moveTo(x - dx, y - dy);
+        effect.rays.lineTo(x + dx, y + dy);
+        effect.rays.stroke({ color: shard.color, width: 2.5, alpha: Math.max(0, (1 - t) * 0.78) * lateFade });
+      }
+
+      const coreRadius = 18 + burst * 92 + Math.sin(now * 0.018) * 5;
+      effect.rings.circle(effect.centerX, effect.centerY, coreRadius);
+      effect.rings.fill({ color: 0xffffff, alpha: 0.08 * fade });
+      effect.rings.circle(effect.centerX, effect.centerY, coreRadius * 1.34);
+      effect.rings.stroke({ color: 0xfff2a6, width: 6, alpha: 0.2 * fade * lateFade });
+
+      return true;
+    });
+  }
+
   enqueueToast(message, options = {}) {
     if (!message) return;
     const slot = options.slot || 'center';
     const type = options.type || 'generic';
     const priorityMap = {
       boss: 4,
+      run_clear: 5,
       level_clear: 3,
       rank_up: 3,
       repair: 2,
@@ -4117,7 +4400,7 @@ export class PlayScene {
   }
 
   isTransitionToastType(type) {
-    return type === 'level_clear' || type === 'level_up' || type === 'boss';
+    return type === 'level_clear' || type === 'level_up' || type === 'boss' || type === 'run_clear';
   }
 
   delayReadyToast(queue, entry, delayMs, now = Date.now()) {
@@ -4195,7 +4478,7 @@ export class PlayScene {
   showLoreBanner(text, options = {}) {
     if (!text) return false;
     if (!options.force && !this.canShowLore()) return false;
-    const duration = 2500 + Math.random() * 1000;
+    const duration = Number.isFinite(options.duration) ? options.duration : 2500 + Math.random() * 1000;
     const compactHud = this.game.getWidth() < 620;
     const y = compactHud
       ? Math.min(this.game.getHeight() - 170, Math.max(220, this.game.getHeight() * 0.32))
@@ -4211,7 +4494,9 @@ export class PlayScene {
       imageAlias: options.imageAlias || null,
       align: compactHud ? 'center' : 'right',
       y,
-      maxWidth: compactHud
+      maxWidth: Number.isFinite(options.maxWidth)
+        ? options.maxWidth
+        : compactHud
         ? this.game.getWidth() * 0.78
         : Math.min(360, this.game.getWidth() * 0.32)
     });
@@ -4270,7 +4555,7 @@ export class PlayScene {
       const paddingX = 24;
       const paddingY = 16;
       const minFontSize = 16;
-      const maxTextHeight = 80;
+      const maxTextHeight = options.type === 'lore' ? 106 : 80;
 
       const commsPortraits = Object.keys(GameAssets.commsPortraits || {});
       const requestedAvatar = options.imageAlias && GameAssets.isValidTexture(GameAssets.getCommsPortrait(options.imageAlias))
@@ -4307,7 +4592,7 @@ export class PlayScene {
       panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
       panel.fill({ color: options.type === 'lore' ? 0x05121c : 0x111111, alpha: options.type === 'lore' ? 0.78 : 0.88 });
       panel.stroke({
-        color: options.type === 'lore' ? 0x6fe7ff : 0xffff00,
+        color: options.type === 'lore' ? (options.accent || 0x6fe7ff) : 0xffff00,
         width: options.type === 'lore' ? 1.5 : 3,
         alpha: options.type === 'lore' ? 0.78 : 1
       });
@@ -4530,16 +4815,26 @@ export class PlayScene {
     this.synergyBadge.visible = true;
   }
 
-  recordThreatDiscovery(id, category, metadata = {}) {
+  recordThreatDiscovery(id, category, metadata = {}, options = {}) {
     if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
     const result = recordThreatSeen(id, category, metadata);
     if (!result?.isNew) return result;
 
     const bonus = category === 'runThemes'
       ? RunPacingConfig.discovery.firstRunThemeBonus
-      : RunPacingConfig.discovery.firstSeenBonus;
+      : category === 'cabinetLogs'
+        ? (RunPacingConfig.discovery.cabinetLogBonus || RunPacingConfig.discovery.firstSeenBonus)
+        : RunPacingConfig.discovery.firstSeenBonus;
     const appliedBonus = this.game.addScore(bonus, 'discoveryBonus');
     this.discoveryBonus = (Number(this.discoveryBonus) || 0) + appliedBonus;
+    result.appliedBonus = appliedBonus;
+    if (category !== 'cabinetLogs') {
+      this.triggerCabinetLog('codex-discovery', {
+        name: metadata.name || metadata.label || id,
+        source: `codex:${category}`
+      });
+    }
+    if (options.silent) return result;
     const label = String(metadata.name || metadata.label || id).replace(/_/g, ' ').toUpperCase();
     this.enqueueToast(`${translateText('NEW THREAT SCANNED')}: ${label}\n${translateText('THREAT CODEX UPDATED')} +${appliedBonus}`, {
       fontSize: this.game.getWidth() < 620 ? 14 : 17,
@@ -4923,6 +5218,10 @@ export class PlayScene {
     if (this.dangerDodgeCount >= 3) {
       AudioManager.playSfx('combo_tick', { volume: 0.56 });
       this.armGrazeBreak();
+      this.triggerCabinetLog('near-miss-streak', {
+        streak: this.dangerDodgeCount,
+        source: 'near_miss_streak'
+      });
     }
   }
 
@@ -4977,6 +5276,9 @@ export class PlayScene {
       const appliedBonusScore = this.game.addScore(bonusScore);
       if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 12, appliedBonusScore);
       AudioManager.playSfx('trait_bonus_hit', { volume: 0.12, minIntervalMs: 650 });
+      this.triggerCabinetLog('bonus-trait-hit', {
+        source: 'trait_bonus_hit'
+      });
     }
 
     if (bullet.isTraitWingShot) {
@@ -4989,6 +5291,9 @@ export class PlayScene {
         this.lastTraitImpactToastAt = now;
         this.enqueueToast(`WING HIT +${appliedWingScore}`, { fontSize: 14, fill: '#66ff99', slot: 'top', type: 'trait', duration: 650 });
       }
+      this.triggerCabinetLog('wing-trait-hit', {
+        source: 'trait_wing_hit'
+      });
     }
   }
 

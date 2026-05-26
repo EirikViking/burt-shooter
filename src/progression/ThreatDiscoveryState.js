@@ -8,6 +8,7 @@ export const DISCOVERY_CATEGORIES = Object.freeze([
   'elites',
   'bosses',
   'runThemes',
+  'cabinetLogs',
   'rareModifiers'
 ]);
 

@@ -1882,6 +1882,10 @@ export class EnemyManager {
         role: boss.profile?.title || 'boss',
         sector: level
       });
+      playScene?.triggerCabinetLog?.('first-boss-spawn', {
+        name: boss.profile?.name || boss.name || boss.bossType || `Boss ${level}`,
+        source: 'boss_spawn'
+      });
     }
     if (!marketingDebug && playScene?.showBossIntro) {
       const taunt = playScene.getBossTauntCaption ? playScene.getBossTauntCaption('boss_spawn') : getMicroMessage('bossIntro');

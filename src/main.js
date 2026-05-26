@@ -520,8 +520,11 @@ function buildGameTextState(game) {
       bossesKilled: playScene?.bossKills || 0,
       wavesCleared: playScene?.wavesCleared || 0,
       runCleared: Boolean(game?.runCleared || game?.runSummary?.runCleared),
+      clearReason: game?.runClearReason || game?.runSummary?.clearReason || null,
+      clearLivesRemaining: game?.runClearLivesRemaining || game?.runSummary?.clearLivesRemaining || 0,
       score: game?.score || 0,
       scoreBreakdown: game?.scoreBreakdown || null,
+      lastCabinetLog: playScene?.lastCabinetLog || null,
       currentEnemyBulletCount: enemyBullets.filter(bullet => bullet?.active !== false).length,
       peakEnemyBulletCount: playScene?.peakEnemyBulletCount || null,
       pilotXp: hangarProgressSummary.pilotXp,
@@ -587,6 +590,7 @@ function buildGameTextState(game) {
       backButton: getBoundsDebug(shipSelectScene.backButton),
       mainMenuButtonFocused: Boolean(shipSelectScene.mainMenuButtonFocused),
       hangarMenu: shipSelectScene.getHangarMenuDebugState ? shipSelectScene.getHangarMenuDebugState(getBoundsDebug) : null,
+      careerInfo: shipSelectScene.getCareerInfoDebugState ? shipSelectScene.getCareerInfoDebugState(getBoundsDebug) : null,
       startButton: getBoundsDebug(shipSelectScene.startButton)
     } : null,
     gameOver: gameOverScene ? {

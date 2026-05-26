@@ -91,6 +91,7 @@ export class SettingsOverlay {
     this.creditsAnimatedNodes = [];
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
+    this.creditsUnlockReveal = null;
     this.controls = [];
     this.focusedControlIndex = 0;
     this.gamepadNavigator = new GamepadNavigator();
@@ -661,6 +662,7 @@ export class SettingsOverlay {
     this.creditsAnimatedNodes = [];
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
+    this.creditsUnlockReveal = null;
     this.build();
     const nextIndex = Math.max(0, this.controls.findIndex((control) => control.id === focusedId));
     this.setControlFocus(nextIndex);
@@ -805,7 +807,9 @@ export class SettingsOverlay {
     const bodyX = isCompact ? panelX + margin : artRect.x + artRect.width + 36;
     const bodyY = isCompact ? artRect.y + artRect.height + 18 : contentTop + 2;
     const bodyWidth = isCompact ? panelWidth - margin * 2 : panelX + panelWidth - margin - bodyX;
-    const bodyHeight = isCompact ? Math.max(170, contentBottom - bodyY - 14) : contentHeight - 4;
+    const eggRowY = buttonY - (isCompact ? 92 : 96);
+    const footerY = eggRowY - (isCompact ? 42 : 48);
+    const bodyHeight = Math.max(isCompact ? 130 : 178, footerY - bodyY - 18);
     const bodyWash = new PIXI.Graphics();
     bodyWash.roundRect(
       bodyX - 16,
@@ -851,13 +855,13 @@ export class SettingsOverlay {
       align: 'center'
     });
     footer.anchor.set(0.5, 1);
-    footer.position.set(isCompact ? width / 2 : bodyX + bodyWidth / 2, buttonY - (isCompact ? 38 : 52));
+    footer.position.set(isCompact ? width / 2 : bodyX + bodyWidth / 2, footerY);
     fitTextToWidth(footer, isCompact ? panelWidth - margin * 2 : bodyWidth, { minScale: 0.78 });
     overlay.addChild(footer);
 
     const coin = this.createCreditsCoinButton(
-      panelX + panelWidth - (isCompact ? 72 : 86),
-      panelY + panelHeight - (isCompact ? 82 : 96),
+      isCompact ? panelX + panelWidth - 58 : bodyX + bodyWidth - 42,
+      eggRowY,
       isCompact
     );
     overlay.addChild(coin);
@@ -874,7 +878,8 @@ export class SettingsOverlay {
       align: 'right'
     });
     eggStatus.anchor.set(1, 0.5);
-    eggStatus.position.set(coin.x - (isCompact ? 34 : 44), coin.y);
+    eggStatus.position.set(coin.x - (isCompact ? 38 : 48), coin.y);
+    fitDisplayToBox(eggStatus, Math.max(120, (isCompact ? panelWidth - margin * 2 : bodyWidth) - 88), isCompact ? 46 : 52, { minScale: 0.66 });
     overlay.addChild(eggStatus);
     this.creditsEggStatusText = eggStatus;
 
@@ -998,6 +1003,7 @@ export class SettingsOverlay {
       this.creditsEggStatusText.style.fill = '#fff3a2';
     }
     coinButton._drawCoin?.(true);
+    this.showCreditsShipUnlockReveal(result);
     this.creditsDebugState = {
       ...(this.creditsDebugState || {}),
       easterEgg: {
@@ -1009,18 +1015,192 @@ export class SettingsOverlay {
     };
   }
 
+  showCreditsShipUnlockReveal(result = {}) {
+    if (!this.creditsPanel) return;
+    if (this.creditsUnlockReveal?.parent) {
+      this.creditsUnlockReveal.parent.removeChild(this.creditsUnlockReveal);
+    }
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const compact = width < 820 || height < 760;
+    const reveal = new PIXI.Container();
+    reveal.label = 'ui_creditsShipUnlockReveal';
+    reveal.zIndex = 1200;
+    reveal.alpha = 0;
+    reveal.scale.set(0.86);
+    reveal.position.set(width / 2, height / 2);
+
+    const maxW = Math.min(compact ? width * 0.9 : 760, width - 44);
+    const maxH = Math.min(compact ? height * 0.62 : 420, height - 128);
+    const bg = new PIXI.Graphics();
+    bg.roundRect(-maxW / 2, -maxH / 2, maxW, maxH, 10);
+    bg.fill({ color: 0x020711, alpha: 0.96 });
+    bg.stroke({ color: 0xffef7e, width: 3, alpha: 0.98 });
+    bg.roundRect(-maxW / 2 + 10, -maxH / 2 + 10, maxW - 20, maxH - 20, 8);
+    bg.stroke({ color: 0xff55d9, width: 2, alpha: 0.7 });
+    reveal.addChild(bg);
+
+    const rays = new PIXI.Graphics();
+    for (let i = 0; i < 18; i += 1) {
+      const a = (Math.PI * 2 * i) / 18;
+      const inner = Math.min(maxW, maxH) * 0.16;
+      const outer = Math.max(maxW, maxH) * 0.56;
+      rays.moveTo(Math.cos(a - 0.035) * inner, Math.sin(a - 0.035) * inner);
+      rays.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+      rays.lineTo(Math.cos(a + 0.035) * inner, Math.sin(a + 0.035) * inner);
+    }
+    rays.fill({ color: 0xffd15c, alpha: 0.11 });
+    reveal.addChild(rays);
+    this.creditsAnimatedNodes.push({ node: rays, kind: 'spin', speed: compact ? 0.32 : 0.24 });
+
+    const title = createText(translateText('CONGRATULATIONS!'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 34 : 54,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#240018',
+      strokeThickness: compact ? 5 : 7,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.position.set(0, -maxH * 0.34);
+    title.style.dropShadow = true;
+    title.style.dropShadowColor = '#ff55d9';
+    title.style.dropShadowBlur = 12;
+    fitDisplayToBox(title, maxW - 40, compact ? 58 : 82, { minScale: 0.55 });
+    reveal.addChild(title);
+
+    const subtitleText = result.unlocked
+      ? 'YOU UNLOCKED A NEW SHIP!'
+      : 'SHIP ALREADY UNLOCKED!';
+    const subtitle = createText(translateText(subtitleText), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 18 : 28,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      stroke: '#020711',
+      strokeThickness: 4,
+      align: 'center'
+    });
+    subtitle.anchor.set(0.5);
+    subtitle.position.set(0, title.y + (compact ? 46 : 62));
+    fitDisplayToBox(subtitle, maxW - 56, compact ? 34 : 44, { minScale: 0.62 });
+    reveal.addChild(subtitle);
+
+    const shipName = createText(translateText('QUASAR FAN'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 28 : 44,
+      fontWeight: '900',
+      fill: '#9cfbff',
+      stroke: '#020711',
+      strokeThickness: compact ? 4 : 6,
+      align: 'center'
+    });
+    shipName.anchor.set(0.5);
+    shipName.position.set(0, subtitle.y + (compact ? 38 : 52));
+    fitDisplayToBox(shipName, maxW - 72, compact ? 42 : 58, { minScale: 0.58 });
+    reveal.addChild(shipName);
+
+    const shipRing = new PIXI.Graphics();
+    shipRing.circle(0, maxH * 0.14, compact ? 54 : 72);
+    shipRing.stroke({ color: 0x37f5ff, width: 3, alpha: 0.7 });
+    shipRing.circle(0, maxH * 0.14, compact ? 72 : 96);
+    shipRing.stroke({ color: 0xff55d9, width: 2, alpha: 0.42 });
+    reveal.addChild(shipRing);
+    this.creditsAnimatedNodes.push({ node: shipRing, kind: 'breathe', baseScale: 1, speed: 3.1 });
+
+    const shipSrc = AssetManifest.generated.playerShips?.[6];
+    if (shipSrc) {
+      PIXI.Assets.load(shipSrc)
+        .then((texture) => {
+          if (!texture || !this.creditsUnlockReveal || reveal.destroyed) return;
+          const ship = new PIXI.Sprite(texture);
+          ship.anchor.set(0.5);
+          const target = compact ? 102 : 136;
+          const scale = Math.min(target / Math.max(1, texture.width || target), target / Math.max(1, texture.height || target));
+          ship.scale.set(scale);
+          ship.position.set(0, maxH * 0.14);
+          reveal.addChild(ship);
+          this.creditsAnimatedNodes.push({ node: ship, kind: 'breathe', baseScale: scale, speed: 4.2 });
+        })
+        .catch((error) => console.warn('[SettingsOverlay] Unlock ship art failed:', error));
+    }
+
+    const cta = createText(translateText('HANGAR READY'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 16 : 22,
+      fontWeight: '900',
+      fill: '#020711',
+      align: 'center'
+    });
+    cta.anchor.set(0.5);
+    cta.position.set(0, maxH / 2 - (compact ? 34 : 42));
+    const ctaBg = new PIXI.Graphics();
+    const ctaW = Math.min(maxW - 72, Math.max(compact ? 190 : 260, cta.width + 72));
+    ctaBg.roundRect(-ctaW / 2, cta.y - (compact ? 18 : 22), ctaW, compact ? 36 : 44, 8);
+    ctaBg.fill({ color: 0xffef7e, alpha: 0.96 });
+    ctaBg.stroke({ color: 0xffffff, width: 2, alpha: 0.75 });
+    reveal.addChild(ctaBg, cta);
+
+    this.creditsPanel.addChild(reveal);
+    this.creditsUnlockReveal = reveal;
+    this.creditsAnimatedNodes.push({ node: reveal, kind: 'unlockPop', baseScale: 1, speed: 5.6 });
+    this.creditsDebugState = {
+      ...(this.creditsDebugState || {}),
+      unlockReveal: debugBounds(reveal),
+      unlockRevealText: {
+        title: title.text,
+        subtitle: subtitle.text,
+        ship: shipName.text
+      }
+    };
+
+    AudioManager.playSfx('achievement', { force: true, volume: 1.0, minIntervalMs: 0 });
+    AudioManager.playSfx('boss_reveal_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
+
+    let elapsed = 0;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      const inT = Math.min(1, elapsed / 240);
+      reveal.alpha = inT;
+      reveal.scale.set(0.86 + inT * 0.14);
+      if (elapsed > 5200) {
+        const outT = Math.min(1, (elapsed - 5200) / 500);
+        reveal.alpha = 1 - outT;
+        if (outT >= 1) {
+          this.game.app.ticker.remove(ticker);
+          if (reveal.parent) reveal.parent.removeChild(reveal);
+          if (this.creditsUnlockReveal === reveal) this.creditsUnlockReveal = null;
+        }
+      }
+    };
+    this.game.app.ticker.add(ticker);
+  }
+
   startCreditsAnimation() {
     if (this.creditsTicker) this.game.app.ticker.remove(this.creditsTicker);
     this.creditsTicker = () => {
       const now = performance.now() * 0.001;
       for (const entry of this.creditsAnimatedNodes) {
-        if (!entry?.node) continue;
+        if (!entry?.node || entry.node.destroyed) continue;
         if (entry.kind === 'pulse') {
           const pulse = Math.sin(now * entry.speed) * 0.5 + 0.5;
           entry.node.scale.set((entry.baseScale || 1) + pulse * 0.035);
         } else if (entry.kind === 'drift') {
           entry.node.x = (entry.baseX || 0) + Math.sin(now * entry.speed) * 10;
           entry.node.y = (entry.baseY || 0) + Math.cos(now * entry.speed * 0.7) * 6;
+        } else if (entry.kind === 'scanY') {
+          const range = Math.max(1, entry.maxY || 1);
+          entry.node.y = (entry.baseY || 0) + ((now * 60 * (entry.speed || 0.3)) % range);
+        } else if (entry.kind === 'spin') {
+          entry.node.rotation += (entry.speed || 0.2) * 0.016;
+        } else if (entry.kind === 'breathe') {
+          const pulse = Math.sin(now * entry.speed) * 0.5 + 0.5;
+          entry.node.scale.set((entry.baseScale || 1) * (1 + pulse * 0.045));
+        } else if (entry.kind === 'unlockPop') {
+          const pulse = Math.sin(now * entry.speed) * 0.5 + 0.5;
+          entry.node.rotation = Math.sin(now * 2.3) * 0.006;
+          if (entry.node.alpha > 0.9) entry.node.scale.set((entry.baseScale || 1) + pulse * 0.012);
         }
       }
     };
@@ -1048,6 +1228,29 @@ export class SettingsOverlay {
     frame.rect(0, height * 0.72, width, height * 0.28);
     frame.fill({ color: 0x000000, alpha: 0.22 });
     art.addChild(frame);
+
+    const sweep = new PIXI.Graphics();
+    sweep.rect(8, 0, width - 16, Math.max(6, height * 0.035));
+    sweep.fill({ color: 0x7fffd8, alpha: 0.16 });
+    sweep.rect(8, Math.max(8, height * 0.035), width - 16, 2);
+    sweep.fill({ color: 0xff55d9, alpha: 0.34 });
+    art.addChild(sweep);
+    this.creditsAnimatedNodes.push({ node: sweep, kind: 'scanY', baseY: 0, maxY: Math.max(12, height - 18), speed: isCompact ? 0.38 : 0.3 });
+
+    const holoRing = new PIXI.Graphics();
+    holoRing.position.set(width * 0.76, height * 0.2);
+    holoRing.circle(0, 0, Math.min(width, height) * 0.13);
+    holoRing.stroke({ color: 0xffef7e, width: 2, alpha: 0.44 });
+    holoRing.circle(0, 0, Math.min(width, height) * 0.19);
+    holoRing.stroke({ color: 0x37f5ff, width: 1, alpha: 0.26 });
+    for (let i = 0; i < 8; i += 1) {
+      const angle = (Math.PI * 2 * i) / 8;
+      holoRing.moveTo(Math.cos(angle) * 10, Math.sin(angle) * 10);
+      holoRing.lineTo(Math.cos(angle) * Math.min(width, height) * 0.2, Math.sin(angle) * Math.min(width, height) * 0.2);
+    }
+    holoRing.stroke({ color: 0xff55d9, width: 1, alpha: 0.16 });
+    art.addChild(holoRing);
+    this.creditsAnimatedNodes.push({ node: holoRing, kind: 'spin', speed: 0.18 });
     return art;
 
     const cabinet = new PIXI.Graphics();
@@ -1182,6 +1385,7 @@ export class SettingsOverlay {
     this.creditsAnimatedNodes = [];
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
+    this.creditsUnlockReveal = null;
   }
 
   getDebugState() {

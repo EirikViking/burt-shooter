@@ -5,6 +5,10 @@ const apiKey = process.env.ELEVENLABS_API_KEY;
 const voiceId = process.env.ELEVENLABS_VOICE_ID || 'SIbt9DJkaY96v2K2fQyQ';
 const modelId = process.env.ELEVENLABS_MODEL_ID || 'eleven_v3';
 const outputDir = path.resolve('public/audio/voice/mission-control');
+const onlyArg = process.argv.find((arg) => arg.startsWith('--only='));
+const onlyFiles = onlyArg
+  ? new Set(onlyArg.slice('--only='.length).split(',').map((item) => item.trim()).filter(Boolean))
+  : null;
 
 const lines = [
   {
@@ -206,6 +210,10 @@ const lines = [
   {
     file: 'mission_control_credits_01.mp3',
     text: 'Credits protocol open. Tinyfoundry Games denies responsibility for haunted cabinets, boss paperwork, and emotional damage caused by excellent dodging.'
+  },
+  {
+    file: 'mission_control_overrun_clear_01.mp3',
+    text: 'Sector ten cleared. Overrun authorized. The cabinet is applauding and will deny it later.'
   }
 ];
 
@@ -253,6 +261,7 @@ async function main() {
   await mkdir(outputDir, { recursive: true });
 
   for (let i = 0; i < lines.length; i += 1) {
+    if (onlyFiles && !onlyFiles.has(lines[i].file)) continue;
     await generateLine(lines[i], i);
   }
 

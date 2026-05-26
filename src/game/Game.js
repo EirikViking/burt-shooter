@@ -49,6 +49,8 @@ export class Game {
     this.runStartedAtMs = 0;
     this.runElapsedSeconds = 0;
     this.runCleared = false;
+    this.runClearReason = null;
+    this.runClearLivesRemaining = 0;
     this.runFinalized = false;
     this.runSummary = null;
     this.runProgressionResult = null;
@@ -182,6 +184,8 @@ export class Game {
     this.runStartedAtMs = Date.now();
     this.runElapsedSeconds = 0;
     this.runCleared = false;
+    this.runClearReason = null;
+    this.runClearLivesRemaining = 0;
     this.runFinalized = false;
     this.runSummary = null;
     this.runProgressionResult = null;
@@ -229,15 +233,31 @@ export class Game {
   }
 
   gameOver() {
-    this.finalizeRunProgression({ runCleared: false });
+    this.finalizeRunProgression({
+      runCleared: Boolean(this.runCleared),
+      clearReason: this.runClearReason || null,
+      clearLivesRemaining: this.runClearLivesRemaining || 0
+    });
     this.state = GameState.GAME_OVER;
     this.switchScene('gameOver');
   }
 
+  markRunClear(reason = 'target_sector_clear') {
+    if (this.runCleared) return false;
+    this.runCleared = true;
+    this.runClearReason = reason;
+    this.runClearLivesRemaining = Math.max(0, Number(this.lives) || 0);
+    return true;
+  }
+
   completeRun(reason = 'target_sector_clear') {
     if (this.runFinalized) return;
-    this.runCleared = true;
-    this.finalizeRunProgression({ runCleared: true, clearReason: reason });
+    this.markRunClear(reason);
+    this.finalizeRunProgression({
+      runCleared: true,
+      clearReason: this.runClearReason || reason,
+      clearLivesRemaining: this.runClearLivesRemaining || 0
+    });
     this.state = GameState.GAME_OVER;
     this.switchScene('gameOver');
   }
@@ -530,8 +550,9 @@ export class Game {
       wavesCleared: Number(play?.wavesCleared) || 0,
       totalKills: Number(play?.totalKills) || 0,
       livesRemaining: this.lives,
-      runCleared: Boolean(overrides.runCleared),
-      clearReason: overrides.clearReason || null,
+      runCleared: Boolean(overrides.runCleared ?? this.runCleared),
+      clearReason: overrides.clearReason || this.runClearReason || null,
+      clearLivesRemaining: Math.max(0, Number(overrides.clearLivesRemaining ?? this.runClearLivesRemaining) || 0),
       codexDiscoveries: discoveries.length,
       totalCodexDiscoveries: discoveryStats.totalDiscovered,
       runThemeDiscoveries: discoveries.filter((entry) => entry.category === 'runThemes').length,
@@ -598,7 +619,8 @@ export class Game {
         progressValue: entry.value,
         target: entry.target,
         runCleared: this.runSummary.runCleared,
-        livesRemaining: this.runSummary.livesRemaining
+        livesRemaining: this.runSummary.livesRemaining,
+        clearLivesRemaining: this.runSummary.clearLivesRemaining
       });
       if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);
     }

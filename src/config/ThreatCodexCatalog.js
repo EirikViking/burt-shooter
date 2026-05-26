@@ -7,6 +7,7 @@ import { ENEMY_WEAPON_PROFILES } from './EnemyWeaponProfiles.js';
 import { BOSS_ROSTER } from './BossRoster.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { translateText } from '../i18n/index.js';
+import { getCabinetLogEntries } from '../text/phrasePool.js';
 
 export const CODEX_TEXT_TEMPLATES = Object.freeze({
   enemyDescription: '{name} is catalogued as a {role}: {roleDescription}. The hull signature shows {movement} and {fire}. In a themed formation it edits your escape route instead of simply chasing you.',
@@ -15,6 +16,7 @@ export const CODEX_TEXT_TEMPLATES = Object.freeze({
   eliteDescription: '{name} is an elite middle ship. It mixes {movement} movement, {fire} fire, and the {ability} system. Clear nearby fodder, then focus the elite before the wave becomes a target-priority problem.',
   bossDescription: '{name} uses the runtime boss profile {title}: {movement} movement, {attack} pressure, and {signature} as its signature read. The Codex summary is data-driven, then dressed up for arcade drama.',
   themeDescription: 'Run theme {name} changes enemy and attack weights for a run. Director weights favor {threats} and formations such as {formations}.',
+  cabinetLogDescription: '{name} is a Cabinet Log filed from live play. It is part joke, part useful read, and part evidence that the machine is absolutely keeping receipts.',
   runtimeDescription: 'The archive caught this signal in the wild, but the spectrometer is still making dramatic noises. Expect a readable tell, an attitude problem, and a better note once the swarm repeats itself.'
 });
 
@@ -28,7 +30,8 @@ export const THREAT_CODEX_CATEGORIES = Object.freeze([
   { id: 'waveTactics', label: 'Wave Tactics' },
   { id: 'elites', label: 'Elites' },
   { id: 'bosses', label: 'Bosses' },
-  { id: 'runThemes', label: 'Run Themes' }
+  { id: 'runThemes', label: 'Run Themes' },
+  { id: 'cabinetLogs', label: 'Cabinet Logs' }
 ]);
 
 const ACTION_TIPS = Object.freeze({
@@ -216,6 +219,25 @@ const THEME_ART = Object.freeze({
   glitch_parade: AssetManifest.generated.menuCredits
 });
 
+function cabinetLogEntry(entry) {
+  return {
+    id: entry.id,
+    category: 'cabinetLogs',
+    name: entry.title || entry.id,
+    rarity: translateText('Cabinet Log'),
+    role: entry.role || translateText('Cabinet Log'),
+    description: entry.description || codexText('cabinetLogDescription', {
+      name: entry.title || entry.id
+    }),
+    tip: entry.tip || entry.line || translateText('Read the line, then make one calmer decision.'),
+    art: entry.imageAlias
+      ? AssetManifest.generated.storyComms?.find((src) => src.includes(entry.imageAlias))
+      : AssetManifest.generated.menuCredits,
+    accent: entry.accent || 0xffd15c,
+    signalClass: 'cabinet-log'
+  };
+}
+
 const WEAPON_BY_ID = new Map(ENEMY_WEAPON_PROFILES.map((profile) => [profile.id, profile]));
 
 function enemyEntry(profile) {
@@ -360,6 +382,7 @@ export function getThreatCodexCatalog() {
     waveTactics: WAVE_TACTIC_ENTRIES.map(waveEntry),
     elites: ELITE_MIDDLE_SHIPS.map(eliteEntry),
     bosses: BOSS_ROSTER.map(bossEntry),
-    runThemes: RunContentDirectorConfig.runThemes.map(runThemeEntry)
+    runThemes: RunContentDirectorConfig.runThemes.map(runThemeEntry),
+    cabinetLogs: getCabinetLogEntries().map(cabinetLogEntry)
   };
 }

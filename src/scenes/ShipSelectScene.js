@@ -30,6 +30,22 @@ const CAREER_INTEL_BODY = 'Your career profile grows between runs. Score, sector
 const CAREER_INTEL_RANK_COPY = 'Pilot Rank is your long-term arcade signal. Rank progress unlocks achievements and helps open the hangar.';
 const CAREER_INTEL_HANGAR_COPY = 'Ship unlocks read milestones from this profile, so even a failed run can move the roster forward.';
 const CAREER_INTEL_CODEX_COPY = 'Codex scans are discoveries from your own profile. New threats are knowledge, score, XP, and future ship progress.';
+const CAREER_INTEL_KICKER = 'PILOT DOSSIER // LIVE ARCADE SIGNAL';
+const CAREER_INTEL_VALUE = 'EVERY RUN LEAVES A RECEIPT';
+const CAREER_INTEL_FLOW = 'CAREER XP FLOW';
+
+function fitDisplayToBox(display, maxWidth, maxHeight, { minScale = 0.5, maxScale = 1 } = {}) {
+  if (!display || !maxWidth || !maxHeight) return 1;
+  const width = Math.max(1, display.width || 1);
+  const height = Math.max(1, display.height || 1);
+  const scale = Math.max(minScale, Math.min(maxScale, maxWidth / width, maxHeight / height));
+  display.scale.set(scale);
+  return scale;
+}
+
+function hexColor(color) {
+  return `#${Number(color || 0xffffff).toString(16).padStart(6, '0')}`;
+}
 
 export class ShipSelectScene {
   constructor(game) {
@@ -48,6 +64,9 @@ export class ShipSelectScene {
     this.backButton = null;
     this.hangarMenuOverlay = null;
     this.careerInfoOverlay = null;
+    this.careerInfoDebugState = null;
+    this.careerInfoAnimatedNodes = [];
+    this.careerInfoTicker = null;
     this.overlayButtons = [];
     this.overlayFocusedIndex = 0;
     this.mainMenuButtonFocused = false;
@@ -608,6 +627,127 @@ export class ShipSelectScene {
     AudioManager.playSfx('pause_out', { force: true, volume: source === 'keyboard' ? 0.24 : 0.2 });
   }
 
+  createCareerStatTile(label, value, x, y, width, height, accent, compact = false) {
+    const tile = new PIXI.Container();
+    tile.label = `ui_careerIntelTile_${label}`;
+    tile.position.set(x, y);
+
+    const bg = new PIXI.Graphics();
+    bg.roundRect(0, 0, width, height, 7);
+    bg.fill({ color: 0x061827, alpha: 0.9 });
+    bg.stroke({ color: accent, width: 1.4, alpha: 0.72 });
+    bg.rect(0, 0, width, 4);
+    bg.fill({ color: accent, alpha: 0.82 });
+    tile.addChild(bg);
+
+    const valueText = createText(String(value), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 15 : 20,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#020711',
+      strokeThickness: 3,
+      align: 'left',
+      letterSpacing: 0
+    });
+    valueText.position.set(12, compact ? 12 : 14);
+    fitDisplayToBox(valueText, width - 24, compact ? 22 : 28, { minScale: 0.58 });
+
+    const labelText = createText(translateText(label), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 9 : 11,
+      fontWeight: '900',
+      fill: hexColor(accent),
+      align: 'left',
+      letterSpacing: 0
+    });
+    labelText.position.set(12, height - (compact ? 19 : 22));
+    fitDisplayToBox(labelText, width - 24, compact ? 16 : 18, { minScale: 0.54 });
+    tile.addChild(valueText, labelText);
+    return tile;
+  }
+
+  createCareerCopyCard(heading, copy, x, y, width, height, accent, compact = false) {
+    const card = new PIXI.Container();
+    card.position.set(x, y);
+    const bg = new PIXI.Graphics();
+    bg.roundRect(0, 0, width, height, 8);
+    bg.fill({ color: 0x071b2a, alpha: 0.88 });
+    bg.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+    bg.rect(0, 0, 7, height);
+    bg.fill({ color: accent, alpha: 0.84 });
+    bg.rect(width - 18, 10, 8, 8);
+    bg.stroke({ color: accent, width: 1.2, alpha: 0.68 });
+    card.addChild(bg);
+
+    const h = createText(translateText(heading), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 11 : 13,
+      fontWeight: '900',
+      fill: hexColor(accent),
+      letterSpacing: 0
+    });
+    h.position.set(18, 10);
+    fitDisplayToBox(h, width - 44, compact ? 18 : 20, { minScale: 0.56 });
+
+    const p = createText(translateText(copy), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 9 : 11,
+      fontWeight: '700',
+      fill: '#d8fbff',
+      wordWrap: true,
+      wordWrapWidth: width - 30,
+      lineHeight: compact ? 11 : 14,
+      letterSpacing: 0
+    });
+    p.position.set(18, compact ? 30 : 34);
+    fitDisplayToBox(p, width - 30, height - (compact ? 36 : 42), { minScale: 0.7 });
+    card.addChild(h, p);
+    return card;
+  }
+
+  startCareerInfoAnimation() {
+    if (this.careerInfoTicker) return;
+    this.careerInfoTicker = () => {
+      if (!this.careerInfoOverlay?.visible) return;
+      const now = Date.now();
+      const pulse = Math.sin(now * 0.004) * 0.5 + 0.5;
+      this.careerInfoAnimatedNodes.forEach((entry) => {
+        if (!entry?.node || entry.node.destroyed) return;
+        if (entry.kind === 'scan') {
+          entry.node.y = entry.baseY + ((now * entry.speed) % Math.max(1, entry.range));
+          entry.node.alpha = 0.16 + pulse * 0.22;
+        } else if (entry.kind === 'ring') {
+          entry.node.rotation += entry.speed;
+          entry.node.alpha = 0.42 + pulse * 0.22;
+        } else if (entry.kind === 'pulse') {
+          const scale = entry.baseScale + pulse * entry.amount;
+          entry.node.scale.set(scale);
+          entry.node.alpha = entry.baseAlpha + pulse * entry.amount;
+        }
+      });
+    };
+    this.game.app.ticker.add(this.careerInfoTicker);
+  }
+
+  getCareerInfoDebugState(getBounds) {
+    const bounds = typeof getBounds === 'function' ? getBounds : () => null;
+    const refs = this.careerInfoRefs || {};
+    return {
+      visible: Boolean(this.careerInfoOverlay?.visible),
+      panel: refs.panelBounds || null,
+      title: bounds(refs.title),
+      rankGauge: bounds(refs.rankGauge),
+      valueChip: bounds(refs.valueChip),
+      body: bounds(refs.body),
+      flowBar: bounds(refs.flowBar),
+      stats: (refs.stats || []).map((tile) => bounds(tile)),
+      cards: (refs.cards || []).map((card) => bounds(card)),
+      snapshot: bounds(refs.snapshot),
+      backButton: bounds(refs.close)
+    };
+  }
+
   createCareerInfoOverlay(width, height) {
     const overlay = new PIXI.Container();
     overlay.label = 'ui_careerInfoOverlay';
@@ -615,130 +755,262 @@ export class ShipSelectScene {
     overlay.zIndex = 1000001;
     overlay.eventMode = 'static';
     overlay.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    this.careerInfoAnimatedNodes = [];
 
     const dim = new PIXI.Graphics();
     dim.rect(0, 0, width, height);
-    dim.fill({ color: 0x010711, alpha: 0.76 });
+    dim.fill({ color: 0x010711, alpha: 0.82 });
     overlay.addChild(dim);
 
-    const panelWidth = Math.min(760, width - 44);
-    const panelHeight = Math.min(500, height - 56);
+    const narrow = width < 720;
+    const short = height < 620;
+    const compact = narrow || short;
+    const panelWidth = Math.min(compact ? width - 22 : 900, width - 28);
+    const panelHeight = Math.min(compact ? height - 18 : 560, height - 22);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
-    const stackCards = panelWidth < 560;
     const progress = getPilotRankProgress(this.unlockProgress.pilotXp || 0);
+    const rankProgress = Math.max(0, Math.min(1, Number(progress.progress) || 0));
     const nextRank = progress.rankIndex >= MAX_RANK_INDEX
       ? translateText('MAX')
       : getRankTitle(Math.min(MAX_RANK_INDEX, progress.rankIndex + 1)).toUpperCase();
+    const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x041321, alpha: 0.97 });
-    panel.stroke({ color: 0x66ffdd, width: 2, alpha: 0.9 });
-    panel.rect(panelX + 12, panelY + 14, 5, panelHeight - 28);
-    panel.fill({ color: 0xffd15c, alpha: 0.8 });
-    panel.rect(panelX + panelWidth - 18, panelY + 14, 5, panelHeight - 28);
-    panel.fill({ color: 0x37f5ff, alpha: 0.54 });
-    for (let i = 0; i < 7; i += 1) {
-      const y = panelY + 72 + i * 44;
-      panel.moveTo(panelX + 28, y);
-      panel.lineTo(panelX + panelWidth - 28, y + 10);
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 9);
+    panel.fill({ color: 0x03101f, alpha: 0.985 });
+    panel.stroke({ color: 0x66ffdd, width: 2, alpha: 0.95 });
+    panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 7);
+    panel.stroke({ color: 0xff55d9, width: 1.4, alpha: 0.55 });
+    panel.rect(panelX + 18, panelY + 16, 5, panelHeight - 32);
+    panel.fill({ color: 0xffd15c, alpha: 0.92 });
+    panel.rect(panelX + panelWidth - 23, panelY + 16, 5, panelHeight - 32);
+    panel.fill({ color: 0x37f5ff, alpha: 0.68 });
+    for (let i = 0; i < 11; i += 1) {
+      const y = panelY + 74 + i * 36;
+      panel.moveTo(panelX + 30, y);
+      panel.lineTo(panelX + panelWidth - 30, y + 12);
     }
-    panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.08 });
+    panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.07 });
     overlay.addChild(panel);
+
+    const sweep = new PIXI.Graphics();
+    sweep.rect(panelX + 30, 0, panelWidth - 60, 3);
+    sweep.fill({ color: 0x9cfbff, alpha: 0.85 });
+    overlay.addChild(sweep);
+    this.careerInfoAnimatedNodes.push({ node: sweep, kind: 'scan', baseY: panelY + 58, range: panelHeight - 116, speed: compact ? 0.18 : 0.14 });
+
+    const kicker = createText(translateText(CAREER_INTEL_KICKER), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 10 : 12,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      align: 'center',
+      letterSpacing: 0
+    });
+    kicker.anchor.set(0.5, 0);
+    kicker.position.set(width / 2, panelY + (compact ? 18 : 22));
+    fitDisplayToBox(kicker, panelWidth - 90, compact ? 16 : 18, { minScale: 0.55 });
+    overlay.addChild(kicker);
 
     const title = createText(translateText('CAREER INTEL'), {
       fontFamily: FONT_DISPLAY,
-      fontSize: width < 720 ? 24 : 30,
+      fontSize: compact ? 28 : 38,
       fontWeight: '900',
       fill: '#ffffff',
       stroke: '#003344',
-      strokeThickness: 4,
+      strokeThickness: compact ? 4 : 5,
       align: 'center',
       letterSpacing: 0
     });
     title.anchor.set(0.5, 0);
-    title.position.set(width / 2, panelY + 28);
+    title.position.set(width / 2, kicker.y + (compact ? 16 : 18));
+    title.style.dropShadow = true;
+    title.style.dropShadowColor = '#37f5ff';
+    title.style.dropShadowBlur = 10;
+    fitDisplayToBox(title, panelWidth - 84, compact ? 40 : 52, { minScale: 0.58 });
     overlay.addChild(title);
 
+    const valueChip = new PIXI.Container();
+    valueChip.position.set(width / 2, title.y + (compact ? 43 : 54));
+    const valueBg = new PIXI.Graphics();
+    valueBg.roundRect(-Math.min(310, panelWidth - 92) / 2, -12, Math.min(310, panelWidth - 92), 24, 6);
+    valueBg.fill({ color: 0x2a1744, alpha: 0.86 });
+    valueBg.stroke({ color: 0xff55d9, width: 1.2, alpha: 0.75 });
+    valueChip.addChild(valueBg);
+    const valueText = createText(translateText(CAREER_INTEL_VALUE), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 10 : 12,
+      fontWeight: '900',
+      fill: '#fff3a2',
+      align: 'center',
+      letterSpacing: 0
+    });
+    valueText.anchor.set(0.5);
+    fitDisplayToBox(valueText, Math.min(282, panelWidth - 118), 16, { minScale: 0.54 });
+    valueChip.addChild(valueText);
+    overlay.addChild(valueChip);
+
+    const contentTop = panelY + (compact ? 108 : 126);
+    const leftW = compact ? Math.min(220, panelWidth - 72) : 250;
+    const leftX = panelX + 40;
+    const gauge = new PIXI.Container();
+    gauge.label = 'ui_careerIntelRankGauge';
+    gauge.position.set(narrow ? width / 2 : leftX + leftW / 2, contentTop + (compact ? 64 : 82));
+    const gaugeRadius = compact ? 58 : 78;
+    const ring = new PIXI.Graphics();
+    ring.circle(0, 0, gaugeRadius + 18);
+    ring.stroke({ color: 0xff55d9, width: 1.4, alpha: 0.38 });
+    ring.circle(0, 0, gaugeRadius + 6);
+    ring.stroke({ color: 0x37f5ff, width: 2, alpha: 0.44 });
+    ring.arc(0, 0, gaugeRadius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * rankProgress);
+    ring.stroke({ color: 0xffef7e, width: compact ? 8 : 10, alpha: 0.95 });
+    ring.arc(0, 0, gaugeRadius - 14, -Math.PI / 2, Math.PI * 1.5);
+    ring.stroke({ color: 0x0b6f8f, width: 2, alpha: 0.62 });
+    gauge.addChild(ring);
+    this.careerInfoAnimatedNodes.push({ node: ring, kind: 'ring', speed: 0.006 });
+
+    const rankNumber = createText(String(progress.rankIndex), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 42 : 56,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#020711',
+      strokeThickness: 5,
+      align: 'center',
+      letterSpacing: 0
+    });
+    rankNumber.anchor.set(0.5);
+    rankNumber.y = -10;
+    const rankLabel = createText(translateText('PILOT RANK'), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 10 : 12,
+      fontWeight: '900',
+      fill: '#9cfbff',
+      align: 'center',
+      letterSpacing: 0
+    });
+    rankLabel.anchor.set(0.5);
+    rankLabel.y = compact ? 34 : 42;
+    fitDisplayToBox(rankLabel, gaugeRadius * 1.6, 16, { minScale: 0.52 });
+    gauge.addChild(rankNumber, rankLabel);
+    overlay.addChild(gauge);
+
+    const rightX = narrow ? panelX + 34 : leftX + leftW + 34;
+    const rightW = narrow ? panelWidth - 68 : panelX + panelWidth - 42 - rightX;
     const body = createText(translateText(CAREER_INTEL_BODY), {
       fontFamily: FONT_BODY,
-      fontSize: width < 720 ? 13 : 16,
-      fontWeight: '700',
+      fontSize: compact ? 11 : 14,
+      fontWeight: '800',
       fill: '#d8fbff',
       align: 'left',
       wordWrap: true,
-      wordWrapWidth: panelWidth - 72,
-      lineHeight: width < 720 ? 18 : 21,
+      wordWrapWidth: rightW,
+      lineHeight: compact ? 14 : 18,
       letterSpacing: 0
     });
-    body.position.set(panelX + 36, panelY + 88);
-    body.visible = !stackCards;
+    body.position.set(rightX, narrow ? contentTop + 134 : contentTop + 2);
+    fitDisplayToBox(body, rightW, compact ? 46 : 58, { minScale: 0.72 });
     overlay.addChild(body);
 
-    const cardTop = panelY + (stackCards ? 94 : width < 720 ? 158 : 166);
-    const cardGap = 10;
-    const cardW = stackCards ? panelWidth - 72 : Math.max(142, (panelWidth - 72 - cardGap * 2) / 3);
-    const cardH = stackCards ? 48 : (width < 720 ? 82 : 96);
+    const flowY = narrow ? body.y + 52 : contentTop + (short ? 66 : 78);
+    const flowBar = new PIXI.Container();
+    flowBar.label = 'ui_careerIntelFlowBar';
+    flowBar.position.set(rightX, flowY);
+    const flowBg = new PIXI.Graphics();
+    flowBg.roundRect(0, 0, rightW, compact ? 40 : 48, 7);
+    flowBg.fill({ color: 0x020916, alpha: 0.86 });
+    flowBg.stroke({ color: 0xffef7e, width: 1.2, alpha: 0.7 });
+    const fillW = Math.max(12, (rightW - 18) * rankProgress);
+    flowBg.roundRect(9, compact ? 23 : 29, rightW - 18, 8, 4);
+    flowBg.fill({ color: 0x123044, alpha: 0.95 });
+    flowBg.roundRect(9, compact ? 23 : 29, fillW, 8, 4);
+    flowBg.fill({ color: 0xffef7e, alpha: 0.94 });
+    flowBar.addChild(flowBg);
+    const flowTitle = createText(translateText(CAREER_INTEL_FLOW), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 10 : 12,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      letterSpacing: 0
+    });
+    flowTitle.position.set(12, 8);
+    const flowValueText = [`${Math.round(rankProgress * 100)}%`, translateText('TO'), nextRank].join(' ');
+    const flowValue = createText(flowValueText, {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 10 : 12,
+      fontWeight: '900',
+      fill: '#ffffff',
+      align: 'right',
+      letterSpacing: 0
+    });
+    flowValue.anchor.set(1, 0);
+    flowValue.position.set(rightW - 12, 8);
+    fitDisplayToBox(flowValue, rightW * 0.48, 16, { minScale: 0.5 });
+    flowBar.addChild(flowTitle, flowValue);
+    overlay.addChild(flowBar);
+
+    const statsTop = narrow ? flowY + 48 : contentTop + (short ? 132 : 146);
+    const stats = [
+      ['HULLS READY', `${unlockedCount}/${this.ships.length}`, 0x66ffdd],
+      ['XP TO NEXT', Number(progress.xpToNextRank || 0).toLocaleString('en-US'), 0xffef7e],
+      ['CODEX SCANS', this.unlockProgress.totalCodexDiscoveries || 0, 0xff55d9],
+      ['BOSS RECEIPTS', this.unlockProgress.totalBossesDefeated || 0, 0xff8f5c],
+      ['CLEAN WAVES', this.unlockProgress.noHitWaves || 0, 0x9cfbff],
+      ['BEST SCORE', Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US'), 0xffffff]
+    ].slice(0, short && !narrow ? 3 : 6);
+    const statGap = compact ? 7 : 9;
+    const statCols = narrow ? 2 : 3;
+    const statW = (panelWidth - 80 - statGap * (statCols - 1)) / statCols;
+    const statH = compact ? 48 : 56;
+    const statStartX = panelX + 40;
+    const statTiles = stats.map(([label, value, accent], index) => {
+      const col = index % statCols;
+      const row = Math.floor(index / statCols);
+      const tile = this.createCareerStatTile(label, value, statStartX + col * (statW + statGap), statsTop + row * (statH + statGap), statW, statH, accent, compact);
+      overlay.addChild(tile);
+      return tile;
+    });
+
     const cardData = [
       ['EARN XP', CAREER_INTEL_CODEX_COPY, 0xffe76a],
       ['PILOT RANK', CAREER_INTEL_RANK_COPY, 0x66ffdd],
       ['HANGAR UNLOCKS', CAREER_INTEL_HANGAR_COPY, 0xff55d9]
     ];
-    cardData.forEach(([heading, copy, accent], index) => {
-      const card = new PIXI.Container();
-      card.x = stackCards ? panelX + 36 : panelX + 36 + index * (cardW + cardGap);
-      card.y = cardTop + (stackCards ? index * (cardH + 8) : 0);
-      const bg = new PIXI.Graphics();
-      bg.roundRect(0, 0, cardW, cardH, 8);
-      bg.fill({ color: 0x071b2a, alpha: 0.86 });
-      bg.stroke({ color: accent, width: 1.4, alpha: 0.68 });
-      bg.rect(0, 0, 6, cardH);
-      bg.fill({ color: accent, alpha: 0.78 });
-      card.addChild(bg);
-      const h = createText(translateText(heading), {
-        fontFamily: FONT_BODY,
-        fontSize: width < 720 ? 12 : 14,
-        fontWeight: '900',
-        fill: `#${accent.toString(16).padStart(6, '0')}`,
-        letterSpacing: 0
-      });
-      h.position.set(16, 10);
-      const p = createText(translateText(copy), {
-        fontFamily: FONT_BODY,
-        fontSize: stackCards ? 9 : width < 720 ? 10 : 12,
-        fontWeight: '700',
-        fill: '#d8fbff',
-        wordWrap: true,
-        wordWrapWidth: cardW - 28,
-        lineHeight: stackCards ? 11 : width < 720 ? 13 : 15,
-        letterSpacing: 0
-      });
-      p.position.set(16, 32);
-      card.addChild(h, p);
+    const cardGap = compact ? 7 : 10;
+    const cardCols = narrow ? 1 : 3;
+    const cardW = narrow ? panelWidth - 80 : (panelWidth - 80 - cardGap * 2) / 3;
+    const cardH = narrow ? 44 : short ? 64 : 72;
+    const cardTop = statsTop + Math.ceil(stats.length / statCols) * (statH + statGap) + (compact ? 8 : 14);
+    const cards = cardData.map(([heading, copy, accent], index) => {
+      const col = narrow ? 0 : index;
+      const row = narrow ? index : 0;
+      const card = this.createCareerCopyCard(heading, copy, panelX + 40 + col * (cardW + cardGap), cardTop + row * (cardH + 7), cardW, cardH, accent, compact);
       overlay.addChild(card);
+      return card;
     });
 
     const snapshot = createText(
-      `${translateText('PROFILE SNAPSHOT')}: ${translateText('RANK')} ${progress.rankIndex} / ${translateText('NEXT RANK')} ${nextRank} / ${translateText('XP TO NEXT')} ${Number(progress.xpToNextRank || 0).toLocaleString('en-US')} / ${translateText('CODEX SCANS')} ${this.unlockProgress.totalCodexDiscoveries || 0} / ${translateText('BEST SCORE')} ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}`,
+      `${translateText('PROFILE SNAPSHOT')}: ${translateText('RANK')} ${progress.rankIndex} / ${translateText('NEXT RANK')} ${nextRank} / ${translateText('TOTAL RUNS')} ${this.unlockProgress.totalRuns || 0} / ${translateText('BEST SECTOR')} ${this.unlockProgress.bestSector || 1}`,
       {
         fontFamily: FONT_BODY,
-        fontSize: width < 720 ? 11 : 13,
+        fontSize: compact ? 9 : 12,
         fontWeight: '900',
         fill: '#fff3a2',
         align: 'center',
         wordWrap: true,
-        wordWrapWidth: panelWidth - 74,
-        lineHeight: width < 720 ? 14 : 16,
+        wordWrapWidth: panelWidth - 90,
+        lineHeight: compact ? 11 : 15,
         letterSpacing: 0
       }
     );
-    snapshot.anchor.set(0.5, 0);
-    snapshot.position.set(width / 2, cardTop + (stackCards ? cardData.length * (cardH + 8) : cardH) + 18);
-    snapshot.visible = !stackCards;
+    snapshot.anchor.set(0.5, 1);
+    snapshot.position.set(width / 2, cardTop - (compact ? 5 : 6));
+    snapshot.visible = !short && !narrow && panelHeight >= 540;
+    fitDisplayToBox(snapshot, panelWidth - 90, compact ? 24 : 30, { minScale: 0.58 });
     overlay.addChild(snapshot);
 
-    const close = this.createHangarMenuOption('careerClose', translateText('BACK'), width / 2, panelY + panelHeight - 46, 0, () => this.closeCareerInfoOverlay('button'));
+    const close = this.createHangarMenuOption('careerClose', translateText('BACK'), width / 2, panelY + panelHeight - 28, 0, () => this.closeCareerInfoOverlay('button'));
     close.redraw?.();
     overlay.addChild(close);
 
@@ -749,8 +1021,28 @@ export class ShipSelectScene {
       }
     });
 
+    this.careerInfoRefs = {
+      panelBounds: {
+        x: Math.round(panelX),
+        y: Math.round(panelY),
+        width: Math.round(panelWidth),
+        height: Math.round(panelHeight),
+        right: Math.round(panelX + panelWidth),
+        bottom: Math.round(panelY + panelHeight)
+      },
+      title,
+      valueChip,
+      rankGauge: gauge,
+      body,
+      flowBar,
+      stats: statTiles,
+      cards,
+      snapshot,
+      close
+    };
     this.careerInfoOverlay = overlay;
     this.container.addChild(overlay);
+    this.startCareerInfoAnimation();
   }
 
   async exitGameFromHangar() {
@@ -2024,6 +2316,10 @@ export class ShipSelectScene {
     if (this.menuInputTicker) {
       this.game.app.ticker.remove(this.menuInputTicker);
       this.menuInputTicker = null;
+    }
+    if (this.careerInfoTicker) {
+      this.game.app.ticker.remove(this.careerInfoTicker);
+      this.careerInfoTicker = null;
     }
     if (this.exitNoticeTimeout) {
       clearTimeout(this.exitNoticeTimeout);

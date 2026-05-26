@@ -24,7 +24,7 @@ function getMetricValue(achievement, summary = {}, progress = {}) {
     case MILESTONE_ACHIEVEMENT_IDS.TWO_LIVES_CLEAR:
       return Math.max(
         finiteNumber(progress.clearWithLivesRemaining),
-        summary.runCleared ? finiteNumber(summary.livesRemaining) : 0
+        summary.runCleared ? finiteNumber(summary.clearLivesRemaining ?? summary.livesRemaining) : 0
       );
     case MILESTONE_ACHIEVEMENT_IDS.SCORE_250K:
       return Math.max(finiteNumber(summary.score), finiteNumber(summary.finalScore), finiteNumber(progress.bestScore));

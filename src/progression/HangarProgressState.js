@@ -304,7 +304,8 @@ export function calculatePilotXpForRun(summary = {}) {
   const noHitWaveXp = floor(summary.noHitWaves) * xp.noHitWave;
   const noHitSectorXp = floor(summary.noHitSectors) * xp.noHitSector;
   const clearXp = summary.runCleared ? xp.runClear : 0;
-  const livesXp = summary.runCleared ? floor(summary.livesRemaining) * xp.clearWithLivesRemaining : 0;
+  const clearLivesRemaining = floor(summary.clearLivesRemaining ?? summary.livesRemaining);
+  const livesXp = summary.runCleared ? clearLivesRemaining * xp.clearWithLivesRemaining : 0;
   return Math.max(0, Math.floor(scoreXp + sectorXp + waveXp + bossXp + discoveryXp + themeXp + noHitWaveXp + noHitSectorXp + clearXp + livesXp));
 }
 
@@ -333,7 +334,7 @@ export function applyRunProgression(summary = {}) {
     runClears: previous.runClears + (summary.runCleared ? 1 : 0),
     noHitWaves: previous.noHitWaves + floor(summary.noHitWaves),
     noHitSectors: previous.noHitSectors + floor(summary.noHitSectors),
-    clearWithLivesRemaining: summary.runCleared ? Math.max(previous.clearWithLivesRemaining, floor(summary.livesRemaining)) : previous.clearWithLivesRemaining,
+    clearWithLivesRemaining: summary.runCleared ? Math.max(previous.clearWithLivesRemaining, floor(summary.clearLivesRemaining ?? summary.livesRemaining)) : previous.clearWithLivesRemaining,
     highestScoreMultiplier: Math.max(previous.highestScoreMultiplier, Number(summary.highestScoreMultiplier) || 1),
     discoveredThreatIds: Array.isArray(summary.discoveredThreatIds) ? summary.discoveredThreatIds : [],
     defeatedBossIds: Array.isArray(summary.defeatedBossIds) ? summary.defeatedBossIds : [],

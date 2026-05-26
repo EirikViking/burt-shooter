@@ -225,6 +225,18 @@ const sounds = [
     prompt_influence: 0.82
   },
   {
+    file: 'nova_overrun_clear_coronation.mp3',
+    text: 'An original huge sector-ten clear coronation fanfare for Nova Swarm, a neon arcade space shooter. Seven seconds, triumphant synth brass, cosmic trophy drums, glittering coin-slot starburst, heroic victory swell that opens into dangerous overrun energy, no vocals, no copyrighted melody, beautiful and epic achievement payoff.',
+    duration_seconds: 7,
+    prompt_influence: 0.82
+  },
+  {
+    file: 'nova_overrun_clear_shockwave.mp3',
+    text: 'A massive but clean arcade achievement shockwave for clearing sector ten in a neon space shooter. Bright gold-cyan energy bloom, deep cabinet bass impact, sparkling score counter burst, quick celebratory whoosh, no voice, no copyrighted melody, under three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.76
+  },
+  {
     file: 'nova_enemy_pew_cluster.mp3',
     text: 'A tiny clustered alien arcade laser shot, quick chirpy pew with digital swarm texture, readable in busy combat, no voice, no melody, under one second.',
     duration_seconds: 1,

@@ -104,6 +104,7 @@ export const RunPacingConfig = {
     firstDefeatBonus: 750,
     firstBossDefeatBonus: 2000,
     firstRunThemeBonus: 800,
+    cabinetLogBonus: 300,
     toastDurationMs: 1800
   },
 
