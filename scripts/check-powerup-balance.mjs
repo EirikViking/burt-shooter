@@ -1,6 +1,8 @@
 import { BalanceConfig } from '../src/config/BalanceConfig.js';
+import { RunPacingConfig } from '../src/config/RunPacingConfig.js';
 
 const powerups = BalanceConfig.powerups || {};
+const sustain = RunPacingConfig.sustain || {};
 const errors = [];
 
 if ((powerups.dropChance ?? 1) > 0.02) {
@@ -21,14 +23,18 @@ if (powerups.extraLifeDropsEnabled !== true) {
 if ((powerups.extraLifeChance ?? 99) > 0.08) {
   errors.push(`extraLifeChance should stay at or below 0.08, got ${powerups.extraLifeChance}`);
 }
-if ((powerups.extraLifeChance ?? -1) < 0.04) {
-  errors.push(`extraLifeChance should stay at or above 0.04 so life drops can appear, got ${powerups.extraLifeChance}`);
+if ((powerups.extraLifeChance ?? -1) < 0.025) {
+  errors.push(`extraLifeChance should stay at or above 0.025 so rare life drops can appear, got ${powerups.extraLifeChance}`);
 }
-if ((powerups.extraLifeGuaranteedEveryLevels ?? 0) < 6) {
-  errors.push(`extraLifeGuaranteedEveryLevels should stay at or above 6 for rare pacing, got ${powerups.extraLifeGuaranteedEveryLevels}`);
+const guaranteedCadence = Number(powerups.extraLifeGuaranteedEveryLevels ?? 0);
+const controlledRecoveryConfigured = Number(sustain.controlledRecoveryMaxPerRun ?? 0) >= 1
+  && Number(sustain.controlledRecoveryWindowStartSeconds ?? 0) > 0
+  && Number(sustain.controlledRecoveryWindowEndSeconds ?? 0) > Number(sustain.controlledRecoveryWindowStartSeconds ?? 0);
+if (guaranteedCadence !== 0 && (guaranteedCadence < 6 || guaranteedCadence > 8)) {
+  errors.push(`extraLifeGuaranteedEveryLevels should be disabled or kept rare at 6-8, got ${powerups.extraLifeGuaranteedEveryLevels}`);
 }
-if ((powerups.extraLifeGuaranteedEveryLevels ?? 99) > 8) {
-  errors.push(`extraLifeGuaranteedEveryLevels should stay at or below 8 so life drops are not absent, got ${powerups.extraLifeGuaranteedEveryLevels}`);
+if (guaranteedCadence === 0 && !controlledRecoveryConfigured) {
+  errors.push('extraLifeGuaranteedEveryLevels is disabled, so RunPacingConfig.sustain must define a controlled recovery window');
 }
 if (BalanceConfig.survival?.lastStandRepairEnabled === true) {
   errors.push('lastStandRepairEnabled should stay false for Steam score-chaser fairness');
@@ -46,4 +52,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('[powerup-balance] PASS sparse drops, max 2 per level, rare extra lives, no level-clear life grants');
+console.log('[powerup-balance] PASS sparse drops, max 2 per level, pressure-bounded extra lives, no level-clear life grants');

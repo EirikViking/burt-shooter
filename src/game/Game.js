@@ -8,15 +8,33 @@ import { ShipSelectScene } from '../scenes/ShipSelectScene.js';
 import { ShipDetailsScene } from '../scenes/ShipDetailsScene.js';
 import { HighscoreScene } from '../scenes/HighscoreScene.js';
 import { AchievementsScene } from '../scenes/AchievementsScene.js';
+import { ThreatCodexScene } from '../scenes/ThreatCodexScene.js';
 import { rankManager } from '../managers/RankManager.js';
-import { getDefaultShipKey, incrementShipUsage, isShipUnlocked, isValidShipKey, updateShipUnlockProgress } from '../config/ShipMetadata.js';
+import { getDefaultShipKey, incrementShipUsage, isShipUnlocked, isValidShipKey } from '../config/ShipMetadata.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
 import { AchievementManager } from '../achievements/AchievementManager.js';
 import { getAchievementById, getRankAchievementId } from '../achievements/AchievementCatalog.js';
+import { getMilestoneAchievementUnlocks } from '../achievements/MilestoneAchievements.js';
 import { onLanguageChange } from '../i18n/index.js';
+import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
+import { RunPacingConfig, getRunPacingDebugState } from '../config/RunPacingConfig.js';
+import { RunPressureDirector } from './RunPressureDirector.js';
+import { RunContentDirector } from './RunContentDirector.js';
+import {
+  getCodexCompletionCounts,
+  getDiscoveriesThisRun,
+  getDiscoveryStats,
+  startThreatDiscoveryRun
+} from '../progression/ThreatDiscoveryState.js';
+import {
+  applyRunProgression,
+  getHangarProgressSummary,
+  readHangarProgressState,
+  updateHangarProgress
+} from '../progression/HangarProgressState.js';
 
 export class Game {
   constructor(app) {
@@ -28,6 +46,17 @@ export class Game {
     this.level = 1;
     this.lives = 3;
     this.scoreMultiplier = 1;
+    this.runStartedAtMs = 0;
+    this.runElapsedSeconds = 0;
+    this.runCleared = false;
+    this.runClearReason = null;
+    this.runClearLivesRemaining = 0;
+    this.runFinalized = false;
+    this.runSummary = null;
+    this.runProgressionResult = null;
+    this.runPressureDirector = null;
+    this.contentDirector = null;
+    this.scoreBreakdown = this.createEmptyScoreBreakdown();
 
     this.scenes = {
       intro: new IntroScene(this),
@@ -36,7 +65,8 @@ export class Game {
       play: new PlayScene(this),
       gameOver: new GameOverScene(this),
       highscore: new HighscoreScene(this),
-      achievements: new AchievementsScene(this)
+      achievements: new AchievementsScene(this),
+      threatCodex: new ThreatCodexScene(this)
     };
     this.selectedShipId = null;
     this.isDebugRun = false;
@@ -63,6 +93,7 @@ export class Game {
 
   start() {
     this.switchScene('menu');
+    this.achievementManager?.syncWithSteam?.().catch?.(() => {});
   }
 
   showIntro() {
@@ -150,13 +181,28 @@ export class Game {
     this.runMode = 'ranked';
     this.runModeReason = null;
     this.resetGlobalLeaderboardCues();
+    this.runStartedAtMs = Date.now();
+    this.runElapsedSeconds = 0;
+    this.runCleared = false;
+    this.runClearReason = null;
+    this.runClearLivesRemaining = 0;
+    this.runFinalized = false;
+    this.runSummary = null;
+    this.runProgressionResult = null;
+    this.scoreBreakdown = this.createEmptyScoreBreakdown();
+    this.hangarProgressAtRunStart = readHangarProgressState();
+    this.runPressureDirector = new RunPressureDirector(this);
+    this.contentDirector = new RunContentDirector(this, {
+      seed: `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
+    });
+    if (RunPacingConfig.threatCodexEnabled) startThreatDiscoveryRun();
+    if (RunPacingConfig.contentDirectorEnabled) this.contentDirector.startRun();
 
-    // Rank System (Per Run)
-    const initialRank = rankManager.getRankFromLevel(this.level);
+    // Rank System (cross-run pilot career)
+    const initialRank = Number(this.hangarProgressAtRunStart?.pilotRank) || 0;
     this.rankIndex = initialRank;
-    this.lastRankIndex = 0; // Explicitly 0 at start to ensure consistent progression logic
-    if (this.rankIndex > 0) this.lastRankIndex = this.rankIndex; // Sync if starting non-zero (unlikely but safe)
-    // Rank progression follows max level reached; score is only the leaderboard value.
+    this.lastRankIndex = this.rankIndex;
+    // Rank progression is finalized from pilot XP after the run; score remains the leaderboard value.
     this.pendingHighscore = null;
 
     // Diagnostics
@@ -187,6 +233,31 @@ export class Game {
   }
 
   gameOver() {
+    this.finalizeRunProgression({
+      runCleared: Boolean(this.runCleared),
+      clearReason: this.runClearReason || null,
+      clearLivesRemaining: this.runClearLivesRemaining || 0
+    });
+    this.state = GameState.GAME_OVER;
+    this.switchScene('gameOver');
+  }
+
+  markRunClear(reason = 'target_sector_clear') {
+    if (this.runCleared) return false;
+    this.runCleared = true;
+    this.runClearReason = reason;
+    this.runClearLivesRemaining = Math.max(0, Number(this.lives) || 0);
+    return true;
+  }
+
+  completeRun(reason = 'target_sector_clear') {
+    if (this.runFinalized) return;
+    this.markRunClear(reason);
+    this.finalizeRunProgression({
+      runCleared: true,
+      clearReason: this.runClearReason || reason,
+      clearLivesRemaining: this.runClearLivesRemaining || 0
+    });
     this.state = GameState.GAME_OVER;
     this.switchScene('gameOver');
   }
@@ -197,6 +268,10 @@ export class Game {
 
   showAchievements() {
     this.switchScene('achievements');
+  }
+
+  showThreatCodex() {
+    this.switchScene('threatCodex');
   }
 
   unlockAchievement(id, payload = {}) {
@@ -281,15 +356,40 @@ export class Game {
     return this.leaderboardAdapter;
   }
 
-  addScore(points) {
+  createEmptyScoreBreakdown() {
+    return {
+      baseScore: 0,
+      enemyScore: 0,
+      waveClearBonus: 0,
+      sectorClearBonus: 0,
+      bossBonus: 0,
+      bossSpeedBonus: 0,
+      noHitBonus: 0,
+      discoveryBonus: 0,
+      dangerMultiplierBonus: 0,
+      remainingLivesBonus: 0,
+      runClearBonus: 0,
+      pilotXpGained: 0,
+      finalScore: 0
+    };
+  }
+
+  addScore(points, source = 'baseScore') {
+    const base = Number(points) || 0;
+    const gameMult = Number(this.scoreMultiplier) || 1;
+    const playerMult = this.scenes?.play?.player?.scoreMultiplier || 1;
+    const preDangerAward = normalizeScoreDelta(base, gameMult * playerMult);
     const applied = this.getScoreAward(points);
     this.score += applied;
+    const breakdownKey = this.scoreBreakdown[source] !== undefined ? source : 'baseScore';
+    this.scoreBreakdown[breakdownKey] += applied;
+    this.scoreBreakdown.dangerMultiplierBonus += Math.max(0, applied - preDangerAward);
+    this.scoreBreakdown.finalScore = this.score;
 
-    const computedRank = rankManager.getRankFromLevel(this.level);
-    updateShipUnlockProgress({ score: this.score, rank: computedRank, level: this.level });
+    updateHangarProgress({ bestScore: this.score, bestRank: this.rankIndex, bestLevel: this.level, bestSector: this.level });
 
-    // Always update current rank index source of truth
-    this.rankIndex = computedRank;
+    // Current rank index is cross-run pilot rank; it updates during post-run finalization.
+    const computedRank = this.rankIndex;
 
     // Diag Update
     this.diag.asEv++;
@@ -306,7 +406,8 @@ export class Game {
     // Check both Game's scoreMultiplier (bonus core) and Player's scoreMultiplier (score_x2)
     const gameMult = Number(this.scoreMultiplier) || 1;
     const playerMult = this.scenes?.play?.player?.scoreMultiplier || 1;
-    const mult = gameMult * playerMult;
+    const pressureMult = this.runPressureDirector?.getScoreMultiplier?.() || 1;
+    const mult = gameMult * playerMult * pressureMult;
     return normalizeScoreDelta(base, mult);
   }
 
@@ -387,10 +488,16 @@ export class Game {
   }
 
   getRankProgress() {
-    return rankManager.getRankProgress(this.level, this.rankIndex);
+    const currentPilotXp = this.runProgressionResult?.next?.pilotXp ?? readHangarProgressState().pilotXp;
+    return rankManager.getPilotRankProgress(currentPilotXp).progress;
   }
 
   loseLife() {
+    if (this.currentScene?.isDebugInvincibleActive?.()) {
+      this.currentScene.onDebugDamageBlocked?.('game_lose_life');
+      return;
+    }
+
     this.lives--;
     if (this.currentScene && this.currentScene.onLifeLost) {
       this.currentScene.onLifeLost(this.lives);
@@ -402,41 +509,122 @@ export class Game {
 
   gainLife() {
     const before = this.lives;
-    const MAX_LIVES = 5;
-    this.lives = Math.min(this.lives + 1, MAX_LIVES);
+    const maxLives = MAX_PLAYER_LIVES;
+    this.lives = Math.min(this.lives + 1, maxLives);
     const after = this.lives;
     const applied = after > before;
-    console.log(`[Lives] pickup extra_life before=${before} after=${after} max=${MAX_LIVES} applied=${applied}`);
+    console.log(`[Lives] pickup extra_life before=${before} after=${after} max=${maxLives} applied=${applied}`);
 
     // Notify scene if needed
     if (this.currentScene && this.currentScene.onLifeGained) {
-      this.currentScene.onLifeGained(this.lives);
+      this.currentScene.onLifeGained(this.lives, {
+        before,
+        after,
+        maxLives,
+        source: 'extra_life',
+        reachedMax: applied && after >= maxLives
+      });
     }
   }
 
   nextLevel() {
-    const prevRank = this.rankIndex;
     this.level++;
-    const computedRank = rankManager.getRankFromLevel(this.level);
-    this.rankIndex = computedRank;
-    updateShipUnlockProgress({ score: this.score, rank: computedRank, level: this.level });
-    if (computedRank > this.lastRankIndex) {
-      const previousRankIndex = this.lastRankIndex;
-      this.lastRankIndex = computedRank;
-      console.log('[RankUp]', { level: this.level, score: this.score, newRank: computedRank, prevRank });
-      if (this.currentScene && typeof this.currentScene.onRankUp === 'function') {
-        this.currentScene.onRankUp(computedRank);
-      }
-      for (let rankIndex = previousRankIndex + 1; rankIndex <= computedRank; rankIndex++) {
-        this.unlockRankAchievement(rankIndex, {
-          level: this.level,
-          score: this.score
-        });
-      }
-    }
+    updateHangarProgress({ score: this.score, rank: this.rankIndex, bestScore: this.score, bestLevel: this.level, bestSector: this.level });
     if (this.currentScene && this.currentScene.startLevel) {
       this.currentScene.startLevel();
     }
+  }
+
+  buildRunSummary(overrides = {}) {
+    const play = this.scenes?.play;
+    const discoveryStats = getDiscoveryStats();
+    const discoveries = getDiscoveriesThisRun();
+    const elapsed = Number(play?.gameTime) || (this.runStartedAtMs ? (Date.now() - this.runStartedAtMs) / 1000 : 0);
+    const summary = {
+      score: this.score,
+      finalScore: this.score,
+      levelReached: this.level,
+      sectorReached: this.level,
+      runElapsedSeconds: Math.max(0, elapsed),
+      bossesKilled: Number(play?.bossKills) || 0,
+      wavesCleared: Number(play?.wavesCleared) || 0,
+      totalKills: Number(play?.totalKills) || 0,
+      livesRemaining: this.lives,
+      runCleared: Boolean(overrides.runCleared ?? this.runCleared),
+      clearReason: overrides.clearReason || this.runClearReason || null,
+      clearLivesRemaining: Math.max(0, Number(overrides.clearLivesRemaining ?? this.runClearLivesRemaining) || 0),
+      codexDiscoveries: discoveries.length,
+      totalCodexDiscoveries: discoveryStats.totalDiscovered,
+      runThemeDiscoveries: discoveries.filter((entry) => entry.category === 'runThemes').length,
+      discoveredThreatIds: discoveries.map((entry) => entry.id),
+      defeatedBossIds: Array.isArray(play?.defeatedBossIds) ? play.defeatedBossIds.slice() : [],
+      runTheme: this.contentDirector?.runTheme?.id || null,
+      noHitWaves: Number(play?.noHitWavesThisRun) || 0,
+      noHitSectors: Number(play?.noHitSectorsThisRun) || 0,
+      highestScoreMultiplier: Math.max(1, Number(this.runPressureDirector?.getScoreMultiplier?.()) || 1),
+      discoveriesThisRun: discoveries,
+      codexCompletionCounts: getCodexCompletionCounts(),
+      scoreBreakdown: { ...this.scoreBreakdown },
+      pacing: getRunPacingDebugState(this),
+      contentDirectorState: this.contentDirector?.getDebugState?.() || null
+    };
+    return { ...summary, ...overrides };
+  }
+
+  finalizeRunProgression(overrides = {}) {
+    if (this.runFinalized) return this.runProgressionResult;
+    this.runFinalized = true;
+    this.runSummary = this.buildRunSummary(overrides);
+    const result = RunPacingConfig.pilotRankProgressionEnabled
+      ? applyRunProgression(this.runSummary)
+      : { previous: readHangarProgressState(), next: readHangarProgressState(), xpGained: 0, newRanksThisRun: [], newlyUnlockedShipIds: [] };
+    this.runProgressionResult = result;
+    this.rankIndex = result.next?.pilotRank ?? this.rankIndex;
+    this.lastRankIndex = this.rankIndex;
+    this.scoreBreakdown.pilotXpGained = result.xpGained || 0;
+    this.scoreBreakdown.finalScore = this.score;
+    this.runSummary = {
+      ...this.runSummary,
+      pilotXpGained: result.xpGained || 0,
+      pilotXp: result.next?.pilotXp ?? 0,
+      pilotRank: result.next?.pilotRank ?? 0,
+      highestPilotRank: result.next?.highestPilotRank ?? 0,
+      newRanksThisRun: result.newRanksThisRun || [],
+      rankProgress: result.rankProgress || null,
+      rankAchievementsUnlocked: [],
+      milestoneAchievementsUnlocked: [],
+      newlyUnlockedShips: result.newlyUnlockedShipIds || [],
+      hangarProgress: getHangarProgressSummary(result.next)
+    };
+    for (const rankIndex of result.newRanksThisRun || []) {
+      const unlock = this.unlockRankAchievement(rankIndex, {
+        level: this.level,
+        score: this.score,
+        source: 'pilot_rank_progression'
+      });
+      if (unlock?.id) this.runSummary.rankAchievementsUnlocked.push(unlock.id);
+    }
+    const milestoneUnlocks = getMilestoneAchievementUnlocks({
+      summary: this.runSummary,
+      progress: result.next
+    });
+    for (const entry of milestoneUnlocks) {
+      const achievement = entry.achievement;
+      const unlock = this.unlockAchievement(achievement.id, {
+        level: this.level,
+        score: this.score,
+        source: 'milestone_progression',
+        achievementType: achievement.type,
+        metric: entry.metric,
+        progressValue: entry.value,
+        target: entry.target,
+        runCleared: this.runSummary.runCleared,
+        livesRemaining: this.runSummary.livesRemaining,
+        clearLivesRemaining: this.runSummary.clearLivesRemaining
+      });
+      if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);
+    }
+    return result;
   }
 
   update(delta) {

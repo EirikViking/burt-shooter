@@ -862,7 +862,8 @@ class AudioController {
       'mission_control_top3_highscore',
       'mission_control_number_one_highscore',
       'mission_control_near_miss',
-      'mission_control_personal_best'
+      'mission_control_personal_best',
+      'mission_control_overrun_clear'
     ];
     if (celebrations.includes(eventName)) {
       if (!force && !bypassGlobalCooldown && now < this.globalVoiceCooldown) {

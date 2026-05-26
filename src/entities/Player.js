@@ -15,6 +15,34 @@ import {
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
+const GENERATED_SHIP_VISUAL_CENTER_OFFSETS = [
+  { x: 24.5, y: 40.9 },
+  { x: -0.4, y: 18.6 },
+  { x: -0.7, y: 16.9 },
+  { x: -0.6, y: 14.9 },
+  { x: -0.4, y: 16.6 },
+  { x: -0.5, y: 29.4 },
+  { x: -0.8, y: 26.8 },
+  { x: -1.2, y: 24.0 },
+  { x: -0.7, y: 24.4 },
+  { x: -0.6, y: 29.4 },
+  { x: 0.0, y: -15.5 },
+  { x: -1.0, y: -13.9 },
+  { x: -0.3, y: -16.8 },
+  { x: -0.4, y: -10.7 },
+  { x: -0.2, y: -11.3 },
+  { x: -0.5, y: -16.7 },
+  { x: -0.7, y: -16.4 },
+  { x: -1.5, y: -7.8 },
+  { x: -0.3, y: -14.1 },
+  { x: -0.8, y: -5.3 },
+  { x: 7.8, y: -34.6 },
+  { x: -0.6, y: 0.3 },
+  { x: -0.9, y: -0.4 },
+  { x: -1.6, y: -9.8 },
+  { x: -0.5, y: 0.9 }
+];
+
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
     this.x = x;
@@ -199,8 +227,24 @@ export class Player {
     const scale = texture.width > 0 ? targetWidth / texture.width : 1;
     sprite.scale.set(scale);
     this.baseScale = Number.isFinite(scale) ? scale : 1;
+    this.applyShipVisualCentering(sprite, this.selectedShipTextureIndex);
 
     return sprite;
+  }
+
+  getShipVisualCenterOffset(textureIndex = this.selectedShipTextureIndex) {
+    const index = Math.max(0, Math.floor(Number(textureIndex) || 0));
+    const offset = GENERATED_SHIP_VISUAL_CENTER_OFFSETS[index];
+    if (!offset) return { x: 0, y: 0 };
+    return offset;
+  }
+
+  applyShipVisualCentering(sprite = this.shipSprite, textureIndex = this.selectedShipTextureIndex) {
+    if (!sprite?.position || !sprite?.scale) return;
+    const offset = this.getShipVisualCenterOffset(textureIndex);
+    const scaleX = Number.isFinite(sprite.scale.x) ? sprite.scale.x : this.baseScale || 1;
+    const scaleY = Number.isFinite(sprite.scale.y) ? sprite.scale.y : this.baseScale || 1;
+    sprite.position.set(-offset.x * scaleX, -offset.y * scaleY);
   }
 
   createVariantGlow() {
@@ -493,6 +537,7 @@ export class Player {
     const scale = targetWidth / texWidth;
     this.shipSprite.scale.set(scale);
     this.baseScale = Number.isFinite(scale) ? scale : 1;
+    this.applyShipVisualCentering(this.shipSprite, index);
 
     this.sprite.addChildAt(this.shipSprite, 0);
     this.rankShipIndex = index;
@@ -526,8 +571,12 @@ export class Player {
       // Pulse relative to baseScale, not 1
       const pulseScale = this.baseScale * 1.5; // Bigger pulse for visibility
       this.shipSprite.scale.set(pulseScale);
+      this.applyShipVisualCentering(this.shipSprite, index);
       setTimeout(() => {
-        if (this.shipSprite) this.shipSprite.scale.set(this.baseScale);
+        if (this.shipSprite) {
+          this.shipSprite.scale.set(this.baseScale);
+          this.applyShipVisualCentering(this.shipSprite, this.rankShipIndex);
+        }
       }, 180);
     }
 
@@ -711,9 +760,10 @@ export class Player {
       console.log(`[RankUpSprite] before rank=${this.rankIndex} texW=${tex.width} scale=${this.shipSprite.scale.x.toFixed(4)}`);
     }
 
-    // 4. Swap Sprite
-    // We trust swapToRankShip to maintain the correct targetShipWidthPx
-    const swapped = this.swapToRankShip(newRank, { force: true, log: true });
+    // 4. Preserve the hangar-selected ship and trait.
+    // Rank-up should add power, not silently swap the player's chosen loadout.
+    const preservedTrait = this.shipTrait?.label || 'none';
+    console.log(`[RankUpSprite] preserved selected=${this.selectedShipSpriteKey || 'unknown'} trait=${preservedTrait}`);
 
     // 5. Verification Logs (REQUIRED)
     if (this.shipSprite && this.shipSprite.texture) {
@@ -729,7 +779,7 @@ export class Player {
     // 6. Apply Stats/Boost (Shields, etc)
     this.applyRankUpBoost();
 
-    console.log(`[RankUp] complete. Swapped=${swapped}`);
+    console.log(`[RankUp] complete. Preserved selected ship trait=${preservedTrait}`);
   }
 
   update(delta) {
@@ -1064,6 +1114,10 @@ export class Player {
       );
       bomb.isBomb = true;
       bomb.blastRadius = 150; // Blast radius
+      bomb.radius = 11;
+      bomb.trailLength = Math.max(bomb.trailLength || 0, 42);
+      bomb.pulseRate = Math.max(bomb.pulseRate || 0, 0.82);
+      bomb.haloColor = 0xffaa00;
       this.applyTraitProjectileEffects(bomb, shotCounter);
       bullets.push(bomb);
 
@@ -1467,7 +1521,7 @@ export class Player {
       durationMs: effect.durationMs,
       immunityMs: TRACTOR_DEBUFF_IMMUNITY_MS
     };
-    this.statusVfxPulse = 0.85;
+    this.statusVfxPulse = 1.45;
 
     if (Number.isFinite(effect.instantDodgeDelayMs)) {
       this.dodgeCooldown = Math.max(this.dodgeCooldown || 0, effect.instantDodgeDelayMs);
@@ -1477,7 +1531,7 @@ export class Player {
     }
 
     this.recalculateStats();
-    this.triggerFlash(effect.color || 0xff66ff, 180);
+    this.triggerFlash(effect.color || 0xff66ff, 320);
     this.createStatusBurst(effect, x, y);
     AudioManager.playSfx('tractor_capture_sting', { force: false, volume: 0.64, minIntervalMs: 180 });
     AudioManager.playSfx('tractor_debuff_apply', { force: false, volume: 0.58, minIntervalMs: 160 });
@@ -1488,7 +1542,7 @@ export class Player {
       fill: '#ffdde8',
       stroke: '#250012',
       strokeThickness: 4,
-      duration: 1100,
+      duration: 1500,
       slot: 'corner',
       type: 'tractor_debuff',
       priority: 5
@@ -1547,9 +1601,24 @@ export class Player {
     ring.stroke({ color: 0xffffff, width: 2, alpha: 0.4 });
     ring.blendMode = 'add';
     container.addChild(ring);
-    setTimeout(() => {
-      if (ring.parent) ring.parent.removeChild(ring);
-    }, 160);
+    const start = Date.now();
+    const duration = 680;
+    const baseRadius = Math.max(30, this.radius * 2.35);
+    const animate = () => {
+      const t = Math.min(1, (Date.now() - start) / duration);
+      const alpha = (1 - t) * 0.74;
+      ring.clear();
+      ring.circle(this.x, this.y, baseRadius + t * 78);
+      ring.stroke({ color, width: 5, alpha });
+      ring.circle(this.x, this.y, baseRadius * 0.58 + t * 38);
+      ring.stroke({ color: 0xffffff, width: 2, alpha: alpha * 0.65 });
+      if (t >= 1) {
+        playScene?.game?.app?.ticker?.remove(animate);
+        if (ring.parent) ring.parent.removeChild(ring);
+        ring.destroy();
+      }
+    };
+    playScene?.game?.app?.ticker?.add(animate);
   }
 
   updateStatusEffectVisuals(deltaSeconds = 1 / 60) {
@@ -1566,14 +1635,14 @@ export class Player {
     const primary = activeEffects[0];
     const color = primary.color || 0xff66ff;
     const pulse = 0.5 + Math.sin(now * 0.018) * 0.5;
-    const radius = Math.max(28, (this.baseShipWidth || 62) * 0.55) + pulse * 3 + this.statusVfxPulse * 12;
+    const radius = Math.max(30, (this.baseShipWidth || 62) * 0.62) + pulse * 5 + this.statusVfxPulse * 18;
 
     layer.clear();
     layer.visible = true;
     layer.circle(0, 0, radius);
-    layer.stroke({ color, width: 2.4, alpha: 0.56 });
+    layer.stroke({ color, width: 3.2, alpha: 0.68 });
     layer.circle(0, 0, radius * 0.72);
-    layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.18 + this.statusVfxPulse * 0.22 });
+    layer.stroke({ color: 0xffffff, width: 1.8, alpha: 0.24 + this.statusVfxPulse * 0.26 });
 
     activeEffects.slice(0, 3).forEach((effect, index) => {
       const phase = now * 0.004 + index * 2.1;
@@ -1621,7 +1690,7 @@ export class Player {
       speed_up: 'SPEED UP',
       pierce: 'PIERCE',
       score_x2: 'SCORE x2',
-      magnet: 'MAGNET',
+      magnet: 'MAGNET: PICKUPS',
       drones: 'DRONES',
       shockwave: 'SHOCKWAVE',
       point_defense: 'POINT DEFENSE',
@@ -1775,6 +1844,15 @@ export class Player {
     this.triggerTraitDodgePulse();
   }
 
+  grantInvulnerability(ms, reason = 'generic') {
+    const duration = Math.max(0, Number(ms) || 0);
+    if (duration <= 0) return this.invulnerableTime || 0;
+    this.invulnerable = true;
+    this.invulnerableTime = Math.max(this.invulnerableTime || 0, duration);
+    this.lastInvulnerabilityReason = reason;
+    return this.invulnerableTime;
+  }
+
   triggerTraitDodgePulse() {
     const radius = Number(this.traitCombat?.dodgePulseRadius || 0);
     const playScene = this.game?.scenes?.play;
@@ -1814,6 +1892,12 @@ export class Player {
   }
 
   takeDamage() {
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.isDebugInvincibleActive?.()) {
+      playScene.onDebugDamageBlocked?.('player_take_damage');
+      return false;
+    }
+
     if (this.shieldActive && !this.isDefenseSuppressed()) {
       this.deactivateShield();
       // Play Break Sound
@@ -1827,8 +1911,7 @@ export class Player {
     }
 
     if (this.invulnerable) return false;
-    this.invulnerable = true;
-    this.invulnerableTime = 2000;
+    this.grantInvulnerability(2000, 'damage');
 
     // Trigger damage flash effect
     this.triggerFlash(0xff0000, 300);

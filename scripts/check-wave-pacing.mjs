@@ -16,10 +16,9 @@ globalThis.Audio ??= class {
 };
 
 const HISTORICAL_INTENDED = {
-  source: 'git history/docs: 607b85c3 and 3eb85916 boss-spacing pass',
+  source: 'arcade revamp guard: prevent accidental one-wave boss rush, not old duration lock',
   minWavesBeforeBoss: 6,
-  maxPlannedWavesBeforeBoss: 8,
-  estimatedSecondsBeforeBoss: 75
+  maxPlannedWavesBeforeBoss: 10
 };
 
 function timestamp() {
@@ -106,18 +105,14 @@ const firstTen = wavePlan.slice(0, 10);
 assert(diff.MIN_WAVES_BETWEEN_BOSSES === HISTORICAL_INTENDED.minWavesBeforeBoss,
   `MIN_WAVES_BETWEEN_BOSSES should be ${HISTORICAL_INTENDED.minWavesBeforeBoss}, got ${diff.MIN_WAVES_BETWEEN_BOSSES}.`,
   errors);
-assert(diff.MIN_SECONDS_BETWEEN_BOSSES === 0,
-  `MIN_SECONDS_BETWEEN_BOSSES should remain 0 because 75 seconds is only an estimate, got ${diff.MIN_SECONDS_BETWEEN_BOSSES}.`,
-  errors);
 assert(diff.wavesPerBossBase === HISTORICAL_INTENDED.minWavesBeforeBoss,
   `wavesPerBossBase should be ${HISTORICAL_INTENDED.minWavesBeforeBoss}, got ${diff.wavesPerBossBase}.`,
   errors);
-assert(diff.wavesPerBossMax === HISTORICAL_INTENDED.maxPlannedWavesBeforeBoss,
-  `wavesPerBossMax should be ${HISTORICAL_INTENDED.maxPlannedWavesBeforeBoss}, got ${diff.wavesPerBossMax}.`,
+assert(diff.wavesPerBossMax >= HISTORICAL_INTENDED.minWavesBeforeBoss && diff.wavesPerBossMax <= HISTORICAL_INTENDED.maxPlannedWavesBeforeBoss,
+  `wavesPerBossMax should stay within the arcade tuning range ${HISTORICAL_INTENDED.minWavesBeforeBoss}-${HISTORICAL_INTENDED.maxPlannedWavesBeforeBoss}, got ${diff.wavesPerBossMax}.`,
   errors);
-assert((diff.bossIntervalCatchupWaveMax ?? 0) === 0, 'Boss timing catchup waves should stay disabled because 75 seconds is only an estimate.', errors);
-assert(firstTen.every((entry) => entry.waveCount >= 6 && entry.waveCount <= 8),
-  `Levels 1-10 should generate 6-8 normal waves, got ${firstTen.map((entry) => `${entry.level}:${entry.waveCount}`).join(', ')}.`,
+assert(firstTen.every((entry) => entry.waveCount >= 6 && entry.waveCount <= HISTORICAL_INTENDED.maxPlannedWavesBeforeBoss),
+  `Levels 1-10 should generate at least six normal waves without runaway sector length, got ${firstTen.map((entry) => `${entry.level}:${entry.waveCount}`).join(', ')}.`,
   errors);
 assert(!wavePlan.some((entry) => entry.waveCount <= 1),
   `Normal generation must never create a 1-wave boss gate: ${wavePlan.filter((entry) => entry.waveCount <= 1).map((entry) => entry.level).join(', ')}`,
@@ -149,8 +144,8 @@ const estimatedSeconds = Number((
   Math.max(0, HISTORICAL_INTENDED.minWavesBeforeBoss - 1) * ((diff.waveDelayMs ?? 0) / 1000) +
   ((diff.bossGateMs ?? 0) / 1000)
 ).toFixed(1));
-assert(estimatedSeconds >= 70 && estimatedSeconds <= 100,
-  `Six-wave boss interval should estimate near 75 seconds, got ${estimatedSeconds}s.`,
+assert(estimatedSeconds >= 45 && estimatedSeconds <= 180,
+  `Six-wave sector setup should remain tunable for arcade pacing without collapsing or stalling, got ${estimatedSeconds}s.`,
   errors);
 
 const configSource = readFileSync(path.resolve('src/config/BalanceConfig.js'), 'utf8');

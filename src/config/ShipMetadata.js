@@ -6,6 +6,14 @@
 
 import { ShipData } from './ShipData.js';
 import { buildSelectableShipVariants } from './VisualVariantCatalog.js';
+import { getTraitExplanation } from './ShipTraitDescriptions.js';
+import { getShipUnlockDefinition } from './ShipUnlockConfig.js';
+import {
+  getShipUnlockProgressDetails as getHangarShipUnlockProgressDetails,
+  readHangarProgressState,
+  shipUnlockMet,
+  updateHangarProgress
+} from '../progression/HangarProgressState.js';
 
 export const ShipMetadata = {};
 export const ShipVariantData = buildSelectableShipVariants(ShipData);
@@ -27,6 +35,7 @@ ShipVariantData.forEach(ship => {
     visuals: { ...ship.visuals },
     hitbox: { ...ship.hitbox },
     trait: ship.trait ? { ...ship.trait } : null,
+    traitExplanation: ship.trait ? getTraitExplanation(ship.trait, ship) : null,
     unlock: ship.unlock ? { ...ship.unlock } : null,
     stats: {
       speed: ship.stats.speed,
@@ -102,22 +111,8 @@ export function isValidShipKey(spriteKey) {
   return !!ShipMetadata[spriteKey];
 }
 
-const UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
-
 function readUnlockProgress() {
-  try {
-    if (typeof localStorage === 'undefined') return { bestScore: 0, bestRank: 0, bestLevel: 1 };
-    const raw = localStorage.getItem(UNLOCK_PROGRESS_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    return {
-      bestScore: Math.max(0, Number(parsed.bestScore) || 0),
-      bestRank: Math.max(0, Number(parsed.bestRank) || 0),
-      bestLevel: Math.max(1, Number(parsed.bestLevel) || 1)
-    };
-  } catch (e) {
-    console.warn('[ShipMetadata] Failed to read unlock progress:', e);
-    return { bestScore: 0, bestRank: 0, bestLevel: 1 };
-  }
+  return readHangarProgressState();
 }
 
 export function getShipUnlockProgress() {
@@ -126,44 +121,45 @@ export function getShipUnlockProgress() {
 
 export function updateShipUnlockProgress({ score = 0, rank = 0, level = 1 } = {}) {
   try {
-    if (typeof localStorage === 'undefined') return readUnlockProgress();
-    const current = readUnlockProgress();
-    const next = {
-      bestScore: Math.max(current.bestScore, Math.floor(Number(score) || 0)),
-      bestRank: Math.max(current.bestRank, Math.floor(Number(rank) || 0)),
-      bestLevel: Math.max(current.bestLevel, Math.floor(Number(level) || 1))
-    };
-    localStorage.setItem(UNLOCK_PROGRESS_KEY, JSON.stringify(next));
-    if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
-    return next;
+    return updateHangarProgress({
+      bestScore: Math.floor(Number(score) || 0),
+      bestRank: Math.floor(Number(rank) || 0),
+      bestLevel: Math.floor(Number(level) || 1),
+      bestSector: Math.floor(Number(level) || 1)
+    });
   } catch (e) {
     console.warn('[ShipMetadata] Failed to update unlock progress:', e);
     return readUnlockProgress();
   }
 }
 
-export function getShipUnlockRequirement(spriteKey) {
+function getShipUnlockId(spriteKey) {
   const ship = getShipMetadata(spriteKey);
-  return ship?.unlock || { level: 1, label: 'Available now' };
+  return ship?.baseId || ship?.id || spriteKey;
+}
+
+export function getShipUnlockRequirement(spriteKey) {
+  const definition = getShipUnlockDefinition(getShipUnlockId(spriteKey));
+  return definition || { requirements: {}, label: 'Available now' };
 }
 
 export function getShipUnlockLabel(spriteKey) {
-  const requirement = getShipUnlockRequirement(spriteKey);
-  const level = Math.max(1, Math.floor(Number(requirement.level) || 1));
-  if (level <= 1) return 'AVAILABLE NOW';
-  return `UNLOCK: REACH LEVEL ${level}`;
+  const details = getShipUnlockProgressDetails(spriteKey);
+  if (details.complete) return 'AVAILABLE NOW';
+  return `UNLOCK: ${details.label}`.toUpperCase();
 }
 
 export function isShipUnlocked(spriteKey, progress = readUnlockProgress()) {
-  const resolved = resolveShipKey(spriteKey);
-  const requirement = getShipUnlockRequirement(resolved);
-  const requiredLevel = Math.max(1, Math.floor(Number(requirement.level) || 1));
-  return Math.max(1, Number(progress.bestLevel) || 1) >= requiredLevel;
+  return shipUnlockMet(getShipUnlockId(spriteKey), progress);
 }
 
 export function getUnlockedSelectableShips() {
   const progress = readUnlockProgress();
   return getSelectableShips().filter(ship => isShipUnlocked(ship.spriteKey, progress));
+}
+
+export function getShipUnlockProgressDetails(spriteKey, progress = readUnlockProgress()) {
+  return getHangarShipUnlockProgressDetails(getShipUnlockId(spriteKey), progress);
 }
 
 /**

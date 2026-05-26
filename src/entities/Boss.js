@@ -44,6 +44,20 @@ function lerpAngle(current, target, maxStep) {
   return normalizeAngle(current + step);
 }
 
+function fitPixiTextToBox(text, maxWidth, maxHeight, minScale = 0.62) {
+  if (!text) return;
+  text.scale.set(1);
+  if (text.style) {
+    text.style.wordWrap = true;
+    text.style.wordWrapWidth = maxWidth;
+    text.style.align = 'center';
+  }
+  text.updateText?.(false);
+  const widthScale = maxWidth / Math.max(1, text.width || maxWidth);
+  const heightScale = maxHeight / Math.max(1, text.height || maxHeight);
+  text.scale.set(Math.max(minScale, Math.min(1, widthScale, heightScale)));
+}
+
 export class Boss {
   constructor(x, y, level, game) {
     this.x = x;
@@ -94,6 +108,10 @@ export class Boss {
     this.spawnedAtMs = Date.now();
     this.regularAttackReadyAt = this.spawnedAtMs + (level <= 1 ? 1800 : 1400);
     this.invulnerableUntilMs = this.spawnedAtMs + 800;
+    this.minimumFightMs = Math.max(7200, Math.min(9800, 7600 + Math.max(0, level - 1) * 140));
+    this.finishGateUntilMs = 0;
+    this.finishGateFxAt = 0;
+    this.finishGateLogged = false;
     this.visualBaseScale = { x: 1, y: 1 };
     this.animationRig = null;
     this.animationDebug = null;
@@ -195,16 +213,27 @@ export class Boss {
       fontSize: 20,
       fill: `#${(this.profile?.accent || 0xff4455).toString(16).padStart(6, '0')}`,
       stroke: '#000000',
-      strokeThickness: 3
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: Math.max(120, Math.min(240, gameWidth * 0.26)),
+      lineHeight: 22
     });
     this.nameText.anchor.set(0.5);
     this.nameText.y = -Math.min(this.radius + 30, 72);
     this.nameText.zIndex = 6;
     this.sprite.addChild(this.nameText);
+    this.fitNameText();
 
     // Force visibility
     this.sprite.visible = true;
     this.sprite.alpha = 1;
+  }
+
+  fitNameText(maxHeight = 52) {
+    const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
+    const maxWidth = Math.max(120, Math.min(240, gameWidth * 0.26));
+    fitPixiTextToBox(this.nameText, maxWidth, maxHeight, 0.58);
   }
 
   updateHealthBar() {
@@ -580,6 +609,19 @@ export class Boss {
     playScene?.particleManager?.createBossExplosion(this.x, this.y, color);
     playScene?.triggerShockwave?.(this.x, this.y, color);
     playScene?.screenShake?.shake(8, 20);
+  }
+
+  triggerFinishGatePresentation(untilMs = Date.now() + 1200) {
+    const now = Date.now();
+    if (now - this.finishGateFxAt < 520) return;
+    this.finishGateFxAt = now;
+    this.setPresentationState('phaseChange', Math.max(420, Math.min(1400, untilMs - now)));
+    const playScene = this.game?.scenes?.play;
+    const color = this.profile?.accent || this.color || 0xffff33;
+    playScene?.triggerShockwave?.(this.x, this.y, color);
+    playScene?.particleManager?.createHitSpark(this.x, this.y, color, 1.25);
+    playScene?.screenShake?.shake(3, 10);
+    AudioManager.playSfx('boss_phase_surge', { volume: 0.45, minIntervalMs: 900 });
   }
 
   updateBossAnimation(delta, playerX, playerY) {
@@ -1298,6 +1340,7 @@ export class Boss {
       const remaining = Math.max(0, Math.ceil((1 - progress) * 3));
       this.nameText.text = `${this.telegraph.label}\n${remaining}`;
       this.nameText.alpha = 0.88 + progress * 0.12;
+      this.fitNameText(58);
     }
 
   }
@@ -1307,6 +1350,7 @@ export class Boss {
     if (this.nameText) {
       this.nameText.text = this.name;
       this.nameText.alpha = 1;
+      this.fitNameText();
     }
     if (hadTelegraphOverlay) {
       this.updateHealthBar();
@@ -1456,7 +1500,7 @@ export class Boss {
         this.getBossPressureScalar();
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig));
+      bullets.push(this.markBossBullet(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig), attackType));
     }
     bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
   }
@@ -1481,14 +1525,24 @@ export class Boss {
         this.getBossPressureScalar();
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      bullets.push(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig));
+      bullets.push(this.markBossBullet(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig), this.telegraph?.type || 'ring'));
     }
     bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
+  }
+
+  markBossBullet(bullet, fireStyle = 'boss') {
+    if (!bullet) return bullet;
+    bullet.sourceEnemyType = 'boss';
+    bullet.sourceFireStyle = fireStyle;
+    bullet.sourceBossLevel = this.level;
+    bullet.sourceBossName = this.name || null;
+    return bullet;
   }
 
   canShoot() {
     if (this.shootCooldown > 0 || this.telegraph) return false;
     const now = Date.now();
+    if (now < this.finishGateUntilMs) return false;
     if (this.entryStartMs && now - this.entryStartMs < this.entryDurationMs + 250) return false;
     if (now < this.regularAttackReadyAt) return false;
     if (!this.regularTelegraph) {
@@ -1526,7 +1580,7 @@ export class Boss {
     const weaponSpeedMult = weaponProfile?.speedMult || 1;
     const aimAngle = Math.atan2(playerY - this.y, playerX - this.x);
     const addBullet = (x, y, angle, speed, color = weaponProfile?.color || this.color) => {
-      bullets.push(new Bullet(
+      bullets.push(this.markBossBullet(new Bullet(
         x,
         y,
         Math.cos(angle) * speed * weaponSpeedMult,
@@ -1535,7 +1589,7 @@ export class Boss {
         color,
         false,
         vConfig
-      ));
+      ), attack));
     };
 
     if (attack === 'fan' || attack === 'burst' || attack === 'fakeout') {
@@ -1597,7 +1651,7 @@ export class Boss {
         this.getBossAttackSpeedMultiplier('aim') *
         BalanceConfig.difficulty.pressureScalar *
         this.getBossPressureScalar();
-      bullets.push(new Bullet(
+      bullets.push(this.markBossBullet(new Bullet(
         this.x,
         this.y,
         (dx / distance) * speed * weaponSpeedMult,
@@ -1606,7 +1660,7 @@ export class Boss {
         weaponProfile?.color || this.color,
         false,
         vConfig
-      ));
+      ), attack));
     } else if (this.phase === 2) {
       // 3-shot spread keeps the first boss readable while still punishing tunnel vision.
       for (let i = -1; i <= 1; i++) {
@@ -1615,7 +1669,7 @@ export class Boss {
           this.getBossAttackSpeedMultiplier('fan') *
           BalanceConfig.difficulty.pressureScalar *
           this.getBossPressureScalar();
-        bullets.push(new Bullet(
+        bullets.push(this.markBossBullet(new Bullet(
           this.x,
           this.y,
           Math.cos(angle) * speed * weaponSpeedMult,
@@ -1624,7 +1678,7 @@ export class Boss {
           weaponProfile?.color || this.color,
           false,
           vConfig
-        ));
+        ), attack));
       }
     } else {
       // 8-bullet spiral with visible gaps.
@@ -1634,7 +1688,7 @@ export class Boss {
           this.getBossAttackSpeedMultiplier('radial') *
           BalanceConfig.difficulty.pressureScalar *
           this.getBossPressureScalar();
-        bullets.push(new Bullet(
+        bullets.push(this.markBossBullet(new Bullet(
           this.x,
           this.y,
           Math.cos(angle) * speed * weaponSpeedMult,
@@ -1643,7 +1697,7 @@ export class Boss {
           weaponProfile?.color || this.color,
           false,
           vConfig
-        ));
+        ), attack));
       }
     }
 
@@ -1662,7 +1716,38 @@ export class Boss {
     const invuln = now < this.invulnerableUntilMs;
     if (invuln) return false;
     const hpBefore = this.health;
-    this.health -= amount;
+    const elapsed = now - (this.spawnedAtMs || now);
+    const gateActive = now < this.finishGateUntilMs;
+    const minFightMs = Math.max(0, Number(this.minimumFightMs) || 0);
+    const incomingHealth = this.health - amount;
+    if (incomingHealth <= 0 && elapsed < minFightMs) {
+      const floor = Math.max(1, Math.ceil(this.maxHealth * 0.055));
+      this.health = Math.min(Math.max(floor, this.health), Math.max(floor, this.maxHealth));
+      this.finishGateUntilMs = Math.max(this.finishGateUntilMs || 0, (this.spawnedAtMs || now) + minFightMs);
+      this.shootCooldown = Math.max(this.shootCooldown || 0, 80);
+      this.signatureCooldown = Math.max(this.signatureCooldown || 0, 180);
+      this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500);
+      this.telegraph = null;
+      this.regularTelegraph = null;
+      this.clearTelegraphVisual();
+      this.clearRegularAttackTelegraphVisual();
+      this.updateHealthBar();
+      this.triggerHurtPresentation(amount);
+      this.triggerFinishGatePresentation(this.finishGateUntilMs);
+      if (!this.finishGateLogged) {
+        this.finishGateLogged = true;
+        console.log(`[BossDamageGate] level=${this.level} elapsedMs=${Math.round(elapsed)} minFightMs=${Math.round(minFightMs)} floor=${floor}`);
+      }
+      return false;
+    }
+    if (gateActive) {
+      const floor = Math.max(1, Math.ceil(this.maxHealth * 0.055));
+      this.health = Math.max(floor, incomingHealth);
+      this.updateHealthBar();
+      this.triggerFinishGatePresentation(this.finishGateUntilMs);
+      return false;
+    }
+    this.health = incomingHealth;
     this.updateHealthBar();
     console.log(`[BossDamage] level=${this.level} hpBefore=${hpBefore} dmg=${amount} hpAfter=${this.health} invuln=${invuln}`);
     this.triggerHurtPresentation(amount);

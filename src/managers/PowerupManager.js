@@ -1,8 +1,9 @@
-import { BalanceConfig } from '../config/BalanceConfig.js';
+import { BalanceConfig, MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
+import { translateText } from '../i18n/index.js';
 
 class Powerup {
   constructor(x, y, type) {
@@ -195,18 +196,21 @@ class Powerup {
     // TASK 1: Premium powerup pickup effects
     this.showPickupEffect(scene);
     this.playPickupSFX(scene);
-    const voiceOk = AudioManager.playPowerupVoice();
-    if (!voiceOk) {
+
+    const maxLives = this.type === 'life'
+      ? Math.max(1, Number(BalanceConfig.survival?.maxLives) || MAX_PLAYER_LIVES)
+      : null;
+    const reachesMaxLives = this.type === 'life' && scene.game.lives < maxLives && scene.game.lives + 1 >= maxLives;
+    const voiceOk = reachesMaxLives ? false : AudioManager.playPowerupVoice();
+    if (!voiceOk && !reachesMaxLives) {
       AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
     }
 
     // Pass type directly to player (Player handles reset)
     // Life Powerup Logic
     if (this.type === 'life') {
-      const maxLives = 5;
       if (scene.game.lives < maxLives) {
         scene.game.gainLife(); // Use the new gainLife() method
-        scene.onLifeGained ? scene.onLifeGained() : null; // Optional hook
 
         // Play distinct audio for life gain (not achievement audio per AUDIO_RULES.md)
         if (scene.game && scene.game.audio) {
@@ -216,7 +220,7 @@ class Powerup {
         // Score bonus instead
         console.log(`[Lives] pickup extra_life before=${scene.game.lives} after=${scene.game.lives} max=${maxLives} applied=false (at max, bonus awarded)`);
         scene.game.addScore(1000);
-        scene.showToast('MAX LIVES BONUS!', { fontSize: 24, fill: '#00ff00' });
+        scene.showToast(translateText('MAX LIVES REACHED!'), { fontSize: 24, fill: '#00ff00' });
 
         // Play pickup sound for bonus
         if (scene.game && scene.game.audio) {
@@ -324,7 +328,7 @@ class Powerup {
       speed_up: 'SPEED UP!',
       pierce: 'PIERCING SHOTS!',
       score_x2: 'SCORE x2!',
-      magnet: 'MAGNET FIELD!',
+      magnet: 'MAGNET FIELD: PULLS PICKUPS',
       drones: 'SIDE DRONES!',
       shockwave: 'SHOCKWAVE!',
       chain_lightning: 'CHAIN LIGHTNING!',
@@ -333,7 +337,7 @@ class Powerup {
     };
 
     const { width, height } = scene.game.app.screen;
-    const text = createText(messages[this.type] || 'POWERUP!', {
+    const text = createText(translateText(messages[this.type] || 'POWERUP!'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 20,
       fill: this.color,
@@ -471,13 +475,14 @@ export class PowerupManager {
     }
 
     let shouldSpawn = force;
-    let baseChance = BalanceConfig.powerups.dropChance ?? 0.02;
+    const sustainMult = this.game?.runPressureDirector?.getSustainMultiplier?.() || 1;
+    let baseChance = (BalanceConfig.powerups.dropChance ?? 0.02) * sustainMult;
 
     // Dynamic Probability: Increase chance over time since last spawn
     const timeSinceLast = timeSinceLastMs / 1000;
-    const growthPerSecond = BalanceConfig.powerups.chanceGrowthPerSecond ?? 0.002;
+    const growthPerSecond = (BalanceConfig.powerups.chanceGrowthPerSecond ?? 0.002) * sustainMult;
     const dynamicChance = baseChance + (timeSinceLast * growthPerSecond);
-    const cappedChance = Math.min(BalanceConfig.powerups.maxDropChance ?? 0.12, dynamicChance);
+    const cappedChance = Math.min((BalanceConfig.powerups.maxDropChance ?? 0.12) * sustainMult, dynamicChance);
 
     if (!shouldSpawn) {
       shouldSpawn = Math.random() < cappedChance;
@@ -510,7 +515,7 @@ export class PowerupManager {
       console.log(`[PowerupManager] GUARANTEED extra life spawned (${levelsSinceLastLife} levels since last)`);
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;
-    } else if (extraLifeDropsEnabled && rand < (BalanceConfig.powerups.extraLifeChance ?? 0)) {
+    } else if (extraLifeDropsEnabled && rand < ((BalanceConfig.powerups.extraLifeChance ?? 0) * sustainMult)) {
       type = 'life';
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;

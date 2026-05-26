@@ -195,6 +195,7 @@ async function checkNativeBridgeHappyPath() {
   assert.equal(submit.diagnostics.selectedUploadPath, 'raw_sdk_diagnostic');
   assert.equal(submit.diagnostics.uploadMethod.key, 'KeepBest');
   assert.equal(submit.diagnostics.uploadMethod.value, 1);
+  assert.ok(submit.requestCurrentStats);
   assert.equal(submit.interpretedStatus, 'accepted');
 
   const uploadCall = nativeModule.fakeSteam.calls.find(call => call[0] === 'rawUploadScore');
@@ -230,7 +231,8 @@ async function checkRawUploadFailureDiagnostics() {
     uploadMethod: 'keep_best'
   });
   assert.equal(submit.success, false);
-  assert.equal(submit.interpretedStatus, 'steam_callback_m_bSuccess_false');
+  assert.equal(submit.interpretedStatus, 'steam_backend_rejected_unknown_reason');
+  assert.match(submit.nativeErrorMessage, /Steam accepted the UploadLeaderboardScore call/);
   assert.equal(submit.diagnostics.selectedUploadPath, 'raw_sdk_diagnostic');
   assert.equal(submit.diagnostics.detailsMode, 'omitted');
   assert.equal(submit.rawResult.m_bSuccess, 0);
@@ -238,11 +240,44 @@ async function checkRawUploadFailureDiagnostics() {
   bridge.shutdown();
 }
 
+async function checkUploadInFlightGuard() {
+  const nativeModule = createFakeSteamNative();
+  const originalPoll = nativeModule.fakeSteam.leaderboards.callbackPoller.poll;
+  nativeModule.fakeSteam.leaderboards.callbackPoller.poll = async (...args) => {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    return originalPoll(...args);
+  };
+  const bridge = createSteamLeaderboardBridge({
+    nativeModule,
+    appId: 480,
+    sdkPath: 'steamworks_sdk',
+    rootDir: process.cwd(),
+    logger: { warn() {}, error() {} }
+  });
+
+  const first = bridge.submitScoreDetailed({
+    leaderboardName: STEAM_LEADERBOARD_NAME,
+    score: 100,
+    uploadMethod: 'keep_best'
+  });
+  const second = await bridge.submitScoreDetailed({
+    leaderboardName: STEAM_LEADERBOARD_NAME,
+    score: 101,
+    uploadMethod: 'keep_best'
+  });
+  assert.equal(second.success, false);
+  assert.equal(second.interpretedStatus, 'upload_already_in_flight');
+  assert.equal(nativeModule.fakeSteam.calls.filter(call => call[0] === 'rawUploadScore').length, 0);
+  await first;
+  assert.equal(nativeModule.fakeSteam.calls.filter(call => call[0] === 'rawUploadScore').length, 1);
+  bridge.shutdown();
+}
+
 function checkPreloadSurface() {
   const preload = readFileSync(path.resolve('electron/preload.cjs'), 'utf8');
   assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaSteamLeaderboard'/);
   assert.doesNotMatch(preload, /fs\.|child_process|shell|process\.env/);
-  for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getFriendsScores', 'submitScore', 'submitScoreDetailed', 'getLastUploadDiagnostics', 'getRuntimeInfo']) {
+  for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getFriendsScores', 'submitScore', 'submitScoreDetailed', 'requestCurrentStats', 'getLastUploadDiagnostics', 'getRuntimeInfo']) {
     assert.match(preload, new RegExp(`${method}:`));
   }
 }
@@ -264,6 +299,7 @@ await checkUnavailableWithoutNative();
 await checkMissingAppIdDoesNotInitNative();
 await checkNativeBridgeHappyPath();
 await checkRawUploadFailureDiagnostics();
+await checkUploadInFlightGuard();
 checkPreloadSurface();
 checkNoRendererNativeImport();
 

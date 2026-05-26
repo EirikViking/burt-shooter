@@ -5,6 +5,8 @@ import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { createText } from '../utils/pixiText.js';
 import { createShipStatPanel } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
+import { getTraitExplanation } from '../config/ShipTraitDescriptions.js';
+import { translateText } from '../i18n/index.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
@@ -98,7 +100,7 @@ export class ShipDetailsScene {
         // Usage count
         const usageCount = getShipUsage(this.spriteKey);
         const locked = !isShipUnlocked(this.spriteKey, this.unlockProgress);
-        const usageText = createText(`Used ${usageCount} times by players`, {
+        const usageText = createText([translateText('YOUR LAUNCHES') + ':', usageCount, '//', translateText('LOCAL PROFILE')].join(' '), {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: 13,
             fill: '#999999',
@@ -126,8 +128,12 @@ export class ShipDetailsScene {
             yOffset += unlockText.height + 18;
         }
 
-        // Lore section with better formatting
-        yOffset = this.createLoreSection(contentContainer, panelWidth, yOffset, isMobile);
+        // Lore section with better formatting. Keep it inside the space above the fixed buttons.
+        const buttonTop = panelHeight - (isMobile ? 78 : 84);
+        const loreMaxHeight = Math.max(0, buttonTop - yOffset - 10);
+        if (loreMaxHeight >= (isMobile ? 38 : 44)) {
+            yOffset = this.createLoreSection(contentContainer, panelWidth, yOffset, isMobile, loreMaxHeight);
+        }
 
         // Buttons
         this.createButtons(panelX, panelY, panelWidth, panelHeight, isMobile);
@@ -152,35 +158,46 @@ export class ShipDetailsScene {
         container.addChild(statPanel);
         yOffset += statPanel.height + 18;
 
-        const traitText = createText(
-            trait?.label
-                ? `TRAIT: ${trait.label} - ${trait.description || 'Balanced arcade handling.'}`
-                : 'TRAIT: BALANCED TUNE',
-            {
-                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-                fontSize: isMobile ? 11 : 13,
-                fill: '#00ffff',
-                align: 'center',
-                wordWrap: true,
-                wordWrapWidth: panelWidth - 80,
-                lineHeight: isMobile ? 15 : 17,
-                stroke: '#000000',
-                strokeThickness: 2
-            }
-        );
-        traitText.anchor.set(0.5, 0);
-        traitText.position.set(panelWidth / 2, yOffset);
-        container.addChild(traitText);
+        const explanation = getTraitExplanation(trait, this.ship);
+        const traitTitleText = 'TRAIT: ' + explanation.label;
+        const traitTitle = createText(traitTitleText, {
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+            fontSize: isMobile ? 13 : 15,
+            fill: '#66ffcc',
+            align: 'center',
+            stroke: '#000000',
+            strokeThickness: 2,
+            fontWeight: 'bold'
+        });
+        traitTitle.anchor.set(0.5, 0);
+        traitTitle.position.set(panelWidth / 2, yOffset);
+        container.addChild(traitTitle);
+        yOffset += traitTitle.height + 5;
 
-        return yOffset + traitText.height + 18;
+        const traitBody = createText(explanation.lines.map(line => `- ${line}`).join('\n'), {
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+            fontSize: isMobile ? 10 : 12,
+            fill: '#d8fbff',
+            align: 'left',
+            wordWrap: true,
+            wordWrapWidth: panelWidth - 100,
+            lineHeight: isMobile ? 13 : 15,
+            stroke: '#000000',
+            strokeThickness: 2
+        });
+        traitBody.position.set(50, yOffset);
+        container.addChild(traitBody);
+
+        return yOffset + traitBody.height + 16;
     }
 
-    createLoreSection(container, panelWidth, yOffset, isMobile) {
+    createLoreSection(container, panelWidth, yOffset, isMobile, maxHeight = Infinity) {
         // Format lore into paragraphs
         const loreLong = this.ship.loreLong || this.ship.description;
         const paragraphs = this.formatLoreIntoParagraphs(loreLong);
+        const startY = yOffset;
 
-        paragraphs.forEach((para, index) => {
+        for (const para of paragraphs) {
             const paraText = createText(para, {
                 fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
                 fontSize: isMobile ? 11 : 13,
@@ -191,9 +208,14 @@ export class ShipDetailsScene {
                 lineHeight: isMobile ? 16 : 18
             });
             paraText.position.set(40, yOffset);
+            const nextBottom = (yOffset - startY) + paraText.height;
+            if (nextBottom > maxHeight) {
+                paraText.destroy();
+                break;
+            }
             container.addChild(paraText);
             yOffset += paraText.height + (isMobile ? 10 : 12);
-        });
+        }
 
         return yOffset;
     }

@@ -5,6 +5,11 @@ when git commits are not used.
 
 ---
 
+## 2026-05-25
+- Added Steam leaderboard write diagnostics for stats-readiness gating, one-upload-in-flight protection, fresh leaderboard override testing, and Steamworks config checklist output.
+
+---
+
 ## 2026-05-17
 - Rethemed the public-facing game identity to Nova Swarm: removed shipped real-person joke photos, replaced the old inside-joke README/store copy with public arcade-shooter positioning, swapped visible ship/rank/powerup/boss text toward bonus-core and swarm humor, and verified the production build/smoke flow after the transformation.
 - Added in-menu audio audition controls for SFX and mission-control voice, with smoke-visible last-SFX/last-voice telemetry.

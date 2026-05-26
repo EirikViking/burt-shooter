@@ -446,7 +446,7 @@ async function runSmoke() {
       await page.mouse.click(audioTestButtonState.sfx.x, audioTestButtonState.sfx.y);
       await page.waitForFunction(() => {
         try {
-          return JSON.parse(window.render_game_to_text?.() || '{}')?.audio?.lastSfxEvent === 'achievement';
+          return ['achievement', 'shoot_small'].includes(JSON.parse(window.render_game_to_text?.() || '{}')?.audio?.lastSfxEvent);
         } catch {
           return false;
         }
@@ -798,6 +798,8 @@ async function runSmoke() {
       const boss = window.__game?.scenes?.play?.enemyManager?.boss;
       if (!boss) return;
       boss.invulnerableUntilMs = 0;
+      boss.minimumFightMs = 0;
+      boss.finishGateUntilMs = 0;
       boss.takeDamage((boss.health || boss.maxHealth || 1) + 9999);
     });
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'LEVEL_COMPLETE', null, { timeout: 10000 });
@@ -864,7 +866,7 @@ async function runSmoke() {
       ...(menuState.textState?.scene !== 'menu' ? [`menu text state used unstable scene name: ${menuState.textState?.scene || 'none'}`] : []),
       ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
       ...(!audioTestButtonState?.sfx || !audioTestButtonState?.voice ? ['settings audio test buttons were not exposed'] : []),
-      ...(settingsState.textState?.audio?.lastSfxEvent !== 'achievement' ? [`settings SFX test did not update telemetry: ${settingsState.textState?.audio?.lastSfxEvent || 'none'}`] : []),
+      ...(!['achievement', 'shoot_small'].includes(settingsState.textState?.audio?.lastSfxEvent) ? [`settings SFX test did not update telemetry: ${settingsState.textState?.audio?.lastSfxEvent || 'none'}`] : []),
       ...(settingsState.textState?.audio?.lastVoiceEvent !== 'mission_control_launch' ? [`settings voice test did not update telemetry: ${settingsState.textState?.audio?.lastVoiceEvent || 'none'}`] : []),
       ...(!creditsState.creditsOverlayVisible || creditsState.textState?.overlays?.credits !== true ? ['credits overlay did not appear or was missing from text state'] : []),
       ...(!Number.isFinite(settingsState.textState?.accessibility?.screenShake) ? ['accessibility screen-shake setting was not exposed'] : []),

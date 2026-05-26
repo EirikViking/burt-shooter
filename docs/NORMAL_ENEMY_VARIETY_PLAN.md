@@ -9,7 +9,7 @@
 
 ## New Counts
 
-- Normal enemy profiles: 120 generated profiles.
+- Normal enemy profiles: 180 generated profiles.
 - Movement families: 28.
 - Attack families: 23.
 - Enemy art assets: 50 generated enemy sprites are reused with profile-specific sprite index, target width, scale, tint, glow, accent color, role, movement, and attack metadata.
@@ -21,15 +21,23 @@
 | 1 | 10 | 4 | 3 |
 | 5 | 22 | 8 | 6 |
 | 10 | 36 | 13 | 11 |
-| 11 | 39 | 14 | 12 |
-| 20 | 64 | 19 | 16 |
-| 30 | 92 | 24 | 20 |
-| 40 | 120 | 28 | 23 |
+| 11 | 54 | 14 | 12 |
+| 20 | 89 | 19 | 16 |
+| 30 | 133 | 24 | 20 |
+| 40 | 180 | 28 | 23 |
 
 - All normal enemy profiles become available at level 40.
 - All movement families become available at level 40.
 - All attack families become available at level 40.
-- Level 11 exposes 39 of 120 profiles, so it is intentionally far below the full pool.
+- Level 11 exposes 54 of 180 profiles, so it is intentionally far below the full pool.
+
+## Codex And Director Expansion
+
+- The Threat Codex now surfaces the full 180-profile normal enemy catalog instead of a shortened sample.
+- Normal enemy threat actions grew from 10 base patterns to 40 codex-visible attack signals. The added signals reuse proven telegraphed handlers with different timing, roles, weights, weapons, names, and tips.
+- Wave tactics now include 39 codex-visible formation scripts. New tactics reuse safe movement and shot families so the director can vary run texture without untested collision or projectile physics.
+- Run themes now include 18 director themes. Themes bias formations, tactics, threat actions, enemy families, elites, and boss archetypes so repeated runs can reveal new combinations over a much longer period.
+- Current total Threat Codex target after this pass is 347 entries: 180 enemies, 40 attack patterns, 39 wave tactics, 20 elites, 50 bosses, and 18 run themes.
 
 ## Movement Families Introduced After Level 11
 

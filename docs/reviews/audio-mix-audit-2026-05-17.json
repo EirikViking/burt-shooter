@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-23T09:12:14.007Z",
+  "generatedAt": "2026-05-26T10:41:24.070Z",
   "defaults": {
     "masterVolume": 0.3,
     "musicVolume": 0.2,
@@ -12,10 +12,10 @@
     }
   },
   "counts": {
-    "measuredFiles": 238,
+    "measuredFiles": 244,
     "musicRows": 26,
-    "sfxRows": 159,
-    "voiceRows": 101,
+    "sfxRows": 161,
+    "voiceRows": 105,
     "warnings": 0,
     "errors": 0
   },
@@ -151,6 +151,20 @@
       },
       {
         "type": "sfx",
+        "event": "overrun_clear_shockwave",
+        "url": "/audio/sfx/nova-swarm/nova_overrun_clear_shockwave.mp3",
+        "durationSeconds": 3,
+        "mixVolume": 0.86,
+        "duckFactor": null,
+        "effectiveLinear": 0.1032,
+        "rawMeanDb": -19.8,
+        "rawPeakDb": -0.3,
+        "gainDb": -19.7,
+        "effectiveMeanDb": -39.5,
+        "effectivePeakDb": -20
+      },
+      {
+        "type": "sfx",
         "event": "boss_explode",
         "url": "/audio/sfx/lowFrequency_explosion_000.mp3",
         "durationSeconds": 2,
@@ -249,34 +263,34 @@
       },
       {
         "type": "sfx",
-        "event": "shoot_alt",
-        "url": "/audio/sfx/laserRetro_000.mp3",
-        "durationSeconds": 0.24,
-        "mixVolume": 0.7,
+        "event": "overrun_clear_coronation",
+        "url": "/audio/sfx/nova-swarm/nova_overrun_clear_coronation.mp3",
+        "durationSeconds": 7,
+        "mixVolume": 0.88,
         "duckFactor": null,
-        "effectiveLinear": 0.084,
-        "rawMeanDb": -7.8,
-        "rawPeakDb": -0.2,
-        "gainDb": -21.5,
-        "effectiveMeanDb": -29.3,
-        "effectivePeakDb": -21.7
-      },
-      {
-        "type": "sfx",
-        "event": "shoot_alt",
-        "url": "/audio/sfx/laserRetro_003.mp3",
-        "durationSeconds": 0.25,
-        "mixVolume": 0.7,
-        "duckFactor": null,
-        "effectiveLinear": 0.084,
-        "rawMeanDb": -7.9,
-        "rawPeakDb": -0.2,
-        "gainDb": -21.5,
-        "effectiveMeanDb": -29.4,
-        "effectivePeakDb": -21.7
+        "effectiveLinear": 0.1056,
+        "rawMeanDb": -16.9,
+        "rawPeakDb": -2.1,
+        "gainDb": -19.5,
+        "effectiveMeanDb": -36.4,
+        "effectivePeakDb": -21.6
       }
     ],
     "voice": [
+      {
+        "type": "voice",
+        "event": "mission_control_overrun_clear",
+        "url": "/audio/voice/mission-control/mission_control_overrun_clear_01.mp3",
+        "durationSeconds": 7.2,
+        "mixVolume": 1.05,
+        "duckFactor": 0.28,
+        "effectiveLinear": 0.14175,
+        "rawMeanDb": -13.8,
+        "rawPeakDb": -1.1,
+        "gainDb": -17,
+        "effectiveMeanDb": -30.8,
+        "effectivePeakDb": -18.1
+      },
       {
         "type": "voice",
         "event": "one_more_run_13",
@@ -374,20 +388,6 @@
         "gainDb": -17.2,
         "effectiveMeanDb": -32.3,
         "effectivePeakDb": -18.3
-      },
-      {
-        "type": "voice",
-        "event": "one_more_run_14",
-        "url": "/audio/voice/cta/one_more_run_14.mp3",
-        "durationSeconds": 2.48,
-        "mixVolume": 1,
-        "duckFactor": 1,
-        "effectiveLinear": 0.135,
-        "rawMeanDb": -14.2,
-        "rawPeakDb": -1,
-        "gainDb": -17.4,
-        "effectiveMeanDb": -31.6,
-        "effectivePeakDb": -18.4
       }
     ]
   },
@@ -2376,6 +2376,34 @@
     },
     {
       "type": "sfx",
+      "event": "overrun_clear_coronation",
+      "url": "/audio/sfx/nova-swarm/nova_overrun_clear_coronation.mp3",
+      "durationSeconds": 7,
+      "mixVolume": 0.88,
+      "duckFactor": null,
+      "effectiveLinear": 0.1056,
+      "rawMeanDb": -16.9,
+      "rawPeakDb": -2.1,
+      "gainDb": -19.5,
+      "effectiveMeanDb": -36.4,
+      "effectivePeakDb": -21.6
+    },
+    {
+      "type": "sfx",
+      "event": "overrun_clear_shockwave",
+      "url": "/audio/sfx/nova-swarm/nova_overrun_clear_shockwave.mp3",
+      "durationSeconds": 3,
+      "mixVolume": 0.86,
+      "duckFactor": null,
+      "effectiveLinear": 0.1032,
+      "rawMeanDb": -19.8,
+      "rawPeakDb": -0.3,
+      "gainDb": -19.7,
+      "effectiveMeanDb": -39.5,
+      "effectivePeakDb": -20
+    },
+    {
+      "type": "sfx",
       "event": "nova_player_hit_crackle",
       "url": "/audio/sfx/nova-swarm/nova_player_hit_crackle.mp3",
       "durationSeconds": 1,
@@ -3482,6 +3510,20 @@
     },
     {
       "type": "voice",
+      "event": "mission_control_lives_max",
+      "url": "/audio/voice/mission-control/mission_control_lives_max.mp3",
+      "durationSeconds": 4.48,
+      "mixVolume": 0.82,
+      "duckFactor": 0.48,
+      "effectiveLinear": 0.1107,
+      "rawMeanDb": -13.7,
+      "rawPeakDb": -1.8,
+      "gainDb": -19.1,
+      "effectiveMeanDb": -32.8,
+      "effectivePeakDb": -20.9
+    },
+    {
+      "type": "voice",
       "event": "mission_control_powerup",
       "url": "/audio/voice/mission-control/mission_control_powerup.mp3",
       "durationSeconds": 2.72,
@@ -3605,6 +3647,34 @@
       "gainDb": -18.9,
       "effectiveMeanDb": -34.2,
       "effectivePeakDb": -19.8
+    },
+    {
+      "type": "voice",
+      "event": "mission_control_ship_unlocked",
+      "url": "/audio/voice/mission-control/mission_control_ship_unlocked_01.mp3",
+      "durationSeconds": 6.96,
+      "mixVolume": 0.98,
+      "duckFactor": 0.34,
+      "effectiveLinear": 0.1323,
+      "rawMeanDb": -13.9,
+      "rawPeakDb": -1,
+      "gainDb": -17.6,
+      "effectiveMeanDb": -31.5,
+      "effectivePeakDb": -18.6
+    },
+    {
+      "type": "voice",
+      "event": "mission_control_ships_unlocked",
+      "url": "/audio/voice/mission-control/mission_control_ships_unlocked_01.mp3",
+      "durationSeconds": 6.48,
+      "mixVolume": 0.98,
+      "duckFactor": 0.34,
+      "effectiveLinear": 0.1323,
+      "rawMeanDb": -14,
+      "rawPeakDb": -1.2,
+      "gainDb": -17.6,
+      "effectiveMeanDb": -31.6,
+      "effectivePeakDb": -18.8
     },
     {
       "type": "voice",
@@ -3913,6 +3983,20 @@
       "gainDb": -19.3,
       "effectiveMeanDb": -33.5,
       "effectivePeakDb": -20.4
+    },
+    {
+      "type": "voice",
+      "event": "mission_control_overrun_clear",
+      "url": "/audio/voice/mission-control/mission_control_overrun_clear_01.mp3",
+      "durationSeconds": 7.2,
+      "mixVolume": 1.05,
+      "duckFactor": 0.28,
+      "effectiveLinear": 0.14175,
+      "rawMeanDb": -13.8,
+      "rawPeakDb": -1.1,
+      "gainDb": -17,
+      "effectiveMeanDb": -30.8,
+      "effectivePeakDb": -18.1
     },
     {
       "type": "voice",

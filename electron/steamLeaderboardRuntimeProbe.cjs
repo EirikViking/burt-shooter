@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score';
+const STEAM_LEADERBOARD_NAME = process.env.NOVA_SWARM_STEAM_LEADERBOARD_NAME || 'nova_swarm_global_score';
 const TEST_SCORE = 1;
 const TEST_DETAILS = [1, 0, 1, 0, 0, 0];
 const DETAILS_MODES = new Set(['basic', 'none', 'empty']);
@@ -25,11 +25,13 @@ function parseSteamLeaderboardProbeOptions(args) {
   }
   const score = Math.max(0, Math.min(2147483647, Math.floor(Number(readArgValue(args, '--score', TEST_SCORE)) || TEST_SCORE)));
   const detailsMode = String(readArgValue(args, '--details', 'basic')).toLowerCase();
+  const leaderboardName = String(readArgValue(args, '--leaderboard', process.env.NOVA_SWARM_STEAM_LEADERBOARD_NAME || STEAM_LEADERBOARD_NAME)).trim() || STEAM_LEADERBOARD_NAME;
   if (!DETAILS_MODES.has(detailsMode)) {
     throw new Error(`Unsupported --details mode "${detailsMode}". Use basic, none, or empty.`);
   }
   return {
     submit: !args.includes('--no-submit') || args.includes('--submit'),
+    leaderboardName,
     score,
     detailsMode,
     uploadMethod: 'keep_best'
@@ -65,6 +67,7 @@ function publicSummary(report) {
     bridgePresent: report.bridgePresent,
     bridgeStatus: report.bridgeStatus,
     personaName: report.personaName,
+    requestCurrentStats: report.requestCurrentStats || null,
     globalBefore: compactRead(report.globalBefore),
     friendsBefore: compactRead(report.friendsBefore),
     submit: report.submit ? compactSubmit(report.submit) : null,
@@ -93,7 +96,8 @@ function compactSubmit(step) {
     nativeErrorMessage: step.nativeErrorMessage || null,
     score: step.score ?? null,
     scoreChanged: step.scoreChanged ?? null,
-    rank: step.rank ?? null
+    rank: step.rank ?? null,
+    requestCurrentStats: step.requestCurrentStats || step.diagnostics?.requestCurrentStats || null
   };
 }
 
@@ -129,8 +133,8 @@ async function runSteamLeaderboardRuntimeProbe({ window, args, baseUrl, runtimeI
 
   const rendererReport = await window.webContents.executeJavaScript(`
     (async () => {
-      const leaderboardName = ${JSON.stringify(STEAM_LEADERBOARD_NAME)};
       const options = ${JSON.stringify(options)};
+      const leaderboardName = options.leaderboardName || ${JSON.stringify(STEAM_LEADERBOARD_NAME)};
       const selectedDetails = ${JSON.stringify(selectedDetails ?? null)};
       const hasDetails = ${JSON.stringify(selectedDetails !== undefined)};
 
@@ -211,6 +215,7 @@ async function runSteamLeaderboardRuntimeProbe({ window, args, baseUrl, runtimeI
           previousRank: value.previousRank ?? null,
           scoreChanged: value.scoreChanged ?? null,
           details: value.details ?? [],
+          requestCurrentStats: value.requestCurrentStats || value.diagnostics?.requestCurrentStats || null,
           diagnostics: value.diagnostics || null,
           rawResult: value.rawResult || null
         };
@@ -265,6 +270,28 @@ async function runSteamLeaderboardRuntimeProbe({ window, args, baseUrl, runtimeI
       report.personaName = report.available ? await api.getPersonaName().catch(() => null) : null;
 
       if (report.available) {
+        report.requestCurrentStats = api.requestCurrentStats
+          ? await api.requestCurrentStats().catch(error => ({
+              attempted: false,
+              available: false,
+              returned: false,
+              callbackObserved: false,
+              ok: false,
+              result: null,
+              durationMs: 0,
+              error: errorSummary(error).message
+            }))
+          : {
+              attempted: false,
+              available: false,
+              returned: false,
+              callbackObserved: false,
+              ok: false,
+              result: null,
+              durationMs: 0,
+              error: 'preload_requestCurrentStats_unavailable'
+            };
+
         const globalBeforeStep = await runStep(() => api.getTopScores({
           leaderboardName,
           request: 'global',

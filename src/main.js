@@ -8,6 +8,11 @@ import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
 import { getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
+import { getSectorInfo } from './config/SectorCatalog.js';
+import { getRunPacingDebugState } from './config/RunPacingConfig.js';
+import { getThreatCodexCatalog } from './config/ThreatCodexCatalog.js';
+import { getCodexCompletionCounts, getDiscoveriesThisRun, getDiscoveryStats } from './progression/ThreatDiscoveryState.js';
+import { getHangarProgressSummary } from './progression/HangarProgressState.js';
 import {
   LANGUAGE_CHANGE_EVENT,
   getCurrentLanguage,
@@ -97,11 +102,13 @@ function readLastSteamUploadDiagnostics() {
 async function collectSteamDiagnostics() {
   const bridge = window.__novaSteamBridge || null;
   const leaderboards = window.__novaSteamLeaderboard || bridge?.leaderboards || null;
-  const [bridgeStatus, runtimeInfo, personaName, latestUploadDiagnostics] = await Promise.all([
+  const achievements = bridge?.achievements || window.__novaSteamAchievements || null;
+  const [bridgeStatus, runtimeInfo, personaName, latestUploadDiagnostics, achievementStatus] = await Promise.all([
     bridge?.getStatus?.().catch(error => ({ error: error?.message || String(error) })) || null,
     (bridge?.getRuntimeInfo?.() || leaderboards?.getRuntimeInfo?.())?.catch?.(error => ({ error: error?.message || String(error) })) || null,
     leaderboards?.getPersonaName?.().catch(() => null) || null,
-    leaderboards?.getLastUploadDiagnostics?.().catch(() => null) || null
+    leaderboards?.getLastUploadDiagnostics?.().catch(() => null) || null,
+    achievements?.getStatus?.().catch(error => ({ error: error?.message || String(error) })) || null
   ]);
   return {
     generatedAt: new Date().toISOString(),
@@ -117,6 +124,8 @@ async function collectSteamDiagnostics() {
     launchedBySteamHint: Boolean(runtimeInfo?.launchedBySteamHint),
     steamEnv: runtimeInfo?.steamEnv || null,
     personaName,
+    achievementStatus,
+    achievementState: window.__game?.getAchievementDebugState?.() || null,
     latestUploadDiagnostics,
     storedUploadDiagnostics: readLastSteamUploadDiagnostics()
   };
@@ -391,7 +400,12 @@ function buildGameTextState(game) {
   const gameOverScene = getStableSceneName(game) === 'gameOver' ? game?.currentScene : null;
   const highscoreScene = getStableSceneName(game) === 'highscore' ? game?.currentScene : null;
   const achievementsScene = getStableSceneName(game) === 'achievements' ? game?.currentScene : null;
+  const threatCodexScene = getStableSceneName(game) === 'threatCodex' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
+  const pacingDebug = getRunPacingDebugState(game);
+  const hangarProgressSummary = getHangarProgressSummary();
+  const threatCodexCatalog = getThreatCodexCatalog();
+  const sector = getSectorInfo(game?.level || 1);
   const getBoundsDebug = (displayObject) => {
     try {
       if (!displayObject?.getBounds) return null;
@@ -432,6 +446,7 @@ function buildGameTextState(game) {
     scene: getStableSceneName(game),
     score: game?.score ?? 0,
     level: game?.level ?? 0,
+    sector,
     lives: game?.lives ?? 0,
     runMode: game?.runMode || (game?.isDebugRun ? 'unranked' : 'ranked'),
     runModeReason: game?.runModeReason || null,
@@ -456,6 +471,11 @@ function buildGameTextState(game) {
     input: {
       gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null
     },
+    debugTools: playScene ? {
+      invincible: Boolean(playScene.debugInvincible),
+      levelToolsUsed: Boolean(playScene.debugLevelToolsUsed),
+      levelJumpAvailable: typeof playScene.debugJumpToLevel === 'function'
+    } : null,
     toast: playScene?.getToastDebugState ? playScene.getToastDebugState() : null,
     scoring: playScene ? {
       comboCount: playScene.comboCount || 0,
@@ -479,6 +499,42 @@ function buildGameTextState(game) {
         ))
       } : null
     } : null,
+    arcadeRun: {
+      runElapsedSeconds: pacingDebug.runElapsedSeconds,
+      targetRunSeconds: pacingDebug.targetRunSeconds,
+      currentSector: pacingDebug.currentSector,
+      targetSectors: pacingDebug.targetSectors,
+      sectorElapsedSeconds: pacingDebug.sectorElapsedSeconds,
+      averageSectorSeconds: pacingDebug.averageSectorSeconds,
+      estimatedRunCompletionSeconds: pacingDebug.estimatedRunCompletionSeconds,
+      pressurePhase: pacingDebug.pressurePhase,
+      pressureMultipliers: pacingDebug.pressureMultipliers,
+      runTheme: game?.contentDirector?.runTheme?.id || null,
+      contentDirectorState: game?.contentDirector?.getDebugState?.() || null,
+      discoveriesThisRun: getDiscoveriesThisRun(),
+      codexCompletionCounts: getCodexCompletionCounts(threatCodexCatalog),
+      discoveryStats: getDiscoveryStats(),
+      livesGainedThisRun: playScene?.repairsGrantedThisRun || 0,
+      repairsGrantedThisRun: playScene?.repairsGrantedThisRun || 0,
+      extraLifeDropsThisRun: playScene?.powerupManager?.powerups?.filter?.(powerup => powerup?.type === 'life')?.length || 0,
+      bossesKilled: playScene?.bossKills || 0,
+      wavesCleared: playScene?.wavesCleared || 0,
+      runCleared: Boolean(game?.runCleared || game?.runSummary?.runCleared),
+      clearReason: game?.runClearReason || game?.runSummary?.clearReason || null,
+      clearLivesRemaining: game?.runClearLivesRemaining || game?.runSummary?.clearLivesRemaining || 0,
+      score: game?.score || 0,
+      scoreBreakdown: game?.scoreBreakdown || null,
+      lastCabinetLog: playScene?.lastCabinetLog || null,
+      currentEnemyBulletCount: enemyBullets.filter(bullet => bullet?.active !== false).length,
+      peakEnemyBulletCount: playScene?.peakEnemyBulletCount || null,
+      pilotXp: hangarProgressSummary.pilotXp,
+      pilotRank: hangarProgressSummary.pilotRank,
+      highestPilotRank: hangarProgressSummary.highestPilotRank,
+      newRanksThisRun: game?.runSummary?.newRanksThisRun || [],
+      rankAchievementsUnlocked: game?.runSummary?.rankAchievementsUnlocked || [],
+      newlyUnlockedShips: game?.runSummary?.newlyUnlockedShips || [],
+      shipUnlockProgressSummary: hangarProgressSummary
+    },
     wave: enemyManager ? {
       phase: enemyManager.phase || null,
       state: enemyManager.state || null,
@@ -492,7 +548,17 @@ function buildGameTextState(game) {
         label: enemyManager.currentWaveTactic.label || null,
         move: enemyManager.currentWaveTactic.move || null,
         shot: enemyManager.currentWaveTactic.shot || null,
-        volley: enemyManager.currentWaveTactic.volley || null
+        volley: enemyManager.currentWaveTactic.volley || null,
+        threatActions: Array.isArray(enemyManager.currentWaveTactic.threatActions)
+          ? enemyManager.currentWaveTactic.threatActions
+          : []
+      } : null,
+      threatBudget: enemyManager.currentWaveThreatState ? {
+        maxActive: enemyManager.currentWaveThreatState.maxActive || 0,
+        dangerBudget: enemyManager.currentWaveThreatState.dangerBudget || 0,
+        activeCount: enemyManager.currentWaveThreatState.activeCount || 0,
+        activeCost: enemyManager.currentWaveThreatState.activeCost || 0,
+        assignedIds: enemyManager.currentWaveThreatState.assignedIds || []
       } : null,
       nextTactic: enemyManager.pendingWaveConfig
         ? {
@@ -524,6 +590,7 @@ function buildGameTextState(game) {
       backButton: getBoundsDebug(shipSelectScene.backButton),
       mainMenuButtonFocused: Boolean(shipSelectScene.mainMenuButtonFocused),
       hangarMenu: shipSelectScene.getHangarMenuDebugState ? shipSelectScene.getHangarMenuDebugState(getBoundsDebug) : null,
+      careerInfo: shipSelectScene.getCareerInfoDebugState ? shipSelectScene.getCareerInfoDebugState(getBoundsDebug) : null,
       startButton: getBoundsDebug(shipSelectScene.startButton)
     } : null,
     gameOver: gameOverScene ? {
@@ -531,6 +598,7 @@ function buildGameTextState(game) {
       level: gameOverScene.finalLevel || 0,
       levelSummary: gameOverScene.levelSummary || gameOverScene.levelText?.text || null,
       unlockSummary: gameOverScene.unlockSummary || null,
+      shipUnlocks: gameOverScene.getShipUnlockRevealDebugState ? gameOverScene.getShipUnlockRevealDebugState() : null,
       nextGoal: gameOverScene.nextGoal?.text || gameOverScene.nextGoalText?.text || null,
       prompt: gameOverScene.promptText?.text || null,
       retryPrompt: gameOverScene.instructions?.text || null,
@@ -580,6 +648,7 @@ function buildGameTextState(game) {
       runtime: game?.leaderboardAdapter?.getRuntimeSummary ? game.leaderboardAdapter.getRuntimeSummary() : null
     } : null,
     achievementsScreen: achievementsScene?.getDebugState ? achievementsScene.getDebugState() : null,
+    threatCodexScreen: threatCodexScene?.getDebugState ? threatCodexScene.getDebugState() : null,
     player: player ? {
       x: Math.round(player.x),
       y: Math.round(player.y),
@@ -664,6 +733,7 @@ function buildGameTextState(game) {
           label: bullet.weaponLabel || null,
           behavior: bullet.behavior || null,
           waveTactic: bullet.waveTactic || null,
+          threatAction: bullet.threatActionId || null,
           speed: Number.isFinite(bullet.speed) ? Number(bullet.speed.toFixed(2)) : null
         }))
     },
@@ -694,6 +764,7 @@ function buildGameTextState(game) {
           shot: enemy.waveTactic.shot || null,
           role: enemy.waveRole || null
         } : null,
+        threatAction: enemy.getThreatDebugState ? enemy.getThreatDebugState() : null,
         variant: enemy.visualVariant?.slug || null,
         eliteMiddleShip: enemy.getEliteDebugState ? enemy.getEliteDebugState() : null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
@@ -1052,11 +1123,17 @@ async function enforceVersion() {
     localStorage.setItem('app_version', currentVersion);
   }
 
+  if (isDesktopRuntime()) {
+    return false;
+  }
+
   // 2. Check if we are STALE (Remote mismatch)
   // This handles the "Mobile stuck on old version" case
   try {
     const resp = await fetch(`/version.json?t=${Date.now()}`);
     if (resp.ok) {
+      const contentType = resp.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) return false;
       const data = await resp.json();
       if (data.version && data.version !== currentVersion) {
         console.log(`[Version] Remote mismatch! Remote: ${data.version}, Local: ${currentVersion}`);
@@ -1092,22 +1169,29 @@ async function init() {
   if ('serviceWorker' in navigator && import.meta.env.PROD && !isDesktopRuntime()) {
     try {
       // TASK 4: Mobile Safety - Cache busting param
-      const registration = await navigator.serviceWorker.register(`/sw.js?v=${BUILD_ID}`);
-      console.log('[SW] Service worker registered:', registration.scope);
+      const swUrl = `/sw.js?v=${BUILD_ID}`;
+      const swProbe = await fetch(swUrl, { method: 'HEAD', cache: 'no-store' });
+      const swContentType = swProbe.headers.get('content-type') || '';
+      if (!swProbe.ok || !/(java|ecma)script/i.test(swContentType)) {
+        console.warn('[SW] Service worker script missing or invalid, skipping registration.');
+      } else {
+        const registration = await navigator.serviceWorker.register(swUrl);
+        console.log('[SW] Service worker registered:', registration.scope);
 
-      // Force update if found
-      registration.onupdatefound = () => {
-        const installingWorker = registration.installing;
-        if (installingWorker) {
-          installingWorker.onstatechange = () => {
-            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New content available
-              console.log('[SW] New content available, reloading...');
-              window.location.reload(true);
-            }
-          };
-        }
-      };
+        // Force update if found
+        registration.onupdatefound = () => {
+          const installingWorker = registration.installing;
+          if (installingWorker) {
+            installingWorker.onstatechange = () => {
+              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New content available
+                console.log('[SW] New content available, reloading...');
+                window.location.reload(true);
+              }
+            };
+          }
+        };
+      }
     } catch (error) {
       console.warn('[SW] Service worker registration failed:', error);
     }

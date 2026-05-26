@@ -44,11 +44,11 @@ export class Hijacker {
     this.maxHealth = this.health;
     this.scoreValue = 500;
 
-    // Tractor beam: short, readable, escapable, and valuable if broken.
+    // Tractor beam: readable, dangerous, escapable through hard lateral movement, and valuable if broken.
     this.beamState = 'cooldown';
     this.beamWarningMs = 820;
-    this.beamActiveMs = 1450;
-    this.beamCooldownMs = Math.max(2800, 4300 - this.level * 120);
+    this.beamActiveMs = 1850;
+    this.beamCooldownMs = Math.max(3100, 4650 - this.level * 115);
     this.nextBeamAt = Date.now() + 1500 + Math.random() * 900;
     this.beamStartedAt = 0;
     this.beamTarget = { x, y: y + 360 };
@@ -257,9 +257,10 @@ export class Hijacker {
     const halfWidth = Math.max(44, 22 + relY * 0.24);
     if (Math.abs(relX) > halfWidth) return;
 
-    const frameScale = Math.max(0.5, Math.min(2.2, tickDelta));
-    const pullX = (this.x - playerX) * 0.022 * frameScale;
-    const pullY = (1.35 + Math.min(1.2, this.level * 0.06)) * frameScale;
+    const frameScale = Math.max(0.5, Math.min(2.6, tickDelta));
+    const beamCentering = 0.052 + Math.min(0.024, this.level * 0.0018);
+    const pullX = (this.x - playerX) * beamCentering * frameScale;
+    const pullY = (3.85 + Math.min(2.4, this.level * 0.11)) * frameScale;
     player.x = Math.max(playerRadius, Math.min(gameWidth - playerRadius, playerX + pullX));
     player.y = Math.max(this.y + this.radius + 76, playerY - pullY);
     this.beamPullActive = true;

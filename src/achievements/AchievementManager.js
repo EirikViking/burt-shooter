@@ -4,6 +4,7 @@ import {
   getAchievementIds,
   isValidAchievementId
 } from './AchievementCatalog.js';
+import { createSteamAchievementSync } from './SteamAchievementSync.js';
 
 export const ACHIEVEMENT_STORAGE_KEY = 'nova_swarm_achievements_v1';
 
@@ -38,7 +39,13 @@ function compactPayload(payload = {}) {
     'runMode',
     'globalProvider',
     'placement',
-    'numberOne'
+    'numberOne',
+    'achievementType',
+    'metric',
+    'progressValue',
+    'target',
+    'runCleared',
+    'livesRemaining'
   ];
   return Object.fromEntries(
     allowed
@@ -52,8 +59,12 @@ export class AchievementManager {
     this.storage = options.storage ?? getDefaultStorage();
     this.getRunState = typeof options.getRunState === 'function' ? options.getRunState : null;
     this.onUnlock = typeof options.onUnlock === 'function' ? options.onUnlock : null;
+    this.steamSync = options.steamSync === false
+      ? null
+      : options.steamSync || createSteamAchievementSync({ storage: this.storage });
     this.unlockedIds = new Set(readStoredIds(this.storage));
     this.lastUnlocked = null;
+    this.lastSteamSync = null;
   }
 
   configure(options = {}) {
@@ -119,6 +130,8 @@ export class AchievementManager {
         // UI notification hooks are optional; never let them break gameplay.
       }
 
+      this.steamSync?.unlock?.(id)?.catch?.(() => {});
+
       return this.lastUnlocked;
     } catch {
       return null;
@@ -138,9 +151,51 @@ export class AchievementManager {
     return {
       unlocked,
       lastUnlocked: this.lastUnlocked,
+      steam: this.steamSync?.getDebugState?.() || null,
+      lastSteamSync: this.lastSteamSync,
       count: unlocked.length,
       total: ACHIEVEMENTS.length
     };
+  }
+
+  importUnlocked(ids = [], options = {}) {
+    const added = [];
+    for (const id of ids) {
+      if (!isValidAchievementId(id) || this.unlockedIds.has(id)) continue;
+      this.unlockedIds.add(id);
+      added.push(id);
+    }
+    if (!added.length) return [];
+    this.persist();
+    this.lastSteamSync = {
+      direction: 'steam_to_local',
+      added,
+      source: options.source || 'steam',
+      suppressToast: options.suppressToast !== false,
+      syncedAt: new Date().toISOString()
+    };
+    return added;
+  }
+
+  async syncWithSteam() {
+    if (!this.steamSync?.syncWithLocal) return null;
+    try {
+      const result = await this.steamSync.syncWithLocal(this);
+      this.lastSteamSync = {
+        direction: 'bidirectional',
+        result,
+        syncedAt: new Date().toISOString()
+      };
+      return result;
+    } catch (error) {
+      this.lastSteamSync = {
+        direction: 'bidirectional',
+        ok: false,
+        error: error?.message || String(error),
+        syncedAt: new Date().toISOString()
+      };
+      return null;
+    }
   }
 
   resetForDebugOnly() {

@@ -1,0 +1,254 @@
+{
+  "appId": 4765070,
+  "generatedAt": "2026-05-25T22:54:38.862Z",
+  "canonicalSource": "src/achievements/AchievementCatalog.js",
+  "sourceSheet": "nova-swarm-achievement-icons-sheet-20260525.png",
+  "sourceGenerator": "Codex imagegen skill; original 7x3 launch contact sheet plus 2026-05-26 3x3 milestone sheet",
+  "iconSize": "256x256 jpg",
+  "icons": [
+    {
+      "apiName": "ACH_RANK_01",
+      "displayName": "Rank Up: Button Warmer",
+      "description": "Reach the Button Warmer rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_01-achieved.jpg",
+      "lockedIcon": "ACH_RANK_01-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_02",
+      "displayName": "Rank Up: Pixel Pilot",
+      "description": "Reach the Pixel Pilot rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_02-achieved.jpg",
+      "lockedIcon": "ACH_RANK_02-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_03",
+      "displayName": "Rank Up: Formation Breaker",
+      "description": "Reach the Formation Breaker rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_03-achieved.jpg",
+      "lockedIcon": "ACH_RANK_03-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_04",
+      "displayName": "Rank Up: Laser Wrangler",
+      "description": "Reach the Laser Wrangler rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_04-achieved.jpg",
+      "lockedIcon": "ACH_RANK_04-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_05",
+      "displayName": "Rank Up: Bonus Hunter",
+      "description": "Reach the Bonus Hunter rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_05-achieved.jpg",
+      "lockedIcon": "ACH_RANK_05-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_06",
+      "displayName": "Rank Up: Combo Courier",
+      "description": "Reach the Combo Courier rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_06-achieved.jpg",
+      "lockedIcon": "ACH_RANK_06-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_07",
+      "displayName": "Rank Up: Swarm Dodger",
+      "description": "Reach the Swarm Dodger rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_07-achieved.jpg",
+      "lockedIcon": "ACH_RANK_07-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_08",
+      "displayName": "Rank Up: Arcade Ace",
+      "description": "Reach the Arcade Ace rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_08-achieved.jpg",
+      "lockedIcon": "ACH_RANK_08-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_09",
+      "displayName": "Rank Up: Quarter Captain",
+      "description": "Reach the Quarter Captain rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_09-achieved.jpg",
+      "lockedIcon": "ACH_RANK_09-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_10",
+      "displayName": "Rank Up: Nebula Striker",
+      "description": "Reach the Nebula Striker rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_10-achieved.jpg",
+      "lockedIcon": "ACH_RANK_10-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_11",
+      "displayName": "Rank Up: Boss Baiter",
+      "description": "Reach the Boss Baiter rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_11-achieved.jpg",
+      "lockedIcon": "ACH_RANK_11-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_12",
+      "displayName": "Rank Up: Pattern Reader",
+      "description": "Reach the Pattern Reader rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_12-achieved.jpg",
+      "lockedIcon": "ACH_RANK_12-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_13",
+      "displayName": "Rank Up: Cabinet Champion",
+      "description": "Reach the Cabinet Champion rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_13-achieved.jpg",
+      "lockedIcon": "ACH_RANK_13-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_14",
+      "displayName": "Rank Up: Wave Surgeon",
+      "description": "Reach the Wave Surgeon rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_14-achieved.jpg",
+      "lockedIcon": "ACH_RANK_14-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_15",
+      "displayName": "Rank Up: Starline Veteran",
+      "description": "Reach the Starline Veteran rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_15-achieved.jpg",
+      "lockedIcon": "ACH_RANK_15-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_16",
+      "displayName": "Rank Up: High-Score Hero",
+      "description": "Reach the High-Score Hero rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_16-achieved.jpg",
+      "lockedIcon": "ACH_RANK_16-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_17",
+      "displayName": "Rank Up: Swarm Nemesis",
+      "description": "Reach the Swarm Nemesis rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_17-achieved.jpg",
+      "lockedIcon": "ACH_RANK_17-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_18",
+      "displayName": "Rank Up: Boss Rush Royalty",
+      "description": "Reach the Boss Rush Royalty rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_18-achieved.jpg",
+      "lockedIcon": "ACH_RANK_18-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_19",
+      "displayName": "Rank Up: Arcade Legend",
+      "description": "Reach the Arcade Legend rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_19-achieved.jpg",
+      "lockedIcon": "ACH_RANK_19-locked.jpg"
+    },
+    {
+      "apiName": "ACH_GLOBAL_LEADERBOARD",
+      "displayName": "Callsign On The Board",
+      "description": "Qualify for the global leaderboard.",
+      "hidden": false,
+      "achievedIcon": "ACH_GLOBAL_LEADERBOARD-achieved.jpg",
+      "lockedIcon": "ACH_GLOBAL_LEADERBOARD-locked.jpg"
+    },
+    {
+      "apiName": "ACH_GLOBAL_NUMBER_ONE",
+      "displayName": "Top Of The Swarm",
+      "description": "Reach #1 on the global leaderboard.",
+      "hidden": false,
+      "achievedIcon": "ACH_GLOBAL_NUMBER_ONE-achieved.jpg",
+      "lockedIcon": "ACH_GLOBAL_NUMBER_ONE-locked.jpg"
+    },
+    {
+      "apiName": "ACH_SECTOR_FIVE",
+      "displayName": "Past The Warmup",
+      "description": "Reach Sector 5 in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_SECTOR_FIVE-achieved.jpg",
+      "lockedIcon": "ACH_SECTOR_FIVE-locked.jpg"
+    },
+    {
+      "apiName": "ACH_FINAL_CLIMAX",
+      "displayName": "Final Climax Signal",
+      "description": "Reach the final climax sector.",
+      "hidden": false,
+      "achievedIcon": "ACH_FINAL_CLIMAX-achieved.jpg",
+      "lockedIcon": "ACH_FINAL_CLIMAX-locked.jpg"
+    },
+    {
+      "apiName": "ACH_ARCADE_CLEAR",
+      "displayName": "Cabinet Survived",
+      "description": "Clear the current arcade run.",
+      "hidden": false,
+      "achievedIcon": "ACH_ARCADE_CLEAR-achieved.jpg",
+      "lockedIcon": "ACH_ARCADE_CLEAR-locked.jpg"
+    },
+    {
+      "apiName": "ACH_TWO_LIVES_CLEAR",
+      "displayName": "Spare Hull Ceremony",
+      "description": "Clear the run with at least 2 lives remaining.",
+      "hidden": false,
+      "achievedIcon": "ACH_TWO_LIVES_CLEAR-achieved.jpg",
+      "lockedIcon": "ACH_TWO_LIVES_CLEAR-locked.jpg"
+    },
+    {
+      "apiName": "ACH_SCORE_250K",
+      "displayName": "Quarter-Million Voltage",
+      "description": "Score 250,000 points in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_SCORE_250K-achieved.jpg",
+      "lockedIcon": "ACH_SCORE_250K-locked.jpg"
+    },
+    {
+      "apiName": "ACH_NO_HIT_SECTOR",
+      "displayName": "Clean Sector License",
+      "description": "Complete any sector without taking a hit.",
+      "hidden": false,
+      "achievedIcon": "ACH_NO_HIT_SECTOR-achieved.jpg",
+      "lockedIcon": "ACH_NO_HIT_SECTOR-locked.jpg"
+    },
+    {
+      "apiName": "ACH_BOSS_HUNTER_25",
+      "displayName": "Boss Debt Collector",
+      "description": "Defeat 25 bosses across your career.",
+      "hidden": false,
+      "achievedIcon": "ACH_BOSS_HUNTER_25-achieved.jpg",
+      "lockedIcon": "ACH_BOSS_HUNTER_25-locked.jpg"
+    },
+    {
+      "apiName": "ACH_SIGNAL_CARTOGRAPHER",
+      "displayName": "Signal Cartographer",
+      "description": "Discover 75 Threat Codex signals.",
+      "hidden": false,
+      "achievedIcon": "ACH_SIGNAL_CARTOGRAPHER-achieved.jpg",
+      "lockedIcon": "ACH_SIGNAL_CARTOGRAPHER-locked.jpg"
+    },
+    {
+      "apiName": "ACH_HANGAR_TWELVE",
+      "displayName": "Twelve-Hull Hangar",
+      "description": "Unlock 12 playable ships.",
+      "hidden": false,
+      "achievedIcon": "ACH_HANGAR_TWELVE-achieved.jpg",
+      "lockedIcon": "ACH_HANGAR_TWELVE-locked.jpg"
+    }
+  ],
+  "sourceSheets": [
+    "nova-swarm-achievement-icons-sheet-20260525.png",
+    "nova-swarm-achievement-icons-sheet-20260526.png"
+  ]
+}

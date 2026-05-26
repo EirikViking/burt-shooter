@@ -27,7 +27,7 @@ Scope: full first-pass difficulty QA and conservative balance patch. This review
 | Mid run, levels 2-4 | Six curated waves per level, counts rise to 7-11, higher enemy IDs introduce stutter, fan, offset, triad, needle, wall-like pressure. | Better pattern variety, but still mostly forgiving because `baseEnemyHealthMultiplier` and global pressure trim keep enemies quick to kill. |
 | Pre-boss | Boss spacing enforces 6 waves and 75 seconds. Extra spacing waves can be inserted if the timer is short. Enemy bullets are cleared between waves and before boss. | Good readability. Risk is pacing drag if normal waves are not threatening enough; boss remains the first intense moment. |
 | Boss | Every level is boss-capable. Boss HP is `44 + 4 * (level - 1)`, min 44 after this patch. Phases at below 75% and 40%. Telegraphs are explicit, safe lanes exist, and bullets/hazards consume one shield/life. | Boss identity and readability are strong, but phase cadence, projectile speed, and attack/hazard overlap were costing too many lives in no-debug playtests. |
-| Post-boss/later scaling | Level clears award 1000 score. Boss clears now restore 1 life up to a 5-life cap; normal wave and level-clear repair remain off. Later dynamic waves scale HP/speed/fire chance and can add modifiers from level 5 onward. | Deterministic and leaderboard-safe. Boss victory now relieves life attrition without adding random luck or changing normal waves. |
+| Post-boss/later scaling | Level clears award 1000 score. Boss clears now restore 1 life up to a 6-life cap; normal wave and level-clear repair remain off. Later dynamic waves scale HP/speed/fire chance and can add modifiers from level 5 onward. | Deterministic and leaderboard-safe. Boss victory now relieves life attrition without adding random luck or changing normal waves. |
 
 ## 3. Normal enemy QA
 
@@ -82,13 +82,19 @@ Boss HP after this patch is level 1 at 44, level 2 at 48, level 3 at 52, etc. Bo
 
 Boss finding: the config-level theoretical Nova Sparrow lower bound on level 1 boss HP is short, but the release playtest showed the first boss taking much longer in real play and costing too many lives due to movement, misses, phases, entry invulnerability, dodging, and overlapping boss bullets/hazards. The first pass treats boss HP, cadence, projectile speed, telegraph timing, safe wedges, and hazard hitboxes as the supported boss-specific fix.
 
+### Boss mercy recovery
+
+Boss-caused damage now has a central mercy window in `BalanceConfig.bossMercy`. It starts at 7000 ms, scales down to 5000 ms by level 10, and never drops below 2500 ms. Boss body contact, boss-owned bullets, and boss hazards route through the same gate so a boss can stay dangerous without chaining repeated life loss while the player is still recovering. Boss contact also nudges the player out of overlap to preserve movement agency; this is fairness protection, not an easy-mode damage nerf.
+
+`npm run check:boss-mercy` verifies that level 6 boss-caused contact attempts over 10 seconds cannot remove all 4 lives, that the cooldown scales down with progression, that shields and existing invulnerability still prevent life loss, and that boss contact becomes dangerous again after the cooldown expires.
+
 ## 5. Player power QA
 
 | System | Current behavior | QA read |
 | --- | --- | --- |
 | Starter survivability | 3 lives, radius 12, speed 5.75, dodge available. | Understandable and responsive. Main risk is not survivability but whether early waves teach boss dodging. |
 | Starter damage | 2 bullets, 1.05 damage, 122 ms cadence, 11.2 bullet speed. | Normal enemies die quickly, which feels satisfying but can reduce target-priority pressure. |
-| Powerup pacing | 2% base drop chance, +0.002 per second since last drop, max 12%, 18s cooldown, max 2 drops per level. Extra-life drops are enabled at 8% of selected powerup drops, with a 6-level long-gap guarantee. Life pickups cap at 5 lives. | Sparse but intentional. Extra lives are rare enough to stay valuable, while long runs are not fully dependent on boss-clear repair. |
+| Powerup pacing | 2% base drop chance, +0.002 per second since last drop, max 12%, 18s cooldown, max 2 drops per level. Extra-life drops are enabled at 8% of selected powerup drops, with a 6-level long-gap guarantee. Life pickups cap at 6 lives. | Sparse but intentional. Extra lives are rare enough to stay valuable, while long runs are not fully dependent on boss-clear repair. |
 | First-run support | `maybeDropFirstRunPickup()` drops rapid fire after 3 kills in level 1 wave 1. | Good onboarding. |
 | Shields/health recovery | Shield drops are possible; rare extra-life drops are enabled; level-clear repair is guarded at 0 by `check:powerup-balance`; last-stand repair disabled. Boss clears now restore 1 life up to 5, and boss clutch shield can spawn on final life in boss levels up to level 6. | Fair and deterministic enough for leaderboards. Boss-clear repair is a visible milestone reward; boss clutch shield is visible support, not hidden difficulty scaling. |
 | Respawn/invulnerability | `RESPAWN_INVULNERABILITY_MS` is exactly 1000 ms. `forceRespawn()` and life-loss respawn use that value. Initial spawn and non-respawn damage invulnerability remain 2000 ms. | Respawn protection is aligned with the prior 1s target. Damage invulnerability is separate and unchanged. |
@@ -152,7 +158,7 @@ Added in this patch:
 | Regular ring safe wedge | `regularRingSafeWedge: 0.5` | `0.60` | Reduces unavoidable overlap perception for radial regular attacks. | Same as above. | Yes |
 | Boss hazard hitboxes and arming | `beamHazardRadius: 13`, `coneHazardRadius: 27`, `hazardArmingMs: 240` | `11`, `23`, `320` | Reduces cheap-feeling overlap between boss bullets and hazard traces. | Hazards may become too forgiving for expert players. | Yes |
 | Sector-clear repair | `levelClearRepairTargetLives: 0`, `repairInvulnerabilityMs: 0` | Keep `0`, `0` | Existing `check:powerup-balance` guards against random or level-clear life grants. | No normal-wave recovery help; boss milestone recovery is handled separately. | Yes, no change |
-| Boss-clear recovery | None | Restore `1` life, capped at `5`, with `1000` ms repair invulnerability | With only 3 starting lives and rare extra lives, boss victory should not leave the next level doomed. | Could soften boss attrition too much if boss damage is also over-corrected. | Yes |
+| Boss-clear recovery | None | Restore `1` life, capped at `6`, with `1000` ms repair invulnerability | With only 3 starting lives and rare extra lives, boss victory should not leave the next level doomed. | Could soften boss attrition too much if boss damage is also over-corrected. | Yes |
 | Final-life boss clutch shield | Shield only spawned after losing a life during an active boss level | Also checks while a boss is active, so entering a boss on 1 life can receive the existing one-time clutch shield | A player who reaches boss 2 on 1 life should still feel they have a chance. | Needs human review to ensure it feels like fair support, not a bailout. | Yes |
 | Difficulty modes | None | Document only | New modes need leaderboard policy work. | Adding modes now could complicate ranked scoring. | No code change |
 
@@ -182,8 +188,8 @@ Exact boss values changed in this patch:
 | Boss attack family speed multipliers | net `0.86`, beam `0.84`, wall `0.78` | net `0.80`, beam `0.78`, wall `0.74` | Softens the highest overlap-risk boss patterns. |
 | Boss ring safe wedges | signature `0.5`, regular `0.5` | signature `0.6`, regular `0.6` | Wider readable escape lanes. |
 | Boss hazard fairness | beam radius `13`, cone radius `27`, arming `240` ms | beam radius `11`, cone radius `23`, arming `320` ms | Less cheap-feeling contact with telegraphed hazards. |
-| Boss clear recovery | none | `bossClearRepairLives: 1`, `bossClearRepairMaxLives: 5`, `bossClearRepairInvulnerabilityMs: 1000` | Boss victories restore one life up to a 5-life cap. |
-| Extra-life pickup cap | `MAX_LIVES: 6` in `Game.gainLife()` and life pickup handling | `5` | Aligns all life gains with the requested 5-life cap. |
+| Boss clear recovery | none | `bossClearRepairLives: 1`, `bossClearRepairMaxLives: 6`, `bossClearRepairInvulnerabilityMs: 1000` | Boss victories restore one life up to a 6-life cap. |
+| Extra-life pickup cap | `MAX_PLAYER_LIVES: 6` in shared balance config, `Game.gainLife()`, and life pickup handling | `6` | Aligns all life gains with the requested 6-life cap. |
 | Extra-life drops | disabled: `extraLifeDropsEnabled: false`, `extraLifeChance: 0`, `extraLifeGuaranteedEveryLevels: 0` | `true`, `0.08`, `6` | Makes life powerups rare: low chance on ordinary powerup drops plus about 0.5 guaranteed life drops per 3 levels if none appear. |
 | Boss clutch shield timing | only checked from life-loss handling | also checked during active boss updates | Gives players entering a boss on 1 life one visible shield chance. |
 
@@ -197,4 +203,4 @@ Expected progression effect:
 
 ## Patch intent
 
-This patch deliberately keeps normal enemy constants and per-level scaling at baseline after the release playtest rejected the micro-buff, while moving bosses toward shorter, more readable, less bursty encounters. It adds deterministic boss-clear recovery capped at 5 lives while preserving the 3-life starting economy, and rare extra-life powerups for longer-run sustain. It avoids normal HP inflation, hidden dynamic difficulty, scoring changes, leaderboard changes, level-clear life grants, common extra-life drops, and boss identity changes.
+This patch deliberately keeps normal enemy constants and per-level scaling at baseline after the release playtest rejected the micro-buff, while moving bosses toward shorter, more readable, less bursty encounters. It adds deterministic boss-clear recovery capped at 6 lives while preserving the 3-life starting economy, and rare extra-life powerups for longer-run sustain. It avoids normal HP inflation, hidden dynamic difficulty, scoring changes, leaderboard changes, level-clear life grants, common extra-life drops, and boss identity changes.

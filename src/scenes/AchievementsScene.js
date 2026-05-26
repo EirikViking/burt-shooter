@@ -4,10 +4,12 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, getResponsiveFontSize } from '../ui/textLayout.js';
 import { createText } from '../utils/pixiText.js';
+import { translateText } from '../i18n/index.js';
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const GAMEPAD_DEADZONE = 0.42;
+const ACHIEVEMENT_ICON_BASE = '/art/generated/nova-swarm/achievements';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -62,6 +64,11 @@ function getBoundsDebug(displayObject) {
   }
 }
 
+function getAchievementIconPath(id, unlocked) {
+  const state = unlocked ? 'achieved' : 'locked';
+  return `${ACHIEVEMENT_ICON_BASE}/${id}-${state}.jpg`;
+}
+
 export class AchievementsScene {
   constructor(game) {
     this.game = game;
@@ -73,6 +80,9 @@ export class AchievementsScene {
     this.summary = null;
     this.hint = null;
     this.rowsContainer = new PIXI.Container();
+    this.scrollRail = null;
+    this.scrollThumb = null;
+    this.pageText = null;
     this.backBtn = null;
     this.rows = [];
     this.rowDebug = [];
@@ -89,6 +99,7 @@ export class AchievementsScene {
     this.shortLayout = false;
     this.layoutUnsubscribe = null;
     this.keyHandler = null;
+    this.wheelHandler = null;
     this.gamepadPrevious = {};
     this.gamepadSuppressActiveInput = true;
   }
@@ -182,6 +193,26 @@ export class AchievementsScene {
     this.rowsContainer.zIndex = 10;
     this.container.addChild(this.rowsContainer);
 
+    this.scrollRail = new PIXI.Graphics();
+    this.scrollRail.zIndex = 12;
+    this.container.addChild(this.scrollRail);
+
+    this.scrollThumb = new PIXI.Graphics();
+    this.scrollThumb.zIndex = 13;
+    this.container.addChild(this.scrollThumb);
+
+    this.pageText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 13,
+      fontWeight: '900',
+      fill: '#fff3a2',
+      stroke: '#031323',
+      strokeThickness: 3,
+      align: 'right'
+    });
+    this.pageText.anchor.set(1, 0.5);
+    this.container.addChild(this.pageText);
+
     this.backBtn = this.createButton('BACK');
     this.backBtn.on('pointerdown', () => this.returnToMenu());
     this.container.addChild(this.backBtn);
@@ -195,7 +226,7 @@ export class AchievementsScene {
     button._buttonHeight = 42;
 
     const bg = new PIXI.Graphics();
-    const text = createText(label, {
+    const text = createText(translateText(label), {
       fontFamily: FONT_DISPLAY,
       fontSize: 17,
       fontWeight: '800',
@@ -257,10 +288,13 @@ export class AchievementsScene {
     this.hint.style.fontSize = hintSize;
 
     const unlockedCount = this.rows.filter((row) => row.unlocked).length;
-    this.summary.text = `${unlockedCount} / ${this.rows.length} UNLOCKED`;
+    this.summary.text = translateText('{unlockedCount} / {total} UNLOCKED', {
+      unlockedCount,
+      total: this.rows.length
+    });
     this.hint.text = mobile
-      ? 'UP/DOWN: BROWSE  |  ESC/B: BACK'
-      : 'ARROWS/STICK: BROWSE  |  ESC/B: BACK';
+      ? translateText('UP/DOWN: BROWSE  |  WHEEL/PAGE: MORE  |  ESC/B: BACK')
+      : translateText('ARROWS/STICK: BROWSE  |  WHEEL/PAGE: MORE  |  ESC/B: BACK');
     this.hint.visible = !short;
 
     this.title.x = width / 2;
@@ -272,7 +306,7 @@ export class AchievementsScene {
 
     this.columns = width >= 980 ? 2 : 1;
     this.columnGap = this.columns > 1 ? 18 : 0;
-    this.rowHeight = short ? 44 : mobile ? 64 : 58;
+    this.rowHeight = short ? 52 : mobile ? 78 : 82;
     const bottomReserve = short ? 46 : mobile ? 98 : 108;
     this.listTop = this.summary.y + (short ? 20 : mobile ? 32 : 42);
     const listBottom = height - bottomInset - bottomReserve;
@@ -287,6 +321,7 @@ export class AchievementsScene {
     this.ensureFocusedVisible();
     this.drawPanel(totalListWidth, listBottom);
     this.drawRows();
+    this.drawScrollIndicator(totalListWidth, listBottom);
 
     this.backBtn._buttonWidth = short ? 132 : mobile ? 150 : 170;
     this.backBtn._buttonHeight = short ? 32 : mobile ? 40 : 42;
@@ -354,6 +389,7 @@ export class AchievementsScene {
         bounds: getBoundsDebug(display)
       });
     });
+    this.drawScrollIndicator();
   }
 
   createAchievementRow(row, absoluteIndex) {
@@ -363,6 +399,14 @@ export class AchievementsScene {
     const hidden = Boolean(achievement.hidden && !unlocked);
     const short = this.shortLayout;
     const container = new PIXI.Container();
+    container.eventMode = 'static';
+    container.cursor = 'pointer';
+    container.hitArea = new PIXI.Rectangle(0, 0, this.rowWidth, this.rowHeight - 6);
+    container.on('pointerdown', () => {
+      this.focusedIndex = absoluteIndex;
+      this.ensureFocusedVisible();
+      this.drawRows();
+    });
     const height = this.rowHeight - 6;
 
     const bg = new PIXI.Graphics();
@@ -373,11 +417,48 @@ export class AchievementsScene {
       width: focused ? 2.4 : 1.2,
       alpha: focused ? 0.94 : 0.62
     });
-    bg.rect(12, 8, 4, height - 16);
+    bg.rect(10, 8, 4, height - 16);
     bg.fill({ color: unlocked ? 0xffd15c : 0x496071, alpha: unlocked ? 0.8 : 0.55 });
     container.addChild(bg);
 
-    const status = createText(unlocked ? 'UNLOCKED' : 'LOCKED', {
+    const iconSize = short ? 38 : 54;
+    const iconX = short ? 22 : 24;
+    const iconY = (height - iconSize) / 2;
+    const iconFrame = new PIXI.Graphics();
+    iconFrame.roundRect(iconX, iconY, iconSize, iconSize, 7);
+    iconFrame.fill({ color: 0x010914, alpha: 0.94 });
+    iconFrame.stroke({
+      color: unlocked ? 0xffef7e : 0x50687b,
+      width: focused ? 2 : 1,
+      alpha: focused ? 0.96 : 0.76
+    });
+    container.addChild(iconFrame);
+
+    const placeholder = new PIXI.Graphics();
+    placeholder.circle(iconX + iconSize / 2, iconY + iconSize / 2, iconSize * 0.24);
+    placeholder.fill({ color: unlocked ? 0xffd15c : 0x40566a, alpha: 0.55 });
+    placeholder.circle(iconX + iconSize / 2, iconY + iconSize / 2, iconSize * 0.08);
+    placeholder.fill({ color: unlocked ? 0xffffff : 0x9fb0bf, alpha: 0.72 });
+    container.addChild(placeholder);
+
+    const iconPath = getAchievementIconPath(achievement.id, unlocked);
+    PIXI.Assets.load(iconPath).then((texture) => {
+      if (!container.parent || !texture) return;
+      const sprite = new PIXI.Sprite(texture);
+      sprite.anchor.set(0.5);
+      sprite.position.set(iconX + iconSize / 2, iconY + iconSize / 2);
+      const scale = Math.min(iconSize / (texture.width || iconSize), iconSize / (texture.height || iconSize));
+      sprite.scale.set(scale);
+      sprite.alpha = unlocked ? 1 : 0.72;
+      container.addChildAt(sprite, container.getChildIndex(placeholder));
+      placeholder.visible = false;
+    }).catch(() => {
+      // The row remains readable with the procedural achievement sigil.
+    });
+
+    const textX = short ? 74 : 92;
+    const textWidth = Math.max(120, this.rowWidth - textX - 18);
+    const status = createText(translateText(unlocked ? 'UNLOCKED' : 'LOCKED'), {
       fontFamily: FONT_BODY,
       fontSize: short ? 9 : 11,
       fontWeight: 'bold',
@@ -386,11 +467,11 @@ export class AchievementsScene {
       strokeThickness: 2,
       align: 'left'
     });
-    status.x = 24;
+    status.x = textX;
     status.y = short ? 6 : 8;
     container.addChild(status);
 
-    const name = createText(hidden ? 'Hidden Achievement' : achievement.name, {
+    const name = createText(hidden ? translateText('Hidden Achievement') : translateText(achievement.name), {
       fontFamily: FONT_DISPLAY,
       fontSize: short ? 12 : this.columns > 1 ? 15 : 16,
       fontWeight: '800',
@@ -399,27 +480,60 @@ export class AchievementsScene {
       strokeThickness: 3,
       align: 'left',
       wordWrap: true,
-      wordWrapWidth: Math.max(120, this.rowWidth - (short ? 118 : 142))
+      wordWrapWidth: textWidth
     });
-    name.x = short ? 96 : 116;
-    name.y = short ? 3 : 5;
+    name.x = textX;
+    name.y = short ? 18 : 23;
     container.addChild(name);
 
-    const description = createText(hidden ? 'Unlock to reveal details.' : achievement.description, {
+    const description = createText(hidden ? translateText('Unlock to reveal details.') : translateText(achievement.description), {
       fontFamily: FONT_BODY,
-      fontSize: short ? 10 : 13,
+      fontSize: short ? 10 : 12,
       fill: unlocked ? '#d8e6ff' : '#7e91a3',
       stroke: '#031323',
       strokeThickness: 2,
       align: 'left',
       wordWrap: true,
-      wordWrapWidth: Math.max(120, this.rowWidth - (short ? 118 : 142))
+      wordWrapWidth: textWidth
     });
-    description.x = short ? 96 : 116;
-    description.y = short ? 22 : 29;
+    description.x = textX;
+    description.y = short ? 34 : 45;
     container.addChild(description);
 
     return container;
+  }
+
+  drawScrollIndicator(totalListWidth = null, listBottom = null) {
+    if (!this.scrollRail || !this.scrollThumb || !this.pageText) return;
+    const width = totalListWidth ?? (this.rowWidth * this.columns + this.columnGap * (this.columns - 1));
+    const bottom = listBottom ?? (this.listTop + this.rowsPerColumn * this.rowHeight);
+    const railX = this.listLeft + width + 18;
+    const railY = this.listTop;
+    const railHeight = Math.max(80, bottom - this.listTop);
+    const total = Math.max(1, this.rows.length);
+    const visible = Math.min(total, this.visibleCapacity);
+    const maxOffset = Math.max(0, total - visible);
+    const thumbHeight = maxOffset <= 0 ? railHeight : Math.max(42, railHeight * (visible / total));
+    const thumbY = maxOffset <= 0
+      ? railY
+      : railY + (railHeight - thumbHeight) * (this.scrollOffset / maxOffset);
+    this.scrollRail.clear();
+    this.scrollThumb.clear();
+    this.scrollRail.roundRect(railX, railY, 7, railHeight, 4);
+    this.scrollRail.fill({ color: 0x06111e, alpha: 0.72 });
+    this.scrollRail.stroke({ color: 0x37f5ff, width: 1, alpha: 0.45 });
+    this.scrollThumb.roundRect(railX - 2, thumbY, 11, thumbHeight, 5);
+    this.scrollThumb.fill({ color: 0xffef7e, alpha: 0.92 });
+    this.scrollThumb.stroke({ color: 0x37f5ff, width: 1.5, alpha: 0.76 });
+
+    const start = total === 0 ? 0 : this.scrollOffset + 1;
+    const end = Math.min(total, this.scrollOffset + visible);
+    this.pageText.text = translateText('{start}-{end} / {total}', { start, end, total });
+    this.pageText.x = railX + 8;
+    this.pageText.y = railY - 18;
+    this.pageText.visible = total > visible;
+    this.scrollRail.visible = total > visible;
+    this.scrollThumb.visible = total > visible;
   }
 
   moveFocus(delta) {
@@ -469,6 +583,16 @@ export class AchievementsScene {
       }
     };
     window.addEventListener('keydown', this.keyHandler, true);
+
+    if (this.wheelHandler) window.removeEventListener('wheel', this.wheelHandler, true);
+    this.wheelHandler = (event) => {
+      if (this.game?.currentScene !== this) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const step = Math.max(1, Math.round(Math.abs(event.deltaY || 0) / 90));
+      this.moveFocus((event.deltaY || 0) > 0 ? step : -step);
+    };
+    window.addEventListener('wheel', this.wheelHandler, { capture: true, passive: false });
   }
 
   returnToMenu() {
@@ -552,6 +676,10 @@ export class AchievementsScene {
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler, true);
       this.keyHandler = null;
+    }
+    if (this.wheelHandler) {
+      window.removeEventListener('wheel', this.wheelHandler, true);
+      this.wheelHandler = null;
     }
     this.rowsContainer.removeChildren();
   }

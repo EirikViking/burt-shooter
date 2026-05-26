@@ -137,8 +137,8 @@ try {
     'primaryHint',
     'launchButton',
     'hangarButton',
-    'introButton',
     'highscoresButton',
+    'threatCodexButton',
     'settingsButton',
     'exitButton',
     'disclaimer'
@@ -162,6 +162,8 @@ try {
     'art',
     'body',
     'footer',
+    'coin',
+    'eggStatus',
     'backButton'
   ]);
   const overlapFailures = [
@@ -169,7 +171,35 @@ try {
     intersects(credits.art, credits.footer, 8) ? 'credits art overlaps footer' : null,
     intersects(credits.art, credits.backButton, 8) ? 'credits art overlaps back button' : null,
     intersects(credits.body, credits.backButton, 8) ? 'credits body overlaps back button' : null,
-    intersects(credits.footer, credits.backButton, 6) ? 'credits footer overlaps back button' : null
+    intersects(credits.footer, credits.backButton, 6) ? 'credits footer overlaps back button' : null,
+    intersects(credits.footer, credits.coin, 4) ? 'credits footer overlaps cabinet seal' : null,
+    intersects(credits.footer, credits.eggStatus, 4) ? 'credits footer overlaps cabinet seal status' : null,
+    intersects(credits.backButton, credits.coin, 4) ? 'credits back button overlaps cabinet seal' : null,
+    intersects(credits.backButton, credits.eggStatus, 4) ? 'credits back button overlaps cabinet seal status' : null,
+    intersects(credits.coin, credits.eggStatus, 2) ? 'credits cabinet seal overlaps status text' : null
+  ].filter(Boolean);
+
+  const eggTrigger = await page.evaluate(() => {
+    const overlay = window.__game?.currentScene?.settingsOverlay;
+    const coin = overlay?.creditsPanel?.children?.find((child) => child?.label === 'ui_creditsCabinetSeal');
+    if (!overlay || !coin || typeof overlay.triggerCreditsEasterEgg !== 'function') {
+      return { ok: false, reason: 'credits cabinet seal unavailable' };
+    }
+    overlay.triggerCreditsEasterEgg(coin);
+    overlay.triggerCreditsEasterEgg(coin);
+    overlay.triggerCreditsEasterEgg(coin);
+    return { ok: true };
+  });
+  await page.waitForTimeout(520);
+  const revealState = await readState(page);
+  const revealCredits = revealState.settingsOverlay?.credits || {};
+  const unlockText = revealCredits.unlockRevealText || {};
+  const revealFailures = [
+    !eggTrigger.ok ? eggTrigger.reason : null,
+    !revealCredits.unlockReveal ? 'credits unlock reveal missing' : null,
+    !/CONGRATULATIONS/i.test(String(unlockText.title || '')) ? 'credits unlock reveal title missing congratulations' : null,
+    !/(NEW SHIP|ALREADY UNLOCKED)/i.test(String(unlockText.subtitle || '')) ? 'credits unlock reveal subtitle missing ship unlock result' : null,
+    !/QUASAR FAN/i.test(String(unlockText.ship || '')) ? 'credits unlock reveal ship name missing' : null
   ].filter(Boolean);
 
   mkdirSync(outputDir, { recursive: true });
@@ -183,6 +213,7 @@ try {
       credits.panel &&
       creditsFailures.length === 0 &&
       overlapFailures.length === 0 &&
+      revealFailures.length === 0 &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
@@ -194,6 +225,8 @@ try {
     credits,
     creditsFailures,
     overlapFailures,
+    revealCredits,
+    revealFailures,
     pageErrors,
     consoleErrors,
     screenshot

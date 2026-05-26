@@ -29,6 +29,29 @@ const LEVEL_THRESHOLDS = [
     60
 ];
 
+const PILOT_XP_THRESHOLDS = [
+    0,
+    650,
+    1600,
+    3000,
+    5000,
+    7600,
+    10800,
+    14600,
+    19000,
+    24200,
+    30400,
+    37800,
+    46600,
+    57000,
+    69400,
+    84200,
+    101800,
+    122800,
+    147800,
+    177500
+];
+
 const RANK_TITLES = [
     "Cadet",
     "Button Warmer",
@@ -59,6 +82,13 @@ function sanitizeLevel(level) {
     return Math.floor(level);
 }
 
+function sanitizePilotXp(pilotXp) {
+    if (typeof pilotXp !== 'number' || !Number.isFinite(pilotXp) || pilotXp < 0) {
+        return 0;
+    }
+    return Math.floor(pilotXp);
+}
+
 export function getRankFromLevel(level) {
     const normalizedLevel = sanitizeLevel(level);
 
@@ -73,6 +103,16 @@ export function getRankFromScore(_score) {
     return 0;
 }
 
+export function getRankFromPilotXp(pilotXp) {
+    const normalizedXp = sanitizePilotXp(pilotXp);
+
+    for (let i = PILOT_XP_THRESHOLDS.length - 1; i >= 0; i--) {
+        if (normalizedXp >= PILOT_XP_THRESHOLDS[i]) return i;
+    }
+
+    return 0;
+}
+
 export function getRankTitle(rankIndex) {
     if (rankIndex < 0 || rankIndex >= NUM_RANKS) {
         return RANK_TITLES[0];
@@ -82,6 +122,10 @@ export function getRankTitle(rankIndex) {
 
 export function getThresholds() {
     return [...LEVEL_THRESHOLDS];
+}
+
+export function getPilotXpThresholds() {
+    return [...PILOT_XP_THRESHOLDS];
 }
 
 export function getRankThreshold(rankIndex) {
@@ -95,6 +139,13 @@ export function getRankLevelThreshold(rankIndex) {
     return getRankThreshold(rankIndex);
 }
 
+export function getPilotXpThreshold(rankIndex) {
+    if (rankIndex < 0 || rankIndex >= NUM_RANKS) {
+        return PILOT_XP_THRESHOLDS[0];
+    }
+    return PILOT_XP_THRESHOLDS[rankIndex];
+}
+
 export function getNextRankThreshold(currentRankIndex) {
     if (currentRankIndex >= MAX_RANK_INDEX) {
         return LEVEL_THRESHOLDS[MAX_RANK_INDEX];
@@ -104,4 +155,44 @@ export function getNextRankThreshold(currentRankIndex) {
 
 export function getNextRankLevelThreshold(currentRankIndex) {
     return getNextRankThreshold(currentRankIndex);
+}
+
+export function getNextPilotXpThreshold(currentRankIndex) {
+    if (currentRankIndex >= MAX_RANK_INDEX) {
+        return PILOT_XP_THRESHOLDS[MAX_RANK_INDEX];
+    }
+    return PILOT_XP_THRESHOLDS[currentRankIndex + 1];
+}
+
+export function getPilotRankProgress(pilotXp) {
+    const normalizedXp = sanitizePilotXp(pilotXp);
+    const rankIndex = getRankFromPilotXp(normalizedXp);
+    const currentThreshold = getPilotXpThreshold(rankIndex);
+    const nextThreshold = getNextPilotXpThreshold(rankIndex);
+
+    if (nextThreshold === currentThreshold) {
+        return {
+            rankIndex,
+            title: getRankTitle(rankIndex),
+            pilotXp: normalizedXp,
+            currentThreshold,
+            nextThreshold,
+            xpIntoRank: 0,
+            xpToNextRank: 0,
+            progress: 1
+        };
+    }
+
+    const xpIntoRank = Math.max(0, normalizedXp - currentThreshold);
+    const spread = Math.max(1, nextThreshold - currentThreshold);
+    return {
+        rankIndex,
+        title: getRankTitle(rankIndex),
+        pilotXp: normalizedXp,
+        currentThreshold,
+        nextThreshold,
+        xpIntoRank,
+        xpToNextRank: Math.max(0, nextThreshold - normalizedXp),
+        progress: Math.max(0, Math.min(1, xpIntoRank / spread))
+    };
 }

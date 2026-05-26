@@ -201,6 +201,8 @@ export const SFX_MIX = {
     nova_global_slot_fanfare: { volume: 0.84, minIntervalMs: 900 },
     nova_top3_fanfare: { volume: 0.96, minIntervalMs: 900 },
     nova_number_one_fanfare: { volume: 1.05, minIntervalMs: 900 },
+    overrun_clear_coronation: { volume: 0.88, minIntervalMs: 60000 },
+    overrun_clear_shockwave: { volume: 0.86, minIntervalMs: 60000 },
     nova_player_hit_crackle: { volume: 0.72, minIntervalMs: 220 },
     nova_life_extend_bloom: { volume: 0.66, minIntervalMs: 700 },
     nova_wave_clear_sweep: { volume: 0.54, minIntervalMs: 700 },
@@ -272,9 +274,12 @@ export const VOICE_MIX = {
     mission_control_wave_clear: { volume: 0.76, duckFactor: 0.52, duckMs: 1300, cooldownMs: 30000 },
     mission_control_boss_inbound: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 14000 },
     mission_control_life_low: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 18000 },
+    mission_control_lives_max: { volume: 0.82, duckFactor: 0.48, duckMs: 1500, cooldownMs: 30000 },
     mission_control_powerup: { volume: 0.72, duckFactor: 0.52, duckMs: 900, cooldownMs: 28000 },
     mission_control_victory: { volume: 0.82, duckFactor: 0.48, duckMs: 1800, cooldownMs: 18000 },
     mission_control_game_over: { volume: 0.84, duckFactor: 0.44, duckMs: 2300, cooldownMs: 4200 },
+    mission_control_ship_unlocked: { volume: 0.98, duckFactor: 0.34, duckMs: 3200, cooldownMs: 8000 },
+    mission_control_ships_unlocked: { volume: 0.98, duckFactor: 0.34, duckMs: 3400, cooldownMs: 8000 },
     mission_control_combo: { volume: 0.72, duckFactor: 0.54, duckMs: 900, cooldownMs: 30000 },
     mission_control_local_highscore: { volume: 0.82, duckFactor: 0.46, duckMs: 2200, cooldownMs: 7000 },
     mission_control_global_highscore: { volume: 0.96, duckFactor: 0.32, duckMs: 3400, cooldownMs: 9000 },
@@ -288,6 +293,7 @@ export const VOICE_MIX = {
     mission_control_restart: { volume: 0.72, duckFactor: 0.6, duckMs: 1100, cooldownMs: 7000, eventCooldownMs: 12000 },
     mission_control_hijacker: { volume: 0.76, duckFactor: 0.54, duckMs: 1500, cooldownMs: 24000 },
     mission_control_tractor_hijack: { volume: 0.8, duckFactor: 0.48, duckMs: 1300, cooldownMs: 26000 },
+    mission_control_overrun_clear: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
     mission_control_credits: { volume: 0.9, duckFactor: 0.34, duckMs: 3600, cooldownMs: 0 }
 };
 
@@ -297,9 +303,12 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_wave_clear: 'mission_control_wave_clear.mp3',
     mission_control_boss_inbound: 'mission_control_boss_inbound.mp3',
     mission_control_life_low: 'mission_control_life_low.mp3',
+    mission_control_lives_max: 'mission_control_lives_max.mp3',
     mission_control_powerup: 'mission_control_powerup.mp3',
     mission_control_victory: 'mission_control_victory.mp3',
     mission_control_game_over: 'mission_control_game_over.mp3',
+    mission_control_ship_unlocked: 'mission_control_ship_unlocked_01.mp3',
+    mission_control_ships_unlocked: 'mission_control_ships_unlocked_01.mp3',
     mission_control_combo: 'mission_control_combo_01.mp3',
     mission_control_local_highscore: 'mission_control_local_highscore_01.mp3',
     mission_control_global_highscore: 'mission_control_global_highscore_01.mp3',
@@ -313,6 +322,7 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_restart: 'mission_control_restart_01.mp3',
     mission_control_hijacker: 'mission_control_hijacker_01.mp3',
     mission_control_tractor_hijack: 'mission_control_tractor_hijack_01.mp3',
+    mission_control_overrun_clear: 'mission_control_overrun_clear_01.mp3',
     mission_control_credits: 'mission_control_credits_01.mp3',
     intro_narrator_01: 'intro_narrator_01.mp3',
     intro_narrator_02: 'intro_narrator_02.mp3',
@@ -546,9 +556,12 @@ export const SFX_CATALOG = {
     'mission_control_wave_clear': missionControlPool('mission_control_wave_clear'),
     'mission_control_boss_inbound': missionControlPool('mission_control_boss_inbound'),
     'mission_control_life_low': missionControlPool('mission_control_life_low'),
+    'mission_control_lives_max': missionControlPool('mission_control_lives_max', 0),
     'mission_control_powerup': missionControlPool('mission_control_powerup'),
     'mission_control_victory': missionControlPool('mission_control_victory'),
     'mission_control_game_over': missionControlPool('mission_control_game_over'),
+    'mission_control_ship_unlocked': numberedVoicePool('mission_control_ship_unlocked', 1),
+    'mission_control_ships_unlocked': numberedVoicePool('mission_control_ships_unlocked', 1),
     'mission_control_combo': numberedVoicePool('mission_control_combo', 3),
     'mission_control_local_highscore': numberedVoicePool('mission_control_local_highscore', 2),
     'mission_control_global_highscore': numberedVoicePool('mission_control_global_highscore', 2),
@@ -562,6 +575,7 @@ export const SFX_CATALOG = {
     'mission_control_restart': numberedVoicePool('mission_control_restart', 2),
     'mission_control_hijacker': numberedVoicePool('mission_control_hijacker', 2),
     'mission_control_tractor_hijack': numberedVoicePool('mission_control_tractor_hijack', 3),
+    'mission_control_overrun_clear': numberedVoicePool('mission_control_overrun_clear', 1),
     'mission_control_credits': numberedVoicePool('mission_control_credits', 1),
     ...GAME_OVER_CTA_VOICE_CATALOG,
     'boss_spawn': [
@@ -610,6 +624,12 @@ export const SFX_CATALOG = {
     ],
     'nova_number_one_fanfare': [
         getSfx('nova_number_one_fanfare')
+    ],
+    'overrun_clear_coronation': [
+        getSfx('nova_overrun_clear_coronation')
+    ],
+    'overrun_clear_shockwave': [
+        getSfx('nova_overrun_clear_shockwave')
     ],
     'nova_player_hit_crackle': [
         getSfx('nova_player_hit_crackle')

@@ -1,6 +1,8 @@
+export const MAX_PLAYER_LIVES = 6;
+
 export const BalanceConfig = {
     // Global pressure trim: below 1 keeps Nova Swarm readable while the wave count rises.
-    DIFFICULTY_MULTIPLIER: 0.78,
+    DIFFICULTY_MULTIPLIER: 0.88,
 
     // Rank System
     ranks: {
@@ -10,15 +12,15 @@ export const BalanceConfig = {
 
     // Powerups
     powerups: {
-        dropChance: 0.02, // Base enemy-drop chance; kept sparse so pickups feel intentional
-        chanceGrowthPerSecond: 0.002,
-        maxDropChance: 0.12,
+        dropChance: 0.018, // Base enemy-drop chance; kept sparse so pickups feel intentional
+        chanceGrowthPerSecond: 0.0014,
+        maxDropChance: 0.08,
         cooldownMs: 18000,
         maxPerLevel: 2,
         minPerLevel: 1,
         extraLifeDropsEnabled: true,
-        extraLifeChance: 0.08,
-        extraLifeGuaranteedEveryLevels: 6,
+        extraLifeChance: 0.03,
+        extraLifeGuaranteedEveryLevels: 0,
         guaranteeWindowStart: 0.2, // 20% progress
         guaranteeWindowEnd: 0.8, // 80% progress
         logDrops: true, // Dev toggle
@@ -35,33 +37,33 @@ export const BalanceConfig = {
 
     // Difficulty: six-wave early sectors, then a steady linear climb.
     difficulty: {
-        pressureScalar: 0.72,
+        pressureScalar: 0.85,
         baseEnemyHealthMultiplier: 0.62,
         hpScalePerLevel: 0.035,
         enemyHealthMaxMultiplier: 1.8,
 
-        enemySpeedMultiplier: 0.72,
-        enemySpeedPerLevel: 0.012,
-        enemySpeedMaxMultiplier: 1.15,
+        enemySpeedMultiplier: 0.78,
+        enemySpeedPerLevel: 0.011,
+        enemySpeedMaxMultiplier: 1.08,
 
         enemyFireDelayMultiplier: 1.32,
         enemyFireDelayPerLevel: -0.012,
         enemyFireDelayMinMultiplier: 0.9,
-        enemyFireChance: 0.0036,
-        enemyFireChancePerLevel: 0.00015,
-        enemyFireChanceMax: 0.0072,
-        enemyProjectileSpeed: 1.55,
-        enemyProjectileSpeedPerLevel: 0.04,
-        enemyProjectileSpeedMax: 2.35,
+        enemyFireChance: 0.0042,
+        enemyFireChancePerLevel: 0.00022,
+        enemyFireChanceMax: 0.0095,
+        enemyProjectileSpeed: 1.65,
+        enemyProjectileSpeedPerLevel: 0.05,
+        enemyProjectileSpeedMax: 2.55,
 
         MIN_WAVES_BETWEEN_BOSSES: 6,
         MIN_SECONDS_BETWEEN_BOSSES: 0,
         bossIntervalCatchupWaveMax: 0,
         wavesPerBossBase: 6,
         wavesPerBossPerLevel: 0.03,
-        wavesPerBossMax: 8,
+        wavesPerBossMax: 7,
         bossTargetIntervalSeconds: { earlyMin: 60, earlyMax: 90 },
-        estimatedWaveSeconds: 11.5,
+        estimatedWaveSeconds: 18,
 
         earlyWaveEnemyCounts: {
             1: [6, 7, 8, 8, 8, 9],
@@ -74,27 +76,27 @@ export const BalanceConfig = {
         waveEnemyPerWave: 0.45,
         waveEnemyRandom: 2,
         waveEnemyMax: 14,
-        waveDelayMs: 820,
+        waveDelayMs: 740,
         waveBriefingAnnounceMs: 260,
-        waveCleanupMs: 760,
+        waveCleanupMs: 680,
         enemyEntryDurationMs: 1460,
         enemyEntryDelayBaseMs: 150,
         bossGateMs: 950,
         challengeWaveChance: 0.015,
         challengeWaveCount: 8,
 
-        bossBaseHealth: 44,
-        bossHealthPerLevel: 4,
+        bossBaseHealth: 40,
+        bossHealthPerLevel: 3.6,
         bossMinHealth: 44,
         bossPostFirstDifficultyStartsAt: 2,
         bossPostFirstDifficultyScalar: 0.8,
-        bossShootDelayBase: 44,
+        bossShootDelayBase: 46,
         bossShootDelayPhase2: 42,
         bossShootDelayPhase3: 38,
         bossProjectileSpeedPhase1: 1.45,
         bossProjectileSpeedPhase2: 1.52,
         bossProjectileSpeedPhase3: 1.68,
-        bossProjectileSpeedPerLevel: 0.018,
+        bossProjectileSpeedPerLevel: 0.022,
         bossProjectileSpeedMax: 2.8,
 
         bossFairness: {
@@ -124,13 +126,25 @@ export const BalanceConfig = {
         waveClearRepairTargetLives: 0,
         levelClearRepairTargetLives: 0,
         bossClearRepairLives: 1,
-        bossClearRepairMaxLives: 5,
+        bossClearRepairMaxLives: 3,
         bossClearRepairInvulnerabilityMs: 1000,
         repairInvulnerabilityMs: 0
     },
 
     survival: {
+        maxLives: MAX_PLAYER_LIVES,
         lastStandRepairEnabled: false
+    },
+
+    bossMercy: {
+        enabled: true,
+        maxProtectedLevel: 10,
+        earlyCooldownMs: 7000,
+        lateCooldownMs: 5000,
+        minimumCooldownMs: 2500,
+        levelReductionMs: 250,
+        contactPushbackPx: 72,
+        blockedHitFeedbackCooldownMs: 600
     },
 
     // Modifiers

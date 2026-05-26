@@ -1,3 +1,5 @@
+import { markControllerInputActive } from './GamepadNavigator.js';
+
 export class InputManager {
   constructor() {
     this.keys = {};
@@ -93,6 +95,12 @@ export class InputManager {
     return Math.sign(n) * Math.max(0, Math.min(1, scaled));
   }
 
+  readDirectionalAxis(axes, primaryIndex, fallbackIndex) {
+    const primary = this.normalizeAxis(axes?.[primaryIndex]);
+    if (primary !== 0) return primary;
+    return this.normalizeAxis(axes?.[fallbackIndex]);
+  }
+
   isButtonPressed(buttons, index) {
     const button = buttons?.[index];
     if (button == null) return false;
@@ -145,8 +153,8 @@ export class InputManager {
 
     const buttons = pad.buttons || [];
     const axes = pad.axes || [];
-    const moveX = this.normalizeAxis(axes[0]);
-    const moveY = this.normalizeAxis(axes[1]);
+    const moveX = this.readDirectionalAxis(axes, 0, 2);
+    const moveY = this.readDirectionalAxis(axes, 1, 3);
     const dpadLeft = this.isButtonPressed(buttons, 14);
     const dpadRight = this.isButtonPressed(buttons, 15);
     const dpadUp = this.isButtonPressed(buttons, 12);
@@ -160,6 +168,17 @@ export class InputManager {
       this.isButtonPressed(buttons, 8) ||
       this.isButtonPressed(buttons, 16);
     const pauseWasPressed = Boolean(this.previousGamepadButtons.pause);
+    const pauseJustPressed = Boolean(pause && (this.gamepadState.pauseJustPressed || !pauseWasPressed));
+    const controllerActive = Math.abs(moveX) > 0 ||
+      Math.abs(moveY) > 0 ||
+      dpadLeft ||
+      dpadRight ||
+      dpadUp ||
+      dpadDown ||
+      firing ||
+      dodge ||
+      pause;
+    if (controllerActive) markControllerInputActive();
 
     this.gamepadState = {
       connected: true,
@@ -170,7 +189,7 @@ export class InputManager {
       firing,
       dodge,
       pause,
-      pauseJustPressed: pause && !pauseWasPressed,
+      pauseJustPressed,
       buttons: { dpadLeft, dpadRight, dpadUp, dpadDown, firing, dodge, pause },
       updatedAt: now
     };

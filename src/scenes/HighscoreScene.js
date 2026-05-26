@@ -109,6 +109,7 @@ export class HighscoreScene {
     this.statsText = null;
     this.tableMetrics = null;
     this.rowLayoutDebug = [];
+    this.playerHighlightEffects = [];
 
     this.boardOpenTime = 0;
   }
@@ -124,6 +125,7 @@ export class HighscoreScene {
     this.statsText = null;
     this.tableMetrics = null;
     this.rowLayoutDebug = [];
+    this.playerHighlightEffects = [];
     this.entries = [];
     this.entriesNormalized = [];
     this.activeLeaderboardResult = null;
@@ -678,9 +680,165 @@ export class HighscoreScene {
     return normalized;
   }
 
+  normalizePlayerNameForMatch(value) {
+    return String(value || '').trim().replace(/\s+/g, ' ').toUpperCase();
+  }
+
+  getLastLeaderboardPlayerMatch() {
+    const result = this.game?.lastLeaderboardResult || null;
+    if (!result) return null;
+
+    const localEntry = result.localEntry || null;
+    const score = Number(result.score ?? localEntry?.score);
+    const level = Number(result.level ?? localEntry?.level);
+    return {
+      name: this.normalizePlayerNameForMatch(result.name || result.playerName || localEntry?.name || localEntry?.playerName),
+      score: Number.isFinite(score) ? score : null,
+      level: Number.isFinite(level) ? level : null,
+      localPlacement: Number(result.localPlacement ?? localEntry?.placement),
+      steamRank: Number(result.steamRank ?? result.globalRank ?? result.rank),
+      localStatus: result.localStatus || null,
+      steamStatus: result.steamStatus || result.globalStatus || null
+    };
+  }
+
+  isFeaturedLeaderboardEntry(entry, index) {
+    if (!entry) return false;
+    if (entry.isCurrentPlayer) return true;
+
+    const match = this.getLastLeaderboardPlayerMatch();
+    if (!match) return false;
+
+    const entryName = this.normalizePlayerNameForMatch(entry.name || entry.playerName);
+    const entryScore = Number(entry.score);
+    const entryLevel = Number(entry.level ?? entry.levelReached);
+    const sameName = Boolean(match.name && entryName && match.name === entryName);
+    const sameScore = match.score === null || (Number.isFinite(entryScore) && entryScore === match.score);
+    const sameLevel = match.level === null || !Number.isFinite(entryLevel) || entryLevel === match.level;
+
+    if (!sameScore || !sameLevel) return false;
+
+    if (this.activeLeaderboard === LeaderboardView.LOCAL) {
+      const visiblePlacement = index + 1;
+      if (Number.isFinite(match.localPlacement) && match.localPlacement === visiblePlacement) {
+        return !match.name || sameName;
+      }
+      return sameName && (match.localStatus === 'saved' || match.localStatus === 'duplicate' || match.localStatus === 'local');
+    }
+
+    const entryRank = Number(entry.rank ?? entry.globalRank ?? index + 1);
+    if (Number.isFinite(match.steamRank) && Number.isFinite(entryRank) && match.steamRank === entryRank) {
+      return !match.name || sameName;
+    }
+
+    return sameName && (match.steamStatus === 'submitted' || match.steamStatus === 'saved' || match.steamStatus === 'steam');
+  }
+
+  createFeaturedEntryHighlight({
+    rowX,
+    rowY,
+    rowW,
+    rowHeight,
+    rowMidY,
+    columns,
+    nameBlockWidth,
+    displayName,
+    accent,
+    rowStyle,
+    isMobile,
+    index
+  }) {
+    const effect = new PIXI.Container();
+    effect.eventMode = 'none';
+
+    const glow = new PIXI.Graphics();
+    glow.roundRect(rowX - 8, rowY - 7, rowW + 16, rowHeight + 10, 10);
+    glow.fill({ color: 0x37f5ff, alpha: 0.2 });
+    glow.stroke({ color: 0xffd15c, width: 4, alpha: 0.5 });
+    glow.filters = [new PIXI.BlurFilter(isMobile ? 8 : 12)];
+
+    const pulseFrame = new PIXI.Graphics();
+    pulseFrame.roundRect(rowX - 3, rowY - 3, rowW + 6, rowHeight + 2, 8);
+    pulseFrame.stroke({ color: 0xfff15c, width: 2.5, alpha: 0.92 });
+    pulseFrame.roundRect(rowX + 3, rowY + 3, rowW - 6, rowHeight - 8, 6);
+    pulseFrame.stroke({ color: 0x37f5ff, width: 1.5, alpha: 0.74 });
+
+    const nameGlow = createText(displayName, {
+      fontFamily: FONT_ARCADE,
+      fontSize: rowStyle.fontSize + (isMobile ? 4 : 8),
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#37f5ff',
+      strokeThickness: isMobile ? 3 : 5,
+      dropShadow: true,
+      dropShadowColor: '#ff3fd7',
+      dropShadowBlur: isMobile ? 8 : 12,
+      dropShadowDistance: 0,
+      padding: 8
+    });
+    nameGlow.x = columns.name - (isMobile ? 2 : 4);
+    nameGlow.y = rowY + (isMobile ? -1 : -4);
+    nameGlow.alpha = 0.34;
+    fitTextToWidth(nameGlow, nameBlockWidth + (isMobile ? 14 : 34), isMobile ? 10 : 12);
+
+    const sweep = new PIXI.Graphics();
+    sweep.rect(0, rowY + 3, isMobile ? 20 : 34, rowHeight - 8);
+    sweep.fill({ color: 0xffffff, alpha: 0.18 });
+    sweep.rect(isMobile ? 6 : 10, rowY + 5, isMobile ? 8 : 12, rowHeight - 12);
+    sweep.fill({ color: 0xfff15c, alpha: 0.42 });
+    sweep.filters = [new PIXI.BlurFilter(isMobile ? 4 : 6)];
+
+    const leftChevron = new PIXI.Graphics();
+    const chevronSize = isMobile ? 8 : 12;
+    leftChevron.moveTo(rowX + 16, rowMidY - chevronSize);
+    leftChevron.lineTo(rowX + 6, rowMidY);
+    leftChevron.lineTo(rowX + 16, rowMidY + chevronSize);
+    leftChevron.stroke({ color: 0xfff15c, width: isMobile ? 2 : 3, alpha: 0.95 });
+
+    const rightChevron = new PIXI.Graphics();
+    rightChevron.moveTo(rowX + rowW - 16, rowMidY - chevronSize);
+    rightChevron.lineTo(rowX + rowW - 6, rowMidY);
+    rightChevron.lineTo(rowX + rowW - 16, rowMidY + chevronSize);
+    rightChevron.stroke({ color: 0xff3fd7, width: isMobile ? 2 : 3, alpha: 0.9 });
+
+    const sparks = [];
+    const sparkCount = isMobile ? 3 : 5;
+    for (let sparkIndex = 0; sparkIndex < sparkCount; sparkIndex += 1) {
+      const spark = new PIXI.Graphics();
+      const x = rowX + rowW * (0.18 + sparkIndex * (0.64 / Math.max(1, sparkCount - 1)));
+      const y = rowY + 5 + (sparkIndex % 2) * (rowHeight - 16);
+      spark.moveTo(x - 4, y);
+      spark.lineTo(x + 4, y);
+      spark.moveTo(x, y - 4);
+      spark.lineTo(x, y + 4);
+      spark.stroke({ color: sparkIndex % 2 ? 0x37f5ff : 0xfff15c, width: 1.5, alpha: 0.82 });
+      spark._baseX = x;
+      spark._baseY = y;
+      spark._phase = sparkIndex * 0.76;
+      sparks.push(spark);
+    }
+
+    effect.addChild(glow, nameGlow, sweep, pulseFrame, leftChevron, rightChevron, ...sparks);
+    this.rowsContainer.addChild(effect);
+    this.playerHighlightEffects.push({
+      glow,
+      pulseFrame,
+      nameGlow,
+      sweep,
+      leftChevron,
+      rightChevron,
+      sparks,
+      rowX,
+      rowW,
+      phase: index * 0.53,
+      accent
+    });
+  }
+
   async renderHighscoreRows(startY, layout) {
     this.rowsContainer.removeChildren();
     this.rowLayoutDebug = [];
+    this.playerHighlightEffects = [];
     const isMobile = layout.isMobile || layout.width < 720;
     const metrics = this.tableMetrics || {
       x: layout.padding,
@@ -825,14 +983,19 @@ export class HighscoreScene {
         const y = rowsBaseY + rowHeight * rowIndex;
         const isTop3 = index < 3 && !score.isPending;
         const isPending = score.isPending || false;
+        const isFeaturedPlayer = this.isFeaturedLeaderboardEntry(score, index);
         const rowY = y;
         const primaryY = rowY + (isMobile ? 6 : 7);
         const rowMidY = rowY + rowHeight * 0.5;
         const rowBg = new PIXI.Graphics();
         const medalAccents = [0xffd15c, 0x9fefff, 0xff9b5c];
         const medalFills = [0x1e1607, 0x081d2d, 0x261109];
-        const accent = isPending ? 0xffaa44 : (isTop3 ? medalAccents[index] : (index % 2 === 0 ? 0x37f5ff : 0x7fffd8));
-        const rowColor = isTop3 ? medalFills[index] : (index % 2 === 0 ? 0x03111f : 0x061827);
+        const accent = isFeaturedPlayer
+          ? 0xfff15c
+          : (isPending ? 0xffaa44 : (isTop3 ? medalAccents[index] : (index % 2 === 0 ? 0x37f5ff : 0x7fffd8)));
+        const rowColor = isFeaturedPlayer
+          ? 0x102538
+          : (isTop3 ? medalFills[index] : (index % 2 === 0 ? 0x03111f : 0x061827));
 
         if (isTop3) {
           const rowAura = new PIXI.Graphics();
@@ -843,22 +1006,36 @@ export class HighscoreScene {
         }
 
         rowBg.roundRect(rowX, rowY, rowW, rowHeight - 2, 7);
-        rowBg.fill({ color: rowColor, alpha: isTop3 ? 0.8 : 0.66 });
+        rowBg.fill({ color: rowColor, alpha: isFeaturedPlayer ? 0.88 : (isTop3 ? 0.8 : 0.66) });
         rowBg.stroke({
           color: accent,
-          width: isTop3 ? 1.5 : 1,
-          alpha: isTop3 ? 0.74 : 0.32
+          width: isFeaturedPlayer ? 2.25 : (isTop3 ? 1.5 : 1),
+          alpha: isFeaturedPlayer ? 0.96 : (isTop3 ? 0.74 : 0.32)
         });
         rowBg.rect(rowX + 8, rowY + 6, 3, rowHeight - 14);
-        rowBg.fill({ color: accent, alpha: isTop3 ? 0.78 : 0.42 });
+        rowBg.fill({ color: accent, alpha: isFeaturedPlayer ? 0.96 : (isTop3 ? 0.78 : 0.42) });
         rowBg.rect(rowX + rowW - scoreBlockWidth - levelBlockWidth - 18, rowY + 8, 1, rowHeight - 18);
-        rowBg.fill({ color: 0xffffff, alpha: 0.1 });
+        rowBg.fill({ color: 0xffffff, alpha: isFeaturedPlayer ? 0.2 : 0.1 });
         rowBg.rect(rowX + 18, rowY + rowHeight - 10, rowW - 36, 1);
-        rowBg.fill({ color: 0x7fffd8, alpha: isTop3 ? 0.22 : 0.1 });
+        rowBg.fill({ color: isFeaturedPlayer ? 0xfff15c : 0x7fffd8, alpha: isFeaturedPlayer ? 0.38 : (isTop3 ? 0.22 : 0.1) });
         this.rowsContainer.addChild(rowBg);
 
-        const rankStyle = isTop3 ? { ...rowStyle, fill: '#fff3a0' } : (isPending ? { ...rowStyle, fill: '#ffb45a' } : rowStyle);
-        const nameStyle = isTop3 ? { ...rowStyle, fill: '#ffffff' } : (isPending ? { ...rowStyle, fill: '#ffaa44' } : rowStyle);
+        const rankStyle = isFeaturedPlayer
+          ? { ...rowStyle, fill: '#fff7b8', stroke: '#2a061c', strokeThickness: 3 }
+          : (isTop3 ? { ...rowStyle, fill: '#fff3a0' } : (isPending ? { ...rowStyle, fill: '#ffb45a' } : rowStyle));
+        const nameStyle = isFeaturedPlayer
+          ? {
+              ...rowStyle,
+              fill: '#ffffff',
+              stroke: '#031323',
+              strokeThickness: 3,
+              dropShadow: true,
+              dropShadowColor: '#37f5ff',
+              dropShadowBlur: 8,
+              dropShadowDistance: 0,
+              padding: 5
+            }
+          : (isTop3 ? { ...rowStyle, fill: '#ffffff' } : (isPending ? { ...rowStyle, fill: '#ffaa44' } : rowStyle));
 
         const playerRankIndex = (score.rank_index !== null && score.rank_index !== undefined)
           ? score.rank_index
@@ -866,6 +1043,23 @@ export class HighscoreScene {
         const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
         const rankTitle = getRankTitle(clampedRank);
         const displayName = (score.name || '??').slice(0, isMobile ? 13 : 18).toUpperCase();
+
+        if (isFeaturedPlayer) {
+          this.createFeaturedEntryHighlight({
+            rowX,
+            rowY,
+            rowW,
+            rowHeight,
+            rowMidY,
+            columns,
+            nameBlockWidth,
+            displayName,
+            accent,
+            rowStyle,
+            isMobile,
+            index
+          });
+        }
 
         const rankText = createText(`#${index + 1}`, {
           ...rankStyle,
@@ -930,7 +1124,7 @@ export class HighscoreScene {
         const pillHeight = isMobile ? 24 : 28;
         levelPill.roundRect(columns.level - pillWidth / 2, rowMidY - pillHeight / 2, pillWidth, pillHeight, 5);
         levelPill.fill({ color: 0x031725, alpha: 0.8 });
-        levelPill.stroke({ color: accent, width: 1, alpha: isTop3 ? 0.72 : 0.34 });
+        levelPill.stroke({ color: accent, width: isFeaturedPlayer ? 1.5 : 1, alpha: isFeaturedPlayer ? 0.9 : (isTop3 ? 0.72 : 0.34) });
         this.rowsContainer.addChild(levelPill);
 
         const rankTexture = rankTextures[index];
@@ -939,9 +1133,9 @@ export class HighscoreScene {
           const badgeGlow = new PIXI.Graphics();
           const glowSize = Math.min(rowHeight * 0.82, layout.isMobile ? 34 : 52);
           badgeGlow.circle(columns.badge, rowMidY, glowSize * 0.54);
-          badgeGlow.fill({ color: accent, alpha: isTop3 ? 0.18 : 0.09 });
+          badgeGlow.fill({ color: accent, alpha: isFeaturedPlayer ? 0.28 : (isTop3 ? 0.18 : 0.09) });
           badgeGlow.circle(columns.badge, rowMidY, glowSize * 0.36);
-          badgeGlow.stroke({ color: 0xffffff, width: 1, alpha: isTop3 ? 0.26 : 0.14 });
+          badgeGlow.stroke({ color: 0xffffff, width: isFeaturedPlayer ? 1.5 : 1, alpha: isFeaturedPlayer ? 0.36 : (isTop3 ? 0.26 : 0.14) });
           this.rowsContainer.addChild(badgeGlow);
 
           const rankSprite = new PIXI.Sprite(rankTexture);
@@ -991,6 +1185,7 @@ export class HighscoreScene {
           score: debugBounds(scoreText),
           scoreLabel: debugBounds(scoreLabel),
           level: debugBounds(levelText),
+          featured: isFeaturedPlayer,
           scoreGroup: {
             x: Math.round(columns.score - scoreBlockWidth),
             y: Math.round(rowY + 4),
@@ -1463,6 +1658,31 @@ export class HighscoreScene {
         const pulse = 0.7 + Math.sin(Date.now() * 0.002) * 0.3;
         this.title.style.dropShadowAlpha = pulse * 0.7;
       }
+
+      const highlightTime = Date.now() * 0.004;
+      this.playerHighlightEffects.forEach((effect) => {
+        const pulse = 0.5 + Math.sin(highlightTime + effect.phase) * 0.5;
+        if (effect.glow) effect.glow.alpha = 0.58 + pulse * 0.32;
+        if (effect.pulseFrame) effect.pulseFrame.alpha = 0.72 + pulse * 0.26;
+        if (effect.nameGlow) {
+          effect.nameGlow.alpha = 0.2 + pulse * 0.22;
+          const scale = 1 + pulse * 0.035;
+          effect.nameGlow.scale.set(scale);
+        }
+        if (effect.sweep) {
+          const travel = effect.rowW + 90;
+          effect.sweep.x = effect.rowX - 45 + ((highlightTime * 72 + effect.phase * 120) % travel);
+          effect.sweep.alpha = 0.44 + pulse * 0.24;
+        }
+        if (effect.leftChevron) effect.leftChevron.alpha = 0.62 + pulse * 0.34;
+        if (effect.rightChevron) effect.rightChevron.alpha = 0.58 + (1 - pulse) * 0.3;
+        effect.sparks?.forEach((spark) => {
+          const sparkPulse = 0.5 + Math.sin(highlightTime * 1.7 + spark._phase) * 0.5;
+          spark.alpha = 0.35 + sparkPulse * 0.55;
+          spark.scale.set(0.8 + sparkPulse * 0.45);
+          spark.rotation += dtSec * (1.4 + spark._phase);
+        });
+      });
 
     };
 

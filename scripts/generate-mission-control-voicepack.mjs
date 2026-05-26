@@ -5,6 +5,10 @@ const apiKey = process.env.ELEVENLABS_API_KEY;
 const voiceId = process.env.ELEVENLABS_VOICE_ID || 'SIbt9DJkaY96v2K2fQyQ';
 const modelId = process.env.ELEVENLABS_MODEL_ID || 'eleven_v3';
 const outputDir = path.resolve('public/audio/voice/mission-control');
+const onlyArg = process.argv.find((arg) => arg.startsWith('--only='));
+const onlyFiles = onlyArg
+  ? new Set(onlyArg.slice('--only='.length).split(',').map((item) => item.trim()).filter(Boolean))
+  : null;
 
 const lines = [
   {
@@ -68,6 +72,10 @@ const lines = [
     text: 'Careful now. The board is watching.'
   },
   {
+    file: 'mission_control_lives_max.mp3',
+    text: 'Maximum lives reached. Cabinet says you are fully stocked.'
+  },
+  {
     file: 'mission_control_powerup.mp3',
     text: 'Powerup live. Use it hard.'
   },
@@ -102,6 +110,14 @@ const lines = [
   {
     file: 'mission_control_game_over_alt02.mp3',
     text: 'Not bad. Not final.'
+  },
+  {
+    file: 'mission_control_ship_unlocked_01.mp3',
+    text: 'Congratulations, pilot. New ship unlocked. The hangar says do not scratch the paint yet.'
+  },
+  {
+    file: 'mission_control_ships_unlocked_01.mp3',
+    text: 'Congratulations, pilot. Several ships unlocked. The hangar is showing off. Go pick a favorite.'
   },
   {
     file: 'mission_control_combo_01.mp3',
@@ -194,6 +210,10 @@ const lines = [
   {
     file: 'mission_control_credits_01.mp3',
     text: 'Credits protocol open. Tinyfoundry Games denies responsibility for haunted cabinets, boss paperwork, and emotional damage caused by excellent dodging.'
+  },
+  {
+    file: 'mission_control_overrun_clear_01.mp3',
+    text: 'Sector ten cleared. Overrun authorized. The cabinet is applauding and will deny it later.'
   }
 ];
 
@@ -241,6 +261,7 @@ async function main() {
   await mkdir(outputDir, { recursive: true });
 
   for (let i = 0; i < lines.length; i += 1) {
+    if (onlyFiles && !onlyFiles.has(lines[i].file)) continue;
     await generateLine(lines[i], i);
   }
 

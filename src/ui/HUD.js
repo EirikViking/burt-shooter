@@ -1,11 +1,11 @@
 import * as PIXI from 'pixi.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
-import { extendLocations } from '../text/phrasePool.js';
 
 import { GameAssets } from '../utils/GameAssets.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
-import { formatNumber } from '../i18n/index.js';
+import { formatNumber, translateText } from '../i18n/index.js';
+import { formatSectorLabel } from '../config/SectorCatalog.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
@@ -218,8 +218,11 @@ export class HUD {
     this.missionText.anchor.set(0.5);
     this.hudContainer.addChild(this.missionText);
 
-    // Rotating arcade-sector label.
-    this.locationText = createText('ORBITAL ARCADE', {
+    // Current sector label.
+    this.locationText = createText(formatSectorLabel(this.game.level || 1, {
+      sectorWord: translateText('SECTOR'),
+      compact: true
+    }), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#9eb7c0'
@@ -280,11 +283,10 @@ export class HUD {
     this.rankBarBg.clear().rect(0, 42, barW, barH).fill({ color: 0x333333 });
     this.rankBarFill.clear().rect(0, 42, barW * progress, barH).fill({ color: 0xffff00 });
 
-    // Random location updates
-    const locations = extendLocations(['ORBITAL ARCADE', 'NEON BELT', 'PIXEL DRIFT', 'BONUS SECTOR', 'CABINET CORE']);
-    if (Math.random() < 0.001) {
-      this.locationText.text = locations[Math.floor(Math.random() * locations.length)];
-    }
+    this.locationText.text = formatSectorLabel(this.game.level || 1, {
+      sectorWord: translateText('SECTOR'),
+      compact: true
+    });
 
     this.updateActivePowerup();
     this.updateTraitMeter();
@@ -352,11 +354,11 @@ export class HUD {
     this.activePowerupBg.clear();
     this.activePowerupBg.roundRect(0, 0, width, height, 8);
     this.activePowerupBg.fill({ color: 0x020914, alpha: 0.62 });
-    this.activePowerupBg.stroke({ color: 0x00e5ff, width: 1.2, alpha: 0.7 });
-    this.activePowerupBg.rect(1, 1, Math.max(0, width - 2), 14);
-    this.activePowerupBg.fill({ color: 0x00e5ff, alpha: 0.11 });
-
     const hasDebuff = activeStates.some((state) => String(state.type || '').startsWith('debuff_'));
+    this.activePowerupBg.stroke({ color: hasDebuff ? 0xff6688 : 0x00e5ff, width: hasDebuff ? 2 : 1.2, alpha: hasDebuff ? 0.88 : 0.7 });
+    this.activePowerupBg.rect(1, 1, Math.max(0, width - 2), 14);
+    this.activePowerupBg.fill({ color: hasDebuff ? 0xff6688 : 0x00e5ff, alpha: hasDebuff ? 0.17 : 0.11 });
+
     this.activePowerupTitle.text = hasDebuff
       ? 'SYSTEM STATUS'
       : activeStates.length > 1 ? 'POWERUPS ONLINE' : 'POWERUP ONLINE';
@@ -376,7 +378,7 @@ export class HUD {
       row.container.visible = false;
     });
 
-    this.activePowerupText.text = activeStates[0]?.label || '';
+    this.activePowerupText.text = translateText(activeStates[0]?.label || '');
     this.activePowerupTimer.text = this.formatPowerupMeta(activeStates[0] || {});
     this.activePowerupBarBg.clear();
     this.activePowerupBarFill.clear();
@@ -485,7 +487,7 @@ export class HUD {
 
     row.label.style.fontSize = isMobile ? 10 : 12;
     row.meta.style.fontSize = isMobile ? 10 : 11;
-    row.label.text = this.truncateLabel(state.label, isMobile ? 15 : 19);
+    row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 15 : 19);
     row.meta.text = this.formatPowerupMeta(state);
     row.label.x = 34;
     row.label.y = 4;
@@ -644,7 +646,7 @@ export class HUD {
       {
         every: Number(state.critEvery || 0),
         remaining: Number(state.nextCritShotIn || 0),
-        text: 'OVERCHARGE',
+        text: 'CRIT',
         color: 0xff8844
       },
       {
@@ -656,7 +658,7 @@ export class HUD {
       {
         every: Number(state.wingShotEvery || 0),
         remaining: Number(state.nextWingShotIn || 0),
-        text: 'WING BURST',
+        text: 'WING SHOT',
         color: 0x66ff99
       },
       {
@@ -672,7 +674,7 @@ export class HUD {
       const next = candidates[0];
       const progress = Math.max(0, Math.min(1, 1 - (next.remaining - 1) / next.every));
       return {
-        text: next.remaining <= 1 ? `${next.text} READY` : `${next.text} IN ${next.remaining}`,
+        text: next.remaining <= 1 ? `${next.text} READY` : `${next.text} IN ${next.remaining} SHOTS`,
         progress,
         color: next.color
       };

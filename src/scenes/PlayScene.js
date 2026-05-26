@@ -4,11 +4,12 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { Player, RESPAWN_INVULNERABILITY_MS } from '../entities/Player.js';
 import { BonusDrone } from '../entities/BonusDrone.js';
 import { AssetManifest } from '../assets/assetManifest.js';
-import { BalanceConfig } from '../config/BalanceConfig.js';
+import { BalanceConfig, MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { COMBO_MILESTONES, COMBO_WINDOW_MS } from '../config/ComboConfig.js';
 import { EnemyManager } from '../managers/EnemyManager.js';
 import { BulletManager } from '../managers/BulletManager.js';
 import { PowerupManager } from '../managers/PowerupManager.js';
+import { rankManager } from '../managers/RankManager.js';
 import { ParticleManager } from '../effects/ParticleManager.js';
 import { ScreenShake } from '../effects/ScreenShake.js';
 import { ScorePopupManager } from '../ui/ScorePopup.js';
@@ -23,15 +24,23 @@ import { getDefaultShipKey } from '../config/ShipMetadata.js';
 import { createText } from '../utils/pixiText.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import {
-  extendLevelIntroTexts,
   getAchievementPopup,
   getEnemyTaunt,
   getMicroMessage,
   getAllNewPhrases,
+  getCabinetLogEntry,
   getStoryTransmission
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
+import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { translateText } from '../i18n/index.js';
+import { RunPacingConfig } from '../config/RunPacingConfig.js';
+import {
+  recordThreatDefeated,
+  recordThreatSeen
+} from '../progression/ThreatDiscoveryState.js';
+
+const OVERRUN_CLEAR_VFX_MS = 5600;
 
 export class PlayScene {
   constructor(game) {
@@ -60,6 +69,12 @@ export class PlayScene {
     this.pauseFocusedIndex = 0;
     this.pauseGamepadNavigator = new GamepadNavigator();
     this.settingsOverlay = null;
+    this.hadGameplayGamepadConnection = false;
+    this.lastGameplayGamepadConnected = false;
+    this.controlSmokeMode = false;
+    this.autoPauseHandlersInstalled = false;
+    this.visibilityPauseHandler = null;
+    this.blurPauseHandler = null;
     this.levelAdvancePending = false;
     this.levelAdvanceTimeout = null;
     this.capState = {
@@ -72,8 +87,16 @@ export class PlayScene {
     this.tauntTimer = 0;
     this.storyTransmissionTimer = 0;
     this.shownStoryTransmissionIds = new Set();
+    this.shownCabinetLogIds = new Set();
     this.commsPortraitsReady = null;
     this.lowLivesShownFor = null;
+    this.lastMaxLivesVoiceAt = 0;
+    this.bossMercyUntilMs = 0;
+    this.lastBossMercyBlockLogAt = 0;
+    this.lastBossMercyFeedbackAt = 0;
+    this.debugInvincible = false;
+    this.debugLastBlockedDamageAt = 0;
+    this.debugLevelToolsUsed = false;
     this.ambientBonusDroneTimer = 0;
     this.easterEggTimer = 0;
     this.ambientBonusDrones = []; // Lists for update
@@ -125,6 +148,9 @@ export class PlayScene {
     this.tractorHijack = null;
     this.lastTractorHijack = null;
     this.tractorHijackLayer = null;
+    this.overrunClearLayer = null;
+    this.overrunClearEffects = [];
+    this.overrunSealTexture = null;
     this.bossHazards = [];
     this.bossHazardLayer = null;
     this.lastBossHazardHit = null;
@@ -146,7 +172,8 @@ export class PlayScene {
     this.loreBagIndex = 0;
     this.lastLoreLine = null;
     this.lastLoreAt = 0;
-    this.loreCooldownMs = 10000;
+    this.loreCooldownMs = 7200;
+    this.lastCabinetLog = null;
     this.lastMajorToastAt = 0;
     this.majorToastCooldownMs = 3500;
 
@@ -158,6 +185,13 @@ export class PlayScene {
     this.totalKills = 0;
     this.bossKills = 0;
     this.wavesCleared = 0;
+    this.noHitWavesThisRun = 0;
+    this.noHitSectorsThisRun = 0;
+    this.damageTakenThisWave = 0;
+    this.damageTakenThisSector = 0;
+    this.discoveryBonus = 0;
+    this.defeatedBossIds = [];
+    this.repairsGrantedThisRun = 0;
     this.lastKillAt = 0;
     this.lastHitAt = 0;
     this.lastStandReadyAt = 0;
@@ -210,15 +244,24 @@ export class PlayScene {
     this.pauseOverlay = null;
     this.settingsOverlay = null;
     this.pausePressed = false;
+    this.hadGameplayGamepadConnection = false;
+    this.lastGameplayGamepadConnected = false;
+    this.setupAutoPauseHandlers();
     this.gameContainer.removeChildren();
     this.uiContainer.removeChildren();
     this.uiOverlay.removeChildren();
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
+    this.overrunClearEffects = [];
+    this.overrunClearLayer = new PIXI.Container();
+    this.overrunClearLayer.zIndex = 9600;
+    this.overrunClearLayer.sortableChildren = true;
+    this.uiOverlay.addChild(this.overrunClearLayer);
 
     // TASK D: Create procedural starfield background
     this.createStarfield();
     this.loadBossDossierTexture();
+    this.loadOverrunSealTexture();
 
     // --- Hud & UI ---
     this.hud = new HUD(this.uiContainer, this.game);
@@ -264,9 +307,18 @@ export class PlayScene {
     };
 
     this.gameTime = 0;
+    this.shownCabinetLogIds.clear();
+    this.lastCabinetLog = null;
     this.totalKills = 0;
     this.bossKills = 0;
     this.wavesCleared = 0;
+    this.noHitWavesThisRun = 0;
+    this.noHitSectorsThisRun = 0;
+    this.damageTakenThisWave = 0;
+    this.damageTakenThisSector = 0;
+    this.discoveryBonus = 0;
+    this.defeatedBossIds = [];
+    this.repairsGrantedThisRun = 0;
     this.levelAdvancePending = false;
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
@@ -306,55 +358,66 @@ export class PlayScene {
     this.bossHazardLayer.zIndex = 66;
     this.gameContainer.addChild(this.bossHazardLayer);
 
-    // Initial load of ships AND Ranks
-    Promise.all([
-      GameAssets.loadShips(),
-      RankAssets.preloadAll()
-    ]).then(() => {
-      // Sync rank state to prevent immediate spam if starting with score > 0 (handled in Game, but good safety)
+    const params = new URLSearchParams(window.location.search);
+    const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
+    const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
+    const selectedShipTextureIndex = getShipMetadata(spriteKey)?.textureIndex ?? 0;
+    const controlSmoke = params.get('controlSmoke') === '1';
+    this.controlSmokeMode = controlSmoke;
+    const logShipDebug = () => {
+      if (!this.player) return;
+      console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
+      console.log(`[ShipDebug] Selected: ${this.game.selectedShipSpriteKey}`);
+      console.log(`[ShipDebug] Active: ${this.player.selectedShipSpriteKey}`);
+      console.log(`[ShipDebug] PlayerSprite: exists=${!!this.player.sprite} alpha=${this.player.sprite?.alpha} visible=${this.player.sprite?.visible} x=${this.player.sprite?.x} y=${this.player.sprite?.y}`);
+      const textureSource = this.player.shipSprite?.texture?.source;
+      console.log(`[ShipDebug] Texture: ${textureSource?.resource?.url || textureSource?.label || 'loaded'}`);
+    };
+    const startIntroFromPlayer = (source) => {
+      if (this.game?.currentScene !== this || !this.player || this.introActive || this.introComplete) return;
       this._lastRankUpSeen = this.game.rankIndex;
-
-      // Create player AFTER ships are loaded to ensure texture is ready
-      if (this.player) {
-        this.gameContainer.removeChild(this.player.sprite);
-      }
-      const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
-      console.log('[PlayScene] Assets ready, creating player with spriteKey=' + spriteKey);
-      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
-      this.gameContainer.addChild(this.player.sprite);
-      const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
-      this.player.setRank(initialRank, 'init');
-
+      this.player.setRank(initialRank, source);
       this.applySeasonCosmetics();
-
-      // DEBUG: Log ship selection details
-      if (this.player) {
-        console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
-        console.log(`[ShipDebug] Selected: ${this.game.selectedShipSpriteKey}`);
-        console.log(`[ShipDebug] Active: ${this.player.selectedShipSpriteKey}`);
-        console.log(`[ShipDebug] PlayerSprite: exists=${!!this.player.sprite} alpha=${this.player.sprite?.alpha} visible=${this.player.sprite?.visible} x=${this.player.sprite?.x} y=${this.player.sprite?.y}`);
-        const textureSource = this.player.shipSprite?.texture?.source;
-        console.log(`[ShipDebug] Texture: ${textureSource?.resource?.url || textureSource?.label || 'loaded'}`);
-      }
-
-      const controlSmoke = new URLSearchParams(window.location.search).get('controlSmoke') === '1';
+      logShipDebug();
       if (controlSmoke) {
         this.introActive = false;
         this.introComplete = true;
         this.startLevel('controlSmoke');
       } else {
-        // Start ship intro animation
         this.startShipIntro(spriteKey);
       }
+    };
+    const selectedShipReady = GameAssets.ensureRankShipTexture(selectedShipTextureIndex)
+      .then(() => {
+        if (this.game?.currentScene === this && this.player?.rebuildShipSprite) {
+          this.player.rebuildShipSprite('selected_ship_ready');
+        }
+      })
+      .catch((error) => {
+        console.warn('[PlayScene] Selected ship texture preload failed:', error);
+      });
+    Promise.race([
+      selectedShipReady,
+      new Promise((resolve) => setTimeout(resolve, 2500))
+    ]).then(() => startIntroFromPlayer('selected_ship_ready'));
+    selectedShipReady.finally(() => {
+      GameAssets.loadShips()
+        .then(() => {
+          if (this.game?.currentScene !== this || !this.player?.rebuildShipSprite) return;
+          this.player.rebuildShipSprite('ship_catalog_ready');
+          console.log('[PlayScene] Ship catalog ready for current run');
+        })
+        .catch((error) => console.warn('[PlayScene] Ship catalog preload failed:', error));
+      RankAssets.preloadAll().catch((error) => {
+        console.warn('[PlayScene] Rank badge preload failed:', error);
+      });
     });
 
     // Create placeholder player immediately (will be replaced)
     if (!this.player) {
-      const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
       this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
       this.gameContainer.addChild(this.player.sprite);
       if (this.player.setRank) {
-        const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
         this.player.setRank(initialRank, 'init_placeholder');
       }
       this.applySeasonCosmetics();
@@ -364,7 +427,6 @@ export class PlayScene {
     this.enemyManager = new EnemyManager(this.gameContainer, this.game, capHandler);
     this.game.flushAchievementToasts?.(this);
 
-    const params = new URLSearchParams(window.location.search);
     this.initBalanceDebug(params);
     const debugToken = params.get('debugBossToken');
     if (debugToken === 'NOVA_DEBUG_2026') {
@@ -417,7 +479,7 @@ export class PlayScene {
 
   handleDebugKeys(e) {
     if (e.repeat) return;
-    if (this.handleMarketingSpawnKey(e)) {
+    if (this.handleDebugNumberKey(e)) {
       e.preventDefault?.();
       return;
     }
@@ -443,21 +505,129 @@ export class PlayScene {
     }
   }
 
-  handleMarketingSpawnKey(e) {
+  handleDebugNumberKey(e) {
     const key = e.code || e.key;
     if (key === 'Digit1' || key === 'Numpad1' || e.key === '1') {
-      this.spawnMarketingDebugWave();
+      this.toggleDebugInvincibility();
       return true;
     }
-    if (key === 'Digit2' || key === 'Numpad2' || e.key === '2') {
-      this.spawnMarketingDebugMiniBoss();
+    if (key === 'KeyL' || e.key?.toLowerCase?.() === 'l') {
+      this.promptDebugLevelJump();
       return true;
     }
-    if (key === 'Digit3' || key === 'Numpad3' || e.key === '3') {
-      this.spawnMarketingDebugBoss();
+    if (key === 'PageUp') {
+      this.debugJumpToLevel((Number(this.game?.level) || 1) + 1, 'debug_level_up_key');
+      return true;
+    }
+    if (key === 'PageDown') {
+      this.debugJumpToLevel((Number(this.game?.level) || 1) - 1, 'debug_level_down_key');
       return true;
     }
     return false;
+  }
+
+  handleMarketingSpawnKey() {
+    // Retired: number keys are reserved for debug survival/level tooling now.
+    // Keep the marker for release-line guards until the old marketing hotkeys are fully removed.
+    return false;
+  }
+
+  isDebugInvincibleActive() {
+    return this.debugInvincible === true;
+  }
+
+  toggleDebugInvincibility() {
+    this.debugInvincible = !this.debugInvincible;
+    this.game?.markUnrankedRun?.('debug_invincible');
+    if (this.debugInvincible && this.player?.grantInvulnerability) {
+      this.player.grantInvulnerability(1200, 'debug_invincible_toggle');
+    }
+    this.showToast(translateText(this.debugInvincible ? 'DEBUG INVINCIBLE ON' : 'DEBUG INVINCIBLE OFF'), {
+      fontSize: 18,
+      fill: this.debugInvincible ? '#7dffcc' : '#ffb35c',
+      duration: 1400,
+      slot: 'corner',
+      type: 'debug',
+      priority: 4
+    });
+    console.log(`[DebugTools] invincible=${this.debugInvincible}`);
+  }
+
+  onDebugDamageBlocked(source = 'damage') {
+    const now = Date.now();
+    if (now - (this.debugLastBlockedDamageAt || 0) < 900) return false;
+    this.debugLastBlockedDamageAt = now;
+    this.particleManager?.createHitSpark(this.player?.x || 0, this.player?.y || 0, 0x7dffcc);
+    this.showToast(translateText('DEBUG SHIELD'), {
+      fontSize: 14,
+      fill: '#7dffcc',
+      duration: 650,
+      slot: 'corner',
+      type: 'debug',
+      priority: 2
+    });
+    console.log(`[DebugTools] blocked_damage source=${source}`);
+    return true;
+  }
+
+  promptDebugLevelJump() {
+    const current = Math.max(1, Number(this.game?.level) || 1);
+    const input = window.prompt?.(translateText('Debug jump to level'), String(current));
+    if (input == null) return false;
+    return this.debugJumpToLevel(Number(input), 'debug_level_prompt');
+  }
+
+  clearDebugProjectiles() {
+    const removeBullets = (bullets = []) => {
+      bullets.forEach((bullet) => {
+        bullet.active = false;
+        if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      });
+    };
+    removeBullets(this.bulletManager?.playerBullets || []);
+    removeBullets(this.bulletManager?.enemyBullets || []);
+    if (this.bulletManager) {
+      this.bulletManager.playerBullets = [];
+      this.bulletManager.enemyBullets = [];
+    }
+  }
+
+  debugJumpToLevel(level, reason = 'debug_level_jump') {
+    const targetLevel = Math.max(1, Math.min(999, Math.floor(Number(level) || 1)));
+    if (!this.game || !this.enemyManager) return false;
+    this.game.markUnrankedRun?.(reason);
+    this.debugLevelToolsUsed = true;
+    this.introActive = false;
+    this.introComplete = true;
+    this.levelAdvancePending = false;
+    this.postBossLevelIntroPending = false;
+    this.debugStartLevel = null;
+    this.debugStartAtBoss = false;
+    if (this.levelAdvanceTimeout) {
+      clearTimeout(this.levelAdvanceTimeout);
+      this.levelAdvanceTimeout = null;
+    }
+    this.clearDebugProjectiles();
+    this.bossHazards = [];
+    this.lastBossHazardHit = null;
+    this.bossMercyUntilMs = 0;
+    this.game.level = targetLevel;
+    const computedRank = rankManager.getRankFromLevel(targetLevel);
+    this.game.rankIndex = computedRank;
+    this.game.lastRankIndex = Math.max(Number(this.game.lastRankIndex) || 0, computedRank);
+    this.player?.setRank?.(computedRank, reason);
+    this._lastStartedLevel = null;
+    this.startLevel(reason);
+    this.showToast(translateText('DEBUG LEVEL {level}', { level: targetLevel }), {
+      fontSize: 18,
+      fill: '#7ee9ff',
+      duration: 1400,
+      slot: 'corner',
+      type: 'debug',
+      priority: 4
+    });
+    console.log(`[DebugTools] jump_level=${targetLevel} rank=${computedRank} reason=${reason}`);
+    return true;
   }
 
   activateMarketingSpawnMode(reason = 'marketing_spawn_debug') {
@@ -789,6 +959,7 @@ export class PlayScene {
     this.powerupManager.checkLevelReset(this.game.level); // Reset powerup caps
     if (this.game.level === 1) {
       this.shownStoryTransmissionIds.clear();
+      this.shownCabinetLogIds.clear();
     }
 
     this.enemyManager.startLevel(this.game.level);
@@ -808,27 +979,18 @@ export class PlayScene {
 
     this.resetRandomTimers();
     this.ambientBonusDroneTimer = 2000 + Math.random() * 3000;
-    this.queueStoryTransmission(postBossLevelIntro ? 3200 : 2600);
   }
 
   showLevelIntro({ postBoss = false } = {}) {
-    const levelTexts = [
-      'Sector 1: Popcorn Patrol',
-      'Sector 2: Spiral Academy',
-      'Sector 3: Laser Lane Union',
-      'Sector 4: Bonus Stage Panic',
-      'BOSS: THE FORMATION FOREMAN',
-      'Sector 6: Meteor Queue',
-      'Sector 7: Neon Swarm',
-      'Sector 8: Hitbox Negotiations',
-      'Sector 9: Cabinet Overdrive',
-      'BOSS: THE QUARTER EATER'
-    ];
-    const introList = extendLevelIntroTexts(levelTexts, this.game.level, this.game.level % 5 === 0);
-    const message = introList[(this.game.level - 1) % introList.length] || `LEVEL ${this.game.level}`;
-    const localizedMessage = translateText(message);
+    const localizedMessage = formatSectorLabel(this.game.level, {
+      sectorWord: translateText('SECTOR')
+    });
     const compactHud = this.game.getWidth() < 620;
     const fontSize = compactHud ? (postBoss ? 21 : 25) : (postBoss ? 34 : 42);
+    this.reserveMessageFocus(postBoss ? 1550 : 800, {
+      priority: 2,
+      slots: ['center', 'top', 'corner']
+    });
     this.showToast(localizedMessage, {
       fontSize,
       fill: '#ffff00',
@@ -836,6 +998,9 @@ export class PlayScene {
       strokeThickness: compactHud ? 2 : 3,
       duration: postBoss ? 1450 : 2000,
       type: 'level_up',
+      priority: 2,
+      bypassFocusLock: true,
+      transition: true,
       slot: 'center',
       y: compactHud ? this.game.getHeight() * 0.25 : this.game.getHeight() * (postBoss ? 0.18 : 0.2),
       maxWidth: compactHud ? this.game.getWidth() * 0.82 : this.game.getWidth() * (postBoss ? 0.78 : 0.9)
@@ -871,18 +1036,10 @@ export class PlayScene {
       }
 
       this.handlePauseToggle();
+      this.updateControllerPresencePause();
       if (this.isPaused) {
         this.updatePauseMenuControls(delta);
         return;
-      }
-
-      // Mobile inputs
-      if (this.touchControls && this.touchControls.active) {
-        const movement = this.touchControls.getMovement();
-        this.inputManager.setKeyPressed('KeyA', movement.dx < -0.3);
-        this.inputManager.setKeyPressed('KeyD', movement.dx > 0.3);
-        this.inputManager.setKeyPressed('KeyW', movement.dy < -0.3);
-        this.inputManager.setKeyPressed('KeyS', movement.dy > 0.3);
       }
 
       // Player update
@@ -1000,6 +1157,7 @@ export class PlayScene {
       this.updatePlayerMetrics(delta);
 
       this.checkCollisions();
+      this.updateOverrunClearCelebrations();
 
       // Level progression
       if (this.enemyManager.isLevelComplete() && !this.enemyManager.spawning && !this.levelAdvancePending) {
@@ -1008,8 +1166,19 @@ export class PlayScene {
         AudioManager.playSfx('levelComplete');
         const rewardConfig = BalanceConfig.rewards || {};
         const levelClearScore = rewardConfig.levelClearScore || BalanceConfig.level.completionBonus || 1000;
-        const appliedLevelClearScore = this.game.addScore(levelClearScore);
+        const appliedLevelClearScore = this.game.addScore(levelClearScore, 'sectorClearBonus');
         const bossCompletion = Boolean(this.enemyManager?.bossDefeatedThisLevel);
+        if (bossCompletion && this.damageTakenThisSector === 0) {
+          this.noHitSectorsThisRun += 1;
+          const appliedNoHitSector = this.game.addScore(1500, 'noHitBonus');
+          this.enqueueToast(`${translateText('NO-HIT SECTOR')} +${appliedNoHitSector}`, {
+            fontSize: 18,
+            fill: '#7dffcc',
+            slot: 'top',
+            type: 'bonus',
+            duration: 1400
+          });
+        }
         const compactHud = this.game.getWidth() < 620;
         const repairTarget = rewardConfig.levelClearRepairTargetLives || 0;
         const repairDelta = repairTarget > 0
@@ -1048,6 +1217,41 @@ export class PlayScene {
           this.levelAdvancePending = false;
           this.levelAdvanceTimeout = null;
           this.postBossLevelIntroPending = bossCompletion;
+          if (bossCompletion && !this.game.runCleared && this.game.level >= RunPacingConfig.targetSectors) {
+            const clearBonus = 10000;
+            const livesBonus = Math.max(0, Number(this.game.lives) || 0) * 2500;
+            if (clearBonus > 0) this.game.addScore(clearBonus, 'runClearBonus');
+            if (livesBonus > 0) this.game.addScore(livesBonus, 'remainingLivesBonus');
+            const markedClear = this.game.markRunClear?.('target_sector_clear');
+            if (markedClear) {
+              const nextSector = this.game.level + 1;
+              this.triggerOverrunClearCelebration({ nextSector });
+              this.showToast([
+                translateText('RUN CLEAR! OVERRUN UNLOCKED'),
+                translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
+                  clearBonus: clearBonus.toLocaleString('en-US'),
+                  livesBonus: livesBonus.toLocaleString('en-US')
+                }),
+                translateText('SECTOR {sector} WILL NOT BE POLITE', { sector: nextSector })
+              ].join('\n'), {
+                fontSize: compactHud ? 21 : 32,
+                fill: '#fff3a2',
+                stroke: '#150318',
+                strokeThickness: compactHud ? 4 : 6,
+                duration: 4300,
+                slot: 'center',
+                type: 'run_clear',
+                priority: 10,
+                transition: true,
+                y: this.game.getHeight() * (compactHud ? 0.29 : 0.37),
+                maxWidth: this.game.getWidth() * (compactHud ? 0.9 : 0.78)
+              });
+              this.reserveMessageFocus(4400, { priority: 10, slots: ['top', 'corner'] });
+            }
+          }
+          if (bossCompletion) {
+            this.damageTakenThisSector = 0;
+          }
           this.game.nextLevel();
           if (this.player) {
             const sprite = this.player.sprite;
@@ -1486,6 +1690,60 @@ export class PlayScene {
     document.body.appendChild(div);
   }
 
+  detonateBombBullet(bullet, reason = 'unknown') {
+    if (!bullet?.active || !bullet.isBomb || bullet.bombDetonated) return false;
+    bullet.bombDetonated = true;
+    bullet.active = false;
+
+    const radius = Math.max(110, Number(bullet.blastRadius) || 150);
+    const damage = Math.max(1, Number(bullet.damage) || 1);
+    const x = Number.isFinite(bullet.x) ? bullet.x : this.player?.x || this.game.getWidth() / 2;
+    const y = Number.isFinite(bullet.y) ? bullet.y : this.player?.y || this.game.getHeight() * 0.45;
+
+    if (this.particleManager) {
+      const burstCount = this.game.getWidth() < 620 ? 9 : 14;
+      for (let i = 0; i < burstCount; i += 1) {
+        const angle = (Math.PI * 2 * i) / burstCount;
+        const distance = radius * (0.28 + Math.random() * 0.68);
+        this.particleManager.createExplosion(
+          x + Math.cos(angle) * distance,
+          y + Math.sin(angle) * distance,
+          i % 3 === 0 ? 0xffff66 : 0xff6600,
+          0.72
+        );
+      }
+      this.particleManager.createExplosion(x, y, 0xffff00, 1.15);
+    }
+    this.triggerShockwave?.(x, y, 0xffaa00);
+    this.screenShake?.shake(reason === 'apex' ? 12 : 16, 28);
+    AudioManager.playSfx('explosion', { force: true, volume: 1.0 });
+
+    this.enemyManager.enemies.forEach(enemy => {
+      if (!enemy?.active) return;
+      const dist = Math.hypot((enemy.x || 0) - x, (enemy.y || 0) - y);
+      if (dist > radius + (enemy.radius || 16)) return;
+      const destroyed = enemy.takeDamage(damage);
+      this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xffaa00);
+      if (destroyed) {
+        this.game.addScore(enemy.scoreValue || 0);
+        this.particleManager?.createExplosion(enemy.x, enemy.y, 0xff6600);
+      }
+    });
+
+    const hijacker = this.enemyManager.hijacker;
+    if (hijacker?.active) {
+      const dist = Math.hypot((hijacker.x || 0) - x, (hijacker.y || 0) - y);
+      if (dist <= radius + (hijacker.radius || 18)) {
+        const destroyed = hijacker.takeDamage(damage);
+        this.particleManager?.createHitSpark(hijacker.x, hijacker.y, 0xffaa00);
+        if (destroyed) this.particleManager?.createExplosion(hijacker.x, hijacker.y, 0xff9900);
+      }
+    }
+
+    console.log(`[BombPowerup] detonated reason=${reason} x=${Math.round(x)} y=${Math.round(y)} radius=${Math.round(radius)}`);
+    return true;
+  }
+
   checkCollisions() {
     const { width, height } = this.game.app.screen;
 
@@ -1497,65 +1755,7 @@ export class PlayScene {
     const detonationY = screenHeight * 0.45; // Detonate at 45% of screen height
     this.bulletManager.playerBullets.forEach(bullet => {
       if (bullet.active && bullet.isBomb && bullet.y <= detonationY) {
-        // Detonate bomb
-        bullet.active = false;
-
-        // Visual explosion
-        if (this.particleManager) {
-          for (let i = 0; i < 10; i++) {
-            const angle = (Math.PI * 2 * i) / 10;
-            const distance = Math.random() * bullet.blastRadius;
-            this.particleManager.createExplosion(
-              bullet.x + Math.cos(angle) * distance,
-              bullet.y + Math.sin(angle) * distance,
-              0xff3300
-            );
-          }
-          // Center explosion
-          this.particleManager.createExplosion(bullet.x, bullet.y, 0xffff00);
-        }
-
-        // Screen shake
-        if (this.screenShake) {
-          this.screenShake.shake(15, 30);
-        }
-
-        // Explosion sound
-        AudioManager.playSfx('explosion', { force: true, volume: 1.0 });
-
-        // Damage all enemies in blast radius
-        this.enemyManager.enemies.forEach(enemy => {
-          if (enemy.active) {
-            const dx = enemy.x - bullet.x;
-            const dy = enemy.y - bullet.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < bullet.blastRadius) {
-              const destroyed = enemy.takeDamage(bullet.damage);
-              if (destroyed) {
-                this.game.addScore(enemy.scoreValue);
-                if (this.particleManager) {
-                  this.particleManager.createExplosion(enemy.x, enemy.y, 0xff6600);
-                }
-              }
-            }
-          }
-        });
-
-        // Also damage hijacker if active
-        if (this.enemyManager.hijacker && this.enemyManager.hijacker.active) {
-          const hijacker = this.enemyManager.hijacker;
-          const dx = hijacker.x - bullet.x;
-          const dy = hijacker.y - bullet.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < bullet.blastRadius) {
-            const destroyed = hijacker.takeDamage(bullet.damage);
-            if (destroyed) {
-              if (this.particleManager) {
-                this.particleManager.createExplosion(hijacker.x, hijacker.y, 0xff9900);
-              }
-            }
-          }
-        }
+        this.detonateBombBullet(bullet, 'apex');
       }
     });
 
@@ -1563,7 +1763,12 @@ export class PlayScene {
     this.bulletManager.playerBullets.forEach(bullet => {
       if (bullet.active) {
         this.enemyManager.enemies.forEach(enemy => {
+          if (!bullet.active) return;
           if (enemy.active && this.checkCollision(bullet, enemy)) {
+            if (bullet.isBomb) {
+              this.detonateBombBullet(bullet, 'impact');
+              return;
+            }
             if (!bullet.piercing) bullet.active = false;
             const destroyed = enemy.takeDamage(bullet.damage);
 
@@ -1605,6 +1810,10 @@ export class PlayScene {
         if (bullet.active) {
           const hijacker = this.enemyManager.hijacker;
           if (this.checkCollision(bullet, hijacker)) {
+            if (bullet.isBomb) {
+              this.detonateBombBullet(bullet, 'hijacker_impact');
+              return;
+            }
             if (!bullet.piercing) bullet.active = false;
             const destroyed = hijacker.takeDamage(bullet.damage);
 
@@ -1681,6 +1890,14 @@ export class PlayScene {
           if (this.player.isGhostActive?.()) return;
 
           bullet.active = false;
+          if (this.isBossOwnedBullet(bullet)) {
+            this.handleBossCausedPlayerHit('boss_bullet', this.enemyManager?.boss, {
+              balanceSource: `boss_bullet:${bullet.sourceFireStyle || bullet.weaponProfileId || 'unknown'}`,
+              shieldShake: 4
+            });
+            return;
+          }
+
           if (!this.player.invulnerable) {
             const damageTaken = this.player.takeDamage();
             if (damageTaken) {
@@ -1767,19 +1984,10 @@ export class PlayScene {
 
           const isBossContact = enemy.kind === 'boss';
           if (isBossContact) {
-            if (!this.player.invulnerable) {
-              const damageTaken = this.player.takeDamage();
-              if (damageTaken) {
-                this.recordBalanceDamage('boss_contact');
-                this.lastHitAt = Date.now();
-                this.game.loseLife();
-                this.triggerPlayerDeathFeedback();
-              } else {
-                this.screenShake.shake(4);
-                this.particleManager.createHitSpark(this.player.x, this.player.y);
-              }
-              this.particleManager.createHitSpark(this.player.x, this.player.y);
-            }
+            this.handleBossCausedPlayerHit('boss_contact', enemy, {
+              balanceSource: 'boss_contact',
+              shieldShake: 4
+            });
             return;
           }
 
@@ -2018,6 +2226,22 @@ export class PlayScene {
     }
   }
 
+  async loadOverrunSealTexture() {
+    const src = AssetManifest.generated?.vfx?.overrunVictorySeal;
+    if (!src) return;
+    try {
+      const texture = await PIXI.Assets.load({
+        alias: 'generated_overrun_victory_seal',
+        src
+      });
+      if (GameAssets.isValidTexture(texture)) {
+        this.overrunSealTexture = texture;
+      }
+    } catch (error) {
+      console.warn('[PlayScene] Overrun victory seal art failed to load:', error);
+    }
+  }
+
   applyGameplayBackdropLevel(level = 1) {
     const stormActive = level >= 3;
     const bossActive = level % 5 === 0 || this.enemyManager?.state === 'BOSS' || this.enemyManager?.boss?.active;
@@ -2147,6 +2371,7 @@ export class PlayScene {
   destroy() {
     this.flushBalanceDebugSummary('scene_destroy');
     this.closeSettingsOverlay();
+    this.removeAutoPauseHandlers();
     this.shipIntroToken += 1;
 
     if (this.levelAdvanceTimeout) {
@@ -2243,6 +2468,53 @@ export class PlayScene {
       this.hidePauseOverlay();
       AudioManager.setPauseDucked(false);
       AudioManager.playSfx('pause_out', { force: true, volume: 0.34 });
+    }
+  }
+
+  setupAutoPauseHandlers() {
+    if (this.autoPauseHandlersInstalled || typeof window === 'undefined') return;
+    this.visibilityPauseHandler = () => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        this.pauseForExternalInterruption('visibility_hidden');
+      }
+    };
+    this.blurPauseHandler = () => this.pauseForExternalInterruption('window_blur');
+    if (typeof document !== 'undefined') {
+      document.addEventListener?.('visibilitychange', this.visibilityPauseHandler);
+    }
+    window.addEventListener('blur', this.blurPauseHandler);
+    this.autoPauseHandlersInstalled = true;
+  }
+
+  removeAutoPauseHandlers() {
+    if (!this.autoPauseHandlersInstalled) return;
+    if (typeof document !== 'undefined') {
+      document.removeEventListener?.('visibilitychange', this.visibilityPauseHandler);
+    }
+    window.removeEventListener('blur', this.blurPauseHandler);
+    this.visibilityPauseHandler = null;
+    this.blurPauseHandler = null;
+    this.autoPauseHandlersInstalled = false;
+  }
+
+  pauseForExternalInterruption(reason = 'external_interruption') {
+    if (this.controlSmokeMode) return;
+    if (this.game?.currentScene !== this || !this.isReady || this.isPaused || (this.game?.lives || 0) <= 0) return;
+    this.pauseReason = reason;
+    this.setPaused(true);
+  }
+
+  updateControllerPresencePause() {
+    const state = this.inputManager?.getGamepadState?.();
+    const connected = Boolean(state?.connected);
+    if (connected) {
+      this.hadGameplayGamepadConnection = true;
+      this.lastGameplayGamepadConnected = true;
+      return;
+    }
+    if (this.hadGameplayGamepadConnection && this.lastGameplayGamepadConnected) {
+      this.lastGameplayGamepadConnected = false;
+      this.pauseForExternalInterruption('controller_disconnected');
     }
   }
 
@@ -2443,17 +2715,11 @@ export class PlayScene {
   resetRandomTimers() {
     this.achievementTimer = 0;
     this.tauntTimer = 0;
-    this.storyTransmissionTimer = this.getRandomTimer(18000, 26000);
+    this.storyTransmissionTimer = 0;
   }
 
   updateRandomPopups(delta) {
-    if (this.storyTransmissionTimer > 0) {
-      this.storyTransmissionTimer -= delta * 16.67;
-      return;
-    }
-
-    const shown = this.showStoryTransmission();
-    this.storyTransmissionTimer = shown ? this.getRandomTimer(16000, 24000) : this.getRandomTimer(3500, 6500);
+    if (this.storyTransmissionTimer > 0) this.storyTransmissionTimer -= delta * 16.67;
   }
 
   queueStoryTransmission(delayMs = 2600) {
@@ -2463,6 +2729,11 @@ export class PlayScene {
   }
 
   showStoryTransmission({ force = false } = {}) {
+    if (this.triggerCabinetLog('codex-discovery', {
+      name: translateText('Cabinet Log')
+    }, { force, debug: true })) {
+      return true;
+    }
     const transmission = getStoryTransmission(this.game.level);
     if (!transmission?.line) return false;
     if (!force && this.shownStoryTransmissionIds.has(transmission.id)) return false;
@@ -2483,6 +2754,60 @@ export class PlayScene {
     if (!shown) return false;
     this.shownStoryTransmissionIds.add(transmission.id);
     this.lastStoryTransmissionId = transmission.id;
+    return true;
+  }
+
+  triggerCabinetLog(id, context = {}, options = {}) {
+    if (!id) return false;
+    if (!options.force && this.shownCabinetLogIds.has(id)) return false;
+    if (!options.force && !this.canShowLore()) return false;
+
+    const entry = getCabinetLogEntry(id, {
+      level: this.game?.level || 1,
+      score: this.game?.score || 0,
+      streak: this.dangerDodgeCount || 0,
+      ship: this.player?.shipName || this.player?.shipTrait?.label || 'SHIP',
+      ...context
+    });
+    if (!entry?.line) return false;
+
+    let appliedBonus = 0;
+    const discovery = this.recordThreatDiscovery(entry.id, 'cabinetLogs', {
+      name: entry.title,
+      label: entry.title,
+      role: entry.role || translateText('Cabinet Log'),
+      description: entry.description,
+      tip: entry.tip,
+      line: entry.line,
+      sector: this.game?.level || 1,
+      source: context.source || id
+    }, { silent: true });
+    if (discovery?.isNew && Number.isFinite(discovery.appliedBonus)) {
+      appliedBonus = discovery.appliedBonus;
+    }
+
+    const archiveLine = appliedBonus > 0
+      ? `\n${translateText('CABINET LOG ARCHIVED')} +${appliedBonus}`
+      : '';
+    const shown = this.showLoreBanner(`${entry.line}${archiveLine}`, {
+      title: entry.title || translateText('CABINET LOG'),
+      imageAlias: entry.imageAlias,
+      force: options.force,
+      accent: entry.accent,
+      duration: options.duration || (appliedBonus > 0 ? 4200 : 3600),
+      maxWidth: this.game.getWidth() < 620
+        ? this.game.getWidth() * 0.82
+        : Math.min(460, this.game.getWidth() * 0.38)
+    });
+    if (!shown) return false;
+    this.shownCabinetLogIds.add(id);
+    this.lastCabinetLog = {
+      id,
+      title: entry.title,
+      line: entry.line,
+      archived: Boolean(discovery?.isNew),
+      appliedBonus
+    };
     return true;
   }
 
@@ -2549,6 +2874,8 @@ export class PlayScene {
   }
 
   onLifeLost() {
+    this.damageTakenThisWave = (Number(this.damageTakenThisWave) || 0) + 1;
+    this.damageTakenThisSector = (Number(this.damageTakenThisSector) || 0) + 1;
     this.recordBalanceLifeLost();
     this.player?.clearStatusEffects?.('life_lost');
     if (this.tryLastStandRepair()) return;
@@ -2557,11 +2884,16 @@ export class PlayScene {
     }
 
     this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
+    if (this.game.lives === 1) {
+      this.triggerCabinetLog('low-life-read', {
+        source: 'one_life_left'
+      });
+    }
 
     // RESPONDER LOGIC
     if (this.player && this.game.lives > 0) {
       this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
-      this.player.invulnerableTime = RESPAWN_INVULNERABILITY_MS;
+      this.player.grantInvulnerability?.(RESPAWN_INVULNERABILITY_MS, 'respawn');
       this.recordBalanceRespawn();
       const clearedHazards = this.clearRespawnHazards('life_lost');
       if (clearedHazards > 0) {
@@ -2623,6 +2955,225 @@ export class PlayScene {
     return true;
   }
 
+  getBossMercyCooldownMs(level = this.game?.level || 1) {
+    const config = BalanceConfig.bossMercy || {};
+    if (config.enabled !== true) return 0;
+
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const maxProtectedLevel = Math.max(1, Math.floor(Number(config.maxProtectedLevel) || 10));
+    const earlyCooldownMs = Math.max(0, Number(config.earlyCooldownMs) || 7000);
+    const lateCooldownMs = Math.max(0, Number(config.lateCooldownMs) || 5000);
+    const minimumCooldownMs = Math.max(0, Number(config.minimumCooldownMs) || 2500);
+    const levelReductionMs = Math.max(0, Number(config.levelReductionMs) || 250);
+
+    if (safeLevel <= maxProtectedLevel) {
+      return Math.max(lateCooldownMs, earlyCooldownMs - (safeLevel - 1) * levelReductionMs);
+    }
+    return Math.max(minimumCooldownMs, lateCooldownMs - (safeLevel - maxProtectedLevel) * levelReductionMs);
+  }
+
+  canBossCauseLifeLoss(source = 'boss_damage', boss = this.enemyManager?.boss) {
+    const config = BalanceConfig.bossMercy || {};
+    if (config.enabled !== true) return true;
+    const now = Date.now();
+    const remainingMs = Math.max(0, (this.bossMercyUntilMs || 0) - now);
+    if (remainingMs <= 0) return true;
+
+    const feedbackCooldownMs = Math.max(0, Number(config.blockedHitFeedbackCooldownMs) || 600);
+    if (now - (this.lastBossMercyBlockLogAt || 0) >= feedbackCooldownMs) {
+      this.lastBossMercyBlockLogAt = now;
+      console.log(`[BossMercy] block source=${source} level=${Number(boss?.level) || Number(this.game?.level) || 1} remainingMs=${Math.round(remainingMs)}`);
+    }
+    this.showBossMercyBlockedFeedback(source);
+    return false;
+  }
+
+  startBossMercyWindow(source = 'boss_damage', boss = this.enemyManager?.boss, cooldownMs = this.getBossMercyCooldownMs(boss?.level || this.game?.level || 1)) {
+    const duration = Math.max(0, Number(cooldownMs) || 0);
+    if (duration <= 0) return 0;
+    const now = Date.now();
+    this.bossMercyUntilMs = Math.max(this.bossMercyUntilMs || 0, now + duration);
+    const level = Number(boss?.level) || Number(this.game?.level) || 1;
+    console.log(`[BossMercy] trigger source=${source} level=${level} cooldownMs=${Math.round(duration)}`);
+    return duration;
+  }
+
+  applyBossRecoverySeparation(boss = this.enemyManager?.boss) {
+    if (!this.player || !boss || !this.game) return false;
+    const config = BalanceConfig.bossMercy || {};
+    const pushback = Math.max(0, Number(config.contactPushbackPx) || 72);
+    const width = this.game.getWidth ? this.game.getWidth() : this.game.app.screen.width;
+    const height = this.game.getHeight ? this.game.getHeight() : this.game.app.screen.height;
+    const margin = Math.max(24, (this.player.radius || 12) + 12);
+    let dx = this.player.x - boss.x;
+    const baseDy = this.player.y - boss.y;
+    let dy = baseDy + 0.85 * Math.max(1, Math.abs(dx) + Math.abs(baseDy));
+    let length = Math.hypot(dx, dy);
+    if (!Number.isFinite(length) || length < 0.01) {
+      dx = 0;
+      dy = 1;
+      length = 1;
+    }
+    const nx = dx / length;
+    const ny = dy / length;
+    const targetX = Math.max(margin, Math.min(width - margin, this.player.x + nx * pushback));
+    const targetY = Math.max(margin, Math.min(height - margin, this.player.y + ny * pushback));
+    this.player.x = targetX;
+    this.player.y = targetY;
+    this.player.sprite.x = targetX;
+    this.player.sprite.y = targetY;
+    this.particleManager?.createHitSpark(targetX, targetY, boss.color || 0xfff45c);
+    return true;
+  }
+
+  showBossMercyBlockedFeedback(source = 'boss_damage') {
+    const config = BalanceConfig.bossMercy || {};
+    const cooldownMs = Math.max(0, Number(config.blockedHitFeedbackCooldownMs) || 600);
+    const now = Date.now();
+    if (now - (this.lastBossMercyFeedbackAt || 0) < cooldownMs) return false;
+    this.lastBossMercyFeedbackAt = now;
+    this.enqueueToast(translateText('RECOVERING'), {
+      fontSize: this.game.getWidth() < 620 ? 13 : 15,
+      fill: '#8fffd5',
+      stroke: '#001616',
+      strokeThickness: 2,
+      duration: 520,
+      slot: 'corner',
+      type: 'repair',
+      priority: 1
+    });
+    if (source === 'boss_contact') this.screenShake?.shake(2, 8);
+    return true;
+  }
+
+  handleBossCausedPlayerHit(source, boss = this.enemyManager?.boss, options = {}) {
+    if (!this.player?.active || this.player.isGhostActive?.()) return false;
+    if (!this.canBossCauseLifeLoss(source, boss)) {
+      this.particleManager?.createHitSpark(this.player.x, this.player.y, boss?.color || 0x8fffd5);
+      return false;
+    }
+    if (this.player.invulnerable) {
+      this.showBossMercyBlockedFeedback(source);
+      return false;
+    }
+
+    const damageTaken = this.player.takeDamage();
+    if (!damageTaken) {
+      this.screenShake?.shake(options.shieldShake || 4);
+      this.particleManager?.createHitSpark(this.player.x, this.player.y, boss?.color || 0x8fffd5);
+      return false;
+    }
+
+    const cooldownMs = this.startBossMercyWindow(source, boss);
+    this.player.grantInvulnerability?.(cooldownMs, 'boss_mercy');
+    if (source === 'boss_contact') this.applyBossRecoverySeparation(boss);
+    this.triggerCabinetLog('boss-mercy-read', {
+      source: 'boss_mercy'
+    });
+    this.recordBalanceDamage(options.balanceSource || source);
+    this.lastHitAt = Date.now();
+    this.game.loseLife();
+    this.triggerPlayerDeathFeedback();
+    return true;
+  }
+
+  isBossOwnedBullet(bullet) {
+    return bullet?.sourceEnemyType === 'boss' || bullet?.visualConfig?.sourceEnemyType === 'boss';
+  }
+
+  getMaxLives() {
+    return Math.max(1, Number(BalanceConfig.survival?.maxLives) || MAX_PLAYER_LIVES);
+  }
+
+  onLifeGained(lives, context = {}) {
+    const maxLives = Math.max(1, Number(context.maxLives) || this.getMaxLives());
+    const before = Number.isFinite(context.before) ? context.before : maxLives - 1;
+    const currentLives = Number.isFinite(lives) ? lives : Number(this.game?.lives) || 0;
+    if (currentLives >= maxLives && before < maxLives) {
+      this.showMaxLivesNotification({ maxLives });
+    }
+  }
+
+  showMaxLivesNotification({ maxLives = this.getMaxLives() } = {}) {
+    const compactHud = this.game.getWidth() < 620;
+    this.enqueueToast(translateText('MAX LIVES REACHED!'), {
+      fontSize: compactHud ? 21 : 34,
+      fill: '#7dffcc',
+      stroke: '#001616',
+      strokeThickness: compactHud ? 4 : 5,
+      duration: 2800,
+      slot: 'top',
+      type: 'repair',
+      priority: 6,
+      y: this.game.getHeight() * (compactHud ? 0.26 : 0.2),
+      maxWidth: this.game.getWidth() * (compactHud ? 0.9 : 0.7)
+    });
+    this.spawnMaxLivesVfx();
+    this.screenShake?.smallShake?.();
+    AudioManager.playSfx('achievement', { force: true, volume: 1.0, minIntervalMs: 250 });
+
+    const now = Date.now();
+    if (now - this.lastMaxLivesVoiceAt > 30000) {
+      this.lastMaxLivesVoiceAt = now;
+      AudioManager.playVoice('mission_control_lives_max', {
+        force: true,
+        bypassGlobalCooldown: true,
+        stopOtherVoices: true,
+        cooldownMs: 30000,
+        duckMs: 2600,
+        duckFactor: 0.28,
+        volume: 1.75
+      });
+    }
+    this.triggerCabinetLog('max-lives-read', {
+      source: 'max_lives'
+    });
+    console.log(`[Lives] max_reached lives=${maxLives}`);
+  }
+
+  spawnMaxLivesVfx() {
+    if (!this.player || !this.gameContainer || !this.game?.app?.ticker) return;
+
+    const burst = new PIXI.Container();
+    burst.x = this.player.x;
+    burst.y = this.player.y;
+    burst.zIndex = 9000;
+
+    const rings = [0, 1, 2, 3].map((index) => {
+      const ring = new PIXI.Graphics();
+      ring.__delay = index * 120;
+      burst.addChild(ring);
+      return ring;
+    });
+    this.gameContainer.addChild(burst);
+
+    let elapsed = 0;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      burst.x = this.player?.x ?? burst.x;
+      burst.y = this.player?.y ?? burst.y;
+      rings.forEach((ring, index) => {
+        const t = Math.max(0, Math.min(1, (elapsed - ring.__delay) / 900));
+        ring.clear();
+        if (t <= 0 || t >= 1) return;
+        const radius = 24 + t * (72 + index * 14);
+        ring.circle(0, 0, radius);
+        ring.stroke({
+          color: index % 2 === 1 ? 0xffffff : 0x7dffcc,
+          width: 4 - t * 2,
+          alpha: 0.92 * (1 - t)
+        });
+      });
+
+      if (elapsed >= 1480) {
+        this.game.app.ticker.remove(ticker);
+        if (burst.parent) burst.parent.removeChild(burst);
+      }
+    };
+    this.game.app.ticker.add(ticker);
+    AudioManager.playSfx('life_up', { force: true, volume: 1.0, minIntervalMs: 250 });
+  }
+
   tryLastStandRepair() {
     if (BalanceConfig.survival?.lastStandRepairEnabled !== true) return false;
     if (!this.player || this.game.lives > 0) return false;
@@ -2633,7 +3184,7 @@ export class PlayScene {
     this.game.lives = 2;
     this.lowLivesShownFor = null;
     this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
-    this.player.invulnerableTime = RESPAWN_INVULNERABILITY_MS;
+    this.player.grantInvulnerability?.(RESPAWN_INVULNERABILITY_MS, 'last_stand');
     this.recordBalanceRespawn();
     const clearedHazards = this.clearRespawnHazards('last_stand');
     const compactHud = this.game.getWidth() < 620;
@@ -2793,15 +3344,22 @@ export class PlayScene {
   applyLifeRepair(targetLives = 3, invulnerabilityMs = 3000) {
     const before = Number.isFinite(this.game?.lives) ? this.game.lives : 0;
     if (before <= 0) return 0;
-    const target = Math.max(before, Math.min(5, Math.round(targetLives)));
+    const maxLives = this.getMaxLives();
+    const target = Math.max(before, Math.min(maxLives, Math.round(targetLives)));
     if (target <= before) return 0;
 
     this.game.lives = target;
     this.lowLivesShownFor = null;
+    this.onLifeGained(target, {
+      before,
+      after: target,
+      maxLives,
+      source: 'life_repair',
+      reachedMax: target >= maxLives
+    });
 
     if (this.player) {
-      this.player.invulnerable = true;
-      this.player.invulnerableTime = Math.max(this.player.invulnerableTime || 0, invulnerabilityMs);
+      this.player.grantInvulnerability?.(invulnerabilityMs, 'life_repair');
     }
 
     AudioManager.playSfx('powerup', { force: true, volume: 0.72, minIntervalMs: 250 });
@@ -2810,20 +3368,28 @@ export class PlayScene {
 
   applyBossClearRecovery(level = this.game?.level || 1) {
     const rewardConfig = BalanceConfig.rewards || {};
+    const sustainConfig = RunPacingConfig.sustain || {};
     const repairLives = Math.max(0, Number(rewardConfig.bossClearRepairLives) || 0);
-    const maxLives = Math.max(1, Number(rewardConfig.bossClearRepairMaxLives) || 5);
+    const maxLives = Math.min(
+      Math.max(1, Number(rewardConfig.bossClearRepairMaxLives) || this.getMaxLives()),
+      Math.max(1, Number(sustainConfig.bossRepairMaxLives) || 3)
+    );
     const levelKey = Number(level) || Number(this.game?.level) || 1;
     if (repairLives <= 0 || this.bossClearRecoveryLevels.has(levelKey)) return 0;
 
     this.bossClearRecoveryLevels.add(levelKey);
     const before = Number.isFinite(this.game?.lives) ? this.game.lives : 0;
+    if (before > (Number(sustainConfig.bossRepairOnlyAtOrBelowLives) || 1)) return 0;
+    if ((Number(this.repairsGrantedThisRun) || 0) >= (Number(sustainConfig.controlledRecoveryMaxPerRun) || 1)) return 0;
     if (before <= 0 || before >= maxLives) return 0;
 
     const targetLives = Math.min(maxLives, before + repairLives);
-    return this.applyLifeRepair(
+    const applied = this.applyLifeRepair(
       targetLives,
       rewardConfig.bossClearRepairInvulnerabilityMs || RESPAWN_INVULNERABILITY_MS
     );
+    if (applied > 0) this.repairsGrantedThisRun = (Number(this.repairsGrantedThisRun) || 0) + applied;
+    return applied;
   }
 
   triggerTractorHijack({ x, y } = {}) {
@@ -3356,7 +3922,6 @@ export class PlayScene {
   isPlayerInsideBossHazard(hazard) {
     if (!this.player?.active) return false;
     if (this.player.isGhostActive?.()) return false;
-    if (this.player.invulnerable) return false;
 
     const playerRadius = this.player.radius || 12;
     if (hazard.kind === 'wall') {
@@ -3385,8 +3950,7 @@ export class PlayScene {
   }
 
   damagePlayerFromBossHazard(hazard) {
-    if (!this.player || this.player.invulnerable) return false;
-    const damageTaken = this.player.takeDamage();
+    if (!this.player) return false;
     this.lastBossHazardHit = {
       type: hazard.type,
       kind: hazard.kind,
@@ -3396,11 +3960,12 @@ export class PlayScene {
       playerY: Math.round(this.player.y)
     };
 
+    const damageTaken = this.handleBossCausedPlayerHit('boss_hazard', this.enemyManager?.boss, {
+      balanceSource: `boss_hazard:${hazard.category || 'unknown'}:${hazard.type || hazard.kind || 'unknown'}`,
+      shieldShake: 4
+    });
+
     if (damageTaken) {
-      this.recordBalanceDamage(`boss_hazard:${hazard.category || 'unknown'}:${hazard.type || hazard.kind || 'unknown'}`);
-      this.lastHitAt = Date.now();
-      this.game.loseLife();
-      this.triggerPlayerDeathFeedback();
       this.screenShake?.shake(7, 18);
       AudioManager.playSfx('boss_hazard_impact', { volume: 0.62, minIntervalMs: 180 });
     } else {
@@ -3409,17 +3974,19 @@ export class PlayScene {
       AudioManager.playSfx('boss_hazard_impact', { volume: 0.34, minIntervalMs: 180 });
     }
 
-    this.particleManager?.createHitSpark(this.player.x, this.player.y, hazard.color || 0xfff45c);
-    this.showToast('BOSS WEAPON HIT', {
-      fontSize: this.game.getWidth() < 620 ? 16 : 18,
-      fill: '#ff6b7a',
-      stroke: '#140006',
-      strokeThickness: 2,
-      duration: 720,
-      slot: 'corner',
-      type: 'boss_hazard',
-      priority: 2
-    });
+    if (damageTaken) {
+      this.particleManager?.createHitSpark(this.player.x, this.player.y, hazard.color || 0xfff45c);
+      this.showToast('BOSS WEAPON HIT', {
+        fontSize: this.game.getWidth() < 620 ? 16 : 18,
+        fill: '#ff6b7a',
+        stroke: '#140006',
+        strokeThickness: 2,
+        duration: 720,
+        slot: 'corner',
+        type: 'boss_hazard',
+        priority: 2
+      });
+    }
     return damageTaken;
   }
 
@@ -3516,12 +4083,174 @@ export class PlayScene {
     console.log(`[Powerup] pickup type=SCORE_X2 durationMs=${durationMs} source=${source}`);
   }
 
+  triggerOverrunClearCelebration({ nextSector = (this.game?.level || 10) + 1 } = {}) {
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const centerX = width * 0.5;
+    const centerY = height * (width < 620 ? 0.36 : 0.42);
+    const container = new PIXI.Container();
+    container.zIndex = 9600 + this.overrunClearEffects.length;
+    container.sortableChildren = true;
+    container.blendMode = 'add';
+
+    const flash = new PIXI.Graphics();
+    flash.zIndex = 0;
+    container.addChild(flash);
+
+    const rays = new PIXI.Graphics();
+    rays.zIndex = 2;
+    container.addChild(rays);
+
+    const sealTexture = this.overrunSealTexture;
+    let seal = null;
+    if (sealTexture && GameAssets.isValidTexture(sealTexture)) {
+      seal = new PIXI.Sprite(sealTexture);
+      seal.anchor.set(0.5);
+      seal.x = centerX;
+      seal.y = centerY;
+      seal.alpha = 0;
+      seal.blendMode = 'add';
+      seal.zIndex = 1;
+      container.addChild(seal);
+    }
+
+    const rings = new PIXI.Graphics();
+    rings.zIndex = 3;
+    container.addChild(rings);
+
+    const shards = Array.from({ length: width < 620 ? 28 : 46 }, (_, index) => ({
+      angle: (Math.PI * 2 * index) / (width < 620 ? 28 : 46) + Math.random() * 0.16,
+      speed: 0.72 + Math.random() * 0.55,
+      size: 4 + Math.random() * 10,
+      drift: Math.random() * 0.9,
+      color: Math.random() < 0.5 ? 0xffd15c : 0x61f6ff
+    }));
+
+    const effect = {
+      startedAt: Date.now(),
+      durationMs: OVERRUN_CLEAR_VFX_MS,
+      centerX,
+      centerY,
+      nextSector,
+      container,
+      flash,
+      rays,
+      rings,
+      seal,
+      shards
+    };
+    this.overrunClearLayer?.addChild(container);
+    this.overrunClearEffects.push(effect);
+
+    this.screenShake?.shake(width < 620 ? 16 : 24, width < 620 ? 24 : 34);
+    AudioManager.duckMusic?.(0.28, 4300);
+    AudioManager.playSfx('overrun_clear_shockwave', { force: true, volume: 1.0, minIntervalMs: 0 });
+    AudioManager.playSfx('overrun_clear_coronation', { force: true, volume: 1.0, minIntervalMs: 0 });
+    setTimeout(() => {
+      if (this.game?.currentScene !== this) return;
+      AudioManager.playVoice('mission_control_overrun_clear', {
+        force: true,
+        stopOtherVoices: true,
+        exclusiveGroup: 'announcer',
+        bypassEventCooldown: true,
+        bypassGlobalCooldown: true,
+        cooldownMs: 60000,
+        duckFactor: 0.28,
+        duckMs: 4200,
+        volume: 1.08
+      });
+    }, 520);
+  }
+
+  updateOverrunClearCelebrations() {
+    if (!this.overrunClearEffects?.length) return;
+    const now = Date.now();
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+
+    this.overrunClearEffects = this.overrunClearEffects.filter((effect) => {
+      const elapsed = now - effect.startedAt;
+      const progress = Math.max(0, Math.min(1, elapsed / effect.durationMs));
+      if (progress >= 1) {
+        effect.container?.parent?.removeChild(effect.container);
+        effect.container?.destroy?.({ children: true });
+        return false;
+      }
+
+      const burst = 1 - Math.pow(1 - Math.min(1, progress * 2.2), 3);
+      const fade = Math.sin(progress * Math.PI);
+      const lateFade = Math.max(0, 1 - Math.max(0, progress - 0.72) / 0.28);
+      const pulse = 1 + Math.sin(now * 0.012) * 0.025;
+      const maxRadius = Math.hypot(width, height) * 0.68;
+
+      effect.flash.clear();
+      const flashAlpha = Math.max(0, (1 - progress * 5.8) * 0.34);
+      if (flashAlpha > 0) {
+        effect.flash.rect(0, 0, width, height);
+        effect.flash.fill({ color: 0xfff2a6, alpha: flashAlpha });
+      }
+
+      if (effect.seal) {
+        const baseScale = Math.min(width, height) / 1024;
+        const introScale = 0.18 + burst * 0.82;
+        effect.seal.x = effect.centerX;
+        effect.seal.y = effect.centerY;
+        effect.seal.scale.set(baseScale * introScale * (1.08 + Math.sin(now * 0.006) * 0.025));
+        effect.seal.rotation = -0.1 + progress * 0.34;
+        effect.seal.alpha = Math.min(0.82, burst * 0.9) * lateFade;
+      }
+
+      effect.rays.clear();
+      effect.rings.clear();
+
+      for (let i = 0; i < 4; i += 1) {
+        const local = (progress * 1.7 + i * 0.22) % 1;
+        const radius = 48 + local * maxRadius;
+        const alpha = Math.max(0, 1 - local) * 0.34 * lateFade;
+        effect.rings.circle(effect.centerX, effect.centerY, radius * pulse);
+        effect.rings.stroke({ color: i % 2 ? 0x61f6ff : 0xffd15c, width: 4 - i * 0.55, alpha });
+      }
+
+      for (let i = 0; i < 24; i += 1) {
+        const angle = (Math.PI * 2 * i) / 24 + progress * 0.32;
+        const inner = 34 + burst * 70;
+        const outer = inner + maxRadius * (0.36 + Math.sin(i + now * 0.004) * 0.04);
+        const alpha = (0.1 + 0.16 * Math.sin(progress * Math.PI)) * lateFade;
+        effect.rays.moveTo(effect.centerX + Math.cos(angle) * inner, effect.centerY + Math.sin(angle) * inner);
+        effect.rays.lineTo(effect.centerX + Math.cos(angle) * outer, effect.centerY + Math.sin(angle) * outer);
+        effect.rays.stroke({ color: i % 3 === 0 ? 0xffffff : (i % 2 ? 0x61f6ff : 0xffd15c), width: i % 3 === 0 ? 2.2 : 1.3, alpha });
+      }
+
+      for (const shard of effect.shards) {
+        const t = Math.min(1, progress * shard.speed);
+        const distance = 70 + t * Math.min(width, height) * (0.42 + shard.drift * 0.25);
+        const spin = now * 0.004 + shard.drift * 3;
+        const x = effect.centerX + Math.cos(shard.angle) * distance;
+        const y = effect.centerY + Math.sin(shard.angle) * distance;
+        const dx = Math.cos(shard.angle + Math.PI * 0.5 + spin) * shard.size;
+        const dy = Math.sin(shard.angle + Math.PI * 0.5 + spin) * shard.size;
+        effect.rays.moveTo(x - dx, y - dy);
+        effect.rays.lineTo(x + dx, y + dy);
+        effect.rays.stroke({ color: shard.color, width: 2.5, alpha: Math.max(0, (1 - t) * 0.78) * lateFade });
+      }
+
+      const coreRadius = 18 + burst * 92 + Math.sin(now * 0.018) * 5;
+      effect.rings.circle(effect.centerX, effect.centerY, coreRadius);
+      effect.rings.fill({ color: 0xffffff, alpha: 0.08 * fade });
+      effect.rings.circle(effect.centerX, effect.centerY, coreRadius * 1.34);
+      effect.rings.stroke({ color: 0xfff2a6, width: 6, alpha: 0.2 * fade * lateFade });
+
+      return true;
+    });
+  }
+
   enqueueToast(message, options = {}) {
     if (!message) return;
     const slot = options.slot || 'center';
     const type = options.type || 'generic';
     const priorityMap = {
       boss: 4,
+      run_clear: 5,
       level_clear: 3,
       rank_up: 3,
       repair: 2,
@@ -3666,9 +4395,43 @@ export class PlayScene {
         this.delayReadyToast(this.toastQueue, centerReady, 600, now);
       }
     }
+    const activeCenterMeta = this.activeCenterToast?.__toastMeta || null;
+    if (activeCenterMeta && this.isTransitionToastType(activeCenterMeta.type)) {
+      const centerPriority = activeCenterMeta.priority || 0;
+      if (topReady && (topReady.priority || 0) < centerPriority) {
+        this.delayReadyToast(this.toastTopQueue, topReady, 500, now);
+      }
+      const cornerReady = !this.activeCornerToast && now >= this.getToastSlotLockUntil('corner')
+        ? this.peekReadyToast(this.toastCornerQueue, now)
+        : null;
+      if (cornerReady && (cornerReady.priority || 0) < centerPriority) {
+        this.delayReadyToast(this.toastCornerQueue, cornerReady, 500, now);
+      }
+    }
     if (!this.activeCenterToast && now >= this.getToastSlotLockUntil('center') && this.toastQueue.length > 0) {
       const entry = this.dequeueReadyToast(this.toastQueue, now);
       if (entry) this.activeCenterToast = this.showToastNow(entry.message, entry.options, 'center');
+    }
+    const blockingCenterMeta = this.activeCenterToast?.__toastMeta || null;
+    if (blockingCenterMeta && this.isTransitionToastType(blockingCenterMeta.type)) {
+      const centerPriority = blockingCenterMeta.priority || 0;
+      this.dismissActiveToastSlotsBelowPriority(['top', 'corner'], centerPriority);
+      const delayedTop = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
+        ? this.peekReadyToast(this.toastTopQueue, now)
+        : null;
+      const delayedCorner = !this.activeCornerToast && now >= this.getToastSlotLockUntil('corner')
+        ? this.peekReadyToast(this.toastCornerQueue, now)
+        : null;
+      if (delayedTop && (delayedTop.priority || 0) < centerPriority) {
+        this.delayReadyToast(this.toastTopQueue, delayedTop, 500, now);
+      }
+      if (delayedCorner && (delayedCorner.priority || 0) < centerPriority) {
+        this.delayReadyToast(this.toastCornerQueue, delayedCorner, 500, now);
+      }
+      if ((delayedTop && (delayedTop.priority || 0) < centerPriority) ||
+        (delayedCorner && (delayedCorner.priority || 0) < centerPriority)) {
+        return;
+      }
     }
     if (!this.activeTopToast && now >= this.getToastSlotLockUntil('top') && this.toastTopQueue.length > 0) {
       const entry = this.dequeueReadyToast(this.toastTopQueue, now);
@@ -3692,7 +4455,11 @@ export class PlayScene {
 
   isTransitionToastEntry(entry) {
     const type = entry?.options?.type;
-    return type === 'level_clear' || type === 'level_up' || type === 'boss' || entry?.options?.transition === true;
+    return this.isTransitionToastType(type) || entry?.options?.transition === true;
+  }
+
+  isTransitionToastType(type) {
+    return type === 'level_clear' || type === 'level_up' || type === 'boss' || type === 'run_clear';
   }
 
   delayReadyToast(queue, entry, delayMs, now = Date.now()) {
@@ -3770,7 +4537,7 @@ export class PlayScene {
   showLoreBanner(text, options = {}) {
     if (!text) return false;
     if (!options.force && !this.canShowLore()) return false;
-    const duration = 2500 + Math.random() * 1000;
+    const duration = Number.isFinite(options.duration) ? options.duration : 2500 + Math.random() * 1000;
     const compactHud = this.game.getWidth() < 620;
     const y = compactHud
       ? Math.min(this.game.getHeight() - 170, Math.max(220, this.game.getHeight() * 0.32))
@@ -3786,7 +4553,9 @@ export class PlayScene {
       imageAlias: options.imageAlias || null,
       align: compactHud ? 'center' : 'right',
       y,
-      maxWidth: compactHud
+      maxWidth: Number.isFinite(options.maxWidth)
+        ? options.maxWidth
+        : compactHud
         ? this.game.getWidth() * 0.78
         : Math.min(360, this.game.getWidth() * 0.32)
     });
@@ -3845,7 +4614,7 @@ export class PlayScene {
       const paddingX = 24;
       const paddingY = 16;
       const minFontSize = 16;
-      const maxTextHeight = 80;
+      const maxTextHeight = options.type === 'lore' ? 106 : 80;
 
       const commsPortraits = Object.keys(GameAssets.commsPortraits || {});
       const requestedAvatar = options.imageAlias && GameAssets.isValidTexture(GameAssets.getCommsPortrait(options.imageAlias))
@@ -3882,7 +4651,7 @@ export class PlayScene {
       panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
       panel.fill({ color: options.type === 'lore' ? 0x05121c : 0x111111, alpha: options.type === 'lore' ? 0.78 : 0.88 });
       panel.stroke({
-        color: options.type === 'lore' ? 0x6fe7ff : 0xffff00,
+        color: options.type === 'lore' ? (options.accent || 0x6fe7ff) : 0xffff00,
         width: options.type === 'lore' ? 1.5 : 3,
         alpha: options.type === 'lore' ? 0.78 : 1
       });
@@ -4105,8 +4874,71 @@ export class PlayScene {
     this.synergyBadge.visible = true;
   }
 
+  recordThreatDiscovery(id, category, metadata = {}, options = {}) {
+    if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
+    const result = recordThreatSeen(id, category, metadata);
+    if (!result?.isNew) return result;
+
+    const bonus = category === 'runThemes'
+      ? RunPacingConfig.discovery.firstRunThemeBonus
+      : category === 'cabinetLogs'
+        ? (RunPacingConfig.discovery.cabinetLogBonus || RunPacingConfig.discovery.firstSeenBonus)
+        : RunPacingConfig.discovery.firstSeenBonus;
+    const appliedBonus = this.game.addScore(bonus, 'discoveryBonus');
+    this.discoveryBonus = (Number(this.discoveryBonus) || 0) + appliedBonus;
+    result.appliedBonus = appliedBonus;
+    if (category !== 'cabinetLogs') {
+      this.triggerCabinetLog('codex-discovery', {
+        name: metadata.name || metadata.label || id,
+        source: `codex:${category}`
+      });
+    }
+    if (options.silent) return result;
+    const label = String(metadata.name || metadata.label || id).replace(/_/g, ' ').toUpperCase();
+    this.enqueueToast(`${translateText('NEW THREAT SCANNED')}: ${label}\n${translateText('THREAT CODEX UPDATED')} +${appliedBonus}`, {
+      fontSize: this.game.getWidth() < 620 ? 14 : 17,
+      fill: '#7dffcc',
+      stroke: '#001616',
+      strokeThickness: 2,
+      slot: 'corner',
+      type: 'discovery',
+      duration: RunPacingConfig.discovery.toastDurationMs,
+      priority: 1,
+      maxWidth: this.game.getWidth() * (this.game.getWidth() < 620 ? 0.72 : 0.38)
+    });
+    return result;
+  }
+
+  recordThreatDefeat(id, category, metadata = {}) {
+    if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
+    const result = recordThreatDefeated(id, category, metadata);
+    if (result?.isFirstDefeat) {
+      const bonus = category === 'bosses'
+        ? RunPacingConfig.discovery.firstBossDefeatBonus
+        : RunPacingConfig.discovery.firstDefeatBonus;
+      const appliedBonus = this.game.addScore(bonus, category === 'bosses' ? 'bossBonus' : 'discoveryBonus');
+      if (category !== 'bosses') this.discoveryBonus = (Number(this.discoveryBonus) || 0) + appliedBonus;
+    }
+    return result;
+  }
+
   onEnemyKilled(enemy) {
     const now = Date.now();
+    if (enemy?.kind === 'boss') {
+      const bossId = enemy?.profile?.id || enemy?.bossType || `boss_${this.game.level}`;
+      this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
+      this.recordThreatDefeat(bossId, 'bosses', {
+        name: enemy?.profile?.name || enemy?.name || bossId,
+        role: enemy?.profile?.title || 'boss',
+        sector: this.game.level
+      });
+    } else {
+      this.recordThreatDefeat(enemy?.type, 'enemies', {
+        name: enemy?.generatedProfile?.displayName || enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || enemy?.type,
+        role: enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy',
+        sector: this.game.level
+      });
+    }
     this.recordBalanceKill(enemy);
     if (now - this.lastKillAt > this.comboWindowMs) {
       this.comboCount = 0;
@@ -4445,6 +5277,10 @@ export class PlayScene {
     if (this.dangerDodgeCount >= 3) {
       AudioManager.playSfx('combo_tick', { volume: 0.56 });
       this.armGrazeBreak();
+      this.triggerCabinetLog('near-miss-streak', {
+        streak: this.dangerDodgeCount,
+        source: 'near_miss_streak'
+      });
     }
   }
 
@@ -4499,6 +5335,9 @@ export class PlayScene {
       const appliedBonusScore = this.game.addScore(bonusScore);
       if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 12, appliedBonusScore);
       AudioManager.playSfx('trait_bonus_hit', { volume: 0.12, minIntervalMs: 650 });
+      this.triggerCabinetLog('bonus-trait-hit', {
+        source: 'trait_bonus_hit'
+      });
     }
 
     if (bullet.isTraitWingShot) {
@@ -4511,6 +5350,9 @@ export class PlayScene {
         this.lastTraitImpactToastAt = now;
         this.enqueueToast(`WING HIT +${appliedWingScore}`, { fontSize: 14, fill: '#66ff99', slot: 'top', type: 'trait', duration: 650 });
       }
+      this.triggerCabinetLog('wing-trait-hit', {
+        source: 'trait_wing_hit'
+      });
     }
   }
 
@@ -5150,13 +5992,27 @@ export class PlayScene {
 
   showBossIntro(name, taunt) {
     const { width, height } = this.game.app.screen;
+    const compact = width < 720;
+    const panelWidth = Math.max(300, Math.min(compact ? width - 36 : 540, width * 0.72));
+    const panelHeight = compact ? 154 : 148;
+    const fitText = (text, maxWidth, maxHeight, minScale = 0.68) => {
+      if (!text) return;
+      text.scale.set(1);
+      text.style.wordWrap = true;
+      text.style.wordWrapWidth = maxWidth;
+      text.style.align = 'center';
+      text.updateText?.(false);
+      const widthScale = maxWidth / Math.max(1, text.width || maxWidth);
+      const heightScale = maxHeight / Math.max(1, text.height || maxHeight);
+      text.scale.set(Math.max(minScale, Math.min(1, widthScale, heightScale)));
+    };
     const card = new PIXI.Container();
     card.x = width / 2;
     card.y = height * 0.28;
     card.alpha = 0;
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(-220, -70, 440, 140, 12);
+    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 12);
     panel.fill({ color: 0x111111, alpha: 0.9 });
     panel.stroke({ color: 0xff3300, width: 3 });
     card.addChild(panel);
@@ -5166,21 +6022,31 @@ export class PlayScene {
       fontSize: 26,
       fill: '#ff3300',
       stroke: '#000000',
-      strokeThickness: 4
+      strokeThickness: 4,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 38,
+      lineHeight: compact ? 25 : 29
     });
     title.anchor.set(0.5);
-    title.y = -18;
+    title.y = -24;
+    fitText(title, panelWidth - 38, 56, 0.6);
     card.addChild(title);
 
     const line = createText(taunt || 'LET\'S GO!', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 18,
+      fontSize: compact ? 16 : 18,
       fill: '#ffffff',
       stroke: '#000000',
-      strokeThickness: 3
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 48,
+      lineHeight: compact ? 18 : 21
     });
     line.anchor.set(0.5);
-    line.y = 22;
+    line.y = 28;
+    fitText(line, panelWidth - 48, 54, 0.68);
     card.addChild(line);
 
     this.uiOverlay.addChild(card);
@@ -5241,6 +6107,14 @@ export class PlayScene {
   showBossCelebration({ level = this.game.level, type = 'UNKNOWN' } = {}) {
     if (!this.uiOverlay) return;
     this.recordBalanceBossEnd();
+    const bossId = this.enemyManager?.boss?.profile?.id || String(type || `boss_${level}`).toLowerCase();
+    const bossName = this.enemyManager?.boss?.profile?.name || String(type || 'Boss').replace(/_/g, ' ');
+    this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
+    this.recordThreatDefeat(bossId, 'bosses', {
+      name: bossName,
+      role: this.enemyManager?.boss?.profile?.title || 'boss',
+      sector: level
+    });
     const repairDelta = this.applyBossClearRecovery(level);
 
     const compactHud = this.game.getWidth() < 620;

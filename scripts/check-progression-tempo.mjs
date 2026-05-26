@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { BalanceConfig } from '../src/config/BalanceConfig.js';
+import { RunPacingConfig } from '../src/config/RunPacingConfig.js';
 
 globalThis.Audio ??= class {
   constructor() {
@@ -54,6 +55,9 @@ const wavePlan = levels.map((level) => {
 const firstTen = wavePlan.slice(0, 10);
 const totalNormalWavesToLevel10 = firstTen.reduce((total, level) => total + level.waveCount, 0);
 const totalEnemiesToLevel10 = firstTen.reduce((total, level) => total + level.enemyCount, 0);
+const averagePreBossSeconds = Number((firstTen.reduce((total, level) => total + level.estimatedBossIntervalSeconds, 0) / firstTen.length).toFixed(1));
+const minArcadePreBossSeconds = Math.max(90, Math.round((RunPacingConfig.sectorTargetSeconds ?? 150) * 0.6));
+const maxArcadePreBossSeconds = Math.min(150, Math.round((RunPacingConfig.sectorTargetSeconds ?? 150) * 1.0));
 const errors = [];
 
 assert(wavePlan[0].waveCount >= 6, `Level 1 needs at least six waves before the first boss, got ${wavePlan[0].waveCount}.`, errors);
@@ -65,9 +69,11 @@ assert(totalEnemiesToLevel10 >= 480, `Too few normal enemies before level 10 (${
 assert(totalEnemiesToLevel10 <= 780, `Too many normal enemies before level 10 (${totalEnemiesToLevel10}).`, errors);
 assert(wavePlan[9].bossHealth <= 175, `Level 10 boss health is too slow for the 15-minute reachability target (${wavePlan[9].bossHealth}).`, errors);
 assert(wavePlan[19].bossHealth <= 285, `Level 20 boss health is too high for difficult-but-possible pacing (${wavePlan[19].bossHealth}).`, errors);
-assert(wavePlan.slice(0, 10).every((level) => level.estimatedBossIntervalSeconds >= 70 && level.estimatedBossIntervalSeconds <= 100), 'Early boss intervals should estimate around 75 seconds after the six-wave floor.', errors);
+assert(wavePlan.slice(0, 10).every((level) => level.estimatedBossIntervalSeconds >= minArcadePreBossSeconds && level.estimatedBossIntervalSeconds <= maxArcadePreBossSeconds),
+  `Early pre-boss wave spans should fit the arcade sector target (${minArcadePreBossSeconds}-${maxArcadePreBossSeconds}s), got ${wavePlan.slice(0, 10).map((level) => `${level.level}:${level.estimatedBossIntervalSeconds}`).join(', ')}.`,
+  errors);
 assert((diff.MIN_WAVES_BETWEEN_BOSSES ?? 0) >= 6, `MIN_WAVES_BETWEEN_BOSSES must be at least 6, got ${diff.MIN_WAVES_BETWEEN_BOSSES}.`, errors);
-assert((diff.MIN_SECONDS_BETWEEN_BOSSES ?? 0) === 0, `MIN_SECONDS_BETWEEN_BOSSES should remain 0 because 75 seconds is an estimate, got ${diff.MIN_SECONDS_BETWEEN_BOSSES}.`, errors);
+assert((diff.MIN_SECONDS_BETWEEN_BOSSES ?? 0) === 0, `MIN_SECONDS_BETWEEN_BOSSES should remain 0 so the six-wave floor drives sector flow, got ${diff.MIN_SECONDS_BETWEEN_BOSSES}.`, errors);
 assert(diff.waveDelayMs <= 950, `Between-wave briefing is too long (${diff.waveDelayMs}ms).`, errors);
 assert(diff.waveCleanupMs <= 850, `Wave cleanup window is too long (${diff.waveCleanupMs}ms).`, errors);
 assert(diff.bossGateMs <= 1050, `Boss gate is too long (${diff.bossGateMs}ms).`, errors);
@@ -79,7 +85,14 @@ assert((BalanceConfig.rewards?.levelClearRepairTargetLives ?? 0) === 0, 'Level c
 
 const report = {
   ok: errors.length === 0,
-  buildTarget: 'level-10-tempo',
+  buildTarget: 'arcade-sector-tempo',
+  arcadeTarget: {
+    targetRunSeconds: RunPacingConfig.targetRunSeconds,
+    targetSectors: RunPacingConfig.targetSectors,
+    sectorTargetSeconds: RunPacingConfig.sectorTargetSeconds,
+    minArcadePreBossSeconds,
+    maxArcadePreBossSeconds
+  },
   tuning: {
     waveDelayMs: diff.waveDelayMs,
     waveBriefingAnnounceMs: diff.waveBriefingAnnounceMs,
@@ -104,6 +117,7 @@ const report = {
   totals: {
     totalNormalWavesToLevel10,
     totalEnemiesToLevel10,
+    averagePreBossSeconds,
     level10BossHealth: wavePlan[9].bossHealth,
     level20BossHealth: wavePlan[19].bossHealth
   },
@@ -120,4 +134,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`[progression-tempo] PASS wavesToL10=${totalNormalWavesToLevel10} enemiesToL10=${totalEnemiesToLevel10} l10BossHp=${wavePlan[9].bossHealth} l20BossHp=${wavePlan[19].bossHealth} report=${path.join(outputDir, 'report.json')}`);
+console.log(`[progression-tempo] PASS arcadeSector=${RunPacingConfig.sectorTargetSeconds}s preBossAvg=${averagePreBossSeconds}s wavesToL10=${totalNormalWavesToLevel10} enemiesToL10=${totalEnemiesToLevel10} l10BossHp=${wavePlan[9].bossHealth} l20BossHp=${wavePlan[19].bossHealth} report=${path.join(outputDir, 'report.json')}`);

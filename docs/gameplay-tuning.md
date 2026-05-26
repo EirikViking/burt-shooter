@@ -1,5 +1,13 @@
 # Nova Swarm Gameplay Tuning
 
+## 2026-05-25 Arcade Score-Attack Revamp
+
+- Default run pacing now lives in `src/config/RunPacingConfig.js` and `src/game/RunPressureDirector.js`. The current arcade target is 10 sectors, 150 seconds per sector, and a good-player climax around 24-30 minutes with sharp overrun pressure after the target.
+- `BalanceConfig` now supplies base values and caps; time pressure, sustain tightening, score pressure, projectile pressure, and special-threat pressure should be tuned through the run pressure director first.
+- Content rotation lives in `src/config/RunContentDirectorConfig.js` and `src/game/RunContentDirector.js`. Runs choose a theme, boost unseen content, suppress recently seen content, and expose advanced attacks as scaled previews.
+- Long-term progression now uses `src/progression/HangarProgressState.js`, `src/progression/ThreatDiscoveryState.js`, `src/config/ShipUnlockConfig.js`, and pilot XP thresholds in `src/shared/RankPolicy.js`. Keep old `bestLevel` compatibility, but new ship/rank tuning should use cross-run milestones.
+- Old 75-second pre-boss guards are no longer authoritative. `check:wave-pacing` and `check:progression-tempo` should prevent collapse, one-wave boss routes, and nonsensical values while allowing the director to decide the exact arcade cadence.
+
 ## 2026-05-21 Polish Pass
 
 - Boss spacing lives in `src/config/BalanceConfig.js` under `difficulty.MIN_WAVES_BETWEEN_BOSSES`; current defaults are restored to the verified six real waves before a normal boss gate can open. The roughly 75-second boss cadence is an estimate from wave duration, not a hard timing gate; no git/doc evidence was found for a 9-wave default.

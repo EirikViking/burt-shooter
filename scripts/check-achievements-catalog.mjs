@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { ACHIEVEMENTS } from '../src/achievements/AchievementCatalog.js';
 
 const errors = [];
@@ -9,9 +11,16 @@ function fail(message) {
 const ids = ACHIEVEMENTS.map((achievement) => achievement.id);
 const names = ACHIEVEMENTS.map((achievement) => achievement.name);
 const idPattern = /^ACH_[A-Z0-9]+(?:_[A-Z0-9]+)*$/;
+const expectedTotal = 30;
+const expectedMilestones = 9;
+const allowedMilestoneDifficulties = new Set(['medium', 'hard', 'very_hard']);
 
 if (ACHIEVEMENTS.length > 100) {
   fail(`Catalog has ${ACHIEVEMENTS.length} achievements; Steam limit is 100.`);
+}
+
+if (ACHIEVEMENTS.length !== expectedTotal) {
+  fail(`Catalog should contain ${expectedTotal} achievements for the Steam launch set; saw ${ACHIEVEMENTS.length}.`);
 }
 
 for (const achievement of ACHIEVEMENTS) {
@@ -23,6 +32,17 @@ for (const achievement of ACHIEVEMENTS) {
   }
   if (!achievement?.description || typeof achievement.description !== 'string') {
     fail(`Achievement ${achievement?.id || '<unknown>'} is missing a description.`);
+  }
+  if (achievement.type === 'milestone') {
+    if (!achievement.metric || typeof achievement.metric !== 'string') {
+      fail(`Milestone achievement ${achievement.id} is missing a metric.`);
+    }
+    if (!Number.isFinite(Number(achievement.target)) || Number(achievement.target) <= 0) {
+      fail(`Milestone achievement ${achievement.id} needs a positive numeric target.`);
+    }
+    if (!allowedMilestoneDifficulties.has(achievement.difficulty)) {
+      fail(`Milestone achievement ${achievement.id} has unsupported difficulty ${achievement.difficulty}.`);
+    }
   }
 }
 
@@ -59,6 +79,32 @@ rankNumbers.forEach((rankNumber, index) => {
   }
 });
 
+const milestoneCount = ACHIEVEMENTS.filter((achievement) => achievement.type === 'milestone').length;
+if (milestoneCount !== expectedMilestones) {
+  fail(`Expected ${expectedMilestones} milestone achievements; saw ${milestoneCount}.`);
+}
+
+const manifestPath = path.resolve('release/steamworks/achievement-icons/manifest.json');
+if (!fs.existsSync(manifestPath)) {
+  fail('Missing Steam achievement icon manifest.');
+} else {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const manifestIds = new Set((manifest.icons || []).map((entry) => entry.apiName));
+  for (const id of ids) {
+    if (!manifestIds.has(id)) {
+      fail(`Icon manifest missing ${id}.`);
+      continue;
+    }
+    const entry = (manifest.icons || []).find((item) => item.apiName === id);
+    for (const key of ['achievedIcon', 'lockedIcon']) {
+      const file = entry?.[key];
+      if (!file || !fs.existsSync(path.resolve('release/steamworks/achievement-icons', file))) {
+        fail(`Icon manifest ${id} missing file for ${key}.`);
+      }
+    }
+  }
+}
+
 if (errors.length > 0) {
   console.error('[check-achievements-catalog] FAIL');
   for (const error of errors) {
@@ -66,5 +112,5 @@ if (errors.length > 0) {
   }
   process.exitCode = 1;
 } else {
-  console.log(`[check-achievements-catalog] PASS ${ACHIEVEMENTS.length} achievements (${rankNumbers.length} rank, ${ACHIEVEMENTS.length - rankNumbers.length} leaderboard).`);
+  console.log(`[check-achievements-catalog] PASS ${ACHIEVEMENTS.length} achievements (${rankNumbers.length} rank, ${milestoneCount} milestone, ${ACHIEVEMENTS.length - rankNumbers.length - milestoneCount} leaderboard).`);
 }

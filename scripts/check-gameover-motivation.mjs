@@ -140,6 +140,8 @@ observePage(page);
 
 try {
   await page.addInitScript(() => {
+    localStorage.removeItem('nova.hangarProgress.v1');
+    localStorage.removeItem('nova.threatDiscovery.v1');
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 0, bestRank: 0, bestLevel: 1 }));
   });
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -188,6 +190,8 @@ try {
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
   await page.evaluate(() => {
+    localStorage.removeItem('nova.hangarProgress.v1');
+    localStorage.removeItem('nova.threatDiscovery.v1');
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 6, bestLevel: 12 }));
     const game = window.__game;
     if (!game) return;
@@ -211,6 +215,8 @@ try {
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
   await page.evaluate(() => {
+    localStorage.removeItem('nova.hangarProgress.v1');
+    localStorage.removeItem('nova.threatDiscovery.v1');
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 8, bestLevel: 21 }));
     const game = window.__game;
     if (!game) return;
@@ -304,15 +310,16 @@ try {
   const report = {
     ok: Boolean(
       gameOverState.scene === 'gameOver' &&
-      /NEW SHIP UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
+      /NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
       !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
-      /THIS RUN:\s*LEVEL 5/i.test(careerLevelSummary) &&
-      /CAREER BEST:\s*LEVEL 21/i.test(careerLevelSummary) &&
+      /GAME OVER:\s*SECTOR 5/i.test(careerLevelSummary) &&
+      /CAREER BEST:\s*SECTOR 21/i.test(careerLevelSummary) &&
       /NEXT SHIP:\s*VIOLET FEINT/i.test(careerUnlockSummary) &&
-      /CAREER LEVEL 21\/23 - 2 LEVELS TO GO/i.test(careerUnlockSummary) &&
-      /NEXT CAREER GOAL:\s*REACH LEVEL 22/i.test(careerNextGoal) &&
+      /SURVIVE 15 MINUTES/i.test(careerUnlockSummary) &&
+      /SURVIVEDSECONDS 0\/900/i.test(careerUnlockSummary) &&
+      /NEXT CAREER GOAL:\s*REACH SECTOR 22/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
-      /LEADERBOARD FIRST/i.test(gameOverState.gameOver?.retryPrompt || '') &&
+      /LEADERBOARD FIRST|TYPE NAME/i.test(gameOverState.gameOver?.retryPrompt || '') &&
       /SUBMIT SCORE/i.test(gameOverState.gameOver?.primaryCta?.label || '') &&
       /PILOT NAME FIRST|TYPE NAME FIRST|ENTER \/ CLICK/i.test(gameOverState.gameOver?.primaryCta?.hint || '') &&
       ['leaderboard', 'submit'].includes(gameOverState.gameOver?.primaryCta?.mode) &&

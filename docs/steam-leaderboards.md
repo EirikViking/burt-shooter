@@ -19,10 +19,12 @@ Create this leaderboard in Steamworks App Admin:
 
 - Internal name: `nova_swarm_global_score`
 - Community name: `Global High Score` if the App Admin UI exposes it. The current UI may show this blank while the internal leaderboard exists.
-- Sort method: Descending
-- Display type: Numeric
-- Writes: client writes are expected unless you later move to trusted Web API writes
-- Reads: the current App Admin UI shows `Friends`. `FRIENDS` uses Steam's friends request against the same leaderboard. If `GLOBAL` fails in Steam-client testing while `FRIENDS` works, revisit the Reader/visibility setting.
+- Sort method: Descending / Synkende
+- Display type: Numeric / Numerisk
+- Writer / Skriver: `-`
+- Reader / Leser: `-`
+- Lobby: `-`
+- Community name may be blank; this affects Community Hub visibility, not API writing.
 
 Steam supports one entry per player, an int32 score, and optional int32 detail metadata. Nova Swarm sends score as the sortable value and details as:
 
@@ -44,6 +46,7 @@ Expected async methods:
 
 - `isAvailable()`
 - `getPersonaName()`
+- `requestCurrentStats()`
 - `getTopScores({ leaderboardName, request: "global", start, end, limit })`
 - `getFriendsScores({ leaderboardName, request: "friends", limit })`
 - `submitScore({ leaderboardName, score, details, uploadMethod: "keep_best" })`
@@ -108,7 +111,9 @@ Upload implementation note: `steamworks-ffi-node@0.10.3` documents `uploadScore(
 
 Official Steamworks notes relevant to the current failure:
 
-- `LeaderboardScoreUploaded_t.m_bSuccess = 0` is documented for either too many detail values or a leaderboard set to `Trusted`. Nova Swarm's `details=none`, `score=1` probe still returns `m_bSuccess: 0`, so detail length is not the likely blocker.
+- Steamworks screenshot evidence now confirms Writer/Skriver `-`, Reader/Leser `-`, and Lobby `-`; do not treat visible Trusted config as the current leading explanation.
+- `LeaderboardScoreUploaded_t.m_bSuccess = 0` is documented for either too many detail values or a leaderboard set to `Trusted`. Nova Swarm's `details=none`, `score=1` probe still returns `m_bSuccess: 0`, so detail length and visible Trusted config are not the likely blocker.
+- The bridge now gates upload through an observable `RequestUserStats(current user)` / `UserStatsReceived_t` readiness check because the local `steamworks-ffi-node` wrapper does not expose a flat `RequestCurrentStats` bool call.
 - `UploadLeaderboardScore` is rate-limited to 10 uploads per 10 minutes and one outstanding call. Keep probes to one submit per pass.
 - Steam testing depends on package entitlement: the Dev Comp or Beta Testing package used by the account must include App ID `4765070` and Windows depot `4765071`.
 
@@ -118,6 +123,7 @@ The default live probe submits one deliberately low keep-best score of `1` with 
 - `npm run probe:steam-leaderboard-live -- --details=none --score=1` submits without metadata to isolate details formatting.
 - `npm run probe:steam-leaderboard-live -- --details=empty --score=1` submits an empty details array.
 - `npm run probe:steam-leaderboard-live -- --score=1001` submits a custom keep-best score.
+- `npm run probe:steam-leaderboard-live -- --details=none --score=1 --leaderboard=nova_swarm_global_score_v2_test` targets a fresh test leaderboard with the same settings.
 - `npm run probe:steam-leaderboard-live -- --force-update --score=1` is available only for intentional manual diagnosis. Do not use it casually because it can overwrite an existing better score.
 
 Electron runtime probe examples:
@@ -140,12 +146,15 @@ Do not spam submissions. Prefer one read-only run, one default keep-best run, th
 
 SteamPipe status on 2026-05-21: App ID `4765070` and Windows depot ID `4765071` are known. `release/steamworks/app_build_LOCAL.vdf` is ignored and should be regenerated locally for SteamPipe uploads; do not commit it or any Steam credentials.
 
-Current diagnosis as of build `23352036`: installed Steam manifest matches build `23352036`, local and packaged probes can open/read the leaderboard, and the raw upload callback returns `m_bSuccess: 0` with `details=none`. The most likely remaining cause is Steamworks backend/config/entitlement state, not local upload signature. Check only:
+Current diagnosis as of build `23352036`: installed Steam manifest matches build `23352036`, local and packaged probes can open/read the leaderboard, and the raw upload callback returns `m_bSuccess: 0` with `details=none`. Details overflow and visible Trusted config are ruled out; the remaining fastest checks are stats readiness, Steam client launch context, package/pre-release entitlement, a fresh v2 leaderboard, or Steam backend rejection. Check only:
 
-- Leaderboard config: `nova_swarm_global_score`, Writes `Client`, Sort `Descending`, Display `Numeric`; do not delete/reset/recreate.
+- Leaderboard config: `nova_swarm_global_score`, Writer/Skriver `-`, Reader/Leser `-`, Lobby `-`, Sort `Descending`, Display `Numeric`; do not delete/reset/recreate.
+- RequestCurrentStats/UserStatsReceived_t readiness: the latest probe report must show `requestCurrentStats.ok = true`.
+- Launch context: verify the probe was launched from the Steam client, not only npm/direct Node.
 - Builds: default branch points to `23352036` or newer diagnostics build; do not release/publish or alter pricing/date.
 - Packages: the Dev Comp or Beta Testing package used by `gaunziman` / `EvilEirik` includes app `4765070` and depot `4765071`.
 - Steam client console: `licenses_for_app 4765070` should show the package and depot used by this account.
+- Fresh leaderboard isolation: if `nova_swarm_global_score_v2_test` with the same settings also returns `m_bSuccess: 0`, prepare a Steamworks support ticket with raw callback JSON.
 
 For local validation without Steam, open with `?mockSteamLeaderboard=1`. This enables the mock provider and shows `GLOBAL / FRIENDS / LOCAL` tabs.
 

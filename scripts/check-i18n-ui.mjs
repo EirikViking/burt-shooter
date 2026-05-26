@@ -433,6 +433,7 @@ async function captureLanguage(page, language, index) {
 
   await page.evaluate(() => window.__game?.showHighscores?.());
   await waitForScene(page, 'highscore');
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.highscore?.title?.text), null, { timeout: 10000 });
   await page.waitForTimeout(600);
   snaps.leaderboard = await snapshot(page);
   assertSnapshotClean(snaps.leaderboard, language, `${language.slug}.leaderboard`);
