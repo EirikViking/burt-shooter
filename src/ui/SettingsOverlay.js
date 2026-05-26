@@ -14,8 +14,10 @@ import {
   getLanguageOptions,
   getLanguagePreferenceMode,
   onLanguageChange,
-  setLanguagePreference
+  setLanguagePreference,
+  translateText
 } from '../i18n/index.js';
+import { grantSecretShipUnlock } from '../progression/HangarProgressState.js';
 
 function percent(value) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
@@ -85,6 +87,10 @@ export class SettingsOverlay {
     this.creditsPanel = null;
     this.creditsBackButton = null;
     this.creditsDebugState = null;
+    this.creditsTicker = null;
+    this.creditsAnimatedNodes = [];
+    this.creditsCoinClicks = 0;
+    this.creditsEggStatusText = null;
     this.controls = [];
     this.focusedControlIndex = 0;
     this.gamepadNavigator = new GamepadNavigator();
@@ -501,7 +507,7 @@ export class SettingsOverlay {
     const bg = new PIXI.Graphics();
     button.addChild(focus, bg);
 
-    const text = createText(label, {
+    const text = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 17,
       fontWeight: 'bold',
@@ -652,6 +658,9 @@ export class SettingsOverlay {
     this.creditsPanel = null;
     this.creditsBackButton = null;
     this.creditsDebugState = null;
+    this.creditsAnimatedNodes = [];
+    this.creditsCoinClicks = 0;
+    this.creditsEggStatusText = null;
     this.build();
     const nextIndex = Math.max(0, this.controls.findIndex((control) => control.id === focusedId));
     this.setControlFocus(nextIndex);
@@ -716,11 +725,35 @@ export class SettingsOverlay {
     overlay.eventMode = 'static';
     overlay.hitArea = new PIXI.Rectangle(0, 0, width, height);
 
+    this.creditsAnimatedNodes = [];
+    this.creditsCoinClicks = 0;
+
     const dim = new PIXI.Graphics();
     dim.rect(0, 0, width, height);
     dim.fill({ color: 0x00040b, alpha: 0.94 });
     dim.eventMode = 'static';
     overlay.addChild(dim);
+
+    const skyline = this.createCreditsImageLayer({
+      x: 0,
+      y: 0,
+      width,
+      height,
+      alpha: 0.18,
+      focusX: 0.5
+    });
+    skyline.label = 'ui_creditsFullBleedArt';
+    overlay.addChild(skyline);
+
+    const starfield = new PIXI.Graphics();
+    for (let i = 0; i < 80; i += 1) {
+      const px = (i * 137) % Math.max(1, width);
+      const py = (i * 73) % Math.max(1, height);
+      starfield.circle(px, py, 1 + (i % 3) * 0.8);
+      starfield.fill({ color: i % 2 ? 0x37f5ff : 0xffd15c, alpha: 0.08 + (i % 4) * 0.025 });
+    }
+    overlay.addChild(starfield);
+    this.creditsAnimatedNodes.push({ node: starfield, kind: 'drift', baseX: 0, baseY: 0, speed: 0.16 });
 
     const panel = new PIXI.Graphics();
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
@@ -734,7 +767,7 @@ export class SettingsOverlay {
     panel.fill({ color: 0xffd15c, alpha: 0.34 });
     overlay.addChild(panel);
 
-    const title = createText('CREDITS: THE CABINET DENIES EVERYTHING', {
+    const title = createText(translateText('CREDITS: THE CABINET DENIES EVERYTHING'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: isCompact ? 20 : 30,
       fontWeight: 'bold',
@@ -748,7 +781,7 @@ export class SettingsOverlay {
     fitTextToWidth(title, panelWidth - margin * 2, { minScale: 0.54 });
     overlay.addChild(title);
 
-    const subtitle = createText('A Tinyfoundry Games incident report, lightly redacted by mission control.', {
+    const subtitle = createText(translateText('A Tinyfoundry Games incident report, heavily denied by Mission Control.'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: isCompact ? 12 : 16,
       fontWeight: '700',
@@ -784,14 +817,14 @@ export class SettingsOverlay {
     bodyWash.fill({ color: 0x020711, alpha: 0.72 });
     overlay.addChild(bodyWash);
     const creditsCopy = [
-      'Tinyfoundry Games: proudly blamed for every tasteful explosion.',
-      'Cabinet Ghost: promoted after eating seven coins and one meeting agenda.',
-      'The Swarm: choreography by angry triangles with suspiciously good dental.',
-      'Boss Scheduler: fewer ambushes, better entrances, one tractor-beam learning moment.',
-      'Mission Control: sarcasm, volume ducking, snack authority.',
-      'Popcorn Formation Union: filed fourteen complaints. All were dodged.',
-      'You: pilot, auditor, apocalypse consultant, and the only adult in the room.',
-      `Build: ${BUILD_ID}`
+      translateText('Tinyfoundry Games: legally responsible for the explosions, emotionally responsible for the coins.'),
+      translateText('Mission Control: sarcasm department, panic reduction unit, snack custody office.'),
+      translateText('The Cabinet Ghost: unpaid intern, paid in quarters, promoted after haunting the balance spreadsheet.'),
+      translateText('The Swarm: hostile geometry with suspicious timing and absolutely no respect for personal space.'),
+      translateText('Boss Scheduler: dramatic entrances, unsafe lasers, one tractor-beam apology note.'),
+      translateText('Popcorn Formation Union: filed fourteen complaints. The pilot dodged all of them.'),
+      translateText('You: pilot, auditor, apocalypse consultant, and apparently the only adult near the coin slot.'),
+      `${translateText('Build')}: ${BUILD_ID}`
     ].join('\n');
     const body = createText(creditsCopy, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -808,7 +841,7 @@ export class SettingsOverlay {
     fitDisplayToBox(body, bodyWidth, bodyHeight, { minScale: isCompact ? 0.78 : 0.86 });
     overlay.addChild(body);
 
-    const footer = createText('No cabinets were harmed. One cabinet was promoted to lore compliance.', {
+    const footer = createText(translateText('No cabinets were harmed. One cabinet was promoted to lore compliance.'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: isCompact ? 11 : 14,
       fontWeight: '800',
@@ -821,6 +854,29 @@ export class SettingsOverlay {
     footer.position.set(isCompact ? width / 2 : bodyX + bodyWidth / 2, buttonY - (isCompact ? 38 : 52));
     fitTextToWidth(footer, isCompact ? panelWidth - margin * 2 : bodyWidth, { minScale: 0.78 });
     overlay.addChild(footer);
+
+    const coin = this.createCreditsCoinButton(
+      panelX + panelWidth - (isCompact ? 72 : 86),
+      panelY + panelHeight - (isCompact ? 82 : 96),
+      isCompact
+    );
+    overlay.addChild(coin);
+
+    const eggStatus = createText(translateText('Cabinet seal idle. Totally normal. Probably.'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: isCompact ? 10 : 13,
+      fontWeight: '900',
+      fill: '#9cfbff',
+      stroke: '#020711',
+      strokeThickness: 3,
+      wordWrap: true,
+      wordWrapWidth: isCompact ? Math.min(220, panelWidth - margin * 2) : 310,
+      align: 'right'
+    });
+    eggStatus.anchor.set(1, 0.5);
+    eggStatus.position.set(coin.x - (isCompact ? 34 : 44), coin.y);
+    overlay.addChild(eggStatus);
+    this.creditsEggStatusText = eggStatus;
 
     const backButton = this.createButton('BACK TO CABINET', width / 2, buttonY, () => this.closeCreditsPanel(), {
       width: isCompact ? Math.min(260, panelWidth - margin * 2) : 280,
@@ -845,9 +901,12 @@ export class SettingsOverlay {
       },
       body: debugBounds(body),
       footer: debugBounds(footer),
+      coin: debugBounds(coin),
+      eggStatus: debugBounds(eggStatus),
       backButton: debugBounds(backButton)
     };
     this.container.addChild(overlay);
+    this.startCreditsAnimation();
     AudioManager.playSfx('ui_open', { volume: 0.16, minIntervalMs: 120 });
     AudioManager.playVoice?.('mission_control_credits', {
       force: true,
@@ -856,6 +915,116 @@ export class SettingsOverlay {
       duckMs: 3600,
       cooldownMs: 0
     });
+  }
+
+  createCreditsCoinButton(x, y, isCompact = false) {
+    const button = new PIXI.Container();
+    button.label = 'ui_creditsCabinetSeal';
+    button.position.set(x, y);
+    button.eventMode = 'static';
+    button.cursor = 'pointer';
+    const radius = isCompact ? 21 : 27;
+    button.hitArea = new PIXI.Circle(0, 0, radius + 8);
+
+    const glow = new PIXI.Graphics();
+    const face = new PIXI.Graphics();
+    const text = createText(translateText('INSERT COIN'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: isCompact ? 8 : 10,
+      fontWeight: '900',
+      fill: '#fff3a2',
+      stroke: '#020711',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    text.anchor.set(0.5);
+    text.y = radius + (isCompact ? 16 : 18);
+
+    const draw = (armed = false) => {
+      glow.clear();
+      face.clear();
+      glow.circle(0, 0, radius + (armed ? 10 : 7));
+      glow.fill({ color: armed ? 0xff55d9 : 0x37f5ff, alpha: armed ? 0.18 : 0.1 });
+      face.circle(0, 0, radius);
+      face.fill({ color: armed ? 0x2a1744 : 0x201703, alpha: 0.94 });
+      face.stroke({ color: armed ? 0xff55d9 : 0xffd15c, width: armed ? 3 : 2, alpha: 0.95 });
+      face.circle(0, 0, radius * 0.58);
+      face.stroke({ color: 0x7fffd8, width: 1, alpha: 0.82 });
+      face.moveTo(-radius * 0.45, 0);
+      face.lineTo(radius * 0.45, 0);
+      face.stroke({ color: 0xffef7e, width: 2, alpha: 0.92 });
+      face.moveTo(0, -radius * 0.45);
+      face.lineTo(0, radius * 0.45);
+      face.stroke({ color: 0xffef7e, width: 2, alpha: 0.68 });
+    };
+    draw(false);
+    button.addChild(glow, face, text);
+    button._drawCoin = draw;
+
+    button.on('pointerover', () => {
+      button._drawCoin?.(true);
+      AudioManager.playSfx('thrusterFire', { volume: 0.06, minIntervalMs: 120 });
+    });
+    button.on('pointerout', () => button._drawCoin?.(false));
+    button.on('pointertap', () => this.triggerCreditsEasterEgg(button));
+    this.creditsAnimatedNodes.push({ node: button, kind: 'pulse', baseScale: 1, speed: 3.2 });
+    return button;
+  }
+
+  triggerCreditsEasterEgg(coinButton) {
+    this.creditsCoinClicks += 1;
+    const needed = Math.max(0, 3 - this.creditsCoinClicks);
+    AudioManager.playSfx(needed > 0 ? 'powerup' : 'nova_bonus_core_jackpot', {
+      force: true,
+      volume: needed > 0 ? 0.28 : 0.48,
+      minIntervalMs: 0
+    });
+    coinButton.rotation += 0.32;
+
+    if (needed > 0) {
+      if (this.creditsEggStatusText) {
+        this.creditsEggStatusText.text = translateText('Cabinet seal warming. {count} more coin reports required.', { count: needed });
+      }
+      return;
+    }
+
+    const result = grantSecretShipUnlock('nova_ship_07', { source: 'credits_easter_egg' });
+    if (this.creditsEggStatusText) {
+      this.creditsEggStatusText.text = translateText(
+        result.unlocked
+          ? 'Cabinet Ghost waiver filed: Quasar Fan is ready in the hangar.'
+          : 'Cabinet Ghost already signed this waiver. Quasar Fan remains suspiciously ready.'
+      );
+      this.creditsEggStatusText.style.fill = '#fff3a2';
+    }
+    coinButton._drawCoin?.(true);
+    this.creditsDebugState = {
+      ...(this.creditsDebugState || {}),
+      easterEgg: {
+        clicks: this.creditsCoinClicks,
+        shipId: 'nova_ship_07',
+        unlocked: Boolean(result.unlocked),
+        alreadyUnlocked: Boolean(result.alreadyUnlocked)
+      }
+    };
+  }
+
+  startCreditsAnimation() {
+    if (this.creditsTicker) this.game.app.ticker.remove(this.creditsTicker);
+    this.creditsTicker = () => {
+      const now = performance.now() * 0.001;
+      for (const entry of this.creditsAnimatedNodes) {
+        if (!entry?.node) continue;
+        if (entry.kind === 'pulse') {
+          const pulse = Math.sin(now * entry.speed) * 0.5 + 0.5;
+          entry.node.scale.set((entry.baseScale || 1) + pulse * 0.035);
+        } else if (entry.kind === 'drift') {
+          entry.node.x = (entry.baseX || 0) + Math.sin(now * entry.speed) * 10;
+          entry.node.y = (entry.baseY || 0) + Math.cos(now * entry.speed * 0.7) * 6;
+        }
+      }
+    };
+    this.game.app.ticker.add(this.creditsTicker);
   }
 
   createCreditsSpectacle(rect, isCompact = false) {
@@ -999,6 +1168,10 @@ export class SettingsOverlay {
 
   closeCreditsPanel() {
     if (!this.creditsPanel) return;
+    if (this.creditsTicker) {
+      this.game.app.ticker.remove(this.creditsTicker);
+      this.creditsTicker = null;
+    }
     if (this.creditsPanel.parent) {
       this.creditsPanel.parent.removeChild(this.creditsPanel);
     }
@@ -1006,6 +1179,9 @@ export class SettingsOverlay {
     this.creditsPanel = null;
     this.creditsBackButton = null;
     this.creditsDebugState = null;
+    this.creditsAnimatedNodes = [];
+    this.creditsCoinClicks = 0;
+    this.creditsEggStatusText = null;
   }
 
   getDebugState() {

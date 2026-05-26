@@ -76,6 +76,8 @@ export function createDefaultHangarProgress() {
     discoveredThreatIds: [],
     defeatedBossIds: [],
     runThemesSurvived: [],
+    secretShipUnlockIds: [],
+    creditsEasterEggFound: false,
     unlockedShipIds: ['nova_ship_01'],
     lastNewlyUnlockedShipIds: [],
     newRanksThisRun: [],
@@ -144,6 +146,8 @@ export function normalizeHangarProgress(raw = {}) {
     discoveredThreatIds: Array.isArray(raw.discoveredThreatIds) ? [...new Set(raw.discoveredThreatIds.map(String))] : [],
     defeatedBossIds: Array.isArray(raw.defeatedBossIds) ? [...new Set(raw.defeatedBossIds.map(String))] : [],
     runThemesSurvived: Array.isArray(raw.runThemesSurvived) ? [...new Set(raw.runThemesSurvived.map(String))] : [],
+    secretShipUnlockIds: Array.isArray(raw.secretShipUnlockIds) ? [...new Set(raw.secretShipUnlockIds.map(String))] : [],
+    creditsEasterEggFound: Boolean(raw.creditsEasterEggFound),
     unlockedShipIds: [...unlocked],
     lastNewlyUnlockedShipIds: Array.isArray(raw.lastNewlyUnlockedShipIds) ? raw.lastNewlyUnlockedShipIds.map(String) : [],
     newRanksThisRun: Array.isArray(raw.newRanksThisRun) ? raw.newRanksThisRun.map(Number).filter(Number.isFinite) : [],
@@ -212,6 +216,9 @@ export function recalculateUnlockedShipIds(progress = readHangarProgressState())
   for (const entry of ShipUnlockConfig) {
     if (shipUnlockMet(entry.shipId, normalized)) unlocked.add(entry.shipId);
   }
+  if (Array.isArray(normalized.secretShipUnlockIds)) {
+    for (const shipId of normalized.secretShipUnlockIds) unlocked.add(String(shipId));
+  }
   return ShipUnlockConfig
     .map((entry) => entry.shipId)
     .filter((shipId) => unlocked.has(shipId));
@@ -241,6 +248,8 @@ export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true 
     discoveredThreatIds: [...new Set([...previous.discoveredThreatIds, ...(Array.isArray(partial.discoveredThreatIds) ? partial.discoveredThreatIds : [])])],
     defeatedBossIds: [...new Set([...previous.defeatedBossIds, ...(Array.isArray(partial.defeatedBossIds) ? partial.defeatedBossIds : [])])],
     runThemesSurvived: [...new Set([...previous.runThemesSurvived, ...(Array.isArray(partial.runThemesSurvived) ? partial.runThemesSurvived : [])])],
+    secretShipUnlockIds: [...new Set([...previous.secretShipUnlockIds, ...(Array.isArray(partial.secretShipUnlockIds) ? partial.secretShipUnlockIds : [])])],
+    creditsEasterEggFound: Boolean(previous.creditsEasterEggFound || partial.creditsEasterEggFound),
     lastNewlyUnlockedShipIds: preserveLastUnlocks ? previous.lastNewlyUnlockedShipIds : []
   });
   merged.pilotRank = getRankFromPilotXp(merged.pilotXp);
@@ -250,6 +259,38 @@ export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true 
   merged.unlockedShipIds = recalculateUnlockedShipIds(merged);
   merged.lastNewlyUnlockedShipIds = merged.unlockedShipIds.filter((shipId) => !before.has(shipId));
   return writeHangarProgressState(merged);
+}
+
+export function grantSecretShipUnlock(shipId, { source = 'secret' } = {}) {
+  const previous = readHangarProgressState();
+  const id = String(shipId || '').trim();
+  if (!id) {
+    return {
+      previous,
+      next: previous,
+      unlocked: false,
+      alreadyUnlocked: false,
+      shipId: id,
+      source
+    };
+  }
+
+  const alreadyUnlocked = previous.unlockedShipIds.includes(id);
+  const next = writeHangarProgressState({
+    ...previous,
+    secretShipUnlockIds: [...new Set([...(previous.secretShipUnlockIds || []), id])],
+    creditsEasterEggFound: source === 'credits_easter_egg' ? true : previous.creditsEasterEggFound,
+    lastNewlyUnlockedShipIds: alreadyUnlocked ? previous.lastNewlyUnlockedShipIds : [id]
+  });
+
+  return {
+    previous,
+    next,
+    unlocked: !alreadyUnlocked && next.unlockedShipIds.includes(id),
+    alreadyUnlocked,
+    shipId: id,
+    source
+  };
 }
 
 export function calculatePilotXpForRun(summary = {}) {
@@ -350,6 +391,8 @@ export function getHangarProgressSummary(progress = readHangarProgressState()) {
     totalWavesCleared: progress.totalWavesCleared,
     totalCodexDiscoveries: progress.totalCodexDiscoveries,
     runClears: progress.runClears,
+    secretShipUnlockIds: progress.secretShipUnlockIds.slice(),
+    creditsEasterEggFound: Boolean(progress.creditsEasterEggFound),
     unlockedShipIds: progress.unlockedShipIds.slice(),
     newlyUnlockedShipIds: progress.lastNewlyUnlockedShipIds.slice(),
     rankProgress: getPilotRankProgress(progress.pilotXp)

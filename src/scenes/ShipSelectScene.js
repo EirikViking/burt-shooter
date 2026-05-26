@@ -121,7 +121,7 @@ export class ShipSelectScene {
     // Fixed footer
     const footerContainer = new PIXI.Container();
     const instructions = createText(
-      'ARROWS/STICK: SHIP  |  A/ENTER: LAUNCH  |  X: DETAILS  |  Y/R: RANDOM  |  B/ESC: MENU',
+      translateText('ARROWS/STICK: SHIP  |  A/ENTER: LAUNCH  |  X: DETAILS  |  Y/R: RANDOM  |  B/ESC: BACK'),
       {
         fontFamily: FONT_BODY,
         fontSize: this.layout.isMobile ? 11 : 14,
@@ -306,16 +306,13 @@ export class ShipSelectScene {
 
   createBackButton(width, height) {
     const isMobile = width < 640;
-    const capWidth = Math.min(width - 32, isMobile ? 420 : 760);
     const buttonWidth = isMobile ? 132 : 154;
     const buttonHeight = isMobile ? 34 : 38;
-    const buttonX = isMobile
-      ? Math.max(12, width - buttonWidth - 12)
-      : Math.min(width - buttonWidth - 24, width / 2 + capWidth / 2 + 14);
-    const buttonY = isMobile ? 92 : 34;
+    const buttonX = isMobile ? 14 : 28;
+    const buttonY = height - (isMobile ? 58 : 64);
 
     this.backButton = new PIXI.Container();
-    this.backButton.label = 'ui_hangarMainMenuButton';
+    this.backButton.label = 'ui_hangarBackButton';
     this.backButton.position.set(buttonX, buttonY);
     this.backButton.eventMode = 'static';
     this.backButton.cursor = 'pointer';
@@ -352,7 +349,7 @@ export class ShipSelectScene {
     this.backButton.addChild(bg);
     drawButton();
 
-    const label = createText('☰ MAIN MENU', {
+    const label = createText(translateText('BACK'), {
       fontFamily: FONT_BODY,
       fontSize: isMobile ? 12 : 15,
       fill: '#f4fbff',
@@ -374,7 +371,7 @@ export class ShipSelectScene {
       e.stopPropagation();
       this.backButton.active = false;
       drawButton();
-      this.openHangarMenu('button');
+      this.returnToMenu('button');
     });
     this.backButton.on('pointerupoutside', () => {
       this.backButton.active = false;
@@ -1819,11 +1816,11 @@ export class ShipSelectScene {
         this.openCareerInfoOverlay('keyboard');
       } else if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault();
-        this.openHangarMenu('keyboard');
+        this.returnToMenu('keyboard');
       } else if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space') {
         e.preventDefault();
         if (this.mainMenuButtonFocused) {
-          this.openHangarMenu('keyboard');
+          this.returnToMenu('keyboard');
           return;
         }
         this.launchSelectedShip('keyboard');
@@ -1889,7 +1886,7 @@ export class ShipSelectScene {
       if (this.hangarMenuOverlay?.visible) {
         this.closeHangarMenu('controller');
       } else {
-        this.openHangarMenu('controller');
+        this.returnToMenu('controller');
       }
       return;
     }
@@ -1904,11 +1901,11 @@ export class ShipSelectScene {
 
     if (nav.pressed.cancel) {
       this.setMainMenuButtonFocus(true);
-      this.openHangarMenu('controller');
+      this.returnToMenu('controller');
       return;
     }
-    if (nav.pressed.up) this.setMainMenuButtonFocus(true);
-    if (nav.pressed.down) this.setMainMenuButtonFocus(false);
+    if (nav.pressed.down) this.setMainMenuButtonFocus(true);
+    if (nav.pressed.up) this.setMainMenuButtonFocus(false);
     if (nav.pressed.left) {
       this.setMainMenuButtonFocus(false);
       this.navigateLeft();
@@ -1935,7 +1932,7 @@ export class ShipSelectScene {
     }
     if (nav.pressed.confirm) {
       if (this.mainMenuButtonFocused) {
-        this.openHangarMenu('controller');
+        this.returnToMenu('controller');
       } else {
         this.launchSelectedShip('controller');
       }
