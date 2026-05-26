@@ -91,6 +91,7 @@ export class SettingsOverlay {
     this.creditsFocusedIndex = 0;
     this.creditsDebugState = null;
     this.creditsTicker = null;
+    this.creditsRevealTicker = null;
     this.creditsAnimatedNodes = [];
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
@@ -666,6 +667,7 @@ export class SettingsOverlay {
     this.creditsFocusedIndex = 0;
     this.creditsDebugState = null;
     this.creditsAnimatedNodes = [];
+    this.creditsRevealTicker = null;
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
     this.creditsUnlockReveal = null;
@@ -1059,6 +1061,10 @@ export class SettingsOverlay {
 
   showCreditsShipUnlockReveal(result = {}) {
     if (!this.creditsPanel) return;
+    if (this.creditsRevealTicker) {
+      this.game.app.ticker.remove(this.creditsRevealTicker);
+      this.creditsRevealTicker = null;
+    }
     if (this.creditsUnlockReveal?.parent) {
       this.creditsUnlockReveal.parent.removeChild(this.creditsUnlockReveal);
     }
@@ -1202,6 +1208,11 @@ export class SettingsOverlay {
 
     let elapsed = 0;
     const ticker = (delta) => {
+      if (!this.creditsPanel || this.creditsUnlockReveal !== reveal || reveal.destroyed || !reveal.scale?.set) {
+        this.game.app.ticker.remove(ticker);
+        if (this.creditsRevealTicker === ticker) this.creditsRevealTicker = null;
+        return;
+      }
       elapsed += delta.deltaTime * 16.67;
       const inT = Math.min(1, elapsed / 240);
       reveal.alpha = inT;
@@ -1213,9 +1224,11 @@ export class SettingsOverlay {
           this.game.app.ticker.remove(ticker);
           if (reveal.parent) reveal.parent.removeChild(reveal);
           if (this.creditsUnlockReveal === reveal) this.creditsUnlockReveal = null;
+          if (this.creditsRevealTicker === ticker) this.creditsRevealTicker = null;
         }
       }
     };
+    this.creditsRevealTicker = ticker;
     this.game.app.ticker.add(ticker);
   }
 
@@ -1227,7 +1240,7 @@ export class SettingsOverlay {
         if (!entry?.node || entry.node.destroyed) continue;
         if (entry.kind === 'pulse') {
           const pulse = Math.sin(now * entry.speed) * 0.5 + 0.5;
-          entry.node.scale.set((entry.baseScale || 1) + pulse * 0.035);
+          entry.node.scale?.set?.((entry.baseScale || 1) + pulse * 0.035);
         } else if (entry.kind === 'drift') {
           entry.node.x = (entry.baseX || 0) + Math.sin(now * entry.speed) * 10;
           entry.node.y = (entry.baseY || 0) + Math.cos(now * entry.speed * 0.7) * 6;
@@ -1238,11 +1251,11 @@ export class SettingsOverlay {
           entry.node.rotation += (entry.speed || 0.2) * 0.016;
         } else if (entry.kind === 'breathe') {
           const pulse = Math.sin(now * entry.speed) * 0.5 + 0.5;
-          entry.node.scale.set((entry.baseScale || 1) * (1 + pulse * 0.045));
+          entry.node.scale?.set?.((entry.baseScale || 1) * (1 + pulse * 0.045));
         } else if (entry.kind === 'unlockPop') {
           const pulse = Math.sin(now * entry.speed) * 0.5 + 0.5;
           entry.node.rotation = Math.sin(now * 2.3) * 0.006;
-          if (entry.node.alpha > 0.9) entry.node.scale.set((entry.baseScale || 1) + pulse * 0.012);
+          if (entry.node.alpha > 0.9) entry.node.scale?.set?.((entry.baseScale || 1) + pulse * 0.012);
         }
       }
     };
@@ -1417,17 +1430,21 @@ export class SettingsOverlay {
       this.game.app.ticker.remove(this.creditsTicker);
       this.creditsTicker = null;
     }
+    if (this.creditsRevealTicker) {
+      this.game.app.ticker.remove(this.creditsRevealTicker);
+      this.creditsRevealTicker = null;
+    }
+    this.creditsAnimatedNodes = [];
     if (this.creditsPanel.parent) {
       this.creditsPanel.parent.removeChild(this.creditsPanel);
     }
-      this.creditsPanel.destroy({ children: true });
+    this.creditsPanel.destroy({ children: true });
     this.creditsPanel = null;
     this.creditsBackButton = null;
     this.creditsCoinButton = null;
     this.creditsControls = [];
     this.creditsFocusedIndex = 0;
     this.creditsDebugState = null;
-    this.creditsAnimatedNodes = [];
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
     this.creditsUnlockReveal = null;

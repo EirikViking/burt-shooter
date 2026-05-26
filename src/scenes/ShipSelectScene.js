@@ -2173,7 +2173,17 @@ export class ShipSelectScene {
       return;
     }
 
-    if (nav.pressed.menu || nav.pressed.back) {
+    if (nav.pressed.menu) {
+      this.setMainMenuButtonFocus(true);
+      if (this.hangarMenuOverlay?.visible) {
+        this.closeHangarMenu('controller');
+      } else {
+        this.openHangarMenu('controller');
+      }
+      return;
+    }
+
+    if (nav.pressed.back) {
       this.setMainMenuButtonFocus(true);
       if (this.hangarMenuOverlay?.visible) {
         this.closeHangarMenu('controller');

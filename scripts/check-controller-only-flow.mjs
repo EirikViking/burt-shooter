@@ -88,6 +88,14 @@ async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
+function codexState(state) {
+  return state?.threatCodex || state?.threatCodexScreen || null;
+}
+
+function achievementsScreen(state) {
+  return state?.achievementsScreen || null;
+}
+
 async function waitForState(page, predicate, label, timeoutMs = 10000) {
   const deadline = Date.now() + timeoutMs;
   let latest = null;
@@ -261,14 +269,14 @@ try {
 
   await steerMenuTo(page, 'threatCodex');
   await tapButton(page, 0);
-  const codexOpen = await waitForState(page, (state) => state.scene === 'threatCodex' && state.threatCodex?.selectedEntryId, 'threat codex opened by controller');
+  const codexOpen = await waitForState(page, (state) => state.scene === 'threatCodex' && codexState(state)?.selectedEntryId, 'threat codex opened by controller');
   checkpoint('threat-codex-open', codexOpen, { screenshot: await screenshot(page, '04-threat-codex-open') });
   await tapButton(page, 15);
   await tapButton(page, 13);
   const codexMoved = await waitForState(page, (state) =>
     state.scene === 'threatCodex' &&
-    (state.threatCodex?.category !== codexOpen.threatCodex?.category ||
-      state.threatCodex?.selectedEntryId !== codexOpen.threatCodex?.selectedEntryId),
+    (codexState(state)?.category !== codexState(codexOpen)?.category ||
+      codexState(state)?.selectedEntryId !== codexState(codexOpen)?.selectedEntryId),
   'threat codex controller navigation');
   checkpoint('threat-codex-navigation', codexMoved);
   await tapButton(page, 1);
@@ -276,11 +284,11 @@ try {
 
   await steerMenuTo(page, 'achievements');
   await tapButton(page, 0);
-  const achievementsOpen = await waitForState(page, (state) => state.scene === 'achievements' && state.achievements?.focusedId, 'achievements opened by controller');
+  const achievementsOpen = await waitForState(page, (state) => state.scene === 'achievements' && achievementsScreen(state)?.focusedId, 'achievements opened by controller');
   checkpoint('achievements-open', achievementsOpen, { screenshot: await screenshot(page, '05-achievements-open') });
   await tapButton(page, 13);
   const achievementsMoved = await waitForState(page, (state) =>
-    state.scene === 'achievements' && state.achievements?.focusedId !== achievementsOpen.achievements?.focusedId,
+    state.scene === 'achievements' && achievementsScreen(state)?.focusedId !== achievementsScreen(achievementsOpen)?.focusedId,
   'achievements controller navigation');
   checkpoint('achievements-navigation', achievementsMoved);
   await tapButton(page, 1);
