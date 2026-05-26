@@ -329,6 +329,17 @@ function getSteamCloudDiagnostics() {
   return steamCloudSave?.getDiagnostics() || null;
 }
 
+function waitForWindowLoad(window, timeoutMs, label) {
+  if (!window.webContents.isLoading()) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error(`${label} load timeout`)), timeoutMs);
+    window.webContents.once('did-finish-load', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+  });
+}
+
 async function runSmoke(window) {
   const outputDir = path.resolve(
     process.env.NOVA_SWARM_ELECTRON_SMOKE_OUTPUT_DIR || path.join(process.cwd(), 'test-results', `electron-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}`)
@@ -341,13 +352,7 @@ async function runSmoke(window) {
     if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
   });
 
-  await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Electron smoke load timeout')), 20000);
-    window.webContents.once('did-finish-load', () => {
-      clearTimeout(timeout);
-      resolve();
-    });
-  });
+  await waitForWindowLoad(window, 20000, 'Electron smoke');
   const readyState = await waitForRenderedScene(window);
   await window.webContents.executeJavaScript('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
   await new Promise((resolve) => setTimeout(resolve, 500));
@@ -668,13 +673,7 @@ async function runControlSmoke(window) {
     if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
   });
 
-  await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Electron control smoke load timeout')), 20000);
-    window.webContents.once('did-finish-load', () => {
-      clearTimeout(timeout);
-      resolve();
-    });
-  });
+  await waitForWindowLoad(window, 20000, 'Electron control smoke');
   await window.loadURL(`${baseUrl}/?desktop=1&autostart=1&controlSmoke=1`);
   const startState = await waitForPlay(window);
   await captureControlScreenshot(window, outputDir, '00-control-start.png', capturedScreenshots, screenshotWarnings);
