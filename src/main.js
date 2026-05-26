@@ -1123,11 +1123,17 @@ async function enforceVersion() {
     localStorage.setItem('app_version', currentVersion);
   }
 
+  if (isDesktopRuntime()) {
+    return false;
+  }
+
   // 2. Check if we are STALE (Remote mismatch)
   // This handles the "Mobile stuck on old version" case
   try {
     const resp = await fetch(`/version.json?t=${Date.now()}`);
     if (resp.ok) {
+      const contentType = resp.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) return false;
       const data = await resp.json();
       if (data.version && data.version !== currentVersion) {
         console.log(`[Version] Remote mismatch! Remote: ${data.version}, Local: ${currentVersion}`);
