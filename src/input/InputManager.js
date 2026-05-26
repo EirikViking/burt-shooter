@@ -1,3 +1,5 @@
+import { markControllerInputActive } from './GamepadNavigator.js';
+
 export class InputManager {
   constructor() {
     this.keys = {};
@@ -167,6 +169,16 @@ export class InputManager {
       this.isButtonPressed(buttons, 16);
     const pauseWasPressed = Boolean(this.previousGamepadButtons.pause);
     const pauseJustPressed = Boolean(pause && (this.gamepadState.pauseJustPressed || !pauseWasPressed));
+    const controllerActive = Math.abs(moveX) > 0 ||
+      Math.abs(moveY) > 0 ||
+      dpadLeft ||
+      dpadRight ||
+      dpadUp ||
+      dpadDown ||
+      firing ||
+      dodge ||
+      pause;
+    if (controllerActive) markControllerInputActive();
 
     this.gamepadState = {
       connected: true,

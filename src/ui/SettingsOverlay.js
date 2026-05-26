@@ -86,6 +86,9 @@ export class SettingsOverlay {
     this.languageHint = null;
     this.creditsPanel = null;
     this.creditsBackButton = null;
+    this.creditsCoinButton = null;
+    this.creditsControls = [];
+    this.creditsFocusedIndex = 0;
     this.creditsDebugState = null;
     this.creditsTicker = null;
     this.creditsAnimatedNodes = [];
@@ -658,6 +661,9 @@ export class SettingsOverlay {
     this.languageHint = null;
     this.creditsPanel = null;
     this.creditsBackButton = null;
+    this.creditsCoinButton = null;
+    this.creditsControls = [];
+    this.creditsFocusedIndex = 0;
     this.creditsDebugState = null;
     this.creditsAnimatedNodes = [];
     this.creditsCoinClicks = 0;
@@ -673,9 +679,13 @@ export class SettingsOverlay {
     if (!nav.connected || !nav.active) return;
 
     if (this.creditsPanel) {
-      if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
+      if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
         this.closeCreditsPanel();
+        return;
       }
+      if (nav.pressed.up || nav.pressed.left) this.moveCreditsFocus(-1);
+      if (nav.pressed.down || nav.pressed.right) this.moveCreditsFocus(1);
+      if (nav.pressed.confirm) this.activateCreditsFocus();
       return;
     }
 
@@ -864,7 +874,9 @@ export class SettingsOverlay {
       eggRowY,
       isCompact
     );
+    coin.activate = () => this.triggerCreditsEasterEgg(coin);
     overlay.addChild(coin);
+    this.creditsCoinButton = coin;
 
     const eggStatus = createText(translateText('Cabinet seal idle. Totally normal. Probably.'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -887,10 +899,11 @@ export class SettingsOverlay {
       width: isCompact ? Math.min(260, panelWidth - margin * 2) : 280,
       height: isCompact ? 34 : 38
     });
-    backButton._focused = true;
-    backButton._drawButton?.(false);
+    backButton.activate = () => this.closeCreditsPanel();
     overlay.addChild(backButton);
     this.creditsBackButton = backButton;
+    this.creditsControls = [coin, backButton];
+    this.setCreditsFocus(1);
     this.creditsPanel = overlay;
     this.creditsDebugState = {
       panel: { x: Math.round(panelX), y: Math.round(panelY), width: Math.round(panelWidth), height: Math.round(panelHeight) },
@@ -946,13 +959,15 @@ export class SettingsOverlay {
     text.y = radius + (isCompact ? 16 : 18);
 
     const draw = (armed = false) => {
+      const focused = Boolean(button._focused);
+      const highlighted = armed || focused;
       glow.clear();
       face.clear();
-      glow.circle(0, 0, radius + (armed ? 10 : 7));
-      glow.fill({ color: armed ? 0xff55d9 : 0x37f5ff, alpha: armed ? 0.18 : 0.1 });
+      glow.circle(0, 0, radius + (highlighted ? 10 : 7));
+      glow.fill({ color: highlighted ? 0xff55d9 : 0x37f5ff, alpha: highlighted ? 0.18 : 0.1 });
       face.circle(0, 0, radius);
-      face.fill({ color: armed ? 0x2a1744 : 0x201703, alpha: 0.94 });
-      face.stroke({ color: armed ? 0xff55d9 : 0xffd15c, width: armed ? 3 : 2, alpha: 0.95 });
+      face.fill({ color: highlighted ? 0x2a1744 : 0x201703, alpha: 0.94 });
+      face.stroke({ color: focused ? 0xffffff : highlighted ? 0xff55d9 : 0xffd15c, width: highlighted ? 3 : 2, alpha: 0.95 });
       face.circle(0, 0, radius * 0.58);
       face.stroke({ color: 0x7fffd8, width: 1, alpha: 0.82 });
       face.moveTo(-radius * 0.45, 0);
@@ -967,13 +982,40 @@ export class SettingsOverlay {
     button._drawCoin = draw;
 
     button.on('pointerover', () => {
+      this.setCreditsFocusByButton(button);
       button._drawCoin?.(true);
       AudioManager.playSfx('thrusterFire', { volume: 0.06, minIntervalMs: 120 });
     });
     button.on('pointerout', () => button._drawCoin?.(false));
-    button.on('pointertap', () => this.triggerCreditsEasterEgg(button));
+    button.on('pointertap', () => button.activate?.());
     this.creditsAnimatedNodes.push({ node: button, kind: 'pulse', baseScale: 1, speed: 3.2 });
     return button;
+  }
+
+  setCreditsFocusByButton(button) {
+    const index = this.creditsControls.findIndex((control) => control === button);
+    if (index >= 0) this.setCreditsFocus(index);
+  }
+
+  setCreditsFocus(index) {
+    if (!this.creditsControls.length) return;
+    const count = this.creditsControls.length;
+    const next = ((index % count) + count) % count;
+    this.creditsControls.forEach((control, controlIndex) => {
+      control._focused = controlIndex === next;
+      control._drawButton?.(false);
+      control._drawCoin?.(false);
+    });
+    this.creditsFocusedIndex = next;
+  }
+
+  moveCreditsFocus(delta) {
+    this.setCreditsFocus(this.creditsFocusedIndex + delta);
+    AudioManager.playSfx('thrusterFire', { volume: 0.06, minIntervalMs: 90 });
+  }
+
+  activateCreditsFocus() {
+    this.creditsControls[this.creditsFocusedIndex]?.activate?.();
   }
 
   triggerCreditsEasterEgg(coinButton) {
@@ -1378,9 +1420,12 @@ export class SettingsOverlay {
     if (this.creditsPanel.parent) {
       this.creditsPanel.parent.removeChild(this.creditsPanel);
     }
-    this.creditsPanel.destroy({ children: true });
+      this.creditsPanel.destroy({ children: true });
     this.creditsPanel = null;
     this.creditsBackButton = null;
+    this.creditsCoinButton = null;
+    this.creditsControls = [];
+    this.creditsFocusedIndex = 0;
     this.creditsDebugState = null;
     this.creditsAnimatedNodes = [];
     this.creditsCoinClicks = 0;
@@ -1397,6 +1442,7 @@ export class SettingsOverlay {
       },
       footer: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button)])),
       credits: this.creditsDebugState,
+      creditsFocus: this.creditsControls[this.creditsFocusedIndex]?.label || null,
       focus: this.getFocusedControl()?.id || null
     };
   }

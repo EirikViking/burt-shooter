@@ -69,6 +69,11 @@ export class PlayScene {
     this.pauseFocusedIndex = 0;
     this.pauseGamepadNavigator = new GamepadNavigator();
     this.settingsOverlay = null;
+    this.hadGameplayGamepadConnection = false;
+    this.lastGameplayGamepadConnected = false;
+    this.autoPauseHandlersInstalled = false;
+    this.visibilityPauseHandler = null;
+    this.blurPauseHandler = null;
     this.levelAdvancePending = false;
     this.levelAdvanceTimeout = null;
     this.capState = {
@@ -238,6 +243,9 @@ export class PlayScene {
     this.pauseOverlay = null;
     this.settingsOverlay = null;
     this.pausePressed = false;
+    this.hadGameplayGamepadConnection = false;
+    this.lastGameplayGamepadConnected = false;
+    this.setupAutoPauseHandlers();
     this.gameContainer.removeChildren();
     this.uiContainer.removeChildren();
     this.uiOverlay.removeChildren();
@@ -1025,6 +1033,7 @@ export class PlayScene {
         this.game.scoreMultiplier = this.scoreMultiplier;
       }
 
+      this.updateControllerPresencePause();
       this.handlePauseToggle();
       if (this.isPaused) {
         this.updatePauseMenuControls(delta);
@@ -2360,6 +2369,7 @@ export class PlayScene {
   destroy() {
     this.flushBalanceDebugSummary('scene_destroy');
     this.closeSettingsOverlay();
+    this.removeAutoPauseHandlers();
     this.shipIntroToken += 1;
 
     if (this.levelAdvanceTimeout) {
@@ -2456,6 +2466,52 @@ export class PlayScene {
       this.hidePauseOverlay();
       AudioManager.setPauseDucked(false);
       AudioManager.playSfx('pause_out', { force: true, volume: 0.34 });
+    }
+  }
+
+  setupAutoPauseHandlers() {
+    if (this.autoPauseHandlersInstalled || typeof window === 'undefined') return;
+    this.visibilityPauseHandler = () => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        this.pauseForExternalInterruption('visibility_hidden');
+      }
+    };
+    this.blurPauseHandler = () => this.pauseForExternalInterruption('window_blur');
+    if (typeof document !== 'undefined') {
+      document.addEventListener?.('visibilitychange', this.visibilityPauseHandler);
+    }
+    window.addEventListener('blur', this.blurPauseHandler);
+    this.autoPauseHandlersInstalled = true;
+  }
+
+  removeAutoPauseHandlers() {
+    if (!this.autoPauseHandlersInstalled) return;
+    if (typeof document !== 'undefined') {
+      document.removeEventListener?.('visibilitychange', this.visibilityPauseHandler);
+    }
+    window.removeEventListener('blur', this.blurPauseHandler);
+    this.visibilityPauseHandler = null;
+    this.blurPauseHandler = null;
+    this.autoPauseHandlersInstalled = false;
+  }
+
+  pauseForExternalInterruption(reason = 'external_interruption') {
+    if (this.game?.currentScene !== this || !this.isReady || this.isPaused || (this.game?.lives || 0) <= 0) return;
+    this.pauseReason = reason;
+    this.setPaused(true);
+  }
+
+  updateControllerPresencePause() {
+    const state = this.inputManager?.getGamepadState?.();
+    const connected = Boolean(state?.connected);
+    if (connected) {
+      this.hadGameplayGamepadConnection = true;
+      this.lastGameplayGamepadConnected = true;
+      return;
+    }
+    if (this.hadGameplayGamepadConnection && this.lastGameplayGamepadConnected) {
+      this.lastGameplayGamepadConnected = false;
+      this.pauseForExternalInterruption('controller_disconnected');
     }
   }
 

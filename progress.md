@@ -9,6 +9,14 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Follow-up request: make the Career Intel screen much more dramatic. Reworked it into an arcade dossier with rank gauge, animated scan sweep, XP flow bar, profile stat tiles, bolder card framing, localized new labels, and a new `npm run check:career-intel-layout` screenshot/bounds validator.
 - Follow-up design correction: Sector 10 is now an official clear milestone rather than a hard stop. Clearing the target boss awards the clear/lives bonus, marks `runCleared`, shows a localized overrun toast, preserves clear-time lives for XP/achievements, and continues into Sector 11+ for score-chase overrun pressure. Added `npm run check:overrun-clear`.
 
+## 2026-05-26 Steam Controller Review Fix
+
+- Current user request: fix the Steam review failure where Full Controller Support was claimed but controller-only users could not reliably operate the main menu, submenus, pause menu, and pause submenus.
+- Work branch: `codex/steam-controller-menu-fix-20260526` from clean baseline `3000b18795e34481dbd7eebeaf1121a288498969`.
+- Implemented shared controller cursor hiding, native/override-backed Threat Codex navigation, controller focus/activation for the credits coin and back controls, gameplay auto-pause on controller disconnect, and gameplay auto-pause on focus/visibility loss for Steam Overlay-style interruptions.
+- Expanded `npm run check:controller-flow` to cover Settings credits/coin, Threat Codex, Achievements, Hangar menu, Ship Details, pause Settings, controller disconnect pause, game over initials, and highscore return.
+- Note: `npm run build:current` was accidentally run in this isolated worktree before the instruction to build only from the later integration branch. Do not deploy or package from this worktree; integrate the controller commit into the cabinet/overrun branch first.
+
 ## 2026-05-24 Desktop Wave Width And Controlled Chaos
 
 - Current user request: make desktop enemy formations use more screen width, add conservative random boss chaos events, and allow compensated multi-mini-boss normal wave variants without globally increasing difficulty; commit and push the branch without merging to main.

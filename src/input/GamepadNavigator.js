@@ -1,4 +1,26 @@
 const DEFAULT_DEADZONE = 0.42;
+let controllerCursorListenersInstalled = false;
+
+function clearControllerCursorMode() {
+  if (typeof document === 'undefined') return;
+  document.documentElement?.classList?.remove('controller-input-active');
+  document.body?.classList?.remove('controller-input-active');
+}
+
+function installControllerCursorListeners() {
+  if (controllerCursorListenersInstalled || typeof window === 'undefined') return;
+  controllerCursorListenersInstalled = true;
+  window.addEventListener('pointermove', clearControllerCursorMode, { passive: true });
+  window.addEventListener('pointerdown', clearControllerCursorMode, { passive: true });
+  window.addEventListener('keydown', clearControllerCursorMode, { passive: true });
+}
+
+export function markControllerInputActive() {
+  if (typeof document === 'undefined') return;
+  installControllerCursorListeners();
+  document.documentElement?.classList?.add('controller-input-active');
+  document.body?.classList?.add('controller-input-active');
+}
 
 function isPressed(buttons, index) {
   const button = buttons?.[index];
@@ -121,6 +143,7 @@ export class GamepadNavigator {
 
     if (active) {
       this.lastActivityAt = Date.now();
+      markControllerInputActive();
     }
 
     this.previous = down;

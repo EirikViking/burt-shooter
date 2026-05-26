@@ -242,14 +242,62 @@ try {
     masterAfter: masterAfter.audio?.masterVolume
   });
   assert(masterAfter.audio?.masterVolume !== masterBefore, 'Controller did not adjust the master volume slider');
+  for (let i = 0; i < 7; i += 1) await tapButton(page, 13);
+  const creditsFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'footer_credits', 'settings credits focus');
+  checkpoint('menu-settings-credits-focused', creditsFocused);
+  await tapButton(page, 0);
+  const creditsOpen = await waitForState(page, (state) => state.overlays?.credits && state.settingsOverlay?.credits, 'credits opened from settings by controller');
+  checkpoint('menu-settings-credits-open', creditsOpen, { screenshot: await screenshot(page, '03-menu-settings-credits-open') });
+  await tapButton(page, 12);
+  await tapButton(page, 0);
+  await tapButton(page, 0);
+  await tapButton(page, 0);
+  const creditsCoin = await waitForState(page, (state) => state.settingsOverlay?.credits?.easterEgg?.clicks >= 3, 'credits coin controller activation');
+  checkpoint('menu-settings-credits-coin', creditsCoin);
+  await tapButton(page, 1);
+  await waitForState(page, (state) => state.overlays?.settings && !state.overlays?.credits, 'credits closed with controller');
   await tapButton(page, 1);
   await waitForState(page, (state) => state.scene === 'menu' && !state.overlays?.settings, 'settings closed with controller');
+
+  await steerMenuTo(page, 'threatCodex');
+  await tapButton(page, 0);
+  const codexOpen = await waitForState(page, (state) => state.scene === 'threatCodex' && state.threatCodex?.selectedEntryId, 'threat codex opened by controller');
+  checkpoint('threat-codex-open', codexOpen, { screenshot: await screenshot(page, '04-threat-codex-open') });
+  await tapButton(page, 15);
+  await tapButton(page, 13);
+  const codexMoved = await waitForState(page, (state) =>
+    state.scene === 'threatCodex' &&
+    (state.threatCodex?.category !== codexOpen.threatCodex?.category ||
+      state.threatCodex?.selectedEntryId !== codexOpen.threatCodex?.selectedEntryId),
+  'threat codex controller navigation');
+  checkpoint('threat-codex-navigation', codexMoved);
+  await tapButton(page, 1);
+  await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, 'threat codex returned to menu');
+
+  await steerMenuTo(page, 'achievements');
+  await tapButton(page, 0);
+  const achievementsOpen = await waitForState(page, (state) => state.scene === 'achievements' && state.achievements?.focusedId, 'achievements opened by controller');
+  checkpoint('achievements-open', achievementsOpen, { screenshot: await screenshot(page, '05-achievements-open') });
+  await tapButton(page, 13);
+  const achievementsMoved = await waitForState(page, (state) =>
+    state.scene === 'achievements' && state.achievements?.focusedId !== achievementsOpen.achievements?.focusedId,
+  'achievements controller navigation');
+  checkpoint('achievements-navigation', achievementsMoved);
+  await tapButton(page, 1);
+  await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, 'achievements returned to menu');
 
   const hangarFocused = await steerMenuTo(page, 'hangar');
   checkpoint('menu-hangar-focused', hangarFocused);
   await tapButton(page, 0);
   const hangar = await waitForState(page, (state) => state.scene === 'shipSelect' && state.shipSelect?.spriteKey, 'ship select opened');
-  checkpoint('ship-select-open', hangar, { screenshot: await screenshot(page, '03-ship-select-open') });
+  checkpoint('ship-select-open', hangar, { screenshot: await screenshot(page, '06-ship-select-open') });
+  await tapButton(page, 9);
+  const hangarMenu = await waitForState(page, (state) => state.shipSelect?.hangarMenu?.visible, 'hangar menu opened by controller Start');
+  checkpoint('ship-select-hangar-menu-open', hangarMenu, { screenshot: await screenshot(page, '07-ship-select-hangar-menu-open') });
+  await tapButton(page, 13);
+  await tapButton(page, 12);
+  await tapButton(page, 1);
+  await waitForState(page, (state) => state.scene === 'shipSelect' && !state.shipSelect?.hangarMenu?.visible, 'hangar menu closed by controller B');
   const firstShipIndex = hangar.shipSelect.selectedIndex;
   await tapButton(page, 15);
   const afterRight = await waitForState(page, (state) => state.shipSelect?.selectedIndex !== firstShipIndex, 'ship select right navigation');
@@ -263,12 +311,12 @@ try {
   });
   await tapButton(page, 2);
   const details = await waitForState(page, (state) => state.scene === 'shipDetails', 'ship details opened by controller X');
-  checkpoint('ship-details-open', details, { screenshot: await screenshot(page, '04-ship-details-open') });
+  checkpoint('ship-details-open', details, { screenshot: await screenshot(page, '08-ship-details-open') });
   await tapButton(page, 1);
   await waitForState(page, (state) => state.scene === 'shipSelect', 'ship details closed by controller B');
   await tapButton(page, 0);
   const playStarted = await waitForState(page, (state) => state.scene === 'play' && state.player, 'gameplay launched by controller', 30000);
-  checkpoint('gameplay-launched', playStarted, { screenshot: await screenshot(page, '05-gameplay-launched') });
+  checkpoint('gameplay-launched', playStarted, { screenshot: await screenshot(page, '09-gameplay-launched') });
 
   await page.evaluate(() => {
     const game = window.__game;
@@ -295,7 +343,7 @@ try {
     beforeX: gameplayBefore.player?.x,
     afterX: gameplayAfter.player?.x,
     gamepad: gameplayAfter.input?.gamepad,
-    screenshot: await screenshot(page, '06-gameplay-move-fire')
+    screenshot: await screenshot(page, '10-gameplay-move-fire')
   });
   assert(gameplayAfter.input?.gamepad?.connected, 'Gameplay did not report connected controller');
   assert(gameplayAfter.input?.gamepad?.buttons?.firing, 'Gameplay did not report controller firing');
@@ -303,7 +351,7 @@ try {
 
   await tapButton(page, 9);
   const paused = await waitForState(page, (state) => state.overlays?.pause && state.isPaused, 'pause opened by controller Start');
-  checkpoint('pause-open', paused, { screenshot: await screenshot(page, '07-pause-open') });
+  checkpoint('pause-open', paused, { screenshot: await screenshot(page, '11-pause-open') });
   await tapButton(page, 13);
   await tapButton(page, 0);
   const pauseSettings = await waitForState(page, (state) => state.overlays?.pause && state.overlays?.settings && state.settingsOverlay?.focus, 'pause settings opened by controller');
@@ -324,6 +372,12 @@ try {
   await tapButton(page, 1);
   const resumed = await waitForState(page, (state) => state.scene === 'play' && !state.isPaused && !state.overlays?.pause, 'game resumed by controller B');
   checkpoint('pause-resumed', resumed);
+  await setGamepad(page, { connected: false });
+  const disconnectPaused = await waitForState(page, (state) => state.overlays?.pause && state.isPaused, 'controller disconnect auto-paused gameplay');
+  checkpoint('controller-disconnect-paused', disconnectPaused, { screenshot: await screenshot(page, '12-controller-disconnect-paused') });
+  await setGamepad(page);
+  await tapButton(page, 1);
+  await waitForState(page, (state) => state.scene === 'play' && !state.isPaused && !state.overlays?.pause, 'game resumed after controller reconnect');
 
   await page.evaluate(() => {
     const game = window.__game;
@@ -335,7 +389,7 @@ try {
     game.gameOver();
   });
   const gameOverPrompt = await waitForState(page, (state) => state.scene === 'gameOver', 'game over opened', 10000);
-  checkpoint('game-over-open', gameOverPrompt, { screenshot: await screenshot(page, '08-game-over-open') });
+  checkpoint('game-over-open', gameOverPrompt, { screenshot: await screenshot(page, '13-game-over-open') });
   let inputState = await readState(page);
   if (inputState.gameOver?.state !== 'input') {
     await tapButton(page, 0);
@@ -346,7 +400,7 @@ try {
     state.gameOver?.inputDevice === 'controller' &&
     /^[A-Z0-9]{3}$/.test(state.gameOver?.nameInput || ''),
   'controller initials entry');
-  checkpoint('game-over-controller-name-entry', inputState, { screenshot: await screenshot(page, '09-controller-name-entry') });
+  checkpoint('game-over-controller-name-entry', inputState, { screenshot: await screenshot(page, '14-controller-name-entry') });
   await tapButton(page, 13);
   await tapButton(page, 15);
   await tapButton(page, 12);
@@ -368,16 +422,16 @@ try {
   const submitted = await waitForState(page, (state) => state.scene === 'gameOver' && state.gameOver?.state === 'runback', 'score submitted from controller initials', 15000);
   checkpoint('game-over-score-submitted', submitted, {
     savedName: submitted.gameOver?.lastLeaderboardResult?.name,
-    screenshot: await screenshot(page, '10-score-submitted')
+    screenshot: await screenshot(page, '15-score-submitted')
   });
   assert(submitted.gameOver?.lastLeaderboardResult?.name, 'Controller name entry did not save a leaderboard name');
 
   await tapButton(page, 3);
   const highscore = await waitForState(page, (state) => state.scene === 'highscore' && state.highscore?.focusedControl, 'highscores opened by controller Y');
-  checkpoint('highscores-open', highscore, { screenshot: await screenshot(page, '11-highscores-open') });
+  checkpoint('highscores-open', highscore, { screenshot: await screenshot(page, '16-highscores-open') });
   await tapButton(page, 1);
   const backToMenu = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, 'highscores returned to menu by controller B');
-  checkpoint('return-menu', backToMenu, { screenshot: await screenshot(page, '12-return-menu') });
+  checkpoint('return-menu', backToMenu, { screenshot: await screenshot(page, '17-return-menu') });
 
   const report = {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,

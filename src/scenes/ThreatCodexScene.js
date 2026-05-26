@@ -9,6 +9,7 @@ import {
 import { AssetManifest } from '../assets/assetManifest.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
+import { GamepadNavigator } from '../input/GamepadNavigator.js';
 
 const FONT_FAMILY = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 const CODEX_BG = 0x02070c;
@@ -216,7 +217,7 @@ export class ThreatCodexScene {
     this.entryIndex = 0;
     this.keyHandler = null;
     this.wheelHandler = null;
-    this.gamepadLatchUntil = 0;
+    this.gamepadNavigator = new GamepadNavigator();
     this.catalog = getThreatCodexCatalog();
     this.discoveryState = getThreatCodexState();
     this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
@@ -237,6 +238,7 @@ export class ThreatCodexScene {
     this.discoveryState = clearThreatCodexUnread();
     this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
     this.renderToken += 1;
+    this.gamepadNavigator.suppressUntilReleased();
     this.createLayout(this.renderToken);
     this.keyHandler = (event) => this.handleKeyDown(event);
     this.wheelHandler = (event) => this.handleWheel(event);
@@ -1050,31 +1052,24 @@ export class ThreatCodexScene {
   }
 
   update() {
-    const now = Date.now();
-    if (now < this.gamepadLatchUntil) return;
-    const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : [];
-    const pad = pads[0];
-    if (!pad) return;
-    const x = pad.axes?.[0] || 0;
-    const y = pad.axes?.[1] || 0;
-    if (pad.buttons?.[1]?.pressed) {
-      this.gamepadLatchUntil = now + 220;
+    const nav = this.gamepadNavigator.update();
+    if (!nav.connected || !nav.active) return;
+    if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) {
       this.goBack();
       return;
     }
-    if (x < -0.5) {
-      this.gamepadLatchUntil = now + 180;
+    if (nav.pressed.lb) {
       this.moveCategory(-1);
-    } else if (x > 0.5) {
-      this.gamepadLatchUntil = now + 180;
-      this.moveCategory(1);
-    } else if (y < -0.5) {
-      this.gamepadLatchUntil = now + 150;
-      this.moveEntry(-1);
-    } else if (y > 0.5) {
-      this.gamepadLatchUntil = now + 150;
-      this.moveEntry(1);
+      return;
     }
+    if (nav.pressed.rb) {
+      this.moveCategory(1);
+      return;
+    }
+    if (nav.pressed.left) this.moveCategory(-1);
+    if (nav.pressed.right) this.moveCategory(1);
+    if (nav.pressed.up) this.moveEntry(-1);
+    if (nav.pressed.down) this.moveEntry(1);
   }
 
   goBack() {
