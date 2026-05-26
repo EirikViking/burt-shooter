@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-24T15:44:38.266Z",
+  "generatedAt": "2026-05-26T14:13:55.337Z",
   "status": "failed",
   "currentBuild": {
-    "version": "v2026-05-24_17-26-01",
-    "timestamp": "2026-05-24T15:26:01.075Z"
+    "version": "v2026-05-26_16-04-56",
+    "timestamp": "2026-05-26T14:04:56.993Z"
   },
   "liveUrl": "https://novaswarm.tinyfoundry.app",
   "versionChecks": [
@@ -11,72 +11,14 @@
       "url": "https://novaswarm.tinyfoundry.app/version.json",
       "ok": true,
       "status": 200,
-      "version": "v2026-05-24_14-41-37",
-      "timestamp": "2026-05-24T12:41:37.998Z"
+      "version": "v2026-05-26_10-37-24",
+      "timestamp": "2026-05-26T08:37:24.944Z"
     }
   ],
-  "latestLiveSmoke": {
-    "reportPath": "test-results/smoke-2026-05-23T21-35-47-765Z/report.json",
-    "baseUrl": "https://novaswarm.tinyfoundry.app",
-    "status": null,
-    "build": "v2026-05-23_23-31-46",
-    "screenshots": [
-      {
-        "file": "01-menu.png",
-        "exists": true
-      },
-      {
-        "file": "01-settings.png",
-        "exists": true
-      },
-      {
-        "file": "01-credits.png",
-        "exists": true
-      },
-      {
-        "file": "02-gameplay.png",
-        "exists": true
-      },
-      {
-        "file": "02-powerup-hud.png",
-        "exists": true
-      },
-      {
-        "file": "03-gamepad-pause.png",
-        "exists": true
-      },
-      {
-        "file": "06-game-over.png",
-        "exists": true
-      },
-      {
-        "file": "08-mobile-intro.png",
-        "exists": true
-      },
-      {
-        "file": "10-level3-gameplay.png",
-        "exists": true
-      },
-      {
-        "file": "14-boss-defeated.png",
-        "exists": true
-      },
-      {
-        "file": "15-level-2-start.png",
-        "exists": true
-      }
-    ],
-    "console": {
-      "warningsOrErrors": 0,
-      "pageErrors": 0,
-      "badResponses": 0
-    },
-    "scenes": null,
-    "coverage": null
-  },
+  "latestLiveSmoke": null,
   "errors": [
-    "Live version v2026-05-24_14-41-37 at https://novaswarm.tinyfoundry.app/version.json does not match current build v2026-05-24_17-26-01",
-    "Latest live smoke build v2026-05-23_23-31-46 does not match current build v2026-05-24_17-26-01"
+    "Live version v2026-05-26_10-37-24 at https://novaswarm.tinyfoundry.app/version.json does not match current build v2026-05-26_16-04-56",
+    "Missing live-domain smoke report for https://novaswarm.tinyfoundry.app"
   ],
   "warnings": []
 }

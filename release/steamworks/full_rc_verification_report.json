@@ -1,94 +1,15 @@
 {
-  "generatedAt": "2026-05-24T15:44:58.022Z",
+  "generatedAt": "2026-05-26T14:11:05.659Z",
   "status": "failed",
   "currentBuild": {
-    "version": "v2026-05-24_17-26-01",
-    "timestamp": "2026-05-24T15:26:01.075Z"
+    "version": "v2026-05-26_16-04-56",
+    "timestamp": "2026-05-26T14:04:56.993Z"
   },
-  "latestFullRc": {
-    "reportPath": "test-results/steam-rc-verify-2026-05-24T15-42-20-885Z/report.json",
-    "generatedAt": "2026-05-24T15:44:38.360Z",
-    "mode": "full",
-    "ok": false,
-    "stageCount": 11,
-    "stages": [
-      {
-        "name": "build:current",
-        "ok": true,
-        "durationMs": 28104
-      },
-      {
-        "name": "check:intro-voice",
-        "ok": true,
-        "durationMs": 14002
-      },
-      {
-        "name": "check:provenance",
-        "ok": true,
-        "durationMs": 740
-      },
-      {
-        "name": "check:steam-assets",
-        "ok": true,
-        "durationMs": 3164
-      },
-      {
-        "name": "check:steam-store",
-        "ok": true,
-        "durationMs": 541
-      },
-      {
-        "name": "package:steam:win:current",
-        "ok": true,
-        "durationMs": 59092
-      },
-      {
-        "name": "desktop:smoke:current",
-        "ok": true,
-        "durationMs": 3723
-      },
-      {
-        "name": "desktop:smoke:packaged",
-        "ok": true,
-        "durationMs": 16504
-      },
-      {
-        "name": "desktop:controls:packaged",
-        "ok": true,
-        "durationMs": 8776
-      },
-      {
-        "name": "check:desktop-package",
-        "ok": true,
-        "durationMs": 1410
-      },
-      {
-        "name": "check:live-deployment",
-        "ok": false,
-        "durationMs": 1306
-      }
-    ],
-    "releaseAudit": {
-      "verdict": "not_steam_ready",
-      "passed": 9,
-      "failed": 14,
-      "hardFailures": 11,
-      "manualBlockers": [
-        "Steamworks app ID and depot ID are still not configured in tracked files.",
-        "SteamPipe upload and Steam-client install/launch validation still require credentials and a real app.",
-        "User/human approval is still required for final screenshots, capsules, trailer, and by-ear audio mix."
-      ]
-    },
-    "audioAudit": {
-      "generatedAt": "2026-05-23T09:12:14.007Z",
-      "decodeErrors": null,
-      "warnings": 0
-    }
-  },
+  "latestFullRc": null,
   "latestLocalSmoke": {
-    "reportPath": "test-results/smoke-2026-05-24T15-30-35-482Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-26T14-09-18-662Z/report.json",
     "baseUrl": "http://127.0.0.1:4173",
-    "build": "v2026-05-24_17-26-01",
+    "build": "v2026-05-26_16-04-56",
     "status": "passed",
     "console": {
       "warningsOrErrors": 0,
@@ -98,34 +19,10 @@
     "scenes": null,
     "coverage": null
   },
-  "latestReleasePlaytest": {
-    "reportPath": "test-results/release-playtest-2026-05-24T15-32-02-117Z/report.json",
-    "baseUrl": "http://127.0.0.1:4173",
-    "survivedMs": 599898,
-    "requiredSurvivalMs": 599500,
-    "survivedFullDuration": true,
-    "peakLevel": 7,
-    "peakScore": 18341,
-    "finalState": {
-      "scene": "play",
-      "level": 7,
-      "lives": 4,
-      "score": 18341,
-      "enemyManagerState": "WAVE_ACTIVE",
-      "musicContext": "gameplay",
-      "musicTrack": "Rain of Lasers.mp3",
-      "fatalOverlay": false
-    },
-    "console": {
-      "routineMessages": 0,
-      "warningsOrErrors": 0,
-      "pageErrors": 0,
-      "badResponses": 0,
-      "requestFailures": 0
-    }
-  },
+  "latestReleasePlaytest": null,
   "errors": [
-    "Latest full Steam RC report is not complete; missing/failed stages: check:live-deployment, audit:audio-mix, smoke, playtest:release"
+    "Missing full Steam RC verifier report in test-results/steam-rc-verify-*/report.json",
+    "Missing release playtest report in test-results/release-playtest-*/report.json"
   ],
   "warnings": []
 }
