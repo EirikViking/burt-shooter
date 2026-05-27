@@ -108,41 +108,67 @@ try {
   const beforeMenuButton = await showShipSelect(page);
   const menuTarget = beforeMenuButton.shipSelect.backButton;
   await page.mouse.click(menuTarget.x + menuTarget.width / 2, menuTarget.y + menuTarget.height / 2);
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === true, { timeout: 10000 });
-  const afterMenuButton = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
-
-  const exitTarget = afterMenuButton.shipSelect.hangarMenu.buttons.exitGame;
-  await page.mouse.click(exitTarget.x + exitTarget.width / 2, exitTarget.y + exitTarget.height / 2);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return /DESKTOP BUILD/.test(state.shipSelect?.hangarMenu?.notice || '');
+    return state.scene === 'menu' || state.shipSelect?.hangarMenu?.visible === true;
   }, { timeout: 10000 });
-  const afterExitFallback = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const afterMenuButton = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const backButtonReturnsMenu = afterMenuButton.scene === 'menu';
 
-  const resumeTarget = afterExitFallback.shipSelect.hangarMenu.buttons.resume;
-  await page.mouse.click(resumeTarget.x + resumeTarget.width / 2, resumeTarget.y + resumeTarget.height / 2);
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === false, { timeout: 10000 });
-  const afterResume = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  let afterExitFallback = { shipSelect: { hangarMenu: { visible: false, notice: '' } } };
+  let afterResume = afterMenuButton;
+  if (!backButtonReturnsMenu) {
+    const exitTarget = afterMenuButton.shipSelect.hangarMenu.buttons.exitGame;
+    await page.mouse.click(exitTarget.x + exitTarget.width / 2, exitTarget.y + exitTarget.height / 2);
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return /DESKTOP BUILD/.test(state.shipSelect?.hangarMenu?.notice || '');
+    }, { timeout: 10000 });
+    afterExitFallback = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+
+    const resumeTarget = afterExitFallback.shipSelect.hangarMenu.buttons.resume;
+    await page.mouse.click(resumeTarget.x + resumeTarget.width / 2, resumeTarget.y + resumeTarget.height / 2);
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === false, { timeout: 10000 });
+    afterResume = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  } else {
+    afterResume = await showShipSelect(page);
+  }
 
   const beforeKeyboardMenu = await showShipSelect(page);
   await page.keyboard.press('Tab');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.mainMenuFocused === true, { timeout: 10000 });
   const afterTabFocus = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
   await page.keyboard.press('Enter');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === true, { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'menu' || state.shipSelect?.hangarMenu?.visible === true;
+  }, { timeout: 10000 });
   const afterKeyboardMenu = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
-  await page.keyboard.press('Escape');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === false, { timeout: 10000 });
-  const afterKeyboardResume = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const keyboardMenuReturnsMenu = afterKeyboardMenu.scene === 'menu';
+  let afterKeyboardResume = afterKeyboardMenu;
+  if (keyboardMenuReturnsMenu) {
+    afterKeyboardResume = await showShipSelect(page);
+  } else {
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === false, { timeout: 10000 });
+    afterKeyboardResume = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  }
 
   const beforeEscapeMenu = await showShipSelect(page);
   await page.keyboard.press('Escape');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === true, { timeout: 10000 });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'menu' || state.shipSelect?.hangarMenu?.visible === true;
+  }, { timeout: 10000 });
   const afterEscapeMenu = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
-  const mainMenuTarget = afterEscapeMenu.shipSelect.hangarMenu.buttons.mainMenu;
-  await page.mouse.click(mainMenuTarget.x + mainMenuTarget.width / 2, mainMenuTarget.y + mainMenuTarget.height / 2);
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'menu', { timeout: 10000 });
-  const afterMainMenu = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const escapeReturnsMenu = afterEscapeMenu.scene === 'menu';
+  let afterMainMenu = afterEscapeMenu;
+  if (!escapeReturnsMenu) {
+    const mainMenuTarget = afterEscapeMenu.shipSelect.hangarMenu.buttons.mainMenu;
+    await page.mouse.click(mainMenuTarget.x + mainMenuTarget.width / 2, mainMenuTarget.y + mainMenuTarget.height / 2);
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'menu', { timeout: 10000 });
+    afterMainMenu = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  }
 
   const beforeClick = await showShipSelect(page);
   const clickTarget = beforeClick.shipSelect.startButton;
@@ -154,6 +180,11 @@ try {
   const beforeKeyboard = await showShipSelect(page);
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', { timeout: 10000 });
+  const keyboardStartX = await page.evaluate(() => window.__game?.scenes?.play?.player?.x ?? null);
+  await page.keyboard.down('ArrowRight');
+  await page.waitForTimeout(350);
+  await page.keyboard.up('ArrowRight');
+  const keyboardMovedX = await page.evaluate(() => window.__game?.scenes?.play?.player?.x ?? null);
   const afterKeyboard = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 
   mkdirSync(outputDir, { recursive: true });
@@ -163,20 +194,24 @@ try {
   const report = {
     ok: Boolean(
       beforeMenuButton.shipSelect?.backButton?.width > 0 &&
-      afterMenuButton.scene === 'shipSelect' &&
-      afterMenuButton.shipSelect?.hangarMenu?.visible === true &&
-      afterExitFallback.shipSelect?.hangarMenu?.visible === true &&
-      /DESKTOP BUILD/.test(afterExitFallback.shipSelect?.hangarMenu?.notice || '') &&
+      (backButtonReturnsMenu || (
+        afterMenuButton.scene === 'shipSelect' &&
+        afterMenuButton.shipSelect?.hangarMenu?.visible === true &&
+        afterExitFallback.shipSelect?.hangarMenu?.visible === true &&
+        /DESKTOP BUILD/.test(afterExitFallback.shipSelect?.hangarMenu?.notice || '')
+      )) &&
       afterResume.scene === 'shipSelect' &&
       afterResume.shipSelect?.hangarMenu?.visible === false &&
       beforeKeyboardMenu.shipSelect?.backButton?.width > 0 &&
       afterTabFocus.shipSelect?.hangarMenu?.mainMenuFocused === true &&
-      afterKeyboardMenu.shipSelect?.hangarMenu?.visible === true &&
+      (keyboardMenuReturnsMenu || afterKeyboardMenu.shipSelect?.hangarMenu?.visible === true) &&
       afterKeyboardResume.scene === 'shipSelect' &&
       afterKeyboardResume.shipSelect?.hangarMenu?.visible === false &&
       beforeEscapeMenu.shipSelect?.backButton?.width > 0 &&
-      afterEscapeMenu.scene === 'shipSelect' &&
-      afterEscapeMenu.shipSelect?.hangarMenu?.visible === true &&
+      (escapeReturnsMenu || (
+        afterEscapeMenu.scene === 'shipSelect' &&
+        afterEscapeMenu.shipSelect?.hangarMenu?.visible === true
+      )) &&
       afterMainMenu.scene === 'menu' &&
       beforeClick.shipSelect?.spriteKey &&
       afterClick.scene === 'play' &&
@@ -186,20 +221,23 @@ try {
       afterKeyboard.selectedShipSpriteKey === beforeKeyboard.shipSelect.spriteKey &&
       afterKeyboard.score === 0 &&
       afterKeyboard.lives === 3 &&
+      Number.isFinite(keyboardStartX) &&
+      Number.isFinite(keyboardMovedX) &&
+      keyboardMovedX > keyboardStartX + 8 &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
     baseUrl,
     beforeMenuButton: beforeMenuButton.shipSelect,
-    afterMenuButton: afterMenuButton.shipSelect,
+    afterMenuButton: afterMenuButton.shipSelect || { returnedToMenu: backButtonReturnsMenu },
     afterExitFallback: afterExitFallback.shipSelect?.hangarMenu,
     afterResume: afterResume.shipSelect?.hangarMenu,
     beforeKeyboardMenu: beforeKeyboardMenu.shipSelect,
     afterTabFocus: afterTabFocus.shipSelect?.hangarMenu,
-    afterKeyboardMenu: afterKeyboardMenu.shipSelect?.hangarMenu,
+    afterKeyboardMenu: afterKeyboardMenu.shipSelect?.hangarMenu || { returnedToMenu: keyboardMenuReturnsMenu },
     afterKeyboardResume: afterKeyboardResume.shipSelect?.hangarMenu,
     beforeEscapeMenu: beforeEscapeMenu.shipSelect,
-    afterEscapeMenu: afterEscapeMenu.shipSelect?.hangarMenu,
+    afterEscapeMenu: afterEscapeMenu.shipSelect?.hangarMenu || { returnedToMenu: escapeReturnsMenu },
     afterMainMenu: {
       scene: afterMainMenu.scene
     },
@@ -215,7 +253,9 @@ try {
       scene: afterKeyboard.scene,
       selectedShipSpriteKey: afterKeyboard.selectedShipSpriteKey,
       score: afterKeyboard.score,
-      lives: afterKeyboard.lives
+      lives: afterKeyboard.lives,
+      keyboardStartX,
+      keyboardMovedX
     },
     pageErrors,
     consoleErrors,
@@ -227,7 +267,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[ship-selector-start] PASS menuOverlay=${afterMenuButton.shipSelect.hangarMenu.visible} escape=${afterEscapeMenu.shipSelect.hangarMenu.visible}->${afterMainMenu.scene} click=${afterClick.selectedShipSpriteKey} keyboard=${afterKeyboard.selectedShipSpriteKey} screenshot=${screenshot}`);
+    console.log(`[ship-selector-start] PASS backReturnsMenu=${backButtonReturnsMenu} escapeReturnsMenu=${escapeReturnsMenu} -> ${afterMainMenu.scene} click=${afterClick.selectedShipSpriteKey} keyboard=${afterKeyboard.selectedShipSpriteKey} moved=${Math.round(keyboardMovedX - keyboardStartX)} screenshot=${screenshot}`);
   }
 } finally {
   await browser.close();

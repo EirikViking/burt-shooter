@@ -596,9 +596,10 @@ export class EnemyManager {
 
   getWaveEnemyCount(level, waveIndex = 0) {
     const diff = BalanceConfig.difficulty;
+    const earlyBoost = this.getEarlyLevelDifficultyBoost(level);
     const earlyCounts = diff.earlyWaveEnemyCounts?.[level];
     if (Array.isArray(earlyCounts) && Number.isFinite(earlyCounts[waveIndex])) {
-      return earlyCounts[waveIndex];
+      return Math.ceil(earlyCounts[waveIndex] * earlyBoost);
     }
 
     const levelScale = Math.max(0, level - 1);
@@ -610,7 +611,7 @@ export class EnemyManager {
       waveScale * (diff.waveEnemyPerWave ?? 0.45) +
       variance
     );
-    return Math.max(4, Math.min(diff.waveEnemyMax ?? 14, count));
+    return Math.max(4, Math.min(diff.waveEnemyMax ?? 14, Math.ceil(count * earlyBoost)));
   }
 
   getCuratedWaves(level) {
@@ -1050,6 +1051,7 @@ export class EnemyManager {
     const pressureDirector = this.game?.runPressureDirector;
     const fireChance = (pressureDirector?.scaleEnemyFireChance?.(baseFireChance) ?? baseFireChance) *
       diff.pressureScalar *
+      this.getEarlyLevelDifficultyBoost(this.level) *
       this.getOpeningFireScalar() *
       (1 + tier * 0.1);
     const enemySpeedMult = pressureDirector?.scaleEnemySpeed?.(1) || 1;
@@ -2180,6 +2182,10 @@ export class EnemyManager {
       if ((Number(playScene.damageTakenThisWave) || 0) === 0) {
         playScene.noHitWavesThisRun = (Number(playScene.noHitWavesThisRun) || 0) + 1;
         this.game.addScore(400, 'noHitBonus');
+        playScene.triggerCabinetLog?.('no-hit-wave', {
+          source: 'no_hit_wave',
+          wave: clearedWaveNumber
+        }, { duration: 6400 });
       }
       playScene.damageTakenThisWave = 0;
     }
@@ -2539,20 +2545,29 @@ export class EnemyManager {
   getDifficultyScalars(level) {
     const diff = BalanceConfig.difficulty;
     const levelScale = Math.max(0, level - 1);
+    const earlyBoost = this.getEarlyLevelDifficultyBoost(level);
     return {
       hpScale: Math.min(
         diff.enemyHealthMaxMultiplier ?? Number.POSITIVE_INFINITY,
-        diff.baseEnemyHealthMultiplier + levelScale * diff.hpScalePerLevel
+        (diff.baseEnemyHealthMultiplier + levelScale * diff.hpScalePerLevel) * earlyBoost
       ),
       speedScale: Math.min(
         diff.enemySpeedMaxMultiplier ?? Number.POSITIVE_INFINITY,
-        diff.enemySpeedMultiplier + levelScale * diff.enemySpeedPerLevel
+        (diff.enemySpeedMultiplier + levelScale * diff.enemySpeedPerLevel) * earlyBoost
       ),
       fireDelayScale: Math.max(
         diff.enemyFireDelayMinMultiplier ?? 0.85,
-        (diff.enemyFireDelayMultiplier ?? 1) + levelScale * diff.enemyFireDelayPerLevel
+        ((diff.enemyFireDelayMultiplier ?? 1) + levelScale * diff.enemyFireDelayPerLevel) / earlyBoost
       )
     };
+  }
+
+  getEarlyLevelDifficultyBoost(level) {
+    const config = BalanceConfig.difficulty?.earlyLevelDifficultyBoost || {};
+    const safeLevel = Math.max(1, Number(level) || 1);
+    const maxLevel = Math.max(0, Number(config.maxLevel) || 0);
+    const scalar = Number(config.scalar) || 1;
+    return maxLevel > 0 && safeLevel <= maxLevel ? Math.max(1, scalar) : 1;
   }
 
   logLevelDifficulty(level, waveCount) {
@@ -2565,7 +2580,7 @@ export class EnemyManager {
     const fireChance = Math.min(
       diff.enemyFireChanceMax ?? Number.POSITIVE_INFINITY,
       diff.enemyFireChance + Math.max(0, level - 1) * (diff.enemyFireChancePerLevel ?? 0)
-    );
+    ) * this.getEarlyLevelDifficultyBoost(level);
     console.log(
       `[Difficulty] level=${level} waves=${waveCount} waveDelayMs=${diff.waveDelayMs}` +
       ` wavesPerBossBase=${diff.wavesPerBossBase} wavesPerBossMax=${diff.wavesPerBossMax}` +

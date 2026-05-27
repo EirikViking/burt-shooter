@@ -233,6 +233,8 @@ export class PlayScene {
     if (!this.inputManager || this.inputManager.destroyed) {
       this.inputManager = new InputManager();
     }
+    this.inputManager.armForGameplay?.();
+    this.focusGameplayCanvas();
     this.isPaused = false;
     this.bossClearRecoveryLevels.clear();
     this.pauseOverlay = null;
@@ -969,6 +971,19 @@ export class PlayScene {
 
     this.resetRandomTimers();
     this.ambientBonusDroneTimer = 2000 + Math.random() * 3000;
+  }
+
+  focusGameplayCanvas() {
+    try {
+      const canvas = this.game?.app?.canvas || this.game?.app?.view;
+      if (canvas) {
+        canvas.tabIndex = 0;
+        canvas.focus?.({ preventScroll: true });
+      }
+      window.focus?.();
+    } catch (error) {
+      console.warn('[PlayScene] gameplay focus request failed:', error);
+    }
   }
 
   showLevelIntro({ postBoss = false } = {}) {
@@ -2005,6 +2020,17 @@ export class PlayScene {
           this.recordBalancePickup(powerup);
           powerup.collect(this.player, this);
           AudioManager.playSfx('pickup');
+          const pickupName = powerup.label || powerup.type || translateText('Powerup');
+          this.triggerCabinetLog('first-powerup-read', {
+            name: pickupName,
+            source: 'powerup_pickup'
+          }, { duration: 6400 });
+          if (powerup.type === 'shield' || this.player?.shieldActive || this.player?.shielded) {
+            this.triggerCabinetLog('shield-window', {
+              name: pickupName,
+              source: 'shield_pickup'
+            }, { duration: 6400 });
+          }
           const pickupColor = this.player?.synergyState?.type === 'cash_vacuum' ? 0xffff00 : powerup.color;
           this.particleManager.createPickupEffect(powerup.x, powerup.y, pickupColor);
           // CRITICAL: Ensure player visibility after powerup pickup
@@ -2735,12 +2761,13 @@ export class PlayScene {
       imageAlias: entry.imageAlias,
       force: options.force,
       accent: entry.accent,
-      duration: options.duration || (appliedBonus > 0 ? 4200 : 3600),
+      duration: options.duration || (appliedBonus > 0 ? 7200 : 6200),
       maxWidth: this.game.getWidth() < 620
         ? this.game.getWidth() * 0.82
-        : Math.min(460, this.game.getWidth() * 0.38)
+        : Math.min(560, this.game.getWidth() * 0.46)
     });
     if (!shown) return false;
+    AudioManager.playSfx('cabinet_log_stamp', { volume: 0.76, minIntervalMs: 250 });
     this.shownCabinetLogIds.add(id);
     this.lastCabinetLog = {
       id,
@@ -4101,6 +4128,13 @@ export class PlayScene {
         volume: 1.08
       });
     }, 520);
+    setTimeout(() => {
+      if (this.game?.currentScene !== this) return;
+      this.triggerCabinetLog('overrun-door', {
+        source: 'overrun_clear',
+        sector: nextSector - 1
+      }, { duration: 7600, force: true });
+    }, 4800);
   }
 
   updateOverrunClearCelebrations() {
@@ -4478,7 +4512,7 @@ export class PlayScene {
   showLoreBanner(text, options = {}) {
     if (!text) return false;
     if (!options.force && !this.canShowLore()) return false;
-    const duration = Number.isFinite(options.duration) ? options.duration : 2500 + Math.random() * 1000;
+    const duration = Number.isFinite(options.duration) ? options.duration : 4600 + Math.random() * 1400;
     const compactHud = this.game.getWidth() < 620;
     const y = compactHud
       ? Math.min(this.game.getHeight() - 170, Math.max(220, this.game.getHeight() * 0.32))
@@ -4498,7 +4532,7 @@ export class PlayScene {
         ? options.maxWidth
         : compactHud
         ? this.game.getWidth() * 0.78
-        : Math.min(360, this.game.getWidth() * 0.32)
+        : Math.min(520, this.game.getWidth() * 0.42)
     });
     return true;
   }
@@ -4534,6 +4568,8 @@ export class PlayScene {
     const requestedY = options.y || (slot === 'corner' ? height * 0.12 : slot === 'top' ? height * 0.18 : height * 0.2);
     const y = slot === 'corner'
       ? Math.min(height - 80, Math.max(requestedY, 156))
+      : slot === 'top'
+        ? Math.min(height - 130, Math.max(requestedY, 188))
       : requestedY;
 
     let display = null;
@@ -4841,11 +4877,15 @@ export class PlayScene {
       fill: '#7dffcc',
       stroke: '#001616',
       strokeThickness: 2,
-      slot: 'corner',
+      slot: 'top',
       type: 'discovery',
-      duration: RunPacingConfig.discovery.toastDurationMs,
-      priority: 1,
-      maxWidth: this.game.getWidth() * (this.game.getWidth() < 620 ? 0.72 : 0.38)
+      banner: true,
+      title: translateText('NEW THREAT SCANNED'),
+      align: this.game.getWidth() < 620 ? 'center' : 'right',
+      y: Math.max(220, this.game.getHeight() * 0.26),
+      duration: Math.max(3600, RunPacingConfig.discovery.toastDurationMs || 0),
+      priority: 2,
+      maxWidth: this.game.getWidth() * (this.game.getWidth() < 620 ? 0.78 : 0.42)
     });
     return result;
   }
@@ -4867,12 +4907,17 @@ export class PlayScene {
     const now = Date.now();
     if (enemy?.kind === 'boss') {
       const bossId = enemy?.profile?.id || enemy?.bossType || `boss_${this.game.level}`;
+      const bossName = enemy?.profile?.name || enemy?.name || bossId;
       this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
       this.recordThreatDefeat(bossId, 'bosses', {
-        name: enemy?.profile?.name || enemy?.name || bossId,
+        name: bossName,
         role: enemy?.profile?.title || 'boss',
         sector: this.game.level
       });
+      this.triggerCabinetLog('boss-defeated', {
+        name: bossName,
+        source: 'boss_defeated'
+      }, { duration: 7000 });
     } else {
       this.recordThreatDefeat(enemy?.type, 'enemies', {
         name: enemy?.generatedProfile?.displayName || enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || enemy?.type,
@@ -4926,6 +4971,10 @@ export class PlayScene {
       const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
       this.enqueueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
       AudioManager.playSfx('combo_breakout', { force: true, volume: 0.82 });
+      this.triggerCabinetLog('combo-staircase', {
+        source: 'combo_multiplier',
+        streak: this.comboCount
+      }, { duration: 6200 });
       if (this.particleManager && this.player) {
         this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
       }
@@ -5059,6 +5108,10 @@ export class PlayScene {
       duration: 950
     });
     AudioManager.playSfx('combo_tick', { force: true, volume: 0.62, minIntervalMs: 180 });
+    this.triggerCabinetLog('graze-break-armed', {
+      source: 'graze_break',
+      streak: this.dangerDodgeCount || 0
+    }, { duration: 6400 });
     return true;
   }
 
@@ -6313,6 +6366,12 @@ export class PlayScene {
     // Start enemy waves - use startLevel, not startWave
     if (this.enemyManager && this.game.level) {
       this.startLevel('introComplete');
+      setTimeout(() => {
+        if (this.game?.currentScene !== this || !this.introComplete) return;
+        this.triggerCabinetLog('launch-checklist', {
+          source: 'launch_checklist'
+        }, { duration: 6600 });
+      }, 2600);
     }
 
     console.log('[PlayScene] Ship intro complete, gameplay enabled');

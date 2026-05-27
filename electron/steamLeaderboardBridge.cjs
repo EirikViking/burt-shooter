@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score';
+const DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 const STEAM_LEADERBOARD_NAME = process.env.NOVA_SWARM_STEAM_LEADERBOARD_NAME || DEFAULT_STEAM_LEADERBOARD_NAME;
 const INT32_MAX = 2147483647;
 const MAX_STEAM_DOWNLOAD_ENTRIES = 100;

@@ -238,6 +238,96 @@ const cabinetLogsEn = Object.freeze([
     tip: 'At max lives, keep collecting score safely. The extra buffer is for mistakes, not for standing still.',
     imageAlias: 'nova-swarm-story-comms-02-20260519',
     accent: 0x7dffcc
+  },
+  {
+    id: 'launch-checklist',
+    title: 'CABINET LOG: PRE-FLIGHT RECEIPT',
+    role: 'Launch read',
+    line: 'New sector, same invoice. Useful read: spend the first wave learning lanes before spending hulls.',
+    description: 'Filed when a run settles into motion. The Cabinet turns the opening seconds into a reminder to read lanes before chasing damage.',
+    tip: 'Use the first wave to map safe lanes, then push for score once the rhythm is clear.',
+    imageAlias: 'nova-swarm-story-comms-01-20260519',
+    accent: 0xffef7e
+  },
+  {
+    id: 'first-powerup-read',
+    title: 'CABINET LOG: BRIGHT OBJECT',
+    role: 'Pickup read',
+    line: 'Powerup collected: {name}. Useful read: grab gifts from safe lanes, not from the teeth of the swarm.',
+    description: 'Filed on the first powerup pickup in a run. The Cabinet reminds the pilot that rewards still need a safe approach path.',
+    tip: 'Let unsafe pickups drift or expire if the lane is closing. Surviving keeps more score alive.',
+    imageAlias: 'nova-swarm-story-comms-03-20260519',
+    accent: 0x37f5ff
+  },
+  {
+    id: 'shield-window',
+    title: 'CABINET LOG: SHIELD IS NOT A PLAN',
+    role: 'Shield read',
+    line: 'Shield online. Useful read: it buys one mistake; it does not buy a new personality.',
+    description: 'Filed the first time shield protection appears in a run. It frames shield as a recovery buffer, not a reason to drift into danger.',
+    tip: 'Use shield time to reposition and keep firing from safe lanes.',
+    imageAlias: 'nova-swarm-story-comms-02-20260519',
+    accent: 0x7dffcc
+  },
+  {
+    id: 'combo-staircase',
+    title: 'CABINET LOG: COMBO STAIRS',
+    role: 'Combo read',
+    line: 'Combo climbing. Useful read: keep the lane calm; dropped streaks do not give refunds.',
+    description: 'Filed when the first multiplier step lands. It teaches that combo value comes from controlled survival, not just faster firing.',
+    tip: 'Hold a safe lane through the multiplier step before chasing the next wave.',
+    imageAlias: 'nova-swarm-story-comms-03-20260519',
+    accent: 0xff55d9
+  },
+  {
+    id: 'graze-break-armed',
+    title: 'CABINET LOG: GRAZE BREAK ARMED',
+    role: 'Graze read',
+    line: 'Graze Break armed. Useful read: shoot the next safe bullet lane, then let the shockwave do paperwork.',
+    description: 'Filed when near-miss pressure arms Graze Break. The Cabinet explains that the payoff is strongest when fired from a readable lane.',
+    tip: 'Do not force the shot through a wall of bullets. Fire when the next lane opens.',
+    imageAlias: 'nova-swarm-story-comms-02-20260519',
+    accent: 0xff66ff
+  },
+  {
+    id: 'no-hit-wave',
+    title: 'CABINET LOG: CLEAN WAVE',
+    role: 'Clean wave read',
+    line: 'No-hit wave filed. Useful read: that is the game rewarding patience, not just damage.',
+    description: 'Filed after the first wave cleared without damage. It highlights that clean positioning is a scoring tool.',
+    tip: 'Repeat clean lanes before taking greedier pickup routes.',
+    imageAlias: 'nova-swarm-story-comms-01-20260519',
+    accent: 0x66ff99
+  },
+  {
+    id: 'boss-defeated',
+    title: 'CABINET LOG: BOSS STAMPED',
+    role: 'Boss defeat',
+    line: 'Boss defeated: {name}. Useful read: bank the lesson before the next sector changes the question.',
+    description: 'Filed after the first boss defeat in a run. The Cabinet turns the celebration into a quick pattern-reading reminder.',
+    tip: 'After each boss, remember which tell actually mattered before the next sector starts.',
+    imageAlias: 'nova-swarm-story-comms-04-20260519',
+    accent: 0xffd15c
+  },
+  {
+    id: 'overrun-door',
+    title: 'CABINET LOG: OVERTIME BEGINS',
+    role: 'Overrun read',
+    line: 'Sector ten cleared. Useful read: the run continues because the Cabinet respects score greed, regrettably.',
+    description: 'Filed when the run crosses into overrun play. It marks the shift from completion to score-chasing danger.',
+    tip: 'In overrun, treat every pickup as optional and every lane as suspicious.',
+    imageAlias: 'nova-swarm-story-comms-04-20260519',
+    accent: 0xff8f9c
+  },
+  {
+    id: 'turret-status-read',
+    title: 'CABINET LOG: STATUS BOARD',
+    role: 'Status read',
+    line: 'Status board updated. Useful read: that panel is your co-pilot. Glance before the next lane closes.',
+    description: 'Filed when the hangar career panel opens. It points players toward the status readout and progression dossier.',
+    tip: 'Use Career Intel to check hull unlocks, best score, scans, and profile progress before launching.',
+    imageAlias: 'nova-swarm-story-comms-03-20260519',
+    accent: 0x7dffcc
   }
 ]);
 
@@ -375,6 +465,100 @@ localizedCabinetLogs.ja = [
   ['CABINETログ: 慈悲ウィンドウ', '回復読み', 'ボスmercy発動。その回復時間は本物だ。今は離れ、演出が足をどけてから撃て。', 'ボスmercyが連続ダメージを防いだ時に保存される。', 'ボス被弾後はまず距離を取り、それから撃つ。'],
   ['CABINETログ: 船体余剰', '維持読み', '残機最大。素晴らしい。その自信はパターン読みへ。次の爆発オーディションには使うな。', '残機上限に到達した時に保存される。', '最大残機では安全に稼ぐ。余裕はミス用だ。']
 ].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
+
+const localizedCabinetLogExtras = {
+  de: {
+    'launch-checklist': ['CABINET-LOG: VORFLUG-BELEG', 'Start-Read', 'Neuer Sektor, gleiche Rechnung. Erst die Lanes lesen, dann Rumpf riskieren.', 'Wird nach Run-Start abgelegt und erinnert daran, die ersten Sekunden als Lesefenster zu nutzen.', 'Erste Welle lesen, sichere Lanes finden, dann auf Punkte drücken.'],
+    'first-powerup-read': ['CABINET-LOG: HELLER GEGENSTAND', 'Pickup-Read', 'Powerup gesammelt: {name}. Geschenke nur aus sicheren Lanes holen.', 'Wird beim ersten Powerup abgelegt. Belohnungen brauchen trotzdem eine sichere Route.', 'Unsichere Pickups lieber ziehen lassen, wenn die Lane schließt.'],
+    'shield-window': ['CABINET-LOG: SCHILD IST KEIN PLAN', 'Schild-Read', 'Schild online. Es kauft einen Fehler, keine neue Persönlichkeit.', 'Wird beim ersten Schild abgelegt und rahmt es als Puffer, nicht als Einladung.', 'Schildzeit zum Umpositionieren und sicheren Feuern nutzen.'],
+    'combo-staircase': ['CABINET-LOG: KOMBO-TREPPE', 'Kombo-Read', 'Kombo steigt. Lane ruhig halten; verlorene Serien geben keine Rückerstattung.', 'Wird bei der ersten Multiplikator-Stufe abgelegt.', 'Nach dem Multiplikator erst stabil bleiben, dann gieriger werden.'],
+    'graze-break-armed': ['CABINET-LOG: GRAZE BREAK BEREIT', 'Graze-Read', 'Graze Break bereit. Nächste sichere Kugel-Lane treffen, dann macht die Schockwelle Papierkram.', 'Wird abgelegt, wenn Graze Break bereit ist.', 'Nicht durch eine Kugelwand erzwingen. Schießen, wenn die Lane öffnet.'],
+    'no-hit-wave': ['CABINET-LOG: SAUBERE WELLE', 'Clean-Wave-Read', 'No-Hit-Welle abgelegt. Geduld punktet, nicht nur Schaden.', 'Wird nach der ersten Welle ohne Schaden abgelegt.', 'Saubere Lanes wiederholen, bevor du riskante Pickup-Wege nimmst.'],
+    'boss-defeated': ['CABINET-LOG: BOSS GESTEMPELT', 'Boss-Sieg', 'Boss besiegt: {name}. Die Lektion sichern, bevor der nächste Sektor fragt.', 'Wird nach dem ersten Boss-Sieg eines Runs abgelegt.', 'Merke dir nach jedem Boss den Tell, der wirklich zählte.'],
+    'overrun-door': ['CABINET-LOG: ÜBERSTUNDEN BEGINNEN', 'Overrun-Read', 'Sektor zehn geschafft. Der Run läuft weiter, weil das Cabinet Punktgier leider respektiert.', 'Wird beim Wechsel in Overrun abgelegt.', 'Im Overrun ist jedes Pickup optional und jede Lane verdächtig.'],
+    'turret-status-read': ['CABINET-LOG: STATUS-TAFEL', 'Status-Read', 'Status-Tafel aktualisiert. Dieses Panel ist dein Co-Pilot.', 'Wird beim Öffnen von Career Intel abgelegt und weist auf den Fortschritt hin.', 'Vor dem Start Hulls, Bestscore, Scans und Profilfortschritt prüfen.']
+  },
+  es: {
+    'launch-checklist': ['CABINET LOG: RECIBO PREVUELO', 'Lectura de salida', 'Nuevo sector, misma factura. Lee carriles antes de gastar cascos.', 'Archivado al asentarse la partida. Convierte los primeros segundos en una lectura útil.', 'Usa la primera oleada para mapear carriles seguros.'],
+    'first-powerup-read': ['CABINET LOG: OBJETO BRILLANTE', 'Lectura de pickup', 'Powerup recogido: {name}. Toma regalos desde carriles seguros, no desde los dientes del enjambre.', 'Archivado con el primer powerup. La recompensa aún necesita ruta segura.', 'Deja pasar pickups peligrosos si el carril se cierra.'],
+    'shield-window': ['CABINET LOG: EL ESCUDO NO ES PLAN', 'Lectura de escudo', 'Escudo activo. Compra un error, no una personalidad nueva.', 'Archivado cuando aparece el primer escudo.', 'Usa el escudo para recolocarte y disparar desde carriles seguros.'],
+    'combo-staircase': ['CABINET LOG: ESCALERA DE COMBO', 'Lectura de combo', 'Combo subiendo. Mantén el carril tranquilo; las rachas caídas no reembolsan.', 'Archivado en el primer escalón de multiplicador.', 'Asegura el carril antes de perseguir la siguiente oleada.'],
+    'graze-break-armed': ['CABINET LOG: GRAZE BREAK ARMADO', 'Lectura de roce', 'Graze Break armado. Dispara al siguiente carril seguro y deja que la onda haga el papeleo.', 'Archivado cuando la presión de roces arma Graze Break.', 'No fuerces el disparo contra una pared de balas.'],
+    'no-hit-wave': ['CABINET LOG: OLEADA LIMPIA', 'Lectura limpia', 'Oleada sin daño archivada. Eso premia paciencia, no solo daño.', 'Archivado tras la primera oleada sin recibir daño.', 'Repite carriles limpios antes de buscar rutas codiciosas.'],
+    'boss-defeated': ['CABINET LOG: JEFE SELLADO', 'Derrota de jefe', 'Jefe derrotado: {name}. Guarda la lección antes de que el sector cambie la pregunta.', 'Archivado tras la primera derrota de jefe en una partida.', 'Tras cada jefe, recuerda qué señal importó de verdad.'],
+    'overrun-door': ['CABINET LOG: EMPIEZA LA PRÓRROGA', 'Lectura de overrun', 'Sector diez superado. La partida sigue porque el Cabinet respeta la avaricia de puntos, por desgracia.', 'Archivado al entrar en overrun.', 'En overrun, todo pickup es opcional y todo carril sospechoso.'],
+    'turret-status-read': ['CABINET LOG: PANEL DE ESTADO', 'Lectura de estado', 'Panel de estado actualizado. Ese panel es tu copiloto.', 'Archivado al abrir Career Intel y señalar el dosier de progreso.', 'Revisa cascos, mejor puntuación, escaneos y perfil antes de lanzar.']
+  },
+  'pt-BR': {
+    'launch-checklist': ['CABINET LOG: RECIBO PRÉ-VOO', 'Leitura de partida', 'Novo setor, mesma conta. Leia as rotas antes de gastar casco.', 'Arquivado quando a partida engrena. Os primeiros segundos viram janela de leitura.', 'Use a primeira onda para mapear rotas seguras.'],
+    'first-powerup-read': ['CABINET LOG: OBJETO BRILHANTE', 'Leitura de pickup', 'Powerup coletado: {name}. Pegue presentes por rotas seguras, não nos dentes do enxame.', 'Arquivado no primeiro powerup. Recompensa ainda precisa de rota segura.', 'Deixe pickups perigosos passarem quando a rota fechar.'],
+    'shield-window': ['CABINET LOG: ESCUDO NÃO É PLANO', 'Leitura de escudo', 'Escudo online. Ele compra um erro, não uma personalidade nova.', 'Arquivado quando a proteção aparece pela primeira vez.', 'Use o escudo para reposicionar e atirar de rotas seguras.'],
+    'combo-staircase': ['CABINET LOG: ESCADA DE COMBO', 'Leitura de combo', 'Combo subindo. Mantenha a rota calma; sequência perdida não tem reembolso.', 'Arquivado no primeiro passo do multiplicador.', 'Segure uma rota segura antes de caçar a próxima onda.'],
+    'graze-break-armed': ['CABINET LOG: GRAZE BREAK ARMADO', 'Leitura de raspão', 'Graze Break armado. Atire na próxima rota segura e deixe a onda cuidar da papelada.', 'Arquivado quando a pressão de near miss arma o Graze Break.', 'Não force o tiro por uma parede de balas.'],
+    'no-hit-wave': ['CABINET LOG: ONDA LIMPA', 'Leitura limpa', 'Onda sem dano arquivada. Isso premia paciência, não só dano.', 'Arquivado após a primeira onda sem dano.', 'Repita rotas limpas antes de buscar pickups arriscados.'],
+    'boss-defeated': ['CABINET LOG: CHEFE CARIMBADO', 'Chefe derrotado', 'Chefe derrotado: {name}. Guarde a lição antes que o próximo setor mude a pergunta.', 'Arquivado após a primeira vitória contra chefe.', 'Depois de cada chefe, lembre qual sinal importou.'],
+    'overrun-door': ['CABINET LOG: HORA EXTRA COMEÇA', 'Leitura de overrun', 'Setor dez limpo. A partida continua porque o Cabinet respeita ganância por pontos, infelizmente.', 'Arquivado ao entrar no overrun.', 'No overrun, todo pickup é opcional e toda rota é suspeita.'],
+    'turret-status-read': ['CABINET LOG: PAINEL DE STATUS', 'Leitura de status', 'Painel de status atualizado. Esse painel é seu copiloto.', 'Arquivado ao abrir Career Intel e apontar o dossiê de progresso.', 'Confira cascos, melhor pontuação, scans e perfil antes de lançar.']
+  },
+  ru: {
+    'launch-checklist': ['CABINET LOG: ПРЕДПОЛЕТНЫЙ ЧЕК', 'Старт', 'Новый сектор, тот же счет. Сначала читай линии, потом трать корпуса.', 'Архивируется в начале забега и напоминает использовать первые секунды для чтения.', 'Первую волну используй для поиска безопасных линий.'],
+    'first-powerup-read': ['CABINET LOG: ЯРКИЙ ОБЪЕКТ', 'Pickup', 'Подобран powerup: {name}. Бери подарки из безопасных линий, не из зубов роя.', 'Архивируется при первом powerup. Награде все равно нужен безопасный заход.', 'Опасный pickup лучше отпустить, если линия закрывается.'],
+    'shield-window': ['CABINET LOG: ЩИТ НЕ ПЛАН', 'Щит', 'Щит включен. Он покупает одну ошибку, не новую личность.', 'Архивируется при первом щите и объясняет, что это буфер.', 'Используй щит, чтобы перестроиться и стрелять из безопасных линий.'],
+    'combo-staircase': ['CABINET LOG: ЛЕСТНИЦА КОМБО', 'Комбо', 'Комбо растет. Держи линию спокойно; сорванные серии не возвращают очки.', 'Архивируется на первой ступени множителя.', 'Сначала удержи безопасную линию, затем гонись за следующей волной.'],
+    'graze-break-armed': ['CABINET LOG: GRAZE BREAK ГОТОВ', 'Graze', 'Graze Break готов. Стреляй в следующей безопасной линии, а ударная волна оформит бумаги.', 'Архивируется, когда near miss заряжает Graze Break.', 'Не пробивайся через стену пуль. Жди открытой линии.'],
+    'no-hit-wave': ['CABINET LOG: ЧИСТАЯ ВОЛНА', 'Чистая волна', 'Волна без урона записана. Игра награждает терпение, не только урон.', 'Архивируется после первой волны без урона.', 'Повторяй чистые линии перед рискованными pickup.'],
+    'boss-defeated': ['CABINET LOG: БОСС ПРОШТАМПОВАН', 'Победа над боссом', 'Босс побежден: {name}. Запомни урок до того, как сектор сменит вопрос.', 'Архивируется после первой победы над боссом.', 'После босса запомни, какой сигнал был важен.'],
+    'overrun-door': ['CABINET LOG: НАЧАЛАСЬ СВЕРХСМЕНА', 'Overrun', 'Сектор десять очищен. Забег продолжается, потому что Cabinet уважает жадность к очкам.', 'Архивируется при входе в overrun.', 'В overrun каждый pickup необязателен, каждая линия подозрительна.'],
+    'turret-status-read': ['CABINET LOG: ПАНЕЛЬ СТАТУСА', 'Статус', 'Панель статуса обновлена. Это твой второй пилот.', 'Архивируется при открытии Career Intel и указывает на прогресс.', 'Перед стартом проверь корпуса, рекорд, сканы и профиль.']
+  },
+  'zh-CN': {
+    'launch-checklist': ['CABINET 日志：起飞清单', '起飞阅读', '新扇区，同一张账单。先读航道，再花船体。', '开局稳定后归档，提醒玩家用最初几秒读局势。', '用第一波确认安全航道，然后再追分。'],
+    'first-powerup-read': ['CABINET 日志：发光物体', '拾取阅读', '已拾取 powerup：{name}。从安全航道拿奖励，不要从虫群嘴里抢。', '首次拾取 powerup 时归档。奖励也需要安全路线。', '航道关闭时，让危险拾取物离开。'],
+    'shield-window': ['CABINET 日志：护盾不是计划', '护盾阅读', '护盾上线。它能买一次失误，不能买新性格。', '首次获得护盾时归档，把护盾定义为缓冲。', '用护盾时间换位，并从安全航道开火。'],
+    'combo-staircase': ['CABINET 日志：连击阶梯', '连击阅读', '连击上升。保持航道冷静；掉链没有退款。', '首次倍率提升时归档。', '倍率到手后先稳住，再追下一波。'],
+    'graze-break-armed': ['CABINET 日志：GRAZE BREAK 已准备', '擦弹阅读', 'Graze Break 已准备。朝下一条安全弹道开火，让冲击波处理文件。', 'near miss 压力充能 Graze Break 时归档。', '不要硬穿弹墙，等航道打开再开火。'],
+    'no-hit-wave': ['CABINET 日志：无伤波次', '无伤阅读', '无伤波次已归档。这是在奖励耐心，不只是伤害。', '首次无伤清波后归档。', '先重复干净航道，再走贪心拾取路线。'],
+    'boss-defeated': ['CABINET 日志：Boss 已盖章', 'Boss 击败', 'Boss 已击败：{name}。在下个扇区改题前，先记住这课。', '首次击败 Boss 后归档。', '每个 Boss 后，记住真正重要的预警。'],
+    'overrun-door': ['CABINET 日志：加班开始', 'Overrun 阅读', '第十扇区已清除。Cabinet 很遗憾地尊重分数贪婪，所以继续。', '进入 overrun 时归档。', '在 overrun 中，每个拾取物都可放弃，每条航道都可疑。'],
+    'turret-status-read': ['CABINET 日志：状态板', '状态阅读', '状态板已更新。那个面板是你的副驾驶。', '打开 Career Intel 时归档，指向进度档案。', '发射前查看船体、最高分、扫描和档案进度。']
+  },
+  ko: {
+    'launch-checklist': ['CABINET 로그: 이륙 전 영수증', '출격 읽기', '새 섹터, 같은 청구서. 선체를 쓰기 전에 라인을 읽어라.', '런이 자리 잡을 때 보관된다. 첫 몇 초를 읽기 시간으로 만든다.', '첫 웨이브로 안전 라인을 찾고 그 다음 점수를 밀어라.'],
+    'first-powerup-read': ['CABINET 로그: 밝은 물체', '픽업 읽기', '파워업 획득: {name}. 선물은 안전한 라인에서 받아라.', '첫 파워업 때 보관된다. 보상에도 안전한 접근이 필요하다.', '라인이 닫히면 위험한 픽업은 보내도 된다.'],
+    'shield-window': ['CABINET 로그: 실드는 계획이 아니다', '실드 읽기', '실드 온라인. 한 번의 실수를 살 뿐 새 성격을 사지는 않는다.', '첫 실드 보호가 나타날 때 보관된다.', '실드 시간으로 위치를 바꾸고 안전 라인에서 쏴라.'],
+    'combo-staircase': ['CABINET 로그: 콤보 계단', '콤보 읽기', '콤보 상승 중. 라인을 차분히 유지해라; 끊긴 연속은 환불되지 않는다.', '첫 배율 단계에서 보관된다.', '배율을 얻은 뒤 안전 라인을 잡고 다음 웨이브를 노려라.'],
+    'graze-break-armed': ['CABINET 로그: GRAZE BREAK 준비', '그레이즈 읽기', 'Graze Break 준비. 다음 안전 탄막 라인에서 쏘고 충격파에 맡겨라.', 'near miss 압력이 Graze Break를 준비시킬 때 보관된다.', '탄막 벽을 억지로 뚫지 말고 라인이 열릴 때 쏴라.'],
+    'no-hit-wave': ['CABINET 로그: 클린 웨이브', '무피격 읽기', '무피격 웨이브 기록. 피해량만이 아니라 인내도 보상한다.', '첫 무피격 웨이브 뒤 보관된다.', '욕심 픽업 전에 깨끗한 라인을 반복해라.'],
+    'boss-defeated': ['CABINET 로그: 보스 도장 완료', '보스 격파', '보스 격파: {name}. 다음 섹터가 질문을 바꾸기 전에 교훈을 저장해라.', '첫 보스 격파 후 보관된다.', '각 보스 뒤 진짜 중요했던 신호를 기억해라.'],
+    'overrun-door': ['CABINET 로그: 연장전 시작', '오버런 읽기', '섹터 10 클리어. Cabinet이 점수 욕심을 유감스럽게 존중해서 런이 계속된다.', '오버런 진입 때 보관된다.', '오버런에서는 모든 픽업이 선택이고 모든 라인이 수상하다.'],
+    'turret-status-read': ['CABINET 로그: 상태 보드', '상태 읽기', '상태 보드 업데이트. 그 패널은 네 부조종사다.', 'Career Intel을 열 때 보관되고 진행 상황을 가리킨다.', '출격 전 선체, 최고 점수, 스캔, 프로필 진행도를 확인해라.']
+  },
+  ja: {
+    'launch-checklist': ['CABINETログ: 発進前レシート', '発進読み', '新セクター、同じ請求。機体を使う前にレーンを読む。', 'ラン開始後に保存され、最初の数秒を読み時間にする。', '第一ウェーブで安全レーンを見つけてからスコアを押す。'],
+    'first-powerup-read': ['CABINETログ: 光る物体', 'ピックアップ読み', 'パワーアップ取得: {name}。贈り物は安全レーンから取る。', '最初のパワーアップで保存される。報酬にも安全な進路が必要。', 'レーンが閉じるなら危険なピックアップは見送る。'],
+    'shield-window': ['CABINETログ: シールドは作戦ではない', 'シールド読み', 'シールド起動。買えるのは一度のミスで、新しい性格ではない。', '最初のシールド保護で保存される。', 'シールド時間で位置を直し、安全レーンから撃つ。'],
+    'combo-staircase': ['CABINETログ: コンボ階段', 'コンボ読み', 'コンボ上昇中。レーンを落ち着かせる。落とした連続に返金はない。', '最初の倍率段階で保存される。', '倍率後は安全レーンを保ってから次を追う。'],
+    'graze-break-armed': ['CABINETログ: GRAZE BREAK準備完了', 'グレイズ読み', 'Graze Break準備完了。次の安全な弾レーンで撃ち、衝撃波に任せる。', 'near missでGraze Breakが準備された時に保存される。', '弾の壁を無理に抜かず、レーンが開いた時に撃つ。'],
+    'no-hit-wave': ['CABINETログ: クリーンウェーブ', '無傷読み', '無傷ウェーブを記録。これはダメージだけでなく忍耐への報酬。', '最初の無傷ウェーブ後に保存される。', '欲張る前にきれいなレーンを繰り返す。'],
+    'boss-defeated': ['CABINETログ: ボス押印済み', 'ボス撃破', 'ボス撃破: {name}。次のセクターが問いを変える前に教訓を保存。', '最初のボス撃破後に保存される。', '各ボス後、本当に重要だった予告を覚える。'],
+    'overrun-door': ['CABINETログ: 残業開始', 'オーバーラン読み', 'セクター10クリア。Cabinetは残念ながらスコア欲を尊重するので続行。', 'オーバーラン突入時に保存される。', 'オーバーランでは全ピックアップが任意、全レーンが怪しい。'],
+    'turret-status-read': ['CABINETログ: ステータスボード', 'ステータス読み', 'ステータスボード更新。そのパネルは副操縦士。', 'Career Intelを開いた時に保存され、進行状況を示す。', '発進前に機体、最高スコア、スキャン、プロフィール進行を見る。']
+  }
+};
+
+for (const [locale, entries] of Object.entries(localizedCabinetLogExtras)) {
+  localizedCabinetLogs[locale] = [
+    ...(localizedCabinetLogs[locale] || []),
+    ...Object.entries(entries).map(([id, [title, role, line, description, tip]]) => ({
+      id,
+      title,
+      role,
+      line,
+      description,
+      tip
+    }))
+  ];
+}
 
 const fragments = {
   leads: [

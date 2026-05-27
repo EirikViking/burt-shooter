@@ -313,11 +313,8 @@ try {
       /NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
       !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
       /GAME OVER:\s*SECTOR 5/i.test(careerLevelSummary) &&
-      /CAREER BEST:\s*SECTOR 21/i.test(careerLevelSummary) &&
-      /NEXT SHIP:\s*VIOLET FEINT/i.test(careerUnlockSummary) &&
-      /SURVIVE 15 MINUTES/i.test(careerUnlockSummary) &&
-      /SURVIVEDSECONDS 0\/900/i.test(careerUnlockSummary) &&
-      /NEXT CAREER GOAL:\s*REACH SECTOR 22/i.test(careerNextGoal) &&
+      /NEW SHIPS? UNLOCKED:\s*COMET COURIER/i.test(careerUnlockSummary) &&
+      /NEXT CAREER GOAL:\s*REACH SECTOR 7/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
       /LEADERBOARD FIRST|TYPE NAME/i.test(gameOverState.gameOver?.retryPrompt || '') &&
       /SUBMIT SCORE/i.test(gameOverState.gameOver?.primaryCta?.label || '') &&

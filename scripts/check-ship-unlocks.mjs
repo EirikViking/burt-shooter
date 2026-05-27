@@ -37,11 +37,12 @@ for (const entry of ShipUnlockConfig) {
 }
 
 const early = updateHangarProgress({ totalRuns: 1, bestSector: 3, totalBossesDefeated: 1, bestScore: 25000 });
-for (const shipId of ['nova_ship_02', 'nova_ship_03']) {
-  if (!shipUnlockMet(shipId, early)) fail(`${shipId} should unlock from early milestones`);
-}
-for (const shipId of ['nova_ship_04', 'nova_ship_05', 'nova_ship_07', 'nova_ship_11']) {
+for (const shipId of ['nova_ship_02', 'nova_ship_03', 'nova_ship_04', 'nova_ship_05', 'nova_ship_07', 'nova_ship_11']) {
   if (shipUnlockMet(shipId, early)) fail(`${shipId} should stay locked after a short sector-3 profile`);
+}
+const firstUnlock = updateHangarProgress({ bestSector: 5, totalBossesDefeated: 1, bestScore: 30000 });
+for (const shipId of ['nova_ship_02', 'nova_ship_03']) {
+  if (!shipUnlockMet(shipId, firstUnlock)) fail(`${shipId} should unlock after reaching sector 5`);
 }
 
 const details = getShipUnlockProgressDetails('nova_ship_22', early);
@@ -59,4 +60,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`[ship-unlocks] PASS ships=${ShipData.length} earlyUnlocked=${early.unlockedShipIds.length} migrated=${migrated.unlockedShipIds.length}`);
+console.log(`[ship-unlocks] PASS ships=${ShipData.length} earlyUnlocked=${early.unlockedShipIds.length} sector5Unlocked=${firstUnlock.unlockedShipIds.length} migrated=${migrated.unlockedShipIds.length}`);

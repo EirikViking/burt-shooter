@@ -2,7 +2,7 @@ import { hashString } from './VisualVariantCatalog.js';
 import { ENEMY_ATTACK_STYLE_DEFS, getEnemyAttackStyle } from './EnemyAttackStyles.js';
 import { ENEMY_MOVEMENT_STYLE_DEFS } from './EnemyMovementStyles.js';
 
-export const GENERATED_ENEMY_TOTAL = 180;
+export const GENERATED_ENEMY_TOTAL = 300;
 export const GENERATED_ENEMY_ASSET_COUNT = 50;
 export const GENERATED_ENEMY_STARTER_COUNT = 10;
 export const GENERATED_ENEMY_FULL_UNLOCK_LEVEL = 40;
@@ -83,7 +83,7 @@ export function getGeneratedEnemyTargetCountForLevel(level) {
     Math.ceil(
       GENERATED_ENEMY_STARTER_COUNT +
       (GENERATED_ENEMY_TOTAL - GENERATED_ENEMY_STARTER_COUNT) *
-      ((safeLevel - 1) / (GENERATED_ENEMY_FULL_UNLOCK_LEVEL - 1))
+      (((safeLevel - 1) / (GENERATED_ENEMY_FULL_UNLOCK_LEVEL - 1)) ** 0.88)
     )
   );
 }

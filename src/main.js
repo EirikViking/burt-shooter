@@ -976,6 +976,9 @@ function waitForDomReady() {
 }
 
 function attachCanvas(canvas) {
+  canvas.tabIndex = 0;
+  canvas.style.outline = 'none';
+  canvas.style.webkitTapHighlightColor = 'transparent';
   const container = document.getElementById('game-container');
   if (container) {
     if (!canvas.parentNode) {

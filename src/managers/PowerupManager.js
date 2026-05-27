@@ -14,7 +14,7 @@ class Powerup {
     this.radius = 12;
     this.vy = 1;
     this.createdAt = Date.now();
-    this.lifeTime = 15000; // 15 seconds expiry
+    this.lifeTime = 22000; // Long enough to visibly reach the bottom on tall screens.
 
     const powerupData = {
       triple_beam: { color: 0xffaa00, label: 'TRIPLE' },
@@ -185,7 +185,9 @@ class Powerup {
       this.sprite.alpha = 0.5 + Math.sin(age * 0.01) * 0.5;
     }
 
-    if (this.y > 620 || age > this.lifeTime) {
+    const screenHeight = scene?.game?.getHeight?.() || scene?.game?.app?.screen?.height || 620;
+    const despawnY = screenHeight + Math.max(72, this.radius * 4);
+    if (this.y > despawnY || age > this.lifeTime) {
       this.active = false;
     }
   }

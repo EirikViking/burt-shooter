@@ -38,6 +38,10 @@ export const BalanceConfig = {
     // Difficulty: six-wave early sectors, then a steady linear climb.
     difficulty: {
         pressureScalar: 0.85,
+        earlyLevelDifficultyBoost: {
+            maxLevel: 5,
+            scalar: 1.27
+        },
         baseEnemyHealthMultiplier: 0.62,
         hpScalePerLevel: 0.035,
         enemyHealthMaxMultiplier: 1.8,
@@ -66,21 +70,22 @@ export const BalanceConfig = {
         estimatedWaveSeconds: 18,
 
         earlyWaveEnemyCounts: {
-            1: [6, 7, 8, 8, 8, 9],
-            2: [7, 8, 8, 9, 9, 10],
-            3: [7, 8, 9, 9, 10, 10],
-            4: [8, 9, 9, 10, 10, 11]
+            1: [8, 9, 10, 10, 11, 12],
+            2: [9, 10, 10, 11, 12, 13],
+            3: [9, 10, 11, 12, 13, 13],
+            4: [10, 11, 12, 13, 13, 14],
+            5: [11, 12, 13, 13, 14, 15]
         },
         waveEnemyBase: 7,
         waveEnemyPerLevel: 0.35,
         waveEnemyPerWave: 0.45,
         waveEnemyRandom: 2,
-        waveEnemyMax: 14,
-        waveDelayMs: 740,
-        waveBriefingAnnounceMs: 260,
-        waveCleanupMs: 680,
-        enemyEntryDurationMs: 1460,
-        enemyEntryDelayBaseMs: 150,
+        waveEnemyMax: 18,
+        waveDelayMs: 660,
+        waveBriefingAnnounceMs: 220,
+        waveCleanupMs: 560,
+        enemyEntryDurationMs: 1240,
+        enemyEntryDelayBaseMs: 118,
         bossGateMs: 950,
         challengeWaveChance: 0.015,
         challengeWaveCount: 8,

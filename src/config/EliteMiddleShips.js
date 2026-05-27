@@ -1,10 +1,11 @@
 export const ELITE_MIDDLE_SHIP_FULL_UNLOCK_LEVEL = 40;
 export const ELITE_MIDDLE_SHIP_ASSET_COUNT = 20;
+export const ELITE_MIDDLE_SHIP_TOTAL = 50;
 
 const assetPath = (index, slug) =>
   `/art/generated/nova-swarm/elites/nova-elite-middle-${String(index).padStart(2, '0')}-${slug}-20260523.png`;
 
-export const ELITE_MIDDLE_SHIPS = [
+const BASE_ELITE_MIDDLE_SHIPS = [
   {
     id: 'nova_elite_tractor_puller',
     type: 'nova_elite_tractor_puller',
@@ -766,6 +767,76 @@ export const ELITE_MIDDLE_SHIPS = [
     designNote: 'Late-game priority hunter with fast readable volleys, still far below boss durability.'
   }
 ];
+
+const ELITE_VARIANT_THEMES = [
+  ['aurora', 'Aurora', 'Prismatic pressure elite'],
+  ['blackbox', 'Blackbox', 'Recorder ambush elite'],
+  ['circuit', 'Circuit', 'Relay commander elite'],
+  ['docket', 'Docket', 'Paperwork denial elite'],
+  ['echo', 'Echo', 'Afterimage hunter elite'],
+  ['frost', 'Frost', 'Cold lane-control elite'],
+  ['gala', 'Gala', 'Ceremonial crossfire elite'],
+  ['helix', 'Helix', 'Spiral pressure elite'],
+  ['ion', 'Ion', 'Precision lock elite'],
+  ['junction', 'Junction', 'Traffic-control elite'],
+  ['kicker', 'Kicker', 'Delayed burst elite'],
+  ['lantern', 'Lantern', 'Beacon trap elite'],
+  ['mirror', 'Mirror', 'Reflection feint elite'],
+  ['neon', 'Neon', 'High-contrast pursuit elite'],
+  ['overpass', 'Overpass', 'Layered lane elite'],
+  ['prism', 'Prism', 'Split-angle elite'],
+  ['quartz', 'Quartz', 'Hardlight bruiser elite'],
+  ['relay', 'Relay', 'Signal support elite'],
+  ['saffron', 'Saffron', 'Volatile artillery elite'],
+  ['turnkey', 'Turnkey', 'Lock-and-release elite'],
+  ['umbra', 'Umbra', 'Shadow dash elite'],
+  ['vector', 'Vector', 'Vector chase elite'],
+  ['wire', 'Wire', 'Snare-pattern elite'],
+  ['xeno', 'Xeno', 'Alien geometry elite'],
+  ['yonder', 'Yonder', 'Long-lane elite'],
+  ['zenith', 'Zenith', 'Climax support elite'],
+  ['apex', 'Apex', 'Peak-pressure elite'],
+  ['binary', 'Binary', 'Alternating fire elite'],
+  ['crown', 'Crown', 'Command aura elite'],
+  ['drift', 'Drift', 'Sliding hazard elite']
+];
+
+function eliteVariantFromSeed(index) {
+  const base = BASE_ELITE_MIDDLE_SHIPS[index % BASE_ELITE_MIDDLE_SHIPS.length];
+  const [slug, label, role] = ELITE_VARIANT_THEMES[index % ELITE_VARIANT_THEMES.length];
+  const cycle = Math.floor(index / ELITE_VARIANT_THEMES.length) + 2;
+  const levelOffset = (index % 7) - 2;
+  const minLevel = Math.max(3, Math.min(ELITE_MIDDLE_SHIP_FULL_UNLOCK_LEVEL, (base.minLevel || 3) + levelOffset));
+  const healthScalar = 0.92 + (index % 5) * 0.035;
+  const speedScalar = 0.9 + (index % 6) * 0.04;
+  const fireScalar = 0.92 + (index % 4) * 0.045;
+  return {
+    ...base,
+    id: `nova_elite_${slug}_${String(index + 21).padStart(2, '0')}`,
+    type: `nova_elite_${slug}_${String(index + 21).padStart(2, '0')}`,
+    displayName: `${label} ${base.displayName}`,
+    role,
+    minLevel,
+    unlockLevel: minLevel,
+    spriteIndex: index % ELITE_MIDDLE_SHIP_ASSET_COUNT,
+    asset: assetPath((index % ELITE_MIDDLE_SHIP_ASSET_COUNT) + 1, String(base.asset || '').match(/nova-elite-middle-\d+-(.*)-20260523\.png/)?.[1] || slug),
+    health: Math.max(8, Math.min(30, Math.round((base.health || 16) * healthScalar))),
+    toughness: Math.round(((base.toughness || 1.5) + (index % 4) * 0.025) * 100) / 100,
+    speed: Math.round(Math.max(0.42, Math.min(1.04, (base.speed || 0.7) * speedScalar)) * 100) / 100,
+    shootDelay: Math.max(104, Math.round((base.shootDelay || 140) * fireScalar)),
+    scoreValue: Math.round((base.scoreValue || 300) + 70 + index * 18),
+    spawnWeight: Math.max(0.3, Math.round((base.spawnWeight || 0.7) * (0.72 + (index % 6) * 0.04) * 100) / 100),
+    tint: [0x66f7ff, 0xffd166, 0xc77dff, 0x7cffcb, 0xff5c8a, 0xffffff][index % 6],
+    accent: [0xff55d9, 0x66ffff, 0xffef6e, 0xa8ff72, 0xff8844, 0x84a8ff][index % 6],
+    glowAlpha: Math.min(0.32, (base.glowAlpha || 0.22) + (index % 4) * 0.015),
+    designNote: `${role}; variant of ${base.displayName} with altered timing, pressure, and codex identity.`
+  };
+}
+
+export const ELITE_MIDDLE_SHIPS = Object.freeze([
+  ...BASE_ELITE_MIDDLE_SHIPS,
+  ...Array.from({ length: ELITE_MIDDLE_SHIP_TOTAL - BASE_ELITE_MIDDLE_SHIPS.length }, (_, index) => eliteVariantFromSeed(index))
+]);
 
 export const ELITE_MIDDLE_SHIP_IDS = ELITE_MIDDLE_SHIPS.map((profile) => profile.id);
 export const ELITE_MIDDLE_SHIP_ASSETS = ELITE_MIDDLE_SHIPS.map((profile) => profile.asset);

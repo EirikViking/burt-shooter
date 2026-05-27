@@ -177,6 +177,24 @@ const sounds = [
     prompt_influence: 0.55
   },
   {
+    file: 'nova_cabinet_log_stamp.mp3',
+    text: 'A premium arcade cabinet log stamp sound, paper receipt printer chirp, coin-slot thunk, holographic archive shimmer, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_hangar_dock_surge.mp3',
+    text: 'A large starship hangar dock surge, launch clamps hum, holographic platform bloom, heroic but short, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_career_intel_open.mp3',
+    text: 'A crisp pilot dossier panel open sound, scanner sweep, data card snap, tiny arcade chime, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.68
+  },
+  {
     file: 'nova_bonus_core_jackpot.mp3',
     text: 'A bright arcade bonus core jackpot pickup sound, sparkling coin-slot energy, quick upward chime, satisfying and playful, no voice, under two seconds.',
     duration_seconds: 2,

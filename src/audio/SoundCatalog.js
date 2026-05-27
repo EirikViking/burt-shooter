@@ -215,6 +215,9 @@ export const SFX_MIX = {
     pause_in: { volume: 0.34, minIntervalMs: 250 },
     pause_out: { volume: 0.3, minIntervalMs: 250 },
     ship_lock_chime: { volume: 0.56, minIntervalMs: 500 },
+    cabinet_log_stamp: { volume: 0.62, minIntervalMs: 450 },
+    hangar_dock_surge: { volume: 0.52, minIntervalMs: 700 },
+    career_intel_open: { volume: 0.42, minIntervalMs: 250 },
     chain_lightning_arc: { volume: 0.45, minIntervalMs: 160 },
     magnet_pull: { volume: 0.5, minIntervalMs: 260 },
     ghost_phase_shift: { volume: 0.48, minIntervalMs: 450 },
@@ -666,6 +669,15 @@ export const SFX_CATALOG = {
     ],
     'ship_lock_chime': [
         getSfx('nova_ship_lock_chime')
+    ],
+    'cabinet_log_stamp': [
+        getSfx('nova_cabinet_log_stamp')
+    ],
+    'hangar_dock_surge': [
+        getSfx('nova_hangar_dock_surge')
+    ],
+    'career_intel_open': [
+        getSfx('nova_career_intel_open')
     ],
     'nova_chain_lightning_arc': [
         getSfx('nova_chain_lightning_arc')

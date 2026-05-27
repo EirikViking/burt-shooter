@@ -3,7 +3,7 @@ import { getRankFromLevel } from '../shared/RankPolicy.js';
 import { getSelectableShips, getShipMetadata } from '../config/ShipMetadata.js';
 
 export const LEADERBOARD_DISPLAY_LIMIT = 20;
-export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score';
+export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 export const STEAM_LEADERBOARD_COMMUNITY_NAME = 'Global High Score';
 
 export const LeaderboardView = {

@@ -219,16 +219,20 @@ export class ShipSelectScene {
       sprite.scale.set(scale);
       sprite.x = width / 2;
       sprite.y = height / 2;
-      sprite.alpha = 0.72;
+      sprite.alpha = 0.92;
       this.container.addChild(sprite);
 
       const shade = new PIXI.Graphics();
       shade.rect(0, 0, width, height);
-      shade.fill({ color: 0x020711, alpha: 0.54 });
+      shade.fill({ color: 0x020711, alpha: 0.28 });
       shade.rect(0, 0, width, 110);
-      shade.fill({ color: 0x000000, alpha: 0.36 });
+      shade.fill({ color: 0x000000, alpha: 0.34 });
       shade.rect(0, height - 84, width, 84);
-      shade.fill({ color: 0x000000, alpha: 0.42 });
+      shade.fill({ color: 0x000000, alpha: 0.38 });
+      shade.circle(width * 0.5, height * 0.58, Math.min(width, height) * 0.26);
+      shade.fill({ color: 0x37f5ff, alpha: 0.045 });
+      shade.circle(width * 0.5, height * 0.5, Math.min(width, height) * 0.42);
+      shade.stroke({ color: 0xffd15c, width: 3, alpha: 0.12 });
       this.container.addChild(shade);
     } catch (error) {
       console.warn('[ShipSelect] Failed to load hangar backdrop', error);
@@ -263,6 +267,10 @@ export class ShipSelectScene {
     frame.stroke({ color: 0x00ffcc, width: 2, alpha: 0.36 });
     frame.ellipse(centerX, bottom + 30, Math.min(width * 0.22, 250), 50);
     frame.stroke({ color: 0xffd166, width: 1, alpha: 0.22 });
+    frame.ellipse(centerX, bottom + 30, Math.min(width * 0.48, 520), 118);
+    frame.stroke({ color: 0xff55d9, width: 1, alpha: 0.14 });
+    frame.ellipse(centerX, bottom + 30, Math.min(width * 0.58, 680), 152);
+    frame.stroke({ color: 0x37f5ff, width: 1, alpha: 0.1 });
     this.container.addChild(frame);
   }
 
@@ -618,7 +626,7 @@ export class ShipSelectScene {
       this.createCareerInfoOverlay(this.game.getWidth(), this.game.getHeight());
     }
     this.careerInfoOverlay.visible = true;
-    AudioManager.playSfx('powerup', { force: true, volume: source === 'pointer' ? 0.18 : 0.22 });
+    AudioManager.playSfx('career_intel_open', { force: true, volume: source === 'pointer' ? 0.42 : 0.48 });
   }
 
   closeCareerInfoOverlay(source = 'unknown') {
@@ -1074,8 +1082,8 @@ export class ShipSelectScene {
     const panel = new PIXI.Container();
     const bg = new PIXI.Graphics();
     bg.roundRect(0, 0, width, height, 8);
-    bg.fill({ color: 0x020916, alpha: 0.78 });
-    bg.stroke({ color: accent, width: 1.5, alpha: 0.58 });
+    bg.fill({ color: 0x020916, alpha: 0.84 });
+    bg.stroke({ color: accent, width: 1.5, alpha: 0.68 });
     bg.rect(1, 1, width - 2, 28);
     bg.fill({ color: accent, alpha: 0.1 });
     panel.addChild(bg);
@@ -1103,24 +1111,44 @@ export class ShipSelectScene {
     this.container.addChild(this.intelPanels);
 
     if (this.layout.showLeftIntel) {
-      const left = this.createPanel(230, 292, 0x66ffdd);
-      left.position.set(22, 128);
+      const panelW = 292;
+      const panelH = 382;
+      const left = this.createPanel(panelW, panelH, 0x66ffdd);
+      left.position.set(22, 126);
       left.eventMode = 'static';
       left.cursor = 'pointer';
-      left.hitArea = new PIXI.Rectangle(0, 0, 230, 292);
+      left.hitArea = new PIXI.Rectangle(0, 0, panelW, panelH);
       left.on('pointerdown', (e) => {
         e.stopPropagation();
         this.openCareerInfoOverlay('pointer');
       });
-      const title = this.createIntelText('CAREER SIGNAL', 16, 10, 13, '#ffffff', '900');
-      const count = this.createIntelText('', 16, 46, 14, '#ffef7e', '900');
-      const progress = this.createIntelText('', 16, 82, 12, '#b8fff1');
-      const stats = this.createIntelText('', 16, 158, 12, '#d8fbff');
-      const hint = this.createIntelText('CLICK FOR CAREER INTEL', 16, 238, 12, '#ffef7e', '900');
-      [progress, stats, hint].forEach(text => {
-        text.style.wordWrapWidth = 196;
+      const glow = new PIXI.Graphics();
+      glow.roundRect(-6, -6, panelW + 12, panelH + 12, 12);
+      glow.stroke({ color: 0xffef7e, width: 2, alpha: 0.16 });
+      glow.roundRect(8, 44, panelW - 16, 2, 1);
+      glow.fill({ color: 0x66ffdd, alpha: 0.45 });
+      glow.roundRect(18, panelH - 76, panelW - 36, 42, 8);
+      glow.fill({ color: 0xffd15c, alpha: 0.1 });
+      glow.stroke({ color: 0xffef7e, width: 1.5, alpha: 0.58 });
+      left.addChild(glow);
+      const beacon = new PIXI.Graphics();
+      beacon.circle(panelW - 34, 24, 10);
+      beacon.fill({ color: 0x7dffcc, alpha: 0.95 });
+      beacon.circle(panelW - 34, 24, 21);
+      beacon.stroke({ color: 0x7dffcc, width: 2, alpha: 0.28 });
+      beacon.circle(panelW - 34, 24, 29);
+      beacon.stroke({ color: 0xffef7e, width: 1, alpha: 0.18 });
+      left.addChild(beacon);
+      const title = this.createIntelText('CAREER INTEL', 18, 11, 18, '#ffffff', '900');
+      const subtitle = this.createIntelText('HANGAR STATUS', 18, 34, 11, '#9cfbff', '900');
+      const count = this.createIntelText('', 18, 66, 22, '#ffef7e', '900');
+      const progress = this.createIntelText('', 18, 116, 14, '#b8fff1');
+      const stats = this.createIntelText('', 18, 222, 14, '#d8fbff');
+      const hint = this.createIntelText('OPEN CAREER DOSSIER', 32, panelH - 62, 15, '#ffef7e', '900');
+      [progress, stats, hint, count].forEach(text => {
+        text.style.wordWrapWidth = panelW - 36;
       });
-      left.addChild(title, count, progress, stats, hint);
+      left.addChild(title, subtitle, count, progress, stats, hint);
       this.leftIntel = { panel: left, count, progress, stats, hint };
       this.intelPanels.addChild(left);
     }
@@ -1704,6 +1732,7 @@ export class ShipSelectScene {
 
     // More dramatic navigation sound
     AudioManager.playSfx('thrusterFire', { volume: 0.25 });
+    AudioManager.playSfx('hangar_dock_surge', { volume: 0.26 });
 
     this.updateCarouselPositions(true);
     this.updateSelectionInfo();
@@ -2257,6 +2286,7 @@ export class ShipSelectScene {
     setSelectedShipKey(spriteKey);
     this.saveSelection(spriteKey);
     AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.8 });
+    AudioManager.playSfx('hangar_dock_surge', { force: true, volume: 0.62 });
 
     if (DEBUG) console.log(`[ShipSelect] Starting game via ${source}:`, spriteKey);
     this.game.startGame(spriteKey).catch((error) => {

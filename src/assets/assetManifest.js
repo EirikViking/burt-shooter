@@ -2,6 +2,7 @@ export const AssetManifest = {
     generated: {
         menuBackdrop: '/art/generated/nova-swarm/menu/nova-swarm-start-screen-20260519.webp',
         menuCredits: '/art/generated/nova-swarm/menu/nova-swarm-credits-20260519.png',
+        cabinetArchive: '/art/generated/nova-swarm/menu/nova-swarm-cabinet-archive-20260526.png',
         leaderboardHall: '/art/generated/nova-swarm/leaderboard/nova-swarm-leaderboard-hall-20260519.png',
         gameOverCeremony: '/art/generated/nova-swarm/gameover/nova-swarm-gameover-ceremony-20260519.png',
         gameplayArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
@@ -81,7 +82,7 @@ export const AssetManifest = {
             '/art/generated/nova-swarm/nova-swarm-intro-small-ship.webp',
             '/art/generated/nova-swarm/nova-swarm-intro-boss-chorus.webp'
         ],
-        shipHangar: '/art/generated/nova-swarm/nova-swarm-ship-hangar.webp',
+        shipHangar: '/art/generated/nova-swarm/nova-swarm-hangar-cathedral-20260526.png',
         crewPortraits: [
             '/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-01-20260519.webp',
             '/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-02-20260519.webp',
@@ -327,6 +328,9 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_pause_in.mp3',
             '/audio/sfx/nova-swarm/nova_pause_out.mp3',
             '/audio/sfx/nova-swarm/nova_ship_lock_chime.mp3',
+            '/audio/sfx/nova-swarm/nova_cabinet_log_stamp.mp3',
+            '/audio/sfx/nova-swarm/nova_hangar_dock_surge.mp3',
+            '/audio/sfx/nova-swarm/nova_career_intel_open.mp3',
             '/audio/sfx/nova-swarm/nova_chain_lightning_arc.mp3',
             '/audio/sfx/nova-swarm/nova_magnet_pull_warble.mp3',
             '/audio/sfx/nova-swarm/nova_ghost_phase_shift.mp3',

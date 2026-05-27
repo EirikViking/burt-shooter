@@ -67,13 +67,24 @@ const firstSession = unlockedFor({
   totalCodexDiscoveries: 28,
   pilotRank: 6
 });
-assert(firstSession.length >= 2 && firstSession.length <= 3, `short first-session milestones should reveal only a small hangar set, got ${firstSession.length}`);
-['nova_ship_02', 'nova_ship_03'].forEach((shipId) => {
-  assert(firstSession.includes(shipId), `first-session profile should unlock ${shipId}`);
-});
-['nova_ship_04', 'nova_ship_05', 'nova_ship_07', 'nova_ship_11'].forEach((shipId) => {
+assert.equal(firstSession.length, 1, `short sector-3 first-session profile should not unlock extra ships, got ${firstSession.length}`);
+['nova_ship_02', 'nova_ship_03', 'nova_ship_04', 'nova_ship_05', 'nova_ship_07', 'nova_ship_11'].forEach((shipId) => {
   assert(!firstSession.includes(shipId), `sector-3 first-session profile should not unlock ${shipId}`);
 });
+
+const sector5Session = unlockedFor({
+  totalRuns: 1,
+  bestSector: 5,
+  bestScore: 30000,
+  totalBossesDefeated: 1,
+  totalWavesCleared: 18,
+  totalCodexDiscoveries: 35,
+  pilotRank: 6
+});
+['nova_ship_02', 'nova_ship_03'].forEach((shipId) => {
+  assert(sector5Session.includes(shipId), `sector-5 first-session profile should unlock ${shipId}`);
+});
+assert(!sector5Session.includes('nova_ship_04'), 'sector-5 first-session profile should not unlock sector-6 ship');
 
 const fakeStorage = new Map();
 globalThis.localStorage = {
@@ -142,4 +153,4 @@ for (let index = 1; index < pilotXpThresholds.length; index += 1) {
   assert(pilotXpThresholds[index] > pilotXpThresholds[index - 1], `pilot XP threshold ${index} should increase`);
 }
 
-console.log(`[unlock-rank-pacing] PASS fresh=1 firstSession=${firstSession.length} midCareer=${midCareer.length} mastery=${mastery.length} topRank=${getRankTitle(MAX_RANK_INDEX)}`);
+console.log(`[unlock-rank-pacing] PASS fresh=1 firstSession=${firstSession.length} sector5=${sector5Session.length} midCareer=${midCareer.length} mastery=${mastery.length} topRank=${getRankTitle(MAX_RANK_INDEX)}`);

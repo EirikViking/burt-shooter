@@ -2,7 +2,7 @@ const COMMON_FORMS = ['GRID', 'STAGGERED_WING', 'DOUBLE_ARC', 'PINCER', 'CROSS_S
 const ARC_FORMS = ['SIDEWINDER', 'SPIRAL', 'CROSS_STREAM', 'DIAGONAL_RAID'];
 const DENIAL_FORMS = ['SCREEN_DOOR', 'ORBIT_RING', 'GRID', 'BOX'];
 
-export const ENEMY_THREAT_ACTION_VARIANTS = Object.freeze([
+const HANDCRAFTED_ENEMY_THREAT_ACTION_VARIANTS = [
   {
     id: 'ion_pin_lance',
     label: 'Ion Pin Lance',
@@ -609,4 +609,53 @@ export const ENEMY_THREAT_ACTION_VARIANTS = Object.freeze([
     telegraph: 'ring',
     codexTip: 'Royal satellites launch with ceremony. Respect the ceremony, then steal the lane.'
   }
+];
+
+const EXPANSION_THEMES = [
+  ['aurora', 'Aurora', 'The tell shimmers before the hurt arrives. Let the shimmer finish its sentence.'],
+  ['blackbox', 'Blackbox', 'The cabinet recorded this pattern. Replay the tell, then move.'],
+  ['comet', 'Comet', 'It looks fast because it wants an early dodge. Wait for the lock.'],
+  ['docket', 'Docket', 'The swarm filed paperwork in your lane. Step out before it gets stamped.'],
+  ['echo', 'Echo', 'The first shape is the warning. The echo is the hitbox.'],
+  ['frost', 'Frost', 'Cold shots make pilots drift. Tap once, then hold the safe lane.'],
+  ['gala', 'Gala', 'Pretty patterns are still hostile. Admire them from elsewhere.'],
+  ['helix', 'Helix', 'Follow the twist with your eyes, not your ship. Cross after the gap opens.'],
+  ['ink', 'Ink', 'Dark tells are easiest to read at the edge. Do not tunnel-center.'],
+  ['junction', 'Junction', 'Two lanes argue. Pick neither until the crossing angle commits.'],
+  ['kicker', 'Kicker', 'The late kick punishes panic dodges. Move on the flash, not the tease.'],
+  ['lantern', 'Lantern', 'The bright lane is a warning light, not an invitation.'],
+  ['mirror', 'Mirror', 'It copies your habit. Break rhythm and the mirror misses.'],
+  ['neutrino', 'Neutrino', 'Small tells still count. Give the little shot big respect.'],
+  ['overpass', 'Overpass', 'Let the upper lane pass before crossing under it.'],
+  ['parade', 'Parade', 'The formation marches loudly. The quiet gap is the route.'],
+  ['quartz', 'Quartz', 'Hard angles are readable if you stop drifting into them.'],
+  ['relay', 'Relay', 'One enemy announces, another delivers. Watch the whole line.'],
+  ['signal', 'Signal', 'The signal peaks before the shot. Dodge on the peak.'],
+  ['turnkey', 'Turnkey', 'The lock is visible before it bites. Leave before the key turns.']
+];
+
+function expandedVariantFromSeed(index) {
+  const base = HANDCRAFTED_ENEMY_THREAT_ACTION_VARIANTS[index % HANDCRAFTED_ENEMY_THREAT_ACTION_VARIANTS.length];
+  const [slug, label, tip] = EXPANSION_THEMES[index % EXPANSION_THEMES.length];
+  const cycle = Math.floor(index / EXPANSION_THEMES.length) + 1;
+  const minLevelOffset = (index % 5) - 1;
+  const dangerBump = index % 9 === 0 ? 1 : 0;
+  const weightScalar = 0.78 + (index % 7) * 0.035;
+  return {
+    ...base,
+    id: `${slug}_${base.id}_${cycle}`,
+    label: `${label} ${base.label}`,
+    minLevel: Math.max(1, Math.min(40, (base.minLevel || 1) + minLevelOffset)),
+    tags: [...new Set([...(base.tags || []), slug, 'expanded'])],
+    telegraphMs: Math.max(430, Math.round((base.telegraphMs || 620) * (0.92 + (index % 4) * 0.035))),
+    cooldownMs: Math.max(6800, Math.round((base.cooldownMs || 9000) * (0.94 + (index % 6) * 0.025))),
+    dangerBudgetCost: Math.max(1, (base.dangerBudgetCost || 1) + dangerBump),
+    weight: Math.max(0.22, Math.round((base.weight || 0.6) * weightScalar * 100) / 100),
+    codexTip: tip
+  };
+}
+
+export const ENEMY_THREAT_ACTION_VARIANTS = Object.freeze([
+  ...HANDCRAFTED_ENEMY_THREAT_ACTION_VARIANTS,
+  ...Array.from({ length: 60 }, (_, index) => expandedVariantFromSeed(index))
 ]);

@@ -226,6 +226,8 @@ export class ThreatCodexScene {
     this.titlePlate = null;
     this.holoRails = null;
     this.animationTime = 0;
+    this.codexAnimationTicker = null;
+    this.codexAnimatedNodes = [];
     this.lastEntryListDebug = null;
   }
 
@@ -238,6 +240,7 @@ export class ThreatCodexScene {
     this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
     this.renderToken += 1;
     this.createLayout(this.renderToken);
+    this.startCodexAnimations();
     this.keyHandler = (event) => this.handleKeyDown(event);
     this.wheelHandler = (event) => this.handleWheel(event);
     window.addEventListener('keydown', this.keyHandler);
@@ -247,8 +250,74 @@ export class ThreatCodexScene {
   cleanup() {
     if (this.keyHandler) window.removeEventListener('keydown', this.keyHandler);
     if (this.wheelHandler) window.removeEventListener('wheel', this.wheelHandler);
+    if (this.codexAnimationTicker) {
+      this.game?.app?.ticker?.remove(this.codexAnimationTicker);
+      this.codexAnimationTicker = null;
+    }
+    this.codexAnimatedNodes = [];
     this.keyHandler = null;
     this.wheelHandler = null;
+  }
+
+  startCodexAnimations() {
+    if (this.codexAnimationTicker) return;
+    this.codexAnimationTicker = (ticker) => {
+      const delta = Number(ticker?.deltaTime ?? ticker) || 1;
+      this.animationTime += delta / 60;
+      this.updateCodexAnimations();
+    };
+    this.game?.app?.ticker?.add(this.codexAnimationTicker);
+  }
+
+  registerCodexShipAnimation(sprite, { accent = CYAN, detail = false, seed = 1 } = {}) {
+    if (!sprite || this.getCategory()?.id !== 'enemies') return;
+    const glow = new PIXI.Graphics();
+    glow.circle(0, 0, detail ? 54 : 18);
+    glow.fill({ color: accent, alpha: detail ? 0.12 : 0.08 });
+    glow.circle(0, 0, detail ? 30 : 10);
+    glow.stroke({ color: 0xffffff, width: detail ? 2 : 1, alpha: detail ? 0.18 : 0.12 });
+    glow.position.set(sprite.x, sprite.y);
+    glow.zIndex = (sprite.zIndex || 0) - 1;
+    if (sprite.parent) {
+      sprite.parent.addChildAt(glow, Math.max(0, sprite.parent.getChildIndex(sprite)));
+    }
+    this.codexAnimatedNodes.push({
+      sprite,
+      glow,
+      baseX: sprite.x,
+      baseY: sprite.y,
+      baseScaleX: sprite.scale.x,
+      baseScaleY: sprite.scale.y,
+      baseAlpha: sprite.alpha,
+      seed: seed % 997,
+      detail
+    });
+  }
+
+  updateCodexAnimations() {
+    const t = this.animationTime;
+    this.codexAnimatedNodes = this.codexAnimatedNodes.filter((entry) => {
+      const sprite = entry.sprite;
+      if (!sprite || sprite.destroyed || !sprite.parent) return false;
+      const phase = entry.seed * 0.017;
+      const hover = Math.sin(t * (entry.detail ? 2.1 : 2.8) + phase);
+      const pulse = 0.5 + Math.sin(t * (entry.detail ? 3.4 : 4.2) + phase * 1.7) * 0.5;
+      const drift = Math.cos(t * 1.4 + phase) * (entry.detail ? 5 : 1.6);
+      const scale = 1 + (entry.detail ? 0.045 : 0.028) * pulse;
+      sprite.x = entry.baseX + drift;
+      sprite.y = entry.baseY + hover * (entry.detail ? 8 : 2.4);
+      sprite.rotation = Math.sin(t * 1.65 + phase) * (entry.detail ? 0.055 : 0.035);
+      sprite.scale.set(entry.baseScaleX * scale, entry.baseScaleY * scale);
+      sprite.alpha = Math.max(0.24, Math.min(1, entry.baseAlpha + pulse * (entry.detail ? 0.04 : 0.06)));
+      if (entry.glow && !entry.glow.destroyed) {
+        entry.glow.x = sprite.x;
+        entry.glow.y = sprite.y + (entry.detail ? 8 : 2);
+        entry.glow.alpha = 0.55 + pulse * 0.35;
+        const glowScale = 1 + pulse * (entry.detail ? 0.16 : 0.08);
+        entry.glow.scale.set(glowScale);
+      }
+      return true;
+    });
   }
 
   destroy() {
@@ -302,7 +371,7 @@ export class ThreatCodexScene {
       elites: AssetManifest.generated.eliteMiddleShips?.[0],
       bosses: AssetManifest.generated.bossDossier || AssetManifest.generated.bossArenaBackdrop,
       runThemes: AssetManifest.generated.menuBackdrop,
-      cabinetLogs: AssetManifest.generated.menuCredits
+      cabinetLogs: AssetManifest.generated.cabinetArchive || AssetManifest.generated.menuCredits
     };
     return fallback[categoryId] || AssetManifest.generated.leaderboardHall;
   }
@@ -386,7 +455,9 @@ export class ThreatCodexScene {
   }
 
   loadCodexBackdrop(width, height, token) {
-    const src = AssetManifest.generated.leaderboardHall || AssetManifest.generated.menuBackdrop;
+    const src = this.getCategory()?.id === 'cabinetLogs'
+      ? (AssetManifest.generated.cabinetArchive || AssetManifest.generated.menuCredits || AssetManifest.generated.leaderboardHall)
+      : (AssetManifest.generated.leaderboardHall || AssetManifest.generated.menuBackdrop);
     PIXI.Assets.load(src)
       .then((texture) => {
         if (token !== this.renderToken || !texture) return;
@@ -731,6 +802,9 @@ export class ThreatCodexScene {
           sprite.alpha = discovered ? 0.88 : 0.44;
           sprite.tint = discovered ? 0xffffff : accent;
           thumb.addChildAt(sprite, 1);
+          if (categoryId === 'enemies') {
+            this.registerCodexShipAnimation(sprite, { accent, detail: false, seed });
+          }
         })
         .catch(() => drawMiniGlyph(thumb, 0, 0, size, accent, seed, discovered));
     } else {
@@ -904,6 +978,9 @@ export class ThreatCodexScene {
         sprite.alpha = discovered ? 0.96 : 0.42;
         sprite.tint = discovered ? 0xffffff : accent;
         parent.addChild(sprite);
+        if ((entry?.category || this.getCategory().id) === 'enemies') {
+          this.registerCodexShipAnimation(sprite, { accent, detail: true, seed });
+        }
 
         const rim = new PIXI.Graphics();
         rim.circle(x + width * 0.5, y + height * 0.5, Math.min(width, height) * 0.34);

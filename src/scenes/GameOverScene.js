@@ -220,7 +220,11 @@ export class GameOverScene {
 
     // FREEZE final score and level immediately
     this.finalScore = Number(this.game.score) || 0;
-    this.finalLevel = Number(this.game.level) || 0;
+    this.finalLevel = Math.max(1, Math.floor(Number(
+      this.game?.runSummary?.levelReached ??
+      this.game?.runSummary?.sectorReached ??
+      this.game.level
+    ) || 1));
     if (this.isRankedRun) {
       this.localQualified = this.steamSubmissionMode
         ? this.finalScore > 0
@@ -284,9 +288,12 @@ export class GameOverScene {
     this.levelText = createText(this.levelSummary, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: levelSize,
-      fill: '#ffffff',
+      fill: '#d8f8ff',
+      fontWeight: '800',
+      stroke: '#031323',
+      strokeThickness: layout.isMobile ? 2 : 3,
       align: 'center',
-      lineHeight: Math.round(levelSize * 1.12)
+      lineHeight: Math.round(levelSize * 1.22)
     });
     this.levelText.anchor.set(0.5);
     this.container.addChild(this.levelText);
@@ -626,13 +633,18 @@ export class GameOverScene {
     if (!this.isRankedRun) return 'LOCAL BOARD: PRACTICE RUN\nGLOBAL BOARD: PRACTICE RUN';
     if (this.steamSubmissionMode) {
       const pilot = this.steamPlayerName ? ` (${this.steamPlayerName})` : '';
+      const steamRank = Number(this.globalPlacement?.placement ?? this.leaderboardResult?.steamRank ?? this.leaderboardResult?.rank);
       const steamLine = {
         steam_ready: `STEAM BOARD: READY${pilot}`,
         submitting: `STEAM BOARD: SUBMITTING${pilot}`,
-        submitted: 'STEAM BOARD: SUBMITTED',
+        submitted: Number.isFinite(steamRank) && steamRank > 0
+          ? `STEAM BOARD: SUBMITTED - RANK #${Math.floor(steamRank)}`
+          : 'STEAM BOARD: SUBMITTED',
         failed: 'STEAM BOARD: FAILED - LOCAL SAVED'
       }[this.globalStatus] || `STEAM BOARD: ${String(this.globalStatus || 'READY').replace(/_/g, ' ').toUpperCase()}`;
-      const localLine = this.finalScore > 0 ? 'LOCAL BOARD: BACKUP READY' : 'LOCAL BOARD: NO SCORE';
+      const localLine = this.globalStatus === 'submitted'
+        ? 'LOCAL BOARD: BACKUP SAVED'
+        : this.finalScore > 0 ? 'LOCAL BOARD: BACKUP READY' : 'LOCAL BOARD: NO SCORE';
       return `${localLine}\n${steamLine}`;
     }
     const localLine = this.localQualified
@@ -670,6 +682,8 @@ export class GameOverScene {
       this.leaderboardStatusText.style.fill = '#9cfbff';
     } else if (this.globalStatus === 'offline' || this.globalStatus === 'failed') {
       this.leaderboardStatusText.style.fill = '#ffb35c';
+    } else if (this.globalStatus === 'submitted') {
+      this.leaderboardStatusText.style.fill = '#ffe86a';
     } else {
       this.leaderboardStatusText.style.fill = '#8fa6b8';
     }
@@ -861,7 +875,7 @@ export class GameOverScene {
     this.scoreText.style.fontSize = scoreSize;
     this.levelText.style.fontSize = levelSize;
     this.levelText.style.align = 'center';
-    this.levelText.style.lineHeight = Math.round(levelSize * 1.12);
+    this.levelText.style.lineHeight = Math.round(levelSize * 1.22);
     this.unlockText.style.fontSize = unlockSize;
     this.unlockText.style.wordWrap = true;
     this.unlockText.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
@@ -875,7 +889,7 @@ export class GameOverScene {
     this.comment.style.lineHeight = Math.round(bodySize * 1.4);
     this.comment.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
     this.leaderboardStatusText.style.fontSize = leaderboardStatusSize;
-    this.leaderboardStatusText.style.lineHeight = Math.round(leaderboardStatusSize * 1.25);
+    this.leaderboardStatusText.style.lineHeight = Math.round(leaderboardStatusSize * 1.34);
     this.leaderboardStatusText.style.wordWrapWidth = clampTextWidth(width * 0.88, layout);
     this.notQualifiedText.style.fontSize = layout.isMobile ? 18 : 22;
     this.notQualifiedText.style.wordWrapWidth = clampTextWidth(width * 0.86, layout);
@@ -917,9 +931,9 @@ export class GameOverScene {
     const unlockHeight = Math.max(unlockSize * 1.3, this.unlockText.height || 0) + unlockRevealHeight;
     const nextGoalHeight = this.nextGoalGroup?.visible ? Math.max(this.nextGoalGroup.height || 0, layout.isMobile ? 32 : 38) : 0;
     const commentHeight = Math.max(bodySize * 1.4, this.comment.height || 0);
-    const leaderboardStatusHeight = Math.max(leaderboardStatusSize * 1.5, this.leaderboardStatusText.height || 0);
+    const leaderboardStatusHeight = Math.max(leaderboardStatusSize * 1.8, this.leaderboardStatusText.height || 0);
     const promptHeight = Math.max(promptSize * 1.2, this.promptText.height || 0);
-    const nameHeight = Math.max(nameSize * 1.2, this.nameDisplay.height || 0);
+    const nameHeight = this.nameDisplay?.visible ? Math.max(nameSize * 1.2, this.nameDisplay.height || 0) : 0;
     const retryHeight = this.retryButtonHeight || (layout.isMobile ? 58 : 66);
     const leaderboardVisible = this.shouldShowLeaderboardButton();
     const leaderboardHeight = leaderboardVisible ? (this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48)) : 0;
@@ -929,9 +943,16 @@ export class GameOverScene {
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
     const availableHeight = height - footerSpace - safeMargin.top;
-    const startY = Math.max(safeMargin.top, safeMargin.top + (availableHeight - totalHeight) / 2 * (layout.isMobile ? 0.5 : 0.7));
+    const topGuard = safeMargin.top + (layout.isMobile ? 18 : 26);
+    const startY = Math.max(topGuard, safeMargin.top + (availableHeight - totalHeight) / 2 * (layout.isMobile ? 0.55 : 0.78));
 
     const stack = createVerticalStack(layout, { startY, spacing });
+    const placeCentered = (element, spacingAfter = spacing) => {
+      const elementHeight = Math.max(1, element?.height || element?.style?.fontSize || spacing);
+      const y = stack.getCurrentY() + elementHeight / 2;
+      stack.setY(stack.getCurrentY() + elementHeight + spacingAfter);
+      return y;
+    };
 
     this.title.x = width / 2;
     const titleMaxWidth = clampTextWidth(width * 0.9, layout);
@@ -941,47 +962,47 @@ export class GameOverScene {
       this.title.style.fontSize = fittedSize;
       this.title.style.lineHeight = Math.round(fittedSize * 1.08);
     }
-    this.title.y = stack.placeElement(this.title, spacing);
+    this.title.y = placeCentered(this.title, spacing);
 
     this.scoreText.x = width / 2;
-    this.scoreText.y = stack.placeElement(this.scoreText, spacing * 0.5);
+    this.scoreText.y = placeCentered(this.scoreText, spacing * 0.5);
 
     this.levelText.x = width / 2;
-    this.levelText.y = stack.placeElement(this.levelText, sectionGap);
+    this.levelText.y = placeCentered(this.levelText, sectionGap);
 
     this.unlockText.x = width / 2;
-    this.unlockText.y = stack.placeText(this.unlockText, spacing);
+    this.unlockText.y = placeCentered(this.unlockText, spacing);
 
     if (unlockRevealVisible) {
       this.shipUnlockReveal.x = width / 2;
-      this.shipUnlockReveal.y = stack.placeElement(this.shipUnlockReveal, spacing * 0.5);
+      this.shipUnlockReveal.y = placeCentered(this.shipUnlockReveal, spacing * 0.5);
     }
 
     if (this.nextGoalGroup?.visible) {
       this.nextGoalGroup.x = width / 2;
-      this.nextGoalGroup.y = stack.placeElement(this.nextGoalGroup, spacing);
+      this.nextGoalGroup.y = placeCentered(this.nextGoalGroup, spacing);
     }
 
     this.comment.x = width / 2;
-    this.comment.y = stack.placeText(this.comment, spacing);
+    this.comment.y = placeCentered(this.comment, spacing);
 
     this.leaderboardStatusText.x = width / 2;
-    this.leaderboardStatusText.y = stack.placeText(this.leaderboardStatusText, spacing * 0.8);
+    this.leaderboardStatusText.y = placeCentered(this.leaderboardStatusText, spacing * 0.8);
 
     this.promptText.x = width / 2;
-    this.promptText.y = stack.placeElement(this.promptText, spacing);
+    this.promptText.y = placeCentered(this.promptText, spacing);
 
     this.notQualifiedText.x = width / 2;
     this.notQualifiedText.y = this.promptText.y;
 
     stack.addGap(this.state === 'runback' ? (layout.isMobile ? 22 : 36) : (layout.isMobile ? 8 : 18));
     this.retryButton.x = width / 2;
-    this.retryButton.y = stack.placeElement(this.retryButton, spacing);
+    this.retryButton.y = placeCentered(this.retryButton, spacing);
 
     if (this.leaderboardButton) {
       this.leaderboardButton.visible = leaderboardVisible;
       this.leaderboardButton.x = width / 2;
-      this.leaderboardButton.y = leaderboardVisible ? stack.placeElement(this.leaderboardButton, spacing * 0.8) : this.retryButton.y;
+      this.leaderboardButton.y = leaderboardVisible ? placeCentered(this.leaderboardButton, spacing * 0.8) : this.retryButton.y;
     }
 
     this.nameDisplay.x = width / 2;
@@ -1874,7 +1895,11 @@ export class GameOverScene {
     const newBest = bestLevel > previousBestLevel && this.finalLevel >= bestLevel;
     const suffix = newBest ? ' - NEW BEST' : '';
     const clearLabel = summary.runCleared ? 'CLEAR' : 'GAME OVER';
-    return `${clearLabel}: SECTOR ${this.finalLevel}  ${Math.floor(summary.runElapsedSeconds || 0)}s\nCAREER BEST: SECTOR ${bestLevel}${suffix}\n${this.createPilotXpLine(currentProgress)}\n${translateText('XP FUELS PILOT RANK AND HANGAR UNLOCKS')}`;
+    const elapsed = Math.floor(summary.runElapsedSeconds || 0);
+    const rankLine = this.createPilotXpLine(currentProgress)
+      .replace(/\s+RANK\s+/i, '\nRANK ')
+      .replace(/\s+TO\s+/i, '\nTO ');
+    return `${clearLabel}: SECTOR ${this.finalLevel} | ${elapsed}s\nCAREER BEST: SECTOR ${bestLevel}${suffix}\n${rankLine}`;
   }
 
   getNextLevelGoal(bestLevel) {
@@ -2183,6 +2208,7 @@ export class GameOverScene {
         placement: Number.isFinite(steamRank) && steamRank > 0 ? Math.floor(steamRank) : null,
         qualified: true,
         numberOne: Number.isFinite(steamRank) && Math.floor(steamRank) === 1,
+        top3: Number.isFinite(steamRank) && Math.floor(steamRank) <= 3,
         source: 'steam_submit_result'
       };
       result.confirmedGlobalPlacement = placement;
@@ -2267,8 +2293,18 @@ export class GameOverScene {
   }
 
   getRunbackStatusText(reason = this.runbackReason) {
+    const globalRank = Number(this.globalPlacement?.placement ?? this.leaderboardResult?.steamRank ?? this.leaderboardResult?.rank ?? this.leaderboardResult?.globalRank);
+    const localRank = Number(this.leaderboardResult?.localPlacement ?? this.leaderboardResult?.localEntry?.placement);
+    if (reason === 'score_submitted') {
+      const globalLine = Number.isFinite(globalRank) && globalRank > 0
+        ? `CONGRATULATIONS - #${Math.floor(globalRank)} GLOBAL LEADERBOARD`
+        : 'CONGRATULATIONS - GLOBAL LEADERBOARD SAVED';
+      const localLine = Number.isFinite(localRank) && localRank > 0
+        ? `LOCAL LEADERBOARD: #${Math.floor(localRank)}`
+        : 'LOCAL LEADERBOARD: SAVED';
+      return `${globalLine}\n${localLine}`;
+    }
     const map = {
-      score_submitted: 'SCORE SUBMITTED',
       score_saved: 'SCORE SAVED',
       global_failed: 'LOCAL SCORE SAVED\nGLOBAL SUBMIT FAILED - RUN IT BACK',
       score_skipped: 'SCORE SUBMISSION SKIPPED',
@@ -2600,6 +2636,10 @@ export class GameOverScene {
       score: this.finalScore,
       level: this.finalLevel,
       rankIndex: this.game.rankIndex || 0,
+      runTimeSeconds: this.game?.runSummary?.runElapsedSeconds,
+      kills: this.game?.runSummary?.totalKills,
+      bossKills: this.game?.runSummary?.bossesKilled,
+      wavesCleared: this.game?.runSummary?.wavesCleared,
       submissionId: this.submissionId
     });
 
@@ -2615,7 +2655,16 @@ export class GameOverScene {
     result.localQualified = true;
     result.steamSubmissionMode = true;
     result.updatedAt = new Date().toISOString();
-    await this.confirmGlobalLeaderboardAchievements(result);
+    const confirmedPlacement = await this.confirmGlobalLeaderboardAchievements(result);
+    if (confirmedPlacement?.qualified) {
+      this.globalPlacement = confirmedPlacement;
+      this.globalPlacementTier = confirmedPlacement.numberOne
+        ? 'number1'
+        : confirmedPlacement.top3
+          ? 'top3'
+          : 'global';
+      this.globalQualified = true;
+    }
     this.leaderboardResult = result;
     this.game.lastLeaderboardResult = result;
     this.game.leaderboardView = this.globalStatus === 'submitted' ? 'global' : 'local';
@@ -2624,6 +2673,10 @@ export class GameOverScene {
     this.state = 'submitted';
     this.removeInputOverlay();
     this.updateLeaderboardStatusText();
+    if (this.globalStatus === 'submitted') {
+      this.playGlobalQualificationFanfare();
+      this.updatePromptMessage('STEAM SCORE SAVED!');
+    }
     this.enterRunbackStage(this.globalStatus === 'submitted' ? 'score_submitted' : 'global_failed');
   }
 

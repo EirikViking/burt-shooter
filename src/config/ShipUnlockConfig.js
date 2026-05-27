@@ -26,32 +26,32 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_02',
-    label: 'Finish 1 run or reach sector 2',
-    requirementsAny: [{ totalRuns: 1 }, { bestSector: 2 }],
+    label: 'Reach sector 5',
+    requirements: { bestSector: 5 },
     legacyLevel: 2
   },
   {
     shipId: 'nova_ship_03',
-    label: 'Defeat 1 boss',
-    requirements: { totalBossesDefeated: 1 },
+    label: 'Reach sector 5 and defeat 1 boss',
+    requirements: { bestSector: 5, totalBossesDefeated: 1 },
     legacyLevel: 3
   },
   {
     shipId: 'nova_ship_04',
-    label: 'Reach sector 4',
-    requirements: { bestSector: 4 },
+    label: 'Reach sector 6',
+    requirements: { bestSector: 6 },
     legacyLevel: 4
   },
   {
     shipId: 'nova_ship_05',
-    label: 'Score 50,000 in one run',
-    requirements: { bestScore: 50000 },
+    label: 'Reach sector 6 and score 50,000',
+    requirements: { bestSector: 6, bestScore: 50000 },
     legacyLevel: 5
   },
   {
     shipId: 'nova_ship_06',
-    label: 'Defeat 6 total bosses',
-    requirements: { totalBossesDefeated: 6 },
+    label: 'Reach sector 7 and defeat 6 total bosses',
+    requirements: { bestSector: 7, totalBossesDefeated: 6 },
     legacyLevel: 7
   },
   {

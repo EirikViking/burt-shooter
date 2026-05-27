@@ -80,6 +80,7 @@
     "check:enemy-wave-patterns": "node scripts/check-enemy-wave-patterns.mjs",
     "check:normal-enemy-attack-variety": "node scripts/check-normal-enemy-attack-variety.mjs",
     "check:menu-credits-layout": "node scripts/check-menu-credits-layout.mjs",
+    "check:settings-controls": "node scripts/check-settings-controls.mjs",
     "check:music-pack": "node scripts/check-music-pack.mjs",
     "check:powerup-assets": "node scripts/check-powerup-assets.mjs",
     "check:powerup-balance": "node scripts/check-powerup-balance.mjs",

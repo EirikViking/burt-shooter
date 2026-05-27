@@ -76,6 +76,7 @@ html, body {
 canvas {
   display: block;
   image-rendering: pixelated;
+  outline: none;
   /* Prevent canvas touch scrolling */
   touch-action: none;
   /* Center canvas when constrained */
@@ -83,6 +84,10 @@ canvas {
   /* Prevent canvas from stretching beyond its set dimensions */
   max-width: 100%;
   max-height: 100%;
+}
+canvas:focus,
+canvas:focus-visible {
+  outline: none;
 }
 .loading {
   position: absolute;

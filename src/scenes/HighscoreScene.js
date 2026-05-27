@@ -661,9 +661,28 @@ export class HighscoreScene {
   normalizeEntry(raw) {
     const normalized = normalizeLeaderboardEntry(raw, { source: this.activeLeaderboard });
     if (!normalized) return null;
+    const match = this.getLastLeaderboardPlayerMatch();
+    const rawDetails = Array.isArray(raw?.details) ? raw.details : Array.isArray(raw?.scoreDetails) ? raw.scoreDetails : [];
+    const rawLevel = Number(raw?.level ?? raw?.levelReached ?? raw?.metadata?.levelReached ?? raw?.metadata?.level);
+    const rawRank = Number(raw?.rank ?? raw?.globalRank);
+    const rawName = this.normalizePlayerNameForMatch(raw?.name || raw?.playerName);
+    const scoreMatches = Boolean(match) && match.score !== null && Number(normalized.score) === match.score;
+    const rankMatches = Boolean(match) && Number.isFinite(match.steamRank) && Number.isFinite(rawRank) && Math.floor(match.steamRank) === Math.floor(rawRank);
+    const nameMatches = !match || !match.name || !rawName || rawName === match.name;
+    const shouldRepairCurrentSteamLevel = this.activeLeaderboard !== LeaderboardView.LOCAL &&
+      match &&
+      Number.isFinite(match.level) &&
+      match.level > 1 &&
+      scoreMatches &&
+      nameMatches &&
+      (rankMatches || normalized.isCurrentPlayer) &&
+      (!rawDetails.length || !Number.isFinite(rawLevel) || rawLevel <= 1);
+    const repairedLevel = shouldRepairCurrentSteamLevel ? Math.floor(match.level) : normalized.level;
     return {
       ...normalized,
-      rank_index: normalized.rank_index ?? getRankFromLevel(normalized.level || 1)
+      level: repairedLevel,
+      levelReached: repairedLevel,
+      rank_index: normalized.rank_index ?? getRankFromLevel(repairedLevel || 1)
     };
   }
 
@@ -716,14 +735,14 @@ export class HighscoreScene {
     const sameScore = match.score === null || (Number.isFinite(entryScore) && entryScore === match.score);
     const sameLevel = match.level === null || !Number.isFinite(entryLevel) || entryLevel === match.level;
 
-    if (!sameScore || !sameLevel) return false;
+    if (!sameScore) return false;
 
     if (this.activeLeaderboard === LeaderboardView.LOCAL) {
       const visiblePlacement = index + 1;
       if (Number.isFinite(match.localPlacement) && match.localPlacement === visiblePlacement) {
         return !match.name || sameName;
       }
-      return sameName && (match.localStatus === 'saved' || match.localStatus === 'duplicate' || match.localStatus === 'local');
+      return sameName && (sameLevel || !Number.isFinite(entryLevel)) && (match.localStatus === 'saved' || match.localStatus === 'duplicate' || match.localStatus === 'local');
     }
 
     const entryRank = Number(entry.rank ?? entry.globalRank ?? index + 1);
@@ -731,7 +750,7 @@ export class HighscoreScene {
       return !match.name || sameName;
     }
 
-    return sameName && (match.steamStatus === 'submitted' || match.steamStatus === 'saved' || match.steamStatus === 'steam');
+    return sameName && (sameLevel || !Number.isFinite(entryLevel)) && (match.steamStatus === 'submitted' || match.steamStatus === 'saved' || match.steamStatus === 'steam');
   }
 
   createFeaturedEntryHighlight({

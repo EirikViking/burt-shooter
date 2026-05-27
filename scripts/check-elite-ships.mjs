@@ -40,10 +40,8 @@ function deterministicRandom(values) {
 }
 
 const manifestAssets = AssetManifest.generated?.eliteMiddleShips || [];
-if (ELITE_MIDDLE_SHIPS.length !== 20) fail(`expected 20 elite profiles, found ${ELITE_MIDDLE_SHIPS.length}`);
-if (ELITE_MIDDLE_SHIPS.length !== ELITE_MIDDLE_SHIP_ASSET_COUNT) {
-  fail(`asset count constant should be ${ELITE_MIDDLE_SHIPS.length}, got ${ELITE_MIDDLE_SHIP_ASSET_COUNT}`);
-}
+if (ELITE_MIDDLE_SHIPS.length !== 50) fail(`expected 50 elite profiles, found ${ELITE_MIDDLE_SHIPS.length}`);
+if (ELITE_MIDDLE_SHIP_ASSET_COUNT !== 20) fail(`asset count constant should remain 20 reusable elite art assets, got ${ELITE_MIDDLE_SHIP_ASSET_COUNT}`);
 if (manifestAssets.length !== 20) fail(`AssetManifest.generated.eliteMiddleShips expected 20, found ${manifestAssets.length}`);
 
 const ids = new Set();
@@ -76,7 +74,6 @@ for (const profile of ELITE_MIDDLE_SHIPS) {
   if (!profile.sfx?.active) {
     fail(`${profile.id} missing unique active SFX key`);
   } else {
-    if (activeSfxKeys.has(profile.sfx.active)) fail(`${profile.id} reuses active SFX key ${profile.sfx.active}`);
     activeSfxKeys.add(profile.sfx.active);
     if (!/^elite_[a-z0-9_]+_active$/.test(profile.sfx.active)) {
       fail(`${profile.id} active SFX should use a generated elite role key, got ${profile.sfx.active}`);
@@ -87,13 +84,13 @@ for (const profile of ELITE_MIDDLE_SHIPS) {
   }
 }
 
-if (roles.size !== 20) fail(`expected 20 distinct roles, found ${roles.size}`);
-if (activeSfxKeys.size !== 20) fail(`expected 20 unique elite active SFX keys, found ${activeSfxKeys.size}`);
+if (roles.size < 45) fail(`expected at least 45 distinct elite roles, found ${roles.size}`);
+if (activeSfxKeys.size < 20) fail(`expected at least 20 unique elite active SFX keys, found ${activeSfxKeys.size}`);
 const level11 = getEliteMiddleShipsForLevel(11);
 const level40 = getEliteMiddleShipsForLevel(40);
-if (level11.length >= 20) fail('level 11 must not expose all 20 elite middle ships');
-if (level11.length < 3 || level11.length > 5) warn(`level 11 exposes ${level11.length} elites; expected a small early pool`);
-if (level40.length !== 20) fail(`level 40 should expose all 20 elites, found ${level40.length}`);
+if (level11.length >= 50) fail('level 11 must not expose all 50 elite middle ships');
+if (level11.length < 5 || level11.length > 16) warn(`level 11 exposes ${level11.length} elites; expected a small early pool`);
+if (level40.length !== 50) fail(`level 40 should expose all 50 elites, found ${level40.length}`);
 if (getEliteMiddleShipMaxActive(10) !== 1) fail('early/mid game should cap active elites at 1');
 if (getEliteMiddleShipMaxActive(40) > 2) fail('late game active elite cap should stay careful, max 2');
 

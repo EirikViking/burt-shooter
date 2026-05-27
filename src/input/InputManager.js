@@ -39,8 +39,8 @@ export class InputManager {
       this.keys[e.key] = false;
     };
 
-    window.addEventListener('keydown', this.handleKeyDown);
-    window.addEventListener('keyup', this.handleKeyUp);
+    window.addEventListener('keydown', this.handleKeyDown, true);
+    window.addEventListener('keyup', this.handleKeyUp, true);
   }
 
   setupFocusHandlers() {
@@ -205,6 +205,11 @@ export class InputManager {
     this.previousGamepadButtons = {};
   }
 
+  armForGameplay() {
+    this.resetAllKeys();
+    this.destroyed = false;
+  }
+
   isFiring() {
     const gamepad = this.pollGamepad();
     return this.isKeyPressed('Space') ||
@@ -248,8 +253,8 @@ export class InputManager {
   }
 
   destroy() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-    window.removeEventListener('keyup', this.handleKeyUp);
+    window.removeEventListener('keydown', this.handleKeyDown, true);
+    window.removeEventListener('keyup', this.handleKeyUp, true);
     window.removeEventListener('blur', this.handleBlur);
     window.removeEventListener('gamepadconnected', this.handleGamepadConnected);
     window.removeEventListener('gamepaddisconnected', this.handleGamepadDisconnected);

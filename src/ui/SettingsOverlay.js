@@ -714,8 +714,8 @@ export class SettingsOverlay {
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const margin = isCompact ? 22 : 42;
-    const headerHeight = isCompact ? 132 : 104;
-    const footerHeight = isCompact ? 70 : 82;
+    const headerHeight = isCompact ? 132 : 112;
+    const footerHeight = isCompact ? 104 : 118;
     const contentTop = panelY + headerHeight;
     const contentBottom = panelY + panelHeight - footerHeight;
     const contentHeight = Math.max(180, contentBottom - contentTop);
@@ -741,8 +741,9 @@ export class SettingsOverlay {
       y: 0,
       width,
       height,
-      alpha: 0.18,
-      focusX: 0.5
+      alpha: 0.24,
+      focusX: 0.42,
+      source: AssetManifest.generated.cabinetArchive || AssetManifest.generated.menuCredits
     });
     skyline.label = 'ui_creditsFullBleedArt';
     overlay.addChild(skyline);
@@ -759,7 +760,7 @@ export class SettingsOverlay {
 
     const panel = new PIXI.Graphics();
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x06111f, alpha: 0.985 });
+    panel.fill({ color: 0x06111f, alpha: 0.955 });
     panel.stroke({ color: 0xff55d9, width: 2, alpha: 0.98 });
     panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 6);
     panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.34 });
@@ -799,7 +800,7 @@ export class SettingsOverlay {
     overlay.addChild(subtitle);
 
     const artRect = isCompact
-      ? { x: panelX + margin, y: contentTop, width: panelWidth - margin * 2, height: Math.min(150, contentHeight * 0.34) }
+      ? { x: panelX + margin, y: contentTop, width: panelWidth - margin * 2, height: Math.min(138, contentHeight * 0.3) }
       : { x: panelX + margin, y: contentTop, width: Math.min(380, panelWidth * 0.36), height: contentHeight };
     const art = this.createCreditsSpectacle(artRect, isCompact);
     overlay.addChild(art);
@@ -807,15 +808,15 @@ export class SettingsOverlay {
     const bodyX = isCompact ? panelX + margin : artRect.x + artRect.width + 36;
     const bodyY = isCompact ? artRect.y + artRect.height + 18 : contentTop + 2;
     const bodyWidth = isCompact ? panelWidth - margin * 2 : panelX + panelWidth - margin - bodyX;
-    const eggRowY = buttonY - (isCompact ? 92 : 96);
-    const footerY = eggRowY - (isCompact ? 42 : 48);
-    const bodyHeight = Math.max(isCompact ? 130 : 178, footerY - bodyY - 18);
+    const eggRowY = buttonY - (isCompact ? 72 : 64);
+    const footerY = buttonY - (isCompact ? 112 : 110);
+    const bodyHeight = Math.max(isCompact ? 112 : 168, footerY - bodyY - 24);
     const bodyWash = new PIXI.Graphics();
     bodyWash.roundRect(
       bodyX - 16,
       bodyY - 16,
       bodyWidth + 32,
-      bodyHeight + 30,
+      bodyHeight + 20,
       8
     );
     bodyWash.fill({ color: 0x020711, alpha: 0.72 });
@@ -832,9 +833,9 @@ export class SettingsOverlay {
     ].join('\n');
     const body = createText(creditsCopy, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: isCompact ? 11 : 16,
+      fontSize: isCompact ? 10 : 15,
       fill: '#c9f6ff',
-      lineHeight: isCompact ? 15 : 22,
+      lineHeight: isCompact ? 14 : 20,
       fontWeight: '700',
       wordWrap: true,
       wordWrapWidth: bodyWidth,
@@ -854,13 +855,13 @@ export class SettingsOverlay {
       wordWrapWidth: isCompact ? panelWidth - margin * 2 : bodyWidth,
       align: 'center'
     });
-    footer.anchor.set(0.5, 1);
+    footer.anchor.set(0.5, 0.5);
     footer.position.set(isCompact ? width / 2 : bodyX + bodyWidth / 2, footerY);
     fitTextToWidth(footer, isCompact ? panelWidth - margin * 2 : bodyWidth, { minScale: 0.78 });
     overlay.addChild(footer);
 
     const coin = this.createCreditsCoinButton(
-      isCompact ? panelX + panelWidth - 58 : bodyX + bodyWidth - 42,
+      isCompact ? panelX + panelWidth - 58 : bodyX + bodyWidth - 52,
       eggRowY,
       isCompact
     );
@@ -878,8 +879,8 @@ export class SettingsOverlay {
       align: 'right'
     });
     eggStatus.anchor.set(1, 0.5);
-    eggStatus.position.set(coin.x - (isCompact ? 38 : 48), coin.y);
-    fitDisplayToBox(eggStatus, Math.max(120, (isCompact ? panelWidth - margin * 2 : bodyWidth) - 88), isCompact ? 46 : 52, { minScale: 0.66 });
+    eggStatus.position.set(coin.x - (isCompact ? 40 : 58), coin.y);
+    fitDisplayToBox(eggStatus, Math.max(120, (isCompact ? panelWidth - margin * 2 : bodyWidth) - 112), isCompact ? 42 : 44, { minScale: 0.62 });
     overlay.addChild(eggStatus);
     this.creditsEggStatusText = eggStatus;
 
@@ -1213,7 +1214,15 @@ export class SettingsOverlay {
     const { x, y, width, height } = rect;
     art.position.set(x, y);
 
-    art.addChild(this.createCreditsImageLayer({ x: 0, y: 0, width, height, alpha: 0.95, focusX: 0.18 }));
+    art.addChild(this.createCreditsImageLayer({
+      x: 0,
+      y: 0,
+      width,
+      height,
+      alpha: 0.95,
+      focusX: 0.22,
+      source: AssetManifest.generated.cabinetArchive || AssetManifest.generated.menuCredits
+    }));
 
     const frame = new PIXI.Graphics();
     frame.roundRect(0, 0, width, height, 8);
@@ -1338,7 +1347,7 @@ export class SettingsOverlay {
     return art;
   }
 
-  createCreditsImageLayer({ x, y, width, height, alpha = 0.35, focusX = 0.5 }) {
+  createCreditsImageLayer({ x, y, width, height, alpha = 0.35, focusX = 0.5, source = null }) {
     const layer = new PIXI.Container();
     layer.position.set(x, y);
     layer.alpha = alpha;
@@ -1360,7 +1369,7 @@ export class SettingsOverlay {
       layer.addChildAt(sprite, 0);
     };
 
-    PIXI.Assets.load(AssetManifest.generated.menuCredits)
+    PIXI.Assets.load(source || AssetManifest.generated.cabinetArchive || AssetManifest.generated.menuCredits)
       .then(mountTexture)
       .catch((error) => {
         console.warn('[SettingsOverlay] Credits art failed to load:', error);
@@ -1394,6 +1403,22 @@ export class SettingsOverlay {
         value: AudioManager.getSettings().musicPack,
         button: debugBounds(this.musicPackButton),
         label: this.musicPackButton?._label?.text || null
+      },
+      settings: {
+        audio: AudioManager.getSettings(),
+        accessibility: getAccessibilitySettings(),
+        language: {
+          button: debugBounds(this.languageButton),
+          label: this.languageButton?._label?.text || null,
+          hint: this.languageHint?.text || null
+        },
+        footer: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button)])),
+        controls: this.controls.map((control) => ({
+          id: control.id,
+          type: control.type,
+          label: control.label,
+          bounds: debugBounds(control.button || control.track || control.node)
+        }))
       },
       footer: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button)])),
       credits: this.creditsDebugState,
