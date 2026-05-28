@@ -49,6 +49,7 @@ function registerSteamLeaderboardIpc() {
   ipcMain.handle('nova-steam-leaderboard:getPersonaName', () => steamLeaderboardBridge.getPersonaName());
   ipcMain.handle('nova-steam-leaderboard:getTopScores', (_event, payload) => steamLeaderboardBridge.getTopScores(payload));
   ipcMain.handle('nova-steam-leaderboard:getFriendsScores', (_event, payload) => steamLeaderboardBridge.getFriendsScores(payload));
+  ipcMain.handle('nova-steam-leaderboard:getPlayerBest', (_event, payload) => steamLeaderboardBridge.getPlayerBest(payload));
   ipcMain.handle('nova-steam-leaderboard:submitScore', (_event, payload) => steamLeaderboardBridge.submitScore(payload));
   ipcMain.handle('nova-steam-leaderboard:submitScoreDetailed', (_event, payload) => steamLeaderboardBridge.submitScoreDetailed(payload));
   ipcMain.handle('nova-steam-leaderboard:requestCurrentStats', () => steamLeaderboardBridge.requestCurrentStats());

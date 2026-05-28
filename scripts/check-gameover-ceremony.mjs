@@ -186,14 +186,14 @@ try {
   results.push(await checkCeremony(browser, {
     score: 39000,
     expectedTier: 'top3',
-    titlePattern: /TOP THREE/i,
+    titlePattern: /GLOBAL RANK #3|TOP THREE/i,
     shotName: 'top-three.png'
   }));
   console.log('[gameover-ceremony] checking global-slot ceremony');
   results.push(await checkCeremony(browser, {
     score: 7000,
     expectedTier: 'global',
-    titlePattern: /GLOBAL SLOT/i,
+    titlePattern: /GLOBAL RANK #\d+|GLOBAL RANK SAVED|GLOBAL SLOT/i,
     shotName: 'global-slot.png'
   }));
   console.log('[gameover-ceremony] checking near-global ceremony');

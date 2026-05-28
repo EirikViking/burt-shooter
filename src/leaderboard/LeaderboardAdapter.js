@@ -88,10 +88,29 @@ export class LeaderboardAdapter {
   }
 
   getRuntimeSummary() {
+    const win = safeWindow();
+    let desktop = false;
+    let steamBridgePresent = false;
+    try {
+      const params = new URLSearchParams(win?.location?.search || '');
+      desktop = params.get('desktop') === '1' || win?.__NOVA_SWARM_DESKTOP__ === true;
+      steamBridgePresent = Boolean(
+        win?.__novaSteamLeaderboard ||
+        win?.novaSteamLeaderboard ||
+        win?.__novaSteam?.leaderboards ||
+        win?.novaSteam?.leaderboards ||
+        win?.__novaSteamBridge?.leaderboards
+      );
+    } catch {
+      desktop = false;
+      steamBridgePresent = false;
+    }
     return {
       steam: Boolean(this.availability.steam),
       cloud: Boolean(this.availability.cloud),
       local: Boolean(this.availability.local),
+      desktop,
+      steamBridgePresent,
       globalProvider: this.availability.steam ? 'steam' : (this.availability.cloud ? 'cloud' : 'local')
     };
   }
@@ -212,6 +231,14 @@ export class LeaderboardAdapter {
         result.steamRank = steam.rank;
         result.steamDetails = steam.details;
         result.steamResponse = steam.response || null;
+        if (!Number.isFinite(Number(result.steamRank))) {
+          const playerBest = await this.steamProvider.getPlayerBest().catch(() => null);
+          const playerBestRank = Number(playerBest?.rank ?? playerBest?.globalRank);
+          if (Number.isFinite(playerBestRank) && playerBestRank > 0) {
+            result.steamRank = Math.floor(playerBestRank);
+            result.steamPlayerBest = playerBest;
+          }
+        }
       } catch (error) {
         result.globalStatus = 'failed';
         result.globalProvider = 'steam';
@@ -254,6 +281,10 @@ export class LeaderboardAdapter {
   }
 
   async getGlobalScoresForPlacement(options = {}) {
+    await this.ensureAvailability();
+    if (!this.availability.steam && !this.availability.cloud) {
+      return [];
+    }
     const result = await this.getScores(LeaderboardView.GLOBAL, {
       ...options,
       useCache: options.useCache ?? false
@@ -288,6 +319,10 @@ export class LeaderboardAdapter {
   async getSteamPlayerName() {
     await this.ensureAvailability();
     if (!this.availability.steam) return null;
+    return this.steamProvider.getPlayerName();
+  }
+
+  async getBestEffortSteamPlayerName() {
     return this.steamProvider.getPlayerName();
   }
 

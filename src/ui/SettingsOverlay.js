@@ -269,8 +269,8 @@ export class SettingsOverlay {
     this.audioTestButtons.sfx = sfxButton;
     this.audioTestButtons.voice = voiceButton;
     row.addChild(sfxButton, voiceButton);
-    this.registerControl({ type: 'button', id: 'test_sfx', button: sfxButton, label: 'TEST SFX' });
-    this.registerControl({ type: 'button', id: 'test_voice', button: voiceButton, label: 'TEST VOICE' });
+    this.registerControl({ type: 'button', id: 'test_sfx', button: sfxButton, label: 'TEST SFX', navRow: 'audio_test' });
+    this.registerControl({ type: 'button', id: 'test_voice', button: voiceButton, label: 'TEST VOICE', navRow: 'audio_test' });
 
     this.container.addChild(row);
     this.rows.push(row);
@@ -613,6 +613,15 @@ export class SettingsOverlay {
       return true;
     }
     if (control.type !== 'slider') {
+      if (control.navRow === 'audio_test') {
+        const targetId = direction > 0 ? 'test_voice' : 'test_sfx';
+        const targetIndex = this.controls.findIndex((candidate) => candidate.id === targetId);
+        if (targetIndex >= 0) {
+          this.setControlFocus(targetIndex);
+          AudioManager.playSfx('thrusterFire', { volume: 0.07, minIntervalMs: 80 });
+          return true;
+        }
+      }
       this.moveControlFocus(direction > 0 ? 1 : -1);
       return true;
     }

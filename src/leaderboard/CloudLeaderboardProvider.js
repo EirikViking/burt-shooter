@@ -9,7 +9,10 @@ function cloudDisabledByRuntime() {
   try {
     if (window.__novaLeaderboardMode === 'local') return true;
     const params = new URLSearchParams(window.location.search || '');
-    return params.get('leaderboard') === 'local' || params.get('offlineLeaderboard') === '1';
+    if (params.get('leaderboard') === 'local' || params.get('offlineLeaderboard') === '1') return true;
+    const desktopRuntime = params.get('desktop') === '1' || window.__NOVA_SWARM_DESKTOP__ === true;
+    if (desktopRuntime && params.get('cloudLeaderboard') !== '1') return true;
+    return false;
   } catch {
     return false;
   }

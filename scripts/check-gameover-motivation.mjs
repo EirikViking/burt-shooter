@@ -181,11 +181,13 @@ try {
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+    return state.scene === 'gameOver' && state.gameOver?.state === 'submitted';
   }, null, { timeout: 15000 });
-  const submittedRunbackState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
-  const runbackScreenshot = path.join(outputDir, 'gameover-runback.png');
-  await page.screenshot({ path: runbackScreenshot, fullPage: true });
+  const submittedResultState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await page.waitForTimeout(350);
+  const submittedResultAfterSpinState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const resultScreenshot = path.join(outputDir, 'gameover-submitted-result.png');
+  await page.screenshot({ path: resultScreenshot, fullPage: true });
 
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
@@ -322,11 +324,13 @@ try {
       ['leaderboard', 'submit'].includes(gameOverState.gameOver?.primaryCta?.mode) &&
       nameInputState.nameInput === 'ABCDEFGHIJKLMN' &&
       nameInputState.hiddenMaxLength === 14 &&
-      submittedRunbackState.scene === 'gameOver' &&
-      submittedRunbackState.gameOver?.state === 'runback' &&
-      submittedRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
-      submittedRunbackState.gameOver?.ceremonyTitle === 'ONE MORE RUN?' &&
-      /^one_more_run_\d\d$/.test(submittedRunbackState.gameOver?.selectedCtaLine?.id || '') &&
+      submittedResultState.scene === 'gameOver' &&
+      submittedResultState.gameOver?.state === 'submitted' &&
+      submittedResultState.gameOver?.primaryCta?.mode === 'restart' &&
+      submittedResultState.gameOver?.ceremonyTitle !== 'ONE MORE RUN?' &&
+      /^one_more_run_\d\d$/.test(submittedResultState.gameOver?.selectedCtaLine?.id || '') &&
+      submittedResultState.gameOver?.primaryCta?.spinVisible === true &&
+      Math.abs((submittedResultAfterSpinState.gameOver?.primaryCta?.spinRotation || 0) - (submittedResultState.gameOver?.primaryCta?.spinRotation || 0)) > 0.01 &&
       /ONE MORE RUN/i.test(noSlotCtaState.gameOver?.primaryCta?.label || '') &&
       noSlotCtaState.gameOver?.primaryCta?.mode === 'restart' &&
       noSlotCtaState.gameOver?.state === 'runback' &&
@@ -342,9 +346,11 @@ try {
     baseUrl,
     gameOver: gameOverState.gameOver,
     leaderboardFirst: {
-      submittedScene: submittedRunbackState.scene,
-      submittedState: submittedRunbackState.gameOver?.state || null,
-      selectedCtaLine: submittedRunbackState.gameOver?.selectedCtaLine || null,
+      submittedScene: submittedResultState.scene,
+      submittedState: submittedResultState.gameOver?.state || null,
+      selectedCtaLine: submittedResultState.gameOver?.selectedCtaLine || null,
+      submittedTitle: submittedResultState.gameOver?.ceremonyTitle || null,
+      submittedPrimaryCta: submittedResultAfterSpinState.gameOver?.primaryCta || null,
       primaryCta: gameOverState.gameOver?.primaryCta || null
     },
     retryCtaRestarted: {
@@ -374,7 +380,7 @@ try {
     pageErrors,
     consoleErrors,
     screenshot,
-    runbackScreenshot
+    resultScreenshot
   };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
 

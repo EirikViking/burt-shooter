@@ -504,6 +504,19 @@ class SteamLeaderboardBridge {
     return entries.map(entry => ({ ...entry, source: 'steam-friends' }));
   }
 
+  async getPlayerBest(options = {}) {
+    const leaderboard = await this.getLeaderboard(options.leaderboardName);
+    const nativeModule = this.loadNativeModule();
+    const raw = await this.steam.leaderboards.downloadLeaderboardEntries(
+      leaderboard.handle,
+      enumValue(nativeModule, 'LeaderboardDataRequest', 'GlobalAroundUser', FALLBACK_DATA_REQUEST.GlobalAroundUser),
+      0,
+      0
+    );
+    const entries = await this.normalizeEntries(asEntryArray(raw));
+    return entries.find(entry => entry.isCurrentPlayer) || entries[0] || null;
+  }
+
   async submitScore(payload = {}) {
     const result = await this.submitScoreDetailed(payload);
     if (!result.success) {

@@ -12,7 +12,7 @@ import { getSectorInfo } from './config/SectorCatalog.js';
 import { getRunPacingDebugState } from './config/RunPacingConfig.js';
 import { getThreatCodexCatalog } from './config/ThreatCodexCatalog.js';
 import { getCodexCompletionCounts, getDiscoveriesThisRun, getDiscoveryStats } from './progression/ThreatDiscoveryState.js';
-import { getHangarProgressSummary } from './progression/HangarProgressState.js';
+import { getHangarProgressSummary, readHangarProgressState } from './progression/HangarProgressState.js';
 import {
   LANGUAGE_CHANGE_EVENT,
   getCurrentLanguage,
@@ -135,6 +135,7 @@ function collectSteamCloudRendererState() {
   return collectSteamCloudPersistenceState({
     game: window.__game,
     getShipUnlockProgress,
+    getHangarProgressState: readHangarProgressState,
     getAccessibilitySettings,
     getLanguagePreferenceMode,
     getCurrentLanguage
@@ -638,6 +639,14 @@ function buildGameTextState(game) {
       tabs: highscoreScene.leaderboardTabs?.map(tab => tab.id) || [],
       status: highscoreScene.status || null,
       sourceLabel: highscoreScene.activeLeaderboardResult?.sourceLabel || null,
+      runAgainCta: highscoreScene.runAgainBtn ? {
+        label: highscoreScene.runAgainBtn?._label?.text || null,
+        visible: highscoreScene.runAgainBtn.visible !== false,
+        bounds: getBoundsDebug(highscoreScene.runAgainBtn),
+        spinVisible: Boolean(highscoreScene.runAgainBtn?._ctaSpin?.visible),
+        spinRotation: Number(highscoreScene.runAgainBtn?._ctaSpin?.rotation || 0),
+        scale: Number(highscoreScene.runAgainBtn?.scale?.x || 1)
+      } : null,
       rows: highscoreScene.entries?.map(entry => ({
         rank: entry.rank || null,
         name: entry.name || entry.playerName || null,

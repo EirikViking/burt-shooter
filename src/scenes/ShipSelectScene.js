@@ -690,7 +690,7 @@ export class ShipSelectScene {
 
     const h = createText(translateText(heading), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 11 : 13,
+      fontSize: compact ? 12 : 14,
       fontWeight: '900',
       fill: hexColor(accent),
       letterSpacing: 0
@@ -700,15 +700,15 @@ export class ShipSelectScene {
 
     const p = createText(translateText(copy), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 9 : 11,
+      fontSize: compact ? 11 : 12,
       fontWeight: '700',
       fill: '#d8fbff',
       wordWrap: true,
       wordWrapWidth: width - 30,
-      lineHeight: compact ? 11 : 14,
+      lineHeight: compact ? 13 : 15,
       letterSpacing: 0
     });
-    p.position.set(18, compact ? 30 : 34);
+    p.position.set(18, compact ? 31 : 35);
     fitDisplayToBox(p, width - 30, height - (compact ? 36 : 42), { minScale: 0.7 });
     card.addChild(h, p);
     return card;
@@ -988,7 +988,7 @@ export class ShipSelectScene {
     const cardGap = compact ? 7 : 10;
     const cardCols = narrow ? 1 : 3;
     const cardW = narrow ? panelWidth - 80 : (panelWidth - 80 - cardGap * 2) / 3;
-    const cardH = narrow ? 44 : short ? 64 : 72;
+    const cardH = narrow ? (compact ? 58 : 70) : short ? 78 : 86;
     const cardTop = statsTop + Math.ceil(stats.length / statCols) * (statH + statGap) + (compact ? 8 : 14);
     const cards = cardData.map(([heading, copy, accent], index) => {
       const col = narrow ? 0 : index;

@@ -273,6 +273,7 @@ export class HighscoreScene {
     this.container.addChild(this.backBtn);
 
     this.runAgainBtn = this.createButton('ONE MORE RUN');
+    this.runAgainBtn._callToAction = true;
     this.runAgainBtn.on('pointerdown', () => {
       this.game.startGame(this.game.selectedShipSpriteKey);
     });
@@ -1678,6 +1679,15 @@ export class HighscoreScene {
         this.title.style.dropShadowAlpha = pulse * 0.7;
       }
 
+      if (this.runAgainBtn?.visible !== false) {
+        this.drawButtonChrome(this.runAgainBtn, { active: true });
+        const ctaPulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
+        this.runAgainBtn.scale.set(1 + ctaPulse * 0.045);
+        if (this.runAgainBtn._ctaSpin?.visible) {
+          this.runAgainBtn._ctaSpin.rotation += 0.028;
+        }
+      }
+
       const highlightTime = Date.now() * 0.004;
       this.playerHighlightEffects.forEach((effect) => {
         const pulse = 0.5 + Math.sin(highlightTime + effect.phase) * 0.5;
@@ -1732,13 +1742,16 @@ export class HighscoreScene {
 
     const glow = new PIXI.Graphics();
     glow.filters = [new PIXI.BlurFilter(8)];
+    const ctaSpin = new PIXI.Graphics();
     const focus = new PIXI.Graphics();
     container.addChildAt(focus, 0);
+    container.addChildAt(ctaSpin, 0);
     container.addChildAt(glow, 0);
     container._bg = bg;
     container._label = label;
     container._glow = glow;
     container._focus = focus;
+    container._ctaSpin = ctaSpin;
     this.setButtonActive(container, false);
 
     container.on('pointerover', () => {
@@ -1784,6 +1797,7 @@ export class HighscoreScene {
     const fillColor = active ? 0x10203b : (hover ? 0x06314f : 0x04182d);
     const fillAlpha = hover ? 0.82 : (active ? 0.74 : 0.6);
     const focused = Boolean(button._focused);
+    const ctaPulse = button._callToAction ? (0.5 + Math.sin(Date.now() * 0.006) * 0.5) : 0;
 
     if (button._focus) {
       button._focus.clear();
@@ -1796,7 +1810,11 @@ export class HighscoreScene {
     button._bg.clear();
     button._bg.roundRect(x, y, width, height, 7);
     button._bg.fill({ color: fillColor, alpha: fillAlpha });
-    button._bg.stroke({ color: focused ? 0xffffff : frameColor, width: active || hover || focused ? 2 : 1.5, alpha: active || hover || focused ? 0.82 : 0.5 });
+    button._bg.stroke({
+      color: focused ? 0xffffff : frameColor,
+      width: active || hover || focused ? 2 : 1.5,
+      alpha: active || hover || focused ? 0.82 + ctaPulse * 0.12 : 0.5
+    });
     button._bg.rect(x + 10, y + 7, 4, height - 14);
     button._bg.fill({ color: active ? 0xffd15c : 0xff55d9, alpha: hover ? 0.9 : 0.62 });
     button._bg.rect(x + width - 14, y + 7, 4, height - 14);
@@ -1809,8 +1827,36 @@ export class HighscoreScene {
     button._bg.stroke({ color: 0x7fffd8, width: 1, alpha: hover ? 0.38 : 0.18 });
 
     button._glow.clear();
-    button._glow.roundRect(x - 2, y - 2, width + 4, height + 4, 8);
-    button._glow.fill({ color: active ? 0xffd15c : 0x37f5ff, alpha: active ? 0.18 : (hover ? 0.16 : 0) });
+    button._glow.roundRect(x - 8, y - 7, width + 16, height + 14, 10);
+    button._glow.fill({
+      color: active ? 0xffd15c : 0x37f5ff,
+      alpha: button._callToAction
+        ? 0.22 + ctaPulse * 0.2
+        : active
+          ? 0.18
+          : (hover ? 0.16 : 0)
+    });
+    if (button._callToAction) {
+      button._glow.roundRect(x - 2, y - 2, width + 4, height + 4, 8);
+      button._glow.stroke({ color: 0xffffff, width: 1.5, alpha: 0.16 + ctaPulse * 0.24 });
+    }
+    if (button._ctaSpin) {
+      button._ctaSpin.clear();
+      button._ctaSpin.visible = Boolean(button._callToAction);
+      if (button._callToAction) {
+        const notchW = Math.max(20, width * 0.12);
+        const notchH = 5;
+        const spinAlpha = 0.36 + ctaPulse * 0.38;
+        button._ctaSpin.roundRect(-notchW / 2, y - 12, notchW, notchH, notchH / 2);
+        button._ctaSpin.fill({ color: 0xffffff, alpha: spinAlpha });
+        button._ctaSpin.roundRect(-notchW / 2, -y + 7, notchW, notchH, notchH / 2);
+        button._ctaSpin.fill({ color: 0xffd15c, alpha: spinAlpha });
+        button._ctaSpin.roundRect(x - 15, -notchW / 2, notchH, notchW, notchH / 2);
+        button._ctaSpin.fill({ color: 0x37f5ff, alpha: spinAlpha * 0.9 });
+        button._ctaSpin.roundRect(-x + 10, -notchW / 2, notchH, notchW, notchH / 2);
+        button._ctaSpin.fill({ color: 0xff55d9, alpha: spinAlpha * 0.9 });
+      }
+    }
   }
 
   setButtonActive(button, active = false) {

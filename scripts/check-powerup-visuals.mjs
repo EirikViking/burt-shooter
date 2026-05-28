@@ -191,13 +191,77 @@ try {
   const screenshot = path.join(outputDir, 'powerup-icons-runtime.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
+  const collectState = await page.evaluate((types) => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const manager = play?.powerupManager;
+    const player = play?.player;
+    if (!game || !play || !manager || !player) return { ok: false, reason: 'missing collect harness' };
+
+    const expected = {
+      triple_beam: () => player.activePowerup?.type === 'triple_beam',
+      vector_boost: () => player.activePowerup?.type === 'vector_boost',
+      rapid_cabinet: () => player.activePowerup?.type === 'rapid_cabinet',
+      overdrive_core: () => player.activePowerup?.type === 'overdrive_core',
+      slow_time: () => player.activePowerup?.type === 'slow_time',
+      ghost: () => player.activePowerup?.type === 'ghost' && player.sprite?.alpha < 1,
+      shield: () => player.shieldActive === true,
+      life: () => game.lives >= 2,
+      rapid_fire: () => player.activePowerup?.type === 'rapid_fire',
+      double_shot: () => player.activePowerup?.type === 'double_shot',
+      damage_up: () => player.activePowerup?.type === 'damage_up',
+      speed_up: () => player.activePowerup?.type === 'speed_up',
+      pierce: () => player.activePowerup?.type === 'pierce',
+      score_x2: () => player.scoreMultiplier === 2,
+      magnet: () => player.magnetActive === true,
+      drones: () => player.dronesActive === true,
+      shockwave: () => player.activePowerup?.type == null,
+      point_defense: () => player.pointDefenseActive === true,
+      bomb: () => player.bombShotsLeft === 3,
+      chain_lightning: () => player.chainLightningActive === true,
+      orbital_strike: () => player.orbitalStrikeActive === true && player.orbitalStrikeCharges === 5,
+      vampire: () => player.vampireActive === true
+    };
+
+    const results = [];
+    for (const type of types) {
+      try {
+        player.resetPowerups?.();
+        player.deactivateShield?.();
+        player.deactivateBomb?.();
+        if (type === 'life') game.lives = 1;
+        const powerup = manager.spawnSpecific(player.x, player.y, type, { source: 'collect-check' });
+        powerup.collect(player, play);
+        results.push({
+          type,
+          ok: Boolean(expected[type]?.()),
+          activePowerup: player.activePowerup?.type || null,
+          shieldActive: Boolean(player.shieldActive),
+          scoreMultiplier: player.scoreMultiplier,
+          bombShotsLeft: player.bombShotsLeft,
+          orbitalStrikeCharges: player.orbitalStrikeCharges,
+          lives: game.lives
+        });
+      } catch (error) {
+        results.push({ type, ok: false, error: error?.message || String(error) });
+      }
+    }
+    return {
+      ok: results.every((item) => item.ok),
+      results
+    };
+  }, powerupTypes);
+
   const missing = state.types?.filter(item => !item.hasMainSprite || item.width < 28 || item.height < 28) || [];
+  const failedCollects = collectState.results?.filter(item => !item.ok) || [];
   const report = {
-    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && consoleEvents.length === 0 ? 'passed' : 'failed',
+    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && failedCollects.length === 0 && consoleEvents.length === 0 ? 'passed' : 'failed',
     baseUrl,
     screenshot,
     state,
+    collectState,
     missing,
+    failedCollects,
     consoleEvents
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
@@ -206,7 +270,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exit(1);
   }
-  console.log(`[powerup-visuals] PASS count=${state.count} screenshot=${screenshot}`);
+  console.log(`[powerup-visuals] PASS count=${state.count} collected=${collectState.results?.length || 0} screenshot=${screenshot}`);
 } finally {
   await browser.close();
   if (server) server.kill();

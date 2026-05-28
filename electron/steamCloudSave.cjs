@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 const CLOUD_SUBDIR = 'steam-cloud';
 const CLOUD_SAVE_FILE = 'nova-swarm-save.json';
 const LEGACY_HIGHSCORE_FILE = 'local-highscores-v2.json';
@@ -108,6 +108,18 @@ function sanitizeUnlockProgress(progress = {}) {
   };
 }
 
+function sanitizePlainObject(value = {}, maxBytes = 262144) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  try {
+    const raw = JSON.stringify(value);
+    if (!raw || raw.length > maxBytes) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 function sanitizeLanguageState(language = {}) {
   const preference = SUPPORTED_LANGUAGE_MODES.has(language.preference) ? language.preference : 'system';
   const current = SUPPORTED_LANGUAGE_MODES.has(language.current) && language.current !== 'system'
@@ -179,6 +191,8 @@ function sanitizeRendererState(state = {}) {
     achievements: sanitizeAchievements(state.achievements || state.achievementMirror),
     selectedShipKey,
     progression: sanitizeUnlockProgress(state.progression || state.unlockProgress || {}),
+    hangarProgress: sanitizePlainObject(state.hangarProgress || {}),
+    threatDiscovery: sanitizePlainObject(state.threatDiscovery || {}),
     settings: sanitizeSettings(state.settings || {})
   };
 }
@@ -192,6 +206,8 @@ function createEmptySave() {
     achievements: sanitizeAchievements(),
     selectedShipKey: null,
     progression: sanitizeUnlockProgress(),
+    hangarProgress: {},
+    threatDiscovery: {},
     settings: sanitizeSettings()
   };
 }
@@ -206,6 +222,8 @@ function normalizeSave(rawSave = {}, localHighscores = null) {
     achievements: rendererState.achievements,
     selectedShipKey: rendererState.selectedShipKey,
     progression: rendererState.progression,
+    hangarProgress: rendererState.hangarProgress,
+    threatDiscovery: rendererState.threatDiscovery,
     settings: rendererState.settings
   };
 }
@@ -273,6 +291,12 @@ function createSteamCloudSave(userDataPath, logger = console) {
         : current.achievements,
       selectedShipKey: rendererState.selectedShipKey || current.selectedShipKey || null,
       progression: rendererState.progression,
+      hangarProgress: Object.hasOwn(state, 'hangarProgress')
+        ? rendererState.hangarProgress
+        : current.hangarProgress,
+      threatDiscovery: Object.hasOwn(state, 'threatDiscovery')
+        ? rendererState.threatDiscovery
+        : current.threatDiscovery,
       settings: rendererState.settings
     });
   }
@@ -287,6 +311,9 @@ function createSteamCloudSave(userDataPath, logger = console) {
       achievementMirrorCount: save.achievements.unlocked.length,
       selectedShipKey: save.selectedShipKey,
       progression: save.progression,
+      hangarPilotXp: Math.max(0, Math.floor(Number(save.hangarProgress?.pilotXp) || 0)),
+      hangarBestScore: Math.max(0, Math.floor(Number(save.hangarProgress?.bestScore) || 0)),
+      threatDiscoveryCategories: Object.keys(save.threatDiscovery?.items || {}).length,
       updatedAt: save.updatedAt
     };
   }

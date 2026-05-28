@@ -1,5 +1,12 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-28 Desktop Game Over Autosave Follow-Up
+
+- Current user request: fix packaged/desktop Game Over still asking for manual name input, overlapping Game Over copy, missing obvious One More Run glow/animation on Game Over and leaderboard, and Steam Cloud/history progress starting from zero; then produce a new Steam build.
+- Implemented desktop-like runtime auto-name fallback so Electron/Steam Cloud/Steam bridge builds submit local scores without the manual pilot-name prompt when Steam leaderboards are unavailable.
+- Fixed Steam Cloud renderer collection to save full hangar progress from `readHangarProgressState()` instead of reusing legacy ship unlock progress, and added a regression check for split legacy-vs-hangar progress.
+- Tightened Game Over stack sizing and added a 1920x1080 desktop autosave visual regression that verifies direct score-saved celebration, animated One More Run CTA, no manual-name copy, persisted hangar XP, persisted local score, and leaderboard One More Run animation.
+
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 
 - Current user request: replace the static lore popup with a context-aware Cabinet Log system that adds useful/funny gameplay value and archives discoveries in the Codex, then overhaul the credits screen with stronger animation, fixed text overlaps, and a much bigger secret ship unlock reveal.

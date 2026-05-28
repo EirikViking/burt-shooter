@@ -134,6 +134,13 @@ async function tapButton(page, button, holdMs = 120) {
   await page.waitForTimeout(120);
 }
 
+async function tapAxis(page, axes, holdMs = 140) {
+  await setGamepad(page, { axes });
+  await page.waitForTimeout(holdMs);
+  await setGamepad(page);
+  await page.waitForTimeout(120);
+}
+
 async function screenshot(page, name) {
   const target = path.join(outputDir, `${name}.png`);
   await page.screenshot({ path: target, fullPage: true });
@@ -365,7 +372,7 @@ try {
     scene.refreshPrimaryCta?.();
   });
   await tapButton(page, 0);
-  const submitted = await waitForState(page, (state) => state.scene === 'gameOver' && state.gameOver?.state === 'runback', 'score submitted from controller initials', 15000);
+  const submitted = await waitForState(page, (state) => state.scene === 'gameOver' && state.gameOver?.state === 'submitted', 'score submitted from controller initials', 15000);
   checkpoint('game-over-score-submitted', submitted, {
     savedName: submitted.gameOver?.lastLeaderboardResult?.name,
     screenshot: await screenshot(page, '10-score-submitted')
@@ -378,6 +385,37 @@ try {
   await tapButton(page, 1);
   const backToMenu = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, 'highscores returned to menu by controller B');
   checkpoint('return-menu', backToMenu, { screenshot: await screenshot(page, '12-return-menu') });
+
+  await steerMenuTo(page, 'threatCodex');
+  await tapButton(page, 0);
+  const codexOpen = await waitForState(page, (state) => state.scene === 'threatCodex' && state.threatCodexScreen?.category, 'threat codex opened by controller');
+  checkpoint('threat-codex-open', codexOpen, { screenshot: await screenshot(page, '13-threat-codex-open') });
+  await setGamepad(page);
+  await page.waitForTimeout(260);
+  const codexStartCategory = codexOpen.threatCodexScreen.categoryIndex;
+  const codexStartEntry = codexOpen.threatCodexScreen.entryIndex;
+  await tapAxis(page, [1, 0]);
+  const codexRight = await waitForState(page, (state) =>
+    state.scene === 'threatCodex' && state.threatCodexScreen?.categoryIndex !== codexStartCategory,
+  'threat codex category right');
+  await tapAxis(page, [0, 1]);
+  const codexDown = await waitForState(page, (state) =>
+    state.scene === 'threatCodex' && state.threatCodexScreen?.entryIndex !== codexStartEntry,
+  'threat codex entry down');
+  await tapButton(page, 4);
+  const codexLeft = await waitForState(page, (state) =>
+    state.scene === 'threatCodex' && state.threatCodexScreen?.categoryIndex === codexStartCategory,
+  'threat codex category left bumper');
+  checkpoint('threat-codex-controller-navigation', codexLeft, {
+    startCategory: codexStartCategory,
+    rightCategory: codexRight.threatCodexScreen?.categoryIndex,
+    startEntry: codexStartEntry,
+    downEntry: codexDown.threatCodexScreen?.entryIndex,
+    screenshot: await screenshot(page, '14-threat-codex-navigated')
+  });
+  await tapButton(page, 1);
+  const codexBackToMenu = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, 'threat codex returned to menu by controller B');
+  checkpoint('threat-codex-return-menu', codexBackToMenu, { screenshot: await screenshot(page, '15-threat-codex-return-menu') });
 
   const report = {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,

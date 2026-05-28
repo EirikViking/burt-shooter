@@ -624,6 +624,7 @@ export class Game {
       });
       if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);
     }
+    window.__novaSteamCloudDiagnostics?.sync?.().catch?.(() => {});
     return result;
   }
 

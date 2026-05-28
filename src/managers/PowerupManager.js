@@ -194,6 +194,9 @@ class Powerup {
 
   collect(player, scene) {
     this.active = false;
+    if (player && scene) {
+      player.lastScene = scene;
+    }
 
     // TASK 1: Premium powerup pickup effects
     this.showPickupEffect(scene);
@@ -232,12 +235,6 @@ class Powerup {
     } else {
       // Pass type directly to player (Player handles all powerup logic)
       player.applyPowerup(this.type);
-
-      // shockwave: Also trigger scene effect (player.triggerShockwave handles damage/bullets)
-      if (this.type === 'shockwave') {
-        // Store scene reference for player to use
-        player.lastScene = scene;
-      }
     }
 
     if (scene.debugStats) {
@@ -253,31 +250,61 @@ class Powerup {
   // TASK 1: Show premium visual effect on pickup
   showPickupEffect(scene) {
     if (!scene || !scene.particleManager) return;
+    const presentation = this.getPickupPresentation();
+    const secondaryColor = presentation.secondaryColor || 0xffffff;
 
     // Use existing particle system for pickup burst
     scene.particleManager.createPickupEffect(this.x, this.y, this.color);
+    for (let i = 0; i < presentation.extraBursts; i += 1) {
+      scene.particleManager.createPickupEffect(
+        this.x + (Math.random() - 0.5) * 10,
+        this.y + (Math.random() - 0.5) * 10,
+        i % 2 === 0 ? secondaryColor : this.color
+      );
+    }
+    this.spawnPickupAccentParticles(scene, presentation);
 
     // Create expanding ring effect
     const ring = new PIXI.Graphics();
+    const innerRing = new PIXI.Graphics();
     ring.x = this.x;
     ring.y = this.y;
+    innerRing.x = this.x;
+    innerRing.y = this.y;
     ring.alpha = 0.8;
-    scene.container.addChild(ring);
+    innerRing.alpha = 0.75;
+    scene.container.addChild(ring, innerRing);
 
     let ringTime = 0;
     const ringTicker = (delta) => {
       ringTime += delta.deltaTime * 16.67;
-      const progress = ringTime / 400;
+      const progress = ringTime / presentation.durationMs;
 
       if (progress < 1) {
         ring.clear();
-        const radius = 15 + progress * 30;
+        innerRing.clear();
+        const radius = presentation.radiusStart + progress * presentation.radiusGrowth;
         ring.circle(0, 0, radius);
-        ring.stroke({ width: 3, color: this.color, alpha: 0.8 * (1 - progress) });
+        ring.stroke({ width: presentation.ringWidth, color: this.color, alpha: presentation.ringAlpha * (1 - progress) });
+        if (presentation.doubleRing) {
+          const innerRadius = Math.max(8, radius * (presentation.implode ? 1 - progress * 0.45 : 0.58));
+          innerRing.circle(0, 0, innerRadius);
+          innerRing.stroke({ width: 2, color: secondaryColor, alpha: 0.62 * (1 - progress) });
+        }
+        if (presentation.cross) {
+          const line = radius * 0.9;
+          innerRing.moveTo(-line, 0);
+          innerRing.lineTo(line, 0);
+          innerRing.moveTo(0, -line);
+          innerRing.lineTo(0, line);
+          innerRing.stroke({ width: 2, color: secondaryColor, alpha: 0.48 * (1 - progress) });
+        }
         ring.alpha = 1 - progress;
+        innerRing.alpha = 1 - progress;
       } else {
         scene.game.app.ticker.remove(ringTicker);
         scene.container.removeChild(ring);
+        scene.container.removeChild(innerRing);
       }
     };
     scene.game.app.ticker.add(ringTicker);
@@ -287,30 +314,98 @@ class Powerup {
   playPickupSFX(scene) {
     // Category-specific sounds
     const sfxMap = {
-      life: 'life_up',
-      shield: 'shield_up',
-      ghost: 'ghost_phase_shift',
-      slow_time: 'time_slow_warp',
-      triple_beam: 'pickup',
-      vector_boost: 'pickup',
-      rapid_cabinet: 'pickup',
-      overdrive_core: 'pickup',
-      rapid_fire: 'pickup',
-      double_shot: 'pickup',
-      damage_up: 'pickup',
-      speed_up: 'pickup',
-      pierce: 'pickup',
-      score_x2: 'achievement',
-      magnet: 'magnet_pull',
-      drones: 'drone_launch_blip',
-      shockwave: 'powerup',
-      chain_lightning: 'chain_lightning_arc',
-      orbital_strike: 'orbital_strike_charge',
-      vampire: 'pickup'
+      life: ['life_up', 'achievement'],
+      shield: ['shield_up', 'forceField'],
+      ghost: ['ghost_phase_shift'],
+      slow_time: ['time_slow_warp'],
+      triple_beam: ['pickup', 'powerup'],
+      vector_boost: ['pickup', 'thrusterFire'],
+      rapid_cabinet: ['pickup', 'powerup'],
+      overdrive_core: ['powerup', 'achievement'],
+      rapid_fire: ['pickup', 'thrusterFire'],
+      double_shot: ['pickup', 'powerup'],
+      damage_up: ['powerup'],
+      speed_up: ['pickup', 'thrusterFire'],
+      pierce: ['pickup', 'chain_lightning_arc'],
+      score_x2: ['achievement'],
+      magnet: ['magnet_pull'],
+      drones: ['drone_launch_blip', 'pickup'],
+      shockwave: ['powerup', 'forceField'],
+      point_defense: ['forceField', 'shield_up'],
+      bomb: ['powerup', 'orbital_strike_charge'],
+      chain_lightning: ['chain_lightning_arc', 'powerup'],
+      orbital_strike: ['orbital_strike_charge', 'achievement'],
+      vampire: ['ghost_phase_shift', 'powerup']
     };
 
-    const sfxKey = sfxMap[this.type] || 'pickup';
-    AudioManager.playSfx(sfxKey);
+    const sfxKeys = sfxMap[this.type] || ['pickup'];
+    sfxKeys.forEach((sfxKey, index) => {
+      AudioManager.playSfx(sfxKey, {
+        force: index === 0,
+        volume: index === 0 ? 0.82 : 0.48,
+        minIntervalMs: index === 0 ? 30 : 90
+      });
+    });
+  }
+
+  getPickupPresentation() {
+    const dramatic = {
+      extraBursts: 1,
+      durationMs: 520,
+      radiusStart: 18,
+      radiusGrowth: 58,
+      ringWidth: 4,
+      ringAlpha: 0.9,
+      doubleRing: true,
+      cross: false,
+      secondaryColor: 0xffffff,
+      accentCount: 14,
+      accentSpeed: 4.2,
+      implode: false
+    };
+    const map = {
+      life: { ...dramatic, secondaryColor: 0xfff3a2, cross: true, accentCount: 18 },
+      shield: { ...dramatic, secondaryColor: 0x8ffcff, radiusGrowth: 70, accentCount: 10 },
+      ghost: { ...dramatic, secondaryColor: 0xb8c7ff, implode: true, accentSpeed: 2.5 },
+      slow_time: { ...dramatic, secondaryColor: 0x7fffd8, radiusGrowth: 82, accentSpeed: 1.8 },
+      score_x2: { ...dramatic, secondaryColor: 0xffef7e, extraBursts: 2, accentCount: 22 },
+      magnet: { ...dramatic, secondaryColor: 0x99ffcc, implode: true, radiusGrowth: 78 },
+      drones: { ...dramatic, secondaryColor: 0x66ccff, accentCount: 20 },
+      shockwave: { ...dramatic, secondaryColor: 0xffe4a8, extraBursts: 2, radiusGrowth: 112, ringWidth: 5 },
+      point_defense: { ...dramatic, secondaryColor: 0xd9fdff, radiusGrowth: 76, cross: true },
+      bomb: { ...dramatic, secondaryColor: 0xffd15c, extraBursts: 2, radiusGrowth: 100, ringWidth: 5, accentCount: 24 },
+      chain_lightning: { ...dramatic, secondaryColor: 0xffffff, extraBursts: 1, cross: true, accentCount: 24 },
+      orbital_strike: { ...dramatic, secondaryColor: 0xff9cff, extraBursts: 2, radiusGrowth: 120, cross: true },
+      vampire: { ...dramatic, secondaryColor: 0xff8ab6, implode: true, extraBursts: 1, accentCount: 18 }
+    };
+    return map[this.type] || {
+      ...dramatic,
+      extraBursts: ['overdrive_core', 'rapid_cabinet'].includes(this.type) ? 1 : 0,
+      secondaryColor: this.type === 'speed_up' || this.type === 'vector_boost' ? 0x66ff66 : 0xffffff,
+      accentCount: ['overdrive_core', 'rapid_cabinet', 'pierce'].includes(this.type) ? 16 : 10,
+      radiusGrowth: ['overdrive_core', 'rapid_cabinet'].includes(this.type) ? 72 : 54
+    };
+  }
+
+  spawnPickupAccentParticles(scene, presentation) {
+    const count = Math.max(0, Math.floor(presentation.accentCount || 0));
+    for (let i = 0; i < count; i += 1) {
+      const angle = (Math.PI * 2 * i) / Math.max(1, count);
+      const inward = presentation.implode ? -1 : 1;
+      const speed = (presentation.accentSpeed || 3) * (0.75 + Math.random() * 0.5);
+      const spawnRadius = presentation.implode ? 46 + Math.random() * 24 : 4;
+      const x = this.x + Math.cos(angle) * spawnRadius;
+      const y = this.y + Math.sin(angle) * spawnRadius;
+      scene.particleManager.spawnParticle(
+        x,
+        y,
+        Math.cos(angle) * speed * inward,
+        Math.sin(angle) * speed * inward - 0.8,
+        i % 2 === 0 ? this.color : presentation.secondaryColor,
+        2 + Math.random() * 2.6,
+        34 + Math.random() * 28
+      );
+    }
   }
 
   showMessage(scene) {
@@ -319,7 +414,6 @@ class Powerup {
       vector_boost: 'VECTOR BOOST! Speed Up!',
       rapid_cabinet: 'RAPID CABINET! Rapid Fire!',
       overdrive_core: 'OVERDRIVE CORE! Ultimate Power!',
-      slow_time: 'SLOW MOTION!',
       slow_time: 'SLOW MOTION!',
       ghost: 'GHOST MODE! Invincible!',
       shield: 'SHIELD UP!',
@@ -333,6 +427,7 @@ class Powerup {
       magnet: 'MAGNET FIELD: PULLS PICKUPS',
       drones: 'SIDE DRONES!',
       shockwave: 'SHOCKWAVE!',
+      point_defense: 'POINT DEFENSE!',
       chain_lightning: 'CHAIN LIGHTNING!',
       orbital_strike: 'ORBITAL STRIKE!',
       vampire: 'VAMPIRE DRAIN!'

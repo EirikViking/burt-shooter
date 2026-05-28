@@ -146,7 +146,7 @@ try {
   });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
-    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+    return state.scene === 'gameOver' && state.gameOver?.state === 'submitted';
   }, null, { timeout: 12000 });
   const gameOverState = await state(page);
   if (!gameOverState.gameOver?.steamSubmissionMode) throw new Error('Game over did not enter Steam submission mode');
@@ -154,7 +154,21 @@ try {
   if (gameOverState.gameOver?.lastLeaderboardResult?.steamStatus !== 'submitted') {
     throw new Error(`Steam mock submission failed: ${JSON.stringify(gameOverState.gameOver?.lastLeaderboardResult)}`);
   }
-  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-runback.png'), fullPage: true });
+  if (/ONE MORE RUN\?/i.test(gameOverState.gameOver?.ceremonyTitle || '')) {
+    throw new Error('Steam game over skipped the result ceremony and landed on the runback title');
+  }
+  if (!/#1|RANK #1/i.test(`${gameOverState.gameOver?.ceremonyTitle || ''}\n${gameOverState.gameOver?.leaderboardStatus || ''}`)) {
+    throw new Error(`Steam global placement was not visible: ${gameOverState.gameOver?.ceremonyTitle} / ${gameOverState.gameOver?.leaderboardStatus}`);
+  }
+  if (!gameOverState.gameOver?.primaryCta?.spinVisible) {
+    throw new Error('One More Run CTA did not expose the rotating accent state');
+  }
+  await page.waitForTimeout(350);
+  const ctaAfterSpin = (await state(page)).gameOver?.primaryCta;
+  if (Math.abs((ctaAfterSpin?.spinRotation || 0) - (gameOverState.gameOver?.primaryCta?.spinRotation || 0)) < 0.01) {
+    throw new Error('One More Run CTA rotating accent did not advance');
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-submitted.png'), fullPage: true });
 
   const report = {
     status: 'passed',
@@ -163,6 +177,9 @@ try {
     tabs: globalState.highscore.tabs,
     friendsRows: friendsState.highscore.rows.length,
     steamGameOver: gameOverState.gameOver.lastLeaderboardResult,
+    gameOverTitle: gameOverState.gameOver.ceremonyTitle,
+    leaderboardStatus: gameOverState.gameOver.leaderboardStatus,
+    primaryCta: ctaAfterSpin,
     consoleEvents
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

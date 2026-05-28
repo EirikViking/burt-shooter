@@ -4747,6 +4747,10 @@ export class PlayScene {
     }
     if (slot === 'center' && majorTypes.includes(options.type)) {
       this.centerToastLockUntil = Math.max(this.centerToastLockUntil, now + duration);
+      if (!this.toastSlotLockUntil) this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
+      this.toastSlotLockUntil.top = Math.max(this.toastSlotLockUntil.top || 0, now + duration);
+      this.toastSlotLockUntil.corner = Math.max(this.toastSlotLockUntil.corner || 0, now + duration);
+      this.dismissActiveToastSlotsBelowPriority(['top', 'corner'], display.__toastMeta.priority || 0);
     }
     if (options.type === 'lore') {
       this.lastLoreAt = now;

@@ -279,12 +279,19 @@ export function collectSteamCloudPersistenceState({
   storage = getDefaultStorage(),
   game = typeof window !== 'undefined' ? window.__game : null,
   getShipUnlockProgress = null,
+  getHangarProgressState = null,
   getAccessibilitySettings = null,
   getLanguagePreferenceMode = null,
   getCurrentLanguage = null
 } = {}) {
   const selectedShipKey = readStorage(storage, CLOUD_SELECTED_SHIP_KEY) || game?.selectedShipSpriteKey || null;
   const achievementPayload = normalizeAchievementPayload(readJsonStorage(storage, CLOUD_ACHIEVEMENT_KEY, {}));
+  const progressionSource = typeof getShipUnlockProgress === 'function'
+    ? getShipUnlockProgress()
+    : readJsonStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, {});
+  const hangarProgressSource = typeof getHangarProgressState === 'function'
+    ? getHangarProgressState()
+    : readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {});
   const settings = typeof getAccessibilitySettings === 'function'
     ? getAccessibilitySettings()
     : {
@@ -305,12 +312,10 @@ export function collectSteamCloudPersistenceState({
     localHighscores: normalizeScores(readJsonStorage(storage, CLOUD_LOCAL_LEADERBOARD_KEY, [])),
     achievements: achievementPayload,
     selectedShipKey,
-    progression: typeof getShipUnlockProgress === 'function'
-      ? normalizeProgression(getShipUnlockProgress())
-      : normalizeProgression(readJsonStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, {})),
-    hangarProgress: typeof getShipUnlockProgress === 'function'
-      ? getShipUnlockProgress()
-      : readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {}),
+    progression: normalizeProgression(progressionSource),
+    hangarProgress: hangarProgressSource && typeof hangarProgressSource === 'object'
+      ? hangarProgressSource
+      : {},
     threatDiscovery: readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {}),
     settings: {
       screenShake: clampUnit(settings.screenShake, 1),

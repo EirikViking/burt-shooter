@@ -26,6 +26,7 @@
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",
     "check:graze-break": "node scripts/check-graze-break.mjs",
     "check:gameover-motivation": "node scripts/check-gameover-motivation.mjs",
+    "check:desktop-gameover-autosave": "node scripts/check-desktop-gameover-autosave.mjs",
     "check:ship-unlock-reveal": "node scripts/check-ship-unlock-reveal.mjs",
     "check:sector-progression": "node scripts/check-sector-progression.mjs",
     "check:ship-selector-start": "node scripts/check-ship-selector-start.mjs",

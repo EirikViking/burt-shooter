@@ -133,6 +133,24 @@ try {
     return state?.scene === 'gameOver' && state?.runMode === 'unranked';
   }, { timeout: 10000 });
 
+  mkdirSync(outputDir, { recursive: true });
+  const gameOverScreenshot = path.join(outputDir, 'debug-run-unranked-gameover.png');
+  const initialGameOver = await page.evaluate(() => {
+    const game = window.__game;
+    const scene = game?.scenes?.gameOver;
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return {
+      textState: state,
+      gameOverState: scene?.state || null,
+      ceremonyTitle: scene?.title?.text || null,
+      leaderboardStatus: scene?.leaderboardStatusText?.text || null,
+      promptText: scene?.promptText?.text || null,
+      submitBlockedReason: scene?.submitBlockedReason || null,
+      isRankedRun: scene?.isRankedRun ?? null
+    };
+  });
+  await page.screenshot({ path: gameOverScreenshot, fullPage: true });
+
   await page.keyboard.press('Enter');
   await page.keyboard.type('QA');
   await page.keyboard.press('Enter');
@@ -150,6 +168,7 @@ try {
       scoreSubmissionAllowed: game?.isScoreSubmissionAllowed?.() ?? null,
       pendingHighscore: game?.pendingHighscore || null,
       gameOverState: scene?.state || null,
+      ceremonyTitle: scene?.title?.text || null,
       isRankedRun: scene?.isRankedRun ?? null,
       isQualified: scene?.isQualified ?? null,
       submitBlockedReason: scene?.submitBlockedReason || null,
@@ -159,16 +178,22 @@ try {
     };
   });
 
-  mkdirSync(outputDir, { recursive: true });
   const screenshot = path.join(outputDir, 'debug-run-unranked.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
   const report = {
     ok: Boolean(
+      initialGameOver.textState?.scene === 'gameOver' &&
+      initialGameOver.textState?.runMode === 'unranked' &&
+      ['unranked', 'runback'].includes(initialGameOver.gameOverState) &&
+      initialGameOver.isRankedRun === false &&
+      !/ONE MORE RUN\?/i.test(initialGameOver.ceremonyTitle || '') &&
+      initialGameOver.submitBlockedReason === 'debug_route' &&
       result.textState?.runMode === 'unranked' &&
       result.scoreSubmissionAllowed === false &&
       result.isRankedRun === false &&
       ['unranked', 'runback'].includes(result.gameOverState) &&
+      !/ONE MORE RUN\?/i.test(result.ceremonyTitle || '') &&
       result.submitBlockedReason === 'debug_route' &&
       result.pendingHighscore === null &&
       Array.isArray(result.achievements?.unlocked) &&
@@ -180,11 +205,13 @@ try {
       consoleErrors.length === 0
     ),
     baseUrl,
+    initialGameOver,
     result,
     highscorePostCount,
     highscoreGetCount,
     pageErrors,
     consoleErrors,
+    gameOverScreenshot,
     screenshot
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
