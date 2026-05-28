@@ -6,6 +6,7 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Implemented desktop-like runtime auto-name fallback so Electron/Steam Cloud/Steam bridge builds submit local scores without the manual pilot-name prompt when Steam leaderboards are unavailable.
 - Fixed Steam Cloud renderer collection to save full hangar progress from `readHangarProgressState()` instead of reusing legacy ship unlock progress, and added a regression check for split legacy-vs-hangar progress.
 - Tightened Game Over stack sizing and added a 1920x1080 desktop autosave visual regression that verifies direct score-saved celebration, animated One More Run CTA, no manual-name copy, persisted hangar XP, persisted local score, and leaderboard One More Run animation.
+- Follow-up hardening: added `desktop:gameover:packaged`, a no-debug packaged-exe smoke that uses isolated temp userData and verifies the reported Steam build flow end-to-end: submitted celebration, no name prompt, glowing/spinning One More Run, leaderboard One More Run, Steam Cloud/local score mirror, and progress restored after reload. Final package candidate at this point is `v2026-05-28_22-05-37`.
 
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 

@@ -612,6 +612,7 @@ function buildGameTextState(game) {
       state: gameOverScene.state || null,
       runbackReason: gameOverScene.runbackReason || null,
       steamSubmissionMode: Boolean(gameOverScene.steamSubmissionMode),
+      desktopAutoNameMode: Boolean(gameOverScene.desktopAutoNameMode),
       steamPlayerName: gameOverScene.steamPlayerName || null,
       selectedCtaLine: gameOverScene.selectedCtaLine ? {
         id: gameOverScene.selectedCtaLine.id,

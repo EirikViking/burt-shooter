@@ -11,10 +11,14 @@ const { createSteamCloudSave } = require('./steamCloudSave.cjs');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
+const isGameOverAutosaveSmoke = process.argv.includes('--gameover-autosave-smoke') || process.env.NOVA_SWARM_GAMEOVER_AUTOSAVE_SMOKE === '1';
 const isSteamLeaderboardProbe = process.argv.includes('--steam-leaderboard-probe') || process.env.NOVA_SWARM_STEAM_LEADERBOARD_PROBE === '1';
 const isSteamCloudDiagnostics = process.argv.includes('--steam-cloud-diagnostics') || process.env.NOVA_SWARM_STEAM_CLOUD_DIAGNOSTICS === '1';
 const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
-const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isWindowed;
+const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isGameOverAutosaveSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isWindowed;
+if ((isSmoke || isControlSmoke || isGameOverAutosaveSmoke) && process.env.NOVA_SWARM_TEST_USER_DATA) {
+  app.setPath('userData', path.resolve(process.env.NOVA_SWARM_TEST_USER_DATA));
+}
 const distDir = path.resolve(__dirname, '..', 'dist');
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -283,7 +287,7 @@ function createWindow() {
     minHeight: 540,
     fullscreen: shouldStartFullscreen,
     backgroundColor: '#030714',
-    show: !isSmoke && !isSteamLeaderboardProbe,
+    show: isGameOverAutosaveSmoke || (!isSmoke && !isControlSmoke && !isSteamLeaderboardProbe),
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
@@ -330,6 +334,14 @@ function getSteamCloudDiagnostics() {
   return steamCloudSave?.getDiagnostics() || null;
 }
 
+function isRoutineSmokeConsoleMessage(text) {
+  return (
+    text.includes('Electron Security Warning') && text.includes('will not show up')
+  ) || /^\s+at\s+/.test(text) || (
+    text.includes('[Version] Remote check failed') && text.includes('Failed to fetch')
+  );
+}
+
 async function runSmoke(window) {
   const outputDir = path.resolve(
     process.env.NOVA_SWARM_ELECTRON_SMOKE_OUTPUT_DIR || path.join(process.cwd(), 'test-results', `electron-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}`)
@@ -338,7 +350,7 @@ async function runSmoke(window) {
   const consoleEvents = [];
   window.webContents.on('console-message', (_event, level, message) => {
     const text = String(message);
-    if (text.includes('Electron Security Warning') && text.includes('will not show up')) return;
+    if (isRoutineSmokeConsoleMessage(text)) return;
     if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
   });
 
@@ -665,7 +677,7 @@ async function runControlSmoke(window) {
   const screenshotWarnings = [];
   window.webContents.on('console-message', (_event, level, message) => {
     const text = String(message);
-    if (text.includes('Electron Security Warning') && text.includes('will not show up')) return;
+    if (isRoutineSmokeConsoleMessage(text)) return;
     if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
   });
 
@@ -768,6 +780,203 @@ async function runControlSmoke(window) {
   if (errors.length) throw new Error(`Electron control smoke failed: ${errors.join('; ')}`);
 }
 
+function assertSmoke(condition, message, details = {}) {
+  if (condition) return;
+  const error = new Error(message);
+  error.details = details;
+  throw error;
+}
+
+async function waitForGameOverAutosaveState(window, predicateSource, timeoutMs = 16000) {
+  const startedAt = Date.now();
+  let lastState = null;
+  while (Date.now() - startedAt < timeoutMs) {
+    lastState = await window.webContents.executeJavaScript(`
+      (() => {
+        try {
+          return typeof window.render_game_to_text === 'function' ? JSON.parse(window.render_game_to_text()) : null;
+        } catch {
+          return null;
+        }
+      })()
+    `);
+    if (lastState && await window.webContents.executeJavaScript(`
+      (() => {
+        const state = ${JSON.stringify(lastState)};
+        return (${predicateSource})(state);
+      })()
+    `)) {
+      return lastState;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`Timed out waiting for packaged game-over autosave state: ${JSON.stringify(lastState)}`);
+}
+
+async function clickDebugBounds(window, bounds) {
+  const x = Math.round((bounds.x || 0) + (bounds.width || 0) / 2);
+  const y = Math.round((bounds.y || 0) + (bounds.height || 0) / 2);
+  window.webContents.sendInputEvent({ type: 'mouseMove', x, y });
+  window.webContents.sendInputEvent({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  window.webContents.sendInputEvent({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
+}
+
+async function captureSmokePage(window, outputDir, fileName, warnings) {
+  try {
+    const image = await window.webContents.capturePage();
+    fs.writeFileSync(path.join(outputDir, fileName), image.toPNG());
+    return true;
+  } catch (error) {
+    warnings.push({ file: fileName, message: error?.message || String(error) });
+    return false;
+  }
+}
+
+async function runGameOverAutosaveSmoke(window) {
+  const outputDir = path.resolve(
+    process.env.NOVA_SWARM_GAMEOVER_AUTOSAVE_OUTPUT_DIR || path.join(process.cwd(), 'test-results', `packaged-gameover-autosave-${new Date().toISOString().replace(/[:.]/g, '-')}`)
+  );
+  fs.mkdirSync(outputDir, { recursive: true });
+  const consoleEvents = [];
+  const screenshotWarnings = [];
+  const screenshots = [];
+  window.webContents.on('console-message', (_event, level, message) => {
+    const text = String(message);
+    if (isRoutineSmokeConsoleMessage(text)) return;
+    if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
+  });
+
+  window.setSize(1920, 1080);
+  window.show();
+  window.focus();
+  window.webContents.focus();
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Electron game-over autosave smoke load timeout')), 20000);
+    window.webContents.once('did-finish-load', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+  });
+  await window.loadURL(`${baseUrl}/?desktop=1&autostart=1`);
+  await waitForGameOverAutosaveState(window, '(state) => state.scene === "play" && state.player?.active', 30000);
+
+  await window.webContents.executeJavaScript(`
+    (() => {
+      localStorage.clear();
+      localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 0, bestRank: 0, bestLevel: 1 }));
+      const game = window.__game;
+      game.score = 504;
+      game.level = 1;
+      game.rankIndex = 0;
+      game.lives = 0;
+      game.gameOver();
+    })()
+  `);
+  await waitForGameOverAutosaveState(window, '(state) => state.scene === "gameOver" && ["submitted","runback"].includes(state.gameOver?.state)', 16000);
+  await new Promise((resolve) => setTimeout(resolve, 350));
+  const firstGameOverState = await window.webContents.executeJavaScript('JSON.parse(window.render_game_to_text())');
+  await window.webContents.executeJavaScript('window.advanceTime?.(700)');
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  const gameOverState = await window.webContents.executeJavaScript('JSON.parse(window.render_game_to_text())');
+  const rendererPersisted = await window.webContents.executeJavaScript(`
+    ({
+      hangar: JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}'),
+      highscores: JSON.parse(localStorage.getItem('novaSwarm.localLeaderboard.v2') || '[]'),
+      cloud: window.__novaSteamCloudDiagnostics?.collect ? null : null
+    })
+  `);
+  const cloudSaveAfterRun = steamCloudSave?.readSave?.() || null;
+  if (await captureSmokePage(window, outputDir, '01-packaged-gameover-autosave.png', screenshotWarnings)) {
+    screenshots.push('01-packaged-gameover-autosave.png');
+  }
+
+  const gameOver = gameOverState.gameOver || {};
+  const gameOverVisibleText = [
+    gameOver.prompt,
+    gameOver.retryPrompt,
+    gameOver.primaryCta?.label,
+    gameOver.primaryCta?.hint,
+    gameOver.ceremonyTitle
+  ].filter(Boolean).join(' ');
+
+  assertSmoke(gameOver.state === 'submitted', 'packaged desktop game-over did not auto-submit to celebration', { gameOver });
+  assertSmoke(gameOver.canEnterName === false, 'packaged desktop game-over still allows manual name entry', { gameOver });
+  assertSmoke(
+    gameOver.steamSubmissionMode === false &&
+      (gameOver.desktopAutoNameMode === true || gameOver.lastLeaderboardResult?.desktopAutoNameMode === true),
+    'packaged desktop did not use desktop auto-name fallback',
+    { gameOver }
+  );
+  assertSmoke(/ONE MORE RUN/i.test(gameOver.primaryCta?.label || ''), 'packaged desktop game-over is missing one-more-run CTA', { primaryCta: gameOver.primaryCta });
+  assertSmoke(gameOver.primaryCta?.mode === 'restart', 'packaged desktop game-over CTA does not restart', { primaryCta: gameOver.primaryCta });
+  assertSmoke(gameOver.primaryCta?.spinVisible === true, 'packaged desktop game-over CTA spin/glow is not visible', { primaryCta: gameOver.primaryCta });
+  assertSmoke(Math.abs((gameOver.primaryCta?.spinRotation || 0) - (firstGameOverState.gameOver?.primaryCta?.spinRotation || 0)) > 0.01, 'packaged desktop game-over CTA is not animating', {
+    before: firstGameOverState.gameOver?.primaryCta,
+    after: gameOver.primaryCta
+  });
+  assertSmoke(gameOver.ceremonyTitle !== 'ONE MORE RUN?', 'packaged desktop game-over skipped celebration title', { gameOver });
+  assertSmoke(!/ENTER PILOT NAME|SUBMIT SCORE|TYPE NAME|NAME:/i.test(gameOverVisibleText), 'packaged desktop game-over still shows manual name-copy', { gameOverVisibleText });
+  assertSmoke((rendererPersisted.hangar.pilotXp || 0) > 0 && (rendererPersisted.hangar.totalRuns || 0) >= 1, 'renderer hangar progress did not persist after packaged run', rendererPersisted);
+  assertSmoke((cloudSaveAfterRun?.hangarProgress?.pilotXp || 0) > 0 && (cloudSaveAfterRun?.hangarProgress?.totalRuns || 0) >= 1, 'Steam Cloud hangar progress did not persist after packaged run', cloudSaveAfterRun);
+  assertSmoke((cloudSaveAfterRun?.localHighscores?.[0]?.score || 0) >= 504, 'Steam Cloud local score mirror did not persist after packaged run', cloudSaveAfterRun);
+
+  await window.webContents.executeJavaScript('window.__game?.switchScene?.("highscore")');
+  await waitForGameOverAutosaveState(window, '(state) => state.scene === "highscore" && state.highscore?.runAgainCta?.visible', 12000);
+  const firstLeaderboardState = await window.webContents.executeJavaScript('JSON.parse(window.render_game_to_text())');
+  await window.webContents.executeJavaScript('window.__game?.currentScene?.animationTicker?.({ deltaMS: 700, deltaTime: 42 })');
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  const leaderboardState = await window.webContents.executeJavaScript('JSON.parse(window.render_game_to_text())');
+  if (await captureSmokePage(window, outputDir, '02-packaged-leaderboard-run-again.png', screenshotWarnings)) {
+    screenshots.push('02-packaged-leaderboard-run-again.png');
+  }
+  const runAgain = leaderboardState.highscore?.runAgainCta || {};
+  assertSmoke(/ONE MORE RUN/i.test(runAgain.label || ''), 'packaged leaderboard is missing one-more-run CTA', { runAgain });
+  assertSmoke(runAgain.spinVisible === true, 'packaged leaderboard one-more-run CTA spin/glow is not visible', { runAgain });
+  assertSmoke(Math.abs((runAgain.spinRotation || 0) - (firstLeaderboardState.highscore?.runAgainCta?.spinRotation || 0)) > 0.01, 'packaged leaderboard one-more-run CTA is not animating', {
+    before: firstLeaderboardState.highscore?.runAgainCta,
+    after: runAgain
+  });
+
+  await window.loadURL(`${baseUrl}/?desktop=1`);
+  await waitForGameOverAutosaveState(window, '(state) => state.scene === "menu" && (state.arcadeRun?.pilotXp > 0 || state.arcadeRun?.shipUnlockProgressSummary?.pilotXp > 0)', 16000);
+  const restartState = await window.webContents.executeJavaScript('JSON.parse(window.render_game_to_text())');
+  const restartPilotXp = restartState.arcadeRun?.pilotXp || restartState.arcadeRun?.shipUnlockProgressSummary?.pilotXp || 0;
+  assertSmoke(restartPilotXp > 0, 'packaged restart did not restore hangar progress', { restartState });
+
+  const report = {
+    status: consoleEvents.length ? 'failed' : 'passed',
+    baseUrl,
+    outputDir,
+    args: process.argv.slice(2),
+    build: gameOverState.buildId || null,
+    gitSha: gameOverState.gitSha || null,
+    noDebugFlagUsed: !process.argv.some((arg) => String(arg).includes('debug')),
+    screenshots,
+    screenshotWarnings,
+    gameOver,
+    leaderboard: leaderboardState.highscore || null,
+    restartHangarProgress: restartState.arcadeRun?.shipUnlockProgressSummary || null,
+    rendererPersisted,
+    cloudSummary: {
+      hangarPilotXp: cloudSaveAfterRun?.hangarProgress?.pilotXp || 0,
+      totalRuns: cloudSaveAfterRun?.hangarProgress?.totalRuns || 0,
+      localHighscoresCount: Array.isArray(cloudSaveAfterRun?.localHighscores) ? cloudSaveAfterRun.localHighscores.length : 0,
+      topScore: cloudSaveAfterRun?.localHighscores?.[0]?.score || 0
+    },
+    consoleEvents
+  };
+  fs.writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
+  console.log(JSON.stringify({
+    outputDir,
+    build: report.build,
+    noDebugFlagUsed: report.noDebugFlagUsed,
+    cloudSummary: report.cloudSummary,
+    consoleEvents
+  }, null, 2));
+  if (consoleEvents.length) throw new Error(`Electron game-over autosave smoke failed: ${consoleEvents.length} console event(s)`);
+}
+
 async function waitForRenderedScene(window) {
   const startedAt = Date.now();
   let lastState = null;
@@ -824,6 +1033,14 @@ app.whenReady().then(async () => {
         runtimeInfo: await getSteamRuntimeInfo(),
         outputRoot: app.isPackaged ? app.getPath('userData') : process.cwd()
       });
+      app.quit();
+    } catch (error) {
+      console.error(error);
+      app.exit(1);
+    }
+  } else if (isGameOverAutosaveSmoke) {
+    try {
+      await runGameOverAutosaveSmoke(win);
       app.quit();
     } catch (error) {
       console.error(error);
