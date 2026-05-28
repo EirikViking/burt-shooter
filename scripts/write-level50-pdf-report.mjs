@@ -45,6 +45,18 @@ function fmtMs(value) {
   return `${(n / 1000).toFixed(1)} s`;
 }
 
+function fmtSeconds(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 'n/a';
+  const rounded = Math.max(0, Math.round(n));
+  const hours = Math.floor(rounded / 3600);
+  const minutes = Math.floor((rounded % 3600) / 60);
+  const seconds = rounded % 60;
+  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+  if (minutes > 0) return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+  return `${seconds}s`;
+}
+
 function statusClass(status) {
   const text = String(status || '').toLowerCase();
   if (text.includes('broken') || text.includes('missing') || text.includes('conflicting')) return 'bad';
@@ -83,6 +95,8 @@ function milestoneRows(telemetry) {
         attempt: attempt.attempt,
         realElapsedMs: milestone.realElapsedMs,
         gameElapsedSeconds: milestone.gameElapsedSeconds,
+        simulatedHumanElapsedSeconds: milestone.simulatedHumanElapsedSeconds,
+        simulatedHumanElapsedLabel: milestone.simulatedHumanElapsedLabel,
         lives: milestone.lives,
         damageTaken: milestone.damageTaken,
         boss: milestone.bossOrEliteEncounters?.boss || 'sampled',
@@ -313,7 +327,7 @@ function renderHtml(telemetry, audit, prompt) {
   <section class="page">
     <h2>Profile Results</h2>
     <table>
-      <thead><tr><th>Profile</th><th>Median</th><th>Average</th><th>Best</th><th>Worst</th><th>Avg Time</th><th>Failure</th><th>Retry</th></tr></thead>
+      <thead><tr><th>Profile</th><th>Median</th><th>Average</th><th>Best</th><th>Worst</th><th>Automation Time</th><th>Human Est.</th><th>Failure</th><th>Retry</th></tr></thead>
       <tbody>
         ${profileSummaries.map((profile) => `<tr>
           <td>${esc(profile.label)}</td>
@@ -322,25 +336,41 @@ function renderHtml(telemetry, audit, prompt) {
           <td>${esc(profile.bestLevelReached)}</td>
           <td>${esc(profile.worstLevelReached)}</td>
           <td>${esc(fmtMs(profile.averageTimeSurvivedMs))}</td>
+          <td>${esc(profile.averageSimulatedHumanSurvivalLabel || fmtSeconds(profile.averageSimulatedHumanSurvivalSeconds))}</td>
           <td>${esc(profile.mostCommonCauseOfFailure)}</td>
           <td>${profile.likelyToRetry ? '<span class="pill good">likely</span>' : '<span class="pill warn">unclear</span>'}</td>
         </tr>`).join('')}
       </tbody>
     </table>
-    <p class="footer-note">Profile reachability is modeled from automated pressure telemetry. Treat it as a signal for investigation, not as human playtest proof.</p>
+    <p class="footer-note">Automation time is how quickly the harness sampled the game. Human estimates are modeled from wave count, boss HP, elite presence, pressure, mistakes, and profile assumptions.</p>
+  </section>
+
+  <section class="page">
+    <h2>Human Time To Milestones</h2>
+    <table>
+      <thead><tr><th>Profile</th><th>Level 10</th><th>Level 20</th><th>Level 30</th><th>Level 40</th><th>Level 50</th></tr></thead>
+      <tbody>
+        ${profileSummaries.map((profile) => `<tr>
+          <td>${esc(profile.label)}</td>
+          ${[10, 20, 30, 40, 50].map((level) => `<td>${esc(profile.humanMilestoneEstimates?.[level]?.medianLabel || 'not reached')}</td>`).join('')}
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <p class="footer-note">These are estimates, not observed human playtests. They exist so the few-second automation probe does not get mistaken for human pacing.</p>
   </section>
 
   <section class="page break">
     <h2>Milestone Timing</h2>
     <table>
-      <thead><tr><th>Level</th><th>Profile</th><th>Attempt</th><th>Real</th><th>Game</th><th>Lives</th><th>Damage</th><th>Boss / Elite</th><th>Notes</th></tr></thead>
+      <thead><tr><th>Level</th><th>Profile</th><th>Attempt</th><th>Automation</th><th>Game (s)</th><th>Human Est.</th><th>Lives</th><th>Damage</th><th>Boss / Elite</th><th>Notes</th></tr></thead>
       <tbody>
         ${milestones.map((row) => `<tr>
           <td>${esc(row.level)}</td>
           <td>${esc(row.profile)}</td>
           <td>${esc(row.attempt)}</td>
           <td>${esc(fmtMs(row.realElapsedMs))}</td>
-          <td>${esc(row.gameElapsedSeconds)} s</td>
+          <td>${esc(row.gameElapsedSeconds)}</td>
+          <td>${esc(row.simulatedHumanElapsedLabel || fmtSeconds(row.simulatedHumanElapsedSeconds))}</td>
           <td>${esc(row.lives)}</td>
           <td>${esc(row.damageTaken)}</td>
           <td>${esc(row.boss)}</td>

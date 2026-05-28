@@ -15,6 +15,8 @@ The command launches the local browser runtime through Vite preview, starts isol
 
 This is automated evidence, not human playtesting. The harness uses seeded randomness, isolated localStorage, and the existing `NOVA_DEBUG_2026` unranked route so it cannot submit scores, unlock Steam achievements, change Steamworks settings, or tune production balance. It is meant to reveal runtime reachability, pacing pressure, feature wiring, stale claims, and regression risks.
 
+Important timing note: the browser run is intentionally accelerated, so reaching Level 50 in seconds only proves that the harness can sample those levels. The reports separately include simulated human elapsed time for Levels 10, 20, 30, 40, and 50 based on sampled wave count, boss HP, elite presence, pressure, mistakes, and the selected player profile. Treat those human times as estimates for pacing discussion, not as proof from real playtesters.
+
 Useful full pass:
 
 ```bash

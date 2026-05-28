@@ -35,7 +35,16 @@ const profiles = [
     upgradeJudgment: 0.34,
     damageTolerance: 2.4,
     retryBias: 0.42,
-    mistakeRate: 0.34
+    mistakeRate: 0.34,
+    humanTiming: {
+      waveClearSeconds: 12,
+      bossBaseSeconds: 18,
+      bossHpSecondsDivisor: 8,
+      pressureTimeScale: 0.06,
+      decisionSecondsPerWave: 2.5,
+      eliteSeconds: 4,
+      mistakeRecoverySeconds: 4
+    }
   },
   {
     id: 'average',
@@ -45,7 +54,16 @@ const profiles = [
     upgradeJudgment: 0.58,
     damageTolerance: 3.35,
     retryBias: 0.58,
-    mistakeRate: 0.19
+    mistakeRate: 0.19,
+    humanTiming: {
+      waveClearSeconds: 10,
+      bossBaseSeconds: 14,
+      bossHpSecondsDivisor: 10,
+      pressureTimeScale: 0.045,
+      decisionSecondsPerWave: 1.5,
+      eliteSeconds: 3,
+      mistakeRecoverySeconds: 2.5
+    }
   },
   {
     id: 'skilled',
@@ -55,7 +73,16 @@ const profiles = [
     upgradeJudgment: 0.78,
     damageTolerance: 4.35,
     retryBias: 0.72,
-    mistakeRate: 0.08
+    mistakeRate: 0.08,
+    humanTiming: {
+      waveClearSeconds: 8,
+      bossBaseSeconds: 11,
+      bossHpSecondsDivisor: 13,
+      pressureTimeScale: 0.032,
+      decisionSecondsPerWave: 1,
+      eliteSeconds: 2,
+      mistakeRecoverySeconds: 1.5
+    }
   }
 ];
 
@@ -85,6 +112,18 @@ function average(values) {
   const finite = values.filter(Number.isFinite);
   if (!finite.length) return null;
   return finite.reduce((sum, value) => sum + value, 0) / finite.length;
+}
+
+function formatHumanDuration(seconds) {
+  const n = Number(seconds);
+  if (!Number.isFinite(n)) return 'n/a';
+  const rounded = Math.max(0, Math.round(n));
+  const hours = Math.floor(rounded / 3600);
+  const minutes = Math.floor((rounded % 3600) / 60);
+  const secs = rounded % 60;
+  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+  if (minutes > 0) return `${minutes}m ${String(secs).padStart(2, '0')}s`;
+  return `${secs}s`;
 }
 
 async function isPortAvailable(candidatePort) {
@@ -503,6 +542,24 @@ function computePressure(levelState, bossState, profile) {
   return round(Math.max(0.1, base + density - skillMitigation), 3);
 }
 
+function estimateHumanLevelSeconds(levelEntry, profile) {
+  const timing = profile.humanTiming || {};
+  const waveCount = Math.max(1, Number(levelEntry.waveCount) || 1);
+  const pressure = Math.max(0.1, Number(levelEntry.pressure) || 1);
+  const bossHp = Math.max(0, Number(levelEntry.boss?.maxHealth || levelEntry.boss?.health || 0));
+  const eliteCount = Array.isArray(levelEntry.bossOrEliteEncounters?.eliteMiddleShipPlan)
+    ? levelEntry.bossOrEliteEncounters.eliteMiddleShipPlan.length
+    : 0;
+  const damageEvents = Math.max(0, Number(levelEntry.damageThisLevel) || 0);
+  const pressureMultiplier = 1 + Math.min(0.9, pressure * (timing.pressureTimeScale || 0.08));
+  const waveSeconds = waveCount * (timing.waveClearSeconds || 24) * pressureMultiplier;
+  const bossSeconds = ((timing.bossBaseSeconds || 36) + bossHp / Math.max(1, timing.bossHpSecondsDivisor || 5)) * (1 + Math.min(0.45, pressure * 0.035));
+  const decisionSeconds = waveCount * (timing.decisionSecondsPerWave || 3);
+  const eliteSeconds = eliteCount * (timing.eliteSeconds || 6);
+  const mistakeSeconds = damageEvents * (timing.mistakeRecoverySeconds || 5);
+  return round(Math.max(20, waveSeconds + bossSeconds + decisionSeconds + eliteSeconds + mistakeSeconds), 1);
+}
+
 function summarizeLoadout(state) {
   return {
     ship: state.selectedShipSpriteKey || 'default',
@@ -532,6 +589,7 @@ async function runProfileAttempt(browser, profile, attemptIndex) {
     reachedLevel: 1,
     deathLevel: null,
     timeSurvivedMs: 0,
+    simulatedHumanSurvivalSeconds: 0,
     damageTaken: 0,
     nearDeaths: 0,
     deaths: 0,
@@ -578,6 +636,7 @@ async function runProfileAttempt(browser, profile, attemptIndex) {
         shields: Boolean(afterState.playerInternal?.shieldActive || afterState.player?.statusEffects?.some?.((effect) => /shield/i.test(effect?.type || ''))),
         lives: afterState.lives,
         damageTaken: attempt.damageTaken,
+        damageThisLevel: damage.lifeLosses || 0,
         nearDeaths: attempt.nearDeaths,
         deaths: attempt.deaths,
         loadout: summarizeLoadout(afterState),
@@ -598,6 +657,9 @@ async function runProfileAttempt(browser, profile, attemptIndex) {
       if (pressure > 5.4) levelEntry.obviousBalanceProblems.push('high modeled pressure for this profile');
       if ((levelState.counts?.enemyBullets || 0) > 24) levelEntry.obviousBalanceProblems.push('projectile clutter risk');
       if ((levelState.manager?.normalWavesTotal || 0) > 7) levelEntry.obviousBalanceProblems.push('long sector before boss/reward');
+      levelEntry.simulatedHumanLevelSeconds = estimateHumanLevelSeconds(levelEntry, profile);
+      attempt.simulatedHumanSurvivalSeconds = round(attempt.simulatedHumanSurvivalSeconds + levelEntry.simulatedHumanLevelSeconds, 1);
+      levelEntry.simulatedHumanElapsedSeconds = attempt.simulatedHumanSurvivalSeconds;
       attempt.levels.push(levelEntry);
       attempt.reachedLevel = level;
 
@@ -605,6 +667,9 @@ async function runProfileAttempt(browser, profile, attemptIndex) {
         attempt.milestones[level] = {
           realElapsedMs,
           gameElapsedSeconds: levelEntry.gameElapsedSeconds,
+          simulatedHumanLevelSeconds: levelEntry.simulatedHumanLevelSeconds,
+          simulatedHumanElapsedSeconds: levelEntry.simulatedHumanElapsedSeconds,
+          simulatedHumanElapsedLabel: formatHumanDuration(levelEntry.simulatedHumanElapsedSeconds),
           ship: levelEntry.loadout.ship,
           build: afterState.text?.buildId || null,
           weapons: levelEntry.loadout.powerups,
@@ -653,6 +718,7 @@ async function runProfileAttempt(browser, profile, attemptIndex) {
 function aggregateProfile(profile, attempts) {
   const reached = attempts.map((attempt) => Number(attempt.reachedLevel) || 0);
   const survived = attempts.map((attempt) => Number(attempt.timeSurvivedMs) || 0);
+  const simulatedHumanSurvived = attempts.map((attempt) => Number(attempt.simulatedHumanSurvivalSeconds) || 0);
   const deaths = attempts.filter((attempt) => attempt.deathLevel).map((attempt) => attempt.deathLevel);
   const failureCounts = {};
   attempts.forEach((attempt) => {
@@ -663,6 +729,21 @@ function aggregateProfile(profile, attempts) {
   const allLevels = attempts.flatMap((attempt) => attempt.levels || []);
   const highPressureLevels = allLevels.filter((entry) => entry.pressure >= 4.8).map((entry) => entry.level);
   const commonFrustrationLevel = percentile(highPressureLevels, 0.5);
+  const humanMilestoneEstimates = {};
+  for (const level of milestoneLevels) {
+    const values = attempts
+      .map((attempt) => Number(attempt.milestones?.[level]?.simulatedHumanElapsedSeconds))
+      .filter(Number.isFinite);
+    if (!values.length) continue;
+    const medianSeconds = percentile(values, 0.5);
+    const averageSeconds = average(values);
+    humanMilestoneEstimates[level] = {
+      medianSeconds: round(medianSeconds, 1),
+      averageSeconds: round(averageSeconds, 1),
+      medianLabel: formatHumanDuration(medianSeconds),
+      averageLabel: formatHumanDuration(averageSeconds)
+    };
+  }
   return {
     profile: profile.id,
     label: profile.label,
@@ -676,6 +757,9 @@ function aggregateProfile(profile, attempts) {
       return acc;
     }, {}),
     averageTimeSurvivedMs: round(average(survived), 0),
+    averageSimulatedHumanSurvivalSeconds: round(average(simulatedHumanSurvived), 1),
+    averageSimulatedHumanSurvivalLabel: formatHumanDuration(average(simulatedHumanSurvived)),
+    humanMilestoneEstimates,
     mostCommonCauseOfFailure: sortedFailures[0]?.[0] || 'none',
     expectedFrustrationPoints: [
       ...(commonFrustrationLevel ? [`modeled pressure spikes around level ${commonFrustrationLevel}`] : []),
@@ -1191,22 +1275,28 @@ function renderLevel50Report(data) {
     'npm run test:level50-analysis'
   ];
   const milestoneRows = [
-    '| Milestone | Profile/attempt | Real elapsed | Game elapsed | Lives | Damage | Boss/elite | Balance notes |',
-    '|---|---|---:|---:|---:|---:|---|---|'
+    '| Milestone | Profile/attempt | Automation runtime | Game clock | Simulated human elapsed | Lives | Damage | Boss/elite | Balance notes |',
+    '|---|---|---:|---:|---:|---:|---:|---|---|'
   ];
   for (const attempt of data.attempts) {
     for (const level of milestoneLevels) {
       const item = attempt.milestones[level];
       if (!item) continue;
-      milestoneRows.push(`| Level ${level} | ${attempt.profile} #${attempt.attempt} | ${round(item.realElapsedMs / 1000, 1)}s | ${item.gameElapsedSeconds ?? 'n/a'}s | ${item.lives ?? 'n/a'} | ${item.damageTaken ?? 0} | ${escapeMd(item.bossOrEliteEncounters?.boss || 'sampled')} | ${escapeMd((item.obviousBalanceProblems || []).join('; ') || 'none')} |`);
+      milestoneRows.push(`| Level ${level} | ${attempt.profile} #${attempt.attempt} | ${round(item.realElapsedMs / 1000, 1)}s | ${item.gameElapsedSeconds ?? 'n/a'}s | ${item.simulatedHumanElapsedLabel || formatHumanDuration(item.simulatedHumanElapsedSeconds)} | ${item.lives ?? 'n/a'} | ${item.damageTaken ?? 0} | ${escapeMd(item.bossOrEliteEncounters?.boss || 'sampled')} | ${escapeMd((item.obviousBalanceProblems || []).join('; ') || 'none')} |`);
     }
   }
+  const humanMilestoneRows = [
+    '| Profile | Level 10 | Level 20 | Level 30 | Level 40 | Level 50 |',
+    '|---|---:|---:|---:|---:|---:|',
+    ...data.profileSummaries.map((summary) => `| ${escapeMd(summary.label)} | ${milestoneLevels.map((level) => summary.humanMilestoneEstimates?.[level]?.medianLabel || 'not reached').join(' | ')} |`)
+  ];
   return `# Nova Swarm Level 50 Automated Analysis
 
 Generated: ${data.generatedAt}
 Baseline: ${data.git.baselineCommit}
 Branch: ${data.git.branch}
 Automation mode: accelerated browser runtime, unranked debug route, isolated localStorage, seeded Math.random.
+Human time mode: modeled from sampled wave count, boss HP, elite presence, pressure, mistakes, and profile assumptions. It is not observed human playtesting.
 
 ## Summary
 
@@ -1215,7 +1305,7 @@ Automation mode: accelerated browser runtime, unranked debug route, isolated loc
 - Profiles: ${profiles.map((profile) => profile.label).join(', ')}
 - Attempts per profile: ${attemptsPerProfile}
 - Reports written: \`${path.relative(root, reportPath).replaceAll(path.sep, '/')}\`, \`${path.relative(root, telemetryPath).replaceAll(path.sep, '/')}\`
-- This is automated evidence, not a substitute for human playtesting.
+- The seconds in automation runtime are intentionally fast reachability probes. Human elapsed time is reported separately as an estimate.
 
 ## Test Setup
 
@@ -1237,6 +1327,8 @@ Automation mode: accelerated browser runtime, unranked debug route, isolated loc
 
 ${milestoneRows.join('\n')}
 
+The automation runtime column measures how fast the harness sampled the game. The simulated human elapsed column estimates how long a human profile would take if they had to clear those waves, bosses, and decisions in real play.
+
 ## Difficulty Curve
 
 Largest modeled pressure jumps:
@@ -1257,7 +1349,9 @@ ${JSON.stringify(Object.fromEntries(data.profileSummaries.map((summary) => [summ
 
 These estimates are modeled from automated pressure telemetry, not observed human play:
 
-${data.profileSummaries.map((summary) => `- ${summary.label}: expected human reach around level ${summary.medianLevelReached}-${summary.bestLevelReached}; frustration points: ${summary.expectedFrustrationPoints.join('; ') || 'none modeled'}.`).join('\n')}
+${humanMilestoneRows.join('\n')}
+
+${data.profileSummaries.map((summary) => `- ${summary.label}: expected human reach around level ${summary.medianLevelReached}-${summary.bestLevelReached}; average simulated survival ${summary.averageSimulatedHumanSurvivalLabel}; frustration points: ${summary.expectedFrustrationPoints.join('; ') || 'none modeled'}.`).join('\n')}
 
 ## Frustration Analysis
 
@@ -1303,6 +1397,7 @@ ${JSON.stringify({
 
 - This is not real human playtesting.
 - The harness accelerates progression by invoking safe debug/unranked runtime hooks.
+- Human milestone times are estimates from the run telemetry, not wall-clock observations from a person playing.
 - Profile damage is modeled from telemetry pressure, not from a learned human-like controller.
 - Reports can reveal broken/reachable state, but they do not judge fun with human certainty.
 
