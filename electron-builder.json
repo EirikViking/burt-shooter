@@ -7,6 +7,11 @@
   "files": [
     "dist/**/*",
     "electron/**/*",
+    "node_modules/discord-rpc/**/*",
+    "node_modules/node-fetch/**/*",
+    "node_modules/whatwg-url/**/*",
+    "node_modules/tr46/**/*",
+    "node_modules/webidl-conversions/**/*",
     "node_modules/steamworks-ffi-node/**/*",
     "node_modules/koffi/**/*",
     "steam_sdk/sdk/redistributable_bin/**/*",

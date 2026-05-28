@@ -42,6 +42,7 @@
     "check:i18n-ui": "node scripts/check-i18n-ui.mjs",
     "check:steam-sdk-ready": "node scripts/check-steam-sdk-ready.mjs",
     "check:steam-cloud-save": "node scripts/check-steam-cloud-save.mjs",
+    "check:discord-presence": "node scripts/check-discord-presence.mjs",
     "check:release-line": "node scripts/check-release-line.mjs",
     "probe:steam-leaderboard-live": "node scripts/probe-steam-leaderboard-live.mjs",
     "probe:steam-leaderboard-electron": "node scripts/probe-steam-leaderboard-electron.mjs",
@@ -143,6 +144,7 @@
     "deploy": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {
+    "discord-rpc": "^4.0.1",
     "howler": "^2.2.4",
     "pixi.js": "^8.15.0"
   },

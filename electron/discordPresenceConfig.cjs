@@ -1,0 +1,11 @@
+const PACKAGED_DISCORD_CLIENT_ID = '';
+const DISCORD_PRESENCE_CLIENT_ID = process.env.NOVA_SWARM_DISCORD_CLIENT_ID || PACKAGED_DISCORD_CLIENT_ID;
+const DISCORD_PRESENCE_LARGE_IMAGE_KEY = process.env.NOVA_SWARM_DISCORD_LARGE_IMAGE_KEY || '';
+
+module.exports = {
+  discordPresenceConfig: {
+    enabled: process.env.NOVA_SWARM_DISABLE_DISCORD_PRESENCE !== '1',
+    clientId: DISCORD_PRESENCE_CLIENT_ID,
+    largeImageKey: DISCORD_PRESENCE_LARGE_IMAGE_KEY
+  }
+};

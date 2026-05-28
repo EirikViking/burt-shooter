@@ -8,6 +8,8 @@ const { createSteamAchievementsBridge } = require('./steamAchievementsBridge.cjs
 const { runSteamLeaderboardRuntimeProbe } = require('./steamLeaderboardRuntimeProbe.cjs');
 const { createNativeGamepadBridge } = require('./nativeGamepadBridge.cjs');
 const { createSteamCloudSave } = require('./steamCloudSave.cjs');
+const { createDiscordPresence } = require('./discordPresence.cjs');
+const { discordPresenceConfig } = require('./discordPresenceConfig.cjs');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
@@ -47,6 +49,7 @@ const steamAchievementsBridge = createSteamAchievementsBridge({
 });
 const nativeGamepadBridge = createNativeGamepadBridge();
 let steamCloudSave = null;
+let discordPresence = null;
 
 function registerSteamLeaderboardIpc() {
   ipcMain.handle('nova-steam-leaderboard:isAvailable', () => steamLeaderboardBridge.isAvailable());
@@ -304,6 +307,34 @@ function createWindow() {
 
   win.loadURL(baseUrl ? `${baseUrl}/?desktop=1` : pathToFileURL(path.join(distDir, 'index.html')).toString());
   return win;
+}
+
+function shouldEnableDiscordPresence() {
+  return discordPresenceConfig.enabled &&
+    !isSmoke &&
+    !isControlSmoke &&
+    !isGameOverAutosaveSmoke &&
+    !isSteamLeaderboardProbe &&
+    !isSteamCloudDiagnostics;
+}
+
+async function readDiscordPresenceTextState(window) {
+  if (!window || window.isDestroyed()) return {};
+  try {
+    return await window.webContents.executeJavaScript(`
+      (() => {
+        try {
+          return typeof window.render_game_to_text === 'function'
+            ? JSON.parse(window.render_game_to_text())
+            : {};
+        } catch {
+          return {};
+        }
+      })()
+    `);
+  } catch {
+    return {};
+  }
 }
 
 async function getSteamRuntimeInfo() {
@@ -1024,6 +1055,14 @@ app.whenReady().then(async () => {
   registerSteamCloudIpc();
   await startLocalServer();
   const win = createWindow();
+  discordPresence = createDiscordPresence({
+    enabled: shouldEnableDiscordPresence(),
+    clientId: discordPresenceConfig.clientId,
+    largeImageKey: discordPresenceConfig.largeImageKey,
+    logger: console,
+    readTextState: () => readDiscordPresenceTextState(win)
+  });
+  discordPresence.start();
   if (isSteamLeaderboardProbe) {
     try {
       await runSteamLeaderboardRuntimeProbe({
@@ -1072,5 +1111,6 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   if (server) server.close();
+  discordPresence?.stop?.();
   steamLeaderboardBridge.shutdown();
 });
