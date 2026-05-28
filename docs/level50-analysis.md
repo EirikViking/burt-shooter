@@ -21,4 +21,7 @@ Useful full pass:
 npm run build
 npm run smoke
 npm run test:level50-analysis
+npm run report:level50-pdf
 ```
+
+On Windows, double-click `Generate-Level50-Report-PDF.cmd` from the repo root to build, run the Level 50 analysis, render `test-results/level50-analysis-summary.pdf`, write `test-results/level50-improvement-codex-prompt.md`, and open the PDF automatically.

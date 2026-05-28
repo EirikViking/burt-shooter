@@ -117,6 +117,7 @@
     "smoke": "node scripts/smoke-playtest.mjs",
     "playtest:release": "node scripts/release-playtest.mjs",
     "test:level50-analysis": "node scripts/level50-analysis.mjs",
+    "report:level50-pdf": "node scripts/write-level50-pdf-report.mjs",
     "capture:steam-screenshots": "node scripts/capture-steam-screenshots.mjs",
     "capture:steam-trailer": "node scripts/capture-steam-trailer.mjs",
     "capture:boss-vfx-polish": "node scripts/capture-boss-vfx-polish.mjs",
