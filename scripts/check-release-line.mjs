@@ -36,6 +36,8 @@ requireText(resolve(root, 'electron', 'main.cjs'), [
   [/shouldStartFullscreen/, 'fullscreen launch guard'],
   [/fullscreen:\s*shouldStartFullscreen/, 'fullscreen BrowserWindow option'],
   [/isWindowed/, 'explicit windowed diagnostic escape hatch'],
+  [/--nova-debug-tools/, 'Steam launch option for debug tools'],
+  [/debugBossToken['"]\s*,\s*['"]NOVA_DEBUG_2026/, 'debug tools renderer token bridge'],
   [/createSteamCloudSave/, 'Steam Cloud save initialization']
 ]);
 

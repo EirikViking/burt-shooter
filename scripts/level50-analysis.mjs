@@ -371,6 +371,25 @@ async function collectState(page) {
   });
 }
 
+function findRenderedNullText(value, path = 'gameOver') {
+  if (typeof value === 'string') {
+    return /#null|\bnull\b/i.test(value) ? { path, value } : null;
+  }
+  if (!value || typeof value !== 'object') return null;
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i += 1) {
+      const match = findRenderedNullText(value[i], `${path}[${i}]`);
+      if (match) return match;
+    }
+    return null;
+  }
+  for (const [key, nested] of Object.entries(value)) {
+    const match = findRenderedNullText(nested, `${path}.${key}`);
+    if (match) return match;
+  }
+  return null;
+}
+
 async function ensureFreshRun(page, seed, startLevel = 1) {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
@@ -1064,8 +1083,17 @@ async function collectRuntimeAudit(browser) {
 
     await page.evaluate(() => {
       const game = window.__game;
+      const play = game?.scenes?.play;
       if (!game) return;
       game.lastLeaderboardResult = { globalRank: null, rank: null, steamRank: null };
+      if (play) {
+        play.debugInvincible = false;
+        play.bossMercyUntilMs = 0;
+      }
+      if (play?.player) {
+        play.player.invulnerable = false;
+        play.player.invulnerableTime = 0;
+      }
       game.lives = 1;
       game.loseLife?.();
     });
@@ -1086,13 +1114,16 @@ async function collectRuntimeAudit(browser) {
         riskOrTradeoff: 'May require carefully preserving valid leaderboard submission transitions.'
       });
     }
+    const renderedNullText = findRenderedNullText(runtime.gameOverAfterWait.gameOver || {});
     const gameOverText = JSON.stringify(runtime.gameOverAfterWait.gameOver || {});
     runtime.checks.globalRankNull = {
-      ok: !/#null|null/i.test(gameOverText),
-      broken: /#null/i.test(gameOverText),
-      evidence: gameOverText.slice(0, 500)
+      ok: !renderedNullText,
+      broken: Boolean(renderedNullText),
+      evidence: renderedNullText
+        ? `${renderedNullText.path}: ${renderedNullText.value}`
+        : gameOverText.slice(0, 500)
     };
-    if (/#null/i.test(gameOverText)) {
+    if (renderedNullText) {
       runtime.bugFindings.push({
         priority: 'High',
         problem: 'Game over or leaderboard state contains a null global rank.',

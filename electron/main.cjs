@@ -14,6 +14,7 @@ const isControlSmoke = process.argv.includes('--control-smoke') || process.env.N
 const isSteamLeaderboardProbe = process.argv.includes('--steam-leaderboard-probe') || process.env.NOVA_SWARM_STEAM_LEADERBOARD_PROBE === '1';
 const isSteamCloudDiagnostics = process.argv.includes('--steam-cloud-diagnostics') || process.env.NOVA_SWARM_STEAM_CLOUD_DIAGNOSTICS === '1';
 const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
+const isNovaDebugTools = process.argv.includes('--nova-debug-tools') || process.env.NOVA_SWARM_DEBUG_TOOLS === '1';
 const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isWindowed;
 const distDir = path.resolve(__dirname, '..', 'dist');
 const mimeTypes = {
@@ -297,8 +298,19 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  win.loadURL(baseUrl ? `${baseUrl}/?desktop=1` : pathToFileURL(path.join(distDir, 'index.html')).toString());
+  win.loadURL(getRendererLaunchUrl());
   return win;
+}
+
+function getRendererLaunchUrl() {
+  const launchUrl = baseUrl
+    ? new URL(baseUrl)
+    : new URL(pathToFileURL(path.join(distDir, 'index.html')).toString());
+  launchUrl.searchParams.set('desktop', '1');
+  if (isNovaDebugTools) {
+    launchUrl.searchParams.set('debugBossToken', 'NOVA_DEBUG_2026');
+  }
+  return launchUrl.toString();
 }
 
 async function getSteamRuntimeInfo() {
@@ -365,10 +377,16 @@ async function runSmoke(window) {
       const steamLeaderboardAvailable = await window.__novaSteamLeaderboard?.isAvailable?.().catch(() => false);
       const steamBridgeStatus = await window.__novaSteamBridge?.getStatus?.().catch(error => ({ error: error?.message || String(error) }));
       const steamCloudDiagnostics = await window.__novaSteamCloud?.getDiagnostics?.().catch(error => ({ error: error?.message || String(error) }));
+      const rendererUrl = new URL(window.location.href);
       return {
         title: document.title,
         apiOk: api.ok,
         apiStatus: api.status,
+        rendererUrl: window.location.href,
+        rendererParams: {
+          desktop: rendererUrl.searchParams.get('desktop'),
+          debugBossToken: rendererUrl.searchParams.get('debugBossToken')
+        },
         steamBridgeStatus: steamBridgeStatus || null,
         steamLeaderboardAvailable: Boolean(steamLeaderboardAvailable),
         steamLeaderboardBridgePresent: Boolean(window.__novaSteamLeaderboard),

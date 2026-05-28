@@ -472,9 +472,10 @@ function buildGameTextState(game) {
       gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null
     },
     debugTools: playScene ? {
+      enabled: Boolean(playScene.debugToolsEnabled),
       invincible: Boolean(playScene.debugInvincible),
       levelToolsUsed: Boolean(playScene.debugLevelToolsUsed),
-      levelJumpAvailable: typeof playScene.debugJumpToLevel === 'function'
+      levelJumpAvailable: Boolean(playScene.debugToolsEnabled && typeof playScene.debugJumpToLevel === 'function')
     } : null,
     toast: playScene?.getToastDebugState ? playScene.getToastDebugState() : null,
     scoring: playScene ? {

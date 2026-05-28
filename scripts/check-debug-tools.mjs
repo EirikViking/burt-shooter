@@ -90,7 +90,9 @@ function getState(page) {
 const playSceneSource = readFileSync(path.resolve('src/scenes/PlayScene.js'), 'utf8');
 assert(!/handleDebugKeys[\s\S]*handleMarketingSpawnKey\(e\)/.test(playSceneSource), 'number key handler still calls marketing spawn hotkeys');
 assert(/handleDebugNumberKey/.test(playSceneSource), 'debug number key handler is missing');
+assert(/debugToolsEnabled/.test(playSceneSource), 'debug tools are not gated behind an explicit dev route');
 assert(/Digit1[\s\S]*toggleDebugInvincibility/.test(playSceneSource), 'Digit1 does not toggle debug invincibility');
+assert(/Digit\|Numpad\)\(\[2-8\]\)/.test(playSceneSource), 'Digit2-Digit8 level staging keys are missing');
 assert(/KeyL[\s\S]*promptDebugLevelJump/.test(playSceneSource), 'KeyL does not expose the level jump prompt');
 
 const server = await startPreviewServer();
@@ -112,6 +114,25 @@ page.on('console', (message) => {
 try {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
+    controlSmoke: '1'
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state?.scene === 'play' && state?.level === 1;
+  }, { timeout: 30000 });
+
+  const normalBefore = await getState(page);
+  await page.keyboard.press('Digit8');
+  await page.waitForTimeout(300);
+  const normalAfter = await getState(page);
+  assert(normalBefore.runMode === 'ranked', 'normal route did not start ranked');
+  assert(normalAfter.level === normalBefore.level, 'Digit8 changed level on a normal ranked route');
+  assert(normalAfter.runMode === 'ranked', 'Digit8 marked a normal route unranked');
+  assert(normalAfter.debugTools?.enabled === false, 'normal route exposed debug tools');
+
+  await page.goto(withQuery(baseUrl, {
+    autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
     startLevel: '3'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -128,12 +149,16 @@ try {
   const initialTrait = initial.player?.shipTrait || null;
   const initialLevel = initial.level;
 
-  await page.keyboard.press('Digit2');
-  await page.keyboard.press('Digit3');
-  await page.waitForTimeout(300);
-  const afterRetiredNumbers = await getState(page);
-  assert(afterRetiredNumbers.level === initialLevel, 'Digit2/Digit3 changed the level unexpectedly');
-  assert(afterRetiredNumbers.wave?.marketingDebug === false, 'Digit2/Digit3 enabled marketing debug spawning');
+  await page.keyboard.press('Digit8');
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state?.level === 8 && state?.debugTools?.levelToolsUsed === true;
+  }, { timeout: 10000 });
+  const afterDigitJump = await getState(page);
+  assert(afterDigitJump.runMode === 'unranked', 'Digit8 route did not remain unranked');
+  assert(afterDigitJump.runModeReason === 'debug_digit_level_key', 'Digit8 did not mark its debug reason');
+  assert(afterDigitJump.wave?.marketingDebug === false, 'Digit8 enabled marketing debug spawning');
+  assert(afterDigitJump.player?.shipTrait === initialTrait, 'trait changed after Digit8 level staging');
 
   await page.keyboard.press('Digit1');
   await page.waitForFunction(() => {
@@ -193,9 +218,17 @@ try {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,
     baseUrl,
     initial: { level: initial.level, trait: initialTrait },
-    afterRetiredNumbers: {
-      level: afterRetiredNumbers.level,
-      marketingDebug: afterRetiredNumbers.wave?.marketingDebug
+    normalRoute: {
+      beforeLevel: normalBefore.level,
+      afterLevel: normalAfter.level,
+      runMode: normalAfter.runMode,
+      debugEnabled: normalAfter.debugTools?.enabled
+    },
+    afterDigitJump: {
+      level: afterDigitJump.level,
+      trait: afterDigitJump.player?.shipTrait,
+      runModeReason: afterDigitJump.runModeReason,
+      marketingDebug: afterDigitJump.wave?.marketingDebug
     },
     damageProbe,
     afterPromptJump: {

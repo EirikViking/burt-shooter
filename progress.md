@@ -1,5 +1,16 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-28 Level 50 Runtime Audit Fixes
+
+- Current request: continue from `codex/level50-analysis-20260528`, reproduce the Level 50 report findings, fix the highest-value runtime-backed issues safely, regenerate reports/PDF, and prepare a full Windows Steam build plus exact SteamCMD upload command without uploading.
+- Safety state: working in dedicated worktree `D:\vibe-coding-e\burt-shooter-level50-analysis` on `codex/level50-runtime-fixes-20260528`; the dirty main checkout was left untouched.
+- Reproduced before edits: `npm run test:level50-analysis` still reported game-over persistence as broken and Digit8 as partially implemented.
+- Implementation direction: game-over persistence was a harness false positive because `debugInvincible` was still active before `loseLife()`; the audit now disables debug invulnerability before simulating death. Debug number/F-key tooling is being tightened behind explicit debug routes so normal ranked players cannot trigger it.
+- Result: `npm run test:level50-analysis` now reports `{"Verified implemented":32,"Untestable with current automation":12}`, no high-risk findings, and no generated recommendations. Game over persistence evidence is `scene after 1.2s=gameOver`; Digit8 evidence is `level 1->8, active enemies 0->3`.
+- Steam package result: full Windows payload built at `release/desktop/win-unpacked/Nova Swarm.exe` for build `v2026-05-28_19-02-56`, `release/steamworks/app_build_LOCAL.vdf` regenerated with empty `SetLive`, and package smoke/control evidence passed. No deploy, upload, or Steamworks settings changes were performed.
+- Follow-up: Steam/Electron launch option `--nova-debug-tools` now forwards `debugBossToken=NOVA_DEBUG_2026` into the renderer URL so Digit2-Digit8 debug level staging works in Steam builds while still marking runs unranked. `check:release-line` and `check:steam-electron-bridge` now guard the bridge so future release/package checks fail if it is removed.
+- Build guard update: `npm run build` and `npm run build:current` now run `check-release-line`, so the `--nova-debug-tools` bridge remains part of normal build validation until intentionally removed.
+
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 
 - Current user request: replace the static lore popup with a context-aware Cabinet Log system that adds useful/funny gameplay value and archives discoveries in the Codex, then overhaul the credits screen with stronger animation, fixed text overlaps, and a much bigger secret ship unlock reveal.

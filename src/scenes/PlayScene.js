@@ -97,6 +97,7 @@ export class PlayScene {
     this.debugInvincible = false;
     this.debugLastBlockedDamageAt = 0;
     this.debugLevelToolsUsed = false;
+    this.debugToolsEnabled = false;
     this.ambientBonusDroneTimer = 0;
     this.easterEggTimer = 0;
     this.ambientBonusDrones = []; // Lists for update
@@ -364,6 +365,13 @@ export class PlayScene {
     const selectedShipTextureIndex = getShipMetadata(spriteKey)?.textureIndex ?? 0;
     const controlSmoke = params.get('controlSmoke') === '1';
     this.controlSmokeMode = controlSmoke;
+    const debugToken = params.get('debugBossToken');
+    this.debugToolsEnabled = debugToken === 'NOVA_DEBUG_2026' ||
+      params.get('debugTools') === '1' ||
+      params.get('debug') === '1';
+    if (this.debugToolsEnabled && debugToken !== 'NOVA_DEBUG_2026') {
+      this.game.markUnrankedRun?.('debug_tools');
+    }
     const logShipDebug = () => {
       if (!this.player) return;
       console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
@@ -428,7 +436,6 @@ export class PlayScene {
     this.game.flushAchievementToasts?.(this);
 
     this.initBalanceDebug(params);
-    const debugToken = params.get('debugBossToken');
     if (debugToken === 'NOVA_DEBUG_2026') {
       this.game.markUnrankedRun?.('debug_route');
       const startLevel = Number(params.get('startLevel'));
@@ -479,6 +486,7 @@ export class PlayScene {
 
   handleDebugKeys(e) {
     if (e.repeat) return;
+    if (!this.debugToolsEnabled) return;
     if (this.handleDebugNumberKey(e)) {
       e.preventDefault?.();
       return;
@@ -506,9 +514,15 @@ export class PlayScene {
   }
 
   handleDebugNumberKey(e) {
+    if (!this.debugToolsEnabled) return false;
     const key = e.code || e.key;
     if (key === 'Digit1' || key === 'Numpad1' || e.key === '1') {
       this.toggleDebugInvincibility();
+      return true;
+    }
+    const digitMatch = /^(?:Digit|Numpad)([2-8])$/.exec(key) || /^[2-8]$/.exec(e.key || '');
+    if (digitMatch) {
+      this.debugJumpToLevel(Number(digitMatch[1] || e.key), 'debug_digit_level_key');
       return true;
     }
     if (key === 'KeyL' || e.key?.toLowerCase?.() === 'l') {

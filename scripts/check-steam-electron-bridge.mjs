@@ -282,6 +282,15 @@ function checkPreloadSurface() {
   }
 }
 
+function checkSteamLaunchOptionBridge() {
+  const main = readFileSync(path.resolve('electron/main.cjs'), 'utf8');
+  assert.match(main, /--nova-debug-tools/, 'Steam debug tools launch option is missing');
+  assert.match(main, /NOVA_SWARM_DEBUG_TOOLS/, 'debug tools environment escape hatch is missing');
+  assert.match(main, /getRendererLaunchUrl/, 'renderer launch URL builder is missing');
+  assert.match(main, /searchParams\.set\(['"]debugBossToken['"],\s*['"]NOVA_DEBUG_2026['"]\)/, 'debug token is not forwarded into the renderer URL');
+  assert.match(main, /searchParams\.set\(['"]desktop['"],\s*['"]1['"]\)/, 'desktop renderer flag is not preserved');
+}
+
 function checkNoRendererNativeImport() {
   const files = [
     'src/leaderboard/SteamLeaderboardProvider.js',
@@ -301,6 +310,7 @@ await checkNativeBridgeHappyPath();
 await checkRawUploadFailureDiagnostics();
 await checkUploadInFlightGuard();
 checkPreloadSurface();
+checkSteamLaunchOptionBridge();
 checkNoRendererNativeImport();
 
-console.log('[steam-electron-bridge] PASS native bridge contract, preload surface, renderer isolation');
+console.log('[steam-electron-bridge] PASS native bridge contract, preload surface, launch options, renderer isolation');
