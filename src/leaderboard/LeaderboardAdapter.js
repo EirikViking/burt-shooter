@@ -57,6 +57,7 @@ export class LeaderboardAdapter {
     this.steamProvider = new SteamLeaderboardProvider();
     this.availability = {
       steam: false,
+      steamFriends: false,
       cloud: true,
       local: true
     };
@@ -69,7 +70,16 @@ export class LeaderboardAdapter {
       this.cloudProvider.isAvailable().catch(() => false),
       this.localProvider.isAvailable().catch(() => true)
     ]);
-    this.availability = { steam, cloud, local };
+    let steamFriends = false;
+    if (steam) {
+      try {
+        const friends = await this.steamProvider.getFriendsScores({ limit: LEADERBOARD_DISPLAY_LIMIT, useCache: false });
+        steamFriends = Array.isArray(friends.entries) && friends.entries.some((entry) => !entry.isCurrentPlayer);
+      } catch {
+        steamFriends = false;
+      }
+    }
+    this.availability = { steam, steamFriends, cloud, local };
     this.refreshed = true;
     return this.availability;
   }
@@ -107,6 +117,7 @@ export class LeaderboardAdapter {
     }
     return {
       steam: Boolean(this.availability.steam),
+      steamFriends: Boolean(this.availability.steamFriends),
       cloud: Boolean(this.availability.cloud),
       local: Boolean(this.availability.local),
       desktop,
@@ -117,11 +128,14 @@ export class LeaderboardAdapter {
 
   getTabs() {
     if (this.availability.steam) {
-      return [
+      const tabs = [
         { id: LeaderboardView.GLOBAL, label: 'GLOBAL', title: 'GLOBAL SCORE DECK', sourceLabel: 'Steam Global' },
-        { id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' },
         { id: LeaderboardView.LOCAL, label: 'LOCAL', title: 'LOCAL SCORE DECK', sourceLabel: 'Local Memory' }
       ];
+      if (this.availability.steamFriends) {
+        tabs.splice(1, 0, { id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' });
+      }
+      return tabs;
     }
     if (this.availability.cloud) {
       return [
@@ -156,13 +170,13 @@ export class LeaderboardAdapter {
         return this.localProvider.getLocalScores({ ...options, limit });
       }
       if (normalizedView === LeaderboardView.FRIENDS) {
-        if (!this.availability.steam) {
+        if (!this.availability.steam || !this.availability.steamFriends) {
           return {
             status: 'unavailable',
             source: 'steam-friends',
             sourceLabel: 'Steam Friends',
             entries: [],
-            message: 'Steam unavailable. Friends scores cannot load.'
+            message: 'No Steam friends scores found for Nova Swarm.'
           };
         }
         return this.steamProvider.getFriendsScores({ ...options, limit });
@@ -237,6 +251,13 @@ export class LeaderboardAdapter {
           if (Number.isFinite(playerBestRank) && playerBestRank > 0) {
             result.steamRank = Math.floor(playerBestRank);
             result.steamPlayerBest = playerBest;
+          }
+        }
+        if (!Number.isFinite(Number(result.steamRank))) {
+          const resolvedRank = await this.resolveSteamRankFromFreshReads(runResult, result).catch(() => null);
+          if (Number.isFinite(Number(resolvedRank)) && Number(resolvedRank) > 0) {
+            result.steamRank = Math.floor(Number(resolvedRank));
+            result.steamRankSource = 'post_submit_read';
           }
         }
       } catch (error) {
@@ -320,6 +341,26 @@ export class LeaderboardAdapter {
     await this.ensureAvailability();
     if (!this.availability.steam) return null;
     return this.steamProvider.getPlayerName();
+  }
+
+  async resolveSteamRankFromFreshReads(runResult = {}, result = {}) {
+    const playerName = String(result.name || result.playerName || '').trim().toUpperCase();
+    const targetScore = Number(runResult.score);
+    const reads = await Promise.allSettled([
+      this.steamProvider.getTopScores({ limit: LEADERBOARD_DISPLAY_LIMIT, useCache: false }),
+      this.steamProvider.getFriendsScores({ limit: LEADERBOARD_DISPLAY_LIMIT, useCache: false })
+    ]);
+    const entries = reads.flatMap((read) => read.status === 'fulfilled' && Array.isArray(read.value?.entries) ? read.value.entries : []);
+    const match = entries.find((entry) => {
+      const entryRank = Number(entry.rank ?? entry.globalRank);
+      if (!Number.isFinite(entryRank) || entryRank <= 0) return false;
+      if (entry.isCurrentPlayer) return true;
+      const entryName = String(entry.name || entry.playerName || '').trim().toUpperCase();
+      const entryScore = Number(entry.score);
+      return playerName && entryName === playerName && Number.isFinite(entryScore) && entryScore === targetScore;
+    });
+    const rank = Number(match?.rank ?? match?.globalRank);
+    return Number.isFinite(rank) && rank > 0 ? Math.floor(rank) : null;
   }
 
   async getBestEffortSteamPlayerName() {

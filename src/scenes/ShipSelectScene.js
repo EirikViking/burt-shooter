@@ -200,6 +200,20 @@ export class ShipSelectScene {
         centerShip.scanLine.alpha = (1 - Math.abs(scanProgress - 0.5) * 2) * 0.5;
       }
 
+      if (this.leftIntel?.attentionGlow?.visible) {
+        const attentionPulse = Math.sin(now * 0.006) * 0.5 + 0.5;
+        this.leftIntel.attentionGlow.alpha = 0.24 + attentionPulse * 0.28;
+        this.leftIntel.attentionGlow.scale.set(1 + attentionPulse * 0.018);
+        if (this.leftIntel.buttonAttention) {
+          this.leftIntel.buttonAttention.alpha = 0.42 + attentionPulse * 0.38;
+          this.leftIntel.buttonAttention.scale.set(1 + attentionPulse * 0.012);
+        }
+        if (this.leftIntel.beacon) {
+          this.leftIntel.beacon.alpha = 0.68 + attentionPulse * 0.3;
+          this.leftIntel.beacon.scale.set(1 + attentionPulse * 0.08);
+        }
+      }
+
       // Update any lingering particles
       this.updateParticles(centerShip, now);
     };
@@ -635,6 +649,16 @@ export class ShipSelectScene {
     AudioManager.playSfx('pause_out', { force: true, volume: source === 'keyboard' ? 0.24 : 0.2 });
   }
 
+  refreshUnlockProgress(progress = getShipUnlockProgress()) {
+    this.unlockProgress = progress;
+    const selected = this.ships?.[this.selectedIndex]?.spriteKey || null;
+    if (selected && !isShipUnlocked(selected, this.unlockProgress)) {
+      this.selectedIndex = Math.max(0, this.ships.findIndex(ship => isShipUnlocked(ship.spriteKey, this.unlockProgress)));
+    }
+    this.updateSelection?.();
+    return this.unlockProgress;
+  }
+
   createCareerStatTile(label, value, x, y, width, height, accent, compact = false) {
     const tile = new PIXI.Container();
     tile.label = `ui_careerIntelTile_${label}`;
@@ -732,6 +756,9 @@ export class ShipSelectScene {
           const scale = entry.baseScale + pulse * entry.amount;
           entry.node.scale.set(scale);
           entry.node.alpha = entry.baseAlpha + pulse * entry.amount;
+        } else if (entry.kind === 'progressGlow') {
+          entry.node.alpha = entry.baseAlpha + pulse * entry.amount;
+          entry.node.scale.set(1 + pulse * 0.012, 1 + pulse * 0.018);
         }
       });
     };
@@ -749,6 +776,9 @@ export class ShipSelectScene {
       valueChip: bounds(refs.valueChip),
       body: bounds(refs.body),
       flowBar: bounds(refs.flowBar),
+      progressGlow: bounds(refs.progressGlow),
+      progressGlowVisible: Boolean(refs.progressGlow?.visible),
+      animatedKinds: (this.careerInfoAnimatedNodes || []).map((entry) => entry.kind).filter(Boolean),
       stats: (refs.stats || []).map((tile) => bounds(tile)),
       cards: (refs.cards || []).map((card) => bounds(card)),
       snapshot: bounds(refs.snapshot),
@@ -779,6 +809,10 @@ export class ShipSelectScene {
     const panelY = height / 2 - panelHeight / 2;
     const progress = getPilotRankProgress(this.unlockProgress.pilotXp || 0);
     const rankProgress = Math.max(0, Math.min(1, Number(progress.progress) || 0));
+    const progressReported = rankProgress > 0 ||
+      Number(this.unlockProgress.pilotXp || 0) > 0 ||
+      Number(this.unlockProgress.totalRuns || 0) > 0 ||
+      Number(this.unlockProgress.bestScore || 0) > 0;
     const nextRank = progress.rankIndex >= MAX_RANK_INDEX
       ? translateText('MAX')
       : getRankTitle(Math.min(MAX_RANK_INDEX, progress.rankIndex + 1)).toUpperCase();
@@ -925,6 +959,16 @@ export class ShipSelectScene {
     const flowBar = new PIXI.Container();
     flowBar.label = 'ui_careerIntelFlowBar';
     flowBar.position.set(rightX, flowY);
+    const progressGlow = new PIXI.Graphics();
+    progressGlow.visible = progressReported;
+    if (progressReported) {
+      progressGlow.roundRect(-7, -6, rightW + 14, (compact ? 40 : 48) + 12, 10);
+      progressGlow.fill({ color: 0xffef7e, alpha: 0.16 });
+      progressGlow.roundRect(-3, -3, rightW + 6, (compact ? 40 : 48) + 6, 8);
+      progressGlow.stroke({ color: 0x37f5ff, width: 2, alpha: 0.58 });
+      flowBar.addChild(progressGlow);
+      this.careerInfoAnimatedNodes.push({ node: progressGlow, kind: 'progressGlow', baseAlpha: 0.22, amount: 0.22 });
+    }
     const flowBg = new PIXI.Graphics();
     flowBg.roundRect(0, 0, rightW, compact ? 40 : 48, 7);
     flowBg.fill({ color: 0x020916, alpha: 0.86 });
@@ -1043,6 +1087,7 @@ export class ShipSelectScene {
       rankGauge: gauge,
       body,
       flowBar,
+      progressGlow,
       stats: statTiles,
       cards,
       snapshot,
@@ -1075,6 +1120,27 @@ export class ShipSelectScene {
         mainMenu: bounds(this.overlayButtons?.find(button => button.id === 'mainMenu')),
         exitGame: bounds(this.overlayButtons?.find(button => button.id === 'exitGame'))
       }
+    };
+  }
+
+  hasCareerProgressSignal() {
+    const rankProgress = getPilotRankProgress(this.unlockProgress?.pilotXp || 0);
+    return Number(this.unlockProgress?.pilotXp || 0) > 0 ||
+      Number(this.unlockProgress?.totalRuns || 0) > 0 ||
+      Number(this.unlockProgress?.bestScore || 0) > 0 ||
+      Number(rankProgress.progress || 0) > 0;
+  }
+
+  getCareerAttentionDebugState(getBounds) {
+    const bounds = typeof getBounds === 'function' ? getBounds : () => null;
+    return {
+      visible: Boolean(this.leftIntel?.attentionGlow?.visible),
+      animated: Boolean(this.leftIntel?.attentionGlow?.visible && this.selectionAnimTicker),
+      hasProgress: this.hasCareerProgressSignal(),
+      panel: bounds(this.leftIntel?.panel),
+      glow: bounds(this.leftIntel?.attentionGlow),
+      buttonGlow: bounds(this.leftIntel?.buttonAttention),
+      beacon: bounds(this.leftIntel?.beacon)
     };
   }
 
@@ -1131,6 +1197,13 @@ export class ShipSelectScene {
       glow.fill({ color: 0xffd15c, alpha: 0.1 });
       glow.stroke({ color: 0xffef7e, width: 1.5, alpha: 0.58 });
       left.addChild(glow);
+      const attentionGlow = new PIXI.Graphics();
+      attentionGlow.roundRect(-12, -12, panelW + 24, panelH + 24, 16);
+      attentionGlow.fill({ color: 0xffef7e, alpha: 0.18 });
+      attentionGlow.roundRect(-8, -8, panelW + 16, panelH + 16, 14);
+      attentionGlow.stroke({ color: 0x37f5ff, width: 3, alpha: 0.82 });
+      attentionGlow.visible = this.hasCareerProgressSignal();
+      left.addChildAt(attentionGlow, 0);
       const beacon = new PIXI.Graphics();
       beacon.circle(panelW - 34, 24, 10);
       beacon.fill({ color: 0x7dffcc, alpha: 0.95 });
@@ -1144,12 +1217,21 @@ export class ShipSelectScene {
       const count = this.createIntelText('', 18, 66, 22, '#ffef7e', '900');
       const progress = this.createIntelText('', 18, 116, 14, '#b8fff1');
       const stats = this.createIntelText('', 18, 222, 14, '#d8fbff');
+      const buttonAttention = new PIXI.Graphics();
+      buttonAttention.roundRect(12, panelH - 82, panelW - 24, 58, 11);
+      buttonAttention.fill({ color: 0xffef7e, alpha: 0.24 });
+      buttonAttention.roundRect(17, panelH - 77, panelW - 34, 48, 9);
+      buttonAttention.stroke({ color: 0xffffff, width: 2, alpha: 0.82 });
+      buttonAttention.roundRect(22, panelH - 72, panelW - 44, 38, 7);
+      buttonAttention.stroke({ color: 0xff55d9, width: 2, alpha: 0.72 });
+      buttonAttention.visible = this.hasCareerProgressSignal();
+      left.addChild(buttonAttention);
       const hint = this.createIntelText('OPEN CAREER DOSSIER', 32, panelH - 62, 15, '#ffef7e', '900');
       [progress, stats, hint, count].forEach(text => {
         text.style.wordWrapWidth = panelW - 36;
       });
       left.addChild(title, subtitle, count, progress, stats, hint);
-      this.leftIntel = { panel: left, count, progress, stats, hint };
+      this.leftIntel = { panel: left, count, progress, stats, hint, attentionGlow, buttonAttention, beacon };
       this.intelPanels.addChild(left);
     }
 
@@ -1809,6 +1891,10 @@ export class ShipSelectScene {
       if (this.leftIntel.hint) {
         this.leftIntel.hint.text = translateText('CLICK FOR CAREER INTEL');
       }
+      const showAttention = this.hasCareerProgressSignal();
+      if (this.leftIntel.attentionGlow) this.leftIntel.attentionGlow.visible = showAttention;
+      if (this.leftIntel.buttonAttention) this.leftIntel.buttonAttention.visible = showAttention;
+      if (this.leftIntel.beacon) this.leftIntel.beacon.visible = showAttention;
     }
 
     if (this.rightIntel) {

@@ -454,6 +454,7 @@ class SteamLeaderboardBridge {
       const details = sanitizeDetails(entry.details ?? entry.scoreDetails ?? entry.m_pDetails);
       const steamId = stringifySteamId(entry.steamId ?? entry.steamID ?? entry.m_steamIDUser);
       const metadata = detailsMetadata(details);
+      const levelKnown = Number.isFinite(Number(metadata.levelReached)) && Number(metadata.levelReached) > 0;
       return {
         rank: integer(entry.globalRank ?? entry.rank ?? entry.m_nGlobalRank, index + 1),
         globalRank: integer(entry.globalRank ?? entry.rank ?? entry.m_nGlobalRank, index + 1),
@@ -461,8 +462,9 @@ class SteamLeaderboardBridge {
         score: clampInt32(entry.score ?? entry.m_nScore),
         details,
         metadata,
-        level: metadata.levelReached || 1,
-        levelReached: metadata.levelReached || 1,
+        level: levelKnown ? metadata.levelReached : null,
+        levelReached: levelKnown ? metadata.levelReached : null,
+        levelKnown,
         shipId: metadata.shipId,
         runTimeSeconds: metadata.runTimeSeconds,
         kills: metadata.kills,

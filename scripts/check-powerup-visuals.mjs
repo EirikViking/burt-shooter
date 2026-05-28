@@ -180,6 +180,8 @@ try {
       types: manager.powerups.map(powerup => ({
         type: powerup.type,
         hasMainSprite: Boolean(powerup.mainSprite),
+        hasTypeBadge: Boolean(powerup.badgeLabel?.text && powerup.badgePlate && powerup.iconRing),
+        badgeLabel: powerup.badgeLabel?.text || null,
         textureLabel: powerup.mainSprite?.texture?.label || powerup.mainSprite?.texture?.source?.label || null,
         width: Math.round(powerup.mainSprite?.width || 0),
         height: Math.round(powerup.mainSprite?.height || 0)
@@ -253,14 +255,16 @@ try {
   }, powerupTypes);
 
   const missing = state.types?.filter(item => !item.hasMainSprite || item.width < 28 || item.height < 28) || [];
+  const missingBadges = state.types?.filter(item => !item.hasTypeBadge) || [];
   const failedCollects = collectState.results?.filter(item => !item.ok) || [];
   const report = {
-    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && failedCollects.length === 0 && consoleEvents.length === 0 ? 'passed' : 'failed',
+    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && missingBadges.length === 0 && failedCollects.length === 0 && consoleEvents.length === 0 ? 'passed' : 'failed',
     baseUrl,
     screenshot,
     state,
     collectState,
     missing,
+    missingBadges,
     failedCollects,
     consoleEvents
   };

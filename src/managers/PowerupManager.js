@@ -86,6 +86,36 @@ class Powerup {
         glow.circle(0, 0, 21);
         glow.fill({ color: this.color, alpha: 0.25 });
         this.sprite.addChildAt(glow, 1);
+
+        const iconRing = new PIXI.Graphics();
+        iconRing.circle(0, 0, 24);
+        iconRing.stroke({ color: this.color, width: 2.4, alpha: 0.9 });
+        iconRing.circle(0, 0, 29);
+        iconRing.stroke({ color: 0xffffff, width: 1, alpha: 0.35 });
+        this.sprite.addChild(iconRing);
+        this.iconRing = iconRing;
+
+        const badgePlate = new PIXI.Graphics();
+        badgePlate.roundRect(-26, 19, 52, 13, 4);
+        badgePlate.fill({ color: 0x020711, alpha: 0.88 });
+        badgePlate.stroke({ color: this.color, width: 1.5, alpha: 0.92 });
+        this.sprite.addChild(badgePlate);
+        this.badgePlate = badgePlate;
+
+        const badgeLabel = createText(this.label, {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: this.label.length > 6 ? 7 : 8,
+          fill: '#fff6b6',
+          stroke: '#020711',
+          strokeThickness: 2,
+          fontWeight: 'bold',
+          align: 'center',
+          letterSpacing: 0
+        });
+        badgeLabel.anchor.set(0.5);
+        badgeLabel.y = 25.5;
+        this.sprite.addChild(badgeLabel);
+        this.badgeLabel = badgeLabel;
       } else {
         this.createFallbackSprite();
       }
@@ -142,8 +172,11 @@ class Powerup {
       this.mainSprite.scale.set(scale, scale);
     }
 
-    // Gentle rotation
-    this.sprite.rotation += 0.02 * delta;
+    // Keep the pickup label readable while the core art spins.
+    this.sprite.rotation = 0;
+    if (this.mainSprite) {
+      this.mainSprite.rotation += 0.022 * delta;
+    }
 
     // TASK A: Breathing aura ring (reduced size)
     if (this.aura) {
@@ -154,6 +187,14 @@ class Powerup {
       this.aura.clear();
       this.aura.circle(0, 0, auraRadius);
       this.aura.stroke({ width: 1.5, color: this.color, alpha: auraAlpha });
+    }
+    if (this.iconRing) {
+      const ringPulse = 1 + Math.sin(age * 0.006) * 0.045;
+      this.iconRing.scale.set(ringPulse);
+      this.iconRing.alpha = 0.82 + Math.sin(age * 0.008) * 0.16;
+    }
+    if (this.badgePlate) {
+      this.badgePlate.alpha = 0.88 + Math.sin(age * 0.009) * 0.08;
     }
 
     // TASK A: Ambient sparkles (spawn every 200-300ms, reduced distance)
@@ -263,6 +304,10 @@ class Powerup {
       );
     }
     this.spawnPickupAccentParticles(scene, presentation);
+    if (presentation.shake && scene.screenShake) {
+      scene.screenShake.shake(presentation.shake, presentation.shakeDuration || 18);
+      scene.screenShake.freezeFrame?.(presentation.freezeFrames || 2);
+    }
 
     // Create expanding ring effect
     const ring = new PIXI.Graphics();
@@ -308,6 +353,10 @@ class Powerup {
       }
     };
     scene.game.app.ticker.add(ringTicker);
+
+    if (presentation.flashAlpha) {
+      this.spawnPickupFlash(scene, presentation);
+    }
   }
 
   // TASK 1: Play category-specific pickup SFX
@@ -371,12 +420,12 @@ class Powerup {
       score_x2: { ...dramatic, secondaryColor: 0xffef7e, extraBursts: 2, accentCount: 22 },
       magnet: { ...dramatic, secondaryColor: 0x99ffcc, implode: true, radiusGrowth: 78 },
       drones: { ...dramatic, secondaryColor: 0x66ccff, accentCount: 20 },
-      shockwave: { ...dramatic, secondaryColor: 0xffe4a8, extraBursts: 2, radiusGrowth: 112, ringWidth: 5 },
+      shockwave: { ...dramatic, secondaryColor: 0xffe4a8, extraBursts: 2, radiusGrowth: 132, ringWidth: 6, flashAlpha: 0.14, shake: 10, freezeFrames: 2 },
       point_defense: { ...dramatic, secondaryColor: 0xd9fdff, radiusGrowth: 76, cross: true },
-      bomb: { ...dramatic, secondaryColor: 0xffd15c, extraBursts: 2, radiusGrowth: 100, ringWidth: 5, accentCount: 24 },
-      chain_lightning: { ...dramatic, secondaryColor: 0xffffff, extraBursts: 1, cross: true, accentCount: 24 },
-      orbital_strike: { ...dramatic, secondaryColor: 0xff9cff, extraBursts: 2, radiusGrowth: 120, cross: true },
-      vampire: { ...dramatic, secondaryColor: 0xff8ab6, implode: true, extraBursts: 1, accentCount: 18 }
+      bomb: { ...dramatic, secondaryColor: 0xffd15c, extraBursts: 2, radiusGrowth: 122, ringWidth: 6, accentCount: 28, flashAlpha: 0.18, shake: 12, freezeFrames: 3 },
+      chain_lightning: { ...dramatic, secondaryColor: 0xffffff, extraBursts: 1, cross: true, accentCount: 28, flashAlpha: 0.1, shake: 7 },
+      orbital_strike: { ...dramatic, secondaryColor: 0xff9cff, extraBursts: 2, radiusGrowth: 142, cross: true, accentCount: 30, flashAlpha: 0.16, shake: 13, freezeFrames: 3 },
+      vampire: { ...dramatic, secondaryColor: 0xff8ab6, implode: true, extraBursts: 1, accentCount: 22, flashAlpha: 0.1, shake: 6 }
     };
     return map[this.type] || {
       ...dramatic,
@@ -408,6 +457,28 @@ class Powerup {
     }
   }
 
+  spawnPickupFlash(scene, presentation) {
+    const flash = new PIXI.Graphics();
+    const width = scene.game?.getWidth?.() || scene.game?.app?.screen?.width || 800;
+    const height = scene.game?.getHeight?.() || scene.game?.app?.screen?.height || 600;
+    flash.rect(0, 0, width, height);
+    flash.fill({ color: presentation.secondaryColor || this.color, alpha: presentation.flashAlpha });
+    flash.eventMode = 'none';
+    scene.container.addChild(flash);
+    let elapsed = 0;
+    const duration = 220;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      const t = Math.min(1, elapsed / duration);
+      flash.alpha = 1 - t;
+      if (t >= 1) {
+        scene.game.app.ticker.remove(ticker);
+        if (flash.parent) flash.parent.removeChild(flash);
+      }
+    };
+    scene.game.app.ticker.add(ticker);
+  }
+
   showMessage(scene) {
     const messages = {
       triple_beam: 'TRIPLE BEAM! Triple Shot!',
@@ -428,6 +499,7 @@ class Powerup {
       drones: 'SIDE DRONES!',
       shockwave: 'SHOCKWAVE!',
       point_defense: 'POINT DEFENSE!',
+      bomb: 'BOMB',
       chain_lightning: 'CHAIN LIGHTNING!',
       orbital_strike: 'ORBITAL STRIKE!',
       vampire: 'VAMPIRE DRAIN!'
@@ -482,6 +554,7 @@ export class PowerupManager {
     this.debugPowerupIndex = 0;
     this.debugPowerupTypes = [
       'triple_beam',
+      'vector_boost',
       'rapid_cabinet',
       'overdrive_core',
       'slow_time',
@@ -498,6 +571,7 @@ export class PowerupManager {
       'drones',
       'shockwave',
       'point_defense',
+      'bomb',
       'chain_lightning',
       'orbital_strike',
       'vampire'

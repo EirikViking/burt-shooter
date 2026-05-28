@@ -1,5 +1,15 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-05-28 Game Over, Leaderboard, Career Intel, Credits, Codex, Powerup Fix Pass
+
+- Current user request: stop skipping straight to One More Run, remove manual-name prompts and text overlap, restore saved history/progression, make Career Intel glow in the hangar, fix leaderboard/friends/null-rank regressions, fix Credits Quasar Fan unlock arrival, mask Threat Codex art bleed, inspect all powerups, add more oomph where useful, and produce a new Steam build.
+- Implemented an in-game Game Over interlude that holds inside gameplay before the GameOver scene, with a cinematic `GAME OVER` title, score, layered rings/flare/sweeps/embers, screen shake/freeze-frame, and explicit `nova_game_over_drop` SFX coverage.
+- Hardened Steam leaderboard normalization so missing Steam metadata no longer renders as impossible `LV 1`, rankless submits cannot become `#null`, and Friends is only exposed when real Steam friend rows are available.
+- Career Intel now raises attention in the hangar itself when saved progress exists, with debug state and screenshot coverage before the overlay opens; the overlay progress glow remains separately checked.
+- Credits easter egg now refreshes the active hangar progress state after granting Quasar Fan, and the menu credits check verifies the stored unlock plus hangar availability.
+- Threat Codex entry/detail art now uses masks for thumbnail/detail frames and exposes debug geometry for the bleed regression.
+- Powerup audit passed all 22 runtime collection states. Powerups now get readable color/type badges, stable labels, animated rings, Bomb is covered in the debug cycle/message path, and high-impact pickups got stronger flash/shake/freeze feedback.
+
 ## 2026-05-28 Desktop Game Over Autosave Follow-Up
 
 - Current user request: fix packaged/desktop Game Over still asking for manual name input, overlapping Game Over copy, missing obvious One More Run glow/animation on Game Over and leaderboard, and Steam Cloud/history progress starting from zero; then produce a new Steam build.

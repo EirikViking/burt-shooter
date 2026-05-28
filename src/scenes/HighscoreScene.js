@@ -1057,9 +1057,10 @@ export class HighscoreScene {
             }
           : (isTop3 ? { ...rowStyle, fill: '#ffffff' } : (isPending ? { ...rowStyle, fill: '#ffaa44' } : rowStyle));
 
+        const levelKnown = score.levelKnown !== false && score.level !== null && score.level !== undefined;
         const playerRankIndex = (score.rank_index !== null && score.rank_index !== undefined)
           ? score.rank_index
-          : getRankFromLevel(score.level || 1);
+          : (levelKnown ? getRankFromLevel(score.level || 1) : 0);
         const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
         const rankTitle = getRankTitle(clampedRank);
         const displayName = (score.name || '??').slice(0, isMobile ? 13 : 18).toUpperCase();
@@ -1106,7 +1107,7 @@ export class HighscoreScene {
           stroke: '#00131b',
           strokeThickness: 1
         });
-        const levelText = createText(`LV ${score.level || 0}`, {
+        const levelText = createText(levelKnown ? `LV ${score.level || 0}` : 'LV --', {
           ...rankStyle,
           fontSize: Math.max(10, rowStyle.fontSize - (isMobile ? 3 : 2))
         });

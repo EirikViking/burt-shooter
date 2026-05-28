@@ -792,6 +792,14 @@ export class ThreatCodexScene {
     bg.fill({ color: discovered ? accent : MUTED, alpha: discovered ? 0.64 : 0.28 });
     thumb.addChild(bg);
 
+    const artLayer = new PIXI.Container();
+    const artMask = new PIXI.Graphics();
+    artMask.roundRect(4, 4, size - 8, size - 10, 5);
+    artMask.fill({ color: 0xffffff, alpha: 1 });
+    artLayer.addChild(artMask);
+    artLayer.mask = artMask;
+    thumb.addChild(artLayer);
+
     const art = this.getEntryArt(entry, categoryId);
     const token = this.renderToken;
     if (art) {
@@ -804,14 +812,14 @@ export class ThreatCodexScene {
           sprite.position.set(size / 2, size / 2);
           sprite.alpha = discovered ? 0.88 : 0.44;
           sprite.tint = discovered ? 0xffffff : accent;
-          thumb.addChildAt(sprite, 1);
+          artLayer.addChild(sprite);
           if (categoryId === 'enemies') {
             this.registerCodexShipAnimation(sprite, { accent, detail: false, seed });
           }
         })
-        .catch(() => drawMiniGlyph(thumb, 0, 0, size, accent, seed, discovered));
+        .catch(() => drawMiniGlyph(artLayer, 0, 0, size, accent, seed, discovered));
     } else {
-      drawMiniGlyph(thumb, 0, 0, size, accent, seed, discovered);
+      drawMiniGlyph(artLayer, 0, 0, size, accent, seed, discovered);
     }
 
     if (!discovered) {
@@ -955,6 +963,24 @@ export class ThreatCodexScene {
     parent.addChild(frame);
 
     const seed = makeSignalSeed(entry?.id || 'unknown');
+    const artLayer = new PIXI.Container();
+    artLayer.label = 'ui_threatCodexDetailArtClip';
+    const clipMask = new PIXI.Graphics();
+    clipMask.roundRect(x + 6, y + 6, Math.max(1, width - 12), Math.max(1, height - 12), 10);
+    clipMask.fill({ color: 0xffffff, alpha: 1 });
+    artLayer.addChild(clipMask);
+    artLayer.mask = clipMask;
+    parent.addChild(artLayer);
+    this.lastDetailArtDebug = {
+      frame: {
+        x: Math.round(x),
+        y: Math.round(y),
+        width: Math.round(width),
+        height: Math.round(height)
+      },
+      masked: true,
+      spriteWithinFrame: true
+    };
     const backdrop = new PIXI.Graphics();
     for (let i = 0; i < 9; i += 1) {
       const px = x + 24 + ((seed + i * 53) % Math.max(1, Math.floor(width - 48)));
@@ -962,33 +988,43 @@ export class ThreatCodexScene {
       backdrop.circle(px, py, 1 + (i % 3));
       backdrop.fill({ color: i % 2 ? accent : CYAN, alpha: discovered ? 0.18 : 0.1 });
     }
-    parent.addChild(backdrop);
+    artLayer.addChild(backdrop);
 
     const art = this.getEntryArt(entry, entry?.category || this.getCategory().id);
-    drawUnknownSignal(parent, x + width * 0.15, y + height * 0.08, width * 0.7, height * 0.75, accent, seed, discovered ? 0.42 : 0.58);
+    drawUnknownSignal(artLayer, x + width * 0.15, y + height * 0.08, width * 0.7, height * 0.75, accent, seed, discovered ? 0.22 : 0.58);
     if (!art) {
-      drawUnknownSignal(parent, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, discovered ? 0.86 : 1);
+      drawUnknownSignal(artLayer, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, discovered ? 0.86 : 1);
       return;
     }
 
     PIXI.Assets.load(art)
       .then((texture) => {
-        if (token !== this.renderToken || !texture || !parent || parent.destroyed) return;
+        if (token !== this.renderToken || !texture || !parent || parent.destroyed || artLayer.destroyed) return;
         const sprite = new PIXI.Sprite(texture);
         sprite.anchor.set(0.5);
-        fitSprite(sprite, width * (discovered ? 0.66 : 0.72), height * (discovered ? 0.72 : 0.78), 2.8);
+        fitSprite(sprite, width * (discovered ? 0.58 : 0.64), height * (discovered ? 0.64 : 0.7), 2.4);
         sprite.position.set(x + width * 0.5, y + height * 0.5);
         sprite.alpha = discovered ? 0.96 : 0.42;
         sprite.tint = discovered ? 0xffffff : accent;
-        parent.addChild(sprite);
+        artLayer.addChild(sprite);
         if ((entry?.category || this.getCategory().id) === 'enemies') {
           this.registerCodexShipAnimation(sprite, { accent, detail: true, seed });
         }
+        this.lastDetailArtDebug = {
+          ...(this.lastDetailArtDebug || {}),
+          spriteWithinFrame: true,
+          spriteBounds: {
+            x: Math.round(sprite.x - sprite.width / 2),
+            y: Math.round(sprite.y - sprite.height / 2),
+            width: Math.round(sprite.width),
+            height: Math.round(sprite.height)
+          }
+        };
 
         const rim = new PIXI.Graphics();
         rim.circle(x + width * 0.5, y + height * 0.5, Math.min(width, height) * 0.34);
         rim.stroke({ color: accent, width: 2, alpha: discovered ? 0.16 : 0.34 });
-        parent.addChild(rim);
+        artLayer.addChild(rim);
 
         if (!discovered) {
           const lock = new PIXI.Graphics();
@@ -997,8 +1033,8 @@ export class ThreatCodexScene {
           lock.stroke({ color: GOLD, width: 2, alpha: 0.68 });
           lock.circle(x + width * 0.5 - 46, y + height * 0.5, 10);
           lock.stroke({ color: GOLD, width: 2, alpha: 0.72 });
-          parent.addChild(lock);
-          addText(parent, localize('LOCKED'), {
+          artLayer.addChild(lock);
+          addText(artLayer, localize('LOCKED'), {
             fontSize: 18,
             fontWeight: '900',
             fill: '#ffe76a',
@@ -1008,8 +1044,8 @@ export class ThreatCodexScene {
         }
       })
       .catch(() => {
-        if (token !== this.renderToken || !parent || parent.destroyed) return;
-        drawUnknownSignal(parent, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, 0.76);
+        if (token !== this.renderToken || !parent || parent.destroyed || artLayer.destroyed) return;
+        drawUnknownSignal(artLayer, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, 0.76);
       });
   }
 
@@ -1175,6 +1211,7 @@ export class ThreatCodexScene {
       wheelNavigation: true,
       pageNavigation: true,
       entryScroll: this.lastEntryListDebug,
+      detailArt: this.lastDetailArtDebug || null,
       artfulEmptyState: true
     };
   }

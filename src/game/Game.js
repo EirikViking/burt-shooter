@@ -56,6 +56,7 @@ export class Game {
     this.runProgressionResult = null;
     this.runPressureDirector = null;
     this.contentDirector = null;
+    this.gameOverTransitionPending = false;
     this.scoreBreakdown = this.createEmptyScoreBreakdown();
 
     this.scenes = {
@@ -189,6 +190,7 @@ export class Game {
     this.runFinalized = false;
     this.runSummary = null;
     this.runProgressionResult = null;
+    this.gameOverTransitionPending = false;
     this.scoreBreakdown = this.createEmptyScoreBreakdown();
     this.hangarProgressAtRunStart = readHangarProgressState();
     this.runPressureDirector = new RunPressureDirector(this);
@@ -233,6 +235,8 @@ export class Game {
   }
 
   gameOver() {
+    if (this.state === GameState.GAME_OVER && this.currentScene === this.scenes?.gameOver) return;
+    this.gameOverTransitionPending = false;
     this.finalizeRunProgression({
       runCleared: Boolean(this.runCleared),
       clearReason: this.runClearReason || null,
@@ -240,6 +244,17 @@ export class Game {
     });
     this.state = GameState.GAME_OVER;
     this.switchScene('gameOver');
+  }
+
+  triggerGameOverInterlude() {
+    if (this.gameOverTransitionPending) return;
+    this.gameOverTransitionPending = true;
+    const complete = () => {
+      if (!this.gameOverTransitionPending) return;
+      this.gameOver();
+    };
+    const shown = this.currentScene?.showGameOverInterlude?.(complete);
+    if (!shown) complete();
   }
 
   markRunClear(reason = 'target_sector_clear') {
@@ -503,7 +518,7 @@ export class Game {
       this.currentScene.onLifeLost(this.lives);
     }
     if (this.lives <= 0) {
-      this.gameOver();
+      this.triggerGameOverInterlude();
     }
   }
 

@@ -73,9 +73,13 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
   const score = Math.max(0, numericInt(rawScore, 0));
   if (score <= 0 && options.dropZero !== false) return null;
 
-  const level = Math.max(1, numericInt(raw.level ?? raw.levelReached ?? raw.metadata?.levelReached, 1));
+  const detailLevel = Array.isArray(raw.details) ? raw.details[0] : Array.isArray(raw.scoreDetails) ? raw.scoreDetails[0] : null;
+  const rawLevel = raw.level ?? raw.levelReached ?? raw.metadata?.levelReached ?? raw.metadata?.level ?? detailLevel;
+  const levelNumber = numericInt(rawLevel, 0);
+  const levelKnown = raw.levelKnown === false ? false : levelNumber > 0;
+  const level = levelKnown ? Math.max(1, levelNumber) : null;
   const rank = rawRank != null ? Math.max(1, numericInt(rawRank, fallbackRank || 1)) : fallbackRank;
-  const rankIndex = Math.max(0, Math.min(19, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
+  const rankIndex = Math.max(0, Math.min(19, numericInt(raw.rankIndex ?? raw.rank_index, levelKnown ? getRankFromLevel(level) : 0)));
   const playerName = toPublicPilotName(
     raw.playerName ?? raw.name ?? raw.personaName ?? raw.displayName ?? raw.steamName,
     raw.id ?? raw.steamId ?? score
@@ -93,6 +97,7 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
     playerName,
     score,
     level,
+    levelKnown,
     rank_index: rankIndex,
     rankIndex,
     shipId,

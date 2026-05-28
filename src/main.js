@@ -472,6 +472,9 @@ function buildGameTextState(game) {
     input: {
       gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null
     },
+    gameOverInterlude: playScene?.getGameOverInterludeDebugState
+      ? playScene.getGameOverInterludeDebugState(getBoundsDebug)
+      : null,
     debugTools: playScene ? {
       invincible: Boolean(playScene.debugInvincible),
       levelToolsUsed: Boolean(playScene.debugLevelToolsUsed),
@@ -591,6 +594,7 @@ function buildGameTextState(game) {
       backButton: getBoundsDebug(shipSelectScene.backButton),
       mainMenuButtonFocused: Boolean(shipSelectScene.mainMenuButtonFocused),
       hangarMenu: shipSelectScene.getHangarMenuDebugState ? shipSelectScene.getHangarMenuDebugState(getBoundsDebug) : null,
+      careerAttention: shipSelectScene.getCareerAttentionDebugState ? shipSelectScene.getCareerAttentionDebugState(getBoundsDebug) : null,
       careerInfo: shipSelectScene.getCareerInfoDebugState ? shipSelectScene.getCareerInfoDebugState(getBoundsDebug) : null,
       startButton: getBoundsDebug(shipSelectScene.startButton)
     } : null,

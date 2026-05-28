@@ -17,7 +17,7 @@ import {
   setLanguagePreference,
   translateText
 } from '../i18n/index.js';
-import { grantSecretShipUnlock } from '../progression/HangarProgressState.js';
+import { grantSecretShipUnlock, readHangarProgressState } from '../progression/HangarProgressState.js';
 
 function percent(value) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
@@ -88,6 +88,7 @@ export class SettingsOverlay {
     this.creditsBackButton = null;
     this.creditsDebugState = null;
     this.creditsTicker = null;
+    this.creditsRevealTicker = null;
     this.creditsAnimatedNodes = [];
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
@@ -672,6 +673,7 @@ export class SettingsOverlay {
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
     this.creditsUnlockReveal = null;
+    this.creditsRevealTicker = null;
     this.build();
     const nextIndex = Math.max(0, this.controls.findIndex((control) => control.id === focusedId));
     this.setControlFocus(nextIndex);
@@ -1004,6 +1006,18 @@ export class SettingsOverlay {
     }
 
     const result = grantSecretShipUnlock('nova_ship_07', { source: 'credits_easter_egg' });
+    const latestProgress = readHangarProgressState();
+    this.game?.scenes?.shipSelect?.refreshUnlockProgress?.(latestProgress);
+    try {
+      window.dispatchEvent(new CustomEvent('nova-hangar-progress-updated', {
+        detail: {
+          source: 'credits_easter_egg',
+          shipId: 'nova_ship_07',
+          progress: latestProgress
+        }
+      }));
+    } catch {}
+    window.__novaSteamCloudDiagnostics?.sync?.().catch?.(() => {});
     if (this.creditsEggStatusText) {
       this.creditsEggStatusText.text = translateText(
         result.unlocked
@@ -1020,13 +1034,15 @@ export class SettingsOverlay {
         clicks: this.creditsCoinClicks,
         shipId: 'nova_ship_07',
         unlocked: Boolean(result.unlocked),
-        alreadyUnlocked: Boolean(result.alreadyUnlocked)
+        alreadyUnlocked: Boolean(result.alreadyUnlocked),
+        hangarHasShip: Array.isArray(latestProgress.secretShipUnlockIds) && latestProgress.secretShipUnlockIds.includes('nova_ship_07')
       }
     };
   }
 
   showCreditsShipUnlockReveal(result = {}) {
     if (!this.creditsPanel) return;
+    this.stopCreditsRevealTicker();
     if (this.creditsUnlockReveal?.parent) {
       this.creditsUnlockReveal.parent.removeChild(this.creditsUnlockReveal);
     }
@@ -1181,10 +1197,19 @@ export class SettingsOverlay {
           this.game.app.ticker.remove(ticker);
           if (reveal.parent) reveal.parent.removeChild(reveal);
           if (this.creditsUnlockReveal === reveal) this.creditsUnlockReveal = null;
+          if (this.creditsRevealTicker === ticker) this.creditsRevealTicker = null;
         }
       }
     };
+    this.creditsRevealTicker = ticker;
     this.game.app.ticker.add(ticker);
+  }
+
+  stopCreditsRevealTicker() {
+    if (this.creditsRevealTicker) {
+      this.game.app.ticker.remove(this.creditsRevealTicker);
+      this.creditsRevealTicker = null;
+    }
   }
 
   startCreditsAnimation() {
@@ -1389,6 +1414,7 @@ export class SettingsOverlay {
 
   closeCreditsPanel() {
     if (!this.creditsPanel) return;
+    this.stopCreditsRevealTicker();
     if (this.creditsTicker) {
       this.game.app.ticker.remove(this.creditsTicker);
       this.creditsTicker = null;

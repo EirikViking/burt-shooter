@@ -31,6 +31,7 @@ import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/Ra
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
+const MIN_GAME_OVER_RESULT_HOLD_MS = 3500;
 const PILOT_NAME_MAX_LENGTH = 14;
 const CONTROLLER_NAME_STORAGE_KEY = 'nova.controllerPilotName.v1';
 const CONTROLLER_NAME_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -120,6 +121,8 @@ export class GameOverScene {
     this.selectedCtaLine = null;
     this.ctaVoicePlayed = false;
     this.runbackStartedAt = 0;
+    this.resultScreenStartedAt = 0;
+    this.pendingRunbackReason = null;
     // HTML overlay for mobile input
     this.inputOverlay = null;
     this.inputField = null;
@@ -201,6 +204,8 @@ export class GameOverScene {
     this.selectedCtaLine = null;
     this.ctaVoicePlayed = false;
     this.runbackStartedAt = 0;
+    this.resultScreenStartedAt = Date.now();
+    this.pendingRunbackReason = null;
     this.newlyUnlockedShips = [];
     this.shipUnlockVoicePlayed = false;
     this.caretVisible = true;
@@ -2319,16 +2324,17 @@ export class GameOverScene {
     const provider = result.globalProvider || (this.steamSubmissionMode ? 'steam' : null);
     if (provider === 'steam') {
       const steamRank = Number(result.steamRank ?? result.rank ?? result.globalRank);
+      const hasSteamRank = Number.isFinite(steamRank) && steamRank > 0;
       const placement = {
         score: this.finalScore,
-        placement: Number.isFinite(steamRank) && steamRank > 0 ? Math.floor(steamRank) : null,
-        qualified: true,
-        numberOne: Number.isFinite(steamRank) && Math.floor(steamRank) === 1,
-        top3: Number.isFinite(steamRank) && Math.floor(steamRank) <= 3,
+        placement: hasSteamRank ? Math.floor(steamRank) : null,
+        qualified: hasSteamRank,
+        numberOne: hasSteamRank && Math.floor(steamRank) === 1,
+        top3: hasSteamRank && Math.floor(steamRank) <= 3,
         source: 'steam_submit_result'
       };
       result.confirmedGlobalPlacement = placement;
-      this.unlockConfirmedLeaderboardAchievements(placement, provider);
+      if (hasSteamRank) this.unlockConfirmedLeaderboardAchievements(placement, provider);
       return placement;
     }
 
@@ -2433,12 +2439,23 @@ export class GameOverScene {
 
   enterRunbackStage(reason = 'runback') {
     if (this.state === 'runback') return;
+    const elapsed = Date.now() - (this.resultScreenStartedAt || Date.now());
+    if (elapsed < MIN_GAME_OVER_RESULT_HOLD_MS && reason !== 'score_skipped') {
+      if (this.pendingRunbackReason === reason) return;
+      this.pendingRunbackReason = reason;
+      this.scheduleSceneTimeout(() => {
+        this.pendingRunbackReason = null;
+        this.enterRunbackStage(reason);
+      }, Math.max(120, MIN_GAME_OVER_RESULT_HOLD_MS - elapsed));
+      return;
+    }
     this.clearSceneTimeouts();
     this.removeInputOverlay();
     this.stopCaretBlink();
     this.hideHiddenInput();
 
     this.state = 'runback';
+    this.pendingRunbackReason = null;
     this.runbackReason = reason;
     this.runbackStartedAt = Date.now();
     this.ctaVoicePlayed = false;

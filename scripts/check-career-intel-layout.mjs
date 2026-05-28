@@ -109,7 +109,7 @@ async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
-async function openCareerIntel(page) {
+async function showShipSelectWithCareerProgress(page) {
   await page.evaluate(() => {
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
       version: 1,
@@ -128,6 +128,11 @@ async function openCareerIntel(page) {
     window.__game?.showShipSelect?.();
   });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'shipSelect', null, { timeout: 10000 });
+  await page.waitForTimeout(500);
+  return readState(page);
+}
+
+async function openCareerIntel(page) {
   await page.evaluate(() => window.__game?.currentScene?.openCareerInfoOverlay?.('layout-check'));
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.careerInfo?.visible === true, null, { timeout: 10000 });
   await page.waitForTimeout(500);
@@ -155,8 +160,14 @@ try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForFunction(() => Boolean(window.__game?.showShipSelect), null, { timeout: 30000 });
 
+    const hangarState = await showShipSelectWithCareerProgress(page);
+    const hangarAttention = hangarState.shipSelect?.careerAttention || {};
+    const hangarScreenshot = path.join(outputDir, `career-hangar-attention-${viewport.name}-${viewport.width}x${viewport.height}.png`);
+    await page.screenshot({ path: hangarScreenshot, fullPage: true });
+
     const state = await openCareerIntel(page);
     const career = state.shipSelect?.careerInfo || {};
+    const careerAttention = state.shipSelect?.careerAttention || {};
     const panel = normalizeBounds(career.panel);
     const namedBounds = [
       ['title', career.title],
@@ -164,6 +175,7 @@ try {
       ['valueChip', career.valueChip],
       ['body', career.body],
       ['flowBar', career.flowBar],
+      ['progressGlow', career.progressGlow],
       ['snapshot', career.snapshot],
       ['backButton', career.backButton],
       ...(career.stats || []).map((bounds, index) => [`stat${index}`, bounds]),
@@ -199,6 +211,15 @@ try {
           : null
       ))
     ].filter(Boolean);
+    const animationFailures = [
+      viewport.name === 'desktop' && hangarAttention.visible !== true ? 'hangar Career Intel attention glow is not visible with saved progress' : null,
+      viewport.name === 'desktop' && hangarAttention.animated !== true ? 'hangar Career Intel attention glow is not animated' : null,
+      viewport.name === 'desktop' && hangarAttention.hasProgress !== true ? 'hangar Career Intel attention state did not detect saved progress' : null,
+      career.progressGlowVisible !== true ? 'career progress glow is not visible with saved progress' : null,
+      !(career.animatedKinds || []).includes('progressGlow') ? 'career progress glow is not animated' : null,
+      !(career.animatedKinds || []).includes('scan') ? 'career scan animation missing' : null,
+      !(career.animatedKinds || []).includes('ring') ? 'career rank ring animation missing' : null
+    ].filter(Boolean);
 
     const screenshot = path.join(outputDir, `career-intel-${viewport.name}-${viewport.width}x${viewport.height}.png`);
     await page.screenshot({ path: screenshot, fullPage: true });
@@ -206,15 +227,20 @@ try {
       viewport,
       panel,
       career,
+      careerAttention,
+      hangarAttention,
       containmentFailures,
       overlapFailures,
+      animationFailures,
+      hangarScreenshot,
       screenshot,
       ok: Boolean(
         panel &&
         career.visible === true &&
         namedBounds.length >= 10 &&
         containmentFailures.length === 0 &&
-        overlapFailures.length === 0
+        overlapFailures.length === 0 &&
+        animationFailures.length === 0
       )
     });
     await page.close();

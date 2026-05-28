@@ -333,7 +333,8 @@ try {
       Math.abs((submittedResultAfterSpinState.gameOver?.primaryCta?.spinRotation || 0) - (submittedResultState.gameOver?.primaryCta?.spinRotation || 0)) > 0.01 &&
       /ONE MORE RUN/i.test(noSlotCtaState.gameOver?.primaryCta?.label || '') &&
       noSlotCtaState.gameOver?.primaryCta?.mode === 'restart' &&
-      noSlotCtaState.gameOver?.state === 'runback' &&
+      ['prompt', 'runback'].includes(noSlotCtaState.gameOver?.state) &&
+      noSlotCtaState.gameOver?.ceremonyTitle !== 'ONE MORE RUN?' &&
       retryCtaRestartedState.scene === 'play' &&
       retryCtaRestartedState.score === 0 &&
       firstMenuLaunchState.scene === 'play' &&
@@ -358,6 +359,8 @@ try {
       score: retryCtaRestartedState.score,
       level: retryCtaRestartedState.level,
       lives: retryCtaRestartedState.lives,
+      noSlotState: noSlotCtaState.gameOver?.state || null,
+      noSlotTitle: noSlotCtaState.gameOver?.ceremonyTitle || null,
       noSlotCta: noSlotCtaState.gameOver?.primaryCta || null
     },
     returnMenuLaunch: {

@@ -202,6 +202,30 @@ try {
     !/QUASAR FAN/i.test(String(unlockText.ship || '')) ? 'credits unlock reveal ship name missing' : null
   ].filter(Boolean);
 
+  const hangarArrival = await page.evaluate(async () => {
+    const stored = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');
+    await window.__game?.showShipSelect?.();
+    const scene = window.__game?.scenes?.shipSelect;
+    const ship = scene?.ships?.find?.((candidate) =>
+      candidate?.spriteKey === 'nova_ship_07' ||
+      candidate?.id === 'nova_ship_07' ||
+      candidate?.baseId === 'nova_ship_07'
+    ) || null;
+    return {
+      storedHasSecret: Array.isArray(stored.secretShipUnlockIds) && stored.secretShipUnlockIds.includes('nova_ship_07'),
+      sceneHasShip: Boolean(ship),
+      sceneProgressHasSecret: Array.isArray(scene?.unlockProgress?.secretShipUnlockIds) && scene.unlockProgress.secretShipUnlockIds.includes('nova_ship_07'),
+      shipName: ship?.name || null,
+      scene: window.__game?.currentSceneName || null
+    };
+  });
+  const hangarFailures = [
+    !hangarArrival.storedHasSecret ? 'credits easter egg did not persist secret ship unlock' : null,
+    !hangarArrival.sceneHasShip ? 'Quasar Fan ship missing from hangar roster' : null,
+    !hangarArrival.sceneProgressHasSecret ? 'hangar scene did not receive secret ship unlock progress' : null,
+    !/QUASAR FAN/i.test(String(hangarArrival.shipName || '')) ? 'hangar secret ship name missing Quasar Fan' : null
+  ].filter(Boolean);
+
   mkdirSync(outputDir, { recursive: true });
   const screenshot = path.join(outputDir, `menu-credits-layout-${viewport.width}x${viewport.height}.png`);
   await page.screenshot({ path: screenshot, fullPage: true });
@@ -214,6 +238,7 @@ try {
       creditsFailures.length === 0 &&
       overlapFailures.length === 0 &&
       revealFailures.length === 0 &&
+      hangarFailures.length === 0 &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
@@ -227,6 +252,8 @@ try {
     overlapFailures,
     revealCredits,
     revealFailures,
+    hangarArrival,
+    hangarFailures,
     pageErrors,
     consoleErrors,
     screenshot

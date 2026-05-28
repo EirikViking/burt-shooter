@@ -41,6 +41,7 @@ import {
 } from '../progression/ThreatDiscoveryState.js';
 
 const OVERRUN_CLEAR_VFX_MS = 5600;
+const GAME_OVER_INTERLUDE_MS = 2600;
 
 export class PlayScene {
   constructor(game) {
@@ -144,6 +145,7 @@ export class PlayScene {
     this.tractorHijackLayer = null;
     this.overrunClearLayer = null;
     this.overrunClearEffects = [];
+    this.gameOverInterlude = null;
     this.overrunSealTexture = null;
     this.bossHazards = [];
     this.bossHazardLayer = null;
@@ -246,6 +248,7 @@ export class PlayScene {
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
     this.overrunClearEffects = [];
+    this.clearGameOverInterlude();
     this.overrunClearLayer = new PIXI.Container();
     this.overrunClearLayer.zIndex = 9600;
     this.overrunClearLayer.sortableChildren = true;
@@ -1019,6 +1022,11 @@ export class PlayScene {
     try {
       this.updateDiagnosticsLayout();
       this.gameTime += delta / 60;
+
+      if (this.gameOverInterlude?.active) {
+        this.updateGameOverInterlude(delta);
+        return;
+      }
 
       // Score Boost Timer
       if (this.scoreBoostTimer > 0) {
@@ -2386,6 +2394,7 @@ export class PlayScene {
   destroy() {
     this.flushBalanceDebugSummary('scene_destroy');
     this.closeSettingsOverlay();
+    this.clearGameOverInterlude();
     this.shipIntroToken += 1;
 
     if (this.levelAdvanceTimeout) {
@@ -2437,6 +2446,243 @@ export class PlayScene {
     this.achievementToastQueue = [];
 
     // Music continues to next scene
+  }
+
+  clearGameOverInterlude() {
+    if (this.gameOverInterlude?.overlay?.parent) {
+      this.gameOverInterlude.overlay.parent.removeChild(this.gameOverInterlude.overlay);
+    }
+    this.gameOverInterlude = null;
+  }
+
+  showGameOverInterlude(onComplete) {
+    if (this.gameOverInterlude?.active) return true;
+    if (!this.uiOverlay || !this.game?.app?.screen) return false;
+
+    const { width, height } = this.game.app.screen;
+    const compact = width < 720;
+    const centerX = width / 2;
+    const centerY = height * (compact ? 0.43 : 0.42);
+    const maxRadius = Math.min(width, height);
+    const overlay = new PIXI.Container();
+    overlay.label = 'ui_gameOverInterlude';
+    overlay.zIndex = 1000002;
+    overlay.eventMode = 'none';
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x020711, alpha: 0.72 });
+    overlay.addChild(dim);
+
+    const vignette = new PIXI.Graphics();
+    vignette.rect(0, 0, width, height);
+    vignette.stroke({ color: 0xff315f, width: Math.max(18, maxRadius * 0.035), alpha: 0.22 });
+    vignette.rect(14, 14, Math.max(1, width - 28), Math.max(1, height - 28));
+    vignette.stroke({ color: 0x37f5ff, width: compact ? 2 : 3, alpha: 0.18 });
+    overlay.addChild(vignette);
+
+    const warningBands = [];
+    for (let i = 0; i < 3; i += 1) {
+      const band = new PIXI.Graphics();
+      const y = centerY - (compact ? 66 : 104) + i * (compact ? 66 : 104);
+      band.rect(-width * 0.06, y - 1, width * 1.12, compact ? 3 : 5);
+      band.fill({ color: i === 1 ? 0xffd15c : 0xff315f, alpha: i === 1 ? 0.55 : 0.38 });
+      band.skew.x = -0.1;
+      overlay.addChild(band);
+      warningBands.push(band);
+    }
+
+    const bloom = new PIXI.Graphics();
+    bloom.circle(0, 0, maxRadius * 0.23);
+    bloom.fill({ color: 0xff315f, alpha: 0.22 });
+    bloom.circle(0, 0, maxRadius * 0.13);
+    bloom.fill({ color: 0xfff0a4, alpha: 0.18 });
+    bloom.position.set(centerX, centerY);
+    overlay.addChild(bloom);
+
+    const rays = new PIXI.Graphics();
+    for (let i = 0; i < 28; i += 1) {
+      const angle = (Math.PI * 2 * i) / 28;
+      const inner = maxRadius * (i % 2 === 0 ? 0.12 : 0.17);
+      const outer = maxRadius * (i % 2 === 0 ? 0.45 : 0.36);
+      rays.moveTo(centerX + Math.cos(angle) * inner, centerY + Math.sin(angle) * inner);
+      rays.lineTo(centerX + Math.cos(angle) * outer, centerY + Math.sin(angle) * outer);
+    }
+    rays.stroke({ color: 0xffd15c, width: compact ? 1 : 2, alpha: 0.28 });
+    overlay.addChild(rays);
+
+    const shock = new PIXI.Graphics();
+    shock.circle(0, 0, Math.min(width, height) * 0.16);
+    shock.stroke({ color: 0xffd15c, width: compact ? 5 : 8, alpha: 0.95 });
+    shock.circle(0, 0, Math.min(width, height) * 0.25);
+    shock.stroke({ color: 0x37f5ff, width: compact ? 3 : 5, alpha: 0.68 });
+    shock.circle(0, 0, Math.min(width, height) * 0.34);
+    shock.stroke({ color: 0xffffff, width: compact ? 1 : 2, alpha: 0.38 });
+    shock.position.set(centerX, centerY);
+    overlay.addChild(shock);
+
+    const titlePlate = new PIXI.Graphics();
+    const plateW = Math.min(width * 0.9, compact ? 520 : 820);
+    const plateH = compact ? 78 : 118;
+    titlePlate.roundRect(-plateW / 2, -plateH / 2, plateW, plateH, compact ? 12 : 18);
+    titlePlate.fill({ color: 0x030813, alpha: 0.42 });
+    titlePlate.stroke({ color: 0xffd15c, width: compact ? 2 : 3, alpha: 0.72 });
+    titlePlate.roundRect(-plateW / 2 + 8, -plateH / 2 + 8, plateW - 16, plateH - 16, compact ? 8 : 12);
+    titlePlate.stroke({ color: 0x37f5ff, width: compact ? 1 : 2, alpha: 0.4 });
+    titlePlate.position.set(centerX, centerY);
+    overlay.addChild(titlePlate);
+
+    const label = createText(translateText('GAME OVER'), {
+      fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
+      fontSize: compact ? 46 : 86,
+      fontWeight: '900',
+      fill: '#fff3a2',
+      stroke: '#240018',
+      strokeThickness: compact ? 6 : 9,
+      align: 'center',
+      letterSpacing: 0,
+      dropShadow: true,
+      dropShadowColor: '#ff55d9',
+      dropShadowBlur: 14
+    });
+    label.anchor.set(0.5);
+    label.position.set(centerX, centerY);
+    overlay.addChild(label);
+
+    const score = createText(translateText(`SCORE: ${Number(this.game?.score || 0).toLocaleString('en-US')}`), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 19 : 30,
+      fontWeight: '900',
+      fill: '#9cfbff',
+      stroke: '#020711',
+      strokeThickness: compact ? 3 : 5,
+      align: 'center',
+      letterSpacing: 0
+    });
+    score.anchor.set(0.5);
+    score.position.set(width / 2, label.y + (compact ? 56 : 88));
+    overlay.addChild(score);
+
+    const embers = [];
+    for (let i = 0; i < (compact ? 18 : 34); i += 1) {
+      const ember = new PIXI.Graphics();
+      const size = compact ? 2 + Math.random() * 3 : 3 + Math.random() * 5;
+      ember.circle(0, 0, size);
+      ember.fill({ color: i % 3 === 0 ? 0x37f5ff : i % 3 === 1 ? 0xffd15c : 0xffffff, alpha: 0.82 });
+      ember.x = centerX + (Math.random() - 0.5) * width * 0.72;
+      ember.y = centerY + (Math.random() - 0.5) * height * 0.42;
+      ember._vx = (ember.x - centerX) * 0.0025;
+      ember._vy = (ember.y - centerY) * 0.0025 - Math.random() * 0.45;
+      overlay.addChild(ember);
+      embers.push(ember);
+    }
+
+    this.uiOverlay.addChild(overlay);
+    this.freezeTimerMs = Math.max(this.freezeTimerMs || 0, GAME_OVER_INTERLUDE_MS);
+    this.screenShake?.shake(compact ? 12 : 20, compact ? 22 : 34);
+    this.screenShake?.freezeFrame?.(compact ? 3 : 5);
+    const sfxKey = 'nova_game_over_drop';
+    this.gameOverInterlude = {
+      active: true,
+      overlay,
+      dim,
+      vignette,
+      warningBands,
+      bloom,
+      rays,
+      label,
+      titlePlate,
+      score,
+      shock,
+      embers,
+      sfxKey,
+      elapsedMs: 0,
+      durationMs: GAME_OVER_INTERLUDE_MS,
+      onComplete: typeof onComplete === 'function' ? onComplete : null
+    };
+    AudioManager.playSfx('nova_player_hit_crackle', { force: true, volume: 0.52, minIntervalMs: 0 });
+    AudioManager.playSfx(sfxKey, { force: true, volume: 1.08, minIntervalMs: 0 });
+    return true;
+  }
+
+  updateGameOverInterlude(delta) {
+    const interlude = this.gameOverInterlude;
+    if (!interlude?.active) return;
+    interlude.elapsedMs += delta * 16.67;
+    const t = Math.max(0, Math.min(1, interlude.elapsedMs / interlude.durationMs));
+    const pulse = Math.sin(interlude.elapsedMs * 0.012) * 0.5 + 0.5;
+    if (interlude.label) {
+      interlude.label.scale.set(0.94 + Math.min(1, t / 0.22) * 0.08 + pulse * 0.035);
+      interlude.label.alpha = t < 0.12 ? t / 0.12 : t > 0.86 ? Math.max(0, (1 - t) / 0.14) : 1;
+    }
+    if (interlude.titlePlate) {
+      interlude.titlePlate.scale.set(0.98 + pulse * 0.018, 1 + pulse * 0.035);
+      interlude.titlePlate.alpha = t > 0.88 ? Math.max(0, (1 - t) / 0.12) : 1;
+    }
+    if (interlude.score) {
+      interlude.score.alpha = t < 0.18 ? Math.max(0, (t - 0.06) / 0.12) : t > 0.88 ? Math.max(0, (1 - t) / 0.12) : 1;
+      interlude.score.y += Math.sin(interlude.elapsedMs * 0.01) * 0.05;
+    }
+    if (interlude.shock) {
+      interlude.shock.rotation += 0.014 * delta;
+      interlude.shock.scale.set(0.92 + t * 1.25);
+      interlude.shock.alpha = Math.max(0, 0.95 - t * 0.7);
+    }
+    if (interlude.rays) {
+      interlude.rays.rotation += 0.0035 * delta;
+      interlude.rays.alpha = Math.max(0, 0.46 - t * 0.3);
+    }
+    if (interlude.bloom) {
+      interlude.bloom.scale.set(0.7 + t * 0.95 + pulse * 0.08);
+      interlude.bloom.alpha = Math.max(0.08, 0.72 - t * 0.45);
+    }
+    if (Array.isArray(interlude.warningBands)) {
+      interlude.warningBands.forEach((band, index) => {
+        band.x = Math.sin(interlude.elapsedMs * 0.003 + index) * 18;
+        band.alpha = 0.18 + pulse * (index === 1 ? 0.42 : 0.24);
+      });
+    }
+    if (Array.isArray(interlude.embers)) {
+      interlude.embers.forEach((ember, index) => {
+        ember.x += (ember._vx || 0) * delta * 16.67;
+        ember.y += (ember._vy || 0) * delta * 16.67;
+        ember.alpha = Math.max(0, 0.92 - t * 0.78 + Math.sin(interlude.elapsedMs * 0.02 + index) * 0.08);
+        ember.scale.set(1 + pulse * 0.3);
+      });
+    }
+    if (interlude.elapsedMs < interlude.durationMs) return;
+    const complete = interlude.onComplete;
+    this.clearGameOverInterlude();
+    complete?.();
+  }
+
+  getGameOverInterludeDebugState(getBounds) {
+    const interlude = this.gameOverInterlude;
+    if (!interlude?.active) {
+      return {
+        active: false,
+        visible: false
+      };
+    }
+    const bounds = typeof getBounds === 'function' ? getBounds(interlude.label) : null;
+    return {
+      active: true,
+      visible: Boolean(interlude.overlay?.parent),
+      label: interlude.label?.text || null,
+      sfxKey: interlude.sfxKey || null,
+      cinematicLayers: [
+        interlude.dim,
+        interlude.vignette,
+        interlude.bloom,
+        interlude.rays,
+        interlude.titlePlate,
+        interlude.shock,
+        interlude.score
+      ].filter(Boolean).length + (interlude.warningBands?.length || 0) + (interlude.embers?.length || 0),
+      elapsedMs: Math.round(interlude.elapsedMs || 0),
+      durationMs: Math.round(interlude.durationMs || 0),
+      bounds
+    };
   }
 
   getPerfCounts() {
