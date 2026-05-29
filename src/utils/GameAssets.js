@@ -14,6 +14,8 @@ class GameAssetsManager {
         this.enemyWeaponTextures = [];
         this.rankShipTextures = [];
         this.rankShipList = AssetManifest.sprites.playerRankShips || [];
+        this.xtra = { ships: {}, enemies: {}, lasers: {}, damage: {}, parts: {}, effects: {}, powerups: {} };
+        this.powerupTexturePromises = {};
     }
 
     async ensureBonusCoreTexture() {
@@ -277,7 +279,7 @@ class GameAssetsManager {
     }
 
     async loadXtraAssets() {
-        this.xtra = { ships: {}, enemies: {}, lasers: {}, damage: {}, parts: {}, effects: {}, powerups: {} };
+        this.xtra = { ships: {}, enemies: {}, lasers: {}, damage: {}, parts: {}, effects: {}, powerups: { ...(this.xtra?.powerups || {}) } };
 
         // Loading Xtra Player Ships (for rank progression)
         const shipPromises = [];
@@ -394,6 +396,34 @@ class GameAssetsManager {
 
     getPowerupTexture(name) {
         return this.getXtraPowerup(name);
+    }
+
+    async ensurePowerupTexture(name) {
+        const key = String(name || '').trim();
+        if (!key) return null;
+        const existing = this.getXtraPowerup(key);
+        if (this.isValidTexture(existing)) return existing;
+
+        const src = AssetManifest.generated?.powerups?.[key];
+        if (!src) return null;
+        if (this.powerupTexturePromises[key]) return this.powerupTexturePromises[key];
+
+        const alias = `xtra_powerup_${key}`;
+        this.xtra = this.xtra || { ships: {}, enemies: {}, lasers: {}, damage: {}, parts: {}, effects: {}, powerups: {} };
+        this.xtra.powerups = this.xtra.powerups || {};
+        this.powerupTexturePromises[key] = PIXI.Assets.load({ alias, src })
+            .then((texture) => {
+                if (this.isValidTexture(texture)) this.xtra.powerups[alias] = texture;
+                return this.xtra.powerups[alias] || null;
+            })
+            .catch((error) => {
+                console.warn(`[GameAssets] Failed to load generated powerup ${key}:`, error);
+                return null;
+            })
+            .finally(() => {
+                delete this.powerupTexturePromises[key];
+            });
+        return this.powerupTexturePromises[key];
     }
 }
 

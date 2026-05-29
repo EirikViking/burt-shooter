@@ -39,6 +39,7 @@ import {
   recordThreatDefeated,
   recordThreatSeen
 } from '../progression/ThreatDiscoveryState.js';
+import { calculatePilotXpForRun } from '../progression/HangarProgressState.js';
 
 const OVERRUN_CLEAR_VFX_MS = 5600;
 const GAME_OVER_INTERLUDE_MS = 3600;
@@ -123,6 +124,8 @@ export class PlayScene {
     this._lastRankUpSeen = null;
     this._rankUpCount = 0;
     this._rankUpAnimating = false;
+    this.projectedFieldRankIndex = 0;
+    this.projectedFieldRankXp = 0;
 
     // TASK 4: Shooting sound health check
     this.shootSoundHealthCheck = {
@@ -978,6 +981,7 @@ export class PlayScene {
 
     this.resetRandomTimers();
     this.ambientBonusDroneTimer = 2000 + Math.random() * 3000;
+    this.updateProjectedFieldPromotion('sector');
   }
 
   focusGameplayCanvas() {
@@ -1307,10 +1311,12 @@ export class PlayScene {
       if (scoreDelta > 0) {
         this.updateMetaProgress(scoreDelta, false);
         this.lastScoreSeen = this.game.score;
+        this.updateProjectedFieldPromotion('score');
       }
       if (this.enemyManager?.bossDefeatedThisLevel && this.lastBossDefeatedLevel !== this.game.level) {
         this.lastBossDefeatedLevel = this.game.level;
         this.updateMetaProgress(0, true);
+        this.updateProjectedFieldPromotion('boss');
       }
       this.updateDevOverlay();
 
@@ -1337,6 +1343,31 @@ export class PlayScene {
       this.player.setRank(nr, 'rank_up');
     }
     this.showRankUp(nr);
+  }
+
+  updateProjectedFieldPromotion(reason = 'progress') {
+    if (!this.game || this.game.currentScene !== this || this.game.runFinalized) return false;
+    const startProgress = this.game.hangarProgressAtRunStart || {};
+    const startXp = Math.max(0, Math.floor(Number(startProgress.pilotXp) || 0));
+    const committedRank = Math.max(0, Math.floor(Number(this.game.rankIndex) || 0));
+    const previousProjected = Math.max(
+      committedRank,
+      Math.floor(Number(this.projectedFieldRankIndex ?? this.game.fieldPromotionRankIndex) || committedRank)
+    );
+    const summary = this.game.buildRunSummary ? this.game.buildRunSummary({ runCleared: false }) : null;
+    if (!summary) return false;
+    const projectedXpGained = calculatePilotXpForRun(summary);
+    const projectedXp = startXp + projectedXpGained;
+    const projectedRank = Math.max(committedRank, rankManager.getRankFromPilotXp(projectedXp));
+    this.projectedFieldRankXp = projectedXp;
+    this.projectedFieldRankIndex = projectedRank;
+    this.game.fieldPromotionRankIndex = projectedRank;
+    if (projectedRank > previousProjected) {
+      console.log(`[FieldPromotion] reason=${reason} committed=${committedRank} projected=${projectedRank} projectedXp=${projectedXp}`);
+      this.onRankUp(projectedRank);
+      return true;
+    }
+    return false;
   }
 
   normalizeRankValue(payload) {
@@ -1426,7 +1457,7 @@ export class PlayScene {
     }
 
     // "RANK UP!" trigger reason (clear and prominent)
-    const rankUpText = createText('⬆ RANK UP! ⬆', {
+    const rankUpText = createText(translateText('RANK UP'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 26,
       fill: '#ffff00',
@@ -4331,6 +4362,7 @@ export class PlayScene {
     if (this.player) {
       this.player.scoreMultiplier = mult;
       this.player.scoreBoostExpiresAt = Date.now() + durationMs;
+      this.player.triggerPowerupSurge?.('score_x2');
     }
     if (this.player?.noteScoreMultiplier) this.player.noteScoreMultiplier();
     this.showToast(`SCORE x${mult}`, { fontSize: 34, fill: '#ffff00', duration: 1800, slot: 'center', type: 'score_boost' });
@@ -5722,9 +5754,13 @@ export class PlayScene {
     }
 
     graphics.lineTo(x2, y2);
-    graphics.stroke({ color: 0x88ffff, width: 2, alpha: 0.8 });
+    graphics.stroke({ color: 0x88ffff, width: 4, alpha: 0.92 });
+    graphics.moveTo(x1, y1);
+    graphics.lineTo(x2, y2);
+    graphics.stroke({ color: 0xffffff, width: 1.5, alpha: 0.72 });
 
     this.container.addChild(graphics);
+    this.particleManager?.createHitSpark(x2, y2, 0x88ffff);
 
     // Fade out and remove
     setTimeout(() => {
@@ -5971,6 +6007,7 @@ export class PlayScene {
     warning.stroke({ color: 0xff6600, width: 2, alpha: 0.5 });
     warning.position.set(targetX, targetY);
     this.gameContainer.addChild(warning);
+    AudioManager.playSfx('orbital_strike_charge', { force: true, volume: 0.9, minIntervalMs: 0 });
 
     // Animate warning pulse
     let pulseTime = 0;
@@ -5991,12 +6028,15 @@ export class PlayScene {
       const screenHeight = this.game.app.screen.height;
       beam.moveTo(targetX, 0);
       beam.lineTo(targetX, screenHeight);
-      beam.stroke({ color: 0xffaa00, width: 40, alpha: 0.6 });
+      beam.stroke({ color: 0xffaa00, width: 58, alpha: 0.66 });
 
       // Add glow effect
       beam.moveTo(targetX, 0);
       beam.lineTo(targetX, screenHeight);
-      beam.stroke({ color: 0xffff00, width: 20, alpha: 0.8 });
+      beam.stroke({ color: 0xffff00, width: 26, alpha: 0.88 });
+      beam.moveTo(targetX, 0);
+      beam.lineTo(targetX, screenHeight);
+      beam.stroke({ color: 0xffffff, width: 7, alpha: 0.92 });
 
       this.gameContainer.addChild(beam);
 
@@ -6025,16 +6065,24 @@ export class PlayScene {
       });
 
       // Screen shake and sound
-      this.screenShake.shake(4);
-      AudioManager.playSfx('enemy_explode', { volume: 0.7 });
+      this.screenShake.shake(9, 22);
+      AudioManager.playSfx('explosionCrunch', { force: true, volume: 0.95, minIntervalMs: 0 });
 
       // Create impact explosion at target
-      this.particleManager.createExplosion(targetX, targetY, 0xffaa00);
+      this.particleManager.createExplosion(targetX, targetY, 0xffaa00, 1.2);
+      const impactRing = new PIXI.Graphics();
+      impactRing.circle(targetX, targetY, damageRadius);
+      impactRing.stroke({ color: 0xffff66, width: 5, alpha: 0.86 });
+      impactRing.circle(targetX, targetY, damageRadius * 0.58);
+      impactRing.stroke({ color: 0xffffff, width: 2, alpha: 0.64 });
+      impactRing.blendMode = 'add';
+      this.gameContainer.addChild(impactRing);
 
       // Remove beam after short duration
       setTimeout(() => {
         if (beam.parent) beam.parent.removeChild(beam);
-      }, 150);
+        if (impactRing.parent) impactRing.parent.removeChild(impactRing);
+      }, 260);
     }, 500); // 0.5 second warning
   }
 

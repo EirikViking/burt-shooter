@@ -71,6 +71,7 @@
     "check:ship-unlocks": "node scripts/check-ship-unlocks.mjs",
     "check:normal-enemy-threat-actions": "node scripts/check-normal-enemy-threat-actions.mjs",
     "check:rank-progression": "node scripts/check-rank-progression.mjs",
+    "check:field-promotion": "node scripts/check-field-promotion.mjs",
     "check:wave-pacing": "node scripts/check-wave-pacing.mjs",
     "check:elite-ships": "node scripts/check-elite-ships.mjs",
     "check:tractor-debuffs": "node scripts/check-tractor-debuffs.mjs",

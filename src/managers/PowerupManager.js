@@ -66,37 +66,40 @@ class Powerup {
     this.sprite.addChild(this.aura);
 
     try {
-      const texture = GameAssets.getPowerupTexture(this.type) || GameAssets.getBonusCoreTexture();
+      const texture = GameAssets.getPowerupTexture(this.type);
+      const fallbackTexture = GameAssets.getBonusCoreTexture();
+      const displayTexture = GameAssets.isValidTexture(texture) ? texture : fallbackTexture;
 
-      if (GameAssets.isValidTexture(texture)) {
-        const iconSprite = new PIXI.Sprite(texture);
+      if (GameAssets.isValidTexture(displayTexture)) {
+        const iconSprite = new PIXI.Sprite(displayTexture);
         iconSprite.anchor.set(0.5);
         iconSprite.label = 'mainSprite';
-        const maxIconSize = ['orbital_strike', 'shockwave', 'bomb'].includes(this.type) ? 52 : 48;
-        const scale = maxIconSize / Math.max(texture.width, texture.height);
-        iconSprite.scale.set(scale);
+        const maxIconSize = ['orbital_strike', 'shockwave', 'bomb'].includes(this.type) ? 62 : 54;
+        this.iconMaxSize = maxIconSize;
+        this.applyIconTexture(iconSprite, displayTexture);
 
         this.sprite.addChild(iconSprite);
         this.mainSprite = iconSprite;
 
         // Store base scale to prevent runaway pulsing.
         this.baseScale = iconSprite.scale.x;
+        this.loadSpecificIconTexture();
 
         const glow = new PIXI.Graphics();
-        glow.circle(0, 0, 21);
-        glow.fill({ color: this.color, alpha: 0.25 });
+        glow.circle(0, 0, 27);
+        glow.fill({ color: this.color, alpha: 0.34 });
         this.sprite.addChildAt(glow, 1);
 
         const iconRing = new PIXI.Graphics();
-        iconRing.circle(0, 0, 24);
-        iconRing.stroke({ color: this.color, width: 2.4, alpha: 0.9 });
-        iconRing.circle(0, 0, 29);
-        iconRing.stroke({ color: 0xffffff, width: 1, alpha: 0.35 });
+        iconRing.circle(0, 0, 28);
+        iconRing.stroke({ color: this.color, width: 3.2, alpha: 0.96 });
+        iconRing.circle(0, 0, 35);
+        iconRing.stroke({ color: 0xffffff, width: 1.4, alpha: 0.46 });
         this.sprite.addChild(iconRing);
         this.iconRing = iconRing;
 
         const badgePlate = new PIXI.Graphics();
-        badgePlate.roundRect(-26, 19, 52, 13, 4);
+        badgePlate.roundRect(-31, 23, 62, 15, 4);
         badgePlate.fill({ color: 0x020711, alpha: 0.88 });
         badgePlate.stroke({ color: this.color, width: 1.5, alpha: 0.92 });
         this.sprite.addChild(badgePlate);
@@ -113,7 +116,7 @@ class Powerup {
           letterSpacing: 0
         });
         badgeLabel.anchor.set(0.5);
-        badgeLabel.y = 25.5;
+        badgeLabel.y = 30.5;
         this.sprite.addChild(badgeLabel);
         this.badgeLabel = badgeLabel;
       } else {
@@ -181,8 +184,8 @@ class Powerup {
     // TASK A: Breathing aura ring (reduced size)
     if (this.aura) {
       const auraPhase = (age * 0.003) % (Math.PI * 2);
-      const auraRadius = 18 + Math.sin(auraPhase) * 3;
-      const auraAlpha = 0.3 + Math.sin(auraPhase) * 0.15;
+      const auraRadius = 25 + Math.sin(auraPhase) * 5;
+      const auraAlpha = 0.42 + Math.sin(auraPhase) * 0.22;
 
       this.aura.clear();
       this.aura.circle(0, 0, auraRadius);
@@ -201,24 +204,24 @@ class Powerup {
     this.sparkleTimer += delta * 16.67;
     const sparkleInterval = 200 + Math.random() * 100;
 
-    if (this.sparkleTimer > sparkleInterval && this.particleCount < 2 && scene && scene.particleManager) {
+    if (this.sparkleTimer > sparkleInterval && this.particleCount < 4 && scene && scene.particleManager) {
       this.sparkleTimer = 0;
       this.particleCount++;
 
       // Spawn tiny sparkle around powerup (reduced distance)
       const angle = Math.random() * Math.PI * 2;
-      const dist = 10 + Math.random() * 8;
+      const dist = 14 + Math.random() * 16;
       const sx = this.x + Math.cos(angle) * dist;
       const sy = this.y + Math.sin(angle) * dist;
       const vx = (Math.random() - 0.5) * 0.3;
       const vy = (Math.random() - 0.5) * 0.3;
 
-      scene.particleManager.spawnParticle(sx, sy, vx, vy, this.color, 1.2, 18);
+      scene.particleManager.spawnParticle(sx, sy, vx, vy, this.color, 1.8, 24);
 
       // Decrement count after particle dies
       setTimeout(() => {
         this.particleCount = Math.max(0, this.particleCount - 1);
-      }, 25);
+      }, 40);
     }
 
     // Scale down if expiring soon
@@ -231,6 +234,24 @@ class Powerup {
     if (this.y > despawnY || age > this.lifeTime) {
       this.active = false;
     }
+  }
+
+  applyIconTexture(iconSprite, texture) {
+    if (!iconSprite || !GameAssets.isValidTexture(texture)) return false;
+    iconSprite.texture = texture;
+    const maxIconSize = this.iconMaxSize || 54;
+    const scale = maxIconSize / Math.max(texture.width, texture.height);
+    iconSprite.scale.set(scale);
+    this.baseScale = scale;
+    return true;
+  }
+
+  loadSpecificIconTexture() {
+    if (!this.mainSprite || GameAssets.isValidTexture(GameAssets.getPowerupTexture(this.type))) return;
+    GameAssets.ensurePowerupTexture?.(this.type)?.then((texture) => {
+      if (!this.active || !this.mainSprite || !GameAssets.isValidTexture(texture)) return;
+      this.applyIconTexture(this.mainSprite, texture);
+    });
   }
 
   collect(player, scene) {
@@ -249,7 +270,7 @@ class Powerup {
     const reachesMaxLives = this.type === 'life' && scene.game.lives < maxLives && scene.game.lives + 1 >= maxLives;
     const voiceOk = reachesMaxLives ? false : AudioManager.playPowerupVoice();
     if (!voiceOk && !reachesMaxLives) {
-      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+      AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
     }
 
     // Pass type directly to player (Player handles reset)
@@ -357,82 +378,86 @@ class Powerup {
     if (presentation.flashAlpha) {
       this.spawnPickupFlash(scene, presentation);
     }
+    this.spawnPickupStarburst(scene, presentation);
   }
 
   // TASK 1: Play category-specific pickup SFX
   playPickupSFX(scene) {
     // Category-specific sounds
     const sfxMap = {
-      life: ['life_up', 'achievement'],
-      shield: ['shield_up', 'forceField'],
-      ghost: ['ghost_phase_shift'],
-      slow_time: ['time_slow_warp'],
-      triple_beam: ['pickup', 'powerup'],
-      vector_boost: ['pickup', 'thrusterFire'],
-      rapid_cabinet: ['pickup', 'powerup'],
-      overdrive_core: ['powerup', 'achievement'],
-      rapid_fire: ['pickup', 'thrusterFire'],
-      double_shot: ['pickup', 'powerup'],
-      damage_up: ['powerup'],
-      speed_up: ['pickup', 'thrusterFire'],
-      pierce: ['pickup', 'chain_lightning_arc'],
-      score_x2: ['achievement'],
-      magnet: ['magnet_pull'],
-      drones: ['drone_launch_blip', 'pickup'],
-      shockwave: ['powerup', 'forceField'],
-      point_defense: ['forceField', 'shield_up'],
-      bomb: ['powerup', 'orbital_strike_charge'],
-      chain_lightning: ['chain_lightning_arc', 'powerup'],
-      orbital_strike: ['orbital_strike_charge', 'achievement'],
-      vampire: ['ghost_phase_shift', 'powerup']
+      life: ['life_up', 'achievement', 'pickup'],
+      shield: ['shield_up', 'forceField', 'powerup'],
+      ghost: ['ghost_phase_shift', 'forceField'],
+      slow_time: ['time_slow_warp', 'powerup'],
+      triple_beam: ['powerup', 'pickup'],
+      vector_boost: ['thrusterFire', 'powerup', 'pickup'],
+      rapid_cabinet: ['powerup', 'thrusterFire'],
+      overdrive_core: ['powerup', 'achievement', 'forceField'],
+      rapid_fire: ['thrusterFire', 'pickup'],
+      double_shot: ['powerup', 'pickup'],
+      damage_up: ['powerup', 'impactMetal'],
+      speed_up: ['thrusterFire', 'pickup'],
+      pierce: ['chain_lightning_arc', 'pickup'],
+      score_x2: ['achievement', 'pickup'],
+      magnet: ['magnet_pull', 'pickup'],
+      drones: ['drone_launch_blip', 'powerup'],
+      shockwave: ['explosionCrunch', 'forceField', 'powerup'],
+      point_defense: ['forceField', 'shield_up', 'powerup'],
+      bomb: ['explosionCrunch', 'orbital_strike_charge', 'powerup'],
+      chain_lightning: ['chain_lightning_arc', 'powerup', 'forceField'],
+      orbital_strike: ['orbital_strike_charge', 'achievement', 'powerup'],
+      vampire: ['ghost_phase_shift', 'powerup', 'pickup']
     };
 
     const sfxKeys = sfxMap[this.type] || ['pickup'];
     sfxKeys.forEach((sfxKey, index) => {
       AudioManager.playSfx(sfxKey, {
         force: index === 0,
-        volume: index === 0 ? 0.82 : 0.48,
-        minIntervalMs: index === 0 ? 30 : 90
+        volume: index === 0 ? 1.0 : 0.66,
+        minIntervalMs: index === 0 ? 20 : 70
       });
     });
   }
 
   getPickupPresentation() {
     const dramatic = {
-      extraBursts: 1,
-      durationMs: 520,
-      radiusStart: 18,
-      radiusGrowth: 58,
-      ringWidth: 4,
-      ringAlpha: 0.9,
+      extraBursts: 2,
+      durationMs: 640,
+      radiusStart: 20,
+      radiusGrowth: 82,
+      ringWidth: 5,
+      ringAlpha: 0.98,
       doubleRing: true,
       cross: false,
       secondaryColor: 0xffffff,
-      accentCount: 14,
-      accentSpeed: 4.2,
-      implode: false
+      accentCount: 24,
+      accentSpeed: 5.2,
+      implode: false,
+      shake: 4,
+      freezeFrames: 1,
+      starburst: true
     };
     const map = {
-      life: { ...dramatic, secondaryColor: 0xfff3a2, cross: true, accentCount: 18 },
-      shield: { ...dramatic, secondaryColor: 0x8ffcff, radiusGrowth: 70, accentCount: 10 },
-      ghost: { ...dramatic, secondaryColor: 0xb8c7ff, implode: true, accentSpeed: 2.5 },
-      slow_time: { ...dramatic, secondaryColor: 0x7fffd8, radiusGrowth: 82, accentSpeed: 1.8 },
-      score_x2: { ...dramatic, secondaryColor: 0xffef7e, extraBursts: 2, accentCount: 22 },
-      magnet: { ...dramatic, secondaryColor: 0x99ffcc, implode: true, radiusGrowth: 78 },
-      drones: { ...dramatic, secondaryColor: 0x66ccff, accentCount: 20 },
-      shockwave: { ...dramatic, secondaryColor: 0xffe4a8, extraBursts: 2, radiusGrowth: 132, ringWidth: 6, flashAlpha: 0.14, shake: 10, freezeFrames: 2 },
+      life: { ...dramatic, secondaryColor: 0xfff3a2, cross: true, accentCount: 28, flashAlpha: 0.1 },
+      shield: { ...dramatic, secondaryColor: 0x8ffcff, radiusGrowth: 92, accentCount: 20 },
+      ghost: { ...dramatic, secondaryColor: 0xb8c7ff, implode: true, accentSpeed: 3.1 },
+      slow_time: { ...dramatic, secondaryColor: 0x7fffd8, radiusGrowth: 104, accentSpeed: 2.2, flashAlpha: 0.1 },
+      score_x2: { ...dramatic, secondaryColor: 0xffef7e, extraBursts: 3, accentCount: 34, flashAlpha: 0.12 },
+      magnet: { ...dramatic, secondaryColor: 0x99ffcc, implode: true, radiusGrowth: 96, accentCount: 30 },
+      drones: { ...dramatic, secondaryColor: 0x66ccff, accentCount: 30 },
+      shockwave: { ...dramatic, secondaryColor: 0xffe4a8, extraBursts: 3, radiusGrowth: 168, ringWidth: 7, accentCount: 36, flashAlpha: 0.18, shake: 13, freezeFrames: 2 },
       point_defense: { ...dramatic, secondaryColor: 0xd9fdff, radiusGrowth: 76, cross: true },
-      bomb: { ...dramatic, secondaryColor: 0xffd15c, extraBursts: 2, radiusGrowth: 122, ringWidth: 6, accentCount: 28, flashAlpha: 0.18, shake: 12, freezeFrames: 3 },
-      chain_lightning: { ...dramatic, secondaryColor: 0xffffff, extraBursts: 1, cross: true, accentCount: 28, flashAlpha: 0.1, shake: 7 },
-      orbital_strike: { ...dramatic, secondaryColor: 0xff9cff, extraBursts: 2, radiusGrowth: 142, cross: true, accentCount: 30, flashAlpha: 0.16, shake: 13, freezeFrames: 3 },
-      vampire: { ...dramatic, secondaryColor: 0xff8ab6, implode: true, extraBursts: 1, accentCount: 22, flashAlpha: 0.1, shake: 6 }
+      bomb: { ...dramatic, secondaryColor: 0xffd15c, extraBursts: 4, radiusGrowth: 162, ringWidth: 7, accentCount: 40, flashAlpha: 0.22, shake: 15, freezeFrames: 3 },
+      chain_lightning: { ...dramatic, secondaryColor: 0xffffff, extraBursts: 2, cross: true, accentCount: 38, flashAlpha: 0.12, shake: 9 },
+      orbital_strike: { ...dramatic, secondaryColor: 0xff9cff, extraBursts: 4, radiusGrowth: 182, cross: true, accentCount: 42, flashAlpha: 0.2, shake: 16, freezeFrames: 3 },
+      vampire: { ...dramatic, secondaryColor: 0xff8ab6, implode: true, extraBursts: 2, accentCount: 30, flashAlpha: 0.12, shake: 8 }
     };
     return map[this.type] || {
       ...dramatic,
-      extraBursts: ['overdrive_core', 'rapid_cabinet'].includes(this.type) ? 1 : 0,
+      extraBursts: ['overdrive_core', 'rapid_cabinet', 'vector_boost'].includes(this.type) ? 3 : 1,
       secondaryColor: this.type === 'speed_up' || this.type === 'vector_boost' ? 0x66ff66 : 0xffffff,
-      accentCount: ['overdrive_core', 'rapid_cabinet', 'pierce'].includes(this.type) ? 16 : 10,
-      radiusGrowth: ['overdrive_core', 'rapid_cabinet'].includes(this.type) ? 72 : 54
+      accentCount: ['overdrive_core', 'rapid_cabinet', 'pierce', 'vector_boost'].includes(this.type) ? 32 : 22,
+      radiusGrowth: ['overdrive_core', 'rapid_cabinet', 'vector_boost'].includes(this.type) ? 98 : 72
     };
   }
 
@@ -451,10 +476,44 @@ class Powerup {
         Math.cos(angle) * speed * inward,
         Math.sin(angle) * speed * inward - 0.8,
         i % 2 === 0 ? this.color : presentation.secondaryColor,
-        2 + Math.random() * 2.6,
-        34 + Math.random() * 28
+        2.6 + Math.random() * 3.4,
+        42 + Math.random() * 34
       );
     }
+  }
+
+  spawnPickupStarburst(scene, presentation) {
+    if (!presentation.starburst || !scene?.container || !scene?.game?.app?.ticker) return;
+    const burst = new PIXI.Graphics();
+    burst.x = this.x;
+    burst.y = this.y;
+    burst.blendMode = 'add';
+    scene.container.addChild(burst);
+    let elapsed = 0;
+    const duration = Math.max(260, Math.min(760, presentation.durationMs || 520));
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      const t = Math.min(1, elapsed / duration);
+      const radius = 22 + t * (presentation.radiusGrowth || 80);
+      const alpha = 0.72 * (1 - t);
+      burst.clear();
+      const spokes = presentation.cross ? 12 : 9;
+      for (let i = 0; i < spokes; i += 1) {
+        const angle = (Math.PI * 2 * i) / spokes + t * 0.55;
+        const inner = radius * 0.22;
+        const outer = radius * (0.82 + (i % 2) * 0.18);
+        burst.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        burst.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      }
+      burst.stroke({ color: this.color, width: 3.2, alpha });
+      burst.circle(0, 0, radius * 0.42);
+      burst.stroke({ color: presentation.secondaryColor || 0xffffff, width: 1.8, alpha: alpha * 0.72 });
+      if (t >= 1) {
+        scene.game.app.ticker.remove(ticker);
+        if (burst.parent) burst.parent.removeChild(burst);
+      }
+    };
+    scene.game.app.ticker.add(ticker);
   }
 
   spawnPickupFlash(scene, presentation) {
@@ -508,10 +567,11 @@ class Powerup {
     const { width, height } = scene.game.app.screen;
     const text = createText(translateText(messages[this.type] || 'POWERUP!'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 20,
+      fontSize: 24,
       fill: this.color,
       stroke: '#000000',
-      strokeThickness: 3
+      strokeThickness: 4,
+      fontWeight: 'bold'
     });
     text.anchor.set(0.5);
     text.x = width / 2;
@@ -525,10 +585,11 @@ class Powerup {
       if (elapsed < 300) text.alpha = elapsed / 300;
       else if (elapsed > 1500) text.alpha = Math.max(0, (2000 - elapsed) / 500);
       else text.alpha = 1;
+      text.scale.set(1 + Math.sin(elapsed * 0.015) * 0.08);
 
       if (elapsed >= 2000) {
         scene.game.app.ticker.remove(ticker);
-        scene.container.removeChild(text);
+        if (text.parent) scene.container.removeChild(text);
       }
     };
     scene.game.app.ticker.add(ticker);

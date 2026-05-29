@@ -259,7 +259,8 @@ export class HUD {
     this.updateLivesVisuals();
 
     // Rank Update
-    const rankTex = RankAssets.getRankTexture(this.game.rankIndex);
+    const displayRank = this.game.getEffectiveRankIndex ? this.game.getEffectiveRankIndex() : this.game.rankIndex;
+    const rankTex = RankAssets.getRankTexture(displayRank);
     if (rankTex) {
       this.rankIcon.texture = rankTex;
       // Make it slightly larger as requested
@@ -271,7 +272,7 @@ export class HUD {
     }
 
     // Clearer text
-    this.rankText.text = rankManager.getRankString(this.game.rankIndex);
+    this.rankText.text = rankManager.getRankString(displayRank);
     this.rankText.x = 60; // Fixed offset to clear the icon
     this.rankText.y = 15;
 

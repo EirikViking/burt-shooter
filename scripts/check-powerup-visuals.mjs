@@ -132,7 +132,7 @@ try {
   }, null, { timeout: 15000 });
   await page.waitForTimeout(300);
 
-  const state = await page.evaluate((types) => {
+  const state = await page.evaluate(async (types) => {
     const game = window.__game;
     const play = game?.scenes?.play;
     const manager = play?.powerupManager;
@@ -174,6 +174,8 @@ try {
       manager.spawnSpecific(x, y, type);
     });
 
+    await new Promise((resolve) => setTimeout(resolve, 900));
+
     return {
       ok: true,
       count: manager.powerups.length,
@@ -200,49 +202,91 @@ try {
     const player = play?.player;
     if (!game || !play || !manager || !player) return { ok: false, reason: 'missing collect harness' };
 
+    const snapshot = () => ({
+      activePowerup: player.activePowerup?.type || null,
+      speed: Number(player.speed || 0),
+      shootDelay: Number(player.shootDelay || 0),
+      bulletDamage: Number(player.bulletDamage || 0),
+      bulletSpeed: Number(player.bulletSpeed || 0),
+      multiShot: Number(player.multiShot || 0),
+      bulletPierce: Boolean(player.bulletPierce),
+      dodgeDelay: Number(player.dodgeDelay || 0),
+      shieldActive: Boolean(player.shieldActive),
+      shieldVisible: Boolean(player.shieldSprite?.visible),
+      scoreMultiplier: Number(player.scoreMultiplier || 1),
+      magnetActive: Boolean(player.magnetActive),
+      magnetRadius: Number(player.magnetRadius || 0),
+      dronesActive: Boolean(player.dronesActive),
+      droneCount: player.drones?.length || 0,
+      pointDefenseActive: Boolean(player.pointDefenseActive),
+      pointDefenseVisible: Boolean(player.pointDefenseRing?.visible),
+      bombShotsLeft: Number(player.bombShotsLeft || 0),
+      bombIndicatorVisible: Boolean(player.bombIndicator?.visible),
+      chainLightningActive: Boolean(player.chainLightningActive),
+      orbitalStrikeActive: Boolean(player.orbitalStrikeActive),
+      orbitalStrikeCharges: Number(player.orbitalStrikeCharges || 0),
+      vampireActive: Boolean(player.vampireActive),
+      vampireKillCount: Number(player.vampireKillCount || 0),
+      spriteAlpha: Number(player.sprite?.alpha ?? 1),
+      auraVisible: Boolean(player.powerupAura?.visible),
+      particleCount: play.particleManager?.particles?.length || 0
+    });
+
     const expected = {
-      triple_beam: () => player.activePowerup?.type === 'triple_beam',
-      vector_boost: () => player.activePowerup?.type === 'vector_boost',
-      rapid_cabinet: () => player.activePowerup?.type === 'rapid_cabinet',
-      overdrive_core: () => player.activePowerup?.type === 'overdrive_core',
-      slow_time: () => player.activePowerup?.type === 'slow_time',
-      ghost: () => player.activePowerup?.type === 'ghost' && player.sprite?.alpha < 1,
-      shield: () => player.shieldActive === true,
+      triple_beam: (before, after) => after.activePowerup === 'triple_beam' && after.multiShot >= 3 && after.bulletSpeed > before.bulletSpeed,
+      vector_boost: (before, after) => after.activePowerup === 'vector_boost' && after.speed > before.speed && after.bulletSpeed > before.bulletSpeed && after.dodgeDelay < before.dodgeDelay,
+      rapid_cabinet: (before, after) => after.activePowerup === 'rapid_cabinet' && after.bulletDamage >= 3 && after.shootDelay < before.shootDelay,
+      overdrive_core: (before, after) => after.activePowerup === 'overdrive_core' && after.multiShot >= 5 && after.bulletDamage >= 2 && after.shootDelay < before.shootDelay,
+      slow_time: (_before, after) => after.activePowerup === 'slow_time',
+      ghost: (_before, after) => after.activePowerup === 'ghost' && after.spriteAlpha < 1,
+      shield: (_before, after) => after.shieldActive === true && after.shieldVisible === true,
       life: () => game.lives >= 2,
-      rapid_fire: () => player.activePowerup?.type === 'rapid_fire',
-      double_shot: () => player.activePowerup?.type === 'double_shot',
-      damage_up: () => player.activePowerup?.type === 'damage_up',
-      speed_up: () => player.activePowerup?.type === 'speed_up',
-      pierce: () => player.activePowerup?.type === 'pierce',
-      score_x2: () => player.scoreMultiplier === 2,
-      magnet: () => player.magnetActive === true,
-      drones: () => player.dronesActive === true,
-      shockwave: () => player.activePowerup?.type == null,
-      point_defense: () => player.pointDefenseActive === true,
-      bomb: () => player.bombShotsLeft === 3,
-      chain_lightning: () => player.chainLightningActive === true,
-      orbital_strike: () => player.orbitalStrikeActive === true && player.orbitalStrikeCharges === 5,
-      vampire: () => player.vampireActive === true
+      rapid_fire: (before, after) => after.activePowerup === 'rapid_fire' && after.shootDelay < before.shootDelay,
+      double_shot: (_before, after) => after.activePowerup === 'double_shot' && after.multiShot >= 2,
+      damage_up: (before, after) => after.activePowerup === 'damage_up' && after.bulletDamage > before.bulletDamage,
+      speed_up: (before, after) => after.activePowerup === 'speed_up' && after.speed > before.speed,
+      pierce: (_before, after) => after.activePowerup === 'pierce' && after.bulletPierce === true,
+      score_x2: (_before, after) => after.scoreMultiplier === 2,
+      magnet: (_before, after) => after.magnetActive === true && after.magnetRadius >= 140,
+      drones: (_before, after) => after.dronesActive === true && after.droneCount >= 2,
+      shockwave: (before, after) => after.activePowerup == null && after.particleCount > before.particleCount,
+      point_defense: (_before, after) => after.pointDefenseActive === true && after.pointDefenseVisible === true,
+      bomb: (_before, after) => after.bombShotsLeft === 3 && after.bombIndicatorVisible === true,
+      chain_lightning: (_before, after) => after.chainLightningActive === true,
+      orbital_strike: (_before, after) => after.orbitalStrikeActive === true && after.orbitalStrikeCharges === 5,
+      vampire: (_before, after) => after.vampireActive === true && after.vampireKillCount === 0
     };
 
     const results = [];
     for (const type of types) {
       try {
         player.resetPowerups?.();
+        player.clearSynergy?.();
         player.deactivateShield?.();
         player.deactivateBomb?.();
+        player.lastPowerupType = null;
+        player.lastPowerupAt = 0;
+        if (play.particleManager?.particles) {
+          play.particleManager.particles.forEach((particle) => {
+            if (particle.sprite?.parent) particle.sprite.parent.removeChild(particle.sprite);
+            if (particle.bitmap?.parent) particle.bitmap.parent.removeChild(particle.bitmap);
+            particle.active = false;
+          });
+          play.particleManager.particles = [];
+        }
         if (type === 'life') game.lives = 1;
+        const before = snapshot();
         const powerup = manager.spawnSpecific(player.x, player.y, type, { source: 'collect-check' });
         powerup.collect(player, play);
+        player.updatePowerupAura?.(Date.now(), 1 / 60);
+        const after = snapshot();
         results.push({
           type,
-          ok: Boolean(expected[type]?.()),
-          activePowerup: player.activePowerup?.type || null,
-          shieldActive: Boolean(player.shieldActive),
-          scoreMultiplier: player.scoreMultiplier,
-          bombShotsLeft: player.bombShotsLeft,
-          orbitalStrikeCharges: player.orbitalStrikeCharges,
-          lives: game.lives
+          ok: Boolean(expected[type]?.(before, after)),
+          before,
+          after,
+          lives: game.lives,
+          auraOk: type === 'life' || type === 'shockwave' || after.auraVisible === true
         });
       } catch (error) {
         results.push({ type, ok: false, error: error?.message || String(error) });
@@ -256,15 +300,17 @@ try {
 
   const missing = state.types?.filter(item => !item.hasMainSprite || item.width < 28 || item.height < 28) || [];
   const missingBadges = state.types?.filter(item => !item.hasTypeBadge) || [];
-  const failedCollects = collectState.results?.filter(item => !item.ok) || [];
+  const fallbackIcons = state.types?.filter(item => /bonus_core/i.test(String(item.textureLabel || ''))) || [];
+  const failedCollects = collectState.results?.filter(item => !item.ok || !item.auraOk) || [];
   const report = {
-    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && missingBadges.length === 0 && failedCollects.length === 0 && consoleEvents.length === 0 ? 'passed' : 'failed',
+    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && missingBadges.length === 0 && fallbackIcons.length === 0 && failedCollects.length === 0 && consoleEvents.length === 0 ? 'passed' : 'failed',
     baseUrl,
     screenshot,
     state,
     collectState,
     missing,
     missingBadges,
+    fallbackIcons,
     failedCollects,
     consoleEvents
   };

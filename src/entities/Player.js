@@ -129,6 +129,7 @@ export class Player {
     this.focusPulse = 0;
     this.damageOverlay = null;
     this.boostAura = null;
+    this.powerupAura = null;
     this.rankBoostText = null;
     this.bulletPierce = false;
     this.scoreMultiplier = 1;
@@ -845,12 +846,15 @@ export class Player {
           this.pointDefenseRing.clear();
           const radius = 35 + Math.sin(now * 0.008) * 5;
           this.pointDefenseRing.circle(0, 0, radius);
-          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 2, alpha: pointDefenseSuppressed ? 0.18 : 0.6 + Math.sin(now * 0.01) * 0.2 });
+          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 3, alpha: pointDefenseSuppressed ? 0.18 : 0.68 + Math.sin(now * 0.01) * 0.24 });
 
           // Inner ring
           const innerRadius = radius - 8;
           this.pointDefenseRing.circle(0, 0, innerRadius);
-          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 1, alpha: pointDefenseSuppressed ? 0.1 : 0.4 });
+          this.pointDefenseRing.stroke({ color: 0xffffff, width: 1.6, alpha: pointDefenseSuppressed ? 0.1 : 0.46 });
+          const sweep = now * 0.006;
+          this.pointDefenseRing.arc(0, 0, radius + 6, sweep, sweep + Math.PI * 0.62);
+          this.pointDefenseRing.stroke({ color: 0xaaffff, width: 3, alpha: pointDefenseSuppressed ? 0.08 : 0.42 });
         }
       }
     } else {
@@ -974,6 +978,7 @@ export class Player {
     }
     this.updateFocusRing(deltaSeconds);
     this.updateStatusEffectVisuals(deltaSeconds);
+    this.updatePowerupAura(now, deltaSeconds);
 
     // Dodge Logic
     if (this.inputManager.isKeyPressed('ShiftLeft') && this.dodgeCooldown <= 0 && !this.isDodging) {
@@ -1156,6 +1161,9 @@ export class Player {
     if (pType === 'rapid_cabinet') vConfig = { color: 'Red', index: 1 };
     else if (pType === 'triple_beam') vConfig = { color: 'Green', index: 13 };
     else if (pType === 'overdrive_core') vConfig = { color: 'Blue', index: 8 };
+    else if (pType === 'damage_up' || pType === 'bomb') vConfig = { color: 'Red', index: 15 };
+    else if (pType === 'vector_boost' || pType === 'speed_up') vConfig = { color: 'Green', index: 7 };
+    else if (pType === 'chain_lightning' || pType === 'pierce') vConfig = { color: 'Blue', index: 8 };
     else if (this.activePowerup.type) vConfig = { color: 'Blue', index: 3 }; // Other powerups slightly different
     if (totalShots > 1) vConfig = { color: 'Green', index: 13 };
     if (this.rankBoostBulletFx) vConfig = { color: 'Red', index: 15 };
@@ -1930,6 +1938,134 @@ export class Player {
     this.flashColor = color;
   }
 
+  getPowerupColor(type) {
+    const colors = {
+      triple_beam: 0xffaa00,
+      vector_boost: 0x66ff66,
+      rapid_cabinet: 0xff44cc,
+      overdrive_core: 0xffdd44,
+      slow_time: 0x66ffe8,
+      ghost: 0xb8c7ff,
+      shield: 0x66ffff,
+      rapid_fire: 0xffcc00,
+      double_shot: 0x66ccff,
+      damage_up: 0xff6644,
+      speed_up: 0x88ff44,
+      pierce: 0xcc66ff,
+      score_x2: 0xffee66,
+      magnet: 0x99ffcc,
+      drones: 0x66ddff,
+      shockwave: 0xffaa66,
+      point_defense: 0x00ddff,
+      bomb: 0xff6622,
+      chain_lightning: 0xaaeeff,
+      orbital_strike: 0xffaa00,
+      vampire: 0xff4477,
+      rank_boost: 0xffdd66,
+      synergy: 0xff66cc
+    };
+    return colors[type] || 0x66ffff;
+  }
+
+  getPrimaryPowerupVisualType() {
+    if (this.activePowerup?.type) return this.activePowerup.type;
+    if (this.bombShotsLeft > 0) return 'bomb';
+    if (this.orbitalStrikeActive) return 'orbital_strike';
+    if (this.chainLightningActive) return 'chain_lightning';
+    if (this.vampireActive) return 'vampire';
+    if (this.pointDefenseActive) return 'point_defense';
+    if (this.dronesActive) return 'drones';
+    if (this.magnetActive) return 'magnet';
+    if (this.scoreMultiplier > 1) return 'score_x2';
+    if (this.shieldActive) return 'shield';
+    if (this.rankBoost?.type) return 'rank_boost';
+    if (this.synergyState?.type) return 'synergy';
+    return null;
+  }
+
+  ensurePowerupAura() {
+    if (!this.sprite) return null;
+    if (!this.powerupAura || this.powerupAura.destroyed) {
+      this.sprite.sortableChildren = true;
+      this.powerupAura = new PIXI.Graphics();
+      this.powerupAura.label = 'player_powerup_aura';
+      this.powerupAura.zIndex = -2;
+      this.powerupAura.blendMode = 'add';
+      this.sprite.addChild(this.powerupAura);
+    }
+    return this.powerupAura;
+  }
+
+  updatePowerupAura(now = Date.now(), deltaSeconds = 0) {
+    const type = this.getPrimaryPowerupVisualType();
+    const aura = this.ensurePowerupAura();
+    if (!aura) return;
+    if (!type || this.isPowerupSuppressed?.()) {
+      aura.clear();
+      aura.visible = false;
+      return;
+    }
+
+    const color = this.getPowerupColor(type);
+    const pulse = Math.sin(now * 0.012) * 0.5 + 0.5;
+    const radius = Math.max(34, (this.baseShipWidth || 58) * 0.62) + pulse * 8;
+    aura.visible = true;
+    aura.clear();
+    aura.circle(0, 0, radius);
+    aura.stroke({ color, width: 3.2, alpha: 0.56 + pulse * 0.18 });
+    aura.circle(0, 0, radius * 0.68);
+    aura.stroke({ color: 0xffffff, width: 1.4, alpha: 0.22 + pulse * 0.12 });
+
+    if (type === 'vector_boost' || type === 'speed_up') {
+      const trail = 20 + pulse * 16;
+      aura.moveTo(-16, 18);
+      aura.lineTo(-28, 18 + trail);
+      aura.moveTo(16, 18);
+      aura.lineTo(28, 18 + trail);
+      aura.stroke({ color, width: 4, alpha: 0.46 });
+    } else if (type === 'chain_lightning') {
+      for (let i = 0; i < 4; i += 1) {
+        const a = now * 0.006 + i * Math.PI * 0.5;
+        aura.moveTo(Math.cos(a) * radius * 0.3, Math.sin(a) * radius * 0.3);
+        aura.lineTo(Math.cos(a + 0.55) * radius, Math.sin(a + 0.55) * radius);
+      }
+      aura.stroke({ color: 0xffffff, width: 2, alpha: 0.38 + pulse * 0.18 });
+    } else if (type === 'slow_time') {
+      aura.arc(0, 0, radius * 0.82, now * 0.003, now * 0.003 + Math.PI * 1.25);
+      aura.stroke({ color, width: 4, alpha: 0.42 });
+    }
+
+    if (this.boostAura) {
+      this.boostAura.alpha = Math.max(this.boostAura.alpha || 0, 0.2 + pulse * 0.18);
+    }
+    if (deltaSeconds > 0 && this.rankBoostPulse > 0) {
+      this.rankBoostPulse = Math.max(0, this.rankBoostPulse - deltaSeconds);
+    }
+  }
+
+  triggerPowerupSurge(type) {
+    const playScene = this.game?.scenes?.play;
+    const color = this.getPowerupColor(type);
+    this.triggerFlash(color, 180);
+    this.rankBoostPulse = 0.5;
+    if (playScene?.particleManager) {
+      playScene.particleManager.createExplosion(this.x, this.y - 8, color, 0.72);
+      for (let i = 0; i < 14; i += 1) {
+        const angle = (Math.PI * 2 * i) / 14;
+        playScene.particleManager.spawnParticle(
+          this.x,
+          this.y - 6,
+          Math.cos(angle) * (2.8 + Math.random() * 1.8),
+          Math.sin(angle) * (2.8 + Math.random() * 1.8),
+          i % 2 === 0 ? color : 0xffffff,
+          2.4 + Math.random() * 2.2,
+          28 + Math.random() * 18
+        );
+      }
+    }
+    playScene?.screenShake?.shake?.(['bomb', 'shockwave', 'orbital_strike', 'overdrive_core'].includes(type) ? 8 : 4, 14);
+  }
+
   activateShield() {
     this.shieldActive = true;
     this.shieldExpiresAt = Date.now() + 15000; // 15 Seconds
@@ -2092,6 +2228,7 @@ export class Player {
     this.recalculateStats();
     const after = this.getStatSnapshot();
     console.log(`[Powerup] apply type=${type} before=${before} after=${after}`);
+    this.triggerPowerupSurge(type);
 
     // CRITICAL: Ensure player remains visible after powerup application
     // (Ghost is special - it sets alpha to 0.4, which ensureRenderable respects)
@@ -2214,6 +2351,12 @@ export class Player {
       switch (this.activePowerup.type) {
         case 'triple_beam':
           this.multiShot = Math.max(this.multiShot, 3);
+          this.bulletSpeed = this.bulletSpeed * 1.08;
+          break;
+        case 'vector_boost':
+          this.speed = this.speed * 1.12;
+          this.bulletSpeed = this.bulletSpeed * 1.12;
+          this.dodgeDelay = Math.round(Math.max(420, this.dodgeDelay * 0.78));
           break;
         case 'rapid_cabinet':
           this.bulletDamage = Math.max(this.bulletDamage, 3);
@@ -2222,6 +2365,8 @@ export class Player {
         case 'overdrive_core':
           this.multiShot = Math.max(this.multiShot, 5);
           this.bulletDamage = Math.max(this.bulletDamage, 2);
+          this.shootDelay = Math.max(55, this.shootDelay * 0.72);
+          this.bulletSpeed = this.bulletSpeed * 1.15;
           break;
         case 'rapid_fire':
           this.shootDelay = this.stats.fireRate * 0.5;

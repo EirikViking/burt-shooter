@@ -205,6 +205,7 @@ export class Game {
     const initialRank = Number(this.hangarProgressAtRunStart?.pilotRank) || 0;
     this.rankIndex = initialRank;
     this.lastRankIndex = this.rankIndex;
+    this.fieldPromotionRankIndex = initialRank;
     // Rank progression is finalized from pilot XP after the run; score remains the leaderboard value.
     this.pendingHighscore = null;
 
@@ -532,6 +533,12 @@ export class Game {
     return rankManager.getPilotRankProgress(currentPilotXp).progress;
   }
 
+  getEffectiveRankIndex() {
+    const committed = Number.isFinite(this.rankIndex) ? this.rankIndex : 0;
+    const projected = Number.isFinite(this.fieldPromotionRankIndex) ? this.fieldPromotionRankIndex : committed;
+    return Math.max(committed, projected);
+  }
+
   loseLife() {
     if (this.currentScene?.isDebugInvincibleActive?.()) {
       this.currentScene.onDebugDamageBlocked?.('game_lose_life');
@@ -621,6 +628,7 @@ export class Game {
     this.runProgressionResult = result;
     this.rankIndex = result.next?.pilotRank ?? this.rankIndex;
     this.lastRankIndex = this.rankIndex;
+    this.fieldPromotionRankIndex = this.rankIndex;
     this.scoreBreakdown.pilotXpGained = result.xpGained || 0;
     this.scoreBreakdown.finalScore = this.score;
     this.runSummary = {
