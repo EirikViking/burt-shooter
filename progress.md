@@ -39,6 +39,13 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Completed fix: kept desktop/Steam auto-name behavior, restored manual name entry on plain web, made direct `game.gameOver()` calls pass through the in-game Game Over interlude, lengthened the interlude, held the GameOverScene title on `GAME OVER` before revealing rank/summary, kept Threat Codex masks renderable with near-zero alpha, and added visual Codex plus global-submit regression checks.
 - Published production build `v2026-05-29_10-48-30` to Cloudflare Pages production at `https://a32396f3.burt-game.pages.dev` and verified `https://novaswarm.tinyfoundry.app`. Prepared Windows Steam payload in `release/desktop/win-unpacked/`, refreshed payload manifest, and regenerated `release/steamworks/app_build_LOCAL.vdf`.
 
+## 2026-05-29 Goal Continuation: Number One, Autosave Screen, Achievement Attention
+
+- Current user follow-up: global #1 did not show the big Number One heading, desktop/Steam autosave still briefly showed a Saving Score screen, and Achievements should glow on the main menu after newly earned achievements until inspected.
+- Found likely #1 title bug: GameOver title prioritized `RUN CLEAR` before global placement, so a clear run with global #1 could hide the Number One heading.
+- Completed: global placement title priority now wins over run-clear, cached global placement previews can show Number One immediately, desktop/Steam autosave prepares submission state before visible summary rendering, and Achievements has a persisted unread-attention glow that clears when Achievements opens.
+- Follow-up found during live smoke: forced boss-victory smoke exposed a real transition/cleanup issue where boss cleanup could double-touch destroyed boss name text and leave the level in transition. Boss cleanup is now idempotent and the level-complete handoff uses an explicit transition state until `startLevel()` resets the enemy manager.
+
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 
 - Current user request: replace the static lore popup with a context-aware Cabinet Log system that adds useful/funny gameplay value and archives discoveries in the Codex, then overhaul the credits screen with stronger animation, fixed text overlaps, and a much bigger secret ship unlock reveal.

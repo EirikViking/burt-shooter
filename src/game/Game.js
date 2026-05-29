@@ -35,6 +35,7 @@ import {
   readHangarProgressState,
   updateHangarProgress
 } from '../progression/HangarProgressState.js';
+import { clearAchievementAttention } from '../progression/AchievementAttentionState.js';
 
 export class Game {
   constructor(app) {
@@ -305,6 +306,7 @@ export class Game {
   }
 
   showAchievements() {
+    clearAchievementAttention();
     this.switchScene('achievements');
   }
 

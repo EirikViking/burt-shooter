@@ -231,6 +231,7 @@ export class Boss {
   }
 
   fitNameText(maxHeight = 52) {
+    if (!this.nameText || this.nameText.destroyed || !this.nameText.style) return;
     const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
     const maxWidth = Math.max(120, Math.min(240, gameWidth * 0.26));
     fitPixiTextToBox(this.nameText, maxWidth, maxHeight, 0.58);
@@ -1346,8 +1347,9 @@ export class Boss {
   }
 
   clearTelegraphVisual() {
-    const hadTelegraphOverlay = Boolean(this.nameText && this.nameText.text !== this.name);
-    if (this.nameText) {
+    const nameTextReady = Boolean(this.nameText && !this.nameText.destroyed && this.nameText.style);
+    const hadTelegraphOverlay = Boolean(nameTextReady && this.nameText.text !== this.name);
+    if (nameTextReady) {
       this.nameText.text = this.name;
       this.nameText.alpha = 1;
       this.fitNameText();
@@ -1761,6 +1763,8 @@ export class Boss {
   }
 
   destroy() {
+    if (this.__novaBossDestroyed) return;
+    this.__novaBossDestroyed = true;
     this.clearTelegraphVisual();
     this.clearRegularAttackTelegraphVisual();
     if (this.visualCleanup) {

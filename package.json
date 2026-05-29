@@ -34,6 +34,7 @@
     "check:ship-selector-start": "node scripts/check-ship-selector-start.mjs",
     "check:career-intel-layout": "node scripts/check-career-intel-layout.mjs",
     "check:menu-codex-attention": "node scripts/check-menu-codex-attention.mjs",
+    "check:menu-achievements-attention": "node scripts/check-menu-achievements-attention.mjs",
     "check:gameover-ceremony": "node scripts/check-gameover-ceremony.mjs",
     "check:leaderboard-split": "node scripts/check-leaderboard-split.mjs",
     "check:leaderboard-adapter": "node scripts/check-leaderboard-adapter.mjs",

@@ -1230,8 +1230,11 @@ export class PlayScene {
         }
 
         this.levelAdvanceTimeout = setTimeout(() => {
-          this.levelAdvancePending = false;
           this.levelAdvanceTimeout = null;
+          if (this.enemyManager?.state === 'LEVEL_COMPLETE') {
+            this.enemyManager.state = 'LEVEL_TRANSITION';
+            this.enemyManager.phase = 'TRANSITION';
+          }
           this.postBossLevelIntroPending = bossCompletion;
           if (bossCompletion && !this.game.runCleared && this.game.level >= RunPacingConfig.targetSectors) {
             const clearBonus = 10000;

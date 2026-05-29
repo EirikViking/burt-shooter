@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-29T11:11:32.256Z",
-  "status": "failed",
+  "generatedAt": "2026-05-29T12:41:19.208Z",
+  "status": "passed",
   "currentBuild": {
-    "version": "v2026-05-29_13-07-18",
-    "timestamp": "2026-05-29T11:07:18.522Z"
+    "version": "v2026-05-29_14-37-40",
+    "timestamp": "2026-05-29T12:37:40.692Z"
   },
   "liveUrl": "https://novaswarm.tinyfoundry.app",
   "versionChecks": [
@@ -11,15 +11,15 @@
       "url": "https://novaswarm.tinyfoundry.app/version.json",
       "ok": true,
       "status": 200,
-      "version": "v2026-05-29_13-07-18",
-      "timestamp": "2026-05-29T11:07:18.522Z"
+      "version": "v2026-05-29_14-37-40",
+      "timestamp": "2026-05-29T12:37:40.692Z"
     }
   ],
   "latestLiveSmoke": {
-    "reportPath": "test-results/smoke-2026-05-29T09-06-36-171Z/report.json",
+    "reportPath": "test-results/smoke-2026-05-29T12-39-36-627Z/report.json",
     "baseUrl": "https://novaswarm.tinyfoundry.app",
-    "status": null,
-    "build": "v2026-05-29_10-48-30",
+    "status": "passed",
+    "build": "v2026-05-29_14-37-40",
     "screenshots": [
       {
         "file": "01-menu.png",
@@ -74,8 +74,6 @@
     "scenes": null,
     "coverage": null
   },
-  "errors": [
-    "Latest live smoke build v2026-05-29_10-48-30 does not match current build v2026-05-29_13-07-18"
-  ],
+  "errors": [],
   "warnings": []
 }

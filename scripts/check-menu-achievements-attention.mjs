@@ -5,9 +5,10 @@ import path from 'node:path';
 import { chromium } from 'playwright';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
-const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4399));
+const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4401));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
-const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/menu-codex-attention-${Date.now()}`);
+const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/menu-achievements-attention-${Date.now()}`);
+const attentionKey = 'nova.achievementAttention.v1';
 
 async function isPortAvailable(candidatePort) {
   return new Promise((resolve) => {
@@ -77,34 +78,40 @@ const browser = await chromium.launch({ headless: true, executablePath: findChro
 
 try {
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
-  await page.addInitScript(() => {
-    localStorage.setItem('nova.threatDiscovery.v1', JSON.stringify({
+  await page.addInitScript((key) => {
+    localStorage.setItem(key, JSON.stringify({
       version: 1,
-      items: { enemies: {}, attackPatterns: {}, waveTactics: {}, elites: {}, bosses: {}, runThemes: {}, cabinetLogs: {}, rareModifiers: {} },
-      discoveriesThisRun: [{ id: 'nova_enemy_005', category: 'enemies', name: 'Copper Mite' }],
-      recentRunThemes: [],
-      unreadIds: ['enemies:nova_enemy_005'],
+      unreadIds: ['ACH_RANK_01'],
       updatedAt: new Date().toISOString()
     }));
-  });
+  }, attentionKey);
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
   await page.waitForTimeout(1800);
-  const first = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
-  await page.waitForTimeout(400);
-  const second = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
-  const attention = second.menu?.threatCodexAttention || {};
-  assert(attention.unreadCount === 1, 'Threat Codex unread count is not surfaced on menu', { attention });
-  assert(attention.glowVisible === true, 'Threat Codex menu attention glow is missing', { attention });
-  assert(attention.animated === true, 'Threat Codex menu attention glow is not marked animated', { attention });
-  assert(first.menu?.items?.threatCodexButton && second.menu?.items?.threatCodexButton, 'Threat Codex button bounds missing', {
-    first: first.menu,
-    second: second.menu
-  });
-  const screenshot = path.join(outputDir, 'menu-codex-attention.png');
-  await page.screenshot({ path: screenshot, fullPage: true });
-  writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify({ ok: true, attention, screenshot }, null, 2));
-  console.log(`[menu-codex-attention] PASS screenshot=${screenshot}`);
+  const before = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  const attention = before.menu?.achievementsAttention || {};
+  assert(attention.unreadCount === 1, 'Achievements unread count is not surfaced on menu', { attention });
+  assert(attention.glowVisible === true, 'Achievements menu attention glow is missing', { attention });
+  assert(attention.animated === true, 'Achievements menu attention glow is not marked animated', { attention });
+  assert(before.menu?.items?.achievementsButton, 'Achievements button bounds missing', before.menu);
+  await page.screenshot({ path: path.join(outputDir, 'menu-achievements-attention.png'), fullPage: true });
+
+  await page.evaluate(() => window.__game?.showAchievements?.());
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'achievements', null, { timeout: 10000 });
+  const clearedStorage = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) || '{}'), attentionKey);
+  assert(Array.isArray(clearedStorage.unreadIds) && clearedStorage.unreadIds.length === 0, 'Achievements attention did not clear after inspection', clearedStorage);
+
+  await page.evaluate(() => window.__game?.showMenu?.());
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 10000 });
+  await page.waitForTimeout(250);
+  const after = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  const cleared = after.menu?.achievementsAttention || {};
+  assert(cleared.unreadCount === 0, 'Achievements unread count stayed after returning to menu', { cleared });
+  assert(cleared.glowVisible === false, 'Achievements menu glow stayed visible after inspection', { cleared });
+
+  const report = { ok: true, before: attention, after: cleared, clearedStorage };
+  writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
+  console.log(`[menu-achievements-attention] PASS report=${path.join(outputDir, 'report.json')}`);
 } finally {
   await browser.close().catch(() => {});
   if (server) server.kill();

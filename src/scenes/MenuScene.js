@@ -12,6 +12,7 @@ import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } fro
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
 import { getDiscoveryStats } from '../progression/ThreatDiscoveryState.js';
+import { getAchievementAttentionDebugState } from '../progression/AchievementAttentionState.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
@@ -795,6 +796,9 @@ export class MenuScene {
 
     this.achievementsBtn = this.createButton('ACHIEVEMENTS', layout, { accent: 0xffd15c });
     this.achievementsBtn.alpha = 0;
+    this.achievementsBtn._attentionGlow = new PIXI.Graphics();
+    this.achievementsBtn.addChildAt(this.achievementsBtn._attentionGlow, 0);
+    this.updateAchievementsAttentionState();
     this.achievementsBtn.on('pointerdown', () => {
       try {
         AudioManager.init();
@@ -1318,6 +1322,11 @@ export class MenuScene {
         glowVisible: Boolean(this.threatCodexBtn?._attention),
         animated: Boolean(this.threatCodexBtn?._attentionGlow && this.threatCodexUnreadCount > 0)
       },
+      achievementsAttention: {
+        unreadCount: this.achievementsUnreadCount,
+        glowVisible: Boolean(this.achievementsBtn?._attention),
+        animated: Boolean(this.achievementsBtn?._attentionGlow && this.achievementsUnreadCount > 0)
+      },
       exitNoticeText: this.exitNotice?.text || '',
       items: Object.fromEntries(
         Object.entries(textItems).map(([key, item]) => [key, boundsForDisplayObject(item)])
@@ -1433,6 +1442,16 @@ export class MenuScene {
       this.threatCodexBtn._attention = this.threatCodexUnreadCount > 0;
       this.threatCodexBtn._attentionCount = this.threatCodexUnreadCount;
       this.drawMenuButton(this.threatCodexBtn, Boolean(this.threatCodexBtn._hovered));
+    }
+  }
+
+  updateAchievementsAttentionState() {
+    const state = getAchievementAttentionDebugState();
+    this.achievementsUnreadCount = Math.max(0, Number(state.unreadCount) || 0);
+    if (this.achievementsBtn) {
+      this.achievementsBtn._attention = this.achievementsUnreadCount > 0;
+      this.achievementsBtn._attentionCount = this.achievementsUnreadCount;
+      this.drawMenuButton(this.achievementsBtn, Boolean(this.achievementsBtn._hovered));
     }
   }
 

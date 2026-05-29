@@ -123,14 +123,20 @@ async function preparePage(browser) {
   return { page, pageErrors, globalSubmissions };
 }
 
-async function forceGameOver(page, score) {
-  await page.evaluate((finalScore) => {
+async function forceGameOver(page, score, options = {}) {
+  await page.evaluate(({ finalScore, runCleared, cachedTargets }) => {
     const game = window.__game;
+    game.globalLeaderboardTargets = cachedTargets;
     game.score = finalScore;
     game.level = 6;
     game.rankIndex = 8;
+    if (runCleared) {
+      game.runCleared = true;
+      game.runClearReason = 'test_clear';
+      game.runClearLivesRemaining = 2;
+    }
     game.gameOver();
-  }, score);
+  }, { finalScore: score, runCleared: Boolean(options.runCleared), cachedTargets: board });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'play' && state.gameOverInterlude?.active === true;
@@ -151,9 +157,9 @@ async function forceGameOver(page, score) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text()));
 }
 
-async function checkCeremony(browser, { score, expectedTier, titlePattern, shotName }) {
+async function checkCeremony(browser, { score, expectedTier, titlePattern, shotName, runCleared = false }) {
   const { page, pageErrors, globalSubmissions } = await preparePage(browser);
-  const revealState = await forceGameOver(page, score);
+  const revealState = await forceGameOver(page, score, { runCleared });
   assert(revealState.gameOver.globalPlacementTier === expectedTier, `expected ${expectedTier}, got ${revealState.gameOver.globalPlacementTier}`);
   assert(titlePattern.test(revealState.gameOver.ceremonyTitle || ''), `unexpected title: ${revealState.gameOver.ceremonyTitle}`);
   await page.waitForFunction(() => {
@@ -248,6 +254,14 @@ try {
     expectedTier: 'number1',
     titlePattern: /NUMBER ONE/i,
     shotName: 'number-one.png'
+  }));
+  console.log('[gameover-ceremony] checking number-one overrides run-clear title');
+  results.push(await checkCeremony(browser, {
+    score: 56000,
+    expectedTier: 'number1',
+    titlePattern: /NUMBER ONE/i,
+    shotName: 'number-one-run-clear.png',
+    runCleared: true
   }));
   console.log('[gameover-ceremony] checking top-three ceremony');
   results.push(await checkCeremony(browser, {

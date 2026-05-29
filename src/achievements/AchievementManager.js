@@ -5,6 +5,7 @@ import {
   isValidAchievementId
 } from './AchievementCatalog.js';
 import { createSteamAchievementSync } from './SteamAchievementSync.js';
+import { recordAchievementAttention } from '../progression/AchievementAttentionState.js';
 
 export const ACHIEVEMENT_STORAGE_KEY = 'nova_swarm_achievements_v1';
 
@@ -123,6 +124,7 @@ export class AchievementManager {
         unlockedAt: new Date().toISOString(),
         payload: compactPayload(payload)
       };
+      recordAchievementAttention(id, this.storage);
 
       try {
         this.onUnlock?.(this.lastUnlocked);

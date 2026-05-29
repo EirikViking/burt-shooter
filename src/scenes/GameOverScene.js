@@ -279,6 +279,7 @@ export class GameOverScene {
           ? this.finalScore > 0
         : this.leaderboardAdapter.qualifiesLocal(this.finalScore);
       this.globalStatus = this.steamSubmissionMode ? 'steam_ready' : 'checking';
+      this.applyCachedGlobalPlacementPreview();
       this.updateCanEnterName();
     }
     const previousProgress = this.game.runProgressionResult?.previous || getShipUnlockProgress();
@@ -296,6 +297,7 @@ export class GameOverScene {
     // Generate unique submissionId for this run (reused across retries)
     this.submissionId = generateUUID();
     console.log('[GameOver] Generated submissionId:', this.submissionId);
+    const preRenderedAutoSubmission = await this.prepareAutoSubmissionBeforeRender();
 
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
@@ -501,6 +503,17 @@ export class GameOverScene {
     this.setupKeyboard();
 
     AudioManager.playSfx('nova_game_over_drop');
+    if (preRenderedAutoSubmission) {
+      this.updateLeaderboardStatusText();
+      if (this.globalStatus === 'submitted') {
+        this.playGlobalQualificationFanfare();
+      } else {
+        this.playLocalHighscoreVoice();
+      }
+      this.enterSubmittedStage(preRenderedAutoSubmission.reason);
+      return;
+    }
+
     if (this.newlyUnlockedShips.length > 0) {
       AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.72, minIntervalMs: 0 });
       this.scheduleSceneTimeout(() => this.playShipUnlockVoice(), 720);
@@ -556,6 +569,20 @@ export class GameOverScene {
     this.canEnterName = Boolean(!this.steamSubmissionMode && !this.desktopAutoNameMode && this.isRankedRun && (this.localQualified || this.globalQualified));
     this.isQualified = this.canEnterName;
     return this.canEnterName;
+  }
+
+  applyCachedGlobalPlacementPreview() {
+    if (!this.isRankedRun || this.steamSubmissionMode || this.desktopAutoNameMode) return false;
+    const targets = this.game?.globalLeaderboardTargets;
+    if (!Array.isArray(targets) || targets.length === 0) return false;
+    const placement = analyzeGlobalLeaderboardScore(this.finalScore, targets);
+    this.globalPlacement = placement;
+    this.globalPlacementTier = placement.tier;
+    this.globalQualified = placement.qualified;
+    if (placement.qualified && this.globalStatus === 'checking') {
+      this.globalStatus = 'qualified';
+    }
+    return true;
   }
 
   isSceneActive() {
@@ -775,12 +802,12 @@ export class GameOverScene {
   }
 
   getCeremonyTitle() {
-    if (this.game?.runSummary?.runCleared) return 'RUN CLEAR';
     const globalRank = this.getGlobalRankNumber();
     if (globalRank) return globalRank === 1 ? 'NUMBER ONE' : `GLOBAL RANK #${globalRank}`;
     if (this.globalPlacementTier === 'number1') return 'NUMBER ONE';
     if (this.globalPlacementTier === 'top3') return 'GLOBAL TOP THREE';
     if (this.globalPlacementTier === 'global') return 'GLOBAL RANK SAVED';
+    if (this.game?.runSummary?.runCleared) return 'RUN CLEAR';
     if (this.globalPlacementTier === 'near_global') return 'GLOBAL BOARD IN SIGHT';
     return 'GAME OVER';
   }
@@ -947,6 +974,9 @@ export class GameOverScene {
         this.updateCeremonyPresentation();
         this.updateLeaderboardStatusText();
         this.updateQualificationPromptState();
+        this.scheduleSceneTimeout(() => {
+          if (this.isSceneActive()) this.updateCeremonyPresentation();
+        }, 0);
         if (this.state === 'prompt' && this.updateCanEnterName()) {
           this.scheduleSceneTimeout(() => {
             if (this.isSceneActive() && this.state === 'prompt') this.enterInputMode();
@@ -2653,6 +2683,106 @@ export class GameOverScene {
         volume: 0.84
       });
     }, 1400);
+  }
+
+  async prepareAutoSubmissionBeforeRender() {
+    if (!this.isRankedRun || this.finalScore <= 0) return null;
+    if (this.steamSubmissionMode) {
+      return this.submitSteamScoreBeforeRender();
+    }
+    if (this.desktopAutoNameMode && this.localQualified) {
+      return this.submitDesktopLocalScoreBeforeRender();
+    }
+    return null;
+  }
+
+  async submitSteamScoreBeforeRender() {
+    this.state = 'submitting';
+    this.globalStatus = 'submitting';
+    const playerName = this.steamPlayerName || await this.leaderboardAdapter.getSteamPlayerName().catch(() => null) || 'STEAM PILOT';
+    const runResult = this.leaderboardAdapter.createRunResult(this.game, {
+      name: playerName,
+      playerName,
+      score: this.finalScore,
+      level: this.finalLevel,
+      rankIndex: this.game.rankIndex || 0,
+      runTimeSeconds: this.game?.runSummary?.runElapsedSeconds,
+      kills: this.game?.runSummary?.totalKills,
+      bossKills: this.game?.runSummary?.bossesKilled,
+      wavesCleared: this.game?.runSummary?.wavesCleared,
+      submissionId: this.submissionId
+    });
+
+    const result = await this.leaderboardAdapter.submitScore(runResult, {
+      target: 'steam',
+      saveLocal: true,
+      name: playerName
+    });
+
+    this.globalStatus = result.steamStatus === 'submitted' ? 'submitted' : 'failed';
+    result.globalStatus = this.globalStatus === 'submitted' ? 'submitted' : 'failed';
+    result.globalQualified = true;
+    result.localQualified = true;
+    result.steamSubmissionMode = true;
+    result.updatedAt = new Date().toISOString();
+    const confirmedPlacement = await this.confirmGlobalLeaderboardAchievements(result);
+    if (confirmedPlacement?.qualified) {
+      this.globalPlacement = confirmedPlacement;
+      this.globalPlacementTier = confirmedPlacement.numberOne
+        ? 'number1'
+        : confirmedPlacement.top3
+          ? 'top3'
+          : 'global';
+      this.globalQualified = true;
+    }
+    this.leaderboardResult = result;
+    this.game.lastLeaderboardResult = result;
+    this.game.leaderboardView = this.globalStatus === 'submitted' ? 'global' : 'local';
+    this.game.pendingHighscore = null;
+    this.isSubmitting = false;
+    return { reason: this.globalStatus === 'submitted' ? 'score_submitted' : 'global_failed', result };
+  }
+
+  async submitDesktopLocalScoreBeforeRender() {
+    this.state = 'submitting';
+    this.globalStatus = this.leaderboardRuntime?.cloud ? 'checking' : (this.leaderboardRuntime?.steamBridgePresent ? 'failed' : 'offline');
+    const bestEffortName = await (this.leaderboardAdapter.getBestEffortSteamPlayerName?.() || Promise.resolve(null)).catch(() => null);
+    const playerName = this.steamPlayerName || bestEffortName || 'STEAM PILOT';
+    const runResult = this.leaderboardAdapter.createRunResult(this.game, {
+      name: playerName,
+      playerName,
+      score: this.finalScore,
+      level: this.finalLevel,
+      rankIndex: this.game.rankIndex || 0,
+      submissionId: this.submissionId
+    });
+    const localSave = await this.leaderboardAdapter.submitScore(runResult, {
+      target: 'local',
+      saveLocal: true,
+      name: playerName
+    });
+    const result = {
+      name: playerName,
+      score: this.finalScore,
+      level: this.finalLevel,
+      rankIndex: this.game.rankIndex || 0,
+      submissionId: this.submissionId,
+      localQualified: true,
+      globalQualified: false,
+      localStatus: localSave.localStatus || 'saved',
+      localPlacement: localSave.localPlacement,
+      localEntry: localSave.localEntry,
+      globalStatus: this.globalStatus === 'failed' ? 'failed' : 'offline',
+      desktopAutoNameMode: true,
+      updatedAt: new Date().toISOString()
+    };
+    this.globalStatus = result.globalStatus;
+    this.leaderboardResult = result;
+    this.game.lastLeaderboardResult = result;
+    this.game.leaderboardView = 'local';
+    this.game.pendingHighscore = null;
+    this.isSubmitting = false;
+    return { reason: result.globalStatus === 'failed' ? 'global_failed' : 'score_saved', result };
   }
 
   showAchievementToast(toast) {

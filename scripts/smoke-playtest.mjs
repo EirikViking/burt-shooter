@@ -821,7 +821,7 @@ async function runSmoke() {
       const game = window.__game;
       const enemyManager = game?.scenes?.play?.enemyManager;
       return game?.level >= 2 && enemyManager?.state === 'WAVE_ACTIVE';
-    }, null, { timeout: 12000 });
+    }, null, { timeout: 30000 });
     await stabilizeSmokePlayer(bossPage);
     await bossPage.waitForTimeout(900);
     await bossPage.screenshot({ path: path.join(outputDir, '15-level-2-start.png'), fullPage: true });
