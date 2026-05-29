@@ -245,7 +245,19 @@ export class Game {
     return this.runMode !== 'unranked' && !this.isDebugRun;
   }
 
-  gameOver() {
+  gameOver(options = {}) {
+    const fromInterlude = Boolean(options?.fromInterlude);
+    const skipInterlude = Boolean(globalThis?.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__);
+    if (
+      !fromInterlude &&
+      !skipInterlude &&
+      !this.gameOverTransitionPending &&
+      this.currentSceneName === 'play' &&
+      typeof this.currentScene?.showGameOverInterlude === 'function'
+    ) {
+      this.triggerGameOverInterlude();
+      return;
+    }
     if (this.state === GameState.GAME_OVER && this.currentScene === this.scenes?.gameOver) return;
     this.gameOverTransitionPending = false;
     this.finalizeRunProgression({
@@ -262,7 +274,7 @@ export class Game {
     this.gameOverTransitionPending = true;
     const complete = () => {
       if (!this.gameOverTransitionPending) return;
-      this.gameOver();
+      this.gameOver({ fromInterlude: true });
     };
     const shown = this.currentScene?.showGameOverInterlude?.(complete);
     if (!shown) complete();

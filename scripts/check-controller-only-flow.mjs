@@ -343,17 +343,27 @@ try {
   });
   const gameOverPrompt = await waitForState(page, (state) => state.scene === 'gameOver', 'game over opened', 10000);
   checkpoint('game-over-open', gameOverPrompt, { screenshot: await screenshot(page, '08-game-over-open') });
+  const controllerInput = await waitForState(page, (state) =>
+    state.scene === 'gameOver' &&
+    state.gameOver?.state === 'input' &&
+    state.gameOver?.inputDevice === 'controller' &&
+    state.gameOver?.nameInput,
+  'controller initials input ready', 15000);
+  checkpoint('game-over-controller-initials', controllerInput, {
+    defaultName: controllerInput.gameOver?.nameInput
+  });
+  await tapButton(page, 0);
   const submitted = await waitForState(page, (state) =>
     state.scene === 'gameOver' &&
     ['submitted', 'runback', 'unranked'].includes(state.gameOver?.state) &&
     state.gameOver?.lastLeaderboardResult?.name,
-  'score auto-submitted without manual initials', 15000);
+  'score submitted with controller initials', 15000);
   checkpoint('game-over-score-submitted', submitted, {
     savedName: submitted.gameOver?.lastLeaderboardResult?.name,
-    autoName: submitted.gameOver?.autoSubmittedName,
+    controllerName: controllerInput.gameOver?.nameInput,
     screenshot: await screenshot(page, '09-score-submitted')
   });
-  assert(submitted.gameOver?.lastLeaderboardResult?.name, 'Controller auto-submit did not save a leaderboard name');
+  assert(submitted.gameOver?.lastLeaderboardResult?.name, 'Controller initials submit did not save a leaderboard name');
 
   await tapButton(page, 3);
   const highscore = await waitForState(page, (state) => state.scene === 'highscore' && state.highscore?.focusedControl, 'highscores opened by controller Y');

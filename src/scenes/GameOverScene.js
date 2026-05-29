@@ -32,6 +32,7 @@ import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/Ra
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
 const MIN_GAME_OVER_RESULT_HOLD_MS = 3500;
+const GAME_OVER_ARRIVAL_TITLE_MS = 2200;
 const PILOT_NAME_MAX_LENGTH = 14;
 const CONTROLLER_NAME_STORAGE_KEY = 'nova.controllerPilotName.v1';
 const CONTROLLER_NAME_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -57,16 +58,18 @@ function getConfirmedGlobalPlacement(score, entries = []) {
 
 function isDesktopAutoNameRuntime(runtime = {}) {
   if (typeof window !== 'undefined' && window.__NOVA_SWARM_MANUAL_NAME__ === true) return false;
+  if (typeof window !== 'undefined') {
+    try {
+      if (new URLSearchParams(window.location.search).get('manualName') === '1') return false;
+    } catch {
+      // Fall through to the runtime checks below.
+    }
+  }
   if (runtime?.desktop || runtime?.steamBridgePresent) return true;
   if (typeof window === 'undefined') return false;
   if (window.__NOVA_SWARM_DESKTOP__ === true) return true;
   if (window.__novaSteamBridge || window.__novaSteamLeaderboard || window.__novaSteamCloud) return true;
-  try {
-    if (new URLSearchParams(window.location.search).get('manualName') === '1') return false;
-  } catch {
-    // Fall through to auto-name; post-run manual name entry should not block the loop.
-  }
-  return true;
+  return false;
 }
 
 export class GameOverScene {
@@ -131,6 +134,8 @@ export class GameOverScene {
     this.ctaVoicePlayed = false;
     this.runbackStartedAt = 0;
     this.resultScreenStartedAt = 0;
+    this.arrivalTitleUntil = 0;
+    this.arrivalTitleRevealed = false;
     this.pendingRunbackReason = null;
     // HTML overlay for mobile input
     this.inputOverlay = null;
@@ -214,6 +219,8 @@ export class GameOverScene {
     this.ctaVoicePlayed = false;
     this.runbackStartedAt = 0;
     this.resultScreenStartedAt = Date.now();
+    this.arrivalTitleUntil = this.resultScreenStartedAt + GAME_OVER_ARRIVAL_TITLE_MS;
+    this.arrivalTitleRevealed = false;
     this.pendingRunbackReason = null;
     this.newlyUnlockedShips = [];
     this.shipUnlockVoicePlayed = false;
@@ -289,7 +296,7 @@ export class GameOverScene {
     this.initBackdrop(width, height);
     this.createCeremonyVisuals();
 
-    const ceremonyTitle = this.getCeremonyTitle();
+    const ceremonyTitle = this.getVisibleCeremonyTitle();
 
     const titleSize = getResponsiveFontSize(layout, 'title');
     this.title = createText(ceremonyTitle, {
@@ -766,6 +773,21 @@ export class GameOverScene {
     return 'GAME OVER';
   }
 
+  isArrivalTitleActive() {
+    return !this.arrivalTitleRevealed && Date.now() < (this.arrivalTitleUntil || 0);
+  }
+
+  getVisibleCeremonyTitle() {
+    if (this.isArrivalTitleActive() && !this.game?.runSummary?.runCleared) return 'GAME OVER';
+    return this.getCeremonyTitle();
+  }
+
+  updateArrivalTitleReveal() {
+    if (!this.title || this.arrivalTitleRevealed || Date.now() < (this.arrivalTitleUntil || 0)) return;
+    this.arrivalTitleRevealed = true;
+    this.updateCeremonyPresentation();
+  }
+
   getCeremonyComment() {
     const placement = this.globalPlacement;
     if (placement?.numberOne) {
@@ -801,7 +823,7 @@ export class GameOverScene {
     if (!this.title || !this.comment) return;
     const placement = this.globalPlacement;
     this.refreshNextGoalFromLeaderboard();
-    this.title.text = this.getCeremonyTitle();
+    this.title.text = this.getVisibleCeremonyTitle();
     this.comment.text = this.getCeremonyComment();
     if (placement?.numberOne) {
       this.title.style.fill = '#fff8b8';
@@ -1997,6 +2019,7 @@ export class GameOverScene {
   }
 
   update() {
+    this.updateArrivalTitleReveal();
     this.updateCeremonyEffects();
     if (this.shipUnlockReveal?.visible) {
       this.drawShipUnlockReveal(createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout()));
@@ -2756,7 +2779,7 @@ export class GameOverScene {
     this.selectedCtaLine = this.selectRunbackCtaLine();
 
     if (this.title) {
-      this.title.text = this.getCeremonyTitle();
+      this.title.text = this.getVisibleCeremonyTitle();
       this.title.style.fill = this.localQualified || this.isPersonalBest ? '#9cfbff' : '#d8e6ff';
       this.title.style.dropShadowColor = '#00aaff';
     }

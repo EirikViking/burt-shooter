@@ -632,6 +632,8 @@ function buildGameTextState(game) {
       globalPlacement: gameOverScene.globalPlacement || null,
       globalPlacementTier: gameOverScene.globalPlacementTier || null,
       ceremonyTitle: gameOverScene.title?.text || null,
+      finalCeremonyTitle: typeof gameOverScene.getCeremonyTitle === 'function' ? gameOverScene.getCeremonyTitle() : null,
+      arrivalTitleActive: typeof gameOverScene.isArrivalTitleActive === 'function' ? gameOverScene.isArrivalTitleActive() : false,
       ceremonyComment: gameOverScene.comment?.text || null,
       backdropLoaded: Boolean(gameOverScene.backdropLoaded),
       canEnterName: Boolean(gameOverScene.canEnterName),

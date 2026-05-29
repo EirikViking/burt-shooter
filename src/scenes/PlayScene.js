@@ -41,7 +41,7 @@ import {
 } from '../progression/ThreatDiscoveryState.js';
 
 const OVERRUN_CLEAR_VFX_MS = 5600;
-const GAME_OVER_INTERLUDE_MS = 2600;
+const GAME_OVER_INTERLUDE_MS = 3600;
 
 export class PlayScene {
   constructor(game) {

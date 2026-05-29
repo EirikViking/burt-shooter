@@ -278,6 +278,7 @@ async function snapshot(page) {
         cta: game?.scenes?.gameOver?.retryButtonLabel?.text || null
       },
       leaderboard: {
+        activeLeaderboard: highscore?.activeLeaderboard || null,
         title: highscore?.title?.text || null,
         retry: highscore?.retryButton?._label?.text || null,
         board: highscore?.boardTitle?.text || null,
@@ -449,7 +450,9 @@ async function captureLanguage(page, language, index) {
   snaps.leaderboard = await snapshot(page);
   assertSnapshotClean(snaps.leaderboard, language, `${language.slug}.leaderboard`);
   shots.leaderboard = await screenshot(page, `${prefix}-leaderboard.png`);
-  const expectedLeaderboardTitle = localLeaderboardTitles[language.code] || language.leaderboard;
+  const expectedLeaderboardTitle = snaps.leaderboard.leaderboard.activeLeaderboard === 'local'
+    ? (localLeaderboardTitles[language.code] || language.leaderboard)
+    : language.leaderboard;
   assert(snaps.leaderboard.leaderboard.title === expectedLeaderboardTitle, `${language.slug} leaderboard title mismatch: ${snaps.leaderboard.leaderboard.title}`);
   assert(!boxesOverlap(snaps.leaderboard.leaderboard.commentBounds, snaps.leaderboard.leaderboard.stateBounds, 4), `${language.slug} leaderboard empty-state text overlaps`);
   assert(!boxesOverlap(snaps.leaderboard.leaderboard.stateBounds, snaps.leaderboard.leaderboard.firstRowBounds, 4), `${language.slug} leaderboard empty rows overlap state message`);

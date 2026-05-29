@@ -64,6 +64,7 @@
     "check:overrun-clear": "node scripts/check-overrun-clear.mjs",
     "check:content-director": "node scripts/check-content-director.mjs",
     "check:threat-codex": "node scripts/check-threat-codex.mjs",
+    "check:threat-codex-visual": "node scripts/check-threat-codex-visual.mjs",
     "check:ship-unlocks": "node scripts/check-ship-unlocks.mjs",
     "check:normal-enemy-threat-actions": "node scripts/check-normal-enemy-threat-actions.mjs",
     "check:rank-progression": "node scripts/check-rank-progression.mjs",

@@ -21,8 +21,10 @@ const board = [
   rank_index: 12
 }));
 
-function assert(condition, message) {
-  if (!condition) throw new Error(message);
+function assert(condition, message, details = undefined) {
+  if (condition) return;
+  const suffix = details ? `\n${JSON.stringify(details, null, 2)}` : '';
+  throw new Error(`${message}${suffix}`);
 }
 
 async function isPortAvailable(candidatePort) {
@@ -87,10 +89,27 @@ function findChrome() {
 async function preparePage(browser) {
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const pageErrors = [];
+  const globalSubmissions = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.route('**/api/highscores', async (route) => {
     if (route.request().method() === 'POST') {
-      await route.fulfill({ status: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, id: 1 }) });
+      let body = {};
+      try {
+        body = JSON.parse(route.request().postData() || '{}');
+      } catch {
+        body = {};
+      }
+      globalSubmissions.push({
+        name: String(body.name || body.playerName || '').slice(0, 32),
+        score: Math.max(0, Math.floor(Number(body.score) || 0)),
+        level: Math.max(1, Math.floor(Number(body.level) || 1)),
+        rankIndex: Math.max(0, Math.floor(Number(body.rankIndex ?? body.rank_index) || 0))
+      });
+      await route.fulfill({
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ success: true, id: globalSubmissions.length, score: body.score })
+      });
       return;
     }
     await route.fulfill({ status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(board) });
@@ -101,7 +120,7 @@ async function preparePage(browser) {
   }, localKey);
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
-  return { page, pageErrors };
+  return { page, pageErrors, globalSubmissions };
 }
 
 async function forceGameOver(page, score) {
@@ -114,8 +133,20 @@ async function forceGameOver(page, score) {
   }, score);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'play' && state.gameOverInterlude?.active === true;
+  }, null, { timeout: 5000 });
+  const interludeState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  assert(interludeState.gameOverInterlude?.label === 'GAME OVER', 'direct game.gameOver() skipped the in-game Game Over interlude', interludeState.gameOverInterlude);
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'gameOver' && state.gameOver?.globalStatus !== 'checking';
   }, null, { timeout: 20000 });
+  const arrivalState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  assert(arrivalState.gameOver?.ceremonyTitle === 'GAME OVER', 'Game Over scene did not hold the arrival title before summary reveal', arrivalState.gameOver);
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.gameOver?.arrivalTitleActive === false;
+  }, null, { timeout: 6000 });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.gameOver?.backdropLoaded === true;
@@ -125,18 +156,45 @@ async function forceGameOver(page, score) {
 }
 
 async function checkCeremony(browser, { score, expectedTier, titlePattern, shotName }) {
-  const { page, pageErrors } = await preparePage(browser);
-  const state = await forceGameOver(page, score);
-  assert(state.gameOver.globalPlacementTier === expectedTier, `expected ${expectedTier}, got ${state.gameOver.globalPlacementTier}`);
-  assert(titlePattern.test(state.gameOver.ceremonyTitle || ''), `unexpected title: ${state.gameOver.ceremonyTitle}`);
+  const { page, pageErrors, globalSubmissions } = await preparePage(browser);
+  const revealState = await forceGameOver(page, score);
+  assert(revealState.gameOver.globalPlacementTier === expectedTier, `expected ${expectedTier}, got ${revealState.gameOver.globalPlacementTier}`);
+  assert(titlePattern.test(revealState.gameOver.ceremonyTitle || ''), `unexpected title: ${revealState.gameOver.ceremonyTitle}`);
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.gameOver?.state === 'input' && state.gameOver?.canEnterName === true;
+  }, null, { timeout: 8000 });
+  await page.keyboard.type('TEST ACE');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.gameOver?.state === 'submitted';
+  }, null, { timeout: 20000 });
+  const state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  const shouldSubmitGlobally = ['number1', 'top3', 'global'].includes(expectedTier);
+  const submittedScore = Math.max(0, Math.floor(Number(state.gameOver?.score) || score));
+  if (shouldSubmitGlobally) {
+    assert(state.gameOver.globalStatus === 'submitted', `expected globalStatus submitted for ${expectedTier}`, state.gameOver);
+    assert(state.gameOver.lastLeaderboardResult?.globalStatus === 'submitted', `expected lastLeaderboardResult globalStatus submitted for ${expectedTier}`, state.gameOver.lastLeaderboardResult);
+    assert(globalSubmissions.length === 1, `expected one global POST for ${expectedTier}, got ${globalSubmissions.length}`, globalSubmissions);
+    assert(globalSubmissions[0].score === submittedScore, `global POST score mismatch for ${expectedTier}`, { submitted: globalSubmissions[0], gameOverScore: submittedScore });
+    assert(globalSubmissions[0].name === 'TEST ACE', `global POST name mismatch for ${expectedTier}`, globalSubmissions[0]);
+  } else {
+    assert(globalSubmissions.length === 0, `near-global should not POST to global leaderboard`, globalSubmissions);
+    assert(state.gameOver.lastLeaderboardResult?.globalStatus !== 'submitted', 'near-global should not report submitted globally', state.gameOver.lastLeaderboardResult);
+  }
   assert(pageErrors.length === 0, `page errors for ${expectedTier}: ${pageErrors.join('; ')}`);
   await page.screenshot({ path: path.join(outputDir, shotName), fullPage: true });
   await page.close();
   return {
     tier: state.gameOver.globalPlacementTier,
     title: state.gameOver.ceremonyTitle,
+    finalTitle: state.gameOver.finalCeremonyTitle,
     placement: state.gameOver.globalPlacement?.placement || null,
-    status: state.gameOver.leaderboardStatus
+    status: state.gameOver.leaderboardStatus,
+    globalStatus: state.gameOver.globalStatus,
+    submittedGlobally: globalSubmissions.length > 0,
+    globalSubmissions
   };
 }
 

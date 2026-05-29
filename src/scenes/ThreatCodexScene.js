@@ -796,7 +796,7 @@ export class ThreatCodexScene {
     const artMask = new PIXI.Graphics();
     artMask.roundRect(4, 4, size - 8, size - 10, 5);
     artMask.fill({ color: 0xffffff, alpha: 1 });
-    artMask.renderable = false;
+    artMask.alpha = 0.001;
     artLayer.mask = artMask;
     thumb.addChild(artMask);
     thumb.addChild(artLayer);
@@ -969,7 +969,7 @@ export class ThreatCodexScene {
     const clipMask = new PIXI.Graphics();
     clipMask.roundRect(x + 6, y + 6, Math.max(1, width - 12), Math.max(1, height - 12), 10);
     clipMask.fill({ color: 0xffffff, alpha: 1 });
-    clipMask.renderable = false;
+    clipMask.alpha = 0.001;
     artLayer.mask = clipMask;
     parent.addChild(clipMask);
     parent.addChild(artLayer);
@@ -981,7 +981,7 @@ export class ThreatCodexScene {
         height: Math.round(height)
       },
       masked: true,
-      maskRenderable: false,
+      maskRenderable: true,
       spriteWithinFrame: true
     };
     const backdrop = new PIXI.Graphics();

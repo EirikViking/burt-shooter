@@ -134,7 +134,8 @@ try {
   const screenshot = path.join(outputDir, 'gameover-interlude.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
-  await page.evaluate(() => window.advanceTime?.(1700));
+  const remainingInterludeMs = Math.max(0, Number(heldState.gameOverInterlude?.durationMs || 0) - Number(heldState.gameOverInterlude?.elapsedMs || 0));
+  await page.evaluate((ms) => window.advanceTime?.(ms), remainingInterludeMs + 260);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'gameOver';
