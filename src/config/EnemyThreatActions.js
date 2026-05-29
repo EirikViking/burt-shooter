@@ -252,26 +252,52 @@ export function scoreThreatActionForWave(action, { level = 1, formation = '', ta
   return score;
 }
 
+function getThreatActionHandlerId(action) {
+  return action?.handlerId || action?.id || '';
+}
+
+function getThreatActionDiversityTargetId(available = [], level = 1, waveIndex = 0, slotIndex = 0, planned = 1) {
+  if (!available.length) return null;
+  const availableIds = new Set(available.map((action) => action.id));
+  const safeLevel = Math.max(1, Number(level) || 1);
+  const safeWave = Math.max(0, Number(waveIndex) || 0);
+  const safeSlot = Math.max(0, Number(slotIndex) || 0);
+  const safePlanned = Math.max(1, Number(planned) || 1);
+  const cursor = ((safeLevel - 1) * 42 + safeWave * safePlanned + safeSlot * 7) % ENEMY_THREAT_ACTIONS.length;
+  for (let offset = 0; offset < ENEMY_THREAT_ACTIONS.length; offset += 1) {
+    const action = ENEMY_THREAT_ACTIONS[(cursor + offset) % ENEMY_THREAT_ACTIONS.length];
+    if (availableIds.has(action.id)) return action.id;
+  }
+  return available[0]?.id || null;
+}
+
 export function pickThreatActionsForWave({ level, formation, tactic, enemyProfiles = [], waveIndex = 0, count = 0 } = {}) {
   const budget = getThreatBudgetForLevel(level, count || enemyProfiles.length);
   const available = getEnemyThreatActionsForLevel(level);
   if (!available.length || budget.plannedActions <= 0) return { budget, assignments: [] };
 
   const usedIds = new Set();
+  const usedHandlers = new Set();
   const assignments = [];
   const planned = Math.min(budget.plannedActions, enemyProfiles.length || count || budget.plannedActions);
   for (let i = 0; i < planned; i += 1) {
     const slot = (i * 2 + waveIndex) % Math.max(1, enemyProfiles.length || count || 1);
     const enemyProfile = enemyProfiles[slot] || null;
+    const diversityTargetId = getThreatActionDiversityTargetId(available, level, waveIndex, i, planned);
     const ranked = available
       .map((action) => ({
         action,
-        score: scoreThreatActionForWave(action, { level, formation, tactic, enemyProfile, slot: slot + waveIndex * 3 })
+        score: scoreThreatActionForWave(action, { level, formation, tactic, enemyProfile, slot: slot + waveIndex * 3 }) +
+          (action.id === diversityTargetId ? 9.25 : 0)
       }))
       .sort((a, b) => b.score - a.score || a.action.id.localeCompare(b.action.id));
-    const picked = ranked.find((entry) => !usedIds.has(entry.action.id)) || ranked[0];
+    const diversityPick = ranked.find((entry) => entry.action.id === diversityTargetId && !usedIds.has(entry.action.id));
+    const picked = ranked.find((entry) =>
+      !usedIds.has(entry.action.id) && !usedHandlers.has(getThreatActionHandlerId(entry.action))
+    ) || diversityPick || ranked.find((entry) => !usedIds.has(entry.action.id)) || ranked[0];
     if (!picked) continue;
     usedIds.add(picked.action.id);
+    usedHandlers.add(getThreatActionHandlerId(picked.action));
     assignments.push({ slot, actionId: picked.action.id });
   }
 

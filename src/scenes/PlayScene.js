@@ -2491,10 +2491,23 @@ export class PlayScene {
   }
 
   clearGameOverInterlude() {
+    if (this.gameOverInterlude?.fallbackTimer) {
+      clearTimeout(this.gameOverInterlude.fallbackTimer);
+      this.gameOverInterlude.fallbackTimer = null;
+    }
     if (this.gameOverInterlude?.overlay?.parent) {
       this.gameOverInterlude.overlay.parent.removeChild(this.gameOverInterlude.overlay);
     }
     this.gameOverInterlude = null;
+  }
+
+  completeGameOverInterlude() {
+    const interlude = this.gameOverInterlude;
+    if (!interlude?.active || interlude.completed) return;
+    interlude.completed = true;
+    const complete = interlude.onComplete;
+    this.clearGameOverInterlude();
+    complete?.();
   }
 
   clearDeathMessageClutterForGameOver() {
@@ -2652,9 +2665,18 @@ export class PlayScene {
       embers,
       sfxKey,
       elapsedMs: 0,
+      startedAtMs: Date.now(),
       durationMs: GAME_OVER_INTERLUDE_MS,
-      onComplete: typeof onComplete === 'function' ? onComplete : null
+      onComplete: typeof onComplete === 'function' ? onComplete : null,
+      fallbackTimer: null,
+      completed: false
     };
+    const interlude = this.gameOverInterlude;
+    interlude.fallbackTimer = setTimeout(() => {
+      if (this.gameOverInterlude !== interlude || !interlude.active || interlude.completed) return;
+      interlude.elapsedMs = Math.max(interlude.durationMs, Date.now() - interlude.startedAtMs);
+      this.completeGameOverInterlude();
+    }, GAME_OVER_INTERLUDE_MS + 300);
     AudioManager.playSfx('nova_player_hit_crackle', { force: true, volume: 0.52, minIntervalMs: 0 });
     AudioManager.playSfx(sfxKey, { force: true, volume: 1.08, minIntervalMs: 0 });
     return true;
@@ -2663,7 +2685,8 @@ export class PlayScene {
   updateGameOverInterlude(delta) {
     const interlude = this.gameOverInterlude;
     if (!interlude?.active) return;
-    interlude.elapsedMs += delta * 16.67;
+    const wallElapsedMs = Number.isFinite(interlude.startedAtMs) ? Date.now() - interlude.startedAtMs : 0;
+    interlude.elapsedMs = Math.max(interlude.elapsedMs + delta * 16.67, wallElapsedMs);
     const t = Math.max(0, Math.min(1, interlude.elapsedMs / interlude.durationMs));
     const pulse = Math.sin(interlude.elapsedMs * 0.012) * 0.5 + 0.5;
     if (interlude.label) {
@@ -2706,9 +2729,7 @@ export class PlayScene {
       });
     }
     if (interlude.elapsedMs < interlude.durationMs) return;
-    const complete = interlude.onComplete;
-    this.clearGameOverInterlude();
-    complete?.();
+    this.completeGameOverInterlude();
   }
 
   getGameOverInterludeDebugState(getBounds) {

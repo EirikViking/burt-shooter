@@ -1718,14 +1718,22 @@ export class Enemy {
         this.sprite.visible = false;
         this.sprite.renderable = false;
       }
+      this.destroy();
       return true;
     }
     return false;
   }
 
   destroy() {
+    if (this.__novaDestroyStarted) return;
+    this.__novaDestroyStarted = true;
     if (this.middleShipProfile) {
       AudioManager.playSfx(this.middleShipProfile.sfx?.death || 'elite_death', { volume: 0.58, minIntervalMs: 120 });
+    }
+    if (this.sprite) {
+      this.sprite.visible = false;
+      this.sprite.renderable = false;
+      if (this.sprite.parent) this.sprite.parent.removeChild(this.sprite);
     }
     // Clean up visual enhancements
     if (this.visualEnhancementCleanup) {

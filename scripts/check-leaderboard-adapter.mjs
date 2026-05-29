@@ -103,6 +103,9 @@ async function checkWebRuntime() {
 
 async function checkMockSteamRuntime() {
   const win = installWindow({ search: '?mockSteamLeaderboard=1', mockSteam: true });
+  win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
+    { playerName: 'ORBIT PAL', score: 9000, level: 4, isCurrentPlayer: false, source: 'steam' }
+  ]));
   installCloudFetch();
   const adapter = createLeaderboardAdapter();
   await adapter.refreshAvailability();
