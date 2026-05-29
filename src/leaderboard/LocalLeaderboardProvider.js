@@ -100,7 +100,7 @@ export class LocalLeaderboardProvider {
       source: 'local',
       sourceLabel: 'Local Memory',
       entries: normalizeLeaderboardEntries(entries, { source: 'local' }),
-      message: entries.length > 0 ? 'Local cabinet records loaded.' : 'No local scores yet. First entry is open.'
+      message: entries.length > 0 ? 'Local board loaded.' : 'No local scores yet. Be the first legend here.'
     };
   }
 

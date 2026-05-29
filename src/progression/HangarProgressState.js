@@ -199,6 +199,8 @@ export function requirementsMet(progress, requirements = {}) {
 }
 
 export function shipUnlockMet(shipId, progress = readHangarProgressState()) {
+  if (Array.isArray(progress?.unlockedShipIds) && progress.unlockedShipIds.includes(shipId)) return true;
+  if (Array.isArray(progress?.secretShipUnlockIds) && progress.secretShipUnlockIds.includes(shipId)) return true;
   const definition = getShipUnlockDefinition(shipId);
   if (!definition) return false;
   const requirements = definition.requirements || {};

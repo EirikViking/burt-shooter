@@ -133,8 +133,29 @@ try {
     game.score = 504;
     game.level = 1;
     game.rankIndex = 0;
-    game.lives = 0;
-    game.gameOver();
+    game.lives = 1;
+    game.loseLife();
+  });
+
+  await page.waitForFunction(() => {
+    try {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'play' && state.gameOverInterlude?.active === true;
+    } catch {
+      return false;
+    }
+  }, null, { timeout: 5000 });
+  const interludeState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const activeToastText = [
+    ...(interludeState.toast?.active || []).map((toast) => toast.message),
+    interludeState.toast?.current?.message
+  ].filter(Boolean).join(' ');
+  assert(/GAME OVER/i.test(interludeState.gameOverInterlude?.label || ''), 'in-game game-over interlude did not show the Game Over celebration', {
+    gameOverInterlude: interludeState.gameOverInterlude
+  });
+  assert(!/LOW LIFE|LIFE LOST/i.test(activeToastText), 'low-life/life-lost message is visible during game-over interlude', {
+    activeToastText,
+    toast: interludeState.toast
   });
 
   await page.waitForFunction(() => {
@@ -150,6 +171,13 @@ try {
   const firstState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   await page.waitForTimeout(350);
   const secondState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('blur'));
+    window.dispatchEvent(new Event('focus'));
+    window.dispatchEvent(new Event('resize'));
+  });
+  await page.waitForTimeout(180);
+  const focusState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const persisted = await page.evaluate(() => ({
     hangar: JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}'),
     highscores: JSON.parse(localStorage.getItem('novaSwarm.localLeaderboard.v2') || '[]')
@@ -159,7 +187,7 @@ try {
   const screenshot = path.join(outputDir, 'desktop-gameover-autosave.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
-  const gameOver = secondState.gameOver || {};
+  const gameOver = focusState.gameOver || secondState.gameOver || {};
   const visibleText = [
     gameOver.retryPrompt,
     gameOver.primaryCta?.label,
@@ -186,6 +214,13 @@ try {
   assert(leaderboardCta?.visible && leaderboardCta.width > 0 && leaderboardCta.height > 0, 'leaderboard CTA is not available from game-over', { leaderboardCta });
   const hangarCta = gameOver.hangarCta;
   assert(hangarCta?.visible && hangarCta.width > 0 && hangarCta.height > 0, 'hangar CTA is not available from game-over', { hangarCta });
+  for (const [label, cta] of [['primary', gameOver.primaryCta], ['leaderboard', leaderboardCta], ['hangar', hangarCta]]) {
+    assert(
+      cta.x >= 0 && cta.y >= 0 && cta.x + cta.width <= 1920 && cta.y + cta.height <= 1080,
+      `${label} CTA moved off screen after focus/resize`,
+      { cta }
+    );
+  }
   await page.mouse.click(leaderboardCta.x + leaderboardCta.width / 2, leaderboardCta.y + leaderboardCta.height / 2);
   await page.waitForFunction(() => {
     try {

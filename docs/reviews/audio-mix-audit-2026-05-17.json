@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-26T10:41:24.070Z",
+  "generatedAt": "2026-05-29T08:09:25.563Z",
   "defaults": {
     "masterVolume": 0.3,
     "musicVolume": 0.2,
@@ -12,9 +12,9 @@
     }
   },
   "counts": {
-    "measuredFiles": 244,
+    "measuredFiles": 247,
     "musicRows": 26,
-    "sfxRows": 161,
+    "sfxRows": 164,
     "voiceRows": 105,
     "warnings": 0,
     "errors": 0
@@ -2569,6 +2569,48 @@
       "gainDb": -23.5,
       "effectiveMeanDb": -44.8,
       "effectivePeakDb": -26.2
+    },
+    {
+      "type": "sfx",
+      "event": "cabinet_log_stamp",
+      "url": "/audio/sfx/nova-swarm/nova_cabinet_log_stamp.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.62,
+      "duckFactor": null,
+      "effectiveLinear": 0.0744,
+      "rawMeanDb": -27.2,
+      "rawPeakDb": -2.2,
+      "gainDb": -22.6,
+      "effectiveMeanDb": -49.8,
+      "effectivePeakDb": -24.8
+    },
+    {
+      "type": "sfx",
+      "event": "hangar_dock_surge",
+      "url": "/audio/sfx/nova-swarm/nova_hangar_dock_surge.mp3",
+      "durationSeconds": 2,
+      "mixVolume": 0.52,
+      "duckFactor": null,
+      "effectiveLinear": 0.0624,
+      "rawMeanDb": -16.2,
+      "rawPeakDb": -1.4,
+      "gainDb": -24.1,
+      "effectiveMeanDb": -40.3,
+      "effectivePeakDb": -25.5
+    },
+    {
+      "type": "sfx",
+      "event": "career_intel_open",
+      "url": "/audio/sfx/nova-swarm/nova_career_intel_open.mp3",
+      "durationSeconds": 1,
+      "mixVolume": 0.42,
+      "duckFactor": null,
+      "effectiveLinear": 0.0504,
+      "rawMeanDb": -25,
+      "rawPeakDb": -0.1,
+      "gainDb": -26,
+      "effectiveMeanDb": -51,
+      "effectivePeakDb": -26.1
     },
     {
       "type": "sfx",

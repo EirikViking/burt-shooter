@@ -53,7 +53,7 @@ for (const token of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'pointer
 for (const token of ['UNKNOWN SIGNAL', 'NEW THREAT SCANNED', 'THREAT CODEX UPDATED']) {
   if (!sceneSource.includes(token) && !readFileSync('src/scenes/PlayScene.js', 'utf8').includes(token)) fail(`missing player feedback text ${token}`);
 }
-for (const token of ['artLayer.mask = artMask', 'artLayer.mask = clipMask', 'lastDetailArtDebug', 'spriteWithinFrame']) {
+for (const token of ['artLayer.mask = artMask', 'artLayer.mask = clipMask', 'maskRenderable: false', 'lastDetailArtDebug', 'spriteWithinFrame']) {
   if (!sceneSource.includes(token)) fail(`ThreatCodexScene missing masked art regression guard token: ${token}`);
 }
 

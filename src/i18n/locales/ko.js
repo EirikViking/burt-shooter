@@ -237,6 +237,7 @@ const sourceText = Object.freeze({
   'GLOBAL BOARD: SUBMITTING...': '글로벌: 제출 중...',
   'GLOBAL BOARD: SUBMITTED': '글로벌: 제출됨',
   'GLOBAL BOARD: FAILED - LOCAL SAVED': '글로벌: 실패 - 로컬 저장됨',
+  'NOT QUALIFIED': '진입 실패',
   'CHECKING GLOBAL BOARD...': '글로벌 순위표 확인 중...',
   'GLOBAL BOARD CHECKING...': '글로벌 순위표 확인 중...',
   'ENTER: LOG LOCAL SCORE': 'ENTER: 로컬 점수 기록',

@@ -1,7 +1,7 @@
 # Nova Swarm Steam Client Preflight Packet
 
-Generated: 2026-05-23T09:32:38.184Z
-Build: `v2026-05-23_11-05-56`
+Generated: 2026-05-29T08:06:04.585Z
+Build: `v2026-05-29_09-55-46`
 Status: `failed`
 
 This packet proves local upload preflight only. It is not Steam-client validation evidence.
@@ -11,12 +11,12 @@ This packet proves local upload preflight only. It is not Steam-client validatio
 - Executable: `release/desktop/win-unpacked/Nova Swarm.exe`
 - Payload manifest: `release/steamworks/steam_payload_manifest.json`
 - Payload files: 334
-- Payload SHA-256 manifest hash: `03ab5eebd948a4b46899de3830042430dabb8ed6cd09d6016a3628758047eafd`
+- Payload SHA-256 manifest hash: `8c8e7833b1b25449c471b5860e007ebfb7676ca8f01deab6102f4db079e350a0`
 - Product name: Nova Swarm
 - Electron app id: app.novaswarm.game
-- Packaged smoke report: `test-results/packaged-exe-smoke-2026-05-23T09-11-15-217Z/report.json`
-- Packaged controls report: `test-results/packaged-control-smoke-2026-05-23T09-11-50-759Z/report.json`
-- Full RC report: `test-results/steam-rc-verify-2026-05-23T09-09-28-674Z/report.json`
+- Packaged smoke report: `test-results/packaged-exe-smoke-2026-05-29T08-04-08-068Z/report.json`
+- Packaged controls report: `test-results/packaged-control-smoke-2026-05-29T08-04-59-538Z/report.json`
+- Full RC report: `test-results/steam-rc-verify-2026-05-24T15-42-20-885Z/report.json`
 
 ## SteamPipe
 
@@ -55,8 +55,8 @@ Only use that command after testing the Steam-installed build.
 | yes | `release/steamworks/app_build_TEMPLATE.vdf` | 359 |
 | yes | `release/steamworks/client_validation_report.template.json` | 994 |
 | yes | `release/steamworks/desktop_package_review_report.json` | 2516 |
-| yes | `release/steamworks/full_rc_verification_report.json` | 3790 |
-| yes | `release/steamworks/steam_client_validation_runbook.md` | 4512 |
+| yes | `release/steamworks/full_rc_verification_report.json` | 3521 |
+| yes | `release/steamworks/steam_client_validation_runbook.md` | 4602 |
 | yes | `docs/reviews/2026-05-17-steamcmd-local-check.md` | 854 |
 
 ## Warnings

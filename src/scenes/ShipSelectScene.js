@@ -78,11 +78,14 @@ export class ShipSelectScene {
     this.exitNoticeTimeout = null;
 
     // Load saved selection
-    const saved = this.loadSelection();
+    const saved = this.loadPendingSelection() || this.loadSelection();
     if (saved && isValidShipKey(saved) && isShipUnlocked(saved, this.unlockProgress)) {
       const resolvedSaved = resolveShipKey(saved);
       const index = this.ships.findIndex(s => s.spriteKey === resolvedSaved);
-      if (index >= 0) this.selectedIndex = index;
+      if (index >= 0) {
+        this.selectedIndex = index;
+        this.clearPendingSelection();
+      }
     }
 
     // Set initial selection in state
@@ -651,6 +654,15 @@ export class ShipSelectScene {
 
   refreshUnlockProgress(progress = getShipUnlockProgress()) {
     this.unlockProgress = progress;
+    const saved = this.loadPendingSelection() || this.loadSelection();
+    if (saved && isValidShipKey(saved) && isShipUnlocked(saved, this.unlockProgress)) {
+      const resolvedSaved = resolveShipKey(saved);
+      const savedIndex = this.ships.findIndex(ship => ship.spriteKey === resolvedSaved);
+      if (savedIndex >= 0) {
+        this.selectedIndex = savedIndex;
+        this.clearPendingSelection();
+      }
+    }
     const selected = this.ships?.[this.selectedIndex]?.spriteKey || null;
     if (selected && !isShipUnlocked(selected, this.unlockProgress)) {
       this.selectedIndex = Math.max(0, this.ships.findIndex(ship => isShipUnlocked(ship.spriteKey, this.unlockProgress)));
@@ -2407,6 +2419,20 @@ export class ShipSelectScene {
       console.warn('[ShipSelect] Failed to load selection:', e);
       return getDefaultShipKey();
     }
+  }
+
+  loadPendingSelection() {
+    try {
+      return typeof window !== 'undefined' ? window.__novaPendingHangarSelection || null : null;
+    } catch {
+      return null;
+    }
+  }
+
+  clearPendingSelection() {
+    try {
+      if (typeof window !== 'undefined') window.__novaPendingHangarSelection = null;
+    } catch {}
   }
 
   cleanup() {

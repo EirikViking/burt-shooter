@@ -219,6 +219,7 @@ const sourceText = Object.freeze({
   'GLOBAL BOARD: SUBMITTING...': 'ГЛОБАЛЬНО: ОТПРАВКА...',
   'GLOBAL BOARD: SUBMITTED': 'ГЛОБАЛЬНО: ОТПРАВЛЕНО',
   'GLOBAL BOARD: FAILED - LOCAL SAVED': 'ГЛОБАЛЬНО: ОШИБКА - ЛОКАЛЬНО СОХРАНЕНО',
+  'NOT QUALIFIED': 'НЕ ПРОШЕЛ',
   'CHECKING GLOBAL BOARD...': 'ПРОВЕРЯЕМ ГЛОБАЛЬНУЮ ТАБЛИЦУ...',
   'GLOBAL BOARD CHECKING...': 'ПРОВЕРЯЕМ ГЛОБАЛЬНУЮ ТАБЛИЦУ...',
   'ENTER: LOG LOCAL SCORE': 'ENTER: СОХРАНИТЬ ЛОКАЛЬНО',

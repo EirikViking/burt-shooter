@@ -2463,9 +2463,22 @@ export class PlayScene {
     this.gameOverInterlude = null;
   }
 
+  clearDeathMessageClutterForGameOver() {
+    this.toastQueue = [];
+    this.toastTopQueue = [];
+    this.toastCornerQueue = [];
+    this.dismissActiveToastSlotsBelowPriority?.(['center', 'top', 'corner'], 99);
+    this.lowLivesShownFor = Number(this.game?.lives) || 0;
+    this.reserveMessageFocus?.(GAME_OVER_INTERLUDE_MS + 900, {
+      priority: 99,
+      slots: ['center', 'top', 'corner']
+    });
+  }
+
   showGameOverInterlude(onComplete) {
     if (this.gameOverInterlude?.active) return true;
     if (!this.uiOverlay || !this.game?.app?.screen) return false;
+    this.clearDeathMessageClutterForGameOver();
 
     const { width, height } = this.game.app.screen;
     const compact = width < 720;
@@ -3034,9 +3047,18 @@ export class PlayScene {
   }
 
   checkLowLives() {
+    if (this.gameOverInterlude?.active || this.game?.gameOverTransitionPending || this.game?.lives <= 0) {
+      this.lowLivesShownFor = Number(this.game?.lives) || 0;
+      return;
+    }
     if (this.game.lives <= 1 && this.lowLivesShownFor !== this.game.lives) {
       this.lowLivesShownFor = this.game.lives;
-      this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, y: this.game.getHeight() * 0.3 });
+      this.showToast(getMicroMessage('lowHealth'), {
+        fontSize: 22,
+        y: this.game.getHeight() * 0.3,
+        type: 'low_life',
+        priority: 1
+      });
       AudioManager.playVoice('mission_control_life_low', { cooldownMs: 18000, duckMs: 1800 });
     }
   }
@@ -3103,9 +3125,16 @@ export class PlayScene {
     if (this.tryLastStandRepair()) return;
     if (this.game.lives <= 0) {
       this.flushBalanceDebugSummary('game_over');
+      this.clearDeathMessageClutterForGameOver();
+      return;
     }
 
-    this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
+    this.showToast(getMicroMessage('lifeLost'), {
+      fontSize: 22,
+      y: this.game.getHeight() * 0.32,
+      type: 'life_lost',
+      priority: 1
+    });
     if (this.game.lives === 1) {
       this.triggerCabinetLog('low-life-read', {
         source: 'one_life_left'

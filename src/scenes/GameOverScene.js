@@ -26,7 +26,7 @@ import {
   GLOBAL_LEADERBOARD_ACHIEVEMENT_ID,
   GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID
 } from '../achievements/AchievementCatalog.js';
-import { translateText } from '../i18n/index.js';
+import { getCurrentLanguage, translateText } from '../i18n/index.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
@@ -56,15 +56,17 @@ function getConfirmedGlobalPlacement(score, entries = []) {
 }
 
 function isDesktopAutoNameRuntime(runtime = {}) {
+  if (typeof window !== 'undefined' && window.__NOVA_SWARM_MANUAL_NAME__ === true) return false;
   if (runtime?.desktop || runtime?.steamBridgePresent) return true;
   if (typeof window === 'undefined') return false;
   if (window.__NOVA_SWARM_DESKTOP__ === true) return true;
   if (window.__novaSteamBridge || window.__novaSteamLeaderboard || window.__novaSteamCloud) return true;
   try {
-    return new URLSearchParams(window.location.search).get('desktop') === '1';
+    if (new URLSearchParams(window.location.search).get('manualName') === '1') return false;
   } catch {
-    return false;
+    // Fall through to auto-name; post-run manual name entry should not block the loop.
   }
+  return true;
 }
 
 export class GameOverScene {
@@ -509,7 +511,10 @@ export class GameOverScene {
 
     if (this.desktopAutoNameMode && this.localQualified) {
       this.state = 'submitting';
-      this.globalStatus = this.leaderboardRuntime?.steamBridgePresent ? 'failed' : 'offline';
+      this.globalStatus = this.leaderboardRuntime?.cloud ? 'checking' : (this.leaderboardRuntime?.steamBridgePresent ? 'failed' : 'offline');
+      if (this.leaderboardRuntime?.cloud && !this.leaderboardRuntime?.steamBridgePresent) {
+        this.globalQualificationPromise = this.checkGlobalQualification();
+      }
       this.updateLeaderboardStatusText();
       this.updatePromptMessage('SAVING LOCAL SCORE');
       this.refreshPrimaryCta();
@@ -922,6 +927,7 @@ export class GameOverScene {
     const responsiveLayout = getCurrentLayout();
     const layout = createTextLayout(width, height, responsiveLayout);
     const safeMargin = responsiveLayout.safeArea;
+    const safeBottomInset = Math.max(0, height - (safeMargin?.bottom ?? height));
     const resultCtaLayout = ['prompt', 'input', 'submitting', 'runback', 'submitted', 'unranked'].includes(this.state);
     const shortResultLayout = resultCtaLayout && (height < 1100 || !layout.isMobile);
 
@@ -1121,7 +1127,7 @@ export class GameOverScene {
     this.nameDisplay.y = stack.getCurrentY();
 
     this.instructions.x = width / 2;
-    this.instructions.y = height - safeMargin.bottom - (layout.isMobile ? 32 : 40);
+    this.instructions.y = height - safeBottomInset - (layout.isMobile ? 32 : 40);
 
     const layoutNodes = [
       this.title,
@@ -1150,6 +1156,107 @@ export class GameOverScene {
     if (bottom > bottomGuard && top > topGuard) {
       const shift = Math.min(bottom - bottomGuard, top - topGuard);
       layoutNodes.forEach(node => {
+        node.y -= shift;
+      });
+    }
+    this.preventResultLayoutOverlap(layoutNodes, {
+      topGuard,
+      bottomGuard,
+      minGap: shortResultLayout ? (layout.isMobile ? 3 : 4) : (layout.isMobile ? 5 : 7)
+    });
+    this.keepResultActionsInFrame({
+      bottomGuard,
+      minGap: shortResultLayout ? 4 : 7
+    });
+  }
+
+  getLayoutBounds(node) {
+    const buttonSize = node === this.retryButton
+      ? { width: this.retryButtonWidth, height: this.retryButtonHeight }
+      : node === this.leaderboardButton
+        ? { width: this.leaderboardButtonWidth, height: this.leaderboardButtonHeight }
+        : node === this.hangarButton
+          ? { width: this.hangarButtonWidth, height: this.hangarButtonHeight }
+          : null;
+    if (buttonSize && Number(buttonSize.width) > 0 && Number(buttonSize.height) > 0) {
+      const width = Number(buttonSize.width);
+      const height = Number(buttonSize.height);
+      return {
+        x: Number(node.x || 0) - width / 2,
+        y: Number(node.y || 0) - height / 2,
+        width,
+        height,
+        top: Number(node.y || 0) - height / 2,
+        bottom: Number(node.y || 0) + height / 2
+      };
+    }
+    if (!node?.getBounds) return null;
+    try {
+      const bounds = node.getBounds();
+      const x = Number(bounds?.x);
+      const y = Number(bounds?.y);
+      const width = Number(bounds?.width);
+      const height = Number(bounds?.height);
+      if (![x, y, width, height].every(Number.isFinite)) return null;
+      return {
+        x,
+        y,
+        width,
+        height,
+        top: y,
+        bottom: y + height
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  preventResultLayoutOverlap(nodes = [], { topGuard = 0, bottomGuard = Infinity, minGap = 4 } = {}) {
+    const visibleNodes = nodes
+      .filter(node => node && node.visible !== false)
+      .map(node => ({ node, bounds: this.getLayoutBounds(node) }))
+      .filter(entry => entry.bounds)
+      .sort((a, b) => a.bounds.top - b.bounds.top);
+    if (visibleNodes.length < 2) return;
+
+    let previousBottom = Math.max(topGuard, visibleNodes[0].bounds.bottom);
+    for (let i = 1; i < visibleNodes.length; i += 1) {
+      const entry = visibleNodes[i];
+      const overlap = previousBottom + minGap - entry.bounds.top;
+      if (overlap > 0) {
+        entry.node.y += overlap;
+        entry.bounds.top += overlap;
+        entry.bounds.bottom += overlap;
+      }
+      previousBottom = Math.max(previousBottom, entry.bounds.bottom);
+    }
+
+    const finalBottom = visibleNodes.reduce((max, entry) => Math.max(max, entry.bounds.bottom), 0);
+    const finalTop = visibleNodes.reduce((min, entry) => Math.min(min, entry.bounds.top), Infinity);
+    if (finalBottom > bottomGuard && finalTop > topGuard) {
+      const shift = Math.min(finalBottom - bottomGuard, finalTop - topGuard);
+      visibleNodes.forEach(({ node }) => {
+        node.y -= shift;
+      });
+    }
+  }
+
+  keepResultActionsInFrame({ bottomGuard = Infinity, minGap = 6 } = {}) {
+    const actionNodes = [
+      this.retryButton,
+      this.shouldShowLeaderboardButton() ? this.leaderboardButton : null,
+      this.shouldShowHangarButton() ? this.hangarButton : null,
+      this.nameDisplay?.visible ? this.nameDisplay : null
+    ].filter(node => node && node.visible !== false);
+    if (!actionNodes.length) return;
+    const actionBounds = actionNodes
+      .map(node => ({ node, bounds: this.getLayoutBounds(node) }))
+      .filter(entry => entry.bounds);
+    if (!actionBounds.length) return;
+    const bottom = actionBounds.reduce((max, entry) => Math.max(max, entry.bounds.bottom), 0);
+    if (bottom > bottomGuard) {
+      const shift = bottom - bottomGuard + minGap;
+      actionNodes.forEach(node => {
         node.y -= shift;
       });
     }
@@ -1341,11 +1448,12 @@ export class GameOverScene {
     this.leaderboardButton.cursor = visible ? 'pointer' : 'default';
     this.leaderboardButton.eventMode = visible ? 'static' : 'none';
 
+    const pulse = 0.5 + Math.sin(Date.now() * 0.0062) * 0.5;
     this.leaderboardButtonGlow.clear();
     this.leaderboardButtonGlow.roundRect(-halfWidth - 7, -halfHeight - 5, buttonWidth + 14, buttonHeight + 10, radius + 4);
-    this.leaderboardButtonGlow.fill({ color: 0x00ffff, alpha: visible ? 0.11 : 0 });
+    this.leaderboardButtonGlow.fill({ color: 0x00ffff, alpha: visible ? 0.12 + pulse * 0.08 : 0 });
     this.leaderboardButtonGlow.roundRect(-halfWidth - 2, -halfHeight - 2, buttonWidth + 4, buttonHeight + 4, radius + 2);
-    this.leaderboardButtonGlow.stroke({ color: 0xff55d9, width: 1.5, alpha: visible ? 0.34 : 0 });
+    this.leaderboardButtonGlow.stroke({ color: 0xff55d9, width: 1.5, alpha: visible ? 0.34 + pulse * 0.18 : 0 });
 
     this.leaderboardButtonBg.clear();
     this.leaderboardButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
@@ -1992,6 +2100,11 @@ export class GameOverScene {
         this.retryButtonSpin.rotation += 0.026;
       }
     }
+    if (this.shouldShowLeaderboardButton() || this.shouldShowHangarButton()) {
+      const layout = createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout());
+      this.drawLeaderboardButton(layout);
+      this.drawHangarButton(layout);
+    }
     if (!this.fanfareParticles?.length) return;
     const { width, height } = this.game.app.screen;
     this.ceremonyPulse += 1;
@@ -2588,6 +2701,13 @@ export class GameOverScene {
     return selected;
   }
 
+  getCtaDisplayText(fallback = 'ONE MORE RUN') {
+    const source = this.selectedCtaLine?.text || fallback;
+    const translated = translateText(source);
+    if (translated !== source || getCurrentLanguage() === 'en') return translated;
+    return translateText('ONE MORE RUN');
+  }
+
   getRunbackStatusText(reason = this.runbackReason) {
     const globalRank = this.getGlobalRankNumber();
     const localRank = Number(this.leaderboardResult?.localPlacement ?? this.leaderboardResult?.localEntry?.placement);
@@ -2652,7 +2772,7 @@ export class GameOverScene {
       this.promptText.visible = true;
       this.promptText.eventMode = 'none';
       this.promptText.cursor = 'default';
-      this.promptText.text = this.selectedCtaLine?.text || 'One more run.';
+      this.promptText.text = this.getCtaDisplayText('ONE MORE RUN');
       this.promptText.style.fill = '#fff3a2';
     }
     if (this.notQualifiedText) {
@@ -2690,7 +2810,7 @@ export class GameOverScene {
       this.promptText.visible = true;
       this.promptText.eventMode = 'none';
       this.promptText.cursor = 'default';
-      this.promptText.text = this.selectedCtaLine?.text || 'One more run. You were just getting warm.';
+      this.promptText.text = this.getCtaDisplayText('ONE MORE RUN');
       this.promptText.style.fill = '#fff3a2';
     }
     if (this.notQualifiedText) {
@@ -2774,8 +2894,8 @@ export class GameOverScene {
       visible: Boolean(this.retryButton?.visible && this.retryButton?.parent)
     };
     try {
-      if (!this.retryButton?.getBounds) return fallback;
-      const bounds = this.retryButton.getBounds();
+      const bounds = this.getLayoutBounds(this.retryButton);
+      if (!bounds) return fallback;
       return {
         ...fallback,
         x: Math.round(bounds.x || 0),
@@ -2799,8 +2919,8 @@ export class GameOverScene {
       visible: Boolean(this.leaderboardButton?.visible && this.leaderboardButton?.parent)
     };
     try {
-      if (!this.leaderboardButton?.getBounds) return fallback;
-      const bounds = this.leaderboardButton.getBounds();
+      const bounds = this.getLayoutBounds(this.leaderboardButton);
+      if (!bounds) return fallback;
       return {
         ...fallback,
         x: Math.round(bounds.x || 0),
@@ -2820,8 +2940,8 @@ export class GameOverScene {
       visible: Boolean(this.hangarButton?.visible && this.hangarButton?.parent)
     };
     try {
-      if (!this.hangarButton?.getBounds) return fallback;
-      const bounds = this.hangarButton.getBounds();
+      const bounds = this.getLayoutBounds(this.hangarButton);
+      if (!bounds) return fallback;
       return {
         ...fallback,
         x: Math.round(bounds.x || 0),
@@ -3109,15 +3229,23 @@ export class GameOverScene {
       desktopAutoNameMode: true,
       updatedAt: new Date().toISOString()
     };
+    if (this.leaderboardRuntime?.cloud && !this.leaderboardRuntime?.steamBridgePresent) {
+      await this.startGlobalSubmissionWhenReady(playerName, result);
+    }
     this.leaderboardResult = result;
     this.game.lastLeaderboardResult = result;
-    this.game.leaderboardView = 'local';
+    this.game.leaderboardView = result.globalStatus === 'submitted' ? 'global' : 'local';
     this.game.pendingHighscore = null;
     this.isSubmitting = false;
     this.removeInputOverlay();
     this.updateLeaderboardStatusText();
-    this.playLocalHighscoreVoice();
-    this.enterSubmittedStage('score_saved');
+    if (result.globalStatus === 'submitted') {
+      this.playGlobalQualificationFanfare();
+      this.enterSubmittedStage('score_submitted');
+    } else {
+      this.playLocalHighscoreVoice();
+      this.enterSubmittedStage(result.globalStatus === 'failed' ? 'global_failed' : 'score_saved');
+    }
   }
 
   ensureHiddenInput() {

@@ -305,11 +305,11 @@ export class ThreatCodexScene {
       const phase = entry.seed * 0.017;
       const hover = Math.sin(t * (entry.detail ? 2.1 : 2.8) + phase);
       const pulse = 0.5 + Math.sin(t * (entry.detail ? 3.4 : 4.2) + phase * 1.7) * 0.5;
-      const drift = Math.cos(t * 1.4 + phase) * (entry.detail ? 5 : 1.6);
-      const scale = 1 + (entry.detail ? 0.045 : 0.028) * pulse;
+      const drift = Math.cos(t * 1.4 + phase) * (entry.detail ? 3.4 : 1.1);
+      const scale = 1 + (entry.detail ? 0.032 : 0.02) * pulse;
       sprite.x = entry.baseX + drift;
-      sprite.y = entry.baseY + hover * (entry.detail ? 8 : 2.4);
-      sprite.rotation = Math.sin(t * 1.65 + phase) * (entry.detail ? 0.055 : 0.035);
+      sprite.y = entry.baseY + hover * (entry.detail ? 5.2 : 1.7);
+      sprite.rotation = Math.sin(t * 1.65 + phase) * (entry.detail ? 0.038 : 0.025);
       sprite.scale.set(entry.baseScaleX * scale, entry.baseScaleY * scale);
       sprite.alpha = Math.max(0.24, Math.min(1, entry.baseAlpha + pulse * (entry.detail ? 0.04 : 0.06)));
       if (entry.glow && !entry.glow.destroyed) {
@@ -796,6 +796,7 @@ export class ThreatCodexScene {
     const artMask = new PIXI.Graphics();
     artMask.roundRect(4, 4, size - 8, size - 10, 5);
     artMask.fill({ color: 0xffffff, alpha: 1 });
+    artMask.renderable = false;
     artLayer.mask = artMask;
     thumb.addChild(artMask);
     thumb.addChild(artLayer);
@@ -808,7 +809,7 @@ export class ThreatCodexScene {
           if (token !== this.renderToken || !texture || thumb.destroyed) return;
           const sprite = new PIXI.Sprite(texture);
           sprite.anchor.set(0.5);
-          fitSprite(sprite, size * 0.72, size * 0.72, 2.2);
+          fitSprite(sprite, size * 0.64, size * 0.64, 2);
           sprite.position.set(size / 2, size / 2);
           sprite.alpha = discovered ? 0.88 : 0.44;
           sprite.tint = discovered ? 0xffffff : accent;
@@ -968,6 +969,7 @@ export class ThreatCodexScene {
     const clipMask = new PIXI.Graphics();
     clipMask.roundRect(x + 6, y + 6, Math.max(1, width - 12), Math.max(1, height - 12), 10);
     clipMask.fill({ color: 0xffffff, alpha: 1 });
+    clipMask.renderable = false;
     artLayer.mask = clipMask;
     parent.addChild(clipMask);
     parent.addChild(artLayer);
@@ -979,6 +981,7 @@ export class ThreatCodexScene {
         height: Math.round(height)
       },
       masked: true,
+      maskRenderable: false,
       spriteWithinFrame: true
     };
     const backdrop = new PIXI.Graphics();
@@ -1002,7 +1005,7 @@ export class ThreatCodexScene {
         if (token !== this.renderToken || !texture || !parent || parent.destroyed || artLayer.destroyed) return;
         const sprite = new PIXI.Sprite(texture);
         sprite.anchor.set(0.5);
-        fitSprite(sprite, width * (discovered ? 0.58 : 0.64), height * (discovered ? 0.64 : 0.7), 2.4);
+        fitSprite(sprite, width * (discovered ? 0.48 : 0.54), height * (discovered ? 0.54 : 0.6), 2.05);
         sprite.position.set(x + width * 0.5, y + height * 0.5);
         sprite.alpha = discovered ? 0.96 : 0.42;
         sprite.tint = discovered ? 0xffffff : accent;

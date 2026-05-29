@@ -211,10 +211,13 @@ try {
       candidate?.id === 'nova_ship_07' ||
       candidate?.baseId === 'nova_ship_07'
     ) || null;
+    const selected = scene?.ships?.[scene?.selectedIndex] || null;
     return {
       storedHasSecret: Array.isArray(stored.secretShipUnlockIds) && stored.secretShipUnlockIds.includes('nova_ship_07'),
       sceneHasShip: Boolean(ship),
       sceneProgressHasSecret: Array.isArray(scene?.unlockProgress?.secretShipUnlockIds) && scene.unlockProgress.secretShipUnlockIds.includes('nova_ship_07'),
+      selectedIsQuasar: selected?.baseId === 'nova_ship_07' || selected?.id === 'nova_ship_07',
+      selectedShipName: selected?.name || null,
       shipName: ship?.name || null,
       scene: window.__game?.currentSceneName || null
     };
@@ -223,6 +226,7 @@ try {
     !hangarArrival.storedHasSecret ? 'credits easter egg did not persist secret ship unlock' : null,
     !hangarArrival.sceneHasShip ? 'Quasar Fan ship missing from hangar roster' : null,
     !hangarArrival.sceneProgressHasSecret ? 'hangar scene did not receive secret ship unlock progress' : null,
+    !hangarArrival.selectedIsQuasar ? 'hangar did not select Quasar Fan after credits unlock' : null,
     !/QUASAR FAN/i.test(String(hangarArrival.shipName || '')) ? 'hangar secret ship name missing Quasar Fan' : null
   ].filter(Boolean);
 

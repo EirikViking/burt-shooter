@@ -618,7 +618,7 @@ export class HighscoreScene {
   setState(newState) {
     this.status = newState;
     const lastResult = this.game.lastLeaderboardResult || null;
-    const globalResult = lastResult?.globalStatus ? String(lastResult.globalStatus).replace(/_/g, ' ').toUpperCase() : null;
+    const globalResult = lastResult?.globalStatus ? translateText(String(lastResult.globalStatus).replace(/_/g, ' ').toUpperCase()) : null;
     const sourceLabel = this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Leaderboard';
     switch (newState) {
       case 'LOADED':

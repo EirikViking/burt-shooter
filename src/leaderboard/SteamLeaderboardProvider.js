@@ -2,12 +2,14 @@ import {
   LEADERBOARD_DISPLAY_LIMIT,
   STEAM_LEADERBOARD_NAME,
   encodeSteamLeaderboardDetails,
+  normalizeLeaderboardEntry,
   normalizeLeaderboardEntries,
   toPublicPilotName
 } from './LeaderboardTypes.js';
 
 const MOCK_STORAGE_KEY = 'novaSwarm.mockSteamLeaderboard.v1';
 const MOCK_PERSONA_KEY = 'novaSwarm.mockSteamPersona.v1';
+const LAST_CONFIRMED_STEAM_SUBMIT_KEY = 'novaSwarm.lastConfirmedSteamSubmit.v1';
 
 function safeWindow() {
   try {
@@ -164,6 +166,48 @@ function filterVerifiedSteamEntries(entries = []) {
   return (Array.isArray(entries) ? entries : []).filter(hasVerifiedSteamRunDetails);
 }
 
+function readLastConfirmedSteamSubmit(win) {
+  try {
+    const parsed = JSON.parse(win?.localStorage?.getItem(LAST_CONFIRMED_STEAM_SUBMIT_KEY) || 'null');
+    const entry = normalizeLeaderboardEntry(parsed, { source: 'steam' });
+    return hasVerifiedSteamRunDetails(entry) ? entry : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastConfirmedSteamSubmit(win, entry) {
+  try {
+    if (!win || !entry) return;
+    win.localStorage?.setItem(LAST_CONFIRMED_STEAM_SUBMIT_KEY, JSON.stringify({
+      ...entry,
+      confirmedAt: new Date().toISOString()
+    }));
+  } catch {
+    // Local Steam submit mirrors are UI evidence only and must never block Steam writes.
+  }
+}
+
+function mergeCurrentPlayerMirror(entries = [], limit = LEADERBOARD_DISPLAY_LIMIT) {
+  const win = safeWindow();
+  const mirror = readLastConfirmedSteamSubmit(win);
+  if (!mirror) return entries.slice(0, limit);
+  const hasCurrentPlayer = entries.some(entry => entry?.isCurrentPlayer);
+  const hasSameScore = entries.some(entry =>
+    Number(entry?.score) === Number(mirror.score) &&
+    String(entry?.playerName || entry?.name || '').toUpperCase() === String(mirror.playerName || mirror.name || '').toUpperCase()
+  );
+  if (hasCurrentPlayer || hasSameScore) return entries.slice(0, limit);
+  return [mirror, ...entries]
+    .sort((a, b) => {
+      const rankA = Number(a.rank);
+      const rankB = Number(b.rank);
+      if (Number.isFinite(rankA) && Number.isFinite(rankB) && rankA !== rankB) return rankA - rankB;
+      return (Number(b.score) || 0) - (Number(a.score) || 0);
+    })
+    .slice(0, limit);
+}
+
 async function callFirst(bridge, methodNames, payload) {
   for (const name of methodNames) {
     const fn = bridge?.[name];
@@ -264,7 +308,7 @@ export class SteamLeaderboardProvider {
       'downloadEntries'
     ], payload);
     const normalizedEntries = normalizeLeaderboardEntries(Array.isArray(raw) ? raw : raw?.entries, { source: 'steam' });
-    const entries = filterVerifiedSteamEntries(normalizedEntries).slice(0, limit);
+    const entries = mergeCurrentPlayerMirror(filterVerifiedSteamEntries(normalizedEntries), limit);
     return {
       status: entries.length > 0 ? 'available' : 'empty',
       source: 'steam',
@@ -298,7 +342,7 @@ export class SteamLeaderboardProvider {
       'downloadEntries'
     ], payload);
     const normalizedEntries = normalizeLeaderboardEntries(Array.isArray(raw) ? raw : raw?.entries, { source: 'steam-friends' });
-    const entries = filterVerifiedSteamEntries(normalizedEntries).slice(0, limit);
+    const entries = mergeCurrentPlayerMirror(filterVerifiedSteamEntries(normalizedEntries), limit);
     return {
       status: entries.length > 0 ? 'available' : 'empty',
       source: 'steam-friends',
@@ -348,14 +392,34 @@ export class SteamLeaderboardProvider {
       });
       throw error;
     }
+    const playerName = await this.getPlayerName();
+    const rank = response?.rank ?? response?.globalRank ?? response?.m_nGlobalRank ?? null;
+    const confirmedEntry = normalizeLeaderboardEntry({
+      playerName,
+      name: playerName,
+      score,
+      rank,
+      globalRank: rank,
+      details,
+      level: details[0],
+      levelKnown: details[0] > 0,
+      shipId: details[1],
+      runTimeSeconds: details[2],
+      kills: details[3],
+      bossKills: details[4],
+      wavesCleared: details[5],
+      isCurrentPlayer: true,
+      source: 'steam'
+    }, { source: 'steam' });
+    writeLastConfirmedSteamSubmit(safeWindow(), confirmedEntry);
     return {
       status: 'submitted',
       source: 'steam',
       sourceLabel: 'Steam Global',
-      playerName: await this.getPlayerName(),
+      playerName,
       details,
       response,
-      rank: response?.rank ?? response?.globalRank ?? response?.m_nGlobalRank ?? null
+      rank
     };
   }
 

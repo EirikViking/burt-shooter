@@ -21,6 +21,17 @@ const languages = [
   { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'ゲーム開始', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'グローバルランキング', glyphProbe: '日本語 設定 スコア ランキング' }
 ];
 
+const localLeaderboardTitles = {
+  en: 'LOCAL SCORE DECK',
+  de: 'LOKALES SCORE-DECK',
+  'zh-CN': '本地计分榜',
+  ru: 'ЛОКАЛЬНАЯ ТАБЛИЦА',
+  es: 'MARCADOR LOCAL',
+  'pt-BR': 'RANKING LOCAL',
+  ko: '로컬 순위표',
+  ja: 'ローカルランキング'
+};
+
 const forbiddenPlaceholderMarkers = [
   'Texto:',
   '문구:',
@@ -438,7 +449,8 @@ async function captureLanguage(page, language, index) {
   snaps.leaderboard = await snapshot(page);
   assertSnapshotClean(snaps.leaderboard, language, `${language.slug}.leaderboard`);
   shots.leaderboard = await screenshot(page, `${prefix}-leaderboard.png`);
-  assert(snaps.leaderboard.leaderboard.title === language.leaderboard, `${language.slug} leaderboard title mismatch: ${snaps.leaderboard.leaderboard.title}`);
+  const expectedLeaderboardTitle = localLeaderboardTitles[language.code] || language.leaderboard;
+  assert(snaps.leaderboard.leaderboard.title === expectedLeaderboardTitle, `${language.slug} leaderboard title mismatch: ${snaps.leaderboard.leaderboard.title}`);
   assert(!boxesOverlap(snaps.leaderboard.leaderboard.commentBounds, snaps.leaderboard.leaderboard.stateBounds, 4), `${language.slug} leaderboard empty-state text overlaps`);
   assert(!boxesOverlap(snaps.leaderboard.leaderboard.stateBounds, snaps.leaderboard.leaderboard.firstRowBounds, 4), `${language.slug} leaderboard empty rows overlap state message`);
 

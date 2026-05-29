@@ -1032,6 +1032,7 @@ export class SettingsOverlay {
       setSelectedShipKey(quasarShip.spriteKey);
       try {
         localStorage.setItem('burt.selectedShip.v1', quasarShip.spriteKey);
+        window.__novaPendingHangarSelection = quasarShip.spriteKey;
       } catch {}
     }
     this.game?.scenes?.shipSelect?.refreshUnlockProgress?.(latestProgress);
