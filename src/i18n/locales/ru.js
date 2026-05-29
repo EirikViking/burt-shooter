@@ -232,6 +232,7 @@ const sourceText = Object.freeze({
   'TAP SCORE  |  GLOBAL SLOT': 'НАЖМИТЕ ОЧКИ  |  ГЛОБАЛЬНОЕ МЕСТО',
   'TAP SCORE  |  LOCAL + GLOBAL SLOT': 'НАЖМИТЕ ОЧКИ  |  ЛОКАЛЬНО + ГЛОБАЛЬНО',
   'A: RELAUNCH  |  Y: LEADERBOARD  |  B/START: MENU': 'A: ЗАНОВО  |  Y: ТАБЛИЦА  |  B/START: МЕНЮ',
+  'B/START: MENU': 'B/START: МЕНЮ',
   'A: PICK PILOT NAME  |  B: SKIP SCORE': 'A: ВЫБРАТЬ ИМЯ  |  B: ПРОПУСТИТЬ ОЧКИ',
   'A: RELAUNCH  |  B/START: MENU': 'A: ЗАНОВО  |  B/START: МЕНЮ',
   'TYPE NAME  |  ENTER: SUBMIT  |  ESC: SKIP SCORE': 'ВВЕДИТЕ ИМЯ  |  ENTER: ОТПРАВИТЬ  |  ESC: ПРОПУСТИТЬ',

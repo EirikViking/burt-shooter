@@ -396,6 +396,9 @@ export class Enemy {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
     this.sprite.sortableChildren = true;
+    this.sprite.label = 'nova-enemy-sprite';
+    this.sprite.__novaEnemySprite = true;
+    this.sprite.__enemyRef = this;
 
     let tex;
     // Check for fighter type (player ship variant)
@@ -658,7 +661,13 @@ export class Enemy {
   }
 
   update(delta, playerX, playerY) {
-    if (!this.active && !this.waitingForEntry) return;
+    if (!this.active && !this.waitingForEntry) {
+      if (this.sprite) {
+        this.sprite.visible = false;
+        this.sprite.renderable = false;
+      }
+      return;
+    }
 
     if (this.waitingForEntry) {
       if (Date.now() >= this.entryCurve.startTime) {
@@ -1704,6 +1713,11 @@ export class Enemy {
         this.game?.scenes?.play?.enemyManager?.spawnEliteSupportDrone?.(this, { count: 2, split: true });
       }
       this.active = false;
+      this.waitingForEntry = false;
+      if (this.sprite) {
+        this.sprite.visible = false;
+        this.sprite.renderable = false;
+      }
       return true;
     }
     return false;

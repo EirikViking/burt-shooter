@@ -11,6 +11,7 @@ import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
+import { getDiscoveryStats } from '../progression/ThreatDiscoveryState.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
@@ -110,6 +111,7 @@ export class MenuScene {
     this.deckGlints = [];
     this.settingsOverlay = null;
     this.lastMenuPanelBounds = null;
+    this.threatCodexUnreadCount = 0;
 
     // PWA install prompt
     this.installPrompt = null;
@@ -139,6 +141,7 @@ export class MenuScene {
     this.launchingRun = false;
     this.menuGamepadActionWasPressed = false;
     this.menuGamepadNavigator.suppressUntilReleased();
+    this.updateThreatCodexAttentionState();
     this.container.sortableChildren = true;
     this.createStarfield();
     this.initBackdrop();
@@ -805,6 +808,9 @@ export class MenuScene {
 
     this.threatCodexBtn = this.createButton(translateText('THREAT CODEX'), layout, { accent: 0x7dffcc });
     this.threatCodexBtn.alpha = 0;
+    this.threatCodexBtn._attentionGlow = new PIXI.Graphics();
+    this.threatCodexBtn.addChildAt(this.threatCodexBtn._attentionGlow, 0);
+    this.updateThreatCodexAttentionState();
     this.threatCodexBtn.on('pointerdown', () => {
       try {
         AudioManager.init();
@@ -1307,6 +1313,11 @@ export class MenuScene {
       panel: this.lastMenuPanelBounds,
       focusedOption: this.menuOptions?.[this.focusedMenuIndex]?.id || null,
       inputDevice: this.lastInputDevice,
+      threatCodexAttention: {
+        unreadCount: this.threatCodexUnreadCount,
+        glowVisible: Boolean(this.threatCodexBtn?._attention),
+        animated: Boolean(this.threatCodexBtn?._attentionGlow && this.threatCodexUnreadCount > 0)
+      },
       exitNoticeText: this.exitNotice?.text || '',
       items: Object.fromEntries(
         Object.entries(textItems).map(([key, item]) => [key, boundsForDisplayObject(item)])
@@ -1401,11 +1412,13 @@ export class MenuScene {
     container.on('pointerover', () => {
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(container);
+      container._hovered = true;
       label.style.fill = '#ffffff';
       this.drawMenuButton(container, true);
     });
 
     container.on('pointerout', () => {
+      container._hovered = false;
       label.style.fill = '#c9fbff';
       this.drawMenuButton(container, false);
     });
@@ -1413,10 +1426,21 @@ export class MenuScene {
     return container;
   }
 
+  updateThreatCodexAttentionState() {
+    const stats = getDiscoveryStats();
+    this.threatCodexUnreadCount = Math.max(0, Number(stats.unreadCount) || 0);
+    if (this.threatCodexBtn) {
+      this.threatCodexBtn._attention = this.threatCodexUnreadCount > 0;
+      this.threatCodexBtn._attentionCount = this.threatCodexUnreadCount;
+      this.drawMenuButton(this.threatCodexBtn, Boolean(this.threatCodexBtn._hovered));
+    }
+  }
+
   drawMenuButton(container, isHover = false) {
     const bg = container?._bg;
     const shine = container?._shine;
     const focus = container?._focus;
+    const attentionGlow = container?._attentionGlow;
     if (!bg || !shine) return;
 
     const w = container._btnWidth || 286;
@@ -1427,6 +1451,15 @@ export class MenuScene {
     const accent = container._accent || 0x37f5ff;
     const isFocused = Boolean(container._focused);
     const edgeAlpha = isHover || isFocused ? 0.9 : (isPrimary ? 0.68 : 0.48);
+    const attentionPulse = 0.5 + Math.sin(this.animationTime * 4.6) * 0.5;
+
+    attentionGlow?.clear();
+    if (container._attention) {
+      attentionGlow.roundRect(x - 12, y - 10, w + 24, h + 20, 11);
+      attentionGlow.fill({ color: 0x7dffcc, alpha: 0.14 + attentionPulse * 0.12 });
+      attentionGlow.roundRect(x - 5, y - 5, w + 10, h + 10, 9);
+      attentionGlow.stroke({ color: 0xfff08a, width: 2 + attentionPulse * 1.2, alpha: 0.58 + attentionPulse * 0.28 });
+    }
 
     focus?.clear();
     if (isFocused) {
@@ -1772,6 +1805,9 @@ export class MenuScene {
     if (this.title && this.title.alpha >= 1) {
       const pulse = Math.sin(this.animationTime * 0.5) * 0.3 + 0.7;
       this.title.style.dropShadowAlpha = pulse * 0.8;
+    }
+    if (this.threatCodexBtn?._attention) {
+      this.drawMenuButton(this.threatCodexBtn, Boolean(this.threatCodexBtn._hovered));
     }
 
     if (this.radarSweep) {

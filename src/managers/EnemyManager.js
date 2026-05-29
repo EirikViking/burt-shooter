@@ -731,7 +731,7 @@ export class EnemyManager {
 
   // WAVE FIX: Helper to identify objective enemies (ships, not bonus drones)
   isObjectiveEnemy(enemy) {
-    if (!enemy || !enemy.active) return false;
+    if (!enemy || (enemy.active === false && !enemy.waitingForEntry)) return false;
     // bonus drones and bosses are not objective enemies
     return enemy.kind !== 'bonus_drone' && enemy.kind !== 'boss';
   }
@@ -1078,15 +1078,84 @@ export class EnemyManager {
       }
 
       if (!enemy.active && !enemy.waitingForEntry) {
-        if (enemy.destroy) enemy.destroy();
-        // Always remove sprite from container, regardless of destroy method
-        if (enemy.sprite && enemy.sprite.parent) {
-          enemy.sprite.parent.removeChild(enemy.sprite);
-        }
+        this.cleanupEnemyEntity(enemy, 'inactive-update');
         return false;
       }
       return true;
     });
+    this.pruneOrphanEnemySprites('post-update');
+  }
+
+  cleanupEnemyEntity(enemy, reason = 'cleanup') {
+    if (!enemy) return;
+    enemy.active = false;
+    enemy.waitingForEntry = false;
+
+    if (!enemy.__novaCleanupDone && typeof enemy.destroy === 'function') {
+      enemy.__novaCleanupDone = true;
+      enemy.destroy();
+    }
+
+    this.removeEnemySprite(enemy, reason);
+  }
+
+  removeEnemySprite(enemy, reason = 'cleanup') {
+    const sprite = enemy?.sprite;
+    if (!sprite) return;
+    sprite.__novaEnemyRemovedReason = reason;
+    sprite.visible = false;
+    sprite.renderable = false;
+    if (sprite.parent) {
+      sprite.parent.removeChild(sprite);
+    }
+    if (!sprite.destroyed && typeof sprite.destroy === 'function') {
+      sprite.destroy({ children: true });
+    }
+  }
+
+  getEnemySpriteCleanupDebugState() {
+    const liveSprites = new Set((this.enemies || [])
+      .filter(enemy => enemy && (enemy.active !== false || enemy.waitingForEntry))
+      .map(enemy => enemy.sprite)
+      .filter(Boolean));
+    const enemySprites = (this.container?.children || []).filter(child => child?.__novaEnemySprite);
+    const orphanSprites = enemySprites.filter(child => !liveSprites.has(child));
+    return {
+      tracked: liveSprites.size,
+      displayList: enemySprites.length,
+      orphaned: orphanSprites.length,
+      orphanKinds: orphanSprites
+        .map(child => child.__enemyRef?.kind || child.__enemyKind || null)
+        .filter(Boolean)
+        .slice(0, 8)
+    };
+  }
+
+  pruneOrphanEnemySprites(reason = 'prune') {
+    if (!this.container?.children) return 0;
+    const liveSprites = new Set((this.enemies || [])
+      .filter(enemy => enemy && (enemy.active !== false || enemy.waitingForEntry))
+      .map(enemy => enemy.sprite)
+      .filter(Boolean));
+    let pruned = 0;
+    [...this.container.children].forEach(child => {
+      if (!child?.__novaEnemySprite) return;
+      const ref = child.__enemyRef;
+      const inactive = ref && ref.active === false && !ref.waitingForEntry;
+      if (!liveSprites.has(child) || inactive) {
+        child.visible = false;
+        child.renderable = false;
+        if (child.parent) child.parent.removeChild(child);
+        if (!child.destroyed && typeof child.destroy === 'function') {
+          child.destroy({ children: true });
+        }
+        pruned += 1;
+      }
+    });
+    if (pruned > 0) {
+      console.warn(`[EnemyManager] pruned ${pruned} orphan enemy sprite(s) reason=${reason}`);
+    }
+    return pruned;
   }
 
   playEnemyShotFeedback(enemy, playerX, playerY) {
@@ -2397,14 +2466,7 @@ export class EnemyManager {
         if (playScene.particleManager) {
           playScene.particleManager.createExplosion(target.x, target.y, 0xcccccc, 1.2);
         }
-        // Mark as inactive (their managers will clean up sprites)
-        target.active = false;
-        if (target.destroy) target.destroy(); // CLEANUP: Force destroy
-
-        // Remove sprite immediately
-        if (target.sprite && target.sprite.parent) {
-          target.sprite.parent.removeChild(target.sprite);
-        }
+        this.cleanupEnemyEntity(target, 'wave-cleanup-bonus-drone');
       });
     }
 
@@ -2420,10 +2482,7 @@ export class EnemyManager {
         if (wasActive && this.game.scenes.play && this.game.scenes.play.particleManager) {
           this.game.scenes.play.particleManager.createExplosion(e.x, e.y, 0xcccccc, 1.1);
         }
-        // Always remove sprite
-        if (e.sprite && e.sprite.parent) {
-          e.sprite.parent.removeChild(e.sprite);
-        }
+        this.cleanupEnemyEntity(e, 'wave-cleanup');
       }
     });
 
@@ -2442,6 +2501,7 @@ export class EnemyManager {
 
     // BOSS FIX: Filter out cleared enemies but keep boss
     this.enemies = this.enemies.filter(e => e.active && (e.kind === 'boss' || e.kind === 'bonus_drone'));
+    this.pruneOrphanEnemySprites('wave-cleanup-complete');
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE';
 
@@ -2451,12 +2511,7 @@ export class EnemyManager {
 
   clearEnemies() {
     this.enemies.forEach(e => {
-      e.active = false; // Disable update
-      if (e.destroy) e.destroy(); // CLEANUP: Call destroy to stop tickers
-      // Always remove sprite from container
-      if (e.sprite && e.sprite.parent) {
-        e.sprite.parent.removeChild(e.sprite);
-      }
+      this.cleanupEnemyEntity(e, 'clear-enemies');
     });
     this.enemies = [];
     if (this.boss) {
@@ -2478,6 +2533,7 @@ export class EnemyManager {
       }
       this.hijacker = null;
     }
+    this.pruneOrphanEnemySprites('clear-enemies');
   }
   updateAdaptation(metrics) {
     if (!metrics) return;

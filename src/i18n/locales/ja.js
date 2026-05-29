@@ -250,6 +250,7 @@ const sourceText = Object.freeze({
   'TAP SCORE  |  GLOBAL SLOT': 'スコアをタップ  |  グローバル枠',
   'TAP SCORE  |  LOCAL + GLOBAL SLOT': 'スコアをタップ  |  ローカル+グローバル',
   'A: RELAUNCH  |  Y: LEADERBOARD  |  B/START: MENU': 'A: 再開  |  Y: ランキング  |  B/START: メニュー',
+  'B/START: MENU': 'B/START: メニュー',
   'A: PICK PILOT NAME  |  B: SKIP SCORE': 'A: 名前選択  |  B: スコアをスキップ',
   'A: RELAUNCH  |  B/START: MENU': 'A: 再開  |  B/START: メニュー',
   'TYPE NAME  |  ENTER: SUBMIT  |  ESC: SKIP SCORE': '名前入力  |  ENTER: 送信  |  ESC: スキップ',

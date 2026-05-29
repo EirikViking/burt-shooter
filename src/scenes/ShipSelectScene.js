@@ -1252,8 +1252,8 @@ export class ShipSelectScene {
       right.position.set(width - 284, 128);
       const title = this.createIntelText('COMBAT READOUT', 16, 10, 13, '#ffffff', '900');
       const role = this.createIntelText('', 16, 44, 17, '#ffef7e', '900');
-      const weapon = this.createIntelText('', 16, 76, 13, '#d8fbff');
-      const trait = this.createIntelText('', 16, 126, 13, '#9ceeff');
+      const weapon = this.createIntelText('', 16, 76, 14, '#d8fbff');
+      const trait = this.createIntelText('', 16, 124, 15, '#9ceeff');
       const unlock = this.createIntelText('', 16, 302, 13, '#ffd166', '900');
       const statPanel = createShipStatPanel(this.ships[this.selectedIndex], {
         compact: true,
@@ -1460,7 +1460,8 @@ export class ShipSelectScene {
         sprite.tint = variant.tint;
       }
 
-      const scale = Math.min(heroSize / sprite.width, heroSize / sprite.height);
+      const spriteFit = heroSize * (ship.name === 'Chrome Rail' ? 0.72 : 0.86);
+      const scale = Math.min(spriteFit / sprite.width, spriteFit / sprite.height);
       sprite.scale.set(scale);
 
       container.addChild(sprite);
@@ -1530,12 +1531,12 @@ export class ShipSelectScene {
     const teaser = this.getShortTeaser(ship.baseDescription || ship.description, this.layout.isMobile ? 54 : 68);
     const desc = createText(teaser, {
       fontFamily: FONT_BODY,
-      fontSize: this.layout.isMobile ? 14 : 16,
+      fontSize: this.layout.isMobile ? 15 : 18,
       fill: '#d8fbff',
       align: 'center',
       wordWrap: true,
       wordWrapWidth: this.layout.isMobile ? 310 : 430,
-      lineHeight: this.layout.isMobile ? 18 : 21,
+      lineHeight: this.layout.isMobile ? 19 : 23,
       fontWeight: '700'
     });
     desc.anchor.set(0.5, 0);
@@ -1546,12 +1547,12 @@ export class ShipSelectScene {
     const traitText = this.getShipTraitText(ship);
     const trait = createText(traitText, {
       fontFamily: FONT_BODY,
-      fontSize: this.layout.isMobile ? 12 : 13,
+      fontSize: this.layout.isMobile ? 13 : 15,
       fill: this.toHexText(textAccent),
       align: 'center',
       wordWrap: true,
       wordWrapWidth: this.layout.isMobile ? 330 : 560,
-      lineHeight: 17,
+      lineHeight: this.layout.isMobile ? 18 : 21,
       stroke: '#000000',
       strokeThickness: 2
     });

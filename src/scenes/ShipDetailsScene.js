@@ -176,12 +176,12 @@ export class ShipDetailsScene {
 
         const traitBody = createText(explanation.lines.map(line => `- ${line}`).join('\n'), {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: isMobile ? 10 : 12,
+            fontSize: isMobile ? 12 : 15,
             fill: '#d8fbff',
             align: 'left',
             wordWrap: true,
             wordWrapWidth: panelWidth - 100,
-            lineHeight: isMobile ? 13 : 15,
+            lineHeight: isMobile ? 16 : 20,
             stroke: '#000000',
             strokeThickness: 2
         });
@@ -200,12 +200,12 @@ export class ShipDetailsScene {
         for (const para of paragraphs) {
             const paraText = createText(para, {
                 fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-                fontSize: isMobile ? 11 : 13,
+                fontSize: isMobile ? 12 : 16,
                 fill: '#dddddd',
                 align: 'left',
                 wordWrap: true,
                 wordWrapWidth: panelWidth - 80,
-                lineHeight: isMobile ? 16 : 18
+                lineHeight: isMobile ? 17 : 22
             });
             paraText.position.set(40, yOffset);
             const nextBottom = (yOffset - startY) + paraText.height;

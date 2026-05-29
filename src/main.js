@@ -614,6 +614,8 @@ function buildGameTextState(game) {
       retryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       leaderboardCta: gameOverScene.getLeaderboardCtaDebugState ? gameOverScene.getLeaderboardCtaDebugState() : null,
       hangarCta: gameOverScene.getHangarCtaDebugState ? gameOverScene.getHangarCtaDebugState() : null,
+      mainMenuCta: gameOverScene.getMainMenuCtaDebugState ? gameOverScene.getMainMenuCtaDebugState() : null,
+      globalCelebration: gameOverScene.getGlobalCelebrationDebugState ? gameOverScene.getGlobalCelebrationDebugState() : null,
       state: gameOverScene.state || null,
       runbackReason: gameOverScene.runbackReason || null,
       steamSubmissionMode: Boolean(gameOverScene.steamSubmissionMode),
@@ -731,6 +733,12 @@ function buildGameTextState(game) {
       eliteMiddleShips: enemies.filter(enemy =>
         enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry)
       ).length,
+      enemySprites: playScene?.enemyManager?.getEnemySpriteCleanupDebugState
+        ? playScene.enemyManager.getEnemySpriteCleanupDebugState().displayList
+        : null,
+      orphanEnemySprites: playScene?.enemyManager?.getEnemySpriteCleanupDebugState
+        ? playScene.enemyManager.getEnemySpriteCleanupDebugState().orphaned
+        : null,
       playerBullets: playerBullets.filter(bullet => bullet?.active !== false).length,
       enemyBullets: enemyBullets.filter(bullet => bullet?.active !== false).length,
       particles: playScene?.particleManager?.particles?.length || 0

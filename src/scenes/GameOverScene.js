@@ -32,7 +32,6 @@ import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/Ra
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
 const MIN_GAME_OVER_RESULT_HOLD_MS = 3500;
-const GAME_OVER_ARRIVAL_TITLE_MS = 2200;
 const PILOT_NAME_MAX_LENGTH = 14;
 const CONTROLLER_NAME_STORAGE_KEY = 'nova.controllerPilotName.v1';
 const CONTROLLER_NAME_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -65,10 +64,9 @@ function isDesktopAutoNameRuntime(runtime = {}) {
       // Fall through to the runtime checks below.
     }
   }
-  if (runtime?.desktop || runtime?.steamBridgePresent) return true;
+  if (runtime?.desktop) return true;
   if (typeof window === 'undefined') return false;
   if (window.__NOVA_SWARM_DESKTOP__ === true) return true;
-  if (window.__novaSteamBridge || window.__novaSteamLeaderboard || window.__novaSteamCloud) return true;
   return false;
 }
 
@@ -129,6 +127,13 @@ export class GameOverScene {
     this.hangarButtonHint = null;
     this.hangarButtonWidth = 0;
     this.hangarButtonHeight = 0;
+    this.mainMenuButton = null;
+    this.mainMenuButtonBg = null;
+    this.mainMenuButtonGlow = null;
+    this.mainMenuButtonLabel = null;
+    this.mainMenuButtonHint = null;
+    this.mainMenuButtonWidth = 0;
+    this.mainMenuButtonHeight = 0;
     this.runbackReason = null;
     this.selectedCtaLine = null;
     this.ctaVoicePlayed = false;
@@ -150,6 +155,9 @@ export class GameOverScene {
     this.ceremonyFrame = null;
     this.ceremonyGlow = null;
     this.fanfareParticles = [];
+    this.confettiParticles = [];
+    this.globalCelebrationTier = 'none';
+    this.globalCelebrationStartedAt = 0;
     this.ceremonyPulse = 0;
     // Frozen final values
     this.finalScore = 0;
@@ -219,8 +227,8 @@ export class GameOverScene {
     this.ctaVoicePlayed = false;
     this.runbackStartedAt = 0;
     this.resultScreenStartedAt = Date.now();
-    this.arrivalTitleUntil = this.resultScreenStartedAt + GAME_OVER_ARRIVAL_TITLE_MS;
-    this.arrivalTitleRevealed = false;
+    this.arrivalTitleUntil = this.resultScreenStartedAt;
+    this.arrivalTitleRevealed = true;
     this.pendingRunbackReason = null;
     this.newlyUnlockedShips = [];
     this.shipUnlockVoicePlayed = false;
@@ -442,6 +450,8 @@ export class GameOverScene {
     this.container.addChild(this.leaderboardButton);
     this.createHangarButton(layout);
     this.container.addChild(this.hangarButton);
+    this.createMainMenuButton(layout);
+    this.container.addChild(this.mainMenuButton);
 
     if (!this.isRankedRun) {
       this.promptText.eventMode = 'none';
@@ -509,7 +519,7 @@ export class GameOverScene {
       this.state = 'submitting';
       this.globalStatus = 'submitting';
       this.updateLeaderboardStatusText();
-      this.updatePromptMessage('STEAM SCORE SYNC');
+      this.hideTransientSavingCopy();
       this.refreshPrimaryCta();
       this.layoutScreen();
       this.scheduleSceneTimeout(() => this.submitSteamScore(), 220);
@@ -523,7 +533,7 @@ export class GameOverScene {
         this.globalQualificationPromise = this.checkGlobalQualification();
       }
       this.updateLeaderboardStatusText();
-      this.updatePromptMessage('SAVING LOCAL SCORE');
+      this.hideTransientSavingCopy();
       this.refreshPrimaryCta();
       this.layoutScreen();
       this.scheduleSceneTimeout(() => this.submitDesktopLocalScore(), 220);
@@ -586,6 +596,7 @@ export class GameOverScene {
         return 'A: RELAUNCH  |  Y: LEADERBOARD  |  B/START: MENU';
       }
       if (this.state === 'submitting') {
+        if (this.steamSubmissionMode || this.desktopAutoNameMode) return '';
         return 'SAVING SCORE...';
       }
       if (this.isRankedRun && this.updateCanEnterName()) {
@@ -605,6 +616,7 @@ export class GameOverScene {
 
   getEntryPromptText(layout = getCurrentLayout()) {
     const mobile = Boolean(layout?.isMobile);
+    if (this.state === 'submitting' && (this.steamSubmissionMode || this.desktopAutoNameMode)) return '';
     if (!this.isRankedRun) return 'PRACTICE RUN - SCORE NOT LOGGED';
     if (!this.updateCanEnterName()) {
       return this.globalStatus === 'checking'
@@ -774,7 +786,7 @@ export class GameOverScene {
   }
 
   isArrivalTitleActive() {
-    return !this.arrivalTitleRevealed && Date.now() < (this.arrivalTitleUntil || 0);
+    return false;
   }
 
   getVisibleCeremonyTitle() {
@@ -1002,6 +1014,7 @@ export class GameOverScene {
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
     this.drawHangarButton(layout);
+    this.drawMainMenuButton(layout);
     this.drawNextGoalStrip(layout);
     this.drawShipUnlockReveal(layout);
     [
@@ -1034,15 +1047,35 @@ export class GameOverScene {
     const promptHeight = Math.max(promptSize * 1.2, this.promptText.height || 0);
     const nameHeight = this.nameDisplay?.visible ? Math.max(nameSize * 1.2, this.nameDisplay.height || 0) : 0;
     const retryHeight = this.retryButtonHeight || (shortResultLayout ? (layout.isMobile ? 50 : 58) : (layout.isMobile ? 58 : 66));
-    const leaderboardVisible = this.shouldShowLeaderboardButton();
-    const hangarVisible = this.shouldShowHangarButton();
-    const leaderboardHeight = leaderboardVisible ? (this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48)) : 0;
-    const hangarHeight = hangarVisible ? (this.hangarButtonHeight || (layout.isMobile ? 42 : 48)) : 0;
-    const secondaryStacked = layout.isMobile && leaderboardVisible && hangarVisible;
+    const secondaryActions = [
+      {
+        id: 'leaderboard',
+        node: this.leaderboardButton,
+        visible: this.shouldShowLeaderboardButton(),
+        width: this.leaderboardButtonWidth,
+        height: this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48)
+      },
+      {
+        id: 'hangar',
+        node: this.hangarButton,
+        visible: this.shouldShowHangarButton(),
+        width: this.hangarButtonWidth,
+        height: this.hangarButtonHeight || (layout.isMobile ? 42 : 48)
+      },
+      {
+        id: 'mainMenu',
+        node: this.mainMenuButton,
+        visible: this.shouldShowMainMenuButton(),
+        width: this.mainMenuButtonWidth,
+        height: this.mainMenuButtonHeight || (layout.isMobile ? 42 : 48)
+      }
+    ];
+    const visibleSecondaryActions = secondaryActions.filter(action => action.visible && action.node);
+    const secondaryStacked = layout.isMobile && visibleSecondaryActions.length > 1;
     const secondaryHeight = secondaryStacked
-      ? leaderboardHeight + hangarHeight + spacing * 0.8
-      : Math.max(leaderboardHeight, hangarHeight);
-    const secondarySpacingSlots = secondaryStacked ? 2 : (leaderboardVisible || hangarVisible ? 1 : 0);
+      ? visibleSecondaryActions.reduce((sum, action) => sum + action.height, 0) + spacing * 0.8 * Math.max(0, visibleSecondaryActions.length - 1)
+      : visibleSecondaryActions.reduce((max, action) => Math.max(max, action.height), 0);
+    const secondarySpacingSlots = secondaryStacked ? visibleSecondaryActions.length : (visibleSecondaryActions.length ? 1 : 0);
 
     const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + secondaryHeight + nameHeight + spacing * (9 + secondarySpacingSlots) + sectionGap * 2;
 
@@ -1105,43 +1138,27 @@ export class GameOverScene {
     this.retryButton.x = width / 2;
     this.retryButton.y = placeCentered(this.retryButton, spacing);
 
-    if (this.leaderboardButton) {
-      this.leaderboardButton.visible = leaderboardVisible;
-    }
-    if (this.hangarButton) {
-      this.hangarButton.visible = hangarVisible;
-    }
-    if (leaderboardVisible || hangarVisible) {
+    secondaryActions.forEach((action) => {
+      if (action.node) action.node.visible = action.visible;
+    });
+    if (visibleSecondaryActions.length) {
       if (secondaryStacked) {
-        if (this.leaderboardButton) {
-          this.leaderboardButton.x = width / 2;
-          this.leaderboardButton.y = leaderboardVisible ? placeCentered(this.leaderboardButton, spacing * 0.8) : this.retryButton.y;
-        }
-        if (this.hangarButton) {
-          this.hangarButton.x = width / 2;
-          this.hangarButton.y = hangarVisible ? placeCentered(this.hangarButton, spacing * 0.8) : this.retryButton.y;
-        }
+        visibleSecondaryActions.forEach((action) => {
+          action.node.x = width / 2;
+          action.node.y = placeCentered(action.node, spacing * 0.8);
+        });
       } else {
         const rowY = stack.getCurrentY() + secondaryHeight / 2;
         stack.setY(stack.getCurrentY() + secondaryHeight + spacing * 0.8);
         const gap = 18;
-        const totalSecondaryWidth = (leaderboardVisible ? this.leaderboardButtonWidth : 0) + (hangarVisible ? this.hangarButtonWidth : 0) + (leaderboardVisible && hangarVisible ? gap : 0);
+        const totalSecondaryWidth = visibleSecondaryActions.reduce((sum, action) => sum + action.width, 0)
+          + gap * Math.max(0, visibleSecondaryActions.length - 1);
         let xCursor = width / 2 - totalSecondaryWidth / 2;
-        if (leaderboardVisible && this.leaderboardButton) {
-          this.leaderboardButton.x = xCursor + this.leaderboardButtonWidth / 2;
-          this.leaderboardButton.y = rowY;
-          xCursor += this.leaderboardButtonWidth + gap;
-        } else if (this.leaderboardButton) {
-          this.leaderboardButton.x = width / 2;
-          this.leaderboardButton.y = rowY;
-        }
-        if (hangarVisible && this.hangarButton) {
-          this.hangarButton.x = xCursor + this.hangarButtonWidth / 2;
-          this.hangarButton.y = rowY;
-        } else if (this.hangarButton) {
-          this.hangarButton.x = width / 2;
-          this.hangarButton.y = rowY;
-        }
+        visibleSecondaryActions.forEach((action) => {
+          action.node.x = xCursor + action.width / 2;
+          action.node.y = rowY;
+          xCursor += action.width + gap;
+        });
       }
     }
 
@@ -1162,8 +1179,9 @@ export class GameOverScene {
       this.leaderboardStatusText,
       this.promptText?.visible !== false ? this.promptText : null,
       this.retryButton,
-      leaderboardVisible ? this.leaderboardButton : null,
-      hangarVisible ? this.hangarButton : null,
+      this.shouldShowLeaderboardButton() ? this.leaderboardButton : null,
+      this.shouldShowHangarButton() ? this.hangarButton : null,
+      this.shouldShowMainMenuButton() ? this.mainMenuButton : null,
       this.nameDisplay?.visible ? this.nameDisplay : null
     ].filter(Boolean);
     const bottomGuard = this.instructions.y - (layout.isMobile ? 28 : 34);
@@ -1190,6 +1208,16 @@ export class GameOverScene {
       bottomGuard,
       minGap: shortResultLayout ? 4 : 7
     });
+    if (!secondaryStacked && visibleSecondaryActions.length > 1) {
+      const rowY = Math.min(...visibleSecondaryActions.map(action => Number(action.node.y) || 0));
+      visibleSecondaryActions.forEach((action) => {
+        action.node.y = rowY;
+      });
+      this.keepResultActionsInFrame({
+        bottomGuard,
+        minGap: shortResultLayout ? 4 : 7
+      });
+    }
   }
 
   getLayoutBounds(node) {
@@ -1197,8 +1225,10 @@ export class GameOverScene {
       ? { width: this.retryButtonWidth, height: this.retryButtonHeight }
       : node === this.leaderboardButton
         ? { width: this.leaderboardButtonWidth, height: this.leaderboardButtonHeight }
-        : node === this.hangarButton
-          ? { width: this.hangarButtonWidth, height: this.hangarButtonHeight }
+      : node === this.hangarButton
+        ? { width: this.hangarButtonWidth, height: this.hangarButtonHeight }
+        : node === this.mainMenuButton
+          ? { width: this.mainMenuButtonWidth, height: this.mainMenuButtonHeight }
           : null;
     if (buttonSize && Number(buttonSize.width) > 0 && Number(buttonSize.height) > 0) {
       const width = Number(buttonSize.width);
@@ -1268,6 +1298,7 @@ export class GameOverScene {
       this.retryButton,
       this.shouldShowLeaderboardButton() ? this.leaderboardButton : null,
       this.shouldShowHangarButton() ? this.hangarButton : null,
+      this.shouldShowMainMenuButton() ? this.mainMenuButton : null,
       this.nameDisplay?.visible ? this.nameDisplay : null
     ].filter(node => node && node.visible !== false);
     if (!actionNodes.length) return;
@@ -1334,6 +1365,17 @@ export class GameOverScene {
 
     const config = this.getPrimaryCtaConfig();
     this.retryButtonMode = config.mode;
+    if (config.hidden) {
+      this.retryButton.visible = false;
+      this.retryButton.eventMode = 'none';
+      this.retryButtonWidth = 0;
+      this.retryButtonHeight = 0;
+      this.retryButtonBg.clear();
+      this.retryButtonGlow.clear();
+      if (this.retryButtonSpin) this.retryButtonSpin.visible = false;
+      return;
+    }
+    this.retryButton.visible = true;
     const shortRunback = config.runback && layout.height < 820;
     const buttonWidth = config.runback
       ? Math.min(layout.width * (layout.isMobile ? 0.82 : (shortRunback ? 0.46 : 0.58)), layout.isMobile ? 340 : (shortRunback ? 520 : 560))
@@ -1451,6 +1493,10 @@ export class GameOverScene {
   }
 
   shouldShowHangarButton() {
+    return this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked';
+  }
+
+  shouldShowMainMenuButton() {
     return this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked';
   }
 
@@ -1581,6 +1627,91 @@ export class GameOverScene {
     if (this.hangarButtonHint) {
       this.hangarButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
       this.hangarButtonHint.y = layout.isMobile ? 14 : 16;
+    }
+  }
+
+  createMainMenuButton(layout) {
+    this.mainMenuButton = new PIXI.Container();
+    this.mainMenuButton.zIndex = 8;
+    this.mainMenuButton.eventMode = 'static';
+    this.mainMenuButton.cursor = 'pointer';
+
+    this.mainMenuButtonGlow = new PIXI.Graphics();
+    this.mainMenuButtonBg = new PIXI.Graphics();
+
+    this.mainMenuButtonLabel = createText(translateText('☰ MAIN MENU'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 14 : 17,
+      fontWeight: 'bold',
+      fill: '#d8e6ff',
+      stroke: '#031323',
+      strokeThickness: layout.isMobile ? 2 : 3,
+      align: 'center',
+      dropShadow: true,
+      dropShadowColor: '#37f5ff',
+      dropShadowBlur: 4
+    });
+    this.mainMenuButtonLabel.anchor.set(0.5);
+
+    this.mainMenuButtonHint = createText(translateText('B/START: MENU'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 9 : 11,
+      fontWeight: 'bold',
+      fill: '#9cfbff',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    this.mainMenuButtonHint.anchor.set(0.5);
+
+    this.mainMenuButton.addChild(this.mainMenuButtonGlow, this.mainMenuButtonBg, this.mainMenuButtonLabel, this.mainMenuButtonHint);
+    this.mainMenuButton.on('pointerdown', () => {
+      this.setInputDevice('keyboard');
+      this.returnToMenu();
+    });
+    this.mainMenuButton.on('pointerover', () => this.mainMenuButton.scale.set(1.02));
+    this.mainMenuButton.on('pointerout', () => this.mainMenuButton.scale.set(1));
+    this.drawMainMenuButton(layout);
+  }
+
+  drawMainMenuButton(layout) {
+    if (!this.mainMenuButton || !this.mainMenuButtonBg || !this.mainMenuButtonGlow) return;
+    const visible = this.shouldShowMainMenuButton();
+    const buttonWidth = Math.min(layout.width * (layout.isMobile ? 0.55 : 0.2), layout.isMobile ? 220 : 210);
+    const buttonHeight = layout.isMobile ? 42 : 50;
+    const halfWidth = buttonWidth / 2;
+    const halfHeight = buttonHeight / 2;
+    const radius = layout.isMobile ? 8 : 10;
+    const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
+    this.mainMenuButtonWidth = buttonWidth;
+    this.mainMenuButtonHeight = buttonHeight;
+    this.mainMenuButton.hitArea = new PIXI.Rectangle(-halfWidth, -halfHeight, buttonWidth, buttonHeight);
+    this.mainMenuButton.visible = visible;
+    this.mainMenuButton.alpha = visible ? 0.88 : 0;
+    this.mainMenuButton.cursor = visible ? 'pointer' : 'default';
+    this.mainMenuButton.eventMode = visible ? 'static' : 'none';
+
+    this.mainMenuButtonGlow.clear();
+    this.mainMenuButtonGlow.roundRect(-halfWidth - 6, -halfHeight - 5, buttonWidth + 12, buttonHeight + 10, radius + 3);
+    this.mainMenuButtonGlow.fill({ color: 0x37f5ff, alpha: visible ? 0.08 + pulse * 0.05 : 0 });
+    this.mainMenuButtonGlow.roundRect(-halfWidth - 2, -halfHeight - 2, buttonWidth + 4, buttonHeight + 4, radius + 2);
+    this.mainMenuButtonGlow.stroke({ color: 0x9cfbff, width: 1.3, alpha: visible ? 0.28 + pulse * 0.14 : 0 });
+
+    this.mainMenuButtonBg.clear();
+    this.mainMenuButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.mainMenuButtonBg.fill({ color: 0x07101d, alpha: 0.86 });
+    this.mainMenuButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.mainMenuButtonBg.stroke({ color: 0x9cfbff, width: 1.5, alpha: 0.72 });
+    this.mainMenuButtonBg.rect(-halfWidth + 12, -halfHeight + 6, buttonWidth - 24, 2);
+    this.mainMenuButtonBg.fill({ color: 0xff55d9, alpha: 0.28 });
+
+    if (this.mainMenuButtonLabel) {
+      this.mainMenuButtonLabel.style.fontSize = layout.isMobile ? 14 : 17;
+      this.mainMenuButtonLabel.y = layout.isMobile ? -6 : -7;
+    }
+    if (this.mainMenuButtonHint) {
+      this.mainMenuButtonHint.style.fontSize = layout.isMobile ? 9 : 11;
+      this.mainMenuButtonHint.y = layout.isMobile ? 12 : 14;
     }
   }
 
@@ -1733,6 +1864,15 @@ export class GameOverScene {
     }
 
     if (this.state === 'submitting') {
+      if (this.steamSubmissionMode || this.desktopAutoNameMode) {
+        return {
+          mode: 'submitting',
+          label: '',
+          hint: '',
+          disabled: true,
+          hidden: true
+        };
+      }
       return {
         mode: 'submitting',
         label: 'SAVING SCORE',
@@ -1811,6 +1951,7 @@ export class GameOverScene {
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
     this.drawHangarButton(layout);
+    this.drawMainMenuButton(layout);
   }
 
   createFallbackBackdrop(width, height) {
@@ -2123,11 +2264,13 @@ export class GameOverScene {
         this.retryButtonSpin.rotation += 0.026;
       }
     }
-    if (this.shouldShowLeaderboardButton() || this.shouldShowHangarButton()) {
+    if (this.shouldShowLeaderboardButton() || this.shouldShowHangarButton() || this.shouldShowMainMenuButton()) {
       const layout = createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout());
       this.drawLeaderboardButton(layout);
       this.drawHangarButton(layout);
+      this.drawMainMenuButton(layout);
     }
+    this.updateConfettiParticles();
     if (!this.fanfareParticles?.length) return;
     const { width, height } = this.game.app.screen;
     this.ceremonyPulse += 1;
@@ -2476,6 +2619,7 @@ export class GameOverScene {
         ? 'nova_top3_fanfare'
         : 'nova_global_slot_fanfare';
     const fanfareMs = placement?.numberOne ? 10000 : placement?.top3 ? 8000 : 6000;
+    this.startGlobalCelebrationBurst(placement);
     AudioManager.duckMusic(placement?.numberOne ? 0.18 : placement?.top3 ? 0.22 : 0.28, fanfareMs);
     AudioManager.playSfx(fanfareKey, { force: true, volume: placement?.numberOne ? 1.0 : placement?.top3 ? 0.94 : 0.88, minIntervalMs: 0 });
     if (placement?.numberOne) {
@@ -2906,6 +3050,25 @@ export class GameOverScene {
   updatePromptMessage(text) {
     if (this.promptText) {
       this.promptText.text = text;
+      if (String(text || '').trim()) {
+        this.promptText.visible = true;
+      }
+    }
+  }
+
+  hideTransientSavingCopy() {
+    if (this.promptText) {
+      this.promptText.text = '';
+      this.promptText.visible = false;
+      this.promptText.eventMode = 'none';
+      this.promptText.cursor = 'default';
+    }
+    if (this.nameDisplay) {
+      this.nameDisplay.text = '';
+      this.nameDisplay.visible = false;
+    }
+    if (this.instructions) {
+      this.instructions.text = '';
     }
   }
 
@@ -2956,6 +3119,83 @@ export class GameOverScene {
     }
   }
 
+  startGlobalCelebrationBurst(placement = this.globalPlacement) {
+    const tier = placement?.numberOne ? 'number1' : placement?.top3 ? 'top3' : placement?.qualified ? 'global' : 'none';
+    this.globalCelebrationTier = tier;
+    this.globalCelebrationStartedAt = Date.now();
+    this.clearConfettiParticles();
+    const layout = createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout());
+    const count = tier === 'number1' ? 220 : tier === 'top3' ? 160 : 92;
+    const colors = tier === 'number1'
+      ? [0xfff08a, 0xffd75f, 0xffffff, 0x37f5ff, 0xff55d9]
+      : tier === 'top3'
+        ? [0xffba57, 0xffd75f, 0x37f5ff, 0xff55d9]
+        : [0x37f5ff, 0x65f7ff, 0x9cfbff, 0xffd15c];
+    for (let i = 0; i < count; i += 1) {
+      const particle = new PIXI.Graphics();
+      const side = i % 2 === 0 ? -1 : 1;
+      const seed = (i * 37) % 997;
+      const color = colors[i % colors.length];
+      particle.__confetti = {
+        seed,
+        color,
+        side,
+        ageMs: 0,
+        durationMs: (tier === 'number1' ? 10500 : tier === 'top3' ? 8800 : 6200) + (seed % 1700),
+        x0: layout.width * (side < 0 ? 0.15 : 0.85) + ((seed % 41) - 20),
+        y0: layout.height * (0.18 + ((seed % 13) * 0.012)),
+        vx: side * (1.3 + (seed % 11) * 0.11),
+        vy: 1.2 + (seed % 17) * 0.055,
+        wobble: 0.035 + (seed % 9) * 0.004,
+        size: 4 + (seed % 7)
+      };
+      particle.zIndex = 12;
+      particle.blendMode = 'add';
+      this.container.addChild(particle);
+      this.confettiParticles.push(particle);
+    }
+  }
+
+  clearConfettiParticles() {
+    if (!this.confettiParticles?.length) {
+      this.confettiParticles = [];
+      return;
+    }
+    this.confettiParticles.forEach(particle => {
+      if (particle.parent) particle.parent.removeChild(particle);
+      if (!particle.destroyed) particle.destroy();
+    });
+    this.confettiParticles = [];
+  }
+
+  updateConfettiParticles() {
+    if (!this.confettiParticles?.length) return;
+    const now = Date.now();
+    const elapsedSinceBurst = Math.max(0, now - (this.globalCelebrationStartedAt || now));
+    this.confettiParticles = this.confettiParticles.filter(particle => {
+      const config = particle.__confetti;
+      if (!config) return false;
+      config.ageMs = elapsedSinceBurst;
+      const life = Math.min(1, config.ageMs / config.durationMs);
+      if (life >= 1) {
+        if (particle.parent) particle.parent.removeChild(particle);
+        if (!particle.destroyed) particle.destroy();
+        return false;
+      }
+      const swing = Math.sin(config.seed + config.ageMs * config.wobble) * 42;
+      const x = config.x0 + config.vx * config.ageMs * 0.12 + swing;
+      const y = config.y0 + config.vy * config.ageMs * 0.09 + life * life * 110;
+      const alpha = Math.max(0, 1 - life * 0.72);
+      const size = config.size * (1 - life * 0.24);
+      particle.clear();
+      particle.rect(-size * 0.5, -size * 0.5, size * 2.2, Math.max(2, size * 0.52));
+      particle.fill({ color: config.color, alpha: alpha * 0.82 });
+      particle.position.set(x, y);
+      particle.rotation += 0.08 + config.wobble;
+      return true;
+    });
+  }
+
   getHangarCtaDebugState() {
     const fallback = {
       label: this.hangarButtonLabel?.text || null,
@@ -2975,6 +3215,36 @@ export class GameOverScene {
     } catch {
       return fallback;
     }
+  }
+
+  getMainMenuCtaDebugState() {
+    const fallback = {
+      label: this.mainMenuButtonLabel?.text || null,
+      hint: this.mainMenuButtonHint?.text || null,
+      visible: Boolean(this.mainMenuButton?.visible && this.mainMenuButton?.parent)
+    };
+    try {
+      const bounds = this.getLayoutBounds(this.mainMenuButton);
+      if (!bounds) return fallback;
+      return {
+        ...fallback,
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width: Math.round(bounds.width || 0),
+        height: Math.round(bounds.height || 0)
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
+  getGlobalCelebrationDebugState() {
+    return {
+      tier: this.globalCelebrationTier || 'none',
+      active: Boolean(this.confettiParticles?.length),
+      confettiCount: this.confettiParticles?.length || 0,
+      startedAt: this.globalCelebrationStartedAt || 0
+    };
   }
 
   showInputOverlay() {
@@ -3151,7 +3421,7 @@ export class GameOverScene {
     this.globalStatus = 'submitting';
     this.stopCaretBlink();
     this.hideHiddenInput();
-    this.updatePromptMessage('SAVING TO STEAM...');
+    this.hideTransientSavingCopy();
     this.updateNameDisplay();
     this.updateLeaderboardStatusText();
     this.refreshPrimaryCta();
@@ -3201,7 +3471,6 @@ export class GameOverScene {
     this.updateLeaderboardStatusText();
     if (this.globalStatus === 'submitted') {
       this.playGlobalQualificationFanfare();
-      this.updatePromptMessage('STEAM SCORE SAVED!');
     }
     this.enterSubmittedStage(this.globalStatus === 'submitted' ? 'score_submitted' : 'global_failed');
   }
@@ -3220,7 +3489,7 @@ export class GameOverScene {
     this.hideHiddenInput();
     const bestEffortName = await (this.leaderboardAdapter.getBestEffortSteamPlayerName?.() || Promise.resolve(null)).catch(() => null);
     const playerName = this.steamPlayerName || bestEffortName || 'STEAM PILOT';
-    this.updatePromptMessage('SAVING LOCAL SCORE');
+    this.hideTransientSavingCopy();
     this.updateNameDisplay();
     this.refreshPrimaryCta();
 
@@ -3252,23 +3521,15 @@ export class GameOverScene {
       desktopAutoNameMode: true,
       updatedAt: new Date().toISOString()
     };
-    if (this.leaderboardRuntime?.cloud && !this.leaderboardRuntime?.steamBridgePresent) {
-      await this.startGlobalSubmissionWhenReady(playerName, result);
-    }
     this.leaderboardResult = result;
     this.game.lastLeaderboardResult = result;
-    this.game.leaderboardView = result.globalStatus === 'submitted' ? 'global' : 'local';
+    this.game.leaderboardView = 'local';
     this.game.pendingHighscore = null;
     this.isSubmitting = false;
     this.removeInputOverlay();
     this.updateLeaderboardStatusText();
-    if (result.globalStatus === 'submitted') {
-      this.playGlobalQualificationFanfare();
-      this.enterSubmittedStage('score_submitted');
-    } else {
-      this.playLocalHighscoreVoice();
-      this.enterSubmittedStage(result.globalStatus === 'failed' ? 'global_failed' : 'score_saved');
-    }
+    this.playLocalHighscoreVoice();
+    this.enterSubmittedStage(result.globalStatus === 'failed' ? 'global_failed' : 'score_saved');
   }
 
   ensureHiddenInput() {
@@ -3363,6 +3624,12 @@ export class GameOverScene {
       this.nameDisplay.text = `NAME: ${this.nameInput}${caret}`;
       this.nameDisplay.visible = true;
     } else if (this.state === 'submitting') {
+      if (this.steamSubmissionMode || this.desktopAutoNameMode) {
+        this.nameDisplay.text = '';
+        this.nameDisplay.visible = false;
+        this.refreshPrimaryCta();
+        return;
+      }
       this.nameDisplay.text = 'SAVING...';
       this.nameDisplay.visible = true;
     } else {
@@ -3603,6 +3870,7 @@ export class GameOverScene {
     this.removeInputOverlay();
     this.stopCaretBlink();
     this.removeAchievementToast();
+    this.clearConfettiParticles();
     this.achievementToastQueue = [];
     AudioManager.stopVoiceGroup('runback');
     this.layoutUnsubscribe?.();

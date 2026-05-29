@@ -142,11 +142,7 @@ async function forceGameOver(page, score) {
     return state.scene === 'gameOver' && state.gameOver?.globalStatus !== 'checking';
   }, null, { timeout: 20000 });
   const arrivalState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
-  assert(arrivalState.gameOver?.ceremonyTitle === 'GAME OVER', 'Game Over scene did not hold the arrival title before summary reveal', arrivalState.gameOver);
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.gameOver?.arrivalTitleActive === false;
-  }, null, { timeout: 6000 });
+  assert(arrivalState.gameOver?.arrivalTitleActive === false, 'Game Over scene should not hold a second arrival/saving screen before the summary', arrivalState.gameOver);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.gameOver?.backdropLoaded === true;
@@ -171,6 +167,19 @@ async function checkCeremony(browser, { score, expectedTier, titlePattern, shotN
     return state.gameOver?.state === 'submitted';
   }, null, { timeout: 20000 });
   const state = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
+  const visibleText = [
+    state.gameOver?.prompt,
+    state.gameOver?.retryPrompt,
+    state.gameOver?.primaryCta?.label,
+    state.gameOver?.primaryCta?.hint,
+    state.gameOver?.ceremonyTitle
+  ].filter(Boolean).join(' ');
+  assert(!/SAVING SCORE|SAVING LOCAL SCORE|SAVING TO STEAM|SAVING\.\.\./i.test(visibleText), 'Game Over ceremony shows transient saving copy', { visibleText, gameOver: state.gameOver });
+  if (['number1', 'top3'].includes(expectedTier)) {
+    const celebration = state.gameOver?.globalCelebration || {};
+    assert(celebration.active === true, `expected active confetti celebration for ${expectedTier}`, celebration);
+    assert(celebration.confettiCount >= (expectedTier === 'number1' ? 160 : 110), `expected stronger confetti for ${expectedTier}`, celebration);
+  }
   const shouldSubmitGlobally = ['number1', 'top3', 'global'].includes(expectedTier);
   const submittedScore = Math.max(0, Math.floor(Number(state.gameOver?.score) || score));
   if (shouldSubmitGlobally) {

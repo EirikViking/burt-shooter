@@ -232,6 +232,7 @@ const sourceText = Object.freeze({
   'TAP SCORE  |  GLOBAL SLOT': '点按分数  |  全球席位',
   'TAP SCORE  |  LOCAL + GLOBAL SLOT': '点按分数  |  本地 + 全球',
   'A: RELAUNCH  |  Y: LEADERBOARD  |  B/START: MENU': 'A：重开  |  Y：排行榜  |  B/START：菜单',
+  'B/START: MENU': 'B/START：菜单',
   'A: PICK PILOT NAME  |  B: SKIP SCORE': 'A：选择名字  |  B：跳过分数',
   'A: RELAUNCH  |  B/START: MENU': 'A：重开  |  B/START：菜单',
   'TYPE NAME  |  ENTER: SUBMIT  |  ESC: SKIP SCORE': '输入名字  |  ENTER：提交  |  ESC：跳过',

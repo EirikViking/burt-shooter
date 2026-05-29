@@ -796,8 +796,12 @@ export class ThreatCodexScene {
     const artMask = new PIXI.Graphics();
     artMask.roundRect(4, 4, size - 8, size - 10, 5);
     artMask.fill({ color: 0xffffff, alpha: 1 });
-    artMask.alpha = 0.001;
-    artLayer.mask = artMask;
+    artMask.alpha = 0;
+    if (typeof artLayer.setMask === 'function') {
+      artLayer.setMask({ mask: artMask });
+    } else {
+      artLayer.mask = artMask;
+    }
     thumb.addChild(artMask);
     thumb.addChild(artLayer);
 
@@ -966,13 +970,20 @@ export class ThreatCodexScene {
     const seed = makeSignalSeed(entry?.id || 'unknown');
     const artLayer = new PIXI.Container();
     artLayer.label = 'ui_threatCodexDetailArtClip';
+    artLayer.position.set(x + 6, y + 6);
     const clipMask = new PIXI.Graphics();
     clipMask.roundRect(x + 6, y + 6, Math.max(1, width - 12), Math.max(1, height - 12), 10);
     clipMask.fill({ color: 0xffffff, alpha: 1 });
-    clipMask.alpha = 0.001;
-    artLayer.mask = clipMask;
+    clipMask.alpha = 0;
+    if (typeof artLayer.setMask === 'function') {
+      artLayer.setMask({ mask: clipMask });
+    } else {
+      artLayer.mask = clipMask;
+    }
     parent.addChild(clipMask);
     parent.addChild(artLayer);
+    const innerW = Math.max(1, width - 12);
+    const innerH = Math.max(1, height - 12);
     this.lastDetailArtDebug = {
       frame: {
         x: Math.round(x),
@@ -986,17 +997,17 @@ export class ThreatCodexScene {
     };
     const backdrop = new PIXI.Graphics();
     for (let i = 0; i < 9; i += 1) {
-      const px = x + 24 + ((seed + i * 53) % Math.max(1, Math.floor(width - 48)));
-      const py = y + 22 + ((seed * 3 + i * 41) % Math.max(1, Math.floor(height - 44)));
+      const px = 18 + ((seed + i * 53) % Math.max(1, Math.floor(innerW - 36)));
+      const py = 16 + ((seed * 3 + i * 41) % Math.max(1, Math.floor(innerH - 32)));
       backdrop.circle(px, py, 1 + (i % 3));
       backdrop.fill({ color: i % 2 ? accent : CYAN, alpha: discovered ? 0.18 : 0.1 });
     }
     artLayer.addChild(backdrop);
 
     const art = this.getEntryArt(entry, entry?.category || this.getCategory().id);
-    drawUnknownSignal(artLayer, x + width * 0.15, y + height * 0.08, width * 0.7, height * 0.75, accent, seed, discovered ? 0.22 : 0.58);
+    drawUnknownSignal(artLayer, innerW * 0.15, innerH * 0.08, innerW * 0.7, innerH * 0.75, accent, seed, discovered ? 0.22 : 0.58);
     if (!art) {
-      drawUnknownSignal(artLayer, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, discovered ? 0.86 : 1);
+      drawUnknownSignal(artLayer, innerW * 0.08, innerH * 0.05, innerW * 0.84, innerH * 0.82, accent, seed, discovered ? 0.86 : 1);
       return;
     }
 
@@ -1005,8 +1016,8 @@ export class ThreatCodexScene {
         if (token !== this.renderToken || !texture || !parent || parent.destroyed || artLayer.destroyed) return;
         const sprite = new PIXI.Sprite(texture);
         sprite.anchor.set(0.5);
-        fitSprite(sprite, width * (discovered ? 0.48 : 0.54), height * (discovered ? 0.54 : 0.6), 2.05);
-        sprite.position.set(x + width * 0.5, y + height * 0.5);
+        fitSprite(sprite, innerW * (discovered ? 0.4 : 0.46), innerH * (discovered ? 0.48 : 0.52), 1.35);
+        sprite.position.set(innerW * 0.5, innerH * 0.5);
         sprite.alpha = discovered ? 0.96 : 0.42;
         sprite.tint = discovered ? 0xffffff : accent;
         artLayer.addChild(sprite);
@@ -1017,24 +1028,24 @@ export class ThreatCodexScene {
           ...(this.lastDetailArtDebug || {}),
           spriteWithinFrame: true,
           spriteBounds: {
-            x: Math.round(sprite.x - sprite.width / 2),
-            y: Math.round(sprite.y - sprite.height / 2),
+            x: Math.round(x + 6 + sprite.x - sprite.width / 2),
+            y: Math.round(y + 6 + sprite.y - sprite.height / 2),
             width: Math.round(sprite.width),
             height: Math.round(sprite.height)
           }
         };
 
         const rim = new PIXI.Graphics();
-        rim.circle(x + width * 0.5, y + height * 0.5, Math.min(width, height) * 0.34);
+        rim.circle(innerW * 0.5, innerH * 0.5, Math.min(innerW, innerH) * 0.3);
         rim.stroke({ color: accent, width: 2, alpha: discovered ? 0.16 : 0.34 });
         artLayer.addChild(rim);
 
         if (!discovered) {
           const lock = new PIXI.Graphics();
-          lock.roundRect(x + width * 0.5 - 74, y + height * 0.5 - 22, 148, 44, 8);
+          lock.roundRect(innerW * 0.5 - 74, innerH * 0.5 - 22, 148, 44, 8);
           lock.fill({ color: 0x020711, alpha: 0.72 });
           lock.stroke({ color: GOLD, width: 2, alpha: 0.68 });
-          lock.circle(x + width * 0.5 - 46, y + height * 0.5, 10);
+          lock.circle(innerW * 0.5 - 46, innerH * 0.5, 10);
           lock.stroke({ color: GOLD, width: 2, alpha: 0.72 });
           artLayer.addChild(lock);
           addText(artLayer, localize('LOCKED'), {
@@ -1043,12 +1054,12 @@ export class ThreatCodexScene {
             fill: '#ffe76a',
             stroke: '#001016',
             strokeThickness: 3
-          }, x + width * 0.5 + 14, y + height * 0.5, { x: 0.5, y: 0.5 });
+          }, innerW * 0.5 + 14, innerH * 0.5, { x: 0.5, y: 0.5 });
         }
       })
       .catch(() => {
         if (token !== this.renderToken || !parent || parent.destroyed || artLayer.destroyed) return;
-        drawUnknownSignal(artLayer, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, 0.76);
+        drawUnknownSignal(artLayer, innerW * 0.08, innerH * 0.05, innerW * 0.84, innerH * 0.82, accent, seed, 0.76);
       });
   }
 

@@ -250,6 +250,7 @@ const sourceText = Object.freeze({
   'TAP SCORE  |  GLOBAL SLOT': '점수 터치  |  글로벌 자리',
   'TAP SCORE  |  LOCAL + GLOBAL SLOT': '점수 터치  |  로컬 + 글로벌',
   'A: RELAUNCH  |  Y: LEADERBOARD  |  B/START: MENU': 'A: 재시작  |  Y: 순위표  |  B/START: 메뉴',
+  'B/START: MENU': 'B/START: 메뉴',
   'A: PICK PILOT NAME  |  B: SKIP SCORE': 'A: 이름 선택  |  B: 점수 건너뛰기',
   'A: RELAUNCH  |  B/START: MENU': 'A: 재시작  |  B/START: 메뉴',
   'TYPE NAME  |  ENTER: SUBMIT  |  ESC: SKIP SCORE': '이름 입력  |  ENTER: 제출  |  ESC: 건너뛰기',

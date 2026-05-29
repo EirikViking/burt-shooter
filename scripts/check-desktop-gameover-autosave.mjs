@@ -206,6 +206,7 @@ try {
   });
   assert(gameOver.ceremonyTitle !== 'ONE MORE RUN?', 'desktop game-over skipped celebration title', { gameOver });
   assert(!/ENTER PILOT NAME|SUBMIT SCORE|TYPE NAME|NAME:/i.test(visibleText), 'desktop game-over still shows manual name-copy', { visibleText });
+  assert(!/SAVING SCORE|SAVING LOCAL SCORE|SAVING TO STEAM|SAVING\.\.\./i.test(visibleText), 'desktop auto-save still shows transient saving copy', { visibleText });
   assert((persisted.hangar.pilotXp || 0) > 0 && (persisted.hangar.totalRuns || 0) >= 1, 'hangar progress did not persist after desktop run', persisted);
   assert((persisted.highscores[0]?.score || 0) >= 504, 'desktop local score did not persist', persisted);
   assert(pageErrors.length === 0 && consoleErrors.length === 0, 'browser errors occurred', { pageErrors, consoleErrors });
@@ -214,7 +215,11 @@ try {
   assert(leaderboardCta?.visible && leaderboardCta.width > 0 && leaderboardCta.height > 0, 'leaderboard CTA is not available from game-over', { leaderboardCta });
   const hangarCta = gameOver.hangarCta;
   assert(hangarCta?.visible && hangarCta.width > 0 && hangarCta.height > 0, 'hangar CTA is not available from game-over', { hangarCta });
-  for (const [label, cta] of [['primary', gameOver.primaryCta], ['leaderboard', leaderboardCta], ['hangar', hangarCta]]) {
+  const mainMenuCta = gameOver.mainMenuCta;
+  assert(mainMenuCta?.visible && mainMenuCta.width > 0 && mainMenuCta.height > 0, 'main menu CTA is not available from game-over', { mainMenuCta });
+  assert(Math.abs((leaderboardCta.y || 0) - (hangarCta.y || 0)) < 6, 'leaderboard and hangar CTAs are not aligned', { leaderboardCta, hangarCta });
+  assert(Math.abs((hangarCta.y || 0) - (mainMenuCta.y || 0)) < 8, 'secondary CTAs are not aligned', { leaderboardCta, hangarCta, mainMenuCta });
+  for (const [label, cta] of [['primary', gameOver.primaryCta], ['leaderboard', leaderboardCta], ['hangar', hangarCta], ['mainMenu', mainMenuCta]]) {
     assert(
       cta.x >= 0 && cta.y >= 0 && cta.x + cta.width <= 1920 && cta.y + cta.height <= 1080,
       `${label} CTA moved off screen after focus/resize`,
