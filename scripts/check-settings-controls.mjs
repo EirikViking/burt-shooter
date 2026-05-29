@@ -120,8 +120,7 @@ try {
       'slider_playerFocus',
       'toggle_color_aid',
       'footer_credits',
-      'footer_close',
-      'footer_fullscreen'
+      'footer_close'
     ].filter((id) => !control(id));
     if (missing.length) return { ok: false, missing };
 
@@ -144,7 +143,8 @@ try {
     const creditsOpened = Boolean(overlay.creditsPanel?.parent);
     overlay.closeCreditsPanel();
     const creditsClosed = !overlay.creditsPanel;
-    overlay.toggleFullscreen();
+    const fullscreenControl = control('footer_fullscreen');
+    fullscreenControl?.button?.activate?.();
     await new Promise((resolve) => setTimeout(resolve, 200));
     const after = state();
     const storage = {
@@ -165,12 +165,26 @@ try {
       voicePlayed,
       creditsOpened,
       creditsClosed,
+      fullscreenVisible: Boolean(fullscreenControl),
       controls: overlay.controls.map((entry) => ({ id: entry.id, type: entry.type, label: entry.label }))
     };
   });
 
+  await page.goto(`${baseUrl}/?desktop=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', { timeout: 30000 });
+  await page.waitForTimeout(300);
+  const desktopExercise = await page.evaluate(async () => {
+    const scene = window.__game?.currentScene;
+    scene?.openSettingsOverlay?.();
+    const overlay = scene?.settingsOverlay;
+    const fullscreenVisible = Boolean(overlay?.controls?.some?.((entry) => entry.id === 'footer_fullscreen'));
+    overlay?.close?.();
+    return { fullscreenVisible };
+  });
+
   const failures = [
     !exercise.ok ? (exercise.reason || `missing controls: ${(exercise.missing || []).join(', ')}`) : null,
+    desktopExercise.fullscreenVisible ? 'desktop Steam settings should hide fullscreen footer button' : null,
     exercise.ok && exercise.before.audio?.musicEnabled === exercise.after.audio?.musicEnabled ? 'music toggle did not change state' : null,
     exercise.ok && exercise.before.audio?.voiceEnabled === exercise.after.audio?.voiceEnabled ? 'voice toggle did not change state' : null,
     exercise.ok && exercise.before.audio?.ctaVoiceEnabled === exercise.after.audio?.ctaVoiceEnabled ? 'CTA voice toggle did not change state' : null,

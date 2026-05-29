@@ -18,6 +18,8 @@ import {
   translateText
 } from '../i18n/index.js';
 import { grantSecretShipUnlock, readHangarProgressState } from '../progression/HangarProgressState.js';
+import { getSelectableShips } from '../config/ShipMetadata.js';
+import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 
 function percent(value) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
@@ -62,6 +64,16 @@ function debugBounds(displayObject) {
     };
   } catch {
     return null;
+  }
+}
+
+function isDesktopSteamRuntime() {
+  if (typeof window === 'undefined') return false;
+  if (window.__NOVA_SWARM_DESKTOP__ === true || window.__novaSteamBridge || window.__novaSteamCloud) return true;
+  try {
+    return new URLSearchParams(window.location.search).get('desktop') === '1';
+  } catch {
+    return false;
   }
 }
 
@@ -180,33 +192,41 @@ export class SettingsOverlay {
     this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
 
     const footerY = panelY + panelHeight - (isCompact ? 26 : 38);
+    const showFullscreenButton = !isDesktopSteamRuntime();
     if (panelWidth >= 500) {
       const footerButtonGap = isCompact ? 12 : 16;
       const availableFooterWidth = panelWidth - (isCompact ? 44 : 64);
-      const footerButtonWidth = Math.min(isCompact ? 154 : 168, Math.floor((availableFooterWidth - footerButtonGap * 2) / 3));
+      const footerButtonCount = showFullscreenButton ? 3 : 2;
+      const footerButtonWidth = Math.min(isCompact ? 154 : 168, Math.floor((availableFooterWidth - footerButtonGap * Math.max(0, footerButtonCount - 1)) / footerButtonCount));
       const footerStep = footerButtonWidth + footerButtonGap;
-      this.addFooterButton('credits', 'CREDITS', width / 2 - footerStep, footerY, () => this.openCreditsPanel(), {
+      const firstX = showFullscreenButton ? width / 2 - footerStep : width / 2 - footerStep / 2;
+      const closeX = showFullscreenButton ? width / 2 : width / 2 + footerStep / 2;
+      this.addFooterButton('credits', 'CREDITS', firstX, footerY, () => this.openCreditsPanel(), {
         width: footerButtonWidth,
         height: footerButtonHeight
       });
-      this.addFooterButton('close', 'CLOSE', width / 2, footerY, () => this.close(), {
+      this.addFooterButton('close', 'CLOSE', closeX, footerY, () => this.close(), {
         width: footerButtonWidth,
         height: footerButtonHeight
       });
-      this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2 + footerStep, footerY, () => this.toggleFullscreen(), {
-        width: footerButtonWidth,
-        height: footerButtonHeight
-      });
+      if (showFullscreenButton) {
+        this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2 + footerStep, footerY, () => this.toggleFullscreen(), {
+          width: footerButtonWidth,
+          height: footerButtonHeight
+        });
+      }
     } else {
       const stackGap = footerButtonHeight + 8;
-      this.addFooterButton('credits', 'CREDITS', width / 2, footerY - stackGap * 2, () => this.openCreditsPanel(), {
+      this.addFooterButton('credits', 'CREDITS', width / 2, footerY - stackGap * (showFullscreenButton ? 2 : 1), () => this.openCreditsPanel(), {
         width: stackedButtonWidth,
         height: footerButtonHeight
       });
-      this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2, footerY - stackGap, () => this.toggleFullscreen(), {
-        width: stackedButtonWidth,
-        height: footerButtonHeight
-      });
+      if (showFullscreenButton) {
+        this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2, footerY - stackGap, () => this.toggleFullscreen(), {
+          width: stackedButtonWidth,
+          height: footerButtonHeight
+        });
+      }
       this.addFooterButton('close', 'CLOSE', width / 2, footerY, () => this.close(), {
         width: stackedButtonWidth,
         height: footerButtonHeight
@@ -1007,6 +1027,13 @@ export class SettingsOverlay {
 
     const result = grantSecretShipUnlock('nova_ship_07', { source: 'credits_easter_egg' });
     const latestProgress = readHangarProgressState();
+    const quasarShip = getSelectableShips().find((ship) => ship.baseId === 'nova_ship_07' || ship.id === 'nova_ship_07');
+    if (quasarShip?.spriteKey) {
+      setSelectedShipKey(quasarShip.spriteKey);
+      try {
+        localStorage.setItem('burt.selectedShip.v1', quasarShip.spriteKey);
+      } catch {}
+    }
     this.game?.scenes?.shipSelect?.refreshUnlockProgress?.(latestProgress);
     try {
       window.dispatchEvent(new CustomEvent('nova-hangar-progress-updated', {

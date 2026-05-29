@@ -117,6 +117,13 @@ export class GameOverScene {
     this.leaderboardButtonHint = null;
     this.leaderboardButtonWidth = 0;
     this.leaderboardButtonHeight = 0;
+    this.hangarButton = null;
+    this.hangarButtonBg = null;
+    this.hangarButtonGlow = null;
+    this.hangarButtonLabel = null;
+    this.hangarButtonHint = null;
+    this.hangarButtonWidth = 0;
+    this.hangarButtonHeight = 0;
     this.runbackReason = null;
     this.selectedCtaLine = null;
     this.ctaVoicePlayed = false;
@@ -424,6 +431,8 @@ export class GameOverScene {
     this.container.addChild(this.retryButton);
     this.createLeaderboardButton(layout);
     this.container.addChild(this.leaderboardButton);
+    this.createHangarButton(layout);
+    this.container.addChild(this.hangarButton);
 
     if (!this.isRankedRun) {
       this.promptText.eventMode = 'none';
@@ -768,7 +777,7 @@ export class GameOverScene {
       return `Global rank #${globalRank}. The board has been informed, probably against its better judgment.`;
     }
     if (this.globalStatus === 'submitted') {
-      return 'Steam accepted the score. Rank is still syncing, so the board gets another poke from the leaderboard screen.';
+      return 'Steam accepted the score. Open the leaderboard to verify the official board placement.';
     }
     if (placement?.nearGlobal) {
       return `Only ${placement.scoreToGlobal.toLocaleString('en-US')} more points for a global slot. This was not a miss, it was a warning shot.`;
@@ -964,6 +973,7 @@ export class GameOverScene {
     this.layoutCeremonyVisuals(width, height, layout);
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
+    this.drawHangarButton(layout);
     this.drawNextGoalStrip(layout);
     this.drawShipUnlockReveal(layout);
     [
@@ -997,9 +1007,16 @@ export class GameOverScene {
     const nameHeight = this.nameDisplay?.visible ? Math.max(nameSize * 1.2, this.nameDisplay.height || 0) : 0;
     const retryHeight = this.retryButtonHeight || (shortResultLayout ? (layout.isMobile ? 50 : 58) : (layout.isMobile ? 58 : 66));
     const leaderboardVisible = this.shouldShowLeaderboardButton();
+    const hangarVisible = this.shouldShowHangarButton();
     const leaderboardHeight = leaderboardVisible ? (this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48)) : 0;
+    const hangarHeight = hangarVisible ? (this.hangarButtonHeight || (layout.isMobile ? 42 : 48)) : 0;
+    const secondaryStacked = layout.isMobile && leaderboardVisible && hangarVisible;
+    const secondaryHeight = secondaryStacked
+      ? leaderboardHeight + hangarHeight + spacing * 0.8
+      : Math.max(leaderboardHeight, hangarHeight);
+    const secondarySpacingSlots = secondaryStacked ? 2 : (leaderboardVisible || hangarVisible ? 1 : 0);
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + nameHeight + spacing * (leaderboardVisible ? 10 : 9) + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + secondaryHeight + nameHeight + spacing * (9 + secondarySpacingSlots) + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = shortResultLayout ? (layout.isMobile ? 14 : 18) : (layout.isMobile ? 40 : 50);
@@ -1062,8 +1079,42 @@ export class GameOverScene {
 
     if (this.leaderboardButton) {
       this.leaderboardButton.visible = leaderboardVisible;
-      this.leaderboardButton.x = width / 2;
-      this.leaderboardButton.y = leaderboardVisible ? placeCentered(this.leaderboardButton, spacing * 0.8) : this.retryButton.y;
+    }
+    if (this.hangarButton) {
+      this.hangarButton.visible = hangarVisible;
+    }
+    if (leaderboardVisible || hangarVisible) {
+      if (secondaryStacked) {
+        if (this.leaderboardButton) {
+          this.leaderboardButton.x = width / 2;
+          this.leaderboardButton.y = leaderboardVisible ? placeCentered(this.leaderboardButton, spacing * 0.8) : this.retryButton.y;
+        }
+        if (this.hangarButton) {
+          this.hangarButton.x = width / 2;
+          this.hangarButton.y = hangarVisible ? placeCentered(this.hangarButton, spacing * 0.8) : this.retryButton.y;
+        }
+      } else {
+        const rowY = stack.getCurrentY() + secondaryHeight / 2;
+        stack.setY(stack.getCurrentY() + secondaryHeight + spacing * 0.8);
+        const gap = 18;
+        const totalSecondaryWidth = (leaderboardVisible ? this.leaderboardButtonWidth : 0) + (hangarVisible ? this.hangarButtonWidth : 0) + (leaderboardVisible && hangarVisible ? gap : 0);
+        let xCursor = width / 2 - totalSecondaryWidth / 2;
+        if (leaderboardVisible && this.leaderboardButton) {
+          this.leaderboardButton.x = xCursor + this.leaderboardButtonWidth / 2;
+          this.leaderboardButton.y = rowY;
+          xCursor += this.leaderboardButtonWidth + gap;
+        } else if (this.leaderboardButton) {
+          this.leaderboardButton.x = width / 2;
+          this.leaderboardButton.y = rowY;
+        }
+        if (hangarVisible && this.hangarButton) {
+          this.hangarButton.x = xCursor + this.hangarButtonWidth / 2;
+          this.hangarButton.y = rowY;
+        } else if (this.hangarButton) {
+          this.hangarButton.x = width / 2;
+          this.hangarButton.y = rowY;
+        }
+      }
     }
 
     this.nameDisplay.x = width / 2;
@@ -1084,6 +1135,7 @@ export class GameOverScene {
       this.promptText?.visible !== false ? this.promptText : null,
       this.retryButton,
       leaderboardVisible ? this.leaderboardButton : null,
+      hangarVisible ? this.hangarButton : null,
       this.nameDisplay?.visible ? this.nameDisplay : null
     ].filter(Boolean);
     const bottomGuard = this.instructions.y - (layout.isMobile ? 28 : 34);
@@ -1269,6 +1321,10 @@ export class GameOverScene {
     return this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked';
   }
 
+  shouldShowHangarButton() {
+    return this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked';
+  }
+
   drawLeaderboardButton(layout) {
     if (!this.leaderboardButton || !this.leaderboardButtonBg || !this.leaderboardButtonGlow) return;
     const visible = this.shouldShowLeaderboardButton();
@@ -1308,6 +1364,93 @@ export class GameOverScene {
     if (this.leaderboardButtonHint) {
       this.leaderboardButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
       this.leaderboardButtonHint.y = layout.isMobile ? 14 : 16;
+    }
+  }
+
+  createHangarButton(layout) {
+    this.hangarButton = new PIXI.Container();
+    this.hangarButton.zIndex = 8;
+    this.hangarButton.eventMode = 'static';
+    this.hangarButton.cursor = 'pointer';
+
+    this.hangarButtonGlow = new PIXI.Graphics();
+    this.hangarButtonBg = new PIXI.Graphics();
+
+    this.hangarButtonLabel = createText(translateText('HANGAR'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 18 : 22,
+      fontWeight: 'bold',
+      fill: '#fff3a2',
+      stroke: '#031323',
+      strokeThickness: layout.isMobile ? 2 : 3,
+      align: 'center',
+      dropShadow: true,
+      dropShadowColor: '#ffd15c',
+      dropShadowBlur: 5
+    });
+    this.hangarButtonLabel.anchor.set(0.5);
+
+    this.hangarButtonHint = createText(translateText('H / GAMEPAD X'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 10 : 12,
+      fontWeight: 'bold',
+      fill: '#9cfbff',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    this.hangarButtonHint.anchor.set(0.5);
+
+    this.hangarButton.addChild(this.hangarButtonGlow, this.hangarButtonBg, this.hangarButtonLabel, this.hangarButtonHint);
+    this.hangarButton.on('pointerdown', () => {
+      this.setInputDevice('keyboard');
+      this.openHangar();
+    });
+    this.hangarButton.on('pointerover', () => this.hangarButton.scale.set(1.02));
+    this.hangarButton.on('pointerout', () => this.hangarButton.scale.set(1));
+    this.drawHangarButton(layout);
+  }
+
+  drawHangarButton(layout) {
+    if (!this.hangarButton || !this.hangarButtonBg || !this.hangarButtonGlow) return;
+    const visible = this.shouldShowHangarButton();
+    const buttonWidth = Math.min(layout.width * (layout.isMobile ? 0.72 : 0.26), layout.isMobile ? 280 : 270);
+    const buttonHeight = layout.isMobile ? 48 : 54;
+    const halfWidth = buttonWidth / 2;
+    const halfHeight = buttonHeight / 2;
+    const radius = layout.isMobile ? 8 : 10;
+    const pulse = 0.5 + Math.sin(Date.now() * 0.0068) * 0.5;
+    this.hangarButtonWidth = buttonWidth;
+    this.hangarButtonHeight = buttonHeight;
+    this.hangarButton.hitArea = new PIXI.Rectangle(-halfWidth, -halfHeight, buttonWidth, buttonHeight);
+    this.hangarButton.visible = visible;
+    this.hangarButton.alpha = visible ? 0.96 : 0;
+    this.hangarButton.cursor = visible ? 'pointer' : 'default';
+    this.hangarButton.eventMode = visible ? 'static' : 'none';
+
+    this.hangarButtonGlow.clear();
+    this.hangarButtonGlow.roundRect(-halfWidth - 8, -halfHeight - 6, buttonWidth + 16, buttonHeight + 12, radius + 4);
+    this.hangarButtonGlow.fill({ color: 0xffd15c, alpha: visible ? 0.11 + pulse * 0.07 : 0 });
+    this.hangarButtonGlow.roundRect(-halfWidth - 3, -halfHeight - 3, buttonWidth + 6, buttonHeight + 6, radius + 2);
+    this.hangarButtonGlow.stroke({ color: 0xff55d9, width: 1.5, alpha: visible ? 0.32 + pulse * 0.18 : 0 });
+
+    this.hangarButtonBg.clear();
+    this.hangarButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.hangarButtonBg.fill({ color: 0x1a1320, alpha: 0.92 });
+    this.hangarButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.hangarButtonBg.stroke({ color: 0xffd15c, width: 2, alpha: 0.88 });
+    this.hangarButtonBg.rect(-halfWidth + 14, -halfHeight + 7, buttonWidth - 28, 2);
+    this.hangarButtonBg.fill({ color: 0xff55d9, alpha: 0.34 });
+    this.hangarButtonBg.rect(-halfWidth + 18, halfHeight - 8, buttonWidth - 36, 1);
+    this.hangarButtonBg.fill({ color: 0x37f5ff, alpha: 0.28 });
+
+    if (this.hangarButtonLabel) {
+      this.hangarButtonLabel.style.fontSize = layout.isMobile ? 18 : 22;
+      this.hangarButtonLabel.y = layout.isMobile ? -7 : -8;
+    }
+    if (this.hangarButtonHint) {
+      this.hangarButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
+      this.hangarButtonHint.y = layout.isMobile ? 14 : 16;
     }
   }
 
@@ -1537,6 +1680,7 @@ export class GameOverScene {
     const layout = createTextLayout(width, height, getCurrentLayout());
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
+    this.drawHangarButton(layout);
   }
 
   createFallbackBackdrop(width, height) {
@@ -1685,6 +1829,12 @@ export class GameOverScene {
         return;
       }
 
+      if (this.shouldShowHangarButton() && (e.key === 'h' || e.key === 'H')) {
+        e.preventDefault();
+        this.openHangar();
+        return;
+      }
+
       if (this.state !== 'input' && isRestartKey) {
         e.preventDefault();
         if (this.state === 'prompt' && this.isRankedRun && this.globalStatus === 'checking' && !this.localQualified) {
@@ -1787,6 +1937,11 @@ export class GameOverScene {
 
     if (nav.pressed.y && this.shouldShowLeaderboardButton()) {
       this.openLeaderboard();
+      return;
+    }
+
+    if (nav.pressed.x && this.shouldShowHangarButton()) {
+      this.openHangar();
       return;
     }
 
@@ -1943,13 +2098,13 @@ export class GameOverScene {
     }
     const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
     const percent = Math.max(0, Math.min(99, Math.round((rankProgress.progress || 0) * 100)));
-    return `${translateText('RANK')} ${rankProgress.rankIndex}: ${rankTitle} ${percent}% ${translateText('TO')} ${nextTitle}`;
+    return `${translateText('RANK')} ${rankProgress.rankIndex}: ${rankTitle} - ${translateText('NEXT')}: ${nextTitle} (${percent}%)`;
   }
 
   createPilotXpLine(currentProgress = {}) {
     const summary = this.game?.runSummary || {};
     const gained = Math.max(0, Number(summary.pilotXpGained) || 0);
-    return `${translateText('CAREER XP')} +${gained.toLocaleString('en-US')}  ${this.createPilotRankLine(currentProgress)}`;
+    return `${translateText('CAREER XP')} +${gained.toLocaleString('en-US')}`;
   }
 
   playShipUnlockVoice() {
@@ -2014,10 +2169,9 @@ export class GameOverScene {
     const suffix = newBest ? ' - NEW BEST' : '';
     const clearLabel = summary.runCleared ? 'CLEAR' : 'GAME OVER';
     const elapsed = Math.floor(summary.runElapsedSeconds || 0);
-    const rankLine = this.createPilotXpLine(currentProgress)
-      .replace(/\s+RANK\s+/i, '\nRANK ')
-      .replace(/\s+TO\s+/i, '\nTO ');
-    return `${clearLabel}: SECTOR ${this.finalLevel} | ${elapsed}s\nCAREER BEST: SECTOR ${bestLevel}${suffix}\n${rankLine}`;
+    const rankLine = this.createPilotRankLine(currentProgress);
+    const xpLine = this.createPilotXpLine(currentProgress);
+    return `${clearLabel}: SECTOR ${this.finalLevel} - ${elapsed}s\nCAREER BEST: SECTOR ${bestLevel}${suffix}\n${xpLine}\n${rankLine}`;
   }
 
   getNextLevelGoal(bestLevel) {
@@ -2136,6 +2290,16 @@ export class GameOverScene {
     this.removeInputOverlay();
     this.stopCaretBlink();
     this.hideHiddenInput();
+    try {
+      const active = document?.activeElement;
+      if (active && typeof active.blur === 'function') active.blur();
+      const canvas = this.game?.app?.canvas || this.game?.app?.view;
+      if (canvas) {
+        canvas.tabIndex = 0;
+        canvas.focus?.({ preventScroll: true });
+      }
+      window.focus?.();
+    } catch {}
     AudioManager.stopVoiceGroup('runback');
     AudioManager.playSfx('start_game_confirm');
     AudioManager.playVoice('mission_control_restart', {
@@ -2148,6 +2312,16 @@ export class GameOverScene {
     });
     AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
     this.game.startGame(this.game.selectedShipSpriteKey);
+  }
+
+  openHangar() {
+    this.clearSceneTimeouts();
+    this.removeInputOverlay();
+    this.stopCaretBlink();
+    this.hideHiddenInput();
+    AudioManager.stopVoiceGroup('runback');
+    AudioManager.playSfx('ui_open', { volume: 0.22, minIntervalMs: 80 });
+    this.game.showShipSelect();
   }
 
   playGlobalQualificationFanfare() {
@@ -2627,6 +2801,27 @@ export class GameOverScene {
     try {
       if (!this.leaderboardButton?.getBounds) return fallback;
       const bounds = this.leaderboardButton.getBounds();
+      return {
+        ...fallback,
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width: Math.round(bounds.width || 0),
+        height: Math.round(bounds.height || 0)
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
+  getHangarCtaDebugState() {
+    const fallback = {
+      label: this.hangarButtonLabel?.text || null,
+      hint: this.hangarButtonHint?.text || null,
+      visible: Boolean(this.hangarButton?.visible && this.hangarButton?.parent)
+    };
+    try {
+      if (!this.hangarButton?.getBounds) return fallback;
+      const bounds = this.hangarButton.getBounds();
       return {
         ...fallback,
         x: Math.round(bounds.x || 0),

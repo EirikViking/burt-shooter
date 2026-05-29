@@ -41,6 +41,8 @@ export class InputManager {
 
     window.addEventListener('keydown', this.handleKeyDown, true);
     window.addEventListener('keyup', this.handleKeyUp, true);
+    document.addEventListener('keydown', this.handleKeyDown, true);
+    document.addEventListener('keyup', this.handleKeyUp, true);
   }
 
   setupFocusHandlers() {
@@ -208,6 +210,14 @@ export class InputManager {
   armForGameplay() {
     this.resetAllKeys();
     this.destroyed = false;
+    try {
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+        canvas.tabIndex = 0;
+        canvas.focus?.({ preventScroll: true });
+      }
+      window.focus?.();
+    } catch {}
   }
 
   isFiring() {
@@ -255,6 +265,8 @@ export class InputManager {
   destroy() {
     window.removeEventListener('keydown', this.handleKeyDown, true);
     window.removeEventListener('keyup', this.handleKeyUp, true);
+    document.removeEventListener('keydown', this.handleKeyDown, true);
+    document.removeEventListener('keyup', this.handleKeyUp, true);
     window.removeEventListener('blur', this.handleBlur);
     window.removeEventListener('gamepadconnected', this.handleGamepadConnected);
     window.removeEventListener('gamepaddisconnected', this.handleGamepadDisconnected);

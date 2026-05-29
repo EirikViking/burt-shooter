@@ -219,6 +219,17 @@ export class Game {
     };
 
     this.switchScene('play');
+    const playScene = this.scenes?.play;
+    const armGameplayInput = () => {
+      if (this.currentSceneName !== 'play') return;
+      playScene?.inputManager?.armForGameplay?.();
+      playScene?.focusGameplayCanvas?.();
+    };
+    armGameplayInput();
+    globalThis.requestAnimationFrame?.(armGameplayInput);
+    setTimeout(armGameplayInput, 0);
+    setTimeout(armGameplayInput, 160);
+    setTimeout(armGameplayInput, 640);
     this.primeGlobalLeaderboardTargets();
   }
 

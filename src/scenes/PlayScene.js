@@ -245,6 +245,10 @@ export class PlayScene {
     this.gameContainer.removeChildren();
     this.uiContainer.removeChildren();
     this.uiOverlay.removeChildren();
+    if (this.player) {
+      this.player.destroy?.();
+      this.player = null;
+    }
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
     this.overrunClearEffects = [];
@@ -2408,6 +2412,10 @@ export class PlayScene {
     if (this.inputManager) {
       this.inputManager.destroy();
       this.inputManager = null;
+    }
+    if (this.player) {
+      this.player.destroy?.();
+      this.player = null;
     }
     if (this.touchControls) {
       this.touchControls.destroy();

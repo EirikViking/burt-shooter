@@ -184,6 +184,8 @@ try {
 
   const leaderboardCta = gameOver.leaderboardCta;
   assert(leaderboardCta?.visible && leaderboardCta.width > 0 && leaderboardCta.height > 0, 'leaderboard CTA is not available from game-over', { leaderboardCta });
+  const hangarCta = gameOver.hangarCta;
+  assert(hangarCta?.visible && hangarCta.width > 0 && hangarCta.height > 0, 'hangar CTA is not available from game-over', { hangarCta });
   await page.mouse.click(leaderboardCta.x + leaderboardCta.width / 2, leaderboardCta.y + leaderboardCta.height / 2);
   await page.waitForFunction(() => {
     try {
@@ -205,6 +207,27 @@ try {
     before: leaderboardFirst.highscore?.runAgainCta,
     after: runAgain
   });
+  const runAgainBounds = runAgain.bounds || runAgain;
+  await page.mouse.click(runAgainBounds.x + runAgainBounds.width / 2, runAgainBounds.y + runAgainBounds.height / 2);
+  await page.waitForFunction(() => {
+    try {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'play' && state.player?.active;
+    } catch {
+      return false;
+    }
+  }, null, { timeout: 12000 });
+  await page.waitForTimeout(3600);
+  const playBeforeInput = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await page.keyboard.down('ArrowLeft');
+  await page.waitForTimeout(350);
+  await page.keyboard.up('ArrowLeft');
+  const playAfterInput = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  assert(
+    Number(playAfterInput.player?.x) < Number(playBeforeInput.player?.x) - 1,
+    'keyboard movement did not work after one-more-run restart',
+    { before: playBeforeInput.player, after: playAfterInput.player }
+  );
 
   const report = {
     ok: true,
@@ -213,6 +236,10 @@ try {
     leaderboardScreenshot,
     gameOver,
     leaderboard: leaderboardSecond.highscore,
+    restartedPlay: {
+      before: playBeforeInput.player,
+      after: playAfterInput.player
+    },
     persisted,
     pageErrors,
     consoleErrors

@@ -156,6 +156,14 @@ function resolveBridge() {
   return null;
 }
 
+function hasVerifiedSteamRunDetails(entry = {}) {
+  return entry?.levelKnown === true && Number.isFinite(Number(entry.level)) && Number(entry.level) > 0;
+}
+
+function filterVerifiedSteamEntries(entries = []) {
+  return (Array.isArray(entries) ? entries : []).filter(hasVerifiedSteamRunDetails);
+}
+
 async function callFirst(bridge, methodNames, payload) {
   for (const name of methodNames) {
     const fn = bridge?.[name];
@@ -255,13 +263,14 @@ export class SteamLeaderboardProvider {
       'getScores',
       'downloadEntries'
     ], payload);
-    const entries = normalizeLeaderboardEntries(Array.isArray(raw) ? raw : raw?.entries, { source: 'steam' }).slice(0, limit);
+    const normalizedEntries = normalizeLeaderboardEntries(Array.isArray(raw) ? raw : raw?.entries, { source: 'steam' });
+    const entries = filterVerifiedSteamEntries(normalizedEntries).slice(0, limit);
     return {
       status: entries.length > 0 ? 'available' : 'empty',
       source: 'steam',
       sourceLabel: 'Steam Global',
       entries,
-      message: entries.length > 0 ? 'Steam global records loaded.' : 'Steam global board has no entries yet.'
+      message: entries.length > 0 ? 'Steam global records loaded.' : 'Steam global board has no verified level records yet.'
     };
   }
 
@@ -288,13 +297,14 @@ export class SteamLeaderboardProvider {
       'getScores',
       'downloadEntries'
     ], payload);
-    const entries = normalizeLeaderboardEntries(Array.isArray(raw) ? raw : raw?.entries, { source: 'steam-friends' }).slice(0, limit);
+    const normalizedEntries = normalizeLeaderboardEntries(Array.isArray(raw) ? raw : raw?.entries, { source: 'steam-friends' });
+    const entries = filterVerifiedSteamEntries(normalizedEntries).slice(0, limit);
     return {
       status: entries.length > 0 ? 'available' : 'empty',
       source: 'steam-friends',
       sourceLabel: 'Steam Friends',
       entries,
-      message: entries.length > 0 ? 'Steam friends records loaded.' : 'No friends scores yet.'
+      message: entries.length > 0 ? 'Steam friends records loaded.' : 'No verified friends scores yet.'
     };
   }
 

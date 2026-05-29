@@ -48,6 +48,7 @@ globalThis.Audio ??= class {
 
 const { LeaderboardAdapter } = await import('../src/leaderboard/LeaderboardAdapter.js');
 const { normalizeLeaderboardEntry } = await import('../src/leaderboard/LeaderboardTypes.js');
+const { SteamLeaderboardProvider } = await import('../src/leaderboard/SteamLeaderboardProvider.js');
 const { GameOverScene } = await import('../src/scenes/GameOverScene.js');
 
 const unknownLevel = normalizeLeaderboardEntry({
@@ -69,6 +70,31 @@ const detailedLevel = normalizeLeaderboardEntry({
 });
 assert.equal(detailedLevel.level, 7, 'Steam details[0] must be used as the leaderboard level when present');
 assert.equal(detailedLevel.levelKnown, true, 'Steam rows with score details must expose known level state');
+
+window.__novaSteamLeaderboard = {
+  async isAvailable() {
+    return true;
+  },
+  async getTopScores() {
+    return [
+      { playerName: 'VENERATOR', score: 9000, rank: 1, details: [], source: 'steam' },
+      { playerName: 'GAUNZIMAN', score: 8000, rank: 2, details: [5, 1, 120, 50, 0, 4], source: 'steam' }
+    ];
+  },
+  async getFriendsScores() {
+    return [
+      { playerName: 'LEGACY PAL', score: 7000, rank: 1, details: [], source: 'steam-friends' },
+      { playerName: 'ORBIT PAL', score: 6000, rank: 2, details: [3, 1, 90, 30, 0, 3], source: 'steam-friends' }
+    ];
+  }
+};
+const steamProvider = new SteamLeaderboardProvider();
+const steamGlobal = await steamProvider.getTopScores({ limit: 20 });
+assert.deepEqual(steamGlobal.entries.map((entry) => entry.name), ['GAUNZIMAN'], 'Steam global should hide legacy rows without level details');
+assert.equal(steamGlobal.entries[0]?.level, 5, 'Steam global should keep verified level details visible');
+const steamFriends = await steamProvider.getFriendsScores({ limit: 20 });
+assert.deepEqual(steamFriends.entries.map((entry) => entry.name), ['ORBIT PAL'], 'Steam friends should hide legacy rows without level details');
+delete window.__novaSteamLeaderboard;
 
 const fakeScene = {
   isRankedRun: true,
@@ -135,6 +161,7 @@ console.log(JSON.stringify({
   checks: {
     noNullGlobalPlacement: true,
     unknownSteamLevelNotLevelOne: true,
+    steamLeaderboardsRequireVerifiedLevelDetails: true,
     friendsTabRequiresFriendRows: true
   }
 }, null, 2));
