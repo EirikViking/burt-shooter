@@ -70,6 +70,26 @@ function isDesktopAutoNameRuntime(runtime = {}) {
   return false;
 }
 
+function getUnlockRequirementLabelSource(key) {
+  const labels = {
+    bestScore: 'BEST SCORE',
+    bestSector: 'BEST SECTOR',
+    totalBossesDefeated: 'BOSS RECEIPTS',
+    totalWavesCleared: 'WAVES',
+    totalRuns: 'TOTAL RUNS',
+    pilotRank: 'PILOT RANK',
+    runClears: 'RUN CLEARS',
+    codexDiscoveries: 'CODEX SCANS',
+    noHitWaves: 'NO-HIT WAVES',
+    noHitSectors: 'NO-HIT SECTOR',
+    survivedSeconds: 'SURVIVED',
+    clearWithLivesRemaining: 'LIVES',
+    highestScoreMultiplier: 'MULTIPLIER'
+  };
+  if (labels[key]) return labels[key];
+  return String(key || 'REQUIREMENT').replace(/([a-z0-9])([A-Z])/g, '$1 $2').toUpperCase();
+}
+
 export class GameOverScene {
   constructor(game) {
     this.game = game;
@@ -169,6 +189,7 @@ export class GameOverScene {
     this.globalStatus = 'idle';
     this.globalPlacement = null;
     this.globalPlacementTier = 'none';
+    this.ceremonyFrameBounds = null;
     this.canEnterName = false;
     this.globalQualificationPromise = null;
     this.leaderboardResult = null;
@@ -1063,6 +1084,7 @@ export class GameOverScene {
     // Calculate content height for centering
     const spacing = shortResultLayout ? (layout.isMobile ? 5 : 6) : (layout.isMobile ? 7 : 11);
     const sectionGap = shortResultLayout ? (layout.isMobile ? 8 : 10) : (layout.isMobile ? 12 : 18);
+    const unlockFrameGap = shortResultLayout ? (layout.isMobile ? 12 : 18) : (layout.isMobile ? 4 : 6);
 
     // Use measured text heights so extra unlock/rank lines cannot collide.
     const titleHeight = Math.max(titleSize * 1.2, this.title.height || 0);
@@ -1107,7 +1129,7 @@ export class GameOverScene {
       : visibleSecondaryActions.reduce((max, action) => Math.max(max, action.height), 0);
     const secondarySpacingSlots = secondaryStacked ? visibleSecondaryActions.length : (visibleSecondaryActions.length ? 1 : 0);
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + secondaryHeight + nameHeight + spacing * (9 + secondarySpacingSlots) + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + secondaryHeight + nameHeight + spacing * (9 + secondarySpacingSlots) + sectionGap * 2 + unlockFrameGap;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = shortResultLayout ? (layout.isMobile ? 14 : 18) : (layout.isMobile ? 40 : 50);
@@ -1137,7 +1159,7 @@ export class GameOverScene {
     this.scoreText.y = placeCentered(this.scoreText, spacing * 0.5);
 
     this.levelText.x = width / 2;
-    this.levelText.y = placeCentered(this.levelText, sectionGap);
+    this.levelText.y = placeCentered(this.levelText, sectionGap + unlockFrameGap);
 
     this.unlockText.x = width / 2;
     this.unlockText.y = placeCentered(this.unlockText, spacing);
@@ -1248,6 +1270,7 @@ export class GameOverScene {
         minGap: shortResultLayout ? 4 : 7
       });
     }
+    this.layoutCeremonyVisuals(width, height, layout);
   }
 
   getLayoutBounds(node) {
@@ -2057,9 +2080,27 @@ export class GameOverScene {
 
   layoutCeremonyVisuals(width = this.game.app.screen.width, height = this.game.app.screen.height, layout = getCurrentLayout()) {
     const panelWidth = Math.min(width * (layout.isMobile ? 0.92 : 0.58), layout.isMobile ? 560 : 760);
-    const panelHeight = Math.min(height * (layout.isMobile ? 0.68 : 0.58), layout.isMobile ? 520 : 560);
+    let panelHeight = Math.min(height * (layout.isMobile ? 0.68 : 0.58), layout.isMobile ? 520 : 560);
     const x = (width - panelWidth) / 2;
-    const y = Math.max(layout.safeArea?.top || 0, (height - panelHeight) * (layout.isMobile ? 0.42 : 0.46));
+    let y = Math.max(layout.safeArea?.top || 0, (height - panelHeight) * (layout.isMobile ? 0.42 : 0.46));
+    const compactScoreSurface = ['prompt', 'input', 'submitting', 'submitted', 'runback', 'skipped', 'unranked'].includes(this.state) && height < 900;
+    const levelBounds = this.levelText?.getBounds?.();
+    if (compactScoreSurface && Number.isFinite(levelBounds?.bottom)) {
+      const minPanelHeight = layout.isMobile ? 230 : 300;
+      const bottomReserve = layout.isMobile ? 88 : 104;
+      const maxPanelBottom = height - bottomReserve;
+      const unlockBounds = this.unlockText?.getBounds?.();
+      const minTop = levelBounds.bottom + (layout.isMobile ? 8 : 12);
+      const maxTopBeforeUnlock = Number.isFinite(unlockBounds?.top)
+        ? unlockBounds.top - (layout.isMobile ? 12 : 16)
+        : Infinity;
+      const desiredTop = maxTopBeforeUnlock >= minTop
+        ? Math.min(Math.max(y, minTop), maxTopBeforeUnlock)
+        : minTop;
+      y = Math.min(Math.max(y, desiredTop), Math.max(layout.safeArea?.top || 0, maxPanelBottom - minPanelHeight));
+      panelHeight = Math.max(minPanelHeight, Math.min(panelHeight, maxPanelBottom - y));
+    }
+    this.ceremonyFrameBounds = { x, y, width: panelWidth, height: panelHeight, top: y, bottom: y + panelHeight };
     const accent = this.globalPlacement?.numberOne
       ? 0xffe86a
       : this.globalPlacement?.top3
@@ -2087,6 +2128,22 @@ export class GameOverScene {
       this.ceremonyFrame.rect(x + 20, y + panelHeight - 15, panelWidth - 40, 2);
       this.ceremonyFrame.fill({ color: accent, alpha: 0.38 });
     }
+  }
+
+  getResultLayoutDebugState(getBounds) {
+    const bounds = typeof getBounds === 'function' ? getBounds : (node => node?.getBounds?.() || null);
+    return {
+      frame: this.ceremonyFrameBounds,
+      title: bounds(this.title),
+      score: bounds(this.scoreText),
+      level: bounds(this.levelText),
+      unlock: bounds(this.unlockText),
+      nextGoal: this.nextGoalGroup?.visible ? bounds(this.nextGoalGroup) : null,
+      comment: bounds(this.comment),
+      leaderboardStatus: bounds(this.leaderboardStatusText),
+      prompt: this.promptText?.visible !== false ? bounds(this.promptText) : null,
+      primaryCta: bounds(this.retryButton)
+    };
   }
 
   setupKeyboard() {
@@ -2356,6 +2413,16 @@ export class GameOverScene {
 
   getNewlyUnlockedShips(previousProgress, currentProgress) {
     const ships = getSelectableShips();
+    const explicitIds = [
+      ...(Array.isArray(this.game?.runProgressionResult?.newlyUnlockedShipIds) ? this.game.runProgressionResult.newlyUnlockedShipIds : []),
+      ...(Array.isArray(this.game?.runSummary?.newlyUnlockedShips) ? this.game.runSummary.newlyUnlockedShips : [])
+    ].map(String);
+    if (explicitIds.length > 0) {
+      const idSet = new Set(explicitIds);
+      return ships
+        .filter(ship => idSet.has(String(ship.baseId || ship.id || ship.spriteKey)))
+        .sort((a, b) => (Number(a.unlock?.level) || 1) - (Number(b.unlock?.level) || 1));
+    }
     return ships
       .filter(ship =>
         isShipUnlocked(ship.spriteKey, currentProgress) &&
@@ -2393,10 +2460,17 @@ export class GameOverScene {
     const requirementLine = details.requirements?.length
       ? details.requirements
         .slice(0, 2)
-        .map(item => `${item.key.toUpperCase()} ${Math.min(Number(item.current) || 0, Number(item.target) || 0)}/${item.target}`)
+        .map(item => this.formatUnlockRequirement(item))
         .join('  ')
       : details.label;
     return `NEXT SHIP: ${nextShip.name}\n${details.label.toUpperCase()}\n${requirementLine}`;
+  }
+
+  formatUnlockRequirement(item = {}) {
+    const label = translateText(getUnlockRequirementLabelSource(item.key)).toUpperCase();
+    const target = Math.max(0, Number(item.target) || 0);
+    const current = Math.min(Math.max(0, Number(item.current) || 0), target);
+    return `${label} ${this.formatGoalNumber(current)}/${this.formatGoalNumber(target)}`;
   }
 
   createPilotRankLine(currentProgress = {}) {

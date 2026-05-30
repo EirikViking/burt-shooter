@@ -411,11 +411,19 @@ function buildGameTextState(game) {
     try {
       if (!displayObject?.getBounds) return null;
       const bounds = displayObject.getBounds();
+      const x = Math.round(bounds.x || 0);
+      const y = Math.round(bounds.y || 0);
+      const width = Math.round(bounds.width || 0);
+      const height = Math.round(bounds.height || 0);
       return {
-        x: Math.round(bounds.x || 0),
-        y: Math.round(bounds.y || 0),
-        width: Math.round(bounds.width || 0),
-        height: Math.round(bounds.height || 0)
+        x,
+        y,
+        width,
+        height,
+        left: x,
+        top: y,
+        right: x + width,
+        bottom: y + height
       };
     } catch {
       return null;
@@ -616,6 +624,7 @@ function buildGameTextState(game) {
       hangarCta: gameOverScene.getHangarCtaDebugState ? gameOverScene.getHangarCtaDebugState() : null,
       mainMenuCta: gameOverScene.getMainMenuCtaDebugState ? gameOverScene.getMainMenuCtaDebugState() : null,
       globalCelebration: gameOverScene.getGlobalCelebrationDebugState ? gameOverScene.getGlobalCelebrationDebugState() : null,
+      layout: gameOverScene.getResultLayoutDebugState ? gameOverScene.getResultLayoutDebugState(getBoundsDebug) : null,
       state: gameOverScene.state || null,
       runbackReason: gameOverScene.runbackReason || null,
       steamSubmissionMode: Boolean(gameOverScene.steamSubmissionMode),

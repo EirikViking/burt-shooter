@@ -136,6 +136,29 @@ function fullLocalLeaderboard() {
   }));
 }
 
+function frameClearsLevelText(layout = {}) {
+  const frameTop = Number(layout.frame?.top);
+  const levelBottom = Number.isFinite(Number(layout.level?.bottom))
+    ? Number(layout.level.bottom)
+    : Number(layout.level?.y) + Number(layout.level?.height);
+  if (!Number.isFinite(frameTop) || !Number.isFinite(levelBottom)) return false;
+  return frameTop >= levelBottom + 6;
+}
+
+function frameLeavesUnlockTextClear(layout = {}) {
+  const frameTop = Number(layout.frame?.top);
+  const unlockTop = Number.isFinite(Number(layout.unlock?.top))
+    ? Number(layout.unlock.top)
+    : Number(layout.unlock?.y);
+  if (!Number.isFinite(frameTop) || !Number.isFinite(unlockTop)) return false;
+  return unlockTop >= frameTop + 14;
+}
+
+function hasReadableRequirementLabels(...values) {
+  return !/(BESTSECTOR|BESTSCORE|TOTALBOSSESDEFEATED|TOTALWAVESCLEARED|PILOTRANK|CODEXDISCOVERIES)/i
+    .test(values.filter(Boolean).join('\n'));
+}
+
 observePage(page);
 
 try {
@@ -214,12 +237,29 @@ try {
   const alreadyUnlockedState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const alreadyUnlockedSummary = alreadyUnlockedState.gameOver?.unlockSummary || '';
 
-  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
-  await page.evaluate(() => {
-    localStorage.removeItem('nova.hangarProgress.v1');
+  const careerGoalPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  observePage(careerGoalPage);
+  await careerGoalPage.addInitScript(() => {
     localStorage.removeItem('nova.threatDiscovery.v1');
-    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 8, bestLevel: 21 }));
+    localStorage.removeItem('burt.shipUnlockProgress.v1');
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
+      version: 1,
+      bestScore: 150000,
+      bestRank: 8,
+      pilotXp: 0,
+      pilotRank: 8,
+      highestPilotRank: 8,
+      bestLevel: 1,
+      bestSector: 1,
+      totalBossesDefeated: 0,
+      totalWavesCleared: 0,
+      totalRuns: 0,
+      unlockedShipIds: ['nova_ship_01']
+    }));
+  });
+  await careerGoalPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await careerGoalPage.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
+  await careerGoalPage.evaluate(() => {
     const game = window.__game;
     if (!game) return;
     game.score = 24668;
@@ -228,7 +268,7 @@ try {
     game.lives = 0;
     game.gameOver();
   });
-  await page.waitForFunction(() => {
+  await careerGoalPage.waitForFunction(() => {
     try {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return state.scene === 'gameOver' && state.gameOver?.unlockSummary;
@@ -236,10 +276,49 @@ try {
       return false;
     }
   }, null, { timeout: 10000 });
-  const careerGoalState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const careerGoalState = await careerGoalPage.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const careerGoalDebug = await careerGoalPage.evaluate(() => {
+    const read = (key) => {
+      try {
+        return JSON.parse(localStorage.getItem(key) || 'null');
+      } catch {
+        return null;
+      }
+    };
+    const progressSummary = (progress) => progress ? {
+      bestScore: progress.bestScore,
+      bestSector: progress.bestSector,
+      bestLevel: progress.bestLevel,
+      totalBossesDefeated: progress.totalBossesDefeated,
+      pilotXp: progress.pilotXp,
+      pilotRank: progress.pilotRank,
+      unlockedShipIds: progress.unlockedShipIds,
+      lastNewlyUnlockedShipIds: progress.lastNewlyUnlockedShipIds
+    } : null;
+    const result = window.__game?.runProgressionResult || null;
+    return {
+      storedHangar: progressSummary(read('nova.hangarProgress.v1')),
+      storedLegacy: read('burt.shipUnlockProgress.v1'),
+      runProgressionResult: result ? {
+        previous: progressSummary(result.previous),
+        next: progressSummary(result.next),
+        newlyUnlockedShipIds: result.newlyUnlockedShipIds,
+        newRanksThisRun: result.newRanksThisRun
+      } : null,
+      runSummary: window.__game?.runSummary ? {
+        score: window.__game.runSummary.score,
+        levelReached: window.__game.runSummary.levelReached,
+        sectorReached: window.__game.runSummary.sectorReached,
+        newlyUnlockedShips: window.__game.runSummary.newlyUnlockedShips,
+        pilotXpGained: window.__game.runSummary.pilotXpGained
+      } : null,
+      finalRankIndex: window.__game?.rankIndex ?? null
+    };
+  });
   const careerLevelSummary = careerGoalState.gameOver?.levelSummary || '';
   const careerUnlockSummary = careerGoalState.gameOver?.unlockSummary || '';
   const careerNextGoal = careerGoalState.gameOver?.nextGoal || '';
+  await careerGoalPage.close();
 
   const retryCtaPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   observePage(retryCtaPage);
@@ -313,9 +392,21 @@ try {
     ok: Boolean(
       gameOverState.scene === 'gameOver' &&
       /NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
+      frameClearsLevelText(gameOverState.gameOver?.layout) &&
+      frameClearsLevelText(submittedResultAfterSpinState.gameOver?.layout) &&
+      frameLeavesUnlockTextClear(gameOverState.gameOver?.layout) &&
+      frameLeavesUnlockTextClear(careerGoalState.gameOver?.layout) &&
+      hasReadableRequirementLabels(
+        gameOverState.gameOver?.unlockSummary,
+        alreadyUnlockedSummary,
+        careerUnlockSummary
+      ) &&
       !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
       /GAME OVER:\s*SECTOR 5/i.test(careerLevelSummary) &&
       /NEW SHIPS? UNLOCKED:\s*COMET COURIER/i.test(careerUnlockSummary) &&
+      careerGoalDebug.runProgressionResult?.previous?.bestSector === 1 &&
+      Array.isArray(careerGoalDebug.runProgressionResult?.newlyUnlockedShipIds) &&
+      careerGoalDebug.runProgressionResult.newlyUnlockedShipIds.includes('nova_ship_02') &&
       /NEXT CAREER GOAL:\s*REACH SECTOR 7/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
       /LEADERBOARD FIRST|TYPE NAME/i.test(gameOverState.gameOver?.retryPrompt || '') &&
@@ -380,6 +471,7 @@ try {
     nameInput: nameInputState,
     alreadyUnlocked: alreadyUnlockedState.gameOver,
     careerGoal: careerGoalState.gameOver,
+    careerGoalDebug,
     pageErrors,
     consoleErrors,
     screenshot,

@@ -32,8 +32,7 @@ import {
 import {
   applyRunProgression,
   getHangarProgressSummary,
-  readHangarProgressState,
-  updateHangarProgress
+  readHangarProgressState
 } from '../progression/HangarProgressState.js';
 import { clearAchievementAttention } from '../progression/AchievementAttentionState.js';
 
@@ -427,8 +426,6 @@ export class Game {
     this.scoreBreakdown.dangerMultiplierBonus += Math.max(0, applied - preDangerAward);
     this.scoreBreakdown.finalScore = this.score;
 
-    updateHangarProgress({ bestScore: this.score, bestRank: this.rankIndex, bestLevel: this.level, bestSector: this.level });
-
     // Current rank index is cross-run pilot rank; it updates during post-run finalization.
     const computedRank = this.rankIndex;
 
@@ -576,7 +573,6 @@ export class Game {
 
   nextLevel() {
     this.level++;
-    updateHangarProgress({ score: this.score, rank: this.rankIndex, bestScore: this.score, bestLevel: this.level, bestSector: this.level });
     if (this.currentScene && this.currentScene.startLevel) {
       this.currentScene.startLevel();
     }

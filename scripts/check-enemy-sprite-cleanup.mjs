@@ -126,9 +126,57 @@ try {
   assert(inactiveResult.displayList === 0, 'inactive enemy sprites remain on display list', inactiveResult);
   assert(inactiveResult.orphaned === 0, 'inactive enemy cleanup left orphan sprites', inactiveResult);
 
+  const killPathResult = await page.evaluate(() => {
+    const manager = window.__game.scenes.play.enemyManager;
+    manager.clearEnemies();
+    const result = {
+      killed: 0,
+      parentAfterKill: 0,
+      stillRenderableAfterKill: 0,
+      maxDisplayListAfterWave: 0,
+      maxOrphanedAfterWave: 0,
+      samples: []
+    };
+
+    for (let wave = 0; wave < 10; wave += 1) {
+      manager.spawnWave({ type: wave % 2 === 0 ? 'chaser' : 'bruiser', count: 6, formation: wave % 2 === 0 ? 'ARC' : 'GRID' });
+      const enemies = [...manager.enemies].filter((enemy) => enemy?.sprite?.parent);
+      for (const enemy of enemies) {
+        enemy.waitingForEntry = false;
+        enemy.active = true;
+        enemy.health = Math.max(1, Number(enemy.health) || 1);
+        const sprite = enemy.sprite;
+        const died = enemy.takeDamage(enemy.health + 9999);
+        if (died) result.killed += 1;
+        if (sprite?.parent) result.parentAfterKill += 1;
+        if (sprite?.visible || sprite?.renderable) result.stillRenderableAfterKill += 1;
+        if (result.samples.length < 4) {
+          result.samples.push({
+            died,
+            parentAfterKill: Boolean(sprite?.parent),
+            visible: Boolean(sprite?.visible),
+            renderable: Boolean(sprite?.renderable)
+          });
+        }
+      }
+      manager.updateEnemies(1);
+      const cleanup = manager.getEnemySpriteCleanupDebugState();
+      result.maxDisplayListAfterWave = Math.max(result.maxDisplayListAfterWave, cleanup.displayList || 0);
+      result.maxOrphanedAfterWave = Math.max(result.maxOrphanedAfterWave, cleanup.orphaned || 0);
+      manager.clearEnemies();
+    }
+
+    return result;
+  });
+  assert(killPathResult.killed >= 40, 'kill-path cleanup test did not kill enough enemies', killPathResult);
+  assert(killPathResult.parentAfterKill === 0, 'killed enemy sprites stayed attached to the display list', killPathResult);
+  assert(killPathResult.stillRenderableAfterKill === 0, 'killed enemy sprites stayed visible/renderable', killPathResult);
+  assert(killPathResult.maxDisplayListAfterWave === 0, 'killed enemy sprites accumulated after wave cleanup', killPathResult);
+  assert(killPathResult.maxOrphanedAfterWave === 0, 'killed enemy sprites left orphan display objects after wave cleanup', killPathResult);
+
   const screenshot = path.join(outputDir, 'enemy-sprite-cleanup.png');
   await page.screenshot({ path: screenshot, fullPage: true });
-  const report = { ok: pageErrors.length === 0 && consoleErrors.length === 0, baseUrl, orphanResult, inactiveResult, pageErrors, consoleErrors, screenshot };
+  const report = { ok: pageErrors.length === 0 && consoleErrors.length === 0, baseUrl, orphanResult, inactiveResult, killPathResult, pageErrors, consoleErrors, screenshot };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
   assert(report.ok, 'browser errors during enemy sprite cleanup check', report);
   console.log(`[enemy-sprite-cleanup] PASS screenshot=${screenshot}`);
