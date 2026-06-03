@@ -1,25 +1,25 @@
 {
-  "generatedAt": "2026-06-03T18:44:18.302Z",
+  "generatedAt": "2026-06-03T20:22:45.366Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-06-03_20-31-45",
-    "timestamp": "2026-06-03T18:31:45.117Z"
+    "version": "v2026-06-03_21-53-52",
+    "timestamp": "2026-06-03T19:53:52.043Z"
   },
   "desktopPayload": {
     "path": "release/desktop/win-unpacked/Nova Swarm.exe",
     "sizeBytes": 226666496,
-    "modifiedAt": "2026-06-03T18:33:17.728Z"
+    "modifiedAt": "2026-06-03T20:22:02.808Z"
   },
   "steamApiPayload": {
     "path": "release/desktop/win-unpacked/steam_api64.dll",
     "sizeBytes": 317080,
-    "modifiedAt": "2026-03-10T23:13:48.000Z"
+    "modifiedAt": "2026-05-28T20:49:20.000Z"
   },
   "latestElectronSmoke": {
-    "reportPath": "test-results/electron-smoke-2026-06-03T18-41-24-792Z/report.json",
-    "screenshotPath": "test-results/electron-smoke-2026-06-03T18-41-24-792Z/01-electron-menu.png",
+    "reportPath": "test-results/electron-smoke-2026-06-03T20-22-19-851Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-06-03T20-22-19-851Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-06-03_20-31-45",
+    "build": "v2026-06-03_21-53-52",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "menu",
     "introTitle": null,
@@ -37,10 +37,10 @@
     "consoleEvents": []
   },
   "latestPackagedExeSmoke": {
-    "reportPath": "test-results/packaged-exe-smoke-2026-06-03T18-41-48-913Z/report.json",
-    "screenshotPath": "test-results/packaged-exe-smoke-2026-06-03T18-41-48-913Z/01-electron-menu.png",
+    "reportPath": "test-results/packaged-exe-smoke-2026-06-03T20-22-26-610Z/report.json",
+    "screenshotPath": "test-results/packaged-exe-smoke-2026-06-03T20-22-26-610Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-06-03_20-31-45",
+    "build": "v2026-06-03_21-53-52",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "menu",
     "introTitle": null,
@@ -58,16 +58,15 @@
     "consoleEvents": []
   },
   "latestPackagedControlsSmoke": {
-    "reportPath": "test-results/packaged-control-smoke-2026-06-03T18-42-25-314Z/report.json",
+    "reportPath": "test-results/packaged-control-smoke-2026-06-03T20-22-40-221Z/report.json",
     "screenshotPaths": [
-      "test-results/packaged-control-smoke-2026-06-03T18-42-25-314Z/00-control-start.png",
-      "test-results/packaged-control-smoke-2026-06-03T18-42-25-314Z/01-keyboard-run.png",
-      "test-results/packaged-control-smoke-2026-06-03T18-42-25-314Z/02-keyboard-pause.png",
-      "test-results/packaged-control-smoke-2026-06-03T18-42-25-314Z/03-gamepad-run.png",
-      "test-results/packaged-control-smoke-2026-06-03T18-42-25-314Z/04-gamepad-pause.png"
+      "test-results/packaged-control-smoke-2026-06-03T20-22-40-221Z/01-keyboard-run.png",
+      "test-results/packaged-control-smoke-2026-06-03T20-22-40-221Z/02-keyboard-pause.png",
+      "test-results/packaged-control-smoke-2026-06-03T20-22-40-221Z/03-gamepad-run.png",
+      "test-results/packaged-control-smoke-2026-06-03T20-22-40-221Z/04-gamepad-pause.png"
     ],
     "status": "passed",
-    "build": "v2026-06-03_20-31-45",
+    "build": "v2026-06-03_21-53-52",
     "checks": {
       "keyboardMovement": true,
       "keyboardFire": true,
@@ -80,12 +79,12 @@
     "errors": []
   },
   "latestPackagedPerfSmoke": {
-    "reportPath": "test-results/packaged-perf-smoke-2026-06-03T18-42-47-576Z/report.json",
-    "screenshotPath": "test-results/packaged-perf-smoke-2026-06-03T18-42-47-576Z/01-electron-perf-final.png",
+    "reportPath": "test-results/packaged-perf-smoke-2026-06-03T20-16-33-712Z/report.json",
+    "screenshotPath": "test-results/packaged-perf-smoke-2026-06-03T20-16-33-712Z/01-electron-perf-final.png",
     "status": "passed",
-    "build": "v2026-06-03_20-31-45",
-    "minFps": 59.523809523799216,
-    "avgFps": 60.11018176445941,
+    "build": "v2026-06-03_21-53-52",
+    "minFps": 59.88023952094243,
+    "avgFps": 60.07739574122738,
     "minRequiredFps": 50,
     "consoleEvents": [],
     "errors": []

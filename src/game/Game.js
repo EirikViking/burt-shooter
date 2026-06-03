@@ -57,6 +57,7 @@ export class Game {
     this.runPressureDirector = null;
     this.contentDirector = null;
     this.scoreBreakdown = this.createEmptyScoreBreakdown();
+    this.gameOverTransitionPending = false;
 
     this.scenes = {
       intro: new IntroScene(this),
@@ -190,6 +191,7 @@ export class Game {
     this.runSummary = null;
     this.runProgressionResult = null;
     this.scoreBreakdown = this.createEmptyScoreBreakdown();
+    this.gameOverTransitionPending = false;
     this.hangarProgressAtRunStart = readHangarProgressState();
     this.runPressureDirector = new RunPressureDirector(this);
     this.contentDirector = new RunContentDirector(this, {
@@ -232,14 +234,41 @@ export class Game {
     return this.runMode !== 'unranked' && !this.isDebugRun;
   }
 
-  gameOver() {
-    this.finalizeRunProgression({
+  gameOver(options = {}) {
+    const fromInterlude = Boolean(options?.fromInterlude);
+    const skipInterlude = Boolean(globalThis?.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__);
+    const progressionOverrides = {
       runCleared: Boolean(this.runCleared),
       clearReason: this.runClearReason || null,
       clearLivesRemaining: this.runClearLivesRemaining || 0
-    });
+    };
+    if (
+      !fromInterlude &&
+      !skipInterlude &&
+      !this.gameOverTransitionPending &&
+      this.currentSceneName === 'play' &&
+      typeof this.currentScene?.showGameOverInterlude === 'function'
+    ) {
+      this.finalizeRunProgression(progressionOverrides);
+      this.triggerGameOverInterlude();
+      return;
+    }
+    if (this.state === GameState.GAME_OVER && this.currentScene === this.scenes?.gameOver) return;
+    this.gameOverTransitionPending = false;
+    this.finalizeRunProgression(progressionOverrides);
     this.state = GameState.GAME_OVER;
     this.switchScene('gameOver');
+  }
+
+  triggerGameOverInterlude() {
+    if (this.gameOverTransitionPending) return;
+    this.gameOverTransitionPending = true;
+    const complete = () => {
+      if (!this.gameOverTransitionPending) return;
+      this.gameOver({ fromInterlude: true });
+    };
+    const shown = this.currentScene?.showGameOverInterlude?.(complete);
+    if (!shown) complete();
   }
 
   markRunClear(reason = 'target_sector_clear') {

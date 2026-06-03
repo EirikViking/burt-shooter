@@ -33,6 +33,13 @@ const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
 const PILOT_NAME_MAX_LENGTH = 14;
 const CONTROLLER_NAME_STORAGE_KEY = 'nova.controllerPilotName.v1';
+
+function formatUnlockRequirementProgress(item) {
+  const current = Math.min(Number(item?.current) || 0, Number(item?.target) || 0);
+  const target = Number(item?.target) || 0;
+  const suffix = item?.key === 'survivedSeconds' ? 's' : '';
+  return `${current.toLocaleString('en-US')}${suffix}/${target.toLocaleString('en-US')}${suffix}`;
+}
 const CONTROLLER_NAME_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const CONTROLLER_INITIALS_LENGTH = 3;
 
@@ -1818,7 +1825,7 @@ export class GameOverScene {
     const requirementLine = details.requirements?.length
       ? details.requirements
         .slice(0, 2)
-        .map(item => `${item.key.toUpperCase()} ${Math.min(Number(item.current) || 0, Number(item.target) || 0)}/${item.target}`)
+        .map(item => formatUnlockRequirementProgress(item))
         .join('  ')
       : details.label;
     return `NEXT SHIP: ${nextShip.name}\n${details.label.toUpperCase()}\n${requirementLine}`;

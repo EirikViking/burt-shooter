@@ -400,7 +400,8 @@ try {
       /CAREER BEST:\s*SECTOR 7/i.test(careerLevelSummary) &&
       /NEXT SHIP:\s*VIOLET FEINT/i.test(careerUnlockSummary) &&
       /SURVIVE 15 MINUTES/i.test(careerUnlockSummary) &&
-      /SURVIVEDSECONDS 0\/900/i.test(careerUnlockSummary) &&
+      /\b\d+s\/900s\b/i.test(careerUnlockSummary) &&
+      !/SURVIVEDSECONDS/i.test(careerUnlockSummary) &&
       /NEXT CAREER GOAL:\s*REACH SECTOR 9/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
       /LEADERBOARD FIRST|TYPE NAME/i.test(gameOverState.gameOver?.retryPrompt || '') &&

@@ -477,6 +477,9 @@ function buildGameTextState(game) {
       levelJumpAvailable: typeof playScene.debugJumpToLevel === 'function'
     } : null,
     toast: playScene?.getToastDebugState ? playScene.getToastDebugState() : null,
+    gameOverInterlude: playScene?.getGameOverInterludeDebugState
+      ? playScene.getGameOverInterludeDebugState(getBoundsDebug)
+      : { active: false, visible: false },
     scoring: playScene ? {
       comboCount: playScene.comboCount || 0,
       comboMultiplier: playScene.comboMultiplier || 1,

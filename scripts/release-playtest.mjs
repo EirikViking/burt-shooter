@@ -523,6 +523,11 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
   }
 
   const nonBossVisibleCount = visibleTargets.filter((enemy) => enemy.kind !== 'boss').length;
+  const lowLives = Number.isFinite(state.lives) && state.lives <= 1;
+  const cleanupTargets = state.enemyManagerState === 'WAVE_ACTIVE' &&
+    nonBossVisibleCount > 0 &&
+    nonBossVisibleCount <= 3 &&
+    !lowLives;
   const pressure = (state.enemyBullets?.length || 0) +
     visibleTargets.filter((enemy) => enemy.kind !== 'boss' && enemy.y > viewportHeight * 0.48).length * 2;
   const nearbyBulletCount = (state.enemyBullets || []).filter((bullet) => {
@@ -537,8 +542,8 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
     const dy = Math.abs((bullet.y ?? 0) - playerY);
     return dy < 270 && dx < 165;
   }).length;
-  const lowLives = Number.isFinite(state.lives) && state.lives <= 1;
-  const highPressure = lowLives || pressure >= 5 || immediateBulletCount > 0;
+  const effectivePressure = cleanupTargets && immediateBulletCount === 0 ? Math.min(pressure, 4) : pressure;
+  const highPressure = lowLives || effectivePressure >= 5 || immediateBulletCount > 0;
   const safeLeft = lowLives ? viewportWidth * 0.18 : highPressure ? viewportWidth * 0.15 : margin;
   const safeRight = lowLives ? viewportWidth * 0.82 : highPressure ? viewportWidth * 0.85 : viewportWidth - margin;
   const safeBottom = lowLives ? viewportHeight * 0.64 : highPressure ? viewportHeight * 0.62 : combatBottom;
@@ -580,6 +585,10 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
     ? (immediateBulletCount > 0 ? 0.18 : 0.35)
     : immediateBulletCount > 0
       ? 0.035
+      : cleanupTargets && nearbyBulletCount > 0
+        ? 0.36
+      : cleanupTargets
+        ? 0.58
       : nearbyBulletCount > 0 && nonBossVisibleCount <= 3
         ? 0.18
         : nearbyBulletCount > 0
@@ -605,7 +614,7 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
           ? viewportHeight * 0.58
           : viewportHeight * 0.61;
       const verticalPreference = Math.abs(y - preferredY) * 0.08;
-      const centerBias = Math.abs(x - viewportWidth * 0.5) * (lowLives ? 0.028 : 0.018);
+      const centerBias = Math.abs(x - viewportWidth * 0.5) * (cleanupTargets ? 0.004 : lowLives ? 0.028 : 0.018);
       const edgePenalty = Math.max(0, viewportWidth * 0.18 - x) * (lowLives ? 1.8 : 0.9) +
         Math.max(0, x - viewportWidth * 0.82) * (lowLives ? 1.8 : 0.9);
       const bottomPenalty = Math.max(0, y - viewportHeight * (lowLives ? 0.58 : highPressure ? 0.62 : 0.66)) * (lowLives ? 2.4 : highPressure ? 1.35 : 0.8);
