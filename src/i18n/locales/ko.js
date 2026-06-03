@@ -399,6 +399,11 @@ const sourceText = Object.freeze({
 
   'BOSS': '보스',
   'BOSS INCOMING': '보스 접근',
+  'Mission Control is hiding under the desk.': '미션 관제부가 책상 밑에 숨었습니다.',
+  'The boss brought paperwork. This is not a drill.': '보스가 서류를 들고 왔습니다. 훈련이 아닙니다.',
+  'Please stop the boss before it invoices us.': '보스가 청구서를 보내기 전에 막아 주세요.',
+  'Cabinet says this is fine. Cabinet is lying.': 'Cabinet은 괜찮다고 합니다. Cabinet은 거짓말 중입니다.',
+  'Warning: enormous problem with excellent lighting.': '경고: 조명은 훌륭하지만 문제가 거대합니다.',
   'BOSS DEFEATED': '보스 격파',
   'BOSS ALERT': '보스 경보',
   'BOSS WEAKENING': '보스 약화',

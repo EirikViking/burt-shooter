@@ -49,7 +49,9 @@ export class RankManager {
     }
 
     getRankString(rankIndex) {
-        return `RANK ${rankIndex.toString().padStart(3, '0')}`;
+        const normalized = Math.max(0, Math.floor(Number(rankIndex) || 0));
+        const displayRank = Math.min(MAX_RANK_INDEX + 1, normalized + 1);
+        return `RANK ${String(displayRank).padStart(3, '0')}`;
     }
 
     getRankProgress(level, rankIndex) {

@@ -1,5 +1,5 @@
 console.log('Confirmed current visual settings:');
-console.log('[ ] nova_swarm_global_score exists');
+console.log('[ ] nova_swarm_global_score_v2 exists');
 console.log('[ ] Sort is Descending / Synkende');
 console.log('[ ] Display is Numeric / Numerisk');
 console.log('[ ] Writer / Skriver is "-"');
@@ -11,6 +11,6 @@ console.log('Remaining checks:');
 console.log('[ ] Wait 10 to 15 minutes after live probes');
 console.log('[ ] Run only one upload probe');
 console.log('[ ] Test from Steam client launch options, not only npm/direct launch');
-console.log('[ ] If still failing, create nova_swarm_global_score_v2_test with same settings');
-console.log('[ ] Test with --leaderboard=nova_swarm_global_score_v2_test');
-console.log('[ ] If v2 also fails, escalate to Steamworks support with raw callback JSON');
+console.log('[ ] If still failing, create nova_swarm_global_score_v3_test with same settings');
+console.log('[ ] Test with --leaderboard=nova_swarm_global_score_v3_test');
+console.log('[ ] If a fresh board also fails, escalate to Steamworks support with raw callback JSON');

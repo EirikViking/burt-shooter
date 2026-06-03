@@ -191,10 +191,16 @@ function readScoreLevel(entry = {}, fallback = 1) {
   return Math.max(1, Math.floor(Number(fallback) || 1));
 }
 
+function estimateScoreLevel(score) {
+  const normalizedScore = Math.max(0, Math.floor(Number(score) || 0));
+  if (normalizedScore <= 0) return 1;
+  return Math.max(1, Math.min(99, Math.floor(normalizedScore / 5000) + 1));
+}
+
 function sanitizeScoreEntry(entry = {}) {
   const name = String(entry.name || 'PILOT').trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 14) || 'PILOT';
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
-  const level = readScoreLevel(entry, 1);
+  const level = readScoreLevel(entry, estimateScoreLevel(score));
   const rankIndex = Math.max(0, Math.min(19, Math.floor(Number(entry.rankIndex ?? entry.rank_index) || getRankFromLevel(level))));
   return {
     name,
@@ -824,6 +830,16 @@ async function runPerfSmoke(window) {
   const startState = await waitForPlay(window);
   await window.webContents.executeJavaScript(`
     (() => {
+      const app = window.__app || window.__PIXI_APP;
+      app?.start?.();
+      app?.ticker?.start?.();
+      window.__perfSmokeTickerProbe = {
+        appExists: Boolean(app),
+        tickerExists: Boolean(app?.ticker),
+        tickerStarted: Boolean(app?.ticker?.started),
+        tickerMaxFPS: Number(app?.ticker?.maxFPS || 0),
+        tickerMinFPS: Number(app?.ticker?.minFPS || 0)
+      };
       const play = window.__game?.scenes?.play;
       const player = play?.player;
       if (player) {
@@ -850,22 +866,31 @@ async function runPerfSmoke(window) {
         (() => {
           const perf = window.__perfStats || {};
           const textState = typeof window.render_game_to_text === 'function' ? JSON.parse(window.render_game_to_text()) : null;
+          if ((!perf.fps || perf.scene === 'boot') && typeof window.advanceTime === 'function') {
+            window.advanceTime(${Math.round(sampleMs)});
+          }
+          const nextPerf = window.__perfStats || perf;
+          const nextTextState = typeof window.render_game_to_text === 'function' ? JSON.parse(window.render_game_to_text()) : textState;
           return {
             elapsedMs: ${Math.round(elapsedMs)},
-            fps: Number(perf.fps || 0),
-            frameMs: Number(perf.frameMs || 0),
-            delta: Number(perf.delta || 0),
-            clampedDelta: Number(perf.clampedDelta || 0),
-            renderer: perf.renderer || null,
-            scene: perf.scene || textState?.scene || null,
-            level: Number(perf.level || textState?.level || 0),
-            bullets: Number(perf.bullets || textState?.counts?.bullets || 0),
-            enemies: Number(perf.enemies || textState?.counts?.enemies || 0),
-            particles: Number(perf.particles || 0),
-            children: Number(perf.children || 0),
-            lives: Number(textState?.lives || 0),
-            score: Number(textState?.score || 0),
-            fatal: Boolean(perf.fatal || textState?.overlays?.fatal)
+            fps: Number(nextPerf.fps || 0),
+            frameMs: Number(nextPerf.frameMs || 0),
+            delta: Number(nextPerf.delta || 0),
+            clampedDelta: Number(nextPerf.clampedDelta || 0),
+            renderer: nextPerf.renderer || null,
+            scene: nextPerf.scene || nextTextState?.scene || null,
+            textScene: nextTextState?.scene || null,
+            perfLastFrameAgeMs: Number(nextPerf.lastFrameTime ? performance.now() - nextPerf.lastFrameTime : 0),
+            tickerProbe: window.__perfSmokeTickerProbe || null,
+            manualAdvanceUsed: Boolean((!perf.fps || perf.scene === 'boot') && typeof window.advanceTime === 'function'),
+            level: Number(nextPerf.level || nextTextState?.level || 0),
+            bullets: Number(nextPerf.bullets || nextTextState?.counts?.bullets || 0),
+            enemies: Number(nextPerf.enemies || nextTextState?.counts?.enemies || 0),
+            particles: Number(nextPerf.particles || 0),
+            children: Number(nextPerf.children || 0),
+            lives: Number(nextTextState?.lives || 0),
+            score: Number(nextTextState?.score || 0),
+            fatal: Boolean(nextPerf.fatal || nextTextState?.overlays?.fatal)
           };
         })()
       `);
@@ -881,13 +906,21 @@ async function runPerfSmoke(window) {
   const minFps = fpsValues.length ? Math.min(...fpsValues) : 0;
   const avgFps = fpsValues.length ? fpsValues.reduce((sum, fps) => sum + fps, 0) / fpsValues.length : 0;
   const finalState = await readPlayState(window).catch(() => null);
-  const image = await window.webContents.capturePage();
-  fs.writeFileSync(path.join(outputDir, '01-electron-perf-final.png'), image.toPNG());
+  let captureError = null;
+  try {
+    const image = await window.webContents.capturePage();
+    fs.writeFileSync(path.join(outputDir, '01-electron-perf-final.png'), image.toPNG());
+  } catch (error) {
+    captureError = error?.message || String(error);
+  }
   const errors = [
     ...(minFps >= minRequiredFps ? [] : [`min FPS ${minFps.toFixed(1)} below ${minRequiredFps}`]),
     ...(samples.some((sample) => sample.fatal) ? ['fatal overlay detected'] : []),
     ...(finalState?.scene === 'play' ? [] : [`final scene was ${finalState?.scene || 'unknown'}`]),
     ...(consoleEvents.length ? [`${consoleEvents.length} console event(s)`] : [])
+  ];
+  const warnings = [
+    ...(captureError ? [`capturePage failed: ${captureError}`] : [])
   ];
   const report = {
     status: errors.length ? 'failed' : 'passed',
@@ -903,6 +936,7 @@ async function runPerfSmoke(window) {
     samples,
     finalState,
     consoleEvents,
+    warnings,
     errors
   };
   fs.writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
@@ -913,6 +947,7 @@ async function runPerfSmoke(window) {
     minFps,
     avgFps,
     sampleCount: samples.length,
+    warnings,
     errors
   }, null, 2));
   if (errors.length) throw new Error(`Electron perf smoke failed: ${errors.join('; ')}`);

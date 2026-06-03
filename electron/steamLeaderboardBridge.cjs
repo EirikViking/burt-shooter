@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score';
+const DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 const STEAM_LEADERBOARD_NAME = process.env.NOVA_SWARM_STEAM_LEADERBOARD_NAME || DEFAULT_STEAM_LEADERBOARD_NAME;
 const INT32_MAX = 2147483647;
 const MAX_STEAM_DOWNLOAD_ENTRIES = 100;
@@ -53,9 +53,11 @@ function readSteamAppId(rootDir) {
   if (fromEnv && /^\d+$/.test(String(fromEnv).trim())) return Number(fromEnv);
 
   const candidates = [
+    process.execPath ? path.join(path.dirname(process.execPath), 'steam_appid.txt') : null,
+    process.resourcesPath ? path.join(path.dirname(process.resourcesPath), 'steam_appid.txt') : null,
     path.join(rootDir, 'steam_appid.txt'),
     path.join(process.cwd(), 'steam_appid.txt')
-  ];
+  ].filter(Boolean);
   for (const candidate of candidates) {
     try {
       const raw = fs.readFileSync(candidate, 'utf8').trim();
@@ -222,6 +224,12 @@ function readScoreLevel(entry = {}, metadata = {}, details = [], fallback = 1) {
     if (Number.isFinite(parsed)) return Math.max(1, Math.floor(parsed));
   }
   return Math.max(1, Math.floor(Number(fallback) || 1));
+}
+
+function estimateLevelFromScore(score) {
+  const normalizedScore = Math.max(0, integer(score, 0));
+  if (normalizedScore <= 0) return 1;
+  return Math.max(1, Math.min(99, Math.floor(normalizedScore / 5000) + 1));
 }
 
 function jsonSafe(value) {
@@ -471,7 +479,7 @@ class SteamLeaderboardBridge {
       const details = sanitizeDetails(entry.details ?? entry.scoreDetails ?? entry.m_pDetails);
       const steamId = stringifySteamId(entry.steamId ?? entry.steamID ?? entry.m_steamIDUser);
       const metadata = detailsMetadata(details);
-      const level = readScoreLevel(entry, metadata, details, 1);
+      const level = readScoreLevel(entry, metadata, details, estimateLevelFromScore(entry.score ?? entry.m_nScore));
       return {
         rank: integer(entry.globalRank ?? entry.rank ?? entry.m_nGlobalRank, index + 1),
         globalRank: integer(entry.globalRank ?? entry.rank ?? entry.m_nGlobalRank, index + 1),

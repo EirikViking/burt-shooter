@@ -61,6 +61,8 @@ installCloudFetch();
 
 const { createLeaderboardAdapter } = await import('../src/leaderboard/LeaderboardAdapter.js');
 const {
+  STEAM_LEADERBOARD_NAME,
+  estimateLeaderboardLevelFromScore,
   getPilotNameValidation,
   normalizeLeaderboardEntry,
   toPublicPilotName
@@ -70,6 +72,10 @@ const { LOCAL_LEADERBOARD_KEY, LocalLeaderboard } = await import('../src/api/Loc
 assert.equal(normalizeLeaderboardEntry({ name: 'META', score: 100, metadata: { level: 9 } })?.level, 9);
 assert.equal(normalizeLeaderboardEntry({ name: 'DETAILS', score: 100, details: [10] })?.level, 10);
 assert.equal(normalizeLeaderboardEntry({ name: 'REACHED', score: 100, levelReached: 11 })?.level, 11);
+assert.equal(estimateLeaderboardLevelFromScore(69212), 14);
+assert.equal(normalizeLeaderboardEntry({ name: 'STEAMOLD', score: 69212 })?.level, 14, 'legacy Steam rows without details must not display as LV1');
+assert.equal(normalizeLeaderboardEntry({ name: 'DETAILSWIN', score: 69212, details: [6] })?.level, 6, 'encoded Steam details must beat score fallback');
+assert.equal(STEAM_LEADERBOARD_NAME, 'nova_swarm_global_score_v2', 'Steam default leaderboard must stay on the metadata-preserving v2 board');
 
 async function checkWebRuntime() {
   const win = installWindow();
@@ -124,6 +130,20 @@ async function checkMockSteamRuntime() {
   const adapter = createLeaderboardAdapter();
   await adapter.refreshAvailability();
   assert.equal(adapter.isSteamAvailable(), true, 'mock Steam runtime should be available');
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'local'], 'Steam Friends tab should stay hidden without friend entries');
+
+  win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
+    {
+      playerName: 'ORBIT FRIEND',
+      name: 'ORBIT FRIEND',
+      score: 10000,
+      level: 4,
+      rankIndex: 4,
+      source: 'steam-friends',
+      timestamp: '2026-02-01T00:00:00.000Z'
+    }
+  ]));
+  await adapter.refreshAvailability();
   assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'friends', 'local']);
 
   const result = await adapter.submitScore({

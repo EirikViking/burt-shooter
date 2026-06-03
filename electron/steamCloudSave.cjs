@@ -134,6 +134,130 @@ function sanitizeUnlockProgress(progress = {}) {
   };
 }
 
+function sanitizeStringArray(values, { maxItems = 500, maxLength = 180 } = {}) {
+  if (!Array.isArray(values)) return [];
+  return [...new Set(values
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .map((value) => value.slice(0, maxLength)))]
+    .slice(0, maxItems);
+}
+
+function sanitizeNumber(value, fallback = 0, { min = 0, max = 2147483647 } = {}) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(min, Math.min(max, Math.floor(number)));
+}
+
+function sanitizeJsonValue(value, depth = 2) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') return value.slice(0, 300);
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'boolean') return value;
+  if (Array.isArray(value)) {
+    if (depth <= 0) return [];
+    return value.slice(0, 80).map((entry) => sanitizeJsonValue(entry, depth - 1));
+  }
+  if (typeof value === 'object') {
+    if (depth <= 0) return {};
+    return Object.fromEntries(
+      Object.entries(value)
+        .slice(0, 80)
+        .map(([key, entry]) => [String(key).slice(0, 120), sanitizeJsonValue(entry, depth - 1)])
+    );
+  }
+  return null;
+}
+
+function sanitizeHangarProgress(progress = {}) {
+  const raw = progress && typeof progress === 'object' ? progress : {};
+  const shipSpecificMilestones = raw.shipSpecificMilestones && typeof raw.shipSpecificMilestones === 'object'
+    ? sanitizeJsonValue(raw.shipSpecificMilestones, 2)
+    : {};
+  return {
+    version: Math.max(1, sanitizeNumber(raw.version, 1)),
+    unlockTuningVersion: sanitizeNumber(raw.unlockTuningVersion, 0),
+    pilotXp: sanitizeNumber(raw.pilotXp, 0),
+    pilotRank: sanitizeNumber(raw.pilotRank, 0, { min: 0, max: 20 }),
+    highestPilotRank: sanitizeNumber(raw.highestPilotRank, 0, { min: 0, max: 20 }),
+    totalRuns: sanitizeNumber(raw.totalRuns, 0),
+    bestScore: sanitizeNumber(raw.bestScore, 0),
+    bestSector: Math.max(1, sanitizeNumber(raw.bestSector ?? raw.bestLevel, 1, { min: 1 })),
+    bestLevel: Math.max(1, sanitizeNumber(raw.bestLevel ?? raw.bestSector, 1, { min: 1 })),
+    bestRank: sanitizeNumber(raw.bestRank, 0, { min: 0, max: 20 }),
+    bestRunTimeSeconds: sanitizeNumber(raw.bestRunTimeSeconds, 0),
+    survivedSeconds: sanitizeNumber(raw.survivedSeconds, 0),
+    totalBossesDefeated: sanitizeNumber(raw.totalBossesDefeated, 0),
+    totalWavesCleared: sanitizeNumber(raw.totalWavesCleared, 0),
+    totalCodexDiscoveries: sanitizeNumber(raw.totalCodexDiscoveries, 0),
+    runClears: sanitizeNumber(raw.runClears, 0),
+    noHitWaves: sanitizeNumber(raw.noHitWaves, 0),
+    noHitSectors: sanitizeNumber(raw.noHitSectors, 0),
+    clearWithLivesRemaining: sanitizeNumber(raw.clearWithLivesRemaining, 0),
+    highestScoreMultiplier: Math.max(1, Number(raw.highestScoreMultiplier) || 1),
+    shipSpecificMilestones,
+    discoveredThreatIds: sanitizeStringArray(raw.discoveredThreatIds),
+    defeatedBossIds: sanitizeStringArray(raw.defeatedBossIds),
+    runThemesSurvived: sanitizeStringArray(raw.runThemesSurvived),
+    secretShipUnlockIds: sanitizeStringArray(raw.secretShipUnlockIds),
+    creditsEasterEggFound: Boolean(raw.creditsEasterEggFound),
+    unlockedShipIds: sanitizeStringArray(raw.unlockedShipIds),
+    lastNewlyUnlockedShipIds: sanitizeStringArray(raw.lastNewlyUnlockedShipIds),
+    newRanksThisRun: sanitizeStringArray(raw.newRanksThisRun, { maxItems: 32, maxLength: 12 })
+      .map((value) => sanitizeNumber(value, 0, { min: 0, max: 20 })),
+    rankAchievementsUnlocked: sanitizeStringArray(raw.rankAchievementsUnlocked),
+    rankProgress: raw.rankProgress && typeof raw.rankProgress === 'object'
+      ? sanitizeJsonValue(raw.rankProgress, 1)
+      : null,
+    updatedAt: raw.updatedAt ? String(raw.updatedAt).slice(0, 80) : nowIso()
+  };
+}
+
+function sanitizeThreatItem(item = {}, fallback = {}) {
+  const raw = item && typeof item === 'object' ? item : {};
+  return {
+    id: String(raw.id || fallback.id || '').slice(0, 160),
+    category: String(raw.category || fallback.category || '').slice(0, 80),
+    name: String(raw.name || fallback.name || raw.id || fallback.id || 'Unknown Signal').slice(0, 180),
+    firstSeenAt: raw.firstSeenAt ? String(raw.firstSeenAt).slice(0, 80) : nowIso(),
+    lastSeenAt: raw.lastSeenAt ? String(raw.lastSeenAt).slice(0, 80) : nowIso(),
+    timesSeen: sanitizeNumber(raw.timesSeen, 0),
+    timesDefeated: sanitizeNumber(raw.timesDefeated, 0),
+    timesSurvived: sanitizeNumber(raw.timesSurvived, 0),
+    timesKilledPlayer: sanitizeNumber(raw.timesKilledPlayer, 0),
+    bestClearTimeAgainst: raw.bestClearTimeAgainst == null ? null : Number(raw.bestClearTimeAgainst) || null,
+    highestScoreDuringEncounter: sanitizeNumber(raw.highestScoreDuringEncounter, 0),
+    metadata: raw.metadata && typeof raw.metadata === 'object' ? sanitizeJsonValue(raw.metadata, 2) : {}
+  };
+}
+
+function sanitizeThreatDiscovery(discovery = {}) {
+  const raw = discovery && typeof discovery === 'object' ? discovery : {};
+  const rawItems = raw.items && typeof raw.items === 'object' ? raw.items : {};
+  const items = {};
+  for (const [category, bucket] of Object.entries(rawItems).slice(0, 24)) {
+    const cleanCategory = String(category || '').slice(0, 80);
+    if (!cleanCategory || !bucket || typeof bucket !== 'object') continue;
+    items[cleanCategory] = Object.fromEntries(
+      Object.entries(bucket)
+        .slice(0, 500)
+        .filter(([id]) => String(id || '').trim())
+        .map(([id, item]) => [String(id).slice(0, 160), sanitizeThreatItem(item, { id, category: cleanCategory })])
+    );
+  }
+  const discoveriesThisRun = Array.isArray(raw.discoveriesThisRun)
+    ? raw.discoveriesThisRun.slice(-80).map((entry) => sanitizeJsonValue(entry, 2)).filter(Boolean)
+    : [];
+  return {
+    version: Math.max(1, sanitizeNumber(raw.version, 1)),
+    items,
+    discoveriesThisRun,
+    recentRunThemes: sanitizeStringArray(raw.recentRunThemes, { maxItems: 8 }),
+    unreadIds: sanitizeStringArray(raw.unreadIds),
+    updatedAt: raw.updatedAt ? String(raw.updatedAt).slice(0, 80) : nowIso()
+  };
+}
+
 function sanitizeLanguageState(language = {}) {
   const preference = SUPPORTED_LANGUAGE_MODES.has(language.preference) ? language.preference : 'system';
   const current = SUPPORTED_LANGUAGE_MODES.has(language.current) && language.current !== 'system'
@@ -205,6 +329,8 @@ function sanitizeRendererState(state = {}) {
     achievements: sanitizeAchievements(state.achievements || state.achievementMirror),
     selectedShipKey,
     progression: sanitizeUnlockProgress(state.progression || state.unlockProgress || {}),
+    hangarProgress: sanitizeHangarProgress(state.hangarProgress || {}),
+    threatDiscovery: sanitizeThreatDiscovery(state.threatDiscovery || {}),
     settings: sanitizeSettings(state.settings || {})
   };
 }
@@ -218,6 +344,8 @@ function createEmptySave() {
     achievements: sanitizeAchievements(),
     selectedShipKey: null,
     progression: sanitizeUnlockProgress(),
+    hangarProgress: sanitizeHangarProgress(),
+    threatDiscovery: sanitizeThreatDiscovery(),
     settings: sanitizeSettings()
   };
 }
@@ -232,6 +360,8 @@ function normalizeSave(rawSave = {}, localHighscores = null) {
     achievements: rendererState.achievements,
     selectedShipKey: rendererState.selectedShipKey,
     progression: rendererState.progression,
+    hangarProgress: rendererState.hangarProgress,
+    threatDiscovery: rendererState.threatDiscovery,
     settings: rendererState.settings
   };
 }
@@ -299,6 +429,12 @@ function createSteamCloudSave(userDataPath, logger = console) {
         : current.achievements,
       selectedShipKey: rendererState.selectedShipKey || current.selectedShipKey || null,
       progression: rendererState.progression,
+      hangarProgress: Object.hasOwn(state, 'hangarProgress')
+        ? rendererState.hangarProgress
+        : current.hangarProgress,
+      threatDiscovery: Object.hasOwn(state, 'threatDiscovery')
+        ? rendererState.threatDiscovery
+        : current.threatDiscovery,
       settings: rendererState.settings
     });
   }
@@ -313,6 +449,10 @@ function createSteamCloudSave(userDataPath, logger = console) {
       achievementMirrorCount: save.achievements.unlocked.length,
       selectedShipKey: save.selectedShipKey,
       progression: save.progression,
+      hangarPilotXp: Math.max(0, Math.floor(Number(save.hangarProgress?.pilotXp) || 0)),
+      hangarUnlockedShips: Array.isArray(save.hangarProgress?.unlockedShipIds) ? save.hangarProgress.unlockedShipIds.length : 0,
+      threatDiscoveryCategories: Object.keys(save.threatDiscovery?.items || {}).length,
+      threatDiscoveryUnread: Array.isArray(save.threatDiscovery?.unreadIds) ? save.threatDiscovery.unreadIds.length : 0,
       updatedAt: save.updatedAt
     };
   }
@@ -358,5 +498,7 @@ module.exports = {
   getPaths,
   sanitizeScores,
   sanitizeAchievements,
-  sanitizeRendererState
+  sanitizeRendererState,
+  sanitizeHangarProgress,
+  sanitizeThreatDiscovery
 };

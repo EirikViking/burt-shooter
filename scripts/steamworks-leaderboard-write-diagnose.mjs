@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const APP_ID = '4765070';
 const DEPOT_ID = '4765071';
-const LEADERBOARD_NAME = 'nova_swarm_global_score';
+const LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 const EXPECTED_LATEST_BUILD_ID = '23352036';
 const REPORT_PREFIX = 'steamworks-leaderboard-write-diagnose';
 
@@ -346,8 +346,8 @@ function manualChecks() {
   return [
     {
       label: 'Leaderboard configuration',
-      page: 'Steamworks App Admin -> Nova Swarm (4765070) -> Stats & Achievements -> Leaderboards -> nova_swarm_global_score',
-      expected: ['Writer / Skriver = "-"', 'Reader / Leser = "-"', 'Lobby = "-"', 'Sort = Descending / Synkende', 'Display = Numeric / Numerisk', 'Internal name = nova_swarm_global_score'],
+      page: 'Steamworks App Admin -> Nova Swarm (4765070) -> Stats & Achievements -> Leaderboards -> nova_swarm_global_score_v2',
+      expected: ['Writer / Skriver = "-"', 'Reader / Leser = "-"', 'Lobby = "-"', 'Sort = Descending / Synkende', 'Display = Numeric / Numerisk', 'Internal name = nova_swarm_global_score_v2'],
       doNotClick: ['Do not delete, reset, or recreate the leaderboard', 'Do not change release/store state']
     },
     {

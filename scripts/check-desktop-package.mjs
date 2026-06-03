@@ -4,6 +4,7 @@ import path from 'node:path';
 const root = process.cwd();
 const outputPath = path.resolve(root, 'release/steamworks/desktop_package_review_report.json');
 const desktopPayload = 'release/desktop/win-unpacked/Nova Swarm.exe';
+const steamApiPayload = 'release/desktop/win-unpacked/steam_api64.dll';
 const versionPath = path.resolve(root, 'public/version.json');
 const smokeRoot = path.resolve(root, 'test-results');
 
@@ -91,6 +92,11 @@ function fileInfo(relativePath) {
 const payload = fileInfo(desktopPayload);
 if (!payload) {
   errors.push(`Missing ${desktopPayload}`);
+}
+
+const steamApiPayloadInfo = fileInfo(steamApiPayload);
+if (!steamApiPayloadInfo) {
+  errors.push(`Missing ${steamApiPayload}; Steam overlay and SteamAPI loading expect the runtime DLL beside the executable`);
 }
 
 const currentBuild = existsSync(versionPath) ? readJson(versionPath) : null;
@@ -246,6 +252,7 @@ const report = {
     timestamp: currentBuild.timestamp || null
   } : null,
   desktopPayload: payload,
+  steamApiPayload: steamApiPayloadInfo,
   latestElectronSmoke: smokeSummary(latestSmoke, smokeReport),
   latestPackagedExeSmoke: smokeSummary(latestPackagedSmoke, packagedSmokeReport),
   latestPackagedControlsSmoke: controlSmokeSummary(latestPackagedControlSmoke, packagedControlSmokeReport),

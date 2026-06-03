@@ -3,7 +3,7 @@ import { getRankFromLevel } from '../shared/RankPolicy.js';
 import { getSelectableShips, getShipMetadata } from '../config/ShipMetadata.js';
 
 export const LEADERBOARD_DISPLAY_LIMIT = 20;
-export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score';
+export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 export const STEAM_LEADERBOARD_COMMUNITY_NAME = 'Global High Score';
 
 export const LeaderboardView = {
@@ -68,7 +68,13 @@ function firstFiniteInt(values = [], fallback = 0) {
   return fallback;
 }
 
-export function readLeaderboardLevel(raw = {}, fallback = 1) {
+export function estimateLeaderboardLevelFromScore(score) {
+  const normalizedScore = Math.max(0, numericInt(score, 0));
+  if (normalizedScore <= 0) return 1;
+  return Math.max(1, Math.min(99, Math.floor(normalizedScore / 5000) + 1));
+}
+
+export function readExplicitLeaderboardLevel(raw = {}) {
   const details = Array.isArray(raw.details)
     ? raw.details
     : Array.isArray(raw.scoreDetails)
@@ -78,7 +84,7 @@ export function readLeaderboardLevel(raw = {}, fallback = 1) {
         : Array.isArray(raw.metadata?.details)
           ? raw.metadata.details
           : [];
-  return Math.max(1, firstFiniteInt([
+  const explicit = firstFiniteInt([
     raw.level,
     raw.levelReached,
     raw.metadata?.level,
@@ -86,7 +92,12 @@ export function readLeaderboardLevel(raw = {}, fallback = 1) {
     raw.detailsMetadata?.level,
     raw.detailsMetadata?.levelReached,
     details[0]
-  ], fallback));
+  ], 0);
+  return explicit > 0 ? Math.max(1, explicit) : null;
+}
+
+export function readLeaderboardLevel(raw = {}, fallback = 1) {
+  return readExplicitLeaderboardLevel(raw) || Math.max(1, numericInt(fallback, 1));
 }
 
 export function getShipNumericId(spriteKey) {
@@ -103,7 +114,9 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
   const score = Math.max(0, numericInt(rawScore, 0));
   if (score <= 0 && options.dropZero !== false) return null;
 
-  const level = readLeaderboardLevel(raw, 1);
+  const explicitLevel = readExplicitLeaderboardLevel(raw);
+  const fallbackLevel = estimateLeaderboardLevelFromScore(score);
+  const level = explicitLevel || readLeaderboardLevel(raw, fallbackLevel);
   const rank = rawRank != null ? Math.max(1, numericInt(rawRank, fallbackRank || 1)) : fallbackRank;
   const rankIndex = Math.max(0, Math.min(19, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
   const playerName = toPublicPilotName(
@@ -131,6 +144,7 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
     kills: kills == null ? null : Math.max(0, numericInt(kills, 0)),
     bossKills: bossKills == null ? null : Math.max(0, numericInt(bossKills, 0)),
     wavesCleared: wavesCleared == null ? null : Math.max(0, numericInt(wavesCleared, 0)),
+    levelSource: explicitLevel ? 'encoded' : 'score_estimate',
     source: raw.source || options.source || 'unknown',
     isCurrentPlayer: Boolean(raw.isCurrentPlayer),
     timestamp: raw.timestamp || raw.created_at || raw.createdAt || null,

@@ -34,6 +34,10 @@ const CAREER_INTEL_KICKER = 'PILOT DOSSIER // LIVE ARCADE SIGNAL';
 const CAREER_INTEL_VALUE = 'EVERY RUN LEAVES A RECEIPT';
 const CAREER_INTEL_FLOW = 'CAREER XP FLOW';
 
+function getDisplayRankNumber(rankIndex) {
+  return Math.min(MAX_RANK_INDEX + 1, Math.max(1, Math.floor(Number(rankIndex) || 0) + 1));
+}
+
 function fitDisplayToBox(display, maxWidth, maxHeight, { minScale = 0.5, maxScale = 1 } = {}) {
   if (!display || !maxWidth || !maxHeight) return 1;
   const width = Math.max(1, display.width || 1);
@@ -67,6 +71,7 @@ export class ShipSelectScene {
     this.careerInfoDebugState = null;
     this.careerInfoAnimatedNodes = [];
     this.careerInfoTicker = null;
+    this.careerSignalTicker = null;
     this.overlayButtons = [];
     this.overlayFocusedIndex = 0;
     this.mainMenuButtonFocused = false;
@@ -771,6 +776,7 @@ export class ShipSelectScene {
     const panelY = height / 2 - panelHeight / 2;
     const progress = getPilotRankProgress(this.unlockProgress.pilotXp || 0);
     const rankProgress = Math.max(0, Math.min(1, Number(progress.progress) || 0));
+    const displayRank = getDisplayRankNumber(progress.rankIndex);
     const nextRank = progress.rankIndex >= MAX_RANK_INDEX
       ? translateText('MAX')
       : getRankTitle(Math.min(MAX_RANK_INDEX, progress.rankIndex + 1)).toUpperCase();
@@ -870,7 +876,7 @@ export class ShipSelectScene {
     gauge.addChild(ring);
     this.careerInfoAnimatedNodes.push({ node: ring, kind: 'ring', speed: 0.006 });
 
-    const rankNumber = createText(String(progress.rankIndex), {
+    const rankNumber = createText(String(displayRank), {
       fontFamily: FONT_DISPLAY,
       fontSize: compact ? 42 : 56,
       fontWeight: '900',
@@ -991,7 +997,7 @@ export class ShipSelectScene {
     });
 
     const snapshot = createText(
-      `${translateText('PROFILE SNAPSHOT')}: ${translateText('RANK')} ${progress.rankIndex} / ${translateText('NEXT RANK')} ${nextRank} / ${translateText('TOTAL RUNS')} ${this.unlockProgress.totalRuns || 0} / ${translateText('BEST SECTOR')} ${this.unlockProgress.bestSector || 1}`,
+      `${translateText('PROFILE SNAPSHOT')}: ${translateText('RANK')} ${displayRank} / ${translateText('NEXT RANK')} ${nextRank} / ${translateText('TOTAL RUNS')} ${this.unlockProgress.totalRuns || 0} / ${translateText('BEST SECTOR')} ${this.unlockProgress.bestSector || 1}`,
       {
         fontFamily: FONT_BODY,
         fontSize: compact ? 9 : 12,
@@ -1112,16 +1118,18 @@ export class ShipSelectScene {
         e.stopPropagation();
         this.openCareerInfoOverlay('pointer');
       });
-      const title = this.createIntelText('CAREER SIGNAL', 16, 10, 13, '#ffffff', '900');
-      const count = this.createIntelText('', 16, 46, 14, '#ffef7e', '900');
-      const progress = this.createIntelText('', 16, 82, 12, '#b8fff1');
-      const stats = this.createIntelText('', 16, 158, 12, '#d8fbff');
-      const hint = this.createIntelText('CLICK FOR CAREER INTEL', 16, 238, 12, '#ffef7e', '900');
+      const alertGlow = new PIXI.Graphics();
+      const rankRail = new PIXI.Graphics();
+      const title = this.createIntelText('CAREER SIGNAL', 16, 12, 15, '#ffffff', '900');
+      const count = this.createIntelText('', 16, 48, 16, '#ffef7e', '900');
+      const progress = this.createIntelText('', 16, 96, 12, '#b8fff1');
+      const stats = this.createIntelText('', 16, 176, 12, '#d8fbff');
+      const hint = this.createIntelText('CLICK FOR CAREER INTEL', 16, 244, 12, '#ffef7e', '900');
       [progress, stats, hint].forEach(text => {
         text.style.wordWrapWidth = 196;
       });
-      left.addChild(title, count, progress, stats, hint);
-      this.leftIntel = { panel: left, count, progress, stats, hint };
+      left.addChild(alertGlow, title, count, rankRail, progress, stats, hint);
+      this.leftIntel = { panel: left, alertGlow, rankRail, count, progress, stats, hint };
       this.intelPanels.addChild(left);
     }
 
@@ -1769,11 +1777,27 @@ export class ShipSelectScene {
       const rankTitle = String(rankProgress.title || getRankTitle(this.unlockProgress.pilotRank || 0)).toUpperCase();
       const isMaxRank = rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1;
       const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
+      const displayRank = getDisplayRankNumber(rankProgress.rankIndex);
       const rankLine = isMaxRank
         ? [rankTitle, translateText('MAX RANK')].join('  ')
         : `${Math.round((rankProgress.progress || 0) * 100)}% ${translateText('TO')} ${nextTitle}`;
-      this.leftIntel.count.text = `${unlockedCount}/${this.ships.length} HULLS READY`;
-      this.leftIntel.progress.text = `${translateText('PILOT RANK')} ${rankProgress.rankIndex}: ${rankTitle}\n${rankLine}\n${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
+      this.leftIntel.count.text = translateText(`${unlockedCount}/${this.ships.length} HULLS READY`);
+      this.leftIntel.progress.text = `${translateText('PILOT RANK')} ${displayRank}: ${rankTitle}\n${rankLine}\n${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
+      if (this.leftIntel.rankRail) {
+        const fill = Math.max(0, Math.min(1, Number(rankProgress.progress) || 0));
+        this.leftIntel.rankRail.clear();
+        this.leftIntel.rankRail.roundRect(16, 78, 196, 10, 5);
+        this.leftIntel.rankRail.fill({ color: 0x031323, alpha: 0.92 });
+        this.leftIntel.rankRail.stroke({ color: 0x66ffdd, width: 1.2, alpha: 0.52 });
+        this.leftIntel.rankRail.roundRect(18, 80, 192 * fill, 6, 3);
+        this.leftIntel.rankRail.fill({ color: 0xffef7e, alpha: 0.94 });
+      }
+      this.setCareerSignalPulse(Boolean(
+        (Number(this.unlockProgress.pilotXp) || 0) > 0 ||
+        (this.unlockProgress.lastNewlyUnlockedShipIds || []).length > 0 ||
+        (this.unlockProgress.newRanksThisRun || []).length > 0 ||
+        (Number(this.unlockProgress.totalCodexDiscoveries) || 0) > 0
+      ));
       if (this.leftIntel.stats) {
         this.leftIntel.stats.text = `${translateText('CODEX SCANS')}: ${this.unlockProgress.totalCodexDiscoveries || 0}\n${translateText('BEST SCORE')}: ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}\n${translateText('LOCAL PROFILE')}`;
       }
@@ -1807,6 +1831,29 @@ export class ShipSelectScene {
       this.compactIntel.role.text = `${role} | ${unlock}`;
       this.compactIntel.weapon.text = weapon;
     }
+  }
+
+  setCareerSignalPulse(active = false) {
+    if (!this.leftIntel?.alertGlow) return;
+    this.leftIntel.careerPulseActive = Boolean(active);
+    if (!active) {
+      this.leftIntel.alertGlow.clear();
+      return;
+    }
+    if (this.careerSignalTicker) return;
+    this.careerSignalTicker = () => {
+      if (!this.leftIntel?.alertGlow || !this.leftIntel.careerPulseActive) return;
+      const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
+      const glow = this.leftIntel.alertGlow;
+      glow.clear();
+      glow.roundRect(-5, -5, 240, 302, 10);
+      glow.stroke({ color: 0xffef7e, width: 2 + pulse * 2, alpha: 0.34 + pulse * 0.38 });
+      glow.roundRect(6, 6, 218, 280, 8);
+      glow.stroke({ color: 0x66ffdd, width: 1.5, alpha: 0.24 + pulse * 0.28 });
+      glow.circle(202, 24, 6 + pulse * 5);
+      glow.fill({ color: 0xffef7e, alpha: 0.28 + pulse * 0.34 });
+    };
+    this.game.app.ticker.add(this.careerSignalTicker);
   }
 
   updateRosterStrip() {
@@ -2330,6 +2377,10 @@ export class ShipSelectScene {
     if (this.careerInfoTicker) {
       this.game.app.ticker.remove(this.careerInfoTicker);
       this.careerInfoTicker = null;
+    }
+    if (this.careerSignalTicker) {
+      this.game.app.ticker.remove(this.careerSignalTicker);
+      this.careerSignalTicker = null;
     }
     if (this.exitNoticeTimeout) {
       clearTimeout(this.exitNoticeTimeout);

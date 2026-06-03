@@ -80,6 +80,19 @@ function storeLastUploadDiagnostics(error, diagnostics) {
   console.warn('[SteamLeaderboardProvider] submit failed diagnostics:', summary);
 }
 
+function normalizePublicNameForCompare(value) {
+  if (!String(value || '').trim()) return '';
+  return toPublicPilotName(value, 0).replace(/\s+/g, '');
+}
+
+function isNonCurrentFriendEntry(entry = {}, currentPlayerName = null) {
+  if (!entry || entry.isCurrentPlayer) return false;
+  const current = normalizePublicNameForCompare(currentPlayerName);
+  const entryName = normalizePublicNameForCompare(entry.playerName || entry.name || entry.personaName || entry.displayName);
+  if (current && entryName && entryName === current) return false;
+  return true;
+}
+
 function createMockSteamBridge(win) {
   const personaName = () => {
     try {
@@ -227,6 +240,23 @@ export class SteamLeaderboardProvider {
         typeof bridge.downloadEntries === 'function'
       )
     );
+  }
+
+  async hasFriendLeaderboardEntries(options = {}) {
+    if (!this.supportsFriendsScores()) return false;
+    try {
+      const [friends, currentPlayerName] = await Promise.all([
+        this.getFriendsScores({
+          limit: Number(options.limit) || LEADERBOARD_DISPLAY_LIMIT,
+          useCache: false
+        }),
+        this.getPlayerName().catch(() => null)
+      ]);
+      return Boolean((friends.entries || []).some((entry) => isNonCurrentFriendEntry(entry, currentPlayerName)));
+    } catch (error) {
+      console.warn('[SteamLeaderboardProvider] friends availability check failed:', error?.message || error);
+      return false;
+    }
   }
 
   async getTopScores(options = {}) {

@@ -5,8 +5,10 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import {
   CLOUD_ACHIEVEMENT_KEY,
+  CLOUD_HANGAR_PROGRESS_KEY,
   CLOUD_LANGUAGE_KEY,
   CLOUD_LOCAL_LEADERBOARD_KEY,
+  CLOUD_THREAT_DISCOVERY_KEY,
   collectSteamCloudPersistenceState,
   restoreSteamCloudPersistenceToStorage
 } from '../src/steamCloudPersistence.js';
@@ -82,6 +84,33 @@ try {
         musicPack: 'generated'
       }
     },
+    hangarProgress: {
+      pilotXp: 54321,
+      pilotRank: 6,
+      highestPilotRank: 6,
+      bestScore: 9000,
+      bestSector: 12,
+      bestLevel: 12,
+      totalCodexDiscoveries: 3,
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_09'],
+      lastNewlyUnlockedShipIds: ['nova_ship_09'],
+      discoveredThreatIds: ['nova_boss_01']
+    },
+    threatDiscovery: {
+      items: {
+        bosses: {
+          nova_boss_01: {
+            id: 'nova_boss_01',
+            category: 'bosses',
+            name: 'NULL CROWN',
+            timesSeen: 1,
+            timesDefeated: 1
+          }
+        }
+      },
+      unreadIds: ['bosses:nova_boss_01'],
+      recentRunThemes: ['storm']
+    },
     debugFlags: { shouldNotPersist: true },
     absolutePath: 'C:/Users/example/AppData/Roaming/Nova Swarm'
   });
@@ -90,6 +119,10 @@ try {
   assert.deepEqual(merged.achievements.unlocked, ['first_launch', 'score_10000']);
   assert.equal(merged.selectedShipKey, 'nova-player-ship-04.png');
   assert.deepEqual(merged.progression, { bestScore: 9000, bestRank: 7, bestLevel: 12 });
+  assert.equal(merged.hangarProgress.pilotXp, 54321);
+  assert.equal(merged.hangarProgress.unlockedShipIds.includes('nova_ship_09'), true);
+  assert.equal(merged.threatDiscovery.items.bosses.nova_boss_01.name, 'NULL CROWN');
+  assert.deepEqual(merged.threatDiscovery.unreadIds, ['bosses:nova_boss_01']);
   assert.equal(merged.settings.screenShake, 0.35);
   assert.equal(merged.settings.playerFocus, 0.8);
   assert.equal(merged.settings.colorAssist, true);
@@ -106,19 +139,42 @@ try {
       version: 1,
       unlocked: ['first_launch'],
       updatedAt: '2026-01-07T00:00:00.000Z'
+    })],
+    [CLOUD_HANGAR_PROGRESS_KEY, JSON.stringify({
+      pilotXp: 7777,
+      pilotRank: 4,
+      bestScore: 4444,
+      bestRank: 6,
+      bestLevel: 8,
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_04']
+    })],
+    [CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify({
+      items: { enemies: { scout: { id: 'scout', category: 'enemies', name: 'Scout', timesSeen: 2 } } },
+      unreadIds: ['enemies:scout']
     })]
   ]);
   const collected = collectSteamCloudPersistenceState({
     storage,
     getLanguagePreferenceMode: () => 'pt-BR',
     getCurrentLanguage: () => 'pt-BR',
-    getShipUnlockProgress: () => ({ bestScore: 4444, bestRank: 6, bestLevel: 8 }),
+    getShipUnlockProgress: () => ({
+      pilotXp: 7777,
+      pilotRank: 4,
+      bestScore: 4444,
+      bestRank: 6,
+      bestLevel: 8,
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_04']
+    }),
     getAccessibilitySettings: () => ({ screenShake: 0.4, playerFocus: 0.9, colorAssist: true })
   });
   const collectedSave = saveSystem.mergeRendererState(collected);
   assert.equal(collectedSave.language.preference, 'pt-BR');
   assert.equal(collectedSave.localHighscores[0].score, 4444);
   assert.deepEqual(collectedSave.achievements.unlocked, ['first_launch']);
+  assert.equal(collectedSave.hangarProgress.pilotXp, 7777);
+  assert.equal(collectedSave.hangarProgress.unlockedShipIds.includes('nova_ship_04'), true);
+  assert.equal(collectedSave.threatDiscovery.items.enemies.scout.name, 'Scout');
+  assert.deepEqual(collectedSave.threatDiscovery.unreadIds, ['enemies:scout']);
 
   const restartStorage = new MemoryStorage([
     [CLOUD_LANGUAGE_KEY, 'de'],
@@ -135,6 +191,18 @@ try {
     achievements: { version: 1, unlocked: ['cloud_unlock'], updatedAt: '2026-01-08T00:00:00.000Z' },
     selectedShipKey: 'nova-player-ship-02.png',
     progression: { bestScore: 5555, bestRank: 7, bestLevel: 9 },
+    hangarProgress: {
+      pilotXp: 8888,
+      pilotRank: 5,
+      bestScore: 5555,
+      bestRank: 7,
+      bestLevel: 9,
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_05']
+    },
+    threatDiscovery: {
+      items: { bosses: { nova_boss_02: { id: 'nova_boss_02', category: 'bosses', name: 'ORBITAL HECKLER' } } },
+      unreadIds: ['bosses:nova_boss_02']
+    },
     settings: {
       screenShake: 0.2,
       playerFocus: 0.75,
@@ -146,6 +214,8 @@ try {
   assert.equal(restartStorage.getItem(CLOUD_LANGUAGE_KEY), 'ja');
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_LOCAL_LEADERBOARD_KEY))[0].name, 'CLOUDACE');
   assert.deepEqual(JSON.parse(restartStorage.getItem(CLOUD_ACHIEVEMENT_KEY)).unlocked.sort(), ['cloud_unlock', 'existing_local']);
+  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_HANGAR_PROGRESS_KEY)).pilotXp, 8888);
+  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.bosses.nova_boss_02.name, 'ORBITAL HECKLER');
 
   const systemStorage = new MemoryStorage([[CLOUD_LANGUAGE_KEY, 'de']]);
   restoreSteamCloudPersistenceToStorage({ language: { preference: 'system' } }, { storage: systemStorage });
@@ -177,6 +247,8 @@ try {
   assert.equal(diagnostics.steamworksAutoCloud.recursive, false);
   assert.equal(diagnostics.steamworksAutoCloud.dynamicCloudSync, false);
   assert.equal(diagnostics.persistenceSummary.cloudSavePath, paths.cloudSavePath);
+  assert.equal(diagnostics.persistenceSummary.hangarPilotXp >= 0, true);
+  assert.equal(diagnostics.persistenceSummary.threatDiscoveryCategories >= 0, true);
 
   if (process.env.APPDATA) {
     const realPaths = getPaths(path.join(process.env.APPDATA, 'nova-swarm'));

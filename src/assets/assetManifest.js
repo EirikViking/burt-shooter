@@ -9,7 +9,9 @@ export const AssetManifest = {
         bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
         bossDossier: '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
         vfx: {
-            overrunVictorySeal: '/art/generated/nova-swarm/vfx/overrun-victory-seal.png'
+            overrunVictorySeal: '/art/generated/nova-swarm/vfx/overrun-victory-seal.png',
+            bossWarningAtlas: '/art/generated/nova-swarm/vfx/boss-warning-emblems/nova-boss-warning-emblem-atlas-20260603-clean.png',
+            bossWarningEmblems: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/vfx/boss-warning-emblems/nova-boss-warning-emblem-${String(i + 1).padStart(2, '0')}-20260603-clean.png`)
         },
         bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
         playerShips: Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),

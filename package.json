@@ -52,6 +52,7 @@
     "check:boss-mercy": "node scripts/check-boss-mercy.mjs",
     "check:boss-phase-variety": "node scripts/check-boss-phase-variety.mjs",
     "check:boss-animation": "node scripts/check-boss-animation.mjs",
+    "check:boss-warning-popup": "node scripts/check-boss-warning-popup.mjs",
     "check:boss-movement-variety": "node scripts/check-boss-movement-variety.mjs",
     "check:boss-special-hazards": "node scripts/check-boss-special-hazards.mjs",
     "check:first-boss-balance": "node scripts/check-first-boss-balance.mjs",

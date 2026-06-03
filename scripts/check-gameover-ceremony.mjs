@@ -140,6 +140,36 @@ async function checkCeremony(browser, { score, expectedTier, titlePattern, shotN
   };
 }
 
+async function checkInGameFinalDeathAnimation(browser) {
+  const { page, pageErrors } = await preparePage(browser);
+  await page.evaluate(() => {
+    const game = window.__game;
+    game.score = 12345;
+    game.level = 6;
+    game.lives = 1;
+    game.loseLife();
+  });
+  await page.waitForFunction(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    return game?.currentSceneName === 'play' &&
+      play?.gameOverSequenceStarted === true &&
+      Boolean(play?.gameOverAnimationLayer?.parent);
+  }, null, { timeout: 5000 });
+  await page.waitForTimeout(450);
+  await page.screenshot({ path: path.join(outputDir, 'in-game-final-death.png'), fullPage: true });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 5000 });
+  const state = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  assert(state.scene === 'gameOver', `expected gameOver after final death ceremony, got ${state.scene}`);
+  assert(pageErrors.length === 0, `page errors for in-game final death animation: ${pageErrors.join('; ')}`);
+  await page.close();
+  return {
+    scenario: 'in_game_final_death_animation',
+    finalScene: state.scene,
+    finalScore: state.gameOver?.score || 0
+  };
+}
+
 const server = await startPreviewServer();
 console.log(`[gameover-ceremony] preview ready ${baseUrl}`);
 const browser = await chromium.launch({
@@ -174,6 +204,9 @@ try {
     results.push({ scenario: 'live_cues', cueState });
     await page.close();
   }
+
+  console.log('[gameover-ceremony] checking in-game final death animation');
+  results.push(await checkInGameFinalDeathAnimation(browser));
 
   console.log('[gameover-ceremony] checking number-one ceremony');
   results.push(await checkCeremony(browser, {

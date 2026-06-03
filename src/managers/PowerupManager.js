@@ -14,7 +14,7 @@ class Powerup {
     this.radius = 12;
     this.vy = 1;
     this.createdAt = Date.now();
-    this.lifeTime = 15000; // 15 seconds expiry
+    this.lifeTime = 26000;
 
     const powerupData = {
       triple_beam: { color: 0xffaa00, label: 'TRIPLE' },
@@ -180,12 +180,20 @@ class Powerup {
       }, 25);
     }
 
-    // Scale down if expiring soon
-    if (age > this.lifeTime - 2000) {
+    const screenHeight = Math.max(
+      620,
+      Number(scene?.game?.app?.screen?.height) ||
+      Number(scene?.game?.getHeight?.()) ||
+      Number(scene?.game?.height) ||
+      620
+    );
+    const offscreenMargin = Math.max(90, this.radius * 6);
+
+    if (age > this.lifeTime - 2500 && this.y > screenHeight * 0.72) {
       this.sprite.alpha = 0.5 + Math.sin(age * 0.01) * 0.5;
     }
 
-    if (this.y > 620 || age > this.lifeTime) {
+    if (this.y > screenHeight + offscreenMargin || (age > this.lifeTime && this.y > screenHeight)) {
       this.active = false;
     }
   }

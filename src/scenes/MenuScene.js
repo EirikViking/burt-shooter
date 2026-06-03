@@ -14,6 +14,7 @@ import { translateText } from '../i18n/index.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
+import { getDiscoveryStats } from '../progression/ThreatDiscoveryState.js';
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
@@ -89,6 +90,8 @@ export class MenuScene {
     this.introBtn = null;
     this.storyBtn = null;
     this.threatCodexBtn = null;
+    this.codexUnreadCount = 0;
+    this.codexCuePollMs = 0;
     this.achievementsBtn = null;
     this.settingsBtn = null;
     this.exitBtn = null;
@@ -805,6 +808,7 @@ export class MenuScene {
 
     this.threatCodexBtn = this.createButton(translateText('THREAT CODEX'), layout, { accent: 0x7dffcc });
     this.threatCodexBtn.alpha = 0;
+    this.attachCodexSignalCue(this.threatCodexBtn);
     this.threatCodexBtn.on('pointerdown', () => {
       try {
         AudioManager.init();
@@ -1413,6 +1417,50 @@ export class MenuScene {
     return container;
   }
 
+  attachCodexSignalCue(button) {
+    if (!button || button._signalCue) return;
+    const cue = new PIXI.Graphics();
+    cue.label = 'ui_codexUnreadSignal';
+    cue.visible = false;
+    button._signalCue = cue;
+    button.addChild(cue);
+  }
+
+  updateCodexSignalCue(delta = 0) {
+    if (!this.threatCodexBtn?._signalCue) return;
+    this.codexCuePollMs -= delta * 16.67;
+    if (this.codexCuePollMs <= 0) {
+      this.codexCuePollMs = 600;
+      try {
+        this.codexUnreadCount = getDiscoveryStats().unreadCount || 0;
+      } catch {
+        this.codexUnreadCount = 0;
+      }
+    }
+    const cue = this.threatCodexBtn._signalCue;
+    const active = this.codexUnreadCount > 0;
+    cue.visible = active;
+    if (!active) {
+      cue.clear();
+      return;
+    }
+    const w = this.threatCodexBtn._btnWidth || 286;
+    const h = this.threatCodexBtn._btnHeight || 46;
+    const pulse = 0.5 + Math.sin(this.animationTime * 8) * 0.5;
+    const x = w / 2 - 22;
+    const y = -h / 2 + 14;
+    cue.clear();
+    cue.circle(x, y, 7 + pulse * 6);
+    cue.fill({ color: 0xffef7e, alpha: 0.16 + pulse * 0.16 });
+    cue.circle(x, y, 6);
+    cue.fill({ color: 0xffef7e, alpha: 0.92 });
+    cue.circle(x, y, 2.2);
+    cue.fill({ color: 0x061827, alpha: 0.95 });
+    cue.moveTo(x - 15, y + 10);
+    cue.lineTo(x + 15, y + 10);
+    cue.stroke({ color: 0x7dffcc, width: 1.5, alpha: 0.35 + pulse * 0.35 });
+  }
+
   drawMenuButton(container, isHover = false) {
     const bg = container?._bg;
     const shine = container?._shine;
@@ -1751,6 +1799,7 @@ export class MenuScene {
     if (this.storyTypewriter) {
       this.storyTypewriter.update(delta);
     }
+    this.updateCodexSignalCue(delta);
 
     // Update starfield
     const { height } = this.game.app.screen;

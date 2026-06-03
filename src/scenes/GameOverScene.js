@@ -54,6 +54,10 @@ function getConfirmedGlobalPlacement(score, entries = []) {
   };
 }
 
+function getDisplayRankNumber(rankIndex) {
+  return Math.min(MAX_RANK_INDEX + 1, Math.max(1, Math.floor(Number(rankIndex) || 0) + 1));
+}
+
 export class GameOverScene {
   constructor(game) {
     this.game = game;
@@ -280,13 +284,15 @@ export class GameOverScene {
     this.scoreText.anchor.set(0.5);
     this.container.addChild(this.scoreText);
 
-    const levelSize = getResponsiveFontSize(layout, 'subtitle');
+    const levelSize = layout.isMobile ? 13 : 17;
     this.levelText = createText(this.levelSummary, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: levelSize,
       fill: '#ffffff',
       align: 'center',
-      lineHeight: Math.round(levelSize * 1.12)
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.76, layout),
+      lineHeight: Math.round(levelSize * 1.18)
     });
     this.levelText.anchor.set(0.5);
     this.container.addChild(this.levelText);
@@ -456,10 +462,12 @@ export class GameOverScene {
     }
 
     if (this.steamSubmissionMode) {
-      this.state = 'submitting';
       this.globalStatus = 'submitting';
+      this.state = 'submitting';
+      this.canEnterName = false;
+      this.updatePromptMessage('SAVING TO STEAM...');
       this.updateLeaderboardStatusText();
-      this.updatePromptMessage('STEAM SCORE SYNC');
+      this.updateNameDisplay();
       this.refreshPrimaryCta();
       this.layoutScreen();
       this.scheduleSceneTimeout(() => this.submitSteamScore(), 220);
@@ -533,6 +541,9 @@ export class GameOverScene {
     if (this.state === 'input') {
       return 'TYPE NAME  |  ENTER: SUBMIT  |  ESC: SKIP SCORE';
     }
+    if (this.state === 'submitting') {
+      return this.steamSubmissionMode ? 'AUTO-SUBMITTING WITH STEAM NAME' : 'SAVING SCORE...';
+    }
     if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
       return 'ENTER / SPACE / CLICK: RELAUNCH  |  L / GAMEPAD Y: LEADERBOARD  |  ESC: MENU';
     }
@@ -542,6 +553,11 @@ export class GameOverScene {
   getEntryPromptText(layout = getCurrentLayout()) {
     const mobile = Boolean(layout?.isMobile);
     if (!this.isRankedRun) return 'PRACTICE RUN - SCORE NOT LOGGED';
+    if (this.steamSubmissionMode) {
+      if (this.globalStatus === 'submitted') return 'SCORE SUBMITTED WITH STEAM NAME';
+      if (this.globalStatus === 'failed') return 'STEAM SUBMIT FAILED - LOCAL BACKUP SAVED';
+      return 'AUTO-SUBMITTING WITH STEAM NAME';
+    }
     if (!this.updateCanEnterName()) {
       return this.globalStatus === 'checking'
         ? 'CHECKING GLOBAL BOARD...'
@@ -844,7 +860,7 @@ export class GameOverScene {
     // Update font sizes
     const titleSize = getResponsiveFontSize(layout, 'title');
     const scoreSize = getResponsiveFontSize(layout, 'score');
-    const levelSize = getResponsiveFontSize(layout, 'subtitle');
+    const levelSize = layout.isMobile ? 13 : 17;
     const unlockSize = layout.isMobile ? 15 : 18;
     const bodySize = getResponsiveFontSize(layout, 'body');
     const leaderboardStatusSize = layout.isMobile ? 13 : 16;
@@ -861,7 +877,9 @@ export class GameOverScene {
     this.scoreText.style.fontSize = scoreSize;
     this.levelText.style.fontSize = levelSize;
     this.levelText.style.align = 'center';
-    this.levelText.style.lineHeight = Math.round(levelSize * 1.12);
+    this.levelText.style.wordWrap = true;
+    this.levelText.style.wordWrapWidth = clampTextWidth(width * (layout.isMobile ? 0.86 : 0.58), layout);
+    this.levelText.style.lineHeight = Math.round(levelSize * 1.18);
     this.unlockText.style.fontSize = unlockSize;
     this.unlockText.style.wordWrap = true;
     this.unlockText.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
@@ -1491,9 +1509,9 @@ export class GameOverScene {
 
   layoutCeremonyVisuals(width = this.game.app.screen.width, height = this.game.app.screen.height, layout = getCurrentLayout()) {
     const panelWidth = Math.min(width * (layout.isMobile ? 0.92 : 0.58), layout.isMobile ? 560 : 760);
-    const panelHeight = Math.min(height * (layout.isMobile ? 0.68 : 0.58), layout.isMobile ? 520 : 560);
+    const panelHeight = Math.min(height * (layout.isMobile ? 0.72 : 0.64), layout.isMobile ? 560 : 590);
     const x = (width - panelWidth) / 2;
-    const y = Math.max(layout.safeArea?.top || 0, (height - panelHeight) * (layout.isMobile ? 0.42 : 0.46));
+    const y = Math.max(layout.safeArea?.top || 0, (height - panelHeight) * (layout.isMobile ? 0.34 : 0.4));
     const accent = this.globalPlacement?.numberOne
       ? 0xffe86a
       : this.globalPlacement?.top3
@@ -1809,18 +1827,37 @@ export class GameOverScene {
   createPilotRankLine(currentProgress = {}) {
     const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
     const rankTitle = String(rankProgress.title || getRankTitle(currentProgress.pilotRank || 0)).toUpperCase();
+    const displayRank = getDisplayRankNumber(rankProgress.rankIndex);
     if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
-      return `${translateText('RANK')} ${rankProgress.rankIndex}: ${rankTitle} ${translateText('MAX')}`;
+      return `${translateText('RANK')} ${displayRank}: ${rankTitle} ${translateText('MAX')}`;
     }
     const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
     const percent = Math.max(0, Math.min(99, Math.round((rankProgress.progress || 0) * 100)));
-    return `${translateText('RANK')} ${rankProgress.rankIndex}: ${rankTitle} ${percent}% ${translateText('TO')} ${nextTitle}`;
+    return `${translateText('RANK')} ${displayRank}: ${rankTitle}\n${percent}% ${translateText('TO')} ${nextTitle}`;
   }
 
   createPilotXpLine(currentProgress = {}) {
     const summary = this.game?.runSummary || {};
     const gained = Math.max(0, Number(summary.pilotXpGained) || 0);
-    return `${translateText('CAREER XP')} +${gained.toLocaleString('en-US')}  ${this.createPilotRankLine(currentProgress)}`;
+    const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
+    const rankTitle = String(rankProgress.title || getRankTitle(currentProgress.pilotRank || 0)).toUpperCase();
+    const displayRank = getDisplayRankNumber(rankProgress.rankIndex);
+    if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
+      return [
+        `${translateText('CAREER XP')}: +${gained.toLocaleString('en-US')}`,
+        `${translateText('RANK')} ${displayRank}: ${rankTitle}`,
+        translateText('MAX RANK')
+      ].join('\n');
+    }
+    const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
+    const percent = Math.max(0, Math.min(99, Math.round((rankProgress.progress || 0) * 100)));
+    return [
+      `${translateText('CAREER XP')}: +${gained.toLocaleString('en-US')}`,
+      `${translateText('RANK')} ${displayRank}: ${rankTitle}`,
+      `${translateText('NEXT RANK')}: ${nextTitle}`,
+      `${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`,
+      `${percent}% ${translateText('TO')} ${nextTitle}`
+    ].join('\n');
   }
 
   playShipUnlockVoice() {
@@ -2586,21 +2623,22 @@ export class GameOverScene {
   }
 
   async submitSteamScore() {
-    if (!this.steamSubmissionMode || !this.isRankedRun || this.isSubmitting || this.state === 'runback') return;
+    if (!this.steamSubmissionMode || !this.isRankedRun || this.isSubmitting) return;
     if (this.finalScore <= 0) {
       this.game.pendingHighscore = null;
-      this.enterRunbackStage('no_slot');
+      if (this.state !== 'runback') this.enterRunbackStage('no_slot');
       return;
     }
 
+    const runbackAlreadyVisible = this.state === 'runback';
     this.isSubmitting = true;
-    this.state = 'submitting';
+    if (!runbackAlreadyVisible) this.state = 'submitting';
     this.globalStatus = 'submitting';
     this.stopCaretBlink();
     this.hideHiddenInput();
-    this.updatePromptMessage('SAVING TO STEAM...');
+    if (!runbackAlreadyVisible) this.updatePromptMessage('SAVING TO STEAM...');
     this.updateNameDisplay();
-    this.updateLeaderboardStatusText();
+    if (!runbackAlreadyVisible) this.updateLeaderboardStatusText();
     this.refreshPrimaryCta();
 
     const playerName = this.steamPlayerName || await this.leaderboardAdapter.getSteamPlayerName().catch(() => null) || 'STEAM PILOT';
@@ -2631,10 +2669,21 @@ export class GameOverScene {
     this.game.leaderboardView = this.globalStatus === 'submitted' ? 'global' : 'local';
     this.game.pendingHighscore = null;
     this.isSubmitting = false;
-    this.state = 'submitted';
     this.removeInputOverlay();
+    const reason = this.globalStatus === 'submitted' ? 'score_submitted' : 'global_failed';
+    if (runbackAlreadyVisible) {
+      this.runbackReason = reason;
+      if (this.leaderboardStatusText) {
+        this.leaderboardStatusText.text = this.getRunbackStatusText(reason);
+        this.leaderboardStatusText.style.fill = reason === 'global_failed' ? '#ffb35c' : '#ffe86a';
+      }
+      this.refreshPrimaryCta();
+      this.layoutScreen();
+      return;
+    }
+    this.state = 'submitted';
     this.updateLeaderboardStatusText();
-    this.enterRunbackStage(this.globalStatus === 'submitted' ? 'score_submitted' : 'global_failed');
+    this.enterRunbackStage(reason);
   }
 
   ensureHiddenInput() {

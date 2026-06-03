@@ -146,13 +146,21 @@ try {
   });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
-    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+    return state.scene === 'gameOver' &&
+      state.gameOver?.state === 'runback' &&
+      state.gameOver?.lastLeaderboardResult?.steamStatus === 'submitted';
   }, null, { timeout: 12000 });
   const gameOverState = await state(page);
   if (!gameOverState.gameOver?.steamSubmissionMode) throw new Error('Game over did not enter Steam submission mode');
   if (gameOverState.gameOver?.canEnterName) throw new Error('Steam submission should not require manual name entry');
+  if (/PILOT NAME|TYPE NAME|ENTER PILOT|SUBMIT SCORE/i.test(`${gameOverState.gameOver?.prompt || ''} ${gameOverState.gameOver?.primaryCta?.label || ''} ${gameOverState.gameOver?.primaryCta?.hint || ''}`)) {
+    throw new Error(`Steam auto-submit flow exposed manual submit copy: ${JSON.stringify(gameOverState.gameOver)}`);
+  }
   if (gameOverState.gameOver?.lastLeaderboardResult?.steamStatus !== 'submitted') {
     throw new Error(`Steam mock submission failed: ${JSON.stringify(gameOverState.gameOver?.lastLeaderboardResult)}`);
+  }
+  if (gameOverState.gameOver?.lastLeaderboardResult?.name !== 'STEAM ACE') {
+    throw new Error(`Steam mock submission did not use Steam persona: ${JSON.stringify(gameOverState.gameOver?.lastLeaderboardResult)}`);
   }
   const mockScoresAfterSubmit = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
   if (!mockScoresAfterSubmit.some((entry) => entry.playerName === 'STEAM ACE' && entry.score === 33333 && entry.level === 8)) {

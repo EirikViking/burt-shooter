@@ -39,6 +39,20 @@ import {
   recordThreatDefeated,
   recordThreatSeen
 } from '../progression/ThreatDiscoveryState.js';
+import { getBossProfile } from '../config/BossRoster.js';
+
+const BOSS_WARNING_JOKES = [
+  'Mission Control is hiding under the desk.',
+  'The boss brought paperwork. This is not a drill.',
+  'Please stop the boss before it invoices us.',
+  'Cabinet says this is fine. Cabinet is lying.',
+  'Warning: enormous problem with excellent lighting.'
+];
+
+function pickBossWarningJoke(profile, level = 1) {
+  const seed = Number(profile?.index || level || 1);
+  return BOSS_WARNING_JOKES[Math.max(0, seed - 1) % BOSS_WARNING_JOKES.length];
+}
 
 const OVERRUN_CLEAR_VFX_MS = 5600;
 
@@ -225,6 +239,9 @@ export class PlayScene {
     this.lastBossDefeatedLevel = 0;
     this.postBossLevelIntroPending = false;
     this.freezeTimerMs = 0;
+    this.gameOverSequenceStarted = false;
+    this.finalDeathFeedbackShown = false;
+    this.gameOverAnimationLayer = null;
 
     // TASK: Fix duplicate wave start
     this._lastStartedLevel = -1;
@@ -253,6 +270,9 @@ export class PlayScene {
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
     this.overrunClearEffects = [];
+    this.gameOverSequenceStarted = false;
+    this.finalDeathFeedbackShown = false;
+    this.gameOverAnimationLayer = null;
     this.overrunClearLayer = new PIXI.Container();
     this.overrunClearLayer.zIndex = 9600;
     this.overrunClearLayer.sortableChildren = true;
@@ -2812,34 +2832,40 @@ export class PlayScene {
   }
 
   checkLowLives() {
-    if (this.game.lives <= 1 && this.lowLivesShownFor !== this.game.lives) {
-      this.lowLivesShownFor = this.game.lives;
+    const lives = Number(this.game?.lives) || 0;
+    if (this.gameOverSequenceStarted || lives <= 0) return;
+    if (lives <= 1 && this.lowLivesShownFor !== lives) {
+      this.lowLivesShownFor = lives;
       this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, y: this.game.getHeight() * 0.3 });
       AudioManager.playVoice('mission_control_life_low', { cooldownMs: 18000, duckMs: 1800 });
     }
   }
 
-  triggerPlayerDeathFeedback() {
-    if (!this.player) return;
+  triggerPlayerDeathFeedback(options = {}) {
+    const finalDeath = Boolean(options.final || this.game?.lives <= 0);
+    if (finalDeath && this.finalDeathFeedbackShown) return;
+    if (finalDeath) this.finalDeathFeedbackShown = true;
+    if (!this.player && !finalDeath) return;
 
-    // 1. Freeze Frame (150-200ms)
-    this.freezeTimerMs = 180;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const impactX = this.player?.x ?? width / 2;
+    const impactY = this.player?.y ?? height * 0.72;
 
-    // 2. Heavy Screenshake
-    if (this.screenShake) this.screenShake.shake(25);
+    this.freezeTimerMs = finalDeath ? 420 : 180;
 
-    // 3. Fullscreen Red Flash
+    if (this.screenShake) this.screenShake.shake(finalDeath ? 42 : 25);
+
     const flash = new PIXI.Graphics();
-    flash.rect(0, 0, this.game.getWidth(), this.game.getHeight()).fill({ color: 0xff0000, alpha: 0.5 });
+    flash.rect(0, 0, width, height).fill({ color: finalDeath ? 0xff174a : 0xff0000, alpha: finalDeath ? 0.68 : 0.5 });
     this.uiOverlay.addChild(flash);
 
-    let frames = 0;
     const fadeTicker = (ticker) => {
       if (!flash.parent) {
         this.game.app.ticker.remove(fadeTicker);
         return;
       }
-      flash.alpha -= 0.05 * ticker.deltaTime;
+      flash.alpha -= (finalDeath ? 0.028 : 0.05) * ticker.deltaTime;
       if (flash.alpha <= 0) {
         if (flash.parent) flash.parent.removeChild(flash);
         this.game.app.ticker.remove(fadeTicker);
@@ -2852,25 +2878,123 @@ export class PlayScene {
     // 4. Multiple Explosions
     if (this.particleManager) {
       // Immediate big one
-      this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
-      // Cascading smaller ones
-      for (let i = 1; i <= 3; i++) {
+      this.particleManager.createExplosion(impactX, impactY, finalDeath ? 0xff55d9 : 0x00ffff);
+      const burstCount = finalDeath ? 7 : 3;
+      for (let i = 1; i <= burstCount; i++) {
         const id = setTimeout(() => {
-          if (this.particleManager && this.player) {
+          if (this.particleManager) {
             this.particleManager.createExplosion(
-              this.player.x + (Math.random() - 0.5) * 50,
-              this.player.y + (Math.random() - 0.5) * 50,
-              0xffaa00
+              impactX + (Math.random() - 0.5) * (finalDeath ? 180 : 50),
+              impactY + (Math.random() - 0.5) * (finalDeath ? 130 : 50),
+              finalDeath && i % 2 === 0 ? 0x37f5ff : 0xffaa00
             );
           }
-        }, i * 80);
+        }, i * (finalDeath ? 90 : 80));
         if (!this._deathTimeouts) this._deathTimeouts = [];
         this._deathTimeouts.push(id);
       }
     }
 
-    // 5. Audio
     AudioManager.playSfx('explosionCrunch', { force: true, volume: 1.0 });
+  }
+
+  beginGameOverSequence() {
+    if (this.gameOverSequenceStarted) return true;
+    this.gameOverSequenceStarted = true;
+    this.clearToastState();
+    this.triggerPlayerDeathFeedback({ final: true });
+    this.showInGameGameOverAnimation();
+    const id = setTimeout(() => {
+      if (this.game?.currentScene === this) {
+        this.game.gameOver();
+      }
+    }, 1500);
+    if (!this._deathTimeouts) this._deathTimeouts = [];
+    this._deathTimeouts.push(id);
+    return true;
+  }
+
+  showInGameGameOverAnimation() {
+    if (!this.uiOverlay || this.gameOverAnimationLayer?.parent) return;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const layer = new PIXI.Container();
+    layer.label = 'ui_in_game_game_over_animation';
+    layer.zIndex = 1000000;
+    layer.alpha = 0;
+    layer.scale.set(0.92);
+    this.gameOverAnimationLayer = layer;
+
+    const shade = new PIXI.Graphics();
+    shade.rect(0, 0, width, height);
+    shade.fill({ color: 0x020711, alpha: 0.58 });
+    layer.addChild(shade);
+
+    const ring = new PIXI.Graphics();
+    ring.x = width / 2;
+    ring.y = height * 0.46;
+    layer.addChild(ring);
+
+    const titleSize = width < 720 ? 48 : 86;
+    const title = createText(translateText('GAME OVER'), {
+      fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
+      fontSize: titleSize,
+      fontWeight: '900',
+      fill: '#fff3a2',
+      stroke: '#2a0013',
+      strokeThickness: width < 720 ? 5 : 8,
+      align: 'center',
+      letterSpacing: 0,
+      dropShadow: true,
+      dropShadowColor: '#ff55d9',
+      dropShadowBlur: 12,
+      dropShadowDistance: 0
+    });
+    title.anchor.set(0.5);
+    title.x = width / 2;
+    title.y = height * 0.43;
+    layer.addChild(title);
+
+    const subtitle = createText(`${translateText('SCORE')}: ${Number(this.game.score || 0).toLocaleString('en-US')}  //  ${translateText('SECTOR')} ${this.game.level || 1}`, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: width < 720 ? 17 : 24,
+      fontWeight: '900',
+      fill: '#9cfbff',
+      stroke: '#020711',
+      strokeThickness: 4,
+      align: 'center'
+    });
+    subtitle.anchor.set(0.5);
+    subtitle.x = width / 2;
+    subtitle.y = title.y + (width < 720 ? 52 : 82);
+    layer.addChild(subtitle);
+
+    this.uiOverlay.addChild(layer);
+    this.uiOverlay.sortChildren?.();
+    AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.92, minIntervalMs: 0 });
+
+    let elapsed = 0;
+    const duration = 1480;
+    const ticker = (tick) => {
+      elapsed += tick.deltaTime * 16.67;
+      const t = Math.min(1, elapsed / duration);
+      const intro = Math.min(1, elapsed / 260);
+      layer.alpha = intro < 1 ? intro : Math.max(0, 1 - Math.max(0, t - 0.82) / 0.18);
+      layer.scale.set(0.92 + Math.sin(Math.min(1, intro) * Math.PI * 0.5) * 0.08);
+      const pulse = 0.5 + Math.sin(elapsed * 0.014) * 0.5;
+      ring.clear();
+      ring.circle(0, 0, Math.min(width, height) * (0.22 + pulse * 0.03));
+      ring.stroke({ color: 0xff55d9, width: 4, alpha: 0.52 + pulse * 0.28 });
+      ring.circle(0, 0, Math.min(width, height) * (0.34 + pulse * 0.04));
+      ring.stroke({ color: 0x37f5ff, width: 2, alpha: 0.36 + pulse * 0.18 });
+      if (elapsed >= duration) {
+        this.game.app.ticker.remove(ticker);
+        this._activeTickers = (this._activeTickers || []).filter(fn => fn !== ticker);
+      }
+    };
+    this.game.app.ticker.add(ticker);
+    if (!this._activeTickers) this._activeTickers = [];
+    this._activeTickers.push(ticker);
   }
 
   onLifeLost() {
@@ -2881,6 +3005,7 @@ export class PlayScene {
     if (this.tryLastStandRepair()) return;
     if (this.game.lives <= 0) {
       this.flushBalanceDebugSummary('game_over');
+      return;
     }
 
     this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
@@ -4380,6 +4505,17 @@ export class PlayScene {
     }
   }
 
+  clearToastState() {
+    this.toastQueue = [];
+    this.toastTopQueue = [];
+    this.toastCornerQueue = [];
+    this.dismissToastDisplay(this.activeCenterToast, 'center');
+    this.dismissToastDisplay(this.activeTopToast, 'top');
+    this.dismissToastDisplay(this.activeCornerToast, 'corner');
+    this.centerToastLockUntil = 0;
+    this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
+  }
+
   processToastQueue() {
     const now = Date.now();
     const centerReady = !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
@@ -5831,57 +5967,150 @@ export class PlayScene {
       return;
     }
 
-    const tex = this.bossDossierTexture;
+    const bossProfile = this.enemyManager?.boss?.profile || getBossProfile(this.game?.level || 1);
+    const primaryColor = bossProfile?.palette || 0xff3030;
+    const accentColor = bossProfile?.accent || 0x2ff6ff;
+    const bossArt = bossProfile?.art || null;
+    const emblemList = AssetManifest.generated?.vfx?.bossWarningEmblems || [];
+    const emblemIndex = Math.max(0, Number(bossProfile?.index || this.game?.level || 1) - 1) % Math.max(1, emblemList.length || 1);
+    const emblemSrc = emblemList[emblemIndex] || null;
+    const fallbackTex = this.bossDossierTexture;
+    const spectacular = reason === 'boss_spawn';
+    if (spectacular) {
+      this.shipIntroToken += 1;
+      this.introActive = false;
+      this.introComplete = true;
+    }
+    if (spectacular && this.introOverlay?.parent) {
+      this.introOverlay.parent.removeChild(this.introOverlay);
+      this.introOverlay.destroy?.({ children: true });
+      this.introOverlay = null;
+    }
+    if (spectacular && this.uiOverlay?.children?.length) {
+      for (const child of [...this.uiOverlay.children]) {
+        if (child.label === 'ship_intro_overlay' || child.label === 'ship_intro_flash') {
+          this.uiOverlay.removeChild(child);
+          child.destroy?.({ children: true });
+        }
+      }
+    }
 
-    // Generated threat dossier only. No legacy portrait lookup is used.
     const detailLabel = reason === 'boss_life_lost'
       ? 'ARMOR BREACH'
       : reason === 'boss_phase2' || reason === 'boss_half'
         ? 'PATTERN SHIFT'
         : 'NEON RADAR LOCK';
-    const characterData = { subtitle: 'THREAT DOSSIER', detail: detailLabel };
 
     const poster = new PIXI.Container();
     poster.label = 'ui_boss_dossier';
     poster.eventMode = 'none';
     poster.interactive = false;
 
+    const burst = new PIXI.Graphics();
+    burst.blendMode = 'add';
+    for (let i = 0; i < 36; i += 1) {
+      const angle = (Math.PI * 2 * i) / 36;
+      const inner = 150 + (i % 3) * 18;
+      const outer = 280 + (i % 5) * 18;
+      burst.moveTo(Math.cos(angle) * inner, -24 + Math.sin(angle) * inner);
+      burst.lineTo(Math.cos(angle) * outer, -24 + Math.sin(angle) * outer);
+      burst.stroke({ color: i % 2 ? accentColor : primaryColor, width: i % 4 === 0 ? 3 : 1.5, alpha: spectacular ? 0.24 : 0.12 });
+    }
+    burst.circle(0, -24, 246);
+    burst.stroke({ color: primaryColor, width: 5, alpha: spectacular ? 0.24 : 0.1 });
+    burst.circle(0, -24, 188);
+    burst.stroke({ color: accentColor, width: 3, alpha: spectacular ? 0.34 : 0.14 });
+    poster.addChild(burst);
+
     const bg = new PIXI.Graphics();
-    bg.roundRect(-170, -205, 340, 410, 10);
+    bg.roundRect(-188, -220, 376, 440, 12);
     bg.fill({ color: 0x06101a, alpha: 0.94 });
-    bg.stroke({ color: 0xff3030, width: 3, alpha: 0.9 });
-    bg.roundRect(-158, -193, 316, 386, 7);
-    bg.stroke({ color: 0x2ff6ff, width: 1, alpha: 0.45 });
+    bg.stroke({ color: primaryColor, width: 4, alpha: 0.92 });
+    bg.roundRect(-174, -206, 348, 412, 8);
+    bg.stroke({ color: accentColor, width: 1.4, alpha: 0.58 });
+    bg.rect(-188, -220, 376, 42);
+    bg.fill({ color: primaryColor, alpha: 0.22 });
     poster.addChild(bg);
 
-    if (GameAssets.isValidTexture(tex)) {
-      const sprite = new PIXI.Sprite(tex);
+    const pattern = new PIXI.Graphics();
+    this.drawBossWarningSignature(pattern, bossProfile, primaryColor, accentColor);
+    poster.addChild(pattern);
+
+    const addEmblemSprite = (texture, alpha = 0.92) => {
+      if (!GameAssets.isValidTexture(texture)) return null;
+      const emblem = new PIXI.Sprite(texture);
+      emblem.label = 'boss_warning_emblem';
+      emblem.anchor.set(0.5);
+      emblem.y = -36;
+      emblem.alpha = alpha;
+      emblem.blendMode = 'add';
+      const maxSize = spectacular ? 318 : 250;
+      const scale = Math.min(maxSize / Math.max(1, texture.width), maxSize / Math.max(1, texture.height));
+      emblem.scale.set(scale);
+      poster.addChildAt(emblem, Math.min(3, poster.children.length));
+      return emblem;
+    };
+
+    if (emblemSrc) {
+      PIXI.Assets.load({
+        alias: `generated_boss_warning_emblem_${emblemIndex + 1}`,
+        src: emblemSrc
+      }).then((loaded) => {
+        if (!poster.parent) return;
+        addEmblemSprite(loaded, spectacular ? 0.96 : 0.72);
+      }).catch(() => {});
+    }
+
+    const applyBossPosterTexture = (sprite, texture) => {
+      if (!GameAssets.isValidTexture(texture)) return false;
+      sprite.texture = texture;
       sprite.anchor.set(0.5);
-      sprite.y = -20;
-      sprite.width = 270;
-      sprite.height = 270;
-      sprite.alpha = 0.96;
+      sprite.y = spectacular ? -20 : -14;
+      const maxSize = spectacular ? 218 : 252;
+      const scale = Math.min(maxSize / Math.max(1, texture.width), maxSize / Math.max(1, texture.height));
+      sprite.scale.set(scale);
+      sprite.alpha = spectacular ? 0.86 : 0.96;
+      return true;
+    };
+
+    if (!spectacular && (GameAssets.isValidTexture(fallbackTex) || bossArt)) {
+      const sprite = new PIXI.Sprite();
+      sprite.label = 'boss_warning_boss_art';
+      sprite.anchor.set(0.5);
+      sprite.y = spectacular ? -20 : -14;
+      sprite.alpha = 0;
       poster.addChild(sprite);
+      applyBossPosterTexture(sprite, fallbackTex);
+      if (bossArt) {
+        PIXI.Assets.load({
+          alias: `generated_boss_warning_art_${bossProfile?.index || this.game?.level || 'current'}`,
+          src: bossArt
+        }).then((loaded) => {
+          if (!poster.parent) return;
+          if (!GameAssets.isValidTexture(loaded)) return;
+          applyBossPosterTexture(sprite, loaded);
+        }).catch(() => {});
+      }
     } else {
       const fallback = new PIXI.Graphics();
       fallback.circle(0, -28, 118);
-      fallback.stroke({ color: 0xff3030, width: 3, alpha: 0.8 });
+      fallback.stroke({ color: primaryColor, width: 3, alpha: 0.8 });
       fallback.moveTo(-110, -28);
       fallback.lineTo(110, -28);
       fallback.moveTo(0, -138);
       fallback.lineTo(0, 82);
-      fallback.stroke({ color: 0x2ff6ff, width: 2, alpha: 0.7 });
+      fallback.stroke({ color: accentColor, width: 2, alpha: 0.7 });
       poster.addChild(fallback);
     }
 
     const scanOverlay = new PIXI.Graphics();
-    scanOverlay.roundRect(-136, -150, 272, 270, 7);
-    scanOverlay.stroke({ color: 0xff3030, width: 2, alpha: 0.72 });
-    scanOverlay.moveTo(-120, -18);
-    scanOverlay.lineTo(120, -18);
+    scanOverlay.roundRect(-136, -148, 272, 268, 7);
+    scanOverlay.stroke({ color: primaryColor, width: 2, alpha: 0.72 });
+    scanOverlay.moveTo(-122, -18);
+    scanOverlay.lineTo(122, -18);
     scanOverlay.moveTo(0, -138);
     scanOverlay.lineTo(0, 88);
-    scanOverlay.stroke({ color: 0x2ff6ff, width: 1, alpha: 0.55 });
+    scanOverlay.stroke({ color: accentColor, width: 1, alpha: 0.55 });
     poster.addChild(scanOverlay);
 
     const headerLabel = reason === 'boss_spawn'
@@ -5893,63 +6122,86 @@ export class PlayScene {
           : 'BOSS ALERT';
     const topText = createText(headerLabel, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 18,
-      fill: '#ff4040',
-      fontWeight: 'bold'
+      fontSize: 20,
+      fill: '#fff3a2',
+      stroke: '#1a0010',
+      strokeThickness: 4,
+      fontWeight: '900'
     });
+    topText.label = 'boss_warning_title';
     topText.anchor.set(0.5);
-    topText.y = -178;
+    topText.y = -194;
+    topText.text = translateText(headerLabel);
     poster.addChild(topText);
 
-    const subText = createText(characterData.subtitle, {
+    const bossName = createText(bossProfile?.name || translateText('BOSS'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 12,
-      fill: '#2ff6ff',
-      fontWeight: 'bold'
+      fontSize: 18,
+      fill: '#ffffff',
+      stroke: '#020711',
+      strokeThickness: 4,
+      fontWeight: '900',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: 306
     });
-    subText.anchor.set(0.5);
-    subText.y = -154;
-    poster.addChild(subText);
+    bossName.anchor.set(0.5);
+    bossName.y = 132;
+    poster.addChild(bossName);
 
-    // Additional detail text for context
-    const detailText = createText(characterData.detail, {
+    const detailParts = [translateText(detailLabel)];
+    if (bossProfile?.title) detailParts.push(String(bossProfile.title).toUpperCase());
+    const detailText = createText(detailParts.join(' // '), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 11,
       fill: '#d8fbff',
-      fontWeight: 'bold'
-    });
-    detailText.anchor.set(0.5);
-    detailText.y = 132;
-    poster.addChild(detailText);
-
-    const bottomText = createText(caption, {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 15,
-      fill: '#ffffff',
-      fontWeight: 'bold',
+      fontWeight: '900',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: 286
+      wordWrapWidth: 310
     });
+    detailText.anchor.set(0.5);
+    detailText.y = 160;
+    poster.addChild(detailText);
+
+    const warningCaption = reason === 'boss_spawn'
+      ? translateText(pickBossWarningJoke(bossProfile, this.game?.level || 1))
+      : caption;
+    const bottomText = createText(warningCaption, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: spectacular ? 17 : 15,
+      fill: spectacular ? '#fff3a2' : '#ffffff',
+      stroke: '#12020c',
+      strokeThickness: spectacular ? 3 : 0,
+      fontWeight: '900',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: 304
+    });
+    bottomText.label = 'boss_warning_caption';
     bottomText.anchor.set(0.5);
-    bottomText.y = 166;
+    bottomText.y = 192;
     poster.addChild(bottomText);
 
     const width = this.game.getWidth();
     const height = this.game.getHeight();
-    poster.x = Math.min(260, Math.max(190, width * 0.18));
-    poster.y = Math.min(height - 205, Math.max(360, height * 0.52));
-    poster.rotation = -0.025;
+    poster.x = spectacular
+      ? Math.min(width - 236, Math.max(220, width * 0.24))
+      : Math.min(286, Math.max(210, width * 0.2));
+    poster.y = spectacular
+      ? Math.min(height - 210, Math.max(348, height * 0.56))
+      : Math.min(height - 230, Math.max(382, height * 0.53));
+    poster.rotation = spectacular ? -0.035 : -0.025;
 
     this.uiOverlay.addChild(poster);
     console.log('[UI] boss dossier shown uiOnly=true');
 
-    const baseScale = 0.68;
-    const popScale = 0.74;
+    const baseScale = spectacular ? 0.54 : 0.68;
+    const popScale = spectacular ? 0.7 : 0.78;
     poster.scale.set(baseScale);
     let elapsed = 0;
-    const fadeDelay = 1500; // Display longer for readability
-    const fadeDuration = 600;
+    const fadeDelay = spectacular ? 1650 : 1500;
+    const fadeDuration = spectacular ? 520 : 600;
     const animate = (delta) => {
       elapsed += delta.deltaTime * 16.67;
       if (elapsed < 200) {
@@ -5962,10 +6214,71 @@ export class PlayScene {
           this.game.app.ticker.remove(animate);
           if (this.uiOverlay) this.uiOverlay.removeChild(poster);
         }
+      } else if (spectacular) {
+        const pulse = Math.sin(elapsed * 0.012) * 0.018;
+        poster.scale.set(popScale + pulse);
       }
     };
     this.game.app.ticker.add(animate);
-    AudioManager.play('menuSelect');
+    if (spectacular) {
+      AudioManager.playSfx('boss_reveal_stinger', { force: true, volume: 0.98, minIntervalMs: 0 });
+    } else {
+      AudioManager.play('menuSelect');
+    }
+  }
+
+  drawBossWarningSignature(graphics, profile, primaryColor = 0xff3030, accentColor = 0x2ff6ff) {
+    graphics.clear();
+    const signature = profile?.signature || 'ring';
+    graphics.alpha = 0.78;
+    if (signature === 'cone') {
+      for (let i = 0; i < 5; i += 1) {
+        const x = -142 + i * 71;
+        graphics.moveTo(x, -88);
+        graphics.lineTo(x + 28, -146);
+        graphics.lineTo(x + 56, -88);
+        graphics.closePath();
+        graphics.stroke({ color: i % 2 ? accentColor : primaryColor, width: 1.6, alpha: 0.36 });
+      }
+      return;
+    }
+    if (signature === 'lance') {
+      for (let i = 0; i < 6; i += 1) {
+        const x = -150 + i * 60;
+        graphics.moveTo(x, -152);
+        graphics.lineTo(x + 30, 86);
+        graphics.stroke({ color: i % 2 ? primaryColor : accentColor, width: 2, alpha: 0.32 });
+      }
+      return;
+    }
+    if (signature === 'mirror') {
+      for (let i = 0; i < 4; i += 1) {
+        const y = -130 + i * 54;
+        graphics.moveTo(-146, y);
+        graphics.lineTo(-34, y + 30);
+        graphics.moveTo(146, y);
+        graphics.lineTo(34, y + 30);
+        graphics.stroke({ color: i % 2 ? accentColor : primaryColor, width: 2, alpha: 0.34 });
+      }
+      return;
+    }
+    if (signature === 'adds') {
+      for (let i = 0; i < 8; i += 1) {
+        const angle = (Math.PI * 2 * i) / 8;
+        const x = Math.cos(angle) * 132;
+        const y = -18 + Math.sin(angle) * 116;
+        graphics.circle(x, y, 8);
+        graphics.fill({ color: i % 2 ? accentColor : primaryColor, alpha: 0.28 });
+        graphics.moveTo(0, -18);
+        graphics.lineTo(x, y);
+        graphics.stroke({ color: accentColor, width: 1, alpha: 0.2 });
+      }
+      return;
+    }
+    for (let i = 0; i < 4; i += 1) {
+      graphics.circle(0, -18, 68 + i * 32);
+      graphics.stroke({ color: i % 2 ? accentColor : primaryColor, width: 2, alpha: 0.24 });
+    }
   }
 
   showBossCombatNotice(reason, caption) {
@@ -6179,6 +6492,7 @@ export class PlayScene {
 
     // Create intro overlay
     this.introOverlay = new PIXI.Container();
+    this.introOverlay.label = 'ship_intro_overlay';
     this.introOverlay.zIndex = 999999;
 
     // Dark vignette for readability + Flash Layer
@@ -6229,6 +6543,7 @@ export class PlayScene {
 
     // Impact Flash (White overlay)
     const flash = new PIXI.Graphics();
+    flash.label = 'ship_intro_flash';
     flash.rect(0, 0, introWidth, introHeight);
     flash.fill({ color: 0xffffff, alpha: 0.15 });
     flash.alpha = 0;

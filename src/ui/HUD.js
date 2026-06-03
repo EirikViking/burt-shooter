@@ -51,13 +51,18 @@ export class HUD {
 
     // Rank Elements
     this.rankGroup = new PIXI.Container();
+    this.rankBadgeBg = new PIXI.Graphics();
+    this.rankTextBg = new PIXI.Graphics();
     this.rankIcon = new PIXI.Sprite();
     this.rankBarBg = new PIXI.Graphics();
     this.rankBarFill = new PIXI.Graphics();
     this.rankText = createText('', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 10,
-      fill: '#ffff00'
+      fontSize: 13,
+      fontWeight: '900',
+      fill: '#fff8ba',
+      stroke: '#020711',
+      strokeThickness: 4
     });
 
     this.createHUD();
@@ -71,6 +76,9 @@ export class HUD {
     this.hudContainer.addChild(this.missionPanel);
 
     // Rank Group
+    this.rankIcon.anchor.set(0.5);
+    this.rankGroup.addChild(this.rankBadgeBg);
+    this.rankGroup.addChild(this.rankTextBg);
     this.rankGroup.addChild(this.rankBarBg);
     this.rankGroup.addChild(this.rankBarFill);
     this.rankGroup.addChild(this.rankIcon);
@@ -262,26 +270,42 @@ export class HUD {
     const rankTex = RankAssets.getRankTexture(this.game.rankIndex);
     if (rankTex) {
       this.rankIcon.texture = rankTex;
-      // Make it slightly larger as requested
-      const maxSz = 50;
-      if (this.rankIcon.width > 0) {
+      const maxSz = 42;
+      if (this.rankIcon.texture?.width > 0) {
         const scale = Math.min(maxSz / this.rankIcon.texture.width, maxSz / this.rankIcon.texture.height);
         this.rankIcon.scale.set(scale);
       }
     }
 
-    // Clearer text
     this.rankText.text = rankManager.getRankString(this.game.rankIndex);
-    this.rankText.x = 60; // Fixed offset to clear the icon
-    this.rankText.y = 15;
+    this.rankText.x = 58;
+    this.rankText.y = 8;
+    this.rankText.scale.set(1);
+    this.rankText.updateText?.(false);
+    if (this.rankText.width > 86) {
+      this.rankText.scale.set(Math.max(0.68, 86 / this.rankText.width));
+    }
+    this.rankIcon.x = 25;
+    this.rankIcon.y = 24;
+
+    this.rankBadgeBg.clear();
+    this.rankBadgeBg.roundRect(-5, -3, 154, 58, 9);
+    this.rankBadgeBg.fill({ color: 0x020916, alpha: 0.76 });
+    this.rankBadgeBg.stroke({ color: 0xffef7e, width: 1.5, alpha: 0.82 });
+
+    this.rankTextBg.clear();
+    this.rankTextBg.roundRect(52, 5, 92, 22, 4);
+    this.rankTextBg.fill({ color: 0x020711, alpha: 0.72 });
+    this.rankTextBg.stroke({ color: 0x75ecff, width: 1, alpha: 0.2 });
 
     // XP Bar
     const progress = this.game.getRankProgress();
-    const barW = 40;
-    const barH = 4;
+    const barW = 92;
+    const barH = 5;
 
-    this.rankBarBg.clear().rect(0, 42, barW, barH).fill({ color: 0x333333 });
-    this.rankBarFill.clear().rect(0, 42, barW * progress, barH).fill({ color: 0xffff00 });
+    this.rankBarBg.clear().roundRect(52, 40, barW, barH, 3).fill({ color: 0x102238, alpha: 0.94 });
+    this.rankBarBg.stroke({ color: 0x75ecff, width: 1, alpha: 0.45 });
+    this.rankBarFill.clear().roundRect(52, 40, barW * progress, barH, 3).fill({ color: 0xffef7e });
 
     this.locationText.text = formatSectorLabel(this.game.level || 1, {
       sectorWord: translateText('SECTOR'),
@@ -725,7 +749,7 @@ export class HUD {
     const blockSpacing = layout.isMobile ? 24 : 22;
     const scoreFont = layout.isMobile ? 15 : 18;
     const livesFont = layout.isMobile ? 16 : 18;
-    const leftPanelWidth = layout.isMobile ? Math.min(180, canvasWidth * 0.46) : 250;
+    const leftPanelWidth = layout.isMobile ? Math.min(242, canvasWidth * 0.58) : 326;
     const leftPanelHeight = layout.isMobile ? 76 : 82;
     const rightPanelWidth = layout.isMobile ? 118 : 150;
     const rightPanelHeight = layout.isMobile ? 42 : 46;
@@ -738,7 +762,7 @@ export class HUD {
     this.levelText.style.fontSize = scoreFont;
     this.livesText.style.fontSize = livesFont;
     this.locationText.style.fontSize = layout.isMobile ? 10 : 12;
-    this.rankText.style.fontSize = layout.isMobile ? 9 : 10;
+    this.rankText.style.fontSize = layout.isMobile ? 11 : 13;
     this.missionLabel.style.fontSize = layout.isMobile ? 8 : 10;
     this.missionText.style.fontSize = layout.isMobile ? 11 : 14;
 
@@ -751,7 +775,7 @@ export class HUD {
     this.rankGroup.y = margin + 10;
 
     // Shift Score and Level to the right of Rank
-    const rankOffset = 66;
+    const rankOffset = layout.isMobile ? 164 : 188;
 
     this.scoreText.x = margin + rankOffset;
     this.scoreText.y = margin + 10;

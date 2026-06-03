@@ -57,6 +57,7 @@ export class LeaderboardAdapter {
     this.steamProvider = new SteamLeaderboardProvider();
     this.availability = {
       steam: false,
+      steamFriends: false,
       cloud: true,
       local: true
     };
@@ -69,7 +70,10 @@ export class LeaderboardAdapter {
       this.cloudProvider.isAvailable().catch(() => false),
       this.localProvider.isAvailable().catch(() => true)
     ]);
-    this.availability = { steam, cloud, local };
+    const steamFriends = steam
+      ? await this.steamProvider.hasFriendLeaderboardEntries({ limit: LEADERBOARD_DISPLAY_LIMIT }).catch(() => false)
+      : false;
+    this.availability = { steam, steamFriends, cloud, local };
     this.refreshed = true;
     return this.availability;
   }
@@ -90,6 +94,7 @@ export class LeaderboardAdapter {
   getRuntimeSummary() {
     return {
       steam: Boolean(this.availability.steam),
+      steamFriends: Boolean(this.availability.steamFriends),
       cloud: Boolean(this.availability.cloud),
       local: Boolean(this.availability.local),
       globalProvider: this.availability.steam ? 'steam' : (this.availability.cloud ? 'cloud' : 'local')
@@ -100,7 +105,9 @@ export class LeaderboardAdapter {
     if (this.availability.steam) {
       return [
         { id: LeaderboardView.GLOBAL, label: 'GLOBAL', title: 'GLOBAL SCORE DECK', sourceLabel: 'Steam Global' },
-        { id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' },
+        ...(this.availability.steamFriends
+          ? [{ id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' }]
+          : []),
         { id: LeaderboardView.LOCAL, label: 'LOCAL', title: 'LOCAL SCORE DECK', sourceLabel: 'Local Memory' }
       ];
     }

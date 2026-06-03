@@ -503,6 +503,7 @@ export class Game {
       this.currentScene.onLifeLost(this.lives);
     }
     if (this.lives <= 0) {
+      if (this.currentScene?.beginGameOverSequence?.()) return;
       this.gameOver();
     }
   }
