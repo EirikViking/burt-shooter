@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-05-26T14:13:55.337Z",
+  "generatedAt": "2026-06-03T02:50:53.837Z",
   "status": "failed",
   "currentBuild": {
-    "version": "v2026-05-26_16-04-56",
-    "timestamp": "2026-05-26T14:04:56.993Z"
+    "version": "v2026-06-03_02-05-51",
+    "timestamp": "2026-06-03T00:05:51.471Z"
   },
   "liveUrl": "https://novaswarm.tinyfoundry.app",
   "versionChecks": [
@@ -11,13 +11,14 @@
       "url": "https://novaswarm.tinyfoundry.app/version.json",
       "ok": true,
       "status": 200,
-      "version": "v2026-05-26_10-37-24",
-      "timestamp": "2026-05-26T08:37:24.944Z"
+      "version": null,
+      "timestamp": null
     }
   ],
   "latestLiveSmoke": null,
   "errors": [
-    "Live version v2026-05-26_10-37-24 at https://novaswarm.tinyfoundry.app/version.json does not match current build v2026-05-26_16-04-56",
+    "Live version response was not JSON at https://novaswarm.tinyfoundry.app/version.json",
+    "Live version unknown at https://novaswarm.tinyfoundry.app/version.json does not match current build v2026-06-03_02-05-51",
     "Missing live-domain smoke report for https://novaswarm.tinyfoundry.app"
   ],
   "warnings": []

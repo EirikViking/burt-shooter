@@ -35,6 +35,45 @@ function toPublicPilotName(rawName, fallbackSeed = 0) {
   return validation.publicName;
 }
 
+function readScoreLevel(entry = {}, fallback = 1) {
+  const details = Array.isArray(entry.details)
+    ? entry.details
+    : Array.isArray(entry.scoreDetails)
+      ? entry.scoreDetails
+      : Array.isArray(entry.metadata?.details)
+        ? entry.metadata.details
+        : [];
+  for (const value of [
+    entry.level,
+    entry.levelReached,
+    entry.metadata?.level,
+    entry.metadata?.levelReached,
+    details[0]
+  ]) {
+    if (value === null || value === undefined || value === '') continue;
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return Math.max(1, Math.floor(parsed));
+  }
+  return Math.max(1, Math.floor(Number(fallback) || 1));
+}
+
+function hasScoreLevel(entry = {}) {
+  const details = Array.isArray(entry.details)
+    ? entry.details
+    : Array.isArray(entry.scoreDetails)
+      ? entry.scoreDetails
+      : Array.isArray(entry.metadata?.details)
+        ? entry.metadata.details
+        : [];
+  return [
+    entry.level,
+    entry.levelReached,
+    entry.metadata?.level,
+    entry.metadata?.levelReached,
+    details[0]
+  ].some(value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)));
+}
+
 // Schema detection cache
 let schemaChecked = false;
 let hasRankIndexColumn = false;
@@ -112,11 +151,12 @@ export async function onRequestPost(context) {
     const db = context.env.DB;
     const body = await context.request.json();
 
-    const { name, score, level, submissionId } = body;
+    const { name, score, submissionId } = body;
+    const level = hasScoreLevel(body) ? readScoreLevel(body, 1) : NaN;
     // NOTE: Ignore any client-provided rank or rankIndex - backend is authoritative
 
     // Validation
-    if (!name || typeof score !== 'number' || typeof level !== 'number') {
+    if (!name || typeof score !== 'number' || !Number.isFinite(score) || !Number.isFinite(level)) {
       return new Response(JSON.stringify({ error: 'Invalid input' }), {
         status: 400,
         headers: {

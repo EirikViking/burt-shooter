@@ -283,11 +283,25 @@ async function collectPlayState(page) {
         shieldActive: Boolean(player.shieldActive),
         dodgeCooldown: Number(player.dodgeCooldown) || 0
       } : null,
-      enemies: (textState?.visibleEnemies || []).map((enemy) => ({
+      enemies: (enemyManager?.enemies || [])
+        .filter((enemy) => enemy?.active !== false)
+        .slice(0, 24)
+        .map((enemy) => ({
         x: Math.round(enemy.x),
         y: Math.round(enemy.y),
         radius: Math.round(enemy.radius || 0),
         kind: enemy.kind || null,
+        state: enemy.state || null,
+        waitingForEntry: Boolean(enemy.waitingForEntry),
+        moveStyle: enemy.tacticalMoveStyle || null,
+        waveRole: enemy.waveRole || null,
+        waveTactic: enemy.waveTactic ? {
+          id: enemy.waveTactic.id || null,
+          move: enemy.waveTactic.move || null,
+          shot: enemy.waveTactic.shot || null
+        } : null,
+        formationX: Number.isFinite(enemy.formationX) ? Math.round(enemy.formationX) : null,
+        formationY: Number.isFinite(enemy.formationY) ? Math.round(enemy.formationY) : null,
         health: Number.isFinite(enemy.health) ? enemy.health : null,
         maxHealth: Number.isFinite(enemy.maxHealth) ? enemy.maxHealth : null,
         type: enemy.type,
@@ -352,18 +366,22 @@ function normalizeAngle(angle) {
 function scoreLane(state, x, y, viewportWidth, viewportHeight) {
   let score = 0;
   for (const bullet of state.enemyBullets || []) {
+    if ((bullet.y ?? 0) > y + 96) continue;
     const dx = Math.abs((bullet.x ?? 0) - x);
     const dy = Math.abs((bullet.y ?? 0) - y);
     if (dy > 360) continue;
-    const nearX = Math.max(0, 100 - dx);
-    const nearY = Math.max(0, 280 - dy);
-    const collisionColumn = dx < 52 && dy < 170;
-    const grazeColumn = dx < 82 && dy < 230;
-    score -= nearX * nearX * 0.16 + nearY * 0.24;
-    if (collisionColumn) score -= 950 + (170 - dy) * 2.8;
-    else if (grazeColumn) score -= 360 + (230 - dy) * 1.2;
-    if ((bullet.y ?? 0) < y && dy < 260 && dx < 100) {
-      score -= (260 - dy) * 2.4;
+    const nearX = Math.max(0, 130 - dx);
+    const nearY = Math.max(0, 310 - dy);
+    const collisionColumn = dx < 64 && dy < 190;
+    const grazeColumn = dx < 110 && dy < 260;
+    score -= nearX * nearX * 0.38 + nearY * 0.72;
+    if (collisionColumn) score -= 3400 + (190 - dy) * 10.5;
+    else if (grazeColumn) score -= 1350 + (260 - dy) * 5.2;
+    if ((bullet.y ?? 0) < y && dy < 300 && dx < 130) {
+      score -= (300 - dy) * 9.4 + Math.max(0, 130 - dx) * 11.5;
+    }
+    if ((bullet.y ?? 0) <= y + 64 && dy < 340 && dx < 150) {
+      score -= Math.max(0, 150 - dx) * 20 + Math.max(0, 340 - dy) * 3.2;
     }
   }
   for (const enemy of state.enemies || []) {
@@ -373,12 +391,28 @@ function scoreLane(state, x, y, viewportWidth, viewportHeight) {
     if (ex < -80 || ex > viewportWidth + 80) continue;
     const dx = Math.abs(ex - x);
     const dy = Math.abs(ey - y);
-    const lowThreat = ey > viewportHeight * 0.62 ? 1.35 : ey > viewportHeight * 0.52 ? 0.65 : 0.015;
+    const tacticId = String(state.wave?.tactic?.id || '');
+    const tacticMove = String(state.wave?.tactic?.move || '');
+    const diveLike = /dive|rush|pincer|strafe|sweep/i.test(`${tacticId} ${tacticMove}`);
+    const activeDiver = enemy.state === 'DIVE' || enemy.state === 'RETURN';
+    const lowThreat = ey > viewportHeight * 0.62
+      ? 1.45
+      : ey > viewportHeight * 0.52
+        ? 0.82
+        : ey > viewportHeight * 0.32
+          ? (diveLike && activeDiver ? 0.32 : 0.12)
+          : (diveLike && activeDiver ? 0.18 : 0.04);
     const nearX = Math.max(0, 165 - dx);
     const nearY = Math.max(0, 260 - dy);
     score -= nearX * nearX * 0.035 * lowThreat + nearY * 0.42 * lowThreat;
     if (ey > viewportHeight * 0.6 && dy < 130 && dx < 110) {
       score -= 900 * lowThreat;
+    }
+    if (activeDiver && dy < 260 && dx < 210) {
+      score -= 3200 + Math.max(0, 210 - dx) * 22 + Math.max(0, 260 - dy) * 11;
+    }
+    if (diveLike && activeDiver && ey < y && dx < 145 && dy < viewportHeight * 0.72) {
+      score -= (145 - dx) * 14 + (viewportHeight * 0.72 - dy) * 1.8;
     }
   }
   for (const hazard of state.bossHazards || []) {
@@ -427,12 +461,32 @@ function scoreLane(state, x, y, viewportWidth, viewportHeight) {
   return score;
 }
 
+function scoreMovementPath(state, fromX, fromY, toX, toY) {
+  if (!Number.isFinite(fromX) || !Number.isFinite(fromY)) return 0;
+  let score = 0;
+  const minX = Math.min(fromX, toX) - 54;
+  const maxX = Math.max(fromX, toX) + 54;
+  const verticalBand = Math.max(150, Math.abs(toY - fromY) + 190);
+  for (const bullet of state.enemyBullets || []) {
+    const bx = Number(bullet.x) || 0;
+    const by = Number(bullet.y) || 0;
+    if (by > Math.max(fromY, toY) + 96) continue;
+    if (by < Math.min(fromY, toY) - 90 || by > Math.max(fromY, toY) + verticalBand) continue;
+    const pathDx = bx >= minX && bx <= maxX ? 0 : Math.min(Math.abs(bx - minX), Math.abs(bx - maxX));
+    const dy = Math.abs(by - toY);
+    if (pathDx < 135 && dy < 310) {
+      score -= (135 - pathDx) * 26 + (310 - dy) * 6.2;
+    }
+  }
+  return score;
+}
+
 function chooseIntent(state, viewportWidth, viewportHeight) {
   const playerX = state.player?.x ?? viewportWidth / 2;
   const playerY = state.player?.y ?? viewportHeight * 0.8;
   const margin = 46;
-  const combatTop = viewportHeight * 0.55;
-  const combatBottom = viewportHeight * 0.78;
+  const combatTop = viewportHeight * 0.45;
+  const combatBottom = viewportHeight * 0.66;
 
   const visibleTargets = (state.enemies || []).filter((enemy) => enemy.x >= 0 && enemy.x <= viewportWidth);
   let targetX = viewportWidth / 2;
@@ -471,11 +525,23 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
   const nonBossVisibleCount = visibleTargets.filter((enemy) => enemy.kind !== 'boss').length;
   const pressure = (state.enemyBullets?.length || 0) +
     visibleTargets.filter((enemy) => enemy.kind !== 'boss' && enemy.y > viewportHeight * 0.48).length * 2;
+  const nearbyBulletCount = (state.enemyBullets || []).filter((bullet) => {
+    if ((bullet.y ?? 0) > playerY + 96) return false;
+    const dx = Math.abs((bullet.x ?? 0) - playerX);
+    const dy = Math.abs((bullet.y ?? 0) - playerY);
+    return dy < 330 && dx < 190;
+  }).length;
+  const immediateBulletCount = (state.enemyBullets || []).filter((bullet) => {
+    if ((bullet.y ?? 0) > playerY + 90) return false;
+    const dx = Math.abs((bullet.x ?? 0) - playerX);
+    const dy = Math.abs((bullet.y ?? 0) - playerY);
+    return dy < 270 && dx < 165;
+  }).length;
   const lowLives = Number.isFinite(state.lives) && state.lives <= 1;
-  const highPressure = lowLives || pressure >= 4;
+  const highPressure = lowLives || pressure >= 5 || immediateBulletCount > 0;
   const safeLeft = lowLives ? viewportWidth * 0.18 : highPressure ? viewportWidth * 0.15 : margin;
   const safeRight = lowLives ? viewportWidth * 0.82 : highPressure ? viewportWidth * 0.85 : viewportWidth - margin;
-  const safeBottom = lowLives ? viewportHeight * 0.76 : highPressure ? viewportHeight * 0.77 : combatBottom;
+  const safeBottom = lowLives ? viewportHeight * 0.64 : highPressure ? viewportHeight * 0.62 : combatBottom;
 
   const candidateXs = [
     playerX,
@@ -487,36 +553,70 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
     targetX + 90,
     targetX + 180,
     viewportWidth * 0.12,
+    viewportWidth * 0.18,
     viewportWidth * 0.25,
+    viewportWidth * 0.32,
     viewportWidth * 0.38,
     viewportWidth * 0.5,
     viewportWidth * 0.62,
+    viewportWidth * 0.68,
     viewportWidth * 0.75,
+    viewportWidth * 0.82,
     viewportWidth * 0.88
   ].map((x) => Math.max(safeLeft, Math.min(safeRight, x)));
   const candidateYs = [
     playerY,
+    viewportHeight * 0.48,
+    viewportHeight * 0.52,
+    viewportHeight * 0.55,
     viewportHeight * 0.58,
     viewportHeight * 0.62,
     viewportHeight * 0.66,
-    viewportHeight * 0.7,
-    viewportHeight * 0.74,
-    viewportHeight * 0.78
+    viewportHeight * 0.7
   ].map((y) => Math.max(combatTop, Math.min(safeBottom, y)));
 
   let best = { x: playerX, y: playerY, score: Number.NEGATIVE_INFINITY };
-  const aimWeight = state.enemyManagerState === 'BOSS_ACTIVE' ? 0.35 : nonBossVisibleCount <= 2 ? 0.5 : nonBossVisibleCount <= 3 ? 0.42 : lowLives ? 0.1 : pressure >= 5 ? 0.08 : 0.18;
+  const aimWeight = state.enemyManagerState === 'BOSS_ACTIVE'
+    ? (immediateBulletCount > 0 ? 0.18 : 0.35)
+    : immediateBulletCount > 0
+      ? 0.035
+      : nearbyBulletCount > 0 && nonBossVisibleCount <= 3
+        ? 0.18
+        : nearbyBulletCount > 0
+          ? 0.11
+          : nonBossVisibleCount <= 2
+        ? 0.38
+        : nonBossVisibleCount <= 3
+          ? 0.28
+          : lowLives
+            ? 0.18
+            : pressure >= 5
+              ? 0.05
+              : 0.14;
   for (const x of candidateXs) {
     for (const y of candidateYs) {
       const aimPenalty = Math.abs(x - targetX) * aimWeight;
       const movementPenalty = Math.abs(x - playerX) * 0.04 + Math.abs(y - playerY) * 0.03;
-      const preferredY = pressure >= 4 || lowLives ? viewportHeight * 0.68 : viewportHeight * 0.78;
-      const verticalPreference = Math.abs(y - preferredY) * 0.06;
+      const preferredY = pressure >= 6 || immediateBulletCount > 0
+        ? viewportHeight * 0.55
+        : lowLives
+          ? viewportHeight * 0.59
+        : nearbyBulletCount > 0
+          ? viewportHeight * 0.58
+          : viewportHeight * 0.61;
+      const verticalPreference = Math.abs(y - preferredY) * 0.08;
       const centerBias = Math.abs(x - viewportWidth * 0.5) * (lowLives ? 0.028 : 0.018);
       const edgePenalty = Math.max(0, viewportWidth * 0.18 - x) * (lowLives ? 1.8 : 0.9) +
         Math.max(0, x - viewportWidth * 0.82) * (lowLives ? 1.8 : 0.9);
-      const bottomPenalty = Math.max(0, y - viewportHeight * (lowLives ? 0.74 : 0.78)) * (lowLives ? 1.2 : 0.55);
-      const score = scoreLane(state, x, y, viewportWidth, viewportHeight) - aimPenalty - movementPenalty - verticalPreference - centerBias - edgePenalty - bottomPenalty;
+      const bottomPenalty = Math.max(0, y - viewportHeight * (lowLives ? 0.58 : highPressure ? 0.62 : 0.66)) * (lowLives ? 2.4 : highPressure ? 1.35 : 0.8);
+      const score = scoreLane(state, x, y, viewportWidth, viewportHeight) +
+        scoreMovementPath(state, playerX, playerY, x, y) -
+        aimPenalty -
+        movementPenalty -
+        verticalPreference -
+        centerBias -
+        edgePenalty -
+        bottomPenalty;
       if (score > best.score) best = { x, y, score };
     }
   }
@@ -529,22 +629,29 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
     !state.player.shieldActive &&
     (Number(state.player.dodgeCooldown) || 0) <= 0;
   const urgentBullet = canDodge && (state.enemyBullets || []).some((bullet) => {
+    if ((bullet.y ?? 0) > playerY + 90) return false;
     const dx = Math.abs((bullet.x ?? 0) - playerX);
     const dy = Math.abs((bullet.y ?? 0) - playerY);
-    const incomingFromAbove = (bullet.y ?? 0) < playerY && dy < 260;
-    return (incomingFromAbove && dx < 78) || (dy < 135 && dx < 92);
+    const incomingFromAbove = (bullet.y ?? 0) < playerY && dy < 320;
+    return (incomingFromAbove && dx < 150) || (dy < 220 && dx < 158);
   });
   const urgentEnemy = canDodge && (state.enemies || []).some((enemy) => {
     if (enemy.kind === 'boss') return false;
     const dx = Math.abs((enemy.x ?? 0) - playerX);
     const dy = Math.abs((enemy.y ?? 0) - playerY);
-    return (enemy.y ?? 0) > viewportHeight * 0.55 && dy < 150 && dx < 118;
+    const tacticId = String(state.wave?.tactic?.id || '');
+    const tacticMove = String(state.wave?.tactic?.move || '');
+    const diveLike = /dive|rush|pincer|strafe|sweep/i.test(`${tacticId} ${tacticMove}`);
+    const activeDiver = enemy.state === 'DIVE' || enemy.state === 'RETURN';
+    return (activeDiver && dy < 270 && dx < 210) ||
+      ((enemy.y ?? 0) > viewportHeight * 0.55 && dy < 150 && dx < 118) ||
+      (diveLike && activeDiver && (enemy.y ?? 0) < playerY && dy < viewportHeight * 0.72 && dx < 150);
   });
 
   return {
     horizontal: best.x < playerX - deadzoneX ? 'left' : best.x > playerX + deadzoneX ? 'right' : 'none',
     vertical: best.y < playerY - deadzoneY ? 'up' : best.y > playerY + deadzoneY ? 'down' : 'none',
-    dodge: Boolean(urgentBullet || urgentEnemy || (canDodge && lowLives && pressure >= 5))
+    dodge: Boolean(urgentBullet || urgentEnemy || (canDodge && (lowLives || immediateBulletCount > 0) && pressure >= 5))
   };
 }
 
@@ -609,6 +716,54 @@ function findSectorClearStalls(timeline, limitMs = 15000) {
     } else {
       current.lastMs = entry.elapsedMs;
       current.maxBlockingCount = Math.max(current.maxBlockingCount, blockingCount);
+    }
+  }
+
+  finishCurrent();
+  return stalls;
+}
+
+function findWaveProgressStalls(timeline, limitMs = 120000) {
+  const stalls = [];
+  let current = null;
+  const finishCurrent = () => {
+    if (!current) return;
+    const durationMs = Math.max(0, current.lastMs - current.startMs);
+    if (durationMs >= limitMs) stalls.push({ ...current, durationMs });
+    current = null;
+  };
+
+  for (const entry of timeline) {
+    const state = entry.state || {};
+    const enemyCount = Number(state.counts?.enemies ?? state.enemies?.length) || 0;
+    const isActiveWave = state.scene === 'play' &&
+      state.enemyManagerState === 'WAVE_ACTIVE' &&
+      state.wave?.phase === 'WAVES' &&
+      enemyCount > 0;
+    if (!isActiveWave) {
+      finishCurrent();
+      continue;
+    }
+
+    const marker = [
+      state.level ?? 'unknown',
+      state.currentWaveIndex ?? 'unknown',
+      Number(state.score) || 0,
+      enemyCount
+    ].join(':');
+    if (!current || current.marker !== marker) {
+      finishCurrent();
+      current = {
+        marker,
+        level: state.level ?? null,
+        wave: state.wave?.currentWaveNumber ?? null,
+        score: Number(state.score) || 0,
+        enemyCount,
+        startMs: entry.elapsedMs,
+        lastMs: entry.elapsedMs
+      };
+    } else {
+      current.lastMs = entry.elapsedMs;
     }
   }
 
@@ -736,6 +891,7 @@ async function runReleasePlaytest() {
   const endedInGameOver = Number.isFinite(finalState?.lives) && finalState.lives <= 0;
   const endedOutsidePlay = finalState?.scene && finalState.scene !== 'play';
   const sectorClearStalls = findSectorClearStalls(timeline);
+  const waveProgressStalls = findWaveProgressStalls(timeline);
   const report = {
     baseUrl,
     outputDir,
@@ -756,6 +912,7 @@ async function runReleasePlaytest() {
     badResponses,
     requestFailures,
     sectorClearStalls,
+    waveProgressStalls,
     timeline
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
@@ -779,7 +936,9 @@ async function runReleasePlaytest() {
   }, null, 2));
 
   const blockingRequestFailures = requestFailures.filter((request) => {
-    return !(request.resourceType === 'media' && request.failure === 'net::ERR_ABORTED');
+    if (request.resourceType === 'media' && request.failure === 'net::ERR_ABORTED') return false;
+    if (request.method === 'HEAD' && request.failure === 'net::ERR_ABORTED' && /\/sw\.js(?:\?|$)/.test(request.url)) return false;
+    return true;
   });
   const technicalIssues = [
     ...pageErrors.map((message) => `pageerror: ${message}`),
@@ -795,6 +954,9 @@ async function runReleasePlaytest() {
     ...(!allowGameOver && endedOutsidePlay ? [`ended outside play scene (${finalState.scene})`] : []),
     ...sectorClearStalls.map((stall) =>
       `sector clear blocked for ${Math.round(stall.durationMs / 1000)}s at level ${stall.level} wave ${stall.wave} by ${stall.maxBlockingCount} lingering entity`
+    ),
+    ...waveProgressStalls.map((stall) =>
+      `wave progress stalled for ${Math.round(stall.durationMs / 1000)}s at level ${stall.level} wave ${stall.wave} with score ${stall.score} and ${stall.enemyCount} enemies`
     )
   ];
 

@@ -126,6 +126,42 @@ async function clickPrimaryCta(targetPage) {
   await targetPage.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
 }
 
+async function readGameOverTopLayout(targetPage) {
+  return targetPage.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    const readNode = (node, id) => {
+      if (!node) return null;
+      const anchorY = Number(node.anchor?.y) || 0;
+      const height = Number(node.height) || 0;
+      return {
+        id,
+        text: String(node.text || ''),
+        visible: node.visible !== false,
+        x: Number(node.x) || 0,
+        y: Number(node.y) || 0,
+        width: Number(node.width) || 0,
+        height,
+        top: (Number(node.y) || 0) - height * anchorY,
+        bottom: (Number(node.y) || 0) + height * (1 - anchorY)
+      };
+    };
+    return [
+      readNode(scene?.title, 'title'),
+      readNode(scene?.scoreText, 'score'),
+      readNode(scene?.levelText, 'level')
+    ].filter((node) => node?.visible);
+  });
+}
+
+function hasReadableTopStack(layout, minGap = 3) {
+  const nodes = Array.isArray(layout) ? layout : [];
+  if (nodes.length < 3) return false;
+  for (let index = 1; index < nodes.length; index += 1) {
+    if (nodes[index - 1].bottom + minGap > nodes[index].top) return false;
+  }
+  return true;
+}
+
 function fullLocalLeaderboard() {
   return Array.from({ length: 20 }, (_, index) => ({
     name: `ACE${String(index + 1).padStart(2, '0')}`,
@@ -169,6 +205,7 @@ try {
   mkdirSync(outputDir, { recursive: true });
   const screenshot = path.join(outputDir, 'gameover-motivation.png');
   await page.screenshot({ path: screenshot, fullPage: true });
+  const gameOverTopLayout = await readGameOverTopLayout(page);
   const gameOverState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   await clickPrimaryCta(page);
   await page.waitForFunction(() => window.__game?.scenes?.gameOver?.state === 'input', null, { timeout: 5000 });
@@ -186,6 +223,7 @@ try {
   const submittedRunbackState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const runbackScreenshot = path.join(outputDir, 'gameover-runback.png');
   await page.screenshot({ path: runbackScreenshot, fullPage: true });
+  const runbackTopLayout = await readGameOverTopLayout(page);
 
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
@@ -217,7 +255,51 @@ try {
   await page.evaluate(() => {
     localStorage.removeItem('nova.hangarProgress.v1');
     localStorage.removeItem('nova.threatDiscovery.v1');
-    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 8, bestLevel: 21 }));
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
+      version: 1,
+      unlockTuningVersion: 2,
+      pilotXp: 19000,
+      pilotRank: 8,
+      highestPilotRank: 8,
+      totalRuns: 20,
+      bestScore: 150000,
+      bestSector: 7,
+      bestLevel: 7,
+      bestRank: 8,
+      bestRunTimeSeconds: 420,
+      survivedSeconds: 0,
+      totalBossesDefeated: 6,
+      totalWavesCleared: 30,
+      totalCodexDiscoveries: 40,
+      runClears: 0,
+      noHitWaves: 0,
+      noHitSectors: 0,
+      clearWithLivesRemaining: 0,
+      highestScoreMultiplier: 1,
+      shipSpecificMilestones: {},
+      discoveredThreatIds: [],
+      defeatedBossIds: [],
+      runThemesSurvived: [],
+      secretShipUnlockIds: [],
+      creditsEasterEggFound: false,
+      unlockedShipIds: [
+        'nova_ship_01',
+        'nova_ship_02',
+        'nova_ship_03',
+        'nova_ship_04',
+        'nova_ship_05',
+        'nova_ship_06',
+        'nova_ship_07',
+        'nova_ship_08',
+        'nova_ship_09',
+        'nova_ship_10',
+        'nova_ship_11'
+      ],
+      lastNewlyUnlockedShipIds: [],
+      newRanksThisRun: [],
+      rankAchievementsUnlocked: [],
+      updatedAt: new Date().toISOString()
+    }));
     const game = window.__game;
     if (!game) return;
     game.score = 24668;
@@ -310,14 +392,16 @@ try {
   const report = {
     ok: Boolean(
       gameOverState.scene === 'gameOver' &&
+      hasReadableTopStack(gameOverTopLayout) &&
+      hasReadableTopStack(runbackTopLayout) &&
       /NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
       !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
       /GAME OVER:\s*SECTOR 5/i.test(careerLevelSummary) &&
-      /CAREER BEST:\s*SECTOR 21/i.test(careerLevelSummary) &&
+      /CAREER BEST:\s*SECTOR 7/i.test(careerLevelSummary) &&
       /NEXT SHIP:\s*VIOLET FEINT/i.test(careerUnlockSummary) &&
       /SURVIVE 15 MINUTES/i.test(careerUnlockSummary) &&
       /SURVIVEDSECONDS 0\/900/i.test(careerUnlockSummary) &&
-      /NEXT CAREER GOAL:\s*REACH SECTOR 22/i.test(careerNextGoal) &&
+      /NEXT CAREER GOAL:\s*REACH SECTOR 9/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
       /LEADERBOARD FIRST|TYPE NAME/i.test(gameOverState.gameOver?.retryPrompt || '') &&
       /SUBMIT SCORE/i.test(gameOverState.gameOver?.primaryCta?.label || '') &&
@@ -344,6 +428,8 @@ try {
     ),
     baseUrl,
     gameOver: gameOverState.gameOver,
+    gameOverTopLayout,
+    runbackTopLayout,
     leaderboardFirst: {
       submittedScene: submittedRunbackState.scene,
       submittedState: submittedRunbackState.gameOver?.state || null,

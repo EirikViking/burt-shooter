@@ -1,4 +1,5 @@
 import { getRankFromLevel } from '../shared/RankPolicy.js';
+import { readLeaderboardLevel } from '../leaderboard/LeaderboardTypes.js';
 
 export const LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
 export const LOCAL_LEADERBOARD_LIMIT = 20;
@@ -40,7 +41,7 @@ export function sanitizeLocalPilotName(rawName, fallbackSeed = 0) {
 function normalizeEntry(raw, fallbackIndex = 0) {
   if (!raw || typeof raw !== 'object') return null;
   const score = Math.max(0, Math.floor(Number(raw.score) || 0));
-  const level = Math.max(1, Math.floor(Number(raw.level) || 1));
+  const level = readLeaderboardLevel(raw, 1);
   const rawRankIndex = Number(raw.rankIndex ?? raw.rank_index);
   const rankIndex = Math.max(0, Math.min(19, Number.isFinite(rawRankIndex)
     ? Math.floor(rawRankIndex)
@@ -129,8 +130,8 @@ export const LocalLeaderboard = {
     const savedEntry = normalizeEntry({
       name: entry.name,
       score,
-      level: entry.level,
-      rankIndex: entry.rankIndex ?? entry.rank_index ?? getRankFromLevel(entry.level),
+      level: readLeaderboardLevel(entry, 1),
+      rankIndex: entry.rankIndex ?? entry.rank_index ?? getRankFromLevel(readLeaderboardLevel(entry, 1)),
       shipId: entry.shipId,
       shipName: entry.shipName,
       runTimeSeconds: entry.runTimeSeconds,

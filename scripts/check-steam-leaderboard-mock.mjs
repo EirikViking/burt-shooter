@@ -154,6 +154,10 @@ try {
   if (gameOverState.gameOver?.lastLeaderboardResult?.steamStatus !== 'submitted') {
     throw new Error(`Steam mock submission failed: ${JSON.stringify(gameOverState.gameOver?.lastLeaderboardResult)}`);
   }
+  const mockScoresAfterSubmit = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
+  if (!mockScoresAfterSubmit.some((entry) => entry.playerName === 'STEAM ACE' && entry.score === 33333 && entry.level === 8)) {
+    throw new Error(`Steam mock submission did not preserve level 8: ${JSON.stringify(mockScoresAfterSubmit)}`);
+  }
   await page.screenshot({ path: path.join(outputDir, 'steam-gameover-runback.png'), fullPage: true });
 
   const report = {

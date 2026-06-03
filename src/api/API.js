@@ -1,4 +1,5 @@
 // API client for highscore communication
+import { readLeaderboardLevel } from '../leaderboard/LeaderboardTypes.js';
 
 const DEFAULT_TIMEOUT_MS = 8000; // First attempt: 8 seconds
 const RETRY_TIMEOUT_MS = 10000; // Retry attempts: 10 seconds
@@ -199,7 +200,7 @@ class APIClient {
       }).map(entry => ({
         name: entry.name || 'Unknown',
         score: typeof entry.score === 'number' ? entry.score : parseInt(entry.score, 10) || 0,
-        level: typeof entry.level === 'number' ? entry.level : parseInt(entry.level, 10) || 1,
+        level: readLeaderboardLevel(entry, 1),
         rankIndex: entry.rankIndex ?? entry.rank_index ?? 0,
         timestamp: entry.timestamp
       }));

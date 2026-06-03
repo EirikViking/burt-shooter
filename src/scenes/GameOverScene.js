@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { getGameOverComment } from '../text/phrasePool.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
-import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
+import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { generateUUID } from '../utils/uuid.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -931,7 +931,17 @@ export class GameOverScene {
     const availableHeight = height - footerSpace - safeMargin.top;
     const startY = Math.max(safeMargin.top, safeMargin.top + (availableHeight - totalHeight) / 2 * (layout.isMobile ? 0.5 : 0.7));
 
-    const stack = createVerticalStack(layout, { startY, spacing });
+    let stackY = startY;
+    const elementHeight = (element, fallback = spacing) => Math.max(1, element?.height || element?.style?.fontSize || fallback);
+    const placeCenteredElement = (element, spacingAfter = spacing, fallback = spacing) => {
+      const measuredHeight = elementHeight(element, fallback);
+      const y = stackY + measuredHeight / 2;
+      stackY += measuredHeight + spacingAfter;
+      return y;
+    };
+    const addStackGap = (amount) => {
+      stackY += amount;
+    };
 
     this.title.x = width / 2;
     const titleMaxWidth = clampTextWidth(width * 0.9, layout);
@@ -941,51 +951,51 @@ export class GameOverScene {
       this.title.style.fontSize = fittedSize;
       this.title.style.lineHeight = Math.round(fittedSize * 1.08);
     }
-    this.title.y = stack.placeElement(this.title, spacing);
+    this.title.y = placeCenteredElement(this.title, spacing * 0.5, titleHeight);
 
     this.scoreText.x = width / 2;
-    this.scoreText.y = stack.placeElement(this.scoreText, spacing * 0.5);
+    this.scoreText.y = placeCenteredElement(this.scoreText, spacing * 0.6, scoreHeight);
 
     this.levelText.x = width / 2;
-    this.levelText.y = stack.placeElement(this.levelText, sectionGap);
+    this.levelText.y = placeCenteredElement(this.levelText, sectionGap, levelHeight);
 
     this.unlockText.x = width / 2;
-    this.unlockText.y = stack.placeText(this.unlockText, spacing);
+    this.unlockText.y = placeCenteredElement(this.unlockText, spacing, unlockHeight);
 
     if (unlockRevealVisible) {
       this.shipUnlockReveal.x = width / 2;
-      this.shipUnlockReveal.y = stack.placeElement(this.shipUnlockReveal, spacing * 0.5);
+      this.shipUnlockReveal.y = placeCenteredElement(this.shipUnlockReveal, spacing * 0.5, unlockRevealHeight);
     }
 
     if (this.nextGoalGroup?.visible) {
       this.nextGoalGroup.x = width / 2;
-      this.nextGoalGroup.y = stack.placeElement(this.nextGoalGroup, spacing);
+      this.nextGoalGroup.y = placeCenteredElement(this.nextGoalGroup, spacing, nextGoalHeight);
     }
 
     this.comment.x = width / 2;
-    this.comment.y = stack.placeText(this.comment, spacing);
+    this.comment.y = placeCenteredElement(this.comment, spacing, commentHeight);
 
     this.leaderboardStatusText.x = width / 2;
-    this.leaderboardStatusText.y = stack.placeText(this.leaderboardStatusText, spacing * 0.8);
+    this.leaderboardStatusText.y = placeCenteredElement(this.leaderboardStatusText, spacing * 0.8, leaderboardStatusHeight);
 
     this.promptText.x = width / 2;
-    this.promptText.y = stack.placeElement(this.promptText, spacing);
+    this.promptText.y = placeCenteredElement(this.promptText, spacing, promptHeight);
 
     this.notQualifiedText.x = width / 2;
     this.notQualifiedText.y = this.promptText.y;
 
-    stack.addGap(this.state === 'runback' ? (layout.isMobile ? 22 : 36) : (layout.isMobile ? 8 : 18));
+    addStackGap(this.state === 'runback' ? (layout.isMobile ? 22 : 36) : (layout.isMobile ? 8 : 18));
     this.retryButton.x = width / 2;
-    this.retryButton.y = stack.placeElement(this.retryButton, spacing);
+    this.retryButton.y = placeCenteredElement(this.retryButton, spacing, retryHeight);
 
     if (this.leaderboardButton) {
       this.leaderboardButton.visible = leaderboardVisible;
       this.leaderboardButton.x = width / 2;
-      this.leaderboardButton.y = leaderboardVisible ? stack.placeElement(this.leaderboardButton, spacing * 0.8) : this.retryButton.y;
+      this.leaderboardButton.y = leaderboardVisible ? placeCenteredElement(this.leaderboardButton, spacing * 0.8, leaderboardHeight) : this.retryButton.y;
     }
 
     this.nameDisplay.x = width / 2;
-    this.nameDisplay.y = stack.getCurrentY();
+    this.nameDisplay.y = stackY + nameHeight / 2;
 
     this.instructions.x = width / 2;
     this.instructions.y = height - safeMargin.bottom - (layout.isMobile ? 32 : 40);

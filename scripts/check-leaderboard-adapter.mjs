@@ -46,8 +46,8 @@ function installCloudFetch() {
       });
     }
     return new Response(JSON.stringify([
-      { id: 1, name: 'ORB', score: 9000, level: 4, rank_index: 7 },
-      { id: 2, name: 'NOVA', score: 7000, level: 3, rank_index: 5 }
+      { id: 1, name: 'ORB', score: 9000, levelReached: 4, rank_index: 7 },
+      { id: 2, name: 'NOVA', score: 7000, metadata: { level: 3 }, rank_index: 5 }
     ]), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
@@ -60,7 +60,16 @@ installWindow();
 installCloudFetch();
 
 const { createLeaderboardAdapter } = await import('../src/leaderboard/LeaderboardAdapter.js');
-const { getPilotNameValidation, toPublicPilotName } = await import('../src/leaderboard/LeaderboardTypes.js');
+const {
+  getPilotNameValidation,
+  normalizeLeaderboardEntry,
+  toPublicPilotName
+} = await import('../src/leaderboard/LeaderboardTypes.js');
+const { LOCAL_LEADERBOARD_KEY, LocalLeaderboard } = await import('../src/api/LocalLeaderboard.js');
+
+assert.equal(normalizeLeaderboardEntry({ name: 'META', score: 100, metadata: { level: 9 } })?.level, 9);
+assert.equal(normalizeLeaderboardEntry({ name: 'DETAILS', score: 100, details: [10] })?.level, 10);
+assert.equal(normalizeLeaderboardEntry({ name: 'REACHED', score: 100, levelReached: 11 })?.level, 11);
 
 async function checkWebRuntime() {
   const win = installWindow();
@@ -74,6 +83,13 @@ async function checkWebRuntime() {
   assert.equal(global.source, 'cloud');
   assert.equal(global.entries.length, 2);
   assert.equal(global.entries[0].playerName, 'ORB');
+  assert.equal(global.entries[0].level, 4);
+  assert.equal(global.entries[1].level, 3);
+
+  win.localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify([
+    { name: 'OLDMETA', score: 3210, metadata: { level: 8 }, timestamp: new Date().toISOString() }
+  ]));
+  assert.equal(LocalLeaderboard.getScores(1)[0]?.level, 8, 'local leaderboard must preserve metadata.level from stored entries');
 
   const localSubmit = await adapter.submitScore({
     score: 4321,
@@ -99,6 +115,7 @@ async function checkWebRuntime() {
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('PILOT06'), false);
   await adapter.submitScore(eirikRun, { target: 'cloud', saveLocal: false, name: 'Eirik' });
   assert.equal(cloudState.lastPost.name, 'EIRIK');
+  assert.equal(cloudState.lastPost.level, 11);
 }
 
 async function checkMockSteamRuntime() {
@@ -131,6 +148,7 @@ async function checkMockSteamRuntime() {
   assert.equal(global.source, 'steam');
   assert.equal(friends.source, 'steam-friends');
   assert.equal(global.entries[0].score, 12345);
+  assert.equal(global.entries[0].level, 5);
   assert.equal(friends.entries[0].playerName, 'STEAM ACE');
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('STEAM ACE'), true);
 }
@@ -173,13 +191,14 @@ async function checkDesktopLocalPersistenceRuntime() {
   await firstAdapter.refreshAvailability();
   const submitted = await firstAdapter.submitScore({
     score: 56,
-    level: 1,
+    level: 7,
     rankIndex: 0,
     playerName: 'evileirik',
     submissionId: 'evileirik-local-restart'
   }, { target: 'local', saveLocal: true, name: 'evileirik' });
   assert.equal(submitted.localStatus, 'saved');
   assert.equal(desktopScores.some(entry => entry.name === 'EVILEIRIK' && entry.score === 56), true);
+  assert.equal(desktopScores.some(entry => entry.name === 'EVILEIRIK' && entry.score === 56 && entry.level === 7), true);
   assert.equal(firstWindow.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('EVILEIRIK'), true);
 
   const secondWindow = installWindow({ search: '?desktop=1', origin: 'http://127.0.0.1:41099' });
@@ -188,6 +207,7 @@ async function checkDesktopLocalPersistenceRuntime() {
   const local = await secondAdapter.getScores('local', { useCache: false });
   assert.equal(local.source, 'local');
   assert.equal(local.entries.some(entry => entry.playerName === 'EVILEIRIK' && entry.score === 56), true);
+  assert.equal(local.entries.some(entry => entry.playerName === 'EVILEIRIK' && entry.score === 56 && entry.level === 7), true);
   assert.equal(secondWindow.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('EVILEIRIK'), true);
 }
 

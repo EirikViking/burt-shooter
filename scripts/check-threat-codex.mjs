@@ -1,8 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { THREAT_CODEX_CATEGORIES, getThreatCodexCatalog } from '../src/config/ThreatCodexCatalog.js';
+import { HANGAR_PROGRESS_KEY } from '../src/progression/HangarProgressState.js';
 import {
+  THREAT_DISCOVERY_KEY,
   clearThreatCodexUnread,
   getCodexCompletionCounts,
+  getThreatCodexState,
   recordThreatSeen,
   resetDiscoveryStateForTests
 } from '../src/progression/ThreatDiscoveryState.js';
@@ -34,6 +37,23 @@ if (new Set(waveArt).size !== waveArt.length) fail('wave tactic Codex art should
 if (!catalog.bosses?.every(entry => /runtime boss profile/i.test(entry.description))) {
   fail('boss Codex descriptions should be data-driven from runtime boss profiles');
 }
+
+resetDiscoveryStateForTests();
+fakeStorage.delete(THREAT_DISCOVERY_KEY);
+fakeStorage.set(HANGAR_PROGRESS_KEY, JSON.stringify({
+  discoveredThreatIds: ['telegraph_rail_lance'],
+  defeatedBossIds: [catalog.bosses?.[0]?.id],
+  runThemesSurvived: ['swarm_lattice'],
+  updatedAt: new Date(Date.UTC(2026, 0, 1)).toISOString()
+}));
+const restoredState = getThreatCodexState();
+const restoredCompletion = getCodexCompletionCounts(catalog, restoredState);
+if ((restoredCompletion.attackPatterns?.discovered || 0) < 1) fail('Threat Codex should hydrate attack pattern discoveries from hangar progress');
+if ((restoredCompletion.bosses?.discovered || 0) < 1) fail('Threat Codex should hydrate defeated boss discoveries from hangar progress');
+if ((restoredCompletion.runThemes?.discovered || 0) < 1) fail('Threat Codex should hydrate run theme discoveries from hangar progress');
+if (!fakeStorage.get(THREAT_DISCOVERY_KEY)) fail('Threat Codex hydration should write repaired discovery state');
+fakeStorage.delete(HANGAR_PROGRESS_KEY);
+resetDiscoveryStateForTests();
 
 const seen = recordThreatSeen('telegraph_rail_lance', 'attackPatterns', { name: 'Rail Lance' });
 if (!seen.isNew) fail('new discovery should be marked new');

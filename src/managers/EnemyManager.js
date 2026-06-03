@@ -617,11 +617,11 @@ export class EnemyManager {
     const scripts = {
       1: [
         { type: 'nova_enemy_001', count: 6, formation: 'TUTORIAL_ARC', tactic: 'strafe_sweep', entry: 'split', cadence: 0.78 },
-        { type: 'nova_enemy_003', count: 7, formation: 'STAGGERED_WING', tactic: 'needle_stagger', entry: 'alternating', cadence: 0.86 },
+        { type: 'nova_enemy_003', count: 8, formation: 'STAGGERED_WING', tactic: 'needle_stagger', entry: 'alternating', cadence: 0.86 },
         { type: 'nova_enemy_001', count: 8, formation: 'GRID', tactic: 'pulse_net', entry: 'single', cadence: 0.94 },
-        { type: 'nova_enemy_005', count: 8, formation: 'DOUBLE_ARC', tactic: 'dive_chain', entry: 'split', cadence: 1.0 },
-        { type: 'nova_enemy_003', count: 8, formation: 'PINCER', tactic: 'crossfire_pincer', entry: 'alternating', cadence: 1.04 },
-        { type: 'nova_enemy_005', count: 9, formation: 'SCREEN_DOOR', tactic: 'weave_wall', entry: 'split', cadence: 1.08 }
+        { type: 'nova_enemy_003', count: 8, formation: 'DOUBLE_ARC', tactic: 'dive_chain', entry: 'split', cadence: 0.94 },
+        { type: 'nova_enemy_003', count: 8, formation: 'PINCER', tactic: 'crossfire_pincer', entry: 'alternating', cadence: 1.0 },
+        { type: 'nova_enemy_003', count: 6, formation: 'DOUBLE_ARC', tactic: 'needle_stagger', entry: 'split', cadence: 0.98 }
       ],
       2: [
         { type: 'nova_enemy_003', count: 7, formation: 'GRID', tactic: 'pulse_net', entry: 'alternating', cadence: 0.98 },

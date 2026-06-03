@@ -59,6 +59,36 @@ function numericInt(value, fallback = 0) {
   return Math.floor(numeric(value, fallback));
 }
 
+function firstFiniteInt(values = [], fallback = 0) {
+  for (const value of values) {
+    if (value === null || value === undefined || value === '') continue;
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return Math.floor(parsed);
+  }
+  return fallback;
+}
+
+export function readLeaderboardLevel(raw = {}, fallback = 1) {
+  const details = Array.isArray(raw.details)
+    ? raw.details
+    : Array.isArray(raw.scoreDetails)
+      ? raw.scoreDetails
+      : Array.isArray(raw.m_pDetails)
+        ? raw.m_pDetails
+        : Array.isArray(raw.metadata?.details)
+          ? raw.metadata.details
+          : [];
+  return Math.max(1, firstFiniteInt([
+    raw.level,
+    raw.levelReached,
+    raw.metadata?.level,
+    raw.metadata?.levelReached,
+    raw.detailsMetadata?.level,
+    raw.detailsMetadata?.levelReached,
+    details[0]
+  ], fallback));
+}
+
 export function getShipNumericId(spriteKey) {
   const ships = getSelectableShips();
   const resolved = getShipMetadata(spriteKey)?.spriteKey || spriteKey;
@@ -73,7 +103,7 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
   const score = Math.max(0, numericInt(rawScore, 0));
   if (score <= 0 && options.dropZero !== false) return null;
 
-  const level = Math.max(1, numericInt(raw.level ?? raw.levelReached ?? raw.metadata?.levelReached, 1));
+  const level = readLeaderboardLevel(raw, 1);
   const rank = rawRank != null ? Math.max(1, numericInt(rawRank, fallbackRank || 1)) : fallbackRank;
   const rankIndex = Math.max(0, Math.min(19, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
   const playerName = toPublicPilotName(

@@ -721,12 +721,13 @@ export class SettingsOverlay {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const isCompact = width < 820 || height < 760;
+    const isTinyCredits = isCompact && height < 680;
     const panelWidth = Math.min(isCompact ? width * 0.92 : 1120, width * 0.88);
     const panelHeight = Math.min(isCompact ? height * 0.9 : 720, height * 0.88);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const margin = isCompact ? 22 : 42;
-    const headerHeight = isCompact ? 132 : 104;
+    const headerHeight = isCompact ? 132 : 122;
     const footerHeight = isCompact ? 70 : 82;
     const contentTop = panelY + headerHeight;
     const contentBottom = panelY + panelHeight - footerHeight;
@@ -811,17 +812,22 @@ export class SettingsOverlay {
     overlay.addChild(subtitle);
 
     const artRect = isCompact
-      ? { x: panelX + margin, y: contentTop, width: panelWidth - margin * 2, height: Math.min(150, contentHeight * 0.34) }
+      ? {
+          x: panelX + margin,
+          y: contentTop,
+          width: panelWidth - margin * 2,
+          height: Math.min(isTinyCredits ? 86 : 150, contentHeight * (isTinyCredits ? 0.27 : 0.34))
+        }
       : { x: panelX + margin, y: contentTop, width: Math.min(380, panelWidth * 0.36), height: contentHeight };
     const art = this.createCreditsSpectacle(artRect, isCompact);
     overlay.addChild(art);
 
     const bodyX = isCompact ? panelX + margin : artRect.x + artRect.width + 36;
-    const bodyY = isCompact ? artRect.y + artRect.height + 18 : contentTop + 2;
+    const bodyY = isCompact ? artRect.y + artRect.height + (isTinyCredits ? 14 : 18) : contentTop + 2;
     const bodyWidth = isCompact ? panelWidth - margin * 2 : panelX + panelWidth - margin - bodyX;
     const eggRowY = buttonY - (isCompact ? 92 : 96);
     const footerY = eggRowY - (isCompact ? 42 : 48);
-    const bodyHeight = Math.max(isCompact ? 130 : 178, footerY - bodyY - 18);
+    const bodyHeight = Math.max(isTinyCredits ? 92 : (isCompact ? 130 : 178), footerY - bodyY - (isTinyCredits ? 12 : 18));
     const bodyWash = new PIXI.Graphics();
     bodyWash.roundRect(
       bodyX - 16,
@@ -844,9 +850,9 @@ export class SettingsOverlay {
     ].join('\n');
     const body = createText(creditsCopy, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: isCompact ? 11 : 16,
+      fontSize: isTinyCredits ? 9 : (isCompact ? 11 : 16),
       fill: '#c9f6ff',
-      lineHeight: isCompact ? 15 : 22,
+      lineHeight: isTinyCredits ? 12 : (isCompact ? 15 : 22),
       fontWeight: '700',
       wordWrap: true,
       wordWrapWidth: bodyWidth,
@@ -854,7 +860,7 @@ export class SettingsOverlay {
     });
     body.anchor.set(0, 0);
     body.position.set(bodyX, bodyY);
-    fitDisplayToBox(body, bodyWidth, bodyHeight, { minScale: isCompact ? 0.78 : 0.86 });
+    fitDisplayToBox(body, bodyWidth, bodyHeight, { minScale: isTinyCredits ? 0.64 : (isCompact ? 0.78 : 0.86) });
     overlay.addChild(body);
 
     const footer = createText(translateText('No cabinets were harmed. One cabinet was promoted to lore compliance.'), {

@@ -1,3 +1,5 @@
+import { readLeaderboardLevel } from './leaderboard/LeaderboardTypes.js';
+
 export const CLOUD_LANGUAGE_KEY = 'novaSwarm.languagePreference.v1';
 export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
 export const CLOUD_ACHIEVEMENT_KEY = 'nova_swarm_achievements_v1';
@@ -79,7 +81,7 @@ function normalizeLanguagePreference(value) {
 function normalizeScoreEntry(entry = {}, fallbackIndex = 0) {
   if (!entry || typeof entry !== 'object') return null;
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
-  const level = Math.max(1, Math.floor(Number(entry.level) || 1));
+  const level = readLeaderboardLevel(entry, 1);
   const rawRankIndex = Number(entry.rankIndex ?? entry.rank_index);
   const rankIndex = Math.max(0, Math.min(19, Number.isFinite(rawRankIndex) ? Math.floor(rawRankIndex) : 0));
   const name = String(entry.name || `PILOT${String(fallbackIndex).slice(-2).padStart(2, '0')}`)

@@ -11,10 +11,12 @@ const { createSteamCloudSave } = require('./steamCloudSave.cjs');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
+const isPerfSmoke = process.argv.includes('--perf-smoke') || process.env.NOVA_SWARM_ELECTRON_PERF_SMOKE === '1';
 const isSteamLeaderboardProbe = process.argv.includes('--steam-leaderboard-probe') || process.env.NOVA_SWARM_STEAM_LEADERBOARD_PROBE === '1';
 const isSteamCloudDiagnostics = process.argv.includes('--steam-cloud-diagnostics') || process.env.NOVA_SWARM_STEAM_CLOUD_DIAGNOSTICS === '1';
 const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
-const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isWindowed;
+const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isPerfSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isWindowed;
+const smokeMode = isSmoke ? 'smoke' : isControlSmoke ? 'control-smoke' : isPerfSmoke ? 'perf-smoke' : null;
 const distDir = path.resolve(__dirname, '..', 'dist');
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -33,6 +35,19 @@ const mimeTypes = {
 
 let server = null;
 let baseUrl = null;
+const isolatedUserDataDir = process.env.NOVA_SWARM_USER_DATA_DIR
+  ? path.resolve(process.env.NOVA_SWARM_USER_DATA_DIR)
+  : smokeMode
+    ? path.resolve(process.cwd(), 'test-results', `electron-${smokeMode}-user-data-${new Date().toISOString().replace(/[:.]/g, '-')}`)
+    : null;
+if (isolatedUserDataDir) {
+  try {
+    fs.mkdirSync(isolatedUserDataDir, { recursive: true });
+    app.setPath('userData', isolatedUserDataDir);
+  } catch (error) {
+    console.warn('[NovaSwarm] Failed to isolate smoke userData path:', error?.message || String(error));
+  }
+}
 const steamLeaderboardBridge = createSteamLeaderboardBridge({
   rootDir: path.resolve(__dirname, '..'),
   logger: console
@@ -150,10 +165,36 @@ function writeLocalScores(scores) {
   steamCloudSave?.mirrorLocalHighscores(scores);
 }
 
+function readScoreLevel(entry = {}, fallback = 1) {
+  const details = Array.isArray(entry.details)
+    ? entry.details
+    : Array.isArray(entry.scoreDetails)
+      ? entry.scoreDetails
+      : Array.isArray(entry.m_pDetails)
+        ? entry.m_pDetails
+        : Array.isArray(entry.metadata?.details)
+          ? entry.metadata.details
+          : [];
+  for (const value of [
+    entry.level,
+    entry.levelReached,
+    entry.metadata?.level,
+    entry.metadata?.levelReached,
+    entry.detailsMetadata?.level,
+    entry.detailsMetadata?.levelReached,
+    details[0]
+  ]) {
+    if (value === null || value === undefined || value === '') continue;
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return Math.max(1, Math.floor(parsed));
+  }
+  return Math.max(1, Math.floor(Number(fallback) || 1));
+}
+
 function sanitizeScoreEntry(entry = {}) {
   const name = String(entry.name || 'PILOT').trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 14) || 'PILOT';
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
-  const level = Math.max(1, Math.floor(Number(entry.level) || 1));
+  const level = readScoreLevel(entry, 1);
   const rankIndex = Math.max(0, Math.min(19, Math.floor(Number(entry.rankIndex ?? entry.rank_index) || getRankFromLevel(level))));
   return {
     name,
@@ -766,6 +807,117 @@ async function runControlSmoke(window) {
   if (errors.length) throw new Error(`Electron control smoke failed: ${errors.join('; ')}`);
 }
 
+async function runPerfSmoke(window) {
+  const outputDir = path.resolve(
+    process.env.NOVA_SWARM_ELECTRON_PERF_SMOKE_OUTPUT_DIR || path.join(process.cwd(), 'test-results', `electron-perf-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}`)
+  );
+  fs.mkdirSync(outputDir, { recursive: true });
+  const consoleEvents = [];
+  window.webContents.on('console-message', (_event, level, message) => {
+    const text = String(message);
+    if (text.includes('Electron Security Warning') && text.includes('will not show up')) return;
+    if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
+  });
+
+  await waitForWindowLoad(window, 20000, 'Electron perf smoke');
+  await window.loadURL(`${baseUrl}/?desktop=1&autostart=1&perf=1`);
+  const startState = await waitForPlay(window);
+  await window.webContents.executeJavaScript(`
+    (() => {
+      const play = window.__game?.scenes?.play;
+      const player = play?.player;
+      if (player) {
+        player.invulnerable = true;
+        player.invulnerableTime = 1e9;
+      }
+    })()
+  `);
+  window.webContents.focus();
+  window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
+
+  const durationMs = Math.max(5000, Number(process.env.NOVA_SWARM_PERF_SMOKE_DURATION_MS || 60000));
+  const sampleMs = Math.max(1000, Number(process.env.NOVA_SWARM_PERF_SMOKE_SAMPLE_MS || 5000));
+  const minRequiredFps = Math.max(1, Number(process.env.NOVA_SWARM_PERF_SMOKE_MIN_FPS || 50));
+  const warmupSamples = Math.max(0, Number(process.env.NOVA_SWARM_PERF_SMOKE_WARMUP_SAMPLES || 1));
+  const samples = [];
+  const startedAt = Date.now();
+
+  try {
+    while (Date.now() - startedAt < durationMs) {
+      await new Promise((resolve) => setTimeout(resolve, sampleMs));
+      const elapsedMs = Date.now() - startedAt;
+      const sample = await window.webContents.executeJavaScript(`
+        (() => {
+          const perf = window.__perfStats || {};
+          const textState = typeof window.render_game_to_text === 'function' ? JSON.parse(window.render_game_to_text()) : null;
+          return {
+            elapsedMs: ${Math.round(elapsedMs)},
+            fps: Number(perf.fps || 0),
+            frameMs: Number(perf.frameMs || 0),
+            delta: Number(perf.delta || 0),
+            clampedDelta: Number(perf.clampedDelta || 0),
+            renderer: perf.renderer || null,
+            scene: perf.scene || textState?.scene || null,
+            level: Number(perf.level || textState?.level || 0),
+            bullets: Number(perf.bullets || textState?.counts?.bullets || 0),
+            enemies: Number(perf.enemies || textState?.counts?.enemies || 0),
+            particles: Number(perf.particles || 0),
+            children: Number(perf.children || 0),
+            lives: Number(textState?.lives || 0),
+            score: Number(textState?.score || 0),
+            fatal: Boolean(perf.fatal || textState?.overlays?.fatal)
+          };
+        })()
+      `);
+      samples.push(sample);
+      console.log(`[electron-perf] t=${Math.round(elapsedMs / 1000)}s fps=${sample.fps.toFixed(1)} ms=${sample.frameMs.toFixed(1)} level=${sample.level} enemies=${sample.enemies} bullets=${sample.bullets} scene=${sample.scene}`);
+    }
+  } finally {
+    window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
+  }
+
+  const measuredSamples = samples.slice(warmupSamples);
+  const fpsValues = measuredSamples.map((sample) => sample.fps).filter(Number.isFinite);
+  const minFps = fpsValues.length ? Math.min(...fpsValues) : 0;
+  const avgFps = fpsValues.length ? fpsValues.reduce((sum, fps) => sum + fps, 0) / fpsValues.length : 0;
+  const finalState = await readPlayState(window).catch(() => null);
+  const image = await window.webContents.capturePage();
+  fs.writeFileSync(path.join(outputDir, '01-electron-perf-final.png'), image.toPNG());
+  const errors = [
+    ...(minFps >= minRequiredFps ? [] : [`min FPS ${minFps.toFixed(1)} below ${minRequiredFps}`]),
+    ...(samples.some((sample) => sample.fatal) ? ['fatal overlay detected'] : []),
+    ...(finalState?.scene === 'play' ? [] : [`final scene was ${finalState?.scene || 'unknown'}`]),
+    ...(consoleEvents.length ? [`${consoleEvents.length} console event(s)`] : [])
+  ];
+  const report = {
+    status: errors.length ? 'failed' : 'passed',
+    baseUrl,
+    outputDir,
+    build: startState.build || null,
+    gitSha: startState.gitSha || null,
+    durationMs,
+    minRequiredFps,
+    warmupSamples,
+    minFps,
+    avgFps,
+    samples,
+    finalState,
+    consoleEvents,
+    errors
+  };
+  fs.writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
+  console.log(JSON.stringify({
+    outputDir,
+    baseUrl,
+    build: report.build,
+    minFps,
+    avgFps,
+    sampleCount: samples.length,
+    errors
+  }, null, 2));
+  if (errors.length) throw new Error(`Electron perf smoke failed: ${errors.join('; ')}`);
+}
+
 async function waitForRenderedScene(window) {
   const startedAt = Date.now();
   let lastState = null;
@@ -830,6 +982,14 @@ app.whenReady().then(async () => {
   } else if (isControlSmoke) {
     try {
       await runControlSmoke(win);
+      app.quit();
+    } catch (error) {
+      console.error(error);
+      app.exit(1);
+    }
+  } else if (isPerfSmoke) {
+    try {
+      await runPerfSmoke(win);
       app.quit();
     } catch (error) {
       console.error(error);

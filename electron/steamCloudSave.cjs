@@ -59,9 +59,35 @@ function backupCorruptSave(filePath) {
   }
 }
 
+function readScoreLevel(entry = {}, fallback = 1) {
+  const details = Array.isArray(entry.details)
+    ? entry.details
+    : Array.isArray(entry.scoreDetails)
+      ? entry.scoreDetails
+      : Array.isArray(entry.m_pDetails)
+        ? entry.m_pDetails
+        : Array.isArray(entry.metadata?.details)
+          ? entry.metadata.details
+          : [];
+  for (const value of [
+    entry.level,
+    entry.levelReached,
+    entry.metadata?.level,
+    entry.metadata?.levelReached,
+    entry.detailsMetadata?.level,
+    entry.detailsMetadata?.levelReached,
+    details[0]
+  ]) {
+    if (value === null || value === undefined || value === '') continue;
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return Math.max(1, Math.floor(parsed));
+  }
+  return Math.max(1, Math.floor(Number(fallback) || 1));
+}
+
 function sanitizeScoreEntry(entry = {}, fallbackIndex = 0) {
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
-  const level = Math.max(1, Math.floor(Number(entry.level) || 1));
+  const level = readScoreLevel(entry, 1);
   const rankIndex = Math.max(0, Math.min(19, Math.floor(Number(entry.rankIndex ?? entry.rank_index) || 0)));
   const name = String(entry.name || `PILOT${String(fallbackIndex).slice(-2).padStart(2, '0')}`)
     .toUpperCase()

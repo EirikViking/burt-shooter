@@ -1040,7 +1040,7 @@ export class MenuScene {
     fitTextToWidth(this.primaryHint, fitWidth, { minScale: 0.74 });
     fitTextToWidth(this.disclaimer, fitWidth, { minScale: 0.72 });
 
-    const isShortLayout = !isMobileLayout && height < 760;
+    const isShortLayout = !isMobileLayout && height < 820;
     const buttonHeight = isMobileLayout ? 42 : (isShortLayout ? 42 : 48);
     const primaryButtonHeight = isMobileLayout ? 48 : (isShortLayout ? 52 : 58);
     const buttonWidth = isMobileLayout ? Math.min(276, contentWidth - 18) : Math.min(362, contentWidth - 58);
@@ -1220,7 +1220,7 @@ export class MenuScene {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const isMobileLayout = layout.isMobile || width < 720;
-    const isShortLayout = !isMobileLayout && height < 760;
+    const isShortLayout = !isMobileLayout && height < 820;
     const contentItems = [
       this.kicker,
       this.title,

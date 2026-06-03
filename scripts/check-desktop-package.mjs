@@ -101,6 +101,7 @@ if (!currentBuild?.version || !currentBuild?.timestamp) {
 const latestSmoke = findLatestSmokeReport('electron-smoke-');
 const latestPackagedSmoke = findLatestSmokeReport('packaged-exe-smoke-');
 const latestPackagedControlSmoke = findLatestSmokeReport('packaged-control-smoke-');
+const latestPackagedPerfSmoke = findLatestSmokeReport('packaged-perf-smoke-');
 const { report: smokeReport } = checkSmokeReport('Electron', latestSmoke);
 const { report: packagedSmokeReport } = checkSmokeReport('packaged executable', latestPackagedSmoke);
 
@@ -148,6 +149,43 @@ function checkControlSmokeReport(latestSmoke) {
 
 const packagedControlSmokeReport = checkControlSmokeReport(latestPackagedControlSmoke);
 
+function checkPerfSmokeReport(latestSmoke) {
+  if (!latestSmoke) {
+    errors.push('Missing packaged perf smoke report in test-results/packaged-perf-smoke-*/report.json');
+    return null;
+  }
+
+  const report = readJson(latestSmoke.report);
+  if (report.status !== 'passed') {
+    errors.push(`Latest packaged perf smoke status is ${report.status || 'unknown'}`);
+  }
+  if (currentBuild?.version && report.build !== currentBuild.version) {
+    errors.push(`Latest packaged perf smoke build ${report.build || 'unknown'} does not match current build ${currentBuild.version}`);
+  }
+  if ((report.minFps || 0) < (report.minRequiredFps || 50)) {
+    errors.push(`Packaged perf smoke min FPS ${(report.minFps || 0).toFixed(1)} below ${report.minRequiredFps || 50}`);
+  }
+  if ((report.consoleEvents || []).length) {
+    errors.push(`Packaged perf smoke reported ${report.consoleEvents.length} console event(s)`);
+  }
+  if ((report.errors || []).length) {
+    errors.push(`Packaged perf smoke errors: ${report.errors.join('; ')}`);
+  }
+  const screenshot = path.join(latestSmoke.dir, '01-electron-perf-final.png');
+  if (!existsSync(screenshot)) {
+    errors.push(`Missing packaged perf screenshot: ${rel(screenshot)}`);
+  }
+
+  const ageHours = (Date.now() - statSync(latestSmoke.report).mtimeMs) / 36e5;
+  if (ageHours > 72) {
+    warnings.push(`Latest packaged perf smoke report is ${ageHours.toFixed(1)} hours old`);
+  }
+
+  return report;
+}
+
+const packagedPerfSmokeReport = checkPerfSmokeReport(latestPackagedPerfSmoke);
+
 function smokeSummary(latest, smokeReport) {
   return latest ? {
     reportPath: rel(latest.report),
@@ -178,6 +216,20 @@ function controlSmokeSummary(latest, report) {
   } : null;
 }
 
+function perfSmokeSummary(latest, report) {
+  return latest ? {
+    reportPath: rel(latest.report),
+    screenshotPath: rel(path.join(latest.dir, '01-electron-perf-final.png')),
+    status: report?.status || null,
+    build: report?.build || null,
+    minFps: report?.minFps || null,
+    avgFps: report?.avgFps || null,
+    minRequiredFps: report?.minRequiredFps || null,
+    consoleEvents: report?.consoleEvents || [],
+    errors: report?.errors || []
+  } : null;
+}
+
 if (payload && currentBuild?.timestamp) {
   const packageTime = Date.parse(payload.modifiedAt);
   const buildTime = Date.parse(currentBuild.timestamp);
@@ -197,6 +249,7 @@ const report = {
   latestElectronSmoke: smokeSummary(latestSmoke, smokeReport),
   latestPackagedExeSmoke: smokeSummary(latestPackagedSmoke, packagedSmokeReport),
   latestPackagedControlsSmoke: controlSmokeSummary(latestPackagedControlSmoke, packagedControlSmokeReport),
+  latestPackagedPerfSmoke: perfSmokeSummary(latestPackagedPerfSmoke, packagedPerfSmokeReport),
   errors,
   warnings
 };

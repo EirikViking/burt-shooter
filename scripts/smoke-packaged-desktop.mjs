@@ -26,7 +26,8 @@ const result = spawnSync(exePath, ['--smoke'], {
   cwd: root,
   env: {
     ...process.env,
-    NOVA_SWARM_ELECTRON_SMOKE_OUTPUT_DIR: outputDir
+    NOVA_SWARM_ELECTRON_SMOKE_OUTPUT_DIR: outputDir,
+    NOVA_SWARM_USER_DATA_DIR: path.join(outputDir, 'userData')
   },
   windowsHide: true,
   encoding: 'utf8',

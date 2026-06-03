@@ -207,6 +207,23 @@ function detailsMetadata(details) {
   };
 }
 
+function readScoreLevel(entry = {}, metadata = {}, details = [], fallback = 1) {
+  for (const value of [
+    metadata.level,
+    metadata.levelReached,
+    entry.level,
+    entry.levelReached,
+    entry.metadata?.level,
+    entry.metadata?.levelReached,
+    details[0]
+  ]) {
+    if (value === null || value === undefined || value === '') continue;
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return Math.max(1, Math.floor(parsed));
+  }
+  return Math.max(1, Math.floor(Number(fallback) || 1));
+}
+
 function jsonSafe(value) {
   if (typeof value === 'bigint') return value.toString();
   if (Array.isArray(value)) return value.map(jsonSafe);
@@ -454,6 +471,7 @@ class SteamLeaderboardBridge {
       const details = sanitizeDetails(entry.details ?? entry.scoreDetails ?? entry.m_pDetails);
       const steamId = stringifySteamId(entry.steamId ?? entry.steamID ?? entry.m_steamIDUser);
       const metadata = detailsMetadata(details);
+      const level = readScoreLevel(entry, metadata, details, 1);
       return {
         rank: integer(entry.globalRank ?? entry.rank ?? entry.m_nGlobalRank, index + 1),
         globalRank: integer(entry.globalRank ?? entry.rank ?? entry.m_nGlobalRank, index + 1),
@@ -461,8 +479,8 @@ class SteamLeaderboardBridge {
         score: clampInt32(entry.score ?? entry.m_nScore),
         details,
         metadata,
-        level: metadata.levelReached || 1,
-        levelReached: metadata.levelReached || 1,
+        level,
+        levelReached: level,
         shipId: metadata.shipId,
         runTimeSeconds: metadata.runTimeSeconds,
         kills: metadata.kills,

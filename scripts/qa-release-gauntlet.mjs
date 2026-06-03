@@ -17,6 +17,11 @@ import {
   getEnemyMovementOffset
 } from '../src/config/EnemyMovementStyles.js';
 import { getSelectableShips, isShipUnlocked } from '../src/config/ShipMetadata.js';
+import { ShipUnlockConfig } from '../src/config/ShipUnlockConfig.js';
+import {
+  createDefaultHangarProgress,
+  recalculateUnlockedShipIds
+} from '../src/progression/HangarProgressState.js';
 import { PRE_RELEASE_SEED_SCORES, sanitizeLocalPilotName } from '../src/api/LocalLeaderboard.js';
 import {
   SCORE_NORMALIZATION_FACTOR,
@@ -26,7 +31,9 @@ import {
 } from '../src/shared/ScorePolicy.js';
 import {
   MAX_RANK_INDEX,
+  getPilotXpThresholds,
   getRankFromLevel,
+  getRankFromPilotXp,
   getRankTitle,
   getThresholds
 } from '../src/shared/RankPolicy.js';
@@ -62,24 +69,52 @@ function isFinitePoint(point) {
   return Number.isFinite(Number(point?.x)) && Number.isFinite(Number(point?.y));
 }
 
-function unlockedShipsAt(level) {
+function buildHangarProfile(partial = {}) {
+  const defaults = createDefaultHangarProgress();
+  const pilotXp = Number(partial.pilotXp ?? defaults.pilotXp) || 0;
+  const pilotRank = Number(partial.pilotRank ?? getRankFromPilotXp(pilotXp)) || 0;
   const progress = {
-    bestScore: 0,
-    bestRank: getRankFromLevel(level),
-    bestLevel: level
+    ...defaults,
+    ...partial,
+    pilotXp,
+    pilotRank,
+    highestPilotRank: Math.max(Number(partial.highestPilotRank ?? 0) || 0, pilotRank),
+    bestRank: Math.max(Number(partial.bestRank ?? 0) || 0, pilotRank)
   };
+  progress.unlockedShipIds = recalculateUnlockedShipIds(progress);
+  return progress;
+}
+
+function unlockedShipsFor(progress) {
   return getSelectableShips().filter((ship) => isShipUnlocked(ship.spriteKey, progress));
 }
 
-function nextShipAfter(level) {
-  const progress = {
-    bestScore: 0,
-    bestRank: getRankFromLevel(level),
-    bestLevel: level
-  };
+function nextLockedShip(progress) {
   return getSelectableShips()
     .filter((ship) => !isShipUnlocked(ship.spriteKey, progress))
     .sort((a, b) => (Number(a.unlock?.level) || 1) - (Number(b.unlock?.level) || 1))[0] || null;
+}
+
+function summarizeProfile(progress) {
+  const unlocked = unlockedShipsFor(progress);
+  const next = nextLockedShip(progress);
+  return {
+    unlockedShips: unlocked.length,
+    unlockedShipIds: progress.unlockedShipIds,
+    pilotRank: progress.pilotRank,
+    rankTitle: getRankTitle(progress.pilotRank),
+    bestSector: progress.bestSector,
+    bestScore: progress.bestScore,
+    totalRuns: progress.totalRuns,
+    totalBossesDefeated: progress.totalBossesDefeated,
+    totalWavesCleared: progress.totalWavesCleared,
+    totalCodexDiscoveries: progress.totalCodexDiscoveries,
+    nextLockedShip: next ? {
+      id: next.id,
+      name: next.name,
+      requirement: next.unlock?.label || null
+    } : null
+  };
 }
 
 function validateEnemyVariety() {
@@ -168,50 +203,118 @@ function validateProgression() {
   const ships = getSelectableShips();
   const shipThresholds = ships.map((ship) => Number(ship.unlock?.level) || 1);
   const rankThresholds = getThresholds();
-  const level1Ships = unlockedShipsAt(1);
-  const level11Ships = unlockedShipsAt(11);
-  const level60Ships = unlockedShipsAt(60);
+  const pilotXpThresholds = getPilotXpThresholds();
+  const expectedLegacyLevels = [
+    1, 2, 3, 4, 5, 7, 9, 11, 14, 17,
+    20, 23, 26, 29, 32, 35, 38, 41, 44, 47,
+    50, 53, 56, 58, 60
+  ];
+  const actualLegacyLevels = ShipUnlockConfig.map((entry) => Number(entry.legacyLevel));
+
+  const profiles = {
+    fresh: buildHangarProfile(),
+    firstSession: buildHangarProfile({
+      totalRuns: 1,
+      bestSector: 3,
+      bestScore: 25000,
+      totalBossesDefeated: 1,
+      totalWavesCleared: 10,
+      totalCodexDiscoveries: 28,
+      pilotRank: 6
+    }),
+    midCareer: buildHangarProfile({
+      totalRuns: 10,
+      bestSector: 8,
+      bestScore: 175000,
+      pilotRank: 8,
+      totalBossesDefeated: 18,
+      totalWavesCleared: 45,
+      totalCodexDiscoveries: 75,
+      survivedSeconds: 900,
+      noHitWaves: 1
+    }),
+    mastery: buildHangarProfile({
+      totalRuns: 50,
+      bestSector: 10,
+      bestScore: 550000,
+      pilotRank: MAX_RANK_INDEX,
+      totalBossesDefeated: 40,
+      totalWavesCleared: 160,
+      totalCodexDiscoveries: 145,
+      runClears: 1,
+      noHitWaves: 5,
+      noHitSectors: 1,
+      survivedSeconds: 1800,
+      runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse', 'crossfire_doctrine', 'glitch_parade'],
+      clearWithLivesRemaining: 2,
+      highestScoreMultiplier: 2
+    })
+  };
+
+  const profileSummaries = Object.fromEntries(
+    Object.entries(profiles).map(([name, progress]) => [name, summarizeProfile(progress)])
+  );
 
   if (ships.length !== 25) fail(`expected 25 selectable ships, found ${ships.length}`);
-  if (level1Ships.length !== 1) fail(`level 1 should unlock only starter ship, found ${level1Ships.length}`);
-  if (level11Ships.length >= ships.length) fail('level 11 unlocks the full hangar');
-  if (level11Ships.length !== 8) warn(`level 11 currently unlocks ${level11Ships.length} ships; expected 8 after pacing fix`);
-  if (level60Ships.length !== ships.length) fail(`level 60 unlocks ${level60Ships.length}/${ships.length} ships`);
+  if (ShipUnlockConfig.length !== ships.length) fail(`ship unlock config should cover every ship ${ShipUnlockConfig.length}/${ships.length}`);
+  if (JSON.stringify(actualLegacyLevels) !== JSON.stringify(expectedLegacyLevels)) {
+    fail(`legacy ship unlock levels drifted: ${actualLegacyLevels.join(', ')}`);
+  }
+  if (profileSummaries.fresh.unlockedShips !== 1) {
+    fail(`fresh profile should unlock only starter ship, found ${profileSummaries.fresh.unlockedShips}`);
+  }
+  if (profileSummaries.firstSession.unlockedShips < 2 || profileSummaries.firstSession.unlockedShips > 3) {
+    fail(`first-session profile should unlock 2-3 ships, found ${profileSummaries.firstSession.unlockedShips}`);
+  }
+  for (const shipId of ['nova_ship_02', 'nova_ship_03']) {
+    if (!profiles.firstSession.unlockedShipIds.includes(shipId)) fail(`first-session profile should unlock ${shipId}`);
+  }
+  for (const shipId of ['nova_ship_04', 'nova_ship_05', 'nova_ship_07', 'nova_ship_11']) {
+    if (profiles.firstSession.unlockedShipIds.includes(shipId)) fail(`first-session profile should not unlock ${shipId}`);
+  }
+  if (profileSummaries.midCareer.unlockedShips < 16 || profileSummaries.midCareer.unlockedShips >= 23) {
+    fail(`mid-career profile should unlock a broad but incomplete hangar, found ${profileSummaries.midCareer.unlockedShips}`);
+  }
+  for (const shipId of ['nova_ship_11', 'nova_ship_12', 'nova_ship_14', 'nova_ship_16', 'nova_ship_17']) {
+    if (!profiles.midCareer.unlockedShipIds.includes(shipId)) fail(`mid-career profile should unlock ${shipId}`);
+  }
+  if (profileSummaries.mastery.unlockedShips !== ships.length) {
+    fail(`mastery profile should unlock ${ships.length}/${ships.length} ships, found ${profileSummaries.mastery.unlockedShips}`);
+  }
   if (getRankFromLevel(1) !== 0) fail(`level 1 rank should be 0, found ${getRankFromLevel(1)}`);
   if (getRankFromLevel(11) >= MAX_RANK_INDEX) fail('level 11 reaches max rank');
   if (getRankFromLevel(60) !== MAX_RANK_INDEX) fail(`level 60 should reach max rank ${MAX_RANK_INDEX}`);
-
-  const afterLevel21 = nextShipAfter(21);
-  if (afterLevel21?.name === 'VIOLET FEINT' && Number(afterLevel21.unlock?.level) === 23) {
-    findings.push({
-      severity: 'polish',
-      area: 'progression copy',
-      summary: 'A run that reaches level 5 can still show next ship Violet Feint at level 23 if stored career best is level 21.',
-      suggestedFix: 'Label the game-over next ship and next goal lines as career progress when they are based on stored best level.'
-    });
+  if (getRankFromPilotXp(0) !== 0) fail(`0 pilot XP rank should be 0, found ${getRankFromPilotXp(0)}`);
+  if (getRankFromPilotXp(pilotXpThresholds[6]) !== 6) fail('rank 6 should be reachable from pilot XP thresholds');
+  if (getRankFromPilotXp(pilotXpThresholds.at(-1)) !== MAX_RANK_INDEX) {
+    fail(`top pilot XP threshold should award max rank ${MAX_RANK_INDEX}`);
+  }
+  for (let index = 1; index < pilotXpThresholds.length; index += 1) {
+    if (pilotXpThresholds[index] <= pilotXpThresholds[index - 1]) {
+      fail(`pilot XP threshold ${index} should increase`);
+    }
   }
 
   return {
-    shipThresholds,
-    rankThresholds,
-    level1: {
-      unlockedShips: level1Ships.length,
-      rankIndex: getRankFromLevel(1),
-      rankTitle: getRankTitle(getRankFromLevel(1))
-    },
-    level11: {
-      unlockedShips: level11Ships.length,
-      rankIndex: getRankFromLevel(11),
-      rankTitle: getRankTitle(getRankFromLevel(11))
-    },
-    level60: {
-      unlockedShips: level60Ships.length,
-      rankIndex: getRankFromLevel(60),
-      rankTitle: getRankTitle(getRankFromLevel(60))
-    },
-    nextShipAfterLevel21: afterLevel21
-      ? { name: afterLevel21.name, requiredLevel: Number(afterLevel21.unlock?.level) || 1 }
-      : null
+    legacyShipLevels: shipThresholds,
+    unlockConfigLegacyLevels: actualLegacyLevels,
+    legacyRankLevelThresholds: rankThresholds,
+    pilotXpThresholds,
+    profiles: profileSummaries,
+    legacyLevelRanks: {
+      level1: {
+        rankIndex: getRankFromLevel(1),
+        rankTitle: getRankTitle(getRankFromLevel(1))
+      },
+      level11: {
+        rankIndex: getRankFromLevel(11),
+        rankTitle: getRankTitle(getRankFromLevel(11))
+      },
+      level60: {
+        rankIndex: getRankFromLevel(60),
+        rankTitle: getRankTitle(getRankFromLevel(60))
+      }
+    }
   };
 }
 

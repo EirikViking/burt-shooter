@@ -1,3 +1,6 @@
+import { getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
+import { HANGAR_PROGRESS_KEY } from './HangarProgressState.js';
+
 export const THREAT_DISCOVERY_KEY = 'nova.threatDiscovery.v1';
 export const THREAT_DISCOVERY_VERSION = 1;
 
@@ -56,6 +59,79 @@ function normalizeItem(item = {}, fallback = {}) {
   };
 }
 
+let catalogIndex = null;
+
+function getCatalogIndex() {
+  if (catalogIndex) return catalogIndex;
+  catalogIndex = new Map();
+  try {
+    const catalog = getThreatCodexCatalog();
+    for (const category of DISCOVERY_CATEGORIES) {
+      for (const entry of Array.isArray(catalog[category]) ? catalog[category] : []) {
+        if (entry?.id) catalogIndex.set(String(entry.id), { ...entry, category });
+      }
+    }
+  } catch (error) {
+    console.warn('[ThreatDiscoveryState] Failed to index catalog:', error);
+  }
+  return catalogIndex;
+}
+
+function readStoredJson(key, fallback = {}) {
+  try {
+    const raw = storage()?.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function hydrateFromHangarProgress(state) {
+  const progress = readStoredJson(HANGAR_PROGRESS_KEY, {});
+  const discoveryIds = new Set([
+    ...(Array.isArray(progress.discoveredThreatIds) ? progress.discoveredThreatIds : []),
+    ...(Array.isArray(progress.defeatedBossIds) ? progress.defeatedBossIds : []),
+    ...(Array.isArray(progress.runThemesSurvived) ? progress.runThemesSurvived : [])
+  ].map(String).filter(Boolean));
+  if (discoveryIds.size === 0) return state;
+
+  const defeatedBossIds = new Set((Array.isArray(progress.defeatedBossIds) ? progress.defeatedBossIds : []).map(String));
+  const survivedThemeIds = new Set((Array.isArray(progress.runThemesSurvived) ? progress.runThemesSurvived : []).map(String));
+  const index = getCatalogIndex();
+  let changed = false;
+  const restoredAt = progress.updatedAt || nowIso();
+
+  for (const id of discoveryIds) {
+    const catalogEntry = index.get(id);
+    if (!catalogEntry || !DISCOVERY_CATEGORIES.includes(catalogEntry.category)) continue;
+    const category = catalogEntry.category;
+    const bucket = state.items[category] || {};
+    if (bucket[id]) continue;
+    bucket[id] = normalizeItem({
+      id,
+      category,
+      name: catalogEntry.name || id,
+      firstSeenAt: restoredAt,
+      lastSeenAt: restoredAt,
+      timesSeen: 1,
+      timesDefeated: defeatedBossIds.has(id) ? 1 : 0,
+      timesSurvived: survivedThemeIds.has(id) ? 1 : 0,
+      metadata: { restoredFrom: 'hangarProgress' }
+    }, { id, category, name: catalogEntry.name || id });
+    state.items[category] = bucket;
+    changed = true;
+  }
+
+  if (!changed) return state;
+  state.updatedAt = nowIso();
+  try {
+    storage()?.setItem(THREAT_DISCOVERY_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn('[ThreatDiscoveryState] Failed to hydrate state:', error);
+  }
+  return state;
+}
+
 export function normalizeThreatDiscoveryState(raw = {}) {
   const state = emptyState();
   const sourceItems = raw?.items && typeof raw.items === 'object' ? raw.items : {};
@@ -77,13 +153,14 @@ export function normalizeThreatDiscoveryState(raw = {}) {
 }
 
 export function readThreatDiscoveryState() {
+  let parsed = {};
   try {
     const raw = storage()?.getItem(THREAT_DISCOVERY_KEY);
-    return normalizeThreatDiscoveryState(raw ? JSON.parse(raw) : {});
+    parsed = raw ? JSON.parse(raw) : {};
   } catch (error) {
     console.warn('[ThreatDiscoveryState] Failed to read state:', error);
-    return emptyState();
   }
+  return hydrateFromHangarProgress(normalizeThreatDiscoveryState(parsed));
 }
 
 export function writeThreatDiscoveryState(state) {
