@@ -32,6 +32,7 @@ import {
 import {
   applyRunProgression,
   getHangarProgressSummary,
+  previewRunProgression,
   readHangarProgressState,
   updateHangarProgress
 } from '../progression/HangarProgressState.js';
@@ -190,9 +191,14 @@ export class Game {
     this.runFinalized = false;
     this.runSummary = null;
     this.runProgressionResult = null;
+    this.liveRankProgression = null;
+    this.liveRankBaseProgress = null;
+    this.liveRankNotifiedRanks = new Set();
+    this.nextLiveRankCheckAtMs = 0;
     this.scoreBreakdown = this.createEmptyScoreBreakdown();
     this.gameOverTransitionPending = false;
     this.hangarProgressAtRunStart = readHangarProgressState();
+    this.liveRankBaseProgress = this.hangarProgressAtRunStart;
     this.runPressureDirector = new RunPressureDirector(this);
     this.contentDirector = new RunContentDirector(this, {
       seed: `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
@@ -204,7 +210,7 @@ export class Game {
     const initialRank = Number(this.hangarProgressAtRunStart?.pilotRank) || 0;
     this.rankIndex = initialRank;
     this.lastRankIndex = this.rankIndex;
-    // Rank progression is finalized from pilot XP after the run; score remains the leaderboard value.
+    // Pilot XP is saved after the run, but the visible rank previews that same XP live during play.
     this.pendingHighscore = null;
 
     // Diagnostics
@@ -417,15 +423,16 @@ export class Game {
 
     updateHangarProgress({ bestScore: this.score, bestRank: this.rankIndex, bestLevel: this.level, bestSector: this.level });
 
-    // Current rank index is cross-run pilot rank; it updates during post-run finalization.
+    const previousRank = this.rankIndex;
+    this.updateLiveRunRank({ force: true });
     const computedRank = this.rankIndex;
 
     // Diag Update
     this.diag.asEv++;
     this.diag.asPts = Number(points) || 0;
     this.diag.asComp = computedRank;
-    this.diag.asBefore = this.lastRankIndex;
-    this.diag.asAfter = this.lastRankIndex;
+    this.diag.asBefore = previousRank;
+    this.diag.asAfter = computedRank;
     this.updateGlobalLeaderboardVoiceCues();
     return applied;
   }
@@ -559,6 +566,7 @@ export class Game {
 
   nextLevel() {
     this.level++;
+    this.updateLiveRunRank({ force: true });
     updateHangarProgress({ score: this.score, rank: this.rankIndex, bestScore: this.score, bestLevel: this.level, bestSector: this.level });
     if (this.currentScene && this.currentScene.startLevel) {
       this.currentScene.startLevel();
@@ -599,6 +607,46 @@ export class Game {
       contentDirectorState: this.contentDirector?.getDebugState?.() || null
     };
     return { ...summary, ...overrides };
+  }
+
+  updateLiveRunRank({ force = false } = {}) {
+    if (!RunPacingConfig.pilotRankProgressionEnabled) return this.liveRankProgression;
+    if (this.runFinalized || this.runMode === 'unranked' || this.isDebugRun || this.currentSceneName !== 'play') return this.liveRankProgression;
+    const now = Date.now();
+    if (!force && now < (this.nextLiveRankCheckAtMs || 0)) return this.liveRankProgression;
+    this.nextLiveRankCheckAtMs = now + 300;
+
+    const result = previewRunProgression(
+      this.buildRunSummary(),
+      this.liveRankBaseProgress || this.hangarProgressAtRunStart || readHangarProgressState()
+    );
+    this.liveRankProgression = result;
+    this.scoreBreakdown.pilotXpGained = result.xpGained || 0;
+    const targetRank = Math.max(0, Math.floor(Number(result.next?.pilotRank) || 0));
+    const currentRank = Math.max(0, Math.floor(Number(this.rankIndex) || 0));
+    if (targetRank <= currentRank) return result;
+
+    const ranksToNotify = (result.newRanksThisRun || [])
+      .filter((rank) => rank > currentRank && !this.liveRankNotifiedRanks.has(rank));
+    if (!ranksToNotify.length) ranksToNotify.push(targetRank);
+
+    for (const rank of ranksToNotify) {
+      this.rankIndex = Math.max(this.rankIndex || 0, rank);
+      this.lastRankIndex = this.rankIndex;
+      this.liveRankNotifiedRanks.add(rank);
+      this.currentScene?.onRankUp?.({
+        rankIndex: rank,
+        previousRank: currentRank,
+        pilotXpGained: result.xpGained || 0,
+        rankProgress: result.rankProgress || null
+      });
+    }
+    if (this.rankIndex < targetRank) {
+      this.rankIndex = targetRank;
+      this.lastRankIndex = targetRank;
+      this.currentScene?.player?.setRank?.(targetRank, 'live_rank_preview');
+    }
+    return result;
   }
 
   finalizeRunProgression(overrides = {}) {
@@ -661,6 +709,7 @@ export class Game {
     if (this.currentScene && this.currentScene.update) {
       this.currentScene.update(delta);
     }
+    this.updateLiveRunRank();
   }
 
   getWidth() {

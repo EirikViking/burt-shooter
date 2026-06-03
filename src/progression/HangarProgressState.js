@@ -309,6 +309,35 @@ export function calculatePilotXpForRun(summary = {}) {
   return Math.max(0, Math.floor(scoreXp + sectorXp + waveXp + bossXp + discoveryXp + themeXp + noHitWaveXp + noHitSectorXp + clearXp + livesXp));
 }
 
+export function previewRunProgression(summary = {}, baseProgress = readHangarProgressState()) {
+  const previous = normalizeHangarProgress(baseProgress);
+  const xpGained = calculatePilotXpForRun(summary);
+  const nextXp = previous.pilotXp + xpGained;
+  const nextRank = getRankFromPilotXp(nextXp);
+  const newRanksThisRun = [];
+  for (let rank = previous.pilotRank + 1; rank <= nextRank; rank += 1) {
+    newRanksThisRun.push(rank);
+  }
+  const next = normalizeHangarProgress({
+    ...previous,
+    pilotXp: nextXp,
+    pilotRank: nextRank,
+    highestPilotRank: Math.max(previous.highestPilotRank, nextRank),
+    bestRank: Math.max(previous.bestRank, nextRank),
+    newRanksThisRun
+  });
+  next.newRanksThisRun = newRanksThisRun;
+  next.rankProgress = getPilotRankProgress(next.pilotXp);
+  return {
+    previous,
+    next,
+    xpGained,
+    newRanksThisRun,
+    newlyUnlockedShipIds: [],
+    rankProgress: next.rankProgress
+  };
+}
+
 export function applyRunProgression(summary = {}) {
   const previous = readHangarProgressState();
   const xpGained = calculatePilotXpForRun(summary);

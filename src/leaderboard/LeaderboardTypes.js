@@ -172,9 +172,11 @@ export function createRunResultFromGame(game, overrides = {}) {
   const playScene = game?.scenes?.play || null;
   const selectedShipSpriteKey = game?.selectedShipSpriteKey || null;
   const shipMetadata = getShipMetadata(selectedShipSpriteKey);
+  const levelReached = Math.max(1, numericInt(overrides.levelReached ?? overrides.level ?? game?.level, 1));
   return {
     score: Math.max(0, numericInt(overrides.score ?? game?.score, 0)),
-    level: Math.max(1, numericInt(overrides.level ?? game?.level, 1)),
+    level: levelReached,
+    levelReached,
     rankIndex: Math.max(0, numericInt(overrides.rankIndex ?? game?.rankIndex, 0)),
     playerName: overrides.playerName || overrides.name || null,
     submissionId: overrides.submissionId || null,
@@ -192,8 +194,9 @@ export function createRunResultFromGame(game, overrides = {}) {
 }
 
 export function encodeSteamLeaderboardDetails(runResult = {}) {
+  const levelReached = runResult.levelReached ?? runResult.level;
   return [
-    Math.max(0, numericInt(runResult.level, 0)),
+    Math.max(0, numericInt(levelReached, 0)),
     Math.max(0, numericInt(runResult.shipNumericId ?? getShipNumericId(runResult.selectedShipSpriteKey), 0)),
     Math.max(0, numericInt(runResult.runTimeSeconds, 0)),
     Math.max(0, numericInt(runResult.kills, 0)),

@@ -64,6 +64,14 @@ function fitSprite(sprite, width, height, maxScale = 2) {
   sprite.scale.set(scale);
 }
 
+function createArtMask(parent, x, y, width, height, radius = 8) {
+  const mask = new PIXI.Graphics();
+  mask.roundRect(x, y, width, height, radius);
+  mask.fill({ color: 0xffffff, alpha: 1 });
+  parent.addChild(mask);
+  return mask;
+}
+
 function fitTextHeight(node, maxHeight, minScale = 0.76) {
   if (!node || !Number.isFinite(maxHeight) || maxHeight <= 0 || node.height <= maxHeight) return;
   const scale = Math.max(minScale, maxHeight / Math.max(1, node.height));
@@ -719,6 +727,7 @@ export class ThreatCodexScene {
     bg.rect(4, size - 6, size - 8, 2);
     bg.fill({ color: discovered ? accent : MUTED, alpha: discovered ? 0.64 : 0.28 });
     thumb.addChild(bg);
+    const artMask = createArtMask(thumb, 4, 4, size - 8, size - 8, 5);
 
     const art = this.getEntryArt(entry, categoryId);
     const token = this.renderToken;
@@ -732,6 +741,7 @@ export class ThreatCodexScene {
           sprite.position.set(size / 2, size / 2);
           sprite.alpha = discovered ? 0.88 : 0.44;
           sprite.tint = discovered ? 0xffffff : accent;
+          sprite.mask = artMask;
           thumb.addChildAt(sprite, 1);
         })
         .catch(() => drawMiniGlyph(thumb, 0, 0, size, accent, seed, discovered));
@@ -878,6 +888,7 @@ export class ThreatCodexScene {
     frame.rect(x + 10, y + height - 18, width - 20, 2);
     frame.fill({ color: accent, alpha: discovered ? 0.5 : 0.25 });
     parent.addChild(frame);
+    const artMask = createArtMask(parent, x + 8, y + 8, width - 16, height - 26, 8);
 
     const seed = makeSignalSeed(entry?.id || 'unknown');
     const backdrop = new PIXI.Graphics();
@@ -905,6 +916,7 @@ export class ThreatCodexScene {
         sprite.position.set(x + width * 0.5, y + height * 0.5);
         sprite.alpha = discovered ? 0.96 : 0.42;
         sprite.tint = discovered ? 0xffffff : accent;
+        sprite.mask = artMask;
         parent.addChild(sprite);
 
         const rim = new PIXI.Graphics();

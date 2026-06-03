@@ -62,6 +62,8 @@ installCloudFetch();
 const { createLeaderboardAdapter } = await import('../src/leaderboard/LeaderboardAdapter.js');
 const {
   STEAM_LEADERBOARD_NAME,
+  createRunResultFromGame,
+  encodeSteamLeaderboardDetails,
   estimateLeaderboardLevelFromScore,
   getPilotNameValidation,
   normalizeLeaderboardEntry,
@@ -76,6 +78,10 @@ assert.equal(estimateLeaderboardLevelFromScore(69212), 14);
 assert.equal(normalizeLeaderboardEntry({ name: 'STEAMOLD', score: 69212 })?.level, 14, 'legacy Steam rows without details must not display as LV1');
 assert.equal(normalizeLeaderboardEntry({ name: 'DETAILSWIN', score: 69212, details: [6] })?.level, 6, 'encoded Steam details must beat score fallback');
 assert.equal(STEAM_LEADERBOARD_NAME, 'nova_swarm_global_score_v2', 'Steam default leaderboard must stay on the metadata-preserving v2 board');
+const encodedRun = createRunResultFromGame({ score: 12345, level: 12, rankIndex: 4 }, { levelReached: 9 });
+assert.equal(encodedRun.level, 9, 'run result should prefer explicit levelReached');
+assert.equal(encodedRun.levelReached, 9, 'run result should carry levelReached alias');
+assert.equal(encodeSteamLeaderboardDetails(encodedRun)[0], 9, 'Steam details must encode reached level in slot 0');
 
 async function checkWebRuntime() {
   const win = installWindow();

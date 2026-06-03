@@ -342,6 +342,7 @@ export class SteamLeaderboardProvider {
       displayType: 'numeric',
       metadata: {
         level: details[0],
+        levelReached: details[0],
         shipId: details[1],
         runTimeSeconds: details[2],
         kills: details[3],

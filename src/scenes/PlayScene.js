@@ -397,8 +397,9 @@ export class PlayScene {
     };
     const startIntroFromPlayer = (source) => {
       if (this.game?.currentScene !== this || !this.player || this.introActive || this.introComplete) return;
-      this._lastRankUpSeen = this.game.rankIndex;
-      this.player.setRank(initialRank, source);
+      const currentRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : initialRank;
+      this._lastRankUpSeen = currentRank;
+      this.player.setRank(currentRank, source);
       this.applySeasonCosmetics();
       logShipDebug();
       if (controlSmoke) {
@@ -6251,11 +6252,6 @@ export class PlayScene {
     const bossProfile = this.enemyManager?.boss?.profile || getBossProfile(this.game?.level || 1);
     const primaryColor = bossProfile?.palette || 0xff3030;
     const accentColor = bossProfile?.accent || 0x2ff6ff;
-    const bossArt = bossProfile?.art || null;
-    const emblemList = AssetManifest.generated?.vfx?.bossWarningEmblems || [];
-    const emblemIndex = Math.max(0, Number(bossProfile?.index || this.game?.level || 1) - 1) % Math.max(1, emblemList.length || 1);
-    const emblemSrc = emblemList[emblemIndex] || null;
-    const fallbackTex = this.bossDossierTexture;
     const spectacular = reason === 'boss_spawn';
     if (spectacular) {
       this.shipIntroToken += 1;
@@ -6317,72 +6313,8 @@ export class PlayScene {
     this.drawBossWarningSignature(pattern, bossProfile, primaryColor, accentColor);
     poster.addChild(pattern);
 
-    const addEmblemSprite = (texture, alpha = 0.92) => {
-      if (!GameAssets.isValidTexture(texture)) return null;
-      const emblem = new PIXI.Sprite(texture);
-      emblem.label = 'boss_warning_emblem';
-      emblem.anchor.set(0.5);
-      emblem.y = -36;
-      emblem.alpha = alpha;
-      emblem.blendMode = 'add';
-      const maxSize = spectacular ? 318 : 250;
-      const scale = Math.min(maxSize / Math.max(1, texture.width), maxSize / Math.max(1, texture.height));
-      emblem.scale.set(scale);
-      poster.addChildAt(emblem, Math.min(3, poster.children.length));
-      return emblem;
-    };
-
-    if (emblemSrc) {
-      PIXI.Assets.load({
-        alias: `generated_boss_warning_emblem_${emblemIndex + 1}`,
-        src: emblemSrc
-      }).then((loaded) => {
-        if (!poster.parent) return;
-        addEmblemSprite(loaded, spectacular ? 0.96 : 0.72);
-      }).catch(() => {});
-    }
-
-    const applyBossPosterTexture = (sprite, texture) => {
-      if (!GameAssets.isValidTexture(texture)) return false;
-      sprite.texture = texture;
-      sprite.anchor.set(0.5);
-      sprite.y = spectacular ? -20 : -14;
-      const maxSize = spectacular ? 218 : 252;
-      const scale = Math.min(maxSize / Math.max(1, texture.width), maxSize / Math.max(1, texture.height));
-      sprite.scale.set(scale);
-      sprite.alpha = spectacular ? 0.86 : 0.96;
-      return true;
-    };
-
-    if (!spectacular && (GameAssets.isValidTexture(fallbackTex) || bossArt)) {
-      const sprite = new PIXI.Sprite();
-      sprite.label = 'boss_warning_boss_art';
-      sprite.anchor.set(0.5);
-      sprite.y = spectacular ? -20 : -14;
-      sprite.alpha = 0;
-      poster.addChild(sprite);
-      applyBossPosterTexture(sprite, fallbackTex);
-      if (bossArt) {
-        PIXI.Assets.load({
-          alias: `generated_boss_warning_art_${bossProfile?.index || this.game?.level || 'current'}`,
-          src: bossArt
-        }).then((loaded) => {
-          if (!poster.parent) return;
-          if (!GameAssets.isValidTexture(loaded)) return;
-          applyBossPosterTexture(sprite, loaded);
-        }).catch(() => {});
-      }
-    } else {
-      const fallback = new PIXI.Graphics();
-      fallback.circle(0, -28, 118);
-      fallback.stroke({ color: primaryColor, width: 3, alpha: 0.8 });
-      fallback.moveTo(-110, -28);
-      fallback.lineTo(110, -28);
-      fallback.moveTo(0, -138);
-      fallback.lineTo(0, 82);
-      fallback.stroke({ color: accentColor, width: 2, alpha: 0.7 });
-      poster.addChild(fallback);
-    }
+    const emblem = this.createBossWarningEmblem(bossProfile, primaryColor, accentColor, spectacular);
+    poster.addChild(emblem);
 
     const scanOverlay = new PIXI.Graphics();
     scanOverlay.roundRect(-136, -148, 272, 268, 7);
@@ -6560,6 +6492,71 @@ export class PlayScene {
       graphics.circle(0, -18, 68 + i * 32);
       graphics.stroke({ color: i % 2 ? accentColor : primaryColor, width: 2, alpha: 0.24 });
     }
+  }
+
+  createBossWarningEmblem(profile, primaryColor = 0xff3030, accentColor = 0x2ff6ff, spectacular = false) {
+    const emblem = new PIXI.Container();
+    emblem.label = 'boss_warning_emblem';
+    emblem.y = -30;
+    emblem.alpha = spectacular ? 0.98 : 0.88;
+
+    const radar = new PIXI.Graphics();
+    radar.blendMode = 'add';
+    for (let i = 0; i < 4; i += 1) {
+      radar.circle(0, 0, 52 + i * 24);
+      radar.stroke({ color: i % 2 ? accentColor : primaryColor, width: i === 0 ? 2.2 : 1.2, alpha: 0.38 - i * 0.045 });
+    }
+    for (let i = 0; i < 12; i += 1) {
+      const angle = (Math.PI * 2 * i) / 12;
+      const inner = 36 + (i % 2) * 12;
+      const outer = 118;
+      radar.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      radar.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      radar.stroke({ color: i % 3 === 0 ? primaryColor : accentColor, width: i % 3 === 0 ? 2 : 1, alpha: 0.2 });
+    }
+    emblem.addChild(radar);
+
+    const glyph = new PIXI.Graphics();
+    const signature = profile?.signature || 'ring';
+    glyph.poly([0, -102, 76, 60, 0, 102, -76, 60]);
+    glyph.fill({ color: 0x020711, alpha: 0.88 });
+    glyph.stroke({ color: primaryColor, width: 4, alpha: 0.95 });
+    glyph.poly([0, -78, 48, 42, 0, 72, -48, 42]);
+    glyph.stroke({ color: accentColor, width: 2, alpha: 0.78 });
+    glyph.moveTo(0, -58);
+    glyph.lineTo(0, 38);
+    glyph.stroke({ color: 0xffffff, width: 5, alpha: 0.86 });
+    glyph.circle(0, 68, 6);
+    glyph.fill({ color: 0xffffff, alpha: 0.9 });
+    if (signature === 'lance') {
+      glyph.moveTo(-52, -64);
+      glyph.lineTo(52, 64);
+      glyph.moveTo(52, -64);
+      glyph.lineTo(-52, 64);
+      glyph.stroke({ color: primaryColor, width: 2, alpha: 0.52 });
+    } else if (signature === 'adds') {
+      for (let i = 0; i < 6; i += 1) {
+        const angle = (Math.PI * 2 * i) / 6;
+        glyph.circle(Math.cos(angle) * 58, Math.sin(angle) * 58, 5);
+        glyph.fill({ color: accentColor, alpha: 0.64 });
+      }
+    } else {
+      glyph.circle(0, 0, 42);
+      glyph.stroke({ color: accentColor, width: 2, alpha: 0.5 });
+    }
+    emblem.addChild(glyph);
+
+    const sweep = new PIXI.Graphics();
+    sweep.blendMode = 'add';
+    sweep.moveTo(0, 0);
+    sweep.lineTo(108, -26);
+    sweep.stroke({ color: 0xffffff, width: 2, alpha: 0.28 });
+    sweep.moveTo(0, 0);
+    sweep.lineTo(94, 44);
+    sweep.stroke({ color: accentColor, width: 1.4, alpha: 0.24 });
+    emblem.addChild(sweep);
+
+    return emblem;
   }
 
   showBossCombatNotice(reason, caption) {
