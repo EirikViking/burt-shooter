@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import * as PIXI from 'pixi.js';
 
 globalThis.Audio = class {
@@ -104,6 +105,17 @@ assertVisualGone(bossAdd, 'boss support cleanup');
 manager.clearNonBossEnemyVisuals('boss_add_test_repeat');
 assertVisualGone(bossAdd, 'boss support idempotent cleanup');
 
+const lateRunPile = Array.from({ length: 24 }, (_, index) => {
+  const enemy = createSmallEnemy(container, game, index % 2 === 0 ? 'boss_chaos_support' : 'elite_support');
+  enemy.active = false;
+  return enemy;
+});
+manager.enemies = lateRunPile;
+const swept = manager.sweepInactiveEnemyVisuals('late_run_accumulation');
+assert.equal(swept, lateRunPile.length, 'inactive late-run support pile should be swept in one pass');
+assert.equal(manager.enemies.length, 0, 'inactive late-run support pile should not remain tracked');
+lateRunPile.forEach((enemy, index) => assertVisualGone(enemy, `late run support sweep ${index}`));
+
 const owner = createSmallEnemy(container, game);
 const ownedVisual = new PIXI.Graphics();
 ownedVisual.circle(0, 0, 6);
@@ -115,4 +127,15 @@ owner.deactivateVisuals('owned_visual_test');
 const ownedVisualStillVisible = Boolean(ownedVisual.parent && ownedVisual.visible !== false && ownedVisual.renderable !== false);
 assert.equal(ownedVisualStillVisible, false, 'owned external enemy visuals should be removed when owner deactivates');
 
-console.log('[dead-enemy-cleanup] PASS inactive small enemy visuals are hidden immediately and cleanup is idempotent');
+const playSceneSource = readFileSync(new URL('../src/scenes/PlayScene.js', import.meta.url), 'utf8');
+for (const marker of [
+  "cleanupSkippedFrameVisuals('gameover_interlude')",
+  "cleanupSkippedFrameVisuals('overrun_interlude')",
+  "cleanupSkippedFrameVisuals('pause')",
+  "cleanupSkippedFrameVisuals('freeze')",
+  'sweepInactiveEnemyVisuals'
+]) {
+  assert.ok(playSceneSource.includes(marker), `PlayScene missing skipped-frame cleanup marker: ${marker}`);
+}
+
+console.log('[dead-enemy-cleanup] PASS inactive enemy visuals are hidden immediately and skipped-frame cleanup is covered');

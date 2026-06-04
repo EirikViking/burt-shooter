@@ -1102,6 +1102,25 @@ export class EnemyManager {
     return true;
   }
 
+  sweepInactiveEnemyVisuals(reason = 'inactive_sweep') {
+    let swept = 0;
+    this.enemies = this.enemies.filter(enemy => {
+      if (!enemy) return false;
+      const inactive = enemy.active === false || enemy.destroyed === true;
+      if (!inactive) return true;
+      this.removeEnemySprite(enemy, reason);
+      swept += 1;
+      return false;
+    });
+
+    if (this.hijacker && (this.hijacker.active === false || this.hijacker.destroyed === true)) {
+      this.removeEnemySprite(this.hijacker, `${reason}_hijacker`);
+      this.hijacker = null;
+      swept += 1;
+    }
+    return swept;
+  }
+
   updateEnemies(delta) {
     const player = this.game.scenes.play ? this.game.scenes.play.player : null;
 
@@ -2521,6 +2540,7 @@ export class EnemyManager {
 
     // BOSS FIX: Filter out cleared enemies but keep boss
     this.enemies = this.enemies.filter(e => e.active && (e.kind === 'boss' || e.kind === 'bonus_drone'));
+    this.sweepInactiveEnemyVisuals('force_clear_sweep');
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE';
 

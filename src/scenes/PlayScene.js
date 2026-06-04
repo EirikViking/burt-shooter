@@ -1045,13 +1045,16 @@ export class PlayScene {
     try {
       this.updateDiagnosticsLayout();
       this.gameTime += delta / 60;
+      this.cleanupSkippedFrameVisuals('frame_start');
 
       if (this.gameOverInterlude?.active) {
+        this.cleanupSkippedFrameVisuals('gameover_interlude');
         this.updateGameOverInterlude(delta);
         return;
       }
 
       if (this.overrunMilestoneInterlude?.active) {
+        this.cleanupSkippedFrameVisuals('overrun_interlude');
         this.updateOverrunMilestoneInterlude(delta);
         return;
       }
@@ -1079,6 +1082,7 @@ export class PlayScene {
       this.handlePauseToggle();
       this.updateControllerPresencePause();
       if (this.isPaused) {
+        this.cleanupSkippedFrameVisuals('pause');
         this.updatePauseMenuControls(delta);
         return;
       }
@@ -1122,6 +1126,7 @@ export class PlayScene {
 
       if (this.freezeTimerMs > 0) {
         this.freezeTimerMs -= delta * 16.67;
+        this.cleanupSkippedFrameVisuals('freeze');
         this.updateDevOverlay();
         return;
       }
@@ -6254,6 +6259,26 @@ export class PlayScene {
       bonusDrone.update(delta, hazardCount); // Pass hazard count for wave easing
       return true;
     });
+  }
+
+  cleanupSkippedFrameVisuals(reason = 'skipped_frame') {
+    this.enemyManager?.sweepInactiveEnemyVisuals?.(reason);
+    if (Array.isArray(this.ambientBonusDrones) && this.ambientBonusDrones.length > 0) {
+      this.ambientBonusDrones = this.ambientBonusDrones.filter(bonusDrone => {
+        if (bonusDrone?.active !== false && bonusDrone?.destroyed !== true) return true;
+        if (bonusDrone?.sprite?.parent) bonusDrone.sprite.parent.removeChild(bonusDrone.sprite);
+        bonusDrone?.destroy?.();
+        if (bonusDrone?.type === 'POWERUP') this.hasActiveBonusCore = false;
+        return false;
+      });
+    }
+    if (Array.isArray(this.powerupManager?.powerups) && this.powerupManager.powerups.length > 0) {
+      this.powerupManager.powerups = this.powerupManager.powerups.filter(powerup => {
+        if (powerup?.active !== false && powerup?.destroyed !== true) return true;
+        if (powerup?.sprite?.parent) powerup.sprite.parent.removeChild(powerup.sprite);
+        return false;
+      });
+    }
   }
 
   applyMagnetPull(delta) {
