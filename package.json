@@ -45,6 +45,7 @@
     "check:steam-package-runtime": "node scripts/check-steam-package-runtime.mjs",
     "check:steam-cloud-save": "node scripts/check-steam-cloud-save.mjs",
     "check:release-line": "node scripts/check-release-line.mjs",
+    "check:release-hardening": "node scripts/check-release-hardening.mjs",
     "probe:steam-leaderboard-live": "node scripts/probe-steam-leaderboard-live.mjs",
     "probe:steam-leaderboard-electron": "node scripts/probe-steam-leaderboard-electron.mjs",
     "probe:steam-leaderboard-steam-installed": "node scripts/probe-steam-leaderboard-steam-installed.mjs",
