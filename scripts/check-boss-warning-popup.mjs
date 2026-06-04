@@ -99,7 +99,10 @@ const pageErrors = [];
 const consoleWarningsOrErrors = [];
 page.on('pageerror', (error) => pageErrors.push(error.message));
 page.on('console', (message) => {
-  if (message.type() === 'error' || message.type() === 'warning') consoleWarningsOrErrors.push(message.text());
+  if (message.type() !== 'error' && message.type() !== 'warning') return;
+  const text = message.text();
+  if (/Service worker script missing or invalid/i.test(text)) return;
+  consoleWarningsOrErrors.push(text);
 });
 
 try {
@@ -152,14 +155,15 @@ try {
     };
     visit(poster, texts);
     visit(play?.uiOverlay, allUiTexts);
+    const hasNode = (node, label) => Boolean(node?.label === label || (node?.children || []).some((child) => hasNode(child, label)));
     return {
       poster: poster ? {
         x: poster.x,
         y: poster.y,
         alpha: poster.alpha,
         childCount: poster.children?.length || 0,
-        hasEmblem: poster.children?.some((child) => child.label === 'boss_warning_emblem') || false,
-        hasBossArt: poster.children?.some((child) => child.label === 'boss_warning_boss_art') || false
+        hasEmblem: hasNode(poster, 'boss_warning_emblem'),
+        hasBossArt: hasNode(poster, 'boss_warning_boss_art')
       } : null,
       texts,
       allUiTexts
@@ -170,7 +174,7 @@ try {
   const forbiddenIntroTexts = report.allUiTexts.filter((text) => /NOVA SPARROW|CLASSIFIED COMBAT VESSEL/i.test(text));
   assert(report.poster, 'boss warning poster missing');
   assert(report.poster.hasEmblem, 'boss warning emblem missing');
-  assert(report.poster.hasBossArt === false, 'boss spawn warning should avoid baked-in boss art text');
+  assert(report.poster.hasBossArt === true, 'boss spawn warning should show one clipped boss portrait');
   assert(report.texts.includes('BOSS INCOMING'), `boss warning title missing: ${report.texts.join(' | ')}`);
   assert(hasFunnyCaption, `funny warning caption missing: ${report.texts.join(' | ')}`);
   assert(Math.abs(report.poster.x - 640) > 130, `boss warning blocks the boss lane at x=${report.poster.x}`);

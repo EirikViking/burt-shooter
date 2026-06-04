@@ -68,56 +68,56 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_09',
-    label: 'Clear 30 total waves',
-    requirements: { totalWavesCleared: 30 },
+    label: 'Clear 45 total waves',
+    requirements: { totalWavesCleared: 45 },
     legacyLevel: 14
   },
   {
     shipId: 'nova_ship_10',
-    label: 'Score 100,000 in one run',
-    requirements: { bestScore: 100000 },
+    label: 'Score 140,000 in one run',
+    requirements: { bestScore: 140000 },
     legacyLevel: 17
   },
   {
     shipId: 'nova_ship_11',
-    label: 'Reach pilot rank 8',
-    requirements: { pilotRank: 8 },
+    label: 'Reach pilot rank 9',
+    requirements: { pilotRank: 9 },
     legacyLevel: 20
   },
   {
     shipId: 'nova_ship_12',
-    label: 'Survive 15 minutes',
-    requirements: { survivedSeconds: 900 },
+    label: 'Survive 20 minutes',
+    requirements: { survivedSeconds: 1200 },
     legacyLevel: 23
   },
   {
     shipId: 'nova_ship_13',
-    label: 'Defeat 18 total bosses',
-    requirements: { totalBossesDefeated: 18 },
+    label: 'Defeat 24 total bosses',
+    requirements: { totalBossesDefeated: 24 },
     legacyLevel: 26
   },
   {
     shipId: 'nova_ship_14',
-    label: 'Discover 75 Threat Codex entries',
-    requirements: { codexDiscoveries: 75 },
+    label: 'Discover 90 Threat Codex entries',
+    requirements: { codexDiscoveries: 90 },
     legacyLevel: 29
   },
   {
     shipId: 'nova_ship_15',
-    label: 'Score 175,000 in one run',
-    requirements: { bestScore: 175000 },
+    label: 'Score 220,000 in one run',
+    requirements: { bestScore: 220000 },
     legacyLevel: 32
   },
   {
     shipId: 'nova_ship_16',
-    label: 'Complete a no-hit wave or sector',
-    requirementsAny: [{ noHitWaves: 1 }, { noHitSectors: 1 }],
+    label: 'Complete 3 no-hit waves or 1 no-hit sector',
+    requirementsAny: [{ noHitWaves: 3 }, { noHitSectors: 1 }],
     legacyLevel: 35
   },
   {
     shipId: 'nova_ship_17',
-    label: 'Reach sector 8',
-    requirements: { bestSector: 8 },
+    label: 'Reach sector 12',
+    requirements: { bestSector: 12 },
     legacyLevel: 38
   },
   {
@@ -140,8 +140,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_21',
-    label: 'Reach the final climax sector',
-    requirements: { bestSector: 10 },
+    label: 'Reach sector 15 in overrun',
+    requirements: { bestSector: 15 },
     legacyLevel: 50
   },
   {
@@ -152,8 +152,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_23',
-    label: 'Clear the current run',
-    requirements: { runClears: 1 },
+    label: 'Clear the arcade run twice',
+    requirements: { runClears: 2 },
     legacyLevel: 56
   },
   {

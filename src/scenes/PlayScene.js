@@ -55,6 +55,7 @@ function pickBossWarningJoke(profile, level = 1) {
 }
 
 const OVERRUN_CLEAR_VFX_MS = 5600;
+const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
 
 export class PlayScene {
@@ -165,8 +166,11 @@ export class PlayScene {
     this.tractorHijackLayer = null;
     this.overrunClearLayer = null;
     this.overrunClearEffects = [];
+    this.overrunMilestoneInterlude = null;
     this.gameOverInterlude = null;
     this.overrunSealTexture = null;
+    this.bossWarningEmblemTextures = [];
+    this.bossWarningArtTextures = [];
     this.bossHazards = [];
     this.bossHazardLayer = null;
     this.lastBossHazardHit = null;
@@ -279,10 +283,12 @@ export class PlayScene {
     this.overrunClearLayer.zIndex = 9600;
     this.overrunClearLayer.sortableChildren = true;
     this.uiOverlay.addChild(this.overrunClearLayer);
+    this.overrunMilestoneInterlude = null;
 
     // TASK D: Create procedural starfield background
     this.createStarfield();
     this.loadBossDossierTexture();
+    this.loadBossWarningTextures();
     this.loadOverrunSealTexture();
 
     // --- Hud & UI ---
@@ -1043,6 +1049,11 @@ export class PlayScene {
         return;
       }
 
+      if (this.overrunMilestoneInterlude?.active) {
+        this.updateOverrunMilestoneInterlude(delta);
+        return;
+      }
+
       // Score Boost Timer
       if (this.scoreBoostTimer > 0) {
         this.scoreBoostTimer -= delta * 16.67;
@@ -1245,7 +1256,8 @@ export class PlayScene {
           this.levelAdvancePending = false;
           this.levelAdvanceTimeout = null;
           this.postBossLevelIntroPending = bossCompletion;
-          if (bossCompletion && !this.game.runCleared && this.game.level >= RunPacingConfig.targetSectors) {
+          const sectorCleared = Number(this.game.level) || 1;
+          if (bossCompletion && !this.game.runCleared && sectorCleared >= RunPacingConfig.targetSectors) {
             const clearBonus = 10000;
             const livesBonus = Math.max(0, Number(this.game.lives) || 0) * 2500;
             if (clearBonus > 0) this.game.addScore(clearBonus, 'runClearBonus');
@@ -1253,7 +1265,13 @@ export class PlayScene {
             const markedClear = this.game.markRunClear?.('target_sector_clear');
             if (markedClear) {
               const nextSector = this.game.level + 1;
-              this.triggerOverrunClearCelebration({ nextSector });
+              this.triggerOverrunClearCelebration({
+                nextSector,
+                milestoneSector: sectorCleared,
+                eventKind: 'run_clear',
+                clearBonus,
+                livesBonus
+              });
               this.showToast([
                 translateText('RUN CLEAR! OVERRUN UNLOCKED'),
                 translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
@@ -1276,6 +1294,12 @@ export class PlayScene {
               });
               this.reserveMessageFocus(4400, { priority: 10, slots: ['top', 'corner'] });
             }
+          } else if (bossCompletion && this.game.runCleared && sectorCleared > 0 && sectorCleared % 10 === 0) {
+            this.triggerOverrunClearCelebration({
+              nextSector: sectorCleared + 1,
+              milestoneSector: sectorCleared,
+              eventKind: 'overrun_milestone'
+            });
           }
           if (bossCompletion) {
             this.damageTakenThisSector = 0;
@@ -1398,120 +1422,124 @@ export class PlayScene {
     }, 8000); // Match cooldown duration
   }
 
-  // TASK 4: Create polished rank up animation
   createRankUpAnimation(rank, rankTitle) {
     const { width, height } = this.game.app.screen;
-
-    // Container for animation
+    const compact = width < 720;
+    const panelWidth = Math.min(width - 32, compact ? 304 : 356);
+    const panelHeight = compact ? 124 : 142;
     const container = new PIXI.Container();
-    container.x = width / 2;
-    container.y = height * 0.3;
+    container.label = 'ui_rank_up_badge';
+    container.x = compact ? width / 2 : width - panelWidth / 2 - 28;
+    container.y = compact ? Math.max(118, height * 0.22) : Math.max(142, height * 0.2);
     container.alpha = 0;
-    container.scale.set(0.5);
+    container.scale.set(0.78);
     container.zIndex = 10000;
-    this.uiContainer.addChild(container);
+    this.uiOverlay.addChild(container);
 
-    // Background panel (enlarged for bigger portrait and lore text)
     const panel = new PIXI.Graphics();
-    panel.roundRect(-220, -110, 440, 220, 10);
-    panel.fill({ color: 0x000000, alpha: 0.85 });
-    panel.stroke({ color: 0xffff00, width: 3 });
+    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 8);
+    panel.fill({ color: 0x041019, alpha: 0.94 });
+    panel.stroke({ color: 0xffff66, width: 2.5, alpha: 0.94 });
+    panel.rect(-panelWidth / 2 + 12, -panelHeight / 2 + 10, panelWidth - 24, 3);
+    panel.fill({ color: 0x61f6ff, alpha: 0.82 });
     container.addChild(panel);
 
-    // Inner glow
     const glow = new PIXI.Graphics();
-    glow.roundRect(-215, -105, 430, 210, 8);
-    glow.stroke({ color: 0xffaa00, width: 1, alpha: 0.6 });
+    glow.roundRect(-panelWidth / 2 + 8, -panelHeight / 2 + 8, panelWidth - 16, panelHeight - 16, 6);
+    glow.stroke({ color: 0xffd15c, width: 1.2, alpha: 0.58 });
     container.addChild(glow);
 
-    // Rank sprite (50% larger for better visibility)
     const rankTexture = this.game.getRankTexture ? this.game.getRankTexture(rank) : null;
     if (rankTexture) {
       const rankSprite = new PIXI.Sprite(rankTexture);
       rankSprite.anchor.set(0.5);
-      rankSprite.scale.set(0.9); // Increased from 0.6 to 0.9 (50% larger)
-      rankSprite.y = -35;
+      rankSprite.scale.set(compact ? 0.52 : 0.6);
+      rankSprite.x = -panelWidth / 2 + 58;
+      rankSprite.y = -6;
       container.addChild(rankSprite);
     }
 
-    // "RANK UP!" trigger reason (clear and prominent)
-    const rankUpText = createText('⬆ RANK UP! ⬆', {
+    const textX = rankTexture ? -panelWidth / 2 + 116 : 0;
+    const textAnchorX = rankTexture ? 0 : 0.5;
+    const maxTextWidth = rankTexture ? panelWidth - 136 : panelWidth - 36;
+    const rankUpLabel = `${translateText('RANK UP')}!`;
+    const rankUpText = createText(rankUpLabel, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 26,
+      fontSize: compact ? 22 : 26,
       fill: '#ffff00',
       stroke: '#000000',
-      strokeThickness: 4
+      strokeThickness: 4,
+      fontWeight: '900',
+      align: rankTexture ? 'left' : 'center',
+      wordWrap: true,
+      wordWrapWidth: maxTextWidth
     });
-    rankUpText.anchor.set(0.5);
-    rankUpText.y = rankTexture ? 30 : -30;
+    rankUpText.anchor.set(textAnchorX, 0.5);
+    rankUpText.x = textX;
+    rankUpText.y = rankTitle ? -30 : -12;
     container.addChild(rankUpText);
 
-    // Rank title text
     if (rankTitle) {
       const titleText = createText(rankTitle.toUpperCase(), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: 22,
+        fontSize: compact ? 17 : 20,
         fill: '#00ffff',
         stroke: '#000000',
-        strokeThickness: 3
+        strokeThickness: 3,
+        fontWeight: '900',
+        align: rankTexture ? 'left' : 'center',
+        wordWrap: true,
+        wordWrapWidth: maxTextWidth
       });
-      titleText.anchor.set(0.5);
-      titleText.y = rankTexture ? 58 : 0;
+      titleText.anchor.set(textAnchorX, 0.5);
+      titleText.x = textX;
+      titleText.y = 0;
       container.addChild(titleText);
     }
 
-    // Funny lore text from lore system
-    const loreText = getAchievementPopup();
-    const lore = createText(loreText, {
+    const lore = createText(getAchievementPopup(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 14,
-      fill: '#aaaaaa',
+      fontSize: compact ? 11 : 13,
+      fill: '#d8fbff',
       stroke: '#000000',
       strokeThickness: 2,
-      align: 'center',
+      align: rankTexture ? 'left' : 'center',
       wordWrap: true,
-      wordWrapWidth: 380
+      wordWrapWidth: maxTextWidth,
+      lineHeight: compact ? 13 : 15
     });
-    lore.anchor.set(0.5);
-    lore.y = rankTexture ? 85 : 30;
+    lore.anchor.set(textAnchorX, 0);
+    lore.x = textX;
+    lore.y = rankTitle ? 22 : 14;
     container.addChild(lore);
 
-    // Animation sequence: ease in, hold, ease out
     let elapsed = 0;
-    const phases = {
-      easeIn: 300,
-      hold: 1500,
-      easeOut: 500
-    };
+    const phases = { easeIn: 260, hold: 1850, easeOut: 500 };
     const totalDuration = phases.easeIn + phases.hold + phases.easeOut;
-
     const animate = (delta) => {
+      if (container.destroyed || !container.scale || !this.game?.app?.ticker) {
+        this.game?.app?.ticker?.remove?.(animate);
+        return;
+      }
       elapsed += delta.deltaTime * 16.67;
-
       if (elapsed < phases.easeIn) {
-        // Ease in: scale up and fade in
         const t = elapsed / phases.easeIn;
-        const eased = 1 - Math.pow(1 - t, 3); // Ease out cubic
+        const eased = 1 - Math.pow(1 - t, 3);
         container.alpha = eased;
-        container.scale.set(0.5 + eased * 0.5);
+        container.scale.set(0.78 + eased * 0.22);
       } else if (elapsed < phases.easeIn + phases.hold) {
-        // Hold: full visibility with subtle pulse
-        const pulse = Math.sin((elapsed - phases.easeIn) * 0.005) * 0.05;
+        const pulse = Math.sin((elapsed - phases.easeIn) * 0.005) * 0.035;
         container.alpha = 1;
         container.scale.set(1 + pulse);
       } else if (elapsed < totalDuration) {
-        // Ease out: fade out
         const t = (elapsed - phases.easeIn - phases.hold) / phases.easeOut;
         container.alpha = 1 - t;
       } else {
-        // Cleanup
         this.game.app.ticker.remove(animate);
-        if (container.parent) {
-          this.uiContainer.removeChild(container);
-        }
+        if (container.parent) container.parent.removeChild(container);
+        container.destroy?.({ children: true });
       }
     };
-
     this.game.app.ticker.add(animate);
   }
 
@@ -2251,6 +2279,30 @@ export class PlayScene {
       }
     } catch (error) {
       console.warn('[PlayScene] Boss dossier art failed to load:', error);
+    }
+  }
+
+  async loadBossWarningTextures() {
+    const emblemSources = AssetManifest.generated?.vfx?.bossWarningEmblems || [];
+    const warmupSources = emblemSources.slice(0, Math.min(12, emblemSources.length));
+    const loadList = async (sources, aliasPrefix) => Promise.all(sources.map(async (src, index) => {
+      try {
+        const texture = await PIXI.Assets.load({
+          alias: `${aliasPrefix}_${String(index + 1).padStart(2, '0')}`,
+          src
+        });
+        return GameAssets.isValidTexture(texture) ? texture : null;
+      } catch {
+        return null;
+      }
+    }));
+
+    try {
+      const emblems = await loadList(warmupSources, 'generated_boss_warning_emblem');
+      this.bossWarningEmblemTextures = emblems;
+      this.bossWarningArtTextures = [];
+    } catch (error) {
+      console.warn('[PlayScene] Boss warning art failed to load:', error);
     }
   }
 
@@ -4490,7 +4542,13 @@ export class PlayScene {
     console.log(`[Powerup] pickup type=SCORE_X2 durationMs=${durationMs} source=${source}`);
   }
 
-  triggerOverrunClearCelebration({ nextSector = (this.game?.level || 10) + 1 } = {}) {
+  triggerOverrunClearCelebration({
+    nextSector = (this.game?.level || 10) + 1,
+    milestoneSector = this.game?.level || 10,
+    eventKind = 'run_clear',
+    clearBonus = 0,
+    livesBonus = 0
+  } = {}) {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const centerX = width * 0.5;
@@ -4498,13 +4556,14 @@ export class PlayScene {
     const container = new PIXI.Container();
     container.zIndex = 9600 + this.overrunClearEffects.length;
     container.sortableChildren = true;
-    container.blendMode = 'add';
+    container.label = 'ui_overrun_clear_celebration';
 
     const flash = new PIXI.Graphics();
     flash.zIndex = 0;
     container.addChild(flash);
 
     const rays = new PIXI.Graphics();
+    rays.blendMode = 'add';
     rays.zIndex = 2;
     container.addChild(rays);
 
@@ -4522,8 +4581,23 @@ export class PlayScene {
     }
 
     const rings = new PIXI.Graphics();
+    rings.blendMode = 'add';
     rings.zIndex = 3;
     container.addChild(rings);
+
+    const interludeCard = this.createOverrunInterludeCard({
+      width,
+      height,
+      milestoneSector,
+      nextSector,
+      eventKind,
+      clearBonus,
+      livesBonus
+    });
+    if (interludeCard) {
+      interludeCard.zIndex = 5;
+      container.addChild(interludeCard);
+    }
 
     const shards = Array.from({ length: width < 620 ? 28 : 46 }, (_, index) => ({
       angle: (Math.PI * 2 * index) / (width < 620 ? 28 : 46) + Math.random() * 0.16,
@@ -4539,15 +4613,24 @@ export class PlayScene {
       centerX,
       centerY,
       nextSector,
+      milestoneSector,
+      eventKind,
       container,
       flash,
       rays,
       rings,
       seal,
+      interludeCard,
       shards
     };
     this.overrunClearLayer?.addChild(container);
     this.overrunClearEffects.push(effect);
+    this.overrunMilestoneInterlude = {
+      active: true,
+      startedAt: Date.now(),
+      durationMs: OVERRUN_INTERLUDE_MS,
+      effect
+    };
 
     this.screenShake?.shake(width < 620 ? 16 : 24, width < 620 ? 24 : 34);
     AudioManager.duckMusic?.(0.28, 4300);
@@ -4567,6 +4650,147 @@ export class PlayScene {
         volume: 1.08
       });
     }, 520);
+  }
+
+  createOverrunInterludeCard({
+    width,
+    height,
+    milestoneSector,
+    nextSector,
+    eventKind,
+    clearBonus = 0,
+    livesBonus = 0
+  }) {
+    const compact = width < 720;
+    const cardWidth = Math.min(width - 32, compact ? 520 : 760);
+    const cardHeight = compact ? 224 : 246;
+    const card = new PIXI.Container();
+    card.label = 'ui_overrun_interlude';
+    card.x = width / 2;
+    card.y = height * (compact ? 0.44 : 0.5);
+    card.alpha = 0;
+    card.scale.set(0.92);
+
+    const bg = new PIXI.Graphics();
+    bg.roundRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 10);
+    bg.fill({ color: 0x030912, alpha: 0.94 });
+    bg.stroke({ color: 0xffd15c, width: 3, alpha: 0.94 });
+    bg.roundRect(-cardWidth / 2 + 8, -cardHeight / 2 + 8, cardWidth - 16, cardHeight - 16, 7);
+    bg.stroke({ color: 0x61f6ff, width: 1.4, alpha: 0.72 });
+    bg.rect(-cardWidth / 2 + 18, -cardHeight / 2 + 18, cardWidth - 36, 4);
+    bg.fill({ color: 0xfff2a6, alpha: 0.86 });
+    card.addChild(bg);
+
+    const titleKey = eventKind === 'run_clear'
+      ? 'RUN CLEAR! OVERRUN UNLOCKED'
+      : 'OVERRUN MILESTONE';
+    const title = createText(translateText(titleKey), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 25 : 34,
+      fill: '#fff3a2',
+      stroke: '#150318',
+      strokeThickness: 5,
+      fontWeight: '900',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: cardWidth - 54,
+      lineHeight: compact ? 27 : 36
+    });
+    title.anchor.set(0.5);
+    title.y = -cardHeight / 2 + (compact ? 48 : 54);
+    card.addChild(title);
+
+    const sectorLine = eventKind === 'run_clear'
+      ? translateText('SECTOR {sector} WILL NOT BE POLITE', { sector: nextSector })
+      : translateText('SECTOR {sector} OVERRUN SURGE', { sector: milestoneSector });
+    const report = [
+      translateText('PILOT REPORT'),
+      `${translateText('SCORE')}: ${Number(this.game?.score || 0).toLocaleString('en-US')}`,
+      `${translateText('SECTOR')}: ${Number(milestoneSector) || 0}`,
+      `${translateText('RANK')}: ${Math.max(1, Number(this.game?.rankIndex || 0) + 1)}`,
+      `${translateText('LIVES')}: ${Math.max(0, Number(this.game?.lives || 0))}`
+    ].join('  //  ');
+    const reportText = createText(report, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 13 : 16,
+      fill: '#d8fbff',
+      stroke: '#001016',
+      strokeThickness: 2,
+      fontWeight: '900',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: cardWidth - 58,
+      lineHeight: compact ? 16 : 19
+    });
+    reportText.anchor.set(0.5);
+    reportText.y = compact ? -16 : -10;
+    card.addChild(reportText);
+
+    const bonusLine = clearBonus || livesBonus
+      ? translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
+        clearBonus: Number(clearBonus || 0).toLocaleString('en-US'),
+        livesBonus: Number(livesBonus || 0).toLocaleString('en-US')
+      })
+      : translateText('THE CABINET HAS FILED A COMPLAINT. KEEP FLYING.');
+    const subtitleCopy = [sectorLine, bonusLine].join('\n');
+    const subtitle = createText(subtitleCopy, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 15 : 18,
+      fill: '#9cfbff',
+      stroke: '#001016',
+      strokeThickness: 3,
+      fontWeight: '900',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: cardWidth - 70,
+      lineHeight: compact ? 18 : 22
+    });
+    subtitle.anchor.set(0.5);
+    subtitle.y = compact ? 48 : 58;
+    card.addChild(subtitle);
+
+    const warning = createText(translateText('STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 14 : 17,
+      fill: '#fff3a2',
+      stroke: '#160208',
+      strokeThickness: 3,
+      fontWeight: '900',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: cardWidth - 72,
+      lineHeight: compact ? 17 : 20
+    });
+    warning.anchor.set(0.5);
+    warning.y = cardHeight / 2 - (compact ? 40 : 44);
+    card.addChild(warning);
+
+    return card;
+  }
+
+  updateOverrunMilestoneInterlude(delta) {
+    this.updateOverrunClearCelebrations();
+    this.updateStarfield(delta);
+    if (this.screenShake) this.screenShake.update(delta);
+    if (this.scorePopupManager) this.scorePopupManager.update(delta);
+    if (this.hud) this.hud.update();
+    if (AudioManager && AudioManager.update) AudioManager.update(delta);
+
+    const interlude = this.overrunMilestoneInterlude;
+    if (!interlude?.active) return;
+    const elapsed = Date.now() - interlude.startedAt;
+    const progress = Math.max(0, Math.min(1, elapsed / interlude.durationMs));
+    const card = interlude.effect?.interludeCard;
+    if (card && !card.destroyed) {
+      const intro = Math.min(1, progress * 5.2);
+      const outro = progress > 0.82 ? Math.max(0, 1 - (progress - 0.82) / 0.18) : 1;
+      card.alpha = (1 - Math.pow(1 - intro, 3)) * outro;
+      card.scale.set((0.92 + Math.sin(elapsed * 0.006) * 0.012) * (0.96 + intro * 0.04));
+    }
+    if (progress >= 1) {
+      interlude.active = false;
+      this.overrunMilestoneInterlude = null;
+    }
   }
 
   updateOverrunClearCelebrations() {
@@ -6416,6 +6640,10 @@ export class PlayScene {
     const fadeDelay = spectacular ? 1650 : 1500;
     const fadeDuration = spectacular ? 520 : 600;
     const animate = (delta) => {
+      if (poster.destroyed || !poster.scale || !this.game?.app?.ticker) {
+        this.game?.app?.ticker?.remove?.(animate);
+        return;
+      }
       elapsed += delta.deltaTime * 16.67;
       if (elapsed < 200) {
         const t = elapsed / 200;
@@ -6494,7 +6722,7 @@ export class PlayScene {
     }
   }
 
-  createBossWarningEmblem(profile, primaryColor = 0xff3030, accentColor = 0x2ff6ff, spectacular = false) {
+  createBossWarningEmblemLegacy(profile, primaryColor = 0xff3030, accentColor = 0x2ff6ff, spectacular = false) {
     const emblem = new PIXI.Container();
     emblem.label = 'boss_warning_emblem';
     emblem.y = -30;
@@ -6545,6 +6773,107 @@ export class PlayScene {
       glyph.stroke({ color: accentColor, width: 2, alpha: 0.5 });
     }
     emblem.addChild(glyph);
+
+    const sweep = new PIXI.Graphics();
+    sweep.blendMode = 'add';
+    sweep.moveTo(0, 0);
+    sweep.lineTo(108, -26);
+    sweep.stroke({ color: 0xffffff, width: 2, alpha: 0.28 });
+    sweep.moveTo(0, 0);
+    sweep.lineTo(94, 44);
+    sweep.stroke({ color: accentColor, width: 1.4, alpha: 0.24 });
+    emblem.addChild(sweep);
+
+    return emblem;
+  }
+
+  createBossWarningEmblem(profile, primaryColor = 0xff3030, accentColor = 0x2ff6ff, spectacular = false) {
+    const emblem = new PIXI.Container();
+    emblem.label = 'boss_warning_emblem';
+    emblem.y = -30;
+    emblem.alpha = spectacular ? 0.98 : 0.88;
+
+    const radar = new PIXI.Graphics();
+    radar.blendMode = 'add';
+    for (let i = 0; i < 4; i += 1) {
+      radar.circle(0, 0, 52 + i * 24);
+      radar.stroke({ color: i % 2 ? accentColor : primaryColor, width: i === 0 ? 2.2 : 1.2, alpha: 0.38 - i * 0.045 });
+    }
+    for (let i = 0; i < 12; i += 1) {
+      const angle = (Math.PI * 2 * i) / 12;
+      const inner = 36 + (i % 2) * 12;
+      const outer = 118;
+      radar.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      radar.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      radar.stroke({ color: i % 3 === 0 ? primaryColor : accentColor, width: i % 3 === 0 ? 2 : 1, alpha: 0.2 });
+    }
+    emblem.addChild(radar);
+
+    const portraitFrame = new PIXI.Graphics();
+    portraitFrame.roundRect(-118, -118, 236, 236, 10);
+    portraitFrame.fill({ color: 0x020711, alpha: 0.92 });
+    portraitFrame.stroke({ color: primaryColor, width: 3.5, alpha: 0.92 });
+    portraitFrame.roundRect(-106, -106, 212, 212, 8);
+    portraitFrame.stroke({ color: accentColor, width: 1.4, alpha: 0.72 });
+    emblem.addChild(portraitFrame);
+
+    const artMask = new PIXI.Graphics();
+    artMask.roundRect(-104, -104, 208, 208, 8);
+    artMask.fill({ color: 0xffffff, alpha: 1 });
+    artMask.renderable = false;
+    emblem.addChild(artMask);
+
+    const bossIndex = Math.max(0, Math.min(49, (Number(profile?.index) || Number(this.game?.level) || 1) - 1));
+    const src = AssetManifest.generated?.vfx?.bossWarningEmblems?.[bossIndex] || AssetManifest.generated?.bosses?.[bossIndex] || null;
+    const addFallbackGlyph = () => {
+      if (emblem.destroyed) return;
+      const glyph = new PIXI.Graphics();
+      glyph.label = 'boss_warning_fallback_glyph';
+      glyph.poly([0, -86, 66, 52, 0, 86, -66, 52]);
+      glyph.fill({ color: 0x071522, alpha: 0.9 });
+      glyph.stroke({ color: primaryColor, width: 4, alpha: 0.92 });
+      glyph.moveTo(0, -52);
+      glyph.lineTo(0, 34);
+      glyph.stroke({ color: 0xffffff, width: 5, alpha: 0.86 });
+      glyph.circle(0, 62, 6);
+      glyph.fill({ color: accentColor, alpha: 0.9 });
+      emblem.addChild(glyph);
+    };
+
+    const installTexture = (texture) => {
+      if (!GameAssets.isValidTexture(texture) || emblem.destroyed) return false;
+      for (const child of [...emblem.children]) {
+        if (child.label === 'boss_warning_boss_art' || child.label === 'boss_warning_fallback_glyph') {
+          emblem.removeChild(child);
+          child.destroy?.({ children: true });
+        }
+      }
+      const sprite = new PIXI.Sprite(texture);
+      sprite.label = 'boss_warning_boss_art';
+      sprite.anchor.set(0.5);
+      const tw = texture.width || 1;
+      const th = texture.height || 1;
+      const scale = Math.min(208 / tw, 208 / th) * 0.94;
+      sprite.scale.set(scale);
+      sprite.x = 0;
+      sprite.y = 0;
+      emblem.addChildAt(sprite, Math.min(2, emblem.children.length));
+      return true;
+    };
+
+    const cached = this.bossWarningEmblemTextures?.[bossIndex] || this.bossWarningArtTextures?.[bossIndex] || null;
+    if (!installTexture(cached)) {
+      if (src) {
+        PIXI.Assets.load({
+          alias: `generated_boss_warning_runtime_art_${String(bossIndex + 1).padStart(2, '0')}`,
+          src
+        }).then((texture) => {
+          if (!installTexture(texture)) addFallbackGlyph();
+        }).catch(addFallbackGlyph);
+      } else {
+        addFallbackGlyph();
+      }
+    }
 
     const sweep = new PIXI.Graphics();
     sweep.blendMode = 'add';

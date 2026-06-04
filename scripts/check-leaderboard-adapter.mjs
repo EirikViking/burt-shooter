@@ -177,6 +177,30 @@ async function checkMockSteamRuntime() {
   assert.equal(global.entries[0].level, 5);
   assert.equal(friends.entries[0].playerName, 'STEAM ACE');
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('STEAM ACE'), true);
+
+  const staleLevelScores = JSON.parse(win.localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]')
+    .map((entry) => entry.isCurrentPlayer ? { ...entry, level: 1, levelReached: 1, details: [1, 1, 321, 55, 2, 14] } : entry);
+  win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify(staleLevelScores));
+  const repaired = await adapter.submitScore({
+    score: 12345,
+    level: 12,
+    levelReached: 12,
+    rankIndex: 8,
+    shipId: 'nova_sparrow',
+    shipNumericId: 1,
+    shipName: 'Nova Sparrow',
+    runTimeSeconds: 333,
+    kills: 60,
+    bossKills: 3,
+    wavesCleared: 18,
+    submissionId: 'steam-level-repair'
+  }, { target: 'steam', saveLocal: false });
+  assert.equal(repaired.steamStatus, 'submitted');
+  assert.equal(repaired.steamUploadMethod, 'force_update', 'same-score stale Steam level metadata should use a one-row repair update');
+  const repairedGlobal = await adapter.getScores('global', { useCache: false });
+  assert.equal(repairedGlobal.entries.filter((entry) => entry.playerName === 'STEAM ACE').length, 1, 'Steam mock should keep one current-player entry');
+  assert.equal(repairedGlobal.entries[0].score, 12345);
+  assert.equal(repairedGlobal.entries[0].level, 12);
 }
 
 async function checkDesktopLocalPersistenceRuntime() {

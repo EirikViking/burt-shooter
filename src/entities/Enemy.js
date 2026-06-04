@@ -1048,34 +1048,35 @@ export class Enemy {
     const add = (angle, speed = 2.2, damage = 1, extra = {}) => this.addEliteBullet(angle, speed, damage, color, extra);
 
     if (pattern === 'rail') {
-      add(baseAngle, 4.2, 1.2, { radius: 6, trailLength: 44, warningColor: 0xff55ff, haloColor: color });
+      add(baseAngle, 4.2, 1.2, { radius: 6, index: 10, trailLength: 58, warningColor: 0xff55ff, trailColor: 0xff55ff, haloColor: 0x61f6ff });
     } else if (pattern === 'mine') {
-      [-0.22, 0, 0.22].forEach((offset, index) => add(Math.PI / 2 + offset, 1.05 + index * 0.06, 1, { radius: 10, pulseRate: 0.75, haloColor: color }));
+      [-0.22, 0, 0.22].forEach((offset, index) => add(Math.PI / 2 + offset, 1.05 + index * 0.06, 1, { radius: 11 + index, index: 11, pulseRate: 0.52 + index * 0.18, spin: 0.035, warningColor: 0xffd166, trailColor: 0xff7a3d, haloColor: 0xffd166 }));
     } else if (pattern === 'burst') {
-      [-0.32, -0.16, 0, 0.16, 0.32].forEach((offset) => add(Math.PI / 2 + offset, 2.05, 1, { radius: 6, trailLength: 30 }));
+      [-0.32, -0.16, 0, 0.16, 0.32].forEach((offset, index) => add(Math.PI / 2 + offset, 2.05, 1, { radius: 5 + (index % 2), index: 9, trailLength: 26 + index * 4, warningColor: index % 2 ? 0x61f6ff : 0xff66cc, trailColor: index % 2 ? 0x61f6ff : 0xff66cc }));
     } else if (pattern === 'lane') {
       [-150, -75, 0, 75, 150].forEach((offset) => {
         const laneAngle = Math.atan2(playerY - this.y, (playerX + offset) - this.x);
-        add(laneAngle, 1.75, 1, { radius: 7, warningColor: 0xffd166, haloColor: color });
+        add(laneAngle, 1.75, 1, { radius: 7, index: 12, trailLength: 36, warningColor: 0xffd166, trailColor: 0xffd166, haloColor: 0xfff2a6 });
       });
     } else if (pattern === 'web') {
-      [-0.42, -0.2, 0.2, 0.42].forEach((offset) => add(baseAngle + offset, 1.62, 1, { radius: 8, spin: 0.05, wobble: 0.08, haloColor: color }));
+      [-0.42, -0.2, 0.2, 0.42].forEach((offset, index) => add(baseAngle + offset, 1.62, 1, { radius: 8, index: 13, spin: 0.06 + index * 0.015, wobble: 0.11, warningColor: 0x9f7cff, trailColor: 0x9f7cff, haloColor: 0x9f7cff }));
     } else if (pattern === 'missile') {
-      [-0.18, 0.18].forEach((offset) => add(baseAngle + offset, 1.72, 1.15, { radius: 9, trailLength: 42, accel: 0.002, haloColor: 0xff3355 }));
+      [-0.18, 0.18].forEach((offset) => add(baseAngle + offset, 1.72, 1.15, { radius: 9, index: 14, trailLength: 52, accel: 0.0026, warningColor: 0xff3355, trailColor: 0xff3355, haloColor: 0xff6b4a }));
     } else if (pattern === 'anchor') {
-      [-0.42, -0.21, 0, 0.21, 0.42].forEach((offset) => add(baseAngle + offset, 1.9, 1, { radius: 7, trailLength: 28, haloColor: color }));
+      [-0.42, -0.21, 0, 0.21, 0.42].forEach((offset, index) => add(baseAngle + offset, 1.9, 1, { radius: 7 + (index === 2 ? 2 : 0), index: 15, trailLength: 34, pulseRate: 0.9, warningColor: 0x7cff44, trailColor: 0x7cff44, haloColor: 0x7cff44 }));
     } else if (pattern === 'hunter') {
-      [-0.13, 0.13].forEach((offset) => add(baseAngle + offset, 3.15, 1, { radius: 6, trailLength: 36, warningColor: 0x7cff44, haloColor: color }));
+      [-0.13, 0.13].forEach((offset) => add(baseAngle + offset, 3.15, 1, { radius: 6, index: 16, trailLength: 46, accel: 0.0012, warningColor: 0x00ff99, trailColor: 0x00ff99, haloColor: 0x00ff99 }));
     }
   }
 
   addEliteBullet(angle, speed, damage, color, visualConfig = {}) {
+    const specialDamage = Math.max(0.1, (Number(damage) || 1) * 1.25);
     const bullet = new Bullet(
       this.x,
       this.y + this.radius * 0.4,
       Math.cos(angle) * speed,
       Math.sin(angle) * speed,
-      damage,
+      specialDamage,
       color,
       false,
       {

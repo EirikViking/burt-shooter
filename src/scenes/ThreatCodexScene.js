@@ -235,6 +235,7 @@ export class ThreatCodexScene {
     this.titlePlate = null;
     this.holoRails = null;
     this.animationTime = 0;
+    this.animatedNodes = [];
     this.lastEntryListDebug = null;
   }
 
@@ -246,6 +247,7 @@ export class ThreatCodexScene {
     this.discoveryState = clearThreatCodexUnread();
     this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
     this.renderToken += 1;
+    this.animatedNodes = [];
     this.gamepadNavigator.suppressUntilReleased();
     this.createLayout(this.renderToken);
     this.keyHandler = (event) => this.handleKeyDown(event);
@@ -259,6 +261,7 @@ export class ThreatCodexScene {
     if (this.wheelHandler) window.removeEventListener('wheel', this.wheelHandler);
     this.keyHandler = null;
     this.wheelHandler = null;
+    this.animatedNodes = [];
   }
 
   destroy() {
@@ -301,6 +304,55 @@ export class ThreatCodexScene {
 
   getAccent(entry = null, categoryId = this.getCategory().id) {
     return colorValue(entry?.accent ?? entry?.tint, CATEGORY_ACCENTS[categoryId] || AQUA);
+  }
+
+  registerCodexAnimatedNode(node, {
+    kind = 'detail',
+    seed = 1,
+    amplitude = 1,
+    speed = 1
+  } = {}) {
+    if (!node) return;
+    this.animatedNodes.push({
+      node,
+      kind,
+      seed: Number(seed) || 1,
+      amplitude: Number(amplitude) || 1,
+      speed: Number(speed) || 1,
+      baseX: Number(node.x) || 0,
+      baseY: Number(node.y) || 0,
+      baseScaleX: Number(node.scale?.x) || 1,
+      baseScaleY: Number(node.scale?.y) || 1,
+      baseRotation: Number(node.rotation) || 0,
+      baseAlpha: Number(node.alpha) || 1
+    });
+  }
+
+  updateCodexAnimations(delta = 1) {
+    const dt = Number.isFinite(delta) ? delta : 1;
+    this.animationTime += Math.max(0.15, Math.min(3, dt)) * 0.016;
+    const time = this.animationTime;
+    this.animatedNodes = this.animatedNodes.filter((entry) => {
+      const node = entry.node;
+      if (!node || node.destroyed || !node.parent) return false;
+      const phase = time * entry.speed + entry.seed * 0.017;
+      if (entry.kind === 'thumb') {
+        const bob = Math.sin(phase * 1.9) * 1.5 * entry.amplitude;
+        const pulse = 1 + Math.sin(phase * 2.4) * 0.035 * entry.amplitude;
+        node.x = entry.baseX + Math.cos(phase) * 0.9 * entry.amplitude;
+        node.y = entry.baseY + bob;
+        node.scale.set(entry.baseScaleX * pulse, entry.baseScaleY * pulse);
+        node.alpha = Math.max(0.34, Math.min(1, entry.baseAlpha + Math.sin(phase * 2.1) * 0.06));
+      } else {
+        const pulse = 1 + Math.sin(phase * 1.35) * 0.024 * entry.amplitude;
+        node.x = entry.baseX + Math.cos(phase * 0.9) * 4 * entry.amplitude;
+        node.y = entry.baseY + Math.sin(phase * 1.1) * 3 * entry.amplitude;
+        node.scale.set(entry.baseScaleX * pulse, entry.baseScaleY * pulse);
+        node.rotation = entry.baseRotation + Math.sin(phase * 0.8) * 0.022 * entry.amplitude;
+        node.alpha = Math.max(0.35, Math.min(1, entry.baseAlpha + Math.sin(phase * 1.7) * 0.045));
+      }
+      return true;
+    });
   }
 
   getEntryArt(entry = null, categoryId = this.getCategory().id) {
@@ -743,6 +795,12 @@ export class ThreatCodexScene {
           sprite.tint = discovered ? 0xffffff : accent;
           sprite.mask = artMask;
           thumb.addChildAt(sprite, 1);
+          this.registerCodexAnimatedNode(sprite, {
+            kind: 'thumb',
+            seed,
+            amplitude: discovered ? 1 : 0.45,
+            speed: discovered ? 1.1 : 0.62
+          });
         })
         .catch(() => drawMiniGlyph(thumb, 0, 0, size, accent, seed, discovered));
     } else {
@@ -918,11 +976,23 @@ export class ThreatCodexScene {
         sprite.tint = discovered ? 0xffffff : accent;
         sprite.mask = artMask;
         parent.addChild(sprite);
+        this.registerCodexAnimatedNode(sprite, {
+          kind: 'detail',
+          seed,
+          amplitude: discovered ? 1 : 0.52,
+          speed: discovered ? 1 : 0.7
+        });
 
         const rim = new PIXI.Graphics();
         rim.circle(x + width * 0.5, y + height * 0.5, Math.min(width, height) * 0.34);
         rim.stroke({ color: accent, width: 2, alpha: discovered ? 0.16 : 0.34 });
         parent.addChild(rim);
+        this.registerCodexAnimatedNode(rim, {
+          kind: 'detail',
+          seed: seed + 97,
+          amplitude: discovered ? 0.32 : 0.2,
+          speed: 0.72
+        });
 
         if (!discovered) {
           const lock = new PIXI.Graphics();
@@ -1063,7 +1133,8 @@ export class ThreatCodexScene {
     }
   }
 
-  update() {
+  update(delta = 1) {
+    this.updateCodexAnimations(delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) {

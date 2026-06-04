@@ -10,11 +10,14 @@ const progressionSource = readFileSync('src/progression/HangarProgressState.js',
 const soundSource = readFileSync('src/audio/SoundCatalog.js', 'utf8');
 const manifestSource = readFileSync('src/assets/assetManifest.js', 'utf8');
 
-assert.match(playSource, /bossCompletion && !this\.game\.runCleared && this\.game\.level >= RunPacingConfig\.targetSectors/);
+assert.match(playSource, /bossCompletion && !this\.game\.runCleared && sectorCleared >= RunPacingConfig\.targetSectors/);
 assert.match(playSource, /this\.game\.markRunClear\?\.\('target_sector_clear'\)/);
 assert.doesNotMatch(playSource, /this\.game\.completeRun\?\.\('target_sector_clear'\)/);
 assert.match(playSource, /this\.game\.nextLevel\(\);/);
-assert.match(playSource, /triggerOverrunClearCelebration\(\{ nextSector \}\)/);
+assert.match(playSource, /triggerOverrunClearCelebration\(\{\s*nextSector,/);
+assert.match(playSource, /eventKind: 'overrun_milestone'/);
+assert.match(playSource, /updateOverrunMilestoneInterlude\(delta\)/);
+assert.match(playSource, /STRAP IN, PILOT\. OVERRUN DOES NOT DO EASY\./);
 assert.match(playSource, /AudioManager\.playSfx\('overrun_clear_coronation'/);
 assert.match(playSource, /AudioManager\.playSfx\('overrun_clear_shockwave'/);
 assert.match(playSource, /AudioManager\.playVoice\('mission_control_overrun_clear'/);

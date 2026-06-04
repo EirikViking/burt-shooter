@@ -218,6 +218,8 @@ export class LeaderboardAdapter {
         result.steamStatus = 'submitted';
         result.steamRank = steam.rank;
         result.steamDetails = steam.details;
+        result.steamLevelReached = steam.levelReached;
+        result.steamUploadMethod = steam.uploadMethod;
         result.steamResponse = steam.response || null;
       } catch (error) {
         result.globalStatus = 'failed';

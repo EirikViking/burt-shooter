@@ -2225,6 +2225,31 @@ export class GameOverScene {
     }
   }
 
+  applyConfirmedGlobalPlacement(placement, provider = 'global') {
+    if (!placement) return null;
+    const normalizedPlacement = {
+      ...placement,
+      top3: Boolean(placement.top3 || (placement.qualified && Number(placement.placement) <= 3))
+    };
+    this.globalPlacement = normalizedPlacement;
+    this.globalPlacementTier = normalizedPlacement.numberOne
+      ? 'number1'
+      : normalizedPlacement.top3
+        ? 'top3'
+        : normalizedPlacement.qualified
+          ? 'global'
+          : 'none';
+    this.globalQualified = Boolean(normalizedPlacement.qualified);
+    this.globalStatus = normalizedPlacement.qualified ? 'submitted' : this.globalStatus;
+    this.unlockConfirmedLeaderboardAchievements(normalizedPlacement, provider);
+    if (normalizedPlacement.qualified) {
+      this.updateLeaderboardStatusText();
+      this.updateCeremonyPresentation();
+      this.playGlobalQualificationFanfare();
+    }
+    return normalizedPlacement;
+  }
+
   async confirmGlobalLeaderboardAchievements(result) {
     if (!this.isRankedRun || this.game?.runMode === 'unranked' || this.game?.isDebugRun) return null;
     if (result?.globalStatus !== 'submitted') return null;
@@ -2237,11 +2262,11 @@ export class GameOverScene {
         placement: Number.isFinite(steamRank) && steamRank > 0 ? Math.floor(steamRank) : null,
         qualified: true,
         numberOne: Number.isFinite(steamRank) && Math.floor(steamRank) === 1,
+        top3: Number.isFinite(steamRank) && Math.floor(steamRank) <= 3,
         source: 'steam_submit_result'
       };
       result.confirmedGlobalPlacement = placement;
-      this.unlockConfirmedLeaderboardAchievements(placement, provider);
-      return placement;
+      return this.applyConfirmedGlobalPlacement(placement, provider);
     }
 
     if (provider !== 'cloud') return null;
@@ -2251,8 +2276,7 @@ export class GameOverScene {
       const placement = getConfirmedGlobalPlacement(this.finalScore, entries);
       result.confirmedGlobalPlacement = placement;
       result.achievementConfirmationStatus = placement.qualified ? 'confirmed' : 'not_qualified_after_submit';
-      this.unlockConfirmedLeaderboardAchievements(placement, provider);
-      return placement;
+      return this.applyConfirmedGlobalPlacement(placement, provider);
     } catch (error) {
       result.achievementConfirmationStatus = 'post_submit_global_read_failed';
       result.achievementConfirmationError = error?.message || 'unknown';
@@ -2330,7 +2354,31 @@ export class GameOverScene {
       offline_no_slot: 'GLOBAL BOARD OFFLINE\nNO LOCAL SLOT THIS TIME',
       practice: 'PRACTICE RUN - SCORE NOT LOGGED'
     };
-    return map[reason] || 'RUN COMPLETE';
+    const base = map[reason] || 'RUN COMPLETE';
+    if (this.globalPlacement?.qualified && this.globalPlacement.placement) {
+      let globalLine = `GLOBAL BOARD: RANK #${this.globalPlacement.placement}`;
+      if (this.globalPlacement.numberOne) globalLine += ' - NUMBER ONE';
+      else if (this.globalPlacement.top3) globalLine += ' - TOP THREE';
+      return `${base}\n${globalLine}`;
+    }
+    return base;
+  }
+
+  getRunbackTitle() {
+    if (this.globalPlacement?.numberOne) return 'NUMBER ONE';
+    if (this.globalPlacement?.top3) return 'TOP THREE';
+    return 'ONE MORE RUN?';
+  }
+
+  getRunbackComment() {
+    const placement = this.globalPlacement;
+    if (placement?.numberOne) {
+      return 'The global board has a new name at the top. Let the cabinet remember it loudly.';
+    }
+    if (placement?.top3) {
+      return `Global rank #${placement.placement}. That is the kind of run people pretend was easy.`;
+    }
+    return `Score ${Number(this.finalScore || 0).toLocaleString('en-US')} | Level ${this.finalLevel || 0}`;
   }
 
   enterRunbackStage(reason = 'runback') {
@@ -2347,17 +2395,21 @@ export class GameOverScene {
     this.selectedCtaLine = this.selectRunbackCtaLine();
 
     if (this.title) {
-      this.title.text = 'ONE MORE RUN?';
-      this.title.style.fill = '#fff3a2';
-      this.title.style.dropShadowColor = '#ffc94a';
+      this.title.text = this.getRunbackTitle();
+      this.title.style.fill = this.globalPlacement?.qualified ? '#fff8b8' : '#fff3a2';
+      this.title.style.dropShadowColor = this.globalPlacement?.qualified ? '#ffd454' : '#ffc94a';
     }
     if (this.leaderboardStatusText) {
       this.leaderboardStatusText.text = this.getRunbackStatusText(reason);
-      this.leaderboardStatusText.style.fill = reason === 'global_failed' ? '#ffb35c' : '#ffe86a';
+      this.leaderboardStatusText.style.fill = reason === 'global_failed'
+        ? '#ffb35c'
+        : this.globalPlacement?.qualified
+          ? '#fff3a2'
+          : '#ffe86a';
     }
     if (this.comment) {
-      this.comment.text = `Score ${Number(this.finalScore || 0).toLocaleString('en-US')} | Level ${this.finalLevel || 0}`;
-      this.comment.style.fill = '#d8e6ff';
+      this.comment.text = this.getRunbackComment();
+      this.comment.style.fill = this.globalPlacement?.qualified ? '#ffeeb0' : '#d8e6ff';
     }
     if (this.promptText) {
       this.promptText.visible = true;
@@ -2376,8 +2428,12 @@ export class GameOverScene {
       this.instructions.text = this.getInstructionsText();
     }
 
-    AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
-    this.scheduleSceneTimeout(() => this.playRunbackVoice(), 420);
+    if (this.globalPlacement?.qualified) {
+      this.playGlobalQualificationFanfare();
+    } else {
+      AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
+      this.scheduleSceneTimeout(() => this.playRunbackVoice(), 420);
+    }
     this.refreshPrimaryCta();
     this.layoutScreen();
   }

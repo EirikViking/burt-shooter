@@ -524,6 +524,14 @@ export class Game {
   }
 
   getRankProgress() {
+    if (
+      this.currentSceneName === 'play' &&
+      !this.runFinalized &&
+      this.liveRankProgression?.rankProgress &&
+      Number.isFinite(Number(this.liveRankProgression.rankProgress.progress))
+    ) {
+      return Math.max(0, Math.min(1, Number(this.liveRankProgression.rankProgress.progress)));
+    }
     const currentPilotXp = this.runProgressionResult?.next?.pilotXp ?? readHangarProgressState().pilotXp;
     return rankManager.getPilotRankProgress(currentPilotXp).progress;
   }

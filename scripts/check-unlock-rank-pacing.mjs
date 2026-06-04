@@ -100,29 +100,51 @@ assert(migratedFastProfile.unlockedShipIds.length <= 3, `old over-fast profile s
 
 const midCareer = unlockedFor({
   totalRuns: 10,
-  bestSector: 8,
+  bestSector: 12,
   bestScore: 175000,
-  pilotRank: 8,
+  pilotRank: 9,
   totalBossesDefeated: 18,
   totalWavesCleared: 45,
   totalCodexDiscoveries: 75,
   survivedSeconds: 900,
-  noHitWaves: 1
+  noHitWaves: 1,
+  runClears: 1
 });
-assert(midCareer.length >= 16 && midCareer.length < 23, `mid-career profile should unlock a broad but incomplete hangar, got ${midCareer.length}`);
-['nova_ship_11', 'nova_ship_12', 'nova_ship_14', 'nova_ship_16', 'nova_ship_17'].forEach((shipId) => {
-  assert(midCareer.includes(shipId), `mid-career profile should unlock ${shipId}`);
+assert(midCareer.length >= 10 && midCareer.length <= 12, `rank-9 sector-12 profile should unlock roughly 10-12 ships, got ${midCareer.length}`);
+['nova_ship_08', 'nova_ship_09', 'nova_ship_11', 'nova_ship_17'].forEach((shipId) => {
+  assert(midCareer.includes(shipId), `rank-9 sector-12 profile should unlock ${shipId}`);
+});
+['nova_ship_12', 'nova_ship_14', 'nova_ship_16', 'nova_ship_21', 'nova_ship_23'].forEach((shipId) => {
+  assert(!midCareer.includes(shipId), `rank-9 sector-12 profile should not already unlock ${shipId}`);
+});
+
+const lateCareer = unlockedFor({
+  totalRuns: 28,
+  bestSector: 16,
+  bestScore: 300000,
+  pilotRank: 13,
+  totalBossesDefeated: 35,
+  totalWavesCleared: 120,
+  totalCodexDiscoveries: 120,
+  survivedSeconds: 1500,
+  noHitWaves: 3,
+  runClears: 2,
+  runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse']
+});
+assert(lateCareer.length >= 20 && lateCareer.length < 25, `late-career profile should feel rich but not complete, got ${lateCareer.length}`);
+['nova_ship_12', 'nova_ship_14', 'nova_ship_16', 'nova_ship_21', 'nova_ship_23'].forEach((shipId) => {
+  assert(lateCareer.includes(shipId), `late-career profile should unlock ${shipId}`);
 });
 
 const mastery = unlockedFor({
   totalRuns: 50,
-  bestSector: 10,
+  bestSector: 15,
   bestScore: 550000,
   pilotRank: MAX_RANK_INDEX,
   totalBossesDefeated: 40,
   totalWavesCleared: 160,
   totalCodexDiscoveries: 145,
-  runClears: 1,
+  runClears: 2,
   noHitWaves: 5,
   noHitSectors: 1,
   survivedSeconds: 1800,
@@ -142,4 +164,4 @@ for (let index = 1; index < pilotXpThresholds.length; index += 1) {
   assert(pilotXpThresholds[index] > pilotXpThresholds[index - 1], `pilot XP threshold ${index} should increase`);
 }
 
-console.log(`[unlock-rank-pacing] PASS fresh=1 firstSession=${firstSession.length} midCareer=${midCareer.length} mastery=${mastery.length} topRank=${getRankTitle(MAX_RANK_INDEX)}`);
+console.log(`[unlock-rank-pacing] PASS fresh=1 firstSession=${firstSession.length} rank9=${midCareer.length} lateCareer=${lateCareer.length} mastery=${mastery.length} topRank=${getRankTitle(MAX_RANK_INDEX)}`);

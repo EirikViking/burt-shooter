@@ -3,6 +3,7 @@ import {
   STEAM_LEADERBOARD_NAME,
   encodeSteamLeaderboardDetails,
   normalizeLeaderboardEntries,
+  readExplicitLeaderboardLevel,
   toPublicPilotName
 } from './LeaderboardTypes.js';
 
@@ -93,6 +94,28 @@ function isNonCurrentFriendEntry(entry = {}, currentPlayerName = null) {
   return true;
 }
 
+function hasForceRepairFlag(win) {
+  if (!win) return false;
+  if (win.__NOVA_SWARM_FORCE_STEAM_LEADERBOARD_UPDATE__ === true) return true;
+  try {
+    return win.localStorage?.getItem('novaSwarm.forceSteamLeaderboardUpdate.v1') === '1';
+  } catch {
+    return false;
+  }
+}
+
+function resolveSteamUploadMethod({ score, details, previousBest = null } = {}) {
+  const win = safeWindow();
+  const incomingScore = Math.max(0, Math.floor(Number(score) || 0));
+  const previousScore = Math.max(0, Math.floor(Number(previousBest?.score ?? previousBest?.m_nScore) || 0));
+  const incomingLevel = Math.max(1, Math.floor(Number(details?.[0]) || 1));
+  const previousLevel = readExplicitLeaderboardLevel(previousBest || {});
+  const sameOrBetter = !previousScore || incomingScore >= previousScore;
+  if (hasForceRepairFlag(win) && sameOrBetter) return 'force_update';
+  if (previousScore > 0 && sameOrBetter && (!previousLevel || previousLevel !== incomingLevel)) return 'force_update';
+  return 'keep_best';
+}
+
 function createMockSteamBridge(win) {
   const personaName = () => {
     try {
@@ -125,21 +148,30 @@ function createMockSteamBridge(win) {
       const scores = sorted().filter(entry => !entry.isCurrentPlayer);
       const playerName = toPublicPilotName(personaName(), payload.score);
       const existing = sorted().find(entry => entry.isCurrentPlayer);
-      const bestScore = Math.max(Number(existing?.score) || 0, Number(payload.score) || 0);
-      const nextEntry = {
-        playerName,
-        name: playerName,
-        score: bestScore,
-        level: payload.metadata?.level ?? payload.details?.[0] ?? 1,
-        shipId: payload.metadata?.shipId ?? payload.details?.[1] ?? null,
-        runTimeSeconds: payload.metadata?.runTimeSeconds ?? payload.details?.[2] ?? null,
-        kills: payload.metadata?.kills ?? payload.details?.[3] ?? null,
-        bossKills: payload.metadata?.bossKills ?? payload.details?.[4] ?? null,
-        wavesCleared: payload.metadata?.wavesCleared ?? payload.details?.[5] ?? null,
-        isCurrentPlayer: true,
-        source: 'steam',
-        timestamp: new Date().toISOString()
-      };
+      const incomingScore = Math.max(0, Math.floor(Number(payload.score) || 0));
+      const existingScore = Math.max(0, Math.floor(Number(existing?.score) || 0));
+      const forceUpdate = String(payload.uploadMethod || '').toLowerCase() === 'force_update';
+      const keepExisting = existing && !forceUpdate && existingScore > incomingScore;
+      const nextEntry = keepExisting
+        ? { ...existing, playerName, name: playerName, isCurrentPlayer: true, source: 'steam' }
+        : {
+          playerName,
+          name: playerName,
+          score: forceUpdate ? incomingScore : Math.max(existingScore, incomingScore),
+          level: payload.metadata?.level ?? payload.details?.[0] ?? 1,
+          levelReached: payload.metadata?.levelReached ?? payload.details?.[0] ?? 1,
+          shipId: payload.metadata?.shipId ?? payload.details?.[1] ?? null,
+          runTimeSeconds: payload.metadata?.runTimeSeconds ?? payload.details?.[2] ?? null,
+          kills: payload.metadata?.kills ?? payload.details?.[3] ?? null,
+          bossKills: payload.metadata?.bossKills ?? payload.details?.[4] ?? null,
+          wavesCleared: payload.metadata?.wavesCleared ?? payload.details?.[5] ?? null,
+          details: payload.details,
+          metadata: payload.metadata,
+          uploadMethod: payload.uploadMethod,
+          isCurrentPlayer: true,
+          source: 'steam',
+          timestamp: new Date().toISOString()
+        };
       const nextScores = [nextEntry, ...scores].sort((a, b) => (b.score || 0) - (a.score || 0));
       writeMockScores(win, nextScores);
       const rank = nextScores.findIndex(entry => entry === nextEntry) + 1;
@@ -333,16 +365,21 @@ export class SteamLeaderboardProvider {
     }
     const details = encodeSteamLeaderboardDetails(runResult);
     const score = Math.max(0, Math.min(2147483647, Math.floor(Number(runResult.score) || 0)));
+    const previousBest = await this.getPlayerBest();
+    const uploadMethod = resolveSteamUploadMethod({ score, details, previousBest });
     const payload = {
       leaderboardName: this.leaderboardName,
       score,
       details,
-      uploadMethod: 'keep_best',
+      uploadMethod,
       sortMethod: 'descending',
       displayType: 'numeric',
       metadata: {
         level: details[0],
         levelReached: details[0],
+        detailsVersion: 2,
+        oneEntryPerPlayer: true,
+        uploadMethod,
         shipId: details[1],
         runTimeSeconds: details[2],
         kills: details[3],
@@ -374,6 +411,9 @@ export class SteamLeaderboardProvider {
       sourceLabel: 'Steam Global',
       playerName: await this.getPlayerName(),
       details,
+      levelReached: details[0],
+      uploadMethod,
+      previousBest,
       response,
       rank: response?.rank ?? response?.globalRank ?? response?.m_nGlobalRank ?? null
     };

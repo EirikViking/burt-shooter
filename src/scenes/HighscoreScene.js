@@ -755,7 +755,7 @@ export class HighscoreScene {
     glow.roundRect(rowX - 8, rowY - 7, rowW + 16, rowHeight + 10, 10);
     glow.fill({ color: 0x37f5ff, alpha: 0.2 });
     glow.stroke({ color: 0xffd15c, width: 4, alpha: 0.5 });
-    glow.filters = [new PIXI.BlurFilter(isMobile ? 8 : 12)];
+    glow.filters = [new PIXI.BlurFilter({ strength: isMobile ? 8 : 12 })];
 
     const pulseFrame = new PIXI.Graphics();
     pulseFrame.roundRect(rowX - 3, rowY - 3, rowW + 6, rowHeight + 2, 8);
@@ -786,7 +786,7 @@ export class HighscoreScene {
     sweep.fill({ color: 0xffffff, alpha: 0.18 });
     sweep.rect(isMobile ? 6 : 10, rowY + 5, isMobile ? 8 : 12, rowHeight - 12);
     sweep.fill({ color: 0xfff15c, alpha: 0.42 });
-    sweep.filters = [new PIXI.BlurFilter(isMobile ? 4 : 6)];
+    sweep.filters = [new PIXI.BlurFilter({ strength: isMobile ? 4 : 6 })];
 
     const leftChevron = new PIXI.Graphics();
     const chevronSize = isMobile ? 8 : 12;
@@ -1001,7 +1001,7 @@ export class HighscoreScene {
           const rowAura = new PIXI.Graphics();
           rowAura.roundRect(rowX - 2, rowY - 2, rowW + 4, rowHeight - 4, 7);
           rowAura.fill({ color: accent, alpha: index === 0 ? 0.15 : 0.1 });
-          rowAura.filters = [new PIXI.BlurFilter(index === 0 ? 6 : 4)];
+          rowAura.filters = [new PIXI.BlurFilter({ strength: index === 0 ? 6 : 4 })];
           this.rowsContainer.addChild(rowAura);
         }
 
@@ -1712,7 +1712,7 @@ export class HighscoreScene {
     container.addChild(label);
 
     const glow = new PIXI.Graphics();
-    glow.filters = [new PIXI.BlurFilter(8)];
+    glow.filters = [new PIXI.BlurFilter({ strength: 8 })];
     const focus = new PIXI.Graphics();
     container.addChildAt(focus, 0);
     container.addChildAt(glow, 0);

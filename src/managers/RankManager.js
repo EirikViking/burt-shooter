@@ -51,7 +51,7 @@ export class RankManager {
     getRankString(rankIndex) {
         const normalized = Math.max(0, Math.floor(Number(rankIndex) || 0));
         const displayRank = Math.min(MAX_RANK_INDEX + 1, normalized + 1);
-        return `RANK ${String(displayRank).padStart(3, '0')}`;
+        return `RANK ${displayRank}`;
     }
 
     getRankProgress(level, rankIndex) {
