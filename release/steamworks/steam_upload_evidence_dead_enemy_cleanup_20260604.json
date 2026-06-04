@@ -1,0 +1,68 @@
+﻿{
+    "generatedAt":  "2026-06-04T20:05:00.5230805Z",
+    "purpose":  "Steam private/manual developer playtest upload evidence for dead enemy cleanup build",
+    "branch":  "codex/fix-dead-enemy-pixels-20260604",
+    "head":  "b69ecfbf9754b4384febf43100b1c6b1d2614eb9",
+    "packageVersion":  "v2026-06-04_21-49-56",
+    "packageTimestamp":  "2026-06-04T19:49:56.645Z",
+    "steam":  {
+                  "appId":  "4765070",
+                  "depotId":  "4765071",
+                  "buildId":  "23572836",
+                  "depotManifest":  "8492733332048301741",
+                  "baselineManifest":  "5226154991835628566",
+                  "setLive":  "",
+                  "liveBranchChanged":  false,
+                  "buildDescription":  "Nova Swarm v2026-06-04_21-49-56 dead enemy cleanup Steam test"
+              },
+    "commands":  {
+                     "preUploadChecks":  [
+                                             "npm run check:dead-enemy-cleanup",
+                                             "npm run check:wave-stuck-watchdog",
+                                             "npm run check:keyboard-launches",
+                                             "npm run check:gameplay-cursor",
+                                             "npm run check:steam-package-runtime",
+                                             "npm run build",
+                                             "npm run check:release-line"
+                                         ],
+                     "package":  "npm run package:steam:win:current",
+                     "payloadManifest":  "npm run steamworks:payload-manifest",
+                     "writeVdf":  "$env:STEAM_APP_ID=\u00274765070\u0027; $env:STEAM_DEPOT_ID=\u00274765071\u0027; $env:STEAM_BUILD_DESC=\u0027Nova Swarm v2026-06-04_21-49-56 dead enemy cleanup Steam test\u0027; npm run steamworks:write-vdf",
+                     "uploadRedacted":  "\u0026 \u0027D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe\u0027 +@ShutdownOnFailedCommand 1 +login \u003ccached-steamworks-user\u003e +run_app_build \u0027D:\\vibe-coding-e\\burt-shooter-cursor-hide-20260604\\release\\steamworks\\app_build_LOCAL.vdf\u0027 +quit"
+                 },
+    "package":  {
+                    "contentRoot":  "release/desktop/win-unpacked",
+                    "executablePath":  "Nova Swarm.exe",
+                    "executableBytes":  226666496,
+                    "executableSha256":  "430e09ead9880307239e8cd6a748857b5779a279210db780abcd82f328c25aa8",
+                    "payloadFileCount":  336,
+                    "payloadTotalBytes":  723490635,
+                    "payloadManifestHash":  "961bc78daa591d33937a4c47428324ed7d43a019a0bb399a0f9f0e796aa2b201",
+                    "steamRedistributablesIncluded":  [
+                                                          "steam_api.dll",
+                                                          "steam_api64.dll",
+                                                          "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/steam_api.dll",
+                                                          "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/win64/steam_api64.dll"
+                                                      ]
+                },
+    "steamPipeOutput":  {
+                            "appBuildLog":  "release/steam-build-output/app_build_4765070.log",
+                            "depotBuildLog":  "release/steam-build-output/depot_build_4765071.log",
+                            "depotBuildVdf":  "release/steam-build-output/depot_build_4765071.vdf",
+                            "summary":  "Summary: 0 files added (0 bytes), 2 files changed (6.69 MB), 0 files removed (0 bytes)",
+                            "changed":  [
+                                            "Changed: \"Nova Swarm.exe\" 221354 KB size, 1024 KB changed ",
+                                            "Changed: \"resources\\app.asar\" 316400 KB size, 5825 KB changed "
+                                        ]
+                        },
+    "safety":  {
+                   "noStoreMetadataChange":  true,
+                   "noPublicRelease":  true,
+                   "noAppVisibilityChange":  true,
+                   "noAppIdChange":  true,
+                   "noDepotIdChange":  true,
+                   "noLeaderboardRename":  true,
+                   "noDummyLeaderboardScores":  true,
+                   "noDeploy":  true
+               }
+}
