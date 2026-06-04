@@ -68,6 +68,7 @@
     "check:rank-progression": "node scripts/check-rank-progression.mjs",
     "check:wave-pacing": "node scripts/check-wave-pacing.mjs",
     "check:wave-stuck-watchdog": "node scripts/check-wave-stuck-watchdog.mjs",
+    "check:dead-enemy-cleanup": "node scripts/check-dead-enemy-visual-cleanup.mjs",
     "check:elite-ships": "node scripts/check-elite-ships.mjs",
     "check:tractor-debuffs": "node scripts/check-tractor-debuffs.mjs",
     "check:gameplay-followups": "node scripts/check-gameplay-followup-fixes.mjs",

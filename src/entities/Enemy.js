@@ -25,6 +25,9 @@ export class Enemy {
     this.game = game;
     this.waveColor = waveColor; // 'Blue', 'Green', 'Red', 'Black'
     this.active = true;
+    this.visualsDeactivated = false;
+    this.destroyed = false;
+    this.ownedVisuals = [];
     this.radius = 15;
 
     this.middleShipProfile = getEliteMiddleShipProfile(type);
@@ -1144,8 +1147,10 @@ export class Enemy {
       decoy.alpha = 0.34;
       decoy.blendMode = 'add';
       container.addChild(decoy);
+      this.ownedVisuals.push(decoy);
       setTimeout(() => {
         if (decoy.parent) decoy.parent.removeChild(decoy);
+        this.ownedVisuals = this.ownedVisuals.filter(visual => visual !== decoy);
       }, this.middleShipProfile?.specialActiveMs || 1300);
     });
   }
@@ -1705,20 +1710,58 @@ export class Enemy {
         this.game?.scenes?.play?.enemyManager?.spawnEliteSupportDrone?.(this, { count: 2, split: true });
       }
       this.active = false;
+      this.deactivateVisuals('death');
       return true;
     }
     return false;
   }
 
-  destroy() {
-    if (this.middleShipProfile) {
-      AudioManager.playSfx(this.middleShipProfile.sfx?.death || 'elite_death', { volume: 0.58, minIntervalMs: 120 });
+  deactivateVisuals(reason = 'inactive') {
+    this.visualsDeactivated = true;
+    this.visualDeactivateReason = reason;
+    if (this.sprite) {
+      this.sprite.visible = false;
+      this.sprite.renderable = false;
+      if (Array.isArray(this.sprite.children)) {
+        this.sprite.children.forEach(child => {
+          if (child) {
+            child.visible = false;
+            child.renderable = false;
+          }
+        });
+      }
     }
-    // Clean up visual enhancements
+    if (this.healthBar) this.healthBar.visible = false;
+    this.threatTelegraphLayer?.clear();
+    this.eliteVfxLayer?.clear();
     if (this.visualEnhancementCleanup) {
       this.visualEnhancementCleanup();
       this.visualEnhancementCleanup = null;
     }
+    if (Array.isArray(this.ownedVisuals) && this.ownedVisuals.length > 0) {
+      this.ownedVisuals.forEach(visual => {
+        if (!visual) return;
+        visual.visible = false;
+        visual.renderable = false;
+        if (visual.parent) visual.parent.removeChild(visual);
+        visual.destroy?.({ children: true });
+      });
+      this.ownedVisuals = [];
+    }
+  }
+
+  destroy() {
+    if (this.destroyed) {
+      this.deactivateVisuals('destroy_repeat');
+      return;
+    }
+    this.destroyed = true;
+    this.active = false;
+    this.waitingForEntry = false;
+    if (this.middleShipProfile) {
+      AudioManager.playSfx(this.middleShipProfile.sfx?.death || 'elite_death', { volume: 0.58, minIntervalMs: 120 });
+    }
+    this.deactivateVisuals('destroy');
     this.threatTelegraphLayer?.clear();
     if (this.currentThreatAction && this.threatActionDefinition) {
       this.game?.scenes?.play?.enemyManager?.releaseThreatAction?.(this, this.threatActionDefinition);

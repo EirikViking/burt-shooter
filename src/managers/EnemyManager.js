@@ -949,6 +949,10 @@ export class EnemyManager {
                 playScene.showBossCelebration({ level: this.level, type: this.boss?.bossType || 'UNKNOWN' });
               }
             }
+            const clearedSupport = this.clearNonBossEnemyVisuals('boss_defeated');
+            if (clearedSupport > 0) {
+              console.log(`[BossCleanup] cleared non-boss support ships=${clearedSupport}`);
+            }
             this.logBossStatus('boss_defeated');
             console.log(`[BossDefeatProof] level=${this.level} hp=0 dt=${dt} reason=hp_zero`);
             console.log(`[BossFlow] boss defeated level=${this.level}`);
@@ -1065,6 +1069,39 @@ export class EnemyManager {
     }
   }
 
+  deactivateEnemyVisual(enemy, reason = 'inactive') {
+    if (!enemy) return false;
+    if (typeof enemy.deactivateVisuals === 'function') {
+      enemy.deactivateVisuals(reason);
+      return true;
+    }
+
+    const sprite = enemy.sprite;
+    if (!sprite) return false;
+    sprite.visible = false;
+    sprite.renderable = false;
+    if (Array.isArray(sprite.children)) {
+      sprite.children.forEach(child => {
+        if (!child) return;
+        child.visible = false;
+        child.renderable = false;
+      });
+    }
+    return true;
+  }
+
+  removeEnemySprite(enemy, reason = 'cleanup') {
+    if (!enemy) return false;
+    enemy.active = false;
+    if ('waitingForEntry' in enemy) enemy.waitingForEntry = false;
+    this.deactivateEnemyVisual(enemy, reason);
+    if (typeof enemy.destroy === 'function') enemy.destroy();
+    if (enemy.sprite?.parent) {
+      enemy.sprite.parent.removeChild(enemy.sprite);
+    }
+    return true;
+  }
+
   updateEnemies(delta) {
     const player = this.game.scenes.play ? this.game.scenes.play.player : null;
 
@@ -1093,8 +1130,20 @@ export class EnemyManager {
     const playerY = player ? player.y : 300;
 
     this.enemies = this.enemies.filter(enemy => {
+      if (!enemy) return false;
+      if (!enemy.active && !enemy.waitingForEntry) {
+        this.removeEnemySprite(enemy, 'inactive_update_pre');
+        return false;
+      }
+
       const isBoss = enemy.kind === 'boss';
       enemy.update(isBoss ? dt : dt * enemySpeedMult, playerX, playerY);
+
+      if (!enemy.active && !enemy.waitingForEntry) {
+        this.removeEnemySprite(enemy, 'inactive_update');
+        return false;
+      }
+      if (!enemy.active || enemy.waitingForEntry) return true;
 
       // Shooting
       const enemyFireChance = fireChance * (enemy.getTacticalFireScalar?.() || enemy.tacticalFireScalar || 1);
@@ -1110,14 +1159,6 @@ export class EnemyManager {
         }
       }
 
-      if (!enemy.active && !enemy.waitingForEntry) {
-        if (enemy.destroy) enemy.destroy();
-        // Always remove sprite from container, regardless of destroy method
-        if (enemy.sprite && enemy.sprite.parent) {
-          enemy.sprite.parent.removeChild(enemy.sprite);
-        }
-        return false;
-      }
       return true;
     });
   }
@@ -2187,6 +2228,18 @@ export class EnemyManager {
     return spawnCount;
   }
 
+  clearNonBossEnemyVisuals(reason = 'boss_defeated') {
+    let cleared = 0;
+    this.enemies = this.enemies.filter(enemy => {
+      if (!enemy) return false;
+      if (enemy.kind === 'boss' || enemy.kind === 'bonus_drone') return true;
+      this.removeEnemySprite(enemy, reason);
+      cleared += 1;
+      return false;
+    });
+    return cleared;
+  }
+
   applyModifier(enemy) {
     if (this.currentModifier === 'SHIELDED') {
       enemy.health = Math.ceil(enemy.health * 1.5);
@@ -2445,15 +2498,10 @@ export class EnemyManager {
         // Regular enemies get cleared too
         const wasActive = e.active !== false;
         enemyCount++;
-        e.active = false;
-        if (e.destroy) e.destroy(); // Call destroy to clean up tickers
         if (wasActive && this.game.scenes.play && this.game.scenes.play.particleManager) {
           this.game.scenes.play.particleManager.createExplosion(e.x, e.y, 0xcccccc, 1.1);
         }
-        // Always remove sprite
-        if (e.sprite && e.sprite.parent) {
-          e.sprite.parent.removeChild(e.sprite);
-        }
+        this.removeEnemySprite(e, 'force_clear');
       }
     });
 
@@ -2481,31 +2529,16 @@ export class EnemyManager {
 
   clearEnemies() {
     this.enemies.forEach(e => {
-      e.active = false; // Disable update
-      if (e.destroy) e.destroy(); // CLEANUP: Call destroy to stop tickers
-      // Always remove sprite from container
-      if (e.sprite && e.sprite.parent) {
-        e.sprite.parent.removeChild(e.sprite);
-      }
+      this.removeEnemySprite(e, 'clear_enemies');
     });
     this.enemies = [];
     if (this.boss) {
-      this.boss.active = false;
-      if (this.boss.destroy) this.boss.destroy();
-      // Always remove boss sprite
-      if (this.boss.sprite && this.boss.sprite.parent) {
-        this.boss.sprite.parent.removeChild(this.boss.sprite);
-      }
+      this.removeEnemySprite(this.boss, 'clear_boss');
       this.boss = null;
     }
     // Also clear hijacker
     if (this.hijacker) {
-      this.hijacker.active = false;
-      if (this.hijacker.destroy) this.hijacker.destroy();
-      // Always remove hijacker sprite
-      if (this.hijacker.sprite && this.hijacker.sprite.parent) {
-        this.hijacker.sprite.parent.removeChild(this.hijacker.sprite);
-      }
+      this.removeEnemySprite(this.hijacker, 'clear_hijacker');
       this.hijacker = null;
     }
   }

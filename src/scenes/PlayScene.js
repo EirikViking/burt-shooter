@@ -2050,6 +2050,10 @@ export class PlayScene {
           }
 
           enemy.active = false;
+          if (!this.enemyManager?.deactivateEnemyVisual?.(enemy, 'player_contact') && enemy.sprite) {
+            enemy.sprite.visible = false;
+            enemy.sprite.renderable = false;
+          }
           if (!this.player.invulnerable) {
             const damageTaken = this.player.takeDamage();
             if (damageTaken) {
@@ -3908,9 +3912,11 @@ export class PlayScene {
       const displayAward = this.game.getScoreAward?.(award) || award;
       bonusScore += award;
       captured.push({ x: Math.round(enemy.x), y: Math.round(enemy.y), award: displayAward });
-      enemy.active = false;
-      enemy.destroy?.();
-      if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);
+      if (!this.enemyManager?.removeEnemySprite?.(enemy, 'tractor_hijack_capture')) {
+        enemy.active = false;
+        enemy.destroy?.();
+        if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);
+      }
       this.particleManager?.createExplosion(enemy.x, enemy.y, 0x66ffff, 0.82);
       this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xffffff);
       this.scorePopupManager?.addScorePopup(enemy.x, enemy.y, displayAward, {
@@ -4511,7 +4517,9 @@ export class PlayScene {
 
       enemy.active = false;
       cleared += 1;
-      if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);
+      if (!this.enemyManager?.removeEnemySprite?.(enemy, 'respawn_hazard_clear') && enemy.sprite?.parent) {
+        enemy.sprite.parent.removeChild(enemy.sprite);
+      }
       if (this.particleManager) {
         this.particleManager.createHitSpark(enemy.x, enemy.y, enemy.color || 0x8fffd5);
       }
