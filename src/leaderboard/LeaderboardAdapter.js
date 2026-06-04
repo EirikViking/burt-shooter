@@ -182,10 +182,12 @@ export class LeaderboardAdapter {
   async submitScore(runResult = {}, options = {}) {
     await this.ensureAvailability();
     const target = options.target || (this.availability.steam ? 'steam' : 'cloud');
+    const levelReached = runResult.levelReached ?? runResult.level;
     const result = {
       name: options.name || runResult.playerName || runResult.name || null,
       score: runResult.score,
-      level: runResult.level,
+      level: levelReached,
+      levelReached,
       rankIndex: runResult.rankIndex,
       submissionId: runResult.submissionId,
       updatedAt: new Date().toISOString()

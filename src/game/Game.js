@@ -36,6 +36,7 @@ import {
   readHangarProgressState,
   updateHangarProgress
 } from '../progression/HangarProgressState.js';
+import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 
 export class Game {
   constructor(app) {
@@ -106,46 +107,69 @@ export class Game {
     this.switchScene('menu');
   }
 
-  switchScene(sceneName) {
-    if (this.currentScene) {
-      this.app.stage.removeChild(this.currentScene.container);
-      if (this.currentScene.cleanup) {
-        this.currentScene.cleanup();
-      }
-      if (typeof this.currentScene.destroy === 'function') {
-        this.currentScene.destroy();
-      }
+  teardownCurrentScene() {
+    const scene = this.currentScene;
+    if (!scene) return;
+    if (scene.container?.parent) {
+      scene.container.parent.removeChild(scene.container);
     }
+    if (typeof scene.cleanup === 'function') {
+      scene.cleanup();
+    }
+    if (typeof scene.destroy === 'function') {
+      scene.destroy();
+    }
+  }
+
+  prepareGameplayInputFocus() {
+    try {
+      const active = document?.activeElement || null;
+      const tagName = String(active?.tagName || '').toLowerCase();
+      if (active && (tagName === 'input' || tagName === 'textarea' || active.isContentEditable)) {
+        active.blur();
+      }
+      const canvas = this.app?.canvas || this.app?.view || null;
+      if (canvas && typeof canvas.focus === 'function') {
+        if (!canvas.hasAttribute('tabindex')) canvas.setAttribute('tabindex', '-1');
+        canvas.focus({ preventScroll: true });
+      }
+    } catch {
+      // Focus can fail in headless/test shells; keyboard listeners still get reset below.
+    }
+    this.scenes?.play?.inputManager?.resetAllKeys?.();
+    this.scenes?.play?.pauseGamepadNavigator?.suppressUntilReleased?.();
+  }
+
+  switchScene(sceneName) {
+    this.teardownCurrentScene();
 
     this.currentScene = this.scenes[sceneName];
     this.currentSceneName = sceneName;
     this.app.stage.addChild(this.currentScene.container);
     this.currentScene.init();
+    this.syncGameplayCursor();
   }
 
   async showShipSelect() {
     // Create ship select scene if not exists OR recreate it to ensure fresh input state
     // Fixing bug where returning from Details broke input
-    if (this.scenes.shipSelect) {
+    if (this.scenes.shipSelect && this.scenes.shipSelect !== this.currentScene) {
       if (this.scenes.shipSelect.destroy) this.scenes.shipSelect.destroy();
       this.scenes.shipSelect = null;
     }
 
+    const previousScene = this.currentScene;
     this.scenes.shipSelect = new ShipSelectScene(this);
     await this.scenes.shipSelect.create();
 
-    // Remove current scene
-    if (this.currentScene) {
-      this.app.stage.removeChild(this.currentScene.container);
-      if (this.currentScene.cleanup) {
-        this.currentScene.cleanup();
-      }
-    }
+    this.currentScene = previousScene;
+    this.teardownCurrentScene();
 
     // Show ship select
     this.currentScene = this.scenes.shipSelect;
     this.currentSceneName = 'shipSelect';
     this.app.stage.addChild(this.currentScene.container);
+    this.syncGameplayCursor();
   }
 
   async showShipDetails(spriteKey) {
@@ -153,21 +177,17 @@ export class Game {
     const detailsScene = new ShipDetailsScene(this, spriteKey);
     await detailsScene.create();
 
-    // Remove current scene
-    if (this.currentScene) {
-      this.app.stage.removeChild(this.currentScene.container);
-      if (this.currentScene.cleanup) {
-        this.currentScene.cleanup();
-      }
-    }
+    this.teardownCurrentScene();
 
     // Show ship details
     this.currentScene = detailsScene;
     this.currentSceneName = 'shipDetails';
     this.app.stage.addChild(this.currentScene.container);
+    this.syncGameplayCursor();
   }
 
   async startGame(spriteKey) {
+    this.prepareGameplayInputFocus();
     const candidateSpriteKey = isValidShipKey(spriteKey) ? spriteKey : getDefaultShipKey();
     const selectedSpriteKey = isShipUnlocked(candidateSpriteKey) ? candidateSpriteKey : getDefaultShipKey();
     console.log('[Game] starting new game spriteKey=' + selectedSpriteKey);
@@ -225,6 +245,7 @@ export class Game {
     };
 
     this.switchScene('play');
+    this.prepareGameplayInputFocus();
     this.primeGlobalLeaderboardTargets();
   }
 
@@ -586,11 +607,12 @@ export class Game {
     const discoveryStats = getDiscoveryStats();
     const discoveries = getDiscoveriesThisRun();
     const elapsed = Number(play?.gameTime) || (this.runStartedAtMs ? (Date.now() - this.runStartedAtMs) / 1000 : 0);
+    const levelReached = Math.max(1, Number(this.level) || 1, (Number(play?.bossKills) || 0) + 1);
     const summary = {
       score: this.score,
       finalScore: this.score,
-      levelReached: this.level,
-      sectorReached: this.level,
+      levelReached,
+      sectorReached: levelReached,
       runElapsedSeconds: Math.max(0, elapsed),
       bossesKilled: Number(play?.bossKills) || 0,
       wavesCleared: Number(play?.wavesCleared) || 0,
@@ -718,6 +740,11 @@ export class Game {
       this.currentScene.update(delta);
     }
     this.updateLiveRunRank();
+    this.syncGameplayCursor();
+  }
+
+  syncGameplayCursor() {
+    return syncGameplayCursorVisibility(this);
   }
 
   getWidth() {

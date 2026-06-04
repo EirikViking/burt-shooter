@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
+const DEFAULT_STEAM_APP_ID = 4765070;
 const STEAM_LEADERBOARD_NAME = process.env.NOVA_SWARM_STEAM_LEADERBOARD_NAME || DEFAULT_STEAM_LEADERBOARD_NAME;
 const INT32_MAX = 2147483647;
 const MAX_STEAM_DOWNLOAD_ENTRIES = 100;
@@ -66,19 +67,27 @@ function readSteamAppId(rootDir) {
       // Missing local Steam app id files are expected in normal web/dev runs.
     }
   }
-  return null;
+  return DEFAULT_STEAM_APP_ID;
 }
 
 function resolveSdkPath(rootDir) {
   const explicit = process.env.NOVA_SWARM_STEAMWORKS_SDK_PATH || process.env.STEAMWORKS_SDK_PATH;
+  const exeDir = process.execPath ? path.dirname(process.execPath) : null;
   const candidates = [
     explicit,
     path.join(rootDir, 'steam_sdk', 'sdk'),
     path.join(rootDir, 'steam_sdk'),
     path.join(rootDir, 'steamworks_sdk'),
     path.join(rootDir, 'steamworks'),
+    exeDir ? path.join(exeDir, 'steam_sdk', 'sdk') : null,
+    exeDir ? path.join(exeDir, 'steam_sdk') : null,
+    exeDir ? path.join(exeDir, 'steamworks_sdk') : null,
     path.join(rootDir, 'release', 'desktop', 'win-unpacked', 'resources', 'steamworks_sdk'),
+    path.join(rootDir, 'release', 'desktop', 'win-unpacked', 'resources', 'app.asar.unpacked', 'steam_sdk', 'sdk'),
+    path.join(rootDir, 'release', 'desktop', 'win-unpacked', 'resources', 'app.asar.unpacked', 'steam_sdk'),
     process.resourcesPath ? path.join(process.resourcesPath, 'steamworks_sdk') : null,
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'steam_sdk', 'sdk') : null,
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'steam_sdk') : null,
     process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'steamworks_sdk') : null
   ].filter(Boolean);
   return candidates.find(candidate => {
@@ -1141,6 +1150,7 @@ function createSteamLeaderboardBridge(options = {}) {
 }
 
 module.exports = {
+  DEFAULT_STEAM_APP_ID,
   DEFAULT_STEAM_LEADERBOARD_NAME,
   STEAM_LEADERBOARD_NAME,
   STEAM_BACKEND_REJECTED_UNKNOWN_REASON_MESSAGE,

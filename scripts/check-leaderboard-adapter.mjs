@@ -117,6 +117,20 @@ async function checkWebRuntime() {
   assert.equal(localSubmit.localStatus, 'saved');
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('WEB ACE'), true);
 
+  const reachedRun = {
+    score: 5432,
+    level: 4,
+    levelReached: 5,
+    rankIndex: 4,
+    playerName: 'REACHED ACE',
+    submissionId: 'web-reached-level'
+  };
+  const reachedLocal = await adapter.submitScore(reachedRun, { target: 'local', saveLocal: true, name: 'REACHED ACE' });
+  assert.equal(reachedLocal.localEntry.level, 5, 'local leaderboard should prefer reached level over stale current level');
+  assert.equal(reachedLocal.localEntry.levelReached, 5, 'local leaderboard should carry reached level alias');
+  await adapter.submitScore(reachedRun, { target: 'cloud', saveLocal: false, name: 'REACHED ACE' });
+  assert.equal(cloudState.lastPost.level, 5, 'cloud leaderboard should submit reached level, not stale current level');
+
   assert.equal(getPilotNameValidation('Eirik').valid, true, 'Eirik should be a valid pilot name');
   assert.equal(toPublicPilotName('Eirik', 553006), 'EIRIK', 'Eirik must not fall back to Pilot06');
   const eirikRun = {
@@ -158,7 +172,8 @@ async function checkMockSteamRuntime() {
 
   const result = await adapter.submitScore({
     score: 12345,
-    level: 5,
+    level: 4,
+    levelReached: 5,
     rankIndex: 8,
     shipId: 'nova_sparrow',
     shipNumericId: 1,
@@ -172,6 +187,8 @@ async function checkMockSteamRuntime() {
   assert.equal(result.steamStatus, 'submitted');
   assert.equal(result.localStatus, 'saved');
   assert.equal(result.name, 'STEAM ACE');
+  assert.equal(result.level, 5, 'Steam submit result should expose reached level');
+  assert.equal(result.steamDetails[0], 5, 'Steam details slot 0 should encode reached level');
 
   const global = await adapter.getScores('global', { useCache: false });
   const friends = await adapter.getScores('friends', { useCache: false });

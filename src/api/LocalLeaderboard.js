@@ -51,6 +51,7 @@ function normalizeEntry(raw, fallbackIndex = 0) {
     name: sanitizeLocalPilotName(raw.name, fallbackIndex),
     score,
     level,
+    levelReached: level,
     rankIndex,
     rank_index: rankIndex,
     shipId: raw.shipId ?? raw.ship_id ?? null,

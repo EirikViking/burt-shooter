@@ -121,10 +121,12 @@ export class LocalLeaderboardProvider {
       options.name || runResult.playerName || runResult.name || 'PILOT',
       runResult.score
     );
+    const levelReached = runResult.levelReached ?? runResult.level;
     const entry = {
       name,
       score: runResult.score,
-      level: runResult.level,
+      level: levelReached,
+      levelReached,
       rankIndex: runResult.rankIndex,
       submissionId: runResult.submissionId,
       shipId: runResult.shipId,

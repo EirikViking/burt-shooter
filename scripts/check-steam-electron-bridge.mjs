@@ -5,6 +5,7 @@ import path from 'node:path';
 
 const require = createRequire(import.meta.url);
 const {
+  DEFAULT_STEAM_APP_ID,
   STEAM_LEADERBOARD_NAME,
   createSteamLeaderboardBridge
 } = require('../electron/steamLeaderboardBridge.cjs');
@@ -135,6 +136,17 @@ async function checkUnavailableWithoutNative() {
   assert.equal(await bridge.isAvailable(), false);
   assert.equal(bridge.getStatus().available, false);
   assert.equal(bridge.getStatus().reason, 'steamworks-ffi-node_not_installed');
+  bridge.shutdown();
+}
+
+function checkDefaultNovaSteamAppId() {
+  const bridge = createSteamLeaderboardBridge({
+    allowNativeLoad: false,
+    rootDir: process.cwd()
+  });
+  assert.equal(DEFAULT_STEAM_APP_ID, 4765070);
+  assert.equal(bridge.getStatus().appId, 4765070, 'Nova Swarm Steam packages must default to the real app id');
+  assert.equal(bridge.getStatus().leaderboardName, 'nova_swarm_global_score_v2');
   bridge.shutdown();
 }
 
@@ -299,6 +311,7 @@ function checkNoRendererNativeImport() {
 }
 
 await checkUnavailableWithoutNative();
+checkDefaultNovaSteamAppId();
 await checkMissingAppIdDoesNotInitNative();
 await checkNativeBridgeHappyPath();
 await checkRawUploadFailureDiagnostics();

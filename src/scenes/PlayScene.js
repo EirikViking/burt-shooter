@@ -170,6 +170,7 @@ export class PlayScene {
     this.gameOverInterlude = null;
     this.overrunSealTexture = null;
     this.bossWarningEmblemTextures = [];
+    this.bossWarningBossTextures = [];
     this.bossWarningArtTextures = [];
     this.bossHazards = [];
     this.bossHazardLayer = null;
@@ -262,6 +263,7 @@ export class PlayScene {
     if (!this.inputManager || this.inputManager.destroyed) {
       this.inputManager = new InputManager();
     }
+    this.inputManager.resetAllKeys();
     this.isPaused = false;
     this.bossClearRecoveryLevels.clear();
     this.pauseOverlay = null;
@@ -2284,13 +2286,13 @@ export class PlayScene {
 
   async loadBossWarningTextures() {
     const emblemSources = AssetManifest.generated?.vfx?.bossWarningEmblems || [];
+    const bossSources = AssetManifest.generated?.bosses || [];
     const warmupSources = emblemSources.slice(0, Math.min(12, emblemSources.length));
+    const bossWarmupSources = bossSources.slice(0, Math.min(12, bossSources.length));
     const loadList = async (sources, aliasPrefix) => Promise.all(sources.map(async (src, index) => {
       try {
-        const texture = await PIXI.Assets.load({
-          alias: `${aliasPrefix}_${String(index + 1).padStart(2, '0')}`,
-          src
-        });
+        await PIXI.Assets.load(src);
+        const texture = PIXI.Texture.from(src);
         return GameAssets.isValidTexture(texture) ? texture : null;
       } catch {
         return null;
@@ -2298,8 +2300,12 @@ export class PlayScene {
     }));
 
     try {
-      const emblems = await loadList(warmupSources, 'generated_boss_warning_emblem');
+      const [emblems, bosses] = await Promise.all([
+        loadList(warmupSources, 'generated_boss_warning_emblem'),
+        loadList(bossWarmupSources, 'generated_boss_warning_boss')
+      ]);
       this.bossWarningEmblemTextures = emblems;
+      this.bossWarningBossTextures = bosses;
       this.bossWarningArtTextures = [];
     } catch (error) {
       console.warn('[PlayScene] Boss warning art failed to load:', error);
@@ -6479,7 +6485,7 @@ export class PlayScene {
     }
   }
 
-  showBossTaunt(reason = 'boss_spawn') {
+  showBossTaunt(reason = 'boss_spawn', options = {}) {
     const caption = this.getBossTauntCaption(reason);
     if (!caption) return;
 
@@ -6492,6 +6498,46 @@ export class PlayScene {
     const primaryColor = bossProfile?.palette || 0xff3030;
     const accentColor = bossProfile?.accent || 0x2ff6ff;
     const spectacular = reason === 'boss_spawn';
+    if (spectacular && !options?.allowFallback) {
+      const bossIndex = Math.max(0, Math.min(49, (Number(bossProfile?.index) || Number(this.game?.level) || 1) - 1));
+      const bossSrc = AssetManifest.generated?.bosses?.[bossIndex] || null;
+      const emblemSrc = AssetManifest.generated?.vfx?.bossWarningEmblems?.[bossIndex] || null;
+      const isUsable = (texture) => GameAssets.isValidTexture(texture) &&
+        (Number(texture.width) || 0) >= 48 &&
+        (Number(texture.height) || 0) >= 48;
+      const activeBoss = this.enemyManager?.boss || null;
+      const activeTexture = [
+        activeBoss?.hitboxRef?.texture,
+        activeBoss?.visualContainer?.children?.find?.((child) => isUsable(child?.texture))?.texture
+      ].find((texture) => isUsable(texture)) || null;
+      const hasReadyArt = isUsable(activeTexture) ||
+        isUsable(this.bossWarningBossTextures?.[bossIndex]) ||
+        isUsable(this.bossWarningEmblemTextures?.[bossIndex]);
+      if (!hasReadyArt && (bossSrc || emblemSrc)) {
+        const requestToken = `${bossIndex}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+        this.pendingBossWarningArtRequest = requestToken;
+        const candidates = [bossSrc, emblemSrc].filter(Boolean);
+        const loadCandidate = async (candidateIndex = 0) => {
+          const candidateSrc = candidates[candidateIndex];
+          if (!candidateSrc) return false;
+          try {
+            await PIXI.Assets.load(candidateSrc);
+            const texture = PIXI.Texture.from(candidateSrc);
+            if (!isUsable(texture)) return loadCandidate(candidateIndex + 1);
+            if (candidateSrc === bossSrc) this.bossWarningBossTextures[bossIndex] = texture;
+            if (candidateSrc === emblemSrc) this.bossWarningEmblemTextures[bossIndex] = texture;
+            return true;
+          } catch {
+            return loadCandidate(candidateIndex + 1);
+          }
+        };
+        loadCandidate().finally(() => {
+          if (this.pendingBossWarningArtRequest !== requestToken || this.game?.currentScene !== this) return;
+          this.showBossTaunt(reason, { allowFallback: true });
+        });
+        return;
+      }
+    }
     if (spectacular) {
       this.shipIntroToken += 1;
       this.introActive = false;
@@ -6832,16 +6878,14 @@ export class PlayScene {
     portraitFrame.stroke({ color: accentColor, width: 1.4, alpha: 0.72 });
     emblem.addChild(portraitFrame);
 
-    const artMask = new PIXI.Graphics();
-    artMask.roundRect(-104, -104, 208, 208, 8);
-    artMask.fill({ color: 0xffffff, alpha: 1 });
-    artMask.renderable = false;
-    emblem.addChild(artMask);
-
     const bossIndex = Math.max(0, Math.min(49, (Number(profile?.index) || Number(this.game?.level) || 1) - 1));
-    const src = AssetManifest.generated?.vfx?.bossWarningEmblems?.[bossIndex] || null;
+    const bossSrc = AssetManifest.generated?.bosses?.[bossIndex] || null;
+    const emblemSrc = AssetManifest.generated?.vfx?.bossWarningEmblems?.[bossIndex] || null;
+    const sourceCandidates = [bossSrc, emblemSrc].filter(Boolean);
+    let fallbackShown = false;
     const addFallbackGlyph = () => {
-      if (emblem.destroyed) return;
+      if (emblem.destroyed || fallbackShown) return;
+      fallbackShown = true;
       const glyph = new PIXI.Graphics();
       glyph.label = 'boss_warning_fallback_glyph';
       glyph.poly([0, -86, 66, 52, 0, 86, -66, 52]);
@@ -6855,8 +6899,12 @@ export class PlayScene {
       emblem.addChild(glyph);
     };
 
-    const installTexture = (texture) => {
-      if (!GameAssets.isValidTexture(texture) || emblem.destroyed) return false;
+    const isWarningTextureUsable = (texture) => GameAssets.isValidTexture(texture) &&
+      (Number(texture.width) || 0) >= 48 &&
+      (Number(texture.height) || 0) >= 48;
+
+    const installTexture = (texture, source = null) => {
+      if (!isWarningTextureUsable(texture) || emblem.destroyed) return false;
       for (const child of [...emblem.children]) {
         if (child.label === 'boss_warning_boss_art' || child.label === 'boss_warning_fallback_glyph') {
           emblem.removeChild(child);
@@ -6865,29 +6913,48 @@ export class PlayScene {
       }
       const sprite = new PIXI.Sprite(texture);
       sprite.label = 'boss_warning_boss_art';
-      sprite.__bossWarningSource = src || texture?.source?.resource?.src || texture?.textureCacheIds?.[0] || 'cached_boss_warning_emblem';
-      sprite.__bossWarningMasked = true;
+      sprite.__bossWarningSource = source || texture?.source?.resource?.src || texture?.textureCacheIds?.[0] || 'cached_boss_warning_art';
+      sprite.__bossWarningContained = true;
       sprite.anchor.set(0.5);
       const tw = texture.width || 1;
       const th = texture.height || 1;
-      const scale = Math.min(208 / tw, 208 / th) * 0.94;
+      const usesBossPortrait = /\/bosses\//i.test(String(sprite.__bossWarningSource || ''));
+      const scale = Math.min(196 / tw, 196 / th) * (usesBossPortrait ? 1.02 : 0.94);
       sprite.scale.set(scale);
       sprite.x = 0;
       sprite.y = 0;
-      sprite.mask = artMask;
       emblem.addChildAt(sprite, Math.min(2, emblem.children.length));
       return true;
     };
 
-    const cached = this.bossWarningEmblemTextures?.[bossIndex] || null;
-    if (!installTexture(cached)) {
-      if (src) {
-        PIXI.Assets.load({
-          alias: `generated_boss_warning_runtime_art_${String(bossIndex + 1).padStart(2, '0')}`,
-          src
-        }).then((texture) => {
-          if (!installTexture(texture)) addFallbackGlyph();
-        }).catch(addFallbackGlyph);
+    const findActiveBossTexture = () => {
+      const boss = this.enemyManager?.boss || null;
+      const candidates = [
+        boss?.hitboxRef?.texture,
+        boss?.visualContainer?.children?.find?.((child) => isWarningTextureUsable(child?.texture))?.texture,
+        boss?.sprite?.children?.find?.((child) => isWarningTextureUsable(child?.texture))?.texture
+      ];
+      return candidates.find((texture) => isWarningTextureUsable(texture)) || null;
+    };
+
+    const activeBossTexture = findActiveBossTexture();
+    const cachedBoss = this.bossWarningBossTextures?.[bossIndex] || null;
+    const cachedEmblem = this.bossWarningEmblemTextures?.[bossIndex] || null;
+    if (!installTexture(activeBossTexture, bossSrc || 'active_boss_texture') &&
+      !installTexture(cachedBoss, bossSrc) &&
+      !installTexture(cachedEmblem, emblemSrc)) {
+      if (sourceCandidates.length > 0) {
+        addFallbackGlyph();
+        const loadNextCandidate = (candidateIndex = 0) => {
+          const candidateSrc = sourceCandidates[candidateIndex];
+          if (!candidateSrc || emblem.destroyed) return;
+          const aliasKind = /\/bosses\//i.test(candidateSrc) ? 'boss' : 'emblem';
+          PIXI.Assets.load(candidateSrc).then(() => {
+            const texture = PIXI.Texture.from(candidateSrc);
+            if (!installTexture(texture, candidateSrc)) loadNextCandidate(candidateIndex + 1);
+          }).catch(() => loadNextCandidate(candidateIndex + 1));
+        };
+        loadNextCandidate();
       } else {
         addFallbackGlyph();
       }

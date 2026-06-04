@@ -395,7 +395,7 @@ export class ShipSelectScene {
       e.stopPropagation();
       this.backButton.active = false;
       drawButton();
-      this.returnToMenu('button');
+      this.openHangarMenu('button');
     });
     this.backButton.on('pointerupoutside', () => {
       this.backButton.active = false;
@@ -2155,11 +2155,11 @@ export class ShipSelectScene {
         this.openCareerInfoOverlay('keyboard');
       } else if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault();
-        this.returnToMenu('keyboard');
+        this.openHangarMenu('keyboard');
       } else if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space') {
         e.preventDefault();
         if (this.mainMenuButtonFocused) {
-          this.returnToMenu('keyboard');
+          this.openHangarMenu('keyboard');
           return;
         }
         this.launchSelectedShip('keyboard');

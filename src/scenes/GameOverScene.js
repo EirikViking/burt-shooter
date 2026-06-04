@@ -191,6 +191,20 @@ export class GameOverScene {
     this.sceneTimeouts?.clear();
   }
 
+  getSubmittedLevelReached() {
+    const play = this.game?.scenes?.play || null;
+    const values = [
+      this.game?.runSummary?.levelReached,
+      this.game?.runSummary?.sectorReached,
+      this.finalLevel,
+      this.game?.level,
+      (Number(play?.bossKills) || 0) + 1
+    ];
+    return Math.max(1, ...values
+      .map((value) => Math.floor(Number(value)))
+      .filter((value) => Number.isFinite(value) && value > 0));
+  }
+
   async init() {
     this.clearSceneTimeouts();
     this.gamepadNavigator.suppressUntilReleased();
@@ -239,6 +253,7 @@ export class GameOverScene {
     // FREEZE final score and level immediately
     this.finalScore = Number(this.game.score) || 0;
     this.finalLevel = Number(this.game.level) || 0;
+    this.finalLevel = this.getSubmittedLevelReached();
     if (this.isRankedRun) {
       this.localQualified = this.steamSubmissionMode
         ? this.finalScore > 0
@@ -2886,11 +2901,13 @@ export class GameOverScene {
     this.refreshPrimaryCta();
 
     const playerName = this.steamPlayerName || await this.leaderboardAdapter.getSteamPlayerName().catch(() => null) || 'STEAM PILOT';
+    const submittedLevel = this.getSubmittedLevelReached();
     const runResult = this.leaderboardAdapter.createRunResult(this.game, {
       name: playerName,
       playerName,
       score: this.finalScore,
-      level: this.finalLevel,
+      level: submittedLevel,
+      levelReached: submittedLevel,
       rankIndex: this.game.rankIndex || 0,
       submissionId: this.submissionId
     });
@@ -2938,14 +2955,18 @@ export class GameOverScene {
     input.autocapitalize = 'characters';
     input.autocomplete = 'off';
     input.spellcheck = false;
-    input.style.position = 'absolute';
+    input.style.position = 'fixed';
     input.style.opacity = '0';
     input.style.pointerEvents = 'none';
     input.style.zIndex = '-1';
-    input.style.left = '0';
-    input.style.top = '0';
+    input.style.left = '-10000px';
+    input.style.top = '-10000px';
     input.style.width = '1px';
     input.style.height = '1px';
+    input.style.color = 'transparent';
+    input.style.background = 'transparent';
+    input.style.border = '0';
+    input.style.outline = '0';
     this.boundHiddenInput = this.boundHiddenInput || this.handleHiddenInput.bind(this);
     this.boundHiddenKeyDown = this.boundHiddenKeyDown || this.handleHiddenKeyDown.bind(this);
     input.addEventListener('input', this.boundHiddenInput);
@@ -3113,10 +3134,12 @@ export class GameOverScene {
     if (this.lastInputDevice === 'controller') {
       this.storeControllerName(name);
     }
+    const submittedLevel = this.getSubmittedLevelReached();
     const result = {
       name,
       score: this.finalScore,
-      level: this.finalLevel,
+      level: submittedLevel,
+      levelReached: submittedLevel,
       rankIndex: this.game.rankIndex || 0,
       submissionId: this.submissionId,
       localQualified: this.localQualified,
@@ -3132,7 +3155,8 @@ export class GameOverScene {
       name,
       playerName: name,
       score: this.finalScore,
-      level: this.finalLevel,
+      level: submittedLevel,
+      levelReached: submittedLevel,
       rankIndex: this.game.rankIndex || 0,
       submissionId: this.submissionId
     });
@@ -3199,11 +3223,13 @@ export class GameOverScene {
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = window.setTimeout(() => reject(new Error('Global submit timeout')), GLOBAL_SUBMIT_TIMEOUT_MS);
       });
+      const submittedLevel = this.getSubmittedLevelReached();
       const runResult = this.leaderboardAdapter.createRunResult(this.game, {
         name,
         playerName: name,
         score: this.finalScore,
-        level: this.finalLevel,
+        level: submittedLevel,
+        levelReached: submittedLevel,
         rankIndex: this.game.rankIndex,
         submissionId: this.submissionId
       });

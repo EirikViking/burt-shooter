@@ -174,7 +174,7 @@ try {
         childCount: poster.children?.length || 0,
         hasEmblem: hasNode(poster, 'boss_warning_emblem'),
         hasBossArt: hasNode(poster, 'boss_warning_boss_art'),
-        bossArtMasked: Boolean(bossArt?.mask || bossArt?.__bossWarningMasked),
+        bossArtContained: Boolean(bossArt?.mask || bossArt?.__bossWarningMasked || bossArt?.__bossWarningContained),
         bossArtSource: bossArt?.__bossWarningSource || null
       } : null,
       texts,
@@ -187,8 +187,8 @@ try {
   assert(report.poster, 'boss warning poster missing');
   assert(report.poster.hasEmblem, 'boss warning emblem missing');
   assert(report.poster.hasBossArt === true, 'boss spawn warning should show one clipped boss portrait');
-  assert(report.poster.bossArtMasked === true, 'boss spawn warning portrait should be clipped by a PIXI mask');
-  assert(/boss-warning-emblems|cached_boss_warning_emblem/i.test(report.poster.bossArtSource || ''), `boss warning should use clean emblem art, got ${report.poster.bossArtSource}`);
+  assert(report.poster.bossArtContained === true, 'boss spawn warning portrait should stay contained inside the dossier frame');
+  assert(/\/bosses\/|boss-warning-emblems|cached_boss_warning_art/i.test(report.poster.bossArtSource || ''), `boss warning should use boss portrait or clean emblem art, got ${report.poster.bossArtSource}`);
   assert(report.texts.includes('BOSS INCOMING'), `boss warning title missing: ${report.texts.join(' | ')}`);
   assert(hasFunnyCaption, `funny warning caption missing: ${report.texts.join(' | ')}`);
   assert(Math.abs(report.poster.x - 640) > 130, `boss warning blocks the boss lane at x=${report.poster.x}`);

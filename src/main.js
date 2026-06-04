@@ -13,6 +13,7 @@ import { getRunPacingDebugState } from './config/RunPacingConfig.js';
 import { getThreatCodexCatalog } from './config/ThreatCodexCatalog.js';
 import { getCodexCompletionCounts, getDiscoveriesThisRun, getDiscoveryStats } from './progression/ThreatDiscoveryState.js';
 import { getHangarProgressSummary } from './progression/HangarProgressState.js';
+import { getGameplayCursorDebugState } from './ui/GameplayCursor.js';
 import {
   LANGUAGE_CHANGE_EVENT,
   getCurrentLanguage,
@@ -464,6 +465,7 @@ function buildGameTextState(game) {
       credits: Boolean(activeSettingsOverlay?.creditsPanel?.parent),
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
+    cursor: getGameplayCursorDebugState(game),
     menu: menuScene?.getLayoutDebugState ? menuScene.getLayoutDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
