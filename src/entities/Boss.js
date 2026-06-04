@@ -108,7 +108,7 @@ export class Boss {
     this.spawnedAtMs = Date.now();
     this.regularAttackReadyAt = this.spawnedAtMs + (level <= 1 ? 1800 : 1400);
     this.invulnerableUntilMs = this.spawnedAtMs + 800;
-    this.minimumFightMs = Math.max(7200, Math.min(9800, 7600 + Math.max(0, level - 1) * 140));
+    this.minimumFightMs = Math.max(9000, Math.min(12600, 9400 + Math.max(0, level - 1) * 170));
     this.finishGateUntilMs = 0;
     this.finishGateFxAt = 0;
     this.finishGateLogged = false;
@@ -1075,7 +1075,7 @@ export class Boss {
   }
 
   getRegularAttackIntervalMs() {
-    const base = this.level <= 1 ? 2200 : this.level === 2 ? 2400 : 2700;
+    const base = this.level <= 1 ? 2380 : this.level === 2 ? 2580 : 2920;
     const phaseScalar = this.phase === 1 ? 1 : this.phase === 2 ? 0.95 : 0.9;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
     return Math.round((base * phaseScalar * chaosRelief) / this.getPostFirstBossDifficultyScalar());

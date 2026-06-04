@@ -7129,13 +7129,13 @@ export class PlayScene {
     const height = this.game.getHeight();
     const flash = new PIXI.Graphics();
     flash.label = 'boss_death_flash';
-    flash.rect(0, 0, width, height).fill({ color: 0xffffff, alpha: 0.18 });
-    flash.rect(0, 0, width, height).fill({ color, alpha: 0.08 });
+    flash.rect(0, 0, width, height).fill({ color: 0xffffff, alpha: 0.24 });
+    flash.rect(0, 0, width, height).fill({ color, alpha: 0.14 });
     flash.blendMode = 'add';
     this.uiOverlay.addChild(flash);
 
     let elapsed = 0;
-    const duration = 360;
+    const duration = 520;
     const ticker = (delta) => {
       elapsed += delta.deltaTime * 16.67;
       const t = Math.min(1, elapsed / duration);
@@ -7157,12 +7157,14 @@ export class PlayScene {
     const baseColor = Number.isFinite(color) ? color : 0xffff33;
     const seedText = String(type || boss?.profile?.id || 'boss');
     const seed = [...seedText].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const palette = [baseColor, 0xfff066, 0xff6633, 0x61f6ff, 0xffffff];
-    const burstCount = 7 + (seed % 3);
+    const palette = [baseColor, 0xfff066, 0xff6633, 0xff3d7f, 0x61f6ff, 0x8cfffb, 0xffffff];
+    const burstCount = 11 + (seed % 5);
+    const ringCount = 3 + (seed % 3);
 
     this.createBossDeathFlash(baseColor);
-    this.screenShake?.shake(18, 28);
+    this.screenShake?.shake(22, 34);
     AudioManager.playSfx('boss_explode', { force: true, volume: 1.0, minIntervalMs: 0 });
+    AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.54, minIntervalMs: 0 });
 
     if (!this.particleManager) return;
     if (!boss?.defeatPresentationAt) {
@@ -7172,11 +7174,18 @@ export class PlayScene {
     }
     this.triggerShockwave(bossX, bossY, baseColor);
 
+    for (let r = 0; r < ringCount; r += 1) {
+      this.scheduleBossDeathFx(() => {
+        const ringColor = palette[(seed + r * 2) % palette.length];
+        this.triggerShockwave(bossX, bossY, ringColor);
+      }, 120 + r * 150);
+    }
+
     for (let i = 0; i < burstCount; i += 1) {
-      const delay = 80 + i * 68 + (i % 2) * 26;
+      const delay = 70 + i * 62 + (i % 2) * 34;
       const angle = ((Math.PI * 2 * i) / burstCount) + (seed % 11) * 0.13;
-      const spreadX = width * (0.055 + ((seed + i) % 4) * 0.018);
-      const spreadY = height * (0.028 + ((seed + i * 3) % 4) * 0.012);
+      const spreadX = width * (0.06 + ((seed + i) % 5) * 0.018);
+      const spreadY = height * (0.034 + ((seed + i * 3) % 5) * 0.013);
       const x = Math.max(42, Math.min(width - 42, bossX + Math.cos(angle) * spreadX));
       const y = Math.max(76, Math.min(height * 0.56, bossY + Math.sin(angle) * spreadY));
       const burstColor = palette[(seed + i) % palette.length];
@@ -7188,7 +7197,7 @@ export class PlayScene {
           this.triggerShockwave(x, y, burstColor);
         }
         if (i % 3 === 0) {
-          this.screenShake?.shake(5, 12);
+          this.screenShake?.shake(6, 14);
           AudioManager.playSfx('explosionCrunch', { volume: 0.62, minIntervalMs: 60 });
         }
       }, delay);
@@ -7243,7 +7252,7 @@ export class PlayScene {
     AudioManager.playMusicContext('victory', { resetPlaylist: true });
     if (type === 'BONUS_CORE') AudioManager.playSfx('pickup', { force: true, volume: 0.9 });
     else if (type === 'ICON_192') AudioManager.playSfx('ui_open', { force: true, volume: 0.8 });
-    else AudioManager.playSfx('powerup', { force: true, volume: 0.8 });
+    else AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.38, minIntervalMs: 300 });
     console.log(`[BossCelebration] level=${level} type=${type} fired=true repairDelta=${repairDelta}`);
   }
 
