@@ -4732,10 +4732,9 @@ export class PlayScene {
         livesBonus: Number(livesBonus || 0).toLocaleString('en-US')
       })
       : translateText('THE CABINET HAS FILED A COMPLAINT. KEEP FLYING.');
-    const subtitleCopy = [sectorLine, bonusLine].join('\n');
-    const subtitle = createText(subtitleCopy, {
+    const sectorText = createText(sectorLine, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 15 : 18,
+      fontSize: compact ? 14 : 18,
       fill: '#9cfbff',
       stroke: '#001016',
       strokeThickness: 3,
@@ -4743,15 +4742,31 @@ export class PlayScene {
       align: 'center',
       wordWrap: true,
       wordWrapWidth: cardWidth - 70,
-      lineHeight: compact ? 18 : 22
+      lineHeight: compact ? 16 : 21
     });
-    subtitle.anchor.set(0.5);
-    subtitle.y = compact ? 48 : 58;
-    card.addChild(subtitle);
+    sectorText.anchor.set(0.5);
+    sectorText.y = compact ? 32 : 38;
+    card.addChild(sectorText);
+
+    const bonusText = createText(bonusLine, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 12 : 16,
+      fill: '#9cfbff',
+      stroke: '#001016',
+      strokeThickness: 3,
+      fontWeight: '900',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: cardWidth - 84,
+      lineHeight: compact ? 14 : 18
+    });
+    bonusText.anchor.set(0.5);
+    bonusText.y = compact ? 54 : 64;
+    card.addChild(bonusText);
 
     const warning = createText(translateText('STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 14 : 17,
+      fontSize: compact ? 12 : 15,
       fill: '#fff3a2',
       stroke: '#160208',
       strokeThickness: 3,
@@ -4759,10 +4774,10 @@ export class PlayScene {
       align: 'center',
       wordWrap: true,
       wordWrapWidth: cardWidth - 72,
-      lineHeight: compact ? 17 : 20
+      lineHeight: compact ? 14 : 18
     });
     warning.anchor.set(0.5);
-    warning.y = cardHeight / 2 - (compact ? 40 : 44);
+    warning.y = cardHeight / 2 - (compact ? 28 : 32);
     card.addChild(warning);
 
     return card;

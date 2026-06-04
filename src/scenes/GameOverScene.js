@@ -102,6 +102,8 @@ export class GameOverScene {
     this.retryButton = null;
     this.retryButtonBg = null;
     this.retryButtonGlow = null;
+    this.retryButtonEnergy = null;
+    this.retryButtonSheen = null;
     this.retryButtonLabel = null;
     this.retryButtonHint = null;
     this.retryButtonWidth = 0;
@@ -433,6 +435,13 @@ export class GameOverScene {
     this.container.addChild(this.nameDisplay);
 
     const smallSize = getResponsiveFontSize(layout, 'small');
+    const levelVisible = this.levelText?.visible !== false;
+    const unlockVisible = this.unlockText?.visible !== false;
+    const nextGoalVisible = Boolean(this.nextGoalGroup?.visible);
+    const commentVisible = this.comment?.visible !== false;
+    const leaderboardStatusVisible = this.leaderboardStatusText?.visible !== false;
+    const promptVisible = this.promptText?.visible !== false;
+    const nameVisible = this.nameDisplay?.visible !== false;
     this.instructions = createText(this.getInstructionsText(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: smallSize,
@@ -874,6 +883,13 @@ export class GameOverScene {
     const promptSize = layout.isMobile ? 18 : 20;
     const nameSize = layout.isMobile ? 22 : 26;
     const smallSize = getResponsiveFontSize(layout, 'small');
+    const levelVisible = this.levelText?.visible !== false;
+    const unlockVisible = this.unlockText?.visible !== false;
+    const nextGoalVisible = Boolean(this.nextGoalGroup?.visible);
+    const commentVisible = this.comment?.visible !== false;
+    const leaderboardStatusVisible = this.leaderboardStatusText?.visible !== false;
+    const promptVisible = this.promptText?.visible !== false;
+    const nameVisible = this.nameDisplay?.visible !== false;
 
     this.title.style.fontSize = titleSize;
     const titleStroke = this.globalQualified ? '#4c2400' : '#042033';
@@ -936,15 +952,15 @@ export class GameOverScene {
     // Use measured text heights so extra unlock/rank lines cannot collide.
     const titleHeight = Math.max(titleSize * 1.2, this.title.height || 0);
     const scoreHeight = Math.max(scoreSize * 1.2, this.scoreText.height || 0);
-    const levelHeight = Math.max(levelSize * 1.2, this.levelText.height || 0);
+    const levelHeight = levelVisible ? Math.max(levelSize * 1.2, this.levelText.height || 0) : 0;
     const unlockRevealVisible = Boolean(this.shipUnlockReveal?.visible);
     const unlockRevealHeight = unlockRevealVisible ? (layout.isMobile ? 48 : 62) : 0;
-    const unlockHeight = Math.max(unlockSize * 1.3, this.unlockText.height || 0) + unlockRevealHeight;
-    const nextGoalHeight = this.nextGoalGroup?.visible ? Math.max(this.nextGoalGroup.height || 0, layout.isMobile ? 32 : 38) : 0;
-    const commentHeight = Math.max(bodySize * 1.4, this.comment.height || 0);
-    const leaderboardStatusHeight = Math.max(leaderboardStatusSize * 1.5, this.leaderboardStatusText.height || 0);
-    const promptHeight = Math.max(promptSize * 1.2, this.promptText.height || 0);
-    const nameHeight = Math.max(nameSize * 1.2, this.nameDisplay.height || 0);
+    const unlockHeight = unlockVisible ? Math.max(unlockSize * 1.3, this.unlockText.height || 0) + unlockRevealHeight : 0;
+    const nextGoalHeight = nextGoalVisible ? Math.max(this.nextGoalGroup.height || 0, layout.isMobile ? 32 : 38) : 0;
+    const commentHeight = commentVisible ? Math.max(bodySize * 1.4, this.comment.height || 0) : 0;
+    const leaderboardStatusHeight = leaderboardStatusVisible ? Math.max(leaderboardStatusSize * 1.5, this.leaderboardStatusText.height || 0) : 0;
+    const promptHeight = promptVisible ? Math.max(promptSize * 1.2, this.promptText.height || 0) : 0;
+    const nameHeight = nameVisible ? Math.max(nameSize * 1.2, this.nameDisplay.height || 0) : 0;
     const retryHeight = this.retryButtonHeight || (layout.isMobile ? 58 : 66);
     const leaderboardVisible = this.shouldShowLeaderboardButton();
     const leaderboardHeight = leaderboardVisible ? (this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48)) : 0;
@@ -976,38 +992,51 @@ export class GameOverScene {
       this.title.style.fontSize = fittedSize;
       this.title.style.lineHeight = Math.round(fittedSize * 1.08);
     }
-    this.title.y = placeCenteredElement(this.title, spacing * 0.5, titleHeight);
+    const titleSpacingAfter = this.state === 'runback' && this.globalPlacement?.qualified
+      ? (layout.isMobile ? 14 : 26)
+      : spacing * 0.5;
+    this.title.y = placeCenteredElement(this.title, titleSpacingAfter, titleHeight);
 
     this.scoreText.x = width / 2;
     this.scoreText.y = placeCenteredElement(this.scoreText, spacing * 0.6, scoreHeight);
 
-    this.levelText.x = width / 2;
-    this.levelText.y = placeCenteredElement(this.levelText, sectionGap, levelHeight);
+    if (levelVisible) {
+      this.levelText.x = width / 2;
+      this.levelText.y = placeCenteredElement(this.levelText, sectionGap, levelHeight);
+    }
 
-    this.unlockText.x = width / 2;
-    this.unlockText.y = placeCenteredElement(this.unlockText, spacing, unlockHeight);
+    if (unlockVisible) {
+      this.unlockText.x = width / 2;
+      this.unlockText.y = placeCenteredElement(this.unlockText, spacing, unlockHeight);
+    }
 
     if (unlockRevealVisible) {
       this.shipUnlockReveal.x = width / 2;
       this.shipUnlockReveal.y = placeCenteredElement(this.shipUnlockReveal, spacing * 0.5, unlockRevealHeight);
     }
 
-    if (this.nextGoalGroup?.visible) {
+    if (nextGoalVisible) {
       this.nextGoalGroup.x = width / 2;
       this.nextGoalGroup.y = placeCenteredElement(this.nextGoalGroup, spacing, nextGoalHeight);
     }
 
-    this.comment.x = width / 2;
-    this.comment.y = placeCenteredElement(this.comment, spacing, commentHeight);
+    if (commentVisible) {
+      this.comment.x = width / 2;
+      this.comment.y = placeCenteredElement(this.comment, spacing, commentHeight);
+    }
 
-    this.leaderboardStatusText.x = width / 2;
-    this.leaderboardStatusText.y = placeCenteredElement(this.leaderboardStatusText, spacing * 0.8, leaderboardStatusHeight);
+    if (leaderboardStatusVisible) {
+      this.leaderboardStatusText.x = width / 2;
+      this.leaderboardStatusText.y = placeCenteredElement(this.leaderboardStatusText, spacing * 0.8, leaderboardStatusHeight);
+    }
 
-    this.promptText.x = width / 2;
-    this.promptText.y = placeCenteredElement(this.promptText, spacing, promptHeight);
+    if (promptVisible) {
+      this.promptText.x = width / 2;
+      this.promptText.y = placeCenteredElement(this.promptText, spacing, promptHeight);
+    }
 
     this.notQualifiedText.x = width / 2;
-    this.notQualifiedText.y = this.promptText.y;
+    this.notQualifiedText.y = promptVisible ? this.promptText.y : stackY;
 
     addStackGap(this.state === 'runback' ? (layout.isMobile ? 22 : 36) : (layout.isMobile ? 8 : 18));
     this.retryButton.x = width / 2;
@@ -1019,8 +1048,10 @@ export class GameOverScene {
       this.leaderboardButton.y = leaderboardVisible ? placeCenteredElement(this.leaderboardButton, spacing * 0.8, leaderboardHeight) : this.retryButton.y;
     }
 
-    this.nameDisplay.x = width / 2;
-    this.nameDisplay.y = stackY + nameHeight / 2;
+    if (nameVisible) {
+      this.nameDisplay.x = width / 2;
+      this.nameDisplay.y = stackY + nameHeight / 2;
+    }
 
     this.instructions.x = width / 2;
     this.instructions.y = height - safeMargin.bottom - (layout.isMobile ? 32 : 40);
@@ -1034,6 +1065,8 @@ export class GameOverScene {
 
     this.retryButtonGlow = new PIXI.Graphics();
     this.retryButtonBg = new PIXI.Graphics();
+    this.retryButtonEnergy = new PIXI.Graphics();
+    this.retryButtonSheen = new PIXI.Graphics();
 
     this.retryButtonLabel = createText('ONE MORE RUN', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -1060,7 +1093,14 @@ export class GameOverScene {
     });
     this.retryButtonHint.anchor.set(0.5);
 
-    this.retryButton.addChild(this.retryButtonGlow, this.retryButtonBg, this.retryButtonLabel, this.retryButtonHint);
+    this.retryButton.addChild(
+      this.retryButtonGlow,
+      this.retryButtonBg,
+      this.retryButtonEnergy,
+      this.retryButtonSheen,
+      this.retryButtonLabel,
+      this.retryButtonHint
+    );
     this.retryButton.on('pointerdown', () => {
       this.setInputDevice('keyboard');
       this.handlePrimaryCtaPress();
@@ -1093,34 +1133,87 @@ export class GameOverScene {
 
     const frameColor = config.mode === 'restart' ? 0xffd75f : 0x00ffff;
     const glowColor = config.mode === 'restart' ? 0xffc94a : 0x37f5ff;
-    const pulse = config.runback ? (0.5 + Math.sin(Date.now() * 0.006) * 0.5) : 0;
+    const now = Date.now();
+    const pulse = config.runback ? (0.5 + Math.sin(now * 0.006) * 0.5) : 0;
+    const fastPulse = config.runback ? (0.5 + Math.sin(now * 0.017) * 0.5) : 0;
+    const orbit = config.runback ? (now * 0.0024) % (Math.PI * 2) : 0;
+    const drawArc = (target, radiusX, radiusY, start, length, color, alpha, width) => {
+      const steps = 18;
+      for (let step = 0; step < steps; step += 1) {
+        const t0 = start + (length * step) / steps;
+        const t1 = start + (length * (step + 1)) / steps;
+        target.moveTo(Math.cos(t0) * radiusX, Math.sin(t0) * radiusY);
+        target.lineTo(Math.cos(t1) * radiusX, Math.sin(t1) * radiusY);
+      }
+      target.stroke({ color, width, alpha });
+    };
 
     this.retryButtonGlow.clear();
-    this.retryButtonGlow.roundRect(-halfWidth - 12, -halfHeight - 8, buttonWidth + 24, buttonHeight + 16, radius + 4);
-    this.retryButtonGlow.fill({ color: glowColor, alpha: config.disabled ? 0.08 : config.runback ? 0.28 + pulse * 0.16 : 0.18 });
-    this.retryButtonGlow.roundRect(-halfWidth - 5, -halfHeight - 4, buttonWidth + 10, buttonHeight + 8, radius + 2);
-    this.retryButtonGlow.stroke({ color: 0x00ffff, width: config.runback ? 4 : 2, alpha: config.disabled ? 0.2 : config.runback ? 0.52 + pulse * 0.22 : 0.42 });
+    this.retryButtonGlow.roundRect(-halfWidth - 18, -halfHeight - 14, buttonWidth + 36, buttonHeight + 28, radius + 9);
+    this.retryButtonGlow.fill({ color: glowColor, alpha: config.disabled ? 0.08 : config.runback ? 0.34 + pulse * 0.2 : 0.18 });
+    this.retryButtonGlow.roundRect(-halfWidth - 8, -halfHeight - 7, buttonWidth + 16, buttonHeight + 14, radius + 4);
+    this.retryButtonGlow.stroke({ color: 0xffffff, width: config.runback ? 3.8 : 2, alpha: config.disabled ? 0.2 : config.runback ? 0.5 + pulse * 0.26 : 0.42 });
+    if (config.runback && !config.disabled) {
+      this.retryButtonGlow.roundRect(-halfWidth - 27, -halfHeight - 22, buttonWidth + 54, buttonHeight + 44, radius + 13);
+      this.retryButtonGlow.stroke({ color: glowColor, width: 8, alpha: 0.11 + pulse * 0.09 });
+    }
 
     this.retryButtonBg.clear();
     this.retryButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
-    this.retryButtonBg.fill({ color: 0x091523, alpha: 0.94 });
+    this.retryButtonBg.fill({ color: config.runback ? 0x071726 : 0x091523, alpha: 0.96 });
     this.retryButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
-    this.retryButtonBg.stroke({ color: frameColor, width: 3, alpha: config.disabled ? 0.55 : 0.96 });
+    this.retryButtonBg.stroke({ color: frameColor, width: config.runback ? 4 : 3, alpha: config.disabled ? 0.55 : 0.98 });
     this.retryButtonBg.rect(-halfWidth + 16, -halfHeight + 7, buttonWidth - 32, 3);
-    this.retryButtonBg.fill({ color: 0x00ffff, alpha: config.disabled ? 0.22 : 0.5 });
+    this.retryButtonBg.fill({ color: 0x00ffff, alpha: config.disabled ? 0.22 : config.runback ? 0.72 : 0.5 });
     this.retryButtonBg.rect(-halfWidth + 16, halfHeight - 10, buttonWidth - 32, 2);
-    this.retryButtonBg.fill({ color: frameColor, alpha: config.disabled ? 0.2 : 0.46 });
+    this.retryButtonBg.fill({ color: frameColor, alpha: config.disabled ? 0.2 : config.runback ? 0.68 : 0.46 });
+
+    this.retryButtonEnergy?.clear();
+    this.retryButtonSheen?.clear();
+    if (config.runback && !config.disabled && this.retryButtonEnergy && this.retryButtonSheen) {
+      this.retryButtonEnergy.blendMode = 'add';
+      this.retryButtonSheen.blendMode = 'add';
+      drawArc(this.retryButtonEnergy, halfWidth + 12, halfHeight + 9, orbit, Math.PI * 0.48, 0xfff3a2, 0.82, 5.5);
+      drawArc(this.retryButtonEnergy, halfWidth + 12, halfHeight + 9, orbit + Math.PI, Math.PI * 0.48, 0x37f5ff, 0.74, 5);
+      drawArc(this.retryButtonEnergy, halfWidth + 22, halfHeight + 17, -orbit * 0.84, Math.PI * 0.28, 0xffffff, 0.36, 3);
+      drawArc(this.retryButtonEnergy, halfWidth + 22, halfHeight + 17, Math.PI - orbit * 0.84, Math.PI * 0.28, 0xff55d9, 0.32, 3);
+
+      const sweepWidth = Math.max(76, buttonWidth * 0.18);
+      const sweepX = -halfWidth - sweepWidth + ((now * 0.28) % (buttonWidth + sweepWidth * 2));
+      const sheenLeft = Math.max(-halfWidth + 14, sweepX);
+      const sheenRight = Math.min(halfWidth - 14, sweepX + sweepWidth);
+      const visibleSheenWidth = sheenRight - sheenLeft;
+      if (visibleSheenWidth > 16) {
+        this.retryButtonSheen.moveTo(sheenLeft, -halfHeight + 10);
+        this.retryButtonSheen.lineTo(sheenLeft + visibleSheenWidth * 0.52, -halfHeight + 10);
+        this.retryButtonSheen.lineTo(sheenRight, halfHeight - 10);
+        this.retryButtonSheen.lineTo(sheenLeft + visibleSheenWidth * 0.48, halfHeight - 10);
+        this.retryButtonSheen.closePath();
+        this.retryButtonSheen.fill({ color: 0xffffff, alpha: 0.12 + fastPulse * 0.06 });
+      }
+
+      const tickCount = 10;
+      for (let i = 0; i < tickCount; i += 1) {
+        const x = -halfWidth + 30 + i * ((buttonWidth - 60) / Math.max(1, tickCount - 1));
+        const tickAlpha = 0.28 + Math.sin(now * 0.01 + i * 0.7) * 0.16;
+        this.retryButtonEnergy.rect(x - 3, -halfHeight - 6, 6, 12);
+        this.retryButtonEnergy.fill({ color: i % 2 ? 0xfff3a2 : 0x37f5ff, alpha: tickAlpha });
+      }
+    }
 
     if (this.retryButtonLabel) {
       this.retryButtonLabel.text = config.label;
       this.retryButtonLabel.style.fontSize = config.runback ? (layout.isMobile ? 30 : 44) : (layout.isMobile ? 24 : 30);
-      this.retryButtonLabel.style.fill = config.mode === 'restart' ? '#fff3a2' : '#d9fdff';
+      this.retryButtonLabel.style.fill = config.mode === 'restart' ? '#fff3a2' : '#f8ffff';
       this.retryButtonLabel.style.dropShadowColor = config.mode === 'restart' ? '#ffc94a' : '#00ffff';
+      this.retryButtonLabel.style.dropShadowBlur = config.runback ? 10 + pulse * 8 : 6;
       this.retryButtonLabel.y = config.runback ? (layout.isMobile ? -12 : -16) : (layout.isMobile ? -9 : -10);
+      this.retryButtonLabel.scale.set(config.runback ? 1 + pulse * 0.025 : 1);
     }
     if (this.retryButtonHint) {
       this.retryButtonHint.text = config.hint;
       this.retryButtonHint.style.fontSize = config.runback ? (layout.isMobile ? 12 : 15) : (layout.isMobile ? 11 : 13);
+      this.retryButtonHint.style.fill = config.runback ? '#c8ffff' : '#9cfbff';
       this.retryButtonHint.y = config.runback ? (layout.isMobile ? 20 : 24) : (layout.isMobile ? 15 : 17);
     }
   }
@@ -1541,8 +1634,10 @@ export class GameOverScene {
       this.ceremonyFrame.fill({ color: 0x020914, alpha: 0.52 });
       this.ceremonyFrame.roundRect(x, y, panelWidth, panelHeight, 18);
       this.ceremonyFrame.stroke({ color: accent, alpha: 0.82, width: this.globalQualified ? 3 : 2 });
-      this.ceremonyFrame.rect(x + 20, y + 12, panelWidth - 40, 3);
-      this.ceremonyFrame.fill({ color: accent, alpha: 0.54 });
+      if (!(this.state === 'runback' && this.globalPlacement?.qualified)) {
+        this.ceremonyFrame.rect(x + 20, y + 12, panelWidth - 40, 3);
+        this.ceremonyFrame.fill({ color: accent, alpha: 0.54 });
+      }
       this.ceremonyFrame.rect(x + 20, y + panelHeight - 15, panelWidth - 40, 2);
       this.ceremonyFrame.fill({ color: accent, alpha: 0.38 });
     }
@@ -1646,6 +1741,9 @@ export class GameOverScene {
     this.updateCeremonyEffects();
     if (this.shipUnlockReveal?.visible) {
       this.drawShipUnlockReveal(createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout()));
+    }
+    if (this.state === 'runback' && this.retryButton?.visible) {
+      this.drawRetryButton(createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout()));
     }
     const nav = this.gamepadNavigator.update();
     if (nav.connected && nav.active) {
@@ -2127,12 +2225,17 @@ export class GameOverScene {
 
     const { width, height } = this.game.app.screen;
     const compact = width < 720;
-    const bannerWidth = Math.min(width * 0.86, compact ? 430 : 520);
-    const bannerHeight = compact ? 70 : 78;
+    const celebrationMode = Boolean(this.globalPlacement?.qualified || this.globalQualified);
+    const bannerWidth = Math.min(width * (celebrationMode ? 0.72 : 0.86), compact ? 390 : (celebrationMode ? 420 : 520));
+    const bannerHeight = compact ? (celebrationMode ? 56 : 70) : (celebrationMode ? 58 : 78);
     const banner = new PIXI.Container();
     banner.zIndex = 60;
-    banner.x = width / 2;
-    banner.y = Math.max(52, height * 0.09);
+    banner.x = celebrationMode && !compact
+      ? width - bannerWidth / 2 - 28
+      : width / 2;
+    banner.y = celebrationMode
+      ? Math.max(compact ? 36 : 40, height * 0.055)
+      : Math.max(52, height * 0.09);
     banner.alpha = 0;
 
     const bg = new PIXI.Graphics();
@@ -2146,7 +2249,7 @@ export class GameOverScene {
 
     const title = createText('ACHIEVEMENT UNLOCKED', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 14 : 16,
+      fontSize: compact ? (celebrationMode ? 11 : 14) : (celebrationMode ? 12 : 16),
       fontWeight: 'bold',
       fill: '#fff3a2',
       stroke: '#031323',
@@ -2154,12 +2257,12 @@ export class GameOverScene {
       align: 'center'
     });
     title.anchor.set(0.5);
-    title.y = compact ? -14 : -17;
+    title.y = compact ? (celebrationMode ? -11 : -14) : (celebrationMode ? -12 : -17);
     banner.addChild(title);
 
     const name = createText(achievement.name, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 18 : 22,
+      fontSize: compact ? (celebrationMode ? 15 : 18) : (celebrationMode ? 17 : 22),
       fontWeight: 'bold',
       fill: '#9cfbff',
       stroke: '#031323',
@@ -2169,7 +2272,7 @@ export class GameOverScene {
       wordWrapWidth: bannerWidth - 44
     });
     name.anchor.set(0.5);
-    name.y = compact ? 13 : 15;
+    name.y = compact ? (celebrationMode ? 10 : 13) : (celebrationMode ? 11 : 15);
     banner.addChild(name);
 
     this.container.addChild(banner);
@@ -2393,6 +2496,7 @@ export class GameOverScene {
     this.runbackStartedAt = Date.now();
     this.ctaVoicePlayed = false;
     this.selectedCtaLine = this.selectRunbackCtaLine();
+    const globalCelebration = Boolean(this.globalPlacement?.qualified);
 
     if (this.title) {
       this.title.text = this.getRunbackTitle();
@@ -2410,6 +2514,19 @@ export class GameOverScene {
     if (this.comment) {
       this.comment.text = this.getRunbackComment();
       this.comment.style.fill = this.globalPlacement?.qualified ? '#ffeeb0' : '#d8e6ff';
+      this.comment.visible = true;
+    }
+    if (this.levelText) {
+      this.levelText.visible = !globalCelebration;
+    }
+    if (this.unlockText) {
+      this.unlockText.visible = !globalCelebration;
+    }
+    if (this.shipUnlockReveal) {
+      this.shipUnlockReveal.visible = !globalCelebration && Boolean(this.shipUnlockReveal.visible);
+    }
+    if (this.nextGoalGroup) {
+      this.nextGoalGroup.visible = !globalCelebration && Boolean(this.nextGoal?.text);
     }
     if (this.promptText) {
       this.promptText.visible = true;
