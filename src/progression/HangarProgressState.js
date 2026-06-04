@@ -13,7 +13,7 @@ import {
 export const HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const LEGACY_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
 export const HANGAR_PROGRESS_VERSION = 1;
-export const HANGAR_UNLOCK_TUNING_VERSION = 2;
+export const HANGAR_UNLOCK_TUNING_VERSION = 3;
 
 function storage() {
   try {
@@ -109,7 +109,7 @@ export function normalizeHangarProgress(raw = {}) {
   const legacy = readLegacyUnlockProgress();
   const previousTuningVersion = floor(raw.unlockTuningVersion);
   const rawPilotXp = floor(raw.pilotXp);
-  const pilotXp = previousTuningVersion > 0 && previousTuningVersion < HANGAR_UNLOCK_TUNING_VERSION
+  const pilotXp = previousTuningVersion > 0 && previousTuningVersion < 2
     ? Math.floor(rawPilotXp * 0.25)
     : rawPilotXp;
   const pilotRank = Math.min(MAX_RANK_INDEX, getRankFromPilotXp(pilotXp));

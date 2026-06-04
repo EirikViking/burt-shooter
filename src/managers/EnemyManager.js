@@ -28,6 +28,7 @@ import { WAVE_TACTIC_VARIANTS } from '../config/WaveTacticVariants.js';
 
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
+const WAVE_OBJECTIVE_FAILSAFE_MS = 45000;
 
 const BASE_WAVE_TACTICS = [
   {
@@ -200,6 +201,8 @@ export class EnemyManager {
     // TASK 3: Wave cleanup timer to prevent stalls
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE'; // NONE, SLOWING, CLEARING
+    this.waveActiveTimer = 0;
+    this.waveObjectiveFailsafeTriggered = false;
 
     // WAVE FIX: Wave ending state to prevent bonus drone spawning
     this.waveEnding = false;
@@ -259,6 +262,7 @@ export class EnemyManager {
     this.waveEnding = false;
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE';
+    this.resetWaveWatchdog();
 
     // BOSS FIX: Reset boss state
     this.boss = null;
@@ -340,6 +344,7 @@ export class EnemyManager {
     this.waveEnding = false;
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE';
+    this.resetWaveWatchdog();
   }
 
   pickMarketingDebugLevel() {
@@ -735,6 +740,31 @@ export class EnemyManager {
     return enemy.kind !== 'bonus_drone' && enemy.kind !== 'boss';
   }
 
+  resetWaveWatchdog() {
+    this.waveActiveTimer = 0;
+    this.waveObjectiveFailsafeTriggered = false;
+  }
+
+  maybeClearStalledWave(objectiveCount = this.getObjectiveEnemyCount()) {
+    if (objectiveCount <= 0 || this.waveEnding || this.waveObjectiveFailsafeTriggered) return false;
+    const failsafeMs = BalanceConfig.difficulty.waveObjectiveFailsafeMs || WAVE_OBJECTIVE_FAILSAFE_MS;
+    if (this.waveActiveTimer < failsafeMs) return false;
+
+    this.waveObjectiveFailsafeTriggered = true;
+    const objectiveEnemies = this.enemies.filter(enemy => this.isObjectiveEnemy(enemy));
+    const summary = objectiveEnemies
+      .slice(0, 5)
+      .map(enemy => `${enemy.kind || enemy.type || 'enemy'}@${Math.round(enemy.x || 0)},${Math.round(enemy.y || 0)}`)
+      .join(' | ');
+    console.warn(`[WaveStallWatchdog] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} objectiveAlive=${objectiveCount} activeMs=${Math.round(this.waveActiveTimer)} clearing stuck wave ${summary}`);
+    this.forceClearAllEnemies();
+    this.waveEnding = true;
+    this.cleanupTimer = 0;
+    this.cleanupPhase = 'NONE';
+    this.game?.scenes?.play?.clearEnemyBullets?.('wave_stall_watchdog');
+    return true;
+  }
+
   // WAVE FIX: Count objective enemies only
   getObjectiveEnemyCount() {
     return this.enemies.filter(e => this.isObjectiveEnemy(e)).length;
@@ -764,6 +794,9 @@ export class EnemyManager {
     // 1. Update State Machine
     switch (this.state) {
       case 'WAVE_ACTIVE':
+        if (!this.waveEnding) {
+          this.waveActiveTimer += Math.max(0, Math.min(1000, delta * 16.67));
+        }
         // WAVE FIX: Check objective enemies only, not bonus drones
         const objectiveCount = this.getObjectiveEnemyCount();
         if (objectiveCount === 0 && !this.waveEnding) {
@@ -785,6 +818,8 @@ export class EnemyManager {
           // Immediately start cleanup phase
           this.cleanupTimer = 0;
           this.cleanupPhase = 'SLOWING';
+        } else if (objectiveCount > 0 && !this.waveEnding) {
+          this.maybeClearStalledWave(objectiveCount);
         }
 
         // WAVE FIX: Run cleanup during wave ending
@@ -1121,6 +1156,7 @@ export class EnemyManager {
       return;
     }
 
+    this.resetWaveWatchdog();
     const { count, formation, type } = config;
     let tactic = { ...this.resolveWaveTactic(config) };
     const multiEliteIds = Array.isArray(config.multiEliteMiddleShipIds) ? config.multiEliteMiddleShipIds : [];

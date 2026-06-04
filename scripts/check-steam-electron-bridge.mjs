@@ -87,7 +87,9 @@ function createFakeSteamNative({ initResult = true, uploadResult = null, rawUplo
             steamId: '76561198000000001',
             globalRank: 1,
             score: 44000,
-            details: [8, 3, 240, 120, 2, 19]
+            level: 1,
+            levelReached: 1,
+            details: '0x0800000003000000f0000000780000000200000013000000'
           },
           {
             steamId: '76561198000000002',
@@ -173,6 +175,7 @@ async function checkNativeBridgeHappyPath() {
   assert.equal(globalScores[0].playerName, 'Steam Native Ace');
   assert.equal(globalScores[0].isCurrentPlayer, true);
   assert.equal(globalScores[0].metadata.levelReached, 8);
+  assert.equal(globalScores[0].level, 8, 'Steam hex details must override stale LV1 fields');
 
   const friendsScores = await bridge.getFriendsScores({
     leaderboardName: STEAM_LEADERBOARD_NAME,

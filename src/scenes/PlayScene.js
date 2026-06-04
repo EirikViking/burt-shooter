@@ -6839,7 +6839,7 @@ export class PlayScene {
     emblem.addChild(artMask);
 
     const bossIndex = Math.max(0, Math.min(49, (Number(profile?.index) || Number(this.game?.level) || 1) - 1));
-    const src = AssetManifest.generated?.vfx?.bossWarningEmblems?.[bossIndex] || AssetManifest.generated?.bosses?.[bossIndex] || null;
+    const src = AssetManifest.generated?.vfx?.bossWarningEmblems?.[bossIndex] || null;
     const addFallbackGlyph = () => {
       if (emblem.destroyed) return;
       const glyph = new PIXI.Graphics();
@@ -6865,6 +6865,8 @@ export class PlayScene {
       }
       const sprite = new PIXI.Sprite(texture);
       sprite.label = 'boss_warning_boss_art';
+      sprite.__bossWarningSource = src || texture?.source?.resource?.src || texture?.textureCacheIds?.[0] || 'cached_boss_warning_emblem';
+      sprite.__bossWarningMasked = true;
       sprite.anchor.set(0.5);
       const tw = texture.width || 1;
       const th = texture.height || 1;
@@ -6872,11 +6874,12 @@ export class PlayScene {
       sprite.scale.set(scale);
       sprite.x = 0;
       sprite.y = 0;
+      sprite.mask = artMask;
       emblem.addChildAt(sprite, Math.min(2, emblem.children.length));
       return true;
     };
 
-    const cached = this.bossWarningEmblemTextures?.[bossIndex] || this.bossWarningArtTextures?.[bossIndex] || null;
+    const cached = this.bossWarningEmblemTextures?.[bossIndex] || null;
     if (!installTexture(cached)) {
       if (src) {
         PIXI.Assets.load({

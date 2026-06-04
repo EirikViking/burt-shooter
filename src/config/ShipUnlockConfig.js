@@ -92,14 +92,14 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_13',
-    label: 'Defeat 24 total bosses',
-    requirements: { totalBossesDefeated: 24 },
+    label: 'Defeat 24 total bosses and reach pilot rank 12',
+    requirements: { totalBossesDefeated: 24, pilotRank: 12 },
     legacyLevel: 26
   },
   {
     shipId: 'nova_ship_14',
-    label: 'Discover 90 Threat Codex entries',
-    requirements: { codexDiscoveries: 90 },
+    label: 'Discover 130 Threat Codex entries and reach pilot rank 12',
+    requirements: { codexDiscoveries: 130, pilotRank: 12 },
     legacyLevel: 29
   },
   {
@@ -110,8 +110,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_16',
-    label: 'Complete 3 no-hit waves or 1 no-hit sector',
-    requirementsAny: [{ noHitWaves: 3 }, { noHitSectors: 1 }],
+    label: 'Complete 8 no-hit waves and reach pilot rank 11',
+    requirements: { noHitWaves: 8, pilotRank: 11 },
     legacyLevel: 35
   },
   {
@@ -128,8 +128,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_19',
-    label: 'Survive encounters from 4 run themes',
-    requirements: { specificRunThemeSurvived: 4 },
+    label: 'Survive encounters from 5 run themes and reach pilot rank 13',
+    requirements: { specificRunThemeSurvived: 5, pilotRank: 13 },
     legacyLevel: 44
   },
   {
@@ -140,20 +140,20 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_21',
-    label: 'Reach sector 15 in overrun',
-    requirements: { bestSector: 15 },
+    label: 'Reach sector 15 in overrun and pilot rank 13',
+    requirements: { bestSector: 15, pilotRank: 13 },
     legacyLevel: 50
   },
   {
     shipId: 'nova_ship_22',
-    label: 'Discover 120 Threat Codex entries',
-    requirements: { codexDiscoveries: 120 },
+    label: 'Discover 160 Threat Codex entries and reach pilot rank 14',
+    requirements: { codexDiscoveries: 160, pilotRank: 14 },
     legacyLevel: 53
   },
   {
     shipId: 'nova_ship_23',
-    label: 'Clear the arcade run twice',
-    requirements: { runClears: 2 },
+    label: 'Clear the arcade run 3 times and reach pilot rank 14',
+    requirements: { runClears: 3, pilotRank: 14 },
     legacyLevel: 56
   },
   {
@@ -164,8 +164,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_25',
-    label: 'Clear the run and discover 145 threats',
-    requirements: { runClears: 1, codexDiscoveries: 145 },
+    label: 'Clear twice, reach rank 16, and discover 180 threats',
+    requirements: { runClears: 2, pilotRank: 16, codexDiscoveries: 180 },
     legacyLevel: 60
   }
 ]);

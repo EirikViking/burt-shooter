@@ -224,25 +224,27 @@ function validateProgression() {
     }),
     midCareer: buildHangarProfile({
       totalRuns: 10,
-      bestSector: 8,
-      bestScore: 175000,
-      pilotRank: 8,
+      bestSector: 12,
+      bestScore: 58273,
+      pilotRank: 10,
       totalBossesDefeated: 18,
-      totalWavesCleared: 45,
-      totalCodexDiscoveries: 75,
+      totalWavesCleared: 60,
+      totalCodexDiscoveries: 118,
       survivedSeconds: 900,
-      noHitWaves: 1
+      noHitWaves: 3,
+      runClears: 1,
+      runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse']
     }),
     mastery: buildHangarProfile({
       totalRuns: 50,
-      bestSector: 10,
+      bestSector: 15,
       bestScore: 550000,
       pilotRank: MAX_RANK_INDEX,
       totalBossesDefeated: 40,
       totalWavesCleared: 160,
-      totalCodexDiscoveries: 145,
-      runClears: 1,
-      noHitWaves: 5,
+      totalCodexDiscoveries: 180,
+      runClears: 3,
+      noHitWaves: 8,
       noHitSectors: 1,
       survivedSeconds: 1800,
       runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse', 'crossfire_doctrine', 'glitch_parade'],
@@ -272,11 +274,14 @@ function validateProgression() {
   for (const shipId of ['nova_ship_04', 'nova_ship_05', 'nova_ship_07', 'nova_ship_11']) {
     if (profiles.firstSession.unlockedShipIds.includes(shipId)) fail(`first-session profile should not unlock ${shipId}`);
   }
-  if (profileSummaries.midCareer.unlockedShips < 16 || profileSummaries.midCareer.unlockedShips >= 23) {
-    fail(`mid-career profile should unlock a broad but incomplete hangar, found ${profileSummaries.midCareer.unlockedShips}`);
+  if (profileSummaries.midCareer.unlockedShips < 10 || profileSummaries.midCareer.unlockedShips > 12) {
+    fail(`rank-10 codex-118 profile should unlock about 10-12 ships, found ${profileSummaries.midCareer.unlockedShips}`);
   }
-  for (const shipId of ['nova_ship_11', 'nova_ship_12', 'nova_ship_14', 'nova_ship_16', 'nova_ship_17']) {
+  for (const shipId of ['nova_ship_08', 'nova_ship_09', 'nova_ship_11', 'nova_ship_17']) {
     if (!profiles.midCareer.unlockedShipIds.includes(shipId)) fail(`mid-career profile should unlock ${shipId}`);
+  }
+  for (const shipId of ['nova_ship_14', 'nova_ship_16', 'nova_ship_19', 'nova_ship_22', 'nova_ship_23']) {
+    if (profiles.midCareer.unlockedShipIds.includes(shipId)) fail(`mid-career profile should not already unlock ${shipId}`);
   }
   if (profileSummaries.mastery.unlockedShips !== ships.length) {
     fail(`mastery profile should unlock ${ships.length}/${ships.length} ships, found ${profileSummaries.mastery.unlockedShips}`);

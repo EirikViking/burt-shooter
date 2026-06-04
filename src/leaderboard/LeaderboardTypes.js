@@ -68,30 +68,87 @@ function firstFiniteInt(values = [], fallback = 0) {
   return fallback;
 }
 
+function parseHexDetailsString(value) {
+  const text = String(value || '').trim();
+  if (!text) return [];
+  const compact = text.replace(/^0x/i, '').replace(/[^0-9a-f]/gi, '');
+  if (compact.length < 8 || compact.length % 8 !== 0) return [];
+  const details = [];
+  for (let index = 0; index + 8 <= compact.length && details.length < 64; index += 8) {
+    const chunk = compact.slice(index, index + 8);
+    const b0 = Number.parseInt(chunk.slice(0, 2), 16);
+    const b1 = Number.parseInt(chunk.slice(2, 4), 16);
+    const b2 = Number.parseInt(chunk.slice(4, 6), 16);
+    const b3 = Number.parseInt(chunk.slice(6, 8), 16);
+    if ([b0, b1, b2, b3].some(byte => !Number.isFinite(byte))) continue;
+    details.push(b0 | (b1 << 8) | (b2 << 16) | (b3 << 24));
+  }
+  return details;
+}
+
+function parseDetailsValue(value) {
+  if (value === null || value === undefined || value === '') return [];
+  if (Array.isArray(value)) return value;
+  if (ArrayBuffer.isView(value) && typeof value.length === 'number') return Array.from(value);
+  if (typeof value === 'string') {
+    const hexDetails = parseHexDetailsString(value);
+    if (hexDetails.length) return hexDetails;
+    return (value.match(/-?\d+/g) || []).map(Number);
+  }
+  if (typeof value === 'object' && Number.isFinite(Number(value.length))) {
+    return Array.from({ length: Number(value.length) }, (_, index) => value[index]);
+  }
+  return [];
+}
+
+export function readLeaderboardDetails(raw = {}) {
+  const directDetails = parseDetailsValue(raw);
+  if (directDetails.length) {
+    return directDetails
+      .map((value) => Number(value))
+      .filter(Number.isFinite)
+      .map((value) => Math.floor(value))
+      .slice(0, 64);
+  }
+  const sources = [
+    raw.details,
+    raw.scoreDetails,
+    raw.m_pDetails,
+    raw.detailsHex,
+    raw.scoreDetailsHex,
+    raw.metadata?.details,
+    raw.metadata?.scoreDetails,
+    raw.detailsMetadata?.details,
+    raw.data?.details,
+    raw.values
+  ];
+  for (const source of sources) {
+    const details = parseDetailsValue(source)
+      .map((value) => Number(value))
+      .filter(Number.isFinite)
+      .map((value) => Math.floor(value))
+      .slice(0, 64);
+    if (details.length) return details;
+  }
+  return [];
+}
+
 export function estimateLeaderboardLevelFromScore(score) {
   const normalizedScore = Math.max(0, numericInt(score, 0));
   if (normalizedScore <= 0) return 1;
   return Math.max(1, Math.min(99, Math.floor(normalizedScore / 5000) + 1));
 }
 
-export function readExplicitLeaderboardLevel(raw = {}) {
-  const details = Array.isArray(raw.details)
-    ? raw.details
-    : Array.isArray(raw.scoreDetails)
-      ? raw.scoreDetails
-      : Array.isArray(raw.m_pDetails)
-        ? raw.m_pDetails
-        : Array.isArray(raw.metadata?.details)
-          ? raw.metadata.details
-          : [];
+export function readExplicitLeaderboardLevel(raw = {}, options = {}) {
+  const details = Array.isArray(options.details) ? options.details : readLeaderboardDetails(raw);
   const explicit = firstFiniteInt([
-    raw.level,
-    raw.levelReached,
     raw.metadata?.level,
     raw.metadata?.levelReached,
     raw.detailsMetadata?.level,
     raw.detailsMetadata?.levelReached,
-    details[0]
+    details[0],
+    raw.level,
+    raw.levelReached
   ], 0);
   return explicit > 0 ? Math.max(1, explicit) : null;
 }
@@ -114,9 +171,15 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
   const score = Math.max(0, numericInt(rawScore, 0));
   if (score <= 0 && options.dropZero !== false) return null;
 
-  const explicitLevel = readExplicitLeaderboardLevel(raw);
+  const details = readLeaderboardDetails(raw);
+  let explicitLevel = readExplicitLeaderboardLevel(raw, { details });
   const fallbackLevel = estimateLeaderboardLevelFromScore(score);
-  const level = explicitLevel || readLeaderboardLevel(raw, fallbackLevel);
+  const source = String(raw.source || options.source || '').toLowerCase();
+  const steamLike = source.includes('steam') || Boolean(raw.steamId || raw.m_steamIDUser || raw.globalRank);
+  if (steamLike && explicitLevel === 1 && details.length === 0 && fallbackLevel > 1) {
+    explicitLevel = null;
+  }
+  const level = explicitLevel || fallbackLevel || readLeaderboardLevel(raw, fallbackLevel);
   const rank = rawRank != null ? Math.max(1, numericInt(rawRank, fallbackRank || 1)) : fallbackRank;
   const rankIndex = Math.max(0, Math.min(19, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
   const playerName = toPublicPilotName(
@@ -148,7 +211,8 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
     source: raw.source || options.source || 'unknown',
     isCurrentPlayer: Boolean(raw.isCurrentPlayer),
     timestamp: raw.timestamp || raw.created_at || raw.createdAt || null,
-    metadata: raw.metadata || raw.details || null,
+    metadata: raw.metadata || (details.length ? { details } : raw.details || null),
+    details,
     steamId: raw.steamId || raw.m_steamIDUser || null
   };
 }

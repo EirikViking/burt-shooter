@@ -156,6 +156,16 @@ try {
     visit(poster, texts);
     visit(play?.uiOverlay, allUiTexts);
     const hasNode = (node, label) => Boolean(node?.label === label || (node?.children || []).some((child) => hasNode(child, label)));
+    const findNode = (node, label) => {
+      if (!node) return null;
+      if (node.label === label) return node;
+      for (const child of node.children || []) {
+        const found = findNode(child, label);
+        if (found) return found;
+      }
+      return null;
+    };
+    const bossArt = findNode(poster, 'boss_warning_boss_art');
     return {
       poster: poster ? {
         x: poster.x,
@@ -163,7 +173,9 @@ try {
         alpha: poster.alpha,
         childCount: poster.children?.length || 0,
         hasEmblem: hasNode(poster, 'boss_warning_emblem'),
-        hasBossArt: hasNode(poster, 'boss_warning_boss_art')
+        hasBossArt: hasNode(poster, 'boss_warning_boss_art'),
+        bossArtMasked: Boolean(bossArt?.mask || bossArt?.__bossWarningMasked),
+        bossArtSource: bossArt?.__bossWarningSource || null
       } : null,
       texts,
       allUiTexts
@@ -175,6 +187,8 @@ try {
   assert(report.poster, 'boss warning poster missing');
   assert(report.poster.hasEmblem, 'boss warning emblem missing');
   assert(report.poster.hasBossArt === true, 'boss spawn warning should show one clipped boss portrait');
+  assert(report.poster.bossArtMasked === true, 'boss spawn warning portrait should be clipped by a PIXI mask');
+  assert(/boss-warning-emblems|cached_boss_warning_emblem/i.test(report.poster.bossArtSource || ''), `boss warning should use clean emblem art, got ${report.poster.bossArtSource}`);
   assert(report.texts.includes('BOSS INCOMING'), `boss warning title missing: ${report.texts.join(' | ')}`);
   assert(hasFunnyCaption, `funny warning caption missing: ${report.texts.join(' | ')}`);
   assert(Math.abs(report.poster.x - 640) > 130, `boss warning blocks the boss lane at x=${report.poster.x}`);

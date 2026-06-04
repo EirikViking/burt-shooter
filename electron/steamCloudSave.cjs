@@ -59,24 +59,56 @@ function backupCorruptSave(filePath) {
   }
 }
 
+function parseHexDetailsString(value) {
+  const text = String(value || '').trim();
+  if (!text) return [];
+  const compact = text.replace(/^0x/i, '').replace(/[^0-9a-f]/gi, '');
+  if (compact.length < 8 || compact.length % 8 !== 0) return [];
+  const details = [];
+  for (let index = 0; index + 8 <= compact.length && details.length < 64; index += 8) {
+    const chunk = compact.slice(index, index + 8);
+    const b0 = Number.parseInt(chunk.slice(0, 2), 16);
+    const b1 = Number.parseInt(chunk.slice(2, 4), 16);
+    const b2 = Number.parseInt(chunk.slice(4, 6), 16);
+    const b3 = Number.parseInt(chunk.slice(6, 8), 16);
+    if ([b0, b1, b2, b3].some(byte => !Number.isFinite(byte))) continue;
+    details.push(b0 | (b1 << 8) | (b2 << 16) | (b3 << 24));
+  }
+  return details;
+}
+
+function parseScoreDetails(value) {
+  if (value === null || value === undefined || value === '') return [];
+  if (Array.isArray(value)) return value;
+  if (ArrayBuffer.isView(value) && typeof value.length === 'number') return Array.from(value);
+  if (typeof value === 'string') {
+    const hexDetails = parseHexDetailsString(value);
+    if (hexDetails.length) return hexDetails;
+    return (value.match(/-?\d+/g) || []).map(Number);
+  }
+  if (typeof value === 'object' && Number.isFinite(Number(value.length))) {
+    return Array.from({ length: Number(value.length) }, (_, index) => value[index]);
+  }
+  return [];
+}
+
 function readScoreLevel(entry = {}, fallback = 1) {
-  const details = Array.isArray(entry.details)
-    ? entry.details
-    : Array.isArray(entry.scoreDetails)
-      ? entry.scoreDetails
-      : Array.isArray(entry.m_pDetails)
-        ? entry.m_pDetails
-        : Array.isArray(entry.metadata?.details)
-          ? entry.metadata.details
-          : [];
+  const details = parseScoreDetails(
+    entry.details ??
+    entry.scoreDetails ??
+    entry.m_pDetails ??
+    entry.detailsHex ??
+    entry.scoreDetailsHex ??
+    entry.metadata?.details
+  );
   for (const value of [
-    entry.level,
-    entry.levelReached,
     entry.metadata?.level,
     entry.metadata?.levelReached,
     entry.detailsMetadata?.level,
     entry.detailsMetadata?.levelReached,
-    details[0]
+    details[0],
+    entry.level,
+    entry.levelReached
   ]) {
     if (value === null || value === undefined || value === '') continue;
     const parsed = Number(value);

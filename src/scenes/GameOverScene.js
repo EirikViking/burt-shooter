@@ -31,6 +31,7 @@ import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/Ra
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
+const SUBMITTED_REPORT_MIN_MS = 4800;
 const PILOT_NAME_MAX_LENGTH = 14;
 const CONTROLLER_NAME_STORAGE_KEY = 'nova.controllerPilotName.v1';
 
@@ -120,6 +121,8 @@ export class GameOverScene {
     this.selectedCtaLine = null;
     this.ctaVoicePlayed = false;
     this.runbackStartedAt = 0;
+    this.reportShownAt = 0;
+    this.pendingRunbackReason = null;
     // HTML overlay for mobile input
     this.inputOverlay = null;
     this.inputField = null;
@@ -200,6 +203,8 @@ export class GameOverScene {
     this.selectedCtaLine = null;
     this.ctaVoicePlayed = false;
     this.runbackStartedAt = 0;
+    this.reportShownAt = Date.now();
+    this.pendingRunbackReason = null;
     this.newlyUnlockedShips = [];
     this.shipUnlockVoicePlayed = false;
     this.caretVisible = true;
@@ -458,6 +463,7 @@ export class GameOverScene {
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutScreen());
     this.layoutScreen();
+    this.reportShownAt = Date.now();
 
     this.updateNameDisplay();
     this.setupKeyboard();
@@ -542,6 +548,9 @@ export class GameOverScene {
       if (this.state === 'input') {
         return 'D-PAD/STICK: LETTER  |  LB/RB: SLOT  |  A/Y: SUBMIT  |  B: BACK';
       }
+      if (this.state === 'submitted_hold') {
+        return 'SCORE SUBMITTED...';
+      }
       if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
         return 'A: RELAUNCH  |  Y: LEADERBOARD  |  B/START: MENU';
       }
@@ -559,6 +568,9 @@ export class GameOverScene {
     }
     if (this.state === 'submitting') {
       return this.steamSubmissionMode ? 'AUTO-SUBMITTING WITH STEAM NAME' : 'SAVING SCORE...';
+    }
+    if (this.state === 'submitted_hold') {
+      return 'SCORE SUBMITTED...';
     }
     if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
       return 'ENTER / SPACE / CLICK: RELAUNCH  |  L / GAMEPAD Y: LEADERBOARD  |  ESC: MENU';
@@ -1465,6 +1477,15 @@ export class GameOverScene {
       };
     }
 
+    if (this.state === 'submitted_hold') {
+      return {
+        mode: 'submitted_hold',
+        label: 'SCORE SUBMITTED',
+        hint: 'SCORE SUBMITTED',
+        disabled: true
+      };
+    }
+
     if (this.state === 'input') {
       return {
         mode: 'submit',
@@ -1660,6 +1681,14 @@ export class GameOverScene {
         return;
       }
 
+      if (this.state === 'submitted_hold') {
+        if (isEscape) {
+          e.preventDefault();
+          this.returnToMenu();
+        }
+        return;
+      }
+
       if (isEscape) {
         e.preventDefault();
         if (this.state === 'input') {
@@ -1782,6 +1811,12 @@ export class GameOverScene {
 
   handleGamepadNavigation(nav) {
     if (this.state === 'submitting') return;
+    if (this.state === 'submitted_hold') {
+      if (nav.pressed.menu || nav.pressed.back || nav.pressed.cancel) {
+        this.returnToMenu();
+      }
+      return;
+    }
     if (this.state === 'input') {
       this.handleGamepadNameInput(nav);
       return;
@@ -2484,6 +2519,35 @@ export class GameOverScene {
     return `Score ${Number(this.finalScore || 0).toLocaleString('en-US')} | Level ${this.finalLevel || 0}`;
   }
 
+  getSubmittedReportHoldMs() {
+    const elapsed = Date.now() - (this.reportShownAt || Date.now());
+    return Math.max(0, SUBMITTED_REPORT_MIN_MS - elapsed);
+  }
+
+  enterRunbackStageAfterReportHold(reason = 'score_submitted') {
+    const remainingMs = this.getSubmittedReportHoldMs();
+    if (remainingMs <= 0) {
+      this.enterRunbackStage(reason);
+      return;
+    }
+
+    this.pendingRunbackReason = reason;
+    this.state = 'submitted_hold';
+    this.updatePromptMessage('SCORE SUBMITTED');
+    this.updateLeaderboardStatusText();
+    if (this.instructions) {
+      this.instructions.text = this.getInstructionsText();
+    }
+    this.refreshPrimaryCta();
+    this.layoutScreen();
+    this.scheduleSceneTimeout(() => {
+      if (!this.isSceneActive() || this.state !== 'submitted_hold') return;
+      const nextReason = this.pendingRunbackReason || reason;
+      this.pendingRunbackReason = null;
+      this.enterRunbackStage(nextReason);
+    }, remainingMs);
+  }
+
   enterRunbackStage(reason = 'runback') {
     if (this.state === 'runback') return;
     this.clearSceneTimeouts();
@@ -2863,7 +2927,7 @@ export class GameOverScene {
     }
     this.state = 'submitted';
     this.updateLeaderboardStatusText();
-    this.enterRunbackStage(reason);
+    this.enterRunbackStageAfterReportHold(reason);
   }
 
   ensureHiddenInput() {
@@ -3107,7 +3171,7 @@ export class GameOverScene {
       : result.globalStatus === 'submitted'
         ? 'score_submitted'
         : 'score_saved';
-    this.enterRunbackStage(reason);
+    this.enterRunbackStageAfterReportHold(reason);
   }
 
   async startGlobalSubmissionWhenReady(name, result) {

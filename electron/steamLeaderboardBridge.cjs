@@ -193,8 +193,41 @@ function publicFallbackName(steamId, index = 0) {
 }
 
 function sanitizeDetails(details) {
-  const values = Array.isArray(details) ? details : [];
+  const values = parseDetailsValue(details);
   return values.slice(0, 64).map(clampInt32);
+}
+
+function parseHexDetailsString(value) {
+  const text = String(value || '').trim();
+  if (!text) return [];
+  const compact = text.replace(/^0x/i, '').replace(/[^0-9a-f]/gi, '');
+  if (compact.length < 8 || compact.length % 8 !== 0) return [];
+  const values = [];
+  for (let index = 0; index + 8 <= compact.length && values.length < 64; index += 8) {
+    const chunk = compact.slice(index, index + 8);
+    const b0 = Number.parseInt(chunk.slice(0, 2), 16);
+    const b1 = Number.parseInt(chunk.slice(2, 4), 16);
+    const b2 = Number.parseInt(chunk.slice(4, 6), 16);
+    const b3 = Number.parseInt(chunk.slice(6, 8), 16);
+    if ([b0, b1, b2, b3].some(byte => !Number.isFinite(byte))) continue;
+    values.push(b0 | (b1 << 8) | (b2 << 16) | (b3 << 24));
+  }
+  return values;
+}
+
+function parseDetailsValue(details) {
+  if (details === null || details === undefined || details === '') return [];
+  if (Array.isArray(details)) return details;
+  if (ArrayBuffer.isView(details) && typeof details.length === 'number') return Array.from(details);
+  if (typeof details === 'string') {
+    const hexDetails = parseHexDetailsString(details);
+    if (hexDetails.length) return hexDetails;
+    return (details.match(/-?\d+/g) || []).map(Number);
+  }
+  if (typeof details === 'object' && Number.isFinite(Number(details.length))) {
+    return Array.from({ length: Number(details.length) }, (_, index) => details[index]);
+  }
+  return [];
 }
 
 function detailsMetadata(details) {
@@ -213,8 +246,6 @@ function readScoreLevel(entry = {}, metadata = {}, details = [], fallback = 1) {
   for (const value of [
     metadata.level,
     metadata.levelReached,
-    entry.level,
-    entry.levelReached,
     entry.metadata?.level,
     entry.metadata?.levelReached,
     details[0]
@@ -222,6 +253,14 @@ function readScoreLevel(entry = {}, metadata = {}, details = [], fallback = 1) {
     if (value === null || value === undefined || value === '') continue;
     const parsed = Number(value);
     if (Number.isFinite(parsed)) return Math.max(1, Math.floor(parsed));
+  }
+  for (const value of [entry.level, entry.levelReached]) {
+    if (value === null || value === undefined || value === '') continue;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) continue;
+    const level = Math.max(1, Math.floor(parsed));
+    if (level === 1 && details.length === 0 && Math.max(1, Math.floor(Number(fallback) || 1)) > 1) continue;
+    return level;
   }
   return Math.max(1, Math.floor(Number(fallback) || 1));
 }
@@ -476,7 +515,14 @@ class SteamLeaderboardBridge {
   async normalizeEntries(entries = []) {
     const currentId = this.getCurrentSteamId();
     return Promise.all((Array.isArray(entries) ? entries : []).map(async (entry, index) => {
-      const details = sanitizeDetails(entry.details ?? entry.scoreDetails ?? entry.m_pDetails);
+      const details = sanitizeDetails(
+        entry.details ??
+        entry.scoreDetails ??
+        entry.m_pDetails ??
+        entry.detailsHex ??
+        entry.scoreDetailsHex ??
+        entry.metadata?.details
+      );
       const steamId = stringifySteamId(entry.steamId ?? entry.steamID ?? entry.m_steamIDUser);
       const metadata = detailsMetadata(details);
       const level = readScoreLevel(entry, metadata, details, estimateLevelFromScore(entry.score ?? entry.m_nScore));

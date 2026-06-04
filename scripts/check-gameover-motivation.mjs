@@ -215,11 +215,19 @@ try {
     nameInput: window.__game?.scenes?.gameOver?.nameInput || '',
     hiddenMaxLength: window.__game?.scenes?.gameOver?.hiddenInput?.maxLength || null
   }));
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (scene) scene.reportShownAt = Date.now();
+  });
+  const submittedAt = Date.now();
   await page.keyboard.press('Enter');
+  await page.waitForTimeout(700);
+  const submittedHoldSnapshot = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
   }, null, { timeout: 15000 });
+  const submittedRunbackElapsedMs = Date.now() - submittedAt;
   const submittedRunbackState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const runbackScreenshot = path.join(outputDir, 'gameover-runback.png');
   await page.screenshot({ path: runbackScreenshot, fullPage: true });
@@ -398,9 +406,9 @@ try {
       !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
       /GAME OVER:\s*SECTOR 5/i.test(careerLevelSummary) &&
       /CAREER BEST:\s*SECTOR 7/i.test(careerLevelSummary) &&
-      /NEXT SHIP:\s*VIOLET FEINT/i.test(careerUnlockSummary) &&
-      /SURVIVE 15 MINUTES/i.test(careerUnlockSummary) &&
-      /\b\d+s\/900s\b/i.test(careerUnlockSummary) &&
+      /NEXT SHIP:\s*ARC STRIKER/i.test(careerUnlockSummary) &&
+      /CLEAR 45 TOTAL WAVES/i.test(careerUnlockSummary) &&
+      /\b30\/45\b/i.test(careerUnlockSummary) &&
       !/SURVIVEDSECONDS/i.test(careerUnlockSummary) &&
       /NEXT CAREER GOAL:\s*REACH SECTOR 9/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
@@ -410,6 +418,9 @@ try {
       ['leaderboard', 'submit'].includes(gameOverState.gameOver?.primaryCta?.mode) &&
       nameInputState.nameInput === 'ABCDEFGHIJKLMN' &&
       nameInputState.hiddenMaxLength === 14 &&
+      submittedHoldSnapshot.scene === 'gameOver' &&
+      submittedHoldSnapshot.gameOver?.state !== 'runback' &&
+      submittedRunbackElapsedMs >= 1800 &&
       submittedRunbackState.scene === 'gameOver' &&
       submittedRunbackState.gameOver?.state === 'runback' &&
       submittedRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
@@ -434,6 +445,8 @@ try {
     leaderboardFirst: {
       submittedScene: submittedRunbackState.scene,
       submittedState: submittedRunbackState.gameOver?.state || null,
+      submittedHoldStateAt700Ms: submittedHoldSnapshot.gameOver?.state || null,
+      submittedRunbackElapsedMs,
       selectedCtaLine: submittedRunbackState.gameOver?.selectedCtaLine || null,
       primaryCta: gameOverState.gameOver?.primaryCta || null
     },

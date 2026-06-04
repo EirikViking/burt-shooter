@@ -118,18 +118,36 @@ assert(midCareer.length >= 10 && midCareer.length <= 12, `rank-9 sector-12 profi
   assert(!midCareer.includes(shipId), `rank-9 sector-12 profile should not already unlock ${shipId}`);
 });
 
+const eirikRetuneProfile = unlockedFor({
+  totalRuns: 10,
+  bestSector: 12,
+  bestScore: 58273,
+  pilotRank: 10,
+  totalBossesDefeated: 18,
+  totalWavesCleared: 60,
+  totalCodexDiscoveries: 118,
+  survivedSeconds: 900,
+  noHitWaves: 3,
+  runClears: 1,
+  runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse']
+});
+assert(eirikRetuneProfile.length >= 10 && eirikRetuneProfile.length <= 12, `rank-10 codex-118 profile should unlock about 10-12 ships, got ${eirikRetuneProfile.length}`);
+['nova_ship_14', 'nova_ship_16', 'nova_ship_19', 'nova_ship_22', 'nova_ship_23'].forEach((shipId) => {
+  assert(!eirikRetuneProfile.includes(shipId), `rank-10 codex-118 profile should not already unlock ${shipId}`);
+});
+
 const lateCareer = unlockedFor({
   totalRuns: 28,
   bestSector: 16,
   bestScore: 300000,
-  pilotRank: 13,
+  pilotRank: 14,
   totalBossesDefeated: 35,
   totalWavesCleared: 120,
-  totalCodexDiscoveries: 120,
+  totalCodexDiscoveries: 160,
   survivedSeconds: 1500,
-  noHitWaves: 3,
-  runClears: 2,
-  runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse']
+  noHitWaves: 8,
+  runClears: 3,
+  runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse', 'crossfire_doctrine']
 });
 assert(lateCareer.length >= 20 && lateCareer.length < 25, `late-career profile should feel rich but not complete, got ${lateCareer.length}`);
 ['nova_ship_12', 'nova_ship_14', 'nova_ship_16', 'nova_ship_21', 'nova_ship_23'].forEach((shipId) => {
@@ -143,9 +161,9 @@ const mastery = unlockedFor({
   pilotRank: MAX_RANK_INDEX,
   totalBossesDefeated: 40,
   totalWavesCleared: 160,
-  totalCodexDiscoveries: 145,
-  runClears: 2,
-  noHitWaves: 5,
+  totalCodexDiscoveries: 180,
+  runClears: 3,
+  noHitWaves: 8,
   noHitSectors: 1,
   survivedSeconds: 1800,
   runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse', 'crossfire_doctrine', 'glitch_parade'],
@@ -164,4 +182,4 @@ for (let index = 1; index < pilotXpThresholds.length; index += 1) {
   assert(pilotXpThresholds[index] > pilotXpThresholds[index - 1], `pilot XP threshold ${index} should increase`);
 }
 
-console.log(`[unlock-rank-pacing] PASS fresh=1 firstSession=${firstSession.length} rank9=${midCareer.length} lateCareer=${lateCareer.length} mastery=${mastery.length} topRank=${getRankTitle(MAX_RANK_INDEX)}`);
+console.log(`[unlock-rank-pacing] PASS fresh=1 firstSession=${firstSession.length} rank9=${midCareer.length} rank10Codex118=${eirikRetuneProfile.length} lateCareer=${lateCareer.length} mastery=${mastery.length} topRank=${getRankTitle(MAX_RANK_INDEX)}`);
