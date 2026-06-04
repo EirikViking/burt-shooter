@@ -1674,7 +1674,11 @@ export class PlayScene {
     }
 
     // Satisfying sound (NOT the annoying blip blop)
-    AudioManager.playSfx('powerup', { force: true, volume: compact ? 0.65 : 1.0 });
+    AudioManager.playSfx(options.sfxKey || 'nova_wave_clear_sweep', {
+      force: true,
+      volume: compact ? 0.52 : 0.72,
+      minIntervalMs: 620
+    });
 
     // Animation sequence: explosive entry, hold, smooth exit
     let elapsed = 0;
@@ -5666,7 +5670,7 @@ export class PlayScene {
       const bonus = this.getComboScore(100 * (this.comboCount / 10));
       const appliedBonus = this.game.addScore(bonus);
       this.enqueueToast(`COMBO BONUS +${appliedBonus}`, { fontSize: 18, fill: '#ffff00', slot: 'top', type: 'combo', duration: 1200 });
-      AudioManager.playSfx('combo_tick', { force: true, volume: 0.8 });
+      AudioManager.playSfx('combo_tick', { force: false, volume: 0.16, minIntervalMs: 900 });
     }
 
     const clutchChance = 0;

@@ -2314,7 +2314,8 @@ export class EnemyManager {
         const transitionLabel = hasUpcomingWave ? 'WAVE CLEARED!' : 'SECTOR CLEAR';
         this.game.scenes.play.showWaveBonusEffect(appliedBonus, transitionLabel, {
           compact: hasUpcomingWave,
-          subtitle: `${nextLabel}${repairLabel}`
+          subtitle: `${nextLabel}${repairLabel}`,
+          sfxKey: hasUpcomingWave ? 'nova_wave_clear_sweep' : 'levelComplete'
         });
       }
     }
