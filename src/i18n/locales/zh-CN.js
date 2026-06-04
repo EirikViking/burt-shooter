@@ -102,6 +102,7 @@ const sourceText = Object.freeze({
 
   'TINYFOUNDRY GAMES // NOVA RESPONSE DECK': 'TINYFOUNDRY GAMES // NOVA 响应台',
   'NOVA SWARM': 'NOVA SWARM',
+  'CONTINUE': '继续',
   'ONE SHIP. FIFTY BOSS SIGNALS. THE LAST CABINET STILL CALLS.': '一艘飞船。五十个 Boss 信号。最后的 Cabinet 仍在呼叫。',
   'ONE SHIP. ALL BOSSES. NO QUARTERS LEFT.': '一艘飞船。所有 Boss。没有多余硬币。',
   'ONE SHIP. THE SWARM BROUGHT PATTERNS. YOU BROUGHT HANDS.': '一艘飞船。虫群带来弹幕套路。你带来反应。',

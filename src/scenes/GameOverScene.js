@@ -1495,9 +1495,9 @@ export class GameOverScene {
     if (this.state === 'submitted_hold') {
       return {
         mode: 'submitted_hold',
-        label: 'SCORE SUBMITTED',
-        hint: 'SCORE SUBMITTED',
-        disabled: true
+        label: translateText('CONTINUE'),
+        hint: this.lastInputDevice === 'controller' ? `A: ${translateText('CONTINUE')}` : 'ENTER / SPACE / CLICK',
+        disabled: false
       };
     }
 
@@ -1556,6 +1556,11 @@ export class GameOverScene {
       if (this.nameInput.length > 0) {
         this.submitScore();
       }
+      return;
+    }
+
+    if (config.mode === 'submitted_hold') {
+      this.continueFromSubmittedHold();
       return;
     }
 
@@ -1697,7 +1702,10 @@ export class GameOverScene {
       }
 
       if (this.state === 'submitted_hold') {
-        if (isEscape) {
+        if (isSubmitKey || isRestartKey) {
+          e.preventDefault();
+          this.continueFromSubmittedHold();
+        } else if (isEscape) {
           e.preventDefault();
           this.returnToMenu();
         }
@@ -1829,6 +1837,8 @@ export class GameOverScene {
     if (this.state === 'submitted_hold') {
       if (nav.pressed.menu || nav.pressed.back || nav.pressed.cancel) {
         this.returnToMenu();
+      } else if (nav.pressed.confirm) {
+        this.continueFromSubmittedHold();
       }
       return;
     }
@@ -2561,6 +2571,13 @@ export class GameOverScene {
       this.pendingRunbackReason = null;
       this.enterRunbackStage(nextReason);
     }, remainingMs);
+  }
+
+  continueFromSubmittedHold() {
+    if (this.state !== 'submitted_hold') return;
+    const nextReason = this.pendingRunbackReason || 'score_submitted';
+    this.pendingRunbackReason = null;
+    this.enterRunbackStage(nextReason);
   }
 
   enterRunbackStage(reason = 'runback') {

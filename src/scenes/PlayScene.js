@@ -5517,13 +5517,13 @@ export class PlayScene {
 
   updateComboDisplay(delta) {
     if (!this.comboDisplay) return;
-    if (this.comboCount <= 0) {
+    if (this.comboCount < 3) {
       this.comboDisplay.visible = false;
       return;
     }
     this.comboDisplay.visible = true;
     this.comboDisplay.text = `COMBO x${this.comboMultiplier}  (${this.comboCount})`;
-    const pulse = 1 + Math.sin(Date.now() * 0.01) * 0.06;
+    const pulse = 1 + Math.sin(Date.now() * 0.008) * 0.03;
     this.comboDisplay.scale.set(pulse);
   }
 
@@ -5674,7 +5674,9 @@ export class PlayScene {
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
       const bonus = this.getComboScore(100 * (this.comboCount / 10));
       const appliedBonus = this.game.addScore(bonus);
-      this.enqueueToast(`COMBO BONUS +${appliedBonus}`, { fontSize: 18, fill: '#ffff00', slot: 'top', type: 'combo', duration: 1200 });
+      if (this.comboCount % 20 === 0) {
+        this.enqueueToast(`COMBO BONUS +${appliedBonus}`, { fontSize: 16, fill: '#fff3a2', slot: 'top', type: 'combo', duration: 900, priority: 1 });
+      }
       AudioManager.playSfx('combo_tick', { force: false, volume: 0.16, minIntervalMs: 900 });
     }
 

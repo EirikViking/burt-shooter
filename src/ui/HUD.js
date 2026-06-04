@@ -278,34 +278,37 @@ export class HUD {
     }
 
     this.rankText.text = rankManager.getRankString(this.game.rankIndex);
-    this.rankText.x = 58;
+    const rankPanelWidth = 146;
+    const rankTextX = 56;
+    const rankTextMaxWidth = 76;
+    this.rankText.x = rankTextX;
     this.rankText.y = 8;
     this.rankText.scale.set(1);
     this.rankText.updateText?.(false);
-    if (this.rankText.width > 86) {
-      this.rankText.scale.set(Math.max(0.68, 86 / this.rankText.width));
+    if (this.rankText.width > rankTextMaxWidth) {
+      this.rankText.scale.set(Math.max(0.58, rankTextMaxWidth / this.rankText.width));
     }
     this.rankIcon.x = 25;
     this.rankIcon.y = 24;
 
     this.rankBadgeBg.clear();
-    this.rankBadgeBg.roundRect(-5, -3, 154, 58, 9);
+    this.rankBadgeBg.roundRect(-5, -3, rankPanelWidth, 58, 9);
     this.rankBadgeBg.fill({ color: 0x020916, alpha: 0.76 });
     this.rankBadgeBg.stroke({ color: 0xffef7e, width: 1.5, alpha: 0.82 });
 
     this.rankTextBg.clear();
-    this.rankTextBg.roundRect(52, 5, 92, 22, 4);
+    this.rankTextBg.roundRect(rankTextX - 4, 5, rankTextMaxWidth + 8, 22, 4);
     this.rankTextBg.fill({ color: 0x020711, alpha: 0.72 });
     this.rankTextBg.stroke({ color: 0x75ecff, width: 1, alpha: 0.2 });
 
     // XP Bar
     const progress = this.game.getRankProgress();
-    const barW = 92;
+    const barW = rankTextMaxWidth + 8;
     const barH = 5;
 
-    this.rankBarBg.clear().roundRect(52, 40, barW, barH, 3).fill({ color: 0x102238, alpha: 0.94 });
+    this.rankBarBg.clear().roundRect(rankTextX - 4, 40, barW, barH, 3).fill({ color: 0x102238, alpha: 0.94 });
     this.rankBarBg.stroke({ color: 0x75ecff, width: 1, alpha: 0.45 });
-    this.rankBarFill.clear().roundRect(52, 40, barW * progress, barH, 3).fill({ color: 0xffef7e });
+    this.rankBarFill.clear().roundRect(rankTextX - 4, 40, barW * progress, barH, 3).fill({ color: 0xffef7e });
 
     this.locationText.text = formatSectorLabel(this.game.level || 1, {
       sectorWord: translateText('SECTOR'),
@@ -775,7 +778,7 @@ export class HUD {
     this.rankGroup.y = margin + 10;
 
     // Shift Score and Level to the right of Rank
-    const rankOffset = layout.isMobile ? 164 : 188;
+    const rankOffset = layout.isMobile ? 176 : 188;
 
     this.scoreText.x = margin + rankOffset;
     this.scoreText.y = margin + 10;

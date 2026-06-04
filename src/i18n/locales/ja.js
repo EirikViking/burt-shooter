@@ -105,6 +105,7 @@ const sourceText = Object.freeze({
   'ELITE TRIO INBOUND!': 'エリート3機が侵入!',
 
   'NOVA SWARM': 'NOVA SWARM',
+  'CONTINUE': '続ける',
   'TINYFOUNDRY GAMES // NOVA RESPONSE DECK': 'TINYFOUNDRY GAMES // NOVA応答デッキ',
   'ONE SHIP. FIFTY BOSS SIGNALS. THE LAST CABINET STILL CALLS.': '一隻の機体。五十のボス信号。最後のCabinetはまだ呼んでいる。',
   'ONE SHIP. ALL BOSSES. NO QUARTERS LEFT.': '一隻の機体。全ボス。残りコインなし。',

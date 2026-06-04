@@ -102,6 +102,7 @@ const sourceText = Object.freeze({
 
   'TINYFOUNDRY GAMES // NOVA RESPONSE DECK': 'TINYFOUNDRY GAMES // ПУЛЬТ РЕАГИРОВАНИЯ NOVA',
   'NOVA SWARM': 'NOVA SWARM',
+  'CONTINUE': 'ПРОДОЛЖИТЬ',
   'ONE SHIP. FIFTY BOSS SIGNALS. THE LAST CABINET STILL CALLS.': 'ОДИН КОРАБЛЬ. ПЯТЬДЕСЯТ СИГНАЛОВ БОССОВ. ПОСЛЕДНИЙ CABINET ВСЕ ЕЩЕ ЗОВЕТ.',
   'ONE SHIP. ALL BOSSES. NO QUARTERS LEFT.': 'ОДИН КОРАБЛЬ. ВСЕ БОССЫ. МОНЕТ БОЛЬШЕ НЕТ.',
   'ONE SHIP. THE SWARM BROUGHT PATTERNS. YOU BROUGHT HANDS.': 'ОДИН КОРАБЛЬ. РОЙ ПРИНЕС ПАТТЕРНЫ. ТЫ ПРИНЕС РЕФЛЕКСЫ.',
