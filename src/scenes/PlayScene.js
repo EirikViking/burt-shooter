@@ -1432,7 +1432,8 @@ export class PlayScene {
     const container = new PIXI.Container();
     container.label = 'ui_rank_up_badge';
     container.x = compact ? width / 2 : width - panelWidth / 2 - 28;
-    container.y = compact ? Math.max(118, height * 0.22) : Math.max(142, height * 0.2);
+    const safeTop = compact ? 132 : 154;
+    container.y = Math.max(safeTop + panelHeight / 2, height * (compact ? 0.28 : 0.24));
     container.alpha = 0;
     container.scale.set(0.78);
     container.zIndex = 10000;
@@ -7105,6 +7106,91 @@ export class PlayScene {
     this.game.app.ticker.add(ticker);
   }
 
+  scheduleBossDeathFx(callback, delayMs = 0) {
+    const id = setTimeout(() => {
+      if (this._deathTimeouts) {
+        this._deathTimeouts = this._deathTimeouts.filter(timeoutId => timeoutId !== id);
+      }
+      if (this.game?.currentScene !== this) return;
+      callback?.();
+    }, delayMs);
+    if (!this._deathTimeouts) this._deathTimeouts = [];
+    this._deathTimeouts.push(id);
+    return id;
+  }
+
+  createBossDeathFlash(color = 0xffff33) {
+    if (!this.uiOverlay || !this.game?.app?.ticker) return;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const flash = new PIXI.Graphics();
+    flash.label = 'boss_death_flash';
+    flash.rect(0, 0, width, height).fill({ color: 0xffffff, alpha: 0.18 });
+    flash.rect(0, 0, width, height).fill({ color, alpha: 0.08 });
+    flash.blendMode = 'add';
+    this.uiOverlay.addChild(flash);
+
+    let elapsed = 0;
+    const duration = 360;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      const t = Math.min(1, elapsed / duration);
+      flash.alpha = Math.pow(1 - t, 1.8);
+      if (t >= 1 || this.game?.currentScene !== this) {
+        this.game.app.ticker.remove(ticker);
+        if (flash.parent) flash.parent.removeChild(flash);
+        flash.destroy?.();
+      }
+    };
+    this.game.app.ticker.add(ticker);
+  }
+
+  triggerBossDeathImpact({ boss = null, color = 0xffff33, type = 'UNKNOWN' } = {}) {
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const bossX = Math.max(44, Math.min(width - 44, Number.isFinite(boss?.x) ? boss.x : width * 0.5));
+    const bossY = Math.max(72, Math.min(height * 0.58, Number.isFinite(boss?.y) ? boss.y : height * 0.26));
+    const baseColor = Number.isFinite(color) ? color : 0xffff33;
+    const seedText = String(type || boss?.profile?.id || 'boss');
+    const seed = [...seedText].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const palette = [baseColor, 0xfff066, 0xff6633, 0x61f6ff, 0xffffff];
+    const burstCount = 7 + (seed % 3);
+
+    this.createBossDeathFlash(baseColor);
+    this.screenShake?.shake(18, 28);
+    AudioManager.playSfx('boss_explode', { force: true, volume: 1.0, minIntervalMs: 0 });
+
+    if (!this.particleManager) return;
+    if (!boss?.defeatPresentationAt) {
+      this.particleManager.createBossExplosion(bossX, bossY, baseColor);
+    } else {
+      this.particleManager.createExplosion(bossX, bossY, baseColor, 1.45);
+    }
+    this.triggerShockwave(bossX, bossY, baseColor);
+
+    for (let i = 0; i < burstCount; i += 1) {
+      const delay = 80 + i * 68 + (i % 2) * 26;
+      const angle = ((Math.PI * 2 * i) / burstCount) + (seed % 11) * 0.13;
+      const spreadX = width * (0.055 + ((seed + i) % 4) * 0.018);
+      const spreadY = height * (0.028 + ((seed + i * 3) % 4) * 0.012);
+      const x = Math.max(42, Math.min(width - 42, bossX + Math.cos(angle) * spreadX));
+      const y = Math.max(76, Math.min(height * 0.56, bossY + Math.sin(angle) * spreadY));
+      const burstColor = palette[(seed + i) % palette.length];
+      const intensity = 0.85 + (i % 3) * 0.18;
+
+      this.scheduleBossDeathFx(() => {
+        this.particleManager?.createExplosion(x, y, burstColor, intensity);
+        if (i === 1 || i === Math.floor(burstCount / 2)) {
+          this.triggerShockwave(x, y, burstColor);
+        }
+        if (i % 3 === 0) {
+          this.screenShake?.shake(5, 12);
+          AudioManager.playSfx('explosionCrunch', { volume: 0.62, minIntervalMs: 60 });
+        }
+      }, delay);
+    }
+  }
+
   onBossPhaseChange(phase, boss) {
     this.recordBalanceBossPhase(phase, boss);
     const label = phase === 2 ? 'BOSS PHASE 2' : 'BOSS PHASE 3';
@@ -7146,27 +7232,10 @@ export class PlayScene {
     });
     this.reserveMessageFocus(2800, { priority: 4, slots: ['top', 'corner'] });
 
-    if (this.screenShake) this.screenShake.shake(12);
-    if (this.particleManager) {
-      const boss = this.enemyManager?.boss;
-      const bossX = Number.isFinite(boss?.x) ? boss.x : this.game.getWidth() * 0.5;
-      const bossY = Number.isFinite(boss?.y) ? boss.y : this.game.getHeight() * 0.26;
-      const bossColor = boss?.profile?.accent || boss?.color || 0xffff33;
-      if (!boss?.defeatPresentationAt) {
-        this.particleManager.createBossExplosion(bossX, bossY, bossColor);
-        this.triggerShockwave(bossX, bossY, bossColor);
-      }
-      for (let i = 0; i < 8; i++) {
-        const a = (Math.PI * 2 * i) / 8 + Math.random() * 0.25;
-        const spreadX = this.game.getWidth() * (0.08 + Math.random() * 0.16);
-        const spreadY = this.game.getHeight() * (0.04 + Math.random() * 0.1);
-        const x = Math.max(40, Math.min(this.game.getWidth() - 40, bossX + Math.cos(a) * spreadX));
-        const y = Math.max(70, Math.min(this.game.getHeight() * 0.56, bossY + Math.sin(a) * spreadY));
-        this.particleManager.createExplosion(x, y, 0xffff33, 0.75);
-      }
-    }
+    const boss = this.enemyManager?.boss;
+    const bossColor = boss?.profile?.accent || boss?.color || 0xffff33;
+    this.triggerBossDeathImpact({ boss, color: bossColor, type });
 
-    AudioManager.playSfx('boss_explode', { force: true, volume: 1.0 });
     AudioManager.playMusicContext('victory', { resetPlaylist: true });
     if (type === 'BONUS_CORE') AudioManager.playSfx('pickup', { force: true, volume: 0.9 });
     else if (type === 'ICON_192') AudioManager.playSfx('ui_open', { force: true, volume: 0.8 });

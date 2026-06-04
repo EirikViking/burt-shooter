@@ -170,6 +170,7 @@ export const SFX_MIX = {
     pickup: { volume: 0.62, minIntervalMs: 90 },
     achievement: { volume: 0.68, minIntervalMs: 450 },
     enemy_shoot: { volume: 0.18, minIntervalMs: 90 },
+    enemy_threat_soft_warn: { volume: 0.12, minIntervalMs: 1800 },
     computerNoise: { volume: 0.22, minIntervalMs: 350 },
     thrusterFire: { volume: 0.18, minIntervalMs: 240 },
     doorClose: { volume: 0.24, minIntervalMs: 120 },
@@ -375,6 +376,9 @@ export const SFX_CATALOG = {
     ],
     'enemy_shoot': [
         getSfx('laserRetro_000'), getSfx('laserRetro_001'), getSfx('laserSmall_003')
+    ],
+    'enemy_threat_soft_warn': [
+        getSfx('forceField_001'), getSfx('forceField_002')
     ],
     // Direct matches from manifest
     'computerNoise': [getSfx('computerNoise_000')],

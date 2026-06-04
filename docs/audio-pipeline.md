@@ -74,6 +74,7 @@ ELEVENLABS_MODEL_ID=<model id>
 - `src/audio/SoundCatalog.js` maps mission-control events to generated MP3 files, keeps separate music pools for menu, scoreboard, gameplay, boss, victory, and game over contexts, and owns the default SFX/voice mix presets used by `AudioManager`.
 - `src/audio/AudioManager.js` applies short music ducking while voice lines play, puts mission-control lines in an exclusive announcer group, and uses per-event variant bags to prevent immediate repeats.
 - High-traffic SFX are pooled by resolved URL so repeated hits/explosions do not create a new media element for every frame of combat.
+- Normal enemy threat telegraphs use `enemy_threat_soft_warn`, a low-volume reuse of existing force-field SFX. The sharper `elite_special_charge` cue is reserved for actual elite middle ship specials.
 - The service worker bypasses audio and `Range` requests. Letting the browser/network handle media directly avoids stale cache responses and local preview 404/HTML fallbacks during longer playtests.
 - Pause uses `AudioManager.setPauseDucked(true)` so music stays continuous but quieter.
 - `npm run check:audio` verifies manifest audio files, catalog references, music contexts, mix keys, and voice fallback mappings. It also runs as part of `npm run build`.

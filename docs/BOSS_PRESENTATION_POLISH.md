@@ -10,7 +10,7 @@ This pass is presentation-only. It does not change boss health, damage, attack c
 - Charge/firing adds local recoil, node glow, muzzle flash, and a quick settle-back without changing shot timing or projectile creation.
 - Hurt feedback uses a throttled spark/flash/snap layer so rapid player fire reads as impact without flooding the particle pool.
 - Phase changes add a pulse ring and existing surge SFX/shockwave while preserving the signature telegraph and phase thresholds.
-- Defeat feedback uses the existing boss explosion and shockwave hooks, with celebration bursts centered near the defeated boss instead of only random screen bursts.
+- Defeat feedback uses the existing boss explosion and shockwave hooks, with a short contained flash, chained nearby bursts, extra shake, and celebration debris centered near the defeated boss instead of only random screen bursts.
 - Special hazards remain driven by the existing hazard data. Beam/cone/wall/ring hit tests are unchanged; only layered graphics were added.
 
 ## Archetype Personality
@@ -33,7 +33,7 @@ This pass is presentation-only. It does not change boss health, damage, attack c
 
 ## Audio
 
-This pass reuses the existing catalogued boss SFX (`boss_beam_telegraph`, `boss_beam_fire`, `boss_web_telegraph`, `boss_web_fire`, `boss_net_telegraph`, `boss_net_fire`, `boss_phase_surge`, `boss_hazard_impact`) rather than adding new ElevenLabs assets. That keeps the audio audit surface stable while still letting the improved visual states fire the existing cues more expressively.
+This pass reuses the existing catalogued boss SFX (`boss_beam_telegraph`, `boss_beam_fire`, `boss_web_telegraph`, `boss_web_fire`, `boss_net_telegraph`, `boss_net_fire`, `boss_phase_surge`, `boss_hazard_impact`, `boss_explode`, `explosionCrunch`) rather than adding new ElevenLabs assets. That keeps the audio audit surface stable while still letting the improved visual states fire the existing cues more expressively.
 
 ## Tooling Note
 

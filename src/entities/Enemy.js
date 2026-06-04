@@ -1208,7 +1208,7 @@ export class Enemy {
       };
       this.threatTelegraphStartedAt = now;
       this.threatActionLockedTarget = locked;
-      AudioManager.playSfx('elite_special_charge', { volume: 0.18, minIntervalMs: 520 });
+      AudioManager.playSfx('enemy_threat_soft_warn', { volume: 0.12, minIntervalMs: 1800 });
     }
 
     if (!this.currentThreatAction) {
