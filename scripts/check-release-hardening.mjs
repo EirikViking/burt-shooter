@@ -3,33 +3,39 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const startedAt = new Date();
-const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const node = process.execPath;
 
+function npmStep(label, script) {
+  if (process.platform === 'win32') {
+    return { label, command: 'cmd.exe', args: ['/d', '/s', '/c', `npm run ${script}`] };
+  }
+  return { label, command: 'npm', args: ['run', script] };
+}
+
 const steps = [
-  { label: 'release line guard', command: npm, args: ['run', 'check:release-line'] },
+  npmStep('release line guard', 'check:release-line'),
   { label: 'combo and distinct SFX', command: node, args: ['scripts/check-release-hardening-audio.mjs'] },
   { label: 'boss flow and death spectacle', command: node, args: ['scripts/check-release-hardening-boss-flow.mjs'] },
   { label: 'UI overlap and game-over hold', command: node, args: ['scripts/check-release-hardening-ui-flow.mjs'] },
   { label: 'Steam autosubmit mock guard', command: node, args: ['scripts/check-release-hardening-steam-autosubmit.mjs'] },
-  { label: 'enemy cleanup accumulation', command: npm, args: ['run', 'check:dead-enemy-cleanup'] },
-  { label: 'wave stuck watchdog', command: npm, args: ['run', 'check:wave-stuck-watchdog'] },
-  { label: 'boss mercy gate', command: npm, args: ['run', 'check:boss-mercy'] },
-  { label: 'first boss balance', command: npm, args: ['run', 'check:first-boss-balance'] },
-  { label: 'game over interlude readability', command: npm, args: ['run', 'check:gameover-interlude'] },
-  { label: 'one more run flow', command: npm, args: ['run', 'check:gameover-motivation'] },
-  { label: 'leaderboard status screens', command: npm, args: ['run', 'check:leaderboard-visuals'] },
-  { label: 'Steam leaderboard autosubmit mock', command: npm, args: ['run', 'check:steam-leaderboard-mock'] },
-  { label: 'ship usage counter', command: npm, args: ['run', 'check:ship-usage-counter'] },
-  { label: 'Steam Cloud save', command: npm, args: ['run', 'check:steam-cloud-save'] },
-  { label: 'i18n strings', command: npm, args: ['run', 'check:i18n'] },
-  { label: 'localized UI visual QA', command: npm, args: ['run', 'check:i18n-ui'] },
-  { label: 'Steam Electron bridge', command: npm, args: ['run', 'check:steam-electron-bridge'] },
-  { label: 'controller flow', command: npm, args: ['run', 'check:controller-flow'] },
-  { label: 'browser smoke', command: npm, args: ['run', 'smoke'] },
-  { label: 'current build', command: npm, args: ['run', 'build:current'] },
-  { label: 'desktop smoke current build', command: npm, args: ['run', 'desktop:smoke:current'] },
-  { label: 'Steam package runtime', command: npm, args: ['run', 'check:steam-package-runtime'] }
+  npmStep('enemy cleanup accumulation', 'check:dead-enemy-cleanup'),
+  npmStep('wave stuck watchdog', 'check:wave-stuck-watchdog'),
+  npmStep('boss mercy gate', 'check:boss-mercy'),
+  npmStep('first boss balance', 'check:first-boss-balance'),
+  npmStep('game over interlude readability', 'check:gameover-interlude'),
+  npmStep('one more run flow', 'check:gameover-motivation'),
+  npmStep('leaderboard status screens', 'check:leaderboard-visuals'),
+  npmStep('Steam leaderboard autosubmit mock', 'check:steam-leaderboard-mock'),
+  npmStep('ship usage counter', 'check:ship-usage-counter'),
+  npmStep('Steam Cloud save', 'check:steam-cloud-save'),
+  npmStep('i18n strings', 'check:i18n'),
+  npmStep('localized UI visual QA', 'check:i18n-ui'),
+  npmStep('Steam Electron bridge', 'check:steam-electron-bridge'),
+  npmStep('controller flow', 'check:controller-flow'),
+  npmStep('browser smoke', 'smoke'),
+  npmStep('current build', 'build:current'),
+  npmStep('desktop smoke current build', 'desktop:smoke:current'),
+  npmStep('Steam package runtime', 'check:steam-package-runtime')
 ];
 
 function runStep(step, index) {
@@ -41,7 +47,6 @@ function runStep(step, index) {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'inherit',
-      shell: process.platform === 'win32',
       windowsHide: true
     });
     child.on('error', reject);
