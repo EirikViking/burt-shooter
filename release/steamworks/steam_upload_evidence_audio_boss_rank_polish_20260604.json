@@ -1,0 +1,64 @@
+{
+  "generatedAt": "2026-06-04T21:03:51.215Z",
+  "purpose": "Steam private/manual developer playtest upload evidence for audio, boss death impact, and rank badge polish build",
+  "branch": "codex/fix-dead-enemy-pixels-20260604",
+  "head": "62747463795d614d6d962e96bbd12f9ba2241064",
+  "packageVersion": "v2026-06-04_22-54-37",
+  "packageTimestamp": "2026-06-04T20:54:37.391Z",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23573576",
+    "depotManifest": "910136015384557441",
+    "baselineManifest": "8492733332048301741",
+    "setLive": "",
+    "liveBranchChanged": false,
+    "buildDescription": "Nova Swarm v2026-06-04_22-54-37 private Steam test - audio boss rank polish"
+  },
+  "commands": {
+    "preUploadChecks": [
+      "npm run build",
+      "npm run check:steam-package-runtime",
+      "npm run check:release-line"
+    ],
+    "package": "npm run package:steam:win:current",
+    "payloadManifest": "npm run steamworks:payload-manifest",
+    "writeVdf": "$env:STEAM_APP_ID='4765070'; $env:STEAM_DEPOT_ID='4765071'; $env:STEAM_BUILD_DESC='Nova Swarm v2026-06-04_22-54-37 private Steam test - audio boss rank polish'; npm run steamworks:write-vdf",
+    "uploadRedacted": "& 'C:\\steamcmd\\steamcmd.exe' +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build 'D:\\vibe-coding-e\\burt-shooter-cursor-hide-20260604\\release\\steamworks\\app_build_LOCAL.vdf' +quit"
+  },
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executablePath": "Nova Swarm.exe",
+    "executableBytes": 226666496,
+    "executableSha256": "848b7fdf0663c90ffaf3740d74034aa864e13813a6e326dc41966f992e4b80ea",
+    "payloadFileCount": 336,
+    "payloadTotalBytes": 723492363,
+    "payloadManifestHash": "3135179e4eaeae4dd977b0655c09fb8ab214b62735978264d6c291f6e0947f80",
+    "steamRedistributablesIncluded": [
+      "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/steam_api.dll",
+      "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/win64/steam_api64.dll",
+      "steam_api.dll",
+      "steam_api64.dll"
+    ]
+  },
+  "steamPipeOutput": {
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "summary": "[2026-06-04 22:59:32]: Summary: 0 files added (0 bytes), 2 files changed (6.69 MB), 0 files removed (0 bytes)",
+    "changed": [
+      "[2026-06-04 22:59:32]: Changed: \"Nova Swarm.exe\" 221354 KB size, 1024 KB changed ",
+      "[2026-06-04 22:59:32]: Changed: \"resources\\app.asar\" 316402 KB size, 5827 KB changed "
+    ]
+  },
+  "safety": {
+    "noStoreMetadataChange": true,
+    "noPublicRelease": true,
+    "noAppVisibilityChange": true,
+    "noAppIdChange": true,
+    "noDepotIdChange": true,
+    "noLeaderboardRename": true,
+    "noDummyLeaderboardScores": true,
+    "noDeploy": true
+  }
+}
