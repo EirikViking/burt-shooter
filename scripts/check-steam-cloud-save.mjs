@@ -8,6 +8,8 @@ import {
   CLOUD_HANGAR_PROGRESS_KEY,
   CLOUD_LANGUAGE_KEY,
   CLOUD_LOCAL_LEADERBOARD_KEY,
+  CLOUD_SHIP_USAGE_KEY,
+  CLOUD_SHIP_USAGE_TOTAL_KEY,
   CLOUD_THREAT_DISCOVERY_KEY,
   collectSteamCloudPersistenceState,
   restoreSteamCloudPersistenceToStorage
@@ -111,6 +113,11 @@ try {
       unreadIds: ['bosses:nova_boss_01'],
       recentRunThemes: ['storm']
     },
+    shipUsage: {
+      nova_ship_01: 4,
+      'nova-player-ship-04.png': 2
+    },
+    shipUsageTotal: 6,
     debugFlags: { shouldNotPersist: true },
     absolutePath: 'C:/Users/example/AppData/Roaming/Nova Swarm'
   });
@@ -123,6 +130,9 @@ try {
   assert.equal(merged.hangarProgress.unlockedShipIds.includes('nova_ship_09'), true);
   assert.equal(merged.threatDiscovery.items.bosses.nova_boss_01.name, 'NULL CROWN');
   assert.deepEqual(merged.threatDiscovery.unreadIds, ['bosses:nova_boss_01']);
+  assert.equal(merged.shipUsage.nova_ship_01, 4);
+  assert.equal(merged.shipUsage['nova-player-ship-04.png'], 2);
+  assert.equal(merged.shipUsageTotal, 6);
   assert.equal(merged.settings.screenShake, 0.35);
   assert.equal(merged.settings.playerFocus, 0.8);
   assert.equal(merged.settings.colorAssist, true);
@@ -151,7 +161,12 @@ try {
     [CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify({
       items: { enemies: { scout: { id: 'scout', category: 'enemies', name: 'Scout', timesSeen: 2 } } },
       unreadIds: ['enemies:scout']
-    })]
+    })],
+    [CLOUD_SHIP_USAGE_KEY, JSON.stringify({
+      nova_ship_04: 3,
+      'nova-player-ship-04.png': 2
+    })],
+    [CLOUD_SHIP_USAGE_TOTAL_KEY, '5']
   ]);
   const collected = collectSteamCloudPersistenceState({
     storage,
@@ -175,13 +190,19 @@ try {
   assert.equal(collectedSave.hangarProgress.unlockedShipIds.includes('nova_ship_04'), true);
   assert.equal(collectedSave.threatDiscovery.items.enemies.scout.name, 'Scout');
   assert.deepEqual(collectedSave.threatDiscovery.unreadIds, ['enemies:scout']);
+  assert.equal(collectedSave.shipUsage.nova_ship_01, 4);
+  assert.equal(collectedSave.shipUsage.nova_ship_04, 3);
+  assert.equal(collectedSave.shipUsage['nova-player-ship-04.png'], 2);
+  assert.equal(collectedSave.shipUsageTotal, 9);
 
   const restartStorage = new MemoryStorage([
     [CLOUD_LANGUAGE_KEY, 'de'],
     [CLOUD_LOCAL_LEADERBOARD_KEY, JSON.stringify([
       { name: 'OLDLOCAL', score: 111, level: 2, rankIndex: 1, timestamp: '2026-01-01T00:00:00.000Z' }
     ])],
-    [CLOUD_ACHIEVEMENT_KEY, JSON.stringify({ version: 1, unlocked: ['existing_local'] })]
+    [CLOUD_ACHIEVEMENT_KEY, JSON.stringify({ version: 1, unlocked: ['existing_local'] })],
+    [CLOUD_SHIP_USAGE_KEY, JSON.stringify({ nova_ship_01: 2 })],
+    [CLOUD_SHIP_USAGE_TOTAL_KEY, '2']
   ]);
   const restoreSummary = restoreSteamCloudPersistenceToStorage({
     language: { preference: 'ja', current: 'ja' },
@@ -203,6 +224,11 @@ try {
       items: { bosses: { nova_boss_02: { id: 'nova_boss_02', category: 'bosses', name: 'ORBITAL HECKLER' } } },
       unreadIds: ['bosses:nova_boss_02']
     },
+    shipUsage: {
+      nova_ship_01: 5,
+      'row2_ship_1.png': 3
+    },
+    shipUsageTotal: 8,
     settings: {
       screenShake: 0.2,
       playerFocus: 0.75,
@@ -216,6 +242,9 @@ try {
   assert.deepEqual(JSON.parse(restartStorage.getItem(CLOUD_ACHIEVEMENT_KEY)).unlocked.sort(), ['cloud_unlock', 'existing_local']);
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_HANGAR_PROGRESS_KEY)).pilotXp, 8888);
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.bosses.nova_boss_02.name, 'ORBITAL HECKLER');
+  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY)).nova_ship_01, 5);
+  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY))['row2_ship_1.png'], 3);
+  assert.equal(restartStorage.getItem(CLOUD_SHIP_USAGE_TOTAL_KEY), '8');
 
   const systemStorage = new MemoryStorage([[CLOUD_LANGUAGE_KEY, 'de']]);
   restoreSteamCloudPersistenceToStorage({ language: { preference: 'system' } }, { storage: systemStorage });
@@ -249,6 +278,7 @@ try {
   assert.equal(diagnostics.persistenceSummary.cloudSavePath, paths.cloudSavePath);
   assert.equal(diagnostics.persistenceSummary.hangarPilotXp >= 0, true);
   assert.equal(diagnostics.persistenceSummary.threatDiscoveryCategories >= 0, true);
+  assert.equal(diagnostics.persistenceSummary.shipUsageTotal >= 0, true);
 
   if (process.env.APPDATA) {
     const realPaths = getPaths(path.join(process.env.APPDATA, 'nova-swarm'));

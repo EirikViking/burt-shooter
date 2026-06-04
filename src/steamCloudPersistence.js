@@ -7,6 +7,8 @@ export const CLOUD_SELECTED_SHIP_KEY = 'burt.selectedShip.v1';
 export const CLOUD_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
 export const CLOUD_HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const CLOUD_THREAT_DISCOVERY_KEY = 'nova.threatDiscovery.v1';
+export const CLOUD_SHIP_USAGE_KEY = 'burt.shipUsage.v1';
+export const CLOUD_SHIP_USAGE_TOTAL_KEY = 'burt.shipUsageTotal.v1';
 
 const SCREEN_SHAKE_KEY = 'burt_accessibility_screen_shake';
 const PLAYER_FOCUS_KEY = 'burt_accessibility_player_focus';
@@ -174,6 +176,32 @@ function mergeArrayUnique(local, cloud, key) {
   ].map(String).filter(Boolean))];
 }
 
+function normalizeUsageMap(rawUsage = {}) {
+  if (!rawUsage || typeof rawUsage !== 'object' || Array.isArray(rawUsage)) return {};
+  const usage = {};
+  for (const [rawKey, rawValue] of Object.entries(rawUsage)) {
+    const key = String(rawKey || '').trim().slice(0, 160);
+    const value = Math.max(0, Math.floor(Number(rawValue) || 0));
+    if (!key || value <= 0) continue;
+    usage[key] = Math.max(usage[key] || 0, value);
+  }
+  return usage;
+}
+
+function sumUsageMap(usage = {}) {
+  return Object.values(normalizeUsageMap(usage))
+    .reduce((total, value) => total + value, 0);
+}
+
+function mergeShipUsage(localUsage = {}, cloudUsage = {}) {
+  const local = normalizeUsageMap(localUsage);
+  const cloud = normalizeUsageMap(cloudUsage);
+  const keys = [...new Set([...Object.keys(local), ...Object.keys(cloud)])];
+  return Object.fromEntries(keys
+    .map((key) => [key, Math.max(local[key] || 0, cloud[key] || 0)])
+    .filter(([, value]) => value > 0));
+}
+
 function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
   const local = localProgress && typeof localProgress === 'object' ? localProgress : {};
   const cloud = cloudProgress && typeof cloudProgress === 'object' ? cloudProgress : {};
@@ -314,6 +342,11 @@ export function collectSteamCloudPersistenceState({
       ? getShipUnlockProgress()
       : readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {}),
     threatDiscovery: readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {}),
+    shipUsage: normalizeUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {})),
+    shipUsageTotal: Math.max(
+      Math.floor(Number(readStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY)) || 0),
+      sumUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {}))
+    ),
     settings: {
       screenShake: clampUnit(settings.screenShake, 1),
       playerFocus: clampUnit(settings.playerFocus, 0.72),
@@ -333,6 +366,8 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     achievements: 0,
     selectedShipKey: null,
     progression: null,
+    shipUsage: 0,
+    shipUsageTotal: 0,
     settings: 0
   };
   if (!storage || !save || typeof save !== 'object') return summary;
@@ -402,6 +437,22 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     summary.restored = writeStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify(mergedDiscovery)) || summary.restored;
   }
 
+  if (save.shipUsage || save.shipUsageByShip) {
+    const mergedUsage = mergeShipUsage(
+      readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {}),
+      save.shipUsage || save.shipUsageByShip
+    );
+    const total = Math.max(
+      Math.floor(Number(readStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY)) || 0),
+      Math.floor(Number(save.shipUsageTotal) || 0),
+      sumUsageMap(mergedUsage)
+    );
+    summary.shipUsage = Object.keys(mergedUsage).length;
+    summary.shipUsageTotal = total;
+    summary.restored = writeStorage(storage, CLOUD_SHIP_USAGE_KEY, JSON.stringify(mergedUsage)) || summary.restored;
+    summary.restored = writeStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY, String(total)) || summary.restored;
+  }
+
   const settings = save.settings || {};
   if (settings.screenShake !== undefined && writeStorage(storage, SCREEN_SHAKE_KEY, clampUnit(settings.screenShake, 1))) {
     summary.settings += 1;
@@ -432,6 +483,8 @@ export function summarizeSteamCloudPersistence(save = {}) {
     selectedShipKey: save?.selectedShipKey || null,
     progression: normalizeProgression(save?.progression || save?.unlockProgress || {}),
     hangarPilotXp: Math.max(0, Math.floor(Number(save?.hangarProgress?.pilotXp) || 0)),
+    shipUsageShips: Object.keys(normalizeUsageMap(save?.shipUsage || save?.shipUsageByShip || {})).length,
+    shipUsageTotal: Math.max(Math.floor(Number(save?.shipUsageTotal) || 0), sumUsageMap(save?.shipUsage || save?.shipUsageByShip || {})),
     threatDiscoveryCategories: Object.keys(save?.threatDiscovery?.items || {}).length
   };
 }

@@ -348,10 +348,37 @@ function sanitizeSettings(settings = {}) {
   };
 }
 
+function sanitizeShipUsage(rawUsage = {}) {
+  if (!rawUsage || typeof rawUsage !== 'object' || Array.isArray(rawUsage)) return {};
+  const usage = {};
+  for (const [rawKey, rawValue] of Object.entries(rawUsage).slice(0, 500)) {
+    const key = String(rawKey || '').trim().slice(0, 160);
+    const value = sanitizeNumber(rawValue, 0);
+    if (!key || value <= 0) continue;
+    usage[key] = Math.max(usage[key] || 0, value);
+  }
+  return usage;
+}
+
+function sumShipUsage(usage = {}) {
+  return Object.values(sanitizeShipUsage(usage))
+    .reduce((total, value) => total + value, 0);
+}
+
+function mergeShipUsage(localUsage = {}, rendererUsage = {}) {
+  const local = sanitizeShipUsage(localUsage);
+  const renderer = sanitizeShipUsage(rendererUsage);
+  const keys = [...new Set([...Object.keys(local), ...Object.keys(renderer)])];
+  return Object.fromEntries(keys
+    .map((key) => [key, Math.max(local[key] || 0, renderer[key] || 0)])
+    .filter(([, value]) => value > 0));
+}
+
 function sanitizeRendererState(state = {}) {
   const selectedShipKey = typeof state.selectedShipKey === 'string' && state.selectedShipKey.trim()
     ? state.selectedShipKey.trim().slice(0, 160)
     : null;
+  const shipUsage = sanitizeShipUsage(state.shipUsage || state.shipUsageByShip || {});
   return {
     language: sanitizeLanguageState(state.language || {
       preference: state.languagePreference,
@@ -363,6 +390,8 @@ function sanitizeRendererState(state = {}) {
     progression: sanitizeUnlockProgress(state.progression || state.unlockProgress || {}),
     hangarProgress: sanitizeHangarProgress(state.hangarProgress || {}),
     threatDiscovery: sanitizeThreatDiscovery(state.threatDiscovery || {}),
+    shipUsage,
+    shipUsageTotal: Math.max(sanitizeNumber(state.shipUsageTotal, 0), sumShipUsage(shipUsage)),
     settings: sanitizeSettings(state.settings || {})
   };
 }
@@ -378,6 +407,8 @@ function createEmptySave() {
     progression: sanitizeUnlockProgress(),
     hangarProgress: sanitizeHangarProgress(),
     threatDiscovery: sanitizeThreatDiscovery(),
+    shipUsage: sanitizeShipUsage(),
+    shipUsageTotal: 0,
     settings: sanitizeSettings()
   };
 }
@@ -394,6 +425,8 @@ function normalizeSave(rawSave = {}, localHighscores = null) {
     progression: rendererState.progression,
     hangarProgress: rendererState.hangarProgress,
     threatDiscovery: rendererState.threatDiscovery,
+    shipUsage: rendererState.shipUsage,
+    shipUsageTotal: rendererState.shipUsageTotal,
     settings: rendererState.settings
   };
 }
@@ -448,6 +481,10 @@ function createSteamCloudSave(userDataPath, logger = console) {
   function mergeRendererState(state = {}) {
     const current = readSave();
     const rendererState = sanitizeRendererState(state);
+    const hasShipUsage = Object.hasOwn(state, 'shipUsage') || Object.hasOwn(state, 'shipUsageByShip');
+    const shipUsage = hasShipUsage
+      ? mergeShipUsage(current.shipUsage, rendererState.shipUsage)
+      : current.shipUsage;
     return writeSave({
       ...current,
       language: Object.hasOwn(state, 'language') || Object.hasOwn(state, 'languagePreference')
@@ -467,6 +504,12 @@ function createSteamCloudSave(userDataPath, logger = console) {
       threatDiscovery: Object.hasOwn(state, 'threatDiscovery')
         ? rendererState.threatDiscovery
         : current.threatDiscovery,
+      shipUsage,
+      shipUsageTotal: Math.max(
+        current.shipUsageTotal || 0,
+        hasShipUsage ? rendererState.shipUsageTotal : 0,
+        sumShipUsage(shipUsage)
+      ),
       settings: rendererState.settings
     });
   }
@@ -483,6 +526,8 @@ function createSteamCloudSave(userDataPath, logger = console) {
       progression: save.progression,
       hangarPilotXp: Math.max(0, Math.floor(Number(save.hangarProgress?.pilotXp) || 0)),
       hangarUnlockedShips: Array.isArray(save.hangarProgress?.unlockedShipIds) ? save.hangarProgress.unlockedShipIds.length : 0,
+      shipUsageShips: Object.keys(sanitizeShipUsage(save.shipUsage)).length,
+      shipUsageTotal: Math.max(sanitizeNumber(save.shipUsageTotal, 0), sumShipUsage(save.shipUsage)),
       threatDiscoveryCategories: Object.keys(save.threatDiscovery?.items || {}).length,
       threatDiscoveryUnread: Array.isArray(save.threatDiscovery?.unreadIds) ? save.threatDiscovery.unreadIds.length : 0,
       updatedAt: save.updatedAt

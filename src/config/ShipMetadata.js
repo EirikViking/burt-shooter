@@ -162,14 +162,72 @@ export function getShipUnlockProgressDetails(spriteKey, progress = readUnlockPro
   return getHangarShipUnlockProgressDetails(getShipUnlockId(spriteKey), progress);
 }
 
+const SHIP_USAGE_STORAGE_KEY = 'burt.shipUsage.v1';
+const SHIP_USAGE_TOTAL_STORAGE_KEY = 'burt.shipUsageTotal.v1';
+
+function readShipUsageMap() {
+  const data = localStorage.getItem(SHIP_USAGE_STORAGE_KEY);
+  return data ? JSON.parse(data) : {};
+}
+
+function getStoredUsageCount(usage, key) {
+  const value = Number(usage?.[key]);
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.floor(value));
+}
+
+function addUsageAlias(aliases, key) {
+  const normalized = String(key || '').trim();
+  if (normalized) aliases.add(normalized);
+}
+
+function getShipUsageAliases(spriteKey) {
+  const aliases = new Set();
+  const rawKey = String(spriteKey || '').trim();
+  const resolvedKey = resolveShipKey(rawKey);
+  const ship = getShipMetadata(rawKey);
+
+  addUsageAlias(aliases, rawKey);
+  addUsageAlias(aliases, resolvedKey);
+  addUsageAlias(aliases, ship?.spriteKey);
+  addUsageAlias(aliases, ship?.baseSpriteKey);
+  addUsageAlias(aliases, ship?.id);
+  addUsageAlias(aliases, ship?.baseId);
+
+  for (const [key, metadata] of Object.entries(ShipMetadata)) {
+    const metadataResolvedKey = metadata?.aliasFor || key;
+    const sameResolvedKey = resolvedKey && metadataResolvedKey === resolvedKey;
+    const sameShipId = ship?.id && metadata?.id === ship.id;
+    const sameBaseId = ship?.baseId && metadata?.baseId === ship.baseId;
+    if (sameResolvedKey || sameShipId || sameBaseId) {
+      addUsageAlias(aliases, key);
+      addUsageAlias(aliases, metadata?.spriteKey);
+      addUsageAlias(aliases, metadata?.baseSpriteKey);
+      addUsageAlias(aliases, metadata?.id);
+      addUsageAlias(aliases, metadata?.baseId);
+    }
+  }
+
+  return [...aliases];
+}
+
+export function getShipUsageKey(spriteKey) {
+  const ship = getShipMetadata(spriteKey);
+  return ship?.id || ship?.baseId || resolveShipKey(spriteKey) || String(spriteKey || '').trim();
+}
+
 /**
  * Get ship usage count from localStorage
  */
 export function getShipUsage(spriteKey) {
   try {
-    const data = localStorage.getItem('burt.shipUsage.v1');
-    const usage = data ? JSON.parse(data) : {};
-    return usage[spriteKey] || 0;
+    const usage = readShipUsageMap();
+    const canonicalKey = getShipUsageKey(spriteKey);
+    const canonicalCount = getStoredUsageCount(usage, canonicalKey);
+    const legacyCount = getShipUsageAliases(spriteKey)
+      .filter((key) => key !== canonicalKey)
+      .reduce((total, key) => total + getStoredUsageCount(usage, key), 0);
+    return Math.max(canonicalCount, legacyCount);
   } catch (e) {
     console.warn('[ShipMetadata] Failed to get usage:', e);
     return 0;
@@ -181,7 +239,7 @@ export function getShipUsage(spriteKey) {
  */
 export function getTotalUsage() {
   try {
-    const total = localStorage.getItem('burt.shipUsageTotal.v1');
+    const total = localStorage.getItem(SHIP_USAGE_TOTAL_STORAGE_KEY);
     return total ? parseInt(total, 10) : 0;
   } catch (e) {
     console.warn('[ShipMetadata] Failed to get total usage:', e);
@@ -194,19 +252,18 @@ export function getTotalUsage() {
  */
 export function incrementShipUsage(spriteKey) {
   try {
-    // Get current usage
-    const data = localStorage.getItem('burt.shipUsage.v1');
-    const usage = data ? JSON.parse(data) : {};
-
-    // Increment ship usage
-    usage[spriteKey] = (usage[spriteKey] || 0) + 1;
-    localStorage.setItem('burt.shipUsage.v1', JSON.stringify(usage));
+    const usage = readShipUsageMap();
+    const canonicalKey = getShipUsageKey(spriteKey);
+    usage[canonicalKey] = getShipUsage(spriteKey) + 1;
+    localStorage.setItem(SHIP_USAGE_STORAGE_KEY, JSON.stringify(usage));
 
     // Increment total usage
     const total = getTotalUsage();
-    localStorage.setItem('burt.shipUsageTotal.v1', String(total + 1));
+    localStorage.setItem(SHIP_USAGE_TOTAL_STORAGE_KEY, String(total + 1));
 
-    console.log('[ShipMetadata] Incremented usage for', spriteKey, 'to', usage[spriteKey]);
+    if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.()?.catch?.(() => {});
+
+    console.log('[ShipMetadata] Incremented usage for', spriteKey, 'as', canonicalKey, 'to', usage[canonicalKey]);
   } catch (e) {
     console.warn('[ShipMetadata] Failed to increment usage:', e);
   }
