@@ -1,0 +1,48 @@
+{
+  "status": "uploaded",
+  "purpose": "private Steam test build after release hardening final verification",
+  "timestampUtc": "2026-06-05T08:57:50Z",
+  "branch": "codex/fix-dead-enemy-pixels-20260604",
+  "commit": "b67285fccae452cd8cb04f09a3172fdf5259581c",
+  "baselineCommit": "cdcdcc4375a89354944d405b46798656752e4eeb",
+  "packageVersion": "v2026-06-05_10-53-01",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23581905",
+    "setLive": "",
+    "leaderboardName": "nova_swarm_global_score_v2"
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestHash": "65f743148657512764e8a4dff699eb289503ce720c77625489adccab1bf66468",
+    "fileCount": 336,
+    "totalBytes": 723500944
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-05_10-53-01 private Steam test - release hardening final",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "buildOutput": "..\\\\steam-build-output",
+    "setLive": ""
+  },
+  "commands": [
+    "npm run check:release-hardening",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf",
+    "C:\\\\steamcmd\\\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\\\vibe-coding-e\\\\burt-shooter-cursor-hide-20260604\\\\release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  ],
+  "verification": {
+    "releaseHardening": "passed 25/25 checks in 394s; summary test-results/release-hardening/latest-summary.md",
+    "releaseLine": "passed before packaging and again during package/VDF generation",
+    "packageRuntime": "passed app=4765070 leaderboard=nova_swarm_global_score_v2; report test-results/steam-package-runtime-2026-06-05T08-56-14-961Z/report.json",
+    "packagedSmoke": "passed; report test-results/packaged-exe-smoke-2026-06-05T08-55-37-679Z/report.json",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23581905).",
+    "dummyScoresSubmitted": false,
+    "steamworksStoreSettingsChanged": false,
+    "setLiveKeptEmpty": true,
+    "deployPerformed": false
+  }
+}
