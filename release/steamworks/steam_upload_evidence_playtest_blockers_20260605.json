@@ -1,0 +1,58 @@
+{
+  "status": "uploaded",
+  "purpose": "private Steam test build for BuildID 23588518 real-playtest release blockers",
+  "timestampUtc": "2026-06-05T18:39:40Z",
+  "branch": "codex/fix-dead-enemy-pixels-20260604",
+  "baselineCommit": "494a0e9cff1cfcad0c205a2558d6fa92acca8311",
+  "packageVersion": "v2026-06-05_20-28-59",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23591148",
+    "setLive": "",
+    "leaderboardName": "nova_swarm_global_score_v2"
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestFileHash": "8070ccb8ac018e32bb269c33cd248f031d28bcedb50dfc012b143d57979e7a4d",
+    "manifestContentHash": "ac78155b5f3ca6dd50ffea3df2a5fb4ac33f70a9e1962bccf9c6ca16e1c5b8f1",
+    "fileCount": 336,
+    "totalBytes": 723511890,
+    "executableSha256": "08088896458f28047c8b07dda2f1aead5a5a8743d205035436fbc0a636c0c7b7"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-05_20-28-59 BuildID 23588518 release blockers private test",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "buildOutput": "..\\\\steam-build-output",
+    "setLive": ""
+  },
+  "commands": [
+    "npm run check:release-hardening",
+    "npm run build",
+    "npm run check:steam-leaderboard-mock",
+    "npm run check:i18n",
+    "npm run check:i18n-ui",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run check:dead-enemy-playthrough",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm v2026-06-05_20-28-59 BuildID 23588518 release blockers private test\" npm run steamworks:write-vdf",
+    "C:\\\\steamcmd\\\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\\\vibe-coding-e\\\\burt-shooter-cursor-hide-20260604\\\\release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  ],
+  "verification": {
+    "releaseHardening": "passed 33/33 checks in 492s; summary test-results/release-hardening/latest-summary.md",
+    "build": "passed; package version v2026-06-05_20-28-59",
+    "steamLeaderboardMock": "passed; report test-results/steam-leaderboard-mock-2026-06-05T18-29-40-550Z/report.json",
+    "i18n": "passed",
+    "i18nUi": "passed; report test-results/i18n-ui-2026-06-05T18-32-01-413Z/",
+    "packageSteamWinCurrent": "passed; runtime report test-results/steam-package-runtime-2026-06-05T18-35-48-024Z/report.json",
+    "packagedSmoke": "passed; report test-results/packaged-exe-smoke-2026-06-05T18-35-57-515Z/report.json",
+    "finalDeadEnemyPlaythrough": "passed; report test-results/dead-enemy-playthrough-2026-06-05T18-36-29-246Z/report.json",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23591148).",
+    "dummyScoresSubmitted": false,
+    "steamworksStoreSettingsChanged": false,
+    "setLiveKeptEmpty": true,
+    "deployPerformed": false
+  }
+}

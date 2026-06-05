@@ -21,8 +21,8 @@
 - [x] Reproduce/fix dead small-ship pixel through at least sector 9, preferably 12, while preserving pending `waitingForEntry` enemies.
 - [x] Add sector-10 Overrun confirmation pause, then resume on keyboard/controller/mouse confirmation.
 - [x] Improve Career Intel readability with minimum readable text sizes and spacing.
-- [ ] Run required checks: `npm run check:release-hardening`, `npm run build`, `npm run check:steam-leaderboard-mock`, `npm run check:i18n`, `npm run check:i18n-ui`, `npm run package:steam:win:current`, `npm run desktop:smoke:packaged`.
-- [ ] Upload private Steam test build with `SetLive` empty, then commit/push final evidence.
+- [x] Run required checks: `npm run check:release-hardening`, `npm run build`, `npm run check:steam-leaderboard-mock`, `npm run check:i18n`, `npm run check:i18n-ui`, `npm run package:steam:win:current`, `npm run desktop:smoke:packaged`.
+- [x] Upload private Steam test build with `SetLive` empty, then commit/push final evidence.
 
 ## Evidence log
 
@@ -65,3 +65,17 @@
   - Toast debug state now exposes real rendered bounds for active center/top/corner messages.
   - Default center messages sit lower than top messages, and transition-priority messages delay/dismiss lower-priority bursts instead of stacking over them.
   - `npm run check:gameplay-message-overlap` passed with 48 sampled frames of boss/sector/powerup/combo message bursts; report: `test-results/gameplay-message-overlap-2026-06-05T18-11-16-699Z/report.json`.
+- Final release verification:
+  - `npm run check:release-hardening` passed 33/33 checks in 492s; summary: `test-results/release-hardening/latest-summary.md`.
+  - `npm run build` passed and produced build version `v2026-06-05_20-28-59`.
+  - `npm run check:steam-leaderboard-mock` passed; report: `test-results/steam-leaderboard-mock-2026-06-05T18-29-40-550Z/report.json`.
+  - `npm run check:i18n` passed.
+  - `npm run check:i18n-ui` passed across `en`, `de`, `zh-CN`, `ru`, `es`, `pt-BR`, `ko`, and `ja`; report directory: `test-results/i18n-ui-2026-06-05T18-32-01-413Z/`.
+  - `npm run package:steam:win:current` passed, including `check:release-line`, `check:steam-sdk-ready`, Electron packaging, and packaged runtime validation; runtime report: `test-results/steam-package-runtime-2026-06-05T18-35-48-024Z/report.json`.
+  - `npm run desktop:smoke:packaged` passed; report: `test-results/packaged-exe-smoke-2026-06-05T18-35-57-515Z/report.json`.
+  - Final targeted dead enemy proof after packaging: `npm run check:dead-enemy-playthrough` passed; report: `test-results/dead-enemy-playthrough-2026-06-05T18-36-29-246Z/report.json`.
+- Steam private test upload:
+  - Payload manifest regenerated with 336 files and 723511890 bytes; `release/steamworks/steam_payload_manifest.json`.
+  - VDF inspected before upload: `AppID` `4765070`, depot `4765071`, `ContentRoot` `..\\desktop\\win-unpacked`, and `SetLive` exactly `""`.
+  - SteamCMD upload completed successfully for AppID `4765070`; private test BuildID: `23591148`.
+  - Evidence JSON: `release/steamworks/steam_upload_evidence_playtest_blockers_20260605.json`.
