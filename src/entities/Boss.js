@@ -1075,7 +1075,7 @@ export class Boss {
   }
 
   getRegularAttackIntervalMs() {
-    const base = this.level <= 1 ? 2750 : this.level === 2 ? 2580 : 2920;
+    const base = this.level <= 1 ? 3400 : this.level === 2 ? 2580 : 2920;
     const phaseScalar = this.phase === 1 ? 1 : this.phase === 2 ? 0.95 : 0.9;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
     return Math.round((base * phaseScalar * chaosRelief) / this.getPostFirstBossDifficultyScalar());
@@ -1603,9 +1603,10 @@ export class Boss {
     };
 
     if (attack === 'fan' || attack === 'burst' || attack === 'fakeout') {
-      const count = this.phase === 1 ? 1 : attack === 'burst' ? 5 : 3;
-      const spread = this.phase === 1 ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
-      const speed = this.getBossProjectileSpeed(this.phase === 1 ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
+      const firstBoss = this.level <= 1;
+      const count = this.phase === 1 || firstBoss ? 1 : attack === 'burst' ? 5 : 3;
+      const spread = this.phase === 1 || firstBoss ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
+      const speed = this.getBossProjectileSpeed(this.phase === 1 || firstBoss ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
       for (let i = 0; i < count; i++) {
         const t = count === 1 ? 0 : (i / (count - 1)) - 0.5;
         addBullet(this.x, this.y, aimAngle + t * spread, speed);

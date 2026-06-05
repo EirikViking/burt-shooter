@@ -30,7 +30,7 @@ assert.ok(earlyBoss.minimumFightMs >= 9000, `first boss minimum fight should be 
 assert.ok(midBoss.minimumFightMs > earlyBoss.minimumFightMs, 'boss minimum fight should grow gently after the first boss');
 assert.ok(lateBoss.minimumFightMs <= 12600, `boss minimum fight should cap at 12600ms, got ${lateBoss.minimumFightMs}`);
 assert.ok(
-  earlyBoss.getRegularAttackIntervalMs() >= 2380,
+  earlyBoss.getRegularAttackIntervalMs() >= 3200,
   `first boss regular attack interval should not get shorter, got ${earlyBoss.getRegularAttackIntervalMs()}`
 );
 assert.ok(
