@@ -6,14 +6,14 @@ Baseline before low-risk polish pass: `58e896a569aab8d6bd202f2b301a4921a1cd818f`
 
 ## Build Under Test
 
-- Steam package version: pending next private upload from this pass.
-- Steam BuildID: pending next private upload from this pass.
-- SetLive: must remain empty.
+- Steam package version: `v2026-06-05_06-10-44`
+- Steam BuildID: `23578716`
+- SetLive: empty
 - AppID: `4765070`
 - Windows depot: `4765071`
 - Steam leaderboard name: `nova_swarm_global_score_v2`
 
-Use the newest private Steam build uploaded from this branch unless the final upload evidence file says otherwise.
+Use private Steam BuildID `23578716` for this checklist.
 
 ## Automated Gate Before Manual Testing
 
