@@ -129,6 +129,9 @@ try {
         enemyManager.spawnWave(config);
 
         const enemies = enemyManager.enemies.filter((enemy) => enemy.kind === 'enemy');
+        const objectiveCountBeforeEntry = enemyManager.getObjectiveEnemyCount();
+        const waitingEntryCount = enemies.filter((enemy) => enemy.waitingForEntry).length;
+        const activeEntryCount = enemies.filter((enemy) => enemy.active && !enemy.waitingForEntry).length;
         for (const enemy of enemies) {
           enemy.waitingForEntry = false;
           enemy.active = true;
@@ -168,7 +171,11 @@ try {
           shotTactics: [...new Set(shotList.map((bullet) => bullet.waveTactic).filter(Boolean))],
           movementDelta: before && after
             ? Math.round(Math.hypot(after.x - before.x, after.y - before.y))
-            : 0
+            : 0,
+          objectiveCountBeforeEntry,
+          waitingEntryCount,
+          activeEntryCount,
+          plannedCount: Number(config.count) || 0
         });
       }
     }
@@ -191,6 +198,9 @@ try {
   const uniqueVolleys = new Set(data.samples.map((sample) => sample.volley).filter(Boolean));
   const uniqueFormations = new Set(data.samples.map((sample) => sample.formation).filter(Boolean));
   const inheritedOk = data.samples.every((sample) => sample.enemyCount > 0 && sample.inheritedCount === sample.enemyCount);
+  const delayedEntrySamples = data.samples.filter((sample) => sample.waitingEntryCount > 0);
+  const objectiveCoversDelayedEntries = data.samples.every((sample) => sample.objectiveCountBeforeEntry >= sample.enemyCount);
+  const plannedEnemyCountsOk = data.samples.every((sample) => sample.enemyCount >= Math.max(4, Math.min(6, sample.plannedCount || 0)));
   const shotTaggedOk = data.samples.every((sample) => sample.shotCount > 0 && sample.shotTactics.includes(sample.activeTactic));
   const movementSamples = data.samples.map((sample) => sample.movementDelta);
   const movingEnoughCount = movementSamples.filter((delta) => delta >= 8).length;
@@ -214,6 +224,9 @@ try {
       uniqueVolleys.size >= 3 &&
       uniqueFormations.size >= 6 &&
       inheritedOk &&
+      delayedEntrySamples.length >= data.samples.length * 0.75 &&
+      objectiveCoversDelayedEntries &&
+      plannedEnemyCountsOk &&
       shotTaggedOk &&
       movedOk &&
       pageErrors.length === 0 &&
@@ -226,6 +239,9 @@ try {
     uniqueVolleys: [...uniqueVolleys],
     uniqueFormations: [...uniqueFormations],
     inheritedOk,
+    delayedEntrySampleCount: delayedEntrySamples.length,
+    objectiveCoversDelayedEntries,
+    plannedEnemyCountsOk,
     shotTaggedOk,
     movedOk,
     movingEnoughCount,

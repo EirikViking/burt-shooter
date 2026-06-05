@@ -735,7 +735,8 @@ export class EnemyManager {
 
   // WAVE FIX: Helper to identify objective enemies (ships, not bonus drones)
   isObjectiveEnemy(enemy) {
-    if (!enemy || !enemy.active) return false;
+    if (!enemy || enemy.destroyed) return false;
+    if (enemy.active === false && !enemy.waitingForEntry) return false;
     // bonus drones and bosses are not objective enemies
     return enemy.kind !== 'bonus_drone' && enemy.kind !== 'boss';
   }
