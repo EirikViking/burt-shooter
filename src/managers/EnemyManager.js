@@ -1103,12 +1103,28 @@ export class EnemyManager {
     return true;
   }
 
+  isPendingEntryEnemy(enemy) {
+    if (!enemy || enemy.destroyed === true) return false;
+    if (enemy.waitingForEntry === true) return true;
+    const entryStart = Number(enemy.entryCurve?.startTime);
+    return enemy.active === false &&
+      enemy.state === 'ENTRY' &&
+      Number.isFinite(entryStart) &&
+      entryStart > Date.now();
+  }
+
+  shouldSweepInactiveEnemy(enemy) {
+    if (!enemy) return true;
+    if (enemy.destroyed === true) return true;
+    if (enemy.active !== false) return false;
+    return !this.isPendingEntryEnemy(enemy);
+  }
+
   sweepInactiveEnemyVisuals(reason = 'inactive_sweep') {
     let swept = 0;
     this.enemies = this.enemies.filter(enemy => {
       if (!enemy) return false;
-      const inactive = enemy.active === false || enemy.destroyed === true;
-      if (!inactive) return true;
+      if (!this.shouldSweepInactiveEnemy(enemy)) return true;
       this.removeEnemySprite(enemy, reason);
       swept += 1;
       return false;
@@ -1151,7 +1167,7 @@ export class EnemyManager {
 
     this.enemies = this.enemies.filter(enemy => {
       if (!enemy) return false;
-      if (!enemy.active && !enemy.waitingForEntry) {
+      if (this.shouldSweepInactiveEnemy(enemy)) {
         this.removeEnemySprite(enemy, 'inactive_update_pre');
         return false;
       }
@@ -1159,7 +1175,7 @@ export class EnemyManager {
       const isBoss = enemy.kind === 'boss';
       enemy.update(isBoss ? dt : dt * enemySpeedMult, playerX, playerY);
 
-      if (!enemy.active && !enemy.waitingForEntry) {
+      if (this.shouldSweepInactiveEnemy(enemy)) {
         this.removeEnemySprite(enemy, 'inactive_update');
         return false;
       }

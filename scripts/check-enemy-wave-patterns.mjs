@@ -50,23 +50,23 @@ function viteCommand() {
   return { command: process.platform === 'win32' ? 'npx.cmd' : 'npx', args: ['vite'] };
 }
 
-async function startPreviewServer() {
+async function startTestServer() {
   if (await canFetch(baseUrl)) return null;
   const { command, args } = viteCommand();
-  const server = spawn(command, [...args, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
+  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort'], {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
   });
-  server.stdout.on('data', (chunk) => process.stdout.write(`[preview] ${chunk}`));
-  server.stderr.on('data', (chunk) => process.stderr.write(`[preview] ${chunk}`));
+  server.stdout.on('data', (chunk) => process.stdout.write(`[vite] ${chunk}`));
+  server.stderr.on('data', (chunk) => process.stderr.write(`[vite] ${chunk}`));
   const start = Date.now();
   while (Date.now() - start < 15000) {
     if (await canFetch(baseUrl)) return server;
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   server.kill();
-  throw new Error(`Preview server did not become ready at ${baseUrl}`);
+  throw new Error(`Vite test server did not become ready at ${baseUrl}`);
 }
 
 function findChrome() {
@@ -77,7 +77,7 @@ function findChrome() {
   ].filter(Boolean).find((candidate) => existsSync(candidate));
 }
 
-const server = await startPreviewServer();
+const server = await startTestServer();
 const browser = await chromium.launch({
   headless: true,
   executablePath: findChrome(),
@@ -128,10 +128,24 @@ try {
         enemyManager.phase = 'WAVES';
         enemyManager.spawnWave(config);
 
-        const enemies = enemyManager.enemies.filter((enemy) => enemy.kind === 'enemy');
+        const enemiesBeforeSweep = enemyManager.enemies.filter((enemy) => enemy.kind === 'enemy');
+        const spawnedCount = enemiesBeforeSweep.length;
         const objectiveCountBeforeEntry = enemyManager.getObjectiveEnemyCount();
-        const waitingEntryCount = enemies.filter((enemy) => enemy.waitingForEntry).length;
-        const activeEntryCount = enemies.filter((enemy) => enemy.active && !enemy.waitingForEntry).length;
+        const waitingEntryCount = enemiesBeforeSweep.filter((enemy) => enemy.waitingForEntry).length;
+        const activeEntryCount = enemiesBeforeSweep.filter((enemy) => enemy.active && !enemy.waitingForEntry).length;
+        const sweptAfterSpawn = enemyManager.sweepInactiveEnemyVisuals('wave_regression_after_spawn');
+        const enemiesAfterSpawnSweep = enemyManager.enemies.filter((enemy) => enemy.kind === 'enemy');
+        const objectiveCountAfterSpawnSweep = enemyManager.getObjectiveEnemyCount();
+        enemyManager.updateEnemies(1);
+        const enemiesAfterOneUpdate = enemyManager.enemies.filter((enemy) => enemy.kind === 'enemy');
+        const objectiveCountAfterOneUpdate = enemyManager.getObjectiveEnemyCount();
+        const preWatchdogCount = enemyManager.enemies.length;
+        enemyManager.waveActiveTimer = 0;
+        const validWaveClearedAsStuck = enemyManager.maybeClearStalledWave(objectiveCountAfterOneUpdate);
+        const postWatchdogCount = enemyManager.enemies.length;
+        const sweptAfterOneUpdate = enemyManager.sweepInactiveEnemyVisuals('wave_regression_after_one_update');
+        const enemies = enemyManager.enemies.filter((enemy) => enemy.kind === 'enemy');
+        const objectiveCountAfterCleanupSweep = enemyManager.getObjectiveEnemyCount();
         for (const enemy of enemies) {
           enemy.waitingForEntry = false;
           enemy.active = true;
@@ -166,6 +180,15 @@ try {
           shot: enemyManager.currentWaveTactic?.shot || null,
           volley: enemyManager.currentWaveTactic?.volley || null,
           enemyCount: enemies.length,
+          spawnedCount,
+          afterSpawnSweepCount: enemiesAfterSpawnSweep.length,
+          afterOneUpdateCount: enemiesAfterOneUpdate.length,
+          afterCleanupSweepCount: enemies.length,
+          sweptAfterSpawn,
+          sweptAfterOneUpdate,
+          validWaveClearedAsStuck,
+          preWatchdogCount,
+          postWatchdogCount,
           inheritedCount: enemies.filter((enemy) => enemy.waveTactic?.id === enemyManager.currentWaveTactic?.id).length,
           shotCount: shotList.length,
           shotTactics: [...new Set(shotList.map((bullet) => bullet.waveTactic).filter(Boolean))],
@@ -173,6 +196,9 @@ try {
             ? Math.round(Math.hypot(after.x - before.x, after.y - before.y))
             : 0,
           objectiveCountBeforeEntry,
+          objectiveCountAfterSpawnSweep,
+          objectiveCountAfterOneUpdate,
+          objectiveCountAfterCleanupSweep,
           waitingEntryCount,
           activeEntryCount,
           plannedCount: Number(config.count) || 0
@@ -200,7 +226,31 @@ try {
   const inheritedOk = data.samples.every((sample) => sample.enemyCount > 0 && sample.inheritedCount === sample.enemyCount);
   const delayedEntrySamples = data.samples.filter((sample) => sample.waitingEntryCount > 0);
   const objectiveCoversDelayedEntries = data.samples.every((sample) => sample.objectiveCountBeforeEntry >= sample.enemyCount);
-  const plannedEnemyCountsOk = data.samples.every((sample) => sample.enemyCount >= Math.max(4, Math.min(6, sample.plannedCount || 0)));
+  const plannedEnemyCountsOk = data.samples.every((sample) => sample.spawnedCount >= Math.max(4, Math.min(6, sample.plannedCount || 0)));
+  const waveCountLifecycleOk = data.samples.every((sample) =>
+    sample.spawnedCount > 1 &&
+    sample.afterSpawnSweepCount === sample.spawnedCount &&
+    sample.afterOneUpdateCount === sample.spawnedCount &&
+    sample.afterCleanupSweepCount === sample.spawnedCount &&
+    sample.objectiveCountBeforeEntry >= sample.spawnedCount &&
+    sample.objectiveCountAfterSpawnSweep === sample.objectiveCountBeforeEntry &&
+    sample.objectiveCountAfterOneUpdate === sample.objectiveCountBeforeEntry &&
+    sample.objectiveCountAfterCleanupSweep === sample.objectiveCountBeforeEntry &&
+    sample.sweptAfterSpawn === 0 &&
+    sample.sweptAfterOneUpdate === 0 &&
+    sample.validWaveClearedAsStuck === false &&
+    sample.preWatchdogCount === sample.postWatchdogCount
+  );
+  const earlyWaveLifecycleOk = data.samples.some((sample) =>
+    sample.level <= 3 &&
+    sample.spawnedCount > 1 &&
+    sample.afterCleanupSweepCount === sample.spawnedCount
+  );
+  const laterWaveLifecycleOk = data.samples.some((sample) =>
+    sample.level >= 8 &&
+    sample.spawnedCount > 1 &&
+    sample.afterCleanupSweepCount === sample.spawnedCount
+  );
   const shotTaggedOk = data.samples.every((sample) => sample.shotCount > 0 && sample.shotTactics.includes(sample.activeTactic));
   const movementSamples = data.samples.map((sample) => sample.movementDelta);
   const movingEnoughCount = movementSamples.filter((delta) => delta >= 8).length;
@@ -233,6 +283,9 @@ try {
       delayedEntrySamples.length >= data.samples.length * 0.75 &&
       objectiveCoversDelayedEntries &&
       plannedEnemyCountsOk &&
+      waveCountLifecycleOk &&
+      earlyWaveLifecycleOk &&
+      laterWaveLifecycleOk &&
       shotTaggedOk &&
       movedOk &&
       pageErrors.length === 0 &&
@@ -248,6 +301,9 @@ try {
     delayedEntrySampleCount: delayedEntrySamples.length,
     objectiveCoversDelayedEntries,
     plannedEnemyCountsOk,
+    waveCountLifecycleOk,
+    earlyWaveLifecycleOk,
+    laterWaveLifecycleOk,
     shotTaggedOk,
     movedOk,
     movingEnoughCount,

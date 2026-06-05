@@ -116,6 +116,21 @@ assert.equal(swept, lateRunPile.length, 'inactive late-run support pile should b
 assert.equal(manager.enemies.length, 0, 'inactive late-run support pile should not remain tracked');
 lateRunPile.forEach((enemy, index) => assertVisualGone(enemy, `late run support sweep ${index}`));
 
+const pendingEntryWave = Array.from({ length: 6 }, (_, index) => {
+  const enemy = createSmallEnemy(container, game);
+  enemy.startEntry(80, -50, 160 + index * 64, 120, 1200, index * 200);
+  return enemy;
+});
+manager.enemies = pendingEntryWave;
+const pendingSwept = manager.sweepInactiveEnemyVisuals('pending_entry_wave');
+assert.equal(pendingSwept, 0, 'pending wave entries should not be swept as dead visuals');
+assert.equal(manager.enemies.length, pendingEntryWave.length, 'pending wave entries should remain tracked');
+assert.equal(
+  manager.enemies.filter((enemy) => enemy.waitingForEntry).length,
+  pendingEntryWave.length - 1,
+  'staggered pending entries should remain waiting for entry'
+);
+
 const owner = createSmallEnemy(container, game);
 const ownedVisual = new PIXI.Graphics();
 ownedVisual.circle(0, 0, 6);
