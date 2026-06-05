@@ -596,6 +596,7 @@ function buildGameTextState(game) {
       mainMenuButtonFocused: Boolean(shipSelectScene.mainMenuButtonFocused),
       hangarMenu: shipSelectScene.getHangarMenuDebugState ? shipSelectScene.getHangarMenuDebugState(getBoundsDebug) : null,
       careerInfo: shipSelectScene.getCareerInfoDebugState ? shipSelectScene.getCareerInfoDebugState(getBoundsDebug) : null,
+      selectedShipDisplay: shipSelectScene.getSelectedShipDisplayDebugState ? shipSelectScene.getSelectedShipDisplayDebugState(getBoundsDebug) : null,
       startButton: getBoundsDebug(shipSelectScene.startButton)
     } : null,
     gameOver: gameOverScene ? {

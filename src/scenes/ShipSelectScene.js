@@ -753,6 +753,63 @@ export class ShipSelectScene {
     };
   }
 
+  getSelectedShipDisplayDebugState(getBounds) {
+    const bounds = typeof getBounds === 'function' ? getBounds : () => null;
+    const card = this.shipCards[this.selectedIndex] || null;
+    const sprite = card?.shipSprite || card?.sprite || null;
+    const lockPlate = card?.lockPlate || null;
+    const width = this.game?.getWidth?.() || this.layout?.width || 0;
+    const height = this.game?.getHeight?.() || this.layout?.height || 0;
+    const buttonBounds = [
+      bounds(this.detailsButton),
+      bounds(this.startButton),
+      bounds(this.randomButton)
+    ].filter(Boolean);
+    const footerBounds = bounds(this.footerInstructions);
+    const bottomLimit = Math.min(
+      ...buttonBounds.map(item => item.y),
+      footerBounds ? footerBounds.y - 8 : height - 18,
+      height - 58
+    );
+    const frame = {
+      x: this.layout?.showLeftIntel ? 278 : 18,
+      y: this.layout?.isMobile ? 92 : 104,
+      width: Math.max(120, width - (this.layout?.showLeftIntel ? 278 : 18) - (this.layout?.showSideIntel ? 296 : 18)),
+      height: Math.max(120, bottomLimit - (this.layout?.isMobile ? 92 : 104))
+    };
+    const frameRight = frame.x + frame.width;
+    const frameBottom = frame.y + frame.height;
+    const spriteBounds = bounds(sprite);
+    const lockPlateBounds = bounds(lockPlate);
+    const dynamicFrameMargins = spriteBounds && lockPlateBounds ? {
+      left: spriteBounds.x - lockPlateBounds.x,
+      right: (lockPlateBounds.x + lockPlateBounds.width) - (spriteBounds.x + spriteBounds.width),
+      top: spriteBounds.y - lockPlateBounds.y,
+      bottom: (lockPlateBounds.y + lockPlateBounds.height) - (spriteBounds.y + spriteBounds.height)
+    } : null;
+    return {
+      card: bounds(card),
+      sprite: spriteBounds,
+      lockPlate: lockPlateBounds,
+      frame,
+      scale: card?.scale?.x || 0,
+      shipDisplaySize: card?.shipDisplaySize || 0,
+      lockPlateFrameSize: card?.lockPlateFrameSize || null,
+      fitsFrame: Boolean(spriteBounds &&
+        spriteBounds.x >= frame.x &&
+        spriteBounds.y >= frame.y &&
+        spriteBounds.x + spriteBounds.width <= frameRight &&
+        spriteBounds.y + spriteBounds.height <= frameBottom),
+      clearOfButtons: Boolean(spriteBounds && buttonBounds.every(item => spriteBounds.y + spriteBounds.height <= item.y - 8)),
+      dynamicFrameMargins,
+      fitsDynamicFrame: Boolean(!lockPlate || (spriteBounds && lockPlateBounds &&
+        dynamicFrameMargins.left >= 8 &&
+        dynamicFrameMargins.right >= 8 &&
+        dynamicFrameMargins.top >= 8 &&
+        dynamicFrameMargins.bottom >= 8))
+    };
+  }
+
   createCareerInfoOverlay(width, height) {
     const overlay = new PIXI.Container();
     overlay.label = 'ui_careerInfoOverlay';
@@ -1346,20 +1403,26 @@ export class ShipSelectScene {
         sprite.tint = variant.tint;
       }
 
-      const scale = Math.min(heroSize / sprite.width, heroSize / sprite.height);
+      const shipDisplaySize = this.getHangarShipDisplaySize(ship, heroSize);
+      const scale = Math.min(shipDisplaySize / sprite.width, shipDisplaySize / sprite.height);
       sprite.scale.set(scale);
 
       container.addChild(sprite);
+      container.shipSprite = sprite;
       container.sprite = sprite;
+      container.shipDisplaySize = shipDisplaySize;
     }
 
     if (locked) {
+      const frameSize = this.getDynamicShipFrameSize(container, heroSize);
       const lockPlate = new PIXI.Graphics();
-      lockPlate.roundRect(-heroSize * 0.72, heroY - heroSize * 0.52, heroSize * 1.44, heroSize * 1.08, 10);
-      lockPlate.fill({ color: 0x020711, alpha: 0.62 });
-      lockPlate.stroke({ color: 0xffcc00, width: 2, alpha: 0.7 });
-      container.addChild(lockPlate);
+      lockPlate.roundRect(-frameSize.width / 2, heroY - frameSize.height / 2, frameSize.width, frameSize.height, 10);
+      lockPlate.fill({ color: 0x020711, alpha: 0.26 });
+      lockPlate.stroke({ color: 0xffcc00, width: 2, alpha: 0.62 });
+      const spriteIndex = container.shipSprite ? container.getChildIndex(container.shipSprite) : container.children.length;
+      container.addChildAt(lockPlate, Math.max(0, spriteIndex));
       container.lockPlate = lockPlate;
+      container.lockPlateFrameSize = frameSize;
 
       const lockText = createText('LOCKED', {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -1479,6 +1542,31 @@ export class ShipSelectScene {
     const g = (value >> 8) & 0xff;
     const b = value & 0xff;
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  getHangarShipSizeFactor(ship) {
+    const radius = Number(ship?.hitbox?.radius) || 12;
+    const normalized = Math.max(0, Math.min(1, (radius - 10) / 5));
+    const textureIndex = Math.max(0, Number(ship?.textureIndex) || 0);
+    const progression = Math.max(0, Math.min(1, textureIndex / 24));
+    return Math.min(1.2, 0.9 + normalized * 0.2 + progression * 0.14);
+  }
+
+  getHangarShipDisplaySize(ship, heroSize) {
+    const factor = this.getHangarShipSizeFactor(ship);
+    return heroSize * factor;
+  }
+
+  getDynamicShipFrameSize(shipContainer, heroSize) {
+    const sprite = shipContainer?.shipSprite || shipContainer?.sprite || null;
+    const displayWidth = Math.abs(sprite?.width || 0);
+    const displayHeight = Math.abs(sprite?.height || 0);
+    const paddingX = heroSize * (this.layout?.isMobile ? 0.5 : 0.62);
+    const paddingY = heroSize * (this.layout?.isMobile ? 0.42 : 0.52);
+    return {
+      width: Math.max(heroSize * 1.45, displayWidth + paddingX),
+      height: Math.max(heroSize * 1.18, displayHeight + paddingY)
+    };
   }
 
   updateCarouselPositions(animate = true) {
