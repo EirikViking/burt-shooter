@@ -1026,7 +1026,7 @@ export class Boss {
 
   getBossPressureScalar() {
     let scalar = 1;
-    if (this.level <= 1) scalar = 0.78;
+    if (this.level <= 1) scalar = 0.66;
     else if (this.level === 2) scalar = 0.88;
     else if (this.level <= 4) scalar = 0.92;
     else if (this.level <= 6) scalar = 0.96;
@@ -1075,7 +1075,7 @@ export class Boss {
   }
 
   getRegularAttackIntervalMs() {
-    const base = this.level <= 1 ? 2380 : this.level === 2 ? 2580 : 2920;
+    const base = this.level <= 1 ? 2750 : this.level === 2 ? 2580 : 2920;
     const phaseScalar = this.phase === 1 ? 1 : this.phase === 2 ? 0.95 : 0.9;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
     return Math.round((base * phaseScalar * chaosRelief) / this.getPostFirstBossDifficultyScalar());
@@ -1222,19 +1222,29 @@ export class Boss {
 
   startSignatureTelegraph(type, playerX, playerY) {
     const fairness = BalanceConfig.difficulty.bossFairness || {};
+    const earlyBoss = this.level <= 2;
     if (type === 'ring' || type === 'adds') {
-      this.setRingSafeLane(type === 'adds' ? 14 : 18, type === 'adds' ? 0.48 : (fairness.ringSafeWedge ?? 0.5));
+      const safeWedge = type === 'adds'
+        ? 0.48
+        : earlyBoss
+          ? (fairness.ringSafeWedgeEarly ?? fairness.ringSafeWedge ?? 0.5)
+          : (fairness.ringSafeWedge ?? 0.5);
+      this.setRingSafeLane(type === 'adds' ? 14 : 18, safeWedge);
     } else {
       const spread = type === 'lance' ? 0.16 : type === 'mirror' ? 0.38 : this.level <= 2 ? 0.5 : 0.64;
       this.setAimedSafeLane(type, playerX, playerY, spread);
     }
+    const ringTelegraphMs = earlyBoss
+      ? (fairness.signatureRingTelegraphEarlyMs ?? fairness.signatureRingTelegraphMs ?? 1220)
+      : (fairness.signatureRingTelegraphMs ?? 1220);
+    const aimedTelegraphMs = earlyBoss
+      ? (fairness.signatureTelegraphEarlyMs ?? fairness.signatureTelegraphMs ?? 1120)
+      : (fairness.signatureTelegraphMs ?? 1120);
     this.telegraph = {
       type,
       label: this.getSignatureLabel(type),
       start: Date.now(),
-      duration: type === 'ring' || type === 'adds'
-        ? (fairness.signatureRingTelegraphMs ?? 1220)
-        : (fairness.signatureTelegraphMs ?? 1120)
+      duration: type === 'ring' || type === 'adds' ? ringTelegraphMs : aimedTelegraphMs
     };
     this.setPresentationState('charge', this.telegraph.duration);
     const playScene = this.game?.scenes?.play;

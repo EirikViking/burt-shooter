@@ -101,16 +101,20 @@ export const BalanceConfig = {
 
         bossFairness: {
             signatureTelegraphMs: 1240,
+            signatureTelegraphEarlyMs: 1360,
             signatureRingTelegraphMs: 1340,
-            regularTelegraphEarlyMs: 1040,
+            signatureRingTelegraphEarlyMs: 1500,
+            regularTelegraphEarlyMs: 1120,
             regularTelegraphMidMs: 960,
             regularTelegraphLateMs: 900,
             netSpeedMultiplier: 0.8,
             beamSpeedMultiplier: 0.78,
             wallSpeedMultiplier: 0.74,
-            ringSafeWedgeEarly: 0.58,
+            ringSafeWedgeEarly: 0.74,
             ringSafeWedge: 0.6,
             regularRingSafeWedge: 0.6,
+            contactRadiusScalarEarly: 0.5,
+            contactRadiusScalar: 0.62,
             beamHazardRadius: 11,
             coneHazardRadius: 23,
             hazardArmingMs: 320

@@ -2152,7 +2152,19 @@ export class PlayScene {
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    const minDistance = (a.radius || 10) + (b.radius || 10);
+    const collisionRadius = (entity) => {
+      const radius = Number(entity?.radius) || 10;
+      if (entity?.kind === 'boss') {
+        const fairness = BalanceConfig.difficulty?.bossFairness || {};
+        const level = Number(entity.level) || Number(this.game?.level) || 1;
+        const scalar = level <= 1
+          ? (fairness.contactRadiusScalarEarly ?? fairness.contactRadiusScalar ?? 0.5)
+          : (fairness.contactRadiusScalar ?? 0.62);
+        return Math.max(42, radius * scalar);
+      }
+      return radius;
+    };
+    const minDistance = collisionRadius(a) + collisionRadius(b);
     return distance < minDistance;
   }
 

@@ -45,7 +45,12 @@ assert.ok(playScene.includes("AudioManager.playSfx('boss_phase_surge', { force: 
 assert.ok(!playScene.includes("else AudioManager.playSfx('powerup', { force: true, volume: 0.8 });"), 'boss celebration should not end with generic powerup pickup SFX');
 
 const bossSource = readFileSync('src/entities/Boss.js', 'utf8');
+const balanceSource = readFileSync('src/config/BalanceConfig.js', 'utf8');
 assert.ok(bossSource.includes('regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500)'), 'damage gate should keep boss fire suppressed until after the hold');
 assert.ok(bossSource.includes('return false;'), 'damage gate should preserve non-lethal hold behavior');
+assert.ok(balanceSource.includes('ringSafeWedgeEarly: 0.74'), 'first boss ring safe wedge should stay wider than later boss rings');
+assert.ok(balanceSource.includes('signatureRingTelegraphEarlyMs: 1500'), 'first boss ring telegraph should stay more readable');
+assert.ok(balanceSource.includes('contactRadiusScalarEarly: 0.5'), 'first boss contact radius should stay readable against large boss art');
+assert.ok(bossSource.includes('if (this.level <= 1) scalar = 0.66'), 'first boss pressure scalar should stay softened while the fight lasts longer');
 
 console.log(`[release-hardening-boss-flow] PASS minFightMs first=${earlyBoss.minimumFightMs} mid=${midBoss.minimumFightMs} cap=${lateBoss.minimumFightMs}`);
