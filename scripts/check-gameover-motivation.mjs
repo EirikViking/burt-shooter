@@ -437,11 +437,11 @@ try {
       gameOverState.scene === 'gameOver' &&
       hasReadableTopStack(gameOverTopLayout) &&
       hasReadableTopStack(runbackTopLayout) &&
-      /NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
-      !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
+      /SHIP UNLOCKED|NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
+      !/NEXT SHIP(?: UNLOCK)?:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
       /GAME OVER:\s*SECTOR 5/i.test(careerLevelSummary) &&
       /BEST SECTOR\s*7/i.test(careerLevelSummary) &&
-      /NEXT SHIP:\s*ARC STRIKER/i.test(careerUnlockSummary) &&
+      /NEXT SHIP(?: UNLOCK)?:\s*ARC STRIKER/i.test(careerUnlockSummary) &&
       /CLEAR 45 TOTAL WAVES/i.test(careerUnlockSummary) &&
       /\b30\/45\b/i.test(careerUnlockSummary) &&
       !/SURVIVEDSECONDS/i.test(careerUnlockSummary) &&
