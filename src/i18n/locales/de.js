@@ -335,6 +335,7 @@ const sourceText = Object.freeze({
   'CAREER SIGNAL': 'KARRIERE-SIGNAL',
   'PILOT RANK': 'PILOTENRANG',
   'NEXT RANK': 'NÄCHSTER RANG',
+  'NEXT SHIP UNLOCK': 'NÄCHSTE SCHIFFSFREISCHALTUNG',
   'XP TO NEXT': 'XP BIS ZUM NÄCHSTEN',
   'CODEX SCANS': 'CODEX-SCANS',
   'BEST SCORE': 'BESTPUNKTZAHL',
@@ -653,6 +654,26 @@ const patterns = Object.freeze([
     id: 'newShipUnlockedLine',
     regex: /^NEW (SHIP|SHIPS) UNLOCKED: (.+)$/,
     replace: (match) => `${match[1] === 'SHIPS' ? 'NEUE SCHIFFE' : 'NEUES SCHIFF'} FREIGESCHALTET: ${match[2]}`
+  },
+  {
+    id: 'shipUnlockedLine',
+    regex: /^(SHIP|SHIPS) UNLOCKED: (.+)$/,
+    replace: (match) => `${match[1] === 'SHIPS' ? 'SCHIFFE' : 'SCHIFF'} FREIGESCHALTET: ${match[2]}`
+  },
+  {
+    id: 'visitHangarTryThem',
+    regex: /^VISIT THE HANGAR TO TRY THEM$/,
+    replace: () => 'BESUCHE DEN HANGAR ZUM AUSPROBIEREN'
+  },
+  {
+    id: 'nextShipUnlock',
+    regex: /^NEXT SHIP UNLOCK: (.+)$/,
+    replace: (match) => `NÃ„CHSTE SCHIFFSFREISCHALTUNG: ${match[1]}`
+  },
+  {
+    id: 'allShipsUnlocked',
+    regex: /^ALL SHIPS UNLOCKED$/,
+    replace: () => 'ALLE SCHIFFE FREIGESCHALTET'
   },
 
   {

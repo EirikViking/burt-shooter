@@ -86,7 +86,7 @@ function makeLocalScores(count, topScore, step = 1000) {
 }
 
 async function openScenarioPage(browser, consoleEvents) {
-  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
   page.on('console', (message) => {
     if (message.type() === 'error' || message.type() === 'warning') {
       consoleEvents.push({ type: message.type(), text: message.text().slice(0, 500) });
@@ -117,6 +117,7 @@ async function runSteamGameOver(page, {
     localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify(scenario.steamScores));
     localStorage.setItem('novaSwarm.mockSteamPersona.v1', 'STEAM ACE');
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(scenario.hangarProgress));
+    localStorage.removeItem('burt.shipUnlockProgress.v1');
     localStorage.removeItem('nova.threatDiscovery.v1');
     window.__NOVA_SWARM_MOCK_STEAM_LEADERBOARD__ = true;
     window.__novaMockSteamPersonaName = 'STEAM ACE';
@@ -260,16 +261,44 @@ function assertNoBadSteamTerms(text, label) {
 }
 
 function assertNoRetainedHoldOrSummaryText(text, label) {
-  const forbidden = /SCORE SUBMITTED|PLACEMENT READY|LEADERBOARDS|LOCAL BOARD|GLOBAL BOARD|STEAM BOARD|CAREER XP|BEST SECTOR|NEXT SHIP|HANGAR COMPLETE/i;
+  const forbidden = /SCORE SUBMITTED|PLACEMENT READY|LEADERBOARDS|LOCAL BOARD|GLOBAL BOARD|STEAM BOARD|CAREER XP|BEST SECTOR/i;
   if (forbidden.test(text)) {
     throw new Error(`${label} retained old hold/status/full-summary text:\n${text}`);
   }
+}
+
+function assertProgressCopy(snapshot, label) {
+  if (!/(NEXT SHIP UNLOCK|SHIP UNLOCKED|SHIPS UNLOCKED|ALL SHIPS UNLOCKED)/i.test(snapshot.visibleText)) {
+    throw new Error(`${label} did not show ship unlock or next-unlock progress:\n${snapshot.visibleText}`);
+  }
+}
+
+function getNode(snapshot, id) {
+  return snapshot.nodes.find((node) => node.id === id) || null;
+}
+
+function assertVerticalGap(snapshot, topId, bottomId, minGap, label) {
+  const top = getNode(snapshot, topId);
+  const bottom = getNode(snapshot, bottomId);
+  if (!top || !bottom) return;
+  const gap = bottom.top - top.bottom;
+  if (gap < minGap) {
+    throw new Error(`${label} gap ${topId}->${bottomId} was ${Math.round(gap)}px, expected at least ${minGap}px:\n${snapshot.visibleText}`);
+  }
+}
+
+function assertResultSpacing(snapshot, label) {
+  assertVerticalGap(snapshot, 'score', 'run-summary', 12, label);
+  assertVerticalGap(snapshot, 'run-summary', 'progress', 8, label);
+  assertVerticalGap(snapshot, 'progress', 'leaderboard', 8, label);
+  assertVerticalGap(snapshot, 'next-goal', 'one-more-run-button', 28, label);
 }
 
 function assertGoodRun(snapshot) {
   const text = snapshot.visibleText;
   assertNoBadSteamTerms(text, 'Good run');
   assertNoRetainedHoldOrSummaryText(text, 'Good run');
+  assertProgressCopy(snapshot, 'Good run');
   if (!/(Steam|New Steam best): #2/i.test(text)) {
     throw new Error(`Good run did not show concise Steam rank #2:\n${text}`);
   }
@@ -288,6 +317,7 @@ function assertLowRun(snapshot) {
   const text = snapshot.visibleText;
   assertNoBadSteamTerms(text, 'Low-score run');
   assertNoRetainedHoldOrSummaryText(text, 'Low-score run');
+  assertProgressCopy(snapshot, 'Low-score run');
   if (!/Steam: Best unchanged/i.test(text)) {
     throw new Error(`Low-score run did not show Steam best unchanged:\n${text}`);
   }
@@ -305,23 +335,40 @@ function assertLowRun(snapshot) {
   }
 }
 
+function assertNumberOneRun(snapshot) {
+  const text = snapshot.visibleText;
+  assertNoBadSteamTerms(text, 'Number-one run');
+  assertNoRetainedHoldOrSummaryText(text, 'Number-one run');
+  assertProgressCopy(snapshot, 'Number-one run');
+  if (!/NUMBER ONE/i.test(text) || !/#1/i.test(text)) {
+    throw new Error(`Number-one run did not show an obvious #1 celebration:\n${text}`);
+  }
+  if (/TOP THREE/i.test(text)) {
+    throw new Error(`Number-one run used redundant Top Three wording:\n${text}`);
+  }
+}
+
 async function assertRelayoutStable(page, label) {
-  await page.setViewportSize({ width: 1919, height: 1079 });
-  await page.evaluate(() => {
-    window.dispatchEvent(new Event('resize'));
-    window.dispatchEvent(new Event('focus'));
-    document.dispatchEvent(new Event('visibilitychange'));
-    window.__game?.scenes?.gameOver?.layoutScreen?.();
-  });
-  await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.evaluate(() => {
-    window.dispatchEvent(new Event('resize'));
-    window.dispatchEvent(new Event('focus'));
-    window.__game?.scenes?.gameOver?.layoutScreen?.();
-  });
-  await page.waitForTimeout(120);
-  const snapshot = await readScenario(page);
-  assertNoOverlaps(snapshot, `${label} after resize/focus`);
+  const viewports = [
+    { width: 1600, height: 900 },
+    { width: 1366, height: 768 },
+    { width: 1280, height: 720 }
+  ];
+  let snapshot = null;
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('resize'));
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.__game?.scenes?.gameOver?.layoutScreen?.();
+    });
+    await page.waitForTimeout(120);
+    snapshot = await readScenario(page);
+    const labelWithSize = `${label} ${viewport.width}x${viewport.height}`;
+    assertNoOverlaps(snapshot, `${labelWithSize} after resize/focus`);
+    assertResultSpacing(snapshot, labelWithSize);
+  }
   return snapshot;
 }
 
@@ -362,9 +409,42 @@ try {
   const goodInitial = await readScenario(goodPage);
   assertGoodRun(goodInitial);
   assertNoOverlaps(goodInitial, 'Good run initial render');
+  assertResultSpacing(goodInitial, 'Good run initial render');
   const goodAfterRelayout = await assertRelayoutStable(goodPage, 'Good run');
   await goodPage.screenshot({ path: path.join(outputDir, 'good-run-rank2.png'), fullPage: true });
   await goodPage.close();
+
+  const numberOnePage = await openScenarioPage(browser, consoleEvents);
+  await runSteamGameOver(numberOnePage, {
+    score: 61286,
+    level: 10,
+    rankIndex: 12,
+    localScores: makeLocalScores(19, 57000, 1000),
+    steamScores: [
+      { playerName: 'ORBIT PAL', score: 52000, level: 9, source: 'steam' },
+      { playerName: 'STEAM ACE', name: 'STEAM ACE', score: 22000, level: 7, isCurrentPlayer: true, source: 'steam' },
+      { playerName: 'RIFT PAL', score: 18000, level: 6, source: 'steam' }
+    ],
+    hangarProgress: {
+      version: 1,
+      unlockTuningVersion: 3,
+      pilotXp: 85000,
+      pilotRank: 15,
+      totalRuns: 9,
+      bestScore: 52000,
+      bestSector: 10,
+      bestLevel: 10,
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_02', 'nova_ship_04', 'nova_ship_05', 'nova_ship_08']
+    },
+    runSummary: { runElapsedSeconds: 511, pilotXpGained: 1890 }
+  });
+  const numberOneInitial = await readScenario(numberOnePage);
+  assertNumberOneRun(numberOneInitial);
+  assertNoOverlaps(numberOneInitial, 'Number-one initial render');
+  assertResultSpacing(numberOneInitial, 'Number-one initial render');
+  const numberOneAfterRelayout = await assertRelayoutStable(numberOnePage, 'Number-one');
+  await numberOnePage.screenshot({ path: path.join(outputDir, 'great-run-number1.png'), fullPage: true });
+  await numberOnePage.close();
 
   const lowPage = await openScenarioPage(browser, consoleEvents);
   await runSteamGameOver(lowPage, {
@@ -391,6 +471,7 @@ try {
   const lowInitial = await readScenario(lowPage);
   assertLowRun(lowInitial);
   assertNoOverlaps(lowInitial, 'Low-score initial render');
+  assertResultSpacing(lowInitial, 'Low-score initial render');
   const lowAfterRelayout = await assertRelayoutStable(lowPage, 'Low-score');
   await lowPage.screenshot({ path: path.join(outputDir, 'low-score-best-unchanged.png'), fullPage: true });
   await lowPage.close();
@@ -401,6 +482,8 @@ try {
     outputDir,
     goodInitial,
     goodAfterRelayout,
+    numberOneInitial,
+    numberOneAfterRelayout,
     lowInitial,
     lowAfterRelayout,
     consoleEvents

@@ -159,6 +159,11 @@ export class GameOverScene {
     this.backdropLoaded = false;
     this.ceremonyFrame = null;
     this.ceremonyGlow = null;
+    this.ceremonyBurst = null;
+    this.ceremonyMedal = null;
+    this.ceremonyMedalBg = null;
+    this.ceremonyMedalText = null;
+    this.ceremonyMedalSubtext = null;
     this.fanfareParticles = [];
     this.ceremonyPulse = 0;
     // Frozen final values
@@ -954,17 +959,23 @@ export class GameOverScene {
 
   createRunbackProgressSummary(currentProgress = this.currentProgressForResult || {}) {
     const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
+    const shipLines = this.createShipUnlockProgressLines(currentProgress, {
+      newlyUnlocked: this.newlyUnlockedShips || []
+    });
+    const rankLines = [];
     if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
-      return [
+      rankLines.push(
         `Next rank: ${getRankTitle(MAX_RANK_INDEX)}`,
         'XP to next: 0'
-      ].join('\n');
+      );
+    } else {
+      const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1));
+      rankLines.push(
+        `Next rank: ${nextTitle}`,
+        `XP to next: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`
+      );
     }
-    const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1));
-    return [
-      `Next rank: ${nextTitle}`,
-      `XP to next: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`
-    ].join('\n');
+    return [...rankLines, ...shipLines].filter(Boolean).join('\n');
   }
 
   getRunbackProgressText() {
@@ -1003,7 +1014,8 @@ export class GameOverScene {
 
     const holdStage = this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting';
     if (holdStage) {
-      this.title.text = this.state === 'submitting' ? 'SAVING SCORE' : 'SCORE STATUS';
+      this.title.text = translateText(this.state === 'submitting' ? 'SAVING SCORE' : 'SCORE STATUS');
+      this.scoreText.visible = false;
       if (this.levelText) this.levelText.visible = false;
       if (this.unlockText) this.unlockText.visible = false;
       if (this.shipUnlockReveal) this.shipUnlockReveal.visible = false;
@@ -1029,6 +1041,7 @@ export class GameOverScene {
     if (this.state !== 'runback') return;
     const finalLines = this.getFinalResultScreenLines();
     this.title.text = finalLines.title;
+    this.scoreText.visible = true;
     if (this.levelText) {
       this.levelText.text = finalLines.runSummary;
       this.levelText.visible = true;
@@ -1270,6 +1283,7 @@ export class GameOverScene {
     const promptSize = layout.isMobile ? 18 : 20;
     const nameSize = layout.isMobile ? 22 : 26;
     const smallSize = getResponsiveFontSize(layout, 'small');
+    const scoreVisible = this.scoreText?.visible !== false;
     const levelVisible = this.levelText?.visible !== false;
     const unlockVisible = this.unlockText?.visible !== false;
     const nextGoalVisible = Boolean(this.nextGoalGroup?.visible);
@@ -1339,11 +1353,11 @@ export class GameOverScene {
 
     // Use measured text heights so extra unlock/rank lines cannot collide.
     const titleHeight = Math.max(titleSize * 1.2, this.title.height || 0);
-    const scoreHeight = Math.max(scoreSize * 1.2, this.scoreText.height || 0);
+    const scoreHeight = scoreVisible ? Math.max(scoreSize * 1.2, this.scoreText.height || 0) : 0;
     const levelHeight = levelVisible ? Math.max(levelSize * 1.2, this.levelText.height || 0) : 0;
     const unlockRevealVisible = Boolean(this.shipUnlockReveal?.visible);
     const unlockRevealHeight = unlockRevealVisible ? (layout.isMobile ? 48 : 62) : 0;
-    const unlockHeight = unlockVisible ? Math.max(unlockSize * 1.3, this.unlockText.height || 0) : 0;
+    const unlockHeight = unlockVisible ? Math.max(unlockSize * 1.42, this.unlockText.height || 0) : 0;
     const nextGoalHeight = nextGoalVisible ? Math.max(this.nextGoalGroup.height || 0, layout.isMobile ? 32 : 38) : 0;
     const commentHeight = commentVisible ? Math.max(bodySize * 1.4, this.comment.height || 0) : 0;
     const leaderboardStatusHeight = leaderboardStatusVisible ? Math.max(leaderboardStatusSize * 1.5, this.leaderboardStatusText.height || 0) : 0;
@@ -1360,7 +1374,7 @@ export class GameOverScene {
       : 0;
     const hangarHeight = hangarVisible && !secondaryButtonsShareRow ? rawHangarHeight : 0;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + nameHeight + spacing * (leaderboardVisible || hangarVisible ? 11 : 9) + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + nameHeight + spacing * (leaderboardVisible || hangarVisible ? 12 : 9) + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -1392,8 +1406,14 @@ export class GameOverScene {
       : spacing * 0.5;
     this.title.y = placeCenteredElement(this.title, titleSpacingAfter, titleHeight);
 
-    this.scoreText.x = width / 2;
-    this.scoreText.y = placeCenteredElement(this.scoreText, spacing * 0.6, scoreHeight);
+    if (scoreVisible) {
+      this.scoreText.x = width / 2;
+      this.scoreText.y = placeCenteredElement(
+        this.scoreText,
+        this.state === 'runback' ? (layout.isMobile ? 10 : 15) : spacing * 0.9,
+        scoreHeight
+      );
+    }
 
     if (levelVisible) {
       this.levelText.x = width / 2;
@@ -1402,7 +1422,7 @@ export class GameOverScene {
 
     if (unlockVisible) {
       this.unlockText.x = width / 2;
-      this.unlockText.y = placeCenteredElement(this.unlockText, spacing, unlockHeight);
+      this.unlockText.y = placeCenteredElement(this.unlockText, this.state === 'runback' ? spacing * 1.35 : spacing, unlockHeight);
     }
 
     if (unlockRevealVisible) {
@@ -1413,12 +1433,12 @@ export class GameOverScene {
     if (this.state === 'runback') {
       if (commentVisible) {
         this.comment.x = width / 2;
-        this.comment.y = placeCenteredElement(this.comment, spacing, commentHeight);
+        this.comment.y = placeCenteredElement(this.comment, spacing * 1.05, commentHeight);
       }
 
       if (nextGoalVisible) {
         this.nextGoalGroup.x = width / 2;
-        this.nextGoalGroup.y = placeCenteredElement(this.nextGoalGroup, spacing, nextGoalHeight);
+        this.nextGoalGroup.y = placeCenteredElement(this.nextGoalGroup, spacing * 1.15, nextGoalHeight);
       }
     } else {
       if (nextGoalVisible) {
@@ -1445,7 +1465,7 @@ export class GameOverScene {
     this.notQualifiedText.x = width / 2;
     this.notQualifiedText.y = promptVisible ? this.promptText.y : stackY;
 
-    addStackGap(this.state === 'runback' ? (layout.isMobile ? 22 : 36) : (layout.isMobile ? 8 : 18));
+    addStackGap(this.state === 'runback' ? (layout.isMobile ? 30 : 54) : (layout.isMobile ? 8 : 18));
     this.retryButton.x = width / 2;
     this.retryButton.y = placeCenteredElement(this.retryButton, spacing, retryHeight);
 
@@ -2035,18 +2055,54 @@ export class GameOverScene {
     this.ceremonyGlow.zIndex = -8;
     this.container.addChild(this.ceremonyGlow);
 
+    this.ceremonyBurst = new PIXI.Graphics();
+    this.ceremonyBurst.zIndex = -7;
+    this.ceremonyBurst.blendMode = 'add';
+    this.container.addChild(this.ceremonyBurst);
+
     this.ceremonyFrame = new PIXI.Graphics();
     this.ceremonyFrame.zIndex = -6;
     this.container.addChild(this.ceremonyFrame);
 
-    this.fanfareParticles = Array.from({ length: 56 }, (_, index) => {
+    this.ceremonyMedal = new PIXI.Container();
+    this.ceremonyMedal.zIndex = -2;
+    this.ceremonyMedal.visible = false;
+    this.ceremonyMedalBg = new PIXI.Graphics();
+    this.ceremonyMedalText = createText('', {
+      fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
+      fontSize: 86,
+      fontWeight: '900',
+      fill: '#fff8b8',
+      stroke: '#3b1700',
+      strokeThickness: 7,
+      align: 'center',
+      dropShadow: true,
+      dropShadowColor: '#ffc94a',
+      dropShadowBlur: 12
+    });
+    this.ceremonyMedalText.anchor.set(0.5);
+    this.ceremonyMedalSubtext = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 22,
+      fontWeight: '900',
+      fill: '#d9fdff',
+      stroke: '#031323',
+      strokeThickness: 3,
+      align: 'center',
+      letterSpacing: 0
+    });
+    this.ceremonyMedalSubtext.anchor.set(0.5);
+    this.ceremonyMedal.addChild(this.ceremonyMedalBg, this.ceremonyMedalText, this.ceremonyMedalSubtext);
+    this.container.addChild(this.ceremonyMedal);
+
+    this.fanfareParticles = Array.from({ length: 112 }, (_, index) => {
       const particle = new PIXI.Graphics();
       particle.zIndex = -4;
       particle.eventMode = 'none';
-      particle.alpha = 0.25 + (index % 7) * 0.08;
+      particle.alpha = 0.28 + (index % 9) * 0.07;
       particle.__fanfare = {
         seed: index * 37.7,
-        lane: index % 2 === 0 ? -1 : 1,
+        lane: index % 3 === 0 ? 0 : index % 2 === 0 ? -1 : 1,
         speed: 0.45 + (index % 9) * 0.035
       };
       this.container.addChild(particle);
@@ -2112,7 +2168,32 @@ export class GameOverScene {
     if (this.ceremonyGlow) {
       this.ceremonyGlow.clear();
       this.ceremonyGlow.ellipse(width / 2, y + panelHeight * 0.5, panelWidth * 0.72, panelHeight * 0.56);
-      this.ceremonyGlow.fill({ color: accent, alpha: this.globalQualified ? 0.14 : 0.08 });
+      this.ceremonyGlow.fill({ color: accent, alpha: this.globalQualified ? (this.globalPlacement?.numberOne ? 0.24 : 0.18) : 0.08 });
+    }
+
+    if (this.ceremonyBurst) {
+      this.ceremonyBurst.clear();
+      const celebration = this.state === 'runback' && this.globalPlacement?.qualified;
+      if (celebration) {
+        const centerX = width / 2;
+        const centerY = y + panelHeight * 0.42;
+        const rayCount = this.globalPlacement?.numberOne ? 30 : 22;
+        const inner = panelWidth * (this.globalPlacement?.numberOne ? 0.16 : 0.12);
+        const outer = panelWidth * (this.globalPlacement?.numberOne ? 0.78 : 0.64);
+        for (let i = 0; i < rayCount; i += 1) {
+          const a0 = (Math.PI * 2 * i) / rayCount + (this.ceremonyPulse || 0) * 0.004;
+          const a1 = a0 + Math.PI / rayCount * 0.72;
+          this.ceremonyBurst.moveTo(centerX + Math.cos(a0) * inner, centerY + Math.sin(a0) * inner);
+          this.ceremonyBurst.lineTo(centerX + Math.cos(a0) * outer, centerY + Math.sin(a0) * outer);
+          this.ceremonyBurst.lineTo(centerX + Math.cos(a1) * (outer * 0.72), centerY + Math.sin(a1) * (outer * 0.72));
+          this.ceremonyBurst.closePath();
+          this.ceremonyBurst.fill({ color: i % 2 ? 0xfff08a : 0x37f5ff, alpha: this.globalPlacement?.numberOne ? 0.11 : 0.075 });
+        }
+        this.ceremonyBurst.circle(centerX, centerY, panelWidth * (this.globalPlacement?.numberOne ? 0.28 : 0.22));
+        this.ceremonyBurst.stroke({ color: accent, width: this.globalPlacement?.numberOne ? 7 : 5, alpha: 0.24 });
+        this.ceremonyBurst.circle(centerX, centerY, panelWidth * (this.globalPlacement?.numberOne ? 0.36 : 0.3));
+        this.ceremonyBurst.stroke({ color: 0xffffff, width: 2, alpha: this.globalPlacement?.numberOne ? 0.2 : 0.14 });
+      }
     }
 
     if (this.ceremonyFrame) {
@@ -2127,6 +2208,39 @@ export class GameOverScene {
       }
       this.ceremonyFrame.rect(x + 20, y + panelHeight - 15, panelWidth - 40, 2);
       this.ceremonyFrame.fill({ color: accent, alpha: 0.38 });
+    }
+
+    if (this.ceremonyMedal && this.ceremonyMedalBg && this.ceremonyMedalText && this.ceremonyMedalSubtext) {
+      const placement = this.globalPlacement;
+      const celebration = this.state === 'runback' && placement?.qualified && (placement.numberOne || placement.top3);
+      this.ceremonyMedal.visible = Boolean(celebration);
+      if (celebration) {
+        const badgeRadius = layout.isMobile
+          ? (placement.numberOne ? 72 : 60)
+          : (placement.numberOne ? 105 : 82);
+        const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
+        this.ceremonyMedal.position.set(width / 2, y + panelHeight * (layout.isMobile ? 0.22 : 0.25));
+        this.ceremonyMedal.scale.set(1 + pulse * (placement.numberOne ? 0.035 : 0.022));
+        this.ceremonyMedalBg.clear();
+        this.ceremonyMedalBg.circle(0, 0, badgeRadius + 14);
+        this.ceremonyMedalBg.fill({ color: placement.numberOne ? 0xffd75f : 0xff9b42, alpha: placement.numberOne ? 0.28 : 0.2 });
+        this.ceremonyMedalBg.circle(0, 0, badgeRadius);
+        this.ceremonyMedalBg.fill({ color: 0x071523, alpha: 0.82 });
+        this.ceremonyMedalBg.circle(0, 0, badgeRadius);
+        this.ceremonyMedalBg.stroke({ color: placement.numberOne ? 0xfff3a2 : 0xffc264, width: placement.numberOne ? 6 : 4, alpha: 0.95 });
+        this.ceremonyMedalBg.circle(0, 0, badgeRadius - 13);
+        this.ceremonyMedalBg.stroke({ color: 0x37f5ff, width: 2, alpha: 0.58 });
+        this.ceremonyMedalText.text = placement.numberOne ? '#1' : `#${placement.placement || 3}`;
+        this.ceremonyMedalText.style.fontSize = layout.isMobile
+          ? (placement.numberOne ? 66 : 54)
+          : (placement.numberOne ? 104 : 78);
+        this.ceremonyMedalText.y = placement.numberOne ? -5 : -3;
+        this.ceremonyMedalSubtext.text = placement.numberOne ? 'STEAM BEST' : 'STEAM TOP 3';
+        this.ceremonyMedalSubtext.style.fontSize = layout.isMobile ? 14 : 18;
+        this.ceremonyMedalSubtext.y = badgeRadius * 0.46;
+      } else {
+        this.ceremonyMedalBg.clear();
+      }
     }
   }
 
@@ -2385,12 +2499,25 @@ export class GameOverScene {
     for (const particle of this.fanfareParticles) {
       const config = particle.__fanfare || { seed: 0, lane: 1, speed: 0.5 };
       const drift = ((this.ceremonyPulse * config.speed + config.seed) % 220) / 220;
-      const sideBase = config.lane < 0 ? width * 0.12 : width * 0.88;
-      const x = sideBase + Math.sin((this.ceremonyPulse + config.seed) * 0.025) * width * 0.08;
-      const y = height * (0.1 + drift * 0.78);
-      const size = (2 + (config.seed % 5)) * activeBoost;
+      const sideBase = config.lane === 0 ? width * 0.5 : config.lane < 0 ? width * 0.1 : width * 0.9;
+      const x = sideBase + Math.sin((this.ceremonyPulse + config.seed) * 0.025) * width * (config.lane === 0 ? 0.22 : 0.08);
+      const y = height * (0.06 + drift * 0.84);
+      const placementBoost = this.globalPlacement?.numberOne ? 1.35 : this.globalPlacement?.top3 ? 1.16 : 1;
+      const size = (2.4 + (config.seed % 6)) * activeBoost * placementBoost;
       particle.clear();
-      particle.rect(-size * 0.5, -size * 0.5, size * 2.6, size);
+      if (this.globalPlacement?.numberOne && config.seed % 2 > 1) {
+        for (let point = 0; point < 10; point += 1) {
+          const radius = point % 2 === 0 ? size * 1.7 : size * 0.72;
+          const angle = -Math.PI / 2 + point * Math.PI / 5;
+          const px = Math.cos(angle) * radius;
+          const py = Math.sin(angle) * radius;
+          if (point === 0) particle.moveTo(px, py);
+          else particle.lineTo(px, py);
+        }
+        particle.closePath();
+      } else {
+        particle.rect(-size * 0.5, -size * 0.5, size * 2.8, size);
+      }
       particle.fill({ color, alpha: (this.globalQualified ? 0.76 : 0.28) * (1 - drift * 0.55) });
       particle.position.set(x, y);
       particle.rotation += 0.035 + config.speed * 0.01;
@@ -2437,29 +2564,30 @@ export class GameOverScene {
       .sort((a, b) => (Number(a.unlock?.level) || 1) - (Number(b.unlock?.level) || 1));
   }
 
-  createUnlockSummary(previousProgress, currentProgress, newlyUnlocked = this.getNewlyUnlockedShips(previousProgress, currentProgress)) {
+  getNextLockedShip(currentProgress = this.currentProgressForResult || {}) {
     const ships = getSelectableShips();
-    if (newlyUnlocked.length > 0) {
-      const names = newlyUnlocked.slice(0, 2).map(ship => ship.name).join(' + ');
-      const suffix = newlyUnlocked.length > 2 ? ` +${newlyUnlocked.length - 2} MORE` : '';
-      const verb = newlyUnlocked.length === 1 ? 'SHIP' : 'SHIPS';
-      return `NEW ${verb} UNLOCKED: ${names}${suffix}\nHANGAR READY`;
-    }
-
-    const nextShip = ships
-      .filter(ship =>
-        !isShipUnlocked(ship.spriteKey, currentProgress)
-      )
+    return ships
+      .filter(ship => !isShipUnlocked(ship.spriteKey, currentProgress))
       .sort((a, b) => {
         const aLevel = Number(a.unlock?.level) || 1;
         const bLevel = Number(b.unlock?.level) || 1;
         return aLevel - bLevel;
-      })[0];
+      })[0] || null;
+  }
 
-    if (!nextShip) {
-      const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestLevel) || 1));
-      return `HANGAR COMPLETE: ALL SHIPS UNLOCKED\nBEST SECTOR ${bestLevel}`;
+  createShipUnlockProgressLines(currentProgress = this.currentProgressForResult || {}, { newlyUnlocked = [] } = {}) {
+    if (Array.isArray(newlyUnlocked) && newlyUnlocked.length > 0) {
+      const names = newlyUnlocked.slice(0, 2).map(ship => ship.name).join(' + ');
+      const suffix = newlyUnlocked.length > 2 ? ` +${newlyUnlocked.length - 2} MORE` : '';
+      const prefix = newlyUnlocked.length === 1 ? 'SHIP UNLOCKED' : 'SHIPS UNLOCKED';
+      return [
+        translateText(`${prefix}: ${names}${suffix}`),
+        translateText('VISIT THE HANGAR TO TRY THEM')
+      ];
     }
+
+    const nextShip = this.getNextLockedShip(currentProgress);
+    if (!nextShip) return [translateText('ALL SHIPS UNLOCKED')];
 
     const details = getShipUnlockProgressDetails(nextShip.spriteKey, currentProgress);
     const requirementLine = details.requirements?.length
@@ -2469,7 +2597,25 @@ export class GameOverScene {
         .join('  ')
       : details.label;
     const requirementLabel = String(details.label || 'SHIP PROGRESS').toUpperCase();
-    return `NEXT SHIP: ${nextShip.name}\n${requirementLabel}: ${requirementLine}`;
+    return [
+      translateText(`NEXT SHIP UNLOCK: ${nextShip.name}`),
+      `${translateText(requirementLabel)}: ${requirementLine}`
+    ];
+  }
+
+  createUnlockSummary(previousProgress, currentProgress, newlyUnlocked = this.getNewlyUnlockedShips(previousProgress, currentProgress)) {
+    if (newlyUnlocked.length > 0) {
+      return this.createShipUnlockProgressLines(currentProgress, { newlyUnlocked }).join('\n');
+    }
+
+    const nextShip = this.getNextLockedShip(currentProgress);
+
+    if (!nextShip) {
+      const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestLevel) || 1));
+      return `HANGAR COMPLETE: ALL SHIPS UNLOCKED\nBEST SECTOR ${bestLevel}`;
+    }
+
+    return this.createShipUnlockProgressLines(currentProgress).join('\n');
   }
 
   createPilotRankLine(currentProgress = {}) {
@@ -3129,7 +3275,8 @@ export class GameOverScene {
   }
 
   getRunbackTitle() {
-    if (this.globalPlacement?.qualified && (this.globalPlacement?.numberOne || this.globalPlacement?.top3)) return 'TOP THREE';
+    if (this.globalPlacement?.qualified && this.globalPlacement?.numberOne) return 'NUMBER ONE';
+    if (this.globalPlacement?.qualified && this.globalPlacement?.top3) return 'TOP THREE';
     return 'ONE MORE RUN?';
   }
 

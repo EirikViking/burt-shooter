@@ -140,6 +140,26 @@ export function buildArcadePatterns(labels) {
       replace: (match) => labels.newShipUnlockedLine(match[2], match[1] === 'SHIPS')
     },
     {
+      id: 'shipUnlockedLine',
+      regex: /^(SHIP|SHIPS) UNLOCKED: (.+)$/,
+      replace: (match) => (labels.shipUnlockedLine || labels.newShipUnlockedLine)(match[2], match[1] === 'SHIPS')
+    },
+    {
+      id: 'visitHangarTryThem',
+      regex: /^VISIT THE HANGAR TO TRY THEM$/,
+      replace: () => labels.visitHangarTryThem || 'VISIT THE HANGAR'
+    },
+    {
+      id: 'nextShipUnlock',
+      regex: /^NEXT SHIP UNLOCK: (.+)$/,
+      replace: (match) => `${labels.nextShipUnlock || labels.nextShip}: ${match[1]}`
+    },
+    {
+      id: 'allShipsUnlocked',
+      regex: /^ALL SHIPS UNLOCKED$/,
+      replace: () => labels.allShipsUnlocked || labels.hangarCompleteLine
+    },
+    {
       id: 'nextShip',
       regex: /^NEXT SHIP: (.+)$/,
       replace: (match) => `${labels.nextShip}: ${match[1]}`

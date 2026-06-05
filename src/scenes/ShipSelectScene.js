@@ -632,7 +632,7 @@ export class ShipSelectScene {
     AudioManager.playSfx('pause_out', { force: true, volume: source === 'keyboard' ? 0.24 : 0.2 });
   }
 
-  createCareerStatTile(label, value, x, y, width, height, accent, compact = false) {
+  createCareerStatTile(label, value, x, y, width, height, accent, compact = false, subline = '') {
     const tile = new PIXI.Container();
     tile.label = `ui_careerIntelTile_${label}`;
     tile.position.set(x, y);
@@ -655,8 +655,20 @@ export class ShipSelectScene {
       align: 'left',
       letterSpacing: 0
     });
-    valueText.position.set(12, compact ? 12 : 14);
-    fitDisplayToBox(valueText, width - 24, compact ? 22 : 28, { minScale: 0.58 });
+    valueText.position.set(12, compact ? 10 : 12);
+    fitDisplayToBox(valueText, width - 24, subline ? (compact ? 19 : 23) : (compact ? 24 : 30), { minScale: 0.62 });
+
+    const sublineText = createText(String(subline || ''), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 9 : 10,
+      fontWeight: '900',
+      fill: '#d8fbff',
+      align: 'left',
+      letterSpacing: 0
+    });
+    sublineText.visible = Boolean(subline);
+    sublineText.position.set(12, compact ? 30 : 34);
+    fitDisplayToBox(sublineText, width - 24, compact ? 12 : 14, { minScale: 0.72 });
 
     const labelText = createText(translateText(label), {
       fontFamily: FONT_BODY,
@@ -667,8 +679,8 @@ export class ShipSelectScene {
       letterSpacing: 0
     });
     labelText.position.set(12, height - (compact ? 19 : 22));
-    fitDisplayToBox(labelText, width - 24, compact ? 16 : 18, { minScale: 0.54 });
-    tile.addChild(valueText, labelText);
+    fitDisplayToBox(labelText, width - 24, compact ? 16 : 18, { minScale: 0.58 });
+    tile.addChild(valueText, sublineText, labelText);
     return tile;
   }
 
@@ -697,18 +709,45 @@ export class ShipSelectScene {
 
     const p = createText(translateText(copy), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 9 : 11,
+      fontSize: compact ? 10 : 12,
       fontWeight: '700',
       fill: '#d8fbff',
       wordWrap: true,
       wordWrapWidth: width - 30,
-      lineHeight: compact ? 11 : 14,
+      lineHeight: compact ? 12 : 15,
       letterSpacing: 0
     });
     p.position.set(18, compact ? 30 : 34);
-    fitDisplayToBox(p, width - 30, height - (compact ? 36 : 42), { minScale: 0.7 });
+    fitDisplayToBox(p, width - 30, height - (compact ? 34 : 40), { minScale: 0.78 });
     card.addChild(h, p);
     return card;
+  }
+
+  getNextShipUnlockSummary(progress = this.unlockProgress) {
+    const locked = this.ships
+      .filter(ship => !isShipUnlocked(ship.spriteKey, progress))
+      .sort((a, b) => (Number(a.unlock?.level) || 1) - (Number(b.unlock?.level) || 1));
+    const nextShip = locked[0] || null;
+    if (!nextShip) {
+      return {
+        label: 'ALL SHIPS UNLOCKED',
+        value: `${this.ships.length}/${this.ships.length}`,
+        detail: translateText('HANGAR COMPLETE: ALL SHIPS UNLOCKED')
+      };
+    }
+    const details = getShipUnlockProgressDetails(nextShip.spriteKey, progress);
+    const requirement = details.requirements?.[0] || null;
+    const current = Math.min(Number(requirement?.current) || 0, Number(requirement?.target) || 0);
+    const target = Number(requirement?.target) || 0;
+    const suffix = requirement?.key === 'survivedSeconds' ? 's' : '';
+    const requirementProgress = requirement
+      ? `${current.toLocaleString('en-US')}${suffix}/${target.toLocaleString('en-US')}${suffix}`
+      : String(details.label || '');
+    return {
+      label: 'NEXT SHIP UNLOCK',
+      value: nextShip.name,
+      detail: `${translateText(String(details.label || 'SHIP PROGRESS').toUpperCase())}: ${requirementProgress}`
+    };
   }
 
   startCareerInfoAnimation() {
@@ -746,6 +785,7 @@ export class ShipSelectScene {
       valueChip: bounds(refs.valueChip),
       body: bounds(refs.body),
       flowBar: bounds(refs.flowBar),
+      nextUnlock: refs.nextUnlock || null,
       stats: (refs.stats || []).map((tile) => bounds(tile)),
       cards: (refs.cards || []).map((card) => bounds(card)),
       snapshot: bounds(refs.snapshot),
@@ -781,6 +821,7 @@ export class ShipSelectScene {
       ? translateText('MAX')
       : getRankTitle(Math.min(MAX_RANK_INDEX, progress.rankIndex + 1)).toUpperCase();
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
+    const nextUnlock = this.getNextShipUnlockSummary(this.unlockProgress);
 
     const panel = new PIXI.Graphics();
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 9);
@@ -958,22 +999,22 @@ export class ShipSelectScene {
 
     const statsTop = narrow ? flowY + 48 : contentTop + (short ? 132 : 146);
     const stats = [
+      [nextUnlock.label, nextUnlock.value, 0xffd15c, nextUnlock.detail],
       ['HULLS READY', `${unlockedCount}/${this.ships.length}`, 0x66ffdd],
       ['XP TO NEXT', Number(progress.xpToNextRank || 0).toLocaleString('en-US'), 0xffef7e],
       ['CODEX SCANS', this.unlockProgress.totalCodexDiscoveries || 0, 0xff55d9],
       ['BOSS RECEIPTS', this.unlockProgress.totalBossesDefeated || 0, 0xff8f5c],
-      ['CLEAN WAVES', this.unlockProgress.noHitWaves || 0, 0x9cfbff],
       ['BEST SCORE', Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US'), 0xffffff]
     ].slice(0, short && !narrow ? 3 : 6);
     const statGap = compact ? 7 : 9;
     const statCols = narrow ? 2 : 3;
     const statW = (panelWidth - 80 - statGap * (statCols - 1)) / statCols;
-    const statH = compact ? 48 : 56;
+    const statH = compact ? 56 : 64;
     const statStartX = panelX + 40;
-    const statTiles = stats.map(([label, value, accent], index) => {
+    const statTiles = stats.map(([label, value, accent, subline], index) => {
       const col = index % statCols;
       const row = Math.floor(index / statCols);
-      const tile = this.createCareerStatTile(label, value, statStartX + col * (statW + statGap), statsTop + row * (statH + statGap), statW, statH, accent, compact);
+      const tile = this.createCareerStatTile(label, value, statStartX + col * (statW + statGap), statsTop + row * (statH + statGap), statW, statH, accent, compact, subline);
       overlay.addChild(tile);
       return tile;
     });
@@ -1044,7 +1085,8 @@ export class ShipSelectScene {
       stats: statTiles,
       cards,
       snapshot,
-      close
+      close,
+      nextUnlock
     };
     this.careerInfoOverlay = overlay;
     this.container.addChild(overlay);

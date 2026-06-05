@@ -157,6 +157,7 @@ try {
 
     const state = await openCareerIntel(page);
     const career = state.shipSelect?.careerInfo || {};
+    const nextUnlock = career.nextUnlock || null;
     const panel = normalizeBounds(career.panel);
     const namedBounds = [
       ['title', career.title],
@@ -199,6 +200,12 @@ try {
           : null
       ))
     ].filter(Boolean);
+    const nextUnlockOk = Boolean(
+      nextUnlock &&
+      /NEXT SHIP UNLOCK|ALL SHIPS UNLOCKED/i.test(String(nextUnlock.label || '')) &&
+      String(nextUnlock.value || '').trim() &&
+      String(nextUnlock.detail || '').trim()
+    );
 
     const screenshot = path.join(outputDir, `career-intel-${viewport.name}-${viewport.width}x${viewport.height}.png`);
     await page.screenshot({ path: screenshot, fullPage: true });
@@ -206,12 +213,15 @@ try {
       viewport,
       panel,
       career,
+      nextUnlock,
       containmentFailures,
       overlapFailures,
+      nextUnlockOk,
       screenshot,
       ok: Boolean(
         panel &&
         career.visible === true &&
+        nextUnlockOk &&
         namedBounds.length >= 10 &&
         containmentFailures.length === 0 &&
         overlapFailures.length === 0

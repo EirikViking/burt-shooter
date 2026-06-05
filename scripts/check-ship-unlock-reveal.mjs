@@ -73,7 +73,26 @@ function findChrome() {
   return candidates.find((candidate) => fs.existsSync(candidate));
 }
 
-async function preparePage(browser, bestLevel) {
+function baseHangarProgress(overrides = {}) {
+  return {
+    version: 1,
+    unlockTuningVersion: 3,
+    pilotXp: 0,
+    pilotRank: 0,
+    totalRuns: 0,
+    bestScore: 0,
+    bestSector: 1,
+    bestLevel: 1,
+    totalBossesDefeated: 0,
+    totalWavesCleared: 0,
+    totalCodexDiscoveries: 0,
+    noHitWaves: 0,
+    unlockedShipIds: ['nova_ship_01'],
+    ...overrides
+  };
+}
+
+async function preparePage(browser, scenario) {
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -84,11 +103,11 @@ async function preparePage(browser, bestLevel) {
     }
     await route.fulfill({ status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([]) });
   });
-  await page.addInitScript((level) => {
-    localStorage.removeItem('nova.hangarProgress.v1');
+  await page.addInitScript((progress) => {
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(progress));
+    localStorage.removeItem('burt.shipUnlockProgress.v1');
     localStorage.removeItem('nova.threatDiscovery.v1');
-    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 0, bestRank: 0, bestLevel: level }));
-  }, bestLevel);
+  }, scenario.previousProgress);
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
   return { page, pageErrors };
@@ -111,7 +130,7 @@ async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000) {
 }
 
 async function runScenario(browser, scenario) {
-  const { page, pageErrors } = await preparePage(browser, scenario.bestLevel);
+  const { page, pageErrors } = await preparePage(browser, scenario);
   const state = await forceGameOver(page, scenario.finalLevel, scenario.finalScore);
   const unlocks = state.gameOver?.shipUnlocks || {};
   assert(unlocks.count === scenario.expectedCount, `${scenario.name}: expected ${scenario.expectedCount} unlock(s), got ${unlocks.count}`);
@@ -143,20 +162,25 @@ try {
   const results = [];
   results.push(await runScenario(browser, {
     name: 'single',
-    bestLevel: 4,
+    previousProgress: baseHangarProgress({
+      totalRuns: 1,
+      bestSector: 3,
+      bestLevel: 3,
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_02']
+    }),
     finalLevel: 4,
     finalScore: 25000,
     expectedCount: 1,
     expectedVoiceKey: 'mission_control_ship_unlocked',
-    expectedSummary: 'NEW SHIP UNLOCKED'
+    expectedSummary: 'SHIP UNLOCKED'
   }));
   results.push(await runScenario(browser, {
     name: 'several',
-    bestLevel: 1,
+    previousProgress: baseHangarProgress(),
     finalLevel: 5,
-    expectedCount: 4,
+    expectedCount: 2,
     expectedVoiceKey: 'mission_control_ships_unlocked',
-    expectedSummary: 'NEW SHIPS UNLOCKED'
+    expectedSummary: 'SHIPS UNLOCKED'
   }));
   console.log(`[ship-unlock-reveal] PASS ${JSON.stringify(results)}`);
 } finally {
