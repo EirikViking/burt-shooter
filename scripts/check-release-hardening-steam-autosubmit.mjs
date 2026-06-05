@@ -32,9 +32,11 @@ assert.ok(
   'Steam autosubmit must remain ranked-run guarded'
 );
 assert.ok(
-  mockCheck.includes('window.__NOVA_SWARM_MOCK_STEAM_LEADERBOARD__ = true') &&
+    mockCheck.includes('window.__NOVA_SWARM_MOCK_STEAM_LEADERBOARD__ = true') &&
     mockCheck.includes("lastLeaderboardResult?.steamStatus === 'submitted'") &&
-    mockCheck.includes('Steam auto-submit flow exposed manual submit copy'),
+    mockCheck.includes('Steam auto-submit flow exposed manual submit copy') &&
+    mockCheck.includes('steamRank: 4') &&
+    mockCheck.includes('Steam rank 4 was incorrectly treated as Top Three'),
   'Steam leaderboard mock must cover autosubmit without manual name entry'
 );
 assert.ok(

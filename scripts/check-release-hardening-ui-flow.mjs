@@ -22,8 +22,13 @@ for (const needle of [
 
 assert.ok(
   gameOver.includes("this.updatePromptMessage('SCORE SUBMITTED')") &&
-    gameOver.includes("this.scheduleSceneTimeout(() => {\n      if (!this.isSceneActive() || this.state !== 'submitted_hold') return;"),
-  'submitted score report should remain readable before runback'
+    gameOver.includes('submittedHoldContinueReadyAt') &&
+    gameOver.includes('isSubmittedHoldContinueReady()') &&
+    gameOver.includes('disabled: !this.isSubmittedHoldContinueReady()') &&
+    gameOver.includes("if (!this.isSubmittedHoldContinueReady()) {\n      this.refreshPrimaryCta();\n      return;\n    }") &&
+    gameoverMotivationCheck.includes('submittedEarlyContinueState') &&
+    gameoverMotivationCheck.includes('submittedReadyHoldState'),
+  'submitted score report should require readable hold plus Continue input before runback'
 );
 
 for (const needle of [

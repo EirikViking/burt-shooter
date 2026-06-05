@@ -147,24 +147,70 @@ try {
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
     return state.scene === 'gameOver' &&
-      state.gameOver?.state === 'runback' &&
+      state.gameOver?.state === 'submitted_hold' &&
       state.gameOver?.lastLeaderboardResult?.steamStatus === 'submitted';
   }, null, { timeout: 12000 });
+  const steamSubmittedState = await state(page);
+  if (!steamSubmittedState.gameOver?.steamSubmissionMode) throw new Error('Game over did not enter Steam submission mode');
+  if (steamSubmittedState.gameOver?.canEnterName) throw new Error('Steam submission should not require manual name entry');
+  if (/PILOT NAME|TYPE NAME|ENTER PILOT|SUBMIT SCORE/i.test(`${steamSubmittedState.gameOver?.prompt || ''} ${steamSubmittedState.gameOver?.primaryCta?.label || ''} ${steamSubmittedState.gameOver?.primaryCta?.hint || ''}`)) {
+    throw new Error(`Steam auto-submit flow exposed manual submit copy: ${JSON.stringify(steamSubmittedState.gameOver)}`);
+  }
+  if (steamSubmittedState.gameOver?.lastLeaderboardResult?.steamStatus !== 'submitted') {
+    throw new Error(`Steam mock submission failed: ${JSON.stringify(steamSubmittedState.gameOver?.lastLeaderboardResult)}`);
+  }
+  if (steamSubmittedState.gameOver?.lastLeaderboardResult?.name !== 'STEAM ACE') {
+    throw new Error(`Steam mock submission did not use Steam persona: ${JSON.stringify(steamSubmittedState.gameOver?.lastLeaderboardResult)}`);
+  }
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.scene === 'gameOver' &&
+      state.gameOver?.state === 'submitted_hold' &&
+      state.gameOver?.submittedHoldReady === true;
+  }, null, { timeout: 8000 });
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+  }, null, { timeout: 5000 });
   const gameOverState = await state(page);
-  if (!gameOverState.gameOver?.steamSubmissionMode) throw new Error('Game over did not enter Steam submission mode');
-  if (gameOverState.gameOver?.canEnterName) throw new Error('Steam submission should not require manual name entry');
-  if (/PILOT NAME|TYPE NAME|ENTER PILOT|SUBMIT SCORE/i.test(`${gameOverState.gameOver?.prompt || ''} ${gameOverState.gameOver?.primaryCta?.label || ''} ${gameOverState.gameOver?.primaryCta?.hint || ''}`)) {
-    throw new Error(`Steam auto-submit flow exposed manual submit copy: ${JSON.stringify(gameOverState.gameOver)}`);
-  }
-  if (gameOverState.gameOver?.lastLeaderboardResult?.steamStatus !== 'submitted') {
-    throw new Error(`Steam mock submission failed: ${JSON.stringify(gameOverState.gameOver?.lastLeaderboardResult)}`);
-  }
-  if (gameOverState.gameOver?.lastLeaderboardResult?.name !== 'STEAM ACE') {
-    throw new Error(`Steam mock submission did not use Steam persona: ${JSON.stringify(gameOverState.gameOver?.lastLeaderboardResult)}`);
-  }
   const mockScoresAfterSubmit = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
   if (!mockScoresAfterSubmit.some((entry) => entry.playerName === 'STEAM ACE' && entry.score === 33333 && entry.level === 8)) {
     throw new Error(`Steam mock submission did not preserve level 8: ${JSON.stringify(mockScoresAfterSubmit)}`);
+  }
+  const rank4Probe = await page.evaluate(async () => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene) throw new Error('Missing GameOver scene for rank-4 placement probe');
+    scene.isRankedRun = true;
+    if (scene.game) {
+      scene.game.runMode = 'ranked';
+      scene.game.isDebugRun = false;
+    }
+    scene.finalScore = 30000;
+    scene.globalStatus = 'submitted';
+    scene.globalQualified = true;
+    scene.globalPlacement = null;
+    scene.globalPlacementTier = 'none';
+    scene.qualificationFanfarePlayed = true;
+    const result = { globalStatus: 'submitted', globalProvider: 'steam', steamRank: 4 };
+    const placement = await scene.confirmGlobalLeaderboardAchievements(result);
+    return {
+      placement,
+      tier: scene.globalPlacementTier,
+      status: scene.getLeaderboardStatusMessage?.() || '',
+      runbackTitle: scene.getRunbackTitle?.() || ''
+    };
+  });
+  if (
+    rank4Probe.placement?.top3 ||
+    rank4Probe.placement?.numberOne ||
+    rank4Probe.tier === 'top3' ||
+    /TOP THREE/i.test(`${rank4Probe.status} ${rank4Probe.runbackTitle}`)
+  ) {
+    throw new Error(`Steam rank 4 was incorrectly treated as Top Three: ${JSON.stringify(rank4Probe)}`);
+  }
+  if (rank4Probe.placement?.placement !== 4 || rank4Probe.tier !== 'global') {
+    throw new Error(`Steam rank 4 should be a global placement only: ${JSON.stringify(rank4Probe)}`);
   }
   await page.screenshot({ path: path.join(outputDir, 'steam-gameover-runback.png'), fullPage: true });
 
@@ -174,7 +220,9 @@ try {
     outputDir,
     tabs: globalState.highscore.tabs,
     friendsRows: friendsState.highscore.rows.length,
+    steamSubmittedHold: steamSubmittedState.gameOver.lastLeaderboardResult,
     steamGameOver: gameOverState.gameOver.lastLeaderboardResult,
+    rank4Probe,
     consoleEvents
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

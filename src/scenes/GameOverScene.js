@@ -123,6 +123,7 @@ export class GameOverScene {
     this.runbackStartedAt = 0;
     this.reportShownAt = 0;
     this.pendingRunbackReason = null;
+    this.submittedHoldContinueReadyAt = 0;
     // HTML overlay for mobile input
     this.inputOverlay = null;
     this.inputField = null;
@@ -1497,7 +1498,7 @@ export class GameOverScene {
         mode: 'submitted_hold',
         label: translateText('CONTINUE'),
         hint: this.lastInputDevice === 'controller' ? `A: ${translateText('CONTINUE')}` : 'ENTER / SPACE / CLICK',
-        disabled: false
+        disabled: !this.isSubmittedHoldContinueReady()
       };
     }
 
@@ -2390,9 +2391,19 @@ export class GameOverScene {
 
   applyConfirmedGlobalPlacement(placement, provider = 'global') {
     if (!placement) return null;
+    const rawPlacement = Number(placement.placement);
+    const placementRank = Number.isFinite(rawPlacement) && rawPlacement > 0
+      ? Math.floor(rawPlacement)
+      : null;
+    const qualified = Boolean(placement.qualified && placementRank);
+    const numberOne = Boolean(qualified && placementRank === 1);
+    const top3 = Boolean(qualified && placementRank <= 3);
     const normalizedPlacement = {
       ...placement,
-      top3: Boolean(placement.top3 || (placement.qualified && Number(placement.placement) <= 3))
+      placement: placementRank,
+      qualified,
+      numberOne,
+      top3
     };
     this.globalPlacement = normalizedPlacement;
     this.globalPlacementTier = normalizedPlacement.numberOne
@@ -2424,8 +2435,8 @@ export class GameOverScene {
         score: this.finalScore,
         placement: Number.isFinite(steamRank) && steamRank > 0 ? Math.floor(steamRank) : null,
         qualified: true,
-        numberOne: Number.isFinite(steamRank) && Math.floor(steamRank) === 1,
-        top3: Number.isFinite(steamRank) && Math.floor(steamRank) <= 3,
+        numberOne: Number.isFinite(steamRank) && steamRank > 0 && Math.floor(steamRank) === 1,
+        top3: Number.isFinite(steamRank) && steamRank > 0 && Math.floor(steamRank) <= 3,
         source: 'steam_submit_result'
       };
       result.confirmedGlobalPlacement = placement;
@@ -2549,15 +2560,24 @@ export class GameOverScene {
     return Math.max(0, SUBMITTED_REPORT_MIN_MS - elapsed);
   }
 
+  isSubmittedHoldContinueReady() {
+    return !this.submittedHoldContinueReadyAt || Date.now() >= this.submittedHoldContinueReadyAt;
+  }
+
+  getSubmittedHoldRemainingMs() {
+    if (!this.submittedHoldContinueReadyAt) return 0;
+    return Math.max(0, this.submittedHoldContinueReadyAt - Date.now());
+  }
+
   enterRunbackStageAfterReportHold(reason = 'score_submitted') {
     const remainingMs = this.getSubmittedReportHoldMs();
-    if (remainingMs <= 0) {
-      this.enterRunbackStage(reason);
-      return;
-    }
 
     this.pendingRunbackReason = reason;
+    this.submittedHoldContinueReadyAt = Date.now() + remainingMs;
     this.state = 'submitted_hold';
+    this.removeInputOverlay();
+    this.stopCaretBlink();
+    this.hideHiddenInput();
     this.updatePromptMessage('SCORE SUBMITTED');
     this.updateLeaderboardStatusText();
     if (this.instructions) {
@@ -2565,18 +2585,25 @@ export class GameOverScene {
     }
     this.refreshPrimaryCta();
     this.layoutScreen();
-    this.scheduleSceneTimeout(() => {
-      if (!this.isSceneActive() || this.state !== 'submitted_hold') return;
-      const nextReason = this.pendingRunbackReason || reason;
-      this.pendingRunbackReason = null;
-      this.enterRunbackStage(nextReason);
-    }, remainingMs);
+    if (remainingMs > 0) {
+      this.scheduleSceneTimeout(() => {
+        if (!this.isSceneActive() || this.state !== 'submitted_hold') return;
+        this.updateInputPrompts();
+        this.refreshPrimaryCta();
+        this.layoutScreen();
+      }, remainingMs);
+    }
   }
 
   continueFromSubmittedHold() {
     if (this.state !== 'submitted_hold') return;
+    if (!this.isSubmittedHoldContinueReady()) {
+      this.refreshPrimaryCta();
+      return;
+    }
     const nextReason = this.pendingRunbackReason || 'score_submitted';
     this.pendingRunbackReason = null;
+    this.submittedHoldContinueReadyAt = 0;
     this.enterRunbackStage(nextReason);
   }
 
@@ -2590,6 +2617,7 @@ export class GameOverScene {
     this.state = 'runback';
     this.runbackReason = reason;
     this.runbackStartedAt = Date.now();
+    this.submittedHoldContinueReadyAt = 0;
     this.ctaVoicePlayed = false;
     this.selectedCtaLine = this.selectRunbackCtaLine();
     const globalCelebration = Boolean(this.globalPlacement?.qualified);
@@ -2706,6 +2734,7 @@ export class GameOverScene {
       const bounds = this.retryButton.getBounds();
       return {
         ...fallback,
+        disabled: this.retryButton?.eventMode === 'none',
         x: Math.round(bounds.x || 0),
         y: Math.round(bounds.y || 0),
         width: Math.round(bounds.width || 0),

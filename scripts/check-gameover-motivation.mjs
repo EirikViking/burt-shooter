@@ -221,12 +221,21 @@ try {
   });
   const submittedAt = Date.now();
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(700);
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'gameOver' && state.gameOver?.state === 'submitted_hold';
+  }, null, { timeout: 5000 });
   const submittedHoldSnapshot = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(350);
+  const submittedEarlyContinueState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await page.waitForTimeout(5200);
+  const submittedReadyHoldState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await page.keyboard.press('Enter');
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
-  }, null, { timeout: 15000 });
+  }, null, { timeout: 5000 });
   const submittedRunbackElapsedMs = Date.now() - submittedAt;
   const submittedRunbackState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const runbackScreenshot = path.join(outputDir, 'gameover-runback.png');
@@ -419,8 +428,15 @@ try {
       nameInputState.nameInput === 'ABCDEFGHIJKLMN' &&
       nameInputState.hiddenMaxLength === 14 &&
       submittedHoldSnapshot.scene === 'gameOver' &&
-      submittedHoldSnapshot.gameOver?.state !== 'runback' &&
-      submittedRunbackElapsedMs >= 1800 &&
+      submittedHoldSnapshot.gameOver?.state === 'submitted_hold' &&
+      submittedHoldSnapshot.gameOver?.submittedHoldReady === false &&
+      submittedHoldSnapshot.gameOver?.primaryCta?.mode === 'submitted_hold' &&
+      submittedHoldSnapshot.gameOver?.primaryCta?.disabled === true &&
+      submittedEarlyContinueState.gameOver?.state === 'submitted_hold' &&
+      submittedReadyHoldState.gameOver?.state === 'submitted_hold' &&
+      submittedReadyHoldState.gameOver?.submittedHoldReady === true &&
+      submittedReadyHoldState.gameOver?.primaryCta?.disabled === false &&
+      submittedRunbackElapsedMs >= 4800 &&
       submittedRunbackState.scene === 'gameOver' &&
       submittedRunbackState.gameOver?.state === 'runback' &&
       submittedRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
@@ -445,7 +461,10 @@ try {
     leaderboardFirst: {
       submittedScene: submittedRunbackState.scene,
       submittedState: submittedRunbackState.gameOver?.state || null,
-      submittedHoldStateAt700Ms: submittedHoldSnapshot.gameOver?.state || null,
+      submittedHoldState: submittedHoldSnapshot.gameOver?.state || null,
+      submittedEarlyContinueState: submittedEarlyContinueState.gameOver?.state || null,
+      submittedReadyHoldState: submittedReadyHoldState.gameOver?.state || null,
+      submittedHoldReady: submittedReadyHoldState.gameOver?.submittedHoldReady || false,
       submittedRunbackElapsedMs,
       selectedCtaLine: submittedRunbackState.gameOver?.selectedCtaLine || null,
       primaryCta: gameOverState.gameOver?.primaryCta || null

@@ -614,6 +614,12 @@ function buildGameTextState(game) {
       retryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       leaderboardCta: gameOverScene.getLeaderboardCtaDebugState ? gameOverScene.getLeaderboardCtaDebugState() : null,
       state: gameOverScene.state || null,
+      submittedHoldReady: typeof gameOverScene.isSubmittedHoldContinueReady === 'function'
+        ? gameOverScene.isSubmittedHoldContinueReady()
+        : null,
+      submittedHoldRemainingMs: typeof gameOverScene.getSubmittedHoldRemainingMs === 'function'
+        ? Math.round(gameOverScene.getSubmittedHoldRemainingMs())
+        : null,
       runbackReason: gameOverScene.runbackReason || null,
       steamSubmissionMode: Boolean(gameOverScene.steamSubmissionMode),
       steamPlayerName: gameOverScene.steamPlayerName || null,
