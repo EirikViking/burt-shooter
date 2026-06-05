@@ -36,6 +36,7 @@ const steps = [
   npmStep('debug shortcut stays unranked', 'check:debug-unranked'),
   npmStep('game over interlude readability', 'check:gameover-interlude'),
   npmStep('result screen leaderboard statuses', 'check:result-screen-status'),
+  npmStep('result screen final flow layout', 'check:result-screen-flow'),
   npmStep('one more run flow', 'check:gameover-motivation'),
   npmStep('leaderboard status screens', 'check:leaderboard-visuals'),
   npmStep('Steam leaderboard autosubmit mock', 'check:steam-leaderboard-mock'),

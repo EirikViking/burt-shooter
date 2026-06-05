@@ -696,6 +696,101 @@ const patterns = Object.freeze([
     replace: () => 'NÄCHSTES ZIEL: EINEN GLOBALEN RANG AUFSTEIGEN'
   },
   {
+    id: 'scoreStatus',
+    regex: /^SCORE STATUS$/,
+    replace: () => 'PUNKTZAHLSTATUS'
+  },
+  {
+    id: 'savingScore',
+    regex: /^SAVING SCORE$/,
+    replace: () => 'PUNKTZAHL WIRD GESPEICHERT'
+  },
+  {
+    id: 'noVisibleLeaderboardSlot',
+    regex: /^No visible leaderboard slot this run$/,
+    replace: () => 'Kein sichtbarer Bestenlistenplatz in diesem Run'
+  },
+  {
+    id: 'runbackSummary',
+    regex: /^Sector (.+?) \| (.+?) \| Level (.+)$/,
+    replace: (match, helpers) => `${helpers.translate('SECTOR')} ${match[1]} | ${match[2]} | ${helpers.translate('LEVEL')} ${match[3]}`
+  },
+  {
+    id: 'xpPlus',
+    regex: /^XP \+(.+)$/,
+    replace: (match) => `XP +${match[1]}`
+  },
+  {
+    id: 'nextRank',
+    regex: /^Next rank: (.+)$/,
+    replace: (match, helpers) => `Naechster Rang: ${helpers.translate(match[1])}`
+  },
+  {
+    id: 'xpToNext',
+    regex: /^XP to next: (.+)$/,
+    replace: (match) => `XP bis naechster: ${match[1]}`
+  },
+  {
+    id: 'nextGoalReadable',
+    regex: /^Next goal: (.+)$/,
+    replace: (match, helpers) => `Naechstes Ziel: ${helpers.translate(match[1])}`
+  },
+  {
+    id: 'localSimpleRank',
+    regex: /^Local: #([0-9]+)$/,
+    replace: (match) => `LOKAL: #${match[1]}`
+  },
+  {
+    id: 'localSimpleStatus',
+    regex: /^Local: (Practice run|No score|Qualified|Backup ready)$/,
+    replace: (match, helpers) => `LOKAL: ${helpers.translate(match[1])}`
+  },
+  {
+    id: 'localSimpleNeed',
+    regex: /^Local: Need (.+)$/,
+    replace: (match) => `LOKAL: BENÖTIGT ${match[1]}`
+  },
+  {
+    id: 'localSimpleNotInTop',
+    regex: /^Local: Not in local top ([0-9]+)$/,
+    replace: (match) => `LOKAL: NICHT IN LOKALEN TOP ${match[1]}`
+  },
+  {
+    id: 'globalSimpleRank',
+    regex: /^Global: #([0-9]+)$/,
+    replace: (match) => `GLOBAL: #${match[1]}`
+  },
+  {
+    id: 'globalSimpleStatus',
+    regex: /^Global: (Idle|Checking\.\.\.|Qualified|No slot|Offline - local still works|Submitting\.\.\.|Failed - local saved|Practice run|Score submitted)$/,
+    replace: (match, helpers) => `GLOBAL: ${helpers.translate(match[1])}`
+  },
+  {
+    id: 'globalSimpleClose',
+    regex: /^Global: Close - need (.+)$/,
+    replace: (match) => `GLOBAL: KNAPP - BENÖTIGT ${match[1]}`
+  },
+  {
+    id: 'steamSimpleRank',
+    regex: /^Steam: #([0-9]+)$/,
+    replace: (match) => `Steam: #${match[1]}`
+  },
+  {
+    id: 'newSteamBest',
+    regex: /^New Steam best: #([0-9]+)$/,
+    replace: (match) => `Neuer Steam-Bestwert: #${match[1]}`
+  },
+  {
+    id: 'steamSimpleStatus',
+    regex: /^Steam: (Best unchanged|Rank updating\.\.\.|Unavailable - local backup saved|Score submitted|Ready|.+)$/,
+    replace: (match, helpers) => `Steam: ${helpers.translate(match[1])}`
+  },
+  {
+    id: 'steamBestCompare',
+    regex: /^Best: (.+) \| This run: (.+)$/,
+    replace: (match) => `Bestwert: ${match[1]} | Dieser Run: ${match[2]}`
+  },
+  {
     id: 'localNeed',
     regex: /^LOCAL BOARD: NEED (.+)$/,
     replace: (match) => `LOKALE LISTE: BENÖTIGT ${match[1]}`
@@ -779,15 +874,6 @@ const patterns = Object.freeze([
     id: 'nearGlobalComment',
     regex: /^Only (.+) more points for a global slot\. This was not a miss, it was a warning shot\.$/,
     replace: (match) => `Nur noch ${match[1]} Punkte bis zu einem globalen Platz. Das war kein Fehlschlag, sondern ein Warnschuss.`
-  },  {
-    id: 'steamRank',
-    regex: /^STEAM BOARD: RANK #([0-9]+)$/,
-    replace: (match) => `STEAM-LISTE: RANG #${match[1]}`
-  },
-  {
-    id: 'steamRankTop',
-    regex: /^STEAM BOARD: RANK #(.+) - (NUMBER ONE|TOP THREE)$/,
-    replace: (match, helpers) => `STEAM-LISTE: RANG #${match[1]} - ${helpers.translate(match[2])}`
   },
   {
     id: 'steamBestMissLine',
@@ -803,12 +889,6 @@ const patterns = Object.freeze([
     id: 'steamBestMissComment',
     regex: /^Steam best unchanged\. This run did not beat your Steam best: (.+)\.$/,
     replace: (match) => `Steam-Bestwert unveraendert. Dieser Run hat deinen Steam-Bestwert nicht geschlagen: ${match[1]}.`
-  },
-
-  {
-    id: 'steamBoard',
-    regex: /^STEAM BOARD: (.+)$/,
-    replace: (match, helpers) => `STEAM-LISTE: ${helpers.translate(match[1])}`
   },
   {
     id: 'bossDefeatedRepair',

@@ -27,6 +27,7 @@
     "check:graze-break": "node scripts/check-graze-break.mjs",
     "check:gameover-motivation": "node scripts/check-gameover-motivation.mjs",
     "check:result-screen-status": "node scripts/check-result-screen-status.mjs",
+    "check:result-screen-flow": "node scripts/check-result-screen-flow.mjs",
     "check:ship-unlock-reveal": "node scripts/check-ship-unlock-reveal.mjs",
     "check:sector-progression": "node scripts/check-sector-progression.mjs",
     "check:ship-selector-start": "node scripts/check-ship-selector-start.mjs",

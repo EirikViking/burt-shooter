@@ -36,16 +36,21 @@ assert.ok(
     mockCheck.includes("lastLeaderboardResult?.steamStatus === 'submitted'") &&
     mockCheck.includes('Steam auto-submit flow exposed manual submit copy') &&
     mockCheck.includes('Steam mock exposed manual name entry') &&
-    mockCheck.includes('Steam mock did not report exact local placement') &&
+    mockCheck.includes('Steam hold status reused full or stale leaderboard copy') &&
+    mockCheck.includes('Final runback did not report exact local placement') &&
     mockCheck.includes('Steam mock did not report exact global placement') &&
+    mockCheck.includes('Final runback did not report exact Steam placement') &&
     mockCheck.includes('steamRank: 3') &&
     mockCheck.includes('steamRank: 4') &&
     mockCheck.includes('steamRank: null') &&
     mockCheck.includes('Steam rank 4 was incorrectly treated as Top Three') &&
     mockCheck.includes('Missing Steam rank should clear stale Top Three placement without final rank pending copy') &&
     mockCheck.includes('Low Steam score should be marked best unchanged') &&
-    mockCheck.includes('THIS RUN DID NOT BEAT YOUR STEAM BEST: 35,923') &&
-    mockCheck.includes('LOCAL BOARD: NOT IN LOCAL TOP 20'),
+    mockCheck.includes('Best: 35,923') &&
+    mockCheck.includes('This run: 254') &&
+    mockCheck.includes('Low Steam hold status reused full or stale leaderboard copy') &&
+    mockCheck.includes('Local: Not in local top 20') &&
+    mockCheck.includes('Final low-score runback should not show an outside-visible local placement'),
   'Steam leaderboard mock must cover autosubmit without manual name entry'
 );
 assert.ok(

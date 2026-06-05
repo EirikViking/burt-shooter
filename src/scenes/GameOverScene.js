@@ -102,6 +102,8 @@ export class GameOverScene {
     this.shipUnlockRevealCountText = null;
     this.shipUnlockVoicePlayed = false;
     this.nextGoal = null;
+    this.currentProgressForResult = null;
+    this.runbackProgressSummary = '';
     this.nextGoalGroup = null;
     this.nextGoalBg = null;
     this.nextGoalText = null;
@@ -304,11 +306,13 @@ export class GameOverScene {
     this.personalBestVoicePlayed = false;
     this.nearMissVoicePlayed = false;
     const currentProgress = this.game.runProgressionResult?.next || getShipUnlockProgress();
+    this.currentProgressForResult = currentProgress;
     this.game.rankIndex = currentProgress.pilotRank || this.game.rankIndex || 0;
     this.newlyUnlockedShips = this.getNewlyUnlockedShips(previousProgress, currentProgress);
     this.levelSummary = this.createLevelSummary(previousProgress, currentProgress);
     this.unlockSummary = this.createUnlockSummary(previousProgress, currentProgress, this.newlyUnlockedShips);
     this.nextGoal = this.createNextGoal(previousProgress, currentProgress);
+    this.runbackProgressSummary = this.createRunbackProgressSummary(currentProgress);
 
     // Generate unique submissionId for this run (reused across retries)
     this.submissionId = generateUUID();
@@ -342,7 +346,7 @@ export class GameOverScene {
     this.container.addChild(this.title);
 
     const scoreSize = getResponsiveFontSize(layout, 'score');
-    this.scoreText = createText(`SCORE: ${this.finalScore}`, {
+    this.scoreText = createText(this.getScoreResultText(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: scoreSize,
       fill: '#ffff00'
@@ -625,6 +629,31 @@ export class GameOverScene {
     return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('en-US');
   }
 
+  formatElapsedTime(seconds) {
+    const totalSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+    const minutes = Math.floor(totalSeconds / 60);
+    const remainder = totalSeconds % 60;
+    return `${minutes}:${String(remainder).padStart(2, '0')}`;
+  }
+
+  normalizeNextGoalLine(text = '') {
+    const cleaned = String(text || '')
+      .replace(/^NEXT\s+CAREER\s+GOAL:\s*/i, '')
+      .replace(/^NEXT\s+GOAL:\s*/i, '')
+      .replace(/^BEAT\s+YOUR\s+BEST:\s*/i, 'Beat your best: ')
+      .replace(/^GLOBAL\s+SLOT:\s*/i, 'Global slot: ')
+      .replace(/^TOP\s+THREE:\s*/i, 'Top three: ')
+      .replace(/^NUMBER\s+ONE:\s*/i, 'Number one: ')
+      .trim();
+    if (!cleaned) return 'Next goal: Climb one global rank';
+    const readable = cleaned
+      .toLowerCase()
+      .replace(/\bxp\b/g, 'XP')
+      .replace(/\b\d+\b/g, (match) => match)
+      .replace(/(^|[.:]\s+)([a-z])/g, (_, prefix, char) => `${prefix}${char.toUpperCase()}`);
+    return `Next goal: ${readable}`;
+  }
+
   getSteamPreviousBestScore(result = this.getCurrentLeaderboardResult()) {
     const candidates = [
       result?.steamPreviousBestScore,
@@ -672,77 +701,72 @@ export class GameOverScene {
   }
 
   getLocalPlacementLine() {
-    if (!this.isRankedRun) return 'LOCAL BOARD: PRACTICE RUN';
+    if (!this.isRankedRun) return 'Local: Practice run';
     const rank = this.getVisibleLocalPlacementRank();
     const rawRank = this.getLocalPlacementRank();
     const result = this.getCurrentLeaderboardResult();
     if (rank && (this.localQualified || result?.localStatus === 'saved' || this.steamSubmissionMode)) {
-      return `LOCAL BOARD: TOP 20 #${rank}`;
+      return `Local: #${rank}`;
     }
     if (rawRank && rawRank > LEADERBOARD_DISPLAY_LIMIT && (this.localQualified || result?.localStatus === 'saved' || this.steamSubmissionMode)) {
-      return `LOCAL BOARD: NOT IN LOCAL TOP ${LEADERBOARD_DISPLAY_LIMIT}`;
+      return `Local: Not in local top ${LEADERBOARD_DISPLAY_LIMIT}`;
     }
-    if (this.finalScore <= 0) return 'LOCAL BOARD: NO SCORE';
-    if (this.localQualified) return 'LOCAL BOARD: QUALIFIED';
-    if (this.steamSubmissionMode) return 'LOCAL BOARD: BACKUP READY';
-    return `LOCAL BOARD: NEED ${Math.max(1, this.leaderboardAdapter.getLocalCutoff() + 1).toLocaleString('en-US')}`;
+    if (this.finalScore <= 0) return 'Local: No score';
+    if (this.localQualified) return 'Local: Qualified';
+    if (this.steamSubmissionMode) return 'Local: Backup ready';
+    return `Local: Need ${Math.max(1, this.leaderboardAdapter.getLocalCutoff() + 1).toLocaleString('en-US')}`;
   }
 
   getGlobalPlacementLine() {
-    if (!this.isRankedRun) return 'GLOBAL BOARD: PRACTICE RUN';
+    if (!this.isRankedRun) return 'Global: Practice run';
     if (this.steamSubmissionMode) return this.getSteamPlacementLine();
     const rank = this.getGlobalPlacementRank();
     if (rank) {
-      let line = `GLOBAL BOARD: RANK #${rank}`;
-      if (rank === 1 || this.globalPlacement?.numberOne) line += ' - NUMBER ONE';
-      else if (rank <= 3 || this.globalPlacement?.top3) line += ' - TOP THREE';
-      return line;
+      return `Global: #${rank}`;
     }
     if (this.globalPlacement?.nearGlobal) {
-      return `GLOBAL BOARD: CLOSE - NEED ${this.globalPlacement.scoreToGlobal.toLocaleString('en-US')}`;
+      return `Global: Close - need ${this.globalPlacement.scoreToGlobal.toLocaleString('en-US')}`;
     }
-    if (this.globalStatus === 'submitted') return 'GLOBAL BOARD: SUBMITTED - RANK PENDING';
+    if (this.globalStatus === 'submitted') return 'Global: Score submitted';
     return {
-      idle: 'GLOBAL BOARD: IDLE',
-      steam_ready: 'GLOBAL BOARD: IDLE',
-      checking: 'GLOBAL BOARD: CHECKING...',
-      qualified: 'GLOBAL BOARD: QUALIFIED',
-      missed: 'GLOBAL BOARD: NO SLOT',
-      offline: 'GLOBAL BOARD: OFFLINE - LOCAL STILL WORKS',
-      submitting: 'GLOBAL BOARD: SUBMITTING...',
-      failed: 'GLOBAL BOARD: FAILED - LOCAL SAVED',
-      unranked: 'GLOBAL BOARD: PRACTICE RUN'
-    }[this.globalStatus] || `GLOBAL BOARD: ${String(this.globalStatus || 'UNKNOWN').toUpperCase()}`;
+      idle: 'Global: Idle',
+      steam_ready: 'Global: Idle',
+      checking: 'Global: Checking...',
+      qualified: 'Global: Qualified',
+      missed: 'Global: No slot',
+      offline: 'Global: Offline - local still works',
+      submitting: 'Global: Submitting...',
+      failed: 'Global: Failed - local saved',
+      unranked: 'Global: Practice run'
+    }[this.globalStatus] || `Global: ${String(this.globalStatus || 'unknown')}`;
   }
 
   getSteamPlacementLine() {
     const result = this.getCurrentLeaderboardResult();
-    const rank = this.getGlobalPlacementRank();
-    if (rank) {
-      let line = `STEAM BOARD: RANK #${rank}`;
-      if (rank === 1 || this.globalPlacement?.numberOne) line += ' - NUMBER ONE';
-      else if (rank <= 3 || this.globalPlacement?.top3) line += ' - TOP THREE';
-      return line;
-    }
-    if (this.globalStatus === 'submitting') return 'STEAM BOARD: STEAM RANK UPDATING...';
-    if (this.globalStatus === 'failed' || result?.steamStatus === 'failed') return 'STEAM BOARD: UNAVAILABLE - LOCAL BACKUP SAVED';
     if (this.isSteamBestUnchangedResult(result) || this.globalStatus === 'steam_best_unchanged') {
       const best = this.getSteamPreviousBestScore(result);
       return best > 0
-        ? `STEAM BOARD: STEAM BEST UNCHANGED\nTHIS RUN DID NOT BEAT YOUR STEAM BEST: ${this.formatScoreNumber(best)}`
-        : 'STEAM BOARD: STEAM BEST UNCHANGED';
+        ? `Steam: Best unchanged\nBest: ${this.formatScoreNumber(best)} | This run: ${this.formatScoreNumber(this.finalScore)}`
+        : 'Steam: Best unchanged';
     }
-    if (result?.steamStatus === 'submitted' || this.globalStatus === 'submitted') return 'STEAM BOARD: SCORE SUBMITTED';
-    if (this.globalStatus === 'steam_ready' || this.globalStatus === 'idle') return 'STEAM BOARD: READY';
-    return `STEAM BOARD: ${String(this.globalStatus || 'UNKNOWN').toUpperCase()}`;
+    const rank = this.getGlobalPlacementRank();
+    if (rank) {
+      return result?.steamStatus === 'submitted' || this.globalStatus === 'submitted'
+        ? `New Steam best: #${rank}`
+        : `Steam: #${rank}`;
+    }
+    if (this.globalStatus === 'submitting') return 'Steam: Rank updating...';
+    if (this.globalStatus === 'failed' || result?.steamStatus === 'failed') return 'Steam: Unavailable - local backup saved';
+    if (result?.steamStatus === 'submitted' || this.globalStatus === 'submitted') return 'Steam: Score submitted';
+    if (this.globalStatus === 'steam_ready' || this.globalStatus === 'idle') return 'Steam: Ready';
+    return `Steam: ${String(this.globalStatus || 'unknown')}`;
   }
 
   getLeaderboardPlacementLines() {
-    const lines = [
+    return [
       this.getLocalPlacementLine(),
       this.getGlobalPlacementLine()
     ];
-    return ['LEADERBOARDS', ...lines];
   }
 
   isSceneActive() {
@@ -910,8 +934,138 @@ export class GameOverScene {
     return this.getLeaderboardPlacementLines().join('\n');
   }
 
+  getHoldStatusText(reason = this.pendingRunbackReason) {
+    if (this.state === 'submitting' || this.globalStatus === 'submitting') return 'Steam: Rank updating...';
+    if (reason === 'global_failed' || this.globalStatus === 'failed') return 'Steam: Unavailable - local backup saved';
+    if (reason === 'steam_best_unchanged' || this.isSteamBestUnchangedResult()) return this.getSteamPlacementLine();
+    if (reason === 'no_slot' || reason === 'offline_no_slot') return 'No visible leaderboard slot this run';
+    return this.getGlobalPlacementLine();
+  }
+
+  getRunbackRunSummaryText() {
+    const summary = this.game?.runSummary || {};
+    const elapsedSeconds = Math.max(0, Math.floor(Number(summary.runElapsedSeconds) || 0));
+    const gained = Math.max(0, Math.floor(Number(summary.pilotXpGained) || 0));
+    return [
+      `Sector ${this.finalLevel || 1} | ${this.formatElapsedTime(elapsedSeconds)} | Level ${this.finalLevel || 1}`,
+      `XP +${gained.toLocaleString('en-US')}`
+    ].join('\n');
+  }
+
+  createRunbackProgressSummary(currentProgress = this.currentProgressForResult || {}) {
+    const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
+    if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
+      return [
+        `Next rank: ${getRankTitle(MAX_RANK_INDEX)}`,
+        'XP to next: 0'
+      ].join('\n');
+    }
+    const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1));
+    return [
+      `Next rank: ${nextTitle}`,
+      `XP to next: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`
+    ].join('\n');
+  }
+
+  getRunbackProgressText() {
+    return this.runbackProgressSummary || this.createRunbackProgressSummary();
+  }
+
+  getRunbackLeaderboardText() {
+    return this.getLeaderboardPlacementLines().join('\n');
+  }
+
+  getRunbackNextGoalText() {
+    const rank = this.getGlobalPlacementRank();
+    if (rank && rank > 1) return 'Next goal: Climb one global rank';
+    if (rank === 1) return 'Next goal: Defend #1';
+    return this.normalizeNextGoalLine(this.nextGoal?.text || '');
+  }
+
+  getFinalResultScreenLines() {
+    return {
+      title: this.getRunbackTitle(),
+      score: this.getScoreResultText(),
+      runSummary: this.getRunbackRunSummaryText(),
+      progress: this.getRunbackProgressText(),
+      leaderboard: this.getRunbackLeaderboardText(),
+      nextGoal: this.getRunbackNextGoalText()
+    };
+  }
+
+  getScoreResultText() {
+    return translateText('SCORE') + ': ' + this.formatScoreNumber(this.finalScore);
+  }
+
+  syncResultStagePresentation() {
+    if (!this.title || !this.scoreText) return;
+    this.scoreText.text = this.getScoreResultText();
+
+    const holdStage = this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting';
+    if (holdStage) {
+      this.title.text = this.state === 'submitting' ? 'SAVING SCORE' : 'SCORE STATUS';
+      if (this.levelText) this.levelText.visible = false;
+      if (this.unlockText) this.unlockText.visible = false;
+      if (this.shipUnlockReveal) this.shipUnlockReveal.visible = false;
+      if (this.nextGoalGroup) this.nextGoalGroup.visible = false;
+      if (this.comment) {
+        this.comment.text = '';
+        this.comment.visible = false;
+      }
+      if (this.leaderboardStatusText) {
+        this.leaderboardStatusText.text = this.getHoldStatusText();
+        this.leaderboardStatusText.visible = true;
+      }
+      if (this.promptText) {
+        this.promptText.text = '';
+        this.promptText.visible = false;
+      }
+      if (this.nameDisplay) this.nameDisplay.visible = false;
+      if (this.notQualifiedText) this.notQualifiedText.visible = false;
+      if (this.instructions) this.instructions.visible = false;
+      return;
+    }
+
+    if (this.state !== 'runback') return;
+    const finalLines = this.getFinalResultScreenLines();
+    this.title.text = finalLines.title;
+    if (this.levelText) {
+      this.levelText.text = finalLines.runSummary;
+      this.levelText.visible = true;
+    }
+    if (this.unlockText) {
+      this.unlockText.text = finalLines.progress;
+      this.unlockText.visible = true;
+    }
+    if (this.shipUnlockReveal) this.shipUnlockReveal.visible = false;
+    if (this.comment) {
+      this.comment.text = finalLines.leaderboard;
+      this.comment.visible = true;
+    }
+    if (this.nextGoal) this.nextGoal = { text: finalLines.nextGoal, tone: 'leaderboard' };
+    if (this.nextGoalText) this.nextGoalText.text = finalLines.nextGoal;
+    if (this.nextGoalGroup) this.nextGoalGroup.visible = Boolean(finalLines.nextGoal);
+    if (this.leaderboardStatusText) {
+      this.leaderboardStatusText.text = finalLines.leaderboard;
+      this.leaderboardStatusText.visible = false;
+    }
+    if (this.promptText) {
+      this.promptText.text = '';
+      this.promptText.visible = false;
+      this.promptText.eventMode = 'none';
+      this.promptText.cursor = 'default';
+    }
+    if (this.notQualifiedText) this.notQualifiedText.visible = false;
+    if (this.nameDisplay) this.nameDisplay.visible = false;
+    if (this.instructions) this.instructions.visible = false;
+  }
+
   updateLeaderboardStatusText() {
     if (!this.leaderboardStatusText) return;
+    if (this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting' || this.state === 'runback') {
+      this.syncResultStagePresentation();
+      return;
+    }
     this.leaderboardStatusText.text = this.getLeaderboardStatusMessage();
     if (this.globalQualified) {
       this.leaderboardStatusText.style.fill = '#ffe86a';
@@ -966,7 +1120,7 @@ export class GameOverScene {
       const globalRank = this.getGlobalPlacementRank();
       if (localRank && globalRank) return `Local board rank #${localRank}. Global board rank #${globalRank}.`;
       if (localRank && this.globalStatus === 'submitted') return `Local board rank #${localRank}. Global board rank pending.`;
-      if (localRank) return `Local board rank #${localRank}. Global board status: ${this.getGlobalPlacementLine().replace(/^GLOBAL BOARD: /, '')}.`;
+      if (localRank) return `Local board rank #${localRank}. Global status: ${this.getGlobalPlacementLine().replace(/^Global: /, '')}.`;
       return 'Local board slot secured. Global board status is shown below.';
     }
     if (this.isPersonalBest) {
@@ -976,7 +1130,10 @@ export class GameOverScene {
   }
 
   updateCeremonyPresentation() {
-    if (this.state === 'runback') return;
+    if (this.state === 'submitting' || this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'runback') {
+      this.syncResultStagePresentation();
+      return;
+    }
     if (!this.title || !this.comment) return;
     const placement = this.globalPlacement;
     this.refreshNextGoalFromLeaderboard();
@@ -1101,6 +1258,7 @@ export class GameOverScene {
     const responsiveLayout = getCurrentLayout();
     const layout = createTextLayout(width, height, responsiveLayout);
     const safeMargin = responsiveLayout.safeArea;
+    this.syncResultStagePresentation();
 
     // Update font sizes
     const titleSize = getResponsiveFontSize(layout, 'title');
@@ -1252,14 +1410,26 @@ export class GameOverScene {
       this.shipUnlockReveal.y = placeCenteredElement(this.shipUnlockReveal, spacing * 0.5, unlockRevealHeight);
     }
 
-    if (nextGoalVisible) {
-      this.nextGoalGroup.x = width / 2;
-      this.nextGoalGroup.y = placeCenteredElement(this.nextGoalGroup, spacing, nextGoalHeight);
-    }
+    if (this.state === 'runback') {
+      if (commentVisible) {
+        this.comment.x = width / 2;
+        this.comment.y = placeCenteredElement(this.comment, spacing, commentHeight);
+      }
 
-    if (commentVisible) {
-      this.comment.x = width / 2;
-      this.comment.y = placeCenteredElement(this.comment, spacing, commentHeight);
+      if (nextGoalVisible) {
+        this.nextGoalGroup.x = width / 2;
+        this.nextGoalGroup.y = placeCenteredElement(this.nextGoalGroup, spacing, nextGoalHeight);
+      }
+    } else {
+      if (nextGoalVisible) {
+        this.nextGoalGroup.x = width / 2;
+        this.nextGoalGroup.y = placeCenteredElement(this.nextGoalGroup, spacing, nextGoalHeight);
+      }
+
+      if (commentVisible) {
+        this.comment.x = width / 2;
+        this.comment.y = placeCenteredElement(this.comment, spacing, commentHeight);
+      }
     }
 
     if (leaderboardStatusVisible) {
@@ -1596,7 +1766,8 @@ export class GameOverScene {
 
   drawNextGoalStrip(layout) {
     if (!this.nextGoalGroup || !this.nextGoalBg || !this.nextGoalText) return;
-    const text = String(this.nextGoal?.text || '').trim();
+    const canShow = !(this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting');
+    const text = canShow ? String(this.nextGoal?.text || '').trim() : '';
     this.nextGoalGroup.visible = Boolean(text);
     if (!text) {
       this.nextGoalBg.clear();
@@ -1679,7 +1850,8 @@ export class GameOverScene {
 
   drawShipUnlockReveal(layout) {
     if (!this.shipUnlockReveal || !this.shipUnlockRevealBg || !this.shipUnlockRevealGlow) return;
-    const count = this.newlyUnlockedShips.length;
+    const canShow = !(this.state === 'runback' || this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting');
+    const count = canShow ? this.newlyUnlockedShips.length : 0;
     this.shipUnlockReveal.visible = count > 0;
     if (count <= 0) {
       this.shipUnlockRevealBg.clear();
@@ -2953,47 +3125,16 @@ export class GameOverScene {
   }
 
   getRunbackStatusText(reason = this.runbackReason) {
-    const map = {
-      score_submitted: 'SCORE SUBMITTED',
-      steam_best_unchanged: 'STEAM BEST UNCHANGED',
-      score_saved: 'SCORE SAVED',
-      global_failed: 'LOCAL SCORE SAVED\nGLOBAL SUBMIT FAILED - RUN IT BACK',
-      score_skipped: 'SCORE SUBMISSION SKIPPED',
-      no_slot: 'NO BOARD SLOT THIS TIME',
-      offline_no_slot: 'GLOBAL BOARD OFFLINE\nNO LOCAL SLOT THIS TIME',
-      practice: 'PRACTICE RUN - SCORE NOT LOGGED'
-    };
-    const base = map[reason] || 'RUN COMPLETE';
-    return `${base}\n${this.getLeaderboardPlacementLines().join('\n')}`;
+    return this.getRunbackLeaderboardText(reason);
   }
 
   getRunbackTitle() {
-    if (this.globalPlacement?.numberOne) return 'NUMBER ONE';
-    if (this.globalPlacement?.top3) return 'TOP THREE';
+    if (this.globalPlacement?.qualified && (this.globalPlacement?.numberOne || this.globalPlacement?.top3)) return 'TOP THREE';
     return 'ONE MORE RUN?';
   }
 
   getRunbackComment() {
-    const placement = this.globalPlacement;
-    const localRank = this.getVisibleLocalPlacementRank();
-    if (this.isSteamBestUnchangedResult() || this.runbackReason === 'steam_best_unchanged') {
-      const best = this.getSteamPreviousBestScore();
-      return best > 0
-        ? `Steam best unchanged. This run did not beat your Steam best: ${this.formatScoreNumber(best)}.`
-        : 'Steam best unchanged.';
-    }
-    if (placement?.numberOne) {
-      return `${localRank ? `Local #${localRank}. ` : ''}Global #1. Let the cabinet remember it loudly.`;
-    }
-    if (placement?.top3) {
-      return `${localRank ? `Local #${localRank}. ` : ''}Global #${placement.placement}. That is the kind of run people pretend was easy.`;
-    }
-    const globalRank = this.getGlobalPlacementRank();
-    const placementSummary = [
-      localRank ? `Local #${localRank}` : null,
-      globalRank ? `Global #${globalRank}` : null
-    ].filter(Boolean).join(' | ');
-    return `${placementSummary ? `${placementSummary} | ` : ''}Score ${Number(this.finalScore || 0).toLocaleString('en-US')} | Level ${this.finalLevel || 0}`;
+    return this.getRunbackLeaderboardText();
   }
 
   getSubmittedReportHoldMs() {
@@ -3128,44 +3269,20 @@ export class GameOverScene {
     this.continueInputArmedAt = 0;
     this.ctaVoicePlayed = false;
     this.selectedCtaLine = this.selectRunbackCtaLine();
-    const globalCelebration = Boolean(this.globalPlacement?.qualified);
 
     if (this.title) {
       this.title.text = this.getRunbackTitle();
       this.title.style.fill = this.globalPlacement?.qualified ? '#fff8b8' : '#fff3a2';
       this.title.style.dropShadowColor = this.globalPlacement?.qualified ? '#ffd454' : '#ffc94a';
     }
+    this.syncResultStagePresentation();
+    if (this.comment) this.comment.style.fill = this.globalPlacement?.qualified ? '#ffeeb0' : '#d8e6ff';
     if (this.leaderboardStatusText) {
-      this.leaderboardStatusText.text = this.getRunbackStatusText(reason);
       this.leaderboardStatusText.style.fill = reason === 'global_failed'
         ? '#ffb35c'
         : this.globalPlacement?.qualified
           ? '#fff3a2'
           : '#ffe86a';
-    }
-    if (this.comment) {
-      this.comment.text = this.getRunbackComment();
-      this.comment.style.fill = this.globalPlacement?.qualified ? '#ffeeb0' : '#d8e6ff';
-      this.comment.visible = true;
-    }
-    if (this.levelText) {
-      this.levelText.visible = !globalCelebration;
-    }
-    if (this.unlockText) {
-      this.unlockText.visible = !globalCelebration;
-    }
-    if (this.shipUnlockReveal) {
-      this.shipUnlockReveal.visible = !globalCelebration && Boolean(this.shipUnlockReveal.visible);
-    }
-    if (this.nextGoalGroup) {
-      this.nextGoalGroup.visible = !globalCelebration && Boolean(this.nextGoal?.text);
-    }
-    if (this.promptText) {
-      this.promptText.visible = true;
-      this.promptText.eventMode = 'none';
-      this.promptText.cursor = 'default';
-      this.promptText.text = this.selectedCtaLine?.text || 'One more run.';
-      this.promptText.style.fill = '#fff3a2';
     }
     if (this.notQualifiedText) {
       this.notQualifiedText.visible = false;

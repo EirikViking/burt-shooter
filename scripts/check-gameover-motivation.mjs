@@ -447,8 +447,8 @@ try {
       !/SURVIVEDSECONDS/i.test(careerUnlockSummary) &&
       /NEXT CAREER GOAL:\s*REACH SECTOR 9/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
-      /LOCAL BOARD: (?:TOP 20 #|RANK #)\d+/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
-      /GLOBAL BOARD:/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
+      /Local: #\d+/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
+      /Global:/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
       lineCount(gameOverState.gameOver?.levelSummary) <= 4 &&
       lineCount(gameOverState.gameOver?.unlockSummary) <= 2 &&
       lineCount(gameOverState.gameOver?.leaderboardStatus) <= 4 &&
@@ -464,8 +464,8 @@ try {
       submittedHoldSnapshot.gameOver?.submittedHoldReady === false &&
       submittedHoldSnapshot.gameOver?.primaryCta?.mode === 'submitted_hold' &&
       submittedHoldSnapshot.gameOver?.primaryCta?.disabled === true &&
-      /LOCAL BOARD: (?:TOP 20 #|RANK #)\d+/i.test(submittedHoldSnapshot.gameOver?.leaderboardStatus || '') &&
-      /GLOBAL BOARD:/i.test(submittedHoldSnapshot.gameOver?.leaderboardStatus || '') &&
+      lineCount(submittedHoldSnapshot.gameOver?.leaderboardStatus) <= 2 &&
+      !/Local:|LEADERBOARDS|LOCAL BOARD|GLOBAL BOARD|Steamboard|Steam Board|Steam board/i.test(submittedHoldSnapshot.gameOver?.leaderboardStatus || '') &&
       submittedEarlyContinueState.gameOver?.state === 'submitted_hold' &&
       submittedReadyHoldState.gameOver?.state === 'submitted_hold' &&
       submittedReadyHoldState.gameOver?.submittedHoldReady === true &&
@@ -475,6 +475,8 @@ try {
       submittedRunbackState.gameOver?.state === 'runback' &&
       submittedRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
       submittedRunbackState.gameOver?.ceremonyTitle === 'ONE MORE RUN?' &&
+      /Local: #\d+/i.test(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
+      /Global:/i.test(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
       /^one_more_run_\d\d$/.test(submittedRunbackState.gameOver?.selectedCtaLine?.id || '') &&
       /CONTINUE/i.test(noSlotCtaState.gameOver?.primaryCta?.label || '') &&
       noSlotCtaState.gameOver?.primaryCta?.mode === 'result_hold' &&

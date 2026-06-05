@@ -180,6 +180,101 @@ export function buildArcadePatterns(labels) {
       replace: () => labels.nextGoalGlobalRank
     },
     {
+      id: 'scoreStatus',
+      regex: /^SCORE STATUS$/,
+      replace: () => labels.scoreStatus || 'SCORE STATUS'
+    },
+    {
+      id: 'savingScore',
+      regex: /^SAVING SCORE$/,
+      replace: () => labels.savingScore || 'SAVING SCORE'
+    },
+    {
+      id: 'noVisibleLeaderboardSlot',
+      regex: /^No visible leaderboard slot this run$/,
+      replace: () => labels.noVisibleLeaderboardSlot || 'No visible leaderboard slot this run'
+    },
+    {
+      id: 'runbackSummary',
+      regex: /^Sector (.+?) \| (.+?) \| Level (.+)$/,
+      replace: (match, helpers) => `${helpers.translate('SECTOR')} ${match[1]} | ${match[2]} | ${helpers.translate('LEVEL')} ${match[3]}`
+    },
+    {
+      id: 'xpPlus',
+      regex: /^XP \+(.+)$/,
+      replace: (match) => `${labels.xp || 'XP'} +${match[1]}`
+    },
+    {
+      id: 'nextRank',
+      regex: /^Next rank: (.+)$/,
+      replace: (match, helpers) => `${labels.nextRank || 'Next rank'}: ${helpers.translate(match[1])}`
+    },
+    {
+      id: 'xpToNext',
+      regex: /^XP to next: (.+)$/,
+      replace: (match) => `${labels.xpToNext || 'XP to next'}: ${match[1]}`
+    },
+    {
+      id: 'nextGoalReadable',
+      regex: /^Next goal: (.+)$/,
+      replace: (match, helpers) => `${labels.nextGoal || 'Next goal'}: ${helpers.translate(match[1])}`
+    },
+    {
+      id: 'localSimpleRank',
+      regex: /^Local: #([0-9]+)$/,
+      replace: (match) => `${labels.localBoard}: #${match[1]}`
+    },
+    {
+      id: 'localSimpleStatus',
+      regex: /^Local: (Practice run|No score|Qualified|Backup ready)$/,
+      replace: (match, helpers) => `${labels.localBoard}: ${helpers.translate(match[1])}`
+    },
+    {
+      id: 'localSimpleNeed',
+      regex: /^Local: Need (.+)$/,
+      replace: (match) => `${labels.localBoard}: ${labels.need} ${match[1]}`
+    },
+    {
+      id: 'localSimpleNotInTop',
+      regex: /^Local: Not in local top ([0-9]+)$/,
+      replace: (match) => labels.localNotInTop(match[1])
+    },
+    {
+      id: 'globalSimpleRank',
+      regex: /^Global: #([0-9]+)$/,
+      replace: (match) => `${labels.globalBoard}: #${match[1]}`
+    },
+    {
+      id: 'globalSimpleStatus',
+      regex: /^Global: (Idle|Checking\.\.\.|Qualified|No slot|Offline - local still works|Submitting\.\.\.|Failed - local saved|Practice run|Score submitted)$/,
+      replace: (match, helpers) => `${labels.globalBoard}: ${helpers.translate(match[1])}`
+    },
+    {
+      id: 'globalSimpleClose',
+      regex: /^Global: Close - need (.+)$/,
+      replace: (match) => `${labels.globalBoard}: ${labels.close} - ${labels.need} ${match[1]}`
+    },
+    {
+      id: 'steamSimpleRank',
+      regex: /^Steam: #([0-9]+)$/,
+      replace: (match) => `${labels.steam || 'Steam'}: #${match[1]}`
+    },
+    {
+      id: 'newSteamBest',
+      regex: /^New Steam best: #([0-9]+)$/,
+      replace: (match) => `${labels.newSteamBest || 'New Steam best'}: #${match[1]}`
+    },
+    {
+      id: 'steamSimpleStatus',
+      regex: /^Steam: (Best unchanged|Rank updating\.\.\.|Unavailable - local backup saved|Score submitted|Ready|.+)$/,
+      replace: (match, helpers) => `${labels.steam || 'Steam'}: ${helpers.translate(match[1])}`
+    },
+    {
+      id: 'steamBestCompare',
+      regex: /^Best: (.+) \| This run: (.+)$/,
+      replace: (match) => `${labels.best || 'Best'}: ${match[1]} | ${labels.thisRun || 'This run'}: ${match[2]}`
+    },
+    {
       id: 'localNeed',
       regex: /^LOCAL BOARD: NEED (.+)$/,
       replace: (match) => `${labels.localBoard}: ${labels.need} ${match[1]}`
@@ -265,16 +360,6 @@ export function buildArcadePatterns(labels) {
       replace: (match) => labels.nearGlobalComment(match[1])
     },
     {
-      id: 'steamRank',
-      regex: /^STEAM BOARD: RANK #([0-9]+)$/,
-      replace: (match) => `${labels.steamBoard}: ${labels.rank} #${match[1]}`
-    },
-    {
-      id: 'steamRankTop',
-      regex: /^STEAM BOARD: RANK #(.+) - (NUMBER ONE|TOP THREE)$/,
-      replace: (match, helpers) => `${labels.steamBoard}: ${labels.rank} #${match[1]} - ${helpers.translate(match[2])}`
-    },
-    {
       id: 'steamBestMissLine',
       regex: /^THIS RUN DID NOT BEAT YOUR STEAM BEST: (.+)$/,
       replace: (match) => labels.steamBestMissLine(match[1])
@@ -288,11 +373,6 @@ export function buildArcadePatterns(labels) {
       id: 'steamBestMissComment',
       regex: /^Steam best unchanged\. This run did not beat your Steam best: (.+)\.$/,
       replace: (match) => labels.steamBestMissComment(match[1])
-    },
-    {
-      id: 'steamBoard',
-      regex: /^STEAM BOARD: (.+)$/,
-      replace: (match, helpers) => `${labels.steamBoard}: ${helpers.translate(match[1])}`
     },
     {
       id: 'bossDefeatedRepair',
