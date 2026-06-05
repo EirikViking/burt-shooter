@@ -248,7 +248,6 @@ export class HighscoreScene {
       wordWrapWidth: clampTextWidth(width * 0.8, layout)
     });
     this.stateMessage.anchor.set(0.5);
-    this.stateMessage.anchor.set(0.5);
     this.stateMessage.zIndex = 12;
     this.container.addChild(this.stateMessage);
 

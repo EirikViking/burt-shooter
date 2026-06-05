@@ -13,7 +13,8 @@ const requiredEvents = [
   'nova_wave_clear_sweep',
   'levelComplete',
   'powerup',
-  'boss_explode'
+  'boss_explode',
+  'boss_phase_surge'
 ];
 
 for (const event of requiredEvents) {
@@ -46,6 +47,16 @@ assert.notEqual(
   SFX_CATALOG.powerup?.[0],
   SFX_CATALOG.nova_wave_clear_sweep?.[0],
   'powerup and wave clear must not share the same asset'
+);
+assert.notEqual(
+  SFX_CATALOG.boss_explode?.[0],
+  SFX_CATALOG.powerup?.[0],
+  'boss death and powerup pickup must not share the same asset'
+);
+assert.notEqual(
+  SFX_CATALOG.boss_phase_surge?.[0],
+  SFX_CATALOG.levelComplete?.[0],
+  'boss surge and sector clear must not share the same asset'
 );
 
 console.log('[release-hardening-audio] PASS combo, wave clear, sector clear, powerup, and boss SFX are distinct');

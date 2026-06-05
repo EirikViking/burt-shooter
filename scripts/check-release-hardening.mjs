@@ -4,6 +4,16 @@ import path from 'node:path';
 
 const startedAt = new Date();
 const node = process.execPath;
+const manualTestingStillNeeded = [
+  'Steam-client combo x10/x20 by-ear pass: softened tick, score bonus unchanged.',
+  'Steam-client SFX by-ear pass: combo, wave clear, sector clear, powerup pickup, boss death all distinct.',
+  'Human boss pass: boss 1 lasts longer/readable without feeling much harder; sample one later boss if possible.',
+  'Human boss-death pass: bursts/rings/shockwaves look varied and clear before the next sector.',
+  'Level 8-9 stuck-sprite pass: death, despawn, wave/sector clear, boss transition, support ships, pause/freeze/interlude.',
+  'Steam-client game-over pass: auto-submit status is readable, Continue advances cleanly, One More Run/Top 3 remain readable.',
+  'UI overlap pass: Rank badge, Run Clear, One More Run, Global Score Deck, empty/populated leaderboards.',
+  'Real Steam leaderboard pass: use a real ranked run only; no dummy scores; board stays nova_swarm_global_score_v2.'
+];
 
 function npmStep(label, script) {
   if (process.platform === 'win32') {
@@ -22,6 +32,7 @@ const steps = [
   npmStep('wave stuck watchdog', 'check:wave-stuck-watchdog'),
   npmStep('boss mercy gate', 'check:boss-mercy'),
   npmStep('first boss balance', 'check:first-boss-balance'),
+  npmStep('debug shortcut stays unranked', 'check:debug-unranked'),
   npmStep('game over interlude readability', 'check:gameover-interlude'),
   npmStep('one more run flow', 'check:gameover-motivation'),
   npmStep('leaderboard status screens', 'check:leaderboard-visuals'),
@@ -97,13 +108,45 @@ const report = {
   finishedAt: new Date().toISOString(),
   durationMs: Date.now() - startedAt.getTime(),
   steps: results,
-  failure
+  passedCount: results.filter((result) => result.status === 'passed').length,
+  failedCount: results.filter((result) => result.status === 'failed').length,
+  failure,
+  manualTestingStillNeeded,
+  manualChecklistPath: 'release/steamworks/release_hardening_manual_test_checklist_20260605.md'
 };
 writeFileSync(path.join(outputDir, 'latest-report.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+writeFileSync(path.join(outputDir, 'latest-summary.md'), [
+  '# Nova Swarm Release Hardening Summary',
+  '',
+  `Status: ${status}`,
+  `Started: ${report.startedAt}`,
+  `Finished: ${report.finishedAt}`,
+  `Duration: ${Math.round(report.durationMs / 1000)}s`,
+  '',
+  '## Automated Checks',
+  '',
+  ...results.map((result) => `- ${result.status === 'passed' ? 'PASS' : 'FAIL'} ${result.label} (${Math.round(result.durationMs / 1000)}s)`),
+  '',
+  '## Manual Testing Still Needed',
+  '',
+  ...manualTestingStillNeeded.map((item) => `- ${item}`),
+  '',
+  `Full checklist: ${report.manualChecklistPath}`,
+  ''
+].join('\n'), 'utf8');
 
 if (status !== 'passed') {
   console.error(`[release-hardening] FAIL ${failure}`);
   process.exit(1);
 }
 
-console.log(`[release-hardening] PASS ${steps.length} checks in ${Math.round(report.durationMs / 1000)}s`);
+console.log('');
+console.log('[release-hardening] Automated summary');
+console.log(`[release-hardening] PASS ${report.passedCount}/${steps.length} checks in ${Math.round(report.durationMs / 1000)}s`);
+console.log(`[release-hardening] report=${path.join(outputDir, 'latest-report.json')}`);
+console.log(`[release-hardening] summary=${path.join(outputDir, 'latest-summary.md')}`);
+console.log('[release-hardening] Manual testing still needed:');
+manualTestingStillNeeded.forEach((item, index) => {
+  console.log(`[release-hardening] ${index + 1}. ${item}`);
+});
+console.log(`[release-hardening] Full manual checklist: ${report.manualChecklistPath}`);
