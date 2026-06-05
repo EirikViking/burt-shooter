@@ -95,32 +95,60 @@ async function prepareGameplay(page) {
     play.inputManager.resetAllKeys();
     if (play.player) {
       play.player.x = Math.max(120, Math.min((window.__game?.getWidth?.() || 1280) - 120, play.player.x || 640));
+      play.player.shootCooldown = 0;
+    }
+    if (play.bulletManager) {
+      play.bulletManager.playerBullets = [];
     }
   });
 }
 
-async function assertKeyboardMovementKey(page, label) {
+async function assertKeyboardGameplayControls(page, label) {
   await prepareGameplay(page);
-  await page.keyboard.down('ArrowRight');
-  await page.waitForTimeout(140);
-  const state = await page.evaluate(() => {
+  const before = await page.evaluate(() => {
     const play = window.__game?.scenes?.play;
     return {
       scene: window.__game?.currentSceneName,
+      playerX: Number(play?.player?.x) || 0,
+      playerBullets: Number(play?.bulletManager?.playerBullets?.length) || 0
+    };
+  });
+  await page.keyboard.down('ArrowRight');
+  await page.keyboard.down('Space');
+  await page.evaluate(() => window.advanceTime?.(360));
+  await page.waitForTimeout(240);
+  const after = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    return {
+      scene: window.__game?.currentSceneName,
+      lives: Number(window.__game?.lives) || 0,
+      playerActive: Boolean(play?.player?.active),
+      playerSpeed: Number(play?.player?.speed) || 0,
+      introActive: Boolean(play?.introActive),
+      introComplete: Boolean(play?.introComplete),
+      isPaused: Boolean(play?.isPaused),
       pressed: Boolean(play?.inputManager?.isKeyPressed?.('ArrowRight')),
+      firing: Boolean(play?.inputManager?.isFiring?.()),
       rawArrowRight: Boolean(play?.inputManager?.keys?.ArrowRight),
-      rawCode: Boolean(play?.inputManager?.keys?.ArrowRight),
+      rawSpace: Boolean(play?.inputManager?.keys?.Space),
+      playerX: Number(play?.player?.x) || 0,
+      playerBullets: Number(play?.bulletManager?.playerBullets?.length) || 0,
+      shootCooldown: Number(play?.player?.shootCooldown) || 0,
       activeTag: document.activeElement?.tagName || null,
       activeType: document.activeElement?.getAttribute?.('type') || null,
       inputDestroyed: Boolean(play?.inputManager?.destroyed)
     };
   });
+  await page.keyboard.up('Space');
   await page.keyboard.up('ArrowRight');
-  assert(state.scene === 'play', `${label}: expected play scene, got ${state.scene}`);
-  assert(state.inputDestroyed === false, `${label}: play input manager is destroyed`);
-  assert(state.pressed === true || state.rawArrowRight === true || state.rawCode === true, `${label}: ArrowRight did not reach gameplay input (${JSON.stringify(state)})`);
-  assert(state.activeTag !== 'INPUT', `${label}: hidden input kept focus during gameplay (${JSON.stringify(state)})`);
-  return state;
+  assert(after.scene === 'play', `${label}: expected play scene, got ${after.scene}`);
+  assert(after.inputDestroyed === false, `${label}: play input manager is destroyed`);
+  assert(after.pressed === true || after.rawArrowRight === true, `${label}: ArrowRight did not reach gameplay input (${JSON.stringify(after)})`);
+  assert(after.firing === true || after.rawSpace === true || after.playerBullets > before.playerBullets || after.shootCooldown > 0, `${label}: Space did not reach gameplay firing (${JSON.stringify({ before, after })})`);
+  assert(after.playerX > before.playerX + 2, `${label}: keyboard movement did not move the ship (${JSON.stringify({ before, after })})`);
+  assert(after.playerBullets > before.playerBullets || after.shootCooldown > 0, `${label}: keyboard firing did not create a shot (${JSON.stringify({ before, after })})`);
+  assert(after.activeTag !== 'INPUT', `${label}: hidden input kept focus during gameplay (${JSON.stringify(after)})`);
+  return { before, after };
 }
 
 async function openFreshPage(browser, pageErrors, consoleWarningsOrErrors) {
@@ -159,12 +187,10 @@ try {
     await window.__game.showShipSelect();
   });
   await waitForScene(hangarPage, 'shipSelect');
-  await hangarPage.evaluate(() => {
-    const scene = window.__game?.currentScene;
-    if (!scene?.launchSelectedShip) throw new Error('Missing ship selector launch action');
-    scene.launchSelectedShip('keyboard_launch_check');
-  });
-  const hangarState = await assertKeyboardMovementKey(hangarPage, 'Hangar launch');
+  await hangarPage.keyboard.down('Enter');
+  await waitForScene(hangarPage, 'play');
+  await hangarPage.keyboard.up('Enter');
+  const hangarState = await assertKeyboardGameplayControls(hangarPage, 'Hangar launch');
   const hangarScreenshot = path.join(outputDir, 'hangar-launch-keyboard.png');
   await hangarPage.screenshot({ path: hangarScreenshot, fullPage: true });
   reports.push({ label: 'Hangar launch', state: hangarState, screenshot: hangarScreenshot });
@@ -184,11 +210,13 @@ try {
   await waitForScene(runbackPage, 'gameOver');
   await runbackPage.evaluate(() => {
     const scene = window.__game?.scenes?.gameOver;
-    if (!scene?.enterRunbackStage || !scene?.restartRun) throw new Error('Missing game over runback actions');
+    if (!scene?.enterRunbackStage) throw new Error('Missing game over runback action');
     scene.enterRunbackStage('keyboard_launch_check');
-    scene.restartRun();
   });
-  const runbackState = await assertKeyboardMovementKey(runbackPage, 'One More Run launch');
+  await runbackPage.keyboard.down('Enter');
+  await waitForScene(runbackPage, 'play');
+  await runbackPage.keyboard.up('Enter');
+  const runbackState = await assertKeyboardGameplayControls(runbackPage, 'One More Run launch');
   const runbackScreenshot = path.join(outputDir, 'one-more-run-keyboard.png');
   await runbackPage.screenshot({ path: runbackScreenshot, fullPage: true });
   reports.push({ label: 'One More Run launch', state: runbackState, screenshot: runbackScreenshot });

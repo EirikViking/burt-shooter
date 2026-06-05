@@ -35,8 +35,14 @@ assert.ok(
     mockCheck.includes('window.__NOVA_SWARM_MOCK_STEAM_LEADERBOARD__ = true') &&
     mockCheck.includes("lastLeaderboardResult?.steamStatus === 'submitted'") &&
     mockCheck.includes('Steam auto-submit flow exposed manual submit copy') &&
+    mockCheck.includes('Steam mock exposed manual name entry') &&
+    mockCheck.includes('Steam mock did not report exact local placement') &&
+    mockCheck.includes('Steam mock did not report exact global placement') &&
+    mockCheck.includes('steamRank: 3') &&
     mockCheck.includes('steamRank: 4') &&
-    mockCheck.includes('Steam rank 4 was incorrectly treated as Top Three'),
+    mockCheck.includes('steamRank: null') &&
+    mockCheck.includes('Steam rank 4 was incorrectly treated as Top Three') &&
+    mockCheck.includes('Missing Steam rank should clear stale Top Three placement'),
   'Steam leaderboard mock must cover autosubmit without manual name entry'
 );
 assert.ok(

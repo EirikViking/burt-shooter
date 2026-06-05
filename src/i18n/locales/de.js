@@ -182,6 +182,7 @@ const sourceText = Object.freeze({
 
   'GAME OVER': 'SPIEL VORBEI',
   'LOCAL LEGEND': 'LOKALE LEGENDE',
+  'LOCAL BOARD SLOT': 'LOKALER LISTENPLATZ',
   'PERSONAL BEST': 'PERSÖNLICHER BESTWERT',
   'RUN COMPLETE': 'RUN ABGESCHLOSSEN',
   'NUMBER ONE': 'NUMMER EINS',
@@ -194,6 +195,14 @@ const sourceText = Object.freeze({
   'SUBMIT SCORE': 'PUNKTZAHL SENDEN',
   'SAVING SCORE': 'PUNKTZAHL WIRD GESPEICHERT',
   'SCORE SUBMITTED': 'PUNKTZAHL GESENDET',
+  'SUBMITTED': 'GESENDET',
+  'SCORE SUBMITTED WITH STEAM NAME': 'PUNKTZAHL MIT STEAM-NAMEN GESENDET',
+  'STEAM SUBMIT FAILED - LOCAL BACKUP SAVED': 'STEAM-SENDUNG FEHLGESCHLAGEN - LOKALES BACKUP GESPEICHERT',
+  'AUTO-SUBMITTING WITH STEAM NAME': 'AUTOMATISCH MIT STEAM-NAMEN SENDEN',
+  'SAVING TO STEAM...': 'SPEICHERT AUF STEAM...',
+  'PLACEMENT READY': 'PLATZIERUNG BEREIT',
+  'PLACEMENT READY...': 'PLATZIERUNG BEREIT...',
+  'RANK PENDING': 'RANG AUSSTEHEND',
   'PUNKTZAHL SUBMITTED': 'PUNKTZAHL GESENDET',
   'CHECKING BOARD': 'BESTENLISTE WIRD GEPRÜFT',
   'ENTER PILOT NAME': 'PILOTENNAMEN EINGEBEN',
@@ -216,6 +225,7 @@ const sourceText = Object.freeze({
   'GLOBAL BOARD: OFFLINE - LOCAL STILL WORKS': 'GLOBALE LISTE: OFFLINE - LOKAL FUNKTIONIERT',
   'GLOBAL BOARD: SUBMITTING...': 'GLOBALE LISTE: SENDET...',
   'GLOBAL BOARD: SUBMITTED': 'GLOBALE LISTE: GESENDET',
+  'GLOBAL BOARD: SUBMITTED - RANK PENDING': 'GLOBALE LISTE: GESENDET - RANG AUSSTEHEND',
   'GLOBAL BOARD: FAILED - LOCAL SAVED': 'GLOBALE LISTE: FEHLER - LOKAL GESPEICHERT',
   'CHECKING GLOBAL BOARD...': 'GLOBALE LISTE WIRD GEPRÜFT...',
   'GLOBAL BOARD CHECKING...': 'GLOBALE LISTE WIRD GEPRÜFT...',
@@ -655,6 +665,16 @@ const patterns = Object.freeze([
     replace: (match) => `LOKALE LISTE: BENÖTIGT ${match[1]}`
   },
   {
+    id: 'localRankTitle',
+    regex: /^LOCAL BOARD RANK #([0-9]+)$/,
+    replace: (match) => `LOKALE LISTE RANG #${match[1]}`
+  },
+  {
+    id: 'localRank',
+    regex: /^LOCAL BOARD: RANK #([0-9]+)$/,
+    replace: (match) => `LOKALE LISTE: RANG #${match[1]}`
+  },
+  {
     id: 'globalRank',
     regex: /^GLOBAL BOARD: RANK #([0-9]+)$/,
     replace: (match) => `GLOBALE LISTE: RANG #${match[1]}`
@@ -668,6 +688,41 @@ const patterns = Object.freeze([
     id: 'globalClose',
     regex: /^GLOBAL BOARD: CLOSE - NEED (.+)$/,
     replace: (match) => `GLOBALE LISTE: KNAPP - BENÖTIGT ${match[1]}`
+  },
+  {
+    id: 'globalRankPending',
+    regex: /^GLOBAL BOARD: SUBMITTED - RANK PENDING$/,
+    replace: () => 'GLOBALE LISTE: GESENDET - RANG AUSSTEHEND'
+  },
+  {
+    id: 'localGlobalRankComment',
+    regex: /^Local board rank #(.+)\. Global board rank #(.+)\.$/,
+    replace: (match) => `LOKALE LISTE: RANG #${match[1]}. GLOBALE LISTE: RANG #${match[2]}.`
+  },
+  {
+    id: 'localGlobalPendingComment',
+    regex: /^Local board rank #(.+)\. Global board rank pending\.$/,
+    replace: (match) => `LOKALE LISTE: RANG #${match[1]}. GLOBALE LISTE: RANG AUSSTEHEND.`
+  },
+  {
+    id: 'localGlobalStatusComment',
+    regex: /^Local board rank #(.+)\. Global board status: (.+)\.$/,
+    replace: (match, helpers) => `LOKALE LISTE: RANG #${match[1]}. GLOBALE LISTE: ${helpers.translate(match[2])}.`
+  },
+  {
+    id: 'localGlobalPlacementComment',
+    regex: /^Local board rank #(.+)\. Global rank #(.+)\. (.+)$/,
+    replace: (match, helpers) => `LOKALE LISTE: RANG #${match[1]}. GLOBALE LISTE: RANG #${match[2]}. ${helpers.translate(match[3])}`
+  },
+  {
+    id: 'localNearGlobalComment',
+    regex: /^Local board rank #(.+)\. Only (.+) more points for a global slot\. This was not a miss, it was a warning shot\.$/,
+    replace: (match) => `LOKALE LISTE: RANG #${match[1]}. Nur noch ${match[2]} Punkte bis zu einem globalen Platz. Das war kein Fehlschlag, sondern ein Warnschuss.`
+  },
+  {
+    id: 'localSlotStatusComment',
+    regex: /^Local board slot secured\. Global board status is shown below\.$/,
+    replace: () => 'LOKALER LISTENPLATZ. GLOBALE LISTE.'
   },
   {
     id: 'globalPlacementComment',

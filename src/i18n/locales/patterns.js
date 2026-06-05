@@ -160,6 +160,16 @@ export function buildArcadePatterns(labels) {
       replace: (match) => `${labels.localBoard}: ${labels.need} ${match[1]}`
     },
     {
+      id: 'localRankTitle',
+      regex: /^LOCAL BOARD RANK #([0-9]+)$/,
+      replace: (match) => `${labels.localBoard} ${labels.rank} #${match[1]}`
+    },
+    {
+      id: 'localRank',
+      regex: /^LOCAL BOARD: RANK #([0-9]+)$/,
+      replace: (match) => `${labels.localBoard}: ${labels.rank} #${match[1]}`
+    },
+    {
       id: 'globalRank',
       regex: /^GLOBAL BOARD: RANK #([0-9]+)$/,
       replace: (match) => `${labels.globalBoard}: ${labels.rank} #${match[1]}`
@@ -173,6 +183,41 @@ export function buildArcadePatterns(labels) {
       id: 'globalClose',
       regex: /^GLOBAL BOARD: CLOSE - NEED (.+)$/,
       replace: (match) => `${labels.globalBoard}: ${labels.close} - ${labels.need} ${match[1]}`
+    },
+    {
+      id: 'globalRankPending',
+      regex: /^GLOBAL BOARD: SUBMITTED - RANK PENDING$/,
+      replace: (match, helpers) => `${labels.globalBoard}: ${helpers.translate('SUBMITTED')} - ${helpers.translate('RANK PENDING')}`
+    },
+    {
+      id: 'localGlobalRankComment',
+      regex: /^Local board rank #(.+)\. Global board rank #(.+)\.$/,
+      replace: (match) => `${labels.localBoard}: ${labels.rank} #${match[1]}. ${labels.globalBoard}: ${labels.rank} #${match[2]}.`
+    },
+    {
+      id: 'localGlobalPendingComment',
+      regex: /^Local board rank #(.+)\. Global board rank pending\.$/,
+      replace: (match, helpers) => `${labels.localBoard}: ${labels.rank} #${match[1]}. ${labels.globalBoard}: ${helpers.translate('RANK PENDING')}.`
+    },
+    {
+      id: 'localGlobalStatusComment',
+      regex: /^Local board rank #(.+)\. Global board status: (.+)\.$/,
+      replace: (match, helpers) => `${labels.localBoard}: ${labels.rank} #${match[1]}. ${labels.globalBoard}: ${helpers.translate(match[2])}.`
+    },
+    {
+      id: 'localGlobalPlacementComment',
+      regex: /^Local board rank #(.+)\. Global rank #(.+)\. (.+)$/,
+      replace: (match, helpers) => `${labels.localBoard}: ${labels.rank} #${match[1]}. ${labels.globalBoard}: ${labels.rank} #${match[2]}. ${helpers.translate(match[3])}`
+    },
+    {
+      id: 'localNearGlobalComment',
+      regex: /^Local board rank #(.+)\. Only (.+) more points for a global slot\. This was not a miss, it was a warning shot\.$/,
+      replace: (match) => `${labels.localBoard}: ${labels.rank} #${match[1]}. ${labels.nearGlobalComment(match[2])}`
+    },
+    {
+      id: 'localSlotStatusComment',
+      regex: /^Local board slot secured\. Global board status is shown below\.$/,
+      replace: (match, helpers) => `${helpers.translate('LOCAL BOARD SLOT')}. ${labels.globalBoard}.`
     },
     {
       id: 'globalPlacementComment',

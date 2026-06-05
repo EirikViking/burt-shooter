@@ -162,6 +162,15 @@ try {
   if (steamSubmittedState.gameOver?.lastLeaderboardResult?.name !== 'STEAM ACE') {
     throw new Error(`Steam mock submission did not use Steam persona: ${JSON.stringify(steamSubmittedState.gameOver?.lastLeaderboardResult)}`);
   }
+  if (steamSubmittedState.gameOver?.state === 'input' || steamSubmittedState.gameOver?.canEnterName) {
+    throw new Error(`Steam mock exposed manual name entry: ${JSON.stringify(steamSubmittedState.gameOver)}`);
+  }
+  if (!/LOCAL BOARD: RANK #\d+/i.test(steamSubmittedState.gameOver?.leaderboardStatus || '')) {
+    throw new Error(`Steam mock did not report exact local placement: ${JSON.stringify(steamSubmittedState.gameOver)}`);
+  }
+  if (!/GLOBAL BOARD: RANK #1 - NUMBER ONE/i.test(steamSubmittedState.gameOver?.leaderboardStatus || '')) {
+    throw new Error(`Steam mock did not report exact global placement: ${JSON.stringify(steamSubmittedState.gameOver)}`);
+  }
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
     return state.scene === 'gameOver' &&
@@ -177,6 +186,32 @@ try {
   const mockScoresAfterSubmit = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
   if (!mockScoresAfterSubmit.some((entry) => entry.playerName === 'STEAM ACE' && entry.score === 33333 && entry.level === 8)) {
     throw new Error(`Steam mock submission did not preserve level 8: ${JSON.stringify(mockScoresAfterSubmit)}`);
+  }
+  const rank3Probe = await page.evaluate(async () => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene) throw new Error('Missing GameOver scene for rank-3 placement probe');
+    scene.isRankedRun = true;
+    if (scene.game) {
+      scene.game.runMode = 'ranked';
+      scene.game.isDebugRun = false;
+    }
+    scene.finalScore = 31000;
+    scene.globalStatus = 'submitted';
+    scene.globalQualified = false;
+    scene.globalPlacement = null;
+    scene.globalPlacementTier = 'none';
+    scene.qualificationFanfarePlayed = true;
+    const result = { globalStatus: 'submitted', globalProvider: 'steam', steamRank: 3 };
+    const placement = await scene.confirmGlobalLeaderboardAchievements(result);
+    return {
+      placement,
+      tier: scene.globalPlacementTier,
+      status: scene.getLeaderboardStatusMessage?.() || '',
+      runbackTitle: scene.getRunbackTitle?.() || ''
+    };
+  });
+  if (!rank3Probe.placement?.top3 || rank3Probe.tier !== 'top3' || !/TOP THREE/i.test(`${rank3Probe.status} ${rank3Probe.runbackTitle}`)) {
+    throw new Error(`Steam rank 3 should be treated as Top Three: ${JSON.stringify(rank3Probe)}`);
   }
   const rank4Probe = await page.evaluate(async () => {
     const scene = window.__game?.scenes?.gameOver;
@@ -212,6 +247,40 @@ try {
   if (rank4Probe.placement?.placement !== 4 || rank4Probe.tier !== 'global') {
     throw new Error(`Steam rank 4 should be a global placement only: ${JSON.stringify(rank4Probe)}`);
   }
+  const missingRankProbe = await page.evaluate(async () => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene) throw new Error('Missing GameOver scene for missing-rank placement probe');
+    scene.isRankedRun = true;
+    if (scene.game) {
+      scene.game.runMode = 'ranked';
+      scene.game.isDebugRun = false;
+    }
+    scene.finalScore = 28000;
+    scene.globalStatus = 'submitted';
+    scene.globalQualified = true;
+    scene.globalPlacement = { score: 28000, placement: 2, qualified: true, top3: true, numberOne: false, source: 'stale_probe' };
+    scene.globalPlacementTier = 'top3';
+    scene.qualificationFanfarePlayed = true;
+    const result = { globalStatus: 'submitted', globalProvider: 'steam', steamRank: null };
+    const placement = await scene.confirmGlobalLeaderboardAchievements(result);
+    return {
+      placement,
+      result,
+      qualified: scene.globalQualified,
+      tier: scene.globalPlacementTier,
+      status: scene.getLeaderboardStatusMessage?.() || '',
+      runbackTitle: scene.getRunbackTitle?.() || ''
+    };
+  });
+  if (
+    missingRankProbe.placement?.qualified ||
+    missingRankProbe.qualified ||
+    missingRankProbe.tier !== 'none' ||
+    /TOP THREE|NUMBER ONE/i.test(`${missingRankProbe.status} ${missingRankProbe.runbackTitle}`) ||
+    !/GLOBAL BOARD: SUBMITTED - RANK PENDING/i.test(missingRankProbe.status)
+  ) {
+    throw new Error(`Missing Steam rank should clear stale Top Three placement: ${JSON.stringify(missingRankProbe)}`);
+  }
   await page.screenshot({ path: path.join(outputDir, 'steam-gameover-runback.png'), fullPage: true });
 
   const report = {
@@ -222,7 +291,9 @@ try {
     friendsRows: friendsState.highscore.rows.length,
     steamSubmittedHold: steamSubmittedState.gameOver.lastLeaderboardResult,
     steamGameOver: gameOverState.gameOver.lastLeaderboardResult,
+    rank3Probe,
     rank4Probe,
+    missingRankProbe,
     consoleEvents
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

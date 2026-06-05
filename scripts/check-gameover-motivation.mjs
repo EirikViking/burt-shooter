@@ -365,12 +365,34 @@ try {
   await retryCtaPage.waitForFunction(() => {
     try {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      return state.gameOver?.primaryCta?.mode === 'restart';
+      return state.gameOver?.primaryCta?.mode === 'result_hold';
     } catch {
       return false;
     }
   }, null, { timeout: 5000 });
   const noSlotCtaState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await clickPrimaryCta(retryCtaPage);
+  await retryCtaPage.waitForTimeout(350);
+  const noSlotEarlyContinueState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await retryCtaPage.waitForFunction(() => {
+    try {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.gameOver?.state === 'result_hold' && state.gameOver?.resultHoldReady === true;
+    } catch {
+      return false;
+    }
+  }, null, { timeout: 5000 });
+  const noSlotReadyState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await clickPrimaryCta(retryCtaPage);
+  await retryCtaPage.waitForFunction(() => {
+    try {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.gameOver?.state === 'runback' && state.gameOver?.primaryCta?.mode === 'restart';
+    } catch {
+      return false;
+    }
+  }, null, { timeout: 5000 });
+  const noSlotRunbackState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
   await clickPrimaryCta(retryCtaPage);
   await retryCtaPage.waitForFunction(() => window.__game?.currentSceneName === 'play', null, { timeout: 10000 });
   const retryCtaRestartedState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
@@ -421,6 +443,9 @@ try {
       !/SURVIVEDSECONDS/i.test(careerUnlockSummary) &&
       /NEXT CAREER GOAL:\s*REACH SECTOR 9/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
+      /LOCAL BOARD: RANK #\d+/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
+      /GLOBAL BOARD:/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
+      !/LOCAL LEGEND/i.test(`${gameOverState.gameOver?.ceremonyTitle || ''} ${gameOverState.gameOver?.leaderboardStatus || ''}`) &&
       /LEADERBOARD FIRST|TYPE NAME/i.test(gameOverState.gameOver?.retryPrompt || '') &&
       /SUBMIT SCORE/i.test(gameOverState.gameOver?.primaryCta?.label || '') &&
       /PILOT NAME FIRST|TYPE NAME FIRST|ENTER \/ CLICK/i.test(gameOverState.gameOver?.primaryCta?.hint || '') &&
@@ -432,6 +457,8 @@ try {
       submittedHoldSnapshot.gameOver?.submittedHoldReady === false &&
       submittedHoldSnapshot.gameOver?.primaryCta?.mode === 'submitted_hold' &&
       submittedHoldSnapshot.gameOver?.primaryCta?.disabled === true &&
+      /LOCAL BOARD: RANK #\d+/i.test(submittedHoldSnapshot.gameOver?.leaderboardStatus || '') &&
+      /GLOBAL BOARD:/i.test(submittedHoldSnapshot.gameOver?.leaderboardStatus || '') &&
       submittedEarlyContinueState.gameOver?.state === 'submitted_hold' &&
       submittedReadyHoldState.gameOver?.state === 'submitted_hold' &&
       submittedReadyHoldState.gameOver?.submittedHoldReady === true &&
@@ -442,9 +469,14 @@ try {
       submittedRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
       submittedRunbackState.gameOver?.ceremonyTitle === 'ONE MORE RUN?' &&
       /^one_more_run_\d\d$/.test(submittedRunbackState.gameOver?.selectedCtaLine?.id || '') &&
-      /ONE MORE RUN/i.test(noSlotCtaState.gameOver?.primaryCta?.label || '') &&
-      noSlotCtaState.gameOver?.primaryCta?.mode === 'restart' &&
-      noSlotCtaState.gameOver?.state === 'runback' &&
+      /CONTINUE/i.test(noSlotCtaState.gameOver?.primaryCta?.label || '') &&
+      noSlotCtaState.gameOver?.primaryCta?.mode === 'result_hold' &&
+      noSlotCtaState.gameOver?.primaryCta?.disabled === true &&
+      noSlotCtaState.gameOver?.state === 'result_hold' &&
+      noSlotEarlyContinueState.gameOver?.state === 'result_hold' &&
+      noSlotReadyState.gameOver?.resultHoldReady === true &&
+      noSlotRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
+      noSlotRunbackState.gameOver?.state === 'runback' &&
       retryCtaRestartedState.scene === 'play' &&
       retryCtaRestartedState.score === 0 &&
       firstMenuLaunchState.scene === 'play' &&
@@ -474,7 +506,10 @@ try {
       score: retryCtaRestartedState.score,
       level: retryCtaRestartedState.level,
       lives: retryCtaRestartedState.lives,
-      noSlotCta: noSlotCtaState.gameOver?.primaryCta || null
+      noSlotCta: noSlotCtaState.gameOver?.primaryCta || null,
+      noSlotEarlyContinue: noSlotEarlyContinueState.gameOver || null,
+      noSlotReady: noSlotReadyState.gameOver || null,
+      noSlotRunback: noSlotRunbackState.gameOver || null
     },
     returnMenuLaunch: {
       first: {

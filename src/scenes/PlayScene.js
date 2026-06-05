@@ -444,15 +444,19 @@ export class PlayScene {
       });
     });
 
-    // Create placeholder player immediately (will be replaced)
-    if (!this.player) {
-      this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
-      this.gameContainer.addChild(this.player.sprite);
-      if (this.player.setRank) {
-        this.player.setRank(initialRank, 'init_placeholder');
+    // Create a fresh player for each run so movement reads the current InputManager.
+    if (this.player) {
+      this.player.destroy?.();
+      if (this.player.sprite?.parent) {
+        this.player.sprite.parent.removeChild(this.player.sprite);
       }
-      this.applySeasonCosmetics();
     }
+    this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
+    this.gameContainer.addChild(this.player.sprite);
+    if (this.player.setRank) {
+      this.player.setRank(initialRank, 'init_placeholder');
+    }
+    this.applySeasonCosmetics();
 
     // Create enemy manager
     this.enemyManager = new EnemyManager(this.gameContainer, this.game, capHandler);
@@ -1437,8 +1441,8 @@ export class PlayScene {
     const container = new PIXI.Container();
     container.label = 'ui_rank_up_badge';
     container.x = compact ? width / 2 : width - panelWidth / 2 - 28;
-    const safeTop = compact ? 132 : 154;
-    container.y = Math.max(safeTop + panelHeight / 2, height * (compact ? 0.28 : 0.24));
+    const safeTop = compact ? 176 : 190;
+    container.y = Math.max(safeTop + panelHeight / 2, height * (compact ? 0.34 : 0.3));
     container.alpha = 0;
     container.scale.set(0.78);
     container.zIndex = 10000;

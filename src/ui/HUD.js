@@ -278,9 +278,9 @@ export class HUD {
     }
 
     this.rankText.text = rankManager.getRankString(this.game.rankIndex);
-    const rankPanelWidth = 146;
+    const rankPanelWidth = 164;
     const rankTextX = 56;
-    const rankTextMaxWidth = 76;
+    const rankTextMaxWidth = 92;
     this.rankText.x = rankTextX;
     this.rankText.y = 8;
     this.rankText.scale.set(1);
@@ -752,7 +752,7 @@ export class HUD {
     const blockSpacing = layout.isMobile ? 24 : 22;
     const scoreFont = layout.isMobile ? 15 : 18;
     const livesFont = layout.isMobile ? 16 : 18;
-    const leftPanelWidth = layout.isMobile ? Math.min(242, canvasWidth * 0.58) : 326;
+    const leftPanelWidth = layout.isMobile ? Math.min(274, canvasWidth * 0.72) : 356;
     const leftPanelHeight = layout.isMobile ? 76 : 82;
     const rightPanelWidth = layout.isMobile ? 118 : 150;
     const rightPanelHeight = layout.isMobile ? 42 : 46;
@@ -778,7 +778,7 @@ export class HUD {
     this.rankGroup.y = margin + 10;
 
     // Shift Score and Level to the right of Rank
-    const rankOffset = layout.isMobile ? 176 : 188;
+    const rankOffset = layout.isMobile ? 196 : 212;
 
     this.scoreText.x = margin + rankOffset;
     this.scoreText.y = margin + 10;

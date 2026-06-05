@@ -620,6 +620,12 @@ function buildGameTextState(game) {
       submittedHoldRemainingMs: typeof gameOverScene.getSubmittedHoldRemainingMs === 'function'
         ? Math.round(gameOverScene.getSubmittedHoldRemainingMs())
         : null,
+      resultHoldReady: typeof gameOverScene.isResultHoldContinueReady === 'function'
+        ? gameOverScene.isResultHoldContinueReady()
+        : null,
+      resultHoldRemainingMs: typeof gameOverScene.getResultHoldRemainingMs === 'function'
+        ? Math.round(gameOverScene.getResultHoldRemainingMs())
+        : null,
       runbackReason: gameOverScene.runbackReason || null,
       steamSubmissionMode: Boolean(gameOverScene.steamSubmissionMode),
       steamPlayerName: gameOverScene.steamPlayerName || null,
@@ -633,6 +639,8 @@ function buildGameTextState(game) {
       localQualified: Boolean(gameOverScene.localQualified),
       globalQualified: Boolean(gameOverScene.globalQualified),
       globalStatus: gameOverScene.globalStatus || null,
+      localPlacement: gameOverScene.localPlacement || null,
+      localPlacementSource: gameOverScene.localPlacementSource || null,
       globalPlacement: gameOverScene.globalPlacement || null,
       globalPlacementTier: gameOverScene.globalPlacementTier || null,
       ceremonyTitle: gameOverScene.title?.text || null,

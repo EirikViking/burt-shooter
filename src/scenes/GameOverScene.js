@@ -28,10 +28,14 @@ import {
 } from '../achievements/AchievementCatalog.js';
 import { translateText } from '../i18n/index.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
+import { LocalLeaderboard, LOCAL_LEADERBOARD_LIMIT } from '../api/LocalLeaderboard.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
 const SUBMITTED_REPORT_MIN_MS = 4800;
+const SUBMITTED_POST_RESULT_MIN_MS = 1200;
+const RESULT_REPORT_MIN_MS = 2600;
+const CONTINUE_INPUT_ARM_MS = 500;
 const PILOT_NAME_MAX_LENGTH = 14;
 const CONTROLLER_NAME_STORAGE_KEY = 'nova.controllerPilotName.v1';
 
@@ -64,6 +68,12 @@ function getConfirmedGlobalPlacement(score, entries = []) {
 
 function getDisplayRankNumber(rankIndex) {
   return Math.min(MAX_RANK_INDEX + 1, Math.max(1, Math.floor(Number(rankIndex) || 0) + 1));
+}
+
+function getValidPlacementNumber(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return null;
+  return Math.floor(numeric);
 }
 
 export class GameOverScene {
@@ -124,6 +134,8 @@ export class GameOverScene {
     this.reportShownAt = 0;
     this.pendingRunbackReason = null;
     this.submittedHoldContinueReadyAt = 0;
+    this.resultHoldContinueReadyAt = 0;
+    this.continueInputArmedAt = 0;
     // HTML overlay for mobile input
     this.inputOverlay = null;
     this.inputField = null;
@@ -148,6 +160,8 @@ export class GameOverScene {
     this.globalStatus = 'idle';
     this.globalPlacement = null;
     this.globalPlacementTier = 'none';
+    this.localPlacement = null;
+    this.localPlacementSource = null;
     this.canEnterName = false;
     this.globalQualificationPromise = null;
     this.leaderboardResult = null;
@@ -220,6 +234,9 @@ export class GameOverScene {
     this.runbackStartedAt = 0;
     this.reportShownAt = Date.now();
     this.pendingRunbackReason = null;
+    this.submittedHoldContinueReadyAt = 0;
+    this.resultHoldContinueReadyAt = 0;
+    this.continueInputArmedAt = 0;
     this.newlyUnlockedShips = [];
     this.shipUnlockVoicePlayed = false;
     this.caretVisible = true;
@@ -233,6 +250,8 @@ export class GameOverScene {
     this.globalStatus = 'idle';
     this.globalPlacement = null;
     this.globalPlacementTier = 'none';
+    this.localPlacement = null;
+    this.localPlacementSource = null;
     this.canEnterName = false;
     this.globalQualificationPromise = null;
     this.leaderboardResult = null;
@@ -261,6 +280,9 @@ export class GameOverScene {
         : this.leaderboardAdapter.qualifiesLocal(this.finalScore);
       this.globalStatus = this.steamSubmissionMode ? 'steam_ready' : 'checking';
       this.updateCanEnterName();
+      if (this.localQualified) {
+        this.rememberLocalPlacement(this.estimateLocalPlacement(), 'preview');
+      }
     }
     const previousProgress = this.game.runProgressionResult?.previous || getShipUnlockProgress();
     this.isPersonalBest = this.finalScore > (Number(previousProgress.bestScore) || 0);
@@ -514,13 +536,6 @@ export class GameOverScene {
 
     this.updateLeaderboardStatusText();
     this.updateQualificationPromptState();
-    if (this.localQualified) {
-      this.scheduleSceneTimeout(() => {
-        if (this.isSceneActive() && this.state === 'prompt' && this.updateCanEnterName()) {
-          this.enterInputMode();
-        }
-      }, 180);
-    }
     this.globalQualificationPromise = this.checkGlobalQualification();
   }
 
@@ -528,6 +543,102 @@ export class GameOverScene {
     this.canEnterName = Boolean(!this.steamSubmissionMode && this.isRankedRun && (this.localQualified || this.globalQualified));
     this.isQualified = this.canEnterName;
     return this.canEnterName;
+  }
+
+  estimateLocalPlacement() {
+    const finalScore = Math.max(0, Math.floor(Number(this.finalScore) || 0));
+    if (finalScore <= 0) return null;
+    try {
+      const scores = LocalLeaderboard.getScores(LOCAL_LEADERBOARD_LIMIT);
+      const betterScores = Array.isArray(scores)
+        ? scores.filter((entry) => Number(entry?.score) > finalScore).length
+        : 0;
+      return Math.max(1, Math.min(LOCAL_LEADERBOARD_LIMIT, betterScores + 1));
+    } catch {
+      return null;
+    }
+  }
+
+  rememberLocalPlacement(placement, source = 'local') {
+    const rank = getValidPlacementNumber(placement);
+    if (!rank) return null;
+    this.localPlacement = rank;
+    this.localPlacementSource = source;
+    return rank;
+  }
+
+  getCurrentLeaderboardResult() {
+    const result = this.leaderboardResult || this.game?.lastLeaderboardResult || null;
+    if (!result) return null;
+    if (result.submissionId && this.submissionId && result.submissionId !== this.submissionId) {
+      return this.leaderboardResult || null;
+    }
+    return result;
+  }
+
+  getLocalPlacementRank() {
+    const result = this.getCurrentLeaderboardResult();
+    return getValidPlacementNumber(result?.localPlacement)
+      || getValidPlacementNumber(result?.localRank)
+      || getValidPlacementNumber(this.localPlacement)
+      || (this.localQualified ? this.rememberLocalPlacement(this.estimateLocalPlacement(), 'preview') : null);
+  }
+
+  getGlobalPlacementRank() {
+    const result = this.getCurrentLeaderboardResult();
+    const scenePlacement = this.globalPlacement?.qualified
+      ? getValidPlacementNumber(this.globalPlacement?.placement)
+      : null;
+    return scenePlacement
+      || (result?.globalStatus === 'submitted' ? getValidPlacementNumber(result?.confirmedGlobalPlacement?.placement) : null)
+      || (result?.globalStatus === 'submitted' ? getValidPlacementNumber(result?.globalPlacement?.placement) : null)
+      || (result?.globalStatus === 'submitted' ? getValidPlacementNumber(result?.globalRank) : null)
+      || (result?.globalStatus === 'submitted' ? getValidPlacementNumber(result?.steamRank) : null);
+  }
+
+  getLocalPlacementLine() {
+    if (!this.isRankedRun) return 'LOCAL BOARD: PRACTICE RUN';
+    const rank = this.getLocalPlacementRank();
+    if (rank && (this.localQualified || this.leaderboardResult?.localStatus === 'saved' || this.steamSubmissionMode)) {
+      return `LOCAL BOARD: RANK #${rank}`;
+    }
+    if (this.finalScore <= 0) return 'LOCAL BOARD: NO SCORE';
+    if (this.localQualified) return 'LOCAL BOARD: QUALIFIED';
+    if (this.steamSubmissionMode) return 'LOCAL BOARD: BACKUP READY';
+    return `LOCAL BOARD: NEED ${Math.max(1, this.leaderboardAdapter.getLocalCutoff() + 1).toLocaleString('en-US')}`;
+  }
+
+  getGlobalPlacementLine() {
+    if (!this.isRankedRun) return 'GLOBAL BOARD: PRACTICE RUN';
+    const rank = this.getGlobalPlacementRank();
+    if (rank) {
+      let line = `GLOBAL BOARD: RANK #${rank}`;
+      if (rank === 1 || this.globalPlacement?.numberOne) line += ' - NUMBER ONE';
+      else if (rank <= 3 || this.globalPlacement?.top3) line += ' - TOP THREE';
+      return line;
+    }
+    if (this.globalPlacement?.nearGlobal) {
+      return `GLOBAL BOARD: CLOSE - NEED ${this.globalPlacement.scoreToGlobal.toLocaleString('en-US')}`;
+    }
+    if (this.globalStatus === 'submitted') return 'GLOBAL BOARD: SUBMITTED - RANK PENDING';
+    return {
+      idle: 'GLOBAL BOARD: IDLE',
+      steam_ready: 'GLOBAL BOARD: IDLE',
+      checking: 'GLOBAL BOARD: CHECKING...',
+      qualified: 'GLOBAL BOARD: QUALIFIED',
+      missed: 'GLOBAL BOARD: NO SLOT',
+      offline: 'GLOBAL BOARD: OFFLINE - LOCAL STILL WORKS',
+      submitting: 'GLOBAL BOARD: SUBMITTING...',
+      failed: 'GLOBAL BOARD: FAILED - LOCAL SAVED',
+      unranked: 'GLOBAL BOARD: PRACTICE RUN'
+    }[this.globalStatus] || `GLOBAL BOARD: ${String(this.globalStatus || 'UNKNOWN').toUpperCase()}`;
+  }
+
+  getLeaderboardPlacementLines() {
+    return [
+      this.getLocalPlacementLine(),
+      this.getGlobalPlacementLine()
+    ];
   }
 
   isSceneActive() {
@@ -567,6 +678,9 @@ export class GameOverScene {
       if (this.state === 'submitted_hold') {
         return 'SCORE SUBMITTED...';
       }
+      if (this.state === 'result_hold') {
+        return 'PLACEMENT READY...';
+      }
       if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
         return 'A: RELAUNCH  |  Y: LEADERBOARD  |  B/START: MENU';
       }
@@ -587,6 +701,9 @@ export class GameOverScene {
     }
     if (this.state === 'submitted_hold') {
       return 'SCORE SUBMITTED...';
+    }
+    if (this.state === 'result_hold') {
+      return 'PLACEMENT READY...';
     }
     if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
       return 'ENTER / SPACE / CLICK: RELAUNCH  |  L / GAMEPAD Y: LEADERBOARD  |  ESC: MENU';
@@ -683,40 +800,7 @@ export class GameOverScene {
   }
 
   getLeaderboardStatusMessage() {
-    if (!this.isRankedRun) return 'LOCAL BOARD: PRACTICE RUN\nGLOBAL BOARD: PRACTICE RUN';
-    if (this.steamSubmissionMode) {
-      const pilot = this.steamPlayerName ? ` (${this.steamPlayerName})` : '';
-      const steamLine = {
-        steam_ready: `STEAM BOARD: READY${pilot}`,
-        submitting: `STEAM BOARD: SUBMITTING${pilot}`,
-        submitted: 'STEAM BOARD: SUBMITTED',
-        failed: 'STEAM BOARD: FAILED - LOCAL SAVED'
-      }[this.globalStatus] || `STEAM BOARD: ${String(this.globalStatus || 'READY').replace(/_/g, ' ').toUpperCase()}`;
-      const localLine = this.finalScore > 0 ? 'LOCAL BOARD: BACKUP READY' : 'LOCAL BOARD: NO SCORE';
-      return `${localLine}\n${steamLine}`;
-    }
-    const localLine = this.localQualified
-      ? 'LOCAL BOARD: QUALIFIED'
-      : `LOCAL BOARD: NEED ${Math.max(1, this.leaderboardAdapter.getLocalCutoff() + 1).toLocaleString('en-US')}`;
-    let globalLine = {
-      idle: 'GLOBAL BOARD: IDLE',
-      checking: 'GLOBAL BOARD: CHECKING...',
-      qualified: 'GLOBAL BOARD: QUALIFIED',
-      missed: 'GLOBAL BOARD: NO SLOT',
-      offline: 'GLOBAL BOARD: OFFLINE - LOCAL STILL WORKS',
-      submitting: 'GLOBAL BOARD: SUBMITTING...',
-      submitted: 'GLOBAL BOARD: SUBMITTED',
-      failed: 'GLOBAL BOARD: FAILED - LOCAL SAVED',
-      unranked: 'GLOBAL BOARD: PRACTICE RUN'
-    }[this.globalStatus] || `GLOBAL BOARD: ${String(this.globalStatus || 'UNKNOWN').toUpperCase()}`;
-    if (this.globalPlacement?.qualified && this.globalPlacement.placement) {
-      globalLine = `GLOBAL BOARD: RANK #${this.globalPlacement.placement}`;
-      if (this.globalPlacement.numberOne) globalLine += ' - NUMBER ONE';
-      else if (this.globalPlacement.top3) globalLine += ' - TOP THREE';
-    } else if (this.globalPlacement?.nearGlobal) {
-      globalLine = `GLOBAL BOARD: CLOSE - NEED ${this.globalPlacement.scoreToGlobal.toLocaleString('en-US')}`;
-    }
-    return `${localLine}\n${globalLine}`;
+    return this.getLeaderboardPlacementLines().join('\n');
   }
 
   updateLeaderboardStatusText() {
@@ -741,27 +825,36 @@ export class GameOverScene {
     if (this.globalPlacementTier === 'top3') return 'TOP THREE';
     if (this.globalPlacementTier === 'global') return 'GLOBAL SLOT SECURED';
     if (this.globalPlacementTier === 'near_global') return 'GLOBAL BOARD IN SIGHT';
-    if (this.localQualified) return 'LOCAL LEGEND';
+    if (this.localQualified) {
+      const localRank = this.getLocalPlacementRank();
+      return localRank ? `LOCAL BOARD RANK #${localRank}` : 'LOCAL BOARD SLOT';
+    }
     if (this.isPersonalBest) return 'PERSONAL BEST';
     return 'RUN COMPLETE';
   }
 
   getCeremonyComment() {
     const placement = this.globalPlacement;
+    const localRank = this.getLocalPlacementRank();
+    const localPrefix = localRank ? `Local board rank #${localRank}. ` : '';
     if (placement?.numberOne) {
-      return 'The global board has a new name at the top. Let the cabinet remember it loudly.';
+      return `${localPrefix}Global rank #1. The cabinet has a new global name at the top.`;
     }
     if (placement?.top3) {
-      return `Global rank #${placement.placement}. That is the kind of run people pretend was easy.`;
+      return `${localPrefix}Global rank #${placement.placement}. That is the kind of run people pretend was easy.`;
     }
     if (placement?.qualified) {
-      return `Global rank #${placement.placement}. Your score now travels farther than the swarm wanted.`;
+      return `${localPrefix}Global rank #${placement.placement}. Your score now travels farther than the swarm wanted.`;
     }
     if (placement?.nearGlobal) {
-      return `Only ${placement.scoreToGlobal.toLocaleString('en-US')} more points for a global slot. This was not a miss, it was a warning shot.`;
+      return `${localPrefix}Only ${placement.scoreToGlobal.toLocaleString('en-US')} more points for a global slot. This was not a miss, it was a warning shot.`;
     }
     if (this.localQualified) {
-      return 'Local board claimed. The machine has been informed who owns this corner of space.';
+      const globalRank = this.getGlobalPlacementRank();
+      if (localRank && globalRank) return `Local board rank #${localRank}. Global board rank #${globalRank}.`;
+      if (localRank && this.globalStatus === 'submitted') return `Local board rank #${localRank}. Global board rank pending.`;
+      if (localRank) return `Local board rank #${localRank}. Global board status: ${this.getGlobalPlacementLine().replace(/^GLOBAL BOARD: /, '')}.`;
+      return 'Local board slot secured. Global board status is shown below.';
     }
     if (this.isPersonalBest) {
       return 'Personal best archived. The next run starts with evidence.';
@@ -821,7 +914,7 @@ export class GameOverScene {
   }
 
   updateQualificationPromptState() {
-    if (this.state === 'runback') return;
+    if (this.state === 'runback' || this.state === 'submitted_hold' || this.state === 'result_hold') return;
     const layout = getCurrentLayout();
     this.updateCanEnterName();
     if (this.promptText) {
@@ -842,7 +935,7 @@ export class GameOverScene {
     this.refreshPrimaryCta();
     this.layoutScreen();
     if (this.state === 'prompt' && this.isRankedRun && !this.canEnterName && this.globalStatus !== 'checking') {
-      this.enterRunbackStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
+      this.enterResultHoldStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
     }
   }
 
@@ -886,11 +979,6 @@ export class GameOverScene {
         this.updateCeremonyPresentation();
         this.updateLeaderboardStatusText();
         this.updateQualificationPromptState();
-        if (this.state === 'prompt' && this.updateCanEnterName()) {
-          this.scheduleSceneTimeout(() => {
-            if (this.isSceneActive() && this.state === 'prompt') this.enterInputMode();
-          }, 120);
-        }
       }
     }
   }
@@ -1502,6 +1590,15 @@ export class GameOverScene {
       };
     }
 
+    if (this.state === 'result_hold') {
+      return {
+        mode: 'result_hold',
+        label: translateText('CONTINUE'),
+        hint: this.lastInputDevice === 'controller' ? `A: ${translateText('CONTINUE')}` : 'ENTER / SPACE / CLICK',
+        disabled: !this.isResultHoldContinueReady()
+      };
+    }
+
     if (this.state === 'input') {
       return {
         mode: 'submit',
@@ -1562,6 +1659,11 @@ export class GameOverScene {
 
     if (config.mode === 'submitted_hold') {
       this.continueFromSubmittedHold();
+      return;
+    }
+
+    if (config.mode === 'result_hold') {
+      this.continueFromResultHold();
       return;
     }
 
@@ -1705,7 +1807,26 @@ export class GameOverScene {
       if (this.state === 'submitted_hold') {
         if (isSubmitKey || isRestartKey) {
           e.preventDefault();
+          if (e.repeat) {
+            this.refreshPrimaryCta();
+            return;
+          }
           this.continueFromSubmittedHold();
+        } else if (isEscape) {
+          e.preventDefault();
+          this.returnToMenu();
+        }
+        return;
+      }
+
+      if (this.state === 'result_hold') {
+        if (isSubmitKey || isRestartKey) {
+          e.preventDefault();
+          if (e.repeat) {
+            this.refreshPrimaryCta();
+            return;
+          }
+          this.continueFromResultHold();
         } else if (isEscape) {
           e.preventDefault();
           this.returnToMenu();
@@ -1748,6 +1869,10 @@ export class GameOverScene {
           this.enterInputMode();
           return;
         }
+        if (this.state === 'prompt' && this.isRankedRun && !this.updateCanEnterName()) {
+          this.enterResultHoldStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
+          return;
+        }
         this.restartRun();
         return;
       }
@@ -1758,7 +1883,7 @@ export class GameOverScene {
           if (this.isRankedRun && this.updateCanEnterName()) {
             this.enterInputMode();
           } else if (!this.isRankedRun || this.globalStatus !== 'checking') {
-            this.enterRunbackStage('no_slot');
+            this.enterResultHoldStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
           }
         }
         return;
@@ -1843,6 +1968,14 @@ export class GameOverScene {
       }
       return;
     }
+    if (this.state === 'result_hold') {
+      if (nav.pressed.menu || nav.pressed.back || nav.pressed.cancel) {
+        this.returnToMenu();
+      } else if (nav.pressed.confirm) {
+        this.continueFromResultHold();
+      }
+      return;
+    }
     if (this.state === 'input') {
       this.handleGamepadNameInput(nav);
       return;
@@ -1881,7 +2014,7 @@ export class GameOverScene {
     }
 
     if (this.state === 'prompt' && this.isRankedRun && !this.updateCanEnterName()) {
-      this.enterRunbackStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
+      this.enterResultHoldStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
       return;
     }
 
@@ -2104,6 +2237,16 @@ export class GameOverScene {
   enterInputMode() {
     if (this.state === 'input' || this.state === 'submitting' || this.state === 'rejected') return;
 
+    if (this.steamSubmissionMode) {
+      console.log('[GameOver] Steam leaderboard available. Manual name entry is disabled; score uses Steam persona.');
+      this.canEnterName = false;
+      this.updatePromptMessage(this.globalStatus === 'submitted'
+        ? 'SCORE SUBMITTED WITH STEAM NAME'
+        : 'AUTO-SUBMITTING WITH STEAM NAME');
+      this.refreshPrimaryCta();
+      return;
+    }
+
     if (!this.isRankedRun) {
       this.submitBlockedReason = this.game.runModeReason || 'unranked_run';
       console.log(`[GameOver] Blocking score input for unranked run reason=${this.submitBlockedReason}`);
@@ -2122,7 +2265,7 @@ export class GameOverScene {
         this.updatePromptMessage('GLOBAL BOARD CHECKING...');
         this.scheduleSceneTimeout(() => this.updateQualificationPromptState(), 900);
       } else {
-        this.enterRunbackStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
+        this.enterResultHoldStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
       }
       return;
     }
@@ -2416,9 +2559,9 @@ export class GameOverScene {
     this.globalQualified = Boolean(normalizedPlacement.qualified);
     this.globalStatus = normalizedPlacement.qualified ? 'submitted' : this.globalStatus;
     this.unlockConfirmedLeaderboardAchievements(normalizedPlacement, provider);
+    this.updateLeaderboardStatusText();
+    this.updateCeremonyPresentation();
     if (normalizedPlacement.qualified) {
-      this.updateLeaderboardStatusText();
-      this.updateCeremonyPresentation();
       this.playGlobalQualificationFanfare();
     }
     return normalizedPlacement;
@@ -2430,16 +2573,19 @@ export class GameOverScene {
 
     const provider = result.globalProvider || (this.steamSubmissionMode ? 'steam' : null);
     if (provider === 'steam') {
-      const steamRank = Number(result.steamRank ?? result.rank ?? result.globalRank);
+      const steamRank = getValidPlacementNumber(result.steamRank ?? result.rank ?? result.globalRank);
       const placement = {
         score: this.finalScore,
-        placement: Number.isFinite(steamRank) && steamRank > 0 ? Math.floor(steamRank) : null,
-        qualified: true,
-        numberOne: Number.isFinite(steamRank) && steamRank > 0 && Math.floor(steamRank) === 1,
-        top3: Number.isFinite(steamRank) && steamRank > 0 && Math.floor(steamRank) <= 3,
+        placement: steamRank,
+        qualified: Boolean(steamRank),
+        numberOne: Boolean(steamRank === 1),
+        top3: Boolean(steamRank && steamRank <= 3),
         source: 'steam_submit_result'
       };
       result.confirmedGlobalPlacement = placement;
+      result.achievementConfirmationStatus = steamRank ? 'confirmed' : 'steam_rank_missing';
+      this.leaderboardResult = result;
+      if (this.game) this.game.lastLeaderboardResult = result;
       return this.applyConfirmedGlobalPlacement(placement, provider);
     }
 
@@ -2450,6 +2596,8 @@ export class GameOverScene {
       const placement = getConfirmedGlobalPlacement(this.finalScore, entries);
       result.confirmedGlobalPlacement = placement;
       result.achievementConfirmationStatus = placement.qualified ? 'confirmed' : 'not_qualified_after_submit';
+      this.leaderboardResult = result;
+      if (this.game) this.game.lastLeaderboardResult = result;
       return this.applyConfirmedGlobalPlacement(placement, provider);
     } catch (error) {
       result.achievementConfirmationStatus = 'post_submit_global_read_failed';
@@ -2529,13 +2677,7 @@ export class GameOverScene {
       practice: 'PRACTICE RUN - SCORE NOT LOGGED'
     };
     const base = map[reason] || 'RUN COMPLETE';
-    if (this.globalPlacement?.qualified && this.globalPlacement.placement) {
-      let globalLine = `GLOBAL BOARD: RANK #${this.globalPlacement.placement}`;
-      if (this.globalPlacement.numberOne) globalLine += ' - NUMBER ONE';
-      else if (this.globalPlacement.top3) globalLine += ' - TOP THREE';
-      return `${base}\n${globalLine}`;
-    }
-    return base;
+    return `${base}\n${this.getLeaderboardPlacementLines().join('\n')}`;
   }
 
   getRunbackTitle() {
@@ -2546,27 +2688,54 @@ export class GameOverScene {
 
   getRunbackComment() {
     const placement = this.globalPlacement;
+    const localRank = this.getLocalPlacementRank();
     if (placement?.numberOne) {
-      return 'The global board has a new name at the top. Let the cabinet remember it loudly.';
+      return `${localRank ? `Local #${localRank}. ` : ''}Global #1. Let the cabinet remember it loudly.`;
     }
     if (placement?.top3) {
-      return `Global rank #${placement.placement}. That is the kind of run people pretend was easy.`;
+      return `${localRank ? `Local #${localRank}. ` : ''}Global #${placement.placement}. That is the kind of run people pretend was easy.`;
     }
-    return `Score ${Number(this.finalScore || 0).toLocaleString('en-US')} | Level ${this.finalLevel || 0}`;
+    const globalRank = this.getGlobalPlacementRank();
+    const placementSummary = [
+      localRank ? `Local #${localRank}` : null,
+      globalRank ? `Global #${globalRank}` : null
+    ].filter(Boolean).join(' | ');
+    return `${placementSummary ? `${placementSummary} | ` : ''}Score ${Number(this.finalScore || 0).toLocaleString('en-US')} | Level ${this.finalLevel || 0}`;
   }
 
   getSubmittedReportHoldMs() {
     const elapsed = Date.now() - (this.reportShownAt || Date.now());
-    return Math.max(0, SUBMITTED_REPORT_MIN_MS - elapsed);
+    return Math.max(SUBMITTED_POST_RESULT_MIN_MS, SUBMITTED_REPORT_MIN_MS - elapsed);
   }
 
   isSubmittedHoldContinueReady() {
-    return !this.submittedHoldContinueReadyAt || Date.now() >= this.submittedHoldContinueReadyAt;
+    const now = Date.now();
+    return (!this.submittedHoldContinueReadyAt || now >= this.submittedHoldContinueReadyAt)
+      && (!this.continueInputArmedAt || now >= this.continueInputArmedAt);
   }
 
   getSubmittedHoldRemainingMs() {
-    if (!this.submittedHoldContinueReadyAt) return 0;
-    return Math.max(0, this.submittedHoldContinueReadyAt - Date.now());
+    const now = Date.now();
+    return Math.max(
+      0,
+      this.submittedHoldContinueReadyAt ? this.submittedHoldContinueReadyAt - now : 0,
+      this.continueInputArmedAt ? this.continueInputArmedAt - now : 0
+    );
+  }
+
+  isResultHoldContinueReady() {
+    const now = Date.now();
+    return (!this.resultHoldContinueReadyAt || now >= this.resultHoldContinueReadyAt)
+      && (!this.continueInputArmedAt || now >= this.continueInputArmedAt);
+  }
+
+  getResultHoldRemainingMs() {
+    const now = Date.now();
+    return Math.max(
+      0,
+      this.resultHoldContinueReadyAt ? this.resultHoldContinueReadyAt - now : 0,
+      this.continueInputArmedAt ? this.continueInputArmedAt - now : 0
+    );
   }
 
   enterRunbackStageAfterReportHold(reason = 'score_submitted') {
@@ -2574,6 +2743,7 @@ export class GameOverScene {
 
     this.pendingRunbackReason = reason;
     this.submittedHoldContinueReadyAt = Date.now() + remainingMs;
+    this.continueInputArmedAt = Date.now() + CONTINUE_INPUT_ARM_MS;
     this.state = 'submitted_hold';
     this.removeInputOverlay();
     this.stopCaretBlink();
@@ -2595,6 +2765,35 @@ export class GameOverScene {
     }
   }
 
+  enterResultHoldStage(reason = 'no_slot') {
+    if (this.state === 'result_hold' || this.state === 'runback') return;
+    const now = Date.now();
+    this.pendingRunbackReason = reason;
+    this.resultHoldContinueReadyAt = now + RESULT_REPORT_MIN_MS;
+    this.continueInputArmedAt = now + CONTINUE_INPUT_ARM_MS;
+    this.state = 'result_hold';
+    this.removeInputOverlay();
+    this.stopCaretBlink();
+    this.hideHiddenInput();
+    this.updatePromptMessage('PLACEMENT READY');
+    this.updateLeaderboardStatusText();
+    this.updateCeremonyPresentation();
+    if (this.notQualifiedText) {
+      this.notQualifiedText.visible = false;
+    }
+    if (this.instructions) {
+      this.instructions.text = this.getInstructionsText();
+    }
+    this.refreshPrimaryCta();
+    this.layoutScreen();
+    this.scheduleSceneTimeout(() => {
+      if (!this.isSceneActive() || this.state !== 'result_hold') return;
+      this.updateInputPrompts();
+      this.refreshPrimaryCta();
+      this.layoutScreen();
+    }, RESULT_REPORT_MIN_MS);
+  }
+
   continueFromSubmittedHold() {
     if (this.state !== 'submitted_hold') return;
     if (!this.isSubmittedHoldContinueReady()) {
@@ -2604,6 +2803,20 @@ export class GameOverScene {
     const nextReason = this.pendingRunbackReason || 'score_submitted';
     this.pendingRunbackReason = null;
     this.submittedHoldContinueReadyAt = 0;
+    this.continueInputArmedAt = 0;
+    this.enterRunbackStage(nextReason);
+  }
+
+  continueFromResultHold() {
+    if (this.state !== 'result_hold') return;
+    if (!this.isResultHoldContinueReady()) {
+      this.refreshPrimaryCta();
+      return;
+    }
+    const nextReason = this.pendingRunbackReason || 'no_slot';
+    this.pendingRunbackReason = null;
+    this.resultHoldContinueReadyAt = 0;
+    this.continueInputArmedAt = 0;
     this.enterRunbackStage(nextReason);
   }
 
@@ -2618,6 +2831,8 @@ export class GameOverScene {
     this.runbackReason = reason;
     this.runbackStartedAt = Date.now();
     this.submittedHoldContinueReadyAt = 0;
+    this.resultHoldContinueReadyAt = 0;
+    this.continueInputArmedAt = 0;
     this.ctaVoicePlayed = false;
     this.selectedCtaLine = this.selectRunbackCtaLine();
     const globalCelebration = Boolean(this.globalPlacement?.qualified);
@@ -2931,7 +3146,7 @@ export class GameOverScene {
     if (!this.steamSubmissionMode || !this.isRankedRun || this.isSubmitting) return;
     if (this.finalScore <= 0) {
       this.game.pendingHighscore = null;
-      if (this.state !== 'runback') this.enterRunbackStage('no_slot');
+      if (this.state !== 'runback') this.enterResultHoldStage('no_slot');
       return;
     }
 
@@ -2966,11 +3181,16 @@ export class GameOverScene {
 
     this.globalStatus = result.steamStatus === 'submitted' ? 'submitted' : 'failed';
     result.globalStatus = this.globalStatus === 'submitted' ? 'submitted' : 'failed';
-    result.globalQualified = true;
-    result.localQualified = true;
+    result.globalQualified = false;
+    result.localQualified = result.localStatus === 'saved';
     result.steamSubmissionMode = true;
     result.updatedAt = new Date().toISOString();
-    await this.confirmGlobalLeaderboardAchievements(result);
+    this.rememberLocalPlacement(result.localPlacement, 'steam_local_backup');
+    const confirmedPlacement = await this.confirmGlobalLeaderboardAchievements(result);
+    result.globalQualified = Boolean(confirmedPlacement?.qualified);
+    result.globalPlacement = confirmedPlacement || null;
+    result.globalPlacementTier = this.globalPlacementTier;
+    result.globalRank = confirmedPlacement?.placement || null;
     this.leaderboardResult = result;
     this.game.lastLeaderboardResult = result;
     this.game.leaderboardView = this.globalStatus === 'submitted' ? 'global' : 'local';
@@ -3216,6 +3436,7 @@ export class GameOverScene {
       result.localStatus = localSave.localStatus || 'saved';
       result.localPlacement = localSave.localPlacement;
       result.localEntry = localSave.localEntry;
+      this.rememberLocalPlacement(localSave.localPlacement, 'saved');
       if (!this.globalQualified) {
         this.playLocalHighscoreVoice();
       }
@@ -3294,7 +3515,11 @@ export class GameOverScene {
       result.globalProvider = response?.globalProvider || response?.source || 'cloud';
       result.globalResponse = response || null;
       result.updatedAt = new Date().toISOString();
-      await this.confirmGlobalLeaderboardAchievements(result);
+      const confirmedPlacement = await this.confirmGlobalLeaderboardAchievements(result);
+      result.globalQualified = Boolean(confirmedPlacement?.qualified);
+      result.globalPlacement = confirmedPlacement || null;
+      result.globalPlacementTier = this.globalPlacementTier;
+      result.globalRank = confirmedPlacement?.placement || null;
       this.game.lastLeaderboardResult = result;
       this.updateLeaderboardStatusText();
       console.log('[GameOverScene] Global submit success.');

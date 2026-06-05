@@ -13,9 +13,14 @@ for (const needle of [
   "label: translateText('CONTINUE')",
   "A: ${translateText('CONTINUE')}",
   "mode: 'submitted_hold'",
+  "mode: 'result_hold'",
   'continueFromSubmittedHold()',
+  'continueFromResultHold()',
   'this.continueFromSubmittedHold();',
-  'SUBMITTED_REPORT_MIN_MS'
+  'this.continueFromResultHold();',
+  'SUBMITTED_REPORT_MIN_MS',
+  'RESULT_REPORT_MIN_MS',
+  'CONTINUE_INPUT_ARM_MS'
 ]) {
   assert.ok(gameOver.includes(needle), `game-over status hold missing marker: ${needle}`);
 }
@@ -32,12 +37,21 @@ assert.ok(
 );
 
 for (const needle of [
-  'const rankPanelWidth = 146;',
-  'const rankTextMaxWidth = 76;',
+  'const rankPanelWidth = 164;',
+  'const rankTextMaxWidth = 92;',
   'Math.max(0.58, rankTextMaxWidth / this.rankText.width)',
-  'const rankOffset = layout.isMobile ? 176 : 188;'
+  'const rankOffset = layout.isMobile ? 196 : 212;'
 ]) {
   assert.ok(hud.includes(needle), `rank badge overlap guard missing marker: ${needle}`);
+}
+
+for (const needle of [
+  'const safeTop = compact ? 176 : 190;',
+  'height * (compact ? 0.34 : 0.3)',
+  'new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey)',
+  'Create a fresh player for each run so movement reads the current InputManager.'
+]) {
+  assert.ok(playScene.includes(needle), `play scene readability/input guard missing marker: ${needle}`);
 }
 
 assert.ok(

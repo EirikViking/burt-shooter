@@ -30,6 +30,7 @@
     "check:sector-progression": "node scripts/check-sector-progression.mjs",
     "check:ship-selector-start": "node scripts/check-ship-selector-start.mjs",
     "check:ship-usage-counter": "node scripts/check-ship-usage-counter.mjs",
+    "check:player-ship-padding": "node scripts/check-player-ship-padding.mjs",
     "check:career-intel-layout": "node scripts/check-career-intel-layout.mjs",
     "check:gameover-interlude": "node scripts/check-gameover-interlude.mjs",
     "check:gameover-ceremony": "node scripts/check-gameover-ceremony.mjs",
