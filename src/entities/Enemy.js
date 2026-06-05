@@ -727,8 +727,10 @@ export class Enemy {
           swayX += Math.sin(tacticalWave * 1.2 + this.waveSlot) * 22;
           swayY += Math.sin(tacticalWave * 1.7 + this.waveSlot * 0.35) * 12;
         } else if (this.tacticalMoveStyle === 'feint') {
-          const snap = Math.sin(tacticalWave * 1.9);
-          swayX += Math.sign(snap) * 16 + Math.sin(tacticalWave * 0.65) * 10;
+          const snap = Math.sin(tacticalWave * 2.6 + this.waveSlot * 0.35);
+          const fakeout = Math.sin(tacticalWave * 1.15 + this.waveSlot * 0.2);
+          swayX += Math.sign(snap || 1) * 18 + fakeout * 18;
+          swayY += Math.cos(tacticalWave * 1.25 + this.waveSlot * 0.4) * 9;
         } else if (this.tacticalMoveStyle === 'split_sweep') {
           swayX += side * Math.sin(tacticalWave * 0.8) * 32;
           swayY += Math.cos(tacticalWave * 1.1 + this.waveSlot) * 10;
