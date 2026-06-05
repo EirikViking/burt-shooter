@@ -415,6 +415,7 @@ const sourceText = Object.freeze({
   'SECTOR {sector} OVERRUN SURGE': 'OLEADA DE SOBRECARGA EN SECTOR {sector}',
   'THE CABINET HAS FILED A COMPLAINT. KEEP FLYING.': 'El Cabinet ha presentado una queja. Sigue volando.',
   'STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.': 'Abróchate, piloto. La sobrecarga no sabe ir suave.',
+  'I’m ready — bring the swarm.': 'Estoy listo: traigan el enjambre.',
   'Quarter-Million Voltage': 'Voltaje de cuarto de millón',
   'Score 250,000 points in a ranked run.': 'Consigue 250.000 puntos en una partida clasificada.',
   'Clean Sector License': 'Licencia de sector limpio',

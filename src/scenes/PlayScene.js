@@ -167,6 +167,10 @@ export class PlayScene {
     this.overrunClearLayer = null;
     this.overrunClearEffects = [];
     this.overrunMilestoneInterlude = null;
+    this._overrunConfirmKeyHandler = null;
+    this._overrunConfirmPointerHandler = null;
+    this._overrunConfirmPointerTarget = null;
+    this.overrunConfirmGamepadWasPressed = false;
     this.gameOverInterlude = null;
     this.overrunSealTexture = null;
     this.bossWarningEmblemTextures = [];
@@ -1798,6 +1802,10 @@ export class PlayScene {
       this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xffaa00);
       if (destroyed) {
         this.game.addScore(enemy.scoreValue || 0);
+        if (enemy.kind !== 'boss') {
+          this.onEnemyKilled(enemy);
+          this.enemyManager?.removeEnemySprite?.(enemy, 'bomb_blast');
+        }
         this.particleManager?.createExplosion(enemy.x, enemy.y, 0xff6600);
       }
     });
@@ -2538,6 +2546,7 @@ export class PlayScene {
     this.removeAchievementToast();
     this.achievementToastQueue = [];
     this.clearGameOverInterlude();
+    this.clearOverrunConfirmationHandlers();
 
     // Music continues to next scene
   }
@@ -4669,8 +4678,17 @@ export class PlayScene {
       active: true,
       startedAt: Date.now(),
       durationMs: OVERRUN_INTERLUDE_MS,
+      requiresConfirm: eventKind === 'run_clear',
+      confirmReadyAt: Date.now() + 1250,
+      confirmed: false,
+      confirmedBy: null,
       effect
     };
+    effect.requiresConfirm = eventKind === 'run_clear';
+    effect.confirmed = false;
+    if (eventKind === 'run_clear') {
+      this.installOverrunConfirmationHandlers();
+    }
 
     this.screenShake?.shake(width < 620 ? 16 : 24, width < 620 ? 24 : 34);
     AudioManager.duckMusic?.(0.28, 4300);
@@ -4817,8 +4835,25 @@ export class PlayScene {
       lineHeight: compact ? 14 : 18
     });
     warning.anchor.set(0.5);
-    warning.y = cardHeight / 2 - (compact ? 28 : 32);
+    warning.y = compact ? cardHeight / 2 - 44 : cardHeight / 2 - 54;
     card.addChild(warning);
+
+    const confirmText = createText(translateText('I’m ready — bring the swarm.'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 13 : 17,
+      fill: '#ffffff',
+      stroke: '#160208',
+      strokeThickness: 3,
+      fontWeight: '900',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: cardWidth - 78,
+      lineHeight: compact ? 15 : 19
+    });
+    confirmText.anchor.set(0.5);
+    confirmText.y = cardHeight / 2 - (compact ? 22 : 26);
+    confirmText.label = 'ui_overrun_confirm_prompt';
+    card.addChild(confirmText);
 
     return card;
   }
@@ -4833,18 +4868,31 @@ export class PlayScene {
 
     const interlude = this.overrunMilestoneInterlude;
     if (!interlude?.active) return;
+    this.pollOverrunConfirmationInput();
     const elapsed = Date.now() - interlude.startedAt;
-    const progress = Math.max(0, Math.min(1, elapsed / interlude.durationMs));
+    const rawProgress = Math.max(0, Math.min(1, elapsed / interlude.durationMs));
+    const waitingForConfirm = Boolean(interlude.requiresConfirm && !interlude.confirmed);
+    const progress = waitingForConfirm ? Math.min(rawProgress, 0.82) : rawProgress;
     const card = interlude.effect?.interludeCard;
     if (card && !card.destroyed) {
       const intro = Math.min(1, progress * 5.2);
-      const outro = progress > 0.82 ? Math.max(0, 1 - (progress - 0.82) / 0.18) : 1;
+      const outro = !waitingForConfirm && progress > 0.82 ? Math.max(0, 1 - (progress - 0.82) / 0.18) : 1;
       card.alpha = (1 - Math.pow(1 - intro, 3)) * outro;
       card.scale.set((0.92 + Math.sin(elapsed * 0.006) * 0.012) * (0.96 + intro * 0.04));
+      const confirmPrompt = card.children?.find(child => child?.label === 'ui_overrun_confirm_prompt');
+      if (confirmPrompt) {
+        const ready = Date.now() >= (interlude.confirmReadyAt || interlude.startedAt);
+        confirmPrompt.visible = Boolean(interlude.requiresConfirm);
+        confirmPrompt.alpha = waitingForConfirm
+          ? (ready ? 0.72 + Math.sin(elapsed * 0.008) * 0.18 : 0.42)
+          : Math.max(0, 1 - rawProgress * 1.4);
+      }
     }
-    if (progress >= 1) {
+    if (waitingForConfirm) return;
+    if (rawProgress >= 1) {
       interlude.active = false;
       this.overrunMilestoneInterlude = null;
+      this.clearOverrunConfirmationHandlers();
     }
   }
 
@@ -4856,8 +4904,10 @@ export class PlayScene {
 
     this.overrunClearEffects = this.overrunClearEffects.filter((effect) => {
       const elapsed = now - effect.startedAt;
-      const progress = Math.max(0, Math.min(1, elapsed / effect.durationMs));
-      if (progress >= 1) {
+      const rawProgress = Math.max(0, Math.min(1, elapsed / effect.durationMs));
+      const waitingForConfirm = Boolean(effect.requiresConfirm && !effect.confirmed);
+      const progress = waitingForConfirm ? Math.min(rawProgress, 0.82) : rawProgress;
+      if (rawProgress >= 1 && !waitingForConfirm) {
         effect.container?.parent?.removeChild(effect.container);
         effect.container?.destroy?.({ children: true });
         return false;
@@ -4928,6 +4978,106 @@ export class PlayScene {
 
       return true;
     });
+  }
+
+  installOverrunConfirmationHandlers() {
+    this.clearOverrunConfirmationHandlers();
+    this.overrunConfirmGamepadWasPressed = Boolean(this.inputManager?.pollGamepad?.(true)?.buttons?.firing);
+    this._overrunConfirmKeyHandler = (event) => {
+      if (!this.overrunMilestoneInterlude?.active) return;
+      const code = event?.code || '';
+      const key = event?.key || '';
+      const matches = code === 'Enter' || code === 'NumpadEnter' || code === 'Space' || code === 'Escape' ||
+        key === 'Enter' || key === ' ' || key === 'Spacebar' || key === 'Escape';
+      if (!matches) return;
+      event?.preventDefault?.();
+      this.confirmOverrunInterlude('keyboard');
+    };
+    window.addEventListener('keydown', this._overrunConfirmKeyHandler);
+
+    this._overrunConfirmPointerHandler = () => this.confirmOverrunInterlude('pointer');
+    const target = this.game?.app?.canvas || this.game?.app?.view || window;
+    this._overrunConfirmPointerTarget = target;
+    target.addEventListener?.('pointerdown', this._overrunConfirmPointerHandler, { passive: true });
+  }
+
+  clearOverrunConfirmationHandlers() {
+    if (this._overrunConfirmKeyHandler) {
+      window.removeEventListener('keydown', this._overrunConfirmKeyHandler);
+      this._overrunConfirmKeyHandler = null;
+    }
+    if (this._overrunConfirmPointerHandler && this._overrunConfirmPointerTarget) {
+      this._overrunConfirmPointerTarget.removeEventListener?.('pointerdown', this._overrunConfirmPointerHandler);
+    }
+    this._overrunConfirmPointerHandler = null;
+    this._overrunConfirmPointerTarget = null;
+    this.overrunConfirmGamepadWasPressed = false;
+  }
+
+  confirmOverrunInterlude(source = 'unknown') {
+    const interlude = this.overrunMilestoneInterlude;
+    if (!interlude?.active || !interlude.requiresConfirm || interlude.confirmed) return false;
+    const now = Date.now();
+    if (now < (interlude.confirmReadyAt || interlude.startedAt || 0)) return false;
+    interlude.confirmed = true;
+    interlude.confirmedBy = source;
+    interlude.startedAt = now - Math.round(interlude.durationMs * 0.82);
+    if (interlude.effect) {
+      interlude.effect.confirmed = true;
+      interlude.effect.confirmedBy = source;
+      interlude.effect.startedAt = now - Math.round(interlude.effect.durationMs * 0.82);
+    }
+    this.clearOverrunConfirmationHandlers();
+    AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.9, minIntervalMs: 0 });
+    return true;
+  }
+
+  pollOverrunConfirmationInput() {
+    const interlude = this.overrunMilestoneInterlude;
+    if (!interlude?.active || !interlude.requiresConfirm || interlude.confirmed) return;
+    if (this.inputManager?.consumeKeyPress?.('Enter', 'NumpadEnter', 'Space', 'Escape')) {
+      this.confirmOverrunInterlude('keyboard');
+      return;
+    }
+    const gamepad = this.inputManager?.pollGamepad?.(true);
+    const pressed = Boolean(gamepad?.buttons?.firing || gamepad?.firing || gamepad?.pauseJustPressed);
+    if (pressed && !this.overrunConfirmGamepadWasPressed) {
+      this.confirmOverrunInterlude('gamepad');
+    }
+    this.overrunConfirmGamepadWasPressed = pressed;
+  }
+
+  getOverrunInterludeDebugState(getBounds = null) {
+    const interlude = this.overrunMilestoneInterlude;
+    const effect = interlude?.effect || null;
+    const card = effect?.interludeCard || null;
+    const confirmPrompt = card?.children?.find?.(child => child?.label === 'ui_overrun_confirm_prompt') || null;
+    if (!interlude?.active) {
+      return {
+        active: false,
+        requiresConfirm: false,
+        confirmed: false,
+        confirmedBy: null,
+        readyForConfirm: false,
+        cardVisible: false,
+        promptVisible: false,
+        promptText: null,
+        bounds: null,
+        promptBounds: null
+      };
+    }
+    return {
+      active: true,
+      requiresConfirm: Boolean(interlude.requiresConfirm),
+      confirmed: Boolean(interlude.confirmed),
+      confirmedBy: interlude.confirmedBy || effect?.confirmedBy || null,
+      readyForConfirm: Date.now() >= (interlude.confirmReadyAt || interlude.startedAt || 0),
+      cardVisible: Boolean(card && !card.destroyed && card.visible !== false && card.alpha > 0.05),
+      promptVisible: Boolean(confirmPrompt && confirmPrompt.visible !== false && confirmPrompt.alpha > 0.05),
+      promptText: confirmPrompt?.text || null,
+      bounds: typeof getBounds === 'function' ? getBounds(card) : null,
+      promptBounds: typeof getBounds === 'function' ? getBounds(confirmPrompt) : null
+    };
   }
 
   enqueueToast(message, options = {}) {
@@ -5166,7 +5316,25 @@ export class PlayScene {
     queue.sort((a, b) => b.priority - a.priority || (a.notBefore || 0) - (b.notBefore || 0) || a.createdAt - b.createdAt);
   }
 
-  describeToastDisplay(display) {
+  getToastDisplayBounds(display) {
+    try {
+      if (!display?.getBounds) return null;
+      const bounds = display.getBounds();
+      const width = Math.round(bounds.width || 0);
+      const height = Math.round(bounds.height || 0);
+      if (width <= 0 || height <= 0) return null;
+      return {
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width,
+        height
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  describeToastDisplay(display, getBounds = null) {
     const meta = display?.__toastMeta;
     if (!meta) return null;
     return {
@@ -5176,16 +5344,19 @@ export class PlayScene {
       title: meta.title || null,
       imageAlias: meta.imageAlias || null,
       duration: meta.duration,
-      ageMs: Math.max(0, Date.now() - meta.createdAt)
+      ageMs: Math.max(0, Date.now() - meta.createdAt),
+      bounds: typeof getBounds === 'function'
+        ? getBounds(display)
+        : this.getToastDisplayBounds(display)
     };
   }
 
-  getToastDebugState() {
+  getToastDebugState(getBounds = null) {
     return {
       active: [
-        this.describeToastDisplay(this.activeCenterToast),
-        this.describeToastDisplay(this.activeTopToast),
-        this.describeToastDisplay(this.activeCornerToast)
+        this.describeToastDisplay(this.activeCenterToast, getBounds),
+        this.describeToastDisplay(this.activeTopToast, getBounds),
+        this.describeToastDisplay(this.activeCornerToast, getBounds)
       ].filter(Boolean),
       achievement: this.activeAchievementToast ? {
         id: this.activeAchievementToast.__achievementToastId,
@@ -5287,7 +5458,12 @@ export class PlayScene {
     const maxWidth = Number.isFinite(options.maxWidth)
       ? options.maxWidth
       : (slot === 'corner' ? width * 0.45 : slot === 'top' ? width * 0.7 : width * 0.9);
-    const requestedY = options.y || (slot === 'corner' ? height * 0.12 : slot === 'top' ? height * 0.18 : height * 0.2);
+    const defaultY = slot === 'corner'
+      ? height * 0.12
+      : slot === 'top'
+      ? Math.max(96, height * 0.13)
+      : Math.max(178, height * 0.28);
+    const requestedY = Number.isFinite(options.y) ? options.y : defaultY;
     const y = slot === 'corner'
       ? Math.min(height - 80, Math.max(requestedY, 156))
       : requestedY;
@@ -6281,6 +6457,7 @@ export class PlayScene {
 
   cleanupSkippedFrameVisuals(reason = 'skipped_frame') {
     this.enemyManager?.sweepInactiveEnemyVisuals?.(reason);
+    this.sweepOrphanEnemyVisuals(reason);
     if (Array.isArray(this.ambientBonusDrones) && this.ambientBonusDrones.length > 0) {
       this.ambientBonusDrones = this.ambientBonusDrones.filter(bonusDrone => {
         if (bonusDrone?.active !== false && bonusDrone?.destroyed !== true) return true;
@@ -6297,6 +6474,36 @@ export class PlayScene {
         return false;
       });
     }
+  }
+
+  sweepOrphanEnemyVisuals(reason = 'orphan_sweep') {
+    const root = this.gameContainer;
+    const manager = this.enemyManager;
+    if (!root || !manager) return 0;
+    const trackedSprites = new Set([
+      ...(manager.enemies || []).map(enemy => enemy?.sprite),
+      manager.boss?.sprite,
+      manager.hijacker?.sprite
+    ].filter(Boolean));
+    const removals = [];
+    const walk = (node) => {
+      if (!node) return;
+      for (const child of node.children || []) walk(child);
+      const label = String(node.label || '');
+      if (!label.startsWith('enemy_visual:')) return;
+      if (trackedSprites.has(node)) return;
+      removals.push(node);
+    };
+    walk(root);
+    for (const node of removals) {
+      node.__enemyOwner?.deactivateVisuals?.(reason);
+      if (node.parent) node.parent.removeChild(node);
+      node.destroy?.({ children: true });
+    }
+    if (removals.length > 0 && this.debugPowerups) {
+      console.warn(`[EnemyVisualCleanup] removed orphan enemy visuals=${removals.length} reason=${reason}`);
+    }
+    return removals.length;
   }
 
   applyMagnetPull(delta) {
@@ -6394,9 +6601,18 @@ export class PlayScene {
     const target = activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
     const targetX = target.x;
     const targetY = target.y;
+    const debug = {
+      targetX: Math.round(targetX || 0),
+      targetY: Math.round(targetY || 0),
+      chargesBefore: this.player?.orbitalStrikeCharges || 0,
+      damageEvents: [],
+      completed: false
+    };
+    this.lastOrbitalStrikeDebug = debug;
 
     // Decrement charges
     this.player.orbitalStrikeCharges--;
+    debug.chargesAfter = this.player.orbitalStrikeCharges;
 
     // Show warning indicator
     const warning = new PIXI.Graphics();
@@ -6409,16 +6625,17 @@ export class PlayScene {
 
     // Animate warning pulse
     let pulseTime = 0;
-    const pulseInterval = this.game.app.ticker.add(() => {
+    const pulseTicker = () => {
       pulseTime += 16.67;
       const pulse = Math.sin(pulseTime * 0.01) * 0.5 + 0.5;
       warning.alpha = 0.5 + pulse * 0.5;
       warning.scale.set(0.8 + pulse * 0.2);
-    });
+    };
+    this.game.app.ticker.add(pulseTicker);
 
     // Fire strike after delay
     setTimeout(() => {
-      this.game.app.ticker.remove(pulseInterval);
+      this.game.app.ticker.remove(pulseTicker);
       if (warning.parent) warning.parent.removeChild(warning);
 
       // Create beam from top
@@ -6438,12 +6655,24 @@ export class PlayScene {
       // Deal area damage
       const damageRadius = 80;
       const damage = 30;
+      const damagedEnemies = new Set();
 
-      this.enemyManager.enemies.forEach(enemy => {
+      const applyStrikeDamage = (enemy, forceTarget = false) => {
         if (!enemy.active) return;
         const dist = Math.hypot(enemy.x - targetX, enemy.y - targetY);
-        if (dist < damageRadius) {
+        if (forceTarget || dist <= damageRadius + (enemy.radius || 0)) {
+          damagedEnemies.add(enemy);
+          const hpBefore = Number(enemy.health) || 0;
           const destroyed = enemy.takeDamage(damage);
+          debug.damageEvents.push({
+            kind: enemy.kind || 'enemy',
+            type: enemy.type || enemy.profile?.id || null,
+            forced: Boolean(forceTarget),
+            dist: Math.round(dist),
+            hpBefore,
+            hpAfter: Number(enemy.health) || 0,
+            destroyed: Boolean(destroyed)
+          });
           if (destroyed) {
             if (!(this.player.activePowerup?.type === 'slow_time' && !this.player.isPowerupSuppressed?.())) {
               const scoreAwarded = this.getComboScore(enemy.scoreValue);
@@ -6457,7 +6686,13 @@ export class PlayScene {
             AudioManager.playSfx('enemy_explode', { volume: 0.4 });
           }
         }
-      });
+      };
+
+      this.enemyManager.enemies.forEach(enemy => applyStrikeDamage(enemy, false));
+      if (target?.active && !damagedEnemies.has(target)) {
+        applyStrikeDamage(target, true);
+      }
+      debug.completed = true;
 
       // Screen shake and sound
       this.screenShake.shake(4);

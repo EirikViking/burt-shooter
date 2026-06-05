@@ -16,10 +16,10 @@
 - [x] Reproduce/verify result/status overlap and final One More Run spacing at `1600x900` and scaled sizes.
 - [x] Add obvious visual celebration for new Steam Top 3 and stronger celebration for new Steam #1 without Steam Board/Steamboard/redundant rank wording.
 - [x] Restore final One More Run and Career Intel next-ship-unlock progress; show ship-unlocked result notice; show all-unlocked state.
-- [ ] Audit gameplay HUD/central message stacking and make important messages readable during boss/sector/powerup bursts.
-- [ ] Deterministically verify every powerup effect, especially Bomb, and fix only broken intended behavior.
-- [ ] Reproduce/fix dead small-ship pixel through at least sector 9, preferably 12, while preserving pending `waitingForEntry` enemies.
-- [ ] Add sector-10 Overrun confirmation pause, then resume on keyboard/controller/mouse confirmation.
+- [x] Audit gameplay HUD/central message stacking and make important messages readable during boss/sector/powerup bursts.
+- [x] Deterministically verify every powerup effect, especially Bomb, and fix only broken intended behavior.
+- [x] Reproduce/fix dead small-ship pixel through at least sector 9, preferably 12, while preserving pending `waitingForEntry` enemies.
+- [x] Add sector-10 Overrun confirmation pause, then resume on keyboard/controller/mouse confirmation.
 - [x] Improve Career Intel readability with minimum readable text sizes and spacing.
 - [ ] Run required checks: `npm run check:release-hardening`, `npm run build`, `npm run check:steam-leaderboard-mock`, `npm run check:i18n`, `npm run check:i18n-ui`, `npm run package:steam:win:current`, `npm run desktop:smoke:packaged`.
 - [ ] Upload private Steam test build with `SetLive` empty, then commit/push final evidence.
@@ -42,3 +42,26 @@
   - `npm run build:current` passed after UI/i18n changes.
   - `npm run check:ship-unlock-reveal` passed; seeded canonical single/multi unlocks showed readable notices and voice keys.
   - `npm run check:career-intel-layout` passed; screenshots/report: `test-results/career-intel-layout-2026-06-05T17-32-09-186Z/`.
+- Dead enemy visual checkpoint:
+  - Enemy and boss root containers are tagged as `enemy_visual:*` and exposed through `render_game_to_text().enemyVisualAudit`.
+  - Runtime cleanup now sweeps tracked inactive/dead/despawned enemy visuals and orphaned enemy visual containers while exempting pending `waitingForEntry` enemies.
+  - `npm run check:dead-enemy-cleanup` passed, including pending-entry preservation.
+  - `npm run check:dead-enemy-playthrough` passed; report: `test-results/dead-enemy-playthrough-2026-06-05T17-48-09-001Z/report.json`.
+  - Synthetic proof in that report detected a forced stale visible enemy (`staleVisibleCount: 1`) and a forced orphaned enemy visual (`orphanedVisibleCount: 1`), then cleaned both back to zero.
+  - Browser playthrough audited sectors 8, 9, 10, 11, and 12 across normal waves, Boss Incoming/gate, and boss defeat; final stale/orphan counts were zero with no page errors.
+  - Re-ran after Overrun confirmation changes: `npm run check:dead-enemy-playthrough` passed; report: `test-results/dead-enemy-playthrough-2026-06-05T17-57-35-175Z/report.json`.
+  - Re-ran after powerup/orbital fixes: `npm run check:dead-enemy-cleanup` passed and `npm run check:dead-enemy-playthrough` passed; report: `test-results/dead-enemy-playthrough-2026-06-05T18-08-25-459Z/report.json`.
+- Overrun confirmation checkpoint:
+  - `npm run check:overrun-clear` passed after adding confirmation source guards.
+  - `npm run check:overrun-confirmation` passed; report: `test-results/overrun-confirmation-2026-06-05T17-57-13-917Z/report.json`.
+  - Browser proof triggered the sector-10 clear flow, prepared sector 11, held the Overrun card past its normal timeout with `requiresConfirm: true`, accepted `Enter`, then resumed play with the interlude inactive.
+- Powerup checkpoint:
+  - Bomb now sends destroyed normal enemies through `onEnemyKilled()` and `removeEnemySprite()` from the detonation path.
+  - Orbital Strike now keeps the selected target through its warning delay, removes its ticker by callback, and guarantees the chosen target receives the intended strike damage.
+  - `npm run check:powerup-assets` passed.
+  - `npm run check:powerup-effects` passed for 22/22 pickup types; report: `test-results/powerup-effects-2026-06-05T18-08-03-398Z/report.json`.
+  - Bomb proof used a real pickup, real bomb shot, real enemy collision/detonation, score award, and enemy visual audit with `staleVisibleCount: 0` and `orphanedVisibleCount: 0`.
+- Gameplay message checkpoint:
+  - Toast debug state now exposes real rendered bounds for active center/top/corner messages.
+  - Default center messages sit lower than top messages, and transition-priority messages delay/dismiss lower-priority bursts instead of stacking over them.
+  - `npm run check:gameplay-message-overlap` passed with 48 sampled frames of boss/sector/powerup/combo message bursts; report: `test-results/gameplay-message-overlap-2026-06-05T18-11-16-699Z/report.json`.

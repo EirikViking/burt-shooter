@@ -405,6 +405,7 @@ const sourceText = Object.freeze({
   'SECTOR {sector} OVERRUN SURGE': '第 {sector} 扇区超限涌动',
   'THE CABINET HAS FILED A COMPLAINT. KEEP FLYING.': 'Cabinet 已提交投诉。继续飞。',
   'STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.': '系紧安全带，飞行员。超限从不放水。',
+  'I’m ready — bring the swarm.': '我准备好了——让虫群来吧。',
   'Quarter-Million Voltage': '二十五万伏特',
   'Score 250,000 points in a ranked run.': '在排名出击中获得 250,000 分。',
   'Clean Sector License': '无伤区域执照',

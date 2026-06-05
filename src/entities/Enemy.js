@@ -396,6 +396,8 @@ export class Enemy {
 
   createSprite() {
     this.sprite = new PIXI.Container();
+    this.sprite.label = `enemy_visual:${this.kind}:${this.type || 'unknown'}`;
+    this.sprite.__enemyOwner = this;
     this.sprite.x = this.x;
     this.sprite.y = this.y;
     this.sprite.sortableChildren = true;

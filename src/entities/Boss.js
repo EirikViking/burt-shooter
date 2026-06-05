@@ -142,6 +142,8 @@ export class Boss {
 
   async createSprite() {
     this.sprite = new PIXI.Container();
+    this.sprite.label = `enemy_visual:${this.kind}:boss`;
+    this.sprite.__enemyOwner = this;
     this.sprite.sortableChildren = true;
     this.sprite.x = this.x;
     this.sprite.y = this.y;

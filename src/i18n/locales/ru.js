@@ -405,6 +405,7 @@ const sourceText = Object.freeze({
   'SECTOR {sector} OVERRUN SURGE': 'ВСПЛЕСК ОВЕРРАНА В СЕКТОРЕ {sector}',
   'THE CABINET HAS FILED A COMPLAINT. KEEP FLYING.': 'Cabinet подал жалобу. Продолжай лететь.',
   'STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.': 'Пристегнись, пилот. Оверран не умеет легко.',
+  'I’m ready — bring the swarm.': 'Я готов — ведите рой.',
   'Quarter-Million Voltage': 'Четверть миллиона вольт',
   'Score 250,000 points in a ranked run.': 'Набери 250 000 очков в рейтинговом забеге.',
   'Clean Sector License': 'Лицензия чистого сектора',

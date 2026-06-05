@@ -434,6 +434,112 @@ function buildGameTextState(game) {
       return null;
     }
   };
+  const isDisplayRenderable = (displayObject) => {
+    let cursor = displayObject;
+    while (cursor) {
+      if (cursor.visible === false || cursor.renderable === false || cursor.alpha === 0) return false;
+      cursor = cursor.parent;
+    }
+    return Boolean(displayObject?.parent);
+  };
+  const isPendingEntryEnemy = (enemy) => {
+    if (!enemy || enemy.destroyed === true) return false;
+    if (enemy.waitingForEntry === true) return true;
+    const entryStart = Number(enemy.entryCurve?.startTime);
+    return enemy.active === false &&
+      enemy.state === 'ENTRY' &&
+      Number.isFinite(entryStart) &&
+      entryStart > Date.now();
+  };
+  const getVisualAuditBounds = (displayObject) => {
+    try {
+      if (!displayObject?.getBounds) return null;
+      const bounds = displayObject.getBounds();
+      const width = Math.round(bounds.width || 0);
+      const height = Math.round(bounds.height || 0);
+      if (width <= 0 || height <= 0) return null;
+      return {
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width,
+        height
+      };
+    } catch {
+      return null;
+    }
+  };
+  const collectEnemyVisualNodes = () => {
+    const result = [];
+    const walk = (node) => {
+      if (!node) return;
+      const label = String(node.label || '');
+      if (label.startsWith('enemy_visual:')) result.push(node);
+      for (const child of node.children || []) walk(child);
+    };
+    walk(playScene?.gameContainer);
+    return result;
+  };
+  const createEnemyVisualAudit = () => {
+    if (!playScene || !enemyManager) {
+      return { staleVisibleCount: 0, orphanedVisibleCount: 0, pendingEntryVisibleCount: 0, samples: [] };
+    }
+    const trackedEnemies = [
+      ...enemies,
+      enemyManager.boss,
+      enemyManager.hijacker
+    ].filter(Boolean);
+    const trackedSprites = new Set(trackedEnemies.map(enemy => enemy.sprite).filter(Boolean));
+    const samples = [];
+    let staleVisibleCount = 0;
+    let pendingEntryVisibleCount = 0;
+    for (const enemy of trackedEnemies) {
+      const sprite = enemy?.sprite;
+      if (!sprite?.parent || !isDisplayRenderable(sprite)) continue;
+      const pending = isPendingEntryEnemy(enemy);
+      if (pending) {
+        pendingEntryVisibleCount += 1;
+        continue;
+      }
+      if (enemy.active === false || enemy.destroyed === true || enemy.visualsDeactivated === true) {
+        staleVisibleCount += 1;
+        if (samples.length < 8) {
+          samples.push({
+            issue: 'tracked_inactive_visible',
+            kind: enemy.kind || null,
+            type: enemy.type || enemy.profile?.id || null,
+            active: Boolean(enemy.active),
+            destroyed: Boolean(enemy.destroyed),
+            waitingForEntry: Boolean(enemy.waitingForEntry),
+            reason: enemy.visualDeactivateReason || null,
+            bounds: getVisualAuditBounds(sprite)
+          });
+        }
+      }
+    }
+
+    let orphanedVisibleCount = 0;
+    for (const node of collectEnemyVisualNodes()) {
+      if (trackedSprites.has(node)) continue;
+      if (!isDisplayRenderable(node)) continue;
+      orphanedVisibleCount += 1;
+      if (samples.length < 8) {
+        samples.push({
+          issue: 'orphaned_enemy_visual',
+          label: node.label || null,
+          bounds: getVisualAuditBounds(node)
+        });
+      }
+    }
+
+    return {
+      staleVisibleCount,
+      orphanedVisibleCount,
+      pendingEntryVisibleCount,
+      trackedEnemyVisualCount: trackedSprites.size,
+      renderTreeEnemyVisualCount: collectEnemyVisualNodes().length,
+      samples
+    };
+  };
 
   return {
     coordinateSystem: 'origin top-left, x right, y down',
@@ -478,10 +584,13 @@ function buildGameTextState(game) {
       levelToolsUsed: Boolean(playScene.debugLevelToolsUsed),
       levelJumpAvailable: typeof playScene.debugJumpToLevel === 'function'
     } : null,
-    toast: playScene?.getToastDebugState ? playScene.getToastDebugState() : null,
+    toast: playScene?.getToastDebugState ? playScene.getToastDebugState(getBoundsDebug) : null,
     gameOverInterlude: playScene?.getGameOverInterludeDebugState
       ? playScene.getGameOverInterludeDebugState(getBoundsDebug)
       : { active: false, visible: false },
+    overrunInterlude: playScene?.getOverrunInterludeDebugState
+      ? playScene.getOverrunInterludeDebugState(getBoundsDebug)
+      : { active: false, requiresConfirm: false },
     scoring: playScene ? {
       comboCount: playScene.comboCount || 0,
       comboMultiplier: playScene.comboMultiplier || 1,
@@ -738,6 +847,7 @@ function buildGameTextState(game) {
       enemyBullets: enemyBullets.filter(bullet => bullet?.active !== false).length,
       particles: playScene?.particleManager?.particles?.length || 0
     },
+    enemyVisualAudit: createEnemyVisualAudit(),
     enemyWeapons: {
       activeProfiles: [...new Set(enemyBullets
         .filter(bullet => bullet?.active !== false && bullet.weaponProfileId)
