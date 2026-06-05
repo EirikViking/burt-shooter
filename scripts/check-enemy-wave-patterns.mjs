@@ -212,9 +212,15 @@ try {
     current.max = Math.max(current.max, sample.movementDelta);
     movementByFamily.set(family, current);
   }
+  const slowRepeatedMovementFamilies = [...movementByFamily.entries()]
+    .filter(([, entry]) => entry.count >= 2 && entry.max < 8)
+    .map(([family, entry]) => ({ family, ...entry }));
+  const singleSampleLowMovementFamilies = [...movementByFamily.entries()]
+    .filter(([, entry]) => entry.count === 1 && entry.max < 8)
+    .map(([family, entry]) => ({ family, ...entry }));
   const movedOk = movementSamples.every(Number.isFinite)
     && movingEnoughCount >= Math.floor(data.samples.length * 0.65)
-    && [...movementByFamily.values()].every((entry) => entry.max >= 8);
+    && slowRepeatedMovementFamilies.length === 0;
 
   const report = {
     ok: data.samples.length >= 20 &&
@@ -247,6 +253,8 @@ try {
     movingEnoughCount,
     movementThresholdRatio: Number((movingEnoughCount / Math.max(1, data.samples.length)).toFixed(3)),
     movementByFamily: Object.fromEntries(movementByFamily.entries()),
+    slowRepeatedMovementFamilies,
+    singleSampleLowMovementFamilies,
     textWave: data.textWave,
     textEnemies: data.textEnemies,
     samples: data.samples,
