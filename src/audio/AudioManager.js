@@ -78,6 +78,7 @@ class AudioController {
       'boss_explode',
       'enemy_shoot',
       'powerup',
+      'powerup_pickup',
       'pickup',
       'achievement',
       'forceField'

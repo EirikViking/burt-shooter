@@ -2087,7 +2087,7 @@ export class PlayScene {
         if (this.checkCollision(powerup, this.player)) {
           this.recordBalancePickup(powerup);
           powerup.collect(this.player, this);
-          AudioManager.playSfx('pickup');
+          AudioManager.playSfx('powerup_pickup', { volume: 0.35, minIntervalMs: 120 });
           const pickupColor = this.player?.synergyState?.type === 'cash_vacuum' ? 0xffff00 : powerup.color;
           this.particleManager.createPickupEffect(powerup.x, powerup.y, pickupColor);
           // CRITICAL: Ensure player visibility after powerup pickup

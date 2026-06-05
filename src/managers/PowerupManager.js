@@ -297,25 +297,25 @@ class Powerup {
       shield: 'shield_up',
       ghost: 'ghost_phase_shift',
       slow_time: 'time_slow_warp',
-      triple_beam: 'pickup',
-      vector_boost: 'pickup',
-      rapid_cabinet: 'pickup',
-      overdrive_core: 'pickup',
-      rapid_fire: 'pickup',
-      double_shot: 'pickup',
-      damage_up: 'pickup',
-      speed_up: 'pickup',
-      pierce: 'pickup',
+      triple_beam: 'powerup_pickup',
+      vector_boost: 'powerup_pickup',
+      rapid_cabinet: 'powerup_pickup',
+      overdrive_core: 'powerup_pickup',
+      rapid_fire: 'powerup_pickup',
+      double_shot: 'powerup_pickup',
+      damage_up: 'powerup_pickup',
+      speed_up: 'powerup_pickup',
+      pierce: 'powerup_pickup',
       score_x2: 'achievement',
       magnet: 'magnet_pull',
       drones: 'drone_launch_blip',
       shockwave: 'powerup',
       chain_lightning: 'chain_lightning_arc',
       orbital_strike: 'orbital_strike_charge',
-      vampire: 'pickup'
+      vampire: 'powerup_pickup'
     };
 
-    const sfxKey = sfxMap[this.type] || 'pickup';
+    const sfxKey = sfxMap[this.type] || 'powerup_pickup';
     AudioManager.playSfx(sfxKey);
   }
 

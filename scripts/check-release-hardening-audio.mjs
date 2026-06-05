@@ -13,6 +13,7 @@ const requiredEvents = [
   'nova_wave_clear_sweep',
   'levelComplete',
   'powerup',
+  'powerup_pickup',
   'boss_explode',
   'boss_phase_surge'
 ];
@@ -35,28 +36,26 @@ assert.ok(
   'wave clear and sector clear should route to distinct SFX events'
 );
 assert.ok(
-  powerupManager.includes("AudioManager.playSfx('powerup'"),
-  'powerup pickup should keep the distinct powerup pickup SFX'
+  powerupManager.includes("'powerup_pickup'") && powerupManager.includes('AudioManager.playSfx(sfxKey'),
+  'powerup pickup should route through the dedicated powerup_pickup SFX event'
 );
-assert.notEqual(
-  SFX_CATALOG.combo_tick?.[0],
-  SFX_CATALOG.nova_wave_clear_sweep?.[0],
-  'combo tick and wave clear must not share the same asset'
-);
-assert.notEqual(
-  SFX_CATALOG.powerup?.[0],
-  SFX_CATALOG.nova_wave_clear_sweep?.[0],
-  'powerup and wave clear must not share the same asset'
-);
-assert.notEqual(
-  SFX_CATALOG.boss_explode?.[0],
-  SFX_CATALOG.powerup?.[0],
-  'boss death and powerup pickup must not share the same asset'
-);
-assert.notEqual(
-  SFX_CATALOG.boss_phase_surge?.[0],
-  SFX_CATALOG.levelComplete?.[0],
-  'boss surge and sector clear must not share the same asset'
+assert.ok(
+  playScene.includes("AudioManager.playSfx('powerup_pickup'"),
+  'powerup collision path should not fall back to the generic pickup event'
 );
 
-console.log('[release-hardening-audio] PASS combo, wave clear, sector clear, powerup, and boss SFX are distinct');
+function assertNoSharedAssets(left, right) {
+  const leftAssets = new Set(SFX_CATALOG[left] || []);
+  const shared = (SFX_CATALOG[right] || []).filter((asset) => leftAssets.has(asset));
+  assert.equal(shared.length, 0, `${left} and ${right} must not share assets: ${shared.join(', ')}`);
+}
+
+assertNoSharedAssets('combo_tick', 'nova_wave_clear_sweep');
+assertNoSharedAssets('combo_tick', 'powerup_pickup');
+assertNoSharedAssets('nova_wave_clear_sweep', 'levelComplete');
+assertNoSharedAssets('nova_wave_clear_sweep', 'powerup_pickup');
+assertNoSharedAssets('levelComplete', 'powerup_pickup');
+assertNoSharedAssets('boss_explode', 'powerup_pickup');
+assertNoSharedAssets('boss_phase_surge', 'levelComplete');
+
+console.log('[release-hardening-audio] PASS combo, wave clear, sector clear, powerup pickup, and boss SFX pools are distinct');

@@ -178,6 +178,7 @@ export const SFX_MIX = {
     shoot: { volume: 0.72, minIntervalMs: 55 },
     explosion: { volume: 0.75, minIntervalMs: 80 },
     powerup: { volume: 0.72, minIntervalMs: 150 },
+    powerup_pickup: { volume: 0.56, minIntervalMs: 120 },
     menuSelect: { volume: 0.3, minIntervalMs: 120 },
     playerHit: { volume: 0.78, minIntervalMs: 220 },
     levelComplete: { volume: 0.45, minIntervalMs: 700 },
@@ -391,7 +392,7 @@ export const SFX_CATALOG = {
     'explosion': [getSfx('explosionCrunch_000')],
     'menuSelect': [getSfx('nova_menu_tick'), getSfx('doorOpen_000')],
     'playerHit': [getSfx('nova_player_hit_crackle'), getSfx('impactMetal_000')],
-    'levelComplete': [getSfx('nova_level_clear_medal'), getSfx('nova_wave_clear_sweep'), getSfx('nova_rank_fanfare')],
+    'levelComplete': [getSfx('nova_level_clear_medal'), getSfx('nova_rank_fanfare')],
 
     // Aliases for inconsistent call sites
     'forceField': [getSfx('nova_shield_snap'), getSfx('forceField_000')], // Alias for shield/pickup reuse
@@ -406,10 +407,13 @@ export const SFX_CATALOG = {
         getSfx('forceField_002')
     ],
     'powerup': [
-        getSfx('nova_bonus_core_jackpot'),
         getSfx('forceField_001'), // Sharp
         getSfx('forceField_002'), // Resonant
         getSfx('forceField_003')  // High pitch
+    ],
+    'powerup_pickup': [
+        getSfx('nova_bonus_core_jackpot'),
+        getSfx('doorOpen_002')
     ],
     'chain_lightning_arc': [
         getSfx('nova_chain_lightning_arc')
