@@ -165,10 +165,10 @@ try {
   if (steamSubmittedState.gameOver?.state === 'input' || steamSubmittedState.gameOver?.canEnterName) {
     throw new Error(`Steam mock exposed manual name entry: ${JSON.stringify(steamSubmittedState.gameOver)}`);
   }
-  if (!/LOCAL BOARD: RANK #\d+/i.test(steamSubmittedState.gameOver?.leaderboardStatus || '')) {
+  if (!/LOCAL BOARD: (?:TOP 20 #|RANK #)\d+/i.test(steamSubmittedState.gameOver?.leaderboardStatus || '')) {
     throw new Error(`Steam mock did not report exact local placement: ${JSON.stringify(steamSubmittedState.gameOver)}`);
   }
-  if (!/GLOBAL BOARD: RANK #1 - NUMBER ONE/i.test(steamSubmittedState.gameOver?.leaderboardStatus || '')) {
+  if (!/STEAM BOARD: RANK #1 - NUMBER ONE/i.test(steamSubmittedState.gameOver?.leaderboardStatus || '')) {
     throw new Error(`Steam mock did not report exact global placement: ${JSON.stringify(steamSubmittedState.gameOver)}`);
   }
   await page.waitForFunction(() => {
@@ -187,6 +187,63 @@ try {
   if (!mockScoresAfterSubmit.some((entry) => entry.playerName === 'STEAM ACE' && entry.score === 33333 && entry.level === 8)) {
     throw new Error(`Steam mock submission did not preserve level 8: ${JSON.stringify(mockScoresAfterSubmit)}`);
   }
+  await page.evaluate(() => {
+    const localScores = Array.from({ length: 43 }, (_, index) => ({
+      name: `LOCAL${String(index + 1).padStart(2, '0')}`,
+      score: 50000 - index * 100,
+      level: 8,
+      rankIndex: 10,
+      timestamp: new Date(Date.UTC(2026, 0, index + 1)).toISOString(),
+      source: 'local_seed'
+    }));
+    localStorage.setItem('novaSwarm.localLeaderboard.v2', JSON.stringify(localScores));
+    localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
+      { playerName: 'STEAM ACE', name: 'STEAM ACE', score: 35923, level: 9, isCurrentPlayer: true, source: 'steam' },
+      { playerName: 'ORBIT PAL', score: 28000, level: 7, source: 'steam' },
+      { playerName: 'RIFT PAL', score: 24000, level: 6, source: 'steam' }
+    ]));
+    window.__game.lastLeaderboardResult = {
+      score: 33333,
+      globalStatus: 'submitted',
+      steamStatus: 'submitted',
+      steamRank: 1,
+      globalRank: 1,
+      globalPlacement: { placement: 1, qualified: true, numberOne: true, top3: true },
+      globalPlacementTier: 'number1',
+      submissionId: 'stale-top-three'
+    };
+    window.__game.score = 1000;
+    window.__game.level = 2;
+    window.__game.rankIndex = 1;
+    window.__game.switchScene('gameOver');
+  });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.scene === 'gameOver' &&
+      state.gameOver?.state === 'submitted_hold' &&
+      state.gameOver?.lastLeaderboardResult?.steamStatus === 'submitted';
+  }, null, { timeout: 12000 });
+  const lowScoreState = await state(page);
+  const lowStatus = lowScoreState.gameOver?.leaderboardStatus || '';
+  if (lowScoreState.gameOver?.globalStatus !== 'steam_best_unchanged') {
+    throw new Error(`Low Steam score should be marked best unchanged: ${JSON.stringify(lowScoreState.gameOver)}`);
+  }
+  if (!lowScoreState.gameOver?.lastLeaderboardResult?.steamBestUnchanged || lowScoreState.gameOver?.lastLeaderboardResult?.steamPreviousBestScore !== 35923) {
+    throw new Error(`Low Steam score did not preserve previous-best diagnostics: ${JSON.stringify(lowScoreState.gameOver?.lastLeaderboardResult)}`);
+  }
+  if (!/STEAM BEST UNCHANGED/i.test(lowStatus) || !/THIS RUN DID NOT BEAT YOUR STEAM BEST: 35,923/i.test(lowStatus)) {
+    throw new Error(`Low Steam score did not explain unchanged Steam best: ${JSON.stringify(lowScoreState.gameOver)}`);
+  }
+  if (/RANK PENDING|TOP THREE|NUMBER ONE|STEAM BOARD: RANK|GLOBAL BOARD: RANK/i.test(lowStatus)) {
+    throw new Error(`Low Steam score reused stale or misleading rank copy: ${JSON.stringify(lowScoreState.gameOver)}`);
+  }
+  if (!/LOCAL BOARD: NOT IN LOCAL TOP 20/i.test(lowStatus) || /LOCAL #44|LOCAL BOARD: RANK #4[0-9]|LOCAL BOARD: TOP 20 #4[0-9]/i.test(lowStatus)) {
+    throw new Error(`Low local score should not show an outside-visible placement as visible: ${JSON.stringify(lowScoreState.gameOver)}`);
+  }
+  const mockScoresAfterLowScore = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
+  if (!mockScoresAfterLowScore.some((entry) => entry.isCurrentPlayer && entry.score === 35923)) {
+    throw new Error(`Steam mock keep-best score was overwritten by low score: ${JSON.stringify(mockScoresAfterLowScore)}`);
+  }
   const rank3Probe = await page.evaluate(async () => {
     const scene = window.__game?.scenes?.gameOver;
     if (!scene) throw new Error('Missing GameOver scene for rank-3 placement probe');
@@ -201,6 +258,8 @@ try {
     scene.globalPlacement = null;
     scene.globalPlacementTier = 'none';
     scene.qualificationFanfarePlayed = true;
+    scene.previousSteamBestScore = 0;
+    scene.steamBestUnchanged = false;
     const result = { globalStatus: 'submitted', globalProvider: 'steam', steamRank: 3 };
     const placement = await scene.confirmGlobalLeaderboardAchievements(result);
     return {
@@ -227,6 +286,8 @@ try {
     scene.globalPlacement = null;
     scene.globalPlacementTier = 'none';
     scene.qualificationFanfarePlayed = true;
+    scene.previousSteamBestScore = 0;
+    scene.steamBestUnchanged = false;
     const result = { globalStatus: 'submitted', globalProvider: 'steam', steamRank: 4 };
     const placement = await scene.confirmGlobalLeaderboardAchievements(result);
     return {
@@ -261,6 +322,8 @@ try {
     scene.globalPlacement = { score: 28000, placement: 2, qualified: true, top3: true, numberOne: false, source: 'stale_probe' };
     scene.globalPlacementTier = 'top3';
     scene.qualificationFanfarePlayed = true;
+    scene.previousSteamBestScore = 0;
+    scene.steamBestUnchanged = false;
     const result = { globalStatus: 'submitted', globalProvider: 'steam', steamRank: null };
     const placement = await scene.confirmGlobalLeaderboardAchievements(result);
     return {
@@ -277,9 +340,9 @@ try {
     missingRankProbe.qualified ||
     missingRankProbe.tier !== 'none' ||
     /TOP THREE|NUMBER ONE/i.test(`${missingRankProbe.status} ${missingRankProbe.runbackTitle}`) ||
-    !/GLOBAL BOARD: SUBMITTED - RANK PENDING/i.test(missingRankProbe.status)
+    !/STEAM BOARD: SCORE SUBMITTED/i.test(missingRankProbe.status)
   ) {
-    throw new Error(`Missing Steam rank should clear stale Top Three placement: ${JSON.stringify(missingRankProbe)}`);
+    throw new Error(`Missing Steam rank should clear stale Top Three placement without final rank pending copy: ${JSON.stringify(missingRankProbe)}`);
   }
   await page.screenshot({ path: path.join(outputDir, 'steam-gameover-runback.png'), fullPage: true });
 
@@ -294,6 +357,7 @@ try {
     rank3Probe,
     rank4Probe,
     missingRankProbe,
+    lowScoreState: lowScoreState.gameOver,
     consoleEvents
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

@@ -191,7 +191,13 @@ const sourceText = Object.freeze({
   'GLOBAL BOARD IN SIGHT': 'GLOBALE BESTENLISTE IN SICHT',
   'ONE MORE RUN?': 'NOCH EIN RUN?',
   'ONE MORE RUN': 'NOCH EIN RUN',
+  'RUN': 'RUN',
+  'RUN CLEAR': 'RUN GESCHAFFT',
+  'TIME': 'ZEIT',
+  'NEW BEST': 'NEUER BESTWERT',
+  'LEADERBOARDS': 'BESTENLISTEN',
   'VIEW LEADERBOARD': 'BESTENLISTE ANSEHEN',
+  'BACK TO HANGAR': 'ZURUECK ZUM HANGAR',
   'SUBMIT SCORE': 'PUNKTZAHL SENDEN',
   'SAVING SCORE': 'PUNKTZAHL WIRD GESPEICHERT',
   'SCORE SUBMITTED': 'PUNKTZAHL GESENDET',
@@ -199,6 +205,10 @@ const sourceText = Object.freeze({
   'SCORE SUBMITTED WITH STEAM NAME': 'PUNKTZAHL MIT STEAM-NAMEN GESENDET',
   'STEAM SUBMIT FAILED - LOCAL BACKUP SAVED': 'STEAM-SENDUNG FEHLGESCHLAGEN - LOKALES BACKUP GESPEICHERT',
   'AUTO-SUBMITTING WITH STEAM NAME': 'AUTOMATISCH MIT STEAM-NAMEN SENDEN',
+  'STEAM BEST UNCHANGED': 'STEAM-BESTWERT UNVERAENDERT',
+  'STEAM RANK UPDATING...': 'STEAM-RANG WIRD AKTUALISIERT...',
+  'UNAVAILABLE - LOCAL BACKUP SAVED': 'NICHT VERFUEGBAR - LOKALES BACKUP GESPEICHERT',
+  'Steam best unchanged.': 'Steam-Bestwert unveraendert.',
   'SAVING TO STEAM...': 'SPEICHERT AUF STEAM...',
   'PLACEMENT READY': 'PLATZIERUNG BEREIT',
   'PLACEMENT READY...': 'PLATZIERUNG BEREIT...',
@@ -243,6 +253,7 @@ const sourceText = Object.freeze({
   'A: RELAUNCH  |  B/START: MENU': 'A: NEUSTART  |  B/START: MENÜ',
   'TYPE NAME  |  ENTER: SUBMIT  |  ESC: SKIP SCORE': 'NAMEN EINGEBEN  |  ENTER: SENDEN  |  ESC: ÜBERSPRINGEN',
   'ENTER / SPACE / CLICK: RELAUNCH  |  L / GAMEPAD Y: LEADERBOARD  |  ESC: MENU': 'ENTER / LEERTASTE / KLICK: NEUSTART  |  L / GAMEPAD Y: BESTENLISTE  |  ESC: MENÜ',
+  'ENTER / SPACE / CLICK: RELAUNCH  |  L: LEADERBOARD  |  H: HANGAR  |  ESC: MENU': 'ENTER / LEERTASTE / KLICK: NEUSTART  |  L: BESTENLISTE  |  H: HANGAR  |  ESC: MENÜ',
   'ENTER / SPACE / CLICK - SAME SHIP': 'ENTER / LEERTASTE / KLICK - GLEICHES SCHIFF',
   'A: SAME SHIP  |  Y: LEADERBOARD': 'A: GLEICHES SCHIFF  |  Y: BESTENLISTE',
   'TYPE NAME FIRST': 'ZUERST NAMEN EINGEBEN',
@@ -618,12 +629,32 @@ const patterns = Object.freeze([
     id: 'thisRunCareerBest',
     regex: /^THIS RUN: LEVEL (.+)\nCAREER BEST: LEVEL (.+?)( - NEW BEST)?$/,
     replace: (match) => `DIESER RUN: LEVEL ${match[1]}\nKARRIEREBESTWERT: LEVEL ${match[2]}${match[3] ? ' - NEUER BESTWERT' : ''}`
+  },  {
+    id: 'runSummaryLine',
+    regex: /^(GAME OVER|RUN CLEAR): SECTOR (.+?)  TIME (.+)$/,
+    replace: (match, helpers) => `${helpers.translate(match[1])}: ${helpers.translate('SECTOR')} ${match[2]}  ${helpers.translate('TIME')} ${match[3]}`
   },
+  {
+    id: 'runRankXp',
+    regex: /^RANK (.+?): (.+?)  CAREER XP: \+(.+)$/,
+    replace: (match, helpers) => `${helpers.translate('RANK')} ${match[1]}: ${helpers.translate(match[2])}  ${helpers.translate('CAREER XP')}: +${match[3]}`
+  },
+  {
+    id: 'bestSectorLine',
+    regex: /^BEST SECTOR (.+?)( - NEW BEST)?$/,
+    replace: (match, helpers) => `${helpers.translate('BEST SECTOR')} ${match[1]}${match[2] ? ` - ${helpers.translate('NEW BEST')}` : ''}`
+  },
+
   {
     id: 'newShipUnlocked',
     regex: /^NEW (SHIP|SHIPS) UNLOCKED: (.+)\nVISIT THE HANGAR TO TRY (IT|THEM)$/,
     replace: (match) => `${match[1] === 'SHIPS' ? 'NEUE SCHIFFE' : 'NEUES SCHIFF'} FREIGESCHALTET: ${match[2]}\nBESUCHE DEN HANGAR ZUM AUSPROBIEREN`
+  },  {
+    id: 'newShipUnlockedLine',
+    regex: /^NEW (SHIP|SHIPS) UNLOCKED: (.+)$/,
+    replace: (match) => `${match[1] === 'SHIPS' ? 'NEUE SCHIFFE' : 'NEUES SCHIFF'} FREIGESCHALTET: ${match[2]}`
   },
+
   {
     id: 'nextShip',
     regex: /^NEXT SHIP: (.+)$/,
@@ -643,7 +674,12 @@ const patterns = Object.freeze([
     id: 'hangarComplete',
     regex: /^HANGAR COMPLETE: ALL SHIPS UNLOCKED\nCAREER BEST: LEVEL (.+)$/,
     replace: (match) => `HANGAR KOMPLETT: ALLE SCHIFFE FREI\nKARRIEREBESTWERT: LEVEL ${match[1]}`
+  },  {
+    id: 'hangarCompleteLine',
+    regex: /^HANGAR COMPLETE: ALL SHIPS UNLOCKED$/,
+    replace: () => 'HANGAR KOMPLETT: ALLE SCHIFFE FREI'
   },
+
   {
     id: 'nextCareerGoal',
     regex: /^NEXT CAREER GOAL: REACH LEVEL (.+)$/,
@@ -673,7 +709,17 @@ const patterns = Object.freeze([
     id: 'localRank',
     regex: /^LOCAL BOARD: RANK #([0-9]+)$/,
     replace: (match) => `LOKALE LISTE: RANG #${match[1]}`
+  },  {
+    id: 'localTopRank',
+    regex: /^LOCAL BOARD: TOP ([0-9]+) #([0-9]+)$/,
+    replace: (match) => `LOKALE LISTE: TOP ${match[1]} #${match[2]}`
   },
+  {
+    id: 'localNotInTop',
+    regex: /^LOCAL BOARD: NOT IN LOCAL TOP ([0-9]+)$/,
+    replace: (match) => `LOKALE LISTE: NICHT IN LOKALEN TOP ${match[1]}`
+  },
+
   {
     id: 'globalRank',
     regex: /^GLOBAL BOARD: RANK #([0-9]+)$/,
@@ -733,7 +779,32 @@ const patterns = Object.freeze([
     id: 'nearGlobalComment',
     regex: /^Only (.+) more points for a global slot\. This was not a miss, it was a warning shot\.$/,
     replace: (match) => `Nur noch ${match[1]} Punkte bis zu einem globalen Platz. Das war kein Fehlschlag, sondern ein Warnschuss.`
+  },  {
+    id: 'steamRank',
+    regex: /^STEAM BOARD: RANK #([0-9]+)$/,
+    replace: (match) => `STEAM-LISTE: RANG #${match[1]}`
   },
+  {
+    id: 'steamRankTop',
+    regex: /^STEAM BOARD: RANK #(.+) - (NUMBER ONE|TOP THREE)$/,
+    replace: (match, helpers) => `STEAM-LISTE: RANG #${match[1]} - ${helpers.translate(match[2])}`
+  },
+  {
+    id: 'steamBestMissLine',
+    regex: /^THIS RUN DID NOT BEAT YOUR STEAM BEST: (.+)$/,
+    replace: (match) => `DIESER RUN HAT DEINEN STEAM-BESTWERT NICHT GESCHLAGEN: ${match[1]}`
+  },
+  {
+    id: 'steamBestUnchangedComment',
+    regex: /^Steam best unchanged\.$/,
+    replace: () => 'Steam-Bestwert unveraendert.'
+  },
+  {
+    id: 'steamBestMissComment',
+    regex: /^Steam best unchanged\. This run did not beat your Steam best: (.+)\.$/,
+    replace: (match) => `Steam-Bestwert unveraendert. Dieser Run hat deinen Steam-Bestwert nicht geschlagen: ${match[1]}.`
+  },
+
   {
     id: 'steamBoard',
     regex: /^STEAM BOARD: (.+)$/,

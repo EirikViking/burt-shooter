@@ -222,6 +222,10 @@ export class LeaderboardAdapter {
         result.steamDetails = steam.details;
         result.steamLevelReached = steam.levelReached;
         result.steamUploadMethod = steam.uploadMethod;
+        result.steamPreviousBest = steam.previousBest || null;
+        result.steamPreviousBestScore = steam.previousBestScore || 0;
+        result.steamPersonalBestBeaten = Boolean(steam.personalBestBeaten);
+        result.steamBestUnchanged = Boolean(steam.bestUnchanged);
         result.steamResponse = steam.response || null;
       } catch (error) {
         result.globalStatus = 'failed';
@@ -237,6 +241,8 @@ export class LeaderboardAdapter {
           steamStatus: result.steamStatus,
           steamError: result.steamError || null,
           steamRank: result.steamRank || null,
+          steamBestUnchanged: Boolean(result.steamBestUnchanged),
+          steamPreviousBestScore: result.steamPreviousBestScore || null,
           score: result.score ?? null,
           level: result.level ?? null,
           submissionId: result.submissionId || null

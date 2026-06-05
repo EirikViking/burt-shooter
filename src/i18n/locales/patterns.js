@@ -115,9 +115,29 @@ export function buildArcadePatterns(labels) {
       replace: (match) => labels.thisRunCareerBest(match[1], match[2], Boolean(match[3]))
     },
     {
+      id: 'runSummaryLine',
+      regex: /^(GAME OVER|RUN CLEAR): SECTOR (.+?)  TIME (.+)$/,
+      replace: (match, helpers) => `${helpers.translate(match[1])}: ${helpers.translate('SECTOR')} ${match[2]}  ${helpers.translate('TIME')} ${match[3]}`
+    },
+    {
+      id: 'runRankXp',
+      regex: /^RANK (.+?): (.+?)  CAREER XP: \+(.+)$/,
+      replace: (match, helpers) => `${helpers.translate('RANK')} ${match[1]}: ${helpers.translate(match[2])}  ${helpers.translate('CAREER XP')}: +${match[3]}`
+    },
+    {
+      id: 'bestSectorLine',
+      regex: /^BEST SECTOR (.+?)( - NEW BEST)?$/,
+      replace: (match, helpers) => `${helpers.translate('BEST SECTOR')} ${match[1]}${match[2] ? ` - ${helpers.translate('NEW BEST')}` : ''}`
+    },
+    {
       id: 'newShipUnlocked',
       regex: /^NEW (SHIP|SHIPS) UNLOCKED: (.+)\nVISIT THE HANGAR TO TRY (IT|THEM)$/,
       replace: (match) => labels.newShipUnlocked(match[2], match[1] === 'SHIPS')
+    },
+    {
+      id: 'newShipUnlockedLine',
+      regex: /^NEW (SHIP|SHIPS) UNLOCKED: (.+)$/,
+      replace: (match) => labels.newShipUnlockedLine(match[2], match[1] === 'SHIPS')
     },
     {
       id: 'nextShip',
@@ -138,6 +158,11 @@ export function buildArcadePatterns(labels) {
       id: 'hangarComplete',
       regex: /^HANGAR COMPLETE: ALL SHIPS UNLOCKED\nCAREER BEST: LEVEL (.+)$/,
       replace: (match) => labels.hangarComplete(match[1])
+    },
+    {
+      id: 'hangarCompleteLine',
+      regex: /^HANGAR COMPLETE: ALL SHIPS UNLOCKED$/,
+      replace: () => labels.hangarCompleteLine
     },
     {
       id: 'nextCareerGoal',
@@ -168,6 +193,16 @@ export function buildArcadePatterns(labels) {
       id: 'localRank',
       regex: /^LOCAL BOARD: RANK #([0-9]+)$/,
       replace: (match) => `${labels.localBoard}: ${labels.rank} #${match[1]}`
+    },
+    {
+      id: 'localTopRank',
+      regex: /^LOCAL BOARD: TOP ([0-9]+) #([0-9]+)$/,
+      replace: (match) => labels.localTopRank(match[1], match[2])
+    },
+    {
+      id: 'localNotInTop',
+      regex: /^LOCAL BOARD: NOT IN LOCAL TOP ([0-9]+)$/,
+      replace: (match) => labels.localNotInTop(match[1])
     },
     {
       id: 'globalRank',
@@ -228,6 +263,31 @@ export function buildArcadePatterns(labels) {
       id: 'nearGlobalComment',
       regex: /^Only (.+) more points for a global slot\. This was not a miss, it was a warning shot\.$/,
       replace: (match) => labels.nearGlobalComment(match[1])
+    },
+    {
+      id: 'steamRank',
+      regex: /^STEAM BOARD: RANK #([0-9]+)$/,
+      replace: (match) => `${labels.steamBoard}: ${labels.rank} #${match[1]}`
+    },
+    {
+      id: 'steamRankTop',
+      regex: /^STEAM BOARD: RANK #(.+) - (NUMBER ONE|TOP THREE)$/,
+      replace: (match, helpers) => `${labels.steamBoard}: ${labels.rank} #${match[1]} - ${helpers.translate(match[2])}`
+    },
+    {
+      id: 'steamBestMissLine',
+      regex: /^THIS RUN DID NOT BEAT YOUR STEAM BEST: (.+)$/,
+      replace: (match) => labels.steamBestMissLine(match[1])
+    },
+    {
+      id: 'steamBestUnchangedComment',
+      regex: /^Steam best unchanged\.$/,
+      replace: (match, helpers) => helpers.translate('Steam best unchanged.')
+    },
+    {
+      id: 'steamBestMissComment',
+      regex: /^Steam best unchanged\. This run did not beat your Steam best: (.+)\.$/,
+      replace: (match) => labels.steamBestMissComment(match[1])
     },
     {
       id: 'steamBoard',

@@ -2,18 +2,18 @@
 
 Date: 2026-06-05
 Branch: `codex/fix-dead-enemy-pixels-20260604`
-Baseline before low-risk polish pass: `58e896a569aab8d6bd202f2b301a4921a1cd818f`
+Baseline before result-screen status pass: `2cfcd8b261345440d0d3d689911394ada15f8f84`
 
 ## Build Under Test
 
-- Steam package version: `v2026-06-05_06-10-44`
-- Steam BuildID: `23578716`
+- Steam package version: `v2026-06-05_15-51-39`
+- Steam BuildID: `23586841`
 - SetLive: empty
 - AppID: `4765070`
 - Windows depot: `4765071`
 - Steam leaderboard name: `nova_swarm_global_score_v2`
 
-Use private Steam BuildID `23578716` for this checklist.
+Use private Steam BuildID `23586841` for this checklist.
 
 ## Automated Gate Before Manual Testing
 

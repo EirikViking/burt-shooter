@@ -13,6 +13,10 @@ function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
 
+function lineCount(value) {
+  return String(value || '').split(/\n/).filter((line) => line.trim().length > 0).length;
+}
+
 async function isPortAvailable(candidatePort) {
   return new Promise((resolve) => {
     const server = createServer();
@@ -436,15 +440,18 @@ try {
       /NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
       !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
       /GAME OVER:\s*SECTOR 5/i.test(careerLevelSummary) &&
-      /CAREER BEST:\s*SECTOR 7/i.test(careerLevelSummary) &&
+      /BEST SECTOR\s*7/i.test(careerLevelSummary) &&
       /NEXT SHIP:\s*ARC STRIKER/i.test(careerUnlockSummary) &&
       /CLEAR 45 TOTAL WAVES/i.test(careerUnlockSummary) &&
       /\b30\/45\b/i.test(careerUnlockSummary) &&
       !/SURVIVEDSECONDS/i.test(careerUnlockSummary) &&
       /NEXT CAREER GOAL:\s*REACH SECTOR 9/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
-      /LOCAL BOARD: RANK #\d+/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
+      /LOCAL BOARD: (?:TOP 20 #|RANK #)\d+/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
       /GLOBAL BOARD:/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
+      lineCount(gameOverState.gameOver?.levelSummary) <= 4 &&
+      lineCount(gameOverState.gameOver?.unlockSummary) <= 2 &&
+      lineCount(gameOverState.gameOver?.leaderboardStatus) <= 4 &&
       !/LOCAL LEGEND/i.test(`${gameOverState.gameOver?.ceremonyTitle || ''} ${gameOverState.gameOver?.leaderboardStatus || ''}`) &&
       /LEADERBOARD FIRST|TYPE NAME/i.test(gameOverState.gameOver?.retryPrompt || '') &&
       /SUBMIT SCORE/i.test(gameOverState.gameOver?.primaryCta?.label || '') &&
@@ -457,7 +464,7 @@ try {
       submittedHoldSnapshot.gameOver?.submittedHoldReady === false &&
       submittedHoldSnapshot.gameOver?.primaryCta?.mode === 'submitted_hold' &&
       submittedHoldSnapshot.gameOver?.primaryCta?.disabled === true &&
-      /LOCAL BOARD: RANK #\d+/i.test(submittedHoldSnapshot.gameOver?.leaderboardStatus || '') &&
+      /LOCAL BOARD: (?:TOP 20 #|RANK #)\d+/i.test(submittedHoldSnapshot.gameOver?.leaderboardStatus || '') &&
       /GLOBAL BOARD:/i.test(submittedHoldSnapshot.gameOver?.leaderboardStatus || '') &&
       submittedEarlyContinueState.gameOver?.state === 'submitted_hold' &&
       submittedReadyHoldState.gameOver?.state === 'submitted_hold' &&

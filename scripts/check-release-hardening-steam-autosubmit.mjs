@@ -42,7 +42,10 @@ assert.ok(
     mockCheck.includes('steamRank: 4') &&
     mockCheck.includes('steamRank: null') &&
     mockCheck.includes('Steam rank 4 was incorrectly treated as Top Three') &&
-    mockCheck.includes('Missing Steam rank should clear stale Top Three placement'),
+    mockCheck.includes('Missing Steam rank should clear stale Top Three placement without final rank pending copy') &&
+    mockCheck.includes('Low Steam score should be marked best unchanged') &&
+    mockCheck.includes('THIS RUN DID NOT BEAT YOUR STEAM BEST: 35,923') &&
+    mockCheck.includes('LOCAL BOARD: NOT IN LOCAL TOP 20'),
   'Steam leaderboard mock must cover autosubmit without manual name entry'
 );
 assert.ok(

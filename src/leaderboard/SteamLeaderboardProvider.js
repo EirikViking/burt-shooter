@@ -366,6 +366,7 @@ export class SteamLeaderboardProvider {
     const details = encodeSteamLeaderboardDetails(runResult);
     const score = Math.max(0, Math.min(2147483647, Math.floor(Number(runResult.score) || 0)));
     const previousBest = await this.getPlayerBest();
+    const previousBestScore = Math.max(0, Math.floor(Number(previousBest?.score ?? previousBest?.m_nScore) || 0));
     const uploadMethod = resolveSteamUploadMethod({ score, details, previousBest });
     const payload = {
       leaderboardName: this.leaderboardName,
@@ -414,6 +415,9 @@ export class SteamLeaderboardProvider {
       levelReached: details[0],
       uploadMethod,
       previousBest,
+      previousBestScore,
+      personalBestBeaten: previousBestScore <= 0 || score > previousBestScore,
+      bestUnchanged: previousBestScore > 0 && score <= previousBestScore,
       response,
       rank: response?.rank ?? response?.globalRank ?? response?.m_nGlobalRank ?? null
     };
