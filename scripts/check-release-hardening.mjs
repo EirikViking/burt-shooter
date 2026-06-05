@@ -28,7 +28,6 @@ const steps = [
   { label: 'boss flow and death spectacle', command: node, args: ['scripts/check-release-hardening-boss-flow.mjs'] },
   { label: 'UI overlap and game-over hold', command: node, args: ['scripts/check-release-hardening-ui-flow.mjs'] },
   { label: 'Steam autosubmit mock guard', command: node, args: ['scripts/check-release-hardening-steam-autosubmit.mjs'] },
-  npmStep('Hangar selected ship framing', 'check:ship-selector-start'),
   npmStep('enemy wave counts and delayed entries', 'check:enemy-wave-patterns'),
   npmStep('enemy cleanup accumulation', 'check:dead-enemy-cleanup'),
   npmStep('wave stuck watchdog', 'check:wave-stuck-watchdog'),

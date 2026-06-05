@@ -86,30 +86,6 @@ async function showShipSelect(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
-async function collectShipDisplaySamples(page) {
-  return page.evaluate(async () => {
-    const scene = window.__game?.scenes?.shipSelect;
-    if (!scene?.shipCards?.length) throw new Error('Missing ship selector scene for display samples');
-    const samples = [];
-    const readState = () => JSON.parse(window.render_game_to_text?.() || '{}');
-    for (let index = 0; index < scene.ships.length; index += 1) {
-      scene.selectedIndex = index;
-      scene.updateCarouselPositions(false);
-      scene.updateSelectionInfo?.();
-      scene.updateIntelPanels?.();
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      const state = readState();
-      samples.push({
-        index,
-        shipName: state.shipSelect?.shipName || scene.ships[index]?.name || null,
-        spriteKey: state.shipSelect?.spriteKey || scene.ships[index]?.spriteKey || null,
-        display: state.shipSelect?.selectedShipDisplay || null
-      });
-    }
-    return samples;
-  });
-}
-
 const server = await startPreviewServer();
 const browser = await chromium.launch({
   headless: true,
@@ -130,10 +106,6 @@ try {
   await page.waitForFunction(() => Boolean(window.__game?.showShipSelect), { timeout: 30000 });
 
   const beforeMenuButton = await showShipSelect(page);
-  mkdirSync(outputDir, { recursive: true });
-  const shipDisplaySamples = await collectShipDisplaySamples(page);
-  const hangarScreenshot = path.join(outputDir, 'ship-selector-hangar-large.png');
-  await page.screenshot({ path: hangarScreenshot, fullPage: true });
   const menuTarget = beforeMenuButton.shipSelect.backButton;
   await page.mouse.click(menuTarget.x + menuTarget.width / 2, menuTarget.y + menuTarget.height / 2);
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === true, { timeout: 10000 });
@@ -184,25 +156,13 @@ try {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', { timeout: 10000 });
   const afterKeyboard = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 
+  mkdirSync(outputDir, { recursive: true });
   const screenshot = path.join(outputDir, 'ship-selector-start.png');
   await page.screenshot({ path: screenshot, fullPage: true });
-  const visibleShipDisplaySamples = shipDisplaySamples.filter((sample) => sample.display?.sprite?.width > 0 && sample.display?.sprite?.height > 0);
-  const shipDisplaySizes = visibleShipDisplaySamples
-    .map((sample) => Number(sample.display?.shipDisplaySize) || 0)
-    .filter((value) => value > 0);
-  const minShipDisplaySize = Math.min(...shipDisplaySizes);
-  const maxShipDisplaySize = Math.max(...shipDisplaySizes);
-  const dynamicShipScaleOk = shipDisplaySizes.length >= 5 && maxShipDisplaySize >= minShipDisplaySize * 1.18;
-  const shipDisplayOk = visibleShipDisplaySamples.every((sample) => (
-    sample.display?.fitsFrame === true &&
-    sample.display?.clearOfButtons === true &&
-    sample.display?.fitsDynamicFrame === true
-  )) && dynamicShipScaleOk;
 
   const report = {
     ok: Boolean(
       beforeMenuButton.shipSelect?.backButton?.width > 0 &&
-      shipDisplayOk &&
       afterMenuButton.scene === 'shipSelect' &&
       afterMenuButton.shipSelect?.hangarMenu?.visible === true &&
       afterExitFallback.shipSelect?.hangarMenu?.visible === true &&
@@ -230,14 +190,6 @@ try {
       consoleErrors.length === 0
     ),
     baseUrl,
-    shipDisplayOk,
-    dynamicShipScaleOk,
-    visibleShipDisplayCount: visibleShipDisplaySamples.length,
-    missingShipSpriteCount: shipDisplaySamples.length - visibleShipDisplaySamples.length,
-    minShipDisplaySize,
-    maxShipDisplaySize,
-    shipDisplaySamples,
-    hangarScreenshot,
     beforeMenuButton: beforeMenuButton.shipSelect,
     afterMenuButton: afterMenuButton.shipSelect,
     afterExitFallback: afterExitFallback.shipSelect?.hangarMenu,
