@@ -79,3 +79,12 @@
   - VDF inspected before upload: `AppID` `4765070`, depot `4765071`, `ContentRoot` `..\\desktop\\win-unpacked`, and `SetLive` exactly `""`.
   - SteamCMD upload completed successfully for AppID `4765070`; private test BuildID: `23591148`.
   - Evidence JSON: `release/steamworks/steam_upload_evidence_playtest_blockers_20260605.json`.
+- Final PDF-prep visual catch and superseding build:
+  - While preparing the requested visual-change PDF, the held Overrun confirmation screenshot showed the lower card copy crowding the confirmation prompt.
+  - Fixed the Overrun card by giving title/report/sector/bonus/warning/prompt lines more vertical room and exposing per-line bounds through `render_game_to_text().overrunInterlude.textNodes`.
+  - `npm run check:overrun-confirmation` now captures `overrun-confirmation-held.png` and fails if any Overrun card text nodes overlap; passed report: `test-results/overrun-confirmation-2026-06-05T18-51-48-618Z/report.json`.
+  - `npm run check:overrun-clear`, `npm run check:dead-enemy-playthrough`, `npm run check:i18n`, `npm run build:current`, and `npm run check:i18n-ui` passed after the card fix. Fresh dead enemy report: `test-results/dead-enemy-playthrough-2026-06-05T18-53-00-953Z/report.json`.
+  - `npm run check:release-hardening` passed 33/33 checks in 487s after the card fix; latest dead enemy report inside that pass: `test-results/dead-enemy-playthrough-2026-06-05T18-59-54-499Z/report.json`.
+  - `npm run build` passed and produced build version `v2026-06-05_21-08-06`; `npm run check:steam-leaderboard-mock`, `npm run check:i18n`, `npm run check:i18n-ui`, `npm run package:steam:win:current`, and `npm run desktop:smoke:packaged` all passed against that build.
+  - Superseding VDF inspected before upload: `AppID` `4765070`, depot `4765071`, `ContentRoot` `..\\desktop\\win-unpacked`, and `SetLive` exactly `""`.
+  - SteamCMD upload completed successfully for AppID `4765070`; superseding private test BuildID: `23591701`.

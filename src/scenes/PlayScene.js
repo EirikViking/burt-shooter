@@ -4721,7 +4721,7 @@ export class PlayScene {
   }) {
     const compact = width < 720;
     const cardWidth = Math.min(width - 32, compact ? 520 : 760);
-    const cardHeight = compact ? 224 : 246;
+    const cardHeight = compact ? 252 : 284;
     const card = new PIXI.Container();
     card.label = 'ui_overrun_interlude';
     card.x = width / 2;
@@ -4755,6 +4755,7 @@ export class PlayScene {
       lineHeight: compact ? 27 : 36
     });
     title.anchor.set(0.5);
+    title.label = 'ui_overrun_card_title';
     title.y = -cardHeight / 2 + (compact ? 48 : 54);
     card.addChild(title);
 
@@ -4781,7 +4782,8 @@ export class PlayScene {
       lineHeight: compact ? 16 : 19
     });
     reportText.anchor.set(0.5);
-    reportText.y = compact ? -16 : -10;
+    reportText.label = 'ui_overrun_card_report';
+    reportText.y = compact ? -26 : -24;
     card.addChild(reportText);
 
     const bonusLine = clearBonus || livesBonus
@@ -4803,7 +4805,8 @@ export class PlayScene {
       lineHeight: compact ? 16 : 21
     });
     sectorText.anchor.set(0.5);
-    sectorText.y = compact ? 32 : 38;
+    sectorText.label = 'ui_overrun_card_sector';
+    sectorText.y = compact ? 24 : 34;
     card.addChild(sectorText);
 
     const bonusText = createText(bonusLine, {
@@ -4819,7 +4822,8 @@ export class PlayScene {
       lineHeight: compact ? 14 : 18
     });
     bonusText.anchor.set(0.5);
-    bonusText.y = compact ? 54 : 64;
+    bonusText.label = 'ui_overrun_card_bonus';
+    bonusText.y = compact ? 52 : 64;
     card.addChild(bonusText);
 
     const warning = createText(translateText('STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.'), {
@@ -4835,7 +4839,8 @@ export class PlayScene {
       lineHeight: compact ? 14 : 18
     });
     warning.anchor.set(0.5);
-    warning.y = compact ? cardHeight / 2 - 44 : cardHeight / 2 - 54;
+    warning.label = 'ui_overrun_card_warning';
+    warning.y = compact ? cardHeight / 2 - 48 : cardHeight / 2 - 50;
     card.addChild(warning);
 
     const confirmText = createText(translateText('I’m ready — bring the swarm.'), {
@@ -4851,7 +4856,7 @@ export class PlayScene {
       lineHeight: compact ? 15 : 19
     });
     confirmText.anchor.set(0.5);
-    confirmText.y = cardHeight / 2 - (compact ? 22 : 26);
+    confirmText.y = cardHeight / 2 - (compact ? 22 : 24);
     confirmText.label = 'ui_overrun_confirm_prompt';
     card.addChild(confirmText);
 
@@ -5063,9 +5068,23 @@ export class PlayScene {
         promptVisible: false,
         promptText: null,
         bounds: null,
-        promptBounds: null
+        promptBounds: null,
+        textNodes: []
       };
     }
+    const textNodes = Array.isArray(card?.children)
+      ? card.children
+        .filter(child => typeof child?.label === 'string' && (
+          child.label.startsWith('ui_overrun_card_') ||
+          child.label === 'ui_overrun_confirm_prompt'
+        ))
+        .map(child => ({
+          id: child.label,
+          text: child.text || null,
+          visible: child.visible !== false && child.alpha > 0.05,
+          bounds: typeof getBounds === 'function' ? getBounds(child) : null
+        }))
+      : [];
     return {
       active: true,
       requiresConfirm: Boolean(interlude.requiresConfirm),
@@ -5076,7 +5095,8 @@ export class PlayScene {
       promptVisible: Boolean(confirmPrompt && confirmPrompt.visible !== false && confirmPrompt.alpha > 0.05),
       promptText: confirmPrompt?.text || null,
       bounds: typeof getBounds === 'function' ? getBounds(card) : null,
-      promptBounds: typeof getBounds === 'function' ? getBounds(confirmPrompt) : null
+      promptBounds: typeof getBounds === 'function' ? getBounds(confirmPrompt) : null,
+      textNodes
     };
   }
 

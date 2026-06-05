@@ -76,6 +76,42 @@ async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
+function overlaps(a, b, padding = 2) {
+  if (!a || !b) return false;
+  return !(
+    a.x + a.width + padding <= b.x ||
+    b.x + b.width + padding <= a.x ||
+    a.y + a.height + padding <= b.y ||
+    b.y + b.height + padding <= a.y
+  );
+}
+
+function assertOverrunTextLayout(state, label) {
+  const interlude = state?.overrunInterlude;
+  const textNodes = (interlude?.textNodes || [])
+    .filter(node => node.visible !== false && node.bounds && node.bounds.width > 0 && node.bounds.height > 0);
+  const expectedIds = new Set([
+    'ui_overrun_card_title',
+    'ui_overrun_card_report',
+    'ui_overrun_card_sector',
+    'ui_overrun_card_bonus',
+    'ui_overrun_card_warning',
+    'ui_overrun_confirm_prompt'
+  ]);
+  for (const id of expectedIds) {
+    assert(textNodes.some(node => node.id === id), `${label}: missing overrun text node ${id}`);
+  }
+  const failures = [];
+  for (let i = 0; i < textNodes.length; i += 1) {
+    for (let j = i + 1; j < textNodes.length; j += 1) {
+      if (overlaps(textNodes[i].bounds, textNodes[j].bounds, 3)) {
+        failures.push(`${textNodes[i].id} overlaps ${textNodes[j].id}`);
+      }
+    }
+  }
+  assert.equal(failures.length, 0, `${label}: ${failures.join('; ')}`);
+}
+
 mkdirSync(outputDir, { recursive: true });
 let server = null;
 let browser = null;
@@ -142,6 +178,7 @@ try {
       state.overrunInterlude?.promptVisible === true;
   }, null, { timeout: 2000 });
   const visible = await readState(page);
+  assertOverrunTextLayout(visible, 'visible overrun interlude');
 
   await page.waitForTimeout(5000);
   const held = await readState(page);
@@ -152,6 +189,9 @@ try {
   assert.equal(held.overrunInterlude?.readyForConfirm, true);
   assert.equal(held.overrunInterlude?.cardVisible, true);
   assert.equal((held.enemyVisualAudit?.staleVisibleCount || 0) + (held.enemyVisualAudit?.orphanedVisibleCount || 0), 0);
+  assertOverrunTextLayout(held, 'held overrun interlude');
+  const heldScreenshot = path.join(outputDir, 'overrun-confirmation-held.png');
+  await page.screenshot({ path: heldScreenshot, fullPage: true });
 
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => {
@@ -194,6 +234,7 @@ try {
       wave: resumed.wave,
       enemyVisualAudit: resumed.enemyVisualAudit
     },
+    heldScreenshot,
     screenshot,
     pageErrors,
     consoleErrors
