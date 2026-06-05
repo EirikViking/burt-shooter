@@ -427,19 +427,29 @@ try {
     scene.refreshPrimaryCta?.();
   });
   await tapButton(page, 0);
-  const submitted = await waitForState(page, (state) => state.scene === 'gameOver' && state.gameOver?.state === 'runback', 'score submitted from controller initials', 15000);
-  checkpoint('game-over-score-submitted', submitted, {
-    savedName: submitted.gameOver?.lastLeaderboardResult?.name,
+  const submittedHold = await waitForState(page, (state) =>
+    state.scene === 'gameOver' &&
+    state.gameOver?.state === 'submitted_hold' &&
+    state.gameOver?.submittedHoldReady,
+  'score submitted hold from controller initials', 15000);
+  checkpoint('game-over-score-submitted-hold', submittedHold, {
+    savedName: submittedHold.gameOver?.lastLeaderboardResult?.name,
     screenshot: await screenshot(page, '15-score-submitted')
   });
-  assert(submitted.gameOver?.lastLeaderboardResult?.name, 'Controller name entry did not save a leaderboard name');
+  assert(submittedHold.gameOver?.lastLeaderboardResult?.name, 'Controller name entry did not save a leaderboard name');
+
+  await tapButton(page, 0);
+  const submitted = await waitForState(page, (state) => state.scene === 'gameOver' && state.gameOver?.state === 'runback', 'submitted score continued to runback by controller A', 10000);
+  checkpoint('game-over-runback-after-continue', submitted, {
+    screenshot: await screenshot(page, '16-runback-after-continue')
+  });
 
   await tapButton(page, 3);
   const highscore = await waitForState(page, (state) => state.scene === 'highscore' && state.highscore?.focusedControl, 'highscores opened by controller Y');
-  checkpoint('highscores-open', highscore, { screenshot: await screenshot(page, '16-highscores-open') });
+  checkpoint('highscores-open', highscore, { screenshot: await screenshot(page, '17-highscores-open') });
   await tapButton(page, 1);
   const backToMenu = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, 'highscores returned to menu by controller B');
-  checkpoint('return-menu', backToMenu, { screenshot: await screenshot(page, '17-return-menu') });
+  checkpoint('return-menu', backToMenu, { screenshot: await screenshot(page, '18-return-menu') });
 
   const report = {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,
