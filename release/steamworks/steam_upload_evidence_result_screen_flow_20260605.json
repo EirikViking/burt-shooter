@@ -1,0 +1,62 @@
+{
+  "status": "uploaded",
+  "purpose": "private Steam test build after focused result-screen wording, cleanup, and layout repair",
+  "timestampUtc": "2026-06-05T15:43:52Z",
+  "branch": "codex/fix-dead-enemy-pixels-20260604",
+  "baselineCommit": "7bbc37dbdc4c",
+  "sourceCommit": "229582d",
+  "packageVersion": "v2026-06-05_17-32-02",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23588518",
+    "setLive": "",
+    "leaderboardName": "nova_swarm_global_score_v2"
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestHash": "3ac1e64afd6544b2bdc7b18d55db72b35c75d16e53ea6c1a4f902acaacbb18c5",
+    "manifestFileSha256": "d865611c683a8b5acd082fa3b5f2d0b7181812e32eba1621ee76d517c6daab70",
+    "fileCount": 336,
+    "totalBytes": 723494170
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-05_17-32-02 result screen flow repair",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "buildOutput": "..\\\\steam-build-output",
+    "setLive": ""
+  },
+  "commands": [
+    "npm run check:release-hardening",
+    "npm run build",
+    "npm run check:steam-leaderboard-mock",
+    "npm run check:gameover-motivation",
+    "npm run check:i18n",
+    "npm run check:result-screen-flow",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm v2026-06-05_17-32-02 result screen flow repair\" npm run steamworks:write-vdf",
+    "C:\\\\steamcmd\\\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\\\vibe-coding-e\\\\burt-shooter-cursor-hide-20260604\\\\release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  ],
+  "verification": {
+    "testFirstFailures": [
+      "npm run check:result-screen-status failed before production fix on bad Steam board wording.",
+      "npm run check:result-screen-flow failed before production fix on duplicated full summaries and Steam Board rank copy."
+    ],
+    "releaseHardening": "passed 29/29 checks; report test-results/release-hardening/latest-report.json",
+    "resultScreenFlow": "passed; report test-results/result-screen-flow-2026-06-05T15-37-19-991Z/report.json",
+    "steamLeaderboardMock": "passed; report test-results/steam-leaderboard-mock-2026-06-05T15-32-47-740Z/report.json",
+    "gameoverMotivation": "passed; screenshot test-results/gameover-motivation-2026-06-05T15-33-09-171Z/gameover-motivation.png",
+    "i18nUi": "passed; report test-results/i18n-ui-2026-06-05T15-27-35-166Z",
+    "packageRuntime": "passed app=4765070 leaderboard=nova_swarm_global_score_v2; report test-results/steam-package-runtime-2026-06-05T15-42-18-217Z/report.json",
+    "packagedSmoke": "passed; report test-results/packaged-exe-smoke-2026-06-05T15-41-37-515Z/report.json",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23588518).",
+    "dummyScoresSubmitted": false,
+    "steamworksStoreSettingsChanged": false,
+    "steamworksAppDepotLeaderboardReleaseSettingsChanged": false,
+    "setLiveKeptEmpty": true,
+    "deployPerformed": false
+  }
+}
