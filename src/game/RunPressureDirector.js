@@ -5,6 +5,7 @@ import {
   getRunElapsedSeconds,
   getRunPacingDebugState
 } from '../config/RunPacingConfig.js';
+import { getNormalWavePressureTuning as getNormalWavePressureTuningForLevel } from '../config/BalanceConfig.js';
 
 function finite(value, fallback = 1) {
   const number = Number(value);
@@ -45,16 +46,26 @@ export class RunPressureDirector {
     return getPressureMultipliers(this.getElapsedSeconds());
   }
 
+  getNormalWavePressureTuning() {
+    return getNormalWavePressureTuningForLevel(this.game?.level || 1);
+  }
+
   scaleEnemyFireChance(chance) {
-    return finite(chance, 0) * finite(this.getMultipliers().fireChanceMult);
+    return finite(chance, 0) *
+      finite(this.getMultipliers().fireChanceMult) *
+      finite(this.getNormalWavePressureTuning().fireChanceMult);
   }
 
   scaleProjectileSpeed(speed) {
-    return finite(speed, 0) * finite(this.getMultipliers().projectileSpeedMult);
+    return finite(speed, 0) *
+      finite(this.getMultipliers().projectileSpeedMult) *
+      finite(this.getNormalWavePressureTuning().projectileSpeedMult);
   }
 
   scaleEnemySpeed(speed) {
-    return finite(speed, 0) * finite(this.getMultipliers().enemySpeedMult);
+    return finite(speed, 0) *
+      finite(this.getMultipliers().enemySpeedMult) *
+      finite(this.getNormalWavePressureTuning().enemySpeedMult);
   }
 
   scaleEliteChance(chance) {

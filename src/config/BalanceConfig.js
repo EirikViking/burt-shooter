@@ -84,6 +84,116 @@ export const BalanceConfig = {
         bossGateMs: 950,
         challengeWaveChance: 0.015,
         challengeWaveCount: 8,
+        normalWavePressureLadder: {
+            bands: [
+                {
+                    id: 'opening_readable',
+                    minLevel: 1,
+                    maxLevel: 3,
+                    targetIncreaseRange: [0.05, 0.075],
+                    fireChanceMult: 1.032,
+                    projectileSpeedMult: 1.014,
+                    enemySpeedMult: 1.01,
+                    tacticFireMult: 1.018,
+                    tacticFireDelayMult: 0.994
+                },
+                {
+                    id: 'early_attrition',
+                    minLevel: 4,
+                    maxLevel: 10,
+                    targetIncreaseRange: [0.07, 0.12],
+                    fireChanceMult: 1.052,
+                    projectileSpeedMult: 1.022,
+                    enemySpeedMult: 1.018,
+                    tacticFireMult: 1.028,
+                    tacticFireDelayMult: 0.99,
+                    multiEliteChanceMult: 1.04
+                },
+                {
+                    id: 'serious_run',
+                    minLevel: 11,
+                    maxLevel: 19,
+                    targetIncreaseRange: [0.045, 0.065],
+                    fireChanceMult: 1.026,
+                    projectileSpeedMult: 1.014,
+                    enemySpeedMult: 1.01,
+                    tacticFireMult: 1.016,
+                    tacticFireDelayMult: 0.996,
+                    multiEliteChanceMult: 1.03
+                },
+                {
+                    id: 'late_run_attrition',
+                    minLevel: 20,
+                    maxLevel: 29,
+                    targetIncreaseRange: [0.08, 0.12],
+                    fireChanceMult: 1.056,
+                    projectileSpeedMult: 1.024,
+                    enemySpeedMult: 1.018,
+                    tacticFireMult: 1.032,
+                    tacticFireDelayMult: 0.99,
+                    challengeChanceMult: 1.15,
+                    multiEliteChanceMult: 1.12
+                },
+                {
+                    id: 'overrun_rising',
+                    minLevel: 30,
+                    maxLevel: 39,
+                    targetIncreaseRange: [0.12, 0.16],
+                    fireChanceMult: 1.048,
+                    projectileSpeedMult: 1.022,
+                    enemySpeedMult: 1.016,
+                    tacticFireMult: 1.03,
+                    tacticFireDelayMult: 0.992,
+                    waveEnemyCountBonus: 1,
+                    waveEnemyMaxBonus: 1,
+                    challengeChanceMult: 1.35,
+                    multiEliteChanceMult: 1.18,
+                    eliteSecondSlotChance: 0.42,
+                    threatDangerBudgetBonus: 1
+                },
+                {
+                    id: 'overrun_plateau_break',
+                    minLevel: 40,
+                    maxLevel: 49,
+                    targetIncreaseRange: [0.16, 0.22],
+                    fireChanceMult: 1.064,
+                    projectileSpeedMult: 1.028,
+                    enemySpeedMult: 1.022,
+                    tacticFireMult: 1.044,
+                    tacticFireDelayMult: 0.99,
+                    waveEnemyCountBonus: 1,
+                    waveEnemyMaxBonus: 2,
+                    challengeChanceMult: 1.55,
+                    multiEliteChanceMult: 1.28,
+                    eliteSecondSlotChance: 0.78,
+                    threatDangerBudgetBonus: 1
+                },
+                {
+                    id: 'deep_overrun',
+                    minLevel: 50,
+                    maxLevel: 999,
+                    targetIncreaseRange: [0.26, 0.38],
+                    fireChanceMult: 1.18,
+                    projectileSpeedMult: 1.08,
+                    enemySpeedMult: 1.06,
+                    tacticFireMult: 1.1,
+                    tacticFireDelayMult: 0.956,
+                    waveCountBonus: 1,
+                    waveEnemyCountBonus: 2,
+                    waveEnemyMaxBonus: 3,
+                    challengeChanceMult: 2.2,
+                    challengeWaveCountBonus: 2,
+                    multiEliteChanceMult: 1.65,
+                    multiEliteTriChance: 0.22,
+                    eliteSecondSlotChance: 0.94,
+                    threatDangerBudgetBonus: 2,
+                    threatMaxActiveBonus: 1,
+                    threatPlannedActionBonus: 1,
+                    diveBiasMult: 1.06,
+                    entrySpeedMult: 0.96
+                }
+            ]
+        },
 
         bossBaseHealth: 40,
         bossHealthPerLevel: 3.6,
@@ -167,3 +277,40 @@ export const BalanceConfig = {
         sequenceDuration: 1500 // ms between boss clear and next sector
     }
 };
+
+const DEFAULT_NORMAL_WAVE_PRESSURE_TUNING = Object.freeze({
+    id: 'baseline',
+    targetIncreaseRange: [0, 0],
+    fireChanceMult: 1,
+    projectileSpeedMult: 1,
+    enemySpeedMult: 1,
+    tacticFireMult: 1,
+    tacticFireDelayMult: 1,
+    waveCountBonus: 0,
+    waveEnemyCountBonus: 0,
+    waveEnemyMaxBonus: 0,
+    challengeChanceMult: 1,
+    challengeWaveCountBonus: 0,
+    multiEliteChanceMult: 1,
+    multiEliteTriChance: 0,
+    eliteSecondSlotChance: null,
+    threatDangerBudgetBonus: 0,
+    threatMaxActiveBonus: 0,
+    threatPlannedActionBonus: 0,
+    diveBiasMult: 1,
+    entrySpeedMult: 1
+});
+
+export function getNormalWavePressureTuning(level = 1) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const bands = BalanceConfig.difficulty?.normalWavePressureLadder?.bands || [];
+    const band = bands.find((entry) =>
+        safeLevel >= (Number(entry.minLevel) || 1) &&
+        safeLevel <= (Number(entry.maxLevel) || Number.POSITIVE_INFINITY)
+    ) || {};
+    return {
+        ...DEFAULT_NORMAL_WAVE_PRESSURE_TUNING,
+        ...band,
+        level: safeLevel
+    };
+}

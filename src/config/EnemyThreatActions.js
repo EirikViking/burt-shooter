@@ -1,4 +1,5 @@
 import { ENEMY_THREAT_ACTION_VARIANTS } from './EnemyThreatActionVariants.js';
+import { getNormalWavePressureTuning } from './BalanceConfig.js';
 
 const BASE_ENEMY_THREAT_ACTIONS = [
   {
@@ -232,11 +233,22 @@ export function getEnemyThreatActionsForLevel(level) {
 export function getThreatBudgetForLevel(level, enemyCount = 0) {
   const safeLevel = Math.max(1, Number(level) || 1);
   const countBoost = enemyCount >= 10 ? 1 : 0;
-  if (safeLevel <= 1) return { maxActive: 1, dangerBudget: 1, plannedActions: Math.min(2, Math.max(1, enemyCount)) };
-  if (safeLevel <= 4) return { maxActive: 1, dangerBudget: 2, plannedActions: Math.min(2, Math.max(1, enemyCount)) };
-  if (safeLevel <= 8) return { maxActive: 2, dangerBudget: 3, plannedActions: Math.min(3, Math.max(1, enemyCount)) };
-  if (safeLevel <= 15) return { maxActive: 3, dangerBudget: 4, plannedActions: Math.min(4, Math.max(1, enemyCount)) };
-  return { maxActive: Math.min(5, 3 + countBoost), dangerBudget: 5 + countBoost, plannedActions: Math.min(5, Math.max(1, enemyCount)) };
+  const base = safeLevel <= 1
+    ? { maxActive: 1, dangerBudget: 1, plannedActions: Math.min(2, Math.max(1, enemyCount)) }
+    : safeLevel <= 4
+      ? { maxActive: 1, dangerBudget: 2, plannedActions: Math.min(2, Math.max(1, enemyCount)) }
+      : safeLevel <= 8
+        ? { maxActive: 2, dangerBudget: 3, plannedActions: Math.min(3, Math.max(1, enemyCount)) }
+        : safeLevel <= 15
+          ? { maxActive: 3, dangerBudget: 4, plannedActions: Math.min(4, Math.max(1, enemyCount)) }
+          : { maxActive: Math.min(5, 3 + countBoost), dangerBudget: 5 + countBoost, plannedActions: Math.min(5, Math.max(1, enemyCount)) };
+  const pressureTuning = getNormalWavePressureTuning(safeLevel);
+  const maxAssignable = Math.max(1, enemyCount || base.plannedActions);
+  return {
+    maxActive: Math.min(maxAssignable, base.maxActive + (Number(pressureTuning.threatMaxActiveBonus) || 0)),
+    dangerBudget: base.dangerBudget + (Number(pressureTuning.threatDangerBudgetBonus) || 0),
+    plannedActions: Math.min(maxAssignable, base.plannedActions + (Number(pressureTuning.threatPlannedActionBonus) || 0))
+  };
 }
 
 export function scoreThreatActionForWave(action, { level = 1, formation = '', tactic = null, enemyProfile = null, slot = 0 } = {}) {

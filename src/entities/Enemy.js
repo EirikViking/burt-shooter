@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 import { GameAssets } from '../utils/GameAssets.js';
 // TASK 3: Import difficulty multiplier
-import { BalanceConfig } from '../config/BalanceConfig.js';
+import { BalanceConfig, getNormalWavePressureTuning } from '../config/BalanceConfig.js';
 import { enhanceEnemyVisuals } from '../utils/EnemyVisualEnhancer.js';
 import { getEnemyVisualVariant } from '../config/VisualVariantCatalog.js';
 import { getGeneratedEnemyProfile } from '../config/GeneratedEnemyProfiles.js';
@@ -1575,13 +1575,12 @@ export class Enemy {
     const weaponSpeedMult = weaponProfile?.speedMult || 1;
     const diff = BalanceConfig.difficulty;
     const levelScale = Math.max(0, this.level - 1);
-    const projectileSpeed = this.game?.runPressureDirector?.scaleProjectileSpeed?.(Math.min(
-      diff.enemyProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
-      (diff.enemyProjectileSpeed ?? 1.55) + levelScale * (diff.enemyProjectileSpeedPerLevel ?? 0)
-    )) ?? Math.min(
+    const baseProjectileSpeed = Math.min(
       diff.enemyProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
       (diff.enemyProjectileSpeed ?? 1.55) + levelScale * (diff.enemyProjectileSpeedPerLevel ?? 0)
     );
+    const projectileSpeed = this.game?.runPressureDirector?.scaleProjectileSpeed?.(baseProjectileSpeed) ??
+      baseProjectileSpeed * getNormalWavePressureTuning(this.level).projectileSpeedMult;
     const speed = projectileSpeed *
       BalanceConfig.difficulty.pressureScalar *
       openingProjectileScalar *

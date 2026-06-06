@@ -3,7 +3,7 @@ import { Enemy } from '../entities/Enemy.js';
 import { Boss } from '../entities/Boss.js';
 import { Hijacker } from '../entities/Hijacker.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { BalanceConfig } from '../config/BalanceConfig.js';
+import { BalanceConfig, getNormalWavePressureTuning } from '../config/BalanceConfig.js';
 import { getMicroMessage } from '../text/phrasePool.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
@@ -545,10 +545,15 @@ export class EnemyManager {
     const safeLevel = Math.max(1, Number(level) || 1);
     if (safeLevel < 2 || plannedWaves.length < 4) return;
 
-    const chance = safeLevel <= 4 ? 0.045 : safeLevel < 10 ? 0.11 : 0.15;
+    const pressureTuning = getNormalWavePressureTuning(safeLevel);
+    const baseChance = safeLevel <= 4 ? 0.045 : safeLevel < 10 ? 0.11 : 0.15;
+    const chance = Math.min(0.34, baseChance * (pressureTuning.multiEliteChanceMult || 1));
     if (Math.random() > chance) return;
 
-    const eliteCount = safeLevel >= 10 && Math.random() < 0.14 ? 3 : 2;
+    const triChance = safeLevel >= 50
+      ? (pressureTuning.multiEliteTriChance || 0)
+      : (safeLevel >= 10 ? 0.14 : 0);
+    const eliteCount = triChance > 0 && Math.random() < triChance ? 3 : 2;
     const ids = this.pickEliteMiddleShipIds(safeLevel, eliteCount, { includeGentleFallback: safeLevel <= 4 });
     if (ids.length < 2) return;
 
@@ -596,7 +601,10 @@ export class EnemyManager {
     const perLevel = diff.wavesPerBossPerLevel ?? 0;
     const max = diff.wavesPerBossMax ?? diff.waveCountMax ?? 6;
     const min = diff.MIN_WAVES_BETWEEN_BOSSES ?? diff.minWavesBetweenBosses ?? 1;
-    return Math.max(min, Math.min(max, Math.round(base + Math.max(0, level - 1) * perLevel)));
+    const pressureTuning = getNormalWavePressureTuning(level);
+    const waveBonus = Math.max(0, Number(pressureTuning.waveCountBonus) || 0);
+    const planned = Math.round(base + Math.max(0, level - 1) * perLevel) + waveBonus;
+    return Math.max(min, Math.min(max + waveBonus, planned));
   }
 
   getWaveEnemyCount(level, waveIndex = 0) {
@@ -609,13 +617,16 @@ export class EnemyManager {
     const levelScale = Math.max(0, level - 1);
     const waveScale = Math.max(0, waveIndex);
     const variance = Math.floor(Math.random() * Math.max(1, diff.waveEnemyRandom ?? 1));
+    const pressureTuning = getNormalWavePressureTuning(level);
     const count = Math.round(
       (diff.waveEnemyBase ?? 7) +
       levelScale * (diff.waveEnemyPerLevel ?? 0.35) +
       waveScale * (diff.waveEnemyPerWave ?? 0.45) +
-      variance
+      variance +
+      (Number(pressureTuning.waveEnemyCountBonus) || 0)
     );
-    return Math.max(4, Math.min(diff.waveEnemyMax ?? 14, count));
+    const max = (diff.waveEnemyMax ?? 14) + (Number(pressureTuning.waveEnemyMaxBonus) || 0);
+    return Math.max(4, Math.min(max, count));
   }
 
   getCuratedWaves(level) {
@@ -1156,11 +1167,12 @@ export class EnemyManager {
       (diff.enemyFireChance ?? 0.0036) + levelScale * (diff.enemyFireChancePerLevel ?? 0)
     );
     const pressureDirector = this.game?.runPressureDirector;
-    const fireChance = (pressureDirector?.scaleEnemyFireChance?.(baseFireChance) ?? baseFireChance) *
+    const pressureTuning = getNormalWavePressureTuning(this.level);
+    const fireChance = (pressureDirector?.scaleEnemyFireChance?.(baseFireChance) ?? baseFireChance * pressureTuning.fireChanceMult) *
       diff.pressureScalar *
       this.getOpeningFireScalar() *
       (1 + tier * 0.1);
-    const enemySpeedMult = pressureDirector?.scaleEnemySpeed?.(1) || 1;
+    const enemySpeedMult = pressureDirector?.scaleEnemySpeed?.(1) || pressureTuning.enemySpeedMult || 1;
     const dt = delta * timeScale;
     const playerX = player ? player.x : 400;
     const playerY = player ? player.y : 300;
@@ -1249,6 +1261,7 @@ export class EnemyManager {
     const positions = this.getFormationPositions(formation, count);
     const threatPlan = this.createThreatActionPlan({ count, formation, tactic, config });
     tactic = this.applyThreatPressureCompensation(tactic, threatPlan);
+    tactic = this.applyNormalWavePressureToTactic(tactic);
     this.currentWaveTactic = tactic;
     const screenW = this.game.getWidth();
     const startLeft = Math.random() < 0.5;
@@ -1420,6 +1433,18 @@ export class EnemyManager {
       fireScalar,
       fireDelayMult,
       threatActions: [...ids]
+    };
+  }
+
+  applyNormalWavePressureToTactic(tactic = {}) {
+    const pressureTuning = getNormalWavePressureTuning(this.level);
+    return {
+      ...tactic,
+      fireScalar: (tactic.fireScalar || 1) * (pressureTuning.tacticFireMult || 1),
+      fireDelayMult: (tactic.fireDelayMult || 1) * (pressureTuning.tacticFireDelayMult || 1),
+      diveBias: (tactic.diveBias || 1) * (pressureTuning.diveBiasMult || 1),
+      entrySpeed: (tactic.entrySpeed || 1) * (pressureTuning.entrySpeedMult || 1),
+      normalWavePressureBand: pressureTuning.id
     };
   }
 
@@ -2363,16 +2388,18 @@ export class EnemyManager {
 
     // Logic to potentially inject a short score-risk challenge wave.
     if (this.level > 1 && hasUpcomingWave && this.currentWaveIndex > 0) {
-      const challengeWaveChance = BalanceConfig.difficulty.challengeWaveChance ?? 0.08;
+      const diff = BalanceConfig.difficulty;
+      const pressureTuning = getNormalWavePressureTuning(this.level);
+      const challengeWaveChance = (diff.challengeWaveChance ?? 0.08) * (pressureTuning.challengeChanceMult || 1);
       if (Math.random() < challengeWaveChance) {
         const wasChallenge = clearedWave && clearedWave.isChallenge;
         if (!wasChallenge) {
           console.log('[EnemyManager] injecting bonus drone challenge wave');
           this.waves.splice(this.currentWaveIndex + 1, 0, {
             type: 'bonus_challenge',
-            count: BalanceConfig.difficulty.challengeWaveCount || 24,
-            formation: 'GRID',
-            tactic: 'rush_feint',
+            count: (diff.challengeWaveCount || 24) + (Number(pressureTuning.challengeWaveCountBonus) || 0),
+            formation: this.level >= 50 ? 'CROSS_STREAM' : 'GRID',
+            tactic: this.level >= 50 ? 'overrun_turntable' : 'rush_feint',
             isChallenge: true
           });
           this.normalWavesTotal += 1;

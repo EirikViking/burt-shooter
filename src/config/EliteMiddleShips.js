@@ -1,3 +1,5 @@
+import { getNormalWavePressureTuning } from './BalanceConfig.js';
+
 export const ELITE_MIDDLE_SHIP_FULL_UNLOCK_LEVEL = 40;
 export const ELITE_MIDDLE_SHIP_ASSET_COUNT = 20;
 
@@ -842,10 +844,14 @@ export function planEliteMiddleShipSpawns(level, waveCount, random = Math.random
   }
 
   const maxActive = getEliteMiddleShipMaxActive(safeLevel);
+  const pressureTuning = getNormalWavePressureTuning(safeLevel);
+  const lateSecondSlotChance = Number.isFinite(Number(pressureTuning.eliteSecondSlotChance))
+    ? Number(pressureTuning.eliteSecondSlotChance)
+    : 0.7;
   const targetCount = safeLevel >= 40
-    ? Math.min(maxActive, 1 + (((typeof random === 'function' ? random() : Math.random()) < 0.7) ? 1 : 0))
+    ? Math.min(maxActive, 1 + (((typeof random === 'function' ? random() : Math.random()) < lateSecondSlotChance) ? 1 : 0))
     : safeLevel >= 30
-      ? Math.min(maxActive, 1 + (((typeof random === 'function' ? random() : Math.random()) < 0.35) ? 1 : 0))
+      ? Math.min(maxActive, 1 + (((typeof random === 'function' ? random() : Math.random()) < (pressureTuning.eliteSecondSlotChance || 0.35)) ? 1 : 0))
       : 1;
   const eligibleWaveIndices = [];
   for (let index = 1; index < totalWaves - 1; index += 1) eligibleWaveIndices.push(index);
