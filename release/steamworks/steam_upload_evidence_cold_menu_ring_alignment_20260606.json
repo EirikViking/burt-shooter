@@ -1,0 +1,78 @@
+{
+  "status": "uploaded",
+  "purpose": "private Steam test build after cold menu label rendering and player ring alignment fixes",
+  "generatedAt": "2026-06-06T20:38:42Z",
+  "branch": "codex/fix-dead-enemy-pixels-20260604",
+  "sourceCommit": "ce0be5cb506f4f0081ba20bb7604c40181948553",
+  "package": {
+    "version": "v2026-06-06_22-31-58",
+    "timestamp": "2026-06-06T20:31:58.093Z",
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226694144,
+      "sha256": "7418cd109c5578b32161a904b40730588748dc4e3379c85480bfb6c959b6bb7a",
+      "modifiedAt": "2026-06-06T20:35:22.218Z"
+    },
+    "fileCount": 336,
+    "totalBytes": 723704979,
+    "manifestHash": "0ebd401220508dc24dc8aa1b74b9e2c2d57e20c0a3d3795bf16f874f585fa815",
+    "manifestFileSha256": "1ed79a9c2d503fff5d1c7c736e5a0d74b4616340bb3a3bd8e68577979d946cf6",
+    "manifestPath": "release/steamworks/steam_payload_manifest.json"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23603737",
+    "setLive": "",
+    "leaderboardName": "nova_swarm_global_score_v2"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-06_22-31-58 cold menu labels and player ring alignment private Steam test",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "buildOutput": "..\\\\steam-build-output",
+    "setLive": "",
+    "setLiveEvidence": "\"SetLive\" \"\""
+  },
+  "steamUpload": {
+    "steamCmd": "C:\\\\steamcmd\\\\steamcmd.exe",
+    "steamCmdUser": "gaunziman",
+    "exitCode": 0,
+    "resultLine": "[2026-06-06 22:38:03]: Successfully finished AppID 4765070 build (BuildID 23603737)."
+  },
+  "commands": [
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm v2026-06-06_22-31-58 cold menu labels and player ring alignment private Steam test\" npm run steamworks:write-vdf",
+    "C:\\\\steamcmd\\\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\\\vibe-coding-e\\\\burt-shooter-cursor-hide-20260604\\\\release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  ],
+  "verification": {
+    "menuColdLabels": "passed; screenshots test-results/menu-cold-labels-2026-06-06T18-15-47-531Z/menu-cold-labels-contact-sheet.png",
+    "playerRingAlignment": "passed; screenshots test-results/player-ring-alignment-2026-06-06T18-16-17-879Z/player-ring-alignment-contact-sheet.png",
+    "releaseHardening": "passed 36/36; summary test-results/release-hardening/latest-summary.md",
+    "packageRuntime": "passed app=4765070 leaderboard=nova_swarm_global_score_v2; report test-results/steam-package-runtime-2026-06-06T20-36-24-959Z/report.json",
+    "packagedSmoke": "passed; report test-results/packaged-exe-smoke-2026-06-06T20-35-37-197Z/report.json",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23603737)."
+  },
+  "protectedBoundaries": {
+    "steamPipeUploadPerformed": true,
+    "steamStoreMetadataTouched": false,
+    "appVisibilityChanged": false,
+    "appIdChanged": false,
+    "depotIdsChanged": false,
+    "setLiveEmpty": true,
+    "liveBranchChanged": false,
+    "leaderboardRenamed": false,
+    "dummyScoresSubmitted": false,
+    "rc1TagsMoved": false,
+    "restoreBranchMoved": false,
+    "webDeployPerformed": false
+  },
+  "notes": [
+    "Private SteamPipe upload only; no live branch, RC tag, restore branch, Steamworks store metadata, AppID, depot ID, or leaderboard changes were made.",
+    "Existing Vite large chunk warning remains non-blocking."
+  ]
+}
