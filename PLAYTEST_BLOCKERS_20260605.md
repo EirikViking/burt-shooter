@@ -88,3 +88,48 @@
   - `npm run build` passed and produced build version `v2026-06-05_21-08-06`; `npm run check:steam-leaderboard-mock`, `npm run check:i18n`, `npm run check:i18n-ui`, `npm run package:steam:win:current`, and `npm run desktop:smoke:packaged` all passed against that build.
   - Superseding VDF inspected before upload: `AppID` `4765070`, depot `4765071`, `ContentRoot` `..\\desktop\\win-unpacked`, and `SetLive` exactly `""`.
   - SteamCMD upload completed successfully for AppID `4765070`; superseding private test BuildID: `23591701`.
+
+## Focused visual evidence correction after BuildID 23591701
+
+- Trigger: final visual report/screenshots still showed cramped #2/#1 center rows, a weak #2 celebration, powerup message stacking concerns, overlapping frames around result buttons, and a false low-score `New Steam best: #2` state.
+- Starting HEAD: `148b174796bcbf7d3ed2ad60779636813030afe2` on `codex/fix-dead-enemy-pixels-20260604`; branch tracked `origin/codex/fix-dead-enemy-pixels-20260604` at `0 0`.
+- Result screen correction:
+  - #2/#3 final result title now uses `Steam Global Leaderboard #2` / rank-specific global leaderboard copy, not `Top Three`.
+  - `NUMBER ONE` remains for #1.
+  - Score, run summary, rank XP, next ship unlock, local rank, Steam result, and next goal are laid out as separate rows/cards.
+  - The old outer ceremony frame is not drawn over the final rows/buttons; the rotating/pulsing `One More Run` button orbit remains intact.
+  - Low-score keep-best path now reports `Steam: Best unchanged` and `Best: 29,481 | This run: 6,211` instead of a false new Steam-best celebration.
+- Gameplay message/powerup correction:
+  - Powerup pickup messages route through the toast queue.
+  - Bomb feedback is promoted as a high-priority center message and remains visible during the stress screenshot.
+  - Combo display and score popups are included in overlap debug state and kept out of the center toast stack.
+- Dead-pixel confirmation:
+  - `npm run check:release-hardening` passed 33/33 and included both `check:dead-enemy-cleanup` and `check:dead-enemy-playthrough`.
+  - Latest dead enemy report: `test-results/dead-enemy-playthrough-2026-06-05T23-06-12-046Z/report.json`.
+  - The report audited levels `8`, `9`, `10`, `11`, and `12`; final audit ended with `staleVisibleCount: 0` and `orphanedVisibleCount: 0`.
+  - Synthetic proof forced one stale tracked inactive enemy visual and one orphaned enemy visual, then cleanup returned both counts to zero.
+- Final visual screenshots regenerated after `npm run build` produced `v2026-06-06_01-14-32`:
+  - `test-results/result-screen-flow-2026-06-05T23-17-12-231Z/good-run-status-rank2.png`
+  - `test-results/result-screen-flow-2026-06-05T23-17-12-231Z/good-run-rank2.png`
+  - `test-results/result-screen-flow-2026-06-05T23-17-12-231Z/great-run-status-number1.png`
+  - `test-results/result-screen-flow-2026-06-05T23-17-12-231Z/great-run-number1.png`
+  - `test-results/result-screen-flow-2026-06-05T23-17-12-231Z/low-score-best-unchanged.png`
+  - `test-results/powerup-effects-2026-06-05T23-17-12-278Z/powerup-effects-final.png`
+  - `test-results/gameplay-message-overlap-2026-06-05T23-17-14-866Z/gameplay-message-overlap-final.png`
+- Final required checks:
+  - `npm run check:release-hardening` passed 33/33 in 475s; summary: `test-results/release-hardening/latest-summary.md`.
+  - `npm run build` passed; version `v2026-06-06_01-14-32`.
+  - `npm run check:steam-leaderboard-mock` passed; report: `test-results/steam-leaderboard-mock-2026-06-05T23-15-30-992Z/report.json`.
+  - `npm run check:i18n` passed.
+  - `npm run check:i18n-ui` passed; report directory: `test-results/i18n-ui-2026-06-05T23-15-33-006Z/`.
+  - `npm run check:result-screen-flow` passed; report: `test-results/result-screen-flow-2026-06-05T23-17-12-231Z/report.json`.
+  - `npm run check:powerup-effects` passed 22/22 types; report: `test-results/powerup-effects-2026-06-05T23-17-12-278Z/report.json`.
+  - `npm run check:gameplay-message-overlap` passed with 48 samples; report: `test-results/gameplay-message-overlap-2026-06-05T23-17-14-866Z/report.json`.
+  - `npm run check:release-line` passed immediately before packaging/upload.
+  - `npm run package:steam:win:current` passed; runtime report: `test-results/steam-package-runtime-2026-06-05T23-24-25-666Z/report.json`.
+  - `npm run desktop:smoke:packaged` passed; report: `test-results/packaged-exe-smoke-2026-06-05T23-25-01-747Z/report.json`.
+- Superseding private Steam upload:
+  - Payload manifest regenerated with 336 files and 723519562 bytes; executable SHA-256 `39aff37924d96ff38bd55924348b5c331afc621b782476e5dc18368cd1b830d8`.
+  - VDF inspected before upload: `AppID` `4765070`, depot `4765071`, `ContentRoot` `..\\desktop\\win-unpacked`, and `SetLive` exactly `""`.
+  - SteamCMD upload completed successfully for AppID `4765070`; superseding private test BuildID: `23594722`.
+  - Evidence JSON: `release/steamworks/steam_upload_evidence_visual_correction_20260605.json`.

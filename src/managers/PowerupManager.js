@@ -265,6 +265,9 @@ class Powerup {
 
     // Create expanding ring effect
     const ring = new PIXI.Graphics();
+    ring.name = `powerup-pickup-ring-${this.type}`;
+    ring.__novaPickupEffect = true;
+    ring.__novaPowerupType = this.type;
     ring.x = this.x;
     ring.y = this.y;
     ring.alpha = 0.8;
@@ -339,13 +342,31 @@ class Powerup {
       magnet: 'MAGNET FIELD: PULLS PICKUPS',
       drones: 'SIDE DRONES!',
       shockwave: 'SHOCKWAVE!',
+      bomb: 'BOMB',
       chain_lightning: 'CHAIN LIGHTNING!',
       orbital_strike: 'ORBITAL STRIKE!',
       vampire: 'VAMPIRE DRAIN!'
     };
 
     const { width, height } = scene.game.app.screen;
-    const text = createText(translateText(messages[this.type] || 'POWERUP!'), {
+    const message = translateText(messages[this.type] || 'POWERUP!');
+    if (typeof scene.enqueueToast === 'function') {
+      scene.enqueueToast(message, {
+        fontSize: this.type === 'bomb' ? 30 : 24,
+        fill: this.color,
+        stroke: '#000000',
+        strokeThickness: this.type === 'bomb' ? 5 : 4,
+        slot: 'center',
+        type: 'powerup',
+        priority: this.type === 'bomb' ? 8 : 2,
+        duration: this.type === 'bomb' ? 2100 : 1500,
+        y: height * 0.34,
+        maxWidth: width * 0.62
+      });
+      return;
+    }
+
+    const text = createText(message, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 20,
       fill: this.color,

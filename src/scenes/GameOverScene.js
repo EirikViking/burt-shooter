@@ -94,6 +94,10 @@ export class GameOverScene {
     this.levelText = null;
     this.runSectionBg = null;
     this.unlockText = null;
+    this.rankProgressBg = null;
+    this.rankProgressText = null;
+    this.shipUnlockProgressBg = null;
+    this.shipUnlockProgressText = null;
     this.newlyUnlockedShips = [];
     this.shipUnlockReveal = null;
     this.shipUnlockRevealGlow = null;
@@ -392,6 +396,48 @@ export class GameOverScene {
     });
     this.unlockText.anchor.set(0.5);
     this.container.addChild(this.unlockText);
+
+    this.rankProgressBg = new PIXI.Graphics();
+    this.rankProgressBg.zIndex = 1;
+    this.container.addChild(this.rankProgressBg);
+
+    this.rankProgressText = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 13 : 16,
+      fontWeight: 'bold',
+      fill: '#ffeeb0',
+      stroke: '#031323',
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.62, layout),
+      lineHeight: Math.round((layout.isMobile ? 13 : 16) * 1.28)
+    });
+    this.rankProgressText.anchor.set(0.5);
+    this.rankProgressText.visible = false;
+    this.rankProgressText.zIndex = 2;
+    this.container.addChild(this.rankProgressText);
+
+    this.shipUnlockProgressBg = new PIXI.Graphics();
+    this.shipUnlockProgressBg.zIndex = 1;
+    this.container.addChild(this.shipUnlockProgressBg);
+
+    this.shipUnlockProgressText = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 13 : 16,
+      fontWeight: 'bold',
+      fill: '#9cfbff',
+      stroke: '#031323',
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.64, layout),
+      lineHeight: Math.round((layout.isMobile ? 13 : 16) * 1.28)
+    });
+    this.shipUnlockProgressText.anchor.set(0.5);
+    this.shipUnlockProgressText.visible = false;
+    this.shipUnlockProgressText.zIndex = 2;
+    this.container.addChild(this.shipUnlockProgressText);
 
     this.createShipUnlockReveal(layout);
 
@@ -958,24 +1004,25 @@ export class GameOverScene {
   }
 
   createRunbackProgressSummary(currentProgress = this.currentProgressForResult || {}) {
+    return [
+      this.createRunbackRankProgressSummary(currentProgress),
+      this.createRunbackShipProgressSummary(currentProgress)
+    ].filter(Boolean).join('\n');
+  }
+
+  createRunbackRankProgressSummary(currentProgress = this.currentProgressForResult || {}) {
     const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
-    const shipLines = this.createShipUnlockProgressLines(currentProgress, {
-      newlyUnlocked: this.newlyUnlockedShips || []
-    });
-    const rankLines = [];
     if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
-      rankLines.push(
-        `Next rank: ${getRankTitle(MAX_RANK_INDEX)}`,
-        'XP to next: 0'
-      );
-    } else {
-      const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1));
-      rankLines.push(
-        `Next rank: ${nextTitle}`,
-        `XP to next: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`
-      );
+      return `${translateText('NEXT RANK')}: ${getRankTitle(MAX_RANK_INDEX)}  |  ${translateText('XP TO NEXT')}: 0`;
     }
-    return [...rankLines, ...shipLines].filter(Boolean).join('\n');
+    const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1));
+    return `${translateText('NEXT RANK')}: ${nextTitle}  |  ${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
+  }
+
+  createRunbackShipProgressSummary(currentProgress = this.currentProgressForResult || {}) {
+    return this.createShipUnlockProgressLines(currentProgress, {
+      newlyUnlocked: this.newlyUnlockedShips || []
+    }).filter(Boolean).join('\n');
   }
 
   getRunbackProgressText() {
@@ -998,6 +1045,8 @@ export class GameOverScene {
       title: this.getRunbackTitle(),
       score: this.getScoreResultText(),
       runSummary: this.getRunbackRunSummaryText(),
+      rankProgress: this.createRunbackRankProgressSummary(this.currentProgressForResult || {}),
+      shipProgress: this.createRunbackShipProgressSummary(this.currentProgressForResult || {}),
       progress: this.getRunbackProgressText(),
       leaderboard: this.getRunbackLeaderboardText(),
       nextGoal: this.getRunbackNextGoalText()
@@ -1018,6 +1067,8 @@ export class GameOverScene {
       this.scoreText.visible = false;
       if (this.levelText) this.levelText.visible = false;
       if (this.unlockText) this.unlockText.visible = false;
+      if (this.rankProgressText) this.rankProgressText.visible = false;
+      if (this.shipUnlockProgressText) this.shipUnlockProgressText.visible = false;
       if (this.shipUnlockReveal) this.shipUnlockReveal.visible = false;
       if (this.nextGoalGroup) this.nextGoalGroup.visible = false;
       if (this.comment) {
@@ -1048,7 +1099,15 @@ export class GameOverScene {
     }
     if (this.unlockText) {
       this.unlockText.text = finalLines.progress;
-      this.unlockText.visible = true;
+      this.unlockText.visible = false;
+    }
+    if (this.rankProgressText) {
+      this.rankProgressText.text = finalLines.rankProgress;
+      this.rankProgressText.visible = Boolean(finalLines.rankProgress);
+    }
+    if (this.shipUnlockProgressText) {
+      this.shipUnlockProgressText.text = finalLines.shipProgress;
+      this.shipUnlockProgressText.visible = Boolean(finalLines.shipProgress);
     }
     if (this.shipUnlockReveal) this.shipUnlockReveal.visible = false;
     if (this.comment) {
@@ -1096,7 +1155,7 @@ export class GameOverScene {
   getCeremonyTitle() {
     if (this.game?.runSummary?.runCleared) return 'RUN CLEAR';
     if (this.globalPlacementTier === 'number1') return 'NUMBER ONE';
-    if (this.globalPlacementTier === 'top3') return 'TOP THREE';
+    if (this.globalPlacementTier === 'top3') return this.getSteamGlobalLeaderboardTitle();
     if (this.globalPlacementTier === 'global') return 'GLOBAL SLOT SECURED';
     if (this.globalPlacementTier === 'near_global') return 'GLOBAL BOARD IN SIGHT';
     if (this.localQualified) {
@@ -1278,6 +1337,8 @@ export class GameOverScene {
     const scoreSize = getResponsiveFontSize(layout, 'score');
     const levelSize = layout.isMobile ? 13 : 17;
     const unlockSize = layout.isMobile ? 15 : 18;
+    const rankProgressSize = layout.isMobile ? 13 : 16;
+    const shipProgressSize = layout.isMobile ? 13 : 16;
     const bodySize = getResponsiveFontSize(layout, 'body');
     const leaderboardStatusSize = layout.isMobile ? 13 : 16;
     const promptSize = layout.isMobile ? 18 : 20;
@@ -1286,6 +1347,8 @@ export class GameOverScene {
     const scoreVisible = this.scoreText?.visible !== false;
     const levelVisible = this.levelText?.visible !== false;
     const unlockVisible = this.unlockText?.visible !== false;
+    const rankProgressVisible = this.rankProgressText?.visible !== false;
+    const shipProgressVisible = this.shipUnlockProgressText?.visible !== false;
     const nextGoalVisible = Boolean(this.nextGoalGroup?.visible);
     const commentVisible = this.comment?.visible !== false;
     const leaderboardStatusVisible = this.leaderboardStatusText?.visible !== false;
@@ -1308,6 +1371,18 @@ export class GameOverScene {
     this.unlockText.style.wordWrap = true;
     this.unlockText.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
     this.unlockText.style.lineHeight = Math.round(unlockSize * 1.25);
+    if (this.rankProgressText) {
+      this.rankProgressText.style.fontSize = rankProgressSize;
+      this.rankProgressText.style.wordWrap = true;
+      this.rankProgressText.style.wordWrapWidth = clampTextWidth(width * (layout.isMobile ? 0.82 : 0.54), layout);
+      this.rankProgressText.style.lineHeight = Math.round(rankProgressSize * 1.28);
+    }
+    if (this.shipUnlockProgressText) {
+      this.shipUnlockProgressText.style.fontSize = shipProgressSize;
+      this.shipUnlockProgressText.style.wordWrap = true;
+      this.shipUnlockProgressText.style.wordWrapWidth = clampTextWidth(width * (layout.isMobile ? 0.84 : 0.56), layout);
+      this.shipUnlockProgressText.style.lineHeight = Math.round(shipProgressSize * 1.28);
+    }
     if (this.nextGoalText) {
       this.nextGoalText.style.fontSize = layout.isMobile ? 14 : 17;
       this.nextGoalText.style.wordWrap = true;
@@ -1339,6 +1414,8 @@ export class GameOverScene {
       this.scoreText,
       this.levelText,
       this.unlockText,
+      this.rankProgressText,
+      this.shipUnlockProgressText,
       this.nextGoalText,
       this.comment,
       this.leaderboardStatusText,
@@ -1354,13 +1431,15 @@ export class GameOverScene {
     // Use measured text heights so extra unlock/rank lines cannot collide.
     const titleHeight = Math.max(titleSize * 1.2, this.title.height || 0);
     const scoreHeight = scoreVisible ? Math.max(scoreSize * 1.2, this.scoreText.height || 0) : 0;
-    const levelHeight = levelVisible ? Math.max(levelSize * 1.2, this.levelText.height || 0) : 0;
+    const levelHeight = levelVisible ? Math.max(layout.isMobile ? 52 : 62, levelSize * 1.2, this.levelText.height || 0) : 0;
     const unlockRevealVisible = Boolean(this.shipUnlockReveal?.visible);
     const unlockRevealHeight = unlockRevealVisible ? (layout.isMobile ? 48 : 62) : 0;
     const unlockHeight = unlockVisible ? Math.max(unlockSize * 1.42, this.unlockText.height || 0) : 0;
+    const rankProgressHeight = rankProgressVisible ? Math.max(layout.isMobile ? 46 : 52, this.rankProgressText.height || 0) : 0;
+    const shipProgressHeight = shipProgressVisible ? Math.max(layout.isMobile ? 50 : 58, this.shipUnlockProgressText.height || 0) : 0;
     const nextGoalHeight = nextGoalVisible ? Math.max(this.nextGoalGroup.height || 0, layout.isMobile ? 32 : 38) : 0;
     const commentHeight = commentVisible ? Math.max(bodySize * 1.4, this.comment.height || 0) : 0;
-    const leaderboardStatusHeight = leaderboardStatusVisible ? Math.max(leaderboardStatusSize * 1.5, this.leaderboardStatusText.height || 0) : 0;
+    const leaderboardStatusHeight = leaderboardStatusVisible ? Math.max(layout.isMobile ? 52 : 62, leaderboardStatusSize * 1.5, this.leaderboardStatusText.height || 0) : 0;
     const promptHeight = promptVisible ? Math.max(promptSize * 1.2, this.promptText.height || 0) : 0;
     const nameHeight = nameVisible ? Math.max(nameSize * 1.2, this.nameDisplay.height || 0) : 0;
     const leaderboardVisible = this.shouldShowLeaderboardButton();
@@ -1374,7 +1453,7 @@ export class GameOverScene {
       : 0;
     const hangarHeight = hangarVisible && !secondaryButtonsShareRow ? rawHangarHeight : 0;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + nameHeight + spacing * (leaderboardVisible || hangarVisible ? 12 : 9) + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + nameHeight + spacing * (leaderboardVisible || hangarVisible ? 12 : 9) + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -1384,7 +1463,7 @@ export class GameOverScene {
     let stackY = startY;
     const elementHeight = (element, fallback = spacing) => Math.max(1, element?.height || element?.style?.fontSize || fallback);
     const placeCenteredElement = (element, spacingAfter = spacing, fallback = spacing) => {
-      const measuredHeight = elementHeight(element, fallback);
+      const measuredHeight = Math.max(elementHeight(element, fallback), fallback);
       const y = stackY + measuredHeight / 2;
       stackY += measuredHeight + spacingAfter;
       return y;
@@ -1401,9 +1480,12 @@ export class GameOverScene {
       this.title.style.fontSize = fittedSize;
       this.title.style.lineHeight = Math.round(fittedSize * 1.08);
     }
-    const titleSpacingAfter = this.state === 'runback' && this.globalPlacement?.qualified
-      ? (layout.isMobile ? 14 : 26)
-      : spacing * 0.5;
+    const holdStage = this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting';
+    const titleSpacingAfter = holdStage
+      ? (layout.isMobile ? 28 : 42)
+      : this.state === 'runback' && this.globalPlacement?.qualified
+        ? (layout.isMobile ? 14 : 24)
+        : spacing * 0.5;
     this.title.y = placeCenteredElement(this.title, titleSpacingAfter, titleHeight);
 
     if (scoreVisible) {
@@ -1425,6 +1507,16 @@ export class GameOverScene {
       this.unlockText.y = placeCenteredElement(this.unlockText, this.state === 'runback' ? spacing * 1.35 : spacing, unlockHeight);
     }
 
+    if (rankProgressVisible) {
+      this.rankProgressText.x = width / 2;
+      this.rankProgressText.y = placeCenteredElement(this.rankProgressText, layout.isMobile ? 14 : 18, rankProgressHeight);
+    }
+
+    if (shipProgressVisible) {
+      this.shipUnlockProgressText.x = width / 2;
+      this.shipUnlockProgressText.y = placeCenteredElement(this.shipUnlockProgressText, this.state === 'runback' ? (layout.isMobile ? 14 : 18) : spacing, shipProgressHeight);
+    }
+
     if (unlockRevealVisible) {
       this.shipUnlockReveal.x = width / 2;
       this.shipUnlockReveal.y = placeCenteredElement(this.shipUnlockReveal, spacing * 0.5, unlockRevealHeight);
@@ -1433,7 +1525,7 @@ export class GameOverScene {
     if (this.state === 'runback') {
       if (commentVisible) {
         this.comment.x = width / 2;
-        this.comment.y = placeCenteredElement(this.comment, spacing * 1.05, commentHeight);
+        this.comment.y = placeCenteredElement(this.comment, layout.isMobile ? 14 : 18, commentHeight);
       }
 
       if (nextGoalVisible) {
@@ -1506,18 +1598,22 @@ export class GameOverScene {
     this.instructions.x = width / 2;
     this.instructions.y = height - safeMargin.bottom - (layout.isMobile ? 32 : 40);
     this.drawResultSectionCard(this.runSectionBg, this.levelText, layout, 0x37f5ff);
+    this.drawResultSectionCard(this.rankProgressBg, this.rankProgressText, layout, 0xffd45c, { minHeight: layout.isMobile ? 44 : 50, widthRatio: layout.isMobile ? 0.88 : 0.56 });
+    this.drawResultSectionCard(this.shipUnlockProgressBg, this.shipUnlockProgressText, layout, 0x37f5ff, { minHeight: layout.isMobile ? 48 : 56, widthRatio: layout.isMobile ? 0.9 : 0.58 });
     this.drawResultSectionCard(this.leaderboardStatusBg, this.leaderboardStatusText, layout, 0xff55d9);
   }
 
-  drawResultSectionCard(graphics, textNode, layout, accent = 0x37f5ff) {
+  drawResultSectionCard(graphics, textNode, layout, accent = 0x37f5ff, options = {}) {
     if (!graphics || !textNode || textNode.visible === false) {
       graphics?.clear?.();
       return;
     }
     const padX = layout.isMobile ? 20 : 28;
     const padY = layout.isMobile ? 10 : 12;
-    const width = Math.min(layout.width * (layout.isMobile ? 0.88 : 0.58), Math.max(260, textNode.width + padX * 2));
-    const height = Math.max(layout.isMobile ? 52 : 62, textNode.height + padY * 2);
+    const widthRatio = Number.isFinite(options.widthRatio) ? options.widthRatio : (layout.isMobile ? 0.88 : 0.58);
+    const minHeight = Number.isFinite(options.minHeight) ? options.minHeight : (layout.isMobile ? 52 : 62);
+    const width = Math.min(layout.width * widthRatio, Math.max(260, textNode.width + padX * 2));
+    const height = Math.max(minHeight, textNode.height + padY * 2);
     const x = textNode.x - width / 2;
     const y = textNode.y - height / 2;
     graphics.clear();
@@ -1567,8 +1663,8 @@ export class GameOverScene {
 
     this.retryButton.addChild(
       this.retryButtonGlow,
-      this.retryButtonBg,
       this.retryButtonEnergy,
+      this.retryButtonBg,
       this.retryButtonSheen,
       this.retryButtonLabel,
       this.retryButtonHint
@@ -2151,10 +2247,17 @@ export class GameOverScene {
   }
 
   layoutCeremonyVisuals(width = this.game.app.screen.width, height = this.game.app.screen.height, layout = getCurrentLayout()) {
+    const holdStage = this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting';
+    const runbackStage = this.state === 'runback';
+    const resultCelebrationStage = this.state === 'runback' || holdStage;
     const panelWidth = Math.min(width * (layout.isMobile ? 0.92 : 0.58), layout.isMobile ? 560 : 760);
-    const panelHeight = Math.min(height * (layout.isMobile ? 0.72 : 0.64), layout.isMobile ? 560 : 590);
+    const panelHeight = runbackStage
+      ? Math.min(height * (layout.isMobile ? 0.5 : 0.46), layout.isMobile ? 420 : 430)
+      : Math.min(height * (layout.isMobile ? 0.72 : 0.64), layout.isMobile ? 560 : 590);
     const x = (width - panelWidth) / 2;
-    const y = Math.max(layout.safeArea?.top || 0, (height - panelHeight) * (layout.isMobile ? 0.34 : 0.4));
+    const y = runbackStage
+      ? Math.max(layout.safeArea?.top || 0, height * (layout.isMobile ? 0.15 : 0.14))
+      : Math.max(layout.safeArea?.top || 0, (height - panelHeight) * (layout.isMobile ? 0.34 : 0.4));
     const accent = this.globalPlacement?.numberOne
       ? 0xffe86a
       : this.globalPlacement?.top3
@@ -2168,18 +2271,24 @@ export class GameOverScene {
     if (this.ceremonyGlow) {
       this.ceremonyGlow.clear();
       this.ceremonyGlow.ellipse(width / 2, y + panelHeight * 0.5, panelWidth * 0.72, panelHeight * 0.56);
-      this.ceremonyGlow.fill({ color: accent, alpha: this.globalQualified ? (this.globalPlacement?.numberOne ? 0.24 : 0.18) : 0.08 });
+      const celebrationAlpha = holdStage
+        ? (this.globalPlacement?.numberOne ? 0.26 : 0.2)
+        : (this.globalPlacement?.numberOne ? 0.18 : 0.14);
+      this.ceremonyGlow.fill({ color: accent, alpha: this.globalQualified ? celebrationAlpha : 0.08 });
     }
 
     if (this.ceremonyBurst) {
       this.ceremonyBurst.clear();
-      const celebration = this.state === 'runback' && this.globalPlacement?.qualified;
+      const celebration = resultCelebrationStage && this.globalPlacement?.qualified;
       if (celebration) {
         const centerX = width / 2;
-        const centerY = y + panelHeight * 0.42;
-        const rayCount = this.globalPlacement?.numberOne ? 30 : 22;
-        const inner = panelWidth * (this.globalPlacement?.numberOne ? 0.16 : 0.12);
-        const outer = panelWidth * (this.globalPlacement?.numberOne ? 0.78 : 0.64);
+        const centerY = y + panelHeight * (holdStage ? 0.48 : 0.56);
+        const rayCount = this.globalPlacement?.numberOne ? (holdStage ? 34 : 28) : (holdStage ? 28 : 22);
+        const inner = panelWidth * (this.globalPlacement?.numberOne ? 0.18 : 0.13);
+        const outer = panelWidth * (this.globalPlacement?.numberOne ? 0.78 : 0.62);
+        const rayAlpha = holdStage
+          ? (this.globalPlacement?.numberOne ? 0.14 : 0.1)
+          : (this.globalPlacement?.numberOne ? 0.065 : 0.045);
         for (let i = 0; i < rayCount; i += 1) {
           const a0 = (Math.PI * 2 * i) / rayCount + (this.ceremonyPulse || 0) * 0.004;
           const a1 = a0 + Math.PI / rayCount * 0.72;
@@ -2187,39 +2296,47 @@ export class GameOverScene {
           this.ceremonyBurst.lineTo(centerX + Math.cos(a0) * outer, centerY + Math.sin(a0) * outer);
           this.ceremonyBurst.lineTo(centerX + Math.cos(a1) * (outer * 0.72), centerY + Math.sin(a1) * (outer * 0.72));
           this.ceremonyBurst.closePath();
-          this.ceremonyBurst.fill({ color: i % 2 ? 0xfff08a : 0x37f5ff, alpha: this.globalPlacement?.numberOne ? 0.11 : 0.075 });
+          this.ceremonyBurst.fill({ color: i % 2 ? 0xfff08a : 0x37f5ff, alpha: rayAlpha });
         }
         this.ceremonyBurst.circle(centerX, centerY, panelWidth * (this.globalPlacement?.numberOne ? 0.28 : 0.22));
-        this.ceremonyBurst.stroke({ color: accent, width: this.globalPlacement?.numberOne ? 7 : 5, alpha: 0.24 });
+        this.ceremonyBurst.stroke({ color: accent, width: this.globalPlacement?.numberOne ? 7 : 5, alpha: holdStage ? 0.26 : 0.12 });
         this.ceremonyBurst.circle(centerX, centerY, panelWidth * (this.globalPlacement?.numberOne ? 0.36 : 0.3));
-        this.ceremonyBurst.stroke({ color: 0xffffff, width: 2, alpha: this.globalPlacement?.numberOne ? 0.2 : 0.14 });
+        this.ceremonyBurst.stroke({ color: 0xffffff, width: 2, alpha: holdStage ? (this.globalPlacement?.numberOne ? 0.22 : 0.16) : 0.08 });
       }
     }
 
     if (this.ceremonyFrame) {
       this.ceremonyFrame.clear();
-      this.ceremonyFrame.roundRect(x, y, panelWidth, panelHeight, 18);
-      this.ceremonyFrame.fill({ color: 0x020914, alpha: 0.52 });
-      this.ceremonyFrame.roundRect(x, y, panelWidth, panelHeight, 18);
-      this.ceremonyFrame.stroke({ color: accent, alpha: 0.82, width: this.globalQualified ? 3 : 2 });
-      if (!(this.state === 'runback' && this.globalPlacement?.qualified)) {
+      if (runbackStage) {
+        // Final result cards and the side medal carry the structure; an outer border can cross rows/buttons.
+      } else {
+        this.ceremonyFrame.roundRect(x, y, panelWidth, panelHeight, 18);
+        this.ceremonyFrame.fill({ color: 0x020914, alpha: 0.52 });
+        this.ceremonyFrame.roundRect(x, y, panelWidth, panelHeight, 18);
+        this.ceremonyFrame.stroke({ color: accent, alpha: 0.82, width: this.globalQualified ? 3 : 2 });
         this.ceremonyFrame.rect(x + 20, y + 12, panelWidth - 40, 3);
         this.ceremonyFrame.fill({ color: accent, alpha: 0.54 });
+        this.ceremonyFrame.rect(x + 20, y + panelHeight - 15, panelWidth - 40, 2);
+        this.ceremonyFrame.fill({ color: accent, alpha: 0.38 });
       }
-      this.ceremonyFrame.rect(x + 20, y + panelHeight - 15, panelWidth - 40, 2);
-      this.ceremonyFrame.fill({ color: accent, alpha: 0.38 });
     }
 
     if (this.ceremonyMedal && this.ceremonyMedalBg && this.ceremonyMedalText && this.ceremonyMedalSubtext) {
       const placement = this.globalPlacement;
-      const celebration = this.state === 'runback' && placement?.qualified && (placement.numberOne || placement.top3);
+      const celebration = resultCelebrationStage && placement?.qualified && (placement.numberOne || placement.top3);
       this.ceremonyMedal.visible = Boolean(celebration);
       if (celebration) {
         const badgeRadius = layout.isMobile
           ? (placement.numberOne ? 72 : 60)
-          : (placement.numberOne ? 105 : 82);
+          : (placement.numberOne ? (holdStage ? 118 : 96) : (holdStage ? 96 : 78));
         const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
-        this.ceremonyMedal.position.set(width / 2, y + panelHeight * (layout.isMobile ? 0.22 : 0.25));
+        const badgeX = layout.isMobile
+          ? width / 2
+          : Math.min(width - badgeRadius - 28, x + panelWidth + badgeRadius + 28);
+        const badgeY = layout.isMobile
+          ? y + panelHeight * (holdStage ? 0.74 : 0.24)
+          : y + panelHeight * (holdStage ? 0.48 : 0.44);
+        this.ceremonyMedal.position.set(badgeX, badgeY);
         this.ceremonyMedal.scale.set(1 + pulse * (placement.numberOne ? 0.035 : 0.022));
         this.ceremonyMedalBg.clear();
         this.ceremonyMedalBg.circle(0, 0, badgeRadius + 14);
@@ -2235,7 +2352,7 @@ export class GameOverScene {
           ? (placement.numberOne ? 66 : 54)
           : (placement.numberOne ? 104 : 78);
         this.ceremonyMedalText.y = placement.numberOne ? -5 : -3;
-        this.ceremonyMedalSubtext.text = placement.numberOne ? 'STEAM BEST' : 'STEAM TOP 3';
+        this.ceremonyMedalSubtext.text = translateText('STEAM BEST');
         this.ceremonyMedalSubtext.style.fontSize = layout.isMobile ? 14 : 18;
         this.ceremonyMedalSubtext.y = badgeRadius * 0.46;
       } else {
@@ -3276,8 +3393,15 @@ export class GameOverScene {
 
   getRunbackTitle() {
     if (this.globalPlacement?.qualified && this.globalPlacement?.numberOne) return 'NUMBER ONE';
-    if (this.globalPlacement?.qualified && this.globalPlacement?.top3) return 'TOP THREE';
+    if (this.globalPlacement?.qualified && this.globalPlacement?.top3) return this.getSteamGlobalLeaderboardTitle();
     return 'ONE MORE RUN?';
+  }
+
+  getSteamGlobalLeaderboardTitle() {
+    const rank = getValidPlacementNumber(this.globalPlacement?.placement);
+    return rank
+      ? translateText('Steam Global Leaderboard #{rank}', { rank })
+      : translateText('Steam Global Leaderboard');
   }
 
   getRunbackComment() {

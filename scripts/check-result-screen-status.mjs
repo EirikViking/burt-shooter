@@ -27,15 +27,17 @@ assert.ok(gameOver.includes('getFinalResultScreenLines'), 'One More Run final te
 assert.ok(adapter.includes('steamPreviousBestScore'), 'Leaderboard adapter must propagate Steam previous-best score');
 assert.ok(adapter.includes('steamBestUnchanged'), 'Leaderboard adapter must propagate Steam best-unchanged status');
 assert.ok(steamProvider.includes('previousBestScore'), 'Steam provider must compare submissions against previous best');
-assert.ok(steamProvider.includes('bestUnchanged: previousBestScore > 0 && score <= previousBestScore'), 'Steam provider must expose keep-best unchanged result');
+assert.ok(steamProvider.includes('retainedBestScore'), 'Steam provider must preserve the retained keep-best score after upload');
+assert.ok(steamProvider.includes('scoreChangedFalse'), 'Steam provider must respect Steam keep-best scoreChanged=false responses');
+assert.ok(steamProvider.includes('bestUnchanged ? retainedBestScore : previousBestScore'), 'Steam provider must expose the retained best score for keep-best unchanged results');
 
 assert.ok(steamMockCheck.includes('Low Steam score should be marked best unchanged'), 'Steam mock must cover low-score best-unchanged result');
 assert.ok(steamMockCheck.includes('Low Steam score reused stale or misleading rank copy'), 'Steam mock must cover stale-rank protection');
 assert.ok(steamMockCheck.includes('Local: Not in local top 20'), 'Steam mock must cover outside-visible local rank copy');
-assert.ok(steamMockCheck.includes('Steam rank 3 should be treated as Top Three'), 'Steam mock must keep current top-three rank coverage');
+assert.ok(steamMockCheck.includes('Steam rank 3 should get rank-specific global leaderboard celebration copy'), 'Steam mock must keep current top-three rank coverage without visible Top Three heading copy');
 assert.ok(steamMockCheck.includes("lastLeaderboardResult?.steamStatus === 'submitted'"), 'Steam mock must still prove autosubmit is called');
 assert.ok(resultScreenFlowCheck.includes('score: 25286'), 'Result flow check must cover rank-2 good run');
-assert.ok(resultScreenFlowCheck.includes('previous Steam best: 35,923'), 'Result flow check must cover low-score best-unchanged run');
+assert.ok(resultScreenFlowCheck.includes('previous Steam best: 29,481'), 'Result flow check must cover low-score best-unchanged run');
 assert.ok(resultScreenFlowCheck.includes('assertNoOverlaps'), 'Result flow check must assert first-render and relayout bounding boxes');
 assert.ok(resultScreenFlowCheck.includes('assertNoRetainedHoldOrSummaryText'), 'Result flow check must assert old hold/status/full-summary text cleanup');
 assert.ok(gameOverMotivationCheck.includes('lineCount(gameOverState.gameOver?.leaderboardStatus) <= 4'), 'One More Run check must keep a result-screen text-density guard');

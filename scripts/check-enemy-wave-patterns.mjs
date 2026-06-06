@@ -114,6 +114,7 @@ try {
     }
     player.invulnerable = true;
     player.invulnerableTime = 60000;
+    game.contentDirector?.startRun?.({ seed: 'enemy-wave-patterns-release-hardening-20260605' });
     const samples = [];
 
     for (let level = 1; level <= 16; level += 1) {

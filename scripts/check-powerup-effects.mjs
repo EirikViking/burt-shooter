@@ -95,6 +95,31 @@ function findChrome() {
   ].filter(Boolean).find((candidate) => existsSync(candidate));
 }
 
+function overlap(a, b, margin = 8) {
+  if (!a || !b) return false;
+  return !(
+    a.x + a.width + margin <= b.x ||
+    b.x + b.width + margin <= a.x ||
+    a.y + a.height + margin <= b.y ||
+    b.y + b.height + margin <= a.y
+  );
+}
+
+function assertNoMessageOverlap(state, label) {
+  const surfaces = [
+    ...(state.toast?.active || []),
+    state.toast?.comboDisplay,
+    ...(state.toast?.scorePopups || [])
+  ].filter(item => item?.bounds);
+  for (let i = 0; i < surfaces.length; i += 1) {
+    for (let j = i + 1; j < surfaces.length; j += 1) {
+      if (overlap(surfaces[i].bounds, surfaces[j].bounds)) {
+        throw new Error(`${label}: gameplay message overlap ${JSON.stringify({ a: surfaces[i], b: surfaces[j] }, null, 2)}`);
+      }
+    }
+  }
+}
+
 mkdirSync(outputDir, { recursive: true });
 let server = null;
 let browser = null;
@@ -198,9 +223,13 @@ try {
       pierce: Boolean(player.bulletPierce)
     });
     const collect = (type) => {
+      const visiblePickupEffects = () => (play.container?.children || [])
+        .filter(child => child?.__novaPickupEffect && child.visible !== false && child.renderable !== false && child.alpha > 0)
+        .length;
       const before = {
         containerChildren: play.container?.children?.length || 0,
-        particles: play.particleManager?.particles?.length || 0
+        particles: play.particleManager?.particles?.length || 0,
+        pickupEffects: visiblePickupEffects()
       };
       const powerup = manager.spawnSpecific(player.x, player.y - 16, type, { source: 'effect_check' });
       assert(powerup?.sprite?.parent, `${type}: spawned pickup sprite missing`);
@@ -208,10 +237,11 @@ try {
       manager.update?.(1, play);
       const after = {
         containerChildren: play.container?.children?.length || 0,
-        particles: play.particleManager?.particles?.length || 0
+        particles: play.particleManager?.particles?.length || 0,
+        pickupEffects: visiblePickupEffects()
       };
       return {
-        pickupVisual: after.containerChildren > before.containerChildren || after.particles > before.particles,
+        pickupVisual: after.pickupEffects > before.pickupEffects || after.particles > before.particles,
         before,
         after,
         activeStates: activeStates().map(entry => ({
@@ -584,12 +614,80 @@ try {
     };
   }, powerupTypes);
 
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    if (!play) throw new Error('Missing play scene for powerup visual stress frame');
+    play.scorePopupManager?.cleanup?.();
+    play.clearToastState?.();
+    play.comboCount = 18;
+    play.comboMultiplier = 2;
+    play.comboTimerMs = play.comboWindowMs || 2400;
+    play.createComboDisplay?.();
+    play.layoutComboDisplay?.();
+    play.updateComboDisplay?.(1);
+    play.showToast('BOMB', {
+      slot: 'center',
+      type: 'powerup',
+      priority: 8,
+      fontSize: 32,
+      fill: '#ff6633',
+      stroke: '#000000',
+      strokeThickness: 5,
+      duration: 2600,
+      y: game.getHeight() * 0.34,
+      maxWidth: game.getWidth() * 0.62
+    });
+    play.enqueueToast('MAX LIVES REACHED!', {
+      slot: 'top',
+      type: 'repair',
+      priority: 5,
+      fontSize: 28,
+      fill: '#7dffcc',
+      stroke: '#001616',
+      strokeThickness: 4,
+      duration: 1800,
+      y: game.getHeight() * 0.2,
+      maxWidth: game.getWidth() * 0.56
+    });
+    play.enqueueToast('COMBO BONUS +200', {
+      slot: 'top',
+      type: 'combo',
+      priority: 1,
+      fontSize: 18,
+      fill: '#fff3a2',
+      duration: 900,
+      maxWidth: game.getWidth() * 0.42
+    });
+    play.processToastQueue?.();
+  });
+
+  const visualSamples = [];
+  for (let index = 0; index < 12; index += 1) {
+    await page.waitForTimeout(125);
+    const state = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+    assertNoMessageOverlap(state, `powerup visual stress sample_${index}`);
+    visualSamples.push({
+      index,
+      active: state.toast?.active || [],
+      comboDisplay: state.toast?.comboDisplay || null,
+      scorePopups: state.toast?.scorePopups || []
+    });
+  }
+
+  const screenshotState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  assertNoMessageOverlap(screenshotState, 'powerup visual stress screenshot');
+  if (!screenshotState.toast?.active?.some(entry => entry.slot === 'center' && entry.message === 'BOMB')) {
+    throw new Error(`powerup visual stress screenshot did not keep BOMB feedback visible: ${JSON.stringify(screenshotState.toast, null, 2)}`);
+  }
+
   const screenshot = path.join(outputDir, 'powerup-effects-final.png');
   await page.screenshot({ path: screenshot, fullPage: true });
   const report = {
     ...runtimeReport,
     baseUrl,
     screenshot,
+    visualSamples,
     pageErrors,
     consoleEvents
   };

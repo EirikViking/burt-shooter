@@ -111,7 +111,7 @@ async function runSteamGameOver(page, {
   steamScores,
   hangarProgress,
   runSummary
-}) {
+}, { autoContinue = true } = {}) {
   await page.evaluate((scenario) => {
     localStorage.setItem('novaSwarm.localLeaderboard.v2', JSON.stringify(scenario.localScores));
     localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify(scenario.steamScores));
@@ -157,9 +157,24 @@ async function runSteamGameOver(page, {
     if (!scene) return;
     scene.submittedHoldContinueReadyAt = 0;
     scene.continueInputArmedAt = 0;
+    scene.achievementToastQueue = [];
+    scene.removeAchievementToast?.({ showNext: false });
     scene.refreshPrimaryCta?.();
     scene.layoutScreen?.();
   });
+  if (!autoContinue) {
+    await page.waitForTimeout(100);
+    return;
+  }
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+  }, null, { timeout: 5000 });
+  await page.waitForTimeout(100);
+}
+
+async function continueToRunback(page) {
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -208,15 +223,26 @@ async function readScenario(page) {
       boundsFor(scene?.scoreText, 'score'),
       boundsFor(scene?.levelText, 'run-summary'),
       boundsFor(scene?.unlockText, 'progress'),
+      boundsFor(scene?.rankProgressText, 'rank-progress'),
+      boundsFor(scene?.shipUnlockProgressText, 'ship-progress'),
       boundsFor(scene?.nextGoalText, 'next-goal'),
       boundsFor(scene?.comment, 'leaderboard'),
       boundsFor(scene?.leaderboardStatusText, 'status'),
+      boundsFor(scene?.ceremonyMedal, 'celebration-medal'),
       boundsFor(scene?.promptText, 'prompt'),
       boundsFor(scene?.retryButton, 'one-more-run-button'),
       boundsFor(scene?.leaderboardButton, 'leaderboard-button'),
       boundsFor(scene?.hangarButton, 'hangar-button'),
       boundsFor(scene?.nameDisplay, 'name-input'),
       boundsFor(scene?.instructions, 'instructions')
+    ].filter(Boolean);
+    const decorations = [
+      boundsFor(scene?.ceremonyFrame, 'celebration-frame'),
+      boundsFor(scene?.runSectionBg, 'run-summary-card'),
+      boundsFor(scene?.rankProgressBg, 'rank-progress-card'),
+      boundsFor(scene?.shipUnlockProgressBg, 'ship-progress-card'),
+      boundsFor(scene?.nextGoalGroup, 'next-goal-card'),
+      boundsFor(scene?.leaderboardStatusBg, 'status-card')
     ].filter(Boolean);
     const visibleTexts = [];
     const walk = (node) => {
@@ -228,6 +254,7 @@ async function readScenario(page) {
     return {
       state: JSON.parse(window.render_game_to_text?.() || '{}'),
       nodes,
+      decorations,
       visibleText: visibleTexts.join('\n')
     };
   });
@@ -277,9 +304,17 @@ function getNode(snapshot, id) {
   return snapshot.nodes.find((node) => node.id === id) || null;
 }
 
+function getDecoration(snapshot, id) {
+  return snapshot.decorations?.find((node) => node.id === id) || null;
+}
+
+function getBox(snapshot, id) {
+  return getNode(snapshot, id) || getDecoration(snapshot, id);
+}
+
 function assertVerticalGap(snapshot, topId, bottomId, minGap, label) {
-  const top = getNode(snapshot, topId);
-  const bottom = getNode(snapshot, bottomId);
+  const top = getBox(snapshot, topId);
+  const bottom = getBox(snapshot, bottomId);
   if (!top || !bottom) return;
   const gap = bottom.top - top.bottom;
   if (gap < minGap) {
@@ -287,11 +322,71 @@ function assertVerticalGap(snapshot, topId, bottomId, minGap, label) {
   }
 }
 
+function hasNode(snapshot, id) {
+  return Boolean(getNode(snapshot, id));
+}
+
+function objectsOverlap(a, b, margin = 0) {
+  if (!a || !b) return false;
+  return !(
+    a.right + margin <= b.left ||
+    b.right + margin <= a.left ||
+    a.bottom + margin <= b.top ||
+    b.bottom + margin <= a.top
+  );
+}
+
+function assertCelebrationReadable(snapshot, label) {
+  const medal = getNode(snapshot, 'celebration-medal');
+  if (!medal) {
+    throw new Error(`${label} did not show a visible Top Three/#1 celebration medal:\n${snapshot.visibleText}`);
+  }
+  ['title', 'score', 'status', 'run-summary', 'rank-progress', 'ship-progress', 'leaderboard', 'next-goal', 'one-more-run-button']
+    .forEach((id) => {
+      const node = getNode(snapshot, id);
+      if (node && objectsOverlap(medal, node, 10)) {
+        throw new Error(`${label} celebration medal competed with ${id}: ${JSON.stringify({ medal, node }, null, 2)}\n${snapshot.visibleText}`);
+      }
+    });
+}
+
+function assertFrameSpacing(snapshot, label) {
+  [
+    ['run-summary-card', 'rank-progress-card', 10],
+    ['rank-progress-card', 'ship-progress-card', 10],
+    ['ship-progress-card', 'leaderboard', 10],
+    ['leaderboard', 'next-goal-card', 12],
+    ['next-goal-card', 'one-more-run-button', 28]
+  ].forEach(([topId, bottomId, minGap]) => {
+    assertVerticalGap(snapshot, topId, bottomId, minGap, label);
+  });
+
+  const frame = getDecoration(snapshot, 'celebration-frame');
+  if (!frame) return;
+  if (snapshot.state?.gameOver?.state !== 'runback') return;
+  ['one-more-run-button', 'leaderboard-button', 'hangar-button', 'celebration-medal'].forEach((id) => {
+    const node = getNode(snapshot, id);
+    if (node && objectsOverlap(frame, node, 8)) {
+      throw new Error(`${label} frame overlapped ${id}: ${JSON.stringify({ frame, node }, null, 2)}\n${snapshot.visibleText}`);
+    }
+  });
+}
+
 function assertResultSpacing(snapshot, label) {
-  assertVerticalGap(snapshot, 'score', 'run-summary', 12, label);
-  assertVerticalGap(snapshot, 'run-summary', 'progress', 8, label);
-  assertVerticalGap(snapshot, 'progress', 'leaderboard', 8, label);
-  assertVerticalGap(snapshot, 'next-goal', 'one-more-run-button', 28, label);
+  assertVerticalGap(snapshot, 'title', 'status', 24, label);
+  assertVerticalGap(snapshot, 'status', 'one-more-run-button', 20, label);
+  assertVerticalGap(snapshot, 'score', 'run-summary', 14, label);
+  if (hasNode(snapshot, 'rank-progress') || hasNode(snapshot, 'ship-progress')) {
+    assertVerticalGap(snapshot, 'run-summary', 'rank-progress', 12, label);
+    assertVerticalGap(snapshot, 'rank-progress', 'ship-progress', 10, label);
+    assertVerticalGap(snapshot, 'ship-progress', 'leaderboard', 12, label);
+  } else {
+    assertVerticalGap(snapshot, 'run-summary', 'progress', 8, label);
+    assertVerticalGap(snapshot, 'progress', 'leaderboard', 8, label);
+  }
+  assertVerticalGap(snapshot, 'leaderboard', 'next-goal', 10, label);
+  assertVerticalGap(snapshot, 'next-goal', 'one-more-run-button', 30, label);
+  assertFrameSpacing(snapshot, label);
 }
 
 function assertGoodRun(snapshot) {
@@ -302,11 +397,14 @@ function assertGoodRun(snapshot) {
   if (!/(Steam|New Steam best): #2/i.test(text)) {
     throw new Error(`Good run did not show concise Steam rank #2:\n${text}`);
   }
+  if (!/Steam Global Leaderboard #2/i.test(text)) {
+    throw new Error(`Good run did not show the rank-specific Steam global heading:\n${text}`);
+  }
   if (!/Local: #13/i.test(text)) {
     throw new Error(`Good run did not show local rank #13:\n${text}`);
   }
-  if (/Steam:\s*Rank #2\s*-\s*Top Three|Steam Board Rank #2 - Top Three/i.test(text)) {
-    throw new Error(`Good run repeated Top Three on the Steam rank line:\n${text}`);
+  if (/Steam:\s*Rank #2\s*-\s*Top Three|Steam Board Rank #2 - Top Three|TOP THREE/i.test(text)) {
+    throw new Error(`Good run repeated Top Three wording in the rank-2 result flow:\n${text}`);
   }
   if (!/Next rank:/i.test(text) || !/XP to next:/i.test(text)) {
     throw new Error(`Good run did not show next rank and XP-to-next:\n${text}`);
@@ -321,7 +419,7 @@ function assertLowRun(snapshot) {
   if (!/Steam: Best unchanged/i.test(text)) {
     throw new Error(`Low-score run did not show Steam best unchanged:\n${text}`);
   }
-  if (!/Best: 35,923/i.test(text) || !/This run: 254/i.test(text)) {
+  if (!/Best: 29,481/i.test(text) || !/This run: 6,211/i.test(text)) {
     throw new Error(`Low-score run did not compare old Steam best and this run:\n${text}`);
   }
   if (!/Local: Not in local top 20/i.test(text)) {
@@ -405,11 +503,19 @@ try {
       bestLevel: 8
     },
     runSummary: { runElapsedSeconds: 367, pilotXpGained: 1490 }
-  });
+  }, { autoContinue: false });
+  const goodHold = await readScenario(goodPage);
+  assertNoBadSteamTerms(goodHold.visibleText, 'Good run hold');
+  assertNoOverlaps(goodHold, 'Good run hold render');
+  assertResultSpacing(goodHold, 'Good run hold render');
+  assertCelebrationReadable(goodHold, 'Good run hold render');
+  await goodPage.screenshot({ path: path.join(outputDir, 'good-run-status-rank2.png'), fullPage: true });
+  await continueToRunback(goodPage);
   const goodInitial = await readScenario(goodPage);
   assertGoodRun(goodInitial);
   assertNoOverlaps(goodInitial, 'Good run initial render');
   assertResultSpacing(goodInitial, 'Good run initial render');
+  assertCelebrationReadable(goodInitial, 'Good run initial render');
   const goodAfterRelayout = await assertRelayoutStable(goodPage, 'Good run');
   await goodPage.screenshot({ path: path.join(outputDir, 'good-run-rank2.png'), fullPage: true });
   await goodPage.close();
@@ -437,24 +543,32 @@ try {
       unlockedShipIds: ['nova_ship_01', 'nova_ship_02', 'nova_ship_04', 'nova_ship_05', 'nova_ship_08']
     },
     runSummary: { runElapsedSeconds: 511, pilotXpGained: 1890 }
-  });
+  }, { autoContinue: false });
+  const numberOneHold = await readScenario(numberOnePage);
+  assertNoBadSteamTerms(numberOneHold.visibleText, 'Number-one hold');
+  assertNoOverlaps(numberOneHold, 'Number-one hold render');
+  assertResultSpacing(numberOneHold, 'Number-one hold render');
+  assertCelebrationReadable(numberOneHold, 'Number-one hold render');
+  await numberOnePage.screenshot({ path: path.join(outputDir, 'great-run-status-number1.png'), fullPage: true });
+  await continueToRunback(numberOnePage);
   const numberOneInitial = await readScenario(numberOnePage);
   assertNumberOneRun(numberOneInitial);
   assertNoOverlaps(numberOneInitial, 'Number-one initial render');
   assertResultSpacing(numberOneInitial, 'Number-one initial render');
+  assertCelebrationReadable(numberOneInitial, 'Number-one initial render');
   const numberOneAfterRelayout = await assertRelayoutStable(numberOnePage, 'Number-one');
   await numberOnePage.screenshot({ path: path.join(outputDir, 'great-run-number1.png'), fullPage: true });
   await numberOnePage.close();
 
   const lowPage = await openScenarioPage(browser, consoleEvents);
   await runSteamGameOver(lowPage, {
-    // Low score with previous Steam best: 35,923 and this run: 254.
-    score: 254,
+    // Low score with previous Steam best: 29,481 and this run: 6,211.
+    score: 6211,
     level: 2,
     rankIndex: 1,
     localScores: makeLocalScores(43, 50000, 100),
     steamScores: [
-      { playerName: 'STEAM ACE', name: 'STEAM ACE', score: 35923, level: 9, isCurrentPlayer: true, source: 'steam' },
+      { playerName: 'STEAM ACE', name: 'STEAM ACE', score: 29481, level: 9, isCurrentPlayer: true, source: 'steam' },
       { playerName: 'ORBIT PAL', score: 28000, level: 7, source: 'steam' },
       { playerName: 'RIFT PAL', score: 24000, level: 6, source: 'steam' }
     ],
@@ -462,7 +576,7 @@ try {
       version: 1,
       pilotXp: 84300,
       pilotRank: 15,
-      bestScore: 35923,
+      bestScore: 29481,
       bestSector: 10,
       bestLevel: 10
     },
@@ -480,8 +594,10 @@ try {
     status: 'passed',
     baseUrl,
     outputDir,
+    goodHold,
     goodInitial,
     goodAfterRelayout,
+    numberOneHold,
     numberOneInitial,
     numberOneAfterRelayout,
     lowInitial,

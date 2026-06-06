@@ -43,11 +43,12 @@ assert.ok(
     mockCheck.includes('steamRank: 3') &&
     mockCheck.includes('steamRank: 4') &&
     mockCheck.includes('steamRank: null') &&
+    mockCheck.includes('Steam rank 3 should get rank-specific global leaderboard celebration copy') &&
     mockCheck.includes('Steam rank 4 was incorrectly treated as Top Three') &&
     mockCheck.includes('Missing Steam rank should clear stale Top Three placement without final rank pending copy') &&
     mockCheck.includes('Low Steam score should be marked best unchanged') &&
-    mockCheck.includes('Best: 35,923') &&
-    mockCheck.includes('This run: 254') &&
+    mockCheck.includes('Best: 29,481') &&
+    mockCheck.includes('This run: 6,211') &&
     mockCheck.includes('Low Steam hold status reused full or stale leaderboard copy') &&
     mockCheck.includes('Local: Not in local top 20') &&
     mockCheck.includes('Final low-score runback should not show an outside-visible local placement'),

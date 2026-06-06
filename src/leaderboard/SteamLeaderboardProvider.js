@@ -406,6 +406,28 @@ export class SteamLeaderboardProvider {
       });
       throw error;
     }
+    const responseBestScore = Math.max(
+      0,
+      Math.floor(Number(
+        response?.entry?.score ??
+        response?.score ??
+        response?.m_nScore ??
+        response?.currentScore ??
+        0
+      ) || 0)
+    );
+    const scoreChangedRaw = response?.scoreChanged ?? response?.m_bScoreChanged ?? response?.score_changed ?? null;
+    const scoreChangedFalse = scoreChangedRaw === false || scoreChangedRaw === 0 || scoreChangedRaw === '0';
+    const postSubmitBest = previousBestScore > 0
+      ? previousBest
+      : await this.getPlayerBest().catch(() => null);
+    const postSubmitBestScore = Math.max(0, Math.floor(Number(postSubmitBest?.score ?? postSubmitBest?.m_nScore) || 0));
+    const retainedBestScore = Math.max(previousBestScore, postSubmitBestScore, responseBestScore);
+    const retainedHigherBest = retainedBestScore > score;
+    const retainedEqualBest = retainedBestScore === score &&
+      ((previousBestScore > 0 && previousBestScore >= score) || scoreChangedFalse);
+    const bestUnchanged = retainedBestScore > 0 && (retainedHigherBest || retainedEqualBest);
+
     return {
       status: 'submitted',
       source: 'steam',
@@ -414,10 +436,11 @@ export class SteamLeaderboardProvider {
       details,
       levelReached: details[0],
       uploadMethod,
-      previousBest,
-      previousBestScore,
-      personalBestBeaten: previousBestScore <= 0 || score > previousBestScore,
-      bestUnchanged: previousBestScore > 0 && score <= previousBestScore,
+      previousBest: previousBest || (bestUnchanged ? postSubmitBest : null) || null,
+      previousBestScore: bestUnchanged ? retainedBestScore : previousBestScore,
+      retainedBestScore,
+      personalBestBeaten: !bestUnchanged && (previousBestScore <= 0 || score > previousBestScore),
+      bestUnchanged,
       response,
       rank: response?.rank ?? response?.globalRank ?? response?.m_nGlobalRank ?? null
     };

@@ -5372,12 +5372,43 @@ export class PlayScene {
   }
 
   getToastDebugState(getBounds = null) {
+    const describeVisibleTextNode = (node, id, type) => {
+      if (!node || node.visible === false || node.alpha <= 0.05 || !String(node.text || '').trim()) return null;
+      const bounds = typeof getBounds === 'function'
+        ? getBounds(node)
+        : this.getToastDisplayBounds(node);
+      return {
+        id,
+        slot: 'hud',
+        type,
+        message: String(node.text || ''),
+        bounds
+      };
+    };
+    const scorePopups = (this.scorePopupManager?.popups || [])
+      .map((popup, index) => {
+        const sprite = popup?.sprite;
+        if (!popup?.active || !sprite || sprite.visible === false || sprite.alpha <= 0.05) return null;
+        const bounds = typeof getBounds === 'function'
+          ? getBounds(sprite)
+          : this.getToastDisplayBounds(sprite);
+        return {
+          id: `score-popup-${index}`,
+          slot: 'floating',
+          type: 'score_popup',
+          message: String(sprite.text || ''),
+          bounds
+        };
+      })
+      .filter(Boolean);
     return {
       active: [
         this.describeToastDisplay(this.activeCenterToast, getBounds),
         this.describeToastDisplay(this.activeTopToast, getBounds),
         this.describeToastDisplay(this.activeCornerToast, getBounds)
       ].filter(Boolean),
+      comboDisplay: describeVisibleTextNode(this.comboDisplay, 'combo-display', 'combo_display'),
+      scorePopups,
       achievement: this.activeAchievementToast ? {
         id: this.activeAchievementToast.__achievementToastId,
         queued: this.achievementToastQueue.length
@@ -5723,8 +5754,8 @@ export class PlayScene {
   layoutComboDisplay() {
     if (!this.comboDisplay) return;
     const { width, height } = this.game.app.screen;
-    this.comboDisplay.x = width / 2;
-    this.comboDisplay.y = height * 0.24;
+    this.comboDisplay.x = Math.max(170, Math.min(width * 0.24, width - 220));
+    this.comboDisplay.y = Math.max(150, height * 0.28);
   }
 
   updateComboDisplay(delta) {

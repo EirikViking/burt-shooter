@@ -87,10 +87,15 @@ function overlap(a, b, margin = 8) {
 
 function validateSample(state, label) {
   const active = state.toast?.active || [];
-  for (let i = 0; i < active.length; i += 1) {
-    for (let j = i + 1; j < active.length; j += 1) {
-      if (overlap(active[i].bounds, active[j].bounds)) {
-        throw new Error(`${label}: toast overlap ${JSON.stringify({ a: active[i], b: active[j] }, null, 2)}`);
+  const surfaces = [
+    ...active,
+    state.toast?.comboDisplay,
+    ...(state.toast?.scorePopups || [])
+  ].filter(item => item?.bounds);
+  for (let i = 0; i < surfaces.length; i += 1) {
+    for (let j = i + 1; j < surfaces.length; j += 1) {
+      if (overlap(surfaces[i].bounds, surfaces[j].bounds)) {
+        throw new Error(`${label}: gameplay message overlap ${JSON.stringify({ a: surfaces[i], b: surfaces[j] }, null, 2)}`);
       }
     }
   }
@@ -177,6 +182,12 @@ try {
       fontSize: 18,
       duration: 1400
     });
+    play.comboCount = 18;
+    play.comboMultiplier = 2;
+    play.comboTimerMs = play.comboWindowMs || 2400;
+    play.createComboDisplay?.();
+    play.layoutComboDisplay?.();
+    play.updateComboDisplay?.(1);
   });
 
   const samples = [];
@@ -187,6 +198,8 @@ try {
     samples.push({
       index,
       active: state.toast?.active || [],
+      comboDisplay: state.toast?.comboDisplay || null,
+      scorePopups: state.toast?.scorePopups || [],
       queued: state.toast?.queued || {},
       lockedMs: state.toast?.lockedMs || {}
     });

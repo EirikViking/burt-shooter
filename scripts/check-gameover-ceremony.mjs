@@ -219,7 +219,7 @@ try {
   results.push(await checkCeremony(browser, {
     score: 39000,
     expectedTier: 'top3',
-    titlePattern: /TOP THREE/i,
+    titlePattern: /Steam Global Leaderboard #3/i,
     shotName: 'top-three.png'
   }));
   console.log('[gameover-ceremony] checking global-slot ceremony');
