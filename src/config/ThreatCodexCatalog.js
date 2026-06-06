@@ -16,10 +16,13 @@ export const CODEX_TEXT_TEMPLATES = Object.freeze({
   waveDescription: '{name} is a formation script: {role}. It sets entry timing, lane ownership, and synchronized pressure. Break the lead ship or cross the quiet lane before the whole wave starts speaking at once.',
   eliteDescription: '{name} is an elite middle ship with {movement} movement, {fire} fire, and the {ability} system. Clear nearby cover first, then burn the elite during its cooldown before it turns the wave into a priority puzzle.',
   bossDescription: '{name} is the {title} boss profile. Expect {movement} movement, {attack} pressure, and {signature} as the read that matters. Survive the signature tell first; damage is only useful once the lane is clean.',
-  themeDescription: 'Run theme {name} changes the director weights for the whole run. Expect more {threats} and formations such as {formations}; use sector one to decide what lane rule this run is testing.',
+  themeDescription: '{name} is shaped by the swarm director, the hidden command intelligence that steers each run. This theme leans toward {threats} and wave shapes like {formations}. Watch sector one for that pattern, then {adapt}.',
   cabinetLogDescription: '{name} is a Cabinet Log from live play: joke, field note, and receipt in one. Treat the line as a tiny reminder to make one calmer decision.',
   powerupDescription: '{name} is a {duration} powerup. It changes {effect}. Read it as {read}; pick it when {when}.',
-  sectorDescription: '{name} is a sector reference. The run asks you to clear regular waves, survive the boss gate, and keep enough lives for the next sector. This entry marks {pressure}.',
+  sectorDescriptionA: '{name} opens on {feel}. It matters because {stakes}; the waves, boss gate, and spare lives all start from that rhythm. Lore note: {flavor}. Gameplay clue: {clue}.',
+  sectorDescriptionB: '{name} runs through {feel}. This stretch matters because {stakes}; waves, boss pressure, and life routing all punish sloppy positioning. Tiny threat flavor: {flavor}. Gameplay clue: {clue}.',
+  sectorDescriptionC: '{name} feels like {feel}. The run uses it for {stakes}, so every wave cleared cleanly buys safer boss-gate lives later. Local rumor: {flavor}. Gameplay clue: {clue}.',
+  sectorDescriptionD: '{name} is {feel}. It matters because {stakes}; the waves test patience before the boss gate asks what lives you kept. Field detail: {flavor}. Gameplay clue: {clue}.',
   runtimeDescription: 'The archive has seen this signal, but not enough times to file a clean note. Expect a visible tell, a repeatable behavior, and a sharper entry once the swarm shows it again.'
 });
 
@@ -448,20 +451,173 @@ const POWERUP_CODEX_ENTRIES = Object.freeze([
 ]);
 
 const SECTOR_CODEX_LEVELS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 20]);
-const SECTOR_PRESSURE_COPY = Object.freeze({
-  1: 'the opening read: identify the run theme before chasing score',
-  2: 'early formation pressure while the pickup economy is still quiet',
-  3: 'the first real lane discipline check',
-  4: 'faster target-priority calls before the boss gate rhythm settles',
-  5: 'the midpoint habit check, with boss pressure at the end of the sector',
-  6: 'mid-run pressure where weak positioning starts costing lives',
-  7: 'formation density and pickup timing under less forgiving pacing',
-  8: 'late-run crowd control before the clear gate comes into view',
-  9: 'the last setup sector before the run-clear fight',
-  10: 'the clear gate: beat the boss, mark the run clear, and enter overrun',
-  11: 'the first overrun sector after the clear medal',
-  20: 'deep overrun routing, where score chase and survival both matter'
+const SECTOR_CODEX_COPY = Object.freeze({
+  1: {
+    template: 'sectorDescriptionA',
+    feel: 'a cold launch rail outside Nova Station, all blue runway lights and nervous static',
+    stakes: 'the first waves reveal the run theme before score greed gets loud',
+    flavor: 'one busted beacon still blinks in Cabinet coin timing',
+    clue: 'start near center, read which lane closes first, then chase pickups',
+    tip: 'Use Astra Vey as a scouting lap. Learn the theme before spending lives on edge loot.'
+  },
+  2: {
+    template: 'sectorDescriptionB',
+    feel: 'a service freight lane where cargo drones left bright scars on the traffic rails',
+    stakes: 'the run starts asking for cleaner target priority while pickups are still modest',
+    flavor: 'the swarm likes to hide its first real shove inside ordinary-looking waves',
+    clue: 'clear the lead ship before the formation turns the safe side into a trap',
+    tip: 'Treat Vela Vey as the first discipline check: shoot the lane maker, then move.'
+  },
+  3: {
+    template: 'sectorDescriptionC',
+    feel: 'a dim relay pocket with half the signs flickering and none of them apologizing',
+    stakes: 'lane discipline under faster wave timing',
+    flavor: 'old relay glass throws enemy silhouettes a beat before the shots arrive',
+    clue: 'small dodges beat long drifts when the formation is still entering',
+    tip: 'In Nyx Vey, resist panic movement. Short corrections keep your return lane open.'
+  },
+  4: {
+    template: 'sectorDescriptionD',
+    feel: 'a green maintenance shelf where the swarm has learned to park in your escape route',
+    stakes: 'target-priority calls arrive faster before the next boss checkpoint',
+    flavor: 'maintenance buoys mark clean lanes, then the swarm immediately argues with them',
+    clue: 'delete support ships early so the boss gate does not inherit their mess',
+    tip: 'Kairo Vey rewards calm cleanup. Remove helpers before chasing the loud target.'
+  },
+  5: {
+    template: 'sectorDescriptionA',
+    feel: 'a red checkpoint throat with warning lamps stacked like a bad decision',
+    stakes: 'this is the first boss-sector habit check',
+    flavor: 'the route recorder stamps every lost life here in thick Cabinet ink',
+    clue: 'save room for the boss gate instead of winning the last regular wave from a corner',
+    tip: 'Orin Vey is about arriving intact. Enter the boss gate with space, not pride.'
+  },
+  6: {
+    template: 'sectorDescriptionB',
+    feel: 'a quiet repair band where the stars look close enough to cut your gloves',
+    stakes: 'mid-run wave pressure starts turning weak positioning into lost lives',
+    flavor: 'the swarm sends neat shapes here because neat shapes make greedy pilots lazy',
+    clue: 'hold a middle lane until the wave commits, then punish the exposed side',
+    tip: 'Lyra Vey is where habits get expensive. Keep an exit lane before firing greedily.'
+  },
+  7: {
+    template: 'sectorDescriptionC',
+    feel: 'a neon toll grid with lanes blinking in the wrong order on purpose',
+    stakes: 'formation density and pickup timing under less forgiving pacing',
+    flavor: 'local toll lights count bullets, not ships',
+    clue: 'wait for the formation rhythm before crossing for a pickup',
+    tip: 'In Vega Vey, pickups are invitations. Accept only after the lane pattern is readable.'
+  },
+  8: {
+    template: 'sectorDescriptionD',
+    feel: 'a fractured signal yard full of clean angles and rude surprises',
+    stakes: 'late-run crowd control is the last comfort check before the clear gate comes into view',
+    flavor: 'the yard repeats old wave shapes with less patience',
+    clue: 'clear clusters from the side that gives you the safest boss approach',
+    tip: 'Riven Vey asks for crowd control first. Score comes after the screen breathes.'
+  },
+  9: {
+    template: 'sectorDescriptionA',
+    feel: 'a sunlit staging lane where every quiet gap feels borrowed',
+    stakes: 'the final setup sector decides how much comfort reaches the clear fight',
+    flavor: 'the swarm starts rehearsing clear-gate pressure one sector early',
+    clue: 'treat every spare life as boss-gate ammunition, not a license to drift',
+    tip: 'Solun Vey is preparation, not victory. Bank lives and keep the route boring.'
+  },
+  10: {
+    template: 'sectorDescriptionB',
+    feel: 'a bright clear-gate killbox with the cabinet holding its breath',
+    stakes: 'beating the boss marks the run clear and opens overrun',
+    flavor: 'the gate lights flip from warning red to overrun gold only after the boss falls',
+    clue: 'respect the boss tell first; the medal only matters if the ship survives',
+    tip: 'Sector 10 is the clear milestone. Win the boss read, then carry the run forward.'
+  },
+  11: {
+    template: 'sectorDescriptionC',
+    feel: 'the first overrun drift, too pretty and a little offended that you survived',
+    stakes: 'learning that the run keeps scoring after the clear medal',
+    flavor: 'Nadir Vey logs cleared pilots as trespassers with excellent taste',
+    clue: 'take stable damage windows instead of chasing side lanes like the run is over',
+    tip: 'Nadir Vey starts overrun discipline. Play like the medal happened and the danger did not care.'
+  },
+  20: {
+    template: 'sectorDescriptionD',
+    feel: 'a deep-overrun switchyard where every route looks profitable until it moves',
+    stakes: 'score chase and survival start pulling in opposite directions',
+    flavor: 'Helix Vey keeps a quiet ledger of pilots who mistook confidence for routing',
+    clue: 'choose the lane that preserves movement before choosing the lane with points',
+    tip: 'Helix Vey is for routing, not flexing. Survival lanes beat pretty detours.'
+  }
 });
+
+const FORMATION_LABELS = Object.freeze({
+  ARC: 'arc lanes',
+  TUTORIAL_ARC: 'starter arc lanes',
+  GRID: 'grid walls',
+  SCREEN_DOOR: 'closing door waves',
+  DOUBLE_ARC: 'paired arc waves',
+  STAGGERED_WING: 'staggered wings',
+  PINCER: 'pincer lanes',
+  DIAGONAL_RAID: 'diagonal raids',
+  V_SHAPE: 'V-shaped dives',
+  CROSS_STREAM: 'cross-stream fire',
+  ORBIT_RING: 'orbit rings',
+  BOX: 'box pressure',
+  SPIRAL: 'spiral lanes',
+  SIDEWINDER: 'sidewinder curves'
+});
+
+const THEME_ADAPT_COPY = Object.freeze({
+  swarm_lattice: 'break the grid anchor before crossing a closing lane',
+  hunter_wing: 'clear a flank early and save your dodge for the real dive',
+  minefield_protocol: 'remove denial pieces before mines turn pickups into bait',
+  orbit_collapse: 'wait for the rotation to show a gap before moving through it',
+  crossfire_doctrine: 'pick one side to silence before the angles overlap',
+  glitch_parade: 'hold movement through the fakeout and shoot after the trick resolves',
+  receipt_nebula: 'leave space for delayed fragments instead of chasing the first opening',
+  paperclip_empire: 'delete support shapes before their logistics own the lane',
+  neon_jury_duty: 'clear a side lane before the verdict arrives from both edges',
+  lunar_turnpike: 'let the curve pass, then cut behind it instead of racing it',
+  static_mandala: 'step off center early before symmetry pins you there',
+  cinder_trellis: 'pull hazards out of the route before they grow into a screen tax',
+  blackbox_minuet: 'wait through the elegant fake before spending your dodge',
+  solar_abacus: 'count the first volley rhythm, then keep shooting through the math',
+  hazard_square_dance: 'watch the corner that keeps trading into your lane',
+  violet_switchboard: 'dodge against the routed angle instead of following it',
+  auction_house: 'ignore the fake bid and move only when the hammer drops',
+  overrun_turntable: 'treat familiar patterns as faster remixes, not solved problems'
+});
+
+const THEME_TIPS = Object.freeze({
+  swarm_lattice: 'Grid themes reward patience. Break the wall-maker, then cross the lane once.',
+  hunter_wing: 'Hunter runs punish early dodges. Wait for the dive to commit before you spend movement.',
+  minefield_protocol: 'Minefield runs turn space into debt. Clear denial enemies before chasing pickups.',
+  orbit_collapse: 'Orbit runs are timing puzzles. Let the ring rotate, then move through the real gap.',
+  crossfire_doctrine: 'Crossfire runs stack angles. Silence one flank before the center starts lying.',
+  glitch_parade: 'Glitch runs bluff first. Hold steady until the fakeout ends, then answer hard.',
+  receipt_nebula: 'Receipt runs punish late fragments. Leave room behind your dodge for the bill.',
+  paperclip_empire: 'Paperclip runs look cute and play logistical. Kill helpers before the lane fills.',
+  neon_jury_duty: 'Jury runs decide from the edges. Clear a side before both sides vote at once.',
+  lunar_turnpike: 'Turnpike runs curve around panic. Let traffic pass, then cut behind it.',
+  static_mandala: 'Mandala runs want you centered. Step away from symmetry before it closes.',
+  cinder_trellis: 'Cinder runs grow hazards downward. Pull the seedlings early.',
+  blackbox_minuet: 'Minuet runs rehearse the ambush. Do not spend your dodge on the pretty part.',
+  solar_abacus: 'Abacus runs count volleys. Learn the beat once, then shoot through it.',
+  hazard_square_dance: 'Square Dance runs trade corners. Track the partner entering your lane.',
+  violet_switchboard: 'Switchboard runs route shots diagonally. Dodge across the call, not with it.',
+  auction_house: 'Auction runs sell fake movement. Wait for the hammer drop.',
+  overrun_turntable: 'Turntable runs remix old lessons. Respect the familiar pattern as if it got faster.'
+});
+
+function playerFacingFormationLabel(value = '') {
+  return FORMATION_LABELS[value] || titleCaseSignal(String(value).toLowerCase());
+}
+
+const ACTION_LABEL_BY_ID = new Map(ENEMY_THREAT_ACTIONS.map((action) => [action.id, action.label || titleCaseSignal(action.id)]));
+
+function playerFacingThreatLabel(value = '') {
+  return ACTION_LABEL_BY_ID.get(value) || titleCaseSignal(String(value).toLowerCase());
+}
 
 function powerupEntry(entry) {
   return {
@@ -488,22 +644,28 @@ function powerupEntry(entry) {
 function sectorEntry(level) {
   const sector = getSectorInfo(level);
   const name = formatSectorLabel(level, { sectorWord: 'SECTOR', compact: true });
-  const pressure = SECTOR_PRESSURE_COPY[level] || `sector ${sector.number} routing`;
+  const copy = SECTOR_CODEX_COPY[level] || {
+    template: 'sectorDescriptionA',
+    feel: `${sector.name} routing space with fresh swarm markings`,
+    stakes: `sector ${sector.number} wave routing and boss-gate life planning`,
+    flavor: 'the archive marks this route as active and rude',
+    clue: 'keep a safe lane before chasing score',
+    tip: 'Clear the wave shape first, then take the points the sector actually gives you.'
+  };
   return {
     id: `sector_${String(level).padStart(3, '0')}`,
     category: 'sectors',
     name,
     rarity: level >= 11 ? 'Overrun' : level === 10 ? 'Clear Gate' : 'Sector',
     role: level >= 11 ? 'Overrun route' : sector.bossCheckpoint ? 'Boss gate route' : 'Run route',
-    description: codexText('sectorDescription', {
+    description: codexText(copy.template, {
       name,
-      pressure
+      feel: copy.feel,
+      stakes: copy.stakes,
+      flavor: copy.flavor,
+      clue: copy.clue
     }),
-    tip: level === 10
-      ? 'Sector 10 is the clear milestone. Preserve lives, beat the boss, then keep playing into overrun.'
-      : level >= 11
-        ? 'Overrun keeps score alive after the clear. Take safe damage windows over greedy side lanes.'
-        : 'Clear regular waves with enough space left for the boss gate at the end of the sector.',
+    tip: translateText(copy.tip),
     art: level >= 10 ? AssetManifest.generated.vfx?.overrunVictorySeal || AssetManifest.generated.bossArenaBackdrop : AssetManifest.generated.gameplayArenaBackdrop,
     accent: level >= 11 ? 0xffe76a : level === 10 ? 0x7dffcc : 0x37f5ff,
     signalClass: 'sector reference',
@@ -647,8 +809,9 @@ function bossEntry(profile) {
 }
 
 function runThemeEntry(theme) {
-  const threats = (theme.threatActions || []).map((id) => id.replace(/_/g, ' ')).join(', ') || 'mixed swarm pressure';
-  const formations = (theme.primaryFormations || []).join(', ') || 'varied';
+  const threats = (theme.threatActions || []).map(playerFacingThreatLabel).join(', ') || 'mixed swarm pressure';
+  const formations = (theme.primaryFormations || []).map(playerFacingFormationLabel).join(', ') || 'varied wave shapes';
+  const adapt = THEME_ADAPT_COPY[theme.id] || 'use the first sector to name the pressure before chasing score';
   return {
     id: theme.id,
     category: 'runThemes',
@@ -658,9 +821,10 @@ function runThemeEntry(theme) {
     description: codexText('themeDescription', {
       name: theme.label,
       threats,
-      formations
+      formations,
+      adapt
     }),
-    tip: theme.codexTip || 'Use the first sector to identify what this run wants you to respect.',
+    tip: translateText(THEME_TIPS[theme.id] || theme.codexTip || 'Use the first sector to identify what this run wants you to respect.'),
     art: THEME_ART[theme.id] || AssetManifest.generated.gameplayArenaBackdrop,
     accent: 0x7dffcc,
     signalClass: 'director theme'

@@ -637,7 +637,7 @@ export class ThreatCodexScene {
       button.on('pointerdown', () => {
         this.categoryIndex = index;
         this.entryIndex = 0;
-        AudioManager.playSfx('codex_move', { volume: 0.55 });
+        AudioManager.playSfx('codex_move', { volume: 0.12, minIntervalMs: 120 });
         this.refresh();
       });
 
@@ -726,7 +726,7 @@ export class ThreatCodexScene {
       row.position.set(listX, listY + rowIndex * rowH);
       row.on('pointerdown', () => {
         this.entryIndex = entryIndex;
-        AudioManager.playSfx('codex_move', { volume: 0.5 });
+        AudioManager.playSfx('codex_move', { volume: 0.12, minIntervalMs: 120 });
         this.refresh();
       });
 
@@ -1109,7 +1109,7 @@ export class ThreatCodexScene {
   moveCategory(direction) {
     this.categoryIndex = (this.categoryIndex + direction + THREAT_CODEX_CATEGORIES.length) % THREAT_CODEX_CATEGORIES.length;
     this.entryIndex = 0;
-    AudioManager.playSfx('codex_move', { volume: 0.55 });
+    AudioManager.playSfx('codex_move', { volume: 0.12, minIntervalMs: 120 });
     this.refresh();
   }
 
@@ -1117,7 +1117,7 @@ export class ThreatCodexScene {
     const entries = this.getEntriesForCategory();
     if (!entries.length) return;
     this.entryIndex = Math.max(0, Math.min(entries.length - 1, this.entryIndex + direction));
-    AudioManager.playSfx('codex_move', { volume: 0.45 });
+    AudioManager.playSfx('codex_move', { volume: 0.1, minIntervalMs: 120 });
     this.refresh();
   }
 
@@ -1125,7 +1125,7 @@ export class ThreatCodexScene {
     const entries = this.getEntriesForCategory();
     if (!entries.length) return;
     this.entryIndex = Math.max(0, Math.min(entries.length - 1, index));
-    AudioManager.playSfx('codex_move', { volume: 0.45 });
+    AudioManager.playSfx('codex_move', { volume: 0.1, minIntervalMs: 120 });
     this.refresh();
   }
 
@@ -1200,7 +1200,7 @@ export class ThreatCodexScene {
   }
 
   goBack() {
-    AudioManager.playSfx('codex_back', { volume: 0.7 });
+    AudioManager.playSfx('codex_back', { volume: 0.14, minIntervalMs: 180 });
     this.game.showMenu();
   }
 

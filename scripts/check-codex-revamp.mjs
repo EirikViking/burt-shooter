@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { THREAT_CODEX_CATEGORIES, getThreatCodexCatalog } from '../src/config/ThreatCodexCatalog.js';
+import { AssetManifest } from '../src/assets/assetManifest.js';
+import { SFX_CATALOG, SFX_MIX } from '../src/audio/SoundCatalog.js';
 import { ShipData } from '../src/config/ShipData.js';
 import { buildSelectableShipVariants } from '../src/config/VisualVariantCatalog.js';
 import { getShipUnlockDefinition } from '../src/config/ShipUnlockConfig.js';
@@ -81,6 +83,66 @@ function imageDimensions(file) {
   return null;
 }
 
+function wavDurationSeconds(file) {
+  const buffer = readFileSync(file);
+  if (buffer.length < 44 || buffer.toString('ascii', 0, 4) !== 'RIFF' || buffer.toString('ascii', 8, 12) !== 'WAVE') {
+    return null;
+  }
+  const channels = buffer.readUInt16LE(22);
+  const sampleRate = buffer.readUInt32LE(24);
+  const bitsPerSample = buffer.readUInt16LE(34);
+  const dataIndex = buffer.indexOf(Buffer.from('data'));
+  if (dataIndex < 0 || dataIndex + 8 > buffer.length) return null;
+  const dataSize = buffer.readUInt32LE(dataIndex + 4);
+  const bytesPerSecond = sampleRate * channels * (bitsPerSample / 8);
+  return bytesPerSecond > 0 ? dataSize / bytesPerSecond : null;
+}
+
+function normalizedWords(text) {
+  const stop = new Set([
+    'sector', 'sectors', 'the', 'and', 'that', 'with', 'from', 'this', 'because', 'waves', 'boss', 'gate',
+    'lives', 'life', 'gameplay', 'clue', 'matters', 'run', 'route', 'all', 'every', 'here', 'note', 'flavor'
+  ]);
+  return new Set(String(text || '').toLowerCase().match(/[a-z0-9]+/g)?.filter((word) => word.length > 3 && !stop.has(word)) || []);
+}
+
+function jaccard(a, b) {
+  const left = normalizedWords(a);
+  const right = normalizedWords(b);
+  const union = new Set([...left, ...right]);
+  if (!union.size) return 0;
+  let intersection = 0;
+  for (const word of left) {
+    if (right.has(word)) intersection += 1;
+  }
+  return intersection / union.size;
+}
+
+function checkCodexSfx() {
+  const codexAsset = '/audio/sfx/nova-swarm/nova_codex_tick.wav';
+  if (!AssetManifest.audio.sfx.includes(codexAsset)) fail('Codex tick asset is missing from AssetManifest.audio.sfx');
+  const diskPath = path.join(repoRoot, 'public', codexAsset.replace(/^\//, ''));
+  if (!existsSync(diskPath)) {
+    fail(`Codex tick asset is missing on disk: ${codexAsset}`);
+  } else {
+    const duration = wavDurationSeconds(diskPath);
+    if (!Number.isFinite(duration)) fail('Codex tick asset should be a readable WAV for duration checks');
+    if (Number.isFinite(duration) && duration > 0.09) fail(`Codex tick should be brief, found ${duration.toFixed(3)}s`);
+  }
+  for (const key of ['codex_open', 'codex_move', 'codex_back']) {
+    const variants = SFX_CATALOG[key] || [];
+    if (variants.length !== 1 || variants[0] !== codexAsset) fail(`${key} should use only the short Codex tick asset`);
+    const mix = SFX_MIX[key] || {};
+    if (Number(mix.volume) > 0.18) fail(`${key} mix volume is too loud for Codex browsing`);
+  }
+  if (Number(SFX_MIX.codex_move?.minIntervalMs || 0) < 110) fail('codex_move minIntervalMs should prevent rapid browsing spam');
+  const sceneSource = readFileSync(path.join(repoRoot, 'src/scenes/ThreatCodexScene.js'), 'utf8');
+  const loudCalls = [...sceneSource.matchAll(/playSfx\('codex_(?:move|back)'[\s\S]*?volume:\s*([0-9.]+)/g)]
+    .map((match) => Number(match[1]))
+    .filter((volume) => volume > 0.16);
+  if (loudCalls.length) fail(`Codex scene has loud Codex SFX call volume(s): ${loudCalls.join(', ')}`);
+}
+
 function assetPath(src) {
   if (!src || String(src).startsWith('data:')) return null;
   const clean = String(src).replace(/^\//, '');
@@ -122,16 +184,16 @@ function checkCatalog() {
     if (count < minimum) fail(`${category} has ${count} entries, expected at least ${minimum}`);
   }
 
-  const banned = /mysterious|cosmic entity|harnesses energy|delve|formidable foe|ancient secrets|unleash|data-driven|arcade drama/i;
+  const banned = /mysterious|cosmic entity|harnesses energy|delve|formidable foe|ancient secrets|unleash|data-driven|arcade drama|director weights/i;
   const mechanics = {
     enemies: ['movement', 'fires', 'lane', 'formation', 'clear'],
     attackPatterns: ['tell', 'ms', 'danger', 'move'],
     waveTactics: ['entry timing', 'lane', 'formation', 'pressure'],
     powerups: ['powerup', 'changes', 'read', 'pick'],
-    sectors: ['waves', 'boss', 'lives', 'sector'],
+    sectors: ['waves', 'boss', 'lives', 'gameplay clue'],
     elites: ['movement', 'fire', 'system', 'cooldown'],
     bosses: ['movement', 'pressure', 'signature', 'lane'],
-    runThemes: ['director', 'weights', 'formations', 'sector'],
+    runThemes: ['swarm director', 'hidden command intelligence', 'wave shapes', 'sector'],
     cabinetLogs: ['read', 'boss', 'life', 'trait', 'codex', 'near', 'run', 'clear']
   };
   for (const [category, entries] of Object.entries(catalog)) {
@@ -144,6 +206,35 @@ function checkCatalog() {
       if (words.length && !includesAny(text, words)) fail(`${category}:${entry.id} lacks mechanics-relevant words: ${words.join(', ')}`);
     }
   }
+
+  for (let index = 0; index < (catalog.sectors || []).length; index += 1) {
+    const entry = catalog.sectors[index];
+    if (!/lore note|tiny threat flavor|local rumor|field detail/i.test(entry.description || '')) {
+      fail(`sector:${entry.id} lacks a tiny lore or threat flavor detail`);
+    }
+    if (!/gameplay clue/i.test(entry.description || '')) {
+      fail(`sector:${entry.id} lacks an explicit gameplay clue`);
+    }
+    for (let other = index + 1; other < (catalog.sectors || []).length; other += 1) {
+      const score = jaccard(entry.description, catalog.sectors[other].description);
+      if (score > 0.42) fail(`sector descriptions are too similar: ${entry.id} vs ${catalog.sectors[other].id} (${score.toFixed(2)})`);
+    }
+  }
+
+  for (const entry of catalog.runThemes || []) {
+    const text = textOf(entry);
+    if (/_/.test(text) || /\b(?:SCREEN_DOOR|DOUBLE_ARC|CROSS_STREAM|STAGGERED_WING|ORBIT_RING|DIAGONAL_RAID|V_SHAPE|PINCER|GRID|BOX|SPIRAL|ARC)\b/.test(text)) {
+      fail(`run theme exposes internal formation token: ${entry.id}`);
+    }
+    if (!/swarm director/i.test(text) || !/hidden command intelligence/i.test(text)) {
+      fail(`run theme does not explain the director in-world: ${entry.id}`);
+    }
+    if (!/watch sector one/i.test(text) || !/break|clear|wait|dodge|move|shoot|silence|route|step|let|leave|delete|learn|respect|watch|track/i.test(text)) {
+      fail(`run theme does not explain what changes and how to adapt: ${entry.id}`);
+    }
+  }
+
+  checkCodexSfx();
 
   const assetReport = [];
   const artSources = new Set();

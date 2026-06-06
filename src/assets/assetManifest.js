@@ -326,6 +326,7 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_boss_phase_surge.mp3',
             '/audio/sfx/nova-swarm/nova_level_clear_medal.mp3',
             '/audio/sfx/nova-swarm/nova_menu_tick.mp3',
+            '/audio/sfx/nova-swarm/nova_codex_tick.wav',
             '/audio/sfx/nova-swarm/nova_pause_in.mp3',
             '/audio/sfx/nova-swarm/nova_pause_out.mp3',
             '/audio/sfx/nova-swarm/nova_ship_lock_chime.mp3',

@@ -36,7 +36,7 @@ if ((catalog.runThemes?.length || 0) < 18) fail(`expected at least 18 run theme 
 const waveArt = catalog.waveTactics?.map(entry => entry.art).filter(Boolean) || [];
 if (waveArt.length !== catalog.waveTactics.length) fail('every wave tactic should have unique Codex art');
 if (new Set(waveArt).size !== waveArt.length) fail('wave tactic Codex art should be unique per tactic');
-const bannedCopy = /mysterious|cosmic entity|harnesses energy|delve|formidable foe|ancient secrets|unleash|data-driven|arcade drama/i;
+const bannedCopy = /mysterious|cosmic entity|harnesses energy|delve|formidable foe|ancient secrets|unleash|data-driven|arcade drama|director weights/i;
 for (const entries of Object.values(catalog)) {
   for (const entry of entries || []) {
     const copy = `${entry.name || ''} ${entry.description || ''} ${entry.tip || ''}`;
@@ -49,8 +49,23 @@ if (!catalog.bosses?.every(entry => /movement/i.test(entry.description) && /pres
 if (!catalog.powerups?.every(entry => /powerup|defensive|sustain|shots/i.test(entry.description) && /when|lane|shots|safe|boss|wave|pickups|kills|charges|move|shoot|pattern|enemies|threats|clusters|center|targets|readable/i.test(entry.tip))) {
   fail('powerup Codex entries should explain effect, read, timing, and use');
 }
-if (!catalog.sectors?.every(entry => /waves/i.test(entry.description) && /boss/i.test(entry.description) && /lives/i.test(entry.description))) {
+if (!catalog.sectors?.every(entry => /waves?/i.test(entry.description) && /boss/i.test(entry.description) && /lives|life routing/i.test(entry.description))) {
   fail('sector Codex entries should explain wave, boss-gate, and life-routing relevance');
+}
+const sectorDescriptions = catalog.sectors?.map(entry => entry.description) || [];
+if (new Set(sectorDescriptions).size !== sectorDescriptions.length) fail('sector Codex descriptions should be unique');
+if (!catalog.sectors?.every(entry => /feel|feels|opens|runs|is /i.test(entry.description) && /lore note|tiny threat flavor|local rumor|field detail/i.test(entry.description) && /gameplay clue/i.test(entry.description))) {
+  fail('sector Codex descriptions should include identity, flavor, and a gameplay clue');
+}
+for (const entry of catalog.runThemes || []) {
+  const copy = `${entry.name || ''} ${entry.role || ''} ${entry.description || ''} ${entry.tip || ''}`;
+  if (/_/.test(copy) || /\b(?:SCREEN_DOOR|DOUBLE_ARC|CROSS_STREAM|STAGGERED_WING|ORBIT_RING|DIAGONAL_RAID|V_SHAPE|SIDEWINDER|PINCER|GRID|BOX|SPIRAL|ARC)\b/.test(copy)) {
+    fail(`run theme Codex exposes internal formation token: ${entry.id}`);
+  }
+  if (!/hidden command intelligence|swarm director/i.test(copy)) fail(`run theme Codex should explain director in-world: ${entry.id}`);
+  if (!/watch sector one|sector one/i.test(copy) || !/adapt|clear|dodge|wait|break|move|shoot|silence|route|step|let|leave|pick|respect|learn|delete|watch|track/i.test(copy)) {
+    fail(`run theme Codex should explain what to watch and how to adapt: ${entry.id}`);
+  }
 }
 
 resetDiscoveryStateForTests();

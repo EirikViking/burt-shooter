@@ -111,3 +111,55 @@
 - Upload evidence: `release/steamworks/steam_upload_evidence_codex_revamp_20260606.json`.
 - Deploy not performed.
 - Remaining risk: release-hardening still lists the normal manual Steam-client/human playtest items for by-ear audio feel, real leaderboard submission, and longer-run feel checks. No dummy scores were submitted.
+
+## Focused Codex Polish Follow-Up
+
+- Baseline HEAD: `3d7ae2375c62306719643c1d01ac5747add3241d`.
+- Scope stayed inside Codex text, Codex UI copy, Codex locale strings, and Codex-only UI audio.
+- Replaced the Codex click/select sound with `public/audio/sfx/nova-swarm/nova_codex_tick.wav`.
+  - Provenance: local synthesized mono WAV.
+  - Duration: `70 ms`.
+  - Alias use: `codex_open`, `codex_move`, `codex_back`.
+  - Browsing guard: `codex_move` uses the tick only, low call-site volume, and `120 ms` minimum interval.
+- Rewrote sector entries so each selected sector has a small place identity, run relevance, lore/threat flavor, and gameplay clue without changing sector mechanics.
+- Reworked Run Theme copy so player-facing descriptions use natural wave-shape names instead of internal tokens such as `SCREEN_DOOR` or `DOUBLE_ARC`.
+- The swarm director is now explained in-world as the hidden command intelligence that steers each run.
+- Updated Codex locale template strings for the new Run Theme and sector wording.
+
+### Follow-Up Screenshots
+
+- `test-results/codex-revamp-20260606/layout/codex-after-1600x900-sectors.png`
+- `test-results/codex-revamp-20260606/layout/codex-after-1600x900-runThemes.png`
+- `test-results/codex-revamp-20260606/layout/codex-after-1366x768-sectors.png`
+- `test-results/codex-revamp-20260606/layout/codex-after-1366x768-runThemes.png`
+- `test-results/codex-revamp-20260606/layout/codex-after-1280x720-sectors.png`
+- `test-results/codex-revamp-20260606/layout/codex-after-1280x720-runThemes.png`
+- Contact sheet: `test-results/codex-revamp-20260606/layout/codex-after-contact-sheet.png`
+
+### Follow-Up Verification
+
+- `npm run check:codex-revamp` - passed; now covers sector near-duplicate checks, Run Theme internal-token checks, and Codex SFX duration/alias safety.
+- `npm run check:threat-codex` - passed; now guards sector identity/flavor/clue copy and internal-token-free Run Themes.
+- `npm run check:i18n` - passed.
+- `npm run check:codex-layout` - passed; regenerated Sectors and Run Themes screenshots/contact sheet.
+- `npm run build:current` - passed.
+- `npm run check:i18n-ui` - passed; latest explicit report `test-results/i18n-ui-2026-06-06T08-19-51-266Z`; release-hardening rerun also passed localized UI report `test-results/i18n-ui-2026-06-06T08-41-04-955Z`.
+- `npm run check:release-hardening` - passed `33/33` after the final source cleanup; summary `test-results/release-hardening/latest-summary.md`.
+- `npm run build` - passed after the final source cleanup; package version `v2026-06-06_10-45-22`.
+- `npm run check:release-line` - passed immediately before Steam packaging.
+- `npm run package:steam:win:current` - passed.
+- `npm run desktop:smoke:packaged` - passed; final report `test-results/packaged-exe-smoke-2026-06-06T08-48-23-410Z/report.json`.
+- `npm run steamworks:payload-manifest` - passed; `336` files, `723578126` bytes, manifest hash `5e886f9261bd52a20c192957aa5e2e9a73e7555f601d458af95d5106f5050c81`.
+- `npm run steamworks:write-vdf` - passed after `check:release-line` and `check:steam-package-runtime`.
+
+### Follow-Up Steam/Deploy Notes
+
+- Steam BuildID: `23598635`.
+- VDF evidence:
+  - `"AppID" "4765070"`
+  - `"ContentRoot" "..\\desktop\\win-unpacked"`
+  - `"SetLive" ""`
+- Upload evidence: `release/steamworks/steam_upload_evidence_codex_polish_20260606.json`.
+- Steamworks store metadata, app visibility, live branches, AppID, depot IDs, and leaderboard name were untouched.
+- No dummy scores were submitted.
+- Deploy not performed.

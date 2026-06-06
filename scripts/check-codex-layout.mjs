@@ -15,7 +15,7 @@ const viewports = [
   { width: 1366, height: 768, name: '1366x768' },
   { width: 1280, height: 720, name: '1280x720' }
 ];
-const categoryShots = ['enemies', 'powerups', 'sectors'];
+const categoryShots = ['sectors', 'runThemes'];
 
 async function isPortAvailable(candidatePort) {
   return new Promise((resolve) => {
