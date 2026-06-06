@@ -108,6 +108,7 @@ const sourceText = Object.freeze({
   'SHIP HANGAR': 'АНГАР',
   'STORY INTRO': 'ВСТУПЛЕНИЕ',
   'HIGHSCORES': 'РЕКОРДЫ',
+  'LEADERBOARD': 'ТАБЛИЦА',
   'ACHIEVEMENTS': 'ДОСТИЖЕНИЯ',
   'THREAT CODEX': 'КОДЕКС УГРОЗ',
   'DISCOVERED SIGNALS AND SWARM PATTERNS': 'ОТКРЫТЫЕ СИГНАЛЫ И ПАТТЕРНЫ РОЯ',

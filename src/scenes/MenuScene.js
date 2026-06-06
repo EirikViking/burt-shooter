@@ -19,6 +19,7 @@ import { getDiscoveryStats } from '../progression/ThreatDiscoveryState.js';
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
+const FONT_BUTTON = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 
 function normalizeFontFamily(fontFamily) {
   const family = String(fontFamily || '').trim();
@@ -45,8 +46,11 @@ function createText(text, style) {
   return new PIXI.Text({ text, style: normalizeTextStyle(style) });
 }
 
-function refreshTextTexture(text) {
+function refreshTextTexture(text, { forceGpuRefresh = false } = {}) {
   if (!text) return;
+  if (forceGpuRefresh && typeof text.unload === 'function') {
+    text.unload();
+  }
   text.updateText?.(false);
   text.onViewUpdate?.();
 }
@@ -120,6 +124,7 @@ export class MenuScene {
     this.deckGlints = [];
     this.settingsOverlay = null;
     this.lastMenuPanelBounds = null;
+    this.menuFontsReady = false;
 
     // PWA install prompt
     this.installPrompt = null;
@@ -790,7 +795,7 @@ export class MenuScene {
     });
     this.container.addChild(this.highscoreBtn);
 
-    this.storyBtn = this.createButton('HIGHSCORES', layout, { accent: 0xff55d9 });
+    this.storyBtn = this.createButton(translateText('LEADERBOARD'), layout, { accent: 0xff55d9 });
     this.storyBtn.alpha = 0;
     this.storyBtn.on('pointerdown', () => {
       try {
@@ -933,18 +938,26 @@ export class MenuScene {
     ]);
 
     document.fonts.ready?.then?.(() => {
-      this.refreshMenuText();
+      this.menuFontsReady = true;
+      this.refreshMenuText({ forceGpuRefresh: true });
     }).catch(() => {
       // System fallbacks are acceptable if a browser blocks local font loading.
     });
 
     return Promise.race([
       loadFonts.then(() => true),
-      new Promise((resolve) => setTimeout(() => resolve(false), 900))
-    ]).catch(() => false);
+      new Promise((resolve) => setTimeout(() => resolve(false), 2800))
+    ]).then((ready) => {
+      this.menuFontsReady = ready;
+      this.refreshMenuText({ forceGpuRefresh: ready });
+      return ready;
+    }).catch(() => {
+      this.refreshMenuText();
+      return false;
+    });
   }
 
-  refreshMenuText() {
+  refreshMenuText({ forceGpuRefresh = false } = {}) {
     [
       this.kicker,
       this.title,
@@ -959,22 +972,27 @@ export class MenuScene {
       this.startBtn?._label,
       this.highscoreBtn?._label,
       this.storyBtn?._label,
+      this.threatCodexBtn?._label,
       this.achievementsBtn?._label,
       this.settingsBtn?._label,
       this.exitBtn?._label,
       this.exitNotice,
       ...this.crewComms.flatMap((card) => card.children.filter((child) => child instanceof PIXI.Text))
-    ].filter(Boolean).forEach(refreshTextTexture);
-    this.layoutMenu();
+    ].filter(Boolean).forEach((text) => refreshTextTexture(text, { forceGpuRefresh }));
+    this.layoutMenu({ forceLabelGpuRefresh: forceGpuRefresh });
   }
 
-  refreshMenuButtonLabel(button, maxWidth, { minScale = 0.68 } = {}) {
+  refreshMenuButtonLabel(button, maxWidth, { minScale = 0.68, forceGpuRefresh = false } = {}) {
     const label = button?._label;
     if (!label) return 1;
-    label.style.padding = Math.max(18, Number(label.style.padding) || 0);
-    refreshTextTexture(label);
+    const targetPadding = this.menuFontsReady ? 44 : 36;
+    if (label.style.padding !== targetPadding) {
+      label.style.padding = targetPadding;
+      forceGpuRefresh = true;
+    }
+    refreshTextTexture(label, { forceGpuRefresh });
     const scale = fitTextToWidth(label, maxWidth, { minScale });
-    refreshTextTexture(label);
+    refreshTextTexture(label, { forceGpuRefresh });
     return scale;
   }
 
@@ -1002,7 +1020,7 @@ export class MenuScene {
 
 
 
-  layoutMenu() {
+  layoutMenu({ forceLabelGpuRefresh = false } = {}) {
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
     const layout = createTextLayout(width, height, responsiveLayout);
@@ -1075,8 +1093,8 @@ export class MenuScene {
     const isShortLayout = !isMobileLayout && height < 820;
     const buttonHeight = isMobileLayout ? 42 : (isShortLayout ? 42 : 48);
     const primaryButtonHeight = isMobileLayout ? 48 : (isShortLayout ? 52 : 58);
-    const buttonWidth = isMobileLayout ? Math.min(276, contentWidth - 18) : Math.min(362, contentWidth - 58);
-    const primaryButtonWidth = isMobileLayout ? Math.min(296, contentWidth) : Math.min(420, contentWidth - 18);
+    const buttonWidth = isMobileLayout ? Math.min(286, contentWidth - 10) : Math.min(390, contentWidth - 38);
+    const primaryButtonWidth = isMobileLayout ? Math.min(304, contentWidth) : Math.min(438, contentWidth - 8);
     const buttonSpacing = isMobileLayout ? 10 : (isShortLayout ? 8 : 12);
     const sectionSpacing = isMobileLayout ? 13 : (isShortLayout ? 12 : 18);
 
@@ -1097,8 +1115,8 @@ export class MenuScene {
       button._btnWidth = btnWidth;
       button._btnHeight = btnHeight;
       if (isPrimary) button._variant = 'primary';
-      button._label.style.fontSize = Math.round(getResponsiveFontSize(layout, 'button') * (isPrimary ? 1.08 : 0.96));
-      this.refreshMenuButtonLabel(button, btnWidth - 34, { minScale: 0.68 });
+      button._label.style.fontSize = Math.round(getResponsiveFontSize(layout, 'button') * (isPrimary ? 1 : 0.9));
+      this.refreshMenuButtonLabel(button, btnWidth - 48, { minScale: 0.78, forceGpuRefresh: forceLabelGpuRefresh });
       this.drawMenuButton(button, false);
     });
 
@@ -1261,6 +1279,7 @@ export class MenuScene {
       this.startBtn,
       this.highscoreBtn,
       this.storyBtn,
+      this.threatCodexBtn,
       this.achievementsBtn,
       this.settingsBtn,
       this.exitBtn,
@@ -1406,14 +1425,14 @@ export class MenuScene {
     container.addChild(shine);
 
     const label = createText(text, {
-      fontFamily: FONT_DISPLAY,
+      fontFamily: FONT_BUTTON,
       fontSize: fontSize,
       fontWeight: '800',
       letterSpacing: 0,
       fill: '#c9fbff',
       stroke: '#031323',
       strokeThickness: 3,
-      padding: 10
+      padding: 36
     });
     label.anchor.set(0.5);
     container.addChild(label);
@@ -1777,6 +1796,10 @@ export class MenuScene {
     }
     if (this.threatCodexBtn?._label) {
       this.threatCodexBtn._label.text = translateText('THREAT CODEX');
+    }
+    if (this.storyBtn?._label) {
+      this.storyBtn._label.text = translateText('LEADERBOARD');
+      this.refreshMenuButtonLabel(this.storyBtn, this.storyBtn._btnWidth - 48, { minScale: 0.78 });
     }
     this.settingsOverlay?.rebuild?.();
     this.layoutMenu();

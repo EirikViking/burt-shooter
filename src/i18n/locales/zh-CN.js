@@ -108,6 +108,7 @@ const sourceText = Object.freeze({
   'SHIP HANGAR': '飞船机库',
   'STORY INTRO': '剧情开场',
   'HIGHSCORES': '高分榜',
+  'LEADERBOARD': '排行榜',
   'ACHIEVEMENTS': '成就',
   'THREAT CODEX': '威胁图鉴',
   'DISCOVERED SIGNALS AND SWARM PATTERNS': '已发现的信号与虫群模式',

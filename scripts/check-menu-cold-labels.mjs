@@ -19,16 +19,22 @@ const viewports = [
 const expectedLabels = {
   startBtn: 'LAUNCH RUN',
   highscoreBtn: 'SHIP HANGAR',
-  storyBtn: 'HIGHSCORES',
+  storyBtn: 'LEADERBOARD',
   threatCodexBtn: 'THREAT CODEX',
   achievementsBtn: 'ACHIEVEMENTS',
   settingsBtn: 'SETTINGS',
   exitBtn: 'EXIT GAME',
   musicBtn: 'MUSIC: ON'
 };
+const menuButtonKeys = Object.keys(expectedLabels).filter((key) => key !== 'musicBtn');
+const coldFontDelayMs = Number(process.env.CHECK_MENU_COLD_FONT_DELAY_MS || 2200);
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function isPortAvailable(candidatePort) {
@@ -219,16 +225,29 @@ function labelInkBounds(image, bounds) {
   };
 }
 
-async function waitForColdMenu(page) {
+async function waitForMenuScene(page) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
-  await page.waitForFunction((keys) => {
+}
+
+async function waitForMenuAlpha(page, minAlpha = 0.98, timeout = 12000) {
+  await page.waitForFunction(({ keys, minAlpha: requiredAlpha }) => {
     const scene = window.__game?.scenes?.menu;
     return keys.every((key) => {
       const button = scene?.[key];
-      return button && button.alpha >= 0.98 && button._label?.text;
+      return button && button.alpha >= requiredAlpha && button._label?.text;
     });
-  }, Object.keys(expectedLabels).filter((key) => key !== 'musicBtn'), { timeout: 8000 });
+  }, { keys: menuButtonKeys, minAlpha }, { timeout, polling: 16 });
+}
+
+async function waitForColdFirstVisibleMenu(page) {
+  await waitForMenuScene(page);
+  await waitForMenuAlpha(page, 0.58, 15000);
+  await page.waitForTimeout(32);
+}
+
+async function waitForSettledMenu(page) {
+  await waitForMenuAlpha(page, 0.98, 15000);
   await page.waitForTimeout(250);
 }
 
@@ -259,6 +278,8 @@ async function inspectMenu(page) {
         labelWidth: Number(label?.width || 0),
         buttonWidth: Number(button?._btnWidth || 0),
         labelScaleX: Number(label?.scale?.x || 0),
+        labelFontFamily: String(label?.style?.fontFamily || ''),
+        labelFontSize: Number(label?.style?.fontSize || 0),
         buttonBounds,
         labelBounds
       }];
@@ -266,67 +287,78 @@ async function inspectMenu(page) {
     return {
       scene: window.__game?.currentSceneName || null,
       buildId: JSON.parse(window.render_game_to_text?.() || '{}')?.buildId || null,
+      fontsStatus: document.fonts?.status || 'unavailable',
       focusedOption: scene?.menuOptions?.[scene.focusedMenuIndex]?.id || null,
       buttons
     };
   }, expectedLabels);
 }
 
-function findFailures(snapshot) {
+function findFailures(snapshot, { minAlpha = 0.98, state = 'menu' } = {}) {
   const failures = [];
   if (snapshot.scene !== 'menu') failures.push(`expected menu scene, got ${snapshot.scene || 'missing'}`);
   for (const [key, button] of Object.entries(snapshot.buttons || {})) {
     if (button.text !== button.expected) {
-      failures.push(`${key} label expected "${button.expected}", got "${button.text || 'missing'}"`);
+      failures.push(`${state} ${key} label expected "${button.expected}", got "${button.text || 'missing'}"`);
     }
-    if (button.alpha < 0.98) failures.push(`${key} was not fully visible in cold menu`);
-    if (!button.buttonBounds || !button.labelBounds) failures.push(`${key} missing bounds`);
+    if (/HIGHSCORES?/i.test(button.text || '')) {
+      failures.push(`${state} ${key} still renders old highscore wording: "${button.text}"`);
+    }
+    if (button.alpha < minAlpha) failures.push(`${state} ${key} alpha ${button.alpha.toFixed(2)} below ${minAlpha}`);
+    if (!button.buttonBounds || !button.labelBounds) failures.push(`${state} ${key} missing bounds`);
     if (button.buttonWidth > 0 && button.labelWidth > button.buttonWidth - 28) {
-      failures.push(`${key} label may clip: labelWidth=${Math.round(button.labelWidth)} buttonWidth=${Math.round(button.buttonWidth)}`);
+      failures.push(`${state} ${key} label may clip: labelWidth=${Math.round(button.labelWidth)} buttonWidth=${Math.round(button.buttonWidth)}`);
     }
     if (button.labelScaleX <= 0 || button.labelScaleX > 1.01) {
-      failures.push(`${key} has unexpected label scale ${button.labelScaleX}`);
+      failures.push(`${state} ${key} has unexpected label scale ${button.labelScaleX}`);
     }
   }
   const codex = snapshot.buttons?.threatCodexBtn;
-  if (codex?.text !== 'THREAT CODEX') failures.push('cold Threat Codex label is not complete before hover');
+  if (codex?.text !== 'THREAT CODEX') failures.push(`${state} Threat Codex label is not complete before hover`);
   if (codex?.buttonBounds && codex?.labelBounds) {
     const centeredEnough = Math.abs(
       (codex.labelBounds.x + codex.labelBounds.width / 2) -
       (codex.buttonBounds.x + codex.buttonBounds.width / 2)
     ) <= 4;
-    if (!centeredEnough) failures.push('cold Threat Codex label is not visually centered in its button bounds');
+    if (!centeredEnough) failures.push(`${state} Threat Codex label is not visually centered in its button bounds`);
   }
   return failures;
 }
 
-function findRenderedLabelFailures(coldScreenshotPath, refreshedScreenshotPath, coldSnapshot, refreshedSnapshot) {
+function findRenderedLabelFailures(stateName, screenshotPath, referenceScreenshotPath, snapshot, referenceSnapshot, { compareCounts = true } = {}) {
   const failures = [];
-  const coldImage = parsePngImage(readFileSync(coldScreenshotPath), path.basename(coldScreenshotPath));
-  const refreshedImage = parsePngImage(readFileSync(refreshedScreenshotPath), path.basename(refreshedScreenshotPath));
+  const image = parsePngImage(readFileSync(screenshotPath), path.basename(screenshotPath));
+  const referenceImage = parsePngImage(readFileSync(referenceScreenshotPath), path.basename(referenceScreenshotPath));
 
   for (const key of Object.keys(expectedLabels)) {
-    const cold = coldSnapshot.buttons?.[key];
-    const refreshed = refreshedSnapshot.buttons?.[key];
-    if (!cold?.labelBounds || !refreshed?.labelBounds) continue;
-    const coldInk = labelInkBounds(coldImage, cold.labelBounds);
-    const refreshedInk = labelInkBounds(refreshedImage, refreshed.labelBounds);
-    if (!coldInk || !refreshedInk) {
-      failures.push(`${key} could not read rendered label pixels`);
+    const current = snapshot.buttons?.[key];
+    const reference = referenceSnapshot.buttons?.[key];
+    if (!current?.labelBounds || !reference?.labelBounds) continue;
+    const currentInk = labelInkBounds(image, current.labelBounds);
+    const referenceInk = labelInkBounds(referenceImage, reference.labelBounds);
+    if (!currentInk || !referenceInk) {
+      failures.push(`${stateName} ${key} could not read rendered label pixels`);
       continue;
     }
-    if (refreshedInk.count < 24) {
-      failures.push(`${key} refreshed label pixel probe found too little rendered text`);
+    if (referenceInk.count < 24) {
+      failures.push(`${stateName} ${key} reference label pixel probe found too little rendered text`);
       continue;
     }
-    if (coldInk.count < refreshedInk.count * 0.78) {
-      failures.push(`${key} cold rendered label lost pixels before hover: cold=${coldInk.count} refreshed=${refreshedInk.count}`);
+    if (compareCounts && currentInk.count < referenceInk.count * 0.78) {
+      failures.push(`${stateName} ${key} rendered label lost pixels before hover: current=${currentInk.count} reference=${referenceInk.count}`);
     }
-    if (coldInk.width < refreshedInk.width - 5) {
-      failures.push(`${key} cold rendered label is narrower than refreshed label: cold=${coldInk.width} refreshed=${refreshedInk.width}`);
+    if (currentInk.width < referenceInk.width - 5) {
+      failures.push(`${stateName} ${key} rendered label is narrower than reference label: current=${currentInk.width} reference=${referenceInk.width}`);
     }
-    if (coldInk.right < refreshedInk.right - 4) {
-      failures.push(`${key} cold rendered label right edge is clipped before hover: cold=${coldInk.right} refreshed=${refreshedInk.right}`);
+    if (currentInk.right < referenceInk.right - 4) {
+      failures.push(`${stateName} ${key} rendered label right edge is clipped before hover: current=${currentInk.right} reference=${referenceInk.right}`);
+    }
+    if (current.buttonBounds) {
+      const globalRight = current.labelBounds.x + currentInk.right;
+      const safeRight = current.buttonBounds.x + current.buttonBounds.width - 18;
+      if (globalRight > safeRight) {
+        failures.push(`${stateName} ${key} rendered label reaches unsafe right edge: labelRight=${Math.round(globalRight)} safeRight=${Math.round(safeRight)}`);
+      }
     }
   }
 
@@ -343,26 +375,36 @@ async function forceMenuLabelRefresh(page) {
   await page.waitForTimeout(120);
 }
 
-async function verifyKeyboardMouseController(page, coldSnapshot) {
-  const results = [];
-  await page.keyboard.press('ArrowDown');
-  await page.waitForTimeout(120);
-  results.push({
-    mode: 'keyboard',
-    snapshot: await inspectMenu(page)
+async function installColdFontDelay(context) {
+  if (!coldFontDelayMs || coldFontDelayMs < 1) return;
+  await context.route('**/fonts/*.ttf', async (route) => {
+    await sleep(coldFontDelayMs);
+    await route.continue();
   });
+}
 
-  for (const key of Object.keys(expectedLabels).filter((buttonKey) => buttonKey !== 'musicBtn')) {
-    const bounds = coldSnapshot.buttons?.[key]?.buttonBounds;
+async function takeMenuShot(page, viewport, state, screenshots, { includeInContactSheet = true } = {}) {
+  const snapshot = await inspectMenu(page);
+  const screenshotPath = path.join(outputDir, `menu-${state}-${viewport.name}.png`);
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  if (includeInContactSheet) screenshots.push({ label: `${viewport.name} ${state}`, path: screenshotPath });
+  return {
+    state,
+    snapshot,
+    screenshotPath
+  };
+}
+
+async function hoverMenuButtons(page, snapshot) {
+  for (const key of menuButtonKeys) {
+    const bounds = snapshot.buttons?.[key]?.buttonBounds;
     if (!bounds) continue;
     await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-    await page.waitForTimeout(45);
+    await page.waitForTimeout(55);
   }
-  results.push({
-    mode: 'mouse',
-    snapshot: await inspectMenu(page)
-  });
+}
 
+async function pressVirtualControllerDown(page) {
   await page.evaluate(() => {
     window.__burtGamepadOverride = {
       id: 'virtual-menu-label-check',
@@ -383,15 +425,6 @@ async function verifyKeyboardMouseController(page, coldSnapshot) {
     window.__burtGamepadOverride.buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
   });
   await page.waitForTimeout(120);
-  results.push({
-    mode: 'controller',
-    snapshot: await inspectMenu(page)
-  });
-
-  return results.map((result) => ({
-    ...result,
-    failures: findFailures(result.snapshot)
-  }));
 }
 
 function htmlEscape(value = '') {
@@ -436,7 +469,7 @@ const server = await startDevServer();
 const browser = await chromium.launch({
   headless: true,
   executablePath: findChrome(),
-  args: ['--autoplay-policy=no-user-gesture-required']
+  args: ['--autoplay-policy=no-user-gesture-required', '--disk-cache-size=0', '--media-cache-size=0']
 });
 
 try {
@@ -444,7 +477,9 @@ try {
   const screenshots = [];
   const results = [];
   for (const viewport of viewports) {
-    const page = await browser.newPage({ viewport });
+    const context = await browser.newContext({ viewport });
+    await installColdFontDelay(context);
+    const page = await context.newPage();
     const consoleErrors = [];
     const pageErrors = [];
     page.on('console', (message) => {
@@ -452,38 +487,57 @@ try {
     });
     page.on('pageerror', (error) => pageErrors.push(error.message));
 
-    await waitForColdMenu(page);
-    const snapshot = await inspectMenu(page);
-    const screenshotPath = path.join(outputDir, `menu-cold-${viewport.name}.png`);
-    await page.screenshot({ path: screenshotPath, fullPage: true });
-    screenshots.push({ label: viewport.name, path: screenshotPath });
+    await waitForColdFirstVisibleMenu(page);
+    const firstVisible = await takeMenuShot(page, viewport, 'cold-first-visible', screenshots);
+    await page.waitForTimeout(1800);
+    const noInput = await takeMenuShot(page, viewport, 'cold-no-input-2s', screenshots);
+
+    await hoverMenuButtons(page, noInput.snapshot);
+    const hover = await takeMenuShot(page, viewport, 'after-hover', screenshots);
+
+    await page.mouse.move(1, 1);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(160);
+    const keyboard = await takeMenuShot(page, viewport, 'after-keyboard', screenshots);
+
+    await pressVirtualControllerDown(page);
+    const controller = await takeMenuShot(page, viewport, 'after-controller', screenshots);
+
+    await page.mouse.move(1, 1);
     await forceMenuLabelRefresh(page);
-    const refreshedSnapshot = await inspectMenu(page);
-    const refreshedScreenshotPath = path.join(outputDir, `menu-cold-refreshed-${viewport.name}.png`);
-    await page.screenshot({ path: refreshedScreenshotPath, fullPage: true });
-    const interactionResults = await verifyKeyboardMouseController(page, snapshot);
-    const interactionScreenshotPath = path.join(outputDir, `menu-post-interaction-${viewport.name}.png`);
-    await page.screenshot({ path: interactionScreenshotPath, fullPage: true });
+    const reference = await takeMenuShot(page, viewport, 'reference-refreshed', screenshots, { includeInContactSheet: false });
+
+    await page.close();
+    await context.unroute('**/fonts/*.ttf').catch(() => {});
+    const warmPage = await context.newPage();
+    await waitForMenuScene(warmPage);
+    await waitForSettledMenu(warmPage);
+    const warm = await takeMenuShot(warmPage, viewport, 'warm-relaunch', screenshots);
+
+    const stateResults = [firstVisible, noInput, hover, keyboard, controller, warm];
     const failures = [
-      ...findFailures(snapshot),
-      ...findFailures(refreshedSnapshot).map((failure) => `refreshed ${failure}`),
-      ...findRenderedLabelFailures(screenshotPath, refreshedScreenshotPath, snapshot, refreshedSnapshot),
-      ...interactionResults.flatMap((result) => result.failures.map((failure) => `${result.mode} ${failure}`)),
+      ...findFailures(firstVisible.snapshot, { minAlpha: 0.55, state: 'cold-first-visible' }),
+      ...[noInput, hover, keyboard, controller, warm].flatMap((result) => findFailures(result.snapshot, { state: result.state })),
+      ...stateResults.flatMap((result) => findRenderedLabelFailures(
+        result.state,
+        result.screenshotPath,
+        reference.screenshotPath,
+        result.snapshot,
+        reference.snapshot,
+        { compareCounts: result.state !== 'cold-first-visible' }
+      )),
       ...consoleErrors.map((error) => `console error: ${error}`),
       ...pageErrors.map((error) => `page error: ${error}`)
     ];
     results.push({
       viewport,
-      snapshot,
-      screenshotPath,
-      refreshedSnapshot,
-      refreshedScreenshotPath,
-      interactionResults,
-      interactionScreenshotPath,
+      states: Object.fromEntries(stateResults.map((result) => [result.state, result])),
+      reference,
       failures,
       ok: failures.length === 0
     });
-    await page.close();
+    await warmPage.close();
+    await context.close();
   }
 
   const contactSheet = await makeContactSheet(browser, screenshots);

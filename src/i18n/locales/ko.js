@@ -113,6 +113,7 @@ const sourceText = Object.freeze({
   'SHIP HANGAR': '격납고',
   'STORY INTRO': '스토리 인트로',
   'HIGHSCORES': '최고 점수',
+  'LEADERBOARD': '순위표',
   'ACHIEVEMENTS': '업적',
   'THREAT CODEX': '위협 도감',
   'DISCOVERED SIGNALS AND SWARM PATTERNS': '발견한 신호와 스웜 패턴',

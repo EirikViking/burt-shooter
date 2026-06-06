@@ -113,6 +113,7 @@ const sourceText = Object.freeze({
   'SHIP HANGAR': 'ハンガー',
   'STORY INTRO': 'ストーリー導入',
   'HIGHSCORES': 'ハイスコア',
+  'LEADERBOARD': 'ランキング',
   'ACHIEVEMENTS': '実績',
   'THREAT CODEX': '脅威コーデックス',
   'DISCOVERED SIGNALS AND SWARM PATTERNS': '発見済みシグナルとスウォームパターン',
