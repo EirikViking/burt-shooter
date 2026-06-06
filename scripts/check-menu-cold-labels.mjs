@@ -1,8 +1,9 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { inflateSync } from 'node:zlib';
 import { chromium } from 'playwright';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
@@ -91,6 +92,133 @@ function findChrome() {
   ].filter(Boolean).find((candidate) => existsSync(candidate));
 }
 
+function parsePngImage(buffer, file) {
+  const signature = buffer.subarray(0, 8).toString('hex');
+  if (signature !== '89504e470d0a1a0a') throw new Error(`${file}: invalid PNG signature`);
+
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = 0;
+  const idat = [];
+
+  while (offset < buffer.length) {
+    const length = buffer.readUInt32BE(offset);
+    const type = buffer.subarray(offset + 4, offset + 8).toString('ascii');
+    const data = buffer.subarray(offset + 8, offset + 8 + length);
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      bitDepth = data[8];
+      colorType = data[9];
+    } else if (type === 'IDAT') {
+      idat.push(data);
+    } else if (type === 'IEND') {
+      break;
+    }
+    offset += 12 + length;
+  }
+
+  if (bitDepth !== 8) throw new Error(`${file}: expected 8-bit PNG, got ${bitDepth}`);
+  if (colorType !== 2 && colorType !== 6) throw new Error(`${file}: expected RGB/RGBA PNG color type 2/6, got ${colorType}`);
+
+  const raw = inflateSync(Buffer.concat(idat));
+  const sourceBytesPerPixel = colorType === 6 ? 4 : 3;
+  const sourceStride = width * sourceBytesPerPixel;
+  const pixels = Buffer.alloc(width * height * 4);
+  let rawOffset = 0;
+  let pixelOffset = 0;
+  let prevRow = Buffer.alloc(sourceStride);
+
+  for (let y = 0; y < height; y += 1) {
+    const filter = raw[rawOffset];
+    rawOffset += 1;
+    const row = Buffer.from(raw.subarray(rawOffset, rawOffset + sourceStride));
+    rawOffset += sourceStride;
+
+    for (let x = 0; x < sourceStride; x += 1) {
+      const left = x >= sourceBytesPerPixel ? row[x - sourceBytesPerPixel] : 0;
+      const up = prevRow[x] || 0;
+      const upLeft = x >= sourceBytesPerPixel ? prevRow[x - sourceBytesPerPixel] || 0 : 0;
+      let value = row[x];
+      if (filter === 1) {
+        value = (value + left) & 0xff;
+      } else if (filter === 2) {
+        value = (value + up) & 0xff;
+      } else if (filter === 3) {
+        value = (value + Math.floor((left + up) / 2)) & 0xff;
+      } else if (filter === 4) {
+        const p = left + up - upLeft;
+        const pa = Math.abs(p - left);
+        const pb = Math.abs(p - up);
+        const pc = Math.abs(p - upLeft);
+        const predictor = pa <= pb && pa <= pc ? left : (pb <= pc ? up : upLeft);
+        value = (value + predictor) & 0xff;
+      } else if (filter !== 0) {
+        throw new Error(`${file}: unsupported PNG row filter ${filter}`);
+      }
+      row[x] = value;
+    }
+
+    for (let x = 0; x < width; x += 1) {
+      const sourceIndex = x * sourceBytesPerPixel;
+      pixels[pixelOffset] = row[sourceIndex];
+      pixels[pixelOffset + 1] = row[sourceIndex + 1];
+      pixels[pixelOffset + 2] = row[sourceIndex + 2];
+      pixels[pixelOffset + 3] = colorType === 6 ? row[sourceIndex + 3] : 255;
+      pixelOffset += 4;
+    }
+    prevRow = row;
+  }
+
+  return { width, height, pixels };
+}
+
+function looksLikeLabelPixel(r, g, b, a) {
+  if (a < 220) return false;
+  const bright = Math.max(r, g, b);
+  const textCyan = g >= 145 && b >= 150 && r >= 70;
+  const textWhite = r >= 190 && g >= 190 && b >= 190;
+  return bright >= 150 && (textCyan || textWhite);
+}
+
+function labelInkBounds(image, bounds) {
+  if (!bounds) return null;
+  const left = Math.max(0, Math.floor(bounds.x) - 2);
+  const top = Math.max(0, Math.floor(bounds.y) - 2);
+  const right = Math.min(image.width, Math.ceil(bounds.right) + 2);
+  const bottom = Math.min(image.height, Math.ceil(bounds.bottom) + 2);
+  let minX = right;
+  let minY = bottom;
+  let maxX = left - 1;
+  let maxY = top - 1;
+  let count = 0;
+
+  for (let y = top; y < bottom; y += 1) {
+    for (let x = left; x < right; x += 1) {
+      const offset = (y * image.width + x) * 4;
+      if (!looksLikeLabelPixel(image.pixels[offset], image.pixels[offset + 1], image.pixels[offset + 2], image.pixels[offset + 3])) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+      count += 1;
+    }
+  }
+
+  if (count === 0) return { count: 0, width: 0, height: 0, left: 0, right: 0, top: 0, bottom: 0 };
+  return {
+    count,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+    left: minX - left,
+    right: maxX - left,
+    top: minY - top,
+    bottom: maxY - top
+  };
+}
+
 async function waitForColdMenu(page) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
@@ -172,6 +300,100 @@ function findFailures(snapshot) {
   return failures;
 }
 
+function findRenderedLabelFailures(coldScreenshotPath, refreshedScreenshotPath, coldSnapshot, refreshedSnapshot) {
+  const failures = [];
+  const coldImage = parsePngImage(readFileSync(coldScreenshotPath), path.basename(coldScreenshotPath));
+  const refreshedImage = parsePngImage(readFileSync(refreshedScreenshotPath), path.basename(refreshedScreenshotPath));
+
+  for (const key of Object.keys(expectedLabels)) {
+    const cold = coldSnapshot.buttons?.[key];
+    const refreshed = refreshedSnapshot.buttons?.[key];
+    if (!cold?.labelBounds || !refreshed?.labelBounds) continue;
+    const coldInk = labelInkBounds(coldImage, cold.labelBounds);
+    const refreshedInk = labelInkBounds(refreshedImage, refreshed.labelBounds);
+    if (!coldInk || !refreshedInk) {
+      failures.push(`${key} could not read rendered label pixels`);
+      continue;
+    }
+    if (refreshedInk.count < 24) {
+      failures.push(`${key} refreshed label pixel probe found too little rendered text`);
+      continue;
+    }
+    if (coldInk.count < refreshedInk.count * 0.78) {
+      failures.push(`${key} cold rendered label lost pixels before hover: cold=${coldInk.count} refreshed=${refreshedInk.count}`);
+    }
+    if (coldInk.width < refreshedInk.width - 5) {
+      failures.push(`${key} cold rendered label is narrower than refreshed label: cold=${coldInk.width} refreshed=${refreshedInk.width}`);
+    }
+    if (coldInk.right < refreshedInk.right - 4) {
+      failures.push(`${key} cold rendered label right edge is clipped before hover: cold=${coldInk.right} refreshed=${refreshedInk.right}`);
+    }
+  }
+
+  return failures;
+}
+
+async function forceMenuLabelRefresh(page) {
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.menu;
+    if (!scene) return;
+    scene.refreshMenuText?.();
+    scene.layoutMenu?.();
+  });
+  await page.waitForTimeout(120);
+}
+
+async function verifyKeyboardMouseController(page, coldSnapshot) {
+  const results = [];
+  await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(120);
+  results.push({
+    mode: 'keyboard',
+    snapshot: await inspectMenu(page)
+  });
+
+  for (const key of Object.keys(expectedLabels).filter((buttonKey) => buttonKey !== 'musicBtn')) {
+    const bounds = coldSnapshot.buttons?.[key]?.buttonBounds;
+    if (!bounds) continue;
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+    await page.waitForTimeout(45);
+  }
+  results.push({
+    mode: 'mouse',
+    snapshot: await inspectMenu(page)
+  });
+
+  await page.evaluate(() => {
+    window.__burtGamepadOverride = {
+      id: 'virtual-menu-label-check',
+      connected: true,
+      axes: [0, 0],
+      buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }))
+    };
+  });
+  await page.waitForTimeout(150);
+  await page.evaluate(() => {
+    window.__burtGamepadOverride.buttons = Array.from({ length: 17 }, (_, index) => ({
+      pressed: index === 13,
+      value: index === 13 ? 1 : 0
+    }));
+  });
+  await page.waitForTimeout(180);
+  await page.evaluate(() => {
+    window.__burtGamepadOverride.buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+  });
+  await page.waitForTimeout(120);
+  results.push({
+    mode: 'controller',
+    snapshot: await inspectMenu(page)
+  });
+
+  return results.map((result) => ({
+    ...result,
+    failures: findFailures(result.snapshot)
+  }));
+}
+
 function htmlEscape(value = '') {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -235,12 +457,32 @@ try {
     const screenshotPath = path.join(outputDir, `menu-cold-${viewport.name}.png`);
     await page.screenshot({ path: screenshotPath, fullPage: true });
     screenshots.push({ label: viewport.name, path: screenshotPath });
+    await forceMenuLabelRefresh(page);
+    const refreshedSnapshot = await inspectMenu(page);
+    const refreshedScreenshotPath = path.join(outputDir, `menu-cold-refreshed-${viewport.name}.png`);
+    await page.screenshot({ path: refreshedScreenshotPath, fullPage: true });
+    const interactionResults = await verifyKeyboardMouseController(page, snapshot);
+    const interactionScreenshotPath = path.join(outputDir, `menu-post-interaction-${viewport.name}.png`);
+    await page.screenshot({ path: interactionScreenshotPath, fullPage: true });
     const failures = [
       ...findFailures(snapshot),
+      ...findFailures(refreshedSnapshot).map((failure) => `refreshed ${failure}`),
+      ...findRenderedLabelFailures(screenshotPath, refreshedScreenshotPath, snapshot, refreshedSnapshot),
+      ...interactionResults.flatMap((result) => result.failures.map((failure) => `${result.mode} ${failure}`)),
       ...consoleErrors.map((error) => `console error: ${error}`),
       ...pageErrors.map((error) => `page error: ${error}`)
     ];
-    results.push({ viewport, snapshot, screenshotPath, failures, ok: failures.length === 0 });
+    results.push({
+      viewport,
+      snapshot,
+      screenshotPath,
+      refreshedSnapshot,
+      refreshedScreenshotPath,
+      interactionResults,
+      interactionScreenshotPath,
+      failures,
+      ok: failures.length === 0
+    });
     await page.close();
   }
 

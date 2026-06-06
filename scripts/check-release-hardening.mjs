@@ -48,6 +48,7 @@ const steps = [
   npmStep('Steam leaderboard autosubmit mock', 'check:steam-leaderboard-mock'),
   npmStep('ship usage counter', 'check:ship-usage-counter'),
   npmStep('player ship source and padding', 'check:player-ship-padding'),
+  npmStep('player ring alignment', 'check:player-ring-alignment'),
   npmStep('Steam Cloud save', 'check:steam-cloud-save'),
   npmStep('i18n strings', 'check:i18n'),
   npmStep('localized UI visual QA', 'check:i18n-ui'),

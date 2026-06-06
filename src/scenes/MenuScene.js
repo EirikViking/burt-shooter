@@ -45,15 +45,22 @@ function createText(text, style) {
   return new PIXI.Text({ text, style: normalizeTextStyle(style) });
 }
 
+function refreshTextTexture(text) {
+  if (!text) return;
+  text.updateText?.(false);
+  text.onViewUpdate?.();
+}
+
 function fitTextToWidth(text, maxWidth, { minScale = 0.62 } = {}) {
   if (!text || !Number.isFinite(maxWidth) || maxWidth <= 0) return 1;
   text.scale.set(1);
-  text.updateText?.(false);
+  refreshTextTexture(text);
   const measuredWidth = text.width || 0;
   const nextScale = measuredWidth > maxWidth
     ? Math.max(minScale, maxWidth / measuredWidth)
     : 1;
   text.scale.set(nextScale);
+  refreshTextTexture(text);
   return nextScale;
 }
 
@@ -152,10 +159,14 @@ export class MenuScene {
       .catch((error) => console.warn('[MenuScene] Menu asset preload failed:', error));
     this.initBonusDecorations();
     this.createElements();
-    this.warmMenuFonts();
+    const menuTypographyReady = this.warmMenuFonts();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutMenu());
     this.layoutMenu();
-    this.startAnimations();
+    menuTypographyReady.finally(() => {
+      if (this.game?.currentScene !== this) return;
+      this.refreshMenuText();
+      this.startAnimations();
+    });
     AudioManager.playMusicContext('menu');
     console.log(`MenuScene build:${BUILD_ID}`);
 
@@ -893,7 +904,7 @@ export class MenuScene {
         const enabled = AudioManager.toggleMute();
         const label = this.musicBtn._label;
         label.text = enabled ? 'MUSIC: ON' : 'MUSIC: OFF';
-        label.updateText?.(false);
+        this.refreshMenuButtonLabel(this.musicBtn, this.musicBtn._btnWidth - 26, { minScale: 0.72 });
       } catch (e) {
         console.error('[MenuScene] Music Toggle Error:', e);
       }
@@ -913,17 +924,24 @@ export class MenuScene {
   }
 
   warmMenuFonts() {
-    if (typeof document === 'undefined' || !document.fonts?.load) return;
+    if (typeof document === 'undefined' || !document.fonts?.load) return Promise.resolve(false);
 
-    Promise.all([
+    const loadFonts = Promise.all([
       document.fonts.load('900 56px Orbitron'),
       document.fonts.load('800 20px Orbitron'),
       document.fonts.load('700 18px Rajdhani')
-    ]).then(() => {
+    ]);
+
+    document.fonts.ready?.then?.(() => {
       this.refreshMenuText();
     }).catch(() => {
       // System fallbacks are acceptable if a browser blocks local font loading.
     });
+
+    return Promise.race([
+      loadFonts.then(() => true),
+      new Promise((resolve) => setTimeout(() => resolve(false), 900))
+    ]).catch(() => false);
   }
 
   refreshMenuText() {
@@ -946,8 +964,18 @@ export class MenuScene {
       this.exitBtn?._label,
       this.exitNotice,
       ...this.crewComms.flatMap((card) => card.children.filter((child) => child instanceof PIXI.Text))
-    ].filter(Boolean).forEach((text) => text.onViewUpdate?.());
+    ].filter(Boolean).forEach(refreshTextTexture);
     this.layoutMenu();
+  }
+
+  refreshMenuButtonLabel(button, maxWidth, { minScale = 0.68 } = {}) {
+    const label = button?._label;
+    if (!label) return 1;
+    label.style.padding = Math.max(18, Number(label.style.padding) || 0);
+    refreshTextTexture(label);
+    const scale = fitTextToWidth(label, maxWidth, { minScale });
+    refreshTextTexture(label);
+    return scale;
   }
 
   async initBonusDecorations() {
@@ -1070,8 +1098,7 @@ export class MenuScene {
       button._btnHeight = btnHeight;
       if (isPrimary) button._variant = 'primary';
       button._label.style.fontSize = Math.round(getResponsiveFontSize(layout, 'button') * (isPrimary ? 1.08 : 0.96));
-      button._label.updateText?.(false);
-      fitTextToWidth(button._label, btnWidth - 34, { minScale: 0.68 });
+      this.refreshMenuButtonLabel(button, btnWidth - 34, { minScale: 0.68 });
       this.drawMenuButton(button, false);
     });
 
@@ -1182,7 +1209,7 @@ export class MenuScene {
     this.musicBtn._btnWidth = isMobileLayout ? 150 : 164;
     this.musicBtn._btnHeight = isMobileLayout ? 34 : 36;
     this.musicBtn._label.style.fontSize = Math.max(12, controlsSize);
-    this.musicBtn._label.updateText?.(false);
+    this.refreshMenuButtonLabel(this.musicBtn, this.musicBtn._btnWidth - 26, { minScale: 0.72 });
     this.drawMenuButton(this.musicBtn, false);
     this.musicBtn.scale.set(1);
     this.musicBtn.x = width - Math.max(92, layout.padding + this.musicBtn._btnWidth / 2);
@@ -1569,7 +1596,7 @@ export class MenuScene {
           const enabled = AudioManager.toggleMute();
           if (this.musicBtn?._label) {
             this.musicBtn._label.text = enabled ? 'MUSIC: ON' : 'MUSIC: OFF';
-            this.musicBtn._label.updateText?.(false);
+            this.refreshMenuButtonLabel(this.musicBtn, this.musicBtn._btnWidth - 26, { minScale: 0.72 });
           }
         }
       }
@@ -1733,6 +1760,7 @@ export class MenuScene {
         this.menuGamepadNavigator.suppressUntilReleased();
         if (this.musicBtn?._label) {
           this.musicBtn._label.text = AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF';
+          this.refreshMenuButtonLabel(this.musicBtn, this.musicBtn._btnWidth - 26, { minScale: 0.72 });
         }
       }
     });
@@ -1745,6 +1773,7 @@ export class MenuScene {
     if (this.controls) this.controls.text = getCurrentLayout().isMobile ? this.getControlsText(getCurrentLayout()) : '';
     if (this.musicBtn?._label) {
       this.musicBtn._label.text = AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF';
+      this.refreshMenuButtonLabel(this.musicBtn, this.musicBtn._btnWidth - 26, { minScale: 0.72 });
     }
     if (this.threatCodexBtn?._label) {
       this.threatCodexBtn._label.text = translateText('THREAT CODEX');

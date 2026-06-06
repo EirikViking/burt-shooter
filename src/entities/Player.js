@@ -15,33 +15,13 @@ import {
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
-const GENERATED_SHIP_VISUAL_CENTER_OFFSETS = [
-  { x: 24.5, y: 40.9 },
-  { x: -0.4, y: 18.6 },
-  { x: -0.7, y: 16.9 },
-  { x: -0.6, y: 14.9 },
-  { x: -0.4, y: 16.6 },
-  { x: -0.5, y: 29.4 },
-  { x: -0.8, y: 26.8 },
-  { x: -1.2, y: 24.0 },
-  { x: -0.7, y: 24.4 },
-  { x: -0.6, y: 29.4 },
-  { x: 0.0, y: -15.5 },
-  { x: -1.0, y: -13.9 },
-  { x: -0.3, y: -16.8 },
-  { x: -0.4, y: -10.7 },
-  { x: -0.2, y: -11.3 },
-  { x: -0.5, y: -16.7 },
-  { x: -0.7, y: -16.4 },
-  { x: -1.5, y: -7.8 },
-  { x: -0.3, y: -14.1 },
-  { x: -0.8, y: -5.3 },
-  { x: 7.8, y: -34.6 },
-  { x: -0.6, y: 0.3 },
-  { x: -0.9, y: -0.4 },
-  { x: -1.6, y: -9.8 },
-  { x: -0.5, y: 0.9 }
-];
+// The current generated ship PNG exports are already centered in their 256px
+// transparent frames. Keep runtime centering neutral so the focus ring,
+// hitbox, bullet origin, and ship art all share the same logical center.
+const GENERATED_SHIP_VISUAL_CENTER_OFFSETS = Array.from(
+  { length: 25 },
+  () => Object.freeze({ x: 0, y: 0 })
+);
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
