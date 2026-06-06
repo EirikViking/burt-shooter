@@ -209,7 +209,7 @@ try {
     }));
     localStorage.setItem('novaSwarm.localLeaderboard.v2', JSON.stringify(localScores));
     localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
-      { playerName: 'STEAM ACE', name: 'STEAM ACE', score: 29481, level: 9, isCurrentPlayer: true, source: 'steam' },
+      { playerName: 'STEAM ACE', name: 'STEAM ACE', score: 87628, level: 12, isCurrentPlayer: true, source: 'steam' },
       { playerName: 'ORBIT PAL', score: 28000, level: 7, source: 'steam' },
       { playerName: 'RIFT PAL', score: 24000, level: 6, source: 'steam' }
     ]));
@@ -223,7 +223,7 @@ try {
       globalPlacementTier: 'number1',
       submissionId: 'stale-top-three'
     };
-    window.__game.score = 6211;
+    window.__game.score = 2084;
     window.__game.level = 2;
     window.__game.rankIndex = 1;
     window.__game.switchScene('gameOver');
@@ -239,10 +239,10 @@ try {
   if (lowScoreState.gameOver?.globalStatus !== 'steam_best_unchanged') {
     throw new Error(`Low Steam score should be marked best unchanged: ${JSON.stringify(lowScoreState.gameOver)}`);
   }
-  if (!lowScoreState.gameOver?.lastLeaderboardResult?.steamBestUnchanged || lowScoreState.gameOver?.lastLeaderboardResult?.steamPreviousBestScore !== 29481) {
+  if (!lowScoreState.gameOver?.lastLeaderboardResult?.steamBestUnchanged || lowScoreState.gameOver?.lastLeaderboardResult?.steamPreviousBestScore !== 87628) {
     throw new Error(`Low Steam score did not preserve previous-best diagnostics: ${JSON.stringify(lowScoreState.gameOver?.lastLeaderboardResult)}`);
   }
-  if (!/Steam: Best unchanged/i.test(lowStatus) || !/Best: 29,481/i.test(lowStatus) || !/This run: 6,211/i.test(lowStatus)) {
+  if (!/Steam: Best unchanged/i.test(lowStatus) || !/Best: 87,628/i.test(lowStatus) || !/This run: 2,084/i.test(lowStatus)) {
     throw new Error(`Low Steam score did not explain unchanged Steam best: ${JSON.stringify(lowScoreState.gameOver)}`);
   }
   if (/rank pending|top three|number one|Steam: #|New Steam best|Global: #/i.test(lowStatus)) {
@@ -264,7 +264,7 @@ try {
   }, null, { timeout: 5000 });
   const lowRunbackState = await state(page);
   const lowFinalStatus = lowRunbackState.gameOver?.leaderboardStatus || '';
-  if (!/Steam: Best unchanged/i.test(lowFinalStatus) || !/Best: 29,481/i.test(lowFinalStatus) || !/This run: 6,211/i.test(lowFinalStatus)) {
+  if (!/Steam: Best unchanged/i.test(lowFinalStatus) || !/Best: 87,628/i.test(lowFinalStatus) || !/This run: 2,084/i.test(lowFinalStatus)) {
     throw new Error(`Final low-score runback did not explain unchanged Steam best: ${JSON.stringify(lowRunbackState.gameOver)}`);
   }
   if (!/Local: Not in local top 20/i.test(lowFinalStatus) || /Local #44|Local: #4[0-9]/i.test(lowFinalStatus)) {
@@ -274,7 +274,7 @@ try {
     throw new Error(`Final low-score runback reused stale or misleading rank copy: ${JSON.stringify(lowRunbackState.gameOver)}`);
   }
   const mockScoresAfterLowScore = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
-  if (!mockScoresAfterLowScore.some((entry) => entry.isCurrentPlayer && entry.score === 29481)) {
+  if (!mockScoresAfterLowScore.some((entry) => entry.isCurrentPlayer && entry.score === 87628)) {
     throw new Error(`Steam mock keep-best score was overwritten by low score: ${JSON.stringify(mockScoresAfterLowScore)}`);
   }
   const rank3Probe = await page.evaluate(async () => {

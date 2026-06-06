@@ -419,7 +419,7 @@ function assertLowRun(snapshot) {
   if (!/Steam: Best unchanged/i.test(text)) {
     throw new Error(`Low-score run did not show Steam best unchanged:\n${text}`);
   }
-  if (!/Best: 29,481/i.test(text) || !/This run: 6,211/i.test(text)) {
+  if (!/Best: 87,628/i.test(text) || !/This run: 2,084/i.test(text)) {
     throw new Error(`Low-score run did not compare old Steam best and this run:\n${text}`);
   }
   if (!/Local: Not in local top 20/i.test(text)) {
@@ -562,13 +562,13 @@ try {
 
   const lowPage = await openScenarioPage(browser, consoleEvents);
   await runSteamGameOver(lowPage, {
-    // Low score with previous Steam best: 29,481 and this run: 6,211.
-    score: 6211,
+    // Low score with previous Steam best: 87,628 and this run: 2,084.
+    score: 2084,
     level: 2,
     rankIndex: 1,
     localScores: makeLocalScores(43, 50000, 100),
     steamScores: [
-      { playerName: 'STEAM ACE', name: 'STEAM ACE', score: 29481, level: 9, isCurrentPlayer: true, source: 'steam' },
+      { playerName: 'STEAM ACE', name: 'STEAM ACE', score: 87628, level: 12, isCurrentPlayer: true, source: 'steam' },
       { playerName: 'ORBIT PAL', score: 28000, level: 7, source: 'steam' },
       { playerName: 'RIFT PAL', score: 24000, level: 6, source: 'steam' }
     ],
@@ -576,7 +576,7 @@ try {
       version: 1,
       pilotXp: 84300,
       pilotRank: 15,
-      bestScore: 29481,
+      bestScore: 87628,
       bestSector: 10,
       bestLevel: 10
     },

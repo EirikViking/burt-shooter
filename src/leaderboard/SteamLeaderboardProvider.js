@@ -94,6 +94,25 @@ function isNonCurrentFriendEntry(entry = {}, currentPlayerName = null) {
   return true;
 }
 
+function isCurrentPlayerEntry(entry = {}, currentPlayerName = null) {
+  if (!entry) return false;
+  if (entry.isCurrentPlayer) return true;
+  const current = normalizePublicNameForCompare(currentPlayerName);
+  const entryName = normalizePublicNameForCompare(entry.playerName || entry.name || entry.personaName || entry.displayName);
+  return Boolean(current && entryName && entryName === current);
+}
+
+function pickBestCurrentPlayerEntry(entries = [], currentPlayerName = null) {
+  return entries
+    .filter((entry) => isCurrentPlayerEntry(entry, currentPlayerName))
+    .sort((a, b) => {
+      const scoreDelta = (Number(b?.score ?? b?.m_nScore) || 0) - (Number(a?.score ?? a?.m_nScore) || 0);
+      if (scoreDelta) return scoreDelta;
+      return (Number(a?.rank ?? a?.globalRank ?? a?.m_nGlobalRank) || Number.MAX_SAFE_INTEGER) -
+        (Number(b?.rank ?? b?.globalRank ?? b?.m_nGlobalRank) || Number.MAX_SAFE_INTEGER);
+    })[0] || null;
+}
+
 function hasForceRepairFlag(win) {
   if (!win) return false;
   if (win.__NOVA_SWARM_FORCE_STEAM_LEADERBOARD_UPDATE__ === true) return true;
@@ -406,7 +425,7 @@ export class SteamLeaderboardProvider {
       });
       throw error;
     }
-    const responseBestScore = Math.max(
+    const responseScore = Math.max(
       0,
       Math.floor(Number(
         response?.entry?.score ??
@@ -420,12 +439,14 @@ export class SteamLeaderboardProvider {
     const scoreChangedFalse = scoreChangedRaw === false || scoreChangedRaw === 0 || scoreChangedRaw === '0';
     const postSubmitBest = previousBestScore > 0
       ? previousBest
-      : await this.getPlayerBest().catch(() => null);
+      : await this.getDownloadedPlayerBest().catch(() => null);
     const postSubmitBestScore = Math.max(0, Math.floor(Number(postSubmitBest?.score ?? postSubmitBest?.m_nScore) || 0));
+    const responseBestScore = responseScore > score ? responseScore : 0;
     const retainedBestScore = Math.max(previousBestScore, postSubmitBestScore, responseBestScore);
     const retainedHigherBest = retainedBestScore > score;
     const retainedEqualBest = retainedBestScore === score &&
-      ((previousBestScore > 0 && previousBestScore >= score) || scoreChangedFalse);
+      previousBestScore > 0 &&
+      (previousBestScore >= score || scoreChangedFalse);
     const bestUnchanged = retainedBestScore > 0 && (retainedHigherBest || retainedEqualBest);
 
     return {
@@ -454,5 +475,21 @@ export class SteamLeaderboardProvider {
     } catch {
       return null;
     }
+  }
+
+  async getDownloadedPlayerBest() {
+    const bridge = this.getBridge();
+    if (!bridge || !await this.isAvailable()) return null;
+    const currentPlayerName = await this.getPlayerName().catch(() => null);
+    const reads = await Promise.allSettled([
+      this.getFriendsScores({ limit: 100, useCache: false }),
+      this.getTopScores({ limit: 100, useCache: false })
+    ]);
+    const entries = reads.flatMap((read) => (
+      read.status === 'fulfilled' && Array.isArray(read.value?.entries)
+        ? read.value.entries
+        : []
+    ));
+    return pickBestCurrentPlayerEntry(entries, currentPlayerName);
   }
 }
