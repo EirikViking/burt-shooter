@@ -92,6 +92,7 @@ function assertOverrunTextLayout(state, label) {
     .filter(node => node.visible !== false && node.bounds && node.bounds.width > 0 && node.bounds.height > 0);
   const expectedIds = new Set([
     'ui_overrun_card_title',
+    'ui_overrun_card_flavor',
     'ui_overrun_card_report',
     'ui_overrun_card_sector',
     'ui_overrun_card_bonus',
@@ -169,6 +170,9 @@ try {
   assert.equal(triggered.overrunInterlude?.active, true);
   assert.equal(triggered.overrunInterlude?.requiresConfirm, true);
   assert.equal(triggered.overrunInterlude?.confirmed, false);
+  assert.equal(triggered.overrunInterlude?.eventKind, 'run_clear');
+  assert.equal(triggered.overrunInterlude?.milestoneSector, 10);
+  assert.equal(triggered.overrunInterlude?.variantId, 'clear_gate');
   assert.match(triggered.overrunInterlude?.promptText || '', /ready/i);
 
   await page.waitForFunction(() => {

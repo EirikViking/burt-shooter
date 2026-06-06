@@ -10,7 +10,9 @@ const progressionSource = readFileSync('src/progression/HangarProgressState.js',
 const soundSource = readFileSync('src/audio/SoundCatalog.js', 'utf8');
 const manifestSource = readFileSync('src/assets/assetManifest.js', 'utf8');
 
-assert.match(playSource, /bossCompletion && !this\.game\.runCleared && sectorCleared >= RunPacingConfig\.targetSectors/);
+assert.match(playSource, /maybeTriggerOverrunCelebration\(\{ sectorCleared, bossCompletion, compactHud \}\)/);
+assert.match(playSource, /isOverrunMilestoneSector\(milestoneSector, RunPacingConfig\.targetSectors\)/);
+assert.match(playSource, /this\.overrunCelebratedMilestones = new Set\(\)/);
 assert.match(playSource, /this\.game\.markRunClear\?\.\('target_sector_clear'\)/);
 assert.doesNotMatch(playSource, /this\.game\.completeRun\?\.\('target_sector_clear'\)/);
 assert.match(playSource, /this\.game\.nextLevel\(\);/);
@@ -18,7 +20,7 @@ assert.match(playSource, /triggerOverrunClearCelebration\(\{\s*nextSector,/);
 assert.match(playSource, /eventKind: 'overrun_milestone'/);
 assert.match(playSource, /updateOverrunMilestoneInterlude\(delta\)/);
 assert.match(playSource, /STRAP IN, PILOT\. OVERRUN DOES NOT DO EASY\./);
-assert.match(playSource, /I’m ready — bring the swarm\./);
+assert.match(playSource, /I'M READY - BRING THE SWARM/);
 assert.match(playSource, /installOverrunConfirmationHandlers\(\)/);
 assert.match(playSource, /confirmOverrunInterlude\(source = 'unknown'\)/);
 assert.match(playSource, /pollOverrunConfirmationInput\(\)/);

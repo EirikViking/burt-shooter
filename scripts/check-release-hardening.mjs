@@ -40,6 +40,7 @@ const steps = [
   npmStep('debug shortcut stays unranked', 'check:debug-unranked'),
   npmStep('game over interlude readability', 'check:gameover-interlude'),
   npmStep('overrun confirmation pause', 'check:overrun-confirmation'),
+  npmStep('overrun recurring milestones', 'check:overrun-milestones'),
   npmStep('result screen leaderboard statuses', 'check:result-screen-status'),
   npmStep('result screen final flow layout', 'check:result-screen-flow'),
   npmStep('one more run flow', 'check:gameover-motivation'),

@@ -36,6 +36,10 @@ import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { translateText } from '../i18n/index.js';
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import {
+  getOverrunMilestoneCelebration,
+  isOverrunMilestoneSector
+} from '../config/OverrunMilestoneCelebrations.js';
+import {
   recordThreatDefeated,
   recordThreatSeen
 } from '../progression/ThreatDiscoveryState.js';
@@ -167,6 +171,7 @@ export class PlayScene {
     this.overrunClearLayer = null;
     this.overrunClearEffects = [];
     this.overrunMilestoneInterlude = null;
+    this.overrunCelebratedMilestones = new Set();
     this._overrunConfirmKeyHandler = null;
     this._overrunConfirmPointerHandler = null;
     this._overrunConfirmPointerTarget = null;
@@ -282,6 +287,7 @@ export class PlayScene {
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
     this.overrunClearEffects = [];
+    this.overrunCelebratedMilestones = new Set();
     this.gameOverSequenceStarted = false;
     this.finalDeathFeedbackShown = false;
     this.gameOverAnimationLayer = null;
@@ -1052,7 +1058,6 @@ export class PlayScene {
 
     try {
       this.updateDiagnosticsLayout();
-      this.gameTime += delta / 60;
       this.cleanupSkippedFrameVisuals('frame_start');
 
       if (this.gameOverInterlude?.active) {
@@ -1066,6 +1071,8 @@ export class PlayScene {
         this.updateOverrunMilestoneInterlude(delta);
         return;
       }
+
+      this.gameTime += delta / 60;
 
       // Score Boost Timer
       if (this.scoreBoostTimer > 0) {
@@ -1272,50 +1279,7 @@ export class PlayScene {
           this.levelAdvanceTimeout = null;
           this.postBossLevelIntroPending = bossCompletion;
           const sectorCleared = Number(this.game.level) || 1;
-          if (bossCompletion && !this.game.runCleared && sectorCleared >= RunPacingConfig.targetSectors) {
-            const clearBonus = 10000;
-            const livesBonus = Math.max(0, Number(this.game.lives) || 0) * 2500;
-            if (clearBonus > 0) this.game.addScore(clearBonus, 'runClearBonus');
-            if (livesBonus > 0) this.game.addScore(livesBonus, 'remainingLivesBonus');
-            const markedClear = this.game.markRunClear?.('target_sector_clear');
-            if (markedClear) {
-              const nextSector = this.game.level + 1;
-              this.triggerOverrunClearCelebration({
-                nextSector,
-                milestoneSector: sectorCleared,
-                eventKind: 'run_clear',
-                clearBonus,
-                livesBonus
-              });
-              this.showToast([
-                translateText('RUN CLEAR! OVERRUN UNLOCKED'),
-                translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
-                  clearBonus: clearBonus.toLocaleString('en-US'),
-                  livesBonus: livesBonus.toLocaleString('en-US')
-                }),
-                translateText('SECTOR {sector} WILL NOT BE POLITE', { sector: nextSector })
-              ].join('\n'), {
-                fontSize: compactHud ? 21 : 32,
-                fill: '#fff3a2',
-                stroke: '#150318',
-                strokeThickness: compactHud ? 4 : 6,
-                duration: 4300,
-                slot: 'center',
-                type: 'run_clear',
-                priority: 10,
-                transition: true,
-                y: this.game.getHeight() * (compactHud ? 0.29 : 0.37),
-                maxWidth: this.game.getWidth() * (compactHud ? 0.9 : 0.78)
-              });
-              this.reserveMessageFocus(4400, { priority: 10, slots: ['top', 'corner'] });
-            }
-          } else if (bossCompletion && this.game.runCleared && sectorCleared > 0 && sectorCleared % 10 === 0) {
-            this.triggerOverrunClearCelebration({
-              nextSector: sectorCleared + 1,
-              milestoneSector: sectorCleared,
-              eventKind: 'overrun_milestone'
-            });
-          }
+          this.maybeTriggerOverrunCelebration({ sectorCleared, bossCompletion, compactHud });
           if (bossCompletion) {
             this.damageTakenThisSector = 0;
           }
@@ -4591,6 +4555,66 @@ export class PlayScene {
     console.log(`[Powerup] pickup type=SCORE_X2 durationMs=${durationMs} source=${source}`);
   }
 
+  maybeTriggerOverrunCelebration({ sectorCleared, bossCompletion, compactHud = this.game.getWidth() < 620 } = {}) {
+    if (!bossCompletion) return false;
+    if (this.gameOverInterlude?.active || this.game?.gameOverTransitionPending || this.gameOverSequenceStarted) return false;
+    if ((this.game?.lives || 0) <= 0 || this.game?.currentScene !== this) return false;
+
+    const milestoneSector = Math.max(1, Math.floor(Number(sectorCleared) || 1));
+    if (!isOverrunMilestoneSector(milestoneSector, RunPacingConfig.targetSectors)) return false;
+    if (this.overrunCelebratedMilestones?.has(milestoneSector)) return false;
+
+    const nextSector = milestoneSector + 1;
+    if (!this.game.runCleared && milestoneSector >= RunPacingConfig.targetSectors) {
+      const clearBonus = 10000;
+      const livesBonus = Math.max(0, Number(this.game.lives) || 0) * 2500;
+      if (clearBonus > 0) this.game.addScore(clearBonus, 'runClearBonus');
+      if (livesBonus > 0) this.game.addScore(livesBonus, 'remainingLivesBonus');
+      const markedClear = this.game.markRunClear?.('target_sector_clear');
+      if (!markedClear) return false;
+
+      this.overrunCelebratedMilestones.add(milestoneSector);
+      this.triggerOverrunClearCelebration({
+        nextSector,
+        milestoneSector,
+        eventKind: 'run_clear',
+        clearBonus,
+        livesBonus
+      });
+      this.showToast([
+        translateText('RUN CLEAR! OVERRUN UNLOCKED'),
+        translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
+          clearBonus: clearBonus.toLocaleString('en-US'),
+          livesBonus: livesBonus.toLocaleString('en-US')
+        }),
+        translateText('SECTOR {sector} WILL NOT BE POLITE', { sector: nextSector })
+      ].join('\n'), {
+        fontSize: compactHud ? 21 : 32,
+        fill: '#fff3a2',
+        stroke: '#150318',
+        strokeThickness: compactHud ? 4 : 6,
+        duration: 4300,
+        slot: 'center',
+        type: 'run_clear',
+        priority: 10,
+        transition: true,
+        y: this.game.getHeight() * (compactHud ? 0.29 : 0.37),
+        maxWidth: this.game.getWidth() * (compactHud ? 0.9 : 0.78)
+      });
+      this.reserveMessageFocus(OVERRUN_INTERLUDE_MS + 900, { priority: 10, slots: ['top', 'corner'] });
+      return true;
+    }
+
+    if (!this.game.runCleared) return false;
+    this.overrunCelebratedMilestones.add(milestoneSector);
+    this.triggerOverrunClearCelebration({
+      nextSector,
+      milestoneSector,
+      eventKind: 'overrun_milestone'
+    });
+    return true;
+  }
+
   triggerOverrunClearCelebration({
     nextSector = (this.game?.level || 10) + 1,
     milestoneSector = this.game?.level || 10,
@@ -4602,6 +4626,11 @@ export class PlayScene {
     const height = this.game.getHeight();
     const centerX = width * 0.5;
     const centerY = height * (width < 620 ? 0.36 : 0.42);
+    const celebration = getOverrunMilestoneCelebration({ milestoneSector, eventKind });
+    const visual = celebration.visual || {};
+    const shardPalette = Array.isArray(visual.shardColors) && visual.shardColors.length
+      ? visual.shardColors
+      : [visual.primaryColor || 0xffd15c, visual.accentColor || 0x61f6ff];
     const container = new PIXI.Container();
     container.zIndex = 9600 + this.overrunClearEffects.length;
     container.sortableChildren = true;
@@ -4640,6 +4669,7 @@ export class PlayScene {
       milestoneSector,
       nextSector,
       eventKind,
+      celebration,
       clearBonus,
       livesBonus
     });
@@ -4653,7 +4683,7 @@ export class PlayScene {
       speed: 0.72 + Math.random() * 0.55,
       size: 4 + Math.random() * 10,
       drift: Math.random() * 0.9,
-      color: Math.random() < 0.5 ? 0xffd15c : 0x61f6ff
+      color: shardPalette[index % shardPalette.length]
     }));
 
     const effect = {
@@ -4664,6 +4694,8 @@ export class PlayScene {
       nextSector,
       milestoneSector,
       eventKind,
+      variantId: celebration.id,
+      visual,
       container,
       flash,
       rays,
@@ -4678,17 +4710,22 @@ export class PlayScene {
       active: true,
       startedAt: Date.now(),
       durationMs: OVERRUN_INTERLUDE_MS,
-      requiresConfirm: eventKind === 'run_clear',
+      requiresConfirm: eventKind === 'run_clear' || eventKind === 'overrun_milestone',
       confirmReadyAt: Date.now() + 1250,
       confirmed: false,
       confirmedBy: null,
+      eventKind,
+      milestoneSector,
+      nextSector,
+      variantId: celebration.id,
       effect
     };
-    effect.requiresConfirm = eventKind === 'run_clear';
+    effect.requiresConfirm = eventKind === 'run_clear' || eventKind === 'overrun_milestone';
     effect.confirmed = false;
-    if (eventKind === 'run_clear') {
+    if (effect.requiresConfirm) {
       this.installOverrunConfirmationHandlers();
     }
+    this.reserveMessageFocus(OVERRUN_INTERLUDE_MS + 900, { priority: 10, slots: ['center', 'top', 'corner'] });
 
     this.screenShake?.shake(width < 620 ? 16 : 24, width < 620 ? 24 : 34);
     AudioManager.duckMusic?.(0.28, 4300);
@@ -4716,12 +4753,26 @@ export class PlayScene {
     milestoneSector,
     nextSector,
     eventKind,
+    celebration,
     clearBonus = 0,
     livesBonus = 0
   }) {
     const compact = width < 720;
-    const cardWidth = Math.min(width - 32, compact ? 520 : 760);
-    const cardHeight = compact ? 252 : 284;
+    const cardWidth = Math.min(width - 32, compact ? 540 : 820);
+    const cardHeight = Math.min(height * (compact ? 0.72 : 0.64), compact ? 330 : 364);
+    const visual = celebration?.visual || {};
+    const primaryColor = visual.primaryColor || 0xffd15c;
+    const accentColor = visual.accentColor || 0x61f6ff;
+    const secondaryColor = visual.secondaryColor || 0xfff2a6;
+    const frameColor = visual.frameColor || primaryColor;
+    const backgroundColor = visual.backgroundColor || 0x030912;
+    const vars = {
+      sector: Number(milestoneSector) || 0,
+      nextSector: Number(nextSector) || 0,
+      score: Number(this.game?.score || 0).toLocaleString('en-US'),
+      rank: Math.max(1, Number(this.game?.rankIndex || 0) + 1),
+      lives: Math.max(0, Number(this.game?.lives || 0))
+    };
     const card = new PIXI.Container();
     card.label = 'ui_overrun_interlude';
     card.x = width / 2;
@@ -4731,45 +4782,71 @@ export class PlayScene {
 
     const bg = new PIXI.Graphics();
     bg.roundRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 10);
-    bg.fill({ color: 0x030912, alpha: 0.94 });
-    bg.stroke({ color: 0xffd15c, width: 3, alpha: 0.94 });
+    bg.fill({ color: backgroundColor, alpha: 0.95 });
+    bg.stroke({ color: frameColor, width: 3, alpha: 0.96 });
     bg.roundRect(-cardWidth / 2 + 8, -cardHeight / 2 + 8, cardWidth - 16, cardHeight - 16, 7);
-    bg.stroke({ color: 0x61f6ff, width: 1.4, alpha: 0.72 });
+    bg.stroke({ color: accentColor, width: 1.4, alpha: 0.76 });
     bg.rect(-cardWidth / 2 + 18, -cardHeight / 2 + 18, cardWidth - 36, 4);
-    bg.fill({ color: 0xfff2a6, alpha: 0.86 });
+    bg.fill({ color: secondaryColor, alpha: 0.86 });
+    if (visual.motif === 'double_rail') {
+      bg.rect(-cardWidth / 2 + 28, -cardHeight / 2 + 32, 4, cardHeight - 64);
+      bg.fill({ color: accentColor, alpha: 0.38 });
+      bg.rect(cardWidth / 2 - 32, -cardHeight / 2 + 32, 4, cardHeight - 64);
+      bg.fill({ color: primaryColor, alpha: 0.42 });
+    } else if (visual.motif === 'deep_scan') {
+      for (let x = -cardWidth / 2 + 32; x < cardWidth / 2 - 32; x += 46) {
+        bg.moveTo(x, -cardHeight / 2 + 28);
+        bg.lineTo(x + 22, cardHeight / 2 - 28);
+        bg.stroke({ color: accentColor, width: 1, alpha: 0.11 });
+      }
+    } else if (visual.motif === 'finale') {
+      bg.rect(-cardWidth / 2 + 18, cardHeight / 2 - 23, cardWidth - 36, 4);
+      bg.fill({ color: 0xff4d6d, alpha: 0.72 });
+    }
     card.addChild(bg);
 
-    const titleKey = eventKind === 'run_clear'
-      ? 'RUN CLEAR! OVERRUN UNLOCKED'
-      : 'OVERRUN MILESTONE';
-    const title = createText(translateText(titleKey), {
+    const icon = new PIXI.Graphics();
+    icon.label = 'ui_overrun_card_icon';
+    icon.x = -cardWidth / 2 + (compact ? 38 : 48);
+    icon.y = -cardHeight / 2 + (compact ? 43 : 50);
+    this.drawOverrunMotifIcon(icon, visual.motif, { primaryColor, accentColor, secondaryColor });
+    card.addChild(icon);
+
+    const title = createText(translateText(celebration?.title || 'OVERRUN MILESTONE', vars), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 25 : 34,
+      fontSize: compact ? 23 : 32,
       fill: '#fff3a2',
       stroke: '#150318',
       strokeThickness: 5,
       fontWeight: '900',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: cardWidth - 54,
-      lineHeight: compact ? 27 : 36
+      wordWrapWidth: cardWidth - 76,
+      lineHeight: compact ? 26 : 34
     });
     title.anchor.set(0.5);
     title.label = 'ui_overrun_card_title';
-    title.y = -cardHeight / 2 + (compact ? 48 : 54);
+    title.y = -cardHeight / 2 + (compact ? 42 : 50);
     card.addChild(title);
 
-    const sectorLine = eventKind === 'run_clear'
-      ? translateText('SECTOR {sector} WILL NOT BE POLITE', { sector: nextSector })
-      : translateText('SECTOR {sector} OVERRUN SURGE', { sector: milestoneSector });
-    const report = [
-      translateText('PILOT REPORT'),
-      `${translateText('SCORE')}: ${Number(this.game?.score || 0).toLocaleString('en-US')}`,
-      `${translateText('SECTOR')}: ${Number(milestoneSector) || 0}`,
-      `${translateText('RANK')}: ${Math.max(1, Number(this.game?.rankIndex || 0) + 1)}`,
-      `${translateText('LIVES')}: ${Math.max(0, Number(this.game?.lives || 0))}`
-    ].join('  //  ');
-    const reportText = createText(report, {
+    const flavorText = createText(translateText(celebration?.flavor || '', vars), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 13 : 17,
+      fill: '#d8fbff',
+      stroke: '#001016',
+      strokeThickness: 2,
+      fontWeight: '700',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: cardWidth - (compact ? 56 : 92),
+      lineHeight: compact ? 15 : 20
+    });
+    flavorText.anchor.set(0.5);
+    flavorText.label = 'ui_overrun_card_flavor';
+    flavorText.y = -cardHeight / 2 + (compact ? 84 : 96);
+    card.addChild(flavorText);
+
+    const reportText = createText(translateText(celebration?.statusLine || 'PILOT REPORT', vars), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 13 : 16,
       fill: '#d8fbff',
@@ -4783,16 +4860,10 @@ export class PlayScene {
     });
     reportText.anchor.set(0.5);
     reportText.label = 'ui_overrun_card_report';
-    reportText.y = compact ? -26 : -24;
+    reportText.y = compact ? -34 : -36;
     card.addChild(reportText);
 
-    const bonusLine = clearBonus || livesBonus
-      ? translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
-        clearBonus: Number(clearBonus || 0).toLocaleString('en-US'),
-        livesBonus: Number(livesBonus || 0).toLocaleString('en-US')
-      })
-      : translateText('THE CABINET HAS FILED A COMPLAINT. KEEP FLYING.');
-    const sectorText = createText(sectorLine, {
+    const sectorText = createText(translateText(celebration?.warning || 'STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.', vars), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 14 : 18,
       fill: '#9cfbff',
@@ -4806,9 +4877,15 @@ export class PlayScene {
     });
     sectorText.anchor.set(0.5);
     sectorText.label = 'ui_overrun_card_sector';
-    sectorText.y = compact ? 24 : 34;
+    sectorText.y = compact ? 15 : 18;
     card.addChild(sectorText);
 
+    const bonusLine = eventKind === 'run_clear' && (clearBonus || livesBonus)
+      ? translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
+        clearBonus: Number(clearBonus || 0).toLocaleString('en-US'),
+        livesBonus: Number(livesBonus || 0).toLocaleString('en-US')
+      })
+      : '';
     const bonusText = createText(bonusLine, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 12 : 16,
@@ -4823,7 +4900,8 @@ export class PlayScene {
     });
     bonusText.anchor.set(0.5);
     bonusText.label = 'ui_overrun_card_bonus';
-    bonusText.y = compact ? 52 : 64;
+    bonusText.visible = Boolean(bonusLine);
+    bonusText.y = compact ? 43 : 54;
     card.addChild(bonusText);
 
     const warning = createText(translateText('STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.'), {
@@ -4840,10 +4918,35 @@ export class PlayScene {
     });
     warning.anchor.set(0.5);
     warning.label = 'ui_overrun_card_warning';
-    warning.y = compact ? cardHeight / 2 - 48 : cardHeight / 2 - 50;
+    warning.y = compact ? cardHeight / 2 - 92 : cardHeight / 2 - 96;
     card.addChild(warning);
 
-    const confirmText = createText(translateText('I’m ready — bring the swarm.'), {
+    const button = new PIXI.Container();
+    button.label = 'ui_overrun_confirm_button';
+    button.eventMode = 'static';
+    button.cursor = 'pointer';
+    button.y = cardHeight / 2 - (compact ? 38 : 42);
+    const buttonWidth = Math.min(cardWidth - 96, compact ? 340 : 430);
+    const buttonHeight = compact ? 38 : 44;
+    button.hitArea = new PIXI.Rectangle(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight);
+    const buttonBg = new PIXI.Graphics();
+    const drawButton = (hovered = false) => {
+      buttonBg.clear();
+      buttonBg.roundRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 7);
+      buttonBg.fill({ color: hovered ? accentColor : 0x06243a, alpha: hovered ? 0.94 : 0.88 });
+      buttonBg.stroke({ color: hovered ? 0xffffff : primaryColor, width: hovered ? 2.4 : 1.8, alpha: 0.92 });
+      buttonBg.rect(-buttonWidth / 2 + 14, -buttonHeight / 2 + 8, 4, buttonHeight - 16);
+      buttonBg.fill({ color: secondaryColor, alpha: hovered ? 0.82 : 0.56 });
+      buttonBg.rect(buttonWidth / 2 - 18, -buttonHeight / 2 + 8, 4, buttonHeight - 16);
+      buttonBg.fill({ color: accentColor, alpha: hovered ? 0.82 : 0.56 });
+    };
+    drawButton(false);
+    button.addChild(buttonBg);
+    button.on('pointerover', () => drawButton(true));
+    button.on('pointerout', () => drawButton(false));
+    button.on('pointertap', () => this.confirmOverrunInterlude('pointer'));
+
+    const confirmText = createText(translateText(celebration?.continueText || "I'M READY - BRING THE SWARM", vars), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 13 : 17,
       fill: '#ffffff',
@@ -4852,15 +4955,56 @@ export class PlayScene {
       fontWeight: '900',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: cardWidth - 78,
+      wordWrapWidth: buttonWidth - 28,
       lineHeight: compact ? 15 : 19
     });
     confirmText.anchor.set(0.5);
-    confirmText.y = cardHeight / 2 - (compact ? 22 : 24);
     confirmText.label = 'ui_overrun_confirm_prompt';
-    card.addChild(confirmText);
+    button.addChild(confirmText);
+    card.addChild(button);
 
     return card;
+  }
+
+  drawOverrunMotifIcon(graphics, motif = 'signal', { primaryColor = 0xffd15c, accentColor = 0x61f6ff, secondaryColor = 0xffffff } = {}) {
+    graphics.clear();
+    if (motif === 'double_rail') {
+      graphics.rect(-12, -18, 6, 36).fill({ color: primaryColor, alpha: 0.85 });
+      graphics.rect(6, -18, 6, 36).fill({ color: accentColor, alpha: 0.85 });
+      graphics.circle(0, 0, 11).stroke({ color: secondaryColor, width: 2, alpha: 0.86 });
+      return;
+    }
+    if (motif === 'orbit') {
+      graphics.circle(0, 0, 8).fill({ color: primaryColor, alpha: 0.82 });
+      graphics.ellipse(0, 0, 24, 10).stroke({ color: accentColor, width: 2, alpha: 0.8 });
+      graphics.ellipse(0, 0, 10, 24).stroke({ color: secondaryColor, width: 1.5, alpha: 0.72 });
+      return;
+    }
+    if (motif === 'deep_scan') {
+      graphics.rect(-18, -14, 36, 28).stroke({ color: accentColor, width: 2, alpha: 0.82 });
+      graphics.moveTo(-14, -4).lineTo(14, -4).stroke({ color: primaryColor, width: 2, alpha: 0.86 });
+      graphics.moveTo(-14, 5).lineTo(14, 5).stroke({ color: secondaryColor, width: 1.5, alpha: 0.72 });
+      graphics.circle(0, 0, 5).fill({ color: accentColor, alpha: 0.72 });
+      return;
+    }
+    if (motif === 'finale') {
+      for (let i = 0; i < 10; i += 1) {
+        const radius = i % 2 === 0 ? 23 : 10;
+        const angle = -Math.PI / 2 + (Math.PI * 2 * i) / 10;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        if (i === 0) graphics.moveTo(x, y);
+        else graphics.lineTo(x, y);
+      }
+      graphics.lineTo(0, -23);
+      graphics.fill({ color: primaryColor, alpha: 0.82 });
+      graphics.circle(0, 0, 24).stroke({ color: accentColor, width: 2, alpha: 0.78 });
+      graphics.circle(0, 0, 8).fill({ color: secondaryColor, alpha: 0.88 });
+      return;
+    }
+    graphics.circle(0, 0, 19).stroke({ color: primaryColor, width: 3, alpha: 0.88 });
+    graphics.circle(0, 0, 9).fill({ color: accentColor, alpha: 0.82 });
+    graphics.moveTo(-24, 0).lineTo(24, 0).stroke({ color: secondaryColor, width: 2, alpha: 0.58 });
   }
 
   updateOverrunMilestoneInterlude(delta) {
@@ -4884,13 +5028,18 @@ export class PlayScene {
       const outro = !waitingForConfirm && progress > 0.82 ? Math.max(0, 1 - (progress - 0.82) / 0.18) : 1;
       card.alpha = (1 - Math.pow(1 - intro, 3)) * outro;
       card.scale.set((0.92 + Math.sin(elapsed * 0.006) * 0.012) * (0.96 + intro * 0.04));
-      const confirmPrompt = card.children?.find(child => child?.label === 'ui_overrun_confirm_prompt');
+      const confirmPrompt = this.findOverrunInterludeNode(card, 'ui_overrun_confirm_prompt');
+      const confirmButton = this.findOverrunInterludeNode(card, 'ui_overrun_confirm_button');
       if (confirmPrompt) {
         const ready = Date.now() >= (interlude.confirmReadyAt || interlude.startedAt);
         confirmPrompt.visible = Boolean(interlude.requiresConfirm);
         confirmPrompt.alpha = waitingForConfirm
           ? (ready ? 0.72 + Math.sin(elapsed * 0.008) * 0.18 : 0.42)
           : Math.max(0, 1 - rawProgress * 1.4);
+      }
+      if (confirmButton) {
+        const ready = Date.now() >= (interlude.confirmReadyAt || interlude.startedAt);
+        confirmButton.alpha = waitingForConfirm ? (ready ? 1 : 0.72) : Math.max(0, 1 - rawProgress * 1.4);
       }
     }
     if (waitingForConfirm) return;
@@ -4921,14 +5070,23 @@ export class PlayScene {
       const burst = 1 - Math.pow(1 - Math.min(1, progress * 2.2), 3);
       const fade = Math.sin(progress * Math.PI);
       const lateFade = Math.max(0, 1 - Math.max(0, progress - 0.72) / 0.28);
-      const pulse = 1 + Math.sin(now * 0.012) * 0.025;
+      const visual = effect.visual || {};
+      const primaryColor = visual.primaryColor || 0xffd15c;
+      const accentColor = visual.accentColor || 0x61f6ff;
+      const secondaryColor = visual.secondaryColor || 0xfff2a6;
+      const flashColor = visual.flashColor || secondaryColor;
+      const ringCount = Math.max(3, Math.min(8, Math.floor(Number(visual.ringCount) || 4)));
+      const rayCount = Math.max(16, Math.min(36, Math.floor(Number(visual.rayCount) || 24)));
+      const shardSpeed = Math.max(0.25, Number(visual.shardSpeed) || 1);
+      const sealScale = Math.max(0.5, Number(visual.sealScale) || 1);
+      const pulse = 1 + Math.sin(now * (Number(visual.pulseRate) || 0.012)) * 0.025;
       const maxRadius = Math.hypot(width, height) * 0.68;
 
       effect.flash.clear();
       const flashAlpha = Math.max(0, (1 - progress * 5.8) * 0.34);
       if (flashAlpha > 0) {
         effect.flash.rect(0, 0, width, height);
-        effect.flash.fill({ color: 0xfff2a6, alpha: flashAlpha });
+        effect.flash.fill({ color: flashColor, alpha: flashAlpha });
       }
 
       if (effect.seal) {
@@ -4936,7 +5094,7 @@ export class PlayScene {
         const introScale = 0.18 + burst * 0.82;
         effect.seal.x = effect.centerX;
         effect.seal.y = effect.centerY;
-        effect.seal.scale.set(baseScale * introScale * (1.08 + Math.sin(now * 0.006) * 0.025));
+        effect.seal.scale.set(baseScale * introScale * sealScale * (1.02 + Math.sin(now * 0.006) * 0.025));
         effect.seal.rotation = -0.1 + progress * 0.34;
         effect.seal.alpha = Math.min(0.82, burst * 0.9) * lateFade;
       }
@@ -4944,26 +5102,26 @@ export class PlayScene {
       effect.rays.clear();
       effect.rings.clear();
 
-      for (let i = 0; i < 4; i += 1) {
+      for (let i = 0; i < ringCount; i += 1) {
         const local = (progress * 1.7 + i * 0.22) % 1;
         const radius = 48 + local * maxRadius;
         const alpha = Math.max(0, 1 - local) * 0.34 * lateFade;
         effect.rings.circle(effect.centerX, effect.centerY, radius * pulse);
-        effect.rings.stroke({ color: i % 2 ? 0x61f6ff : 0xffd15c, width: 4 - i * 0.55, alpha });
+        effect.rings.stroke({ color: i % 2 ? accentColor : primaryColor, width: Math.max(1.2, 4 - i * 0.45), alpha });
       }
 
-      for (let i = 0; i < 24; i += 1) {
-        const angle = (Math.PI * 2 * i) / 24 + progress * 0.32;
+      for (let i = 0; i < rayCount; i += 1) {
+        const angle = (Math.PI * 2 * i) / rayCount + progress * 0.32;
         const inner = 34 + burst * 70;
         const outer = inner + maxRadius * (0.36 + Math.sin(i + now * 0.004) * 0.04);
         const alpha = (0.1 + 0.16 * Math.sin(progress * Math.PI)) * lateFade;
         effect.rays.moveTo(effect.centerX + Math.cos(angle) * inner, effect.centerY + Math.sin(angle) * inner);
         effect.rays.lineTo(effect.centerX + Math.cos(angle) * outer, effect.centerY + Math.sin(angle) * outer);
-        effect.rays.stroke({ color: i % 3 === 0 ? 0xffffff : (i % 2 ? 0x61f6ff : 0xffd15c), width: i % 3 === 0 ? 2.2 : 1.3, alpha });
+        effect.rays.stroke({ color: i % 3 === 0 ? secondaryColor : (i % 2 ? accentColor : primaryColor), width: i % 3 === 0 ? 2.2 : 1.3, alpha });
       }
 
       for (const shard of effect.shards) {
-        const t = Math.min(1, progress * shard.speed);
+        const t = Math.min(1, progress * shard.speed * shardSpeed);
         const distance = 70 + t * Math.min(width, height) * (0.42 + shard.drift * 0.25);
         const spin = now * 0.004 + shard.drift * 3;
         const x = effect.centerX + Math.cos(shard.angle) * distance;
@@ -4979,10 +5137,41 @@ export class PlayScene {
       effect.rings.circle(effect.centerX, effect.centerY, coreRadius);
       effect.rings.fill({ color: 0xffffff, alpha: 0.08 * fade });
       effect.rings.circle(effect.centerX, effect.centerY, coreRadius * 1.34);
-      effect.rings.stroke({ color: 0xfff2a6, width: 6, alpha: 0.2 * fade * lateFade });
+      effect.rings.stroke({ color: secondaryColor, width: 6, alpha: 0.2 * fade * lateFade });
 
       return true;
     });
+  }
+
+  findOverrunInterludeNode(root, label) {
+    if (!root || !label) return null;
+    if (root.label === label) return root;
+    const children = Array.isArray(root.children) ? root.children : [];
+    for (const child of children) {
+      const match = this.findOverrunInterludeNode(child, label);
+      if (match) return match;
+    }
+    return null;
+  }
+
+  collectOverrunInterludeTextNodes(root, getBounds = null, nodes = []) {
+    if (!root) return nodes;
+    const id = root.label;
+    const hasText = typeof root.text === 'string' || typeof root.text === 'number';
+    if (hasText && typeof id === 'string' && (
+      id.startsWith('ui_overrun_card_') ||
+      id === 'ui_overrun_confirm_prompt'
+    )) {
+      nodes.push({
+        id,
+        text: root.text || null,
+        visible: root.visible !== false && root.alpha > 0.05,
+        bounds: typeof getBounds === 'function' ? getBounds(root) : null
+      });
+    }
+    const children = Array.isArray(root.children) ? root.children : [];
+    for (const child of children) this.collectOverrunInterludeTextNodes(child, getBounds, nodes);
+    return nodes;
   }
 
   installOverrunConfirmationHandlers() {
@@ -5056,45 +5245,44 @@ export class PlayScene {
     const interlude = this.overrunMilestoneInterlude;
     const effect = interlude?.effect || null;
     const card = effect?.interludeCard || null;
-    const confirmPrompt = card?.children?.find?.(child => child?.label === 'ui_overrun_confirm_prompt') || null;
+    const confirmPrompt = this.findOverrunInterludeNode(card, 'ui_overrun_confirm_prompt');
+    const confirmButton = this.findOverrunInterludeNode(card, 'ui_overrun_confirm_button');
     if (!interlude?.active) {
       return {
         active: false,
         requiresConfirm: false,
         confirmed: false,
         confirmedBy: null,
+        eventKind: null,
+        milestoneSector: null,
+        nextSector: null,
+        variantId: null,
         readyForConfirm: false,
         cardVisible: false,
         promptVisible: false,
         promptText: null,
         bounds: null,
+        buttonBounds: null,
         promptBounds: null,
         textNodes: []
       };
     }
-    const textNodes = Array.isArray(card?.children)
-      ? card.children
-        .filter(child => typeof child?.label === 'string' && (
-          child.label.startsWith('ui_overrun_card_') ||
-          child.label === 'ui_overrun_confirm_prompt'
-        ))
-        .map(child => ({
-          id: child.label,
-          text: child.text || null,
-          visible: child.visible !== false && child.alpha > 0.05,
-          bounds: typeof getBounds === 'function' ? getBounds(child) : null
-        }))
-      : [];
+    const textNodes = this.collectOverrunInterludeTextNodes(card, getBounds);
     return {
       active: true,
       requiresConfirm: Boolean(interlude.requiresConfirm),
       confirmed: Boolean(interlude.confirmed),
       confirmedBy: interlude.confirmedBy || effect?.confirmedBy || null,
+      eventKind: interlude.eventKind || effect?.eventKind || null,
+      milestoneSector: Number(interlude.milestoneSector || effect?.milestoneSector || 0) || null,
+      nextSector: Number(interlude.nextSector || 0) || null,
+      variantId: interlude.variantId || effect?.variantId || null,
       readyForConfirm: Date.now() >= (interlude.confirmReadyAt || interlude.startedAt || 0),
       cardVisible: Boolean(card && !card.destroyed && card.visible !== false && card.alpha > 0.05),
       promptVisible: Boolean(confirmPrompt && confirmPrompt.visible !== false && confirmPrompt.alpha > 0.05),
       promptText: confirmPrompt?.text || null,
       bounds: typeof getBounds === 'function' ? getBounds(card) : null,
+      buttonBounds: typeof getBounds === 'function' ? getBounds(confirmButton) : null,
       promptBounds: typeof getBounds === 'function' ? getBounds(confirmPrompt) : null,
       textNodes
     };
@@ -5248,6 +5436,7 @@ export class PlayScene {
   }
 
   processToastQueue() {
+    if (this.overrunMilestoneInterlude?.active) return;
     const now = Date.now();
     const centerReady = !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
       ? this.peekReadyToast(this.toastQueue, now)
