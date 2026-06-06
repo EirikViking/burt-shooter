@@ -30,12 +30,27 @@ if (totalEntries < 300) fail(`Threat Codex should support long-term discovery, f
 if ((catalog.enemies?.length || 0) < 180) fail(`expected at least 180 enemy codex entries, found ${catalog.enemies?.length || 0}`);
 if ((catalog.attackPatterns?.length || 0) < 40) fail(`expected at least 40 attack pattern codex entries, found ${catalog.attackPatterns?.length || 0}`);
 if ((catalog.waveTactics?.length || 0) < 35) fail(`expected at least 35 wave tactic codex entries, found ${catalog.waveTactics?.length || 0}`);
+if ((catalog.powerups?.length || 0) < 20) fail(`expected at least 20 powerup codex entries, found ${catalog.powerups?.length || 0}`);
+if ((catalog.sectors?.length || 0) < 10) fail(`expected at least 10 sector codex entries, found ${catalog.sectors?.length || 0}`);
 if ((catalog.runThemes?.length || 0) < 18) fail(`expected at least 18 run theme codex entries, found ${catalog.runThemes?.length || 0}`);
 const waveArt = catalog.waveTactics?.map(entry => entry.art).filter(Boolean) || [];
 if (waveArt.length !== catalog.waveTactics.length) fail('every wave tactic should have unique Codex art');
 if (new Set(waveArt).size !== waveArt.length) fail('wave tactic Codex art should be unique per tactic');
-if (!catalog.bosses?.every(entry => /runtime boss profile/i.test(entry.description))) {
-  fail('boss Codex descriptions should be data-driven from runtime boss profiles');
+const bannedCopy = /mysterious|cosmic entity|harnesses energy|delve|formidable foe|ancient secrets|unleash|data-driven|arcade drama/i;
+for (const entries of Object.values(catalog)) {
+  for (const entry of entries || []) {
+    const copy = `${entry.name || ''} ${entry.description || ''} ${entry.tip || ''}`;
+    if (bannedCopy.test(copy)) fail(`generic Codex copy remains in ${entry.category}:${entry.id}`);
+  }
+}
+if (!catalog.bosses?.every(entry => /movement/i.test(entry.description) && /pressure/i.test(entry.description) && /signature/i.test(entry.description))) {
+  fail('boss Codex descriptions should explain movement, pressure, and signature reads');
+}
+if (!catalog.powerups?.every(entry => /powerup|defensive|sustain|shots/i.test(entry.description) && /when|lane|shots|safe|boss|wave|pickups|kills|charges|move|shoot|pattern|enemies|threats|clusters|center|targets|readable/i.test(entry.tip))) {
+  fail('powerup Codex entries should explain effect, read, timing, and use');
+}
+if (!catalog.sectors?.every(entry => /waves/i.test(entry.description) && /boss/i.test(entry.description) && /lives/i.test(entry.description))) {
+  fail('sector Codex entries should explain wave, boss-gate, and life-routing relevance');
 }
 
 resetDiscoveryStateForTests();

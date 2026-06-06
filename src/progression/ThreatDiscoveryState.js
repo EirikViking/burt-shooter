@@ -292,9 +292,18 @@ export function getDiscoveryStats(state = readThreatDiscoveryState()) {
 
 export function getCodexCompletionCounts(catalog = {}, state = readThreatDiscoveryState()) {
   const result = {};
-  for (const category of DISCOVERY_CATEGORIES) {
-    const total = Array.isArray(catalog[category]) ? catalog[category].length : 0;
-    const discovered = Object.keys(state.items?.[category] || {}).length;
+  const categoryIds = [...new Set([
+    ...DISCOVERY_CATEGORIES,
+    ...Object.keys(catalog || {})
+  ])];
+  for (const category of categoryIds) {
+    const entries = Array.isArray(catalog[category]) ? catalog[category] : [];
+    const total = entries.length;
+    const saved = new Set(Object.keys(state.items?.[category] || {}));
+    entries.forEach((entry) => {
+      if (entry?.reference || entry?.alwaysKnown) saved.add(String(entry.id));
+    });
+    const discovered = Math.min(total, saved.size);
     result[category] = {
       discovered,
       total,

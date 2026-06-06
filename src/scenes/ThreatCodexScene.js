@@ -22,6 +22,8 @@ const CATEGORY_ACCENTS = Object.freeze({
   enemies: 0x7dffcc,
   attackPatterns: 0xffe76a,
   waveTactics: 0x37f5ff,
+  powerups: 0x99ffcc,
+  sectors: 0x7db7ff,
   elites: 0xff55d9,
   bosses: 0xff6a2a,
   runThemes: 0xa77dff,
@@ -108,6 +110,7 @@ function getStateItem(state, categoryId, entryId) {
 }
 
 function entryDiscovered(state, categoryId, entry) {
+  if (entry?.reference || entry?.alwaysKnown) return true;
   return Boolean(getStateItem(state, categoryId, entry.id));
 }
 
@@ -137,10 +140,38 @@ function getCodexStatLabels(categoryId) {
       rowCount: 'timesSeen'
     };
   }
+  if (categoryId === 'powerups' || categoryId === 'sectors') {
+    return {
+      primary: 'REFERENCE',
+      secondary: null,
+      rowCount: 'reference'
+    };
+  }
   return {
     primary: 'SCANS',
     secondary: null,
     rowCount: 'timesSeen'
+  };
+}
+
+function getCategoryLayout(width, height, compact) {
+  const count = THREAT_CODEX_CATEGORIES.length;
+  const twoRows = count > 7 && (width < 1450 || height < 780);
+  const rows = twoRows ? 2 : 1;
+  const columns = twoRows ? Math.ceil(count / 2) : count;
+  const buttonH = twoRows ? (height < 740 ? 34 : 38) : compact ? 42 : 48;
+  const rowGap = twoRows ? 6 : 0;
+  const startY = twoRows ? (height < 740 ? 88 : 96) : compact ? 92 : 112;
+  const bottom = startY + rows * buttonH + (rows - 1) * rowGap;
+  return {
+    twoRows,
+    rows,
+    columns,
+    startY,
+    buttonH,
+    rowGap,
+    bottom,
+    listY: bottom + (height < 740 ? 14 : 18)
   };
 }
 
@@ -361,6 +392,8 @@ export class ThreatCodexScene {
       enemies: AssetManifest.generated.gameplayArenaBackdrop,
       attackPatterns: AssetManifest.generated.enemyWeapons?.[2],
       waveTactics: AssetManifest.generated.stormGameplayBackdrop,
+      powerups: AssetManifest.generated.powerups?.overdrive_core || AssetManifest.sprites.bonusCore,
+      sectors: AssetManifest.generated.vfx?.overrunVictorySeal || AssetManifest.generated.gameplayArenaBackdrop,
       elites: AssetManifest.generated.eliteMiddleShips?.[0],
       bosses: AssetManifest.generated.bossDossier || AssetManifest.generated.bossArenaBackdrop,
       runThemes: AssetManifest.generated.menuBackdrop,
@@ -372,13 +405,14 @@ export class ThreatCodexScene {
   createLayout(token) {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
-    const compact = width < 920;
+    const compact = width < 920 || height < 740;
+    const categoryLayout = getCategoryLayout(width, height, compact);
     this.drawBackground(width, height, token);
     this.createTitlePlate(width, height, compact);
     this.createHeader(width, height, compact);
-    this.createCategories(width, compact);
-    this.createEntryList(width, height, compact);
-    this.createDetailPanel(width, height, compact, token);
+    this.createCategories(width, height, compact, categoryLayout);
+    this.createEntryList(width, height, compact, categoryLayout);
+    this.createDetailPanel(width, height, compact, token, categoryLayout);
     this.createBackButton(width, height, compact);
   }
 
@@ -539,7 +573,7 @@ export class ThreatCodexScene {
     title.style.dropShadowDistance = 0;
     title.style.dropShadowBlur = 9;
 
-    addText(header, localize('DISCOVERED SIGNALS AND SWARM PATTERNS'), {
+    addText(header, localize('FIELD NOTES, COUNTERS, AND RUN RECEIPTS'), {
       fontSize: compact ? 12 : 15,
       fontWeight: '800',
       fill: '#9cfbff',
@@ -582,11 +616,13 @@ export class ThreatCodexScene {
     this.container.addChild(signal);
   }
 
-  createCategories(width, compact) {
-    const startY = compact ? 92 : 112;
+  createCategories(width, height, compact, categoryLayout = getCategoryLayout(width, height, compact)) {
+    const startY = categoryLayout.startY;
     const availableWidth = width * 0.9;
-    const buttonWidth = availableWidth / THREAT_CODEX_CATEGORIES.length;
+    const buttonWidth = availableWidth / categoryLayout.columns;
     THREAT_CODEX_CATEGORIES.forEach((category, index) => {
+      const rowIndex = categoryLayout.twoRows ? Math.floor(index / categoryLayout.columns) : 0;
+      const columnIndex = categoryLayout.twoRows ? index % categoryLayout.columns : index;
       const selected = index === this.categoryIndex;
       const counts = this.completionCounts[category.id] || { discovered: 0, total: 0 };
       const accent = CATEGORY_ACCENTS[category.id] || AQUA;
@@ -594,16 +630,20 @@ export class ThreatCodexScene {
       button.eventMode = 'static';
       button.cursor = 'pointer';
       button.zIndex = 9;
-      button.position.set(width * 0.05 + buttonWidth * index, startY);
+      button.position.set(
+        width * 0.05 + buttonWidth * columnIndex,
+        startY + rowIndex * (categoryLayout.buttonH + categoryLayout.rowGap)
+      );
       button.on('pointerdown', () => {
         this.categoryIndex = index;
         this.entryIndex = 0;
-        AudioManager.playSfx('menuMove', { volume: 0.55 });
+        AudioManager.playSfx('codex_move', { volume: 0.55 });
         this.refresh();
       });
 
       const bg = new PIXI.Graphics();
-      drawPanel(bg, 0, 0, buttonWidth - 7, compact ? 42 : 48, {
+      const buttonH = categoryLayout.buttonH;
+      drawPanel(bg, 0, 0, buttonWidth - 7, buttonH, {
         fill: selected ? 0x102738 : 0x06111c,
         alpha: selected ? 0.98 : 0.82,
         stroke: selected ? accent : 0x294258,
@@ -611,35 +651,35 @@ export class ThreatCodexScene {
         strokeWidth: selected ? 2 : 1,
         radius: 8
       });
-      bg.rect(0, compact ? 35 : 41, buttonWidth - 7, selected ? 3 : 1);
+      bg.rect(0, buttonH - 7, buttonWidth - 7, selected ? 3 : 1);
       bg.fill({ color: accent, alpha: selected ? 0.95 : 0.35 });
       button.addChild(bg);
 
       addText(button, localize(category.label.toUpperCase()), {
-        fontSize: compact ? 10 : 12,
+        fontSize: categoryLayout.twoRows ? (height < 740 ? 9 : 10) : compact ? 10 : 12,
         fontWeight: '900',
         fill: selected ? '#ffffff' : '#b9f7ff',
         align: 'center',
         wordWrap: true,
         wordWrapWidth: buttonWidth - 20
-      }, (buttonWidth - 7) / 2, compact ? 9 : 10, { x: 0.5, y: 0 });
+      }, (buttonWidth - 7) / 2, categoryLayout.twoRows ? 6 : compact ? 9 : 10, { x: 0.5, y: 0 });
 
       addText(button, `${counts.discovered}/${counts.total}`, {
-        fontSize: compact ? 10 : 12,
+        fontSize: categoryLayout.twoRows ? 9 : compact ? 10 : 12,
         fontWeight: '800',
         fill: selected ? colorCss(accent) : '#6f879a',
         align: 'center'
-      }, (buttonWidth - 7) / 2, compact ? 27 : 30, { x: 0.5, y: 0 });
+      }, (buttonWidth - 7) / 2, Math.max(20, buttonH - 16), { x: 0.5, y: 0 });
 
       this.container.addChild(button);
     });
   }
 
-  createEntryList(width, height, compact) {
+  createEntryList(width, height, compact, categoryLayout = getCategoryLayout(width, height, compact)) {
     const category = this.getCategory();
     const entries = this.getEntriesForCategory(category.id);
     const listX = width * 0.05;
-    const listY = compact ? 154 : 182;
+    const listY = categoryLayout.listY;
     const listW = compact ? width * 0.39 : Math.min(520, width * 0.38);
     const rowH = compact ? 48 : 56;
     const maxRows = Math.max(6, Math.floor((height - listY - 82) / rowH));
@@ -686,7 +726,7 @@ export class ThreatCodexScene {
       row.position.set(listX, listY + rowIndex * rowH);
       row.on('pointerdown', () => {
         this.entryIndex = entryIndex;
-        AudioManager.playSfx('menuMove', { volume: 0.5 });
+        AudioManager.playSfx('codex_move', { volume: 0.5 });
         this.refresh();
       });
 
@@ -730,7 +770,9 @@ export class ThreatCodexScene {
       const labels = getCodexStatLabels(category.id);
       const count = labels.rowCount === 'timesDefeated'
         ? (stateItem?.timesDefeated ?? 0)
-        : (stateItem?.timesSeen ?? 0);
+        : labels.rowCount === 'reference'
+          ? localize('INFO')
+          : (stateItem?.timesSeen ?? 0);
       addText(row, discovered ? String(count) : '--', {
         fontSize: compact ? 12 : 14,
         fontWeight: '900',
@@ -820,14 +862,14 @@ export class ThreatCodexScene {
     }
   }
 
-  createDetailPanel(width, height, compact, token) {
+  createDetailPanel(width, height, compact, token, categoryLayout = getCategoryLayout(width, height, compact)) {
     const category = this.getCategory();
     const entry = this.getSelectedEntry();
     const discovered = entry ? this.isDiscovered(entry, category.id) : false;
     const stateItem = entry ? getStateItem(this.discoveryState, category.id, entry.id) : null;
     const accent = this.getAccent(entry, category.id);
     const panelX = compact ? width * 0.47 : width * 0.47;
-    const panelY = compact ? 154 : 182;
+    const panelY = categoryLayout.listY;
     const panelW = width - panelX - width * 0.05;
     const panelH = height - panelY - 82;
 
@@ -887,7 +929,7 @@ export class ThreatCodexScene {
     const bodyY = shortPanel ? nameY + 84 : nameY + (compact ? 82 : 104);
     const bodyText = discovered
       ? localize(entry.description)
-      : localize('The scanner has the outline, the static has the attitude, and the swarm is refusing to sign the paperwork. Find this signal in a run to unlock the full field note.');
+      : localize('The silhouette is logged, but the behavior needs one more live read. Find this signal in a run to unlock the counter-note.');
     const tipY = panelH - (compact ? 116 : 138);
     const bodyMaxHeight = Math.max(54, tipY - bodyY - 24);
     const bodyNode = addText(panel, bodyText, {
@@ -923,7 +965,9 @@ export class ThreatCodexScene {
     const statLabels = getCodexStatLabels(category.id);
     const primaryValue = discovered ? (stateItem?.timesSeen ?? 0) : '--';
     const secondaryValue = discovered ? (stateItem?.timesDefeated ?? 0) : '--';
-    const statText = statLabels.secondary
+    const statText = statLabels.rowCount === 'reference'
+      ? localize('REFERENCE ENTRY')
+      : statLabels.secondary
       ? `${localize(statLabels.primary)}: ${primaryValue}    ${localize(statLabels.secondary)}: ${secondaryValue}`
       : `${localize(statLabels.primary)}: ${primaryValue}`;
     addText(panel, statText, {
@@ -1065,7 +1109,7 @@ export class ThreatCodexScene {
   moveCategory(direction) {
     this.categoryIndex = (this.categoryIndex + direction + THREAT_CODEX_CATEGORIES.length) % THREAT_CODEX_CATEGORIES.length;
     this.entryIndex = 0;
-    AudioManager.playSfx('menuMove', { volume: 0.55 });
+    AudioManager.playSfx('codex_move', { volume: 0.55 });
     this.refresh();
   }
 
@@ -1073,7 +1117,7 @@ export class ThreatCodexScene {
     const entries = this.getEntriesForCategory();
     if (!entries.length) return;
     this.entryIndex = Math.max(0, Math.min(entries.length - 1, this.entryIndex + direction));
-    AudioManager.playSfx('menuMove', { volume: 0.45 });
+    AudioManager.playSfx('codex_move', { volume: 0.45 });
     this.refresh();
   }
 
@@ -1081,7 +1125,7 @@ export class ThreatCodexScene {
     const entries = this.getEntriesForCategory();
     if (!entries.length) return;
     this.entryIndex = Math.max(0, Math.min(entries.length - 1, index));
-    AudioManager.playSfx('menuMove', { volume: 0.45 });
+    AudioManager.playSfx('codex_move', { volume: 0.45 });
     this.refresh();
   }
 
@@ -1156,7 +1200,7 @@ export class ThreatCodexScene {
   }
 
   goBack() {
-    AudioManager.playSfx('menuBack', { volume: 0.7 });
+    AudioManager.playSfx('codex_back', { volume: 0.7 });
     this.game.showMenu();
   }
 

@@ -5,19 +5,22 @@ import { ELITE_MIDDLE_SHIPS } from './EliteMiddleShips.js';
 import { RunContentDirectorConfig } from './RunContentDirectorConfig.js';
 import { ENEMY_WEAPON_PROFILES } from './EnemyWeaponProfiles.js';
 import { BOSS_ROSTER } from './BossRoster.js';
+import { formatSectorLabel, getSectorInfo } from './SectorCatalog.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { translateText } from '../i18n/index.js';
 import { getCabinetLogEntries } from '../text/phrasePool.js';
 
 export const CODEX_TEXT_TEMPLATES = Object.freeze({
-  enemyDescription: '{name} is catalogued as a {role}: {roleDescription}. The hull signature shows {movement} and {fire}. In a themed formation it edits your escape route instead of simply chasing you.',
-  actionDescription: '{name} is a readable attack pattern. The scanner marks a {telegraph} tell for about {readWindow} ms, then spends {budget} danger budget on the hit. Early previews are slower and wider; late-run versions get sharper.',
-  waveDescription: '{name} is a wave tactic: {role}. It controls entry timing, lane ownership, and synchronized pressure so ordinary enemies behave like a rehearsed formation.',
-  eliteDescription: '{name} is an elite middle ship. It mixes {movement} movement, {fire} fire, and the {ability} system. Clear nearby fodder, then focus the elite before the wave becomes a target-priority problem.',
-  bossDescription: '{name} uses the runtime boss profile {title}: {movement} movement, {attack} pressure, and {signature} as its signature read. The Codex summary is data-driven, then dressed up for arcade drama.',
-  themeDescription: 'Run theme {name} changes enemy and attack weights for a run. Director weights favor {threats} and formations such as {formations}.',
-  cabinetLogDescription: '{name} is a Cabinet Log filed from live play. It is part joke, part useful read, and part evidence that the machine is absolutely keeping receipts.',
-  runtimeDescription: 'The archive caught this signal in the wild, but the spectrometer is still making dramatic noises. Expect a readable tell, an attitude problem, and a better note once the swarm repeats itself.'
+  enemyDescription: '{name} is a {role}. It brings {roleDescription}, moves with {movement}, and fires {fire}. Read the hull first, then clear it before the formation uses it to close your lane.',
+  actionDescription: '{name} is an attack pattern with a {telegraph} tell for about {readWindow} ms. It spends {budget} danger budget on the hit, so the right play is to wait for lock, move once, then return fire.',
+  waveDescription: '{name} is a formation script: {role}. It sets entry timing, lane ownership, and synchronized pressure. Break the lead ship or cross the quiet lane before the whole wave starts speaking at once.',
+  eliteDescription: '{name} is an elite middle ship with {movement} movement, {fire} fire, and the {ability} system. Clear nearby cover first, then burn the elite during its cooldown before it turns the wave into a priority puzzle.',
+  bossDescription: '{name} is the {title} boss profile. Expect {movement} movement, {attack} pressure, and {signature} as the read that matters. Survive the signature tell first; damage is only useful once the lane is clean.',
+  themeDescription: 'Run theme {name} changes the director weights for the whole run. Expect more {threats} and formations such as {formations}; use sector one to decide what lane rule this run is testing.',
+  cabinetLogDescription: '{name} is a Cabinet Log from live play: joke, field note, and receipt in one. Treat the line as a tiny reminder to make one calmer decision.',
+  powerupDescription: '{name} is a {duration} powerup. It changes {effect}. Read it as {read}; pick it when {when}.',
+  sectorDescription: '{name} is a sector reference. The run asks you to clear regular waves, survive the boss gate, and keep enough lives for the next sector. This entry marks {pressure}.',
+  runtimeDescription: 'The archive has seen this signal, but not enough times to file a clean note. Expect a visible tell, a repeatable behavior, and a sharper entry once the swarm shows it again.'
 });
 
 function codexText(key, vars = {}) {
@@ -28,6 +31,8 @@ export const THREAT_CODEX_CATEGORIES = Object.freeze([
   { id: 'enemies', label: 'Enemies' },
   { id: 'attackPatterns', label: 'Attack Patterns' },
   { id: 'waveTactics', label: 'Wave Tactics' },
+  { id: 'powerups', label: 'Powerups' },
+  { id: 'sectors', label: 'Sectors' },
   { id: 'elites', label: 'Elites' },
   { id: 'bosses', label: 'Bosses' },
   { id: 'runThemes', label: 'Run Themes' },
@@ -219,6 +224,293 @@ const THEME_ART = Object.freeze({
   glitch_parade: AssetManifest.generated.menuCredits
 });
 
+const POWERUP_CODEX_ENTRIES = Object.freeze([
+  {
+    id: 'triple_beam',
+    name: 'TRIPLE BEAM',
+    duration: '12 second',
+    effect: 'your main gun to at least three lanes',
+    read: 'lane coverage, not raw burst damage',
+    when: 'a wave spreads wide or pins both sides',
+    tip: 'Hold center lanes and let the side beams clean stragglers.',
+    accent: 0xffaa00
+  },
+  {
+    id: 'vector_boost',
+    name: 'VECTOR BOOST',
+    duration: '12 second',
+    effect: 'movement speed by 50 percent while the profile is active',
+    read: 'a reposition tool',
+    when: 'you need to cross a boss lane or escape a bad corner',
+    tip: 'Move with intent; the boost also makes over-dodging easier.',
+    accent: 0xff6666
+  },
+  {
+    id: 'rapid_cabinet',
+    name: 'RAPID CABINET',
+    duration: '12 second',
+    effect: 'reload speed and main-shot damage, with damage floored at 3',
+    read: 'a short burn window',
+    when: 'an elite or boss is exposed',
+    tip: 'Commit damage while the lane is clean; the timer is the whole deal.',
+    accent: 0xff00ff
+  },
+  {
+    id: 'overdrive_core',
+    name: 'OVERDRIVE CORE',
+    duration: '12 second',
+    effect: 'your gun to at least five shots and damage to at least 2',
+    read: 'the loudest screen-control pickup',
+    when: 'the wave is dense and you can stay alive long enough to cash it in',
+    tip: 'Do not chase every target. Park in a safe lane and erase the shape.',
+    accent: 0x00ff00
+  },
+  {
+    id: 'slow_time',
+    name: 'SLOW TIME',
+    duration: '8 second',
+    effect: 'the global play speed while your ship keeps readable control',
+    read: 'a bullet-pattern reset',
+    when: 'shots are already on screen and the next dodge matters',
+    tip: 'Use the slow window to choose a lane, not to drift across the whole board.',
+    accent: 0x00cccc
+  },
+  {
+    id: 'ghost',
+    name: 'GHOST MODE',
+    duration: '8 second',
+    effect: 'invincibility with a faded ship sprite',
+    read: 'a safe passage through danger',
+    when: 'you are boxed in or need to pass through a boss pattern',
+    tip: 'Ghost buys survival. It does not clear the wave for you.',
+    accent: 0xeeeeee
+  },
+  {
+    id: 'shield',
+    name: 'SHIELD',
+    duration: 'instant defensive',
+    effect: 'a shield layer that absorbs the next hit',
+    read: 'insurance, not a damage buff',
+    when: 'you can afford to trade the current timed pickup for safety',
+    tip: 'Shield is strongest before an elite or boss gate, when one mistake would end the run.',
+    accent: 0x00aaaa
+  },
+  {
+    id: 'life',
+    name: 'EXTRA LIFE',
+    duration: 'instant sustain',
+    effect: 'one life if you are below the max, or score if you are already capped',
+    read: 'run survival first and score value second',
+    when: 'the overrun push needs another hull',
+    tip: 'At max lives it becomes a bonus, so take it only if the path is safe.',
+    accent: 0xff0000
+  },
+  {
+    id: 'rapid_fire',
+    name: 'RAPID FIRE',
+    duration: '8 second',
+    effect: 'reload time by half',
+    read: 'more shots, same lane discipline',
+    when: 'small enemies need to disappear before they form a wall',
+    tip: 'Rapid Fire stacks well in your hands, not in the save file; keep shooting.',
+    accent: 0xffcc00
+  },
+  {
+    id: 'double_shot',
+    name: 'DOUBLE SHOT',
+    duration: '8 second',
+    effect: 'your gun to at least two bullets per volley',
+    read: 'reliable extra coverage',
+    when: 'single-lane ships need help clearing sides',
+    tip: 'Double Shot is simple. Use the wider pattern to break anchors first.',
+    accent: 0x66ccff
+  },
+  {
+    id: 'damage_up',
+    name: 'DAMAGE UP',
+    duration: '8 second',
+    effect: 'main-shot damage, floored at 2 after a 1.6x bump',
+    read: 'single-target pressure',
+    when: 'tanks, elites, or boss phases need to end quickly',
+    tip: 'Damage Up is strongest when you stop dodging for a clean half-second.',
+    accent: 0xff6666
+  },
+  {
+    id: 'speed_up',
+    name: 'SPEED UP',
+    duration: '8 second',
+    effect: 'ship movement by 30 percent',
+    read: 'a control pickup with a real oversteer risk',
+    when: 'wide patterns demand fast lane changes',
+    tip: 'Tap movement instead of holding the stick; speed makes tiny mistakes larger.',
+    accent: 0x66ff66
+  },
+  {
+    id: 'pierce',
+    name: 'PIERCE',
+    duration: '7 second',
+    effect: 'bullets so they pass through enemies',
+    read: 'line-clearing pressure',
+    when: 'ships stack in columns or a boss hides behind adds',
+    tip: 'Aim through the crowd. Pierce wastes value if you fire at empty side lanes.',
+    accent: 0xcc66ff
+  },
+  {
+    id: 'score_x2',
+    name: 'SCORE x2',
+    duration: '10 second',
+    effect: 'score gain with a 2x multiplier',
+    read: 'a greed window',
+    when: 'you can kill safely instead of just surviving',
+    tip: 'If the screen is unsafe, live first. A multiplier cannot submit a score after a crash.',
+    accent: 0xffff00
+  },
+  {
+    id: 'magnet',
+    name: 'MAGNET FIELD',
+    duration: '8 second',
+    effect: 'pickup pull so nearby drops drift into you',
+    read: 'collection help',
+    when: 'a good drop is falling through a risky lane',
+    tip: 'Magnet helps pickups; it does not move bullets or enemies.',
+    accent: 0x99ffcc
+  },
+  {
+    id: 'drones',
+    name: 'SIDE DRONES',
+    duration: '8 second',
+    effect: 'temporary side drones that add extra fire',
+    read: 'free side pressure',
+    when: 'you need enemies cleared while your ship stays centered',
+    tip: 'Let drones work the edges while you aim the main gun at priority targets.',
+    accent: 0x66ccff
+  },
+  {
+    id: 'shockwave',
+    name: 'SHOCKWAVE',
+    duration: 'instant clear',
+    effect: 'enemy bullets and nearby enemies without taking your timed slot',
+    read: 'a panic button',
+    when: 'the board is already bad',
+    tip: 'Shockwave is strongest after the bullets are out, not before the threat starts.',
+    accent: 0xff9966
+  },
+  {
+    id: 'point_defense',
+    name: 'POINT DEFENSE',
+    duration: '10 second',
+    effect: 'a defensive ring that helps against nearby shots',
+    read: 'bullet insurance around the hull',
+    when: 'dense patterns keep clipping your escape lane',
+    tip: 'Stay readable. Point Defense helps close threats, but it is not a license to park in fire.',
+    accent: 0x00ddff
+  },
+  {
+    id: 'bomb',
+    name: 'BOMB',
+    duration: 'three shots',
+    effect: 'your next three shots into bomb shots',
+    read: 'burst cleanup with limited charges',
+    when: 'a wave or boss phase needs immediate area damage',
+    tip: 'Do not spray Bomb into empty lanes. Each shot is one of the three.',
+    accent: 0xff3300
+  },
+  {
+    id: 'chain_lightning',
+    name: 'CHAIN LIGHTNING',
+    duration: '12 second',
+    effect: 'lightning arcs that can chain to up to three targets',
+    read: 'multi-target punishment',
+    when: 'enemies are close enough for arcs to jump',
+    tip: 'Chain Lightning loves clusters. Thin isolated enemies reduce its value.',
+    accent: 0xffff00
+  },
+  {
+    id: 'orbital_strike',
+    name: 'ORBITAL STRIKE',
+    duration: '15 second',
+    effect: 'five orbital strike charges with a cooldown',
+    read: 'stored burst pressure',
+    when: 'priority targets need help from outside your firing lane',
+    tip: 'Spend charges on elites, boss windows, or formations that would otherwise waste time.',
+    accent: 0xff00ff
+  },
+  {
+    id: 'vampire',
+    name: 'VAMPIRE DRAIN',
+    duration: '20 second',
+    effect: 'kill-count drain progress that can restore life after enough kills',
+    read: 'a comeback engine',
+    when: 'there are enough enemies on screen to feed it',
+    tip: 'Vampire needs kills. Boss-only downtime can leave the drain hungry.',
+    accent: 0xff0066
+  }
+]);
+
+const SECTOR_CODEX_LEVELS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 20]);
+const SECTOR_PRESSURE_COPY = Object.freeze({
+  1: 'the opening read: identify the run theme before chasing score',
+  2: 'early formation pressure while the pickup economy is still quiet',
+  3: 'the first real lane discipline check',
+  4: 'faster target-priority calls before the boss gate rhythm settles',
+  5: 'the midpoint habit check, with boss pressure at the end of the sector',
+  6: 'mid-run pressure where weak positioning starts costing lives',
+  7: 'formation density and pickup timing under less forgiving pacing',
+  8: 'late-run crowd control before the clear gate comes into view',
+  9: 'the last setup sector before the run-clear fight',
+  10: 'the clear gate: beat the boss, mark the run clear, and enter overrun',
+  11: 'the first overrun sector after the clear medal',
+  20: 'deep overrun routing, where score chase and survival both matter'
+});
+
+function powerupEntry(entry) {
+  return {
+    id: entry.id,
+    category: 'powerups',
+    name: entry.name,
+    rarity: entry.duration,
+    role: 'Powerup',
+    description: codexText('powerupDescription', {
+      name: entry.name,
+      duration: entry.duration,
+      effect: entry.effect,
+      read: entry.read,
+      when: entry.when
+    }),
+    tip: entry.tip,
+    art: AssetManifest.generated.powerups?.[entry.id] || AssetManifest.sprites.bonusCore,
+    accent: entry.accent,
+    signalClass: 'pickup reference',
+    reference: true
+  };
+}
+
+function sectorEntry(level) {
+  const sector = getSectorInfo(level);
+  const name = formatSectorLabel(level, { sectorWord: 'SECTOR', compact: true });
+  const pressure = SECTOR_PRESSURE_COPY[level] || `sector ${sector.number} routing`;
+  return {
+    id: `sector_${String(level).padStart(3, '0')}`,
+    category: 'sectors',
+    name,
+    rarity: level >= 11 ? 'Overrun' : level === 10 ? 'Clear Gate' : 'Sector',
+    role: level >= 11 ? 'Overrun route' : sector.bossCheckpoint ? 'Boss gate route' : 'Run route',
+    description: codexText('sectorDescription', {
+      name,
+      pressure
+    }),
+    tip: level === 10
+      ? 'Sector 10 is the clear milestone. Preserve lives, beat the boss, then keep playing into overrun.'
+      : level >= 11
+        ? 'Overrun keeps score alive after the clear. Take safe damage windows over greedy side lanes.'
+        : 'Clear regular waves with enough space left for the boss gate at the end of the sector.',
+    art: level >= 10 ? AssetManifest.generated.vfx?.overrunVictorySeal || AssetManifest.generated.bossArenaBackdrop : AssetManifest.generated.gameplayArenaBackdrop,
+    accent: level >= 11 ? 0xffe76a : level === 10 ? 0x7dffcc : 0x37f5ff,
+    signalClass: 'sector reference',
+    reference: true
+  };
+}
+
 function cabinetLogEntry(entry) {
   return {
     id: entry.id,
@@ -380,6 +672,8 @@ export function getThreatCodexCatalog() {
     enemies: GENERATED_ENEMY_PROFILES.map(enemyEntry),
     attackPatterns: ENEMY_THREAT_ACTIONS.map(actionEntry),
     waveTactics: WAVE_TACTIC_ENTRIES.map(waveEntry),
+    powerups: POWERUP_CODEX_ENTRIES.map(powerupEntry),
+    sectors: SECTOR_CODEX_LEVELS.map(sectorEntry),
     elites: ELITE_MIDDLE_SHIPS.map(eliteEntry),
     bosses: BOSS_ROSTER.map(bossEntry),
     runThemes: RunContentDirectorConfig.runThemes.map(runThemeEntry),

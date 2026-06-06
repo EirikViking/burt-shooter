@@ -167,6 +167,9 @@ export const SFX_MIX = {
     shield: { volume: 0.52, minIntervalMs: 140 },
     ui_open: { volume: 0.28, minIntervalMs: 120 },
     ui_close: { volume: 0.24, minIntervalMs: 120 },
+    codex_open: { volume: 0.34, minIntervalMs: 140 },
+    codex_move: { volume: 0.22, minIntervalMs: 70 },
+    codex_back: { volume: 0.28, minIntervalMs: 140 },
     pickup: { volume: 0.62, minIntervalMs: 90 },
     achievement: { volume: 0.68, minIntervalMs: 450 },
     enemy_shoot: { volume: 0.18, minIntervalMs: 90 },
@@ -364,6 +367,19 @@ export const SFX_CATALOG = {
     'ui_close': [
         getSfx('nova_pause_out'),
         getSfx('doorClose_000'), getSfx('doorClose_001'), getSfx('doorClose_002')
+    ],
+    'codex_open': [
+        getSfx('computerNoise_000'),
+        getSfx('nova_menu_tick'),
+        getSfx('doorOpen_001')
+    ],
+    'codex_move': [
+        getSfx('nova_menu_tick'),
+        getSfx('computerNoise_000')
+    ],
+    'codex_back': [
+        getSfx('nova_pause_out'),
+        getSfx('doorClose_000')
     ],
     'pickup': [
         getSfx('nova_bonus_core_jackpot'),

@@ -812,7 +812,7 @@ export class MenuScene {
     this.threatCodexBtn.on('pointerdown', () => {
       try {
         AudioManager.init();
-        AudioManager.playSfx('ui_open', { volume: 0.32 });
+        AudioManager.playSfx('codex_open', { volume: 0.32 });
         this.game.showThreatCodex();
       } catch (e) {
         console.error('[MenuScene] Threat Codex Error:', e);
@@ -1538,7 +1538,7 @@ export class MenuScene {
         button: this.threatCodexBtn,
         activate: () => {
           AudioManager.init();
-          AudioManager.playSfx('ui_open', { volume: 0.32 });
+          AudioManager.playSfx('codex_open', { volume: 0.32 });
           this.game.showThreatCodex();
         }
       },

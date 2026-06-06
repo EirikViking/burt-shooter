@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-06-06T07:34:40.000Z",
+  "purpose": "Private Steam test build for in-game Codex revamp.",
+  "worktree": "D:\\vibe-coding-e\\burt-shooter-cursor-hide-20260604",
+  "branch": "codex/fix-dead-enemy-pixels-20260604",
+  "baselineHead": "757eb51731e2958a6322222b28e9b440ab13353a",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "leaderboard": "nova_swarm_global_score_v2",
+  "steamCmd": "C:\\steamcmd\\steamcmd.exe",
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm Codex revamp 2026-06-06 private test",
+    "contentRoot": "..\\desktop\\win-unpacked",
+    "buildOutput": "..\\steam-build-output",
+    "setLive": ""
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "version": "v2026-06-06_09-26-18",
+    "fileCount": 336,
+    "totalBytes": 723558738,
+    "manifestHash": "5809f47ac1d9817c9e9d6d1c4de39cb7426453ea556fbd9547e778e92f2d8c2a"
+  },
+  "upload": {
+    "account": "gaunziman",
+    "buildId": "23598200",
+    "finishedAtLocal": "2026-06-06 09:34:40",
+    "result": "success",
+    "setLiveEvidence": "\"SetLive\" \"\""
+  },
+  "verification": [
+    "npm run check:codex-revamp",
+    "npm run check:threat-codex",
+    "npm run check:i18n",
+    "npm run check:codex-layout",
+    "npm run check:release-line",
+    "npm run build:current",
+    "npm run check:i18n-ui",
+    "npm run check:release-hardening",
+    "npm run build",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf"
+  ],
+  "steamworksSettings": {
+    "storeMetadataChanged": false,
+    "appVisibilityChanged": false,
+    "liveBranchChanged": false,
+    "setLiveEmpty": true
+  }
+}
