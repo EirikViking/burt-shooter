@@ -1,0 +1,40 @@
+﻿{
+    "uploadedAtUtc":  "2026-06-06T10:35:28.3681126Z",
+    "branch":  "codex/fix-dead-enemy-pixels-20260604",
+    "sourceCommit":  "9ef4f21c14ef5c50b359c32065a90308acc24db2",
+    "appId":  4765070,
+    "depotId":  4765071,
+    "steamBuildId":  23599343,
+    "setLive":  "",
+    "setLiveProof":  "\"SetLive\" \"\"",
+    "leaderboardName":  "nova_swarm_global_score_v2",
+    "buildDescription":  "Nova Swarm RC QA 2026-06-06 cold menu icon QA",
+    "vdfPath":  "release/steamworks/app_build_LOCAL.vdf",
+    "contentRoot":  "release/desktop/win-unpacked",
+    "steamCmdLog":  "test-results/rc-qa-20260606/steamcmd-upload-20260606.txt",
+    "payloadManifest":  {
+                            "manifestHash":  "80f3c98772e33177dfd8af956c97d78e712b70c09237243ea85ca9e5bdec4093",
+                            "totalBytes":  723676199,
+                            "path":  "release/steamworks/steam_payload_manifest.json",
+                            "executableSha256":  "58d09a7c95dcea1b08b4cd9ee673ef36a018b8cf8d3f105f312f56aa739e148a",
+                            "fileCount":  336,
+                            "buildVersion":  "v2026-06-06_12-30-12"
+                        },
+    "packagedSmoke":  {
+                          "steamInitReason":  "steam_init_returned_false",
+                          "build":  "v2026-06-06_12-30-12",
+                          "leaderboardName":  "nova_swarm_global_score_v2",
+                          "gitSha":  "9ef4f21",
+                          "path":  "test-results/packaged-exe-smoke-2026-06-06T10-32-28-658Z/report.json",
+                          "appId":  4765070,
+                          "status":  "passed"
+                      },
+    "protected":  {
+                      "liveBranchChanged":  false,
+                      "leaderboardPreserved":  true,
+                      "dummyScoresSubmitted":  false,
+                      "steamStoreMetadataTouched":  false,
+                      "setLiveEmpty":  true,
+                      "steamAppVisibilityTouched":  false
+                  }
+}
