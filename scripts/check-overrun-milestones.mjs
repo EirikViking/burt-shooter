@@ -4,6 +4,10 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import {
+  getOverrunMilestoneCelebration,
+  isOverrunMilestoneSector
+} from '../src/config/OverrunMilestoneCelebrations.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4363));
@@ -19,7 +23,8 @@ const cases = [
   { sector: 20, eventKind: 'overrun_milestone', variantId: 'second_signal', title: 'OVERRUN 20: SECOND SIGNAL', control: 'pointer' },
   { sector: 30, eventKind: 'overrun_milestone', variantId: 'pattern_storm', title: 'OVERRUN 30: PATTERN STORM', control: 'gamepad' },
   { sector: 40, eventKind: 'overrun_milestone', variantId: 'deep_circuit', title: 'OVERRUN 40: DEEP CIRCUIT', control: 'keyboard' },
-  { sector: 50, eventKind: 'overrun_milestone', variantId: 'last_cabinet_call', title: 'OVERRUN 50: LAST CABINET CALL', control: 'pointer' }
+  { sector: 50, eventKind: 'overrun_milestone', variantId: 'last_cabinet_call', title: 'OVERRUN 50: LAST CABINET CALL', control: 'pointer' },
+  { sector: 60, eventKind: 'overrun_milestone', variantId: 'far_signal_60', title: 'OVERRUN 60: FAR SIGNAL', control: 'gamepad' }
 ];
 
 function timestamp() {
@@ -84,6 +89,55 @@ function findChrome() {
   ].filter(Boolean).find((candidate) => existsSync(candidate));
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function fileUrl(file) {
+  return `file:///${path.resolve(file).replaceAll(path.sep, '/')}`;
+}
+
+function summarizeState(state = null) {
+  return {
+    scene: state?.scene || null,
+    level: state?.level || null,
+    overrunInterlude: state?.overrunInterlude ? {
+      active: Boolean(state.overrunInterlude.active),
+      eventKind: state.overrunInterlude.eventKind || null,
+      milestoneSector: state.overrunInterlude.milestoneSector || null,
+      nextSector: state.overrunInterlude.nextSector || null,
+      variantId: state.overrunInterlude.variantId || null,
+      readyForConfirm: Boolean(state.overrunInterlude.readyForConfirm),
+      confirmed: Boolean(state.overrunInterlude.confirmed),
+      confirmedBy: state.overrunInterlude.confirmedBy || null,
+      promptText: state.overrunInterlude.promptText || null,
+      title: state.overrunInterlude.textNodes?.find?.(node => node.id === 'ui_overrun_card_title')?.text || null
+    } : null,
+    gameOverInterludeActive: Boolean(state?.gameOverInterlude?.active),
+    toast: state?.toast ? {
+      active: (state.toast.active || []).map(toast => ({
+        slot: toast.slot,
+        type: toast.type,
+        message: toast.message
+      })),
+      queued: state.toast.queued || null
+    } : null,
+    counts: state?.counts || null,
+    wave: state?.wave ? {
+      state: state.wave.state || null,
+      phase: state.wave.phase || null,
+      briefingMs: state.wave.briefingMs || 0,
+      currentWaveNumber: state.wave.currentWaveNumber || null,
+      totalWaves: state.wave.totalWaves || 0
+    } : null
+  };
+}
+
 async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
@@ -99,7 +153,20 @@ async function readRuntimeSnapshot(page) {
         scoreBoostTimer: Number(play?.scoreBoostTimer || 0),
         waveTimer: Number(play?.enemyManager?.waveTimer || 0),
         waveBriefingTimer: Number(play?.enemyManager?.waveBriefingTimer || 0),
+        bossGateTimer: Number(play?.enemyManager?.bossGateTimer || 0),
         pickups: Array.isArray(play?.powerupManager?.powerups) ? play.powerupManager.powerups.length : 0,
+        bossState: {
+          enemyManagerState: play?.enemyManager?.state || null,
+          phase: play?.enemyManager?.phase || null,
+          bossSpawning: Boolean(play?.enemyManager?.bossSpawning),
+          bossDefeatedThisLevel: Boolean(play?.enemyManager?.bossDefeatedThisLevel),
+          bossActive: Boolean(play?.enemyManager?.boss?.active),
+          bossCount: Number(state?.counts?.bosses || 0)
+        },
+        messageQueues: state?.toast?.queued || null,
+        activeToasts: Array.isArray(state?.toast?.active)
+          ? state.toast.active.map(toast => ({ slot: toast.slot, type: toast.type, message: toast.message }))
+          : [],
         counts: {
           enemies: Number(state?.counts?.enemies || 0),
           playerBullets: Number(state?.counts?.playerBullets || 0),
@@ -222,13 +289,18 @@ async function stageMilestone(page, testCase) {
     if (play.enemyManager) {
       play.enemyManager.waveTimer = 321;
       play.enemyManager.waveBriefingTimer = 654;
+      play.enemyManager.bossGateTimer = 222;
+      play.enemyManager.bossSpawning = false;
+      play.enemyManager.bossDefeatedThisLevel = true;
     }
 
+    const beforeTriggerState = JSON.parse(window.render_game_to_text?.() || '{}');
     const first = play.maybeTriggerOverrunCelebration({
       sectorCleared: sector,
       bossCompletion: true,
       compactHud: game.getWidth() < 620
     });
+    const triggerState = JSON.parse(window.render_game_to_text?.() || '{}');
     const beforeDuplicateCount = play.overrunClearEffects.length;
     const duplicate = play.maybeTriggerOverrunCelebration({
       sectorCleared: sector,
@@ -236,19 +308,38 @@ async function stageMilestone(page, testCase) {
       compactHud: game.getWidth() < 620
     });
     const afterDuplicateCount = play.overrunClearEffects.length;
+    play.enqueueToast('OVERRUN QUEUE PROBE', {
+      slot: 'corner',
+      type: 'score_boost',
+      priority: 1,
+      fontSize: 18,
+      duration: 1000
+    });
     game.nextLevel();
+    const afterNextLevelState = JSON.parse(window.render_game_to_text?.() || '{}');
     return {
       first,
       duplicate,
       beforeDuplicateCount,
       afterDuplicateCount,
+      beforeTriggerState,
+      triggerState,
       level: game.level,
       runCleared: game.runCleared,
       scoreBoostTimer: play.scoreBoostTimer,
       gameTime: play.gameTime,
       waveTimer: play.enemyManager?.waveTimer,
       waveBriefingTimer: play.enemyManager?.waveBriefingTimer,
-      state: JSON.parse(window.render_game_to_text?.() || '{}')
+      bossGateTimer: play.enemyManager?.bossGateTimer,
+      bossState: {
+        enemyManagerState: play.enemyManager?.state || null,
+        phase: play.enemyManager?.phase || null,
+        bossSpawning: Boolean(play.enemyManager?.bossSpawning),
+        bossDefeatedThisLevel: Boolean(play.enemyManager?.bossDefeatedThisLevel),
+        bossActive: Boolean(play.enemyManager?.boss?.active),
+        bossCount: Number(afterNextLevelState?.counts?.bosses || 0)
+      },
+      state: afterNextLevelState
     };
   }, { sector: testCase.sector });
 }
@@ -299,18 +390,127 @@ async function assertGuardChecks(page) {
     play.overrunCelebratedMilestones = new Set();
     game.level = 60;
     game.runCleared = true;
+    game.lives = 3;
+    game.currentScene = play;
+    game.currentSceneName = 'play';
+    play.gameOverInterlude = null;
+    game.gameOverTransitionPending = false;
     const nonBoss = play.maybeTriggerOverrunCelebration({ sectorCleared: 60, bossCompletion: false });
+    play.enemyManager.state = 'BOSS_GATE';
+    const bossIntro = play.maybeTriggerOverrunCelebration({ sectorCleared: 70, bossCompletion: false });
+    play.enemyManager.state = 'LEVEL_COMPLETE';
     play.gameOverInterlude = { active: true };
-    const gameOver = play.maybeTriggerOverrunCelebration({ sectorCleared: 60, bossCompletion: true });
+    const gameOver = play.maybeTriggerOverrunCelebration({ sectorCleared: 70, bossCompletion: true });
     play.gameOverInterlude = null;
     game.gameOverTransitionPending = true;
-    const transition = play.maybeTriggerOverrunCelebration({ sectorCleared: 60, bossCompletion: true });
+    const transition = play.maybeTriggerOverrunCelebration({ sectorCleared: 70, bossCompletion: true });
     game.gameOverTransitionPending = false;
-    return { nonBoss, gameOver, transition };
+    const originalScene = game.currentScene;
+    const originalSceneName = game.currentSceneName;
+    game.currentScene = game.scenes.gameOver;
+    game.currentSceneName = 'gameOver';
+    const resultScreen = play.maybeTriggerOverrunCelebration({ sectorCleared: 70, bossCompletion: true });
+    game.currentScene = game.scenes.highscore;
+    game.currentSceneName = 'highscore';
+    const leaderboard = play.maybeTriggerOverrunCelebration({ sectorCleared: 70, bossCompletion: true });
+    game.currentScene = game.scenes.shipSelect || { sceneName: 'shipSelect' };
+    game.currentSceneName = 'shipSelect';
+    const shipUnlock = play.maybeTriggerOverrunCelebration({ sectorCleared: 70, bossCompletion: true });
+    game.currentScene = originalScene;
+    game.currentSceneName = originalSceneName;
+    return { nonBoss, bossIntro, gameOver, transition, resultScreen, leaderboard, shipUnlock };
   });
   assert.equal(guards.nonBoss, false, 'non-boss milestone guard triggered');
+  assert.equal(guards.bossIntro, false, 'boss intro guard triggered');
   assert.equal(guards.gameOver, false, 'game-over interlude guard triggered');
   assert.equal(guards.transition, false, 'game-over transition guard triggered');
+  assert.equal(guards.resultScreen, false, 'result screen guard triggered');
+  assert.equal(guards.leaderboard, false, 'leaderboard guard triggered');
+  assert.equal(guards.shipUnlock, false, 'ship unlock/non-play scene guard triggered');
+}
+
+function assertFallbackCatalog() {
+  for (const sector of [60, 70, 80, 90]) {
+    assert.equal(isOverrunMilestoneSector(sector), true, `sector ${sector}: fallback sector not recognized`);
+    const first = getOverrunMilestoneCelebration({ milestoneSector: sector, eventKind: 'overrun_milestone' });
+    const second = getOverrunMilestoneCelebration({ milestoneSector: sector, eventKind: 'overrun_milestone' });
+    assert.equal(first.id, `far_signal_${sector}`, `sector ${sector}: fallback id was not sector-specific`);
+    assert.equal(first.id, second.id, `sector ${sector}: fallback id was not deterministic`);
+    assert.equal(first.visual?.id, second.visual?.id, `sector ${sector}: fallback visual was not deterministic`);
+  }
+  assert.equal(isOverrunMilestoneSector(61), false, 'sector 61 incorrectly recognized as a milestone');
+}
+
+function writeContactSheet({ results, contactSheetHtml, contactSheetPng }) {
+  const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Nova Swarm Overrun Milestone Contact Sheet</title>
+  <style>
+    body { margin: 0; background: #071018; color: #f7fbff; font: 18px Arial, sans-serif; }
+    header { padding: 28px 34px 10px; }
+    h1 { margin: 0 0 8px; font-size: 30px; }
+    p { margin: 0; color: #a9d8e8; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 24px 34px 34px; }
+    .shot { background: #0d1a26; border: 1px solid #264c62; border-radius: 8px; padding: 12px; break-inside: avoid; }
+    .shot h2 { margin: 0 0 8px; font-size: 17px; color: #ffe18a; }
+    .shot img { width: 100%; display: block; border: 1px solid #173348; }
+    .meta { margin-top: 7px; font-size: 13px; color: #b7d8e4; line-height: 1.35; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Nova Swarm Recurring Overrun Milestones</h1>
+    <p>Sectors 10, 20, 30, 40, 50, and fallback 60 across 1600x900, 1366x768, and 1280x720.</p>
+  </header>
+  <main class="grid">
+    ${results.map(result => `
+      <section class="shot">
+        <h2>Sector ${result.sector} - ${escapeHtml(result.title)} - ${result.viewport.width}x${result.viewport.height}</h2>
+        <img src="${fileUrl(result.screenshot)}" alt="Sector ${result.sector} ${result.viewport.width}x${result.viewport.height}">
+        <div class="meta">event=${escapeHtml(result.eventKind)} / variant=${escapeHtml(result.variantId)} / confirm=${escapeHtml(result.control)}</div>
+      </section>`).join('\n')}
+  </main>
+</body>
+</html>`;
+  writeFileSync(contactSheetHtml, html, 'utf8');
+  return { contactSheetHtml, contactSheetPng };
+}
+
+function writeEvidenceMarkdown({ outputPath, results, contactSheetPng }) {
+  const bySector = new Map();
+  for (const result of results) {
+    if (!bySector.has(result.sector)) bySector.set(result.sector, result);
+  }
+  const lines = [
+    '# Overrun Milestone Evidence',
+    '',
+    `Generated: ${new Date().toISOString()}`,
+    `Contact sheet: ${contactSheetPng}`,
+    '',
+    '| Sector | Event | Variant | Title | Confirm | Trigger | During Pause | After Confirm | Resumed | Evidence |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...[...bySector.values()].map(result => {
+      const trigger = result.phaseEvidence?.trigger?.overrunInterlude;
+      const during = result.phaseEvidence?.duringPause?.overrunInterlude;
+      const confirmed = result.phaseEvidence?.afterConfirm?.overrunInterlude;
+      const resumed = result.phaseEvidence?.resumed;
+      return [
+        result.sector,
+        result.eventKind,
+        result.variantId,
+        escapeHtml(result.title),
+        result.control,
+        trigger?.active ? `active ${trigger.eventKind}` : 'missing',
+        during?.readyForConfirm ? 'paused and ready' : 'not ready',
+        confirmed?.confirmed ? `confirmed by ${confirmed.confirmedBy}` : 'not confirmed',
+        resumed?.scene === 'play' && resumed?.overrunInterlude?.active === false ? `play sector ${resumed.level}` : 'not resumed',
+        result.screenshot
+      ].join(' | ');
+    }).map(row => `| ${row} |`)
+  ];
+  writeFileSync(outputPath, `${lines.join('\n')}\n`, 'utf8');
 }
 
 mkdirSync(outputDir, { recursive: true });
@@ -319,8 +519,12 @@ let browser = null;
 const results = [];
 const variantIds = new Set();
 const titles = new Set();
+const contactSheetHtml = path.join(outputDir, 'overrun-milestones-contact-sheet.html');
+const contactSheetPng = path.join(outputDir, 'overrun-milestones-contact-sheet.png');
+const evidenceReport = path.join(outputDir, 'overrun-milestones-evidence.md');
 
 try {
+  assertFallbackCatalog();
   server = await startTestServer();
   browser = await chromium.launch({
     headless: true,
@@ -360,6 +564,7 @@ try {
       assert.equal(staged.state.overrunInterlude?.eventKind, testCase.eventKind, `sector ${testCase.sector}: wrong event kind`);
       assert.equal(staged.state.overrunInterlude?.milestoneSector, testCase.sector, `sector ${testCase.sector}: wrong milestone sector`);
       assert.equal(staged.state.overrunInterlude?.variantId, testCase.variantId, `sector ${testCase.sector}: wrong variant`);
+      assert.equal(staged.triggerState.overrunInterlude?.active, true, `sector ${testCase.sector}: trigger state missing active interlude`);
 
       await page.waitForFunction(() => {
         const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -379,12 +584,19 @@ try {
       assert.equal(held.internals.scoreBoostTimer, staged.scoreBoostTimer, `${label}: score boost timer advanced while held`);
       assert.equal(held.internals.waveTimer, staged.waveTimer, `${label}: wave timer advanced while held`);
       assert.equal(held.internals.waveBriefingTimer, staged.waveBriefingTimer, `${label}: wave briefing timer advanced while held`);
+      assert.equal(held.internals.bossGateTimer, staged.bossGateTimer, `${label}: boss gate timer advanced while held`);
+      assert.deepEqual(held.internals.bossState, staged.bossState, `${label}: boss state changed while held`);
       assert.deepEqual(held.internals.counts, {
         enemies: Number(staged.state?.counts?.enemies || 0),
         playerBullets: Number(staged.state?.counts?.playerBullets || 0),
         enemyBullets: Number(staged.state?.counts?.enemyBullets || 0)
       }, `${label}: gameplay counts advanced while held`);
       assert.equal(held.internals.pickups, 0, `${label}: pickups advanced or appeared while held`);
+      assert.equal(held.internals.activeToasts.length, 0, `${label}: normal toasts became active over interlude`);
+      assert(
+        Object.values(held.internals.messageQueues || {}).some(count => Number(count) > 0),
+        `${label}: queued messages were not preserved/deferred during interlude`
+      );
       assertTextLayout(held.state, label, viewport, { requireBonus: testCase.sector === 10 });
       const titleNode = held.state.overrunInterlude.textNodes.find(node => node.id === 'ui_overrun_card_title');
       assert.equal(titleNode?.text, testCase.title, `${label}: wrong title text`);
@@ -424,7 +636,15 @@ try {
         title: titleNode.text,
         prompt: held.state.overrunInterlude.promptText,
         confirmedBy: confirmed.overrunInterlude?.confirmedBy,
-        screenshot
+        screenshot,
+        phaseEvidence: {
+          beforeTrigger: summarizeState(staged.beforeTriggerState),
+          trigger: summarizeState(staged.triggerState),
+          afterNextLevel: summarizeState(staged.state),
+          duringPause: summarizeState(held.state),
+          afterConfirm: summarizeState(confirmed),
+          resumed: summarizeState(resumed)
+        }
       });
     }
   }
@@ -432,11 +652,23 @@ try {
   assert.equal(variantIds.size, cases.length, 'curated milestones did not expose unique variants');
   assert.equal(titles.size, cases.length, 'curated milestones did not expose unique titles');
   await assertGuardChecks(page);
+  writeContactSheet({ results, contactSheetHtml, contactSheetPng });
+  const contactPage = await browser.newPage({ viewport: { width: 1800, height: 2400 } });
+  await contactPage.goto(fileUrl(contactSheetHtml), { waitUntil: 'load', timeout: 30000 });
+  await contactPage.screenshot({ path: contactSheetPng, fullPage: true });
+  await contactPage.close();
+  writeEvidenceMarkdown({ outputPath: evidenceReport, results, contactSheetPng });
 
   const report = {
     status: 'passed',
     baseUrl,
     cases: results,
+    verifiedSectors: [...new Set(results.map(result => result.sector))],
+    verifiedViewports: [...new Set(results.map(result => `${result.viewport.width}x${result.viewport.height}`))],
+    verifiedControls: [...new Set(results.map(result => result.control))],
+    contactSheetHtml,
+    contactSheetPng,
+    evidenceReport,
     pageErrors,
     consoleErrors
   };
