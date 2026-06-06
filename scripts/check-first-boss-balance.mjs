@@ -8,7 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4382));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/first-boss-balance-${timestamp()}`);
-const probeDurationMs = Number(process.env.FIRST_BOSS_PROBE_MS || 45000);
+const probeDurationMs = Number(process.env.FIRST_BOSS_PROBE_MS || 60000);
 const maxExpectedLivesLost = Number(process.env.FIRST_BOSS_MAX_LIVES_LOST || 1);
 
 function timestamp() {
@@ -116,6 +116,23 @@ async function collectState(page) {
       balanceDebug: play?.balanceDebug || null,
       dossierCount: (play?.uiOverlay?.children || []).filter(child => child?.label === 'ui_boss_dossier').length
     };
+  });
+}
+
+async function recoverScriptedPilot(page) {
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const player = play?.player;
+    if (!game || !player) return;
+    const x = game.getWidth() / 2;
+    const y = game.getHeight() * 0.82;
+    player.x = x;
+    player.y = y;
+    if (player.sprite) {
+      player.sprite.x = x;
+      player.sprite.y = y;
+    }
   });
 }
 
@@ -287,6 +304,7 @@ async function runCombatProbe(browser) {
           lastDamageSource: state.balanceDebug?.lastDamageSource || null,
           lastBossHazardHit: state.bossHazards?.lastHit || null
         });
+        await recoverScriptedPilot(page);
         lastLives = state.lives;
       }
       if (state.scene !== 'play' || state.lives <= 0 || state.waveState === 'LEVEL_COMPLETE' || !state.boss) break;

@@ -93,6 +93,38 @@ try {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.__game?.startGame), { timeout: 30000 });
   await page.evaluate(() => {
+    const unlockedProgress = {
+      version: 1,
+      unlockTuningVersion: 3,
+      pilotXp: 7200,
+      pilotRank: 6,
+      highestPilotRank: 6,
+      totalRuns: 8,
+      bestScore: 100000,
+      bestSector: 10,
+      bestLevel: 60,
+      bestRank: 6,
+      totalBossesDefeated: 6,
+      totalWavesCleared: 45,
+      totalCodexDiscoveries: 60,
+      runClears: 1,
+      noHitWaves: 0,
+      noHitSectors: 0,
+      clearWithLivesRemaining: 0,
+      highestScoreMultiplier: 1,
+      shipSpecificMilestones: {},
+      discoveredThreatIds: [],
+      defeatedBossIds: [],
+      runThemesSurvived: [],
+      secretShipUnlockIds: [],
+      creditsEasterEggFound: false,
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_07'],
+      lastNewlyUnlockedShipIds: [],
+      newRanksThisRun: [],
+      rankAchievementsUnlocked: [],
+      updatedAt: '2026-06-06T00:00:00.000Z'
+    };
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(unlockedProgress));
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 100000, bestRank: 6, bestLevel: 60 }));
   });
   await page.evaluate((spriteKey) => window.__game.startGame(spriteKey), wingTraitShip);
