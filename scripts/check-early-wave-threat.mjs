@@ -320,10 +320,10 @@ const summaries = [
 const byLabel = new Map(summaries.map((summary) => [summary.label, summary]));
 
 assertRange('levels 1 to 2', byLabel.get('levels 1 to 2').increasePct / 100, [0, 0.05]);
-assertRange('levels 3 to 5', byLabel.get('levels 3 to 5').increasePct / 100, [0.15, 0.25]);
-assertRange('levels 6 to 10', byLabel.get('levels 6 to 10').increasePct / 100, [0.25, 0.4]);
-assertRange('levels 11 to 15', byLabel.get('levels 11 to 15').increasePct / 100, [0.25, 0.45]);
-assertRange('levels 16 to 20', byLabel.get('levels 16 to 20').increasePct / 100, [0.2, 0.35]);
+assertRange('levels 3 to 5', byLabel.get('levels 3 to 5').increasePct / 100, [0.28, 0.38]);
+assertRange('levels 6 to 10', byLabel.get('levels 6 to 10').increasePct / 100, [0.48, 0.64]);
+assertRange('levels 11 to 15', byLabel.get('levels 11 to 15').increasePct / 100, [0.52, 0.7]);
+assertRange('levels 16 to 20', byLabel.get('levels 16 to 20').increasePct / 100, [0.34, 0.48]);
 assertRange('levels 20 to 29 preserve late-overrun baseline', byLabel.get('levels 20 to 29').increasePct / 100, [-0.01, 0.015]);
 assertRange('levels 30 to 49 preserve late-overrun baseline', byLabel.get('levels 30 to 49').increasePct / 100, [-0.01, 0.015]);
 assertRange('levels 50 plus preserve deep overrun baseline', byLabel.get('levels 50 plus').increasePct / 100, [-0.01, 0.015]);

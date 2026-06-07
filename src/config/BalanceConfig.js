@@ -114,16 +114,21 @@ export const BalanceConfig = {
                     challengeFormation: 'SCREEN_DOOR',
                     challengeTactic: 'traffic_court',
                     dangerWaveCount: 1,
-                    dangerWaveCountBonus: 1,
-                    dangerWaveCadenceMult: 1.08,
-                    dangerWaveFireMult: 1.12,
-                    dangerWaveFireDelayMult: 0.96,
-                    dangerWaveThreatDangerBudgetBonus: 1,
-                    dangerWaveThreatPlannedActionBonus: 1,
-                    threatInitialDelayMult: 0.72,
-                    threatInitialDelayMs: 200,
+                    dangerWaveCountBonus: 2,
+                    dangerWaveCadenceMult: 1.14,
+                    dangerWaveFireMult: 1.18,
+                    dangerWaveFireDelayMult: 0.91,
+                    dangerWaveThreatDangerBudgetBonus: 2,
+                    dangerWaveThreatMaxActiveBonus: 1,
+                    dangerWaveThreatPlannedActionBonus: 2,
+                    threatInitialDelayMult: 0.5,
+                    threatInitialDelayMs: 520,
+                    dangerWaveEliteMinLevel: 3,
+                    dangerWaveEliteHealthScalar: 0.6,
+                    dangerWaveEliteFireDelayMult: 1.08,
+                    dangerWaveEliteSpecialDelayMs: 900,
                     diveBiasMult: 1.02,
-                    entrySpeedMult: 0.99
+                    entrySpeedMult: 0.94
                 },
                 {
                     id: 'early_kill_window',
@@ -142,17 +147,21 @@ export const BalanceConfig = {
                     challengeTactic: 'lunar_turnpike',
                     multiEliteChanceMult: 1.18,
                     dangerWaveCount: 2,
-                    dangerWaveCountBonus: 1,
-                    dangerWaveCadenceMult: 1.09,
-                    dangerWaveFireMult: 1.1,
-                    dangerWaveFireDelayMult: 0.965,
-                    dangerWaveThreatDangerBudgetBonus: 1,
+                    dangerWaveCountBonus: 2,
+                    dangerWaveCadenceMult: 1.16,
+                    dangerWaveFireMult: 1.2,
+                    dangerWaveFireDelayMult: 0.9,
+                    dangerWaveThreatDangerBudgetBonus: 2,
                     dangerWaveThreatMaxActiveBonus: 1,
-                    dangerWaveThreatPlannedActionBonus: 1,
-                    threatInitialDelayMult: 0.72,
-                    threatInitialDelayMs: 180,
-                    diveBiasMult: 1.03,
-                    entrySpeedMult: 0.98
+                    dangerWaveThreatPlannedActionBonus: 2,
+                    threatInitialDelayMult: 0.46,
+                    threatInitialDelayMs: 580,
+                    dangerWaveEliteMinLevel: 5,
+                    dangerWaveEliteHealthScalar: 0.68,
+                    dangerWaveEliteFireDelayMult: 1.02,
+                    dangerWaveEliteSpecialDelayMs: 780,
+                    diveBiasMult: 1.05,
+                    entrySpeedMult: 0.93
                 },
                 {
                     id: 'serious_run',
@@ -171,17 +180,21 @@ export const BalanceConfig = {
                     challengeTactic: 'mirror_zipper',
                     multiEliteChanceMult: 1.2,
                     dangerWaveCount: 2,
-                    dangerWaveCountBonus: 1,
-                    dangerWaveCadenceMult: 1.09,
-                    dangerWaveFireMult: 1.1,
-                    dangerWaveFireDelayMult: 0.965,
-                    dangerWaveThreatDangerBudgetBonus: 1,
+                    dangerWaveCountBonus: 2,
+                    dangerWaveCadenceMult: 1.15,
+                    dangerWaveFireMult: 1.18,
+                    dangerWaveFireDelayMult: 0.91,
+                    dangerWaveThreatDangerBudgetBonus: 2,
                     dangerWaveThreatMaxActiveBonus: 1,
-                    dangerWaveThreatPlannedActionBonus: 1,
-                    threatInitialDelayMult: 0.7,
-                    threatInitialDelayMs: 200,
-                    diveBiasMult: 1.03,
-                    entrySpeedMult: 0.98
+                    dangerWaveThreatPlannedActionBonus: 2,
+                    threatInitialDelayMult: 0.45,
+                    threatInitialDelayMs: 620,
+                    dangerWaveEliteMinLevel: 8,
+                    dangerWaveEliteHealthScalar: 0.74,
+                    dangerWaveEliteFireDelayMult: 0.96,
+                    dangerWaveEliteSpecialDelayMs: 700,
+                    diveBiasMult: 1.05,
+                    entrySpeedMult: 0.93
                 },
                 {
                     id: 'early_late_bridge',
@@ -200,17 +213,21 @@ export const BalanceConfig = {
                     challengeTactic: 'sidewinder_choir',
                     multiEliteChanceMult: 1.18,
                     dangerWaveCount: 2,
-                    dangerWaveCountBonus: 1,
-                    dangerWaveCadenceMult: 1.07,
-                    dangerWaveFireMult: 1.08,
-                    dangerWaveFireDelayMult: 0.97,
-                    dangerWaveThreatDangerBudgetBonus: 1,
+                    dangerWaveCountBonus: 2,
+                    dangerWaveCadenceMult: 1.12,
+                    dangerWaveFireMult: 1.14,
+                    dangerWaveFireDelayMult: 0.93,
+                    dangerWaveThreatDangerBudgetBonus: 2,
                     dangerWaveThreatMaxActiveBonus: 1,
-                    dangerWaveThreatPlannedActionBonus: 1,
-                    threatInitialDelayMult: 0.72,
-                    threatInitialDelayMs: 160,
-                    diveBiasMult: 1.02,
-                    entrySpeedMult: 0.985
+                    dangerWaveThreatPlannedActionBonus: 2,
+                    threatInitialDelayMult: 0.48,
+                    threatInitialDelayMs: 560,
+                    dangerWaveEliteMinLevel: 10,
+                    dangerWaveEliteHealthScalar: 0.78,
+                    dangerWaveEliteFireDelayMult: 0.96,
+                    dangerWaveEliteSpecialDelayMs: 720,
+                    diveBiasMult: 1.04,
+                    entrySpeedMult: 0.95
                 },
                 {
                     id: 'late_run_attrition',
@@ -404,20 +421,25 @@ const DEFAULT_NORMAL_WAVE_PRESSURE_TUNING = Object.freeze({
     dangerWaveThreatDangerBudgetBonus: 0,
     dangerWaveThreatMaxActiveBonus: 0,
     dangerWaveThreatPlannedActionBonus: 0,
+    dangerWaveEliteMinLevel: 0,
+    dangerWaveEliteHealthScalar: 1,
+    dangerWaveEliteFireDelayMult: 1,
+    dangerWaveEliteSpecialDelayMs: 0,
     threatInitialDelayMult: 1,
-    threatInitialDelayMs: 0
+    threatInitialDelayMs: 0,
+    forcedThreatActionIds: []
 });
 
 const NORMAL_WAVE_DANGER_PATTERNS = Object.freeze([
-    { minLevel: 3, formation: 'DIAGONAL_RAID', tactic: 'dive_chain', entry: 'split' },
-    { minLevel: 4, formation: 'PINCER', tactic: 'crossfire_pincer', entry: 'alternating' },
-    { minLevel: 5, formation: 'SCREEN_DOOR', tactic: 'traffic_court', entry: 'split' },
-    { minLevel: 6, formation: 'CROSS_STREAM', tactic: 'lunar_turnpike', entry: 'alternating' },
-    { minLevel: 8, formation: 'PINCER', tactic: 'forklift_lattice', entry: 'split' },
-    { minLevel: 9, formation: 'ORBIT_RING', tactic: 'comet_queue', entry: 'single' },
-    { minLevel: 10, formation: 'SCREEN_DOOR', tactic: 'weave_wall', entry: 'alternating' },
-    { minLevel: 11, formation: 'PINCER', tactic: 'mirror_zipper', entry: 'split' },
-    { minLevel: 15, formation: 'SIDEWINDER', tactic: 'sidewinder_choir', entry: 'alternating' }
+    { minLevel: 3, formation: 'DIAGONAL_RAID', tactic: 'dive_chain', entry: 'split', eliteId: 'nova_elite_tractor_puller', threatActionIds: ['brake_dash_bolt', 'crossfire_pair'] },
+    { minLevel: 4, formation: 'PINCER', tactic: 'crossfire_pincer', entry: 'alternating', eliteId: 'nova_elite_tractor_puller', threatActionIds: ['lane_cutter', 'crossfire_pair'] },
+    { minLevel: 5, formation: 'SCREEN_DOOR', tactic: 'traffic_court', entry: 'split', eliteId: 'nova_elite_shield_projector', threatActionIds: ['mine_drop', 'lane_cutter', 'crossfire_pair'] },
+    { minLevel: 6, formation: 'CROSS_STREAM', tactic: 'lunar_turnpike', entry: 'alternating', eliteId: 'nova_elite_shield_projector', threatActionIds: ['telegraph_rail_lance', 'crossfire_pair', 'brake_dash_bolt'] },
+    { minLevel: 8, formation: 'PINCER', tactic: 'forklift_lattice', entry: 'split', eliteId: 'nova_elite_drone_carrier', threatActionIds: ['shotgun_fan_feint', 'lane_cutter', 'crossfire_pair'] },
+    { minLevel: 9, formation: 'ORBIT_RING', tactic: 'comet_queue', entry: 'single', eliteId: 'nova_elite_drone_carrier', threatActionIds: ['orbiting_satellites', 'splitter_seed', 'pulse_ring_bloom'] },
+    { minLevel: 10, formation: 'SCREEN_DOOR', tactic: 'weave_wall', entry: 'alternating', eliteId: 'nova_elite_mine_layer', threatActionIds: ['mine_drop', 'orbiting_satellites', 'lane_cutter'] },
+    { minLevel: 11, formation: 'PINCER', tactic: 'mirror_zipper', entry: 'split', eliteId: 'nova_elite_sniper_rail', threatActionIds: ['shotgun_fan_feint', 'lane_cutter', 'boomerang_crescent'] },
+    { minLevel: 15, formation: 'SIDEWINDER', tactic: 'sidewinder_choir', entry: 'alternating', eliteId: 'nova_elite_jammer_disruptor', threatActionIds: ['boomerang_crescent', 'shotgun_fan_feint', 'brake_dash_bolt'] }
 ]);
 
 export function getNormalWavePressureTuning(level = 1) {
@@ -453,7 +475,7 @@ export function getNormalWaveDangerMoment(level = 1, waveIndex = 0, waveCount = 
 
     const patternPool = NORMAL_WAVE_DANGER_PATTERNS.filter((pattern) => pattern.minLevel <= tuning.level);
     const pattern = patternPool[
-        Math.abs((tuning.level * 3 + safeWaveIndex * 5 + dangerSlot * 7) % Math.max(1, patternPool.length))
+        Math.abs((tuning.level * 5 + safeWaveIndex * 3 + dangerSlot * 11) % Math.max(1, patternPool.length))
     ] || NORMAL_WAVE_DANGER_PATTERNS[0];
 
     return {
@@ -473,7 +495,14 @@ export function getNormalWaveDangerMoment(level = 1, waveIndex = 0, waveCount = 
         threatDangerBudgetBonus: Number(tuning.dangerWaveThreatDangerBudgetBonus) || 0,
         threatMaxActiveBonus: Number(tuning.dangerWaveThreatMaxActiveBonus) || 0,
         threatPlannedActionBonus: Number(tuning.dangerWaveThreatPlannedActionBonus) || 0,
+        eliteMiddleShipId: tuning.level >= (Number(tuning.dangerWaveEliteMinLevel) || Number.POSITIVE_INFINITY)
+            ? pattern.eliteId
+            : null,
+        eliteHealthScalar: tuning.dangerWaveEliteHealthScalar || 1,
+        eliteFireDelayMult: tuning.dangerWaveEliteFireDelayMult || 1,
+        eliteSpecialDelayMs: Number(tuning.dangerWaveEliteSpecialDelayMs) || 0,
         threatInitialDelayMult: tuning.threatInitialDelayMult || 1,
-        threatInitialDelayMs: Number(tuning.threatInitialDelayMs) || 0
+        threatInitialDelayMs: Number(tuning.threatInitialDelayMs) || 0,
+        forcedThreatActionIds: pattern.threatActionIds || tuning.forcedThreatActionIds || []
     };
 }

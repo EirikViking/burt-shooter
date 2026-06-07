@@ -527,8 +527,13 @@ export class EnemyManager {
       entry: moment.entry || wave.entry,
       cadence: (wave.cadence || 1) * (moment.cadenceMult || 1),
       earlyThreatMoment: moment.id,
+      eliteMiddleShipId: moment.eliteMiddleShipId || wave.eliteMiddleShipId || null,
+      eliteHealthScalar: moment.eliteHealthScalar || wave.eliteHealthScalar || null,
+      eliteFireDelayMult: moment.eliteFireDelayMult || wave.eliteFireDelayMult || null,
+      eliteSpecialDelayMs: moment.eliteSpecialDelayMs || wave.eliteSpecialDelayMs || null,
       threatStartDelayMult: moment.threatInitialDelayMult || 1,
       threatStartDelayMs: moment.threatInitialDelayMs || 0,
+      forcedThreatActionIds: Array.isArray(moment.forcedThreatActionIds) ? moment.forcedThreatActionIds : [],
       threatBudgetModifiers: {
         dangerBudgetBonus: moment.threatDangerBudgetBonus || 0,
         maxActiveBonus: moment.threatMaxActiveBonus || 0,
@@ -548,10 +553,15 @@ export class EnemyManager {
 
   applyEliteMiddleShipPlan(waves, level) {
     const plannedWaves = waves.map((wave) => ({ ...wave }));
+    const reservedWaveIndices = new Set();
+    plannedWaves.forEach((wave, index) => {
+      if (wave.eliteMiddleShipId) reservedWaveIndices.add(index);
+    });
     const plan = planEliteMiddleShipSpawns(level, plannedWaves.length);
     this.eliteMiddleShipPlan = plan;
     plan.forEach(({ waveIndex, eliteMiddleShipId }) => {
       if (!plannedWaves[waveIndex]) return;
+      if (plannedWaves[waveIndex].eliteMiddleShipId) return;
       plannedWaves[waveIndex] = {
         ...plannedWaves[waveIndex],
         eliteMiddleShipId
@@ -560,7 +570,8 @@ export class EnemyManager {
     if (plan.length) {
       console.log(`[EliteMiddleShipPlan] level=${level} waves=${plannedWaves.length} plan=${plan.map(item => `${item.waveIndex + 1}:${item.eliteMiddleShipId}`).join(',')}`);
     }
-    this.applyMultiEliteWaveVariant(plannedWaves, level, new Set(plan.map((item) => item.waveIndex)));
+    const reserved = new Set([...reservedWaveIndices, ...plan.map((item) => item.waveIndex)]);
+    this.applyMultiEliteWaveVariant(plannedWaves, level, reserved);
     return plannedWaves;
   }
 
@@ -1345,6 +1356,9 @@ export class EnemyManager {
     positions.forEach((pos, i) => {
       const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
       const enemy = new Enemy(startX, -100, type, this.level, this.game, waveColor);
+      if (config.isChallenge && enemy.kind === 'bonus_drone') {
+        enemy.kind = 'enemy';
+      }
       const lanePressure = this.getLanePressureForPosition(pos.x, formation);
       const enemyTactic = this.applyLanePressureToTactic(tactic, lanePressure);
       this.applyModifier(enemy);
@@ -1380,7 +1394,10 @@ export class EnemyManager {
         tactic,
         waveColor,
         entry: config.entry || 'single',
-        delayMs: Math.min(900, Math.max(220, positions.length * delayStep * 0.35))
+        delayMs: Math.min(900, Math.max(180, positions.length * delayStep * 0.28)),
+        healthScalar: Number.isFinite(Number(config.eliteHealthScalar)) ? Number(config.eliteHealthScalar) : undefined,
+        fireDelayMult: Number.isFinite(Number(config.eliteFireDelayMult)) ? Number(config.eliteFireDelayMult) : undefined,
+        specialDelayMs: Number.isFinite(Number(config.eliteSpecialDelayMs)) ? Number(config.eliteSpecialDelayMs) : undefined
       });
     }
     if (multiEliteIds.length) {
@@ -1433,9 +1450,14 @@ export class EnemyManager {
       count,
       threatBudgetModifiers: config?.threatBudgetModifiers || {}
     });
+    const assignments = this.applyForcedThreatActions(result.assignments || [], {
+      count,
+      maxAssignments: result.budget?.plannedActions || count || 0,
+      forcedThreatActionIds: config?.forcedThreatActionIds || []
+    });
     const assignmentBySlot = new Map();
     const assignedIds = [];
-    for (const assignment of result.assignments || []) {
+    for (const assignment of assignments) {
       const action = getEnemyThreatAction(assignment.actionId);
       if (!action) continue;
       assignmentBySlot.set(assignment.slot, action);
@@ -1456,10 +1478,64 @@ export class EnemyManager {
     };
     return {
       budget: result.budget,
-      assignments: result.assignments || [],
+      assignments,
       assignmentBySlot,
       assignedIds
     };
+  }
+
+  applyForcedThreatActions(assignments = [], { count = 0, maxAssignments = 0, forcedThreatActionIds = [] } = {}) {
+    const forcedIds = Array.isArray(forcedThreatActionIds)
+      ? forcedThreatActionIds.filter(Boolean)
+      : [];
+    if (!forcedIds.length) return assignments;
+
+    const level = Math.max(1, Number(this.level) || 1);
+    const limit = Math.max(1, Math.min(Math.max(1, count || assignments.length || forcedIds.length), maxAssignments || forcedIds.length));
+    const next = assignments.slice(0, limit).map((assignment) => ({ ...assignment }));
+    const preferredSlots = [
+      Math.floor((count || 1) * 0.24),
+      Math.floor((count || 1) * 0.76),
+      Math.floor((count || 1) * 0.5),
+      0,
+      Math.max(0, (count || 1) - 1)
+    ];
+
+    forcedIds.forEach((actionId, index) => {
+      const action = getEnemyThreatAction(actionId);
+      if (!action || (Number(action.minLevel) || 1) > level) return;
+
+      const usedSlots = new Set(next.map((assignment) => assignment.slot));
+      let slot = preferredSlots.find((candidate) =>
+        Number.isFinite(candidate) &&
+        candidate >= 0 &&
+        candidate < Math.max(1, count || 1) &&
+        !usedSlots.has(candidate)
+      );
+      if (!Number.isFinite(slot)) {
+        slot = index % Math.max(1, count || 1);
+      }
+
+      const forced = { slot, actionId: action.id, forced: true };
+      const existingIndex = next.findIndex((assignment) => assignment.actionId === action.id);
+      if (existingIndex >= 0) {
+        next[existingIndex] = forced;
+        return;
+      }
+      if (next.length < limit) {
+        next.push(forced);
+        return;
+      }
+
+      const slotIndex = next.findIndex((assignment) => assignment.slot === slot);
+      next[slotIndex >= 0 ? slotIndex : index % next.length] = forced;
+    });
+
+    return next
+      .filter((assignment, index, all) =>
+        all.findIndex((candidate) => candidate.slot === assignment.slot) === index
+      )
+      .sort((a, b) => a.slot - b.slot);
   }
 
   applyThreatPressureCompensation(tactic = {}, threatPlan = {}) {
