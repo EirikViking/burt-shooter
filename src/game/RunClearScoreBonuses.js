@@ -17,12 +17,8 @@ export function awardRunClearScoreBonuses(game, { clearBonus = 0, livesBonus = 0
 
   const baseClearBonus = Math.max(0, Math.floor(Number(clearBonus) || 0));
   const baseLivesBonus = Math.max(0, Math.floor(Number(livesBonus) || 0));
-  const appliedClearBonus = baseClearBonus > 0
-    ? game.addScore(baseClearBonus, 'runClearBonus')
-    : 0;
-  const appliedLivesBonus = baseLivesBonus > 0
-    ? game.addScore(baseLivesBonus, 'remainingLivesBonus')
-    : 0;
+  const appliedClearBonus = applyExactScoreBonus(game, baseClearBonus, 'runClearBonus');
+  const appliedLivesBonus = applyExactScoreBonus(game, baseLivesBonus, 'remainingLivesBonus');
 
   game.runClearScoreBonusAward = {
     clearBonus: baseClearBonus,
@@ -33,4 +29,22 @@ export function awardRunClearScoreBonuses(game, { clearBonus = 0, livesBonus = 0
     scoreAfter: game.score
   };
   return { ...game.runClearScoreBonusAward, alreadyApplied: false };
+}
+
+function applyExactScoreBonus(game, amount, source) {
+  const applied = Math.max(0, Math.floor(Number(amount) || 0));
+  if (applied <= 0) return 0;
+
+  game.score = Math.max(0, Math.floor(Number(game.score) || 0)) + applied;
+  if (!game.scoreBreakdown && typeof game.createEmptyScoreBreakdown === 'function') {
+    game.scoreBreakdown = game.createEmptyScoreBreakdown();
+  }
+  if (game.scoreBreakdown) {
+    const breakdownKey = game.scoreBreakdown[source] !== undefined ? source : 'baseScore';
+    game.scoreBreakdown[breakdownKey] += applied;
+    game.scoreBreakdown.finalScore = game.score;
+  }
+  game.updateLiveRunRank?.({ force: true });
+  game.updateGlobalLeaderboardVoiceCues?.();
+  return applied;
 }

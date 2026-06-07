@@ -213,3 +213,19 @@ export function getOverrunMilestoneCelebration({
     visual
   };
 }
+
+export function resolveOverrunMilestoneVoiceCue({
+  milestoneSector = 10,
+  eventKind = 'overrun_milestone',
+  celebration = null
+} = {}) {
+  const sector = normalizeSector(milestoneSector);
+  const cue = String(celebration?.voiceCue || '').trim();
+  if (eventKind === 'run_clear' || sector <= 10) {
+    return cue || 'mission_control_overrun_clear_sector_10';
+  }
+  if (cue && cue !== 'mission_control_overrun_clear' && !/_sector_10\b/.test(cue)) {
+    return cue;
+  }
+  return 'mission_control_overrun_clear_far_signal';
+}

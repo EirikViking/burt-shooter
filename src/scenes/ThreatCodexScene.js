@@ -152,7 +152,7 @@ function getCategoryLayout(width, height, compact) {
   const twoRows = count > 7 && (width < 1450 || height < 780);
   const rows = twoRows ? 2 : 1;
   const columns = twoRows ? Math.ceil(count / 2) : count;
-  const buttonH = twoRows ? (height < 740 ? 34 : 38) : compact ? 42 : 48;
+  const buttonH = twoRows ? (height < 740 ? 44 : 46) : compact ? 44 : 52;
   const rowGap = twoRows ? 6 : 0;
   const startY = twoRows ? (height < 740 ? 88 : 96) : compact ? 92 : 112;
   const bottom = startY + rows * buttonH + (rows - 1) * rowGap;
@@ -613,6 +613,7 @@ export class ThreatCodexScene {
     const startY = categoryLayout.startY;
     const availableWidth = width * 0.9;
     const buttonWidth = availableWidth / categoryLayout.columns;
+    this.lastCategoryTabsDebug = [];
     THREAT_CODEX_CATEGORIES.forEach((category, index) => {
       const rowIndex = categoryLayout.twoRows ? Math.floor(index / categoryLayout.columns) : 0;
       const columnIndex = categoryLayout.twoRows ? index % categoryLayout.columns : index;
@@ -648,7 +649,7 @@ export class ThreatCodexScene {
       bg.fill({ color: accent, alpha: selected ? 0.95 : 0.35 });
       button.addChild(bg);
 
-      addText(button, localize(category.label.toUpperCase()), {
+      const labelText = addText(button, localize(category.label.toUpperCase()), {
         fontSize: categoryLayout.twoRows ? (height < 740 ? 9 : 10) : compact ? 10 : 12,
         fontWeight: '900',
         fill: selected ? '#ffffff' : '#b9f7ff',
@@ -657,12 +658,45 @@ export class ThreatCodexScene {
         wordWrapWidth: buttonWidth - 20
       }, (buttonWidth - 7) / 2, categoryLayout.twoRows ? 6 : compact ? 9 : 10, { x: 0.5, y: 0 });
 
-      addText(button, `${counts.discovered}/${counts.total}`, {
+      const countText = addText(button, `${counts.discovered}/${counts.total}`, {
         fontSize: categoryLayout.twoRows ? 9 : compact ? 10 : 12,
         fontWeight: '800',
         fill: selected ? colorCss(accent) : '#6f879a',
         align: 'center'
-      }, (buttonWidth - 7) / 2, Math.max(20, buttonH - 16), { x: 0.5, y: 0 });
+      }, (buttonWidth - 7) / 2, buttonH - 11, { x: 0.5, y: 1 });
+
+      const tabBounds = {
+        x: button.x,
+        y: button.y,
+        width: buttonWidth - 7,
+        height: buttonH,
+        dividerTop: button.y + buttonH - 7
+      };
+      const textBounds = (node) => ({
+        x: button.x + node.x - node.width * (node.anchor?.x || 0),
+        y: button.y + node.y - node.height * (node.anchor?.y || 0),
+        width: node.width,
+        height: node.height,
+        right: button.x + node.x - node.width * (node.anchor?.x || 0) + node.width,
+        bottom: button.y + node.y - node.height * (node.anchor?.y || 0) + node.height
+      });
+      const labelBounds = textBounds(labelText);
+      const countBounds = textBounds(countText);
+      this.lastCategoryTabsDebug.push({
+        id: category.id,
+        label: category.label,
+        count: `${counts.discovered}/${counts.total}`,
+        selected,
+        tabBounds,
+        labelBounds,
+        countBounds,
+        countToDividerGap: tabBounds.dividerTop - countBounds.bottom,
+        labelToCountGap: countBounds.y - labelBounds.bottom,
+        countInsideTab: countBounds.x >= tabBounds.x &&
+          countBounds.right <= tabBounds.x + tabBounds.width &&
+          countBounds.y >= tabBounds.y &&
+          countBounds.bottom <= tabBounds.y + tabBounds.height
+      });
 
       this.container.addChild(button);
     });

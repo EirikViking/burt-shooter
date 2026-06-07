@@ -38,7 +38,8 @@ import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import {
   getOverrunMilestoneCelebration,
-  isOverrunMilestoneSector
+  isOverrunMilestoneSector,
+  resolveOverrunMilestoneVoiceCue
 } from '../config/OverrunMilestoneCelebrations.js';
 import {
   recordThreatDefeated,
@@ -4759,7 +4760,7 @@ export class PlayScene {
     AudioManager.duckMusic?.(0.28, 4300);
     AudioManager.playSfx('overrun_clear_shockwave', { force: true, volume: 1.0, minIntervalMs: 0 });
     AudioManager.playSfx('overrun_clear_coronation', { force: true, volume: 1.0, minIntervalMs: 0 });
-    const voiceCue = celebration?.voiceCue || 'mission_control_overrun_clear';
+    const voiceCue = resolveOverrunMilestoneVoiceCue({ milestoneSector, eventKind, celebration });
     setTimeout(() => {
       if (this.game?.currentScene !== this) return;
       AudioManager.playVoice(voiceCue, {
