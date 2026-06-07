@@ -1,0 +1,47 @@
+{
+  "purpose": "private Steam test build after automated RC soak check-fixture fixes",
+  "generatedAt": "2026-06-07T21:37:29.2020250+02:00",
+  "branch": "rc/automated-release-candidate-soak-v1",
+  "commit": "c785e817ed2bc7201c960ec322b5e31f6eff2974",
+  "baselineCommit": "b7d10f20df53fd98902de626638c646d95163a4e",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "23612264",
+  "packageVersion": "v2026-06-07_21-32-23",
+  "setLive": "",
+  "leaderboard": "nova_swarm_global_score_v2",
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "manifest": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 724374578,
+    "manifestHash": "bc6f9efc364809f6b01aeb963163e6e46c3d43d26cbe8f9ec27ed7939421e41a",
+    "executableSha256": "15ae280478e87c61adf91119d127b0fcd24ffaaac42736d28a1dbae89628a744"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-07_21-32-23 automated RC soak check fixes private test",
+    "setLiveEvidence": "\"SetLive\" \"\""
+  },
+  "steamCmd": {
+    "path": "C:\\steamcmd\\steamcmd.exe",
+    "logPath": "test-results/steam-upload-rc-soak-20260607/steamcmd-upload-20260607.txt",
+    "resultLine": "[2026-06-07 21:37:16]: Successfully finished AppID 4765070 build (BuildID 23612264).",
+    "uploadRedacted": "C:\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\vibe-coding-e\\burt-shooter-cursor-hide-20260604\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+  },
+  "checks": [
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:controls:packaged",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf"
+  ],
+  "uploadResult": "Successfully finished AppID 4765070 build (BuildID 23612264).",
+  "steamworksSettingsTouched": false,
+  "notes": [
+    "SetLive was intentionally left empty, so this uploaded a private build and did not move a live Steam branch.",
+    "Steamworks settings, store metadata, leaderboards, app visibility, and live branches were not changed."
+  ]
+}
