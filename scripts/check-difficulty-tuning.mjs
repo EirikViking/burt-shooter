@@ -151,9 +151,9 @@ const summaryByLabel = new Map(summaries.map((summary) => [summary.label, summar
 
 assertRange('levels 1 to 2 conservative opening', summaryByLabel.get('levels 1 to 2').increasePct / 100, [0.03, 0.07]);
 assertRange('levels 3 to 5 early movement checks', summaryByLabel.get('levels 3 to 5').increasePct / 100, [0.28, 0.42]);
-assertRange('levels 6 to 10 early kill window', summaryByLabel.get('levels 6 to 10').increasePct / 100, [0.42, 0.62]);
+assertRange('levels 6 to 10 early kill window', summaryByLabel.get('levels 6 to 10').increasePct / 100, [0.62, 0.78]);
 assertRange('levels 11 to 15 serious normal waves', summaryByLabel.get('levels 11 to 15').increasePct / 100, [0.55, 0.82]);
-assertRange('levels 16 to 20 early-late bridge', summaryByLabel.get('levels 16 to 20').increasePct / 100, [0.7, 1]);
+assertRange('levels 16 to 20 early-late bridge', summaryByLabel.get('levels 16 to 20').increasePct / 100, [1, 1.16]);
 assertRange('levels 20 to 29 runtime lethality step', summaryByLabel.get('levels 20 to 29').increasePct / 100, [0.85, 1.25]);
 assertRange('levels 30 to 39 practiced-player threat', summaryByLabel.get('levels 30 to 39').increasePct / 100, [1.1, 1.6]);
 assertRange('levels 40 to 49 brutal pre-boss waves', summaryByLabel.get('levels 40 to 49').increasePct / 100, [1.7, 2.4]);

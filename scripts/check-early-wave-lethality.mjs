@@ -376,11 +376,12 @@ function assertProtectedSurfaces() {
     fail(`Steam bridge does not preserve AppID ${EXPECTED_APP_ID}`);
   }
 
-  const lateBands = [20, 30, 40, 50].map((level) => getNormalWavePressureTuning(level));
-  if (lateBands[0].id !== 'late_run_attrition' ||
-      lateBands[1].id !== 'overrun_rising' ||
-      lateBands[2].id !== 'overrun_plateau_break' ||
-      lateBands[3].id !== 'deep_overrun') {
+  const lateBands = [20, 21, 30, 40, 50].map((level) => getNormalWavePressureTuning(level));
+  if (lateBands[0].id !== 'sector_twenty_gate' ||
+      lateBands[1].id !== 'late_run_attrition' ||
+      lateBands[2].id !== 'overrun_rising' ||
+      lateBands[3].id !== 'overrun_plateau_break' ||
+      lateBands[4].id !== 'deep_overrun') {
     fail('level 20+ late-overrun pressure bands changed unexpectedly');
   }
 
