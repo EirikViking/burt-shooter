@@ -557,7 +557,10 @@ export class Enemy {
     this.threatActionCooldown = action.cooldownMs || 8000;
     const slotDelay = (Number(context.index) || this.waveSlot || 0) * 230;
     const waveDelay = (Number(context.waveIndex) || 0) * 140;
-    this.nextThreatActionAt = Date.now() + 1450 + slotDelay + waveDelay + Math.random() * 550;
+    const baseDelayMs = 1450 + slotDelay + waveDelay + Math.random() * 550;
+    const delayMult = Number.isFinite(Number(context.initialDelayMult)) ? Number(context.initialDelayMult) : 1;
+    const delayTrimMs = Number.isFinite(Number(context.initialDelayMs)) ? Number(context.initialDelayMs) : 0;
+    this.nextThreatActionAt = Date.now() + Math.max(520, baseDelayMs * delayMult - delayTrimMs);
   }
 
   clampCombatX(x, padding = 0) {

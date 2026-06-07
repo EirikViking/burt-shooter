@@ -3,7 +3,7 @@ import { Enemy } from '../entities/Enemy.js';
 import { Boss } from '../entities/Boss.js';
 import { Hijacker } from '../entities/Hijacker.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { BalanceConfig, getNormalWavePressureTuning } from '../config/BalanceConfig.js';
+import { BalanceConfig, getNormalWaveDangerMoment, getNormalWavePressureTuning } from '../config/BalanceConfig.js';
 import { getMicroMessage } from '../text/phrasePool.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
@@ -445,7 +445,10 @@ export class EnemyManager {
       const shapedCurated = curatedWaves.map((wave, waveIndex) =>
         this.game?.contentDirector?.shapeWaveConfig?.(wave, { level, waveIndex }) || wave
       );
-      return this.applyEliteMiddleShipPlan(shapedCurated, level);
+      const threatShapedCurated = shapedCurated.map((wave, waveIndex) =>
+        this.applyNormalWaveDangerMoment(wave, level, waveIndex, shapedCurated.length)
+      );
+      return this.applyEliteMiddleShipPlan(threatShapedCurated, level);
     }
 
     const numWaves = this.getNormalWaveCount(level);
@@ -489,9 +492,58 @@ export class EnemyManager {
         entry: i % 3 === 0 ? 'split' : i % 3 === 1 ? 'alternating' : 'single',
         cadence: 0.9 + Math.min(0.45, level * 0.022 + i * 0.035)
       };
-      waves.push(this.game?.contentDirector?.shapeWaveConfig?.(wave, { level, waveIndex: i }) || wave);
+      const shaped = this.game?.contentDirector?.shapeWaveConfig?.(wave, { level, waveIndex: i }) || wave;
+      waves.push(this.applyNormalWaveDangerMoment(shaped, level, i, numWaves));
     }
     return this.applyEliteMiddleShipPlan(waves, level);
+  }
+
+  applyNormalWaveDangerMoment(wave, level, waveIndex, waveCount) {
+    const moment = getNormalWaveDangerMoment(level, waveIndex, waveCount);
+    if (!moment) return wave;
+
+    const tacticId = this.getAllowedThreatMomentTacticId(moment, level, waveIndex);
+    const tactic = TACTIC_BY_ID[tacticId] || TACTIC_BY_ID[this.pickWaveTactic(level, waveIndex, moment.formation)] || WAVE_TACTICS[0];
+    const diff = BalanceConfig.difficulty;
+    const pressureTuning = getNormalWavePressureTuning(level);
+    const max = (diff.waveEnemyMax ?? 14) +
+      (Number(pressureTuning.waveEnemyMaxBonus) || 0) +
+      Math.max(0, Number(moment.countBonus) || 0);
+    const baseCount = Math.max(4, Number(wave.count) || this.getWaveEnemyCount(level, waveIndex));
+    const count = Math.max(baseCount, Math.min(max, baseCount + Math.max(0, Number(moment.countBonus) || 0)));
+
+    return {
+      ...wave,
+      count,
+      formation: moment.formation,
+      tactic: {
+        ...tactic,
+        fireScalar: (tactic.fireScalar || 1) * (moment.fireMult || 1),
+        fireDelayMult: (tactic.fireDelayMult || 1) * (moment.fireDelayMult || 1),
+        diveBias: (tactic.diveBias || 1) * (moment.diveBiasMult || 1),
+        entrySpeed: (tactic.entrySpeed || 1) * (moment.entrySpeedMult || 1),
+        earlyThreatMoment: moment.id
+      },
+      entry: moment.entry || wave.entry,
+      cadence: (wave.cadence || 1) * (moment.cadenceMult || 1),
+      earlyThreatMoment: moment.id,
+      threatStartDelayMult: moment.threatInitialDelayMult || 1,
+      threatStartDelayMs: moment.threatInitialDelayMs || 0,
+      threatBudgetModifiers: {
+        dangerBudgetBonus: moment.threatDangerBudgetBonus || 0,
+        maxActiveBonus: moment.threatMaxActiveBonus || 0,
+        plannedActionBonus: moment.threatPlannedActionBonus || 0
+      }
+    };
+  }
+
+  getAllowedThreatMomentTacticId(moment, level, waveIndex) {
+    const requested = TACTIC_BY_ID[moment?.tactic];
+    const safeLevel = Math.max(1, Number(level) || 1);
+    if (requested && (Number(requested.minLevel) || 1) <= safeLevel) {
+      return moment.tactic;
+    }
+    return this.pickWaveTactic(safeLevel, waveIndex, moment?.formation || 'ARC');
   }
 
   applyEliteMiddleShipPlan(waves, level) {
@@ -1310,7 +1362,9 @@ export class EnemyManager {
         enemy.applyThreatAction?.(threatAction, {
           index: i,
           waveIndex: this.currentWaveIndex,
-          count
+          count,
+          initialDelayMult: config.threatStartDelayMult,
+          initialDelayMs: config.threatStartDelayMs
         });
       }
       if (enemyTactic.forcedDive) {
@@ -1376,7 +1430,8 @@ export class EnemyManager {
       formation,
       tactic,
       waveIndex: this.currentWaveIndex || 0,
-      count
+      count,
+      threatBudgetModifiers: config?.threatBudgetModifiers || {}
     });
     const assignmentBySlot = new Map();
     const assignedIds = [];
@@ -2390,7 +2445,12 @@ export class EnemyManager {
     if (this.level > 1 && hasUpcomingWave && this.currentWaveIndex > 0) {
       const diff = BalanceConfig.difficulty;
       const pressureTuning = getNormalWavePressureTuning(this.level);
-      const challengeWaveChance = (diff.challengeWaveChance ?? 0.08) * (pressureTuning.challengeChanceMult || 1);
+      const challengeMinLevel = Number(pressureTuning.challengeMinLevel) || 1;
+      const challengeWaveChance = Math.min(
+        0.18,
+        ((diff.challengeWaveChance ?? 0.08) * (pressureTuning.challengeChanceMult || 1)) +
+        (this.level >= challengeMinLevel ? (Number(pressureTuning.challengeChanceBonus) || 0) : 0)
+      );
       if (Math.random() < challengeWaveChance) {
         const wasChallenge = clearedWave && clearedWave.isChallenge;
         if (!wasChallenge) {
@@ -2398,8 +2458,8 @@ export class EnemyManager {
           this.waves.splice(this.currentWaveIndex + 1, 0, {
             type: 'bonus_challenge',
             count: (diff.challengeWaveCount || 24) + (Number(pressureTuning.challengeWaveCountBonus) || 0),
-            formation: this.level >= 50 ? 'CROSS_STREAM' : 'GRID',
-            tactic: this.level >= 50 ? 'overrun_turntable' : 'rush_feint',
+            formation: pressureTuning.challengeFormation || (this.level >= 50 ? 'CROSS_STREAM' : 'GRID'),
+            tactic: pressureTuning.challengeTactic || (this.level >= 50 ? 'overrun_turntable' : 'rush_feint'),
             isChallenge: true
           });
           this.normalWavesTotal += 1;

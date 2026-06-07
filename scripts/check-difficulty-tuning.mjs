@@ -136,9 +136,11 @@ function summarizeBand(label, start, end) {
 }
 
 const summaries = [
-  summarizeBand('levels 1 to 3', 1, 3),
-  summarizeBand('levels 1 to 10', 1, 10),
-  summarizeBand('levels 11 to 19', 11, 19),
+  summarizeBand('levels 1 to 2', 1, 2),
+  summarizeBand('levels 3 to 5', 3, 5),
+  summarizeBand('levels 6 to 10', 6, 10),
+  summarizeBand('levels 11 to 15', 11, 15),
+  summarizeBand('levels 16 to 20', 16, 20),
   summarizeBand('levels 20 to 29', 20, 29),
   summarizeBand('levels 30 to 39', 30, 39),
   summarizeBand('levels 40 to 49', 40, 49),
@@ -147,9 +149,11 @@ const summaries = [
 
 const summaryByLabel = new Map(summaries.map((summary) => [summary.label, summary]));
 
-assertRange('levels 1 to 3 conservative opening', summaryByLabel.get('levels 1 to 3').increasePct / 100, [0.03, 0.075]);
-assertRange('levels 1 to 10', summaryByLabel.get('levels 1 to 10').increasePct / 100, [0.05, 0.12]);
-assertRange('levels 11 to 19', summaryByLabel.get('levels 11 to 19').increasePct / 100, [0.04, 0.07]);
+assertRange('levels 1 to 2 conservative opening', summaryByLabel.get('levels 1 to 2').increasePct / 100, [0.03, 0.07]);
+assertRange('levels 3 to 5 early movement checks', summaryByLabel.get('levels 3 to 5').increasePct / 100, [0.08, 0.2]);
+assertRange('levels 6 to 10 early kill window', summaryByLabel.get('levels 6 to 10').increasePct / 100, [0.12, 0.24]);
+assertRange('levels 11 to 15 serious normal waves', summaryByLabel.get('levels 11 to 15').increasePct / 100, [0.14, 0.28]);
+assertRange('levels 16 to 20 early-late bridge', summaryByLabel.get('levels 16 to 20').increasePct / 100, [0.1, 0.24]);
 assertRange('levels 20 to 29', summaryByLabel.get('levels 20 to 29').increasePct / 100, [0.08, 0.12]);
 assertRange('levels 30 to 39', summaryByLabel.get('levels 30 to 39').increasePct / 100, [0.12, 0.16]);
 assertRange('levels 40 to 49', summaryByLabel.get('levels 40 to 49').increasePct / 100, [0.16, 0.22]);
