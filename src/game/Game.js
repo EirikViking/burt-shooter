@@ -23,6 +23,7 @@ import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { RunPacingConfig, getRunPacingDebugState } from '../config/RunPacingConfig.js';
 import { RunPressureDirector } from './RunPressureDirector.js';
 import { RunContentDirector } from './RunContentDirector.js';
+import { awardRunClearScoreBonuses } from './RunClearScoreBonuses.js';
 import {
   getCodexCompletionCounts,
   getDiscoveriesThisRun,
@@ -53,6 +54,7 @@ export class Game {
     this.runCleared = false;
     this.runClearReason = null;
     this.runClearLivesRemaining = 0;
+    this.runClearScoreBonusAward = null;
     this.runFinalized = false;
     this.runSummary = null;
     this.runProgressionResult = null;
@@ -208,6 +210,7 @@ export class Game {
     this.runCleared = false;
     this.runClearReason = null;
     this.runClearLivesRemaining = 0;
+    this.runClearScoreBonusAward = null;
     this.runFinalized = false;
     this.runSummary = null;
     this.runProgressionResult = null;
@@ -304,6 +307,10 @@ export class Game {
     this.runClearReason = reason;
     this.runClearLivesRemaining = Math.max(0, Number(this.lives) || 0);
     return true;
+  }
+
+  awardRunClearScoreBonuses({ clearBonus = 0, livesBonus = 0 } = {}) {
+    return awardRunClearScoreBonuses(this, { clearBonus, livesBonus });
   }
 
   completeRun(reason = 'target_sector_clear') {

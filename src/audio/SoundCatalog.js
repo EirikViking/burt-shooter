@@ -299,6 +299,12 @@ export const VOICE_MIX = {
     mission_control_hijacker: { volume: 0.76, duckFactor: 0.54, duckMs: 1500, cooldownMs: 24000 },
     mission_control_tractor_hijack: { volume: 0.8, duckFactor: 0.48, duckMs: 1300, cooldownMs: 26000 },
     mission_control_overrun_clear: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_sector_10: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_sector_20: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_sector_30: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_sector_40: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_sector_50: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_far_signal: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
     mission_control_credits: { volume: 0.9, duckFactor: 0.34, duckMs: 3600, cooldownMs: 0 }
 };
 
@@ -328,6 +334,12 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_hijacker: 'mission_control_hijacker_01.mp3',
     mission_control_tractor_hijack: 'mission_control_tractor_hijack_01.mp3',
     mission_control_overrun_clear: 'mission_control_overrun_clear_01.mp3',
+    mission_control_overrun_clear_sector_10: 'mission_control_overrun_clear_sector_10_01.mp3',
+    mission_control_overrun_clear_sector_20: 'mission_control_overrun_clear_sector_20_01.mp3',
+    mission_control_overrun_clear_sector_30: 'mission_control_overrun_clear_sector_30_01.mp3',
+    mission_control_overrun_clear_sector_40: 'mission_control_overrun_clear_sector_40_01.mp3',
+    mission_control_overrun_clear_sector_50: 'mission_control_overrun_clear_sector_50_01.mp3',
+    mission_control_overrun_clear_far_signal: 'mission_control_overrun_clear_far_signal_01.mp3',
     mission_control_credits: 'mission_control_credits_01.mp3',
     intro_narrator_01: 'intro_narrator_01.mp3',
     intro_narrator_02: 'intro_narrator_02.mp3',
@@ -596,6 +608,12 @@ export const SFX_CATALOG = {
     'mission_control_hijacker': numberedVoicePool('mission_control_hijacker', 2),
     'mission_control_tractor_hijack': numberedVoicePool('mission_control_tractor_hijack', 3),
     'mission_control_overrun_clear': numberedVoicePool('mission_control_overrun_clear', 1),
+    'mission_control_overrun_clear_sector_10': numberedVoicePool('mission_control_overrun_clear_sector_10', 1),
+    'mission_control_overrun_clear_sector_20': numberedVoicePool('mission_control_overrun_clear_sector_20', 1),
+    'mission_control_overrun_clear_sector_30': numberedVoicePool('mission_control_overrun_clear_sector_30', 1),
+    'mission_control_overrun_clear_sector_40': numberedVoicePool('mission_control_overrun_clear_sector_40', 1),
+    'mission_control_overrun_clear_sector_50': numberedVoicePool('mission_control_overrun_clear_sector_50', 1),
+    'mission_control_overrun_clear_far_signal': numberedVoicePool('mission_control_overrun_clear_far_signal', 1),
     'mission_control_credits': numberedVoicePool('mission_control_credits', 1),
     ...GAME_OVER_CTA_VOICE_CATALOG,
     'boss_spawn': [

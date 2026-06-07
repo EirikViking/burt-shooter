@@ -214,6 +214,30 @@ const lines = [
   {
     file: 'mission_control_overrun_clear_01.mp3',
     text: 'Sector ten cleared. Overrun authorized. The cabinet is applauding and will deny it later.'
+  },
+  {
+    file: 'mission_control_overrun_clear_sector_10_01.mp3',
+    text: 'Sector ten cleared. Overrun authorized. The cabinet is applauding and will deny it later.'
+  },
+  {
+    file: 'mission_control_overrun_clear_sector_20_01.mp3',
+    text: 'Sector twenty cleared. Second signal locked. The swarm is doubling back.'
+  },
+  {
+    file: 'mission_control_overrun_clear_sector_30_01.mp3',
+    text: 'Sector thirty cleared. Pattern storm confirmed. Read once, move twice.'
+  },
+  {
+    file: 'mission_control_overrun_clear_sector_40_01.mp3',
+    text: 'Sector forty cleared. Deep circuit holding. Every safe lane is temporary.'
+  },
+  {
+    file: 'mission_control_overrun_clear_sector_50_01.mp3',
+    text: 'Sector fifty cleared. Last cabinet call answered. This is legend territory.'
+  },
+  {
+    file: 'mission_control_overrun_clear_far_signal_01.mp3',
+    text: 'Far overrun sector cleared. The run is off the map. Keep the line.'
   }
 ];
 

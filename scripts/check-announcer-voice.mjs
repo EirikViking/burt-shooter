@@ -32,6 +32,12 @@ const requiredPools = {
   mission_control_restart: 2,
   mission_control_hijacker: 2,
   mission_control_tractor_hijack: 3,
+  mission_control_overrun_clear_sector_10: 1,
+  mission_control_overrun_clear_sector_20: 1,
+  mission_control_overrun_clear_sector_30: 1,
+  mission_control_overrun_clear_sector_40: 1,
+  mission_control_overrun_clear_sector_50: 1,
+  mission_control_overrun_clear_far_signal: 1,
   mission_control_credits: 1
 };
 
@@ -112,6 +118,12 @@ for (const requiredText of [
   'mission_control_lives_max',
   'mission_control_restart',
   'mission_control_tractor_hijack',
+  'mission_control_overrun_clear_sector_10',
+  'mission_control_overrun_clear_sector_20',
+  'mission_control_overrun_clear_sector_30',
+  'mission_control_overrun_clear_sector_40',
+  'mission_control_overrun_clear_sector_50',
+  'mission_control_overrun_clear_far_signal',
   'mission_control_credits'
 ]) {
   if (!runtimeSource.includes(requiredText)) {

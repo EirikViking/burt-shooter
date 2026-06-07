@@ -67,6 +67,7 @@
     "check:boss-post-first-difficulty": "node scripts/check-boss-post-first-difficulty.mjs",
     "check:run-pacing": "node scripts/check-run-pacing.mjs",
     "check:overrun-clear": "node scripts/check-overrun-clear.mjs",
+    "check:overrun-clear-score-bonus": "node scripts/check-overrun-clear-score-bonus.mjs",
     "check:overrun-confirmation": "node scripts/check-overrun-confirmation.mjs",
     "check:overrun-milestones": "node scripts/check-overrun-milestones.mjs",
     "check:content-director": "node scripts/check-content-director.mjs",

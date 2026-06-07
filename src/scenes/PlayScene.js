@@ -4568,10 +4568,9 @@ export class PlayScene {
     if (!this.game.runCleared && milestoneSector >= RunPacingConfig.targetSectors) {
       const clearBonus = 10000;
       const livesBonus = Math.max(0, Number(this.game.lives) || 0) * 2500;
-      if (clearBonus > 0) this.game.addScore(clearBonus, 'runClearBonus');
-      if (livesBonus > 0) this.game.addScore(livesBonus, 'remainingLivesBonus');
       const markedClear = this.game.markRunClear?.('target_sector_clear');
       if (!markedClear) return false;
+      this.game.awardRunClearScoreBonuses?.({ clearBonus, livesBonus });
 
       this.overrunCelebratedMilestones.add(milestoneSector);
       this.triggerOverrunClearCelebration({
@@ -4731,9 +4730,10 @@ export class PlayScene {
     AudioManager.duckMusic?.(0.28, 4300);
     AudioManager.playSfx('overrun_clear_shockwave', { force: true, volume: 1.0, minIntervalMs: 0 });
     AudioManager.playSfx('overrun_clear_coronation', { force: true, volume: 1.0, minIntervalMs: 0 });
+    const voiceCue = celebration?.voiceCue || 'mission_control_overrun_clear';
     setTimeout(() => {
       if (this.game?.currentScene !== this) return;
-      AudioManager.playVoice('mission_control_overrun_clear', {
+      AudioManager.playVoice(voiceCue, {
         force: true,
         stopOtherVoices: true,
         exclusiveGroup: 'announcer',

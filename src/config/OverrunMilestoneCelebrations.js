@@ -58,6 +58,7 @@ const CELEBRATIONS = Object.freeze({
     statusLine: 'STATUS: CLEAR GATE SECURED // SCORE {score} // HULLS {lives}',
     warning: 'SECTOR {nextSector} WILL NOT BE POLITE',
     continueText: "I'M READY - BRING THE SWARM",
+    voiceCue: 'mission_control_overrun_clear_sector_10',
     visual: {
       id: 'clear_gate_coronation',
       motif: 'coronation',
@@ -83,6 +84,7 @@ const CELEBRATIONS = Object.freeze({
     statusLine: 'STATUS: SECTOR {sector} CLEARED // RANK {rank} // HULLS {lives}',
     warning: 'THE SWARM DOUBLES BACK FROM HERE',
     continueText: 'PUSH INTO SECTOR {nextSector}',
+    voiceCue: 'mission_control_overrun_clear_sector_20',
     visual: {
       id: 'second_signal_surge',
       motif: 'double_rail',
@@ -108,6 +110,7 @@ const CELEBRATIONS = Object.freeze({
     statusLine: 'STATUS: THIRTY SECTORS LOGGED // SCORE {score} // RANK {rank}',
     warning: 'READ ONCE. MOVE TWICE. KEEP FIRING.',
     continueText: 'CUT THROUGH THE STORM',
+    voiceCue: 'mission_control_overrun_clear_sector_30',
     visual: {
       id: 'pattern_storm_orbit',
       motif: 'orbit',
@@ -133,6 +136,7 @@ const CELEBRATIONS = Object.freeze({
     statusLine: 'STATUS: DEEP OVERRUN HOLDING // SECTOR {sector} // HULLS {lives}',
     warning: 'EVERY SAFE LANE IS TEMPORARY',
     continueText: 'TAKE THE DEEP ROUTE',
+    voiceCue: 'mission_control_overrun_clear_sector_40',
     visual: {
       id: 'deep_circuit_scan',
       motif: 'deep_scan',
@@ -158,6 +162,7 @@ const CELEBRATIONS = Object.freeze({
     statusLine: 'STATUS: FIFTY SECTORS SURVIVED // SCORE {score} // RANK {rank}',
     warning: 'THIS IS LEGEND TERRITORY. STAY HUMAN.',
     continueText: 'ANSWER THE CALL',
+    voiceCue: 'mission_control_overrun_clear_sector_50',
     visual: {
       id: 'last_cabinet_call_finale',
       motif: 'finale',
@@ -204,7 +209,7 @@ export function getOverrunMilestoneCelebration({
     statusLine: 'STATUS: SECTOR {sector} CLEARED // SCORE {score} // RANK {rank}',
     warning: 'THE RUN IS OFF THE MAP. KEEP THE LINE.',
     continueText: 'PUSH INTO SECTOR {nextSector}',
+    voiceCue: 'mission_control_overrun_clear_far_signal',
     visual
   };
 }
-
