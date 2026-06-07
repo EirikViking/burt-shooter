@@ -139,9 +139,28 @@ async function submitInitials(page, initials, expectPost = false) {
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+    return state.scene === 'gameOver' &&
+      (
+        state.gameOver?.state === 'runback' ||
+        (state.gameOver?.state === 'submitted_hold' && state.gameOver?.submittedHoldReady)
+      );
   }, null, { timeout: 15000 });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'gameOver' && (
+      state.gameOver?.state === 'runback' ||
+      (state.gameOver?.state === 'submitted_hold' && state.gameOver?.submittedHoldReady)
+    );
+  }, null, { timeout: 5000 });
   if (postPromise) await postPromise;
+  const submittedState = await readTextState(page);
+  if (submittedState.gameOver?.state === 'submitted_hold') {
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+    }, null, { timeout: 10000 });
+  }
 }
 
 async function readLocalScores(page) {

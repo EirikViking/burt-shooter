@@ -113,14 +113,19 @@ async function preparePage(browser, scenario) {
   return { page, pageErrors };
 }
 
-async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000) {
-  await page.evaluate(({ level, score }) => {
+async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000, runStats = {}) {
+  await page.evaluate(({ level, score, runStats }) => {
     const game = window.__game;
+    const play = game.scenes?.play;
+    if (play) {
+      if (runStats.bossKills !== undefined) play.bossKills = runStats.bossKills;
+      if (runStats.wavesCleared !== undefined) play.wavesCleared = runStats.wavesCleared;
+    }
     game.score = score;
     game.level = level;
     game.rankIndex = Math.max(0, level - 1);
     game.gameOver();
-  }, { level: finalLevel, score: finalScore });
+  }, { level: finalLevel, score: finalScore, runStats });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'gameOver' && state.gameOver?.shipUnlocks?.visible === true;
@@ -131,7 +136,7 @@ async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000) {
 
 async function runScenario(browser, scenario) {
   const { page, pageErrors } = await preparePage(browser, scenario);
-  const state = await forceGameOver(page, scenario.finalLevel, scenario.finalScore);
+  const state = await forceGameOver(page, scenario.finalLevel, scenario.finalScore, scenario.runStats);
   const unlocks = state.gameOver?.shipUnlocks || {};
   assert(unlocks.count === scenario.expectedCount, `${scenario.name}: expected ${scenario.expectedCount} unlock(s), got ${unlocks.count}`);
   assert(unlocks.visible === true, `${scenario.name}: unlock reveal was not visible`);
@@ -178,6 +183,10 @@ try {
     name: 'several',
     previousProgress: baseHangarProgress(),
     finalLevel: 5,
+    runStats: {
+      bossKills: 1,
+      wavesCleared: 24
+    },
     expectedCount: 2,
     expectedVoiceKey: 'mission_control_ships_unlocked',
     expectedSummary: 'SHIPS UNLOCKED'
