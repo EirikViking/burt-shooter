@@ -3,9 +3,13 @@ const path = require('node:path');
 
 const SAVE_VERSION = 2;
 const CLOUD_SUBDIR = 'steam-cloud';
+const PROFILE_SUBDIR = 'profiles';
+const PROFILE_INDEX_FILE = 'profile-index.json';
 const CLOUD_SAVE_FILE = 'nova-swarm-save.json';
 const LEGACY_HIGHSCORE_FILE = 'local-highscores-v2.json';
 const OLD_HIGHSCORE_FILE = 'local-highscores.json';
+const LOCAL_OFFLINE_PROFILE_ID = 'local-offline';
+const LEGACY_SHARED_PROFILE_ID = 'legacy-shared';
 const SUPPORTED_LANGUAGE_MODES = new Set(['system', 'en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']);
 const MUSIC_PACKS = new Set(['classic', 'generated']);
 
@@ -13,15 +17,100 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function getPaths(userDataPath) {
+function sanitizeProfileToken(value, fallback = LOCAL_OFFLINE_PROFILE_ID) {
+  const text = String(value || '').trim();
+  const cleaned = text.replace(/[^a-zA-Z0-9_.-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  return (cleaned || fallback).slice(0, 80);
+}
+
+function normalizeProfileContext(profile = {}) {
+  const raw = profile && typeof profile === 'object' ? profile : {};
+  const steamId = String(raw.steamId ?? raw.steamID ?? raw.id ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 32);
+  if (steamId) {
+    return {
+      type: 'steam',
+      id: steamId,
+      steamId,
+      storageId: `steam-${steamId}`,
+      personaName: raw.personaName ? String(raw.personaName).slice(0, 64) : null,
+      reason: raw.reason ? String(raw.reason).slice(0, 120) : null
+    };
+  }
+  const id = sanitizeProfileToken(raw.id ?? raw.storageId ?? LOCAL_OFFLINE_PROFILE_ID, LOCAL_OFFLINE_PROFILE_ID);
+  return {
+    type: 'local',
+    id,
+    steamId: null,
+    storageId: id,
+    personaName: null,
+    reason: raw.reason ? String(raw.reason).slice(0, 120) : null
+  };
+}
+
+function createSaveProfile(profileContext = {}) {
+  const profile = normalizeProfileContext(profileContext);
+  return {
+    type: profile.type,
+    id: profile.id,
+    steamId: profile.steamId,
+    storageId: profile.storageId,
+    personaName: profile.personaName || null
+  };
+}
+
+function normalizeSaveProfile(rawProfile = {}, fallbackProfile = {}) {
+  const raw = rawProfile && typeof rawProfile === 'object' ? rawProfile : {};
+  if (raw.steamId || raw.steamID || (raw.type === 'steam' && raw.id)) {
+    return createSaveProfile({
+      type: 'steam',
+      id: raw.steamId || raw.steamID || raw.id,
+      steamId: raw.steamId || raw.steamID || raw.id,
+      personaName: raw.personaName
+    });
+  }
+  if (raw.storageId || raw.id || raw.type) {
+    return createSaveProfile({
+      type: raw.type || 'local',
+      id: raw.id || raw.storageId || LOCAL_OFFLINE_PROFILE_ID,
+      storageId: raw.storageId || raw.id || LOCAL_OFFLINE_PROFILE_ID
+    });
+  }
+  return createSaveProfile(fallbackProfile);
+}
+
+function profileMatches(rawSave = {}, profileContext = {}) {
+  const raw = rawSave && typeof rawSave === 'object' ? rawSave : {};
+  if (!raw.profile || typeof raw.profile !== 'object') return false;
+  const profile = normalizeProfileContext(profileContext);
+  const saved = normalizeSaveProfile(raw.profile, {});
+  if (profile.type === 'steam') {
+    return Boolean(saved.steamId && saved.steamId === profile.steamId);
+  }
+  return saved.storageId === profile.storageId;
+}
+
+function hasExplicitProfile(rawSave = {}) {
+  return Boolean(rawSave && typeof rawSave === 'object' && rawSave.profile && typeof rawSave.profile === 'object');
+}
+
+function getPaths(userDataPath, profileContext = {}) {
   const root = path.resolve(userDataPath);
   const cloudDir = path.join(root, CLOUD_SUBDIR);
+  const profile = normalizeProfileContext(profileContext);
+  const profileDir = path.join(cloudDir, PROFILE_SUBDIR, profile.storageId);
   return {
     userDataPath: root,
     cloudDir,
-    cloudSavePath: path.join(cloudDir, CLOUD_SAVE_FILE),
+    profileDir,
+    profileIndexPath: path.join(cloudDir, PROFILE_INDEX_FILE),
+    cloudSavePath: path.join(profileDir, CLOUD_SAVE_FILE),
+    legacyCloudSavePath: path.join(cloudDir, CLOUD_SAVE_FILE),
+    legacySharedSavePath: path.join(cloudDir, PROFILE_SUBDIR, LEGACY_SHARED_PROFILE_ID, CLOUD_SAVE_FILE),
     legacyHighscorePath: path.join(root, LEGACY_HIGHSCORE_FILE),
-    oldHighscorePath: path.join(root, OLD_HIGHSCORE_FILE)
+    oldHighscorePath: path.join(root, OLD_HIGHSCORE_FILE),
+    profile
   };
 }
 
@@ -41,6 +130,76 @@ function writeJsonAtomic(filePath, payload) {
   const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
   fs.writeFileSync(tempPath, JSON.stringify(payload, null, 2));
   fs.renameSync(tempPath, filePath);
+}
+
+function readProfileIndex(filePath) {
+  const parsed = readJsonFile(filePath, {});
+  const profiles = parsed?.profiles && typeof parsed.profiles === 'object' ? parsed.profiles : {};
+  return {
+    version: Math.max(1, Math.floor(Number(parsed?.version) || 1)),
+    legacyClaimedBy: parsed?.legacyClaimedBy ? String(parsed.legacyClaimedBy).slice(0, 120) : null,
+    profiles
+  };
+}
+
+function writeProfileIndex(filePath, index) {
+  writeJsonAtomic(filePath, {
+    version: 1,
+    legacyClaimedBy: index.legacyClaimedBy || null,
+    profiles: index.profiles && typeof index.profiles === 'object' ? index.profiles : {},
+    updatedAt: nowIso()
+  });
+}
+
+function updateProfileIndex(paths, profile, patch = {}) {
+  const index = readProfileIndex(paths.profileIndexPath);
+  index.profiles[profile.storageId] = {
+    type: profile.type,
+    steamId: profile.steamId,
+    storageId: profile.storageId,
+    personaName: profile.personaName || null,
+    savePath: paths.cloudSavePath,
+    updatedAt: nowIso(),
+    ...patch.profilePatch
+  };
+  if (patch.legacyClaimedBy) index.legacyClaimedBy = patch.legacyClaimedBy;
+  writeProfileIndex(paths.profileIndexPath, index);
+  return index;
+}
+
+function isMeaningfulSave(save = {}) {
+  const hangar = save.hangarProgress || {};
+  const discoveryItems = save.threatDiscovery?.items || {};
+  const discoveryCount = Object.values(discoveryItems)
+    .reduce((sum, bucket) => sum + (bucket && typeof bucket === 'object' ? Object.keys(bucket).length : 0), 0);
+  return Boolean(
+    (Array.isArray(save.localHighscores) && save.localHighscores.length > 0) ||
+    (Array.isArray(save.achievements?.unlocked) && save.achievements.unlocked.length > 0) ||
+    Number(hangar.pilotXp) > 0 ||
+    Number(hangar.totalRuns) > 0 ||
+    Number(hangar.totalCodexDiscoveries) > 0 ||
+    (Array.isArray(hangar.unlockedShipIds) && hangar.unlockedShipIds.length > 1) ||
+    discoveryCount > 0 ||
+    Object.keys(sanitizeShipUsage(save.shipUsage || save.shipUsageByShip || {})).length > 0 ||
+    Number(save.shipUsageTotal) > 0
+  );
+}
+
+function preserveLegacyCloudSave(paths, logger = console, reason = 'profile_mismatch') {
+  try {
+    if (!fs.existsSync(paths.legacyCloudSavePath)) return null;
+    fs.mkdirSync(path.dirname(paths.legacySharedSavePath), { recursive: true });
+    if (!fs.existsSync(paths.legacySharedSavePath)) {
+      fs.copyFileSync(paths.legacyCloudSavePath, paths.legacySharedSavePath);
+    }
+    const stampedPath = `${paths.legacySharedSavePath}.preserved-${new Date().toISOString().replace(/[:.]/g, '-')}.bak`;
+    fs.copyFileSync(paths.legacyCloudSavePath, stampedPath);
+    logger.warn?.(`[SteamCloudSave] Preserved shared legacy save before ${reason}: ${stampedPath}`);
+    return stampedPath;
+  } catch (error) {
+    logger.warn?.(`[SteamCloudSave] Failed to preserve shared legacy save: ${error?.message || error}`);
+    return null;
+  }
 }
 
 function backupCorruptSave(filePath) {
@@ -396,9 +555,10 @@ function sanitizeRendererState(state = {}) {
   };
 }
 
-function createEmptySave() {
+function createEmptySave(profileContext = {}) {
   return {
     version: SAVE_VERSION,
+    profile: createSaveProfile(profileContext),
     updatedAt: nowIso(),
     language: sanitizeLanguageState(),
     localHighscores: [],
@@ -413,10 +573,11 @@ function createEmptySave() {
   };
 }
 
-function normalizeSave(rawSave = {}, localHighscores = null) {
+function normalizeSave(rawSave = {}, localHighscores = null, profileContext = {}) {
   const rendererState = sanitizeRendererState(rawSave);
   return {
     version: SAVE_VERSION,
+    profile: normalizeSaveProfile(rawSave.profile, profileContext),
     updatedAt: String(rawSave.updatedAt || nowIso()),
     language: rendererState.language,
     localHighscores: sanitizeScores(localHighscores ?? rawSave.localHighscores),
@@ -431,8 +592,9 @@ function normalizeSave(rawSave = {}, localHighscores = null) {
   };
 }
 
-function createSteamCloudSave(userDataPath, logger = console) {
-  const paths = getPaths(userDataPath);
+function createSteamCloudSave(userDataPath, logger = console, options = {}) {
+  const profile = normalizeProfileContext(options.profile || options.profileContext || {});
+  const paths = getPaths(userDataPath, profile);
 
   function readLegacyHighscores() {
     const current = sanitizeScores(readJsonFile(paths.legacyHighscorePath, []));
@@ -446,24 +608,69 @@ function createSteamCloudSave(userDataPath, logger = console) {
       logger.warn?.(`[SteamCloudSave] Corrupt cloud save backed up to ${backupPath}`);
     }
     const parsed = readJsonFile(paths.cloudSavePath, null);
-    return normalizeSave(parsed || createEmptySave());
+    if (parsed) return normalizeSave(parsed, null, profile);
+
+    const legacyParsed = readJsonFile(paths.legacyCloudSavePath, null);
+    if (legacyParsed) {
+      const index = readProfileIndex(paths.profileIndexPath);
+      const knownProfileCount = Object.keys(index.profiles || {}).length;
+      const unclaimedSharedLegacy = !hasExplicitProfile(legacyParsed) &&
+        !index.legacyClaimedBy &&
+        knownProfileCount === 0;
+      const mayClaimLegacy = profile.type === 'steam' && unclaimedSharedLegacy;
+      const mayUseLocalLegacy = profile.type === 'local' && !hasExplicitProfile(legacyParsed);
+      if (profileMatches(legacyParsed, profile) || mayClaimLegacy || mayUseLocalLegacy) {
+        const imported = normalizeSave({
+          ...legacyParsed,
+          profile: createSaveProfile(profile)
+        }, null, profile);
+        writeJsonAtomic(paths.cloudSavePath, imported);
+        updateProfileIndex(paths, profile, {
+          legacyClaimedBy: mayClaimLegacy ? profile.storageId : null,
+          profilePatch: {
+            importedFromLegacy: true,
+            importedAt: nowIso()
+          }
+        });
+        return imported;
+      }
+    }
+
+    return normalizeSave(createEmptySave(profile), null, profile);
+  }
+
+  function shouldMirrorLegacy(normalized) {
+    if (profile.type !== 'steam') return false;
+    const legacyParsed = readJsonFile(paths.legacyCloudSavePath, null);
+    if (!legacyParsed) return true;
+    if (profileMatches(legacyParsed, profile)) return true;
+    return isMeaningfulSave(normalized);
   }
 
   function writeSave(nextSave) {
     const normalized = normalizeSave({
       ...nextSave,
+      profile: createSaveProfile(profile),
       updatedAt: nowIso()
-    });
+    }, null, profile);
     writeJsonAtomic(paths.cloudSavePath, normalized);
+    updateProfileIndex(paths, profile);
+    if (shouldMirrorLegacy(normalized)) {
+      const legacyParsed = readJsonFile(paths.legacyCloudSavePath, null);
+      if (legacyParsed && !profileMatches(legacyParsed, profile)) {
+        preserveLegacyCloudSave(paths, logger, `mirroring ${profile.storageId}`);
+      }
+      writeJsonAtomic(paths.legacyCloudSavePath, normalized);
+    }
     return normalized;
   }
 
   function ensureInitialized() {
-    const legacyHighscores = readLegacyHighscores();
-    const existing = fs.existsSync(paths.cloudSavePath) ? readSave() : createEmptySave();
-    const next = normalizeSave(existing, legacyHighscores.length ? legacyHighscores : existing.localHighscores);
+    const legacyHighscores = profile.type === 'local' ? readLegacyHighscores() : [];
+    const existing = readSave();
+    const next = normalizeSave(existing, legacyHighscores.length ? legacyHighscores : existing.localHighscores, profile);
     next.updatedAt = nowIso();
-    writeJsonAtomic(paths.cloudSavePath, next);
+    writeSave(next);
     if (!fs.existsSync(paths.legacyHighscorePath) && next.localHighscores.length) {
       writeJsonAtomic(paths.legacyHighscorePath, next.localHighscores);
     }
@@ -517,7 +724,10 @@ function createSteamCloudSave(userDataPath, logger = console) {
   function getPersistenceSummary() {
     const save = readSave();
     return {
+      profile: save.profile,
       cloudSavePath: paths.cloudSavePath,
+      legacyCloudSavePath: paths.legacyCloudSavePath,
+      legacySharedSavePath: paths.legacySharedSavePath,
       languagePreference: save.language?.preference || 'system',
       currentLanguage: save.language?.current || null,
       localHighscoresCount: save.localHighscores.length,
@@ -537,9 +747,13 @@ function createSteamCloudSave(userDataPath, logger = console) {
   function getDiagnostics() {
     return {
       ok: true,
+      profile,
       userDataPath: paths.userDataPath,
       cloudDir: paths.cloudDir,
+      profileDir: paths.profileDir,
       cloudSavePath: paths.cloudSavePath,
+      legacyCloudSavePath: paths.legacyCloudSavePath,
+      legacySharedSavePath: paths.legacySharedSavePath,
       persistenceSummary: getPersistenceSummary(),
       steamworksAutoCloud: {
         byteQuota: 1048576,
@@ -555,6 +769,7 @@ function createSteamCloudSave(userDataPath, logger = console) {
 
   return {
     paths,
+    profile,
     ensureInitialized,
     readSave,
     writeSave,
@@ -568,11 +783,14 @@ function createSteamCloudSave(userDataPath, logger = console) {
 module.exports = {
   SAVE_VERSION,
   CLOUD_SUBDIR,
+  PROFILE_SUBDIR,
+  PROFILE_INDEX_FILE,
   CLOUD_SAVE_FILE,
   LEGACY_HIGHSCORE_FILE,
   OLD_HIGHSCORE_FILE,
   createSteamCloudSave,
   getPaths,
+  normalizeProfileContext,
   sanitizeScores,
   sanitizeAchievements,
   sanitizeRendererState,

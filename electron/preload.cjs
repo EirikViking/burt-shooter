@@ -26,6 +26,7 @@ const INPUT_CHANNELS = {
 };
 
 const STEAM_CLOUD_CHANNELS = {
+  getProfileContext: 'nova-steam-cloud:getProfileContext',
   getDiagnostics: 'nova-steam-cloud:getDiagnostics',
   readSave: 'nova-steam-cloud:readSave',
   getPersistenceSummary: 'nova-steam-cloud:getPersistenceSummary',
@@ -105,6 +106,7 @@ contextBridge.exposeInMainWorld('__novaMaintainerDevtools', Object.freeze({
 }));
 
 contextBridge.exposeInMainWorld('__novaSteamCloud', Object.freeze({
+  getProfileContext: () => invoke(STEAM_CLOUD_CHANNELS.getProfileContext),
   getDiagnostics: () => invoke(STEAM_CLOUD_CHANNELS.getDiagnostics),
   readSave: () => invoke(STEAM_CLOUD_CHANNELS.readSave),
   getPersistenceSummary: () => invoke(STEAM_CLOUD_CHANNELS.getPersistenceSummary),

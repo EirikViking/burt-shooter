@@ -269,6 +269,7 @@ try {
   assert.equal(Array.isArray(recovered.localHighscores), true);
 
   const diagnostics = saveSystem.getDiagnostics();
+  assert.equal(diagnostics.profile.storageId, 'local-offline');
   assert.equal(diagnostics.steamworksAutoCloud.byteQuota, 1048576);
   assert.equal(diagnostics.steamworksAutoCloud.fileCount, 20);
   assert.equal(diagnostics.steamworksAutoCloud.root, 'WinAppDataRoaming');
@@ -276,6 +277,7 @@ try {
   assert.equal(diagnostics.steamworksAutoCloud.recursive, false);
   assert.equal(diagnostics.steamworksAutoCloud.dynamicCloudSync, false);
   assert.equal(diagnostics.persistenceSummary.cloudSavePath, paths.cloudSavePath);
+  assert.equal(diagnostics.persistenceSummary.legacyCloudSavePath, paths.legacyCloudSavePath);
   assert.equal(diagnostics.persistenceSummary.hangarPilotXp >= 0, true);
   assert.equal(diagnostics.persistenceSummary.threatDiscoveryCategories >= 0, true);
   assert.equal(diagnostics.persistenceSummary.shipUsageTotal >= 0, true);
@@ -284,6 +286,10 @@ try {
     const realPaths = getPaths(path.join(process.env.APPDATA, 'nova-swarm'));
     assert.equal(
       realPaths.cloudSavePath,
+      path.join(process.env.APPDATA, 'nova-swarm', 'steam-cloud', 'profiles', 'local-offline', 'nova-swarm-save.json')
+    );
+    assert.equal(
+      realPaths.legacyCloudSavePath,
       path.join(process.env.APPDATA, 'nova-swarm', 'steam-cloud', 'nova-swarm-save.json')
     );
   }

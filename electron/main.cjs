@@ -60,6 +60,29 @@ const steamAchievementsBridge = createSteamAchievementsBridge({
 });
 const nativeGamepadBridge = createNativeGamepadBridge();
 let steamCloudSave = null;
+let steamProfileContext = { type: 'local', id: 'local-offline', reason: 'not_resolved' };
+
+async function resolveSteamProfileContext() {
+  const initialized = await steamLeaderboardBridge.initialize().catch(() => false);
+  const steamId = initialized ? steamLeaderboardBridge.getCurrentSteamId() : null;
+  if (steamId) {
+    const personaName = await steamLeaderboardBridge.getPersonaName().catch(() => null);
+    return {
+      type: 'steam',
+      id: steamId,
+      steamId,
+      personaName,
+      reason: 'steam_identity_ready'
+    };
+  }
+  return {
+    type: 'local',
+    id: 'local-offline',
+    steamId: null,
+    personaName: null,
+    reason: steamLeaderboardBridge.getStatus?.().reason || 'steam_identity_unavailable'
+  };
+}
 
 function registerSteamLeaderboardIpc() {
   ipcMain.handle('nova-steam-leaderboard:isAvailable', () => steamLeaderboardBridge.isAvailable());
@@ -104,6 +127,7 @@ function registerMaintainerDevtoolsIpc() {
 }
 
 function registerSteamCloudIpc() {
+  ipcMain.handle('nova-steam-cloud:getProfileContext', () => steamProfileContext);
   ipcMain.handle('nova-steam-cloud:getDiagnostics', () => steamCloudSave?.getDiagnostics() || null);
   ipcMain.handle('nova-steam-cloud:readSave', () => steamCloudSave?.readSave() || null);
   ipcMain.handle('nova-steam-cloud:getPersistenceSummary', () => steamCloudSave?.getPersistenceSummary() || null);
@@ -1021,7 +1045,10 @@ app.whenReady().then(async () => {
   if (!fs.existsSync(path.join(distDir, 'index.html'))) {
     throw new Error(`Missing build output at ${distDir}. Run npm run build first.`);
   }
-  steamCloudSave = createSteamCloudSave(app.getPath('userData'), console);
+  steamProfileContext = await resolveSteamProfileContext();
+  steamCloudSave = createSteamCloudSave(app.getPath('userData'), console, {
+    profile: steamProfileContext
+  });
   const initializedCloudSave = steamCloudSave.ensureInitialized();
   if (isSteamCloudDiagnostics) {
     console.log(JSON.stringify({

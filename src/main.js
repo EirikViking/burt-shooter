@@ -18,6 +18,10 @@ import {
 import { getThreatCodexCatalog } from './config/ThreatCodexCatalog.js';
 import { getCodexCompletionCounts, getDiscoveriesThisRun, getDiscoveryStats } from './progression/ThreatDiscoveryState.js';
 import { getHangarProgressSummary } from './progression/HangarProgressState.js';
+import {
+  getActiveProfileStorageContext,
+  installProfileStorageNamespace
+} from './profile/ProfileStorageNamespace.js';
 import { getGameplayCursorDebugState } from './ui/GameplayCursor.js';
 import {
   LANGUAGE_CHANGE_EVENT,
@@ -68,6 +72,7 @@ const bootState = {
 };
 const supportsAsyncInit = typeof PIXI.Application?.prototype?.init === 'function';
 let autoStartTriggered = false;
+let profileStorageContext = getActiveProfileStorageContext();
 
 applyResponsiveLayout(window.innerWidth, window.innerHeight);
 window.addEventListener('resize', () => {
@@ -147,6 +152,19 @@ function collectSteamCloudRendererState() {
   });
 }
 
+async function initializeProfileStorageNamespace() {
+  const api = window.__novaSteamCloud;
+  const context = await api?.getProfileContext?.().catch(error => ({
+    type: 'local',
+    id: 'local-offline',
+    reason: error?.message || 'profile_context_unavailable'
+  }));
+  profileStorageContext = installProfileStorageNamespace(context || {});
+  return {
+    bootDetail: `${profileStorageContext.type}:${profileStorageContext.storageId}`
+  };
+}
+
 async function syncSteamCloudRendererState() {
   const api = window.__novaSteamCloud;
   if (!api?.mergeRendererState) return null;
@@ -164,6 +182,7 @@ async function collectSteamCloudDiagnostics() {
     buildId: BUILD_ID,
     gitSha: GIT_SHA,
     rendererState: collectSteamCloudRendererState(),
+    profileStorage: getActiveProfileStorageContext(),
     persistenceSummary: summarizeSteamCloudPersistence(save),
     electron,
     save
@@ -1343,6 +1362,10 @@ async function init() {
 
   await initializeMaintainerDevtools();
   const bootLogger = createBootLogger(isBootDebugEnabled());
+  await runBootStep(bootLogger, 'init profile storage namespace', () => initializeProfileStorageNamespace(), {
+    timeoutMs: 900,
+    logFailure: false
+  });
   await runBootStep(bootLogger, 'restore Steam Cloud persistence', () => restoreSteamCloudPersistence(), {
     timeoutMs: 900,
     logFailure: false
