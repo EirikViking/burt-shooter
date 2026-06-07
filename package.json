@@ -49,6 +49,8 @@
     "check:steam-sdk-ready": "node scripts/check-steam-sdk-ready.mjs",
     "check:steam-package-runtime": "node scripts/check-steam-package-runtime.mjs",
     "check:steam-cloud-save": "node scripts/check-steam-cloud-save.mjs",
+    "check:profile-isolation": "node scripts/check-profile-isolation.mjs",
+    "check:progression-pacing": "node scripts/check-progression-pacing.mjs",
     "check:release-line": "node scripts/check-release-line.mjs",
     "check:release-hardening": "node scripts/check-release-hardening.mjs",
     "probe:steam-leaderboard-live": "node scripts/probe-steam-leaderboard-live.mjs",

@@ -140,13 +140,6 @@ function getCodexStatLabels(categoryId) {
       rowCount: 'timesSeen'
     };
   }
-  if (categoryId === 'powerups' || categoryId === 'sectors') {
-    return {
-      primary: 'REFERENCE',
-      secondary: null,
-      rowCount: 'reference'
-    };
-  }
   return {
     primary: 'SCANS',
     secondary: null,

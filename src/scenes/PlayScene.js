@@ -1026,6 +1026,11 @@ export class PlayScene {
     });
     this.applyGameplayBackdropLevel(this.game.level);
     this.powerupManager.checkLevelReset(this.game.level); // Reset powerup caps
+    this.recordThreatDiscovery(`sector_${String(this.game.level).padStart(3, '0')}`, 'sectors', {
+      name: formatSectorLabel(this.game.level, { sectorWord: translateText('SECTOR'), compact: true }),
+      role: 'sector reached',
+      sector: this.game.level
+    }, { silent: true, scoreBonus: false });
     if (this.game.level === 1) {
       this.shownStoryTransmissionIds.clear();
       this.shownCabinetLogIds.clear();
@@ -6021,10 +6026,10 @@ export class PlayScene {
       : category === 'cabinetLogs'
         ? (RunPacingConfig.discovery.cabinetLogBonus || RunPacingConfig.discovery.firstSeenBonus)
         : RunPacingConfig.discovery.firstSeenBonus;
-    const appliedBonus = this.game.addScore(bonus, 'discoveryBonus');
+    const appliedBonus = options.scoreBonus === false ? 0 : this.game.addScore(bonus, 'discoveryBonus');
     this.discoveryBonus = (Number(this.discoveryBonus) || 0) + appliedBonus;
     result.appliedBonus = appliedBonus;
-    if (category !== 'cabinetLogs') {
+    if (!options.silent && category !== 'cabinetLogs') {
       this.triggerCabinetLog('codex-discovery', {
         name: metadata.name || metadata.label || id,
         source: `codex:${category}`

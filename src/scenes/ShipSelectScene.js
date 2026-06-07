@@ -736,12 +736,13 @@ export class ShipSelectScene {
       };
     }
     const details = getShipUnlockProgressDetails(nextShip.spriteKey, progress);
-    const requirement = details.requirements?.[0] || null;
-    const current = Math.min(Number(requirement?.current) || 0, Number(requirement?.target) || 0);
-    const target = Number(requirement?.target) || 0;
-    const suffix = requirement?.key === 'survivedSeconds' ? 's' : '';
-    const requirementProgress = requirement
-      ? `${current.toLocaleString('en-US')}${suffix}/${target.toLocaleString('en-US')}${suffix}`
+    const requirementProgress = details.requirements?.length
+      ? details.requirements.slice(0, 3).map((requirement) => {
+        const current = Math.min(Number(requirement?.current) || 0, Number(requirement?.target) || 0);
+        const target = Number(requirement?.target) || 0;
+        const suffix = requirement?.key === 'survivedSeconds' ? 's' : '';
+        return `${current.toLocaleString('en-US')}${suffix}/${target.toLocaleString('en-US')}${suffix}`;
+      }).join('  ')
       : String(details.label || '');
     return {
       label: 'NEXT SHIP UNLOCK',

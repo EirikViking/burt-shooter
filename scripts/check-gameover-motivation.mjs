@@ -441,9 +441,10 @@ try {
       !/NEXT SHIP(?: UNLOCK)?:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
       /GAME OVER:\s*SECTOR 5/i.test(careerLevelSummary) &&
       /BEST SECTOR\s*7/i.test(careerLevelSummary) &&
-      /NEXT SHIP(?: UNLOCK)?:\s*ARC STRIKER/i.test(careerUnlockSummary) &&
-      /CLEAR 45 TOTAL WAVES/i.test(careerUnlockSummary) &&
-      /\b30\/45\b/i.test(careerUnlockSummary) &&
+      /NEXT SHIP(?: UNLOCK)?:\s*IRON ORBIT/i.test(careerUnlockSummary) &&
+      /DEFEAT 10 BOSSES AND REACH PILOT RANK 4/i.test(careerUnlockSummary) &&
+      /\b6\/10\b/i.test(careerUnlockSummary) &&
+      /\b4\/4\b/i.test(careerUnlockSummary) &&
       !/SURVIVEDSECONDS/i.test(careerUnlockSummary) &&
       /NEXT CAREER GOAL:\s*REACH SECTOR 9/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&

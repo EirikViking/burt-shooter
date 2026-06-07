@@ -45,6 +45,11 @@ function formatUnlockRequirementProgress(item) {
   const suffix = item?.key === 'survivedSeconds' ? 's' : '';
   return `${current.toLocaleString('en-US')}${suffix}/${target.toLocaleString('en-US')}${suffix}`;
 }
+
+function formatUnlockRequirementsProgress(requirements = []) {
+  const visible = Array.isArray(requirements) ? requirements.slice(0, 3) : [];
+  return visible.length ? visible.map(item => formatUnlockRequirementProgress(item)).join('  ') : '';
+}
 const CONTROLLER_NAME_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const CONTROLLER_INITIALS_LENGTH = 3;
 
@@ -2708,10 +2713,7 @@ export class GameOverScene {
 
     const details = getShipUnlockProgressDetails(nextShip.spriteKey, currentProgress);
     const requirementLine = details.requirements?.length
-      ? details.requirements
-        .slice(0, 1)
-        .map(item => formatUnlockRequirementProgress(item))
-        .join('  ')
+      ? formatUnlockRequirementsProgress(details.requirements)
       : details.label;
     const requirementLabel = String(details.label || 'SHIP PROGRESS').toUpperCase();
     return [

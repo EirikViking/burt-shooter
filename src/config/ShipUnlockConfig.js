@@ -38,38 +38,38 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_04',
-    label: 'Reach sector 4',
-    requirements: { bestSector: 4 },
+    label: 'Reach sector 4 and pilot rank 1',
+    requirements: { bestSector: 4, pilotRank: 1 },
     legacyLevel: 4
   },
   {
     shipId: 'nova_ship_05',
-    label: 'Score 50,000 in one run',
-    requirements: { bestScore: 50000 },
+    label: 'Score 50,000 and reach pilot rank 4',
+    requirements: { bestScore: 50000, pilotRank: 4 },
     legacyLevel: 5
   },
   {
     shipId: 'nova_ship_06',
-    label: 'Defeat 6 total bosses',
-    requirements: { totalBossesDefeated: 6 },
+    label: 'Defeat 10 bosses and reach pilot rank 4',
+    requirements: { totalBossesDefeated: 10, pilotRank: 4 },
     legacyLevel: 7
   },
   {
     shipId: 'nova_ship_07',
-    label: 'Discover 40 Threat Codex entries',
-    requirements: { codexDiscoveries: 40 },
+    label: 'Discover 45 Codex entries and reach pilot rank 4',
+    requirements: { codexDiscoveries: 45, pilotRank: 4 },
     legacyLevel: 9
   },
   {
     shipId: 'nova_ship_08',
-    label: 'Reach sector 6',
-    requirements: { bestSector: 6 },
+    label: 'Reach sector 8 and pilot rank 4',
+    requirements: { bestSector: 8, pilotRank: 4 },
     legacyLevel: 11
   },
   {
     shipId: 'nova_ship_09',
-    label: 'Clear 45 total waves',
-    requirements: { totalWavesCleared: 45 },
+    label: 'Clear 45 waves and reach pilot rank 5',
+    requirements: { totalWavesCleared: 45, pilotRank: 5 },
     legacyLevel: 14
   },
   {
@@ -86,8 +86,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_12',
-    label: 'Survive 20 minutes',
-    requirements: { survivedSeconds: 1200 },
+    label: 'Survive 20 minutes and reach pilot rank 11',
+    requirements: { survivedSeconds: 1200, pilotRank: 11 },
     legacyLevel: 23
   },
   {
@@ -116,8 +116,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_17',
-    label: 'Reach sector 12',
-    requirements: { bestSector: 12 },
+    label: 'Reach sector 12 and pilot rank 9',
+    requirements: { bestSector: 12, pilotRank: 9 },
     legacyLevel: 38
   },
   {

@@ -5,6 +5,31 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
 
+const POWERUP_CODEX_NAMES = Object.freeze({
+  triple_beam: 'TRIPLE BEAM',
+  vector_boost: 'VECTOR BOOST',
+  rapid_cabinet: 'RAPID CABINET',
+  overdrive_core: 'OVERDRIVE CORE',
+  slow_time: 'SLOW TIME',
+  ghost: 'GHOST',
+  shield: 'SHIELD',
+  life: 'EXTRA LIFE',
+  rapid_fire: 'RAPID FIRE',
+  double_shot: 'DOUBLE SHOT',
+  damage_up: 'DAMAGE UP',
+  speed_up: 'SPEED UP',
+  pierce: 'PIERCE',
+  score_x2: 'SCORE X2',
+  magnet: 'MAGNET',
+  drones: 'DRONES',
+  shockwave: 'SHOCKWAVE',
+  point_defense: 'POINT DEFENSE',
+  bomb: 'BOMB',
+  chain_lightning: 'CHAIN LIGHTNING',
+  orbital_strike: 'ORBITAL STRIKE',
+  vampire: 'VAMPIRE'
+});
+
 class Powerup {
   constructor(x, y, type) {
     this.x = x;
@@ -200,6 +225,11 @@ class Powerup {
 
   collect(player, scene) {
     this.active = false;
+    scene?.recordThreatDiscovery?.(this.type, 'powerups', {
+      name: POWERUP_CODEX_NAMES[this.type] || String(this.type || 'powerup').replace(/_/g, ' ').toUpperCase(),
+      role: 'powerup pickup',
+      sector: scene?.game?.level || 1
+    }, { silent: true, scoreBonus: false });
 
     // TASK 1: Premium powerup pickup effects
     this.showPickupEffect(scene);

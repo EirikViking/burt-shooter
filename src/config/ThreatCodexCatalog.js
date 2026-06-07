@@ -636,8 +636,7 @@ function powerupEntry(entry) {
     tip: entry.tip,
     art: AssetManifest.generated.powerups?.[entry.id] || AssetManifest.sprites.bonusCore,
     accent: entry.accent,
-    signalClass: 'pickup reference',
-    reference: true
+    signalClass: 'pickup signal'
   };
 }
 
@@ -668,8 +667,7 @@ function sectorEntry(level) {
     tip: translateText(copy.tip),
     art: level >= 10 ? AssetManifest.generated.vfx?.overrunVictorySeal || AssetManifest.generated.bossArenaBackdrop : AssetManifest.generated.gameplayArenaBackdrop,
     accent: level >= 11 ? 0xffe76a : level === 10 ? 0x7dffcc : 0x37f5ff,
-    signalClass: 'sector reference',
-    reference: true
+    signalClass: 'sector signal'
   };
 }
 
