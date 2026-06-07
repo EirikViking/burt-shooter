@@ -262,16 +262,33 @@ function assertSectorBand() {
 
   for (const level of [11, 12, 13, 14, 15]) {
     const sector = sectorLethality(level);
-    if (sector.dangerWaveCount < 2) fail(`level ${level} needs at least two serious normal-wave danger moments`);
+    if (sector.dangerWaveCount < 3) fail(`level ${level} needs at least three serious normal-wave danger moments`);
     if (sector.normalWaveOnlyKillPotential < 4.8) fail(`level ${level} normal waves should be able to kill through mistakes`);
     if (sector.projectileDensityIndex < 3.3) fail(`level ${level} projectile/reach density is too low for practical lethality`);
   }
 
-  for (const level of [20, 30, 40, 50]) {
+  for (const level of [16, 17, 18, 19, 20]) {
     const sector = sectorLethality(level);
-    if (level >= 30 && sector.dangerWaveCount !== 0) {
-      fail(`level ${level} unexpectedly gained early danger-wave scheduler changes`);
-    }
+    if (sector.dangerWaveCount < 3) fail(`level ${level} needs at least three normal-wave danger moments`);
+    if (sector.normalWaveOnlyKillPotential < 6.2) fail(`level ${level} normal waves still read as filler`);
+  }
+
+  for (const level of [20, 25, 30]) {
+    const sector = sectorLethality(level);
+    if (sector.dangerWaveCount < 3) fail(`level ${level} needs runtime danger moments before level 50`);
+    if (sector.normalWaveOnlyKillPotential < 7.2) fail(`level ${level} does not reach clear normal-wave danger`);
+  }
+
+  for (const level of [30, 35, 40]) {
+    const sector = sectorLethality(level);
+    if (sector.dangerWaveCount < 3) fail(`level ${level} needs practiced-player normal-wave danger moments`);
+    if (sector.normalWaveOnlyKillPotential < 8.2) fail(`level ${level} does not threaten practiced-player mistakes`);
+  }
+
+  for (const level of [40, 45, 50]) {
+    const sector = sectorLethality(level);
+    if (sector.dangerWaveCount < 3) fail(`level ${level} needs brutal pre-boss normal-wave danger moments`);
+    if (sector.normalWaveOnlyKillPotential < 9.2) fail(`level ${level} is not intense enough before the boss`);
   }
 }
 
@@ -377,7 +394,12 @@ const changedFiles = assertProtectedSurfaces();
 const bandSummaries = [
   summarizeBand('levels 3 to 5', [3, 4, 5]),
   summarizeBand('levels 6 to 10', [6, 7, 8, 9, 10]),
-  summarizeBand('levels 11 to 15', [11, 12, 13, 14, 15])
+  summarizeBand('levels 11 to 15', [11, 12, 13, 14, 15]),
+  summarizeBand('levels 16 to 20', [16, 17, 18, 19, 20]),
+  summarizeBand('levels 20 to 30', [20, 25, 30]),
+  summarizeBand('levels 30 to 40', [30, 35, 40]),
+  summarizeBand('levels 40 to 50', [40, 45, 50]),
+  summarizeBand('levels 50 plus', [50, 60])
 ];
 
 if (errors.length) {

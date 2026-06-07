@@ -62,6 +62,8 @@ export class Enemy {
     this.waveCenterY = y;
     this.waveFormation = null;
     this.tacticalFireScalar = 1;
+    this.tacticalProjectileSpeedScalar = 1;
+    this.tacticalThreatProjectileSpeedScalar = 1;
     this.tacticalShotPattern = 'aimed';
     this.tacticalMoveStyle = 'standard';
     this.tacticalDiveBias = 1;
@@ -538,6 +540,8 @@ export class Enemy {
     this.waveFormation = context.formation || null;
     this.waveRole = context.side < 0 ? 'left_flank' : context.side > 0 ? 'right_flank' : 'center';
     this.tacticalFireScalar = tactic.fireScalar || 1;
+    this.tacticalProjectileSpeedScalar = tactic.projectileSpeedScalar || 1;
+    this.tacticalThreatProjectileSpeedScalar = tactic.threatProjectileSpeedScalar || this.tacticalProjectileSpeedScalar || 1;
     this.tacticalShotPattern = tactic.shot || 'aimed';
     this.tacticalMoveStyle = tactic.move || 'standard';
     this.tacticalDiveBias = tactic.diveBias || 1;
@@ -1426,28 +1430,50 @@ export class Enemy {
     return bullets;
   }
 
+  scaleThreatProjectileSpeed(speed) {
+    const safeSpeed = Number(speed);
+    if (!Number.isFinite(safeSpeed) || safeSpeed <= 0) return speed;
+    const tuning = getNormalWavePressureTuning(this.level);
+    const runtimePressure = this.game?.runPressureDirector?.getMultipliers?.()?.projectileSpeedMult || 1;
+    const scale = runtimePressure *
+      (tuning.projectileSpeedMult || 1) *
+      (tuning.threatProjectileSpeedMult || 1) *
+      (this.tacticalThreatProjectileSpeedScalar || 1);
+    return safeSpeed * scale * BalanceConfig.difficulty.pressureScalar;
+  }
+
   createThreatBullet(action, angle, speed, options = {}) {
     const weaponProfile = getEnemyWeaponProfileById(action.weaponId || 'crimson_shard');
+    const scaledSpeed = this.scaleThreatProjectileSpeed(speed);
+    const speedScale = speed > 0 ? scaledSpeed / speed : 1;
+    const scaledOptions = { ...options };
+    if (Number.isFinite(scaledOptions.dashSpeed)) {
+      scaledOptions.dashSpeed = this.scaleThreatProjectileSpeed(scaledOptions.dashSpeed);
+    }
+    if (Number.isFinite(scaledOptions.releaseSpeed)) {
+      scaledOptions.releaseSpeed = this.scaleThreatProjectileSpeed(scaledOptions.releaseSpeed);
+    }
     const visualConfig = toBulletVisualConfig(weaponProfile, {
       sourceEnemyType: this.type,
       sourceFireStyle: this.generatedProfile?.fireStyle || null,
       threatActionId: action.id,
       threatActionKind: action.tags?.[0] || 'threat',
-      warningColor: options.warningColor || weaponProfile.warningColor,
-      haloColor: options.haloColor || weaponProfile.haloColor || this.visualVariant?.accent,
-      trailColor: options.trailColor || weaponProfile.trailColor,
-      ...options
+      warningColor: scaledOptions.warningColor || weaponProfile.warningColor,
+      haloColor: scaledOptions.haloColor || weaponProfile.haloColor || this.visualVariant?.accent,
+      trailColor: scaledOptions.trailColor || weaponProfile.trailColor,
+      ...scaledOptions
     });
     const bullet = new Bullet(
       this.x,
       this.y + Math.max(4, this.radius * 0.35),
-      Math.cos(angle) * speed,
-      Math.sin(angle) * speed,
-      options.damage || 1,
+      Math.cos(angle) * scaledSpeed,
+      Math.sin(angle) * scaledSpeed,
+      scaledOptions.damage || 1,
       weaponProfile.color || this.color,
       false,
       visualConfig
     );
+    bullet.runtimeThreatProjectileSpeedScale = speedScale;
     bullet.weaponProfileId = weaponProfile.id;
     bullet.weaponLabel = weaponProfile.label;
     bullet.waveTactic = this.waveTactic?.id || null;
@@ -1587,6 +1613,7 @@ export class Enemy {
     const speed = projectileSpeed *
       BalanceConfig.difficulty.pressureScalar *
       openingProjectileScalar *
+      (this.tacticalProjectileSpeedScalar || 1) *
       ((this.middleShipProfile || this.generatedProfile)?.projectileSpeedMult || 1) *
       weaponSpeedMult;
     const vx = (dx / distance) * speed * accuracy;

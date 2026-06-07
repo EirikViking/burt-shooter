@@ -520,6 +520,8 @@ export class EnemyManager {
         ...tactic,
         fireScalar: (tactic.fireScalar || 1) * (moment.fireMult || 1),
         fireDelayMult: (tactic.fireDelayMult || 1) * (moment.fireDelayMult || 1),
+        projectileSpeedScalar: (tactic.projectileSpeedScalar || 1) * (moment.projectileSpeedMult || 1),
+        threatProjectileSpeedScalar: (tactic.threatProjectileSpeedScalar || 1) * (moment.threatProjectileSpeedMult || moment.projectileSpeedMult || 1),
         diveBias: (tactic.diveBias || 1) * (moment.diveBiasMult || 1),
         entrySpeed: (tactic.entrySpeed || 1) * (moment.entrySpeedMult || 1),
         earlyThreatMoment: moment.id

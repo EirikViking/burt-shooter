@@ -320,13 +320,13 @@ const summaries = [
 const byLabel = new Map(summaries.map((summary) => [summary.label, summary]));
 
 assertRange('levels 1 to 2', byLabel.get('levels 1 to 2').increasePct / 100, [0, 0.05]);
-assertRange('levels 3 to 5', byLabel.get('levels 3 to 5').increasePct / 100, [0.28, 0.38]);
-assertRange('levels 6 to 10', byLabel.get('levels 6 to 10').increasePct / 100, [0.48, 0.64]);
-assertRange('levels 11 to 15', byLabel.get('levels 11 to 15').increasePct / 100, [0.52, 0.7]);
-assertRange('levels 16 to 20', byLabel.get('levels 16 to 20').increasePct / 100, [0.34, 0.48]);
-assertRange('levels 20 to 29 preserve late-overrun baseline', byLabel.get('levels 20 to 29').increasePct / 100, [-0.01, 0.015]);
-assertRange('levels 30 to 49 preserve late-overrun baseline', byLabel.get('levels 30 to 49').increasePct / 100, [-0.01, 0.015]);
-assertRange('levels 50 plus preserve deep overrun baseline', byLabel.get('levels 50 plus').increasePct / 100, [-0.01, 0.015]);
+assertRange('levels 3 to 5', byLabel.get('levels 3 to 5').increasePct / 100, [0.45, 0.65]);
+assertRange('levels 6 to 10', byLabel.get('levels 6 to 10').increasePct / 100, [0.85, 1.25]);
+assertRange('levels 11 to 15', byLabel.get('levels 11 to 15').increasePct / 100, [1.35, 1.9]);
+assertRange('levels 16 to 20', byLabel.get('levels 16 to 20').increasePct / 100, [1.35, 2.05]);
+assertRange('levels 20 to 29 runtime lethality step', byLabel.get('levels 20 to 29').increasePct / 100, [1.45, 2.15]);
+assertRange('levels 30 to 49 practiced-player threat', byLabel.get('levels 30 to 49').increasePct / 100, [2.2, 3.2]);
+assertRange('levels 50 plus remains dangerous', byLabel.get('levels 50 plus').increasePct / 100, [1.5, 2.3]);
 
 if (dangerWaveCountForLevel(1) !== 0 || dangerWaveCountForLevel(2) !== 0) {
   fail('levels 1 to 2 must not add dedicated danger waves');
@@ -340,11 +340,11 @@ if (dangerWaveCountForLevel(6) < 2 || dangerWaveCountForLevel(10) < 2) {
 if (dangerWaveCountForLevel(11) < 2 || dangerWaveCountForLevel(15) < 2) {
   fail('levels 11 to 15 must add at least two normal-wave danger moments');
 }
-if (dangerWaveCountForLevel(16) < 2 || dangerWaveCountForLevel(19) < 2) {
-  fail('levels 16 to 19 must add at least two normal-wave danger moments');
+if (dangerWaveCountForLevel(16) < 3 || dangerWaveCountForLevel(20) < 3) {
+  fail('levels 16 to 20 must add at least three normal-wave danger moments');
 }
-if (dangerWaveCountForLevel(30) !== 0 || dangerWaveCountForLevel(50) !== 0) {
-  fail('level 30 plus must not gain early-wave danger moments');
+if (dangerWaveCountForLevel(30) < 3 || dangerWaveCountForLevel(40) < 3 || dangerWaveCountForLevel(50) < 3) {
+  fail('level 30 plus must retain at least three normal-wave runtime danger moments');
 }
 if (!(challengeChance(5, 'current') >= challengeChance(5, 'baseline') + 0.03)) {
   fail('level 5 challenge-wave chance did not gain a meaningful early presence');
@@ -412,7 +412,7 @@ if (errors.length) {
       level10Before: Number(challengeChance(10, 'baseline').toFixed(4)),
       level10After: Number(challengeChance(10, 'current').toFixed(4))
     },
-    dangerWaveCounts: Object.fromEntries([1, 2, 3, 5, 6, 10, 11, 15, 16, 19, 30, 50].map((level) => [level, dangerWaveCountForLevel(level)])),
+    dangerWaveCounts: Object.fromEntries([1, 2, 3, 5, 6, 10, 11, 15, 16, 20, 30, 40, 50].map((level) => [level, dangerWaveCountForLevel(level)])),
     changedFiles
   }, null, 2));
   process.exit(1);
@@ -427,6 +427,6 @@ console.log(JSON.stringify({
     level10Before: Number(challengeChance(10, 'baseline').toFixed(4)),
     level10After: Number(challengeChance(10, 'current').toFixed(4))
   },
-  dangerWaveCounts: Object.fromEntries([1, 2, 3, 5, 6, 10, 11, 15, 16, 19, 30, 50].map((level) => [level, dangerWaveCountForLevel(level)])),
+  dangerWaveCounts: Object.fromEntries([1, 2, 3, 5, 6, 10, 11, 15, 16, 20, 30, 40, 50].map((level) => [level, dangerWaveCountForLevel(level)])),
   changedFiles
 }, null, 2));

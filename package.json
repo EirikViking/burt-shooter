@@ -88,6 +88,7 @@
     "check:difficulty-tuning": "node scripts/check-difficulty-tuning.mjs",
     "check:early-wave-threat": "node scripts/check-early-wave-threat.mjs",
     "check:early-wave-lethality": "node scripts/check-early-wave-lethality.mjs",
+    "check:normal-wave-runtime-lethality": "node scripts/check-normal-wave-runtime-lethality.mjs",
     "check:hijacker-tractor": "node scripts/check-hijacker-tractor.mjs",
     "check:tractor-hijack": "node scripts/check-tractor-hijack.mjs",
     "check:hijacker-spawn-cadence": "node scripts/check-hijacker-spawn-cadence.mjs",
