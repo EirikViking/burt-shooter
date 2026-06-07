@@ -9,6 +9,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4348));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/boss-post-first-difficulty-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 const levelsToCheck = [1, 2, 6];
 const bossWaitTimeoutMs = Number(process.env.CHECK_BOSS_TIMEOUT_MS) || (process.env.CHECK_URL ? 60000 : 30000);
 
@@ -131,6 +132,7 @@ try {
     await page.goto(withQuery(baseUrl, {
       autostart: '1',
       debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
       startAtBoss: '1',
       startLevel: String(level),
       cacheBust: `${Date.now()}-${level}`

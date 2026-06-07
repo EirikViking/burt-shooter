@@ -10,6 +10,11 @@ import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
 import { getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
 import { getSectorInfo } from './config/SectorCatalog.js';
 import { getRunPacingDebugState } from './config/RunPacingConfig.js';
+import {
+  getMaintainerDevtoolsState,
+  initializeMaintainerDevtools,
+  isMaintainerDevtoolsEnabled
+} from './config/MaintainerDevtools.js';
 import { getThreatCodexCatalog } from './config/ThreatCodexCatalog.js';
 import { getCodexCompletionCounts, getDiscoveriesThisRun, getDiscoveryStats } from './progression/ThreatDiscoveryState.js';
 import { getHangarProgressSummary } from './progression/HangarProgressState.js';
@@ -75,11 +80,11 @@ installSteamDiagnosticsExport();
 installSteamCloudStateExport();
 
 function isBootDebugEnabled() {
-  return urlParams.get('debug') === '1';
+  return urlParams.get('debug') === '1' && isMaintainerDevtoolsEnabled();
 }
 
 function isPerfEnabled() {
-  return urlParams.get('perf') === '1';
+  return urlParams.get('perf') === '1' && isMaintainerDevtoolsEnabled();
 }
 
 function isAutoStartEnabled() {
@@ -184,6 +189,7 @@ function installSteamCloudStateExport() {
     syncSteamCloudRendererState().catch(() => {});
   });
   window.addEventListener('keydown', (event) => {
+    if (!isMaintainerDevtoolsEnabled()) return;
     if (event.ctrlKey && event.altKey && event.shiftKey && event.code === 'KeyC') {
       event.preventDefault();
       logSteamCloudDiagnostics();
@@ -221,6 +227,7 @@ function installSteamDiagnosticsExport() {
     }
   });
   window.addEventListener('keydown', (event) => {
+    if (!isMaintainerDevtoolsEnabled()) return;
     if (event.ctrlKey && event.altKey && event.shiftKey && event.code === 'KeyD') {
       event.preventDefault();
       copySteamDiagnostics();
@@ -561,6 +568,7 @@ function buildGameTextState(game) {
     scoreSubmissionAllowed: typeof game?.isScoreSubmissionAllowed === 'function'
       ? game.isScoreSubmissionAllowed()
       : !game?.isDebugRun,
+    maintainerDevtools: getMaintainerDevtoolsState(),
     selectedShipSpriteKey: game?.selectedShipSpriteKey || null,
     steamUploadDiagnostics: readLastSteamUploadDiagnostics(),
     achievements: game?.getAchievementDebugState ? game.getAchievementDebugState() : null,
@@ -580,9 +588,10 @@ function buildGameTextState(game) {
       gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null
     },
     debugTools: playScene ? {
-      invincible: Boolean(playScene.debugInvincible),
+      enabled: isMaintainerDevtoolsEnabled(),
+      invincible: Boolean(isMaintainerDevtoolsEnabled() && playScene.debugInvincible),
       levelToolsUsed: Boolean(playScene.debugLevelToolsUsed),
-      levelJumpAvailable: typeof playScene.debugJumpToLevel === 'function'
+      levelJumpAvailable: isMaintainerDevtoolsEnabled() && typeof playScene.debugJumpToLevel === 'function'
     } : null,
     toast: playScene?.getToastDebugState ? playScene.getToastDebugState(getBoundsDebug) : null,
     gameOverInterlude: playScene?.getGameOverInterludeDebugState
@@ -1332,6 +1341,7 @@ async function init() {
   BootWatchdog.checkpoint('BOOT_START');
   // ---------------------------
 
+  await initializeMaintainerDevtools();
   const bootLogger = createBootLogger(isBootDebugEnabled());
   await runBootStep(bootLogger, 'restore Steam Cloud persistence', () => restoreSteamCloudPersistence(), {
     timeoutMs: 900,

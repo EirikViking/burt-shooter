@@ -34,6 +34,7 @@ import {
 import { getShipMetadata } from '../config/ShipMetadata.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { translateText } from '../i18n/index.js';
+import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import {
   getOverrunMilestoneCelebration,
@@ -117,6 +118,7 @@ export class PlayScene {
     this.debugInvincible = false;
     this.debugLastBlockedDamageAt = 0;
     this.debugLevelToolsUsed = false;
+    this.maintainerDevtoolsEnabled = false;
     this.ambientBonusDroneTimer = 0;
     this.easterEggTimer = 0;
     this.ambientBonusDrones = []; // Lists for update
@@ -404,6 +406,7 @@ export class PlayScene {
     const selectedShipTextureIndex = getShipMetadata(spriteKey)?.textureIndex ?? 0;
     const controlSmoke = params.get('controlSmoke') === '1';
     this.controlSmokeMode = controlSmoke;
+    this.maintainerDevtoolsEnabled = isMaintainerDevtoolsEnabled();
     const logShipDebug = () => {
       if (!this.player) return;
       console.log(`[ShipDebug] Build: ${BUILD_ID || 'OPTIMIZED'}`);
@@ -474,7 +477,7 @@ export class PlayScene {
 
     this.initBalanceDebug(params);
     const debugToken = params.get('debugBossToken');
-    if (debugToken === 'NOVA_DEBUG_2026') {
+    if (this.canUseMaintainerDevtools() && debugToken === 'NOVA_DEBUG_2026') {
       this.game.markUnrankedRun?.('debug_route');
       const startLevel = Number(params.get('startLevel'));
       const startAtBoss = params.get('startAtBoss') === '1';
@@ -509,7 +512,11 @@ export class PlayScene {
     }
 
     // Add Debug Keys
-    if (!this._debugKeyHandler) {
+    if (!this.canUseMaintainerDevtools() && this._debugKeyHandler) {
+      window.removeEventListener('keydown', this._debugKeyHandler);
+      this._debugKeyHandler = null;
+    }
+    if (this.canUseMaintainerDevtools() && !this._debugKeyHandler) {
       this._debugKeyHandler = (e) => this.handleDebugKeys(e);
       window.addEventListener('keydown', this._debugKeyHandler);
     }
@@ -522,7 +529,12 @@ export class PlayScene {
     this.isReady = true;
   }
 
+  canUseMaintainerDevtools() {
+    return this.maintainerDevtoolsEnabled === true || isMaintainerDevtoolsEnabled();
+  }
+
   handleDebugKeys(e) {
+    if (!this.canUseMaintainerDevtools()) return;
     if (e.repeat) return;
     if (this.handleDebugNumberKey(e)) {
       e.preventDefault?.();
@@ -578,10 +590,11 @@ export class PlayScene {
   }
 
   isDebugInvincibleActive() {
-    return this.debugInvincible === true;
+    return this.canUseMaintainerDevtools() && this.debugInvincible === true;
   }
 
   toggleDebugInvincibility() {
+    if (!this.canUseMaintainerDevtools()) return false;
     this.debugInvincible = !this.debugInvincible;
     this.game?.markUnrankedRun?.('debug_invincible');
     if (this.debugInvincible && this.player?.grantInvulnerability) {
@@ -596,6 +609,7 @@ export class PlayScene {
       priority: 4
     });
     console.log(`[DebugTools] invincible=${this.debugInvincible}`);
+    return true;
   }
 
   onDebugDamageBlocked(source = 'damage') {
@@ -616,6 +630,7 @@ export class PlayScene {
   }
 
   promptDebugLevelJump() {
+    if (!this.canUseMaintainerDevtools()) return false;
     const current = Math.max(1, Number(this.game?.level) || 1);
     const input = window.prompt?.(translateText('Debug jump to level'), String(current));
     if (input == null) return false;
@@ -638,6 +653,7 @@ export class PlayScene {
   }
 
   debugJumpToLevel(level, reason = 'debug_level_jump') {
+    if (!this.canUseMaintainerDevtools()) return false;
     const targetLevel = Math.max(1, Math.min(999, Math.floor(Number(level) || 1)));
     if (!this.game || !this.enemyManager) return false;
     this.game.markUnrankedRun?.(reason);
@@ -676,6 +692,7 @@ export class PlayScene {
   }
 
   activateMarketingSpawnMode(reason = 'marketing_spawn_debug') {
+    if (!this.canUseMaintainerDevtools()) return false;
     if (!this.enemyManager || !this.game || this.game?.currentScene !== this || !this.isReady) {
       return false;
     }
@@ -807,6 +824,7 @@ export class PlayScene {
   }
 
   isBalanceDebugRequested(params = null) {
+    if (!this.canUseMaintainerDevtools()) return false;
     const queryEnabled = params?.get?.('balanceDebug') === '1' || params?.get?.('balance_debug') === '1';
     if (queryEnabled) return true;
     try {
@@ -972,6 +990,12 @@ export class PlayScene {
   startLevel(source = 'unknown') {
     if (this.game?.currentScene && this.game.currentScene !== this) {
       return;
+    }
+    if (!this.canUseMaintainerDevtools()) {
+      this.debugStartLevel = null;
+      this.debugStartAtBoss = false;
+      this.debugPowerups = false;
+      this.debugOverlayEnabled = false;
     }
     if (Number.isFinite(this.debugStartLevel)) {
       this.game.level = this.debugStartLevel;
@@ -6619,6 +6643,7 @@ export class PlayScene {
   }
 
   updateDevOverlay() {
+    if (!this.canUseMaintainerDevtools()) return;
     if (!this.debugOverlayEnabled) return;
     if (!this.devOverlay) {
       this.devOverlay = createText('', {

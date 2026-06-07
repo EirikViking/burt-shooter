@@ -24,6 +24,7 @@ function npmStep(label, script) {
 
 const steps = [
   npmStep('release line guard', 'check:release-line'),
+  npmStep('maintainer devtools gate', 'check:devtools-gate'),
   { label: 'combo and distinct SFX', command: node, args: ['scripts/check-release-hardening-audio.mjs'] },
   { label: 'boss flow and death spectacle', command: node, args: ['scripts/check-release-hardening-boss-flow.mjs'] },
   { label: 'UI overlap and game-over hold', command: node, args: ['scripts/check-release-hardening-ui-flow.mjs'] },

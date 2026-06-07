@@ -17,6 +17,10 @@ const APP_CHANNELS = {
   exitGame: 'nova-app:exitGame'
 };
 
+const MAINTAINER_DEVTOOLS_CHANNELS = {
+  getState: 'nova-maintainer-devtools:getState'
+};
+
 const INPUT_CHANNELS = {
   getNativeGamepads: 'nova-input:getNativeGamepads'
 };
@@ -94,6 +98,10 @@ contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
 
 contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
   exitGame: () => invoke(APP_CHANNELS.exitGame)
+}));
+
+contextBridge.exposeInMainWorld('__novaMaintainerDevtools', Object.freeze({
+  getState: () => invoke(MAINTAINER_DEVTOOLS_CHANNELS.getState)
 }));
 
 contextBridge.exposeInMainWorld('__novaSteamCloud', Object.freeze({

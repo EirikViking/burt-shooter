@@ -9,6 +9,7 @@ const explicitPort = process.env.SMOKE_PORT ? Number(process.env.SMOKE_PORT) : n
 const port = process.env.SMOKE_URL ? null : (explicitPort || await findAvailablePort(Number(process.env.SMOKE_PORT_START || 4173)));
 const baseUrl = process.env.SMOKE_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.SMOKE_OUTPUT_DIR || `test-results/smoke-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function withQuery(url, params) {
   const next = new URL(url);
@@ -707,7 +708,7 @@ async function runSmoke() {
 
     const level3Page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(level3Page, 'level3');
-    await level3Page.goto(withQuery(baseUrl, { autostart: '1', debugBossToken: 'NOVA_DEBUG_2026', startLevel: '3' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await level3Page.goto(withQuery(baseUrl, { autostart: '1', debugBossToken: 'NOVA_DEBUG_2026', startLevel: '3', 'nova-devtools-hash': LOCAL_DEVTOOLS_HASH }), { waitUntil: 'domcontentloaded', timeout: 30000 });
     await level3Page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
     await stabilizeSmokePlayer(level3Page);
     await level3Page.waitForFunction(() => {
@@ -783,7 +784,7 @@ async function runSmoke() {
 
     const bossPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(bossPage, 'boss-victory');
-    await bossPage.goto(withQuery(baseUrl, { autostart: '1', debugBossToken: 'NOVA_DEBUG_2026', startAtBoss: '1', startLevel: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await bossPage.goto(withQuery(baseUrl, { autostart: '1', debugBossToken: 'NOVA_DEBUG_2026', startAtBoss: '1', startLevel: '1', 'nova-devtools-hash': LOCAL_DEVTOOLS_HASH }), { waitUntil: 'domcontentloaded', timeout: 30000 });
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
     await bossPage.screenshot({ path: path.join(outputDir, '12-boss-gate.png'), fullPage: true });
     await bossPage.waitForFunction(() => {

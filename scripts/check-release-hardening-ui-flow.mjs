@@ -83,9 +83,10 @@ for (const needle of [
 }
 assert.ok(
   debugUnrankedCheck.includes("debugBossToken: 'NOVA_DEBUG_2026'") &&
+    debugUnrankedCheck.includes('nova-devtools-hash') &&
     debugUnrankedCheck.includes('runMode') &&
     debugUnrankedCheck.includes('unranked'),
-  'documented debug start-level shortcut must stay covered as unranked'
+  'documented debug start-level shortcut must stay covered as gated and unranked'
 );
 assert.ok(
   (highscore.match(/this\.stateMessage\.anchor\.set\(0\.5\);/g) || []).length === 1,

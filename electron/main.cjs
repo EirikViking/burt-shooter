@@ -8,6 +8,7 @@ const { createSteamAchievementsBridge } = require('./steamAchievementsBridge.cjs
 const { runSteamLeaderboardRuntimeProbe } = require('./steamLeaderboardRuntimeProbe.cjs');
 const { createNativeGamepadBridge } = require('./nativeGamepadBridge.cjs');
 const { createSteamCloudSave } = require('./steamCloudSave.cjs');
+const { getMaintainerDevtoolsState } = require('./maintainerDevtoolsGate.cjs');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
@@ -17,6 +18,7 @@ const isSteamCloudDiagnostics = process.argv.includes('--steam-cloud-diagnostics
 const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
 const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isPerfSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isWindowed;
 const smokeMode = isSmoke ? 'smoke' : isControlSmoke ? 'control-smoke' : isPerfSmoke ? 'perf-smoke' : null;
+const maintainerDevtoolsState = getMaintainerDevtoolsState(process.argv);
 const distDir = path.resolve(__dirname, '..', 'dist');
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -95,6 +97,10 @@ function registerInputIpc() {
     status: nativeGamepadBridge.getStatus(),
     gamepads: nativeGamepadBridge.getGamepads()
   }));
+}
+
+function registerMaintainerDevtoolsIpc() {
+  ipcMain.handle('nova-maintainer-devtools:getState', () => maintainerDevtoolsState);
 }
 
 function registerSteamCloudIpc() {
@@ -1029,6 +1035,7 @@ app.whenReady().then(async () => {
   registerSteamAchievementsIpc();
   registerAppIpc();
   registerInputIpc();
+  registerMaintainerDevtoolsIpc();
   registerSteamCloudIpc();
   await startLocalServer();
   const win = createWindow();

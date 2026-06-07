@@ -8,6 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4382));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/first-boss-balance-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 const probeDurationMs = Number(process.env.FIRST_BOSS_PROBE_MS || 60000);
 const maxExpectedLivesLost = Number(process.env.FIRST_BOSS_MAX_LIVES_LOST || 1);
 
@@ -218,7 +219,8 @@ async function runOverlayGuard(browser) {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
     startAtBoss: '1',
-    startLevel: '1'
+    startLevel: '1',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForBoss(page);
   const result = await page.evaluate(async () => {
@@ -271,7 +273,8 @@ async function runCombatProbe(browser) {
     debugBossToken: 'NOVA_DEBUG_2026',
     startAtBoss: '1',
     startLevel: '1',
-    balanceDebug: '1'
+    balanceDebug: '1',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForBoss(page);
   await page.evaluate(() => {

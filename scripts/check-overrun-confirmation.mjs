@@ -9,6 +9,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4362));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/overrun-confirmation-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -132,7 +133,7 @@ try {
     if (message.type() === 'error') consoleErrors.push(message.text().slice(0, 700));
   });
 
-  await page.goto(`${baseUrl}/?autostart=1&debugBossToken=NOVA_DEBUG_2026&startLevel=10`, {
+  await page.goto(`${baseUrl}/?autostart=1&debugBossToken=NOVA_DEBUG_2026&startLevel=10&nova-devtools-hash=${LOCAL_DEVTOOLS_HASH}`, {
     waitUntil: 'domcontentloaded',
     timeout: 30000
   });
