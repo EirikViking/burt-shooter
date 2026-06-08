@@ -212,6 +212,7 @@ try {
   assert.equal(menu.menu?.sectorStart?.available, true);
   assert.deepEqual(menu.menu?.sectorStart?.checkpoints, [5, 10, 15]);
   assert.equal(menu.menu?.sectorStart?.selectedCheckpoint, 15);
+  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR START CHALLENGE:\s*15/);
 
   await tapButton(page, 13);
   const focused = await waitForState(page, (state) => state.menu?.focusedOption === 'sectorStart', 'sector start focused by D-pad down');
@@ -223,6 +224,13 @@ try {
   await tapButton(page, 15);
   const cycledRight = await waitForState(page, (state) => state.menu?.sectorStart?.selectedCheckpoint === 15, 'sector start checkpoint cycled right');
   assert.equal(cycledRight.menu?.focusedOption, 'sectorStart');
+
+  await tapButton(page, 12);
+  const returnedToLaunch = await waitForState(page, (state) => state.menu?.focusedOption === 'launch', 'controller can move back out of sector start focus');
+  assert.equal(returnedToLaunch.menu?.sectorStart?.selectedCheckpoint, 15);
+
+  await tapButton(page, 13);
+  await waitForState(page, (state) => state.menu?.focusedOption === 'sectorStart', 'sector start refocused before launch');
 
   await tapButton(page, 0);
   const play = await waitForState(page, (state) => state.scene === 'play' && state.runMode === 'sector_start', 'sector start launched by controller', 30000);
@@ -241,6 +249,7 @@ try {
     checkpoints: focused.menu?.sectorStart?.checkpoints,
     cycledLeft: cycledLeft.menu?.sectorStart?.selectedCheckpoint,
     cycledRight: cycledRight.menu?.sectorStart?.selectedCheckpoint,
+    returnedFocus: returnedToLaunch.menu?.focusedOption,
     launched: {
       runMode: play.runMode,
       level: play.level,

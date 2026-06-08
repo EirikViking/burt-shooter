@@ -7,6 +7,8 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Implementation direction: add explicit run modes where normal starts remain ranked and Sector Start is unranked practice only; checkpoint starts are limited to 5-sector intervals at or below highest reached sector, so highest reached 17 allows 5/10/15 and below 5 hides the option.
 - Safety gates under test: Sector Start must not submit leaderboard scores, update local/global bests, grant achievements, rank XP, ship unlock progress, ship usage progress, or Threat Codex progression, while ranked runs still do all normal ranked work.
 - New verification direction: add `npm run check:sector-continue-mode` and `npm run check:sector-continue-controller-flow`, then run the user-requested single-pass check list before committing and pushing only this prototype branch.
+- 2026-06-08 continuation: renamed the prototype path to Sector Start Challenge, kept 5-sector checkpoint selection, added mouse edge cycling on the challenge button, and added a separate profile-scoped `novaSwarm.sectorStartChallengeRecords.v1` best-record store keyed by start checkpoint.
+- Challenge records are written only from `RUN_MODES.SECTOR_START` finalization and carry start sector, score earned during the challenge, highest/final sector, ship id/name, elapsed stats, and completion time. Normal ranked Start Run remains the only path for local/global leaderboard, hangar XP/unlocks, ship usage, achievements, and Threat Codex progression.
 
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 

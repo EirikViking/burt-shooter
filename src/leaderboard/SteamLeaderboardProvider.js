@@ -186,6 +186,7 @@ function createMockSteamBridge(win) {
           wavesCleared: payload.metadata?.wavesCleared ?? payload.details?.[5] ?? null,
           details: payload.details,
           metadata: payload.metadata,
+          leaderboardName: payload.leaderboardName || STEAM_LEADERBOARD_NAME,
           uploadMethod: payload.uploadMethod,
           isCurrentPlayer: true,
           source: 'steam',

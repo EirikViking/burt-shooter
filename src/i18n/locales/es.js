@@ -1,6 +1,12 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR START CHALLENGE': 'DESAFIO DE INICIO DE SECTOR',
+  'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': 'DESAFIO DE INICIO DE SECTOR - PUNTUACION PRINCIPAL NO REGISTRADA',
+  'NEW CHECKPOINT BEST': 'NUEVA MARCA DE CONTROL',
+  'CHECKPOINT BEST': 'MEJOR CONTROL',
+  'MAIN LEADERBOARD OFF': 'CLASIFICACION PRINCIPAL DESACTIVADA',
+  'Sector Start Challenge complete. Local checkpoint record saved separately; ranked leaderboard and career progress stayed untouched.': 'Desafio de inicio de sector completado. El record local del punto de control se guardo aparte; la clasificacion y el progreso de carrera quedaron intactos.',
   'SECTOR START': 'INICIO DE SECTOR',
   'SECTOR START LOCKED': 'INICIO DE SECTOR BLOQUEADO',
   'PRACTICE COMPLETE': 'PRÁCTICA COMPLETA',

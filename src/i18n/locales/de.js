@@ -1,4 +1,10 @@
 const sourceText = Object.freeze({
+  'SECTOR START CHALLENGE': 'SEKTORSTART-CHALLENGE',
+  'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': 'SEKTORSTART-CHALLENGE - HAUPTPUNKTZAHL WIRD NICHT GESPEICHERT',
+  'NEW CHECKPOINT BEST': 'NEUER CHECKPOINT-BESTWERT',
+  'CHECKPOINT BEST': 'CHECKPOINT-BESTWERT',
+  'MAIN LEADERBOARD OFF': 'HAUPT-BESTENLISTE AUS',
+  'Sector Start Challenge complete. Local checkpoint record saved separately; ranked leaderboard and career progress stayed untouched.': 'Sektorstart-Challenge beendet. Lokaler Checkpoint-Rekord separat gespeichert; Bestenliste und Karrierefortschritt blieben unberuehrt.',
   'SECTOR START': 'SEKTORSTART',
   'SECTOR START LOCKED': 'SEKTORSTART GESPERRT',
   'PRACTICE COMPLETE': 'TRAINING BEENDET',

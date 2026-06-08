@@ -1,6 +1,12 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR START CHALLENGE': '扇区开始挑战',
+  'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': '扇区开始挑战 - 主分未记录',
+  'NEW CHECKPOINT BEST': '新检查点最佳',
+  'CHECKPOINT BEST': '检查点最佳',
+  'MAIN LEADERBOARD OFF': '主排行榜关闭',
+  'Sector Start Challenge complete. Local checkpoint record saved separately; ranked leaderboard and career progress stayed untouched.': '扇区开始挑战完成。本地检查点记录已单独保存；排行榜和生涯进度均未改动。',
   'SECTOR START': '扇区开始',
   'SECTOR START LOCKED': '扇区开始已锁定',
   'PRACTICE COMPLETE': '练习完成',

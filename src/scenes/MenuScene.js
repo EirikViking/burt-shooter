@@ -10,8 +10,9 @@ import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
-import { translateText } from '../i18n/index.js';
+import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState } from '../progression/HangarProgressState.js';
+import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
 import { RUN_MODES, getSectorStartState } from '../game/RunMode.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
@@ -801,9 +802,7 @@ export class MenuScene {
 
     this.sectorStartBtn = this.createButton(this.getSectorStartButtonLabel(), layout, { accent: 0xffef7e });
     this.sectorStartBtn.alpha = 0;
-    this.sectorStartBtn.on('pointerdown', () => {
-      this.launchSectorStartRun();
-    });
+    this.sectorStartBtn.on('pointerdown', (event) => this.handleSectorStartPointerDown(event));
     this.container.addChild(this.sectorStartBtn);
 
     this.highscoreBtn = this.createButton('SHIP HANGAR', layout, { accent: 0x37f5ff });
@@ -1393,6 +1392,7 @@ export class MenuScene {
         highestReachedSector: this.sectorStartState?.highestReachedSector || 1,
         checkpoints: this.sectorStartState?.checkpoints || [],
         selectedCheckpoint: this.getSelectedSectorStartCheckpoint(),
+        selectedRecord: getSectorStartChallengeRecord(this.getSelectedSectorStartCheckpoint()),
         buttonVisible: Boolean(this.sectorStartBtn?.visible),
         buttonText: this.sectorStartBtn?._label?.text || null
       },
@@ -1783,8 +1783,14 @@ export class MenuScene {
 
   getSectorStartButtonLabel() {
     const checkpoint = this.getSelectedSectorStartCheckpoint();
-    if (!checkpoint) return translateText('SECTOR START');
-    return `${translateText('SECTOR START')}: ${checkpoint}`;
+    const label = translateText('SECTOR START CHALLENGE');
+    if (!checkpoint) return label;
+    const record = getSectorStartChallengeRecord(checkpoint);
+    const base = `< ${label}: ${checkpoint} >`;
+    if (record?.scoreEarned > 0) {
+      return `${base}  ${translateText('BEST')} ${formatNumber(record.scoreEarned)}`;
+    }
+    return base;
   }
 
   updateSectorStartButton({ forceGpuRefresh = false } = {}) {
@@ -1815,6 +1821,34 @@ export class MenuScene {
     this.updateSectorStartButton({ forceGpuRefresh: true });
     AudioManager.playSfx('thrusterFire', { volume: 0.07, minIntervalMs: 90 });
     return true;
+  }
+
+  handleSectorStartPointerDown(event) {
+    this.setInputDevice('keyboard');
+    this.setMenuFocusByButton(this.sectorStartBtn);
+    const checkpoints = this.sectorStartState?.checkpoints || [];
+    if (checkpoints.length > 1) {
+      const width = this.sectorStartBtn?._btnWidth || 286;
+      let localX = 0;
+      try {
+        const point = typeof event?.getLocalPosition === 'function'
+          ? event.getLocalPosition(this.sectorStartBtn)
+          : this.sectorStartBtn.toLocal(event.global);
+        localX = Number(point?.x) || 0;
+      } catch {
+        localX = 0;
+      }
+      const edgeWidth = width * 0.28;
+      if (localX <= -width / 2 + edgeWidth) {
+        this.cycleSectorStartCheckpoint(-1);
+        return;
+      }
+      if (localX >= width / 2 - edgeWidth) {
+        this.cycleSectorStartCheckpoint(1);
+        return;
+      }
+    }
+    this.launchSectorStartRun();
   }
 
   launchSectorStartRun() {

@@ -1,6 +1,7 @@
 import './styles.css';
 import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
+import { RUN_MODES } from './game/RunMode.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { BootWatchdog } from './utils/BootWatchdog.js';
 import { installConsoleLogFilter } from './utils/Logger.js';
@@ -584,6 +585,14 @@ function buildGameTextState(game) {
     lives: game?.lives ?? 0,
     runMode: game?.runMode || (game?.isDebugRun ? 'unranked' : 'ranked'),
     runModeReason: game?.runModeReason || null,
+    sectorStartChallenge: (game?.runMode === RUN_MODES.SECTOR_START || game?.runSummary?.sectorStartChallengeAttempt) ? {
+      checkpoint: game?.sectorStartCheckpoint || game?.runSummary?.sectorStartCheckpoint || null,
+      highestLegitimatelyReached: game?.sectorStartHighestReached || null,
+      attempt: game?.runSummary?.sectorStartChallengeAttempt || null,
+      previousBest: game?.runSummary?.sectorStartChallengePreviousBest || null,
+      best: game?.runSummary?.sectorStartChallengeBest || null,
+      newBest: Boolean(game?.runSummary?.sectorStartChallengeNewBest)
+    } : null,
     globalLeaderboardCues: game?.globalLeaderboardCueState || null,
     scoreSubmissionAllowed: typeof game?.isScoreSubmissionAllowed === 'function'
       ? game.isScoreSubmissionAllowed()

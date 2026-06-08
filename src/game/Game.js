@@ -10,7 +10,7 @@ import { HighscoreScene } from '../scenes/HighscoreScene.js';
 import { AchievementsScene } from '../scenes/AchievementsScene.js';
 import { ThreatCodexScene } from '../scenes/ThreatCodexScene.js';
 import { rankManager } from '../managers/RankManager.js';
-import { getDefaultShipKey, incrementShipUsage, isShipUnlocked, isValidShipKey } from '../config/ShipMetadata.js';
+import { getDefaultShipKey, getShipMetadata, incrementShipUsage, isShipUnlocked, isValidShipKey } from '../config/ShipMetadata.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
@@ -44,6 +44,7 @@ import {
   readHangarProgressState,
   updateHangarProgress
 } from '../progression/HangarProgressState.js';
+import { recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
 import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 
 export class Game {
@@ -87,6 +88,7 @@ export class Game {
     this.runModeReason = null;
     this.sectorStartCheckpoint = null;
     this.sectorStartHighestReached = null;
+    this.lastSectorStartChallengeRecord = null;
     this.globalLeaderboardTargets = null;
     this.globalLeaderboardTargetPromise = null;
     this.globalLeaderboardCueState = {
@@ -230,6 +232,7 @@ export class Game {
     this.runModeReason = requestedRunMode === RUN_MODES.SECTOR_START ? 'sector_start_checkpoint' : null;
     this.sectorStartCheckpoint = sectorStartCheckpoint;
     this.sectorStartHighestReached = sectorStartCheckpoint ? getSectorStartState(startingProgress).highestReachedSector : null;
+    this.lastSectorStartChallengeRecord = null;
     this.resetGlobalLeaderboardCues();
     this.runStartedAtMs = Date.now();
     this.runElapsedSeconds = 0;
@@ -751,6 +754,22 @@ export class Game {
       newlyUnlockedShips: result.newlyUnlockedShipIds || [],
       hangarProgress: getHangarProgressSummary(result.next)
     };
+    if (this.runMode === RUN_MODES.SECTOR_START && this.sectorStartCheckpoint) {
+      const ship = getShipMetadata(this.selectedShipSpriteKey);
+      const challengeRecord = recordSectorStartChallengeRun(this.runSummary, {
+        selectedShipSpriteKey: this.selectedShipSpriteKey,
+        shipId: ship?.id || this.selectedShipSpriteKey || null,
+        shipName: ship?.name || null
+      });
+      this.lastSectorStartChallengeRecord = challengeRecord;
+      this.runSummary = {
+        ...this.runSummary,
+        sectorStartChallengeAttempt: challengeRecord.attemptRecord,
+        sectorStartChallengePreviousBest: challengeRecord.previousRecord,
+        sectorStartChallengeBest: challengeRecord.bestRecord,
+        sectorStartChallengeNewBest: challengeRecord.isNewBest
+      };
+    }
     if (this.isRankedRun()) {
       for (const rankIndex of result.newRanksThisRun || []) {
         const unlock = this.unlockRankAchievement(rankIndex, {

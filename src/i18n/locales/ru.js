@@ -1,6 +1,12 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR START CHALLENGE': 'ЧЕЛЛЕНДЖ СТАРТА С СЕКТОРА',
+  'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': 'ЧЕЛЛЕНДЖ СЕКТОРА - ОСНОВНОЙ СЧЕТ НЕ ЗАПИСЫВАЕТСЯ',
+  'NEW CHECKPOINT BEST': 'НОВЫЙ ЛУЧШИЙ ЧЕКПОИНТ',
+  'CHECKPOINT BEST': 'ЛУЧШИЙ ЧЕКПОИНТ',
+  'MAIN LEADERBOARD OFF': 'ОСНОВНАЯ ТАБЛИЦА ОТКЛЮЧЕНА',
+  'Sector Start Challenge complete. Local checkpoint record saved separately; ranked leaderboard and career progress stayed untouched.': 'Челлендж старта с сектора завершен. Локальный рекорд чекпоинта сохранен отдельно; рейтинговая таблица и карьерный прогресс не изменились.',
   'SECTOR START': 'СТАРТ С СЕКТОРА',
   'SECTOR START LOCKED': 'СТАРТ С СЕКТОРА ЗАКРЫТ',
   'PRACTICE COMPLETE': 'ТРЕНИРОВКА ЗАВЕРШЕНА',

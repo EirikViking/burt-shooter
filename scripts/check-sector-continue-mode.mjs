@@ -164,6 +164,7 @@ async function storageSnapshot(page) {
     legacy: JSON.parse(localStorage.getItem('burt.shipUnlockProgress.v1') || '{}'),
     achievements: JSON.parse(localStorage.getItem('nova_swarm_achievements_v1') || '{}'),
     localLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.localLeaderboard.v2') || '[]'),
+    sectorChallenge: JSON.parse(localStorage.getItem('novaSwarm.sectorStartChallengeRecords.v1') || '{"byCheckpoint":{}}'),
     shipUsage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}'),
     shipUsageTotal: localStorage.getItem('burt.shipUsageTotal.v1') || '0',
     threatDiscoveryRaw: localStorage.getItem('nova.threatDiscovery.v1')
@@ -175,6 +176,18 @@ async function clickMenuButton(page, buttonKey) {
   const button = state.menu?.items?.[buttonKey];
   assert.ok(button?.width > 0 && button?.height > 0, `Missing menu button bounds for ${buttonKey}`);
   await page.mouse.click(button.x + button.width / 2, button.y + button.height / 2);
+}
+
+async function clickMenuButtonZone(page, buttonKey, zone = 'center') {
+  const state = await readState(page);
+  const button = state.menu?.items?.[buttonKey];
+  assert.ok(button?.width > 0 && button?.height > 0, `Missing menu button bounds for ${buttonKey}`);
+  const x = zone === 'left'
+    ? button.x + button.width * 0.12
+    : zone === 'right'
+      ? button.x + button.width * 0.88
+      : button.x + button.width / 2;
+  await page.mouse.click(x, button.y + button.height / 2);
 }
 
 function assertStaticRules() {
@@ -228,7 +241,7 @@ try {
   assert.equal(menu.menu?.sectorStart?.available, true);
   assert.deepEqual(menu.menu?.sectorStart?.checkpoints, [5, 10, 15]);
   assert.equal(menu.menu?.sectorStart?.selectedCheckpoint, 15);
-  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR START:\s*15/);
+  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR START CHALLENGE:\s*15/);
 
   const invalidStart = await page.evaluate(async () => window.__game.startGame(undefined, {
     runMode: 'sector_start',
@@ -238,11 +251,14 @@ try {
   assert.equal((await readState(page)).scene, 'menu');
 
   const beforeSectorStart = await storageSnapshot(page);
-  await clickMenuButton(page, 'sectorStartButton');
+  await clickMenuButtonZone(page, 'sectorStartButton', 'left');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).menu?.sectorStart?.selectedCheckpoint === 10, { timeout: 8000 });
+  await clickMenuButtonZone(page, 'sectorStartButton', 'center');
   const sectorPlay = await waitForScene(page, 'play');
   assert.equal(sectorPlay.runMode, 'sector_start');
   assert.equal(sectorPlay.runModeReason, 'sector_start_checkpoint');
-  assert.equal(sectorPlay.level, 15);
+  assert.equal(sectorPlay.level, 10);
+  assert.equal(sectorPlay.score, 0, 'sector_start challenge should begin with a separated zero score');
   assert.equal(sectorPlay.scoreSubmissionAllowed, false);
   assert.equal(sectorPlay.maintainerDevtools?.enabled, false);
   assert.equal(sectorPlay.debugTools?.levelJumpAvailable, false);
@@ -258,15 +274,23 @@ try {
   const sectorGameOver = await waitForScene(page, 'gameOver');
   assert.equal(sectorGameOver.runMode, 'sector_start');
   assert.equal(sectorGameOver.scoreSubmissionAllowed, false);
-  await page.keyboard.press('Enter');
-  await page.keyboard.type('QA');
-  await page.keyboard.press('Enter');
+  assert.equal(sectorGameOver.sectorStartChallenge?.checkpoint, 10);
+  assert.equal(sectorGameOver.sectorStartChallenge?.newBest, true);
+  const challengeScore = sectorGameOver.score;
+  assert.ok(challengeScore > 0, 'sector_start challenge should report a positive challenge score after scoring');
+  assert.equal(sectorGameOver.sectorStartChallenge?.best?.scoreEarned, challengeScore);
+  assert.match(sectorGameOver.gameOver?.ceremonyTitle || '', /SECTOR START CHALLENGE/);
+  assert.match(sectorGameOver.gameOver?.ceremonyComment || '', /checkpoint record|CHECKPOINT BEST|NEW CHECKPOINT BEST/i);
   await page.waitForTimeout(700);
   const afterSectorStart = await storageSnapshot(page);
   assert.deepEqual(afterSectorStart.hangar, beforeSectorStart.hangar, 'sector_start must not update hangar progress/bests/XP/unlocks');
   assert.deepEqual(afterSectorStart.legacy, beforeSectorStart.legacy, 'sector_start must not update legacy unlock progress');
   assert.deepEqual(afterSectorStart.achievements, beforeSectorStart.achievements, 'sector_start must not unlock achievements');
   assert.deepEqual(afterSectorStart.localLeaderboard, [], 'sector_start must not save local leaderboard entries');
+  assert.equal(afterSectorStart.sectorChallenge.byCheckpoint?.['10']?.scoreEarned, challengeScore, 'sector_start must save separate local challenge record');
+  assert.equal(afterSectorStart.sectorChallenge.byCheckpoint?.['10']?.startSector, 10, 'challenge record must preserve chosen checkpoint');
+  assert.equal(afterSectorStart.sectorChallenge.byCheckpoint?.['10']?.highestSectorReached, 11, 'challenge record must preserve highest sector reached');
+  assert.equal(beforeSectorStart.sectorChallenge.byCheckpoint?.['10'], undefined, 'challenge record should be separate from pre-run normal storage');
   assert.deepEqual(afterSectorStart.shipUsage, {}, 'sector_start must not increment ship usage');
   assert.equal(afterSectorStart.shipUsageTotal, '0', 'sector_start must not increment total ship usage');
   assert.equal(afterSectorStart.threatDiscoveryRaw, beforeSectorStart.threatDiscoveryRaw, 'sector_start must not write Threat Codex discoveries');
@@ -320,6 +344,8 @@ try {
       checkpoints: menu.menu?.sectorStart?.checkpoints,
       mouseStartLevel: sectorPlay.level,
       keyboardStartLevel: keyboardPlay.level,
+      challengeScoreStart: sectorPlay.score,
+      challengeRecord: afterSectorStart.sectorChallenge.byCheckpoint?.['10'],
       sideEffectsBlocked: true
     },
     ranked: {

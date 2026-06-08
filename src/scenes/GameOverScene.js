@@ -542,7 +542,7 @@ export class GameOverScene {
       this.promptText.eventMode = 'none';
       this.promptText.cursor = 'default';
       this.promptText.style.fill = '#ffb35c';
-      this.promptText.text = 'PRACTICE RUN - SCORE NOT LOGGED';
+      this.promptText.text = this.getUnrankedScoreBlockedText();
       this.submitBlockedReason = this.game.runModeReason || 'unranked_run';
       this.isQualified = false;
       this.localQualified = false;
@@ -758,6 +758,9 @@ export class GameOverScene {
   }
 
   getLocalPlacementLine() {
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) {
+      return this.getSectorStartChallengeRecordLine() || translateText('SECTOR START CHALLENGE');
+    }
     if (!this.isRankedRun) return 'Local: Practice run';
     const rank = this.getVisibleLocalPlacementRank();
     const rawRank = this.getLocalPlacementRank();
@@ -775,6 +778,7 @@ export class GameOverScene {
   }
 
   getGlobalPlacementLine() {
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('MAIN LEADERBOARD OFF');
     if (!this.isRankedRun) return 'Global: Practice run';
     if (this.steamSubmissionMode) return this.getSteamPlacementLine();
     const rank = this.getGlobalPlacementRank();
@@ -824,6 +828,23 @@ export class GameOverScene {
       this.getLocalPlacementLine(),
       this.getGlobalPlacementLine()
     ];
+  }
+
+  getUnrankedScoreBlockedText() {
+    return this.game?.runMode === RUN_MODES.SECTOR_START
+      ? translateText('SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED')
+      : translateText('PRACTICE RUN - SCORE NOT LOGGED');
+  }
+
+  getSectorStartChallengeRecordLine() {
+    const summary = this.game?.runSummary || {};
+    const record = summary.sectorStartChallengeBest || summary.sectorStartChallengeAttempt || null;
+    const checkpoint = record?.startSector || summary.sectorStartCheckpoint || this.game?.sectorStartCheckpoint || null;
+    if (!record || !checkpoint) return null;
+    const label = summary.sectorStartChallengeNewBest
+      ? translateText('NEW CHECKPOINT BEST')
+      : translateText('CHECKPOINT BEST');
+    return `${label}: ${this.formatScoreNumber(record.scoreEarned)} | ${translateText('SECTOR')} ${checkpoint} -> ${record.highestSectorReached}`;
   }
 
   isSceneActive() {
@@ -900,7 +921,7 @@ export class GameOverScene {
 
   getEntryPromptText(layout = getCurrentLayout()) {
     const mobile = Boolean(layout?.isMobile);
-    if (!this.isRankedRun) return 'PRACTICE RUN - SCORE NOT LOGGED';
+    if (!this.isRankedRun) return this.getUnrankedScoreBlockedText();
     if (this.steamSubmissionMode) {
       if (this.globalStatus === 'steam_best_unchanged') return 'STEAM BEST UNCHANGED';
       if (this.globalStatus === 'submitted') return 'SCORE SUBMITTED WITH STEAM NAME';
@@ -1159,6 +1180,7 @@ export class GameOverScene {
   }
 
   getCeremonyTitle() {
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR START CHALLENGE');
     if (!this.isRankedRun) return translateText('PRACTICE COMPLETE');
     if (this.game?.runSummary?.runCleared) return 'RUN CLEAR';
     if (this.globalPlacementTier === 'number1') return 'NUMBER ONE';
@@ -1175,9 +1197,12 @@ export class GameOverScene {
 
   getCeremonyComment() {
     if (!this.isRankedRun) {
-      return this.game?.runMode === RUN_MODES.SECTOR_START
-        ? translateText('Sector Start practice run. Leaderboards and career progress stayed untouched.')
-        : translateText('Practice run. Score not logged.');
+      if (this.game?.runMode === RUN_MODES.SECTOR_START) {
+        const recordLine = this.getSectorStartChallengeRecordLine();
+        const base = translateText('Sector Start Challenge complete. Local checkpoint record saved separately; ranked leaderboard and career progress stayed untouched.');
+        return recordLine ? `${base}\n${recordLine}` : base;
+      }
+      return translateText('Practice run. Score not logged.');
     }
     const placement = this.globalPlacement;
     const localRank = this.getVisibleLocalPlacementRank();
@@ -2883,7 +2908,7 @@ export class GameOverScene {
       console.log(`[GameOver] Blocking score input for unranked run reason=${this.submitBlockedReason}`);
       if (this.promptText) {
         this.promptText.visible = true;
-        this.promptText.text = 'PRACTICE RUN - SCORE NOT LOGGED';
+        this.promptText.text = this.getUnrankedScoreBlockedText();
       }
       this.refreshPrimaryCta();
       return;
@@ -3410,6 +3435,7 @@ export class GameOverScene {
   }
 
   getRunbackTitle() {
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR START CHALLENGE');
     if (this.globalPlacement?.qualified && this.globalPlacement?.numberOne) return 'NUMBER ONE';
     if (this.globalPlacement?.qualified && this.globalPlacement?.top3) return this.getSteamGlobalLeaderboardTitle();
     return 'ONE MORE RUN?';
@@ -4095,7 +4121,7 @@ export class GameOverScene {
       console.log(`[GameOverScene] Blocked score submit for unranked run reason=${this.submitBlockedReason}`);
       if (this.promptText) {
         this.promptText.visible = true;
-        this.promptText.text = 'PRACTICE RUN - SCORE NOT LOGGED';
+        this.promptText.text = this.getUnrankedScoreBlockedText();
       }
       this.refreshPrimaryCta();
       return;

@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { STEAM_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4370));
@@ -197,6 +198,9 @@ try {
   const mockScoresAfterSubmit = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
   if (!mockScoresAfterSubmit.some((entry) => entry.playerName === 'STEAM ACE' && entry.score === 33333 && entry.level === 8)) {
     throw new Error(`Steam mock submission did not preserve level 8: ${JSON.stringify(mockScoresAfterSubmit)}`);
+  }
+  if (!mockScoresAfterSubmit.some((entry) => entry.playerName === 'STEAM ACE' && entry.leaderboardName === STEAM_LEADERBOARD_NAME)) {
+    throw new Error(`Steam mock submission did not use ${STEAM_LEADERBOARD_NAME}: ${JSON.stringify(mockScoresAfterSubmit)}`);
   }
   await page.evaluate(() => {
     const localScores = Array.from({ length: 43 }, (_, index) => ({
