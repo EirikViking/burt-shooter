@@ -1,0 +1,76 @@
+{
+  "upload": {
+    "purpose": "Sector Start Challenge latest private Steam upload after local label/runtime rebuild",
+    "branch": "feature/sector-continue-prototype-v1",
+    "headCommit": "4ccdf3ebe0b63f1154858b616c05fdd733d3682e",
+    "gameplayCommit": "0fc4ba8ebfbbf4dfcface07f616135a8bd5999b8",
+    "steamAppId": "4765070",
+    "windowsDepotId": "4765071",
+    "buildId": "23629412",
+    "setLive": "",
+    "setLiveStatus": "blank; build was uploaded privately and not set live",
+    "steamworksSettingsChanged": false,
+    "steamcmdUser": "gaunziman",
+    "steamcmdPath": "C:\\steamcmd\\steamcmd.exe",
+    "steamcmdCompletedAtLocal": "2026-06-08 22:31:46 Europe/Oslo"
+  },
+  "package": {
+    "version": "v2026-06-08_22-17-30",
+    "timestamp": "2026-06-08T20:17:30.974Z",
+    "contentRoot": "release/desktop/win-unpacked",
+    "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+    "payloadFileCount": 336,
+    "payloadTotalBytes": 724421564,
+    "payloadManifestHash": "e69a8e8e00f2fdf099345c6a5c346d505205b9073a5f13f0cbbebcbfc5ef16f8",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "5f0900467fe793d4f65d756846314178bde0cf8c5002647c8c8c2e63101dda8b"
+    }
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "description": "Sector Start Challenge latest 4ccdf3e v2026-06-08_22-17-30",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": ""
+  },
+  "verification": {
+    "preflight": [
+      "git fetch --all --prune",
+      "git status --short --branch",
+      "git branch --show-current",
+      "git log -3 --oneline --decorate",
+      "git worktree list --porcelain"
+    ],
+    "checksRun": [
+      "npm run check:release-line",
+      "npm run steamworks:payload-manifest",
+      "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' STEAM_BUILD_DESC='Sector Start Challenge latest 4ccdf3e v2026-06-08_22-17-30' npm run steamworks:write-vdf",
+      "C:\\steamcmd\\steamcmd.exe +login gaunziman +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+    ],
+    "packageRuntime": {
+      "status": "passed",
+      "appId": "4765070",
+      "leaderboard": "nova_swarm_global_score_v2",
+      "report": "test-results/steam-package-runtime-2026-06-08T20-30-34-043Z/report.json"
+    },
+    "latestLocalLabelProbe": {
+      "status": "passed",
+      "report": "test-results/sector-start-visible-label-124/report.json",
+      "expectedText": "SECTOR 5 CHALLENGE | BEST 124"
+    },
+    "steamcmdResult": "Successfully finished AppID 4765070 build (BuildID 23629412)."
+  },
+  "boundaries": {
+    "deployedLive": false,
+    "setLiveBlank": true,
+    "steamworksSettingsChanged": false,
+    "defaultBranchChanged": false,
+    "testBuildBranchChanged": false,
+    "mainLeaderboardChanged": false,
+    "mainLeaderboardName": "nova_swarm_global_score_v2",
+    "releaseReposTouched": false,
+    "steamTagsMoved": false
+  }
+}
