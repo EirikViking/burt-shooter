@@ -1,6 +1,11 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR START': 'СТАРТ С СЕКТОРА',
+  'SECTOR START LOCKED': 'СТАРТ С СЕКТОРА ЗАКРЫТ',
+  'PRACTICE COMPLETE': 'ТРЕНИРОВКА ЗАВЕРШЕНА',
+  'Sector Start practice run. Leaderboards and career progress stayed untouched.': 'Тренировка со стартом с сектора. Таблицы лидеров и карьерный прогресс не изменились.',
+  'Practice run. Score not logged.': 'Тренировочный забег. Счет не записан.',
   '{name} is catalogued as a {role}: {roleDescription}. The hull signature shows {movement} and {fire}. In a themed formation it edits your escape route instead of simply chasing you.': '{name} занесен в каталог как {role}: {roleDescription}. Сигнатура корпуса показывает {movement} и {fire}. В тематической формации он меняет твой маршрут отхода, а не просто гонится за тобой.',
   '{name} is a readable attack pattern. The scanner marks a {telegraph} tell for about {readWindow} ms, then spends {budget} danger budget on the hit. Early previews are slower and wider; late-run versions get sharper.': '{name} — читаемый шаблон атаки. Сканер помечает сигнал {telegraph} примерно на {readWindow} мс, затем тратит {budget} бюджета опасности на удар. Ранние версии медленнее и шире; поздние становятся острее.',
   '{name} is a wave tactic: {role}. It controls entry timing, lane ownership, and synchronized pressure so ordinary enemies behave like a rehearsed formation.': '{name} — тактика волны: {role}. Она управляет временем входа, контролем линий и синхронным давлением, чтобы обычные враги двигались как отрепетированная формация.',

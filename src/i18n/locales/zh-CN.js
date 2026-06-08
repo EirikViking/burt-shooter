@@ -1,6 +1,11 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR START': '扇区开始',
+  'SECTOR START LOCKED': '扇区开始已锁定',
+  'PRACTICE COMPLETE': '练习完成',
+  'Sector Start practice run. Leaderboards and career progress stayed untouched.': '扇区开始练习局。排行榜和生涯进度均未改动。',
+  'Practice run. Score not logged.': '练习局。分数未记录。',
   '{name} is catalogued as a {role}: {roleDescription}. The hull signature shows {movement} and {fire}. In a themed formation it edits your escape route instead of simply chasing you.': '{name} 被归档为 {role}：{roleDescription}。船体信号显示 {movement} 和 {fire}。在主题编队中，它会改写你的逃生路线，而不只是追着你飞。',
   '{name} is a readable attack pattern. The scanner marks a {telegraph} tell for about {readWindow} ms, then spends {budget} danger budget on the hit. Early previews are slower and wider; late-run versions get sharper.': '{name} 是可读的攻击模式。扫描器会标出 {telegraph} 预警约 {readWindow} 毫秒，然后投入 {budget} 点危险预算打出攻击。早期预览更慢更宽；后期版本会更锋利。',
   '{name} is a wave tactic: {role}. It controls entry timing, lane ownership, and synchronized pressure so ordinary enemies behave like a rehearsed formation.': '{name} 是波次战术：{role}。它控制入场时机、路线占领和同步压力，让普通敌人像排练过的编队一样行动。',

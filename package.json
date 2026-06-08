@@ -31,6 +31,8 @@
     "check:result-screen-flow": "node scripts/check-result-screen-flow.mjs",
     "check:ship-unlock-reveal": "node scripts/check-ship-unlock-reveal.mjs",
     "check:sector-progression": "node scripts/check-sector-progression.mjs",
+    "check:sector-continue-mode": "node scripts/check-sector-continue-mode.mjs",
+    "check:sector-continue-controller-flow": "node scripts/check-sector-continue-controller-flow.mjs",
     "check:ship-selector-start": "node scripts/check-ship-selector-start.mjs",
     "check:ship-usage-counter": "node scripts/check-ship-usage-counter.mjs",
     "check:player-ship-padding": "node scripts/check-player-ship-padding.mjs",

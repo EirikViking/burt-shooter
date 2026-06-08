@@ -5,6 +5,7 @@ import {
   isValidAchievementId
 } from './AchievementCatalog.js';
 import { createSteamAchievementSync } from './SteamAchievementSync.js';
+import { isRankedRunMode } from '../game/RunMode.js';
 
 export const ACHIEVEMENT_STORAGE_KEY = 'nova_swarm_achievements_v1';
 
@@ -75,7 +76,7 @@ export class AchievementManager {
   canUnlockFromCurrentRun(payload = {}) {
     if (payload.ignoreRunGate === true) return true;
 
-    if (payload.runMode === 'unranked' || payload.isDebugRun === true) {
+    if (!isRankedRunMode(payload.runMode, { isDebugRun: payload.isDebugRun })) {
       return false;
     }
 
@@ -86,7 +87,7 @@ export class AchievementManager {
       runState = null;
     }
 
-    if (runState?.runMode === 'unranked' || runState?.isDebugRun === true) {
+    if (!isRankedRunMode(runState?.runMode, { isDebugRun: runState?.isDebugRun })) {
       return false;
     }
 

@@ -29,6 +29,7 @@ import {
 import { translateText } from '../i18n/index.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
+import { RUN_MODES } from '../game/RunMode.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
@@ -315,7 +316,7 @@ export class GameOverScene {
       }
     }
     const previousProgress = this.game.runProgressionResult?.previous || getShipUnlockProgress();
-    this.isPersonalBest = this.finalScore > (Number(previousProgress.bestScore) || 0);
+    this.isPersonalBest = this.isRankedRun && this.finalScore > (Number(previousProgress.bestScore) || 0);
     this.qualificationFanfarePlayed = false;
     this.personalBestVoicePlayed = false;
     this.nearMissVoicePlayed = false;
@@ -1158,6 +1159,7 @@ export class GameOverScene {
   }
 
   getCeremonyTitle() {
+    if (!this.isRankedRun) return translateText('PRACTICE COMPLETE');
     if (this.game?.runSummary?.runCleared) return 'RUN CLEAR';
     if (this.globalPlacementTier === 'number1') return 'NUMBER ONE';
     if (this.globalPlacementTier === 'top3') return this.getSteamGlobalLeaderboardTitle();
@@ -1172,6 +1174,11 @@ export class GameOverScene {
   }
 
   getCeremonyComment() {
+    if (!this.isRankedRun) {
+      return this.game?.runMode === RUN_MODES.SECTOR_START
+        ? translateText('Sector Start practice run. Leaderboards and career progress stayed untouched.')
+        : translateText('Practice run. Score not logged.');
+    }
     const placement = this.globalPlacement;
     const localRank = this.getVisibleLocalPlacementRank();
     const localPrefix = localRank ? `Local board rank #${localRank}. ` : '';
@@ -2984,7 +2991,16 @@ export class GameOverScene {
       volume: 0.72
     });
     AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
-    this.game.startGame(this.game.selectedShipSpriteKey);
+    const restartOptions = this.game?.runMode === RUN_MODES.SECTOR_START && this.game?.sectorStartCheckpoint
+      ? {
+          runMode: RUN_MODES.SECTOR_START,
+          startSector: this.game.sectorStartCheckpoint
+        }
+      : {};
+    Promise.resolve(this.game.startGame(this.game.selectedShipSpriteKey, restartOptions)).catch((error) => {
+      console.error('[GameOverScene] Restart failed:', error);
+      this.returnToMenu();
+    });
   }
 
   playGlobalQualificationFanfare() {

@@ -6019,6 +6019,7 @@ export class PlayScene {
 
   recordThreatDiscovery(id, category, metadata = {}, options = {}) {
     if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
+    if (!this.game?.isRankedRun?.()) return null;
     const result = recordThreatSeen(id, category, metadata);
     if (!result?.isNew) return result;
 
@@ -6054,6 +6055,7 @@ export class PlayScene {
 
   recordThreatDefeat(id, category, metadata = {}) {
     if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
+    if (!this.game?.isRankedRun?.()) return null;
     const result = recordThreatDefeated(id, category, metadata);
     if (result?.isFirstDefeat) {
       const bonus = category === 'bosses'

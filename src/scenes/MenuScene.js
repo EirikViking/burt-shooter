@@ -11,6 +11,8 @@ import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
+import { readHangarProgressState } from '../progression/HangarProgressState.js';
+import { RUN_MODES, getSectorStartState } from '../game/RunMode.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
@@ -97,6 +99,9 @@ export class MenuScene {
     this.primaryHint = null;
     this.disclaimer = null;
     this.startBtn = null;
+    this.sectorStartBtn = null;
+    this.sectorStartState = { available: false, checkpoints: [], selectedCheckpoint: null, highestReachedSector: 1 };
+    this.selectedSectorStartIndex = 0;
     this.highscoreBtn = null;
     this.introBtn = null;
     this.storyBtn = null;
@@ -196,7 +201,9 @@ export class MenuScene {
       const isPrimaryStart = event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter' || event.code === 'Space';
       const isMoveUp = event.key === 'ArrowUp' || event.code === 'ArrowUp';
       const isMoveDown = event.key === 'ArrowDown' || event.code === 'ArrowDown' || event.key === 'Tab';
-      if (!isPrimaryStart && !isMoveUp && !isMoveDown && event.key !== 'Escape') return;
+      const isMoveLeft = event.key === 'ArrowLeft' || event.code === 'ArrowLeft';
+      const isMoveRight = event.key === 'ArrowRight' || event.code === 'ArrowRight';
+      if (!isPrimaryStart && !isMoveUp && !isMoveDown && !isMoveLeft && !isMoveRight && event.key !== 'Escape') return;
 
       event.preventDefault();
       this.setInputDevice('keyboard');
@@ -204,6 +211,10 @@ export class MenuScene {
         this.moveMenuFocus(-1);
       } else if (isMoveDown) {
         this.moveMenuFocus(event.shiftKey ? -1 : 1);
+      } else if (isMoveLeft) {
+        this.cycleSectorStartCheckpoint(-1);
+      } else if (isMoveRight) {
+        this.cycleSectorStartCheckpoint(1);
       } else if (event.key === 'Escape') {
         this.exitGame();
       } else {
@@ -788,6 +799,13 @@ export class MenuScene {
     });
     this.container.addChild(this.startBtn);
 
+    this.sectorStartBtn = this.createButton(this.getSectorStartButtonLabel(), layout, { accent: 0xffef7e });
+    this.sectorStartBtn.alpha = 0;
+    this.sectorStartBtn.on('pointerdown', () => {
+      this.launchSectorStartRun();
+    });
+    this.container.addChild(this.sectorStartBtn);
+
     this.highscoreBtn = this.createButton('SHIP HANGAR', layout, { accent: 0x37f5ff });
     this.highscoreBtn.alpha = 0;  // Start invisible
     this.highscoreBtn.on('pointerdown', () => {
@@ -915,6 +933,8 @@ export class MenuScene {
       }
     });
     this.container.addChild(this.musicBtn);
+    this.refreshSectorStartState();
+    this.updateSectorStartButton();
     this.buildMenuNavigation();
 
     const stampFont = Math.max(10, getResponsiveFontSize(layout, 'small') - 2);
@@ -970,6 +990,7 @@ export class MenuScene {
       this.buildStamp,
       this.musicBtn?._label,
       this.startBtn?._label,
+      this.sectorStartBtn?._label,
       this.highscoreBtn?._label,
       this.storyBtn?._label,
       this.threatCodexBtn?._label,
@@ -1098,7 +1119,10 @@ export class MenuScene {
     const buttonSpacing = isMobileLayout ? 10 : (isShortLayout ? 8 : 12);
     const sectionSpacing = isMobileLayout ? 13 : (isShortLayout ? 12 : 18);
 
+    this.refreshSectorStartState();
+    this.updateSectorStartButton({ forceGpuRefresh: forceLabelGpuRefresh });
     const secondaryButtons = [
+      ...(this.sectorStartBtn?.visible ? [this.sectorStartBtn] : []),
       this.highscoreBtn,
       this.storyBtn,
       this.threatCodexBtn,
@@ -1161,6 +1185,11 @@ export class MenuScene {
     this.startBtn.x = buttonX;
     placeCentered(this.startBtn, primaryButtonHeight, buttonSpacing);
 
+    if (this.sectorStartBtn?.visible) {
+      this.sectorStartBtn.x = buttonX;
+      placeCentered(this.sectorStartBtn, buttonHeight, buttonSpacing);
+    }
+
     this.highscoreBtn.x = buttonX;
     placeCentered(this.highscoreBtn, buttonHeight, buttonSpacing);
 
@@ -1207,7 +1236,7 @@ export class MenuScene {
     const overflow = this.disclaimer.y + disclaimerHeight / 2 - (height - footerReserve);
     if (overflow > 0) {
       const lift = Math.min(overflow + 10, isMobileLayout ? 56 : 90);
-      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.startBtn, this.highscoreBtn, this.storyBtn, this.threatCodexBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
+      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.startBtn, this.sectorStartBtn?.visible ? this.sectorStartBtn : null, this.highscoreBtn, this.storyBtn, this.threatCodexBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
         if (item) item.y -= lift;
       });
     }
@@ -1277,6 +1306,7 @@ export class MenuScene {
       this.flavor,
       this.primaryHint,
       this.startBtn,
+      this.sectorStartBtn?.visible ? this.sectorStartBtn : null,
       this.highscoreBtn,
       this.storyBtn,
       this.threatCodexBtn,
@@ -1340,6 +1370,7 @@ export class MenuScene {
       disclaimer: this.disclaimer,
       controls: this.controls,
       launchButton: this.startBtn,
+      sectorStartButton: this.sectorStartBtn?.visible ? this.sectorStartBtn : null,
       hangarButton: this.highscoreBtn,
       highscoresButton: this.storyBtn,
       threatCodexButton: this.threatCodexBtn,
@@ -1357,6 +1388,14 @@ export class MenuScene {
       panel: this.lastMenuPanelBounds,
       focusedOption: this.menuOptions?.[this.focusedMenuIndex]?.id || null,
       inputDevice: this.lastInputDevice,
+      sectorStart: {
+        available: Boolean(this.sectorStartState?.available),
+        highestReachedSector: this.sectorStartState?.highestReachedSector || 1,
+        checkpoints: this.sectorStartState?.checkpoints || [],
+        selectedCheckpoint: this.getSelectedSectorStartCheckpoint(),
+        buttonVisible: Boolean(this.sectorStartBtn?.visible),
+        buttonText: this.sectorStartBtn?._label?.text || null
+      },
       exitNoticeText: this.exitNotice?.text || '',
       items: Object.fromEntries(
         Object.entries(textItems).map(([key, item]) => [key, boundsForDisplayObject(item)])
@@ -1557,18 +1596,22 @@ export class MenuScene {
     this.animateElement(this.primaryHint, 0.68, 0.42);
     this.animateElement(this.menuPanel, 0.72, 0.45);
     this.animateElement(this.startBtn, 0.86, 0.4);
-    this.animateElement(this.highscoreBtn, 1.02, 0.4);
-    this.animateElement(this.storyBtn, 1.16, 0.4);
-    this.animateElement(this.threatCodexBtn, 1.28, 0.4);
-    this.animateElement(this.achievementsBtn, 1.4, 0.4);
-    this.animateElement(this.settingsBtn, 1.52, 0.4);
-    this.animateElement(this.exitBtn, 1.64, 0.4);
-    this.animateElement(this.disclaimer, 1.76, 0.4);
+    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 0.98, 0.4);
+    this.animateElement(this.highscoreBtn, this.sectorStartBtn?.visible ? 1.1 : 1.02, 0.4);
+    this.animateElement(this.storyBtn, this.sectorStartBtn?.visible ? 1.22 : 1.16, 0.4);
+    this.animateElement(this.threatCodexBtn, this.sectorStartBtn?.visible ? 1.34 : 1.28, 0.4);
+    this.animateElement(this.achievementsBtn, this.sectorStartBtn?.visible ? 1.46 : 1.4, 0.4);
+    this.animateElement(this.settingsBtn, this.sectorStartBtn?.visible ? 1.58 : 1.52, 0.4);
+    this.animateElement(this.exitBtn, this.sectorStartBtn?.visible ? 1.7 : 1.64, 0.4);
+    this.animateElement(this.disclaimer, this.sectorStartBtn?.visible ? 1.82 : 1.76, 0.4);
   }
 
   buildMenuNavigation() {
     this.menuOptions = [
       { id: 'launch', button: this.startBtn, activate: () => this.quickStartRun() },
+      ...(this.sectorStartBtn?.visible
+        ? [{ id: 'sectorStart', button: this.sectorStartBtn, activate: () => this.launchSectorStartRun() }]
+        : []),
       { id: 'hangar', button: this.highscoreBtn, activate: () => this.openShipSelect() },
       {
         id: 'highscores',
@@ -1627,6 +1670,10 @@ export class MenuScene {
     this.setMenuFocus(0);
   }
 
+  getSelectedMenuOptionId() {
+    return this.menuOptions?.[this.focusedMenuIndex]?.id || null;
+  }
+
   setInputDevice(device) {
     if (this.lastInputDevice === device) return;
     this.lastInputDevice = device;
@@ -1665,6 +1712,8 @@ export class MenuScene {
     const nav = this.menuGamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     this.setInputDevice('controller');
+    if (nav.pressed.left) this.cycleSectorStartCheckpoint(-1);
+    if (nav.pressed.right) this.cycleSectorStartCheckpoint(1);
     if (nav.pressed.up) this.moveMenuFocus(-1);
     if (nav.pressed.down) this.moveMenuFocus(1);
     if (nav.pressed.confirm) this.activateFocusedMenuOption();
@@ -1705,6 +1754,97 @@ export class MenuScene {
       this.game.startGame(this.getQuickStartShipKey());
     } catch (e) {
       console.error('[MenuScene] Quick Start Error:', e);
+      this.launchingRun = false;
+    }
+  }
+
+  refreshSectorStartState() {
+    const progress = readHangarProgressState();
+    const previousSelection = this.getSelectedSectorStartCheckpoint();
+    const state = getSectorStartState(progress, previousSelection);
+    const checkpoints = state.checkpoints || [];
+    if (checkpoints.length) {
+      const preferredIndex = checkpoints.indexOf(state.selectedCheckpoint);
+      this.selectedSectorStartIndex = preferredIndex >= 0 ? preferredIndex : checkpoints.length - 1;
+    } else {
+      this.selectedSectorStartIndex = 0;
+    }
+    this.sectorStartState = {
+      ...state,
+      selectedCheckpoint: checkpoints[this.selectedSectorStartIndex] || null
+    };
+    return this.sectorStartState;
+  }
+
+  getSelectedSectorStartCheckpoint() {
+    const checkpoints = this.sectorStartState?.checkpoints || [];
+    return checkpoints[this.selectedSectorStartIndex] || this.sectorStartState?.selectedCheckpoint || null;
+  }
+
+  getSectorStartButtonLabel() {
+    const checkpoint = this.getSelectedSectorStartCheckpoint();
+    if (!checkpoint) return translateText('SECTOR START');
+    return `${translateText('SECTOR START')}: ${checkpoint}`;
+  }
+
+  updateSectorStartButton({ forceGpuRefresh = false } = {}) {
+    if (!this.sectorStartBtn) return;
+    const available = Boolean(this.sectorStartState?.available);
+    this.sectorStartBtn.visible = available;
+    this.sectorStartBtn.eventMode = available ? 'static' : 'none';
+    this.sectorStartBtn.cursor = available ? 'pointer' : 'default';
+    if (this.sectorStartBtn._label) {
+      this.sectorStartBtn._label.text = this.getSectorStartButtonLabel();
+      this.refreshMenuButtonLabel(this.sectorStartBtn, (this.sectorStartBtn._btnWidth || 286) - 48, {
+        minScale: 0.72,
+        forceGpuRefresh
+      });
+    }
+    this.drawMenuButton(this.sectorStartBtn, false);
+  }
+
+  cycleSectorStartCheckpoint(delta) {
+    if (this.getSelectedMenuOptionId() !== 'sectorStart') return false;
+    const checkpoints = this.sectorStartState?.checkpoints || [];
+    if (checkpoints.length <= 1) return false;
+    this.selectedSectorStartIndex = (this.selectedSectorStartIndex + delta + checkpoints.length) % checkpoints.length;
+    this.sectorStartState = {
+      ...this.sectorStartState,
+      selectedCheckpoint: checkpoints[this.selectedSectorStartIndex]
+    };
+    this.updateSectorStartButton({ forceGpuRefresh: true });
+    AudioManager.playSfx('thrusterFire', { volume: 0.07, minIntervalMs: 90 });
+    return true;
+  }
+
+  launchSectorStartRun() {
+    if (this.launchingRun) return;
+    const checkpoint = this.getSelectedSectorStartCheckpoint();
+    if (!checkpoint) {
+      this.showExitNotice(translateText('SECTOR START LOCKED'));
+      return;
+    }
+    this.launchingRun = true;
+    try {
+      AudioManager.init();
+      AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.7 });
+      AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
+      Promise.resolve(this.game.startGame(this.getQuickStartShipKey(), {
+        runMode: RUN_MODES.SECTOR_START,
+        startSector: checkpoint
+      })).then((started) => {
+        if (started !== false) return;
+        this.launchingRun = false;
+        this.refreshSectorStartState();
+        this.updateSectorStartButton({ forceGpuRefresh: true });
+        this.showExitNotice(translateText('SECTOR START LOCKED'));
+      }).catch((error) => {
+        this.launchingRun = false;
+        console.error('[MenuScene] Sector Start Error:', error);
+        this.showExitNotice(translateText('SECTOR START LOCKED'));
+      });
+    } catch (e) {
+      console.error('[MenuScene] Sector Start Error:', e);
       this.launchingRun = false;
     }
   }
@@ -1797,6 +1937,8 @@ export class MenuScene {
     if (this.threatCodexBtn?._label) {
       this.threatCodexBtn._label.text = translateText('THREAT CODEX');
     }
+    this.refreshSectorStartState();
+    this.updateSectorStartButton({ forceGpuRefresh: true });
     if (this.storyBtn?._label) {
       this.storyBtn._label.text = translateText('LEADERBOARD');
       this.refreshMenuButtonLabel(this.storyBtn, this.storyBtn._btnWidth - 48, { minScale: 0.78 });

@@ -1,6 +1,11 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR START': '섹터 시작',
+  'SECTOR START LOCKED': '섹터 시작 잠김',
+  'PRACTICE COMPLETE': '연습 완료',
+  'Sector Start practice run. Leaderboards and career progress stayed untouched.': '섹터 시작 연습 런입니다. 리더보드와 커리어 진행도는 변경되지 않았습니다.',
+  'Practice run. Score not logged.': '연습 런입니다. 점수는 기록되지 않습니다.',
   '{name} is catalogued as a {role}: {roleDescription}. The hull signature shows {movement} and {fire}. In a themed formation it edits your escape route instead of simply chasing you.': '{name}은 {role}(으)로 분류됩니다: {roleDescription}. 선체 신호는 {movement}와 {fire}를 보여 줍니다. 테마 편대에서는 단순히 추격하지 않고 탈출 경로를 편집합니다.',
   '{name} is a readable attack pattern. The scanner marks a {telegraph} tell for about {readWindow} ms, then spends {budget} danger budget on the hit. Early previews are slower and wider; late-run versions get sharper.': '{name}은 읽을 수 있는 공격 패턴입니다. 스캐너가 약 {readWindow}ms 동안 {telegraph} 예고를 표시한 뒤 {budget} 위험 예산을 공격에 사용합니다. 초반 미리보기는 느리고 넓으며, 후반 버전은 더 날카롭습니다.',
   '{name} is a wave tactic: {role}. It controls entry timing, lane ownership, and synchronized pressure so ordinary enemies behave like a rehearsed formation.': '{name}은 웨이브 전술입니다: {role}. 입장 타이밍, 라인 점유, 동기화 압박을 제어해 평범한 적도 리허설한 편대처럼 움직이게 합니다.',

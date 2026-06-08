@@ -1,4 +1,9 @@
 const sourceText = Object.freeze({
+  'SECTOR START': 'SEKTORSTART',
+  'SECTOR START LOCKED': 'SEKTORSTART GESPERRT',
+  'PRACTICE COMPLETE': 'TRAINING BEENDET',
+  'Sector Start practice run. Leaderboards and career progress stayed untouched.': 'Sektorstart-Training. Bestenlisten und Karrierefortschritt blieben unberuehrt.',
+  'Practice run. Score not logged.': 'Trainingslauf. Punktzahl nicht gespeichert.',
   'Language': 'Sprache',
   'LANGUAGE': 'SPRACHE',
   'Interface language': 'Oberflächensprache',

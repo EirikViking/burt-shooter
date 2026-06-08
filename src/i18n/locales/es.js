@@ -1,6 +1,11 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR START': 'INICIO DE SECTOR',
+  'SECTOR START LOCKED': 'INICIO DE SECTOR BLOQUEADO',
+  'PRACTICE COMPLETE': 'PRÁCTICA COMPLETA',
+  'Sector Start practice run. Leaderboards and career progress stayed untouched.': 'Partida de práctica desde sector. Clasificaciones y progreso de carrera quedaron intactos.',
+  'Practice run. Score not logged.': 'Partida de práctica. Puntuación no registrada.',
   'Language': 'Idioma',
   'LANGUAGE': 'IDIOMA',
   'Interface language': 'Idioma de interfaz',

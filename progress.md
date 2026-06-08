@@ -1,5 +1,13 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-08 Sector Start Prototype
+
+- Current user request: prototype Sector Start / Sector Continue from the locked release tag in a separate worktree without touching the release checkout, preserving normal ranked Start Run behavior and the `nova_swarm_global_score_v2` leaderboard.
+- Work branch: `feature/sector-continue-prototype-v1` from tag `nova-swarm-release-20260608-build23620801` / commit `64f0ba200406e4ecfae20b1960be0db6dfac74c5`.
+- Implementation direction: add explicit run modes where normal starts remain ranked and Sector Start is unranked practice only; checkpoint starts are limited to 5-sector intervals at or below highest reached sector, so highest reached 17 allows 5/10/15 and below 5 hides the option.
+- Safety gates under test: Sector Start must not submit leaderboard scores, update local/global bests, grant achievements, rank XP, ship unlock progress, ship usage progress, or Threat Codex progression, while ranked runs still do all normal ranked work.
+- New verification direction: add `npm run check:sector-continue-mode` and `npm run check:sector-continue-controller-flow`, then run the user-requested single-pass check list before committing and pushing only this prototype branch.
+
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 
 - Current user request: replace the static lore popup with a context-aware Cabinet Log system that adds useful/funny gameplay value and archives discoveries in the Codex, then overhaul the credits screen with stronger animation, fixed text overlaps, and a much bigger secret ship unlock reveal.

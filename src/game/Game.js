@@ -25,6 +25,13 @@ import { RunPressureDirector } from './RunPressureDirector.js';
 import { RunContentDirector } from './RunContentDirector.js';
 import { awardRunClearScoreBonuses } from './RunClearScoreBonuses.js';
 import {
+  RUN_MODES,
+  getSectorStartState,
+  isRankedRunMode,
+  normalizeRunMode,
+  resolveSectorStartCheckpoint
+} from './RunMode.js';
+import {
   getCodexCompletionCounts,
   getDiscoveriesThisRun,
   getDiscoveryStats,
@@ -78,6 +85,8 @@ export class Game {
     this.isDebugRun = false;
     this.runMode = 'ranked';
     this.runModeReason = null;
+    this.sectorStartCheckpoint = null;
+    this.sectorStartHighestReached = null;
     this.globalLeaderboardTargets = null;
     this.globalLeaderboardTargetPromise = null;
     this.globalLeaderboardCueState = {
@@ -192,22 +201,35 @@ export class Game {
     this.syncGameplayCursor();
   }
 
-  async startGame(spriteKey) {
+  async startGame(spriteKey, options = {}) {
     this.prepareGameplayInputFocus();
     const candidateSpriteKey = isValidShipKey(spriteKey) ? spriteKey : getDefaultShipKey();
     const selectedSpriteKey = isShipUnlocked(candidateSpriteKey) ? candidateSpriteKey : getDefaultShipKey();
-    console.log('[Game] starting new game spriteKey=' + selectedSpriteKey);
+    const requestedRunMode = normalizeRunMode(options.runMode);
+    const startingProgress = readHangarProgressState();
+    const sectorStartCheckpoint = requestedRunMode === RUN_MODES.SECTOR_START
+      ? resolveSectorStartCheckpoint(options.startSector, startingProgress)
+      : null;
+    if (requestedRunMode === RUN_MODES.SECTOR_START && !sectorStartCheckpoint) {
+      const state = getSectorStartState(startingProgress, options.startSector);
+      console.warn('[Game] sector_start blocked', {
+        requested: options.startSector ?? null,
+        highestReachedSector: state.highestReachedSector,
+        checkpoints: state.checkpoints
+      });
+      return false;
+    }
+    console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${sectorStartCheckpoint || 1}`);
     this.selectedShipSpriteKey = selectedSpriteKey;
 
-    // Increment ship usage count
-    incrementShipUsage(selectedSpriteKey);
-
     this.score = 0;
-    this.level = 1;
+    this.level = sectorStartCheckpoint || 1;
     this.lives = 3;
     this.isDebugRun = false;
-    this.runMode = 'ranked';
-    this.runModeReason = null;
+    this.runMode = requestedRunMode;
+    this.runModeReason = requestedRunMode === RUN_MODES.SECTOR_START ? 'sector_start_checkpoint' : null;
+    this.sectorStartCheckpoint = sectorStartCheckpoint;
+    this.sectorStartHighestReached = sectorStartCheckpoint ? getSectorStartState(startingProgress).highestReachedSector : null;
     this.resetGlobalLeaderboardCues();
     this.runStartedAtMs = Date.now();
     this.runElapsedSeconds = 0;
@@ -224,13 +246,13 @@ export class Game {
     this.nextLiveRankCheckAtMs = 0;
     this.scoreBreakdown = this.createEmptyScoreBreakdown();
     this.gameOverTransitionPending = false;
-    this.hangarProgressAtRunStart = readHangarProgressState();
+    this.hangarProgressAtRunStart = startingProgress;
     this.liveRankBaseProgress = this.hangarProgressAtRunStart;
     this.runPressureDirector = new RunPressureDirector(this);
     this.contentDirector = new RunContentDirector(this, {
       seed: `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
     });
-    if (RunPacingConfig.threatCodexEnabled) startThreatDiscoveryRun();
+    if (this.isRankedRun() && RunPacingConfig.threatCodexEnabled) startThreatDiscoveryRun();
     if (RunPacingConfig.contentDirectorEnabled) this.contentDirector.startRun();
 
     // Rank System (cross-run pilot career)
@@ -254,18 +276,24 @@ export class Game {
     this.switchScene('play');
     this.prepareGameplayInputFocus();
     this.primeGlobalLeaderboardTargets();
+    if (this.isRankedRun()) incrementShipUsage(selectedSpriteKey);
+    return true;
   }
 
   markUnrankedRun(reason = 'debug_route') {
     this.isDebugRun = true;
-    this.runMode = 'unranked';
+    this.runMode = RUN_MODES.UNRANKED;
     this.runModeReason = reason;
     this.pendingHighscore = null;
     console.log(`[Game] run marked unranked reason=${reason}`);
   }
 
   isScoreSubmissionAllowed() {
-    return this.runMode !== 'unranked' && !this.isDebugRun;
+    return this.isRankedRun();
+  }
+
+  isRankedRun() {
+    return isRankedRunMode(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   gameOver(options = {}) {
@@ -453,7 +481,9 @@ export class Game {
     this.scoreBreakdown.dangerMultiplierBonus += Math.max(0, applied - preDangerAward);
     this.scoreBreakdown.finalScore = this.score;
 
-    updateHangarProgress({ bestScore: this.score, bestRank: this.rankIndex, bestLevel: this.level, bestSector: this.level });
+    if (this.isRankedRun()) {
+      updateHangarProgress({ bestScore: this.score, bestRank: this.rankIndex, bestLevel: this.level, bestSector: this.level });
+    }
 
     const previousRank = this.rankIndex;
     this.updateLiveRunRank({ force: true });
@@ -490,7 +520,7 @@ export class Game {
   }
 
   primeGlobalLeaderboardTargets() {
-    if (this.runMode === 'unranked' || this.globalLeaderboardTargetPromise) return this.globalLeaderboardTargetPromise;
+    if (!this.isRankedRun() || this.globalLeaderboardTargetPromise) return this.globalLeaderboardTargetPromise;
     this.globalLeaderboardTargetPromise = this.getLeaderboardAdapter().getGlobalScoresForPlacement({ useCache: true })
       .then((scores) => {
         this.globalLeaderboardTargets = Array.isArray(scores) ? scores : [];
@@ -506,7 +536,7 @@ export class Game {
   }
 
   updateGlobalLeaderboardVoiceCues() {
-    if (this.runMode === 'unranked' || !Array.isArray(this.globalLeaderboardTargets)) return;
+    if (!this.isRankedRun() || !Array.isArray(this.globalLeaderboardTargets)) return;
     const placement = analyzeGlobalLeaderboardScore(this.score, this.globalLeaderboardTargets);
     if (!placement.qualified && placement.nearGlobal && !this.globalLeaderboardCueState.global) {
       this.globalLeaderboardCueState.global = true;
@@ -607,7 +637,9 @@ export class Game {
   nextLevel() {
     this.level++;
     this.updateLiveRunRank({ force: true });
-    updateHangarProgress({ score: this.score, rank: this.rankIndex, bestScore: this.score, bestLevel: this.level, bestSector: this.level });
+    if (this.isRankedRun()) {
+      updateHangarProgress({ score: this.score, rank: this.rankIndex, bestScore: this.score, bestLevel: this.level, bestSector: this.level });
+    }
     if (this.currentScene && this.currentScene.startLevel) {
       this.currentScene.startLevel();
     }
@@ -641,6 +673,9 @@ export class Game {
       noHitWaves: Number(play?.noHitWavesThisRun) || 0,
       noHitSectors: Number(play?.noHitSectorsThisRun) || 0,
       highestScoreMultiplier: Math.max(1, Number(this.runPressureDirector?.getScoreMultiplier?.()) || 1),
+      runMode: this.runMode,
+      runModeReason: this.runModeReason,
+      sectorStartCheckpoint: this.sectorStartCheckpoint || null,
       discoveriesThisRun: discoveries,
       codexCompletionCounts: getCodexCompletionCounts(),
       scoreBreakdown: { ...this.scoreBreakdown },
@@ -652,7 +687,7 @@ export class Game {
 
   updateLiveRunRank({ force = false } = {}) {
     if (!RunPacingConfig.pilotRankProgressionEnabled) return this.liveRankProgression;
-    if (this.runFinalized || this.runMode === 'unranked' || this.isDebugRun || this.currentSceneName !== 'play') return this.liveRankProgression;
+    if (this.runFinalized || !this.isRankedRun() || this.currentSceneName !== 'play') return this.liveRankProgression;
     const now = Date.now();
     if (!force && now < (this.nextLiveRankCheckAtMs || 0)) return this.liveRankProgression;
     this.nextLiveRankCheckAtMs = now + 300;
@@ -694,9 +729,10 @@ export class Game {
     if (this.runFinalized) return this.runProgressionResult;
     this.runFinalized = true;
     this.runSummary = this.buildRunSummary(overrides);
-    const result = RunPacingConfig.pilotRankProgressionEnabled
+    const previousProgress = readHangarProgressState();
+    const result = this.isRankedRun() && RunPacingConfig.pilotRankProgressionEnabled
       ? applyRunProgression(this.runSummary)
-      : { previous: readHangarProgressState(), next: readHangarProgressState(), xpGained: 0, newRanksThisRun: [], newlyUnlockedShipIds: [] };
+      : { previous: previousProgress, next: previousProgress, xpGained: 0, newRanksThisRun: [], newlyUnlockedShipIds: [], rankProgress: null };
     this.runProgressionResult = result;
     this.rankIndex = result.next?.pilotRank ?? this.rankIndex;
     this.lastRankIndex = this.rankIndex;
@@ -715,33 +751,35 @@ export class Game {
       newlyUnlockedShips: result.newlyUnlockedShipIds || [],
       hangarProgress: getHangarProgressSummary(result.next)
     };
-    for (const rankIndex of result.newRanksThisRun || []) {
-      const unlock = this.unlockRankAchievement(rankIndex, {
-        level: this.level,
-        score: this.score,
-        source: 'pilot_rank_progression'
+    if (this.isRankedRun()) {
+      for (const rankIndex of result.newRanksThisRun || []) {
+        const unlock = this.unlockRankAchievement(rankIndex, {
+          level: this.level,
+          score: this.score,
+          source: 'pilot_rank_progression'
+        });
+        if (unlock?.id) this.runSummary.rankAchievementsUnlocked.push(unlock.id);
+      }
+      const milestoneUnlocks = getMilestoneAchievementUnlocks({
+        summary: this.runSummary,
+        progress: result.next
       });
-      if (unlock?.id) this.runSummary.rankAchievementsUnlocked.push(unlock.id);
-    }
-    const milestoneUnlocks = getMilestoneAchievementUnlocks({
-      summary: this.runSummary,
-      progress: result.next
-    });
-    for (const entry of milestoneUnlocks) {
-      const achievement = entry.achievement;
-      const unlock = this.unlockAchievement(achievement.id, {
-        level: this.level,
-        score: this.score,
-        source: 'milestone_progression',
-        achievementType: achievement.type,
-        metric: entry.metric,
-        progressValue: entry.value,
-        target: entry.target,
-        runCleared: this.runSummary.runCleared,
-        livesRemaining: this.runSummary.livesRemaining,
-        clearLivesRemaining: this.runSummary.clearLivesRemaining
-      });
-      if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);
+      for (const entry of milestoneUnlocks) {
+        const achievement = entry.achievement;
+        const unlock = this.unlockAchievement(achievement.id, {
+          level: this.level,
+          score: this.score,
+          source: 'milestone_progression',
+          achievementType: achievement.type,
+          metric: entry.metric,
+          progressValue: entry.value,
+          target: entry.target,
+          runCleared: this.runSummary.runCleared,
+          livesRemaining: this.runSummary.livesRemaining,
+          clearLivesRemaining: this.runSummary.clearLivesRemaining
+        });
+        if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);
+      }
     }
     return result;
   }
