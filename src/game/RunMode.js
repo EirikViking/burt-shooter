@@ -39,7 +39,7 @@ export function getSectorStartCheckpoints(progressOrHighest = {}, {
   const step = Math.max(1, Math.floor(Number(interval) || SECTOR_START_CHECKPOINT_INTERVAL));
   const checkpoints = [];
   for (let sector = step; sector <= highest; sector += step) {
-    checkpoints.push(sector);
+    if (isSectorStartCheckpointUnlocked(sector, progressOrHighest)) checkpoints.push(sector);
   }
   return checkpoints;
 }
@@ -58,10 +58,18 @@ export function getSectorStartPlaySector(checkpointSector) {
   return checkpoint % 10 === 0 ? checkpoint + 1 : checkpoint;
 }
 
+export function isSectorStartCheckpointUnlocked(checkpointSector, progressOrHighest = {}) {
+  const checkpoint = floorSector(checkpointSector, 0);
+  if (checkpoint < 1) return false;
+  const highest = getHighestReachedSector(progressOrHighest);
+  const requiredSector = getSectorStartPlaySector(checkpoint);
+  return requiredSector !== null && highest >= requiredSector;
+}
+
 export function getSectorStartState(progress = {}, requestedSector = null) {
   const highestReachedSector = getHighestReachedSector(progress);
-  const checkpoints = getSectorStartCheckpoints(highestReachedSector);
-  const selectedCheckpoint = resolveSectorStartCheckpoint(requestedSector, highestReachedSector);
+  const checkpoints = getSectorStartCheckpoints(progress);
+  const selectedCheckpoint = resolveSectorStartCheckpoint(requestedSector, progress);
   return {
     available: checkpoints.length > 0,
     highestReachedSector,

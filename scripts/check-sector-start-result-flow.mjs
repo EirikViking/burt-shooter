@@ -73,7 +73,7 @@ function findChrome() {
   ].filter(Boolean).find((candidate) => existsSync(candidate));
 }
 
-function makeProgress({ bestSector = 20, bestLevel = bestSector, pilotXp = 2600, bestScore = 22222 } = {}) {
+function makeProgress({ bestSector = 21, bestLevel = bestSector, pilotXp = 2600, bestScore = 22222 } = {}) {
   return {
     version: 1,
     unlockTuningVersion: 3,

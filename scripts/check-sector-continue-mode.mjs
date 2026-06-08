@@ -10,6 +10,7 @@ import {
   getSectorStartPlaySector,
   getSectorStartState,
   isRankedRunMode,
+  isSectorStartCheckpointUnlocked,
   resolveSectorStartCheckpoint
 } from '../src/game/RunMode.js';
 
@@ -194,16 +195,29 @@ async function clickMenuButtonZone(page, buttonKey, zone = 'center') {
 function assertStaticRules() {
   assert.deepEqual(getSectorStartCheckpoints({ bestSector: 4 }), []);
   assert.deepEqual(getSectorStartCheckpoints({ bestSector: 5 }), [5]);
+  assert.deepEqual(getSectorStartCheckpoints({ bestSector: 9 }), [5]);
+  assert.deepEqual(getSectorStartCheckpoints({ bestSector: 10 }), [5]);
+  assert.deepEqual(getSectorStartCheckpoints({ bestSector: 11 }), [5, 10]);
   assert.deepEqual(getSectorStartCheckpoints({ bestSector: 17 }), [5, 10, 15]);
-  assert.deepEqual(getSectorStartCheckpoints({ bestSector: 20 }), [5, 10, 15, 20]);
+  assert.deepEqual(getSectorStartCheckpoints({ bestSector: 20 }), [5, 10, 15]);
+  assert.deepEqual(getSectorStartCheckpoints({ bestSector: 21 }), [5, 10, 15, 20]);
   assert.equal(resolveSectorStartCheckpoint(null, { bestSector: 17 }), 15);
   assert.equal(resolveSectorStartCheckpoint(10, { bestSector: 17 }), 10);
   assert.equal(resolveSectorStartCheckpoint(17, { bestSector: 17 }), null);
-  assert.equal(resolveSectorStartCheckpoint(20, { bestSector: 17 }), null);
+  assert.equal(resolveSectorStartCheckpoint(10, { bestSector: 10 }), null);
+  assert.equal(resolveSectorStartCheckpoint(20, { bestSector: 20 }), null);
+  assert.equal(resolveSectorStartCheckpoint(20, { bestSector: 21 }), 20);
   assert.equal(getSectorStartPlaySector(5), 5);
   assert.equal(getSectorStartPlaySector(10), 11);
   assert.equal(getSectorStartPlaySector(15), 15);
   assert.equal(getSectorStartPlaySector(20), 21);
+  assert.equal(getSectorStartPlaySector(30), 31);
+  assert.equal(isSectorStartCheckpointUnlocked(10, { bestSector: 10 }), false);
+  assert.equal(isSectorStartCheckpointUnlocked(10, { bestSector: 11 }), true);
+  assert.equal(isSectorStartCheckpointUnlocked(20, { bestSector: 20 }), false);
+  assert.equal(isSectorStartCheckpointUnlocked(20, { bestSector: 21 }), true);
+  assert.equal(isSectorStartCheckpointUnlocked(30, { bestSector: 30 }), false);
+  assert.equal(isSectorStartCheckpointUnlocked(30, { bestSector: 31 }), true);
   assert.equal(getSectorStartState({ bestSector: 3 }).available, false);
   assert.equal(getSectorStartState({ bestSector: 17 }, 15).selectedCheckpoint, 15);
   assert.equal(isRankedRunMode(RUN_MODES.RANKED), true);
@@ -328,8 +342,9 @@ try {
   assert.equal(keyboardPlay.sectorStartChallenge?.checkpoint, 10);
   assert.equal(keyboardPlay.sectorStartChallenge?.playSector, 11);
 
-  await loadProfile(page, makeProgress({ bestSector: 17, bestLevel: 17, pilotXp: 2200, bestScore: 11111 }));
-  await clickMenuButton(page, 'launchButton');
+  const rankedMenu = await loadProfile(page, makeProgress({ bestSector: 17, bestLevel: 17, pilotXp: 2200, bestScore: 11111 }));
+  assert.equal(rankedMenu.menu?.focusedOption, 'launch');
+  await page.keyboard.press('Enter');
   const rankedPlay = await waitForScene(page, 'play');
   assert.equal(rankedPlay.runMode, 'ranked');
   assert.equal(rankedPlay.level, 1);
