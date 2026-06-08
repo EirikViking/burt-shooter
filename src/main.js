@@ -424,6 +424,7 @@ function buildGameTextState(game) {
   const menuScene = getStableSceneName(game) === 'menu' ? game?.currentScene : null;
   const introScene = getStableSceneName(game) === 'intro' ? game?.currentScene : null;
   const shipSelectScene = getStableSceneName(game) === 'shipSelect' ? game?.currentScene : null;
+  const shipDetailsScene = getStableSceneName(game) === 'shipDetails' ? game?.currentScene : null;
   const gameOverScene = getStableSceneName(game) === 'gameOver' ? game?.currentScene : null;
   const highscoreScene = getStableSceneName(game) === 'highscore' ? game?.currentScene : null;
   const achievementsScene = getStableSceneName(game) === 'achievements' ? game?.currentScene : null;
@@ -729,11 +730,23 @@ function buildGameTextState(game) {
       unlocked: isShipUnlocked(selectedShip.spriteKey, getShipUnlockProgress()),
       unlock: selectedShip.unlock || null,
       launchInProgress: Boolean(shipSelectScene.launchInProgress),
+      controllerFocus: shipSelectScene.getControllerFocus ? shipSelectScene.getControllerFocus() : (shipSelectScene.mainMenuButtonFocused ? 'back' : 'ship'),
+      focusedActionButtonId: shipSelectScene.getFocusedActionButtonId ? shipSelectScene.getFocusedActionButtonId() : null,
       backButton: getBoundsDebug(shipSelectScene.backButton),
       mainMenuButtonFocused: Boolean(shipSelectScene.mainMenuButtonFocused),
       hangarMenu: shipSelectScene.getHangarMenuDebugState ? shipSelectScene.getHangarMenuDebugState(getBoundsDebug) : null,
       careerInfo: shipSelectScene.getCareerInfoDebugState ? shipSelectScene.getCareerInfoDebugState(getBoundsDebug) : null,
-      startButton: getBoundsDebug(shipSelectScene.startButton)
+      detailsButton: getBoundsDebug(shipSelectScene.detailsButton),
+      startButton: getBoundsDebug(shipSelectScene.startButton),
+      randomButton: getBoundsDebug(shipSelectScene.randomButton)
+    } : null,
+    shipDetails: shipDetailsScene ? {
+      spriteKey: shipDetailsScene.spriteKey || null,
+      shipName: shipDetailsScene.ship?.name || null,
+      focusedButtonIndex: Number.isFinite(shipDetailsScene.focusedButtonIndex) ? shipDetailsScene.focusedButtonIndex : null,
+      focusedButtonId: shipDetailsScene.focusedButtonIndex === 0 ? 'back' : shipDetailsScene.focusedButtonIndex === 1 ? 'start' : null,
+      backButton: getBoundsDebug(shipDetailsScene.backButton),
+      startButton: getBoundsDebug(shipDetailsScene.startButton)
     } : null,
     gameOver: gameOverScene ? {
       score: gameOverScene.finalScore || 0,

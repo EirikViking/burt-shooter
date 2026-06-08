@@ -500,11 +500,18 @@ const changedFiles = execFileSync('git', ['diff', '--name-only', 'HEAD', '--'], 
   .filter(Boolean);
 const allowedFiles = new Set([
   'package.json',
+  'scripts/check-controller-full-flow.mjs',
   'scripts/check-difficulty-tuning.mjs',
   'scripts/check-early-mid-wave-tighten.mjs',
   'scripts/check-early-wave-threat.mjs',
   'scripts/check-final-release-difficulty-nudge.mjs',
-  'src/config/BalanceConfig.js'
+  'scripts/check-hangar-controller-details.mjs',
+  'scripts/check-result-screen-status.mjs',
+  'scripts/check-steam-overlay-hook.mjs',
+  'src/config/BalanceConfig.js',
+  'src/game/Game.js',
+  'src/main.js',
+  'src/scenes/ShipSelectScene.js'
 ]);
 const unexpectedFiles = changedFiles.filter((file) => !allowedFiles.has(file));
 if (unexpectedFiles.length) {

@@ -33,6 +33,7 @@ const CAREER_INTEL_CODEX_COPY = 'Codex scans are discoveries from your own profi
 const CAREER_INTEL_KICKER = 'PILOT DOSSIER // LIVE ARCADE SIGNAL';
 const CAREER_INTEL_VALUE = 'EVERY RUN LEAVES A RECEIPT';
 const CAREER_INTEL_FLOW = 'CAREER XP FLOW';
+const HANGAR_ACTION_FOCUS_ORDER = ['details', 'start', 'random'];
 
 function getDisplayRankNumber(rankIndex) {
   return Math.min(MAX_RANK_INDEX + 1, Math.max(1, Math.floor(Number(rankIndex) || 0) + 1));
@@ -52,7 +53,7 @@ function hexColor(color) {
 }
 
 export class ShipSelectScene {
-  constructor(game) {
+  constructor(game, options = {}) {
     this.game = game;
     this.container = new PIXI.Container();
     this.ships = this.orderShips(getSelectableShips());
@@ -75,6 +76,9 @@ export class ShipSelectScene {
     this.overlayButtons = [];
     this.overlayFocusedIndex = 0;
     this.mainMenuButtonFocused = false;
+    this.controllerFocus = 'ship';
+    this.actionFocusedIndex = 0;
+    this.actionButtons = [];
     this.gamepadMenuWasPressed = false;
     this.gamepadActionWasPressed = false;
     this.gamepadCancelWasPressed = false;
@@ -83,8 +87,13 @@ export class ShipSelectScene {
     this.exitNoticeTimeout = null;
 
     // Load saved selection
-    const saved = this.loadSelection();
-    if (saved && isValidShipKey(saved) && isShipUnlocked(saved, this.unlockProgress)) {
+    const preferredSpriteKey = options.preferredSpriteKey;
+    const saved = preferredSpriteKey && isValidShipKey(preferredSpriteKey) ? preferredSpriteKey : this.loadSelection();
+    const canRestoreSelection = saved && isValidShipKey(saved) && (
+      saved === preferredSpriteKey ||
+      isShipUnlocked(saved, this.unlockProgress)
+    );
+    if (canRestoreSelection) {
       const resolvedSaved = resolveShipKey(saved);
       const index = this.ships.findIndex(s => s.spriteKey === resolvedSaved);
       if (index >= 0) this.selectedIndex = index;
@@ -415,8 +424,64 @@ export class ShipSelectScene {
   }
 
   setMainMenuButtonFocus(focused) {
-    this.mainMenuButtonFocused = Boolean(focused);
+    this.setControllerFocus(focused ? 'back' : 'ship');
+  }
+
+  getControllerFocus() {
+    if (this.controllerFocus === 'back') return 'back';
+    if (HANGAR_ACTION_FOCUS_ORDER.includes(this.controllerFocus)) return this.controllerFocus;
+    return 'ship';
+  }
+
+  getFocusedActionButtonId() {
+    const focus = this.getControllerFocus();
+    return HANGAR_ACTION_FOCUS_ORDER.includes(focus) ? focus : null;
+  }
+
+  setControllerFocus(focus) {
+    const nextFocus = focus === 'back' || HANGAR_ACTION_FOCUS_ORDER.includes(focus) ? focus : 'ship';
+    this.controllerFocus = nextFocus;
+    this.mainMenuButtonFocused = nextFocus === 'back';
+    if (HANGAR_ACTION_FOCUS_ORDER.includes(nextFocus)) {
+      this.actionFocusedIndex = HANGAR_ACTION_FOCUS_ORDER.indexOf(nextFocus);
+    }
     this.backButton?.redraw?.();
+    this.syncActionButtonFocus();
+  }
+
+  setActionFocusByOffset(delta) {
+    const nextIndex = (this.actionFocusedIndex + delta + HANGAR_ACTION_FOCUS_ORDER.length) % HANGAR_ACTION_FOCUS_ORDER.length;
+    this.actionFocusedIndex = nextIndex;
+    this.setControllerFocus(HANGAR_ACTION_FOCUS_ORDER[nextIndex]);
+  }
+
+  focusActionRow() {
+    this.setControllerFocus(HANGAR_ACTION_FOCUS_ORDER[this.actionFocusedIndex] || 'details');
+  }
+
+  syncActionButtonFocus() {
+    const focusedId = this.getFocusedActionButtonId();
+    for (const button of this.actionButtons || []) {
+      button._focused = Boolean(focusedId && button.actionId === focusedId);
+      button.redraw?.();
+    }
+  }
+
+  activateControllerFocus(source = 'controller') {
+    const focus = this.getControllerFocus();
+    if (focus === 'back') {
+      this.returnToMenu(source);
+      return;
+    }
+    if (focus === 'details') {
+      this.openSelectedShipDetails();
+      return;
+    }
+    if (focus === 'random') {
+      this.navigateRandom();
+      return;
+    }
+    this.launchSelectedShip(source);
   }
 
   openHangarMenu(source = 'unknown') {
@@ -436,6 +501,7 @@ export class ShipSelectScene {
   closeHangarMenu(source = 'unknown') {
     if (!this.hangarMenuOverlay?.visible) return;
     this.hangarMenuOverlay.visible = false;
+    if (source === 'controller') this.setControllerFocus('ship');
     this.showHangarMenuNotice('');
     AudioManager.playSfx('pause_out', { force: true, volume: source === 'keyboard' ? 0.28 : 0.24 });
   }
@@ -1669,6 +1735,7 @@ export class ShipSelectScene {
         this.openSelectedShipDetails();
       }
     );
+    this.detailsButton.actionId = 'details';
     this.container.addChild(this.detailsButton);
 
     this.startButton = this.createButton(
@@ -1688,6 +1755,7 @@ export class ShipSelectScene {
         this.launchSelectedShip('button');
       }
     );
+    this.startButton.actionId = 'start';
     this.container.addChild(this.startButton);
 
     this.randomButton = this.createButton(
@@ -1700,7 +1768,10 @@ export class ShipSelectScene {
       0x66ffff,
       () => this.navigateRandom()
     );
+    this.randomButton.actionId = 'random';
     this.container.addChild(this.randomButton);
+    this.actionButtons = [this.detailsButton, this.startButton, this.randomButton];
+    this.syncActionButtonFocus();
     this.updateSelectionInfo();
   }
 
@@ -1950,6 +2021,8 @@ export class ShipSelectScene {
     button.eventMode = 'static';
     button.cursor = 'pointer';
     button.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    button.hovered = false;
+    button._focused = false;
 
     // Background with glow
     const bgGlow = new PIXI.Graphics();
@@ -1958,10 +2031,11 @@ export class ShipSelectScene {
     button.addChild(bgGlow);
     button.bgGlow = bgGlow;
 
+    const focusRing = new PIXI.Graphics();
+    button.addChild(focusRing);
+    button.focusRing = focusRing;
+
     const bg = new PIXI.Graphics();
-    bg.rect(0, 0, width, height);
-    bg.fill({ color: bgColor });
-    bg.stroke({ color: 0x00ff00, width: 2 });
     button.addChild(bg);
     button.bg = bg;
 
@@ -1975,6 +2049,29 @@ export class ShipSelectScene {
     text.position.set(width / 2, height / 2);
     button.addChild(text);
     button.text = text;
+    button.activate = () => onClick?.();
+    button.redraw = () => {
+      const hovered = Boolean(button.hovered);
+      const focused = Boolean(button._focused);
+      bg.clear();
+      bg.rect(0, 0, width, height);
+      bg.fill({ color: label === 'START' && (hovered || focused) ? 0x00ffff : bgColor, alpha: hovered || focused ? 0.92 : 1 });
+      bg.stroke({
+        color: hovered ? 0xffffff : focused ? 0xffef7e : 0x00ff00,
+        width: hovered || focused ? 3 : 2,
+        alpha: hovered || focused ? 0.95 : 1
+      });
+
+      focusRing.clear();
+      if (focused) {
+        focusRing.rect(-5, -5, width + 10, height + 10);
+        focusRing.stroke({ color: 0xffef7e, width: 2, alpha: 0.8 });
+      }
+
+      bgGlow.alpha = focused ? 0.24 : 0;
+      if (!hovered) button.scale.set(1);
+    };
+    button.redraw();
 
     button.on('pointerdown', (e) => {
       e.stopPropagation();
@@ -1985,17 +2082,13 @@ export class ShipSelectScene {
         if (button.parent) button.scale.set(1);
       }, 100);
       AudioManager.playSfx('powerup', { force: true, volume: 0.4 });
-      onClick();
+      button.activate();
     });
 
     button.on('pointerover', () => {
-      // Dramatic hover effect
-      bg.clear();
-      bg.rect(0, 0, width, height);
-      bg.fill({ color: label === 'START' ? 0x00ffff : bgColor, alpha: 0.9 });
-      bg.stroke({ color: 0xffffff, width: 3 });
-
-      bgGlow.alpha = 0.3;
+      button.hovered = true;
+      if (button.actionId) this.setControllerFocus(button.actionId);
+      button.redraw();
       button.scale.set(1.05);
 
       // Hover sound
@@ -2003,12 +2096,8 @@ export class ShipSelectScene {
     });
 
     button.on('pointerout', () => {
-      bg.clear();
-      bg.rect(0, 0, width, height);
-      bg.fill({ color: bgColor });
-      bg.stroke({ color: 0x00ff00, width: 2 });
-
-      bgGlow.alpha = 0;
+      button.hovered = false;
+      button.redraw();
       button.scale.set(1);
     });
 
@@ -2296,38 +2385,55 @@ export class ShipSelectScene {
       this.returnToMenu('controller');
       return;
     }
-    if (nav.pressed.down) this.setMainMenuButtonFocus(true);
-    if (nav.pressed.up) this.setMainMenuButtonFocus(false);
+    const focus = this.getControllerFocus();
+    if (nav.pressed.down) {
+      if (focus === 'ship') this.focusActionRow();
+      else if (HANGAR_ACTION_FOCUS_ORDER.includes(focus)) this.setControllerFocus('back');
+      else this.setControllerFocus('ship');
+    }
+    if (nav.pressed.up) {
+      if (focus === 'ship') this.setControllerFocus('back');
+      else if (focus === 'back') this.focusActionRow();
+      else this.setControllerFocus('ship');
+    }
     if (nav.pressed.left) {
-      this.setMainMenuButtonFocus(false);
-      this.navigateLeft();
+      if (HANGAR_ACTION_FOCUS_ORDER.includes(focus)) {
+        this.setActionFocusByOffset(-1);
+      } else if (focus === 'back') {
+        this.focusActionRow();
+      } else {
+        this.setControllerFocus('ship');
+        this.navigateLeft();
+      }
     }
     if (nav.pressed.right) {
-      this.setMainMenuButtonFocus(false);
-      this.navigateRight();
+      if (HANGAR_ACTION_FOCUS_ORDER.includes(focus)) {
+        this.setActionFocusByOffset(1);
+      } else if (focus === 'back') {
+        this.focusActionRow();
+      } else {
+        this.setControllerFocus('ship');
+        this.navigateRight();
+      }
     }
     if (nav.pressed.lb) {
-      this.setMainMenuButtonFocus(false);
+      this.setControllerFocus('ship');
       this.navigateModel(-1);
     }
     if (nav.pressed.rb) {
-      this.setMainMenuButtonFocus(false);
+      this.setControllerFocus('ship');
       this.navigateModel(1);
     }
     if (nav.pressed.y) {
-      this.setMainMenuButtonFocus(false);
+      this.setControllerFocus('ship');
       this.navigateRandom();
     }
     if (nav.pressed.x) {
-      this.setMainMenuButtonFocus(false);
+      this.setControllerFocus('ship');
       this.openSelectedShipDetails();
     }
     if (nav.pressed.confirm) {
-      if (this.mainMenuButtonFocused) {
-        this.returnToMenu('controller');
-      } else {
-        this.launchSelectedShip('controller');
-      }
+      this.activateControllerFocus('controller');
     }
   }
 

@@ -74,6 +74,7 @@ export class Game {
       threatCodex: new ThreatCodexScene(this)
     };
     this.selectedShipId = null;
+    this.shipSelectReturnSpriteKey = null;
     this.isDebugRun = false;
     this.runMode = 'ranked';
     this.runModeReason = null;
@@ -161,7 +162,9 @@ export class Game {
     }
 
     const previousScene = this.currentScene;
-    this.scenes.shipSelect = new ShipSelectScene(this);
+    const preferredSpriteKey = this.shipSelectReturnSpriteKey;
+    this.shipSelectReturnSpriteKey = null;
+    this.scenes.shipSelect = new ShipSelectScene(this, { preferredSpriteKey });
     await this.scenes.shipSelect.create();
 
     this.currentScene = previousScene;
@@ -175,6 +178,7 @@ export class Game {
   }
 
   async showShipDetails(spriteKey) {
+    this.shipSelectReturnSpriteKey = spriteKey;
     // Create ship details scene
     const detailsScene = new ShipDetailsScene(this, spriteKey);
     await detailsScene.create();

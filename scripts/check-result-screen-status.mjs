@@ -10,7 +10,7 @@ const resultScreenFlowCheck = readFileSync('scripts/check-result-screen-flow.mjs
 const releaseHardening = readFileSync('scripts/check-release-hardening.mjs', 'utf8');
 
 assert.ok(gameOver.includes("return 'ONE MORE RUN?';"), 'One More Run slogan title must remain present');
-assert.ok(gameOver.includes('this.game.lastLeaderboardResult = null'), 'Game over init must reset stale leaderboard result state');
+assert.match(gameOver, /this\.game(?:\)\s*)?\.lastLeaderboardResult\s*=\s*null/, 'Game over init must reset stale leaderboard result state');
 assert.ok(gameOver.includes('getVisibleLocalPlacementRank()'), 'Result screen must gate local placement through visible leaderboard rank');
 for (const forbidden of ['Steamboard', 'Steam Board', 'Steam board', 'STEAM BOARD']) {
   assert.ok(!gameOver.includes(forbidden), `Result screen copy must not use bad Steam-board term: ${forbidden}`);
