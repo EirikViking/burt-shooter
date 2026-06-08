@@ -1,6 +1,19 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR {sector} CHALLENGE': '섹터 {sector} 챌린지',
+  'NEW SECTOR {sector} BEST: {score}': '섹터 {sector} 신기록: {score}',
+  'SECTOR {sector} BEST: {score}': '섹터 {sector} 최고: {score}',
+  'REACHED SECTOR {sector}': '섹터 {sector} 도달',
+  'UNRANKED CHALLENGE | MAIN LEADERBOARD OFF': '비랭크 챌린지 | 메인 리더보드 꺼짐',
+  'BACK TO MAIN MENU': '메인 메뉴로',
+  'A: RELAUNCH  |  X: HANGAR  |  B/START: MENU': 'A: 재시작  |  X: 격납고  |  B/START: 메뉴',
+  'A: RELAUNCH  |  B/START: MENU': 'A: 재시작  |  B/START: 메뉴',
+  'ENTER / SPACE / CLICK: RELAUNCH  |  H: HANGAR  |  ESC: MAIN MENU': 'ENTER / SPACE / 클릭: 재시작  |  H: 격납고  |  ESC: 메인 메뉴',
+  'ENTER / SPACE / CLICK: RELAUNCH  |  ESC: MAIN MENU': 'ENTER / SPACE / 클릭: 재시작  |  ESC: 메인 메뉴',
+  'A: SAME CHECKPOINT  |  B: MENU': 'A: 같은 체크포인트  |  B: 메뉴',
+  'SPACE / CLICK - SAME CHECKPOINT': 'SPACE / 클릭 - 같은 체크포인트',
+  'Sector Start Challenge complete. Local challenge record saved separately; ranked leaderboard and career progress stayed untouched.': '섹터 스타트 챌린지 완료. 로컬 챌린지 기록은 별도로 저장되었고 랭크 리더보드와 커리어 진행은 그대로입니다.',
   'SECTOR START CHALLENGE': '섹터 시작 챌린지',
   'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': '섹터 시작 챌린지 - 메인 점수 기록 안 됨',
   'NEW CHECKPOINT BEST': '새 체크포인트 최고',

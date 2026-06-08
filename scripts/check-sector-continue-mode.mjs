@@ -241,7 +241,7 @@ try {
   assert.equal(menu.menu?.sectorStart?.available, true);
   assert.deepEqual(menu.menu?.sectorStart?.checkpoints, [5, 10, 15]);
   assert.equal(menu.menu?.sectorStart?.selectedCheckpoint, 15);
-  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR START CHALLENGE:\s*15/);
+  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR 15 CHALLENGE/);
 
   const invalidStart = await page.evaluate(async () => window.__game.startGame(undefined, {
     runMode: 'sector_start',
@@ -280,7 +280,13 @@ try {
   assert.ok(challengeScore > 0, 'sector_start challenge should report a positive challenge score after scoring');
   assert.equal(sectorGameOver.sectorStartChallenge?.best?.scoreEarned, challengeScore);
   assert.match(sectorGameOver.gameOver?.ceremonyTitle || '', /SECTOR START CHALLENGE/);
-  assert.match(sectorGameOver.gameOver?.ceremonyComment || '', /checkpoint record|CHECKPOINT BEST|NEW CHECKPOINT BEST/i);
+  assert.match(sectorGameOver.gameOver?.ceremonyComment || '', /NEW SECTOR 10 BEST|SECTOR 10 BEST/i);
+  assert.match(sectorGameOver.gameOver?.ceremonyComment || '', /REACHED SECTOR 11/i);
+  assert.match(sectorGameOver.gameOver?.ceremonyComment || '', /UNRANKED CHALLENGE \| MAIN LEADERBOARD OFF/i);
+  assert.doesNotMatch(sectorGameOver.gameOver?.ceremonyComment || '', /->/);
+  assert.equal(sectorGameOver.gameOver?.mainMenuCta?.visible, true, 'sector_start result should expose a Main Menu return CTA');
+  assert.equal(sectorGameOver.gameOver?.mainMenuCta?.label, 'BACK TO MAIN MENU');
+  assert.equal(sectorGameOver.gameOver?.leaderboardCta?.visible, false, 'sector_start result should not expose main leaderboard CTA');
   await page.waitForTimeout(700);
   const afterSectorStart = await storageSnapshot(page);
   assert.deepEqual(afterSectorStart.hangar, beforeSectorStart.hangar, 'sector_start must not update hangar progress/bests/XP/unlocks');

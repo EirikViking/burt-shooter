@@ -148,6 +148,13 @@ export class GameOverScene {
     this.hangarButtonHint = null;
     this.hangarButtonWidth = 0;
     this.hangarButtonHeight = 0;
+    this.mainMenuButton = null;
+    this.mainMenuButtonBg = null;
+    this.mainMenuButtonGlow = null;
+    this.mainMenuButtonLabel = null;
+    this.mainMenuButtonHint = null;
+    this.mainMenuButtonWidth = 0;
+    this.mainMenuButtonHeight = 0;
     this.runbackReason = null;
     this.selectedCtaLine = null;
     this.ctaVoicePlayed = false;
@@ -537,6 +544,8 @@ export class GameOverScene {
     this.container.addChild(this.leaderboardButton);
     this.createHangarButton(layout);
     this.container.addChild(this.hangarButton);
+    this.createMainMenuButton(layout);
+    this.container.addChild(this.mainMenuButton);
 
     if (!this.isRankedRun) {
       this.promptText.eventMode = 'none';
@@ -757,8 +766,16 @@ export class GameOverScene {
       || (result?.globalStatus === 'submitted' ? getValidPlacementNumber(result?.steamRank) : null);
   }
 
+  isSectorStartChallengeResult() {
+    return !this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START;
+  }
+
+  isResultActionStage() {
+    return this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked';
+  }
+
   getLocalPlacementLine() {
-    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) {
+    if (this.isSectorStartChallengeResult()) {
       return this.getSectorStartChallengeRecordLine() || translateText('SECTOR START CHALLENGE');
     }
     if (!this.isRankedRun) return 'Local: Practice run';
@@ -778,7 +795,7 @@ export class GameOverScene {
   }
 
   getGlobalPlacementLine() {
-    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('MAIN LEADERBOARD OFF');
+    if (this.isSectorStartChallengeResult()) return this.getSectorStartChallengeReachedLine();
     if (!this.isRankedRun) return 'Global: Practice run';
     if (this.steamSubmissionMode) return this.getSteamPlacementLine();
     const rank = this.getGlobalPlacementRank();
@@ -824,6 +841,9 @@ export class GameOverScene {
   }
 
   getLeaderboardPlacementLines() {
+    if (this.isSectorStartChallengeResult()) {
+      return this.getSectorStartChallengeResultLines();
+    }
     return [
       this.getLocalPlacementLine(),
       this.getGlobalPlacementLine()
@@ -842,9 +862,31 @@ export class GameOverScene {
     const checkpoint = record?.startSector || summary.sectorStartCheckpoint || this.game?.sectorStartCheckpoint || null;
     if (!record || !checkpoint) return null;
     const label = summary.sectorStartChallengeNewBest
-      ? translateText('NEW CHECKPOINT BEST')
-      : translateText('CHECKPOINT BEST');
-    return `${label}: ${this.formatScoreNumber(record.scoreEarned)} | ${translateText('SECTOR')} ${checkpoint} -> ${record.highestSectorReached}`;
+      ? 'NEW SECTOR {sector} BEST: {score}'
+      : 'SECTOR {sector} BEST: {score}';
+    return translateText(label, {
+      sector: checkpoint,
+      score: this.formatScoreNumber(record.scoreEarned)
+    });
+  }
+
+  getSectorStartChallengeReachedLine() {
+    const summary = this.game?.runSummary || {};
+    const record = summary.sectorStartChallengeBest || summary.sectorStartChallengeAttempt || null;
+    const checkpoint = record?.startSector || summary.sectorStartCheckpoint || this.game?.sectorStartCheckpoint || null;
+    const reached = Math.max(
+      1,
+      Math.floor(Number(record?.highestSectorReached || summary.sectorReached || summary.levelReached || this.finalLevel || checkpoint || 1) || 1)
+    );
+    return translateText('REACHED SECTOR {sector}', { sector: reached });
+  }
+
+  getSectorStartChallengeResultLines() {
+    return [
+      this.getSectorStartChallengeRecordLine() || translateText('SECTOR START CHALLENGE'),
+      this.getSectorStartChallengeReachedLine(),
+      translateText('UNRANKED CHALLENGE | MAIN LEADERBOARD OFF')
+    ];
   }
 
   isSceneActive() {
@@ -888,6 +930,11 @@ export class GameOverScene {
         return 'PLACEMENT READY...';
       }
       if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
+        if (this.shouldShowMainMenuButton()) {
+          return this.shouldShowHangarButton()
+            ? translateText('A: RELAUNCH  |  X: HANGAR  |  B/START: MENU')
+            : translateText('A: RELAUNCH  |  B/START: MENU');
+        }
         return 'A: RELAUNCH  |  Y: LEADERBOARD  |  B/START: MENU';
       }
       if (this.state === 'submitting') {
@@ -912,6 +959,11 @@ export class GameOverScene {
       return 'PLACEMENT READY...';
     }
     if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
+      if (this.shouldShowMainMenuButton()) {
+        return this.shouldShowHangarButton()
+          ? translateText('ENTER / SPACE / CLICK: RELAUNCH  |  H: HANGAR  |  ESC: MAIN MENU')
+          : translateText('ENTER / SPACE / CLICK: RELAUNCH  |  ESC: MAIN MENU');
+      }
       return this.shouldShowHangarButton()
         ? 'ENTER / SPACE / CLICK: RELAUNCH  |  L: LEADERBOARD  |  H: HANGAR  |  ESC: MENU'
         : 'ENTER / SPACE / CLICK: RELAUNCH  |  L / GAMEPAD Y: LEADERBOARD  |  ESC: MENU';
@@ -1023,6 +1075,13 @@ export class GameOverScene {
   getRunbackRunSummaryText() {
     const summary = this.game?.runSummary || {};
     const elapsedSeconds = Math.max(0, Math.floor(Number(summary.runElapsedSeconds) || 0));
+    if (this.isSectorStartChallengeResult()) {
+      const checkpoint = summary.sectorStartCheckpoint || this.game?.sectorStartCheckpoint || this.finalLevel || 1;
+      return [
+        translateText('SECTOR {sector} CHALLENGE', { sector: checkpoint }),
+        this.formatElapsedTime(elapsedSeconds)
+      ].filter(Boolean).join('\n');
+    }
     const gained = Math.max(0, Math.floor(Number(summary.pilotXpGained) || 0));
     return [
       `Sector ${this.finalLevel || 1} | ${this.formatElapsedTime(elapsedSeconds)} | Level ${this.finalLevel || 1}`,
@@ -1038,6 +1097,7 @@ export class GameOverScene {
   }
 
   createRunbackRankProgressSummary(currentProgress = this.currentProgressForResult || {}) {
+    if (this.isSectorStartChallengeResult()) return '';
     const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
     if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
       return `${translateText('NEXT RANK')}: ${getRankTitle(MAX_RANK_INDEX)}  |  ${translateText('XP TO NEXT')}: 0`;
@@ -1047,6 +1107,7 @@ export class GameOverScene {
   }
 
   createRunbackShipProgressSummary(currentProgress = this.currentProgressForResult || {}) {
+    if (this.isSectorStartChallengeResult()) return '';
     return this.createShipUnlockProgressLines(currentProgress, {
       newlyUnlocked: this.newlyUnlockedShips || []
     }).filter(Boolean).join('\n');
@@ -1061,6 +1122,7 @@ export class GameOverScene {
   }
 
   getRunbackNextGoalText() {
+    if (this.isSectorStartChallengeResult()) return '';
     const rank = this.getGlobalPlacementRank();
     if (rank && rank > 1) return 'Next goal: Climb one global rank';
     if (rank === 1) return 'Next goal: Defend #1';
@@ -1198,9 +1260,9 @@ export class GameOverScene {
   getCeremonyComment() {
     if (!this.isRankedRun) {
       if (this.game?.runMode === RUN_MODES.SECTOR_START) {
-        const recordLine = this.getSectorStartChallengeRecordLine();
-        const base = translateText('Sector Start Challenge complete. Local checkpoint record saved separately; ranked leaderboard and career progress stayed untouched.');
-        return recordLine ? `${base}\n${recordLine}` : base;
+        const resultText = this.getSectorStartChallengeResultLines().join('\n');
+        const base = translateText('Sector Start Challenge complete. Local challenge record saved separately; ranked leaderboard and career progress stayed untouched.');
+        return resultText ? `${base}\n${resultText}` : base;
       }
       return translateText('Practice run. Score not logged.');
     }
@@ -1444,6 +1506,7 @@ export class GameOverScene {
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
     this.drawHangarButton(layout);
+    this.drawMainMenuButton(layout);
     this.drawNextGoalStrip(layout);
     this.drawShipUnlockReveal(layout);
     [
@@ -1481,16 +1544,23 @@ export class GameOverScene {
     const nameHeight = nameVisible ? Math.max(nameSize * 1.2, this.nameDisplay.height || 0) : 0;
     const leaderboardVisible = this.shouldShowLeaderboardButton();
     const hangarVisible = this.shouldShowHangarButton();
-    const secondaryButtonsShareRow = leaderboardVisible && hangarVisible && !layout.isMobile;
+    const mainMenuVisible = this.shouldShowMainMenuButton();
+    const secondaryVisibleCount = [leaderboardVisible, hangarVisible, mainMenuVisible].filter(Boolean).length;
+    const secondaryButtonsShareRow = secondaryVisibleCount > 1 && !layout.isMobile;
     const retryHeight = this.retryButtonHeight || (layout.isMobile ? 58 : 66);
     const rawLeaderboardHeight = this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48);
     const rawHangarHeight = this.hangarButtonHeight || (layout.isMobile ? 42 : 48);
+    const rawMainMenuHeight = this.mainMenuButtonHeight || (layout.isMobile ? 42 : 48);
+    const secondaryRowHeight = secondaryButtonsShareRow
+      ? Math.max(rawLeaderboardHeight, rawHangarHeight, rawMainMenuHeight)
+      : 0;
     const leaderboardHeight = leaderboardVisible
-      ? (secondaryButtonsShareRow ? Math.max(rawLeaderboardHeight, rawHangarHeight) : rawLeaderboardHeight)
+      ? (secondaryButtonsShareRow ? secondaryRowHeight : rawLeaderboardHeight)
       : 0;
     const hangarHeight = hangarVisible && !secondaryButtonsShareRow ? rawHangarHeight : 0;
+    const mainMenuHeight = mainMenuVisible && !secondaryButtonsShareRow ? rawMainMenuHeight : 0;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + nameHeight + spacing * (leaderboardVisible || hangarVisible ? 12 : 9) + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + mainMenuHeight + nameHeight + spacing * (secondaryVisibleCount ? 12 : 9) + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -1598,33 +1668,34 @@ export class GameOverScene {
     this.retryButton.x = width / 2;
     this.retryButton.y = placeCenteredElement(this.retryButton, spacing, retryHeight);
 
-    if (this.leaderboardButton) {
-      this.leaderboardButton.visible = leaderboardVisible;
-      if (leaderboardVisible && secondaryButtonsShareRow) {
-        const gap = 18;
-        const rowY = placeCenteredElement(this.leaderboardButton, spacing * 0.8, leaderboardHeight);
-        const rowWidth = (this.leaderboardButtonWidth || 0) + (this.hangarButtonWidth || 0) + gap;
-        this.leaderboardButton.x = width / 2 - rowWidth / 2 + (this.leaderboardButtonWidth || 0) / 2;
-        this.leaderboardButton.y = rowY;
-        if (this.hangarButton) {
-          this.hangarButton.visible = hangarVisible;
-          this.hangarButton.x = width / 2 + rowWidth / 2 - (this.hangarButtonWidth || 0) / 2;
-          this.hangarButton.y = rowY;
-        }
-      } else {
-        this.leaderboardButton.x = width / 2;
-        this.leaderboardButton.y = leaderboardVisible ? placeCenteredElement(this.leaderboardButton, spacing * 0.8, leaderboardHeight) : this.retryButton.y;
+    const secondaryButtons = [
+      { node: this.leaderboardButton, visible: leaderboardVisible, width: this.leaderboardButtonWidth || 0, height: rawLeaderboardHeight },
+      { node: this.hangarButton, visible: hangarVisible, width: this.hangarButtonWidth || 0, height: rawHangarHeight },
+      { node: this.mainMenuButton, visible: mainMenuVisible, width: this.mainMenuButtonWidth || 0, height: rawMainMenuHeight }
+    ].filter((entry) => entry.node);
+    secondaryButtons.forEach((entry) => {
+      entry.node.visible = entry.visible;
+      if (!entry.visible) {
+        entry.node.x = width / 2;
+        entry.node.y = this.retryButton.y;
       }
-    }
-
-    if (this.hangarButton) {
-      if (!secondaryButtonsShareRow) {
-        this.hangarButton.visible = hangarVisible;
-        this.hangarButton.x = width / 2;
-        this.hangarButton.y = hangarVisible ? placeCenteredElement(this.hangarButton, spacing * 0.8, hangarHeight) : this.retryButton.y;
-      } else if (!leaderboardVisible) {
-        this.hangarButton.visible = false;
-      }
+    });
+    const visibleSecondaryButtons = secondaryButtons.filter((entry) => entry.visible);
+    if (secondaryButtonsShareRow && visibleSecondaryButtons.length) {
+      const gap = 18;
+      const rowY = placeCenteredElement(visibleSecondaryButtons[0].node, spacing * 0.8, secondaryRowHeight);
+      const rowWidth = visibleSecondaryButtons.reduce((sum, entry) => sum + entry.width, 0) + gap * Math.max(0, visibleSecondaryButtons.length - 1);
+      let cursorX = width / 2 - rowWidth / 2;
+      visibleSecondaryButtons.forEach((entry) => {
+        entry.node.x = cursorX + entry.width / 2;
+        entry.node.y = rowY;
+        cursorX += entry.width + gap;
+      });
+    } else {
+      visibleSecondaryButtons.forEach((entry) => {
+        entry.node.x = width / 2;
+        entry.node.y = placeCenteredElement(entry.node, spacing * 0.8, entry.height);
+      });
     }
 
     if (nameVisible) {
@@ -1868,11 +1939,15 @@ export class GameOverScene {
   }
 
   shouldShowLeaderboardButton() {
-    return this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked';
+    return this.isResultActionStage() && !this.isSectorStartChallengeResult();
   }
 
   shouldShowHangarButton() {
-    return this.shouldShowLeaderboardButton() && typeof this.game?.showShipSelect === 'function';
+    return this.isResultActionStage() && typeof this.game?.showShipSelect === 'function';
+  }
+
+  shouldShowMainMenuButton() {
+    return this.isResultActionStage() && this.isSectorStartChallengeResult();
   }
 
   drawLeaderboardButton(layout) {
@@ -2061,7 +2136,11 @@ export class GameOverScene {
       return {
         mode: 'restart',
         label: 'ONE MORE RUN',
-        hint: this.lastInputDevice === 'controller' ? 'A: SAME SHIP  |  Y: LEADERBOARD' : 'ENTER / SPACE / CLICK - SAME SHIP',
+        hint: this.isSectorStartChallengeResult()
+          ? (this.lastInputDevice === 'controller'
+              ? translateText('A: SAME CHECKPOINT  |  B: MENU')
+              : translateText('SPACE / CLICK - SAME CHECKPOINT'))
+          : (this.lastInputDevice === 'controller' ? 'A: SAME SHIP  |  Y: LEADERBOARD' : 'ENTER / SPACE / CLICK - SAME SHIP'),
         disabled: false,
         runback: true
       };
@@ -2174,6 +2253,7 @@ export class GameOverScene {
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
     this.drawHangarButton(layout);
+    this.drawMainMenuButton(layout);
   }
 
   createFallbackBackdrop(width, height) {
@@ -2600,6 +2680,11 @@ export class GameOverScene {
 
     if (nav.pressed.y && this.shouldShowLeaderboardButton()) {
       this.openLeaderboard();
+      return;
+    }
+
+    if (nav.pressed.x && this.shouldShowHangarButton()) {
+      this.openHangar();
       return;
     }
 
@@ -3279,7 +3364,10 @@ export class GameOverScene {
   drawHangarButton(layout) {
     if (!this.hangarButton || !this.hangarButtonBg || !this.hangarButtonGlow) return;
     const visible = this.shouldShowHangarButton();
-    const buttonWidth = Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
+    const compact = visible && this.shouldShowMainMenuButton();
+    const buttonWidth = compact
+      ? Math.min(layout.width * (layout.isMobile ? 0.72 : 0.26), layout.isMobile ? 280 : 300)
+      : Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
     const buttonHeight = layout.isMobile ? 46 : 52;
     const halfWidth = buttonWidth / 2;
     const halfHeight = buttonHeight / 2;
@@ -3313,6 +3401,95 @@ export class GameOverScene {
     if (this.hangarButtonHint) {
       this.hangarButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
       this.hangarButtonHint.y = layout.isMobile ? 13 : 15;
+    }
+  }
+
+  createMainMenuButton(layout) {
+    this.mainMenuButton = new PIXI.Container();
+    this.mainMenuButton.zIndex = 8;
+    this.mainMenuButton.eventMode = 'static';
+    this.mainMenuButton.cursor = 'pointer';
+
+    this.mainMenuButtonGlow = new PIXI.Graphics();
+    this.mainMenuButtonBg = new PIXI.Graphics();
+
+    this.mainMenuButtonLabel = createText(translateText('BACK TO MAIN MENU'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 17 : 21,
+      fontWeight: 'bold',
+      fill: '#d9fdff',
+      stroke: '#031323',
+      strokeThickness: layout.isMobile ? 2 : 3,
+      align: 'center',
+      dropShadow: true,
+      dropShadowColor: '#00ffff',
+      dropShadowBlur: 4
+    });
+    this.mainMenuButtonLabel.anchor.set(0.5);
+
+    this.mainMenuButtonHint = createText(translateText('ESC / B'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 10 : 12,
+      fontWeight: 'bold',
+      fill: '#ffd15c',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    this.mainMenuButtonHint.anchor.set(0.5);
+
+    this.mainMenuButton.addChild(this.mainMenuButtonGlow, this.mainMenuButtonBg, this.mainMenuButtonLabel, this.mainMenuButtonHint);
+    this.mainMenuButton.on('pointerdown', () => {
+      this.setInputDevice('keyboard');
+      this.returnToMenu();
+    });
+    this.mainMenuButton.on('pointerover', () => this.mainMenuButton.scale.set(1.02));
+    this.mainMenuButton.on('pointerout', () => this.mainMenuButton.scale.set(1));
+    this.drawMainMenuButton(layout);
+  }
+
+  drawMainMenuButton(layout) {
+    if (!this.mainMenuButton || !this.mainMenuButtonBg || !this.mainMenuButtonGlow) return;
+    const visible = this.shouldShowMainMenuButton();
+    const compact = visible && this.shouldShowHangarButton();
+    const buttonWidth = compact
+      ? Math.min(layout.width * (layout.isMobile ? 0.72 : 0.26), layout.isMobile ? 280 : 300)
+      : Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
+    const buttonHeight = layout.isMobile ? 46 : 52;
+    const halfWidth = buttonWidth / 2;
+    const halfHeight = buttonHeight / 2;
+    const radius = layout.isMobile ? 8 : 10;
+    this.mainMenuButtonWidth = buttonWidth;
+    this.mainMenuButtonHeight = buttonHeight;
+    this.mainMenuButton.hitArea = new PIXI.Rectangle(-halfWidth, -halfHeight, buttonWidth, buttonHeight);
+    this.mainMenuButton.visible = visible;
+    this.mainMenuButton.alpha = visible ? 0.94 : 0;
+    this.mainMenuButton.cursor = visible ? 'pointer' : 'default';
+    this.mainMenuButton.eventMode = visible ? 'static' : 'none';
+
+    this.mainMenuButtonGlow.clear();
+    this.mainMenuButtonGlow.roundRect(-halfWidth - 6, -halfHeight - 4, buttonWidth + 12, buttonHeight + 8, radius + 4);
+    this.mainMenuButtonGlow.fill({ color: 0x7dffcc, alpha: visible ? 0.1 : 0 });
+    this.mainMenuButtonGlow.roundRect(-halfWidth - 2, -halfHeight - 2, buttonWidth + 4, buttonHeight + 4, radius + 2);
+    this.mainMenuButtonGlow.stroke({ color: 0xffef7e, width: 1.4, alpha: visible ? 0.32 : 0 });
+
+    this.mainMenuButtonBg.clear();
+    this.mainMenuButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.mainMenuButtonBg.fill({ color: 0x041323, alpha: 0.9 });
+    this.mainMenuButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.mainMenuButtonBg.stroke({ color: 0x7dffcc, width: 1.8, alpha: 0.78 });
+    this.mainMenuButtonBg.rect(-halfWidth + 14, -halfHeight + 7, buttonWidth - 28, 2);
+    this.mainMenuButtonBg.fill({ color: 0x7dffcc, alpha: 0.26 });
+
+    if (this.mainMenuButtonLabel) {
+      this.mainMenuButtonLabel.text = translateText('BACK TO MAIN MENU');
+      this.mainMenuButtonLabel.style.fontSize = layout.isMobile ? 17 : 21;
+      this.mainMenuButtonLabel.y = layout.isMobile ? -7 : -8;
+    }
+    if (this.mainMenuButtonHint) {
+      this.mainMenuButtonHint.text = translateText('ESC / B');
+      this.mainMenuButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
+      this.mainMenuButtonHint.y = layout.isMobile ? 13 : 15;
     }
   }
 
@@ -3722,6 +3899,27 @@ export class GameOverScene {
     try {
       if (!this.hangarButton?.getBounds) return fallback;
       const bounds = this.hangarButton.getBounds();
+      return {
+        ...fallback,
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width: Math.round(bounds.width || 0),
+        height: Math.round(bounds.height || 0)
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
+  getMainMenuCtaDebugState() {
+    const fallback = {
+      label: this.mainMenuButtonLabel?.text || null,
+      hint: this.mainMenuButtonHint?.text || null,
+      visible: Boolean(this.mainMenuButton?.visible && this.mainMenuButton?.parent)
+    };
+    try {
+      if (!this.mainMenuButton?.getBounds) return fallback;
+      const bounds = this.mainMenuButton.getBounds();
       return {
         ...fallback,
         x: Math.round(bounds.x || 0),

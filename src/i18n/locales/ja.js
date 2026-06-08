@@ -1,6 +1,19 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR {sector} CHALLENGE': 'セクター{sector}チャレンジ',
+  'NEW SECTOR {sector} BEST: {score}': 'セクター{sector}新ベスト: {score}',
+  'SECTOR {sector} BEST: {score}': 'セクター{sector}ベスト: {score}',
+  'REACHED SECTOR {sector}': 'セクター{sector}到達',
+  'UNRANKED CHALLENGE | MAIN LEADERBOARD OFF': '非ランクチャレンジ | メインリーダーボードOFF',
+  'BACK TO MAIN MENU': 'メインメニューへ戻る',
+  'A: RELAUNCH  |  X: HANGAR  |  B/START: MENU': 'A: 再開  |  X: ハンガー  |  B/START: メニュー',
+  'A: RELAUNCH  |  B/START: MENU': 'A: 再開  |  B/START: メニュー',
+  'ENTER / SPACE / CLICK: RELAUNCH  |  H: HANGAR  |  ESC: MAIN MENU': 'ENTER / SPACE / クリック: 再開  |  H: ハンガー  |  ESC: メインメニュー',
+  'ENTER / SPACE / CLICK: RELAUNCH  |  ESC: MAIN MENU': 'ENTER / SPACE / クリック: 再開  |  ESC: メインメニュー',
+  'A: SAME CHECKPOINT  |  B: MENU': 'A: 同じチェックポイント  |  B: メニュー',
+  'SPACE / CLICK - SAME CHECKPOINT': 'SPACE / クリック - 同じチェックポイント',
+  'Sector Start Challenge complete. Local challenge record saved separately; ranked leaderboard and career progress stayed untouched.': 'セクタースタートチャレンジ完了。ローカルチャレンジ記録は別保存。ランクリーダーボードとキャリア進行は変更されません。',
   'SECTOR START CHALLENGE': 'セクタースタートチャレンジ',
   'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': 'セクタースタートチャレンジ - メインスコア記録なし',
   'NEW CHECKPOINT BEST': '新チェックポイントベスト',

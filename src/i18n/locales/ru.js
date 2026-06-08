@@ -1,6 +1,19 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR {sector} CHALLENGE': 'ЧЕЛЛЕНДЖ СЕКТОРА {sector}',
+  'NEW SECTOR {sector} BEST: {score}': 'НОВЫЙ РЕКОРД СЕКТОРА {sector}: {score}',
+  'SECTOR {sector} BEST: {score}': 'РЕКОРД СЕКТОРА {sector}: {score}',
+  'REACHED SECTOR {sector}': 'ДОСТИГНУТ СЕКТОР {sector}',
+  'UNRANKED CHALLENGE | MAIN LEADERBOARD OFF': 'ЧЕЛЛЕНДЖ БЕЗ РЕЙТИНГА | ОСНОВНАЯ ТАБЛИЦА ОТКЛЮЧЕНА',
+  'BACK TO MAIN MENU': 'В ГЛАВНОЕ МЕНЮ',
+  'A: RELAUNCH  |  X: HANGAR  |  B/START: MENU': 'A: ЗАНОВО  |  X: АНГАР  |  B/START: МЕНЮ',
+  'A: RELAUNCH  |  B/START: MENU': 'A: ЗАНОВО  |  B/START: МЕНЮ',
+  'ENTER / SPACE / CLICK: RELAUNCH  |  H: HANGAR  |  ESC: MAIN MENU': 'ENTER / SPACE / КЛИК: ЗАНОВО  |  H: АНГАР  |  ESC: ГЛАВНОЕ МЕНЮ',
+  'ENTER / SPACE / CLICK: RELAUNCH  |  ESC: MAIN MENU': 'ENTER / SPACE / КЛИК: ЗАНОВО  |  ESC: ГЛАВНОЕ МЕНЮ',
+  'A: SAME CHECKPOINT  |  B: MENU': 'A: ТОТ ЖЕ ЧЕКПОИНТ  |  B: МЕНЮ',
+  'SPACE / CLICK - SAME CHECKPOINT': 'SPACE / КЛИК - ТОТ ЖЕ ЧЕКПОИНТ',
+  'Sector Start Challenge complete. Local challenge record saved separately; ranked leaderboard and career progress stayed untouched.': 'Челлендж сектора завершен. Локальный рекорд челленджа сохранен отдельно; рейтинговая таблица и карьерный прогресс не изменились.',
   'SECTOR START CHALLENGE': 'ЧЕЛЛЕНДЖ СТАРТА С СЕКТОРА',
   'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': 'ЧЕЛЛЕНДЖ СЕКТОРА - ОСНОВНОЙ СЧЕТ НЕ ЗАПИСЫВАЕТСЯ',
   'NEW CHECKPOINT BEST': 'НОВЫЙ ЛУЧШИЙ ЧЕКПОИНТ',

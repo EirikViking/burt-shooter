@@ -34,6 +34,8 @@
     "check:sector-continue-mode": "node scripts/check-sector-continue-mode.mjs",
     "check:sector-continue-controller-flow": "node scripts/check-sector-continue-controller-flow.mjs",
     "check:sector-start-challenge-records": "node scripts/check-sector-start-challenge-records.mjs",
+    "check:sector-start-result-flow": "node scripts/check-sector-start-result-flow.mjs",
+    "check:sector-start-menu-layout": "node scripts/check-sector-start-menu-layout.mjs",
     "check:ship-selector-start": "node scripts/check-ship-selector-start.mjs",
     "check:ship-usage-counter": "node scripts/check-ship-usage-counter.mjs",
     "check:player-ship-padding": "node scripts/check-player-ship-padding.mjs",

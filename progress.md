@@ -9,6 +9,8 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - New verification direction: add `npm run check:sector-continue-mode` and `npm run check:sector-continue-controller-flow`, then run the user-requested single-pass check list before committing and pushing only this prototype branch.
 - 2026-06-08 continuation: renamed the prototype path to Sector Start Challenge, kept 5-sector checkpoint selection, added mouse edge cycling on the challenge button, and added a separate profile-scoped `novaSwarm.sectorStartChallengeRecords.v1` best-record store keyed by start checkpoint.
 - Challenge records are written only from `RUN_MODES.SECTOR_START` finalization and carry start sector, score earned during the challenge, highest/final sector, ship id/name, elapsed stats, and completion time. Normal ranked Start Run remains the only path for local/global leaderboard, hangar XP/unlocks, ship usage, achievements, and Threat Codex progression.
+- 2026-06-08 polish: shortened the main-menu challenge label to `SECTOR N CHALLENGE`, added a Sector Start result-screen `BACK TO MAIN MENU` path, replaced technical checkpoint wording with clear unranked challenge lines, and added result-flow/menu-layout checks for controller, mouse, keyboard, and layout coverage.
+- Steam packaging/upload/SetLive was not performed during this prototype polish pass; the main ranked leaderboard remains `nova_swarm_global_score_v2` for normal ranked Start Run only.
 
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 

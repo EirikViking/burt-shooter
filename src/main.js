@@ -773,6 +773,7 @@ function buildGameTextState(game) {
       retryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       leaderboardCta: gameOverScene.getLeaderboardCtaDebugState ? gameOverScene.getLeaderboardCtaDebugState() : null,
       hangarCta: gameOverScene.getHangarCtaDebugState ? gameOverScene.getHangarCtaDebugState() : null,
+      mainMenuCta: gameOverScene.getMainMenuCtaDebugState ? gameOverScene.getMainMenuCtaDebugState() : null,
       state: gameOverScene.state || null,
       submittedHoldReady: typeof gameOverScene.isSubmittedHoldContinueReady === 'function'
         ? gameOverScene.isSubmittedHoldContinueReady()

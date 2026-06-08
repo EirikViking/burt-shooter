@@ -1139,7 +1139,10 @@ export class MenuScene {
       button._btnHeight = btnHeight;
       if (isPrimary) button._variant = 'primary';
       button._label.style.fontSize = Math.round(getResponsiveFontSize(layout, 'button') * (isPrimary ? 1 : 0.9));
-      this.refreshMenuButtonLabel(button, btnWidth - 48, { minScale: 0.78, forceGpuRefresh: forceLabelGpuRefresh });
+      this.refreshMenuButtonLabel(button, btnWidth - 48, {
+        minScale: button === this.sectorStartBtn ? 0.74 : 0.78,
+        forceGpuRefresh: forceLabelGpuRefresh
+      });
       this.drawMenuButton(button, false);
     });
 
@@ -1394,7 +1397,12 @@ export class MenuScene {
         selectedCheckpoint: this.getSelectedSectorStartCheckpoint(),
         selectedRecord: getSectorStartChallengeRecord(this.getSelectedSectorStartCheckpoint()),
         buttonVisible: Boolean(this.sectorStartBtn?.visible),
-        buttonText: this.sectorStartBtn?._label?.text || null
+        buttonText: this.sectorStartBtn?._label?.text || null,
+        buttonBounds: boundsForDisplayObject(this.sectorStartBtn?.visible ? this.sectorStartBtn : null),
+        buttonConfiguredWidth: Number(this.sectorStartBtn?._btnWidth || 0),
+        buttonConfiguredHeight: Number(this.sectorStartBtn?._btnHeight || 0),
+        labelBounds: boundsForDisplayObject(this.sectorStartBtn?.visible ? this.sectorStartBtn?._label : null),
+        labelScale: Number(this.sectorStartBtn?._label?.scale?.x || 1)
       },
       exitNoticeText: this.exitNotice?.text || '',
       items: Object.fromEntries(
@@ -1781,14 +1789,26 @@ export class MenuScene {
     return checkpoints[this.selectedSectorStartIndex] || this.sectorStartState?.selectedCheckpoint || null;
   }
 
+  formatSectorStartMenuBestScore(value) {
+    const score = Math.max(0, Math.floor(Number(value) || 0));
+    if (score >= 1_000_000_000) {
+      const compact = (score / 1_000_000_000).toFixed(score >= 10_000_000_000 ? 0 : 1).replace(/\.0$/, '');
+      return `${compact}B`;
+    }
+    if (score >= 1_000_000) {
+      const compact = (score / 1_000_000).toFixed(score >= 10_000_000 ? 0 : 1).replace(/\.0$/, '');
+      return `${compact}M`;
+    }
+    return formatNumber(score);
+  }
+
   getSectorStartButtonLabel() {
     const checkpoint = this.getSelectedSectorStartCheckpoint();
-    const label = translateText('SECTOR START CHALLENGE');
-    if (!checkpoint) return label;
+    if (!checkpoint) return translateText('SECTOR START CHALLENGE');
     const record = getSectorStartChallengeRecord(checkpoint);
-    const base = `< ${label}: ${checkpoint} >`;
+    const base = translateText('SECTOR {sector} CHALLENGE', { sector: checkpoint });
     if (record?.scoreEarned > 0) {
-      return `${base}  ${translateText('BEST')} ${formatNumber(record.scoreEarned)}`;
+      return `${base} | ${translateText('BEST')} ${this.formatSectorStartMenuBestScore(record.scoreEarned)}`;
     }
     return base;
   }

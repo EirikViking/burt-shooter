@@ -1,6 +1,19 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR {sector} CHALLENGE': '第 {sector} 扇区挑战',
+  'NEW SECTOR {sector} BEST: {score}': '第 {sector} 扇区新最佳：{score}',
+  'SECTOR {sector} BEST: {score}': '第 {sector} 扇区最佳：{score}',
+  'REACHED SECTOR {sector}': '到达第 {sector} 扇区',
+  'UNRANKED CHALLENGE | MAIN LEADERBOARD OFF': '非排名挑战 | 主排行榜关闭',
+  'BACK TO MAIN MENU': '返回主菜单',
+  'A: RELAUNCH  |  X: HANGAR  |  B/START: MENU': 'A：重开  |  X：机库  |  B/START：菜单',
+  'A: RELAUNCH  |  B/START: MENU': 'A：重开  |  B/START：菜单',
+  'ENTER / SPACE / CLICK: RELAUNCH  |  H: HANGAR  |  ESC: MAIN MENU': 'ENTER / SPACE / 点击：重开  |  H：机库  |  ESC：主菜单',
+  'ENTER / SPACE / CLICK: RELAUNCH  |  ESC: MAIN MENU': 'ENTER / SPACE / 点击：重开  |  ESC：主菜单',
+  'A: SAME CHECKPOINT  |  B: MENU': 'A：同一检查点  |  B：菜单',
+  'SPACE / CLICK - SAME CHECKPOINT': 'SPACE / 点击 - 同一检查点',
+  'Sector Start Challenge complete. Local challenge record saved separately; ranked leaderboard and career progress stayed untouched.': '扇区起点挑战完成。本地挑战记录已单独保存；排名排行榜和生涯进度未受影响。',
   'SECTOR START CHALLENGE': '扇区开始挑战',
   'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': '扇区开始挑战 - 主分未记录',
   'NEW CHECKPOINT BEST': '新检查点最佳',
