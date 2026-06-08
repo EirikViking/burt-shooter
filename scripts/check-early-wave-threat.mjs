@@ -320,11 +320,11 @@ const summaries = [
 const byLabel = new Map(summaries.map((summary) => [summary.label, summary]));
 
 assertRange('levels 1 to 2', byLabel.get('levels 1 to 2').increasePct / 100, [0, 0.05]);
-assertRange('levels 3 to 5', byLabel.get('levels 3 to 5').increasePct / 100, [0.45, 0.65]);
-assertRange('levels 6 to 10', byLabel.get('levels 6 to 10').increasePct / 100, [1.3, 1.5]);
-assertRange('levels 11 to 15', byLabel.get('levels 11 to 15').increasePct / 100, [1.85, 2.08]);
-assertRange('levels 16 to 20', byLabel.get('levels 16 to 20').increasePct / 100, [2.3, 2.65]);
-assertRange('levels 20 to 29 runtime lethality step', byLabel.get('levels 20 to 29').increasePct / 100, [1.45, 2.15]);
+assertRange('levels 3 to 5', byLabel.get('levels 3 to 5').increasePct / 100, [0.68, 0.84]);
+assertRange('levels 6 to 10', byLabel.get('levels 6 to 10').increasePct / 100, [1.68, 1.9]);
+assertRange('levels 11 to 15', byLabel.get('levels 11 to 15').increasePct / 100, [1.9, 2.22]);
+assertRange('levels 16 to 20', byLabel.get('levels 16 to 20').increasePct / 100, [2.4, 2.85]);
+assertRange('levels 20 to 29 runtime lethality step', byLabel.get('levels 20 to 29').increasePct / 100, [1.48, 2.25]);
 assertRange('levels 30 to 49 practiced-player threat', byLabel.get('levels 30 to 49').increasePct / 100, [2.2, 3.2]);
 assertRange('levels 50 plus remains dangerous', byLabel.get('levels 50 plus').increasePct / 100, [1.5, 2.3]);
 

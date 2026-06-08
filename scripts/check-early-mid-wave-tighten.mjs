@@ -658,11 +658,11 @@ const summaries = [
 const byLabel = new Map(summaries.map((summary) => [summary.label, summary]));
 
 assertRange('Level 1 to 2', byLabel.get('Level 1 to 2').ratio, [0, 0.03]);
-assertRange('Level 3 to 5', byLabel.get('Level 3 to 5').ratio, [0.03, 0.08]);
-assertRange('Level 6 to 10', byLabel.get('Level 6 to 10').ratio, [0.08, 0.14]);
-assertRange('Level 11 to 15', byLabel.get('Level 11 to 15').ratio, [0.05, 0.1]);
-assertRange('Level 16 to 20', byLabel.get('Level 16 to 20').ratio, [0.1, 0.18]);
-assertRange('Level 20 to 30', byLabel.get('Level 20 to 30').ratio, [0, 0.06]);
+assertRange('Level 3 to 5', byLabel.get('Level 3 to 5').ratio, [0.11, 0.2]);
+assertRange('Level 6 to 10', byLabel.get('Level 6 to 10').ratio, [0.2, 0.32]);
+assertRange('Level 11 to 15', byLabel.get('Level 11 to 15').ratio, [0.09, 0.16]);
+assertRange('Level 16 to 20', byLabel.get('Level 16 to 20').ratio, [0.18, 0.28]);
+assertRange('Level 20 to 30', byLabel.get('Level 20 to 30').ratio, [0.04, 0.1]);
 assertRange('Level 30 plus', byLabel.get('Level 30 plus').ratio, [-0.005, 0.005]);
 assertRange('Level 50 plus', byLabel.get('Level 50 plus').ratio, [-0.005, 0.005]);
 

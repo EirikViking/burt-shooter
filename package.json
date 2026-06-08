@@ -93,6 +93,7 @@
     "check:tractor-debuffs": "node scripts/check-tractor-debuffs.mjs",
     "check:gameplay-followups": "node scripts/check-gameplay-followup-fixes.mjs",
     "check:progression-tempo": "node scripts/check-progression-tempo.mjs",
+    "check:final-release-difficulty-nudge": "node scripts/check-final-release-difficulty-nudge.mjs",
     "check:difficulty-tuning": "node scripts/check-difficulty-tuning.mjs",
     "check:early-wave-threat": "node scripts/check-early-wave-threat.mjs",
     "check:early-wave-lethality": "node scripts/check-early-wave-lethality.mjs",
