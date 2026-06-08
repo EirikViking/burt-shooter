@@ -1,0 +1,67 @@
+{
+  "upload": {
+    "purpose": "Sector Start Challenge prototype private Steam upload",
+    "branch": "feature/sector-continue-prototype-v1",
+    "commit": "ba1fbd506ccf8722cf2f2bd7ea6679fc2bef6958",
+    "steamAppId": "4765070",
+    "windowsDepotId": "4765071",
+    "buildId": "23628094",
+    "setLive": "",
+    "setLiveStatus": "blank; build was uploaded privately and not set live",
+    "steamworksSettingsChanged": false,
+    "steamcmdUser": "gaunziman",
+    "steamcmdPath": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe",
+    "steamcmdCompletedAtLocal": "2026-06-08 20:58:03 Europe/Oslo"
+  },
+  "package": {
+    "version": "v2026-06-08_18-32-11",
+    "timestamp": "2026-06-08T16:32:11.444Z",
+    "contentRoot": "release/desktop/win-unpacked",
+    "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+    "payloadFileCount": 336,
+    "payloadTotalBytes": 724406035,
+    "payloadManifestHash": "10c3ee4c39c8ed7d22f8175fedb2c405d09438e3bb0fd72a0dec869850442105",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "ab17a6e2a7592e0e1b64c279f7a52bec772271a3e4a68564bfc94e570005fa92"
+    }
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "description": "Sector Start Challenge prototype ba1fbd5",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": ""
+  },
+  "verification": {
+    "preflight": [
+      "git fetch --all --prune",
+      "git status --short --branch",
+      "git worktree list --porcelain",
+      "git rev-list --left-right --count HEAD...origin/feature/sector-continue-prototype-v1"
+    ],
+    "checksRun": [
+      "npm run check:release-line",
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run steamworks:payload-manifest",
+      "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' npm run steamworks:write-vdf"
+    ],
+    "packageRuntime": {
+      "status": "passed",
+      "appId": "4765070",
+      "leaderboard": "nova_swarm_global_score_v2"
+    },
+    "steamcmdResult": "Successfully finished AppID 4765070 build (BuildID 23628094)."
+  },
+  "boundaries": {
+    "deployedLive": false,
+    "setLiveBlank": true,
+    "steamworksSettingsChanged": false,
+    "mainLeaderboardChanged": false,
+    "mainLeaderboardName": "nova_swarm_global_score_v2",
+    "releaseReposTouched": false,
+    "steamTagsMoved": false
+  }
+}
