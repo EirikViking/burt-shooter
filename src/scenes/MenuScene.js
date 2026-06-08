@@ -801,6 +801,7 @@ export class MenuScene {
     this.container.addChild(this.startBtn);
 
     this.sectorStartBtn = this.createButton(this.getSectorStartButtonLabel(), layout, { accent: 0xffef7e });
+    this.attachSectorStartStepperCue(this.sectorStartBtn);
     this.sectorStartBtn.alpha = 0;
     this.sectorStartBtn.on('pointerdown', (event) => this.handleSectorStartPointerDown(event));
     this.container.addChild(this.sectorStartBtn);
@@ -1289,6 +1290,13 @@ export class MenuScene {
   }
 
   getPrimaryHintText() {
+    const sectorFocused = this.getSelectedMenuOptionId() === 'sectorStart'
+      && (this.sectorStartState?.checkpoints || []).length > 1;
+    if (sectorFocused) {
+      return this.lastInputDevice === 'controller'
+        ? translateText('D-PAD/STICK: NAVIGATE // LEFT/RIGHT: SECTOR // A: CONFIRM // B: BACK')
+        : translateText('ARROWS: NAVIGATE // LEFT/RIGHT: SECTOR // ENTER/SPACE: CONFIRM // ESC: BACK');
+    }
     return this.lastInputDevice === 'controller'
       ? 'D-PAD/STICK: NAVIGATE // A: CONFIRM // B: BACK'
       : 'ARROWS: NAVIGATE // ENTER/SPACE: CONFIRM // ESC: BACK';
@@ -1396,13 +1404,16 @@ export class MenuScene {
         checkpoints: this.sectorStartState?.checkpoints || [],
         selectedCheckpoint: this.getSelectedSectorStartCheckpoint(),
         selectedRecord: getSectorStartChallengeRecord(this.getSelectedSectorStartCheckpoint()),
+        primaryHintText: this.primaryHint?.text || null,
         buttonVisible: Boolean(this.sectorStartBtn?.visible),
         buttonText: this.sectorStartBtn?._label?.text || null,
         buttonBounds: boundsForDisplayObject(this.sectorStartBtn?.visible ? this.sectorStartBtn : null),
         buttonConfiguredWidth: Number(this.sectorStartBtn?._btnWidth || 0),
         buttonConfiguredHeight: Number(this.sectorStartBtn?._btnHeight || 0),
         labelBounds: boundsForDisplayObject(this.sectorStartBtn?.visible ? this.sectorStartBtn?._label : null),
-        labelScale: Number(this.sectorStartBtn?._label?.scale?.x || 1)
+        labelScale: Number(this.sectorStartBtn?._label?.scale?.x || 1),
+        arrowCueVisible: Boolean(this.sectorStartBtn?._stepperCue?.visible),
+        arrowCueBounds: boundsForDisplayObject(this.sectorStartBtn?._stepperCue?.visible ? this.sectorStartBtn?._stepperCue : null)
       },
       exitNoticeText: this.exitNotice?.text || '',
       items: Object.fromEntries(
@@ -1510,6 +1521,60 @@ export class MenuScene {
     return container;
   }
 
+  attachSectorStartStepperCue(button) {
+    if (!button || button._stepperCue) return;
+    const cue = new PIXI.Graphics();
+    cue.label = 'ui_sectorStartCheckpointArrows';
+    cue.eventMode = 'none';
+    button._stepperCue = cue;
+    button.addChild(cue);
+  }
+
+  drawSectorStartStepperCue(button = this.sectorStartBtn) {
+    const cue = button?._stepperCue;
+    if (!cue) return;
+    const checkpoints = this.sectorStartState?.checkpoints || [];
+    const visible = Boolean(button?.visible && this.sectorStartState?.available && checkpoints.length > 1);
+    const w = button._btnWidth || 286;
+    const h = button._btnHeight || 46;
+    button.hitArea = new PIXI.Rectangle(
+      -w / 2 - (visible ? 30 : 0),
+      -h / 2 - 4,
+      w + (visible ? 60 : 0),
+      h + 8
+    );
+    cue.visible = visible;
+    cue.clear();
+    if (!visible) return;
+
+    const focused = Boolean(button._focused);
+    const pulse = 0.5 + Math.sin(this.animationTime * 6) * 0.5;
+    const alpha = focused ? 0.86 + pulse * 0.14 : 0.58;
+    const sideX = w / 2 + (focused ? 13 : 10);
+    const boxW = Math.max(22, Math.min(30, h * 0.64));
+    const boxH = Math.max(28, Math.min(36, h * 0.84));
+    const color = focused ? 0xffef7e : 0x37f5ff;
+
+    for (const side of [-1, 1]) {
+      const centerX = side * sideX;
+      cue.roundRect(centerX - boxW / 2, -boxH / 2, boxW, boxH, 7);
+      cue.fill({ color: 0x031323, alpha: 0.52 });
+      cue.roundRect(centerX - boxW / 2, -boxH / 2, boxW, boxH, 7);
+      cue.stroke({ color, width: focused ? 2 : 1.5, alpha });
+
+      const pointX = centerX + side * 5;
+      const backX = centerX - side * 5;
+      cue.moveTo(backX, -8);
+      cue.lineTo(pointX, 0);
+      cue.lineTo(backX, 8);
+      cue.stroke({ color: 0xffffff, width: focused ? 3 : 2.4, alpha: focused ? 0.92 : 0.72 });
+      cue.moveTo(backX - side * 3, -8);
+      cue.lineTo(pointX - side * 3, 0);
+      cue.lineTo(backX - side * 3, 8);
+      cue.stroke({ color, width: focused ? 2 : 1.5, alpha });
+    }
+  }
+
   attachCodexSignalCue(button) {
     if (!button || button._signalCue) return;
     const cue = new PIXI.Graphics();
@@ -1593,6 +1658,7 @@ export class MenuScene {
     shine.moveTo(x + 22, y + h - 7);
     shine.lineTo(x + w - 22, y + h - 7);
     shine.stroke({ color: 0x7fffd8, width: 1, alpha: isHover ? 0.38 : 0.18 });
+    if (container?._stepperCue) this.drawSectorStartStepperCue(container);
   }
 
   startAnimations() {
@@ -1704,6 +1770,8 @@ export class MenuScene {
       this.drawMenuButton(option.button, false);
     });
     this.focusedMenuIndex = next;
+    if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
+    this.drawSectorStartStepperCue();
   }
 
   moveMenuFocus(delta) {
@@ -1827,6 +1895,7 @@ export class MenuScene {
       });
     }
     this.drawMenuButton(this.sectorStartBtn, false);
+    this.drawSectorStartStepperCue();
   }
 
   cycleSectorStartCheckpoint(delta) {
@@ -2048,6 +2117,7 @@ export class MenuScene {
       this.storyTypewriter.update(delta);
     }
     this.updateCodexSignalCue(delta);
+    this.drawSectorStartStepperCue();
 
     // Update starfield
     const { height } = this.game.app.screen;

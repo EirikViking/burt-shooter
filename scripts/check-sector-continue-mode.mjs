@@ -7,6 +7,7 @@ import { chromium } from 'playwright';
 import {
   RUN_MODES,
   getSectorStartCheckpoints,
+  getSectorStartPlaySector,
   getSectorStartState,
   isRankedRunMode,
   resolveSectorStartCheckpoint
@@ -199,6 +200,10 @@ function assertStaticRules() {
   assert.equal(resolveSectorStartCheckpoint(10, { bestSector: 17 }), 10);
   assert.equal(resolveSectorStartCheckpoint(17, { bestSector: 17 }), null);
   assert.equal(resolveSectorStartCheckpoint(20, { bestSector: 17 }), null);
+  assert.equal(getSectorStartPlaySector(5), 5);
+  assert.equal(getSectorStartPlaySector(10), 11);
+  assert.equal(getSectorStartPlaySector(15), 15);
+  assert.equal(getSectorStartPlaySector(20), 21);
   assert.equal(getSectorStartState({ bestSector: 3 }).available, false);
   assert.equal(getSectorStartState({ bestSector: 17 }, 15).selectedCheckpoint, 15);
   assert.equal(isRankedRunMode(RUN_MODES.RANKED), true);
@@ -242,6 +247,8 @@ try {
   assert.deepEqual(menu.menu?.sectorStart?.checkpoints, [5, 10, 15]);
   assert.equal(menu.menu?.sectorStart?.selectedCheckpoint, 15);
   assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR 15 CHALLENGE/);
+  assert.equal(menu.menu?.sectorStart?.arrowCueVisible, true, 'multi-checkpoint Sector Start should expose visible switch arrows');
+  assert.ok((menu.menu?.sectorStart?.arrowCueBounds?.width || 0) > 0, 'switch arrows should have visible bounds');
 
   const invalidStart = await page.evaluate(async () => window.__game.startGame(undefined, {
     runMode: 'sector_start',
@@ -257,7 +264,9 @@ try {
   const sectorPlay = await waitForScene(page, 'play');
   assert.equal(sectorPlay.runMode, 'sector_start');
   assert.equal(sectorPlay.runModeReason, 'sector_start_checkpoint');
-  assert.equal(sectorPlay.level, 10);
+  assert.equal(sectorPlay.level, 11);
+  assert.equal(sectorPlay.sectorStartChallenge?.checkpoint, 10);
+  assert.equal(sectorPlay.sectorStartChallenge?.playSector, 11);
   assert.equal(sectorPlay.score, 0, 'sector_start challenge should begin with a separated zero score');
   assert.equal(sectorPlay.scoreSubmissionAllowed, false);
   assert.equal(sectorPlay.maintainerDevtools?.enabled, false);
@@ -266,7 +275,6 @@ try {
   await page.evaluate(() => {
     const game = window.__game;
     game.addScore(500000, 'baseScore');
-    game.nextLevel();
     game.unlockAchievement?.('ACH_SCORE_250K', { source: 'sector_continue_check' });
     game.finalizeRunProgression?.();
     game.gameOver({ fromInterlude: true });
@@ -304,13 +312,21 @@ try {
   const keyboardMenu = await loadProfile(page, sectorProgress);
   assert.equal(keyboardMenu.menu?.focusedOption, 'launch');
   await page.keyboard.press('ArrowDown');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).menu?.focusedOption === 'sectorStart', { timeout: 8000 });
+  const keyboardFocused = await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.menu?.focusedOption === 'sectorStart' ? state : null;
+  }, null, { timeout: 8000 });
+  const keyboardFocusedState = await keyboardFocused.jsonValue();
+  assert.match(keyboardFocusedState.menu?.sectorStart?.primaryHintText || '', /LEFT\/RIGHT: SECTOR/);
+  assert.equal(keyboardFocusedState.menu?.sectorStart?.arrowCueVisible, true);
   await page.keyboard.press('ArrowLeft');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).menu?.sectorStart?.selectedCheckpoint === 10, { timeout: 8000 });
   await page.keyboard.press('Enter');
   const keyboardPlay = await waitForScene(page, 'play');
   assert.equal(keyboardPlay.runMode, 'sector_start');
-  assert.equal(keyboardPlay.level, 10);
+  assert.equal(keyboardPlay.level, 11);
+  assert.equal(keyboardPlay.sectorStartChallenge?.checkpoint, 10);
+  assert.equal(keyboardPlay.sectorStartChallenge?.playSector, 11);
 
   await loadProfile(page, makeProgress({ bestSector: 17, bestLevel: 17, pilotXp: 2200, bestScore: 11111 }));
   await clickMenuButton(page, 'launchButton');

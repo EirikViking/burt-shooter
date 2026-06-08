@@ -234,12 +234,14 @@ try {
   assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR 20 CHALLENGE/);
   await clickMenuButton(page, 'sectorStartButton');
   const play = await waitForState(page, (state) => state.scene === 'play' && state.runMode === 'sector_start', 'sector start play');
-  assert.equal(play.level, 20);
+  assert.equal(play.level, 21);
+  assert.equal(play.sectorStartChallenge?.checkpoint, 20);
+  assert.equal(play.sectorStartChallenge?.playSector, 21);
   assert.equal(play.score, 0);
   const gameOver = await finishChallenge(page, 1683);
   const comment = gameOver.gameOver?.ceremonyComment || '';
   assert.match(comment, /NEW SECTOR 20 BEST: 1,683/);
-  assert.match(comment, /REACHED SECTOR 20/);
+  assert.match(comment, /REACHED SECTOR 21/);
   assert.match(comment, /UNRANKED CHALLENGE \| MAIN LEADERBOARD OFF/);
   assert.doesNotMatch(comment, /->/);
   assert.equal(gameOver.gameOver?.mainMenuCta?.visible, true);
@@ -251,7 +253,9 @@ try {
 
   await clickGameOverCta(page, 'retryCta');
   const retryPlay = await waitForState(page, (state) => state.scene === 'play' && state.runMode === 'sector_start', 'one more run sector start');
-  assert.equal(retryPlay.level, 20, 'One More Run should restart the same Sector Start Challenge checkpoint');
+  assert.equal(retryPlay.level, 21, 'One More Run should restart the same Sector Start Challenge checkpoint at its play sector');
+  assert.equal(retryPlay.sectorStartChallenge?.checkpoint, 20);
+  assert.equal(retryPlay.sectorStartChallenge?.playSector, 21);
 
   await finishChallenge(page, 100);
   await clickGameOverCta(page, 'mainMenuCta');

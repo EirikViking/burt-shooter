@@ -52,6 +52,12 @@ export function resolveSectorStartCheckpoint(requestedSector, progressOrHighest 
   return checkpoints.includes(requested) ? requested : null;
 }
 
+export function getSectorStartPlaySector(checkpointSector) {
+  const checkpoint = floorSector(checkpointSector, 0);
+  if (checkpoint < 1) return null;
+  return checkpoint % 10 === 0 ? checkpoint + 1 : checkpoint;
+}
+
 export function getSectorStartState(progress = {}, requestedSector = null) {
   const highestReachedSector = getHighestReachedSector(progress);
   const checkpoints = getSectorStartCheckpoints(highestReachedSector);

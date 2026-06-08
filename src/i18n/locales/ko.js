@@ -13,6 +13,8 @@ const sourceText = Object.freeze({
   'ENTER / SPACE / CLICK: RELAUNCH  |  ESC: MAIN MENU': 'ENTER / SPACE / 클릭: 재시작  |  ESC: 메인 메뉴',
   'A: SAME CHECKPOINT  |  B: MENU': 'A: 같은 체크포인트  |  B: 메뉴',
   'SPACE / CLICK - SAME CHECKPOINT': 'SPACE / 클릭 - 같은 체크포인트',
+  'D-PAD/STICK: NAVIGATE // LEFT/RIGHT: SECTOR // A: CONFIRM // B: BACK': 'D-PAD/STICK: 이동 // 좌/우: 섹터 // A: 확인 // B: 뒤로',
+  'ARROWS: NAVIGATE // LEFT/RIGHT: SECTOR // ENTER/SPACE: CONFIRM // ESC: BACK': '화살표: 이동 // 좌/우: 섹터 // ENTER/SPACE: 확인 // ESC: 뒤로',
   'Sector Start Challenge complete. Local challenge record saved separately; ranked leaderboard and career progress stayed untouched.': '섹터 스타트 챌린지 완료. 로컬 챌린지 기록은 별도로 저장되었고 랭크 리더보드와 커리어 진행은 그대로입니다.',
   'SECTOR START CHALLENGE': '섹터 시작 챌린지',
   'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': '섹터 시작 챌린지 - 메인 점수 기록 안 됨',

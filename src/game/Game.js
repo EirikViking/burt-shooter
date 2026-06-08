@@ -26,6 +26,7 @@ import { RunContentDirector } from './RunContentDirector.js';
 import { awardRunClearScoreBonuses } from './RunClearScoreBonuses.js';
 import {
   RUN_MODES,
+  getSectorStartPlaySector,
   getSectorStartState,
   isRankedRunMode,
   normalizeRunMode,
@@ -87,6 +88,7 @@ export class Game {
     this.runMode = 'ranked';
     this.runModeReason = null;
     this.sectorStartCheckpoint = null;
+    this.sectorStartPlaySector = null;
     this.sectorStartHighestReached = null;
     this.lastSectorStartChallengeRecord = null;
     this.globalLeaderboardTargets = null;
@@ -212,6 +214,7 @@ export class Game {
     const sectorStartCheckpoint = requestedRunMode === RUN_MODES.SECTOR_START
       ? resolveSectorStartCheckpoint(options.startSector, startingProgress)
       : null;
+    const sectorStartPlaySector = sectorStartCheckpoint ? getSectorStartPlaySector(sectorStartCheckpoint) : null;
     if (requestedRunMode === RUN_MODES.SECTOR_START && !sectorStartCheckpoint) {
       const state = getSectorStartState(startingProgress, options.startSector);
       console.warn('[Game] sector_start blocked', {
@@ -221,16 +224,17 @@ export class Game {
       });
       return false;
     }
-    console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${sectorStartCheckpoint || 1}`);
+    console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${sectorStartPlaySector || 1}`);
     this.selectedShipSpriteKey = selectedSpriteKey;
 
     this.score = 0;
-    this.level = sectorStartCheckpoint || 1;
+    this.level = sectorStartPlaySector || 1;
     this.lives = 3;
     this.isDebugRun = false;
     this.runMode = requestedRunMode;
     this.runModeReason = requestedRunMode === RUN_MODES.SECTOR_START ? 'sector_start_checkpoint' : null;
     this.sectorStartCheckpoint = sectorStartCheckpoint;
+    this.sectorStartPlaySector = sectorStartPlaySector;
     this.sectorStartHighestReached = sectorStartCheckpoint ? getSectorStartState(startingProgress).highestReachedSector : null;
     this.lastSectorStartChallengeRecord = null;
     this.resetGlobalLeaderboardCues();
@@ -679,6 +683,7 @@ export class Game {
       runMode: this.runMode,
       runModeReason: this.runModeReason,
       sectorStartCheckpoint: this.sectorStartCheckpoint || null,
+      sectorStartPlaySector: this.sectorStartPlaySector || null,
       discoveriesThisRun: discoveries,
       codexCompletionCounts: getCodexCompletionCounts(),
       scoreBreakdown: { ...this.scoreBreakdown },

@@ -13,6 +13,8 @@ const sourceText = Object.freeze({
   'ENTER / SPACE / CLICK: RELAUNCH  |  ESC: MAIN MENU': 'ENTER / SPACE / КЛИК: ЗАНОВО  |  ESC: ГЛАВНОЕ МЕНЮ',
   'A: SAME CHECKPOINT  |  B: MENU': 'A: ТОТ ЖЕ ЧЕКПОИНТ  |  B: МЕНЮ',
   'SPACE / CLICK - SAME CHECKPOINT': 'SPACE / КЛИК - ТОТ ЖЕ ЧЕКПОИНТ',
+  'D-PAD/STICK: NAVIGATE // LEFT/RIGHT: SECTOR // A: CONFIRM // B: BACK': 'D-PAD/STICK: НАВИГАЦИЯ // ВЛЕВО/ВПРАВО: СЕКТОР // A: ПОДТВЕРДИТЬ // B: НАЗАД',
+  'ARROWS: NAVIGATE // LEFT/RIGHT: SECTOR // ENTER/SPACE: CONFIRM // ESC: BACK': 'СТРЕЛКИ: НАВИГАЦИЯ // ВЛЕВО/ВПРАВО: СЕКТОР // ENTER/SPACE: ПОДТВЕРДИТЬ // ESC: НАЗАД',
   'Sector Start Challenge complete. Local challenge record saved separately; ranked leaderboard and career progress stayed untouched.': 'Челлендж сектора завершен. Локальный рекорд челленджа сохранен отдельно; рейтинговая таблица и карьерный прогресс не изменились.',
   'SECTOR START CHALLENGE': 'ЧЕЛЛЕНДЖ СТАРТА С СЕКТОРА',
   'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': 'ЧЕЛЛЕНДЖ СЕКТОРА - ОСНОВНОЙ СЧЕТ НЕ ЗАПИСЫВАЕТСЯ',

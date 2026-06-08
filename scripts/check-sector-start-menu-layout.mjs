@@ -188,6 +188,9 @@ function assertNoMenuOverlap(state, label) {
   assert.ok(labelBounds.width <= configuredWidth - 12, `${label}: label too wide for button ${JSON.stringify({ labelBounds, configuredWidth, button })}`);
   assert.ok(labelBounds.height <= configuredHeight - 2, `${label}: label too tall for button ${JSON.stringify({ labelBounds, configuredHeight, button })}`);
   assert.ok(Number(sector.labelScale) >= 0.74, `${label}: label scale too small (${sector.labelScale})`);
+  assert.equal(sector.arrowCueVisible, true, `${label}: missing checkpoint switch arrows`);
+  assert.ok((sector.arrowCueBounds?.width || 0) > 0, `${label}: checkpoint switch arrows have no visible bounds`);
+  assert.ok((sector.arrowCueBounds?.height || 0) > 0, `${label}: checkpoint switch arrows have no visible height`);
   if (hangar?.height > 0) {
     assert.ok(button.y + button.height <= hangar.y + 1, `${label}: Sector Start button overlaps Hangar button`);
   }
@@ -247,7 +250,8 @@ try {
         buttonConfiguredWidth: state.menu?.sectorStart?.buttonConfiguredWidth,
         buttonConfiguredHeight: state.menu?.sectorStart?.buttonConfiguredHeight,
         labelBounds: state.menu?.sectorStart?.labelBounds,
-        labelScale: state.menu?.sectorStart?.labelScale
+        labelScale: state.menu?.sectorStart?.labelScale,
+        arrowCueBounds: state.menu?.sectorStart?.arrowCueBounds
       });
     }
     const screenshot = path.join(outputDir, `sector-start-menu-${viewport.name}.png`);

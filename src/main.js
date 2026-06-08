@@ -587,6 +587,7 @@ function buildGameTextState(game) {
     runModeReason: game?.runModeReason || null,
     sectorStartChallenge: (game?.runMode === RUN_MODES.SECTOR_START || game?.runSummary?.sectorStartChallengeAttempt) ? {
       checkpoint: game?.sectorStartCheckpoint || game?.runSummary?.sectorStartCheckpoint || null,
+      playSector: game?.sectorStartPlaySector || game?.runSummary?.sectorStartPlaySector || null,
       highestLegitimatelyReached: game?.sectorStartHighestReached || null,
       attempt: game?.runSummary?.sectorStartChallengeAttempt || null,
       previousBest: game?.runSummary?.sectorStartChallengePreviousBest || null,

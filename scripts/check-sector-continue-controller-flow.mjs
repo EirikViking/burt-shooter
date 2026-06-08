@@ -217,6 +217,9 @@ try {
   await tapButton(page, 13);
   const focused = await waitForState(page, (state) => state.menu?.focusedOption === 'sectorStart', 'sector start focused by D-pad down');
   assert.equal(focused.menu?.sectorStart?.selectedCheckpoint, 15);
+  assert.equal(focused.menu?.sectorStart?.arrowCueVisible, true, 'controller focus should show checkpoint switch arrows');
+  assert.ok((focused.menu?.sectorStart?.arrowCueBounds?.width || 0) > 0, 'checkpoint switch arrows should have visible bounds');
+  assert.match(focused.menu?.sectorStart?.primaryHintText || '', /LEFT\/RIGHT: SECTOR/, 'controller hint should explain sector switching');
 
   await tapButton(page, 14);
   const cycledLeft = await waitForState(page, (state) => state.menu?.sectorStart?.selectedCheckpoint === 10, 'sector start checkpoint cycled left');
@@ -247,6 +250,7 @@ try {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,
     focus: focused.menu?.focusedOption,
     checkpoints: focused.menu?.sectorStart?.checkpoints,
+    arrowCueVisible: focused.menu?.sectorStart?.arrowCueVisible,
     cycledLeft: cycledLeft.menu?.sectorStart?.selectedCheckpoint,
     cycledRight: cycledRight.menu?.sectorStart?.selectedCheckpoint,
     returnedFocus: returnedToLaunch.menu?.focusedOption,

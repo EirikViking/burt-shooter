@@ -13,6 +13,8 @@ const sourceText = Object.freeze({
   'ENTER / SPACE / CLICK: RELAUNCH  |  ESC: MAIN MENU': 'ENTER / SPACE / 点击：重开  |  ESC：主菜单',
   'A: SAME CHECKPOINT  |  B: MENU': 'A：同一检查点  |  B：菜单',
   'SPACE / CLICK - SAME CHECKPOINT': 'SPACE / 点击 - 同一检查点',
+  'D-PAD/STICK: NAVIGATE // LEFT/RIGHT: SECTOR // A: CONFIRM // B: BACK': 'D-PAD/STICK：导航 // 左/右：扇区 // A：确认 // B：返回',
+  'ARROWS: NAVIGATE // LEFT/RIGHT: SECTOR // ENTER/SPACE: CONFIRM // ESC: BACK': '方向键：导航 // 左/右：扇区 // ENTER/SPACE：确认 // ESC：返回',
   'Sector Start Challenge complete. Local challenge record saved separately; ranked leaderboard and career progress stayed untouched.': '扇区起点挑战完成。本地挑战记录已单独保存；排名排行榜和生涯进度未受影响。',
   'SECTOR START CHALLENGE': '扇区开始挑战',
   'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': '扇区开始挑战 - 主分未记录',
