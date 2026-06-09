@@ -122,10 +122,11 @@ Local VDF/upload tooling inspected:
 - `scripts/write-steamworks-vdf.mjs` writes `SetLive` from `STEAM_SET_LIVE`, defaulting to empty.
 - Generated VDF used AppID `4765070`, depot `4765071`, and `"SetLive" "sector-continue-test"`.
 
-Steam BuildID uploaded to `sector-continue-test` for this fix: `23635210`.
-New package upload for this fix: `v2026-06-09_07-15-00`.
-Build description: `Sector Start Challenge gate fix 2f8384a v2026-06-09_07-15-00`.
-Payload manifest: `336` files, `724426249` bytes, manifest hash `147111a4094d98ed01c5fff9073116893a55d196993f6368c69c7cac10eda80e`.
+Latest Steam BuildID uploaded to `sector-continue-test`: `23635462`.
+Latest package upload: `v2026-06-09_07-39-24`.
+Latest build description: `Sector Start Challenge Steam Cloud records e9124d4 v2026-06-09_07-39-24`.
+Latest payload manifest: `336` files, `724431592` bytes, manifest hash `abc2a7b76ae5ac5834f772e09eeb6adcf0b0869e549ee6cfb7559142679d36c0`.
+Previous gate-fix BuildID superseded on `sector-continue-test`: `23635210`.
 Default branch BuildID `23620801`: not targeted by the VDF.
 `test-build` branch: not targeted by the VDF.
 `SetLive`: set only to `sector-continue-test` for this upload.
