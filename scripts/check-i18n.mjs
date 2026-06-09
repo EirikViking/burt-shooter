@@ -198,7 +198,6 @@ const hardcodedTextAllowlist = new Set([
   'Last error: ${this.lastError}',
   'build: ${BUILD_ID}',
   '#${index + 1}',
-  'LV ${score.level || 0}',
   '+${bonusAmount}',
   'pVis:${vis} a:${alpha} tex:${texOk} parent:${parent}',
   'S:${score} R:${rank} (seen:${seen}) REV:${rankEv} UI:${uiRankEv}',

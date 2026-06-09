@@ -110,7 +110,7 @@ try {
     localStorage.setItem('novaSwarm.mockSteamPersona.v1', 'STEAM ACE');
     localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
       { playerName: 'STEAM ACE', score: 22000, level: 7, isCurrentPlayer: true, source: 'steam' },
-      { playerName: 'ORBIT PAL', score: 18000, level: 6, source: 'steam' },
+      { playerName: 'ORBIT PAL', score: 18000, source: 'steam' },
       { playerName: 'RIFT PAL', score: 14000, level: 5, source: 'steam' }
     ]));
     window.__game.leaderboardView = 'global';
@@ -126,6 +126,11 @@ try {
   }
   if (globalState.highscore?.sourceLabel !== 'Steam Global') {
     throw new Error(`Expected Steam Global source, got ${globalState.highscore?.sourceLabel}`);
+  }
+  const globalLevelRows = await page.evaluate(() => window.__game?.scenes?.highscore?.rowLayoutDebug || []);
+  const estimatedLevelRow = globalLevelRows.find((row) => row.levelSource === 'score_estimate');
+  if (!estimatedLevelRow || estimatedLevelRow.levelText !== 'LV ?') {
+    throw new Error(`Estimated Steam levels should display as LV ?: ${JSON.stringify(globalLevelRows)}`);
   }
 
   await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('friends'));

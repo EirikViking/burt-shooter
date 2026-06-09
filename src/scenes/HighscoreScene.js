@@ -52,6 +52,13 @@ function fitTextToWidth(textObject, maxWidth, minFontSize = 9) {
   }
 }
 
+function getLeaderboardLevelDisplay(entry = {}) {
+  const label = translateText('LV');
+  if (entry.levelSource === 'score_estimate') return `${label} ?`;
+  const level = Math.max(0, Math.floor(Number(entry.level ?? entry.levelReached) || 0));
+  return `${label} ${level}`;
+}
+
 export class HighscoreScene {
   constructor(game) {
     this.game = game;
@@ -1085,7 +1092,8 @@ export class HighscoreScene {
           stroke: '#00131b',
           strokeThickness: 1
         });
-        const levelText = createText(`LV ${score.level || 0}`, {
+        const levelDisplay = getLeaderboardLevelDisplay(score);
+        const levelText = createText(levelDisplay, {
           ...rankStyle,
           fontSize: Math.max(10, rowStyle.fontSize - (isMobile ? 3 : 2))
         });
@@ -1117,6 +1125,7 @@ export class HighscoreScene {
         scoreLabel.anchor.set(1, 0);
         levelText.anchor.set(0.5);
         fitTextToWidth(scoreText, scoreBlockWidth, isMobile ? 10 : 12);
+        fitTextToWidth(levelText, levelBlockWidth, isMobile ? 8 : 9);
 
         const levelPill = new PIXI.Graphics();
         const pillWidth = isMobile ? 38 : 46;
@@ -1184,6 +1193,8 @@ export class HighscoreScene {
           score: debugBounds(scoreText),
           scoreLabel: debugBounds(scoreLabel),
           level: debugBounds(levelText),
+          levelText: levelDisplay,
+          levelSource: score.levelSource || null,
           featured: isFeaturedPlayer,
           scoreGroup: {
             x: Math.round(columns.score - scoreBlockWidth),
