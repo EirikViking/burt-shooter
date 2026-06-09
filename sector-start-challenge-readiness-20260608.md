@@ -114,37 +114,34 @@ One initial `npm run check:sector-continue-mode` run exposed a flaky mouse click
 
 ## Steam Upload Status
 
-No Steam upload was performed for this pass.
-
-Reason: the task requires upload only to `sector-continue-test` while also requiring `"SetLive" ""` to remain exactly empty and no live branch changes. The local SteamPipe template and writer expose branch targeting only through `STEAM_SET_LIVE`/`"SetLive"`, and no separate safe repo script was found for assigning `sector-continue-test` while keeping `SetLive` empty. Because the instructions said to stop if any upload-targeting ambiguity exists, this pass stops before SteamCMD.
+Steam upload was performed after explicit follow-up approval to upload the current prototype to `sector-continue-test`.
 
 Local VDF/upload tooling inspected:
 
-- `release/steamworks/app_build_TEMPLATE.vdf` contains `"SetLive" ""`.
+- `release/steamworks/app_build_TEMPLATE.vdf` contains the `SetLive` field used by SteamPipe branch assignment.
 - `scripts/write-steamworks-vdf.mjs` writes `SetLive` from `STEAM_SET_LIVE`, defaulting to empty.
-- Existing sector-start upload evidence used `STEAM_SET_LIVE=''` and did not prove targeting to `sector-continue-test`.
+- Generated VDF used AppID `4765070`, depot `4765071`, and `"SetLive" "sector-continue-test"`.
 
-Steam BuildID uploaded to `sector-continue-test` for this fix: none.
-New package upload for this fix: none.
-Default branch BuildID `23620801`: not live-verified in Steamworks during this pass, but no Steam action was performed.
-`test-build` branch: not live-verified in Steamworks during this pass, but no Steam action was performed.
-`SetLive`: unchanged locally; no new VDF was generated in this pass.
+Steam BuildID uploaded to `sector-continue-test` for this fix: `23635210`.
+New package upload for this fix: `v2026-06-09_07-15-00`.
+Build description: `Sector Start Challenge gate fix 2f8384a v2026-06-09_07-15-00`.
+Payload manifest: `336` files, `724426249` bytes, manifest hash `147111a4094d98ed01c5fff9073116893a55d196993f6368c69c7cac10eda80e`.
+Default branch BuildID `23620801`: not targeted by the VDF.
+`test-build` branch: not targeted by the VDF.
+`SetLive`: set only to `sector-continue-test` for this upload.
 
 ## Known Risks
 
 - The automated checks are strong for run-mode isolation and menu/result flow, but a manual Steam-client pass is still needed for controller feel, focus comfort, and real packaged runtime behavior.
 - The checkpoint unlock rule is intentionally conservative because the current profile shape did not provide a reliable separate cleared-sector fact.
 - Sector Start Challenge is new profile-surface area. The separate storage key lowers corruption risk, but this should still be watched after Steam-client testing.
-- Steam beta deployment requires a clarified branch-targeting procedure. Do not ship live until that is resolved and a Steam-client pass confirms the uploaded build.
+- Steam beta deployment is now on `sector-continue-test`, but do not ship live until a Steam-client pass confirms the uploaded build.
 
 ## Recommendation
 
 A. Safe enough for sector-continue-test only. Do not ship live yet.
 
-Deployment action is blocked until one of these is explicitly allowed and verified:
-
-- Use `SetLive` to target `sector-continue-test`, accepting that this changes a Steam branch assignment.
-- Or provide/verify a Steamworks workflow that assigns the private beta branch without using `SetLive`.
+Deployment action completed for `sector-continue-test` only after explicit follow-up approval. Default and `test-build` were not targeted.
 
 Estimated risk after this pass:
 

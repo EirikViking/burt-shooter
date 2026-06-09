@@ -1,0 +1,53 @@
+{
+  "uploadedAt": "2026-06-09T05:21:45.000Z",
+  "worktree": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+  "branch": "feature/sector-continue-prototype-v1",
+  "sourceHead": "2f8384a0592e764228131aaaeba523ebd992c454",
+  "includedFixCommit": "d5e83efd43479b61ec9f5f65ffff42a9509f1653",
+  "packageVersion": "v2026-06-09_07-15-00",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23635210",
+    "setLive": "sector-continue-test",
+    "targetBranch": "sector-continue-test",
+    "description": "Sector Start Challenge gate fix 2f8384a v2026-06-09_07-15-00",
+    "defaultBranchTargeted": false,
+    "testBuildBranchTargeted": false,
+    "mainLeaderboard": "nova_swarm_global_score_v2"
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 724426249,
+    "manifestHash": "147111a4094d98ed01c5fff9073116893a55d196993f6368c69c7cac10eda80e",
+    "executableSha256": "722fd62abc673310febb8c29d2a75cb6f5adf2d0d645a76358e416a3c7c8b007"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "contentRoot": "..\\desktop\\win-unpacked",
+    "setLive": "sector-continue-test"
+  },
+  "commands": {
+    "package": "npm run package:steam:win",
+    "packagedSmoke": "npm run desktop:smoke:packaged",
+    "payloadManifest": "npm run steamworks:payload-manifest",
+    "writeVdf": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=sector-continue-test STEAM_BUILD_DESC=\"Sector Start Challenge gate fix 2f8384a v2026-06-09_07-15-00\" npm run steamworks:write-vdf",
+    "uploadRedacted": "C:\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+  },
+  "results": {
+    "releaseLine": "PASS",
+    "steamSdkReady": "PASS",
+    "build": "PASS",
+    "steamPackageRuntime": "PASS",
+    "packagedSmoke": "PASS",
+    "steamcmdUpload": "PASS"
+  },
+  "notes": [
+    "Uploaded only to sector-continue-test via SetLive after explicit follow-up approval.",
+    "No default or test-build branch was named in the VDF.",
+    "Steam store metadata, app visibility, AppID, depot ID, and main leaderboard settings were not changed."
+  ]
+}
