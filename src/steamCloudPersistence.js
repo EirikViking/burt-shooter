@@ -1,4 +1,9 @@
 import { readLeaderboardLevel } from './leaderboard/LeaderboardTypes.js';
+import {
+  SECTOR_START_CHALLENGE_RECORDS_KEY,
+  isBetterSectorStartChallengeRecord,
+  normalizeSectorStartChallengeRecord
+} from './progression/SectorStartChallengeRecords.js';
 
 export const CLOUD_LANGUAGE_KEY = 'novaSwarm.languagePreference.v1';
 export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
@@ -9,6 +14,7 @@ export const CLOUD_HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const CLOUD_THREAT_DISCOVERY_KEY = 'nova.threatDiscovery.v1';
 export const CLOUD_SHIP_USAGE_KEY = 'burt.shipUsage.v1';
 export const CLOUD_SHIP_USAGE_TOTAL_KEY = 'burt.shipUsageTotal.v1';
+export const CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY = SECTOR_START_CHALLENGE_RECORDS_KEY;
 
 const SCREEN_SHAKE_KEY = 'burt_accessibility_screen_shake';
 const PLAYER_FOCUS_KEY = 'burt_accessibility_player_focus';
@@ -264,6 +270,40 @@ function mergeThreatDiscovery(localState = {}, cloudState = {}) {
   };
 }
 
+function normalizeSectorStartChallengeRecordsPayload(rawRecords = {}) {
+  const raw = rawRecords && typeof rawRecords === 'object' ? rawRecords : {};
+  const candidates = Array.isArray(raw)
+    ? raw
+    : Object.values(raw.byCheckpoint ?? raw.records ?? raw);
+  const byCheckpoint = {};
+  for (const candidate of candidates) {
+    const record = normalizeSectorStartChallengeRecord(candidate);
+    if (!record) continue;
+    byCheckpoint[String(record.startSector)] = record;
+  }
+  return {
+    version: Math.max(1, Math.floor(Number(raw.version) || 1)),
+    updatedAt: raw.updatedAt ? String(raw.updatedAt) : null,
+    byCheckpoint
+  };
+}
+
+function mergeSectorStartChallengeRecords(localRecords = {}, cloudRecords = {}) {
+  const local = normalizeSectorStartChallengeRecordsPayload(localRecords);
+  const cloud = normalizeSectorStartChallengeRecordsPayload(cloudRecords);
+  const byCheckpoint = { ...local.byCheckpoint };
+  for (const [checkpoint, record] of Object.entries(cloud.byCheckpoint)) {
+    if (isBetterSectorStartChallengeRecord(record, byCheckpoint[checkpoint])) {
+      byCheckpoint[checkpoint] = record;
+    }
+  }
+  return {
+    version: Math.max(local.version, cloud.version, 1),
+    updatedAt: cloud.updatedAt || local.updatedAt || new Date().toISOString(),
+    byCheckpoint
+  };
+}
+
 function normalizeAchievementPayload(raw = {}) {
   const ids = Array.isArray(raw) ? raw : raw?.unlocked;
   const unlocked = Array.isArray(ids)
@@ -342,6 +382,9 @@ export function collectSteamCloudPersistenceState({
       ? getShipUnlockProgress()
       : readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {}),
     threatDiscovery: readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {}),
+    sectorStartChallengeRecords: normalizeSectorStartChallengeRecordsPayload(
+      readJsonStorage(storage, CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY, {})
+    ),
     shipUsage: normalizeUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {})),
     shipUsageTotal: Math.max(
       Math.floor(Number(readStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY)) || 0),
@@ -368,6 +411,7 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     progression: null,
     shipUsage: 0,
     shipUsageTotal: 0,
+    sectorStartChallengeRecords: 0,
     settings: 0
   };
   if (!storage || !save || typeof save !== 'object') return summary;
@@ -453,6 +497,19 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     summary.restored = writeStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY, String(total)) || summary.restored;
   }
 
+  if (save.sectorStartChallengeRecords || save.sectorStartRecords) {
+    const mergedRecords = mergeSectorStartChallengeRecords(
+      readJsonStorage(storage, CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY, {}),
+      save.sectorStartChallengeRecords || save.sectorStartRecords
+    );
+    summary.sectorStartChallengeRecords = Object.keys(mergedRecords.byCheckpoint).length;
+    summary.restored = writeStorage(
+      storage,
+      CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY,
+      JSON.stringify(mergedRecords)
+    ) || summary.restored;
+  }
+
   const settings = save.settings || {};
   if (settings.screenShake !== undefined && writeStorage(storage, SCREEN_SHAKE_KEY, clampUnit(settings.screenShake, 1))) {
     summary.settings += 1;
@@ -485,6 +542,9 @@ export function summarizeSteamCloudPersistence(save = {}) {
     hangarPilotXp: Math.max(0, Math.floor(Number(save?.hangarProgress?.pilotXp) || 0)),
     shipUsageShips: Object.keys(normalizeUsageMap(save?.shipUsage || save?.shipUsageByShip || {})).length,
     shipUsageTotal: Math.max(Math.floor(Number(save?.shipUsageTotal) || 0), sumUsageMap(save?.shipUsage || save?.shipUsageByShip || {})),
-    threatDiscoveryCategories: Object.keys(save?.threatDiscovery?.items || {}).length
+    threatDiscoveryCategories: Object.keys(save?.threatDiscovery?.items || {}).length,
+    sectorStartChallengeCheckpoints: Object.keys(
+      normalizeSectorStartChallengeRecordsPayload(save?.sectorStartChallengeRecords || save?.sectorStartRecords || {}).byCheckpoint
+    ).length
   };
 }

@@ -180,6 +180,7 @@ function isMeaningfulSave(save = {}) {
     Number(hangar.totalCodexDiscoveries) > 0 ||
     (Array.isArray(hangar.unlockedShipIds) && hangar.unlockedShipIds.length > 1) ||
     discoveryCount > 0 ||
+    Object.keys(sanitizeSectorStartChallengeRecords(save.sectorStartChallengeRecords || save.sectorStartRecords || {}).byCheckpoint).length > 0 ||
     Object.keys(sanitizeShipUsage(save.shipUsage || save.shipUsageByShip || {})).length > 0 ||
     Number(save.shipUsageTotal) > 0
   );
@@ -524,6 +525,87 @@ function sumShipUsage(usage = {}) {
     .reduce((total, value) => total + value, 0);
 }
 
+function sanitizeSectorStartChallengeRecord(raw = {}) {
+  if (!raw || typeof raw !== 'object') return null;
+  const startSector = sanitizeNumber(raw.startSector ?? raw.sectorStartCheckpoint, 0, { min: 1 });
+  if (startSector < 1) return null;
+  const highestSectorReached = Math.max(
+    startSector,
+    sanitizeNumber(raw.highestSectorReached ?? raw.sectorReached ?? raw.levelReached, startSector, { min: startSector })
+  );
+  const finalSector = Math.max(
+    startSector,
+    sanitizeNumber(raw.finalSector ?? raw.sectorReached ?? raw.levelReached, highestSectorReached, { min: startSector })
+  );
+  const textOrNull = (value) => {
+    const text = String(value || '').trim();
+    return text ? text.slice(0, 120) : null;
+  };
+  const completedAt = raw.completedAt || raw.timestamp;
+  return {
+    startSector,
+    scoreEarned: sanitizeNumber(raw.scoreEarned ?? raw.score ?? raw.finalScore, 0),
+    highestSectorReached,
+    finalSector,
+    shipId: textOrNull(raw.shipId),
+    shipName: textOrNull(raw.shipName),
+    selectedShipSpriteKey: textOrNull(raw.selectedShipSpriteKey ?? raw.shipKey),
+    completedAt: completedAt ? String(completedAt).slice(0, 80) : nowIso(),
+    runElapsedSeconds: sanitizeNumber(raw.runElapsedSeconds, 0),
+    bossesKilled: sanitizeNumber(raw.bossesKilled, 0),
+    wavesCleared: sanitizeNumber(raw.wavesCleared, 0),
+    runCleared: Boolean(raw.runCleared),
+    source: 'sector_start_challenge'
+  };
+}
+
+function sanitizeSectorStartChallengeRecords(rawRecords = {}) {
+  const raw = rawRecords && typeof rawRecords === 'object' ? rawRecords : {};
+  const candidates = Array.isArray(raw)
+    ? raw
+    : Object.values(raw.byCheckpoint ?? raw.records ?? raw);
+  const byCheckpoint = {};
+  for (const candidate of candidates) {
+    const record = sanitizeSectorStartChallengeRecord(candidate);
+    if (!record) continue;
+    byCheckpoint[String(record.startSector)] = record;
+  }
+  return {
+    version: Math.max(1, sanitizeNumber(raw.version, 1)),
+    updatedAt: raw.updatedAt ? String(raw.updatedAt).slice(0, 80) : null,
+    byCheckpoint
+  };
+}
+
+function isBetterSectorStartChallengeRecord(candidate, previous) {
+  const next = sanitizeSectorStartChallengeRecord(candidate);
+  const current = sanitizeSectorStartChallengeRecord(previous);
+  if (!next) return false;
+  if (!current) return true;
+  if (next.scoreEarned !== current.scoreEarned) return next.scoreEarned > current.scoreEarned;
+  if (next.highestSectorReached !== current.highestSectorReached) {
+    return next.highestSectorReached > current.highestSectorReached;
+  }
+  if (next.finalSector !== current.finalSector) return next.finalSector > current.finalSector;
+  return Date.parse(next.completedAt) > Date.parse(current.completedAt);
+}
+
+function mergeSectorStartChallengeRecords(localRecords = {}, rendererRecords = {}) {
+  const local = sanitizeSectorStartChallengeRecords(localRecords);
+  const renderer = sanitizeSectorStartChallengeRecords(rendererRecords);
+  const byCheckpoint = { ...local.byCheckpoint };
+  for (const [checkpoint, record] of Object.entries(renderer.byCheckpoint)) {
+    if (isBetterSectorStartChallengeRecord(record, byCheckpoint[checkpoint])) {
+      byCheckpoint[checkpoint] = record;
+    }
+  }
+  return {
+    version: Math.max(local.version, renderer.version, 1),
+    updatedAt: renderer.updatedAt || local.updatedAt || nowIso(),
+    byCheckpoint
+  };
+}
+
 function mergeShipUsage(localUsage = {}, rendererUsage = {}) {
   const local = sanitizeShipUsage(localUsage);
   const renderer = sanitizeShipUsage(rendererUsage);
@@ -549,6 +631,9 @@ function sanitizeRendererState(state = {}) {
     progression: sanitizeUnlockProgress(state.progression || state.unlockProgress || {}),
     hangarProgress: sanitizeHangarProgress(state.hangarProgress || {}),
     threatDiscovery: sanitizeThreatDiscovery(state.threatDiscovery || {}),
+    sectorStartChallengeRecords: sanitizeSectorStartChallengeRecords(
+      state.sectorStartChallengeRecords || state.sectorStartRecords || {}
+    ),
     shipUsage,
     shipUsageTotal: Math.max(sanitizeNumber(state.shipUsageTotal, 0), sumShipUsage(shipUsage)),
     settings: sanitizeSettings(state.settings || {})
@@ -567,6 +652,7 @@ function createEmptySave(profileContext = {}) {
     progression: sanitizeUnlockProgress(),
     hangarProgress: sanitizeHangarProgress(),
     threatDiscovery: sanitizeThreatDiscovery(),
+    sectorStartChallengeRecords: sanitizeSectorStartChallengeRecords(),
     shipUsage: sanitizeShipUsage(),
     shipUsageTotal: 0,
     settings: sanitizeSettings()
@@ -586,6 +672,7 @@ function normalizeSave(rawSave = {}, localHighscores = null, profileContext = {}
     progression: rendererState.progression,
     hangarProgress: rendererState.hangarProgress,
     threatDiscovery: rendererState.threatDiscovery,
+    sectorStartChallengeRecords: rendererState.sectorStartChallengeRecords,
     shipUsage: rendererState.shipUsage,
     shipUsageTotal: rendererState.shipUsageTotal,
     settings: rendererState.settings
@@ -711,6 +798,9 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
       threatDiscovery: Object.hasOwn(state, 'threatDiscovery')
         ? rendererState.threatDiscovery
         : current.threatDiscovery,
+      sectorStartChallengeRecords: Object.hasOwn(state, 'sectorStartChallengeRecords') || Object.hasOwn(state, 'sectorStartRecords')
+        ? mergeSectorStartChallengeRecords(current.sectorStartChallengeRecords, rendererState.sectorStartChallengeRecords)
+        : current.sectorStartChallengeRecords,
       shipUsage,
       shipUsageTotal: Math.max(
         current.shipUsageTotal || 0,
@@ -738,6 +828,9 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
       hangarUnlockedShips: Array.isArray(save.hangarProgress?.unlockedShipIds) ? save.hangarProgress.unlockedShipIds.length : 0,
       shipUsageShips: Object.keys(sanitizeShipUsage(save.shipUsage)).length,
       shipUsageTotal: Math.max(sanitizeNumber(save.shipUsageTotal, 0), sumShipUsage(save.shipUsage)),
+      sectorStartChallengeCheckpoints: Object.keys(
+        sanitizeSectorStartChallengeRecords(save.sectorStartChallengeRecords || save.sectorStartRecords || {}).byCheckpoint
+      ).length,
       threatDiscoveryCategories: Object.keys(save.threatDiscovery?.items || {}).length,
       threatDiscoveryUnread: Array.isArray(save.threatDiscovery?.unreadIds) ? save.threatDiscovery.unreadIds.length : 0,
       updatedAt: save.updatedAt

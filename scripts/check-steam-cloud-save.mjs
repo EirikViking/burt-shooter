@@ -8,6 +8,7 @@ import {
   CLOUD_HANGAR_PROGRESS_KEY,
   CLOUD_LANGUAGE_KEY,
   CLOUD_LOCAL_LEADERBOARD_KEY,
+  CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY,
   CLOUD_SHIP_USAGE_KEY,
   CLOUD_SHIP_USAGE_TOTAL_KEY,
   CLOUD_THREAT_DISCOVERY_KEY,
@@ -118,6 +119,20 @@ try {
       'nova-player-ship-04.png': 2
     },
     shipUsageTotal: 6,
+    sectorStartChallengeRecords: {
+      version: 1,
+      updatedAt: '2026-01-06T00:00:00.000Z',
+      byCheckpoint: {
+        5: {
+          startSector: 5,
+          scoreEarned: 1200,
+          highestSectorReached: 7,
+          finalSector: 7,
+          shipName: 'Nova Sparrow',
+          completedAt: '2026-01-06T00:00:00.000Z'
+        }
+      }
+    },
     debugFlags: { shouldNotPersist: true },
     absolutePath: 'C:/Users/example/AppData/Roaming/Nova Swarm'
   });
@@ -133,6 +148,8 @@ try {
   assert.equal(merged.shipUsage.nova_ship_01, 4);
   assert.equal(merged.shipUsage['nova-player-ship-04.png'], 2);
   assert.equal(merged.shipUsageTotal, 6);
+  assert.equal(merged.sectorStartChallengeRecords.byCheckpoint['5'].scoreEarned, 1200);
+  assert.equal(merged.sectorStartChallengeRecords.byCheckpoint['5'].highestSectorReached, 7);
   assert.equal(merged.settings.screenShake, 0.35);
   assert.equal(merged.settings.playerFocus, 0.8);
   assert.equal(merged.settings.colorAssist, true);
@@ -166,7 +183,21 @@ try {
       nova_ship_04: 3,
       'nova-player-ship-04.png': 2
     })],
-    [CLOUD_SHIP_USAGE_TOTAL_KEY, '5']
+    [CLOUD_SHIP_USAGE_TOTAL_KEY, '5'],
+    [CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY, JSON.stringify({
+      version: 1,
+      updatedAt: '2026-01-07T00:00:00.000Z',
+      byCheckpoint: {
+        10: {
+          startSector: 10,
+          scoreEarned: 4444,
+          highestSectorReached: 12,
+          finalSector: 12,
+          shipName: 'Comet Needle',
+          completedAt: '2026-01-07T00:00:00.000Z'
+        }
+      }
+    })]
   ]);
   const collected = collectSteamCloudPersistenceState({
     storage,
@@ -194,6 +225,8 @@ try {
   assert.equal(collectedSave.shipUsage.nova_ship_04, 3);
   assert.equal(collectedSave.shipUsage['nova-player-ship-04.png'], 2);
   assert.equal(collectedSave.shipUsageTotal, 9);
+  assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].scoreEarned, 4444);
+  assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].highestSectorReached, 12);
 
   const restartStorage = new MemoryStorage([
     [CLOUD_LANGUAGE_KEY, 'de'],
@@ -202,7 +235,21 @@ try {
     ])],
     [CLOUD_ACHIEVEMENT_KEY, JSON.stringify({ version: 1, unlocked: ['existing_local'] })],
     [CLOUD_SHIP_USAGE_KEY, JSON.stringify({ nova_ship_01: 2 })],
-    [CLOUD_SHIP_USAGE_TOTAL_KEY, '2']
+    [CLOUD_SHIP_USAGE_TOTAL_KEY, '2'],
+    [CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY, JSON.stringify({
+      version: 1,
+      updatedAt: '2026-01-08T00:00:00.000Z',
+      byCheckpoint: {
+        10: {
+          startSector: 10,
+          scoreEarned: 9000,
+          highestSectorReached: 13,
+          finalSector: 13,
+          shipName: 'Local Best',
+          completedAt: '2026-01-08T00:00:00.000Z'
+        }
+      }
+    })]
   ]);
   const restoreSummary = restoreSteamCloudPersistenceToStorage({
     language: { preference: 'ja', current: 'ja' },
@@ -229,6 +276,28 @@ try {
       'row2_ship_1.png': 3
     },
     shipUsageTotal: 8,
+    sectorStartChallengeRecords: {
+      version: 1,
+      updatedAt: '2026-01-09T00:00:00.000Z',
+      byCheckpoint: {
+        10: {
+          startSector: 10,
+          scoreEarned: 7000,
+          highestSectorReached: 14,
+          finalSector: 14,
+          shipName: 'Cloud Lower',
+          completedAt: '2026-01-09T00:00:00.000Z'
+        },
+        20: {
+          startSector: 20,
+          scoreEarned: 12000,
+          highestSectorReached: 22,
+          finalSector: 22,
+          shipName: 'Cloud New',
+          completedAt: '2026-01-09T00:00:00.000Z'
+        }
+      }
+    },
     settings: {
       screenShake: 0.2,
       playerFocus: 0.75,
@@ -245,6 +314,9 @@ try {
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY)).nova_ship_01, 5);
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY))['row2_ship_1.png'], 3);
   assert.equal(restartStorage.getItem(CLOUD_SHIP_USAGE_TOTAL_KEY), '8');
+  const restoredSectorRecords = JSON.parse(restartStorage.getItem(CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY));
+  assert.equal(restoredSectorRecords.byCheckpoint['10'].scoreEarned, 9000);
+  assert.equal(restoredSectorRecords.byCheckpoint['20'].scoreEarned, 12000);
 
   const systemStorage = new MemoryStorage([[CLOUD_LANGUAGE_KEY, 'de']]);
   restoreSteamCloudPersistenceToStorage({ language: { preference: 'system' } }, { storage: systemStorage });
