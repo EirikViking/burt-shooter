@@ -422,6 +422,7 @@ function buildGameTextState(game) {
   const playerBullets = playScene?.bulletManager?.playerBullets || playScene?.bulletManager?.bullets || [];
   const enemyBullets = playScene?.bulletManager?.enemyBullets || [];
   const activeSettingsOverlay = game?.currentScene?.settingsOverlay || playScene?.settingsOverlay || null;
+  const activeHowToPlayOverlay = game?.currentScene?.howToPlayOverlay || playScene?.howToPlayOverlay || null;
   const menuScene = getStableSceneName(game) === 'menu' ? game?.currentScene : null;
   const introScene = getStableSceneName(game) === 'intro' ? game?.currentScene : null;
   const shipSelectScene = getStableSceneName(game) === 'shipSelect' ? game?.currentScene : null;
@@ -606,12 +607,14 @@ function buildGameTextState(game) {
     overlays: {
       pause: Boolean(playScene?.pauseOverlay?.visible && playScene?.pauseOverlay?.parent),
       settings: Boolean(activeSettingsOverlay?.container?.parent),
+      howToPlay: Boolean(activeHowToPlayOverlay?.container?.parent),
       credits: Boolean(activeSettingsOverlay?.creditsPanel?.parent),
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
     cursor: getGameplayCursorDebugState(game),
     menu: menuScene?.getLayoutDebugState ? menuScene.getLayoutDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
+    howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
     accessibility: getAccessibilitySettings(),
     input: {

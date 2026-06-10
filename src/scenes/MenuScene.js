@@ -6,6 +6,7 @@ import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
+import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
 import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
@@ -111,6 +112,7 @@ export class MenuScene {
     this.codexCuePollMs = 0;
     this.achievementsBtn = null;
     this.settingsBtn = null;
+    this.helpBtn = null;
     this.exitBtn = null;
     this.exitNotice = null;
     this.exitNoticeTimeout = null;
@@ -129,6 +131,7 @@ export class MenuScene {
     this.crewComms = [];
     this.deckGlints = [];
     this.settingsOverlay = null;
+    this.howToPlayOverlay = null;
     this.lastMenuPanelBounds = null;
     this.menuFontsReady = false;
 
@@ -197,7 +200,7 @@ export class MenuScene {
       const target = event.target;
       const tagName = String(target?.tagName || '').toLowerCase();
       if (tagName === 'input' || tagName === 'textarea' || target?.isContentEditable) return;
-      if (this.settingsOverlay) return;
+      if (this.settingsOverlay || this.howToPlayOverlay) return;
 
       const isPrimaryStart = event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter' || event.code === 'Space';
       const isMoveUp = event.key === 'ArrowUp' || event.code === 'ArrowUp';
@@ -867,6 +870,19 @@ export class MenuScene {
     });
     this.container.addChild(this.settingsBtn);
 
+    this.helpBtn = this.createButton(translateText('HOW TO PLAY'), layout, { compact: true, accent: 0xffef7e });
+    this.helpBtn.alpha = 0;
+    this.helpBtn.on('pointerdown', () => {
+      try {
+        AudioManager.init();
+        AudioManager.playSfx('ui_open', { volume: 0.32 });
+        this.openHowToPlayOverlay();
+      } catch (e) {
+        console.error('[MenuScene] How To Play Error:', e);
+      }
+    });
+    this.container.addChild(this.helpBtn);
+
     this.exitBtn = this.createButton('EXIT GAME', layout, { accent: 0xff6b6b });
     this.exitBtn.alpha = 0;
     this.exitBtn.on('pointerdown', () => {
@@ -996,6 +1012,7 @@ export class MenuScene {
       this.threatCodexBtn?._label,
       this.achievementsBtn?._label,
       this.settingsBtn?._label,
+      this.helpBtn?._label,
       this.exitBtn?._label,
       this.exitNotice,
       ...this.crewComms.flatMap((card) => card.children.filter((child) => child instanceof PIXI.Text))
@@ -1265,6 +1282,15 @@ export class MenuScene {
     this.musicBtn.x = width - Math.max(92, layout.padding + this.musicBtn._btnWidth / 2);
     this.musicBtn.y = safeMargin.top + (isMobileLayout ? 32 : 38);
 
+    this.helpBtn._btnWidth = isMobileLayout ? 150 : 164;
+    this.helpBtn._btnHeight = isMobileLayout ? 34 : 36;
+    this.helpBtn._label.style.fontSize = Math.max(12, controlsSize);
+    this.refreshMenuButtonLabel(this.helpBtn, this.helpBtn._btnWidth - 26, { minScale: 0.72 });
+    this.drawMenuButton(this.helpBtn, false);
+    this.helpBtn.scale.set(1);
+    this.helpBtn.x = this.musicBtn.x;
+    this.helpBtn.y = this.musicBtn.y + (isMobileLayout ? 42 : 46);
+
     if (this.buildStamp) {
       this.buildStamp.x = width - layout.padding / 2;
       this.buildStamp.y = height - layout.padding / 2;
@@ -1388,6 +1414,7 @@ export class MenuScene {
       settingsButton: this.settingsBtn,
       exitButton: this.exitBtn,
       exitNotice: this.exitNotice,
+      helpButton: this.helpBtn,
       musicButton: this.musicBtn
     };
     return {
@@ -1397,7 +1424,9 @@ export class MenuScene {
       },
       panel: this.lastMenuPanelBounds,
       focusedOption: this.menuOptions?.[this.focusedMenuIndex]?.id || null,
+      optionOrder: this.menuOptions?.map((option) => option.id).filter(Boolean) || [],
       inputDevice: this.lastInputDevice,
+      howToPlay: this.howToPlayOverlay?.getDebugState ? this.howToPlayOverlay.getDebugState() : null,
       sectorStart: {
         available: Boolean(this.sectorStartState?.available),
         highestReachedSector: this.sectorStartState?.highestReachedSector || 1,
@@ -1677,6 +1706,7 @@ export class MenuScene {
     this.animateElement(this.achievementsBtn, this.sectorStartBtn?.visible ? 1.46 : 1.4, 0.4);
     this.animateElement(this.settingsBtn, this.sectorStartBtn?.visible ? 1.58 : 1.52, 0.4);
     this.animateElement(this.exitBtn, this.sectorStartBtn?.visible ? 1.7 : 1.64, 0.4);
+    this.animateElement(this.helpBtn, this.sectorStartBtn?.visible ? 1.76 : 1.7, 0.4);
     this.animateElement(this.disclaimer, this.sectorStartBtn?.visible ? 1.82 : 1.76, 0.4);
   }
 
@@ -1724,6 +1754,15 @@ export class MenuScene {
         }
       },
       { id: 'exit', button: this.exitBtn, activate: () => this.exitGame() },
+      {
+        id: 'howToPlay',
+        button: this.helpBtn,
+        activate: () => {
+          AudioManager.init();
+          AudioManager.playSfx('ui_open', { volume: 0.32 });
+          this.openHowToPlayOverlay();
+        }
+      },
       {
         id: 'music',
         button: this.musicBtn,
@@ -2049,6 +2088,20 @@ export class MenuScene {
     this.container.addChild(this.settingsOverlay.container);
   }
 
+  openHowToPlayOverlay() {
+    if (this.howToPlayOverlay) {
+      this.closeHowToPlayOverlay();
+    }
+
+    this.howToPlayOverlay = new HowToPlayOverlay(this.game, {
+      onClose: () => {
+        this.howToPlayOverlay = null;
+        this.menuGamepadNavigator.suppressUntilReleased();
+      }
+    });
+    this.container.addChild(this.howToPlayOverlay.container);
+  }
+
   handleLanguageChanged() {
     if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
     if (this.disclaimer) this.disclaimer.text = this.getDisclaimerText(getCurrentLayout());
@@ -2059,6 +2112,10 @@ export class MenuScene {
     }
     if (this.threatCodexBtn?._label) {
       this.threatCodexBtn._label.text = translateText('THREAT CODEX');
+    }
+    if (this.helpBtn?._label) {
+      this.helpBtn._label.text = translateText('HOW TO PLAY');
+      this.refreshMenuButtonLabel(this.helpBtn, this.helpBtn._btnWidth - 26, { minScale: 0.72 });
     }
     this.refreshSectorStartState();
     this.updateSectorStartButton({ forceGpuRefresh: true });
@@ -2074,6 +2131,13 @@ export class MenuScene {
     if (this.settingsOverlay) {
       this.settingsOverlay.close();
       this.settingsOverlay = null;
+    }
+  }
+
+  closeHowToPlayOverlay() {
+    if (this.howToPlayOverlay) {
+      this.howToPlayOverlay.close();
+      this.howToPlayOverlay = null;
     }
   }
 
@@ -2166,7 +2230,9 @@ export class MenuScene {
       });
     }
 
-    if (this.settingsOverlay) {
+    if (this.howToPlayOverlay) {
+      this.howToPlayOverlay.update?.(delta);
+    } else if (this.settingsOverlay) {
       this.settingsOverlay.update?.(delta);
     } else if (!this.launchingRun) {
       this.processMenuGamepad();
@@ -2211,6 +2277,7 @@ export class MenuScene {
 
   destroy() {
     this.closeSettingsOverlay();
+    this.closeHowToPlayOverlay();
 
     // PART A: Cleanup story rotation
     if (this.storyRotationTimer) {

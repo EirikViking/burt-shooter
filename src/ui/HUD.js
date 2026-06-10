@@ -370,12 +370,12 @@ export class HUD {
 
     const layout = getCurrentLayout();
     const isMobile = Boolean(layout?.isMobile);
-    const width = isMobile ? 184 : 232;
+    const width = isMobile ? 194 : 256;
     const paddingX = 7;
     const paddingTop = 6;
     const rowGap = 5;
-    const rowHeight = isMobile ? 31 : 34;
-    const titleHeight = 16;
+    const rowHeight = isMobile ? 32 : 38;
+    const titleHeight = isMobile ? 16 : 18;
     const height = paddingTop + titleHeight + activeStates.length * rowHeight + Math.max(0, activeStates.length - 1) * rowGap + 7;
 
     this.activePowerupBg.clear();
@@ -389,7 +389,7 @@ export class HUD {
     this.activePowerupTitle.text = hasDebuff
       ? 'SYSTEM STATUS'
       : activeStates.length > 1 ? 'POWERUPS ONLINE' : 'POWERUP ONLINE';
-    this.activePowerupTitle.style.fontSize = isMobile ? 9 : 10;
+    this.activePowerupTitle.style.fontSize = isMobile ? 10 : 12;
     this.activePowerupTitle.x = paddingX + 1;
     this.activePowerupTitle.y = paddingTop - 2;
     this.activePowerupTitle.visible = true;
@@ -512,9 +512,9 @@ export class HUD {
       row.icon.visible = false;
     }
 
-    row.label.style.fontSize = isMobile ? 10 : 12;
-    row.meta.style.fontSize = isMobile ? 10 : 11;
-    row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 15 : 19);
+    row.label.style.fontSize = isMobile ? 11 : 14;
+    row.meta.style.fontSize = isMobile ? 10 : 12;
+    row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 15 : 18);
     row.meta.text = this.formatPowerupMeta(state);
     row.label.x = 34;
     row.label.y = 4;
@@ -748,26 +748,27 @@ export class HUD {
     if (!layout || typeof layout.width !== 'number') return;
 
     const canvasWidth = this.game.getWidth ? this.game.getWidth() : layout.width;
-    const margin = layout.isMobile ? 14 : 12;
-    const blockSpacing = layout.isMobile ? 24 : 22;
-    const scoreFont = layout.isMobile ? 15 : 18;
-    const livesFont = layout.isMobile ? 16 : 18;
-    const leftPanelWidth = layout.isMobile ? Math.min(274, canvasWidth * 0.72) : 356;
-    const leftPanelHeight = layout.isMobile ? 76 : 82;
-    const rightPanelWidth = layout.isMobile ? 118 : 150;
-    const rightPanelHeight = layout.isMobile ? 42 : 46;
-    const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : 390;
-    const missionPanelHeight = layout.isMobile ? 38 : 44;
+    const isLargeDesktop = !layout.isMobile && canvasWidth >= 1920;
+    const margin = layout.isMobile ? 14 : 16;
+    const blockSpacing = layout.isMobile ? 24 : (isLargeDesktop ? 26 : 24);
+    const scoreFont = layout.isMobile ? 15 : (isLargeDesktop ? 22 : 20);
+    const livesFont = layout.isMobile ? 16 : (isLargeDesktop ? 22 : 20);
+    const leftPanelWidth = layout.isMobile ? Math.min(274, canvasWidth * 0.72) : (isLargeDesktop ? 410 : 382);
+    const leftPanelHeight = layout.isMobile ? 76 : (isLargeDesktop ? 98 : 90);
+    const rightPanelWidth = layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164);
+    const rightPanelHeight = layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52);
+    const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : (isLargeDesktop ? 520 : 440);
+    const missionPanelHeight = layout.isMobile ? 38 : (isLargeDesktop ? 58 : 52);
     const missionPanelX = layout.isMobile ? margin : canvasWidth / 2 - missionPanelWidth / 2;
     const missionPanelY = layout.isMobile ? margin + leftPanelHeight + 7 : margin;
 
     this.scoreText.style.fontSize = scoreFont;
     this.levelText.style.fontSize = scoreFont;
     this.livesText.style.fontSize = livesFont;
-    this.locationText.style.fontSize = layout.isMobile ? 10 : 12;
-    this.rankText.style.fontSize = layout.isMobile ? 11 : 13;
-    this.missionLabel.style.fontSize = layout.isMobile ? 8 : 10;
-    this.missionText.style.fontSize = layout.isMobile ? 11 : 14;
+    this.locationText.style.fontSize = layout.isMobile ? 11 : (isLargeDesktop ? 16 : 14);
+    this.rankText.style.fontSize = layout.isMobile ? 12 : (isLargeDesktop ? 15 : 14);
+    this.missionLabel.style.fontSize = layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11);
+    this.missionText.style.fontSize = layout.isMobile ? 12 : (isLargeDesktop ? 17 : 15);
 
     this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, leftPanelHeight, 0x00d9ff, 0.16);
     this.drawGlassPanel(this.rightPanel, canvasWidth - margin - rightPanelWidth, margin, rightPanelWidth, rightPanelHeight, 0x75ff8d, 0.14);
@@ -789,9 +790,9 @@ export class HUD {
     this.levelText.y = margin + blockSpacing + 8;
 
     this.missionLabel.x = missionPanelX + missionPanelWidth / 2;
-    this.missionLabel.y = missionPanelY + 10;
+    this.missionLabel.y = missionPanelY + (layout.isMobile ? 10 : (isLargeDesktop ? 14 : 12));
     this.missionText.x = missionPanelX + missionPanelWidth / 2;
-    this.missionText.y = missionPanelY + 27;
+    this.missionText.y = missionPanelY + (layout.isMobile ? 27 : (isLargeDesktop ? 37 : 33));
 
     this.locationText.x = canvasWidth - margin;
     this.locationText.y = layout.isMobile

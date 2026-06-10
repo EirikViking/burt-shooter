@@ -5,9 +5,9 @@ import path from 'node:path';
 import { chromium } from 'playwright';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
-const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4341));
+const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4367));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
-const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/boss-special-hazards-${timestamp()}`);
+const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/boss-hit-clarity-${timestamp()}`);
 const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function timestamp() {
@@ -30,7 +30,7 @@ async function isPortAvailable(candidatePort) {
 }
 
 async function findAvailablePort(startPort) {
-  for (let candidate = startPort; candidate < startPort + 40; candidate++) {
+  for (let candidate = startPort; candidate < startPort + 40; candidate += 1) {
     if (await isPortAvailable(candidate)) return candidate;
   }
   throw new Error(`No available check port found starting at ${startPort}`);
@@ -54,13 +54,14 @@ function viteCommand() {
 async function startPreviewServer() {
   if (await canFetch(baseUrl)) return null;
   const { command, args } = viteCommand();
-  const server = spawn(command, [...args, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
+  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort'], {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
   });
   server.stdout.on('data', (chunk) => process.stdout.write(`[preview] ${chunk}`));
   server.stderr.on('data', (chunk) => process.stderr.write(`[preview] ${chunk}`));
+
   const start = Date.now();
   while (Date.now() - start < 15000) {
     if (await canFetch(baseUrl)) return server;
@@ -76,6 +77,10 @@ function findChrome() {
     'C:/Program Files/Google/Chrome/Application/chrome.exe',
     'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
   ].filter(Boolean).find((candidate) => existsSync(candidate));
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
 }
 
 const server = await startPreviewServer();
@@ -94,12 +99,13 @@ page.on('console', (message) => {
 });
 
 try {
+  mkdirSync(outputDir, { recursive: true });
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
     'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
     startAtBoss: '1',
-    startLevel: '6'
+    startLevel: '2'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
 
   await page.waitForFunction(() => {
@@ -107,109 +113,73 @@ try {
     return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE';
   }, { timeout: 30000 });
 
-  const results = await page.evaluate(async () => {
+  const results = await page.evaluate(() => {
     const game = window.__game;
     const play = game?.scenes?.play;
     const boss = play?.enemyManager?.boss;
     const player = play?.player;
     if (!game || !play || !boss || !player) throw new Error('Missing boss test surface');
-    boss.x = (game.getWidth?.() || 1280) / 2;
+
+    const width = game.getWidth?.() || 1280;
+    const height = game.getHeight?.() || 720;
+    boss.x = width / 2;
     boss.y = Math.max(120, boss.y || 120);
     if (boss.sprite) {
       boss.sprite.x = boss.x;
       boss.sprite.y = boss.y;
     }
+    player.x = width / 2;
+    player.y = height * 0.8;
+    player.invulnerable = true;
+    player.invulnerableTime = 12000;
 
-    const resetPlayer = () => {
-      game.lives = 3;
-      player.active = true;
-      player.shieldActive = false;
-      player.invulnerable = false;
-      player.invulnerableTime = 0;
-      if (player.activePowerup) {
-        player.activePowerup.type = null;
-        player.activePowerup.expiresAt = 0;
-      }
+    const runCase = (name, laneWidth, details) => {
       play.bossHazards = [];
-      play.lastBossHazardHit = null;
-      play.bossMercyUntilMs = 0;
-      play.lastBossMercyBlockLogAt = 0;
-      play.lastBossMercyFeedbackAt = 0;
-      play.lastHitAt = 0;
-    };
-
-    const runCase = (name, setup) => {
-      resetPlayer();
-      const beforeLives = game.lives;
-      const details = setup();
-      const hazard = play.registerBossHazardFromBoss(boss, details.category || 'signature', details);
-      if (hazard) {
-        hazard.startedAt -= (Number(hazard.armingMs) || 0) + 20;
-      }
-      play.updateBossHazards(1);
+      boss.safeLanes = [{
+        kind: 'aimed-edges',
+        width: laneWidth,
+        angle: Math.PI / 2,
+        label: 'TEST WARNING'
+      }];
+      const hazard = play.registerBossHazardFromBoss(boss, details.category || 'regular', {
+        ...details,
+        playerX: player.x,
+        playerY: player.y
+      });
       return {
         name,
-        ok: game.lives === beforeLives - 1 && Boolean(play.lastBossHazardHit),
-        livesBefore: beforeLives,
-        livesAfter: game.lives,
+        laneWidth,
         hazard: hazard ? {
           kind: hazard.kind,
           type: hazard.type,
-          category: hazard.category,
-          hit: Boolean(hazard.hit)
+          attack: hazard.attack,
+          spread: hazard.spread,
+          radius: hazard.radius
         } : null,
-        lastHit: play.lastBossHazardHit
+        ok: Boolean(hazard) && Number(hazard.spread) <= laneWidth + 0.0001
       };
     };
 
-    const beam = runCase('signature-lance-beam', () => {
-      player.x = boss.x;
-      player.y = boss.y + 260;
-      return { category: 'signature', type: 'lance', playerX: player.x, playerY: player.y };
-    });
-
-    const ring = runCase('signature-web-ring', () => {
-      player.x = boss.x + 125;
-      player.y = boss.y + 18;
-      return { category: 'signature', type: 'ring', playerX: player.x, playerY: player.y };
-    });
-
-    const wall = runCase('regular-wall-columns', () => {
-      const offsets = typeof boss.getWallColumnOffsets === 'function' ? boss.getWallColumnOffsets() : [-60];
-      player.x = boss.x + offsets[0];
-      player.y = boss.y + 210;
-      return { category: 'regular', type: 'wall', attack: 'wall', playerX: player.x, playerY: player.y };
-    });
-
-    return {
-      cases: [beam, ring, wall],
-      telemetry: JSON.parse(window.render_game_to_text()).bossHazards
-    };
+    return [
+      runCase('regular-fan-level2', 0.3, { category: 'regular', type: 'fan', attack: 'fan' }),
+      runCase('regular-sniper-beam', 0.07, { category: 'regular', type: 'aim', attack: 'sniper' }),
+      runCase('signature-cone-wide-warning', 0.64, { category: 'signature', type: 'cone' }),
+      runCase('signature-lance-wide-warning', 0.16, { category: 'signature', type: 'lance' })
+    ];
   });
 
-  await page.waitForTimeout(120);
-  mkdirSync(outputDir, { recursive: true });
-  const screenshot = path.join(outputDir, 'boss-special-hazards.png');
-  await page.screenshot({ path: screenshot, fullPage: true });
-
+  const failures = results.filter((item) => !item.ok);
   const report = {
-    ok: results.cases.every((item) => item.ok) &&
-      pageErrors.length === 0 &&
-      consoleWarningsOrErrors.length === 0,
+    ok: failures.length === 0 && pageErrors.length === 0 && consoleWarningsOrErrors.length === 0,
     baseUrl,
-    ...results,
+    results,
+    failures,
     pageErrors,
-    consoleWarningsOrErrors,
-    screenshot
+    consoleWarningsOrErrors
   };
-  writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
-
-  if (!report.ok) {
-    console.error(JSON.stringify(report, null, 2));
-    process.exitCode = 1;
-  } else {
-    console.log(`[boss-special-hazards] PASS ${report.cases.map((item) => `${item.name}:${item.livesBefore}->${item.livesAfter}`).join(' ')} screenshot=${screenshot}`);
-  }
+  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
+  assert(report.ok, `[boss-hit-clarity] ${JSON.stringify(failures)}`);
+  console.log(`[boss-hit-clarity] PASS ${results.map((item) => `${item.name}:${item.hazard?.spread}`).join(' ')} report=${path.join(outputDir, 'report.json')}`);
 } finally {
   await browser.close();
   if (server) server.kill();

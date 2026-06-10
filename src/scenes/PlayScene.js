@@ -19,6 +19,7 @@ import { NullTouchControls } from '../input/NullTouchControls.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
+import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { getDefaultShipKey } from '../config/ShipMetadata.js';
 import { createText } from '../utils/pixiText.js';
@@ -91,6 +92,7 @@ export class PlayScene {
     this.pauseFocusedIndex = 0;
     this.pauseGamepadNavigator = new GamepadNavigator();
     this.settingsOverlay = null;
+    this.howToPlayOverlay = null;
     this.hadGameplayGamepadConnection = false;
     this.lastGameplayGamepadConnected = false;
     this.controlSmokeMode = false;
@@ -280,6 +282,7 @@ export class PlayScene {
     this.bossClearRecoveryLevels.clear();
     this.pauseOverlay = null;
     this.settingsOverlay = null;
+    this.howToPlayOverlay = null;
     this.pausePressed = false;
     this.hadGameplayGamepadConnection = false;
     this.lastGameplayGamepadConnected = false;
@@ -2489,6 +2492,7 @@ export class PlayScene {
   destroy() {
     this.flushBalanceDebugSummary('scene_destroy');
     this.closeSettingsOverlay();
+    this.closeHowToPlayOverlay();
     this.removeAutoPauseHandlers();
     this.shipIntroToken += 1;
 
@@ -2931,7 +2935,7 @@ export class PlayScene {
     overlay.addChild(dim);
 
     const panelWidth = Math.min(500, width * 0.72);
-    const panelHeight = 310;
+    const panelHeight = 360;
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const panel = new PIXI.Graphics();
@@ -2964,13 +2968,15 @@ export class PlayScene {
     overlay.addChild(status);
 
     this.pauseButtons = [
-      this.createPauseButton('RESUME', width / 2, panelY + 148, () => this.setPaused(false)),
-      this.createPauseButton('SETTINGS', width / 2, panelY + 202, () => this.openSettingsOverlay()),
-      this.createPauseButton('QUIT TO MENU', width / 2, panelY + 256, () => {
-      this.closeSettingsOverlay();
-      this.hidePauseOverlay();
-      this.isPaused = false;
-      this.game.switchScene('menu');
+      this.createPauseButton('RESUME', width / 2, panelY + 138, () => this.setPaused(false)),
+      this.createPauseButton('SETTINGS', width / 2, panelY + 188, () => this.openSettingsOverlay()),
+      this.createPauseButton('HOW TO PLAY', width / 2, panelY + 238, () => this.openHowToPlayOverlay()),
+      this.createPauseButton('QUIT TO MENU', width / 2, panelY + 288, () => {
+        this.closeSettingsOverlay();
+        this.closeHowToPlayOverlay();
+        this.hidePauseOverlay();
+        this.isPaused = false;
+        this.game.switchScene('menu');
       })
     ];
     this.pauseButtons.forEach((button) => overlay.addChild(button));
@@ -2995,9 +3001,27 @@ export class PlayScene {
     this.uiOverlay.addChild(this.settingsOverlay.container);
   }
 
+  openHowToPlayOverlay() {
+    if (this.howToPlayOverlay) {
+      this.closeHowToPlayOverlay();
+    }
+
+    this.howToPlayOverlay = new HowToPlayOverlay(this.game, {
+      onClose: () => {
+        this.howToPlayOverlay = null;
+        this.pauseGamepadNavigator.suppressUntilReleased();
+      }
+    });
+    this.uiOverlay.addChild(this.howToPlayOverlay.container);
+  }
+
   handleLanguageChanged() {
     this.hud?.update?.();
     this.settingsOverlay?.rebuild?.();
+    if (this.howToPlayOverlay) {
+      this.closeHowToPlayOverlay();
+      this.openHowToPlayOverlay();
+    }
     if (this.pauseOverlay?.parent && this.pauseOverlay.visible) {
       const focusedIndex = this.pauseFocusedIndex || 0;
       this.pauseOverlay.parent.removeChild(this.pauseOverlay);
@@ -3014,6 +3038,13 @@ export class PlayScene {
     if (this.settingsOverlay) {
       this.settingsOverlay.close();
       this.settingsOverlay = null;
+    }
+  }
+
+  closeHowToPlayOverlay() {
+    if (this.howToPlayOverlay) {
+      this.howToPlayOverlay.close();
+      this.howToPlayOverlay = null;
     }
   }
 
@@ -3083,6 +3114,10 @@ export class PlayScene {
   }
 
   updatePauseMenuControls(delta) {
+    if (this.howToPlayOverlay) {
+      this.howToPlayOverlay.update?.(delta);
+      return;
+    }
     if (this.settingsOverlay) {
       this.settingsOverlay.update?.(delta);
       return;
@@ -4195,11 +4230,18 @@ export class PlayScene {
         : Math.atan2(playerY - sourceY, playerX - sourceX);
       const isLance = type === 'lance' || attack === 'sniper';
       const isFan = type === 'fan' || ['fan', 'burst', 'fakeout', 'mirror', 'cone'].includes(attack) || ['mirror', 'cone'].includes(type);
-      const spread = isLance
+      const aimedLane = Array.isArray(boss.safeLanes)
+        ? boss.safeLanes.find((lane) => lane?.kind === 'aimed-edges' && Number.isFinite(Number(lane.width)))
+        : null;
+      const telegraphedSpread = Number(aimedLane?.width);
+      const fallbackSpread = isLance
         ? 0.12
         : isFan
           ? (type === 'mirror' ? 0.34 : type === 'cone' ? 0.48 : 0.36)
           : 0.15;
+      const spread = Number.isFinite(telegraphedSpread)
+        ? Math.min(fallbackSpread, Math.max(0.02, telegraphedSpread))
+        : fallbackSpread;
       hazard = {
         ...base,
         kind: isLance ? 'beam' : 'cone',
