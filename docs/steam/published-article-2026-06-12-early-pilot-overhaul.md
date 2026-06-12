@@ -1,50 +1,41 @@
-# Nova Swarm Early Pilot Overhaul: The Swarm Got Teeth
+# Nova Swarm Early Pilot Update
 
 Publish date: 2026-06-12
 
-Early pilots came back smoking and told us what needed work. This update is the answer: clearer runs, louder bosses, more enemy variety, deeper progression, and a stronger one-more-run pull.
+Hi everyone,
 
-## The Cockpit Is Clearer
+Thanks for the early feedback since launch. This update focuses on the things players called out most: clearer menus, better run flow, more readable boss fights, stronger Codex coverage, and more variety during runs.
 
-![Main menu run explainer](D:/vibe-coding-e/nova-swarm-sector-continue-prototype/test-results/smoke-2026-06-12T16-48-13-997Z/01-menu.png)
+## Run Flow And UI
 
-Launch Run is the ranked climb with progression, unlocks, achievements, and leaderboards. Sector Start is checkpoint practice with local records only. The Hangar now recommends the best unlocked ship before a run, because unlocked ships should not become decorative furniture.
+Launch Run is clearer as the ranked climb for progression, unlocks, achievements, and leaderboards. Sector Start is clearer as checkpoint practice with local records only.
 
-Settings no longer shows fullscreen, the Windows exit dialog is gone, and the duplicate combo readout has been removed. The How to Play screen is cleaner, sharper, and much less like an emergency binder.
+The Hangar now recommends the best unlocked ship before a run, so unlocked ships are easier to notice and use.
 
-## Bosses Now Fight Dirtier
+Also cleaned up:
 
-![Boss encounter](D:/vibe-coding-e/nova-swarm-sector-continue-prototype/test-results/smoke-2026-06-12T16-48-13-997Z/13-boss-active.png)
+- Removed the fullscreen option from Settings.
+- Removed the Windows exit dialog.
+- Removed the duplicate combo score readout.
+- Improved the How To Play screen layout and readability.
+- Fixed Sector Start "One more run" so it restarts from the same sector.
 
-Bosses can now call in 111 readable support ships that help them survive. Ignore them and the boss gets room to breathe. Delete them and the fight snaps back into arcade rhythm.
+## Boss And Enemy Updates
 
-Boss 1 is now Sonia. Boss 3 is now KurtBossEdgar. Both have expanded Codex stories, and boss deaths now pull from a 100-line dramatic male agony pack with bigger visual and SFX celebrations.
+Boss fights now include readable support ships that can help bosses survive. They are meant to be clear priority targets, not hidden punishment.
 
-## The Swarm Is Bigger
+Boss 1 is now Sonia. Boss 3 is now KurtBossEdgar. Their Codex entries have been expanded, and boss death effects now have more distinct visual and audio feedback.
 
-![Gameplay polish](D:/vibe-coding-e/nova-swarm-sector-continue-prototype/test-results/smoke-2026-06-12T16-48-13-997Z/02-gameplay.png)
+Enemy variety has also been expanded across the game, with additional mid-tier and late-run ships designed to add more movement and color while keeping attacks readable.
 
-The game now has 1,423 additional enemy profiles from level 1, 177 late-run mayhem ships after level 10, and 58 dangerous mid-ship variants after sector 8.
+## Leaderboards, Ranks, And Codex
 
-The goal is variety, color, and surprise without sacrificing readability. More chaos, still fair enough that your explosion can be traced to a decision.
+Leaderboards now support Top 40 where available, while showing fewer entries when fewer players exist.
 
-## Progression And Competition
+Pilot progression now reaches 40 ranks, with new Codex coverage for ranks, boss support ships, enemies, Sonia, and KurtBossEdgar.
 
-Leaderboards now support Top 40 everywhere. Top 10 placements get stronger ceremony, sharper visuals, and dedicated fanfare.
+## Audio And Polish
 
-Pilot progression now reaches 40 ranks, including 20 new hard ranks with Codex coverage. The Codex also covers support ships, expanded enemies, Sonia, and KurtBossEdgar.
+There are new sound effects and voice variations for several game moments. Music was not replaced or altered.
 
-## One More Run
-
-Sector Start "One more run" now restarts from the same sector instead of Sector 1. Ten easter eggs are hiding across runs. Level clears draw from a larger randomized voice pool. Music was not replaced or altered.
-
-## Build Notes
-
-- Steam private BuildID: 23706033
-- Package version: v2026-06-12_18-53-24
-- AppID preserved: 4765070
-- Depot preserved: 4765071
-- Leaderboard preserved: nova_swarm_global_score_v2
-- SetLive remained empty during upload.
-
-Thanks to the early pilots. The swarm is louder now, and it has paperwork.
+Thanks again for the feedback and for playing. This update is a cleanup and expansion pass, and we will keep tuning Nova Swarm from real player notes.

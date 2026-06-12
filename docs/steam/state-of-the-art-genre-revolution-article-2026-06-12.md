@@ -1,45 +1,43 @@
-# Nova Swarm Has Mutated: Early Pilot Update
+# Nova Swarm Early Pilot Update
 
-**The first big early-pilot overhaul is here: cleaner runs, louder bosses, a bigger swarm, and a nastier one-more-run loop.**
+Publish date: 2026-06-12
 
-![Nova Swarm main menu](../../test-results/smoke-2026-06-12T16-48-13-997Z/01-menu.png)
+![Nova Swarm update image](../../release/steam-news-art/2026-06-12-mutation-update/nova-swarm-mutation-update-steam-news-1920x1080.png)
 
-Early pilots did their job: they flew into the machine, came back smoking, and pointed at the loose bolts. This update is the answer.
+Hi everyone,
 
-## Cleaner Cockpit
+Thanks for the early feedback since launch. This update focuses on the things players called out most: clearer menus, better run flow, more readable boss fights, stronger Codex coverage, and more variety during runs.
 
-The main menu now explains the two run types. **Launch Run** is the ranked climb with progression, unlocks, achievements, and leaderboards. **Sector Start** is checkpoint practice with local records only.
+## Run Flow And UI
 
-The Hangar now recommends the best unlocked ship before each run, because a forgotten ship is just a museum exhibit with thrusters. Settings lost the fullscreen option, the Windows exit dialog is gone, and the duplicate combo readout has been removed.
+Launch Run is clearer as the ranked climb for progression, unlocks, achievements, and leaderboards. Sector Start is clearer as checkpoint practice with local records only.
 
-![Nova Swarm How To Play screen](../../test-results/how-to-play-2026-06-12T16-35-06-026Z/menu-how-to-play.png)
+The Hangar now recommends the best unlocked ship before a run, so unlocked ships are easier to notice and use.
 
-The How To Play screen also got rebuilt: clearer controls, better spacing, sharper humor, and less "manual printed during decompression."
+Also cleaned up:
 
-## Bosses Bite Back
+- Removed the fullscreen option from Settings.
+- Removed the Windows exit dialog.
+- Removed the duplicate combo score readout.
+- Improved the How To Play screen layout and readability.
+- Fixed Sector Start "One more run" so it restarts from the same sector.
 
-Boss fights are less lonely now. Bosses can call in **111 different support ships** that help them survive. They are bright, readable priority targets, not cheap clutter.
+## Boss And Enemy Updates
 
-Boss 1 is now **Sonia**. Boss 3 is now **KurtBossEdgar**. Their Codex stories have been expanded, with Sonia getting tragic sci-fi romance and KurtBossEdgar getting a cosmic Jeppe paa Berget spiral.
+Boss fights now include readable support ships that can help bosses survive. They are meant to be clear priority targets, not hidden punishment.
 
-When bosses die, they do not tell jokes. They scream. Boss deaths now pull from a dramatic male agony voice pool with bigger visual and SFX celebrations.
+Boss 1 is now Sonia. Boss 3 is now KurtBossEdgar. Their Codex entries have been expanded, and boss death effects now have more distinct visual and audio feedback.
 
-## Bigger Swarm, Same Readability
+Enemy variety has also been expanded across the game, with additional mid-tier and late-run ships designed to add more movement and color while keeping attacks readable.
 
-Nova Swarm now includes **1,423 additional enemy profiles from level 1**, plus **177 late-run mayhem ships after level 10** and **58 dangerous mid-ship variants after sector 8**.
+## Leaderboards, Ranks, And Codex
 
-The goal is more color, movement, and surprise without turning the screen into unreadable sludge. More chaos, same contract: when you explode, you should know why.
+Leaderboards now support Top 40 where available, while showing fewer entries when fewer players exist.
 
-## Progression And Competition
+Pilot progression now reaches 40 ranks, with new Codex coverage for ranks, boss support ships, enemies, Sonia, and KurtBossEdgar.
 
-Leaderboards now support **Top 40** everywhere. Top 10 placements get stronger ceremony, sharper visuals, and dedicated fanfare.
+## Audio And Polish
 
-Pilot progression now reaches **40 ranks**, including 20 new hard ranks. The Codex has new coverage for ranks, boss support ships, expanded enemies, Sonia, and KurtBossEdgar.
+There are new sound effects and voice variations for several game moments. Music was not replaced or altered.
 
-## One More Run
-
-Sector Start "One more run" now restarts from the same sector instead of dumping you back at Sector 1. Ten easter eggs are hiding across runs, level clears have a larger randomized voice pool, and music was not replaced or altered.
-
-Nova Swarm is faster, stranger, clearer, and louder now.
-
-Thanks to the early pilots. The swarm heard you. It is making a much more expensive noise.
+Thanks again for the feedback and for playing. This update is a cleanup and expansion pass, and we will keep tuning Nova Swarm from real player notes.
