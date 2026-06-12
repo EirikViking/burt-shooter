@@ -105,6 +105,42 @@ export class HUD {
     this.scoreMultiplierText.visible = false;
     this.hudContainer.addChild(this.scoreMultiplierText);
 
+    this.highscoreChaseGroup = new PIXI.Container();
+    this.highscoreChaseBg = new PIXI.Graphics();
+    this.highscoreChaseBarBg = new PIXI.Graphics();
+    this.highscoreChaseBarFill = new PIXI.Graphics();
+    this.highscoreChaseTitle = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      stroke: '#00111d',
+      strokeThickness: 3
+    });
+    this.highscoreChaseTarget = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 12,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#00111d',
+      strokeThickness: 3
+    });
+    this.highscoreChaseGap = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#ff55d9',
+      stroke: '#00111d',
+      strokeThickness: 3
+    });
+    this.highscoreChaseGroup.addChild(this.highscoreChaseBg);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseTitle);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseTarget);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseGap);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseBarBg);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseBarFill);
+    this.hudContainer.addChild(this.highscoreChaseGroup);
+
     // Level
     this.levelText = createText('LEVEL: 1', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -317,10 +353,71 @@ export class HUD {
 
     this.updateActivePowerup();
     this.updateTraitMeter();
+    this.updateHighscoreChase();
   }
 
   formatScore(score) {
     return formatNumber(score);
+  }
+
+  updateHighscoreChase() {
+    if (!this.highscoreChaseGroup) return;
+    const chase = this.game?.getHighscoreChaseState?.() || null;
+    const target = Math.max(0, Math.floor(Number(chase?.targetScore) || 0));
+    const score = Math.max(0, Math.floor(Number(this.game?.score) || 0));
+    const remaining = Math.max(0, target - score);
+    const hasTarget = target > 0;
+    const ratio = hasTarget ? Math.min(1.25, score / target) : 0;
+    const surpassed = hasTarget && score > target;
+    const pulse = 0.5 + Math.sin(Date.now() * (surpassed ? 0.017 : 0.011)) * 0.5;
+    const dangerColor = surpassed ? 0xffef7e : (ratio >= 0.9 ? 0xff55d9 : (ratio >= 0.5 ? 0x7fffd8 : 0x37f5ff));
+    const label = chase?.runMode === 'sector_start'
+      ? translateText('SECTOR RECORD TARGET')
+      : translateText('HIGH SCORE TARGET');
+
+    this.highscoreChaseTitle.text = label;
+    this.highscoreChaseTarget.text = hasTarget
+      ? `${translateText('BEAT')} ${this.formatScore(target)}`
+      : translateText('BEAT THE EMPTY THRONE');
+    this.highscoreChaseGap.text = surpassed
+      ? translateText('OLD SCORE HUMILIATED')
+      : translateText('{score} TO MAKE IT CRY', { score: this.formatScore(remaining + 1) });
+    this.highscoreChaseGap.visible = hasTarget;
+
+    this.highscoreChaseTitle.style.fill = surpassed ? '#fff05c' : '#ffef7e';
+    this.highscoreChaseGap.style.fill = surpassed ? '#fff05c' : (ratio >= 0.9 ? '#ff55d9' : '#7fffd8');
+    this.highscoreChaseGroup.alpha = hasTarget ? 0.86 + pulse * 0.14 : 0.78;
+    this.highscoreChaseGroup.scale.set(surpassed ? 1 + pulse * 0.035 : 1);
+
+    const w = this.highscoreChaseGroup.__w || 178;
+    const h = this.highscoreChaseGroup.__h || 42;
+    const barW = Math.max(48, w - 18);
+    const progress = hasTarget ? Math.min(1, ratio) : 0.08 + pulse * 0.08;
+    this.highscoreChaseTarget.updateText?.(false);
+    this.highscoreChaseGap.updateText?.(false);
+    this.highscoreChaseGap.x = 14;
+    this.highscoreChaseGap.y = h - 22;
+    this.highscoreChaseGap.scale.set(1);
+    const maxGapWidth = Math.max(44, w - 22);
+    if (this.highscoreChaseGap.width > maxGapWidth) {
+      this.highscoreChaseGap.scale.set(Math.max(0.64, maxGapWidth / this.highscoreChaseGap.width));
+    }
+
+    this.highscoreChaseBg.clear();
+    this.highscoreChaseBg.roundRect(0, 0, w, h, 6);
+    this.highscoreChaseBg.fill({ color: 0x020711, alpha: 0.58 });
+    this.highscoreChaseBg.stroke({ color: dangerColor, width: 1.25, alpha: 0.68 + pulse * 0.22 });
+    this.highscoreChaseBg.rect(6, 5, 3, h - 10);
+    this.highscoreChaseBg.fill({ color: dangerColor, alpha: 0.72 });
+    this.highscoreChaseBg.rect(w - 9, 5, 3, h - 10);
+    this.highscoreChaseBg.fill({ color: 0xff55d9, alpha: 0.52 });
+
+    this.highscoreChaseBarBg.clear();
+    this.highscoreChaseBarBg.roundRect(9, h - 9, barW, 4, 2);
+    this.highscoreChaseBarBg.fill({ color: 0x102238, alpha: 0.88 });
+    this.highscoreChaseBarFill.clear();
+    this.highscoreChaseBarFill.roundRect(9, h - 9, barW * progress, 4, 2);
+    this.highscoreChaseBarFill.fill({ color: dangerColor, alpha: 0.92 });
   }
 
   updateMissionStatus() {
@@ -754,7 +851,7 @@ export class HUD {
     const scoreFont = layout.isMobile ? 15 : (isLargeDesktop ? 22 : 20);
     const livesFont = layout.isMobile ? 16 : (isLargeDesktop ? 22 : 20);
     const leftPanelWidth = layout.isMobile ? Math.min(274, canvasWidth * 0.72) : (isLargeDesktop ? 410 : 382);
-    const leftPanelHeight = layout.isMobile ? 76 : (isLargeDesktop ? 98 : 90);
+    const leftPanelHeight = layout.isMobile ? 110 : (isLargeDesktop ? 136 : 128);
     const rightPanelWidth = layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164);
     const rightPanelHeight = layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52);
     const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : (isLargeDesktop ? 520 : 440);
@@ -788,6 +885,30 @@ export class HUD {
 
     this.levelText.x = margin + rankOffset;
     this.levelText.y = margin + blockSpacing + 8;
+
+    if (this.highscoreChaseGroup) {
+      const chaseWidth = Math.max(156, leftPanelWidth - rankOffset - 18);
+      const chaseHeight = layout.isMobile ? 44 : 52;
+      this.highscoreChaseGroup.__w = chaseWidth;
+      this.highscoreChaseGroup.__h = chaseHeight;
+      this.highscoreChaseGroup.x = margin + rankOffset;
+      this.highscoreChaseGroup.y = this.levelText.y + (layout.isMobile ? 24 : 28);
+      this.highscoreChaseTitle.style.fontSize = layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11);
+      this.highscoreChaseTarget.style.fontSize = layout.isMobile ? 11 : (isLargeDesktop ? 14 : 13);
+      this.highscoreChaseGap.style.fontSize = layout.isMobile ? 9 : (isLargeDesktop ? 11 : 10);
+      this.highscoreChaseTitle.x = 14;
+      this.highscoreChaseTitle.y = 4;
+      this.highscoreChaseTarget.x = 14;
+      this.highscoreChaseTarget.y = layout.isMobile ? 16 : 18;
+      this.highscoreChaseGap.x = 14;
+      this.highscoreChaseGap.y = layout.isMobile ? 28 : 31;
+      this.highscoreChaseGap.scale.set(1);
+      this.highscoreChaseGap.updateText?.(false);
+      const maxGapWidth = Math.max(46, chaseWidth - this.highscoreChaseGap.x - 8);
+      if (this.highscoreChaseGap.width > maxGapWidth) {
+        this.highscoreChaseGap.scale.set(Math.max(0.68, maxGapWidth / this.highscoreChaseGap.width));
+      }
+    }
 
     this.missionLabel.x = missionPanelX + missionPanelWidth / 2;
     this.missionLabel.y = missionPanelY + (layout.isMobile ? 10 : (isLargeDesktop ? 14 : 12));

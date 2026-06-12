@@ -1,6 +1,18 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'SECTOR RECORD TARGET': '섹터 기록 목표',
+  'HIGH SCORE TARGET': '하이스코어 목표',
+  'BEAT': '깨기',
+  'BEAT THE EMPTY THRONE': '빈 왕좌를 깨세요',
+  'OLD SCORE HUMILIATED': '이전 점수 굴욕 완료',
+  '{score} TO MAKE IT CRY': '{score} 남음, 울려버리세요',
+  'NO RECORD YET. RUDE OF YOU.': '아직 기록이 없습니다. 무례하군요.',
+  'That high score is pretending not to sweat.': '그 하이스코어가 땀 안 나는 척합니다.',
+  'Halfway there. The scoreboard has begun legal review.': '절반 도착. 점수판이 법무팀을 불렀습니다.',
+  'Three quarters in. The old score is making excuses.': '4분의 3 도착. 옛 점수가 변명 중입니다.',
+  'Close enough to smell the initials. Do not blink.': '이니셜 냄새가 날 만큼 가깝습니다. 눈 깜박이지 마세요.',
+  'HIGH SCORE HUNT COMPLETE. Now embarrass it.': '하이스코어 사냥 완료. 이제 망신 주세요.',
   'RUN INTEL': '런 정보',
   'RANKED RUN': '랭크 런',
   'LEADERBOARD + XP + UNLOCKS': '리더보드 + XP + 해금',

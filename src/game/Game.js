@@ -18,7 +18,7 @@ import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
 import { AchievementManager } from '../achievements/AchievementManager.js';
 import { EARLY_PILOT_ACHIEVEMENT_ID, getAchievementById, getRankAchievementId } from '../achievements/AchievementCatalog.js';
 import { getMilestoneAchievementUnlocks } from '../achievements/MilestoneAchievements.js';
-import { onLanguageChange } from '../i18n/index.js';
+import { onLanguageChange, translateText } from '../i18n/index.js';
 import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { RunPacingConfig, getRunPacingDebugState } from '../config/RunPacingConfig.js';
 import { RunPressureDirector } from './RunPressureDirector.js';
@@ -45,7 +45,7 @@ import {
   readHangarProgressState,
   updateHangarProgress
 } from '../progression/HangarProgressState.js';
-import { recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
+import { getSectorStartChallengeRecord, recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
 import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 
 const MENU_EXIT_GUARD_MS = 900;
@@ -101,6 +101,7 @@ export class Game {
       top3: false,
       number1: false
     };
+    this.highscoreChase = null;
     this.sceneInputGuardUntil = 0;
     this.menuExitGuardUntil = 0;
     this.lastSceneSwitchAt = 0;
@@ -267,6 +268,11 @@ export class Game {
     this.sectorStartPlaySector = sectorStartPlaySector;
     this.sectorStartHighestReached = sectorStartCheckpoint ? getSectorStartState(startingProgress).highestReachedSector : null;
     this.lastSectorStartChallengeRecord = null;
+    this.highscoreChase = this.createHighscoreChaseState({
+      runMode: requestedRunMode,
+      progress: startingProgress,
+      sectorStartCheckpoint
+    });
     this.resetGlobalLeaderboardCues();
     this.runStartedAtMs = Date.now();
     this.runElapsedSeconds = 0;
@@ -554,7 +560,66 @@ export class Game {
     this.diag.asBefore = previousRank;
     this.diag.asAfter = computedRank;
     this.updateGlobalLeaderboardVoiceCues();
+    this.updateHighscoreChaseCues();
     return applied;
+  }
+
+  createHighscoreChaseState({ runMode = this.runMode, progress = null, sectorStartCheckpoint = null } = {}) {
+    const isSectorStart = runMode === RUN_MODES.SECTOR_START;
+    const sectorRecord = isSectorStart ? getSectorStartChallengeRecord(sectorStartCheckpoint) : null;
+    const targetScore = Math.max(0, Math.floor(Number(
+      isSectorStart ? sectorRecord?.scoreEarned : progress?.bestScore
+    ) || 0));
+    return {
+      targetScore,
+      runMode,
+      source: isSectorStart ? 'sector_start_record' : 'ranked_best_score',
+      checkpoint: sectorStartCheckpoint || null,
+      surpassed: targetScore <= 0,
+      milestones: new Set(),
+      lastTauntAtMs: 0,
+      tauntIndex: Math.floor(Math.random() * 1000)
+    };
+  }
+
+  getHighscoreChaseState() {
+    return this.highscoreChase || {
+      targetScore: 0,
+      runMode: this.runMode,
+      source: 'none',
+      checkpoint: null,
+      surpassed: true,
+      milestones: new Set()
+    };
+  }
+
+  updateHighscoreChaseCues() {
+    const chase = this.highscoreChase;
+    if (!chase || chase.targetScore <= 0 || !this.currentScene?.enqueueToast) return;
+    const score = Math.max(0, Number(this.score) || 0);
+    const ratio = score / chase.targetScore;
+    const cues = [
+      { key: '25', at: 0.25, text: 'That high score is pretending not to sweat.', sfx: 'combo_tick', volume: 0.42 },
+      { key: '50', at: 0.5, text: 'Halfway there. The scoreboard has begun legal review.', sfx: 'combo_breakout', volume: 0.6 },
+      { key: '75', at: 0.75, text: 'Three quarters in. The old score is making excuses.', sfx: 'boss_phase_surge', volume: 0.48 },
+      { key: '90', at: 0.9, text: 'Close enough to smell the initials. Do not blink.', sfx: 'nova_highscore_chime', volume: 0.62 },
+      { key: '100', at: 1, text: 'HIGH SCORE HUNT COMPLETE. Now embarrass it.', sfx: 'achievement', volume: 0.88 }
+    ];
+    const nextCue = cues.find((cue) => ratio >= cue.at && !chase.milestones.has(cue.key));
+    if (!nextCue) return;
+    chase.milestones.add(nextCue.key);
+    if (nextCue.key === '100') chase.surpassed = true;
+    const now = Date.now();
+    chase.lastTauntAtMs = now;
+    AudioManager.playSfx(nextCue.sfx, { force: true, volume: nextCue.volume, minIntervalMs: 0 });
+    this.currentScene.enqueueToast(translateText(nextCue.text), {
+      fontSize: nextCue.key === '100' ? 27 : 22,
+      fill: nextCue.key === '100' ? '#fff05c' : '#ff55d9',
+      slot: 'top',
+      type: 'highscore_chase',
+      duration: nextCue.key === '100' ? 2100 : 1600,
+      priority: 3
+    });
   }
 
   getScoreAward(points) {
