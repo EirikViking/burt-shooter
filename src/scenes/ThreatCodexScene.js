@@ -265,6 +265,7 @@ export class ThreatCodexScene {
     this.animatedNodes = [];
     this.lastEntryListDebug = null;
     this.lastDetailBodyDebug = null;
+    this.lastDetailPanelDebug = null;
     this.detailScrollOffset = 0;
   }
 
@@ -278,6 +279,7 @@ export class ThreatCodexScene {
     this.renderToken += 1;
     this.animatedNodes = [];
     this.lastDetailBodyDebug = null;
+    this.lastDetailPanelDebug = null;
     this.gamepadNavigator.suppressUntilReleased();
     this.createLayout(this.renderToken);
     installMenuFx(this, {
@@ -978,26 +980,37 @@ export class ThreatCodexScene {
     panel.addChild(bg);
 
     const shortPanel = panelH < 560;
-    const sideBySide = shortPanel && panelW >= 520;
-    const artX = 18;
+    const epicBody = Boolean(discovered && entry?.codexBodyMode === 'epic');
+    const sideBySide = !epicBody && shortPanel && panelW >= 520;
     const artY = 22;
-    const artW = sideBySide ? panelW * 0.42 : panelW - 36;
-    const artH = sideBySide ? clamp(panelH * 0.42, 150, 205) : shortPanel ? clamp(panelH * 0.28, 108, 155) : clamp(panelH * 0.34, 180, 275);
+    const artW = epicBody
+      ? Math.min(panelW - 36, shortPanel ? 330 : compact ? 380 : 440)
+      : sideBySide
+        ? panelW * 0.42
+        : panelW - 36;
+    const artH = epicBody
+      ? (shortPanel ? clamp(panelH * 0.19, 92, 124) : compact ? clamp(panelH * 0.2, 112, 144) : clamp(panelH * 0.22, 136, 168))
+      : sideBySide
+        ? clamp(panelH * 0.42, 150, 205)
+        : shortPanel
+          ? clamp(panelH * 0.28, 108, 155)
+          : clamp(panelH * 0.34, 180, 275);
+    const artX = sideBySide ? 18 : epicBody ? Math.max(18, (panelW - artW) * 0.5) : 18;
     this.drawDetailArt(panel, entry, discovered, accent, artX, artY, artW, artH, token);
 
     const textX = sideBySide ? artX + artW + 18 : 24;
     const textW = sideBySide ? panelW - textX - 24 : panelW - 46;
-    const nameY = sideBySide ? 28 : artH + 42;
+    const nameY = sideBySide ? 28 : artH + (epicBody ? (shortPanel ? 34 : 38) : 42);
     const name = entry && discovered ? entry.name.toUpperCase() : localize('UNKNOWN SIGNAL');
     const nameNode = addText(panel, name, {
-      fontSize: sideBySide ? 22 : compact ? 19 : 31,
+      fontSize: sideBySide ? 22 : epicBody ? (shortPanel ? 20 : compact ? 23 : 31) : compact ? 19 : 31,
       fontWeight: '900',
       fill: discovered ? '#ffffff' : '#a7bac8',
       stroke: '#001016',
       strokeThickness: 3,
       wordWrap: true,
       wordWrapWidth: textW,
-      lineHeight: sideBySide ? 23 : compact ? 21 : 33
+      lineHeight: sideBySide ? 23 : epicBody ? (shortPanel ? 22 : compact ? 25 : 33) : compact ? 21 : 33
     }, textX, nameY);
     fitTextHeight(nameNode, shortPanel ? 52 : 74, 0.74);
 
@@ -1010,21 +1023,35 @@ export class ThreatCodexScene {
       fill: discovered ? colorCss(accent) : '#8fa6b8',
       wordWrap: true,
       wordWrapWidth: textW
-    }, textX, nameY + (shortPanel ? 56 : compact ? 54 : 70));
+    }, textX, nameY + (epicBody ? (shortPanel ? 44 : compact ? 50 : 66) : shortPanel ? 56 : compact ? 54 : 70));
 
-    const bodyY = shortPanel ? nameY + 84 : nameY + (compact ? 82 : 104);
-    const epicBody = Boolean(discovered && entry?.codexBodyMode === 'epic');
+    const bodyY = epicBody
+      ? nameY + (shortPanel ? 74 : compact ? 84 : 98)
+      : shortPanel
+        ? nameY + 84
+        : nameY + (compact ? 82 : 104);
     const bodyText = discovered
       ? localize(entry.description)
       : localize('The silhouette is logged, but the behavior needs one more live read. Find this signal in a run to unlock the counter-note.');
-    const tipY = panelH - (compact ? 116 : 138);
-    const bodyMaxHeight = Math.max(54, tipY - bodyY - 24);
+    const tipY = panelH - (epicBody ? (shortPanel ? 96 : compact ? 104 : 116) : compact ? 116 : 138);
+    const bodyMaxHeight = Math.max(54, tipY - bodyY - (epicBody ? 14 : 24));
     const bodyFontSize = epicBody
-      ? (shortPanel ? 10.5 : compact ? 11.5 : 13)
+      ? (shortPanel ? 14 : compact ? 15 : 16)
       : (shortPanel ? 13 : compact ? 13 : 17);
     const bodyLineHeight = epicBody
-      ? (shortPanel ? 13 : compact ? 14 : 16)
+      ? (shortPanel ? 18 : compact ? 19 : 21)
       : (shortPanel ? 16 : compact ? 17 : 22);
+    if (epicBody) {
+      const storyDeck = new PIXI.Graphics();
+      drawPanel(storyDeck, textX - 10, bodyY - 10, textW + 20, bodyMaxHeight + 20, {
+        fill: 0x020a12,
+        alpha: 0.62,
+        stroke: accent,
+        strokeAlpha: 0.24,
+        radius: 8
+      });
+      panel.addChild(storyDeck);
+    }
     const bodyNode = addText(panel, bodyText, {
       fontSize: bodyFontSize,
       fill: '#d8fbff',
@@ -1052,7 +1079,10 @@ export class ThreatCodexScene {
         contentHeight: bodyContentHeight,
         offset: this.detailScrollOffset,
         maxOffset,
-        scrollable: maxOffset > 1
+        scrollable: maxOffset > 1,
+        mode: 'epic',
+        fontSize: bodyFontSize,
+        lineHeight: bodyLineHeight
       };
 
       if (maxOffset > 1) {
@@ -1069,6 +1099,15 @@ export class ThreatCodexScene {
     } else {
       fitTextHeight(bodyNode, bodyMaxHeight, shortPanel ? 0.72 : 0.78);
     }
+
+    this.lastDetailPanelDebug = {
+      x: panelX,
+      y: panelY,
+      width: panelW,
+      height: panelH,
+      mode: epicBody ? 'epic' : 'standard',
+      selectedEntryId: entry?.id || null
+    };
 
     const tipBox = new PIXI.Graphics();
     drawPanel(tipBox, 20, tipY - 14, panelW - 40, compact ? 60 : 72, {
@@ -1379,6 +1418,7 @@ export class ThreatCodexScene {
       pageNavigation: true,
       entryScroll: this.lastEntryListDebug,
       detailScroll: this.lastDetailBodyDebug,
+      detailPanel: this.lastDetailPanelDebug,
       artfulEmptyState: true,
       menuFx: this.menuFx?.getDebugState?.() || null
     };

@@ -11,6 +11,7 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || 'test-results/codex-revamp-20260606/layout');
 const viewports = [
+  { width: 1920, height: 1080, name: '1920x1080' },
   { width: 1600, height: 900, name: '1600x900' },
   { width: 1366, height: 768, name: '1366x768' },
   { width: 1280, height: 720, name: '1280x720' }
@@ -180,10 +181,36 @@ async function inspectBounds(page) {
       entryCount: scene?.getEntriesForCategory?.()?.length || 0,
       entryScroll: scene?.lastEntryListDebug || null,
       detailScroll: scene?.lastDetailBodyDebug || null,
+      detailPanel: scene?.lastDetailPanelDebug || null,
       textCount: texts.length,
       outOfBounds
     };
   });
+}
+
+function makeViewportClip(panel, viewport, padding = 8) {
+  const x = Math.max(0, Math.floor(Number(panel.x || 0) - padding));
+  const y = Math.max(0, Math.floor(Number(panel.y || 0) - padding));
+  const right = Math.min(viewport.width, Math.ceil(Number(panel.x || 0) + Number(panel.width || 0) + padding));
+  const bottom = Math.min(viewport.height, Math.ceil(Number(panel.y || 0) + Number(panel.height || 0) + padding));
+  return {
+    x,
+    y,
+    width: Math.max(1, right - x),
+    height: Math.max(1, bottom - y)
+  };
+}
+
+function isBossEpicReadable(snapshot, viewport) {
+  if (!snapshot?.detailScroll) return false;
+  const minFontSize = viewport.width >= 1500 ? 16 : 14;
+  const minLineHeight = viewport.width >= 1500 ? 21 : 18;
+  return snapshot.detailPanel?.mode === 'epic' &&
+    snapshot.detailScroll.mode === 'epic' &&
+    Number(snapshot.detailScroll.fontSize || 0) >= minFontSize &&
+    Number(snapshot.detailScroll.lineHeight || 0) >= minLineHeight &&
+    Number(snapshot.detailScroll.width || 0) >= viewport.width * 0.4 &&
+    Number(snapshot.detailScroll.height || 0) >= viewport.height * 0.18;
 }
 
 function htmlEscape(value = '') {
@@ -251,6 +278,15 @@ try {
       await page.screenshot({ path: screenshotPath, fullPage: true });
       const label = `${viewport.name} ${shot.label}`;
       screenshots.push({ label, path: screenshotPath });
+      let detailScreenshotPath = null;
+      if (shot.label.startsWith('bosses-') && snapshot.detailPanel) {
+        detailScreenshotPath = path.join(outputDir, `codex-after-${viewport.name}-${shot.label}-detail.png`);
+        await page.screenshot({
+          path: detailScreenshotPath,
+          clip: makeViewportClip(snapshot.detailPanel, viewport, 8)
+        });
+        screenshots.push({ label: `${label} detail`, path: detailScreenshotPath });
+      }
       let scrolledSnapshot = null;
       if (shot.label.startsWith('bosses-') && snapshot.detailScroll?.scrollable) {
         const scroll = snapshot.detailScroll;
@@ -263,11 +299,13 @@ try {
         Boolean(snapshot.detailScroll) &&
         snapshot.detailScroll.height > 80 &&
         (!snapshot.detailScroll.scrollable || Number(scrolledSnapshot?.detailScroll?.offset || 0) > Number(snapshot.detailScroll.offset || 0));
+      const bossReadabilityOk = !shot.label.startsWith('bosses-') || isBossEpicReadable(snapshot, viewport);
       reports.push({
         viewport,
         categoryId: shot.categoryId,
         label: shot.label,
         screenshotPath,
+        detailScreenshotPath,
         snapshot,
         scrolledSnapshot,
         ok: snapshot.scene === 'threatCodex' &&
@@ -275,6 +313,7 @@ try {
           snapshot.entryCount > 0 &&
           snapshot.textCount > 20 &&
           detailScrollOk &&
+          bossReadabilityOk &&
           snapshot.outOfBounds.length === 0
       });
     }
