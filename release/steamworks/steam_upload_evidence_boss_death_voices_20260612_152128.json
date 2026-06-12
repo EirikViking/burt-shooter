@@ -1,0 +1,75 @@
+{
+  "uploadedAt": "2026-06-12T13:21:28Z",
+  "localTime": "2026-06-12 15:21:28 Europe/Oslo",
+  "worktree": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype",
+  "branch": "codex/hard-achievements-20260612",
+  "gitHeadUploaded": "aec5f32a8947196cf9bb8cfe816513c714675750",
+  "packageVersion": "v2026-06-12_15-15-58",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "leaderboardPreserved": "nova_swarm_global_score_v2",
+    "steamUser": "gaunziman",
+    "buildId": "23702325",
+    "setLive": "",
+    "visibility": "private/unassigned build",
+    "description": "Nova Swarm v2026-06-12_15-15-58 boss death voices private test"
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 336,
+    "totalBytes": 734394851,
+    "manifestHash": "a9a39edf1433ed06138d10c6f94e191e54ebaed75bb6ad8ee8ff718acd7c4d11",
+    "executableSha256": "b0901973b1addff0337a033de2782f3a9c13a92ee1c6d025a563374abe5458fc",
+    "vdfSha256": "40EF099466C16CCBBF2ACE21ED99B5DE734EF0D61B7C28DB42AF11926D4E6370"
+  },
+  "commands": [
+    "git fetch --all --prune",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm v2026-06-12_15-15-58 boss death voices private test\" npm run steamworks:write-vdf",
+    "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe +login gaunziman +run_app_build D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf +quit"
+  ],
+  "testResults": [
+    {
+      "name": "check:release-line",
+      "status": "passed"
+    },
+    {
+      "name": "package:steam:win",
+      "status": "passed",
+      "notes": "Includes check:steam-sdk-ready, build/prebuild guards, electron-builder win dir x64, and check:steam-package-runtime."
+    },
+    {
+      "name": "desktop:smoke:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-06-12T13-19-25-767Z/report.json"
+    },
+    {
+      "name": "steamworks:write-vdf",
+      "status": "passed",
+      "notes": "VDF kept SetLive blank."
+    },
+    {
+      "name": "steamcmd upload",
+      "status": "passed",
+      "buildId": "23702325"
+    }
+  ],
+  "steamworksUntouched": {
+    "storeMetadata": true,
+    "pricing": true,
+    "releaseVisibility": true,
+    "liveBranches": true,
+    "appId": true,
+    "depotId": true,
+    "leaderboardIdentity": true
+  },
+  "notes": [
+    "This upload contains the current committed boss death agony voice build.",
+    "The 111 support-ship request was interrupted before repository edits and is not included in this Steam build.",
+    "Generated imagegen concept output remains in the Codex generated_images cache only and was not added to this package."
+  ]
+}
