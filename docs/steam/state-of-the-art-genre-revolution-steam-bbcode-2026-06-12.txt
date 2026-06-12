@@ -1,4 +1,4 @@
-[img]{STEAM_CLAN_IMAGE}/46138701/8e1615cb4e9bafd8c4a2b1727c6551b7a3a7101f.png[/img]
+[img]{STEAM_CLAN_IMAGE}/46138701/5ab99c26121ec70560f8242ea7d41169110f4951.png[/img]
 
 [h1]Nova Swarm Is No Longer Just Updated. It Has Mutated.[/h1]
 
@@ -20,7 +20,7 @@ The game also recommends the best unlocked ship before a run. That matters. A ha
 
 The fullscreen option is gone from the menu, the old Windows exit dialog is gone, and the duplicate combo readout has been cleaned up. The cockpit is meaner, cleaner, and less interested in wasting your time.
 
-[img]{STEAM_CLAN_IMAGE}/46138701/5ab99c26121ec70560f8242ea7d41169110f4951.png[/img]
+[img]{STEAM_CLAN_IMAGE}/46138701/05faaf00dd3062f756bbeafd1eee3f19a1ae3151.png[/img]
 
 [h2]The How To Play Screen Has Been Rebuilt Like It Has A Security Clearance[/h2]
 
