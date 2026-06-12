@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const gameOver = readFileSync('src/scenes/GameOverScene.js', 'utf8');
+const gameOverNormalized = gameOver.replace(/\r\n/g, '\n');
 const hud = readFileSync('src/ui/HUD.js', 'utf8');
 const playScene = readFileSync('src/scenes/PlayScene.js', 'utf8');
 const highscore = readFileSync('src/scenes/HighScoreScene.js', 'utf8');
@@ -30,7 +31,7 @@ assert.ok(
     gameOver.includes('submittedHoldContinueReadyAt') &&
     gameOver.includes('isSubmittedHoldContinueReady()') &&
     gameOver.includes('disabled: !this.isSubmittedHoldContinueReady()') &&
-    gameOver.includes("if (!this.isSubmittedHoldContinueReady()) {\n      this.refreshPrimaryCta();\n      return;\n    }") &&
+    gameOverNormalized.includes("if (!this.isSubmittedHoldContinueReady()) {\n      this.refreshPrimaryCta();\n      return;\n    }") &&
     gameoverMotivationCheck.includes('submittedEarlyContinueState') &&
     gameoverMotivationCheck.includes('submittedReadyHoldState'),
   'submitted score report should require readable hold plus Continue input before runback'
