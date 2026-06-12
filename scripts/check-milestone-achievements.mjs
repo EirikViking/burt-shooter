@@ -10,10 +10,11 @@ function idsFor(summary = {}, progress = {}) {
   return getMilestoneAchievementUnlocks({ summary, progress }).map((entry) => entry.achievement.id);
 }
 
-assert.equal(MILESTONE_ACHIEVEMENTS.length, 9, 'Nova Swarm should keep the 9 launch milestone achievements.');
+assert.equal(MILESTONE_ACHIEVEMENTS.length, 10, 'Nova Swarm should keep the 9 launch milestones plus Early Pilot.');
 assert.equal(LEGEND_ACHIEVEMENTS.length, 20, 'Nova Swarm should add 20 legend score-gated achievements.');
 assert.deepEqual(idsFor({}, {}), [], 'Fresh profiles should not unlock milestone achievements.');
 
+assert.ok(idsFor({}, { totalRuns: 1 }).includes('ACH_EARLY_PILOT'));
 assert.ok(idsFor({ sectorReached: 5 }, {}).includes('ACH_SECTOR_FIVE'));
 assert.ok(idsFor({}, { bestSector: 10 }).includes('ACH_FINAL_CLIMAX'));
 assert.ok(idsFor({ runCleared: true }, { runClears: 1 }).includes('ACH_ARCADE_CLEAR'));
@@ -93,4 +94,4 @@ for (const achievement of LEGEND_ACHIEVEMENTS) {
   assert.ok(Number(achievement.target) >= 0);
 }
 
-console.log('[milestone-achievements] PASS 9 launch milestones plus 20 legend score-gated milestones evaluate from run and career progress');
+console.log('[milestone-achievements] PASS 10 launch milestones plus 20 legend score-gated milestones evaluate from run and career progress');
