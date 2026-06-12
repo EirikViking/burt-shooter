@@ -71,6 +71,42 @@ const GENERATED_GAMEPLAY_POOL = [
     getMusic('nova_swarm_gameplay_bonus_heat')
 ];
 
+const OVERDRIVE_TRACKS = [
+    getMusic('nova_swarm_overdrive_quarterstorm'),
+    getMusic('nova_swarm_overdrive_vector_riot'),
+    getMusic('nova_swarm_overdrive_boss_singularity')
+];
+
+const OVERDRIVE_MENU_POOL = [
+    OVERDRIVE_TRACKS[0],
+    OVERDRIVE_TRACKS[1]
+];
+
+const OVERDRIVE_SCOREBOARD_POOL = [
+    OVERDRIVE_TRACKS[0],
+    OVERDRIVE_TRACKS[2]
+];
+
+const OVERDRIVE_GAMEPLAY_POOL = [
+    OVERDRIVE_TRACKS[0],
+    OVERDRIVE_TRACKS[1]
+];
+
+const OVERDRIVE_BOSS_POOL = [
+    OVERDRIVE_TRACKS[2],
+    OVERDRIVE_TRACKS[1]
+];
+
+const OVERDRIVE_GAME_OVER_POOL = [
+    OVERDRIVE_TRACKS[2],
+    OVERDRIVE_TRACKS[0]
+];
+
+const OVERDRIVE_VICTORY_POOL = [
+    OVERDRIVE_TRACKS[0],
+    OVERDRIVE_TRACKS[1]
+];
+
 const GENERATED_BOSS_POOL = [
     getMusic('nova_swarm_boss_gate_overdrive'),
     getMusic('nova_swarm_boss_cabinet_judgement')
@@ -120,8 +156,15 @@ const CLASSIC_VICTORY_POOL = [
 
 export const MUSIC_PACKS = {
     generated: 'generated',
-    classic: 'classic'
+    classic: 'classic',
+    overdrive: 'overdrive'
 };
+
+export const MUSIC_PACK_OPTIONS = [
+    { id: MUSIC_PACKS.classic, label: 'CLASSIC', hint: 'DEFAULT' },
+    { id: MUSIC_PACKS.generated, label: 'NEW MIX', hint: 'OPTIONAL MIX' },
+    { id: MUSIC_PACKS.overdrive, label: 'OVERDRIVE', hint: 'NEW SONGS' }
+];
 
 export const MUSIC_PLAYLISTS_BY_PACK = {
     generated: {
@@ -141,11 +184,20 @@ export const MUSIC_PLAYLISTS_BY_PACK = {
         boss: CLASSIC_BOSS_POOL,
         gameover: CLASSIC_GAME_OVER_POOL,
         victory: CLASSIC_VICTORY_POOL
+    },
+    overdrive: {
+        intro: OVERDRIVE_MENU_POOL,
+        menu: OVERDRIVE_MENU_POOL,
+        scoreboard: OVERDRIVE_SCOREBOARD_POOL,
+        gameplay: OVERDRIVE_GAMEPLAY_POOL,
+        boss: OVERDRIVE_BOSS_POOL,
+        gameover: OVERDRIVE_GAME_OVER_POOL,
+        victory: OVERDRIVE_VICTORY_POOL
     }
 };
 
 export function normalizeMusicPack(pack) {
-    return pack === MUSIC_PACKS.generated ? MUSIC_PACKS.generated : MUSIC_PACKS.classic;
+    return Object.values(MUSIC_PACKS).includes(pack) ? pack : MUSIC_PACKS.classic;
 }
 
 export function getMusicPlaylists(pack = MUSIC_PACKS.classic) {
@@ -153,13 +205,13 @@ export function getMusicPlaylists(pack = MUSIC_PACKS.classic) {
 }
 
 export const MUSIC_PLAYLISTS = {
-    intro: [...GENERATED_INTRO_POOL, ...CLASSIC_INTRO_POOL],
-    menu: [...GENERATED_MENU_POOL, ...CLASSIC_MENU_POOL],
-    scoreboard: [...GENERATED_SCOREBOARD_POOL, ...CLASSIC_SCOREBOARD_POOL],
-    gameplay: [...GENERATED_GAMEPLAY_POOL, ...CLASSIC_GAMEPLAY_POOL],
-    boss: [...GENERATED_BOSS_POOL, ...CLASSIC_BOSS_POOL],
-    gameover: [...GENERATED_GAME_OVER_POOL, ...CLASSIC_GAME_OVER_POOL],
-    victory: [...GENERATED_VICTORY_POOL, ...CLASSIC_VICTORY_POOL]
+    intro: [...GENERATED_INTRO_POOL, ...CLASSIC_INTRO_POOL, ...OVERDRIVE_MENU_POOL],
+    menu: [...GENERATED_MENU_POOL, ...CLASSIC_MENU_POOL, ...OVERDRIVE_MENU_POOL],
+    scoreboard: [...GENERATED_SCOREBOARD_POOL, ...CLASSIC_SCOREBOARD_POOL, ...OVERDRIVE_SCOREBOARD_POOL],
+    gameplay: [...GENERATED_GAMEPLAY_POOL, ...CLASSIC_GAMEPLAY_POOL, ...OVERDRIVE_GAMEPLAY_POOL],
+    boss: [...GENERATED_BOSS_POOL, ...CLASSIC_BOSS_POOL, ...OVERDRIVE_BOSS_POOL],
+    gameover: [...GENERATED_GAME_OVER_POOL, ...CLASSIC_GAME_OVER_POOL, ...OVERDRIVE_GAME_OVER_POOL],
+    victory: [...GENERATED_VICTORY_POOL, ...CLASSIC_VICTORY_POOL, ...OVERDRIVE_VICTORY_POOL]
 };
 
 export const SFX_MIX = {

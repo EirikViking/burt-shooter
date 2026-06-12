@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { MUSIC_PACK_OPTIONS } from '../audio/SoundCatalog.js';
 import {
   getAccessibilitySettings,
   setColorAssistEnabled,
@@ -64,6 +65,10 @@ function debugBounds(displayObject) {
   } catch {
     return null;
   }
+}
+
+function getMusicPackOption(pack) {
+  return MUSIC_PACK_OPTIONS.find((option) => option.id === pack) || MUSIC_PACK_OPTIONS[0];
 }
 
 export class SettingsOverlay {
@@ -372,22 +377,15 @@ export class SettingsOverlay {
     labelText.x = -154;
     row.addChild(labelText);
 
-    let pack = initialPack === 'generated' ? 'generated' : 'classic';
-    const button = this.createButton(pack === 'classic' ? 'CLASSIC' : 'NEW MIX', 18, 0, () => {
-      pack = pack === 'classic' ? 'generated' : 'classic';
-      const settings = AudioManager.setMusicPack(pack);
-      pack = settings.musicPack === 'generated' ? 'generated' : 'classic';
-      button._label.text = pack === 'classic' ? 'CLASSIC' : 'NEW MIX';
-      fitTextToWidth(button._label, 132);
-      AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
-    }, { width: 170, height: 32 });
+    let selectedIndex = Math.max(0, MUSIC_PACK_OPTIONS.findIndex((option) => option.id === initialPack));
+    const selected = () => MUSIC_PACK_OPTIONS[selectedIndex] || MUSIC_PACK_OPTIONS[0];
+    const button = this.createButton(selected().label, 18, 0, () => cycleMusicPack(1), { width: 170, height: 32 });
     button.label = 'ui_settingsMusicPack';
     this.musicPackButton = button;
     fitTextToWidth(button._label, 132);
     row.addChild(button);
-    this.registerControl({ type: 'button', id: 'music_pack', button, label: 'MUSIC SET' });
 
-    const hint = createText(pack === 'classic' ? 'DEFAULT' : 'OPTIONAL MIX', {
+    const hint = createText(translateText(selected().hint), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#ffc96e'
@@ -396,8 +394,27 @@ export class SettingsOverlay {
     hint.x = 116;
     row.addChild(hint);
 
-    button.on('pointertap', () => {
-      hint.text = pack === 'classic' ? 'DEFAULT' : 'OPTIONAL MIX';
+    const updateDisplay = (pack) => {
+      const option = getMusicPackOption(pack);
+      selectedIndex = Math.max(0, MUSIC_PACK_OPTIONS.findIndex((entry) => entry.id === option.id));
+      button._label.text = translateText(option.label);
+      fitTextToWidth(button._label, 132);
+      hint.text = translateText(option.hint);
+      fitTextToWidth(hint, 118, { minScale: 0.68 });
+    };
+    function cycleMusicPack(direction = 1) {
+      selectedIndex = ((selectedIndex + Math.sign(direction || 1)) % MUSIC_PACK_OPTIONS.length + MUSIC_PACK_OPTIONS.length) % MUSIC_PACK_OPTIONS.length;
+      const settings = AudioManager.setMusicPack(selected().id);
+      updateDisplay(settings.musicPack);
+      AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+    }
+    updateDisplay(initialPack);
+    this.registerControl({
+      type: 'choice',
+      id: 'music_pack',
+      button,
+      label: 'MUSIC SET',
+      cycle: cycleMusicPack
     });
 
     this.container.addChild(row);

@@ -50,6 +50,24 @@ const tracks = [
     prompt_influence: 0.73
   },
   {
+    file: 'nova_swarm_overdrive_quarterstorm.mp3',
+    text: 'A super catchy original overdrive soundtrack song for Nova Swarm. Neon arcade cabinet energy, huge singable synth hook without vocals, punchy dance drums, coin-slot sparkle, heroic space-pilot rush, premium shmup comeback feeling, no copyrighted melody, no vocals, loop-friendly.',
+    duration_seconds: 24,
+    prompt_influence: 0.78
+  },
+  {
+    file: 'nova_swarm_overdrive_vector_riot.mp3',
+    text: 'A state-of-the-art original gameplay soundtrack song for Nova Swarm. Fast vector-lane synth bass, bright laser arpeggios, playful mayhem, addictive one-more-run chorus melody without vocals, crisp arcade percussion, colorful explosions in music form, no copyrighted melody, no vocals.',
+    duration_seconds: 24,
+    prompt_influence: 0.78
+  },
+  {
+    file: 'nova_swarm_overdrive_boss_singularity.mp3',
+    text: 'A dramatic but catchy original boss soundtrack song for Nova Swarm. Massive alien-machine groove, heroic counter-melody, thunderous arcade drums, dangerous cosmic brass synths, funny overconfident villain swagger, readable under combat sound effects, no copyrighted melody, no vocals.',
+    duration_seconds: 24,
+    prompt_influence: 0.77
+  },
+  {
     file: 'nova_swarm_boss_gate_overdrive.mp3',
     text: 'A spectacular boss battle theme for Nova Swarm. Heavy pulsing synth bass, dramatic arcade drums, threatening alien choir-like pads without voices, sharp heroic lead hook, intense but readable under combat SFX, no copyrighted melody.',
     duration_seconds: 24,
