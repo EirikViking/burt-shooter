@@ -19,6 +19,7 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Implemented a larger animated ship showcase on the Game Over / runback result screen using the existing generated player-ship textures, with staggered pop-in, hover motion, glow rings, and engine streaks.
 - Extended `npm run check:ship-unlock-reveal` to verify real ship sprites, animation state, readable reveal bounds, and continued visibility on the final "ONE MORE RUN" runback screen.
 - No unlock rules, balance, save keys, leaderboard identity, Steamworks settings, generated assets, or audio assets were changed.
+- Steam upload: packaged and uploaded private Steam build `23696628` for app `4765070` / depot `4765071` with `SetLive` empty; evidence is in `release/steamworks/steam_upload_evidence_ship_unlock_reveal_20260612.json`.
 
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 
