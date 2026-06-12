@@ -21,6 +21,7 @@ import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitHudHint } from '../config/ShipTraitDescriptions.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 import { translateText } from '../i18n/index.js';
+import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -56,6 +57,7 @@ export class ShipSelectScene {
   constructor(game, options = {}) {
     this.game = game;
     this.container = new PIXI.Container();
+    this.container.sortableChildren = true;
     this.ships = this.orderShips(getSelectableShips());
     this.selectedIndex = 0;
     this.shipCards = [];
@@ -84,6 +86,7 @@ export class ShipSelectScene {
     this.gamepadCancelWasPressed = false;
     this.gamepadVerticalWasPressed = false;
     this.gamepadNavigator = new GamepadNavigator();
+    this.menuFx = null;
     this.exitNoticeTimeout = null;
 
     // Load saved selection
@@ -116,6 +119,17 @@ export class ShipSelectScene {
     this.container.addChild(bg);
 
     await this.createHangarBackdrop(width, height);
+    installMenuFx(this, {
+      label: 'ui_menuFxHangar',
+      zIndex: 0,
+      accent: 0x66ffdd,
+      secondary: 0xff55d9,
+      gold: 0xffd15c,
+      intensity: 0.78,
+      density: 0.82,
+      alpha: 0.46,
+      openVolume: 0.2
+    });
 
     // Animated background layer
     this.bgAnimationContainer = new PIXI.Container();
@@ -1826,6 +1840,13 @@ export class ShipSelectScene {
 
     // More dramatic navigation sound
     AudioManager.playSfx('thrusterFire', { volume: 0.25 });
+    playMenuFocusSfx(0.12);
+    const ship = this.ships[this.selectedIndex];
+    this.menuFx?.burst?.(this.game.getWidth() / 2, this.game.getHeight() * 0.52, {
+      color: ship?.visuals?.variant?.accent || ship?.visuals?.variant?.glow || 0x66ffdd,
+      radius: 160,
+      durationMs: 520
+    });
 
     this.updateCarouselPositions(true);
     this.updateSelectionInfo();
@@ -2535,6 +2556,7 @@ export class ShipSelectScene {
       clearTimeout(this.exitNoticeTimeout);
       this.exitNoticeTimeout = null;
     }
+    destroyMenuFx(this);
   }
 
   destroy() {
@@ -2543,6 +2565,10 @@ export class ShipSelectScene {
 
   init() {
     // Called when scene is shown
+  }
+
+  update(delta = 1) {
+    updateMenuFx(this, delta);
   }
 
   getContainer() {

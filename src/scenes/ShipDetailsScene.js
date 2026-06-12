@@ -7,15 +7,18 @@ import { createShipStatPanel } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitExplanation } from '../config/ShipTraitDescriptions.js';
 import { translateText } from '../i18n/index.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
         this.game = game;
         this.spriteKey = spriteKey;
         this.container = new PIXI.Container();
+        this.container.sortableChildren = true;
         this.ship = getShipMetadata(spriteKey);
         this.gamepadNavigator = new GamepadNavigator();
         this.buttons = [];
+        this.menuFx = null;
         this.focusedButtonIndex = 1;
 
         if (!this.ship) {
@@ -38,6 +41,17 @@ export class ShipDetailsScene {
         bg.rect(0, 0, width, height);
         bg.fill({ color: 0x000000 });
         this.container.addChild(bg);
+        installMenuFx(this, {
+            label: 'ui_menuFxShipDetails',
+            zIndex: 0,
+            accent: this.ship?.visuals?.variant?.accent || 0x66ffcc,
+            secondary: 0xff55d9,
+            gold: 0xffef7e,
+            intensity: 0.68,
+            density: 0.7,
+            alpha: 0.42,
+            openVolume: 0.18
+        });
 
         // Determine layout
         const isMobile = width < 900;
@@ -45,12 +59,19 @@ export class ShipDetailsScene {
         const panelHeight = Math.min(750, height - 60);
         const panelX = (width - panelWidth) / 2;
         const panelY = (height - panelHeight) / 2;
+        const accent = this.ship?.visuals?.variant?.accent || 0x37f5ff;
 
         // Main panel
         const panel = new PIXI.Graphics();
-        panel.rect(panelX, panelY, panelWidth, panelHeight);
-        panel.fill({ color: 0x1a1a1a });
-        panel.stroke({ color: 0x00ff00, width: 3 });
+        panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
+        panel.fill({ color: 0x06111f, alpha: 0.92 });
+        panel.stroke({ color: accent, width: 2, alpha: 0.88 });
+        panel.roundRect(panelX + 12, panelY + 12, panelWidth - 24, panelHeight - 24, 6);
+        panel.stroke({ color: 0xff55d9, width: 1, alpha: 0.2 });
+        panel.rect(panelX + 26, panelY + 22, Math.max(120, panelWidth * 0.22), 2);
+        panel.fill({ color: 0xffef7e, alpha: 0.34 });
+        panel.rect(panelX + panelWidth - Math.max(170, panelWidth * 0.26) - 26, panelY + panelHeight - 28, Math.max(150, panelWidth * 0.22), 2);
+        panel.fill({ color: accent, alpha: 0.32 });
         this.container.addChild(panel);
 
         // Content container
@@ -65,9 +86,9 @@ export class ShipDetailsScene {
         const title = createText(this.ship.name, {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: isMobile ? 26 : 32,
-            fill: '#00ff00',
-            stroke: '#000000',
-            strokeThickness: 4,
+            fill: '#f5fdff',
+            stroke: '#00d5ff',
+            strokeThickness: 5,
             fontWeight: 'bold'
         });
         title.anchor.set(0.5, 0);
@@ -249,6 +270,7 @@ export class ShipDetailsScene {
         const buttonWidth = isMobile ? 130 : 150;
         const buttonHeight = isMobile ? 38 : 42;
         const spacing = 20;
+        const accent = this.ship?.visuals?.variant?.accent || 0x37f5ff;
 
         // Back button
         const backButton = new PIXI.Container();
@@ -264,7 +286,7 @@ export class ShipDetailsScene {
         const backText = createText('BACK', {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: isMobile ? 18 : 22,
-            fill: '#00ff00',
+            fill: '#d8fbff',
             fontWeight: 'bold'
         });
         backText.anchor.set(0.5);
@@ -278,17 +300,23 @@ export class ShipDetailsScene {
                 backFocus.stroke({ color: 0xffef7e, width: 2, alpha: 0.88 });
             }
             backBg.clear();
-            backBg.rect(0, 0, buttonWidth, buttonHeight);
-            backBg.fill({ color: hovered ? 0x144455 : 0x333333 });
-            backBg.stroke({ color: hovered || backButton._focused ? 0xffffff : 0x00ff00, width: 2 });
+            backBg.roundRect(0, 0, buttonWidth, buttonHeight, 5);
+            backBg.fill({ color: hovered ? 0x0b6f8f : 0x07334e, alpha: 0.92 });
+            backBg.stroke({ color: hovered || backButton._focused ? 0xffffff : accent, width: 2, alpha: 0.94 });
+            backBg.rect(10, 7, buttonWidth - 20, 2);
+            backBg.fill({ color: 0xff55d9, alpha: 0.38 });
         };
         backButton.redraw(false);
         backButton.on('pointerover', () => {
             this.setButtonFocus(0);
+            playMenuFocusSfx(0.09);
             backButton.redraw(true);
         });
         backButton.on('pointerout', () => backButton.redraw(false));
-        backButton.on('pointerdown', () => this.goBack());
+        backButton.on('pointerdown', () => {
+            playMenuConfirmSfx(0.14);
+            this.goBack();
+        });
         this.container.addChild(backButton);
 
         // Start button
@@ -306,7 +334,7 @@ export class ShipDetailsScene {
         const startText = createText(locked ? 'LOCKED' : 'START GAME', {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: isMobile ? 18 : 22,
-            fill: locked ? '#ffcc00' : '#000000',
+            fill: locked ? '#ffcc00' : '#081522',
             fontWeight: 'bold'
         });
         startText.anchor.set(0.5);
@@ -320,17 +348,23 @@ export class ShipDetailsScene {
                 startFocus.stroke({ color: 0xffef7e, width: 2, alpha: 0.88 });
             }
             startBg.clear();
-            startBg.rect(0, 0, buttonWidth, buttonHeight);
-            startBg.fill({ color: locked ? 0x2a2134 : (hovered ? 0x66ffff : 0x00ff00) });
-            startBg.stroke({ color: hovered || startButton._focused ? 0xffffff : 0xffffff, width: 2 });
+            startBg.roundRect(0, 0, buttonWidth, buttonHeight, 5);
+            startBg.fill({ color: locked ? 0x2a2134 : (hovered ? 0xffef7e : 0xffd15c), alpha: 0.96 });
+            startBg.stroke({ color: hovered || startButton._focused ? 0xffffff : accent, width: 2, alpha: 0.95 });
+            startBg.rect(10, 7, buttonWidth - 20, 2);
+            startBg.fill({ color: locked ? 0xff55d9 : 0x00eaff, alpha: 0.42 });
         };
         startButton.redraw(false);
         startButton.on('pointerover', () => {
             this.setButtonFocus(1);
+            playMenuFocusSfx(0.09);
             startButton.redraw(true);
         });
         startButton.on('pointerout', () => startButton.redraw(false));
-        startButton.on('pointerdown', () => this.startGame());
+        startButton.on('pointerdown', () => {
+            playMenuConfirmSfx(0.18);
+            this.startGame();
+        });
         this.container.addChild(startButton);
 
         this.backButton = backButton;
@@ -361,14 +395,19 @@ export class ShipDetailsScene {
             button._focused = buttonIndex === next;
             button.redraw?.(false);
         });
+        if (next !== this.focusedButtonIndex) playMenuFocusSfx(0.08);
         this.focusedButtonIndex = next;
     }
 
-    update() {
+    update(delta = 1) {
+        updateMenuFx(this, delta);
         const nav = this.gamepadNavigator.update();
         if (!nav.connected || !nav.active) return;
         if (nav.pressed.left || nav.pressed.right) this.setButtonFocus(this.focusedButtonIndex === 0 ? 1 : 0);
-        if (nav.pressed.confirm) this.buttons[this.focusedButtonIndex]?.activate?.();
+        if (nav.pressed.confirm) {
+            playMenuConfirmSfx(0.16);
+            this.buttons[this.focusedButtonIndex]?.activate?.();
+        }
         if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.goBack();
     }
 
@@ -390,6 +429,7 @@ export class ShipDetailsScene {
         if (this.keyHandler) {
             window.removeEventListener('keydown', this.keyHandler);
         }
+        destroyMenuFx(this);
     }
 
     destroy() {

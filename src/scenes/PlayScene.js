@@ -20,6 +20,13 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
+import {
+  MenuFxLayer,
+  playMenuBackSfx,
+  playMenuConfirmSfx,
+  playMenuFocusSfx,
+  playMenuOpenSfx
+} from '../ui/MenuFxLayer.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { getDefaultShipKey } from '../config/ShipMetadata.js';
 import { createText } from '../utils/pixiText.js';
@@ -88,6 +95,7 @@ export class PlayScene {
     this.hud = null;
     this.isPaused = false;
     this.pauseOverlay = null;
+    this.pauseMenuFx = null;
     this.pauseButtons = [];
     this.pauseFocusedIndex = 0;
     this.pauseGamepadNavigator = new GamepadNavigator();
@@ -1146,11 +1154,12 @@ export class PlayScene {
 
       this.handlePauseToggle();
       this.updateControllerPresencePause();
-      if (this.isPaused) {
-        this.cleanupSkippedFrameVisuals('pause');
-        this.updatePauseMenuControls(delta);
-        return;
-      }
+    if (this.isPaused) {
+      this.cleanupSkippedFrameVisuals('pause');
+      this.pauseMenuFx?.update?.(delta);
+      this.updatePauseMenuControls(delta);
+      return;
+    }
 
       // Player update
       if (this.game.lives > 0 && this.player) {
@@ -2546,6 +2555,7 @@ export class PlayScene {
     this.flushBalanceDebugSummary('scene_destroy');
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
+    this.destroyPauseOverlay();
     this.removeAutoPauseHandlers();
     this.shipIntroToken += 1;
 
@@ -2982,6 +2992,8 @@ export class PlayScene {
     this.pauseGamepadNavigator.suppressUntilReleased();
     if (this.pauseOverlay) {
       this.pauseOverlay.visible = true;
+      this.pauseMenuFx?.resize?.(this.game.getWidth(), this.game.getHeight());
+      playMenuOpenSfx(0.22);
       this.setPauseFocus(this.pauseFocusedIndex || 0);
       return;
     }
@@ -2991,17 +3003,32 @@ export class PlayScene {
     const overlay = new PIXI.Container();
     overlay.zIndex = 1000000;
     overlay.label = 'ui_pauseOverlay';
+    overlay.sortableChildren = true;
 
     const dim = new PIXI.Graphics();
+    dim.zIndex = 0;
     dim.rect(0, 0, width, height);
     dim.fill({ color: 0x020713, alpha: 0.74 });
     overlay.addChild(dim);
+
+    this.pauseMenuFx?.destroy?.();
+    this.pauseMenuFx = new MenuFxLayer({
+      game: this.game,
+      label: 'ui_menuFxPause',
+      zIndex: 1,
+      intensity: 0.82,
+      density: 0.72,
+      alpha: 0.78
+    });
+    this.pauseMenuFx.resize(width, height);
+    overlay.addChild(this.pauseMenuFx.container);
 
     const panelWidth = Math.min(500, width * 0.72);
     const panelHeight = 360;
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const panel = new PIXI.Graphics();
+    panel.zIndex = 2;
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
     panel.fill({ color: 0x06111f, alpha: 0.94 });
     panel.stroke({ color: 0x00ffff, width: 2, alpha: 0.9 });
@@ -3018,6 +3045,7 @@ export class PlayScene {
     });
     title.anchor.set(0.5);
     title.position.set(width / 2, panelY + 62);
+    title.zIndex = 3;
     overlay.addChild(title);
 
     const status = createText('ARCADE PATROL ON HOLD', {
@@ -3028,6 +3056,7 @@ export class PlayScene {
     });
     status.anchor.set(0.5);
     status.position.set(width / 2, panelY + 102);
+    status.zIndex = 3;
     overlay.addChild(status);
 
     this.pauseButtons = [
@@ -3042,10 +3071,14 @@ export class PlayScene {
         this.game.switchScene('menu');
       })
     ];
-    this.pauseButtons.forEach((button) => overlay.addChild(button));
+    this.pauseButtons.forEach((button) => {
+      button.zIndex = 4;
+      overlay.addChild(button);
+    });
 
     this.pauseOverlay = overlay;
     this.uiOverlay.addChild(overlay);
+    playMenuOpenSfx(0.22);
     this.setPauseFocus(0);
   }
 
@@ -3087,10 +3120,7 @@ export class PlayScene {
     }
     if (this.pauseOverlay?.parent && this.pauseOverlay.visible) {
       const focusedIndex = this.pauseFocusedIndex || 0;
-      this.pauseOverlay.parent.removeChild(this.pauseOverlay);
-      this.pauseOverlay.destroy({ children: true });
-      this.pauseOverlay = null;
-      this.pauseButtons = [];
+      this.destroyPauseOverlay();
       this.pauseFocusedIndex = focusedIndex;
       this.showPauseOverlay();
       this.setPauseFocus(focusedIndex);
@@ -3151,7 +3181,10 @@ export class PlayScene {
       draw(true);
     });
     button.on('pointerout', () => draw(false));
-    button.on('pointertap', onPress);
+    button.on('pointertap', () => {
+      playMenuConfirmSfx(0.22);
+      onPress?.();
+    });
     return button;
   }
 
@@ -3164,11 +3197,13 @@ export class PlayScene {
     if (!this.pauseButtons?.length) return;
     const count = this.pauseButtons.length;
     const next = ((index % count) + count) % count;
+    const changed = this.pauseFocusedIndex !== next;
     this.pauseButtons.forEach((button, buttonIndex) => {
       button._focused = buttonIndex === next;
       button.redraw?.(false);
     });
     this.pauseFocusedIndex = next;
+    if (changed) playMenuFocusSfx(0.08);
   }
 
   movePauseFocus(delta) {
@@ -3190,9 +3225,11 @@ export class PlayScene {
     if (nav.pressed.up) this.movePauseFocus(-1);
     if (nav.pressed.down) this.movePauseFocus(1);
     if (nav.pressed.confirm) {
+      playMenuConfirmSfx(0.22);
       this.pauseButtons[this.pauseFocusedIndex]?.activate?.();
     }
     if (nav.pressed.cancel || nav.pressed.back) {
+      playMenuBackSfx(0.18);
       this.setPaused(false);
     }
   }
@@ -3201,6 +3238,20 @@ export class PlayScene {
     if (this.pauseOverlay) {
       this.pauseOverlay.visible = false;
     }
+  }
+
+  destroyPauseOverlay() {
+    if (this.pauseMenuFx?.container?.parent) {
+      this.pauseMenuFx.container.parent.removeChild(this.pauseMenuFx.container);
+    }
+    this.pauseMenuFx?.destroy?.();
+    this.pauseMenuFx = null;
+    if (this.pauseOverlay?.parent) {
+      this.pauseOverlay.parent.removeChild(this.pauseOverlay);
+    }
+    this.pauseOverlay?.destroy?.({ children: true });
+    this.pauseOverlay = null;
+    this.pauseButtons = [];
   }
 
   resetRandomTimers() {

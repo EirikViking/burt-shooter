@@ -10,6 +10,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
+import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 const FONT_FAMILY = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 const CODEX_BG = 0x02070c;
@@ -257,6 +258,7 @@ export class ThreatCodexScene {
     this.renderToken = 0;
     this.backdropSprite = null;
     this.backdropShade = null;
+    this.menuFx = null;
     this.titlePlate = null;
     this.holoRails = null;
     this.animationTime = 0;
@@ -275,6 +277,17 @@ export class ThreatCodexScene {
     this.animatedNodes = [];
     this.gamepadNavigator.suppressUntilReleased();
     this.createLayout(this.renderToken);
+    installMenuFx(this, {
+      label: 'ui_menuFxCodex',
+      zIndex: -52,
+      accent: 0x7dffcc,
+      secondary: 0xff55d9,
+      gold: 0xffe76a,
+      intensity: 0.62,
+      density: 0.72,
+      alpha: 0.44,
+      openVolume: 0.16
+    });
     this.keyHandler = (event) => this.handleKeyDown(event);
     this.wheelHandler = (event) => this.handleWheel(event);
     window.addEventListener('keydown', this.keyHandler);
@@ -291,6 +304,7 @@ export class ThreatCodexScene {
 
   destroy() {
     this.cleanup();
+    destroyMenuFx(this);
     this.container.removeChildren();
   }
 
@@ -402,6 +416,7 @@ export class ThreatCodexScene {
     const height = this.game.getHeight();
     const compact = width < 920 || height < 740;
     const categoryLayout = getCategoryLayout(width, height, compact);
+    resizeMenuFx(this, width, height);
     this.drawBackground(width, height, token);
     this.createTitlePlate(width, height, compact);
     this.createHeader(width, height, compact);
@@ -1207,6 +1222,7 @@ export class ThreatCodexScene {
   }
 
   update(delta = 1) {
+    updateMenuFx(this, delta);
     this.updateCodexAnimations(delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
@@ -1249,7 +1265,8 @@ export class ThreatCodexScene {
       wheelNavigation: true,
       pageNavigation: true,
       entryScroll: this.lastEntryListDebug,
-      artfulEmptyState: true
+      artfulEmptyState: true,
+      menuFx: this.menuFx?.getDebugState?.() || null
     };
   }
 }

@@ -18,6 +18,7 @@ import {
   translateText
 } from '../i18n/index.js';
 import { grantSecretShipUnlock } from '../progression/HangarProgressState.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from './MenuFxLayer.js';
 
 function percent(value) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
@@ -77,6 +78,7 @@ export class SettingsOverlay {
     this.container.zIndex = 2000000;
     this.container.label = 'ui_settingsOverlay';
     this.container.sortableChildren = true;
+    this.menuFx = null;
     this.rows = [];
     this.draggingSlider = null;
     this.audioTestButtons = {};
@@ -121,6 +123,17 @@ export class SettingsOverlay {
     dim.fill({ color: 0x020713, alpha: 0.82 });
     dim.eventMode = 'static';
     this.container.addChild(dim);
+    installMenuFx(this, {
+      label: 'ui_menuFxSettings',
+      zIndex: 0,
+      accent: 0x7fffd8,
+      secondary: 0xff55d9,
+      gold: 0xffef7e,
+      intensity: 0.6,
+      density: 0.68,
+      alpha: 0.42,
+      openVolume: 0.18
+    });
 
     const isCompact = width < 620 || height < 820;
     const panelWidth = Math.min(560, width * 0.82);
@@ -539,10 +552,19 @@ export class SettingsOverlay {
 
     button.on('pointerover', () => {
       this.setControlFocusByButton(button);
+      playMenuFocusSfx(0.09);
       draw(true);
     });
     button.on('pointerout', () => draw(false));
-    button.on('pointertap', onPress);
+    button.on('pointertap', () => {
+      playMenuConfirmSfx(0.14);
+      this.menuFx?.burst?.(button.parent ? button.parent.x + button.x : button.x, button.parent ? button.parent.y + button.y : button.y, {
+        color: 0x7fffd8,
+        radius: 72,
+        durationMs: 380
+      });
+      onPress?.();
+    });
     return button;
   }
 
@@ -573,6 +595,7 @@ export class SettingsOverlay {
     if (!this.controls.length) return;
     const count = this.controls.length;
     const next = ((index % count) + count) % count;
+    const changed = next !== this.focusedControlIndex;
     this.controls.forEach((control, controlIndex) => {
       control.focused = controlIndex === next;
       if (control.button) {
@@ -584,6 +607,7 @@ export class SettingsOverlay {
       }
     });
     this.focusedControlIndex = next;
+    if (changed) playMenuFocusSfx(0.08);
   }
 
   getFocusedControl() {
@@ -653,6 +677,7 @@ export class SettingsOverlay {
     this.closeCreditsPanel();
     const children = this.container.removeChildren();
     children.forEach((child) => child?.destroy?.({ children: true }));
+    this.menuFx = null;
     this.rows = [];
     this.draggingSlider = null;
     this.audioTestButtons = {};
@@ -676,7 +701,8 @@ export class SettingsOverlay {
     this.setControlFocus(nextIndex);
   }
 
-  update() {
+  update(delta = 1) {
+    updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
 
@@ -1466,12 +1492,14 @@ export class SettingsOverlay {
       footer: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button)])),
       credits: this.creditsDebugState,
       creditsFocus: this.creditsControls[this.creditsFocusedIndex]?.label || null,
-      focus: this.getFocusedControl()?.id || null
+      focus: this.getFocusedControl()?.id || null,
+      menuFx: this.menuFx?.getDebugState?.() || null
     };
   }
 
   close() {
     this.closeCreditsPanel();
+    destroyMenuFx(this);
     if (this.languageUnsubscribe) {
       this.languageUnsubscribe();
       this.languageUnsubscribe = null;

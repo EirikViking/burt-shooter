@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
 import { createText } from '../utils/pixiText.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from './MenuFxLayer.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
@@ -119,6 +120,8 @@ export class HowToPlayOverlay {
     this.container = new PIXI.Container();
     this.container.zIndex = 2100000;
     this.container.label = 'ui_howToPlayOverlay';
+    this.container.sortableChildren = true;
+    this.menuFx = null;
     this.closeButton = null;
     this.keyHandler = null;
     this.debugLayout = null;
@@ -170,6 +173,17 @@ export class HowToPlayOverlay {
     dim.fill({ color: 0x010611, alpha: 0.88 });
     dim.eventMode = 'static';
     this.container.addChild(dim);
+    installMenuFx(this, {
+      label: 'ui_menuFxHowToPlay',
+      zIndex: 0,
+      accent: 0x37f5ff,
+      secondary: 0xff55d9,
+      gold: 0xffef7e,
+      intensity: 0.72,
+      density: 0.8,
+      alpha: 0.46,
+      openVolume: 0.2
+    });
 
     const panel = new PIXI.Graphics();
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
@@ -456,9 +470,16 @@ export class HowToPlayOverlay {
     fitTextToBox(text, width - 24, height - 8, { minScale: 0.62 });
     button.addChild(text);
     button.position.set(x, y);
-    button.on('pointerover', () => draw(true));
+    button.on('pointerover', () => {
+      playMenuFocusSfx(0.1);
+      draw(true);
+    });
     button.on('pointerout', () => draw(false));
-    button.on('pointertap', onPress);
+    button.on('pointertap', () => {
+      playMenuConfirmSfx(0.16);
+      this.menuFx?.burst?.(x, y, { color: 0xffef7e, radius: 86, durationMs: 420 });
+      onPress?.();
+    });
     return button;
   }
 
@@ -474,7 +495,8 @@ export class HowToPlayOverlay {
     window.addEventListener('keydown', this.keyHandler, true);
   }
 
-  update() {
+  update(delta = 1) {
+    updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
@@ -488,7 +510,8 @@ export class HowToPlayOverlay {
       rows: HELP_ROWS.map((row) => row.label),
       cardCount: HELP_ROWS.length,
       focusedControl: 'back',
-      layout: this.debugLayout
+      layout: this.debugLayout,
+      menuFx: this.menuFx?.getDebugState?.() || null
     };
   }
 
@@ -500,6 +523,7 @@ export class HowToPlayOverlay {
     if (this.container?.parent) {
       this.container.parent.removeChild(this.container);
     }
+    destroyMenuFx(this);
     this.container.destroy({ children: true });
     this.onClose?.();
   }

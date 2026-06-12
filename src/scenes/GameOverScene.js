@@ -30,6 +30,7 @@ import { translateText } from '../i18n/index.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { RUN_MODES } from '../game/RunMode.js';
+import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
@@ -178,6 +179,7 @@ export class GameOverScene {
     this.boundHiddenKeyDown = null;
     this.backdrop = null;
     this.backdropShade = null;
+    this.menuFx = null;
     this.backdropLoaded = false;
     this.ceremonyFrame = null;
     this.ceremonyGlow = null;
@@ -361,6 +363,17 @@ export class GameOverScene {
     const layout = createTextLayout(width, height, responsiveLayout);
     this.createFallbackBackdrop(width, height);
     this.initBackdrop(width, height);
+    installMenuFx(this, {
+      label: 'ui_menuFxGameOver',
+      zIndex: -9,
+      accent: this.game?.runSummary?.runCleared ? 0xffd15c : 0x37f5ff,
+      secondary: 0xff55d9,
+      gold: 0xffef7e,
+      intensity: this.game?.runSummary?.runCleared ? 0.82 : 0.68,
+      density: 0.76,
+      alpha: 0.46,
+      openVolume: 0.2
+    });
     this.createCeremonyVisuals();
 
     const ceremonyTitle = this.getCeremonyTitle();
@@ -1502,6 +1515,7 @@ export class GameOverScene {
     const responsiveLayout = getCurrentLayout();
     const layout = createTextLayout(width, height, responsiveLayout);
     const safeMargin = responsiveLayout.safeArea;
+    resizeMenuFx(this, width, height);
     this.syncResultStagePresentation();
 
     // Update font sizes
@@ -2751,7 +2765,8 @@ export class GameOverScene {
     window.addEventListener('keydown', this.keyHandler);
   }
 
-  update() {
+  update(delta = 1) {
+    updateMenuFx(this, delta);
     this.updateCeremonyEffects();
     if (this.shipUnlockReveal?.visible) {
       this.drawShipUnlockReveal(createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout()));
@@ -4760,6 +4775,7 @@ export class GameOverScene {
     this.removeAchievementToast();
     this.achievementToastQueue = [];
     AudioManager.stopVoiceGroup('runback');
+    destroyMenuFx(this);
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = null;
   }

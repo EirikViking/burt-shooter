@@ -7,6 +7,7 @@ import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.
 import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
@@ -99,6 +100,7 @@ export class MenuScene {
     this.subtitle = null;
     this.flavor = null;
     this.primaryHint = null;
+    this.runModeExplainer = null;
     this.disclaimer = null;
     this.startBtn = null;
     this.sectorStartBtn = null;
@@ -125,6 +127,7 @@ export class MenuScene {
     this.backdrop = null;
     this.backdropShade = null;
     this.missionConsole = null;
+    this.menuFx = null;
     this.menuPanel = null;
     this.radarSweep = null;
     this.radarBlips = [];
@@ -167,6 +170,14 @@ export class MenuScene {
     this.createStarfield();
     this.initBackdrop();
     this.initMissionConsole();
+    installMenuFx(this, {
+      label: 'ui_menuFxMain',
+      zIndex: 3,
+      intensity: 1.08,
+      density: 1.18,
+      alpha: 0.72,
+      playOpen: false
+    });
     GameAssets.loadBonusCore().catch((error) => console.warn('[MenuScene] Bonus core preload failed:', error));
     GameAssets.loadCommsPortraits()
       .then(() => GameAssets.loadShips())
@@ -770,6 +781,24 @@ export class MenuScene {
     this.primaryHint.zIndex = 10;
     this.container.addChild(this.primaryHint);
 
+    const runModeSize = Math.max(11, getResponsiveFontSize(layout, 'small'));
+    this.runModeExplainer = createText(this.getRunModeExplainerText(), {
+      fontFamily: FONT_MONO,
+      fontSize: runModeSize,
+      fontWeight: '800',
+      fill: '#dffcff',
+      stroke: '#020711',
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.7, layout),
+      lineHeight: Math.round(runModeSize * 1.32)
+    });
+    this.runModeExplainer.anchor.set(0.5);
+    this.runModeExplainer.alpha = 0;
+    this.runModeExplainer.zIndex = 10;
+    this.container.addChild(this.runModeExplainer);
+
     this.disclaimer = createText(
       this.getDisclaimerText(layout),
       {
@@ -1000,6 +1029,7 @@ export class MenuScene {
       this.subtitle,
       this.flavor,
       this.primaryHint,
+      this.runModeExplainer,
       this.disclaimer,
       this.controls,
       this.easter,
@@ -1066,6 +1096,7 @@ export class MenuScene {
     const isMobileLayout = layout.isMobile || width < 720;
     this.layoutBackdrop(width, height);
     this.layoutMissionConsole(width, height);
+    resizeMenuFx(this, width, height);
 
     const titleSize = Math.round(getResponsiveFontSize(layout, 'title') * (isMobileLayout ? 0.9 : 1.18));
     const subtitleSize = Math.round(getResponsiveFontSize(layout, 'subtitle') * (isMobileLayout ? 0.92 : 0.96));
@@ -1103,6 +1134,11 @@ export class MenuScene {
     this.primaryHint.text = this.getPrimaryHintText();
     this.primaryHint.style.align = align;
     this.primaryHint.style.wordWrapWidth = clampTextWidth(contentWidth, layout);
+    this.runModeExplainer.text = this.getRunModeExplainerText();
+    this.runModeExplainer.style.fontSize = Math.max(10, controlsSize - 1);
+    this.runModeExplainer.style.lineHeight = Math.round(Math.max(10, controlsSize - 1) * 1.28);
+    this.runModeExplainer.style.align = align;
+    this.runModeExplainer.style.wordWrapWidth = clampTextWidth(isMobileLayout ? contentWidth - 8 : contentWidth, layout);
     this.disclaimer.text = this.getDisclaimerText(layout);
     this.controls.text = layout.isMobile ? this.getControlsText(layout) : '';
     this.controls.style.fontSize = controlsSize;
@@ -1118,6 +1154,7 @@ export class MenuScene {
     this.subtitle.updateText?.(false);
     this.flavor.updateText?.(false);
     this.primaryHint.updateText?.(false);
+    this.runModeExplainer.updateText?.(false);
     this.disclaimer.updateText?.(false);
     this.controls.updateText?.(false);
 
@@ -1126,6 +1163,7 @@ export class MenuScene {
     fitTextToWidth(this.title, fitWidth, { minScale: 0.52 });
     fitTextToWidth(this.subtitle, fitWidth, { minScale: 0.72 });
     fitTextToWidth(this.primaryHint, fitWidth, { minScale: 0.74 });
+    fitTextToWidth(this.runModeExplainer, fitWidth, { minScale: 0.72 });
     fitTextToWidth(this.disclaimer, fitWidth, { minScale: 0.72 });
 
     const isShortLayout = !isMobileLayout && height < 820;
@@ -1169,11 +1207,12 @@ export class MenuScene {
     const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
     const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
     const primaryHintHeight = this.primaryHint.height || controlsSize * 1.5;
+    const runModeExplainerHeight = this.runModeExplainer.height || controlsSize * 3;
     const buttonCount = 1 + secondaryButtons.length;
     const buttonsHeight = primaryButtonHeight + buttonHeight * secondaryButtons.length + buttonSpacing * Math.max(0, buttonCount - 1);
     const exitNoticeHeight = this.exitNotice?.text ? (this.exitNotice.height || controlsSize * 1.2) : 0;
     const disclaimerHeight = this.disclaimer.height || disclaimerSize * 2;
-    const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + buttonsHeight + exitNoticeHeight + disclaimerHeight + sectionSpacing * 7;
+    const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + runModeExplainerHeight + buttonsHeight + exitNoticeHeight + disclaimerHeight + sectionSpacing * 8;
 
     const footerReserve = isMobileLayout ? 86 : (isShortLayout ? 16 : 64);
     const availableHeight = height - footerReserve - safeMargin.top;
@@ -1189,7 +1228,7 @@ export class MenuScene {
       stack.addGap(itemHeight + gapAfter);
     };
 
-    [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.disclaimer].forEach((text) => {
+    [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.runModeExplainer, this.disclaimer].forEach((text) => {
       if (!text) return;
       text.anchor.set(anchorX, 0.5);
       text.x = leftX;
@@ -1199,7 +1238,8 @@ export class MenuScene {
     placeCentered(this.title, titleHeight, isMobileLayout ? 8 : 10);
     placeCentered(this.subtitle, subtitleHeight, isMobileLayout ? 10 : 18);
     placeCentered(this.flavor, flavorHeight, isMobileLayout ? 12 : 18);
-    placeCentered(this.primaryHint, primaryHintHeight, sectionSpacing);
+    placeCentered(this.primaryHint, primaryHintHeight, isMobileLayout ? 8 : 10);
+    placeCentered(this.runModeExplainer, runModeExplainerHeight, sectionSpacing);
 
     const buttonX = isMobileLayout ? contentX : leftX + primaryButtonWidth / 2;
     this.startBtn.x = buttonX;
@@ -1246,7 +1286,7 @@ export class MenuScene {
     placeCentered(this.disclaimer, disclaimerHeight, 0);
 
     if (isMobileLayout) {
-      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.disclaimer].forEach((text) => {
+      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.runModeExplainer, this.disclaimer].forEach((text) => {
         if (!text) return;
         text.x = contentX;
         text.anchor.set(0.5);
@@ -1256,7 +1296,7 @@ export class MenuScene {
     const overflow = this.disclaimer.y + disclaimerHeight / 2 - (height - footerReserve);
     if (overflow > 0) {
       const lift = Math.min(overflow + 10, isMobileLayout ? 56 : 90);
-      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.startBtn, this.sectorStartBtn?.visible ? this.sectorStartBtn : null, this.highscoreBtn, this.storyBtn, this.threatCodexBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
+      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.runModeExplainer, this.startBtn, this.sectorStartBtn?.visible ? this.sectorStartBtn : null, this.highscoreBtn, this.storyBtn, this.threatCodexBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
         if (item) item.y -= lift;
       });
     }
@@ -1328,6 +1368,14 @@ export class MenuScene {
       : 'ARROWS: NAVIGATE // ENTER/SPACE: CONFIRM // ESC: BACK';
   }
 
+  getRunModeExplainerText() {
+    const ranked = translateText('RANKED RUN: Sector 1 climb. Scores, Career XP, achievements, and unlocks count. The leaderboard is watching.');
+    const sector = this.sectorStartState?.available
+      ? translateText('SECTOR START: checkpoint practice. Local checkpoint record only; no leaderboard or career changes. Great for revenge.')
+      : translateText('SECTOR START: unlocks after Sector 5. Then it is checkpoint practice: local records only, no leaderboard or career changes.');
+    return `${ranked}\n${sector}`;
+  }
+
   drawMenuPanel(layout) {
     if (!this.menuPanel || !this.startBtn || !this.settingsBtn) return;
 
@@ -1341,6 +1389,7 @@ export class MenuScene {
       this.subtitle,
       this.flavor,
       this.primaryHint,
+      this.runModeExplainer,
       this.startBtn,
       this.sectorStartBtn?.visible ? this.sectorStartBtn : null,
       this.highscoreBtn,
@@ -1403,6 +1452,7 @@ export class MenuScene {
       subtitle: this.subtitle,
       flavor: this.flavor,
       primaryHint: this.primaryHint,
+      runModeExplainer: this.runModeExplainer,
       disclaimer: this.disclaimer,
       controls: this.controls,
       launchButton: this.startBtn,
@@ -1434,6 +1484,7 @@ export class MenuScene {
         selectedCheckpoint: this.getSelectedSectorStartCheckpoint(),
         selectedRecord: getSectorStartChallengeRecord(this.getSelectedSectorStartCheckpoint()),
         primaryHintText: this.primaryHint?.text || null,
+        runModeExplainerText: this.runModeExplainer?.text || null,
         buttonVisible: Boolean(this.sectorStartBtn?.visible),
         buttonText: this.sectorStartBtn?._label?.text || null,
         buttonBounds: boundsForDisplayObject(this.sectorStartBtn?.visible ? this.sectorStartBtn : null),
@@ -1444,6 +1495,7 @@ export class MenuScene {
         arrowCueVisible: Boolean(this.sectorStartBtn?._stepperCue?.visible),
         arrowCueBounds: boundsForDisplayObject(this.sectorStartBtn?._stepperCue?.visible ? this.sectorStartBtn?._stepperCue : null)
       },
+      menuFx: this.menuFx?.getDebugState?.() || null,
       exitNoticeText: this.exitNotice?.text || '',
       items: Object.fromEntries(
         Object.entries(textItems).map(([key, item]) => [key, boundsForDisplayObject(item)])
@@ -1538,6 +1590,7 @@ export class MenuScene {
     container.on('pointerover', () => {
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(container);
+      playMenuFocusSfx(0.11);
       label.style.fill = '#ffffff';
       this.drawMenuButton(container, true);
     });
@@ -1545,6 +1598,15 @@ export class MenuScene {
     container.on('pointerout', () => {
       label.style.fill = '#c9fbff';
       this.drawMenuButton(container, false);
+    });
+
+    container.on('pointerdown', () => {
+      playMenuConfirmSfx(container._variant === 'primary' ? 0.32 : 0.24);
+      this.menuFx?.burst?.(container.x, container.y, {
+        color: container._accent || 0xffd15c,
+        radius: container._variant === 'primary' ? 132 : 92,
+        durationMs: 460
+      });
     });
 
     return container;
@@ -1697,17 +1759,18 @@ export class MenuScene {
     this.animateElement(this.subtitle, 0.35, 0.5);
     this.animateElement(this.flavor, 0.55, 0.5);
     this.animateElement(this.primaryHint, 0.68, 0.42);
-    this.animateElement(this.menuPanel, 0.72, 0.45);
-    this.animateElement(this.startBtn, 0.86, 0.4);
-    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 0.98, 0.4);
-    this.animateElement(this.highscoreBtn, this.sectorStartBtn?.visible ? 1.1 : 1.02, 0.4);
-    this.animateElement(this.storyBtn, this.sectorStartBtn?.visible ? 1.22 : 1.16, 0.4);
-    this.animateElement(this.threatCodexBtn, this.sectorStartBtn?.visible ? 1.34 : 1.28, 0.4);
-    this.animateElement(this.achievementsBtn, this.sectorStartBtn?.visible ? 1.46 : 1.4, 0.4);
-    this.animateElement(this.settingsBtn, this.sectorStartBtn?.visible ? 1.58 : 1.52, 0.4);
-    this.animateElement(this.exitBtn, this.sectorStartBtn?.visible ? 1.7 : 1.64, 0.4);
-    this.animateElement(this.helpBtn, this.sectorStartBtn?.visible ? 1.76 : 1.7, 0.4);
-    this.animateElement(this.disclaimer, this.sectorStartBtn?.visible ? 1.82 : 1.76, 0.4);
+    this.animateElement(this.runModeExplainer, 0.76, 0.42);
+    this.animateElement(this.menuPanel, 0.78, 0.45);
+    this.animateElement(this.startBtn, 0.92, 0.4);
+    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 1.04, 0.4);
+    this.animateElement(this.highscoreBtn, this.sectorStartBtn?.visible ? 1.16 : 1.08, 0.4);
+    this.animateElement(this.storyBtn, this.sectorStartBtn?.visible ? 1.28 : 1.22, 0.4);
+    this.animateElement(this.threatCodexBtn, this.sectorStartBtn?.visible ? 1.4 : 1.34, 0.4);
+    this.animateElement(this.achievementsBtn, this.sectorStartBtn?.visible ? 1.52 : 1.46, 0.4);
+    this.animateElement(this.settingsBtn, this.sectorStartBtn?.visible ? 1.64 : 1.58, 0.4);
+    this.animateElement(this.exitBtn, this.sectorStartBtn?.visible ? 1.76 : 1.7, 0.4);
+    this.animateElement(this.helpBtn, this.sectorStartBtn?.visible ? 1.82 : 1.76, 0.4);
+    this.animateElement(this.disclaimer, this.sectorStartBtn?.visible ? 1.88 : 1.82, 0.4);
   }
 
   buildMenuNavigation() {
@@ -2178,6 +2241,7 @@ export class MenuScene {
 
   update(delta) {
     this.animationTime += delta * 0.016;
+    updateMenuFx(this, delta);
 
     // PART A: Update typewriter
     if (this.storyTypewriter) {
@@ -2281,6 +2345,7 @@ export class MenuScene {
   destroy() {
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
+    destroyMenuFx(this);
 
     // PART A: Cleanup story rotation
     if (this.storyRotationTimer) {

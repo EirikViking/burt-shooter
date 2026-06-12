@@ -15,6 +15,7 @@ import {
 } from '../leaderboard/LeaderboardTypes.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
@@ -108,6 +109,7 @@ export class HighscoreScene {
     this.largeBonusDronesContainer = new PIXI.Container();
     this.confettiContainer = new PIXI.Container();
     this.scanlineOverlay = null;
+    this.menuFx = null;
     this.animationTicker = null;
     this.bonusDrones = [];
     this.largeBonusDrones = [];
@@ -349,6 +351,17 @@ export class HighscoreScene {
 
     // Enable sortable children for zIndex
     this.container.sortableChildren = true;
+    installMenuFx(this, {
+      label: 'ui_menuFxLeaderboard',
+      zIndex: -3,
+      accent: 0x00f6ff,
+      secondary: 0xff55d9,
+      gold: 0xffd15c,
+      intensity: 0.72,
+      density: 0.82,
+      alpha: 0.52,
+      openVolume: 0.22
+    });
 
     // Start animation loop
     this.startAnimationLoop();
@@ -392,6 +405,12 @@ export class HighscoreScene {
     if (this.activeLeaderboard === nextView && this.status !== 'ERROR') return;
     this.activeLeaderboard = nextView;
     this.game.leaderboardView = nextView;
+    playMenuConfirmSfx(0.18);
+    this.menuFx?.burst?.(this.game.getWidth() * 0.5, Math.max(120, this.tableMetrics?.y || 120), {
+      color: nextView === LeaderboardView.SECTOR ? 0xffd15c : 0x37f5ff,
+      radius: 140,
+      durationMs: 520
+    });
     this.loadActiveLeaderboard();
   }
 
@@ -434,6 +453,7 @@ export class HighscoreScene {
   async layoutHighscore() {
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height);
+    resizeMenuFx(this, width, height);
     this.layoutBackdrop(this.backdropSprite, width, height);
     this.drawBackdropShade(width, height);
 
@@ -1785,6 +1805,7 @@ export class HighscoreScene {
 
     container.on('pointerover', () => {
       this.setHighscoreFocusByButton(container);
+      playMenuFocusSfx(0.1);
       this.drawButtonChrome(container, {
         active: Boolean(container._active),
         hover: true
@@ -1796,6 +1817,12 @@ export class HighscoreScene {
     });
 
     container.on('pointerdown', () => {
+      playMenuConfirmSfx(0.16);
+      this.menuFx?.burst?.(container.x, container.y, {
+        color: container._active ? 0xffd15c : 0x37f5ff,
+        radius: 86,
+        durationMs: 420
+      });
       container.scale.set(0.95);
     });
 
@@ -1878,12 +1905,14 @@ export class HighscoreScene {
     const visible = this.getVisibleControls();
     if (!visible.length) return;
     const next = ((index % visible.length) + visible.length) % visible.length;
+    const changed = next !== this.focusedControlIndex;
     this.focusableControls.forEach((control) => {
       if (!control.button) return;
       control.button._focused = visible[next]?.button === control.button;
       this.drawButtonChrome(control.button, { active: Boolean(control.button._active) });
     });
     this.focusedControlIndex = next;
+    if (changed) playMenuFocusSfx(0.09);
   }
 
   moveHighscoreFocus(delta) {
@@ -1892,6 +1921,7 @@ export class HighscoreScene {
 
   activateHighscoreFocus() {
     const visible = this.getVisibleControls();
+    playMenuConfirmSfx(0.16);
     visible[this.focusedControlIndex]?.activate?.();
   }
 
@@ -1931,7 +1961,8 @@ export class HighscoreScene {
     window.addEventListener('keydown', this.keyHandler, true);
   }
 
-  update() {
+  update(delta = 1) {
+    updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     if (nav.pressed.left || nav.pressed.up) this.moveHighscoreFocus(-1);
@@ -1957,6 +1988,7 @@ export class HighscoreScene {
       this.game.app.ticker.remove(this.animationTicker);
       this.animationTicker = null;
     }
+    destroyMenuFx(this);
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler, true);
       this.keyHandler = null;

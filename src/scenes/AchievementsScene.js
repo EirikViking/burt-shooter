@@ -5,6 +5,7 @@ import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.
 import { createTextLayout, getResponsiveFontSize } from '../ui/textLayout.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
@@ -75,6 +76,7 @@ export class AchievementsScene {
     this.container = new PIXI.Container();
     this.backdrop = null;
     this.backdropShade = null;
+    this.menuFx = null;
     this.panel = null;
     this.title = null;
     this.summary = null;
@@ -114,6 +116,17 @@ export class AchievementsScene {
     this.rowDebug = [];
 
     this.createBackdrop();
+    installMenuFx(this, {
+      label: 'ui_menuFxAchievements',
+      zIndex: -8,
+      accent: 0xffd15c,
+      secondary: 0x37f5ff,
+      gold: 0xffef7e,
+      intensity: 0.72,
+      density: 0.76,
+      alpha: 0.5,
+      openVolume: 0.22
+    });
     this.createElements();
     this.setupKeyboard();
     this.layoutUnsubscribe?.();
@@ -241,8 +254,15 @@ export class AchievementsScene {
     button._label = text;
     button.addChild(bg, text);
     this.drawButton(button, false);
-    button.on('pointerover', () => this.drawButton(button, true));
+    button.on('pointerover', () => {
+      playMenuFocusSfx(0.1);
+      this.drawButton(button, true);
+    });
     button.on('pointerout', () => this.drawButton(button, false));
+    button.on('pointerdown', () => {
+      playMenuConfirmSfx(0.16);
+      this.menuFx?.burst?.(button.x, button.y, { color: 0xffd15c, radius: 84, durationMs: 420 });
+    });
     return button;
   }
 
@@ -267,6 +287,7 @@ export class AchievementsScene {
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
     const layout = createTextLayout(width, height, responsiveLayout);
+    resizeMenuFx(this, width, height);
     const safe = responsiveLayout.safeArea;
     const bottomInset = Math.max(0, height - (safe.bottom ?? height));
     const mobile = layout.isMobile || width < 760;
@@ -541,6 +562,7 @@ export class AchievementsScene {
     this.focusedIndex = clamp(this.focusedIndex + delta, 0, this.rows.length - 1);
     this.ensureFocusedVisible();
     this.drawRows();
+    playMenuFocusSfx(0.09);
   }
 
   setupKeyboard() {
@@ -597,6 +619,7 @@ export class AchievementsScene {
   }
 
   returnToMenu() {
+    playMenuConfirmSfx(0.14);
     this.game.showMenu();
   }
 
@@ -642,7 +665,8 @@ export class AchievementsScene {
     return { connected: true, active, pressed };
   }
 
-  update() {
+  update(delta = 1) {
+    updateMenuFx(this, delta);
     const nav = this.readGamepadNavigation();
     if (!nav.connected || !nav.active) return;
     if (nav.pressed.up) this.moveFocus(-1);
@@ -665,7 +689,8 @@ export class AchievementsScene {
       scrollOffset: this.scrollOffset,
       visibleCapacity: this.visibleCapacity,
       rows: this.rowDebug,
-      backButton: getBoundsDebug(this.backBtn)
+      backButton: getBoundsDebug(this.backBtn),
+      menuFx: this.menuFx?.getDebugState?.() || null
     };
   }
 
@@ -682,6 +707,7 @@ export class AchievementsScene {
       window.removeEventListener('wheel', this.wheelHandler, true);
       this.wheelHandler = null;
     }
+    destroyMenuFx(this);
     this.rowsContainer.removeChildren();
   }
 }

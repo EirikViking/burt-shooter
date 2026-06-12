@@ -180,9 +180,20 @@ function assertNoMenuOverlap(state, label) {
   const sector = state.menu?.sectorStart || {};
   const button = sector.buttonBounds || state.menu?.items?.sectorStartButton;
   const labelBounds = sector.labelBounds;
+  const launch = state.menu?.items?.launchButton;
+  const explainer = state.menu?.items?.runModeExplainer;
+  const explainerText = sector.runModeExplainerText || '';
   const configuredWidth = Number(sector.buttonConfiguredWidth) || button?.width || 0;
   const configuredHeight = Number(sector.buttonConfiguredHeight) || button?.height || 0;
   const hangar = state.menu?.items?.hangarButton;
+  assert.match(explainerText, /RANKED RUN:/, `${label}: missing ranked run explainer`);
+  assert.match(explainerText, /SECTOR START:/, `${label}: missing sector start explainer`);
+  assert.match(explainerText, /leaderboard/i, `${label}: explainer should mention leaderboard behavior`);
+  assert.match(explainerText, /checkpoint/i, `${label}: explainer should mention checkpoint practice`);
+  assert.ok(explainer?.width > 0 && explainer?.height > 0, `${label}: missing run mode explainer bounds`);
+  if (launch?.height > 0) {
+    assert.ok(explainer.bottom <= launch.y + 1, `${label}: run mode explainer overlaps Launch Run button`);
+  }
   assert.ok(button?.width > 0 && button?.height > 0, `${label}: missing Sector Start button bounds`);
   assert.ok(labelBounds?.width > 0 && labelBounds?.height > 0, `${label}: missing Sector Start label bounds`);
   assert.ok(labelBounds.width <= configuredWidth - 12, `${label}: label too wide for button ${JSON.stringify({ labelBounds, configuredWidth, button })}`);
