@@ -1,60 +1,34 @@
-﻿Nova Swarm Early Pilot Overhaul: The Swarm Got Teeth
+Nova Swarm Early Pilot Overhaul: The Swarm Got Teeth
 
-Early pilots did exactly what early pilots are supposed to do: they flew into the machine, came back smoking, and told us where the bolts were loose.
-
-The verdict was useful and a little rude, which is the best kind of useful. Nova Swarm had the fast arcade spine. It had the cabinet energy. It had the bones of a game that could eat a whole evening and leave fingerprints on the glass. But it needed more spectacle, more progression, more readable chaos, and a stronger reason to hit One More Run before pretending to be a stable citizen.
-
-So this update goes hard.
+Early pilots came back smoking and told us what needed work. This update is the answer: clearer runs, louder bosses, more enemy variety, deeper progression, and a stronger one-more-run pull.
 
 [b]The Cockpit Is Clearer[/b]
 
-The main menu now explains what the run modes actually mean. Launch Run is the ranked climb: progression, unlocks, leaderboards, the whole glorious paperwork explosion. Sector Start is practice from a chosen sector: useful, focused, and not pretending to be the main climb.
+Launch Run is the ranked climb with progression, unlocks, achievements, and leaderboards. Sector Start is checkpoint practice with local records only. The Hangar now recommends the best unlocked ship before a run, because unlocked ships should not become decorative furniture.
 
-The Hangar now recommends the best unlocked ship before a run, because a ship you unlocked and forgot is not a ship, it is a museum exhibit with thrusters. The fullscreen option was removed from Settings, the Windows exit dialog is gone, and the duplicate combo readout has been cleaned off the HUD.
+Settings no longer shows fullscreen, the Windows exit dialog is gone, and the duplicate combo readout has been removed. The How to Play screen is cleaner, sharper, and much less like an emergency binder.
 
-The How to Play screen also got rebuilt into something much sharper.
+[b]Bosses Now Fight Dirtier[/b]
 
-It is cleaner, more high-tech, less cramped, and no longer looks like a ship manual written during decompression.
+Bosses can now call in 111 readable support ships that help them survive. Ignore them and the boss gets room to breathe. Delete them and the fight snaps back into arcade rhythm.
 
-[b]Bosses Now Have Friends, Which Is Terrible News[/b]
+Boss 1 is now Sonia. Boss 3 is now KurtBossEdgar. Both have expanded Codex stories, and boss deaths now pull from a 100-line dramatic male agony pack with bigger visual and SFX celebrations.
 
-Boss fights are now much more alive. Bosses can call in 111 different support ships that help them survive. These ships are not meant to be invisible punishment. They are bright, readable priority targets. If you ignore them, the boss gets breathing room. If you delete them, you get that clean arcade joy of solving a problem with forward motion and unreasonable lasers.
+[b]The Swarm Is Bigger[/b]
 
-Boss 1 is now Sonia. Boss 3 is now KurtBossEdgar. Their Codex stories have been expanded too: Sonia gets a long sci-fi romance with tragic heat-shield energy, and KurtBossEdgar gets a Jeppe paa Berget-inspired descent into grand delusion, cosmic status anxiety, and the sort of leadership that makes engineers hide in vents.
+The game now has 1,423 additional enemy profiles from level 1, 177 late-run mayhem ships after level 10, and 58 dangerous mid-ship variants after sector 8.
 
-And when bosses die now, they die properly.
+The goal is variety, color, and surprise without sacrificing readability. More chaos, still fair enough that your explosion can be traced to a decision.
 
-The old jokey death delivery is out. Boss deaths now pull from 100 dramatic male agony voice lines. No quips. No wink. Just theatrical pain from a bad man having a very educational afternoon.
+[b]Progression And Competition[/b]
 
-[b]The Swarm Is Bigger From The Start[/b]
+Leaderboards now support Top 40 everywhere. Top 10 placements get stronger ceremony, sharper visuals, and dedicated fanfare.
 
-The enemy roster has exploded.
+Pilot progression now reaches 40 ranks, including 20 new hard ranks with Codex coverage. The Codex also covers support ships, expanded enemies, Sonia, and KurtBossEdgar.
 
-There are now 1,423 additional unique enemy profiles available from level 1. That means early runs should feel less repetitive without being turned into a blender. The aim is variety, movement, color, and surprise while keeping patterns readable enough that failure still feels like your fault, which is the sacred contract.
+[b]One More Run[/b]
 
-After level 10, 177 extra mayhem ships join the pool. This is where Nova Swarm is allowed to start looking like the universe lost a bet. More colors. More explosions. More weird ships screaming across the lane. More late-run energy without simply twisting the difficulty knob until it snaps off.
-
-The 58 dangerous mid-ship variants still appear after sector 8, bridging normal enemies and elites. They are the middle managers of violence: not quite bosses, not quite cannon fodder, absolutely convinced they are important.
-
-[b]The Leaderboard Got Ambition[/b]
-
-Leaderboards now support Top 40 throughout the game. If fewer players exist, you see fewer. If the board is full, it has room to breathe.
-
-Top 10 placements get special ceremony: stronger visuals, dedicated fanfare, and a more heroic presentation while staying readable. The goal is simple. If you claw into the top shelf, the game should act like the cabinet noticed.
-
-Progression is bigger too. There are now 40 pilot ranks, including 20 new hard ranks with sharper lore and Codex coverage. Pilot Ranks also hydrate properly in the Codex during live runs, so the tab no longer looks empty when you have clearly been out there doing expensive things to hostile spacecraft.
-
-[b]More Reasons To Run Again[/b]
-
-Sector Start "One more run" now restarts from the same sector instead of sending you back to Sector 1. That one matters. A runback should feel like the game is holding the door open, not moving the building.
-
-Ten small easter eggs now appear across runs. They are little signals from the machinery. Some are jokes. Some are warnings. Some are probably evidence in a future inquiry.
-
-Level clears now draw from a 200-line voice pool. The game has more celebration, more texture, and more little hits of encouragement between disasters. Music was not replaced or altered.
-
-[b]Codex Got Fed[/b]
-
-The Codex now covers the expanded enemy roster, the 111 boss support ships, the full 40-rank ladder, and the new boss stories. It should feel less like a checklist and more like the black box recovered after a beautiful mistake.
+Sector Start "One more run" now restarts from the same sector instead of Sector 1. Ten easter eggs are hiding across runs. Level clears draw from a larger randomized voice pool. Music was not replaced or altered.
 
 [b]Build Notes[/b]
 
@@ -64,69 +38,5 @@ The Codex now covers the expanded enemy roster, the 111 boss support ships, the 
 - Depot preserved: 4765071
 - Leaderboard preserved: nova_swarm_global_score_v2
 - SetLive remained empty during upload.
-- No store metadata, pricing, release visibility, or live branches were changed automatically.
 
-[b]Thank You[/b]
-
-To the early pilots: thank you. You made the game sharper. You made it louder. You made it stranger. Nova Swarm is now a lot closer to the arcade fever dream it was trying to become.
-
-Climb in. Shoot first. Read the Codex later. The swarm has new teeth, and some of them have paperwork.
-
-[b]Patch Notes[/b]
-
-Nova Swarm Early Pilot Overhaul - Patch Notes
-
-Nova Swarm just got a heavy early-pilot overhaul: louder bosses, smarter runbacks, richer leaderboards, bigger Codex coverage, more enemies, more secrets, and a lot more reasons to say "one more run" like a responsible adult lying to himself at 01:17.
-
-[b]Screenshots[/b]
-
-[b]Headline Changes[/b]
-
-- Boss 1 is now Sonia.
-- Boss 3 is now KurtBossEdgar.
-- Sector Start "One more run" now restarts from the same sector instead of dumping you back at Sector 1.
-- The Windows exit dialog is gone.
-- The duplicate combo readout is gone.
-- Settings no longer exposes the fullscreen option.
-- The main menu now explains what Launch Run and Sector Start actually mean.
-- The Hangar recommends the best unlocked ship before a run.
-
-[b]Leaderboards And Progression[/b]
-
-- Leaderboards now support Top 40 everywhere.
-- Top 10 placements get stronger ceremony, sharper visual treatment, and dedicated fanfare.
-- Added 20 very hard new ranks, bringing the ladder to 40 total ranks.
-- Pilot Ranks now populate correctly in the Codex during live runs.
-- Early Pilot achievement logic is implemented with safe backfill for players who already played.
-
-[b]Bosses[/b]
-
-- Bosses can now call in 111 different support ships that help them survive.
-- Support ships are bright, readable, and fair: priority targets, not cheap clutter.
-- Boss deaths now use a 100-line male agony voice pack.
-- Boss death celebration effects are louder and more distinct.
-- Sonia and KurtBossEdgar have expanded Codex lore.
-
-[b]Enemies And Mayhem[/b]
-
-- Added 1,423 additional unique enemy profiles available from level 1.
-- Added 177 extra late-run mayhem ships after level 10.
-- The 58 dangerous mid-ship variants still appear after sector 8.
-- Late game should now look much more unhinged without simply becoming unfair.
-
-[b]Codex, UI, And Secrets[/b]
-
-- Added Codex coverage for boss support ships, ranks, generated enemies, and expanded boss lore.
-- Added 10 small easter eggs across runs.
-- Reworked How to Play into a cleaner high-tech screen with better spacing and better punch.
-- Added more menu animation/SFX polish.
-- Level clears now draw from a 200-line randomized voice pool.
-- Music was not replaced or altered.
-
-[b]Build[/b]
-
-- Steam private BuildID: 23706033
-- Package version: v2026-06-12_18-53-24
-- SetLive remained empty, so no public branch was changed automatically.
-
-Thanks to the early pilots. The notes were sharp, the swarm listened, and now the machine is making a much more expensive noise.
+Thanks to the early pilots. The swarm is louder now, and it has paperwork.
