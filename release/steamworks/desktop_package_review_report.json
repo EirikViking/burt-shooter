@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T09:33:30.294Z",
+  "generatedAt": "2026-06-12T09:45:21.828Z",
   "status": "passed",
   "currentBuild": {
     "version": "v2026-06-12_10-54-46",
@@ -16,8 +16,8 @@
     "modifiedAt": "2026-03-10T23:13:48.000Z"
   },
   "latestElectronSmoke": {
-    "reportPath": "test-results/electron-smoke-2026-06-12T09-17-35-948Z/report.json",
-    "screenshotPath": "test-results/electron-smoke-2026-06-12T09-17-35-948Z/01-electron-menu.png",
+    "reportPath": "test-results/electron-smoke-2026-06-12T09-44-55-194Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-06-12T09-44-55-194Z/01-electron-menu.png",
     "status": "passed",
     "build": "v2026-06-12_10-54-46",
     "title": "Nova Swarm - Arcade Patrol",
