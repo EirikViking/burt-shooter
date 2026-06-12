@@ -646,6 +646,50 @@ async function waitForPlay(window) {
   throw new Error(`Control smoke did not reach controllable play state: ${JSON.stringify(lastState)}`);
 }
 
+async function setPerfSmokeAutopilot(window, enabled) {
+  return window.webContents.executeJavaScript(`
+    (() => {
+      const setPressed = (pressedMap = {}) => {
+        const play = window.__game?.scenes?.play;
+        const inputs = [play?.inputManager, play?.player?.inputManager].filter(Boolean);
+        const keys = ['ArrowLeft', 'KeyA', 'a', 'ArrowRight', 'KeyD', 'd', 'Space'];
+        for (const key of keys) {
+          const pressed = Boolean(pressedMap[key]);
+          for (const input of inputs) input?.setKeyPressed?.(key, pressed);
+        }
+      };
+      if (!${enabled ? 'true' : 'false'}) {
+        if (window.__novaPerfSmokeAutopilot) {
+          clearInterval(window.__novaPerfSmokeAutopilot);
+          window.__novaPerfSmokeAutopilot = null;
+        }
+        setPressed({});
+        return false;
+      }
+      if (window.__novaPerfSmokeAutopilot) clearInterval(window.__novaPerfSmokeAutopilot);
+      window.__novaPerfSmokeAutopilot = setInterval(() => {
+        const play = window.__game?.scenes?.play;
+        const player = play?.player;
+        const enemies = play?.enemyManager?.enemies || [];
+        const target = enemies
+          .filter((enemy) => enemy?.active && !enemy.waitingForEntry && Number.isFinite(enemy.x) && Number.isFinite(enemy.y))
+          .sort((a, b) => Math.abs((a.x || 0) - (player?.x || 0)) - Math.abs((b.x || 0) - (player?.x || 0)))[0];
+        const dx = target && player ? target.x - player.x : 0;
+        setPressed({
+          ArrowLeft: dx < -24,
+          KeyA: dx < -24,
+          a: dx < -24,
+          ArrowRight: dx > 24,
+          KeyD: dx > 24,
+          d: dx > 24,
+          Space: true
+        });
+      }, 160);
+      return true;
+    })()
+  `);
+}
+
 async function holdKeys(window, keys, durationMs) {
   const aliases = expandControlKeys(keys);
   const electronKeys = keys.map(toElectronKeyCode);
@@ -960,6 +1004,7 @@ async function runPerfSmoke(window) {
   `);
   window.webContents.focus();
   window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
+  await setPerfSmokeAutopilot(window, true);
 
   const durationMs = Math.max(5000, Number(process.env.NOVA_SWARM_PERF_SMOKE_DURATION_MS || 60000));
   const sampleMs = Math.max(1000, Number(process.env.NOVA_SWARM_PERF_SMOKE_SAMPLE_MS || 5000));
@@ -1009,6 +1054,7 @@ async function runPerfSmoke(window) {
     }
   } finally {
     window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space' });
+    await setPerfSmokeAutopilot(window, false).catch(() => {});
   }
 
   const measuredSamples = samples.slice(warmupSamples);
@@ -1017,20 +1063,26 @@ async function runPerfSmoke(window) {
   const avgFps = fpsValues.length ? fpsValues.reduce((sum, fps) => sum + fps, 0) / fpsValues.length : 0;
   const finalState = await readPlayState(window).catch(() => null);
   let captureError = null;
-  try {
-    const image = await window.webContents.capturePage();
-    fs.writeFileSync(path.join(outputDir, '01-electron-perf-final.png'), image.toPNG());
-  } catch (error) {
-    captureError = error?.message || String(error);
+  let screenshotWritten = false;
+  for (let attempt = 1; attempt <= 3 && !screenshotWritten; attempt += 1) {
+    try {
+      if (attempt > 1) await new Promise((resolve) => setTimeout(resolve, 350));
+      const image = await window.webContents.capturePage();
+      fs.writeFileSync(path.join(outputDir, '01-electron-perf-final.png'), image.toPNG());
+      screenshotWritten = true;
+    } catch (error) {
+      captureError = error?.message || String(error);
+    }
   }
   const errors = [
     ...(minFps >= minRequiredFps ? [] : [`min FPS ${minFps.toFixed(1)} below ${minRequiredFps}`]),
     ...(samples.some((sample) => sample.fatal) ? ['fatal overlay detected'] : []),
     ...(finalState?.scene === 'play' ? [] : [`final scene was ${finalState?.scene || 'unknown'}`]),
-    ...(consoleEvents.length ? [`${consoleEvents.length} console event(s)`] : [])
+    ...(consoleEvents.length ? [`${consoleEvents.length} console event(s)`] : []),
+    ...(screenshotWritten ? [] : [`perf screenshot capture failed: ${captureError || 'unknown'}`])
   ];
   const warnings = [
-    ...(captureError ? [`capturePage failed: ${captureError}`] : [])
+    ...(captureError && screenshotWritten ? [`capturePage retry recovered after: ${captureError}`] : [])
   ];
   const report = {
     status: errors.length ? 'failed' : 'passed',
