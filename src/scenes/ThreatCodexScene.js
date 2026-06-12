@@ -264,6 +264,8 @@ export class ThreatCodexScene {
     this.animationTime = 0;
     this.animatedNodes = [];
     this.lastEntryListDebug = null;
+    this.lastDetailBodyDebug = null;
+    this.detailScrollOffset = 0;
   }
 
   init() {
@@ -275,6 +277,7 @@ export class ThreatCodexScene {
     this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
     this.renderToken += 1;
     this.animatedNodes = [];
+    this.lastDetailBodyDebug = null;
     this.gamepadNavigator.suppressUntilReleased();
     this.createLayout(this.renderToken);
     installMenuFx(this, {
@@ -971,19 +974,62 @@ export class ThreatCodexScene {
     }, textX, nameY + (shortPanel ? 56 : compact ? 54 : 70));
 
     const bodyY = shortPanel ? nameY + 84 : nameY + (compact ? 82 : 104);
+    const epicBody = Boolean(discovered && entry?.codexBodyMode === 'epic');
     const bodyText = discovered
       ? localize(entry.description)
       : localize('The silhouette is logged, but the behavior needs one more live read. Find this signal in a run to unlock the counter-note.');
     const tipY = panelH - (compact ? 116 : 138);
     const bodyMaxHeight = Math.max(54, tipY - bodyY - 24);
+    const bodyFontSize = epicBody
+      ? (shortPanel ? 10.5 : compact ? 11.5 : 13)
+      : (shortPanel ? 13 : compact ? 13 : 17);
+    const bodyLineHeight = epicBody
+      ? (shortPanel ? 13 : compact ? 14 : 16)
+      : (shortPanel ? 16 : compact ? 17 : 22);
     const bodyNode = addText(panel, bodyText, {
-      fontSize: shortPanel ? 13 : compact ? 13 : 17,
+      fontSize: bodyFontSize,
       fill: '#d8fbff',
       wordWrap: true,
       wordWrapWidth: textW,
-      lineHeight: shortPanel ? 16 : compact ? 17 : 22
+      lineHeight: bodyLineHeight
     }, textX, bodyY);
-    fitTextHeight(bodyNode, bodyMaxHeight, shortPanel ? 0.72 : 0.78);
+    if (epicBody) {
+      const bodyContentHeight = bodyNode.height;
+      const maxOffset = Math.max(0, bodyContentHeight - bodyMaxHeight);
+      this.detailScrollOffset = clamp(this.detailScrollOffset || 0, 0, maxOffset);
+      bodyNode.y = bodyY - this.detailScrollOffset;
+
+      const bodyMask = new PIXI.Graphics();
+      bodyMask.rect(textX - 2, bodyY - 2, textW + 4, bodyMaxHeight + 4);
+      bodyMask.fill({ color: 0xffffff, alpha: 1 });
+      panel.addChild(bodyMask);
+      bodyNode.mask = bodyMask;
+
+      this.lastDetailBodyDebug = {
+        x: panelX + textX,
+        y: panelY + bodyY,
+        width: textW,
+        height: bodyMaxHeight,
+        contentHeight: bodyContentHeight,
+        offset: this.detailScrollOffset,
+        maxOffset,
+        scrollable: maxOffset > 1
+      };
+
+      if (maxOffset > 1) {
+        const railX = textX + textW - 5;
+        const thumbH = clamp(bodyMaxHeight * (bodyMaxHeight / bodyContentHeight), 22, bodyMaxHeight);
+        const thumbY = bodyY + (this.detailScrollOffset / maxOffset) * Math.max(1, bodyMaxHeight - thumbH);
+        const storyRail = new PIXI.Graphics();
+        storyRail.roundRect(railX, bodyY, 4, bodyMaxHeight, 2);
+        storyRail.fill({ color: 0x071a27, alpha: 0.72 });
+        storyRail.roundRect(railX, thumbY, 4, thumbH, 2);
+        storyRail.fill({ color: GOLD, alpha: 0.86 });
+        panel.addChild(storyRail);
+      }
+    } else {
+      fitTextHeight(bodyNode, bodyMaxHeight, shortPanel ? 0.72 : 0.78);
+    }
 
     const tipBox = new PIXI.Graphics();
     drawPanel(tipBox, 20, tipY - 14, panelW - 40, compact ? 60 : 72, {
@@ -1151,6 +1197,7 @@ export class ThreatCodexScene {
   }
 
   moveCategory(direction) {
+    this.detailScrollOffset = 0;
     this.categoryIndex = (this.categoryIndex + direction + THREAT_CODEX_CATEGORIES.length) % THREAT_CODEX_CATEGORIES.length;
     this.entryIndex = 0;
     AudioManager.playSfx('codex_move', { volume: 0.12, minIntervalMs: 120 });
@@ -1160,6 +1207,7 @@ export class ThreatCodexScene {
   moveEntry(direction) {
     const entries = this.getEntriesForCategory();
     if (!entries.length) return;
+    this.detailScrollOffset = 0;
     this.entryIndex = Math.max(0, Math.min(entries.length - 1, this.entryIndex + direction));
     AudioManager.playSfx('codex_move', { volume: 0.1, minIntervalMs: 120 });
     this.refresh();
@@ -1168,6 +1216,7 @@ export class ThreatCodexScene {
   moveEntryTo(index) {
     const entries = this.getEntriesForCategory();
     if (!entries.length) return;
+    this.detailScrollOffset = 0;
     this.entryIndex = Math.max(0, Math.min(entries.length - 1, index));
     AudioManager.playSfx('codex_move', { volume: 0.1, minIntervalMs: 120 });
     this.refresh();
@@ -1177,15 +1226,40 @@ export class ThreatCodexScene {
     return Math.max(4, Number(this.lastEntryListDebug?.visibleRows) || 8);
   }
 
+  scrollDetail(delta) {
+    const bounds = this.lastDetailBodyDebug;
+    if (!bounds?.scrollable) return false;
+    const next = clamp((this.detailScrollOffset || 0) + delta, 0, bounds.maxOffset);
+    const changed = Math.abs(next - (this.detailScrollOffset || 0)) > 0.5;
+    this.detailScrollOffset = next;
+    if (changed) {
+      AudioManager.playSfx('codex_move', { volume: 0.08, minIntervalMs: 90 });
+      this.refresh();
+    }
+    return true;
+  }
+
   handleWheel(event) {
-    const bounds = this.lastEntryListDebug;
-    if (!bounds) return;
     const x = Number(event.clientX);
     const y = Number(event.clientY);
-    const insideList = x >= bounds.x && x <= bounds.x + bounds.width + 24 && y >= bounds.y && y <= bounds.y + bounds.height;
-    if (!insideList) return;
     const direction = Math.sign(Number(event.deltaY) || 0);
     if (!direction) return;
+    const detail = this.lastDetailBodyDebug;
+    const insideDetail = detail?.scrollable &&
+      x >= detail.x &&
+      x <= detail.x + detail.width + 18 &&
+      y >= detail.y &&
+      y <= detail.y + detail.height;
+    if (insideDetail) {
+      event.preventDefault();
+      this.scrollDetail(direction * 58);
+      return;
+    }
+
+    const bounds = this.lastEntryListDebug;
+    if (!bounds) return;
+    const insideList = x >= bounds.x && x <= bounds.x + bounds.width + 24 && y >= bounds.y && y <= bounds.y + bounds.height;
+    if (!insideList) return;
     event.preventDefault();
     this.moveEntry(direction > 0 ? 1 : -1);
   }
@@ -1265,6 +1339,7 @@ export class ThreatCodexScene {
       wheelNavigation: true,
       pageNavigation: true,
       entryScroll: this.lastEntryListDebug,
+      detailScroll: this.lastDetailBodyDebug,
       artfulEmptyState: true,
       menuFx: this.menuFx?.getDebugState?.() || null
     };

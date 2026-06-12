@@ -40,6 +40,27 @@ function codexText(key, vars = {}) {
   return translateText(CODEX_TEXT_TEMPLATES[key] || '', vars);
 }
 
+const BOSS_EPIC_CODEX_LORE = Object.freeze({
+  nova_boss_01: {
+    signalClass: 'star-crossed siege romance',
+    description: `Sonia was raised in Dock Verona, a binary city split between House Nova and House Swarm by a customs dispute, three bad funerals, and one spectacularly stupid antenna. At every truce banquet the admirals promised peace, then hid knives in the dessert forks. Sonia was supposed to inherit the left star. Her opposite number, Ravel of the right star, was supposed to hate her on schedule.
+
+They met on a maintenance balcony during a meteor blackout. No music, no moon, just two pressure suits, a leaking oxygen valve, and a shared laugh so bright it made both fleets reload. They traded poems through encrypted targeting pings. She sent him a flower grown in reactor coolant. He sent back a wrench with her name engraved on it, because romance is whatever survives vacuum.
+
+The families found out, of course. Families always do. Ravel tried to cross the kill zone under a false transponder, Sonia tried to pull the guns offline, and the old war woke up hungry. Now Sonia fights like a love letter with a detonator: her movement traces mourning orbits, her pressure arrives in courtly volleys, and her signature tell is the balcony beam that asks whether you can step aside without breaking the heart-shaped lane. Defeat her and the archive records no villain, only a woman who turned grief into a flagship and then made everybody read the footnotes.`,
+    tip: 'The romance is tragic; the beam is not. Watch the balcony tell, cross once, and answer while Sonia is still composing the apology.'
+  },
+  nova_boss_03: {
+    signalClass: 'Berget class authority hangover',
+    description: `KurtBossEdgar began as Kurt Edgar, deckhand third class on Mining Rock Berget-9, where the gravity sagged, the coffee argued back, and every supervisor believed morale was a wrench you hit people with. Kurt dodged work with heroic consistency. He blamed the drills, the stars, his boots, and once a lunch tray that had already filed a complaint.
+
+One payday he drank reactor gin beside an ore chute and woke in the admiral throne of a stolen dreadnought. The officers had found him snoring, thought it would be funny, and dressed him in a cape with too many medals. Kurt looked at the bridge, accepted the evidence, and became awful in under twelve seconds. He promoted a mop. He taxed the moon for looking smug. He ordered the ship's doctor to diagnose everyone else with being insufficiently Kurt.
+
+Then the joke reversed. They dumped him back on Berget-9 with a headache, a fake execution notice, and just enough memory to become dangerous. Kurt decided the universe had briefly confessed its secret: power is a chair, and whoever wakes in it gets to shout. He bolted a throne to a gunship and kept the paperwork error as his name. His movement lurches like borrowed authority, his pressure comes in pompous barrages, and his signature tell is the royal hangover cannon. Let him posture. When the crown light blinks, move. Every tyrant has a recovery animation.`,
+    tip: 'KurtBossEdgar is funniest before the cannon fires. Let the throne wobble, dodge the royal hangover shot, then revoke his chair privileges.'
+  }
+});
+
 export const THREAT_CODEX_CATEGORIES = Object.freeze([
   { id: 'enemies', label: 'Enemies' },
   { id: 'attackPatterns', label: 'Attack Patterns' },
@@ -837,24 +858,26 @@ function eliteEntry(profile) {
 }
 
 function bossEntry(profile) {
+  const epicLore = BOSS_EPIC_CODEX_LORE[profile.id] || null;
   return {
     id: profile.id,
     category: 'bosses',
     name: profile.name,
     rarity: 'Boss',
     role: profile.title,
-    description: codexText('bossDescription', {
+    description: epicLore?.description || codexText('bossDescription', {
       name: profile.name,
       title: profile.title.toLowerCase(),
       movement: profile.movement,
       attack: profile.attack,
       signature: profile.signature
     }),
-    tip: 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.',
+    tip: epicLore?.tip || 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.',
     art: profile.art,
     accent: profile.accent,
     tint: profile.palette,
-    signalClass: profile.archetype
+    signalClass: epicLore?.signalClass || profile.archetype,
+    codexBodyMode: epicLore ? 'epic' : 'standard'
   };
 }
 

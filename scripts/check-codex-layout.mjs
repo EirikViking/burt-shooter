@@ -15,7 +15,12 @@ const viewports = [
   { width: 1366, height: 768, name: '1366x768' },
   { width: 1280, height: 720, name: '1280x720' }
 ];
-const categoryShots = ['sectors', 'runThemes'];
+const categoryShots = [
+  { categoryId: 'sectors', entryIndex: 0, label: 'sectors' },
+  { categoryId: 'runThemes', entryIndex: 0, label: 'runThemes' },
+  { categoryId: 'bosses', entryId: 'nova_boss_01', label: 'bosses-sonia' },
+  { categoryId: 'bosses', entryId: 'nova_boss_03', label: 'bosses-kurtbossedgar' }
+];
 
 async function isPortAvailable(candidatePort) {
   return new Promise((resolve) => {
@@ -119,16 +124,19 @@ async function openCodex(page) {
   await page.waitForTimeout(550);
 }
 
-async function selectCategory(page, categoryId) {
+async function selectCategory(page, shot) {
+  const categoryId = typeof shot === 'string' ? shot : shot.categoryId;
   const index = THREAT_CODEX_CATEGORIES.findIndex((category) => category.id === categoryId);
   if (index < 0) throw new Error(`Unknown Codex category ${categoryId}`);
-  await page.evaluate((categoryIndex) => {
+  await page.evaluate(({ categoryIndex, entryId, entryIndex }) => {
     const scene = window.__game?.scenes?.threatCodex;
     if (!scene) return;
     scene.categoryIndex = categoryIndex;
-    scene.entryIndex = 0;
+    const entries = scene.getEntriesForCategory?.() || [];
+    const foundIndex = entryId ? entries.findIndex((entry) => entry.id === entryId) : -1;
+    scene.entryIndex = foundIndex >= 0 ? foundIndex : Math.max(0, Math.min(entries.length - 1, Number(entryIndex) || 0));
     scene.refresh();
-  }, index);
+  }, { categoryIndex: index, entryId: shot.entryId, entryIndex: shot.entryIndex });
   await page.waitForTimeout(450);
 }
 
@@ -171,6 +179,7 @@ async function inspectBounds(page) {
       category: scene?.getCategory?.()?.id,
       entryCount: scene?.getEntriesForCategory?.()?.length || 0,
       entryScroll: scene?.lastEntryListDebug || null,
+      detailScroll: scene?.lastDetailBodyDebug || null,
       textCount: texts.length,
       outOfBounds
     };
@@ -235,22 +244,37 @@ try {
       if (message.type() === 'error') consoleErrors.push(message.text());
     });
     await openCodex(page);
-    for (const categoryId of categoryShots) {
-      await selectCategory(page, categoryId);
+    for (const shot of categoryShots) {
+      await selectCategory(page, shot);
       const snapshot = await inspectBounds(page);
-      const screenshotPath = path.join(outputDir, `codex-after-${viewport.name}-${categoryId}.png`);
+      const screenshotPath = path.join(outputDir, `codex-after-${viewport.name}-${shot.label}.png`);
       await page.screenshot({ path: screenshotPath, fullPage: true });
-      const label = `${viewport.name} ${categoryId}`;
+      const label = `${viewport.name} ${shot.label}`;
       screenshots.push({ label, path: screenshotPath });
+      let scrolledSnapshot = null;
+      if (shot.label.startsWith('bosses-') && snapshot.detailScroll?.scrollable) {
+        const scroll = snapshot.detailScroll;
+        await page.mouse.move(scroll.x + scroll.width * 0.5, scroll.y + scroll.height * 0.5);
+        await page.mouse.wheel(0, Math.max(120, scroll.height * 0.7));
+        await page.waitForTimeout(220);
+        scrolledSnapshot = await inspectBounds(page);
+      }
+      const detailScrollOk = !shot.label.startsWith('bosses-') ||
+        Boolean(snapshot.detailScroll) &&
+        snapshot.detailScroll.height > 80 &&
+        (!snapshot.detailScroll.scrollable || Number(scrolledSnapshot?.detailScroll?.offset || 0) > Number(snapshot.detailScroll.offset || 0));
       reports.push({
         viewport,
-        categoryId,
+        categoryId: shot.categoryId,
+        label: shot.label,
         screenshotPath,
         snapshot,
+        scrolledSnapshot,
         ok: snapshot.scene === 'threatCodex' &&
-          snapshot.category === categoryId &&
+          snapshot.category === shot.categoryId &&
           snapshot.entryCount > 0 &&
           snapshot.textCount > 20 &&
+          detailScrollOk &&
           snapshot.outOfBounds.length === 0
       });
     }

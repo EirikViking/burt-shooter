@@ -47,6 +47,16 @@ for (const entries of Object.values(catalog)) {
 if (!catalog.bosses?.every(entry => /movement/i.test(entry.description) && /pressure/i.test(entry.description) && /signature/i.test(entry.description))) {
   fail('boss Codex descriptions should explain movement, pressure, and signature reads');
 }
+const bossById = Object.fromEntries((catalog.bosses || []).map((entry) => [entry.id, entry]));
+if (!/Dock Verona|love letter|balcony beam|star-crossed/i.test(bossById.nova_boss_01?.description || '') || (bossById.nova_boss_01?.description || '').length < 900) {
+  fail('Sonia boss Codex entry should include a long sci-fi tragic love story');
+}
+if (!/Berget-9|deckhand|admiral throne|royal hangover cannon/i.test(bossById.nova_boss_03?.description || '') || (bossById.nova_boss_03?.description || '').length < 900) {
+  fail('KurtBossEdgar boss Codex entry should include a long Jeppe pa Berget-inspired story');
+}
+if (bossById.nova_boss_01?.codexBodyMode !== 'epic' || bossById.nova_boss_03?.codexBodyMode !== 'epic') {
+  fail('long boss Codex stories should use epic body layout mode');
+}
 if (!catalog.powerups?.every(entry => /powerup|defensive|sustain|shots/i.test(entry.description) && /when|lane|shots|safe|boss|wave|pickups|kills|charges|move|shoot|pattern|enemies|threats|clusters|center|targets|readable/i.test(entry.tip))) {
   fail('powerup Codex entries should explain effect, read, timing, and use');
 }

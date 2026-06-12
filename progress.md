@@ -25,6 +25,7 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 
 - Current user request: implement 177 extra unique enemy ships after level 10 and make level 10+ look like colorful total mayhem without increasing difficulty.
 - Direction: expand the generated normal enemy profile pool through existing data-driven roster systems, keep level 1-10 availability unchanged, gate all new ships at level 11+, and add presentation-only late-game VFX/SFX fields instead of extra active enemies, bullets, damage, or fire pressure.
+- Follow-up Codex lore request: add long boss Codex stories for Sonia as a sci-fi star-crossed love tragedy and KurtBossEdgar as a Jeppe pa Berget-inspired authority farce, then include those boss entries in Codex layout QA before any private Steam upload.
 
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 
