@@ -48,6 +48,9 @@ import {
 import { recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
 import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 
+const MENU_EXIT_GUARD_MS = 900;
+const SCENE_INPUT_GUARD_MS = 180;
+
 export class Game {
   constructor(app) {
     this.app = app;
@@ -98,6 +101,9 @@ export class Game {
       top3: false,
       number1: false
     };
+    this.sceneInputGuardUntil = 0;
+    this.menuExitGuardUntil = 0;
+    this.lastSceneSwitchAt = 0;
     this.leaderboardAdapter = createLeaderboardAdapter();
     this.pendingAchievementToasts = [];
     this.achievementManager = new AchievementManager({
@@ -121,6 +127,20 @@ export class Game {
 
   showMenu() {
     this.switchScene('menu');
+  }
+
+  armSceneInputGuard(durationMs = SCENE_INPUT_GUARD_MS) {
+    const duration = Math.max(0, Number(durationMs) || 0);
+    this.sceneInputGuardUntil = Math.max(this.sceneInputGuardUntil || 0, Date.now() + duration);
+  }
+
+  armMenuExitGuard(durationMs = MENU_EXIT_GUARD_MS) {
+    const duration = Math.max(0, Number(durationMs) || 0);
+    this.menuExitGuardUntil = Math.max(this.menuExitGuardUntil || 0, Date.now() + duration);
+  }
+
+  isMenuExitGuardActive() {
+    return Date.now() < (this.menuExitGuardUntil || 0);
   }
 
   teardownCurrentScene() {
@@ -156,7 +176,16 @@ export class Game {
     this.scenes?.play?.pauseGamepadNavigator?.suppressUntilReleased?.();
   }
 
-  switchScene(sceneName) {
+  switchScene(sceneName, options = {}) {
+    const now = Date.now();
+    const inputGuardMs = options.inputGuardMs ?? SCENE_INPUT_GUARD_MS;
+    const hadCurrentScene = Boolean(this.currentScene);
+    this.lastSceneSwitchAt = now;
+    this.sceneInputGuardUntil = Math.max(this.sceneInputGuardUntil || 0, now + Math.max(0, Number(inputGuardMs) || 0));
+    if (sceneName === 'menu' && hadCurrentScene) {
+      const menuExitGuardMs = options.menuExitGuardMs ?? MENU_EXIT_GUARD_MS;
+      this.menuExitGuardUntil = Math.max(this.menuExitGuardUntil || 0, now + Math.max(0, Number(menuExitGuardMs) || 0));
+    }
     this.teardownCurrentScene();
 
     this.currentScene = this.scenes[sceneName];

@@ -154,6 +154,15 @@ function safeDialogText(value, fallback) {
   return text.length ? text.slice(0, 180) : fallback;
 }
 
+function sendWindowBlurToRenderer(window) {
+  try {
+    if (!window || window.isDestroyed()) return;
+    window.webContents.send('nova-app:window-blur');
+  } catch {
+    // Best-effort interruption signal for gameplay auto-pause.
+  }
+}
+
 function registerInputIpc() {
   ipcMain.handle('nova-input:getNativeGamepads', () => ({
     status: nativeGamepadBridge.getStatus(),
@@ -1105,8 +1114,10 @@ app.whenReady().then(async () => {
   registerSteamCloudIpc();
   await startLocalServer();
   const win = createWindow();
-  win.on('blur', () => {
-    if (!win.isDestroyed()) win.webContents.send('nova-app:window-blur');
+  const notifyWindowBlur = () => sendWindowBlurToRenderer(win);
+  win.on('blur', notifyWindowBlur);
+  app.on('browser-window-blur', (_event, blurredWindow) => {
+    if (blurredWindow === win) notifyWindowBlur();
   });
   if (isSteamLeaderboardProbe) {
     try {

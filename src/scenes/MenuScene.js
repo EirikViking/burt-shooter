@@ -2022,6 +2022,9 @@ export class MenuScene {
   }
 
   async exitGame() {
+    if (this.game?.isMenuExitGuardActive?.()) {
+      return;
+    }
     try {
       AudioManager.init();
       AudioManager.playSfx('ui_open', { volume: 0.28 });

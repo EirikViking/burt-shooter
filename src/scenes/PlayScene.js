@@ -2878,8 +2878,11 @@ export class PlayScene {
     };
     this.blurPauseHandler = () => this.pauseForExternalInterruption('window_blur');
     this.nativeBlurPauseHandler = () => this.pauseForExternalInterruption('native_window_blur');
+    this.focusOutPauseHandler = () => this.pauseForExternalInterruption('focus_out');
     if (typeof document !== 'undefined') {
       document.addEventListener?.('visibilitychange', this.visibilityPauseHandler);
+      document.addEventListener?.('blur', this.focusOutPauseHandler, true);
+      document.addEventListener?.('focusout', this.focusOutPauseHandler, true);
     }
     window.addEventListener('blur', this.blurPauseHandler);
     window.addEventListener('nova-app-window-blur', this.nativeBlurPauseHandler);
@@ -2890,12 +2893,15 @@ export class PlayScene {
     if (!this.autoPauseHandlersInstalled) return;
     if (typeof document !== 'undefined') {
       document.removeEventListener?.('visibilitychange', this.visibilityPauseHandler);
+      document.removeEventListener?.('blur', this.focusOutPauseHandler, true);
+      document.removeEventListener?.('focusout', this.focusOutPauseHandler, true);
     }
     window.removeEventListener('blur', this.blurPauseHandler);
     window.removeEventListener('nova-app-window-blur', this.nativeBlurPauseHandler);
     this.visibilityPauseHandler = null;
     this.blurPauseHandler = null;
     this.nativeBlurPauseHandler = null;
+    this.focusOutPauseHandler = null;
     this.autoPauseHandlersInstalled = false;
   }
 

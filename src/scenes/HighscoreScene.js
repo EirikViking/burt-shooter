@@ -100,6 +100,7 @@ export class HighscoreScene {
     this.focusableControls = [];
     this.focusedControlIndex = 0;
     this.keyHandler = null;
+    this.leavingScene = false;
 
     // Trophy Room Assets
     this.bonusDronesContainer = new PIXI.Container();
@@ -140,6 +141,7 @@ export class HighscoreScene {
     this.playerHighlightEffects = [];
     this.entries = [];
     this.entriesNormalized = [];
+    this.leavingScene = false;
     this.activeLeaderboardResult = null;
     this.status = 'LOADING';
     this.lastError = 'none';
@@ -278,8 +280,10 @@ export class HighscoreScene {
     this.container.addChild(this.retryBtn);
 
     this.backBtn = this.createButton('BACK');
-    this.backBtn.on('pointerdown', () => {
-      this.game.switchScene('menu');
+    this.backBtn.on('pointerdown', (event) => {
+      event?.stopPropagation?.();
+      event?.preventDefault?.();
+      this.returnToMenu('button');
     });
     this.container.addChild(this.backBtn);
 
@@ -320,7 +324,7 @@ export class HighscoreScene {
       { id: LeaderboardView.FRIENDS, button: this.friendsBtn, activate: () => this.setLeaderboardView(LeaderboardView.FRIENDS) },
       { id: LeaderboardView.LOCAL, button: this.localBtn, activate: () => this.setLeaderboardView(LeaderboardView.LOCAL) },
       { id: 'retry', button: this.retryBtn, activate: () => this.fetchHighscores() },
-      { id: 'back', button: this.backBtn, activate: () => this.game.switchScene('menu') },
+      { id: 'back', button: this.backBtn, activate: () => this.returnToMenu('focus') },
       { id: 'runAgain', button: this.runAgainBtn, activate: () => this.game.startGame(this.game.selectedShipSpriteKey) }
     ];
     this.focusableControls.forEach((control) => {
@@ -1878,13 +1882,26 @@ export class HighscoreScene {
     visible[this.focusedControlIndex]?.activate?.();
   }
 
+  returnToMenu(source = 'leaderboard') {
+    if (this.leavingScene) return;
+    this.leavingScene = true;
+    this.gamepadNavigator.suppressUntilReleased();
+    this.game?.armMenuExitGuard?.(1000);
+    this.game?.armSceneInputGuard?.(220);
+    this.game.switchScene('menu', {
+      menuExitGuardMs: 1000,
+      inputGuardMs: 220,
+      source
+    });
+  }
+
   setupKeyboardNavigation() {
     if (this.keyHandler) window.removeEventListener('keydown', this.keyHandler, true);
     this.keyHandler = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopImmediatePropagation?.();
-        this.game.switchScene('menu');
+        this.returnToMenu('escape');
         return;
       }
       if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
@@ -1907,7 +1924,7 @@ export class HighscoreScene {
     if (nav.pressed.left || nav.pressed.up) this.moveHighscoreFocus(-1);
     if (nav.pressed.right || nav.pressed.down) this.moveHighscoreFocus(1);
     if (nav.pressed.confirm) this.activateHighscoreFocus();
-    if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.game.switchScene('menu');
+    if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.returnToMenu('controller');
   }
 
   destroy() {

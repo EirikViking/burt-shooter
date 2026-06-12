@@ -88,11 +88,17 @@ async function waitForState(page, predicate, label, timeout = 20000) {
 function assertSourceGuards() {
   const main = fs.readFileSync('electron/main.cjs', 'utf8');
   const preload = fs.readFileSync('electron/preload.cjs', 'utf8');
+  const game = fs.readFileSync('src/game/Game.js', 'utf8');
+  const highscore = fs.readFileSync('src/scenes/HighscoreScene.js', 'utf8');
   const play = fs.readFileSync('src/scenes/PlayScene.js', 'utf8');
   assert(main.includes('dialog.showMessageBox'), 'Electron exit bridge must show a confirmation dialog');
   assert(main.includes('nova-app:window-blur'), 'Electron main must send native window blur to renderer');
+  assert(main.includes('browser-window-blur'), 'Electron app blur must also notify the renderer');
   assert(preload.includes('nova-app-window-blur'), 'Preload must dispatch native window blur event');
+  assert(game.includes('menuExitGuardUntil') && game.includes('isMenuExitGuardActive'), 'Game must guard menu exit after scene transitions');
+  assert(highscore.includes('returnToMenu(') && highscore.includes('armMenuExitGuard'), 'Leaderboard Back must use guarded return-to-menu flow');
   assert(play.includes('native_window_blur'), 'PlayScene must auto-pause on native window blur');
+  assert(play.includes('focus_out'), 'PlayScene must auto-pause on renderer focusout');
 }
 
 async function runMenuExitChecks(browser) {
@@ -137,9 +143,46 @@ async function runMenuExitChecks(browser) {
   assert(leakedExitRequests === 0, `leaderboard Escape leaked into menu exit (${leakedExitRequests} exit request(s))`);
 
   await page.screenshot({ path: path.join(outputDir, 'menu-after-leaderboard-escape.png'), fullPage: true });
+  await page.evaluate(() => { window.__novaExitRequests = []; });
+
+  await page.evaluate(() => {
+    window.__game?.showHighscores?.();
+  });
+  await waitForState(
+    page,
+    (state) => state.scene === 'highscore' && Boolean(state.highscore?.focusedControl),
+    'highscore controls ready for pointer back'
+  );
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.highscore;
+    scene?.setLeaderboardView?.('sector');
+    scene?.setLeaderboardView?.('global');
+  });
+  const backBounds = await page.evaluate(() => {
+    const bounds = window.__game?.scenes?.highscore?.backBtn?.getBounds?.();
+    return bounds
+      ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+      : null;
+  });
+  assert(backBounds && backBounds.width > 0 && backBounds.height > 0, `leaderboard Back bounds unavailable: ${JSON.stringify(backBounds)}`);
+  await page.mouse.click(backBounds.x + backBounds.width / 2, backBounds.y + backBounds.height / 2);
+  await waitForState(page, (state) => state.scene === 'menu', 'menu after highscore pointer back');
+  await page.waitForTimeout(120);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(250);
+  const guardedExitRequests = await page.evaluate(() => window.__novaExitRequests?.length || 0);
+  assert(guardedExitRequests === 0, `leaderboard pointer Back carried into menu exit (${guardedExitRequests} exit request(s))`);
+
+  await page.waitForTimeout(1000);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => window.__novaExitRequests?.length === 1, null, { timeout: 10000 });
+  const guardedReleasePayload = await page.evaluate(() => window.__novaExitRequests[0]);
+  assert(/close Nova Swarm/i.test(guardedReleasePayload.message || ''), `menu exit did not recover after guard: ${JSON.stringify(guardedReleasePayload)}`);
+
+  await page.screenshot({ path: path.join(outputDir, 'menu-after-leaderboard-pointer-back.png'), fullPage: true });
   assert(pageErrors.length === 0, `menu page errors: ${pageErrors.join('; ')}`);
   await page.close();
-  return { firstExitPayload, leakedExitRequests };
+  return { firstExitPayload, leakedExitRequests, guardedExitRequests, guardedReleasePayload };
 }
 
 async function runFocusPauseCheck(browser) {
