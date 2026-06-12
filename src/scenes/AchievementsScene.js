@@ -549,6 +549,7 @@ export class AchievementsScene {
       const key = event.key;
       if (key === 'Escape' || key === 'Backspace') {
         event.preventDefault();
+        event.stopImmediatePropagation?.();
         this.returnToMenu();
         return;
       }

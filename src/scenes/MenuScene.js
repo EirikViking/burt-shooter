@@ -2026,7 +2026,7 @@ export class MenuScene {
       AudioManager.init();
       AudioManager.playSfx('ui_open', { volume: 0.28 });
       const result = await requestExitGame();
-      if (!result.ok) this.showExitNotice(result.message);
+      if (!result.ok && !result.canceled) this.showExitNotice(result.message || EXIT_GAME_WEB_MESSAGE);
     } catch (e) {
       console.error('[MenuScene] Exit Game Error:', e);
       this.showExitNotice(EXIT_GAME_WEB_MESSAGE);

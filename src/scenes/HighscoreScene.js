@@ -1849,6 +1849,7 @@ export class HighscoreScene {
     this.keyHandler = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopImmediatePropagation?.();
         this.game.switchScene('menu');
         return;
       }

@@ -1163,7 +1163,7 @@ export class ShipSelectScene {
   async exitGameFromHangar() {
     try {
       const result = await requestExitGame();
-      if (!result.ok) this.showHangarMenuNotice(result.message || EXIT_GAME_WEB_MESSAGE);
+      if (!result.ok && !result.canceled) this.showHangarMenuNotice(result.message || EXIT_GAME_WEB_MESSAGE);
     } catch (e) {
       console.error('[ShipSelect] Exit Game Error:', e);
       this.showHangarMenuNotice(EXIT_GAME_WEB_MESSAGE);

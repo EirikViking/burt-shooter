@@ -98,8 +98,16 @@ contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
 }));
 
 contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
-  exitGame: () => invoke(APP_CHANNELS.exitGame)
+  exitGame: (payload) => invoke(APP_CHANNELS.exitGame, payload)
 }));
+
+ipcRenderer.on('nova-app:window-blur', () => {
+  try {
+    window.dispatchEvent(new Event('nova-app-window-blur'));
+  } catch {
+    // Best-effort focus-loss bridge for gameplay auto-pause.
+  }
+});
 
 contextBridge.exposeInMainWorld('__novaMaintainerDevtools', Object.freeze({
   getState: () => invoke(MAINTAINER_DEVTOOLS_CHANNELS.getState)

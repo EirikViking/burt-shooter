@@ -50,6 +50,9 @@ export class InputManager {
     this.handleBlur = () => {
       this.resetAllKeys();
     };
+    this.handleNativeBlur = () => {
+      this.resetAllKeys();
+    };
 
     this.handleVisibilityChange = () => {
       if (document.hidden) {
@@ -58,6 +61,7 @@ export class InputManager {
     };
 
     window.addEventListener('blur', this.handleBlur);
+    window.addEventListener('nova-app-window-blur', this.handleNativeBlur);
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
@@ -263,6 +267,7 @@ export class InputManager {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
     window.removeEventListener('blur', this.handleBlur);
+    window.removeEventListener('nova-app-window-blur', this.handleNativeBlur);
     window.removeEventListener('gamepadconnected', this.handleGamepadConnected);
     window.removeEventListener('gamepaddisconnected', this.handleGamepadDisconnected);
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);

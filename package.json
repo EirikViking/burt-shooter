@@ -33,6 +33,7 @@
     "check:result-screen-status": "node scripts/check-result-screen-status.mjs",
     "check:result-screen-flow": "node scripts/check-result-screen-flow.mjs",
     "check:ship-unlock-reveal": "node scripts/check-ship-unlock-reveal.mjs",
+    "check:menu-exit-focus-safety": "node scripts/check-menu-exit-focus-safety.mjs",
     "check:sector-progression": "node scripts/check-sector-progression.mjs",
     "check:sector-continue-mode": "node scripts/check-sector-continue-mode.mjs",
     "check:sector-continue-controller-flow": "node scripts/check-sector-continue-controller-flow.mjs",
