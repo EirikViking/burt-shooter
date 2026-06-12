@@ -696,6 +696,11 @@ export class Game {
       bossesKilled: Number(play?.bossKills) || 0,
       wavesCleared: Number(play?.wavesCleared) || 0,
       totalKills: Number(play?.totalKills) || 0,
+      bestComboCount: Number(play?.bestComboCount) || 0,
+      bestDangerDodgeStreak: Number(play?.bestDangerDodgeStreak) || 0,
+      grazeBreaks: Number(play?.grazeBreaksThisRun) || 0,
+      lifeLosses: Number(play?.lifeLossesThisRun) || 0,
+      powerupsCollected: Number(play?.powerupsCollectedThisRun) || 0,
       livesRemaining: this.lives,
       runCleared: Boolean(overrides.runCleared ?? this.runCleared),
       clearReason: overrides.clearReason || this.runClearReason || null,
@@ -829,7 +834,8 @@ export class Game {
           target: entry.target,
           runCleared: this.runSummary.runCleared,
           livesRemaining: this.runSummary.livesRemaining,
-          clearLivesRemaining: this.runSummary.clearLivesRemaining
+          clearLivesRemaining: this.runSummary.clearLivesRemaining,
+          minimumScore: achievement.minimumScore
         });
         if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);
       }

@@ -215,6 +215,7 @@ export class PlayScene {
 
     this.comboCount = 0;
     this.comboMultiplier = 1;
+    this.bestComboCount = 0;
     this.comboTimerMs = 0;
     this.comboWindowMs = COMBO_WINDOW_MS;
     this.killStreak = 0;
@@ -227,6 +228,8 @@ export class PlayScene {
     this.damageTakenThisSector = 0;
     this.discoveryBonus = 0;
     this.defeatedBossIds = [];
+    this.lifeLossesThisRun = 0;
+    this.powerupsCollectedThisRun = 0;
     this.repairsGrantedThisRun = 0;
     this.lastKillAt = 0;
     this.lastHitAt = 0;
@@ -243,6 +246,7 @@ export class PlayScene {
     this.grazeBreakExpiresAt = 0;
     this.grazeBreakCooldownAt = 0;
     this.grazeBreakToken = 0;
+    this.grazeBreaksThisRun = 0;
     this.lastGrazeBreak = null;
     this.lastTraitImpactToastAt = 0;
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
@@ -361,11 +365,25 @@ export class PlayScene {
     this.wavesCleared = 0;
     this.noHitWavesThisRun = 0;
     this.noHitSectorsThisRun = 0;
+    this.bestComboCount = 0;
     this.damageTakenThisWave = 0;
     this.damageTakenThisSector = 0;
     this.discoveryBonus = 0;
     this.defeatedBossIds = [];
+    this.lifeLossesThisRun = 0;
+    this.powerupsCollectedThisRun = 0;
+    this.grazeBreaksThisRun = 0;
     this.repairsGrantedThisRun = 0;
+    this.dangerDodgeCount = 0;
+    this.dangerDodgeTimerMs = 0;
+    this.bestDangerDodgeStreak = 0;
+    this.lastDangerDodgeScore = 0;
+    this.grazeBreakReady = false;
+    this.grazeBreakArmedAt = 0;
+    this.grazeBreakExpiresAt = 0;
+    this.grazeBreakCooldownAt = 0;
+    this.grazeBreakToken = 0;
+    this.lastGrazeBreak = null;
     this.levelAdvancePending = false;
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
@@ -872,6 +890,7 @@ export class PlayScene {
   }
 
   recordBalancePickup(powerup) {
+    if (powerup) this.powerupsCollectedThisRun = (Number(this.powerupsCollectedThisRun) || 0) + 1;
     const stats = this.balanceDebug;
     if (!stats || !powerup) return;
     const key = powerup.type || 'unknown';
@@ -3417,6 +3436,7 @@ export class PlayScene {
   }
 
   onLifeLost() {
+    this.lifeLossesThisRun = (Number(this.lifeLossesThisRun) || 0) + 1;
     this.damageTakenThisWave = (Number(this.damageTakenThisWave) || 0) + 1;
     this.damageTakenThisSector = (Number(this.damageTakenThisSector) || 0) + 1;
     this.recordBalanceLifeLost();
@@ -6147,6 +6167,7 @@ export class PlayScene {
     this.comboCount += 1;
     this.killStreak += 1;
     this.totalKills += 1;
+    this.bestComboCount = Math.max(Number(this.bestComboCount) || 0, this.comboCount);
     this.lastKillAt = now;
     this.comboTimerMs = this.comboWindowMs;
     this.maybeDropFirstRunPickup(enemy);
@@ -6429,6 +6450,7 @@ export class PlayScene {
       enemiesDestroyed,
       bonusScore
     };
+    this.grazeBreaksThisRun = (Number(this.grazeBreaksThisRun) || 0) + 1;
     this.grazeBreakCooldownAt = Date.now() + 5200;
     return this.lastGrazeBreak;
   }

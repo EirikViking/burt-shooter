@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { ACHIEVEMENTS } from '../src/achievements/AchievementCatalog.js';
+import { ACHIEVEMENTS, LEGEND_ACHIEVEMENTS, LEGEND_SCORE_GATE } from '../src/achievements/AchievementCatalog.js';
 
 const errors = [];
 
@@ -11,9 +11,10 @@ function fail(message) {
 const ids = ACHIEVEMENTS.map((achievement) => achievement.id);
 const names = ACHIEVEMENTS.map((achievement) => achievement.name);
 const idPattern = /^ACH_[A-Z0-9]+(?:_[A-Z0-9]+)*$/;
-const expectedTotal = 30;
-const expectedMilestones = 9;
-const allowedMilestoneDifficulties = new Set(['medium', 'hard', 'very_hard']);
+const expectedTotal = 50;
+const expectedMilestones = 29;
+const expectedLegendMilestones = 20;
+const allowedMilestoneDifficulties = new Set(['medium', 'hard', 'very_hard', 'legendary']);
 
 if (ACHIEVEMENTS.length > 100) {
   fail(`Catalog has ${ACHIEVEMENTS.length} achievements; Steam limit is 100.`);
@@ -37,11 +38,21 @@ for (const achievement of ACHIEVEMENTS) {
     if (!achievement.metric || typeof achievement.metric !== 'string') {
       fail(`Milestone achievement ${achievement.id} is missing a metric.`);
     }
-    if (!Number.isFinite(Number(achievement.target)) || Number(achievement.target) <= 0) {
+    const allowsZeroTarget = Array.isArray(achievement.requirements)
+      && achievement.requirements.some((requirement) => requirement.comparator === '<=');
+    if (!Number.isFinite(Number(achievement.target)) || Number(achievement.target) < 0 || (Number(achievement.target) === 0 && !allowsZeroTarget)) {
       fail(`Milestone achievement ${achievement.id} needs a positive numeric target.`);
     }
     if (!allowedMilestoneDifficulties.has(achievement.difficulty)) {
       fail(`Milestone achievement ${achievement.id} has unsupported difficulty ${achievement.difficulty}.`);
+    }
+    if (achievement.difficulty === 'legendary') {
+      if (Number(achievement.minimumScore) < LEGEND_SCORE_GATE) {
+        fail(`Legend achievement ${achievement.id} must require at least ${LEGEND_SCORE_GATE} score.`);
+      }
+      if (!Array.isArray(achievement.requirements) || achievement.requirements.length === 0) {
+        fail(`Legend achievement ${achievement.id} needs explicit requirements.`);
+      }
     }
   }
 }
@@ -82,6 +93,10 @@ rankNumbers.forEach((rankNumber, index) => {
 const milestoneCount = ACHIEVEMENTS.filter((achievement) => achievement.type === 'milestone').length;
 if (milestoneCount !== expectedMilestones) {
   fail(`Expected ${expectedMilestones} milestone achievements; saw ${milestoneCount}.`);
+}
+
+if (LEGEND_ACHIEVEMENTS.length !== expectedLegendMilestones) {
+  fail(`Expected ${expectedLegendMilestones} legend achievements; saw ${LEGEND_ACHIEVEMENTS.length}.`);
 }
 
 const manifestPath = path.resolve('release/steamworks/achievement-icons/manifest.json');

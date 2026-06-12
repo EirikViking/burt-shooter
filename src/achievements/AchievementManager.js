@@ -46,7 +46,9 @@ function compactPayload(payload = {}) {
     'progressValue',
     'target',
     'runCleared',
-    'livesRemaining'
+    'livesRemaining',
+    'clearLivesRemaining',
+    'minimumScore'
   ];
   return Object.fromEntries(
     allowed
