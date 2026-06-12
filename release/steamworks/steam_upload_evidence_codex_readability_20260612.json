@@ -1,0 +1,54 @@
+{
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "23709519",
+  "depotManifest": "3718437896037608120",
+  "setLive": "",
+  "uploadType": "private_unassigned",
+  "steamUser": "gaunziman",
+  "cachedLoginUsed": true,
+  "branch": "codex/hard-achievements-20260612",
+  "commit": "e118f7a",
+  "packageVersion": "v2026-06-12_23-05-57",
+  "packageTimestampUtc": "2026-06-12T21:05:57.879Z",
+  "uploadedAtLocal": "2026-06-12 23:13:41 Europe/Oslo",
+  "uploadedAtUtc": "2026-06-12T21:13:41Z",
+  "steamCmdPath": "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe",
+  "vdfPath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf",
+  "contentRoot": "release/desktop/win-unpacked",
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 772401142,
+    "manifestHash": "4f6c7907d764677e16f3dc262c93122b9ec8624341e85231a0ce0586797f942e",
+    "executableSha256": "701596866952e4ec58e45909c52be8e3260bf772a948444fab15b53eb81c60d0"
+  },
+  "vdfBoundary": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": ""
+  },
+  "steamBuildLogs": {
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf"
+  },
+  "checksRun": [
+    "git fetch --all --prune",
+    "git status --short --branch",
+    "git branch -vv",
+    "git log -1 --oneline",
+    "git worktree list",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' npm run steamworks:write-vdf",
+    "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe +@ShutdownOnFailedCommand 1 +login gaunziman +run_app_build D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf +quit"
+  ],
+  "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23709519).",
+  "notes": [
+    "Steam AppID, depot ID, leaderboard identity, store metadata, pricing, release visibility, and live branches were not changed.",
+    "SetLive was intentionally blank, so the upload is private/unassigned until manually assigned in Steamworks."
+  ]
+}
