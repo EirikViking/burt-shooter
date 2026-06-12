@@ -100,6 +100,7 @@ export class MenuScene {
     this.subtitle = null;
     this.flavor = null;
     this.primaryHint = null;
+    this.runModePanel = null;
     this.runModeExplainer = null;
     this.disclaimer = null;
     this.startBtn = null;
@@ -781,6 +782,11 @@ export class MenuScene {
     this.primaryHint.zIndex = 10;
     this.container.addChild(this.primaryHint);
 
+    this.runModePanel = new PIXI.Graphics();
+    this.runModePanel.zIndex = 9;
+    this.runModePanel.alpha = 0;
+    this.container.addChild(this.runModePanel);
+
     const runModeSize = Math.max(11, getResponsiveFontSize(layout, 'small'));
     this.runModeExplainer = createText(this.getRunModeExplainerText(), {
       fontFamily: FONT_MONO,
@@ -789,7 +795,7 @@ export class MenuScene {
       fill: '#dffcff',
       stroke: '#020711',
       strokeThickness: 3,
-      align: 'center',
+      align: 'left',
       wordWrap: true,
       wordWrapWidth: clampTextWidth(width * 0.7, layout),
       lineHeight: Math.round(runModeSize * 1.32)
@@ -1029,6 +1035,7 @@ export class MenuScene {
       this.subtitle,
       this.flavor,
       this.primaryHint,
+      this.runModePanel,
       this.runModeExplainer,
       this.disclaimer,
       this.controls,
@@ -1135,9 +1142,10 @@ export class MenuScene {
     this.primaryHint.style.align = align;
     this.primaryHint.style.wordWrapWidth = clampTextWidth(contentWidth, layout);
     this.runModeExplainer.text = this.getRunModeExplainerText();
-    this.runModeExplainer.style.fontSize = Math.max(10, controlsSize - 1);
-    this.runModeExplainer.style.lineHeight = Math.round(Math.max(10, controlsSize - 1) * 1.28);
-    this.runModeExplainer.style.align = align;
+    const runIntelSize = Math.max(12, controlsSize + 1);
+    this.runModeExplainer.style.fontSize = runIntelSize;
+    this.runModeExplainer.style.lineHeight = Math.round(runIntelSize * 1.34);
+    this.runModeExplainer.style.align = 'left';
     this.runModeExplainer.style.wordWrapWidth = clampTextWidth(isMobileLayout ? contentWidth - 8 : contentWidth, layout);
     this.disclaimer.text = this.getDisclaimerText(layout);
     this.controls.text = layout.isMobile ? this.getControlsText(layout) : '';
@@ -1163,7 +1171,7 @@ export class MenuScene {
     fitTextToWidth(this.title, fitWidth, { minScale: 0.52 });
     fitTextToWidth(this.subtitle, fitWidth, { minScale: 0.72 });
     fitTextToWidth(this.primaryHint, fitWidth, { minScale: 0.74 });
-    fitTextToWidth(this.runModeExplainer, fitWidth, { minScale: 0.72 });
+    fitTextToWidth(this.runModeExplainer, fitWidth, { minScale: 0.68 });
     fitTextToWidth(this.disclaimer, fitWidth, { minScale: 0.72 });
 
     const isShortLayout = !isMobileLayout && height < 820;
@@ -1207,7 +1215,7 @@ export class MenuScene {
     const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
     const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
     const primaryHintHeight = this.primaryHint.height || controlsSize * 1.5;
-    const runModeExplainerHeight = this.runModeExplainer.height || controlsSize * 3;
+    const runModeExplainerHeight = (this.runModeExplainer.height || controlsSize * 4) + (isMobileLayout ? 18 : 22);
     const buttonCount = 1 + secondaryButtons.length;
     const buttonsHeight = primaryButtonHeight + buttonHeight * secondaryButtons.length + buttonSpacing * Math.max(0, buttonCount - 1);
     const exitNoticeHeight = this.exitNotice?.text ? (this.exitNotice.height || controlsSize * 1.2) : 0;
@@ -1233,6 +1241,7 @@ export class MenuScene {
       text.anchor.set(anchorX, 0.5);
       text.x = leftX;
     });
+    this.runModeExplainer.anchor.set(0, 0.5);
 
     placeCentered(this.kicker, kickerHeight, isMobileLayout ? 4 : 8);
     placeCentered(this.title, titleHeight, isMobileLayout ? 8 : 10);
@@ -1240,6 +1249,10 @@ export class MenuScene {
     placeCentered(this.flavor, flavorHeight, isMobileLayout ? 12 : 18);
     placeCentered(this.primaryHint, primaryHintHeight, isMobileLayout ? 8 : 10);
     placeCentered(this.runModeExplainer, runModeExplainerHeight, sectionSpacing);
+    this.runModeExplainer.x = isMobileLayout
+      ? contentX - Math.min(contentWidth - 10, this.runModeExplainer.width) / 2
+      : leftX + 10;
+    this.drawRunModeExplainerPanel(layout, width, height);
 
     const buttonX = isMobileLayout ? contentX : leftX + primaryButtonWidth / 2;
     this.startBtn.x = buttonX;
@@ -1286,11 +1299,12 @@ export class MenuScene {
     placeCentered(this.disclaimer, disclaimerHeight, 0);
 
     if (isMobileLayout) {
-      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.runModeExplainer, this.disclaimer].forEach((text) => {
+      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.disclaimer].forEach((text) => {
         if (!text) return;
         text.x = contentX;
         text.anchor.set(0.5);
       });
+      this.runModeExplainer.anchor.set(0, 0.5);
     }
 
     const overflow = this.disclaimer.y + disclaimerHeight / 2 - (height - footerReserve);
@@ -1299,6 +1313,7 @@ export class MenuScene {
       [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.runModeExplainer, this.startBtn, this.sectorStartBtn?.visible ? this.sectorStartBtn : null, this.highscoreBtn, this.storyBtn, this.threatCodexBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
         if (item) item.y -= lift;
       });
+      this.drawRunModeExplainerPanel(layout, width, height);
     }
 
     this.drawMenuPanel(layout);
@@ -1369,12 +1384,48 @@ export class MenuScene {
   }
 
   getRunModeExplainerText() {
-    const ranked = translateText('RANKED RUN: Sector 1 climb. Scores, Career XP, achievements, and unlocks count. The leaderboard is watching.');
-    const rankedDetail = ranked.replace(/^[^:]+:\s*/, '');
-    const sector = this.sectorStartState?.available
-      ? translateText('SECTOR START: checkpoint practice. Local checkpoint record only; no leaderboard or career changes. Great for revenge.')
-      : translateText('SECTOR START: unlocks after Sector 5. Then it is checkpoint practice: local records only, no leaderboard or career changes.');
-    return `${translateText('LAUNCH RUN')} // ${rankedDetail}\n${sector}`;
+    const sectorStatus = this.sectorStartState?.available
+      ? translateText('LOCAL RECORD + NO CAREER RISK')
+      : translateText('UNLOCKS AFTER SECTOR 5');
+    const tip = this.sectorStartState?.available
+      ? translateText('Rehearse the sector that punched you. No paperwork.')
+      : translateText('Survive five sectors. Then practice revenge.');
+    return [
+      translateText('RUN INTEL'),
+      `${translateText('RANKED RUN')}     ${translateText('LEADERBOARD + XP + UNLOCKS')}`,
+      `${translateText('SECTOR START')}   ${sectorStatus}`,
+      tip
+    ].join('\n');
+  }
+
+  drawRunModeExplainerPanel(layout, width, height) {
+    if (!this.runModePanel || !this.runModeExplainer) return;
+    const textBounds = boundsForDisplayObject(this.runModeExplainer);
+    if (!textBounds) return;
+    const isMobileLayout = layout.isMobile || width < 720;
+    const padX = isMobileLayout ? 12 : 16;
+    const padY = isMobileLayout ? 8 : 10;
+    const x = textBounds.x - padX;
+    const y = textBounds.y - padY;
+    const panelWidth = textBounds.width + padX * 2;
+    const panelHeight = textBounds.height + padY * 2;
+    const focusedId = this.getSelectedMenuOptionId();
+    const accent = focusedId === 'sectorStart' ? 0xffef7e : 0x37f5ff;
+    const secondary = focusedId === 'sectorStart' ? 0xff55d9 : 0x7fffd8;
+
+    this.runModePanel.clear();
+    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 6);
+    this.runModePanel.fill({ color: 0x031323, alpha: 0.62 });
+    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 6);
+    this.runModePanel.stroke({ color: accent, width: 1.5, alpha: 0.68 });
+    this.runModePanel.rect(x + 7, y + 7, 3, panelHeight - 14);
+    this.runModePanel.fill({ color: secondary, alpha: 0.88 });
+    this.runModePanel.rect(x + panelWidth - 8, y + 7, 3, panelHeight - 14);
+    this.runModePanel.fill({ color: 0xffd15c, alpha: 0.62 });
+    this.runModePanel.rect(x + 16, y + 25, panelWidth - 32, 1);
+    this.runModePanel.fill({ color: 0x8ffcff, alpha: 0.36 });
+    this.runModePanel.rect(x + 16, y + panelHeight - 13, panelWidth - 32, 1);
+    this.runModePanel.fill({ color: 0xff55d9, alpha: 0.28 });
   }
 
   drawMenuPanel(layout) {
@@ -1453,6 +1504,7 @@ export class MenuScene {
       subtitle: this.subtitle,
       flavor: this.flavor,
       primaryHint: this.primaryHint,
+      runModePanel: this.runModePanel,
       runModeExplainer: this.runModeExplainer,
       disclaimer: this.disclaimer,
       controls: this.controls,
@@ -1760,6 +1812,7 @@ export class MenuScene {
     this.animateElement(this.subtitle, 0.35, 0.5);
     this.animateElement(this.flavor, 0.55, 0.5);
     this.animateElement(this.primaryHint, 0.68, 0.42);
+    this.animateElement(this.runModePanel, 0.74, 0.42);
     this.animateElement(this.runModeExplainer, 0.76, 0.42);
     this.animateElement(this.menuPanel, 0.78, 0.45);
     this.animateElement(this.startBtn, 0.92, 0.4);
@@ -1874,7 +1927,9 @@ export class MenuScene {
     });
     this.focusedMenuIndex = next;
     if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
+    if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText();
     this.drawSectorStartStepperCue();
+    this.layoutMenu();
   }
 
   moveMenuFocus(delta) {

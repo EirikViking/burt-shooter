@@ -1,6 +1,13 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'RUN INTEL': '런 정보',
+  'RANKED RUN': '랭크 런',
+  'LEADERBOARD + XP + UNLOCKS': '리더보드 + XP + 해금',
+  'LOCAL RECORD + NO CAREER RISK': '로컬 기록 + 커리어 위험 없음',
+  'UNLOCKS AFTER SECTOR 5': '섹터 5 이후 해금',
+  'Rehearse the sector that punched you. No paperwork.': '당신을 때린 섹터를 연습하세요. 서류는 없습니다.',
+  'Survive five sectors. Then practice revenge.': '다섯 섹터를 버티세요. 그다음 복수를 연습하세요.',
   'RECOMMENDED HULL': '추천 기체',
   'USING RECOMMENDED HULL': '추천 기체 사용 중',
   'BEST UNLOCKED': '해금 중 최고',
