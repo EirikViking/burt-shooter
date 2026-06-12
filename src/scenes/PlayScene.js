@@ -1308,6 +1308,7 @@ export class PlayScene {
             maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.7)
           });
         }
+        this.playLevelClearVoice({ bossCompletion });
 
         // Particles
         for (let i = 0; i < 20; i++) {
@@ -1381,6 +1382,26 @@ export class PlayScene {
       }
       this.showErrorOverlay(e);
     }
+  }
+
+  playLevelClearVoice({ bossCompletion = false } = {}) {
+    const delayMs = bossCompletion ? 2100 : 260;
+    const token = (this.levelClearVoiceToken || 0) + 1;
+    this.levelClearVoiceToken = token;
+    setTimeout(() => {
+      if (this.game?.currentScene !== this || this.levelClearVoiceToken !== token) return;
+      AudioManager.playDiegeticVoice('level_clear_flirt', {
+        force: true,
+        bypassGlobalCooldown: true,
+        bypassEventCooldown: true,
+        exclusiveGroup: 'level_clear_flirt',
+        cooldownMs: 0,
+        eventCooldownMs: 0,
+        volume: bossCompletion ? 1.85 : 1.55,
+        duckFactor: bossCompletion ? 0.28 : 0.36,
+        duckMs: bossCompletion ? 2100 : 1600
+      });
+    }, delayMs);
   }
 
   onRankUp(newRank) {
