@@ -13,6 +13,7 @@ import {
   isSectorStartCheckpointUnlocked,
   resolveSectorStartCheckpoint
 } from '../src/game/RunMode.js';
+import { STEAM_LEADERBOARD_NAME, STEAM_SECTOR_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4651));
@@ -134,12 +135,17 @@ async function waitForScene(page, sceneName) {
   return readState(page);
 }
 
-async function loadProfile(page, progress) {
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+async function loadProfile(page, progress, { mockSteam = false } = {}) {
+  const url = mockSteam ? `${baseUrl}/?mockSteamLeaderboard=1` : baseUrl;
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForGame(page);
-  await page.evaluate((nextProgress) => {
+  await page.evaluate(({ nextProgress, mockSteamEnabled }) => {
     localStorage.clear();
     localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
+    if (mockSteamEnabled) {
+      localStorage.setItem('novaSwarm.mockSteamPersona.v1', 'SECTOR ACE');
+      localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', '[]');
+    }
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(nextProgress));
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({
       bestScore: nextProgress.bestScore,
@@ -154,7 +160,7 @@ async function loadProfile(page, progress) {
     localStorage.setItem('novaSwarm.localLeaderboard.v2', '[]');
     localStorage.setItem('burt.shipUsage.v1', '{}');
     localStorage.setItem('burt.shipUsageTotal.v1', '0');
-  }, progress);
+  }, { nextProgress: progress, mockSteamEnabled: mockSteam });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForGame(page);
   return waitForScene(page, 'menu');
@@ -166,6 +172,7 @@ async function storageSnapshot(page) {
     legacy: JSON.parse(localStorage.getItem('burt.shipUnlockProgress.v1') || '{}'),
     achievements: JSON.parse(localStorage.getItem('nova_swarm_achievements_v1') || '{}'),
     localLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.localLeaderboard.v2') || '[]'),
+    mockSteamLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'),
     sectorChallenge: JSON.parse(localStorage.getItem('novaSwarm.sectorStartChallengeRecords.v1') || '{"byCheckpoint":{}}'),
     shipUsage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}'),
     shipUsageTotal: localStorage.getItem('burt.shipUsageTotal.v1') || '0',
@@ -256,7 +263,7 @@ try {
   assert.equal(belowFive.menu?.sectorStart?.buttonVisible, false);
 
   const sectorProgress = makeProgress({ bestSector: 17, bestLevel: 17, pilotXp: 2200, bestScore: 11111 });
-  const menu = await loadProfile(page, sectorProgress);
+  const menu = await loadProfile(page, sectorProgress, { mockSteam: true });
   assert.equal(menu.menu?.sectorStart?.available, true);
   assert.deepEqual(menu.menu?.sectorStart?.checkpoints, [5, 10, 15]);
   assert.equal(menu.menu?.sectorStart?.selectedCheckpoint, 15);
@@ -308,13 +315,24 @@ try {
   assert.doesNotMatch(sectorGameOver.gameOver?.ceremonyComment || '', /->/);
   assert.equal(sectorGameOver.gameOver?.mainMenuCta?.visible, true, 'sector_start result should expose a Main Menu return CTA');
   assert.equal(sectorGameOver.gameOver?.mainMenuCta?.label, 'BACK TO MAIN MENU');
-  assert.equal(sectorGameOver.gameOver?.leaderboardCta?.visible, false, 'sector_start result should not expose main leaderboard CTA');
+  assert.equal(sectorGameOver.gameOver?.leaderboardCta?.visible, true, 'sector_start result should expose the separate sector leaderboard CTA');
+  assert.equal(sectorGameOver.gameOver?.leaderboardCta?.label, 'VIEW SECTOR BOARD');
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.gameOver?.sectorSteamStatus === 'submitted' &&
+      state.gameOver?.lastSectorLeaderboardResult?.sectorSteamStatus === 'submitted';
+  }, null, { timeout: 10000 });
+  const sectorSubmittedGameOver = await readState(page);
+  assert.match(sectorSubmittedGameOver.gameOver?.ceremonyComment || '', /STEAM SECTOR: #1|STEAM SECTOR: SUBMITTED/i);
+  assert.equal(sectorSubmittedGameOver.gameOver?.lastSectorLeaderboardResult?.leaderboardName, STEAM_SECTOR_LEADERBOARD_NAME);
   await page.waitForTimeout(700);
   const afterSectorStart = await storageSnapshot(page);
   assert.deepEqual(afterSectorStart.hangar, beforeSectorStart.hangar, 'sector_start must not update hangar progress/bests/XP/unlocks');
   assert.deepEqual(afterSectorStart.legacy, beforeSectorStart.legacy, 'sector_start must not update legacy unlock progress');
   assert.deepEqual(afterSectorStart.achievements, beforeSectorStart.achievements, 'sector_start must not unlock achievements');
   assert.deepEqual(afterSectorStart.localLeaderboard, [], 'sector_start must not save local leaderboard entries');
+  assert.equal(afterSectorStart.mockSteamLeaderboard.some((entry) => entry.leaderboardName === STEAM_SECTOR_LEADERBOARD_NAME && entry.score === challengeScore), true, 'sector_start should submit to the separate Steam sector leaderboard');
+  assert.equal(afterSectorStart.mockSteamLeaderboard.some((entry) => entry.leaderboardName === STEAM_LEADERBOARD_NAME), false, 'sector_start must not submit to the main Steam global leaderboard');
   assert.equal(afterSectorStart.sectorChallenge.byCheckpoint?.['10']?.scoreEarned, challengeScore, 'sector_start must save separate local challenge record');
   assert.equal(afterSectorStart.sectorChallenge.byCheckpoint?.['10']?.startSector, 10, 'challenge record must preserve chosen checkpoint');
   assert.equal(afterSectorStart.sectorChallenge.byCheckpoint?.['10']?.highestSectorReached, 11, 'challenge record must preserve highest sector reached');

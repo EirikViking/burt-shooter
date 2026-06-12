@@ -3,7 +3,9 @@ import { LocalLeaderboardProvider } from './LocalLeaderboardProvider.js';
 import { SteamLeaderboardProvider } from './SteamLeaderboardProvider.js';
 import {
   LEADERBOARD_DISPLAY_LIMIT,
+  STEAM_SECTOR_LEADERBOARD_NAME,
   LeaderboardView,
+  createSectorStartRunResultFromGame,
   createRunResultFromGame,
   normalizeLeaderboardEntries
 } from './LeaderboardTypes.js';
@@ -105,6 +107,7 @@ export class LeaderboardAdapter {
     if (this.availability.steam) {
       return [
         { id: LeaderboardView.GLOBAL, label: 'GLOBAL', title: 'GLOBAL SCORE DECK', sourceLabel: 'Steam Global' },
+        { id: LeaderboardView.SECTOR, label: 'SECTOR', title: 'SECTOR CHALLENGE DECK', sourceLabel: 'Steam Sector' },
         ...(this.availability.steamFriends
           ? [{ id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' }]
           : []),
@@ -155,6 +158,25 @@ export class LeaderboardAdapter {
         }
         return this.steamProvider.getFriendsScores({ ...options, limit });
       }
+      if (normalizedView === LeaderboardView.SECTOR) {
+        if (!this.availability.steam) {
+          return {
+            status: 'unavailable',
+            source: 'steam',
+            sourceLabel: 'Steam Sector',
+            entries: [],
+            message: 'Steam unavailable. Sector challenge scores cannot load.'
+          };
+        }
+        return this.steamProvider.getTopScores({
+          ...options,
+          limit,
+          leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
+          leaderboardKind: 'sector_start',
+          view: LeaderboardView.SECTOR,
+          sourceLabel: 'Steam Sector'
+        });
+      }
       if (this.availability.steam) {
         return this.steamProvider.getTopScores({ ...options, limit });
       }
@@ -171,6 +193,8 @@ export class LeaderboardAdapter {
         entries: [],
         message: normalizedView === LeaderboardView.FRIENDS
           ? 'Could not load Steam friends scores.'
+          : normalizedView === LeaderboardView.SECTOR
+            ? 'Could not load Steam sector challenge scores.'
           : normalizedView === LeaderboardView.GLOBAL
             ? 'Global board offline. Local scores are safe.'
             : 'Could not load local scores.',
@@ -270,6 +294,71 @@ export class LeaderboardAdapter {
     return result;
   }
 
+  async submitSectorStartScore(runResult = {}, options = {}) {
+    await this.ensureAvailability();
+    const result = {
+      name: options.name || runResult.playerName || runResult.name || null,
+      score: runResult.score,
+      level: runResult.highestSectorReached ?? runResult.levelReached ?? runResult.level,
+      levelReached: runResult.highestSectorReached ?? runResult.levelReached ?? runResult.level,
+      startSector: runResult.startSector ?? runResult.sectorStart ?? null,
+      highestSectorReached: runResult.highestSectorReached ?? null,
+      finalSector: runResult.finalSector ?? null,
+      rankIndex: runResult.rankIndex,
+      submissionId: runResult.submissionId,
+      sectorSteamStatus: this.availability.steam ? 'ready' : 'unavailable',
+      updatedAt: new Date().toISOString()
+    };
+    if (!this.availability.steam) {
+      result.sectorSteamError = 'Steam leaderboard unavailable';
+      return result;
+    }
+    if (!result.name) {
+      result.name = await this.steamProvider.getPlayerName().catch(() => null);
+    }
+    try {
+      const steam = await this.steamProvider.submitScore({
+        ...runResult,
+        playerName: result.name,
+        name: result.name,
+        leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
+        leaderboardKind: 'sector_start'
+      });
+      result.name = steam.playerName || result.name;
+      result.sectorSteamStatus = 'submitted';
+      result.sectorSteamRank = steam.rank;
+      result.sectorSteamDetails = steam.details;
+      result.sectorSteamUploadMethod = steam.uploadMethod;
+      result.sectorSteamPreviousBest = steam.previousBest || null;
+      result.sectorSteamPreviousBestScore = steam.previousBestScore || 0;
+      result.sectorSteamPersonalBestBeaten = Boolean(steam.personalBestBeaten);
+      result.sectorSteamBestUnchanged = Boolean(steam.bestUnchanged);
+      result.sectorSteamResponse = steam.response || null;
+      result.leaderboardName = steam.leaderboardName || STEAM_SECTOR_LEADERBOARD_NAME;
+      result.leaderboardKind = steam.leaderboardKind || 'sector_start';
+    } catch (error) {
+      result.sectorSteamStatus = 'failed';
+      result.sectorSteamError = error?.message || 'unknown';
+      result.leaderboardName = STEAM_SECTOR_LEADERBOARD_NAME;
+      result.leaderboardKind = 'sector_start';
+    }
+    mergeSteamUploadDiagnostics({
+      source: 'LeaderboardAdapter.submitSectorStartScore',
+      sectorSteamSubmissionResult: {
+        sectorSteamStatus: result.sectorSteamStatus,
+        sectorSteamError: result.sectorSteamError || null,
+        sectorSteamRank: result.sectorSteamRank || null,
+        sectorSteamBestUnchanged: Boolean(result.sectorSteamBestUnchanged),
+        score: result.score ?? null,
+        startSector: result.startSector ?? null,
+        highestSectorReached: result.highestSectorReached ?? null,
+        submissionId: result.submissionId || null,
+        leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME
+      }
+    });
+    return result;
+  }
+
   async getGlobalScoresForPlacement(options = {}) {
     const result = await this.getScores(LeaderboardView.GLOBAL, {
       ...options,
@@ -310,6 +399,10 @@ export class LeaderboardAdapter {
 
   createRunResult(game, overrides = {}) {
     return createRunResultFromGame(game, overrides);
+  }
+
+  createSectorStartRunResult(game, overrides = {}) {
+    return createSectorStartRunResultFromGame(game, overrides);
   }
 }
 

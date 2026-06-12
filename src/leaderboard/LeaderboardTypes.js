@@ -5,9 +5,12 @@ import { getSelectableShips, getShipMetadata } from '../config/ShipMetadata.js';
 export const LEADERBOARD_DISPLAY_LIMIT = 20;
 export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 export const STEAM_LEADERBOARD_COMMUNITY_NAME = 'Global High Score';
+export const STEAM_SECTOR_LEADERBOARD_NAME = 'nova_swarm_sector_start_score_v1';
+export const STEAM_SECTOR_LEADERBOARD_COMMUNITY_NAME = 'Sector Challenge Score';
 
 export const LeaderboardView = {
   GLOBAL: 'global',
+  SECTOR: 'sector',
   FRIENDS: 'friends',
   LOCAL: 'local'
 };
@@ -164,6 +167,27 @@ export function getShipNumericId(spriteKey) {
   return index >= 0 ? index + 1 : 0;
 }
 
+function isSectorLeaderboardEntry(raw = {}, options = {}) {
+  const candidates = [
+    options.leaderboardKind,
+    options.view,
+    raw.leaderboardKind,
+    raw.kind,
+    raw.metadata?.leaderboardKind,
+    raw.metadata?.source,
+    raw.source,
+    raw.leaderboardName,
+    raw.metadata?.leaderboardName
+  ].map(value => String(value || '').toLowerCase());
+  return candidates.some(value => (
+    value === LeaderboardView.SECTOR ||
+    value === 'sector_start' ||
+    value === 'sector-start' ||
+    value.includes('sector_start') ||
+    value === STEAM_SECTOR_LEADERBOARD_NAME
+  ));
+}
+
 export function normalizeLeaderboardEntry(raw = {}, options = {}) {
   const fallbackRank = Number.isFinite(Number(options.rankFallback)) ? Number(options.rankFallback) : null;
   const rawRank = raw.rank ?? raw.globalRank ?? raw.m_nGlobalRank ?? fallbackRank;
@@ -172,6 +196,7 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
   if (score <= 0 && options.dropZero !== false) return null;
 
   const details = readLeaderboardDetails(raw);
+  const sectorEntry = isSectorLeaderboardEntry(raw, options);
   let explicitLevel = readExplicitLeaderboardLevel(raw, { details });
   const fallbackLevel = estimateLeaderboardLevelFromScore(score);
   const source = String(raw.source || options.source || '').toLowerCase();
@@ -179,19 +204,59 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
   if (steamLike && explicitLevel === 1 && details.length === 0 && fallbackLevel > 1) {
     explicitLevel = null;
   }
-  const level = explicitLevel || fallbackLevel || readLeaderboardLevel(raw, fallbackLevel);
+  let level = explicitLevel || fallbackLevel || readLeaderboardLevel(raw, fallbackLevel);
   const rank = rawRank != null ? Math.max(1, numericInt(rawRank, fallbackRank || 1)) : fallbackRank;
-  const rankIndex = Math.max(0, Math.min(19, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
   const playerName = toPublicPilotName(
     raw.playerName ?? raw.name ?? raw.personaName ?? raw.displayName ?? raw.steamName,
     raw.id ?? raw.steamId ?? score
   );
   const shipId = raw.shipId ?? raw.ship_id ?? raw.metadata?.shipId ?? null;
   const shipName = raw.shipName ?? raw.ship_name ?? raw.metadata?.shipName ?? null;
-  const runTimeSeconds = raw.runTimeSeconds ?? raw.runtimeSeconds ?? raw.metadata?.runTimeSeconds ?? null;
+  const sectorStart = sectorEntry
+    ? firstFiniteInt([
+      raw.sectorStart,
+      raw.startSector,
+      raw.metadata?.sectorStart,
+      raw.metadata?.startSector,
+      details[0]
+    ], 0)
+    : null;
+  const highestSectorReached = sectorEntry
+    ? firstFiniteInt([
+      raw.highestSectorReached,
+      raw.metadata?.highestSectorReached,
+      raw.sectorReached,
+      raw.metadata?.sectorReached,
+      details[1]
+    ], 0)
+    : null;
+  const finalSector = sectorEntry
+    ? firstFiniteInt([
+      raw.finalSector,
+      raw.metadata?.finalSector,
+      raw.metadata?.levelReached,
+      raw.levelReached,
+      details[2]
+    ], 0)
+    : null;
+  if (sectorEntry) {
+    const sectorLevel = highestSectorReached || finalSector || sectorStart;
+    if (sectorLevel > 0) {
+      explicitLevel = sectorLevel;
+      level = sectorLevel;
+    }
+  }
+  const rankIndex = Math.max(0, Math.min(19, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
+  const runTimeSeconds = sectorEntry
+    ? (raw.runTimeSeconds ?? raw.runtimeSeconds ?? raw.metadata?.runTimeSeconds ?? details[4] ?? null)
+    : (raw.runTimeSeconds ?? raw.runtimeSeconds ?? raw.metadata?.runTimeSeconds ?? null);
   const kills = raw.kills ?? raw.metadata?.kills ?? null;
-  const bossKills = raw.bossKills ?? raw.metadata?.bossKills ?? null;
-  const wavesCleared = raw.wavesCleared ?? raw.metadata?.wavesCleared ?? null;
+  const bossKills = sectorEntry
+    ? (raw.bossKills ?? raw.metadata?.bossKills ?? details[5] ?? null)
+    : (raw.bossKills ?? raw.metadata?.bossKills ?? null);
+  const wavesCleared = sectorEntry
+    ? (raw.wavesCleared ?? raw.metadata?.wavesCleared ?? details[6] ?? null)
+    : (raw.wavesCleared ?? raw.metadata?.wavesCleared ?? null);
 
   return {
     rank,
@@ -207,6 +272,10 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
     kills: kills == null ? null : Math.max(0, numericInt(kills, 0)),
     bossKills: bossKills == null ? null : Math.max(0, numericInt(bossKills, 0)),
     wavesCleared: wavesCleared == null ? null : Math.max(0, numericInt(wavesCleared, 0)),
+    leaderboardKind: sectorEntry ? 'sector_start' : (raw.leaderboardKind || raw.metadata?.leaderboardKind || null),
+    sectorStart: sectorStart ? Math.max(1, sectorStart) : null,
+    highestSectorReached: highestSectorReached ? Math.max(1, highestSectorReached) : null,
+    finalSector: finalSector ? Math.max(1, finalSector) : null,
     levelSource: explicitLevel ? 'encoded' : 'score_estimate',
     source: raw.source || options.source || 'unknown',
     isCurrentPlayer: Boolean(raw.isCurrentPlayer),
@@ -257,6 +326,59 @@ export function createRunResultFromGame(game, overrides = {}) {
   };
 }
 
+export function createSectorStartRunResultFromGame(game, overrides = {}) {
+  const playScene = game?.scenes?.play || null;
+  const summary = game?.runSummary || {};
+  const attempt = summary.sectorStartChallengeAttempt || summary.sectorStartChallengeBest || {};
+  const selectedShipSpriteKey = game?.selectedShipSpriteKey || null;
+  const shipMetadata = getShipMetadata(selectedShipSpriteKey);
+  const startSector = Math.max(1, firstFiniteInt([
+    overrides.startSector,
+    overrides.sectorStart,
+    attempt.startSector,
+    summary.sectorStartCheckpoint,
+    game?.sectorStartCheckpoint
+  ], 1));
+  const highestSectorReached = Math.max(startSector, firstFiniteInt([
+    overrides.highestSectorReached,
+    attempt.highestSectorReached,
+    summary.sectorReached,
+    summary.levelReached,
+    game?.level
+  ], startSector));
+  const finalSector = Math.max(startSector, firstFiniteInt([
+    overrides.finalSector,
+    attempt.finalSector,
+    summary.finalSector,
+    summary.levelReached,
+    game?.level
+  ], highestSectorReached));
+  return {
+    score: Math.max(0, numericInt(overrides.score ?? attempt.scoreEarned ?? game?.score, 0)),
+    level: highestSectorReached,
+    levelReached: highestSectorReached,
+    rankIndex: Math.max(0, numericInt(overrides.rankIndex ?? game?.rankIndex, 0)),
+    playerName: overrides.playerName || overrides.name || null,
+    submissionId: overrides.submissionId || null,
+    shipId: shipMetadata?.id || selectedShipSpriteKey || null,
+    shipNumericId: getShipNumericId(selectedShipSpriteKey),
+    shipName: shipMetadata?.name || null,
+    selectedShipSpriteKey,
+    runTimeSeconds: Math.max(0, numericInt(overrides.runTimeSeconds ?? summary.runElapsedSeconds ?? playScene?.gameTime, 0)),
+    kills: Math.max(0, numericInt(overrides.kills ?? summary.kills ?? playScene?.totalKills, 0)),
+    bossKills: Math.max(0, numericInt(overrides.bossKills ?? attempt.bossesDefeated ?? summary.bossKills ?? playScene?.bossKills, 0)),
+    wavesCleared: Math.max(0, numericInt(overrides.wavesCleared ?? attempt.wavesCleared ?? summary.wavesCleared ?? playScene?.wavesCleared, 0)),
+    startSector,
+    sectorStart: startSector,
+    highestSectorReached,
+    finalSector,
+    leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
+    leaderboardKind: 'sector_start',
+    buildId: BUILD_ID,
+    source: overrides.source || 'sector_start_challenge'
+  };
+}
+
 export function encodeSteamLeaderboardDetails(runResult = {}) {
   const levelReached = runResult.levelReached ?? runResult.level;
   return [
@@ -264,6 +386,18 @@ export function encodeSteamLeaderboardDetails(runResult = {}) {
     Math.max(0, numericInt(runResult.shipNumericId ?? getShipNumericId(runResult.selectedShipSpriteKey), 0)),
     Math.max(0, numericInt(runResult.runTimeSeconds, 0)),
     Math.max(0, numericInt(runResult.kills, 0)),
+    Math.max(0, numericInt(runResult.bossKills, 0)),
+    Math.max(0, numericInt(runResult.wavesCleared, 0))
+  ].map(value => Math.max(0, Math.min(2147483647, value)));
+}
+
+export function encodeSteamSectorLeaderboardDetails(runResult = {}) {
+  return [
+    Math.max(0, numericInt(runResult.startSector ?? runResult.sectorStart, 0)),
+    Math.max(0, numericInt(runResult.highestSectorReached ?? runResult.levelReached ?? runResult.level, 0)),
+    Math.max(0, numericInt(runResult.finalSector ?? runResult.levelReached ?? runResult.level, 0)),
+    Math.max(0, numericInt(runResult.shipNumericId ?? getShipNumericId(runResult.selectedShipSpriteKey), 0)),
+    Math.max(0, numericInt(runResult.runTimeSeconds, 0)),
     Math.max(0, numericInt(runResult.bossKills, 0)),
     Math.max(0, numericInt(runResult.wavesCleared, 0))
   ].map(value => Math.max(0, Math.min(2147483647, value)));

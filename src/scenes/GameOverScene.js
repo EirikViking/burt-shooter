@@ -20,7 +20,7 @@ import {
   gameOverCtaVoiceLines
 } from '../config/GameOverCtaVoiceLines.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
-import { LEADERBOARD_DISPLAY_LIMIT, getPilotNameValidation } from '../leaderboard/LeaderboardTypes.js';
+import { LEADERBOARD_DISPLAY_LIMIT, LeaderboardView, getPilotNameValidation } from '../leaderboard/LeaderboardTypes.js';
 import { GamepadNavigator, hasConnectedGamepad } from '../input/GamepadNavigator.js';
 import {
   GLOBAL_LEADERBOARD_ACHIEVEMENT_ID,
@@ -201,6 +201,11 @@ export class GameOverScene {
     this.canEnterName = false;
     this.globalQualificationPromise = null;
     this.leaderboardResult = null;
+    this.sectorLeaderboardResult = null;
+    this.sectorSteamStatus = 'idle';
+    this.sectorSteamRank = null;
+    this.sectorSteamError = null;
+    this.sectorSteamSubmitting = false;
     this.previousSteamBestScore = 0;
     this.steamBestUnchanged = false;
     this.leaderboardAdapter = null;
@@ -293,9 +298,15 @@ export class GameOverScene {
     this.canEnterName = false;
     this.globalQualificationPromise = null;
     this.leaderboardResult = null;
+    this.sectorLeaderboardResult = null;
+    this.sectorSteamStatus = 'idle';
+    this.sectorSteamRank = null;
+    this.sectorSteamError = null;
+    this.sectorSteamSubmitting = false;
     this.previousSteamBestScore = 0;
     this.steamBestUnchanged = false;
     if (this.game) this.game.lastLeaderboardResult = null;
+    if (this.game) this.game.lastSectorLeaderboardResult = null;
     this.leaderboardAdapter = typeof this.game.getLeaderboardAdapter === 'function'
       ? this.game.getLeaderboardAdapter()
       : createLeaderboardAdapter();
@@ -556,6 +567,9 @@ export class GameOverScene {
       this.promptText.style.fill = '#ffb35c';
       this.promptText.text = this.getUnrankedScoreBlockedText();
       this.submitBlockedReason = this.game.runModeReason || 'unranked_run';
+      this.sectorSteamStatus = this.isSectorStartChallengeResult()
+        ? (this.leaderboardAdapter.isSteamAvailable() ? 'ready' : 'unavailable')
+        : 'idle';
       this.isQualified = false;
       this.localQualified = false;
       this.globalQualified = false;
@@ -617,6 +631,9 @@ export class GameOverScene {
     if (!this.isRankedRun) {
       console.log(`[GameOver] Unranked run blocked from leaderboard reason=${this.submitBlockedReason}`);
       this.enterRunbackStage('practice');
+      if (this.isSectorStartChallengeResult()) {
+        this.submitSectorStartSteamScore();
+      }
       return;
     }
 
@@ -884,12 +901,37 @@ export class GameOverScene {
     return translateText('REACHED SECTOR {sector}', { sector: reached });
   }
 
+  getCurrentSectorLeaderboardResult() {
+    return this.sectorLeaderboardResult || this.game?.lastSectorLeaderboardResult || null;
+  }
+
+  getSectorSteamLine() {
+    if (!this.isSectorStartChallengeResult()) return null;
+    const result = this.getCurrentSectorLeaderboardResult();
+    const status = this.sectorSteamStatus || result?.sectorSteamStatus || 'idle';
+    const rank = getValidPlacementNumber(this.sectorSteamRank || result?.sectorSteamRank);
+    if (!this.leaderboardAdapter?.isSteamAvailable?.() && status !== 'submitted' && status !== 'best_unchanged') {
+      return translateText('STEAM SECTOR: OFFLINE');
+    }
+    if (status === 'submitting') return translateText('STEAM SECTOR: SUBMITTING...');
+    if (status === 'submitted') {
+      return rank
+        ? translateText('STEAM SECTOR: #{rank}', { rank })
+        : translateText('STEAM SECTOR: SUBMITTED');
+    }
+    if (status === 'best_unchanged') return translateText('STEAM SECTOR: BEST UNCHANGED');
+    if (status === 'failed') return translateText('STEAM SECTOR: UNAVAILABLE');
+    if (status === 'skipped') return translateText('STEAM SECTOR: NO SCORE');
+    return translateText('STEAM SECTOR: READY');
+  }
+
   getSectorStartChallengeResultLines() {
     return [
       this.getSectorStartChallengeRecordLine() || translateText('SECTOR START CHALLENGE'),
       this.getSectorStartChallengeReachedLine(),
+      this.getSectorSteamLine(),
       translateText('UNRANKED CHALLENGE | MAIN LEADERBOARD OFF')
-    ];
+    ].filter(Boolean);
   }
 
   isSceneActive() {
@@ -934,6 +976,11 @@ export class GameOverScene {
       }
       if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
         if (this.shouldShowMainMenuButton()) {
+          if (this.shouldShowLeaderboardButton()) {
+            return this.shouldShowHangarButton()
+              ? translateText('A: RELAUNCH  |  Y: SECTOR BOARD  |  X: HANGAR  |  B/START: MENU')
+              : translateText('A: RELAUNCH  |  Y: SECTOR BOARD  |  B/START: MENU');
+          }
           return this.shouldShowHangarButton()
             ? translateText('A: RELAUNCH  |  X: HANGAR  |  B/START: MENU')
             : translateText('A: RELAUNCH  |  B/START: MENU');
@@ -963,6 +1010,11 @@ export class GameOverScene {
     }
     if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
       if (this.shouldShowMainMenuButton()) {
+        if (this.shouldShowLeaderboardButton()) {
+          return this.shouldShowHangarButton()
+            ? translateText('ENTER / SPACE / CLICK: RELAUNCH  |  L: SECTOR BOARD  |  H: HANGAR  |  ESC: MAIN MENU')
+            : translateText('ENTER / SPACE / CLICK: RELAUNCH  |  L: SECTOR BOARD  |  ESC: MAIN MENU');
+        }
         return this.shouldShowHangarButton()
           ? translateText('ENTER / SPACE / CLICK: RELAUNCH  |  H: HANGAR  |  ESC: MAIN MENU')
           : translateText('ENTER / SPACE / CLICK: RELAUNCH  |  ESC: MAIN MENU');
@@ -1946,7 +1998,10 @@ export class GameOverScene {
   }
 
   shouldShowLeaderboardButton() {
-    return this.isResultActionStage() && !this.isSectorStartChallengeResult();
+    return this.isResultActionStage() && (
+      !this.isSectorStartChallengeResult() ||
+      Boolean(this.leaderboardAdapter?.isSteamAvailable?.())
+    );
   }
 
   shouldShowHangarButton() {
@@ -1990,6 +2045,7 @@ export class GameOverScene {
     this.leaderboardButtonBg.fill({ color: 0xffd15c, alpha: 0.34 });
 
     if (this.leaderboardButtonLabel) {
+      this.leaderboardButtonLabel.text = translateText(this.isSectorStartChallengeResult() ? 'VIEW SECTOR BOARD' : 'VIEW LEADERBOARD');
       this.leaderboardButtonLabel.style.fontSize = layout.isMobile ? 18 : 22;
       this.leaderboardButtonLabel.y = layout.isMobile ? -7 : -8;
     }
@@ -3897,6 +3953,9 @@ export class GameOverScene {
   openLeaderboard() {
     this.clearSceneTimeouts();
     AudioManager.stopVoiceGroup('runback');
+    if (this.isSectorStartChallengeResult()) {
+      this.game.leaderboardView = LeaderboardView.SECTOR;
+    }
     this.game.showHighscores();
   }
 
@@ -4158,6 +4217,75 @@ export class GameOverScene {
     this.submitButton = null;
     this.boundVisibleInput = null;
     this.boundVisibleInputKeyDown = null;
+  }
+
+  async submitSectorStartSteamScore() {
+    if (!this.isSectorStartChallengeResult() || this.sectorSteamSubmitting) return;
+    if (!this.leaderboardAdapter?.isSteamAvailable?.()) {
+      this.sectorSteamStatus = 'unavailable';
+      this.sectorSteamError = 'Steam leaderboard unavailable';
+      this.updateLeaderboardStatusText();
+      this.updateCeremonyPresentation();
+      return;
+    }
+    if (this.finalScore <= 0) {
+      this.sectorSteamStatus = 'skipped';
+      this.updateLeaderboardStatusText();
+      this.updateCeremonyPresentation();
+      return;
+    }
+
+    this.sectorSteamSubmitting = true;
+    this.sectorSteamStatus = 'submitting';
+    this.updateLeaderboardStatusText();
+    this.updateCeremonyPresentation();
+
+    const playerName = this.steamPlayerName || await this.leaderboardAdapter.getSteamPlayerName().catch(() => null) || 'STEAM PILOT';
+    const runResult = this.leaderboardAdapter.createSectorStartRunResult(this.game, {
+      name: playerName,
+      playerName,
+      score: this.finalScore,
+      rankIndex: this.game.rankIndex || 0,
+      submissionId: this.submissionId
+    });
+    let result = null;
+    try {
+      result = await this.leaderboardAdapter.submitSectorStartScore(runResult, {
+        name: playerName
+      });
+    } catch (error) {
+      result = {
+        name: playerName,
+        score: this.finalScore,
+        level: runResult.level,
+        levelReached: runResult.levelReached,
+        startSector: runResult.startSector,
+        highestSectorReached: runResult.highestSectorReached,
+        finalSector: runResult.finalSector,
+        submissionId: this.submissionId,
+        sectorSteamStatus: 'failed',
+        sectorSteamError: error?.message || 'unknown'
+      };
+    }
+
+    this.sectorLeaderboardResult = {
+      ...result,
+      mainLeaderboardStatus: 'unranked',
+      updatedAt: new Date().toISOString()
+    };
+    this.game.lastSectorLeaderboardResult = this.sectorLeaderboardResult;
+    this.game.leaderboardView = LeaderboardView.SECTOR;
+    this.sectorSteamRank = result.sectorSteamRank || null;
+    this.sectorSteamError = result.sectorSteamError || null;
+    this.sectorSteamStatus = result.sectorSteamStatus === 'submitted'
+      ? (result.sectorSteamBestUnchanged ? 'best_unchanged' : 'submitted')
+      : (result.sectorSteamStatus || 'failed');
+    this.sectorLeaderboardResult.sectorSteamStatus = this.sectorSteamStatus;
+    this.sectorSteamSubmitting = false;
+    this.updateLeaderboardStatusText();
+    this.updateCeremonyPresentation();
+    this.refreshPrimaryCta();
+    this.layoutScreen();
   }
 
   async submitSteamScore() {

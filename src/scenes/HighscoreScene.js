@@ -52,7 +52,11 @@ function fitTextToWidth(textObject, maxWidth, minFontSize = 9) {
   }
 }
 
-function getLeaderboardLevelDisplay(entry = {}) {
+function getLeaderboardLevelDisplay(entry = {}, view = LeaderboardView.GLOBAL) {
+  if (view === LeaderboardView.SECTOR) {
+    const sector = Math.max(0, Math.floor(Number(entry.sectorStart ?? entry.startSector ?? entry.level) || 0));
+    return `${translateText('S')} ${sector || '?'}`;
+  }
   const label = translateText('LV');
   if (entry.levelSource === 'score_estimate') return `${label} ?`;
   const level = Math.max(0, Math.floor(Number(entry.level ?? entry.levelReached) || 0));
@@ -74,6 +78,7 @@ export class HighscoreScene {
     this.backBtn = null;
     this.runAgainBtn = null;
     this.globalBtn = null;
+    this.sectorBtn = null;
     this.friendsBtn = null;
     this.localBtn = null;
     this.tabButtons = {};
@@ -289,6 +294,11 @@ export class HighscoreScene {
     this.globalBtn.zIndex = 5;
     this.container.addChild(this.globalBtn);
 
+    this.sectorBtn = this.createButton('SECTOR');
+    this.sectorBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.SECTOR));
+    this.sectorBtn.zIndex = 5;
+    this.container.addChild(this.sectorBtn);
+
     this.friendsBtn = this.createButton('FRIENDS');
     this.friendsBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.FRIENDS));
     this.friendsBtn.zIndex = 5;
@@ -300,11 +310,13 @@ export class HighscoreScene {
     this.container.addChild(this.localBtn);
     this.tabButtons = {
       [LeaderboardView.GLOBAL]: this.globalBtn,
+      [LeaderboardView.SECTOR]: this.sectorBtn,
       [LeaderboardView.FRIENDS]: this.friendsBtn,
       [LeaderboardView.LOCAL]: this.localBtn
     };
     this.focusableControls = [
       { id: LeaderboardView.GLOBAL, button: this.globalBtn, activate: () => this.setLeaderboardView(LeaderboardView.GLOBAL) },
+      { id: LeaderboardView.SECTOR, button: this.sectorBtn, activate: () => this.setLeaderboardView(LeaderboardView.SECTOR) },
       { id: LeaderboardView.FRIENDS, button: this.friendsBtn, activate: () => this.setLeaderboardView(LeaderboardView.FRIENDS) },
       { id: LeaderboardView.LOCAL, button: this.localBtn, activate: () => this.setLeaderboardView(LeaderboardView.LOCAL) },
       { id: 'retry', button: this.retryBtn, activate: () => this.fetchHighscores() },
@@ -631,6 +643,8 @@ export class HighscoreScene {
           this.stateMessage.text = globalResult
             ? translateText('Local board loaded. Global: {status}.', { status: globalResult })
             : translateText('Local board loaded.');
+        } else if (this.activeLeaderboard === LeaderboardView.SECTOR) {
+          this.stateMessage.text = translateText('{source} loaded.', { source: translateText(sourceLabel) });
         } else {
           this.stateMessage.text = globalResult
             ? translateText('{source} loaded. Last run: {status}.', { source: translateText(sourceLabel), status: globalResult })
@@ -640,6 +654,8 @@ export class HighscoreScene {
       case 'EMPTY':
         if (this.activeLeaderboard === LeaderboardView.FRIENDS) {
           this.stateMessage.text = translateText('No friends scores yet.');
+        } else if (this.activeLeaderboard === LeaderboardView.SECTOR) {
+          this.stateMessage.text = translateText('Steam sector challenge board has no entries yet.');
         } else {
           this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.LOCAL
             ? 'No local scores yet. Be the first legend here.'
@@ -651,6 +667,8 @@ export class HighscoreScene {
           ? `Local scores unavailable.`
           : this.activeLeaderboard === LeaderboardView.FRIENDS
             ? 'Could not load Steam friends scores.'
+            : this.activeLeaderboard === LeaderboardView.SECTOR
+              ? 'Could not load Steam sector challenge scores.'
             : `Global board offline. Local scores are safe.`);
         break;
       default:
@@ -658,6 +676,8 @@ export class HighscoreScene {
           ? 'Loading Steam friends scores...'
           : this.activeLeaderboard === LeaderboardView.LOCAL
             ? 'Loading local board...'
+            : this.activeLeaderboard === LeaderboardView.SECTOR
+              ? 'Loading Steam sector challenge scores...'
             : `Loading ${sourceLabel.toLowerCase()}...`);
     }
     this.updateLeaderboardChrome();
@@ -665,7 +685,11 @@ export class HighscoreScene {
   }
 
   normalizeEntry(raw) {
-    const normalized = normalizeLeaderboardEntry(raw, { source: this.activeLeaderboard });
+    const normalized = normalizeLeaderboardEntry(raw, {
+      source: this.activeLeaderboard,
+      view: this.activeLeaderboard,
+      leaderboardKind: this.activeLeaderboard === LeaderboardView.SECTOR ? 'sector_start' : null
+    });
     if (!normalized) return null;
     return {
       ...normalized,
@@ -691,20 +715,22 @@ export class HighscoreScene {
   }
 
   getLastLeaderboardPlayerMatch() {
-    const result = this.game?.lastLeaderboardResult || null;
+    const result = this.activeLeaderboard === LeaderboardView.SECTOR
+      ? (this.game?.lastSectorLeaderboardResult || null)
+      : (this.game?.lastLeaderboardResult || null);
     if (!result) return null;
 
     const localEntry = result.localEntry || null;
     const score = Number(result.score ?? localEntry?.score);
-    const level = Number(result.level ?? localEntry?.level);
+    const level = Number(result.level ?? result.levelReached ?? result.highestSectorReached ?? localEntry?.level);
     return {
       name: this.normalizePlayerNameForMatch(result.name || result.playerName || localEntry?.name || localEntry?.playerName),
       score: Number.isFinite(score) ? score : null,
       level: Number.isFinite(level) ? level : null,
       localPlacement: Number(result.localPlacement ?? localEntry?.placement),
-      steamRank: Number(result.steamRank ?? result.globalRank ?? result.rank),
+      steamRank: Number(result.steamRank ?? result.globalRank ?? result.rank ?? result.sectorSteamRank),
       localStatus: result.localStatus || null,
-      steamStatus: result.steamStatus || result.globalStatus || null
+      steamStatus: result.steamStatus || result.globalStatus || result.sectorSteamStatus || null
     };
   }
 
@@ -942,7 +968,7 @@ export class HighscoreScene {
         const manifestLabel = desktopTwoColumn && columnIndex === 1 ? 'PILOT MANIFEST 11-20' : 'PILOT MANIFEST';
         const headers = [
           { text: manifestLabel, x: geometry.rowX, anchorX: 0 },
-          { text: 'SCORE / LEVEL', x: geometry.rowX + geometry.rowW, anchorX: 1 }
+          { text: this.activeLeaderboard === LeaderboardView.SECTOR ? 'SCORE / START' : 'SCORE / LEVEL', x: geometry.rowX + geometry.rowW, anchorX: 1 }
         ];
         headers.forEach(entry => {
           const text = createText(entry.text, headerStyle);
@@ -1047,7 +1073,11 @@ export class HighscoreScene {
           ? score.rank_index
           : getRankFromLevel(score.level || 1);
         const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
-        const rankTitle = getRankTitle(clampedRank);
+        const rankTitle = this.activeLeaderboard === LeaderboardView.SECTOR
+          ? translateText('REACHED SECTOR {sector}', {
+            sector: Math.max(1, Math.floor(Number(score.highestSectorReached ?? score.level ?? score.sectorStart) || 1))
+          })
+          : getRankTitle(clampedRank);
         const displayName = (score.name || '??').slice(0, isMobile ? 13 : 18).toUpperCase();
 
         if (isFeaturedPlayer) {
@@ -1092,7 +1122,7 @@ export class HighscoreScene {
           stroke: '#00131b',
           strokeThickness: 1
         });
-        const levelDisplay = getLeaderboardLevelDisplay(score);
+        const levelDisplay = getLeaderboardLevelDisplay(score, this.activeLeaderboard);
         const levelText = createText(levelDisplay, {
           ...rankStyle,
           fontSize: Math.max(10, rowStyle.fontSize - (isMobile ? 3 : 2))
@@ -1456,7 +1486,9 @@ export class HighscoreScene {
       ? 0xffd166
       : this.activeLeaderboard === LeaderboardView.FRIENDS
         ? 0xff55d9
-        : 0x00f6ff;
+        : this.activeLeaderboard === LeaderboardView.SECTOR
+          ? 0xffd15c
+          : 0x00f6ff;
 
     this.titlePlate.roundRect(plateX - 10, plateY - 8, plateW + 20, plateH + 16, 10);
     this.titlePlate.fill({ color: accent, alpha: 0.06 });
@@ -1560,7 +1592,9 @@ export class HighscoreScene {
       ? 0xffd166
       : this.activeLeaderboard === LeaderboardView.FRIENDS
         ? 0xff55d9
-        : 0x00f6ff;
+        : this.activeLeaderboard === LeaderboardView.SECTOR
+          ? 0xffd15c
+          : 0x00f6ff;
 
     this.statsDeck.rect(x, y, deckWidth, 1);
     this.statsDeck.fill({ color: 0x7fffd8, alpha: 0.22 });

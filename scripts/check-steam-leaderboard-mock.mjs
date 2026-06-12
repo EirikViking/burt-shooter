@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { STEAM_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
+import { STEAM_LEADERBOARD_NAME, STEAM_SECTOR_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4370));
@@ -106,22 +106,36 @@ try {
   });
   await page.goto(`${baseUrl}/?mockSteamLeaderboard=1`, { waitUntil: 'domcontentloaded' });
   await waitForGame(page);
-  await page.evaluate(() => {
+  await page.evaluate((sectorLeaderboardName) => {
     localStorage.setItem('novaSwarm.mockSteamPersona.v1', 'STEAM ACE');
     localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
       { playerName: 'STEAM ACE', score: 22000, level: 7, isCurrentPlayer: true, source: 'steam' },
       { playerName: 'ORBIT PAL', score: 18000, source: 'steam' },
-      { playerName: 'RIFT PAL', score: 14000, level: 5, source: 'steam' }
+      { playerName: 'RIFT PAL', score: 14000, level: 5, source: 'steam' },
+      {
+        playerName: 'SECTOR ACE',
+        score: 9100,
+        level: 22,
+        levelReached: 22,
+        startSector: 20,
+        highestSectorReached: 22,
+        finalSector: 22,
+        details: [20, 22, 22, 1, 155, 2, 8],
+        metadata: { leaderboardKind: 'sector_start', startSector: 20, highestSectorReached: 22, finalSector: 22 },
+        leaderboardName: sectorLeaderboardName,
+        leaderboardKind: 'sector_start',
+        source: 'steam'
+      }
     ]));
     window.__game.leaderboardView = 'global';
     window.__game.switchScene('highscore');
-  });
+  }, STEAM_SECTOR_LEADERBOARD_NAME);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
     return state.scene === 'highscore' && state.highscore?.status === 'LOADED';
   }, null, { timeout: 12000 });
   const globalState = await state(page);
-  if (globalState.highscore?.tabs?.join(',') !== 'global,friends,local') {
+  if (globalState.highscore?.tabs?.join(',') !== 'global,sector,friends,local') {
     throw new Error(`Steam tabs missing: ${globalState.highscore?.tabs}`);
   }
   if (globalState.highscore?.sourceLabel !== 'Steam Global') {
@@ -132,6 +146,21 @@ try {
   if (!estimatedLevelRow || estimatedLevelRow.levelText !== 'LV ?') {
     throw new Error(`Estimated Steam levels should display as LV ?: ${JSON.stringify(globalLevelRows)}`);
   }
+
+  await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('sector'));
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.highscore?.activeLeaderboard === 'sector' && state.highscore?.status === 'LOADED';
+  }, null, { timeout: 12000 });
+  const sectorState = await state(page);
+  if (sectorState.highscore?.sourceLabel !== 'Steam Sector') {
+    throw new Error(`Expected Steam Sector source, got ${sectorState.highscore?.sourceLabel}`);
+  }
+  const sectorRows = await page.evaluate(() => window.__game?.scenes?.highscore?.rowLayoutDebug || []);
+  if (!sectorRows.some((row) => row.levelText === 'S 20')) {
+    throw new Error(`Sector tab should render start sector as S 20: ${JSON.stringify(sectorRows)}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-sector-tab.png'), fullPage: true });
 
   await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('friends'));
   await page.waitForFunction(() => {
@@ -398,6 +427,7 @@ try {
     baseUrl,
     outputDir,
     tabs: globalState.highscore.tabs,
+    sectorRows: sectorState.highscore.rows.length,
     friendsRows: friendsState.highscore.rows.length,
     steamSubmittedHold: steamSubmittedState.gameOver.lastLeaderboardResult,
     steamGameOver: gameOverState.gameOver.lastLeaderboardResult,

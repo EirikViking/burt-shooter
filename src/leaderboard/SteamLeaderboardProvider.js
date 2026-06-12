@@ -1,7 +1,10 @@
 import {
   LEADERBOARD_DISPLAY_LIMIT,
   STEAM_LEADERBOARD_NAME,
+  STEAM_SECTOR_LEADERBOARD_NAME,
+  LeaderboardView,
   encodeSteamLeaderboardDetails,
+  encodeSteamSectorLeaderboardDetails,
   normalizeLeaderboardEntries,
   readExplicitLeaderboardLevel,
   toPublicPilotName
@@ -113,6 +116,20 @@ function pickBestCurrentPlayerEntry(entries = [], currentPlayerName = null) {
     })[0] || null;
 }
 
+function resolveLeaderboardName(value) {
+  return String(value || STEAM_LEADERBOARD_NAME);
+}
+
+function isSectorLeaderboardName(value) {
+  return resolveLeaderboardName(value) === STEAM_SECTOR_LEADERBOARD_NAME;
+}
+
+function resolveLeaderboardKind({ leaderboardName, leaderboardKind, view } = {}) {
+  const rawKind = String(leaderboardKind || view || '').toLowerCase();
+  if (rawKind === 'sector_start' || rawKind === LeaderboardView.SECTOR) return 'sector_start';
+  return isSectorLeaderboardName(leaderboardName) ? 'sector_start' : 'global';
+}
+
 function hasForceRepairFlag(win) {
   if (!win) return false;
   if (win.__NOVA_SWARM_FORCE_STEAM_LEADERBOARD_UPDATE__ === true) return true;
@@ -144,9 +161,19 @@ function createMockSteamBridge(win) {
     }
   };
 
-  const sorted = () => readMockScores(win)
+  const mockBoardName = (payload = {}) => resolveLeaderboardName(payload.leaderboardName);
+  const entryBoardName = (entry = {}) => resolveLeaderboardName(entry.leaderboardName);
+  const sorted = (payload = {}) => {
+    const leaderboardName = mockBoardName(payload);
+    return readMockScores(win)
+    .filter(entry => entryBoardName(entry) === leaderboardName)
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .map((entry, index) => ({ ...entry, rank: index + 1, globalRank: index + 1 }));
+  };
+  const writeBoardScores = (leaderboardName, nextBoardScores) => {
+    const otherScores = readMockScores(win).filter(entry => entryBoardName(entry) !== leaderboardName);
+    writeMockScores(win, [...nextBoardScores, ...otherScores]);
+  };
 
   return {
     async isAvailable() {
@@ -155,18 +182,22 @@ function createMockSteamBridge(win) {
     async getPersonaName() {
       return personaName();
     },
-    async getTopScores({ limit = LEADERBOARD_DISPLAY_LIMIT } = {}) {
-      return sorted().slice(0, limit);
+    async getTopScores(payload = {}) {
+      const { limit = LEADERBOARD_DISPLAY_LIMIT } = payload;
+      return sorted(payload).slice(0, limit);
     },
-    async getFriendsScores({ limit = LEADERBOARD_DISPLAY_LIMIT } = {}) {
-      return sorted()
+    async getFriendsScores(payload = {}) {
+      const { limit = LEADERBOARD_DISPLAY_LIMIT } = payload;
+      return sorted(payload)
         .filter((entry, index) => index < Math.max(1, Math.min(limit, 8)))
         .map(entry => ({ ...entry, source: 'steam-friends' }));
     },
     async submitScore(payload = {}) {
-      const scores = sorted().filter(entry => !entry.isCurrentPlayer);
+      const leaderboardName = mockBoardName(payload);
+      const leaderboardKind = resolveLeaderboardKind({ leaderboardName, leaderboardKind: payload.metadata?.leaderboardKind });
+      const scores = sorted(payload).filter(entry => !entry.isCurrentPlayer);
       const playerName = toPublicPilotName(personaName(), payload.score);
-      const existing = sorted().find(entry => entry.isCurrentPlayer);
+      const existing = sorted(payload).find(entry => entry.isCurrentPlayer);
       const incomingScore = Math.max(0, Math.floor(Number(payload.score) || 0));
       const existingScore = Math.max(0, Math.floor(Number(existing?.score) || 0));
       const forceUpdate = String(payload.uploadMethod || '').toLowerCase() === 'force_update';
@@ -179,26 +210,30 @@ function createMockSteamBridge(win) {
           score: forceUpdate ? incomingScore : Math.max(existingScore, incomingScore),
           level: payload.metadata?.level ?? payload.details?.[0] ?? 1,
           levelReached: payload.metadata?.levelReached ?? payload.details?.[0] ?? 1,
-          shipId: payload.metadata?.shipId ?? payload.details?.[1] ?? null,
-          runTimeSeconds: payload.metadata?.runTimeSeconds ?? payload.details?.[2] ?? null,
-          kills: payload.metadata?.kills ?? payload.details?.[3] ?? null,
-          bossKills: payload.metadata?.bossKills ?? payload.details?.[4] ?? null,
-          wavesCleared: payload.metadata?.wavesCleared ?? payload.details?.[5] ?? null,
+          shipId: payload.metadata?.shipId ?? (leaderboardKind === 'sector_start' ? payload.details?.[3] : payload.details?.[1]) ?? null,
+          runTimeSeconds: payload.metadata?.runTimeSeconds ?? (leaderboardKind === 'sector_start' ? payload.details?.[4] : payload.details?.[2]) ?? null,
+          kills: payload.metadata?.kills ?? (leaderboardKind === 'sector_start' ? null : payload.details?.[3]) ?? null,
+          bossKills: payload.metadata?.bossKills ?? (leaderboardKind === 'sector_start' ? payload.details?.[5] : payload.details?.[4]) ?? null,
+          wavesCleared: payload.metadata?.wavesCleared ?? (leaderboardKind === 'sector_start' ? payload.details?.[6] : payload.details?.[5]) ?? null,
+          startSector: payload.metadata?.startSector ?? payload.details?.[0] ?? null,
+          highestSectorReached: payload.metadata?.highestSectorReached ?? payload.details?.[1] ?? null,
+          finalSector: payload.metadata?.finalSector ?? payload.details?.[2] ?? null,
           details: payload.details,
           metadata: payload.metadata,
-          leaderboardName: payload.leaderboardName || STEAM_LEADERBOARD_NAME,
+          leaderboardName,
+          leaderboardKind,
           uploadMethod: payload.uploadMethod,
           isCurrentPlayer: true,
           source: 'steam',
           timestamp: new Date().toISOString()
         };
       const nextScores = [nextEntry, ...scores].sort((a, b) => (b.score || 0) - (a.score || 0));
-      writeMockScores(win, nextScores);
+      writeBoardScores(leaderboardName, nextScores);
       const rank = nextScores.findIndex(entry => entry === nextEntry) + 1;
       return { success: true, rank, entry: nextEntry, mock: true };
     },
-    async getPlayerBest() {
-      return sorted().find(entry => entry.isCurrentPlayer) || null;
+    async getPlayerBest(payload = {}) {
+      return sorted(payload).find(entry => entry.isCurrentPlayer) || null;
     }
   };
 }
@@ -316,14 +351,18 @@ export class SteamLeaderboardProvider {
       return {
         status: 'unavailable',
         source: 'steam',
-        sourceLabel: 'Steam Global',
+        sourceLabel: options.sourceLabel || 'Steam Global',
         entries: [],
         message: 'Steam unavailable. Local scores are safe.'
       };
     }
     const limit = Number(options.limit) || LEADERBOARD_DISPLAY_LIMIT;
+    const leaderboardName = resolveLeaderboardName(options.leaderboardName || this.leaderboardName);
+    const leaderboardKind = resolveLeaderboardKind({ leaderboardName, leaderboardKind: options.leaderboardKind, view: options.view });
+    const sourceLabel = options.sourceLabel || (leaderboardKind === 'sector_start' ? 'Steam Sector' : 'Steam Global');
     const payload = {
-      leaderboardName: this.leaderboardName,
+      leaderboardName,
+      leaderboardKind,
       request: 'global',
       limit,
       start: 1,
@@ -336,13 +375,19 @@ export class SteamLeaderboardProvider {
       'getScores',
       'downloadEntries'
     ], payload);
-    const entries = normalizeLeaderboardEntries(Array.isArray(raw) ? raw : raw?.entries, { source: 'steam' }).slice(0, limit);
+    const entries = normalizeLeaderboardEntries(Array.isArray(raw) ? raw : raw?.entries, {
+      source: 'steam',
+      leaderboardKind,
+      view: leaderboardKind === 'sector_start' ? LeaderboardView.SECTOR : LeaderboardView.GLOBAL
+    }).slice(0, limit);
     return {
       status: entries.length > 0 ? 'available' : 'empty',
       source: 'steam',
-      sourceLabel: 'Steam Global',
+      sourceLabel,
       entries,
-      message: entries.length > 0 ? 'Steam global records loaded.' : 'Steam global board has no entries yet.'
+      message: entries.length > 0
+        ? (leaderboardKind === 'sector_start' ? 'Steam sector challenge records loaded.' : 'Steam global records loaded.')
+        : (leaderboardKind === 'sector_start' ? 'Steam sector challenge board has no entries yet.' : 'Steam global board has no entries yet.')
     };
   }
 
@@ -357,8 +402,9 @@ export class SteamLeaderboardProvider {
       };
     }
     const limit = Number(options.limit) || LEADERBOARD_DISPLAY_LIMIT;
+    const leaderboardName = resolveLeaderboardName(options.leaderboardName || this.leaderboardName);
     const payload = {
-      leaderboardName: this.leaderboardName,
+      leaderboardName,
       request: 'friends',
       limit
     };
@@ -383,19 +429,47 @@ export class SteamLeaderboardProvider {
     if (!await this.isAvailable()) {
       throw new Error('Steam leaderboard unavailable');
     }
-    const details = encodeSteamLeaderboardDetails(runResult);
+    const leaderboardName = resolveLeaderboardName(runResult.leaderboardName || this.leaderboardName);
+    const leaderboardKind = resolveLeaderboardKind({
+      leaderboardName,
+      leaderboardKind: runResult.leaderboardKind,
+      view: runResult.view
+    });
+    const details = leaderboardKind === 'sector_start'
+      ? encodeSteamSectorLeaderboardDetails(runResult)
+      : encodeSteamLeaderboardDetails(runResult);
     const score = Math.max(0, Math.min(2147483647, Math.floor(Number(runResult.score) || 0)));
-    const previousBest = await this.getPlayerBest();
+    const previousBest = await this.getPlayerBest({ leaderboardName });
     const previousBestScore = Math.max(0, Math.floor(Number(previousBest?.score ?? previousBest?.m_nScore) || 0));
     const uploadMethod = resolveSteamUploadMethod({ score, details, previousBest });
     const payload = {
-      leaderboardName: this.leaderboardName,
+      leaderboardName,
       score,
       details,
       uploadMethod,
       sortMethod: 'descending',
       displayType: 'numeric',
-      metadata: {
+      metadata: leaderboardKind === 'sector_start' ? {
+        leaderboardKind,
+        leaderboardName,
+        startSector: details[0],
+        sectorStart: details[0],
+        highestSectorReached: details[1],
+        finalSector: details[2],
+        level: details[1],
+        levelReached: details[1],
+        detailsVersion: 1,
+        oneEntryPerPlayer: true,
+        uploadMethod,
+        shipId: runResult.shipId || details[3],
+        shipNumericId: details[3],
+        runTimeSeconds: details[4],
+        bossKills: details[5],
+        wavesCleared: details[6],
+        source: runResult.source || 'sector_start_challenge'
+      } : {
+        leaderboardKind,
+        leaderboardName,
         level: details[0],
         levelReached: details[0],
         detailsVersion: 2,
@@ -440,7 +514,7 @@ export class SteamLeaderboardProvider {
     const scoreChangedFalse = scoreChangedRaw === false || scoreChangedRaw === 0 || scoreChangedRaw === '0';
     const postSubmitBest = previousBestScore > 0
       ? previousBest
-      : await this.getDownloadedPlayerBest().catch(() => null);
+      : await this.getDownloadedPlayerBest({ leaderboardName, leaderboardKind }).catch(() => null);
     const postSubmitBestScore = Math.max(0, Math.floor(Number(postSubmitBest?.score ?? postSubmitBest?.m_nScore) || 0));
     const responseBestScore = responseScore > score ? responseScore : 0;
     const retainedBestScore = Math.max(previousBestScore, postSubmitBestScore, responseBestScore);
@@ -453,10 +527,15 @@ export class SteamLeaderboardProvider {
     return {
       status: 'submitted',
       source: 'steam',
-      sourceLabel: 'Steam Global',
+      sourceLabel: leaderboardKind === 'sector_start' ? 'Steam Sector' : 'Steam Global',
       playerName: await this.getPlayerName(),
       details,
-      levelReached: details[0],
+      levelReached: leaderboardKind === 'sector_start' ? details[1] : details[0],
+      leaderboardName,
+      leaderboardKind,
+      startSector: leaderboardKind === 'sector_start' ? details[0] : null,
+      highestSectorReached: leaderboardKind === 'sector_start' ? details[1] : null,
+      finalSector: leaderboardKind === 'sector_start' ? details[2] : null,
       uploadMethod,
       previousBest: previousBest || (bestUnchanged ? postSubmitBest : null) || null,
       previousBestScore: bestUnchanged ? retainedBestScore : previousBestScore,
@@ -468,23 +547,29 @@ export class SteamLeaderboardProvider {
     };
   }
 
-  async getPlayerBest() {
+  async getPlayerBest(options = {}) {
     const bridge = this.getBridge();
     if (!bridge || !await this.isAvailable()) return null;
     try {
-      return await callFirst(bridge, ['getPlayerBest', 'getBestScore'], { leaderboardName: this.leaderboardName });
+      return await callFirst(bridge, ['getPlayerBest', 'getBestScore'], {
+        leaderboardName: resolveLeaderboardName(options.leaderboardName || this.leaderboardName)
+      });
     } catch {
       return null;
     }
   }
 
-  async getDownloadedPlayerBest() {
+  async getDownloadedPlayerBest(options = {}) {
     const bridge = this.getBridge();
     if (!bridge || !await this.isAvailable()) return null;
     const currentPlayerName = await this.getPlayerName().catch(() => null);
+    const leaderboardName = resolveLeaderboardName(options.leaderboardName || this.leaderboardName);
+    const leaderboardKind = resolveLeaderboardKind({ leaderboardName, leaderboardKind: options.leaderboardKind });
     const reads = await Promise.allSettled([
-      this.getFriendsScores({ limit: 100, useCache: false }),
-      this.getTopScores({ limit: 100, useCache: false })
+      leaderboardKind === 'sector_start'
+        ? Promise.resolve({ entries: [] })
+        : this.getFriendsScores({ limit: 100, useCache: false, leaderboardName }),
+      this.getTopScores({ limit: 100, useCache: false, leaderboardName, leaderboardKind })
     ]);
     const entries = reads.flatMap((read) => (
       read.status === 'fulfilled' && Array.isArray(read.value?.entries)

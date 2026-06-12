@@ -62,8 +62,10 @@ installCloudFetch();
 const { createLeaderboardAdapter } = await import('../src/leaderboard/LeaderboardAdapter.js');
 const {
   STEAM_LEADERBOARD_NAME,
+  STEAM_SECTOR_LEADERBOARD_NAME,
   createRunResultFromGame,
   encodeSteamLeaderboardDetails,
+  encodeSteamSectorLeaderboardDetails,
   estimateLeaderboardLevelFromScore,
   getPilotNameValidation,
   normalizeLeaderboardEntry,
@@ -82,10 +84,16 @@ assert.deepEqual(readLeaderboardDetails({ details: '0x0a00000018000000f30100003d
 assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK', score: 41413, level: 1, levelReached: 1, details: '0x0a00000018000000f30100003d020000' })?.level, 10, 'Steam details must beat stale LV1 row metadata');
 assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK', score: 41413, level: 1, levelReached: 1 })?.level, 9, 'Steam LV1 fallback without details should estimate from score instead of showing LV1');
 assert.equal(STEAM_LEADERBOARD_NAME, 'nova_swarm_global_score_v2', 'Steam default leaderboard must stay on the metadata-preserving v2 board');
+assert.equal(STEAM_SECTOR_LEADERBOARD_NAME, 'nova_swarm_sector_start_score_v1', 'Steam sector challenge leaderboard must use the Steamworks-created board');
 const encodedRun = createRunResultFromGame({ score: 12345, level: 12, rankIndex: 4 }, { levelReached: 9 });
 assert.equal(encodedRun.level, 9, 'run result should prefer explicit levelReached');
 assert.equal(encodedRun.levelReached, 9, 'run result should carry levelReached alias');
 assert.equal(encodeSteamLeaderboardDetails(encodedRun)[0], 9, 'Steam details must encode reached level in slot 0');
+assert.deepEqual(
+  encodeSteamSectorLeaderboardDetails({ startSector: 20, highestSectorReached: 24, finalSector: 23, shipNumericId: 7, runTimeSeconds: 88, bossKills: 2, wavesCleared: 9 }),
+  [20, 24, 23, 7, 88, 2, 9],
+  'Steam sector details must encode start/highest/final sectors without touching global level details'
+);
 
 async function checkWebRuntime() {
   const win = installWindow();
@@ -154,7 +162,7 @@ async function checkMockSteamRuntime() {
   const adapter = createLeaderboardAdapter();
   await adapter.refreshAvailability();
   assert.equal(adapter.isSteamAvailable(), true, 'mock Steam runtime should be available');
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'local'], 'Steam Friends tab should stay hidden without friend entries');
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'sector', 'local'], 'Steam Friends tab should stay hidden without friend entries while Sector is visible');
 
   win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
     {
@@ -168,7 +176,7 @@ async function checkMockSteamRuntime() {
     }
   ]));
   await adapter.refreshAvailability();
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'friends', 'local']);
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'sector', 'friends', 'local']);
 
   const result = await adapter.submitScore({
     score: 12345,
@@ -222,6 +230,46 @@ async function checkMockSteamRuntime() {
   assert.equal(repairedGlobal.entries.filter((entry) => entry.playerName === 'STEAM ACE').length, 1, 'Steam mock should keep one current-player entry');
   assert.equal(repairedGlobal.entries[0].score, 12345);
   assert.equal(repairedGlobal.entries[0].level, 12);
+
+  const sectorBeforeSubmit = await adapter.getScores('sector', { useCache: false });
+  assert.equal(sectorBeforeSubmit.sourceLabel, 'Steam Sector');
+  assert.equal(sectorBeforeSubmit.entries.length, 0, 'sector board should not show global Steam rows');
+
+  const sectorResult = await adapter.submitSectorStartScore({
+    score: 45678,
+    startSector: 20,
+    sectorStart: 20,
+    highestSectorReached: 24,
+    finalSector: 23,
+    level: 24,
+    levelReached: 24,
+    rankIndex: 8,
+    shipId: 'nova_sparrow',
+    shipNumericId: 1,
+    shipName: 'Nova Sparrow',
+    runTimeSeconds: 222,
+    bossKills: 3,
+    wavesCleared: 12,
+    submissionId: 'steam-sector-run-1',
+    leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
+    leaderboardKind: 'sector_start'
+  }, { name: 'STEAM ACE' });
+  assert.equal(sectorResult.sectorSteamStatus, 'submitted');
+  assert.equal(sectorResult.sectorSteamDetails[0], 20, 'sector details slot 0 should encode start sector');
+  assert.equal(sectorResult.sectorSteamDetails[1], 24, 'sector details slot 1 should encode highest sector reached');
+  assert.equal(sectorResult.leaderboardName, STEAM_SECTOR_LEADERBOARD_NAME);
+
+  const sectorAfterSubmit = await adapter.getScores('sector', { useCache: false });
+  assert.equal(sectorAfterSubmit.sourceLabel, 'Steam Sector');
+  assert.equal(sectorAfterSubmit.entries[0].score, 45678);
+  assert.equal(sectorAfterSubmit.entries[0].leaderboardKind, 'sector_start');
+  assert.equal(sectorAfterSubmit.entries[0].sectorStart, 20);
+  assert.equal(sectorAfterSubmit.entries[0].highestSectorReached, 24);
+  const globalAfterSectorSubmit = await adapter.getScores('global', { useCache: false });
+  assert.equal(globalAfterSectorSubmit.entries[0].score, 12345, 'sector submit must not overwrite the global Steam board');
+  const storedMockScores = JSON.parse(win.localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]');
+  assert.equal(storedMockScores.some(entry => entry.leaderboardName === STEAM_SECTOR_LEADERBOARD_NAME && entry.score === 45678), true);
+  assert.equal(storedMockScores.some(entry => entry.leaderboardName === STEAM_LEADERBOARD_NAME && entry.score === 12345), true);
 }
 
 async function checkDesktopLocalPersistenceRuntime() {
