@@ -1,0 +1,64 @@
+{
+  "generatedAt": "2026-06-12T12:06:00Z",
+  "purpose": "Private SteamPipe upload evidence for the Early Pilot overhaul build.",
+  "git": {
+    "branch": "codex/hard-achievements-20260612",
+    "head": "876294d8b125c70bb73a804db6f9481b0454df75"
+  },
+  "build": {
+    "version": "v2026-06-12_13-52-15",
+    "timestamp": "2026-06-12T11:52:15.919Z",
+    "steamBuildId": "23699052",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "depotManifestId": "6663215867113728413",
+    "baselineDepotManifestId": "6690070674492667818",
+    "setLive": "",
+    "visibility": "private build only"
+  },
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "executableBytes": 226698752,
+    "executableSha256": "6c65f722c0aef0354b3f7f59ccc07ad0aaa0ab23425ba1128803b652c4198c18",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadFileCount": 336,
+    "payloadBytes": 728860343,
+    "payloadManifestHash": "94ee0782a69d0045ee38474152d2cc381f00591e4f132f90747bd9ec112d982a"
+  },
+  "steamPipe": {
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "steamcmdPath": "D:/vibe-coding-e/burt-shooter/steam_sdk/sdk/tools/ContentBuilder/builder/steamcmd.exe",
+    "observedResult": "SteamPipe logs report successful AppID 4765070 build completion and depot manifest upload. The SteamCMD process returned exit code 1 after self-update/login prompt noise, but ContentBuilder logs contain BuildID 23699052 and successful depot manifest 6663215867113728413.",
+    "appLogProof": [
+      "Starting AppID 4765070 build (flags 0x0).",
+      "Successfully finished AppID 4765070 build (BuildID 23699052)."
+    ],
+    "depotLogProof": [
+      "Found 398 files (691 MB) for depot 4765071",
+      "Success! New manifestID 6663215867113728413 created and 5 new chunks uploaded."
+    ]
+  },
+  "checks": [
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run check:steam-package-runtime"
+  ],
+  "protectedSteamFields": {
+    "steamAppIdChanged": false,
+    "depotIdsChanged": false,
+    "leaderboardIdentityChanged": false,
+    "storeMetadataChanged": false,
+    "pricingChanged": false,
+    "releaseVisibilityChanged": false,
+    "liveBranchChanged": false
+  },
+  "manualFollowUp": [
+    "Confirm BuildID 23699052 in Steamworks before any branch promotion.",
+    "Keep SetLive empty unless the user explicitly approves setting a live branch.",
+    "Configure ACH_EARLY_PILOT manually in Steamworks if it is not already present."
+  ]
+}
