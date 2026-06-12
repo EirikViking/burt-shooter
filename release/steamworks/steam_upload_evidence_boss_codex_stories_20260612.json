@@ -1,0 +1,56 @@
+{
+  "uploadedAt": "2026-06-12T15:41:18Z",
+  "branch": "codex/hard-achievements-20260612",
+  "gitSha": "28a4950",
+  "buildVersion": "v2026-06-12_17-35-59",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23704777",
+    "setLive": "",
+    "account": "gaunziman",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "log": "release/steam-build-output/app_build_4765070.log"
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 336,
+    "totalBytes": 751995495,
+    "manifestHash": "24d0be106f4c0e7b1597b8f11308b950c7e545b361328d3da0926c79cd83c70c",
+    "manifest": "release/steamworks/steam_payload_manifest.json",
+    "executableSha256": "6206ac3062ba2125d4e09aa9ea19a2c4b8fd4219357ffa2c03796485ed4f6f23"
+  },
+  "scope": [
+    "Sonia boss Codex entry now has a long sci-fi star-crossed love story.",
+    "KurtBossEdgar boss Codex entry now has a long Jeppe pa Berget-inspired authority farce.",
+    "Threat Codex epic boss entries use a scrollable detail body so the long text stays readable.",
+    "Codex layout QA now captures Sonia and KurtBossEdgar and verifies boss story wheel scrolling."
+  ],
+  "screenshots": [
+    "test-results/codex-revamp-20260606/layout/codex-after-1600x900-bosses-sonia.png",
+    "test-results/codex-revamp-20260606/layout/codex-after-1600x900-bosses-kurtbossedgar.png",
+    "test-results/codex-revamp-20260606/layout/codex-after-contact-sheet.png"
+  ],
+  "tests": [
+    "npm run check:threat-codex",
+    "npm run check:codex-layout",
+    "npm run check:i18n",
+    "npm run build:current",
+    "npm run check:i18n-ui",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf",
+    "steamcmd +login gaunziman +run_app_build release/steamworks/app_build_LOCAL.vdf"
+  ],
+  "protectedBoundaries": {
+    "steamworksSettingsChanged": false,
+    "liveBranchChanged": false,
+    "storeMetadataChanged": false,
+    "pricingChanged": false,
+    "appIdChanged": false,
+    "depotIdChanged": false,
+    "leaderboardIdentityChanged": false
+  }
+}
