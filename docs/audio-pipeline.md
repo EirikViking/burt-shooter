@@ -25,6 +25,22 @@ npm run generate:local-announcer-voicepack
 
 The ElevenLabs generator covers the mission-control variation pools plus the four intro narration files.
 
+## Boss death agony voicepack
+
+The 2026-06-12 boss death follow-up adds a separate male ElevenLabs voice pool for boss agony screams:
+
+```text
+public/audio/voice/boss-death/
+```
+
+The default generator voice is `Callum - Husky Trickster` (`N2lVS1w4EtoT3dr4eOWO`) using `eleven_v3`. It is intentionally separate from the current Misfit Galaxy `Female misfit` mission-control voice (`SIbt9DJkaY96v2K2fQyQ`), and the generator refuses to run with that mission-control voice id. To regenerate the pack, set `ELEVENLABS_API_KEY` in the shell environment and run:
+
+```bash
+npm run generate:boss-death-voices
+```
+
+The runtime event is `boss_death_agony`, wired through `src/assets/assetManifest.js`, `src/audio/SoundCatalog.js`, and `AudioManager.playVoice(...)` from the boss-death impact path. `npm run check:boss-death-voices` verifies exactly 100 MP3 files, catalog coverage, the forbidden-voice guard, and the PlayScene death hook. This voice pack does not replace or alter music.
+
 ## Nova Swarm SFX pack
 
 The current bespoke arcade SFX layer was generated with ElevenLabs Sound Generation and is stored in:

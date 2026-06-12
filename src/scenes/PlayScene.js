@@ -7828,6 +7828,19 @@ export class PlayScene {
     AudioManager.playSfx(style.sfx || 'boss_death_cascade', { force: true, volume: 0.82, minIntervalMs: 0 });
     AudioManager.playSfx('boss_explode', { force: true, volume: 0.72, minIntervalMs: 0 });
     AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.42, minIntervalMs: 0 });
+    this.scheduleBossDeathFx(() => {
+      AudioManager.playVoice('boss_death_agony', {
+        force: true,
+        bypassGlobalCooldown: true,
+        bypassEventCooldown: true,
+        exclusiveGroup: 'boss_death_agony',
+        cooldownMs: 0,
+        eventCooldownMs: 0,
+        volume: 1.0,
+        duckFactor: 0.42,
+        duckMs: 1700
+      });
+    }, 180);
 
     if (!this.particleManager) return;
     if (!boss?.defeatPresentationAt) {

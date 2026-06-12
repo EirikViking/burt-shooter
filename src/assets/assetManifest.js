@@ -254,6 +254,7 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_overrun_clear_far_signal_01.mp3',
             '/audio/voice/mission-control/mission_control_credits_01.mp3',
             ...Array.from({ length: 50 }, (_, i) => `/audio/voice/cta/one_more_run_${String(i + 1).padStart(2, '0')}.mp3`),
+            ...Array.from({ length: 100 }, (_, i) => `/audio/voice/boss-death/boss_death_agony_${String(i + 1).padStart(3, '0')}.mp3`),
             '/audio/voice/nova-swarm/intro_narrator_01.mp3',
             '/audio/voice/nova-swarm/intro_narrator_02.mp3',
             '/audio/voice/nova-swarm/intro_narrator_03.mp3',

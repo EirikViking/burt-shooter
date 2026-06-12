@@ -44,7 +44,7 @@ assert.ok(
     mockCheck.includes('steamRank: 4') &&
     mockCheck.includes('steamRank: null') &&
     mockCheck.includes('Steam rank 3 should get rank-specific global leaderboard celebration copy') &&
-    mockCheck.includes('Steam rank 4 was incorrectly treated as Top Three') &&
+    mockCheck.includes('Steam rank 4 should be heroic Top 10 without Top Three copy') &&
     mockCheck.includes('Missing Steam rank should clear stale Top Three placement without final rank pending copy') &&
     mockCheck.includes('Low Steam score should be marked best unchanged') &&
     mockCheck.includes('Best: 87,628') &&

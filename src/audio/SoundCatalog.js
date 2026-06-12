@@ -40,6 +40,10 @@ const numberedVoicePool = (base, count) => getVoicePool(
     ...Array.from({ length: count }, (_, index) => `${base}_${String(index + 1).padStart(2, '0')}.mp3`)
 );
 
+const paddedNumberedVoicePool = (base, count, width = 3) => getVoicePool(
+    ...Array.from({ length: count }, (_, index) => `${base}_${String(index + 1).padStart(width, '0')}.mp3`)
+);
+
 const GAME_OVER_CTA_VOICE_CATALOG = Object.fromEntries(
     gameOverCtaVoiceLines.map((line) => [line.id, [getVoiceFile(`${line.id}.mp3`)].filter(Boolean)])
 );
@@ -300,6 +304,7 @@ export const VOICE_MIX = {
     mission_control_level_start: { volume: 0.7, duckFactor: 0.58, duckMs: 1250, cooldownMs: 18000 },
     mission_control_wave_clear: { volume: 0.76, duckFactor: 0.52, duckMs: 1300, cooldownMs: 30000 },
     mission_control_boss_inbound: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 14000 },
+    boss_death_agony: { volume: 1.0, duckFactor: 0.42, duckMs: 1700, cooldownMs: 0, eventCooldownMs: 0 },
     mission_control_life_low: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 18000 },
     mission_control_lives_max: { volume: 0.82, duckFactor: 0.48, duckMs: 1500, cooldownMs: 30000 },
     mission_control_powerup: { volume: 0.72, duckFactor: 0.52, duckMs: 900, cooldownMs: 28000 },
@@ -679,6 +684,7 @@ export const SFX_CATALOG = {
     'mission_control_overrun_clear_sector_50': numberedVoicePool('mission_control_overrun_clear_sector_50', 1),
     'mission_control_overrun_clear_far_signal': numberedVoicePool('mission_control_overrun_clear_far_signal', 1),
     'mission_control_credits': numberedVoicePool('mission_control_credits', 1),
+    'boss_death_agony': paddedNumberedVoicePool('boss_death_agony', 100, 3),
     ...GAME_OVER_CTA_VOICE_CATALOG,
     'boss_spawn': [
         getSfx('nova_boss_arrival_alarm'),
