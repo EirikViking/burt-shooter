@@ -7756,8 +7756,9 @@ export class PlayScene {
 
     this.createBossDeathFlash(baseColor);
     this.screenShake?.shake(22, 34);
-    AudioManager.playSfx('boss_explode', { force: true, volume: 1.0, minIntervalMs: 0 });
-    AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.54, minIntervalMs: 0 });
+    AudioManager.playSfx('boss_death_cascade', { force: true, volume: 0.84, minIntervalMs: 0 });
+    AudioManager.playSfx('boss_explode', { force: true, volume: 0.72, minIntervalMs: 0 });
+    AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.42, minIntervalMs: 0 });
 
     if (!this.particleManager) return;
     if (!boss?.defeatPresentationAt) {

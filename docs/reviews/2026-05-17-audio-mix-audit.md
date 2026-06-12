@@ -1,6 +1,6 @@
-# Audio Mix Audit - 2026-06-03
+# Audio Mix Audit - 2026-06-12
 
-Generated: 2026-06-03T12:47:34.385Z
+Generated: 2026-06-12T06:50:53.511Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -13,10 +13,10 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Coverage
 
-- Measured files: 244
+- Measured files: 255
 - Music rows: 26
-- SFX rows: 161
-- Voice rows: 105
+- SFX rows: 174
+- Voice rows: 111
 - Warnings: 0
 - Errors: 0
 
@@ -39,29 +39,29 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
+| sfx | boss_death_cascade | nova_boss_death_cascade.mp3 | -0.1 dB | -19.6 dB | -36.9 dB |
+| sfx | nova_boss_death_cascade | nova_boss_death_cascade.mp3 | -0.1 dB | -19.6 dB | -36.9 dB |
 | sfx | boss_explode | lowFrequency_explosion_001.mp3 | -1.1 dB | -20.0 dB | -34.8 dB |
 | sfx | overrun_clear_shockwave | nova_overrun_clear_shockwave.mp3 | -0.3 dB | -20.0 dB | -39.5 dB |
 | sfx | boss_explode | lowFrequency_explosion_000.mp3 | -1.2 dB | -20.1 dB | -37.2 dB |
-| sfx | boss_reveal_stinger | boss_reveal_stinger.mp3 | -0.2 dB | -20.3 dB | -28.9 dB |
+| sfx | boss_reveal_stinger | boss_reveal_stinger.mp3 | -0.2 dB | -20.3 dB | -29.1 dB |
 | sfx | shoot_heavy | laserLarge_002.mp3 | -0.3 dB | -20.4 dB | -36.9 dB |
 | sfx | shoot_heavy | laserLarge_004.mp3 | -0.6 dB | -20.7 dB | -37.4 dB |
 | sfx | shoot_heavy | laserLarge_003.mp3 | -1.0 dB | -21.1 dB | -38.3 dB |
 | sfx | shoot_heavy | laserLarge_001.mp3 | -1.1 dB | -21.2 dB | -36.9 dB |
-| sfx | shoot_heavy | laserLarge_000.mp3 | -1.2 dB | -21.3 dB | -37.6 dB |
-| sfx | overrun_clear_coronation | nova_overrun_clear_coronation.mp3 | -2.1 dB | -21.6 dB | -36.4 dB |
 
 ### Voice
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
+| voice | mission_control_overrun_clear_sector_50 | mission_control_overrun_clear_sector_50_01.mp3 | -1.0 dB | -18.0 dB | -31.4 dB |
 | voice | mission_control_overrun_clear | mission_control_overrun_clear_01.mp3 | -1.1 dB | -18.1 dB | -30.8 dB |
+| voice | mission_control_overrun_clear_sector_10 | mission_control_overrun_clear_sector_10_01.mp3 | -1.1 dB | -18.1 dB | -31.2 dB |
+| voice | mission_control_overrun_clear_sector_20 | mission_control_overrun_clear_sector_20_01.mp3 | -1.1 dB | -18.1 dB | -31.0 dB |
+| voice | mission_control_overrun_clear_far_signal | mission_control_overrun_clear_far_signal_01.mp3 | -1.1 dB | -18.1 dB | -31.8 dB |
 | voice | one_more_run_13 | one_more_run_13.mp3 | -0.8 dB | -18.2 dB | -33.1 dB |
 | voice | one_more_run_39 | one_more_run_39.mp3 | -0.8 dB | -18.2 dB | -31.5 dB |
 | voice | one_more_run_40 | one_more_run_40.mp3 | -0.8 dB | -18.2 dB | -32.0 dB |
-| voice | one_more_run_22 | one_more_run_22.mp3 | -0.9 dB | -18.3 dB | -30.2 dB |
-| voice | one_more_run_31 | one_more_run_31.mp3 | -0.9 dB | -18.3 dB | -35.2 dB |
-| voice | one_more_run_47 | one_more_run_47.mp3 | -0.9 dB | -18.3 dB | -31.7 dB |
-| voice | mission_control_top3_highscore | mission_control_top3_highscore_01.mp3 | -1.1 dB | -18.3 dB | -32.3 dB |
 
 ## Quietest Effective Peaks
 
@@ -69,14 +69,14 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
+| sfx | codex_move | nova_codex_tick.wav | -17.2 dB | -54.0 dB | -65.0 dB |
+| sfx | codex_back | nova_codex_tick.wav | -17.2 dB | -51.5 dB | -62.5 dB |
+| sfx | codex_open | nova_codex_tick.wav | -17.2 dB | -50.5 dB | -61.5 dB |
 | sfx | trait_bonus_hit | nova_combo_tick.mp3 | -4.6 dB | -45.0 dB | -53.1 dB |
 | sfx | enemy_shoot | laserSmall_003.mp3 | -7.9 dB | -41.2 dB | -55.7 dB |
 | sfx | menu_tick | nova_menu_tick.mp3 | -7.4 dB | -39.8 dB | -57.4 dB |
 | sfx | forceField | nova_shield_snap.mp3 | -13.7 dB | -38.1 dB | -62.9 dB |
-| sfx | nova_shield_snap | nova_shield_snap.mp3 | -13.7 dB | -37.5 dB | -62.3 dB |
-| sfx | shield_up | nova_shield_snap.mp3 | -13.7 dB | -37.3 dB | -62.1 dB |
-| sfx | ui_open | nova_menu_tick.mp3 | -7.4 dB | -36.9 dB | -54.5 dB |
-| sfx | menuSelect | nova_menu_tick.mp3 | -7.4 dB | -36.3 dB | -53.9 dB |
+| sfx | enemy_threat_soft_warn | forceField_001.mp3 | -1.2 dB | -38.0 dB | -48.7 dB |
 
 ### Voice
 

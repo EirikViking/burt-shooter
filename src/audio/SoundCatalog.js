@@ -190,14 +190,21 @@ export const SFX_MIX = {
     spawn_special: { volume: 0.55, minIntervalMs: 600 },
     life_up: { volume: 0.7, minIntervalMs: 700 },
     explosionCrunch: { volume: 0.74, minIntervalMs: 80 },
-    boss_spawn: { volume: 0.75, minIntervalMs: 800 }
-    ,
+    boss_spawn: { volume: 0.75, minIntervalMs: 800 },
+    boss_entrance_impact: { volume: 0.78, minIntervalMs: 1200 },
+    boss_charge_lattice: { volume: 0.5, minIntervalMs: 760 },
+    boss_damage_armor_crack: { volume: 0.36, minIntervalMs: 115 },
+    boss_death_cascade: { volume: 0.88, minIntervalMs: 2500 },
     intro_panel_whoosh: { volume: 0.58, minIntervalMs: 350 },
     coin_portal_open: { volume: 0.74, minIntervalMs: 900 },
     swarm_chatter_stinger: { volume: 0.58, minIntervalMs: 700 },
     boss_reveal_stinger: { volume: 0.82, minIntervalMs: 1200 },
     start_game_confirm: { volume: 0.7, minIntervalMs: 500 },
     nova_boss_arrival_alarm: { volume: 0.72, minIntervalMs: 1200 },
+    nova_boss_entrance_impact: { volume: 0.78, minIntervalMs: 1200 },
+    nova_boss_charge_lattice: { volume: 0.5, minIntervalMs: 760 },
+    nova_boss_damage_armor_crack: { volume: 0.36, minIntervalMs: 115 },
+    nova_boss_death_cascade: { volume: 0.88, minIntervalMs: 2500 },
     nova_bonus_core_jackpot: { volume: 0.66, minIntervalMs: 180 },
     nova_shield_snap: { volume: 0.54, minIntervalMs: 140 },
     nova_rank_fanfare: { volume: 0.62, minIntervalMs: 800 },
@@ -569,6 +576,18 @@ export const SFX_CATALOG = {
     'boss_hazard_impact': [
         getSfx('nova_boss_hazard_impact')
     ],
+    'boss_entrance_impact': [
+        getSfx('nova_boss_entrance_impact')
+    ],
+    'boss_charge_lattice': [
+        getSfx('nova_boss_charge_lattice')
+    ],
+    'boss_damage_armor_crack': [
+        getSfx('nova_boss_damage_armor_crack')
+    ],
+    'boss_death_cascade': [
+        getSfx('nova_boss_death_cascade')
+    ],
     'trait_bonus_hit': [
         getSfx('nova_combo_tick')
     ],
@@ -638,6 +657,18 @@ export const SFX_CATALOG = {
     ],
     'nova_boss_arrival_alarm': [
         getSfx('nova_boss_arrival_alarm')
+    ],
+    'nova_boss_entrance_impact': [
+        getSfx('nova_boss_entrance_impact')
+    ],
+    'nova_boss_charge_lattice': [
+        getSfx('nova_boss_charge_lattice')
+    ],
+    'nova_boss_damage_armor_crack': [
+        getSfx('nova_boss_damage_armor_crack')
+    ],
+    'nova_boss_death_cascade': [
+        getSfx('nova_boss_death_cascade')
     ],
     'nova_bonus_core_jackpot': [
         getSfx('nova_bonus_core_jackpot')

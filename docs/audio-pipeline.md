@@ -47,6 +47,19 @@ Current generated SFX include boss arrival, leaderboard/highscore fanfares, powe
 - `nova_boss_net_telegraph.mp3`, `nova_boss_net_burst.mp3`
 - `nova_boss_hazard_impact.mp3`
 
+The 2026-06-12 boss presentation follow-up added four more ElevenLabs Sound Generation one-shots for boss animation/spectacle events only. They do not change boss damage, cadence, projectiles, hitboxes, or hazard geometry:
+
+- `nova_boss_entrance_impact.mp3`
+- `nova_boss_charge_lattice.mp3`
+- `nova_boss_damage_armor_crack.mp3`
+- `nova_boss_death_cascade.mp3`
+
+To regenerate only this boss impact set, set `ELEVENLABS_API_KEY` in the shell environment and run:
+
+```bash
+node scripts/generate-nova-swarm-sfx.mjs --only=nova_boss_entrance_impact.mp3,nova_boss_charge_lattice.mp3,nova_boss_damage_armor_crack.mp3,nova_boss_death_cascade.mp3
+```
+
 The 2026-05-23 elite middle ship follow-up added a compact ElevenLabs SFX pack for role identity. Each of the 20 elite middle ships has one unique active/special cue, and the shared elite/tractor status events now point at generated files instead of reused fallback combinations:
 
 - `nova_elite_spawn_alert.mp3`, `nova_elite_special_charge.mp3`, `nova_elite_death.mp3`

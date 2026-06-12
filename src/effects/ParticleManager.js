@@ -95,7 +95,7 @@ export class ParticleManager {
     this.container = container;
     this.particles = [];
     this.pool = [];
-    this.maxParticles = 400;
+    this.maxParticles = 640;
     this.onCap = onCap;
   }
 
@@ -148,6 +148,84 @@ export class ParticleManager {
     }
   }
 
+  createRadialBurst(x, y, color, options = {}) {
+    const count = Math.max(1, Math.floor(options.count ?? 24));
+    const intensity = Math.max(0.1, Number(options.intensity) || 1);
+    const minSpeed = Math.max(0, Number(options.minSpeed) || 1.4);
+    const maxSpeed = Math.max(minSpeed, Number(options.maxSpeed) || 4.2);
+    const baseSize = Math.max(0.5, Number(options.size) || 2.4);
+    const lifetime = Math.max(4, Number(options.lifetime) || 38);
+    const angleOffset = Number(options.angleOffset) || Math.random() * Math.PI * 2;
+    const arc = Math.max(0.05, Number(options.arc) || Math.PI * 2);
+    const alternateColor = Number.isFinite(options.alternateColor) ? options.alternateColor : null;
+    const upwardBias = Number(options.upwardBias) || 0;
+
+    for (let i = 0; i < count; i += 1) {
+      const t = count === 1 ? 0.5 : i / count;
+      const jitter = (Math.random() - 0.5) * (options.jitter ?? 0.22);
+      const angle = angleOffset + t * arc + jitter;
+      const speed = (minSpeed + Math.random() * (maxSpeed - minSpeed)) * intensity;
+      const size = baseSize * (0.75 + Math.random() * 0.7) * intensity;
+      const life = lifetime * (0.75 + Math.random() * 0.65);
+      const particleColor = alternateColor !== null && i % 3 === 1 ? alternateColor : color;
+      if (!this.spawnParticle(
+        x,
+        y,
+        Math.cos(angle) * speed,
+        Math.sin(angle) * speed - upwardBias,
+        particleColor,
+        size,
+        life
+      )) {
+        break;
+      }
+    }
+  }
+
+  createBossEntranceBurst(x, y, color, accent = 0xffffff) {
+    this.createRadialBurst(x, y, color, {
+      count: 38,
+      intensity: 1.05,
+      minSpeed: 1.8,
+      maxSpeed: 5.4,
+      size: 2.9,
+      lifetime: 48,
+      alternateColor: accent
+    });
+    this.createRadialBurst(x, y + 18, accent, {
+      count: 22,
+      intensity: 0.82,
+      minSpeed: 0.8,
+      maxSpeed: 2.6,
+      size: 2,
+      lifetime: 54,
+      arc: Math.PI,
+      angleOffset: Math.PI,
+      upwardBias: 0.8,
+      alternateColor: 0xffffff
+    });
+  }
+
+  createBossChargeSparks(x, y, color, intensity = 1) {
+    const count = Math.max(5, Math.floor(9 * Math.max(0.5, intensity)));
+    for (let i = 0; i < count; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 20 + Math.random() * 42 * Math.max(0.65, intensity);
+      const px = x + Math.cos(angle) * distance;
+      const py = y + Math.sin(angle) * distance * 0.7;
+      const speed = 0.6 + Math.random() * 1.6;
+      this.spawnParticle(
+        px,
+        py,
+        -Math.cos(angle) * speed,
+        -Math.sin(angle) * speed * 0.6,
+        i % 3 === 0 ? 0xffffff : color,
+        1.4 + Math.random() * 2.2,
+        16 + Math.random() * 18
+      );
+    }
+  }
+
   // Massive explosion for boss deaths
   createBossExplosion(x, y, color) {
     this.createExplosion(x, y, color, 3.0);
@@ -161,6 +239,29 @@ export class ParticleManager {
       const lifetime = 60 + Math.random() * 40;
       this.spawnParticle(x, y, vx, vy, color, size, lifetime);
     }
+  }
+
+  createLayeredBossExplosion(x, y, color, accent = 0xffffff, intensity = 1) {
+    const scale = Math.max(0.75, Number(intensity) || 1);
+    this.createBossExplosion(x, y, color);
+    this.createRadialBurst(x, y, accent, {
+      count: Math.floor(34 * scale),
+      intensity: 1.25 * scale,
+      minSpeed: 2.4,
+      maxSpeed: 7.2,
+      size: 2.2,
+      lifetime: 52,
+      alternateColor: 0xffffff
+    });
+    this.createRadialBurst(x, y, color, {
+      count: Math.floor(28 * scale),
+      intensity: 0.92 * scale,
+      minSpeed: 0.7,
+      maxSpeed: 2.4,
+      size: 4.2,
+      lifetime: 76,
+      alternateColor: accent
+    });
   }
 
   // Muzzle flash burst

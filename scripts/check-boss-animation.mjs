@@ -130,7 +130,7 @@ try {
       boss.telegraph = {
         type: boss.getSignatureForPhase?.(3) || 'ring',
         label: 'ANIMATION CHECK',
-        start: Date.now(),
+        start: Date.now() - 2500,
         duration: 5000
       };
       player.invulnerable = true;
@@ -143,14 +143,18 @@ try {
         boss.update(2, player.x, player.y);
         if (i % 8 === 0) {
           const node = boss.animationRig?.weaponNodes?.[0] || null;
+          const panel = boss.animationRig?.sidePanels?.[0] || null;
           samples.push({
             debug: boss.getAnimationDebugState?.() || null,
             scaleX: boss.visualContainer?.scale?.x || 0,
             scaleY: boss.visualContainer?.scale?.y || 0,
             skewX: boss.visualContainer?.skew?.x || 0,
             leftFin: boss.animationRig?.leftFin?.rotation || 0,
+            sidePanelRotation: panel?.rotation || 0,
+            sidePanelX: panel?.x || 0,
             nodeX: node?.x || 0,
             nodeY: node?.y || 0,
+            nodeRotation: node?.rotation || 0,
             nodeScale: node?.scale?.x || 0
           });
         }
@@ -173,27 +177,44 @@ try {
     const exhaustSpan = span(data.samples.map((sample) => sample.debug?.exhaust));
     const nodeXSpan = span(data.samples.map((sample) => sample.nodeX));
     const nodeYSpan = span(data.samples.map((sample) => sample.nodeY));
+    const nodeRotationSpan = span(data.samples.map((sample) => sample.nodeRotation));
+    const sidePanelSpan = span(data.samples.map((sample) => sample.sidePanelRotation));
+    const sidePanelXSpan = span(data.samples.map((sample) => sample.sidePanelX));
     const scaleSpan = span(data.samples.map((sample) => sample.scaleX));
+    const firstDebug = data.samples[0]?.debug || null;
     results.push({
       level,
       archetype: data.archetype,
       movement: data.movement,
       telemetry: data.telemetry,
-      nodeCount: data.samples[0]?.debug?.nodeCount || 0,
+      nodeCount: firstDebug?.nodeCount || 0,
+      sidePanelCount: firstDebug?.sidePanelCount || 0,
+      shutterOpen: firstDebug?.shutterOpen || 0,
+      polishVersion: firstDebug?.polishVersion || null,
+      visualGameplayRadiusRatio: firstDebug?.visualGameplayRadiusRatio || 0,
       bodyPulseSpan: Number(bodyPulseSpan.toFixed(4)),
       finSpan: Number(finSpan.toFixed(4)),
       exhaustSpan: Number(exhaustSpan.toFixed(4)),
       nodeXSpan: Math.round(nodeXSpan),
       nodeYSpan: Math.round(nodeYSpan),
+      nodeRotationSpan: Number(nodeRotationSpan.toFixed(4)),
+      sidePanelSpan: Number(sidePanelSpan.toFixed(4)),
+      sidePanelXSpan: Math.round(sidePanelXSpan),
       scaleSpan: Number(scaleSpan.toFixed(4)),
       ok: data.ok &&
         data.telemetry &&
-        (data.samples[0]?.debug?.nodeCount || 0) >= 3 &&
+        firstDebug?.polishVersion === 'boss-impact-20260612' &&
+        (firstDebug?.nodeCount || 0) >= 3 &&
+        (firstDebug?.sidePanelCount || 0) >= 6 &&
+        (firstDebug?.shutterOpen || 0) >= 0.3 &&
+        (firstDebug?.visualGameplayRadiusRatio || 0) >= 1.1 &&
         bodyPulseSpan >= 0.005 &&
         finSpan >= 0.055 &&
+        sidePanelSpan >= 0.045 &&
         exhaustSpan >= 0.055 &&
         nodeXSpan >= 10 &&
         nodeYSpan >= 6 &&
+        nodeRotationSpan >= 0.02 &&
         scaleSpan >= 0.001
     });
   }

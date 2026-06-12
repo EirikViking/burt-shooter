@@ -8,6 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4384));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.BOSS_VFX_OUTPUT_DIR || path.join('test-results', 'boss-vfx-polish', timestamp()));
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -81,6 +82,7 @@ async function openBoss(page, level) {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
     startAtBoss: '1',
     startLevel: String(level)
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });

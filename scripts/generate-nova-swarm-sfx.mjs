@@ -177,6 +177,30 @@ const sounds = [
     prompt_influence: 0.55
   },
   {
+    file: 'nova_boss_entrance_impact.mp3',
+    text: 'A huge arcade space boss entrance impact, deep mechanical drop, starship armor shockwave, bright energy crackle, cinematic but clean in a busy shooter mix, no voice, no melody, under three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.72
+  },
+  {
+    file: 'nova_boss_charge_lattice.mp3',
+    text: 'A readable boss weapon charge cue for a neon arcade shooter, rising plasma lattice, servo shutters opening, warning ticks, tense but not harsh, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.7
+  },
+  {
+    file: 'nova_boss_damage_armor_crack.mp3',
+    text: 'A short heavy armored boss damage reaction, metal hull crack, shield glass spark, compressed bass thud, satisfying impact feedback, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_boss_death_cascade.mp3',
+    text: 'A spectacular layered arcade boss death cascade, massive hull collapse, plasma core overload, multiple bright explosions rolling outward, triumphant payoff sparkle, no voice, no copyrighted melody, under four seconds.',
+    duration_seconds: 4,
+    prompt_influence: 0.74
+  },
+  {
     file: 'nova_bonus_core_jackpot.mp3',
     text: 'A bright arcade bonus core jackpot pickup sound, sparkling coin-slot energy, quick upward chime, satisfying and playful, no voice, under two seconds.',
     duration_seconds: 2,
