@@ -2,11 +2,11 @@
 
 Steam App ID: `4765070`
 
-The canonical achievement list is `src/achievements/AchievementCatalog.js`. The Steam launch set currently contains 30 achievements:
+The canonical achievement list is `src/achievements/AchievementCatalog.js`. The Steam launch set currently contains 71 achievements:
 
-- 19 pilot-rank achievements generated from `src/shared/RankPolicy.js`.
+- 39 pilot-rank achievements generated from `src/shared/RankPolicy.js`.
 - 2 leaderboard achievements for global qualification and global #1.
-- 9 medium-to-very-hard milestone achievements for sector progress, run clears, clean play, score mastery, boss wins, Codex discovery, and hangar growth.
+- 30 medium-to-very-hard milestone achievements for sector progress, run clears, clean play, score mastery, boss wins, Codex discovery, hangar growth, and Early Pilot participation.
 
 Generate the Steamworks setup list from code with:
 
@@ -34,6 +34,8 @@ Create or verify every Steamworks achievement from the generated catalog list:
 - Hidden: `false` unless the catalog says otherwise
 
 Achievement icon assets are staged in `release/steamworks/achievement-icons/`. The manifest maps every API name to achieved and locked 256x256 JPG icons. The current milestone icons were generated with Codex imagegen from the 2026-05-26 3x3 milestone sheet and can be replaced later without changing API names.
+
+The 2026-06-12 pass added hard-rank icons `ACH_RANK_20` through `ACH_RANK_39` and Early Pilot icons `ACH_EARLY_PILOT-achieved.jpg` / `ACH_EARLY_PILOT-locked.jpg`.
 
 ## Local Testing
 
