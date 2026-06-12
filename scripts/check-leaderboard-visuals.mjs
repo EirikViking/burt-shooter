@@ -80,11 +80,15 @@ function seededScores() {
     'NOVA ACE', 'ORBIT QUEEN', 'LASER PILOT', 'STAR RUNNER', 'SWARM BREAKER',
     'PILOT41', 'COMBO ROYAL', 'SKY VECTOR', 'PILOT35', 'PILOT37',
     'CABINET ACE', 'VOID SPARK', 'NEON RUNNER', 'ORBITAL KID', 'LASER SAGE',
-    'BOSS BAITER', 'NOVA PRIME', 'STAR CLERK', 'SWARM PILOT', 'PIXEL KNIGHT'
+    'BOSS BAITER', 'NOVA PRIME', 'STAR CLERK', 'SWARM PILOT', 'PIXEL KNIGHT',
+    'RIFT TAXI', 'COMET JUDGE', 'ASTRO BOLT', 'LUNAR WRENCH', 'STATIC DUKE',
+    'ION NERD', 'PLASMA VICAR', 'SUN GHOST', 'METEOR BOSS', 'LASER COOK',
+    'STAR HAGGLER', 'ORBIT MOTH', 'VOID CLERK', 'NOVA TELLER', 'SWARM DENT',
+    'BULLET POET', 'HULL MONK', 'RANK KNIFE', 'SCORE VICE', 'FINAL COIN'
   ];
-  return Array.from({ length: 20 }, (_, index) => ({
+  return Array.from({ length: 40 }, (_, index) => ({
     name: names[index],
-    score: 240000 - index * 9100,
+    score: 240000 - index * 4200,
     level: Math.max(3, 12 - Math.floor(index / 2)),
     rank_index: Math.max(0, 12 - index),
     isCurrentPlayer: index === currentPlayerIndex
@@ -205,7 +209,7 @@ try {
       /\b(roast|taunt|mock|boss bait|fixes everything|damage)\b/i.test(result.state.comment) ? `${result.viewport}: taunting comment text is still present` : null,
       result.state.rowChildren < 20 ? `${result.viewport}: row chrome did not render` : null,
       result.state.title !== 'LOCAL SCORE DECK' ? `${result.viewport}: title did not switch to local score deck` : null,
-      result.viewport !== 'mobile' && result.state.rows?.length !== 20 ? `${result.viewport}: desktop leaderboard did not render top 20` : null,
+      result.viewport !== 'mobile' && result.state.rows?.length !== 40 ? `${result.viewport}: desktop leaderboard did not render top 40` : null,
       result.viewport === 'mobile' && result.state.rows?.length !== 10 ? `${result.viewport}: mobile leaderboard should keep 10 visible rows` : null,
       !result.state.highlightedRows?.includes(currentPlayerIndex) ? `${result.viewport}: current player row was not highlighted` : null,
       (() => {
@@ -227,7 +231,7 @@ try {
         row.scoreGroup && intersects(row.name, row.scoreGroup, 2) ? `${result.viewport}: row ${index + 1} pilot name crowds score group` : null,
         row.scoreGroup && intersects(row.rankTitle, row.scoreGroup, 2) ? `${result.viewport}: row ${index + 1} rank title crowds score group` : null,
         rows[index + 1] && intersects(row.rankTitle, rows[index + 1].name, 2) ? `${result.viewport}: row ${index + 1} rank title overlaps next pilot name` : null,
-        row.scoreGroup && row.scoreGroup.width < (result.viewport === 'mobile' ? 120 : 166) ? `${result.viewport}: row ${index + 1} score group is too cramped` : null
+        row.scoreGroup && row.scoreGroup.width < (result.viewport === 'mobile' ? 120 : (result.state.rows?.length >= 30 ? 96 : 166)) ? `${result.viewport}: row ${index + 1} score group is too cramped` : null
       ]))
     ]),
     ...pageErrors.map((message) => `page error: ${message}`),

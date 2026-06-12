@@ -1742,6 +1742,13 @@ export class Enemy {
         this.splitterReleased = true;
         this.game?.scenes?.play?.enemyManager?.spawnEliteSupportDrone?.(this, { count: 2, split: true });
       }
+      if (this.kind === 'boss_fuel_ship') {
+        AudioManager.playSfx('nova_fuel_ship_pop', { force: true, volume: 0.74, minIntervalMs: 80 });
+        this.game?.scenes?.play?.particleManager?.createHitSpark?.(this.x, this.y, 0x7dffcc, 1.5);
+      } else if (this.kind === 'danger_mid_ship') {
+        AudioManager.playSfx('nova_danger_mid_pop', { volume: 0.55, minIntervalMs: 90 });
+        this.game?.scenes?.play?.particleManager?.createHitSpark?.(this.x, this.y, this.dangerMidShipProfile?.accent || 0xffb84a, 1.25);
+      }
       this.active = false;
       this.deactivateVisuals('death');
       return true;

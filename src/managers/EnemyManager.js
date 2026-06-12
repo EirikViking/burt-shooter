@@ -24,6 +24,7 @@ import {
   getEliteMiddleShipProfile,
   planEliteMiddleShipSpawns
 } from '../config/EliteMiddleShips.js';
+import { getDangerMidShipProfile, pickDangerMidShipProfile } from '../config/DangerMidShips.js';
 import { WAVE_TACTIC_VARIANTS } from '../config/WaveTacticVariants.js';
 
 // TASK D: Boss system - always enabled, no gate
@@ -227,6 +228,9 @@ export class EnemyManager {
     this.bossChaosNextCheckAtMs = 0;
     this.bossChaosCooldownUntilMs = 0;
     this.bossChaosPressureReliefUntilMs = 0;
+    this.bossFuelShipCooldownUntilMs = 0;
+    this.bossFuelShipNextCheckAtMs = 0;
+    this.bossFuelShipsSpawnedThisBoss = 0;
     this.directorState = { tier: 0, spawnCadenceScale: 1, eliteChance: 0.02, clutchDropChance: 0.04 };
 
     // TASK 1: Voice history to prevent duplicates
@@ -280,6 +284,9 @@ export class EnemyManager {
     this.bossChaosNextCheckAtMs = 0;
     this.bossChaosCooldownUntilMs = 0;
     this.bossChaosPressureReliefUntilMs = 0;
+    this.bossFuelShipCooldownUntilMs = 0;
+    this.bossFuelShipNextCheckAtMs = 0;
+    this.bossFuelShipsSpawnedThisBoss = 0;
 
     // Play Voice
     // Play Voice (TASK 1: Prevent duplicates per level)
@@ -445,9 +452,10 @@ export class EnemyManager {
       const shapedCurated = curatedWaves.map((wave, waveIndex) =>
         this.game?.contentDirector?.shapeWaveConfig?.(wave, { level, waveIndex }) || wave
       );
-      const threatShapedCurated = shapedCurated.map((wave, waveIndex) =>
-        this.applyNormalWaveDangerMoment(wave, level, waveIndex, shapedCurated.length)
-      );
+      const threatShapedCurated = shapedCurated.map((wave, waveIndex) => {
+        const dangerMoment = this.applyNormalWaveDangerMoment(wave, level, waveIndex, shapedCurated.length);
+        return this.applyDangerMidShipPlan(dangerMoment, level, waveIndex, shapedCurated.length);
+      });
       return this.applyEliteMiddleShipPlan(threatShapedCurated, level);
     }
 
@@ -493,9 +501,35 @@ export class EnemyManager {
         cadence: 0.9 + Math.min(0.45, level * 0.022 + i * 0.035)
       };
       const shaped = this.game?.contentDirector?.shapeWaveConfig?.(wave, { level, waveIndex: i }) || wave;
-      waves.push(this.applyNormalWaveDangerMoment(shaped, level, i, numWaves));
+      const dangerMoment = this.applyNormalWaveDangerMoment(shaped, level, i, numWaves);
+      waves.push(this.applyDangerMidShipPlan(dangerMoment, level, i, numWaves));
     }
     return this.applyEliteMiddleShipPlan(waves, level);
+  }
+
+  applyDangerMidShipPlan(wave, level, waveIndex, waveCount) {
+    const safeLevel = Math.max(1, Number(level) || 1);
+    if (safeLevel < 8 || wave?.type === 'BOSS') return wave;
+    const count = Math.max(0, Number(wave?.count) || 0);
+    if (count < 4) return wave;
+    const progress = waveCount > 1 ? waveIndex / Math.max(1, waveCount - 1) : 0;
+    const chance = Math.min(0.78, 0.18 + Math.max(0, safeLevel - 8) * 0.026 + progress * 0.12);
+    if (Math.random() > chance) return wave;
+
+    const maxDangerSlots = safeLevel < 14 ? 1 : safeLevel < 26 ? 2 : 3;
+    const desired = Math.min(maxDangerSlots, Math.max(1, Math.floor(count / 5)));
+    const startSlot = Math.abs((safeLevel * 7 + waveIndex * 5) % count);
+    const dangerMidShipIds = Array.from({ length: desired }, (_, index) => {
+      const profile = pickDangerMidShipProfile(safeLevel, waveIndex * 11 + index * 17);
+      return {
+        slot: (startSlot + index * Math.max(2, Math.floor(count / Math.max(1, desired)))) % count,
+        id: profile.id
+      };
+    });
+    return {
+      ...wave,
+      dangerMidShipIds
+    };
   }
 
   applyNormalWaveDangerMoment(wave, level, waveIndex, waveCount) {
@@ -1054,6 +1088,7 @@ export class EnemyManager {
           }
         }
         this.maybeTriggerBossChaos();
+        this.maybeSpawnBossFuelShip();
         break;
 
       case 'LEVEL_COMPLETE':
@@ -1258,6 +1293,11 @@ export class EnemyManager {
       }
       if (!enemy.active || enemy.waitingForEntry) return true;
 
+      if (enemy.kind === 'boss_fuel_ship') {
+        this.updateBossFuelShip(enemy, dt);
+        return true;
+      }
+
       // Shooting
       const enemyFireChance = fireChance * (enemy.getTacticalFireScalar?.() || enemy.tacticalFireScalar || 1);
       const shouldShoot = isBoss
@@ -1302,6 +1342,45 @@ export class EnemyManager {
   }
 
   startNextWave() { }
+
+  applyDangerMidShipProfile(enemy, profile) {
+    if (!enemy || !profile) return;
+    enemy.kind = 'danger_mid_ship';
+    enemy.dangerMidShipProfile = profile;
+    enemy.health = Math.max(2, Math.ceil((enemy.health || 1) * (profile.healthScalar || 1.9)));
+    enemy.maxHealth = enemy.health;
+    enemy.scoreValue = Math.max(enemy.scoreValue || 10, Math.round((enemy.scoreValue || 40) * (profile.scoreScalar || 2.4)));
+    enemy.speed = (enemy.speed || 1) * (profile.speedScalar || 1);
+    enemy.shootDelay = Math.max(52, (enemy.shootDelay || 120) * (profile.fireDelayMult || 1.18));
+    enemy.radius = Math.round((enemy.radius || 16) * (profile.radiusScalar || 1.1));
+    enemy.color = profile.tint || enemy.color;
+    enemy.tacticalFireScalar = (enemy.tacticalFireScalar || 1) * (profile.fireScalar || 0.48);
+    enemy.tacticalProjectileSpeedScalar = (enemy.tacticalProjectileSpeedScalar || 1) * (profile.projectileSpeedScalar || 1);
+    enemy.visualVariant = {
+      ...(enemy.visualVariant || {}),
+      slug: profile.id,
+      tint: profile.tint || enemy.color,
+      accent: profile.accent || profile.tint || enemy.color,
+      scale: profile.spriteScale || 1.08,
+      alpha: 0.28
+    };
+    if (enemy.body) {
+      enemy.body.tint = profile.hullTint || 0xffffff;
+    }
+    if (enemy.sprite) {
+      enemy.sprite.label = `enemy_visual:danger_mid_ship:${profile.id}`;
+      const glow = new PIXI.Graphics();
+      const radius = Math.max(24, enemy.radius * 2.2);
+      glow.circle(0, 0, radius);
+      glow.fill({ color: profile.accent || 0xffb84a, alpha: 0.14 });
+      glow.circle(0, 0, radius * 0.62);
+      glow.stroke({ color: profile.tint || 0xff5d7a, width: 3, alpha: 0.35 });
+      glow.label = `dangerMidShipGlow:${profile.id}`;
+      enemy.sprite.addChildAt(glow, 0);
+      enemy.ownedVisuals?.push(glow);
+    }
+    enemy.updateHealthBar?.();
+  }
 
   spawnWave(config) {
     if (config.type === 'BOSS') {
@@ -1355,6 +1434,9 @@ export class EnemyManager {
     const cadence = (this.directorState?.spawnCadenceScale || 1) * (config.cadence || 1);
     const delayStep = Math.max(55, (diff.enemyEntryDelayBaseMs || 150) / cadence);
     const entryDurationMs = Math.max(760, (diff.enemyEntryDurationMs || 2000) * (tactic.entrySpeed || 1));
+    const dangerAssignments = new Map((Array.isArray(config.dangerMidShipIds) ? config.dangerMidShipIds : [])
+      .map((entry) => [Number(entry.slot), getDangerMidShipProfile(entry.id)])
+      .filter((entry) => Number.isFinite(entry[0]) && entry[1]));
     positions.forEach((pos, i) => {
       const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
       const enemy = new Enemy(startX, -100, type, this.level, this.game, waveColor);
@@ -1364,7 +1446,21 @@ export class EnemyManager {
       const lanePressure = this.getLanePressureForPosition(pos.x, formation);
       const enemyTactic = this.applyLanePressureToTactic(tactic, lanePressure);
       this.applyModifier(enemy);
-      enemy.applyWaveTactic?.(enemyTactic, {
+      const dangerProfile = dangerAssignments.get(i);
+      if (dangerProfile) {
+        this.applyDangerMidShipProfile(enemy, dangerProfile);
+      }
+      const resolvedEnemyTactic = dangerProfile
+        ? {
+            ...enemyTactic,
+            move: dangerProfile.move || enemyTactic.move,
+            shot: dangerProfile.shot || enemyTactic.shot,
+            fireScalar: (enemyTactic.fireScalar || 1) * (dangerProfile.fireScalar || 1),
+            fireDelayMult: (enemyTactic.fireDelayMult || 1) * (dangerProfile.fireDelayMult || 1),
+            projectileSpeedScalar: (enemyTactic.projectileSpeedScalar || 1) * (dangerProfile.projectileSpeedScalar || 1)
+          }
+        : enemyTactic;
+      enemy.applyWaveTactic?.(resolvedEnemyTactic, {
         index: i,
         count,
         formation,
@@ -1374,7 +1470,7 @@ export class EnemyManager {
         combatBounds
       });
       const threatAction = threatPlan.assignmentBySlot.get(i) || null;
-      if (threatAction) {
+      if (threatAction && !dangerProfile) {
         enemy.applyThreatAction?.(threatAction, {
           index: i,
           waveIndex: this.currentWaveIndex,
@@ -1431,6 +1527,17 @@ export class EnemyManager {
       rarity: enemyProfile?.tier || null,
       sector: this.level,
       waveIndex: this.currentWaveIndex || 0
+    });
+    dangerAssignments.forEach((profile) => {
+      playScene?.recordThreatDiscovery?.(profile.id, 'enemies', {
+        name: profile.displayName,
+        role: profile.role,
+        movementStyle: profile.move,
+        fireStyle: profile.shot,
+        rarity: profile.tier,
+        sector: this.level,
+        waveIndex: this.currentWaveIndex || 0
+      });
     });
     threatPlan.assignedIds.forEach((actionId) => {
       const action = getEnemyThreatAction(actionId);
@@ -2193,6 +2300,166 @@ export class EnemyManager {
     if (safeLevel <= 4) return 1;
     if (safeLevel <= 9) return 2;
     return 3;
+  }
+
+  getBossFuelShipMaxEvents(level = this.level) {
+    const safeLevel = Math.max(1, Number(level) || 1);
+    if (safeLevel <= 3) return 1;
+    if (safeLevel <= 9) return 2;
+    return 3;
+  }
+
+  getActiveBossFuelShips() {
+    return this.enemies.filter((enemy) =>
+      enemy?.kind === 'boss_fuel_ship' && (enemy.active || enemy.waitingForEntry)
+    );
+  }
+
+  maybeSpawnBossFuelShip() {
+    if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) return;
+    const level = Math.max(1, Number(this.level) || 1);
+    const maxEvents = this.getBossFuelShipMaxEvents(level);
+    if (this.bossFuelShipsSpawnedThisBoss >= maxEvents) return;
+    const now = Date.now();
+    if (now < (this.bossSpawnedAtMs || this.boss.spawnedAtMs || now) + 6500) return;
+    if (now < this.bossFuelShipCooldownUntilMs || now < this.bossFuelShipNextCheckAtMs) return;
+    this.bossFuelShipNextCheckAtMs = now + 2800 + Math.random() * 1800;
+
+    const healthRatio = this.boss.health / Math.max(1, this.boss.maxHealth || 1);
+    if (healthRatio > 0.86 || healthRatio <= 0.08) return;
+    if (this.getActiveBossFuelShips().length > 0) return;
+
+    const playScene = this.game?.scenes?.play;
+    const activeBullets = playScene?.bulletManager?.enemyBullets?.filter((bullet) => bullet?.active !== false).length || 0;
+    if (activeBullets > (level <= 6 ? 18 : 28)) return;
+
+    const chance = level <= 3 ? 0.2 : level <= 9 ? 0.28 : 0.34;
+    if (Math.random() > chance) return;
+    if (this.spawnBossFuelShip()) {
+      this.bossFuelShipsSpawnedThisBoss += 1;
+      this.bossFuelShipCooldownUntilMs = now + (level <= 5 ? 17500 : 13500) + Math.random() * 4500;
+    }
+  }
+
+  spawnBossFuelShip() {
+    if (!this.boss?.active) return false;
+    const level = Math.max(1, Number(this.level) || 1);
+    const screenW = this.game.getWidth();
+    const startLeft = Math.random() < 0.5;
+    const startX = startLeft ? -46 : screenW + 46;
+    const targetX = Math.max(58, Math.min(screenW - 58, this.boss.x + (startLeft ? -170 : 170)));
+    const targetY = Math.max(90, Math.min(this.game.getHeight() * 0.35, (this.boss.y || 150) + 20));
+    const type = pickGeneratedEnemyTypeForLevel(Math.max(1, Math.min(level, 18)));
+    const enemy = new Enemy(startX, -96, type, level, this.game, 'Green');
+    enemy.kind = 'boss_fuel_ship';
+    enemy.bossFuelProfile = {
+      healPercent: level <= 4 ? 0.075 : 0.09,
+      speed: 1.55 + Math.min(0.42, level * 0.018)
+    };
+    enemy.health = Math.max(2, Math.min(5, Math.ceil((enemy.health || 1) * (level <= 4 ? 1.15 : 1.32))));
+    enemy.maxHealth = enemy.health;
+    enemy.scoreValue = Math.max(120, Math.round((enemy.scoreValue || 50) * 2.2));
+    enemy.shootDelay = 999999;
+    enemy.radius = Math.max(16, Math.round((enemy.radius || 16) * 1.12));
+    enemy.color = 0x7dffcc;
+    enemy.visualVariant = {
+      ...(enemy.visualVariant || {}),
+      slug: 'boss_fuel_ship',
+      tint: 0x7dffcc,
+      accent: 0xfff08a,
+      scale: 1.12,
+      alpha: 0.34
+    };
+    if (enemy.body) enemy.body.tint = 0xffffff;
+    if (enemy.sprite) {
+      enemy.sprite.label = 'enemy_visual:boss_fuel_ship';
+      const halo = new PIXI.Graphics();
+      halo.circle(0, 0, enemy.radius * 2.45);
+      halo.fill({ color: 0x7dffcc, alpha: 0.16 });
+      halo.circle(0, 0, enemy.radius * 1.55);
+      halo.stroke({ color: 0xfff08a, width: 3, alpha: 0.52 });
+      halo.label = 'bossFuelShipHalo';
+      enemy.sprite.addChildAt(halo, 0);
+      enemy.ownedVisuals?.push(halo);
+    }
+    enemy.updateHealthBar?.();
+    enemy.applyWaveTactic?.({
+      id: 'boss_fuel_ship',
+      move: 'pulse',
+      shot: 'needle',
+      fireScalar: 0,
+      fireDelayMult: 99,
+      diveBias: 0,
+      entrySpeed: 0.86
+    }, {
+      index: 0,
+      count: 1,
+      formation: 'BOSS_FUEL',
+      centerX: targetX,
+      centerY: targetY,
+      side: startLeft ? -1 : 1
+    });
+    enemy.startEntry(startX, -70, targetX, targetY, 1350, 0);
+    this.enemies.push(enemy);
+    this.container.addChild(enemy.sprite);
+    this.game?.scenes?.play?.recordThreatDiscovery?.('boss_fuel_ship', 'enemies', {
+      name: translateText('Boss Fuel Ship'),
+      role: translateText('Boss healer'),
+      movementStyle: translateText('intercept run'),
+      fireStyle: translateText('unarmed'),
+      rarity: translateText('Boss Support'),
+      sector: level
+    });
+    this.game?.scenes?.play?.showToast?.(translateText('FUEL SHIP INBOUND'), {
+      fontSize: this.game.getWidth() < 620 ? 15 : 18,
+      fill: '#7dffcc',
+      stroke: '#032015',
+      strokeThickness: 4,
+      duration: 1250,
+      slot: 'top',
+      type: 'boss',
+      priority: 5,
+      maxWidth: this.game.getWidth() * 0.76
+    });
+    AudioManager.playSfx('nova_fuel_ship_spawn', { volume: 0.68, minIntervalMs: 900 });
+    return true;
+  }
+
+  updateBossFuelShip(enemy, delta) {
+    if (!enemy?.active || !this.boss?.active) return;
+    const boss = this.boss;
+    const targetX = boss.x;
+    const targetY = boss.y;
+    const dx = targetX - enemy.x;
+    const dy = targetY - enemy.y;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const speed = (enemy.bossFuelProfile?.speed || 1.55) * Math.max(0.5, delta || 1);
+    enemy.x += (dx / distance) * speed;
+    enemy.y += (dy / distance) * speed;
+    enemy.sprite.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+    enemy.sprite.x = enemy.x;
+    enemy.sprite.y = enemy.y;
+    const contactDistance = (enemy.radius || 18) + (boss.getVisualRadius?.() || boss.radius || 70) * 0.45;
+    if (distance <= contactDistance) {
+      const healAmount = Math.max(2, Math.round((boss.maxHealth || 1) * (enemy.bossFuelProfile?.healPercent || 0.08)));
+      const healed = boss.heal?.(healAmount, { source: 'boss_fuel_ship' }) || 0;
+      enemy.active = false;
+      enemy.deactivateVisuals?.('boss_fuel_delivered');
+      this.game?.scenes?.play?.particleManager?.createHitSpark?.(enemy.x, enemy.y, 0x7dffcc, 1.6);
+      this.game?.scenes?.play?.particleManager?.createBossChargeSparks?.(boss.x, boss.y, 0x7dffcc, 1.2);
+      this.game?.scenes?.play?.showToast?.(translateText('BOSS REFUELED +{amount} HP', { amount: healed }), {
+        fontSize: this.game.getWidth() < 620 ? 14 : 17,
+        fill: '#ffec8a',
+        stroke: '#241800',
+        strokeThickness: 4,
+        duration: 1150,
+        slot: 'top',
+        type: 'boss',
+        priority: 5,
+        maxWidth: this.game.getWidth() * 0.72
+      });
+      AudioManager.playSfx('nova_fuel_ship_heal', { force: true, volume: 0.76, minIntervalMs: 0 });
+    }
   }
 
   getActiveBossChaosEnemies() {

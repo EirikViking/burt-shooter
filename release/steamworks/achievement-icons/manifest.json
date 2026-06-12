@@ -1,9 +1,9 @@
 {
   "appId": 4765070,
-  "generatedAt": "2026-06-12T11:01:40.111Z",
+  "generatedAt": "2026-06-12T11:25:37.654Z",
   "canonicalSource": "src/achievements/AchievementCatalog.js",
   "sourceSheet": "nova-swarm-achievement-icons-sheet-20260525.png",
-  "sourceGenerator": "Codex imagegen skill; original 7x3 launch contact sheet plus 2026-05-26 3x3 milestone sheet; 2026-06-12 legend achievement placeholders copied from ACH_SCORE_250K pending custom Steamworks art",
+  "sourceGenerator": "Codex generated/curated achievement icon set; 2026-06-12 hard-rank and Early Pilot icons generated from local badge/SVG assets.",
   "iconSize": "256x256 jpg",
   "icons": [
     {
@@ -159,6 +159,166 @@
       "lockedIcon": "ACH_RANK_19-locked.jpg"
     },
     {
+      "apiName": "ACH_RANK_20",
+      "displayName": "Rank Up: Black-Star Bailiff",
+      "description": "Reach the Black-Star Bailiff rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_20-achieved.jpg",
+      "lockedIcon": "ACH_RANK_20-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_21",
+      "displayName": "Rank Up: Static Undertaker",
+      "description": "Reach the Static Undertaker rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_21-achieved.jpg",
+      "lockedIcon": "ACH_RANK_21-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_22",
+      "displayName": "Rank Up: Void Receipt",
+      "description": "Reach the Void Receipt rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_22-achieved.jpg",
+      "lockedIcon": "ACH_RANK_22-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_23",
+      "displayName": "Rank Up: Meteor Notary",
+      "description": "Reach the Meteor Notary rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_23-achieved.jpg",
+      "lockedIcon": "ACH_RANK_23-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_24",
+      "displayName": "Rank Up: Hull Sermonizer",
+      "description": "Reach the Hull Sermonizer rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_24-achieved.jpg",
+      "lockedIcon": "ACH_RANK_24-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_25",
+      "displayName": "Rank Up: Photon Debt King",
+      "description": "Reach the Photon Debt King rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_25-achieved.jpg",
+      "lockedIcon": "ACH_RANK_25-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_26",
+      "displayName": "Rank Up: Comet Knife Saint",
+      "description": "Reach the Comet Knife Saint rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_26-achieved.jpg",
+      "lockedIcon": "ACH_RANK_26-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_27",
+      "displayName": "Rank Up: Redline Ghost",
+      "description": "Reach the Redline Ghost rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_27-achieved.jpg",
+      "lockedIcon": "ACH_RANK_27-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_28",
+      "displayName": "Rank Up: Grudge Astronaut",
+      "description": "Reach the Grudge Astronaut rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_28-achieved.jpg",
+      "lockedIcon": "ACH_RANK_28-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_29",
+      "displayName": "Rank Up: Zero-G Bastard",
+      "description": "Reach the Zero-G Bastard rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_29-achieved.jpg",
+      "lockedIcon": "ACH_RANK_29-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_30",
+      "displayName": "Rank Up: Cabinet War Pope",
+      "description": "Reach the Cabinet War Pope rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_30-achieved.jpg",
+      "lockedIcon": "ACH_RANK_30-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_31",
+      "displayName": "Rank Up: Starvektor Baron",
+      "description": "Reach the Starvektor Baron rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_31-achieved.jpg",
+      "lockedIcon": "ACH_RANK_31-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_32",
+      "displayName": "Rank Up: Boss-Mouth Doctor",
+      "description": "Reach the Boss-Mouth Doctor rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_32-achieved.jpg",
+      "lockedIcon": "ACH_RANK_32-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_33",
+      "displayName": "Rank Up: Laser Coffin Clerk",
+      "description": "Reach the Laser Coffin Clerk rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_33-achieved.jpg",
+      "lockedIcon": "ACH_RANK_33-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_34",
+      "displayName": "Rank Up: Swarm Tax Marshal",
+      "description": "Reach the Swarm Tax Marshal rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_34-achieved.jpg",
+      "lockedIcon": "ACH_RANK_34-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_35",
+      "displayName": "Rank Up: Nova Ash Colonel",
+      "description": "Reach the Nova Ash Colonel rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_35-achieved.jpg",
+      "lockedIcon": "ACH_RANK_35-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_36",
+      "displayName": "Rank Up: Dead-Sun Mechanic",
+      "description": "Reach the Dead-Sun Mechanic rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_36-achieved.jpg",
+      "lockedIcon": "ACH_RANK_36-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_37",
+      "displayName": "Rank Up: Black Box Prophet",
+      "description": "Reach the Black Box Prophet rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_37-achieved.jpg",
+      "lockedIcon": "ACH_RANK_37-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_38",
+      "displayName": "Rank Up: Final Coin Tyrant",
+      "description": "Reach the Final Coin Tyrant rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_38-achieved.jpg",
+      "lockedIcon": "ACH_RANK_38-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_39",
+      "displayName": "Rank Up: Heat-Death Champion",
+      "description": "Reach the Heat-Death Champion rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_39-achieved.jpg",
+      "lockedIcon": "ACH_RANK_39-locked.jpg"
+    },
+    {
       "apiName": "ACH_GLOBAL_LEADERBOARD",
       "displayName": "Callsign On The Board",
       "description": "Qualify for the global leaderboard.",
@@ -173,6 +333,14 @@
       "hidden": false,
       "achievedIcon": "ACH_GLOBAL_NUMBER_ONE-achieved.jpg",
       "lockedIcon": "ACH_GLOBAL_NUMBER_ONE-locked.jpg"
+    },
+    {
+      "apiName": "ACH_EARLY_PILOT",
+      "displayName": "Early Pilot",
+      "description": "Play one ranked run during the early pilot window.",
+      "hidden": false,
+      "achievedIcon": "ACH_EARLY_PILOT-achieved.jpg",
+      "lockedIcon": "ACH_EARLY_PILOT-locked.jpg"
     },
     {
       "apiName": "ACH_SECTOR_FIVE",
@@ -407,8 +575,5 @@
       "lockedIcon": "ACH_THEME_PARK_PANIC-locked.jpg"
     }
   ],
-  "sourceSheets": [
-    "nova-swarm-achievement-icons-sheet-20260525.png",
-    "nova-swarm-achievement-icons-sheet-20260526.png"
-  ]
+  "sourceFiles": []
 }

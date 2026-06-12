@@ -177,7 +177,8 @@ assert.equal(getRankTitle(getRankFromPilotXp(0)), 'Cadet');
 assert.equal(getRankFromPilotXp(pilotXpThresholds[6]), 6, 'rank 6 should be reachable from pilot XP thresholds');
 assert.equal(getRankTitle(getRankFromPilotXp(pilotXpThresholds[6])), 'Combo Courier');
 assert.equal(getRankFromPilotXp(pilotXpThresholds.at(-1)), MAX_RANK_INDEX, 'top pilot XP threshold should award max rank');
-assert.equal(getRankTitle(MAX_RANK_INDEX), 'Arcade Legend');
+assert.equal(getRankTitle(19), 'Arcade Legend');
+assert.equal(getRankTitle(MAX_RANK_INDEX), 'Heat-Death Champion');
 for (let index = 1; index < pilotXpThresholds.length; index += 1) {
   assert(pilotXpThresholds[index] > pilotXpThresholds[index - 1], `pilot XP threshold ${index} should increase`);
 }

@@ -67,6 +67,8 @@ function getConfirmedGlobalPlacement(score, entries = []) {
     placement,
     qualified,
     numberOne: Boolean(qualified && placement === 1),
+    top3: Boolean(qualified && placement <= 3),
+    top10: Boolean(qualified && placement <= 10),
     source: 'post_submit_global_read',
     scoresCount: scores.length
   };
@@ -1285,7 +1287,7 @@ export class GameOverScene {
     this.leaderboardStatusText.text = this.getLeaderboardStatusMessage();
     if (this.globalQualified) {
       this.leaderboardStatusText.style.fill = '#ffe86a';
-    } else if (this.globalPlacement?.nearGlobal || this.globalPlacement?.nearTop3 || this.globalPlacement?.nearNumberOne) {
+    } else if (this.globalPlacement?.nearGlobal || this.globalPlacement?.nearTop10 || this.globalPlacement?.nearTop3 || this.globalPlacement?.nearNumberOne) {
       this.leaderboardStatusText.style.fill = '#ffcf7a';
     } else if (this.localQualified) {
       this.leaderboardStatusText.style.fill = '#9cfbff';
@@ -1302,6 +1304,7 @@ export class GameOverScene {
     if (this.game?.runSummary?.runCleared) return 'RUN CLEAR';
     if (this.globalPlacementTier === 'number1') return 'NUMBER ONE';
     if (this.globalPlacementTier === 'top3') return this.getSteamGlobalLeaderboardTitle();
+    if (this.globalPlacementTier === 'top10') return this.getSteamGlobalLeaderboardTitle();
     if (this.globalPlacementTier === 'global') return 'GLOBAL SLOT SECURED';
     if (this.globalPlacementTier === 'near_global') return 'GLOBAL BOARD IN SIGHT';
     if (this.localQualified) {
@@ -1335,6 +1338,11 @@ export class GameOverScene {
     }
     if (placement?.top3) {
       return `${localPrefix}Global rank #${placement.placement}. That is the kind of run people pretend was easy.`;
+    }
+    if (placement?.top10) {
+      return `${localPrefix}${translateText('Global rank #{rank}. Top ten. The swarm now has to learn your initials.', {
+        rank: placement.placement
+      })}`;
     }
     if (placement?.qualified) {
       return `${localPrefix}Global rank #${placement.placement}. Your score now travels farther than the swarm wanted.`;
@@ -1375,6 +1383,11 @@ export class GameOverScene {
       this.title.style.stroke = { color: '#4c2400', width: 4 };
       this.title.style.dropShadowColor = '#ffb84a';
       this.comment.style.fill = '#ffd98a';
+    } else if (placement?.top10) {
+      this.title.style.fill = '#c7f7ff';
+      this.title.style.stroke = { color: '#003e58', width: 4 };
+      this.title.style.dropShadowColor = '#4ef8ff';
+      this.comment.style.fill = '#d9fbff';
     } else if (placement?.qualified) {
       this.title.style.fill = '#9cfbff';
       this.title.style.stroke = { color: '#004c58', width: 3 };
@@ -1401,6 +1414,11 @@ export class GameOverScene {
       this.nextGoal = { text: `NUMBER ONE: ${this.formatGoalNumber(placement.scoreToNumberOne)} MORE`, tone: 'leaderboard' };
     } else if (placement.nearTop3 && placement.scoreToTop3 > 0) {
       this.nextGoal = { text: `TOP THREE: ${this.formatGoalNumber(placement.scoreToTop3)} MORE`, tone: 'leaderboard' };
+    } else if (placement.nearTop10 && placement.scoreToTop10 > 0) {
+      this.nextGoal = {
+        text: translateText('TOP TEN: {score} MORE', { score: this.formatGoalNumber(placement.scoreToTop10) }),
+        tone: 'leaderboard'
+      };
     } else if (placement.nearGlobal && placement.scoreToGlobal > 0) {
       this.nextGoal = { text: `GLOBAL SLOT: ${this.formatGoalNumber(placement.scoreToGlobal)} MORE`, tone: 'leaderboard' };
     } else if (placement.qualified && placement.placement && placement.placement > 1) {
@@ -2494,11 +2512,13 @@ export class GameOverScene {
       ? 0xffe86a
       : this.globalPlacement?.top3
         ? 0xffb84a
-        : this.globalQualified
-          ? 0x00ffff
-          : this.globalPlacement?.nearGlobal
-            ? 0xff9b42
-            : 0x23d8ff;
+        : this.globalPlacement?.top10
+          ? 0x87f8ff
+          : this.globalQualified
+            ? 0x00ffff
+            : this.globalPlacement?.nearGlobal
+              ? 0xff9b42
+              : 0x23d8ff;
 
     if (this.ceremonyGlow) {
       this.ceremonyGlow.clear();
@@ -2515,12 +2535,16 @@ export class GameOverScene {
       if (celebration) {
         const centerX = width / 2;
         const centerY = y + panelHeight * (holdStage ? 0.48 : 0.56);
-        const rayCount = this.globalPlacement?.numberOne ? (holdStage ? 34 : 28) : (holdStage ? 28 : 22);
-        const inner = panelWidth * (this.globalPlacement?.numberOne ? 0.18 : 0.13);
-        const outer = panelWidth * (this.globalPlacement?.numberOne ? 0.78 : 0.62);
+        const rayCount = this.globalPlacement?.numberOne
+          ? (holdStage ? 34 : 28)
+          : this.globalPlacement?.top10
+            ? (holdStage ? 30 : 24)
+            : (holdStage ? 28 : 22);
+        const inner = panelWidth * (this.globalPlacement?.numberOne ? 0.18 : this.globalPlacement?.top10 ? 0.15 : 0.13);
+        const outer = panelWidth * (this.globalPlacement?.numberOne ? 0.78 : this.globalPlacement?.top10 ? 0.7 : 0.62);
         const rayAlpha = holdStage
-          ? (this.globalPlacement?.numberOne ? 0.14 : 0.1)
-          : (this.globalPlacement?.numberOne ? 0.065 : 0.045);
+          ? (this.globalPlacement?.numberOne ? 0.14 : this.globalPlacement?.top10 ? 0.11 : 0.1)
+          : (this.globalPlacement?.numberOne ? 0.065 : this.globalPlacement?.top10 ? 0.052 : 0.045);
         for (let i = 0; i < rayCount; i += 1) {
           const a0 = (Math.PI * 2 * i) / rayCount + (this.ceremonyPulse || 0) * 0.004;
           const a1 = a0 + Math.PI / rayCount * 0.72;
@@ -2530,10 +2554,10 @@ export class GameOverScene {
           this.ceremonyBurst.closePath();
           this.ceremonyBurst.fill({ color: i % 2 ? 0xfff08a : 0x37f5ff, alpha: rayAlpha });
         }
-        this.ceremonyBurst.circle(centerX, centerY, panelWidth * (this.globalPlacement?.numberOne ? 0.28 : 0.22));
-        this.ceremonyBurst.stroke({ color: accent, width: this.globalPlacement?.numberOne ? 7 : 5, alpha: holdStage ? 0.26 : 0.12 });
-        this.ceremonyBurst.circle(centerX, centerY, panelWidth * (this.globalPlacement?.numberOne ? 0.36 : 0.3));
-        this.ceremonyBurst.stroke({ color: 0xffffff, width: 2, alpha: holdStage ? (this.globalPlacement?.numberOne ? 0.22 : 0.16) : 0.08 });
+        this.ceremonyBurst.circle(centerX, centerY, panelWidth * (this.globalPlacement?.numberOne ? 0.28 : this.globalPlacement?.top10 ? 0.25 : 0.22));
+        this.ceremonyBurst.stroke({ color: accent, width: this.globalPlacement?.numberOne ? 7 : this.globalPlacement?.top10 ? 6 : 5, alpha: holdStage ? 0.26 : 0.12 });
+        this.ceremonyBurst.circle(centerX, centerY, panelWidth * (this.globalPlacement?.numberOne ? 0.36 : this.globalPlacement?.top10 ? 0.33 : 0.3));
+        this.ceremonyBurst.stroke({ color: 0xffffff, width: 2, alpha: holdStage ? (this.globalPlacement?.numberOne ? 0.22 : this.globalPlacement?.top10 ? 0.18 : 0.16) : 0.08 });
       }
     }
 
@@ -2555,12 +2579,12 @@ export class GameOverScene {
 
     if (this.ceremonyMedal && this.ceremonyMedalBg && this.ceremonyMedalText && this.ceremonyMedalSubtext) {
       const placement = this.globalPlacement;
-      const celebration = resultCelebrationStage && placement?.qualified && (placement.numberOne || placement.top3);
+      const celebration = resultCelebrationStage && placement?.qualified && (placement.numberOne || placement.top3 || placement.top10);
       this.ceremonyMedal.visible = Boolean(celebration);
       if (celebration) {
         const badgeRadius = layout.isMobile
-          ? (placement.numberOne ? 72 : 60)
-          : (placement.numberOne ? (holdStage ? 118 : 96) : (holdStage ? 96 : 78));
+          ? (placement.numberOne ? 72 : placement.top3 ? 60 : 54)
+          : (placement.numberOne ? (holdStage ? 118 : 96) : placement.top3 ? (holdStage ? 96 : 78) : (holdStage ? 86 : 68));
         const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
         const badgeX = layout.isMobile
           ? width / 2
@@ -2569,20 +2593,20 @@ export class GameOverScene {
           ? y + panelHeight * (holdStage ? 0.74 : 0.24)
           : y + panelHeight * (holdStage ? 0.48 : 0.44);
         this.ceremonyMedal.position.set(badgeX, badgeY);
-        this.ceremonyMedal.scale.set(1 + pulse * (placement.numberOne ? 0.035 : 0.022));
+        this.ceremonyMedal.scale.set(1 + pulse * (placement.numberOne ? 0.035 : placement.top3 ? 0.022 : 0.016));
         this.ceremonyMedalBg.clear();
         this.ceremonyMedalBg.circle(0, 0, badgeRadius + 14);
-        this.ceremonyMedalBg.fill({ color: placement.numberOne ? 0xffd75f : 0xff9b42, alpha: placement.numberOne ? 0.28 : 0.2 });
+        this.ceremonyMedalBg.fill({ color: placement.numberOne ? 0xffd75f : placement.top3 ? 0xff9b42 : 0x37f5ff, alpha: placement.numberOne ? 0.28 : placement.top3 ? 0.2 : 0.16 });
         this.ceremonyMedalBg.circle(0, 0, badgeRadius);
         this.ceremonyMedalBg.fill({ color: 0x071523, alpha: 0.82 });
         this.ceremonyMedalBg.circle(0, 0, badgeRadius);
-        this.ceremonyMedalBg.stroke({ color: placement.numberOne ? 0xfff3a2 : 0xffc264, width: placement.numberOne ? 6 : 4, alpha: 0.95 });
+        this.ceremonyMedalBg.stroke({ color: placement.numberOne ? 0xfff3a2 : placement.top3 ? 0xffc264 : 0x87f8ff, width: placement.numberOne ? 6 : placement.top3 ? 4 : 3, alpha: 0.95 });
         this.ceremonyMedalBg.circle(0, 0, badgeRadius - 13);
         this.ceremonyMedalBg.stroke({ color: 0x37f5ff, width: 2, alpha: 0.58 });
         this.ceremonyMedalText.text = placement.numberOne ? '#1' : `#${placement.placement || 3}`;
         this.ceremonyMedalText.style.fontSize = layout.isMobile
-          ? (placement.numberOne ? 66 : 54)
-          : (placement.numberOne ? 104 : 78);
+          ? (placement.numberOne ? 66 : placement.top3 ? 54 : 46)
+          : (placement.numberOne ? 104 : placement.top3 ? 78 : 66);
         this.ceremonyMedalText.y = placement.numberOne ? -5 : -3;
         this.ceremonyMedalSubtext.text = translateText('STEAM BEST');
         this.ceremonyMedalSubtext.style.fontSize = layout.isMobile ? 14 : 18;
@@ -2847,16 +2871,18 @@ export class GameOverScene {
       ? 0xfff08a
       : this.globalPlacement?.top3
         ? 0xffba57
-        : this.globalQualified
-          ? 0x65f7ff
-          : 0x7ca6ff;
+        : this.globalPlacement?.top10
+          ? 0x9cfbff
+          : this.globalQualified
+            ? 0x65f7ff
+            : 0x7ca6ff;
     for (const particle of this.fanfareParticles) {
       const config = particle.__fanfare || { seed: 0, lane: 1, speed: 0.5 };
       const drift = ((this.ceremonyPulse * config.speed + config.seed) % 220) / 220;
       const sideBase = config.lane === 0 ? width * 0.5 : config.lane < 0 ? width * 0.1 : width * 0.9;
       const x = sideBase + Math.sin((this.ceremonyPulse + config.seed) * 0.025) * width * (config.lane === 0 ? 0.22 : 0.08);
       const y = height * (0.06 + drift * 0.84);
-      const placementBoost = this.globalPlacement?.numberOne ? 1.35 : this.globalPlacement?.top3 ? 1.16 : 1;
+      const placementBoost = this.globalPlacement?.numberOne ? 1.35 : this.globalPlacement?.top3 ? 1.16 : this.globalPlacement?.top10 ? 1.08 : 1;
       const size = (2.4 + (config.seed % 6)) * activeBoost * placementBoost;
       particle.clear();
       if (this.globalPlacement?.numberOne && config.seed % 2 > 1) {
@@ -3224,10 +3250,20 @@ export class GameOverScene {
       volume: 0.72
     });
     AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
-    const restartOptions = this.game?.runMode === RUN_MODES.SECTOR_START && this.game?.sectorStartCheckpoint
+    const summary = this.game?.runSummary || {};
+    const challengeRecord = summary.sectorStartChallengeAttempt || summary.sectorStartChallengeBest || {};
+    const sectorStartCheckpoint = [
+      this.game?.sectorStartCheckpoint,
+      summary.sectorStartCheckpoint,
+      challengeRecord.startSector,
+      summary.sectorStartPlaySector ? Number(summary.sectorStartPlaySector) - 1 : null
+    ]
+      .map((value) => Number(value))
+      .find((value) => Number.isFinite(value) && value > 0);
+    const restartOptions = this.game?.runMode === RUN_MODES.SECTOR_START && sectorStartCheckpoint
       ? {
           runMode: RUN_MODES.SECTOR_START,
-          startSector: this.game.sectorStartCheckpoint
+          startSector: sectorStartCheckpoint
         }
       : {};
     Promise.resolve(this.game.startGame(this.game.selectedShipSpriteKey, restartOptions)).catch((error) => {
@@ -3250,10 +3286,12 @@ export class GameOverScene {
       ? 'nova_number_one_fanfare'
       : placement?.top3
         ? 'nova_top3_fanfare'
-        : 'nova_global_slot_fanfare';
-    const fanfareMs = placement?.numberOne ? 10000 : placement?.top3 ? 8000 : 6000;
-    AudioManager.duckMusic(placement?.numberOne ? 0.18 : placement?.top3 ? 0.22 : 0.28, fanfareMs);
-    AudioManager.playSfx(fanfareKey, { force: true, volume: placement?.numberOne ? 1.0 : placement?.top3 ? 0.94 : 0.88, minIntervalMs: 0 });
+        : placement?.top10
+          ? 'nova_top10_fanfare'
+          : 'nova_global_slot_fanfare';
+    const fanfareMs = placement?.numberOne ? 10000 : placement?.top3 ? 8000 : placement?.top10 ? 7000 : 6000;
+    AudioManager.duckMusic(placement?.numberOne ? 0.18 : placement?.top3 ? 0.22 : placement?.top10 ? 0.24 : 0.28, fanfareMs);
+    AudioManager.playSfx(fanfareKey, { force: true, volume: placement?.numberOne ? 1.0 : placement?.top3 ? 0.94 : placement?.top10 ? 0.9 : 0.88, minIntervalMs: 0 });
     if (placement?.numberOne) {
       this.scheduleSceneTimeout(() => {
         AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.82, minIntervalMs: 0 });
@@ -3265,11 +3303,11 @@ export class GameOverScene {
         stopOtherVoices: true,
         exclusiveGroup: 'announcer',
         cooldownMs: 9000,
-        duckMs: placement?.numberOne ? 4300 : placement?.top3 ? 3800 : 3400,
-        duckFactor: placement?.numberOne ? 0.24 : placement?.top3 ? 0.28 : 0.32,
-        volume: placement?.numberOne ? 1.06 : placement?.top3 ? 1.02 : 0.96
+        duckMs: placement?.numberOne ? 4300 : placement?.top3 ? 3800 : placement?.top10 ? 3600 : 3400,
+        duckFactor: placement?.numberOne ? 0.24 : placement?.top3 ? 0.28 : placement?.top10 ? 0.3 : 0.32,
+        volume: placement?.numberOne ? 1.06 : placement?.top3 ? 1.02 : placement?.top10 ? 0.99 : 0.96
       });
-    }, placement?.numberOne ? 2600 : placement?.top3 ? 2200 : 1700);
+    }, placement?.numberOne ? 2600 : placement?.top3 ? 2200 : placement?.top10 ? 1900 : 1700);
   }
 
   playNearMissVoice() {
@@ -3414,21 +3452,25 @@ export class GameOverScene {
     const qualified = Boolean(placement.qualified && placementRank);
     const numberOne = Boolean(qualified && placementRank === 1);
     const top3 = Boolean(qualified && placementRank <= 3);
+    const top10 = Boolean(qualified && placementRank <= 10);
     const normalizedPlacement = {
       ...placement,
       placement: placementRank,
       qualified,
       numberOne,
-      top3
+      top3,
+      top10
     };
     this.globalPlacement = normalizedPlacement;
     this.globalPlacementTier = normalizedPlacement.numberOne
       ? 'number1'
       : normalizedPlacement.top3
         ? 'top3'
-        : normalizedPlacement.qualified
-          ? 'global'
-          : 'none';
+        : normalizedPlacement.top10
+          ? 'top10'
+          : normalizedPlacement.qualified
+            ? 'global'
+            : 'none';
     this.globalQualified = Boolean(normalizedPlacement.qualified);
     this.globalStatus = normalizedPlacement.qualified ? 'submitted' : this.globalStatus;
     this.unlockConfirmedLeaderboardAchievements(normalizedPlacement, provider);
@@ -3644,6 +3686,7 @@ export class GameOverScene {
         qualified: Boolean(steamRank),
         numberOne: Boolean(steamRank === 1),
         top3: Boolean(steamRank && steamRank <= 3),
+        top10: Boolean(steamRank && steamRank <= 10),
         source: 'steam_submit_result'
       };
       result.confirmedGlobalPlacement = placement;
@@ -3738,6 +3781,7 @@ export class GameOverScene {
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR START CHALLENGE');
     if (this.globalPlacement?.qualified && this.globalPlacement?.numberOne) return 'NUMBER ONE';
     if (this.globalPlacement?.qualified && this.globalPlacement?.top3) return this.getSteamGlobalLeaderboardTitle();
+    if (this.globalPlacement?.qualified && this.globalPlacement?.top10) return this.getSteamGlobalLeaderboardTitle();
     return 'ONE MORE RUN?';
   }
 

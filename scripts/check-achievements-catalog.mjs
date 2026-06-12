@@ -11,8 +11,8 @@ function fail(message) {
 const ids = ACHIEVEMENTS.map((achievement) => achievement.id);
 const names = ACHIEVEMENTS.map((achievement) => achievement.name);
 const idPattern = /^ACH_[A-Z0-9]+(?:_[A-Z0-9]+)*$/;
-const expectedTotal = 50;
-const expectedMilestones = 29;
+const expectedTotal = 71;
+const expectedMilestones = 30;
 const expectedLegendMilestones = 20;
 const allowedMilestoneDifficulties = new Set(['medium', 'hard', 'very_hard', 'legendary']);
 

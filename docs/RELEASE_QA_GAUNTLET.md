@@ -42,7 +42,7 @@ Follow-up combat readability changes added a Boss Mercy System that prevents rep
 | `npm run check:boss-special-hazards` | Pass | `test-results/boss-special-hazards-2026-05-22T17-45-54-203Z/` |
 | `npm run check:powerup-balance` | Pass | sparse drops, max 2 per level |
 | `npm run check:score-normalization` | Pass | 100000 -> 10000, 553006 -> 55301 |
-| `npm run check:unlock-rank-pacing` | Pass | level 1 Cadet, level 11 Combo Courier, level 60 Arcade Legend |
+| `npm run check:unlock-rank-pacing` | Pass | level 1 Cadet, level 11 Combo Courier, level 60 Arcade Legend, level 410 Heat-Death Champion |
 | `npm run check:leaderboard-adapter` | Pass | Eirik regression and mock Steam covered |
 | `npm run check:leaderboard-split` | Pass | `test-results/leaderboard-split-2026-05-22T17-46-17-163Z/report.json` |
 | `npm run check:steam-leaderboard-mock` | Pass | `test-results/steam-leaderboard-mock-2026-05-22T17-46-17-181Z/report.json` |
@@ -145,7 +145,7 @@ Result:
 
 - Level 1: 1 ship, rank `Cadet`.
 - Level 11: 8 ships, rank `Combo Courier`.
-- Level 60: all 25 ships and max rank `Arcade Legend`.
+- Level 60: all 25 ships and launch-era rank `Arcade Legend`; level 410 reaches max rank `Heat-Death Champion`.
 - The screenshot behavior where Violet Feint requires level 23 is correct if the saved career best is level 21. The confusing part is copy: `REACHED LEVEL` is this run, while `NEXT SHIP` and `NEXT GOAL` are based on saved career progress.
 
 ### Normal Enemy Variety QA

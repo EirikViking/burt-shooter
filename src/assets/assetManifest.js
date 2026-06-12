@@ -149,8 +149,8 @@ export const AssetManifest = {
             '/sprites/boss/boss_turret_no_bg2.png'
         ],
 
-        // Nova Swarm rank badges - 20 ranks total (0-19)
-        ranks: Array.from({ length: 20 }, (_, i) => `/art/generated/nova-swarm/ranks/nova-rank-badge-${i.toString().padStart(2, '0')}-20260522.png`),
+        // Nova Swarm rank badges - 40 ranks total (0-39)
+        ranks: Array.from({ length: 40 }, (_, i) => `/art/generated/nova-swarm/ranks/nova-rank-badge-${i.toString().padStart(2, '0')}-20260612.png`),
 
         // Damage Overlays
         damage: {
@@ -322,8 +322,23 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_highscore_chime.mp3',
             '/audio/sfx/nova-swarm/nova_global_near_fanfare.mp3',
             '/audio/sfx/nova-swarm/nova_global_slot_fanfare.mp3',
+            '/audio/sfx/nova-swarm/nova_top10_fanfare.mp3',
             '/audio/sfx/nova-swarm/nova_top3_fanfare.mp3',
             '/audio/sfx/nova-swarm/nova_number_one_fanfare.mp3',
+            '/audio/sfx/nova-swarm/nova_fuel_ship_spawn.mp3',
+            '/audio/sfx/nova-swarm/nova_fuel_ship_heal.mp3',
+            '/audio/sfx/nova-swarm/nova_fuel_ship_pop.mp3',
+            '/audio/sfx/nova-swarm/nova_danger_mid_pop.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_death_sonia.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_death_forge.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_death_kurt.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_death_needle.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_death_vortex.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_death_jester.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_death_carrier.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_death_monolith.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_death_choir.mp3',
+            '/audio/sfx/nova-swarm/nova_boss_death_clock.mp3',
             '/audio/sfx/nova-swarm/nova_overrun_clear_coronation.mp3',
             '/audio/sfx/nova-swarm/nova_overrun_clear_shockwave.mp3',
             '/audio/sfx/nova-swarm/nova_enemy_pew_cluster.mp3',

@@ -50,7 +50,7 @@ assert.ok(
     mockCheck.includes('Best: 87,628') &&
     mockCheck.includes('This run: 2,084') &&
     mockCheck.includes('Low Steam hold status reused full or stale leaderboard copy') &&
-    mockCheck.includes('Local: Not in local top 20') &&
+    mockCheck.includes('Local: Not in local top 40') &&
     mockCheck.includes('Final low-score runback should not show an outside-visible local placement'),
   'Steam leaderboard mock must cover autosubmit without manual name entry'
 );

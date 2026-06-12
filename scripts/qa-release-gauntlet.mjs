@@ -288,7 +288,8 @@ function validateProgression() {
   }
   if (getRankFromLevel(1) !== 0) fail(`level 1 rank should be 0, found ${getRankFromLevel(1)}`);
   if (getRankFromLevel(11) >= MAX_RANK_INDEX) fail('level 11 reaches max rank');
-  if (getRankFromLevel(60) !== MAX_RANK_INDEX) fail(`level 60 should reach max rank ${MAX_RANK_INDEX}`);
+  if (getRankFromLevel(60) !== 19) fail(`level 60 should reach launch rank 19, found ${getRankFromLevel(60)}`);
+  if (getRankFromLevel(410) !== MAX_RANK_INDEX) fail(`level 410 should reach max rank ${MAX_RANK_INDEX}`);
   if (getRankFromPilotXp(0) !== 0) fail(`0 pilot XP rank should be 0, found ${getRankFromPilotXp(0)}`);
   if (getRankFromPilotXp(pilotXpThresholds[6]) !== 6) fail('rank 6 should be reachable from pilot XP thresholds');
   if (getRankFromPilotXp(pilotXpThresholds.at(-1)) !== MAX_RANK_INDEX) {
@@ -318,6 +319,10 @@ function validateProgression() {
       level60: {
         rankIndex: getRankFromLevel(60),
         rankTitle: getRankTitle(getRankFromLevel(60))
+      },
+      level410: {
+        rankIndex: getRankFromLevel(410),
+        rankTitle: getRankTitle(getRankFromLevel(410))
       }
     }
   };

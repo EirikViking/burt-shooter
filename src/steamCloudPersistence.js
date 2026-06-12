@@ -91,7 +91,7 @@ function normalizeScoreEntry(entry = {}, fallbackIndex = 0) {
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
   const level = readLeaderboardLevel(entry, 1);
   const rawRankIndex = Number(entry.rankIndex ?? entry.rank_index);
-  const rankIndex = Math.max(0, Math.min(19, Number.isFinite(rawRankIndex) ? Math.floor(rawRankIndex) : 0));
+  const rankIndex = Math.max(0, Math.min(39, Number.isFinite(rawRankIndex) ? Math.floor(rawRankIndex) : 0));
   const name = String(entry.name || `PILOT${String(fallbackIndex).slice(-2).padStart(2, '0')}`)
     .toUpperCase()
     .replace(/[^A-Z0-9 ]/g, '')

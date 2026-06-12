@@ -2088,6 +2088,23 @@ export class PlayScene {
             return;
           }
 
+          if (enemy.kind === 'boss_fuel_ship') {
+            enemy.active = false;
+            if (!this.enemyManager?.deactivateEnemyVisual?.(enemy, 'player_intercept') && enemy.sprite) {
+              enemy.sprite.visible = false;
+              enemy.sprite.renderable = false;
+            }
+            this.particleManager.createExplosion(enemy.x, enemy.y, 0x78ff9a);
+            AudioManager.playSfx('nova_fuel_ship_pop', { volume: 0.7, minIntervalMs: 120 });
+            this.showToast?.(translateText('FUEL SHIP INTERCEPTED'), {
+              fontSize: 18,
+              y: Math.max(92, enemy.y - 8),
+              fill: '#bfffd0',
+              duration: 900
+            });
+            return;
+          }
+
           enemy.active = false;
           if (!this.enemyManager?.deactivateEnemyVisual?.(enemy, 'player_contact') && enemy.sprite) {
             enemy.sprite.visible = false;
@@ -7775,6 +7792,51 @@ export class PlayScene {
     this.game.app.ticker.add(ticker);
   }
 
+  createBossDeathSigil(bossX, bossY, style = {}, palette = []) {
+    if (!this.uiOverlay || !this.game?.app?.ticker) return;
+    const sigil = new PIXI.Graphics();
+    sigil.label = `boss_death_sigil:${style.id || 'default'}`;
+    sigil.blendMode = 'add';
+    this.uiOverlay.addChild(sigil);
+
+    const baseColor = style.baseColor || palette[0] || 0xffff33;
+    const accent = style.accent || palette[1] || 0xffffff;
+    const spokes = style.spokes || 10;
+    const radius = style.radius || Math.min(this.game.getWidth(), this.game.getHeight()) * 0.16;
+    const draw = (t = 0) => {
+      sigil.clear();
+      const spin = t * (style.spin || 0.8);
+      sigil.circle(bossX, bossY, radius * (0.42 + t * 0.42));
+      sigil.stroke({ color: baseColor, width: 5, alpha: 0.34 * (1 - t) });
+      sigil.circle(bossX, bossY, radius * (0.72 + t * 0.32));
+      sigil.stroke({ color: accent, width: 2.5, alpha: 0.24 * (1 - t) });
+      for (let i = 0; i < spokes; i += 1) {
+        const angle = (Math.PI * 2 * i) / spokes + spin;
+        const inner = radius * (0.28 + (i % 2) * 0.08);
+        const outer = radius * (style.longSpokes ? 1.42 : 1.05) * (0.9 + t * 0.55);
+        sigil.moveTo(bossX + Math.cos(angle) * inner, bossY + Math.sin(angle) * inner);
+        sigil.lineTo(bossX + Math.cos(angle) * outer, bossY + Math.sin(angle) * outer);
+        sigil.stroke({ color: i % 2 ? accent : baseColor, width: i % 2 ? 2 : 3.5, alpha: 0.42 * (1 - t) });
+      }
+    };
+    draw(0);
+
+    let elapsed = 0;
+    const duration = style.duration || 980;
+    const ticker = (delta) => {
+      elapsed += delta.deltaTime * 16.67;
+      const t = Math.min(1, elapsed / duration);
+      sigil.alpha = Math.pow(1 - t, 1.25);
+      draw(t);
+      if (t >= 1 || this.game?.currentScene !== this) {
+        this.game.app.ticker.remove(ticker);
+        if (sigil.parent) sigil.parent.removeChild(sigil);
+        sigil.destroy?.();
+      }
+    };
+    this.game.app.ticker.add(ticker);
+  }
+
   triggerBossDeathImpact({ boss = null, color = 0xffff33, type = 'UNKNOWN' } = {}) {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
@@ -7783,13 +7845,32 @@ export class PlayScene {
     const baseColor = Number.isFinite(color) ? color : 0xffff33;
     const seedText = String(type || boss?.profile?.id || 'boss');
     const seed = [...seedText].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const palette = [baseColor, 0xfff066, 0xff6633, 0xff3d7f, 0x61f6ff, 0x8cfffb, 0xffffff];
-    const burstCount = 11 + (seed % 5);
-    const ringCount = 3 + (seed % 3);
+    const deathStyles = [
+      { id: 'sonia_crownfall', pattern: 'crown', sfx: 'nova_boss_death_sonia', accent: 0xff55d9, spokes: 14, longSpokes: true, spin: -1.1 },
+      { id: 'forge_meltdown', pattern: 'forge', sfx: 'nova_boss_death_forge', accent: 0xffd15c, spokes: 9, radius: Math.min(width, height) * 0.19 },
+      { id: 'kurt_mirror_crack', pattern: 'mirror', sfx: 'nova_boss_death_kurt', accent: 0x7fffd8, spokes: 12, spin: 1.4 },
+      { id: 'needle_shatter', pattern: 'needle', sfx: 'nova_boss_death_needle', accent: 0x37f5ff, spokes: 18, longSpokes: true },
+      { id: 'vortex_unwind', pattern: 'spiral', sfx: 'nova_boss_death_vortex', accent: 0xff55d9, spokes: 16, spin: 2.1 },
+      { id: 'jester_finale', pattern: 'confetti', sfx: 'nova_boss_death_jester', accent: 0xffe76a, spokes: 11 },
+      { id: 'carrier_collapse', pattern: 'satellite', sfx: 'nova_boss_death_carrier', accent: 0xffd15c, spokes: 8, radius: Math.min(width, height) * 0.2 },
+      { id: 'monolith_crumble', pattern: 'columns', sfx: 'nova_boss_death_monolith', accent: 0xf6fbff, spokes: 10, longSpokes: true },
+      { id: 'choir_silence', pattern: 'chord', sfx: 'nova_boss_death_choir', accent: 0xff67dc, spokes: 15 },
+      { id: 'clock_ungear', pattern: 'clock', sfx: 'nova_boss_death_clock', accent: 0x37f5ff, spokes: 12, spin: -2.4 }
+    ];
+    const bossIndex = Math.max(0, Number(boss?.profile?.index || 1) - 1);
+    const style = {
+      ...deathStyles[bossIndex % deathStyles.length],
+      baseColor
+    };
+    const palette = [baseColor, style.accent, 0xfff066, 0xff6633, 0xff3d7f, 0x61f6ff, 0x8cfffb, 0xffffff];
+    const burstCount = 12 + (seed % 5) + (style.pattern === 'confetti' ? 5 : 0);
+    const ringCount = 3 + (seed % 3) + (style.pattern === 'vortex' || style.pattern === 'spiral' ? 2 : 0);
 
     this.createBossDeathFlash(baseColor);
+    this.createBossDeathSigil(bossX, bossY, style, palette);
     this.screenShake?.shake(22, 34);
     AudioManager.playSfx('boss_death_cascade', { force: true, volume: 0.84, minIntervalMs: 0 });
+    AudioManager.playSfx(style.sfx || 'boss_death_cascade', { force: true, volume: 0.82, minIntervalMs: 0 });
     AudioManager.playSfx('boss_explode', { force: true, volume: 0.72, minIntervalMs: 0 });
     AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.42, minIntervalMs: 0 });
 
@@ -7810,13 +7891,15 @@ export class PlayScene {
 
     for (let i = 0; i < burstCount; i += 1) {
       const delay = 70 + i * 62 + (i % 2) * 34;
-      const angle = ((Math.PI * 2 * i) / burstCount) + (seed % 11) * 0.13;
-      const spreadX = width * (0.06 + ((seed + i) % 5) * 0.018);
-      const spreadY = height * (0.034 + ((seed + i * 3) % 5) * 0.013);
-      const x = Math.max(42, Math.min(width - 42, bossX + Math.cos(angle) * spreadX));
-      const y = Math.max(76, Math.min(height * 0.56, bossY + Math.sin(angle) * spreadY));
+      const angle = ((Math.PI * 2 * i) / burstCount) + (seed % 11) * 0.13 + (style.pattern === 'spiral' ? i * 0.18 : 0);
+      const mirrorSide = style.pattern === 'mirror' && i % 2 ? -1 : 1;
+      const columnBias = style.pattern === 'columns' ? (i % 4 - 1.5) * width * 0.035 : 0;
+      const spreadX = width * (0.06 + ((seed + i) % 5) * 0.018) * (style.pattern === 'needle' ? 1.22 : 1);
+      const spreadY = height * (0.034 + ((seed + i * 3) % 5) * 0.013) * (style.pattern === 'forge' ? 1.28 : 1);
+      const x = Math.max(42, Math.min(width - 42, bossX + Math.cos(angle) * spreadX * mirrorSide + columnBias));
+      const y = Math.max(76, Math.min(height * 0.56, bossY + Math.sin(angle) * spreadY + (style.pattern === 'crown' ? -Math.abs(Math.sin(angle)) * 28 : 0)));
       const burstColor = palette[(seed + i) % palette.length];
-      const intensity = 0.85 + (i % 3) * 0.18;
+      const intensity = 0.9 + (i % 3) * 0.2 + (style.pattern === 'forge' ? 0.14 : 0);
 
       this.scheduleBossDeathFx(() => {
         this.particleManager?.createExplosion(x, y, burstColor, intensity);

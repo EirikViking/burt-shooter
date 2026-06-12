@@ -6,8 +6,8 @@ export const BalanceConfig = {
 
     // Rank System
     ranks: {
-        NUM_RANKS: 20,
-        MAX_RANK_INDEX: 19
+        NUM_RANKS: 40,
+        MAX_RANK_INDEX: 39
     },
 
     // Powerups

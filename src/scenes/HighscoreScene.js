@@ -3,7 +3,7 @@ import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { BonusAsset } from '../utils/BonusAsset.js';
-import { getRankFromLevel, getRankTitle } from '../shared/RankPolicy.js';
+import { MAX_RANK_INDEX, getRankFromLevel, getRankTitle } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -893,13 +893,19 @@ export class HighscoreScene {
       let entriesToDisplay = [...this.entries];
 
       const desktopTwoColumn = !isMobile && layout.width >= DESKTOP_TWO_COLUMN_MIN_WIDTH && entriesToDisplay.length > MOBILE_LEADERBOARD_VISIBLE_LIMIT;
-      const columnCount = desktopTwoColumn ? 2 : 1;
       const displayLimit = desktopTwoColumn ? LEADERBOARD_DISPLAY_LIMIT : MOBILE_LEADERBOARD_VISIBLE_LIMIT;
+      const visibleEntryCount = Math.min(displayLimit, entriesToDisplay.length || displayLimit);
+      const columnCount = desktopTwoColumn
+        ? Math.min(4, Math.max(2, Math.ceil(visibleEntryCount / 10)))
+        : 1;
+      const compactDesktopGrid = desktopTwoColumn && columnCount >= 3;
       entriesToDisplay = entriesToDisplay.slice(0, displayLimit);
       const rowsPerColumnTarget = desktopTwoColumn
         ? Math.ceil(displayLimit / columnCount)
         : Math.min(displayLimit, entriesToDisplay.length || displayLimit);
-      const columnGap = desktopTwoColumn ? (layout.width < 1500 ? 20 : 28) : 0;
+      const columnGap = desktopTwoColumn
+        ? (compactDesktopGrid ? (layout.width < 1500 ? 10 : 16) : (layout.width < 1500 ? 20 : 28))
+        : 0;
       const columnWidth = (metrics.innerWidth - columnGap * (columnCount - 1)) / columnCount;
       const headerHeight = isMobile ? 22 : 24;
       const rowsBaseY = startY + headerHeight + (isMobile ? 4 : 7);
@@ -914,7 +920,7 @@ export class HighscoreScene {
       const maxRows = Math.max(4, Math.min(displayLimit, entriesToDisplay.length, maxRowsPerColumn * columnCount));
       const rowStyle = {
         fontFamily: FONT_ARCADE,
-        fontSize: isMobile ? 13 : (layout.height < 820 ? 12 : 14),
+        fontSize: isMobile ? 13 : (compactDesktopGrid ? (layout.height < 820 ? 9 : 10) : (layout.height < 820 ? 12 : 14)),
         fill: '#e8fcff',
         stroke: '#00131b',
         strokeThickness: 2
@@ -923,23 +929,26 @@ export class HighscoreScene {
       const headerStyle = {
         ...rowStyle,
         fill: '#ffdf8a',
-        fontSize: isMobile ? 9 : (layout.height < 820 ? 9 : 10),
+        fontSize: isMobile ? 9 : (compactDesktopGrid ? 7 : (layout.height < 820 ? 9 : 10)),
         strokeThickness: 2
       };
 
       const getColumnGeometry = (columnIndex = 0) => {
         const rowX = metrics.innerX + columnIndex * (columnWidth + columnGap);
         const rowW = columnWidth;
-        const rankBlockWidth = isMobile ? 38 : (desktopTwoColumn ? 42 : 52);
-        const badgeColumnWidth = isMobile ? 30 : (desktopTwoColumn ? 34 : 42);
-        const badgeGap = isMobile ? 8 : (desktopTwoColumn ? 8 : 12);
-        const scoreBlockWidth = isMobile ? 96 : (desktopTwoColumn ? 110 : 142);
-        const levelBlockWidth = isMobile ? 38 : (desktopTwoColumn ? 42 : 46);
-        const rightPad = isMobile ? 8 : 10;
+        const rankBlockWidth = isMobile ? 38 : (compactDesktopGrid ? 24 : (desktopTwoColumn ? 42 : 52));
+        const badgeColumnWidth = isMobile ? 30 : (compactDesktopGrid ? 24 : (desktopTwoColumn ? 34 : 42));
+        const badgeGap = isMobile ? 8 : (compactDesktopGrid ? 2 : (desktopTwoColumn ? 8 : 12));
+        const scoreBlockWidth = isMobile ? 96 : (compactDesktopGrid ? 58 : (desktopTwoColumn ? 110 : 142));
+        const levelBlockWidth = isMobile ? 38 : (compactDesktopGrid ? 30 : (desktopTwoColumn ? 42 : 46));
+        const rightPad = isMobile ? 8 : (compactDesktopGrid ? 5 : 10);
         const contentX = rowX + rankBlockWidth + badgeColumnWidth + badgeGap;
         const levelCenterX = rowX + rowW - rightPad - levelBlockWidth / 2;
-        const scoreX = levelCenterX - levelBlockWidth / 2 - (isMobile ? 8 : 10);
-        const nameBlockWidth = Math.max(isMobile ? 76 : 92, scoreX - scoreBlockWidth - contentX - (isMobile ? 10 : 12));
+        const scoreX = levelCenterX - levelBlockWidth / 2 - (isMobile ? 8 : (compactDesktopGrid ? 6 : 10));
+        const nameBlockWidth = Math.max(
+          isMobile ? 76 : (compactDesktopGrid ? 54 : 92),
+          scoreX - scoreBlockWidth - contentX - (isMobile ? 10 : (compactDesktopGrid ? 6 : 12))
+        );
         return {
           rowX,
           rowW,
@@ -969,7 +978,11 @@ export class HighscoreScene {
         headerBar.fill({ color: 0xffd15c, alpha: 0.38 });
         this.rowsContainer.addChild(headerBar);
 
-        const manifestLabel = desktopTwoColumn && columnIndex === 1 ? 'PILOT MANIFEST 11-20' : 'PILOT MANIFEST';
+        const manifestStart = columnIndex * rowsPerColumnTarget + 1;
+        const manifestEnd = Math.min(displayLimit, manifestStart + rowsPerColumnTarget - 1);
+        const manifestLabel = desktopTwoColumn
+          ? `PILOT MANIFEST ${manifestStart}-${manifestEnd}`
+          : 'PILOT MANIFEST';
         const headers = [
           { text: manifestLabel, x: geometry.rowX, anchorX: 0 },
           { text: this.activeLeaderboard === LeaderboardView.SECTOR ? 'SCORE / START' : 'SCORE / LEVEL', x: geometry.rowX + geometry.rowW, anchorX: 1 }
@@ -986,11 +999,11 @@ export class HighscoreScene {
       const computeDisplayRank = (entry) => {
         const fallbackRank = Number(entry?.rank_index ?? entry?.rankIndex ?? entry?.rank);
         if (Number.isFinite(fallbackRank)) {
-          return Math.max(0, Math.min(19, Math.floor(fallbackRank)));
+          return Math.max(0, Math.min(MAX_RANK_INDEX, Math.floor(fallbackRank)));
         }
         const levelValue = Number(entry?.level ?? entry?.levelReached);
         if (Number.isFinite(levelValue)) {
-          return Math.max(0, Math.min(19, Math.floor(getRankFromLevel(levelValue))));
+          return Math.max(0, Math.min(MAX_RANK_INDEX, Math.floor(getRankFromLevel(levelValue))));
         }
         return 0;
       };
@@ -1076,13 +1089,13 @@ export class HighscoreScene {
         const playerRankIndex = (score.rank_index !== null && score.rank_index !== undefined)
           ? score.rank_index
           : getRankFromLevel(score.level || 1);
-        const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
+        const clampedRank = Math.max(0, Math.min(MAX_RANK_INDEX, playerRankIndex));
         const rankTitle = this.activeLeaderboard === LeaderboardView.SECTOR
           ? translateText('REACHED SECTOR {sector}', {
             sector: Math.max(1, Math.floor(Number(score.highestSectorReached ?? score.level ?? score.sectorStart) || 1))
           })
           : getRankTitle(clampedRank);
-        const displayName = (score.name || '??').slice(0, isMobile ? 13 : 18).toUpperCase();
+        const displayName = (score.name || '??').slice(0, isMobile ? 13 : (compactDesktopGrid ? 11 : 18)).toUpperCase();
 
         if (isFeaturedPlayer) {
           this.createFeaturedEntryHighlight({
@@ -1109,7 +1122,7 @@ export class HighscoreScene {
         const nameText = createText(displayName, nameStyle);
         const rankNameText = createText(rankTitle, {
           fontFamily: FONT_ARCADE,
-          fontSize: Math.max(isMobile ? 8 : 8, rowStyle.fontSize - (isMobile ? 4 : 4)),
+          fontSize: Math.max(isMobile ? 8 : (compactDesktopGrid ? 6 : 8), rowStyle.fontSize - (isMobile ? 4 : (compactDesktopGrid ? 3 : 4))),
           fill: isTop3 ? '#ffefaa' : '#9fd7e3',
           stroke: '#00131b',
           strokeThickness: 1
@@ -1121,7 +1134,7 @@ export class HighscoreScene {
         });
         const scoreLabel = createText(index === 0 ? 'LEAD' : 'SCORE', {
           fontFamily: FONT_ARCADE,
-          fontSize: Math.max(8, rowStyle.fontSize - (isMobile ? 5 : 4)),
+          fontSize: Math.max(compactDesktopGrid ? 6 : 8, rowStyle.fontSize - (isMobile ? 5 : (compactDesktopGrid ? 3 : 4))),
           fill: isTop3 ? '#ffe7a8' : '#6fb6c8',
           stroke: '#00131b',
           strokeThickness: 1
@@ -1137,14 +1150,14 @@ export class HighscoreScene {
         rankText.y = rowMidY - 2;
         nameText.x = columns.name;
         nameText.y = primaryY;
-        fitTextToWidth(nameText, nameBlockWidth, layout.isMobile ? 9 : 11);
+        fitTextToWidth(nameText, nameBlockWidth, layout.isMobile ? 9 : (compactDesktopGrid ? 7 : 11));
 
         rankNameText.x = columns.name;
         rankNameText.y = Math.max(
           nameText.y + nameText.height + 1,
           rowY + rowHeight - rankNameText.height - (isMobile ? 8 : 5)
         );
-        fitTextToWidth(rankNameText, nameBlockWidth, isMobile ? 7 : 9);
+        fitTextToWidth(rankNameText, nameBlockWidth, isMobile ? 7 : (compactDesktopGrid ? 6 : 9));
 
         scoreText.x = columns.score;
         scoreText.y = primaryY - 1;
@@ -1158,12 +1171,12 @@ export class HighscoreScene {
         scoreText.anchor.set(1, 0);
         scoreLabel.anchor.set(1, 0);
         levelText.anchor.set(0.5);
-        fitTextToWidth(scoreText, scoreBlockWidth, isMobile ? 10 : 12);
-        fitTextToWidth(levelText, levelBlockWidth, isMobile ? 8 : 9);
+        fitTextToWidth(scoreText, scoreBlockWidth, isMobile ? 10 : (compactDesktopGrid ? 7 : 12));
+        fitTextToWidth(levelText, levelBlockWidth, isMobile ? 8 : (compactDesktopGrid ? 7 : 9));
 
         const levelPill = new PIXI.Graphics();
-        const pillWidth = isMobile ? 38 : 46;
-        const pillHeight = isMobile ? 24 : 28;
+        const pillWidth = isMobile ? 38 : (compactDesktopGrid ? 30 : 46);
+        const pillHeight = isMobile ? 24 : (compactDesktopGrid ? 20 : 28);
         levelPill.roundRect(columns.level - pillWidth / 2, rowMidY - pillHeight / 2, pillWidth, pillHeight, 5);
         levelPill.fill({ color: 0x031725, alpha: 0.8 });
         levelPill.stroke({ color: accent, width: isFeaturedPlayer ? 1.5 : 1, alpha: isFeaturedPlayer ? 0.9 : (isTop3 ? 0.72 : 0.34) });

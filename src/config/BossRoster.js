@@ -92,9 +92,9 @@ const ARCHETYPES = [
 ];
 
 const CALLSIGNS = [
-  'NULL CROWN',
+  'Sonia',
   'ORBITAL HECKLER',
-  'VECTOR EMPEROR',
+  'KurtBossEdgar',
   'LANE EATER',
   'NEON WARDEN',
   'ARCADE REQUIEM',

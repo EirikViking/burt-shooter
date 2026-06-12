@@ -422,7 +422,7 @@ function assertLowRun(snapshot) {
   if (!/Best: 87,628/i.test(text) || !/This run: 2,084/i.test(text)) {
     throw new Error(`Low-score run did not compare old Steam best and this run:\n${text}`);
   }
-  if (!/Local: Not in local top 20/i.test(text)) {
+  if (!/Local: Not in local top 40/i.test(text)) {
     throw new Error(`Low-score run did not hide outside-visible local rank:\n${text}`);
   }
   if (/rank pending|Steam score submitted|Local #44/i.test(text)) {

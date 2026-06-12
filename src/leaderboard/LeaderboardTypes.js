@@ -1,8 +1,8 @@
 import { BUILD_ID } from '../buildInfo.js';
-import { getRankFromLevel } from '../shared/RankPolicy.js';
+import { MAX_RANK_INDEX, getRankFromLevel } from '../shared/RankPolicy.js';
 import { getSelectableShips, getShipMetadata } from '../config/ShipMetadata.js';
 
-export const LEADERBOARD_DISPLAY_LIMIT = 20;
+export const LEADERBOARD_DISPLAY_LIMIT = 40;
 export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 export const STEAM_LEADERBOARD_COMMUNITY_NAME = 'Global High Score';
 export const STEAM_SECTOR_LEADERBOARD_NAME = 'nova_swarm_sector_start_score_v1';
@@ -246,7 +246,7 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
       level = sectorLevel;
     }
   }
-  const rankIndex = Math.max(0, Math.min(19, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
+  const rankIndex = Math.max(0, Math.min(MAX_RANK_INDEX, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
   const runTimeSeconds = sectorEntry
     ? (raw.runTimeSeconds ?? raw.runtimeSeconds ?? raw.metadata?.runTimeSeconds ?? details[4] ?? null)
     : (raw.runTimeSeconds ?? raw.runtimeSeconds ?? raw.metadata?.runTimeSeconds ?? null);

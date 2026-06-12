@@ -1,8 +1,8 @@
-import { getRankFromLevel } from '../shared/RankPolicy.js';
+import { MAX_RANK_INDEX, getRankFromLevel } from '../shared/RankPolicy.js';
 import { estimateLeaderboardLevelFromScore, readLeaderboardLevel } from '../leaderboard/LeaderboardTypes.js';
 
 export const LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
-export const LOCAL_LEADERBOARD_LIMIT = 20;
+export const LOCAL_LEADERBOARD_LIMIT = 40;
 const LOCAL_LEADERBOARD_STORAGE_LIMIT = 100;
 const LOCAL_PILOT_NAME_MAX_LENGTH = 14;
 
@@ -43,7 +43,7 @@ function normalizeEntry(raw, fallbackIndex = 0) {
   const score = Math.max(0, Math.floor(Number(raw.score) || 0));
   const level = readLeaderboardLevel(raw, estimateLeaderboardLevelFromScore(score));
   const rawRankIndex = Number(raw.rankIndex ?? raw.rank_index);
-  const rankIndex = Math.max(0, Math.min(19, Number.isFinite(rawRankIndex)
+  const rankIndex = Math.max(0, Math.min(MAX_RANK_INDEX, Number.isFinite(rawRankIndex)
     ? Math.floor(rawRankIndex)
     : getRankFromLevel(level)));
   const timestamp = String(raw.timestamp || raw.created_at || new Date(0).toISOString());

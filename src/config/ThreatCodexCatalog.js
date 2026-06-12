@@ -5,10 +5,17 @@ import { ELITE_MIDDLE_SHIPS } from './EliteMiddleShips.js';
 import { RunContentDirectorConfig } from './RunContentDirectorConfig.js';
 import { ENEMY_WEAPON_PROFILES } from './EnemyWeaponProfiles.js';
 import { BOSS_ROSTER } from './BossRoster.js';
+import { DANGER_MID_SHIPS } from './DangerMidShips.js';
 import { formatSectorLabel, getSectorInfo } from './SectorCatalog.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { translateText } from '../i18n/index.js';
 import { getCabinetLogEntries } from '../text/phrasePool.js';
+import {
+  getAllRankTitles,
+  getPilotXpThreshold,
+  getRankLevelThreshold,
+  getRankLore
+} from '../shared/RankPolicy.js';
 
 export const CODEX_TEXT_TEMPLATES = Object.freeze({
   enemyDescription: '{name} is a {role}. It brings {roleDescription}, moves with {movement}, and fires {fire}. Read the hull first, then clear it before the formation uses it to close your lane.',
@@ -19,6 +26,9 @@ export const CODEX_TEXT_TEMPLATES = Object.freeze({
   themeDescription: '{name} is shaped by the swarm director, the hidden command intelligence that steers each run. This theme leans toward {threats} and wave shapes like {formations}. Watch sector one for that pattern, then {adapt}.',
   cabinetLogDescription: '{name} is a Cabinet Log from live play: joke, field note, and receipt in one. Treat the line as a tiny reminder to make one calmer decision.',
   powerupDescription: '{name} is a {duration} powerup. It changes {effect}. Read it as {read}; pick it when {when}.',
+  fuelShipDescription: '{name} is boss support. It is unarmed, fast, bright, and carrying enough fuel to heal the boss if it reaches the hull. Kill it early or route around the boss getting paid.',
+  dangerMidTip: 'Kill {name} before it turns a normal wave into a priority problem.',
+  rankDescription: 'Rank {rank}: {name}. Level marker {level}, career XP marker {xp}. {lore}',
   sectorDescriptionA: '{name} opens on {feel}. It matters because {stakes}; the waves, boss gate, and spare lives all start from that rhythm. Lore note: {flavor}. Gameplay clue: {clue}.',
   sectorDescriptionB: '{name} runs through {feel}. This stretch matters because {stakes}; waves, boss pressure, and life routing all punish sloppy positioning. Tiny threat flavor: {flavor}. Gameplay clue: {clue}.',
   sectorDescriptionC: '{name} feels like {feel}. The run uses it for {stakes}, so every wave cleared cleanly buys safer boss-gate lives later. Local rumor: {flavor}. Gameplay clue: {clue}.',
@@ -39,7 +49,8 @@ export const THREAT_CODEX_CATEGORIES = Object.freeze([
   { id: 'elites', label: 'Elites' },
   { id: 'bosses', label: 'Bosses' },
   { id: 'runThemes', label: 'Run Themes' },
-  { id: 'cabinetLogs', label: 'Cabinet Logs' }
+  { id: 'cabinetLogs', label: 'Cabinet Logs' },
+  { id: 'pilotRanks', label: 'Pilot Ranks' }
 ]);
 
 const ACTION_TIPS = Object.freeze({
@@ -720,6 +731,47 @@ function enemyEntry(profile) {
   };
 }
 
+function dangerMidEntry(profile) {
+  const name = profile.displayName || profile.id;
+  return {
+    id: profile.id,
+    category: 'enemies',
+    name,
+    rarity: profile.tier || 'Danger Mid',
+    role: titleCaseSignal(profile.role || 'danger mid ship'),
+    description: codexText('enemyDescription', {
+      name,
+      role: String(profile.role || 'danger mid ship').toLowerCase(),
+      roleDescription: 'a hard midweight hull that appears after sector 8 and asks for target priority',
+      movement: profile.move || 'pressure movement',
+      fire: profile.shot || 'readable pressure fire'
+    }),
+    tip: codexText('dangerMidTip', { name }),
+    art: AssetManifest.generated.enemies?.[(profile.unlockLevel + profile.id.length) % (AssetManifest.generated.enemies?.length || 1)] || null,
+    accent: profile.accent,
+    tint: profile.tint,
+    unlockLevel: profile.unlockLevel,
+    signalClass: 'danger-mid'
+  };
+}
+
+function bossFuelShipEntry() {
+  return {
+    id: 'boss_fuel_ship',
+    category: 'enemies',
+    name: translateText('Boss Fuel Ship'),
+    rarity: translateText('Boss Support'),
+    role: translateText('Boss healer'),
+    description: `${codexText('fuelShipDescription', { name: translateText('Boss Fuel Ship') })} ${translateText('Its movement follows a bright lane, never fires, and clears formation space before it reaches the boss.')}`,
+    tip: translateText('It does not shoot. That is the trick. Shoot it before the boss drinks the tank.'),
+    art: AssetManifest.generated.powerups?.vampire || AssetManifest.sprites.bonusCore,
+    accent: 0x7dffcc,
+    tint: 0xfff08a,
+    unlockLevel: 1,
+    signalClass: 'boss-support'
+  };
+}
+
 function actionEntry(action) {
   const weapon = WEAPON_BY_ID.get(action.weaponId);
   const readWindow = Math.round(action.telegraphMs || 0);
@@ -829,9 +881,41 @@ function runThemeEntry(theme) {
   };
 }
 
+function pilotRankEntry(title, index) {
+  const level = getRankLevelThreshold(index);
+  const xp = getPilotXpThreshold(index);
+  const lore = getRankLore(index);
+  return {
+    id: `pilot_rank_${String(index).padStart(2, '0')}`,
+    category: 'pilotRanks',
+    name: title,
+    rarity: index >= 20 ? translateText('Hard Rank') : translateText('Pilot Rank'),
+    role: translateText('Rank {rank}', { rank: index + 1 }),
+    description: codexText('rankDescription', {
+      rank: index + 1,
+      name: title,
+      level,
+      xp: Number(xp || 0).toLocaleString('en-US'),
+      lore: translateText(lore)
+    }),
+    tip: index >= 20
+      ? translateText('Hard ranks are long-haul bragging rights. Chase them after the clear, not instead of surviving it.')
+      : translateText('Career XP comes from ranked runs. Keep flying, keep submitting, keep the receipt.'),
+    art: AssetManifest.generated.ranks?.[index] || AssetManifest.generated.leaderboardHall,
+    accent: index >= 20 ? 0xffe76a : 0x37f5ff,
+    tint: index >= 20 ? 0xfff08a : 0x9cfbff,
+    unlockLevel: level,
+    signalClass: index >= 20 ? 'hard-rank' : 'rank'
+  };
+}
+
 export function getThreatCodexCatalog() {
   return {
-    enemies: GENERATED_ENEMY_PROFILES.map(enemyEntry),
+    enemies: [
+      bossFuelShipEntry(),
+      ...GENERATED_ENEMY_PROFILES.map(enemyEntry),
+      ...DANGER_MID_SHIPS.map(dangerMidEntry)
+    ],
     attackPatterns: ENEMY_THREAT_ACTIONS.map(actionEntry),
     waveTactics: WAVE_TACTIC_ENTRIES.map(waveEntry),
     powerups: POWERUP_CODEX_ENTRIES.map(powerupEntry),
@@ -839,6 +923,7 @@ export function getThreatCodexCatalog() {
     elites: ELITE_MIDDLE_SHIPS.map(eliteEntry),
     bosses: BOSS_ROSTER.map(bossEntry),
     runThemes: RunContentDirectorConfig.runThemes.map(runThemeEntry),
-    cabinetLogs: getCabinetLogEntries().map(cabinetLogEntry)
+    cabinetLogs: getCabinetLogEntries().map(cabinetLogEntry),
+    pilotRanks: getAllRankTitles().map(pilotRankEntry)
   };
 }

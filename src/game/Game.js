@@ -16,7 +16,7 @@ import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacem
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
 import { AchievementManager } from '../achievements/AchievementManager.js';
-import { getAchievementById, getRankAchievementId } from '../achievements/AchievementCatalog.js';
+import { EARLY_PILOT_ACHIEVEMENT_ID, getAchievementById, getRankAchievementId } from '../achievements/AchievementCatalog.js';
 import { getMilestoneAchievementUnlocks } from '../achievements/MilestoneAchievements.js';
 import { onLanguageChange } from '../i18n/index.js';
 import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
@@ -119,6 +119,7 @@ export class Game {
   start() {
     this.switchScene('menu');
     this.achievementManager?.syncWithSteam?.().catch?.(() => {});
+    this.backfillEarlyPilotAchievement();
   }
 
   showIntro() {
@@ -413,6 +414,27 @@ export class Game {
     }) || null;
   }
 
+  backfillEarlyPilotAchievement() {
+    const progress = readHangarProgressState();
+    const playedBefore = (
+      (Number(progress.totalRuns) || 0) > 0 ||
+      (Number(progress.bestScore) || 0) > 0 ||
+      (Number(progress.totalBossesDefeated) || 0) > 0 ||
+      (Number(progress.totalWavesCleared) || 0) > 0
+    );
+    if (!playedBefore) return null;
+    return this.achievementManager?.unlock(EARLY_PILOT_ACHIEVEMENT_ID, {
+      source: 'early_pilot_backfill',
+      ignoreRunGate: true,
+      progressValue: Math.max(
+        Number(progress.totalRuns) || 0,
+        Number(progress.bestScore) || 0,
+        Number(progress.totalWavesCleared) || 0
+      ),
+      target: 1
+    }) || null;
+  }
+
   unlockRankAchievement(rankIndex, payload = {}) {
     const id = getRankAchievementId(rankIndex);
     if (!id) return null;
@@ -574,7 +596,7 @@ export class Game {
   updateGlobalLeaderboardVoiceCues() {
     if (!this.isRankedRun() || !Array.isArray(this.globalLeaderboardTargets)) return;
     const placement = analyzeGlobalLeaderboardScore(this.score, this.globalLeaderboardTargets);
-    if (!placement.qualified && placement.nearGlobal && !this.globalLeaderboardCueState.global) {
+    if ((placement.qualified || placement.nearGlobal) && !this.globalLeaderboardCueState.global) {
       this.globalLeaderboardCueState.global = true;
       AudioManager.playVoice('mission_control_global_close', {
         cooldownMs: 42000,

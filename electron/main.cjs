@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
@@ -61,7 +61,6 @@ const steamAchievementsBridge = createSteamAchievementsBridge({
 const nativeGamepadBridge = createNativeGamepadBridge();
 let steamCloudSave = null;
 let steamProfileContext = { type: 'local', id: 'local-offline', reason: 'not_resolved' };
-let exitConfirmationInFlight = false;
 
 async function resolveSteamProfileContext() {
   const initialized = await steamLeaderboardBridge.initialize().catch(() => false);
@@ -110,48 +109,13 @@ function registerSteamAchievementsIpc() {
 }
 
 function registerAppIpc() {
-  ipcMain.handle('nova-app:exitGame', async (event, payload = {}) => {
+  ipcMain.handle('nova-app:exitGame', async () => {
     if (smokeMode) {
       return { ok: false, canceled: true, reason: 'smoke_mode' };
-    }
-    if (exitConfirmationInFlight) {
-      return { ok: false, canceled: true, reason: 'confirmation_in_flight' };
-    }
-    const parent = BrowserWindow.fromWebContents(event.sender) || BrowserWindow.getFocusedWindow() || null;
-    exitConfirmationInFlight = true;
-    const options = {
-      type: 'warning',
-      title: safeDialogText(payload.title, 'Quit Nova Swarm?'),
-      message: safeDialogText(payload.message, 'Are you sure you want to close Nova Swarm?'),
-      detail: safeDialogText(payload.detail, 'This closes the game. Unsaved run progress will be lost.'),
-      buttons: [
-        safeDialogText(payload.cancelLabel, 'Cancel'),
-        safeDialogText(payload.confirmLabel, 'Quit')
-      ],
-      defaultId: 0,
-      cancelId: 0,
-      noLink: true,
-      normalizeAccessKeys: true
-    };
-    let result;
-    try {
-      result = parent
-        ? await dialog.showMessageBox(parent, options)
-        : await dialog.showMessageBox(options);
-    } finally {
-      exitConfirmationInFlight = false;
-    }
-    if (result.response !== 1) {
-      return { ok: false, canceled: true };
     }
     setImmediate(() => app.quit());
     return { ok: true };
   });
-}
-
-function safeDialogText(value, fallback) {
-  const text = String(value || '').trim();
-  return text.length ? text.slice(0, 180) : fallback;
 }
 
 function sendWindowBlurToRenderer(window) {
@@ -311,7 +275,7 @@ function sanitizeScoreEntry(entry = {}) {
   const name = String(entry.name || 'PILOT').trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 14) || 'PILOT';
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
   const level = readScoreLevel(entry, estimateScoreLevel(score));
-  const rankIndex = Math.max(0, Math.min(19, Math.floor(Number(entry.rankIndex ?? entry.rank_index) || getRankFromLevel(level))));
+  const rankIndex = Math.max(0, Math.min(39, Math.floor(Number(entry.rankIndex ?? entry.rank_index) || getRankFromLevel(level))));
   return {
     name,
     score,

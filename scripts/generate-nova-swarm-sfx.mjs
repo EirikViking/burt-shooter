@@ -171,6 +171,96 @@ const eliteMiddleShipSounds = [
 
 const sounds = [
   {
+    file: 'nova_top10_fanfare.mp3',
+    text: 'An original heroic top-ten leaderboard fanfare for a neon arcade space shooter, seven seconds, bright synth brass, crisp trophy drums, shimmering score counter arpeggios, proud but readable, no vocals, no copyrighted melody.',
+    duration_seconds: 7,
+    prompt_influence: 0.78
+  },
+  {
+    file: 'nova_fuel_ship_spawn.mp3',
+    text: 'A readable boss fuel ship arrival cue, bright green sci-fi tanker warp-in, soft warning ping, quick engine flare, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_fuel_ship_heal.mp3',
+    text: 'A boss healing fuel transfer sound, liquid plasma gulp, rising shield recharge shimmer, warm dangerous energy bloom, no voice, no melody, under two seconds.',
+    duration_seconds: 2,
+    prompt_influence: 0.68
+  },
+  {
+    file: 'nova_fuel_ship_pop.mp3',
+    text: 'A small fuel tanker enemy popping apart, fizzy plasma burst, glassy green sparkles, quick reward snap, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_danger_mid_pop.mp3',
+    text: 'A dangerous mid enemy ship destruction sound, tougher hull crack, orange plasma snap, compact arcade payoff, no voice, no melody, under one second.',
+    duration_seconds: 1,
+    prompt_influence: 0.66
+  },
+  {
+    file: 'nova_boss_death_sonia.mp3',
+    text: 'A unique boss death sound called Sonia crownfall, pink-cyan royal energy shatters, huge arcade explosion tail, glittering crown fragments, no voice, no melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.72
+  },
+  {
+    file: 'nova_boss_death_forge.mp3',
+    text: 'A unique forge boss death sound, molten engine core collapses, heavy metal slam, hot orange plasma vent, premium arcade finale, no voice, no melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.72
+  },
+  {
+    file: 'nova_boss_death_kurt.mp3',
+    text: 'A unique boss death sound for KurtBossEdgar, mirror hive cracks, glassy phase shards, deep alien cabinet thump, brilliant sci-fi sparkle finish, no voice, no melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.72
+  },
+  {
+    file: 'nova_boss_death_needle.mp3',
+    text: 'A unique needle sniper boss death, razor laser lances snap one by one, icy blue pressure release, sharp but not painful, no voice, no melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.7
+  },
+  {
+    file: 'nova_boss_death_vortex.mp3',
+    text: 'A unique vortex boss death sound, gravity spiral unwinds, bass vacuum implosion, neon debris slingshot sparkle, no voice, no melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.72
+  },
+  {
+    file: 'nova_boss_death_jester.mp3',
+    text: 'A unique jester boss death sound, chaotic arcade confetti burst, trickster synth squeal collapses into a clean explosion, funny but dangerous, no voice, no melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.7
+  },
+  {
+    file: 'nova_boss_death_carrier.mp3',
+    text: 'A unique carrier boss death sound, drone hangar implodes, many tiny clamps snap shut then a large plasma boom, no voice, no melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.7
+  },
+  {
+    file: 'nova_boss_death_monolith.mp3',
+    text: 'A unique monolith boss death sound, massive rectangular hull crumbles, stone-metal bass hits, white-hot crack lines burst, no voice, no melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.72
+  },
+  {
+    file: 'nova_boss_death_choir.mp3',
+    text: 'A unique laser choir boss death sound, synthetic chord collapses into sparkling silence, pink-cyan harmonic blast, no vocals, no copyrighted melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.72
+  },
+  {
+    file: 'nova_boss_death_clock.mp3',
+    text: 'A unique clockwork boss death sound, giant gears strip and unwind, ticking accelerates into a bright sci-fi explosion, no voice, no melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.72
+  },
+  {
     file: 'nova_boss_arrival_alarm.mp3',
     text: 'A short retro arcade boss arrival alarm, cinematic sci-fi siren, rising energy, punchy but not harsh, no voice, no melody, under two seconds.',
     duration_seconds: 2,

@@ -91,7 +91,7 @@ function assertSourceGuards() {
   const game = fs.readFileSync('src/game/Game.js', 'utf8');
   const highscore = fs.readFileSync('src/scenes/HighscoreScene.js', 'utf8');
   const play = fs.readFileSync('src/scenes/PlayScene.js', 'utf8');
-  assert(main.includes('dialog.showMessageBox'), 'Electron exit bridge must show a confirmation dialog');
+  assert(!main.includes('dialog.showMessageBox'), 'Electron exit bridge must quit without a native confirmation dialog');
   assert(main.includes('nova-app:window-blur'), 'Electron main must send native window blur to renderer');
   assert(main.includes('browser-window-blur'), 'Electron app blur must also notify the renderer');
   assert(preload.includes('nova-app-window-blur'), 'Preload must dispatch native window blur event');
@@ -123,7 +123,7 @@ async function runMenuExitChecks(browser) {
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => window.__novaExitRequests?.length === 1, null, { timeout: 10000 });
   const firstExitPayload = await page.evaluate(() => window.__novaExitRequests[0]);
-  assert(/close Nova Swarm/i.test(firstExitPayload.message || ''), `menu ESC did not request close confirmation: ${JSON.stringify(firstExitPayload)}`);
+  assert(!firstExitPayload.message && !firstExitPayload.title, `menu ESC should not pass native exit dialog copy: ${JSON.stringify(firstExitPayload)}`);
   const afterMenuEsc = await readState(page);
   assert(afterMenuEsc.scene === 'menu', `menu ESC changed scene unexpectedly: ${afterMenuEsc.scene}`);
 
@@ -177,7 +177,7 @@ async function runMenuExitChecks(browser) {
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => window.__novaExitRequests?.length === 1, null, { timeout: 10000 });
   const guardedReleasePayload = await page.evaluate(() => window.__novaExitRequests[0]);
-  assert(/close Nova Swarm/i.test(guardedReleasePayload.message || ''), `menu exit did not recover after guard: ${JSON.stringify(guardedReleasePayload)}`);
+  assert(!guardedReleasePayload.message && !guardedReleasePayload.title, `menu exit should recover after guard without dialog copy: ${JSON.stringify(guardedReleasePayload)}`);
 
   await page.screenshot({ path: path.join(outputDir, 'menu-after-leaderboard-pointer-back.png'), fullPage: true });
   assert(pageErrors.length === 0, `menu page errors: ${pageErrors.join('; ')}`);

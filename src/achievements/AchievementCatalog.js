@@ -2,9 +2,11 @@ import { NUM_RANKS, getRankTitle } from '../shared/RankPolicy.js';
 
 export const GLOBAL_LEADERBOARD_ACHIEVEMENT_ID = 'ACH_GLOBAL_LEADERBOARD';
 export const GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID = 'ACH_GLOBAL_NUMBER_ONE';
+export const EARLY_PILOT_ACHIEVEMENT_ID = 'ACH_EARLY_PILOT';
 export const LEGEND_SCORE_GATE = 100000;
 
 export const MILESTONE_ACHIEVEMENT_IDS = Object.freeze({
+  EARLY_PILOT: EARLY_PILOT_ACHIEVEMENT_ID,
   SECTOR_FIVE: 'ACH_SECTOR_FIVE',
   FINAL_CLIMAX: 'ACH_FINAL_CLIMAX',
   ARCADE_CLEAR: 'ACH_ARCADE_CLEAR',
@@ -66,6 +68,16 @@ const rankAchievements = Array.from({ length: Math.max(0, NUM_RANKS - 1) }, (_, 
 });
 
 export const MILESTONE_ACHIEVEMENTS = Object.freeze([
+  {
+    id: MILESTONE_ACHIEVEMENT_IDS.EARLY_PILOT,
+    name: 'Early Pilot',
+    description: 'Play one ranked run during the early pilot window.',
+    type: 'milestone',
+    metric: 'totalRuns',
+    target: 1,
+    difficulty: 'medium',
+    hidden: false
+  },
   {
     id: MILESTONE_ACHIEVEMENT_IDS.SECTOR_FIVE,
     name: 'Past The Warmup',

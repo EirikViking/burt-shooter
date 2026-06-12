@@ -800,6 +800,23 @@ export class Boss {
     AudioManager.playSfx('boss_phase_surge', { volume: 0.45, minIntervalMs: 900 });
   }
 
+  heal(amount = 0, { source = 'unknown' } = {}) {
+    if (!this.active || this.health <= 0) return 0;
+    const value = Math.max(0, Number(amount) || 0);
+    if (value <= 0) return 0;
+    const before = this.health;
+    this.health = Math.min(this.maxHealth, this.health + value);
+    const healed = Math.max(0, this.health - before);
+    if (healed <= 0) return 0;
+    this.updateHealthBar();
+    const playScene = this.game?.scenes?.play;
+    const color = this.profile?.accent || this.color || 0x7dffcc;
+    playScene?.particleManager?.createBossChargeSparks?.(this.x, this.y, color, 1.1);
+    playScene?.particleManager?.createHitSpark?.(this.x, this.y, 0x7dffcc, 1.35);
+    console.log(`[BossHeal] level=${this.level} source=${source} hpBefore=${before} heal=${healed} hpAfter=${this.health}`);
+    return healed;
+  }
+
   updateBossAnimation(delta, playerX, playerY) {
     if (!this.animationRig || !this.visualContainer) return;
     const rig = this.animationRig;

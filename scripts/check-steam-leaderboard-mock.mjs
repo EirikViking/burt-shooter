@@ -305,7 +305,7 @@ try {
   if (!/Steam: Best unchanged/i.test(lowFinalStatus) || !/Best: 87,628/i.test(lowFinalStatus) || !/This run: 2,084/i.test(lowFinalStatus)) {
     throw new Error(`Final low-score runback did not explain unchanged Steam best: ${JSON.stringify(lowRunbackState.gameOver)}`);
   }
-  if (!/Local: Not in local top 20/i.test(lowFinalStatus) || /Local #44|Local: #4[0-9]/i.test(lowFinalStatus)) {
+  if (!/Local: Not in local top 40/i.test(lowFinalStatus) || /Local #4[1-9]/i.test(lowFinalStatus)) {
     throw new Error(`Final low-score runback should not show an outside-visible local placement: ${JSON.stringify(lowRunbackState.gameOver)}`);
   }
   if (/rank pending|top three|number one|Steam: #|New Steam best|Global: #|Steamboard|Steam Board|Steam board/i.test(lowFinalStatus)) {
@@ -374,15 +374,18 @@ try {
     };
   });
   if (
+    !rank4Probe.placement?.top10 ||
     rank4Probe.placement?.top3 ||
     rank4Probe.placement?.numberOne ||
     rank4Probe.tier === 'top3' ||
-    /TOP THREE|Steam Global Leaderboard #4/i.test(`${rank4Probe.status} ${rank4Probe.runbackTitle}`)
+    rank4Probe.tier !== 'top10' ||
+    !/Steam Global Leaderboard #4/i.test(`${rank4Probe.status} ${rank4Probe.runbackTitle}`) ||
+    /TOP THREE/i.test(`${rank4Probe.status} ${rank4Probe.runbackTitle}`)
   ) {
-    throw new Error(`Steam rank 4 was incorrectly treated as Top Three: ${JSON.stringify(rank4Probe)}`);
+    throw new Error(`Steam rank 4 should be heroic Top 10 without Top Three copy: ${JSON.stringify(rank4Probe)}`);
   }
-  if (rank4Probe.placement?.placement !== 4 || rank4Probe.tier !== 'global') {
-    throw new Error(`Steam rank 4 should be a global placement only: ${JSON.stringify(rank4Probe)}`);
+  if (rank4Probe.placement?.placement !== 4 || rank4Probe.tier !== 'top10') {
+    throw new Error(`Steam rank 4 should be a Top 10 placement: ${JSON.stringify(rank4Probe)}`);
   }
   const missingRankProbe = await page.evaluate(async () => {
     const scene = window.__game?.scenes?.gameOver;

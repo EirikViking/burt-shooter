@@ -105,7 +105,7 @@ try {
           nova_boss_01: {
             id: 'nova_boss_01',
             category: 'bosses',
-            name: 'NULL CROWN',
+            name: 'Sonia',
             timesSeen: 1,
             timesDefeated: 1
           }
@@ -143,7 +143,7 @@ try {
   assert.deepEqual(merged.progression, { bestScore: 9000, bestRank: 7, bestLevel: 12 });
   assert.equal(merged.hangarProgress.pilotXp, 54321);
   assert.equal(merged.hangarProgress.unlockedShipIds.includes('nova_ship_09'), true);
-  assert.equal(merged.threatDiscovery.items.bosses.nova_boss_01.name, 'NULL CROWN');
+  assert.equal(merged.threatDiscovery.items.bosses.nova_boss_01.name, 'Sonia');
   assert.deepEqual(merged.threatDiscovery.unreadIds, ['bosses:nova_boss_01']);
   assert.equal(merged.shipUsage.nova_ship_01, 4);
   assert.equal(merged.shipUsage['nova-player-ship-04.png'], 2);
@@ -268,8 +268,8 @@ try {
       unlockedShipIds: ['nova_ship_01', 'nova_ship_05']
     },
     threatDiscovery: {
-      items: { bosses: { nova_boss_02: { id: 'nova_boss_02', category: 'bosses', name: 'ORBITAL HECKLER' } } },
-      unreadIds: ['bosses:nova_boss_02']
+      items: { bosses: { nova_boss_03: { id: 'nova_boss_03', category: 'bosses', name: 'KurtBossEdgar' } } },
+      unreadIds: ['bosses:nova_boss_03']
     },
     shipUsage: {
       nova_ship_01: 5,
@@ -310,7 +310,7 @@ try {
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_LOCAL_LEADERBOARD_KEY))[0].name, 'CLOUDACE');
   assert.deepEqual(JSON.parse(restartStorage.getItem(CLOUD_ACHIEVEMENT_KEY)).unlocked.sort(), ['cloud_unlock', 'existing_local']);
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_HANGAR_PROGRESS_KEY)).pilotXp, 8888);
-  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.bosses.nova_boss_02.name, 'ORBITAL HECKLER');
+  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.bosses.nova_boss_03.name, 'KurtBossEdgar');
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY)).nova_ship_01, 5);
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY))['row2_ship_1.png'], 3);
   assert.equal(restartStorage.getItem(CLOUD_SHIP_USAGE_TOTAL_KEY), '8');

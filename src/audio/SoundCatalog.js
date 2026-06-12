@@ -211,8 +211,23 @@ export const SFX_MIX = {
     nova_highscore_chime: { volume: 0.62, minIntervalMs: 500 },
     nova_global_near_fanfare: { volume: 0.68, minIntervalMs: 900 },
     nova_global_slot_fanfare: { volume: 0.84, minIntervalMs: 900 },
+    nova_top10_fanfare: { volume: 0.9, minIntervalMs: 900 },
     nova_top3_fanfare: { volume: 0.96, minIntervalMs: 900 },
     nova_number_one_fanfare: { volume: 1.05, minIntervalMs: 900 },
+    nova_fuel_ship_spawn: { volume: 0.66, minIntervalMs: 900 },
+    nova_fuel_ship_heal: { volume: 0.72, minIntervalMs: 500 },
+    nova_fuel_ship_pop: { volume: 0.62, minIntervalMs: 80 },
+    nova_danger_mid_pop: { volume: 0.56, minIntervalMs: 90 },
+    nova_boss_death_sonia: { volume: 0.82, minIntervalMs: 900 },
+    nova_boss_death_forge: { volume: 0.82, minIntervalMs: 900 },
+    nova_boss_death_kurt: { volume: 0.82, minIntervalMs: 900 },
+    nova_boss_death_needle: { volume: 0.8, minIntervalMs: 900 },
+    nova_boss_death_vortex: { volume: 0.82, minIntervalMs: 900 },
+    nova_boss_death_jester: { volume: 0.78, minIntervalMs: 900 },
+    nova_boss_death_carrier: { volume: 0.8, minIntervalMs: 900 },
+    nova_boss_death_monolith: { volume: 0.84, minIntervalMs: 900 },
+    nova_boss_death_choir: { volume: 0.8, minIntervalMs: 900 },
+    nova_boss_death_clock: { volume: 0.82, minIntervalMs: 900 },
     overrun_clear_coronation: { volume: 0.88, minIntervalMs: 60000 },
     overrun_clear_shockwave: { volume: 0.86, minIntervalMs: 60000 },
     nova_player_hit_crackle: { volume: 0.72, minIntervalMs: 220 },
@@ -588,6 +603,36 @@ export const SFX_CATALOG = {
     'boss_death_cascade': [
         getSfx('nova_boss_death_cascade')
     ],
+    'nova_boss_death_sonia': [
+        getSfx('nova_boss_death_sonia')
+    ],
+    'nova_boss_death_forge': [
+        getSfx('nova_boss_death_forge')
+    ],
+    'nova_boss_death_kurt': [
+        getSfx('nova_boss_death_kurt')
+    ],
+    'nova_boss_death_needle': [
+        getSfx('nova_boss_death_needle')
+    ],
+    'nova_boss_death_vortex': [
+        getSfx('nova_boss_death_vortex')
+    ],
+    'nova_boss_death_jester': [
+        getSfx('nova_boss_death_jester')
+    ],
+    'nova_boss_death_carrier': [
+        getSfx('nova_boss_death_carrier')
+    ],
+    'nova_boss_death_monolith': [
+        getSfx('nova_boss_death_monolith')
+    ],
+    'nova_boss_death_choir': [
+        getSfx('nova_boss_death_choir')
+    ],
+    'nova_boss_death_clock': [
+        getSfx('nova_boss_death_clock')
+    ],
     'trait_bonus_hit': [
         getSfx('nova_combo_tick')
     ],
@@ -688,11 +733,26 @@ export const SFX_CATALOG = {
     'nova_global_slot_fanfare': [
         getSfx('nova_global_slot_fanfare')
     ],
+    'nova_top10_fanfare': [
+        getSfx('nova_top10_fanfare')
+    ],
     'nova_top3_fanfare': [
         getSfx('nova_top3_fanfare')
     ],
     'nova_number_one_fanfare': [
         getSfx('nova_number_one_fanfare')
+    ],
+    'nova_fuel_ship_spawn': [
+        getSfx('nova_fuel_ship_spawn')
+    ],
+    'nova_fuel_ship_heal': [
+        getSfx('nova_fuel_ship_heal')
+    ],
+    'nova_fuel_ship_pop': [
+        getSfx('nova_fuel_ship_pop')
+    ],
+    'nova_danger_mid_pop': [
+        getSfx('nova_danger_mid_pop')
     ],
     'overrun_clear_coronation': [
         getSfx('nova_overrun_clear_coronation')
