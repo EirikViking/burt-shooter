@@ -102,6 +102,17 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function assertOverlayLayout(state, label) {
+  const overlay = state.howToPlayOverlay;
+  const layout = overlay?.layout;
+  assert(overlay?.cardCount >= 7, `${label} missing help cards`);
+  assert(layout?.cards?.length === overlay.cardCount, `${label} card layout count mismatch`);
+  assert(!layout.layoutWarnings?.length, `${label} layout warnings: ${(layout.layoutWarnings || []).join('; ')}`);
+  assert(layout.panel?.width > 500 && layout.panel?.height > 420, `${label} panel too small`);
+  assert(layout.footer?.y > Math.max(...layout.cards.map((card) => card.y + card.height)), `${label} footer overlaps card grid`);
+  assert(layout.button?.y >= layout.footer?.y, `${label} back button escaped footer rail`);
+}
+
 const server = await startPreviewServer();
 const browser = await chromium.launch({
   headless: true,
@@ -127,6 +138,8 @@ try {
 
   await page.evaluate(() => window.__game?.currentScene?.openHowToPlayOverlay?.());
   const menuHelp = await waitForState(page, (state) => state.overlays?.howToPlay && state.howToPlayOverlay?.rows?.length >= 7, 'menu help overlay');
+  assertOverlayLayout(menuHelp, 'menu help overlay');
+  await page.screenshot({ path: path.join(outputDir, 'menu-how-to-play.png'), fullPage: true });
   await page.keyboard.press('Escape');
   await waitForState(page, (state) => state.scene === 'menu' && !state.overlays?.howToPlay, 'menu help closed');
 
@@ -138,6 +151,8 @@ try {
     play?.openHowToPlayOverlay?.();
   });
   const pauseHelp = await waitForState(page, (state) => state.scene === 'play' && state.isPaused && state.overlays?.pause && state.overlays?.howToPlay, 'pause help overlay');
+  assertOverlayLayout(pauseHelp, 'pause help overlay');
+  await page.screenshot({ path: path.join(outputDir, 'pause-how-to-play.png'), fullPage: true });
 
   const report = {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,
@@ -146,6 +161,12 @@ try {
     menuOrder: menu.menu?.optionOrder,
     menuRows: menuHelp.howToPlayOverlay?.rows,
     pauseRows: pauseHelp.howToPlayOverlay?.rows,
+    menuLayout: menuHelp.howToPlayOverlay?.layout,
+    pauseLayout: pauseHelp.howToPlayOverlay?.layout,
+    screenshots: {
+      menu: path.join(outputDir, 'menu-how-to-play.png'),
+      pause: path.join(outputDir, 'pause-how-to-play.png')
+    },
     pageErrors,
     consoleErrors
   };
