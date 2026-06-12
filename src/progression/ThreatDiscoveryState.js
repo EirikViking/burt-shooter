@@ -14,6 +14,7 @@ export const DISCOVERY_CATEGORIES = Object.freeze([
   'bosses',
   'runThemes',
   'cabinetLogs',
+  'pilotRanks',
   'rareModifiers'
 ]);
 
@@ -88,6 +89,26 @@ function readStoredJson(key, fallback = {}) {
   }
 }
 
+function getEarnedPilotRankIds(progress = {}, index = new Map()) {
+  const candidates = [
+    progress.highestPilotRank,
+    progress.pilotRank,
+    progress.bestRank
+  ].map(Number).filter(Number.isFinite).map(Math.floor);
+  for (const achievementId of Array.isArray(progress.rankAchievementsUnlocked) ? progress.rankAchievementsUnlocked : []) {
+    const match = String(achievementId).match(/ACH_RANK_(\d+)/i);
+    if (match) candidates.push(Number(match[1]) - 1);
+  }
+  const highestRank = Math.max(-1, ...candidates);
+  if (highestRank < 0) return [];
+  const ids = [];
+  for (let rankIndex = 0; rankIndex <= highestRank; rankIndex += 1) {
+    const id = `pilot_rank_${String(rankIndex).padStart(2, '0')}`;
+    if (index.get(id)?.category === 'pilotRanks') ids.push(id);
+  }
+  return ids;
+}
+
 function hydrateFromHangarProgress(state) {
   const progress = readStoredJson(HANGAR_PROGRESS_KEY, {});
   const discoveryIds = new Set([
@@ -95,11 +116,12 @@ function hydrateFromHangarProgress(state) {
     ...(Array.isArray(progress.defeatedBossIds) ? progress.defeatedBossIds : []),
     ...(Array.isArray(progress.runThemesSurvived) ? progress.runThemesSurvived : [])
   ].map(String).filter(Boolean));
-  if (discoveryIds.size === 0) return state;
 
   const defeatedBossIds = new Set((Array.isArray(progress.defeatedBossIds) ? progress.defeatedBossIds : []).map(String));
   const survivedThemeIds = new Set((Array.isArray(progress.runThemesSurvived) ? progress.runThemesSurvived : []).map(String));
   const index = getCatalogIndex();
+  for (const id of getEarnedPilotRankIds(progress, index)) discoveryIds.add(id);
+  if (discoveryIds.size === 0) return state;
   let changed = false;
   const restoredAt = progress.updatedAt || nowIso();
 

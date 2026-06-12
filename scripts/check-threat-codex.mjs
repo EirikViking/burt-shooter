@@ -33,6 +33,7 @@ if ((catalog.waveTactics?.length || 0) < 35) fail(`expected at least 35 wave tac
 if ((catalog.powerups?.length || 0) < 20) fail(`expected at least 20 powerup codex entries, found ${catalog.powerups?.length || 0}`);
 if ((catalog.sectors?.length || 0) < 10) fail(`expected at least 10 sector codex entries, found ${catalog.sectors?.length || 0}`);
 if ((catalog.runThemes?.length || 0) < 18) fail(`expected at least 18 run theme codex entries, found ${catalog.runThemes?.length || 0}`);
+if ((catalog.pilotRanks?.length || 0) < 40) fail(`expected at least 40 pilot rank codex entries, found ${catalog.pilotRanks?.length || 0}`);
 const waveArt = catalog.waveTactics?.map(entry => entry.art).filter(Boolean) || [];
 if (waveArt.length !== catalog.waveTactics.length) fail('every wave tactic should have unique Codex art');
 if (new Set(waveArt).size !== waveArt.length) fail('wave tactic Codex art should be unique per tactic');
@@ -74,6 +75,9 @@ fakeStorage.set(HANGAR_PROGRESS_KEY, JSON.stringify({
   discoveredThreatIds: ['telegraph_rail_lance'],
   defeatedBossIds: [catalog.bosses?.[0]?.id],
   runThemesSurvived: ['swarm_lattice'],
+  pilotRank: 12,
+  highestPilotRank: 12,
+  rankAchievementsUnlocked: ['ACH_RANK_13'],
   updatedAt: new Date(Date.UTC(2026, 0, 1)).toISOString()
 }));
 const restoredState = getThreatCodexState();
@@ -81,6 +85,8 @@ const restoredCompletion = getCodexCompletionCounts(catalog, restoredState);
 if ((restoredCompletion.attackPatterns?.discovered || 0) < 1) fail('Threat Codex should hydrate attack pattern discoveries from hangar progress');
 if ((restoredCompletion.bosses?.discovered || 0) < 1) fail('Threat Codex should hydrate defeated boss discoveries from hangar progress');
 if ((restoredCompletion.runThemes?.discovered || 0) < 1) fail('Threat Codex should hydrate run theme discoveries from hangar progress');
+if ((restoredCompletion.pilotRanks?.discovered || 0) < 13) fail('Threat Codex should hydrate earned pilot ranks from hangar progress');
+if (!restoredState.items?.pilotRanks?.pilot_rank_12) fail('Threat Codex should restore the current displayed pilot rank entry');
 if (!fakeStorage.get(THREAT_DISCOVERY_KEY)) fail('Threat Codex hydration should write repaired discovery state');
 fakeStorage.delete(HANGAR_PROGRESS_KEY);
 resetDiscoveryStateForTests();
@@ -110,4 +116,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`[threat-codex] PASS categories=${THREAT_CODEX_CATEGORIES.length} total=${totalEntries} enemies=${catalog.enemies.length} attackPatterns=${catalog.attackPatterns.length} waveTactics=${catalog.waveTactics.length} runThemes=${catalog.runThemes.length}`);
+console.log(`[threat-codex] PASS categories=${THREAT_CODEX_CATEGORIES.length} total=${totalEntries} enemies=${catalog.enemies.length} attackPatterns=${catalog.attackPatterns.length} waveTactics=${catalog.waveTactics.length} runThemes=${catalog.runThemes.length} pilotRanks=${catalog.pilotRanks.length}`);
