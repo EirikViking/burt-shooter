@@ -1,110 +1,70 @@
 export const BOSS_DEATH_VOICE_COUNT = 100;
-export const BOSS_DEATH_DEFAULT_VOICE_ID = 'N2lVS1w4EtoT3dr4eOWO';
-export const BOSS_DEATH_DEFAULT_VOICE_NAME = 'Callum - Husky Trickster';
+export const BOSS_DEATH_DEFAULT_VOICE_ID = 'KLZOWyG48RjZkAAjuM89';
+export const BOSS_DEATH_DEFAULT_VOICE_NAME = 'Angry AL - Intense Male Space Misfit';
 export const BOSS_DEATH_MODEL_ID = 'eleven_v3';
 export const BOSS_DEATH_FORBIDDEN_VOICE_IDS = [
-  'SIbt9DJkaY96v2K2fQyQ'
+  'SIbt9DJkaY96v2K2fQyQ',
+  'N2lVS1w4EtoT3dr4eOWO'
 ];
 
-export const bossDeathVoiceLines = [
-  { id: 'boss_death_agony_001', text: 'Aaaagh! I was one payment away from immortality!' },
-  { id: 'boss_death_agony_002', text: 'Nooo! My throne had cup holders!' },
-  { id: 'boss_death_agony_003', text: 'Aaargh! Tell my fleet I was busy looking magnificent!' },
-  { id: 'boss_death_agony_004', text: 'Oh no! My evil spreadsheet was unsaved!' },
-  { id: 'boss_death_agony_005', text: 'Graaah! I demand a rematch after repairs and snacks!' },
-  { id: 'boss_death_agony_006', text: 'No! My cape was load-bearing!' },
-  { id: 'boss_death_agony_007', text: 'Aaaagh! Who put courage in that tiny ship?' },
-  { id: 'boss_death_agony_008', text: 'I regret everything except the lasers!' },
-  { id: 'boss_death_agony_009', text: 'My dramatic exit was scheduled for next Tuesday!' },
-  { id: 'boss_death_agony_010', text: 'Aaargh! The board will hear about this explosion!' },
-  { id: 'boss_death_agony_011', text: 'Nooo! I had a monologue warming up!' },
-  { id: 'boss_death_agony_012', text: 'Aaaagh! My armor warranty said mostly bulletproof!' },
-  { id: 'boss_death_agony_013', text: 'Impossible! I practiced sneering all morning!' },
-  { id: 'boss_death_agony_014', text: 'My skull-shaped chair was innocent!' },
-  { id: 'boss_death_agony_015', text: 'Aaargh! Cancel the victory brunch!' },
-  { id: 'boss_death_agony_016', text: 'No! My empire was finally getting dental!' },
-  { id: 'boss_death_agony_017', text: 'I can see the paperwork!' },
-  { id: 'boss_death_agony_018', text: 'Aaaagh! This is terrible branding!' },
-  { id: 'boss_death_agony_019', text: 'My secret weakness was being shot a lot!' },
-  { id: 'boss_death_agony_020', text: 'Nooo! I was emotionally attached to my hull!' },
-  { id: 'boss_death_agony_021', text: 'Aaargh! The tiny pilot used tiny violence!' },
-  { id: 'boss_death_agony_022', text: 'Tell my lasers they were adequate!' },
-  { id: 'boss_death_agony_023', text: 'No! I left the reactor on dramatic!' },
-  { id: 'boss_death_agony_024', text: 'Aaaagh! My final form had not finished downloading!' },
-  { id: 'boss_death_agony_025', text: 'The pain is premium and I hate it!' },
-  { id: 'boss_death_agony_026', text: 'Nooo! I was the problem and the solution!' },
-  { id: 'boss_death_agony_027', text: 'Aaargh! Somebody avenge my excellent posture!' },
-  { id: 'boss_death_agony_028', text: 'I should have invested in shields instead of fog machines!' },
-  { id: 'boss_death_agony_029', text: 'No! My doom invoice is due!' },
-  { id: 'boss_death_agony_030', text: 'Aaaagh! I am becoming a cautionary tutorial!' },
-  { id: 'boss_death_agony_031', text: 'My scream is legally distinct from surrender!' },
-  { id: 'boss_death_agony_032', text: 'Nooo! My henchmen are already updating resumes!' },
-  { id: 'boss_death_agony_033', text: 'Aaargh! I was promised a bigger health bar!' },
-  { id: 'boss_death_agony_034', text: 'The explosion has notes of betrayal!' },
-  { id: 'boss_death_agony_035', text: 'No! My plan was flawless except for results!' },
-  { id: 'boss_death_agony_036', text: 'Aaaagh! My confidence was decorative!' },
-  { id: 'boss_death_agony_037', text: 'I demand to speak to the hitbox manager!' },
-  { id: 'boss_death_agony_038', text: 'Nooo! The ominous choir was nonrefundable!' },
-  { id: 'boss_death_agony_039', text: 'Aaargh! My villain arc clipped through the floor!' },
-  { id: 'boss_death_agony_040', text: 'Tell Sonia she still owes me bolts!' },
-  { id: 'boss_death_agony_041', text: 'No! KurtBossEdgar warned me about you!' },
-  { id: 'boss_death_agony_042', text: 'Aaaagh! I peaked during the warning siren!' },
-  { id: 'boss_death_agony_043', text: 'My last thought is mostly tax fraud!' },
-  { id: 'boss_death_agony_044', text: 'Nooo! I forgot to look mysterious!' },
-  { id: 'boss_death_agony_045', text: 'Aaargh! That was not in the evil brochure!' },
-  { id: 'boss_death_agony_046', text: 'My reactor is screaming in cursive!' },
-  { id: 'boss_death_agony_047', text: 'No! My command chair had lumbar support!' },
-  { id: 'boss_death_agony_048', text: 'Aaaagh! I brought claws to a bullet argument!' },
-  { id: 'boss_death_agony_049', text: 'I can taste the respawn menu!' },
-  { id: 'boss_death_agony_050', text: 'Nooo! My evil laugh still had two payments!' },
-  { id: 'boss_death_agony_051', text: 'Aaargh! The universe is giving me feedback!' },
-  { id: 'boss_death_agony_052', text: 'My doom helmet is full of soup!' },
-  { id: 'boss_death_agony_053', text: 'No! I am too important to be particles!' },
-  { id: 'boss_death_agony_054', text: 'Aaaagh! My menace budget was enormous!' },
-  { id: 'boss_death_agony_055', text: 'Put this in my obituary: briefly intimidating!' },
-  { id: 'boss_death_agony_056', text: 'Nooo! My escape pod is decorative!' },
-  { id: 'boss_death_agony_057', text: 'Aaargh! I should have read the pilot reviews!' },
-  { id: 'boss_death_agony_058', text: 'My final words are several alarms!' },
-  { id: 'boss_death_agony_059', text: 'No! The tiny ship found my unsubscribe button!' },
-  { id: 'boss_death_agony_060', text: 'Aaaagh! I am being deleted with enthusiasm!' },
-  { id: 'boss_death_agony_061', text: 'My crown is entering low orbit!' },
-  { id: 'boss_death_agony_062', text: 'Nooo! My evil dentist was right!' },
-  { id: 'boss_death_agony_063', text: 'Aaargh! Stop shooting the load-bearing arrogance!' },
-  { id: 'boss_death_agony_064', text: 'My defeat tastes like hot pennies!' },
-  { id: 'boss_death_agony_065', text: 'No! My fleet will make this a meeting!' },
-  { id: 'boss_death_agony_066', text: 'Aaaagh! I was still charging my scary face!' },
-  { id: 'boss_death_agony_067', text: 'Somebody mute my reactor!' },
-  { id: 'boss_death_agony_068', text: 'Nooo! My legacy is confetti!' },
-  { id: 'boss_death_agony_069', text: 'Aaargh! The pilot brought receipts!' },
-  { id: 'boss_death_agony_070', text: 'My pain has excellent surround sound!' },
-  { id: 'boss_death_agony_071', text: 'No! My boss title was laminated!' },
-  { id: 'boss_death_agony_072', text: 'Aaaagh! This is why I hate small targets!' },
-  { id: 'boss_death_agony_073', text: 'Tell the swarm I died managerial!' },
-  { id: 'boss_death_agony_074', text: 'Nooo! I did not authorize heroism!' },
-  { id: 'boss_death_agony_075', text: 'Aaargh! My final phase was mostly vibes!' },
-  { id: 'boss_death_agony_076', text: 'My command deck is now a beverage!' },
-  { id: 'boss_death_agony_077', text: 'No! I saved my best laser for after lunch!' },
-  { id: 'boss_death_agony_078', text: 'Aaaagh! I am learning humility at speed!' },
-  { id: 'boss_death_agony_079', text: 'My villain insurance excludes pilots with rhythm!' },
-  { id: 'boss_death_agony_080', text: 'Nooo! I was gorgeous and structurally unsound!' },
-  { id: 'boss_death_agony_081', text: 'Aaargh! Stop applauding the explosion!' },
-  { id: 'boss_death_agony_082', text: 'My last memo says ow in bold!' },
-  { id: 'boss_death_agony_083', text: 'No! My intimidation seminar was tomorrow!' },
-  { id: 'boss_death_agony_084', text: 'Aaaagh! The pilot has weaponized persistence!' },
-  { id: 'boss_death_agony_085', text: 'My empire is becoming collectible dust!' },
-  { id: 'boss_death_agony_086', text: 'Nooo! I never got to use the spare doom!' },
-  { id: 'boss_death_agony_087', text: 'Aaargh! This is an HR incident with fire!' },
-  { id: 'boss_death_agony_088', text: 'My armor is filing for separation!' },
-  { id: 'boss_death_agony_089', text: 'No! I am not ready to be background lore!' },
-  { id: 'boss_death_agony_090', text: 'Aaaagh! There goes my sinister deposit!' },
-  { id: 'boss_death_agony_091', text: 'My lasers loved me in their way!' },
-  { id: 'boss_death_agony_092', text: 'Nooo! The tiny ship chose violence and accounting!' },
-  { id: 'boss_death_agony_093', text: 'Aaargh! I can hear the Codex smirking!' },
-  { id: 'boss_death_agony_094', text: 'My plan had charts! Angry charts!' },
-  { id: 'boss_death_agony_095', text: 'No! I wore the expensive shoulder plates!' },
-  { id: 'boss_death_agony_096', text: 'Aaaagh! My doom aura is leaking!' },
-  { id: 'boss_death_agony_097', text: 'Tell my successor to strafe!' },
-  { id: 'boss_death_agony_098', text: 'Nooo! I became a sound effect!' },
-  { id: 'boss_death_agony_099', text: 'Aaargh! My final scream has excellent metrics!' },
-  { id: 'boss_death_agony_100', text: 'I withdraw my application to be invincible!' }
+const AGONY_OPENERS = [
+  'Aaaagh',
+  'Nooo',
+  'Graaah',
+  'Aaargh',
+  'Nnngh',
+  'Raaagh',
+  'Haaagh',
+  'Uuuhh',
+  'Ghhhaaah',
+  'Aaaah'
 ];
+
+const AGONY_BODIES = [
+  'my core is tearing open',
+  'the reactor is burning through my ribs',
+  'my hull is splitting into fire',
+  'the cockpit is full of white heat',
+  'my armor is crushing inward',
+  'the vacuum is inside my chest',
+  'my spine is breaking in the light',
+  'the engines are eating me alive',
+  'my command deck is collapsing',
+  'the pain is flooding every circuit',
+  'my bones are ringing in the metal',
+  'the stars are cutting through me',
+  'my throat is full of plasma',
+  'the blast is pulling me apart',
+  'my heart is detonating with the ship',
+  'the fire is under my skin',
+  'my crown is melting into my face',
+  'the bridge is folding around me',
+  'my lungs are full of sparks',
+  'the swarm link is screaming inside me'
+];
+
+const AGONY_ENDINGS = [
+  'make it stop',
+  'it hurts',
+  'I can feel everything breaking',
+  'I am burning',
+  'the pain will not end',
+  'I cannot hold the ship',
+  'everything is tearing away',
+  'I am falling into the reactor',
+  'my signal is dying',
+  'there is only fire'
+];
+
+function buildAgonyLine(index) {
+  const opener = AGONY_OPENERS[index % AGONY_OPENERS.length];
+  const body = AGONY_BODIES[(index * 7 + Math.floor(index / 3)) % AGONY_BODIES.length];
+  const ending = AGONY_ENDINGS[(index * 11 + Math.floor(index / 5)) % AGONY_ENDINGS.length];
+  const breath = index % 4 === 0 ? ' Please.' : index % 4 === 1 ? ' No more.' : index % 4 === 2 ? ' It burns.' : ' I am breaking.';
+  return `${opener}! ${body}; ${ending}.${breath}`;
+}
+
+export const bossDeathVoiceLines = Array.from({ length: BOSS_DEATH_VOICE_COUNT }, (_, index) => ({
+  id: `boss_death_agony_${String(index + 1).padStart(3, '0')}`,
+  text: buildAgonyLine(index)
+}));

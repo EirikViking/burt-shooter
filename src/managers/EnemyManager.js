@@ -12,6 +12,7 @@ import {
   GENERATED_ENEMY_TYPES,
   getGeneratedEnemyProfile,
   getGeneratedEnemyTypeAtLevelProgress,
+  getGeneratedEnemyTypeForSpriteIndex,
   pickGeneratedEnemyTypeForLevel
 } from '../config/GeneratedEnemyProfiles.js';
 import {
@@ -26,6 +27,7 @@ import {
 } from '../config/EliteMiddleShips.js';
 import { getDangerMidShipProfile, pickDangerMidShipProfile } from '../config/DangerMidShips.js';
 import { WAVE_TACTIC_VARIANTS } from '../config/WaveTacticVariants.js';
+import { pickBossSupportShipProfile } from '../config/BossSupportShips.js';
 
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
@@ -2344,40 +2346,48 @@ export class EnemyManager {
   spawnBossFuelShip() {
     if (!this.boss?.active) return false;
     const level = Math.max(1, Number(this.level) || 1);
+    const supportProfile = pickBossSupportShipProfile(level, `${level}|${this.bossFuelShipsSpawnedThisBoss}|${Math.round(this.boss.x)}|${Date.now()}`);
     const screenW = this.game.getWidth();
     const startLeft = Math.random() < 0.5;
     const startX = startLeft ? -46 : screenW + 46;
     const targetX = Math.max(58, Math.min(screenW - 58, this.boss.x + (startLeft ? -170 : 170)));
     const targetY = Math.max(90, Math.min(this.game.getHeight() * 0.35, (this.boss.y || 150) + 20));
-    const type = pickGeneratedEnemyTypeForLevel(Math.max(1, Math.min(level, 18)));
+    const type = getGeneratedEnemyTypeForSpriteIndex(supportProfile.spriteIndex) ||
+      pickGeneratedEnemyTypeForLevel(Math.max(1, Math.min(level, 18)));
     const enemy = new Enemy(startX, -96, type, level, this.game, 'Green');
     enemy.kind = 'boss_fuel_ship';
+    enemy.bossSupportShipProfile = supportProfile;
     enemy.bossFuelProfile = {
-      healPercent: level <= 4 ? 0.075 : 0.09,
-      speed: 1.55 + Math.min(0.42, level * 0.018)
+      id: supportProfile.id,
+      displayName: supportProfile.displayName,
+      healPercent: Math.min(level <= 4 ? 0.075 : 0.09, supportProfile.healPercent + Math.min(0.016, level * 0.0015)),
+      speed: supportProfile.speed + Math.min(0.28, level * 0.01)
     };
-    enemy.health = Math.max(2, Math.min(5, Math.ceil((enemy.health || 1) * (level <= 4 ? 1.15 : 1.32))));
+    enemy.health = Math.max(2, Math.min(5, supportProfile.health + (level >= 10 && supportProfile.health < 4 ? 1 : 0)));
     enemy.maxHealth = enemy.health;
-    enemy.scoreValue = Math.max(120, Math.round((enemy.scoreValue || 50) * 2.2));
+    enemy.scoreValue = supportProfile.scoreValue;
     enemy.shootDelay = 999999;
-    enemy.radius = Math.max(16, Math.round((enemy.radius || 16) * 1.12));
-    enemy.color = 0x7dffcc;
+    enemy.radius = supportProfile.radius;
+    enemy.color = supportProfile.tint;
     enemy.visualVariant = {
       ...(enemy.visualVariant || {}),
-      slug: 'boss_fuel_ship',
-      tint: 0x7dffcc,
-      accent: 0xfff08a,
-      scale: 1.12,
+      slug: supportProfile.id,
+      tint: supportProfile.tint,
+      accent: supportProfile.accent,
+      scale: supportProfile.spriteScale,
       alpha: 0.34
     };
-    if (enemy.body) enemy.body.tint = 0xffffff;
+    if (enemy.body) {
+      enemy.body.tint = 0xffffff;
+      enemy.body.scale.set(enemy.body.scale.x * supportProfile.spriteScale, enemy.body.scale.y * supportProfile.spriteScale);
+    }
     if (enemy.sprite) {
-      enemy.sprite.label = 'enemy_visual:boss_fuel_ship';
+      enemy.sprite.label = `enemy_visual:${supportProfile.id}`;
       const halo = new PIXI.Graphics();
-      halo.circle(0, 0, enemy.radius * 2.45);
-      halo.fill({ color: 0x7dffcc, alpha: 0.16 });
-      halo.circle(0, 0, enemy.radius * 1.55);
-      halo.stroke({ color: 0xfff08a, width: 3, alpha: 0.52 });
+      halo.circle(0, 0, enemy.radius * (2.1 + supportProfile.haloScale * 0.22));
+      halo.fill({ color: supportProfile.tint, alpha: 0.16 });
+      halo.circle(0, 0, enemy.radius * supportProfile.haloScale);
+      halo.stroke({ color: supportProfile.accent, width: 3, alpha: 0.52 });
       halo.label = 'bossFuelShipHalo';
       enemy.sprite.addChildAt(halo, 0);
       enemy.ownedVisuals?.push(halo);
@@ -2390,18 +2400,26 @@ export class EnemyManager {
       fireScalar: 0,
       fireDelayMult: 99,
       diveBias: 0,
-      entrySpeed: 0.86
+      entrySpeed: 0.86 + Math.min(0.16, supportProfile.speed * 0.04)
     }, {
       index: 0,
       count: 1,
       formation: 'BOSS_FUEL',
-      centerX: targetX,
+      centerX: targetX + supportProfile.routeDrift * 22,
       centerY: targetY,
       side: startLeft ? -1 : 1
     });
-    enemy.startEntry(startX, -70, targetX, targetY, 1350, 0);
+    enemy.startEntry(startX, -70, targetX + supportProfile.routeDrift * 26, targetY, supportProfile.entryMs, 0);
     this.enemies.push(enemy);
     this.container.addChild(enemy.sprite);
+    this.game?.scenes?.play?.recordThreatDiscovery?.(supportProfile.id, 'enemies', {
+      name: supportProfile.displayName,
+      role: translateText('Boss support'),
+      movementStyle: translateText('intercept run'),
+      fireStyle: translateText('unarmed'),
+      rarity: translateText('Boss Support'),
+      sector: level
+    });
     this.game?.scenes?.play?.recordThreatDiscovery?.('boss_fuel_ship', 'enemies', {
       name: translateText('Boss Fuel Ship'),
       role: translateText('Boss healer'),
@@ -2412,7 +2430,7 @@ export class EnemyManager {
     });
     this.game?.scenes?.play?.showToast?.(translateText('FUEL SHIP INBOUND'), {
       fontSize: this.game.getWidth() < 620 ? 15 : 18,
-      fill: '#7dffcc',
+      fill: `#${supportProfile.tint.toString(16).padStart(6, '0')}`,
       stroke: '#032015',
       strokeThickness: 4,
       duration: 1250,

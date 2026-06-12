@@ -6,6 +6,7 @@ import { RunContentDirectorConfig } from './RunContentDirectorConfig.js';
 import { ENEMY_WEAPON_PROFILES } from './EnemyWeaponProfiles.js';
 import { BOSS_ROSTER } from './BossRoster.js';
 import { DANGER_MID_SHIPS } from './DangerMidShips.js';
+import { BOSS_SUPPORT_SHIPS } from './BossSupportShips.js';
 import { formatSectorLabel, getSectorInfo } from './SectorCatalog.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { translateText } from '../i18n/index.js';
@@ -793,6 +794,24 @@ function bossFuelShipEntry() {
   };
 }
 
+function bossSupportShipEntry(profile) {
+  const name = profile.displayName || profile.id;
+  return {
+    id: profile.id,
+    category: 'enemies',
+    name,
+    rarity: translateText('Boss Support'),
+    role: titleCaseSignal(profile.role || 'boss support'),
+    description: codexText('fuelShipDescription', { name }),
+    tip: translateText('It does not shoot. That is the trick. Shoot it before the boss drinks the tank.'),
+    art: AssetManifest.generated.enemies?.[profile.spriteIndex] || AssetManifest.generated.powerups?.vampire || AssetManifest.sprites.bonusCore,
+    accent: profile.accent,
+    tint: profile.tint,
+    unlockLevel: 1,
+    signalClass: profile.signalClass || 'boss-support'
+  };
+}
+
 function actionEntry(action) {
   const weapon = WEAPON_BY_ID.get(action.weaponId);
   const readWindow = Math.round(action.telegraphMs || 0);
@@ -936,6 +955,7 @@ export function getThreatCodexCatalog() {
   return {
     enemies: [
       bossFuelShipEntry(),
+      ...BOSS_SUPPORT_SHIPS.map(bossSupportShipEntry),
       ...GENERATED_ENEMY_PROFILES.map(enemyEntry),
       ...DANGER_MID_SHIPS.map(dangerMidEntry)
     ],

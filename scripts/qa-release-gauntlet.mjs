@@ -2,10 +2,12 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import {
+  GENERATED_ENEMY_EARLY_SURGE_TOTAL,
   GENERATED_ENEMY_EXTRA_TOTAL,
   GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL,
   GENERATED_ENEMY_FULL_UNLOCK_LEVEL,
   GENERATED_ENEMY_PROFILES,
+  GENERATED_ENEMY_STARTER_COUNT,
   GENERATED_ENEMY_TOTAL,
   getGeneratedEnemyPoolStats
 } from '../src/config/GeneratedEnemyProfiles.js';
@@ -133,6 +135,10 @@ function validateEnemyVariety() {
   if (lateMayhem.length !== GENERATED_ENEMY_EXTRA_TOTAL) {
     fail(`expected ${GENERATED_ENEMY_EXTRA_TOTAL} late-mayhem enemy profiles, found ${lateMayhem.length}`);
   }
+  const earlySurge = GENERATED_ENEMY_PROFILES.filter((profile) => profile.earlySurge === true);
+  if (earlySurge.length !== GENERATED_ENEMY_EARLY_SURGE_TOTAL) {
+    fail(`expected ${GENERATED_ENEMY_EARLY_SURGE_TOTAL} early surge enemy profiles, found ${earlySurge.length}`);
+  }
 
   for (const profile of GENERATED_ENEMY_PROFILES) {
     if (!profile.id) fail('normal enemy profile missing id');
@@ -195,8 +201,9 @@ function validateEnemyVariety() {
   const level10Profiles = getGeneratedEnemyPoolStats(GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1);
   const level11 = stats.find((entry) => entry.level === 11);
   const level40 = stats.find((entry) => entry.level === 40);
-  if (level1.availableProfiles < 8 || level1.availableProfiles > 12) {
-    fail(`level 1 should expose 8-12 normal enemy profiles, found ${level1.availableProfiles}`);
+  const expectedLevel1 = GENERATED_ENEMY_STARTER_COUNT + GENERATED_ENEMY_EARLY_SURGE_TOTAL;
+  if (level1.availableProfiles !== expectedLevel1) {
+    fail(`level 1 should expose ${expectedLevel1} normal enemy profiles, found ${level1.availableProfiles}`);
   }
   if (getGeneratedEnemyPoolStats(GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1).availableProfiles >= level11.availableProfiles) {
     fail(`level ${GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL} should expand the pool beyond level ${GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1}`);

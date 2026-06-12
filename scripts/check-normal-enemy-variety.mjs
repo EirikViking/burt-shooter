@@ -1,9 +1,12 @@
 import { AssetManifest } from '../src/assets/assetManifest.js';
 import {
+  GENERATED_ENEMY_ASSET_COUNT,
+  GENERATED_ENEMY_EARLY_SURGE_TOTAL,
   GENERATED_ENEMY_EXTRA_TOTAL,
   GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL,
   GENERATED_ENEMY_FULL_UNLOCK_LEVEL,
   GENERATED_ENEMY_PROFILES,
+  GENERATED_ENEMY_STARTER_COUNT,
   GENERATED_ENEMY_TOTAL,
   getGeneratedEnemyProfilesForLevel,
   getGeneratedEnemyPoolStats
@@ -36,9 +39,11 @@ const types = new Set();
 if (total !== GENERATED_ENEMY_TOTAL) fail(`expected ${GENERATED_ENEMY_TOTAL} normal enemy profiles, found ${total}`);
 const lateMayhem = profiles.filter((profile) => profile.lateMayhem === true);
 if (lateMayhem.length !== GENERATED_ENEMY_EXTRA_TOTAL) fail(`expected ${GENERATED_ENEMY_EXTRA_TOTAL} late-mayhem profiles, found ${lateMayhem.length}`);
+const earlySurge = profiles.filter((profile) => profile.earlySurge === true);
+if (earlySurge.length !== GENERATED_ENEMY_EARLY_SURGE_TOTAL) fail(`expected ${GENERATED_ENEMY_EARLY_SURGE_TOTAL} level-one surge profiles, found ${earlySurge.length}`);
 if (usedMovement.size < 24) fail(`expected at least 24 movement families, found ${usedMovement.size}`);
 if (usedAttacks.size < 20) fail(`expected at least 20 attack families, found ${usedAttacks.size}`);
-if (assetCount < total - 130) fail(`expected expanded generated enemy assets, found ${assetCount}`);
+if (assetCount !== GENERATED_ENEMY_ASSET_COUNT) fail(`expected ${GENERATED_ENEMY_ASSET_COUNT} generated enemy assets, found ${assetCount}`);
 
 for (const profile of profiles) {
   if (!profile.id) fail('profile missing id');
@@ -89,7 +94,11 @@ const level40Move = unique(level40.map((profile) => profile.movementStyle));
 const level11Attack = unique(level11.map((profile) => profile.fireStyle));
 const level40Attack = unique(level40.map((profile) => profile.fireStyle));
 
-if (level1.length < 8 || level1.length > 12) fail(`level 1 should expose 8-12 profiles, found ${level1.length}`);
+const expectedLevel1 = GENERATED_ENEMY_STARTER_COUNT + GENERATED_ENEMY_EARLY_SURGE_TOTAL;
+if (level1.length !== expectedLevel1) fail(`level 1 should expose ${expectedLevel1} profiles, found ${level1.length}`);
+if (level1.filter((profile) => profile.earlySurge).length !== GENERATED_ENEMY_EARLY_SURGE_TOTAL) {
+  fail(`level 1 should include all ${GENERATED_ENEMY_EARLY_SURGE_TOTAL} early surge profiles`);
+}
 if (level10.some((profile) => profile.lateMayhem)) fail('level 10 should not expose late-mayhem profiles');
 if (level11.length >= total) fail(`level 11 exposes all ${total} profiles`);
 if (!level11.some((profile) => profile.lateMayhem)) fail('level 11 should introduce late-mayhem profiles');
@@ -99,6 +108,39 @@ if (level11Move.length >= usedMovement.size) fail(`level 11 exposes all ${usedMo
 if (level40Move.length !== usedMovement.size) fail(`level 40 exposes ${level40Move.length}/${usedMovement.size} movement families`);
 if (level11Attack.length >= usedAttacks.size) fail(`level 11 exposes all ${usedAttacks.size} attack families`);
 if (level40Attack.length !== usedAttacks.size) fail(`level 40 exposes ${level40Attack.length}/${usedAttacks.size} attack families`);
+
+const surgeNames = new Set();
+const surgeSignatures = new Set();
+for (const profile of earlySurge) {
+  if (profile.unlockLevel !== 1) fail(`${profile.id} should unlock at level 1, found ${profile.unlockLevel}`);
+  if (!profile.displayName || surgeNames.has(profile.displayName)) fail(`duplicate/missing early surge displayName ${profile.displayName || 'none'}`);
+  surgeNames.add(profile.displayName);
+  if (!profile.palette || profile.palette.length < 3) fail(`${profile.id} missing readable three-color palette`);
+  if ((Number(profile.profileFireScalar) || 1) > 0.68) fail(`${profile.id} fires too hot for level 1: ${profile.profileFireScalar}`);
+  if ((Number(profile.damageMult) || 1) > 0.74) fail(`${profile.id} damage is too hot for level 1: ${profile.damageMult}`);
+  if ((Number(profile.diveBias) || 0) > 0.26) fail(`${profile.id} dive bias is too hot for level 1: ${profile.diveBias}`);
+  surgeSignatures.add([
+    profile.displayName,
+    profile.role,
+    profile.spriteIndex,
+    profile.tint,
+    profile.accent,
+    profile.health,
+    profile.speed,
+    profile.shootDelay,
+    profile.radius,
+    profile.movementStyle,
+    profile.fireStyle,
+    profile.projectileSpeedMult,
+    profile.damageMult,
+    profile.diveBias,
+    profile.targetWidth,
+    profile.behaviorSeed
+  ].join('|'));
+}
+if (surgeSignatures.size !== GENERATED_ENEMY_EARLY_SURGE_TOTAL) {
+  fail(`expected ${GENERATED_ENEMY_EARLY_SURGE_TOTAL} unique early surge behavior signatures, found ${surgeSignatures.size}`);
+}
 
 const stats = [1, 5, 10, 11, 20, 30, 40].map((level) => getGeneratedEnemyPoolStats(level));
 for (let i = 1; i < stats.length; i += 1) {
@@ -115,7 +157,7 @@ if (errors.length) {
 
 console.log(
   `[normal-enemy-variety] PASS profiles=${total} movement=${usedMovement.size} attacks=${usedAttacks.size} ` +
-  `level1=${level1.length} level10=${level10.length} level11=${level11.length} late=${lateMayhem.length} level40=${level40.length}`
+  `level1=${level1.length} earlySurge=${earlySurge.length} level10=${level10.length} level11=${level11.length} late=${lateMayhem.length} level40=${level40.length}`
 );
 if (warnings.length) {
   for (const warning of warnings) console.warn(`[normal-enemy-variety] warning: ${warning}`);

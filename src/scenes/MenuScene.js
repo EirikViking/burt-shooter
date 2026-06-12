@@ -1370,10 +1370,11 @@ export class MenuScene {
 
   getRunModeExplainerText() {
     const ranked = translateText('RANKED RUN: Sector 1 climb. Scores, Career XP, achievements, and unlocks count. The leaderboard is watching.');
+    const rankedDetail = ranked.replace(/^[^:]+:\s*/, '');
     const sector = this.sectorStartState?.available
       ? translateText('SECTOR START: checkpoint practice. Local checkpoint record only; no leaderboard or career changes. Great for revenge.')
       : translateText('SECTOR START: unlocks after Sector 5. Then it is checkpoint practice: local records only, no leaderboard or career changes.');
-    return `${ranked}\n${sector}`;
+    return `${translateText('LAUNCH RUN')} // ${rankedDetail}\n${sector}`;
   }
 
   drawMenuPanel(layout) {

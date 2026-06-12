@@ -253,7 +253,7 @@ export class ThreatCodexScene {
     this.wheelHandler = null;
     this.gamepadNavigator = new GamepadNavigator();
     this.catalog = getThreatCodexCatalog();
-    this.discoveryState = getThreatCodexState();
+    this.discoveryState = this.withLivePilotRankDiscovery(getThreatCodexState());
     this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
     this.renderToken = 0;
     this.backdropSprite = null;
@@ -273,7 +273,7 @@ export class ThreatCodexScene {
     this.container.removeChildren();
     this.container.sortableChildren = true;
     this.catalog = getThreatCodexCatalog();
-    this.discoveryState = clearThreatCodexUnread();
+    this.discoveryState = this.withLivePilotRankDiscovery(clearThreatCodexUnread());
     this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
     this.renderToken += 1;
     this.animatedNodes = [];
@@ -337,6 +337,45 @@ export class ThreatCodexScene {
 
   isDiscovered(entry, categoryId = this.getCategory().id) {
     return entryDiscovered(this.discoveryState, categoryId, entry);
+  }
+
+  withLivePilotRankDiscovery(state = getThreatCodexState()) {
+    const liveRank = Math.max(0, Math.floor(Number(this.game?.rankIndex) || 0));
+    const rankEntries = Array.isArray(this.catalog?.pilotRanks) ? this.catalog.pilotRanks : [];
+    if (!rankEntries.length || liveRank <= 0) return state;
+    const next = {
+      ...state,
+      items: {
+        ...(state.items || {}),
+        pilotRanks: {
+          ...(state.items?.pilotRanks || {})
+        }
+      }
+    };
+    const seenAt = new Date().toISOString();
+    const maxRank = Math.min(liveRank, rankEntries.length - 1);
+    for (let index = 0; index <= maxRank; index += 1) {
+      const entry = rankEntries[index];
+      if (!entry?.id || next.items.pilotRanks[entry.id]) continue;
+      next.items.pilotRanks[entry.id] = {
+        id: entry.id,
+        category: 'pilotRanks',
+        name: entry.name || titleCaseSignal(entry.id),
+        firstSeenAt: seenAt,
+        lastSeenAt: seenAt,
+        timesSeen: 1,
+        timesDefeated: 0,
+        timesSurvived: 0,
+        timesKilledPlayer: 0,
+        bestClearTimeAgainst: null,
+        highestScoreDuringEncounter: 0,
+        metadata: {
+          restoredFrom: 'liveGameRank',
+          rankIndex: index
+        }
+      };
+    }
+    return next;
   }
 
   getSelectedEntry() {

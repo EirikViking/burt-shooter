@@ -53,6 +53,25 @@ function hexColor(color) {
   return `#${Number(color || 0xffffff).toString(16).padStart(6, '0')}`;
 }
 
+function shipRecommendationScore(ship) {
+  if (!ship) return -Infinity;
+  const unlockDepth = Number(ship.unlock?.level) || 1;
+  const stats = ship.stats || {};
+  const weapon = ship.weapon || {};
+  const damage = Number(stats.damage) || 1;
+  const speed = Number(stats.speed) || 1;
+  const bulletSpeed = Number(stats.bulletSpeed) || 1;
+  const fireRate = Number(stats.fireRate) || 140;
+  const bullets = Math.max(1, Number(weapon.bullets) || 1);
+  const hitbox = Number(ship.hitbox?.radius) || 12;
+  return unlockDepth * 12 +
+    damage * bullets * 28 +
+    speed * 8 +
+    bulletSpeed * 3 -
+    fireRate * 0.05 -
+    hitbox * 0.6;
+}
+
 export class ShipSelectScene {
   constructor(game, options = {}) {
     this.game = game;
@@ -88,15 +107,26 @@ export class ShipSelectScene {
     this.gamepadNavigator = new GamepadNavigator();
     this.menuFx = null;
     this.exitNoticeTimeout = null;
+    this.recommendedShip = this.getRecommendedShip();
+    this.recommendationBanner = null;
+    this.recommendationText = null;
+    this.recommendationReasonText = null;
 
     // Load saved selection
     const preferredSpriteKey = options.preferredSpriteKey;
     const saved = preferredSpriteKey && isValidShipKey(preferredSpriteKey) ? preferredSpriteKey : this.loadSelection();
-    const canRestoreSelection = saved && isValidShipKey(saved) && (
+    const canRestoreSelection = saved && isValidShipKey(saved) && !this.recommendedShip && (
       saved === preferredSpriteKey ||
       isShipUnlocked(saved, this.unlockProgress)
     );
-    if (canRestoreSelection) {
+    if (!preferredSpriteKey && this.recommendedShip?.spriteKey) {
+      const recommendedIndex = this.ships.findIndex(s => s.spriteKey === this.recommendedShip.spriteKey);
+      if (recommendedIndex >= 0) this.selectedIndex = recommendedIndex;
+    } else if (preferredSpriteKey && isValidShipKey(preferredSpriteKey)) {
+      const resolvedPreferred = resolveShipKey(preferredSpriteKey);
+      const index = this.ships.findIndex(s => s.spriteKey === resolvedPreferred);
+      if (index >= 0) this.selectedIndex = index;
+    } else if (canRestoreSelection) {
       const resolvedSaved = resolveShipKey(saved);
       const index = this.ships.findIndex(s => s.spriteKey === resolvedSaved);
       if (index >= 0) this.selectedIndex = index;
@@ -147,6 +177,7 @@ export class ShipSelectScene {
 
     this.createHangarFrame(width, height);
     this.createHeader(width, height);
+    this.createRecommendationBanner(width, height);
     this.createBackButton(width, height);
 
     // Carousel container
@@ -1227,6 +1258,80 @@ export class ShipSelectScene {
     return text;
   }
 
+  getRecommendedShip() {
+    const unlocked = this.ships.filter(ship => isShipUnlocked(ship.spriteKey, this.unlockProgress));
+    const pool = unlocked.length ? unlocked : this.ships.slice(0, 1);
+    return pool
+      .slice()
+      .sort((a, b) => shipRecommendationScore(b) - shipRecommendationScore(a))[0] || null;
+  }
+
+  createRecommendationBanner(width, height) {
+    const recommended = this.recommendedShip;
+    if (!recommended || width < 760) return;
+    const bannerWidth = Math.min(760, width - 360);
+    const bannerHeight = 42;
+    const banner = new PIXI.Container();
+    banner.label = 'ui_shipRecommendationBanner';
+    banner.position.set(width / 2 - bannerWidth / 2, 100);
+    banner.zIndex = 50;
+    banner.bannerWidth = bannerWidth;
+
+    const bg = new PIXI.Graphics();
+    bg.roundRect(0, 0, bannerWidth, bannerHeight, 8);
+    bg.fill({ color: 0x041322, alpha: 0.9 });
+    bg.stroke({ color: 0xffd15c, width: 1.8, alpha: 0.86 });
+    bg.rect(10, 7, 4, bannerHeight - 14);
+    bg.fill({ color: 0x66ffdd, alpha: 0.85 });
+    bg.rect(bannerWidth - 14, 7, 4, bannerHeight - 14);
+    bg.fill({ color: 0xff55d9, alpha: 0.76 });
+
+    const label = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 14,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      stroke: '#000000',
+      strokeThickness: 2,
+      letterSpacing: 0
+    });
+    label.position.set(24, 6);
+
+    const reason = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 12,
+      fontWeight: '800',
+      fill: '#c9fbff',
+      letterSpacing: 0
+    });
+    reason.position.set(24, 24);
+
+    banner.addChild(bg, label, reason);
+    this.recommendationBanner = banner;
+    this.recommendationText = label;
+    this.recommendationReasonText = reason;
+    this.container.addChild(banner);
+    this.updateRecommendationBanner();
+  }
+
+  updateRecommendationBanner() {
+    if (!this.recommendationBanner || !this.recommendedShip) return;
+    const selected = this.ships[this.selectedIndex];
+    const usingRecommended = selected?.spriteKey === this.recommendedShip.spriteKey;
+    const role = getShipCombatRole(this.recommendedShip, this.statRanges);
+    this.recommendationText.text = [translateText('RECOMMENDED HULL'), this.recommendedShip.name].join(': ');
+    this.recommendationReasonText.text = usingRecommended
+      ? translateText('USING RECOMMENDED HULL')
+      : [translateText('BEST UNLOCKED'), role, translateText('HANGAR SAYS THIS ONE HAS THE BEST ODDS')].join(' // ');
+    this.recommendationText.scale.set(1);
+    this.recommendationReasonText.scale.set(1);
+    const textWidth = (Number.isFinite(this.recommendationBanner.bannerWidth)
+      ? this.recommendationBanner.bannerWidth
+      : this.recommendationBanner.width) - 48;
+    fitDisplayToBox(this.recommendationText, textWidth, 18, { minScale: 0.7 });
+    fitDisplayToBox(this.recommendationReasonText, textWidth, 16, { minScale: 0.68 });
+  }
+
   createIntelPanels(width, height) {
     this.intelPanels = new PIXI.Container();
     this.container.addChild(this.intelPanels);
@@ -1887,6 +1992,7 @@ export class ShipSelectScene {
     const modelTotal = Math.max(1, this.baseOrder.length);
     const status = ship && isShipUnlocked(ship.spriteKey, this.unlockProgress) ? 'READY' : getShipUnlockLabel(ship?.spriteKey);
     this.selectionInfoText.text = `HULL ${this.selectedIndex + 1}/${this.ships.length}  |  SERIES ${modelIndex}/${modelTotal}  |  ${status}`;
+    this.updateRecommendationBanner();
   }
 
   updateIntelPanels() {

@@ -199,27 +199,19 @@ export class SettingsOverlay {
     if (panelWidth >= 500) {
       const footerButtonGap = isCompact ? 12 : 16;
       const availableFooterWidth = panelWidth - (isCompact ? 44 : 64);
-      const footerButtonWidth = Math.min(isCompact ? 154 : 168, Math.floor((availableFooterWidth - footerButtonGap * 2) / 3));
+      const footerButtonWidth = Math.min(isCompact ? 172 : 190, Math.floor((availableFooterWidth - footerButtonGap) / 2));
       const footerStep = footerButtonWidth + footerButtonGap;
-      this.addFooterButton('credits', 'CREDITS', width / 2 - footerStep, footerY, () => this.openCreditsPanel(), {
+      this.addFooterButton('credits', 'CREDITS', width / 2 - footerStep / 2, footerY, () => this.openCreditsPanel(), {
         width: footerButtonWidth,
         height: footerButtonHeight
       });
-      this.addFooterButton('close', 'CLOSE', width / 2, footerY, () => this.close(), {
-        width: footerButtonWidth,
-        height: footerButtonHeight
-      });
-      this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2 + footerStep, footerY, () => this.toggleFullscreen(), {
+      this.addFooterButton('close', 'CLOSE', width / 2 + footerStep / 2, footerY, () => this.close(), {
         width: footerButtonWidth,
         height: footerButtonHeight
       });
     } else {
       const stackGap = footerButtonHeight + 8;
-      this.addFooterButton('credits', 'CREDITS', width / 2, footerY - stackGap * 2, () => this.openCreditsPanel(), {
-        width: stackedButtonWidth,
-        height: footerButtonHeight
-      });
-      this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2, footerY - stackGap, () => this.toggleFullscreen(), {
+      this.addFooterButton('credits', 'CREDITS', width / 2, footerY - stackGap, () => this.openCreditsPanel(), {
         width: stackedButtonWidth,
         height: footerButtonHeight
       });

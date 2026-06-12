@@ -30,7 +30,7 @@ function requireGenerationInputs() {
     throw new Error('ELEVENLABS_API_KEY is required. Keep it in the environment and never commit or print it.');
   }
   if (BOSS_DEATH_FORBIDDEN_VOICE_IDS.includes(voiceId)) {
-    throw new Error(`Refusing to generate boss death voices with the current mission-control voice (${voiceId}). Set ELEVENLABS_BOSS_DEATH_VOICE_ID to a different male voice.`);
+    throw new Error(`Refusing to generate boss death voices with a forbidden/non-agony voice (${voiceId}). Set ELEVENLABS_BOSS_DEATH_VOICE_ID to an intense male boss voice.`);
   }
 }
 
@@ -49,9 +49,9 @@ async function tts(line, index, attempt = 1) {
       model_id: modelId,
       seed: 62000 + index,
       voice_settings: {
-        stability: 0.31,
-        similarity_boost: 0.82,
-        style: 0.9,
+        stability: 0.18,
+        similarity_boost: 0.78,
+        style: 1,
         use_speaker_boost: true
       },
       pronunciation_dictionary_locators: [],

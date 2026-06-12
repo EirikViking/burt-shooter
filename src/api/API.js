@@ -213,9 +213,9 @@ class APIClient {
 
     } catch (error) {
       if (error.code === 'FETCH_TIMEOUT') {
-        console.error('[API] Highscore fetch timed out after 6 seconds');
+        console.warn('[API] Highscore fetch timed out after 6 seconds');
       } else {
-        console.error('[API] Error fetching highscores:', error);
+        console.warn('[API] Error fetching highscores:', error);
       }
       // Re-throw so caller can handle UI state
       throw error;

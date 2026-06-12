@@ -1,44 +1,50 @@
 # Steam Announcement Draft: Early Pilot Overhaul
 
-Status: draft only. Do not post publicly without explicit Steamworks preview approval.
+Status: post-ready draft only. Do not publish publicly until Steamworks shows a safe preview and the publisher explicitly approves that preview.
 
 ## Title
 
-Nova Swarm Early Pilot Overhaul: Top 40, Fuel Ships, Hard Ranks, Bigger Boss Deaths
+Nova Swarm Early Pilot Overhaul: Top 40, Boss Support Ships, Agony Screams, Mayhem, and One More Run
 
 ## Body
 
 Pilots,
 
-Early feedback was clear: Nova Swarm had the arcade bones, but it needed more teeth, more spectacle, and more reasons to chase one more run.
+Early feedback was blunt in the best way: Nova Swarm had the arcade bones, but it needed more teeth, more secrets, louder boss deaths, and a stronger reason to hit one more run before the wreckage cooled.
 
 This update is the first big answer.
 
-Boss fights now have support pressure from bright Fuel Ships. They do not shoot, which is exactly the trap. If one reaches the boss, it restores health. If you intercept it, it pops cleanly and gives the fight a new priority decision without cheap contact damage.
+Leaderboards now support Top 40 throughout the game. Top 10 placements get more heroic ceremony treatment, sharper visuals, and dedicated fanfare audio while staying readable. If you crack the board, the cabinet should look like it noticed.
 
-The leaderboard now supports Top 40 everywhere. Top 10 runs get a more heroic ceremony, stronger visual treatment, and a dedicated fanfare. If you crack the board, the game should feel like it noticed.
+Boss fights have changed hard. Bosses can now call in 111 different support ships that help them survive. They are readable, bright, and fair: the point is a fast priority decision, not cheap confusion. Boss deaths also now trigger a new 100-line male agony voice pack, plus distinct visual and SFX celebrations by boss style. When a boss goes down, he does not make a joke. He suffers.
 
-Late-game waves also got sharper. After sector 8, 58 dangerous mid-ship variants can enter the swarm, filling the space between normal enemies and elites. They are readable, fast to understand, and nasty enough to make lazy routes expensive.
+The swarm itself is bigger now. The game has 1,423 additional unique enemy profiles available from level 1, tuned to add variety without flattening new pilots. After level 10, 177 extra mayhem ships enter the pool to make late runs look wild without simply cranking difficulty. On top of that, the earlier 58 dangerous mid-ship variants still bridge the gap between normal enemies and elites after sector 8.
 
-Boss deaths now hit harder too. Each boss archetype has a more distinct death celebration with new visual bursts and custom SFX. Sonia and KurtBossEdgar have also taken their proper names in the game, Codex, dialogue, and result flow.
+Progression got meaner too. There are 20 new hard ranks, extending the pilot ladder to 40. The Codex now has pilot rank coverage, boss support ship coverage, expanded enemy intel, Sonia lore, and KurtBossEdgar lore.
 
-Progression has been extended with 20 new hard ranks, taking the pilot ladder to 40 total ranks. The new upper ranks are built for players who keep flying after the clear. The final rung is Heat-Death Champion, which is not a job title anyone should want and yet here we are.
+The menus got a quality pass. The How to Play screen is cleaner and more high-tech, menu surfaces have more sci-fi animation and SFX, the fullscreen menu option is gone, and the main menu now explains what Launch Run and Sector Start actually mean. The Hangar also recommends the best unlocked ship before each run so new hulls do not quietly gather dust.
 
-There is also a new Early Pilot achievement. Players who already flew ranked runs during this period should unlock it safely through the new backfill logic once the Steamworks achievement is configured.
+There are also ten new easter eggs hiding in the run. They are small, strange, and probably bad for the insurance paperwork.
 
 Other fixes:
 
-- Sector Run "One more run" now restarts from the same sector instead of Sector 1.
+- Boss 1 is now Sonia.
+- Boss 3 is now KurtBossEdgar.
+- Sector Start "One more run" restarts from the same sector instead of Sector 1.
 - The Windows exit confirmation dialog is gone.
-- The Threat Codex now covers Fuel Ships, dangerous mid-ships, and pilot ranks.
-- New SFX were added for fuel ships, dangerous mid-ships, Top 10 runs, and boss deaths.
+- The duplicate combo readout was removed.
+- Pilot ranks now hydrate correctly in the Codex during live runs.
+- The Early Pilot achievement is implemented in code with safe backfill logic for players who already played.
+- Level clears have a 200-line voice pool.
 - Music was not replaced or altered.
 
-Suggested media for the post:
+Suggested media for this post:
 
-- `test-results/leaderboard-visuals-2026-06-12T11-41-16-481Z/leaderboard-desktop.png`
-- `test-results/gameover-ceremony-1781264727339/number-one.png`
-- `test-results/gameover-ceremony-1781264727339/in-game-final-death.png`
-- `public/art/generated/nova-swarm/ranks/nova-rank-badge-39-20260612.png`
+- How to Play polish: `test-results/how-to-play-2026-06-12T16-35-06-026Z/menu-how-to-play.png`
+- One More Run result screen: `test-results/gameover-motivation-2026-06-12T16-38-09-929Z/gameover-runback.png`
+- Boss agony runtime proof: `test-results/boss-death-voice-runtime-2026-06-12T16-33-41-898Z/boss-death-voice-runtime.png`
+- Sector Start menu explainer: `test-results/sector-start-menu-layout-2026-06-12T16-37-07-609Z/sector-start-menu-desktop.png`
+- Top 40 leaderboard desktop: `test-results/leaderboard-visuals-2026-06-12T11-41-16-481Z/leaderboard-desktop.png`
+- Final rank badge: `public/art/generated/nova-swarm/ranks/nova-rank-badge-39-20260612.png`
 
-Thank you to the early pilots. Your notes made the swarm louder.
+Thank you to the early pilots. Your notes made the swarm louder, weirder, and much harder to put down.

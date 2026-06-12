@@ -5,6 +5,7 @@ import path from 'node:path';
 import { AssetManifest } from '../src/assets/assetManifest.js';
 import { SFX_CATALOG } from '../src/audio/SoundCatalog.js';
 import {
+  GENERATED_ENEMY_EARLY_SURGE_TOTAL,
   GENERATED_ENEMY_EXTRA_TOTAL,
   GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL,
   GENERATED_ENEMY_LEGACY_ASSET_COUNT,
@@ -32,6 +33,7 @@ function hashFile(publicPath) {
 
 const profiles = GENERATED_ENEMY_PROFILES;
 const late = profiles.filter((profile) => profile.lateMayhem === true);
+const earlySurge = profiles.filter((profile) => profile.earlySurge === true);
 const level10 = getGeneratedEnemyProfilesForLevel(GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1);
 const level11 = getGeneratedEnemyProfilesForLevel(GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL);
 const level11Late = level11.filter((profile) => profile.lateMayhem === true);
@@ -44,14 +46,18 @@ if (profiles.length !== GENERATED_ENEMY_TOTAL) {
 if (late.length !== GENERATED_ENEMY_EXTRA_TOTAL) {
   fail(`expected ${GENERATED_ENEMY_EXTRA_TOTAL} late-mayhem enemies, found ${late.length}`);
 }
+if (earlySurge.length !== GENERATED_ENEMY_EARLY_SURGE_TOTAL) {
+  fail(`expected ${GENERATED_ENEMY_EARLY_SURGE_TOTAL} early surge enemies, found ${earlySurge.length}`);
+}
 if (level10.some((profile) => profile.lateMayhem)) {
   fail(`late-mayhem profiles must not unlock before level ${GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL}`);
 }
 if (level11Late.length < 1) {
   fail(`level ${GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL} should introduce at least one late-mayhem enemy`);
 }
-if (level10.length < 40 || level10.length >= GENERATED_ENEMY_LEGACY_TOTAL) {
-  fail(`level 10 should still be legacy-only mid progression, found ${level10.length}`);
+const level10WithoutSurge = level10.filter((profile) => !profile.earlySurge);
+if (level10WithoutSurge.length < 40 || level10WithoutSurge.length >= GENERATED_ENEMY_LEGACY_TOTAL) {
+  fail(`level 10 should keep legacy mid progression before late-mayhem, found ${level10WithoutSurge.length}`);
 }
 
 const names = new Set();

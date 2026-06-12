@@ -5,6 +5,7 @@ import { buildSelectableShipVariants } from '../src/config/VisualVariantCatalog.
 import { AssetManifest } from '../src/assets/assetManifest.js';
 import {
   GENERATED_ENEMY_ASSET_COUNT,
+  GENERATED_ENEMY_EARLY_SURGE_TOTAL,
   GENERATED_ENEMY_EXTRA_TOTAL,
   GENERATED_ENEMY_PROFILES,
   GENERATED_ENEMY_TOTAL
@@ -42,6 +43,8 @@ if (enemyAssets.length !== GENERATED_ENEMY_ASSET_COUNT) fail(`expected ${GENERAT
 if (GENERATED_ENEMY_PROFILES.length !== GENERATED_ENEMY_TOTAL) fail(`expected ${GENERATED_ENEMY_TOTAL} generated enemy profiles, found ${GENERATED_ENEMY_PROFILES.length}`);
 const lateMayhemProfiles = GENERATED_ENEMY_PROFILES.filter((profile) => profile.lateMayhem === true);
 if (lateMayhemProfiles.length !== GENERATED_ENEMY_EXTRA_TOTAL) fail(`expected ${GENERATED_ENEMY_EXTRA_TOTAL} late mayhem profiles, found ${lateMayhemProfiles.length}`);
+const earlySurgeProfiles = GENERATED_ENEMY_PROFILES.filter((profile) => profile.earlySurge === true);
+if (earlySurgeProfiles.length !== GENERATED_ENEMY_EARLY_SURGE_TOTAL) fail(`expected ${GENERATED_ENEMY_EARLY_SURGE_TOTAL} early surge profiles, found ${earlySurgeProfiles.length}`);
 
 const behaviorSignatures = new Set();
 const enemyIds = new Set();
@@ -51,6 +54,9 @@ for (const profile of GENERATED_ENEMY_PROFILES) {
   const asset = enemyAssets[profile.spriteIndex];
   if (!asset || !existsPublic(asset)) fail(`${profile.id} missing generated enemy asset ${asset || 'none'}`);
   behaviorSignatures.add([
+    profile.displayName,
+    profile.tint,
+    profile.accent,
     profile.unlockLevel,
     profile.role,
     profile.health,
@@ -62,12 +68,14 @@ for (const profile of GENERATED_ENEMY_PROFILES) {
     profile.shotCount,
     profile.spread,
     profile.projectileSpeedMult,
+    profile.damageMult,
     profile.diveBias,
-    profile.targetWidth
+    profile.targetWidth,
+    profile.behaviorSeed || ''
   ].join('|'));
 }
 
-if (behaviorSignatures.size < 300) fail(`expected at least 300 distinct enemy behavior signatures, found ${behaviorSignatures.size}`);
+if (behaviorSignatures.size !== GENERATED_ENEMY_TOTAL) fail(`expected ${GENERATED_ENEMY_TOTAL} distinct enemy behavior signatures, found ${behaviorSignatures.size}`);
 
 if (errors.length) {
   console.error(`[GeneratedRosters] FAIL ${errors.length} issue(s)`);

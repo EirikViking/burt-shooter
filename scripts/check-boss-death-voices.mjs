@@ -30,9 +30,13 @@ if (bossDeathVoiceLines.length !== BOSS_DEATH_VOICE_COUNT) {
 
 const ids = new Set();
 const texts = new Set();
+const agonyWords = /\b(agony|pain|hurts?|burn(?:ing|s)?|tear(?:ing)?|break(?:ing)?|scream(?:ing)?|fire|plasma|reactor|dying|stop|no more|ribs|spine|lungs|throat|vacuum|crushing|collapsing)\b/i;
+const comedyWords = /\b(payment|cup holders?|spreadsheet|snacks?|cape|brunch|dental|branding|posture|fog machines?|invoice|tutorial|manager|choir|brochure|chair|lunch|soup|obituary|reviews?|unsubscribe|confetti|meeting|dentist|seminar|insurance|memo|hr incident|metrics|application)\b/i;
 for (const line of bossDeathVoiceLines) {
   if (!/^boss_death_agony_\d{3}$/.test(line.id)) fail(`bad boss death voice id: ${line.id}`);
   if (!line.text || line.text.length < 8) fail(`boss death line ${line.id} is too short`);
+  if (!agonyWords.test(line.text)) fail(`boss death line ${line.id} does not read as agony/pain: ${line.text}`);
+  if (comedyWords.test(line.text)) fail(`boss death line ${line.id} still reads as a joke/gag: ${line.text}`);
   if (ids.has(line.id)) fail(`duplicate boss death id: ${line.id}`);
   if (texts.has(line.text)) fail(`duplicate boss death text: ${line.text}`);
   ids.add(line.id);

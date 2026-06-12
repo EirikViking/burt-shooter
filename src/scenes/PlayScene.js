@@ -45,6 +45,10 @@ import { translateText } from '../i18n/index.js';
 import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import {
+  EASTER_EGG_TOTAL,
+  pickEasterEggForLevel
+} from '../config/EasterEggCatalog.js';
+import {
   getOverrunMilestoneCelebration,
   isOverrunMilestoneSector,
   resolveOverrunMilestoneVoiceCue
@@ -133,8 +137,11 @@ export class PlayScene {
     this.maintainerDevtoolsEnabled = false;
     this.ambientBonusDroneTimer = 0;
     this.easterEggTimer = 0;
+    this.easterEggSeenIds = new Set();
+    this.lastEasterEgg = null;
     this.ambientBonusDrones = []; // Lists for update
     this.legendaryFlyby = null;
+    this.easterEggFlyby = null;
     this.isReady = false;
     this.starfieldContainer = null;
     this.starLayers = [];
@@ -360,12 +367,15 @@ export class PlayScene {
       bonusPickupsCollected: 0,
       bonusBossSpawned: 0,
       commsPortraitsSpawned: 0,
-      legendaryFlybyTriggered: 0
+      legendaryFlybyTriggered: 0,
+      easterEggSignals: 0
     };
 
     this.gameTime = 0;
     this.shownCabinetLogIds.clear();
+    this.easterEggSeenIds.clear();
     this.lastCabinetLog = null;
+    this.lastEasterEgg = null;
     this.totalKills = 0;
     this.bossKills = 0;
     this.wavesCleared = 0;
@@ -2601,6 +2611,16 @@ export class PlayScene {
       this.introOverlay.parent.removeChild(this.introOverlay);
     }
     this.introOverlay = null;
+    if (this.legendaryFlyby?.sprite?.parent) {
+      this.legendaryFlyby.sprite.parent.removeChild(this.legendaryFlyby.sprite);
+    }
+    this.legendaryFlyby?.sprite?.destroy?.({ children: true });
+    this.legendaryFlyby = null;
+    if (this.easterEggFlyby?.sprite?.parent) {
+      this.easterEggFlyby.sprite.parent.removeChild(this.easterEggFlyby.sprite);
+    }
+    this.easterEggFlyby?.sprite?.destroy?.({ children: true });
+    this.easterEggFlyby = null;
     this.introActive = false;
     this.introComplete = false;
     this.removeAchievementToast();
@@ -3257,6 +3277,7 @@ export class PlayScene {
     this.achievementTimer = 0;
     this.tauntTimer = 0;
     this.storyTransmissionTimer = 0;
+    this.easterEggTimer = this.getRandomTimer(12000, 22000);
   }
 
   updateRandomPopups(delta) {
@@ -5845,6 +5866,7 @@ export class PlayScene {
       banner: true,
       title: options.title || 'QUIET SIGNAL',
       imageAlias: options.imageAlias || null,
+      accent: options.accent,
       align: compactHud ? 'center' : 'right',
       y,
       maxWidth: Number.isFinite(options.maxWidth)
@@ -7180,12 +7202,141 @@ export class PlayScene {
       if (this.legendaryFlyby.sprite?.parent) {
         this.legendaryFlyby.sprite.parent.removeChild(this.legendaryFlyby.sprite);
       }
+      this.legendaryFlyby.sprite?.destroy?.({ children: true });
       this.legendaryFlyby = null;
     }
+
+    if (this.easterEggFlyby) {
+      const flyby = this.easterEggFlyby;
+      flyby.ageMs = (flyby.ageMs || 0) + delta * 16.67;
+      const duration = Math.max(1, flyby.durationMs || 2200);
+      const t = Math.min(1, flyby.ageMs / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      if (flyby.sprite?.parent) {
+        flyby.sprite.x = flyby.startX + (flyby.endX - flyby.startX) * eased;
+        flyby.sprite.y = flyby.baseY + Math.sin(t * Math.PI * 2.4 + flyby.waveOffset) * flyby.wave;
+        flyby.sprite.rotation = flyby.rotation + Math.sin(t * Math.PI * 3) * 0.08;
+        flyby.sprite.alpha = t < 0.16 ? t / 0.16 : t > 0.82 ? Math.max(0, (1 - t) / 0.18) : 1;
+        flyby.sprite.scale.set(0.9 + Math.sin(t * Math.PI) * 0.22);
+      }
+      if (t >= 1) {
+        if (flyby.sprite?.parent) flyby.sprite.parent.removeChild(flyby.sprite);
+        flyby.sprite?.destroy?.({ children: true });
+        this.easterEggFlyby = null;
+      }
+    }
+
+    if (this.isPaused || this.introActive || this.gameOverSequenceStarted || this.gameOverInterlude?.active) return;
+    if (!this.player || this.game?.currentScene !== this) return;
+    this.easterEggTimer -= delta * 16.67;
+    if (this.easterEggTimer > 0) return;
+
+    const spawned = this.spawnAmbientEasterEgg();
+    this.easterEggTimer = this.getRandomTimer(spawned ? 26000 : 9000, spawned ? 43000 : 16000);
   }
 
   spawnEasterEgg() {
     return this.showStoryTransmission({ force: true });
+  }
+
+  spawnAmbientEasterEgg({ force = false } = {}) {
+    if (!force && !this.canShowLore()) return false;
+    const egg = pickEasterEggForLevel(this.game?.level || 1, this.easterEggSeenIds);
+    if (!egg) return false;
+
+    const title = translateText(egg.title);
+    const line = translateText(egg.line);
+    const shown = this.showLoreBanner(line, {
+      title,
+      force,
+      accent: egg.accent,
+      duration: 3400,
+      maxWidth: this.game.getWidth() < 900
+        ? this.game.getWidth() * 0.72
+        : Math.min(430, this.game.getWidth() * 0.34)
+    });
+    if (!shown) return false;
+
+    this.easterEggSeenIds.add(egg.id);
+    this.lastEasterEgg = {
+      id: egg.id,
+      title,
+      level: this.game?.level || 1,
+      seen: this.easterEggSeenIds.size,
+      total: EASTER_EGG_TOTAL
+    };
+    if (this.debugStats) this.debugStats.easterEggSignals = (this.debugStats.easterEggSignals || 0) + 1;
+    this.spawnEasterEggFlyby(egg);
+    if (egg.sfx) {
+      AudioManager.playSfx(egg.sfx, { force: true, volume: 0.56, minIntervalMs: 0 });
+    }
+    return true;
+  }
+
+  spawnEasterEggFlyby(egg) {
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const flyby = new PIXI.Container();
+    flyby.zIndex = 9000;
+    flyby.eventMode = 'none';
+    flyby.label = `gameplay_easterEgg_${egg.id}`;
+
+    const accent = Number(egg.accent) || 0xffef7e;
+    const secondary = Number(egg.secondary) || 0x37f5ff;
+    const core = new PIXI.Graphics();
+    core.moveTo(0, -24);
+    core.lineTo(42, 0);
+    core.lineTo(0, 24);
+    core.lineTo(-42, 0);
+    core.closePath();
+    core.fill({ color: 0x041322, alpha: 0.92 });
+    core.stroke({ color: accent, width: 3, alpha: 0.95 });
+    core.circle(0, 0, 12);
+    core.stroke({ color: secondary, width: 2, alpha: 0.82 });
+    core.rect(-58, -4, 116, 8);
+    core.fill({ color: secondary, alpha: 0.22 });
+    core.rect(-5, -38, 10, 76);
+    core.fill({ color: accent, alpha: 0.14 });
+
+    const glow = new PIXI.Graphics();
+    glow.circle(0, 0, 58);
+    glow.stroke({ color: accent, width: 6, alpha: 0.16 });
+    glow.circle(0, 0, 37);
+    glow.stroke({ color: secondary, width: 3, alpha: 0.24 });
+
+    const spark = new PIXI.Graphics();
+    spark.rect(-32, 39, 64, 3);
+    spark.fill({ color: accent, alpha: 0.65 });
+    spark.rect(-18, 46, 36, 2);
+    spark.fill({ color: secondary, alpha: 0.48 });
+
+    flyby.addChild(glow, core, spark);
+    this.uiOverlay.addChild(flyby);
+
+    const fromLeft = Math.random() < 0.5;
+    const startX = fromLeft ? -120 : width + 120;
+    const endX = fromLeft ? width + 120 : -120;
+    const baseY = Math.max(130, Math.min(height - 180, height * (0.2 + Math.random() * 0.42)));
+    flyby.x = startX;
+    flyby.y = baseY;
+    flyby.rotation = fromLeft ? 0.1 : -0.1;
+
+    if (this.easterEggFlyby?.sprite?.parent) {
+      this.easterEggFlyby.sprite.parent.removeChild(this.easterEggFlyby.sprite);
+      this.easterEggFlyby.sprite.destroy?.({ children: true });
+    }
+    this.easterEggFlyby = {
+      alias: egg.id,
+      sprite: flyby,
+      ageMs: 0,
+      durationMs: 2200 + Math.random() * 850,
+      startX,
+      endX,
+      baseY,
+      wave: 20 + Math.random() * 24,
+      waveOffset: Math.random() * Math.PI * 2,
+      rotation: flyby.rotation
+    };
   }
 
   safeGetEnemyTaunt() {

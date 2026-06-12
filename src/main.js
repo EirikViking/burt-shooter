@@ -681,6 +681,11 @@ function buildGameTextState(game) {
       score: game?.score || 0,
       scoreBreakdown: game?.scoreBreakdown || null,
       lastCabinetLog: playScene?.lastCabinetLog || null,
+      lastEasterEgg: playScene?.lastEasterEgg || null,
+      activeEasterEgg: playScene?.easterEggFlyby ? {
+        id: playScene.easterEggFlyby.alias || null,
+        remainingMs: Math.max(0, Math.round((playScene.easterEggFlyby.durationMs || 0) - (playScene.easterEggFlyby.ageMs || 0)))
+      } : null,
       currentEnemyBulletCount: enemyBullets.filter(bullet => bullet?.active !== false).length,
       peakEnemyBulletCount: playScene?.peakEnemyBulletCount || null,
       pilotXp: hangarProgressSummary.pilotXp,
@@ -742,6 +747,14 @@ function buildGameTextState(game) {
       trait: selectedShip.trait?.label || null,
       unlocked: isShipUnlocked(selectedShip.spriteKey, getShipUnlockProgress()),
       unlock: selectedShip.unlock || null,
+      recommended: shipSelectScene.recommendedShip ? {
+        shipName: shipSelectScene.recommendedShip.name || null,
+        spriteKey: shipSelectScene.recommendedShip.spriteKey || null,
+        selected: shipSelectScene.recommendedShip.spriteKey === selectedShip.spriteKey,
+        bannerVisible: Boolean(shipSelectScene.recommendationBanner?.visible !== false && shipSelectScene.recommendationBanner?.parent),
+        label: shipSelectScene.recommendationText?.text || null,
+        reason: shipSelectScene.recommendationReasonText?.text || null
+      } : null,
       launchInProgress: Boolean(shipSelectScene.launchInProgress),
       controllerFocus: shipSelectScene.getControllerFocus ? shipSelectScene.getControllerFocus() : (shipSelectScene.mainMenuButtonFocused ? 'back' : 'ship'),
       focusedActionButtonId: shipSelectScene.getFocusedActionButtonId ? shipSelectScene.getFocusedActionButtonId() : null,
