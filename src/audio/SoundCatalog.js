@@ -1,5 +1,6 @@
 import { AssetManifest } from '../assets/assetManifest.js';
 import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
+import { GAME_OVER_TAUNT_VOICE_COUNT } from '../config/GameOverTauntVoiceLines.js';
 import { LEVEL_CLEAR_VOICE_COUNT } from '../config/LevelClearVoiceLines.js';
 
 // Safe lookup helpers
@@ -305,6 +306,7 @@ export const VOICE_MIX = {
     mission_control_level_start: { volume: 0.7, duckFactor: 0.58, duckMs: 1250, cooldownMs: 18000 },
     mission_control_wave_clear: { volume: 0.76, duckFactor: 0.52, duckMs: 1300, cooldownMs: 30000 },
     level_clear_flirt: { volume: 0.9, duckFactor: 0.38, duckMs: 1700, cooldownMs: 0, eventCooldownMs: 0 },
+    game_over_taunt: { volume: 1.04, duckFactor: 0.28, duckMs: 3200, cooldownMs: 0, eventCooldownMs: 0 },
     mission_control_boss_inbound: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 14000 },
     boss_death_agony: { volume: 1.0, duckFactor: 0.42, duckMs: 1700, cooldownMs: 0, eventCooldownMs: 0 },
     mission_control_life_low: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 18000 },
@@ -687,6 +689,7 @@ export const SFX_CATALOG = {
     'mission_control_overrun_clear_far_signal': numberedVoicePool('mission_control_overrun_clear_far_signal', 1),
     'mission_control_credits': numberedVoicePool('mission_control_credits', 1),
     'boss_death_agony': paddedNumberedVoicePool('boss_death_agony', 100, 3),
+    'game_over_taunt': paddedNumberedVoicePool('game_over_taunt', GAME_OVER_TAUNT_VOICE_COUNT, 3),
     'level_clear_flirt': paddedNumberedVoicePool('level_clear_flirt', LEVEL_CLEAR_VOICE_COUNT, 3),
     ...GAME_OVER_CTA_VOICE_CATALOG,
     'boss_spawn': [

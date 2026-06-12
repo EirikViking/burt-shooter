@@ -40,6 +40,31 @@ const RESULT_REPORT_MIN_MS = 2600;
 const CONTINUE_INPUT_ARM_MS = 500;
 const PILOT_NAME_MAX_LENGTH = 14;
 const CONTROLLER_NAME_STORAGE_KEY = 'nova.controllerPilotName.v1';
+const GAME_OVER_EFFECT_COUNT = 100;
+const GAME_OVER_EFFECT_PALETTES = [
+  [0xff315f, 0xffd35c, 0x55f7ff],
+  [0x8f5cff, 0xff4fd8, 0xfff06a],
+  [0x39ffb6, 0x66b6ff, 0xff566d],
+  [0xff7a36, 0xffee88, 0x47f4ff],
+  [0xc77dff, 0xffdf5a, 0x60ffea]
+];
+const GAME_OVER_EFFECT_PROFILES = Array.from({ length: GAME_OVER_EFFECT_COUNT }, (_, index) => {
+  const palette = GAME_OVER_EFFECT_PALETTES[index % GAME_OVER_EFFECT_PALETTES.length];
+  return {
+    id: `game_over_fx_${String(index + 1).padStart(3, '0')}`,
+    primary: palette[0],
+    secondary: palette[1],
+    accent: palette[2],
+    ringCount: 2 + (index % 5),
+    glitchCount: 4 + (index % 7),
+    shardCount: 32 + (index % 7) * 6,
+    sweepSpeed: 0.009 + (index % 11) * 0.0014,
+    ringSpeed: 0.72 + (index % 13) * 0.035,
+    jitter: 0.7 + (index % 9) * 0.11,
+    tilt: -0.35 + (index % 8) * 0.1,
+    pulseOffset: index * 17
+  };
+});
 
 function formatUnlockRequirementProgress(item) {
   const current = Math.min(Number(item?.current) || 0, Number(item?.target) || 0);
@@ -190,6 +215,13 @@ export class GameOverScene {
     this.ceremonyMedalSubtext = null;
     this.fanfareParticles = [];
     this.ceremonyPulse = 0;
+    this.gameOverEffectProfile = null;
+    this.gameOverDoomLayer = null;
+    this.gameOverAlarmSweep = null;
+    this.gameOverRings = [];
+    this.gameOverGlitchBars = [];
+    this.gameOverShards = [];
+    this.gameOverTauntPlayed = false;
     // Frozen final values
     this.finalScore = 0;
     this.finalLevel = 0;
@@ -223,6 +255,8 @@ export class GameOverScene {
     this.personalBestVoicePlayed = false;
     this.nearMissVoicePlayed = false;
     this.shipUnlockVoicePlayed = false;
+    this.gameOverTauntPlayed = false;
+    this.gameOverEffectProfile = GAME_OVER_EFFECT_PROFILES[Math.floor(Math.random() * GAME_OVER_EFFECT_PROFILES.length)];
     this.sceneTimeouts = new Set();
     // Submission deduplication
     this.submissionId = null;
@@ -635,11 +669,11 @@ export class GameOverScene {
     this.setupKeyboard();
 
     AudioManager.playSfx('nova_game_over_drop');
+    AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.5, minIntervalMs: 0 });
+    this.scheduleSceneTimeout(() => this.playGameOverTaunt(), 360);
     if (this.newlyUnlockedShips.length > 0) {
       AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.72, minIntervalMs: 0 });
-      this.scheduleSceneTimeout(() => this.playShipUnlockVoice(), 720);
-    } else {
-      AudioManager.playVoice('mission_control_game_over', { cooldownMs: 2400, duckMs: 2600 });
+      this.scheduleSceneTimeout(() => this.playShipUnlockVoice(), 3200);
     }
     AudioManager.playMusicContext('gameover', { resetPlaylist: true });
 
@@ -2468,6 +2502,44 @@ export class GameOverScene {
       this.container.addChild(particle);
       return particle;
     });
+    this.createGameOverDoomFx();
+  }
+
+  createGameOverDoomFx() {
+    this.gameOverDoomLayer = new PIXI.Container();
+    this.gameOverDoomLayer.zIndex = -5;
+    this.gameOverDoomLayer.eventMode = 'none';
+    this.container.addChild(this.gameOverDoomLayer);
+
+    this.gameOverAlarmSweep = new PIXI.Graphics();
+    this.gameOverAlarmSweep.blendMode = 'add';
+    this.gameOverDoomLayer.addChild(this.gameOverAlarmSweep);
+
+    this.gameOverRings = Array.from({ length: 7 }, () => {
+      const ring = new PIXI.Graphics();
+      ring.blendMode = 'add';
+      this.gameOverDoomLayer.addChild(ring);
+      return ring;
+    });
+
+    this.gameOverGlitchBars = Array.from({ length: 10 }, () => {
+      const bar = new PIXI.Graphics();
+      bar.blendMode = 'add';
+      this.gameOverDoomLayer.addChild(bar);
+      return bar;
+    });
+
+    this.gameOverShards = Array.from({ length: 72 }, (_, index) => {
+      const shard = new PIXI.Graphics();
+      shard.blendMode = index % 3 === 0 ? 'normal' : 'add';
+      shard.__doom = {
+        seed: 19 + index * 41,
+        speed: 0.6 + (index % 11) * 0.06,
+        lane: index % 4
+      };
+      this.gameOverDoomLayer.addChild(shard);
+      return shard;
+    });
   }
 
   async initBackdrop(width, height) {
@@ -2881,6 +2953,7 @@ export class GameOverScene {
     if (!this.fanfareParticles?.length) return;
     const { width, height } = this.game.app.screen;
     this.ceremonyPulse += 1;
+    this.updateGameOverDoomEffects(width, height);
     const activeBoost = this.globalQualified ? 1 : 0.45;
     const color = this.globalPlacement?.numberOne
       ? 0xfff08a
@@ -2919,6 +2992,86 @@ export class GameOverScene {
     }
     if (this.state === 'runback') {
       this.refreshPrimaryCta();
+    }
+  }
+
+  updateGameOverDoomEffects(width, height) {
+    const profile = this.gameOverEffectProfile || GAME_OVER_EFFECT_PROFILES[0];
+    const pulse = this.ceremonyPulse + profile.pulseOffset;
+    const centerX = width * 0.5 + Math.sin(pulse * 0.011) * width * 0.018 * profile.jitter;
+    const centerY = height * 0.43 + Math.cos(pulse * 0.014) * height * 0.018 * profile.jitter;
+    const maxRadius = Math.hypot(width, height) * 0.42;
+    const dangerAlpha = this.state === 'runback' ? 0.28 : 0.46;
+
+    if (this.gameOverAlarmSweep) {
+      const sweep = this.gameOverAlarmSweep;
+      const angle = pulse * profile.sweepSpeed;
+      const length = Math.max(width, height) * 0.92;
+      const thickness = 8 + (profile.pulseOffset % 7);
+      sweep.clear();
+      sweep.position.set(centerX, centerY);
+      sweep.rotation = angle + profile.tilt;
+      sweep.rect(-length * 0.5, -thickness * 0.5, length, thickness);
+      sweep.fill({ color: profile.secondary, alpha: dangerAlpha * (0.55 + Math.sin(pulse * 0.045) * 0.18) });
+      sweep.rect(-length * 0.5, -1, length, 2);
+      sweep.fill({ color: profile.accent, alpha: 0.7 });
+    }
+
+    for (let index = 0; index < this.gameOverRings.length; index += 1) {
+      const ring = this.gameOverRings[index];
+      const visible = index < profile.ringCount;
+      ring.visible = visible;
+      ring.clear();
+      if (!visible) continue;
+      const phase = ((pulse * profile.ringSpeed + index * 41) % 180) / 180;
+      const radius = 42 + phase * maxRadius;
+      const alpha = (1 - phase) * (0.55 + (index % 2) * 0.18);
+      ring.circle(centerX, centerY, radius);
+      ring.stroke({ color: index % 2 ? profile.accent : profile.primary, alpha, width: 2 + (index % 3) });
+      ring.circle(centerX, centerY, radius * 0.62);
+      ring.stroke({ color: profile.secondary, alpha: alpha * 0.32, width: 1 });
+    }
+
+    for (let index = 0; index < this.gameOverGlitchBars.length; index += 1) {
+      const bar = this.gameOverGlitchBars[index];
+      const visible = index < profile.glitchCount;
+      bar.visible = visible;
+      bar.clear();
+      if (!visible) continue;
+      const bandPhase = (Math.sin(pulse * 0.037 + index * 2.1) + 1) * 0.5;
+      const y = height * (0.12 + ((index * 0.137 + bandPhase * 0.19 + pulse * 0.0009) % 0.78));
+      const xJitter = Math.sin(pulse * 0.071 + index) * 26 * profile.jitter;
+      const barHeight = 3 + (index % 4) * 2;
+      const barWidth = width * (0.18 + (index % 5) * 0.045);
+      bar.rect(width * (index % 2 ? 0.58 : 0.08) + xJitter, y, barWidth, barHeight);
+      bar.fill({ color: index % 3 === 0 ? profile.primary : profile.accent, alpha: 0.16 + bandPhase * 0.2 });
+      if (index % 2 === 0) {
+        bar.rect(width * 0.02, y + barHeight + 5, width * (0.08 + bandPhase * 0.18), 1);
+        bar.fill({ color: profile.secondary, alpha: 0.38 });
+      }
+    }
+
+    for (let index = 0; index < this.gameOverShards.length; index += 1) {
+      const shard = this.gameOverShards[index];
+      const config = shard.__doom || { seed: index * 17, speed: 0.8, lane: 0 };
+      const visible = index < profile.shardCount;
+      shard.visible = visible;
+      shard.clear();
+      if (!visible) continue;
+      const drift = ((pulse * config.speed + config.seed) % 260) / 260;
+      const side = config.lane < 2 ? -0.08 : 1.08;
+      const x = width * side + (config.lane < 2 ? 1 : -1) * drift * width * 1.16;
+      const y = height * (0.1 + ((config.seed * 0.0037 + drift * 0.78) % 0.82));
+      const size = 3 + (config.seed % 11) * 0.45;
+      const alpha = 0.12 + (1 - Math.abs(drift - 0.5) * 2) * 0.38;
+      shard.moveTo(0, -size);
+      shard.lineTo(size * 0.58, size * 0.75);
+      shard.lineTo(-size * 0.58, size * 0.75);
+      shard.closePath();
+      shard.fill({ color: index % 5 === 0 ? profile.secondary : index % 2 ? profile.accent : profile.primary, alpha });
+      shard.position.set(x, y);
+      shard.rotation = pulse * 0.018 * (index % 2 ? 1 : -1) + config.seed;
+      shard.scale.set(1, 0.72 + (index % 4) * 0.08);
     }
   }
 
@@ -3061,6 +3214,21 @@ export class GameOverScene {
       duckMs: 3200,
       duckFactor: 0.34,
       volume: 0.98
+    });
+  }
+
+  playGameOverTaunt() {
+    if (this.gameOverTauntPlayed) return false;
+    this.gameOverTauntPlayed = true;
+    return AudioManager.playVoice('game_over_taunt', {
+      force: true,
+      stopOtherVoices: true,
+      exclusiveGroup: 'game_over_taunt',
+      cooldownMs: 0,
+      eventCooldownMs: 0,
+      duckMs: 3400,
+      duckFactor: 0.24,
+      volume: 1.06
     });
   }
 
