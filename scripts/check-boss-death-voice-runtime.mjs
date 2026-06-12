@@ -101,7 +101,8 @@ page.on('pageerror', (error) => pageErrors.push(error.message));
 try {
   await page.addInitScript(() => {
     localStorage.setItem('burt_music_enabled', 'true');
-    localStorage.setItem('burt_voice_enabled', 'true');
+    localStorage.setItem('burt_voice_enabled', 'false');
+    localStorage.setItem('burt_volume_sfx', '1');
     localStorage.setItem('burt_volume_voice', '1');
     localStorage.setItem('burt_volume_master', '1');
   });

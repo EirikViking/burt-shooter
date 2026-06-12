@@ -72,11 +72,14 @@ if (!VOICE_MIX.boss_death_agony) {
 }
 
 const playSceneSource = fs.readFileSync(path.join(rootDir, 'src/scenes/PlayScene.js'), 'utf8');
-if (!playSceneSource.includes("AudioManager.playVoice('boss_death_agony'")) {
-  fail('PlayScene boss death impact does not play boss_death_agony voice');
+if (!playSceneSource.includes("AudioManager.playDiegeticVoice('boss_death_agony'")) {
+  fail('PlayScene boss death impact does not play boss_death_agony as a diegetic voice');
 }
 if (!playSceneSource.includes("exclusiveGroup: 'boss_death_agony'")) {
   fail('boss death agony voice should have an exclusive group to prevent layered screams');
+}
+if (!playSceneSource.includes('volume: 2.6')) {
+  fail('boss death agony voice should be loud enough to cut through the death SFX bed');
 }
 
 const generatorSource = fs.readFileSync(path.join(rootDir, 'scripts/generate-boss-death-voices.mjs'), 'utf8');

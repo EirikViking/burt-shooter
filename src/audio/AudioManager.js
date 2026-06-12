@@ -797,6 +797,14 @@ class AudioController {
 
   // --- VOICE ---
 
+  playDiegeticVoice(eventName, options = {}) {
+    return this.playVoice(eventName, {
+      ...options,
+      ignoreVoiceEnabled: true,
+      volumeBus: options.volumeBus || 'sfx'
+    });
+  }
+
   recordVoiceSuppression(eventName, reason, now, detail = {}) {
     const entry = {
       eventName,
@@ -836,7 +844,8 @@ class AudioController {
   }
 
   playVoice(eventName, options = {}) {
-    if (!this.enabled || !this.voiceEnabled) return false;
+    if (!this.enabled) return false;
+    if (!this.voiceEnabled && options.ignoreVoiceEnabled !== true) return false;
     const now = Date.now();
     const mix = VOICE_MIX[eventName] || {};
     const cooldownMs = this.readMixNumber(options.cooldownMs, mix.cooldownMs ?? 1500);
@@ -913,7 +922,8 @@ class AudioController {
         const audio = new Audio(resolvedSrc);
         audio.preload = 'auto';
         const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
-        audio.volume = this.clampUnit(this.masterVolume * this.voiceVolume * volumeMultiplier);
+        const busVolume = options.volumeBus === 'sfx' ? this.sfxVolume : this.voiceVolume;
+        audio.volume = this.clampUnit(this.masterVolume * busVolume * volumeMultiplier);
         const voiceId = ++this.voicePlayId;
         const entry = { audio, eventName, src: resolvedSrc, exclusiveGroup };
         this.activeVoices.set(voiceId, entry);
