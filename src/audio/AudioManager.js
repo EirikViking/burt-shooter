@@ -65,6 +65,8 @@ class AudioController {
     this.voicePlayId = 0;
     this.lastSfxEvent = null;
     this.lastSfxTrack = null;
+    this.alienBarkCooldownUntil = 0;
+    this.lastAlienBarkVariant = -1;
     this.lastVoiceEvent = null;
     this.lastVoiceTrack = null;
     this.sfxAssetHealth = new Map();
@@ -380,6 +382,119 @@ class AudioController {
     this.lastSfxPlayedAt[eventName] = now;
     this.lastSfxEvent = eventName;
     this.lastSfxTrack = decodeURIComponent((src || '').split('/').pop() || '');
+    return true;
+  }
+
+  playAlienAttackBark(options = {}) {
+    if (!this.enabled || !this.context) return false;
+    const now = Date.now();
+    const minIntervalMs = this.readMixNumber(options.minIntervalMs, 7600);
+    if (now < this.alienBarkCooldownUntil && options.force !== true) return false;
+    this.alienBarkCooldownUntil = now + minIntervalMs + Math.random() * 2400;
+
+    const ctx = this.context;
+    const startAt = Math.max(ctx.currentTime + 0.01, ctx.currentTime);
+    const intensity = Math.max(0.35, Math.min(1.4, Number(options.intensity) || 0.75));
+    const variants = 17;
+    let variant = Math.floor(Math.random() * variants);
+    if (variant === this.lastAlienBarkVariant) variant = (variant + 3 + Math.floor(Math.random() * 5)) % variants;
+    this.lastAlienBarkVariant = variant;
+
+    const syllableCount = 2 + (variant % 3);
+    const accent = (variant * 37) % 91;
+    const root = 72 + accent + Math.random() * 44;
+    const busVolume = this.clampUnit(this.masterVolume * this.sfxVolume * 0.34 * intensity);
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, startAt);
+    master.gain.exponentialRampToValueAtTime(Math.max(0.0002, busVolume), startAt + 0.035);
+    master.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.72 + syllableCount * 0.09);
+
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-24, startAt);
+    compressor.knee.setValueAtTime(18, startAt);
+    compressor.ratio.setValueAtTime(5, startAt);
+    compressor.attack.setValueAtTime(0.008, startAt);
+    compressor.release.setValueAtTime(0.16, startAt);
+
+    const panner = typeof ctx.createStereoPanner === 'function' ? ctx.createStereoPanner() : null;
+    if (panner) {
+      panner.pan.setValueAtTime(Math.max(-0.5, Math.min(0.5, Number(options.pan) || 0)), startAt);
+      master.connect(panner);
+      panner.connect(compressor);
+    } else {
+      master.connect(compressor);
+    }
+    compressor.connect(ctx.destination);
+
+    const stopAt = startAt + 1.15;
+    for (let i = 0; i < syllableCount; i += 1) {
+      const t = startAt + i * (0.105 + (variant % 2) * 0.026);
+      const duration = 0.12 + ((variant + i) % 4) * 0.025;
+      const pitch = root * (1 + i * 0.17 + ((variant >> i) % 4) * 0.045);
+      const drop = pitch * (0.42 + ((variant + i) % 5) * 0.045);
+      const osc = ctx.createOscillator();
+      const growl = ctx.createOscillator();
+      const vowel = ctx.createBiquadFilter();
+      const throat = ctx.createBiquadFilter();
+      const syllableGain = ctx.createGain();
+
+      osc.type = (variant + i) % 2 === 0 ? 'sawtooth' : 'square';
+      osc.frequency.setValueAtTime(pitch, t);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(24, drop), t + duration);
+      osc.detune.setValueAtTime(-20 + ((variant + i * 11) % 41), t);
+
+      growl.type = 'triangle';
+      growl.frequency.setValueAtTime(Math.max(28, pitch * 0.48), t);
+      growl.frequency.exponentialRampToValueAtTime(Math.max(18, drop * 0.52), t + duration * 0.88);
+
+      vowel.type = 'bandpass';
+      vowel.frequency.setValueAtTime(420 + ((variant * 113 + i * 229) % 900), t);
+      vowel.Q.setValueAtTime(5 + ((variant + i) % 5), t);
+      throat.type = 'lowpass';
+      throat.frequency.setValueAtTime(1500 + ((variant * 73 + i * 140) % 1300), t);
+      throat.Q.setValueAtTime(0.8, t);
+
+      syllableGain.gain.setValueAtTime(0.0001, t);
+      syllableGain.gain.exponentialRampToValueAtTime(0.42 + intensity * 0.2, t + 0.018);
+      syllableGain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+      osc.connect(vowel);
+      growl.connect(vowel);
+      vowel.connect(throat);
+      throat.connect(syllableGain);
+      syllableGain.connect(master);
+      osc.start(t);
+      growl.start(t);
+      osc.stop(stopAt);
+      growl.stop(stopAt);
+    }
+
+    const noiseDuration = 0.48 + syllableCount * 0.08;
+    const noiseBuffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * noiseDuration)), ctx.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i += 1) {
+      const decay = 1 - i / noiseData.length;
+      noiseData[i] = (Math.random() * 2 - 1) * decay * 0.42;
+    }
+    const noise = ctx.createBufferSource();
+    const rasp = ctx.createBiquadFilter();
+    const raspGain = ctx.createGain();
+    noise.buffer = noiseBuffer;
+    rasp.type = 'bandpass';
+    rasp.frequency.setValueAtTime(680 + (variant % 7) * 190, startAt);
+    rasp.frequency.exponentialRampToValueAtTime(260 + (variant % 5) * 90, startAt + noiseDuration);
+    rasp.Q.setValueAtTime(6.5, startAt);
+    raspGain.gain.setValueAtTime(0.0001, startAt);
+    raspGain.gain.exponentialRampToValueAtTime(0.22 * intensity, startAt + 0.04);
+    raspGain.gain.exponentialRampToValueAtTime(0.0001, startAt + noiseDuration);
+    noise.connect(rasp);
+    rasp.connect(raspGain);
+    raspGain.connect(master);
+    noise.start(startAt);
+    noise.stop(stopAt);
+
+    this.lastSfxEvent = 'alien_attack_bark';
+    this.lastSfxTrack = `synthetic_variant_${String(variant + 1).padStart(2, '0')}`;
     return true;
   }
 

@@ -234,6 +234,9 @@ export class EnemyManager {
     this.bossFuelShipNextCheckAtMs = 0;
     this.bossFuelShipsSpawnedThisBoss = 0;
     this.directorState = { tier: 0, spawnCadenceScale: 1, eliteChance: 0.02, clutchDropChance: 0.04 };
+    this.lastAlienAttackBarkAt = 0;
+    this.alienAttackBarkWindowCount = 0;
+    this.alienAttackBarkWindowStartedAt = 0;
 
     // TASK 1: Voice history to prevent duplicates
     this.voiceHistory = {};
@@ -1322,9 +1325,62 @@ export class EnemyManager {
     const playScene = this.game?.scenes?.play;
     const angle = Math.atan2(playerY - enemy.y, playerX - enemy.x);
     playScene?.particleManager?.createMuzzleFlash(enemy.x, enemy.y, angle, enemy.color || 0xff5544);
+    this.maybePlayAlienAttackBark(enemy, playerX, playerY);
 
-    // Enemy fire is intentionally visual-only. The old recurring enemy_shoot
-    // chirp became grating during normal play because enemies fire every few seconds.
+    // Most enemy fire stays visual-only. The old recurring enemy_shoot chirp
+    // became grating; alien barks are rare, diegetic, and globally gated.
+  }
+
+  maybePlayAlienAttackBark(enemy, playerX, playerY) {
+    if (!enemy || enemy.kind === 'boss' || enemy.kind === 'boss_fuel_ship' || enemy.kind === 'bonus_drone') return false;
+    if (enemy.waitingForEntry || enemy.y < 32 || enemy.y > (this.game?.getHeight?.() || 720) + 60) return false;
+
+    const now = Date.now();
+    if (!this.alienAttackBarkWindowStartedAt || now - this.alienAttackBarkWindowStartedAt > 30000) {
+      this.alienAttackBarkWindowStartedAt = now;
+      this.alienAttackBarkWindowCount = 0;
+    }
+    if (this.alienAttackBarkWindowCount >= 4) return false;
+
+    const level = Math.max(1, Number(this.level || this.game?.level) || 1);
+    const playerDistance = Math.hypot((playerX || 0) - enemy.x, (playerY || 0) - enemy.y);
+    const isPriorityEnemy = enemy.kind === 'elite_middle_ship' ||
+      enemy.kind === 'danger_mid_ship' ||
+      enemy.kind === 'boss_add' ||
+      enemy.kind === 'boss_chaos_support' ||
+      enemy.isEliteMiddleShip ||
+      Boolean(enemy.middleShipProfile);
+    const isDiveThreat = enemy.state === 'DIVE' || enemy.waveTactic?.forcedDive || enemy.tacticalDiveUsed;
+    const isClose = playerDistance < Math.max(180, (this.game?.getWidth?.() || 1280) * 0.22);
+
+    let chance = level <= 1 ? 0.028 : 0.045;
+    if (isPriorityEnemy) chance += 0.08;
+    if (isDiveThreat) chance += 0.055;
+    if (isClose) chance += 0.035;
+    if (this.phase === 'BOSS') chance *= 0.65;
+    chance = Math.max(0.018, Math.min(0.19, chance));
+
+    const minGapMs = isPriorityEnemy || isDiveThreat ? 6800 : 9200;
+    if (now - this.lastAlienAttackBarkAt < minGapMs) return false;
+    if (Math.random() > chance) return false;
+
+    const width = Math.max(1, this.game?.getWidth?.() || 1280);
+    const pan = Math.max(-0.52, Math.min(0.52, ((enemy.x || width / 2) / width - 0.5) * 1.04));
+    const intensity = 0.58 +
+      (isPriorityEnemy ? 0.22 : 0) +
+      (isDiveThreat ? 0.16 : 0) +
+      (isClose ? 0.08 : 0) +
+      Math.min(0.22, level * 0.008);
+    const played = AudioManager.playAlienAttackBark({
+      intensity,
+      pan,
+      minIntervalMs: minGapMs
+    });
+    if (played) {
+      this.lastAlienAttackBarkAt = now;
+      this.alienAttackBarkWindowCount += 1;
+    }
+    return played;
   }
 
 
