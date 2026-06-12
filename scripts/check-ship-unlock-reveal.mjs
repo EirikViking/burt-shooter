@@ -134,24 +134,57 @@ async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000, r
   return page.evaluate(() => JSON.parse(window.render_game_to_text()));
 }
 
+async function enterRunbackStage(page) {
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    scene?.enterRunbackStage?.('ship_unlock_reveal_check');
+    scene?.layoutScreen?.();
+  });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'gameOver'
+      && state.gameOver?.shipUnlocks?.state === 'runback'
+      && state.gameOver?.shipUnlocks?.visible === true;
+  }, null, { timeout: 10000 });
+  await page.waitForTimeout(750);
+  return page.evaluate(() => JSON.parse(window.render_game_to_text()));
+}
+
 async function runScenario(browser, scenario) {
   const { page, pageErrors } = await preparePage(browser, scenario);
   const state = await forceGameOver(page, scenario.finalLevel, scenario.finalScore, scenario.runStats);
   const unlocks = state.gameOver?.shipUnlocks || {};
+  const expectedSpriteCount = Math.min(scenario.expectedCount, 4);
   assert(unlocks.count === scenario.expectedCount, `${scenario.name}: expected ${scenario.expectedCount} unlock(s), got ${unlocks.count}`);
   assert(unlocks.visible === true, `${scenario.name}: unlock reveal was not visible`);
+  assert(unlocks.animated === true, `${scenario.name}: unlock reveal did not report animation`);
+  assert(unlocks.spriteCount === expectedSpriteCount, `${scenario.name}: expected ${expectedSpriteCount} ship sprite(s), got ${unlocks.spriteCount}`);
+  assert(unlocks.layout?.spriteSize >= 60, `${scenario.name}: ship sprites are too small: ${JSON.stringify(unlocks.layout)}`);
+  assert(unlocks.layout?.height >= 88, `${scenario.name}: reveal frame is too short: ${JSON.stringify(unlocks.layout)}`);
+  assert(unlocks.bounds?.height >= 88, `${scenario.name}: reveal bounds are too small: ${JSON.stringify(unlocks.bounds)}`);
   assert(unlocks.voiceKey === scenario.expectedVoiceKey, `${scenario.name}: expected voice ${scenario.expectedVoiceKey}, got ${unlocks.voiceKey}`);
   assert(unlocks.voicePlayed === true, `${scenario.name}: unlock voice did not trigger`);
   assert(String(state.gameOver?.unlockSummary || '').includes(scenario.expectedSummary), `${scenario.name}: unexpected summary ${state.gameOver?.unlockSummary}`);
   assert(String(state.gameOver?.unlockSummary || '').includes('VISIT THE HANGAR'), `${scenario.name}: hangar CTA missing`);
   assert(pageErrors.length === 0, `${scenario.name}: page errors: ${pageErrors.join('; ')}`);
   await page.screenshot({ path: path.join(outputDir, `${scenario.name}.png`), fullPage: true });
+  const runbackState = await enterRunbackStage(page);
+  const runbackUnlocks = runbackState.gameOver?.shipUnlocks || {};
+  assert(runbackUnlocks.state === 'runback', `${scenario.name}: expected runback state, got ${runbackUnlocks.state}`);
+  assert(runbackUnlocks.visible === true, `${scenario.name}: unlock reveal was hidden on runback screen`);
+  assert(runbackUnlocks.count === scenario.expectedCount, `${scenario.name}: runback unlock count changed to ${runbackUnlocks.count}`);
+  assert(runbackUnlocks.spriteCount === expectedSpriteCount, `${scenario.name}: runback expected ${expectedSpriteCount} sprite(s), got ${runbackUnlocks.spriteCount}`);
+  assert(runbackUnlocks.layout?.spriteSize >= 60, `${scenario.name}: runback ship sprites are too small: ${JSON.stringify(runbackUnlocks.layout)}`);
+  assert(runbackUnlocks.bounds?.height >= 88, `${scenario.name}: runback reveal bounds are too small: ${JSON.stringify(runbackUnlocks.bounds)}`);
+  await page.screenshot({ path: path.join(outputDir, `${scenario.name}-runback.png`), fullPage: true });
   await page.close();
   return {
     scenario: scenario.name,
     count: unlocks.count,
     names: unlocks.names,
-    voiceKey: unlocks.voiceKey
+    voiceKey: unlocks.voiceKey,
+    spriteCount: unlocks.spriteCount,
+    runbackVisible: runbackUnlocks.visible
   };
 }
 

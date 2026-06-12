@@ -13,6 +13,13 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - 2026-06-08 follow-up polish: added visible Sector Start checkpoint chevrons plus focused keyboard/controller hints, and mapped 10th-sector checkpoints to the post-clear play sector (`10 -> 11`, `20 -> 21`) while keeping challenge records keyed to the selected checkpoint.
 - Steam packaging/upload/SetLive was not performed during this prototype polish pass; the main ranked leaderboard remains `nova_swarm_global_score_v2` for normal ranked Start Run only.
 
+## 2026-06-12 Ship Unlock Result Reveal
+
+- Current user request: when ships unlock on the result screen, show the unlocked ships or an animation of them instead of only a text summary.
+- Implemented a larger animated ship showcase on the Game Over / runback result screen using the existing generated player-ship textures, with staggered pop-in, hover motion, glow rings, and engine streaks.
+- Extended `npm run check:ship-unlock-reveal` to verify real ship sprites, animation state, readable reveal bounds, and continued visibility on the final "ONE MORE RUN" runback screen.
+- No unlock rules, balance, save keys, leaderboard identity, Steamworks settings, generated assets, or audio assets were changed.
+
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 
 - Current user request: replace the static lore popup with a context-aware Cabinet Log system that adds useful/funny gameplay value and archives discoveries in the Codex, then overhaul the credits screen with stronger animation, fixed text overlaps, and a much bigger secret ship unlock reveal.

@@ -108,8 +108,11 @@ export class GameOverScene {
     this.shipUnlockReveal = null;
     this.shipUnlockRevealGlow = null;
     this.shipUnlockRevealBg = null;
+    this.shipUnlockRevealFx = null;
     this.shipUnlockRevealSprites = [];
     this.shipUnlockRevealCountText = null;
+    this.shipUnlockRevealStartedAt = 0;
+    this.shipUnlockRevealDebugLayout = null;
     this.shipUnlockVoicePlayed = false;
     this.nextGoal = null;
     this.currentProgressForResult = null;
@@ -1198,7 +1201,7 @@ export class GameOverScene {
       this.shipUnlockProgressText.text = finalLines.shipProgress;
       this.shipUnlockProgressText.visible = Boolean(finalLines.shipProgress);
     }
-    if (this.shipUnlockReveal) this.shipUnlockReveal.visible = false;
+    if (this.shipUnlockReveal) this.shipUnlockReveal.visible = this.newlyUnlockedShips.length > 0;
     if (this.comment) {
       this.comment.text = finalLines.leaderboard;
       this.comment.visible = true;
@@ -1533,7 +1536,9 @@ export class GameOverScene {
     const scoreHeight = scoreVisible ? Math.max(scoreSize * 1.2, this.scoreText.height || 0) : 0;
     const levelHeight = levelVisible ? Math.max(layout.isMobile ? 52 : 62, levelSize * 1.2, this.levelText.height || 0) : 0;
     const unlockRevealVisible = Boolean(this.shipUnlockReveal?.visible);
-    const unlockRevealHeight = unlockRevealVisible ? (layout.isMobile ? 48 : 62) : 0;
+    const unlockRevealHeight = unlockRevealVisible
+      ? Math.max(this.shipUnlockRevealDebugLayout?.height || 0, layout.isMobile ? 78 : 90)
+      : 0;
     const unlockHeight = unlockVisible ? Math.max(unlockSize * 1.42, this.unlockText.height || 0) : 0;
     const rankProgressHeight = rankProgressVisible ? Math.max(layout.isMobile ? 46 : 52, this.rankProgressText.height || 0) : 0;
     const shipProgressHeight = shipProgressVisible ? Math.max(layout.isMobile ? 50 : 58, this.shipUnlockProgressText.height || 0) : 0;
@@ -1560,7 +1565,7 @@ export class GameOverScene {
     const hangarHeight = hangarVisible && !secondaryButtonsShareRow ? rawHangarHeight : 0;
     const mainMenuHeight = mainMenuVisible && !secondaryButtonsShareRow ? rawMainMenuHeight : 0;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + mainMenuHeight + nameHeight + spacing * (secondaryVisibleCount ? 12 : 9) + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + unlockRevealHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + mainMenuHeight + nameHeight + spacing * (secondaryVisibleCount ? 12 : 9) + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -1664,7 +1669,9 @@ export class GameOverScene {
     this.notQualifiedText.x = width / 2;
     this.notQualifiedText.y = promptVisible ? this.promptText.y : stackY;
 
-    addStackGap(this.state === 'runback' ? (layout.isMobile ? 30 : 54) : (layout.isMobile ? 8 : 18));
+    addStackGap(this.state === 'runback'
+      ? (unlockRevealVisible ? (layout.isMobile ? 12 : 18) : (layout.isMobile ? 30 : 54))
+      : (layout.isMobile ? 8 : 18));
     this.retryButton.x = width / 2;
     this.retryButton.y = placeCenteredElement(this.retryButton, spacing, retryHeight);
 
@@ -2039,10 +2046,13 @@ export class GameOverScene {
     this.shipUnlockReveal.zIndex = 7;
     this.shipUnlockRevealGlow = new PIXI.Graphics();
     this.shipUnlockRevealBg = new PIXI.Graphics();
-    this.shipUnlockReveal.addChild(this.shipUnlockRevealGlow, this.shipUnlockRevealBg);
+    this.shipUnlockRevealFx = new PIXI.Graphics();
+    this.shipUnlockReveal.addChild(this.shipUnlockRevealGlow, this.shipUnlockRevealBg, this.shipUnlockRevealFx);
 
     this.shipUnlockRevealSprites = [];
-    this.newlyUnlockedShips.slice(0, 4).forEach((ship) => {
+    this.shipUnlockRevealStartedAt = Date.now();
+    this.shipUnlockRevealDebugLayout = null;
+    this.newlyUnlockedShips.slice(0, 4).forEach((ship, index) => {
       const shipPath = GameAssets.getRankShipPath(ship.textureIndex)
         || AssetManifest.sprites.playerRankShips?.[ship.textureIndex]
         || null;
@@ -2051,6 +2061,8 @@ export class GameOverScene {
       const sprite = new PIXI.Sprite(texture);
       sprite.anchor.set(0.5);
       sprite.alpha = 0.98;
+      sprite.__unlockIndex = index;
+      sprite.__unlockSeed = index * 1.37 + (Number(ship.textureIndex) || 0) * 0.11;
       if ((!texture || texture === PIXI.Texture.EMPTY || texture.width <= 1 || texture.height <= 1) && shipPath) {
         PIXI.Assets.load(shipPath)
           .then((loadedTexture) => {
@@ -2078,57 +2090,104 @@ export class GameOverScene {
 
   drawShipUnlockReveal(layout) {
     if (!this.shipUnlockReveal || !this.shipUnlockRevealBg || !this.shipUnlockRevealGlow) return;
-    const canShow = !(this.state === 'runback' || this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting');
+    const canShow = !(this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting');
     const count = canShow ? this.newlyUnlockedShips.length : 0;
     this.shipUnlockReveal.visible = count > 0;
     if (count <= 0) {
       this.shipUnlockRevealBg.clear();
       this.shipUnlockRevealGlow.clear();
+      this.shipUnlockRevealFx?.clear();
+      this.shipUnlockRevealDebugLayout = null;
       return;
     }
 
-    const width = Math.min(layout.width * (layout.isMobile ? 0.78 : 0.48), layout.isMobile ? 330 : 460);
-    const height = layout.isMobile ? 44 : 56;
+    if (!this.shipUnlockRevealStartedAt) this.shipUnlockRevealStartedAt = Date.now();
+    const width = Math.min(layout.width * (layout.isMobile ? 0.84 : 0.52), layout.isMobile ? 350 : 600);
+    const height = layout.isMobile ? 76 : 78;
+    const visualHeight = height + (layout.isMobile ? 18 : 20);
     const halfWidth = width / 2;
     const halfHeight = height / 2;
-    const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
+    const now = Date.now();
+    const pulse = 0.5 + Math.sin(now * 0.006) * 0.5;
+    const revealAge = Math.max(0, now - this.shipUnlockRevealStartedAt);
+    const clamp01 = (value) => Math.max(0, Math.min(1, value));
+    const easeOutBack = (value) => {
+      const x = clamp01(value);
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    };
 
     this.shipUnlockRevealGlow.clear();
-    this.shipUnlockRevealGlow.roundRect(-halfWidth - 10, -halfHeight - 6, width + 20, height + 12, layout.isMobile ? 12 : 14);
-    this.shipUnlockRevealGlow.fill({ color: 0xffd75f, alpha: 0.12 + pulse * 0.12 });
-    this.shipUnlockRevealGlow.roundRect(-halfWidth - 4, -halfHeight - 3, width + 8, height + 6, layout.isMobile ? 10 : 12);
-    this.shipUnlockRevealGlow.stroke({ color: 0x37f5ff, width: 2, alpha: 0.5 + pulse * 0.22 });
+    this.shipUnlockRevealGlow.roundRect(-halfWidth - 16, -halfHeight - 10, width + 32, height + 20, layout.isMobile ? 14 : 18);
+    this.shipUnlockRevealGlow.fill({ color: 0xffd75f, alpha: 0.12 + pulse * 0.13 });
+    this.shipUnlockRevealGlow.roundRect(-halfWidth - 7, -halfHeight - 6, width + 14, height + 12, layout.isMobile ? 12 : 16);
+    this.shipUnlockRevealGlow.stroke({ color: 0x37f5ff, width: layout.isMobile ? 2 : 2.6, alpha: 0.52 + pulse * 0.22 });
 
     this.shipUnlockRevealBg.clear();
-    this.shipUnlockRevealBg.roundRect(-halfWidth, -halfHeight, width, height, layout.isMobile ? 8 : 10);
-    this.shipUnlockRevealBg.fill({ color: 0x06101c, alpha: 0.86 });
-    this.shipUnlockRevealBg.stroke({ color: 0xffd75f, width: 2, alpha: 0.9 });
-    this.shipUnlockRevealBg.rect(-halfWidth + 16, -halfHeight + 7, width - 32, 2);
-    this.shipUnlockRevealBg.fill({ color: 0x37f5ff, alpha: 0.38 });
+    this.shipUnlockRevealBg.roundRect(-halfWidth, -halfHeight, width, height, layout.isMobile ? 10 : 14);
+    this.shipUnlockRevealBg.fill({ color: 0x06101c, alpha: 0.9 });
+    this.shipUnlockRevealBg.stroke({ color: 0xffd75f, width: layout.isMobile ? 2 : 2.8, alpha: 0.92 });
+    this.shipUnlockRevealBg.rect(-halfWidth + 20, -halfHeight + 8, width - 40, 2);
+    this.shipUnlockRevealBg.fill({ color: 0x37f5ff, alpha: 0.42 });
+    this.shipUnlockRevealBg.rect(-halfWidth + 20, halfHeight - 9, width - 40, 1.4);
+    this.shipUnlockRevealBg.fill({ color: 0xffffff, alpha: 0.16 + pulse * 0.06 });
 
-    const spriteSize = layout.isMobile ? 32 : 42;
-    const gap = layout.isMobile ? 42 : 54;
+    const spriteSize = layout.isMobile ? 52 : 64;
+    const gap = layout.isMobile ? 64 : 82;
     const sprites = this.shipUnlockRevealSprites || [];
     const totalSpriteWidth = Math.max(0, (sprites.length - 1) * gap);
     const startX = -totalSpriteWidth / 2;
+    this.shipUnlockRevealFx?.clear();
     sprites.forEach((sprite, index) => {
       const textureWidth = Math.max(1, sprite.texture.width || sprite.width || spriteSize);
       const textureHeight = Math.max(1, sprite.texture.height || sprite.height || spriteSize);
-      const scale = Math.min(spriteSize / textureWidth, spriteSize / textureHeight);
+      const baseScale = Math.min(spriteSize / textureWidth, spriteSize / textureHeight);
+      const localAge = revealAge - index * 120;
+      const pop = easeOutBack(localAge / 520);
+      const settle = clamp01(localAge / 700);
+      const hover = Math.sin(now * 0.004 + (sprite.__unlockSeed || index)) * (layout.isMobile ? 2.2 : 3.2);
+      const breathing = 1 + Math.sin(now * 0.005 + index * 0.8) * 0.025;
+      const scale = baseScale * (0.58 + pop * 0.42) * breathing;
+      const x = startX + index * gap;
+      const y = hover - (1 - settle) * (layout.isMobile ? 11 : 16);
       sprite.scale.set(scale);
-      sprite.x = startX + index * gap;
-      sprite.y = 1 + Math.sin(Date.now() * 0.004 + index) * 2;
-      sprite.rotation = Math.sin(Date.now() * 0.003 + index) * 0.035;
+      sprite.x = x;
+      sprite.y = y;
+      sprite.alpha = 0.28 + clamp01(localAge / 360) * 0.72;
+      sprite.rotation = Math.sin(now * 0.003 + index) * 0.045 + (1 - settle) * (index % 2 === 0 ? -0.09 : 0.09);
+
+      if (this.shipUnlockRevealFx) {
+        const ringPulse = 0.5 + Math.sin(now * 0.007 + index * 0.9) * 0.5;
+        const ringRadius = spriteSize * (0.43 + ringPulse * 0.08);
+        const exhaustY = y + spriteSize * 0.43;
+        this.shipUnlockRevealFx.circle(x, y, ringRadius);
+        this.shipUnlockRevealFx.stroke({ color: index % 2 === 0 ? 0x37f5ff : 0xffd75f, width: layout.isMobile ? 1.4 : 1.9, alpha: 0.22 + ringPulse * 0.22 });
+        this.shipUnlockRevealFx.moveTo(x - spriteSize * 0.23, exhaustY);
+        this.shipUnlockRevealFx.lineTo(x - spriteSize * 0.33, exhaustY + spriteSize * (0.12 + ringPulse * 0.06));
+        this.shipUnlockRevealFx.moveTo(x + spriteSize * 0.23, exhaustY);
+        this.shipUnlockRevealFx.lineTo(x + spriteSize * 0.33, exhaustY + spriteSize * (0.12 + ringPulse * 0.06));
+        this.shipUnlockRevealFx.stroke({ color: 0x9cfbff, width: layout.isMobile ? 1.8 : 2.4, alpha: 0.26 + ringPulse * 0.18 });
+      }
     });
 
     const remaining = Math.max(0, count - sprites.length);
     if (this.shipUnlockRevealCountText) {
       this.shipUnlockRevealCountText.visible = remaining > 0;
       this.shipUnlockRevealCountText.text = remaining > 0 ? `+${remaining}` : '';
-      this.shipUnlockRevealCountText.style.fontSize = layout.isMobile ? 15 : 18;
-      this.shipUnlockRevealCountText.x = startX + sprites.length * gap + (layout.isMobile ? 8 : 10);
+      this.shipUnlockRevealCountText.style.fontSize = layout.isMobile ? 19 : 25;
+      this.shipUnlockRevealCountText.x = startX + sprites.length * gap + (layout.isMobile ? 5 : 8);
       this.shipUnlockRevealCountText.y = 0;
+      this.shipUnlockRevealCountText.scale.set(1 + pulse * 0.04);
     }
+    this.shipUnlockRevealDebugLayout = {
+      width,
+      height: visualHeight,
+      frameHeight: height,
+      spriteSize,
+      spriteCount: sprites.length,
+      state: this.state
+    };
   }
 
   getPrimaryCtaConfig() {
@@ -2910,11 +2969,19 @@ export class GameOverScene {
 
   getShipUnlockRevealDebugState() {
     const ships = this.newlyUnlockedShips || [];
+    const bounds = this.shipUnlockReveal?.visible ? this.shipUnlockReveal.getBounds() : null;
     return {
       count: ships.length,
       names: ships.map(ship => ship.name),
       spriteKeys: ships.map(ship => ship.spriteKey),
+      spriteCount: this.shipUnlockRevealSprites?.length || 0,
       visible: Boolean(this.shipUnlockReveal?.visible),
+      animated: Boolean(this.shipUnlockRevealStartedAt && ships.length > 0),
+      state: this.state,
+      layout: this.shipUnlockRevealDebugLayout,
+      bounds: bounds
+        ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
+        : null,
       voiceKey: ships.length === 1
         ? 'mission_control_ship_unlocked'
         : ships.length > 1
