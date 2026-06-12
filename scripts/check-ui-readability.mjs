@@ -112,6 +112,18 @@ try {
   const metrics = await page.evaluate(() => {
     const play = window.__game?.scenes?.play;
     const hud = play?.hud;
+    const bounds = (item) => {
+      if (!item?.getBounds) return null;
+      const rect = item.getBounds();
+      return {
+        x: Math.round(rect.x),
+        y: Math.round(rect.y),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        right: Math.round(rect.right),
+        bottom: Math.round(rect.bottom)
+      };
+    };
     play.introActive = false;
     play.introComplete = true;
     play.player?.applyPowerup?.('shield');
@@ -129,7 +141,16 @@ try {
       activePowerupTitleFont: Number(hud?.activePowerupTitle?.style?.fontSize || 0),
       activePowerupRowFont: Number(hud?.activePowerupRows?.[0]?.label?.style?.fontSize || 0),
       activePowerupMetaFont: Number(hud?.activePowerupRows?.[0]?.meta?.style?.fontSize || 0),
-      activePowerupVisible: Boolean(hud?.activePowerupGroup?.visible)
+      activePowerupVisible: Boolean(hud?.activePowerupGroup?.visible),
+      topLeftHud: {
+        panel: bounds(hud?.leftPanel),
+        rank: bounds(hud?.rankGroup),
+        score: bounds(hud?.scoreText),
+        level: bounds(hud?.levelText),
+        chase: bounds(hud?.highscoreChaseGroup),
+        chaseConfiguredWidth: Math.round(Number(hud?.highscoreChaseGroup?.__w || 0)),
+        chaseScaleX: Number(hud?.highscoreChaseGroup?.scale?.x || 0)
+      }
     };
   });
 
@@ -143,6 +164,17 @@ try {
   if (metrics.activePowerupTitleFont < 12) failures.push(`activePowerupTitleFont ${metrics.activePowerupTitleFont} < 12`);
   if (metrics.activePowerupRowFont < 14) failures.push(`activePowerupRowFont ${metrics.activePowerupRowFont} < 14`);
   if (metrics.activePowerupMetaFont < 12) failures.push(`activePowerupMetaFont ${metrics.activePowerupMetaFont} < 12`);
+  const hud = metrics.topLeftHud || {};
+  if (!hud.panel || !hud.rank || !hud.score || !hud.level || !hud.chase) {
+    failures.push('top-left HUD bounds missing');
+  } else {
+    if (hud.score.x < hud.rank.right + 24) failures.push(`top-left score crowds rank ${JSON.stringify(hud)}`);
+    if (hud.chase.y < Math.max(hud.rank.bottom, hud.level.bottom) + 6) failures.push(`top-left chase strip overlaps rank/score row ${JSON.stringify(hud)}`);
+    if (hud.chase.x > hud.rank.x + 10) failures.push(`top-left chase strip no longer spans under rank ${JSON.stringify(hud)}`);
+    if (hud.chase.right > hud.panel.right - 6) failures.push(`top-left chase strip overflows panel ${JSON.stringify(hud)}`);
+    if (hud.chaseConfiguredWidth < 320) failures.push(`top-left chase strip too narrow: ${hud.chaseConfiguredWidth}`);
+    if (Math.abs(hud.chaseScaleX - 1) > 0.01) failures.push(`top-left chase strip should not resize-pulse: scale ${hud.chaseScaleX}`);
+  }
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 

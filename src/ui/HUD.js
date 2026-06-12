@@ -125,6 +125,7 @@ export class HUD {
       stroke: '#00111d',
       strokeThickness: 3
     });
+    this.highscoreChaseTarget.anchor.set(1, 0);
     this.highscoreChaseGap = createText('', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 10,
@@ -387,25 +388,45 @@ export class HUD {
     this.highscoreChaseTitle.style.fill = surpassed ? '#fff05c' : '#ffef7e';
     this.highscoreChaseGap.style.fill = surpassed ? '#fff05c' : (ratio >= 0.9 ? '#ff55d9' : '#7fffd8');
     this.highscoreChaseGroup.alpha = hasTarget ? 0.86 + pulse * 0.14 : 0.78;
-    this.highscoreChaseGroup.scale.set(surpassed ? 1 + pulse * 0.035 : 1);
+    this.highscoreChaseGroup.scale.set(1);
 
     const w = this.highscoreChaseGroup.__w || 178;
     const h = this.highscoreChaseGroup.__h || 42;
     const barW = Math.max(48, w - 18);
     const progress = hasTarget ? Math.min(1, ratio) : 0.08 + pulse * 0.08;
+    this.highscoreChaseTitle.updateText?.(false);
     this.highscoreChaseTarget.updateText?.(false);
     this.highscoreChaseGap.updateText?.(false);
+    const narrow = w < 248;
+    this.highscoreChaseTitle.x = 14;
+    this.highscoreChaseTitle.y = narrow ? 4 : 5;
+    this.highscoreChaseTitle.scale.set(1);
+    this.highscoreChaseTarget.scale.set(1);
+    if (narrow) {
+      this.highscoreChaseTarget.anchor.set(0, 0);
+      this.highscoreChaseTarget.x = 14;
+      this.highscoreChaseTarget.y = 17;
+    } else {
+      this.highscoreChaseTarget.anchor.set(1, 0);
+      this.highscoreChaseTarget.x = w - 14;
+      this.highscoreChaseTarget.y = 5;
+      const titleRight = this.highscoreChaseTitle.x + this.highscoreChaseTitle.width;
+      const maxTargetWidth = Math.max(78, w - titleRight - 32);
+      if (this.highscoreChaseTarget.width > maxTargetWidth) {
+        this.highscoreChaseTarget.scale.set(Math.max(0.72, maxTargetWidth / this.highscoreChaseTarget.width));
+      }
+    }
     this.highscoreChaseGap.x = 14;
-    this.highscoreChaseGap.y = h - 22;
+    this.highscoreChaseGap.y = narrow ? h - 21 : h - 20;
     this.highscoreChaseGap.scale.set(1);
-    const maxGapWidth = Math.max(44, w - 22);
+    const maxGapWidth = Math.max(44, w - 28);
     if (this.highscoreChaseGap.width > maxGapWidth) {
       this.highscoreChaseGap.scale.set(Math.max(0.64, maxGapWidth / this.highscoreChaseGap.width));
     }
 
     this.highscoreChaseBg.clear();
     this.highscoreChaseBg.roundRect(0, 0, w, h, 6);
-    this.highscoreChaseBg.fill({ color: 0x020711, alpha: 0.58 });
+    this.highscoreChaseBg.fill({ color: 0x020711, alpha: 0.5 });
     this.highscoreChaseBg.stroke({ color: dangerColor, width: 1.25, alpha: 0.68 + pulse * 0.22 });
     this.highscoreChaseBg.rect(6, 5, 3, h - 10);
     this.highscoreChaseBg.fill({ color: dangerColor, alpha: 0.72 });
@@ -850,8 +871,8 @@ export class HUD {
     const blockSpacing = layout.isMobile ? 24 : (isLargeDesktop ? 26 : 24);
     const scoreFont = layout.isMobile ? 15 : (isLargeDesktop ? 22 : 20);
     const livesFont = layout.isMobile ? 16 : (isLargeDesktop ? 22 : 20);
-    const leftPanelWidth = layout.isMobile ? Math.min(274, canvasWidth * 0.72) : (isLargeDesktop ? 410 : 382);
-    const leftPanelHeight = layout.isMobile ? 110 : (isLargeDesktop ? 136 : 128);
+    const leftPanelWidth = layout.isMobile ? Math.min(286, canvasWidth * 0.72) : (isLargeDesktop ? 410 : 390);
+    const leftPanelHeight = layout.isMobile ? 116 : (isLargeDesktop ? 126 : 122);
     const rightPanelWidth = layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164);
     const rightPanelHeight = layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52);
     const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : (isLargeDesktop ? 520 : 440);
@@ -876,7 +897,7 @@ export class HUD {
     this.rankGroup.y = margin + 10;
 
     // Shift Score and Level to the right of Rank
-    const rankOffset = layout.isMobile ? 196 : 212;
+    const rankOffset = layout.isMobile ? 186 : (isLargeDesktop ? 204 : 198);
 
     this.scoreText.x = margin + rankOffset;
     this.scoreText.y = margin + 10;
@@ -887,27 +908,15 @@ export class HUD {
     this.levelText.y = margin + blockSpacing + 8;
 
     if (this.highscoreChaseGroup) {
-      const chaseWidth = Math.max(156, leftPanelWidth - rankOffset - 18);
-      const chaseHeight = layout.isMobile ? 44 : 52;
+      const chaseWidth = Math.max(layout.isMobile ? 248 : 320, leftPanelWidth - 24);
+      const chaseHeight = layout.isMobile ? 42 : 40;
       this.highscoreChaseGroup.__w = chaseWidth;
       this.highscoreChaseGroup.__h = chaseHeight;
-      this.highscoreChaseGroup.x = margin + rankOffset;
-      this.highscoreChaseGroup.y = this.levelText.y + (layout.isMobile ? 24 : 28);
+      this.highscoreChaseGroup.x = margin + 12;
+      this.highscoreChaseGroup.y = margin + (layout.isMobile ? 68 : 76);
       this.highscoreChaseTitle.style.fontSize = layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11);
       this.highscoreChaseTarget.style.fontSize = layout.isMobile ? 11 : (isLargeDesktop ? 14 : 13);
       this.highscoreChaseGap.style.fontSize = layout.isMobile ? 9 : (isLargeDesktop ? 11 : 10);
-      this.highscoreChaseTitle.x = 14;
-      this.highscoreChaseTitle.y = 4;
-      this.highscoreChaseTarget.x = 14;
-      this.highscoreChaseTarget.y = layout.isMobile ? 16 : 18;
-      this.highscoreChaseGap.x = 14;
-      this.highscoreChaseGap.y = layout.isMobile ? 28 : 31;
-      this.highscoreChaseGap.scale.set(1);
-      this.highscoreChaseGap.updateText?.(false);
-      const maxGapWidth = Math.max(46, chaseWidth - this.highscoreChaseGap.x - 8);
-      if (this.highscoreChaseGap.width > maxGapWidth) {
-        this.highscoreChaseGap.scale.set(Math.max(0.68, maxGapWidth / this.highscoreChaseGap.width));
-      }
     }
 
     this.missionLabel.x = missionPanelX + missionPanelWidth / 2;
