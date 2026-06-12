@@ -43,13 +43,15 @@ function codexText(key, vars = {}) {
 
 const BOSS_EPIC_CODEX_LORE = Object.freeze({
   nova_boss_01: {
-    signalClass: 'star-crossed siege romance',
-    description: `Sonia was raised in Dock Verona, a binary city split between House Nova and House Swarm by a customs dispute, three bad funerals, and one spectacularly stupid antenna. At every truce banquet the admirals promised peace, then hid knives in the dessert forks. Sonia was supposed to inherit the left star. Her opposite number, Ravel of the right star, was supposed to hate her on schedule.
+    signalClass: 'Czechia class forbidden signal',
+    description: `Sonia came from Czechia, or from the bright old Earth memory of it: winter roofs, tram wires, cheap coffee, and a language that could make a warning sound like a dare. The archive says she was raised in Dock Verona, a binary city split between House Nova and House Swarm by a customs dispute, three bad funerals, and one spectacularly stupid antenna. Both records are true enough. People are allowed more than one origin when the stars start lying.
 
-They met on a maintenance balcony during a meteor blackout. No music, no moon, just two pressure suits, a leaking oxygen valve, and a shared laugh so bright it made both fleets reload. They traded poems through encrypted targeting pings. She sent him a flower grown in reactor coolant. He sent back a wrench with her name engraved on it, because romance is whatever survives vacuum.
+She was supposed to inherit the left star and aim it like a court weapon. Then the pilot found her voice in a side channel during a meteor blackout. No music, no moon, just two ships pretending the comms were broken and two people refusing to stop talking. They loved to chat. Not strategically. Not usefully. They sent each other jokes, tiny confessions, bad translations, and midnight pings that should have been deleted before the black box woke up. She made the war feel briefly negotiable, which is the most dangerous thing a person can do.
 
-The families found out, of course. Families always do. Ravel tried to cross the kill zone under a false transponder, Sonia tried to pull the guns offline, and the old war woke up hungry. Now Sonia fights like a love letter with a detonator: her movement traces mourning orbits, her pressure arrives in courtly volleys, and her signature tell is the balcony beam that asks whether you can step aside without breaking the heart-shaped lane. Defeat her and the archive records no villain, only a woman who turned grief into a flagship and then made everybody read the footnotes.`,
-    tip: 'The romance is tragic; the beam is not. Watch the balcony tell, cross once, and answer while Sonia is still composing the apology.'
+The pilot adored her. Wanted her, in the way a signal wants an answer before the static eats it. But his home orbit already carried a vow, and some doors stay closed because opening them would burn everyone standing near the light. So Sonia became the impossible thing kept at a respectful distance: not conquest, not trophy, not secret shame, but a star you do not steer toward because you remember who is waiting at your dock.
+
+Now Sonia fights like a love letter locked behind a safety glass. Her movement traces careful Czech glasswork arcs, all elegance until the angle cuts. Her pressure arrives as conversational bursts, questions turning into cannon fire before you can answer honestly. Her signature tell is the balcony beam: three violet lines, a pause, then the path you wish existed but cannot take. Defeat her and the archive records no villain, only a woman from Czechia who made the pilot want the impossible and then taught the fleet that restraint can hurt louder than impact.`,
+    tip: 'Sonia is all signal and boundary. Read the balcony beam, cross once, and fire before the conversation gets expensive.'
   },
   nova_boss_03: {
     signalClass: 'Berget class authority hangover',

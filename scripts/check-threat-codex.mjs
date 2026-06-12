@@ -53,8 +53,8 @@ if (!catalog.bosses?.every(entry => /movement/i.test(entry.description) && /pres
   fail('boss Codex descriptions should explain movement, pressure, and signature reads');
 }
 const bossById = Object.fromEntries((catalog.bosses || []).map((entry) => [entry.id, entry]));
-if (!/Dock Verona|love letter|balcony beam|star-crossed/i.test(bossById.nova_boss_01?.description || '') || (bossById.nova_boss_01?.description || '').length < 900) {
-  fail('Sonia boss Codex entry should include a long sci-fi tragic love story');
+if (!/Czechia|loved to chat|adored her|already carried a vow|balcony beam/i.test(bossById.nova_boss_01?.description || '') || (bossById.nova_boss_01?.description || '').length < 900) {
+  fail('Sonia boss Codex entry should include a long Czechia signal-boundary love story');
 }
 if (!/Berget-9|deckhand|admiral throne|royal hangover cannon/i.test(bossById.nova_boss_03?.description || '') || (bossById.nova_boss_03?.description || '').length < 900) {
   fail('KurtBossEdgar boss Codex entry should include a long Jeppe pa Berget-inspired story');
