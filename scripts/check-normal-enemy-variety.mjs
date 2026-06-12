@@ -5,6 +5,7 @@ import {
   GENERATED_ENEMY_EXTRA_TOTAL,
   GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL,
   GENERATED_ENEMY_FULL_UNLOCK_LEVEL,
+  GENERATED_ENEMY_LEGACY_ASSET_COUNT,
   GENERATED_ENEMY_PROFILES,
   GENERATED_ENEMY_STARTER_COUNT,
   GENERATED_ENEMY_TOTAL,
@@ -116,6 +117,9 @@ for (const profile of earlySurge) {
   if (!profile.displayName || surgeNames.has(profile.displayName)) fail(`duplicate/missing early surge displayName ${profile.displayName || 'none'}`);
   surgeNames.add(profile.displayName);
   if (!profile.palette || profile.palette.length < 3) fail(`${profile.id} missing readable three-color palette`);
+  if (profile.spriteIndex >= GENERATED_ENEMY_LEGACY_ASSET_COUNT) {
+    fail(`${profile.id} should use enhanced early enemy art, found late asset index ${profile.spriteIndex}`);
+  }
   if ((Number(profile.profileFireScalar) || 1) > 0.68) fail(`${profile.id} fires too hot for level 1: ${profile.profileFireScalar}`);
   if ((Number(profile.damageMult) || 1) > 0.74) fail(`${profile.id} damage is too hot for level 1: ${profile.damageMult}`);
   if ((Number(profile.diveBias) || 0) > 0.26) fail(`${profile.id} dive bias is too hot for level 1: ${profile.diveBias}`);

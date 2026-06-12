@@ -344,7 +344,7 @@ function profileFor(index) {
     spriteIndex: isLateMayhem
       ? GENERATED_ENEMY_LEGACY_ASSET_COUNT + extraIndex
       : isEarlySurge
-        ? (surgeIndex * 37 + Math.floor(surgeIndex / 5) * 11 + (surgeIndex % 13)) % GENERATED_ENEMY_ASSET_COUNT
+        ? (surgeIndex * 37 + Math.floor(surgeIndex / 5) * 11 + (surgeIndex % 13)) % GENERATED_ENEMY_LEGACY_ASSET_COUNT
         : index % GENERATED_ENEMY_LEGACY_ASSET_COUNT,
     visualBand: assetBand,
     displayName: nameFor(index),
@@ -356,7 +356,7 @@ function profileFor(index) {
     hullTint: isLateMayhem || isEarlySurge ? 0xffffff : assetBand === 0 ? 0xffffff : tint,
     spriteScale: round(
       isEarlySurge
-        ? 0.84 + (surgeIndex % 9) * 0.012 + (assetBand % 3) * 0.018
+        ? 0.94 + (surgeIndex % 9) * 0.01 + (assetBand % 3) * 0.014
         : 0.92 + (slot % 4) * 0.035 + assetBand * 0.026 + (role.radius > 1 ? 0.04 : 0),
       3
     ),
@@ -395,7 +395,7 @@ function profileFor(index) {
       2
     ),
     targetWidth: isEarlySurge
-      ? Math.round(30 + (surgeIndex % 13) * 2 + (assetBand % 4) * 3)
+      ? Math.round(58 + (surgeIndex % 11) * 2 + (assetBand % 4) * 4)
       : Math.round(38 + (slot % 5) * 3 + assetBand * (isLateMayhem ? 1.7 : 4) + Math.min(8, unlockLevel / 8)),
     ...(mayhem || {}),
     ...(surge || {})

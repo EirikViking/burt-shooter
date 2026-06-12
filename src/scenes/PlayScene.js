@@ -212,6 +212,9 @@ export class PlayScene {
     this.introOverlay = null;
     this.shipIntroToken = 0;
     this.introStartTime = 0;
+    this.shipCatalogReady = Promise.resolve();
+    this.shipCatalogLoaded = false;
+    this.shipIntroAssetGatePending = false;
     this.activeTopToast = null;
     this.activeCornerToast = null;
     this.activeAchievementToast = null;
@@ -483,14 +486,30 @@ export class PlayScene {
       selectedShipReady,
       new Promise((resolve) => setTimeout(resolve, 2500))
     ]).then(() => startIntroFromPlayer('selected_ship_ready'));
-    selectedShipReady.finally(() => {
-      GameAssets.loadShips()
+    this.shipCatalogLoaded = false;
+    this.shipIntroAssetGatePending = false;
+    this.shipCatalogReady = selectedShipReady.finally(() => {
+      return GameAssets.loadShips()
         .then(() => {
+          this.shipCatalogLoaded = true;
           if (this.game?.currentScene !== this || !this.player?.rebuildShipSprite) return;
           this.player.rebuildShipSprite('ship_catalog_ready');
           console.log('[PlayScene] Ship catalog ready for current run');
+          if (this.shipIntroAssetGatePending && this.introComplete && this.enemyManager && this.game.level) {
+            this.shipIntroAssetGatePending = false;
+            this.startLevel('introCompleteAssetsReady');
+          }
         })
-        .catch((error) => console.warn('[PlayScene] Ship catalog preload failed:', error));
+        .catch((error) => {
+          this.shipCatalogLoaded = true;
+          console.warn('[PlayScene] Ship catalog preload failed:', error);
+          if (this.shipIntroAssetGatePending && this.introComplete && this.enemyManager && this.game.level) {
+            this.shipIntroAssetGatePending = false;
+            this.startLevel('introCompleteAssetFallback');
+          }
+        });
+    });
+    this.shipCatalogReady.finally(() => {
       RankAssets.preloadAll().catch((error) => {
         console.warn('[PlayScene] Rank badge preload failed:', error);
       });
@@ -8413,6 +8432,16 @@ export class PlayScene {
 
     // Start enemy waves - use startLevel, not startWave
     if (this.enemyManager && this.game.level) {
+      if (!this.shipCatalogLoaded) {
+        this.shipIntroAssetGatePending = true;
+        this.shipCatalogReady?.finally?.(() => {
+          if (this.game?.currentScene !== this || !this.introComplete || !this.shipIntroAssetGatePending) return;
+          this.shipIntroAssetGatePending = false;
+          this.startLevel('introCompleteAssetsReady');
+        });
+        console.log('[PlayScene] Ship intro complete, waiting for enemy art catalog');
+        return;
+      }
       this.startLevel('introComplete');
     }
 

@@ -504,11 +504,21 @@ export class Enemy {
   addVariantGlow() {
     if (!this.visualVariant || this.variantGlow) return;
     const glow = new PIXI.Graphics();
-    const radius = Math.max(20, this.radius * 1.7);
-    glow.circle(0, 0, radius);
-    glow.fill({ color: this.visualVariant.accent || this.visualVariant.tint, alpha: this.visualVariant.alpha || 0.16 });
-    glow.circle(0, 0, radius * 0.62);
-    glow.stroke({ color: this.visualVariant.tint || 0xffffff, width: 2, alpha: 0.22 });
+    const earlySurge = Boolean(this.generatedProfile?.earlySurge);
+    const radius = earlySurge ? Math.max(18, this.radius * 1.38) : Math.max(20, this.radius * 1.7);
+    if (earlySurge) {
+      glow.circle(0, 0, radius);
+      glow.stroke({ color: this.visualVariant.accent || this.visualVariant.tint, width: 2, alpha: 0.36 });
+      glow.circle(0, 0, radius * 0.64);
+      glow.stroke({ color: this.visualVariant.tint || 0xffffff, width: 1, alpha: 0.24 });
+      glow.circle(0, 0, radius * 0.42);
+      glow.fill({ color: this.visualVariant.accent || this.visualVariant.tint, alpha: 0.045 });
+    } else {
+      glow.circle(0, 0, radius);
+      glow.fill({ color: this.visualVariant.accent || this.visualVariant.tint, alpha: this.visualVariant.alpha || 0.16 });
+      glow.circle(0, 0, radius * 0.62);
+      glow.stroke({ color: this.visualVariant.tint || 0xffffff, width: 2, alpha: 0.22 });
+    }
     glow.label = `enemyVariantGlow:${this.visualVariant.slug}`;
     this.variantGlow = glow;
     this.sprite.addChild(glow);
