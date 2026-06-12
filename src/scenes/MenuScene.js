@@ -1142,9 +1142,9 @@ export class MenuScene {
     this.primaryHint.style.align = align;
     this.primaryHint.style.wordWrapWidth = clampTextWidth(contentWidth, layout);
     this.runModeExplainer.text = this.getRunModeExplainerText();
-    const runIntelSize = Math.max(12, controlsSize + 1);
+    const runIntelSize = Math.max(11, controlsSize);
     this.runModeExplainer.style.fontSize = runIntelSize;
-    this.runModeExplainer.style.lineHeight = Math.round(runIntelSize * 1.34);
+    this.runModeExplainer.style.lineHeight = Math.round(runIntelSize * 1.18);
     this.runModeExplainer.style.align = 'left';
     this.runModeExplainer.style.wordWrapWidth = clampTextWidth(isMobileLayout ? contentWidth - 8 : contentWidth, layout);
     this.disclaimer.text = this.getDisclaimerText(layout);
@@ -1215,7 +1215,7 @@ export class MenuScene {
     const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
     const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
     const primaryHintHeight = this.primaryHint.height || controlsSize * 1.5;
-    const runModeExplainerHeight = (this.runModeExplainer.height || controlsSize * 4) + (isMobileLayout ? 18 : 22);
+    const runModeExplainerHeight = (this.runModeExplainer.height || controlsSize * 1.4) + (isMobileLayout ? 12 : 14);
     const buttonCount = 1 + secondaryButtons.length;
     const buttonsHeight = primaryButtonHeight + buttonHeight * secondaryButtons.length + buttonSpacing * Math.max(0, buttonCount - 1);
     const exitNoticeHeight = this.exitNotice?.text ? (this.exitNotice.height || controlsSize * 1.2) : 0;
@@ -1385,17 +1385,9 @@ export class MenuScene {
 
   getRunModeExplainerText() {
     const sectorStatus = this.sectorStartState?.available
-      ? translateText('LOCAL RECORD + NO CAREER RISK')
-      : translateText('UNLOCKS AFTER SECTOR 5');
-    const tip = this.sectorStartState?.available
-      ? translateText('Rehearse the sector that punched you. No paperwork.')
-      : translateText('Survive five sectors. Then practice revenge.');
-    return [
-      translateText('RUN INTEL'),
-      `${translateText('RANKED RUN')}     ${translateText('LEADERBOARD + XP + UNLOCKS')}`,
-      `${translateText('SECTOR START')}   ${sectorStatus}`,
-      tip
-    ].join('\n');
+      ? translateText('CHECKPOINT')
+      : translateText('LOCKED');
+    return `${translateText('RANKED')}: ${translateText('LEADERBOARD')} // ${translateText('SECTOR')}: ${sectorStatus}`;
   }
 
   drawRunModeExplainerPanel(layout, width, height) {
@@ -1403,8 +1395,8 @@ export class MenuScene {
     const textBounds = boundsForDisplayObject(this.runModeExplainer);
     if (!textBounds) return;
     const isMobileLayout = layout.isMobile || width < 720;
-    const padX = isMobileLayout ? 12 : 16;
-    const padY = isMobileLayout ? 8 : 10;
+    const padX = isMobileLayout ? 10 : 14;
+    const padY = isMobileLayout ? 6 : 7;
     const x = textBounds.x - padX;
     const y = textBounds.y - padY;
     const panelWidth = textBounds.width + padX * 2;
@@ -1414,18 +1406,14 @@ export class MenuScene {
     const secondary = focusedId === 'sectorStart' ? 0xff55d9 : 0x7fffd8;
 
     this.runModePanel.clear();
-    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 6);
-    this.runModePanel.fill({ color: 0x031323, alpha: 0.62 });
-    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 6);
-    this.runModePanel.stroke({ color: accent, width: 1.5, alpha: 0.68 });
-    this.runModePanel.rect(x + 7, y + 7, 3, panelHeight - 14);
-    this.runModePanel.fill({ color: secondary, alpha: 0.88 });
-    this.runModePanel.rect(x + panelWidth - 8, y + 7, 3, panelHeight - 14);
-    this.runModePanel.fill({ color: 0xffd15c, alpha: 0.62 });
-    this.runModePanel.rect(x + 16, y + 25, panelWidth - 32, 1);
-    this.runModePanel.fill({ color: 0x8ffcff, alpha: 0.36 });
-    this.runModePanel.rect(x + 16, y + panelHeight - 13, panelWidth - 32, 1);
-    this.runModePanel.fill({ color: 0xff55d9, alpha: 0.28 });
+    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 5);
+    this.runModePanel.fill({ color: 0x031323, alpha: 0.38 });
+    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 5);
+    this.runModePanel.stroke({ color: accent, width: 1, alpha: 0.58 });
+    this.runModePanel.rect(x + 6, y + 6, 3, Math.max(6, panelHeight - 12));
+    this.runModePanel.fill({ color: secondary, alpha: 0.82 });
+    this.runModePanel.rect(x + panelWidth - 8, y + 6, 3, Math.max(6, panelHeight - 12));
+    this.runModePanel.fill({ color: 0xffd15c, alpha: 0.46 });
   }
 
   drawMenuPanel(layout) {

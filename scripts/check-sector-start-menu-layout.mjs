@@ -186,8 +186,8 @@ function assertNoMenuOverlap(state, label) {
   const configuredWidth = Number(sector.buttonConfiguredWidth) || button?.width || 0;
   const configuredHeight = Number(sector.buttonConfiguredHeight) || button?.height || 0;
   const hangar = state.menu?.items?.hangarButton;
-  assert.match(explainerText, /LAUNCH RUN|RANKED RUN:/, `${label}: missing launch/ranked run explainer`);
-  assert.match(explainerText, /SECTOR START:/, `${label}: missing sector start explainer`);
+  assert.match(explainerText, /LAUNCH RUN|RANKED(?: RUN)?:/, `${label}: missing launch/ranked run explainer`);
+  assert.match(explainerText, /SECTOR(?: START)?:/, `${label}: missing sector start explainer`);
   assert.match(explainerText, /leaderboard/i, `${label}: explainer should mention leaderboard behavior`);
   assert.match(explainerText, /checkpoint/i, `${label}: explainer should mention checkpoint practice`);
   assert.ok(explainer?.width > 0 && explainer?.height > 0, `${label}: missing run mode explainer bounds`);
