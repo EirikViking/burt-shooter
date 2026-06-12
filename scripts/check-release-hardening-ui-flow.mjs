@@ -56,10 +56,12 @@ for (const needle of [
 }
 
 assert.ok(
-  playScene.includes('if (this.comboCount < 3)') &&
+  !playScene.includes('createComboDisplay()') &&
+    !playScene.includes('COMBO x${this.comboMultiplier}  (${this.comboCount})') &&
+    playScene.includes('comboDisplay: null') &&
     playScene.includes('this.comboCount % 20 === 0') &&
     playScene.includes('duration: 900'),
-  'combo UI spam should stay reduced while every-10 scoring remains'
+  'persistent combo HUD should stay removed while every-10 scoring remains'
 );
 assert.ok(
   playScene.includes('const appliedBonus = this.game.addScore(bonus);'),

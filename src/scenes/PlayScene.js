@@ -256,7 +256,6 @@ export class PlayScene {
 
     // Synergy + Meta
     this.synergyBadge = null;
-    this.comboDisplay = null;
     this.devOverlay = null;
     this.seasonXp = 0;
     this.seasonLevel = 0;
@@ -318,7 +317,6 @@ export class PlayScene {
     this.hud = new HUD(this.uiContainer, this.game);
     // Note: HUD creates itself in constructor
     this.initMetaProgress();
-    this.createComboDisplay();
     this.createSynergyBadge();
 
     // TASK C: Debug diagnostics removed from gameplay screen
@@ -809,7 +807,6 @@ export class PlayScene {
       this.buildStamp.y = height - margin;
     }
 
-    this.layoutComboDisplay();
     if (this.synergyBadge) {
       this.synergyBadge.x = width * 0.82;
       this.synergyBadge.y = height * 0.1;
@@ -1183,8 +1180,6 @@ export class PlayScene {
       this.updateComboTimers(delta);
       this.updateDangerDodgeTimer(delta);
       this.updateGrazeBreakTimer();
-      this.updateComboDisplay(delta);
-
       if (this.player?.synergyState?.type) {
         this.setSynergyBadge(this.player.synergyState.label || this.player.synergyState.type);
       } else {
@@ -5716,7 +5711,7 @@ export class PlayScene {
         this.describeToastDisplay(this.activeTopToast, getBounds),
         this.describeToastDisplay(this.activeCornerToast, getBounds)
       ].filter(Boolean),
-      comboDisplay: describeVisibleTextNode(this.comboDisplay, 'combo-display', 'combo_display'),
+      comboDisplay: null,
       scorePopups,
       achievement: this.activeAchievementToast ? {
         id: this.activeAchievementToast.__achievementToastId,
@@ -6041,42 +6036,6 @@ export class PlayScene {
     display.__toastTicker = ticker;
     this.game.app.ticker.add(ticker);
     return display;
-  }
-
-  createComboDisplay() {
-    if (!this.comboDisplay) {
-      this.comboDisplay = createText('', {
-        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: 26,
-        fill: '#00ffff',
-        stroke: '#000000',
-        strokeThickness: 4,
-        align: 'center'
-      });
-      this.comboDisplay.anchor.set(0.5);
-      this.comboDisplay.visible = false;
-      this.uiOverlay.addChild(this.comboDisplay);
-    }
-    this.layoutComboDisplay();
-  }
-
-  layoutComboDisplay() {
-    if (!this.comboDisplay) return;
-    const { width, height } = this.game.app.screen;
-    this.comboDisplay.x = Math.max(170, Math.min(width * 0.24, width - 220));
-    this.comboDisplay.y = Math.max(150, height * 0.28);
-  }
-
-  updateComboDisplay(delta) {
-    if (!this.comboDisplay) return;
-    if (this.comboCount < 3) {
-      this.comboDisplay.visible = false;
-      return;
-    }
-    this.comboDisplay.visible = true;
-    this.comboDisplay.text = `COMBO x${this.comboMultiplier}  (${this.comboCount})`;
-    const pulse = 1 + Math.sin(Date.now() * 0.008) * 0.03;
-    this.comboDisplay.scale.set(pulse);
   }
 
   createSynergyBadge() {
@@ -6711,10 +6670,6 @@ export class PlayScene {
       { auraColor: 0x66ff66, muzzleColor: 0x66ff66 }
     ];
     this.player.setCosmetics(styles[style] || styles[0]);
-    if (this.comboDisplay) {
-      const colors = [0x00ffff, 0xffcc00, 0x66ff66];
-      this.comboDisplay.style.fill = colors[style] || 0x00ffff;
-    }
   }
 
   updateMetaProgress(deltaScore, bossDefeated) {

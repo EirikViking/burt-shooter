@@ -202,7 +202,6 @@ const hardcodedTextAllowlist = new Set([
   'pVis:${vis} a:${alpha} tex:${texOk} parent:${parent}',
   'S:${score} R:${rank} (seen:${seen}) REV:${rankEv} UI:${uiRankEv}',
   '${trimmed}...',
-  'COMBO x${this.comboMultiplier}  (${this.comboCount})',
   'COMBO:${this.comboCount}x${this.comboMultiplier} STREAK:${this.killStreak}',
   'Used ${usageCount} times by players',
   'HULL ${this.selectedIndex + 1}/${this.ships.length}  |  SERIES ${modelIndex}/${modelTotal}  |  ${status}',
