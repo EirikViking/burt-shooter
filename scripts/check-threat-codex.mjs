@@ -27,7 +27,7 @@ for (const category of THREAT_CODEX_CATEGORIES) {
   if (!Array.isArray(catalog[category.id]) || catalog[category.id].length === 0) fail(`missing codex category ${category.id}`);
 }
 if (totalEntries < 300) fail(`Threat Codex should support long-term discovery, found only ${totalEntries} entries`);
-if ((catalog.enemies?.length || 0) < 180) fail(`expected at least 180 enemy codex entries, found ${catalog.enemies?.length || 0}`);
+if ((catalog.enemies?.length || 0) < 357) fail(`expected at least 357 enemy codex entries, found ${catalog.enemies?.length || 0}`);
 if ((catalog.attackPatterns?.length || 0) < 40) fail(`expected at least 40 attack pattern codex entries, found ${catalog.attackPatterns?.length || 0}`);
 if ((catalog.waveTactics?.length || 0) < 35) fail(`expected at least 35 wave tactic codex entries, found ${catalog.waveTactics?.length || 0}`);
 if ((catalog.powerups?.length || 0) < 20) fail(`expected at least 20 powerup codex entries, found ${catalog.powerups?.length || 0}`);

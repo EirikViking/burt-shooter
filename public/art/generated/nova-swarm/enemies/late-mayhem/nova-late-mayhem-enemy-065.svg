@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="-48 -48 96 96" fill="none">
+  <defs>
+    <radialGradient id="late_mayhem_065_glow" cx="50%" cy="42%" r="58%">
+      <stop offset="0%" stop-color="#ff4fd8" stop-opacity="0.7"/>
+      <stop offset="46%" stop-color="#fff45c" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#ff4fd8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="late_mayhem_065_hull" x1="-24" y1="-38" x2="24" y2="38">
+      <stop offset="0%" stop-color="#ff4fd8"/>
+      <stop offset="48%" stop-color="#fff45c"/>
+      <stop offset="100%" stop-color="#ff4fd8"/>
+    </linearGradient>
+  </defs>
+  <g transform="rotate(9)">
+    <ellipse cx="0" cy="0" rx="35" ry="16" stroke="#ff4fd8" stroke-width="1.25" opacity="0.32"/>
+  </g>
+  <circle cx="0" cy="0" r="36" fill="url(#late_mayhem_065_glow)" opacity="0.72"/>
+  <g>
+    <polygon points="-4.9,-20 -31,-4 -21,14 -9.1,24 -7.7,4" fill="#ff4fd8" opacity="0.88" stroke="#ff4fd8" stroke-width="1.3"/>
+    <polygon points="7.7,4 9.1,24 21,14 31,-4 4.9,-20" fill="#ff4fd8" opacity="0.88" stroke="#ff4fd8" stroke-width="1.3"/>
+    <polygon points="0,-42 14,-18 10.9,27 0,35 -10.9,27 -14,-18" fill="url(#late_mayhem_065_hull)" stroke="#f7fbff" stroke-width="1.45" opacity="0.96"/>
+    <path d="M 0 -37 L 0 28" stroke="#ffffff" stroke-width="1.1" opacity="0.44"/>
+    <circle cx="0" cy="-7" r="5" fill="#ff4fd8" opacity="0.92"/>
+    <path d="M -6.3 -31 L -21.3 -40" stroke="#ff4fd8" stroke-width="1.45" stroke-linecap="round" opacity="0.8"/>
+    <path d="M 8.3 -31 L 23.3 -35" stroke="#ff4fd8" stroke-width="1.45" stroke-linecap="round" opacity="0.8"/>
+    <path d="M -18 -19 L -23 -16 M 18 -19 L 23 -16" stroke="#ff4fd8" stroke-width="1.15" opacity="0.4"/>
+    <path d="M -18 -7 L -25 -4 M 18 -7 L 25 -4" stroke="#ff4fd8" stroke-width="1.15" opacity="0.5"/>
+    <path d="M -18 5 L -26 8 M 18 5 L 26 8" stroke="#ff4fd8" stroke-width="1.15" opacity="0.6000000000000001"/>
+    <path d="M -18 17 L -26 20 M 18 17 L 26 20" stroke="#ff4fd8" stroke-width="1.15" opacity="0.7000000000000001"/>
+    <path d="M -9.2 27 L -7 41 L -4.8 27 Z" fill="#ff4fd8" opacity="0.78"/>
+    <path d="M -2.2 27 L 0 43 L 2.2 27 Z" fill="#ff4fd8" opacity="0.78"/>
+    <path d="M 4.8 27 L 7 39 L 9.2 27 Z" fill="#ff4fd8" opacity="0.78"/>
+    <circle cx="-7.700000000000001" cy="22" r="2.2" fill="#ff4fd8" opacity="0.72"/>
+    <circle cx="7.700000000000001" cy="22" r="3.2" fill="#ff4fd8" opacity="0.72"/>
+  </g>
+</svg>

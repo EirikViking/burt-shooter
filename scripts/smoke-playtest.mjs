@@ -318,7 +318,7 @@ function summarizeSmokeReport(report, blockingIssues) {
     settings: {
       overlayVisible: Boolean(report.settingsState?.settingsOverlayVisible),
       creditsVisible: Boolean(report.creditsState?.creditsOverlayVisible),
-      sfxAudition: report.settingsState?.textState?.audio?.lastSfxEvent || null,
+      sfxAudition: report.settingsSfxState?.textState?.audio?.lastSfxEvent || report.settingsState?.textState?.audio?.lastSfxEvent || null,
       voiceAudition: report.settingsState?.textState?.audio?.lastVoiceEvent || null,
       accessibility: report.settingsState?.textState?.accessibility || null
     },
@@ -422,6 +422,7 @@ async function runSmoke() {
     }, null, { timeout: 5000 });
     await page.waitForTimeout(500);
     await page.screenshot({ path: path.join(outputDir, '01-settings.png'), fullPage: true });
+    let settingsSfxState = null;
     const audioTestButtonState = await page.evaluate(() => {
       const overlay = window.__game?.scenes?.menu?.settingsOverlay;
       const toPoint = (button) => {
@@ -452,6 +453,7 @@ async function runSmoke() {
           return false;
         }
       }, null, { timeout: 2500 });
+      settingsSfxState = await collectGameState(page);
     }
     if (audioTestButtonState?.voice) {
       await page.mouse.click(audioTestButtonState.voice.x, audioTestButtonState.voice.y);
@@ -834,6 +836,7 @@ async function runSmoke() {
       baseUrl,
       outputDir,
       menuState,
+      settingsSfxState,
       settingsState,
       creditsState,
       gameplayState,
@@ -867,7 +870,7 @@ async function runSmoke() {
       ...(menuState.textState?.scene !== 'menu' ? [`menu text state used unstable scene name: ${menuState.textState?.scene || 'none'}`] : []),
       ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
       ...(!audioTestButtonState?.sfx || !audioTestButtonState?.voice ? ['settings audio test buttons were not exposed'] : []),
-      ...(!['achievement', 'shoot_small'].includes(settingsState.textState?.audio?.lastSfxEvent) ? [`settings SFX test did not update telemetry: ${settingsState.textState?.audio?.lastSfxEvent || 'none'}`] : []),
+      ...(!['achievement', 'shoot_small'].includes((settingsSfxState || settingsState).textState?.audio?.lastSfxEvent) ? [`settings SFX test did not update telemetry: ${(settingsSfxState || settingsState).textState?.audio?.lastSfxEvent || 'none'}`] : []),
       ...(settingsState.textState?.audio?.lastVoiceEvent !== 'mission_control_launch' ? [`settings voice test did not update telemetry: ${settingsState.textState?.audio?.lastVoiceEvent || 'none'}`] : []),
       ...(!creditsState.creditsOverlayVisible || creditsState.textState?.overlays?.credits !== true ? ['credits overlay did not appear or was missing from text state'] : []),
       ...(!Number.isFinite(settingsState.textState?.accessibility?.screenShake) ? ['accessibility screen-shake setting was not exposed'] : []),

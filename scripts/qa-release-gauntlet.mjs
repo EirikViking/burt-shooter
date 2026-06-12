@@ -2,8 +2,11 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import {
+  GENERATED_ENEMY_EXTRA_TOTAL,
+  GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL,
   GENERATED_ENEMY_FULL_UNLOCK_LEVEL,
   GENERATED_ENEMY_PROFILES,
+  GENERATED_ENEMY_TOTAL,
   getGeneratedEnemyPoolStats
 } from '../src/config/GeneratedEnemyProfiles.js';
 import {
@@ -123,8 +126,12 @@ function validateEnemyVariety() {
   const ids = new Set();
   const types = new Set();
 
-  if (GENERATED_ENEMY_PROFILES.length < 120) {
-    fail(`expected at least 120 normal enemy profiles, found ${GENERATED_ENEMY_PROFILES.length}`);
+  if (GENERATED_ENEMY_PROFILES.length !== GENERATED_ENEMY_TOTAL) {
+    fail(`expected ${GENERATED_ENEMY_TOTAL} normal enemy profiles, found ${GENERATED_ENEMY_PROFILES.length}`);
+  }
+  const lateMayhem = GENERATED_ENEMY_PROFILES.filter((profile) => profile.lateMayhem === true);
+  if (lateMayhem.length !== GENERATED_ENEMY_EXTRA_TOTAL) {
+    fail(`expected ${GENERATED_ENEMY_EXTRA_TOTAL} late-mayhem enemy profiles, found ${lateMayhem.length}`);
   }
 
   for (const profile of GENERATED_ENEMY_PROFILES) {
@@ -185,10 +192,14 @@ function validateEnemyVariety() {
   const stats = sampledLevels.map((level) => getGeneratedEnemyPoolStats(level));
   const total = GENERATED_ENEMY_PROFILES.length;
   const level1 = stats.find((entry) => entry.level === 1);
+  const level10Profiles = getGeneratedEnemyPoolStats(GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1);
   const level11 = stats.find((entry) => entry.level === 11);
   const level40 = stats.find((entry) => entry.level === 40);
   if (level1.availableProfiles < 8 || level1.availableProfiles > 12) {
     fail(`level 1 should expose 8-12 normal enemy profiles, found ${level1.availableProfiles}`);
+  }
+  if (getGeneratedEnemyPoolStats(GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1).availableProfiles >= level11.availableProfiles) {
+    fail(`level ${GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL} should expand the pool beyond level ${GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1}`);
   }
   if (level11.availableProfiles >= total) fail(`level 11 exposes all ${total} normal enemy profiles`);
   if (level11.movementFamilies >= level11.totalMovementFamilies) fail('level 11 exposes all movement families');
@@ -409,6 +420,7 @@ const report = {
     totalAttackFamilies: unique(GENERATED_ENEMY_PROFILES.map((profile) => profile.fireStyle)).length,
     fullUnlockLevel: GENERATED_ENEMY_FULL_UNLOCK_LEVEL,
     sampledLevels: enemyStats,
+    levelBeforeLateMayhem: level10Profiles,
     movementFamiliesAfterLevel11: movementAfter11,
     attackFamiliesAfterLevel11: attacksAfter11
   },

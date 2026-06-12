@@ -1848,7 +1848,7 @@ export class PlayScene {
           this.onEnemyKilled(enemy);
           this.enemyManager?.removeEnemySprite?.(enemy, 'bomb_blast');
         }
-        this.particleManager?.createExplosion(enemy.x, enemy.y, 0xff6600);
+        this.playEnemyDeathFeedback(enemy, { color: 0xff6600, intensity: 0.74, volume: 0.44 });
       }
     });
 
@@ -1911,8 +1911,7 @@ export class PlayScene {
                 }
               }
               this.onEnemyKilled(enemy);
-              this.particleManager.createExplosion(enemy.x, enemy.y, enemy.color);
-              AudioManager.playSfx('enemy_explode', { volume: 0.5 });
+              this.playEnemyDeathFeedback(enemy, { volume: 0.5 });
               this.screenShake.shake(3);
 
               // Powerup Drop Check (Manager handles chance & guarantees)
@@ -6188,6 +6187,53 @@ export class PlayScene {
     return result;
   }
 
+  playEnemyDeathFeedback(enemy, options = {}) {
+    if (!enemy) return;
+    const profile = enemy.generatedProfile || enemy.dangerMidShipProfile || enemy.middleShipProfile || {};
+    const lateMayhem = Boolean(profile.lateMayhem) && Math.max(1, Number(this.game?.level || enemy.level) || 1) >= 11;
+    const x = Number(enemy.x) || 0;
+    const y = Number(enemy.y) || 0;
+    const palette = Array.isArray(profile.palette) && profile.palette.length
+      ? profile.palette
+      : [options.color, profile.accent, profile.tint, enemy.color].filter(Number.isFinite);
+    const baseColor = Number.isFinite(options.color)
+      ? options.color
+      : (Number.isFinite(palette[0]) ? palette[0] : enemy.color || 0xffaa00);
+    const intensity = Number.isFinite(options.intensity)
+      ? options.intensity
+      : (lateMayhem ? 0.86 : 1);
+    this.particleManager?.createExplosion(x, y, baseColor, intensity);
+
+    if (lateMayhem) {
+      const burstCount = Math.max(1, Math.min(3, Math.floor(profile.deathBurstCount || 1)));
+      const sparkCount = Math.max(8, Math.min(18, Math.floor(profile.deathSparkCount || 10)));
+      for (let i = 0; i < burstCount; i += 1) {
+        const color = palette[(i + 1) % palette.length] || baseColor;
+        const angle = ((Math.PI * 2) / burstCount) * i + (profile.spriteIndex || 0) * 0.17;
+        const radius = (profile.deathBurstRadius || 14) * (0.65 + i * 0.22);
+        const burstX = x + Math.cos(angle) * radius;
+        const burstY = y + Math.sin(angle) * radius * 0.65;
+        this.particleManager?.createRadialBurst?.(burstX, burstY, color, {
+          count: sparkCount,
+          intensity: 0.52,
+          minSpeed: 1.4,
+          maxSpeed: 4.8,
+          size: 2.1,
+          lifetime: 24,
+          alternateColor: palette[(i + 2) % palette.length] || baseColor,
+          upwardBias: 0.4
+        });
+      }
+      this.particleManager?.createHitSpark?.(x, y, palette[2] || baseColor, 1.15);
+    }
+
+    const sfx = lateMayhem && profile.deathSfx ? profile.deathSfx : (options.sfx || 'enemy_explode');
+    AudioManager.playSfx(sfx, {
+      volume: Number.isFinite(options.volume) ? options.volume : (lateMayhem ? 0.56 : 0.5),
+      minIntervalMs: lateMayhem ? 55 : 35
+    });
+  }
+
   onEnemyKilled(enemy) {
     const now = Date.now();
     if (enemy?.kind === 'boss') {
@@ -6458,7 +6504,7 @@ export class PlayScene {
         const appliedScore = this.game.addScore(scoreAwarded);
         this.scorePopupManager?.addScorePopup(enemy.x, enemy.y, appliedScore);
         this.onEnemyKilled(enemy);
-        this.particleManager?.createExplosion(enemy.x, enemy.y, 0xff66ff, 0.72);
+        this.playEnemyDeathFeedback(enemy, { color: 0xff66ff, intensity: 0.72, volume: 0.44 });
       }
     }
 
@@ -6580,7 +6626,7 @@ export class PlayScene {
           const appliedScore = this.game.addScore(scoreAwarded);
           if (this.scorePopupManager) this.scorePopupManager.addScorePopup(enemy.x, enemy.y, appliedScore);
           this.onEnemyKilled(enemy);
-          this.particleManager?.createExplosion(enemy.x, enemy.y, accent);
+          this.playEnemyDeathFeedback(enemy, { color: accent, intensity: 0.82, volume: 0.42 });
         }
       });
 
@@ -6675,8 +6721,7 @@ export class PlayScene {
           }
         }
         this.onEnemyKilled(nearest);
-        this.particleManager.createExplosion(nearest.x, nearest.y, nearest.color);
-        AudioManager.playSfx('enemy_explode', { volume: 0.4 });
+        this.playEnemyDeathFeedback(nearest, { volume: 0.4 });
       } else {
         this.particleManager.createHitSpark(nearest.x, nearest.y);
       }
@@ -7074,8 +7119,7 @@ export class PlayScene {
               }
             }
             this.onEnemyKilled(enemy);
-            this.particleManager.createExplosion(enemy.x, enemy.y, enemy.color);
-            AudioManager.playSfx('enemy_explode', { volume: 0.4 });
+            this.playEnemyDeathFeedback(enemy, { volume: 0.4 });
           }
         }
       };

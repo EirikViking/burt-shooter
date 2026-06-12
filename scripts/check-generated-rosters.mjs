@@ -3,7 +3,12 @@ import path from 'node:path';
 import { ShipData } from '../src/config/ShipData.js';
 import { buildSelectableShipVariants } from '../src/config/VisualVariantCatalog.js';
 import { AssetManifest } from '../src/assets/assetManifest.js';
-import { GENERATED_ENEMY_ASSET_COUNT, GENERATED_ENEMY_PROFILES } from '../src/config/GeneratedEnemyProfiles.js';
+import {
+  GENERATED_ENEMY_ASSET_COUNT,
+  GENERATED_ENEMY_EXTRA_TOTAL,
+  GENERATED_ENEMY_PROFILES,
+  GENERATED_ENEMY_TOTAL
+} from '../src/config/GeneratedEnemyProfiles.js';
 
 const root = process.cwd();
 const errors = [];
@@ -34,7 +39,9 @@ if (starterCount !== 1) fail(`expected exactly one starter ship, found ${starter
 
 const enemyAssets = AssetManifest.generated?.enemies || [];
 if (enemyAssets.length !== GENERATED_ENEMY_ASSET_COUNT) fail(`expected ${GENERATED_ENEMY_ASSET_COUNT} generated enemy assets, found ${enemyAssets.length}`);
-if (GENERATED_ENEMY_PROFILES.length < 120) fail(`expected at least 120 generated enemy profiles, found ${GENERATED_ENEMY_PROFILES.length}`);
+if (GENERATED_ENEMY_PROFILES.length !== GENERATED_ENEMY_TOTAL) fail(`expected ${GENERATED_ENEMY_TOTAL} generated enemy profiles, found ${GENERATED_ENEMY_PROFILES.length}`);
+const lateMayhemProfiles = GENERATED_ENEMY_PROFILES.filter((profile) => profile.lateMayhem === true);
+if (lateMayhemProfiles.length !== GENERATED_ENEMY_EXTRA_TOTAL) fail(`expected ${GENERATED_ENEMY_EXTRA_TOTAL} late mayhem profiles, found ${lateMayhemProfiles.length}`);
 
 const behaviorSignatures = new Set();
 const enemyIds = new Set();
@@ -60,7 +67,7 @@ for (const profile of GENERATED_ENEMY_PROFILES) {
   ].join('|'));
 }
 
-if (behaviorSignatures.size < 110) fail(`expected at least 110 distinct enemy behavior signatures, found ${behaviorSignatures.size}`);
+if (behaviorSignatures.size < 300) fail(`expected at least 300 distinct enemy behavior signatures, found ${behaviorSignatures.size}`);
 
 if (errors.length) {
   console.error(`[GeneratedRosters] FAIL ${errors.length} issue(s)`);

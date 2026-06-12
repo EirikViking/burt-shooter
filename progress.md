@@ -21,6 +21,11 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - No unlock rules, balance, save keys, leaderboard identity, Steamworks settings, generated assets, or audio assets were changed.
 - Steam upload: packaged and uploaded private Steam build `23696628` for app `4765070` / depot `4765071` with `SetLive` empty; evidence is in `release/steamworks/steam_upload_evidence_ship_unlock_reveal_20260612.json`.
 
+## 2026-06-12 Late Enemy Mayhem Expansion
+
+- Current user request: implement 177 extra unique enemy ships after level 10 and make level 10+ look like colorful total mayhem without increasing difficulty.
+- Direction: expand the generated normal enemy profile pool through existing data-driven roster systems, keep level 1-10 availability unchanged, gate all new ships at level 11+, and add presentation-only late-game VFX/SFX fields instead of extra active enemies, bullets, damage, or fire pressure.
+
 ## 2026-05-26 Cabinet Log And Credits Unlock Polish
 
 - Current user request: replace the static lore popup with a context-aware Cabinet Log system that adds useful/funny gameplay value and archives discoveries in the Codex, then overhaul the credits screen with stronger animation, fixed text overlaps, and a much bigger secret ship unlock reveal.

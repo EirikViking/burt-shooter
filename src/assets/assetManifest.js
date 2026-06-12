@@ -15,7 +15,10 @@ export const AssetManifest = {
         },
         bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
         playerShips: Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
-        enemies: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/enemies/nova-enemy-${String(i + 1).padStart(2, '0')}.png`),
+        enemies: [
+            ...Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/enemies/nova-enemy-${String(i + 1).padStart(2, '0')}.png`),
+            ...Array.from({ length: 177 }, (_, i) => `/art/generated/nova-swarm/enemies/late-mayhem/nova-late-mayhem-enemy-${String(i + 1).padStart(3, '0')}.svg`)
+        ],
         eliteMiddleShips: [
             '/art/generated/nova-swarm/elites/nova-elite-middle-01-tractor-puller-20260523.png',
             '/art/generated/nova-swarm/elites/nova-elite-middle-02-shield-projector-20260523.png',

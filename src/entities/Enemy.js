@@ -80,6 +80,7 @@ export class Enemy {
     this.threatActionLockedTarget = null;
     this.threatTelegraphLayer = null;
     this.threatActionExecutionCount = 0;
+    this.profileFireScalar = 1;
 
     this.idlePhase = Math.random() * Math.PI * 2;
     this.spriteKey = null;
@@ -150,6 +151,7 @@ export class Enemy {
       this.spriteKey = profile.type;
       this.generatedEnemyIndex = profile.spriteIndex;
       this.xtraType = (profile.spriteIndex % 5) + 1;
+      this.profileFireScalar = profile.profileFireScalar || 1;
     } else {
     switch (this.type) {
       case 'chaser':
@@ -510,6 +512,42 @@ export class Enemy {
     glow.label = `enemyVariantGlow:${this.visualVariant.slug}`;
     this.variantGlow = glow;
     this.sprite.addChild(glow);
+
+    if (this.generatedProfile?.lateMayhem && !this.mayhemVfx) {
+      const profile = this.generatedProfile;
+      const colors = Array.isArray(profile.palette) && profile.palette.length
+        ? profile.palette
+        : [profile.tint, profile.accent, 0xffffff];
+      const mayhem = new PIXI.Graphics();
+      const outer = Math.max(24, this.radius * 2.15);
+      mayhem.circle(0, 0, outer);
+      mayhem.stroke({ color: colors[1] || profile.accent || 0xffffff, width: 1.5, alpha: 0.42 });
+      mayhem.circle(0, 0, outer * 0.72);
+      mayhem.stroke({ color: colors[2] || profile.tint || 0xffffff, width: 1, alpha: 0.3 });
+      const spokeCount = 4 + (profile.spriteIndex % 5);
+      for (let i = 0; i < spokeCount; i += 1) {
+        const angle = (Math.PI * 2 * i) / spokeCount;
+        const inner = outer * 0.34;
+        const tip = outer * (0.72 + (i % 2) * 0.18);
+        mayhem.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        mayhem.lineTo(Math.cos(angle) * tip, Math.sin(angle) * tip);
+      }
+      mayhem.stroke({ color: colors[0] || profile.tint || 0xffffff, width: 1.2, alpha: 0.36 });
+      mayhem.blendMode = 'add';
+      mayhem.alpha = 0.72;
+      mayhem.label = `enemyMayhemVfx:${profile.id}`;
+      this.mayhemVfx = mayhem;
+      this.sprite.addChild(mayhem);
+    }
+  }
+
+  updateMayhemVfx(delta) {
+    if (!this.mayhemVfx || !this.generatedProfile?.lateMayhem) return;
+    const spin = this.generatedProfile.mayhemSpin || 0.5;
+    this.mayhemVfx.rotation += delta * 0.012 * spin;
+    const pulse = Math.sin(Date.now() * 0.006 + this.idlePhase) * 0.5 + 0.5;
+    this.mayhemVfx.alpha = 0.48 + pulse * 0.26;
+    this.mayhemVfx.scale.set(0.94 + pulse * 0.08);
   }
 
   updateHealthBar() {
@@ -539,7 +577,7 @@ export class Enemy {
     this.waveCenterY = Number.isFinite(context.centerY) ? context.centerY : this.formationY;
     this.waveFormation = context.formation || null;
     this.waveRole = context.side < 0 ? 'left_flank' : context.side > 0 ? 'right_flank' : 'center';
-    this.tacticalFireScalar = tactic.fireScalar || 1;
+    this.tacticalFireScalar = (tactic.fireScalar || 1) * (this.profileFireScalar || 1);
     this.tacticalProjectileSpeedScalar = tactic.projectileSpeedScalar || 1;
     this.tacticalThreatProjectileSpeedScalar = tactic.threatProjectileSpeedScalar || this.tacticalProjectileSpeedScalar || 1;
     this.tacticalShotPattern = tactic.shot || 'aimed';
@@ -790,6 +828,7 @@ export class Enemy {
     } else {
       this.updateThreatAction(delta, playerX, playerY);
     }
+    this.updateMayhemVfx(delta);
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;
