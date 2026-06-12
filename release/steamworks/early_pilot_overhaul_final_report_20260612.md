@@ -1,6 +1,7 @@
 # Nova Swarm Early Pilot Overhaul Final Report
 
 Generated: 2026-06-12  
+Corrected Steam upload: 2026-06-12 14:11 Europe/Oslo
 Branch: `codex/hard-achievements-20260612`
 
 ## Heads
@@ -9,7 +10,7 @@ Branch: `codex/hard-achievements-20260612`
 - Recoverable pre-edit snapshot: `refs/backup/codex/pre-major-overhaul-20260612-130046`
 - Recoverable stash snapshot: `45b52bcbe0233cb24f7811ede8870c53aa207212`
 - Clean checkpoint before major edits: `a0a17840e46b55c3f4ef4b7d0d22e82508bdce7e`
-- Final HEAD: `6fb26a19b8ec6d3a70f8a6fb76b24661ab52f3e5`
+- Final HEAD before corrected Steam reupload evidence: `af79dec08cdd608f3771efcc6aea1911c6401b19`
 
 ## Commits
 
@@ -17,6 +18,7 @@ Branch: `codex/hard-achievements-20260612`
 - `25d1ff7f48aef2934afdb878e53b6de0dff3d626` - Add early pilot overhaul release copy
 - `876294d8b125c70bb73a804db6f9481b0454df75` - Update milestone achievement guard for Early Pilot
 - `6fb26a19b8ec6d3a70f8a6fb76b24661ab52f3e5` - Record early pilot Steam upload evidence
+- `af79dec08cdd608f3771efcc6aea1911c6401b19` - Add early pilot overhaul final report
 
 ## What Changed
 
@@ -142,6 +144,8 @@ Passed:
 - `npm run package:steam:win`
 - `npm run check:steam-package-runtime`
 - `npm run steamworks:payload-manifest`
+- `npm run check:release-line` before corrected Steam reupload
+- `npm run steamworks:payload-manifest` after corrected Steam reupload
 
 Not completed:
 
@@ -165,18 +169,18 @@ Not completed:
 - Package version: `v2026-06-12_13-52-15`
 - AppID: `4765070`
 - DepotID: `4765071`
-- Steam BuildID: `23699052`
-- Depot manifest: `6663215867113728413`
+- Steam BuildID: `23701145`
+- Depot manifest: `3346409970397958539`
 - VDF: `release/steamworks/app_build_LOCAL.vdf`
 - Build output logs: `release/steam-build-output/app_build_4765070.log` and `release/steam-build-output/depot_build_4765071.log`
 - `SetLive`: empty string
-- Result: private build uploaded. No live branch was set.
+- Result: corrected private build uploaded. No live branch was set.
 
-SteamCMD returned exit code 1 after self-update/login prompt noise, but SteamPipe ContentBuilder logs record successful AppID build completion and depot manifest upload. Evidence is recorded in `release/steamworks/steam_upload_evidence_early_pilot_overhaul_20260612.json`.
+After the earlier BuildID `23699052` evidence proved ambiguous in Steamworks, the build was reuploaded with cached SteamCMD credentials from `C:\steamcmd\steamcmd.exe`. SteamCMD returned exit code 0 and ContentBuilder logs record BuildID `23701145` plus depot manifest `3346409970397958539`. Evidence is recorded in `release/steamworks/steam_upload_evidence_early_pilot_overhaul_20260612.json`.
 
 ## Manual Steamworks Steps
 
-1. Confirm private BuildID `23699052` in Steamworks.
+1. Confirm private BuildID `23701145` in Steamworks.
 2. Do not set a live branch unless explicitly approved.
 3. Configure `ACH_EARLY_PILOT` in Steamworks if missing:
    - API Name: `ACH_EARLY_PILOT`
@@ -185,7 +189,7 @@ SteamCMD returned exit code 1 after self-update/login prompt noise, but SteamPip
    - Hidden: `false`
    - Icons: `release/steamworks/achievement-icons/ACH_EARLY_PILOT-achieved.jpg` and `ACH_EARLY_PILOT-locked.jpg`
 4. Publish the Steamworks achievement admin change through the normal Steamworks preview/review flow.
-5. Install BuildID `23699052` through Steam client and run live achievement/leaderboard/cloud smoke before any branch promotion.
+5. Install BuildID `23701145` through Steam client and run live achievement/leaderboard/cloud smoke before any branch promotion.
 
 ## Protected Steamworks State
 
@@ -200,7 +204,7 @@ SteamCMD returned exit code 1 after self-update/login prompt noise, but SteamPip
 ## Known Remaining Issues
 
 - Early Pilot live unlock validation depends on the Steamworks achievement entry existing.
-- Steam client install validation for BuildID `23699052` is still pending.
+- Steam client install validation for BuildID `23701145` is still pending.
 - The release handoff helper still sees older stale evidence files from prior release packets.
 - Vite still warns that the main JS chunk is larger than 700 kB after minification.
 - Steam announcement/forum copy is repo-drafted only; nothing was posted publicly.
@@ -216,4 +220,4 @@ git revert --no-edit 6fb26a19b8ec6d3a70f8a6fb76b24661ab52f3e5 876294d8b125c70bb7
 Steam rollback:
 
 - No live branch was changed, so no public rollback is required.
-- If BuildID `23699052` is later promoted by mistake, use Steamworks branch management to set that branch back to the previous approved BuildID.
+- If BuildID `23701145` is later promoted by mistake, use Steamworks branch management to set that branch back to the previous approved BuildID.
