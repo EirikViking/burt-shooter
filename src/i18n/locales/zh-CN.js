@@ -36,6 +36,7 @@ const sourceText = Object.freeze({
   'SECTOR': '扇区',
   'S': 'S',
   'SCORE / START': '分数 / 起点',
+  'SCORE / LEVEL': '分数 / 等级',
   'SECTOR {sector} CHALLENGE': '第 {sector} 扇区挑战',
   'NEW SECTOR {sector} BEST: {score}': '第 {sector} 扇区新最佳：{score}',
   'SECTOR {sector} BEST: {score}': '第 {sector} 扇区最佳：{score}',

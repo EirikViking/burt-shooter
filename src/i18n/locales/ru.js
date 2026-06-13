@@ -36,6 +36,7 @@ const sourceText = Object.freeze({
   'SECTOR': 'СЕКТОР',
   'S': 'С',
   'SCORE / START': 'ОЧКИ / СТАРТ',
+  'SCORE / LEVEL': 'ОЧКИ / УРОВЕНЬ',
   'SECTOR {sector} CHALLENGE': 'ЧЕЛЛЕНДЖ СЕКТОРА {sector}',
   'NEW SECTOR {sector} BEST: {score}': 'НОВЫЙ РЕКОРД СЕКТОРА {sector}: {score}',
   'SECTOR {sector} BEST: {score}': 'РЕКОРД СЕКТОРА {sector}: {score}',

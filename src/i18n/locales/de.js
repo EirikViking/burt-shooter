@@ -505,6 +505,7 @@ const sourceText = Object.freeze({
   'LEAD': 'RANG',
   'S': 'S',
   'SCORE / START': 'PUNKTE / START',
+  'SCORE / LEVEL': 'PUNKTE / LEVEL',
   'LV': 'LV',
   'SIGNALS': 'SIGNALE',
   'BEST': 'BESTER',

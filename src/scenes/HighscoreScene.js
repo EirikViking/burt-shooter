@@ -53,11 +53,22 @@ function fitTextToWidth(textObject, maxWidth, minFontSize = 9) {
   }
 }
 
+function hasLeaderboardLevelColumn(view = LeaderboardView.GLOBAL) {
+  return view === LeaderboardView.SECTOR || view === LeaderboardView.LOCAL;
+}
+
+function getLeaderboardScoreHeader(view = LeaderboardView.GLOBAL) {
+  if (view === LeaderboardView.SECTOR) return 'SCORE / START';
+  if (view === LeaderboardView.LOCAL) return 'SCORE / LEVEL';
+  return 'SCORE';
+}
+
 function getLeaderboardLevelDisplay(entry = {}, view = LeaderboardView.GLOBAL) {
   if (view === LeaderboardView.SECTOR) {
     const sector = Math.max(0, Math.floor(Number(entry.sectorStart ?? entry.startSector ?? entry.level) || 0));
     return `${translateText('S')} ${sector || '?'}`;
   }
+  if (!hasLeaderboardLevelColumn(view)) return '';
   const label = translateText('LV');
   if (entry.levelSource === 'score_estimate') return `${label} ?`;
   const level = Math.max(0, Math.floor(Number(entry.level ?? entry.levelReached) || 0));
@@ -927,6 +938,7 @@ export class HighscoreScene {
         ? (compactDesktopGrid ? (layout.width < 1500 ? 10 : 16) : (layout.width < 1500 ? 20 : 28))
         : 0;
       const columnWidth = (metrics.innerWidth - columnGap * (columnCount - 1)) / columnCount;
+      const showLevelColumn = hasLeaderboardLevelColumn(this.activeLeaderboard);
       const headerHeight = isMobile ? 22 : 24;
       const rowsBaseY = startY + headerHeight + (isMobile ? 4 : 7);
       const rowsBottom = Math.min(metrics.rowsBottom || metrics.bottom - 48, metrics.bottom - (isMobile ? 44 : 54));
@@ -960,11 +972,16 @@ export class HighscoreScene {
         const badgeColumnWidth = isMobile ? 30 : (compactDesktopGrid ? 24 : (desktopTwoColumn ? 34 : 42));
         const badgeGap = isMobile ? 8 : (compactDesktopGrid ? 2 : (desktopTwoColumn ? 8 : 12));
         const scoreBlockWidth = isMobile ? 96 : (compactDesktopGrid ? 58 : (desktopTwoColumn ? 110 : 142));
-        const levelBlockWidth = isMobile ? 38 : (compactDesktopGrid ? 30 : (desktopTwoColumn ? 42 : 46));
+        const levelBlockWidth = showLevelColumn ? (isMobile ? 38 : (compactDesktopGrid ? 30 : (desktopTwoColumn ? 42 : 46))) : 0;
+        const levelGap = showLevelColumn ? (isMobile ? 8 : (compactDesktopGrid ? 6 : 10)) : 0;
         const rightPad = isMobile ? 8 : (compactDesktopGrid ? 5 : 10);
         const contentX = rowX + rankBlockWidth + badgeColumnWidth + badgeGap;
-        const levelCenterX = rowX + rowW - rightPad - levelBlockWidth / 2;
-        const scoreX = levelCenterX - levelBlockWidth / 2 - (isMobile ? 8 : (compactDesktopGrid ? 6 : 10));
+        const levelCenterX = showLevelColumn
+          ? rowX + rowW - rightPad - levelBlockWidth / 2
+          : rowX + rowW - rightPad;
+        const scoreX = showLevelColumn
+          ? levelCenterX - levelBlockWidth / 2 - levelGap
+          : rowX + rowW - rightPad;
         const nameBlockWidth = Math.max(
           isMobile ? 76 : (compactDesktopGrid ? 54 : 92),
           scoreX - scoreBlockWidth - contentX - (isMobile ? 10 : (compactDesktopGrid ? 6 : 12))
@@ -1005,7 +1022,7 @@ export class HighscoreScene {
           : 'PILOT MANIFEST';
         const headers = [
           { text: manifestLabel, x: geometry.rowX, anchorX: 0 },
-          { text: this.activeLeaderboard === LeaderboardView.SECTOR ? 'SCORE / START' : 'SCORE / LEVEL', x: geometry.rowX + geometry.rowW, anchorX: 1 }
+          { text: translateText(getLeaderboardScoreHeader(this.activeLeaderboard)), x: geometry.rowX + geometry.rowW, anchorX: 1 }
         ];
         headers.forEach(entry => {
           const text = createText(entry.text, headerStyle);
@@ -1160,10 +1177,12 @@ export class HighscoreScene {
           strokeThickness: 1
         });
         const levelDisplay = getLeaderboardLevelDisplay(score, this.activeLeaderboard);
-        const levelText = createText(levelDisplay, {
-          ...rankStyle,
-          fontSize: Math.max(10, rowStyle.fontSize - (isMobile ? 3 : 2))
-        });
+        const levelText = showLevelColumn
+          ? createText(levelDisplay, {
+              ...rankStyle,
+              fontSize: Math.max(10, rowStyle.fontSize - (isMobile ? 3 : 2))
+            })
+          : null;
 
         rankText.anchor.set(0.5);
         rankText.x = columns.rank;
@@ -1186,21 +1205,23 @@ export class HighscoreScene {
           scoreText.y + scoreText.height + 1,
           rowY + rowHeight - scoreLabel.height - (isMobile ? 8 : 5)
         );
-        levelText.x = columns.level;
-        levelText.y = rowMidY;
         scoreText.anchor.set(1, 0);
         scoreLabel.anchor.set(1, 0);
-        levelText.anchor.set(0.5);
         fitTextToWidth(scoreText, scoreBlockWidth, isMobile ? 10 : (compactDesktopGrid ? 7 : 12));
-        fitTextToWidth(levelText, levelBlockWidth, isMobile ? 8 : (compactDesktopGrid ? 7 : 9));
+        if (levelText) {
+          levelText.x = columns.level;
+          levelText.y = rowMidY;
+          levelText.anchor.set(0.5);
+          fitTextToWidth(levelText, levelBlockWidth, isMobile ? 8 : (compactDesktopGrid ? 7 : 9));
 
-        const levelPill = new PIXI.Graphics();
-        const pillWidth = isMobile ? 38 : (compactDesktopGrid ? 30 : 46);
-        const pillHeight = isMobile ? 24 : (compactDesktopGrid ? 20 : 28);
-        levelPill.roundRect(columns.level - pillWidth / 2, rowMidY - pillHeight / 2, pillWidth, pillHeight, 5);
-        levelPill.fill({ color: 0x031725, alpha: 0.8 });
-        levelPill.stroke({ color: accent, width: isFeaturedPlayer ? 1.5 : 1, alpha: isFeaturedPlayer ? 0.9 : (isTop3 ? 0.72 : 0.34) });
-        this.rowsContainer.addChild(levelPill);
+          const levelPill = new PIXI.Graphics();
+          const pillWidth = isMobile ? 38 : (compactDesktopGrid ? 30 : 46);
+          const pillHeight = isMobile ? 24 : (compactDesktopGrid ? 20 : 28);
+          levelPill.roundRect(columns.level - pillWidth / 2, rowMidY - pillHeight / 2, pillWidth, pillHeight, 5);
+          levelPill.fill({ color: 0x031725, alpha: 0.8 });
+          levelPill.stroke({ color: accent, width: isFeaturedPlayer ? 1.5 : 1, alpha: isFeaturedPlayer ? 0.9 : (isTop3 ? 0.72 : 0.34) });
+          this.rowsContainer.addChild(levelPill);
+        }
 
         const rankTexture = rankTextures[index];
         const displayRank = computeDisplayRank(score);
@@ -1243,7 +1264,8 @@ export class HighscoreScene {
           this.rowsContainer.addChild(placeholder);
         }
 
-        this.rowsContainer.addChild(rankText, nameText, rankNameText, scoreText, scoreLabel, levelText);
+        this.rowsContainer.addChild(rankText, nameText, rankNameText, scoreText, scoreLabel);
+        if (levelText) this.rowsContainer.addChild(levelText);
         this.rowLayoutDebug.push({
           index,
           row: {
@@ -1261,6 +1283,7 @@ export class HighscoreScene {
           scoreLabel: debugBounds(scoreLabel),
           level: debugBounds(levelText),
           levelText: levelDisplay,
+          levelColumnVisible: showLevelColumn,
           levelSource: score.levelSource || null,
           featured: isFeaturedPlayer,
           scoreGroup: {

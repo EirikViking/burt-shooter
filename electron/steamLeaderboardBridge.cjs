@@ -534,6 +534,7 @@ class SteamLeaderboardBridge {
       );
       const steamId = stringifySteamId(entry.steamId ?? entry.steamID ?? entry.m_steamIDUser);
       const metadata = detailsMetadata(details);
+      const hasEncodedLevel = details.length > 0 && Number.isFinite(Number(metadata.levelReached)) && Number(metadata.levelReached) > 0;
       const level = readScoreLevel(entry, metadata, details, estimateLevelFromScore(entry.score ?? entry.m_nScore));
       return {
         rank: integer(entry.globalRank ?? entry.rank ?? entry.m_nGlobalRank, index + 1),
@@ -544,6 +545,7 @@ class SteamLeaderboardBridge {
         metadata,
         level,
         levelReached: level,
+        levelSource: hasEncodedLevel ? 'encoded' : 'score_estimate',
         shipId: metadata.shipId,
         runTimeSeconds: metadata.runTimeSeconds,
         kills: metadata.kills,

@@ -55,6 +55,7 @@ const sourceText = Object.freeze({
   'SECTOR': '섹터',
   'S': 'S',
   'SCORE / START': '점수 / 시작',
+  'SCORE / LEVEL': '점수 / 레벨',
   'SECTOR {sector} CHALLENGE': '섹터 {sector} 챌린지',
   'NEW SECTOR {sector} BEST: {score}': '섹터 {sector} 신기록: {score}',
   'SECTOR {sector} BEST: {score}': '섹터 {sector} 최고: {score}',

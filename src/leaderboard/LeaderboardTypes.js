@@ -197,10 +197,20 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
 
   const details = readLeaderboardDetails(raw);
   const sectorEntry = isSectorLeaderboardEntry(raw, options);
-  let explicitLevel = readExplicitLeaderboardLevel(raw, { details });
-  const fallbackLevel = estimateLeaderboardLevelFromScore(score);
   const source = String(raw.source || options.source || '').toLowerCase();
   const steamLike = source.includes('steam') || Boolean(raw.steamId || raw.m_steamIDUser || raw.globalRank);
+  const encodedLevel = firstFiniteInt([
+    raw.metadata?.level,
+    raw.metadata?.levelReached,
+    raw.detailsMetadata?.level,
+    raw.detailsMetadata?.levelReached,
+    details[0]
+  ], 0);
+  let explicitLevel = readExplicitLeaderboardLevel(raw, { details });
+  const fallbackLevel = estimateLeaderboardLevelFromScore(score);
+  if (steamLike && details.length === 0 && encodedLevel <= 0) {
+    explicitLevel = null;
+  }
   if (steamLike && explicitLevel === 1 && details.length === 0 && fallbackLevel > 1) {
     explicitLevel = null;
   }

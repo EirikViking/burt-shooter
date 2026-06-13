@@ -79,10 +79,13 @@ assert.equal(normalizeLeaderboardEntry({ name: 'DETAILS', score: 100, details: [
 assert.equal(normalizeLeaderboardEntry({ name: 'REACHED', score: 100, levelReached: 11 })?.level, 11);
 assert.equal(estimateLeaderboardLevelFromScore(69212), 14);
 assert.equal(normalizeLeaderboardEntry({ name: 'STEAMOLD', score: 69212 })?.level, 14, 'legacy Steam rows without details must not display as LV1');
+assert.equal(normalizeLeaderboardEntry({ name: 'STEAMOLD', score: 69212 })?.levelSource, 'score_estimate', 'legacy rows without encoded details must be flagged as estimates');
 assert.equal(normalizeLeaderboardEntry({ name: 'DETAILSWIN', score: 69212, details: [6] })?.level, 6, 'encoded Steam details must beat score fallback');
+assert.equal(normalizeLeaderboardEntry({ name: 'DETAILSWIN', score: 69212, details: [6] })?.levelSource, 'encoded', 'encoded details must be marked as trusted level data');
 assert.deepEqual(readLeaderboardDetails({ details: '0x0a00000018000000f30100003d020000' }).slice(0, 4), [10, 24, 499, 573], 'Steamworks hex details should decode little-endian int32 values');
 assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK', score: 41413, level: 1, levelReached: 1, details: '0x0a00000018000000f30100003d020000' })?.level, 10, 'Steam details must beat stale LV1 row metadata');
 assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK', score: 41413, level: 1, levelReached: 1 })?.level, 9, 'Steam LV1 fallback without details should estimate from score instead of showing LV1');
+assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK', score: 41413, level: 1, levelReached: 1 })?.levelSource, 'score_estimate', 'Steam rows without details must not mark fallback levels as encoded');
 assert.equal(STEAM_LEADERBOARD_NAME, 'nova_swarm_global_score_v2', 'Steam default leaderboard must stay on the metadata-preserving v2 board');
 assert.equal(STEAM_SECTOR_LEADERBOARD_NAME, 'nova_swarm_sector_start_score_v1', 'Steam sector challenge leaderboard must use the Steamworks-created board');
 const encodedRun = createRunResultFromGame({ score: 12345, level: 12, rankIndex: 4 }, { levelReached: 9 });

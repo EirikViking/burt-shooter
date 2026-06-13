@@ -508,6 +508,7 @@ const sourceText = Object.freeze({
   'LEAD': 'RANGO',
   'S': 'S',
   'SCORE / START': 'PUNTOS / INICIO',
+  'SCORE / LEVEL': 'PUNTOS / NIVEL',
   'LV': 'NV',
   'SIGNALS': 'SEÑALES',
   'BEST': 'MEJOR',

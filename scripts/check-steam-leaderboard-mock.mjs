@@ -143,8 +143,11 @@ try {
   }
   const globalLevelRows = await page.evaluate(() => window.__game?.scenes?.highscore?.rowLayoutDebug || []);
   const estimatedLevelRow = globalLevelRows.find((row) => row.levelSource === 'score_estimate');
-  if (!estimatedLevelRow || estimatedLevelRow.levelText !== 'LV ?') {
-    throw new Error(`Estimated Steam levels should display as LV ?: ${JSON.stringify(globalLevelRows)}`);
+  if (!estimatedLevelRow || estimatedLevelRow.levelColumnVisible || estimatedLevelRow.levelText || estimatedLevelRow.level) {
+    throw new Error(`Estimated Steam levels should not render a global LV chip: ${JSON.stringify(globalLevelRows)}`);
+  }
+  if (globalLevelRows.some((row) => /\bLV\b/i.test(String(row.levelText || '')))) {
+    throw new Error(`Global Steam rows should not label score-derived levels as LV: ${JSON.stringify(globalLevelRows)}`);
   }
 
   await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('sector'));
