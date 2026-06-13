@@ -1423,7 +1423,7 @@ export class PlayScene {
   }
 
   playLevelClearVoice({ bossCompletion = false } = {}) {
-    const delayMs = bossCompletion ? 2100 : 260;
+    const delayMs = bossCompletion ? 3200 : 260;
     const token = (this.levelClearVoiceToken || 0) + 1;
     this.levelClearVoiceToken = token;
     setTimeout(() => {
@@ -1433,6 +1433,9 @@ export class PlayScene {
         bypassGlobalCooldown: true,
         bypassEventCooldown: true,
         exclusiveGroup: 'level_clear_flirt',
+        delayIfVoiceLocked: true,
+        maxVoiceLockDelayMs: bossCompletion ? 3600 : 1600,
+        voicePriority: bossCompletion ? 10 : 4,
         cooldownMs: 0,
         eventCooldownMs: 0,
         volume: bossCompletion ? 1.85 : 1.55,
@@ -8114,12 +8117,23 @@ export class PlayScene {
     AudioManager.playSfx(style.sfx || 'boss_death_cascade', { force: true, volume: 0.82, minIntervalMs: 0 });
     AudioManager.playSfx('boss_explode', { force: true, volume: 0.72, minIntervalMs: 0 });
     AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.42, minIntervalMs: 0 });
+    AudioManager.reserveVoiceLock?.('boss_death_agony', {
+      durationMs: 3600,
+      voicePriority: 100,
+      stopOtherVoices: true,
+      force: true,
+      reason: 'boss_death_impact'
+    });
     this.scheduleBossDeathFx(() => {
       AudioManager.playDiegeticVoice('boss_death_agony', {
         force: true,
         bypassGlobalCooldown: true,
         bypassEventCooldown: true,
         exclusiveGroup: 'boss_death_agony',
+        stopOtherVoices: true,
+        exclusiveLockMs: 3600,
+        exclusiveLockReason: 'boss_death_agony',
+        voicePriority: 100,
         cooldownMs: 0,
         eventCooldownMs: 0,
         volume: 2.6,

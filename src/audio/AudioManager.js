@@ -60,6 +60,8 @@ class AudioController {
     this.lastVoiceVariantByEvent = {};
     this.activeVoiceGroups = {};
     this.activeVoices = new Map();
+    this.voicePriorityLock = null;
+    this.delayedVoiceTimers = new Set();
     this.lastVoiceSuppression = null;
     this.voiceSuppressionLog = [];
     this.voicePlayId = 0;
@@ -827,6 +829,12 @@ class AudioController {
       lastSfxTrack: this.lastSfxTrack,
       lastVoiceEvent: this.lastVoiceEvent,
       lastVoiceTrack: this.lastVoiceTrack,
+      voicePriorityLock: this.getActiveVoiceLock() ? {
+        eventName: this.voicePriorityLock.eventName,
+        remainingMs: Math.max(0, Math.round(this.voicePriorityLock.until - Date.now())),
+        priority: this.voicePriorityLock.priority
+      } : null,
+      delayedVoiceCount: this.delayedVoiceTimers?.size || 0,
       lastVoiceSuppression: this.lastVoiceSuppression,
       recentVoiceSuppressions: this.voiceSuppressionLog?.slice(-8) || [],
       activeVoiceCount: this.activeVoices?.size || 0,
@@ -958,11 +966,81 @@ class AudioController {
     }
   }
 
+  getActiveVoiceLock(now = Date.now()) {
+    const lock = this.voicePriorityLock;
+    if (!lock || now >= lock.until) {
+      this.voicePriorityLock = null;
+      return null;
+    }
+    return lock;
+  }
+
+  reserveVoiceLock(eventName, options = {}) {
+    const now = Date.now();
+    const durationMs = Math.max(0, this.readMixNumber(options.durationMs, options.exclusiveLockMs ?? 0));
+    if (!eventName || durationMs <= 0) return false;
+    const priority = this.readMixNumber(options.voicePriority, options.priority ?? 50);
+    const activeLock = this.getActiveVoiceLock(now);
+    if (activeLock && activeLock.eventName !== eventName && activeLock.priority > priority && options.force !== true) {
+      return false;
+    }
+    if (options.stopOtherVoices === true) {
+      this.stopAllVoices(options.reason || `${eventName}_voice_lock`);
+    }
+    this.voicePriorityLock = {
+      eventName,
+      priority,
+      until: now + durationMs,
+      startedAt: now,
+      reason: options.reason || 'voice_lock'
+    };
+    return true;
+  }
+
+  scheduleVoiceAfterLock(eventName, options, remainingMs, lock) {
+    const delayMs = Math.max(80, Math.min(
+      this.readMixNumber(options.maxVoiceLockDelayMs, 4500),
+      remainingMs + this.readMixNumber(options.voiceLockTailMs, 180)
+    ));
+    const retryOptions = {
+      ...options,
+      delayIfVoiceLocked: false
+    };
+    const timer = setTimeout(() => {
+      this.delayedVoiceTimers.delete(timer);
+      this.playVoice(eventName, retryOptions);
+    }, delayMs);
+    this.delayedVoiceTimers.add(timer);
+    this.recordVoiceSuppression(eventName, 'voice_lock_delayed', Date.now(), {
+      lockEvent: lock?.eventName || null,
+      delayMs: Math.round(delayMs)
+    });
+    return false;
+  }
+
   playVoice(eventName, options = {}) {
     if (!this.enabled) return false;
     if (!this.voiceEnabled && options.ignoreVoiceEnabled !== true) return false;
     const now = Date.now();
     const mix = VOICE_MIX[eventName] || {};
+    const voicePriority = this.readMixNumber(options.voicePriority, mix.priority ?? 0);
+    const activeLock = this.getActiveVoiceLock(now);
+    if (
+      activeLock &&
+      options.bypassVoiceLock !== true &&
+      activeLock.eventName !== eventName &&
+      voicePriority < activeLock.priority
+    ) {
+      const remainingMs = Math.max(0, activeLock.until - now);
+      if (options.delayIfVoiceLocked === true) {
+        return this.scheduleVoiceAfterLock(eventName, options, remainingMs, activeLock);
+      }
+      this.recordVoiceSuppression(eventName, 'voice_lock', now, {
+        lockEvent: activeLock.eventName,
+        remainingMs: Math.round(remainingMs)
+      });
+      return false;
+    }
     const cooldownMs = this.readMixNumber(options.cooldownMs, mix.cooldownMs ?? 1500);
     const eventCooldownMs = Math.max(0, this.readMixNumber(options.eventCooldownMs, mix.eventCooldownMs ?? cooldownMs));
     const force = options.force === true;
@@ -976,6 +1054,14 @@ class AudioController {
     }
     if (options.stopOtherVoices === true) {
       this.stopAllVoices('exclusive_voice_request');
+    }
+    if (this.readMixNumber(options.exclusiveLockMs, 0) > 0) {
+      this.reserveVoiceLock(eventName, {
+        durationMs: options.exclusiveLockMs,
+        voicePriority,
+        force: true,
+        reason: options.exclusiveLockReason || 'exclusive_voice_request'
+      });
     }
 
     // Celebration Rate Limiting

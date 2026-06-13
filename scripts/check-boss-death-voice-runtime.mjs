@@ -101,7 +101,7 @@ page.on('pageerror', (error) => pageErrors.push(error.message));
 try {
   await page.addInitScript(() => {
     localStorage.setItem('burt_music_enabled', 'true');
-    localStorage.setItem('burt_voice_enabled', 'false');
+    localStorage.setItem('burt_voice_enabled', 'true');
     localStorage.setItem('burt_volume_sfx', '1');
     localStorage.setItem('burt_volume_voice', '1');
     localStorage.setItem('burt_volume_master', '1');
@@ -138,8 +138,25 @@ try {
     return state?.audio?.lastVoiceEvent === 'boss_death_agony' &&
       /^boss_death_agony_\d{3}\.mp3$/.test(state?.audio?.lastVoiceTrack || '');
   }, null, { timeout: 10000 });
+  await page.waitForTimeout(900);
 
   const after = await stateFromPage(page);
+  const activeVoiceEvents = after.audio?.activeVoiceEvents || [];
+  const recentSuppressions = after.audio?.recentVoiceSuppressions || [];
+  const victorySuppressed = recentSuppressions.some((entry) => (
+    entry.eventName === 'mission_control_victory' &&
+    entry.reason === 'voice_lock' &&
+    entry.lockEvent === 'boss_death_agony'
+  ));
+  if ((after.audio?.activeVoiceCount || 0) > 1) {
+    throw new Error(`boss death voice overlapped active voices: ${JSON.stringify(activeVoiceEvents)}`);
+  }
+  if (activeVoiceEvents.some((entry) => entry.eventName !== 'boss_death_agony')) {
+    throw new Error(`non-boss voice active during boss death: ${JSON.stringify(activeVoiceEvents)}`);
+  }
+  if (!victorySuppressed) {
+    throw new Error(`mission_control_victory was not suppressed by boss_death_agony lock: ${JSON.stringify(recentSuppressions)}`);
+  }
   await page.screenshot({ path: path.join(outputDir, 'boss-death-voice-runtime.png'), fullPage: true });
 
   const report = {
@@ -150,6 +167,8 @@ try {
     afterAudio: after.audio || null,
     lastVoiceEvent: after.audio?.lastVoiceEvent || null,
     lastVoiceTrack: after.audio?.lastVoiceTrack || null,
+    activeVoiceEvents,
+    victorySuppressed,
     consoleEvents,
     pageErrors
   };
