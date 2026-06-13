@@ -1,5 +1,9 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-13 HUD Overlap Fix
+
+- Fixed the top-left high-score/sector-record chase card so the title, `BEAT` value, taunt line, and progress bar use separate lanes instead of stacking into each other at desktop gameplay sizes. This is layout-only in the HUD: no scoring, gameplay rules, Steamworks settings, or player-facing copy changed.
+
 ## 2026-06-08 Sector Start Prototype
 
 - Current user request: prototype Sector Start / Sector Continue from the locked release tag in a separate worktree without touching the release checkout, preserving normal ranked Start Run behavior and the `nova_swarm_global_score_v2` leaderboard.
