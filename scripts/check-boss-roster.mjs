@@ -43,6 +43,8 @@ for (const boss of BOSS_ROSTER) {
 
 if (ids.size !== BOSS_ROSTER.length) errors.push('Boss profile ids are not unique.');
 if (names.size !== BOSS_ROSTER.length) errors.push('Boss profile names are not unique.');
+if (BOSS_ROSTER[1]?.name !== 'Sam the Misfit') errors.push(`Boss 2 must be Sam the Misfit, found ${BOSS_ROSTER[1]?.name || 'missing'}.`);
+if (BOSS_ROSTER[5]?.name !== 'Misfit Galaxy') errors.push(`Boss 6 must be Misfit Galaxy, found ${BOSS_ROSTER[5]?.name || 'missing'}.`);
 if (archetypes.size < 10) errors.push(`Expected at least 10 boss archetypes, found ${archetypes.size}.`);
 if (attacks.size < 10) errors.push(`Expected at least 10 boss attack styles, found ${attacks.size}.`);
 if (movements.size < 9) errors.push(`Expected at least 9 boss movement styles, found ${movements.size}.`);

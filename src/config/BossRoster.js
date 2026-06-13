@@ -93,11 +93,11 @@ const ARCHETYPES = [
 
 const CALLSIGNS = [
   'Sonia',
-  'ORBITAL HECKLER',
+  'Sam the Misfit',
   'KurtBossEdgar',
   'LANE EATER',
   'NEON WARDEN',
-  'ARCADE REQUIEM',
+  'Misfit Galaxy',
   'BOSS MUSIC PRIME',
   'THE BIG RECTANGLE',
   'HYPERGLYPH',
