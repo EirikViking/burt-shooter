@@ -3373,17 +3373,13 @@ export class PlayScene {
       bg.stroke({ color: active ? 0xffffff : accent, width: active ? 2 : 1.2, alpha: active ? 0.96 : 0.78 });
 
       marker.clear();
-      const markerAlpha = active ? 0.92 : 0.34;
-      marker.moveTo(-width / 2 + 18, 0);
-      marker.lineTo(-width / 2 + 32, -8);
-      marker.lineTo(-width / 2 + 32, 8);
-      marker.closePath();
+      const markerAlpha = active ? 0.82 : 0.3;
+      marker.rect(-width / 2 + 18, -10, 3, 20);
       marker.fill({ color: hot ? 0xffd15c : accent, alpha: markerAlpha });
-      marker.moveTo(width / 2 - 18, 0);
-      marker.lineTo(width / 2 - 32, -8);
-      marker.lineTo(width / 2 - 32, 8);
-      marker.closePath();
+      marker.rect(width / 2 - 21, -10, 3, 20);
       marker.fill({ color: active ? 0xffffff : accent, alpha: markerAlpha * 0.75 });
+      marker.rect(-width / 2 + 26, -1, width - 52, 2);
+      marker.fill({ color: accent, alpha: active ? 0.22 : 0.1 });
     };
 
     const focus = new PIXI.Graphics();

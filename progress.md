@@ -4,6 +4,7 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 
 - Fixed the top-left high-score/sector-record chase card so the title, `BEAT` value, taunt line, and progress bar use separate lanes instead of stacking into each other at desktop gameplay sizes. This is layout-only in the HUD: no scoring, gameplay rules, Steamworks settings, or player-facing copy changed.
 - Codex follow-up: Threat Codex category lists now sort discovered/always-known entries before locked signals while preserving catalog order inside each group. `check-codex-tab-count-layout` now seeds late-catalog discoveries to prove discovered entries are shown first.
+- Sector Start selector follow-up: pause-menu command buttons no longer use left/right selector arrows, while the Sector Start Challenge button now has large in-button checkpoint arrows and wider PC layout treatment. Menu layout QA now proves PC-sized checkpoint labels including Sector 15, and controller flow still launches checkpoint 15.
 
 ## 2026-06-08 Sector Start Prototype
 

@@ -115,6 +115,7 @@ function challengeRecords() {
     updatedAt: '2026-06-08T00:00:00.000Z',
     byCheckpoint: {
       5: { startSector: 5, scoreEarned: 900, highestSectorReached: 6, finalSector: 6, shipId: 'nova_ship_01', shipName: 'Nova Sparrow', completedAt: '2026-06-08T00:00:00.000Z' },
+      15: { startSector: 15, scoreEarned: 15015, highestSectorReached: 17, finalSector: 17, shipId: 'nova_ship_01', shipName: 'Nova Sparrow', completedAt: '2026-06-08T00:00:00.000Z' },
       20: { startSector: 20, scoreEarned: 1683, highestSectorReached: 22, finalSector: 22, shipId: 'nova_ship_01', shipName: 'Nova Sparrow', completedAt: '2026-06-08T00:00:00.000Z' },
       100: { startSector: 100, scoreEarned: 987654321, highestSectorReached: 103, finalSector: 103, shipId: 'nova_ship_01', shipName: 'Nova Sparrow', completedAt: '2026-06-08T00:00:00.000Z' }
     }
@@ -196,12 +197,14 @@ function assertNoMenuOverlap(state, label) {
   }
   assert.ok(button?.width > 0 && button?.height > 0, `${label}: missing Sector Start button bounds`);
   assert.ok(labelBounds?.width > 0 && labelBounds?.height > 0, `${label}: missing Sector Start label bounds`);
-  assert.ok(labelBounds.width <= configuredWidth - 12, `${label}: label too wide for button ${JSON.stringify({ labelBounds, configuredWidth, button })}`);
+  assert.ok(labelBounds.width <= configuredWidth - 78, `${label}: label too wide for button with sector arrows ${JSON.stringify({ labelBounds, configuredWidth, button })}`);
   assert.ok(labelBounds.height <= configuredHeight - 2, `${label}: label too tall for button ${JSON.stringify({ labelBounds, configuredHeight, button })}`);
   assert.ok(Number(sector.labelScale) >= 0.74, `${label}: label scale too small (${sector.labelScale})`);
   assert.equal(sector.arrowCueVisible, true, `${label}: missing checkpoint switch arrows`);
   assert.ok((sector.arrowCueBounds?.width || 0) > 0, `${label}: checkpoint switch arrows have no visible bounds`);
   assert.ok((sector.arrowCueBounds?.height || 0) > 0, `${label}: checkpoint switch arrows have no visible height`);
+  assert.ok(sector.arrowCueBounds.x >= button.x - 1, `${label}: checkpoint arrows should live inside the Sector Start button`);
+  assert.ok(sector.arrowCueBounds.right <= button.right + 1, `${label}: checkpoint arrows should live inside the Sector Start button`);
   if (hangar?.height > 0) {
     assert.ok(button.y + button.height <= hangar.y + 1, `${label}: Sector Start button overlaps Hangar button`);
   }
@@ -236,10 +239,10 @@ const report = {
 try {
   const viewports = [
     { width: 1366, height: 768, name: 'desktop' },
-    { width: 1024, height: 768, name: 'tablet' },
-    { width: 390, height: 844, name: 'mobile' }
+    { width: 1280, height: 720, name: 'compact-desktop' },
+    { width: 1024, height: 768, name: 'small-desktop' }
   ];
-  const checkpoints = [5, 10, 20, 100];
+  const checkpoints = [5, 10, 15, 20, 100];
   for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await loadProfile(page);

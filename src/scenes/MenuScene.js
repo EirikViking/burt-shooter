@@ -1199,11 +1199,16 @@ export class MenuScene {
       ...secondaryButtons.map((button) => [button, buttonWidth, buttonHeight, false])
     ].forEach(([button, btnWidth, btnHeight, isPrimary]) => {
       if (!button) return;
+      if (button === this.sectorStartBtn) {
+        btnWidth = Math.min(primaryButtonWidth, contentWidth - 8);
+        btnHeight = Math.max(btnHeight, isShortLayout ? 46 : 50);
+      }
       button._btnWidth = btnWidth;
       button._btnHeight = btnHeight;
       if (isPrimary) button._variant = 'primary';
       button._label.style.fontSize = Math.round(getResponsiveFontSize(layout, 'button') * (isPrimary ? 1 : 0.9));
-      this.refreshMenuButtonLabel(button, btnWidth - 48, {
+      const labelMaxWidth = btnWidth - (button === this.sectorStartBtn ? 88 : 48);
+      this.refreshMenuButtonLabel(button, labelMaxWidth, {
         minScale: button === this.sectorStartBtn ? 0.74 : 0.78,
         forceGpuRefresh: forceLabelGpuRefresh
       });
@@ -1217,7 +1222,11 @@ export class MenuScene {
     const primaryHintHeight = this.primaryHint.height || controlsSize * 1.5;
     const runModeExplainerHeight = (this.runModeExplainer.height || controlsSize * 1.4) + (isMobileLayout ? 12 : 14);
     const buttonCount = 1 + secondaryButtons.length;
-    const buttonsHeight = primaryButtonHeight + buttonHeight * secondaryButtons.length + buttonSpacing * Math.max(0, buttonCount - 1);
+    const sectorButtonHeight = this.sectorStartBtn?.visible
+      ? Math.max(buttonHeight, isShortLayout ? 46 : 50)
+      : 0;
+    const secondaryButtonsHeight = buttonHeight * secondaryButtons.length + Math.max(0, sectorButtonHeight - buttonHeight);
+    const buttonsHeight = primaryButtonHeight + secondaryButtonsHeight + buttonSpacing * Math.max(0, buttonCount - 1);
     const exitNoticeHeight = this.exitNotice?.text ? (this.exitNotice.height || controlsSize * 1.2) : 0;
     const disclaimerHeight = this.disclaimer.height || disclaimerSize * 2;
     const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + runModeExplainerHeight + buttonsHeight + exitNoticeHeight + disclaimerHeight + sectionSpacing * 8;
@@ -1260,7 +1269,7 @@ export class MenuScene {
 
     if (this.sectorStartBtn?.visible) {
       this.sectorStartBtn.x = buttonX;
-      placeCentered(this.sectorStartBtn, buttonHeight, buttonSpacing);
+      placeCentered(this.sectorStartBtn, this.sectorStartBtn._btnHeight || buttonHeight, buttonSpacing);
     }
 
     this.highscoreBtn.x = buttonX;
@@ -1669,12 +1678,7 @@ export class MenuScene {
     const visible = Boolean(button?.visible && this.sectorStartState?.available && checkpoints.length > 1);
     const w = button._btnWidth || 286;
     const h = button._btnHeight || 46;
-    button.hitArea = new PIXI.Rectangle(
-      -w / 2 - (visible ? 30 : 0),
-      -h / 2 - 4,
-      w + (visible ? 60 : 0),
-      h + 8
-    );
+    button.hitArea = new PIXI.Rectangle(-w / 2, -h / 2 - 4, w, h + 8);
     cue.visible = visible;
     cue.clear();
     if (!visible) return;
@@ -1682,9 +1686,9 @@ export class MenuScene {
     const focused = Boolean(button._focused);
     const pulse = 0.5 + Math.sin(this.animationTime * 6) * 0.5;
     const alpha = focused ? 0.86 + pulse * 0.14 : 0.58;
-    const sideX = w / 2 + (focused ? 13 : 10);
-    const boxW = Math.max(22, Math.min(30, h * 0.64));
-    const boxH = Math.max(28, Math.min(36, h * 0.84));
+    const boxW = Math.max(32, Math.min(40, h * 0.84));
+    const boxH = Math.max(30, Math.min(40, h * 0.84));
+    const sideX = w / 2 - boxW / 2 - 12;
     const color = focused ? 0xffef7e : 0x37f5ff;
 
     for (const side of [-1, 1]) {
@@ -1694,15 +1698,15 @@ export class MenuScene {
       cue.roundRect(centerX - boxW / 2, -boxH / 2, boxW, boxH, 7);
       cue.stroke({ color, width: focused ? 2 : 1.5, alpha });
 
-      const pointX = centerX + side * 5;
-      const backX = centerX - side * 5;
-      cue.moveTo(backX, -8);
+      const pointX = centerX + side * 7;
+      const backX = centerX - side * 7;
+      cue.moveTo(backX, -9);
       cue.lineTo(pointX, 0);
-      cue.lineTo(backX, 8);
+      cue.lineTo(backX, 9);
       cue.stroke({ color: 0xffffff, width: focused ? 3 : 2.4, alpha: focused ? 0.92 : 0.72 });
-      cue.moveTo(backX - side * 3, -8);
+      cue.moveTo(backX - side * 4, -9);
       cue.lineTo(pointX - side * 3, 0);
-      cue.lineTo(backX - side * 3, 8);
+      cue.lineTo(backX - side * 4, 9);
       cue.stroke({ color, width: focused ? 2 : 1.5, alpha });
     }
   }
@@ -2035,8 +2039,8 @@ export class MenuScene {
     this.sectorStartBtn.cursor = available ? 'pointer' : 'default';
     if (this.sectorStartBtn._label) {
       this.sectorStartBtn._label.text = this.getSectorStartButtonLabel();
-      this.refreshMenuButtonLabel(this.sectorStartBtn, (this.sectorStartBtn._btnWidth || 286) - 48, {
-        minScale: 0.72,
+      this.refreshMenuButtonLabel(this.sectorStartBtn, (this.sectorStartBtn._btnWidth || 286) - 88, {
+        minScale: 0.74,
         forceGpuRefresh
       });
     }
