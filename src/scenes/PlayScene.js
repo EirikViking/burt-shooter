@@ -100,6 +100,7 @@ export class PlayScene {
     this.isPaused = false;
     this.pauseOverlay = null;
     this.pauseMenuFx = null;
+    this.pauseMenuDecor = null;
     this.pauseButtons = [];
     this.pauseFocusedIndex = 0;
     this.pauseGamepadNavigator = new GamepadNavigator();
@@ -303,6 +304,7 @@ export class PlayScene {
     this.isPaused = false;
     this.bossClearRecoveryLevels.clear();
     this.pauseOverlay = null;
+    this.pauseMenuDecor = null;
     this.settingsOverlay = null;
     this.howToPlayOverlay = null;
     this.pausePressed = false;
@@ -3034,6 +3036,7 @@ export class PlayScene {
     if (this.pauseOverlay) {
       this.pauseOverlay.visible = true;
       this.pauseMenuFx?.resize?.(this.game.getWidth(), this.game.getHeight());
+      this.pauseMenuDecor?.resize?.(this.game.getWidth(), this.game.getHeight());
       playMenuOpenSfx(0.22);
       this.setPauseFocus(this.pauseFocusedIndex || 0);
       return;
@@ -3049,7 +3052,9 @@ export class PlayScene {
     const dim = new PIXI.Graphics();
     dim.zIndex = 0;
     dim.rect(0, 0, width, height);
-    dim.fill({ color: 0x020713, alpha: 0.74 });
+    dim.fill({ color: 0x020713, alpha: 0.68 });
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x001827, alpha: 0.16 });
     overlay.addChild(dim);
 
     this.pauseMenuFx?.destroy?.();
@@ -3064,47 +3069,184 @@ export class PlayScene {
     this.pauseMenuFx.resize(width, height);
     overlay.addChild(this.pauseMenuFx.container);
 
-    const panelWidth = Math.min(500, width * 0.72);
-    const panelHeight = 360;
+    const decorLayer = new PIXI.Container();
+    decorLayer.label = 'ui_pauseDecorLayer';
+    decorLayer.zIndex = 2;
+    decorLayer.sortableChildren = true;
+    overlay.addChild(decorLayer);
+
+    const panelWidth = Math.min(620, Math.max(500, width * 0.34));
+    const panelHeight = 430;
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
-    const panel = new PIXI.Graphics();
-    panel.zIndex = 2;
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x06111f, alpha: 0.94 });
-    panel.stroke({ color: 0x00ffff, width: 2, alpha: 0.9 });
-    overlay.addChild(panel);
+    const centerX = width / 2;
+    const centerY = height / 2;
 
-    const title = createText('PAUSED', {
+    const deckShadow = new PIXI.Graphics();
+    deckShadow.label = 'ui_pauseDeckShadow';
+    deckShadow.zIndex = 0;
+    deckShadow.roundRect(panelX - 18, panelY - 16, panelWidth + 36, panelHeight + 34, 18);
+    deckShadow.fill({ color: 0x000000, alpha: 0.46 });
+    deckShadow.roundRect(panelX - 10, panelY - 8, panelWidth + 20, panelHeight + 18, 14);
+    deckShadow.stroke({ color: 0xff55d9, width: 8, alpha: 0.08 });
+    decorLayer.addChild(deckShadow);
+
+    const leftWing = new PIXI.Graphics();
+    leftWing.label = 'ui_pauseLeftWing';
+    leftWing.zIndex = 1;
+    leftWing.moveTo(panelX - 74, panelY + 86);
+    leftWing.lineTo(panelX - 18, panelY + 54);
+    leftWing.lineTo(panelX - 18, panelY + panelHeight - 54);
+    leftWing.lineTo(panelX - 74, panelY + panelHeight - 86);
+    leftWing.closePath();
+    leftWing.fill({ color: 0x06233b, alpha: 0.62 });
+    leftWing.stroke({ color: 0x00eaff, width: 1.5, alpha: 0.54 });
+    decorLayer.addChild(leftWing);
+
+    const rightWing = new PIXI.Graphics();
+    rightWing.label = 'ui_pauseRightWing';
+    rightWing.zIndex = 1;
+    rightWing.moveTo(panelX + panelWidth + 74, panelY + 86);
+    rightWing.lineTo(panelX + panelWidth + 18, panelY + 54);
+    rightWing.lineTo(panelX + panelWidth + 18, panelY + panelHeight - 54);
+    rightWing.lineTo(panelX + panelWidth + 74, panelY + panelHeight - 86);
+    rightWing.closePath();
+    rightWing.fill({ color: 0x2a1037, alpha: 0.42 });
+    rightWing.stroke({ color: 0xff55d9, width: 1.5, alpha: 0.52 });
+    decorLayer.addChild(rightWing);
+
+    const panel = new PIXI.Graphics();
+    panel.label = 'ui_pauseCommandDeck';
+    panel.zIndex = 4;
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 10);
+    panel.fill({ color: 0x06111f, alpha: 0.92 });
+    panel.roundRect(panelX + 8, panelY + 8, panelWidth - 16, panelHeight - 16, 8);
+    panel.stroke({ color: 0x0b5a72, width: 1, alpha: 0.68 });
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 10);
+    panel.stroke({ color: 0x00eaff, width: 2.4, alpha: 0.94 });
+    panel.roundRect(panelX + 3, panelY + 3, panelWidth - 6, panelHeight - 6, 9);
+    panel.stroke({ color: 0xff55d9, width: 1, alpha: 0.24 });
+    decorLayer.addChild(panel);
+
+    const headerPlate = new PIXI.Graphics();
+    headerPlate.label = 'ui_pauseHeaderPlate';
+    headerPlate.zIndex = 5;
+    headerPlate.roundRect(panelX + 38, panelY + 26, panelWidth - 76, 94, 8);
+    headerPlate.fill({ color: 0x09233a, alpha: 0.62 });
+    headerPlate.rect(panelX + 54, panelY + 34, panelWidth - 108, 2);
+    headerPlate.fill({ color: 0xffd15c, alpha: 0.52 });
+    headerPlate.rect(panelX + 84, panelY + 111, panelWidth - 168, 2);
+    headerPlate.fill({ color: 0x00eaff, alpha: 0.38 });
+    decorLayer.addChild(headerPlate);
+
+    const scanLine = new PIXI.Graphics();
+    scanLine.label = 'ui_pauseScanLine';
+    scanLine.zIndex = 6;
+    scanLine.rect(panelX + 20, panelY + 28, panelWidth - 40, 2);
+    scanLine.fill({ color: 0xffffff, alpha: 0.46 });
+    scanLine.rect(panelX + 20, panelY + 31, panelWidth - 124, 1);
+    scanLine.fill({ color: 0x00eaff, alpha: 0.7 });
+    decorLayer.addChild(scanLine);
+
+    const buildRadar = (x, y, radius, color, label) => {
+      const radar = new PIXI.Container();
+      radar.label = label;
+      radar.zIndex = 3;
+      radar.position.set(x, y);
+      radar.alpha = 0.58;
+      const g = new PIXI.Graphics();
+      for (let i = 0; i < 4; i += 1) {
+        g.circle(0, 0, radius * (0.28 + i * 0.2));
+        g.stroke({ color: i % 2 ? color : 0x00eaff, width: i === 0 ? 2 : 1, alpha: 0.18 + i * 0.03 });
+      }
+      for (let i = 0; i < 16; i += 1) {
+        const a = Math.PI * 2 * i / 16;
+        g.moveTo(Math.cos(a) * radius * 0.2, Math.sin(a) * radius * 0.2);
+        g.lineTo(Math.cos(a) * radius * 0.98, Math.sin(a) * radius * 0.98);
+      }
+      g.stroke({ color, width: 1, alpha: 0.08 });
+      const sweep = new PIXI.Graphics();
+      sweep.label = `${label}_sweep`;
+      sweep.moveTo(0, 0);
+      sweep.lineTo(radius * 0.95, -radius * 0.12);
+      sweep.lineTo(radius * 0.95, radius * 0.12);
+      sweep.closePath();
+      sweep.fill({ color, alpha: 0.14 });
+      radar.addChild(g, sweep);
+      radar._sweep = sweep;
+      return radar;
+    };
+
+    const leftRadar = buildRadar(panelX - 88, centerY, 72, 0x00eaff, 'ui_pauseLeftRadar');
+    const rightRadar = buildRadar(panelX + panelWidth + 88, centerY, 72, 0xff55d9, 'ui_pauseRightRadar');
+    decorLayer.addChild(leftRadar, rightRadar);
+
+    const title = createText(translateText('PAUSED'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 42,
+      fontSize: 48,
       fontWeight: 'bold',
       fill: '#f6fbff',
-      stroke: '#003344',
-      strokeThickness: 4,
+      stroke: '#001c2a',
+      strokeThickness: 5,
       align: 'center'
     });
     title.anchor.set(0.5);
-    title.position.set(width / 2, panelY + 62);
-    title.zIndex = 3;
+    title.position.set(centerX, panelY + 72);
+    title.zIndex = 7;
     overlay.addChild(title);
 
-    const status = createText('ARCADE PATROL ON HOLD', {
+    const status = createText(translateText('ARCADE PATROL ON HOLD'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 14,
-      fill: '#7ee9ff',
+      fontSize: 15,
+      fontWeight: 'bold',
+      fill: '#7fffd8',
       align: 'center'
     });
     status.anchor.set(0.5);
-    status.position.set(width / 2, panelY + 102);
-    status.zIndex = 3;
+    status.position.set(centerX, panelY + 111);
+    status.zIndex = 7;
     overlay.addChild(status);
 
+    const makeChip = (label, value, x, y, color = 0x00eaff) => {
+      const chip = new PIXI.Container();
+      chip.label = `ui_pauseChip_${label}`;
+      chip.zIndex = 6;
+      chip.position.set(x, y);
+      const bg = new PIXI.Graphics();
+      bg.roundRect(-92, -20, 184, 40, 7);
+      bg.fill({ color: 0x031321, alpha: 0.82 });
+      bg.stroke({ color, width: 1, alpha: 0.58 });
+      const top = createText(label, {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: 10,
+        fontWeight: 'bold',
+        fill: '#8df6ff',
+        align: 'center'
+      });
+      top.anchor.set(0.5);
+      top.y = -8;
+      const bottom = createText(value, {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: 17,
+        fontWeight: 'bold',
+        fill: '#ffffff',
+        align: 'center'
+      });
+      bottom.anchor.set(0.5);
+      bottom.y = 8;
+      chip.addChild(bg, top, bottom);
+      return chip;
+    };
+
+    const scoreChip = makeChip(translateText('SCORE'), Number(this.game.score || 0).toLocaleString('en-US'), centerX - 104, panelY + 150, 0xffd15c);
+    const sectorChip = makeChip(translateText('SECTOR'), String(this.game.level || 1).padStart(2, '0'), centerX + 104, panelY + 150, 0x00eaff);
+    decorLayer.addChild(scoreChip, sectorChip);
+
     this.pauseButtons = [
-      this.createPauseButton('RESUME', width / 2, panelY + 138, () => this.setPaused(false)),
-      this.createPauseButton('SETTINGS', width / 2, panelY + 188, () => this.openSettingsOverlay()),
-      this.createPauseButton('HOW TO PLAY', width / 2, panelY + 238, () => this.openHowToPlayOverlay()),
-      this.createPauseButton('QUIT TO MENU', width / 2, panelY + 288, () => {
+      this.createPauseButton(translateText('RESUME'), centerX, panelY + 206, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
+      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 258, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
+      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 310, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
+      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 362, () => {
         this.closeSettingsOverlay();
         this.closeHowToPlayOverlay();
         this.hidePauseOverlay();
@@ -3118,8 +3260,22 @@ export class PlayScene {
     });
 
     this.pauseOverlay = overlay;
+    this.pauseMenuDecor = {
+      time: 0,
+      panelX,
+      panelY,
+      panelWidth,
+      panelHeight,
+      scanLine,
+      title,
+      status,
+      leftRadar,
+      rightRadar,
+      resize: () => {}
+    };
     this.uiOverlay.addChild(overlay);
     playMenuOpenSfx(0.22);
+    this.pauseMenuFx.burst?.(centerX, panelY + 72, { color: 0xffd15c, radius: 132, durationMs: 680 });
     this.setPauseFocus(0);
   }
 
@@ -3182,29 +3338,58 @@ export class PlayScene {
     }
   }
 
-  createPauseButton(label, x, y, onPress) {
+  createPauseButton(label, x, y, onPress, options = {}) {
     const button = new PIXI.Container();
     button.eventMode = 'static';
     button.cursor = 'pointer';
     button.activate = onPress;
 
-    const width = 260;
-    const height = 38;
+    const width = 312;
+    const height = 44;
+    const accent = options.accent || 0x00eaff;
+    const hot = options.hot === true;
     const draw = (hovered = false) => {
+      const focused = Boolean(button._focused);
+      const active = hovered || focused;
+      const pulse = button._pulse || 0;
       focus.clear();
-      if (button._focused) {
-        focus.roundRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, 8);
-        focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
+      if (focused) {
+        focus.roundRect(-width / 2 - 7, -height / 2 - 6, width + 14, height + 12, 9);
+        focus.stroke({ color: 0xffef7e, width: 2.5, alpha: 0.72 + pulse * 0.2 });
+        focus.roundRect(-width / 2 - 13, -height / 2 - 11, width + 26, height + 22, 11);
+        focus.stroke({ color: accent, width: 1.4, alpha: 0.22 + pulse * 0.24 });
       }
       bg.clear();
-      bg.roundRect(-width / 2, -height / 2, width, height, 6);
-      bg.fill({ color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.92 : 0.84 });
-      bg.stroke({ color: hovered || button._focused ? 0xffffff : 0x00ffff, width: hovered || button._focused ? 2 : 1, alpha: 0.95 });
+      bg.roundRect(-width / 2, -height / 2, width, height, 7);
+      bg.fill({ color: active ? 0x0b5571 : 0x061d32, alpha: active ? 0.95 : 0.86 });
+      bg.rect(-width / 2 + 8, -height / 2 + 6, width - 16, 2);
+      bg.fill({ color: 0xffffff, alpha: active ? 0.18 : 0.09 });
+      bg.rect(-width / 2 + 14, height / 2 - 9, width - 28, 1);
+      bg.fill({ color: accent, alpha: active ? 0.54 : 0.22 });
+      bg.rect(-width / 2, -height / 2 + 5, 4, height - 10);
+      bg.fill({ color: hot ? 0xffd15c : accent, alpha: active ? 0.98 : 0.7 });
+      bg.rect(width / 2 - 4, -height / 2 + 5, 4, height - 10);
+      bg.fill({ color: active ? 0xffffff : accent, alpha: active ? 0.88 : 0.42 });
+      bg.stroke({ color: active ? 0xffffff : accent, width: active ? 2 : 1.2, alpha: active ? 0.96 : 0.78 });
+
+      marker.clear();
+      const markerAlpha = active ? 0.92 : 0.34;
+      marker.moveTo(-width / 2 + 18, 0);
+      marker.lineTo(-width / 2 + 32, -8);
+      marker.lineTo(-width / 2 + 32, 8);
+      marker.closePath();
+      marker.fill({ color: hot ? 0xffd15c : accent, alpha: markerAlpha });
+      marker.moveTo(width / 2 - 18, 0);
+      marker.lineTo(width / 2 - 32, -8);
+      marker.lineTo(width / 2 - 32, 8);
+      marker.closePath();
+      marker.fill({ color: active ? 0xffffff : accent, alpha: markerAlpha * 0.75 });
     };
 
     const focus = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
-    button.addChild(focus, bg);
+    const marker = new PIXI.Graphics();
+    button.addChild(focus, bg, marker);
     draw(false);
     button.redraw = draw;
 
@@ -3212,7 +3397,10 @@ export class PlayScene {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 18,
       fontWeight: 'bold',
-      fill: '#ffffff'
+      fill: '#ffffff',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: width - 76
     });
     text.anchor.set(0.5);
     button.addChild(text);
@@ -3227,6 +3415,27 @@ export class PlayScene {
       onPress?.();
     });
     return button;
+  }
+
+  updatePauseMenuMotion(delta = 1) {
+    const decor = this.pauseMenuDecor;
+    if (!decor) return;
+    const dt = Math.max(0.1, Math.min(4, Number(delta) || 1));
+    decor.time += dt * 0.016;
+    const t = decor.time;
+    const scanTravel = Math.max(1, decor.panelHeight - 58);
+    decor.scanLine.y = (Math.sin(t * 1.75) * 0.5 + 0.5) * scanTravel;
+    decor.scanLine.alpha = 0.34 + Math.sin(t * 5.2) * 0.08;
+    decor.title.scale.set(1 + Math.sin(t * 2.1) * 0.012);
+    decor.status.alpha = 0.74 + Math.sin(t * 3.4) * 0.18;
+    decor.leftRadar.rotation += dt * 0.006;
+    decor.rightRadar.rotation -= dt * 0.005;
+    if (decor.leftRadar._sweep) decor.leftRadar._sweep.rotation += dt * 0.028;
+    if (decor.rightRadar._sweep) decor.rightRadar._sweep.rotation -= dt * 0.024;
+    this.pauseButtons?.forEach((button) => {
+      button._pulse = button._focused ? (0.5 + Math.sin(t * 5.5) * 0.5) : 0;
+      if (button._focused) button.redraw?.(false);
+    });
   }
 
   setPauseFocusByButton(button) {
@@ -3254,13 +3463,16 @@ export class PlayScene {
 
   updatePauseMenuControls(delta) {
     if (this.howToPlayOverlay) {
+      this.updatePauseMenuMotion(delta);
       this.howToPlayOverlay.update?.(delta);
       return;
     }
     if (this.settingsOverlay) {
+      this.updatePauseMenuMotion(delta);
       this.settingsOverlay.update?.(delta);
       return;
     }
+    this.updatePauseMenuMotion(delta);
     const nav = this.pauseGamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     if (nav.pressed.up) this.movePauseFocus(-1);
@@ -3287,6 +3499,7 @@ export class PlayScene {
     }
     this.pauseMenuFx?.destroy?.();
     this.pauseMenuFx = null;
+    this.pauseMenuDecor = null;
     if (this.pauseOverlay?.parent) {
       this.pauseOverlay.parent.removeChild(this.pauseOverlay);
     }
