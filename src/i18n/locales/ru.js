@@ -1,6 +1,13 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'NEW HULL ARRIVED': 'NOVYY KORPUS PRIBYL',
+  'NEW HULLS ARRIVED': 'NOVYE KORPUSA PRIBYLI',
+  'HANGAR DOORS OPEN': 'DVERI ANGARA OTKRYTY',
+  'The paint is still warm. Try not to make it emotional.': 'Kraska eshche teplaya. Bez dramy, pilot.',
+  'COMBAT ROLE': 'BOEVAYA ROL',
+  'ENTER / CLICK / A: KEEP THE KEYS': 'ENTER / KLIK / A: ZABRAT KLYUCHI',
+  'HULLS ADDED': 'KORPUSA DOBAVLENY',
   'RECOMMENDED HULL': 'РЕКОМЕНДОВАННЫЙ КОРПУС',
   'USING RECOMMENDED HULL': 'РЕКОМЕНДОВАННЫЙ КОРПУС ВЫБРАН',
   'BEST UNLOCKED': 'ЛУЧШИЙ ОТКРЫТЫЙ',

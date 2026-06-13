@@ -1,6 +1,13 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'NEW HULL ARRIVED': 'SAE GICHE DAEGI',
+  'NEW HULLS ARRIVED': 'SAE GICHEDEUL DAEGI',
+  'HANGAR DOORS OPEN': 'HANGAR MUN YEOLRIM',
+  'The paint is still warm. Try not to make it emotional.': 'Dochjang-i ajik tteugeopda. Neomu gamjeongjeog-eun geumji.',
+  'COMBAT ROLE': 'JEONTU YEOKHAL',
+  'ENTER / CLICK / A: KEEP THE KEYS': 'ENTER / CLICK / A: YEOLSOE BOGWAN',
+  'HULLS ADDED': 'GICHE CHUGA',
   'SECTOR RECORD TARGET': '섹터 기록 목표',
   'HIGH SCORE TARGET': '하이스코어 목표',
   'BEAT': '깨기',

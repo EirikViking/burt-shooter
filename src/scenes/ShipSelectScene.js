@@ -22,6 +22,7 @@ import { getTraitHudHint } from '../config/ShipTraitDescriptions.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
+import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -35,6 +36,16 @@ const CAREER_INTEL_KICKER = 'PILOT DOSSIER // LIVE ARCADE SIGNAL';
 const CAREER_INTEL_VALUE = 'EVERY RUN LEAVES A RECEIPT';
 const CAREER_INTEL_FLOW = 'CAREER XP FLOW';
 const HANGAR_ACTION_FOCUS_ORDER = ['details', 'start', 'random'];
+const HANGAR_UNLOCK_PRESENTATION_MS = 5400;
+const HANGAR_UNLOCK_STRINGS = {
+  titleSingle: 'NEW HULL ARRIVED',
+  titlePlural: 'NEW HULLS ARRIVED',
+  kicker: 'HANGAR DOORS OPEN',
+  subtitle: 'The paint is still warm. Try not to make it emotional.',
+  rolePrefix: 'COMBAT ROLE',
+  continue: 'ENTER / CLICK / A: KEEP THE KEYS',
+  countPrefix: 'HULLS ADDED'
+};
 
 function getDisplayRankNumber(rankIndex) {
   return Math.min(MAX_RANK_INDEX + 1, Math.max(1, Math.floor(Number(rankIndex) || 0) + 1));
@@ -111,21 +122,35 @@ export class ShipSelectScene {
     this.recommendationBanner = null;
     this.recommendationText = null;
     this.recommendationReasonText = null;
+    this.pendingHangarUnlockShips = this.resolvePendingHangarUnlockShips();
+    this.hangarUnlockPresentation = null;
+    this.hangarUnlockPresentationRefs = null;
+    this.hangarUnlockPresentationSprites = [];
+    this.hangarUnlockPresentationParticles = [];
+    this.hangarUnlockPresentationStartedAt = 0;
+    this.hangarUnlockPresentationActive = false;
+    this.hangarUnlockPresentationAcked = false;
+    this.hangarUnlockPresentationTimer = null;
+    this.hangarUnlockPresentationTicker = null;
 
     // Load saved selection
     const preferredSpriteKey = options.preferredSpriteKey;
     const saved = preferredSpriteKey && isValidShipKey(preferredSpriteKey) ? preferredSpriteKey : this.loadSelection();
+    const newlyUnlockedSpriteKey = this.pendingHangarUnlockShips[0]?.spriteKey || null;
     const canRestoreSelection = saved && isValidShipKey(saved) && !this.recommendedShip && (
       saved === preferredSpriteKey ||
       isShipUnlocked(saved, this.unlockProgress)
     );
-    if (!preferredSpriteKey && this.recommendedShip?.spriteKey) {
-      const recommendedIndex = this.ships.findIndex(s => s.spriteKey === this.recommendedShip.spriteKey);
-      if (recommendedIndex >= 0) this.selectedIndex = recommendedIndex;
-    } else if (preferredSpriteKey && isValidShipKey(preferredSpriteKey)) {
+    if (preferredSpriteKey && isValidShipKey(preferredSpriteKey)) {
       const resolvedPreferred = resolveShipKey(preferredSpriteKey);
       const index = this.ships.findIndex(s => s.spriteKey === resolvedPreferred);
       if (index >= 0) this.selectedIndex = index;
+    } else if (newlyUnlockedSpriteKey) {
+      const index = this.ships.findIndex(s => s.spriteKey === newlyUnlockedSpriteKey);
+      if (index >= 0) this.selectedIndex = index;
+    } else if (!preferredSpriteKey && this.recommendedShip?.spriteKey) {
+      const recommendedIndex = this.ships.findIndex(s => s.spriteKey === this.recommendedShip.spriteKey);
+      if (recommendedIndex >= 0) this.selectedIndex = recommendedIndex;
     } else if (canRestoreSelection) {
       const resolvedSaved = resolveShipKey(saved);
       const index = this.ships.findIndex(s => s.spriteKey === resolvedSaved);
@@ -221,6 +246,8 @@ export class ShipSelectScene {
 
     // Setup input
     this.setupInput();
+    this.createHangarUnlockPresentation(width, height);
+    this.startHangarUnlockPresentation();
 
     // Continuous animation ticker for glow effects
     this.selectionAnimTicker = () => {
@@ -1332,6 +1359,403 @@ export class ShipSelectScene {
     fitDisplayToBox(this.recommendationReasonText, textWidth, 16, { minScale: 0.68 });
   }
 
+  resolvePendingHangarUnlockShips() {
+    const ids = [...new Set((this.unlockProgress?.lastNewlyUnlockedShipIds || [])
+      .map(id => String(id || '').trim())
+      .filter(Boolean))];
+    if (!ids.length) return [];
+    const idSet = new Set(ids);
+    const seen = new Set();
+    return this.ships.filter((ship) => {
+      const keys = [ship?.baseId, ship?.id, ship?.spriteKey, ship?.baseSpriteKey].filter(Boolean);
+      const matched = keys.some(key => idSet.has(String(key)));
+      const stableKey = String(ship?.baseId || ship?.id || ship?.spriteKey || '');
+      if (!matched || seen.has(stableKey)) return false;
+      seen.add(stableKey);
+      return true;
+    });
+  }
+
+  createHangarUnlockPresentation(width, height) {
+    const ships = this.pendingHangarUnlockShips || [];
+    if (!ships.length) return;
+
+    const overlay = new PIXI.Container();
+    overlay.label = 'ui_hangarUnlockPresentation';
+    overlay.visible = false;
+    overlay.zIndex = 1100000;
+    overlay.eventMode = 'static';
+    overlay.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const dim = new PIXI.Graphics();
+    const frameFx = new PIXI.Graphics();
+    const panel = new PIXI.Graphics();
+    const stageFx = new PIXI.Graphics();
+    const shipStage = new PIXI.Container();
+    const textLayer = new PIXI.Container();
+    overlay.addChild(dim, frameFx, panel, shipStage, textLayer);
+    shipStage.addChild(stageFx);
+
+    const narrow = width < 860;
+    const panelWidth = Math.min(width - 96, narrow ? width - 48 : 940);
+    const panelHeight = Math.min(height - 96, narrow ? height - 72 : 520);
+    const panelX = width / 2 - panelWidth / 2;
+    const panelY = height / 2 - panelHeight / 2;
+    const title = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: narrow ? 34 : 54,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#001018',
+      strokeThickness: narrow ? 5 : 7,
+      align: 'center',
+      letterSpacing: 0
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, panelY + (narrow ? 82 : 88));
+    title.style.dropShadow = true;
+    title.style.dropShadowColor = '#66ffdd';
+    title.style.dropShadowBlur = 14;
+    title.style.dropShadowDistance = 0;
+
+    const kicker = createText(translateText(HANGAR_UNLOCK_STRINGS.kicker), {
+      fontFamily: FONT_BODY,
+      fontSize: narrow ? 12 : 15,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      align: 'center',
+      letterSpacing: 0
+    });
+    kicker.anchor.set(0.5);
+    kicker.position.set(width / 2, panelY + 38);
+
+    const subtitle = createText(translateText(HANGAR_UNLOCK_STRINGS.subtitle), {
+      fontFamily: FONT_BODY,
+      fontSize: narrow ? 14 : 18,
+      fontWeight: '800',
+      fill: '#b8fff1',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 96,
+      letterSpacing: 0
+    });
+    subtitle.anchor.set(0.5);
+    subtitle.position.set(width / 2, panelY + (narrow ? 126 : 148));
+
+    const nameText = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: narrow ? 23 : 34,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      stroke: '#1d0c00',
+      strokeThickness: narrow ? 4 : 5,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 112,
+      letterSpacing: 0
+    });
+    nameText.anchor.set(0.5);
+    nameText.position.set(width / 2, panelY + panelHeight - (narrow ? 110 : 118));
+
+    const roleText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: narrow ? 13 : 16,
+      fontWeight: '900',
+      fill: '#9cfbff',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 132,
+      letterSpacing: 0
+    });
+    roleText.anchor.set(0.5);
+    roleText.position.set(width / 2, panelY + panelHeight - (narrow ? 76 : 82));
+
+    const hintText = createText(translateText(HANGAR_UNLOCK_STRINGS.continue), {
+      fontFamily: FONT_BODY,
+      fontSize: narrow ? 12 : 15,
+      fontWeight: '900',
+      fill: '#ffffff',
+      align: 'center',
+      letterSpacing: 0
+    });
+    hintText.anchor.set(0.5);
+    hintText.position.set(width / 2, panelY + panelHeight - 36);
+
+    const countText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: narrow ? 12 : 15,
+      fontWeight: '900',
+      fill: '#ff55d9',
+      align: 'right',
+      letterSpacing: 0
+    });
+    countText.anchor.set(1, 0);
+    countText.position.set(panelX + panelWidth - 34, panelY + 34);
+
+    textLayer.addChild(kicker, title, subtitle, nameText, roleText, hintText, countText);
+    shipStage.position.set(width / 2, panelY + panelHeight * (narrow ? 0.48 : 0.5));
+
+    this.hangarUnlockPresentationSprites = [];
+    ships.slice(0, 5).forEach((ship, index) => {
+      const texture = GameAssets.getRankShipTexture(ship.textureIndex) || PIXI.Texture.EMPTY;
+      const sprite = new PIXI.Sprite(texture);
+      sprite.anchor.set(0.5);
+      sprite.alpha = 0;
+      sprite.__unlockIndex = index;
+      sprite.__unlockSeed = index * 1.7 + (Number(ship.textureIndex) || 0) * 0.09;
+      const shipPath = GameAssets.getRankShipPath(ship.textureIndex)
+        || AssetManifest.sprites.playerRankShips?.[ship.textureIndex]
+        || null;
+      if ((!texture || texture === PIXI.Texture.EMPTY || texture.width <= 1 || texture.height <= 1) && shipPath) {
+        PIXI.Assets.load(shipPath)
+          .then((loadedTexture) => {
+            if (loadedTexture && loadedTexture.width > 0 && loadedTexture.height > 0) sprite.texture = loadedTexture;
+          })
+          .catch((error) => console.warn('[ShipSelect] Hangar unlock texture failed:', shipPath, error));
+      }
+      this.hangarUnlockPresentationSprites.push(sprite);
+      shipStage.addChild(sprite);
+    });
+
+    const names = ships.map(ship => ship.name).join(' // ');
+    const primaryRole = getShipCombatRole(ships[0], this.statRanges);
+    title.text = translateText(ships.length === 1 ? HANGAR_UNLOCK_STRINGS.titleSingle : HANGAR_UNLOCK_STRINGS.titlePlural);
+    nameText.text = names;
+    roleText.text = [translateText(HANGAR_UNLOCK_STRINGS.rolePrefix), primaryRole].join(': ');
+    countText.text = [translateText(HANGAR_UNLOCK_STRINGS.countPrefix), String(ships.length)].join(' ');
+    fitDisplayToBox(title, panelWidth - 112, narrow ? 54 : 72, { minScale: 0.58 });
+    fitDisplayToBox(nameText, panelWidth - 112, narrow ? 42 : 54, { minScale: 0.56 });
+    fitDisplayToBox(roleText, panelWidth - 132, narrow ? 24 : 28, { minScale: 0.62 });
+    fitDisplayToBox(hintText, panelWidth - 128, 22, { minScale: 0.62 });
+
+    overlay.on('pointerdown', (event) => {
+      event.stopPropagation();
+      this.dismissHangarUnlockPresentation('pointer');
+    });
+
+    this.hangarUnlockPresentationRefs = {
+      width,
+      height,
+      panelX,
+      panelY,
+      panelWidth,
+      panelHeight,
+      narrow,
+      dim,
+      frameFx,
+      panel,
+      stageFx,
+      shipStage,
+      title,
+      kicker,
+      subtitle,
+      nameText,
+      roleText,
+      hintText,
+      countText
+    };
+    this.hangarUnlockPresentation = overlay;
+    this.container.addChild(overlay);
+    this.drawHangarUnlockPresentation();
+  }
+
+  startHangarUnlockPresentation() {
+    if (!this.hangarUnlockPresentation || this.hangarUnlockPresentationActive || !this.pendingHangarUnlockShips?.length) return false;
+    this.hangarUnlockPresentation.visible = true;
+    this.hangarUnlockPresentationActive = true;
+    this.hangarUnlockPresentationStartedAt = Date.now();
+    this.hangarUnlockPresentationAcked = false;
+    this.drawHangarUnlockPresentation();
+
+    AudioManager.playSfx('forceField', { force: true, volume: 0.52 });
+    AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.62 });
+    this.menuFx?.burst?.(this.game.getWidth() / 2, this.game.getHeight() * 0.5, {
+      color: this.pendingHangarUnlockShips[0]?.visuals?.variant?.accent || 0xffef7e,
+      radius: 260,
+      durationMs: 980
+    });
+
+    this.hangarUnlockPresentationTicker = () => this.drawHangarUnlockPresentation();
+    this.game.app.ticker.add(this.hangarUnlockPresentationTicker);
+    this.hangarUnlockPresentationTimer = setTimeout(() => {
+      this.dismissHangarUnlockPresentation('auto');
+    }, HANGAR_UNLOCK_PRESENTATION_MS);
+    return true;
+  }
+
+  dismissHangarUnlockPresentation(source = 'unknown') {
+    if (!this.hangarUnlockPresentation || (!this.hangarUnlockPresentationActive && this.hangarUnlockPresentationAcked)) return false;
+    if (this.hangarUnlockPresentationTimer) {
+      clearTimeout(this.hangarUnlockPresentationTimer);
+      this.hangarUnlockPresentationTimer = null;
+    }
+    if (this.hangarUnlockPresentationTicker) {
+      this.game.app.ticker.remove(this.hangarUnlockPresentationTicker);
+      this.hangarUnlockPresentationTicker = null;
+    }
+    this.hangarUnlockPresentationActive = false;
+    this.hangarUnlockPresentation.visible = false;
+    if (!this.hangarUnlockPresentationAcked) {
+      this.hangarUnlockPresentationAcked = true;
+      try {
+        this.unlockProgress = acknowledgeHangarUnlockPresentation();
+      } catch (error) {
+        console.warn('[ShipSelect] Failed to acknowledge hangar unlock presentation:', error);
+      }
+      this.pendingHangarUnlockShips = [];
+      this.updateIntelPanels();
+    }
+    if (source !== 'auto') AudioManager.playSfx('powerup', { force: false, volume: 0.22 });
+    return true;
+  }
+
+  drawHangarUnlockPresentation() {
+    const refs = this.hangarUnlockPresentationRefs;
+    if (!refs) return;
+    const {
+      width,
+      height,
+      panelX,
+      panelY,
+      panelWidth,
+      panelHeight,
+      narrow,
+      dim,
+      frameFx,
+      panel,
+      stageFx,
+      title,
+      kicker,
+      subtitle,
+      nameText,
+      roleText,
+      hintText,
+      countText
+    } = refs;
+    const startedAt = this.hangarUnlockPresentationStartedAt || Date.now();
+    const age = Math.max(0, Date.now() - startedAt);
+    const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
+    const clamp01 = (value) => Math.max(0, Math.min(1, value));
+    const intro = clamp01(age / 780);
+    const easeOutBack = (value) => {
+      const x = clamp01(value);
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    };
+
+    dim.clear();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x010711, alpha: 0.18 + intro * 0.74 });
+
+    frameFx.clear();
+    const centerX = width / 2;
+    const centerY = panelY + panelHeight * 0.5;
+    for (let i = 0; i < 5; i += 1) {
+      const radius = ((age * 0.12 + i * 86) % Math.max(160, panelWidth * 0.58)) + 42;
+      frameFx.circle(centerX, centerY, radius);
+      frameFx.stroke({ color: i % 2 === 0 ? 0x66ffdd : 0xff55d9, width: 1.4, alpha: (1 - radius / Math.max(180, panelWidth * 0.72)) * 0.18 * intro });
+    }
+    for (let i = 0; i < 12; i += 1) {
+      const x = panelX + 32 + i * ((panelWidth - 64) / 11);
+      frameFx.moveTo(x, panelY + 18);
+      frameFx.lineTo(x + Math.sin(Date.now() * 0.001 + i) * 42, panelY + panelHeight - 18);
+    }
+    frameFx.stroke({ color: 0x37f5ff, width: 1, alpha: 0.06 + pulse * 0.035 });
+
+    panel.clear();
+    panel.roundRect(panelX - 12, panelY - 10, panelWidth + 24, panelHeight + 20, 16);
+    panel.fill({ color: 0x66ffdd, alpha: 0.05 + pulse * 0.04 });
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 12);
+    panel.fill({ color: 0x06101c, alpha: 0.86 + intro * 0.1 });
+    panel.stroke({ color: 0x66ffdd, width: 2.6, alpha: 0.62 + pulse * 0.28 });
+    panel.roundRect(panelX + 14, panelY + 14, panelWidth - 28, panelHeight - 28, 10);
+    panel.stroke({ color: 0xff55d9, width: 1.5, alpha: 0.38 + pulse * 0.18 });
+    panel.rect(panelX + 28, panelY + 28, panelWidth - 56, 3);
+    panel.fill({ color: 0xffef7e, alpha: 0.76 });
+    panel.rect(panelX + 28, panelY + panelHeight - 30, panelWidth - 56, 2);
+    panel.fill({ color: 0x37f5ff, alpha: 0.5 });
+
+    const scanX = panelX + 36 + ((age * 0.34) % Math.max(1, panelWidth - 72));
+    panel.rect(scanX, panelY + 42, 4, panelHeight - 84);
+    panel.fill({ color: 0xffffff, alpha: 0.18 + pulse * 0.12 });
+
+    const titleScale = 0.78 + easeOutBack(age / 620) * 0.22;
+    title.scale.set(titleScale);
+    title.alpha = intro;
+    kicker.alpha = 0.65 + pulse * 0.35;
+    subtitle.alpha = 0.82 + pulse * 0.18;
+    nameText.alpha = intro;
+    nameText.scale.set(1 + pulse * 0.025);
+    roleText.alpha = 0.86 + pulse * 0.14;
+    hintText.alpha = 0.44 + pulse * 0.56;
+    countText.alpha = 0.58 + pulse * 0.42;
+
+    stageFx.clear();
+    const sprites = this.hangarUnlockPresentationSprites || [];
+    const spriteSize = narrow ? 126 : 172;
+    const gap = Math.min(narrow ? 132 : 164, Math.max(narrow ? 92 : 122, panelWidth / Math.max(2.8, sprites.length + 1)));
+    const startX = -((sprites.length - 1) * gap) / 2;
+    sprites.forEach((sprite, index) => {
+      const textureWidth = Math.max(1, sprite.texture.width || sprite.width || spriteSize);
+      const textureHeight = Math.max(1, sprite.texture.height || sprite.height || spriteSize);
+      const baseScale = Math.min(spriteSize / textureWidth, spriteSize / textureHeight);
+      const localAge = age - index * 170;
+      const pop = easeOutBack(localAge / 700);
+      const settle = clamp01(localAge / 820);
+      const x = startX + index * gap;
+      const y = Math.sin(Date.now() * 0.004 + (sprite.__unlockSeed || index)) * (narrow ? 5 : 8) - (1 - settle) * 76;
+      const spritePulse = 1 + Math.sin(Date.now() * 0.006 + index) * 0.035;
+      sprite.x = x;
+      sprite.y = y;
+      sprite.alpha = clamp01(localAge / 340);
+      sprite.rotation = Math.sin(Date.now() * 0.0028 + index) * 0.045 + (1 - settle) * (index % 2 ? 0.18 : -0.18);
+      sprite.scale.set(baseScale * (0.48 + pop * 0.52) * spritePulse);
+
+      const ringPulse = 0.5 + Math.sin(Date.now() * 0.007 + index * 0.9) * 0.5;
+      stageFx.circle(x, y, spriteSize * (0.52 + ringPulse * 0.08));
+      stageFx.stroke({ color: index % 2 ? 0xff55d9 : 0x66ffdd, width: narrow ? 1.6 : 2.2, alpha: 0.24 + ringPulse * 0.24 });
+      stageFx.circle(x, y, spriteSize * (0.68 + pulse * 0.05));
+      stageFx.stroke({ color: 0xffef7e, width: 1, alpha: 0.16 + pulse * 0.12 });
+      const exhaustY = y + spriteSize * 0.34;
+      stageFx.moveTo(x - spriteSize * 0.18, exhaustY);
+      stageFx.lineTo(x - spriteSize * 0.32, exhaustY + spriteSize * (0.16 + ringPulse * 0.08));
+      stageFx.moveTo(x + spriteSize * 0.18, exhaustY);
+      stageFx.lineTo(x + spriteSize * 0.32, exhaustY + spriteSize * (0.16 + ringPulse * 0.08));
+      stageFx.stroke({ color: 0x9cfbff, width: narrow ? 2 : 3, alpha: 0.26 + ringPulse * 0.22 });
+    });
+
+    refs.layout = {
+      panel: {
+        x: Math.round(panelX),
+        y: Math.round(panelY),
+        width: Math.round(panelWidth),
+        height: Math.round(panelHeight)
+      },
+      spriteSize,
+      spriteCount: sprites.length,
+      ageMs: Math.round(age)
+    };
+  }
+
+  getHangarUnlockPresentationDebugState(getBounds) {
+    const bounds = typeof getBounds === 'function' ? getBounds : () => null;
+    const ships = this.pendingHangarUnlockShips || [];
+    return {
+      visible: Boolean(this.hangarUnlockPresentation?.visible),
+      active: Boolean(this.hangarUnlockPresentationActive),
+      acknowledged: Boolean(this.hangarUnlockPresentationAcked),
+      count: ships.length,
+      names: ships.map(ship => ship.name),
+      spriteKeys: ships.map(ship => ship.spriteKey),
+      selectedUnlockFocused: ships.some(ship => ship.spriteKey === this.ships[this.selectedIndex]?.spriteKey),
+      animated: Boolean(this.hangarUnlockPresentationStartedAt && (Date.now() - this.hangarUnlockPresentationStartedAt) > 80),
+      layout: this.hangarUnlockPresentationRefs?.layout || null,
+      bounds: bounds(this.hangarUnlockPresentation),
+      title: this.hangarUnlockPresentationRefs?.title?.text || null
+    };
+  }
+
   createIntelPanels(width, height) {
     this.intelPanels = new PIXI.Container();
     this.container.addChild(this.intelPanels);
@@ -2350,7 +2774,9 @@ export class ShipSelectScene {
       // Log first key press for debug
       if (DEBUG) console.log(`[ShipSelectInput] key=${e.key} code=${e.code}`);
 
-      const handledKey = this.hangarMenuOverlay?.visible ||
+      const presentationVisible = Boolean(this.hangarUnlockPresentation?.visible);
+      const handledKey = presentationVisible ||
+        this.hangarMenuOverlay?.visible ||
         this.careerInfoOverlay?.visible ||
         e.key === 'Tab' ||
         e.key === 'ArrowUp' ||
@@ -2369,6 +2795,21 @@ export class ShipSelectScene {
         e.code === 'Enter' ||
         e.code === 'NumpadEnter';
       if (handledKey) e.stopImmediatePropagation();
+
+      if (presentationVisible) {
+        e.preventDefault();
+        if (
+          e.key === 'Escape' ||
+          e.code === 'Escape' ||
+          e.key === 'Enter' ||
+          e.code === 'Enter' ||
+          e.code === 'NumpadEnter' ||
+          e.code === 'Space'
+        ) {
+          this.dismissHangarUnlockPresentation('keyboard');
+        }
+        return;
+      }
 
       if (this.hangarMenuOverlay?.visible) {
         this.handleHangarMenuKey(e);
@@ -2471,6 +2912,13 @@ export class ShipSelectScene {
   pollHangarMenuGamepad() {
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+
+    if (this.hangarUnlockPresentation?.visible) {
+      if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
+        this.dismissHangarUnlockPresentation('controller');
+      }
+      return;
+    }
 
     if (this.careerInfoOverlay?.visible) {
       if (nav.pressed.cancel || nav.pressed.confirm || nav.pressed.menu || nav.pressed.back) {
@@ -2657,6 +3105,14 @@ export class ShipSelectScene {
     if (this.careerSignalTicker) {
       this.game.app.ticker.remove(this.careerSignalTicker);
       this.careerSignalTicker = null;
+    }
+    if (this.hangarUnlockPresentationTicker) {
+      this.game.app.ticker.remove(this.hangarUnlockPresentationTicker);
+      this.hangarUnlockPresentationTicker = null;
+    }
+    if (this.hangarUnlockPresentationTimer) {
+      clearTimeout(this.hangarUnlockPresentationTimer);
+      this.hangarUnlockPresentationTimer = null;
     }
     if (this.exitNoticeTimeout) {
       clearTimeout(this.exitNoticeTimeout);

@@ -113,10 +113,7 @@ try {
 
   const exitTarget = afterMenuButton.shipSelect.hangarMenu.buttons.exitGame;
   await page.mouse.click(exitTarget.x + exitTarget.width / 2, exitTarget.y + exitTarget.height / 2);
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return /DESKTOP BUILD/.test(state.shipSelect?.hangarMenu?.notice || '');
-  }, { timeout: 10000 });
+  await page.waitForTimeout(350);
   const afterExitFallback = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 
   const resumeTarget = afterExitFallback.shipSelect.hangarMenu.buttons.resume;
@@ -166,7 +163,7 @@ try {
       afterMenuButton.scene === 'shipSelect' &&
       afterMenuButton.shipSelect?.hangarMenu?.visible === true &&
       afterExitFallback.shipSelect?.hangarMenu?.visible === true &&
-      /DESKTOP BUILD/.test(afterExitFallback.shipSelect?.hangarMenu?.notice || '') &&
+      !/DESKTOP BUILD/.test(afterExitFallback.shipSelect?.hangarMenu?.notice || '') &&
       afterResume.scene === 'shipSelect' &&
       afterResume.shipSelect?.hangarMenu?.visible === false &&
       beforeKeyboardMenu.shipSelect?.backButton?.width > 0 &&

@@ -103,13 +103,17 @@ async function preparePage(browser, scenario) {
     }
     await route.fulfill({ status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([]) });
   });
-  await page.addInitScript((progress) => {
+  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
+  await page.evaluate((progress) => {
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(progress));
     localStorage.removeItem('burt.shipUnlockProgress.v1');
     localStorage.removeItem('nova.threatDiscovery.v1');
+    if (window.__game) {
+      window.__game.hangarProgressAtRunStart = progress;
+      window.__game.liveRankBaseProgress = progress;
+    }
   }, scenario.previousProgress);
-  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
   return { page, pageErrors };
 }
 
@@ -126,11 +130,34 @@ async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000, r
     game.rankIndex = Math.max(0, level - 1);
     game.gameOver();
   }, { level: finalLevel, score: finalScore, runStats });
+  try {
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'gameOver' && state.gameOver?.shipUnlocks?.visible === true;
+    }, null, { timeout: 20000 });
+  } catch (error) {
+    const state = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+    const diagnostic = await page.evaluate(() => ({
+      localHangarProgress: JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || 'null'),
+      runProgressionResult: window.__game?.runProgressionResult || null,
+      sceneUnlocks: window.__game?.scenes?.gameOver?.newlyUnlockedShips?.map?.(ship => ({
+        id: ship.id,
+        baseId: ship.baseId,
+        spriteKey: ship.spriteKey,
+        name: ship.name
+      })) || null
+    }));
+    throw new Error(`unlock reveal did not become visible: ${error.message}\n${JSON.stringify({
+      scene: state.scene,
+      shipUnlocks: state.gameOver?.shipUnlocks || null,
+      unlockSummary: state.gameOver?.unlockSummary || null,
+      diagnostic
+    }, null, 2)}`);
+  }
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'gameOver' && state.gameOver?.shipUnlocks?.visible === true;
-  }, null, { timeout: 20000 });
-  await page.waitForTimeout(1000);
+    return state.scene === 'gameOver' && state.gameOver?.shipUnlocks?.voicePlayed === true;
+  }, null, { timeout: 7000 });
   return page.evaluate(() => JSON.parse(window.render_game_to_text()));
 }
 
@@ -208,6 +235,9 @@ try {
     }),
     finalLevel: 4,
     finalScore: 25000,
+    runStats: {
+      bossKills: 1
+    },
     expectedCount: 1,
     expectedVoiceKey: 'mission_control_ship_unlocked',
     expectedSummary: 'SHIP UNLOCKED'

@@ -302,6 +302,12 @@ try {
   await tapButton(page, 0);
   const hangar = await waitForState(page, (state) => state.scene === 'shipSelect' && state.shipSelect?.spriteKey, 'ship select opened');
   checkpoint('ship-select-open', hangar, { screenshot: await screenshot(page, '06-ship-select-open') });
+  if (hangar.shipSelect?.unlockPresentation?.visible) {
+    await tapButton(page, 9);
+    await waitForState(page, (state) =>
+      state.scene === 'shipSelect' && state.shipSelect?.unlockPresentation?.visible === false,
+    'hangar unlock presentation dismissed by controller Start');
+  }
   await tapButton(page, 9);
   const hangarMenu = await waitForState(page, (state) => state.shipSelect?.hangarMenu?.visible, 'hangar menu opened by controller Start');
   checkpoint('ship-select-hangar-menu-open', hangarMenu, { screenshot: await screenshot(page, '07-ship-select-hangar-menu-open') });

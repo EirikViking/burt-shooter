@@ -1,6 +1,13 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'NEW HULL ARRIVED': 'ATARASHII KITAI TOUCHAKU',
+  'NEW HULLS ARRIVED': 'ATARASHII KITAI GUN TOUCHAKU',
+  'HANGAR DOORS OPEN': 'HANGAR TOBIRA KAIHOU',
+  'The paint is still warm. Try not to make it emotional.': 'Toso wa mada atatakai. Kando shi suginai de.',
+  'COMBAT ROLE': 'SENTO ROLE',
+  'ENTER / CLICK / A: KEEP THE KEYS': 'ENTER / CLICK / A: KEY O UKE TORU',
+  'HULLS ADDED': 'KITAI TSUIKA',
   'RECOMMENDED HULL': '推奨機体',
   'USING RECOMMENDED HULL': '推奨機体を使用中',
   'BEST UNLOCKED': '解放済み最良',

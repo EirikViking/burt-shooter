@@ -1,6 +1,13 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'NEW HULL ARRIVED': 'NUEVO CASCO LLEGO',
+  'NEW HULLS ARRIVED': 'NUEVOS CASCOS LLEGARON',
+  'HANGAR DOORS OPEN': 'PUERTAS DEL HANGAR ABIERTAS',
+  'The paint is still warm. Try not to make it emotional.': 'La pintura sigue caliente. Intenta no ponerte emocional.',
+  'COMBAT ROLE': 'ROL DE COMBATE',
+  'ENTER / CLICK / A: KEEP THE KEYS': 'ENTER / CLIC / A: QUEDATE LAS LLAVES',
+  'HULLS ADDED': 'CASCOS ANADIDOS',
   'SECTOR START CHALLENGE': 'DESAFIO DE INICIO DE SECTOR',
   'SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED': 'DESAFIO DE INICIO DE SECTOR - PUNTUACION PRINCIPAL NO REGISTRADA',
   'SECTOR {sector} CHALLENGE': 'DESAFIO SECTOR {sector}',

@@ -1,6 +1,13 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  'NEW HULL ARRIVED': 'XIN JITI DAO DA',
+  'NEW HULLS ARRIVED': 'XIN JITI DAO DA',
+  'HANGAR DOORS OPEN': 'JIKU MEN DAKAI',
+  'The paint is still warm. Try not to make it emotional.': 'Qimian hai re. Bie tai dongqing.',
+  'COMBAT ROLE': 'ZHANDOU JUEDING',
+  'ENTER / CLICK / A: KEEP THE KEYS': 'ENTER / DIANJI / A: LIU XIA YAOSHI',
+  'HULLS ADDED': 'JITI YI TIANJIA',
   'RECOMMENDED HULL': '推荐机体',
   'USING RECOMMENDED HULL': '正在使用推荐机体',
   'BEST UNLOCKED': '已解锁最佳',

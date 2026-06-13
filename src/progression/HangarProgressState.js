@@ -176,6 +176,15 @@ export function writeHangarProgressState(progress) {
   return normalized;
 }
 
+export function acknowledgeHangarUnlockPresentation() {
+  const previous = readHangarProgressState();
+  if (!previous.lastNewlyUnlockedShipIds?.length) return previous;
+  return writeHangarProgressState({
+    ...previous,
+    lastNewlyUnlockedShipIds: []
+  });
+}
+
 function valueForRequirement(progress, key) {
   if (key === 'codexDiscoveries') return progress.totalCodexDiscoveries;
   if (key === 'specificThreatDiscovered') return progress.discoveredThreatIds;
@@ -200,6 +209,8 @@ export function requirementsMet(progress, requirements = {}) {
 
 export function shipUnlockMet(shipId, progress = readHangarProgressState()) {
   const definition = getShipUnlockDefinition(shipId);
+  const id = String(shipId || '').trim();
+  if (id && Array.isArray(progress?.secretShipUnlockIds) && progress.secretShipUnlockIds.map(String).includes(id)) return true;
   if (!definition) return false;
   const requirements = definition.requirements || {};
   const hasAllRequirements = Object.keys(requirements).length > 0;
