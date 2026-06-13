@@ -5,8 +5,10 @@ RESCUE/
 *.diff
 RESCUE_*.txt
 .claude/
+.codex-snapshots/
 .wrangler/
 test-results/
+tmp/
 tmpclaude-*
 tools/steamcmd/
 tools/dumps/
