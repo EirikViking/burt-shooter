@@ -105,7 +105,8 @@ function seededDiscoveryState() {
   const items = {};
   for (const [category, entries] of Object.entries(catalog)) {
     const target = Math.min(Number(seededDiscoveryTargets[category]) || 0, entries.length);
-    items[category] = Object.fromEntries((entries || []).slice(0, target).map((entry) => [entry.id, {
+    const discoveredEntries = (entries || []).slice(Math.max(0, entries.length - target));
+    items[category] = Object.fromEntries(discoveredEntries.map((entry) => [entry.id, {
       id: entry.id,
       category,
       name: entry.name,
@@ -151,10 +152,17 @@ async function openCodex(page) {
 async function inspectTabs(page) {
   return page.evaluate(() => {
     const scene = window.__game?.scenes?.threatCodex;
+    const category = scene?.getCategory?.()?.id || null;
+    const entries = scene?.getEntriesForCategory?.(category) || [];
     return {
       scene: window.__game?.currentSceneName || null,
-      category: scene?.getCategory?.()?.id || null,
+      category,
       completionCounts: scene?.completionCounts || null,
+      firstEntries: entries.slice(0, 12).map((entry) => ({
+        id: entry.id,
+        name: entry.name || null,
+        discovered: Boolean(scene?.isDiscovered?.(entry, category))
+      })),
       tabs: (scene?.lastCategoryTabsDebug || []).map((item) => ({
         ...item,
         countToDividerGap: Number(item.countToDividerGap),
@@ -175,6 +183,15 @@ function validateSnapshot(snapshot, viewportName) {
     assert.equal(tab.countInsideTab, true, `${viewportName}: ${tab.id} count escaped tab bounds`);
     assert.ok(tab.countToDividerGap >= 3, `${viewportName}: ${tab.id} count is too close to divider (${tab.countToDividerGap}px)`);
     assert.ok(tab.labelToCountGap >= 2, `${viewportName}: ${tab.id} label/count overlap (${tab.labelToCountGap}px)`);
+  }
+  const categoryTarget = Math.min(Number(seededDiscoveryTargets[snapshot.category]) || 0, catalogForExpectations[snapshot.category]?.length || 0);
+  const firstExpectedDiscovered = Math.min(categoryTarget, snapshot.firstEntries.length);
+  for (const entry of snapshot.firstEntries.slice(0, firstExpectedDiscovered)) {
+    assert.equal(entry.discovered, true, `${viewportName}: discovered Codex item ${entry.id} should sort before locked signals`);
+  }
+  const firstLocked = snapshot.firstEntries[firstExpectedDiscovered];
+  if (categoryTarget > 0 && firstLocked) {
+    assert.equal(firstLocked.discovered, false, `${viewportName}: locked Codex item ${firstLocked.id} appeared before all discovered entries`);
   }
 }
 

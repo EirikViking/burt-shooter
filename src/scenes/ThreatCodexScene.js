@@ -116,6 +116,20 @@ function entryDiscovered(state, categoryId, entry) {
   return Boolean(getStateItem(state, categoryId, entry.id));
 }
 
+function sortDiscoveredEntriesFirst(entries, state, categoryId) {
+  return entries
+    .map((entry, index) => ({
+      entry,
+      index,
+      discovered: entryDiscovered(state, categoryId, entry)
+    }))
+    .sort((a, b) => {
+      if (a.discovered !== b.discovered) return a.discovered ? -1 : 1;
+      return a.index - b.index;
+    })
+    .map(({ entry }) => entry);
+}
+
 function makeSignalSeed(id = '') {
   return String(id).split('').reduce((sum, char, index) => sum + char.charCodeAt(0) * (index + 3), 17);
 }
@@ -334,7 +348,7 @@ export class ThreatCodexScene {
         tip: item.metadata?.tip || 'Watch the first tell, then move once. The scanner believes in you, suspiciously.'
       });
     });
-    return merged;
+    return sortDiscoveredEntriesFirst(merged, this.discoveryState, categoryId);
   }
 
   isDiscovered(entry, categoryId = this.getCategory().id) {

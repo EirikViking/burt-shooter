@@ -3,6 +3,7 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 ## 2026-06-13 HUD Overlap Fix
 
 - Fixed the top-left high-score/sector-record chase card so the title, `BEAT` value, taunt line, and progress bar use separate lanes instead of stacking into each other at desktop gameplay sizes. This is layout-only in the HUD: no scoring, gameplay rules, Steamworks settings, or player-facing copy changed.
+- Codex follow-up: Threat Codex category lists now sort discovered/always-known entries before locked signals while preserving catalog order inside each group. `check-codex-tab-count-layout` now seeds late-catalog discoveries to prove discovered entries are shown first.
 
 ## 2026-06-08 Sector Start Prototype
 
