@@ -3,35 +3,13 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { ALL_POWERUP_TYPES } from '../src/config/PowerupCatalog.js';
 
 const host = process.env.POWERUP_VISUAL_HOST || '127.0.0.1';
 const port = Number(process.env.POWERUP_VISUAL_PORT || await findAvailablePort(4190));
 const baseUrl = process.env.POWERUP_VISUAL_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.POWERUP_VISUAL_OUTPUT_DIR || `test-results/powerup-visuals-${timestamp()}`);
-const powerupTypes = [
-  'triple_beam',
-  'vector_boost',
-  'rapid_cabinet',
-  'overdrive_core',
-  'slow_time',
-  'ghost',
-  'life',
-  'shield',
-  'rapid_fire',
-  'double_shot',
-  'damage_up',
-  'speed_up',
-  'pierce',
-  'score_x2',
-  'magnet',
-  'drones',
-  'shockwave',
-  'point_defense',
-  'bomb',
-  'chain_lightning',
-  'orbital_strike',
-  'vampire'
-];
+const powerupTypes = ALL_POWERUP_TYPES;
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');

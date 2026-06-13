@@ -4,31 +4,11 @@ import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
+import { ALL_POWERUP_TYPES, getPowerupMeta } from '../config/PowerupCatalog.js';
 
-const POWERUP_CODEX_NAMES = Object.freeze({
-  triple_beam: 'TRIPLE BEAM',
-  vector_boost: 'VECTOR BOOST',
-  rapid_cabinet: 'RAPID CABINET',
-  overdrive_core: 'OVERDRIVE CORE',
-  slow_time: 'SLOW TIME',
-  ghost: 'GHOST',
-  shield: 'SHIELD',
-  life: 'EXTRA LIFE',
-  rapid_fire: 'RAPID FIRE',
-  double_shot: 'DOUBLE SHOT',
-  damage_up: 'DAMAGE UP',
-  speed_up: 'SPEED UP',
-  pierce: 'PIERCE',
-  score_x2: 'SCORE X2',
-  magnet: 'MAGNET',
-  drones: 'DRONES',
-  shockwave: 'SHOCKWAVE',
-  point_defense: 'POINT DEFENSE',
-  bomb: 'BOMB',
-  chain_lightning: 'CHAIN LIGHTNING',
-  orbital_strike: 'ORBITAL STRIKE',
-  vampire: 'VAMPIRE'
-});
+const POWERUP_CODEX_NAMES = Object.freeze(Object.fromEntries(
+  ALL_POWERUP_TYPES.map((type) => [type, getPowerupMeta(type)?.name || String(type).replace(/_/g, ' ').toUpperCase()])
+));
 
 class Powerup {
   constructor(x, y, type) {
@@ -41,34 +21,9 @@ class Powerup {
     this.createdAt = Date.now();
     this.lifeTime = 26000;
 
-    const powerupData = {
-      triple_beam: { color: 0xffaa00, label: 'TRIPLE' },
-      vector_boost: { color: 0xff6666, label: 'VECTOR' },
-      rapid_cabinet: { color: 0xff00ff, label: 'RAPID' },
-      overdrive_core: { color: 0x00ff00, label: 'OVERDRIVE' },
-      slow_time: { color: 0x00cccc, label: 'SLOW' },
-      ghost: { color: 0xeeeeee, label: 'GHOST' },
-      shield: { color: 0x00aaaa, label: 'SHIELD' },
-      life: { color: 0xff0000, label: 'LIFE' },
-      rapid_fire: { color: 0xffcc00, label: 'RAPID' },
-      double_shot: { color: 0x66ccff, label: 'DOUBLE' },
-      damage_up: { color: 0xff6666, label: 'DMG+' },
-      speed_up: { color: 0x66ff66, label: 'SPEED' },
-      pierce: { color: 0xcc66ff, label: 'PIERCE' },
-      score_x2: { color: 0xffff00, label: 'x2' },
-      magnet: { color: 0x99ffcc, label: 'MAGNET' },
-      drones: { color: 0x66ccff, label: 'DRONES' },
-      shockwave: { color: 0xff9966, label: 'WAVE' },
-      point_defense: { color: 0x00ddff, label: 'P-DEF' },
-      bomb: { color: 0xff3300, label: 'BOMB' },
-      chain_lightning: { color: 0xffff00, label: 'CHAIN' },
-      orbital_strike: { color: 0xff00ff, label: 'ORBITAL' },
-      vampire: { color: 0xff0066, label: 'VAMP' }
-    };
-
-    const data = powerupData[type] || powerupData['triple_beam'];
+    const data = getPowerupMeta(type) || getPowerupMeta('triple_beam');
     this.color = data.color;
-    this.label = data.label;
+    this.label = data.shortLabel || data.name || 'POWER';
 
     // TASK A: Idle animation state
     this.bobPhase = Math.random() * Math.PI * 2;
@@ -324,72 +279,24 @@ class Powerup {
 
   // TASK 1: Play category-specific pickup SFX
   playPickupSFX(scene) {
-    // Category-specific sounds
-    const sfxMap = {
-      life: 'life_up',
-      shield: 'shield_up',
-      ghost: 'ghost_phase_shift',
-      slow_time: 'time_slow_warp',
-      triple_beam: 'powerup_pickup',
-      vector_boost: 'powerup_pickup',
-      rapid_cabinet: 'powerup_pickup',
-      overdrive_core: 'powerup_pickup',
-      rapid_fire: 'powerup_pickup',
-      double_shot: 'powerup_pickup',
-      damage_up: 'powerup_pickup',
-      speed_up: 'powerup_pickup',
-      pierce: 'powerup_pickup',
-      score_x2: 'achievement',
-      magnet: 'magnet_pull',
-      drones: 'drone_launch_blip',
-      shockwave: 'powerup',
-      chain_lightning: 'chain_lightning_arc',
-      orbital_strike: 'orbital_strike_charge',
-      vampire: 'powerup_pickup'
-    };
-
-    const sfxKey = sfxMap[this.type] || 'powerup_pickup';
+    const sfxKey = getPowerupMeta(this.type)?.sfx || 'powerup_pickup';
     AudioManager.playSfx(sfxKey);
   }
 
   showMessage(scene) {
-    const messages = {
-      triple_beam: 'TRIPLE BEAM! Triple Shot!',
-      vector_boost: 'VECTOR BOOST! Speed Up!',
-      rapid_cabinet: 'RAPID CABINET! Rapid Fire!',
-      overdrive_core: 'OVERDRIVE CORE! Ultimate Power!',
-      slow_time: 'SLOW MOTION!',
-      slow_time: 'SLOW MOTION!',
-      ghost: 'GHOST MODE! Invincible!',
-      shield: 'SHIELD UP!',
-      life: 'EXTRA LIFE!',
-      rapid_fire: 'RAPID FIRE!',
-      double_shot: 'DOUBLE SHOT!',
-      damage_up: 'DAMAGE UP!',
-      speed_up: 'SPEED UP!',
-      pierce: 'PIERCING SHOTS!',
-      score_x2: 'SCORE x2!',
-      magnet: 'MAGNET FIELD: PULLS PICKUPS',
-      drones: 'SIDE DRONES!',
-      shockwave: 'SHOCKWAVE!',
-      bomb: 'BOMB',
-      chain_lightning: 'CHAIN LIGHTNING!',
-      orbital_strike: 'ORBITAL STRIKE!',
-      vampire: 'VAMPIRE DRAIN!'
-    };
-
     const { width, height } = scene.game.app.screen;
-    const message = translateText(messages[this.type] || 'POWERUP!');
+    const meta = getPowerupMeta(this.type);
+    const message = translateText(meta?.pickupMessage || 'POWERUP!');
     if (typeof scene.enqueueToast === 'function') {
       scene.enqueueToast(message, {
-        fontSize: this.type === 'bomb' ? 30 : 24,
+        fontSize: this.type === 'bomb' || meta?.effect?.charges ? 30 : 24,
         fill: this.color,
         stroke: '#000000',
-        strokeThickness: this.type === 'bomb' ? 5 : 4,
+        strokeThickness: this.type === 'bomb' || meta?.effect?.charges ? 5 : 4,
         slot: 'center',
         type: 'powerup',
-        priority: this.type === 'bomb' ? 8 : 2,
-        duration: this.type === 'bomb' ? 2100 : 1500,
+        priority: this.type === 'bomb' || meta?.effect?.charges ? 8 : 2,
+        duration: this.type === 'bomb' || meta?.effect?.charges ? 2100 : 1500,
         y: height * 0.34,
         maxWidth: width * 0.62
       });
@@ -442,28 +349,7 @@ export class PowerupManager {
     this.debugPowerupsEnabled = false;
     this.debugPowerupTimer = 0;
     this.debugPowerupIndex = 0;
-    this.debugPowerupTypes = [
-      'triple_beam',
-      'rapid_cabinet',
-      'overdrive_core',
-      'slow_time',
-      'ghost',
-      'life',
-      'shield',
-      'rapid_fire',
-      'double_shot',
-      'damage_up',
-      'speed_up',
-      'pierce',
-      'score_x2',
-      'magnet',
-      'drones',
-      'shockwave',
-      'point_defense',
-      'chain_lightning',
-      'orbital_strike',
-      'vampire'
-    ];
+    this.debugPowerupTypes = ALL_POWERUP_TYPES;
   }
 
   checkLevelReset(level) {
@@ -582,23 +468,37 @@ export class PowerupManager {
       type = 'shield'; // 13% Uncommon, if no shield
     } else if (rand < 0.25) {
       // BOMB & SHOCKWAVE - 10% dedicated chance for most visible powerups
-      type = Math.random() < 0.5 ? 'bomb' : 'shockwave';
+      const burstPowerups = ['bomb', 'shockwave', 'stasis_net', 'pulse_refund', 'saw_matrix'];
+      type = burstPowerups[Math.floor(Math.random() * burstPowerups.length)];
     } else if (rand < 0.50) {
-      // OTHER NEW POWERUPS - 25% chance pool for remaining new powerups
-      const newPowerups = [
+      // Spectacle powerups - 25% chance pool for high-readability showpieces.
+      const spectaclePowerups = [
         'chain_lightning',
-        'orbital_strike'
+        'orbital_strike',
+        'prism_splitter',
+        'rail_surge',
+        'drone_carousel',
+        'plasma_lance',
+        'void_crown',
+        'swarm_contract'
       ];
-      type = newPowerups[Math.floor(Math.random() * newPowerups.length)];
+      type = spectaclePowerups[Math.floor(Math.random() * spectaclePowerups.length)];
     } else if (rand < 0.60) {
-      // Combat powerups - 10% chance pool
+      // Combat/support powerups - 10% chance pool
       const combatPowerups = [
         'score_x2',
+        'score_fever',
+        'jackpot_lens',
         'magnet',
+        'gravity_well',
         'drones',
         'point_defense',
+        'aegis_burst',
         'pierce',
-        'damage_up'
+        'damage_up',
+        'target_paint',
+        'nano_patch',
+        'mercy_protocol'
       ];
       type = combatPowerups[Math.floor(Math.random() * combatPowerups.length)];
     } else {
@@ -606,12 +506,16 @@ export class PowerupManager {
       const standardPowerups = [
         'ghost',
         'slow_time',
+        'chrono_anchor',
+        'blink_drive',
+        'ion_dash',
         'rapid_cabinet',
         'overdrive_core',
         'triple_beam',
         'rapid_fire',
         'double_shot',
-        'speed_up'
+        'speed_up',
+        'mirror_shots'
       ];
       type = standardPowerups[Math.floor(Math.random() * standardPowerups.length)];
     }

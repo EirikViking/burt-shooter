@@ -1257,11 +1257,8 @@ export class EnemyManager {
   updateEnemies(delta) {
     const player = this.game.scenes.play ? this.game.scenes.play.player : null;
 
-    // SAFEGUARD: Check for active powerup correctly
-    const isSlowTime = player &&
-      player.activePowerup &&
-      player.activePowerup.type === 'slow_time' &&
-      !player.isPowerupSuppressed?.();
+    // SAFEGUARD: Check for active time-slow powerups correctly.
+    const isSlowTime = player?.isSlowTimeActive?.() === true;
 
     const timeScale = isSlowTime ? 0.5 : 1.0;
     const tier = this.directorState?.tier || 0;

@@ -1,32 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { AssetManifest } from '../src/assets/assetManifest.js';
+import { ALL_POWERUP_TYPES } from '../src/config/PowerupCatalog.js';
 
-const requiredPowerups = [
-  'triple_beam',
-  'vector_boost',
-  'rapid_cabinet',
-  'overdrive_core',
-  'slow_time',
-  'ghost',
-  'life',
-  'shield',
-  'rapid_fire',
-  'double_shot',
-  'damage_up',
-  'speed_up',
-  'pierce',
-  'score_x2',
-  'magnet',
-  'drones',
-  'shockwave',
-  'point_defense',
-  'bomb',
-  'chain_lightning',
-  'orbital_strike',
-  'vampire',
-  'bonus_core'
-];
+const requiredPowerups = [...ALL_POWERUP_TYPES, 'bonus_core'];
 
 function pngDimensions(filePath) {
   const bytes = readFileSync(filePath);

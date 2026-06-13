@@ -1282,7 +1282,7 @@ export class PlayScene {
       }
 
       // Managers update
-      const slowTimeActive = this.player?.activePowerup?.type === 'slow_time' && !this.player?.isPowerupSuppressed?.();
+      const slowTimeActive = this.player?.isSlowTimeActive?.() === true;
       const enemyBulletScale = slowTimeActive ? 0.6 : 1;
       if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
       if (this.enemyManager) this.enemyManager.update(delta);
@@ -1936,7 +1936,7 @@ export class PlayScene {
               // XP Logic handled by score now
 
               // Feature: Slow Time Trade-off
-              if (!(this.player.activePowerup?.type === 'slow_time' && !this.player.isPowerupSuppressed?.())) {
+              if (!this.player.isSlowTimeActive?.()) {
                 const scoreAwarded = this.getComboScore(enemy.scoreValue);
                 const appliedScore = this.game.addScore(scoreAwarded);
                 // Score popup with combo
@@ -2115,7 +2115,7 @@ export class PlayScene {
             if (!bullet.piercing) bullet.active = false;
             const destroyed = bonusDrone.takeDamage(bullet.damage || 1);
             if (destroyed) {
-              if (!(this.player.activePowerup?.type === 'slow_time' && !this.player.isPowerupSuppressed?.())) {
+              if (!this.player.isSlowTimeActive?.()) {
                 this.game.addScore(this.getComboScore(500));
               }
               this.onEnemyKilled(bonusDrone);
@@ -6966,7 +6966,7 @@ export class PlayScene {
 
       if (destroyed) {
         // Award score
-        if (!(this.player.activePowerup?.type === 'slow_time' && !this.player.isPowerupSuppressed?.())) {
+        if (!this.player.isSlowTimeActive?.()) {
           const scoreAwarded = this.getComboScore(nearest.scoreValue);
           const appliedScore = this.game.addScore(scoreAwarded);
           if (this.scorePopupManager) {
@@ -7364,7 +7364,7 @@ export class PlayScene {
             destroyed: Boolean(destroyed)
           });
           if (destroyed) {
-            if (!(this.player.activePowerup?.type === 'slow_time' && !this.player.isPowerupSuppressed?.())) {
+            if (!this.player.isSlowTimeActive?.()) {
               const scoreAwarded = this.getComboScore(enemy.scoreValue);
               const appliedScore = this.game.addScore(scoreAwarded);
               if (this.scorePopupManager) {

@@ -1,5 +1,13 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-13 Twenty Powerups And Steam Deploy
+
+- Current user request: implement 20 new powerups, then deploy a private Steam build with all changes since the last build.
+- Added a shared `PowerupCatalog` for 42 total gameplay powerups with names, labels, colors, pickup messages, SFX routing, gameplay effect metadata, and Codex entries.
+- Implemented the new pickups as data-driven player effects: prism/mirror shot spreads, rail/plasma damage windows, chrono slow time, blink/ion movement and dodge windows, nano/mercy repairs, score fever/jackpot scoring, gravity magnet, drone carousel/swarm contract support, stasis/pulse clears, aegis defense, target paint, void crown, and saw-matrix charged shots.
+- Generated 20 new 192x192 powerup PNG icons and expanded asset/test coverage to load all catalog powerups.
+- Verification so far: `npm run check:powerup-assets`, `npm run check:threat-codex`, `npm run check:i18n`, `npm run build:current`, `npm run check:i18n-ui`, `npm run check:powerup-visuals`, `npm run check:powerup-effects`, and `git diff --check` passed. Packaging/upload still pending.
+
 ## 2026-06-13 HUD Overlap Fix
 
 - Fixed the top-left high-score/sector-record chase card so the title, `BEAT` value, taunt line, and progress bar use separate lanes instead of stacking into each other at desktop gameplay sizes. This is layout-only in the HUD: no scoring, gameplay rules, Steamworks settings, or player-facing copy changed.

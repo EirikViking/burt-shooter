@@ -95,6 +95,34 @@ function drawPanel(graphics, x, y, width, height, {
   graphics.stroke({ color: stroke, alpha: strokeAlpha, width: strokeWidth });
 }
 
+function shortSignal(value = '', maxLength = 26) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim().toUpperCase();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(1, maxLength - 3)).trim()}...`;
+}
+
+function drawSignalChip(parent, text, x, y, width, accent, {
+  fill = 0x051521,
+  alpha = 0.72,
+  textFill = '#dffcff'
+} = {}) {
+  const chip = new PIXI.Graphics();
+  chip.roundRect(x, y, width, 24, 7);
+  chip.fill({ color: fill, alpha });
+  chip.stroke({ color: accent, width: 1, alpha: 0.36 });
+  chip.rect(x + 5, y + 5, 3, 14);
+  chip.fill({ color: accent, alpha: 0.72 });
+  parent.addChild(chip);
+  const label = addText(parent, shortSignal(text), {
+    fontSize: 11,
+    fontWeight: '900',
+    fill: textFill,
+    wordWrap: false
+  }, x + 14, y + 5);
+  fitTextHeight(label, 15, 0.72);
+  return chip;
+}
+
 function addText(parent, text, style, x, y, anchor = null) {
   const node = createText(text, {
     fontFamily: FONT_FAMILY,
@@ -993,8 +1021,24 @@ export class ThreatCodexScene {
     bg.fill({ color: discovered ? accent : 0x34566d, alpha: discovered ? 0.85 : 0.52 });
     panel.addChild(bg);
 
+    const atmosphere = new PIXI.Graphics();
+    atmosphere.circle(panelW * 0.18, panelH * 0.16, Math.min(panelW, panelH) * 0.22);
+    atmosphere.fill({ color: accent, alpha: discovered ? 0.1 : 0.045 });
+    atmosphere.circle(panelW * 0.78, panelH * 0.24, Math.min(panelW, panelH) * 0.18);
+    atmosphere.fill({ color: 0xff55d9, alpha: discovered ? 0.08 : 0.035 });
+    atmosphere.circle(panelW * 0.64, panelH * 0.82, Math.min(panelW, panelH) * 0.24);
+    atmosphere.fill({ color: GOLD, alpha: discovered ? 0.045 : 0.022 });
+    for (let i = 0; i < 9; i += 1) {
+      const lineY = 34 + i * Math.max(34, panelH / 12);
+      atmosphere.moveTo(22, lineY);
+      atmosphere.lineTo(panelW - 22, lineY - 18 + (i % 3) * 9);
+    }
+    atmosphere.stroke({ color: accent, width: 1, alpha: discovered ? 0.08 : 0.04 });
+    panel.addChild(atmosphere);
+
     const shortPanel = panelH < 560;
     const epicBody = Boolean(discovered && entry?.codexBodyMode === 'epic');
+    const storyBody = Boolean(discovered && (epicBody || entry?.codexBodyMode === 'story'));
     const sideBySide = !epicBody && shortPanel && panelW >= 520;
     const artY = 22;
     const artW = epicBody
@@ -1031,19 +1075,43 @@ export class ThreatCodexScene {
     const meta = discovered
       ? `${entry.rarity || 'Signal'}  |  ${entry.role || category.label}`
       : `${localize('SIGNAL DATA LOCKED')}  |  ${localize(category.label.toUpperCase())}`;
+    const metaY = nameY + (epicBody ? (shortPanel ? 44 : compact ? 50 : 66) : shortPanel ? 56 : compact ? 54 : 70);
     addText(panel, meta, {
       fontSize: shortPanel ? 12 : compact ? 13 : 16,
       fontWeight: '900',
       fill: discovered ? colorCss(accent) : '#8fa6b8',
       wordWrap: true,
       wordWrapWidth: textW
-    }, textX, nameY + (epicBody ? (shortPanel ? 44 : compact ? 50 : 66) : shortPanel ? 56 : compact ? 54 : 70));
+    }, textX, metaY);
+
+    const chipY = metaY + (shortPanel ? 21 : 28);
+    const chipGap = 8;
+    const chipCount = sideBySide ? 1 : 3;
+    const chipW = Math.max(82, Math.min(178, (textW - chipGap * (chipCount - 1)) / chipCount));
+    if (discovered) {
+      const chips = [
+        entry.signalClass || category.label,
+        entry.rarity || 'Signal',
+        entry.unlockLevel ? `${localize('LEVEL')} ${entry.unlockLevel}` : entry.role || category.label
+      ];
+      chips.slice(0, chipCount).forEach((chip, index) => {
+        drawSignalChip(panel, chip, textX + index * (chipW + chipGap), chipY, chipW, index === 1 ? GOLD : accent, {
+          fill: index === 1 ? 0x16150a : 0x051521,
+          textFill: index === 1 ? '#fff3a2' : '#dffcff'
+        });
+      });
+    } else {
+      drawSignalChip(panel, localize('LOCKED'), textX, chipY, chipW, GOLD, { fill: 0x17130a, textFill: '#fff3a2' });
+      if (!sideBySide) {
+        drawSignalChip(panel, localize(category.label.toUpperCase()), textX + chipW + chipGap, chipY, chipW, accent);
+      }
+    }
 
     const bodyY = epicBody
-      ? nameY + (shortPanel ? 74 : compact ? 84 : 98)
+      ? chipY + (shortPanel ? 34 : 40)
       : shortPanel
-        ? nameY + 84
-        : nameY + (compact ? 82 : 104);
+        ? chipY + 36
+        : chipY + (compact ? 38 : 44);
     const bodyText = discovered
       ? localize(entry.description)
       : localize('The silhouette is logged, but the behavior needs one more live read. Find this signal in a run to unlock the counter-note.');
@@ -1055,15 +1123,19 @@ export class ThreatCodexScene {
     const bodyLineHeight = epicBody
       ? (shortPanel ? 18 : compact ? 19 : 21)
       : (shortPanel ? 16 : compact ? 17 : 22);
-    if (epicBody) {
+    if (storyBody) {
       const storyDeck = new PIXI.Graphics();
       drawPanel(storyDeck, textX - 10, bodyY - 10, textW + 20, bodyMaxHeight + 20, {
         fill: 0x020a12,
-        alpha: 0.62,
+        alpha: epicBody ? 0.62 : 0.72,
         stroke: accent,
-        strokeAlpha: 0.24,
+        strokeAlpha: epicBody ? 0.24 : 0.34,
         radius: 8
       });
+      storyDeck.rect(textX - 10, bodyY - 10, 5, bodyMaxHeight + 20);
+      storyDeck.fill({ color: accent, alpha: 0.58 });
+      storyDeck.rect(textX + 8, bodyY - 4, textW - 16, 1);
+      storyDeck.fill({ color: GOLD, alpha: 0.18 });
       panel.addChild(storyDeck);
     }
     const bodyNode = addText(panel, bodyText, {
@@ -1073,7 +1145,7 @@ export class ThreatCodexScene {
       wordWrapWidth: textW,
       lineHeight: bodyLineHeight
     }, textX, bodyY);
-    if (epicBody) {
+    if (storyBody) {
       const bodyContentHeight = bodyNode.height;
       const maxOffset = Math.max(0, bodyContentHeight - bodyMaxHeight);
       this.detailScrollOffset = clamp(this.detailScrollOffset || 0, 0, maxOffset);
@@ -1094,7 +1166,7 @@ export class ThreatCodexScene {
         offset: this.detailScrollOffset,
         maxOffset,
         scrollable: maxOffset > 1,
-        mode: 'epic',
+        mode: epicBody ? 'epic' : 'story',
         fontSize: bodyFontSize,
         lineHeight: bodyLineHeight
       };
@@ -1107,7 +1179,7 @@ export class ThreatCodexScene {
         storyRail.roundRect(railX, bodyY, 4, bodyMaxHeight, 2);
         storyRail.fill({ color: 0x071a27, alpha: 0.72 });
         storyRail.roundRect(railX, thumbY, 4, thumbH, 2);
-        storyRail.fill({ color: GOLD, alpha: 0.86 });
+        storyRail.fill({ color: epicBody ? GOLD : accent, alpha: 0.86 });
         panel.addChild(storyRail);
       }
     } else {
@@ -1119,7 +1191,7 @@ export class ThreatCodexScene {
       y: panelY,
       width: panelW,
       height: panelH,
-      mode: epicBody ? 'epic' : 'standard',
+      mode: epicBody ? 'epic' : storyBody ? 'story' : 'standard',
       selectedEntryId: entry?.id || null
     };
 

@@ -8,10 +8,12 @@ import { createText } from '../utils/pixiText.js';
 import { getPlayerFocusScale } from '../config/AccessibilitySettings.js';
 import { getDefaultShipKey, getShipMetadata } from '../config/ShipMetadata.js';
 import { ShipData } from '../config/ShipData.js';
+import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import {
   TRACTOR_DEBUFF_IMMUNITY_MS,
   pickTractorDebuff
 } from '../config/TractorDebuffs.js';
+import { BASE_POWERUP_TYPES, getPowerupMeta } from '../config/PowerupCatalog.js';
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
@@ -22,6 +24,7 @@ const GENERATED_SHIP_VISUAL_CENTER_OFFSETS = Array.from(
   { length: 25 },
   () => Object.freeze({ x: 0, y: 0 })
 );
+const BASE_POWERUP_TYPE_SET = new Set(BASE_POWERUP_TYPES);
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
@@ -100,6 +103,16 @@ export class Player {
 
     // Powerups
     this.activePowerup = { type: null, expiresAt: 0 };
+    this.powerupEffect = null;
+    this.powerupMovementBoostMult = 1;
+    this.powerupDodgeDelayMult = 1;
+    this.scoreMultiplierType = null;
+    this.bombMaxShots = 3;
+    this.bombBlastRadius = 150;
+    this.bombDamageMult = 5;
+    this.bombColor = 0xffaa00;
+    this.droneCount = 2;
+    this.droneColor = 0x66ccff;
     this.rankBoost = { type: null, expiresAt: 0 };
     this.rankBoostPulse = 0;
     this.rankBoostExtraShots = 0;
@@ -788,6 +801,7 @@ export class Player {
     }
     if (this.scoreMultiplier > 1 && now > this.scoreBoostExpiresAt) {
       this.scoreMultiplier = 1;
+      this.scoreMultiplierType = null;
       this.scoreBoostExpiresAt = 0;
     }
     this.updateStatusEffects(now, deltaSeconds);
@@ -893,10 +907,9 @@ export class Player {
     }
 
     // Apply Speed. Tractor debuffs never invert controls; drift only adds mild inertia.
-    const vectorBoostActive = this.activePowerup.type === 'vector_boost' && !this.isPowerupSuppressed();
     const engineDrag = this.getStatusEffect('engine_drag');
     const controlDrift = this.getStatusEffect('control_drift');
-    const speedMultiplier = (vectorBoostActive ? 1.5 : 1) * (engineDrag?.movementSpeedMult || 1);
+    const speedMultiplier = this.getPowerupMovementMultiplier() * (engineDrag?.movementSpeedMult || 1);
     const targetMoveX = dx * this.speed * speedMultiplier;
     const targetMoveY = dy * this.speed * speedMultiplier;
     if (controlDrift) {
@@ -1087,17 +1100,17 @@ export class Player {
         this.y - 20,
         0, // Straight up
         this.bulletSpeed * 0.4, // 40% slower
-        this.bulletDamage * 5, // More damage
-        0xffaa00,
+        this.bulletDamage * this.bombDamageMult,
+        this.bombColor,
         true,
         { color: 'Orange', index: 3 }
       );
       bomb.isBomb = true;
-      bomb.blastRadius = 150; // Blast radius
+      bomb.blastRadius = this.bombBlastRadius;
       bomb.radius = 11;
       bomb.trailLength = Math.max(bomb.trailLength || 0, 42);
       bomb.pulseRate = Math.max(bomb.pulseRate || 0, 0.82);
-      bomb.haloColor = 0xffaa00;
+      bomb.haloColor = this.bombColor;
       this.applyTraitProjectileEffects(bomb, shotCounter);
       bullets.push(bomb);
 
@@ -1231,20 +1244,22 @@ export class Player {
     return bullets;
   }
 
-  createDrones() {
+  createDrones(count = this.droneCount, color = this.droneColor) {
     this.clearDrones();
     const texture = this.shipSprite?.texture;
+    const safeCount = Math.max(1, Math.min(4, Math.round(Number(count) || 2)));
+    const safeColor = Number.isFinite(color) ? color : 0x66ccff;
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < safeCount; i++) {
       // Create a container for each drone (sprite + glow effect)
       const droneContainer = new PIXI.Container();
 
       // Add glow ring for visibility
       const glow = new PIXI.Graphics();
       glow.circle(0, 0, 16);
-      glow.fill({ color: 0x66ccff, alpha: 0.3 });
+      glow.fill({ color: safeColor, alpha: 0.3 });
       glow.circle(0, 0, 12);
-      glow.stroke({ color: 0x00ffff, width: 2, alpha: 0.8 });
+      glow.stroke({ color: safeColor, width: 2, alpha: 0.8 });
       droneContainer.addChild(glow);
 
       // Add the ship sprite
@@ -1252,13 +1267,13 @@ export class Player {
         const droneSprite = new PIXI.Sprite(texture);
         droneSprite.anchor.set(0.5);
         droneSprite.scale.set(0.45); // Larger than before (was 0.35)
-        droneSprite.tint = 0x66ccff; // Cyan tint
+        droneSprite.tint = safeColor;
         droneContainer.addChild(droneSprite);
       } else {
         // Fallback graphics
         const fallback = new PIXI.Graphics();
         fallback.circle(0, 0, 8);
-        fallback.fill({ color: 0x66ccff, alpha: 1 });
+        fallback.fill({ color: safeColor, alpha: 1 });
         droneContainer.addChild(fallback);
       }
 
@@ -1272,7 +1287,7 @@ export class Player {
     }
 
     this.dronesActive = true;
-    console.log('[Player] Drones created: count=2 texture=' + (texture ? 'yes' : 'fallback'));
+    console.log('[Player] Drones created: count=' + safeCount + ' texture=' + (texture ? 'yes' : 'fallback'));
     console.log('[Player] Drone containers added to sprite, alpha=' + this.sprite.alpha);
   }
 
@@ -1280,14 +1295,16 @@ export class Player {
     if (!this.dronesActive || this.drones.length === 0) return;
     const t = Date.now() * 0.002;
     const offset = 32; // Increased from 28 for better visibility
+    const count = Math.max(1, this.drones.length);
 
     this.drones.forEach((drone, i) => {
-      const side = i === 0 ? -1 : 1;
-      drone.x = side * (offset + Math.sin(t + i) * 8);
-      drone.y = 10 + Math.cos(t + i) * 6;
+      const slot = i - (count - 1) / 2;
+      const orbit = Math.sin(t + i) * 8;
+      drone.x = slot * offset + orbit;
+      drone.y = 10 + Math.cos(t + i) * (count > 2 ? 10 : 6);
 
       // Rotate drone sprite slightly
-      if (drone.rotation !== undefined) drone.rotation = side * 0.1;
+      if (drone.rotation !== undefined) drone.rotation = slot * 0.08;
 
       // Pulse the glow effect for visibility
       if (drone.children && drone.children[0]) {
@@ -1308,14 +1325,24 @@ export class Player {
     this.drones = [];
   }
 
-  triggerShockwave() {
+  triggerShockwave(options = {}) {
     console.log('[Shockwave] Triggered!');
     const playScene = this.game?.scenes?.play;
-    if (!playScene) return;
+    if (!playScene) return { clearedBullets: 0, hitCount: 0 };
+    const shockwaveRadius = Number(options.radius ?? options.shockwaveRadius ?? 250);
+    const shockwaveDamage = Number(options.damage ?? options.shockwaveDamage ?? 5);
+    const shockwaveColor = Number.isFinite(options.color ?? options.shockwaveColor)
+      ? Number(options.color ?? options.shockwaveColor)
+      : 0xffaa00;
+    const scorePerBullet = Math.max(0, Number(options.scorePerBullet || 0));
+    const scoreBulletCap = Math.max(0, Number(options.scoreBulletCap || 0));
+    let clearedBullets = 0;
+    let hitCount = 0;
 
     // Clear all enemy bullets
     if (playScene.bulletManager) {
       const cleared = playScene.bulletManager.enemyBullets.length;
+      clearedBullets = cleared;
       playScene.bulletManager.enemyBullets.forEach(b => {
         b.active = false;
         if (b.sprite && b.sprite.parent) {
@@ -1324,14 +1351,14 @@ export class Player {
       });
       playScene.bulletManager.enemyBullets = [];
       console.log(`[Shockwave] Cleared ${cleared} enemy bullets`);
+      if (scorePerBullet > 0 && cleared > 0) {
+        const paidBullets = scoreBulletCap > 0 ? Math.min(cleared, scoreBulletCap) : cleared;
+        this.game?.addScore?.(Math.round(paidBullets * scorePerBullet), 'pulse_refund');
+      }
     }
 
     // Damage nearby enemies
     if (playScene.enemyManager && playScene.enemyManager.enemies) {
-      const shockwaveRadius = 250;
-      const shockwaveDamage = 5;
-      let hitCount = 0;
-
       playScene.enemyManager.enemies.forEach(enemy => {
         if (!enemy.active) return;
         const dx = enemy.x - this.x;
@@ -1343,7 +1370,7 @@ export class Player {
           hitCount++;
           // Visual feedback
           if (playScene.particleManager) {
-            playScene.particleManager.createExplosion(enemy.x, enemy.y, 0xffaa00, 8);
+            playScene.particleManager.createExplosion(enemy.x, enemy.y, shockwaveColor, 8);
           }
         }
       });
@@ -1366,8 +1393,8 @@ export class Player {
 
         ring.clear();
         ring.circle(this.x, this.y, radius);
-        ring.stroke({ color: 0xffaa00, width: 4, alpha: alpha * 0.8 });
-        ring.fill({ color: 0xffaa00, alpha: alpha * 0.2 });
+        ring.stroke({ color: shockwaveColor, width: 4, alpha: alpha * 0.8 });
+        ring.fill({ color: shockwaveColor, alpha: alpha * 0.2 });
 
         if (progress < 1) {
           requestAnimationFrame(animateRing);
@@ -1382,6 +1409,7 @@ export class Player {
 
     // Sound effect
     AudioManager.playSfx('explosionCrunch', { force: true, volume: 1.0 });
+    return { clearedBullets, hitCount };
   }
 
   getStatSnapshot() {
@@ -1464,6 +1492,21 @@ export class Player {
 
   isPowerupSuppressed() {
     return this.hasStatusEffect('powerup_nullification');
+  }
+
+  getCurrentPowerupEffect() {
+    return this.powerupEffect || getPowerupMeta(this.activePowerup?.type)?.effect || null;
+  }
+
+  getPowerupMovementMultiplier() {
+    if (this.isPowerupSuppressed()) return 1;
+    const effect = this.getCurrentPowerupEffect() || {};
+    return Math.max(0.1, Number(effect.movementBoostMult || 1));
+  }
+
+  isSlowTimeActive() {
+    if (this.isPowerupSuppressed()) return false;
+    return this.activePowerup?.type === 'slow_time' || this.getCurrentPowerupEffect()?.slowTime === true;
   }
 
   isGhostActive() {
@@ -1656,36 +1699,14 @@ export class Player {
   }
 
   getPowerupLabel(type) {
-    const labels = {
-      triple_beam: 'TRIPLE BEAM',
-      vector_boost: 'VECTOR BOOST',
-      rapid_cabinet: 'RAPID CABINET',
-      overdrive_core: 'OVERDRIVE CORE',
-      slow_time: 'SLOW TIME',
-      ghost: 'GHOST',
-      shield: 'SHIELD',
-      rapid_fire: 'RAPID FIRE',
-      double_shot: 'DOUBLE SHOT',
-      damage_up: 'DAMAGE UP',
-      speed_up: 'SPEED UP',
-      pierce: 'PIERCE',
-      score_x2: 'SCORE x2',
-      magnet: 'MAGNET: PICKUPS',
-      drones: 'DRONES',
-      shockwave: 'SHOCKWAVE',
-      point_defense: 'POINT DEFENSE',
-      bomb: 'BOMB',
-      chain_lightning: 'CHAIN LIGHTNING',
-      orbital_strike: 'ORBITAL STRIKE',
-      vampire: 'VAMPIRE DRAIN'
-    };
-    return labels[type] || String(type || '').toUpperCase();
+    return getPowerupMeta(type)?.name || String(type || '').replace(/_/g, ' ').toUpperCase();
   }
 
   getActivePowerupStates() {
     const now = Date.now();
     const states = [];
     const seen = new Set();
+    const activeEffect = this.getCurrentPowerupEffect() || {};
     const addTimedState = (type, expiresAt, extra = {}) => {
       if (!type || seen.has(type)) return;
       const remainingMs = Math.max(0, (Number(expiresAt) || 0) - now);
@@ -1703,7 +1724,7 @@ export class Player {
         case 'bomb':
           return {
             charges: Math.max(0, this.bombShotsLeft || 0),
-            maxCharges: 3,
+            maxCharges: this.bombMaxShots || 3,
             detail: `${Math.max(0, this.bombShotsLeft || 0)} SHOTS`
           };
         case 'orbital_strike':
@@ -1725,40 +1746,40 @@ export class Player {
       addTimedState(this.activePowerup.type, this.activePowerup.expiresAt, getPrimaryStateDetail(this.activePowerup.type));
     }
 
-    if (this.shieldActive) {
+    if (this.shieldActive && !activeEffect.shield) {
       addTimedState('shield', this.shieldExpiresAt);
     }
 
     if (this.scoreMultiplier > 1) {
-      addTimedState('score_x2', this.scoreBoostExpiresAt);
+      addTimedState(this.scoreMultiplierType || 'score_x2', this.scoreBoostExpiresAt);
     }
 
-    if (this.magnetActive) {
+    if (this.magnetActive && !activeEffect.magnetRadius) {
       addTimedState('magnet', this.magnetExpiresAt);
     }
 
-    if (this.dronesActive) {
+    if (this.dronesActive && !activeEffect.droneCount) {
       addTimedState('drones', this.dronesExpiresAt);
     }
 
-    if (this.pointDefenseActive) {
+    if (this.pointDefenseActive && !activeEffect.pointDefense) {
       addTimedState('point_defense', this.pointDefenseExpiresAt);
     }
 
-    if (this.bombShotsLeft > 0) {
+    if (this.bombShotsLeft > 0 && !activeEffect.bombShots) {
       addTimedState('bomb', 0, {
         remainingMs: 0,
         charges: this.bombShotsLeft,
-        maxCharges: 3,
+        maxCharges: this.bombMaxShots || 3,
         detail: `${this.bombShotsLeft} SHOTS`
       });
     }
 
-    if (this.chainLightningActive) {
+    if (this.chainLightningActive && !activeEffect.chainMax) {
       addTimedState('chain_lightning', this.activePowerup?.type === 'chain_lightning' ? this.activePowerup.expiresAt : 0);
     }
 
-    if (this.orbitalStrikeActive) {
+    if (this.orbitalStrikeActive && !activeEffect.orbitalCharges) {
       addTimedState('orbital_strike', this.activePowerup?.type === 'orbital_strike' ? this.activePowerup.expiresAt : 0, {
         charges: this.orbitalStrikeCharges,
         maxCharges: 5,
@@ -1766,7 +1787,7 @@ export class Player {
       });
     }
 
-    if (this.vampireActive) {
+    if (this.vampireActive && !activeEffect.vampire) {
       addTimedState('vampire', this.activePowerup?.type === 'vampire' ? this.activePowerup.expiresAt : 0, {
         detail: `${Math.max(0, this.vampireKillCount || 0)} KILLS`
       });
@@ -1910,9 +1931,9 @@ export class Player {
     this.flashColor = color;
   }
 
-  activateShield() {
+  activateShield(durationMs = 15000) {
     this.shieldActive = true;
-    this.shieldExpiresAt = Date.now() + 15000; // 15 Seconds
+    this.shieldExpiresAt = Date.now() + Math.max(1000, Number(durationMs) || 15000);
     if (this.shieldSprite) this.shieldSprite.visible = true;
     // CRITICAL: Ensure player remains visible after shield activation
     this.ensureRenderable('activateShield');
@@ -1977,16 +1998,135 @@ export class Player {
 
   // --- Powerups ---
 
+  repairFromPowerup(effect = {}, type = 'powerup') {
+    const repairLives = Math.max(0, Math.round(Number(effect.repairLives || 0)));
+    if (repairLives <= 0 || !this.game) return;
+    const maxLives = Math.max(
+      1,
+      Number(this.game.balanceConfig?.survival?.maxLives) ||
+      Number(this.game.maxLives) ||
+      MAX_PLAYER_LIVES
+    );
+    let repaired = 0;
+    for (let i = 0; i < repairLives && this.game.lives < maxLives; i += 1) {
+      this.game.gainLife?.();
+      repaired += 1;
+    }
+    if (repaired <= 0 && Number(effect.scoreBonusAtMax || 0) > 0) {
+      this.game.addScore?.(Math.round(effect.scoreBonusAtMax), type);
+    }
+  }
+
+  applyCatalogPowerupEffect(type, effect = {}, now = Date.now()) {
+    const durationMs = Math.max(0, Number(effect.durationMs || 0));
+    const expiresAt = durationMs > 0 ? now + durationMs : this.activePowerup.expiresAt;
+
+    if (effect.ghost && this.sprite) {
+      this.sprite.alpha = 0.4;
+    }
+
+    if (effect.invulnMs) {
+      this.grantInvulnerability(effect.invulnMs, type);
+    }
+
+    if (effect.repairLives) {
+      this.repairFromPowerup(effect, type);
+    }
+
+    if (effect.shield) {
+      this.activateShield(effect.shieldDurationMs || durationMs || 15000);
+    }
+
+    if (effect.pointDefense) {
+      this.pointDefenseActive = true;
+      this.pointDefenseExpiresAt = now + (durationMs || 10000);
+      this.createPointDefenseRing();
+      AudioManager.playSfx('forceField', { force: true, volume: 0.8 });
+    }
+
+    if (effect.bombShots) {
+      this.bombMaxShots = Math.max(1, Math.round(Number(effect.bombShots) || 3));
+      this.bombShotsLeft = this.bombMaxShots;
+      this.bombBlastRadius = Math.max(40, Number(effect.bombBlastRadius || 150));
+      this.bombDamageMult = Math.max(1, Number(effect.bombDamageMult || 5));
+      this.bombColor = Number.isFinite(effect.bombColor) ? effect.bombColor : (getPowerupMeta(type)?.color || 0xffaa00);
+      this.createBombIndicator();
+      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+    }
+
+    if (effect.scoreMultiplier) {
+      this.scoreMultiplier = Math.max(this.scoreMultiplier || 1, Number(effect.scoreMultiplier) || 1);
+      this.scoreMultiplierType = type;
+      this.scoreBoostExpiresAt = expiresAt || now + 10000;
+    }
+
+    if (effect.magnetRadius) {
+      this.magnetActive = true;
+      this.magnetExpiresAt = expiresAt || now + 8000;
+      this.magnetRadius = Math.max(80, Number(effect.magnetRadius) || 140);
+      this.magnetStrength = Math.max(0.02, Number(effect.magnetStrength || 0.08));
+    }
+
+    if (effect.droneCount) {
+      this.dronesActive = true;
+      this.dronesExpiresAt = expiresAt || now + 8000;
+      this.droneCount = Math.max(1, Math.min(4, Math.round(Number(effect.droneCount) || 2)));
+      this.droneColor = Number.isFinite(effect.droneColor) ? effect.droneColor : 0x66ccff;
+      this.createDrones(this.droneCount, this.droneColor);
+    }
+
+    if (effect.chainMax) {
+      this.chainLightningActive = true;
+      this.chainLightningMaxChains = Math.max(1, Math.round(Number(effect.chainMax) || 3));
+    }
+
+    if (effect.orbitalCharges) {
+      this.orbitalStrikeActive = true;
+      this.orbitalStrikeCharges = Math.max(1, Math.round(Number(effect.orbitalCharges) || 5));
+      this.orbitalStrikeCooldown = 0;
+    }
+
+    if (effect.vampire) {
+      this.vampireActive = true;
+      this.vampireKillCount = 0;
+    }
+
+    if (effect.shockwave) {
+      this.triggerShockwave({
+        radius: effect.shockwaveRadius,
+        damage: effect.shockwaveDamage,
+        color: effect.shockwaveColor,
+        scorePerBullet: effect.scorePerBullet,
+        scoreBulletCap: effect.scoreBulletCap
+      });
+    }
+
+    if (effect.instant && !effect.durationMs && !effect.bombShots) {
+      this.activePowerup.type = null;
+      this.activePowerup.expiresAt = 0;
+      this.powerupEffect = null;
+    }
+  }
+
   applyPowerup(type) {
+    const meta = getPowerupMeta(type);
+    const effect = meta?.effect || {};
+    const now = Date.now();
+    const durationMs = Math.max(0, Number(effect.durationMs || 12000));
     if (type !== 'shield' && this.activePowerup.type === type) {
-      this.activePowerup.expiresAt = Date.now() + 12000;
+      this.activePowerup.expiresAt = now + durationMs;
+      if (this.scoreMultiplierType === type) this.scoreBoostExpiresAt = this.activePowerup.expiresAt;
+      if (this.magnetActive) this.magnetExpiresAt = this.activePowerup.expiresAt;
+      if (this.dronesActive) this.dronesExpiresAt = this.activePowerup.expiresAt;
+      if (this.pointDefenseActive) this.pointDefenseExpiresAt = this.activePowerup.expiresAt;
       console.log(`[Powerup] refresh type=${type} expiresAt=${this.activePowerup.expiresAt}`);
       return;
     }
 
     this.resetPowerups(); // Clear existing to prevent stacking weirdness
     this.activePowerup.type = type;
-    this.activePowerup.expiresAt = Date.now() + 12000; // 12 Seconds Default
+    this.activePowerup.expiresAt = now + durationMs; // 12 Seconds Default
+    this.powerupEffect = effect;
 
     switch (type) {
       case 'slow_time':
@@ -2026,6 +2166,7 @@ export class Player {
         this.activateShield();
         if (type === 'shield') {
           this.activePowerup.type = null; // Don't block weapon slot
+          this.powerupEffect = null;
         }
         break;
       case 'point_defense':
@@ -2041,6 +2182,7 @@ export class Player {
         break;
       case 'score_x2':
         this.scoreMultiplier = 2;
+        this.scoreMultiplierType = 'score_x2';
         this.scoreBoostExpiresAt = Date.now() + 10000; // 10 seconds
         this.activePowerup.expiresAt = Date.now() + 10000;
         break;
@@ -2048,6 +2190,7 @@ export class Player {
         // Clear all enemy bullets and deal damage to nearby enemies
         this.triggerShockwave();
         this.activePowerup.type = null; // Instant effect, don't block slot
+        this.powerupEffect = null;
         break;
       case 'chain_lightning':
         this.chainLightningActive = true;
@@ -2064,6 +2207,9 @@ export class Player {
         this.vampireActive = true;
         this.vampireKillCount = 0;
         this.activePowerup.expiresAt = Date.now() + 20000; // 20 seconds
+        break;
+      default:
+        this.applyCatalogPowerupEffect(type, effect, now);
         break;
     }
 
@@ -2094,13 +2240,23 @@ export class Player {
     this.magnetExpiresAt = 0;
     this.clearDrones();
     this.deactivatePointDefense();
+    this.deactivateBomb();
+    this.powerupEffect = null;
     this.scoreMultiplier = 1;
+    this.scoreMultiplierType = null;
     this.scoreBoostExpiresAt = 0;
     this.chainLightningActive = false;
+    this.chainLightningMaxChains = 3;
     this.orbitalStrikeActive = false;
     this.orbitalStrikeCharges = 0;
     this.vampireActive = false;
     this.vampireKillCount = 0;
+    this.bombMaxShots = 3;
+    this.bombBlastRadius = 150;
+    this.bombDamageMult = 5;
+    this.bombColor = 0xffaa00;
+    this.droneCount = 2;
+    this.droneColor = 0x66ccff;
     this.activePowerup.type = null;
     this.activePowerup.expiresAt = 0;
     const before = this.getStatSnapshot();
@@ -2165,6 +2321,49 @@ export class Player {
     this.recalculateStats();
   }
 
+  applyCatalogStatModifiers(effect = {}) {
+    if (!effect || typeof effect !== 'object') return;
+
+    if (Number.isFinite(effect.shotsMin)) {
+      this.multiShot = Math.max(this.multiShot, Math.min(7, Math.round(effect.shotsMin)));
+    }
+    if (Number.isFinite(effect.shotBonus)) {
+      this.multiShot = Math.min(7, this.multiShot + Math.max(0, Math.round(effect.shotBonus)));
+    }
+    if (Number.isFinite(effect.damageMult)) {
+      this.bulletDamage = Math.max(0.65, this.bulletDamage * effect.damageMult);
+    }
+    if (Number.isFinite(effect.damageMin)) {
+      this.bulletDamage = Math.max(this.bulletDamage, effect.damageMin);
+    }
+    if (Number.isFinite(effect.fireRateMult)) {
+      this.shootDelay = Math.max(45, this.shootDelay * effect.fireRateMult);
+    }
+    if (Number.isFinite(effect.speedMult)) {
+      this.speed *= effect.speedMult;
+    }
+    if (Number.isFinite(effect.bulletSpeedMult)) {
+      this.bulletSpeed = Math.max(2.5, this.bulletSpeed * effect.bulletSpeedMult);
+    }
+    if (effect.pierce) {
+      this.bulletPierce = true;
+    }
+    if (Number.isFinite(effect.dodgeDelayMult)) {
+      this.dodgeDelay = Math.round(Math.max(420, this.dodgeDelay * effect.dodgeDelayMult));
+    }
+    if (Number.isFinite(effect.magnetRadius)) {
+      this.magnetActive = true;
+      this.magnetRadius = Math.max(80, effect.magnetRadius);
+      this.magnetStrength = Math.max(0.02, Number(effect.magnetStrength || 0.08));
+    }
+    if (Number.isFinite(effect.droneCount)) {
+      this.dronesActive = true;
+      this.droneCount = Math.max(1, Math.min(4, Math.round(effect.droneCount)));
+      this.droneColor = Number.isFinite(effect.droneColor) ? effect.droneColor : this.droneColor;
+      if (!this.drones.length && this.sprite) this.createDrones(this.droneCount, this.droneColor);
+    }
+  }
+
   recalculateStats() {
     // 1. Reset to BASE STATS from Single Source of Truth
     this.speed = this.stats.speed;
@@ -2225,6 +2424,10 @@ export class Player {
           this.dronesActive = true;
           if (!this.drones.length && this.sprite) this.createDrones();
           break;
+      }
+
+      if (!BASE_POWERUP_TYPE_SET.has(this.activePowerup.type)) {
+        this.applyCatalogStatModifiers(this.powerupEffect || {});
       }
     }
 

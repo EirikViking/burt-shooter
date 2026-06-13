@@ -676,6 +676,25 @@ try {
     });
   }
 
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    if (!play) throw new Error('Missing play scene before powerup visual screenshot');
+    play.showToast('BOMB', {
+      slot: 'center',
+      type: 'powerup',
+      priority: 8,
+      fontSize: 32,
+      fill: '#ff6633',
+      stroke: '#000000',
+      strokeThickness: 5,
+      duration: 1800,
+      y: game.getHeight() * 0.34,
+      maxWidth: game.getWidth() * 0.62
+    });
+    play.processToastQueue?.();
+  });
+
   const screenshotState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
   assertNoMessageOverlap(screenshotState, 'powerup visual stress screenshot');
   if (!screenshotState.toast?.active?.some(entry => entry.slot === 'center' && entry.message === 'BOMB')) {

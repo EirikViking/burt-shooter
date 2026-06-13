@@ -8,6 +8,7 @@ import { BOSS_ROSTER } from './BossRoster.js';
 import { DANGER_MID_SHIPS } from './DangerMidShips.js';
 import { BOSS_SUPPORT_SHIPS } from './BossSupportShips.js';
 import { formatSectorLabel, getSectorInfo } from './SectorCatalog.js';
+import { POWERUP_CODEX_ENTRIES as CATALOG_POWERUP_CODEX_ENTRIES } from './PowerupCatalog.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { translateText } from '../i18n/index.js';
 import { getCabinetLogEntries } from '../text/phrasePool.js';
@@ -644,6 +645,261 @@ const THEME_TIPS = Object.freeze({
   overrun_turntable: 'Turntable runs remix old lessons. Respect the familiar pattern as if it got faster.'
 });
 
+const STORY_INCIDENTS = Object.freeze([
+  'The first scan arrived with scorch marks on the margins and a pilot note that simply said, "do not admire it."',
+  'A junior archivist tried to file it alphabetically. The cabinet rejected the form and blinked three times like a lawsuit.',
+  'Old runs remember this signal as a tiny disaster wearing good lighting and very bad intentions.',
+  'The black box kept the audio because somebody laughed exactly one second before the lane got expensive.',
+  'Mission control called it routine until the replay started pointing at the screen by itself.',
+  'The cabinet stores this one in the drawer labeled "avoidable, technically, if you stop being glamorous."',
+  'A cleaner found the first report folded under the coin slot, still warm and still judging everyone.',
+  'The scanner swears the signal has a mood. The scanner is not paid enough to have opinions, but here we are.'
+]);
+
+const STORY_WARNINGS = Object.freeze([
+  'Respect the tell, make one clean move, and spend the rest of the second shooting instead of negotiating.',
+  'The safe play is boring for half a heartbeat, then suddenly looks brilliant on the replay.',
+  'If it seems theatrical, good. Theater has marks on the floor. Stand somewhere else.',
+  'Do not chase pride through the bright lane. Pride has no shield meter.',
+  'Treat the first flash as a receipt, not a suggestion, and the second flash as your final invoice.',
+  'Clear the thing that gives the wave confidence. Most disasters are just morale with projectiles.',
+  'The trick is not speed. The trick is refusing the stupid dodge the pattern clearly wants from you.',
+  'Keep the center honest, leave yourself an exit, and never let a pretty shape do accounting.'
+]);
+
+const STORY_PUNCHLINES = Object.freeze([
+  'The cabinet approves, then immediately asks why your score is not higher.',
+  'Somewhere in the archive, a tiny alarm puts on sunglasses.',
+  'That is not fear in the log. That is professional respect wearing cheap shoes.',
+  'The swarm calls it doctrine. Pilots call it Tuesday with teeth.',
+  'Mission control denies naming it after an ex, which is exactly what mission control would say.',
+  'The replay looks heroic if nobody notices the three panic wiggles.',
+  'A sensible pilot learns it once. A leaderboard pilot learns it loudly.',
+  'The signal remains rude, but at least now it is rude on file.'
+]);
+
+const STORY_MATERIALS = Object.freeze([
+  'neon brass',
+  'cold glass',
+  'dirty starlight',
+  'arcade chrome',
+  'violet reactor dust',
+  'burned circuit lace',
+  'tax-office titanium',
+  'confession booth alloy'
+]);
+
+function storyPick(list, seed, offset = 0) {
+  return list[Math.abs((Number(seed) || 0) + offset * 7919) % list.length];
+}
+
+function storySeed(...parts) {
+  return hashString(parts.filter(Boolean).join(':'));
+}
+
+function storySentence(...parts) {
+  return parts
+    .filter(Boolean)
+    .map((part) => String(part).trim())
+    .filter(Boolean)
+    .join(' ');
+}
+
+function makeCodexStory({
+  id,
+  name,
+  role,
+  category,
+  core,
+  read,
+  payoff,
+  required = ''
+}) {
+  const seed = storySeed(id, name, category, role);
+  const material = storyPick(STORY_MATERIALS, seed, 1);
+  const incident = storyPick(STORY_INCIDENTS, seed, 2);
+  const warning = storyPick(STORY_WARNINGS, seed, 3);
+  const punchline = storyPick(STORY_PUNCHLINES, seed, 4);
+  const hook = `${name} enters the archive as ${role || 'a hostile signal'} cut from ${material}.`;
+  return storySentence(
+    hook,
+    incident,
+    core,
+    read,
+    warning,
+    payoff,
+    required,
+    punchline
+  );
+}
+
+function enemyStory({ profile, name, roleLabel, roleDescription, movement, fire }) {
+  const unlock = Number(profile.unlockLevel || 1);
+  const core = `It brings ${roleDescription}, moves with ${movement}, and fires ${fire}; that is the polite description, written before the hull started making the wave braver.`;
+  const read = unlock >= 10
+    ? `After sector ${unlock}, the signal starts arriving with late-run confidence and absolutely no manners.`
+    : `Early sectors use it as a lesson with engines: simple enough to read, sharp enough to punish daydreaming.`;
+  return makeCodexStory({
+    id: profile.type,
+    name,
+    role: roleLabel.toLowerCase(),
+    category: 'enemy',
+    core,
+    read,
+    payoff: 'Read the hull first, cut it out of the formation, and the rest of the wave suddenly remembers it is mortal.'
+  });
+}
+
+function dangerMidStory(profile, name) {
+  return makeCodexStory({
+    id: profile.id,
+    name,
+    role: String(profile.role || 'danger mid ship').toLowerCase(),
+    category: 'danger-mid',
+    core: `This is the middle child between cannon fodder and elite royalty: too tough to ignore, too readable to excuse. It moves with ${profile.move || 'pressure movement'} and fires ${profile.shot || 'pressure fire'} like it has a meeting with your hitbox.`,
+    read: 'It appears after sector 8 because the swarm believes you have learned target priority and would like to test that belief in public.',
+    payoff: 'Kill it before it turns a normal wave into paperwork with teeth.',
+    required: 'Hard hull, sharp tell, fair read.'
+  });
+}
+
+function fuelShipStory(name, extra = '') {
+  return makeCodexStory({
+    id: name,
+    name,
+    role: 'boss support',
+    category: 'fuel',
+    core: 'It is unarmed, fast, bright, and carrying enough fuel to heal the boss if it reaches the hull.',
+    read: extra || 'Its movement follows a bright lane, never fires, and clears formation space before it reaches the boss.',
+    payoff: 'Shoot it early. If the boss drinks the tank, the archive marks that as comedy with a body count.',
+    required: 'Boss support. Boss healer. Fuel ship.'
+  });
+}
+
+function actionStory(action, readWindow, budget) {
+  const name = action.label || action.id;
+  return makeCodexStory({
+    id: action.id,
+    name,
+    role: 'attack pattern',
+    category: 'attack-pattern',
+    core: `Its ${action.telegraph || 'visual'} tell lasts about ${readWindow} ms, which is just long enough for a calm pilot and brutally short for a dramatic one.`,
+    read: `The hit spends ${budget} danger budget on the lane, so the pattern is less a bullet and more a signed appointment.`,
+    payoff: 'Wait for lock, move once, return fire, and let the replay pretend you were calm the whole time.'
+  });
+}
+
+function waveStory(id, name, role) {
+  return makeCodexStory({
+    id,
+    name,
+    role: 'formation script',
+    category: 'wave',
+    core: `It sets entry timing, lane ownership, and synchronized pressure by using ${String(role || 'formation pressure').toLowerCase()} as the opening argument.`,
+    read: 'The lead ship is usually not brave; it is just early. Break it and the chorus loses the lyric.',
+    payoff: 'Cross the quiet lane before the whole wave starts speaking at once.'
+  });
+}
+
+function eliteStory(profile, name, ability) {
+  return makeCodexStory({
+    id: profile.id,
+    name,
+    role: profile.role || 'elite middle ship',
+    category: 'elite',
+    core: `It carries ${profile.movementStyle || 'special'} movement, ${profile.fireStyle || 'elite'} fire, and the ${ability} system like a badge it definitely bought itself.`,
+    read: 'Nearby cover makes it look smarter than it is. Remove the audience first.',
+    payoff: 'Burn the elite during cooldown before it turns the wave into a priority puzzle.'
+  });
+}
+
+function bossStory(profile) {
+  return makeCodexStory({
+    id: profile.id,
+    name: profile.name,
+    role: `${profile.title} boss profile`,
+    category: 'boss',
+    core: `Movement comes as ${profile.movement}; pressure arrives through ${profile.attack}.`,
+    read: `The signature read is ${profile.signature}, which is the boss politely drawing the place you should not be standing.`,
+    payoff: 'Survive the signature tell first; damage is only useful once the lane is clean.',
+    required: 'Movement, pressure, and signature are the three truths. Everything else is costume.'
+  });
+}
+
+function powerupStory(entry) {
+  return makeCodexStory({
+    id: entry.id,
+    name: entry.name,
+    role: `${entry.duration} powerup`,
+    category: 'powerup',
+    core: `This powerup changes ${entry.effect}; in practical terms it is a bright little contract that says the next mistake might be survivable.`,
+    read: `Read it as ${entry.read}, then pick it when ${entry.when}.`,
+    payoff: 'Defensive sustain, hotter shots, safer pickups, or cleaner boss pressure all count as romance when the screen is armed.',
+    required: 'Powerup timing is not greed. It is lane management with better lighting.'
+  });
+}
+
+function sectorStory(name, copy, level) {
+  const base = codexText(copy.template, {
+    name,
+    feel: copy.feel,
+    stakes: copy.stakes,
+    flavor: copy.flavor,
+    clue: copy.clue
+  });
+  const seed = storySeed(name, level, copy.feel);
+  const extra = storySentence(
+    `The route crew calls it ${storyPick(['a nervous doorway', 'a glittering bruise', 'a toll road with stars', 'a rehearsal for bad judgment'], seed, 1)} because every wave here teaches the boss how much nerve you brought.`,
+    `Bank lives like contraband, then spend none of them unless the lane truly earns it.`
+  );
+  return `${base} ${extra}`;
+}
+
+function runThemeStory(theme, threats, formations, adapt) {
+  const base = codexText('themeDescription', {
+    name: theme.label,
+    threats,
+    formations,
+    adapt
+  });
+  const seed = storySeed(theme.id, theme.label, threats);
+  const extra = storySentence(
+    `The hidden command intelligence keeps a little theater program for this run and circles your weakest habit in ${storyPick(STORY_MATERIALS, seed, 2)} ink.`,
+    `If sector one feels familiar, be suspicious; the swarm director loves a cover song with a knife in it.`
+  );
+  return `${base} ${extra}`;
+}
+
+function rankStory(title, index, level, xp, lore) {
+  const displayRank = index + 1;
+  const seed = storySeed(title, index, level, xp);
+  const ceremony = storyPick([
+    'a vending machine salute',
+    'three sparks from the coin slot',
+    'a scoreboard cough that sounds like applause',
+    'mission control pretending this was planned',
+    'a brass light blinking like it owes you money',
+    'a tiny parade held entirely inside the cabinet'
+  ], seed, 1);
+  const trouble = storyPick([
+    'the swarm writes your name on a missile and underlines it twice',
+    'rookie pilots start copying the dangerous part of your replay',
+    'the cabinet unlocks a drawer labeled "more trouble, please"',
+    'bosses begin arriving with opinions and better lighting',
+    'the hangar starts treating your dents as proof of employment',
+    'the archive moves your file from cute to concerning'
+  ], seed, 2);
+  const privateNote = storyPick([
+    'Nobody claps for the clean dodge. They notice when it is missing.',
+    'A rank is just a scar with typography.',
+    'The best pilots look lucky until you slow the footage down.',
+    'You did not become safer. You became harder to surprise.',
+    'The next run does not care. That is why the next run is beautiful.',
+    'Your hands know before your mouth starts bragging.'
+  ], seed, 3);
+  return `Rank ${displayRank}: ${title}. The level marker is ${level}, the career XP marker is ${Number(xp || 0).toLocaleString('en-US')}, and the ceremony is ${ceremony}. ${lore} From here, ${trouble}. ${privateNote}`;
+}
+
 function playerFacingFormationLabel(value = '') {
   return FORMATION_LABELS[value] || titleCaseSignal(String(value).toLowerCase());
 }
@@ -661,17 +917,12 @@ function powerupEntry(entry) {
     name: entry.name,
     rarity: entry.duration,
     role: 'Powerup',
-    description: codexText('powerupDescription', {
-      name: entry.name,
-      duration: entry.duration,
-      effect: entry.effect,
-      read: entry.read,
-      when: entry.when
-    }),
-    tip: entry.tip,
+    description: powerupStory(entry),
+    tip: `Pick when safe. ${entry.tip}`,
     art: AssetManifest.generated.powerups?.[entry.id] || AssetManifest.sprites.bonusCore,
     accent: entry.accent,
-    signalClass: 'pickup signal'
+    signalClass: 'pickup signal',
+    codexBodyMode: 'story'
   };
 }
 
@@ -692,17 +943,12 @@ function sectorEntry(level) {
     name,
     rarity: level >= 11 ? 'Overrun' : level === 10 ? 'Clear Gate' : 'Sector',
     role: level >= 11 ? 'Overrun route' : sector.bossCheckpoint ? 'Boss gate route' : 'Run route',
-    description: codexText(copy.template, {
-      name,
-      feel: copy.feel,
-      stakes: copy.stakes,
-      flavor: copy.flavor,
-      clue: copy.clue
-    }),
+    description: sectorStory(name, copy, level),
     tip: translateText(copy.tip),
     art: level >= 10 ? AssetManifest.generated.vfx?.overrunVictorySeal || AssetManifest.generated.bossArenaBackdrop : AssetManifest.generated.gameplayArenaBackdrop,
     accent: level >= 11 ? 0xffe76a : level === 10 ? 0x7dffcc : 0x37f5ff,
-    signalClass: 'sector signal'
+    signalClass: 'sector signal',
+    codexBodyMode: 'story'
   };
 }
 
@@ -713,15 +959,22 @@ function cabinetLogEntry(entry) {
     name: entry.title || entry.id,
     rarity: translateText('Cabinet Log'),
     role: entry.role || translateText('Cabinet Log'),
-    description: entry.description || codexText('cabinetLogDescription', {
-      name: entry.title || entry.id
+    description: entry.description || makeCodexStory({
+      id: entry.id,
+      name: entry.title || entry.id,
+      role: 'cabinet log',
+      category: 'cabinet-log',
+      core: 'It is a joke, field note, and receipt from live play, preserved because the cabinet believes embarrassment is a training tool.',
+      read: 'The line is short because survival advice gets worse when it starts wearing a lecture hat.',
+      payoff: 'Read it, laugh once if you have time, then make one calmer decision.'
     }),
     tip: entry.tip || entry.line || translateText('Read the line, then make one calmer decision.'),
     art: entry.imageAlias
       ? AssetManifest.generated.storyComms?.find((src) => src.includes(entry.imageAlias))
       : AssetManifest.generated.menuCredits,
     accent: entry.accent || 0xffd15c,
-    signalClass: 'cabinet-log'
+    signalClass: 'cabinet-log',
+    codexBodyMode: 'story'
   };
 }
 
@@ -739,19 +992,14 @@ function enemyEntry(profile) {
     name,
     rarity,
     role: roleLabel,
-    description: codexText('enemyDescription', {
-      name,
-      role: roleLabel.toLowerCase(),
-      roleDescription,
-      movement,
-      fire
-    }),
+    description: enemyStory({ profile, name, roleLabel, roleDescription, movement, fire }),
     tip: ROLE_TIPS[profile.role] || 'Destroy it before the formation finishes shaping the lane.',
     art: AssetManifest.generated.enemies?.[profile.spriteIndex] || null,
     accent: profile.accent,
     tint: profile.tint,
     unlockLevel: profile.unlockLevel,
-    signalClass: profile.tier
+    signalClass: profile.tier,
+    codexBodyMode: 'story'
   };
 }
 
@@ -763,19 +1011,14 @@ function dangerMidEntry(profile) {
     name,
     rarity: profile.tier || 'Danger Mid',
     role: titleCaseSignal(profile.role || 'danger mid ship'),
-    description: codexText('enemyDescription', {
-      name,
-      role: String(profile.role || 'danger mid ship').toLowerCase(),
-      roleDescription: 'a hard midweight hull that appears after sector 8 and asks for target priority',
-      movement: profile.move || 'pressure movement',
-      fire: profile.shot || 'readable pressure fire'
-    }),
+    description: dangerMidStory(profile, name),
     tip: codexText('dangerMidTip', { name }),
     art: AssetManifest.generated.enemies?.[(profile.unlockLevel + profile.id.length) % (AssetManifest.generated.enemies?.length || 1)] || null,
     accent: profile.accent,
     tint: profile.tint,
     unlockLevel: profile.unlockLevel,
-    signalClass: 'danger-mid'
+    signalClass: 'danger-mid',
+    codexBodyMode: 'story'
   };
 }
 
@@ -786,13 +1029,14 @@ function bossFuelShipEntry() {
     name: translateText('Boss Fuel Ship'),
     rarity: translateText('Boss Support'),
     role: translateText('Boss healer'),
-    description: `${codexText('fuelShipDescription', { name: translateText('Boss Fuel Ship') })} ${translateText('Its movement follows a bright lane, never fires, and clears formation space before it reaches the boss.')}`,
+    description: fuelShipStory(translateText('Boss Fuel Ship'), translateText('Its movement follows a bright lane, never fires, and clears formation space before it reaches the boss.')),
     tip: translateText('It does not shoot. That is the trick. Shoot it before the boss drinks the tank.'),
     art: AssetManifest.generated.powerups?.vampire || AssetManifest.sprites.bonusCore,
     accent: 0x7dffcc,
     tint: 0xfff08a,
     unlockLevel: 1,
-    signalClass: 'boss-support'
+    signalClass: 'boss-support',
+    codexBodyMode: 'story'
   };
 }
 
@@ -804,13 +1048,14 @@ function bossSupportShipEntry(profile) {
     name,
     rarity: translateText('Boss Support'),
     role: titleCaseSignal(profile.role || 'boss support'),
-    description: codexText('fuelShipDescription', { name }),
+    description: fuelShipStory(name, 'Its repair tank flashes bright enough to be fair and rude enough to be memorable.'),
     tip: translateText('It does not shoot. That is the trick. Shoot it before the boss drinks the tank.'),
     art: AssetManifest.generated.enemies?.[profile.spriteIndex] || AssetManifest.generated.powerups?.vampire || AssetManifest.sprites.bonusCore,
     accent: profile.accent,
     tint: profile.tint,
     unlockLevel: 1,
-    signalClass: profile.signalClass || 'boss-support'
+    signalClass: profile.signalClass || 'boss-support',
+    codexBodyMode: 'story'
   };
 }
 
@@ -824,17 +1069,13 @@ function actionEntry(action) {
     name: action.label || action.id,
     rarity: action.minLevel <= 2 ? 'Common' : action.minLevel <= 8 ? 'Uncommon' : 'Rare',
     role: action.tags?.[0] || 'Attack pattern',
-    description: codexText('actionDescription', {
-      name: action.label || action.id,
-      telegraph: action.telegraph || 'visual',
-      readWindow,
-      budget
-    }),
+    description: actionStory(action, readWindow, budget),
     tip: ACTION_TIPS[action.id] || action.codexTip || 'Read the tell first, then move once with purpose.',
     art: Number.isFinite(weapon?.assetIndex) ? AssetManifest.generated.enemyWeapons?.[weapon.assetIndex] : null,
     accent: weapon?.warningColor || weapon?.color || 0x7dffcc,
     telegraph: action.telegraph,
-    signalClass: action.tags?.join(' / ') || 'pattern'
+    signalClass: action.tags?.join(' / ') || 'pattern',
+    codexBodyMode: 'story'
   };
 }
 
@@ -846,11 +1087,12 @@ function waveEntry([id, name, role, tip]) {
     name,
     rarity: 'Common',
     role,
-    description: codexText('waveDescription', { name, role }),
+    description: waveStory(id, name, role),
     tip,
     art: createWaveTacticArtDataUri(id, name, role),
     accent: 0x37f5ff ^ (seed & 0x3f3fff),
-    signalClass: 'formation script'
+    signalClass: 'formation script',
+    codexBodyMode: 'story'
   };
 }
 
@@ -863,18 +1105,14 @@ function eliteEntry(profile) {
     name,
     rarity: profile.minLevel <= 8 ? 'Uncommon' : 'Rare',
     role: profile.role || profile.specialAbility || 'Elite',
-    description: codexText('eliteDescription', {
-      name,
-      movement: profile.movementStyle || 'special',
-      fire: profile.fireStyle || 'elite',
-      ability
-    }),
+    description: eliteStory(profile, name, ability),
     tip: profile.designNote || 'Clear nearby fodder, then focus the elite during its cooldown.',
     art: profile.asset || AssetManifest.generated.eliteMiddleShips?.[profile.spriteIndex] || null,
     accent: profile.accent,
     tint: profile.tint,
     unlockLevel: profile.unlockLevel,
-    signalClass: profile.specialAbility
+    signalClass: profile.specialAbility,
+    codexBodyMode: 'story'
   };
 }
 
@@ -886,19 +1124,13 @@ function bossEntry(profile) {
     name: profile.name,
     rarity: 'Boss',
     role: profile.title,
-    description: epicLore?.description || codexText('bossDescription', {
-      name: profile.name,
-      title: profile.title.toLowerCase(),
-      movement: profile.movement,
-      attack: profile.attack,
-      signature: profile.signature
-    }),
+    description: epicLore?.description || bossStory(profile),
     tip: epicLore?.tip || 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.',
     art: profile.art,
     accent: profile.accent,
     tint: profile.palette,
     signalClass: epicLore?.signalClass || profile.archetype,
-    codexBodyMode: epicLore ? 'epic' : 'standard'
+    codexBodyMode: epicLore ? 'epic' : 'story'
   };
 }
 
@@ -912,16 +1144,12 @@ function runThemeEntry(theme) {
     name: theme.label,
     rarity: 'Run Theme',
     role: theme.description || 'Content rotation',
-    description: codexText('themeDescription', {
-      name: theme.label,
-      threats,
-      formations,
-      adapt
-    }),
+    description: runThemeStory(theme, threats, formations, adapt),
     tip: translateText(THEME_TIPS[theme.id] || theme.codexTip || 'Use the first sector to identify what this run wants you to respect.'),
     art: THEME_ART[theme.id] || AssetManifest.generated.gameplayArenaBackdrop,
     accent: 0x7dffcc,
-    signalClass: 'director theme'
+    signalClass: 'director theme',
+    codexBodyMode: 'story'
   };
 }
 
@@ -935,13 +1163,7 @@ function pilotRankEntry(title, index) {
     name: title,
     rarity: index >= 20 ? translateText('Hard Rank') : translateText('Pilot Rank'),
     role: translateText('Rank {rank}', { rank: index + 1 }),
-    description: codexText('rankDescription', {
-      rank: index + 1,
-      name: title,
-      level,
-      xp: Number(xp || 0).toLocaleString('en-US'),
-      lore: translateText(lore)
-    }),
+    description: rankStory(title, index, level, xp, translateText(lore)),
     tip: index >= 20
       ? translateText('Hard ranks are long-haul bragging rights. Chase them after the clear, not instead of surviving it.')
       : translateText('Career XP comes from ranked runs. Keep flying, keep submitting, keep the receipt.'),
@@ -949,7 +1171,8 @@ function pilotRankEntry(title, index) {
     accent: index >= 20 ? 0xffe76a : 0x37f5ff,
     tint: index >= 20 ? 0xfff08a : 0x9cfbff,
     unlockLevel: level,
-    signalClass: index >= 20 ? 'hard-rank' : 'rank'
+    signalClass: index >= 20 ? 'hard-rank' : 'rank',
+    codexBodyMode: 'story'
   };
 }
 
@@ -963,7 +1186,7 @@ export function getThreatCodexCatalog() {
     ],
     attackPatterns: ENEMY_THREAT_ACTIONS.map(actionEntry),
     waveTactics: WAVE_TACTIC_ENTRIES.map(waveEntry),
-    powerups: POWERUP_CODEX_ENTRIES.map(powerupEntry),
+    powerups: CATALOG_POWERUP_CODEX_ENTRIES.map(powerupEntry),
     sectors: SECTOR_CODEX_LEVELS.map(sectorEntry),
     elites: ELITE_MIDDLE_SHIPS.map(eliteEntry),
     bosses: BOSS_ROSTER.map(bossEntry),
