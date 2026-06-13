@@ -33,6 +33,25 @@ function compactScoreRead(result) {
   };
 }
 
+function scoreFromPersonalBest(value) {
+  if (value == null) return 0;
+  const rawScore = typeof value === 'number'
+    ? value
+    : value.score ?? value.m_nScore ?? value.value ?? value.bestScore ?? value.highScore;
+  return Math.max(0, Math.floor(Number(rawScore) || 0));
+}
+
+function personalBestCandidate(source, value) {
+  if (value?.seed) return null;
+  const score = scoreFromPersonalBest(value);
+  if (score <= 0) return null;
+  return {
+    source,
+    score,
+    entry: value && typeof value === 'object' ? value : null
+  };
+}
+
 function mergeSteamUploadDiagnostics(extra = {}) {
   const win = safeWindow();
   if (!win) return;
@@ -365,6 +384,33 @@ export class LeaderboardAdapter {
       useCache: options.useCache ?? false
     });
     return normalizeLeaderboardEntries(result.entries || [], { source: result.source || 'global' });
+  }
+
+  async getKnownPersonalBest(options = {}) {
+    await this.ensureAvailability();
+    const reads = [
+      this.localProvider.getPlayerBest()
+        .then((best) => personalBestCandidate('local', best))
+        .catch(() => null)
+    ];
+    if (this.availability.steam) {
+      reads.push(
+        this.steamProvider.getPlayerBest(options)
+          .then((best) => personalBestCandidate('steam_player_best', best))
+          .catch(() => null),
+        this.steamProvider.getDownloadedPlayerBest(options)
+          .then((best) => personalBestCandidate('steam_downloaded_player_best', best))
+          .catch(() => null)
+      );
+    }
+
+    const settled = await Promise.allSettled(reads);
+    const candidates = settled
+      .map((result) => result.status === 'fulfilled' ? result.value : null)
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score);
+
+    return candidates[0] || { source: 'none', score: 0, entry: null };
   }
 
   async getSteamPostSubmitDownloadSnapshot() {

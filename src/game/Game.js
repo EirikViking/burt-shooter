@@ -102,6 +102,7 @@ export class Game {
       number1: false
     };
     this.highscoreChase = null;
+    this.highscoreChaseTargetPromise = null;
     this.sceneInputGuardUntil = 0;
     this.menuExitGuardUntil = 0;
     this.lastSceneSwitchAt = 0;
@@ -273,6 +274,7 @@ export class Game {
       progress: startingProgress,
       sectorStartCheckpoint
     });
+    this.highscoreChaseTargetPromise = null;
     this.resetGlobalLeaderboardCues();
     this.runStartedAtMs = Date.now();
     this.runElapsedSeconds = 0;
@@ -318,6 +320,7 @@ export class Game {
 
     this.switchScene('play');
     this.prepareGameplayInputFocus();
+    this.primeHighscoreChaseTarget();
     this.primeGlobalLeaderboardTargets();
     if (this.isRankedRun()) incrementShipUsage(selectedSpriteKey);
     return true;
@@ -580,6 +583,33 @@ export class Game {
       lastTauntAtMs: 0,
       tauntIndex: Math.floor(Math.random() * 1000)
     };
+  }
+
+  raiseHighscoreChaseTarget(targetScore, source = 'known_personal_best') {
+    const score = Math.max(0, Math.floor(Number(targetScore) || 0));
+    const chase = this.highscoreChase;
+    if (!chase || chase.runMode !== RUN_MODES.RANKED || score <= chase.targetScore) return false;
+    chase.targetScore = score;
+    chase.source = source || chase.source;
+    chase.surpassed = score <= 0 || this.score > score;
+    return true;
+  }
+
+  primeHighscoreChaseTarget() {
+    if (!this.isRankedRun() || this.highscoreChaseTargetPromise) return this.highscoreChaseTargetPromise;
+    const chase = this.highscoreChase;
+    if (!chase || chase.runMode !== RUN_MODES.RANKED) return null;
+    this.highscoreChaseTargetPromise = this.getLeaderboardAdapter().getKnownPersonalBest({ useCache: false })
+      .then((best) => {
+        if (this.highscoreChase !== chase || !this.isRankedRun()) return null;
+        this.raiseHighscoreChaseTarget(best?.score, best?.source || 'known_personal_best');
+        return this.highscoreChase?.targetScore ?? null;
+      })
+      .catch((error) => {
+        console.warn('[HighscoreChase] Unable to load known personal best', error?.message || error);
+        return null;
+      });
+    return this.highscoreChaseTargetPromise;
   }
 
   getHighscoreChaseState() {

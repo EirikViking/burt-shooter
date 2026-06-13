@@ -60,6 +60,7 @@
     "check:gameover-ceremony": "node scripts/check-gameover-ceremony.mjs",
     "check:leaderboard-split": "node scripts/check-leaderboard-split.mjs",
     "check:leaderboard-adapter": "node scripts/check-leaderboard-adapter.mjs",
+    "check:highscore-chase-target": "node scripts/check-highscore-chase-target.mjs",
     "check:score-normalization": "node scripts/check-score-normalization.mjs",
     "check:steam-leaderboard-mock": "node scripts/check-steam-leaderboard-mock.mjs",
     "check:unlock-rank-pacing": "node scripts/check-unlock-rank-pacing.mjs",

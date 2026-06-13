@@ -109,6 +109,8 @@ async function checkWebRuntime() {
   assert.equal(global.entries[0].playerName, 'ORB');
   assert.equal(global.entries[0].level, 4);
   assert.equal(global.entries[1].level, 3);
+  const emptyPersonalBest = await adapter.getKnownPersonalBest({ useCache: false });
+  assert.equal(emptyPersonalBest.score, 0, 'seed leaderboard rows must not become the personal high-score chase target');
 
   win.localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify([
     { name: 'OLDMETA', score: 3210, metadata: { level: 8 }, timestamp: new Date().toISOString() }
@@ -207,6 +209,12 @@ async function checkMockSteamRuntime() {
   assert.equal(friends.entries[0].playerName, 'STEAM ACE');
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('STEAM ACE'), true);
 
+  win.localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify([
+    { name: 'LOCAL ACE', score: 54321, level: 10, rankIndex: 8, timestamp: '2026-06-01T00:00:00.000Z' }
+  ]));
+  const knownLocalBest = await adapter.getKnownPersonalBest({ useCache: false });
+  assert.equal(knownLocalBest.score, 54321, 'known personal best should use the highest local score instead of stale progress');
+
   const staleLevelScores = JSON.parse(win.localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]')
     .map((entry) => entry.isCurrentPlayer ? { ...entry, level: 1, levelReached: 1, details: [1, 1, 321, 55, 2, 14] } : entry);
   win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify(staleLevelScores));
@@ -230,6 +238,12 @@ async function checkMockSteamRuntime() {
   assert.equal(repairedGlobal.entries.filter((entry) => entry.playerName === 'STEAM ACE').length, 1, 'Steam mock should keep one current-player entry');
   assert.equal(repairedGlobal.entries[0].score, 12345);
   assert.equal(repairedGlobal.entries[0].level, 12);
+
+  const steamBestScores = JSON.parse(win.localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]')
+    .map((entry) => entry.isCurrentPlayer ? { ...entry, score: 120140, m_nScore: 120140 } : entry);
+  win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify(steamBestScores));
+  const knownSteamBest = await adapter.getKnownPersonalBest({ useCache: false });
+  assert.equal(knownSteamBest.score, 120140, 'known personal best should raise the chase target to the Steam player best');
 
   const sectorBeforeSubmit = await adapter.getScores('sector', { useCache: false });
   assert.equal(sectorBeforeSubmit.sourceLabel, 'Steam Sector');
@@ -266,10 +280,10 @@ async function checkMockSteamRuntime() {
   assert.equal(sectorAfterSubmit.entries[0].sectorStart, 20);
   assert.equal(sectorAfterSubmit.entries[0].highestSectorReached, 24);
   const globalAfterSectorSubmit = await adapter.getScores('global', { useCache: false });
-  assert.equal(globalAfterSectorSubmit.entries[0].score, 12345, 'sector submit must not overwrite the global Steam board');
+  assert.equal(globalAfterSectorSubmit.entries[0].score, knownSteamBest.score, 'sector submit must not overwrite the global Steam board');
   const storedMockScores = JSON.parse(win.localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]');
   assert.equal(storedMockScores.some(entry => entry.leaderboardName === STEAM_SECTOR_LEADERBOARD_NAME && entry.score === 45678), true);
-  assert.equal(storedMockScores.some(entry => entry.leaderboardName === STEAM_LEADERBOARD_NAME && entry.score === 12345), true);
+  assert.equal(storedMockScores.some(entry => entry.leaderboardName === STEAM_LEADERBOARD_NAME && entry.score === knownSteamBest.score), true);
 }
 
 async function checkDesktopLocalPersistenceRuntime() {
