@@ -167,14 +167,14 @@ function getCodexStatLabels(categoryId) {
     return {
       primary: 'ENCOUNTERS',
       secondary: 'DESTROYED',
-      rowCount: 'timesDefeated'
+      rowCount: 'timesSeen'
     };
   }
   if (categoryId === 'bosses') {
     return {
       primary: 'ENCOUNTERS',
       secondary: 'DEFEATED',
-      rowCount: 'timesDefeated'
+      rowCount: 'timesSeen'
     };
   }
   if (categoryId === 'runThemes') {
@@ -189,6 +189,19 @@ function getCodexStatLabels(categoryId) {
     secondary: null,
     rowCount: 'timesSeen'
   };
+}
+
+function getCodexRowCountText(entry, stateItem, labels, discovered) {
+  if (!discovered) return '--';
+  if (entry?.reference || entry?.alwaysKnown || labels.rowCount === 'reference') return localize('INFO');
+  const seen = Math.max(0, Math.floor(Number(stateItem?.timesSeen) || 0));
+  const defeated = Math.max(0, Math.floor(Number(stateItem?.timesDefeated) || 0));
+  const survived = Math.max(0, Math.floor(Number(stateItem?.timesSurvived) || 0));
+  const killedPlayer = Math.max(0, Math.floor(Number(stateItem?.timesKilledPlayer) || 0));
+  const fallback = stateItem ? Math.max(1, seen, defeated, survived, killedPlayer) : 1;
+  if (labels.rowCount === 'timesDefeated') return String(Math.max(fallback, defeated));
+  if (labels.rowCount === 'timesSurvived') return String(Math.max(fallback, survived));
+  return String(Math.max(fallback, seen));
 }
 
 function getCategoryLayout(width, height, compact) {
@@ -306,6 +319,7 @@ export class ThreatCodexScene {
     this.animationTime = 0;
     this.animatedNodes = [];
     this.lastEntryListDebug = null;
+    this.lastEntryRowsDebug = [];
     this.lastDetailBodyDebug = null;
     this.lastDetailPanelDebug = null;
     this.detailScrollOffset = 0;
@@ -320,6 +334,7 @@ export class ThreatCodexScene {
     this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
     this.renderToken += 1;
     this.animatedNodes = [];
+    this.lastEntryRowsDebug = [];
     this.lastDetailBodyDebug = null;
     this.lastDetailPanelDebug = null;
     this.gamepadNavigator.suppressUntilReleased();
@@ -898,12 +913,8 @@ export class ThreatCodexScene {
 
       const stateItem = getStateItem(this.discoveryState, category.id, entry.id);
       const labels = getCodexStatLabels(category.id);
-      const count = labels.rowCount === 'timesDefeated'
-        ? (stateItem?.timesDefeated ?? 0)
-        : labels.rowCount === 'reference'
-          ? localize('INFO')
-          : (stateItem?.timesSeen ?? 0);
-      addText(row, discovered ? String(count) : '--', {
+      const countText = getCodexRowCountText(entry, stateItem, labels, discovered);
+      addText(row, countText, {
         fontSize: compact ? 12 : 14,
         fontWeight: '900',
         fill: discovered ? '#ffffff' : '#4e6374'
