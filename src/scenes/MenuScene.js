@@ -1105,13 +1105,13 @@ export class MenuScene {
     this.layoutMissionConsole(width, height);
     resizeMenuFx(this, width, height);
 
-    const titleSize = Math.round(getResponsiveFontSize(layout, 'title') * (isMobileLayout ? 0.9 : 1.18));
-    const subtitleSize = Math.round(getResponsiveFontSize(layout, 'subtitle') * (isMobileLayout ? 0.92 : 0.96));
-    const storySize = getResponsiveFontSize(layout, 'body');
+    const titleSize = Math.round(getResponsiveFontSize(layout, 'title') * (isMobileLayout ? 0.9 : 1.0));
+    const subtitleSize = Math.round(getResponsiveFontSize(layout, 'subtitle') * (isMobileLayout ? 0.92 : 0.92));
+    const storySize = Math.round(getResponsiveFontSize(layout, 'body') * (isMobileLayout ? 1 : 0.94));
     const controlsSize = getResponsiveFontSize(layout, 'small');
     const contentWidth = isMobileLayout
       ? Math.min(width - 34, 430)
-      : Math.min(Math.max(390, width * 0.39), 530);
+      : Math.min(Math.max(430, width * 0.4), 548);
     const contentX = isMobileLayout
       ? width / 2
       : Math.max(layout.padding + contentWidth / 2, width * 0.28);
@@ -1134,7 +1134,7 @@ export class MenuScene {
     this.subtitle.style.wordWrapWidth = clampTextWidth(contentWidth, layout);
     this.subtitle.style.lineHeight = Math.round(subtitleSize * 1.22);
     this.flavor.style.fontSize = storySize;
-    this.flavor.style.lineHeight = Math.round(storySize * 1.5);
+    this.flavor.style.lineHeight = Math.round(storySize * 1.34);
     this.flavor.style.align = align;
     this.flavor.style.wordWrapWidth = clampTextWidth(contentWidth, layout);
     this.primaryHint.style.fontSize = Math.max(10, controlsSize);
@@ -1145,7 +1145,7 @@ export class MenuScene {
     const runIntelSize = Math.max(11, controlsSize);
     this.runModeExplainer.style.fontSize = runIntelSize;
     this.runModeExplainer.style.lineHeight = Math.round(runIntelSize * 1.18);
-    this.runModeExplainer.style.align = 'left';
+    this.runModeExplainer.style.align = isMobileLayout ? 'center' : 'left';
     this.runModeExplainer.style.wordWrapWidth = clampTextWidth(isMobileLayout ? contentWidth - 8 : contentWidth, layout);
     this.disclaimer.text = this.getDisclaimerText(layout);
     this.controls.text = layout.isMobile ? this.getControlsText(layout) : '';
@@ -1178,7 +1178,7 @@ export class MenuScene {
     const buttonHeight = isMobileLayout ? 42 : (isShortLayout ? 42 : 48);
     const primaryButtonHeight = isMobileLayout ? 48 : (isShortLayout ? 52 : 58);
     const buttonWidth = isMobileLayout ? Math.min(286, contentWidth - 10) : Math.min(390, contentWidth - 38);
-    const primaryButtonWidth = isMobileLayout ? Math.min(304, contentWidth) : Math.min(438, contentWidth - 8);
+    const primaryButtonWidth = isMobileLayout ? Math.min(304, contentWidth) : Math.min(448, contentWidth - 8);
     const buttonSpacing = isMobileLayout ? 10 : (isShortLayout ? 8 : 12);
     const sectionSpacing = isMobileLayout ? 13 : (isShortLayout ? 12 : 18);
 
@@ -1200,16 +1200,16 @@ export class MenuScene {
     ].forEach(([button, btnWidth, btnHeight, isPrimary]) => {
       if (!button) return;
       if (button === this.sectorStartBtn) {
-        btnWidth = Math.min(primaryButtonWidth, contentWidth - 8);
+        btnWidth = Math.min(primaryButtonWidth - (isMobileLayout ? 0 : 18), contentWidth - 26);
         btnHeight = Math.max(btnHeight, isShortLayout ? 46 : 50);
       }
       button._btnWidth = btnWidth;
       button._btnHeight = btnHeight;
       if (isPrimary) button._variant = 'primary';
       button._label.style.fontSize = Math.round(getResponsiveFontSize(layout, 'button') * (isPrimary ? 1 : 0.9));
-      const labelMaxWidth = btnWidth - (button === this.sectorStartBtn ? 88 : 48);
+      const labelMaxWidth = btnWidth - (button === this.sectorStartBtn ? 34 : 48);
       this.refreshMenuButtonLabel(button, labelMaxWidth, {
-        minScale: button === this.sectorStartBtn ? 0.74 : 0.78,
+        minScale: button === this.sectorStartBtn ? 0.82 : 0.78,
         forceGpuRefresh: forceLabelGpuRefresh
       });
       this.drawMenuButton(button, false);
@@ -1250,7 +1250,7 @@ export class MenuScene {
       text.anchor.set(anchorX, 0.5);
       text.x = leftX;
     });
-    this.runModeExplainer.anchor.set(0, 0.5);
+    this.runModeExplainer.anchor.set(isMobileLayout ? 0.5 : 0, 0.5);
 
     placeCentered(this.kicker, kickerHeight, isMobileLayout ? 4 : 8);
     placeCentered(this.title, titleHeight, isMobileLayout ? 8 : 10);
@@ -1258,9 +1258,7 @@ export class MenuScene {
     placeCentered(this.flavor, flavorHeight, isMobileLayout ? 12 : 18);
     placeCentered(this.primaryHint, primaryHintHeight, isMobileLayout ? 8 : 10);
     placeCentered(this.runModeExplainer, runModeExplainerHeight, sectionSpacing);
-    this.runModeExplainer.x = isMobileLayout
-      ? contentX - Math.min(contentWidth - 10, this.runModeExplainer.width) / 2
-      : leftX + 10;
+    this.runModeExplainer.x = isMobileLayout ? contentX : leftX + 16;
     this.drawRunModeExplainerPanel(layout, width, height);
 
     const buttonX = isMobileLayout ? contentX : leftX + primaryButtonWidth / 2;
@@ -1313,7 +1311,7 @@ export class MenuScene {
         text.x = contentX;
         text.anchor.set(0.5);
       });
-      this.runModeExplainer.anchor.set(0, 0.5);
+      this.runModeExplainer.anchor.set(0.5, 0.5);
     }
 
     const overflow = this.disclaimer.y + disclaimerHeight / 2 - (height - footerReserve);
@@ -1396,7 +1394,10 @@ export class MenuScene {
     const sectorStatus = this.sectorStartState?.available
       ? translateText('CHECKPOINT')
       : translateText('LOCKED');
-    return `${translateText('RANKED')}: ${translateText('LEADERBOARD')} // ${translateText('SECTOR')}: ${sectorStatus}`;
+    const ranked = translateText('RANKED');
+    const leaderboard = translateText('LEADERBOARD');
+    const sector = translateText('SECTOR');
+    return `${ranked}: ${leaderboard}  //  ${sector}: ${sectorStatus}`;
   }
 
   drawRunModeExplainerPanel(layout, width, height) {
@@ -1404,8 +1405,8 @@ export class MenuScene {
     const textBounds = boundsForDisplayObject(this.runModeExplainer);
     if (!textBounds) return;
     const isMobileLayout = layout.isMobile || width < 720;
-    const padX = isMobileLayout ? 10 : 14;
-    const padY = isMobileLayout ? 6 : 7;
+    const padX = isMobileLayout ? 12 : 18;
+    const padY = isMobileLayout ? 7 : 8;
     const x = textBounds.x - padX;
     const y = textBounds.y - padY;
     const panelWidth = textBounds.width + padX * 2;
@@ -1415,14 +1416,17 @@ export class MenuScene {
     const secondary = focusedId === 'sectorStart' ? 0xff55d9 : 0x7fffd8;
 
     this.runModePanel.clear();
-    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 5);
-    this.runModePanel.fill({ color: 0x031323, alpha: 0.38 });
-    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 5);
-    this.runModePanel.stroke({ color: accent, width: 1, alpha: 0.58 });
-    this.runModePanel.rect(x + 6, y + 6, 3, Math.max(6, panelHeight - 12));
-    this.runModePanel.fill({ color: secondary, alpha: 0.82 });
-    this.runModePanel.rect(x + panelWidth - 8, y + 6, 3, Math.max(6, panelHeight - 12));
-    this.runModePanel.fill({ color: 0xffd15c, alpha: 0.46 });
+    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 6);
+    this.runModePanel.fill({ color: 0x031323, alpha: 0.56 });
+    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 6);
+    this.runModePanel.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+    this.runModePanel.rect(x + 7, y + 6, 3, Math.max(6, panelHeight - 12));
+    this.runModePanel.fill({ color: secondary, alpha: 0.88 });
+    this.runModePanel.rect(x + panelWidth - 10, y + 6, 3, Math.max(6, panelHeight - 12));
+    this.runModePanel.fill({ color: 0xffd15c, alpha: 0.58 });
+    this.runModePanel.moveTo(x + 18, y + panelHeight - 6);
+    this.runModePanel.lineTo(x + panelWidth - 18, y + panelHeight - 6);
+    this.runModePanel.stroke({ color: 0x7fffd8, width: 1, alpha: 0.2 });
   }
 
   drawMenuPanel(layout) {
@@ -1543,7 +1547,15 @@ export class MenuScene {
         labelBounds: boundsForDisplayObject(this.sectorStartBtn?.visible ? this.sectorStartBtn?._label : null),
         labelScale: Number(this.sectorStartBtn?._label?.scale?.x || 1),
         arrowCueVisible: Boolean(this.sectorStartBtn?._stepperCue?.visible),
-        arrowCueBounds: boundsForDisplayObject(this.sectorStartBtn?._stepperCue?.visible ? this.sectorStartBtn?._stepperCue : null)
+        arrowCueBounds: boundsForDisplayObject(this.sectorStartBtn?._stepperCue?.visible ? this.sectorStartBtn?._stepperCue : null),
+        coreButtonBounds: this.sectorStartBtn?.visible ? {
+          x: Math.round(this.sectorStartBtn.x - (this.sectorStartBtn._btnWidth || 0) / 2),
+          y: Math.round(this.sectorStartBtn.y - (this.sectorStartBtn._btnHeight || 0) / 2),
+          width: Math.round(this.sectorStartBtn._btnWidth || 0),
+          height: Math.round(this.sectorStartBtn._btnHeight || 0),
+          right: Math.round(this.sectorStartBtn.x + (this.sectorStartBtn._btnWidth || 0) / 2),
+          bottom: Math.round(this.sectorStartBtn.y + (this.sectorStartBtn._btnHeight || 0) / 2)
+        } : null
       },
       menuFx: this.menuFx?.getDebugState?.() || null,
       exitNoticeText: this.exitNotice?.text || '',
@@ -1678,7 +1690,7 @@ export class MenuScene {
     const visible = Boolean(button?.visible && this.sectorStartState?.available && checkpoints.length > 1);
     const w = button._btnWidth || 286;
     const h = button._btnHeight || 46;
-    button.hitArea = new PIXI.Rectangle(-w / 2, -h / 2 - 4, w, h + 8);
+    button.hitArea = new PIXI.Rectangle(-w / 2 - 58, -h / 2 - 6, w + 116, h + 12);
     cue.visible = visible;
     cue.clear();
     if (!visible) return;
@@ -1686,24 +1698,27 @@ export class MenuScene {
     const focused = Boolean(button._focused);
     const pulse = 0.5 + Math.sin(this.animationTime * 6) * 0.5;
     const alpha = focused ? 0.86 + pulse * 0.14 : 0.58;
-    const boxW = Math.max(32, Math.min(40, h * 0.84));
-    const boxH = Math.max(30, Math.min(40, h * 0.84));
-    const sideX = w / 2 - boxW / 2 - 12;
+    const boxW = Math.max(34, Math.min(42, h * 0.86));
+    const boxH = Math.max(32, Math.min(42, h * 0.86));
+    const sideX = w / 2 + boxW / 2 + 9;
     const color = focused ? 0xffef7e : 0x37f5ff;
 
     for (const side of [-1, 1]) {
       const centerX = side * sideX;
+      cue.moveTo(side * (w / 2 + 3), 0);
+      cue.lineTo(side * (sideX - boxW / 2 - 4), 0);
+      cue.stroke({ color, width: focused ? 2 : 1.25, alpha: focused ? 0.7 : 0.32 });
       cue.roundRect(centerX - boxW / 2, -boxH / 2, boxW, boxH, 7);
-      cue.fill({ color: 0x031323, alpha: 0.52 });
+      cue.fill({ color: 0x031323, alpha: focused ? 0.78 : 0.62 });
       cue.roundRect(centerX - boxW / 2, -boxH / 2, boxW, boxH, 7);
       cue.stroke({ color, width: focused ? 2 : 1.5, alpha });
 
-      const pointX = centerX + side * 7;
+      const pointX = centerX + side * 6;
       const backX = centerX - side * 7;
       cue.moveTo(backX, -9);
       cue.lineTo(pointX, 0);
       cue.lineTo(backX, 9);
-      cue.stroke({ color: 0xffffff, width: focused ? 3 : 2.4, alpha: focused ? 0.92 : 0.72 });
+      cue.stroke({ color: 0xffffff, width: focused ? 2.8 : 2.2, alpha: focused ? 0.92 : 0.68 });
       cue.moveTo(backX - side * 4, -9);
       cue.lineTo(pointX - side * 3, 0);
       cue.lineTo(backX - side * 4, 9);
@@ -2077,12 +2092,11 @@ export class MenuScene {
       } catch {
         localX = 0;
       }
-      const edgeWidth = width * 0.28;
-      if (localX <= -width / 2 + edgeWidth) {
+      if (localX < -width / 2) {
         this.cycleSectorStartCheckpoint(-1);
         return;
       }
-      if (localX >= width / 2 - edgeWidth) {
+      if (localX > width / 2) {
         this.cycleSectorStartCheckpoint(1);
         return;
       }

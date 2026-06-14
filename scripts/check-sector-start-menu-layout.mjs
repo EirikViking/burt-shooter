@@ -180,12 +180,13 @@ async function selectCheckpoint(page, checkpoint) {
 function assertNoMenuOverlap(state, label) {
   const sector = state.menu?.sectorStart || {};
   const button = sector.buttonBounds || state.menu?.items?.sectorStartButton;
+  const coreButton = sector.coreButtonBounds || button;
   const labelBounds = sector.labelBounds;
   const launch = state.menu?.items?.launchButton;
   const explainer = state.menu?.items?.runModeExplainer;
   const explainerText = sector.runModeExplainerText || '';
-  const configuredWidth = Number(sector.buttonConfiguredWidth) || button?.width || 0;
-  const configuredHeight = Number(sector.buttonConfiguredHeight) || button?.height || 0;
+  const configuredWidth = Number(sector.buttonConfiguredWidth) || coreButton?.width || button?.width || 0;
+  const configuredHeight = Number(sector.buttonConfiguredHeight) || coreButton?.height || button?.height || 0;
   const hangar = state.menu?.items?.hangarButton;
   assert.match(explainerText, /LAUNCH RUN|RANKED(?: RUN)?:/, `${label}: missing launch/ranked run explainer`);
   assert.match(explainerText, /SECTOR(?: START)?:/, `${label}: missing sector start explainer`);
@@ -196,17 +197,19 @@ function assertNoMenuOverlap(state, label) {
     assert.ok(explainer.bottom <= launch.y + 1, `${label}: run mode explainer overlaps Launch Run button`);
   }
   assert.ok(button?.width > 0 && button?.height > 0, `${label}: missing Sector Start button bounds`);
+  assert.ok(coreButton?.width > 0 && coreButton?.height > 0, `${label}: missing Sector Start core button bounds`);
   assert.ok(labelBounds?.width > 0 && labelBounds?.height > 0, `${label}: missing Sector Start label bounds`);
-  assert.ok(labelBounds.width <= configuredWidth - 78, `${label}: label too wide for button with sector arrows ${JSON.stringify({ labelBounds, configuredWidth, button })}`);
+  assert.ok(labelBounds.width <= configuredWidth - 30, `${label}: label too wide for Sector Start core button ${JSON.stringify({ labelBounds, configuredWidth, coreButton })}`);
   assert.ok(labelBounds.height <= configuredHeight - 2, `${label}: label too tall for button ${JSON.stringify({ labelBounds, configuredHeight, button })}`);
-  assert.ok(Number(sector.labelScale) >= 0.74, `${label}: label scale too small (${sector.labelScale})`);
+  assert.ok(Number(sector.labelScale) >= 0.82, `${label}: label scale too small (${sector.labelScale})`);
   assert.equal(sector.arrowCueVisible, true, `${label}: missing checkpoint switch arrows`);
   assert.ok((sector.arrowCueBounds?.width || 0) > 0, `${label}: checkpoint switch arrows have no visible bounds`);
   assert.ok((sector.arrowCueBounds?.height || 0) > 0, `${label}: checkpoint switch arrows have no visible height`);
-  assert.ok(sector.arrowCueBounds.x >= button.x - 1, `${label}: checkpoint arrows should live inside the Sector Start button`);
-  assert.ok(sector.arrowCueBounds.right <= button.right + 1, `${label}: checkpoint arrows should live inside the Sector Start button`);
+  assert.ok(sector.arrowCueBounds.x < coreButton.x - 1, `${label}: left checkpoint arrow should sit outside the Sector Start label lane`);
+  assert.ok(sector.arrowCueBounds.right > coreButton.right + 1, `${label}: right checkpoint arrow should sit outside the Sector Start label lane`);
+  assert.ok(sector.arrowCueBounds.width > coreButton.width, `${label}: checkpoint arrows should read as external selector tabs`);
   if (hangar?.height > 0) {
-    assert.ok(button.y + button.height <= hangar.y + 1, `${label}: Sector Start button overlaps Hangar button`);
+    assert.ok(coreButton.y + coreButton.height <= hangar.y + 1, `${label}: Sector Start button overlaps Hangar button`);
   }
   assert.doesNotMatch(sector.buttonText || '', /SECTOR START CHALLENGE:/, `${label}: old cramped challenge label returned`);
   assert.doesNotMatch(sector.buttonText || '', /</, `${label}: old selector arrow label returned`);
@@ -261,6 +264,7 @@ try {
         checkpoint,
         text,
         buttonBounds: state.menu?.sectorStart?.buttonBounds,
+        coreButtonBounds: state.menu?.sectorStart?.coreButtonBounds,
         buttonConfiguredWidth: state.menu?.sectorStart?.buttonConfiguredWidth,
         buttonConfiguredHeight: state.menu?.sectorStart?.buttonConfiguredHeight,
         labelBounds: state.menu?.sectorStart?.labelBounds,
@@ -268,6 +272,7 @@ try {
         arrowCueBounds: state.menu?.sectorStart?.arrowCueBounds
       });
     }
+    await page.waitForTimeout(2200);
     const screenshot = path.join(outputDir, `sector-start-menu-${viewport.name}.png`);
     await page.screenshot({ path: screenshot, fullPage: true });
     report.cases.push({ viewport, screenshot });
