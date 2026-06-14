@@ -195,6 +195,9 @@ export class Game {
     this.currentSceneName = sceneName;
     this.app.stage.addChild(this.currentScene.container);
     this.currentScene.init();
+    if (sceneName === 'menu') {
+      this.scenes?.menu?.menuGamepadNavigator?.suppressUntilReleased?.();
+    }
     this.syncGameplayCursor();
   }
 

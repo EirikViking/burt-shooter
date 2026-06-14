@@ -201,6 +201,16 @@ function publicFallbackName(steamId, index = 0) {
   return `STEAM ${suffix}`.slice(0, 14);
 }
 
+function toSafePublicSteamName(rawName, fallbackSeed = 0) {
+  const stripped = String(rawName || '')
+    .normalize('NFKC')
+    .replace(/[\u0000-\u001f\u007f-\u009f\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180e\u2000-\u200f\u2028-\u202f\u205f-\u206f\u2800\u3000\ufeff\ufff9-\ufffb]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (stripped) return stripped.slice(0, 64);
+  return publicFallbackName(null, fallbackSeed);
+}
+
 function sanitizeDetails(details) {
   const values = parseDetailsValue(details);
   return values.slice(0, 64).map(clampInt32);
@@ -452,7 +462,7 @@ class SteamLeaderboardBridge {
       const name = this.steam.friends?.getPersonaName?.() ||
         this.steam.localplayer?.getName?.() ||
         'STEAM PILOT';
-      return String(name || 'STEAM PILOT').slice(0, 64);
+      return toSafePublicSteamName(name, 0);
     } catch {
       return 'STEAM PILOT';
     }
@@ -508,13 +518,13 @@ class SteamLeaderboardBridge {
 
   async nameForEntry(entry, index) {
     const explicit = entry.playerName || entry.personaName || entry.name || entry.displayName || entry.steamName;
-    if (explicit) return String(explicit).slice(0, 64);
+    if (explicit) return toSafePublicSteamName(explicit, index);
     const steamId = stringifySteamId(entry.steamId ?? entry.steamID ?? entry.m_steamIDUser);
     const currentId = this.getCurrentSteamId();
     if (steamId && currentId && steamId === currentId) return this.getPersonaName();
     try {
       const friendName = steamId ? this.steam.friends?.getFriendPersonaName?.(steamId) : null;
-      if (friendName) return String(friendName).slice(0, 64);
+      if (friendName) return toSafePublicSteamName(friendName, index);
     } catch {
       // Non-friend global rows may only expose Steam IDs.
     }

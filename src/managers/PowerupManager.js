@@ -44,6 +44,9 @@ class Powerup {
     this.aura = new PIXI.Graphics();
     this.aura.label = 'aura';
     this.sprite.addChild(this.aura);
+    this.readabilityHalo = new PIXI.Graphics();
+    this.readabilityHalo.label = 'readabilityHalo';
+    this.sprite.addChild(this.readabilityHalo);
 
     try {
       const texture = GameAssets.getPowerupTexture(this.type) || GameAssets.getBonusCoreTexture();
@@ -63,8 +66,8 @@ class Powerup {
         this.baseScale = iconSprite.scale.x;
 
         const glow = new PIXI.Graphics();
-        glow.circle(0, 0, 21);
-        glow.fill({ color: this.color, alpha: 0.25 });
+        glow.circle(0, 0, 25);
+        glow.fill({ color: this.color, alpha: 0.34 });
         this.sprite.addChildAt(glow, 1);
       } else {
         this.createFallbackSprite();
@@ -128,31 +131,42 @@ class Powerup {
     // TASK A: Breathing aura ring (reduced size)
     if (this.aura) {
       const auraPhase = (age * 0.003) % (Math.PI * 2);
-      const auraRadius = 18 + Math.sin(auraPhase) * 3;
-      const auraAlpha = 0.3 + Math.sin(auraPhase) * 0.15;
+      const auraRadius = 24 + Math.sin(auraPhase) * 4;
+      const auraAlpha = 0.42 + Math.sin(auraPhase) * 0.16;
 
       this.aura.clear();
       this.aura.circle(0, 0, auraRadius);
-      this.aura.stroke({ width: 1.5, color: this.color, alpha: auraAlpha });
+      this.aura.stroke({ width: 2.4, color: this.color, alpha: auraAlpha });
+    }
+
+    if (this.readabilityHalo) {
+      const sweep = (age * 0.004) % (Math.PI * 2);
+      const haloRadius = 33 + Math.sin(sweep) * 3;
+      this.readabilityHalo.clear();
+      this.readabilityHalo.circle(0, 0, haloRadius);
+      this.readabilityHalo.stroke({ width: 1.2, color: 0xffffff, alpha: 0.22 });
+      this.readabilityHalo.moveTo(Math.cos(sweep) * 18, Math.sin(sweep) * 18);
+      this.readabilityHalo.lineTo(Math.cos(sweep) * haloRadius, Math.sin(sweep) * haloRadius);
+      this.readabilityHalo.stroke({ width: 2.2, color: this.color, alpha: 0.58 });
     }
 
     // TASK A: Ambient sparkles (spawn every 200-300ms, reduced distance)
     this.sparkleTimer += delta * 16.67;
     const sparkleInterval = 200 + Math.random() * 100;
 
-    if (this.sparkleTimer > sparkleInterval && this.particleCount < 2 && scene && scene.particleManager) {
+    if (this.sparkleTimer > sparkleInterval && this.particleCount < 3 && scene && scene.particleManager) {
       this.sparkleTimer = 0;
       this.particleCount++;
 
       // Spawn tiny sparkle around powerup (reduced distance)
       const angle = Math.random() * Math.PI * 2;
-      const dist = 10 + Math.random() * 8;
+      const dist = 14 + Math.random() * 13;
       const sx = this.x + Math.cos(angle) * dist;
       const sy = this.y + Math.sin(angle) * dist;
       const vx = (Math.random() - 0.5) * 0.3;
       const vy = (Math.random() - 0.5) * 0.3;
 
-      scene.particleManager.spawnParticle(sx, sy, vx, vy, this.color, 1.2, 18);
+      scene.particleManager.spawnParticle(sx, sy, vx, vy, this.color, 1.6, 22);
 
       // Decrement count after particle dies
       setTimeout(() => {

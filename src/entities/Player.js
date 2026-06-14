@@ -5,6 +5,7 @@ import { ShipRegistry } from '../utils/ShipRegistry.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { enhanceShipVisuals } from '../utils/ShipVisualEnhancer.js';
 import { createText } from '../utils/pixiText.js';
+import { translateText } from '../i18n/index.js';
 import { getPlayerFocusScale } from '../config/AccessibilitySettings.js';
 import { getDefaultShipKey, getShipMetadata } from '../config/ShipMetadata.js';
 import { ShipData } from '../config/ShipData.js';
@@ -119,6 +120,9 @@ export class Player {
     this.rankBoostBulletFx = false;
     this.currentModel = 1;
     this.focusRing = null;
+    this.dodgeRing = null;
+    this.dodgeText = null;
+    this.dodgeFlashMs = 0;
     this.focusPulse = 0;
     this.damageOverlay = null;
     this.boostAura = null;
@@ -276,6 +280,33 @@ export class Player {
       this.sprite.addChild(this.damageOverlay);
     } else if (!this.damageOverlay.parent) {
       this.sprite.addChild(this.damageOverlay);
+    }
+
+    if (!this.dodgeRing) {
+      this.dodgeRing = new PIXI.Graphics();
+      this.dodgeRing.label = 'playerDodgeRing';
+      this.dodgeRing.visible = false;
+      this.sprite.addChild(this.dodgeRing);
+    } else if (!this.dodgeRing.parent) {
+      this.sprite.addChild(this.dodgeRing);
+    }
+
+    if (!this.dodgeText) {
+      this.dodgeText = createText(translateText('DODGE'), {
+        fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
+        fontSize: 13,
+        fill: '#ffffff',
+        stroke: '#00131b',
+        strokeThickness: 3,
+        fontWeight: '900',
+        align: 'center'
+      });
+      this.dodgeText.anchor.set(0.5);
+      this.dodgeText.y = -58;
+      this.dodgeText.visible = false;
+      this.sprite.addChild(this.dodgeText);
+    } else if (!this.dodgeText.parent) {
+      this.sprite.addChild(this.dodgeText);
     }
 
     if (!this.shieldSprite) {
@@ -975,10 +1006,12 @@ export class Player {
 
     if (this.isDodging) {
       this.dodgeDuration -= dt;
-      this.sprite.alpha = 0.3; // Visually indicate dodge
+      this.sprite.alpha = 0.42; // Visually indicate dodge without making the ship vanish.
+      this.updateDodgeVisual(dt);
       if (this.dodgeDuration <= 0) {
         this.isDodging = false;
         this.invulnerable = false;
+        this.clearDodgeVisual();
         if (!this.isGhostActive()) this.sprite.alpha = 1;
       }
     } else {
@@ -1842,7 +1875,46 @@ export class Player {
     this.invulnerable = true;
     this.dodgeDuration = this.dodgeDurationMax;
     this.dodgeCooldown = this.dodgeDelay;
+    this.dodgeFlashMs = this.dodgeDurationMax;
+    AudioManager.playSfx('ghost_phase_shift', { volume: 0.46, minIntervalMs: 160 });
+    this.updateDodgeVisual(0);
     this.triggerTraitDodgePulse();
+  }
+
+  updateDodgeVisual(dt = 0) {
+    if (!this.dodgeRing && !this.dodgeText) return;
+    this.dodgeFlashMs = Math.max(0, (this.dodgeFlashMs || 0) - Math.max(0, Number(dt) || 0));
+    const duration = Math.max(1, this.dodgeDurationMax || 1);
+    const progress = 1 - Math.max(0, Math.min(1, (this.dodgeDuration || 0) / duration));
+    const color = this.visualVariant?.accent || 0xff55d9;
+    const pulse = Math.sin(Date.now() * 0.04) * 0.5 + 0.5;
+    if (this.dodgeRing) {
+      const radius = Math.max(42, (this.baseShipWidth || 64) * (0.72 + progress * 0.36));
+      this.dodgeRing.clear();
+      this.dodgeRing.circle(0, 0, radius + pulse * 4);
+      this.dodgeRing.stroke({ color, width: 4, alpha: 0.72 * (1 - progress * 0.45) });
+      this.dodgeRing.circle(0, 0, radius * 0.58);
+      this.dodgeRing.stroke({ color: 0xffffff, width: 1.6, alpha: 0.42 });
+      this.dodgeRing.visible = true;
+    }
+    if (this.dodgeText) {
+      this.dodgeText.visible = true;
+      this.dodgeText.alpha = 0.86 * (1 - progress * 0.35);
+      this.dodgeText.scale.set(1 + pulse * 0.08);
+    }
+  }
+
+  clearDodgeVisual() {
+    if (this.dodgeRing) {
+      this.dodgeRing.clear();
+      this.dodgeRing.visible = false;
+    }
+    if (this.dodgeText) {
+      this.dodgeText.visible = false;
+      this.dodgeText.alpha = 1;
+      this.dodgeText.scale.set(1);
+    }
+    this.dodgeFlashMs = 0;
   }
 
   grantInvulnerability(ms, reason = 'generic') {

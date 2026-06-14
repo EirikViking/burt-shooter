@@ -19,8 +19,8 @@ export const BalanceConfig = {
         maxPerLevel: 2,
         minPerLevel: 1,
         extraLifeDropsEnabled: true,
-        extraLifeChance: 0.03,
-        extraLifeGuaranteedEveryLevels: 0,
+        extraLifeChance: 0.06,
+        extraLifeGuaranteedEveryLevels: 8,
         guaranteeWindowStart: 0.2, // 20% progress
         guaranteeWindowEnd: 0.8, // 80% progress
         logDrops: true, // Dev toggle
