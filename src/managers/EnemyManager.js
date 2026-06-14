@@ -1494,14 +1494,18 @@ export class EnemyManager {
       .filter((entry) => Number.isFinite(entry[0]) && entry[1]));
     positions.forEach((pos, i) => {
       const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
-      const enemy = new Enemy(startX, -100, type, this.level, this.game, waveColor);
+      const dangerProfile = dangerAssignments.get(i);
+      const dangerMidType = dangerProfile && Number.isFinite(dangerProfile.spriteIndex)
+        ? getGeneratedEnemyTypeForSpriteIndex(dangerProfile.spriteIndex)
+        : null;
+      const enemyType = dangerMidType || type;
+      const enemy = new Enemy(startX, -100, enemyType, this.level, this.game, waveColor);
       if (config.isChallenge && enemy.kind === 'bonus_drone') {
         enemy.kind = 'enemy';
       }
       const lanePressure = this.getLanePressureForPosition(pos.x, formation);
       const enemyTactic = this.applyLanePressureToTactic(tactic, lanePressure);
       this.applyModifier(enemy);
-      const dangerProfile = dangerAssignments.get(i);
       if (dangerProfile) {
         this.applyDangerMidShipProfile(enemy, dangerProfile);
       }

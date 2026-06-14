@@ -1013,7 +1013,7 @@ function dangerMidEntry(profile) {
     role: titleCaseSignal(profile.role || 'danger mid ship'),
     description: dangerMidStory(profile, name),
     tip: codexText('dangerMidTip', { name }),
-    art: AssetManifest.generated.enemies?.[(profile.unlockLevel + profile.id.length) % (AssetManifest.generated.enemies?.length || 1)] || null,
+    art: AssetManifest.generated.enemies?.[Number.isFinite(profile.spriteIndex) ? profile.spriteIndex : ((profile.unlockLevel + profile.id.length) % (AssetManifest.generated.enemies?.length || 1))] || null,
     accent: profile.accent,
     tint: profile.tint,
     unlockLevel: profile.unlockLevel,

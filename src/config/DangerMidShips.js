@@ -1,3 +1,5 @@
+import { GENERATED_ENEMY_ASSET_COUNT } from './GeneratedEnemyProfiles.js';
+
 const NAMES_A = Object.freeze([
   'Knife', 'Debt', 'Cinder', 'Static', 'Rivet', 'Comet', 'Jury', 'Viper', 'Signal', 'Grudge',
   'Receipt', 'Needle', 'Blackbox', 'Voltage', 'Lunar', 'Hazard', 'Switch', 'Ash', 'Vector', 'Neon'
@@ -47,6 +49,7 @@ export const DANGER_MID_SHIPS = Object.freeze(Array.from({ length: 58 }, (_, ind
     scoreScalar: 2.2 + (index % 6) * 0.22,
     radiusScalar: 1.08 + (index % 4) * 0.035,
     spriteScale: 1.08 + (index % 4) * 0.045,
+    spriteIndex: (50 + index) % GENERATED_ENEMY_ASSET_COUNT,
     move,
     shot,
     codexTip: `Hard hull, sharp tell. Kill ${name} before it turns a normal wave into paperwork with teeth.`

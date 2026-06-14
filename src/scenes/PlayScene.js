@@ -6392,9 +6392,13 @@ export class PlayScene {
 
   recordThreatDiscovery(id, category, metadata = {}, options = {}) {
     if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
-    if (!this.game?.isRankedRun?.()) return null;
+    const isRankedRun = Boolean(this.game?.isRankedRun?.());
     const result = recordThreatSeen(id, category, metadata);
     if (!result?.isNew) return result;
+
+    if (!isRankedRun) {
+      return result;
+    }
 
     const bonus = category === 'runThemes'
       ? RunPacingConfig.discovery.firstRunThemeBonus
@@ -6428,7 +6432,8 @@ export class PlayScene {
 
   recordThreatDefeat(id, category, metadata = {}) {
     if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
-    if (!this.game?.isRankedRun?.()) return null;
+    const isRankedRun = Boolean(this.game?.isRankedRun?.());
+    if (!isRankedRun) return null;
     const result = recordThreatDefeated(id, category, metadata);
     if (result?.isFirstDefeat) {
       const bonus = category === 'bosses'
