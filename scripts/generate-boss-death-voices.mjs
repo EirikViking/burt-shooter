@@ -37,6 +37,7 @@ function requireGenerationInputs() {
 async function tts(line, index, attempt = 1) {
   const url = new URL(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`);
   url.searchParams.set('output_format', 'mp3_44100_128');
+  const text = line.generationText || line.text;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -45,12 +46,12 @@ async function tts(line, index, attempt = 1) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      text: line.text,
+      text,
       model_id: modelId,
       seed: 62000 + index,
       voice_settings: {
-        stability: 0.18,
-        similarity_boost: 0.78,
+        stability: 0.12,
+        similarity_boost: 0.86,
         style: 1,
         use_speaker_boost: true
       },

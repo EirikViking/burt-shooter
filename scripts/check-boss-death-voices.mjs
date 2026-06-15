@@ -14,6 +14,7 @@ import {
 const errors = [];
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const publicDir = path.join(rootDir, 'public');
+const MISFIT_GALAXY_MALE_VOICE_ID = 'YO6HUzlgJ0HQvmYejW5c';
 
 function fail(message) {
   errors.push(message);
@@ -45,6 +46,9 @@ for (const line of bossDeathVoiceLines) {
 
 if (BOSS_DEATH_FORBIDDEN_VOICE_IDS.includes(BOSS_DEATH_DEFAULT_VOICE_ID)) {
   fail('default boss death voice id matches a forbidden/current mission-control voice id');
+}
+if (BOSS_DEATH_DEFAULT_VOICE_ID !== MISFIT_GALAXY_MALE_VOICE_ID) {
+  fail(`default boss death voice id must be the Misfit Galaxy male voice (${MISFIT_GALAXY_MALE_VOICE_ID})`);
 }
 
 const manifestVoiceUrls = AssetManifest.audio.voice.filter((url) => url.includes('/audio/voice/boss-death/'));
@@ -89,6 +93,9 @@ if (!playSceneSource.includes('volume: 2.6')) {
 const generatorSource = fs.readFileSync(path.join(rootDir, 'scripts/generate-boss-death-voices.mjs'), 'utf8');
 if (!generatorSource.includes('ELEVENLABS_BOSS_DEATH_VOICE_ID')) {
   fail('boss death voice generator should support ELEVENLABS_BOSS_DEATH_VOICE_ID override');
+}
+if (!generatorSource.includes('line.generationText || line.text')) {
+  fail('boss death voice generator should use ElevenLabs-directed generationText when present');
 }
 if (!generatorSource.includes('BOSS_DEATH_FORBIDDEN_VOICE_IDS.includes(voiceId)')) {
   fail('generator does not explicitly guard against forbidden/current mission-control voice ids');
