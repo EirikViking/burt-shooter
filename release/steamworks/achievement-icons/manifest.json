@@ -2,7 +2,7 @@
   "appId": 4765070,
   "generatedAt": "2026-06-15T12:45:28.054Z",
   "canonicalSource": "src/achievements/AchievementCatalog.js",
-  "sourceSheet": "nova-swarm-achievement-icons-sheet-20260525.png",
+  "sourceSheet": "nova-swarm-achievement-icons-sheet-20260615-legendary-unique.png",
   "sourceGenerator": "Codex generated/curated achievement icon set; 2026-06-12 hard-rank and Early Pilot icons generated from local badge/SVG assets; 2026-06-15 ultra-hard achievement icons generated with internal Codex imagegen and processed to 256x256 JPG pairs.",
   "iconSize": "256x256 jpg",
   "icons": [

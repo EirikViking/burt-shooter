@@ -35,7 +35,7 @@ Create or verify every Steamworks achievement from the generated catalog list:
 
 Achievement icon assets are staged in `release/steamworks/achievement-icons/`. The manifest maps every API name to achieved and locked 256x256 JPG icons. The current milestone icons were generated with Codex imagegen from the 2026-05-26 3x3 milestone sheet and can be replaced later without changing API names.
 
-The 2026-06-12 pass added hard-rank icons `ACH_RANK_20` through `ACH_RANK_39` and Early Pilot icons `ACH_EARLY_PILOT-achieved.jpg` / `ACH_EARLY_PILOT-locked.jpg`. The 2026-06-15 pass added 10 ultra-hard legendary achievements and icon pairs generated with internal Codex imagegen.
+The 2026-06-12 pass added hard-rank icons `ACH_RANK_20` through `ACH_RANK_39` and Early Pilot icons `ACH_EARLY_PILOT-achieved.jpg` / `ACH_EARLY_PILOT-locked.jpg`. The 2026-06-15 pass added ultra-hard legendary achievements and replaced the duplicated milestone badge art with unique achieved/locked icon pairs generated with internal Codex imagegen.
 
 Current Steamworks App Admin evidence showed only 30 configured Steam achievements before the 2026-06-15 source update. On 2026-06-15, the missing achievement rows were added and published in Steamworks; final browser verification showed `Antall prestasjoner: 81` with no missing or extra API names. Achievement icon uploads remain a separate Steamworks visual-polish step because the browser automation surface could not set file inputs.
 

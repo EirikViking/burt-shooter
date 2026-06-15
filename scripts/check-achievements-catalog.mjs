@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { ACHIEVEMENTS, LEGEND_ACHIEVEMENTS, LEGEND_SCORE_GATE } from '../src/achievements/AchievementCatalog.js';
 
 const errors = [];
@@ -105,6 +106,12 @@ if (!fs.existsSync(manifestPath)) {
 } else {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   const manifestIds = new Set((manifest.icons || []).map((entry) => entry.apiName));
+  const releaseIconDir = path.resolve('release/steamworks/achievement-icons');
+  const publicIconDir = path.resolve('public/art/generated/nova-swarm/achievements');
+  const iconHashes = {
+    achievedIcon: new Map(),
+    lockedIcon: new Map()
+  };
   for (const id of ids) {
     if (!manifestIds.has(id)) {
       fail(`Icon manifest missing ${id}.`);
@@ -113,8 +120,24 @@ if (!fs.existsSync(manifestPath)) {
     const entry = (manifest.icons || []).find((item) => item.apiName === id);
     for (const key of ['achievedIcon', 'lockedIcon']) {
       const file = entry?.[key];
-      if (!file || !fs.existsSync(path.resolve('release/steamworks/achievement-icons', file))) {
+      const iconPath = file ? path.resolve(releaseIconDir, file) : null;
+      if (!file || !fs.existsSync(iconPath)) {
         fail(`Icon manifest ${id} missing file for ${key}.`);
+        continue;
+      }
+      if (!fs.existsSync(path.resolve(publicIconDir, file))) {
+        fail(`Runtime achievement icon missing public file ${file}.`);
+      }
+      const hash = crypto.createHash('sha256').update(fs.readFileSync(iconPath)).digest('hex');
+      const matches = iconHashes[key].get(hash) || [];
+      matches.push(file);
+      iconHashes[key].set(hash, matches);
+    }
+  }
+  for (const [key, hashes] of Object.entries(iconHashes)) {
+    for (const duplicates of hashes.values()) {
+      if (duplicates.length > 1) {
+        fail(`${key} files must not be byte-identical: ${duplicates.join(', ')}`);
       }
     }
   }
