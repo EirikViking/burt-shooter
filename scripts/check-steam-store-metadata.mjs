@@ -151,8 +151,12 @@ if (!errors.length) {
       errors.push(`controllerSupportDecision must document "${required}"`);
     }
   }
-  if (metadata.achievementsDecision?.status !== 'defer_for_v1') {
-    warnings.push('Achievements decision differs from current no-Steamworks-API implementation');
+  const acceptedAchievementsStatuses = new Set([
+    'defer_for_v1',
+    'implemented_pending_full_steamworks_verification'
+  ]);
+  if (!acceptedAchievementsStatuses.has(metadata.achievementsDecision?.status)) {
+    warnings.push('Achievements decision must be defer_for_v1 or implemented_pending_full_steamworks_verification');
   }
   if (metadata.steamCloudDecision?.status !== 'defer_for_v1') {
     warnings.push('Steam Cloud decision differs from current local-only desktop storage');

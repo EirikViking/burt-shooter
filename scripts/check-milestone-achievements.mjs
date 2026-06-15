@@ -11,7 +11,7 @@ function idsFor(summary = {}, progress = {}) {
 }
 
 assert.equal(MILESTONE_ACHIEVEMENTS.length, 10, 'Nova Swarm should keep the 9 launch milestones plus Early Pilot.');
-assert.equal(LEGEND_ACHIEVEMENTS.length, 20, 'Nova Swarm should add 20 legend score-gated achievements.');
+assert.equal(LEGEND_ACHIEVEMENTS.length, 30, 'Nova Swarm should include 30 legend score-gated achievements.');
 assert.deepEqual(idsFor({}, {}), [], 'Fresh profiles should not unlock milestone achievements.');
 
 assert.ok(idsFor({}, { totalRuns: 1 }).includes('ACH_EARLY_PILOT'));
@@ -35,7 +35,7 @@ const overqualifiedLowScoreSummary = {
   clearLivesRemaining: 9,
   bossesKilled: 99,
   wavesCleared: 99,
-  totalKills: 999,
+  totalKills: 9999,
   noHitWaves: 99,
   noHitSectors: 99,
   bestComboCount: 999,
@@ -62,9 +62,12 @@ assert.deepEqual(
 );
 const fullLegendUnlockIds = idsFor({
   ...overqualifiedLowScoreSummary,
-  score: 1000000,
-  finalScore: 1000000
-}, overqualifiedProgress);
+  score: 2000000,
+  finalScore: 2000000
+}, {
+  ...overqualifiedProgress,
+  unlockedShipIds: Array.from({ length: 25 }, (_, index) => `ship_${index}`)
+});
 assert.deepEqual(
   [...legendIds].filter((id) => !fullLegendUnlockIds.includes(id)),
   [],
@@ -94,4 +97,4 @@ for (const achievement of LEGEND_ACHIEVEMENTS) {
   assert.ok(Number(achievement.target) >= 0);
 }
 
-console.log('[milestone-achievements] PASS 10 launch milestones plus 20 legend score-gated milestones evaluate from run and career progress');
+console.log('[milestone-achievements] PASS 10 launch milestones plus 30 legend score-gated milestones evaluate from run and career progress');

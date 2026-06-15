@@ -58,8 +58,8 @@
     "reason": "Desktop build stores highscores and settings locally. Steam Cloud can be added after the Steam client package path is validated and save-file locations are finalized."
   },
   "achievementsDecision": {
-    "status": "defer_for_v1",
-    "reason": "The game has in-run accomplishment beats, but no Steamworks API integration is present. Do not advertise Steam achievements until implemented and tested."
+    "status": "implemented_pending_full_steamworks_verification",
+    "reason": "The game has source/runtime Steam achievement integration and an 81-achievement catalog. Verify all Steamworks App Admin rows and icons from release/steamworks/achievement-config-prep-20260615.json before advertising the full set."
   },
   "localizationDecision": {
     "primaryLanguage": "English",

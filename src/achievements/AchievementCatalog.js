@@ -38,7 +38,17 @@ export const LEGEND_ACHIEVEMENT_IDS = Object.freeze({
   BLACK_BOX_ARCHIVIST: 'ACH_BLACK_BOX_ARCHIVIST',
   HANGAR_AFTERPARTY: 'ACH_HANGAR_AFTERPARTY',
   BOSS_ROSTER_STAMPED: 'ACH_BOSS_ROSTER_STAMPED',
-  THEME_PARK_PANIC: 'ACH_THEME_PARK_PANIC'
+  THEME_PARK_PANIC: 'ACH_THEME_PARK_PANIC',
+  TWO_MILLION_REACTOR: 'ACH_TWO_MILLION_REACTOR',
+  SECTOR_THIRTY_BLACKOUT: 'ACH_SECTOR_THIRTY_BLACKOUT',
+  SECTOR_FIFTY_ENDLESS: 'ACH_SECTOR_FIFTY_ENDLESS',
+  TEN_BOSS_TRIBUNAL: 'ACH_TEN_BOSS_TRIBUNAL',
+  CLEAN_TEN_STATUTE: 'ACH_CLEAN_TEN_STATUTE',
+  THIRTY_WAVE_GHOST: 'ACH_THIRTY_WAVE_GHOST',
+  TWO_HUNDRED_HIT_COMET: 'ACH_TWO_HUNDRED_HIT_COMET',
+  DANGER_DODGE_PROPHET: 'ACH_DANGER_DODGE_PROPHET',
+  GRAZE_STORM_CROWN: 'ACH_GRAZE_STORM_CROWN',
+  FULL_HANGAR_OMEGA: 'ACH_FULL_HANGAR_OMEGA'
 });
 
 function scoreGated(requirements = []) {
@@ -411,6 +421,126 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
     target: 6,
     minimumScore: LEGEND_SCORE_GATE,
     requirements: scoreGated([{ metric: 'uniqueRunThemesSurvived', target: 6 }]),
+    difficulty: 'legendary',
+    hidden: false
+  },
+  {
+    id: LEGEND_ACHIEVEMENT_IDS.TWO_MILLION_REACTOR,
+    name: 'Two-Million Reactor',
+    description: 'Score 2,000,000 points in a ranked run.',
+    type: 'milestone',
+    metric: 'score',
+    target: 2000000,
+    minimumScore: LEGEND_SCORE_GATE,
+    requirements: scoreGated([{ metric: 'score', target: 2000000 }]),
+    difficulty: 'legendary',
+    hidden: false
+  },
+  {
+    id: LEGEND_ACHIEVEMENT_IDS.SECTOR_THIRTY_BLACKOUT,
+    name: 'Sector 30 Blackout',
+    description: 'Reach Sector 30 with at least 100,000 points.',
+    type: 'milestone',
+    metric: 'sectorReached',
+    target: 30,
+    minimumScore: LEGEND_SCORE_GATE,
+    requirements: scoreGated([{ metric: 'sectorReached', target: 30 }]),
+    difficulty: 'legendary',
+    hidden: false
+  },
+  {
+    id: LEGEND_ACHIEVEMENT_IDS.SECTOR_FIFTY_ENDLESS,
+    name: 'Sector 50 Endless',
+    description: 'Reach Sector 50 with at least 100,000 points.',
+    type: 'milestone',
+    metric: 'sectorReached',
+    target: 50,
+    minimumScore: LEGEND_SCORE_GATE,
+    requirements: scoreGated([{ metric: 'sectorReached', target: 50 }]),
+    difficulty: 'legendary',
+    hidden: false
+  },
+  {
+    id: LEGEND_ACHIEVEMENT_IDS.TEN_BOSS_TRIBUNAL,
+    name: 'Ten-Boss Tribunal',
+    description: 'Defeat 10 bosses in one 100,000-point ranked run.',
+    type: 'milestone',
+    metric: 'bossesKilled',
+    target: 10,
+    minimumScore: LEGEND_SCORE_GATE,
+    requirements: scoreGated([{ metric: 'bossesKilled', target: 10 }]),
+    difficulty: 'legendary',
+    hidden: false
+  },
+  {
+    id: LEGEND_ACHIEVEMENT_IDS.CLEAN_TEN_STATUTE,
+    name: 'Clean Ten Statute',
+    description: 'Clear 10 no-hit sectors in one 100,000-point ranked run.',
+    type: 'milestone',
+    metric: 'runNoHitSectors',
+    target: 10,
+    minimumScore: LEGEND_SCORE_GATE,
+    requirements: scoreGated([{ metric: 'runNoHitSectors', target: 10 }]),
+    difficulty: 'legendary',
+    hidden: false
+  },
+  {
+    id: LEGEND_ACHIEVEMENT_IDS.THIRTY_WAVE_GHOST,
+    name: 'Thirty-Wave Ghost',
+    description: 'Clear 30 no-hit waves in one 100,000-point ranked run.',
+    type: 'milestone',
+    metric: 'runNoHitWaves',
+    target: 30,
+    minimumScore: LEGEND_SCORE_GATE,
+    requirements: scoreGated([{ metric: 'runNoHitWaves', target: 30 }]),
+    difficulty: 'legendary',
+    hidden: false
+  },
+  {
+    id: LEGEND_ACHIEVEMENT_IDS.TWO_HUNDRED_HIT_COMET,
+    name: 'Two-Hundred Hit Comet',
+    description: 'Reach a 200-hit combo in a 100,000-point ranked run.',
+    type: 'milestone',
+    metric: 'bestComboCount',
+    target: 200,
+    minimumScore: LEGEND_SCORE_GATE,
+    requirements: scoreGated([{ metric: 'bestComboCount', target: 200 }]),
+    difficulty: 'legendary',
+    hidden: false
+  },
+  {
+    id: LEGEND_ACHIEVEMENT_IDS.DANGER_DODGE_PROPHET,
+    name: 'Danger Dodge Prophet',
+    description: 'Chain 20 danger dodges in a 100,000-point ranked run.',
+    type: 'milestone',
+    metric: 'bestDangerDodgeStreak',
+    target: 20,
+    minimumScore: LEGEND_SCORE_GATE,
+    requirements: scoreGated([{ metric: 'bestDangerDodgeStreak', target: 20 }]),
+    difficulty: 'legendary',
+    hidden: false
+  },
+  {
+    id: LEGEND_ACHIEVEMENT_IDS.GRAZE_STORM_CROWN,
+    name: 'Graze Storm Crown',
+    description: 'Trigger 12 Graze Breaks in a 100,000-point ranked run.',
+    type: 'milestone',
+    metric: 'grazeBreaks',
+    target: 12,
+    minimumScore: LEGEND_SCORE_GATE,
+    requirements: scoreGated([{ metric: 'grazeBreaks', target: 12 }]),
+    difficulty: 'legendary',
+    hidden: false
+  },
+  {
+    id: LEGEND_ACHIEVEMENT_IDS.FULL_HANGAR_OMEGA,
+    name: 'Full Hangar Omega',
+    description: 'Unlock all 25 playable ships, then finish a 100,000-point run.',
+    type: 'milestone',
+    metric: 'unlockedShipCount',
+    target: 25,
+    minimumScore: LEGEND_SCORE_GATE,
+    requirements: scoreGated([{ metric: 'unlockedShipCount', target: 25 }]),
     difficulty: 'legendary',
     hidden: false
   }
