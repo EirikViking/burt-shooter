@@ -41,7 +41,7 @@ for (const needle of [
   'const rankPanelWidth = 164;',
   'const rankTextMaxWidth = 92;',
   'Math.max(0.58, rankTextMaxWidth / this.rankText.width)',
-  'const rankOffset = layout.isMobile ? 196 : 212;'
+  'const rankOffset = layout.isMobile ? 186 : (isLargeDesktop ? 204 : 198);'
 ]) {
   assert.ok(hud.includes(needle), `rank badge overlap guard missing marker: ${needle}`);
 }

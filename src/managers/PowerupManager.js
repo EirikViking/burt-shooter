@@ -359,6 +359,7 @@ export class PowerupManager {
     // Track extra life spawns for the rare long-gap guarantee.
     this.lastExtraLifeLevel = 0;
     this.extraLifeSpawnedThisLevel = false;
+    this.pendingGuaranteedExtraLifeLevel = null;
 
     this.debugPowerupsEnabled = false;
     this.debugPowerupTimer = 0;
@@ -383,10 +384,34 @@ export class PowerupManager {
       const levelsSinceLastLife = level - this.lastExtraLifeLevel;
       const guaranteedLifeLevels = Number(BalanceConfig.powerups.extraLifeGuaranteedEveryLevels) || 0;
       if (extraLifeDropsEnabled && guaranteedLifeLevels > 0 && levelsSinceLastLife >= guaranteedLifeLevels) {
+        if (this.game?.scenes?.play?.overrunMilestoneInterlude?.active) {
+          this.pendingGuaranteedExtraLifeLevel = level;
+          console.log(`[PowerupManager] DEFER guaranteed extra life for level ${level} until overrun interlude clears`);
+          return;
+        }
         console.log(`[PowerupManager] FORCING guaranteed extra life for level ${level} (${levelsSinceLastLife} levels since last)`);
         this.forceExtraLifeSpawn();
       }
     }
+  }
+
+  flushPendingGuaranteedExtraLife() {
+    const pendingLevel = Number(this.pendingGuaranteedExtraLifeLevel);
+    if (!Number.isFinite(pendingLevel)) return;
+    if (pendingLevel !== this.currentLevel) {
+      this.pendingGuaranteedExtraLifeLevel = null;
+      return;
+    }
+    if (this.game?.scenes?.play?.overrunMilestoneInterlude?.active) return;
+
+    const extraLifeDropsEnabled = BalanceConfig.powerups.extraLifeDropsEnabled === true;
+    const guaranteedLifeLevels = Number(BalanceConfig.powerups.extraLifeGuaranteedEveryLevels) || 0;
+    const levelsSinceLastLife = pendingLevel - this.lastExtraLifeLevel;
+    if (extraLifeDropsEnabled && guaranteedLifeLevels > 0 && levelsSinceLastLife >= guaranteedLifeLevels) {
+      console.log(`[PowerupManager] FORCING deferred guaranteed extra life for level ${pendingLevel} (${levelsSinceLastLife} levels since last)`);
+      this.forceExtraLifeSpawn();
+    }
+    this.pendingGuaranteedExtraLifeLevel = null;
   }
 
   forceExtraLifeSpawn() {
@@ -548,6 +573,7 @@ export class PowerupManager {
   }
 
   update(delta, scene) {
+    this.flushPendingGuaranteedExtraLife();
     this.updateDebugPowerups(delta, scene);
     this.powerups = this.powerups.filter(powerup => {
       powerup.update(delta, scene);

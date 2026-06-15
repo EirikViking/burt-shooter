@@ -109,6 +109,11 @@ function findForbiddenPlaceholderMarkers(value) {
   return forbiddenPlaceholderMarkers.filter((marker) => text.includes(marker));
 }
 
+function findQuestionPlaceholderMarkers(value) {
+  const text = String(value ?? '');
+  return text.match(/\?{2,}/g) || [];
+}
+
 function findEnglishLeakMarkers(value) {
   const text = String(value ?? '');
   const hits = forbiddenEnglishFragments.filter((fragment) => text.toLowerCase().includes(fragment.toLowerCase()));
@@ -142,6 +147,7 @@ const sourceTextKeys = new Set(sourceLocales.flatMap((locale) => Object.keys(loc
 const allowTodos = process.argv.includes('--allow-i18n-todo');
 const todoMarkers = [];
 const placeholderMarkers = [];
+const questionPlaceholderMarkers = [];
 for (const [code, locale] of locales) {
   for (const [key, value] of Object.entries(locale.sourceText || {})) {
     if (/\b(TODO|TBD|TRANSLATE|UNLOCALIZED)\b/i.test(String(value))) {
@@ -151,12 +157,20 @@ for (const [code, locale] of locales) {
     if (markers.length) {
       placeholderMarkers.push(`${code}.sourceText.${key}: ${markers.join(', ')}`);
     }
+    const questionMarkers = findQuestionPlaceholderMarkers(value);
+    if (questionMarkers.length) {
+      questionPlaceholderMarkers.push(`${code}.sourceText.${key}: ${questionMarkers.join(', ')}`);
+    }
   }
   for (const key of flattenKeys(locale)) {
     const value = key.split('.').reduce((node, part) => node?.[part], locale);
     const markers = findForbiddenPlaceholderMarkers(value);
     if (markers.length) {
       placeholderMarkers.push(`${code}.${key}: ${markers.join(', ')}`);
+    }
+    const questionMarkers = findQuestionPlaceholderMarkers(value);
+    if (questionMarkers.length) {
+      questionPlaceholderMarkers.push(`${code}.${key}: ${questionMarkers.join(', ')}`);
     }
   }
 }
@@ -168,6 +182,11 @@ assert.deepEqual(
   placeholderMarkers,
   [],
   `Player-facing placeholder markers are forbidden in locale data:\n${placeholderMarkers.join('\n')}`
+);
+assert.deepEqual(
+  questionPlaceholderMarkers,
+  [],
+  `Player-facing question-mark placeholders are forbidden in locale data:\n${questionPlaceholderMarkers.join('\n')}`
 );
 
 const patternIds = locales.map(([code, locale]) => [code, (locale.patterns || []).map((pattern) => pattern.id)]);

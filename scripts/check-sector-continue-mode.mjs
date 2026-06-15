@@ -191,6 +191,17 @@ async function clickMenuButtonZone(page, buttonKey, zone = 'center') {
   const state = await readState(page);
   const button = state.menu?.items?.[buttonKey];
   assert.ok(button?.width > 0 && button?.height > 0, `Missing menu button bounds for ${buttonKey}`);
+  const sectorStart = buttonKey === 'sectorStartButton' ? state.menu?.sectorStart : null;
+  const arrowCue = sectorStart?.arrowCueBounds;
+  const coreButton = sectorStart?.coreButtonBounds;
+  if (zone === 'left' && arrowCue && coreButton) {
+    await page.mouse.click((arrowCue.x + coreButton.x) / 2, button.y + button.height / 2);
+    return;
+  }
+  if (zone === 'right' && arrowCue && coreButton) {
+    await page.mouse.click((coreButton.right + arrowCue.right) / 2, button.y + button.height / 2);
+    return;
+  }
   const x = zone === 'left'
     ? button.x + button.width * 0.12
     : zone === 'right'
