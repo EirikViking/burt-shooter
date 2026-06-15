@@ -1,0 +1,53 @@
+{
+  "uploadedAt": "2026-06-15T07:38:43Z",
+  "steamBuildId": "23736903",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "setLive": "",
+  "steamUser": "gaunziman",
+  "branch": "codex/hard-achievements-20260612",
+  "codeCommit": "a192fd02b1470801aaab73baeb0bcaeca329aa00",
+  "startingCommit": "452543d46bf7e9e848d89d72aa82dba8a007429f",
+  "snapshotTag": "snap/pre-enemy-gfx-steam-20260615-090427",
+  "buildVersion": "v2026-06-15_09-32-12",
+  "description": "Private SteamPipe upload for late enemy and boss-support ship readability polish. Live branch was not changed.",
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "steamcmd": "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe"
+  },
+  "qa": [
+    "npm run check:i18n",
+    "npm run build:current",
+    "npm run check:i18n-ui",
+    "npm run check:codex-revamp",
+    "npm run check:codex-layout",
+    "npm run smoke",
+    "npm run check:steam-electron-bridge",
+    "npm run desktop:smoke:current",
+    "npm run check:controller-flow",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run steamworks:write-vdf",
+    "steamcmd +login gaunziman +run_app_build app_build_LOCAL.vdf +quit"
+  ],
+  "evidence": {
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-15T07-34-48-799Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-06-15T07-35-24-556Z/report.json",
+    "codexLayoutContactSheet": "test-results/codex-revamp-20260606/layout/codex-after-contact-sheet.png",
+    "i18nUiReport": "test-results/i18n-ui-2026-06-15T07-26-53-439Z",
+    "browserSmokeReport": "test-results/smoke-2026-06-15T07-28-21-548Z/report.json",
+    "steamPackageRuntimeReport": "test-results/steam-package-runtime-2026-06-15T07-36-58-358Z/report.json",
+    "steamBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "steamcmdResult": {
+    "exitCode": 0,
+    "summary": "Successfully finished AppID 4765070 build (BuildID 23736903)."
+  },
+  "steamworksTouched": false,
+  "liveBranchChanged": false
+}
