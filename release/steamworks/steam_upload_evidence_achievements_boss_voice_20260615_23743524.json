@@ -1,0 +1,60 @@
+{
+  "uploadedAt": "2026-06-15T14:17:45Z",
+  "steamBuildId": "23743524",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "setLive": "",
+  "steamUser": "gaunziman",
+  "branch": "codex/hard-achievements-20260612",
+  "codeCommit": "a5bdcfa13961ef5aee1485a2e318ba0a6b5f0b15",
+  "startingCommit": "a5bdcfa13961ef5aee1485a2e318ba0a6b5f0b15",
+  "buildVersion": "v2026-06-15_16-12-43",
+  "description": "Private SteamPipe upload for the current achievements and boss voice baseline: 81 source/runtime achievements, Steamworks achievement rows published, boss voice setting, first-boss pacing/readability fix, and draft patch notes. Live branch was not changed.",
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "steamcmd": "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe"
+  },
+  "qa": [
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=\"\" npm run steamworks:write-vdf",
+    "steamcmd +login gaunziman +run_app_build app_build_LOCAL.vdf +quit"
+  ],
+  "evidence": {
+    "steamSdkReadyReport": "test-results/steam-sdk-ready-2026-06-15T14-12-42-642Z/report.json",
+    "steamPackageRuntimeReport": "test-results/steam-package-runtime-2026-06-15T14-16-05-130Z/report.json",
+    "steamBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "steamworksAchievementPublishEvidence": "release/steamworks/steamworks_achievement_publish_evidence_20260615.json",
+    "achievementConfigPrep": "release/steamworks/achievement-config-prep-20260615.json",
+    "patchNoteDraft": "docs/steam/patch-notes-2026-06-15-achievements-boss-voice-steamworks.md"
+  },
+  "qaHighlights": {
+    "releaseLine": "PASS latest localization, achievements, Steam Cloud, fullscreen, and marketing hotkey markers present.",
+    "achievementCatalog": "81 source/runtime achievements verified during package prebuild: 39 rank, 40 milestone, 2 leaderboard.",
+    "packageRuntime": "PASS appId 4765070 and leaderboard nova_swarm_global_score_v2.",
+    "steamcmd": "Successfully finished AppID 4765070 build (BuildID 23743524)."
+  },
+  "steamcmdResult": {
+    "exitCode": 0,
+    "summary": "Successfully finished AppID 4765070 build (BuildID 23743524).",
+    "depotManifest": "6734233214593286269",
+    "uploadedChunks": 6
+  },
+  "steamworksAchievementRows": {
+    "sourceRuntimeCount": 81,
+    "steamworksObservedCount": 81,
+    "status": "backend_rows_published",
+    "note": "Steamworks app admin achievement rows were published separately before this SteamPipe upload. Browser verification observed 81 achievements on the app admin achievements page."
+  },
+  "manualSteamworksSteps": [
+    "Upload final Steamworks achievement icons manually if needed; Browser automation cannot set local file inputs reliably.",
+    "Assign BuildID 23743524 to the intended Steam branch only after human client validation."
+  ],
+  "steamworksTouchedDuringUpload": false,
+  "patchNotesPublished": false,
+  "liveBranchChanged": false,
+  "leaderboardIdentity": "nova_swarm_global_score_v2"
+}
