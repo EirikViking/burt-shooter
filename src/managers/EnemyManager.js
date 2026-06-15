@@ -1075,7 +1075,6 @@ export class EnemyManager {
             this.phase = 'COMPLETE';
             console.log(`[BossPhase] level=${this.level} phase=${this.phase} bossDefeated=true`);
             this.state = 'LEVEL_COMPLETE';
-            AudioManager.playVoice('mission_control_victory', { cooldownMs: 18000, duckMs: 1800, bypassGlobalCooldown: true });
             return;
           }
         }

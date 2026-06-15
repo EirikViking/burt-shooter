@@ -367,7 +367,8 @@ export class HUD {
     const target = Math.max(0, Math.floor(Number(chase?.targetScore) || 0));
     const score = Math.max(0, Math.floor(Number(this.game?.score) || 0));
     const remaining = Math.max(0, target - score);
-    const hasTarget = target > 0;
+    const syncingTarget = Boolean(chase?.syncingTarget);
+    const hasTarget = target > 0 && !syncingTarget;
     const ratio = hasTarget ? Math.min(1.25, score / target) : 0;
     const surpassed = hasTarget && score > target;
     const pulse = 0.5 + Math.sin(Date.now() * (surpassed ? 0.017 : 0.011)) * 0.5;
@@ -379,7 +380,9 @@ export class HUD {
     this.highscoreChaseTitle.text = label;
     this.highscoreChaseTarget.text = hasTarget
       ? `${translateText('BEAT')} ${this.formatScore(target)}`
-      : translateText('BEAT THE EMPTY THRONE');
+      : syncingTarget
+        ? translateText('CHECKING BOARD')
+        : translateText('BEAT THE EMPTY THRONE');
     this.highscoreChaseGap.text = surpassed
       ? translateText('OLD SCORE HUMILIATED')
       : translateText('{score} TO MAKE IT CRY', { score: this.formatScore(remaining + 1) });

@@ -75,6 +75,7 @@ function pickBossWarningJoke(profile, level = 1) {
 const OVERRUN_CLEAR_VFX_MS = 5600;
 const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
+const BOSS_DEATH_VOICE_LOCK_MS = 9400;
 
 export class PlayScene {
   constructor(game) {
@@ -1425,7 +1426,7 @@ export class PlayScene {
   }
 
   playLevelClearVoice({ bossCompletion = false } = {}) {
-    const delayMs = bossCompletion ? 3200 : 260;
+    const delayMs = bossCompletion ? BOSS_DEATH_VOICE_LOCK_MS + 450 : 260;
     const token = (this.levelClearVoiceToken || 0) + 1;
     this.levelClearVoiceToken = token;
     setTimeout(() => {
@@ -1436,7 +1437,7 @@ export class PlayScene {
         bypassEventCooldown: true,
         exclusiveGroup: 'level_clear_flirt',
         delayIfVoiceLocked: true,
-        maxVoiceLockDelayMs: bossCompletion ? 3600 : 1600,
+        maxVoiceLockDelayMs: bossCompletion ? BOSS_DEATH_VOICE_LOCK_MS + 1600 : 1600,
         voicePriority: bossCompletion ? 10 : 4,
         cooldownMs: 0,
         eventCooldownMs: 0,
@@ -8332,7 +8333,7 @@ export class PlayScene {
     AudioManager.playSfx('boss_explode', { force: true, volume: 0.72, minIntervalMs: 0 });
     AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.42, minIntervalMs: 0 });
     AudioManager.reserveVoiceLock?.('boss_death_agony', {
-      durationMs: 3600,
+      durationMs: BOSS_DEATH_VOICE_LOCK_MS,
       voicePriority: 100,
       stopOtherVoices: true,
       force: true,
@@ -8345,7 +8346,7 @@ export class PlayScene {
         bypassEventCooldown: true,
         exclusiveGroup: 'boss_death_agony',
         stopOtherVoices: true,
-        exclusiveLockMs: 3600,
+        exclusiveLockMs: BOSS_DEATH_VOICE_LOCK_MS,
         exclusiveLockReason: 'boss_death_agony',
         voicePriority: 100,
         cooldownMs: 0,

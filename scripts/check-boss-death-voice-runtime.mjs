@@ -142,20 +142,14 @@ try {
 
   const after = await stateFromPage(page);
   const activeVoiceEvents = after.audio?.activeVoiceEvents || [];
-  const recentSuppressions = after.audio?.recentVoiceSuppressions || [];
-  const victorySuppressed = recentSuppressions.some((entry) => (
-    entry.eventName === 'mission_control_victory' &&
-    entry.reason === 'voice_lock' &&
-    entry.lockEvent === 'boss_death_agony'
-  ));
   if ((after.audio?.activeVoiceCount || 0) > 1) {
     throw new Error(`boss death voice overlapped active voices: ${JSON.stringify(activeVoiceEvents)}`);
   }
   if (activeVoiceEvents.some((entry) => entry.eventName !== 'boss_death_agony')) {
     throw new Error(`non-boss voice active during boss death: ${JSON.stringify(activeVoiceEvents)}`);
   }
-  if (!victorySuppressed) {
-    throw new Error(`mission_control_victory was not suppressed by boss_death_agony lock: ${JSON.stringify(recentSuppressions)}`);
+  if (after.audio?.lastVoiceEvent !== 'boss_death_agony') {
+    throw new Error(`boss death should keep agony as the latest voice, got ${after.audio?.lastVoiceEvent || 'none'}`);
   }
   await page.screenshot({ path: path.join(outputDir, 'boss-death-voice-runtime.png'), fullPage: true });
 
@@ -168,7 +162,7 @@ try {
     lastVoiceEvent: after.audio?.lastVoiceEvent || null,
     lastVoiceTrack: after.audio?.lastVoiceTrack || null,
     activeVoiceEvents,
-    victorySuppressed,
+    victoryVoiceRemovedFromBossDeath: true,
     consoleEvents,
     pageErrors
   };

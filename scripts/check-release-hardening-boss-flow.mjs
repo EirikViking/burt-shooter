@@ -44,7 +44,7 @@ assert.ok(playScene.includes('const ringCount = 3 + (seed % 3)'), 'boss death sh
 assert.ok(playScene.includes("AudioManager.playSfx('boss_death_cascade'"), 'boss death should play the generated cascade one-shot');
 assert.ok(playScene.includes("AudioManager.playSfx('boss_explode'"), 'boss death should keep the heavy explosion layer');
 assert.ok(playScene.includes("AudioManager.playSfx('boss_phase_surge'"), 'boss death should layer boss-specific surge audio');
-assert.ok(playScene.includes("AudioManager.playVoice('boss_death_agony'"), 'boss death should play a randomized agony voice line');
+assert.ok(playScene.includes("AudioManager.playDiegeticVoice('boss_death_agony'"), 'boss death should play a randomized agony voice line');
 assert.ok(!playScene.includes("else AudioManager.playSfx('powerup', { force: true, volume: 0.8 });"), 'boss celebration should not end with generic powerup pickup SFX');
 
 const bossSource = readFileSync('src/entities/Boss.js', 'utf8');

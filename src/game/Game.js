@@ -580,6 +580,7 @@ export class Game {
       targetScore,
       runMode,
       source: isSectorStart ? 'sector_start_record' : 'ranked_best_score',
+      syncingTarget: runMode === RUN_MODES.RANKED,
       checkpoint: sectorStartCheckpoint || null,
       surpassed: targetScore <= 0,
       milestones: new Set(),
@@ -606,10 +607,12 @@ export class Game {
       .then((best) => {
         if (this.highscoreChase !== chase || !this.isRankedRun()) return null;
         this.raiseHighscoreChaseTarget(best?.score, best?.source || 'known_personal_best');
+        if (this.highscoreChase === chase) chase.syncingTarget = false;
         return this.highscoreChase?.targetScore ?? null;
       })
       .catch((error) => {
         console.warn('[HighscoreChase] Unable to load known personal best', error?.message || error);
+        if (this.highscoreChase === chase) chase.syncingTarget = false;
         return null;
       });
     return this.highscoreChaseTargetPromise;
@@ -620,6 +623,7 @@ export class Game {
       targetScore: 0,
       runMode: this.runMode,
       source: 'none',
+      syncingTarget: false,
       checkpoint: null,
       surpassed: true,
       milestones: new Set()

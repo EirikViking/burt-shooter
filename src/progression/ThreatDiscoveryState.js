@@ -1,5 +1,5 @@
 import { getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
-import { HANGAR_PROGRESS_KEY } from './HangarProgressState.js';
+import { readHangarProgressState } from './HangarProgressState.js';
 
 export const THREAT_DISCOVERY_KEY = 'nova.threatDiscovery.v1';
 export const THREAT_DISCOVERY_VERSION = 1;
@@ -80,15 +80,6 @@ function getCatalogIndex() {
   return catalogIndex;
 }
 
-function readStoredJson(key, fallback = {}) {
-  try {
-    const raw = storage()?.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 function getEarnedPilotRankIds(progress = {}, index = new Map()) {
   const candidates = [
     progress.highestPilotRank,
@@ -110,7 +101,7 @@ function getEarnedPilotRankIds(progress = {}, index = new Map()) {
 }
 
 function hydrateFromHangarProgress(state) {
-  const progress = readStoredJson(HANGAR_PROGRESS_KEY, {});
+  const progress = readHangarProgressState();
   const discoveryIds = new Set([
     ...(Array.isArray(progress.discoveredThreatIds) ? progress.discoveredThreatIds : []),
     ...(Array.isArray(progress.defeatedBossIds) ? progress.defeatedBossIds : []),

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { THREAT_CODEX_CATEGORIES, getThreatCodexCatalog } from '../src/config/ThreatCodexCatalog.js';
 import { BOSS_SUPPORT_SHIP_TOTAL } from '../src/config/BossSupportShips.js';
 import { GENERATED_ENEMY_TOTAL } from '../src/config/GeneratedEnemyProfiles.js';
-import { HANGAR_PROGRESS_KEY } from '../src/progression/HangarProgressState.js';
+import { HANGAR_PROGRESS_KEY, LEGACY_UNLOCK_PROGRESS_KEY } from '../src/progression/HangarProgressState.js';
 import {
   THREAT_DISCOVERY_KEY,
   clearThreatCodexUnread,
@@ -104,6 +104,19 @@ if ((restoredCompletion.pilotRanks?.discovered || 0) < 13) fail('Threat Codex sh
 if (!restoredState.items?.pilotRanks?.pilot_rank_12) fail('Threat Codex should restore the current displayed pilot rank entry');
 if (!fakeStorage.get(THREAT_DISCOVERY_KEY)) fail('Threat Codex hydration should write repaired discovery state');
 fakeStorage.delete(HANGAR_PROGRESS_KEY);
+resetDiscoveryStateForTests();
+
+fakeStorage.delete(THREAT_DISCOVERY_KEY);
+fakeStorage.set(LEGACY_UNLOCK_PROGRESS_KEY, JSON.stringify({
+  bestScore: 81240,
+  bestRank: 18,
+  bestLevel: 18
+}));
+const legacyRestoredState = getThreatCodexState();
+const legacyCompletion = getCodexCompletionCounts(catalog, legacyRestoredState);
+if ((legacyCompletion.pilotRanks?.discovered || 0) < 19) fail('Threat Codex should hydrate earned pilot ranks from legacy hangar progress');
+if (!legacyRestoredState.items?.pilotRanks?.pilot_rank_18) fail('Threat Codex should restore legacy displayed pilot rank entry');
+fakeStorage.delete(LEGACY_UNLOCK_PROGRESS_KEY);
 resetDiscoveryStateForTests();
 
 const seen = recordThreatSeen('telegraph_rail_lance', 'attackPatterns', { name: 'Rail Lance' });
