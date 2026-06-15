@@ -48,6 +48,13 @@
     "exitCode": 0,
     "summary": "Successfully finished AppID 4765070 build (BuildID 23736903)."
   },
+  "steamPatchNotes": {
+    "status": "published",
+    "title": "Enemy Readability Pass: Support Ships Look Like Ships Now",
+    "url": "https://store.steampowered.com/news/app/4765070/view/667242081733838821",
+    "partnerEditUrl": "https://steamcommunity.com/games/4765070/partnerevents/edit/667242081733838821",
+    "artworkNote": "Published through Browser. Steam accepted the post without new local artwork because the Browser tool could not safely attach a local file upload; no release-post image was reused."
+  },
   "steamworksTouched": false,
   "liveBranchChanged": false
 }
