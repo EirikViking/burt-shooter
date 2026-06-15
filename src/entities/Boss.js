@@ -1453,7 +1453,9 @@ export class Boss {
 
   getRegularAttackIntervalMs() {
     const base = this.level <= 1 ? 3400 : this.level === 2 ? 2580 : 2920;
-    const phaseScalar = this.phase === 1 ? 1 : this.phase === 2 ? 0.95 : 0.9;
+    const phaseScalar = this.level <= 1
+      ? (this.phase === 1 ? 1 : 1.18)
+      : this.phase === 2 ? 0.95 : 0.9;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
     return Math.round((base * phaseScalar * chaosRelief) / this.getPostFirstBossDifficultyScalar());
   }

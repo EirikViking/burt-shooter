@@ -486,6 +486,7 @@ function sanitizeAudioSettings(audio = {}) {
   if (audio.voiceVolume !== undefined) next.voiceVolume = clampUnit(audio.voiceVolume, 0.45);
   if (audio.musicEnabled !== undefined) next.musicEnabled = Boolean(audio.musicEnabled);
   if (audio.voiceEnabled !== undefined) next.voiceEnabled = Boolean(audio.voiceEnabled);
+  if (audio.bossVoiceEnabled !== undefined) next.bossVoiceEnabled = Boolean(audio.bossVoiceEnabled);
   if (audio.ctaVoiceEnabled !== undefined) next.ctaVoiceEnabled = Boolean(audio.ctaVoiceEnabled);
   if (audio.musicPack !== undefined) {
     const musicPack = String(audio.musicPack || '').trim();

@@ -10,6 +10,7 @@ class AudioController {
     this.musicEnabled = false;
     this.voiceEnabled = false;
     this.ctaVoiceEnabled = true;
+    this.bossVoiceEnabled = true;
     this.musicPack = 'classic';
 
     // Volume
@@ -144,6 +145,8 @@ class AudioController {
     if (savedVoice !== null) this.voiceEnabled = savedVoice !== 'false' && Features.VOICE_ENABLED;
     const savedCtaVoice = localStorage.getItem('burt_cta_voice_enabled');
     if (savedCtaVoice !== null) this.ctaVoiceEnabled = savedCtaVoice !== 'false';
+    const savedBossVoice = localStorage.getItem('burt_boss_voice_enabled');
+    if (savedBossVoice !== null) this.bossVoiceEnabled = savedBossVoice !== 'false';
 
     this.applyMusicVolume();
   }
@@ -174,6 +177,8 @@ class AudioController {
       this.voiceEnabled = savedVoice !== 'false' && Features.VOICE_ENABLED;
       const savedCtaVoice = localStorage.getItem('burt_cta_voice_enabled');
       this.ctaVoiceEnabled = savedCtaVoice !== 'false';
+      const savedBossVoice = localStorage.getItem('burt_boss_voice_enabled');
+      this.bossVoiceEnabled = savedBossVoice !== 'false';
 
       // Add debug key listener globally (only once)
       if (!this._debugKeyHandler) {
@@ -818,6 +823,7 @@ class AudioController {
       musicEnabled: this.musicEnabled,
       voiceEnabled: this.voiceEnabled,
       ctaVoiceEnabled: this.ctaVoiceEnabled,
+      bossVoiceEnabled: this.bossVoiceEnabled,
       musicDuckFactor: this.musicDuckFactor,
       pauseDuckFactor: this.pauseDuckFactor,
       currentMusicContext: this.currentContext,
@@ -910,8 +916,20 @@ class AudioController {
     return this.ctaVoiceEnabled;
   }
 
+  setBossVoiceEnabled(enabled) {
+    this.bossVoiceEnabled = Boolean(enabled);
+    try {
+      localStorage.setItem('burt_boss_voice_enabled', this.bossVoiceEnabled);
+    } catch { }
+    return this.bossVoiceEnabled;
+  }
+
   isCtaVoiceEnabled() {
     return this.ctaVoiceEnabled !== false;
+  }
+
+  isBossVoiceEnabled() {
+    return this.bossVoiceEnabled !== false;
   }
 
   toggleMute() {

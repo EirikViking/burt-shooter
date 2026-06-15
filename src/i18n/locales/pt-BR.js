@@ -111,6 +111,7 @@ const sourceText = Object.freeze({
   'CONFIGURAÇÕES': 'CONFIGURAÇÕES',
   'MUSIC': 'MÚSICA',
   'VOICE': 'VOZ',
+  'Boss Voices': 'VOZES DO CHEFE',
   'CTA VOICE': 'VOZ DE RECOMEÇO',
   'MUSIC SET': 'MODO DE MÚSICA',
   'TEST': 'TESTAR',

@@ -8332,30 +8332,32 @@ export class PlayScene {
     AudioManager.playSfx(style.sfx || 'boss_death_cascade', { force: true, volume: 0.82, minIntervalMs: 0 });
     AudioManager.playSfx('boss_explode', { force: true, volume: 0.72, minIntervalMs: 0 });
     AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.42, minIntervalMs: 0 });
-    AudioManager.reserveVoiceLock?.('boss_death_agony', {
-      durationMs: BOSS_DEATH_VOICE_LOCK_MS,
-      voicePriority: 100,
-      stopOtherVoices: true,
-      force: true,
-      reason: 'boss_death_impact'
-    });
-    this.scheduleBossDeathFx(() => {
-      AudioManager.playDiegeticVoice('boss_death_agony', {
-        force: true,
-        bypassGlobalCooldown: true,
-        bypassEventCooldown: true,
-        exclusiveGroup: 'boss_death_agony',
-        stopOtherVoices: true,
-        exclusiveLockMs: BOSS_DEATH_VOICE_LOCK_MS,
-        exclusiveLockReason: 'boss_death_agony',
+    if (AudioManager.isBossVoiceEnabled?.() !== false) {
+      AudioManager.reserveVoiceLock?.('boss_death_agony', {
+        durationMs: BOSS_DEATH_VOICE_LOCK_MS,
         voicePriority: 100,
-        cooldownMs: 0,
-        eventCooldownMs: 0,
-        volume: 2.6,
-        duckFactor: 0.22,
-        duckMs: 2300
+        stopOtherVoices: true,
+        force: true,
+        reason: 'boss_death_impact'
       });
-    }, 70);
+      this.scheduleBossDeathFx(() => {
+        AudioManager.playDiegeticVoice('boss_death_agony', {
+          force: true,
+          bypassGlobalCooldown: true,
+          bypassEventCooldown: true,
+          exclusiveGroup: 'boss_death_agony',
+          stopOtherVoices: true,
+          exclusiveLockMs: BOSS_DEATH_VOICE_LOCK_MS,
+          exclusiveLockReason: 'boss_death_agony',
+          voicePriority: 100,
+          cooldownMs: 0,
+          eventCooldownMs: 0,
+          volume: 2.6,
+          duckFactor: 0.22,
+          duckMs: 2300
+        });
+      }, 70);
+    }
 
     if (!this.particleManager) return;
     if (!boss?.defeatPresentationAt) {

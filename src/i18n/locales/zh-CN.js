@@ -140,6 +140,7 @@ const sourceText = Object.freeze({
   'SETTINGS': '设置',
   'MUSIC': '音乐',
   'VOICE': '语音',
+  'Boss Voices': '首领语音',
   'CTA VOICE': '重试语音',
   'MUSIC SET': '音乐模式',
   'TEST': '测试',

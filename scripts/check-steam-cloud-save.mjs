@@ -83,6 +83,7 @@ try {
         voiceVolume: 0.6,
         musicEnabled: false,
         voiceEnabled: true,
+        bossVoiceEnabled: false,
         ctaVoiceEnabled: false,
         musicPack: 'generated'
       }
@@ -154,6 +155,7 @@ try {
   assert.equal(merged.settings.playerFocus, 0.8);
   assert.equal(merged.settings.colorAssist, true);
   assert.equal(merged.settings.audio.musicPack, 'generated');
+  assert.equal(merged.settings.audio.bossVoiceEnabled, false);
   assert.equal(Object.hasOwn(merged, 'debugFlags'), false);
   assert.equal(Object.hasOwn(merged, 'absolutePath'), false);
 
@@ -302,7 +304,7 @@ try {
       screenShake: 0.2,
       playerFocus: 0.75,
       colorAssist: true,
-      audio: { musicEnabled: false, musicPack: 'classic' }
+      audio: { musicEnabled: false, bossVoiceEnabled: false, musicPack: 'classic' }
     }
   }, { storage: restartStorage });
   assert.equal(restoreSummary.language, 'ja');
@@ -317,6 +319,7 @@ try {
   const restoredSectorRecords = JSON.parse(restartStorage.getItem(CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY));
   assert.equal(restoredSectorRecords.byCheckpoint['10'].scoreEarned, 9000);
   assert.equal(restoredSectorRecords.byCheckpoint['20'].scoreEarned, 12000);
+  assert.equal(restartStorage.getItem('burt_boss_voice_enabled'), 'false');
 
   const systemStorage = new MemoryStorage([[CLOUD_LANGUAGE_KEY, 'de']]);
   restoreSteamCloudPersistenceToStorage({ language: { preference: 'system' } }, { storage: systemStorage });

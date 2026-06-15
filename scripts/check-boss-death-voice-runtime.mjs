@@ -82,6 +82,38 @@ function stateFromPage(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
+async function navigateToBoss(page) {
+  await page.goto(withQuery(baseUrl, {
+    autostart: '1',
+    debugBossToken: 'NOVA_DEBUG_2026',
+    startAtBoss: '1',
+    startLevel: '1',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
+    cacheBust: String(Date.now())
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+  await page.mouse.click(24, 24);
+  await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_ACTIVE', null, { timeout: 30000 });
+  await page.waitForTimeout(1800);
+  return stateFromPage(page);
+}
+
+async function defeatCurrentBoss(page) {
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const boss = play?.enemyManager?.boss;
+    if (!boss) throw new Error('Missing boss for death voice probe');
+    boss.entryStartMs = Date.now() - (boss.entryDurationMs || 1) - 1;
+    boss.spawnedAtMs = Date.now() - 60000;
+    boss.invulnerableUntilMs = 0;
+    boss.minimumFightMs = 0;
+    boss.finishGateUntilMs = 0;
+    boss.takeDamage((boss.health || boss.maxHealth || 1) + 9999);
+  });
+
+  await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'LEVEL_COMPLETE', null, { timeout: 10000 });
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const server = await startPreviewServer();
@@ -107,32 +139,8 @@ try {
     localStorage.setItem('burt_volume_master', '1');
   });
 
-  await page.goto(withQuery(baseUrl, {
-    autostart: '1',
-    debugBossToken: 'NOVA_DEBUG_2026',
-    startAtBoss: '1',
-    startLevel: '1',
-    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH
-  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-  await page.mouse.click(24, 24);
-  await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_ACTIVE', null, { timeout: 30000 });
-  await page.waitForTimeout(1800);
-  const before = await stateFromPage(page);
-
-  await page.evaluate(() => {
-    const play = window.__game?.scenes?.play;
-    const boss = play?.enemyManager?.boss;
-    if (!boss) throw new Error('Missing boss for death voice probe');
-    boss.entryStartMs = Date.now() - (boss.entryDurationMs || 1) - 1;
-    boss.spawnedAtMs = Date.now() - 60000;
-    boss.invulnerableUntilMs = 0;
-    boss.minimumFightMs = 0;
-    boss.finishGateUntilMs = 0;
-    boss.takeDamage((boss.health || boss.maxHealth || 1) + 9999);
-  });
-
-  await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'LEVEL_COMPLETE', null, { timeout: 10000 });
+  const before = await navigateToBoss(page);
+  await defeatCurrentBoss(page);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state?.audio?.lastVoiceEvent === 'boss_death_agony' &&
@@ -153,6 +161,22 @@ try {
   }
   await page.screenshot({ path: path.join(outputDir, 'boss-death-voice-runtime.png'), fullPage: true });
 
+  await page.evaluate(() => localStorage.setItem('burt_boss_voice_enabled', 'false'));
+  const disabledBefore = await navigateToBoss(page);
+  if (disabledBefore.audio?.bossVoiceEnabled !== false) {
+    throw new Error(`Boss Voices should reload disabled, got ${disabledBefore.audio?.bossVoiceEnabled}`);
+  }
+  await defeatCurrentBoss(page);
+  await page.waitForTimeout(1400);
+  const disabledAfter = await stateFromPage(page);
+  const disabledActiveVoiceEvents = disabledAfter.audio?.activeVoiceEvents || [];
+  if (disabledAfter.audio?.lastVoiceEvent === 'boss_death_agony') {
+    throw new Error('Boss Voices OFF still recorded boss_death_agony as the latest voice');
+  }
+  if (disabledActiveVoiceEvents.some((entry) => entry.eventName === 'boss_death_agony')) {
+    throw new Error(`Boss Voices OFF left boss agony active: ${JSON.stringify(disabledActiveVoiceEvents)}`);
+  }
+
   const report = {
     status: 'passed',
     baseUrl,
@@ -162,7 +186,10 @@ try {
     lastVoiceEvent: after.audio?.lastVoiceEvent || null,
     lastVoiceTrack: after.audio?.lastVoiceTrack || null,
     activeVoiceEvents,
+    disabledAudio: disabledAfter.audio || null,
+    disabledActiveVoiceEvents,
     victoryVoiceRemovedFromBossDeath: true,
+    bossVoiceToggleSuppressesAgony: true,
     consoleEvents,
     pageErrors
   };

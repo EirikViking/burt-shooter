@@ -164,15 +164,17 @@ export class SettingsOverlay {
     titleText.position.set(width / 2, panelY + (isCompact ? 42 : 48));
     this.container.addChild(titleText);
 
-    const toggleGap = isCompact ? 38 : 42;
-    const testGap = isCompact ? 36 : 40;
-    const sliderGap = isCompact ? 38 : 42;
+    const toggleGap = isCompact ? 34 : 38;
+    const testGap = isCompact ? 32 : 36;
+    const sliderGap = isCompact ? 34 : 38;
     const footerButtonHeight = isCompact ? 32 : 38;
     const stackedButtonWidth = Math.min(240, panelWidth - 56);
     let y = panelY + (isCompact ? 84 : 100);
     this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
     y += toggleGap;
     this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
+    y += toggleGap;
+    this.addToggleRow('Boss Voices', settings.bossVoiceEnabled, y, (enabled) => AudioManager.setBossVoiceEnabled(enabled));
     y += toggleGap;
     this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
     y += testGap;
@@ -232,7 +234,7 @@ export class SettingsOverlay {
     const row = new PIXI.Container();
     row.position.set(width / 2, y);
 
-    const labelText = createText(label, {
+    const labelText = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 18,
       fill: '#9befff'
