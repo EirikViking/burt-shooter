@@ -15,7 +15,7 @@ The draft intentionally uses the claims currently accepted for the Steamworks st
 - Steam Input tradeoff: Nova Swarm uses native XInput/gamepad input and plain text prompts such as `A/B/X/Y/LB/RB/Start`. No official Steam Input action manifest or custom recommended Steam Input layout is published for v1, and that tradeoff is accepted. Do not claim device-specific glyph polish or a custom Steam Input configuration.
 - Steam Cloud deferred for v1 because the current desktop package uses local settings/local leaderboard storage instead of Steam Cloud.
 - Avoid public Steam leaderboard wording for now. Steam leaderboard support has an SDK-ready Electron bridge, but do not call it live Steam leaderboard support until the Steam-installed build passes the manual Steam runtime checklist in `docs/steam-leaderboards.md`.
-- Steam achievements are implemented in source/runtime and exported from `src/achievements/AchievementCatalog.js`; see `docs/achievements.md`. Before advertising the full set, verify Steamworks App Admin has all rows from `release/steamworks/achievement-config-prep-20260615.json`.
+- Steam achievements are implemented in source/runtime and exported from `src/achievements/AchievementCatalog.js`; see `docs/achievements.md`. Steamworks App Admin was updated and published to 81 achievement rows on 2026-06-15; icon uploads still need a manual visual pass.
 - English only until final public copy is approved.
 
 ## Steamworks Entry Checklist
@@ -25,7 +25,7 @@ The draft intentionally uses the claims currently accepted for the Steamworks st
 3. Upload capsule art from `release/steam-assets/draft-2026-05-17-nova-swarm/`.
 4. Upload screenshots from `release/steam-screenshots/steam-upload-candidates-2026-05-23-action/`.
 5. Upload the trailer only after the editorial candidate in `release/steam-trailer/candidate-2026-05-17-current/` has by-ear and store-submission approval.
-6. Keep Steam Cloud disabled unless implementation and validation are added. For achievements, verify all API rows and icons in Steamworks before treating the full set as live.
+6. Keep Steam Cloud disabled unless implementation and validation are added. For achievements, verify icon art in Steamworks before treating the full visual set as complete.
 7. Set the launch executable to `Nova Swarm.exe`.
 8. Keep Steamworks category_28 / Full Controller Support selected, and keep the native XInput/plain-prompt tradeoff recorded in `docs/steam-controller-support-checklist.md`.
 9. Run `npm run build:current`, `npm run check:controller-flow`, and the manual checklist in `docs/steam-controller-support-checklist.md` before final release approval.

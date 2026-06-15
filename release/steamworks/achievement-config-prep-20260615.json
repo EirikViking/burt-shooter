@@ -10,14 +10,14 @@
   "steamClientObservedCount": 30,
   "steamClientObservedCountSource": "user reported Steam client count during 2026-06-15 implementation session",
   "sourceStatus": "source_runtime_and_icon_manifest_prepared_for_81_achievements",
-  "steamworksSettingsTouched": false,
-  "steamworksPublishStatus": "pending_manual_or_web_app_admin_update_and_publish_in_steamworks",
+  "steamworksSettingsTouched": true,
+  "steamworksPublishStatus": "published_in_steamworks_app_admin_2026-06-15",
   "iconDirectory": "release/steamworks/achievement-icons",
   "publicIconDirectory": "public/art/generated/nova-swarm/achievements",
   "exportCommand": "node scripts/export-steam-achievements.mjs --json",
   "notes": [
     "SteamCMD build upload does not create or publish Steamworks achievement definitions.",
-    "Steamworks App Admin > Stats & Achievements > Achievements must contain all API names in this file before the Steam client will show 81 achievements.",
+    "Steamworks App Admin > Stats & Achievements > Achievements was updated and published on 2026-06-15; final browser verification showed 81 achievements and no missing API names.",
     "Do not rename existing API names; add missing rows and upload achieved/locked icons exactly as listed."
   ],
   "achievements": [

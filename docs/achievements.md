@@ -37,7 +37,7 @@ Achievement icon assets are staged in `release/steamworks/achievement-icons/`. T
 
 The 2026-06-12 pass added hard-rank icons `ACH_RANK_20` through `ACH_RANK_39` and Early Pilot icons `ACH_EARLY_PILOT-achieved.jpg` / `ACH_EARLY_PILOT-locked.jpg`. The 2026-06-15 pass added 10 ultra-hard legendary achievements and icon pairs generated with internal Codex imagegen.
 
-Current Steam client evidence showed only 30 configured Steam achievements before the 2026-06-15 source update. Use `release/steamworks/achievement-config-prep-20260615.json` to add or verify all 81 API names in Steamworks App Admin before expecting the Steam client to display the full set.
+Current Steamworks App Admin evidence showed only 30 configured Steam achievements before the 2026-06-15 source update. On 2026-06-15, the missing achievement rows were added and published in Steamworks; final browser verification showed `Antall prestasjoner: 81` with no missing or extra API names. Achievement icon uploads remain a separate Steamworks visual-polish step because the browser automation surface could not set file inputs.
 
 ## Local Testing
 

@@ -1,0 +1,46 @@
+{
+  "publishedAt": "2026-06-15T13:52:22Z",
+  "appId": "4765070",
+  "page": "Steamworks App Admin > Stats & Achievements > Achievements",
+  "account": "gaunziman",
+  "sourceCommitAtStart": "57bf2498e111a361e864e83441c1e97f86c4366a",
+  "sourceCatalog": "release/steamworks/achievement-config-prep-20260615.json",
+  "before": {
+    "steamworksAchievementCount": 30,
+    "sourceRuntimeAchievementCount": 81
+  },
+  "changes": {
+    "addedAchievementRows": 51,
+    "publishedVia": "Steamworks publishing page",
+    "publishMode": "light_publish_no_images",
+    "buildBranchChanged": false,
+    "steamPipeBuildChanged": false,
+    "steamworksSettingsChanged": [
+      "Stats & Achievements achievement rows"
+    ]
+  },
+  "after": {
+    "steamworksAchievementCountLabel": "Antall prestasjoner: 81",
+    "liveDomAchievementCount": 81,
+    "missingApiNames": [],
+    "extraApiNames": [],
+    "unpublishedWarningPresent": false,
+    "lastVerifiedApiNames": [
+      "ACH_TWO_MILLION_REACTOR",
+      "ACH_SECTOR_THIRTY_BLACKOUT",
+      "ACH_SECTOR_FIFTY_ENDLESS",
+      "ACH_TEN_BOSS_TRIBUNAL",
+      "ACH_CLEAN_TEN_STATUTE",
+      "ACH_THIRTY_WAVE_GHOST",
+      "ACH_TWO_HUNDRED_HIT_COMET",
+      "ACH_DANGER_DODGE_PROPHET",
+      "ACH_GRAZE_STORM_CROWN",
+      "ACH_FULL_HANGAR_OMEGA"
+    ]
+  },
+  "limitations": [
+    "Achievement icon JPG files were not uploaded in this browser pass because the Browser plugin surface cannot set native file input values and does not expose setInputFiles.",
+    "Steam client cache may need restart or time to refresh before the library UI shows the new count.",
+    "Runtime unlock validation still requires a Steam-client run against the published backend rows."
+  ]
+}
