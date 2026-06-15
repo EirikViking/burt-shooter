@@ -12,7 +12,7 @@ Nova Swarm Update: 81 Achievements, Boss Voice Control, Cleaner Boss Runs
 
 Hi pilots,
 
-This update wraps several post-launch cleanup threads into one sharper build: the achievement chase is bigger, Steamworks now knows about the full achievement list, boss voices are under player control, and the first boss has a little more breathing room without turning the game into a different game.
+This update wraps several post-launch cleanup threads into one sharper build: the achievement chase is bigger, Steamworks now knows about the full achievement list, boss voices can now be turned off in Settings, and the first boss has a little more breathing room without turning the game into a different game.
 
 ## What Changed
 
@@ -66,7 +66,7 @@ Late-run enemy and boss-support ship art also received a readability pass: darke
 
 ## Steam / Build Notes
 
-- Latest private SteamPipe upload for this work: BuildID `23742727`.
+- Latest private SteamPipe upload for this work: BuildID `23743524`.
 - Steamworks achievement rows were published after that upload and now verify as 81 rows in App Admin.
 - No Steam live branch was changed by automation.
 - AppID remained `4765070`.
@@ -82,5 +82,5 @@ Tiny Foundry
 
 - Confirm the Steam client shows 81 achievements after cache refresh/restart.
 - Upload/verify achievement icons in Steamworks if the public announcement mentions badge art.
-- Confirm BuildID `23742727` is assigned to the intended Steam branch, or update the build note before publishing.
+- Confirm BuildID `23743524` is assigned to the intended Steam branch, or update the build note before publishing.
 - Re-run a quick Steam-client launch check if this note is published alongside a branch promotion.
