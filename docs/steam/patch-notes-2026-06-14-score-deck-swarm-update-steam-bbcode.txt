@@ -1,5 +1,7 @@
 [h1]Nova Swarm Update: Score Chase, Swarm Mayhem, Cleaner Cockpit[/h1]
 
+[i]Document timestamp: 2026-06-14 08:53 CEST[/i]
+
 Hi pilots,
 
 Nova Swarm has had a heavy feedback pass. The target was not just "more stuff." The target was better reasons to hit One More Run: cleaner information, sharper score chasing, louder boss moments, more enemy variety, and a Codex that feels less like a spreadsheet and more like something the arcade cabinet should probably not be allowed to know.

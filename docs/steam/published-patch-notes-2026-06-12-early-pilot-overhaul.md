@@ -1,6 +1,6 @@
 # Nova Swarm Early Pilot Overhaul - Patch Notes
 
-Publish date: 2026-06-12
+Publish timestamp: 2026-06-12 19:42 CEST
 
 Nova Swarm just got a heavy early-pilot overhaul: louder bosses, smarter runbacks, richer leaderboards, bigger Codex coverage, more enemies, more secrets, and a lot more reasons to say "one more run" like a responsible adult lying to himself at 01:17.
 

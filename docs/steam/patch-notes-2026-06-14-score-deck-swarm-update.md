@@ -1,5 +1,7 @@
 # Nova Swarm Update Notes - June 14, 2026
 
+Document timestamp: 2026-06-14 08:53 CEST
+
 Status: post-ready Steam announcement/forum copy.
 
 ## Suggested Title

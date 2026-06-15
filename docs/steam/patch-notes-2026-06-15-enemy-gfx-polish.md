@@ -1,5 +1,7 @@
 # Nova Swarm Patch Notes - Enemy Readability Pass
 
+Document timestamp: 2026-06-15 09:31 CEST
+
 Pilots called out a few support ships and late-wave enemies that looked too soft, too flat, and too much like little glowing badges. Fair hit. This update sharpens that whole visual family.
 
 ## What Changed

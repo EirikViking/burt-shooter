@@ -1,6 +1,6 @@
 # Nova Swarm Patch Notes Draft - Achievements, Boss Voices, Steamworks
 
-Draft date: 2026-06-15
+Draft timestamp: 2026-06-15 16:23 CEST
 
 Status: draft only. Do not publish until publisher approval and a final Steam-client refresh check.
 
