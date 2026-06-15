@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  LEGEND_COMPOUND_SCORE_GATE,
   LEGEND_ACHIEVEMENTS,
   LEGEND_SCORE_GATE,
   MILESTONE_ACHIEVEMENTS
@@ -55,6 +56,32 @@ const overqualifiedProgress = {
   runThemesSurvived: Array.from({ length: 20 }, (_, index) => `theme_${index}`),
   unlockedShipIds: Array.from({ length: 20 }, (_, index) => `ship_${index}`)
 };
+
+const lowScoreDevProfileSummary = {
+  score: 147641,
+  finalScore: 147641,
+  sectorReached: 17,
+  levelReached: 17,
+  runCleared: true,
+  clearLivesRemaining: 3,
+  bossesKilled: 73,
+  noHitWaves: 99,
+  noHitSectors: 99,
+  bestComboCount: 999,
+  bestDangerDodgeStreak: 99,
+  grazeBreaks: 99,
+  lifeLosses: 0,
+  codexDiscoveries: 99,
+  defeatedBossIds: Array.from({ length: 20 }, (_, index) => `boss_${index}`),
+  runTheme: 'swarm_lattice'
+};
+assert.deepEqual(
+  idsFor(lowScoreDevProfileSummary, overqualifiedProgress)
+    .filter((id) => legendIds.has(id))
+    .filter((id) => !['ACH_SIX_FIGURE_SIGNAL'].includes(id)),
+  [],
+  'A 147k dev-profile run must not batch-unlock compound legendary achievements from old profile progress.'
+);
 assert.deepEqual(
   idsFor(overqualifiedLowScoreSummary, overqualifiedProgress).filter((id) => legendIds.has(id)),
   [],
@@ -77,6 +104,9 @@ assert.deepEqual(
 for (const achievement of LEGEND_ACHIEVEMENTS) {
   assert.equal(achievement.difficulty, 'legendary');
   assert.ok(Number(achievement.minimumScore) >= LEGEND_SCORE_GATE, `${achievement.id} needs the score gate.`);
+  if (!['ACH_SIX_FIGURE_SIGNAL', 'ACH_NEON_TAX_BRACKET', 'ACH_CABINET_JACKPOT', 'ACH_MILLION_POINT_MUTINY', 'ACH_TWO_MILLION_REACTOR'].includes(achievement.id)) {
+    assert.ok(Number(achievement.minimumScore) >= LEGEND_COMPOUND_SCORE_GATE, `${achievement.id} needs the compound score gate.`);
+  }
 }
 
 for (const achievement of MILESTONE_ACHIEVEMENTS) {
