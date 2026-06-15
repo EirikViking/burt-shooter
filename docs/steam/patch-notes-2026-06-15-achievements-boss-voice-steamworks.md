@@ -1,30 +1,33 @@
-# Nova Swarm Patch Notes Draft - Achievements, Boss Voices, Steamworks
+# Nova Swarm Patch Notes - Achievements, Boss Voices, Steamworks
 
-Draft timestamp: 2026-06-15 16:23 CEST
+Document timestamp: 2026-06-15 19:45 CEST
 
-Status: draft only. Do not publish until publisher approval and a final Steam-client refresh check.
+Status: verification draft. Steamworks achievement rows and icon uploads are visible in App Admin, but the stats section still has an unpublished Steamworks revision pending publication.
 
 ## Suggested Title
 
-Nova Swarm Update: 81 Achievements, Boss Voice Control, Cleaner Boss Runs
+Nova Swarm Update - 2026-06-15 19:45 CEST: 81 Achievements, Boss Voice Control
 
 ## Steam News Draft
 
 Hi pilots,
 
-This update wraps several post-launch cleanup threads into one sharper build: the achievement chase is bigger, Steamworks now knows about the full achievement list, boss voices can now be turned off in Settings, and the first boss has a little more breathing room without turning the game into a different game.
+Patch note timestamp: 2026-06-15 19:45 CEST.
+
+This update wraps several post-launch cleanup threads into one sharper build: the achievement chase is bigger, Steamworks now knows about the full achievement list, boss voices can now be turned off in Settings, duplicate achievement badge art has been replaced, and the first boss has a little more breathing room without turning the game into a different game.
 
 ## What Changed
 
 - Steam achievements have been expanded to 81 configured rows in Steamworks.
 - Added 10 new ultra-hard legendary achievements for deep-run, high-score, no-hit, boss-clear, combo, danger-dodge, Graze Break, and full-hangar mastery.
 - Added achieved and locked badge art for the new ultra-hard achievements.
+- Replaced duplicated achievement badge art across the hard and legendary achievement set with unique achieved and locked icons.
 - Added a Settings option for Boss Voices, defaulting ON.
 - Turning Boss Voices OFF disables boss voice lines only. Music, SFX, UI sounds, alerts, achievement sounds, and normal gameplay audio are unchanged.
 - Boss Voice preference persists through restart, profile reload, and Steam profile/cloud save paths.
 - First-boss pressure was adjusted surgically so the first boss remains readable and survivable without broadly rebalancing the run.
 - Boss death voice playback now respects the Boss Voices setting.
-- The boss-death voice pack was regenerated with the Misfit Galaxy voice direction.
+- The boss-death voice pack was regenerated with a darker boss-death performance direction.
 - Late-run enemy and boss-support ship visuals were sharpened so support ships read more like ships and less like flat UI badges.
 - Achievement validation, Steam achievement mock coverage, localization checks, controller flow, release hardening, and Steam package/runtime checks were updated around the new catalog.
 
@@ -43,7 +46,7 @@ The new ultra-hard set is aimed at players who already have the basics handled a
 - Graze Storm Crown
 - Full Hangar Omega
 
-Steamworks App Admin has now been updated and published to the full 81 achievement rows. If the Steam client still shows the older count immediately after the update, restart Steam or give the client cache a little time to refresh.
+Steamworks App Admin now shows the full 81 achievement rows. The final icon pass also replaced the repeated gold lightning badge and matching grey locked badge on the hard/legendary set. A final Steamworks publish pass is still required while the stats section shows an unpublished revision.
 
 ## Boss Voices
 
@@ -66,13 +69,13 @@ Late-run enemy and boss-support ship art also received a readability pass: darke
 
 ## Steam / Build Notes
 
-- Latest private SteamPipe upload for this work: BuildID `23743524`.
-- Steamworks achievement rows were published after that upload and now verify as 81 rows in App Admin.
+- Latest private SteamPipe upload for this work: BuildID `23747531`.
+- Steamworks achievement rows and achievement icon changes verify as 81 rows in App Admin, with a pending stats-section Steamworks publish still outstanding.
 - No Steam live branch was changed by automation.
 - AppID remained `4765070`.
 - Windows depot remained `4765071`.
 - Global leaderboard identity remains `nova_swarm_global_score_v2`.
-- Achievement icon upload in Steamworks still needs a manual visual pass; the generated JPG assets are staged in `release/steamworks/achievement-icons/`.
+- Achievement icon verification found no duplicate achieved or locked icon groups across the loaded 81-row Steamworks achievement table.
 
 Thanks for the fast feedback and the sharp eyes on the Steam achievement count. Keep breaking the cabinet in public; it keeps making the next build better.
 
@@ -81,6 +84,6 @@ Tiny Foundry
 ## Internal Checklist Before Publishing
 
 - Confirm the Steam client shows 81 achievements after cache refresh/restart.
-- Upload/verify achievement icons in Steamworks if the public announcement mentions badge art.
-- Confirm BuildID `23743524` is assigned to the intended Steam branch, or update the build note before publishing.
+- Upload/verify achievement icons in Steamworks if the public announcement mentions badge art. Browser audit found 81 achievement rows with no duplicate or missing icon URLs, but Steamworks still reports an unpublished stats revision.
+- Confirm BuildID `23747531` is assigned to the intended Steam branch, or update the build note before publishing.
 - Re-run a quick Steam-client launch check if this note is published alongside a branch promotion.

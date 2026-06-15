@@ -195,6 +195,7 @@ export class Game {
     this.currentSceneName = sceneName;
     this.app.stage.addChild(this.currentScene.container);
     this.currentScene.init();
+    this.flushAchievementToasts(this.currentScene);
     if (sceneName === 'menu') {
       this.scenes?.menu?.menuGamepadNavigator?.suppressUntilReleased?.();
     }
@@ -483,8 +484,7 @@ export class Game {
     const scene = this.currentScene;
     if (scene && typeof scene.showAchievementToast === 'function') {
       try {
-        scene.showAchievementToast(toast);
-        return true;
+        return scene.showAchievementToast(toast) === true;
       } catch {
         return false;
       }
@@ -497,7 +497,9 @@ export class Game {
     const pending = this.pendingAchievementToasts.splice(0);
     pending.forEach((toast) => {
       try {
-        scene.showAchievementToast(toast);
+        if (scene.showAchievementToast(toast) !== true) {
+          this.pendingAchievementToasts.push(toast);
+        }
       } catch {
         this.pendingAchievementToasts.push(toast);
       }

@@ -20,7 +20,7 @@ Nova Swarm has had a heavy feedback pass. The target was not just "more stuff." 
 [*]The How To Play and Codex screens were improved for readability, pacing, and visual quality.
 [*]Discovered Codex items now sort to the front, so pilots do not have to hunt through locked noise first.
 [*]Bosses now have stronger names, lore hooks, death presentation, and support-ship pressure.
-[*]Sonia, Sam the Misfit, KurtBossEdgar, and Misfit Galaxy are now part of the boss roster identity.
+[*]Sonia, Sam the Misfit, and KurtBossEdgar are now part of the boss roster identity.
 [*]Boss support ships and fuel ships give boss fights more tactical priority without hiding the important threat.
 [*]Enemy variety has been expanded hard, including early-run variety and late-run mayhem, while keeping performance and pattern readability in mind.
 [*]Powerup coverage and presentation have been expanded, with more ways for a run to swing into chaos.

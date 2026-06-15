@@ -3510,7 +3510,7 @@ export class GameOverScene {
 
   showAchievementToast(toast) {
     const achievement = toast?.achievement || toast;
-    if (!achievement?.name) return;
+    if (!achievement?.name || !this.container || !this.game?.app?.ticker) return false;
     if (this.achievementToast) {
       const id = achievement.id || toast?.id || achievement.name;
       const duplicateQueued = this.achievementToastQueue.some((queued) => {
@@ -3518,7 +3518,7 @@ export class GameOverScene {
         return (queuedAchievement?.id || queued?.id || queuedAchievement?.name) === id;
       });
       if (!duplicateQueued) this.achievementToastQueue.push(toast);
-      return;
+      return true;
     }
 
     const { width, height } = this.game.app.screen;
@@ -3593,6 +3593,7 @@ export class GameOverScene {
       }
     };
     this.game.app.ticker.add(this.achievementToastTicker);
+    return true;
   }
 
   removeAchievementToast({ showNext = false } = {}) {

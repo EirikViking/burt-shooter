@@ -10,7 +10,7 @@
   "startingCommit": "1b0bfbfe47323e22d330f727a2948ff670384f86",
   "snapshotTag": "snap/pre-steam-deploy-boss-agony-20260615-104729",
   "buildVersion": "v2026-06-15_11-00-15",
-  "description": "Private SteamPipe upload for the Misfit Galaxy male boss agony voice build plus a packaged-runtime Pixi warning cleanup. Live branch was not changed.",
+  "description": "Private SteamPipe upload for the male boss agony voice build plus a packaged-runtime Pixi warning cleanup. Live branch was not changed.",
   "package": {
     "contentRoot": "release/desktop/win-unpacked",
     "executable": "release/desktop/win-unpacked/Nova Swarm.exe",

@@ -4139,11 +4139,11 @@ export class PlayScene {
 
   showAchievementToast(toast) {
     const achievement = toast?.achievement || toast;
-    if (!achievement?.name) return;
+    if (!achievement?.name) return false;
     const id = achievement.id || toast?.id || achievement.name;
     const alreadyActive = this.activeAchievementToast?.__achievementToastId === id;
     const duplicateQueued = this.achievementToastQueue.some((entry) => entry.id === id);
-    if (alreadyActive || duplicateQueued) return;
+    if (alreadyActive || duplicateQueued) return true;
 
     const entry = {
       id,
@@ -4152,14 +4152,14 @@ export class PlayScene {
     };
     if (this.activeAchievementToast) {
       this.achievementToastQueue.push(entry);
-      return;
+      return true;
     }
-    this.showAchievementToastNow(entry);
+    return this.showAchievementToastNow(entry);
   }
 
   showAchievementToastNow(entry) {
     const achievement = entry?.achievement;
-    if (!achievement?.name || !this.uiOverlay || !this.game?.app?.ticker) return;
+    if (!achievement?.name || !this.uiOverlay || !this.game?.app?.ticker) return false;
 
     const { width, height } = this.game.app.screen;
     const compact = width < 620;
@@ -4245,6 +4245,7 @@ export class PlayScene {
     };
     this.achievementToastTicker = ticker;
     this.game.app.ticker.add(ticker);
+    return true;
   }
 
   removeAchievementToast({ showNext = false } = {}) {
