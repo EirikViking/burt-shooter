@@ -611,6 +611,7 @@ function buildGameTextState(game) {
       credits: Boolean(activeSettingsOverlay?.creditsPanel?.parent),
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
+    pauseOverlay: playScene?.getPauseDebugState ? playScene.getPauseDebugState() : null,
     cursor: getGameplayCursorDebugState(game),
     menu: menuScene?.getLayoutDebugState ? menuScene.getLayoutDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,

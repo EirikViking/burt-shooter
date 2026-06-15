@@ -195,12 +195,34 @@ async function runFocusPauseCheck(browser) {
   const paused = await waitForState(page, (state) => state.scene === 'play' && state.isPaused && state.overlays?.pause, 'native blur pause');
   await page.screenshot({ path: path.join(outputDir, 'native-blur-pause.png'), fullPage: true });
   assert(paused.isPaused === true && paused.overlays?.pause === true, `native blur did not pause gameplay: ${JSON.stringify(paused)}`);
+
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    play?.setPaused?.(false);
+    if (game) {
+      game.score = 70540;
+      game.level = 11;
+    }
+  });
+  await waitForState(page, (state) => state.scene === 'play' && !state.isPaused && !state.overlays?.pause, 'gameplay resumed after first pause');
+  await page.evaluate(() => window.dispatchEvent(new Event('nova-app-window-blur')));
+  const refreshedPause = await waitForState(page, (state) =>
+    state.scene === 'play' &&
+    state.isPaused &&
+    state.overlays?.pause &&
+    state.pauseOverlay?.score === '70,540' &&
+    state.pauseOverlay?.sector === '11',
+  'pause stats refreshed after reopening');
+  assert(refreshedPause.pauseOverlay?.score === '70,540', `pause score did not refresh: ${JSON.stringify(refreshedPause.pauseOverlay)}`);
+  assert(refreshedPause.pauseOverlay?.sector === '11', `pause sector did not refresh: ${JSON.stringify(refreshedPause.pauseOverlay)}`);
   assert(pageErrors.length === 0, `focus page errors: ${pageErrors.join('; ')}`);
   await page.close();
   return {
     scene: paused.scene,
     paused: paused.isPaused,
-    overlay: paused.overlays?.pause
+    overlay: paused.overlays?.pause,
+    refreshedStats: refreshedPause.pauseOverlay
   };
 }
 

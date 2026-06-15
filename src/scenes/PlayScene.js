@@ -3038,6 +3038,7 @@ export class PlayScene {
       this.pauseOverlay.visible = true;
       this.pauseMenuFx?.resize?.(this.game.getWidth(), this.game.getHeight());
       this.pauseMenuDecor?.resize?.(this.game.getWidth(), this.game.getHeight());
+      this.refreshPauseOverlayStats();
       playMenuOpenSfx(0.22);
       this.setPauseFocus(this.pauseFocusedIndex || 0);
       return;
@@ -3236,6 +3237,7 @@ export class PlayScene {
       bottom.anchor.set(0.5);
       bottom.y = 8;
       chip.addChild(bg, top, bottom);
+      chip.valueText = bottom;
       return chip;
     };
 
@@ -3270,14 +3272,33 @@ export class PlayScene {
       scanLine,
       title,
       status,
+      scoreValue: scoreChip.valueText,
+      sectorValue: sectorChip.valueText,
       leftRadar,
       rightRadar,
       resize: () => {}
     };
     this.uiOverlay.addChild(overlay);
+    this.refreshPauseOverlayStats();
     playMenuOpenSfx(0.22);
     this.pauseMenuFx.burst?.(centerX, panelY + 72, { color: 0xffd15c, radius: 132, durationMs: 680 });
     this.setPauseFocus(0);
+  }
+
+  refreshPauseOverlayStats() {
+    const decor = this.pauseMenuDecor;
+    if (!decor) return;
+    if (decor.scoreValue) decor.scoreValue.text = Number(this.game?.score || 0).toLocaleString('en-US');
+    if (decor.sectorValue) decor.sectorValue.text = String(this.game?.level || 1).padStart(2, '0');
+  }
+
+  getPauseDebugState() {
+    const decor = this.pauseMenuDecor;
+    return {
+      visible: Boolean(this.pauseOverlay?.visible && this.pauseOverlay?.parent),
+      score: decor?.scoreValue?.text ?? null,
+      sector: decor?.sectorValue?.text ?? null
+    };
   }
 
   openSettingsOverlay() {
