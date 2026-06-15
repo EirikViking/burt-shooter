@@ -264,7 +264,7 @@ class Powerup {
 
     // Create expanding ring effect
     const ring = new PIXI.Graphics();
-    ring.name = `powerup-pickup-ring-${this.type}`;
+    ring.label = `powerup-pickup-ring-${this.type}`;
     ring.__novaPickupEffect = true;
     ring.__novaPowerupType = this.type;
     ring.x = this.x;
