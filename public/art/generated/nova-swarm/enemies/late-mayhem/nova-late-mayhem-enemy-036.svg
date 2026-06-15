@@ -1,39 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="-48 -48 96 96" fill="none">
   <defs>
-    <radialGradient id="late_mayhem_036_glow" cx="50%" cy="42%" r="58%">
-      <stop offset="0%" stop-color="#84a8ff" stop-opacity="0.7"/>
-      <stop offset="46%" stop-color="#35ff92" stop-opacity="0.28"/>
-      <stop offset="100%" stop-color="#ffef6e" stop-opacity="0"/>
+    <radialGradient id="late_mayhem_036_core" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="44%" stop-color="#84a8ff" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#84a8ff" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="late_mayhem_036_hull" x1="-24" y1="-38" x2="24" y2="38">
-      <stop offset="0%" stop-color="#84a8ff"/>
-      <stop offset="48%" stop-color="#35ff92"/>
-      <stop offset="100%" stop-color="#ffef6e"/>
+      <stop offset="0%" stop-color="#142b2f"/>
+      <stop offset="54%" stop-color="#131019"/>
+      <stop offset="100%" stop-color="#02070d"/>
+    </linearGradient>
+    <linearGradient id="late_mayhem_036_panel" x1="-28" y1="-24" x2="28" y2="32">
+      <stop offset="0%" stop-color="#35ff92" stop-opacity="0.86"/>
+      <stop offset="100%" stop-color="#ffef6e" stop-opacity="0.72"/>
     </linearGradient>
   </defs>
-  <g transform="rotate(17)">
-    <ellipse cx="0" cy="0" rx="36" ry="16" stroke="#ffef6e" stroke-width="1.25" opacity="0.32"/>
-  </g>
-  <circle cx="0" cy="0" r="39" fill="url(#late_mayhem_036_glow)" opacity="0.72"/>
+  <ellipse cx="0" cy="25" rx="21" ry="7" fill="#ffef6e" opacity="0.12"/>
   <g>
-    <polygon points="-3.8,-20 -27,-9 -11,17 -7.1,27 -6.1,4" fill="#ffef6e" opacity="0.88" stroke="#84a8ff" stroke-width="1.3"/>
-    <polygon points="6.1,4 7.2,27 11,17 27,-9 3.9,-20" fill="#ffef6e" opacity="0.88" stroke="#84a8ff" stroke-width="1.3"/>
-    <polygon points="0,-38 11,-18 8.6,30 0,41 -8.6,30 -11,-18" fill="url(#late_mayhem_036_hull)" stroke="#f7fbff" stroke-width="1.45" opacity="0.96"/>
-    <path d="M 0 -33 L 0 31" stroke="#ffffff" stroke-width="1.1" opacity="0.44"/>
-    <path d="M -8 -10 C -2 -20 8 -14 7 -5 C 5 5 -7 5 -8 -10 Z" fill="#84a8ff" opacity="0.88"/>
-    <path d="M -4.95 -27 L -14.95 -36" stroke="#84a8ff" stroke-width="1.7" stroke-linecap="round" opacity="0.8"/>
-    <path d="M 6.95 -27 L 15.95 -31" stroke="#84a8ff" stroke-width="1.7" stroke-linecap="round" opacity="0.8"/>
-    <path d="M 0 -27 L -8 -26" stroke="#84a8ff" stroke-width="1.7" stroke-linecap="round" opacity="0.8"/>
-    <path d="M -15 -18 L -20 -15 M 15 -18 L 20 -15" stroke="#84a8ff" stroke-width="1.15" opacity="0.4"/>
-    <path d="M -15 -6 L -19 -3 M 15 -6 L 19 -3" stroke="#84a8ff" stroke-width="1.15" opacity="0.5"/>
-    <path d="M -15 6 L -19 9 M 15 6 L 19 9" stroke="#84a8ff" stroke-width="1.15" opacity="0.6000000000000001"/>
-    <path d="M -15 18 L -21 21 M 15 18 L 21 21" stroke="#84a8ff" stroke-width="1.15" opacity="0.7000000000000001"/>
-    <path d="M -12.7 30 L -10.5 42 L -8.3 30 Z" fill="#ffef6e" opacity="0.78"/>
-    <path d="M -5.7 30 L -3.5 45 L -1.2999999999999998 30 Z" fill="#ffef6e" opacity="0.78"/>
-    <path d="M 1.2999999999999998 30 L 3.5 42 L 5.7 30 Z" fill="#ffef6e" opacity="0.78"/>
-    <path d="M 8.3 30 L 10.5 45 L 12.7 30 Z" fill="#ffef6e" opacity="0.78"/>
-    <circle cx="-6.050000000000001" cy="25" r="3.2" fill="#84a8ff" opacity="0.72"/>
-    <circle cx="6.050000000000001" cy="25" r="2.2" fill="#84a8ff" opacity="0.72"/>
+    <polygon points="-5,-21 -24,-6 -11,10 -9.8,25 -7,2" fill="#142b2f" opacity="0.98" stroke="#35ff92" stroke-width="1.55"/>
+    <polygon points="7,2 9.8,25 11,10 24,-6 5,-21" fill="#142b2f" opacity="0.98" stroke="#35ff92" stroke-width="1.55"/>
+    <polygon points="-9.4,-15 -17,-3 -8,8 -11.5,20 -7.4,1" fill="url(#late_mayhem_036_panel)" opacity="0.46" stroke="#ffef6e" stroke-width="0.65"/>
+    <polygon points="7.4,1 11.5,20 8,8 17,-3 9.4,-15" fill="url(#late_mayhem_036_panel)" opacity="0.46" stroke="#ffef6e" stroke-width="0.65"/>
+    <path d="M -21 -4 L -13 -9 L -9.36 20 M 21 -4 L 13 -9 L 9.36 20" stroke="#dffaff" stroke-width="0.6" opacity="0.28"/>
+    <polygon points="-19,-24 -26,-15 -16,-13" fill="#35ff92" opacity="0.5"/><polygon points="19,-24 26,-15 16,-13" fill="#35ff92" opacity="0.5"/>
+    <polygon points="0,-43 12,-18 8.6,28 0,36 -8.6,28 -12,-18" fill="url(#late_mayhem_036_hull)" stroke="#84a8ff" stroke-width="1.65" opacity="0.99"/>
+    <polygon points="0,-35 4.6,-11 3.6,24 0,32 -3.6,24 -4.6,-11" fill="#142b2f" stroke="#dffaff" stroke-width="0.75" opacity="0.72"/>
+    <path d="M 0 -36 L 0 27" stroke="#ffffff" stroke-width="0.9" opacity="0.34"/>
+    <path d="M -7 -10 C -2 -18 7 -14 6 -5 C 5 4 -6 4 -7 -10 Z" fill="#84a8ff" opacity="0.92"/>
+    <circle cx="0" cy="-7" r="10" fill="url(#late_mayhem_036_core)" opacity="0.42"/>
+    <path d="M -5.4 -31 L -16.4 -39" stroke="#84a8ff" stroke-width="1.49" stroke-linecap="round" opacity="0.72"/>
+    <path d="M 7.4 -31 L 16.4 -34" stroke="#84a8ff" stroke-width="1.49" stroke-linecap="round" opacity="0.72"/>
+    <path d="M 0 -31 L -11 -29" stroke="#84a8ff" stroke-width="1.49" stroke-linecap="round" opacity="0.72"/>
+    <path d="M -15 -18 L -20 -15.5 M 15 -18 L 20 -15.5" stroke="#84a8ff" stroke-width="1.05" opacity="0.36"/>
+    <path d="M -15 -6 L -19 -3.5 M 15 -6 L 19 -3.5" stroke="#84a8ff" stroke-width="1.05" opacity="0.45999999999999996"/>
+    <path d="M -15 6 L -19 8.5 M 15 6 L 19 8.5" stroke="#84a8ff" stroke-width="1.05" opacity="0.56"/>
+    <path d="M -15 18 L -21 20.5 M 15 18 L 21 20.5" stroke="#84a8ff" stroke-width="1.05" opacity="0.66"/>
+    <path d="M -12.3 28 L -10.5 35 L -8.7 28 Z" fill="#ffef6e" opacity="0.84"/>
+    <path d="M -5.3 28 L -3.5 39 L -1.7 28 Z" fill="#ffef6e" opacity="0.84"/>
+    <path d="M 1.7 28 L 3.5 37 L 5.3 28 Z" fill="#ffef6e" opacity="0.84"/>
+    <path d="M 8.7 28 L 10.5 36 L 12.3 28 Z" fill="#ffef6e" opacity="0.84"/>
+    <circle cx="-6.6000000000000005" cy="22" r="2.9" fill="#84a8ff" opacity="0.74"/>
+    <circle cx="6.6000000000000005" cy="22" r="1.9" fill="#84a8ff" opacity="0.74"/>
   </g>
 </svg>

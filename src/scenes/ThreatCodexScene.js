@@ -1049,6 +1049,7 @@ export class ThreatCodexScene {
 
     const shortPanel = panelH < 560;
     const epicBody = Boolean(discovered && entry?.codexBodyMode === 'epic');
+    const veryShortEpic = Boolean(epicBody && shortPanel && panelH < 500);
     const storyBody = Boolean(discovered && (epicBody || entry?.codexBodyMode === 'story'));
     const sideBySide = !epicBody && shortPanel && panelW >= 520;
     const artY = 22;
@@ -1058,7 +1059,7 @@ export class ThreatCodexScene {
         ? panelW * 0.42
         : panelW - 36;
     const artH = epicBody
-      ? (shortPanel ? clamp(panelH * 0.19, 92, 124) : compact ? clamp(panelH * 0.2, 112, 144) : clamp(panelH * 0.22, 136, 168))
+      ? (veryShortEpic ? clamp(panelH * 0.16, 68, 92) : shortPanel ? clamp(panelH * 0.19, 92, 124) : compact ? clamp(panelH * 0.2, 112, 144) : clamp(panelH * 0.22, 136, 168))
       : sideBySide
         ? clamp(panelH * 0.42, 150, 205)
         : shortPanel
@@ -1069,24 +1070,24 @@ export class ThreatCodexScene {
 
     const textX = sideBySide ? artX + artW + 18 : 24;
     const textW = sideBySide ? panelW - textX - 24 : panelW - 46;
-    const nameY = sideBySide ? 28 : artH + (epicBody ? (shortPanel ? 34 : 38) : 42);
+    const nameY = sideBySide ? 28 : artH + (epicBody ? (veryShortEpic ? 28 : shortPanel ? 34 : 38) : 42);
     const name = entry && discovered ? entry.name.toUpperCase() : localize('UNKNOWN SIGNAL');
     const nameNode = addText(panel, name, {
-      fontSize: sideBySide ? 22 : epicBody ? (shortPanel ? 20 : compact ? 23 : 31) : compact ? 19 : 31,
+      fontSize: sideBySide ? 22 : epicBody ? (veryShortEpic ? 18 : shortPanel ? 20 : compact ? 23 : 31) : compact ? 19 : 31,
       fontWeight: '900',
       fill: discovered ? '#ffffff' : '#a7bac8',
       stroke: '#001016',
       strokeThickness: 3,
       wordWrap: true,
       wordWrapWidth: textW,
-      lineHeight: sideBySide ? 23 : epicBody ? (shortPanel ? 22 : compact ? 25 : 33) : compact ? 21 : 33
+      lineHeight: sideBySide ? 23 : epicBody ? (veryShortEpic ? 20 : shortPanel ? 22 : compact ? 25 : 33) : compact ? 21 : 33
     }, textX, nameY);
-    fitTextHeight(nameNode, shortPanel ? 52 : 74, 0.74);
+    fitTextHeight(nameNode, veryShortEpic ? 44 : shortPanel ? 52 : 74, 0.74);
 
     const meta = discovered
       ? `${entry.rarity || 'Signal'}  |  ${entry.role || category.label}`
       : `${localize('SIGNAL DATA LOCKED')}  |  ${localize(category.label.toUpperCase())}`;
-    const metaY = nameY + (epicBody ? (shortPanel ? 44 : compact ? 50 : 66) : shortPanel ? 56 : compact ? 54 : 70);
+    const metaY = nameY + (epicBody ? (veryShortEpic ? 36 : shortPanel ? 44 : compact ? 50 : 66) : shortPanel ? 56 : compact ? 54 : 70);
     addText(panel, meta, {
       fontSize: shortPanel ? 12 : compact ? 13 : 16,
       fontWeight: '900',
@@ -1095,7 +1096,7 @@ export class ThreatCodexScene {
       wordWrapWidth: textW
     }, textX, metaY);
 
-    const chipY = metaY + (shortPanel ? 21 : 28);
+    const chipY = metaY + (veryShortEpic ? 19 : shortPanel ? 21 : 28);
     const chipGap = 8;
     const chipCount = sideBySide ? 1 : 3;
     const chipW = Math.max(82, Math.min(178, (textW - chipGap * (chipCount - 1)) / chipCount));
@@ -1119,14 +1120,14 @@ export class ThreatCodexScene {
     }
 
     const bodyY = epicBody
-      ? chipY + (shortPanel ? 34 : 40)
+      ? chipY + (veryShortEpic ? 28 : shortPanel ? 34 : 40)
       : shortPanel
         ? chipY + 36
         : chipY + (compact ? 38 : 44);
     const bodyText = discovered
       ? localize(entry.description)
       : localize('The silhouette is logged, but the behavior needs one more live read. Find this signal in a run to unlock the counter-note.');
-    const tipY = panelH - (epicBody ? (shortPanel ? 96 : compact ? 104 : 116) : compact ? 116 : 138);
+    const tipY = panelH - (epicBody ? (veryShortEpic ? 90 : shortPanel ? 96 : compact ? 104 : 116) : compact ? 116 : 138);
     const bodyMaxHeight = Math.max(54, tipY - bodyY - (epicBody ? 14 : 24));
     const bodyFontSize = epicBody
       ? (shortPanel ? 14 : compact ? 15 : 16)

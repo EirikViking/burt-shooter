@@ -36,12 +36,22 @@ function dataSvgDimensions(src) {
   return Number.isFinite(width) && Number.isFinite(height) ? { width, height, type: 'svg-data' } : null;
 }
 
+function diskSvgDimensions(buffer) {
+  const text = buffer.toString('utf8', 0, Math.min(buffer.length, 2048));
+  if (!/<svg\b/i.test(text)) return null;
+  const width = Number(text.match(/\bwidth="(\d+)"/i)?.[1]);
+  const height = Number(text.match(/\bheight="(\d+)"/i)?.[1]);
+  return Number.isFinite(width) && Number.isFinite(height) ? { width, height, type: 'svg-file' } : null;
+}
+
 function readUint24LE(buffer, offset) {
   return buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16);
 }
 
 function imageDimensions(file) {
   const buffer = readFileSync(file);
+  const svg = diskSvgDimensions(buffer);
+  if (svg) return svg;
   if (buffer.length >= 24 && buffer.toString('ascii', 1, 4) === 'PNG') {
     return {
       type: 'png',
@@ -200,10 +210,13 @@ function checkCatalog() {
     const words = mechanics[category] || [];
     for (const entry of entries || []) {
       const text = textOf(entry);
+      const entryMechanics = category === 'enemies' && /boss[-\s]support|boss healer|fuel ship/i.test(`${entry.signalClass || ''} ${entry.role || ''} ${entry.rarity || ''}`)
+        ? ['support', 'heal', 'tank', 'boss']
+        : words;
       if (banned.test(text)) fail(`generic AI-ish copy remains in ${category}:${entry.id}`);
       if (String(entry.description || '').length < 80) fail(`${category}:${entry.id} description is too short to be useful`);
       if (String(entry.tip || '').length < 30) fail(`${category}:${entry.id} tip is too short to guide play`);
-      if (words.length && !includesAny(text, words)) fail(`${category}:${entry.id} lacks mechanics-relevant words: ${words.join(', ')}`);
+      if (entryMechanics.length && !includesAny(text, entryMechanics)) fail(`${category}:${entry.id} lacks mechanics-relevant words: ${entryMechanics.join(', ')}`);
     }
   }
 

@@ -537,12 +537,12 @@ const SECTOR_CODEX_COPY = Object.freeze({
     tip: 'Lyra Vey is where habits get expensive. Keep an exit lane before firing greedily.'
   },
   7: {
-    template: 'sectorDescriptionC',
-    feel: 'a neon toll grid with lanes blinking in the wrong order on purpose',
-    stakes: 'formation density and pickup timing under less forgiving pacing',
-    flavor: 'local toll lights count bullets, not ships',
-    clue: 'wait for the formation rhythm before crossing for a pickup',
-    tip: 'In Vega Vey, pickups are invitations. Accept only after the lane pattern is readable.'
+    template: 'sectorDescriptionD',
+    feel: 'a neon toll grid where every pickup looks like a bribe from a machine that hates you',
+    stakes: 'bait control, side-lane patience, and refusing shiny detours until the wave exposes its route',
+    flavor: 'local toll lights count bullets, invoices, and pilots who cross on shimmer instead of rhythm',
+    clue: 'let the bait blink twice, clear the toll keeper, then cross only when the exit lane stays open',
+    tip: 'In Vega Vey, pickups are bait with manners. Make the lane prove it is safe first.'
   },
   8: {
     template: 'sectorDescriptionD',

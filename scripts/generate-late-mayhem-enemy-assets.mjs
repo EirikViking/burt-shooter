@@ -44,93 +44,128 @@ function buildSvg(index) {
   const primary = palette[(seed >>> 3) % palette.length];
   const accent = palette[(seed >>> 7) % palette.length];
   const hot = palette[(seed >>> 11) % palette.length];
-  const hull = 10 + (seed % 8);
-  const nose = -38 - (index % 5);
-  const tail = 28 + ((seed >>> 5) % 8);
-  const wingSpan = 27 + ((seed >>> 9) % 15);
-  const wingY = -10 + ((seed >>> 13) % 17);
-  const notch = 8 + ((seed >>> 17) % 9);
-  const fin = 4 + ((seed >>> 20) % 8);
+  const darkA = ['#08131e', '#101827', '#131019', '#0b1720'][(seed >>> 2) % 4];
+  const darkB = ['#1d2633', '#241a32', '#142b2f', '#2a1c24'][(seed >>> 6) % 4];
+  const hull = 9 + (seed % 7);
+  const nose = -40 - (index % 4);
+  const tail = 27 + ((seed >>> 5) % 7);
+  const wingSpan = 24 + ((seed >>> 9) % 13);
+  const wingY = -14 + ((seed >>> 13) % 14);
+  const notch = 6 + ((seed >>> 17) % 8);
+  const fin = 6 + ((seed >>> 20) % 7);
   const coreShape = index % 4;
   const antennae = 1 + (index % 3);
-  const ringTilt = -18 + (index % 37);
+  const bladeStyle = (seed >>> 23) % 5;
   const id = `late_mayhem_${pad(index + 1)}`;
 
   const leftWing = [
-    [-hull * 0.35, -20],
+    [-hull * 0.42, -21],
     [-wingSpan, wingY],
-    [-wingSpan + notch, 14 + (index % 8)],
-    [-hull * 0.65, tail - 5],
-    [-hull * 0.55, 4]
+    [-wingSpan + notch, 10 + (index % 7)],
+    [-hull * 0.82, tail - 4],
+    [-hull * 0.58, 2]
   ];
   const rightWing = mirror(leftWing);
   const body = [
     [0, nose],
     [hull, -18],
-    [hull * 0.78, tail - 2],
+    [hull * 0.72, tail - 1],
     [0, tail + fin],
-    [-hull * 0.78, tail - 2],
+    [-hull * 0.72, tail - 1],
     [-hull, -18]
   ];
+  const spine = [
+    [0, nose + 8],
+    [hull * 0.38, -11],
+    [hull * 0.3, tail - 5],
+    [0, tail + 3],
+    [-hull * 0.3, tail - 5],
+    [-hull * 0.38, -11]
+  ];
+  const leftWingInset = [
+    [-hull * 0.78, -15],
+    [-wingSpan + 7, wingY + 3],
+    [-wingSpan + notch + 3, 8 + (index % 7)],
+    [-hull * 0.96, tail - 9],
+    [-hull * 0.62, 1]
+  ];
+  const rightWingInset = mirror(leftWingInset);
 
   const antennaLines = Array.from({ length: antennae }, (_, antennaIndex) => {
     const side = antennaIndex % 2 === 0 ? -1 : 1;
     const offset = antennaIndex === 2 ? 0 : side * (hull * 0.45 + antennaIndex * 2);
-    const tipX = offset + side * (8 + ((seed >>> (antennaIndex + 2)) % 8));
-    const tipY = nose + 2 + antennaIndex * 5;
-    return `<path d="M ${offset} ${nose + 11} L ${tipX} ${tipY}" stroke="${hot}" stroke-width="${1.2 + (index % 3) * 0.25}" stroke-linecap="round" opacity="0.8"/>`;
+    const tipX = offset + side * (7 + ((seed >>> (antennaIndex + 2)) % 7));
+    const tipY = nose + 4 + antennaIndex * 5;
+    return `<path d="M ${offset} ${nose + 12} L ${tipX} ${tipY}" stroke="${hot}" stroke-width="${1.05 + (index % 3) * 0.22}" stroke-linecap="round" opacity="0.72"/>`;
   }).join('\n    ');
 
   const core = coreShape === 0
-    ? `<circle cx="0" cy="-7" r="${5 + (index % 4)}" fill="${hot}" opacity="0.92"/>`
+    ? `<circle cx="0" cy="-7" r="${4 + (index % 3)}" fill="${hot}" opacity="0.96"/>`
     : coreShape === 1
-      ? `<rect x="${-5 - (index % 3)}" y="-14" width="${10 + (index % 6)}" height="${13 + (index % 5)}" rx="3" fill="${hot}" opacity="0.9"/>`
+      ? `<rect x="${-4 - (index % 2)}" y="-14" width="${8 + (index % 5)}" height="${12 + (index % 4)}" rx="2.4" fill="${hot}" opacity="0.94"/>`
       : coreShape === 2
-        ? `<polygon points="0,-18 8,-7 0,5 -8,-7" fill="${hot}" opacity="0.92"/>`
-        : `<path d="M -8 -10 C -2 -20 8 -14 7 -5 C 5 5 -7 5 -8 -10 Z" fill="${hot}" opacity="0.88"/>`;
+        ? `<polygon points="0,-17 7,-7 0,4 -7,-7" fill="${hot}" opacity="0.96"/>`
+        : `<path d="M -7 -10 C -2 -18 7 -14 6 -5 C 5 4 -6 4 -7 -10 Z" fill="${hot}" opacity="0.92"/>`;
 
   const engineCount = 2 + (index % 3);
   const engines = Array.from({ length: engineCount }, (_, engineIndex) => {
     const gap = engineCount === 1 ? 0 : (engineIndex - (engineCount - 1) / 2) * 7;
-    const flame = 7 + ((seed >>> (engineIndex + 8)) % 9);
-    return `<path d="M ${gap - 2.2} ${tail - 2} L ${gap} ${tail + flame} L ${gap + 2.2} ${tail - 2} Z" fill="${accent}" opacity="0.78"/>`;
+    const flame = 6 + ((seed >>> (engineIndex + 8)) % 8);
+    return `<path d="M ${gap - 1.8} ${tail - 1} L ${gap} ${tail + flame} L ${gap + 1.8} ${tail - 1} Z" fill="${accent}" opacity="0.84"/>`;
   }).join('\n    ');
 
   const sideRunes = Array.from({ length: 4 }, (_, runeIndex) => {
     const y = -20 + runeIndex * 12 + (index % 3);
     const width = 4 + ((seed >>> (runeIndex + 15)) % 5);
-    return `<path d="M ${-hull - 4} ${y} L ${-hull - width - 4} ${y + 3} M ${hull + 4} ${y} L ${hull + width + 4} ${y + 3}" stroke="${hot}" stroke-width="1.15" opacity="${0.4 + runeIndex * 0.1}"/>`;
+    return `<path d="M ${-hull - 3} ${y} L ${-hull - width - 3} ${y + 2.5} M ${hull + 3} ${y} L ${hull + width + 3} ${y + 2.5}" stroke="${hot}" stroke-width="1.05" opacity="${0.36 + runeIndex * 0.1}"/>`;
   }).join('\n    ');
+
+  const blade = bladeStyle === 0
+    ? `<path d="M -${wingSpan - 2} ${wingY + 2} L -${wingSpan + 6} ${wingY + 10} M ${wingSpan - 2} ${wingY + 2} L ${wingSpan + 6} ${wingY + 10}" stroke="${primary}" stroke-width="2" stroke-linecap="round" opacity="0.62"/>`
+    : bladeStyle === 1
+      ? `<path d="M -${hull + 5} ${tail - 12} L -${hull + 16} ${tail - 2} M ${hull + 5} ${tail - 12} L ${hull + 16} ${tail - 2}" stroke="${accent}" stroke-width="1.7" stroke-linecap="round" opacity="0.66"/>`
+      : bladeStyle === 2
+        ? `<polygon points="-${hull + 7},-24 -${hull + 14},-15 -${hull + 4},-13" fill="${primary}" opacity="0.5"/><polygon points="${hull + 7},-24 ${hull + 14},-15 ${hull + 4},-13" fill="${primary}" opacity="0.5"/>`
+        : bladeStyle === 3
+          ? `<path d="M -${hull + 10} 5 C -${hull + 20} 13 -${hull + 14} 24 -${hull + 5} 20 M ${hull + 10} 5 C ${hull + 20} 13 ${hull + 14} 24 ${hull + 5} 20" stroke="${hot}" stroke-width="1.5" fill="none" opacity="0.62"/>`
+          : `<path d="M -${hull + 2} -31 L -${hull + 13} -37 M ${hull + 2} -31 L ${hull + 13} -37" stroke="${accent}" stroke-width="1.7" stroke-linecap="round" opacity="0.64"/>`;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="-48 -48 96 96" fill="none">
   <defs>
-    <radialGradient id="${id}_glow" cx="50%" cy="42%" r="58%">
-      <stop offset="0%" stop-color="${hot}" stop-opacity="0.7"/>
-      <stop offset="46%" stop-color="${primary}" stop-opacity="0.28"/>
-      <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
+    <radialGradient id="${id}_core" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="44%" stop-color="${hot}" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="${hot}" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="${id}_hull" x1="-24" y1="-38" x2="24" y2="38">
-      <stop offset="0%" stop-color="${hot}"/>
-      <stop offset="48%" stop-color="${primary}"/>
-      <stop offset="100%" stop-color="${accent}"/>
+      <stop offset="0%" stop-color="${darkB}"/>
+      <stop offset="54%" stop-color="${darkA}"/>
+      <stop offset="100%" stop-color="#02070d"/>
+    </linearGradient>
+    <linearGradient id="${id}_panel" x1="-28" y1="-24" x2="28" y2="32">
+      <stop offset="0%" stop-color="${primary}" stop-opacity="0.86"/>
+      <stop offset="100%" stop-color="${accent}" stop-opacity="0.72"/>
     </linearGradient>
   </defs>
-  <g transform="rotate(${ringTilt})">
-    <ellipse cx="0" cy="0" rx="${31 + (index % 6)}" ry="${14 + ((seed >>> 6) % 5)}" stroke="${accent}" stroke-width="1.25" opacity="0.32"/>
-  </g>
-  <circle cx="0" cy="0" r="${36 + (index % 8)}" fill="url(#${id}_glow)" opacity="0.72"/>
+  <ellipse cx="0" cy="${tail - 4}" rx="${18 + (index % 8)}" ry="7" fill="${accent}" opacity="0.12"/>
   <g>
-    <polygon points="${pointList(leftWing)}" fill="${accent}" opacity="0.88" stroke="${hot}" stroke-width="1.3"/>
-    <polygon points="${pointList(rightWing)}" fill="${accent}" opacity="0.88" stroke="${hot}" stroke-width="1.3"/>
-    <polygon points="${pointList(body)}" fill="url(#${id}_hull)" stroke="#f7fbff" stroke-width="1.45" opacity="0.96"/>
-    <path d="M 0 ${nose + 5} L 0 ${tail - 1}" stroke="#ffffff" stroke-width="1.1" opacity="0.44"/>
+    <polygon points="${pointList(leftWing)}" fill="${darkB}" opacity="0.98" stroke="${primary}" stroke-width="1.55"/>
+    <polygon points="${pointList(rightWing)}" fill="${darkB}" opacity="0.98" stroke="${primary}" stroke-width="1.55"/>
+    <polygon points="${pointList(leftWingInset)}" fill="url(#${id}_panel)" opacity="0.46" stroke="${accent}" stroke-width="0.65"/>
+    <polygon points="${pointList(rightWingInset)}" fill="url(#${id}_panel)" opacity="0.46" stroke="${accent}" stroke-width="0.65"/>
+    <path d="M -${wingSpan - 3} ${wingY + 2} L -${hull + 1} -9 L -${hull * 0.78} ${tail - 9} M ${wingSpan - 3} ${wingY + 2} L ${hull + 1} -9 L ${hull * 0.78} ${tail - 9}" stroke="#dffaff" stroke-width="0.6" opacity="0.28"/>
+    ${blade}
+    <polygon points="${pointList(body)}" fill="url(#${id}_hull)" stroke="${hot}" stroke-width="1.65" opacity="0.99"/>
+    <polygon points="${pointList(spine)}" fill="${darkB}" stroke="#dffaff" stroke-width="0.75" opacity="0.72"/>
+    <path d="M 0 ${nose + 7} L 0 ${tail - 2}" stroke="#ffffff" stroke-width="0.9" opacity="0.34"/>
     ${core}
+    <circle cx="0" cy="-7" r="${8 + (index % 3)}" fill="url(#${id}_core)" opacity="0.42"/>
     ${antennaLines}
     ${sideRunes}
     ${engines}
-    <circle cx="${-hull * 0.55}" cy="${tail - 7}" r="${2.2 + (index % 2)}" fill="${hot}" opacity="0.72"/>
-    <circle cx="${hull * 0.55}" cy="${tail - 7}" r="${2.2 + ((index + 1) % 2)}" fill="${hot}" opacity="0.72"/>
+    <circle cx="${-hull * 0.55}" cy="${tail - 7}" r="${1.9 + (index % 2)}" fill="${hot}" opacity="0.74"/>
+    <circle cx="${hull * 0.55}" cy="${tail - 7}" r="${1.9 + ((index + 1) % 2)}" fill="${hot}" opacity="0.74"/>
   </g>
 </svg>
 `;
