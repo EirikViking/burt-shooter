@@ -1,0 +1,66 @@
+{
+  "uploadedAt": "2026-06-15T13:34:54Z",
+  "steamBuildId": "23742727",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "setLive": "",
+  "steamUser": "gaunziman",
+  "branch": "codex/hard-achievements-20260612",
+  "codeCommit": "bb1c3c56f62052333bfe0278128af98663facd66",
+  "startingCommit": "616a6103311e81e1a7ebe13b60cc33352d303596",
+  "buildVersion": "v2026-06-15_15-28-36",
+  "description": "Private SteamPipe upload for the 81-achievement runtime catalog, including 10 new ultra-hard legendary achievements and generated achievement icon art. Live branch was not changed.",
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "steamcmd": "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe"
+  },
+  "qa": [
+    "npm run check:achievements",
+    "npm run check:milestone-achievements",
+    "npm run check:steam-achievements-mock",
+    "npm run check:i18n",
+    "npm run check:i18n-ui",
+    "npm run check:steam-store",
+    "npm run check:controller-flow",
+    "npm run check:first-boss-balance",
+    "npm run check:release-hardening",
+    "npm run package:steam:win",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=\"\" npm run steamworks:write-vdf",
+    "steamcmd +login gaunziman +run_app_build app_build_LOCAL.vdf +quit"
+  ],
+  "evidence": {
+    "releaseHardeningReport": "test-results/release-hardening/latest-report.json",
+    "releaseHardeningSummary": "test-results/release-hardening/latest-summary.md",
+    "steamSdkReadyReport": "test-results/steam-sdk-ready-2026-06-15T13-28-35-930Z/report.json",
+    "steamPackageRuntimeReport": "test-results/steam-package-runtime-2026-06-15T13-33-06-994Z/report.json",
+    "steamBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "achievementConfigPrep": "release/steamworks/achievement-config-prep-20260615.json",
+    "patchNoteDraft": "docs/steam/patch-notes-2026-06-15-ultra-hard-achievements.md"
+  },
+  "qaHighlights": {
+    "achievementCatalog": "81 source/runtime achievements verified: 39 rank, 40 milestone, 2 leaderboard.",
+    "legendaryMilestones": "30 legend score-gated milestones verified, including 10 new ultra-hard achievements.",
+    "releaseHardening": "PASS 37/37 automated checks.",
+    "packageRuntime": "passed with appId 4765070 and leaderboard nova_swarm_global_score_v2"
+  },
+  "steamcmdResult": {
+    "exitCode": 0,
+    "summary": "Successfully finished AppID 4765070 build (BuildID 23742727)."
+  },
+  "steamworksAchievementRows": {
+    "steamClientObservedCount": 30,
+    "sourceRuntimeCount": 81,
+    "status": "backend_rows_pending_manual_or_app_admin_publish",
+    "note": "SteamPipe upload does not create Steamworks achievement rows. Configure and publish the 81 rows/icons from achievement-config-prep-20260615.json for the Steam client to show all achievements."
+  },
+  "manualSteamworksSteps": [
+    "Add or update the Steamworks achievement rows/icons from release/steamworks/achievement-config-prep-20260615.json.",
+    "Publish Steamworks app admin changes so the Steam client count moves beyond the observed 30 achievements.",
+    "Assign BuildID 23742727 to the intended Steam branch only after human client validation."
+  ],
+  "steamworksTouched": false,
+  "liveBranchChanged": false
+}
