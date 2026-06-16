@@ -55,10 +55,14 @@ import {
 } from '../config/OverrunMilestoneCelebrations.js';
 import { getSectorCodexArt, getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
 import {
+  getGeneratedEnemyProfilesForLevel
+} from '../config/GeneratedEnemyProfiles.js';
+import {
   recordThreatDefeated,
   recordThreatSeen
 } from '../progression/ThreatDiscoveryState.js';
 import { getBossProfile } from '../config/BossRoster.js';
+import { RUN_MODES } from '../game/RunMode.js';
 
 const BOSS_WARNING_JOKES = [
   'Mission Control is hiding under the desk.',
@@ -210,6 +214,10 @@ export class PlayScene {
     this.bossHazardLayer = null;
     this.lastBossHazardHit = null;
     this.sectorArrivalStinger = null;
+    this.sectorArrivalArtCache = new Map();
+    this.entryAssetWarmupCache = new Map();
+    this.preparedRenderTextureKeys = new Set();
+    this.levelStartWarmupPending = false;
 
     // Ship intro state
     this.introActive = false;
@@ -475,7 +483,7 @@ export class PlayScene {
       if (controlSmoke) {
         this.introActive = false;
         this.introComplete = true;
-        this.startLevel('controlSmoke');
+        this.startLevelWhenWarm('controlSmoke');
       } else {
         this.startShipIntro(spriteKey);
       }
@@ -504,7 +512,7 @@ export class PlayScene {
           console.log('[PlayScene] Ship catalog ready for current run');
           if (this.shipIntroAssetGatePending && this.introComplete && this.enemyManager && this.game.level) {
             this.shipIntroAssetGatePending = false;
-            this.startLevel('introCompleteAssetsReady');
+            this.startLevelWhenWarm('introCompleteAssetsReady');
           }
         })
         .catch((error) => {
@@ -512,7 +520,7 @@ export class PlayScene {
           console.warn('[PlayScene] Ship catalog preload failed:', error);
           if (this.shipIntroAssetGatePending && this.introComplete && this.enemyManager && this.game.level) {
             this.shipIntroAssetGatePending = false;
-            this.startLevel('introCompleteAssetFallback');
+            this.startLevelWhenWarm('introCompleteAssetFallback');
           }
         });
     });
@@ -556,6 +564,10 @@ export class PlayScene {
       this.debugOverlayEnabled = debugOverlay;
       console.log(`[Debug] enabled startLevel=${this.debugStartLevel ?? 'default'} startAtBoss=${startAtBoss} debugPowerups=${debugPowerups} debugOverlay=${debugOverlay}`);
     }
+    const expectedStartLevel = Number.isFinite(this.debugStartLevel) ? this.debugStartLevel : (this.game?.level || 1);
+    this.preloadSectorArrivalArt(expectedStartLevel, { ahead: 2 }).catch((error) => {
+      console.warn('[PlayScene] Sector arrival art prewarm failed:', error);
+    });
 
     // Ensure Assets are ready for gameplay
     GameAssets.ensureBonusCoreTexture().then(tex => {
@@ -1101,6 +1113,9 @@ export class PlayScene {
       this.shownCabinetLogIds.clear();
     }
 
+    this.prewarmLevelEntryAssets(this.game.level, { ahead: 2 }).catch((error) => {
+      console.warn('[PlayScene] level entry asset prewarm failed:', error);
+    });
     this.enemyManager.startLevel(this.game.level);
     if (startAtBoss) {
       this.enemyManager.forceBossStart(this.game.level);
@@ -1158,6 +1173,136 @@ export class PlayScene {
     }
   }
 
+  getSectorArrivalArtSource(level = this.game?.level || 1) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const entry = this.getSectorArrivalEntry(safeLevel) || {};
+    return entry.art || getSectorCodexArt(safeLevel);
+  }
+
+  getRunStartSector() {
+    if (this.game?.runMode === RUN_MODES.SECTOR_START) {
+      return Math.max(1, Math.floor(Number(this.game?.sectorStartPlaySector || this.game?.level) || 1));
+    }
+    return 1;
+  }
+
+  shouldShowSectorArrivalStinger(level = this.game?.level || 1) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    return safeLevel > this.getRunStartSector();
+  }
+
+  prepareTextureForRender(texture, key = 'texture') {
+    if (!GameAssets.isValidTexture(texture)) return Promise.resolve(texture);
+    const cacheKey = String(key || texture?.label || texture?.source?.label || 'texture');
+    if (this.preparedRenderTextureKeys?.has(cacheKey)) return Promise.resolve(texture);
+    const prepare = this.game?.app?.renderer?.prepare;
+    if (!prepare?.upload) {
+      this.preparedRenderTextureKeys?.add(cacheKey);
+      return Promise.resolve(texture);
+    }
+
+    return prepare.upload(texture)
+      .then(() => {
+        this.preparedRenderTextureKeys?.add(cacheKey);
+        return texture;
+      })
+      .catch((error) => {
+        console.warn(`[PlayScene] texture prepare failed for ${cacheKey}:`, error);
+        return texture;
+      });
+  }
+
+  preloadSectorArrivalArt(level = this.game?.level || 1, { ahead = 0 } = {}) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const aheadCount = Math.max(0, Math.min(4, Math.floor(Number(ahead) || 0)));
+    const loads = [];
+
+    for (let offset = 0; offset <= aheadCount; offset += 1) {
+      const sectorLevel = safeLevel + offset;
+      if (!this.shouldShowSectorArrivalStinger(sectorLevel)) continue;
+      const artSource = this.getSectorArrivalArtSource(sectorLevel);
+      if (!artSource) continue;
+
+      if (!this.sectorArrivalArtCache.has(artSource)) {
+        const loadPromise = PIXI.Assets.load(artSource)
+          .then((texture) => this.prepareTextureForRender(texture, `sector_arrival:${artSource}`))
+          .catch((error) => {
+            this.sectorArrivalArtCache.delete(artSource);
+            console.warn(`[PlayScene] sector arrival art load failed for level ${sectorLevel}:`, error);
+            return null;
+          });
+        this.sectorArrivalArtCache.set(artSource, loadPromise);
+      }
+
+      loads.push(this.sectorArrivalArtCache.get(artSource));
+    }
+
+    if (!loads.length) return Promise.resolve(null);
+    return Promise.allSettled(loads).then((results) => results[0]?.value || null);
+  }
+
+  prewarmGeneratedEnemyTexturesForLevel(level = this.game?.level || 1, { aheadLevels = 1 } = {}) {
+    if (!this.shipCatalogLoaded) return Promise.resolve(false);
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const aheadCount = Math.max(0, Math.min(4, Math.floor(Number(aheadLevels) || 0)));
+    const textures = [];
+    const usedKeys = new Set();
+    const addTexture = (texture, key) => {
+      if (!GameAssets.isValidTexture(texture) || !key || usedKeys.has(key)) return;
+      usedKeys.add(key);
+      if (!this.preparedRenderTextureKeys?.has(key)) textures.push({ texture, key });
+    };
+
+    for (let sectorLevel = safeLevel; sectorLevel <= safeLevel + aheadCount; sectorLevel += 1) {
+      const profiles = getGeneratedEnemyProfilesForLevel(sectorLevel);
+      profiles.forEach((profile) => {
+        if (!Number.isFinite(profile?.spriteIndex)) return;
+        const index = Math.max(0, Math.floor(profile.spriteIndex));
+        addTexture(GameAssets.getGeneratedEnemyTexture(index), `generated_enemy:${index}`);
+      });
+    }
+
+    const eliteCount = AssetManifest.generated?.eliteMiddleShips?.length || 0;
+    for (let index = 0; index < eliteCount; index += 1) {
+      addTexture(GameAssets.getEliteMiddleShipTexture(index), `elite_middle:${index}`);
+    }
+
+    if (!textures.length) return Promise.resolve(true);
+    return Promise.allSettled(
+      textures.map(({ texture, key }) => this.prepareTextureForRender(texture, key))
+    ).then(() => true);
+  }
+
+  prewarmLevelEntryAssets(level = this.game?.level || 1, { ahead = 1 } = {}) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const aheadCount = Math.max(0, Math.min(4, Math.floor(Number(ahead) || 0)));
+    const key = `${safeLevel}:${aheadCount}:${this.shipCatalogLoaded ? 'ships' : 'art'}`;
+    if (!this.entryAssetWarmupCache.has(key)) {
+      const warmup = Promise.allSettled([
+        this.preloadSectorArrivalArt(safeLevel, { ahead: aheadCount }),
+        this.prewarmGeneratedEnemyTexturesForLevel(safeLevel, { aheadLevels: aheadCount })
+      ]).then(() => true);
+      this.entryAssetWarmupCache.set(key, warmup);
+    }
+    return this.entryAssetWarmupCache.get(key);
+  }
+
+  startLevelWhenWarm(source = 'introComplete') {
+    if (this.levelStartWarmupPending) return;
+    const targetLevel = Number.isFinite(this.debugStartLevel) ? this.debugStartLevel : (this.game?.level || 1);
+    this.levelStartWarmupPending = true;
+    const catalogReady = this.shipCatalogLoaded
+      ? Promise.resolve(true)
+      : (this.shipCatalogReady || Promise.resolve(true)).catch(() => true);
+    catalogReady
+      .then(() => this.prewarmLevelEntryAssets(targetLevel, { ahead: 2 }))
+      .finally(() => {
+        this.levelStartWarmupPending = false;
+        if (this.game?.currentScene !== this || !this.introComplete || !this.enemyManager || !this.game?.level) return;
+        this.startLevel(source);
+      });
+  }
+
   clearSectorArrivalStinger() {
     const stinger = this.sectorArrivalStinger;
     if (!stinger) return;
@@ -1175,13 +1320,16 @@ export class PlayScene {
     if (!this.uiContainer || !this.game?.app?.ticker || this.game?.currentScene !== this) return;
 
     const level = Math.max(1, Math.floor(Number(this.game?.level) || 1));
+    if (!this.shouldShowSectorArrivalStinger(level)) {
+      this.clearSectorArrivalStinger();
+      return;
+    }
     const entry = this.getSectorArrivalEntry(level) || {};
     const durationMs = postBoss ? SECTOR_ARRIVAL_STINGER_MS + 560 : SECTOR_ARRIVAL_STINGER_MS;
     const { width, height } = this.game.app.screen;
     const compact = width < 620 || height < 520;
     const accent = Number.isFinite(entry.accent) ? entry.accent : (level >= 30 ? 0xffe76a : 0x37f5ff);
     const accentHex = `#${accent.toString(16).padStart(6, '0').slice(-6)}`;
-    const artSource = entry.art || getSectorCodexArt(level);
     const sectorLabel = formatSectorLabel(level, {
       sectorWord: translateText('SECTOR'),
       compact: true
@@ -1208,7 +1356,7 @@ export class PlayScene {
     root.addChild(backdrop);
     const backdropBaseScale = { value: 1 };
 
-    PIXI.Assets.load(artSource)
+    this.preloadSectorArrivalArt(level, { ahead: 0 })
       .then((texture) => {
         if (!root.parent || backdrop.destroyed || !GameAssets.isValidTexture(texture)) return;
         backdrop.texture = texture;
@@ -2800,6 +2948,9 @@ export class PlayScene {
     this.clearSectorArrivalStinger();
     this.removeAutoPauseHandlers();
     this.shipIntroToken += 1;
+    this.sectorArrivalArtCache?.clear?.();
+    this.entryAssetWarmupCache?.clear?.();
+    this.preparedRenderTextureKeys?.clear?.();
 
     if (this.levelAdvanceTimeout) {
       clearTimeout(this.levelAdvanceTimeout);
@@ -8898,12 +9049,12 @@ export class PlayScene {
         this.shipCatalogReady?.finally?.(() => {
           if (this.game?.currentScene !== this || !this.introComplete || !this.shipIntroAssetGatePending) return;
           this.shipIntroAssetGatePending = false;
-          this.startLevel('introCompleteAssetsReady');
+          this.startLevelWhenWarm('introCompleteAssetsReady');
         });
         console.log('[PlayScene] Ship intro complete, waiting for enemy art catalog');
         return;
       }
-      this.startLevel('introComplete');
+      this.startLevelWhenWarm('introComplete');
     }
 
     console.log('[PlayScene] Ship intro complete, gameplay enabled');

@@ -23,8 +23,38 @@ if (!source.includes("root.zIndex = -20")) {
   fail('sector arrival stinger should stay behind the HUD layer');
 }
 
-if (!source.includes('getSectorCodexArt(level)') || !source.includes('getThreatCodexCatalog()')) {
+if (!source.includes('getSectorCodexArt(safeLevel)') || !source.includes('getThreatCodexCatalog()')) {
   fail('sector arrival stinger should reuse sector Codex art and metadata');
+}
+
+const stingerStart = source.indexOf('showSectorArrivalStinger({ postBoss = false } = {})');
+const stingerEnd = source.indexOf('const shade = new PIXI.Graphics();', stingerStart);
+const stingerSetupSource = stingerStart >= 0 && stingerEnd > stingerStart
+  ? source.slice(stingerStart, stingerEnd)
+  : '';
+if (!source.includes('preloadSectorArrivalArt') || stingerSetupSource.includes('PIXI.Assets.load(')) {
+  fail('sector arrival stinger art should be preloaded through the warm cache, not loaded cold during display');
+}
+
+if (!source.includes('RUN_MODES.SECTOR_START') ||
+  !source.includes('sectorStartPlaySector') ||
+  !source.includes('shouldShowSectorArrivalStinger') ||
+  !source.includes('return safeLevel > this.getRunStartSector();')) {
+  fail('sector arrival stinger should skip sector 1 and the initial Sector Start challenge sector');
+}
+
+if (!source.includes('prepare.upload(texture)')) {
+  fail('sector arrival stinger should prepare textures for render to avoid first-use GPU upload hitches');
+}
+
+const startPrewarmIndex = source.indexOf('this.prewarmLevelEntryAssets(this.game.level, { ahead: 2 })');
+const enemyStartIndex = source.indexOf('this.enemyManager.startLevel(this.game.level)');
+if (startPrewarmIndex < 0 || enemyStartIndex < 0 || startPrewarmIndex > enemyStartIndex) {
+  fail('level entry assets should begin prewarming before enemyManager.startLevel spawns the first wave');
+}
+
+if (!source.includes('getGeneratedEnemyProfilesForLevel') || !source.includes('GameAssets.getGeneratedEnemyTexture(index)')) {
+  fail('level entry warmup should include generated enemy ship textures for the incoming sector');
 }
 
 if (!source.includes("translateText('NEON RADAR LOCK')") || !source.includes("translateText('THREAT DOSSIER: {hint}', { hint })")) {
