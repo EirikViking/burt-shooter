@@ -77,7 +77,8 @@ export class Boss {
     const rawHealth = Math.round(diff.bossBaseHealth + Math.max(0, level - 1) * diff.bossHealthPerLevel);
     const healthBeforePostFirstEase = Math.max(rawHealth, diff.bossMinHealth || 70);
     this.difficultyScalar = this.getPostFirstBossDifficultyScalar();
-    this.health = Math.max(1, Math.round(healthBeforePostFirstEase * this.difficultyScalar));
+    const firstBossHealthScalar = level <= 1 ? 0.86 : 1;
+    this.health = Math.max(1, Math.round(healthBeforePostFirstEase * this.difficultyScalar * firstBossHealthScalar));
     this.maxHealth = this.health;
     this.shootCooldown = 0;
     this.shootDelay = this.getPhaseShootDelay(1);
@@ -1403,7 +1404,7 @@ export class Boss {
 
   getBossPressureScalar() {
     let scalar = 1;
-    if (this.level <= 1) scalar = 0.66;
+    if (this.level <= 1) scalar = 0.58;
     else if (this.level === 2) scalar = 0.88;
     else if (this.level <= 4) scalar = 0.92;
     else if (this.level <= 6) scalar = 0.96;
@@ -1452,9 +1453,9 @@ export class Boss {
   }
 
   getRegularAttackIntervalMs() {
-    const base = this.level <= 1 ? 3400 : this.level === 2 ? 2580 : 2920;
+    const base = this.level <= 1 ? 3800 : this.level === 2 ? 2580 : 2920;
     const phaseScalar = this.level <= 1
-      ? (this.phase === 1 ? 1 : 1.18)
+      ? (this.phase === 1 ? 1 : 1.28)
       : this.phase === 2 ? 0.95 : 0.9;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
     return Math.round((base * phaseScalar * chaosRelief) / this.getPostFirstBossDifficultyScalar());

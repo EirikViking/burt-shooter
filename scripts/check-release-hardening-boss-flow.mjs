@@ -54,6 +54,6 @@ assert.ok(bossSource.includes('return false;'), 'damage gate should preserve non
 assert.ok(balanceSource.includes('ringSafeWedgeEarly: 0.74'), 'first boss ring safe wedge should stay wider than later boss rings');
 assert.ok(balanceSource.includes('signatureRingTelegraphEarlyMs: 1500'), 'first boss ring telegraph should stay more readable');
 assert.ok(balanceSource.includes('contactRadiusScalarEarly: 0.5'), 'first boss contact radius should stay readable against large boss art');
-assert.ok(bossSource.includes('if (this.level <= 1) scalar = 0.66'), 'first boss pressure scalar should stay softened while the fight lasts longer');
+assert.ok(bossSource.includes('if (this.level <= 1) scalar = 0.58'), 'first boss pressure scalar should stay softened while the fight lasts longer');
 
 console.log(`[release-hardening-boss-flow] PASS minFightMs first=${earlyBoss.minimumFightMs} mid=${midBoss.minimumFightMs} cap=${lateBoss.minimumFightMs}`);
