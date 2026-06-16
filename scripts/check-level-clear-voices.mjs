@@ -68,6 +68,11 @@ if (!playSceneSource.includes("exclusiveGroup: 'level_clear_flirt'")) {
   fail('level-clear voice should have an exclusive group to avoid stacked compliments');
 }
 
+const enemyManagerSource = fs.readFileSync(path.join(rootDir, 'src/managers/EnemyManager.js'), 'utf8');
+if (!/if\s*\(\s*hasUpcomingWave\s*\)\s*{\s*AudioManager\.playVoice\('mission_control_wave_clear'/.test(enemyManagerSource)) {
+  fail('mission_control_wave_clear should only play when another wave is upcoming; final-wave sector clear uses level_clear_flirt');
+}
+
 const generatorSource = fs.readFileSync(path.join(rootDir, 'scripts/generate-level-clear-voices.mjs'), 'utf8');
 if (!generatorSource.includes('ELEVENLABS_LEVEL_CLEAR_VOICE_ID')) {
   fail('level-clear voice generator should support ELEVENLABS_LEVEL_CLEAR_VOICE_ID override');

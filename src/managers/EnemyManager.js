@@ -2827,7 +2827,9 @@ export class EnemyManager {
       if (this.game.scenes.play) {
         this.game.scenes.play.showWaveBonusEffect(appliedBonus, 'BONUS DRONE RAID CLEAR!');
       }
-      AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 30000, duckMs: 1300 });
+      if (hasUpcomingWave) {
+        AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 30000, duckMs: 1300 });
+      }
     } else {
       // Normal Bonus
       const rewardConfig = BalanceConfig.rewards || {};
