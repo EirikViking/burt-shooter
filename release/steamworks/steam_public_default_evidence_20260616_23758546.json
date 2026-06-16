@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-06-16T08:42:00Z",
+  "steamBuild": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23758546",
+    "depotManifestId": "885319157176203180",
+    "previousDefaultBuildId": "23747531",
+    "branch": "default",
+    "branchDescription": "Public default branch",
+    "steamworksUser": "gaunziman",
+    "description": "Nova Swarm public default candidate 2026-06-16 hard achievements 53743bd v2026-06-16_10-21-23"
+  },
+  "source": {
+    "worktree": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/hard-achievements-20260612",
+    "baselineHead": "53743bd8814920d6f5a5ca7128bc62db28930876",
+    "remoteSync": "origin/codex/hard-achievements-20260612 0 ahead / 0 behind",
+    "buildVersion": "v2026-06-16_10-21-23",
+    "buildTimestamp": "2026-06-16T08:21:23.558Z"
+  },
+  "protectedBoundaries": {
+    "steamworksMetadataChanged": false,
+    "appIdChanged": false,
+    "depotIdsChanged": false,
+    "storeMetadataChanged": false,
+    "visibilityChanged": false,
+    "achievementsChanged": false,
+    "leaderboardIdentity": "nova_swarm_global_score_v2"
+  },
+  "package": {
+    "vdf": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf",
+    "vdfSha256": "2B7C30F6B8EE8CD8061268AB09E622F1D6AC24850B2E2663E3D38A1F9BF6A043",
+    "contentRoot": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\desktop\\win-unpacked",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestSha256": "A400CBC72029671FDADF4AD5B6ED746669702B965C801BA53E387FBA303348D4",
+    "payloadFileCount": 336,
+    "payloadBytes": 787211570
+  },
+  "validation": [
+    "git fetch --all --prune",
+    "git status --short --branch",
+    "git worktree list",
+    "npm run check:release-line",
+    "npm run check:i18n",
+    "npm run check:i18n-ui",
+    "npm run check:steam-electron-bridge",
+    "npm run check:steamworks-leaderboard-config",
+    "npm run check:steam-achievements-mock",
+    "npm run build:current",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run desktop:controls:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=\"\" npm run steamworks:write-vdf"
+  ],
+  "testReports": {
+    "i18nUi": "test-results/i18n-ui-2026-06-16T08-18-37-908Z",
+    "steamSdkReady": "test-results/steam-sdk-ready-2026-06-16T08-21-22-853Z/report.json",
+    "steamPackageRuntime": "test-results/steam-package-runtime-2026-06-16T08-26-38-448Z/report.json",
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-16T08-24-47-317Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-06-16T08-24-47-310Z/report.json",
+    "packagedControls": "test-results/packaged-control-smoke-2026-06-16T08-24-47-341Z/report.json"
+  },
+  "steamcmd": {
+    "path": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe",
+    "commandShape": "+login gaunziman +run_app_build <absolute app_build_LOCAL.vdf> +quit",
+    "result": "Successfully finished AppID 4765070 build (BuildID 23758546).",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "steamworksPublicDefault": {
+    "assignmentMethod": "Steamworks App Admin build-change preview and SMS-confirmed apply",
+    "previewUrl": "https://partner.steamgames.com/apps/previewbuildchange/4765070/23758546?betakey=default",
+    "confirmationUrl": "https://partner.steamgames.com/apps/builds/4765070?submittedbuild=23758546",
+    "observedStatusText": "Byggversjonen 23758546 er nå i bruk for spillere i grenen «default»",
+    "branchTableVerification": "default / Public default branch / BuildID 23758546 / depot 4765071 / manifest 885319157176203180",
+    "updateDownloadSize": "5.4 MB"
+  },
+  "rollback": {
+    "previousDefaultBuildId": "23747531",
+    "instructions": "In Steamworks > App Admin > SteamPipe > Builds for AppID 4765070, select branch default for BuildID 23747531, preview the change, then confirm the build change. This reverts public/default to the previous build without changing AppID, depot IDs, store metadata, visibility, achievements, or leaderboard identity."
+  },
+  "notes": [
+    "SteamCMD upload used SetLive blank; Steamworks App Admin performed the explicit default branch assignment after upload.",
+    "Steamworks App Admin confirmed BuildID 23758546 is now in use for players on default.",
+    "No code, achievements, Steamworks metadata, AppID, depot IDs, store metadata, visibility, or leaderboard identity were intentionally changed."
+  ]
+}
