@@ -13,12 +13,12 @@ export const AssetManifest = {
             bossWarningAtlas: '/art/generated/nova-swarm/vfx/boss-warning-emblems/nova-boss-warning-emblem-atlas-20260603-clean.png',
             bossWarningEmblems: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/vfx/boss-warning-emblems/nova-boss-warning-emblem-${String(i + 1).padStart(2, '0')}-20260603-clean.png`)
         },
-        sectors: Array.from({ length: 240 }, (_, i) => `/art/generated/nova-swarm/replacements/sectors/nova-sector-signal-${String(i + 1).padStart(3, '0')}-20260616.svg`),
+        sectors: Array.from({ length: 240 }, (_, i) => `/art/generated/nova-swarm/replacements/sector-scenes/nova-sector-scene-${String(i + 1).padStart(3, '0')}-20260616.png`),
         bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
         playerShips: Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
         enemies: [
             ...Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/enemies/enhanced/nova-enemy-enhanced-${String(i + 1).padStart(2, '0')}.png`),
-            ...Array.from({ length: 177 }, (_, i) => `/art/generated/nova-swarm/enemies/late-mayhem/nova-late-mayhem-enemy-${String(i + 1).padStart(3, '0')}.svg`)
+            ...Array.from({ length: 177 }, (_, i) => `/art/generated/nova-swarm/enemies/late-mayhem/nova-late-mayhem-enemy-${String(i + 1).padStart(3, '0')}.png`)
         ],
         eliteMiddleShips: [
             '/art/generated/nova-swarm/elites/nova-elite-middle-01-tractor-puller-20260523.png',

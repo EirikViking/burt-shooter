@@ -723,6 +723,7 @@ const sourceText = Object.freeze({
   'ARMOR BREACH': '装甲破裂',
   'NEON RADAR LOCK': '霓虹雷达锁定',
   'THREAT DOSSIER': '威胁档案',
+  'THREAT DOSSIER: {hint}': ({ hint }) => `威胁档案：${hint}`,
   'BOSS': 'Boss',
   "LET'S GO!": '上！',
   'BOSS DEFEATED! +1000': 'Boss 已击败！+1000',

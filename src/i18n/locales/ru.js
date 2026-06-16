@@ -723,6 +723,7 @@ const sourceText = Object.freeze({
   'ARMOR BREACH': 'БРОНЯ ПРОБИТА',
   'NEON RADAR LOCK': 'НЕОНОВЫЙ ЗАХВАТ',
   'THREAT DOSSIER': 'ДОСЬЕ УГРОЗЫ',
+  'THREAT DOSSIER: {hint}': ({ hint }) => `ДОСЬЕ УГРОЗЫ: ${hint}`,
   'BOSS': 'БОСС',
   "LET'S GO!": 'ПОЕХАЛИ!',
   'BOSS DEFEATED! +1000': 'БОСС ПОБЕЖДЕН! +1000',

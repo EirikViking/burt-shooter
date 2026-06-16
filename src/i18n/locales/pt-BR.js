@@ -752,6 +752,7 @@ const sourceText = Object.freeze({
   'ARMOR BREACH': 'ARMADURA ROMPIDA',
   'NEON RADAR LOCK': 'TRAVA DE RADAR NEON',
   'THREAT DOSSIER': 'DOSSIÊ DE AMEAÇA',
+  'THREAT DOSSIER: {hint}': ({ hint }) => `DOSSIÊ DE AMEAÇA: ${hint}`,
   'BOSS': 'CHEFE',
   "LET'S GO!": 'BORA!',
   'BOSS DEFEATED! +1000': 'CHEFE DERROTADO +1000',

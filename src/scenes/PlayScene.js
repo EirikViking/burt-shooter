@@ -53,6 +53,7 @@ import {
   isOverrunMilestoneSector,
   resolveOverrunMilestoneVoiceCue
 } from '../config/OverrunMilestoneCelebrations.js';
+import { getSectorCodexArt, getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
 import {
   recordThreatDefeated,
   recordThreatSeen
@@ -76,6 +77,7 @@ const OVERRUN_CLEAR_VFX_MS = 5600;
 const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
+const SECTOR_ARRIVAL_STINGER_MS = 1200;
 
 export class PlayScene {
   constructor(game) {
@@ -207,6 +209,7 @@ export class PlayScene {
     this.bossHazards = [];
     this.bossHazardLayer = null;
     this.lastBossHazardHit = null;
+    this.sectorArrivalStinger = null;
 
     // Ship intro state
     this.introActive = false;
@@ -319,6 +322,7 @@ export class PlayScene {
     this.uiOverlay.sortableChildren = true;
     this.overrunClearEffects = [];
     this.overrunCelebratedMilestones = new Set();
+    this.clearSectorArrivalStinger();
     this.gameOverSequenceStarted = false;
     this.finalDeathFeedbackShown = false;
     this.gameOverAnimationLayer = null;
@@ -1101,6 +1105,7 @@ export class PlayScene {
     if (startAtBoss) {
       this.enemyManager.forceBossStart(this.game.level);
     }
+    this.showSectorArrivalStinger({ postBoss: postBossLevelIntro });
     this.showLevelIntro({ postBoss: postBossLevelIntro });
     const compactHud = this.game.getWidth() < 620;
     if (!compactHud && !postBossLevelIntro) {
@@ -1140,6 +1145,208 @@ export class PlayScene {
       y: compactHud ? this.game.getHeight() * 0.25 : this.game.getHeight() * (postBoss ? 0.18 : 0.2),
       maxWidth: compactHud ? this.game.getWidth() * 0.82 : this.game.getWidth() * (postBoss ? 0.78 : 0.9)
     });
+  }
+
+  getSectorArrivalEntry(level = this.game?.level || 1) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    try {
+      const id = `sector_${String(safeLevel).padStart(3, '0')}`;
+      return getThreatCodexCatalog()?.sectors?.find((entry) => entry?.id === id) || null;
+    } catch (error) {
+      console.warn('[SectorArrival] failed to read sector Codex entry:', error);
+      return null;
+    }
+  }
+
+  clearSectorArrivalStinger() {
+    const stinger = this.sectorArrivalStinger;
+    if (!stinger) return;
+    if (stinger.ticker && this.game?.app?.ticker) {
+      this.game.app.ticker.remove(stinger.ticker);
+    }
+    if (stinger.container?.parent) {
+      stinger.container.parent.removeChild(stinger.container);
+    }
+    stinger.container?.destroy?.({ children: true });
+    this.sectorArrivalStinger = null;
+  }
+
+  showSectorArrivalStinger({ postBoss = false } = {}) {
+    if (!this.uiContainer || !this.game?.app?.ticker || this.game?.currentScene !== this) return;
+
+    const level = Math.max(1, Math.floor(Number(this.game?.level) || 1));
+    const entry = this.getSectorArrivalEntry(level) || {};
+    const durationMs = postBoss ? SECTOR_ARRIVAL_STINGER_MS + 280 : SECTOR_ARRIVAL_STINGER_MS;
+    const { width, height } = this.game.app.screen;
+    const compact = width < 620 || height < 520;
+    const accent = Number.isFinite(entry.accent) ? entry.accent : (level >= 30 ? 0xffe76a : 0x37f5ff);
+    const accentHex = `#${accent.toString(16).padStart(6, '0').slice(-6)}`;
+    const artSource = entry.art || getSectorCodexArt(level);
+    const sectorLabel = formatSectorLabel(level, {
+      sectorWord: translateText('SECTOR'),
+      compact: true
+    }).toUpperCase();
+    const pressure = translateText(entry.pressureStyle || entry.role || 'SECTOR').toUpperCase();
+    const hint = translateText(entry.tip || 'Read the line, then make one calmer decision.');
+
+    this.clearSectorArrivalStinger();
+
+    const root = new PIXI.Container();
+    root.label = 'sector_arrival_stinger';
+    root.eventMode = 'none';
+    root.interactive = false;
+    root.zIndex = -20;
+    root.alpha = 0;
+    root.sortableChildren = true;
+    this.uiContainer.addChild(root);
+    this.uiContainer.sortChildren?.();
+
+    const backdrop = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    backdrop.anchor.set(0.5);
+    backdrop.position.set(width / 2, height / 2);
+    backdrop.alpha = 0.84;
+    root.addChild(backdrop);
+    const backdropBaseScale = { value: 1 };
+
+    PIXI.Assets.load(artSource)
+      .then((texture) => {
+        if (!root.parent || backdrop.destroyed || !GameAssets.isValidTexture(texture)) return;
+        backdrop.texture = texture;
+        const scale = Math.max(width / texture.width, height / texture.height);
+        backdropBaseScale.value = scale;
+        backdrop.scale.set(scale);
+      })
+      .catch((error) => {
+        console.warn('[SectorArrival] sector art failed to load:', error);
+      });
+
+    const shade = new PIXI.Graphics();
+    shade.rect(0, 0, width, height);
+    shade.fill({ color: 0x020712, alpha: 0.36 });
+    root.addChild(shade);
+
+    const vignette = new PIXI.Graphics();
+    vignette.rect(0, 0, width, height);
+    vignette.stroke({ color: accent, width: compact ? 3 : 5, alpha: 0.52 });
+    vignette.rect(0, 0, width, Math.max(4, height * 0.008));
+    vignette.fill({ color: accent, alpha: 0.34 });
+    vignette.rect(0, height - Math.max(4, height * 0.008), width, Math.max(4, height * 0.008));
+    vignette.fill({ color: accent, alpha: 0.22 });
+    root.addChild(vignette);
+
+    const lockLayer = new PIXI.Container();
+    lockLayer.position.set(width / 2, height / 2);
+    lockLayer.blendMode = 'add';
+    root.addChild(lockLayer);
+
+    const radius = Math.min(width, height) * (compact ? 0.28 : 0.34);
+    const rings = new PIXI.Graphics();
+    rings.circle(0, 0, radius);
+    rings.stroke({ color: accent, width: compact ? 2 : 3, alpha: 0.42 });
+    rings.circle(0, 0, radius * 0.64);
+    rings.stroke({ color: 0x7dffcc, width: 1.5, alpha: 0.36 });
+    rings.circle(0, 0, radius * 0.28);
+    rings.stroke({ color: accent, width: 1, alpha: 0.3 });
+    lockLayer.addChild(rings);
+
+    const sweep = new PIXI.Graphics();
+    sweep.moveTo(0, 0);
+    sweep.lineTo(radius * 1.08, 0);
+    sweep.stroke({ color: 0x7dffcc, width: compact ? 4 : 6, alpha: 0.86 });
+    lockLayer.addChild(sweep);
+
+    const scan = new PIXI.Graphics();
+    root.addChild(scan);
+
+    const textY = compact ? height * 0.24 : height * 0.18;
+    const kicker = createText(translateText('NEON RADAR LOCK'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 13 : 18,
+      fontWeight: '900',
+      fill: '#7dffcc',
+      letterSpacing: 0
+    });
+    kicker.anchor?.set?.(0.5, 0);
+    kicker.position.set(width / 2, textY);
+    root.addChild(kicker);
+
+    const title = createText(sectorLabel, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 32 : 58,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#001018',
+      strokeThickness: compact ? 3 : 5,
+      letterSpacing: 0,
+      wordWrap: true,
+      wordWrapWidth: Math.min(width * 0.9, compact ? 560 : 980),
+      align: 'center'
+    });
+    title.anchor?.set?.(0.5, 0);
+    title.position.set(width / 2, textY + (compact ? 22 : 32));
+    root.addChild(title);
+
+    const meta = createText(pressure, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 12 : 16,
+      fontWeight: '900',
+      fill: accentHex,
+      letterSpacing: 0,
+      wordWrap: true,
+      wordWrapWidth: Math.min(width * 0.82, compact ? 500 : 820),
+      align: 'center'
+    });
+    meta.anchor?.set?.(0.5, 0);
+    meta.position.set(width / 2, title.y + title.height + (compact ? 6 : 8));
+    root.addChild(meta);
+
+    const hintText = createText(translateText('THREAT DOSSIER: {hint}', { hint }), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 13 : 17,
+      fontWeight: '700',
+      fill: '#d7fbff',
+      letterSpacing: 0,
+      wordWrap: true,
+      wordWrapWidth: Math.min(width * 0.78, compact ? 520 : 860),
+      align: 'center',
+      lineHeight: compact ? 15 : 20
+    });
+    hintText.anchor?.set?.(0.5, 0);
+    hintText.position.set(width / 2, height * (compact ? 0.66 : 0.70));
+    root.addChild(hintText);
+
+    this.reserveMessageFocus(durationMs + 120, {
+      priority: 2,
+      slots: ['center', 'top']
+    });
+
+    const startedAt = performance.now();
+    const ticker = () => {
+      if (!root.parent || this.game?.currentScene !== this) {
+        this.clearSectorArrivalStinger();
+        return;
+      }
+      const elapsed = performance.now() - startedAt;
+      const progress = Math.min(1, elapsed / durationMs);
+      const fadeIn = Math.min(1, elapsed / 150);
+      const fadeOut = Math.max(0, (durationMs - elapsed) / 390);
+      const alpha = Math.min(fadeIn, fadeOut);
+      root.alpha = alpha;
+      backdrop.scale.set(backdropBaseScale.value * (1 + progress * 0.035));
+      lockLayer.rotation = progress * Math.PI * 2.15;
+      rings.alpha = 0.42 + Math.sin(elapsed * 0.018) * 0.18;
+      sweep.alpha = 0.48 + Math.sin(elapsed * 0.026) * 0.28;
+      scan.clear();
+      const scanX = width * (progress * 1.18 - 0.09);
+      scan.rect(Math.max(0, scanX - width * 0.018), 0, width * 0.036, height);
+      scan.fill({ color: 0x7dffcc, alpha: 0.18 * alpha });
+      if (elapsed >= durationMs) {
+        this.clearSectorArrivalStinger();
+      }
+    };
+
+    this.sectorArrivalStinger = { container: root, ticker };
+    this.game.app.ticker.add(ticker);
   }
 
   update(delta) {
@@ -2590,6 +2797,7 @@ export class PlayScene {
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
     this.destroyPauseOverlay();
+    this.clearSectorArrivalStinger();
     this.removeAutoPauseHandlers();
     this.shipIntroToken += 1;
 
