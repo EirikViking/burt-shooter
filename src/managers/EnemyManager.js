@@ -184,6 +184,10 @@ export class EnemyManager {
     this.waveBriefingTimer = 0;
     this.waveBriefingAnnounced = false;
     this.currentWaveTactic = null;
+    this.spawning = false;
+    this.waveSpawnPendingCount = 0;
+    this.waveSpawnSerial = 0;
+    this.waveSpawnTimers = [];
     this.marketingDebugMode = false;
     this.marketingDebugBossSpawnCount = 0;
 
@@ -247,6 +251,7 @@ export class EnemyManager {
     this.marketingDebugMode = false;
     this.marketingDebugBossSpawnCount = 0;
     this.level = level;
+    this.clearPendingWaveSpawns();
     this.clearEnemies();
 
     this.currentWaveIndex = 0;
@@ -343,6 +348,62 @@ export class EnemyManager {
       this.state = 'LEVEL_COMPLETE';
       console.log(`[BossPhase] level=${level} phase=${this.phase} bossDefeated=true`);
     }
+  }
+
+  beginLevelEntryHold(level) {
+    const targetLevel = Math.max(1, Math.floor(Number(level) || 1));
+    console.log(`[EnemyManager] HOLDING LEVEL ${targetLevel} ENTRY`);
+    this.marketingDebugMode = false;
+    this.marketingDebugBossSpawnCount = 0;
+    this.level = targetLevel;
+    this.clearPendingWaveSpawns();
+    this.clearEnemies();
+
+    this.currentWaveIndex = 0;
+    this.state = 'LEVEL_ENTRY_HOLD';
+    this.waveTimer = 0;
+    this.waves = [];
+    this.normalWavesTotal = 0;
+    this.bossWaveIndex = 0;
+    this.levelStartTime = 0;
+    this.phase = 'ENTRY_HOLD';
+    this.pendingWaveConfig = null;
+    this.waveBriefingTimer = 0;
+    this.waveBriefingAnnounced = false;
+    this.currentWaveTactic = null;
+    this.currentModifier = null;
+    this.isBossLevel = false;
+
+    this.hijacker = null;
+    this.hijackerSpawnedThisLevel = false;
+    this.hijackerSpawnAttemptedThisLevel = false;
+    this.eliteMiddleShipPlan = [];
+    this.eliteMiddleShipsSpawnedThisLevel = 0;
+
+    this.waveEnding = false;
+    this.cleanupTimer = 0;
+    this.cleanupPhase = 'NONE';
+    this.resetWaveWatchdog();
+
+    this.boss = null;
+    this.bossGateTimer = 0;
+    this.bossSpawning = false;
+    this.resetBossGateMessaging();
+    this.bossSpawnedThisLevel = false;
+    this.bossDefeatedThisLevel = false;
+    this.bossDefeatCelebrated = false;
+    this.bossBlockLogged = false;
+    this.bossSpawnedAtMs = 0;
+    this.bossAddWaveCooldownUntilMs = 0;
+    this.bossAddWaveCount = 0;
+    this.bossIntervalExtraWaves = 0;
+    this.bossChaosEventsThisBoss = 0;
+    this.bossChaosNextCheckAtMs = 0;
+    this.bossChaosCooldownUntilMs = 0;
+    this.bossChaosPressureReliefUntilMs = 0;
+    this.bossFuelShipCooldownUntilMs = 0;
+    this.bossFuelShipNextCheckAtMs = 0;
+    this.bossFuelShipsSpawnedThisBoss = 0;
   }
 
   enableMarketingDebugMode() {
@@ -916,6 +977,9 @@ export class EnemyManager {
         // WAVE FIX: Check objective enemies only, not bonus drones
         const objectiveCount = this.getObjectiveEnemyCount();
         if (objectiveCount === 0 && !this.waveEnding) {
+          if (this.spawning) {
+            break;
+          }
           // Start wave ending immediately when last objective enemy dies
           this.waveEnding = true;
 
@@ -992,8 +1056,8 @@ export class EnemyManager {
           this.pendingWaveConfig = null;
           this.waveBriefingTimer = 0;
           this.waveBriefingAnnounced = false;
-          this.spawnWave(config);
           this.state = 'WAVE_ACTIVE';
+          this.spawnWave(config);
         }
         break;
 
@@ -1437,6 +1501,7 @@ export class EnemyManager {
   }
 
   spawnWave(config) {
+    this.clearPendingWaveSpawns();
     if (config.type === 'BOSS') {
       AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800, bypassGlobalCooldown: true });
       this.spawnBoss(this.level); // Fire and forget
@@ -1488,10 +1553,28 @@ export class EnemyManager {
     const cadence = (this.directorState?.spawnCadenceScale || 1) * (config.cadence || 1);
     const delayStep = Math.max(55, (diff.enemyEntryDelayBaseMs || 150) / cadence);
     const entryDurationMs = Math.max(760, (diff.enemyEntryDurationMs || 2000) * (tactic.entrySpeed || 1));
+    const spawnChunkSize = Math.max(3, Math.min(6, Math.floor(Number(diff.enemyEntrySpawnChunkSize) || 4)));
+    const spawnChunkDelayMs = Math.max(8, Math.min(24, Math.floor(Number(diff.enemyEntrySpawnChunkDelayMs) || 16)));
+    const waveSpawnSerial = this.waveSpawnSerial;
     const dangerAssignments = new Map((Array.isArray(config.dangerMidShipIds) ? config.dangerMidShipIds : [])
       .map((entry) => [Number(entry.slot), getDangerMidShipProfile(entry.id)])
       .filter((entry) => Number.isFinite(entry[0]) && entry[1]));
-    positions.forEach((pos, i) => {
+    this.spawning = positions.length > 0;
+    this.waveSpawnPendingCount = positions.length;
+
+    const markWaveSpawnDone = () => {
+      this.waveSpawnPendingCount = Math.max(0, (Number(this.waveSpawnPendingCount) || 0) - 1);
+      if (this.waveSpawnPendingCount <= 0) {
+        this.waveSpawnPendingCount = 0;
+        this.spawning = false;
+      }
+    };
+
+    const spawnEnemyAtSlot = (pos, i, scheduledDelayMs = 0) => {
+      if (this.waveSpawnSerial !== waveSpawnSerial || this.state !== 'WAVE_ACTIVE') {
+        markWaveSpawnDone();
+        return;
+      }
       const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
       const dangerProfile = dangerAssignments.get(i);
       const dangerMidType = dangerProfile && Number.isFinite(dangerProfile.spriteIndex)
@@ -1540,9 +1623,25 @@ export class EnemyManager {
       if (enemyTactic.forcedDive) {
         enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
       }
-      enemy.startEntry(startX, -50, pos.x, pos.y, entryDurationMs, i * delayStep);
+      const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs);
+      enemy.startEntry(startX, -50, pos.x, pos.y, entryDurationMs, entryDelayMs);
       this.enemies.push(enemy);
       this.container.addChild(enemy.sprite);
+      markWaveSpawnDone();
+    };
+
+    positions.forEach((pos, i) => {
+      const scheduledDelayMs = Math.floor(i / spawnChunkSize) * spawnChunkDelayMs;
+      if (scheduledDelayMs <= 0) {
+        spawnEnemyAtSlot(pos, i, 0);
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        this.waveSpawnTimers = this.waveSpawnTimers.filter((pendingTimer) => pendingTimer !== timer);
+        spawnEnemyAtSlot(pos, i, scheduledDelayMs);
+      }, scheduledDelayMs);
+      this.waveSpawnTimers.push(timer);
     });
     if (config.eliteMiddleShipId) {
       this.spawnEliteMiddleShip(config.eliteMiddleShipId, {
@@ -3074,6 +3173,7 @@ export class EnemyManager {
   }
 
   clearEnemies() {
+    this.clearPendingWaveSpawns();
     this.enemies.forEach(e => {
       this.removeEnemySprite(e, 'clear_enemies');
     });
@@ -3088,6 +3188,17 @@ export class EnemyManager {
       this.hijacker = null;
     }
   }
+
+  clearPendingWaveSpawns() {
+    if (Array.isArray(this.waveSpawnTimers) && this.waveSpawnTimers.length) {
+      this.waveSpawnTimers.forEach((timer) => clearTimeout(timer));
+    }
+    this.waveSpawnTimers = [];
+    this.waveSpawnPendingCount = 0;
+    this.spawning = false;
+    this.waveSpawnSerial = (Number(this.waveSpawnSerial) || 0) + 1;
+  }
+
   updateAdaptation(metrics) {
     if (!metrics) return;
     this.adaptation.diagonalShotBias = Math.abs(metrics.avgX) * 0.5;

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
 const source = fs.readFileSync('src/scenes/PlayScene.js', 'utf8');
+const enemyManagerSource = fs.readFileSync('src/managers/EnemyManager.js', 'utf8');
 const errors = [];
 
 function fail(message) {
@@ -57,11 +58,24 @@ const showArrivalIndex = source.indexOf('this.showSectorArrivalStinger({ postBos
 if (
   !source.includes('pendingEnemyStartTimeout') ||
   !source.includes('getSectorArrivalStingerDuration({ postBoss: postBossLevelIntro }) + 120') ||
+  !source.includes('this.enemyManager?.beginLevelEntryHold?.(targetLevel)') ||
   showArrivalIndex < 0 ||
   scheduledEnemyStartIndex < 0 ||
   showArrivalIndex > scheduledEnemyStartIndex
 ) {
   fail('enemy wave release should be delayed until the visible sector arrival stinger is finished');
+}
+
+const holdIndex = source.indexOf('this.enemyManager?.beginLevelEntryHold?.(targetLevel)');
+const releaseIndex = source.indexOf('this.pendingEnemyStartTimeout = setTimeout(startEnemies, delayMs)');
+if (holdIndex < 0 || releaseIndex < 0 || holdIndex > releaseIndex) {
+  fail('delayed sector entry should put EnemyManager into a non-complete hold before the timeout starts');
+}
+
+if (!enemyManagerSource.includes('beginLevelEntryHold(level)') ||
+  !enemyManagerSource.includes("this.state = 'LEVEL_ENTRY_HOLD'") ||
+  !enemyManagerSource.includes("this.phase = 'ENTRY_HOLD'")) {
+  fail('EnemyManager should expose a non-complete level entry hold state for delayed arrivals');
 }
 
 if (!source.includes('scheduleEnemyStartForLevel(level') ||

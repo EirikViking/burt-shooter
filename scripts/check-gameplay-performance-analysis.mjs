@@ -132,6 +132,15 @@ async function sampleFrameIntervals(page, sampleMs) {
 
 async function sampleParkedEnemyMotion(page, sampleFrames = 180) {
   return page.evaluate((framesToSample) => new Promise((resolve) => {
+    window.__perfEnemyIds = window.__perfEnemyIds || new WeakMap();
+    window.__perfEnemyIdSeq = Number(window.__perfEnemyIdSeq) || 1;
+    const getEnemyKey = (enemy) => {
+      if (!window.__perfEnemyIds.has(enemy)) {
+        window.__perfEnemyIds.set(enemy, window.__perfEnemyIdSeq);
+        window.__perfEnemyIdSeq += 1;
+      }
+      return String(window.__perfEnemyIds.get(enemy));
+    };
     const samples = [];
     const take = () => {
       const enemies = window.__game?.scenes?.play?.enemyManager?.enemies || [];
@@ -139,7 +148,7 @@ async function sampleParkedEnemyMotion(page, sampleFrames = 180) {
         .filter((enemy) => enemy?.state === 'FORMATION' && enemy?.active !== false)
         .slice(0, 8)
         .map((enemy) => ({
-          key: `${enemy.waveSlot ?? 0}:${Math.round(enemy.formationX || 0)}:${Math.round(enemy.formationY || 0)}:${enemy.type || 'enemy'}`,
+          key: getEnemyKey(enemy),
           x: Number(enemy.x || 0),
           y: Number(enemy.y || 0),
           state: enemy.state || null,
@@ -182,6 +191,70 @@ function summarizeParkedMotion(samples) {
   };
 }
 
+async function makeProbePlayerSafe(page) {
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    if (game) game.lives = Math.max(Number(game.lives) || 0, 3);
+    if (play?.player) {
+      play.player.invulnerable = true;
+      play.player.invulnerableTime = Math.max(Number(play.player.invulnerableTime) || 0, 600000);
+    }
+    play?.clearEnemyBullets?.('performance_probe');
+  });
+}
+
+async function sampleNextWaveEntry(page, sampleMs = 3600) {
+  const setup = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const manager = play?.enemyManager;
+    if (!manager || !Array.isArray(manager.waves) || manager.waves.length < 2) {
+      return { available: false, reason: 'missing wave list' };
+    }
+    const nextIndex = Math.min(
+      Math.max(1, (Number(manager.currentWaveIndex) || 0) + 1),
+      Math.max(1, manager.normalWavesTotal - 1)
+    );
+    const config = manager.waves[nextIndex];
+    if (!config) return { available: false, reason: `missing wave config ${nextIndex}` };
+
+    manager.clearPendingWaveSpawns?.();
+    manager.clearEnemies?.();
+    manager.waveEnding = false;
+    manager.cleanupTimer = 0;
+    manager.cleanupPhase = 'NONE';
+    manager.currentWaveIndex = nextIndex;
+    manager.pendingWaveConfig = config;
+    manager.waveBriefingTimer = 0;
+    manager.waveBriefingAnnounced = true;
+    manager.state = 'WAVE_BRIEFING';
+    return {
+      available: true,
+      nextIndex,
+      normalWavesTotal: manager.normalWavesTotal,
+      count: config.count || 0,
+      formation: config.formation || null
+    };
+  });
+  if (!setup.available) return { setup, frameSummary: summarizeFrameIntervals([]), after: null };
+  const intervals = await sampleFrameIntervals(page, sampleMs);
+  const after = await page.evaluate(() => {
+    const manager = window.__game?.scenes?.play?.enemyManager;
+    return {
+      state: manager?.state || null,
+      spawning: Boolean(manager?.spawning),
+      pending: Number(manager?.waveSpawnPendingCount) || 0,
+      enemies: manager?.enemies?.length || 0,
+      waveIndex: Number(manager?.currentWaveIndex) || 0
+    };
+  });
+  return {
+    setup,
+    frameSummary: summarizeFrameIntervals(intervals),
+    after
+  };
+}
+
 async function runScenario(browser, scenario) {
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const pageErrors = [];
@@ -197,20 +270,25 @@ async function runScenario(browser, scenario) {
   await page.evaluate(() => window.__game.startGame());
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', null, { timeout: 30000 });
   await waitForActiveWave(page);
+  await makeProbePlayerSafe(page);
   await page.waitForFunction(() => {
     const enemies = window.__game?.scenes?.play?.enemyManager?.enemies || [];
     return enemies.some((enemy) => enemy?.state === 'FORMATION' && enemy?.active !== false);
   }, null, { timeout: 15000 });
   await page.waitForTimeout(350);
+  await makeProbePlayerSafe(page);
 
   const before = await readState(page);
   const intervals = await sampleFrameIntervals(page, scenario.sampleMs || 6000);
   const motionSamples = await sampleParkedEnemyMotion(page, scenario.motionFrames || 180);
+  await makeProbePlayerSafe(page);
+  const nextWaveEntry = await sampleNextWaveEntry(page, scenario.entrySampleMs || 3600);
   const after = await readState(page);
   const report = {
     name: scenario.name,
     startLevel: scenario.startLevel,
     frameSummary: summarizeFrameIntervals(intervals),
+    nextWaveEntry,
     parkedMotion: summarizeParkedMotion(motionSamples),
     before: {
       level: before.level,
@@ -257,6 +335,21 @@ try {
     }
     if (result.frameSummary.longFrames50 > 0) {
       failures.push(`${result.name} has ${result.frameSummary.longFrames50} frame(s) over 50ms`);
+    }
+    if (result.nextWaveEntry?.setup?.available) {
+      const entryFrame = result.nextWaveEntry.frameSummary;
+      if (entryFrame.p95Ms > 30) {
+        failures.push(`${result.name} wave entry p95 frame ${entryFrame.p95Ms}ms exceeds 30ms`);
+      }
+      if (entryFrame.longFrames50 > 1) {
+        failures.push(`${result.name} wave entry has ${entryFrame.longFrames50} frame(s) over 50ms`);
+      }
+      if (result.nextWaveEntry.after?.pending !== 0 || result.nextWaveEntry.after?.spawning) {
+        failures.push(`${result.name} wave entry spawn queue did not drain`);
+      }
+      if ((result.nextWaveEntry.after?.enemies || 0) <= 0) {
+        failures.push(`${result.name} wave entry did not spawn enemies`);
+      }
     }
     if (result.parkedMotion.maxXStepPx > 5.5) {
       failures.push(`${result.name} parked enemy x step ${result.parkedMotion.maxXStepPx}px exceeds 5.5px`);

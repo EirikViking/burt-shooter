@@ -1171,6 +1171,7 @@ export class PlayScene {
 
     this.clearPendingEnemyStart();
     if (delayMs > 0) {
+      this.enemyManager?.beginLevelEntryHold?.(targetLevel);
       this.pendingEnemyStartTimeout = setTimeout(startEnemies, delayMs);
       return;
     }

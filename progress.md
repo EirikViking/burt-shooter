@@ -6,6 +6,8 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Implemented a delayed enemy-release gate in `PlayScene.startLevel`: sector 1 and initial Sector Start still start immediately, but later sector arrivals now show the stinger first and release waves after the stinger duration.
 - Smoothed parked enemy motion by replacing sign/round-based sine steps with eased curves and adding a short formation-sway ramp after entry/return lock, so enemies no longer snap sideways on the first parked frame.
 - Added focused guards: `check:sector-arrival-spawn-delay`, `check:enemy-movement-smoothing`, and `check:gameplay-performance-analysis`. Runtime evidence currently lives under `test-results/sector-arrival-spawn-delay-2026-06-16T17-22-36-092Z/` and `test-results/gameplay-performance-analysis-2026-06-16T17-26-56-684Z/`.
+- Follow-up bug fix: delayed sector arrivals now put `EnemyManager` into `LEVEL_ENTRY_HOLD` before the stinger timeout starts, preventing stale `LEVEL_COMPLETE` state from auto-advancing through multiple sectors. Wave fly-in work is also chunked across a few frames while preserving entry timing, removing measured wave-entry frame spikes without reducing visual quality.
+- Verification evidence: `test-results/sector-arrival-spawn-delay-2026-06-16T17-57-28-740Z/` proves the stale-complete sector-2 hold, and `test-results/gameplay-performance-analysis-2026-06-16T18-03-07-563Z/` proves sector 1, sector 2, and sector 20 wave-entry p95 frame times at about 16.8ms with no >33ms frames.
 
 ## 2026-06-13 Twenty Powerups And Steam Deploy
 
