@@ -319,14 +319,19 @@ export class ThreatCodexScene {
     this.animationTime = 0;
     this.animatedNodes = [];
     this.lastEntryListDebug = null;
+    this.lastEntryScrollbarDebug = null;
     this.lastEntryRowsDebug = [];
     this.lastDetailBodyDebug = null;
+    this.lastDetailScrollbarDebug = null;
     this.lastDetailPanelDebug = null;
     this.detailScrollOffset = 0;
+    this.scrollDrag = null;
+    this.scrollDragMoveHandler = null;
+    this.scrollDragEndHandler = null;
   }
 
-  init() {
-    this.cleanup();
+  init({ preserveScrollDrag = false } = {}) {
+    this.cleanup({ preserveScrollDrag });
     this.container.removeChildren();
     this.container.sortableChildren = true;
     this.catalog = getThreatCodexCatalog();
@@ -335,7 +340,9 @@ export class ThreatCodexScene {
     this.renderToken += 1;
     this.animatedNodes = [];
     this.lastEntryRowsDebug = [];
+    this.lastEntryScrollbarDebug = null;
     this.lastDetailBodyDebug = null;
+    this.lastDetailScrollbarDebug = null;
     this.lastDetailPanelDebug = null;
     this.gamepadNavigator.suppressUntilReleased();
     this.createLayout(this.renderToken);
@@ -356,11 +363,12 @@ export class ThreatCodexScene {
     window.addEventListener('wheel', this.wheelHandler, { passive: false });
   }
 
-  cleanup() {
+  cleanup({ preserveScrollDrag = false } = {}) {
     if (this.keyHandler) window.removeEventListener('keydown', this.keyHandler);
     if (this.wheelHandler) window.removeEventListener('wheel', this.wheelHandler);
     this.keyHandler = null;
     this.wheelHandler = null;
+    if (!preserveScrollDrag) this.endScrollDrag();
     this.animatedNodes = [];
   }
 
@@ -942,6 +950,29 @@ export class ThreatCodexScene {
     scroll.stroke({ color: 0x24435b, width: 1, alpha: 0.56 });
     scroll.roundRect(railX, thumbY, compact ? 5 : 6, thumbH, 3);
     scroll.fill({ color: AQUA, alpha: 0.88 });
+    scroll.eventMode = 'static';
+    scroll.cursor = 'pointer';
+    scroll.hitArea = new PIXI.Rectangle(railX - 12, railY, (compact ? 5 : 6) + 24, railH);
+    this.lastEntryScrollbarDebug = {
+      x: railX - 12,
+      y: railY,
+      width: (compact ? 5 : 6) + 24,
+      height: railH,
+      thumbY,
+      thumbHeight: thumbH,
+      totalRows,
+      maxRows,
+      interactive: true
+    };
+    scroll.on('pointerdown', (event) => {
+      event.stopPropagation?.();
+      this.beginScrollDrag('entry', {
+        railY,
+        railH,
+        totalRows,
+        maxRows
+      }, Number(event.global?.y) || railY);
+    });
     this.container.addChild(scroll);
 
     const count = addText(this.container, `${this.entryIndex + 1}/${totalRows}`, {
@@ -1196,6 +1227,27 @@ export class ThreatCodexScene {
         storyRail.fill({ color: 0x071a27, alpha: 0.72 });
         storyRail.roundRect(railX, thumbY, 4, thumbH, 2);
         storyRail.fill({ color: epicBody ? GOLD : accent, alpha: 0.86 });
+        storyRail.eventMode = 'static';
+        storyRail.cursor = 'pointer';
+        storyRail.hitArea = new PIXI.Rectangle(railX - 12, bodyY, 28, bodyMaxHeight);
+        this.lastDetailScrollbarDebug = {
+          x: panelX + railX - 12,
+          y: panelY + bodyY,
+          width: 28,
+          height: bodyMaxHeight,
+          thumbY: panelY + thumbY,
+          thumbHeight: thumbH,
+          maxOffset,
+          interactive: true
+        };
+        storyRail.on('pointerdown', (event) => {
+          event.stopPropagation?.();
+          this.beginScrollDrag('detail', {
+            railY: panelY + bodyY,
+            railH: bodyMaxHeight,
+            maxOffset
+          }, Number(event.global?.y) || (panelY + bodyY));
+        });
         panel.addChild(storyRail);
       }
     } else {
@@ -1369,11 +1421,11 @@ export class ThreatCodexScene {
     this.container.addChild(button);
   }
 
-  refresh() {
-    this.cleanup();
+  refresh({ preserveScrollDrag = false } = {}) {
+    this.cleanup({ preserveScrollDrag });
     const entries = this.getEntriesForCategory();
     this.entryIndex = Math.max(0, Math.min(this.entryIndex, Math.max(0, entries.length - 1)));
-    this.init();
+    this.init({ preserveScrollDrag });
   }
 
   moveCategory(direction) {
@@ -1417,6 +1469,72 @@ export class ThreatCodexScene {
       this.refresh();
     }
     return true;
+  }
+
+  beginScrollDrag(kind, bounds, y) {
+    this.endScrollDrag();
+    this.scrollDrag = { kind, bounds };
+    this.scrollDragMoveHandler = (event) => {
+      event.preventDefault?.();
+      this.updateScrollDrag(Number(event.clientY) || 0);
+    };
+    this.scrollDragEndHandler = () => this.endScrollDrag();
+    window.addEventListener('pointermove', this.scrollDragMoveHandler, { passive: false });
+    window.addEventListener('pointerup', this.scrollDragEndHandler, { passive: true });
+    window.addEventListener('pointercancel', this.scrollDragEndHandler, { passive: true });
+    this.updateScrollDrag(y);
+  }
+
+  endScrollDrag() {
+    if (this.scrollDragMoveHandler) {
+      window.removeEventListener('pointermove', this.scrollDragMoveHandler);
+    }
+    if (this.scrollDragEndHandler) {
+      window.removeEventListener('pointerup', this.scrollDragEndHandler);
+      window.removeEventListener('pointercancel', this.scrollDragEndHandler);
+    }
+    this.scrollDrag = null;
+    this.scrollDragMoveHandler = null;
+    this.scrollDragEndHandler = null;
+  }
+
+  updateScrollDrag(y) {
+    const drag = this.scrollDrag;
+    if (!drag?.bounds) return;
+    if (drag.kind === 'detail') {
+      this.setDetailScrollFromY(y, drag.bounds);
+    } else {
+      this.setEntryScrollFromY(y, drag.bounds);
+    }
+  }
+
+  setEntryScrollFromY(y, bounds) {
+    const maxStart = Math.max(0, (Number(bounds.totalRows) || 0) - (Number(bounds.maxRows) || 0));
+    const totalRows = Math.max(0, Number(bounds.totalRows) || 0);
+    if (totalRows <= 1) return false;
+    const ratio = clamp((Number(y) - bounds.railY) / Math.max(1, bounds.railH), 0, 1);
+    const start = Math.round(ratio * maxStart);
+    const targetIndex = clamp(start + Math.floor((Number(bounds.maxRows) || 1) / 2), 0, totalRows - 1);
+    if (targetIndex === this.entryIndex) return false;
+    this.detailScrollOffset = 0;
+    this.entryIndex = targetIndex;
+    AudioManager.playSfx('codex_move', { volume: 0.1, minIntervalMs: 120 });
+    this.refresh({ preserveScrollDrag: true });
+    return true;
+  }
+
+  setDetailScrollFromY(y, bounds) {
+    const maxOffset = Math.max(0, Number(bounds.maxOffset) || 0);
+    if (maxOffset <= 1) return false;
+    const ratio = clamp((Number(y) - bounds.railY) / Math.max(1, bounds.railH), 0, 1);
+    const next = clamp(ratio * maxOffset, 0, maxOffset);
+    const changed = Math.abs(next - (this.detailScrollOffset || 0)) > 0.5;
+    this.detailScrollOffset = next;
+    if (changed) {
+      AudioManager.playSfx('codex_move', { volume: 0.08, minIntervalMs: 90 });
+      this.refresh({ preserveScrollDrag: true });
+    }
+    return changed;
   }
 
   handleWheel(event) {
@@ -1519,7 +1637,9 @@ export class ThreatCodexScene {
       wheelNavigation: true,
       pageNavigation: true,
       entryScroll: this.lastEntryListDebug,
+      entryScrollbar: this.lastEntryScrollbarDebug,
       detailScroll: this.lastDetailBodyDebug,
+      detailScrollbar: this.lastDetailScrollbarDebug,
       detailPanel: this.lastDetailPanelDebug,
       artfulEmptyState: true,
       menuFx: this.menuFx?.getDebugState?.() || null

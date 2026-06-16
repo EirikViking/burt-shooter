@@ -8,6 +8,12 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Generated 20 new 192x192 powerup PNG icons and expanded asset/test coverage to load all catalog powerups.
 - Verification so far: `npm run check:powerup-assets`, `npm run check:threat-codex`, `npm run check:i18n`, `npm run build:current`, `npm run check:i18n-ui`, `npm run check:powerup-visuals`, `npm run check:powerup-effects`, and `git diff --check` passed. Packaging/upload still pending.
 
+## 2026-06-16 Menu Scrollbar Surgical Fix
+
+- Current user report: visible menu scrollbars no longer worked as controls, especially painful in the large Threat Codex.
+- Fix direction: keep wheel/keyboard/controller behavior unchanged, but make the visible Codex entry/detail scrollbars and Achievements scrollbar real pointer targets with click-to-jump and drag-to-scroll.
+- Added `npm run check:menu-scrollbars`, which opens Codex and Achievements in Playwright, drags the rendered scrollbar hit areas, and verifies scroll offsets move.
+
 ## 2026-06-13 HUD Overlap Fix
 
 - Fixed the top-left high-score/sector-record chase card so the title, `BEAT` value, taunt line, and progress bar use separate lanes instead of stacking into each other at desktop gameplay sizes. This is layout-only in the HUD: no scoring, gameplay rules, Steamworks settings, or player-facing copy changed.

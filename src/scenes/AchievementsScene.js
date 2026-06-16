@@ -102,6 +102,10 @@ export class AchievementsScene {
     this.layoutUnsubscribe = null;
     this.keyHandler = null;
     this.wheelHandler = null;
+    this.scrollDrag = null;
+    this.scrollDragMoveHandler = null;
+    this.scrollDragEndHandler = null;
+    this.scrollBarDebug = null;
     this.gamepadPrevious = {};
     this.gamepadSuppressActiveInput = true;
   }
@@ -208,10 +212,16 @@ export class AchievementsScene {
 
     this.scrollRail = new PIXI.Graphics();
     this.scrollRail.zIndex = 12;
+    this.scrollRail.eventMode = 'static';
+    this.scrollRail.cursor = 'pointer';
+    this.scrollRail.on('pointerdown', (event) => this.beginScrollbarDrag(event));
     this.container.addChild(this.scrollRail);
 
     this.scrollThumb = new PIXI.Graphics();
     this.scrollThumb.zIndex = 13;
+    this.scrollThumb.eventMode = 'static';
+    this.scrollThumb.cursor = 'pointer';
+    this.scrollThumb.on('pointerdown', (event) => this.beginScrollbarDrag(event));
     this.container.addChild(this.scrollThumb);
 
     this.pageText = createText('', {
@@ -538,6 +548,18 @@ export class AchievementsScene {
     const thumbY = maxOffset <= 0
       ? railY
       : railY + (railHeight - thumbHeight) * (this.scrollOffset / maxOffset);
+    this.scrollBarDebug = {
+      x: railX - 12,
+      y: railY,
+      width: 31,
+      height: railHeight,
+      thumbY,
+      thumbHeight,
+      total,
+      visible,
+      maxOffset,
+      interactive: total > visible
+    };
     this.scrollRail.clear();
     this.scrollThumb.clear();
     this.scrollRail.roundRect(railX, railY, 7, railHeight, 4);
@@ -555,6 +577,52 @@ export class AchievementsScene {
     this.pageText.visible = total > visible;
     this.scrollRail.visible = total > visible;
     this.scrollThumb.visible = total > visible;
+    this.scrollRail.hitArea = new PIXI.Rectangle(railX - 12, railY, 31, railHeight);
+    this.scrollThumb.hitArea = new PIXI.Rectangle(railX - 12, railY, 31, railHeight);
+    this.scrollRail.eventMode = total > visible ? 'static' : 'none';
+    this.scrollThumb.eventMode = total > visible ? 'static' : 'none';
+  }
+
+  beginScrollbarDrag(event) {
+    if (!this.scrollBarDebug?.interactive) return;
+    event.stopPropagation?.();
+    this.endScrollbarDrag();
+    this.scrollDrag = { bounds: this.scrollBarDebug };
+    this.scrollDragMoveHandler = (moveEvent) => {
+      moveEvent.preventDefault?.();
+      this.setScrollFromY(Number(moveEvent.clientY) || 0);
+    };
+    this.scrollDragEndHandler = () => this.endScrollbarDrag();
+    window.addEventListener('pointermove', this.scrollDragMoveHandler, { passive: false });
+    window.addEventListener('pointerup', this.scrollDragEndHandler, { passive: true });
+    window.addEventListener('pointercancel', this.scrollDragEndHandler, { passive: true });
+    this.setScrollFromY(Number(event.global?.y) || this.scrollBarDebug.y);
+  }
+
+  endScrollbarDrag() {
+    if (this.scrollDragMoveHandler) {
+      window.removeEventListener('pointermove', this.scrollDragMoveHandler);
+    }
+    if (this.scrollDragEndHandler) {
+      window.removeEventListener('pointerup', this.scrollDragEndHandler);
+      window.removeEventListener('pointercancel', this.scrollDragEndHandler);
+    }
+    this.scrollDrag = null;
+    this.scrollDragMoveHandler = null;
+    this.scrollDragEndHandler = null;
+  }
+
+  setScrollFromY(y) {
+    const bounds = this.scrollDrag?.bounds || this.scrollBarDebug;
+    if (!bounds?.interactive || bounds.maxOffset <= 0) return false;
+    const ratio = clamp((Number(y) - bounds.y) / Math.max(1, bounds.height), 0, 1);
+    const nextOffset = clamp(Math.round(ratio * bounds.maxOffset), 0, bounds.maxOffset);
+    if (nextOffset === this.scrollOffset && this.focusedIndex === nextOffset) return false;
+    this.scrollOffset = nextOffset;
+    this.focusedIndex = clamp(nextOffset, 0, Math.max(0, this.rows.length - 1));
+    this.drawRows();
+    playMenuFocusSfx(0.09);
+    return true;
   }
 
   moveFocus(delta) {
@@ -688,6 +756,7 @@ export class AchievementsScene {
       focusedId: this.rows[this.focusedIndex]?.achievement?.id || null,
       scrollOffset: this.scrollOffset,
       visibleCapacity: this.visibleCapacity,
+      scrollbar: this.scrollBarDebug,
       rows: this.rowDebug,
       backButton: getBoundsDebug(this.backBtn),
       menuFx: this.menuFx?.getDebugState?.() || null
@@ -707,6 +776,7 @@ export class AchievementsScene {
       window.removeEventListener('wheel', this.wheelHandler, true);
       this.wheelHandler = null;
     }
+    this.endScrollbarDrag();
     destroyMenuFx(this);
     this.rowsContainer.removeChildren();
   }
