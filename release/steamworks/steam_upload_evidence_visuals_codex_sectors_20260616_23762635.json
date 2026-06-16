@@ -1,0 +1,69 @@
+{
+  "generatedAt": "2026-06-16T12:49:00.000Z",
+  "worktree": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+  "branch": "codex/hard-achievements-20260612",
+  "head": "decd7265a4e02fa4ae4543319ac328cbf4bfe077",
+  "sourceCommits": {
+    "visualsAndSectorCodex": "41869ed5f1a3b7a5e28cd9e7d3c79dbdf5a68559",
+    "firstBossReleaseGate": "decd7265a4e02fa4ae4543319ac328cbf4bfe077"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23762635",
+    "setLive": "",
+    "branchChanged": false,
+    "uploadMode": "upload-only",
+    "leaderboardPreserved": "nova_swarm_global_score_v2",
+    "steamCmd": "C:\\SteamCMD\\steamcmd.exe",
+    "steamUser": "gaunziman"
+  },
+  "package": {
+    "buildVersion": "v2026-06-16_10-21-23",
+    "versionTimestamp": "2026-06-16T08:21:23.558Z",
+    "contentRoot": "release/desktop/win-unpacked",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestSha256": "5DEE0BA6ADC2ED94FBA6E660A8BAED907A262DA4ECD612BA968D90FE794AA161",
+    "payloadFileCount": 336,
+    "payloadBytes": 788353958,
+    "payloadContentHash": "e154727c87b02fb696e665d12891d52dacbd01b1bc767af7db7ff84a1ccd2b73",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "vdfDesc": "Nova Swarm upload-only 2026-06-16 visuals codex sectors decd726 v2026-06-16_10-21-23",
+    "steamCmdConsoleLog": "release/steamworks/steam_upload_console_20260616_decd726.log",
+    "steamCmdConsoleLogSha256": "6F655A328B9808082F72D303EA4086F6E230E37F9E98D21DD2FEDAEF1EF84F73"
+  },
+  "checksPassed": [
+    "npm run check:release-line",
+    "npm run check:achievements",
+    "npm run check:steam-achievements-mock",
+    "npm run check:steam-store",
+    "npm run check:release-hardening",
+    "npm run build:current",
+    "npm run smoke",
+    "npm run desktop:smoke:current",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf"
+  ],
+  "checkEvidence": {
+    "releaseHardeningReport": "test-results/release-hardening/latest-report.json",
+    "releaseHardeningSummary": "test-results/release-hardening/latest-summary.md",
+    "releaseHardeningLog": "test-results/release-hardening/manual-rerun-20260616.log",
+    "browserSmokeReport": "test-results/smoke-2026-06-16T12-37-38-106Z/report.json",
+    "electronSmokeReport": "test-results/electron-smoke-2026-06-16T12-37-37-980Z/report.json",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-16T12-42-32-048Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-06-16T12-42-32-088Z/report.json",
+    "steamPackageRuntimeReport": "test-results/steam-package-runtime-2026-06-16T12-45-14-696Z/report.json"
+  },
+  "steamCmdResult": {
+    "status": "success",
+    "line": "[2026-06-16 14:47:18]: Successfully finished AppID 4765070 build (BuildID 23762635)."
+  },
+  "notes": [
+    "No Steam branch was set live by this upload; SetLive remained empty.",
+    "No AppID, depot ID, achievement config, store metadata, visibility, or leaderboard identity was changed.",
+    "The package was built only from D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype."
+  ]
+}
