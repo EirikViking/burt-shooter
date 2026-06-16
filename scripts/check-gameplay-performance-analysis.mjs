@@ -1,0 +1,285 @@
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:net';
+import path from 'node:path';
+import { chromium } from 'playwright';
+
+const host = process.env.CHECK_HOST || '127.0.0.1';
+const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4731));
+const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
+const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/gameplay-performance-analysis-${timestamp()}`);
+const devtoolsHash = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
+
+function timestamp() {
+  return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+async function isPortAvailable(candidatePort) {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => server.close(() => resolve(true)));
+    server.listen(candidatePort, host);
+  });
+}
+
+async function findAvailablePort(startPort) {
+  for (let candidate = startPort; candidate < startPort + 40; candidate += 1) {
+    if (await isPortAvailable(candidate)) return candidate;
+  }
+  throw new Error(`No available performance check port found starting at ${startPort}`);
+}
+
+async function canFetch(url) {
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function viteCommand() {
+  const viteEntry = path.resolve('node_modules/vite/bin/vite.js');
+  if (existsSync(viteEntry)) return { command: process.execPath, args: [viteEntry] };
+  return { command: process.platform === 'win32' ? 'npx.cmd' : 'npx', args: ['vite'] };
+}
+
+async function startDevServer() {
+  if (await canFetch(baseUrl)) return null;
+  const { command, args } = viteCommand();
+  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort'], {
+    cwd: process.cwd(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true
+  });
+  server.stdout.on('data', (chunk) => process.stdout.write(`[vite] ${chunk}`));
+  server.stderr.on('data', (chunk) => process.stderr.write(`[vite] ${chunk}`));
+
+  const start = Date.now();
+  while (Date.now() - start < 20000) {
+    if (await canFetch(baseUrl)) return server;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  server.kill();
+  throw new Error(`Vite server did not become ready at ${baseUrl}`);
+}
+
+function findChrome() {
+  return [
+    process.env.CHROME_PATH,
+    process.env.PLAYWRIGHT_CHROME_EXECUTABLE,
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files/Microsoft/Edge/Application/msedge.exe'
+  ].filter(Boolean).find((candidate) => existsSync(candidate));
+}
+
+function percentile(values, p) {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * p)));
+  return sorted[index];
+}
+
+function summarizeFrameIntervals(intervals) {
+  const useful = intervals.filter((value) => Number.isFinite(value) && value > 0);
+  const average = useful.length ? useful.reduce((sum, value) => sum + value, 0) / useful.length : 0;
+  return {
+    frames: useful.length,
+    averageMs: Number(average.toFixed(2)),
+    p95Ms: Number(percentile(useful, 0.95).toFixed(2)),
+    p99Ms: Number(percentile(useful, 0.99).toFixed(2)),
+    maxMs: Number((useful.length ? Math.max(...useful) : 0).toFixed(2)),
+    longFrames33: useful.filter((value) => value > 33.34).length,
+    longFrames50: useful.filter((value) => value > 50).length
+  };
+}
+
+async function readState(page) {
+  return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+}
+
+async function waitForActiveWave(page) {
+  await page.waitForFunction(() => {
+    const play = window.__game?.scenes?.play;
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'play' &&
+      !play?.sectorArrivalStinger &&
+      (play?.enemyManager?.enemies?.length || 0) > 0 &&
+      (state.counts?.enemies || 0) > 0;
+  }, null, { timeout: 30000 });
+}
+
+async function sampleFrameIntervals(page, sampleMs) {
+  return page.evaluate((durationMs) => new Promise((resolve) => {
+    const intervals = [];
+    let previous = performance.now();
+    const startedAt = previous;
+    const tick = (now) => {
+      intervals.push(now - previous);
+      previous = now;
+      if (now - startedAt >= durationMs) {
+        resolve(intervals);
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }), sampleMs);
+}
+
+async function sampleParkedEnemyMotion(page, sampleFrames = 180) {
+  return page.evaluate((framesToSample) => new Promise((resolve) => {
+    const samples = [];
+    const take = () => {
+      const enemies = window.__game?.scenes?.play?.enemyManager?.enemies || [];
+      samples.push(enemies
+        .filter((enemy) => enemy?.state === 'FORMATION' && enemy?.active !== false)
+        .slice(0, 8)
+        .map((enemy) => ({
+          key: `${enemy.waveSlot ?? 0}:${Math.round(enemy.formationX || 0)}:${Math.round(enemy.formationY || 0)}:${enemy.type || 'enemy'}`,
+          x: Number(enemy.x || 0),
+          y: Number(enemy.y || 0),
+          state: enemy.state || null,
+          move: enemy.tacticalMoveStyle || enemy.generatedProfile?.movementStyle || null
+        })));
+      if (samples.length >= framesToSample) {
+        resolve(samples);
+        return;
+      }
+      requestAnimationFrame(take);
+    };
+    requestAnimationFrame(take);
+  }), sampleFrames);
+}
+
+function summarizeParkedMotion(samples) {
+  let maxXStep = 0;
+  let maxYStep = 0;
+  let observed = 0;
+  const moves = new Set();
+  for (let frame = 1; frame < samples.length; frame += 1) {
+    const previous = new Map(samples[frame - 1].map((enemy) => [enemy.key, enemy]));
+    const current = samples[frame];
+    for (const enemy of current) {
+      const prior = previous.get(enemy.key);
+      if (!prior) continue;
+      const dx = Math.abs((enemy.x || 0) - (prior.x || 0));
+      const dy = Math.abs((enemy.y || 0) - (prior.y || 0));
+      maxXStep = Math.max(maxXStep, dx);
+      maxYStep = Math.max(maxYStep, dy);
+      if (enemy.move) moves.add(enemy.move);
+      observed += 1;
+    }
+  }
+  return {
+    observed,
+    maxXStepPx: Number(maxXStep.toFixed(2)),
+    maxYStepPx: Number(maxYStep.toFixed(2)),
+    movementStyles: [...moves].sort()
+  };
+}
+
+async function runScenario(browser, scenario) {
+  const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const pageErrors = [];
+  const consoleErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+
+  const url = `${baseUrl}/?nova-devtools-hash=${devtoolsHash}&debugBossToken=NOVA_DEBUG_2026&startLevel=${scenario.startLevel}&controlSmoke=1`;
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), null, { timeout: 30000 });
+  await page.evaluate(() => window.__game.startGame());
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', null, { timeout: 30000 });
+  await waitForActiveWave(page);
+  await page.waitForFunction(() => {
+    const enemies = window.__game?.scenes?.play?.enemyManager?.enemies || [];
+    return enemies.some((enemy) => enemy?.state === 'FORMATION' && enemy?.active !== false);
+  }, null, { timeout: 15000 });
+  await page.waitForTimeout(350);
+
+  const before = await readState(page);
+  const intervals = await sampleFrameIntervals(page, scenario.sampleMs || 6000);
+  const motionSamples = await sampleParkedEnemyMotion(page, scenario.motionFrames || 180);
+  const after = await readState(page);
+  const report = {
+    name: scenario.name,
+    startLevel: scenario.startLevel,
+    frameSummary: summarizeFrameIntervals(intervals),
+    parkedMotion: summarizeParkedMotion(motionSamples),
+    before: {
+      level: before.level,
+      counts: before.counts,
+      wave: before.wave
+    },
+    after: {
+      level: after.level,
+      counts: after.counts,
+      wave: after.wave
+    },
+    pageErrors,
+    consoleErrors
+  };
+  await page.screenshot({ path: path.join(outputDir, `${scenario.name}.png`), fullPage: true });
+  await page.close();
+  return report;
+}
+
+mkdirSync(outputDir, { recursive: true });
+const server = await startDevServer();
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: findChrome(),
+  args: ['--autoplay-policy=no-user-gesture-required']
+});
+
+try {
+  const scenarios = [
+    { name: 'sector-1-opening-wave', startLevel: 1, sampleMs: 5000, motionFrames: 150 },
+    { name: 'sector-2-after-arrival', startLevel: 2, sampleMs: 5000, motionFrames: 150 },
+    { name: 'sector-20-generated-wave', startLevel: 20, sampleMs: 6500, motionFrames: 210 }
+  ];
+  const results = [];
+  for (const scenario of scenarios) {
+    console.log(`[gameplay-performance] scenario ${scenario.name}`);
+    results.push(await runScenario(browser, scenario));
+  }
+
+  const failures = [];
+  for (const result of results) {
+    if (result.frameSummary.p95Ms > 24) {
+      failures.push(`${result.name} p95 frame ${result.frameSummary.p95Ms}ms exceeds 24ms`);
+    }
+    if (result.frameSummary.longFrames50 > 0) {
+      failures.push(`${result.name} has ${result.frameSummary.longFrames50} frame(s) over 50ms`);
+    }
+    if (result.parkedMotion.maxXStepPx > 5.5) {
+      failures.push(`${result.name} parked enemy x step ${result.parkedMotion.maxXStepPx}px exceeds 5.5px`);
+    }
+    if (result.pageErrors.length) {
+      failures.push(`${result.name} page errors: ${result.pageErrors.join('; ')}`);
+    }
+    if (result.consoleErrors.length) {
+      failures.push(`${result.name} console errors: ${result.consoleErrors.join('; ')}`);
+    }
+  }
+
+  const report = {
+    status: failures.length ? 'failed' : 'passed',
+    generatedAt: new Date().toISOString(),
+    outputDir,
+    scenarios: results,
+    failures
+  };
+  writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
+  assert.equal(failures.length, 0, failures.join('\n'));
+  console.log(`[gameplay-performance] PASS ${path.relative(process.cwd(), outputDir).replaceAll(path.sep, '/')}`);
+} finally {
+  await browser.close().catch(() => {});
+  if (server) server.kill();
+}

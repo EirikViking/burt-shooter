@@ -122,6 +122,7 @@ export class PlayScene {
     this.nativeBlurPauseHandler = null;
     this.levelAdvancePending = false;
     this.levelAdvanceTimeout = null;
+    this.pendingEnemyStartTimeout = null;
     this.capState = {
       bullets: false,
       enemies: false,
@@ -421,6 +422,7 @@ export class PlayScene {
     this.levelAdvancePending = false;
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
+    this.clearPendingEnemyStart();
     this.capState = { bullets: false, enemies: false, particles: false };
     this.firstRunKillCount = 0;
     this.firstRunPickupDropped = false;
@@ -745,6 +747,7 @@ export class PlayScene {
       clearTimeout(this.levelAdvanceTimeout);
       this.levelAdvanceTimeout = null;
     }
+    this.clearPendingEnemyStart();
     this.clearDebugProjectiles();
     this.bossHazards = [];
     this.lastBossHazardHit = null;
@@ -1116,12 +1119,17 @@ export class PlayScene {
     this.prewarmLevelEntryAssets(this.game.level, { ahead: 2 }).catch((error) => {
       console.warn('[PlayScene] level entry asset prewarm failed:', error);
     });
-    this.enemyManager.startLevel(this.game.level);
-    if (startAtBoss) {
-      this.enemyManager.forceBossStart(this.game.level);
-    }
+    const showArrivalStinger = this.shouldShowSectorArrivalStinger(this.game.level);
+    const enemyStartDelayMs = showArrivalStinger
+      ? this.getSectorArrivalStingerDuration({ postBoss: postBossLevelIntro }) + 120
+      : 0;
     this.showSectorArrivalStinger({ postBoss: postBossLevelIntro });
     this.showLevelIntro({ postBoss: postBossLevelIntro });
+    this.scheduleEnemyStartForLevel(this.game.level, {
+      startAtBoss,
+      delayMs: enemyStartDelayMs,
+      source
+    });
     const compactHud = this.game.getWidth() < 620;
     if (!compactHud && !postBossLevelIntro) {
       this.showToast(getMicroMessage('levelStart'), { fontSize: 18, y: this.game.getHeight() * 0.12, slot: 'corner', type: 'level_up' });
@@ -1134,6 +1142,39 @@ export class PlayScene {
 
     this.resetRandomTimers();
     this.ambientBonusDroneTimer = 2000 + Math.random() * 3000;
+  }
+
+  clearPendingEnemyStart() {
+    if (!this.pendingEnemyStartTimeout) return;
+    clearTimeout(this.pendingEnemyStartTimeout);
+    this.pendingEnemyStartTimeout = null;
+  }
+
+  getSectorArrivalStingerDuration({ postBoss = false } = {}) {
+    return postBoss ? SECTOR_ARRIVAL_STINGER_MS + 560 : SECTOR_ARRIVAL_STINGER_MS;
+  }
+
+  scheduleEnemyStartForLevel(level, { startAtBoss = false, delayMs = 0, source = 'unknown' } = {}) {
+    const targetLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const startEnemies = () => {
+      this.pendingEnemyStartTimeout = null;
+      if (this.game?.currentScene !== this || !this.enemyManager) return;
+      if (this._lastStartedLevel !== targetLevel || this.game?.level !== targetLevel) return;
+      this.enemyManager.startLevel(targetLevel);
+      if (startAtBoss) {
+        this.enemyManager.forceBossStart(targetLevel);
+      }
+      if (delayMs > 0) {
+        console.log(`[LevelStart] enemies released source=${source} level=${targetLevel} delayMs=${Math.round(delayMs)}`);
+      }
+    };
+
+    this.clearPendingEnemyStart();
+    if (delayMs > 0) {
+      this.pendingEnemyStartTimeout = setTimeout(startEnemies, delayMs);
+      return;
+    }
+    startEnemies();
   }
 
   showLevelIntro({ postBoss = false } = {}) {
@@ -1325,7 +1366,7 @@ export class PlayScene {
       return;
     }
     const entry = this.getSectorArrivalEntry(level) || {};
-    const durationMs = postBoss ? SECTOR_ARRIVAL_STINGER_MS + 560 : SECTOR_ARRIVAL_STINGER_MS;
+    const durationMs = this.getSectorArrivalStingerDuration({ postBoss });
     const { width, height } = this.game.app.screen;
     const compact = width < 620 || height < 520;
     const accent = Number.isFinite(entry.accent) ? entry.accent : (level >= 30 ? 0xffe76a : 0x37f5ff);
@@ -2945,6 +2986,7 @@ export class PlayScene {
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
     this.destroyPauseOverlay();
+    this.clearPendingEnemyStart();
     this.clearSectorArrivalStinger();
     this.removeAutoPauseHandlers();
     this.shipIntroToken += 1;

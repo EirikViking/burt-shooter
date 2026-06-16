@@ -48,9 +48,26 @@ if (!source.includes('prepare.upload(texture)')) {
 }
 
 const startPrewarmIndex = source.indexOf('this.prewarmLevelEntryAssets(this.game.level, { ahead: 2 })');
-const enemyStartIndex = source.indexOf('this.enemyManager.startLevel(this.game.level)');
-if (startPrewarmIndex < 0 || enemyStartIndex < 0 || startPrewarmIndex > enemyStartIndex) {
+const scheduledEnemyStartIndex = source.indexOf('this.scheduleEnemyStartForLevel(this.game.level, {');
+if (startPrewarmIndex < 0 || scheduledEnemyStartIndex < 0 || startPrewarmIndex > scheduledEnemyStartIndex) {
   fail('level entry assets should begin prewarming before enemyManager.startLevel spawns the first wave');
+}
+
+const showArrivalIndex = source.indexOf('this.showSectorArrivalStinger({ postBoss: postBossLevelIntro })');
+if (
+  !source.includes('pendingEnemyStartTimeout') ||
+  !source.includes('getSectorArrivalStingerDuration({ postBoss: postBossLevelIntro }) + 120') ||
+  showArrivalIndex < 0 ||
+  scheduledEnemyStartIndex < 0 ||
+  showArrivalIndex > scheduledEnemyStartIndex
+) {
+  fail('enemy wave release should be delayed until the visible sector arrival stinger is finished');
+}
+
+if (!source.includes('scheduleEnemyStartForLevel(level') ||
+  !source.includes('this.enemyManager.startLevel(targetLevel)') ||
+  !source.includes('this.enemyManager.forceBossStart(targetLevel)')) {
+  fail('delayed enemy release should keep normal and explicit debug boss starts behind one guarded helper');
 }
 
 if (!source.includes('getGeneratedEnemyProfilesForLevel') || !source.includes('GameAssets.getGeneratedEnemyTexture(index)')) {

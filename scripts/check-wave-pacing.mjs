@@ -157,8 +157,8 @@ const playSceneSource = readFileSync(path.resolve('src/scenes/PlayScene.js'), 'u
 assert(/if \(this\.canUseMaintainerDevtools\(\) && debugToken === 'NOVA_DEBUG_2026'\) \{[\s\S]*this\.debugStartAtBoss = startAtBoss;/.test(playSceneSource),
   'startAtBoss must stay behind the maintainer devtools and debugBossToken gates.',
   errors);
-assert(/if \(startAtBoss\) \{\s*this\.enemyManager\.forceBossStart\(this\.game\.level\);/.test(playSceneSource),
-  'The only direct boss-start route should call forceBossStart from the explicit debug startAtBoss branch.',
+assert(/scheduleEnemyStartForLevel\(level,[\s\S]*if \(startAtBoss\) \{\s*this\.enemyManager\.forceBossStart\(targetLevel\);/.test(playSceneSource),
+  'The only direct boss-start route should call forceBossStart from the explicit debug startAtBoss branch after the sector-entry gate.',
   errors);
 
 const report = {

@@ -16,6 +16,12 @@ import { AudioManager } from '../audio/AudioManager.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
+function smoothFormationStep(value, sharpness = 2.4) {
+  const normalized = Math.max(-1, Math.min(1, Number(value) || 0));
+  const scale = Math.tanh(sharpness) || 1;
+  return Math.tanh(normalized * sharpness) / scale;
+}
+
 export class Enemy {
   constructor(x, y, type, level, game, waveColor = null) {
     this.x = x;
@@ -72,6 +78,7 @@ export class Enemy {
     this.tacticalPhase = Math.random() * Math.PI * 2;
     this.combatBounds = null;
     this.tacticalSwayScalar = 1;
+    this.formationSwayRampMs = 480;
     this.threatActionDefinition = null;
     this.currentThreatAction = null;
     this.threatTelegraphStartedAt = 0;
@@ -639,6 +646,7 @@ export class Enemy {
     this.formationX = endX;
     this.formationY = endY;
     this.state = 'ENTRY';
+    this.formationSwayRampMs = 0;
 
     // Randomized Control Point based on side
     const curvePull = Math.max(260, Math.min(460, width * 0.2));
@@ -760,7 +768,7 @@ export class Enemy {
           swayX += offset.x || 0;
           swayY += offset.y || 0;
         }
-    const tacticalWave = this.moveTimer * 0.022 + this.tacticalPhase;
+        const tacticalWave = this.moveTimer * 0.022 + this.tacticalPhase;
         const side = this.waveRole === 'left_flank' ? -1 : this.waveRole === 'right_flank' ? 1 : (this.formationX < screenW / 2 ? -1 : 1);
         if (this.tacticalMoveStyle === 'sweep') {
           swayX += Math.sin(tacticalWave * 0.85) * 34;
@@ -778,26 +786,29 @@ export class Enemy {
           swayX += Math.cos(tacticalWave + this.waveSlot * 0.5) * 24;
           swayY += Math.sin(tacticalWave + this.waveSlot * 0.5) * 15;
         } else if (this.tacticalMoveStyle === 'needle') {
-          swayX += Math.sign(Math.sin(tacticalWave * 1.4)) * 10;
+          swayX += smoothFormationStep(Math.sin(tacticalWave * 1.4), 2.6) * 10;
           swayY += Math.cos(tacticalWave * 0.6) * 5;
         } else if (this.tacticalMoveStyle === 'weave_wall') {
           swayX += Math.sin(tacticalWave * 1.2 + this.waveSlot) * 22;
           swayY += Math.sin(tacticalWave * 1.7 + this.waveSlot * 0.35) * 12;
         } else if (this.tacticalMoveStyle === 'feint') {
-          const snap = Math.sin(tacticalWave * 2.6 + this.waveSlot * 0.35);
+          const snap = smoothFormationStep(Math.sin(tacticalWave * 2.6 + this.waveSlot * 0.35), 2.8);
           const fakeout = Math.sin(tacticalWave * 1.15 + this.waveSlot * 0.2);
-          swayX += Math.sign(snap || 1) * 18 + fakeout * 18;
+          swayX += snap * 18 + fakeout * 18;
           swayY += Math.cos(tacticalWave * 1.25 + this.waveSlot * 0.4) * 9;
         } else if (this.tacticalMoveStyle === 'split_sweep') {
           swayX += side * Math.sin(tacticalWave * 0.8) * 32;
           swayY += Math.cos(tacticalWave * 1.1 + this.waveSlot) * 10;
         } else if (this.tacticalMoveStyle === 'ambush') {
-          swayX += Math.round(Math.sin(tacticalWave * 1.1) * 2) * 9;
+          swayX += smoothFormationStep(Math.sin(tacticalWave * 1.1), 2.2) * 18;
           swayY += Math.max(0, Math.sin(tacticalWave * 1.5)) * 14;
         }
         const swayScalar = this.tacticalSwayScalar || 1;
-        this.x = this.clampCombatX(this.formationX + swayX * swayScalar);
-        this.y = this.formationY + swayY;
+        this.formationSwayRampMs = Math.min(480, (this.formationSwayRampMs || 0) + Math.max(0, delta * 16.67));
+        const rampProgress = Math.min(1, this.formationSwayRampMs / 480);
+        const swayRamp = rampProgress * rampProgress * (3 - 2 * rampProgress);
+        this.x = this.clampCombatX(this.formationX + swayX * swayScalar * swayRamp);
+        this.y = this.formationY + swayY * swayRamp;
 
         // Subtle rotation wobble
         const wobbleAngle = Math.sin(this.moveTimer * 0.03 + this.idlePhase) * 0.1;
@@ -869,6 +880,9 @@ export class Enemy {
   updateBezier(curve, nextState) {
     if (!curve) {
       this.state = nextState;
+      if (nextState === 'FORMATION') {
+        this.formationSwayRampMs = 0;
+      }
       return;
     }
     const now = Date.now();
@@ -895,6 +909,9 @@ export class Enemy {
 
     if (t >= 1) {
       this.state = nextState;
+      if (nextState === 'FORMATION') {
+        this.formationSwayRampMs = 0;
+      }
     }
   }
 

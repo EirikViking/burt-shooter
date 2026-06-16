@@ -1,5 +1,12 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-16 Sector Arrival Safety And Performance
+
+- Current user request: delay enemy fly-ins until the sector arrival animation finishes, investigate uneven FPS/stutter, smooth parked enemy ships, then deploy to Steam.
+- Implemented a delayed enemy-release gate in `PlayScene.startLevel`: sector 1 and initial Sector Start still start immediately, but later sector arrivals now show the stinger first and release waves after the stinger duration.
+- Smoothed parked enemy motion by replacing sign/round-based sine steps with eased curves and adding a short formation-sway ramp after entry/return lock, so enemies no longer snap sideways on the first parked frame.
+- Added focused guards: `check:sector-arrival-spawn-delay`, `check:enemy-movement-smoothing`, and `check:gameplay-performance-analysis`. Runtime evidence currently lives under `test-results/sector-arrival-spawn-delay-2026-06-16T17-22-36-092Z/` and `test-results/gameplay-performance-analysis-2026-06-16T17-26-56-684Z/`.
+
 ## 2026-06-13 Twenty Powerups And Steam Deploy
 
 - Current user request: implement 20 new powerups, then deploy a private Steam build with all changes since the last build.
