@@ -18,6 +18,9 @@ const viewports = [
 ];
 const categoryShots = [
   { categoryId: 'sectors', entryIndex: 0, label: 'sectors' },
+  { categoryId: 'sectors', entryId: 'sector_020', label: 'sectors-20' },
+  { categoryId: 'sectors', entryId: 'sector_030', label: 'sectors-30' },
+  { categoryId: 'sectors', entryId: 'sector_060', label: 'sectors-60-far-signal' },
   { categoryId: 'runThemes', entryIndex: 0, label: 'runThemes' },
   { categoryId: 'bosses', entryId: 'nova_boss_01', label: 'bosses-sonia' },
   { categoryId: 'bosses', entryId: 'nova_boss_03', label: 'bosses-kurtbossedgar' }
@@ -87,7 +90,7 @@ function seededDiscoveryState() {
   const catalog = getThreatCodexCatalog();
   const items = {};
   for (const [category, entries] of Object.entries(catalog)) {
-    if (category === 'powerups' || category === 'sectors') continue;
+    if (category === 'powerups') continue;
     items[category] = Object.fromEntries((entries || []).map((entry) => [entry.id, {
       id: entry.id,
       category,

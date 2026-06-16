@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { THREAT_CODEX_CATEGORIES, getThreatCodexCatalog } from '../src/config/ThreatCodexCatalog.js';
+import { THREAT_CODEX_CATEGORIES, getSectorCodexLevels, getThreatCodexCatalog } from '../src/config/ThreatCodexCatalog.js';
 import { BOSS_SUPPORT_SHIP_TOTAL } from '../src/config/BossSupportShips.js';
 import { GENERATED_ENEMY_TOTAL } from '../src/config/GeneratedEnemyProfiles.js';
 import { HANGAR_PROGRESS_KEY, LEGACY_UNLOCK_PROGRESS_KEY } from '../src/progression/HangarProgressState.js';
@@ -36,7 +36,7 @@ if ((catalog.enemies?.length || 0) < expectedEnemyCodexMinimum) {
 if ((catalog.attackPatterns?.length || 0) < 40) fail(`expected at least 40 attack pattern codex entries, found ${catalog.attackPatterns?.length || 0}`);
 if ((catalog.waveTactics?.length || 0) < 35) fail(`expected at least 35 wave tactic codex entries, found ${catalog.waveTactics?.length || 0}`);
 if ((catalog.powerups?.length || 0) < 20) fail(`expected at least 20 powerup codex entries, found ${catalog.powerups?.length || 0}`);
-if ((catalog.sectors?.length || 0) < 10) fail(`expected at least 10 sector codex entries, found ${catalog.sectors?.length || 0}`);
+if ((catalog.sectors?.length || 0) <= 12) fail(`sector Codex must not be capped at 12 entries, found ${catalog.sectors?.length || 0}`);
 if ((catalog.runThemes?.length || 0) < 18) fail(`expected at least 18 run theme codex entries, found ${catalog.runThemes?.length || 0}`);
 if ((catalog.pilotRanks?.length || 0) < 40) fail(`expected at least 40 pilot rank codex entries, found ${catalog.pilotRanks?.length || 0}`);
 const waveArt = catalog.waveTactics?.map(entry => entry.art).filter(Boolean) || [];
@@ -73,6 +73,29 @@ if (new Set(sectorDescriptions).size !== sectorDescriptions.length) fail('sector
 if (!catalog.sectors?.every(entry => /feel|feels|opens|runs|is /i.test(entry.description) && /lore note|tiny threat flavor|local rumor|field detail/i.test(entry.description) && /gameplay clue/i.test(entry.description))) {
   fail('sector Codex descriptions should include identity, flavor, and a gameplay clue');
 }
+const sectorById = Object.fromEntries((catalog.sectors || []).map((entry) => [entry.id, entry]));
+for (const level of [20, 30, 40, 50, 60]) {
+  const id = `sector_${String(level).padStart(3, '0')}`;
+  const entry = sectorById[id];
+  if (!entry) fail(`sector Codex missing milestone ${id}`);
+  if (!/milestone|far signal|overrun|clear gate|boss gate/i.test(`${entry?.rarity || ''} ${entry?.role || ''}`)) {
+    fail(`sector milestone ${id} should expose milestone/band status`);
+  }
+  if (!/sector signal|sector signal/i.test(entry?.signalClass || '')) fail(`sector ${id} should be marked as sector signal`);
+}
+if (!/far-signal|far signal|generated sectors/i.test(`${sectorById.sector_060?.role || ''} ${sectorById.sector_060?.description || ''} ${sectorById.sector_060?.tip || ''}`)) {
+  fail('sector 60 should describe far-signal generated-sector behavior');
+}
+const sectorArt = catalog.sectors?.map((entry) => entry.art).filter(Boolean) || [];
+if (sectorArt.length !== catalog.sectors.length) fail('every sector Codex entry should have art');
+if (new Set(sectorArt).size !== sectorArt.length) fail('sector Codex art should be unique per sector');
+if (sectorArt.some((art) => /overrun-victory-seal|gameplay-arena|boss-arena/i.test(String(art)))) {
+  fail('sector Codex art should not reuse generic gameplay or overrun seal art');
+}
+const sectorLevels = getSectorCodexLevels();
+if (sectorLevels.length <= 12 || !sectorLevels.includes(30) || !sectorLevels.includes(60)) {
+  fail(`sector Codex levels should include scalable milestones beyond 12, found ${sectorLevels.join(', ')}`);
+}
 for (const entry of catalog.runThemes || []) {
   const copy = `${entry.name || ''} ${entry.role || ''} ${entry.description || ''} ${entry.tip || ''}`;
   if (/_/.test(copy) || /\b(?:SCREEN_DOOR|DOUBLE_ARC|CROSS_STREAM|STAGGERED_WING|ORBIT_RING|DIAGONAL_RAID|V_SHAPE|SIDEWINDER|PINCER|GRID|BOX|SPIRAL|ARC)\b/.test(copy)) {
@@ -90,6 +113,8 @@ fakeStorage.set(HANGAR_PROGRESS_KEY, JSON.stringify({
   discoveredThreatIds: ['telegraph_rail_lance'],
   defeatedBossIds: [catalog.bosses?.[0]?.id],
   runThemesSurvived: ['swarm_lattice'],
+  bestSector: 30,
+  bestLevel: 30,
   pilotRank: 12,
   highestPilotRank: 12,
   rankAchievementsUnlocked: ['ACH_RANK_13'],
@@ -101,8 +126,27 @@ if ((restoredCompletion.attackPatterns?.discovered || 0) < 1) fail('Threat Codex
 if ((restoredCompletion.bosses?.discovered || 0) < 1) fail('Threat Codex should hydrate defeated boss discoveries from hangar progress');
 if ((restoredCompletion.runThemes?.discovered || 0) < 1) fail('Threat Codex should hydrate run theme discoveries from hangar progress');
 if ((restoredCompletion.pilotRanks?.discovered || 0) < 13) fail('Threat Codex should hydrate earned pilot ranks from hangar progress');
+if ((restoredCompletion.sectors?.discovered || 0) < 30) fail('Threat Codex should hydrate reached sectors from hangar progress');
+if (!restoredState.items?.sectors?.sector_020 || !restoredState.items?.sectors?.sector_030) fail('Threat Codex should restore sector 20 and sector 30 discoveries');
 if (!restoredState.items?.pilotRanks?.pilot_rank_12) fail('Threat Codex should restore the current displayed pilot rank entry');
 if (!fakeStorage.get(THREAT_DISCOVERY_KEY)) fail('Threat Codex hydration should write repaired discovery state');
+fakeStorage.delete(HANGAR_PROGRESS_KEY);
+resetDiscoveryStateForTests();
+
+fakeStorage.delete(THREAT_DISCOVERY_KEY);
+fakeStorage.set(HANGAR_PROGRESS_KEY, JSON.stringify({
+  bestSector: 75,
+  bestLevel: 75,
+  updatedAt: new Date(Date.UTC(2026, 0, 2)).toISOString()
+}));
+const farCatalog = getThreatCodexCatalog();
+const farSector = farCatalog.sectors?.find((entry) => entry.id === 'sector_075');
+if (!farSector) fail('visiting higher sectors should reveal sector Codex entries beyond 60');
+if (!/sector 75|far signal|overrun|pressure|lane|waves|boss/i.test(`${farSector?.name || ''} ${farSector?.role || ''} ${farSector?.description || ''} ${farSector?.tip || ''}`)) {
+  fail('far-signal sector 75 should display sensible generated content');
+}
+const farState = getThreatCodexState();
+if (!farState.items?.sectors?.sector_075) fail('Threat Codex should hydrate far-signal sector 75 discovery');
 fakeStorage.delete(HANGAR_PROGRESS_KEY);
 resetDiscoveryStateForTests();
 

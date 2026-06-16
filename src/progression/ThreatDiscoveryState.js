@@ -1,4 +1,5 @@
 import { getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
+import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { readHangarProgressState } from './HangarProgressState.js';
 
 export const THREAT_DISCOVERY_KEY = 'nova.threatDiscovery.v1';
@@ -100,6 +101,15 @@ function getEarnedPilotRankIds(progress = {}, index = new Map()) {
   return ids;
 }
 
+function getReachedSectorIds(progress = {}) {
+  const highest = Math.max(
+    1,
+    Math.floor(Number(progress.bestSector) || 1),
+    Math.floor(Number(progress.bestLevel) || 1)
+  );
+  return Array.from({ length: highest }, (_, index) => `sector_${String(index + 1).padStart(3, '0')}`);
+}
+
 function hydrateFromHangarProgress(state) {
   const progress = readHangarProgressState();
   const discoveryIds = new Set([
@@ -112,12 +122,19 @@ function hydrateFromHangarProgress(state) {
   const survivedThemeIds = new Set((Array.isArray(progress.runThemesSurvived) ? progress.runThemesSurvived : []).map(String));
   const index = getCatalogIndex();
   for (const id of getEarnedPilotRankIds(progress, index)) discoveryIds.add(id);
+  for (const id of getReachedSectorIds(progress)) discoveryIds.add(id);
   if (discoveryIds.size === 0) return state;
   let changed = false;
   const restoredAt = progress.updatedAt || nowIso();
 
   for (const id of discoveryIds) {
-    const catalogEntry = index.get(id);
+    const sectorMatch = String(id).match(/^sector_(\d{3,})$/);
+    const sectorLevel = sectorMatch ? Math.max(1, Math.floor(Number(sectorMatch[1]) || 1)) : 0;
+    const catalogEntry = index.get(id) || (sectorLevel > 0 ? {
+      id,
+      category: 'sectors',
+      name: formatSectorLabel(sectorLevel, { sectorWord: 'SECTOR', compact: true })
+    } : null);
     if (!catalogEntry || !DISCOVERY_CATEGORIES.includes(catalogEntry.category)) continue;
     const category = catalogEntry.category;
     const bucket = state.items[category] || {};
@@ -131,7 +148,10 @@ function hydrateFromHangarProgress(state) {
       timesSeen: 1,
       timesDefeated: defeatedBossIds.has(id) ? 1 : 0,
       timesSurvived: survivedThemeIds.has(id) ? 1 : 0,
-      metadata: { restoredFrom: 'hangarProgress' }
+      metadata: {
+        restoredFrom: 'hangarProgress',
+        ...(category === 'sectors' ? { sector: Number(String(id).replace(/^sector_/, '')) || null } : {})
+      }
     }, { id, category, name: catalogEntry.name || id });
     state.items[category] = bucket;
     changed = true;
@@ -313,8 +333,8 @@ export function getCodexCompletionCounts(catalog = {}, state = readThreatDiscove
   ])];
   for (const category of categoryIds) {
     const entries = Array.isArray(catalog[category]) ? catalog[category] : [];
-    const total = entries.length;
     const saved = new Set(Object.keys(state.items?.[category] || {}));
+    const total = category === 'sectors' ? Math.max(entries.length, saved.size) : entries.length;
     entries.forEach((entry) => {
       if (entry?.reference || entry?.alwaysKnown) saved.add(String(entry.id));
     });

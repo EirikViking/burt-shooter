@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
-import { CODEX_TEXT_TEMPLATES, THREAT_CODEX_CATEGORIES, getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
+import { CODEX_TEXT_TEMPLATES, THREAT_CODEX_CATEGORIES, getSectorCodexArt, getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
 import {
   clearThreatCodexUnread,
   getCodexCompletionCounts,
@@ -381,6 +381,8 @@ export class ThreatCodexScene {
     const known = new Set(catalogEntries.map((entry) => entry.id));
     Object.entries(discovered).forEach(([id, item]) => {
       if (known.has(id)) return;
+      const sectorMatch = categoryId === 'sectors' ? String(id).match(/^sector_(\d{3,})$/) : null;
+      const sectorNumber = sectorMatch ? Math.max(1, Math.floor(Number(sectorMatch[1]) || 1)) : null;
       merged.push({
         id,
         category: categoryId,
@@ -388,7 +390,9 @@ export class ThreatCodexScene {
         rarity: item.metadata?.rarity || 'Discovered',
         role: item.metadata?.role || 'Runtime signal',
         description: item.metadata?.description || translateText(CODEX_TEXT_TEMPLATES.runtimeDescription),
-        tip: item.metadata?.tip || 'Watch the first tell, then move once. The scanner believes in you, suspiciously.'
+        tip: item.metadata?.tip || 'Watch the first tell, then move once. The scanner believes in you, suspiciously.',
+        art: sectorNumber ? getSectorCodexArt(sectorNumber) : item.metadata?.art || null,
+        sectorNumber
       });
     });
     return sortDiscoveredEntriesFirst(merged, this.discoveryState, categoryId);
@@ -502,7 +506,7 @@ export class ThreatCodexScene {
       attackPatterns: AssetManifest.generated.enemyWeapons?.[2],
       waveTactics: AssetManifest.generated.stormGameplayBackdrop,
       powerups: AssetManifest.generated.powerups?.overdrive_core || AssetManifest.sprites.bonusCore,
-      sectors: AssetManifest.generated.vfx?.overrunVictorySeal || AssetManifest.generated.gameplayArenaBackdrop,
+      sectors: getSectorCodexArt(entry?.sectorNumber || 1),
       elites: AssetManifest.generated.eliteMiddleShips?.[0],
       bosses: AssetManifest.generated.bossDossier || AssetManifest.generated.bossArenaBackdrop,
       runThemes: AssetManifest.generated.menuBackdrop,

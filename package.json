@@ -23,6 +23,7 @@
     "check:level-clear-voices": "node scripts/check-level-clear-voices.mjs",
     "check:level-clear-voice-runtime": "node scripts/check-level-clear-voice-runtime.mjs",
     "check:localization": "npm run check:i18n && npm run check:i18n-ui",
+    "check:sprite-catalog": "node scripts/check-sprite-catalog.cjs",
     "check:ship-traits": "node scripts/check-ship-traits.mjs",
     "check:ship-trait-explanations": "node scripts/check-ship-trait-explanations.mjs",
     "check:generated-rosters": "node scripts/check-generated-rosters.mjs",

@@ -486,7 +486,16 @@ const POWERUP_CODEX_ENTRIES = Object.freeze([
   }
 ]);
 
-const SECTOR_CODEX_LEVELS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 20]);
+export const SECTOR_CODEX_ART_FILE_COUNT = 240;
+export const SECTOR_CODEX_MILESTONE_LEVELS = Object.freeze([10, 20, 30, 40, 50, 60]);
+const SECTOR_CODEX_BASE_LEVELS = Object.freeze([
+  ...Array.from({ length: 12 }, (_, index) => index + 1),
+  ...SECTOR_CODEX_MILESTONE_LEVELS
+]);
+const THREAT_DISCOVERY_STORAGE_KEY = 'nova.threatDiscovery.v1';
+const HANGAR_PROGRESS_STORAGE_KEY = 'nova.hangarProgress.v1';
+const LEGACY_UNLOCK_PROGRESS_STORAGE_KEY = 'burt.shipUnlockProgress.v1';
+const SECTOR_ID_PATTERN = /^sector_(\d{3,})$/;
 const SECTOR_CODEX_COPY = Object.freeze({
   1: {
     template: 'sectorDescriptionA',
@@ -583,6 +592,38 @@ const SECTOR_CODEX_COPY = Object.freeze({
     flavor: 'Helix Vey keeps a quiet ledger of pilots who mistook confidence for routing',
     clue: 'choose the lane that preserves movement before choosing the lane with points',
     tip: 'Helix Vey is for routing, not flexing. Survival lanes beat pretty detours.'
+  },
+  30: {
+    template: 'sectorDescriptionB',
+    feel: 'a far-gold relay crown where the swarm stops pretending the overrun is bonus content',
+    stakes: 'late-overrun routes begin stacking boss habits with crowd pressure',
+    flavor: 'Mira Kor keeps every clean dodge as a witness statement',
+    clue: 'save burst damage for the wave that would steal your recovery lane',
+    tip: 'Sector 30 is a far-signal routing check. Keep one side boring before chasing the bright score lane.'
+  },
+  40: {
+    template: 'sectorDescriptionC',
+    feel: 'a violet pressure shelf with hostile geometry folded into every quiet gap',
+    stakes: 'the run tests whether score greed can survive disciplined exits',
+    flavor: 'Helix Kor files panic movement under entertainment, not strategy',
+    clue: 'watch the support shape that arrives late; it usually owns the next lane',
+    tip: 'Sector 40 rewards pilots who leave early. Exit before the pretty trap becomes the only route.'
+  },
+  50: {
+    template: 'sectorDescriptionD',
+    feel: 'a white-hot overrun threshold where the cabinet starts taking notes in capital letters',
+    stakes: 'boss gates, wave pressure, and life routing all compress into one mistake budget',
+    flavor: 'Cobalt Kor has never met a spare life it did not immediately audit',
+    clue: 'clear the thing that narrows your dodge before shooting the thing with the loudest health bar',
+    tip: 'Sector 50 is deep-overrun audit work. Preserve movement first, damage second, glory eventually.'
+  },
+  60: {
+    template: 'sectorDescriptionA',
+    feel: 'a far-signal storm gate with neon static stitched across the route recorder',
+    stakes: 'generated sectors beyond the authored gates keep scaling pressure from known rules',
+    flavor: 'Riven Nox proves the archive can name the signal even when the swarm keeps remixing it',
+    clue: 'read the sector family, then expect a faster version of the last lesson',
+    tip: 'Sector 60 is a far-signal marker. Treat familiar patterns as remixes, not solved homework.'
   }
 });
 
@@ -910,6 +951,171 @@ function playerFacingThreatLabel(value = '') {
   return ACTION_LABEL_BY_ID.get(value) || titleCaseSignal(String(value).toLowerCase());
 }
 
+function safeLocalStorage() {
+  try {
+    return typeof localStorage !== 'undefined' ? localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredJson(key) {
+  try {
+    const raw = safeLocalStorage()?.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeSectorLevel(value) {
+  const level = Math.floor(Number(value) || 0);
+  return level > 0 ? level : 0;
+}
+
+function sectorIdForLevel(level) {
+  return `sector_${String(level).padStart(3, '0')}`;
+}
+
+function sectorLevelFromId(id = '') {
+  const match = String(id).match(SECTOR_ID_PATTERN);
+  return match ? normalizeSectorLevel(match[1]) : 0;
+}
+
+function getStoredSectorLevels() {
+  const levels = new Set();
+  const discovery = readStoredJson(THREAT_DISCOVERY_STORAGE_KEY);
+  const sectorItems = discovery?.items?.sectors && typeof discovery.items.sectors === 'object'
+    ? discovery.items.sectors
+    : {};
+  Object.keys(sectorItems).forEach((id) => {
+    const level = sectorLevelFromId(id);
+    if (level > 0) levels.add(level);
+  });
+
+  for (const key of [HANGAR_PROGRESS_STORAGE_KEY, LEGACY_UNLOCK_PROGRESS_STORAGE_KEY]) {
+    const progress = readStoredJson(key);
+    const highest = Math.max(
+      normalizeSectorLevel(progress?.bestSector),
+      normalizeSectorLevel(progress?.bestLevel)
+    );
+    for (let level = 1; level <= highest; level += 1) levels.add(level);
+  }
+  return levels;
+}
+
+export function getSectorCodexLevels(extraLevels = []) {
+  const levels = new Set(SECTOR_CODEX_BASE_LEVELS);
+  const storedLevels = getStoredSectorLevels();
+  for (const level of storedLevels) levels.add(level);
+  const normalizedExtraLevels = [];
+  for (const level of extraLevels) {
+    const normalized = normalizeSectorLevel(level);
+    if (normalized > 0) {
+      levels.add(normalized);
+      normalizedExtraLevels.push(normalized);
+    }
+  }
+  const discoveredHighest = Math.max(0, ...storedLevels, ...normalizedExtraLevels);
+  for (let level = 1; level <= discoveredHighest; level += 1) {
+    if (level <= 12 || levels.has(level)) continue;
+    levels.add(level);
+  }
+  return [...levels].sort((a, b) => a - b);
+}
+
+function sectorBand(level) {
+  if (level >= 60) return 'Far Signal';
+  if (level >= 50) return 'Deep Overrun';
+  if (level >= 30) return 'Late Overrun';
+  if (level >= 20) return 'Overrun Route';
+  if (level >= 11) return 'Overrun';
+  if (level === 10) return 'Clear Gate';
+  if (level % 5 === 0) return 'Boss Gate';
+  return 'Run Route';
+}
+
+function sectorPressureStyle(level) {
+  const styles = [
+    'lane discipline',
+    'crowd control',
+    'boss-gate life routing',
+    'pickup bait control',
+    'support target priority',
+    'overrun score restraint',
+    'crossfire patience',
+    'late-wave recovery'
+  ];
+  return styles[Math.abs(level - 1) % styles.length];
+}
+
+function generatedSectorCopy(level, sector) {
+  const band = sectorBand(level).toLowerCase();
+  const style = sectorPressureStyle(level);
+  const template = ['sectorDescriptionA', 'sectorDescriptionB', 'sectorDescriptionC', 'sectorDescriptionD'][(level - 1) % 4];
+  const bossNote = sector.bossCheckpoint
+    ? 'a boss checkpoint that measures spare lives before damage'
+    : 'wave pressure that borrows boss-gate habits before the gate arrives';
+  return {
+    template,
+    feel: `${sector.name} ${band} space with ${style} painted into the traffic rails`,
+    stakes: `${band} ${style}, ${bossNote}, and score choices that can still leave an exit lane`,
+    flavor: `the route recorder tags this as ${sector.name} signal family ${Math.ceil(level / 5)}`,
+    clue: sector.bossCheckpoint
+      ? 'enter the gate from a lane that can dodge twice without crossing panic fire'
+      : 'clear the lane-maker before taking the pickup or score detour',
+    tip: `${sector.name} is a ${sectorBand(level)} sector. Read ${style} first, then spend movement only when the lane proves it is real.`
+  };
+}
+
+export function getSectorCodexArt(level = 1) {
+  const index = normalizeSectorLevel(level) - 1;
+  const generated = Array.isArray(AssetManifest.generated.sectors) ? AssetManifest.generated.sectors[index] : null;
+  if (generated) return generated;
+  return createSectorSignalArtDataUri(level);
+}
+
+export function createSectorSignalArtDataUri(level = 1) {
+  const safeLevel = normalizeSectorLevel(level) || 1;
+  const hue = (safeLevel * 47) % 360;
+  const secondary = (hue + 138 + (safeLevel % 7) * 9) % 360;
+  const tertiary = (hue + 266) % 360;
+  const spokes = 8 + (safeLevel % 9);
+  const rings = 2 + (safeLevel % 4);
+  const shard = 18 + (safeLevel % 5) * 4;
+  const nodes = Array.from({ length: spokes }, (_, index) => {
+    const angle = (index / spokes) * Math.PI * 2;
+    const outer = 78 + ((index + safeLevel) % 3) * 6;
+    const inner = 30 + ((index * 5 + safeLevel) % 4) * 5;
+    const x1 = 128 + Math.cos(angle) * inner;
+    const y1 = 128 + Math.sin(angle) * inner;
+    const x2 = 128 + Math.cos(angle) * outer;
+    const y2 = 128 + Math.sin(angle) * outer;
+    return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} L${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="hsl(${(hue + index * 13) % 360} 100% 62%)" stroke-width="${index % 3 === 0 ? 2.6 : 1.4}" stroke-linecap="round"/>`;
+  }).join('');
+  const ringMarkup = Array.from({ length: rings }, (_, index) => {
+    const radius = 32 + index * 20 + (safeLevel % 5);
+    const dash = `${7 + ((safeLevel + index) % 9)} ${5 + (index % 4)}`;
+    return `<circle cx="128" cy="128" r="${radius}" fill="none" stroke="hsl(${(secondary + index * 20) % 360} 96% 58%)" stroke-width="${index === rings - 1 ? 2.4 : 1.2}" stroke-dasharray="${dash}" opacity="${0.45 + index * 0.11}"/>`;
+  }).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+<defs>
+<radialGradient id="g" cx="50%" cy="48%" r="48%"><stop offset="0%" stop-color="hsl(${hue} 100% 72%)"/><stop offset="46%" stop-color="hsl(${secondary} 100% 45%)"/><stop offset="100%" stop-color="#020712"/></radialGradient>
+<filter id="glow" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="256" height="256" fill="#020712"/>
+<circle cx="128" cy="128" r="100" fill="url(#g)" opacity="0.28"/>
+<g filter="url(#glow)">
+${ringMarkup}
+${nodes}
+<path d="M128 ${32 + shard} L${154 + (safeLevel % 11)} 128 L128 ${224 - shard} L${102 - (safeLevel % 11)} 128 Z" fill="none" stroke="hsl(${tertiary} 100% 70%)" stroke-width="3.4"/>
+<path d="M128 ${56 + (safeLevel % 18)} L${145 + (safeLevel % 8)} 128 L128 ${200 - (safeLevel % 18)} L${111 - (safeLevel % 8)} 128 Z" fill="hsl(${hue} 100% 56%)" opacity="0.23"/>
+<circle cx="128" cy="128" r="${9 + (safeLevel % 8)}" fill="hsl(${hue} 100% 72%)"/>
+</g>
+</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 function powerupEntry(entry) {
   return {
     id: entry.id,
@@ -929,25 +1135,25 @@ function powerupEntry(entry) {
 function sectorEntry(level) {
   const sector = getSectorInfo(level);
   const name = formatSectorLabel(level, { sectorWord: 'SECTOR', compact: true });
-  const copy = SECTOR_CODEX_COPY[level] || {
-    template: 'sectorDescriptionA',
-    feel: `${sector.name} routing space with fresh swarm markings`,
-    stakes: `sector ${sector.number} wave routing and boss-gate life planning`,
-    flavor: 'the archive marks this route as active and rude',
-    clue: 'keep a safe lane before chasing score',
-    tip: 'Clear the wave shape first, then take the points the sector actually gives you.'
-  };
+  const copy = SECTOR_CODEX_COPY[level] || generatedSectorCopy(level, sector);
+  const milestone = SECTOR_CODEX_MILESTONE_LEVELS.includes(level);
+  const band = sectorBand(level);
+  const pressure = sectorPressureStyle(level);
   return {
-    id: `sector_${String(level).padStart(3, '0')}`,
+    id: sectorIdForLevel(level),
     category: 'sectors',
     name,
-    rarity: level >= 11 ? 'Overrun' : level === 10 ? 'Clear Gate' : 'Sector',
-    role: level >= 11 ? 'Overrun route' : sector.bossCheckpoint ? 'Boss gate route' : 'Run route',
+    rarity: milestone ? `${band} Milestone` : band,
+    role: milestone ? `${band} milestone route` : `${band} - ${pressure}`,
     description: sectorStory(name, copy, level),
     tip: translateText(copy.tip),
-    art: level >= 10 ? AssetManifest.generated.vfx?.overrunVictorySeal || AssetManifest.generated.bossArenaBackdrop : AssetManifest.generated.gameplayArenaBackdrop,
-    accent: level >= 11 ? 0xffe76a : level === 10 ? 0x7dffcc : 0x37f5ff,
+    art: getSectorCodexArt(level),
+    accent: level >= 60 ? 0xc77dff : level >= 30 ? 0xffe76a : level >= 11 ? 0x7db7ff : level === 10 ? 0x7dffcc : 0x37f5ff,
     signalClass: 'sector signal',
+    sectorNumber: level,
+    difficultyBand: band,
+    pressureStyle: pressure,
+    milestone,
     codexBodyMode: 'story'
   };
 }
@@ -1187,7 +1393,7 @@ export function getThreatCodexCatalog() {
     attackPatterns: ENEMY_THREAT_ACTIONS.map(actionEntry),
     waveTactics: WAVE_TACTIC_ENTRIES.map(waveEntry),
     powerups: CATALOG_POWERUP_CODEX_ENTRIES.map(powerupEntry),
-    sectors: SECTOR_CODEX_LEVELS.map(sectorEntry),
+    sectors: getSectorCodexLevels().map(sectorEntry),
     elites: ELITE_MIDDLE_SHIPS.map(eliteEntry),
     bosses: BOSS_ROSTER.map(bossEntry),
     runThemes: RunContentDirectorConfig.runThemes.map(runThemeEntry),

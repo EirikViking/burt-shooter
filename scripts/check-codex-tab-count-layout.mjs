@@ -105,7 +105,9 @@ function seededDiscoveryState() {
   const items = {};
   for (const [category, entries] of Object.entries(catalog)) {
     const target = Math.min(Number(seededDiscoveryTargets[category]) || 0, entries.length);
-    const discoveredEntries = (entries || []).slice(Math.max(0, entries.length - target));
+    const discoveredEntries = category === 'sectors'
+      ? (entries || []).slice(0, target)
+      : (entries || []).slice(Math.max(0, entries.length - target));
     items[category] = Object.fromEntries(discoveredEntries.map((entry) => [entry.id, {
       id: entry.id,
       category,
