@@ -77,7 +77,7 @@ const OVERRUN_CLEAR_VFX_MS = 5600;
 const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
-const SECTOR_ARRIVAL_STINGER_MS = 1200;
+const SECTOR_ARRIVAL_STINGER_MS = 2400;
 
 export class PlayScene {
   constructor(game) {
@@ -1176,7 +1176,7 @@ export class PlayScene {
 
     const level = Math.max(1, Math.floor(Number(this.game?.level) || 1));
     const entry = this.getSectorArrivalEntry(level) || {};
-    const durationMs = postBoss ? SECTOR_ARRIVAL_STINGER_MS + 280 : SECTOR_ARRIVAL_STINGER_MS;
+    const durationMs = postBoss ? SECTOR_ARRIVAL_STINGER_MS + 560 : SECTOR_ARRIVAL_STINGER_MS;
     const { width, height } = this.game.app.screen;
     const compact = width < 620 || height < 520;
     const accent = Number.isFinite(entry.accent) ? entry.accent : (level >= 30 ? 0xffe76a : 0x37f5ff);

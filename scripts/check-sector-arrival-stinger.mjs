@@ -7,8 +7,8 @@ function fail(message) {
   errors.push(message);
 }
 
-if (!source.includes('SECTOR_ARRIVAL_STINGER_MS = 1200')) {
-  fail('sector arrival stinger should stay quick at 1200ms');
+if (!source.includes('SECTOR_ARRIVAL_STINGER_MS = 2400')) {
+  fail('sector arrival stinger should stay punchy at 2400ms');
 }
 
 if (!source.includes('showSectorArrivalStinger({ postBoss: postBossLevelIntro })')) {
@@ -45,4 +45,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('[sector-arrival-stinger] PASS quick full-screen sector art stinger wired behind HUD');
+console.log('[sector-arrival-stinger] PASS punchy full-screen sector art stinger wired behind HUD');
