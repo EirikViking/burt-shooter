@@ -10,6 +10,12 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/gameplay-performance-analysis-${timestamp()}`);
 const devtoolsHash = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
+const perfFlagQuery = Object.freeze({
+  disableSectorArt: 'novaPerfDisableSectorArt',
+  disableSectorFlyins: 'novaPerfDisableSectorFlyins',
+  disableNewEnemyRoster: 'novaPerfDisableNewEnemyRoster',
+  disableDecorativeBackgrounds: 'novaPerfDisableDecorativeBackgrounds'
+});
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -89,6 +95,7 @@ function summarizeFrameIntervals(intervals) {
   return {
     frames: useful.length,
     averageMs: Number(average.toFixed(2)),
+    averageFps: average > 0 ? Number((1000 / average).toFixed(1)) : 0,
     p95Ms: Number(percentile(useful, 0.95).toFixed(2)),
     p99Ms: Number(percentile(useful, 0.99).toFixed(2)),
     maxMs: Number((useful.length ? Math.max(...useful) : 0).toFixed(2)),
@@ -97,8 +104,62 @@ function summarizeFrameIntervals(intervals) {
   };
 }
 
+function withQuery(url, query = {}) {
+  const target = new URL(url);
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null || value === false) continue;
+    target.searchParams.set(key, String(value));
+  }
+  return target.toString();
+}
+
+function queryForFlags(flags = []) {
+  const query = {};
+  for (const flag of flags) {
+    const key = perfFlagQuery[flag];
+    if (key) query[key] = '1';
+  }
+  return query;
+}
+
 async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+}
+
+async function collectRuntimeSnapshot(page) {
+  return page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const manager = play?.enemyManager;
+    const bullets = play?.bulletManager;
+    const enemies = manager?.enemies || [];
+    const activeProjectiles =
+      (bullets?.playerBullets?.filter?.((bullet) => bullet?.active !== false).length || 0) +
+      (bullets?.enemyBullets?.filter?.((bullet) => bullet?.active !== false).length || 0);
+    return {
+      sector: Number(game?.level) || 0,
+      scene: game?.currentSceneName || null,
+      sectorArrivalActive: Boolean(play?.sectorArrivalStinger),
+      newSectorArtActive: Boolean(play?.sectorArrivalStinger?.container?.children?.some?.((child) =>
+        child?.label !== 'sector_arrival_stinger' &&
+        child?.texture &&
+        child?.visible !== false &&
+        child?.renderable !== false
+      )),
+      decorativeBackgroundActive: Boolean(play?.gameplayBackdrop?.parent || play?.gameplayStormBackdrop?.parent || play?.gameplayBossBackdrop?.parent),
+      activeEnemies: enemies.filter((enemy) => enemy?.active !== false || enemy?.waitingForEntry).length,
+      activeProjectiles,
+      activeParticles: play?.particleManager?.particles?.length || 0,
+      activeTweensOrTimers: (manager?.waveSpawnTimers?.length || 0) + (play?.pendingEnemyStartTimeout ? 1 : 0),
+      pendingWaveSpawns: Number(manager?.waveSpawnPendingCount) || 0,
+      loadedTextureKeys: Number(play?.preparedRenderTextureKeys?.size) || 0,
+      sectorArtCacheEntries: Number(play?.sectorArrivalArtCache?.size) || 0,
+      entryWarmupCacheEntries: Number(play?.entryAssetWarmupCache?.size) || 0,
+      lateMayhemEnemies: enemies.filter((enemy) => enemy?.generatedProfile?.lateMayhem === true).length,
+      earlySurgeEnemies: enemies.filter((enemy) => enemy?.generatedProfile?.earlySurge === true).length,
+      enemyManagerState: manager?.state || null
+    };
+  });
 }
 
 async function waitForActiveWave(page) {
@@ -255,6 +316,138 @@ async function sampleNextWaveEntry(page, sampleMs = 3600) {
   };
 }
 
+async function sampleForcedSectorTransition(page, targetLevel, { sampleMs = 5600, prewarm = true } = {}) {
+  const before = await page.evaluate(async ({ targetLevel: target, prewarm: shouldPrewarm }) => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    if (!game || !play || !play.enemyManager) {
+      return { available: false, reason: 'missing play scene' };
+    }
+    play.clearPendingEnemyStart?.();
+    play.clearSectorArrivalStinger?.();
+    play.levelAdvancePending = false;
+    const artSource = play.getSectorArrivalArtSource?.(target);
+    if (artSource && !shouldPrewarm) {
+      play.sectorArrivalArtCache?.delete?.(artSource);
+      play.preparedRenderTextureKeys?.delete?.(`sector_arrival:${artSource}`);
+    }
+    if (shouldPrewarm) {
+      const warmup = play.prewarmLevelEntryAssets?.(target, { ahead: 2 });
+      if (warmup && typeof warmup.catch === 'function') {
+        await warmup.catch(() => true);
+      }
+    }
+    game.level = Math.max(1, target - 1);
+    return {
+      available: true,
+      targetLevel: target,
+      prewarm: shouldPrewarm,
+      artSource,
+      preparedTextureKeys: Number(play.preparedRenderTextureKeys?.size) || 0,
+      sectorArtCacheEntries: Number(play.sectorArrivalArtCache?.size) || 0
+    };
+  }, { targetLevel, prewarm });
+
+  if (!before.available) {
+    return { before, frameSummary: summarizeFrameIntervals([]), after: null };
+  }
+
+  const sampled = await page.evaluate(({ targetLevel: target, durationMs }) => new Promise((resolve) => {
+    const intervals = [];
+    let previous = performance.now();
+    const startedAt = previous;
+    let triggered = false;
+    const snapshot = () => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      const manager = play?.enemyManager;
+      return {
+        sector: Number(game?.level) || 0,
+        sectorArrivalActive: Boolean(play?.sectorArrivalStinger),
+        pendingEnemyStart: Boolean(play?.pendingEnemyStartTimeout),
+        enemyManagerState: manager?.state || null,
+        enemies: manager?.enemies?.length || 0,
+        pendingWaveSpawns: Number(manager?.waveSpawnPendingCount) || 0,
+        loadedTextureKeys: Number(play?.preparedRenderTextureKeys?.size) || 0,
+        sectorArtCacheEntries: Number(play?.sectorArrivalArtCache?.size) || 0
+      };
+    };
+    const tick = (now) => {
+      intervals.push(now - previous);
+      previous = now;
+      if (!triggered) {
+        triggered = true;
+        const game = window.__game;
+        const play = game?.scenes?.play;
+        if (game && play) {
+          game.level = Math.max(1, target - 1);
+          play.postBossLevelIntroPending = true;
+          play.levelAdvancePending = false;
+          game.nextLevel();
+        }
+      }
+      if (now - startedAt >= durationMs) {
+        resolve({ intervals, after: snapshot() });
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }), { targetLevel, durationMs: sampleMs });
+
+  return {
+    before,
+    frameSummary: summarizeFrameIntervals(sampled.intervals),
+    after: sampled.after
+  };
+}
+
+async function runTransitionScenario(browser, scenario) {
+  const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const pageErrors = [];
+  const consoleErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+
+  const url = withQuery(baseUrl, {
+    'nova-devtools-hash': devtoolsHash,
+    debugBossToken: 'NOVA_DEBUG_2026',
+    startLevel: 1,
+    controlSmoke: '1',
+    ...queryForFlags(scenario.flags)
+  });
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), null, { timeout: 30000 });
+  await page.evaluate(() => window.__game.startGame());
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', null, { timeout: 30000 });
+  await waitForActiveWave(page);
+  await makeProbePlayerSafe(page);
+
+  const runtimeBefore = await collectRuntimeSnapshot(page);
+  const transition = await sampleForcedSectorTransition(page, scenario.targetLevel, {
+    sampleMs: scenario.sampleMs || 5600,
+    prewarm: scenario.prewarm !== false
+  });
+  const runtimeAfter = await collectRuntimeSnapshot(page);
+  const report = {
+    name: scenario.name,
+    targetLevel: scenario.targetLevel,
+    flags: scenario.flags || [],
+    prewarm: scenario.prewarm !== false,
+    frameSummary: transition.frameSummary,
+    transition,
+    runtimeBefore,
+    runtimeAfter,
+    pageErrors,
+    consoleErrors
+  };
+  await page.screenshot({ path: path.join(outputDir, `${scenario.name}.png`), fullPage: true });
+  await page.close();
+  return report;
+}
+
 async function runScenario(browser, scenario) {
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const pageErrors = [];
@@ -264,7 +457,13 @@ async function runScenario(browser, scenario) {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
 
-  const url = `${baseUrl}/?nova-devtools-hash=${devtoolsHash}&debugBossToken=NOVA_DEBUG_2026&startLevel=${scenario.startLevel}&controlSmoke=1`;
+  const url = withQuery(baseUrl, {
+    'nova-devtools-hash': devtoolsHash,
+    debugBossToken: 'NOVA_DEBUG_2026',
+    startLevel: scenario.startLevel,
+    controlSmoke: '1',
+    ...queryForFlags(scenario.flags)
+  });
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), null, { timeout: 30000 });
   await page.evaluate(() => window.__game.startGame());
@@ -279,14 +478,17 @@ async function runScenario(browser, scenario) {
   await makeProbePlayerSafe(page);
 
   const before = await readState(page);
+  const runtimeBefore = await collectRuntimeSnapshot(page);
   const intervals = await sampleFrameIntervals(page, scenario.sampleMs || 6000);
   const motionSamples = await sampleParkedEnemyMotion(page, scenario.motionFrames || 180);
   await makeProbePlayerSafe(page);
   const nextWaveEntry = await sampleNextWaveEntry(page, scenario.entrySampleMs || 3600);
   const after = await readState(page);
+  const runtimeAfter = await collectRuntimeSnapshot(page);
   const report = {
     name: scenario.name,
     startLevel: scenario.startLevel,
+    flags: scenario.flags || [],
     frameSummary: summarizeFrameIntervals(intervals),
     nextWaveEntry,
     parkedMotion: summarizeParkedMotion(motionSamples),
@@ -300,6 +502,8 @@ async function runScenario(browser, scenario) {
       counts: after.counts,
       wave: after.wave
     },
+    runtimeBefore,
+    runtimeAfter,
     pageErrors,
     consoleErrors
   };
@@ -319,13 +523,35 @@ const browser = await chromium.launch({
 try {
   const scenarios = [
     { name: 'sector-1-opening-wave', startLevel: 1, sampleMs: 5000, motionFrames: 150 },
-    { name: 'sector-2-after-arrival', startLevel: 2, sampleMs: 5000, motionFrames: 150 },
+    { name: 'sector-5-challenge-entry', startLevel: 5, sampleMs: 5200, motionFrames: 170 },
     { name: 'sector-20-generated-wave', startLevel: 20, sampleMs: 6500, motionFrames: 210 }
+  ];
+  const transitionScenarios = [
+    { name: 'transition-sector-20-cold-no-warmup', targetLevel: 20, prewarm: false, diagnosticOnly: true, sampleMs: 5600 },
+    { name: 'transition-sector-20-full-build', targetLevel: 20, sampleMs: 5600 },
+    { name: 'transition-sector-20-sector-flyins-disabled', targetLevel: 20, flags: ['disableSectorFlyins'], sampleMs: 3600 },
+    { name: 'transition-sector-20-sector-art-disabled', targetLevel: 20, flags: ['disableSectorArt'], sampleMs: 5600 },
+    { name: 'transition-sector-20-new-enemy-roster-disabled', targetLevel: 20, flags: ['disableNewEnemyRoster'], sampleMs: 5600 },
+    { name: 'transition-sector-20-art-and-flyins-disabled', targetLevel: 20, flags: ['disableSectorArt', 'disableSectorFlyins'], sampleMs: 3600 },
+    { name: 'transition-sector-20-decorative-backgrounds-disabled', targetLevel: 20, flags: ['disableDecorativeBackgrounds'], sampleMs: 5600 },
+    {
+      name: 'transition-sector-20-heavy-visuals-disabled',
+      targetLevel: 20,
+      flags: ['disableSectorArt', 'disableSectorFlyins', 'disableNewEnemyRoster', 'disableDecorativeBackgrounds'],
+      sampleMs: 3600
+    }
   ];
   const results = [];
   for (const scenario of scenarios) {
     console.log(`[gameplay-performance] scenario ${scenario.name}`);
     results.push(await runScenario(browser, scenario));
+  }
+  const transitionResults = [];
+  for (const scenario of transitionScenarios) {
+    console.log(`[gameplay-performance] transition ${scenario.name}`);
+    const result = await runTransitionScenario(browser, scenario);
+    result.diagnosticOnly = Boolean(scenario.diagnosticOnly);
+    transitionResults.push(result);
   }
 
   const failures = [];
@@ -361,12 +587,31 @@ try {
       failures.push(`${result.name} console errors: ${result.consoleErrors.join('; ')}`);
     }
   }
+  for (const result of transitionResults) {
+    if (result.diagnosticOnly) continue;
+    if (result.frameSummary.p95Ms > 26) {
+      failures.push(`${result.name} transition p95 frame ${result.frameSummary.p95Ms}ms exceeds 26ms`);
+    }
+    if (result.frameSummary.p99Ms > 34) {
+      failures.push(`${result.name} transition p99 frame ${result.frameSummary.p99Ms}ms exceeds 34ms`);
+    }
+    if (result.frameSummary.longFrames50 > 1) {
+      failures.push(`${result.name} transition has ${result.frameSummary.longFrames50} frame(s) over 50ms`);
+    }
+    if (result.pageErrors.length) {
+      failures.push(`${result.name} page errors: ${result.pageErrors.join('; ')}`);
+    }
+    if (result.consoleErrors.length) {
+      failures.push(`${result.name} console errors: ${result.consoleErrors.join('; ')}`);
+    }
+  }
 
   const report = {
     status: failures.length ? 'failed' : 'passed',
     generatedAt: new Date().toISOString(),
     outputDir,
     scenarios: results,
+    transitions: transitionResults,
     failures
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

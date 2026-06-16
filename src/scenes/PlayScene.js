@@ -43,6 +43,7 @@ import { getShipMetadata } from '../config/ShipMetadata.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { translateText } from '../i18n/index.js';
 import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
+import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import {
   EASTER_EGG_TOTAL,
@@ -219,6 +220,7 @@ export class PlayScene {
     this.entryAssetWarmupCache = new Map();
     this.preparedRenderTextureKeys = new Set();
     this.levelStartWarmupPending = false;
+    this.levelAdvanceWarmupPromise = null;
 
     // Ship intro state
     this.introActive = false;
@@ -1229,6 +1231,7 @@ export class PlayScene {
   }
 
   shouldShowSectorArrivalStinger(level = this.game?.level || 1) {
+    if (getNovaPerformanceFlags().disableSectorFlyins) return false;
     const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
     return safeLevel > this.getRunStartSector();
   }
@@ -1398,17 +1401,22 @@ export class PlayScene {
     root.addChild(backdrop);
     const backdropBaseScale = { value: 1 };
 
-    this.preloadSectorArrivalArt(level, { ahead: 0 })
-      .then((texture) => {
-        if (!root.parent || backdrop.destroyed || !GameAssets.isValidTexture(texture)) return;
-        backdrop.texture = texture;
-        const scale = Math.max(width / texture.width, height / texture.height);
-        backdropBaseScale.value = scale;
-        backdrop.scale.set(scale);
-      })
-      .catch((error) => {
-        console.warn('[SectorArrival] sector art failed to load:', error);
-      });
+    if (getNovaPerformanceFlags().disableSectorArt) {
+      backdrop.visible = false;
+      backdrop.renderable = false;
+    } else {
+      this.preloadSectorArrivalArt(level, { ahead: 0 })
+        .then((texture) => {
+          if (!root.parent || backdrop.destroyed || !GameAssets.isValidTexture(texture)) return;
+          backdrop.texture = texture;
+          const scale = Math.max(width / texture.width, height / texture.height);
+          backdropBaseScale.value = scale;
+          backdrop.scale.set(scale);
+        })
+        .catch((error) => {
+          console.warn('[SectorArrival] sector art failed to load:', error);
+        });
+    }
 
     const shade = new PIXI.Graphics();
     shade.rect(0, 0, width, height);
@@ -1761,35 +1769,47 @@ export class PlayScene {
           }, i * 100);
         }
 
+        const nextSectorLevel = Math.max(1, Math.floor(Number(this.game.level) || 1) + 1);
+        this.levelAdvanceWarmupPromise = this.prewarmLevelEntryAssets(nextSectorLevel, { ahead: 2 })
+          .catch((error) => {
+            console.warn(`[PlayScene] next sector warmup failed for level ${nextSectorLevel}:`, error);
+            return true;
+          });
+
         this.levelAdvanceTimeout = setTimeout(() => {
-          this.levelAdvancePending = false;
-          this.levelAdvanceTimeout = null;
-          this.postBossLevelIntroPending = bossCompletion;
-          const sectorCleared = Number(this.game.level) || 1;
-          this.maybeTriggerOverrunCelebration({ sectorCleared, bossCompletion, compactHud });
-          if (bossCompletion) {
-            this.damageTakenThisSector = 0;
-          }
-          this.game.nextLevel();
-          if (this.player) {
-            const sprite = this.player.sprite;
-            if (sprite) {
-              sprite.visible = true;
-              sprite.alpha = 1;
-              sprite.renderable = true;
-              if (!sprite.parent && this.gameContainer) {
-                this.gameContainer.addChild(sprite);
+          const advanceWhenWarm = this.levelAdvanceWarmupPromise || Promise.resolve(true);
+          advanceWhenWarm.finally(() => {
+            if (this.game?.currentScene !== this) return;
+            this.levelAdvancePending = false;
+            this.levelAdvanceTimeout = null;
+            this.levelAdvanceWarmupPromise = null;
+            this.postBossLevelIntroPending = bossCompletion;
+            const sectorCleared = Number(this.game.level) || 1;
+            this.maybeTriggerOverrunCelebration({ sectorCleared, bossCompletion, compactHud });
+            if (bossCompletion) {
+              this.damageTakenThisSector = 0;
+            }
+            this.game.nextLevel();
+            if (this.player) {
+              const sprite = this.player.sprite;
+              if (sprite) {
+                sprite.visible = true;
+                sprite.alpha = 1;
+                sprite.renderable = true;
+                if (!sprite.parent && this.gameContainer) {
+                  this.gameContainer.addChild(sprite);
+                }
+              }
+              const shipSprite = this.player.shipSprite;
+              const texValid = shipSprite && shipSprite instanceof PIXI.Sprite && GameAssets.isValidTexture(shipSprite.texture);
+              if (!texValid && this.player.rebuildShipSprite) {
+                this.player.rebuildShipSprite('afterNextLevel');
+              } else if (shipSprite?.scale) {
+                const baseScale = Number.isFinite(this.player.baseScale) ? this.player.baseScale : (shipSprite.scale.x || 1);
+                shipSprite.scale.set(baseScale);
               }
             }
-            const shipSprite = this.player.shipSprite;
-            const texValid = shipSprite && shipSprite instanceof PIXI.Sprite && GameAssets.isValidTexture(shipSprite.texture);
-            if (!texValid && this.player.rebuildShipSprite) {
-              this.player.rebuildShipSprite('afterNextLevel');
-            } else if (shipSprite?.scale) {
-              const baseScale = Number.isFinite(this.player.baseScale) ? this.player.baseScale : (shipSprite.scale.x || 1);
-              shipSprite.scale.set(baseScale);
-            }
-          }
+          });
         }, BalanceConfig.level.sequenceDuration || 3000);
       }
 
@@ -2736,6 +2756,7 @@ export class PlayScene {
   }
 
   async initGameplayBackdrop(width, height) {
+    if (getNovaPerformanceFlags().disableDecorativeBackgrounds) return;
     const baseBackdrop = AssetManifest.generated?.gameplayArenaBackdrop || AssetManifest.generated?.menuBackdrop;
     if (!baseBackdrop) return;
 
@@ -2994,6 +3015,7 @@ export class PlayScene {
     this.sectorArrivalArtCache?.clear?.();
     this.entryAssetWarmupCache?.clear?.();
     this.preparedRenderTextureKeys?.clear?.();
+    this.levelAdvanceWarmupPromise = null;
 
     if (this.levelAdvanceTimeout) {
       clearTimeout(this.levelAdvanceTimeout);

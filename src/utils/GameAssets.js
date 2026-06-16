@@ -1,4 +1,6 @@
 import { AssetManifest } from '../assets/assetManifest.js';
+import { GENERATED_ENEMY_LEGACY_ASSET_COUNT } from '../config/GeneratedEnemyProfiles.js';
+import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import * as PIXI from 'pixi.js';
 
 class GameAssetsManager {
@@ -173,7 +175,10 @@ class GameAssetsManager {
         }));
 
         const generatedEnemies = AssetManifest.generated?.enemies || [];
-        await Promise.all(generatedEnemies.map(async (filepath, index) => {
+        const loadGeneratedEnemies = getNovaPerformanceFlags().disableNewEnemyRoster
+            ? generatedEnemies.slice(0, GENERATED_ENEMY_LEGACY_ASSET_COUNT)
+            : generatedEnemies;
+        await Promise.all(loadGeneratedEnemies.map(async (filepath, index) => {
             try {
                 const texture = await PIXI.Assets.load({
                     alias: `nova_generated_enemy_${index + 1}`,

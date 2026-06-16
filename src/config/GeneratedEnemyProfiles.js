@@ -1,6 +1,7 @@
 import { hashString } from './VisualVariantCatalog.js';
 import { ENEMY_ATTACK_STYLE_DEFS, getEnemyAttackStyle } from './EnemyAttackStyles.js';
 import { ENEMY_MOVEMENT_STYLE_DEFS } from './EnemyMovementStyles.js';
+import { getNovaPerformanceFlags } from './PerformanceFlags.js';
 
 export const GENERATED_ENEMY_LEGACY_TOTAL = 180;
 export const GENERATED_ENEMY_EXTRA_TOTAL = 177;
@@ -419,9 +420,14 @@ const PROFILE_POOL_BY_LEVEL = new Map();
 
 export function getGeneratedEnemyProfilesForLevel(level) {
   const safeLevel = Math.max(1, Number(level) || 1);
-  if (PROFILE_POOL_BY_LEVEL.has(safeLevel)) return PROFILE_POOL_BY_LEVEL.get(safeLevel);
-  const pool = GENERATED_ENEMY_PROFILES.filter((profile) => profile.unlockLevel <= safeLevel);
-  PROFILE_POOL_BY_LEVEL.set(safeLevel, pool);
+  const disableNewEnemyRoster = getNovaPerformanceFlags().disableNewEnemyRoster;
+  const cacheKey = `${safeLevel}:${disableNewEnemyRoster ? 'legacy' : 'full'}`;
+  if (PROFILE_POOL_BY_LEVEL.has(cacheKey)) return PROFILE_POOL_BY_LEVEL.get(cacheKey);
+  const pool = GENERATED_ENEMY_PROFILES.filter((profile) =>
+    profile.unlockLevel <= safeLevel &&
+    (!disableNewEnemyRoster || profile.lateMayhem !== true)
+  );
+  PROFILE_POOL_BY_LEVEL.set(cacheKey, pool);
   return pool;
 }
 
