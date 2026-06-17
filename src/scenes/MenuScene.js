@@ -77,6 +77,21 @@ function clampNumber(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function drawCutPanel(graphics, x, y, w, h, cut, fillStyle = null, strokeStyle = null) {
+  const c = clampNumber(cut, 0, Math.min(w, h) * 0.45);
+  graphics.moveTo(x + c, y);
+  graphics.lineTo(x + w - c, y);
+  graphics.lineTo(x + w, y + c);
+  graphics.lineTo(x + w, y + h - c);
+  graphics.lineTo(x + w - c, y + h);
+  graphics.lineTo(x + c, y + h);
+  graphics.lineTo(x, y + h - c);
+  graphics.lineTo(x, y + c);
+  graphics.lineTo(x + c, y);
+  if (fillStyle) graphics.fill(fillStyle);
+  if (strokeStyle) graphics.stroke(strokeStyle);
+}
+
 function boundsForDisplayObject(displayObject) {
   if (!displayObject?.getBounds) return null;
   try {
@@ -1110,11 +1125,14 @@ export class MenuScene {
     } else if (button._sublabelKey) {
       button._sublabel.text = translateText(button._sublabelKey);
     }
+    const isPrimaryButton = button._variant === 'primary';
+    const isCompactButton = (button._btnHeight || 0) <= 38;
     const labelPad = button._iconType
-      ? (button._variant === 'primary' ? 74 : 58)
+      ? (isPrimaryButton ? 94 : (isCompactButton ? 52 : 64))
       : 48;
-    this.refreshMenuButtonLabel(button, (button._btnWidth || 180) - labelPad, { minScale: button._labelMinScale || 0.62, forceGpuRefresh });
-    this.refreshMenuButtonSubLabel(button, (button._btnWidth || 180) - 24, { minScale: 0.68, forceGpuRefresh });
+    const fitMinScale = button._labelMinScale || (Number.isFinite(button._dockIndex) ? 0.54 : 0.62);
+    this.refreshMenuButtonLabel(button, (button._btnWidth || 180) - labelPad, { minScale: fitMinScale, forceGpuRefresh });
+    this.refreshMenuButtonSubLabel(button, (button._btnWidth || 180) - labelPad + 18, { minScale: 0.62, forceGpuRefresh });
   }
 
   async initBonusDecorations() {
@@ -1904,8 +1922,13 @@ export class MenuScene {
     const isCompact = h <= 38;
     const accent = container._accent || 0x37f5ff;
     const isFocused = Boolean(container._focused);
+    const active = isHover || isFocused;
     const drawAccent = isDanger ? 0xff5f6a : (isPrimary ? 0xffd15c : accent);
-    const edgeAlpha = isHover || isFocused ? 0.94 : (isPrimary ? 0.78 : (isDanger ? 0.62 : 0.46));
+    const hotAccent = isDanger ? 0xff98a2 : (isPrimary ? 0xffef7e : 0x8effff);
+    const baseColor = isPrimary ? 0x261904 : (isDanger ? 0x19070e : 0x031321);
+    const glassColor = isPrimary ? 0x3b2506 : (isDanger ? 0x2b1019 : 0x06243a);
+    const cut = clampNumber(h * 0.16, 5, 10);
+    const iconPlateSize = isCompact ? clampNumber(h * 0.58, 22, 27) : clampNumber(h * (isPrimary ? 0.52 : 0.48), 30, isPrimary ? 42 : 36);
     const label = container._label;
     const sublabel = container._sublabel;
     const icon = container._icon;
@@ -1913,55 +1936,85 @@ export class MenuScene {
 
     focus?.clear();
     if (isFocused) {
-      focus.roundRect(x - 5, y - 5, w + 10, h + 10, 6);
-      focus.stroke({ color: isDanger ? 0xff8aa0 : 0xffef7e, width: 2, alpha: 0.9 });
+      drawCutPanel(focus, x - 7, y - 7, w + 14, h + 14, cut + 3, null, { color: hotAccent, width: 2.2, alpha: 0.9 });
+      drawCutPanel(focus, x - 12, y - 12, w + 24, h + 24, cut + 6, null, { color: drawAccent, width: 1, alpha: 0.24 });
+      focus.rect(x + w * 0.18, y - 10, w * 0.64, 2);
+      focus.fill({ color: hotAccent, alpha: 0.34 });
+      focus.rect(x + w * 0.18, y + h + 8, w * 0.64, 2);
+      focus.fill({ color: hotAccent, alpha: 0.22 });
     }
 
     bg.clear();
-    bg.roundRect(x, y, w, h, 5);
-    bg.fill({
-      color: isPrimary ? 0x211806 : (isDanger ? 0x17080d : 0x041625),
-      alpha: isHover || isFocused ? (isPrimary ? 0.88 : 0.78) : (isPrimary ? 0.76 : 0.62)
-    });
-    bg.roundRect(x, y, w, h, 5);
-    bg.stroke({ color: isFocused ? 0xffffff : drawAccent, width: isHover || isFocused ? 2.4 : 1.4, alpha: edgeAlpha });
-    bg.rect(x + 1, y + 1, w - 2, Math.max(12, h * 0.38));
-    bg.fill({ color: isPrimary ? 0xffd15c : (isDanger ? 0xff5f6a : 0x37f5ff), alpha: isHover || isFocused ? 0.14 : 0.075 });
-    bg.rect(x + 1, y + h - 5, w - 2, 4);
-    bg.fill({ color: drawAccent, alpha: isPrimary ? 0.48 : 0.26 });
-    bg.rect(x + 6, y + 7, 2, h - 14);
-    bg.fill({ color: isPrimary ? 0xffef7e : (isDanger ? 0xff5f6a : 0x37f5ff), alpha: isHover || isFocused ? 0.86 : 0.48 });
+    drawCutPanel(bg, x + 4, y + 5, w, h, cut, { color: 0x000000, alpha: isPrimary ? 0.42 : 0.34 });
+    drawCutPanel(bg, x - 1, y - 1, w + 2, h + 2, cut + 1, { color: drawAccent, alpha: active ? 0.14 : 0.07 });
+    drawCutPanel(bg, x, y, w, h, cut, { color: baseColor, alpha: active ? 0.9 : 0.76 }, { color: active ? hotAccent : drawAccent, width: active ? 2.4 : 1.35, alpha: active ? 0.92 : (isPrimary ? 0.74 : 0.48) });
+    drawCutPanel(bg, x + 3, y + 3, w - 6, h - 6, Math.max(2, cut - 3), { color: glassColor, alpha: active ? 0.58 : 0.42 }, { color: 0xffffff, width: 1, alpha: active ? 0.14 : 0.07 });
+
+    bg.rect(x + 7, y + 6, w - 14, Math.max(12, h * 0.34));
+    bg.fill({ color: isPrimary ? 0xffd15c : (isDanger ? 0xff5f6a : 0x37f5ff), alpha: active ? 0.17 : 0.09 });
+    bg.rect(x + 9, y + h - 8, w - 18, 3);
+    bg.fill({ color: drawAccent, alpha: isPrimary ? (active ? 0.72 : 0.5) : (active ? 0.5 : 0.28) });
+
+    const railW = isPrimary ? 5 : 3;
+    bg.rect(x + 9, y + 9, railW, h - 18);
+    bg.fill({ color: hotAccent, alpha: active ? 0.86 : 0.46 });
+    bg.rect(x + w - 12, y + 9, railW, h - 18);
+    bg.fill({ color: drawAccent, alpha: active ? 0.5 : 0.25 });
+
+    const cornerLen = clampNumber(w * 0.11, 18, isPrimary ? 42 : 30);
+    const cornerAlpha = active ? 0.72 : 0.36;
+    bg.moveTo(x + cut + 4, y + 6);
+    bg.lineTo(x + cut + cornerLen, y + 6);
+    bg.stroke({ color: hotAccent, width: 1.4, alpha: cornerAlpha });
+    bg.moveTo(x + w - cut - 4, y + h - 6);
+    bg.lineTo(x + w - cut - cornerLen, y + h - 6);
+    bg.stroke({ color: drawAccent, width: 1.4, alpha: cornerAlpha });
+    bg.moveTo(x + 6, y + h * 0.56);
+    bg.lineTo(x + 6 + Math.min(26, w * 0.12), y + h * 0.56);
+    bg.stroke({ color: 0xffffff, width: 1, alpha: active ? 0.22 : 0.1 });
+
+    if (!isCompact && icon) {
+      const plateX = x + (isPrimary ? 18 : 14);
+      const plateY = -iconPlateSize / 2 + (hasSubLabel ? -h * 0.08 : 0);
+      drawCutPanel(bg, plateX, plateY, iconPlateSize, iconPlateSize, Math.max(4, iconPlateSize * 0.18), { color: 0x020711, alpha: active ? 0.62 : 0.44 }, { color: hotAccent, width: 1.2, alpha: active ? 0.64 : 0.34 });
+      bg.circle(plateX + iconPlateSize / 2, plateY + iconPlateSize / 2, iconPlateSize * 0.35);
+      bg.stroke({ color: drawAccent, width: 1, alpha: active ? 0.38 : 0.18 });
+    }
 
     shine.clear();
-    shine.moveTo(x + 16, y + 8);
-    shine.lineTo(x + w - 16, y + 8);
-    shine.stroke({ color: 0xffffff, width: 1, alpha: isHover ? 0.22 : 0.09 });
-    shine.moveTo(x + 18, y + h - 12);
-    shine.lineTo(x + w - 18, y + h - 12);
-    shine.stroke({ color: isPrimary ? 0xffef7e : 0x7fffd8, width: 1, alpha: isHover ? 0.36 : 0.16 });
+    shine.moveTo(x + 18, y + 8);
+    shine.lineTo(x + w - 18, y + 8);
+    shine.stroke({ color: 0xffffff, width: 1.1, alpha: isHover ? 0.3 : 0.11 });
+    shine.moveTo(x + 20, y + h - 13);
+    shine.lineTo(x + w - 20, y + h - 13);
+    shine.stroke({ color: hotAccent, width: 1.1, alpha: active ? 0.42 : 0.17 });
+    shine.moveTo(x + w * 0.18, y + h - 5);
+    shine.lineTo(x + w * 0.82, y + h - 5);
+    shine.stroke({ color: drawAccent, width: active ? 2 : 1, alpha: isPrimary ? 0.5 : 0.28 });
 
     if (label) {
       label.anchor.set(0, 0.5);
       label.style.align = 'left';
-      label.style.fill = isHover || isFocused
+      label.style.fill = active
         ? '#ffffff'
         : (isPrimary ? '#ffe584' : (isDanger ? '#ff7a86' : '#c9fbff'));
-      label.x = x + (isCompact ? 36 : (isPrimary ? 58 : 44));
+      label.style.strokeThickness = isPrimary ? 4 : 3;
+      label.x = x + (isCompact ? 38 : (isPrimary ? 72 : 54));
       label.y = hasSubLabel ? -h * 0.1 : 0;
     }
     if (sublabel) {
       sublabel.anchor.set(0, 0.5);
       sublabel.style.align = 'left';
       sublabel.style.fill = isPrimary ? '#fff3b6' : (isDanger ? '#ff9aa5' : '#8deeff');
-      sublabel.alpha = hasSubLabel ? (isHover || isFocused ? 1 : 0.86) : 0;
+      sublabel.alpha = hasSubLabel ? (active ? 1 : 0.78) : 0;
       sublabel.x = label?.x || (x + 44);
-      sublabel.y = h * 0.2;
+      sublabel.y = h * 0.22;
     }
     if (icon) {
-      const iconSize = clampNumber(h * (isCompact ? 0.36 : 0.31), 16, isPrimary ? 32 : 24);
-      const iconX = x + (isCompact ? 20 : (isPrimary ? 30 : 23));
+      const iconSize = clampNumber(h * (isCompact ? 0.34 : (isPrimary ? 0.32 : 0.29)), 16, isPrimary ? 30 : 23);
+      const iconX = x + (isCompact ? 20 : (isPrimary ? 36 : 29));
       const iconY = hasSubLabel ? -h * 0.08 : 0;
-      this.drawMenuButtonIcon(icon, container._iconType, iconX, iconY, iconSize, drawAccent, isHover || isFocused ? 1 : 0.82);
+      this.drawMenuButtonIcon(icon, container._iconType, iconX, iconY, iconSize, active ? hotAccent : drawAccent, active ? 1 : 0.82);
     }
     container.hitArea = new PIXI.Rectangle(x, y, w, h);
     if (container?._stepperCue) this.drawSectorStartStepperCue(container);
