@@ -15,7 +15,8 @@ import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState } from '../progression/HangarProgressState.js';
 import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
-import { RUN_MODES, getSectorStartState } from '../game/RunMode.js';
+import { getSectorInfo } from '../config/SectorCatalog.js';
+import { RUN_MODES, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
@@ -126,6 +127,18 @@ export class MenuScene {
     this.sectorStartBtn = null;
     this.sectorStartState = { available: false, checkpoints: [], selectedCheckpoint: null, highestReachedSector: 1 };
     this.selectedSectorStartIndex = 0;
+    this.sectorSelectorOpen = false;
+    this.sectorSelectorOverlay = null;
+    this.sectorSelectorPanel = null;
+    this.sectorSelectorTitle = null;
+    this.sectorSelectorSubtitle = null;
+    this.sectorSelectorGrid = null;
+    this.sectorSelectorDetail = null;
+    this.sectorSelectorHint = null;
+    this.sectorSelectorItems = [];
+    this.sectorSelectorSectors = [];
+    this.selectedSectorSelectorIndex = 0;
+    this.lastSectorSelectorPanelBounds = null;
     this.highscoreBtn = null;
     this.introBtn = null;
     this.storyBtn = null;
@@ -239,10 +252,20 @@ export class MenuScene {
       const isMoveDown = event.key === 'ArrowDown' || event.code === 'ArrowDown' || event.key === 'Tab';
       const isMoveLeft = event.key === 'ArrowLeft' || event.code === 'ArrowLeft';
       const isMoveRight = event.key === 'ArrowRight' || event.code === 'ArrowRight';
-      if (!isPrimaryStart && !isMoveUp && !isMoveDown && !isMoveLeft && !isMoveRight && event.key !== 'Escape') return;
+      const isCancel = event.key === 'Escape';
+      if (!isPrimaryStart && !isMoveUp && !isMoveDown && !isMoveLeft && !isMoveRight && !isCancel) return;
 
       event.preventDefault();
       this.setInputDevice('keyboard');
+      if (this.sectorSelectorOpen) {
+        if (isMoveUp) this.moveSectorSelectorFocus(-this.getSectorSelectorColumns());
+        else if (isMoveDown) this.moveSectorSelectorFocus(this.getSectorSelectorColumns());
+        else if (isMoveLeft) this.moveSectorSelectorFocus(-1);
+        else if (isMoveRight) this.moveSectorSelectorFocus(1);
+        else if (isCancel) this.closeSectorSelector();
+        else this.activateSectorSelectorSelection();
+        return;
+      }
       if (isMoveUp) {
         this.moveMenuFocus(-1);
       } else if (isMoveDown) {
@@ -251,7 +274,7 @@ export class MenuScene {
         if (!this.cycleSectorStartCheckpoint(-1)) this.moveMenuFocus(-1);
       } else if (isMoveRight) {
         if (!this.cycleSectorStartCheckpoint(1)) this.moveMenuFocus(1);
-      } else if (event.key === 'Escape') {
+      } else if (isCancel) {
         this.exitGame();
       } else {
         this.activateFocusedMenuOption();
@@ -854,6 +877,7 @@ export class MenuScene {
     this.menuPanel.zIndex = 8;
     this.menuPanel.alpha = 0;
     this.container.addChild(this.menuPanel);
+    this.createSectorSelectorOverlay(layout);
 
     this.startBtn = this.createButton('LAUNCH RUN', layout, { variant: 'primary', accent: 0xffd15c, icon: 'launch', subLabel: 'START YOUR MISSION' });
     this.startBtn.alpha = 0;  // Start invisible
@@ -1321,6 +1345,7 @@ export class MenuScene {
       this.installButton.x = width / 2;
       this.installButton.y = height - 100;
     }
+    this.layoutSectorSelector(layout, width, height);
   }
 
   getControlsText(layout) {
@@ -1336,6 +1361,11 @@ export class MenuScene {
   }
 
   getPrimaryHintText() {
+    if (this.sectorSelectorOpen) {
+      return this.lastInputDevice === 'controller'
+        ? translateText('D-PAD/STICK: SELECT // A: START // B: BACK')
+        : translateText('ARROWS: SELECT // ENTER/SPACE: START // ESC: BACK');
+    }
     const sectorFocused = this.getSelectedMenuOptionId() === 'sectorStart'
       && (this.sectorStartState?.checkpoints || []).length > 1;
     if (sectorFocused) {
@@ -1409,16 +1439,19 @@ export class MenuScene {
       };
 
       this.menuPanel.clear();
-      this.menuPanel.roundRect(x, y, panelWidth, panelHeight, 5);
-      this.menuPanel.fill({ color: 0x020711, alpha: 0.52 });
-      this.menuPanel.roundRect(x, y, panelWidth, panelHeight, 5);
-      this.menuPanel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.42 });
-      this.menuPanel.rect(x + 1, y + 1, panelWidth - 2, Math.max(18, panelHeight * 0.34));
-      this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.22 });
-      this.menuPanel.rect(x + 12, y + 10, panelWidth - 24, 1.5);
-      this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.34 });
-      this.menuPanel.rect(x + 12, y + panelHeight - 12, panelWidth - 24, 1.5);
-      this.menuPanel.fill({ color: 0xffd15c, alpha: 0.22 });
+      this.menuPanel.roundRect(x + 6, y + 8, panelWidth, panelHeight, 5);
+      this.menuPanel.fill({ color: 0x000000, alpha: 0.38 });
+      drawCutPanel(this.menuPanel, x, y, panelWidth, panelHeight, 10, { color: 0x020711, alpha: 0.62 }, { color: 0x37f5ff, width: 1, alpha: 0.46 });
+      drawCutPanel(this.menuPanel, x + 5, y + 5, panelWidth - 10, panelHeight - 10, 8, { color: 0x062034, alpha: 0.28 }, { color: 0x7fffd8, width: 1, alpha: 0.18 });
+      this.menuPanel.rect(x + 2, y + 2, panelWidth - 4, Math.max(24, panelHeight * 0.42));
+      this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.26 });
+      this.menuPanel.rect(x + 16, y + 12, panelWidth - 32, 2);
+      this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.38 });
+      this.menuPanel.rect(x + 16, y + panelHeight - 15, panelWidth - 32, 2);
+      this.menuPanel.fill({ color: 0xffd15c, alpha: 0.28 });
+      this.menuPanel.moveTo(x + panelWidth * 0.32, y + panelHeight - 3);
+      this.menuPanel.lineTo(x + panelWidth * 0.68, y + panelHeight - 3);
+      this.menuPanel.stroke({ color: 0x37f5ff, width: 2, alpha: 0.42 });
       return;
     }
     const contentItems = [
@@ -1457,16 +1490,267 @@ export class MenuScene {
     this.menuDockBounds = this.lastMenuPanelBounds;
 
     this.menuPanel.clear();
-    this.menuPanel.roundRect(x, y, panelWidth, panelHeight, 5);
-    this.menuPanel.fill({ color: 0x020711, alpha: 0.52 });
-    this.menuPanel.roundRect(x, y, panelWidth, panelHeight, 5);
-    this.menuPanel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.42 });
-    this.menuPanel.rect(x + 1, y + 1, panelWidth - 2, Math.max(18, panelHeight * 0.34));
-    this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.22 });
-    this.menuPanel.rect(x + 12, y + 10, panelWidth - 24, 1.5);
-    this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.34 });
-    this.menuPanel.rect(x + 12, y + panelHeight - 12, panelWidth - 24, 1.5);
-    this.menuPanel.fill({ color: 0xffd15c, alpha: 0.22 });
+    this.menuPanel.roundRect(x + 6, y + 8, panelWidth, panelHeight, 5);
+    this.menuPanel.fill({ color: 0x000000, alpha: 0.38 });
+    drawCutPanel(this.menuPanel, x, y, panelWidth, panelHeight, 10, { color: 0x020711, alpha: 0.62 }, { color: 0x37f5ff, width: 1, alpha: 0.46 });
+    drawCutPanel(this.menuPanel, x + 5, y + 5, panelWidth - 10, panelHeight - 10, 8, { color: 0x062034, alpha: 0.28 }, { color: 0x7fffd8, width: 1, alpha: 0.18 });
+    this.menuPanel.rect(x + 2, y + 2, panelWidth - 4, Math.max(24, panelHeight * 0.42));
+    this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.26 });
+    this.menuPanel.rect(x + 16, y + 12, panelWidth - 32, 2);
+    this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.38 });
+    this.menuPanel.rect(x + 16, y + panelHeight - 15, panelWidth - 32, 2);
+    this.menuPanel.fill({ color: 0xffd15c, alpha: 0.28 });
+  }
+
+  layoutSectorSelector(layout, width, height) {
+    if (!this.sectorSelectorOverlay) return;
+    this.sectorSelectorOverlay.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    if (!this.sectorSelectorOpen) {
+      this.sectorSelectorOverlay.visible = false;
+      return;
+    }
+    this.sectorSelectorOverlay.visible = true;
+    this.sectorSelectorSectors = this.sectorSelectorSectors?.length
+      ? this.sectorSelectorSectors
+      : this.buildSectorSelectorSectors();
+
+    const isCompact = width < 1450 || height < 850;
+    const panelWidth = clampNumber(width * (isCompact ? 0.82 : 0.72), 760, Math.min(1280, width - 72));
+    const panelHeight = clampNumber(height * (isCompact ? 0.66 : 0.62), 500, Math.min(710, height - 150));
+    const panelX = Math.round((width - panelWidth) / 2);
+    const panelY = Math.round(Math.max(40, height * 0.12));
+    const pad = isCompact ? 24 : 34;
+    this.lastSectorSelectorPanelBounds = {
+      x: panelX,
+      y: panelY,
+      width: Math.round(panelWidth),
+      height: Math.round(panelHeight),
+      right: Math.round(panelX + panelWidth),
+      bottom: Math.round(panelY + panelHeight)
+    };
+
+    this.sectorSelectorPanel.x = 0;
+    this.sectorSelectorPanel.y = 0;
+    this.sectorSelectorPanel.hitArea = new PIXI.Rectangle(panelX, panelY, panelWidth, panelHeight);
+    this.sectorSelectorTitle.style.fontSize = Math.round(clampNumber(width * 0.022, 24, 38));
+    this.sectorSelectorTitle.text = translateText('SELECT SECTOR');
+    this.sectorSelectorTitle.x = panelX + pad;
+    this.sectorSelectorTitle.y = panelY + pad + 18;
+    this.sectorSelectorSubtitle.style.fontSize = Math.round(clampNumber(width * 0.0085, 12, 16));
+    this.sectorSelectorSubtitle.text = translateText('CHOOSE YOUR STARTING POINT');
+    this.sectorSelectorSubtitle.x = panelX + pad + 2;
+    this.sectorSelectorSubtitle.y = this.sectorSelectorTitle.y + 35;
+
+    const detailWidth = clampNumber(panelWidth * 0.26, 210, 310);
+    const gridX = panelX + pad;
+    const gridY = panelY + (isCompact ? 96 : 110);
+    const gridW = panelWidth - pad * 3 - detailWidth;
+    const gridH = panelHeight - (isCompact ? 170 : 190);
+    const columns = this.getSectorSelectorColumns();
+    const rows = Math.ceil(this.sectorSelectorSectors.length / columns);
+    const gap = isCompact ? 8 : 10;
+    const cellW = Math.floor((gridW - gap * (columns - 1)) / columns);
+    const cellH = Math.floor(Math.min(58, (gridH - gap * Math.max(0, rows - 1)) / rows));
+    const actualGridH = rows * cellH + Math.max(0, rows - 1) * gap;
+
+    this.sectorSelectorGrid.x = gridX;
+    this.sectorSelectorGrid.y = gridY;
+    this.sectorSelectorGrid.removeChildren();
+    this.sectorSelectorItems = [];
+
+    this.sectorSelectorSectors.forEach((entry, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const item = this.createSectorSelectorCell(entry, index, cellW, cellH);
+      item.x = column * (cellW + gap);
+      item.y = row * (cellH + gap);
+      item._bounds = {
+        x: Math.round(gridX + item.x),
+        y: Math.round(gridY + item.y),
+        width: cellW,
+        height: cellH,
+        right: Math.round(gridX + item.x + cellW),
+        bottom: Math.round(gridY + item.y + cellH)
+      };
+      this.sectorSelectorGrid.addChild(item);
+      this.sectorSelectorItems.push(item);
+    });
+
+    this.sectorSelectorDetail.style.fontSize = Math.round(clampNumber(width * 0.0085, 12, 16));
+    this.sectorSelectorDetail.style.wordWrapWidth = detailWidth - 18;
+    this.sectorSelectorDetail.text = this.getSectorSelectorDetailText();
+    this.sectorSelectorDetail.x = gridX + gridW + pad;
+    this.sectorSelectorDetail.y = gridY + 4;
+
+    this.sectorSelectorHint.style.fontSize = Math.round(clampNumber(width * 0.0076, 11, 14));
+    this.sectorSelectorHint.text = this.lastInputDevice === 'controller'
+      ? translateText('D-PAD/STICK: SELECT // A: START // B: BACK')
+      : translateText('ARROWS: SELECT // ENTER/SPACE: START // ESC: BACK');
+    this.sectorSelectorHint.x = panelX + panelWidth / 2;
+    this.sectorSelectorHint.y = panelY + panelHeight - (isCompact ? 28 : 32);
+
+    this.drawSectorSelectorPanel(panelX, panelY, panelWidth, panelHeight, {
+      gridX,
+      gridY,
+      gridW,
+      gridH: actualGridH,
+      detailX: gridX + gridW + pad,
+      detailY: gridY,
+      detailWidth,
+      detailHeight: Math.max(180, actualGridH)
+    });
+  }
+
+  createSectorSelectorCell(entry, index, width, height) {
+    const item = new PIXI.Container();
+    item.eventMode = 'static';
+    item.cursor = entry.unlocked ? 'pointer' : 'default';
+    item._sector = entry.sector;
+    const bg = new PIXI.Graphics();
+    item.addChild(bg);
+    const number = createText(String(entry.sector).padStart(2, '0'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.round(clampNumber(width * 0.2, 15, 22)),
+      fontWeight: '900',
+      fill: entry.unlocked ? '#dffcff' : '#5f7283',
+      stroke: '#020711',
+      strokeThickness: 3,
+      padding: 10
+    });
+    number.anchor.set(0.5);
+    number.x = width * 0.5;
+    number.y = height * 0.38;
+    item.addChild(number);
+    const status = createText(entry.unlocked ? translateText('READY') : translateText('LOCKED'), {
+      fontFamily: FONT_MONO,
+      fontSize: Math.round(clampNumber(width * 0.07, 8, 10)),
+      fontWeight: '900',
+      fill: entry.unlocked ? '#7fffd8' : '#6c7884',
+      stroke: '#020711',
+      strokeThickness: 2,
+      padding: 8
+    });
+    status.anchor.set(0.5);
+    status.x = width * 0.5;
+    status.y = height * 0.72;
+    item.addChild(status);
+    item.on('pointerover', () => {
+      this.setInputDevice('keyboard');
+      this.selectedSectorSelectorIndex = index;
+      this.drawSectorSelectorOverlay();
+      playMenuFocusSfx(0.09);
+    });
+    item.on('pointerdown', (event) => {
+      event.stopPropagation?.();
+      this.selectedSectorSelectorIndex = index;
+      this.drawSectorSelectorOverlay();
+      if (!entry.unlocked) return;
+      this.activateSectorSelectorSelection();
+    });
+    item._cellBg = bg;
+    item._cellNumber = number;
+    item._cellStatus = status;
+    item._cellWidth = width;
+    item._cellHeight = height;
+    this.drawSectorSelectorCell(item, entry, index === this.selectedSectorSelectorIndex);
+    return item;
+  }
+
+  drawSectorSelectorPanel(x, y, width, height, zones = {}) {
+    const g = this.sectorSelectorPanel;
+    if (!g) return;
+    g.clear();
+    g.rect(0, 0, this.game.getWidth(), this.game.getHeight());
+    g.fill({ color: 0x00040a, alpha: 0.54 });
+    drawCutPanel(g, x - 9, y - 9, width + 18, height + 18, 18, { color: 0x37f5ff, alpha: 0.05 }, { color: 0x37f5ff, width: 1, alpha: 0.28 });
+    drawCutPanel(g, x, y, width, height, 16, { color: 0x020a14, alpha: 0.88 }, { color: 0x37f5ff, width: 2, alpha: 0.72 });
+    drawCutPanel(g, x + 8, y + 8, width - 16, height - 16, 12, { color: 0x031827, alpha: 0.42 }, { color: 0x7fffd8, width: 1, alpha: 0.2 });
+    g.rect(x + 14, y + 12, width - 28, 2);
+    g.fill({ color: 0x7fffd8, alpha: 0.42 });
+    g.rect(x + 14, y + height - 16, width - 28, 2);
+    g.fill({ color: 0xffd15c, alpha: 0.34 });
+    g.rect(x + 1, y + 1, width - 2, Math.max(68, height * 0.18));
+    g.fill({ color: 0x0a2b43, alpha: 0.25 });
+
+    if (zones.gridW > 0) {
+      drawCutPanel(g, zones.gridX - 10, zones.gridY - 10, zones.gridW + 20, zones.gridH + 20, 10, { color: 0x010812, alpha: 0.42 }, { color: 0x37f5ff, width: 1, alpha: 0.32 });
+      for (let i = 0; i < 4; i += 1) {
+        const yy = zones.gridY + (zones.gridH * i) / 3;
+        g.moveTo(zones.gridX - 4, yy);
+        g.lineTo(zones.gridX + zones.gridW + 4, yy);
+        g.stroke({ color: i % 2 ? 0xff55d9 : 0x37f5ff, width: 1, alpha: 0.08 });
+      }
+    }
+    if (zones.detailWidth > 0) {
+      drawCutPanel(g, zones.detailX - 10, zones.detailY - 10, zones.detailWidth + 20, zones.detailHeight + 20, 10, { color: 0x010812, alpha: 0.5 }, { color: 0xffd15c, width: 1, alpha: 0.38 });
+    }
+    this.drawSectorSelectorOverlay();
+  }
+
+  drawSectorSelectorOverlay() {
+    if (!this.sectorSelectorOpen) return;
+    this.sectorSelectorItems.forEach((item, index) => {
+      const entry = this.sectorSelectorSectors[index];
+      this.drawSectorSelectorCell(item, entry, index === this.selectedSectorSelectorIndex);
+    });
+    if (this.sectorSelectorDetail) {
+      this.sectorSelectorDetail.text = this.getSectorSelectorDetailText();
+      this.sectorSelectorDetail.updateText?.(false);
+    }
+  }
+
+  drawSectorSelectorCell(item, entry, selected) {
+    const g = item?._cellBg;
+    if (!g || !entry) return;
+    const w = item._cellWidth || 90;
+    const h = item._cellHeight || 46;
+    const unlocked = Boolean(entry.unlocked);
+    const accent = unlocked ? (selected ? 0xffef7e : 0x37f5ff) : 0x52606f;
+    const fill = unlocked ? (selected ? 0x18301f : 0x041927) : 0x07101a;
+    const pulse = 0.5 + Math.sin(this.animationTime * 6) * 0.5;
+    g.clear();
+    drawCutPanel(g, 0, 0, w, h, 8, { color: fill, alpha: unlocked ? 0.82 : 0.56 }, { color: accent, width: selected ? 2.3 : 1.1, alpha: selected ? 0.95 : (unlocked ? 0.5 : 0.22) });
+    g.rect(6, 5, w - 12, Math.max(9, h * 0.25));
+    g.fill({ color: unlocked ? 0x37f5ff : 0x334150, alpha: selected ? 0.18 : 0.08 });
+    g.rect(8, h - 7, w - 16, 2);
+    g.fill({ color: accent, alpha: selected ? 0.72 : 0.28 });
+    if (selected) {
+      drawCutPanel(g, -5, -5, w + 10, h + 10, 10, null, { color: 0xffef7e, width: 1.2, alpha: 0.52 + pulse * 0.18 });
+    }
+    if (!unlocked) {
+      g.moveTo(w * 0.3, h * 0.5);
+      g.lineTo(w * 0.7, h * 0.5);
+      g.stroke({ color: 0x8b96a3, width: 2, alpha: 0.42 });
+    }
+    if (item._cellNumber) item._cellNumber.style.fill = unlocked ? (selected ? '#fff7bf' : '#dffcff') : '#6b7785';
+    if (item._cellStatus) item._cellStatus.style.fill = unlocked ? (selected ? '#ffe584' : '#7fffd8') : '#68727c';
+  }
+
+  getSectorSelectorDetailText() {
+    const entry = this.sectorSelectorSectors[this.selectedSectorSelectorIndex];
+    if (!entry) return '';
+    const sectorLine = translateText('SECTOR {sector}', { sector: entry.sector });
+    if (!entry.unlocked) {
+      const required = getSectorStartPlaySector(entry.sector);
+      return [
+        sectorLine,
+        translateText('LOCKED'),
+        required ? translateText('REACH SECTOR {sector} TO UNLOCK', { sector: required }) : translateText('SECTOR START LOCKED')
+      ].join('\n');
+    }
+    const record = entry.record;
+    const best = record?.scoreEarned > 0
+      ? `${translateText('BEST')} ${this.formatSectorStartMenuBestScore(record.scoreEarned)}`
+      : translateText('NO RECORD YET');
+    const startLine = translateText('STARTS AT SECTOR {sector}', { sector: entry.playSector || entry.sector });
+    const checkpoint = translateText('CHECKPOINT {sector}', { sector: entry.sector });
+    return [
+      sectorLine,
+      entry.name,
+      checkpoint,
+      startLine,
+      best
+    ].join('\n');
   }
 
   getLayoutDebugState() {
@@ -1528,7 +1812,8 @@ export class MenuScene {
           height: Math.round(this.sectorStartBtn._btnHeight || 0),
           right: Math.round(this.sectorStartBtn.x + (this.sectorStartBtn._btnWidth || 0) / 2),
           bottom: Math.round(this.sectorStartBtn.y + (this.sectorStartBtn._btnHeight || 0) / 2)
-        } : null
+        } : null,
+        selector: this.getSectorSelectorDebugState()
       },
       menuFx: this.menuFx?.getDebugState?.() || null,
       exitNoticeText: this.exitNotice?.text || '',
@@ -1581,6 +1866,32 @@ export class MenuScene {
       this.backdropShade.rect(0, height * 0.88, width, height * 0.12);
       this.backdropShade.fill({ color: 0x020711, alpha: 0.42 });
     }
+  }
+
+  getSectorSelectorDebugState() {
+    const selected = this.sectorSelectorSectors?.[this.selectedSectorSelectorIndex] || null;
+    return {
+      open: Boolean(this.sectorSelectorOpen),
+      visible: Boolean(this.sectorSelectorOverlay?.visible),
+      selectedIndex: this.selectedSectorSelectorIndex,
+      selectedSector: selected?.sector || null,
+      selectedUnlocked: Boolean(selected?.unlocked),
+      selectedPlaySector: selected?.playSector || null,
+      columns: this.getSectorSelectorColumns(),
+      title: this.sectorSelectorTitle?.text || null,
+      subtitle: this.sectorSelectorSubtitle?.text || null,
+      hint: this.sectorSelectorHint?.text || null,
+      detailText: this.sectorSelectorDetail?.text || null,
+      panelBounds: this.lastSectorSelectorPanelBounds,
+      gridBounds: boundsForDisplayObject(this.sectorSelectorGrid),
+      sectors: (this.sectorSelectorSectors || []).map((entry, index) => ({
+        sector: entry.sector,
+        unlocked: Boolean(entry.unlocked),
+        playSector: entry.playSector || null,
+        hasRecord: Boolean(entry.record?.scoreEarned > 0),
+        bounds: this.sectorSelectorItems?.[index]?._bounds || null
+      }))
+    };
   }
 
   createButton(text, layout, options = {}) {
@@ -1679,6 +1990,170 @@ export class MenuScene {
     return container;
   }
 
+  createSectorSelectorOverlay(layout) {
+    const overlay = new PIXI.Container();
+    overlay.label = 'ui_sectorChallengeSelector';
+    overlay.zIndex = 36;
+    overlay.visible = false;
+    overlay.alpha = 0;
+    overlay.eventMode = 'static';
+    overlay.cursor = 'default';
+    overlay.on('pointerdown', () => this.closeSectorSelector());
+    this.sectorSelectorOverlay = overlay;
+
+    this.sectorSelectorPanel = new PIXI.Graphics();
+    this.sectorSelectorPanel.label = 'ui_sectorChallengeSelectorPanel';
+    this.sectorSelectorPanel.eventMode = 'static';
+    this.sectorSelectorPanel.on('pointerdown', (event) => event.stopPropagation?.());
+    overlay.addChild(this.sectorSelectorPanel);
+
+    this.sectorSelectorTitle = createText(translateText('SELECT SECTOR'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.max(24, getResponsiveFontSize(layout, 'subtitle') * 1.45),
+      fontWeight: '900',
+      fill: '#dffcff',
+      stroke: '#031527',
+      strokeThickness: 5,
+      padding: 20,
+      dropShadow: true,
+      dropShadowColor: '#37f5ff',
+      dropShadowBlur: 10,
+      dropShadowDistance: 0,
+      dropShadowAlpha: 0.72
+    });
+    this.sectorSelectorTitle.anchor.set(0, 0.5);
+    overlay.addChild(this.sectorSelectorTitle);
+
+    this.sectorSelectorSubtitle = createText(translateText('CHOOSE YOUR STARTING POINT'), {
+      fontFamily: FONT_MONO,
+      fontSize: Math.max(12, getResponsiveFontSize(layout, 'small')),
+      fontWeight: '900',
+      fill: '#7fffd8',
+      stroke: '#020711',
+      strokeThickness: 3,
+      padding: 12
+    });
+    this.sectorSelectorSubtitle.anchor.set(0, 0.5);
+    overlay.addChild(this.sectorSelectorSubtitle);
+
+    this.sectorSelectorGrid = new PIXI.Container();
+    this.sectorSelectorGrid.label = 'ui_sectorChallengeSelectorGrid';
+    overlay.addChild(this.sectorSelectorGrid);
+
+    this.sectorSelectorDetail = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: Math.max(12, getResponsiveFontSize(layout, 'small')),
+      fontWeight: '900',
+      fill: '#dffcff',
+      stroke: '#020711',
+      strokeThickness: 3,
+      padding: 18,
+      lineHeight: Math.max(17, Math.round(getResponsiveFontSize(layout, 'small') * 1.45)),
+      wordWrap: true,
+      wordWrapWidth: 260
+    });
+    this.sectorSelectorDetail.anchor.set(0, 0);
+    overlay.addChild(this.sectorSelectorDetail);
+
+    this.sectorSelectorHint = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: Math.max(11, getResponsiveFontSize(layout, 'small') - 1),
+      fontWeight: '900',
+      fill: '#9feeff',
+      stroke: '#020711',
+      strokeThickness: 3,
+      padding: 12,
+      align: 'center'
+    });
+    this.sectorSelectorHint.anchor.set(0.5);
+    overlay.addChild(this.sectorSelectorHint);
+
+    this.container.addChild(overlay);
+  }
+
+  getSectorSelectorColumns() {
+    const width = this.game?.getWidth?.() || this.game?.app?.screen?.width || 1280;
+    if (width < 900) return 4;
+    if (width < 1450) return 6;
+    return 8;
+  }
+
+  buildSectorSelectorSectors() {
+    const highest = Math.max(1, Math.floor(Number(this.sectorStartState?.highestReachedSector) || 1));
+    const checkpoints = this.sectorStartState?.checkpoints || [];
+    const maxCheckpoint = checkpoints.length ? Math.max(...checkpoints) : 0;
+    const displayMax = Math.max(32, Math.min(64, Math.ceil(Math.max(highest, maxCheckpoint, 5) / 8) * 8));
+    return Array.from({ length: displayMax }, (_, index) => index + 1).map((sector) => {
+      const record = getSectorStartChallengeRecord(sector);
+      const unlocked = checkpoints.includes(sector);
+      const playSector = unlocked ? getSectorStartPlaySector(sector) : null;
+      const info = getSectorInfo(playSector || sector);
+      return {
+        sector,
+        unlocked,
+        playSector,
+        record,
+        name: info.name,
+        bossCheckpoint: info.bossCheckpoint
+      };
+    });
+  }
+
+  openSectorSelector() {
+    this.refreshSectorStartState();
+    this.sectorSelectorSectors = this.buildSectorSelectorSectors();
+    const selected = this.getSelectedSectorStartCheckpoint();
+    const selectedIndex = this.sectorSelectorSectors.findIndex((entry) => entry.sector === selected);
+    const firstUnlocked = this.sectorSelectorSectors.findIndex((entry) => entry.unlocked);
+    this.selectedSectorSelectorIndex = selectedIndex >= 0 ? selectedIndex : Math.max(0, firstUnlocked);
+    this.sectorSelectorOpen = true;
+    this.sectorSelectorOverlay.visible = true;
+    this.sectorSelectorOverlay.alpha = 1;
+    this.setMenuFocusByButton(this.sectorStartBtn);
+    this.layoutMenu({ forceLabelGpuRefresh: true });
+    AudioManager.playSfx('ui_open', { volume: 0.24, minIntervalMs: 120 });
+  }
+
+  closeSectorSelector() {
+    if (!this.sectorSelectorOpen) return;
+    this.sectorSelectorOpen = false;
+    if (this.sectorSelectorOverlay) {
+      this.sectorSelectorOverlay.visible = false;
+      this.sectorSelectorOverlay.alpha = 0;
+    }
+    this.setMenuFocusByButton(this.sectorStartBtn);
+    this.menuGamepadNavigator.suppressUntilReleased();
+    AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 120 });
+  }
+
+  moveSectorSelectorFocus(delta) {
+    if (!this.sectorSelectorOpen || !this.sectorSelectorSectors.length) return;
+    const count = this.sectorSelectorSectors.length;
+    this.selectedSectorSelectorIndex = (this.selectedSectorSelectorIndex + delta + count) % count;
+    this.drawSectorSelectorOverlay();
+    AudioManager.playSfx('thrusterFire', { volume: 0.07, minIntervalMs: 90 });
+  }
+
+  activateSectorSelectorSelection() {
+    const entry = this.sectorSelectorSectors[this.selectedSectorSelectorIndex];
+    if (!entry?.unlocked) {
+      this.showExitNotice(translateText('SECTOR START LOCKED'));
+      AudioManager.playSfx('ui_open', { volume: 0.14, minIntervalMs: 180 });
+      return;
+    }
+    const checkpoints = this.sectorStartState?.checkpoints || [];
+    const index = checkpoints.indexOf(entry.sector);
+    if (index >= 0) {
+      this.selectedSectorStartIndex = index;
+      this.sectorStartState = {
+        ...this.sectorStartState,
+        selectedCheckpoint: checkpoints[index]
+      };
+    }
+    this.updateSectorStartButton({ forceGpuRefresh: true });
+    this.launchSectorStartRun(entry.sector);
+  }
+
   attachSectorStartStepperCue(button) {
     if (!button || button._stepperCue) return;
     const cue = new PIXI.Graphics();
@@ -1769,18 +2244,15 @@ export class MenuScene {
     const w = this.threatCodexBtn._btnWidth || 286;
     const h = this.threatCodexBtn._btnHeight || 46;
     const pulse = 0.5 + Math.sin(this.animationTime * 8) * 0.5;
-    const x = w / 2 - 22;
-    const y = -h / 2 + 14;
+    const x = w / 2 - 18;
+    const y = -h / 2 + 13;
     cue.clear();
-    cue.circle(x, y, 7 + pulse * 6);
-    cue.fill({ color: 0xffef7e, alpha: 0.16 + pulse * 0.16 });
-    cue.circle(x, y, 6);
-    cue.fill({ color: 0xffef7e, alpha: 0.92 });
-    cue.circle(x, y, 2.2);
-    cue.fill({ color: 0x061827, alpha: 0.95 });
-    cue.moveTo(x - 15, y + 10);
-    cue.lineTo(x + 15, y + 10);
-    cue.stroke({ color: 0x7dffcc, width: 1.5, alpha: 0.35 + pulse * 0.35 });
+    cue.roundRect(x - 11, y - 5, 22, 10, 3);
+    cue.fill({ color: 0x031323, alpha: 0.72 });
+    cue.roundRect(x - 11, y - 5, 22, 10, 3);
+    cue.stroke({ color: 0x7dffcc, width: 1, alpha: 0.42 + pulse * 0.18 });
+    cue.rect(x - 7, y - 1.5, 14, 3);
+    cue.fill({ color: 0xffef7e, alpha: 0.58 + pulse * 0.24 });
   }
 
   drawMenuButtonIcon(icon, type, centerX, centerY, size, color, alpha = 0.82) {
@@ -1936,22 +2408,22 @@ export class MenuScene {
 
     focus?.clear();
     if (isFocused) {
-      drawCutPanel(focus, x - 7, y - 7, w + 14, h + 14, cut + 3, null, { color: hotAccent, width: 2.2, alpha: 0.9 });
-      drawCutPanel(focus, x - 12, y - 12, w + 24, h + 24, cut + 6, null, { color: drawAccent, width: 1, alpha: 0.24 });
-      focus.rect(x + w * 0.18, y - 10, w * 0.64, 2);
-      focus.fill({ color: hotAccent, alpha: 0.34 });
-      focus.rect(x + w * 0.18, y + h + 8, w * 0.64, 2);
-      focus.fill({ color: hotAccent, alpha: 0.22 });
+      const focusPulse = 0.5 + Math.sin(this.animationTime * 5.2) * 0.5;
+      drawCutPanel(focus, x - 7, y - 7, w + 14, h + 14, cut + 4, { color: hotAccent, alpha: 0.035 + focusPulse * 0.025 }, { color: hotAccent, width: 1.8, alpha: 0.72 + focusPulse * 0.16 });
+      focus.rect(x + w * 0.22, y - 7, w * 0.56, 2);
+      focus.fill({ color: hotAccent, alpha: 0.22 + focusPulse * 0.12 });
     }
 
     bg.clear();
-    drawCutPanel(bg, x + 4, y + 5, w, h, cut, { color: 0x000000, alpha: isPrimary ? 0.42 : 0.34 });
-    drawCutPanel(bg, x - 1, y - 1, w + 2, h + 2, cut + 1, { color: drawAccent, alpha: active ? 0.14 : 0.07 });
-    drawCutPanel(bg, x, y, w, h, cut, { color: baseColor, alpha: active ? 0.9 : 0.76 }, { color: active ? hotAccent : drawAccent, width: active ? 2.4 : 1.35, alpha: active ? 0.92 : (isPrimary ? 0.74 : 0.48) });
-    drawCutPanel(bg, x + 3, y + 3, w - 6, h - 6, Math.max(2, cut - 3), { color: glassColor, alpha: active ? 0.58 : 0.42 }, { color: 0xffffff, width: 1, alpha: active ? 0.14 : 0.07 });
+    drawCutPanel(bg, x + 7, y + 8, w, h, cut, { color: 0x000000, alpha: isPrimary ? 0.54 : 0.44 });
+    drawCutPanel(bg, x + 3, y + 4, w, h, cut, { color: 0x000000, alpha: 0.22 });
+    drawCutPanel(bg, x - 2, y - 2, w + 4, h + 4, cut + 2, { color: drawAccent, alpha: active ? 0.18 : 0.075 }, { color: drawAccent, width: 1, alpha: active ? 0.54 : 0.22 });
+    drawCutPanel(bg, x, y, w, h, cut, { color: baseColor, alpha: active ? 0.94 : 0.84 }, { color: active ? hotAccent : drawAccent, width: active ? 2.15 : 1.35, alpha: active ? 0.88 : (isPrimary ? 0.78 : 0.48) });
+    drawCutPanel(bg, x + 4, y + 4, w - 8, h - 8, Math.max(2, cut - 3), { color: glassColor, alpha: active ? 0.66 : 0.48 }, { color: 0xffffff, width: 1, alpha: active ? 0.18 : 0.08 });
+    drawCutPanel(bg, x + 8, y + h * 0.17, w - 16, h * 0.48, Math.max(2, cut - 4), { color: isPrimary ? 0x5a3a0b : (isDanger ? 0x3b101b : 0x0a3750), alpha: active ? 0.18 : 0.11 });
 
     bg.rect(x + 7, y + 6, w - 14, Math.max(12, h * 0.34));
-    bg.fill({ color: isPrimary ? 0xffd15c : (isDanger ? 0xff5f6a : 0x37f5ff), alpha: active ? 0.17 : 0.09 });
+    bg.fill({ color: isPrimary ? 0xffd15c : (isDanger ? 0xff5f6a : 0x37f5ff), alpha: active ? 0.2 : 0.1 });
     bg.rect(x + 9, y + h - 8, w - 18, 3);
     bg.fill({ color: drawAccent, alpha: isPrimary ? (active ? 0.72 : 0.5) : (active ? 0.5 : 0.28) });
 
@@ -1976,7 +2448,9 @@ export class MenuScene {
     if (!isCompact && icon) {
       const plateX = x + (isPrimary ? 18 : 14);
       const plateY = -iconPlateSize / 2 + (hasSubLabel ? -h * 0.08 : 0);
-      drawCutPanel(bg, plateX, plateY, iconPlateSize, iconPlateSize, Math.max(4, iconPlateSize * 0.18), { color: 0x020711, alpha: active ? 0.62 : 0.44 }, { color: hotAccent, width: 1.2, alpha: active ? 0.64 : 0.34 });
+      drawCutPanel(bg, plateX + 3, plateY + 4, iconPlateSize, iconPlateSize, Math.max(4, iconPlateSize * 0.18), { color: 0x000000, alpha: 0.32 });
+      drawCutPanel(bg, plateX, plateY, iconPlateSize, iconPlateSize, Math.max(4, iconPlateSize * 0.18), { color: 0x020711, alpha: active ? 0.72 : 0.52 }, { color: hotAccent, width: 1.35, alpha: active ? 0.72 : 0.38 });
+      drawCutPanel(bg, plateX + 4, plateY + 4, iconPlateSize - 8, iconPlateSize - 8, Math.max(2, iconPlateSize * 0.12), { color: drawAccent, alpha: active ? 0.12 : 0.07 });
       bg.circle(plateX + iconPlateSize / 2, plateY + iconPlateSize / 2, iconPlateSize * 0.35);
       bg.stroke({ color: drawAccent, width: 1, alpha: active ? 0.38 : 0.18 });
     }
@@ -1984,7 +2458,10 @@ export class MenuScene {
     shine.clear();
     shine.moveTo(x + 18, y + 8);
     shine.lineTo(x + w - 18, y + 8);
-    shine.stroke({ color: 0xffffff, width: 1.1, alpha: isHover ? 0.3 : 0.11 });
+    shine.stroke({ color: 0xffffff, width: 1.1, alpha: active ? 0.24 : 0.12 });
+    shine.moveTo(x + 22, y + 13);
+    shine.lineTo(x + w * 0.7, y + 13);
+    shine.stroke({ color: 0x7fffd8, width: 1, alpha: isPrimary ? 0.12 : 0.18 });
     shine.moveTo(x + 20, y + h - 13);
     shine.lineTo(x + w - 20, y + h - 13);
     shine.stroke({ color: hotAccent, width: 1.1, alpha: active ? 0.42 : 0.17 });
@@ -2046,7 +2523,7 @@ export class MenuScene {
     this.menuOptions = [
       { id: 'launch', button: this.startBtn, activate: () => this.quickStartRun() },
       ...(this.sectorStartBtn?.visible
-        ? [{ id: 'sectorStart', button: this.sectorStartBtn, activate: () => this.launchSectorStartRun() }]
+        ? [{ id: 'sectorStart', button: this.sectorStartBtn, activate: () => this.openSectorSelector() }]
         : []),
       { id: 'hangar', button: this.highscoreBtn, activate: () => this.openShipSelect() },
       {
@@ -2161,6 +2638,15 @@ export class MenuScene {
     const nav = this.menuGamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     this.setInputDevice('controller');
+    if (this.sectorSelectorOpen) {
+      if (nav.pressed.left) this.moveSectorSelectorFocus(-1);
+      if (nav.pressed.right) this.moveSectorSelectorFocus(1);
+      if (nav.pressed.up) this.moveSectorSelectorFocus(-this.getSectorSelectorColumns());
+      if (nav.pressed.down) this.moveSectorSelectorFocus(this.getSectorSelectorColumns());
+      if (nav.pressed.confirm) this.activateSectorSelectorSelection();
+      if (nav.pressed.cancel || nav.pressed.back) this.closeSectorSelector();
+      return;
+    }
     if (nav.pressed.left && !this.cycleSectorStartCheckpoint(-1)) this.moveMenuFocus(-1);
     if (nav.pressed.right && !this.cycleSectorStartCheckpoint(1)) this.moveMenuFocus(1);
     if (nav.pressed.up) this.moveMenuFocus(-1);
@@ -2292,33 +2778,13 @@ export class MenuScene {
   handleSectorStartPointerDown(event) {
     this.setInputDevice('keyboard');
     this.setMenuFocusByButton(this.sectorStartBtn);
-    const checkpoints = this.sectorStartState?.checkpoints || [];
-    if (checkpoints.length > 1) {
-      const width = this.sectorStartBtn?._btnWidth || 286;
-      let localX = 0;
-      try {
-        const point = typeof event?.getLocalPosition === 'function'
-          ? event.getLocalPosition(this.sectorStartBtn)
-          : this.sectorStartBtn.toLocal(event.global);
-        localX = Number(point?.x) || 0;
-      } catch {
-        localX = 0;
-      }
-      if (localX < -width / 2) {
-        this.cycleSectorStartCheckpoint(-1);
-        return;
-      }
-      if (localX > width / 2) {
-        this.cycleSectorStartCheckpoint(1);
-        return;
-      }
-    }
-    this.launchSectorStartRun();
+    event?.stopPropagation?.();
+    this.openSectorSelector();
   }
 
-  launchSectorStartRun() {
+  launchSectorStartRun(requestedCheckpoint = null) {
     if (this.launchingRun) return;
-    const checkpoint = this.getSelectedSectorStartCheckpoint();
+    const checkpoint = requestedCheckpoint || this.getSelectedSectorStartCheckpoint();
     if (!checkpoint) {
       this.showExitNotice(translateText('SECTOR START LOCKED'));
       return;
@@ -2621,6 +3087,7 @@ export class MenuScene {
   }
 
   destroy() {
+    this.closeSectorSelector();
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
     destroyMenuFx(this);
