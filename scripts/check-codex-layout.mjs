@@ -18,6 +18,7 @@ const viewports = [
 ];
 const categoryShots = [
   { categoryId: 'powerups', entryId: 'prism_splitter', label: 'powerups-prism-splitter' },
+  { categoryId: 'powerups', entryId: 'mercy_protocol', label: 'powerups-mercy-protocol' },
   { categoryId: 'sectors', entryIndex: 0, label: 'sectors' },
   { categoryId: 'sectors', entryId: 'sector_020', label: 'sectors-20' },
   { categoryId: 'sectors', entryId: 'sector_030', label: 'sectors-30' },

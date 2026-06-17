@@ -59,6 +59,19 @@ if (!existsSync(refreshedBatchReviewSheet)) {
   errors.push('Refreshed 2026-06-13 powerup review sheet missing: public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260617-new-batch.png');
 }
 
+const imagegenNormalizeScript = path.join(root, 'scripts/normalize-powerup-imagegen-icons-20260617.py');
+if (!existsSync(imagegenNormalizeScript)) {
+  errors.push('Imagegen powerup normalization script missing: scripts/normalize-powerup-imagegen-icons-20260617.py');
+}
+
+const imagegenSourceDir = path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260617');
+for (const key of NEW_POWERUP_TYPES) {
+  const sourcePath = path.join(imagegenSourceDir, `${key}.png`);
+  if (!existsSync(sourcePath)) {
+    errors.push(`${key} imagegen source icon missing: ${sourcePath}`);
+  }
+}
+
 for (const key of NEW_POWERUP_TYPES) {
   const url = generatedPowerups[key] || '';
   if (!url.endsWith('-20260613.png')) {
