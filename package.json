@@ -51,6 +51,7 @@
     "check:hangar-unlock-presentation": "node scripts/check-hangar-unlock-presentation.mjs",
     "check:menu-exit-focus-safety": "node scripts/check-menu-exit-focus-safety.mjs",
     "check:menu-scrollbars": "node scripts/check-menu-scrollbars.mjs",
+    "check:cinematic-hangar-menu": "node scripts/check-cinematic-hangar-menu.mjs",
     "check:sector-progression": "node scripts/check-sector-progression.mjs",
     "check:sector-continue-mode": "node scripts/check-sector-continue-mode.mjs",
     "check:sector-continue-controller-flow": "node scripts/check-sector-continue-controller-flow.mjs",

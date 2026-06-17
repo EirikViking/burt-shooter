@@ -4,7 +4,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
-import { createTextLayout, createVerticalStack, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
+import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
@@ -73,6 +73,10 @@ function fitTextToWidth(text, maxWidth, { minScale = 0.62 } = {}) {
   return nextScale;
 }
 
+function clampNumber(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
 function boundsForDisplayObject(displayObject) {
   if (!displayObject?.getBounds) return null;
   try {
@@ -130,6 +134,7 @@ export class MenuScene {
     this.missionConsole = null;
     this.menuFx = null;
     this.menuPanel = null;
+    this.menuDockBounds = null;
     this.radarSweep = null;
     this.radarBlips = [];
     this.crewComms = [];
@@ -228,9 +233,9 @@ export class MenuScene {
       } else if (isMoveDown) {
         this.moveMenuFocus(event.shiftKey ? -1 : 1);
       } else if (isMoveLeft) {
-        this.cycleSectorStartCheckpoint(-1);
+        if (!this.cycleSectorStartCheckpoint(-1)) this.moveMenuFocus(-1);
       } else if (isMoveRight) {
-        this.cycleSectorStartCheckpoint(1);
+        if (!this.cycleSectorStartCheckpoint(1)) this.moveMenuFocus(1);
       } else if (event.key === 'Escape') {
         this.exitGame();
       } else {
@@ -686,6 +691,10 @@ export class MenuScene {
     });
   }
 
+  getCinematicSubtitleText() {
+    return `${translateText('DEFEND THE CABINET')}\n${translateText('SURVIVE THE BOSS WAVES')}`;
+  }
+
   createElements() {
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
@@ -730,11 +739,11 @@ export class MenuScene {
     this.container.addChild(this.title);
 
     const subtitleSize = getResponsiveFontSize(layout, 'subtitle');
-    this.subtitle = createText('ONE SHIP. FIFTY BOSS SIGNALS. THE LAST CABINET STILL CALLS.', {
+    this.subtitle = createText(this.getCinematicSubtitleText(), {
       fontFamily: FONT_ARCADE,
       fontSize: subtitleSize,
       fontWeight: '800',
-      fill: '#ffd15c',
+      fill: '#37f5ff',
       stroke: '#050813',
       strokeThickness: 3,
       letterSpacing: 0,
@@ -831,27 +840,31 @@ export class MenuScene {
     this.menuPanel.alpha = 0;
     this.container.addChild(this.menuPanel);
 
-    this.startBtn = this.createButton('LAUNCH RUN', layout, { variant: 'primary', accent: 0xffd15c });
+    this.startBtn = this.createButton('LAUNCH RUN', layout, { variant: 'primary', accent: 0xffd15c, icon: 'launch', subLabel: 'START YOUR MISSION' });
     this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
       this.quickStartRun();
     });
     this.container.addChild(this.startBtn);
 
-    this.sectorStartBtn = this.createButton(this.getSectorStartButtonLabel(), layout, { accent: 0xffef7e });
+    this.sectorStartBtn = this.createButton('SECTOR CHALLENGE', layout, {
+      accent: 0x37f5ff,
+      icon: 'target',
+      dynamicSubLabel: () => this.getSectorStartButtonSubLabel()
+    });
     this.attachSectorStartStepperCue(this.sectorStartBtn);
     this.sectorStartBtn.alpha = 0;
     this.sectorStartBtn.on('pointerdown', (event) => this.handleSectorStartPointerDown(event));
     this.container.addChild(this.sectorStartBtn);
 
-    this.highscoreBtn = this.createButton('SHIP HANGAR', layout, { accent: 0x37f5ff });
+    this.highscoreBtn = this.createButton('SHIP HANGAR', layout, { accent: 0x37f5ff, icon: 'hangar', subLabel: 'UPGRADE & CUSTOMIZE' });
     this.highscoreBtn.alpha = 0;  // Start invisible
     this.highscoreBtn.on('pointerdown', () => {
       this.openShipSelect();
     });
     this.container.addChild(this.highscoreBtn);
 
-    this.storyBtn = this.createButton(translateText('LEADERBOARD'), layout, { accent: 0xff55d9 });
+    this.storyBtn = this.createButton('LEADERBOARD', layout, { accent: 0x37f5ff, icon: 'bars', subLabel: 'GLOBAL RANKINGS' });
     this.storyBtn.alpha = 0;
     this.storyBtn.on('pointerdown', () => {
       try {
@@ -865,7 +878,7 @@ export class MenuScene {
     });
     this.container.addChild(this.storyBtn);
 
-    this.achievementsBtn = this.createButton('ACHIEVEMENTS', layout, { accent: 0xffd15c });
+    this.achievementsBtn = this.createButton('ACHIEVEMENTS', layout, { accent: 0x37f5ff, icon: 'star', subLabel: 'TRACK PROGRESS' });
     this.achievementsBtn.alpha = 0;
     this.achievementsBtn.on('pointerdown', () => {
       try {
@@ -878,7 +891,7 @@ export class MenuScene {
     });
     this.container.addChild(this.achievementsBtn);
 
-    this.threatCodexBtn = this.createButton(translateText('THREAT CODEX'), layout, { accent: 0x7dffcc });
+    this.threatCodexBtn = this.createButton('THREAT CODEX', layout, { accent: 0x37f5ff, icon: 'codex', subLabel: 'ENEMY INTEL' });
     this.threatCodexBtn.alpha = 0;
     this.attachCodexSignalCue(this.threatCodexBtn);
     this.threatCodexBtn.on('pointerdown', () => {
@@ -892,7 +905,7 @@ export class MenuScene {
     });
     this.container.addChild(this.threatCodexBtn);
 
-    this.settingsBtn = this.createButton('SETTINGS', layout, { accent: 0x7fffd8 });
+    this.settingsBtn = this.createButton('SETTINGS', layout, { accent: 0x37f5ff, icon: 'gear', subLabel: 'AUDIO & VIDEO' });
     this.settingsBtn.alpha = 0;
     this.settingsBtn.on('pointerdown', () => {
       try {
@@ -905,7 +918,7 @@ export class MenuScene {
     });
     this.container.addChild(this.settingsBtn);
 
-    this.helpBtn = this.createButton(translateText('HOW TO PLAY'), layout, { compact: true, accent: 0xffef7e });
+    this.helpBtn = this.createButton('HOW TO PLAY', layout, { compact: true, accent: 0xffef7e, icon: 'codex' });
     this.helpBtn.alpha = 0;
     this.helpBtn.on('pointerdown', () => {
       try {
@@ -918,7 +931,7 @@ export class MenuScene {
     });
     this.container.addChild(this.helpBtn);
 
-    this.exitBtn = this.createButton('EXIT GAME', layout, { accent: 0xff6b6b });
+    this.exitBtn = this.createButton('EXIT GAME', layout, { accent: 0xff6b6b, icon: 'exit' });
     this.exitBtn.alpha = 0;
     this.exitBtn.on('pointerdown', () => {
       this.exitGame();
@@ -968,7 +981,12 @@ export class MenuScene {
     this.container.addChild(this.easter);
 
     // Mute/Music Toggle (Small corner button)
-    this.musicBtn = this.createButton('MUSIC: ON', layout, { compact: true, accent: 0x7fffd8 });
+    this.musicBtn = this.createButton('MUSIC: ON', layout, {
+      compact: true,
+      accent: 0x7fffd8,
+      icon: 'music',
+      dynamicLabel: () => translateText(AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF')
+    });
     // Overwrite style for small button
     const scale = 0.6;
     this.musicBtn.scale.set(scale);
@@ -977,8 +995,8 @@ export class MenuScene {
         AudioManager.init();
         const enabled = AudioManager.toggleMute();
         const label = this.musicBtn._label;
-        label.text = enabled ? 'MUSIC: ON' : 'MUSIC: OFF';
-        this.refreshMenuButtonLabel(this.musicBtn, this.musicBtn._btnWidth - 26, { minScale: 0.72 });
+        label.text = translateText(enabled ? 'MUSIC: ON' : 'MUSIC: OFF');
+        this.refreshButtonCopy(this.musicBtn, { forceGpuRefresh: true });
       } catch (e) {
         console.error('[MenuScene] Music Toggle Error:', e);
       }
@@ -1071,6 +1089,34 @@ export class MenuScene {
     return scale;
   }
 
+  refreshMenuButtonSubLabel(button, maxWidth, { minScale = 0.72, forceGpuRefresh = false } = {}) {
+    const label = button?._sublabel;
+    if (!label) return 1;
+    refreshTextTexture(label, { forceGpuRefresh });
+    const scale = fitTextToWidth(label, maxWidth, { minScale });
+    refreshTextTexture(label, { forceGpuRefresh });
+    return scale;
+  }
+
+  refreshButtonCopy(button, { forceGpuRefresh = false } = {}) {
+    if (!button) return;
+    if (button._dynamicLabel) {
+      button._label.text = button._dynamicLabel();
+    } else if (button._labelKey) {
+      button._label.text = translateText(button._labelKey);
+    }
+    if (button._dynamicSubLabel) {
+      button._sublabel.text = button._dynamicSubLabel();
+    } else if (button._sublabelKey) {
+      button._sublabel.text = translateText(button._sublabelKey);
+    }
+    const labelPad = button._iconType
+      ? (button._variant === 'primary' ? 74 : 58)
+      : 48;
+    this.refreshMenuButtonLabel(button, (button._btnWidth || 180) - labelPad, { minScale: button._labelMinScale || 0.62, forceGpuRefresh });
+    this.refreshMenuButtonSubLabel(button, (button._btnWidth || 180) - 24, { minScale: 0.68, forceGpuRefresh });
+  }
+
   async initBonusDecorations() {
     try {
       const { width, height } = this.game.app.screen;
@@ -1100,92 +1146,64 @@ export class MenuScene {
     const responsiveLayout = getCurrentLayout();
     const layout = createTextLayout(width, height, responsiveLayout);
     const safeMargin = responsiveLayout.safeArea;
-    const isMobileLayout = layout.isMobile || width < 720;
+    const isMobileLayout = layout.isMobile || width < 760;
+    const isShortLayout = height < 820;
     this.layoutBackdrop(width, height);
     this.layoutMissionConsole(width, height);
     resizeMenuFx(this, width, height);
 
-    const titleSize = Math.round(getResponsiveFontSize(layout, 'title') * (isMobileLayout ? 0.9 : 1.0));
-    const subtitleSize = Math.round(getResponsiveFontSize(layout, 'subtitle') * (isMobileLayout ? 0.92 : 0.92));
-    const storySize = Math.round(getResponsiveFontSize(layout, 'body') * (isMobileLayout ? 1 : 0.94));
+    const titleSize = Math.round(clampNumber(width * (isMobileLayout ? 0.076 : 0.035), isMobileLayout ? 38 : 46, isMobileLayout ? 58 : 72));
+    const subtitleSize = Math.round(clampNumber(width * 0.009, isMobileLayout ? 12 : 14, isMobileLayout ? 16 : 18));
     const controlsSize = getResponsiveFontSize(layout, 'small');
-    const contentWidth = isMobileLayout
-      ? Math.min(width - 34, 430)
-      : Math.min(Math.max(430, width * 0.4), 548);
-    const contentX = isMobileLayout
-      ? width / 2
-      : Math.max(layout.padding + contentWidth / 2, width * 0.28);
-    const align = isMobileLayout ? 'center' : 'left';
-    const anchorX = isMobileLayout ? 0.5 : 0;
-    const leftX = isMobileLayout ? contentX : contentX - contentWidth / 2;
+    const titleX = isMobileLayout ? width * 0.5 : clampNumber(width * 0.05, 44, 96);
+    const titleY = safeMargin.top + clampNumber(height * 0.075, isMobileLayout ? 46 : 58, isMobileLayout ? 72 : 92);
+    const titleWidth = isMobileLayout ? width * 0.88 : Math.min(width * 0.42, 560);
 
-    this.kicker.style.fontSize = Math.max(11, controlsSize + 1);
-    this.kicker.style.align = align;
+    this.kicker.visible = false;
+    this.kicker.alpha = 0;
     this.title.style.fontSize = titleSize;
-    this.title.style.stroke = { color: '#031527', width: isMobileLayout ? 5 : 8 };
+    this.title.style.stroke = { color: '#031527', width: isMobileLayout ? 5 : 7 };
     this.title.style.letterSpacing = 0;
-    this.title.style.padding = isMobileLayout ? 12 : 32;
-    this.subtitle.text = isMobileLayout
-      ? '50 BOSS SIGNALS\nLAST CABINET ONLINE'
-      : 'ONE SHIP. FIFTY BOSS SIGNALS. THE LAST CABINET STILL CALLS.';
+    this.title.style.padding = isMobileLayout ? 12 : 26;
+    this.title.anchor.set(isMobileLayout ? 0.5 : 0, 0.5);
+    this.title.x = titleX;
+    this.title.y = titleY;
+    this.subtitle.text = this.getCinematicSubtitleText();
     this.subtitle.style.fontSize = subtitleSize;
-    this.subtitle.style.align = align;
+    this.subtitle.style.align = isMobileLayout ? 'center' : 'left';
     this.subtitle.style.wordWrap = true;
-    this.subtitle.style.wordWrapWidth = clampTextWidth(contentWidth, layout);
-    this.subtitle.style.lineHeight = Math.round(subtitleSize * 1.22);
-    this.flavor.style.fontSize = storySize;
-    this.flavor.style.lineHeight = Math.round(storySize * 1.34);
-    this.flavor.style.align = align;
-    this.flavor.style.wordWrapWidth = clampTextWidth(contentWidth, layout);
-    this.primaryHint.style.fontSize = Math.max(10, controlsSize);
+    this.subtitle.style.wordWrapWidth = clampTextWidth(titleWidth, layout);
+    this.subtitle.style.lineHeight = Math.round(subtitleSize * 1.28);
+    this.subtitle.anchor.set(isMobileLayout ? 0.5 : 0, 0.5);
+    this.subtitle.x = titleX;
+    this.subtitle.y = titleY + titleSize * (isMobileLayout ? 0.78 : 0.74);
+    this.title._layoutY = this.title.y;
+    this.subtitle._layoutY = this.subtitle.y;
+
+    this.flavor.visible = false;
+    this.flavor.alpha = 0;
+    this.primaryHint.visible = false;
+    this.runModePanel.visible = false;
+    this.runModeExplainer.visible = false;
+    this.disclaimer.visible = false;
+    this.controls.visible = false;
     this.primaryHint.text = this.getPrimaryHintText();
-    this.primaryHint.style.align = align;
-    this.primaryHint.style.wordWrapWidth = clampTextWidth(contentWidth, layout);
+    this.primaryHint.style.fontSize = Math.max(10, controlsSize);
     this.runModeExplainer.text = this.getRunModeExplainerText();
-    const runIntelSize = Math.max(11, controlsSize);
-    this.runModeExplainer.style.fontSize = runIntelSize;
-    this.runModeExplainer.style.lineHeight = Math.round(runIntelSize * 1.18);
-    this.runModeExplainer.style.align = isMobileLayout ? 'center' : 'left';
-    this.runModeExplainer.style.wordWrapWidth = clampTextWidth(isMobileLayout ? contentWidth - 8 : contentWidth, layout);
     this.disclaimer.text = this.getDisclaimerText(layout);
-    this.controls.text = layout.isMobile ? this.getControlsText(layout) : '';
-    this.controls.style.fontSize = controlsSize;
-    this.controls.style.wordWrapWidth = clampTextWidth(width * 0.9, layout);
 
-    const disclaimerSize = Math.max(12, controlsSize);
-    this.disclaimer.style.fontSize = disclaimerSize;
-    this.disclaimer.style.align = align;
-    this.disclaimer.style.wordWrapWidth = clampTextWidth(isMobileLayout ? width * 0.84 : contentWidth, layout);
-
-    this.kicker.updateText?.(false);
     this.title.updateText?.(false);
     this.subtitle.updateText?.(false);
-    this.flavor.updateText?.(false);
     this.primaryHint.updateText?.(false);
     this.runModeExplainer.updateText?.(false);
-    this.disclaimer.updateText?.(false);
-    this.controls.updateText?.(false);
-
-    const fitWidth = isMobileLayout ? contentWidth - 12 : contentWidth - 8;
-    fitTextToWidth(this.kicker, fitWidth, { minScale: 0.72 });
-    fitTextToWidth(this.title, fitWidth, { minScale: 0.52 });
-    fitTextToWidth(this.subtitle, fitWidth, { minScale: 0.72 });
-    fitTextToWidth(this.primaryHint, fitWidth, { minScale: 0.74 });
-    fitTextToWidth(this.runModeExplainer, fitWidth, { minScale: 0.68 });
-    fitTextToWidth(this.disclaimer, fitWidth, { minScale: 0.72 });
-
-    const isShortLayout = !isMobileLayout && height < 820;
-    const buttonHeight = isMobileLayout ? 42 : (isShortLayout ? 42 : 48);
-    const primaryButtonHeight = isMobileLayout ? 48 : (isShortLayout ? 52 : 58);
-    const buttonWidth = isMobileLayout ? Math.min(286, contentWidth - 10) : Math.min(390, contentWidth - 38);
-    const primaryButtonWidth = isMobileLayout ? Math.min(304, contentWidth) : Math.min(448, contentWidth - 8);
-    const buttonSpacing = isMobileLayout ? 10 : (isShortLayout ? 8 : 12);
-    const sectionSpacing = isMobileLayout ? 13 : (isShortLayout ? 12 : 18);
+    fitTextToWidth(this.title, titleWidth, { minScale: 0.54 });
+    fitTextToWidth(this.subtitle, titleWidth, { minScale: 0.72 });
 
     this.refreshSectorStartState();
     this.updateSectorStartButton({ forceGpuRefresh: forceLabelGpuRefresh });
-    const secondaryButtons = [
-      ...(this.sectorStartBtn?.visible ? [this.sectorStartBtn] : []),
+    const dockButtons = [
+      this.startBtn,
+      this.sectorStartBtn,
       this.highscoreBtn,
       this.storyBtn,
       this.threatCodexBtn,
@@ -1194,164 +1212,86 @@ export class MenuScene {
       this.exitBtn
     ].filter(Boolean);
 
-    [
-      [this.startBtn, primaryButtonWidth, primaryButtonHeight, true],
-      ...secondaryButtons.map((button) => [button, buttonWidth, buttonHeight, false])
-    ].forEach(([button, btnWidth, btnHeight, isPrimary]) => {
-      if (!button) return;
-      if (button === this.sectorStartBtn) {
-        btnWidth = Math.min(primaryButtonWidth - (isMobileLayout ? 0 : 18), contentWidth - 26);
-        btnHeight = Math.max(btnHeight, isShortLayout ? 46 : 50);
-      }
-      button._btnWidth = btnWidth;
-      button._btnHeight = btnHeight;
-      if (isPrimary) button._variant = 'primary';
-      button._label.style.fontSize = Math.round(getResponsiveFontSize(layout, 'button') * (isPrimary ? 1 : 0.9));
-      const labelMaxWidth = btnWidth - (button === this.sectorStartBtn ? 34 : 48);
-      this.refreshMenuButtonLabel(button, labelMaxWidth, {
-        minScale: button === this.sectorStartBtn ? 0.82 : 0.78,
-        forceGpuRefresh: forceLabelGpuRefresh
-      });
-      this.drawMenuButton(button, false);
-    });
-
-    const kickerHeight = this.kicker.height || controlsSize * 1.3;
-    const titleHeight = this.title.height || titleSize * 1.2;
-    const subtitleHeight = this.subtitle.height || subtitleSize * 1.2;
-    const flavorHeight = this.flavor.height || (storySize * 3 * 1.5);
-    const primaryHintHeight = this.primaryHint.height || controlsSize * 1.5;
-    const runModeExplainerHeight = (this.runModeExplainer.height || controlsSize * 1.4) + (isMobileLayout ? 12 : 14);
-    const buttonCount = 1 + secondaryButtons.length;
-    const sectorButtonHeight = this.sectorStartBtn?.visible
-      ? Math.max(buttonHeight, isShortLayout ? 46 : 50)
-      : 0;
-    const secondaryButtonsHeight = buttonHeight * secondaryButtons.length + Math.max(0, sectorButtonHeight - buttonHeight);
-    const buttonsHeight = primaryButtonHeight + secondaryButtonsHeight + buttonSpacing * Math.max(0, buttonCount - 1);
-    const exitNoticeHeight = this.exitNotice?.text ? (this.exitNotice.height || controlsSize * 1.2) : 0;
-    const disclaimerHeight = this.disclaimer.height || disclaimerSize * 2;
-    const totalContentHeight = kickerHeight + titleHeight + subtitleHeight + flavorHeight + primaryHintHeight + runModeExplainerHeight + buttonsHeight + exitNoticeHeight + disclaimerHeight + sectionSpacing * 8;
-
-    const footerReserve = isMobileLayout ? 86 : (isShortLayout ? 16 : 64);
-    const availableHeight = height - footerReserve - safeMargin.top;
-    const startY = Math.max(
-      safeMargin.top + (isMobileLayout ? 18 : 38),
-      safeMargin.top + (availableHeight - totalContentHeight) / 2 * (isMobileLayout ? 0.72 : 0.58)
-    );
-
-    const stack = createVerticalStack(layout, { startY, spacing: 0 });
-    const placeCentered = (item, itemHeight, gapAfter = 0) => {
-      if (!item) return;
-      item.y = stack.getCurrentY() + itemHeight / 2;
-      stack.addGap(itemHeight + gapAfter);
+    const marginX = clampNumber(width * 0.018, 16, 34);
+    const gap = clampNumber(width * 0.004, 4, 8);
+    const dockWidth = Math.max(0, width - marginX * 2);
+    const dockHeight = clampNumber(height * 0.132, isShortLayout ? 92 : 104, isMobileLayout ? 118 : 142);
+    const safeBottomEdge = Number.isFinite(safeMargin.bottom)
+      ? (safeMargin.bottom > height * 0.5 ? safeMargin.bottom : height - safeMargin.bottom)
+      : height;
+    const dockBottom = Math.min(height - 8, safeBottomEdge - clampNumber(height * 0.015, 10, 18));
+    const tileHeight = dockHeight - (isShortLayout ? 14 : 18);
+    const dockTop = Math.max(8, dockBottom - dockHeight);
+    this.menuDockBounds = {
+      x: marginX,
+      y: dockTop,
+      width: dockWidth,
+      height: Math.min(height - dockTop - 8, dockHeight),
+      right: marginX + dockWidth,
+      bottom: Math.min(height - 8, dockTop + dockHeight)
     };
+    const launchWidth = clampNumber(dockWidth * 0.15, isMobileLayout ? 150 : 188, isMobileLayout ? 210 : 286);
+    const remainingWidth = dockWidth - launchWidth - gap * (dockButtons.length - 1);
+    const secondaryWidth = Math.max(112, remainingWidth / Math.max(1, dockButtons.length - 1));
+    let cursorX = marginX;
 
-    [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.runModeExplainer, this.disclaimer].forEach((text) => {
-      if (!text) return;
-      text.anchor.set(anchorX, 0.5);
-      text.x = leftX;
+    dockButtons.forEach((button, index) => {
+      if (!button) return;
+      const isPrimary = index === 0;
+      const btnWidth = isPrimary ? launchWidth : secondaryWidth;
+      button.visible = true;
+      button._btnWidth = btnWidth;
+      button._btnHeight = tileHeight;
+      button._variant = isPrimary ? 'primary' : (button === this.exitBtn ? 'danger' : 'secondary');
+      button._dockIndex = index;
+      button._label.style.fontSize = Math.round(clampNumber(btnWidth * (isPrimary ? 0.105 : 0.068), isPrimary ? 15 : 11, isPrimary ? 24 : 16));
+      button._sublabel.style.fontSize = Math.round(clampNumber(btnWidth * 0.041, 8, 11));
+      this.refreshButtonCopy(button, { forceGpuRefresh: forceLabelGpuRefresh });
+      button.x = cursorX + btnWidth / 2;
+      button.y = dockTop + dockHeight * (isShortLayout ? 0.54 : 0.56);
+      button._layoutY = button.y;
+      this.drawMenuButton(button, false);
+      cursorX += btnWidth + gap;
     });
-    this.runModeExplainer.anchor.set(isMobileLayout ? 0.5 : 0, 0.5);
-
-    placeCentered(this.kicker, kickerHeight, isMobileLayout ? 4 : 8);
-    placeCentered(this.title, titleHeight, isMobileLayout ? 8 : 10);
-    placeCentered(this.subtitle, subtitleHeight, isMobileLayout ? 10 : 18);
-    placeCentered(this.flavor, flavorHeight, isMobileLayout ? 12 : 18);
-    placeCentered(this.primaryHint, primaryHintHeight, isMobileLayout ? 8 : 10);
-    placeCentered(this.runModeExplainer, runModeExplainerHeight, sectionSpacing);
-    this.runModeExplainer.x = isMobileLayout ? contentX : leftX + 16;
-    this.drawRunModeExplainerPanel(layout, width, height);
-
-    const buttonX = isMobileLayout ? contentX : leftX + primaryButtonWidth / 2;
-    this.startBtn.x = buttonX;
-    placeCentered(this.startBtn, primaryButtonHeight, buttonSpacing);
-
-    if (this.sectorStartBtn?.visible) {
-      this.sectorStartBtn.x = buttonX;
-      placeCentered(this.sectorStartBtn, this.sectorStartBtn._btnHeight || buttonHeight, buttonSpacing);
-    }
-
-    this.highscoreBtn.x = buttonX;
-    placeCentered(this.highscoreBtn, buttonHeight, buttonSpacing);
-
-    this.storyBtn.x = buttonX;
-    placeCentered(this.storyBtn, buttonHeight, buttonSpacing);
-
-    this.threatCodexBtn.x = buttonX;
-    placeCentered(this.threatCodexBtn, buttonHeight, buttonSpacing);
-
-    this.achievementsBtn.x = buttonX;
-    placeCentered(this.achievementsBtn, buttonHeight, buttonSpacing);
-
-    this.settingsBtn.x = buttonX;
-    placeCentered(this.settingsBtn, buttonHeight, buttonSpacing);
-
-    this.exitBtn.x = buttonX;
-    placeCentered(this.exitBtn, buttonHeight, this.exitNotice?.text ? 6 : sectionSpacing);
 
     if (this.exitNotice) {
       this.exitNotice.style.fontSize = Math.max(11, controlsSize);
-      this.exitNotice.style.align = align;
-      this.exitNotice.style.wordWrapWidth = clampTextWidth(isMobileLayout ? contentWidth : buttonWidth, layout);
+      this.exitNotice.style.align = 'center';
+      this.exitNotice.style.wordWrapWidth = clampTextWidth(width * 0.54, layout);
       this.exitNotice.updateText?.(false);
-      fitTextToWidth(this.exitNotice, buttonWidth, { minScale: 0.72 });
-      if (this.exitNotice.text) {
-        this.exitNotice.x = buttonX;
-        placeCentered(this.exitNotice, exitNoticeHeight, sectionSpacing);
-      } else {
-        this.exitNotice.x = buttonX;
-        this.exitNotice.y = this.exitBtn.y + buttonHeight / 2 + 6;
-      }
-    }
-
-    placeCentered(this.disclaimer, disclaimerHeight, 0);
-
-    if (isMobileLayout) {
-      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.disclaimer].forEach((text) => {
-        if (!text) return;
-        text.x = contentX;
-        text.anchor.set(0.5);
-      });
-      this.runModeExplainer.anchor.set(0.5, 0.5);
-    }
-
-    const overflow = this.disclaimer.y + disclaimerHeight / 2 - (height - footerReserve);
-    if (overflow > 0) {
-      const lift = Math.min(overflow + 10, isMobileLayout ? 56 : 90);
-      [this.kicker, this.title, this.subtitle, this.flavor, this.primaryHint, this.runModeExplainer, this.startBtn, this.sectorStartBtn?.visible ? this.sectorStartBtn : null, this.highscoreBtn, this.storyBtn, this.threatCodexBtn, this.achievementsBtn, this.settingsBtn, this.exitBtn, this.exitNotice, this.disclaimer].forEach((item) => {
-        if (item) item.y -= lift;
-      });
-      this.drawRunModeExplainerPanel(layout, width, height);
+      fitTextToWidth(this.exitNotice, width * 0.54, { minScale: 0.72 });
+      this.exitNotice.visible = Boolean(this.exitNotice.text);
+      this.exitNotice.x = width / 2;
+      this.exitNotice.y = dockBottom - dockHeight - 18;
     }
 
     this.drawMenuPanel(layout);
 
-    const easterY = height - safeMargin.bottom - (isMobileLayout ? 8 : 12);
-    const controlsY = easterY - (isMobileLayout ? 22 : 32);
+    this.easter.x = marginX + 2;
+    this.easter.y = dockBottom + 4;
+    this.easter.anchor.set(0, 0.5);
 
-    this.controls.x = width / 2;
-    this.controls.y = controlsY;
-
-    this.easter.x = isMobileLayout ? width / 2 : layout.padding;
-    this.easter.y = easterY;
-    this.easter.anchor.set(isMobileLayout ? 0.5 : 0, 0.5);
-
-    this.musicBtn._btnWidth = isMobileLayout ? 150 : 164;
-    this.musicBtn._btnHeight = isMobileLayout ? 34 : 36;
-    this.musicBtn._label.style.fontSize = Math.max(12, controlsSize);
-    this.refreshMenuButtonLabel(this.musicBtn, this.musicBtn._btnWidth - 26, { minScale: 0.72 });
+    const utilityWidth = isMobileLayout ? 132 : 158;
+    const utilityHeight = isMobileLayout ? 30 : 34;
+    this.musicBtn._btnWidth = utilityWidth;
+    this.musicBtn._btnHeight = utilityHeight;
+    this.musicBtn._label.style.fontSize = Math.max(10, controlsSize - 1);
+    this.refreshButtonCopy(this.musicBtn, { forceGpuRefresh: forceLabelGpuRefresh });
     this.drawMenuButton(this.musicBtn, false);
     this.musicBtn.scale.set(1);
-    this.musicBtn.x = width - Math.max(92, layout.padding + this.musicBtn._btnWidth / 2);
-    this.musicBtn.y = safeMargin.top + (isMobileLayout ? 32 : 38);
+    this.musicBtn.x = width - marginX - utilityWidth / 2;
+    this.musicBtn.y = safeMargin.top + (isMobileLayout ? 24 : 30);
+    this.musicBtn._layoutY = this.musicBtn.y;
 
-    this.helpBtn._btnWidth = isMobileLayout ? 150 : 164;
-    this.helpBtn._btnHeight = isMobileLayout ? 34 : 36;
-    this.helpBtn._label.style.fontSize = Math.max(12, controlsSize);
-    this.refreshMenuButtonLabel(this.helpBtn, this.helpBtn._btnWidth - 26, { minScale: 0.72 });
+    this.helpBtn._btnWidth = utilityWidth;
+    this.helpBtn._btnHeight = utilityHeight;
+    this.helpBtn._label.style.fontSize = Math.max(10, controlsSize - 1);
+    this.refreshButtonCopy(this.helpBtn, { forceGpuRefresh: forceLabelGpuRefresh });
     this.drawMenuButton(this.helpBtn, false);
     this.helpBtn.scale.set(1);
     this.helpBtn.x = this.musicBtn.x;
-    this.helpBtn.y = this.musicBtn.y + (isMobileLayout ? 42 : 46);
+    this.helpBtn.y = this.musicBtn.y + utilityHeight + 8;
+    this.helpBtn._layoutY = this.helpBtn.y;
 
     if (this.buildStamp) {
       this.buildStamp.x = width - layout.padding / 2;
@@ -1373,7 +1313,7 @@ export class MenuScene {
   }
 
   getDisclaimerText(layout) {
-    const objective = 'DEFEND THE CABINET // SURVIVE THE BOSS WAVES';
+    const objective = `${translateText('DEFEND THE CABINET')} // ${translateText('SURVIVE THE BOSS WAVES')}`;
     return layout.isMobile ? objective : `${objective}\n${this.getControlsText(layout)}`;
   }
 
@@ -1434,68 +1374,81 @@ export class MenuScene {
 
     const width = this.game.getWidth();
     const height = this.game.getHeight();
-    const isMobileLayout = layout.isMobile || width < 720;
-    const isShortLayout = !isMobileLayout && height < 820;
+    const isShortLayout = height < 820;
+    const dockBounds = this.menuDockBounds;
+    if (dockBounds) {
+      const x = Math.max(8, dockBounds.x - 6);
+      const y = Math.max(8, dockBounds.y - 4);
+      const panelWidth = Math.min(width - x - 8, dockBounds.width + 12);
+      const panelHeight = Math.min(height - y - 8, dockBounds.height + 8);
+      this.lastMenuPanelBounds = {
+        x,
+        y,
+        width: panelWidth,
+        height: panelHeight,
+        right: x + panelWidth,
+        bottom: y + panelHeight
+      };
+
+      this.menuPanel.clear();
+      this.menuPanel.roundRect(x, y, panelWidth, panelHeight, 5);
+      this.menuPanel.fill({ color: 0x020711, alpha: 0.52 });
+      this.menuPanel.roundRect(x, y, panelWidth, panelHeight, 5);
+      this.menuPanel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.42 });
+      this.menuPanel.rect(x + 1, y + 1, panelWidth - 2, Math.max(18, panelHeight * 0.34));
+      this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.22 });
+      this.menuPanel.rect(x + 12, y + 10, panelWidth - 24, 1.5);
+      this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.34 });
+      this.menuPanel.rect(x + 12, y + panelHeight - 12, panelWidth - 24, 1.5);
+      this.menuPanel.fill({ color: 0xffd15c, alpha: 0.22 });
+      return;
+    }
     const contentItems = [
-      this.kicker,
-      this.title,
-      this.subtitle,
-      this.flavor,
-      this.primaryHint,
-      this.runModeExplainer,
       this.startBtn,
-      this.sectorStartBtn?.visible ? this.sectorStartBtn : null,
+      this.sectorStartBtn,
       this.highscoreBtn,
       this.storyBtn,
       this.threatCodexBtn,
       this.achievementsBtn,
       this.settingsBtn,
-      this.exitBtn,
-      this.exitNotice?.text ? this.exitNotice : null,
-      this.disclaimer
+      this.exitBtn
     ].filter(Boolean);
     const itemBounds = contentItems.map(boundsForDisplayObject).filter(Boolean);
     const minX = itemBounds.length ? Math.min(...itemBounds.map((bounds) => bounds.x)) : this.startBtn.x - this.startBtn._btnWidth / 2;
     const maxX = itemBounds.length ? Math.max(...itemBounds.map((bounds) => bounds.right)) : this.startBtn.x + this.startBtn._btnWidth / 2;
     const minY = itemBounds.length ? Math.min(...itemBounds.map((bounds) => bounds.y)) : this.startBtn.y - 180;
     const maxY = itemBounds.length ? Math.max(...itemBounds.map((bounds) => bounds.bottom)) : this.settingsBtn.y + 60;
-    const padX = isMobileLayout ? 18 : 34;
-    const padTop = isMobileLayout ? 16 : (isShortLayout ? 46 : 20);
-    const padBottom = isMobileLayout ? 18 : 24;
-    let x = Math.max(12, minX - padX);
-    let y = Math.max(8, minY - padTop);
+    const padX = 8;
+    const padTop = isShortLayout ? 7 : 9;
+    const padBottom = isShortLayout ? 7 : 9;
+    const x = Math.max(8, minX - padX);
+    const y = Math.max(8, minY - padTop);
     let panelWidth = (maxX - minX) + padX * 2;
     let panelHeight = (maxY - minY) + padTop + padBottom;
 
-    if (isMobileLayout) {
-      panelWidth = Math.min(width - 24, Math.max(316, panelWidth));
-      x = width / 2 - panelWidth / 2;
-    } else {
-      panelWidth = Math.min(width * 0.43, Math.max(506, panelWidth));
-      if (x + panelWidth > width - 18) x = Math.max(18, width - panelWidth - 18);
-    }
-
-    panelHeight = Math.min(height - y - 18, Math.max(390, panelHeight));
-    this.lastMenuPanelBounds = { x, y, width: panelWidth, height: panelHeight };
+    panelWidth = Math.min(width - x - 8, panelWidth);
+    panelHeight = Math.min(height - y - 8, Math.max(isShortLayout ? 92 : 106, panelHeight));
+    this.lastMenuPanelBounds = {
+      x,
+      y,
+      width: panelWidth,
+      height: panelHeight,
+      right: x + panelWidth,
+      bottom: y + panelHeight
+    };
+    this.menuDockBounds = this.lastMenuPanelBounds;
 
     this.menuPanel.clear();
-    this.menuPanel.roundRect(x, y, panelWidth, panelHeight, 8);
-    this.menuPanel.fill({ color: 0x020711, alpha: isMobileLayout ? 0.56 : 0.42 });
+    this.menuPanel.roundRect(x, y, panelWidth, panelHeight, 5);
+    this.menuPanel.fill({ color: 0x020711, alpha: 0.52 });
+    this.menuPanel.roundRect(x, y, panelWidth, panelHeight, 5);
     this.menuPanel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.42 });
-    this.menuPanel.roundRect(x + 9, y + 9, panelWidth - 18, panelHeight - 18, 6);
-    this.menuPanel.stroke({ color: 0xff55d9, width: 1, alpha: 0.2 });
-    this.menuPanel.rect(x, y + 28, 4, panelHeight - 56);
-    this.menuPanel.fill({ color: 0x37f5ff, alpha: 0.56 });
-    this.menuPanel.rect(x + panelWidth - 4, y + 54, 4, panelHeight - 108);
-    this.menuPanel.fill({ color: 0xff55d9, alpha: 0.42 });
-    this.menuPanel.rect(x + 24, y + 18, panelWidth - 48, 2);
-    this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.36 });
-    this.menuPanel.rect(x + 24, y + panelHeight - 22, panelWidth - 48, 2);
-    this.menuPanel.fill({ color: 0xffd15c, alpha: 0.32 });
-
-    const tabWidth = isMobileLayout ? 84 : 118;
-    this.menuPanel.roundRect(x + 24, y - 5, tabWidth, 10, 4);
-    this.menuPanel.fill({ color: 0xffd15c, alpha: 0.42 });
+    this.menuPanel.rect(x + 1, y + 1, panelWidth - 2, Math.max(18, panelHeight * 0.34));
+    this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.22 });
+    this.menuPanel.rect(x + 12, y + 10, panelWidth - 24, 1.5);
+    this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.34 });
+    this.menuPanel.rect(x + 12, y + panelHeight - 12, panelWidth - 24, 1.5);
+    this.menuPanel.fill({ color: 0xffd15c, alpha: 0.22 });
   }
 
   getLayoutDebugState() {
@@ -1540,7 +1493,9 @@ export class MenuScene {
         primaryHintText: this.primaryHint?.text || null,
         runModeExplainerText: this.runModeExplainer?.text || null,
         buttonVisible: Boolean(this.sectorStartBtn?.visible),
-        buttonText: this.sectorStartBtn?._label?.text || null,
+        buttonText: this.getSectorStartButtonLabel(),
+        buttonVisualText: this.sectorStartBtn?._label?.text || null,
+        buttonSubtext: this.sectorStartBtn?._sublabel?.text || null,
         buttonBounds: boundsForDisplayObject(this.sectorStartBtn?.visible ? this.sectorStartBtn : null),
         buttonConfiguredWidth: Number(this.sectorStartBtn?._btnWidth || 0),
         buttonConfiguredHeight: Number(this.sectorStartBtn?._btnHeight || 0),
@@ -1568,7 +1523,8 @@ export class MenuScene {
   layoutMissionConsole(width = this.game.app.screen.width, height = this.game.app.screen.height) {
     if (!this.missionConsole) return;
     const responsiveLayout = getCurrentLayout();
-    this.missionConsole.alpha = responsiveLayout.isMobile ? 0.2 : 0.48;
+    this.missionConsole.visible = false;
+    this.missionConsole.alpha = 0;
 
     if (this.radar) {
       this.radar.x = responsiveLayout.isMobile ? width * 0.54 : width * 0.73;
@@ -1599,11 +1555,13 @@ export class MenuScene {
     if (this.backdropShade) {
       this.backdropShade.clear();
       this.backdropShade.rect(0, 0, width, height);
-      this.backdropShade.fill({ color: 0x020711, alpha: 0.12 });
-      this.backdropShade.rect(0, 0, Math.min(width * 0.54, 760), height);
-      this.backdropShade.fill({ color: 0x020711, alpha: 0.46 });
-      this.backdropShade.rect(0, height * 0.68, width, height * 0.32);
-      this.backdropShade.fill({ color: 0x000000, alpha: 0.16 });
+      this.backdropShade.fill({ color: 0x020711, alpha: 0.08 });
+      this.backdropShade.rect(0, 0, Math.min(width * 0.38, 660), height * 0.38);
+      this.backdropShade.fill({ color: 0x020711, alpha: 0.18 });
+      this.backdropShade.rect(0, height * 0.72, width, height * 0.28);
+      this.backdropShade.fill({ color: 0x000000, alpha: 0.44 });
+      this.backdropShade.rect(0, height * 0.88, width, height * 0.12);
+      this.backdropShade.fill({ color: 0x020711, alpha: 0.42 });
     }
   }
 
@@ -1625,6 +1583,10 @@ export class MenuScene {
     const shine = new PIXI.Graphics();
     container.addChild(shine);
 
+    const icon = new PIXI.Graphics();
+    icon.label = `ui_menuTileIcon_${options.icon || 'panel'}`;
+    container.addChild(icon);
+
     const label = createText(text, {
       fontFamily: FONT_BUTTON,
       fontSize: fontSize,
@@ -1638,14 +1600,37 @@ export class MenuScene {
     label.anchor.set(0.5);
     container.addChild(label);
 
+    const sublabel = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: Math.max(8, Math.round(fontSize * 0.46)),
+      fontWeight: '800',
+      letterSpacing: 0,
+      fill: '#9feeff',
+      stroke: '#031323',
+      strokeThickness: 2,
+      padding: 18,
+      align: 'left'
+    });
+    sublabel.anchor.set(0.5);
+    container.addChild(sublabel);
+
     // Store dimensions for hover redraw
     container._btnWidth = btnWidth;
     container._btnHeight = btnHeight;
     container._variant = options.variant || 'secondary';
     container._accent = options.accent || 0x37f5ff;
+    container._labelKey = options.labelKey || text;
+    container._sublabelKey = options.subLabel || '';
+    container._dynamicLabel = options.dynamicLabel || null;
+    container._dynamicSubLabel = options.dynamicSubLabel || null;
+    container._iconType = options.icon || 'panel';
+    container._labelMinScale = options.labelMinScale || 0.62;
     container._bg = bg;
     container._shine = shine;
+    container._icon = icon;
     container._label = label;
+    container._sublabel = sublabel;
+    this.refreshButtonCopy(container);
     container._focus = focus;
     this.drawMenuButton(container, false);
 
@@ -1654,11 +1639,13 @@ export class MenuScene {
       this.setMenuFocusByButton(container);
       playMenuFocusSfx(0.11);
       label.style.fill = '#ffffff';
+      sublabel.style.fill = '#dffcff';
       this.drawMenuButton(container, true);
     });
 
     container.on('pointerout', () => {
       label.style.fill = '#c9fbff';
+      sublabel.style.fill = '#9feeff';
       this.drawMenuButton(container, false);
     });
 
@@ -1687,31 +1674,39 @@ export class MenuScene {
     const cue = button?._stepperCue;
     if (!cue) return;
     const checkpoints = this.sectorStartState?.checkpoints || [];
-    const visible = Boolean(button?.visible && this.sectorStartState?.available && checkpoints.length > 1);
+    const focused = Boolean(button._focused);
     const w = button._btnWidth || 286;
     const h = button._btnHeight || 46;
-    button.hitArea = new PIXI.Rectangle(-w / 2 - 58, -h / 2 - 6, w + 116, h + 12);
+    const dockMode = Number.isFinite(button._dockIndex);
+    const visible = Boolean(button?.visible
+      && this.sectorStartState?.available
+      && checkpoints.length > 1
+      && (!dockMode || focused));
+    button.hitArea = dockMode
+      ? new PIXI.Rectangle(-w / 2, -h / 2, w, h)
+      : new PIXI.Rectangle(-w / 2 - 58, -h / 2 - 6, w + 116, h + 12);
     cue.visible = visible;
     cue.clear();
     if (!visible) return;
 
-    const focused = Boolean(button._focused);
     const pulse = 0.5 + Math.sin(this.animationTime * 6) * 0.5;
     const alpha = focused ? 0.86 + pulse * 0.14 : 0.58;
     const boxW = Math.max(34, Math.min(42, h * 0.86));
     const boxH = Math.max(32, Math.min(42, h * 0.86));
-    const sideX = w / 2 + boxW / 2 + 9;
+    const sideX = dockMode ? (w / 2 - boxW / 2 - 7) : (w / 2 + boxW / 2 + 9);
     const color = focused ? 0xffef7e : 0x37f5ff;
 
     for (const side of [-1, 1]) {
       const centerX = side * sideX;
-      cue.moveTo(side * (w / 2 + 3), 0);
-      cue.lineTo(side * (sideX - boxW / 2 - 4), 0);
-      cue.stroke({ color, width: focused ? 2 : 1.25, alpha: focused ? 0.7 : 0.32 });
+      if (!dockMode) {
+        cue.moveTo(side * (w / 2 + 3), 0);
+        cue.lineTo(side * (sideX - boxW / 2 - 4), 0);
+        cue.stroke({ color, width: focused ? 2 : 1.25, alpha: focused ? 0.7 : 0.32 });
+      }
       cue.roundRect(centerX - boxW / 2, -boxH / 2, boxW, boxH, 7);
-      cue.fill({ color: 0x031323, alpha: focused ? 0.78 : 0.62 });
+      cue.fill({ color: 0x031323, alpha: focused ? 0.58 : 0.34 });
       cue.roundRect(centerX - boxW / 2, -boxH / 2, boxW, boxH, 7);
-      cue.stroke({ color, width: focused ? 2 : 1.5, alpha });
+      cue.stroke({ color, width: focused ? 2 : 1.5, alpha: dockMode ? alpha * 0.72 : alpha });
 
       const pointX = centerX + side * 6;
       const backX = centerX - side * 7;
@@ -1770,6 +1765,130 @@ export class MenuScene {
     cue.stroke({ color: 0x7dffcc, width: 1.5, alpha: 0.35 + pulse * 0.35 });
   }
 
+  drawMenuButtonIcon(icon, type, centerX, centerY, size, color, alpha = 0.82) {
+    if (!icon) return;
+    const s = size;
+    icon.clear();
+    const stroke = { color, width: Math.max(1.4, s * 0.085), alpha };
+    const thin = { color, width: Math.max(1, s * 0.055), alpha: alpha * 0.72 };
+    if (type === 'launch') {
+      icon.moveTo(centerX, centerY - s * 0.42);
+      icon.lineTo(centerX + s * 0.34, centerY + s * 0.32);
+      icon.lineTo(centerX, centerY + s * 0.14);
+      icon.lineTo(centerX - s * 0.34, centerY + s * 0.32);
+      icon.lineTo(centerX, centerY - s * 0.42);
+      icon.stroke(stroke);
+      icon.moveTo(centerX, centerY - s * 0.18);
+      icon.lineTo(centerX, centerY + s * 0.28);
+      icon.moveTo(centerX - s * 0.2, centerY + s * 0.08);
+      icon.lineTo(centerX - s * 0.42, centerY + s * 0.02);
+      icon.moveTo(centerX + s * 0.2, centerY + s * 0.08);
+      icon.lineTo(centerX + s * 0.42, centerY + s * 0.02);
+      icon.stroke(thin);
+      return;
+    }
+    if (type === 'target') {
+      icon.circle(centerX, centerY, s * 0.34);
+      icon.stroke(stroke);
+      icon.circle(centerX, centerY, s * 0.13);
+      icon.stroke(thin);
+      icon.moveTo(centerX - s * 0.48, centerY);
+      icon.lineTo(centerX + s * 0.48, centerY);
+      icon.moveTo(centerX, centerY - s * 0.48);
+      icon.lineTo(centerX, centerY + s * 0.48);
+      icon.stroke(thin);
+      return;
+    }
+    if (type === 'hangar') {
+      icon.moveTo(centerX - s * 0.42, centerY + s * 0.36);
+      icon.lineTo(centerX, centerY - s * 0.42);
+      icon.lineTo(centerX + s * 0.42, centerY + s * 0.36);
+      icon.stroke(stroke);
+      icon.moveTo(centerX - s * 0.18, centerY + s * 0.16);
+      icon.lineTo(centerX, centerY - s * 0.1);
+      icon.lineTo(centerX + s * 0.18, centerY + s * 0.16);
+      icon.stroke(thin);
+      return;
+    }
+    if (type === 'bars') {
+      [-0.26, 0, 0.26].forEach((offset, index) => {
+        const h = s * (0.38 + index * 0.18);
+        icon.rect(centerX + offset * s - s * 0.055, centerY + s * 0.36 - h, s * 0.11, h);
+        icon.stroke(stroke);
+      });
+      return;
+    }
+    if (type === 'codex') {
+      icon.roundRect(centerX - s * 0.38, centerY - s * 0.36, s * 0.76, s * 0.72, s * 0.06);
+      icon.stroke(stroke);
+      icon.moveTo(centerX, centerY - s * 0.34);
+      icon.lineTo(centerX, centerY + s * 0.34);
+      icon.moveTo(centerX - s * 0.24, centerY - s * 0.12);
+      icon.lineTo(centerX - s * 0.08, centerY - s * 0.12);
+      icon.moveTo(centerX + s * 0.08, centerY - s * 0.12);
+      icon.lineTo(centerX + s * 0.24, centerY - s * 0.12);
+      icon.stroke(thin);
+      return;
+    }
+    if (type === 'star') {
+      const points = [
+        [0, -0.42], [0.12, -0.12], [0.42, -0.12], [0.18, 0.08],
+        [0.28, 0.4], [0, 0.2], [-0.28, 0.4], [-0.18, 0.08],
+        [-0.42, -0.12], [-0.12, -0.12], [0, -0.42]
+      ];
+      points.forEach(([px, py], index) => {
+        const x = centerX + px * s;
+        const y = centerY + py * s;
+        if (index === 0) icon.moveTo(x, y);
+        else icon.lineTo(x, y);
+      });
+      icon.stroke(stroke);
+      return;
+    }
+    if (type === 'gear') {
+      icon.circle(centerX, centerY, s * 0.25);
+      icon.stroke(stroke);
+      icon.circle(centerX, centerY, s * 0.1);
+      icon.stroke(thin);
+      for (let i = 0; i < 8; i += 1) {
+        const angle = (Math.PI * 2 * i) / 8;
+        const x1 = centerX + Math.cos(angle) * s * 0.34;
+        const y1 = centerY + Math.sin(angle) * s * 0.34;
+        const x2 = centerX + Math.cos(angle) * s * 0.45;
+        const y2 = centerY + Math.sin(angle) * s * 0.45;
+        icon.moveTo(x1, y1);
+        icon.lineTo(x2, y2);
+      }
+      icon.stroke(thin);
+      return;
+    }
+    if (type === 'exit') {
+      icon.moveTo(centerX - s * 0.34, centerY - s * 0.36);
+      icon.lineTo(centerX - s * 0.34, centerY + s * 0.36);
+      icon.lineTo(centerX + s * 0.08, centerY + s * 0.36);
+      icon.moveTo(centerX - s * 0.08, centerY);
+      icon.lineTo(centerX + s * 0.42, centerY);
+      icon.moveTo(centerX + s * 0.22, centerY - s * 0.18);
+      icon.lineTo(centerX + s * 0.42, centerY);
+      icon.lineTo(centerX + s * 0.22, centerY + s * 0.18);
+      icon.stroke(stroke);
+      return;
+    }
+    if (type === 'music') {
+      icon.moveTo(centerX - s * 0.05, centerY - s * 0.38);
+      icon.lineTo(centerX - s * 0.05, centerY + s * 0.2);
+      icon.circle(centerX - s * 0.2, centerY + s * 0.28, s * 0.12);
+      icon.moveTo(centerX - s * 0.05, centerY - s * 0.34);
+      icon.lineTo(centerX + s * 0.28, centerY - s * 0.26);
+      icon.lineTo(centerX + s * 0.28, centerY + s * 0.08);
+      icon.circle(centerX + s * 0.13, centerY + s * 0.16, s * 0.12);
+      icon.stroke(stroke);
+      return;
+    }
+    icon.circle(centerX, centerY, s * 0.32);
+    icon.stroke(stroke);
+  }
+
   drawMenuButton(container, isHover = false) {
     const bg = container?._bg;
     const shine = container?._shine;
@@ -1781,34 +1900,70 @@ export class MenuScene {
     const x = -w / 2;
     const y = -h / 2;
     const isPrimary = container._variant === 'primary';
+    const isDanger = container._variant === 'danger' || container === this.exitBtn;
+    const isCompact = h <= 38;
     const accent = container._accent || 0x37f5ff;
     const isFocused = Boolean(container._focused);
-    const edgeAlpha = isHover || isFocused ? 0.9 : (isPrimary ? 0.68 : 0.48);
+    const drawAccent = isDanger ? 0xff5f6a : (isPrimary ? 0xffd15c : accent);
+    const edgeAlpha = isHover || isFocused ? 0.94 : (isPrimary ? 0.78 : (isDanger ? 0.62 : 0.46));
+    const label = container._label;
+    const sublabel = container._sublabel;
+    const icon = container._icon;
+    const hasSubLabel = Boolean(sublabel?.text);
 
     focus?.clear();
     if (isFocused) {
-      focus.roundRect(x - 5, y - 5, w + 10, h + 10, 9);
-      focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
+      focus.roundRect(x - 5, y - 5, w + 10, h + 10, 6);
+      focus.stroke({ color: isDanger ? 0xff8aa0 : 0xffef7e, width: 2, alpha: 0.9 });
     }
 
     bg.clear();
-    bg.roundRect(x, y, w, h, 7);
-    bg.fill({ color: isPrimary ? 0x10203b : (isHover ? 0x06314f : 0x04182d), alpha: isHover ? 0.82 : (isPrimary ? 0.74 : 0.6) });
-    bg.stroke({ color: isFocused ? 0xffffff : accent, width: isHover || isFocused ? 3 : 2, alpha: edgeAlpha });
-    bg.rect(x + 10, y + 7, 4, h - 14);
-    bg.fill({ color: isPrimary ? 0xffd15c : 0xff55d9, alpha: isHover ? 0.9 : 0.62 });
-    bg.rect(x + w - 14, y + 7, 4, h - 14);
-    bg.fill({ color: isPrimary ? 0x37f5ff : 0xffd15c, alpha: isHover ? 0.82 : 0.48 });
-    bg.moveTo(x + 22, y);
-    bg.lineTo(x + w - 22, y);
-    bg.stroke({ color: 0xffffff, width: 1, alpha: isHover ? 0.18 : 0.08 });
+    bg.roundRect(x, y, w, h, 5);
+    bg.fill({
+      color: isPrimary ? 0x211806 : (isDanger ? 0x17080d : 0x041625),
+      alpha: isHover || isFocused ? (isPrimary ? 0.88 : 0.78) : (isPrimary ? 0.76 : 0.62)
+    });
+    bg.roundRect(x, y, w, h, 5);
+    bg.stroke({ color: isFocused ? 0xffffff : drawAccent, width: isHover || isFocused ? 2.4 : 1.4, alpha: edgeAlpha });
+    bg.rect(x + 1, y + 1, w - 2, Math.max(12, h * 0.38));
+    bg.fill({ color: isPrimary ? 0xffd15c : (isDanger ? 0xff5f6a : 0x37f5ff), alpha: isHover || isFocused ? 0.14 : 0.075 });
+    bg.rect(x + 1, y + h - 5, w - 2, 4);
+    bg.fill({ color: drawAccent, alpha: isPrimary ? 0.48 : 0.26 });
+    bg.rect(x + 6, y + 7, 2, h - 14);
+    bg.fill({ color: isPrimary ? 0xffef7e : (isDanger ? 0xff5f6a : 0x37f5ff), alpha: isHover || isFocused ? 0.86 : 0.48 });
 
     shine.clear();
-    shine.roundRect(x + 4, y + 4, w - 8, Math.max(8, h * 0.36), 5);
-    shine.fill({ color: 0xffffff, alpha: isHover ? 0.12 : (isPrimary ? 0.075 : 0.045) });
-    shine.moveTo(x + 22, y + h - 7);
-    shine.lineTo(x + w - 22, y + h - 7);
-    shine.stroke({ color: 0x7fffd8, width: 1, alpha: isHover ? 0.38 : 0.18 });
+    shine.moveTo(x + 16, y + 8);
+    shine.lineTo(x + w - 16, y + 8);
+    shine.stroke({ color: 0xffffff, width: 1, alpha: isHover ? 0.22 : 0.09 });
+    shine.moveTo(x + 18, y + h - 12);
+    shine.lineTo(x + w - 18, y + h - 12);
+    shine.stroke({ color: isPrimary ? 0xffef7e : 0x7fffd8, width: 1, alpha: isHover ? 0.36 : 0.16 });
+
+    if (label) {
+      label.anchor.set(0, 0.5);
+      label.style.align = 'left';
+      label.style.fill = isHover || isFocused
+        ? '#ffffff'
+        : (isPrimary ? '#ffe584' : (isDanger ? '#ff7a86' : '#c9fbff'));
+      label.x = x + (isCompact ? 36 : (isPrimary ? 58 : 44));
+      label.y = hasSubLabel ? -h * 0.1 : 0;
+    }
+    if (sublabel) {
+      sublabel.anchor.set(0, 0.5);
+      sublabel.style.align = 'left';
+      sublabel.style.fill = isPrimary ? '#fff3b6' : (isDanger ? '#ff9aa5' : '#8deeff');
+      sublabel.alpha = hasSubLabel ? (isHover || isFocused ? 1 : 0.86) : 0;
+      sublabel.x = label?.x || (x + 44);
+      sublabel.y = h * 0.2;
+    }
+    if (icon) {
+      const iconSize = clampNumber(h * (isCompact ? 0.36 : 0.31), 16, isPrimary ? 32 : 24);
+      const iconX = x + (isCompact ? 20 : (isPrimary ? 30 : 23));
+      const iconY = hasSubLabel ? -h * 0.08 : 0;
+      this.drawMenuButtonIcon(icon, container._iconType, iconX, iconY, iconSize, drawAccent, isHover || isFocused ? 1 : 0.82);
+    }
+    container.hitArea = new PIXI.Rectangle(x, y, w, h);
     if (container?._stepperCue) this.drawSectorStartStepperCue(container);
   }
 
@@ -1894,8 +2049,8 @@ export class MenuScene {
           AudioManager.init();
           const enabled = AudioManager.toggleMute();
           if (this.musicBtn?._label) {
-            this.musicBtn._label.text = enabled ? 'MUSIC: ON' : 'MUSIC: OFF';
-            this.refreshMenuButtonLabel(this.musicBtn, this.musicBtn._btnWidth - 26, { minScale: 0.72 });
+            this.musicBtn._label.text = translateText(enabled ? 'MUSIC: ON' : 'MUSIC: OFF');
+            this.refreshButtonCopy(this.musicBtn, { forceGpuRefresh: true });
           }
         }
       }
@@ -1953,8 +2108,8 @@ export class MenuScene {
     const nav = this.menuGamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     this.setInputDevice('controller');
-    if (nav.pressed.left) this.cycleSectorStartCheckpoint(-1);
-    if (nav.pressed.right) this.cycleSectorStartCheckpoint(1);
+    if (nav.pressed.left && !this.cycleSectorStartCheckpoint(-1)) this.moveMenuFocus(-1);
+    if (nav.pressed.right && !this.cycleSectorStartCheckpoint(1)) this.moveMenuFocus(1);
     if (nav.pressed.up) this.moveMenuFocus(-1);
     if (nav.pressed.down) this.moveMenuFocus(1);
     if (nav.pressed.confirm) this.activateFocusedMenuOption();
@@ -2046,19 +2201,23 @@ export class MenuScene {
     return base;
   }
 
+  getSectorStartButtonSubLabel() {
+    const checkpoint = this.getSelectedSectorStartCheckpoint();
+    if (!checkpoint || !this.sectorStartState?.available) return translateText('LOCKED');
+    const record = getSectorStartChallengeRecord(checkpoint);
+    if (record?.scoreEarned > 0) {
+      return `${translateText('BEST')} ${this.formatSectorStartMenuBestScore(record.scoreEarned)}`;
+    }
+    return `${translateText('CHECKPOINT')} ${checkpoint}`;
+  }
+
   updateSectorStartButton({ forceGpuRefresh = false } = {}) {
     if (!this.sectorStartBtn) return;
     const available = Boolean(this.sectorStartState?.available);
-    this.sectorStartBtn.visible = available;
-    this.sectorStartBtn.eventMode = available ? 'static' : 'none';
+    this.sectorStartBtn.visible = true;
+    this.sectorStartBtn.eventMode = 'static';
     this.sectorStartBtn.cursor = available ? 'pointer' : 'default';
-    if (this.sectorStartBtn._label) {
-      this.sectorStartBtn._label.text = this.getSectorStartButtonLabel();
-      this.refreshMenuButtonLabel(this.sectorStartBtn, (this.sectorStartBtn._btnWidth || 286) - 88, {
-        minScale: 0.74,
-        forceGpuRefresh
-      });
-    }
+    this.refreshButtonCopy(this.sectorStartBtn, { forceGpuRefresh });
     this.drawMenuButton(this.sectorStartBtn, false);
     this.drawSectorStartStepperCue();
   }
@@ -2208,8 +2367,8 @@ export class MenuScene {
         this.settingsOverlay = null;
         this.menuGamepadNavigator.suppressUntilReleased();
         if (this.musicBtn?._label) {
-          this.musicBtn._label.text = AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF';
-          this.refreshMenuButtonLabel(this.musicBtn, this.musicBtn._btnWidth - 26, { minScale: 0.72 });
+          this.musicBtn._label.text = translateText(AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF');
+          this.refreshButtonCopy(this.musicBtn, { forceGpuRefresh: true });
         }
       }
     });
@@ -2235,22 +2394,22 @@ export class MenuScene {
     if (this.disclaimer) this.disclaimer.text = this.getDisclaimerText(getCurrentLayout());
     if (this.controls) this.controls.text = getCurrentLayout().isMobile ? this.getControlsText(getCurrentLayout()) : '';
     if (this.musicBtn?._label) {
-      this.musicBtn._label.text = AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF';
-      this.refreshMenuButtonLabel(this.musicBtn, this.musicBtn._btnWidth - 26, { minScale: 0.72 });
+      this.musicBtn._label.text = translateText(AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF');
     }
-    if (this.threatCodexBtn?._label) {
-      this.threatCodexBtn._label.text = translateText('THREAT CODEX');
-    }
-    if (this.helpBtn?._label) {
-      this.helpBtn._label.text = translateText('HOW TO PLAY');
-      this.refreshMenuButtonLabel(this.helpBtn, this.helpBtn._btnWidth - 26, { minScale: 0.72 });
-    }
+    [
+      this.startBtn,
+      this.sectorStartBtn,
+      this.highscoreBtn,
+      this.storyBtn,
+      this.threatCodexBtn,
+      this.achievementsBtn,
+      this.settingsBtn,
+      this.helpBtn,
+      this.exitBtn,
+      this.musicBtn
+    ].filter(Boolean).forEach((button) => this.refreshButtonCopy(button, { forceGpuRefresh: true }));
     this.refreshSectorStartState();
     this.updateSectorStartButton({ forceGpuRefresh: true });
-    if (this.storyBtn?._label) {
-      this.storyBtn._label.text = translateText('LEADERBOARD');
-      this.refreshMenuButtonLabel(this.storyBtn, this.storyBtn._btnWidth - 48, { minScale: 0.78 });
-    }
     this.settingsOverlay?.rebuild?.();
     this.layoutMenu();
   }
@@ -2272,11 +2431,15 @@ export class MenuScene {
   animateElement(element, delay, duration) {
     if (!element) return;
 
+    const animationToken = (element._introAnimationToken || 0) + 1;
+    element._introAnimationToken = animationToken;
     const startTime = Date.now() + delay * 1000;
-    const initialY = element.y;
+    const targetY = Number.isFinite(element._layoutY) ? element._layoutY : element.y;
     const offsetY = 20;
+    element.y = targetY + offsetY;
 
     const animate = () => {
+      if (element._introAnimationToken !== animationToken) return;
       const now = Date.now();
       if (now < startTime) {
         requestAnimationFrame(animate);
@@ -2287,7 +2450,7 @@ export class MenuScene {
       const eased = this.easeOutCubic(progress);
 
       element.alpha = eased;
-      element.y = initialY + offsetY * (1 - eased);  // Slide up from below
+      element.y = targetY + offsetY * (1 - eased);
 
       if (progress < 1) {
         requestAnimationFrame(animate);
