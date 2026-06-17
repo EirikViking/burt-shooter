@@ -162,6 +162,19 @@ Prompt summary:
 
 > Premium Nova Swarm arcade powerup icon atlas with distinct collectible icons for triple beam, vector boost, rapid cabinet, overdrive core, slow time, ghost phase, extra life, shield, rapid fire, double shot, damage up, speed up, pierce shot, score x2, magnet field, side drones, shockwave, chain lightning, orbital strike, vampire drain, plus supplemental bomb, point-defense, and bonus-core icons; flat chroma-key backgrounds, no text, no logos, no old UFO/saucer art, readable at small gameplay sizes.
 
+## 2026-06-17 Latest Powerup Icon Refresh
+
+- Runtime assets: `public/art/generated/nova-swarm/powerups/nova-powerup-*-20260613.png` for the 20 latest powerups.
+- Review sheet: `public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260617-new-batch.png`.
+- Repro script: `scripts/generate-powerup-icon-refresh-20260617.py`.
+- Optimization: internal Codex imagegen was used for the 20-icon art direction and no-text/no-letter constraints; the shipped PNGs were normalized through the local generator so every refreshed asset remains a deterministic `192x192` transparent circular badge under the existing manifest slots.
+- Usage: `src/assets/assetManifest.js` keeps the existing 2026-06-13 paths, while `src/utils/GameAssets.js` now preloads powerup art directly so early gameplay and debug/capture flows do not fall back to the bonus-core texture.
+- Verification: `npm run check:powerup-assets`, `npm run build:current`, `npm run check:powerup-visuals`, and `npm run check:codex-layout`.
+
+Prompt summary:
+
+> Twenty distinct Nova Swarm neon sci-fi arcade powerup icons in a `5x4` sheet: prism splitter, rail surge, chrono anchor, blink drive, nano patch, score fever, gravity well, drone carousel, plasma lance, stasis net, aegis burst, jackpot lens, ion dash, saw matrix, mirror shots, mercy protocol, target paint, void crown, swarm contract, and pulse refund. Crisp silhouettes, dark badge backgrounds, high contrast, no text, no words, no letters, no numerals, no `P` symbol, no labels, no watermarks, readable at small gameplay size.
+
 ## 2026-05-19 Generated Credits Artwork
 
 - Source: `public/art/generated/nova-swarm/source/nova-swarm-credits-20260519-source.png`

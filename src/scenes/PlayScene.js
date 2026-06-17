@@ -587,6 +587,13 @@ export class PlayScene {
         console.log('[PlayScene] Bonus core texture ready.');
       }
     });
+    this.powerupAssetsReady = GameAssets.loadPowerupAssets()
+      .then((textures) => {
+        console.log('[PlayScene] Powerup textures ready:', Object.keys(textures || {}).length);
+      })
+      .catch((error) => {
+        console.warn('[PlayScene] Powerup texture preload failed:', error);
+      });
     this.commsPortraitsReady = GameAssets.loadCommsPortraits();
 
     // Initialize touch controls

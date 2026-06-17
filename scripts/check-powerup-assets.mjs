@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { AssetManifest } from '../src/assets/assetManifest.js';
-import { ALL_POWERUP_TYPES } from '../src/config/PowerupCatalog.js';
+import { ALL_POWERUP_TYPES, NEW_POWERUP_TYPES } from '../src/config/PowerupCatalog.js';
 
 const requiredPowerups = [...ALL_POWERUP_TYPES, 'bonus_core'];
 
@@ -52,6 +52,18 @@ if (AssetManifest.sprites?.bonusCore !== generatedPowerups.bonus_core) {
 const reviewSheet = path.join(root, 'public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260519.jpg');
 if (!existsSync(reviewSheet)) {
   errors.push('Powerup contact sheet missing: public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260519.jpg');
+}
+
+const refreshedBatchReviewSheet = path.join(root, 'public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260617-new-batch.png');
+if (!existsSync(refreshedBatchReviewSheet)) {
+  errors.push('Refreshed 2026-06-13 powerup review sheet missing: public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260617-new-batch.png');
+}
+
+for (const key of NEW_POWERUP_TYPES) {
+  const url = generatedPowerups[key] || '';
+  if (!url.endsWith('-20260613.png')) {
+    errors.push(`${key} should stay on the refreshed 2026-06-13 asset slot, got ${url || 'missing'}`);
+  }
 }
 
 if (errors.length) {

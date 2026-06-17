@@ -17,6 +17,7 @@ const viewports = [
   { width: 1280, height: 720, name: '1280x720' }
 ];
 const categoryShots = [
+  { categoryId: 'powerups', entryId: 'prism_splitter', label: 'powerups-prism-splitter' },
   { categoryId: 'sectors', entryIndex: 0, label: 'sectors' },
   { categoryId: 'sectors', entryId: 'sector_020', label: 'sectors-20' },
   { categoryId: 'sectors', entryId: 'sector_030', label: 'sectors-30' },
@@ -90,7 +91,6 @@ function seededDiscoveryState() {
   const catalog = getThreatCodexCatalog();
   const items = {};
   for (const [category, entries] of Object.entries(catalog)) {
-    if (category === 'powerups') continue;
     items[category] = Object.fromEntries((entries || []).map((entry) => [entry.id, {
       id: entry.id,
       category,

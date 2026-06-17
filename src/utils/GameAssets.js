@@ -16,6 +16,19 @@ class GameAssetsManager {
         this.enemyWeaponTextures = [];
         this.rankShipTextures = [];
         this.rankShipList = AssetManifest.sprites.playerRankShips || [];
+        this.xtra = this.createXtraStore();
+    }
+
+    createXtraStore(existing = {}) {
+        return {
+            ships: existing.ships || {},
+            enemies: existing.enemies || {},
+            lasers: existing.lasers || {},
+            damage: existing.damage || {},
+            parts: existing.parts || {},
+            effects: existing.effects || {},
+            powerups: existing.powerups || {}
+        };
     }
 
     async ensureBonusCoreTexture() {
@@ -282,7 +295,7 @@ class GameAssetsManager {
     }
 
     async loadXtraAssets() {
-        this.xtra = { ships: {}, enemies: {}, lasers: {}, damage: {}, parts: {}, effects: {}, powerups: {} };
+        this.xtra = this.createXtraStore(this.xtra);
 
         // Loading Xtra Player Ships (for rank progression)
         const shipPromises = [];
@@ -349,15 +362,7 @@ class GameAssetsManager {
         });
 
         // Loading generated Nova Swarm powerup icons.
-        const powerupPromises = [];
-        const generatedPowerups = AssetManifest.generated?.powerups || {};
-        Object.entries(generatedPowerups).forEach(([name, src]) => {
-            powerupPromises.push(this.loadSingleAsset(
-                `xtra_powerup_${name}`,
-                src,
-                this.xtra.powerups
-            ));
-        });
+        const powerupPromises = [this.loadPowerupAssets()];
 
         await Promise.all([...shipPromises, ...enemyPromises, ...laserPromises, ...dmgPromises, ...fxPromises, ...powerupPromises]);
         console.log('[GameAssets] Xtra Assets Loaded (ships:', Object.keys(this.xtra.ships).length, 'powerups:', Object.keys(this.xtra.powerups).length, ')');
@@ -370,6 +375,18 @@ class GameAssetsManager {
         } catch (e) {
             // calculated risk: ignore missing optional assets
         }
+    }
+
+    async loadPowerupAssets() {
+        this.xtra = this.createXtraStore(this.xtra);
+        const generatedPowerups = AssetManifest.generated?.powerups || {};
+        const powerupPromises = Object.entries(generatedPowerups).map(([name, src]) => {
+            const alias = `xtra_powerup_${name}`;
+            if (this.isValidTexture(this.xtra.powerups[alias])) return Promise.resolve(this.xtra.powerups[alias]);
+            return this.loadSingleAsset(alias, src, this.xtra.powerups);
+        });
+        await Promise.all(powerupPromises);
+        return this.xtra.powerups;
     }
 
     getXtraShip(type, color) {

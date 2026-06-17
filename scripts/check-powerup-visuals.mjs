@@ -104,6 +104,10 @@ try {
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
   await page.waitForFunction(() => window.__game?.scenes?.play?.powerupManager && window.__game?.scenes?.play?.player, null, { timeout: 15000 });
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.powerupAssetsReady), null, { timeout: 15000 });
+  await page.evaluate(async () => {
+    await window.__game?.scenes?.play?.powerupAssetsReady;
+  });
   await page.waitForFunction(() => {
     const play = window.__game?.scenes?.play;
     return Boolean(play?.introActive || play?.introComplete);
@@ -170,12 +174,16 @@ try {
   await page.screenshot({ path: screenshot, fullPage: true });
 
   const missing = state.types?.filter(item => !item.hasMainSprite || item.width < 28 || item.height < 28) || [];
+  const fallbackTextures = state.types?.filter(item => String(item.textureLabel || '').includes('bonus_core')) || [];
+  const wrongTextures = state.types?.filter(item => !String(item.textureLabel || '').includes(`nova-powerup-${item.type}-`)) || [];
   const report = {
-    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && consoleEvents.length === 0 ? 'passed' : 'failed',
+    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && fallbackTextures.length === 0 && wrongTextures.length === 0 && consoleEvents.length === 0 ? 'passed' : 'failed',
     baseUrl,
     screenshot,
     state,
     missing,
+    fallbackTextures,
+    wrongTextures,
     consoleEvents
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
