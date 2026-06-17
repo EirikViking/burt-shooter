@@ -32,6 +32,8 @@ import { getBossSupportShipEventSeed, pickBossSupportShipProfile } from '../conf
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
 const WAVE_OBJECTIVE_FAILSAFE_MS = 45000;
+const BOSS_FUEL_TETHER_COLOR = 0x7dffcc;
+const BOSS_FUEL_TETHER_ACCENT = 0xffec8a;
 
 const BASE_WAVE_TACTICS = [
   {
@@ -2571,6 +2573,7 @@ export class EnemyManager {
     enemy.startEntry(startX, -70, targetX + supportProfile.routeDrift * 26, targetY, supportProfile.entryMs, 0);
     this.enemies.push(enemy);
     this.container.addChild(enemy.sprite);
+    this.attachBossFuelTether(enemy);
     this.game?.scenes?.play?.recordThreatDiscovery?.(supportProfile.id, 'enemies', {
       name: supportProfile.displayName,
       role: translateText('Boss support'),
@@ -2602,8 +2605,88 @@ export class EnemyManager {
     return true;
   }
 
+  attachBossFuelTether(enemy) {
+    if (!enemy || enemy.bossFuelTether || !this.container) return enemy?.bossFuelTether || null;
+    const tether = new PIXI.Graphics();
+    tether.label = 'bossFuelShipHealTether';
+    tether.zIndex = -6;
+    tether.blendMode = 'add';
+    tether.visible = false;
+    tether.renderable = false;
+    enemy.bossFuelTether = tether;
+    enemy.ownedVisuals?.push(tether);
+    if (typeof this.container.addChildAt === 'function') {
+      this.container.addChildAt(tether, 0);
+    } else {
+      this.container.addChild?.(tether);
+    }
+    return tether;
+  }
+
+  clearBossFuelTether(enemy) {
+    const tether = enemy?.bossFuelTether;
+    if (!tether) return;
+    tether.clear?.();
+    tether.visible = false;
+    tether.renderable = false;
+  }
+
+  updateBossFuelTether(enemy, boss, distance = 0) {
+    const tether = enemy?.bossFuelTether || this.attachBossFuelTether(enemy);
+    if (!tether || !enemy?.active || !boss?.active) return;
+
+    const now = Date.now();
+    const dx = boss.x - enemy.x;
+    const dy = boss.y - enemy.y;
+    const angle = Math.atan2(dy, dx);
+    const supportRadius = Math.max(10, enemy.radius || 18) * 0.72;
+    const bossRadius = Math.max(36, boss.getVisualRadius?.() || boss.radius || 70) * 0.36;
+    const startX = enemy.x + Math.cos(angle) * supportRadius;
+    const startY = enemy.y + Math.sin(angle) * supportRadius;
+    const endX = boss.x - Math.cos(angle) * bossRadius;
+    const endY = boss.y - Math.sin(angle) * bossRadius;
+    const pulse = Math.sin(now * 0.011 + distance * 0.018) * 0.5 + 0.5;
+    const tension = Math.max(0.38, Math.min(1, 1 - distance / 620));
+
+    tether.clear();
+    tether.visible = true;
+    tether.renderable = true;
+    tether.alpha = 0.88 + pulse * 0.12;
+    tether.moveTo(startX, startY);
+    tether.lineTo(endX, endY);
+    tether.stroke({ color: BOSS_FUEL_TETHER_COLOR, width: 10, alpha: 0.16 + tension * 0.12 });
+    tether.moveTo(startX, startY);
+    tether.lineTo(endX, endY);
+    tether.stroke({ color: BOSS_FUEL_TETHER_ACCENT, width: 4 + pulse * 1.7, alpha: 0.34 + tension * 0.26 });
+    tether.moveTo(startX, startY);
+    tether.lineTo(endX, endY);
+    tether.stroke({ color: 0xffffff, width: 1.4, alpha: 0.44 + pulse * 0.24 });
+
+    const packetCount = 3;
+    for (let i = 0; i < packetCount; i += 1) {
+      const t = (now * 0.00135 + i / packetCount) % 1;
+      const packetX = startX + (endX - startX) * t;
+      const packetY = startY + (endY - startY) * t;
+      const packetRadius = 2.8 + pulse * 1.4;
+      tether.circle(packetX, packetY, packetRadius);
+      tether.fill({ color: BOSS_FUEL_TETHER_ACCENT, alpha: 0.36 + tension * 0.28 });
+    }
+
+    tether.circle(startX, startY, 5 + pulse * 2);
+    tether.stroke({ color: BOSS_FUEL_TETHER_COLOR, width: 2, alpha: 0.38 + tension * 0.24 });
+    tether.circle(startX, startY, 2.8 + pulse);
+    tether.fill({ color: 0xffffff, alpha: 0.36 + tension * 0.2 });
+    tether.circle(endX, endY, 7 + pulse * 3);
+    tether.stroke({ color: BOSS_FUEL_TETHER_ACCENT, width: 2, alpha: 0.3 + tension * 0.28 });
+    tether.circle(endX, endY, 3.6 + pulse * 1.4);
+    tether.fill({ color: BOSS_FUEL_TETHER_COLOR, alpha: 0.32 + tension * 0.22 });
+  }
+
   updateBossFuelShip(enemy, delta) {
-    if (!enemy?.active || !this.boss?.active) return;
+    if (!enemy?.active || !this.boss?.active) {
+      this.clearBossFuelTether(enemy);
+      return;
+    }
     const boss = this.boss;
     const targetX = boss.x;
     const targetY = boss.y;
@@ -2616,6 +2699,7 @@ export class EnemyManager {
     enemy.sprite.rotation = Math.atan2(dy, dx) + Math.PI / 2;
     enemy.sprite.x = enemy.x;
     enemy.sprite.y = enemy.y;
+    this.updateBossFuelTether(enemy, boss, distance);
     const contactDistance = (enemy.radius || 18) + (boss.getVisualRadius?.() || boss.radius || 70) * 0.45;
     if (distance <= contactDistance) {
       const healAmount = Math.max(2, Math.round((boss.maxHealth || 1) * (enemy.bossFuelProfile?.healPercent || 0.08)));

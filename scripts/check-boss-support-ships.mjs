@@ -80,7 +80,16 @@ for (const profile of BOSS_SUPPORT_SHIPS) {
 }
 
 const managerSource = readFileSync('src/managers/EnemyManager.js', 'utf8');
-for (const token of ['pickBossSupportShipProfile', 'getBossSupportShipEventSeed', 'bossSupportShipProfile', 'recordThreatDiscovery?.(supportProfile.id', 'guaranteedFirstSupport']) {
+for (const token of [
+  'pickBossSupportShipProfile',
+  'getBossSupportShipEventSeed',
+  'bossSupportShipProfile',
+  'recordThreatDiscovery?.(supportProfile.id',
+  'guaranteedFirstSupport',
+  'attachBossFuelTether',
+  'updateBossFuelTether',
+  'bossFuelShipHealTether'
+]) {
   if (!managerSource.includes(token)) fail(`EnemyManager missing support ship runtime token ${token}`);
 }
 
@@ -170,6 +179,51 @@ deliveryProbe.updateBossFuelShip({
 }, 1);
 if (deliveredHeal !== 8 || deliveredSource !== 'boss_fuel_ship' || !deactivated) {
   fail(`support delivery should heal and deactivate, heal=${deliveredHeal} source=${deliveredSource || 'none'} deactivated=${deactivated}`);
+}
+
+let tetherClears = 0;
+let tetherStrokes = 0;
+let tetherFills = 0;
+const fakeTether = {
+  visible: false,
+  renderable: false,
+  alpha: 0,
+  clear() {
+    tetherClears += 1;
+  },
+  moveTo() {},
+  lineTo() {},
+  stroke() {
+    tetherStrokes += 1;
+  },
+  circle() {},
+  fill() {
+    tetherFills += 1;
+  }
+};
+const tetherProbe = Object.assign(Object.create(EnemyManager.prototype), {});
+const tetherEnemy = {
+  active: true,
+  x: 80,
+  y: 110,
+  radius: 18,
+  bossFuelTether: fakeTether
+};
+tetherProbe.updateBossFuelTether(tetherEnemy, {
+  active: true,
+  x: 220,
+  y: 132,
+  radius: 74,
+  getVisualRadius() {
+    return 92;
+  }
+}, 142);
+if (!fakeTether.visible || !fakeTether.renderable || tetherStrokes < 3 || tetherFills < 4) {
+  fail(`support tether should draw an active heal beam, visible=${fakeTether.visible} renderable=${fakeTether.renderable} strokes=${tetherStrokes} fills=${tetherFills}`);
+}
+tetherProbe.clearBossFuelTether(tetherEnemy);
+if (fakeTether.visible || fakeTether.renderable || tetherClears < 2) {
+  fail('support tether should clear and hide when the support ship is inactive');
 }
 
 const firstSupport = pickBossSupportShipProfile(5, getBossSupportShipEventSeed(5, 0));
