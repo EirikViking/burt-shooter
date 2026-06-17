@@ -166,6 +166,15 @@ function hasReadableTopStack(layout, minGap = 3) {
   return true;
 }
 
+function ctaFitsViewport(cta, viewportHeight = 768) {
+  return Boolean(
+    cta?.visible &&
+    Number(cta.y) >= 0 &&
+    Number(cta.height) > 0 &&
+    Number(cta.y) + Number(cta.height) <= viewportHeight
+  );
+}
+
 function fullLocalLeaderboard() {
   return Array.from({ length: 20 }, (_, index) => ({
     name: `ACE${String(index + 1).padStart(2, '0')}`,
@@ -475,6 +484,11 @@ try {
       submittedRunbackState.scene === 'gameOver' &&
       submittedRunbackState.gameOver?.state === 'runback' &&
       submittedRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
+      submittedRunbackState.gameOver?.mainMenuCta?.visible === true &&
+      submittedRunbackState.gameOver?.mainMenuCta?.label === 'BACK TO MAIN MENU' &&
+      ctaFitsViewport(submittedRunbackState.gameOver?.leaderboardCta) &&
+      ctaFitsViewport(submittedRunbackState.gameOver?.hangarCta) &&
+      ctaFitsViewport(submittedRunbackState.gameOver?.mainMenuCta) &&
       submittedRunbackState.gameOver?.ceremonyTitle === 'ONE MORE RUN?' &&
       /Local: #\d+/i.test(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
       /Global:/i.test(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
@@ -487,6 +501,10 @@ try {
       noSlotReadyState.gameOver?.resultHoldReady === true &&
       noSlotRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
       noSlotRunbackState.gameOver?.state === 'runback' &&
+      noSlotRunbackState.gameOver?.mainMenuCta?.visible === true &&
+      ctaFitsViewport(noSlotRunbackState.gameOver?.leaderboardCta) &&
+      ctaFitsViewport(noSlotRunbackState.gameOver?.hangarCta) &&
+      ctaFitsViewport(noSlotRunbackState.gameOver?.mainMenuCta) &&
       retryCtaRestartedState.scene === 'play' &&
       retryCtaRestartedState.score === 0 &&
       firstMenuLaunchState.scene === 'play' &&

@@ -1646,8 +1646,9 @@ export class GameOverScene {
     ].forEach(node => node?.updateText?.(false));
 
     // Calculate content height for centering
-    const spacing = layout.isMobile ? 7 : 11;
-    const sectionGap = layout.isMobile ? 12 : 18;
+    const compactRunbackDesktop = !layout.isMobile && this.state === 'runback' && height < 820;
+    const spacing = layout.isMobile ? 7 : compactRunbackDesktop ? 7 : 11;
+    const sectionGap = layout.isMobile ? 12 : compactRunbackDesktop ? 10 : 18;
 
     // Use measured text heights so extra unlock/rank lines cannot collide.
     const titleHeight = Math.max(titleSize * 1.2, this.title.height || 0);
@@ -1788,10 +1789,10 @@ export class GameOverScene {
     this.notQualifiedText.y = promptVisible ? this.promptText.y : stackY;
 
     addStackGap(this.state === 'runback'
-      ? (unlockRevealVisible ? (layout.isMobile ? 12 : 18) : (layout.isMobile ? 30 : 54))
+      ? (unlockRevealVisible ? (layout.isMobile ? 12 : compactRunbackDesktop ? 8 : 18) : (layout.isMobile ? 30 : compactRunbackDesktop ? 24 : 54))
       : (layout.isMobile ? 8 : 18));
     this.retryButton.x = width / 2;
-    this.retryButton.y = placeCenteredElement(this.retryButton, spacing, retryHeight);
+    this.retryButton.y = placeCenteredElement(this.retryButton, compactRunbackDesktop ? 0 : spacing, retryHeight);
 
     const secondaryButtons = [
       { node: this.leaderboardButton, visible: leaderboardVisible, width: this.leaderboardButtonWidth || 0, height: rawLeaderboardHeight },
@@ -1808,7 +1809,7 @@ export class GameOverScene {
     const visibleSecondaryButtons = secondaryButtons.filter((entry) => entry.visible);
     if (secondaryButtonsShareRow && visibleSecondaryButtons.length) {
       const gap = 18;
-      const rowY = placeCenteredElement(visibleSecondaryButtons[0].node, spacing * 0.8, secondaryRowHeight);
+      const rowY = placeCenteredElement(visibleSecondaryButtons[0].node, compactRunbackDesktop ? 0 : spacing * 0.8, secondaryRowHeight);
       const rowWidth = visibleSecondaryButtons.reduce((sum, entry) => sum + entry.width, 0) + gap * Math.max(0, visibleSecondaryButtons.length - 1);
       let cursorX = width / 2 - rowWidth / 2;
       visibleSecondaryButtons.forEach((entry) => {
@@ -1915,12 +1916,13 @@ export class GameOverScene {
     if (!this.retryButton || !this.retryButtonBg || !this.retryButtonGlow) return;
 
     const config = this.getPrimaryCtaConfig();
+    const compactRunbackDesktop = config.runback && !layout.isMobile && layout.height < 820;
     this.retryButtonMode = config.mode;
     const buttonWidth = config.runback
-      ? Math.min(layout.width * (layout.isMobile ? 0.9 : 0.58), layout.isMobile ? 360 : 560)
+      ? Math.min(layout.width * (layout.isMobile ? 0.9 : compactRunbackDesktop ? 0.52 : 0.58), layout.isMobile ? 360 : compactRunbackDesktop ? 510 : 560)
       : Math.min(layout.width * (layout.isMobile ? 0.82 : 0.4), layout.isMobile ? 320 : 390);
     const buttonHeight = config.runback
-      ? (layout.isMobile ? 76 : 94)
+      ? (layout.isMobile ? 76 : compactRunbackDesktop ? 74 : 94)
       : (layout.isMobile ? 58 : 66);
     const radius = layout.isMobile ? 10 : 12;
     const halfWidth = buttonWidth / 2;
@@ -1950,12 +1952,16 @@ export class GameOverScene {
     };
 
     this.retryButtonGlow.clear();
-    this.retryButtonGlow.roundRect(-halfWidth - 18, -halfHeight - 14, buttonWidth + 36, buttonHeight + 28, radius + 9);
+    const glowPadX = compactRunbackDesktop ? 12 : 18;
+    const glowPadY = compactRunbackDesktop ? 9 : 14;
+    this.retryButtonGlow.roundRect(-halfWidth - glowPadX, -halfHeight - glowPadY, buttonWidth + glowPadX * 2, buttonHeight + glowPadY * 2, radius + 9);
     this.retryButtonGlow.fill({ color: glowColor, alpha: config.disabled ? 0.08 : config.runback ? 0.34 + pulse * 0.2 : 0.18 });
-    this.retryButtonGlow.roundRect(-halfWidth - 8, -halfHeight - 7, buttonWidth + 16, buttonHeight + 14, radius + 4);
+    this.retryButtonGlow.roundRect(-halfWidth - 8, -halfHeight - (compactRunbackDesktop ? 5 : 7), buttonWidth + 16, buttonHeight + (compactRunbackDesktop ? 10 : 14), radius + 4);
     this.retryButtonGlow.stroke({ color: 0xffffff, width: config.runback ? 3.8 : 2, alpha: config.disabled ? 0.2 : config.runback ? 0.5 + pulse * 0.26 : 0.42 });
     if (config.runback && !config.disabled) {
-      this.retryButtonGlow.roundRect(-halfWidth - 27, -halfHeight - 22, buttonWidth + 54, buttonHeight + 44, radius + 13);
+      const outerPadX = compactRunbackDesktop ? 17 : 27;
+      const outerPadY = compactRunbackDesktop ? 13 : 22;
+      this.retryButtonGlow.roundRect(-halfWidth - outerPadX, -halfHeight - outerPadY, buttonWidth + outerPadX * 2, buttonHeight + outerPadY * 2, radius + 13);
       this.retryButtonGlow.stroke({ color: glowColor, width: 8, alpha: 0.11 + pulse * 0.09 });
     }
 
@@ -2004,18 +2010,18 @@ export class GameOverScene {
 
     if (this.retryButtonLabel) {
       this.retryButtonLabel.text = config.label;
-      this.retryButtonLabel.style.fontSize = config.runback ? (layout.isMobile ? 30 : 44) : (layout.isMobile ? 24 : 30);
+      this.retryButtonLabel.style.fontSize = config.runback ? (layout.isMobile ? 30 : compactRunbackDesktop ? 36 : 44) : (layout.isMobile ? 24 : 30);
       this.retryButtonLabel.style.fill = config.mode === 'restart' ? '#fff3a2' : '#f8ffff';
       this.retryButtonLabel.style.dropShadowColor = config.mode === 'restart' ? '#ffc94a' : '#00ffff';
-      this.retryButtonLabel.style.dropShadowBlur = config.runback ? 10 + pulse * 8 : 6;
-      this.retryButtonLabel.y = config.runback ? (layout.isMobile ? -12 : -16) : (layout.isMobile ? -9 : -10);
+      this.retryButtonLabel.style.dropShadowBlur = config.runback ? (compactRunbackDesktop ? 8 : 10) + pulse * (compactRunbackDesktop ? 5 : 8) : 6;
+      this.retryButtonLabel.y = config.runback ? (layout.isMobile ? -12 : compactRunbackDesktop ? -12 : -16) : (layout.isMobile ? -9 : -10);
       this.retryButtonLabel.scale.set(config.runback ? 1 + pulse * 0.025 : 1);
     }
     if (this.retryButtonHint) {
       this.retryButtonHint.text = config.hint;
-      this.retryButtonHint.style.fontSize = config.runback ? (layout.isMobile ? 12 : 15) : (layout.isMobile ? 11 : 13);
+      this.retryButtonHint.style.fontSize = config.runback ? (layout.isMobile ? 12 : compactRunbackDesktop ? 13 : 15) : (layout.isMobile ? 11 : 13);
       this.retryButtonHint.style.fill = config.runback ? '#c8ffff' : '#9cfbff';
-      this.retryButtonHint.y = config.runback ? (layout.isMobile ? 20 : 24) : (layout.isMobile ? 15 : 17);
+      this.retryButtonHint.y = config.runback ? (layout.isMobile ? 20 : compactRunbackDesktop ? 18 : 24) : (layout.isMobile ? 15 : 17);
     }
   }
 
@@ -2075,14 +2081,15 @@ export class GameOverScene {
   }
 
   shouldShowMainMenuButton() {
-    return this.isResultActionStage() && this.isSectorStartChallengeResult();
+    return this.isResultActionStage();
   }
 
   drawLeaderboardButton(layout) {
     if (!this.leaderboardButton || !this.leaderboardButtonBg || !this.leaderboardButtonGlow) return;
     const visible = this.shouldShowLeaderboardButton();
+    const compactRunbackDesktop = this.state === 'runback' && !layout.isMobile && layout.height < 820;
     const buttonWidth = Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
-    const buttonHeight = layout.isMobile ? 48 : 54;
+    const buttonHeight = layout.isMobile ? 48 : compactRunbackDesktop ? 46 : 54;
     const halfWidth = buttonWidth / 2;
     const halfHeight = buttonHeight / 2;
     const radius = layout.isMobile ? 8 : 10;
@@ -3714,10 +3721,11 @@ export class GameOverScene {
     if (!this.hangarButton || !this.hangarButtonBg || !this.hangarButtonGlow) return;
     const visible = this.shouldShowHangarButton();
     const compact = visible && this.shouldShowMainMenuButton();
+    const compactRunbackDesktop = this.state === 'runback' && !layout.isMobile && layout.height < 820;
     const buttonWidth = compact
       ? Math.min(layout.width * (layout.isMobile ? 0.72 : 0.26), layout.isMobile ? 280 : 300)
       : Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
-    const buttonHeight = layout.isMobile ? 46 : 52;
+    const buttonHeight = layout.isMobile ? 46 : compactRunbackDesktop ? 44 : 52;
     const halfWidth = buttonWidth / 2;
     const halfHeight = buttonHeight / 2;
     const radius = layout.isMobile ? 8 : 10;
@@ -3801,10 +3809,11 @@ export class GameOverScene {
     if (!this.mainMenuButton || !this.mainMenuButtonBg || !this.mainMenuButtonGlow) return;
     const visible = this.shouldShowMainMenuButton();
     const compact = visible && this.shouldShowHangarButton();
+    const compactRunbackDesktop = this.state === 'runback' && !layout.isMobile && layout.height < 820;
     const buttonWidth = compact
       ? Math.min(layout.width * (layout.isMobile ? 0.72 : 0.26), layout.isMobile ? 280 : 300)
       : Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
-    const buttonHeight = layout.isMobile ? 46 : 52;
+    const buttonHeight = layout.isMobile ? 46 : compactRunbackDesktop ? 44 : 52;
     const halfWidth = buttonWidth / 2;
     const halfHeight = buttonHeight / 2;
     const radius = layout.isMobile ? 8 : 10;

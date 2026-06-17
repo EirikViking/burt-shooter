@@ -27,7 +27,7 @@ import {
 } from '../config/EliteMiddleShips.js';
 import { getDangerMidShipProfile, pickDangerMidShipProfile } from '../config/DangerMidShips.js';
 import { WAVE_TACTIC_VARIANTS } from '../config/WaveTacticVariants.js';
-import { pickBossSupportShipProfile } from '../config/BossSupportShips.js';
+import { getBossSupportShipEventSeed, pickBossSupportShipProfile } from '../config/BossSupportShips.js';
 
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
@@ -2490,7 +2490,8 @@ export class EnemyManager {
     const activeBullets = playScene?.bulletManager?.enemyBullets?.filter((bullet) => bullet?.active !== false).length || 0;
     if (activeBullets > (level <= 6 ? 18 : 28)) return;
 
-    const chance = level <= 3 ? 0.2 : level <= 9 ? 0.28 : 0.34;
+    const guaranteedFirstSupport = this.bossFuelShipsSpawnedThisBoss === 0 && healthRatio <= 0.82;
+    const chance = guaranteedFirstSupport ? 1 : level <= 3 ? 0.2 : level <= 9 ? 0.28 : 0.34;
     if (Math.random() > chance) return;
     if (this.spawnBossFuelShip()) {
       this.bossFuelShipsSpawnedThisBoss += 1;
@@ -2501,7 +2502,10 @@ export class EnemyManager {
   spawnBossFuelShip() {
     if (!this.boss?.active) return false;
     const level = Math.max(1, Number(this.level) || 1);
-    const supportProfile = pickBossSupportShipProfile(level, `${level}|${this.bossFuelShipsSpawnedThisBoss}|${Math.round(this.boss.x)}|${Date.now()}`);
+    const supportProfile = pickBossSupportShipProfile(
+      level,
+      getBossSupportShipEventSeed(level, this.bossFuelShipsSpawnedThisBoss)
+    );
     const screenW = this.game.getWidth();
     const startLeft = Math.random() < 0.5;
     const startX = startLeft ? -46 : screenW + 46;

@@ -59,6 +59,10 @@ import {
   getGeneratedEnemyProfilesForLevel
 } from '../config/GeneratedEnemyProfiles.js';
 import {
+  getBossSupportShipEventSeed,
+  pickBossSupportShipProfile
+} from '../config/BossSupportShips.js';
+import {
   recordThreatDefeated,
   recordThreatSeen
 } from '../progression/ThreatDiscoveryState.js';
@@ -221,6 +225,8 @@ export class PlayScene {
     this.preparedRenderTextureKeys = new Set();
     this.levelStartWarmupPending = false;
     this.levelAdvanceWarmupPromise = null;
+    this.backgroundLevelEntryWarmupTimeout = null;
+    this.backgroundLevelEntryWarmupIdleHandle = null;
 
     // Ship intro state
     this.introActive = false;
@@ -1132,6 +1138,10 @@ export class PlayScene {
       delayMs: enemyStartDelayMs,
       source
     });
+    this.scheduleBackgroundLevelEntryWarmup(Math.max(1, Math.floor(Number(this.game.level) || 1) + 1), {
+      ahead: 2,
+      delayMs: showArrivalStinger ? 1200 : 900
+    });
     const compactHud = this.game.getWidth() < 620;
     if (!compactHud && !postBossLevelIntro) {
       this.showToast(getMicroMessage('levelStart'), { fontSize: 18, y: this.game.getHeight() * 0.12, slot: 'corner', type: 'level_up' });
@@ -1305,6 +1315,15 @@ export class PlayScene {
         const index = Math.max(0, Math.floor(profile.spriteIndex));
         addTexture(GameAssets.getGeneratedEnemyTexture(index), `generated_enemy:${index}`);
       });
+      for (let eventIndex = 0; eventIndex < 3; eventIndex += 1) {
+        const supportProfile = pickBossSupportShipProfile(
+          sectorLevel,
+          getBossSupportShipEventSeed(sectorLevel, eventIndex)
+        );
+        if (!Number.isFinite(supportProfile?.spriteIndex)) continue;
+        const index = Math.max(0, Math.floor(supportProfile.spriteIndex));
+        addTexture(GameAssets.getGeneratedEnemyTexture(index), `generated_enemy:${index}`);
+      }
     }
 
     const eliteCount = AssetManifest.generated?.eliteMiddleShips?.length || 0;
@@ -1330,6 +1349,39 @@ export class PlayScene {
       this.entryAssetWarmupCache.set(key, warmup);
     }
     return this.entryAssetWarmupCache.get(key);
+  }
+
+  clearBackgroundLevelEntryWarmup() {
+    if (this.backgroundLevelEntryWarmupTimeout) {
+      clearTimeout(this.backgroundLevelEntryWarmupTimeout);
+      this.backgroundLevelEntryWarmupTimeout = null;
+    }
+    if (this.backgroundLevelEntryWarmupIdleHandle && typeof window !== 'undefined' && window.cancelIdleCallback) {
+      window.cancelIdleCallback(this.backgroundLevelEntryWarmupIdleHandle);
+      this.backgroundLevelEntryWarmupIdleHandle = null;
+    }
+  }
+
+  scheduleBackgroundLevelEntryWarmup(level = (this.game?.level || 1) + 1, { ahead = 2, delayMs = 900 } = {}) {
+    this.clearBackgroundLevelEntryWarmup();
+    const targetLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const aheadCount = Math.max(0, Math.min(4, Math.floor(Number(ahead) || 0)));
+    const startWarmup = () => {
+      this.backgroundLevelEntryWarmupIdleHandle = null;
+      if (this.game?.currentScene !== this) return;
+      this.prewarmLevelEntryAssets(targetLevel, { ahead: aheadCount }).catch((error) => {
+        console.warn(`[PlayScene] background level entry warmup failed for level ${targetLevel}:`, error);
+      });
+    };
+    this.backgroundLevelEntryWarmupTimeout = setTimeout(() => {
+      this.backgroundLevelEntryWarmupTimeout = null;
+      if (this.game?.currentScene !== this) return;
+      if (typeof window !== 'undefined' && window.requestIdleCallback) {
+        this.backgroundLevelEntryWarmupIdleHandle = window.requestIdleCallback(startWarmup, { timeout: 1200 });
+      } else {
+        startWarmup();
+      }
+    }, Math.max(0, Math.floor(Number(delayMs) || 0)));
   }
 
   startLevelWhenWarm(source = 'introComplete') {
@@ -3010,6 +3062,7 @@ export class PlayScene {
     this.destroyPauseOverlay();
     this.clearPendingEnemyStart();
     this.clearSectorArrivalStinger();
+    this.clearBackgroundLevelEntryWarmup();
     this.removeAutoPauseHandlers();
     this.shipIntroToken += 1;
     this.sectorArrivalArtCache?.clear?.();

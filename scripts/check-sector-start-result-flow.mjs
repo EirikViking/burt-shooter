@@ -288,7 +288,7 @@ try {
     game.gameOver({ fromInterlude: true });
   });
   const rankedGameOver = await waitForState(page, (state) => state.scene === 'gameOver' && state.runMode === 'ranked', 'ranked game over');
-  assert.equal(rankedGameOver.gameOver?.mainMenuCta?.visible, false, 'ranked result flow should not gain Sector Start Main Menu CTA');
+  assert.equal(rankedGameOver.gameOver?.mainMenuCta?.visible, false, 'ranked score prompt should wait until runback before showing the Main Menu CTA');
   assert.equal(rankedGameOver.scoreSubmissionAllowed, true);
 
   const screenshot = path.join(outputDir, 'sector-start-result-flow.png');

@@ -93,6 +93,12 @@ export function getBossSupportShipProfile(id) {
   return SUPPORT_BY_ID.get(String(id)) || null;
 }
 
+export function getBossSupportShipEventSeed(level = 1, eventIndex = 0) {
+  const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+  const safeEventIndex = Math.max(0, Math.floor(Number(eventIndex) || 0));
+  return `${safeLevel}:boss-support:${safeEventIndex}`;
+}
+
 export function pickBossSupportShipProfile(level = 1, seed = '') {
   const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
   const hash = hashString(`${safeLevel}:${seed || Date.now()}`);
