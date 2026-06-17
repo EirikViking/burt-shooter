@@ -13,6 +13,14 @@ export const NOVA_PERF_FLAG_DEFINITIONS = Object.freeze({
     env: 'NOVA_PERF_DISABLE_NEW_ENEMY_ROSTER',
     query: 'novaPerfDisableNewEnemyRoster'
   },
+  disableSmallEnemyShips: {
+    env: 'NOVA_PERF_DISABLE_SMALL_ENEMY_SHIPS',
+    query: 'novaPerfDisableSmallEnemyShips'
+  },
+  enableSmallEnemyShips: {
+    env: 'NOVA_PERF_ENABLE_SMALL_ENEMY_SHIPS',
+    query: 'novaPerfEnableSmallEnemyShips'
+  },
   disableDecorativeBackgrounds: {
     env: 'NOVA_PERF_DISABLE_DECORATIVE_BACKGROUNDS',
     query: 'novaPerfDisableDecorativeBackgrounds'

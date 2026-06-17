@@ -9,8 +9,10 @@ import {
   GENERATED_ENEMY_PROFILES,
   GENERATED_ENEMY_STARTER_COUNT,
   GENERATED_ENEMY_TOTAL,
+  SMALL_GENERATED_ENEMY_ROSTER_ENABLED_BY_DEFAULT,
   getGeneratedEnemyProfilesForLevel,
-  getGeneratedEnemyPoolStats
+  getGeneratedEnemyPoolStats,
+  isSmallGeneratedEnemyProfile
 } from '../src/config/GeneratedEnemyProfiles.js';
 import { ENEMY_ATTACK_STYLE_DEFS, ENEMY_ATTACK_STYLE_IDS } from '../src/config/EnemyAttackStyles.js';
 import { ENEMY_MOVEMENT_STYLE_DEFS, ENEMY_MOVEMENT_STYLE_IDS } from '../src/config/EnemyMovementStyles.js';
@@ -40,6 +42,7 @@ const types = new Set();
 if (total !== GENERATED_ENEMY_TOTAL) fail(`expected ${GENERATED_ENEMY_TOTAL} normal enemy profiles, found ${total}`);
 const lateMayhem = profiles.filter((profile) => profile.lateMayhem === true);
 if (lateMayhem.length !== GENERATED_ENEMY_EXTRA_TOTAL) fail(`expected ${GENERATED_ENEMY_EXTRA_TOTAL} late-mayhem profiles, found ${lateMayhem.length}`);
+const smallLateMayhem = lateMayhem.filter(isSmallGeneratedEnemyProfile);
 const earlySurge = profiles.filter((profile) => profile.earlySurge === true);
 if (earlySurge.length !== GENERATED_ENEMY_EARLY_SURGE_TOTAL) fail(`expected ${GENERATED_ENEMY_EARLY_SURGE_TOTAL} level-one surge profiles, found ${earlySurge.length}`);
 if (usedMovement.size < 24) fail(`expected at least 24 movement families, found ${usedMovement.size}`);
@@ -104,7 +107,10 @@ if (level10.some((profile) => profile.lateMayhem)) fail('level 10 should not exp
 if (level11.length >= total) fail(`level 11 exposes all ${total} profiles`);
 if (!level11.some((profile) => profile.lateMayhem)) fail('level 11 should introduce late-mayhem profiles');
 if (level11.length <= level10.length) fail(`level 11 should expand the pool beyond level 10, found ${level10.length}->${level11.length}`);
-if (level40.length !== total) fail(`level 40 should expose all profiles, found ${level40.length}/${total}`);
+const expectedLevel40 = SMALL_GENERATED_ENEMY_ROSTER_ENABLED_BY_DEFAULT
+  ? total
+  : total - smallLateMayhem.length;
+if (level40.length !== expectedLevel40) fail(`level 40 should expose ${expectedLevel40} default-playable profiles, found ${level40.length}/${total}`);
 if (level11Move.length >= usedMovement.size) fail(`level 11 exposes all ${usedMovement.size} movement families`);
 if (level40Move.length !== usedMovement.size) fail(`level 40 exposes ${level40Move.length}/${usedMovement.size} movement families`);
 if (level11Attack.length >= usedAttacks.size) fail(`level 11 exposes all ${usedAttacks.size} attack families`);
@@ -161,7 +167,7 @@ if (errors.length) {
 
 console.log(
   `[normal-enemy-variety] PASS profiles=${total} movement=${usedMovement.size} attacks=${usedAttacks.size} ` +
-  `level1=${level1.length} earlySurge=${earlySurge.length} level10=${level10.length} level11=${level11.length} late=${lateMayhem.length} level40=${level40.length}`
+  `level1=${level1.length} earlySurge=${earlySurge.length} level10=${level10.length} level11=${level11.length} late=${lateMayhem.length} smallGated=${smallLateMayhem.length} level40=${level40.length}`
 );
 if (warnings.length) {
   for (const warning of warnings) console.warn(`[normal-enemy-variety] warning: ${warning}`);

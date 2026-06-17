@@ -14,6 +14,8 @@ const perfFlagQuery = Object.freeze({
   disableSectorArt: 'novaPerfDisableSectorArt',
   disableSectorFlyins: 'novaPerfDisableSectorFlyins',
   disableNewEnemyRoster: 'novaPerfDisableNewEnemyRoster',
+  disableSmallEnemyShips: 'novaPerfDisableSmallEnemyShips',
+  enableSmallEnemyShips: 'novaPerfEnableSmallEnemyShips',
   disableDecorativeBackgrounds: 'novaPerfDisableDecorativeBackgrounds'
 });
 

@@ -14,6 +14,12 @@ export const GENERATED_ENEMY_ASSET_COUNT = GENERATED_ENEMY_LEGACY_ASSET_COUNT + 
 export const GENERATED_ENEMY_STARTER_COUNT = 10;
 export const GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL = 11;
 export const GENERATED_ENEMY_FULL_UNLOCK_LEVEL = 40;
+export const SMALL_GENERATED_ENEMY_ROSTER_ENABLED_BY_DEFAULT = false;
+export const SMALL_GENERATED_ENEMY_SPRITE_INDEXES = Object.freeze([
+  51, 58, 60, 66, 68, 84, 85, 118
+]);
+
+const SMALL_GENERATED_ENEMY_SPRITE_INDEX_SET = new Set(SMALL_GENERATED_ENEMY_SPRITE_INDEXES);
 
 const LEGACY_NAMES = [
   'Array Nibbler', 'Orbit Clerk', 'Needle Skiff', 'Union Saucer', 'Copper Mite',
@@ -418,14 +424,27 @@ for (const profile of GENERATED_ENEMY_PROFILES) {
 
 const PROFILE_POOL_BY_LEVEL = new Map();
 
+export function isSmallGeneratedEnemyProfile(profile) {
+  return Boolean(profile?.lateMayhem === true && SMALL_GENERATED_ENEMY_SPRITE_INDEX_SET.has(profile.spriteIndex));
+}
+
+function shouldIncludeSmallGeneratedEnemies(flags) {
+  if (flags.enableSmallEnemyShips) return true;
+  if (flags.disableSmallEnemyShips) return false;
+  return SMALL_GENERATED_ENEMY_ROSTER_ENABLED_BY_DEFAULT;
+}
+
 export function getGeneratedEnemyProfilesForLevel(level) {
   const safeLevel = Math.max(1, Number(level) || 1);
-  const disableNewEnemyRoster = getNovaPerformanceFlags().disableNewEnemyRoster;
-  const cacheKey = `${safeLevel}:${disableNewEnemyRoster ? 'legacy' : 'full'}`;
+  const flags = getNovaPerformanceFlags();
+  const disableNewEnemyRoster = flags.disableNewEnemyRoster;
+  const includeSmallEnemyShips = shouldIncludeSmallGeneratedEnemies(flags);
+  const cacheKey = `${safeLevel}:${disableNewEnemyRoster ? 'legacy' : 'full'}:${includeSmallEnemyShips ? 'small-on' : 'small-off'}`;
   if (PROFILE_POOL_BY_LEVEL.has(cacheKey)) return PROFILE_POOL_BY_LEVEL.get(cacheKey);
   const pool = GENERATED_ENEMY_PROFILES.filter((profile) =>
     profile.unlockLevel <= safeLevel &&
-    (!disableNewEnemyRoster || profile.lateMayhem !== true)
+    (!disableNewEnemyRoster || profile.lateMayhem !== true) &&
+    (includeSmallEnemyShips || !isSmallGeneratedEnemyProfile(profile))
   );
   PROFILE_POOL_BY_LEVEL.set(cacheKey, pool);
   return pool;
@@ -446,6 +465,8 @@ export function getGeneratedEnemyPoolStats(level) {
     level: Math.max(1, Number(level) || 1),
     availableProfiles: profiles.length,
     totalProfiles: GENERATED_ENEMY_PROFILES.length,
+    smallProfiles: profiles.filter(isSmallGeneratedEnemyProfile).length,
+    totalSmallProfiles: GENERATED_ENEMY_PROFILES.filter(isSmallGeneratedEnemyProfile).length,
     movementFamilies: new Set(profiles.map((profile) => profile.movementStyle)).size,
     totalMovementFamilies: new Set(GENERATED_ENEMY_PROFILES.map((profile) => profile.movementStyle)).size,
     attackFamilies: new Set(profiles.map((profile) => profile.fireStyle)).size,

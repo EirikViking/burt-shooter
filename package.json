@@ -167,6 +167,7 @@
     "check:steam-trailer-opening": "node scripts/check-steam-trailer-opening.mjs",
     "check:gameplay-cursor": "node scripts/check-gameplay-cursor.mjs",
     "check:gameplay-performance-analysis": "node scripts/check-gameplay-performance-analysis.mjs",
+    "check:small-enemy-roster-feel": "node scripts/check-small-enemy-roster-feel.mjs",
     "check:keyboard-launches": "node scripts/check-keyboard-launch-paths.mjs",
     "check:live-deployment": "node scripts/check-live-deployment.mjs",
     "check:full-rc": "node scripts/check-full-rc-evidence.mjs",
