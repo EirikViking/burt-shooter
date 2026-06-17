@@ -1,0 +1,167 @@
+{
+  "timestamp": "2026-06-17T09:28:17Z",
+  "repoPath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype",
+  "branch": "recovery/performance-rescue-20260616",
+  "sourceCommitUsedForPackaging": "136762d2858501cfd4d2787a01296661e11d3469",
+  "performanceRescueCommit": "26f6712e7acf4ecc60a3dafda7b3e77382209877",
+  "smallEnemyGatingCommit": "136762d2858501cfd4d2787a01296661e11d3469",
+  "evidenceCommit": "commit-containing-this-file",
+  "sourceProof": {
+    "performanceRescueIsAncestor": true,
+    "smallEnemyGatingIsAncestor": true,
+    "smallGeneratedEnemyRosterEnabledByDefault": false,
+    "defaultSmallGeneratedEnemyCount": 0,
+    "smallGeneratedEnemyProfilesGated": [
+      "nova_enemy_182",
+      "nova_enemy_189",
+      "nova_enemy_191",
+      "nova_enemy_197",
+      "nova_enemy_199",
+      "nova_enemy_215",
+      "nova_enemy_216",
+      "nova_enemy_249"
+    ]
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23779737",
+    "steamCmdPath": "C:/steamcmd/steamcmd.exe",
+    "steamUser": "gaunziman",
+    "uploadCommand": "C:/steamcmd/steamcmd.exe +@ShutdownOnFailedCommand 1 +login gaunziman +run_app_build D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf +quit",
+    "uploadResult": "success",
+    "setLive": "",
+    "setLiveEmpty": true,
+    "noBranchAssignment": true,
+    "publicDefaultChanged": false,
+    "testBranchAssigned": false,
+    "steamworksMetadataChanged": false,
+    "appIdChanged": false,
+    "depotIdsChanged": false,
+    "storeMetadataChanged": false,
+    "visibilityChanged": false,
+    "achievementsChanged": false,
+    "leaderboardsChanged": false,
+    "leaderboardNamePreserved": "nova_swarm_global_score_v2",
+    "buildIdSafety": {
+      "not23768418": true,
+      "not23773181": true
+    }
+  },
+  "package": {
+    "packageCommand": "npm run package:steam:win",
+    "outputPath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/desktop/win-unpacked",
+    "payloadManifestPath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/steam_payload_manifest.json",
+    "vdfPath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf",
+    "buildVersion": "v2026-06-17_11-19-37",
+    "buildTimestamp": "2026-06-17T09:19:37.977Z",
+    "fileCount": 336,
+    "totalBytes": 873138679,
+    "manifestHash": "b31a0faa6741019ba2b13e0b74cfcba8942458d0360410b502f692aeecac2144",
+    "payloadManifestSha256": "c7672eb63001a0c0cfd300f4f670b66638e1cbed7650d061196f2446a71de73d",
+    "vdfSha256": "2c7ad29642ed1348700af4e342eb07f2e65bb385d215881656e75623c7c64e10",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "47871716ffae7092b899c5e70294bc6c650d72c0d5c51e42d07e1eda2690f5fa"
+    },
+    "packagedSmokeGitSha": "136762d",
+    "packagedPerfGitSha": "136762d"
+  },
+  "vdfInspection": {
+    "appId": "4765070",
+    "buildOutput": "../steam-build-output",
+    "contentRoot": "../desktop/win-unpacked",
+    "setLive": "",
+    "depotId": "4765071",
+    "forbiddenSetLiveTargetsAbsent": [
+      "default",
+      "public",
+      "test",
+      "beta",
+      "staging",
+      "preview"
+    ]
+  },
+  "steamPipeOutput": {
+    "appBuildLogPath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steam-build-output/app_build_4765070.log",
+    "depotBuildLogPath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steam-build-output/depot_build_4765071.log",
+    "capturedConsoleLogPath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/test-results/steam-upload-performance-rescue-small-gating-20260617/steamcmd-upload.log",
+    "successLine": "Successfully finished AppID 4765070 build (BuildID 23779737).",
+    "baselineManifestId": "435722587123880968",
+    "depotManifestId": "6553733676735946827",
+    "uploadedChunks": 7,
+    "branchAssignmentEvidence": "VDF SetLive was empty before upload and SteamCMD output only reports build creation, not SetLive or branch assignment."
+  },
+  "checksRun": [
+    { "command": "git fetch --all --prune", "status": "passed" },
+    { "command": "git status --short --branch", "status": "passed", "note": "clean before package and clean immediately before SteamCMD upload" },
+    { "command": "git worktree list", "status": "passed" },
+    { "command": "git branch --show-current", "status": "passed", "note": "recovery/performance-rescue-20260616" },
+    { "command": "git rev-parse HEAD", "status": "passed", "note": "136762d2858501cfd4d2787a01296661e11d3469" },
+    { "command": "git log --oneline --decorate -n 30", "status": "passed" },
+    { "command": "git merge-base --is-ancestor 26f6712e7acf4ecc60a3dafda7b3e77382209877 HEAD", "status": "passed" },
+    { "command": "git merge-base --is-ancestor 136762d2858501cfd4d2787a01296661e11d3469 HEAD", "status": "passed" },
+    { "command": "git show --stat HEAD", "status": "passed" },
+    { "command": "git diff --check", "status": "passed" },
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run check:generated-rosters", "status": "passed" },
+    { "command": "npm run check:generated-ship-art", "status": "passed" },
+    { "command": "npm run check:gameplay-performance-analysis", "status": "passed", "artifact": "test-results/gameplay-performance-analysis-2026-06-17T09-14-31-397Z" },
+    { "command": "npm run check:enemy-movement-smoothing", "status": "passed" },
+    { "command": "npm run check:late-enemy-mayhem", "status": "passed" },
+    { "command": "node scripts/check-small-enemy-roster-feel.mjs", "status": "passed", "artifact": "test-results/small-enemy-roster-feel-2026-06-17T09-16-46-414Z/report.json" },
+    { "command": "npm run build:current", "status": "passed", "note": "Vite large chunk warning only" },
+    { "command": "npm run package:steam:win", "status": "passed" },
+    { "command": "npm run desktop:smoke:packaged", "status": "passed", "artifact": "test-results/packaged-exe-smoke-2026-06-17T09-22-48-335Z/report.json" },
+    { "command": "npm run desktop:perf:packaged", "status": "passed", "artifact": "test-results/packaged-perf-smoke-2026-06-17T09-23-04-914Z/report.json", "note": "Perf min/avg 60 FPS; Steam API init warnings were emitted in local non-Steam smoke context but the check passed." },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf", "status": "passed" },
+    { "command": "C:/steamcmd/steamcmd.exe +@ShutdownOnFailedCommand 1 +login gaunziman +run_app_build <absolute app_build_LOCAL.vdf> +quit", "status": "passed", "note": "BuildID 23779737" }
+  ],
+  "performanceSummary": {
+    "gameplayPerformanceReport": "test-results/gameplay-performance-analysis-2026-06-17T09-14-31-397Z/report.json",
+    "smallEnemyRosterReport": "test-results/small-enemy-roster-feel-2026-06-17T09-16-46-414Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-06-17T09-23-04-914Z/report.json",
+    "packagedPerf": {
+      "minFps": 59.99999999999999,
+      "avgFps": 59.99999999999999,
+      "sampleCount": 12
+    },
+    "smallEnemyDefaultScenario": {
+      "scenario": "sector-20-b-small-new-ships-disabled",
+      "averageFps": 60,
+      "p95Ms": 16.9,
+      "p99Ms": 17.1,
+      "worstMs": 17.4,
+      "framesOver33Ms": 0,
+      "framesOver50Ms": 0,
+      "activeEnemiesMax": 16,
+      "smallEnemiesMax": 0,
+      "smallEnemiesAvg": 0
+    },
+    "smallEnemyExplicitEnableScenario": {
+      "scenario": "sector-20-a-current-full-roster-small-sample",
+      "smallEnemiesMax": 16
+    }
+  },
+  "manualSteamTestInstructions": [
+    "Open Steamworks for AppID 4765070.",
+    "Go to App Admin > SteamPipe > Builds.",
+    "Find BuildID 23779737.",
+    "Assign BuildID 23779737 to the intended Steam test branch only.",
+    "Do not assign it to default/public.",
+    "Launch Nova Swarm from Steam on that test branch.",
+    "Confirm the title/menu reports build v2026-06-17_11-19-37 / git 136762d where visible in diagnostics.",
+    "Play Sector 1, Sector 4 -> 5, Sector 5 Challenge, and a late/generated-heavy sector if practical.",
+    "Verify frame pacing feels smooth and the small late-mayhem ships do not appear in normal/default play.",
+    "Verify Steam overlay and screenshots in the Steam-launched build."
+  ],
+  "rollbackOrIgnoreInstructions": [
+    "This build was uploaded with SetLive empty and no branch assignment, so rollback is normally to leave BuildID 23779737 unassigned.",
+    "If BuildID 23779737 is manually assigned to a test branch and is bad, switch that test branch back to its previous BuildID.",
+    "To revert the source packaged into this build, run: git revert 136762d2858501cfd4d2787a01296661e11d3469",
+    "To revert the performance rescue source separately, run: git revert 26f6712e7acf4ecc60a3dafda7b3e77382209877",
+    "To revert this evidence file only, revert the commit that adds release/steamworks/steam_test_candidate_upload_20260617_23779737.json."
+  ]
+}
