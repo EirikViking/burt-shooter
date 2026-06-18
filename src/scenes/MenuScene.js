@@ -2142,7 +2142,18 @@ export class MenuScene {
           loaded: Boolean(this.menuIconTextures?.[button?._iconAssetKey]),
           spriteVisible: Boolean(button?._iconSprite?.visible),
           fallbackVisible: Boolean(button?._icon?.visible),
-          bounds: boundsForDisplayObject(button?._iconSprite?.visible ? button?._iconSprite : button?._icon)
+          bounds: boundsForDisplayObject(button?._iconSprite?.visible ? button?._iconSprite : button?._icon),
+          tileBounds: button ? {
+            x: Math.round(button.x - (button._btnWidth || 0) / 2),
+            y: Math.round(button.y - (button._btnHeight || 0) / 2),
+            width: Math.round(button._btnWidth || 0),
+            height: Math.round(button._btnHeight || 0),
+            right: Math.round(button.x + (button._btnWidth || 0) / 2),
+            bottom: Math.round(button.y + (button._btnHeight || 0) / 2)
+          } : null,
+          buttonBounds: boundsForDisplayObject(button),
+          labelBounds: boundsForDisplayObject(button?._label),
+          sublabelBounds: boundsForDisplayObject(button?._sublabel?.alpha > 0.05 ? button?._sublabel : null)
         }
       ])),
       threatCodex: {
@@ -2676,21 +2687,31 @@ export class MenuScene {
     const h = this.threatCodexBtn._btnHeight || 46;
     const pulse = 0.5 + Math.sin(this.animationTime * 5.6) * 0.5;
     const x = w / 2 - 24;
-    const y = -h / 2 + 15;
+    const y = -h / 2 + 16;
+    const chipW = 32;
+    const chipH = 20;
     cue.clear();
-    cue.roundRect(x - 13, y - 8, 26, 16, 5);
-    cue.fill({ color: 0x020711, alpha: 0.82 });
-    cue.roundRect(x - 13, y - 8, 26, 16, 5);
-    cue.stroke({ color: 0xffef7e, width: 1.35, alpha: 0.58 + pulse * 0.18 });
-    cue.circle(x, y, 4.4 + pulse * 1.2);
-    cue.fill({ color: 0xffd15c, alpha: 0.72 + pulse * 0.16 });
-    cue.circle(x, y, 8.5 + pulse * 2.5);
-    cue.stroke({ color: 0xffef7e, width: 1, alpha: 0.22 + pulse * 0.2 });
-    cue.moveTo(x - 15, y - 10);
-    cue.lineTo(x - 5, y - 10);
-    cue.moveTo(x + 5, y + 10);
-    cue.lineTo(x + 15, y + 10);
-    cue.stroke({ color: 0x7fffd8, width: 1, alpha: 0.28 });
+    cue.roundRect(x - chipW / 2 + 2, y - chipH / 2 + 3, chipW, chipH, 5);
+    cue.fill({ color: 0x000000, alpha: 0.34 });
+    cue.roundRect(x - chipW / 2, y - chipH / 2, chipW, chipH, 5);
+    cue.fill({ color: 0x051524, alpha: 0.9 });
+    cue.roundRect(x - chipW / 2, y - chipH / 2, chipW, chipH, 5);
+    cue.stroke({ color: 0xffef7e, width: 1.45, alpha: 0.72 + pulse * 0.18 });
+    cue.rect(x - chipW / 2 + 4, y - chipH / 2 + 5, 4, chipH - 10);
+    cue.fill({ color: 0x7fffd8, alpha: 0.58 + pulse * 0.16 });
+    cue.rect(x + chipW / 2 - 8, y - chipH / 2 + 5, 4, chipH - 10);
+    cue.fill({ color: 0x7fffd8, alpha: 0.42 + pulse * 0.14 });
+    cue.circle(x, y, 4.2 + pulse * 0.8);
+    cue.fill({ color: 0xffd15c, alpha: 0.82 + pulse * 0.14 });
+    cue.circle(x, y, 8.4 + pulse * 2.2);
+    cue.stroke({ color: 0xffef7e, width: 1, alpha: 0.24 + pulse * 0.18 });
+    for (const pinY of [-5, 0, 5]) {
+      cue.moveTo(x - chipW / 2 - 4, y + pinY);
+      cue.lineTo(x - chipW / 2, y + pinY);
+      cue.moveTo(x + chipW / 2, y + pinY);
+      cue.lineTo(x + chipW / 2 + 4, y + pinY);
+    }
+    cue.stroke({ color: 0x7fffd8, width: 1, alpha: 0.34 + pulse * 0.12 });
   }
 
   updateMenuButtonMotion(delta = 0) {
@@ -2891,7 +2912,7 @@ export class MenuScene {
     const cut = clampNumber(h * 0.16, 5, 10);
     const iconRenderSize = isCompact
       ? clampNumber(h * 0.82, 24, 30)
-      : clampNumber(h * (isPrimary ? 0.62 : 0.43), isPrimary ? 76 : 52, isPrimary ? 88 : 62);
+      : clampNumber(h * (isPrimary ? 0.63 : 0.465), isPrimary ? 78 : 56, isPrimary ? 90 : 68);
     const iconPlateSize = iconRenderSize + (isCompact ? 4 : (isPrimary ? 18 : 12));
     const label = container._label;
     const sublabel = container._sublabel;
@@ -2959,10 +2980,10 @@ export class MenuScene {
       const plateX = iconCenterX - iconPlateSize / 2;
       const plateY = iconCenterY - iconPlateSize / 2;
       if (useAssetIcon) {
-        bg.circle(iconCenterX + 2, iconCenterY + 4, iconPlateSize * (isPrimary ? 0.42 : 0.38));
-        bg.fill({ color: 0x000000, alpha: active ? 0.34 : 0.26 });
-        bg.circle(iconCenterX, iconCenterY, iconPlateSize * (isPrimary ? 0.52 : 0.44));
-        bg.fill({ color: hotAccent, alpha: active ? 0.08 : (isPrimary ? 0.04 + ignition * 0.055 : 0.032) });
+        bg.circle(iconCenterX + 2, iconCenterY + 4, iconPlateSize * (isPrimary ? 0.44 : 0.41));
+        bg.fill({ color: 0x000000, alpha: active ? 0.42 : 0.34 });
+        bg.circle(iconCenterX, iconCenterY, iconPlateSize * (isPrimary ? 0.54 : 0.48));
+        bg.fill({ color: hotAccent, alpha: active ? 0.1 : (isPrimary ? 0.05 + ignition * 0.06 : 0.052) });
         if (isPrimary) {
           bg.circle(iconCenterX, iconCenterY, iconPlateSize * (0.26 + ignition * 0.07));
           bg.fill({ color: 0xffd15c, alpha: 0.045 + ignition * 0.07 });
@@ -3012,8 +3033,8 @@ export class MenuScene {
         ? '#ffffff'
           : (isPrimary ? '#ffe584' : (isDanger ? '#ff7a86' : (isUtilityDanger ? '#c9fbff' : '#c9fbff')));
       label.style.strokeThickness = isPrimary ? 4 : 3;
-      label.x = x + (isCompact ? 40 : (isPrimary ? 112 : 76));
-      label.y = hasSubLabel ? -h * 0.12 : 0;
+      label.x = x + (isCompact ? 40 : (isPrimary ? 112 : 82));
+      label.y = hasSubLabel ? -h * (isPrimary ? 0.095 : 0.085) : 0;
     }
     if (sublabel) {
       sublabel.anchor.set(0, 0.5);
@@ -3021,11 +3042,11 @@ export class MenuScene {
       sublabel.style.fill = isPrimary ? '#fff3b6' : (isUtilityDanger ? '#98aab8' : (isDanger ? '#ff9aa5' : '#8deeff'));
       sublabel.alpha = hasSubLabel ? (active ? 1 : 0.78) : 0;
       sublabel.x = label?.x || (x + 44);
-      sublabel.y = h * 0.2;
+      sublabel.y = h * (isPrimary ? 0.175 : 0.155);
     }
     if (icon) {
       const iconSize = clampNumber(h * (isCompact ? 0.34 : (isPrimary ? 0.32 : 0.29)), 16, isPrimary ? 30 : 23);
-      const iconX = x + (isCompact ? 22 : (isPrimary ? 56 : 40));
+      const iconX = x + (isCompact ? 22 : (isPrimary ? 56 : 42));
       const iconY = hasSubLabel ? -h * 0.08 : 0;
       if (useAssetIcon) {
         icon.visible = false;

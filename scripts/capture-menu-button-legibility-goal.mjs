@@ -309,12 +309,33 @@ async function writeIconContactSheet(variant, state, output) {
 function assertIconSizing(state, label) {
   const icons = state.menu?.menuIcons || {};
   const launch = icons.launch?.bounds;
-  assert.ok(launch?.width >= 74 && launch.width <= 94, `${label}: launch icon width ${launch?.width} outside approval range`);
+  assert.ok(launch?.width >= 76 && launch.width <= 96, `${label}: launch icon width ${launch?.width} outside approval range`);
   for (const key of ['sectorChallenge', 'shipHangar', 'leaderboard', 'threatCodex', 'achievements', 'settings']) {
-    assert.ok(icons[key]?.bounds?.width >= 50 && icons[key].bounds.width <= 66, `${label}: ${key} icon width ${icons[key]?.bounds?.width} outside secondary range`);
+    assert.ok(icons[key]?.bounds?.width >= 54 && icons[key].bounds.width <= 70, `${label}: ${key} icon width ${icons[key]?.bounds?.width} outside secondary range`);
   }
   for (const key of ['music', 'howToPlay', 'exit']) {
     assert.ok(icons[key]?.bounds?.width >= 23 && icons[key].bounds.width <= 33, `${label}: ${key} icon width ${icons[key]?.bounds?.width} outside utility range`);
+  }
+}
+
+function assertTextWithinTile(state, label) {
+  const icons = state.menu?.menuIcons || {};
+  const dockKeys = ['launch', 'sectorChallenge', 'shipHangar', 'leaderboard', 'threatCodex', 'achievements', 'settings'];
+  for (const key of dockKeys) {
+    const entry = icons[key];
+    const tile = entry?.tileBounds;
+    assert.ok(tile?.width > 0 && tile?.height > 0, `${label}: ${key} missing tile bounds`);
+    const safe = {
+      x: tile.x + 10,
+      y: tile.y + 8,
+      right: tile.right - 10,
+      bottom: tile.bottom - 10
+    };
+    for (const [kind, bounds] of [['label', entry.labelBounds], ['sublabel', entry.sublabelBounds]]) {
+      if (!bounds) continue;
+      assert.ok(bounds.y >= safe.y, `${label}: ${key} ${kind} top ${bounds.y} outside safe ${safe.y}`);
+      assert.ok(bounds.bottom <= safe.bottom, `${label}: ${key} ${kind} bottom ${bounds.bottom} outside safe ${safe.bottom}`);
+    }
   }
 }
 
@@ -346,6 +367,7 @@ try {
     const initialState = await waitForMenu(page);
     assert.equal(initialState.menu.menuIconVariant, variant, `${variant}: runtime icon variant mismatch`);
     assertIconSizing(initialState, variant);
+    assertTextWithinTile(initialState, `${variant} 1920x1080`);
 
     const mainShot = path.join(variantDir, 'main-menu-1920x1080.png');
     await page.screenshot({ path: mainShot, fullPage: false });
@@ -374,7 +396,8 @@ try {
     for (const viewport of viewports.slice(1)) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto(withQuery(query), { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await waitForMenu(page);
+      const viewportState = await waitForMenu(page);
+      assertTextWithinTile(viewportState, `${variant} ${viewport.name}`);
       const screenshot = path.join(variantDir, `main-menu-${viewport.name}.png`);
       await page.screenshot({ path: screenshot, fullPage: false });
       viewportShots.push({ viewport, screenshot });
