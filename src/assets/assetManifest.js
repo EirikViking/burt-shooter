@@ -2,6 +2,18 @@ export const AssetManifest = {
     generated: {
         menuBackdrop: '/art/generated/nova-swarm/menu/nova-swarm-cinematic-hangar-20260617.webp',
         menuCredits: '/art/generated/nova-swarm/menu/nova-swarm-credits-20260519.png',
+        menuIcons: {
+            launch: '/art/generated/nova-swarm/menu/icons/menu-icon-launch-run.png',
+            sectorChallenge: '/art/generated/nova-swarm/menu/icons/menu-icon-sector-challenge.png',
+            shipHangar: '/art/generated/nova-swarm/menu/icons/menu-icon-ship-hangar.png',
+            leaderboard: '/art/generated/nova-swarm/menu/icons/menu-icon-leaderboard.png',
+            threatCodex: '/art/generated/nova-swarm/menu/icons/menu-icon-threat-codex.png',
+            achievements: '/art/generated/nova-swarm/menu/icons/menu-icon-achievements.png',
+            settings: '/art/generated/nova-swarm/menu/icons/menu-icon-settings.png',
+            music: '/art/generated/nova-swarm/menu/icons/menu-icon-music.png',
+            howToPlay: '/art/generated/nova-swarm/menu/icons/menu-icon-how-to-play.png',
+            exit: '/art/generated/nova-swarm/menu/icons/menu-icon-exit.png'
+        },
         leaderboardHall: '/art/generated/nova-swarm/leaderboard/nova-swarm-leaderboard-hall-20260519.png',
         gameOverCeremony: '/art/generated/nova-swarm/gameover/nova-swarm-gameover-ceremony-20260519.png',
         gameplayArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',

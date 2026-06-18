@@ -27,6 +27,19 @@ const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 const FONT_BUTTON = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 
+const MENU_ICON_ASSET_KEYS = {
+  launch: 'launch',
+  target: 'sectorChallenge',
+  hangar: 'shipHangar',
+  bars: 'leaderboard',
+  codex: 'threatCodex',
+  star: 'achievements',
+  gear: 'settings',
+  music: 'music',
+  help: 'howToPlay',
+  exit: 'exit'
+};
+
 function normalizeFontFamily(fontFamily) {
   const family = String(fontFamily || '').trim();
   if (!family) return FONT_ARCADE;
@@ -193,6 +206,8 @@ export class MenuScene {
     this.focusedMenuIndex = 0;
     this.menuGamepadNavigator = new GamepadNavigator();
     this.lastInputDevice = 'keyboard';
+    this.menuIconTextures = {};
+    this.menuIconLoadPromise = null;
   }
 
   init() {
@@ -218,6 +233,7 @@ export class MenuScene {
       alpha: 0.72,
       playOpen: false
     });
+    this.loadMenuIconAssets();
     GameAssets.loadBonusCore().catch((error) => console.warn('[MenuScene] Bonus core preload failed:', error));
     GameAssets.loadCommsPortraits()
       .then(() => GameAssets.loadShips())
@@ -739,6 +755,38 @@ export class MenuScene {
     return `${translateText('DEFEND THE CABINET')}\n${translateText('SURVIVE THE BOSS WAVES')}`;
   }
 
+  getMenuButtonList() {
+    return [
+      this.startBtn,
+      this.sectorStartBtn,
+      this.highscoreBtn,
+      this.storyBtn,
+      this.threatCodexBtn,
+      this.achievementsBtn,
+      this.settingsBtn,
+      this.musicBtn,
+      this.helpBtn,
+      this.exitBtn
+    ].filter(Boolean);
+  }
+
+  loadMenuIconAssets() {
+    const iconManifest = AssetManifest.generated?.menuIcons || {};
+    if (!iconManifest || this.menuIconLoadPromise) return this.menuIconLoadPromise;
+    this.menuIconLoadPromise = Promise.all(Object.entries(iconManifest).map(async ([key, src]) => {
+      try {
+        const texture = await PIXI.Assets.load({ alias: `menu_icon_${key}`, src });
+        if (GameAssets.isValidTexture(texture)) this.menuIconTextures[key] = texture;
+      } catch (error) {
+        console.warn(`[MenuScene] Menu icon failed to load: ${key}`, error);
+      }
+    })).then(() => {
+      this.getMenuButtonList().forEach((button) => this.drawMenuButton(button, false));
+      return this.menuIconTextures;
+    });
+    return this.menuIconLoadPromise;
+  }
+
   createElements() {
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
@@ -962,7 +1010,7 @@ export class MenuScene {
     });
     this.container.addChild(this.settingsBtn);
 
-    this.helpBtn = this.createButton('HOW TO PLAY', layout, { compact: true, accent: 0xffef7e, icon: 'codex' });
+    this.helpBtn = this.createButton('HOW TO PLAY', layout, { compact: true, accent: 0xffef7e, icon: 'help' });
     this.helpBtn.alpha = 0;
     this.helpBtn.on('pointerdown', () => {
       try {
@@ -1264,7 +1312,7 @@ export class MenuScene {
     ].filter(Boolean);
 
     const marginX = clampNumber(width * 0.018, 16, 34);
-    const gap = clampNumber(width * 0.004, 4, 8);
+    const gap = clampNumber(width * 0.007, 8, 16);
     const dockWidth = Math.max(0, width - marginX * 2);
     const dockHeight = clampNumber(height * 0.132, isShortLayout ? 92 : 104, isMobileLayout ? 118 : 142);
     const safeBottomEdge = Number.isFinite(safeMargin.bottom)
@@ -1488,6 +1536,8 @@ export class MenuScene {
       };
 
       this.menuPanel.clear();
+      const dockSweep = ((this.animationTime * 54) % Math.max(1, panelWidth + 180)) - 90;
+      const dockPulse = 0.5 + Math.sin(this.animationTime * 1.8) * 0.5;
       this.menuPanel.roundRect(x + 6, y + 10, panelWidth, panelHeight, 5);
       this.menuPanel.fill({ color: 0x000000, alpha: 0.46 });
       drawCutPanel(this.menuPanel, x - 2, y - 2, panelWidth + 4, panelHeight + 4, 12, { color: 0x37f5ff, alpha: 0.045 }, { color: 0x37f5ff, width: 1, alpha: 0.26 });
@@ -1497,8 +1547,14 @@ export class MenuScene {
       this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.28 });
       this.menuPanel.rect(x + 16, y + 12, panelWidth - 32, 2);
       this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.42 });
+      const sweepTopX = x + clampNumber(dockSweep, 18, Math.max(18, panelWidth - 142));
+      this.menuPanel.rect(sweepTopX, y + 10, Math.min(124, panelWidth * 0.14), 3);
+      this.menuPanel.fill({ color: 0xdffcff, alpha: 0.18 + dockPulse * 0.1 });
       this.menuPanel.rect(x + 16, y + panelHeight - 15, panelWidth - 32, 2);
       this.menuPanel.fill({ color: 0xffd15c, alpha: 0.32 });
+      const sweepBottomX = x + clampNumber(dockSweep + 42, 24, Math.max(24, panelWidth - 120));
+      this.menuPanel.rect(sweepBottomX, y + panelHeight - 17, Math.min(96, panelWidth * 0.12), 2);
+      this.menuPanel.fill({ color: 0xffef7e, alpha: 0.16 + dockPulse * 0.08 });
       this.menuPanel.moveTo(x + panelWidth * 0.32, y + panelHeight - 3);
       this.menuPanel.lineTo(x + panelWidth * 0.68, y + panelHeight - 3);
       this.menuPanel.stroke({ color: 0x37f5ff, width: 2, alpha: 0.42 });
@@ -1541,6 +1597,8 @@ export class MenuScene {
     this.menuDockBounds = this.lastMenuPanelBounds;
 
     this.menuPanel.clear();
+    const dockSweep = ((this.animationTime * 54) % Math.max(1, panelWidth + 180)) - 90;
+    const dockPulse = 0.5 + Math.sin(this.animationTime * 1.8) * 0.5;
     this.menuPanel.roundRect(x + 6, y + 10, panelWidth, panelHeight, 5);
     this.menuPanel.fill({ color: 0x000000, alpha: 0.46 });
     drawCutPanel(this.menuPanel, x - 2, y - 2, panelWidth + 4, panelHeight + 4, 12, { color: 0x37f5ff, alpha: 0.045 }, { color: 0x37f5ff, width: 1, alpha: 0.26 });
@@ -1550,8 +1608,14 @@ export class MenuScene {
     this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.28 });
     this.menuPanel.rect(x + 16, y + 12, panelWidth - 32, 2);
     this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.38 });
+    const sweepTopX = x + clampNumber(dockSweep, 18, Math.max(18, panelWidth - 142));
+    this.menuPanel.rect(sweepTopX, y + 10, Math.min(124, panelWidth * 0.14), 3);
+    this.menuPanel.fill({ color: 0xdffcff, alpha: 0.16 + dockPulse * 0.1 });
     this.menuPanel.rect(x + 16, y + panelHeight - 15, panelWidth - 32, 2);
     this.menuPanel.fill({ color: 0xffd15c, alpha: 0.28 });
+    const sweepBottomX = x + clampNumber(dockSweep + 42, 24, Math.max(24, panelWidth - 120));
+    this.menuPanel.rect(sweepBottomX, y + panelHeight - 17, Math.min(96, panelWidth * 0.12), 2);
+    this.menuPanel.fill({ color: 0xffef7e, alpha: 0.14 + dockPulse * 0.08 });
   }
 
   layoutSectorSelector(layout, width, height) {
@@ -1980,6 +2044,20 @@ export class MenuScene {
       optionOrder: this.menuOptions?.map((option) => option.id).filter(Boolean) || [],
       inputDevice: this.lastInputDevice,
       howToPlay: this.howToPlayOverlay?.getDebugState ? this.howToPlayOverlay.getDebugState() : null,
+      menuIcons: Object.fromEntries(this.getMenuButtonList().map((button) => [
+        button?._iconAssetKey || button?._iconType || 'unknown',
+        {
+          loaded: Boolean(this.menuIconTextures?.[button?._iconAssetKey]),
+          spriteVisible: Boolean(button?._iconSprite?.visible),
+          fallbackVisible: Boolean(button?._icon?.visible),
+          bounds: boundsForDisplayObject(button?._iconSprite?.visible ? button?._iconSprite : button?._icon)
+        }
+      ])),
+      threatCodex: {
+        unreadCount: Number(this.codexUnreadCount || 0),
+        markerVisible: Boolean(this.threatCodexBtn?._signalCue?.visible),
+        markerBounds: boundsForDisplayObject(this.threatCodexBtn?._signalCue?.visible ? this.threatCodexBtn?._signalCue : null)
+      },
       sectorStart: {
         available: Boolean(this.sectorStartState?.available),
         highestReachedSector: this.sectorStartState?.highestReachedSector || 1,
@@ -2116,6 +2194,12 @@ export class MenuScene {
     icon.label = `ui_menuTileIcon_${options.icon || 'panel'}`;
     container.addChild(icon);
 
+    const iconSprite = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    iconSprite.label = `ui_menuTileIconAsset_${options.icon || 'panel'}`;
+    iconSprite.anchor.set(0.5);
+    iconSprite.visible = false;
+    container.addChild(iconSprite);
+
     const label = createText(text, {
       fontFamily: FONT_BUTTON,
       fontSize: fontSize,
@@ -2153,10 +2237,12 @@ export class MenuScene {
     container._dynamicLabel = options.dynamicLabel || null;
     container._dynamicSubLabel = options.dynamicSubLabel || null;
     container._iconType = options.icon || 'panel';
+    container._iconAssetKey = options.iconAsset || MENU_ICON_ASSET_KEYS[container._iconType] || container._iconType;
     container._labelMinScale = options.labelMinScale || 0.62;
     container._bg = bg;
     container._shine = shine;
     container._icon = icon;
+    container._iconSprite = iconSprite;
     container._label = label;
     container._sublabel = sublabel;
     this.refreshButtonCopy(container);
@@ -2494,16 +2580,23 @@ export class MenuScene {
     }
     const w = this.threatCodexBtn._btnWidth || 286;
     const h = this.threatCodexBtn._btnHeight || 46;
-    const pulse = 0.5 + Math.sin(this.animationTime * 8) * 0.5;
-    const x = w / 2 - 18;
-    const y = -h / 2 + 13;
+    const pulse = 0.5 + Math.sin(this.animationTime * 5.6) * 0.5;
+    const x = w / 2 - 24;
+    const y = -h / 2 + 15;
     cue.clear();
-    cue.roundRect(x - 11, y - 5, 22, 10, 3);
-    cue.fill({ color: 0x031323, alpha: 0.72 });
-    cue.roundRect(x - 11, y - 5, 22, 10, 3);
-    cue.stroke({ color: 0x7dffcc, width: 1, alpha: 0.42 + pulse * 0.18 });
-    cue.rect(x - 7, y - 1.5, 14, 3);
-    cue.fill({ color: 0xffef7e, alpha: 0.58 + pulse * 0.24 });
+    cue.roundRect(x - 13, y - 8, 26, 16, 5);
+    cue.fill({ color: 0x020711, alpha: 0.82 });
+    cue.roundRect(x - 13, y - 8, 26, 16, 5);
+    cue.stroke({ color: 0xffef7e, width: 1.35, alpha: 0.58 + pulse * 0.18 });
+    cue.circle(x, y, 4.4 + pulse * 1.2);
+    cue.fill({ color: 0xffd15c, alpha: 0.72 + pulse * 0.16 });
+    cue.circle(x, y, 8.5 + pulse * 2.5);
+    cue.stroke({ color: 0xffef7e, width: 1, alpha: 0.22 + pulse * 0.2 });
+    cue.moveTo(x - 15, y - 10);
+    cue.lineTo(x - 5, y - 10);
+    cue.moveTo(x + 5, y + 10);
+    cue.lineTo(x + 15, y + 10);
+    cue.stroke({ color: 0x7fffd8, width: 1, alpha: 0.28 });
   }
 
   updateMenuButtonMotion(delta = 0) {
@@ -2526,9 +2619,9 @@ export class MenuScene {
       const focused = Boolean(button._focused && !modalOpen);
       const primary = button === this.startBtn;
       const utility = button._variant === 'utility' || button._variant === 'utilityDanger';
-      const breathe = primary && !modalOpen ? Math.sin(this.animationTime * 2.6) * 0.004 : 0;
-      const targetScale = focused ? (utility ? 1.026 : 1.032) : (primary ? 1 + breathe : 1);
-      const targetY = button._layoutY - (focused ? (utility ? 2 : 5) : 0);
+      const breathe = primary && !modalOpen ? Math.sin(this.animationTime * 2.35) * 0.01 : 0;
+      const targetScale = focused ? (utility ? 1.035 : 1.048) : (primary ? 1 + breathe : 1);
+      const targetY = button._layoutY - (focused ? (utility ? 3 : 7) : 0);
       button._motionScale = Number.isFinite(button._motionScale)
         ? button._motionScale + (targetScale - button._motionScale) * smoothing
         : targetScale;
@@ -2541,6 +2634,9 @@ export class MenuScene {
         this.drawMenuButton(button, false);
       }
     });
+    if (this.menuPanel?.visible && this.menuPanel.alpha > 0.05 && !modalOpen) {
+      this.drawMenuPanel();
+    }
   }
 
   drawMenuButtonIcon(icon, type, centerX, centerY, size, color, alpha = 0.82) {
@@ -2703,6 +2799,7 @@ export class MenuScene {
     const label = container._label;
     const sublabel = container._sublabel;
     const icon = container._icon;
+    const iconSprite = container._iconSprite;
     const hasSubLabel = Boolean(sublabel?.text);
 
     focus?.clear();
@@ -2814,7 +2911,24 @@ export class MenuScene {
       const iconSize = clampNumber(h * (isCompact ? 0.34 : (isPrimary ? 0.32 : 0.29)), 16, isPrimary ? 30 : 23);
       const iconX = x + (isCompact ? 20 : (isPrimary ? 36 : 29));
       const iconY = hasSubLabel ? -h * 0.08 : 0;
-      this.drawMenuButtonIcon(icon, container._iconType, iconX, iconY, iconSize, active ? hotAccent : drawAccent, active ? 1 : 0.82);
+      const assetKey = container._iconAssetKey;
+      const texture = assetKey ? this.menuIconTextures?.[assetKey] : null;
+      const useAssetIcon = Boolean(iconSprite && GameAssets.isValidTexture(texture));
+      if (useAssetIcon) {
+        icon.visible = false;
+        iconSprite.visible = true;
+        iconSprite.texture = texture;
+        iconSprite.x = iconX;
+        iconSprite.y = iconY;
+        const renderSize = clampNumber(iconPlateSize * (isCompact ? 1.04 : 1.02), isCompact ? 22 : 30, isPrimary ? 45 : 38);
+        const maxSide = Math.max(texture.width || 1, texture.height || 1);
+        iconSprite.scale.set(renderSize / maxSide);
+        iconSprite.alpha = active ? 1 : (isUtilityDanger ? 0.72 : 0.86);
+      } else {
+        if (iconSprite) iconSprite.visible = false;
+        icon.visible = true;
+        this.drawMenuButtonIcon(icon, container._iconType, iconX, iconY, iconSize, active ? hotAccent : drawAccent, active ? 1 : 0.82);
+      }
     }
     container.hitArea = new PIXI.Rectangle(x, y, w, h);
     if (container?._stepperCue) this.drawSectorStartStepperCue(container);
