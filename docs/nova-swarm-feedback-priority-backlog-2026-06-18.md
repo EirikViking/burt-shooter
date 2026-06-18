@@ -44,6 +44,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Likely fix area: input helper, `Player.update()`, How To Play/controls text, dodge VFX/audio, boss hazard tutorial copy.
 - Risk: medium. Changing Dodge from invulnerability to motion dash would be a design change; explaining/binding it is lower risk.
 - Recommended next action: implement or verify symmetric Shift handling, add a player-facing "short invulnerability, not movement dash" explanation, and add a tiny boss-danger practice prompt or challenge hint. Decide separately whether a thrust-away mechanic belongs in a later feature patch.
+- Specific input backlog note: bind Right Shift to the same dodge action as Left Shift, or verify it if already fixed, because the action is presented as generic `Shift` and left-handed players expect either Shift key to work.
 
 ### 3. GUI/list readability on large displays and leaderboard lists
 
