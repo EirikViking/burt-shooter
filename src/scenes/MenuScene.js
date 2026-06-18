@@ -1296,18 +1296,19 @@ export class MenuScene {
     const isPrimaryButton = button._variant === 'primary';
     const isCompactButton = (button._btnHeight || 0) <= 38;
     const labelInset = button._iconType
-      ? (isPrimaryButton ? 112 : (isCompactButton ? 40 : 72))
+      ? (isPrimaryButton ? 138 : (isCompactButton ? 40 : 92))
       : (isCompactButton ? 36 : 48);
     const labelRightPad = isPrimaryButton ? 16 : (isCompactButton ? 12 : 10);
     const labelMaxWidth = Math.max(36, (button._btnWidth || 180) - labelInset - labelRightPad);
     const fitMinScale = Number.isFinite(button._labelMinScale)
       ? button._labelMinScale
-      : (Number.isFinite(button._dockIndex) ? (isPrimaryButton ? 0.48 : 0.54) : 0.62);
+      : (Number.isFinite(button._dockIndex) ? (isPrimaryButton ? 0.42 : 0.46) : 0.62);
     const labelTexturePadding = Number.isFinite(button._dockIndex)
       ? (isCompactButton ? 12 : (isPrimaryButton ? 24 : 18))
       : null;
+    const sublabelFitMinScale = Number.isFinite(button._dockIndex) ? 0.5 : 0.62;
     this.refreshMenuButtonLabel(button, labelMaxWidth, { minScale: fitMinScale, forceGpuRefresh, texturePadding: labelTexturePadding });
-    this.refreshMenuButtonSubLabel(button, labelMaxWidth, { minScale: 0.62, forceGpuRefresh });
+    this.refreshMenuButtonSubLabel(button, labelMaxWidth, { minScale: sublabelFitMinScale, forceGpuRefresh });
   }
 
   async initBonusDecorations() {
@@ -2984,7 +2985,7 @@ export class MenuScene {
     bg.stroke({ color: 0xffffff, width: 1, alpha: active ? 0.22 : 0.1 });
 
     if (!isCompact && icon) {
-      const iconCenterX = x + (isPrimary ? 56 : 36);
+      const iconCenterX = x + (isPrimary ? 76 : 50);
       const iconCenterY = hasSubLabel ? -h * 0.08 : 0;
       const plateX = iconCenterX - iconPlateSize / 2;
       const plateY = iconCenterY - iconPlateSize / 2;
@@ -3042,7 +3043,7 @@ export class MenuScene {
         ? '#ffffff'
           : (isPrimary ? '#ffe584' : (isDanger ? '#ff7a86' : (isUtilityDanger ? '#c9fbff' : '#c9fbff')));
       label.style.strokeThickness = isPrimary ? 4 : 3;
-      label.x = x + (isCompact ? 40 : (isPrimary ? 112 : 72));
+      label.x = x + (isCompact ? 40 : (isPrimary ? 138 : 92));
       label.y = hasSubLabel ? -h * (isPrimary ? 0.095 : 0.085) : 0;
     }
     if (sublabel) {
@@ -3055,7 +3056,7 @@ export class MenuScene {
     }
     if (icon) {
       const iconSize = clampNumber(h * (isCompact ? 0.34 : (isPrimary ? 0.32 : 0.29)), 16, isPrimary ? 30 : 23);
-      const iconX = x + (isCompact ? 22 : (isPrimary ? 56 : 36));
+      const iconX = x + (isCompact ? 22 : (isPrimary ? 76 : 50));
       const iconY = hasSubLabel ? -h * 0.08 : 0;
       if (useAssetIcon) {
         icon.visible = false;

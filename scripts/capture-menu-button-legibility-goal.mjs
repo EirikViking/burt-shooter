@@ -320,15 +320,17 @@ function assertIconSizing(state, label) {
 
 function assertTextWithinTile(state, label) {
   const icons = state.menu?.menuIcons || {};
+  const screenWidth = state.menu?.screen?.width || state.screen?.width || 0;
+  const sideSafe = screenWidth >= 1800 ? 10 : 6;
   const dockKeys = ['launch', 'sectorChallenge', 'shipHangar', 'leaderboard', 'threatCodex', 'achievements', 'settings'];
   for (const key of dockKeys) {
     const entry = icons[key];
     const tile = entry?.tileBounds;
     assert.ok(tile?.width > 0 && tile?.height > 0, `${label}: ${key} missing tile bounds`);
     const safe = {
-      x: tile.x + 10,
+      x: tile.x + sideSafe,
       y: tile.y + 8,
-      right: tile.right - 10,
+      right: tile.right - sideSafe,
       bottom: tile.bottom - 10
     };
     for (const [kind, bounds] of [['label', entry.labelBounds], ['sublabel', entry.sublabelBounds]]) {
@@ -338,6 +340,28 @@ function assertTextWithinTile(state, label) {
       assert.ok(bounds.y >= safe.y, `${label}: ${key} ${kind} top ${bounds.y} outside safe ${safe.y}`);
       assert.ok(bounds.bottom <= safe.bottom, `${label}: ${key} ${kind} bottom ${bounds.bottom} outside safe ${safe.bottom}`);
     }
+  }
+}
+
+function assertDockIconSafeArea(state, label) {
+  const icons = state.menu?.menuIcons || {};
+  const screenWidth = state.menu?.screen?.width || state.screen?.width || 0;
+  const dockKeys = ['launch', 'sectorChallenge', 'shipHangar', 'leaderboard', 'threatCodex', 'achievements', 'settings'];
+  for (const key of dockKeys) {
+    const entry = icons[key];
+    const tile = entry?.tileBounds;
+    const bounds = entry?.bounds;
+    assert.ok(tile?.width > 0 && tile?.height > 0, `${label}: ${key} missing tile bounds`);
+    assert.ok(bounds?.width > 0 && bounds?.height > 0, `${label}: ${key} missing icon bounds`);
+    const minLeftClearance = screenWidth >= 1800
+      ? (key === 'launch' ? 16 : 12)
+      : (key === 'launch' ? 10 : 8);
+    const leftClearance = bounds.x - tile.x;
+    assert.ok(
+      leftClearance >= minLeftClearance,
+      `${label}: ${key} icon left clearance ${leftClearance} below ${minLeftClearance}`
+    );
+    assert.ok(bounds.right <= tile.right - 8, `${label}: ${key} icon right ${bounds.right} outside tile safe right ${tile.right - 8}`);
   }
 }
 
@@ -369,6 +393,7 @@ try {
     const initialState = await waitForMenu(page);
     assert.equal(initialState.menu.menuIconVariant, variant, `${variant}: runtime icon variant mismatch`);
     assertIconSizing(initialState, variant);
+    assertDockIconSafeArea(initialState, `${variant} 1920x1080`);
     assertTextWithinTile(initialState, `${variant} 1920x1080`);
 
     const mainShot = path.join(variantDir, 'main-menu-1920x1080.png');
@@ -399,6 +424,7 @@ try {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto(withQuery(query), { waitUntil: 'domcontentloaded', timeout: 30000 });
       const viewportState = await waitForMenu(page);
+      assertDockIconSafeArea(viewportState, `${variant} ${viewport.name}`);
       assertTextWithinTile(viewportState, `${variant} ${viewport.name}`);
       const screenshot = path.join(variantDir, `main-menu-${viewport.name}.png`);
       await page.screenshot({ path: screenshot, fullPage: false });
