@@ -62,6 +62,7 @@ const sourceText = Object.freeze({
   'SECTOR START': '扇区开始',
   'SECTOR START LOCKED': '扇区开始已锁定',
   'SELECT SECTOR': '选择扇区',
+  'CHOOSE START POINT': '选择起点',
   'SELECT START POINT': '选择起点',
   'CHOOSE YOUR STARTING POINT': '选择你的起点',
   'D-PAD/STICK: SELECT // A: START // B: BACK': '方向键/摇杆：选择 // A：开始 // B：返回',

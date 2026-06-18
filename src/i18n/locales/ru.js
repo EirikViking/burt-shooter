@@ -62,6 +62,7 @@ const sourceText = Object.freeze({
   'SECTOR START': 'СТАРТ С СЕКТОРА',
   'SECTOR START LOCKED': 'СТАРТ С СЕКТОРА ЗАКРЫТ',
   'SELECT SECTOR': 'ВЫБОР СЕКТОРА',
+  'CHOOSE START POINT': 'VYBERI TOCHKU STARTA',
   'SELECT START POINT': 'VYBOR TOCHKI STARTA',
   'CHOOSE YOUR STARTING POINT': 'ВЫБЕРИ ТОЧКУ СТАРТА',
   'D-PAD/STICK: SELECT // A: START // B: BACK': 'D-PAD/СТИК: ВЫБОР // A: СТАРТ // B: НАЗАД',

@@ -360,7 +360,8 @@ function assertMenuState(state, viewport) {
   assertUtilityCluster(state, viewport.name);
   assert.equal(menu.sectorStart.buttonVisualText, 'SECTOR CHALLENGE', `${viewport.name}: sector tile visual label`);
   assert.match(menu.sectorStart.buttonText || '', /CHECKPOINT 30 CHALLENGE/, `${viewport.name}: debug keeps selected checkpoint label`);
-  assert.match(menu.sectorStart.buttonSubtext || '', /BEGINS AT SECTOR 31/, `${viewport.name}: sector tile sublabel should clarify overrun checkpoint start`);
+  assert.doesNotMatch(menu.sectorStart.buttonSubtext || '', /BEGINS AT SECTOR 31/, `${viewport.name}: dock tile should not carry overrun start detail`);
+  assert.equal(menu.sectorStart.arrowCueVisible, false, `${viewport.name}: sector tile should not show dock stepper arrows`);
   assert.ok((menu.items.runModePanel?.width || 0) === 0, `${viewport.name}: old run mode panel should not be visible`);
   assert.ok((menu.items.flavor?.width || 0) === 0, `${viewport.name}: old flavor text should not be visible`);
 }

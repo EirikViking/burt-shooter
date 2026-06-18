@@ -277,9 +277,9 @@ export class MenuScene {
       } else if (isMoveDown) {
         this.moveMenuFocus(event.shiftKey ? -1 : 1);
       } else if (isMoveLeft) {
-        if (!this.cycleSectorStartCheckpoint(-1)) this.moveMenuFocus(-1);
+        this.moveMenuFocus(-1);
       } else if (isMoveRight) {
-        if (!this.cycleSectorStartCheckpoint(1)) this.moveMenuFocus(1);
+        this.moveMenuFocus(1);
       } else if (isCancel) {
         this.exitGame();
       } else {
@@ -897,7 +897,6 @@ export class MenuScene {
       icon: 'target',
       dynamicSubLabel: () => this.getSectorStartButtonSubLabel()
     });
-    this.attachSectorStartStepperCue(this.sectorStartBtn);
     this.sectorStartBtn.alpha = 0;
     this.sectorStartBtn.on('pointerdown', (event) => this.handleSectorStartPointerDown(event));
     this.container.addChild(this.sectorStartBtn);
@@ -1302,6 +1301,8 @@ export class MenuScene {
       button.x = cursorX + btnWidth / 2;
       button.y = dockTop + dockHeight * (isShortLayout ? 0.54 : 0.56);
       button._layoutY = button.y;
+      button._motionY = button.y;
+      if (!Number.isFinite(button._motionScale)) button._motionScale = 1;
       this.drawMenuButton(button, false);
       cursorX += btnWidth + gap;
     });
@@ -1338,6 +1339,8 @@ export class MenuScene {
       button.x = width - marginX - utilityWidth / 2;
       button.y = safeMargin.top + (isMobileLayout ? 22 : 28) + index * (utilityHeight + utilityGap);
       button._layoutY = button.y;
+      button._motionY = button.y;
+      if (!Number.isFinite(button._motionScale)) button._motionScale = 1;
       this.drawMenuButton(button, false);
     });
 
@@ -1419,13 +1422,6 @@ export class MenuScene {
         ? translateText('D-PAD/STICK: SELECT // A: START // B: BACK')
         : translateText('ARROWS: SELECT // ENTER/SPACE: START // ESC: BACK');
     }
-    const sectorFocused = this.getSelectedMenuOptionId() === 'sectorStart'
-      && (this.sectorStartState?.checkpoints || []).length > 1;
-    if (sectorFocused) {
-      return this.lastInputDevice === 'controller'
-        ? translateText('D-PAD/STICK: NAVIGATE // LEFT/RIGHT: SECTOR // A: CONFIRM // B: BACK')
-        : translateText('ARROWS: NAVIGATE // LEFT/RIGHT: SECTOR // ENTER/SPACE: CONFIRM // ESC: BACK');
-    }
     return this.lastInputDevice === 'controller'
       ? 'D-PAD/STICK: NAVIGATE // A: CONFIRM // B: BACK'
       : 'ARROWS: NAVIGATE // ENTER/SPACE: CONFIRM // ESC: BACK';
@@ -1492,19 +1488,22 @@ export class MenuScene {
       };
 
       this.menuPanel.clear();
-      this.menuPanel.roundRect(x + 6, y + 8, panelWidth, panelHeight, 5);
-      this.menuPanel.fill({ color: 0x000000, alpha: 0.38 });
-      drawCutPanel(this.menuPanel, x, y, panelWidth, panelHeight, 10, { color: 0x020711, alpha: 0.62 }, { color: 0x37f5ff, width: 1, alpha: 0.46 });
-      drawCutPanel(this.menuPanel, x + 5, y + 5, panelWidth - 10, panelHeight - 10, 8, { color: 0x062034, alpha: 0.28 }, { color: 0x7fffd8, width: 1, alpha: 0.18 });
-      this.menuPanel.rect(x + 2, y + 2, panelWidth - 4, Math.max(24, panelHeight * 0.42));
-      this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.26 });
+      this.menuPanel.roundRect(x + 6, y + 10, panelWidth, panelHeight, 5);
+      this.menuPanel.fill({ color: 0x000000, alpha: 0.46 });
+      drawCutPanel(this.menuPanel, x - 2, y - 2, panelWidth + 4, panelHeight + 4, 12, { color: 0x37f5ff, alpha: 0.045 }, { color: 0x37f5ff, width: 1, alpha: 0.26 });
+      drawCutPanel(this.menuPanel, x, y, panelWidth, panelHeight, 10, { color: 0x020711, alpha: 0.68 }, { color: 0x37f5ff, width: 1, alpha: 0.5 });
+      drawCutPanel(this.menuPanel, x + 6, y + 6, panelWidth - 12, panelHeight - 12, 8, { color: 0x062034, alpha: 0.32 }, { color: 0x7fffd8, width: 1, alpha: 0.2 });
+      this.menuPanel.rect(x + 2, y + 2, panelWidth - 4, Math.max(28, panelHeight * 0.42));
+      this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.28 });
       this.menuPanel.rect(x + 16, y + 12, panelWidth - 32, 2);
-      this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.38 });
+      this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.42 });
       this.menuPanel.rect(x + 16, y + panelHeight - 15, panelWidth - 32, 2);
-      this.menuPanel.fill({ color: 0xffd15c, alpha: 0.28 });
+      this.menuPanel.fill({ color: 0xffd15c, alpha: 0.32 });
       this.menuPanel.moveTo(x + panelWidth * 0.32, y + panelHeight - 3);
       this.menuPanel.lineTo(x + panelWidth * 0.68, y + panelHeight - 3);
       this.menuPanel.stroke({ color: 0x37f5ff, width: 2, alpha: 0.42 });
+      this.menuPanel.rect(x + 18, y + panelHeight - 9, panelWidth - 36, 1);
+      this.menuPanel.fill({ color: 0x000000, alpha: 0.42 });
       return;
     }
     const contentItems = [
@@ -1542,12 +1541,13 @@ export class MenuScene {
     this.menuDockBounds = this.lastMenuPanelBounds;
 
     this.menuPanel.clear();
-    this.menuPanel.roundRect(x + 6, y + 8, panelWidth, panelHeight, 5);
-    this.menuPanel.fill({ color: 0x000000, alpha: 0.38 });
-    drawCutPanel(this.menuPanel, x, y, panelWidth, panelHeight, 10, { color: 0x020711, alpha: 0.62 }, { color: 0x37f5ff, width: 1, alpha: 0.46 });
-    drawCutPanel(this.menuPanel, x + 5, y + 5, panelWidth - 10, panelHeight - 10, 8, { color: 0x062034, alpha: 0.28 }, { color: 0x7fffd8, width: 1, alpha: 0.18 });
+    this.menuPanel.roundRect(x + 6, y + 10, panelWidth, panelHeight, 5);
+    this.menuPanel.fill({ color: 0x000000, alpha: 0.46 });
+    drawCutPanel(this.menuPanel, x - 2, y - 2, panelWidth + 4, panelHeight + 4, 12, { color: 0x37f5ff, alpha: 0.045 }, { color: 0x37f5ff, width: 1, alpha: 0.26 });
+    drawCutPanel(this.menuPanel, x, y, panelWidth, panelHeight, 10, { color: 0x020711, alpha: 0.68 }, { color: 0x37f5ff, width: 1, alpha: 0.5 });
+    drawCutPanel(this.menuPanel, x + 5, y + 5, panelWidth - 10, panelHeight - 10, 8, { color: 0x062034, alpha: 0.32 }, { color: 0x7fffd8, width: 1, alpha: 0.2 });
     this.menuPanel.rect(x + 2, y + 2, panelWidth - 4, Math.max(24, panelHeight * 0.42));
-    this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.26 });
+    this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.28 });
     this.menuPanel.rect(x + 16, y + 12, panelWidth - 32, 2);
     this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.38 });
     this.menuPanel.rect(x + 16, y + panelHeight - 15, panelWidth - 32, 2);
@@ -1757,7 +1757,7 @@ export class MenuScene {
     g.stroke({ color: 0xffd15c, width: 1.2, alpha: 0.48 });
 
     if (zones.gridW > 0) {
-      drawCutPanel(g, zones.gridX - 12, zones.gridY - 12, zones.gridW + 24, zones.gridH + 24, 12, { color: 0x010812, alpha: 0.48 }, { color: 0x37f5ff, width: 1, alpha: 0.34 });
+      drawCutPanel(g, zones.gridX - 12, zones.gridY - 12, zones.gridW + 24, zones.gridH + 24, 12, { color: 0x010812, alpha: 0.5 }, { color: 0x37f5ff, width: 1, alpha: 0.34 });
       for (let i = 0; i < 4; i += 1) {
         const yy = zones.gridY + (zones.gridH * i) / 3;
         g.moveTo(zones.gridX - 4, yy);
@@ -1820,7 +1820,9 @@ export class MenuScene {
       launchText.updateText?.(false);
       fitTextToWidth(launchText, w - 28, { minScale: 0.58 });
       launchBg.clear();
-      drawCutPanel(launchBg, 3, 5, w, h, 10, { color: 0x000000, alpha: 0.32 });
+      const pulse = unlocked ? (0.5 + Math.sin(this.animationTime * 4.2) * 0.5) : 0;
+      drawCutPanel(launchBg, 4, 6, w, h, 10, { color: 0x000000, alpha: 0.38 });
+      drawCutPanel(launchBg, -3, -3, w + 6, h + 6, 12, { color: 0xffd15c, alpha: unlocked ? 0.04 + pulse * 0.025 : 0.01 }, { color: 0xffef7e, width: 1, alpha: unlocked ? 0.24 + pulse * 0.12 : 0.08 });
       drawCutPanel(launchBg, 0, 0, w, h, 10, {
         color: unlocked ? 0x2f2108 : 0x07101a,
         alpha: unlocked ? 0.9 : 0.62
@@ -1839,6 +1841,8 @@ export class MenuScene {
       });
       launchBg.rect(12, h - 9, w - 24, 3);
       launchBg.fill({ color: unlocked ? 0xffef7e : 0x6a7784, alpha: unlocked ? 0.62 : 0.22 });
+      launchBg.rect(14 + (w - 88) * pulse, 5, 52, 2);
+      launchBg.fill({ color: 0xffffff, alpha: unlocked ? 0.28 : 0 });
       launchBg.moveTo(w - 38, h * 0.5);
       launchBg.lineTo(w - 24, h * 0.5);
       launchBg.lineTo(w - 31, h * 0.5 - 7);
@@ -1876,12 +1880,12 @@ export class MenuScene {
     const accent = unlocked
       ? (selected ? 0xffef7e : (isOverrun ? 0xff55d9 : 0x37f5ff))
       : 0x52606f;
-    const fill = unlocked ? (selected ? 0x18301f : (isOverrun ? 0x180d24 : 0x041927)) : 0x07101a;
+    const fill = unlocked ? (selected ? 0x1d311f : (isOverrun ? 0x180d24 : 0x041927)) : 0x07101a;
     const pulse = 0.5 + Math.sin(this.animationTime * 6) * 0.5;
     g.clear();
-    drawCutPanel(g, 0, 0, w, h, 8, { color: fill, alpha: unlocked ? 0.82 : 0.56 }, { color: accent, width: selected ? 2.3 : 1.1, alpha: selected ? 0.95 : (unlocked ? 0.5 : 0.22) });
-    g.rect(6, 5, w - 12, Math.max(9, h * 0.25));
-    g.fill({ color: unlocked ? (isOverrun ? 0xff55d9 : 0x37f5ff) : 0x334150, alpha: selected ? 0.18 : 0.08 });
+    drawCutPanel(g, 2, 3, w, h, 8, { color: 0x000000, alpha: selected ? 0.34 : 0.24 });
+    drawCutPanel(g, 0, 0, w, h, 8, { color: fill, alpha: unlocked ? 0.82 : 0.48 }, { color: accent, width: selected ? 2.3 : 1.1, alpha: selected ? 0.95 : (unlocked ? 0.46 : 0.18) });
+    drawCutPanel(g, 5, 5, w - 10, Math.max(12, h * 0.34), 5, { color: unlocked ? (isOverrun ? 0xff55d9 : 0x37f5ff) : 0x334150, alpha: selected ? 0.18 : 0.07 });
     g.rect(8, h - 7, w - 16, 2);
     g.fill({ color: accent, alpha: selected ? 0.72 : 0.28 });
     if (selected) {
@@ -2502,6 +2506,43 @@ export class MenuScene {
     cue.fill({ color: 0xffef7e, alpha: 0.58 + pulse * 0.24 });
   }
 
+  updateMenuButtonMotion(delta = 0) {
+    const buttons = [
+      this.startBtn,
+      this.sectorStartBtn,
+      this.highscoreBtn,
+      this.storyBtn,
+      this.threatCodexBtn,
+      this.achievementsBtn,
+      this.settingsBtn,
+      this.musicBtn,
+      this.helpBtn,
+      this.exitBtn
+    ].filter(Boolean);
+    const modalOpen = Boolean(this.sectorSelectorOpen);
+    const smoothing = Math.min(1, Math.max(0.12, delta * 0.16));
+    buttons.forEach((button) => {
+      if (!Number.isFinite(button._layoutY)) return;
+      const focused = Boolean(button._focused && !modalOpen);
+      const primary = button === this.startBtn;
+      const utility = button._variant === 'utility' || button._variant === 'utilityDanger';
+      const breathe = primary && !modalOpen ? Math.sin(this.animationTime * 2.6) * 0.004 : 0;
+      const targetScale = focused ? (utility ? 1.026 : 1.032) : (primary ? 1 + breathe : 1);
+      const targetY = button._layoutY - (focused ? (utility ? 2 : 5) : 0);
+      button._motionScale = Number.isFinite(button._motionScale)
+        ? button._motionScale + (targetScale - button._motionScale) * smoothing
+        : targetScale;
+      button._motionY = Number.isFinite(button._motionY)
+        ? button._motionY + (targetY - button._motionY) * smoothing
+        : targetY;
+      button.scale.set(button._motionScale);
+      button.y = button._motionY;
+      if ((focused || primary || utility) && button.visible && button.alpha > 0.05) {
+        this.drawMenuButton(button, false);
+      }
+    });
+  }
+
   drawMenuButtonIcon(icon, type, centerX, centerY, size, color, alpha = 0.82) {
     if (!icon) return;
     const s = size;
@@ -2645,6 +2686,8 @@ export class MenuScene {
     const isModalOpen = Boolean(this.sectorSelectorOpen);
     const isFocused = Boolean(container._focused && !isModalOpen);
     const active = isHover || isFocused;
+    const sweep = active ? (0.5 + Math.sin(this.animationTime * 4.8) * 0.5) : 0;
+    const ignition = isPrimary ? (0.5 + Math.sin(this.animationTime * 2.6) * 0.5) : 0;
     const drawAccent = isUtilityDanger
       ? (active ? 0xff6b6b : 0x6e8492)
       : (isDanger ? 0xff5f6a : (isPrimary ? 0xffd15c : accent));
@@ -2665,26 +2708,29 @@ export class MenuScene {
     focus?.clear();
     if (isFocused) {
       const focusPulse = 0.5 + Math.sin(this.animationTime * 5.2) * 0.5;
-      drawCutPanel(focus, x - 7, y - 7, w + 14, h + 14, cut + 4, { color: hotAccent, alpha: 0.035 + focusPulse * 0.025 }, { color: hotAccent, width: 1.8, alpha: 0.72 + focusPulse * 0.16 });
+      drawCutPanel(focus, x - 8, y - 8, w + 16, h + 16, cut + 5, { color: hotAccent, alpha: 0.04 + focusPulse * 0.03 }, { color: hotAccent, width: 1.8, alpha: 0.72 + focusPulse * 0.16 });
       focus.rect(x + w * 0.22, y - 7, w * 0.56, 2);
       focus.fill({ color: hotAccent, alpha: 0.22 + focusPulse * 0.12 });
+      focus.rect(x + 14 + (w - 84) * sweep, y - 5, 56, 2);
+      focus.fill({ color: 0xffffff, alpha: 0.2 + focusPulse * 0.12 });
     }
 
     bg.clear();
-    drawCutPanel(bg, x + 7, y + 8, w, h, cut, { color: 0x000000, alpha: isPrimary ? 0.54 : 0.44 });
+    drawCutPanel(bg, x + 8, y + 10, w, h, cut, { color: 0x000000, alpha: isPrimary ? 0.58 : 0.48 });
     drawCutPanel(bg, x + 3, y + 4, w, h, cut, { color: 0x000000, alpha: 0.22 });
     drawCutPanel(bg, x + 1, y + h - 4, w - 2, 8, Math.max(2, cut - 5), { color: 0x000000, alpha: isPrimary ? 0.42 : 0.32 });
-    drawCutPanel(bg, x - 2, y - 2, w + 4, h + 4, cut + 2, { color: drawAccent, alpha: active ? 0.18 : (isUtilityDanger ? 0.035 : 0.075) }, { color: drawAccent, width: 1, alpha: active ? 0.54 : (isUtilityDanger ? 0.18 : 0.22) });
+    drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, cut + 3, { color: drawAccent, alpha: active ? 0.2 : (isUtilityDanger ? 0.035 : 0.075) }, { color: drawAccent, width: 1, alpha: active ? 0.56 : (isUtilityDanger ? 0.18 : 0.22) });
     drawCutPanel(bg, x, y, w, h, cut, { color: baseColor, alpha: active ? 0.94 : 0.84 }, { color: active ? hotAccent : drawAccent, width: active ? 2.15 : 1.35, alpha: active ? 0.88 : (isPrimary ? 0.78 : 0.48) });
     drawCutPanel(bg, x + 4, y + 4, w - 8, h - 8, Math.max(2, cut - 3), { color: glassColor, alpha: active ? 0.66 : 0.48 }, { color: 0xffffff, width: 1, alpha: active ? 0.18 : 0.08 });
     drawCutPanel(bg, x + 8, y + h * 0.17, w - 16, h * 0.48, Math.max(2, cut - 4), { color: isPrimary ? 0x5a3a0b : (isDanger ? 0x3b101b : 0x0a3750), alpha: active ? 0.18 : 0.11 });
     if (isPrimary) {
       bg.rect(x + 16, y + h - 13, w - 32, 5);
-      bg.fill({ color: 0xffa83d, alpha: active ? 0.28 : 0.16 });
+      bg.fill({ color: 0xffa83d, alpha: active ? 0.32 : 0.17 + ignition * 0.04 });
+      drawCutPanel(bg, x + 12, y + 12, w - 24, h - 24, Math.max(3, cut - 4), { color: 0xffef7e, alpha: active ? 0.055 : 0.025 + ignition * 0.018 });
       bg.circle(x + 42, y + h * 0.5, Math.max(18, h * 0.26));
-      bg.stroke({ color: 0xffef7e, width: 1, alpha: active ? 0.42 : 0.24 });
+      bg.stroke({ color: 0xffef7e, width: 1, alpha: active ? 0.48 : 0.24 + ignition * 0.08 });
       bg.circle(x + 42, y + h * 0.5, Math.max(9, h * 0.13));
-      bg.fill({ color: 0xffd15c, alpha: active ? 0.12 : 0.065 });
+      bg.fill({ color: 0xffd15c, alpha: active ? 0.14 : 0.065 + ignition * 0.035 });
     }
 
     bg.rect(x + 7, y + 6, w - 14, Math.max(12, h * 0.34));
@@ -2730,6 +2776,15 @@ export class MenuScene {
     shine.moveTo(x + 22, y + 13);
     shine.lineTo(x + w * 0.7, y + 13);
     shine.stroke({ color: 0x7fffd8, width: 1, alpha: isPrimary ? 0.12 : 0.18 });
+    if (active) {
+      const sweepX = x + 18 + (w - 86) * sweep;
+      shine.moveTo(sweepX, y + 12);
+      shine.lineTo(sweepX + 54, y + 12);
+      shine.stroke({ color: 0xffffff, width: 1.2, alpha: isUtilityDanger ? 0.18 : 0.28 });
+      shine.moveTo(sweepX + 12, y + h - 10);
+      shine.lineTo(sweepX + 66, y + h - 10);
+      shine.stroke({ color: hotAccent, width: 1.4, alpha: isPrimary ? 0.36 : 0.26 });
+    }
     shine.moveTo(x + 20, y + h - 13);
     shine.lineTo(x + w - 20, y + h - 13);
     shine.stroke({ color: hotAccent, width: 1.1, alpha: active ? 0.42 : 0.17 });
@@ -2915,8 +2970,8 @@ export class MenuScene {
       if (nav.pressed.cancel || nav.pressed.back) this.closeSectorSelector();
       return;
     }
-    if (nav.pressed.left && !this.cycleSectorStartCheckpoint(-1)) this.moveMenuFocus(-1);
-    if (nav.pressed.right && !this.cycleSectorStartCheckpoint(1)) this.moveMenuFocus(1);
+    if (nav.pressed.left) this.moveMenuFocus(-1);
+    if (nav.pressed.right) this.moveMenuFocus(1);
     if (nav.pressed.up) this.moveMenuFocus(-1);
     if (nav.pressed.down) this.moveMenuFocus(1);
     if (nav.pressed.confirm) this.activateFocusedMenuOption();
@@ -3013,15 +3068,11 @@ export class MenuScene {
   getSectorStartButtonSubLabel() {
     const checkpoint = this.getSelectedSectorStartCheckpoint();
     if (!checkpoint || !this.sectorStartState?.available) return translateText('LOCKED');
-    if (checkpoint % 10 === 0) {
-      const playSector = getSectorStartPlaySector(checkpoint);
-      return translateText('BEGINS AT SECTOR {sector}', { sector: playSector });
-    }
     const record = getSectorStartChallengeRecord(checkpoint);
     if (record?.scoreEarned > 0) {
       return `${translateText('BEST')} ${this.formatSectorStartMenuBestScore(record.scoreEarned)}`;
     }
-    return `${translateText('CHECKPOINT')} ${checkpoint}`;
+    return translateText('CHOOSE START POINT');
   }
 
   updateSectorStartButton({ forceGpuRefresh = false } = {}) {
@@ -3266,6 +3317,7 @@ export class MenuScene {
       this.storyTypewriter.update(delta);
     }
     this.updateCodexSignalCue(delta);
+    this.updateMenuButtonMotion(delta);
     this.drawSectorStartStepperCue();
 
     // Update starfield

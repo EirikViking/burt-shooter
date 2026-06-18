@@ -335,7 +335,28 @@ try {
   assert.ok(state.menu.items.exitButton?.width > 0, 'exit button should be visible from the main menu');
   await page.waitForTimeout(1800);
   state = await readState(page);
+  assert.equal(state.menu.sectorStart.arrowCueVisible, false, 'sector challenge dock tile should not show stepper arrows');
   await page.screenshot({ path: path.join(outputDir, 'main-menu-1920x1080.png'), fullPage: false });
+  await page.evaluate(() => {
+    const menu = window.__game?.scenes?.menu;
+    menu?.setMenuFocusByButton?.(menu.sectorStartBtn);
+  });
+  await page.waitForTimeout(250);
+  state = await readState(page);
+  assert.equal(state.menu.focusedOption, 'sectorStart', 'sector challenge tile should be focusable as a single button');
+  assert.equal(state.menu.sectorStart.arrowCueVisible, false, 'focused sector challenge tile should still not show stepper arrows');
+  await page.screenshot({ path: path.join(outputDir, 'main-menu-sector-focused-1920x1080.png'), fullPage: false });
+  const selectedCheckpointBeforeArrow = state.menu.sectorStart.selectedCheckpoint;
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(120);
+  state = await readState(page);
+  assert.equal(state.menu.focusedOption, 'launch', 'left from Sector Challenge should move dock focus to Launch Run');
+  assert.equal(state.menu.sectorStart.selectedCheckpoint, selectedCheckpointBeforeArrow, 'left/right dock navigation must not cycle selected checkpoint');
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(120);
+  state = await readState(page);
+  assert.equal(state.menu.focusedOption, 'sectorStart', 'right from Launch Run should return focus to Sector Challenge');
+  assert.equal(state.menu.sectorStart.selectedCheckpoint, selectedCheckpointBeforeArrow, 'returning focus should not cycle selected checkpoint');
 
   await page.evaluate(() => {
     const menu = window.__game?.scenes?.menu;

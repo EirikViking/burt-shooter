@@ -62,6 +62,7 @@ const sourceText = Object.freeze({
   'SECTOR START': 'セクタースタート',
   'SECTOR START LOCKED': 'セクタースタート未解放',
   'SELECT SECTOR': 'セクター選択',
+  'CHOOSE START POINT': '開始地点を選択',
   'SELECT START POINT': '開始地点を選択',
   'CHOOSE YOUR STARTING POINT': '開始地点を選択',
   'D-PAD/STICK: SELECT // A: START // B: BACK': '十字キー/スティック: 選択 // A: 開始 // B: 戻る',
