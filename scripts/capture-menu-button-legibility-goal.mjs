@@ -333,6 +333,8 @@ function assertTextWithinTile(state, label) {
     };
     for (const [kind, bounds] of [['label', entry.labelBounds], ['sublabel', entry.sublabelBounds]]) {
       if (!bounds) continue;
+      assert.ok(bounds.x >= safe.x, `${label}: ${key} ${kind} left ${bounds.x} outside safe ${safe.x}`);
+      assert.ok(bounds.right <= safe.right, `${label}: ${key} ${kind} right ${bounds.right} outside safe ${safe.right}`);
       assert.ok(bounds.y >= safe.y, `${label}: ${key} ${kind} top ${bounds.y} outside safe ${safe.y}`);
       assert.ok(bounds.bottom <= safe.bottom, `${label}: ${key} ${kind} bottom ${bounds.bottom} outside safe ${safe.bottom}`);
     }

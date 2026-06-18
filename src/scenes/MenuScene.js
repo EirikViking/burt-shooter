@@ -1256,10 +1256,12 @@ export class MenuScene {
     this.layoutMenu({ forceLabelGpuRefresh: forceGpuRefresh });
   }
 
-  refreshMenuButtonLabel(button, maxWidth, { minScale = 0.68, forceGpuRefresh = false } = {}) {
+  refreshMenuButtonLabel(button, maxWidth, { minScale = 0.68, forceGpuRefresh = false, texturePadding = null } = {}) {
     const label = button?._label;
     if (!label) return 1;
-    const targetPadding = this.menuFontsReady ? 44 : 36;
+    const targetPadding = Number.isFinite(texturePadding)
+      ? texturePadding
+      : (this.menuFontsReady ? 44 : 36);
     if (label.style.padding !== targetPadding) {
       label.style.padding = targetPadding;
       forceGpuRefresh = true;
@@ -1293,12 +1295,19 @@ export class MenuScene {
     }
     const isPrimaryButton = button._variant === 'primary';
     const isCompactButton = (button._btnHeight || 0) <= 38;
-    const labelPad = button._iconType
-      ? (isPrimaryButton ? 118 : (isCompactButton ? 56 : 72))
-      : 48;
-    const fitMinScale = button._labelMinScale || (Number.isFinite(button._dockIndex) ? 0.54 : 0.62);
-    this.refreshMenuButtonLabel(button, (button._btnWidth || 180) - labelPad, { minScale: fitMinScale, forceGpuRefresh });
-    this.refreshMenuButtonSubLabel(button, (button._btnWidth || 180) - labelPad + 18, { minScale: 0.62, forceGpuRefresh });
+    const labelInset = button._iconType
+      ? (isPrimaryButton ? 112 : (isCompactButton ? 40 : 72))
+      : (isCompactButton ? 36 : 48);
+    const labelRightPad = isPrimaryButton ? 16 : (isCompactButton ? 12 : 10);
+    const labelMaxWidth = Math.max(36, (button._btnWidth || 180) - labelInset - labelRightPad);
+    const fitMinScale = Number.isFinite(button._labelMinScale)
+      ? button._labelMinScale
+      : (Number.isFinite(button._dockIndex) ? (isPrimaryButton ? 0.48 : 0.54) : 0.62);
+    const labelTexturePadding = Number.isFinite(button._dockIndex)
+      ? (isCompactButton ? 12 : (isPrimaryButton ? 24 : 18))
+      : null;
+    this.refreshMenuButtonLabel(button, labelMaxWidth, { minScale: fitMinScale, forceGpuRefresh, texturePadding: labelTexturePadding });
+    this.refreshMenuButtonSubLabel(button, labelMaxWidth, { minScale: 0.62, forceGpuRefresh });
   }
 
   async initBonusDecorations() {
@@ -2341,7 +2350,7 @@ export class MenuScene {
     container._dynamicSubLabel = options.dynamicSubLabel || null;
     container._iconType = options.icon || 'panel';
     container._iconAssetKey = options.iconAsset || MENU_ICON_ASSET_KEYS[container._iconType] || container._iconType;
-    container._labelMinScale = options.labelMinScale || 0.62;
+    container._labelMinScale = Number.isFinite(options.labelMinScale) ? options.labelMinScale : null;
     container._bg = bg;
     container._shine = shine;
     container._icon = icon;
@@ -2975,7 +2984,7 @@ export class MenuScene {
     bg.stroke({ color: 0xffffff, width: 1, alpha: active ? 0.22 : 0.1 });
 
     if (!isCompact && icon) {
-      const iconCenterX = x + (isPrimary ? 56 : 40);
+      const iconCenterX = x + (isPrimary ? 56 : 36);
       const iconCenterY = hasSubLabel ? -h * 0.08 : 0;
       const plateX = iconCenterX - iconPlateSize / 2;
       const plateY = iconCenterY - iconPlateSize / 2;
@@ -3033,7 +3042,7 @@ export class MenuScene {
         ? '#ffffff'
           : (isPrimary ? '#ffe584' : (isDanger ? '#ff7a86' : (isUtilityDanger ? '#c9fbff' : '#c9fbff')));
       label.style.strokeThickness = isPrimary ? 4 : 3;
-      label.x = x + (isCompact ? 40 : (isPrimary ? 112 : 82));
+      label.x = x + (isCompact ? 40 : (isPrimary ? 112 : 72));
       label.y = hasSubLabel ? -h * (isPrimary ? 0.095 : 0.085) : 0;
     }
     if (sublabel) {
@@ -3046,7 +3055,7 @@ export class MenuScene {
     }
     if (icon) {
       const iconSize = clampNumber(h * (isCompact ? 0.34 : (isPrimary ? 0.32 : 0.29)), 16, isPrimary ? 30 : 23);
-      const iconX = x + (isCompact ? 22 : (isPrimary ? 56 : 42));
+      const iconX = x + (isCompact ? 22 : (isPrimary ? 56 : 36));
       const iconY = hasSubLabel ? -h * 0.08 : 0;
       if (useAssetIcon) {
         icon.visible = false;
