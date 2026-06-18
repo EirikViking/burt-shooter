@@ -134,6 +134,12 @@ export class MenuScene {
     this.sectorSelectorSubtitle = null;
     this.sectorSelectorGrid = null;
     this.sectorSelectorDetail = null;
+    this.sectorSelectorLaunchButton = null;
+    this.sectorSelectorLaunchBg = null;
+    this.sectorSelectorLaunchText = null;
+    this.sectorSelectorBackButton = null;
+    this.sectorSelectorBackBg = null;
+    this.sectorSelectorBackText = null;
     this.sectorSelectorHint = null;
     this.sectorSelectorItems = [];
     this.sectorSelectorSectors = [];
@@ -970,7 +976,12 @@ export class MenuScene {
     });
     this.container.addChild(this.helpBtn);
 
-    this.exitBtn = this.createButton('EXIT GAME', layout, { accent: 0xff6b6b, icon: 'exit' });
+    this.exitBtn = this.createButton('EXIT GAME', layout, {
+      compact: true,
+      variant: 'utilityDanger',
+      accent: 0xff6b6b,
+      icon: 'exit'
+    });
     this.exitBtn.alpha = 0;
     this.exitBtn.on('pointerdown', () => {
       this.exitGame();
@@ -1250,8 +1261,7 @@ export class MenuScene {
       this.storyBtn,
       this.threatCodexBtn,
       this.achievementsBtn,
-      this.settingsBtn,
-      this.exitBtn
+      this.settingsBtn
     ].filter(Boolean);
 
     const marginX = clampNumber(width * 0.018, 16, 34);
@@ -1272,7 +1282,7 @@ export class MenuScene {
       right: marginX + dockWidth,
       bottom: Math.min(height - 8, dockTop + dockHeight)
     };
-    const launchWidth = clampNumber(dockWidth * 0.15, isMobileLayout ? 150 : 188, isMobileLayout ? 210 : 286);
+    const launchWidth = clampNumber(dockWidth * 0.185, isMobileLayout ? 168 : 226, isMobileLayout ? 238 : 352);
     const remainingWidth = dockWidth - launchWidth - gap * (dockButtons.length - 1);
     const secondaryWidth = Math.max(112, remainingWidth / Math.max(1, dockButtons.length - 1));
     let cursorX = marginX;
@@ -1314,26 +1324,22 @@ export class MenuScene {
     this.easter.anchor.set(0, 0.5);
 
     const utilityWidth = isMobileLayout ? 132 : 158;
-    const utilityHeight = isMobileLayout ? 30 : 34;
-    this.musicBtn._btnWidth = utilityWidth;
-    this.musicBtn._btnHeight = utilityHeight;
-    this.musicBtn._label.style.fontSize = Math.max(10, controlsSize - 1);
-    this.refreshButtonCopy(this.musicBtn, { forceGpuRefresh: forceLabelGpuRefresh });
-    this.drawMenuButton(this.musicBtn, false);
-    this.musicBtn.scale.set(1);
-    this.musicBtn.x = width - marginX - utilityWidth / 2;
-    this.musicBtn.y = safeMargin.top + (isMobileLayout ? 24 : 30);
-    this.musicBtn._layoutY = this.musicBtn.y;
-
-    this.helpBtn._btnWidth = utilityWidth;
-    this.helpBtn._btnHeight = utilityHeight;
-    this.helpBtn._label.style.fontSize = Math.max(10, controlsSize - 1);
-    this.refreshButtonCopy(this.helpBtn, { forceGpuRefresh: forceLabelGpuRefresh });
-    this.drawMenuButton(this.helpBtn, false);
-    this.helpBtn.scale.set(1);
-    this.helpBtn.x = this.musicBtn.x;
-    this.helpBtn.y = this.musicBtn.y + utilityHeight + 8;
-    this.helpBtn._layoutY = this.helpBtn.y;
+    const utilityHeight = isMobileLayout ? 28 : 32;
+    const utilityGap = isMobileLayout ? 6 : 7;
+    const utilityButtons = [this.musicBtn, this.helpBtn, this.exitBtn].filter(Boolean);
+    utilityButtons.forEach((button, index) => {
+      button.visible = true;
+      button._btnWidth = utilityWidth;
+      button._btnHeight = utilityHeight;
+      button._variant = button === this.exitBtn ? 'utilityDanger' : 'utility';
+      button._label.style.fontSize = Math.max(9, controlsSize - 1);
+      this.refreshButtonCopy(button, { forceGpuRefresh: forceLabelGpuRefresh });
+      button.scale.set(1);
+      button.x = width - marginX - utilityWidth / 2;
+      button.y = safeMargin.top + (isMobileLayout ? 22 : 28) + index * (utilityHeight + utilityGap);
+      button._layoutY = button.y;
+      this.drawMenuButton(button, false);
+    });
 
     if (this.buildStamp) {
       this.buildStamp.x = width - layout.padding / 2;
@@ -1345,7 +1351,54 @@ export class MenuScene {
       this.installButton.x = width / 2;
       this.installButton.y = height - 100;
     }
+    this.applyMenuModalDimming();
     this.layoutSectorSelector(layout, width, height);
+  }
+
+  applyMenuModalDimming() {
+    const modalOpen = Boolean(this.sectorSelectorOpen);
+    const dockAlpha = 0.42;
+    const utilityAlpha = 0.34;
+    [
+      this.startBtn,
+      this.sectorStartBtn,
+      this.highscoreBtn,
+      this.storyBtn,
+      this.threatCodexBtn,
+      this.achievementsBtn,
+      this.settingsBtn
+    ].filter(Boolean).forEach((button) => {
+      if (modalOpen) {
+        button._preSelectorAlpha = button.alpha;
+        button.alpha = dockAlpha;
+      } else if (button._preSelectorAlpha != null) {
+        button.alpha = Math.max(button._preSelectorAlpha, 1);
+        button._preSelectorAlpha = null;
+      }
+    });
+    [this.musicBtn, this.helpBtn, this.exitBtn].filter(Boolean).forEach((button) => {
+      if (modalOpen) {
+        button._preSelectorAlpha = button.alpha;
+        button.alpha = utilityAlpha;
+      } else if (button._preSelectorAlpha != null) {
+        button.alpha = Math.max(button._preSelectorAlpha, 1);
+        button._preSelectorAlpha = null;
+      }
+    });
+    [
+      [this.menuPanel, 0.72],
+      [this.runModePanel, 0.38],
+      [this.runModeExplainer, 0.46]
+    ].forEach(([item, alpha]) => {
+      if (!item) return;
+      if (modalOpen) {
+        item._preSelectorAlpha = item.alpha;
+        item.alpha = alpha;
+      } else if (item._preSelectorAlpha != null) {
+        item.alpha = Math.max(item._preSelectorAlpha, 1);
+        item._preSelectorAlpha = null;
+      }
+    });
   }
 
   getControlsText(layout) {
@@ -1461,8 +1514,7 @@ export class MenuScene {
       this.storyBtn,
       this.threatCodexBtn,
       this.achievementsBtn,
-      this.settingsBtn,
-      this.exitBtn
+      this.settingsBtn
     ].filter(Boolean);
     const itemBounds = contentItems.map(boundsForDisplayObject).filter(Boolean);
     const minX = itemBounds.length ? Math.min(...itemBounds.map((bounds) => bounds.x)) : this.startBtn.x - this.startBtn._btnWidth / 2;
@@ -1516,7 +1568,7 @@ export class MenuScene {
 
     const isCompact = width < 1450 || height < 850;
     const panelWidth = clampNumber(width * (isCompact ? 0.82 : 0.72), 760, Math.min(1280, width - 72));
-    const panelHeight = clampNumber(height * (isCompact ? 0.66 : 0.62), 500, Math.min(710, height - 150));
+    const panelHeight = clampNumber(height * (isCompact ? 0.62 : 0.54), 500, Math.min(610, height - 150));
     const panelX = Math.round((width - panelWidth) / 2);
     const panelY = Math.round(Math.max(40, height * 0.12));
     const pad = isCompact ? 24 : 34;
@@ -1533,7 +1585,7 @@ export class MenuScene {
     this.sectorSelectorPanel.y = 0;
     this.sectorSelectorPanel.hitArea = new PIXI.Rectangle(panelX, panelY, panelWidth, panelHeight);
     this.sectorSelectorTitle.style.fontSize = Math.round(clampNumber(width * 0.022, 24, 38));
-    this.sectorSelectorTitle.text = translateText('SELECT SECTOR');
+    this.sectorSelectorTitle.text = translateText('SELECT START POINT');
     this.sectorSelectorTitle.x = panelX + pad;
     this.sectorSelectorTitle.y = panelY + pad + 18;
     this.sectorSelectorSubtitle.style.fontSize = Math.round(clampNumber(width * 0.0085, 12, 16));
@@ -1541,7 +1593,7 @@ export class MenuScene {
     this.sectorSelectorSubtitle.x = panelX + pad + 2;
     this.sectorSelectorSubtitle.y = this.sectorSelectorTitle.y + 35;
 
-    const detailWidth = clampNumber(panelWidth * 0.26, 210, 310);
+    const detailWidth = clampNumber(panelWidth * 0.29, 250, 350);
     const gridX = panelX + pad;
     const gridY = panelY + (isCompact ? 96 : 110);
     const gridW = panelWidth - pad * 3 - detailWidth;
@@ -1582,6 +1634,26 @@ export class MenuScene {
     this.sectorSelectorDetail.x = gridX + gridW + pad;
     this.sectorSelectorDetail.y = gridY + 4;
 
+    const actionW = detailWidth;
+    const actionH = isCompact ? 44 : 50;
+    const actionX = gridX + gridW + pad;
+    const actionY = gridY + Math.max(188, Math.min(actualGridH - 96, panelHeight * 0.36));
+    if (this.sectorSelectorLaunchButton) {
+      this.sectorSelectorLaunchButton.x = actionX;
+      this.sectorSelectorLaunchButton.y = actionY;
+      this.sectorSelectorLaunchButton._btnWidth = actionW;
+      this.sectorSelectorLaunchButton._btnHeight = actionH;
+      this.sectorSelectorLaunchButton.hitArea = new PIXI.Rectangle(0, 0, actionW, actionH);
+    }
+    if (this.sectorSelectorBackButton) {
+      this.sectorSelectorBackButton.x = actionX;
+      this.sectorSelectorBackButton.y = actionY + actionH + 10;
+      this.sectorSelectorBackButton._btnWidth = actionW;
+      this.sectorSelectorBackButton._btnHeight = isCompact ? 34 : 38;
+      this.sectorSelectorBackButton.hitArea = new PIXI.Rectangle(0, 0, actionW, this.sectorSelectorBackButton._btnHeight);
+    }
+    this.drawSectorSelectorActionButtons();
+
     this.sectorSelectorHint.style.fontSize = Math.round(clampNumber(width * 0.0076, 11, 14));
     this.sectorSelectorHint.text = this.lastInputDevice === 'controller'
       ? translateText('D-PAD/STICK: SELECT // A: START // B: BACK')
@@ -1621,7 +1693,9 @@ export class MenuScene {
     number.x = width * 0.5;
     number.y = height * 0.38;
     item.addChild(number);
-    const status = createText(entry.unlocked ? translateText('READY') : translateText('LOCKED'), {
+    const status = createText(entry.unlocked
+      ? translateText(entry.overrunCheckpoint ? 'OVERRUN' : 'READY')
+      : translateText('LOCKED'), {
       fontFamily: FONT_MONO,
       fontSize: Math.round(clampNumber(width * 0.07, 8, 10)),
       fontWeight: '900',
@@ -1661,28 +1735,48 @@ export class MenuScene {
     if (!g) return;
     g.clear();
     g.rect(0, 0, this.game.getWidth(), this.game.getHeight());
-    g.fill({ color: 0x00040a, alpha: 0.54 });
-    drawCutPanel(g, x - 9, y - 9, width + 18, height + 18, 18, { color: 0x37f5ff, alpha: 0.05 }, { color: 0x37f5ff, width: 1, alpha: 0.28 });
-    drawCutPanel(g, x, y, width, height, 16, { color: 0x020a14, alpha: 0.88 }, { color: 0x37f5ff, width: 2, alpha: 0.72 });
-    drawCutPanel(g, x + 8, y + 8, width - 16, height - 16, 12, { color: 0x031827, alpha: 0.42 }, { color: 0x7fffd8, width: 1, alpha: 0.2 });
+    g.fill({ color: 0x00040a, alpha: 0.62 });
+    drawCutPanel(g, x - 14, y - 14, width + 28, height + 28, 20, { color: 0x37f5ff, alpha: 0.055 }, { color: 0x37f5ff, width: 1, alpha: 0.24 });
+    drawCutPanel(g, x - 7, y - 7, width + 14, height + 14, 18, { color: 0x000000, alpha: 0.42 }, { color: 0xff55d9, width: 1, alpha: 0.22 });
+    drawCutPanel(g, x, y, width, height, 16, { color: 0x020a14, alpha: 0.9 }, { color: 0x37f5ff, width: 2, alpha: 0.72 });
+    drawCutPanel(g, x + 8, y + 8, width - 16, height - 16, 12, { color: 0x031827, alpha: 0.46 }, { color: 0x7fffd8, width: 1, alpha: 0.22 });
     g.rect(x + 14, y + 12, width - 28, 2);
     g.fill({ color: 0x7fffd8, alpha: 0.42 });
     g.rect(x + 14, y + height - 16, width - 28, 2);
     g.fill({ color: 0xffd15c, alpha: 0.34 });
-    g.rect(x + 1, y + 1, width - 2, Math.max(68, height * 0.18));
-    g.fill({ color: 0x0a2b43, alpha: 0.25 });
+    g.rect(x + 1, y + 1, width - 2, Math.max(72, height * 0.18));
+    g.fill({ color: 0x0a2b43, alpha: 0.28 });
+    g.rect(x + width * 0.58, y + 1, width * 0.38, Math.max(72, height * 0.18));
+    g.fill({ color: 0xff55d9, alpha: 0.035 });
+    g.moveTo(x + 28, y + 72);
+    g.lineTo(x + width - 28, y + 72);
+    g.stroke({ color: 0x37f5ff, width: 1, alpha: 0.18 });
+    g.moveTo(x + width - 42, y + 22);
+    g.lineTo(x + width - 18, y + 22);
+    g.lineTo(x + width - 18, y + 46);
+    g.stroke({ color: 0xffd15c, width: 1.2, alpha: 0.48 });
 
     if (zones.gridW > 0) {
-      drawCutPanel(g, zones.gridX - 10, zones.gridY - 10, zones.gridW + 20, zones.gridH + 20, 10, { color: 0x010812, alpha: 0.42 }, { color: 0x37f5ff, width: 1, alpha: 0.32 });
+      drawCutPanel(g, zones.gridX - 12, zones.gridY - 12, zones.gridW + 24, zones.gridH + 24, 12, { color: 0x010812, alpha: 0.48 }, { color: 0x37f5ff, width: 1, alpha: 0.34 });
       for (let i = 0; i < 4; i += 1) {
         const yy = zones.gridY + (zones.gridH * i) / 3;
         g.moveTo(zones.gridX - 4, yy);
         g.lineTo(zones.gridX + zones.gridW + 4, yy);
         g.stroke({ color: i % 2 ? 0xff55d9 : 0x37f5ff, width: 1, alpha: 0.08 });
       }
+      for (let i = 1; i < 4; i += 1) {
+        const xx = zones.gridX + (zones.gridW * i) / 4;
+        g.moveTo(xx, zones.gridY - 6);
+        g.lineTo(xx, zones.gridY + zones.gridH + 6);
+        g.stroke({ color: 0x37f5ff, width: 1, alpha: 0.055 });
+      }
     }
     if (zones.detailWidth > 0) {
-      drawCutPanel(g, zones.detailX - 10, zones.detailY - 10, zones.detailWidth + 20, zones.detailHeight + 20, 10, { color: 0x010812, alpha: 0.5 }, { color: 0xffd15c, width: 1, alpha: 0.38 });
+      drawCutPanel(g, zones.detailX - 12, zones.detailY - 12, zones.detailWidth + 24, zones.detailHeight + 20, 12, { color: 0x010812, alpha: 0.58 }, { color: 0xffd15c, width: 1, alpha: 0.4 });
+      g.rect(zones.detailX, zones.detailY + 92, zones.detailWidth, 1);
+      g.fill({ color: 0x37f5ff, alpha: 0.14 });
+      g.rect(zones.detailX, zones.detailY + 100, zones.detailWidth * 0.44, 2);
+      g.fill({ color: 0xff55d9, alpha: 0.3 });
     }
     this.drawSectorSelectorOverlay();
   }
@@ -1697,6 +1791,79 @@ export class MenuScene {
       this.sectorSelectorDetail.text = this.getSectorSelectorDetailText();
       this.sectorSelectorDetail.updateText?.(false);
     }
+    this.drawSectorSelectorActionButtons();
+  }
+
+  getSectorSelectorLaunchLabel(entry = this.sectorSelectorSectors[this.selectedSectorSelectorIndex]) {
+    if (!entry?.unlocked) return translateText('LOCKED');
+    const playSector = entry.playSector || entry.sector;
+    return entry.overrunCheckpoint
+      ? translateText('LAUNCH FROM SECTOR {sector}', { sector: playSector })
+      : translateText('LAUNCH SECTOR {sector}', { sector: playSector });
+  }
+
+  drawSectorSelectorActionButtons() {
+    const entry = this.sectorSelectorSectors?.[this.selectedSectorSelectorIndex];
+    const launchButton = this.sectorSelectorLaunchButton;
+    const launchBg = this.sectorSelectorLaunchBg;
+    const launchText = this.sectorSelectorLaunchText;
+    if (launchButton && launchBg && launchText) {
+      const w = launchButton._btnWidth || 260;
+      const h = launchButton._btnHeight || 48;
+      const unlocked = Boolean(entry?.unlocked);
+      launchButton.cursor = unlocked ? 'pointer' : 'default';
+      launchText.text = this.getSectorSelectorLaunchLabel(entry);
+      launchText.style.fontSize = Math.round(clampNumber(w * 0.062, 13, 18));
+      launchText.style.fill = unlocked ? '#ffe584' : '#7b8794';
+      launchText.x = w / 2;
+      launchText.y = h / 2;
+      launchText.updateText?.(false);
+      fitTextToWidth(launchText, w - 28, { minScale: 0.58 });
+      launchBg.clear();
+      drawCutPanel(launchBg, 3, 5, w, h, 10, { color: 0x000000, alpha: 0.32 });
+      drawCutPanel(launchBg, 0, 0, w, h, 10, {
+        color: unlocked ? 0x2f2108 : 0x07101a,
+        alpha: unlocked ? 0.9 : 0.62
+      }, {
+        color: unlocked ? 0xffd15c : 0x5c6a77,
+        width: unlocked ? 2 : 1,
+        alpha: unlocked ? 0.82 : 0.32
+      });
+      drawCutPanel(launchBg, 7, 7, w - 14, h - 14, 7, {
+        color: unlocked ? 0x5a3a0b : 0x152432,
+        alpha: unlocked ? 0.24 : 0.12
+      }, {
+        color: 0xffffff,
+        width: 1,
+        alpha: unlocked ? 0.1 : 0.05
+      });
+      launchBg.rect(12, h - 9, w - 24, 3);
+      launchBg.fill({ color: unlocked ? 0xffef7e : 0x6a7784, alpha: unlocked ? 0.62 : 0.22 });
+      launchBg.moveTo(w - 38, h * 0.5);
+      launchBg.lineTo(w - 24, h * 0.5);
+      launchBg.lineTo(w - 31, h * 0.5 - 7);
+      launchBg.moveTo(w - 24, h * 0.5);
+      launchBg.lineTo(w - 31, h * 0.5 + 7);
+      launchBg.stroke({ color: unlocked ? 0xffef7e : 0x72808b, width: 2, alpha: unlocked ? 0.86 : 0.32 });
+    }
+
+    const backButton = this.sectorSelectorBackButton;
+    const backBg = this.sectorSelectorBackBg;
+    const backText = this.sectorSelectorBackText;
+    if (backButton && backBg && backText) {
+      const w = backButton._btnWidth || 260;
+      const h = backButton._btnHeight || 36;
+      backText.text = translateText('BACK');
+      backText.style.fontSize = Math.round(clampNumber(w * 0.044, 11, 14));
+      backText.x = w / 2;
+      backText.y = h / 2;
+      backText.updateText?.(false);
+      fitTextToWidth(backText, w - 24, { minScale: 0.62 });
+      backBg.clear();
+      drawCutPanel(backBg, 0, 0, w, h, 8, { color: 0x041420, alpha: 0.72 }, { color: 0x37f5ff, width: 1, alpha: 0.38 });
+      backBg.rect(10, h - 7, w - 20, 2);
+      backBg.fill({ color: 0x37f5ff, alpha: 0.18 });
+    }
   }
 
   drawSectorSelectorCell(item, entry, selected) {
@@ -1705,13 +1872,16 @@ export class MenuScene {
     const w = item._cellWidth || 90;
     const h = item._cellHeight || 46;
     const unlocked = Boolean(entry.unlocked);
-    const accent = unlocked ? (selected ? 0xffef7e : 0x37f5ff) : 0x52606f;
-    const fill = unlocked ? (selected ? 0x18301f : 0x041927) : 0x07101a;
+    const isOverrun = Boolean(entry.overrunCheckpoint);
+    const accent = unlocked
+      ? (selected ? 0xffef7e : (isOverrun ? 0xff55d9 : 0x37f5ff))
+      : 0x52606f;
+    const fill = unlocked ? (selected ? 0x18301f : (isOverrun ? 0x180d24 : 0x041927)) : 0x07101a;
     const pulse = 0.5 + Math.sin(this.animationTime * 6) * 0.5;
     g.clear();
     drawCutPanel(g, 0, 0, w, h, 8, { color: fill, alpha: unlocked ? 0.82 : 0.56 }, { color: accent, width: selected ? 2.3 : 1.1, alpha: selected ? 0.95 : (unlocked ? 0.5 : 0.22) });
     g.rect(6, 5, w - 12, Math.max(9, h * 0.25));
-    g.fill({ color: unlocked ? 0x37f5ff : 0x334150, alpha: selected ? 0.18 : 0.08 });
+    g.fill({ color: unlocked ? (isOverrun ? 0xff55d9 : 0x37f5ff) : 0x334150, alpha: selected ? 0.18 : 0.08 });
     g.rect(8, h - 7, w - 16, 2);
     g.fill({ color: accent, alpha: selected ? 0.72 : 0.28 });
     if (selected) {
@@ -1723,33 +1893,53 @@ export class MenuScene {
       g.stroke({ color: 0x8b96a3, width: 2, alpha: 0.42 });
     }
     if (item._cellNumber) item._cellNumber.style.fill = unlocked ? (selected ? '#fff7bf' : '#dffcff') : '#6b7785';
-    if (item._cellStatus) item._cellStatus.style.fill = unlocked ? (selected ? '#ffe584' : '#7fffd8') : '#68727c';
+    if (item._cellStatus) {
+      item._cellStatus.text = unlocked
+        ? translateText(isOverrun ? 'OVERRUN' : 'READY')
+        : translateText('LOCKED');
+      item._cellStatus.style.fill = unlocked ? (selected ? '#ffe584' : (isOverrun ? '#ff9bff' : '#7fffd8')) : '#68727c';
+      item._cellStatus.updateText?.(false);
+    }
   }
 
   getSectorSelectorDetailText() {
     const entry = this.sectorSelectorSectors[this.selectedSectorSelectorIndex];
     if (!entry) return '';
-    const sectorLine = translateText('SECTOR {sector}', { sector: entry.sector });
+    const startPointLine = entry.overrunCheckpoint
+      ? translateText('CHECKPOINT {sector}', { sector: entry.sector })
+      : translateText('START POINT {sector}', { sector: entry.sector });
     if (!entry.unlocked) {
       const required = getSectorStartPlaySector(entry.sector);
       return [
-        sectorLine,
+        startPointLine,
         translateText('LOCKED'),
-        required ? translateText('REACH SECTOR {sector} TO UNLOCK', { sector: required }) : translateText('SECTOR START LOCKED')
-      ].join('\n');
+        required ? translateText('REACH SECTOR {sector} TO UNLOCK', { sector: required }) : translateText('SECTOR START LOCKED'),
+        entry.overrunCheckpoint ? translateText('OVERRUN STARTS AFTER BONUS') : ''
+      ].filter(Boolean).join('\n');
     }
+    const playSector = entry.playSector || entry.sector;
+    const startLine = entry.overrunCheckpoint
+      ? translateText('BEGINS AT SECTOR {sector}', { sector: playSector })
+      : translateText('STARTS AT SECTOR {sector}', { sector: playSector });
+    const overrunLine = entry.overrunCheckpoint
+      ? translateText('OVERRUN CLEARED')
+      : translateText('READY');
+    const note = entry.overrunCheckpoint
+      ? translateText('OVERRUN STARTS AFTER BONUS')
+      : translateText('DIRECT SECTOR START');
+    const launchLine = this.getSectorSelectorLaunchLabel(entry);
     const record = entry.record;
     const best = record?.scoreEarned > 0
       ? `${translateText('BEST')} ${this.formatSectorStartMenuBestScore(record.scoreEarned)}`
       : translateText('NO RECORD YET');
-    const startLine = translateText('STARTS AT SECTOR {sector}', { sector: entry.playSector || entry.sector });
-    const checkpoint = translateText('CHECKPOINT {sector}', { sector: entry.sector });
     return [
-      sectorLine,
+      startPointLine,
       entry.name,
-      checkpoint,
+      overrunLine,
       startLine,
-      best
+      launchLine,
+      best,
+      note
     ].join('\n');
   }
 
@@ -1877,17 +2067,23 @@ export class MenuScene {
       selectedSector: selected?.sector || null,
       selectedUnlocked: Boolean(selected?.unlocked),
       selectedPlaySector: selected?.playSector || null,
+      selectedOverrunCheckpoint: Boolean(selected?.overrunCheckpoint),
+      launchLabel: this.getSectorSelectorLaunchLabel(selected),
       columns: this.getSectorSelectorColumns(),
       title: this.sectorSelectorTitle?.text || null,
       subtitle: this.sectorSelectorSubtitle?.text || null,
       hint: this.sectorSelectorHint?.text || null,
       detailText: this.sectorSelectorDetail?.text || null,
+      launchButtonBounds: boundsForDisplayObject(this.sectorSelectorLaunchButton),
+      launchButtonText: this.sectorSelectorLaunchText?.text || null,
+      backButtonBounds: boundsForDisplayObject(this.sectorSelectorBackButton),
       panelBounds: this.lastSectorSelectorPanelBounds,
       gridBounds: boundsForDisplayObject(this.sectorSelectorGrid),
       sectors: (this.sectorSelectorSectors || []).map((entry, index) => ({
         sector: entry.sector,
         unlocked: Boolean(entry.unlocked),
         playSector: entry.playSector || null,
+        overrunCheckpoint: Boolean(entry.overrunCheckpoint),
         hasRecord: Boolean(entry.record?.scoreEarned > 0),
         bounds: this.sectorSelectorItems?.[index]?._bounds || null
       }))
@@ -1998,7 +2194,7 @@ export class MenuScene {
     overlay.alpha = 0;
     overlay.eventMode = 'static';
     overlay.cursor = 'default';
-    overlay.on('pointerdown', () => this.closeSectorSelector());
+    overlay.on('pointerdown', (event) => event.stopPropagation?.());
     this.sectorSelectorOverlay = overlay;
 
     this.sectorSelectorPanel = new PIXI.Graphics();
@@ -2007,7 +2203,7 @@ export class MenuScene {
     this.sectorSelectorPanel.on('pointerdown', (event) => event.stopPropagation?.());
     overlay.addChild(this.sectorSelectorPanel);
 
-    this.sectorSelectorTitle = createText(translateText('SELECT SECTOR'), {
+    this.sectorSelectorTitle = createText(translateText('SELECT START POINT'), {
       fontFamily: FONT_DISPLAY,
       fontSize: Math.max(24, getResponsiveFontSize(layout, 'subtitle') * 1.45),
       fontWeight: '900',
@@ -2055,6 +2251,54 @@ export class MenuScene {
     this.sectorSelectorDetail.anchor.set(0, 0);
     overlay.addChild(this.sectorSelectorDetail);
 
+    this.sectorSelectorLaunchButton = new PIXI.Container();
+    this.sectorSelectorLaunchButton.label = 'ui_sectorChallengeSelectorLaunch';
+    this.sectorSelectorLaunchButton.eventMode = 'static';
+    this.sectorSelectorLaunchButton.cursor = 'pointer';
+    this.sectorSelectorLaunchBg = new PIXI.Graphics();
+    this.sectorSelectorLaunchButton.addChild(this.sectorSelectorLaunchBg);
+    this.sectorSelectorLaunchText = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.max(14, getResponsiveFontSize(layout, 'button') * 0.82),
+      fontWeight: '900',
+      fill: '#ffe584',
+      stroke: '#020711',
+      strokeThickness: 4,
+      padding: 14,
+      align: 'center'
+    });
+    this.sectorSelectorLaunchText.anchor.set(0.5);
+    this.sectorSelectorLaunchButton.addChild(this.sectorSelectorLaunchText);
+    this.sectorSelectorLaunchButton.on('pointerdown', (event) => {
+      event.stopPropagation?.();
+      this.activateSectorSelectorSelection();
+    });
+    overlay.addChild(this.sectorSelectorLaunchButton);
+
+    this.sectorSelectorBackButton = new PIXI.Container();
+    this.sectorSelectorBackButton.label = 'ui_sectorChallengeSelectorBack';
+    this.sectorSelectorBackButton.eventMode = 'static';
+    this.sectorSelectorBackButton.cursor = 'pointer';
+    this.sectorSelectorBackBg = new PIXI.Graphics();
+    this.sectorSelectorBackButton.addChild(this.sectorSelectorBackBg);
+    this.sectorSelectorBackText = createText(translateText('BACK'), {
+      fontFamily: FONT_MONO,
+      fontSize: Math.max(11, getResponsiveFontSize(layout, 'small')),
+      fontWeight: '900',
+      fill: '#9feeff',
+      stroke: '#020711',
+      strokeThickness: 3,
+      padding: 12,
+      align: 'center'
+    });
+    this.sectorSelectorBackText.anchor.set(0.5);
+    this.sectorSelectorBackButton.addChild(this.sectorSelectorBackText);
+    this.sectorSelectorBackButton.on('pointerdown', (event) => {
+      event.stopPropagation?.();
+      this.closeSectorSelector();
+    });
+    overlay.addChild(this.sectorSelectorBackButton);
+
     this.sectorSelectorHint = createText('', {
       fontFamily: FONT_MONO,
       fontSize: Math.max(11, getResponsiveFontSize(layout, 'small') - 1),
@@ -2088,13 +2332,15 @@ export class MenuScene {
       const unlocked = checkpoints.includes(sector);
       const playSector = unlocked ? getSectorStartPlaySector(sector) : null;
       const info = getSectorInfo(playSector || sector);
+      const overrunCheckpoint = sector % 10 === 0;
       return {
         sector,
         unlocked,
         playSector,
         record,
         name: info.name,
-        bossCheckpoint: info.bossCheckpoint
+        bossCheckpoint: info.bossCheckpoint,
+        overrunCheckpoint
       };
     });
   }
@@ -2172,6 +2418,7 @@ export class MenuScene {
     const h = button._btnHeight || 46;
     const dockMode = Number.isFinite(button._dockIndex);
     const visible = Boolean(button?.visible
+      && !this.sectorSelectorOpen
       && this.sectorStartState?.available
       && checkpoints.length > 1
       && (!dockMode || focused));
@@ -2390,15 +2637,24 @@ export class MenuScene {
     const x = -w / 2;
     const y = -h / 2;
     const isPrimary = container._variant === 'primary';
-    const isDanger = container._variant === 'danger' || container === this.exitBtn;
+    const isUtility = container._variant === 'utility' || container._variant === 'utilityDanger';
+    const isUtilityDanger = container._variant === 'utilityDanger';
+    const isDanger = container._variant === 'danger';
     const isCompact = h <= 38;
     const accent = container._accent || 0x37f5ff;
-    const isFocused = Boolean(container._focused);
+    const isModalOpen = Boolean(this.sectorSelectorOpen);
+    const isFocused = Boolean(container._focused && !isModalOpen);
     const active = isHover || isFocused;
-    const drawAccent = isDanger ? 0xff5f6a : (isPrimary ? 0xffd15c : accent);
-    const hotAccent = isDanger ? 0xff98a2 : (isPrimary ? 0xffef7e : 0x8effff);
+    const drawAccent = isUtilityDanger
+      ? (active ? 0xff6b6b : 0x6e8492)
+      : (isDanger ? 0xff5f6a : (isPrimary ? 0xffd15c : accent));
+    const hotAccent = isUtilityDanger
+      ? 0xff9aa5
+      : (isDanger ? 0xff98a2 : (isPrimary ? 0xffef7e : 0x8effff));
     const baseColor = isPrimary ? 0x261904 : (isDanger ? 0x19070e : 0x031321);
-    const glassColor = isPrimary ? 0x3b2506 : (isDanger ? 0x2b1019 : 0x06243a);
+    const glassColor = isPrimary
+      ? 0x3b2506
+      : (isDanger ? 0x2b1019 : (isUtility ? 0x061d2c : 0x06243a));
     const cut = clampNumber(h * 0.16, 5, 10);
     const iconPlateSize = isCompact ? clampNumber(h * 0.58, 22, 27) : clampNumber(h * (isPrimary ? 0.52 : 0.48), 30, isPrimary ? 42 : 36);
     const label = container._label;
@@ -2417,13 +2673,22 @@ export class MenuScene {
     bg.clear();
     drawCutPanel(bg, x + 7, y + 8, w, h, cut, { color: 0x000000, alpha: isPrimary ? 0.54 : 0.44 });
     drawCutPanel(bg, x + 3, y + 4, w, h, cut, { color: 0x000000, alpha: 0.22 });
-    drawCutPanel(bg, x - 2, y - 2, w + 4, h + 4, cut + 2, { color: drawAccent, alpha: active ? 0.18 : 0.075 }, { color: drawAccent, width: 1, alpha: active ? 0.54 : 0.22 });
+    drawCutPanel(bg, x + 1, y + h - 4, w - 2, 8, Math.max(2, cut - 5), { color: 0x000000, alpha: isPrimary ? 0.42 : 0.32 });
+    drawCutPanel(bg, x - 2, y - 2, w + 4, h + 4, cut + 2, { color: drawAccent, alpha: active ? 0.18 : (isUtilityDanger ? 0.035 : 0.075) }, { color: drawAccent, width: 1, alpha: active ? 0.54 : (isUtilityDanger ? 0.18 : 0.22) });
     drawCutPanel(bg, x, y, w, h, cut, { color: baseColor, alpha: active ? 0.94 : 0.84 }, { color: active ? hotAccent : drawAccent, width: active ? 2.15 : 1.35, alpha: active ? 0.88 : (isPrimary ? 0.78 : 0.48) });
     drawCutPanel(bg, x + 4, y + 4, w - 8, h - 8, Math.max(2, cut - 3), { color: glassColor, alpha: active ? 0.66 : 0.48 }, { color: 0xffffff, width: 1, alpha: active ? 0.18 : 0.08 });
     drawCutPanel(bg, x + 8, y + h * 0.17, w - 16, h * 0.48, Math.max(2, cut - 4), { color: isPrimary ? 0x5a3a0b : (isDanger ? 0x3b101b : 0x0a3750), alpha: active ? 0.18 : 0.11 });
+    if (isPrimary) {
+      bg.rect(x + 16, y + h - 13, w - 32, 5);
+      bg.fill({ color: 0xffa83d, alpha: active ? 0.28 : 0.16 });
+      bg.circle(x + 42, y + h * 0.5, Math.max(18, h * 0.26));
+      bg.stroke({ color: 0xffef7e, width: 1, alpha: active ? 0.42 : 0.24 });
+      bg.circle(x + 42, y + h * 0.5, Math.max(9, h * 0.13));
+      bg.fill({ color: 0xffd15c, alpha: active ? 0.12 : 0.065 });
+    }
 
     bg.rect(x + 7, y + 6, w - 14, Math.max(12, h * 0.34));
-    bg.fill({ color: isPrimary ? 0xffd15c : (isDanger ? 0xff5f6a : 0x37f5ff), alpha: active ? 0.2 : 0.1 });
+    bg.fill({ color: isPrimary ? 0xffd15c : (isUtilityDanger ? 0x6e8492 : (isDanger ? 0xff5f6a : 0x37f5ff)), alpha: active ? 0.2 : (isUtilityDanger ? 0.055 : 0.1) });
     bg.rect(x + 9, y + h - 8, w - 18, 3);
     bg.fill({ color: drawAccent, alpha: isPrimary ? (active ? 0.72 : 0.5) : (active ? 0.5 : 0.28) });
 
@@ -2453,6 +2718,9 @@ export class MenuScene {
       drawCutPanel(bg, plateX + 4, plateY + 4, iconPlateSize - 8, iconPlateSize - 8, Math.max(2, iconPlateSize * 0.12), { color: drawAccent, alpha: active ? 0.12 : 0.07 });
       bg.circle(plateX + iconPlateSize / 2, plateY + iconPlateSize / 2, iconPlateSize * 0.35);
       bg.stroke({ color: drawAccent, width: 1, alpha: active ? 0.38 : 0.18 });
+      bg.moveTo(plateX + iconPlateSize * 0.22, plateY + iconPlateSize * 0.24);
+      bg.lineTo(plateX + iconPlateSize * 0.78, plateY + iconPlateSize * 0.24);
+      bg.stroke({ color: 0xffffff, width: 1, alpha: active ? 0.22 : 0.1 });
     }
 
     shine.clear();
@@ -2474,7 +2742,7 @@ export class MenuScene {
       label.style.align = 'left';
       label.style.fill = active
         ? '#ffffff'
-        : (isPrimary ? '#ffe584' : (isDanger ? '#ff7a86' : '#c9fbff'));
+          : (isPrimary ? '#ffe584' : (isDanger ? '#ff7a86' : (isUtilityDanger ? '#c9fbff' : '#c9fbff')));
       label.style.strokeThickness = isPrimary ? 4 : 3;
       label.x = x + (isCompact ? 38 : (isPrimary ? 72 : 54));
       label.y = hasSubLabel ? -h * 0.1 : 0;
@@ -2482,7 +2750,7 @@ export class MenuScene {
     if (sublabel) {
       sublabel.anchor.set(0, 0.5);
       sublabel.style.align = 'left';
-      sublabel.style.fill = isPrimary ? '#fff3b6' : (isDanger ? '#ff9aa5' : '#8deeff');
+      sublabel.style.fill = isPrimary ? '#fff3b6' : (isUtilityDanger ? '#98aab8' : (isDanger ? '#ff9aa5' : '#8deeff'));
       sublabel.alpha = hasSubLabel ? (active ? 1 : 0.78) : 0;
       sublabel.x = label?.x || (x + 44);
       sublabel.y = h * 0.22;
@@ -2562,16 +2830,6 @@ export class MenuScene {
           this.openSettingsOverlay();
         }
       },
-      { id: 'exit', button: this.exitBtn, activate: () => this.exitGame() },
-      {
-        id: 'howToPlay',
-        button: this.helpBtn,
-        activate: () => {
-          AudioManager.init();
-          AudioManager.playSfx('ui_open', { volume: 0.32 });
-          this.openHowToPlayOverlay();
-        }
-      },
       {
         id: 'music',
         button: this.musicBtn,
@@ -2583,7 +2841,17 @@ export class MenuScene {
             this.refreshButtonCopy(this.musicBtn, { forceGpuRefresh: true });
           }
         }
-      }
+      },
+      {
+        id: 'howToPlay',
+        button: this.helpBtn,
+        activate: () => {
+          AudioManager.init();
+          AudioManager.playSfx('ui_open', { volume: 0.32 });
+          this.openHowToPlayOverlay();
+        }
+      },
+      { id: 'exit', button: this.exitBtn, activate: () => this.exitGame() }
     ].filter((option) => option.button);
 
     this.menuOptions.forEach((option) => {
@@ -2733,7 +3001,9 @@ export class MenuScene {
     const checkpoint = this.getSelectedSectorStartCheckpoint();
     if (!checkpoint) return translateText('SECTOR START CHALLENGE');
     const record = getSectorStartChallengeRecord(checkpoint);
-    const base = translateText('SECTOR {sector} CHALLENGE', { sector: checkpoint });
+    const base = checkpoint % 10 === 0
+      ? translateText('CHECKPOINT {sector} CHALLENGE', { sector: checkpoint })
+      : translateText('SECTOR {sector} CHALLENGE', { sector: checkpoint });
     if (record?.scoreEarned > 0) {
       return `${base} | ${translateText('BEST')} ${this.formatSectorStartMenuBestScore(record.scoreEarned)}`;
     }
@@ -2743,6 +3013,10 @@ export class MenuScene {
   getSectorStartButtonSubLabel() {
     const checkpoint = this.getSelectedSectorStartCheckpoint();
     if (!checkpoint || !this.sectorStartState?.available) return translateText('LOCKED');
+    if (checkpoint % 10 === 0) {
+      const playSector = getSectorStartPlaySector(checkpoint);
+      return translateText('BEGINS AT SECTOR {sector}', { sector: playSector });
+    }
     const record = getSectorStartChallengeRecord(checkpoint);
     if (record?.scoreEarned > 0) {
       return `${translateText('BEST')} ${this.formatSectorStartMenuBestScore(record.scoreEarned)}`;

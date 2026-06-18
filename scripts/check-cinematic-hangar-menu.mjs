@@ -170,7 +170,7 @@ async function waitForMenu(page) {
     const menu = window.__game?.scenes?.menu;
     return height > 0 &&
       (state.menu?.panel?.y || 0) > height * 0.72 &&
-      (state.menu?.items?.exitButton?.y || 0) > height * 0.72 &&
+      (state.menu?.items?.exitButton?.y || height) < height * 0.16 &&
       (menu?.startBtn?.alpha || 0) > 0.95 &&
       (menu?.exitBtn?.alpha || 0) > 0.95;
   }, null, { timeout: 12000 });
@@ -272,7 +272,7 @@ async function writeAnnotatedShot(state, currentPath, outputPath) {
     title && svgBox({ ...title, label: 'title/subtitle cluster', color: '#72f6ff' }),
     panel && svgBox({ ...panel, label: 'bottom command dock', color: '#fff1a8' }),
     launch && svgBox({ ...launch, label: 'primary launch tile', color: '#ffd64a' }),
-    exit && svgBox({ ...exit, label: 'exit at far right', color: '#ff5a6e' })
+    exit && svgBox({ ...exit, label: 'compact exit utility', color: '#ff5a6e' })
   ].filter(Boolean).join('');
   const overlay = `<svg width="${state.menu.screen.width}" height="${state.menu.screen.height}" xmlns="http://www.w3.org/2000/svg">${boxes}</svg>`;
   await sharp(currentPath)
@@ -301,27 +301,43 @@ function assertHorizontalDock(state, label) {
     ['highscores', menu.items.highscoresButton],
     ['threatCodex', menu.items.threatCodexButton],
     ['achievements', menu.items.achievementsButton],
-    ['settings', menu.items.settingsButton],
-    ['exit', menu.items.exitButton]
+    ['settings', menu.items.settingsButton]
   ];
 
   assertInside(panel, screen, `${label}: dock panel`);
   assert.ok(panel.y > screen.height * 0.72, `${label}: dock panel should live at the bottom`);
   assert.ok(panel.width > screen.width * 0.86, `${label}: dock panel should span most of the screen`);
   assert.ok(panel.height >= 82 && panel.height <= 180, `${label}: dock panel height should feel like a dock`);
-  assert.deepEqual(menu.optionOrder.slice(0, 8), ['launch', 'sectorStart', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings', 'exit'], `${label}: wrong bottom dock order`);
+  assert.deepEqual(menu.optionOrder.slice(0, 7), ['launch', 'sectorStart', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings'], `${label}: wrong bottom dock order`);
 
   for (const [name, bounds] of buttons) assertInside(bounds, screen, `${label}: ${name} tile`);
-  const [launch, sectorStart, hangar, highscores, threatCodex, achievements, settings, exit] = buttons.map(([, bounds]) => bounds);
+  const [launch, sectorStart, hangar, highscores, threatCodex, achievements, settings] = buttons.map(([, bounds]) => bounds);
   assert.ok(launch.x < screen.width * 0.12, `${label}: launch tile should anchor left`);
-  assert.ok(exit.right > screen.width * 0.93, `${label}: exit tile should anchor far right`);
-  assert.ok(Math.abs(launch.y - exit.y) < 24, `${label}: dock tiles should align on one row`);
+  assert.ok(settings.right > screen.width * 0.82, `${label}: settings tile should anchor the right side of the dock`);
+  assert.ok(Math.abs(launch.y - settings.y) < 24, `${label}: dock tiles should align on one row`);
   assert.ok(launch.width >= sectorStart.width * 1.2, `${label}: launch tile should read as the primary wide tile`);
-  const sorted = [launch, sectorStart, hangar, highscores, threatCodex, achievements, settings, exit];
+  const sorted = [launch, sectorStart, hangar, highscores, threatCodex, achievements, settings];
   const allowedGlowBleed = screen.width < 1500 ? 28 : 12;
   for (let index = 1; index < sorted.length; index += 1) {
     assert.ok(sorted[index - 1].right <= sorted[index].x + allowedGlowBleed, `${label}: dock tiles overlap around index ${index}`);
   }
+}
+
+function assertUtilityCluster(state, label) {
+  const menu = state.menu;
+  const screen = menu.screen;
+  const music = menu.items.musicButton;
+  const help = menu.items.helpButton;
+  const exit = menu.items.exitButton;
+  for (const [name, bounds] of [['music', music], ['howToPlay', help], ['exit', exit]]) {
+    assertInside(bounds, screen, `${label}: ${name} utility`);
+    assert.ok(bounds.right > screen.width * 0.88, `${label}: ${name} utility should live in the top-right system cluster`);
+    assert.ok(bounds.y < screen.height * 0.16, `${label}: ${name} utility should stay above the cinematic play space`);
+    assert.ok(bounds.width <= 190, `${label}: ${name} utility should be compact, not a destination tile`);
+  }
+  assert.ok(music.y < help.y && help.y < exit.y, `${label}: utility stack should read Music, How To Play, Exit`);
+  assert.ok(exit.height <= 58, `${label}: exit utility should remain compact`);
+  assert.deepEqual(menu.optionOrder.slice(7), ['music', 'howToPlay', 'exit'], `${label}: wrong utility navigation order`);
 }
 
 function assertMenuState(state, viewport) {
@@ -341,9 +357,10 @@ function assertMenuState(state, viewport) {
   assert.ok(subtitle.y > title.y, `${viewport.name}: subtitle should sit below title`);
 
   assertHorizontalDock(state, viewport.name);
+  assertUtilityCluster(state, viewport.name);
   assert.equal(menu.sectorStart.buttonVisualText, 'SECTOR CHALLENGE', `${viewport.name}: sector tile visual label`);
-  assert.match(menu.sectorStart.buttonText || '', /SECTOR 30 CHALLENGE/, `${viewport.name}: debug keeps selected checkpoint label`);
-  assert.match(menu.sectorStart.buttonSubtext || '', /BEST 8,848/, `${viewport.name}: sector tile sublabel should show seeded best`);
+  assert.match(menu.sectorStart.buttonText || '', /CHECKPOINT 30 CHALLENGE/, `${viewport.name}: debug keeps selected checkpoint label`);
+  assert.match(menu.sectorStart.buttonSubtext || '', /BEGINS AT SECTOR 31/, `${viewport.name}: sector tile sublabel should clarify overrun checkpoint start`);
   assert.ok((menu.items.runModePanel?.width || 0) === 0, `${viewport.name}: old run mode panel should not be visible`);
   assert.ok((menu.items.flavor?.width || 0) === 0, `${viewport.name}: old flavor text should not be visible`);
 }
