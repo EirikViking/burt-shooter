@@ -2869,6 +2869,9 @@ export class MenuScene {
     const sublabel = container._sublabel;
     const icon = container._icon;
     const iconSprite = container._iconSprite;
+    const assetKey = container._iconAssetKey;
+    const texture = assetKey ? this.menuIconTextures?.[assetKey] : null;
+    const useAssetIcon = Boolean(iconSprite && GameAssets.isValidTexture(texture));
     const hasSubLabel = Boolean(sublabel?.text);
 
     focus?.clear();
@@ -2925,14 +2928,23 @@ export class MenuScene {
     if (!isCompact && icon) {
       const plateX = x + (isPrimary ? 18 : 14);
       const plateY = -iconPlateSize / 2 + (hasSubLabel ? -h * 0.08 : 0);
-      drawCutPanel(bg, plateX + 3, plateY + 4, iconPlateSize, iconPlateSize, Math.max(4, iconPlateSize * 0.18), { color: 0x000000, alpha: 0.32 });
-      drawCutPanel(bg, plateX, plateY, iconPlateSize, iconPlateSize, Math.max(4, iconPlateSize * 0.18), { color: 0x020711, alpha: active ? 0.78 : 0.58 }, { color: hotAccent, width: 1.55, alpha: active ? 0.82 : (isPrimary ? 0.5 + ignition * 0.18 : 0.44) });
-      drawCutPanel(bg, plateX + 4, plateY + 4, iconPlateSize - 8, iconPlateSize - 8, Math.max(2, iconPlateSize * 0.12), { color: drawAccent, alpha: active ? 0.16 : (isPrimary ? 0.09 + ignition * 0.04 : 0.08) });
-      bg.circle(plateX + iconPlateSize / 2, plateY + iconPlateSize / 2, iconPlateSize * 0.35);
-      bg.stroke({ color: drawAccent, width: 1, alpha: active ? 0.38 : 0.18 });
-      bg.moveTo(plateX + iconPlateSize * 0.22, plateY + iconPlateSize * 0.24);
-      bg.lineTo(plateX + iconPlateSize * 0.78, plateY + iconPlateSize * 0.24);
-      bg.stroke({ color: 0xffffff, width: 1, alpha: active ? 0.22 : 0.1 });
+      if (useAssetIcon) {
+        const cx = plateX + iconPlateSize / 2;
+        const cy = plateY + iconPlateSize / 2;
+        bg.circle(cx, cy, iconPlateSize * (isPrimary ? 0.58 : 0.54));
+        bg.fill({ color: hotAccent, alpha: active ? 0.1 : (isPrimary ? 0.04 + ignition * 0.035 : 0.028) });
+        bg.circle(cx, cy, iconPlateSize * 0.48);
+        bg.stroke({ color: active ? hotAccent : drawAccent, width: 1, alpha: active ? 0.28 : (isPrimary ? 0.14 + ignition * 0.06 : 0.1) });
+      } else {
+        drawCutPanel(bg, plateX + 3, plateY + 4, iconPlateSize, iconPlateSize, Math.max(4, iconPlateSize * 0.18), { color: 0x000000, alpha: 0.32 });
+        drawCutPanel(bg, plateX, plateY, iconPlateSize, iconPlateSize, Math.max(4, iconPlateSize * 0.18), { color: 0x020711, alpha: active ? 0.78 : 0.58 }, { color: hotAccent, width: 1.55, alpha: active ? 0.82 : (isPrimary ? 0.5 + ignition * 0.18 : 0.44) });
+        drawCutPanel(bg, plateX + 4, plateY + 4, iconPlateSize - 8, iconPlateSize - 8, Math.max(2, iconPlateSize * 0.12), { color: drawAccent, alpha: active ? 0.16 : (isPrimary ? 0.09 + ignition * 0.04 : 0.08) });
+        bg.circle(plateX + iconPlateSize / 2, plateY + iconPlateSize / 2, iconPlateSize * 0.35);
+        bg.stroke({ color: drawAccent, width: 1, alpha: active ? 0.38 : 0.18 });
+        bg.moveTo(plateX + iconPlateSize * 0.22, plateY + iconPlateSize * 0.24);
+        bg.lineTo(plateX + iconPlateSize * 0.78, plateY + iconPlateSize * 0.24);
+        bg.stroke({ color: 0xffffff, width: 1, alpha: active ? 0.22 : 0.1 });
+      }
     }
 
     shine.clear();
@@ -2980,19 +2992,16 @@ export class MenuScene {
       const iconSize = clampNumber(h * (isCompact ? 0.34 : (isPrimary ? 0.32 : 0.29)), 16, isPrimary ? 30 : 23);
       const iconX = x + (isCompact ? 20 : (isPrimary ? 36 : 29));
       const iconY = hasSubLabel ? -h * 0.08 : 0;
-      const assetKey = container._iconAssetKey;
-      const texture = assetKey ? this.menuIconTextures?.[assetKey] : null;
-      const useAssetIcon = Boolean(iconSprite && GameAssets.isValidTexture(texture));
       if (useAssetIcon) {
         icon.visible = false;
         iconSprite.visible = true;
         iconSprite.texture = texture;
         iconSprite.x = iconX;
         iconSprite.y = iconY;
-        const renderSize = clampNumber(iconPlateSize * (isCompact ? 1.16 : 1.14), isCompact ? 26 : 34, isPrimary ? 58 : 48);
+        const renderSize = clampNumber(iconPlateSize * (isCompact ? 1.2 : (isPrimary ? 1.28 : 1.2)), isCompact ? 28 : 38, isPrimary ? 66 : 52);
         const maxSide = Math.max(texture.width || 1, texture.height || 1);
         iconSprite.scale.set(renderSize / maxSide);
-        iconSprite.alpha = active ? 1 : (isUtilityDanger ? 0.72 : 0.86);
+        iconSprite.alpha = active ? 1 : (isUtilityDanger ? 0.84 : 0.94);
       } else {
         if (iconSprite) iconSprite.visible = false;
         icon.visible = true;

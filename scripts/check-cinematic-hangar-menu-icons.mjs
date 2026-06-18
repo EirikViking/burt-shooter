@@ -175,7 +175,7 @@ async function writeContactSheet(icons) {
       top: Math.round(Math.floor(index / cols) * cell + pad + 12)
     });
   }
-  const contactSheet = path.join(outputDir, 'approved-menu-icons-contact-sheet.png');
+  const contactSheet = path.join(outputDir, 'approved-icons-used-contact-sheet.png');
   await sharp(base).composite(composites).png().toFile(contactSheet);
   return contactSheet;
 }
