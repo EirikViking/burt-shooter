@@ -12,17 +12,30 @@ const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/cinematic-hangar-menu-icons-${timestamp()}`);
 
 const expectedIcons = {
-  launch: 'public/art/generated/nova-swarm/menu/icons/menu-icon-launch-run.png',
-  sectorChallenge: 'public/art/generated/nova-swarm/menu/icons/menu-icon-sector-challenge.png',
-  shipHangar: 'public/art/generated/nova-swarm/menu/icons/menu-icon-ship-hangar.png',
-  leaderboard: 'public/art/generated/nova-swarm/menu/icons/menu-icon-leaderboard.png',
-  threatCodex: 'public/art/generated/nova-swarm/menu/icons/menu-icon-threat-codex.png',
-  achievements: 'public/art/generated/nova-swarm/menu/icons/menu-icon-achievements.png',
-  settings: 'public/art/generated/nova-swarm/menu/icons/menu-icon-settings.png',
-  music: 'public/art/generated/nova-swarm/menu/icons/menu-icon-music.png',
-  howToPlay: 'public/art/generated/nova-swarm/menu/icons/menu-icon-how-to-play.png',
-  exit: 'public/art/generated/nova-swarm/menu/icons/menu-icon-exit.png'
+  launch: 'public/art/generated/nova-swarm/menu/icons/approved-menu-icon-launch-run.png',
+  sectorChallenge: 'public/art/generated/nova-swarm/menu/icons/approved-menu-icon-sector-challenge.png',
+  shipHangar: 'public/art/generated/nova-swarm/menu/icons/approved-menu-icon-ship-hangar.png',
+  leaderboard: 'public/art/generated/nova-swarm/menu/icons/approved-menu-icon-leaderboard.png',
+  threatCodex: 'public/art/generated/nova-swarm/menu/icons/approved-menu-icon-threat-codex.png',
+  achievements: 'public/art/generated/nova-swarm/menu/icons/approved-menu-icon-achievements.png',
+  settings: 'public/art/generated/nova-swarm/menu/icons/approved-menu-icon-settings.png',
+  music: 'public/art/generated/nova-swarm/menu/icons/approved-menu-icon-music.png',
+  howToPlay: 'public/art/generated/nova-swarm/menu/icons/approved-menu-icon-how-to-play.png',
+  exit: 'public/art/generated/nova-swarm/menu/icons/approved-menu-icon-exit.png'
 };
+
+const retiredDeterministicIconNames = [
+  'menu-icon-launch-run.png',
+  'menu-icon-sector-challenge.png',
+  'menu-icon-ship-hangar.png',
+  'menu-icon-leaderboard.png',
+  'menu-icon-threat-codex.png',
+  'menu-icon-achievements.png',
+  'menu-icon-settings.png',
+  'menu-icon-music.png',
+  'menu-icon-how-to-play.png',
+  'menu-icon-exit.png'
+];
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -98,6 +111,7 @@ function withQuery(query) {
 async function assertIconFiles() {
   const checked = {};
   for (const [key, relativePath] of Object.entries(expectedIcons)) {
+    assert.ok(relativePath.includes('/approved-menu-icon-'), `${key}: menu icon must use the approved imagegen filename`);
     assert.ok(!relativePath.includes('/powerups/'), `${key}: menu icon must not use a powerup asset path`);
     const absolutePath = path.resolve(relativePath);
     assert.ok(existsSync(absolutePath), `${key}: missing icon asset ${relativePath}`);
@@ -105,9 +119,65 @@ async function assertIconFiles() {
     assert.equal(metadata.format, 'png', `${key}: icon must be PNG`);
     assert.ok(metadata.hasAlpha, `${key}: icon must have transparency`);
     assert.ok(metadata.width >= 128 && metadata.height >= 128, `${key}: icon should have enough source resolution`);
-    checked[key] = { path: relativePath, width: metadata.width, height: metadata.height, hasAlpha: metadata.hasAlpha };
+    const raw = await sharp(absolutePath).ensureAlpha().raw().toBuffer();
+    let visiblePixels = 0;
+    let chromaGreenPixels = 0;
+    for (let index = 0; index < raw.length; index += 4) {
+      const r = raw[index];
+      const g = raw[index + 1];
+      const b = raw[index + 2];
+      const a = raw[index + 3];
+      if (a <= 12) continue;
+      visiblePixels += 1;
+      if (g > 210 && r < 60 && b < 80) chromaGreenPixels += 1;
+    }
+    const greenRatio = visiblePixels ? chromaGreenPixels / visiblePixels : 0;
+    assert.ok(greenRatio < 0.001, `${key}: likely chroma green remains in icon (${greenRatio})`);
+    checked[key] = {
+      path: relativePath,
+      width: metadata.width,
+      height: metadata.height,
+      hasAlpha: metadata.hasAlpha,
+      visiblePixels,
+      chromaGreenPixels
+    };
   }
   return checked;
+}
+
+async function writeContactSheet(icons) {
+  const entries = Object.entries(icons);
+  const cols = 5;
+  const rows = Math.ceil(entries.length / cols);
+  const cell = 220;
+  const pad = 22;
+  const width = cols * cell + pad * 2;
+  const height = rows * cell + pad * 2;
+  const grid = [];
+  for (let x = pad; x <= width - pad; x += cell) {
+    grid.push(`<line x1="${x}" y1="${pad}" x2="${x}" y2="${height - pad}" stroke="#1ee8ff" stroke-opacity="0.22"/>`);
+  }
+  for (let y = pad; y <= height - pad; y += cell) {
+    grid.push(`<line x1="${pad}" y1="${y}" x2="${width - pad}" y2="${y}" stroke="#1ee8ff" stroke-opacity="0.22"/>`);
+  }
+  const labels = entries.map(([key], index) => {
+    const x = (index % cols) * cell + cell / 2 + pad;
+    const y = Math.floor(index / cols) * cell + pad + 184;
+    return `<text x="${x}" y="${y}" font-family="Rajdhani, Arial, sans-serif" font-size="15" fill="#aeefff" text-anchor="middle">${key}</text>`;
+  });
+  const base = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#020710"/>${grid.join('')}${labels.join('')}</svg>`);
+  const composites = [];
+  for (const [index, [, icon]] of entries.entries()) {
+    const input = await sharp(path.resolve(icon.path)).resize(156, 156, { fit: 'contain' }).png().toBuffer();
+    composites.push({
+      input,
+      left: Math.round((index % cols) * cell + pad + (cell - 156) / 2),
+      top: Math.round(Math.floor(index / cols) * cell + pad + 12)
+    });
+  }
+  const contactSheet = path.join(outputDir, 'approved-menu-icons-contact-sheet.png');
+  await sharp(base).composite(composites).png().toFile(contactSheet);
+  return contactSheet;
 }
 
 function unreadDiscoveryPayload(unread = true) {
@@ -187,9 +257,15 @@ async function waitForMenu(page) {
 mkdirSync(outputDir, { recursive: true });
 const fileReport = await assertIconFiles();
 const manifestSource = readFileSync(path.resolve('src/assets/assetManifest.js'), 'utf8');
-for (const key of Object.keys(expectedIcons)) {
-  assert.ok(manifestSource.includes(key), `AssetManifest should reference ${key}`);
+for (const [key, relativePath] of Object.entries(expectedIcons)) {
+  const manifestPath = relativePath.replace(/^public/, '');
+  assert.ok(manifestSource.includes(manifestPath), `AssetManifest should reference approved icon ${key}`);
 }
+for (const oldName of retiredDeterministicIconNames) {
+  assert.ok(!manifestSource.includes(`/art/generated/nova-swarm/menu/icons/${oldName}`), `AssetManifest must not reference retired deterministic icon ${oldName}`);
+  assert.ok(!existsSync(path.resolve('public/art/generated/nova-swarm/menu/icons', oldName)), `Retired deterministic icon should not remain in menu icon folder: ${oldName}`);
+}
+const contactSheet = await writeContactSheet(fileReport);
 
 const server = await startDevServer();
 const browser = await chromium.launch({
@@ -200,7 +276,7 @@ const browser = await chromium.launch({
 
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 await seedUnreadProfile(page);
-const report = { generatedAt: new Date().toISOString(), baseUrl, outputDir, icons: fileReport };
+const report = { generatedAt: new Date().toISOString(), baseUrl, outputDir, icons: fileReport, contactSheet };
 const pageErrors = [];
 const consoleErrors = [];
 page.on('pageerror', (error) => pageErrors.push(error.message));
