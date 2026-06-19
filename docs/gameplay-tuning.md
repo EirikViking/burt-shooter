@@ -5,6 +5,7 @@
 - Mayhem Run is the ranked baseline and keeps the accepted harder profile through `src/game/RunMode.js` with `difficultyProfileId: accepted_harder_ranked`.
 - Scout Run uses `scout_lower_pressure_v1` in `src/game/RunMode.js` for lower-pressure practice. Tune Scout through that profile and `RunPressureDirector`, not one-off checks in scenes or managers.
 - Sector Run keeps checkpoint-start behavior but is unranked for achievements in this first version. Mayhem Run remains the only mode that submits to the existing global leaderboard and unlocks Steam achievements.
+- The main menu Launch Deck uses three compact selectors for Mayhem, Scout, and Sector Run. Keep selector copy and Mission Briefing text aligned with the ranked/unranked rules above.
 
 ## 2026-05-25 Arcade Score-Attack Revamp
 

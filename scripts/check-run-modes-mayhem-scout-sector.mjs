@@ -238,6 +238,46 @@ async function focusMenuOption(page, optionId) {
   return state;
 }
 
+function assertInside(bounds, screen, label) {
+  assert.ok(bounds?.width > 0 && bounds?.height > 0, `${label}: missing bounds`);
+  assert.ok(bounds.x >= -2, `${label}: left edge offscreen`);
+  assert.ok(bounds.y >= -2, `${label}: top edge offscreen`);
+  assert.ok(bounds.right <= screen.width + 2, `${label}: right edge offscreen`);
+  assert.ok(bounds.bottom <= screen.height + 2, `${label}: bottom edge offscreen`);
+}
+
+function assertLaunchDeckVisible(state, label) {
+  const screen = state.menu?.screen;
+  const deck = state.menu?.launchDeck;
+  assert.ok(deck?.bounds?.width > 0, `${label}: Launch Deck bounds missing`);
+  assertInside(deck.bounds, screen, `${label}: Launch Deck`);
+  const cards = [
+    ['mayhem', deck.cards?.mayhem],
+    ['scout', deck.cards?.scout],
+    ['sector', deck.cards?.sector]
+  ];
+  for (const [name, card] of cards) {
+    assertInside(card?.bounds, screen, `${label}: ${name} card`);
+    assert.ok(card.bounds.height >= 54 && card.bounds.height <= 104, `${label}: ${name} selector should stay compact`);
+    assert.ok(card.bounds.width >= 240 && card.bounds.width <= 560, `${label}: ${name} selector should not become oversized`);
+  }
+  assert.equal(deck.cards?.mayhem?.label, 'MAYHEM RUN', `${label}: Mayhem label`);
+  assert.equal(deck.cards?.mayhem?.sublabel, 'Ranked - Leaderboards - Achievements', `${label}: Mayhem sublabel`);
+  assert.match(deck.cards?.mayhem?.body || '', /Full swarm pressure.*ranked checkpoints/i, `${label}: Mayhem body`);
+  assert.equal(deck.cards?.scout?.label, 'SCOUT RUN', `${label}: Scout label`);
+  assert.equal(deck.cards?.scout?.sublabel, 'Unranked - Lower pressure - Practice', `${label}: Scout sublabel`);
+  assert.match(deck.cards?.scout?.body || '', /No leaderboard.*No achievements.*No checkpoint/i, `${label}: Scout body`);
+  assert.equal(deck.cards?.sector?.label, 'SECTOR RUN', `${label}: Sector label`);
+  assert.equal(deck.cards?.sector?.sublabel, 'Checkpoint starts - Every 5 sectors', `${label}: Sector sublabel`);
+  assert.match(deck.cards?.sector?.body || '', /unlocked ranked checkpoints.*No achievements/i, `${label}: Sector body`);
+  assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.scout.bounds.x) < 36, `${label}: Mayhem/Scout cards should share the left command stack`);
+  assert.ok(Math.abs(deck.cards.scout.bounds.x - deck.cards.sector.bounds.x) < 36, `${label}: Scout/Sector cards should share the left command stack`);
+  assert.ok(deck.cards.mayhem.bounds.bottom < deck.cards.scout.bounds.y + 36, `${label}: Mayhem/Scout cards overlap vertically`);
+  assert.ok(deck.cards.scout.bounds.bottom < deck.cards.sector.bounds.y + 36, `${label}: Scout/Sector cards overlap vertically`);
+  assert.ok(deck.bounds.right < screen.width * 0.5, `${label}: Launch Deck should avoid the center ship showcase lane`);
+  assert.ok((state.menu?.panel?.y || 0) > deck.bounds.bottom, `${label}: utility dock should sit below Launch Deck`);
+}
+
 async function selectSectorSelectorCheckpoint(page, checkpoint) {
   await page.evaluate((sector) => {
     const menu = window.__game?.scenes?.menu || window.__game?.scene;
@@ -341,32 +381,49 @@ try {
   assert.equal(menu.menu?.items?.launchButton?.width > 0, true, 'Mayhem Run should be visible');
   assert.equal(menu.menu?.items?.scoutRunButton?.width > 0, true, 'Scout Run should be visible');
   assert.equal(menu.menu?.items?.sectorStartButton?.width > 0, true, 'Sector Run should be visible');
+  assertLaunchDeckVisible(settledMenu, '1366x768 initial menu');
   assert.equal(settledMenu.menu?.missionBriefing?.mode, 'launch', 'Mission briefing should default to Mayhem Run');
   assert.match(settledMenu.menu?.missionBriefing?.title || '', /MISSION BRIEFING.*MAYHEM RUN/i);
-  assert.match(settledMenu.menu?.missionBriefing?.body || '', /ranked.*global leaderboard.*achievements/i);
+  assert.match(settledMenu.menu?.missionBriefing?.body || '', /ranked.*leaderboard.*achievements.*checkpoints/i);
   assert.ok(settledMenu.menu?.missionBriefing?.panelBounds?.width > 0, 'Mission briefing panel should be visible');
   assert.equal(settledMenu.menu?.scoutRun?.buttonText, 'SCOUT RUN');
-  assert.equal(settledMenu.menu?.scoutRun?.buttonSubtext, 'UNRANKED PRACTICE');
+  assert.equal(settledMenu.menu?.scoutRun?.buttonSubtext, 'Unranked - Lower pressure - Practice');
   assert.equal(settledMenu.menu?.sectorStart?.buttonText, 'SECTOR RUN');
-  assert.equal(settledMenu.menu?.sectorStart?.buttonSubtext, 'CHECKPOINT STARTS');
+  assert.equal(settledMenu.menu?.sectorStart?.buttonSubtext, 'Checkpoint starts - Every 5 sectors');
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await waitForScene(page, 'menu');
+  await page.waitForTimeout(500);
+  assertLaunchDeckVisible(await readState(page), '1920x1080 menu');
+  await page.screenshot({ path: path.join(outputDir, 'menu-launch-deck-1920x1080.png'), fullPage: false });
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await waitForScene(page, 'menu');
+  await page.waitForTimeout(500);
   await page.screenshot({ path: path.join(outputDir, 'menu-run-modes-1366x768.png'), fullPage: false });
   await page.setViewportSize({ width: 1280, height: 800 });
   await waitForScene(page, 'menu');
   await page.waitForTimeout(500);
+  assertLaunchDeckVisible(await readState(page), '1280x800 menu');
   await page.screenshot({ path: path.join(outputDir, 'menu-run-modes-1280x800.png'), fullPage: false });
   await page.setViewportSize({ width: 1366, height: 768 });
   await waitForScene(page, 'menu');
+  await focusMenuOption(page, 'launch');
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(150);
+  assert.equal((await readState(page)).menu?.focusedOption, 'scout', 'ArrowRight should move Mayhem card focus to Scout');
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(150);
+  assert.equal((await readState(page)).menu?.focusedOption, 'sectorStart', 'ArrowRight should move Scout card focus to Sector Run');
   const mayhemFocus = await focusMenuOption(page, 'launch');
   assert.equal(mayhemFocus.menu?.missionBriefing?.mode, 'launch');
-  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /global leaderboard.*achievements.*career XP.*checkpoints/i);
+  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /ranked.*leaderboard.*achievements.*checkpoints/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-focused.png'), fullPage: false });
   const scoutFocus = await focusMenuOption(page, 'scout');
   assert.equal(scoutFocus.menu?.missionBriefing?.mode, 'scout');
-  assert.match(scoutFocus.menu?.missionBriefing?.body || '', /unranked.*practice.*No leaderboard submission.*Mayhem checkpoint unlocks/i);
+  assert.match(scoutFocus.menu?.missionBriefing?.body || '', /unranked.*practice.*No leaderboard.*achievements.*checkpoint/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-scout-focused.png'), fullPage: false });
   const sectorFocus = await focusMenuOption(page, 'sectorStart');
   assert.equal(sectorFocus.menu?.missionBriefing?.mode, 'sectorStart');
-  assert.match(sectorFocus.menu?.missionBriefing?.body || '', /unlocked Mayhem checkpoints.*every 5 sectors.*No achievements.*separate/i);
+  assert.match(sectorFocus.menu?.missionBriefing?.body || '', /Checkpoint starts.*5 sectors.*No achievements/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-sector-run-focused.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.openSectorSelector?.());
   await page.waitForTimeout(250);

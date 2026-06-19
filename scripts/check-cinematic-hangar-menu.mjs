@@ -295,9 +295,6 @@ function assertHorizontalDock(state, label) {
   const screen = menu.screen;
   const panel = menu.panel;
   const buttons = [
-    ['launch', menu.items.launchButton],
-    ['scout', menu.items.scoutRunButton],
-    ['sectorStart', menu.items.sectorStartButton],
     ['hangar', menu.items.hangarButton],
     ['highscores', menu.items.highscoresButton],
     ['threatCodex', menu.items.threatCodexButton],
@@ -308,20 +305,48 @@ function assertHorizontalDock(state, label) {
   assertInside(panel, screen, `${label}: dock panel`);
   assert.ok(panel.y > screen.height * 0.72, `${label}: dock panel should live at the bottom`);
   assert.ok(panel.width > screen.width * 0.86, `${label}: dock panel should span most of the screen`);
-  assert.ok(panel.height >= 82 && panel.height <= 180, `${label}: dock panel height should feel like a dock`);
-  assert.deepEqual(menu.optionOrder.slice(0, 8), ['launch', 'scout', 'sectorStart', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings'], `${label}: wrong bottom dock order`);
+  assert.ok(panel.height >= 70 && panel.height <= 150, `${label}: dock panel height should feel like a dock`);
+  assert.deepEqual(menu.optionOrder.slice(0, 8), ['launch', 'scout', 'sectorStart', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings'], `${label}: wrong navigation order`);
 
   for (const [name, bounds] of buttons) assertInside(bounds, screen, `${label}: ${name} tile`);
-  const [launch, scout, sectorStart, hangar, highscores, threatCodex, achievements, settings] = buttons.map(([, bounds]) => bounds);
-  assert.ok(launch.x < screen.width * 0.12, `${label}: launch tile should anchor left`);
+  const [hangar, highscores, threatCodex, achievements, settings] = buttons.map(([, bounds]) => bounds);
+  assert.ok(hangar.x < screen.width * 0.16, `${label}: hangar utility should anchor left side of dock`);
   assert.ok(settings.right > screen.width * 0.82, `${label}: settings tile should anchor the right side of the dock`);
-  assert.ok(Math.abs(launch.y - settings.y) < 24, `${label}: dock tiles should align on one row`);
-  assert.ok(launch.width >= scout.width * 1.2, `${label}: launch tile should read as the primary wide tile`);
-  const sorted = [launch, scout, sectorStart, hangar, highscores, threatCodex, achievements, settings];
+  assert.ok(Math.abs(hangar.y - settings.y) < 24, `${label}: dock tiles should align on one row`);
+  const sorted = [hangar, highscores, threatCodex, achievements, settings];
   const allowedGlowBleed = screen.width < 1500 ? 28 : 12;
   for (let index = 1; index < sorted.length; index += 1) {
     assert.ok(sorted[index - 1].right <= sorted[index].x + allowedGlowBleed, `${label}: dock tiles overlap around index ${index}`);
   }
+}
+
+function assertLaunchDeck(state, label) {
+  const menu = state.menu;
+  const screen = menu.screen;
+  const deck = menu.launchDeck;
+  assertInside(deck?.bounds, screen, `${label}: launch deck`);
+  assert.ok(deck.bounds.y > menu.items.subtitle.bottom + 40, `${label}: Launch Deck should sit below the title block`);
+  assert.ok(deck.bounds.bottom < menu.panel.y, `${label}: Launch Deck should stay above the utility dock`);
+  const cards = [
+    ['mayhem', deck.cards?.mayhem],
+    ['scout', deck.cards?.scout],
+    ['sector', deck.cards?.sector]
+  ];
+  for (const [name, card] of cards) {
+    assertInside(card?.bounds, screen, `${label}: ${name} Launch Deck card`);
+    assert.ok(card.bounds.height >= 42 && card.bounds.height <= 94, `${label}: ${name} should stay compact`);
+    assert.ok(card.bounds.width >= 220 && card.bounds.width <= 560, `${label}: ${name} should not become oversized`);
+  }
+  assert.equal(deck.cards?.mayhem?.sublabel, 'Ranked - Leaderboards - Achievements', `${label}: Mayhem card protocol`);
+  assert.equal(deck.cards?.scout?.sublabel, 'Unranked - Lower pressure - Practice', `${label}: Scout card protocol`);
+  assert.equal(deck.cards?.sector?.sublabel, 'Checkpoint starts - Every 5 sectors', `${label}: Sector card protocol`);
+  assert.match(deck.cards?.scout?.body || '', /No leaderboard.*No achievements.*No checkpoint/i, `${label}: Scout card should explain unranked limits`);
+  assert.match(deck.cards?.sector?.body || '', /unlocked ranked checkpoints.*No achievements/i, `${label}: Sector card should explain checkpoint and achievement limits`);
+  assert.ok(deck.bounds.right < screen.width * 0.5, `${label}: Launch Deck should avoid the center ship showcase lane`);
+  assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.scout.bounds.x) < 36, `${label}: Mayhem/Scout cards should share the left command stack`);
+  assert.ok(Math.abs(deck.cards.scout.bounds.x - deck.cards.sector.bounds.x) < 36, `${label}: Scout/Sector cards should share the left command stack`);
+  assert.ok(deck.cards.mayhem.bounds.bottom < deck.cards.scout.bounds.y + 36, `${label}: Mayhem/Scout card overlap`);
+  assert.ok(deck.cards.scout.bounds.bottom < deck.cards.sector.bounds.y + 36, `${label}: Scout/Sector card overlap`);
 }
 
 function assertUtilityCluster(state, label) {
@@ -358,11 +383,12 @@ function assertMenuState(state, viewport) {
   assert.ok(subtitle.y > title.y, `${viewport.name}: subtitle should sit below title`);
 
   assertHorizontalDock(state, viewport.name);
+  assertLaunchDeck(state, viewport.name);
   assertUtilityCluster(state, viewport.name);
   assert.equal(menu.sectorStart.buttonVisualText, 'SECTOR RUN', `${viewport.name}: sector tile visual label`);
   assert.equal(menu.sectorStart.buttonText, 'SECTOR RUN', `${viewport.name}: sector dock label should stay stable`);
-  assert.equal(menu.sectorStart.buttonSubtext, 'CHECKPOINT STARTS', `${viewport.name}: sector dock should summarize checkpoint starts`);
-  assert.match(menu.missionBriefing?.body || '', /ranked.*global leaderboard.*achievements/i, `${viewport.name}: mission briefing should explain the focused run mode`);
+  assert.equal(menu.sectorStart.buttonSubtext, 'Checkpoint starts - Every 5 sectors', `${viewport.name}: sector card should summarize checkpoint cadence`);
+  assert.match(menu.missionBriefing?.body || '', /ranked.*leaderboard.*achievements.*checkpoints/i, `${viewport.name}: mission briefing should explain the focused run mode`);
   assert.doesNotMatch(menu.sectorStart.buttonSubtext || '', /BEGINS AT SECTOR 31|BEST|CHECKPOINT 30/, `${viewport.name}: dock tile should not carry overrun start detail`);
   assert.equal(menu.sectorStart.arrowCueVisible, false, `${viewport.name}: sector tile should not show dock stepper arrows`);
   assert.ok((menu.items.runModePanel?.width || 0) > 0, `${viewport.name}: mission briefing panel should be visible`);
