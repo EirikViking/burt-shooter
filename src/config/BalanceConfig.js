@@ -64,6 +64,7 @@ export const BalanceConfig = {
         wavesPerBossMax: 7,
         bossTargetIntervalSeconds: { earlyMin: 60, earlyMax: 90 },
         estimatedWaveSeconds: 18,
+        normalWaveDifficultyLevelOffset: 9,
 
         earlyWaveEnemyCounts: {
             1: [6, 7, 8, 8, 8, 9],
@@ -587,6 +588,12 @@ export function getNormalWavePressureTuning(level = 1) {
         ...band,
         level: safeLevel
     };
+}
+
+export function getNormalWaveDifficultyLevel(level = 1) {
+    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+    const offset = Math.max(0, Math.floor(Number(BalanceConfig.difficulty?.normalWaveDifficultyLevelOffset) || 0));
+    return safeLevel + offset;
 }
 
 export function getNormalWaveDangerMoment(level = 1, waveIndex = 0, waveCount = 0) {

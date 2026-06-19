@@ -1674,7 +1674,7 @@ export class Enemy {
       diff.enemyProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
       (diff.enemyProjectileSpeed ?? 1.55) + levelScale * (diff.enemyProjectileSpeedPerLevel ?? 0)
     );
-    const projectileSpeed = this.game?.runPressureDirector?.scaleProjectileSpeed?.(baseProjectileSpeed) ??
+    const projectileSpeed = this.game?.runPressureDirector?.scaleProjectileSpeed?.(baseProjectileSpeed, this.level) ??
       baseProjectileSpeed * getNormalWavePressureTuning(this.level).projectileSpeedMult;
     const speed = projectileSpeed *
       BalanceConfig.difficulty.pressureScalar *
