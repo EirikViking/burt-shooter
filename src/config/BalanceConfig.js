@@ -56,10 +56,10 @@ export const BalanceConfig = {
         enemyProjectileSpeedPerLevel: 0.056,
         enemyProjectileSpeedMax: 2.95,
 
-        MIN_WAVES_BETWEEN_BOSSES: 6,
+        MIN_WAVES_BETWEEN_BOSSES: 5,
         MIN_SECONDS_BETWEEN_BOSSES: 0,
         bossIntervalCatchupWaveMax: 0,
-        wavesPerBossBase: 6,
+        wavesPerBossBase: 5,
         wavesPerBossPerLevel: 0.03,
         wavesPerBossMax: 7,
         bossTargetIntervalSeconds: { earlyMin: 60, earlyMax: 90 },

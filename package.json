@@ -117,6 +117,7 @@
     "check:normal-enemy-threat-actions": "node scripts/check-normal-enemy-threat-actions.mjs",
     "check:rank-progression": "node scripts/check-rank-progression.mjs",
     "check:wave-pacing": "node scripts/check-wave-pacing.mjs",
+    "check:sector10-clear-time-pacing": "node scripts/check-sector10-clear-time-pacing.mjs",
     "check:wave-stuck-watchdog": "node scripts/check-wave-stuck-watchdog.mjs",
     "check:dead-enemy-cleanup": "node scripts/check-dead-enemy-visual-cleanup.mjs",
     "check:dead-enemy-playthrough": "node scripts/check-dead-enemy-playthrough.mjs",

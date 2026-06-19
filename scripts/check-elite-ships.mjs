@@ -17,6 +17,7 @@ import { ENEMY_MOVEMENT_STYLE_IDS } from '../src/config/EnemyMovementStyles.js';
 const root = process.cwd();
 const errors = [];
 const warnings = [];
+const EXPECTED_MIN_WAVES_BEFORE_BOSS = 5;
 
 function fail(message) {
   errors.push(message);
@@ -98,17 +99,17 @@ if (getEliteMiddleShipMaxActive(10) !== 1) fail('early/mid game should cap activ
 if (getEliteMiddleShipMaxActive(40) > 2) fail('late game active elite cap should stay careful, max 2');
 
 for (const level of [1, 2, 3, 5, 11, 20, 30, 40]) {
-  const plan = planEliteMiddleShipSpawns(level, 6, deterministicRandom([0, 0.15, 0.3, 0.55, 0.75]));
+  const plan = planEliteMiddleShipSpawns(level, EXPECTED_MIN_WAVES_BEFORE_BOSS, deterministicRandom([0, 0.15, 0.3, 0.55, 0.75]));
   for (const item of plan) {
-    if (item.waveIndex <= 0 || item.waveIndex >= 5) fail(`level ${level} elite planned too close to boss/first wave: waveIndex ${item.waveIndex}`);
+    if (item.waveIndex <= 0 || item.waveIndex >= EXPECTED_MIN_WAVES_BEFORE_BOSS - 1) fail(`level ${level} elite planned too close to boss/first wave: waveIndex ${item.waveIndex}`);
     const profile = ELITE_MIDDLE_SHIPS.find((entry) => entry.id === item.eliteMiddleShipId);
     if (!profile) fail(`level ${level} plan references unknown elite ${item.eliteMiddleShipId}`);
     if (profile && profile.minLevel > level) fail(`level ${level} plans ${profile.id} before minLevel ${profile.minLevel}`);
   }
 }
 
-if (BalanceConfig.difficulty.MIN_WAVES_BETWEEN_BOSSES !== 6) fail('MIN_WAVES_BETWEEN_BOSSES must remain 6');
-if (BalanceConfig.difficulty.wavesPerBossBase !== 6) fail('wavesPerBossBase must remain 6');
+if (BalanceConfig.difficulty.MIN_WAVES_BETWEEN_BOSSES !== EXPECTED_MIN_WAVES_BEFORE_BOSS) fail(`MIN_WAVES_BETWEEN_BOSSES must remain ${EXPECTED_MIN_WAVES_BEFORE_BOSS}`);
+if (BalanceConfig.difficulty.wavesPerBossBase !== EXPECTED_MIN_WAVES_BEFORE_BOSS) fail(`wavesPerBossBase must remain ${EXPECTED_MIN_WAVES_BEFORE_BOSS}`);
 if (!Number.isFinite(BalanceConfig.difficulty.wavesPerBossMax)
   || BalanceConfig.difficulty.wavesPerBossMax < BalanceConfig.difficulty.wavesPerBossBase
   || BalanceConfig.difficulty.wavesPerBossMax > 10) {

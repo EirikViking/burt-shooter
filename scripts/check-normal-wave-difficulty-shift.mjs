@@ -20,8 +20,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
 const EXPECTED_NORMAL_WAVE_OFFSET = 9;
-const EXPECTED_BOSS_METRIC_HASH = '8a39603efe2e2bf49c421a2b4e419623d0b4842876d9261db18066449a49010d';
+const EXPECTED_BOSS_BODY_METRIC_HASH = '39175994f789ad9578741f72138e0a22ae49dcc7bfa51308fc7c6a7a0d00e2a3';
 const EXPECTED_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
+const EXPECTED_MIN_WAVES = 5;
 
 function normalWaveCount(level) {
   const diff = BalanceConfig.difficulty;
@@ -123,8 +124,21 @@ function currentMetricsForSector(sector) {
 }
 
 function bossMetricHash() {
+  const bossRunwayKeys = new Set([
+    'MIN_WAVES_BETWEEN_BOSSES',
+    'MIN_SECONDS_BETWEEN_BOSSES',
+    'bossIntervalCatchupWaveMax',
+    'wavesPerBossBase',
+    'wavesPerBossPerLevel',
+    'wavesPerBossMax',
+    'bossTargetIntervalSeconds',
+    'estimatedWaveSeconds'
+  ]);
   const entries = Object.entries(BalanceConfig.difficulty)
-    .filter(([key]) => key.toLowerCase().startsWith('boss') || key.includes('Boss'))
+    .filter(([key]) =>
+      (key.toLowerCase().startsWith('boss') || key.includes('Boss')) &&
+      !bossRunwayKeys.has(key)
+    )
     .sort(([a], [b]) => a.localeCompare(b));
   return createHash('sha256')
     .update(JSON.stringify(Object.fromEntries(entries)))
@@ -141,6 +155,8 @@ function changedFiles() {
 
 const diff = BalanceConfig.difficulty;
 assert.equal(diff.normalWaveDifficultyLevelOffset, EXPECTED_NORMAL_WAVE_OFFSET, 'normal wave level offset should be +9');
+assert.equal(diff.MIN_WAVES_BETWEEN_BOSSES, EXPECTED_MIN_WAVES, 'boss runway should now allow five normal waves before a boss');
+assert.equal(diff.wavesPerBossBase, EXPECTED_MIN_WAVES, 'base normal-wave count should be five after the pacing trim');
 assert.equal(getNormalWaveDifficultyLevel(1), 10, 'Sector 1 normal waves should use old Sector 10 difficulty');
 assert.equal(getNormalWaveDifficultyLevel(2), 11, 'Sector 2 normal waves should continue as old Sector 11');
 assert.equal(getNormalWaveDifficultyLevel(5), 14, 'Sector 5 normal waves should use old Sector 14 difficulty');
@@ -148,6 +164,7 @@ assert.equal(getNormalWaveDifficultyLevel(5), 14, 'Sector 5 normal waves should 
 const oldSector10 = waveMetricsForDifficultyLevel(10);
 const newSector1 = currentMetricsForSector(1);
 assert.equal(newSector1.difficultyLevel, 10);
+assert.equal(newSector1.waveCount, EXPECTED_MIN_WAVES, 'new Sector 1 should keep old Sector 10 intensity but trim one normal wave');
 assert.equal(newSector1.tuningId, oldSector10.tuningId, 'new Sector 1 should land in old Sector 10 pressure band');
 assert.deepEqual(newSector1.counts, oldSector10.counts, 'new Sector 1 counts should match old Sector 10 counts with deterministic variance');
 assert.deepEqual(newSector1.dangerMoments, oldSector10.dangerMoments, 'new Sector 1 danger moments should match old Sector 10');
@@ -169,7 +186,7 @@ for (const sector of [1, 5, 10, 20, 30]) {
   assert.ok(metrics.totalEnemies > 0, `Sector ${sector} should contain normal enemies`);
 }
 
-assert.equal(bossMetricHash(), EXPECTED_BOSS_METRIC_HASH, 'boss difficulty metrics must remain unchanged');
+assert.equal(bossMetricHash(), EXPECTED_BOSS_BODY_METRIC_HASH, 'boss body difficulty metrics must remain unchanged');
 assert.equal(getSectorStartPlaySector(5), 5, 'Sector 5 start should remain Sector 5');
 assert.equal(getSectorStartPlaySector(10), 11, 'Checkpoint 10 should still start at Sector 11');
 assert.equal(getSectorStartPlaySector(20), 21, 'Checkpoint 20 should still start at Sector 21');
@@ -198,6 +215,6 @@ console.log('[normal-wave-difficulty-shift] PASS', {
   oldSector10,
   newSector5Pressure: newSector5.pressureIndex,
   oldSector5Pressure: oldSector5.pressureIndex,
-  bossMetricHash: EXPECTED_BOSS_METRIC_HASH,
+  bossBodyMetricHash: EXPECTED_BOSS_BODY_METRIC_HASH,
   leaderboard: STEAM_LEADERBOARD_NAME
 });

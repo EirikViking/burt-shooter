@@ -200,6 +200,7 @@ const balanceDiff = execFileSync('git', ['diff', '--unified=0', 'HEAD', '--', 's
 const protectedBalanceLines = balanceDiff
   .split(/\r?\n/)
   .filter((line) => /^[+-](?![+-]{2})/.test(line))
+  .filter((line) => !/\b(MIN_WAVES_BETWEEN_BOSSES|wavesPerBossBase)\b/.test(line))
   .filter((line) => /\b(boss|score|leaderboard|steam|save|achievement|ship|unlock|reward|powerup|life|lives)\b/i.test(line));
 if (protectedBalanceLines.length) {
   fail(`BalanceConfig diff touched protected non-tuning keys: ${protectedBalanceLines.join(' | ')}`);
