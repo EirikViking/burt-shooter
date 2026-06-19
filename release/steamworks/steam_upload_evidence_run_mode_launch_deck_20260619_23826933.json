@@ -1,0 +1,81 @@
+{
+  "uploadedAtLocal": "2026-06-19 21:00:47 +02:00",
+  "branch": "codex/run-mode-launch-deck-menu-layout-20260619",
+  "sourceCommit": "d93c6c6a9c4f5298180c78fea201718a79449aea",
+  "preRunSnapshotCommit": "e34bb9a",
+  "baseRunModeMenuClarityCommit": "4f7d65247df98dbf9f00ee107d82f78a6877c0a2",
+  "build": {
+    "version": "v2026-06-19_20-47-03",
+    "packagedGitSha": "d93c6c6",
+    "steamBuildId": "23826933",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "depotManifest": "7734851989661105231",
+    "baselineDepotManifest": "2093552943102439710"
+  },
+  "steamPipe": {
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "commandShape": "C:\\steamcmd\\steamcmd.exe +login gaunziman +run_app_build <absolute repo path>\\release\\steamworks\\app_build_LOCAL.vdf +quit",
+    "resultLine": "[2026-06-19 21:00:23]: Successfully finished AppID 4765070 build (BuildID 23826933)."
+  },
+  "verification": {
+    "releaseLine": "passed",
+    "packageRuntime": "test-results/steam-package-runtime-2026-06-19T18-55-49-178Z/report.json",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-19T18-51-41-328Z/report.json",
+    "currentDesktopSmoke": "test-results/electron-smoke-2026-06-19T18-52-28-212Z/report.json",
+    "currentPerfSmoke": "test-results/electron-perf-smoke-2026-06-19T18-52-28-237Z/report.json",
+    "browserSmoke": {
+      "result": "non_blocking_known_timeout",
+      "outputDir": "test-results/smoke-2026-06-19T18-53-52-279Z",
+      "failure": "scripts/smoke-playtest.mjs:764:26 after level 3 debug capture"
+    },
+    "runModeReport": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/report.json",
+    "i18nUiReport": "test-results/i18n-ui-2026-06-19T18-38-03-118Z/report.json",
+    "cinematicMenuReport": "test-results/cinematic-hangar-menu-2026-06-19T18-41-01-552Z/report.json",
+    "cinematicMenuIconsReport": "test-results/cinematic-hangar-menu-icons-2026-06-19T18-38-06-332Z/report.json",
+    "sectorSelectorReport": "test-results/sector-challenge-selector-2026-06-19T18-38-03-077Z/report.json",
+    "controllerFlow": "test-results/controller-only-flow-2026-06-19T18-41-36-324Z",
+    "powerupVisuals": "test-results/powerup-visuals-2026-06-19T18-42-26-356Z/powerup-icons-runtime.png",
+    "codexLayout": "test-results/codex-revamp-20260606/layout/codex-after-contact-sheet.png"
+  },
+  "screenshots": {
+    "menu1366": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/menu-run-modes-1366x768.png",
+    "menu1280": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/menu-run-modes-1280x800.png",
+    "menu1920": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/menu-launch-deck-1920x1080.png",
+    "mayhemFocused": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/menu-mayhem-focused.png",
+    "scoutFocused": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/menu-scout-focused.png",
+    "sectorFocused": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/menu-sector-run-focused.png",
+    "sectorSelectorEvery5": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/sector-run-selector-every-5-sectors.png",
+    "scoutResult": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/scout-result-unranked.png",
+    "mayhemResult": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/mayhem-result-ranked.png",
+    "sectorResult": "test-results/run-modes-mayhem-scout-sector-2026-06-19T18-36-39-968Z/sector-result-run.png"
+  },
+  "safety": {
+    "setLiveBlank": true,
+    "steamBranchAssignment": "none",
+    "publicDefaultChanged": false,
+    "sectorContinueTestChanged": false,
+    "steamworksMetadataChanged": false,
+    "leaderboardIdentity": "nova_swarm_global_score_v2",
+    "manualAssignmentRequired": true
+  },
+  "manualSteamworksTestSteps": [
+    "Open Steamworks > App Admin > SteamPipe > Builds for AppID 4765070.",
+    "Find private BuildID 23826933 and leave it unassigned unless manually choosing a private branch for testing.",
+    "Install/launch the build from Steam client after manual assignment to a private branch.",
+    "Verify the main menu uses compact Mayhem Run, Scout Run, and Sector Run selectors without covering the showcase ship.",
+    "Verify Mayhem Run is ranked, submits to the existing global leaderboard, unlocks achievements, and can unlock checkpoints.",
+    "Verify Scout Run is unranked, lower pressure, does not show a leaderboard CTA, does not submit to the global leaderboard, and does not unlock achievements, career XP, or checkpoints.",
+    "Verify Sector Run starts from unlocked checkpoints, explains every-5-sector unlocks, may show separate Sector board records, and does not unlock achievements.",
+    "Do not assign this BuildID to public/default until explicitly approved."
+  ],
+  "rollback": {
+    "source": "git checkout codex/run-mode-menu-clarity-full-test-20260619",
+    "steam": "No Steam rollback is required while BuildID 23826933 remains unassigned. If later assigned manually, reassign that branch in Steamworks to the prior desired BuildID."
+  }
+}
