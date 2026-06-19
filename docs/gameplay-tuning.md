@@ -1,5 +1,11 @@
 # Nova Swarm Gameplay Tuning
 
+## 2026-06-19 Run Mode Profiles
+
+- Mayhem Run is the ranked baseline and keeps the accepted harder profile through `src/game/RunMode.js` with `difficultyProfileId: accepted_harder_ranked`.
+- Scout Run uses `scout_lower_pressure_v1` in `src/game/RunMode.js` for lower-pressure practice. Tune Scout through that profile and `RunPressureDirector`, not one-off checks in scenes or managers.
+- Sector Run keeps checkpoint-start behavior but is unranked for achievements in this first version. Mayhem Run remains the only mode that submits to the existing global leaderboard and unlocks Steam achievements.
+
 ## 2026-05-25 Arcade Score-Attack Revamp
 
 - Default run pacing now lives in `src/config/RunPacingConfig.js` and `src/game/RunPressureDirector.js`. The current arcade target is 10 sectors, 150 seconds per sector, and a good-player climax around 24-30 minutes with sharp overrun pressure after the target.

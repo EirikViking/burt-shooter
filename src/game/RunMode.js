@@ -1,19 +1,128 @@
 export const RUN_MODES = Object.freeze({
+  MAYHEM: 'ranked',
   RANKED: 'ranked',
+  SCOUT: 'scout',
   UNRANKED: 'unranked',
   SECTOR_START: 'sector_start'
 });
 
 export const SECTOR_START_CHECKPOINT_INTERVAL = 5;
 
+const DEFAULT_MULTIPLIERS = Object.freeze({
+  fireChanceMult: 1,
+  projectileSpeedMult: 1,
+  enemySpeedMult: 1,
+  eliteChanceMult: 1,
+  specialThreatMult: 1,
+  sustainMult: 1,
+  scoreMult: 1,
+  contentRarityMult: 1
+});
+
+export const RUN_MODE_PROFILES = Object.freeze({
+  [RUN_MODES.RANKED]: Object.freeze({
+    id: RUN_MODES.RANKED,
+    menuId: 'mayhem',
+    label: 'MAYHEM RUN',
+    shortLabel: 'Mayhem Run',
+    subLabel: 'Ranked · Leaderboards · Achievements',
+    resultLabel: 'MAYHEM RUN',
+    oneMoreLabel: 'ONE MORE MAYHEM RUN',
+    ranked: true,
+    submitsGlobalLeaderboard: true,
+    submitsLocalLeaderboard: true,
+    unlocksAchievements: true,
+    unlocksRankedCheckpoints: true,
+    updatesCareerProgress: true,
+    difficultyProfileId: 'accepted_harder_ranked',
+    normalWaveDifficultyLevelOffsetDelta: 0,
+    pressureMultipliers: DEFAULT_MULTIPLIERS
+  }),
+  [RUN_MODES.SCOUT]: Object.freeze({
+    id: RUN_MODES.SCOUT,
+    menuId: 'scout',
+    label: 'SCOUT RUN',
+    shortLabel: 'Scout Run',
+    subLabel: 'Unranked · Lower pressure · No achievements',
+    resultLabel: 'SCOUT RUN',
+    oneMoreLabel: 'ONE MORE SCOUT RUN',
+    ranked: false,
+    submitsGlobalLeaderboard: false,
+    submitsLocalLeaderboard: false,
+    unlocksAchievements: false,
+    unlocksRankedCheckpoints: false,
+    updatesCareerProgress: false,
+    difficultyProfileId: 'scout_lower_pressure_v1',
+    normalWaveDifficultyLevelOffsetDelta: -5,
+    pressureMultipliers: Object.freeze({
+      fireChanceMult: 0.72,
+      projectileSpeedMult: 0.82,
+      enemySpeedMult: 0.88,
+      eliteChanceMult: 0.62,
+      specialThreatMult: 0.58,
+      sustainMult: 1.18,
+      scoreMult: 1,
+      contentRarityMult: 0.8
+    })
+  }),
+  [RUN_MODES.SECTOR_START]: Object.freeze({
+    id: RUN_MODES.SECTOR_START,
+    menuId: 'sectorRun',
+    label: 'SECTOR RUN',
+    shortLabel: 'Sector Run',
+    subLabel: 'Checkpoint starts · No achievements',
+    resultLabel: 'SECTOR RUN',
+    oneMoreLabel: 'ONE MORE SECTOR RUN',
+    ranked: false,
+    submitsGlobalLeaderboard: false,
+    submitsLocalLeaderboard: false,
+    unlocksAchievements: false,
+    unlocksRankedCheckpoints: false,
+    updatesCareerProgress: false,
+    difficultyProfileId: 'sector_checkpoint_practice_v1',
+    normalWaveDifficultyLevelOffsetDelta: 0,
+    pressureMultipliers: DEFAULT_MULTIPLIERS
+  }),
+  [RUN_MODES.UNRANKED]: Object.freeze({
+    id: RUN_MODES.UNRANKED,
+    menuId: 'debugPractice',
+    label: 'PRACTICE RUN',
+    shortLabel: 'Practice Run',
+    subLabel: 'Unranked · No leaderboard',
+    resultLabel: 'PRACTICE RUN',
+    oneMoreLabel: 'ONE MORE PRACTICE RUN',
+    ranked: false,
+    submitsGlobalLeaderboard: false,
+    submitsLocalLeaderboard: false,
+    unlocksAchievements: false,
+    unlocksRankedCheckpoints: false,
+    updatesCareerProgress: false,
+    difficultyProfileId: 'debug_unranked',
+    normalWaveDifficultyLevelOffsetDelta: 0,
+    pressureMultipliers: DEFAULT_MULTIPLIERS
+  })
+});
+
 export function normalizeRunMode(value) {
   const mode = String(value || '').trim();
-  if (mode === RUN_MODES.UNRANKED || mode === RUN_MODES.SECTOR_START) return mode;
+  if (mode === RUN_MODES.SCOUT || mode === RUN_MODES.UNRANKED || mode === RUN_MODES.SECTOR_START) return mode;
   return RUN_MODES.RANKED;
 }
 
+export function getRunModeProfile(mode) {
+  return RUN_MODE_PROFILES[normalizeRunMode(mode)] || RUN_MODE_PROFILES[RUN_MODES.RANKED];
+}
+
 export function isRankedRunMode(mode, { isDebugRun = false } = {}) {
-  return normalizeRunMode(mode) === RUN_MODES.RANKED && isDebugRun !== true;
+  return getRunModeProfile(mode).ranked === true && isDebugRun !== true;
+}
+
+export function canRunModeSubmitGlobalLeaderboard(mode, options = {}) {
+  return isRankedRunMode(mode, options) && getRunModeProfile(mode).submitsGlobalLeaderboard === true;
+}
+
+export function canRunModeUnlockAchievements(mode, options = {}) {
+  return isRankedRunMode(mode, options) && getRunModeProfile(mode).unlocksAchievements === true;
 }
 
 function floorSector(value, fallback = 1) {

@@ -1,7 +1,7 @@
 import './styles.css';
 import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
-import { RUN_MODES } from './game/RunMode.js';
+import { RUN_MODES, getRunModeProfile } from './game/RunMode.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { BootWatchdog } from './utils/BootWatchdog.js';
 import { installConsoleLogFilter } from './utils/Logger.js';
@@ -587,6 +587,7 @@ function buildGameTextState(game) {
     lives: game?.lives ?? 0,
     runMode: game?.runMode || (game?.isDebugRun ? 'unranked' : 'ranked'),
     runModeReason: game?.runModeReason || null,
+    runModeProfile: getRunModeProfile(game?.runMode),
     sectorStartChallenge: (game?.runMode === RUN_MODES.SECTOR_START || game?.runSummary?.sectorStartChallengeAttempt) ? {
       checkpoint: game?.sectorStartCheckpoint || game?.runSummary?.sectorStartCheckpoint || null,
       playSector: game?.sectorStartPlaySector || game?.runSummary?.sectorStartPlaySector || null,

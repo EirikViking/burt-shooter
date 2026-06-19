@@ -26,9 +26,12 @@ import { RunContentDirector } from './RunContentDirector.js';
 import { awardRunClearScoreBonuses } from './RunClearScoreBonuses.js';
 import {
   RUN_MODES,
+  canRunModeSubmitGlobalLeaderboard,
+  canRunModeUnlockAchievements,
   getSectorStartPlaySector,
   getSectorStartState,
   isRankedRunMode,
+  getRunModeProfile,
   normalizeRunMode,
   resolveSectorStartCheckpoint
 } from './RunMode.js';
@@ -339,11 +342,19 @@ export class Game {
   }
 
   isScoreSubmissionAllowed() {
-    return this.isRankedRun();
+    return canRunModeSubmitGlobalLeaderboard(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   isRankedRun() {
     return isRankedRunMode(this.runMode, { isDebugRun: this.isDebugRun });
+  }
+
+  getRunModeProfile(mode = this.runMode) {
+    return getRunModeProfile(mode);
+  }
+
+  canUnlockAchievementsForCurrentRun() {
+    return canRunModeUnlockAchievements(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   gameOver(options = {}) {
@@ -423,6 +434,7 @@ export class Game {
     return this.achievementManager?.unlock(id, {
       ...payload,
       runMode: payload.runMode ?? this.runMode,
+      allowAchievements: payload.allowAchievements ?? this.canUnlockAchievementsForCurrentRun(),
       isDebugRun: payload.isDebugRun ?? this.isDebugRun
     }) || null;
   }
@@ -553,7 +565,7 @@ export class Game {
     this.scoreBreakdown.dangerMultiplierBonus += Math.max(0, applied - preDangerAward);
     this.scoreBreakdown.finalScore = this.score;
 
-    if (this.isRankedRun()) {
+    if (this.canUnlockAchievementsForCurrentRun()) {
       updateHangarProgress({ bestScore: this.score, bestRank: this.rankIndex, bestLevel: this.level, bestSector: this.level });
     }
 

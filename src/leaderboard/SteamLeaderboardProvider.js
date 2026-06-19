@@ -386,8 +386,8 @@ export class SteamLeaderboardProvider {
       sourceLabel,
       entries,
       message: entries.length > 0
-        ? (leaderboardKind === 'sector_start' ? 'Steam sector challenge records loaded.' : 'Steam global records loaded.')
-        : (leaderboardKind === 'sector_start' ? 'Steam sector challenge board has no entries yet.' : 'Steam global board has no entries yet.')
+        ? (leaderboardKind === 'sector_start' ? 'Steam sector run records loaded.' : 'Steam global records loaded.')
+        : (leaderboardKind === 'sector_start' ? 'Steam sector run board has no entries yet.' : 'Steam global board has no entries yet.')
     };
   }
 

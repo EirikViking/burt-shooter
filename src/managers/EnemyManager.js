@@ -516,7 +516,7 @@ export class EnemyManager {
   }
 
   getNormalWaveDifficultyLevel(level = this.level) {
-    return getNormalWaveDifficultyLevel(level);
+    return this.game?.runPressureDirector?.getNormalWaveDifficultyLevel?.(level) ?? getNormalWaveDifficultyLevel(level);
   }
 
   generateWaves(level) {
@@ -612,7 +612,8 @@ export class EnemyManager {
   }
 
   applyNormalWaveDangerMoment(wave, level, waveIndex, waveCount) {
-    const moment = getNormalWaveDangerMoment(level, waveIndex, waveCount);
+    const moment = this.game?.runPressureDirector?.getNormalWaveDangerMoment?.(level, waveIndex, waveCount) ??
+      getNormalWaveDangerMoment(level, waveIndex, waveCount);
     if (!moment) return wave;
 
     const tacticId = this.getAllowedThreatMomentTacticId(moment, level, waveIndex);

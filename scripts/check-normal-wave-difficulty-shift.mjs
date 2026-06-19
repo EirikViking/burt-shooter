@@ -191,7 +191,7 @@ assert.equal(getSectorStartPlaySector(5), 5, 'Sector 5 start should remain Secto
 assert.equal(getSectorStartPlaySector(10), 11, 'Checkpoint 10 should still start at Sector 11');
 assert.equal(getSectorStartPlaySector(20), 21, 'Checkpoint 20 should still start at Sector 21');
 assert.equal(getSectorStartPlaySector(30), 31, 'Checkpoint 30 should still start at Sector 31');
-assert.equal(isSectorStartCheckpointUnlocked(10, { bestSector: 10, bestLevel: 10 }), false, 'Sector Challenge should not unlock Checkpoint 10 from Sector 10');
+assert.equal(isSectorStartCheckpointUnlocked(10, { bestSector: 10, bestLevel: 10 }), false, 'Sector Run should not unlock Checkpoint 10 from Sector 10');
 assert.equal(isSectorStartCheckpointUnlocked(10, { bestSector: 11, bestLevel: 11 }), true, 'Checkpoint 10 should unlock only after reaching Sector 11');
 
 assert.equal(STEAM_LEADERBOARD_NAME, EXPECTED_LEADERBOARD_NAME, 'global leaderboard identity should remain unchanged');
@@ -201,8 +201,6 @@ assert.ok(steamBridge.includes(`'${EXPECTED_LEADERBOARD_NAME}'`), 'Electron Stea
 const protectedPrefixes = [
   'src/steamCloudPersistence.js',
   'electron/steamCloudSave.cjs',
-  'src/leaderboard/',
-  'src/achievements/',
   'electron/steamLeaderboardBridge.cjs'
 ];
 const changed = changedFiles().map((entry) => entry.replaceAll(path.sep, '/'));

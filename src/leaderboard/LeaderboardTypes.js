@@ -6,7 +6,7 @@ export const LEADERBOARD_DISPLAY_LIMIT = 40;
 export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 export const STEAM_LEADERBOARD_COMMUNITY_NAME = 'Global High Score';
 export const STEAM_SECTOR_LEADERBOARD_NAME = 'nova_swarm_sector_start_score_v1';
-export const STEAM_SECTOR_LEADERBOARD_COMMUNITY_NAME = 'Sector Challenge Score';
+export const STEAM_SECTOR_LEADERBOARD_COMMUNITY_NAME = 'Sector Run Score';
 
 export const LeaderboardView = {
   GLOBAL: 'global',

@@ -77,6 +77,7 @@ export class AchievementManager {
 
   canUnlockFromCurrentRun(payload = {}) {
     if (payload.ignoreRunGate === true) return true;
+    if (payload.allowAchievements === false) return false;
 
     if (!isRankedRunMode(payload.runMode, { isDebugRun: payload.isDebugRun })) {
       return false;

@@ -126,7 +126,7 @@ export class LeaderboardAdapter {
     if (this.availability.steam) {
       return [
         { id: LeaderboardView.GLOBAL, label: 'GLOBAL', title: 'GLOBAL SCORE DECK', sourceLabel: 'Steam Global' },
-        { id: LeaderboardView.SECTOR, label: 'SECTOR', title: 'SECTOR CHALLENGE DECK', sourceLabel: 'Steam Sector' },
+        { id: LeaderboardView.SECTOR, label: 'SECTOR', title: 'SECTOR RUN DECK', sourceLabel: 'Steam Sector' },
         ...(this.availability.steamFriends
           ? [{ id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' }]
           : []),
@@ -184,7 +184,7 @@ export class LeaderboardAdapter {
             source: 'steam',
             sourceLabel: 'Steam Sector',
             entries: [],
-            message: 'Steam unavailable. Sector challenge scores cannot load.'
+            message: 'Steam unavailable. Sector Run scores cannot load.'
           };
         }
         return this.steamProvider.getTopScores({
@@ -213,7 +213,7 @@ export class LeaderboardAdapter {
         message: normalizedView === LeaderboardView.FRIENDS
           ? 'Could not load Steam friends scores.'
           : normalizedView === LeaderboardView.SECTOR
-            ? 'Could not load Steam sector challenge scores.'
+            ? 'Could not load Steam sector run scores.'
           : normalizedView === LeaderboardView.GLOBAL
             ? 'Global board offline. Local scores are safe.'
             : 'Could not load local scores.',

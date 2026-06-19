@@ -16,7 +16,7 @@ import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState } from '../progression/HangarProgressState.js';
 import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
 import { getSectorInfo } from '../config/SectorCatalog.js';
-import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
+import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getRunModeProfile, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
@@ -159,6 +159,7 @@ export class MenuScene {
     this.runModeExplainer = null;
     this.disclaimer = null;
     this.startBtn = null;
+    this.scoutRunBtn = null;
     this.sectorStartBtn = null;
     this.sectorStartState = { available: false, checkpoints: [], selectedCheckpoint: null, highestReachedSector: 1 };
     this.selectedSectorStartIndex = 0;
@@ -841,6 +842,7 @@ export class MenuScene {
   getMenuButtonList() {
     return [
       this.startBtn,
+      this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
       this.storyBtn,
@@ -1017,14 +1019,23 @@ export class MenuScene {
     this.container.addChild(this.menuPanel);
     this.createSectorSelectorOverlay(layout);
 
-    this.startBtn = this.createButton('LAUNCH RUN', layout, { variant: 'primary', accent: 0xffd15c, icon: 'launch', subLabel: 'START YOUR MISSION' });
+    this.startBtn = this.createButton('MAYHEM RUN', layout, { variant: 'primary', accent: 0xffd15c, icon: 'launch', subLabel: 'RANKED · LEADERBOARDS · ACHIEVEMENTS' });
     this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
       this.quickStartRun();
     });
     this.container.addChild(this.startBtn);
 
-    this.sectorStartBtn = this.createButton('SECTOR CHALLENGE', layout, {
+    this.scoutRunBtn = this.createButton('SCOUT RUN', layout, {
+      accent: 0x7fffd8,
+      icon: 'launch',
+      subLabel: 'UNRANKED · LOWER PRESSURE · NO ACHIEVEMENTS'
+    });
+    this.scoutRunBtn.alpha = 0;
+    this.scoutRunBtn.on('pointerdown', () => this.quickStartRun(RUN_MODES.SCOUT));
+    this.container.addChild(this.scoutRunBtn);
+
+    this.sectorStartBtn = this.createButton('SECTOR RUN', layout, {
       accent: 0x37f5ff,
       icon: 'target',
       dynamicSubLabel: () => this.getSectorStartButtonSubLabel()
@@ -1242,6 +1253,7 @@ export class MenuScene {
       this.buildStamp,
       this.musicBtn?._label,
       this.startBtn?._label,
+      this.scoutRunBtn?._label,
       this.sectorStartBtn?._label,
       this.highscoreBtn?._label,
       this.storyBtn?._label,
@@ -1295,18 +1307,20 @@ export class MenuScene {
     }
     const isPrimaryButton = button._variant === 'primary';
     const isCompactButton = (button._btnHeight || 0) <= 38;
+    const isDockButton = Number.isFinite(button._dockIndex);
+    const isNarrowDockButton = isDockButton && !isPrimaryButton && (button._btnWidth || 0) < 158;
     const labelInset = button._iconType
-      ? (isPrimaryButton ? 138 : (isCompactButton ? 40 : 92))
+      ? (isPrimaryButton ? 138 : (isCompactButton ? 40 : (isNarrowDockButton ? 58 : 92)))
       : (isCompactButton ? 36 : 48);
     const labelRightPad = isPrimaryButton ? 16 : (isCompactButton ? 12 : 10);
     const labelMaxWidth = Math.max(36, (button._btnWidth || 180) - labelInset - labelRightPad);
     const fitMinScale = Number.isFinite(button._labelMinScale)
       ? button._labelMinScale
-      : (Number.isFinite(button._dockIndex) ? (isPrimaryButton ? 0.42 : 0.46) : 0.62);
-    const labelTexturePadding = Number.isFinite(button._dockIndex)
+      : (isDockButton ? (isPrimaryButton ? 0.42 : (isNarrowDockButton ? 0.38 : 0.46)) : 0.62);
+    const labelTexturePadding = isDockButton
       ? (isCompactButton ? 12 : (isPrimaryButton ? 24 : 18))
       : null;
-    const sublabelFitMinScale = Number.isFinite(button._dockIndex) ? 0.5 : 0.62;
+    const sublabelFitMinScale = isDockButton ? (isNarrowDockButton ? 0.38 : 0.5) : 0.62;
     this.refreshMenuButtonLabel(button, labelMaxWidth, { minScale: fitMinScale, forceGpuRefresh, texturePadding: labelTexturePadding });
     this.refreshMenuButtonSubLabel(button, labelMaxWidth, { minScale: sublabelFitMinScale, forceGpuRefresh });
   }
@@ -1397,6 +1411,7 @@ export class MenuScene {
     this.updateSectorStartButton({ forceGpuRefresh: forceLabelGpuRefresh });
     const dockButtons = [
       this.startBtn,
+      this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
       this.storyBtn,
@@ -1423,9 +1438,9 @@ export class MenuScene {
       right: marginX + dockWidth,
       bottom: Math.min(height - 8, dockTop + dockHeight)
     };
-    const launchWidth = clampNumber(dockWidth * 0.185, isMobileLayout ? 168 : 226, isMobileLayout ? 238 : 352);
+    const launchWidth = clampNumber(dockWidth * 0.19, isMobileLayout ? 168 : 226, isMobileLayout ? 238 : 352);
     const remainingWidth = dockWidth - launchWidth - gap * (dockButtons.length - 1);
-    const secondaryWidth = Math.max(112, remainingWidth / Math.max(1, dockButtons.length - 1));
+    const secondaryWidth = Math.max(isMobileLayout ? 96 : 104, remainingWidth / Math.max(1, dockButtons.length - 1));
     let cursorX = marginX;
 
     dockButtons.forEach((button, index) => {
@@ -1506,6 +1521,7 @@ export class MenuScene {
     const utilityAlpha = 0.34;
     [
       this.startBtn,
+      this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
       this.storyBtn,
@@ -1570,13 +1586,17 @@ export class MenuScene {
   }
 
   getRunModeExplainerText() {
-    const sectorStatus = this.sectorStartState?.available
-      ? translateText('CHECKPOINT')
-      : translateText('LOCKED');
-    const ranked = translateText('RANKED');
-    const leaderboard = translateText('LEADERBOARD');
-    const sector = translateText('SECTOR');
-    return `${ranked}: ${leaderboard}  //  ${sector}: ${sectorStatus}`;
+    const focused = this.getSelectedMenuOptionId();
+    if (focused === 'scout') {
+      return translateText('SCOUT RUN: unranked lower-pressure practice for testing ships and learning routes. No leaderboard, achievements, or Mayhem checkpoints.');
+    }
+    if (focused === 'sectorStart') {
+      return translateText('SECTOR RUN: uses unlocked ranked checkpoints. No achievements. New starts unlock every 5 sectors in Mayhem Run.');
+    }
+    if (focused === 'launch') {
+      return translateText('MAYHEM RUN: ranked Sector 1 climb. Submits to the global leaderboard and unlocks achievements.');
+    }
+    return translateText('MAYHEM RUN: ranked. SCOUT RUN: practice. SECTOR RUN: checkpoint starts.');
   }
 
   drawRunModeExplainerPanel(layout, width, height) {
@@ -1660,6 +1680,7 @@ export class MenuScene {
     }
     const contentItems = [
       this.startBtn,
+      this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
       this.storyBtn,
@@ -2084,19 +2105,19 @@ export class MenuScene {
         return [
           startPointLine,
           translateText('NEW START POINTS EVERY 5 SECTORS'),
-          translateText('PLAY LAUNCH RUN TO UNLOCK CHECKPOINTS')
+          translateText('PLAY MAYHEM RUN TO UNLOCK RANKED CHECKPOINTS')
         ].join('\n');
       }
       const required = getSectorStartPlaySector(entry.sector);
       const requirement = entry.overrunCheckpoint
-        ? translateText('CLEAR SECTOR {sector} IN LAUNCH RUN', { sector: entry.sector })
-        : translateText('REACH SECTOR {sector} IN LAUNCH RUN', { sector: required || entry.sector });
+        ? translateText('CLEAR SECTOR {sector} IN MAYHEM RUN', { sector: entry.sector })
+        : translateText('REACH SECTOR {sector} IN MAYHEM RUN', { sector: required || entry.sector });
       return [
         startPointLine,
         translateText('LOCKED'),
         requirement,
         required && required !== entry.sector ? translateText('BEGINS AT SECTOR {sector}', { sector: required }) : '',
-        translateText('SECTOR CHALLENGE DOES NOT UNLOCK START POINTS')
+        translateText('SCOUT AND SECTOR RUNS DO NOT UNLOCK MAYHEM CHECKPOINTS')
       ].filter(Boolean).join('\n');
     }
     const playSector = entry.playSector || entry.sector;
@@ -2121,7 +2142,7 @@ export class MenuScene {
       startLine,
       launchLine,
       best,
-      translateText('SECTOR CHALLENGE RECORD ONLY'),
+      translateText('SECTOR RUN RECORD ONLY'),
       note
     ].join('\n');
   }
@@ -2138,6 +2159,7 @@ export class MenuScene {
       disclaimer: this.disclaimer,
       controls: this.controls,
       launchButton: this.startBtn,
+      scoutRunButton: this.scoutRunBtn,
       sectorStartButton: this.sectorStartBtn?.visible ? this.sectorStartBtn : null,
       hangarButton: this.highscoreBtn,
       highscoresButton: this.storyBtn,
@@ -2213,6 +2235,13 @@ export class MenuScene {
           bottom: Math.round(this.sectorStartBtn.y + (this.sectorStartBtn._btnHeight || 0) / 2)
         } : null,
         selector: this.getSectorSelectorDebugState()
+      },
+      scoutRun: {
+        buttonVisible: Boolean(this.scoutRunBtn?.visible),
+        buttonText: this.scoutRunBtn?._label?.text || null,
+        buttonSubtext: this.scoutRunBtn?._sublabel?.text || null,
+        buttonBounds: boundsForDisplayObject(this.scoutRunBtn?.visible ? this.scoutRunBtn : null),
+        profile: getRunModeProfile(RUN_MODES.SCOUT)
       },
       menuFx: this.menuFx?.getDebugState?.() || null,
       exitNoticeText: this.exitNotice?.text || '',
@@ -2744,6 +2773,7 @@ export class MenuScene {
   updateMenuButtonMotion(delta = 0) {
     const buttons = [
       this.startBtn,
+      this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
       this.storyBtn,
@@ -2920,6 +2950,8 @@ export class MenuScene {
     const isUtilityDanger = container._variant === 'utilityDanger';
     const isDanger = container._variant === 'danger';
     const isCompact = h <= 38;
+    const isDockButton = Number.isFinite(container._dockIndex);
+    const isNarrowDockButton = isDockButton && !isPrimary && !isUtility && w < 158;
     const accent = container._accent || 0x37f5ff;
     const isModalOpen = Boolean(this.sectorSelectorOpen);
     const isFocused = Boolean(container._focused && !isModalOpen);
@@ -2939,7 +2971,7 @@ export class MenuScene {
     const cut = clampNumber(h * 0.16, 5, 10);
     const iconRenderSize = isCompact
       ? clampNumber(h * 0.82, 24, 30)
-      : clampNumber(h * (isPrimary ? 0.63 : 0.465), isPrimary ? 78 : 56, isPrimary ? 90 : 68);
+      : clampNumber(h * (isPrimary ? 0.63 : (isNarrowDockButton ? 0.36 : 0.465)), isPrimary ? 78 : (isNarrowDockButton ? 40 : 56), isPrimary ? 90 : (isNarrowDockButton ? 50 : 68));
     const iconPlateSize = iconRenderSize + (isCompact ? 4 : (isPrimary ? 18 : 12));
     const label = container._label;
     const sublabel = container._sublabel;
@@ -3002,7 +3034,7 @@ export class MenuScene {
     bg.stroke({ color: 0xffffff, width: 1, alpha: active ? 0.22 : 0.1 });
 
     if (!isCompact && icon) {
-      const iconCenterX = x + (isPrimary ? 76 : 50);
+      const iconCenterX = x + (isPrimary ? 76 : (isNarrowDockButton ? 34 : 50));
       const iconCenterY = hasSubLabel ? -h * 0.08 : 0;
       const plateX = iconCenterX - iconPlateSize / 2;
       const plateY = iconCenterY - iconPlateSize / 2;
@@ -3060,7 +3092,7 @@ export class MenuScene {
         ? '#ffffff'
           : (isPrimary ? '#ffe584' : (isDanger ? '#ff7a86' : (isUtilityDanger ? '#c9fbff' : '#c9fbff')));
       label.style.strokeThickness = isPrimary ? 4 : 3;
-      label.x = x + (isCompact ? 40 : (isPrimary ? 138 : 92));
+      label.x = x + (isCompact ? 40 : (isPrimary ? 138 : (isNarrowDockButton ? 58 : 92)));
       label.y = hasSubLabel ? -h * (isPrimary ? 0.095 : 0.085) : 0;
     }
     if (sublabel) {
@@ -3073,7 +3105,7 @@ export class MenuScene {
     }
     if (icon) {
       const iconSize = clampNumber(h * (isCompact ? 0.34 : (isPrimary ? 0.32 : 0.29)), 16, isPrimary ? 30 : 23);
-      const iconX = x + (isCompact ? 22 : (isPrimary ? 76 : 50));
+      const iconX = x + (isCompact ? 22 : (isPrimary ? 76 : (isNarrowDockButton ? 34 : 50)));
       const iconY = hasSubLabel ? -h * 0.08 : 0;
       if (useAssetIcon) {
         icon.visible = false;
@@ -3105,20 +3137,23 @@ export class MenuScene {
     this.animateElement(this.runModeExplainer, 0.76, 0.42);
     this.animateElement(this.menuPanel, 0.78, 0.45);
     this.animateElement(this.startBtn, 0.92, 0.4);
-    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 1.04, 0.4);
-    this.animateElement(this.highscoreBtn, this.sectorStartBtn?.visible ? 1.16 : 1.08, 0.4);
-    this.animateElement(this.storyBtn, this.sectorStartBtn?.visible ? 1.28 : 1.22, 0.4);
-    this.animateElement(this.threatCodexBtn, this.sectorStartBtn?.visible ? 1.4 : 1.34, 0.4);
-    this.animateElement(this.achievementsBtn, this.sectorStartBtn?.visible ? 1.52 : 1.46, 0.4);
-    this.animateElement(this.settingsBtn, this.sectorStartBtn?.visible ? 1.64 : 1.58, 0.4);
-    this.animateElement(this.exitBtn, this.sectorStartBtn?.visible ? 1.76 : 1.7, 0.4);
-    this.animateElement(this.helpBtn, this.sectorStartBtn?.visible ? 1.82 : 1.76, 0.4);
-    this.animateElement(this.disclaimer, this.sectorStartBtn?.visible ? 1.88 : 1.82, 0.4);
+    this.animateElement(this.scoutRunBtn, 1.02, 0.4);
+    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 1.12, 0.4);
+    this.animateElement(this.highscoreBtn, 1.22, 0.4);
+    this.animateElement(this.storyBtn, 1.32, 0.4);
+    this.animateElement(this.threatCodexBtn, 1.42, 0.4);
+    this.animateElement(this.achievementsBtn, 1.52, 0.4);
+    this.animateElement(this.settingsBtn, 1.62, 0.4);
+    this.animateElement(this.exitBtn, 1.72, 0.4);
+    this.animateElement(this.helpBtn, 1.78, 0.4);
+    this.animateElement(this.disclaimer, 1.84, 0.4);
   }
 
   buildMenuNavigation() {
+    const previousFocusedId = this.getSelectedMenuOptionId();
     this.menuOptions = [
-      { id: 'launch', button: this.startBtn, activate: () => this.quickStartRun() },
+      { id: 'launch', button: this.startBtn, activate: () => this.quickStartRun(RUN_MODES.RANKED) },
+      { id: 'scout', button: this.scoutRunBtn, activate: () => this.quickStartRun(RUN_MODES.SCOUT) },
       ...(this.sectorStartBtn?.visible
         ? [{ id: 'sectorStart', button: this.sectorStartBtn, activate: () => this.openSectorSelector() }]
         : []),
@@ -3186,7 +3221,8 @@ export class MenuScene {
     this.menuOptions.forEach((option) => {
       option.button.activate = option.activate;
     });
-    this.setMenuFocus(0);
+    const restoredIndex = this.menuOptions.findIndex((option) => option.id === previousFocusedId);
+    this.setMenuFocus(restoredIndex >= 0 ? restoredIndex : 0);
   }
 
   getSelectedMenuOptionId() {
@@ -3276,14 +3312,14 @@ export class MenuScene {
     return getDefaultShipKey();
   }
 
-  quickStartRun() {
+  quickStartRun(runMode = RUN_MODES.RANKED) {
     if (this.launchingRun) return;
     this.launchingRun = true;
     try {
       AudioManager.init();
       AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.78 });
       AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
-      this.game.startGame(this.getQuickStartShipKey());
+      this.game.startGame(this.getQuickStartShipKey(), { runMode });
     } catch (e) {
       console.error('[MenuScene] Quick Start Error:', e);
       this.launchingRun = false;
@@ -3328,11 +3364,11 @@ export class MenuScene {
 
   getSectorStartButtonLabel() {
     const checkpoint = this.getSelectedSectorStartCheckpoint();
-    if (!checkpoint) return translateText('SECTOR START CHALLENGE');
+    if (!checkpoint) return translateText('SECTOR RUN');
     const record = getSectorStartChallengeRecord(checkpoint);
     const base = checkpoint % 10 === 0
-      ? translateText('CHECKPOINT {sector} CHALLENGE', { sector: checkpoint })
-      : translateText('SECTOR {sector} CHALLENGE', { sector: checkpoint });
+      ? translateText('CHECKPOINT {sector} RUN', { sector: checkpoint })
+      : translateText('SECTOR {sector} RUN', { sector: checkpoint });
     if (record?.scoreEarned > 0) {
       return `${base} | ${translateText('BEST')} ${this.formatSectorStartMenuBestScore(record.scoreEarned)}`;
     }
@@ -3516,6 +3552,7 @@ export class MenuScene {
     }
     [
       this.startBtn,
+      this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
       this.storyBtn,

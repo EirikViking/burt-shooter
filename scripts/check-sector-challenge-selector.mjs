@@ -348,7 +348,7 @@ try {
   assert.ok(state.menu.items.exitButton?.width > 0, 'exit button should be visible from the main menu');
   await page.waitForTimeout(1800);
   state = await readState(page);
-  assert.equal(state.menu.sectorStart.arrowCueVisible, false, 'sector challenge dock tile should not show stepper arrows');
+  assert.equal(state.menu.sectorStart.arrowCueVisible, false, 'sector run dock tile should not show stepper arrows');
   await page.screenshot({ path: path.join(outputDir, 'main-menu-1920x1080.png'), fullPage: false });
   await page.evaluate(() => {
     const menu = window.__game?.scenes?.menu;
@@ -356,19 +356,19 @@ try {
   });
   await page.waitForTimeout(250);
   state = await readState(page);
-  assert.equal(state.menu.focusedOption, 'sectorStart', 'sector challenge tile should be focusable as a single button');
-  assert.equal(state.menu.sectorStart.arrowCueVisible, false, 'focused sector challenge tile should still not show stepper arrows');
+  assert.equal(state.menu.focusedOption, 'sectorStart', 'sector run tile should be focusable as a single button');
+  assert.equal(state.menu.sectorStart.arrowCueVisible, false, 'focused sector run tile should still not show stepper arrows');
   await page.screenshot({ path: path.join(outputDir, 'main-menu-sector-focused-1920x1080.png'), fullPage: false });
   const selectedCheckpointBeforeArrow = state.menu.sectorStart.selectedCheckpoint;
   await page.keyboard.press('ArrowLeft');
   await page.waitForTimeout(120);
   state = await readState(page);
-  assert.equal(state.menu.focusedOption, 'launch', 'left from Sector Challenge should move dock focus to Launch Run');
+  assert.equal(state.menu.focusedOption, 'scout', 'left from Sector Run should move dock focus to Scout Run');
   assert.equal(state.menu.sectorStart.selectedCheckpoint, selectedCheckpointBeforeArrow, 'left/right dock navigation must not cycle selected checkpoint');
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(120);
   state = await readState(page);
-  assert.equal(state.menu.focusedOption, 'sectorStart', 'right from Launch Run should return focus to Sector Challenge');
+  assert.equal(state.menu.focusedOption, 'sectorStart', 'right from Scout Run should return focus to Sector Run');
   assert.equal(state.menu.sectorStart.selectedCheckpoint, selectedCheckpointBeforeArrow, 'returning focus should not cycle selected checkpoint');
 
   await page.evaluate(() => {
@@ -407,7 +407,7 @@ try {
   state = await selectSectorForScreenshot(page, 4);
   assert.match(state.menu.sectorStart.selector.detailText || '', /NO START POINT HERE/);
   assert.match(state.menu.sectorStart.selector.detailText || '', /NEW START POINTS EVERY 5 SECTORS/);
-  assert.match(state.menu.sectorStart.selector.detailText || '', /PLAY LAUNCH RUN TO UNLOCK CHECKPOINTS/);
+  assert.match(state.menu.sectorStart.selector.detailText || '', /PLAY MAYHEM RUN TO UNLOCK RANKED CHECKPOINTS/);
   report.cases.push({
     open: true,
     selectedSector: selector.selectedSector,
@@ -430,9 +430,9 @@ try {
   lockedCheckpointState = await selectSectorForScreenshot(lockedCheckpointPage, 10);
   assert.equal(sectorEntry(lockedCheckpointState, 10)?.checkpointEligible, true, 'sector 10 should be a checkpoint-eligible cell');
   assert.equal(sectorEntry(lockedCheckpointState, 10)?.unlocked, false, 'sector 10 should remain locked before clearing into sector 11');
-  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /CLEAR SECTOR 10 IN LAUNCH RUN/);
+  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /CLEAR SECTOR 10 IN MAYHEM RUN/);
   assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /BEGINS AT SECTOR 11/);
-  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /SECTOR CHALLENGE DOES NOT UNLOCK START POINTS/);
+  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /SCOUT AND SECTOR RUNS DO NOT UNLOCK MAYHEM CHECKPOINTS/);
   await lockedCheckpointPage.close();
 
   for (const sector of [5, 10, 20, 30]) {

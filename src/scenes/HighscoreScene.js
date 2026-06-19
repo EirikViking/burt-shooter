@@ -690,7 +690,7 @@ export class HighscoreScene {
         if (this.activeLeaderboard === LeaderboardView.FRIENDS) {
           this.stateMessage.text = translateText('No friends scores yet.');
         } else if (this.activeLeaderboard === LeaderboardView.SECTOR) {
-          this.stateMessage.text = translateText('Steam sector challenge board has no entries yet.');
+          this.stateMessage.text = translateText('Steam sector run board has no entries yet.');
         } else {
           this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.LOCAL
             ? 'No local scores yet. Be the first legend here.'
@@ -703,7 +703,7 @@ export class HighscoreScene {
           : this.activeLeaderboard === LeaderboardView.FRIENDS
             ? 'Could not load Steam friends scores.'
             : this.activeLeaderboard === LeaderboardView.SECTOR
-              ? 'Could not load Steam sector challenge scores.'
+              ? 'Could not load Steam sector run scores.'
             : `Global board offline. Local scores are safe.`);
         break;
       default:
@@ -712,7 +712,7 @@ export class HighscoreScene {
           : this.activeLeaderboard === LeaderboardView.LOCAL
             ? 'Loading local board...'
             : this.activeLeaderboard === LeaderboardView.SECTOR
-              ? 'Loading Steam sector challenge scores...'
+              ? 'Loading Steam sector run scores...'
             : `Loading ${sourceLabel.toLowerCase()}...`);
     }
     this.updateLeaderboardChrome();

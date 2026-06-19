@@ -187,6 +187,37 @@ async function clickMenuButton(page, buttonKey) {
   await page.mouse.click(button.x + button.width / 2, button.y + button.height / 2);
 }
 
+async function clickBounds(page, bounds) {
+  assert.ok(bounds?.width > 0 && bounds?.height > 0, `cannot click missing bounds: ${JSON.stringify(bounds)}`);
+  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+}
+
+function sectorEntry(state, sector) {
+  return state.menu?.sectorStart?.selector?.sectors?.find((entry) => entry.sector === sector);
+}
+
+async function openSectorSelector(page) {
+  await clickMenuButton(page, 'sectorStartButton');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).menu?.sectorStart?.selector?.open === true, { timeout: 8000 });
+  await page.waitForTimeout(150);
+  return readState(page);
+}
+
+async function selectSectorSelectorCheckpoint(page, sector) {
+  await page.evaluate((targetSector) => {
+    const menu = window.__game?.scenes?.menu;
+    if (!menu?.sectorSelectorOpen) throw new Error('sector selector is not open');
+    const index = menu.sectorSelectorSectors.findIndex((entry) => entry.sector === targetSector);
+    if (index < 0) throw new Error(`sector ${targetSector} not present in selector`);
+    menu.selectedSectorSelectorIndex = index;
+    menu.drawSectorSelectorOverlay();
+  }, sector);
+  await page.waitForTimeout(100);
+  const state = await readState(page);
+  assert.equal(state.menu?.sectorStart?.selector?.selectedSector, sector);
+  return state;
+}
+
 async function clickMenuButtonZone(page, buttonKey, zone = 'center') {
   const state = await readState(page);
   const button = state.menu?.items?.[buttonKey];
@@ -271,16 +302,15 @@ const report = {
 try {
   const belowFive = await loadProfile(page, makeProgress({ bestSector: 4 }));
   assert.equal(belowFive.menu?.sectorStart?.available, false);
-  assert.equal(belowFive.menu?.sectorStart?.buttonVisible, false);
+  assert.equal(belowFive.menu?.sectorStart?.buttonVisible, true);
 
   const sectorProgress = makeProgress({ bestSector: 17, bestLevel: 17, pilotXp: 2200, bestScore: 11111 });
   const menu = await loadProfile(page, sectorProgress, { mockSteam: true });
   assert.equal(menu.menu?.sectorStart?.available, true);
   assert.deepEqual(menu.menu?.sectorStart?.checkpoints, [5, 10, 15]);
   assert.equal(menu.menu?.sectorStart?.selectedCheckpoint, 15);
-  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR 15 CHALLENGE/);
-  assert.equal(menu.menu?.sectorStart?.arrowCueVisible, true, 'multi-checkpoint Sector Start should expose visible switch arrows');
-  assert.ok((menu.menu?.sectorStart?.arrowCueBounds?.width || 0) > 0, 'switch arrows should have visible bounds');
+  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR 15 RUN/);
+  assert.equal(menu.menu?.sectorStart?.arrowCueVisible, false, 'Sector Run dock tile should open the selector instead of showing switch arrows');
 
   const invalidStart = await page.evaluate(async () => window.__game.startGame(undefined, {
     runMode: 'sector_start',
@@ -290,9 +320,10 @@ try {
   assert.equal((await readState(page)).scene, 'menu');
 
   const beforeSectorStart = await storageSnapshot(page);
-  await clickMenuButtonZone(page, 'sectorStartButton', 'left');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).menu?.sectorStart?.selectedCheckpoint === 10, { timeout: 8000 });
-  await clickMenuButtonZone(page, 'sectorStartButton', 'center');
+  let selectorState = await openSectorSelector(page);
+  assert.equal(selectorState.menu?.sectorStart?.selector?.open, true);
+  selectorState = await selectSectorSelectorCheckpoint(page, 10);
+  await clickBounds(page, sectorEntry(selectorState, 10).bounds);
   const sectorPlay = await waitForScene(page, 'play');
   assert.equal(sectorPlay.runMode, 'sector_start');
   assert.equal(sectorPlay.runModeReason, 'sector_start_checkpoint');
@@ -319,10 +350,10 @@ try {
   const challengeScore = sectorGameOver.score;
   assert.ok(challengeScore > 0, 'sector_start challenge should report a positive challenge score after scoring');
   assert.equal(sectorGameOver.sectorStartChallenge?.best?.scoreEarned, challengeScore);
-  assert.match(sectorGameOver.gameOver?.ceremonyTitle || '', /SECTOR START CHALLENGE/);
+  assert.match(sectorGameOver.gameOver?.ceremonyTitle || '', /SECTOR RUN/);
   assert.match(sectorGameOver.gameOver?.ceremonyComment || '', /NEW SECTOR 10 BEST|SECTOR 10 BEST/i);
   assert.match(sectorGameOver.gameOver?.ceremonyComment || '', /REACHED SECTOR 11/i);
-  assert.match(sectorGameOver.gameOver?.ceremonyComment || '', /UNRANKED CHALLENGE \| MAIN LEADERBOARD OFF/i);
+  assert.match(sectorGameOver.gameOver?.ceremonyComment || '', /UNRANKED SECTOR RUN \| NO ACHIEVEMENTS/i);
   assert.doesNotMatch(sectorGameOver.gameOver?.ceremonyComment || '', /->/);
   assert.equal(sectorGameOver.gameOver?.mainMenuCta?.visible, true, 'sector_start result should expose a Main Menu return CTA');
   assert.equal(sectorGameOver.gameOver?.mainMenuCta?.label, 'BACK TO MAIN MENU');
@@ -355,15 +386,16 @@ try {
   const keyboardMenu = await loadProfile(page, sectorProgress);
   assert.equal(keyboardMenu.menu?.focusedOption, 'launch');
   await page.keyboard.press('ArrowDown');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).menu?.focusedOption === 'scout', { timeout: 8000 });
+  await page.keyboard.press('ArrowDown');
   const keyboardFocused = await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
     return state.menu?.focusedOption === 'sectorStart' ? state : null;
   }, null, { timeout: 8000 });
   const keyboardFocusedState = await keyboardFocused.jsonValue();
-  assert.match(keyboardFocusedState.menu?.sectorStart?.primaryHintText || '', /LEFT\/RIGHT: SECTOR/);
-  assert.equal(keyboardFocusedState.menu?.sectorStart?.arrowCueVisible, true);
-  await page.keyboard.press('ArrowLeft');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).menu?.sectorStart?.selectedCheckpoint === 10, { timeout: 8000 });
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).menu?.sectorStart?.selector?.open === true, { timeout: 8000 });
+  await selectSectorSelectorCheckpoint(page, 10);
   await page.keyboard.press('Enter');
   const keyboardPlay = await waitForScene(page, 'play');
   assert.equal(keyboardPlay.runMode, 'sector_start');

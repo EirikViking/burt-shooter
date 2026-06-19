@@ -29,7 +29,7 @@ import {
 import { translateText } from '../i18n/index.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
-import { RUN_MODES } from '../game/RunMode.js';
+import { RUN_MODES, getRunModeProfile } from '../game/RunMode.js';
 import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
@@ -845,9 +845,9 @@ export class GameOverScene {
 
   getLocalPlacementLine() {
     if (this.isSectorStartChallengeResult()) {
-      return this.getSectorStartChallengeRecordLine() || translateText('SECTOR START CHALLENGE');
+      return this.getSectorStartChallengeRecordLine() || translateText('SECTOR RUN');
     }
-    if (!this.isRankedRun) return 'Local: Practice run';
+    if (!this.isRankedRun) return translateText('Local: Scout practice run');
     const rank = this.getVisibleLocalPlacementRank();
     const rawRank = this.getLocalPlacementRank();
     const result = this.getCurrentLeaderboardResult();
@@ -865,7 +865,7 @@ export class GameOverScene {
 
   getGlobalPlacementLine() {
     if (this.isSectorStartChallengeResult()) return this.getSectorStartChallengeReachedLine();
-    if (!this.isRankedRun) return 'Global: Practice run';
+    if (!this.isRankedRun) return translateText('Global: Unranked - no submission');
     if (this.steamSubmissionMode) return this.getSteamPlacementLine();
     const rank = this.getGlobalPlacementRank();
     if (rank) {
@@ -921,8 +921,8 @@ export class GameOverScene {
 
   getUnrankedScoreBlockedText() {
     return this.game?.runMode === RUN_MODES.SECTOR_START
-      ? translateText('SECTOR START CHALLENGE - MAIN SCORE NOT LOGGED')
-      : translateText('PRACTICE RUN - SCORE NOT LOGGED');
+      ? translateText('SECTOR RUN - MAIN SCORE NOT LOGGED - NO ACHIEVEMENTS')
+      : translateText('SCOUT RUN - UNRANKED - SCORE NOT LOGGED');
   }
 
   getSectorStartChallengeRecordLine() {
@@ -976,10 +976,10 @@ export class GameOverScene {
 
   getSectorStartChallengeResultLines() {
     return [
-      this.getSectorStartChallengeRecordLine() || translateText('SECTOR START CHALLENGE'),
+      this.getSectorStartChallengeRecordLine() || translateText('SECTOR RUN'),
       this.getSectorStartChallengeReachedLine(),
       this.getSectorSteamLine(),
-      translateText('UNRANKED CHALLENGE | MAIN LEADERBOARD OFF')
+      translateText('UNRANKED SECTOR RUN | NO ACHIEVEMENTS')
     ].filter(Boolean);
   }
 
@@ -1182,7 +1182,7 @@ export class GameOverScene {
     if (this.isSectorStartChallengeResult()) {
       const checkpoint = summary.sectorStartCheckpoint || this.game?.sectorStartCheckpoint || this.finalLevel || 1;
       return [
-        translateText('SECTOR {sector} CHALLENGE', { sector: checkpoint }),
+        translateText('SECTOR {sector} RUN', { sector: checkpoint }),
         this.formatElapsedTime(elapsedSeconds)
       ].filter(Boolean).join('\n');
     }
@@ -1346,7 +1346,8 @@ export class GameOverScene {
   }
 
   getCeremonyTitle() {
-    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR START CHALLENGE');
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR RUN');
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return translateText('SCOUT RUN COMPLETE');
     if (!this.isRankedRun) return translateText('PRACTICE COMPLETE');
     if (this.game?.runSummary?.runCleared) return 'RUN CLEAR';
     if (this.globalPlacementTier === 'number1') return 'NUMBER ONE';
@@ -1366,10 +1367,10 @@ export class GameOverScene {
     if (!this.isRankedRun) {
       if (this.game?.runMode === RUN_MODES.SECTOR_START) {
         const resultText = this.getSectorStartChallengeResultLines().join('\n');
-        const base = translateText('Sector Start Challenge complete. Local challenge record saved separately; ranked leaderboard and career progress stayed untouched.');
+        const base = translateText('Sector Run complete. Checkpoint context saved separately; achievements, Mayhem leaderboard, and career progress stayed untouched.');
         return resultText ? `${base}\n${resultText}` : base;
       }
-      return translateText('Practice run. Score not logged.');
+      return translateText('Scout Run complete. Unranked local score only: no leaderboard submission, no achievements, and no Mayhem checkpoint unlocks.');
     }
     const placement = this.globalPlacement;
     const localRank = this.getVisibleLocalPlacementRank();
@@ -2323,7 +2324,7 @@ export class GameOverScene {
     if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
       return {
         mode: 'restart',
-        label: 'ONE MORE RUN',
+        label: translateText(getRunModeProfile(this.game?.runMode).oneMoreLabel || 'ONE MORE RUN'),
         hint: this.isSectorStartChallengeResult()
           ? (this.lastInputDevice === 'controller'
               ? translateText('A: SAME CHECKPOINT  |  B: MENU')
@@ -3455,7 +3456,9 @@ export class GameOverScene {
           runMode: RUN_MODES.SECTOR_START,
           startSector: sectorStartCheckpoint
         }
-      : {};
+      : this.game?.runMode === RUN_MODES.SCOUT
+        ? { runMode: RUN_MODES.SCOUT }
+        : {};
     Promise.resolve(this.game.startGame(this.game.selectedShipSpriteKey, restartOptions)).catch((error) => {
       console.error('[GameOverScene] Restart failed:', error);
       this.returnToMenu();
@@ -3971,7 +3974,8 @@ export class GameOverScene {
   }
 
   getRunbackTitle() {
-    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR START CHALLENGE');
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR RUN');
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return translateText('SCOUT RUN');
     if (this.globalPlacement?.qualified && this.globalPlacement?.numberOne) return 'NUMBER ONE';
     if (this.globalPlacement?.qualified && this.globalPlacement?.top3) return this.getSteamGlobalLeaderboardTitle();
     if (this.globalPlacement?.qualified && this.globalPlacement?.top10) return this.getSteamGlobalLeaderboardTitle();

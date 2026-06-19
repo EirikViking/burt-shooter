@@ -1,0 +1,439 @@
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:net';
+import path from 'node:path';
+import { chromium } from 'playwright';
+import { AchievementManager } from '../src/achievements/AchievementManager.js';
+import { getAchievementIds } from '../src/achievements/AchievementCatalog.js';
+import { RunPressureDirector } from '../src/game/RunPressureDirector.js';
+import {
+  RUN_MODES,
+  canRunModeSubmitGlobalLeaderboard,
+  canRunModeUnlockAchievements,
+  getRunModeProfile,
+  getSectorStartCheckpoints,
+  getSectorStartPlaySector,
+  isRankedRunMode
+} from '../src/game/RunMode.js';
+import { STEAM_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
+
+const host = process.env.CHECK_HOST || '127.0.0.1';
+const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4666));
+const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
+const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/run-modes-mayhem-scout-sector-${timestamp()}`);
+
+function timestamp() {
+  return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+async function isPortAvailable(candidatePort) {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => server.close(() => resolve(true)));
+    server.listen(candidatePort, host);
+  });
+}
+
+async function findAvailablePort(startPort) {
+  for (let candidate = startPort; candidate < startPort + 40; candidate += 1) {
+    if (await isPortAvailable(candidate)) return candidate;
+  }
+  throw new Error(`No available run mode check port found starting at ${startPort}`);
+}
+
+async function canFetch(url) {
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function viteCommand() {
+  const viteEntry = path.resolve('node_modules/vite/bin/vite.js');
+  if (existsSync(viteEntry)) return { command: process.execPath, args: [viteEntry] };
+  return { command: process.platform === 'win32' ? 'npx.cmd' : 'npx', args: ['vite'] };
+}
+
+async function startDevServer() {
+  if (await canFetch(baseUrl)) return null;
+  const { command, args } = viteCommand();
+  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort'], {
+    cwd: process.cwd(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true
+  });
+  server.stdout.on('data', (chunk) => process.stdout.write(`[vite] ${chunk}`));
+  server.stderr.on('data', (chunk) => process.stderr.write(`[vite] ${chunk}`));
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < 15000) {
+    if (await canFetch(baseUrl)) return server;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  server.kill();
+  throw new Error(`Dev server did not become ready at ${baseUrl}`);
+}
+
+function findChrome() {
+  return [
+    process.env.CHROME_PATH,
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+  ].filter(Boolean).find((candidate) => existsSync(candidate));
+}
+
+class MemoryStorage {
+  constructor() {
+    this.map = new Map();
+  }
+  getItem(key) {
+    return this.map.has(String(key)) ? this.map.get(String(key)) : null;
+  }
+  setItem(key, value) {
+    this.map.set(String(key), String(value));
+  }
+  removeItem(key) {
+    this.map.delete(String(key));
+  }
+}
+
+function makeProgress(bestSector = 31) {
+  return {
+    version: 1,
+    unlockTuningVersion: 3,
+    pilotXp: 2200,
+    pilotRank: 4,
+    highestPilotRank: 4,
+    totalRuns: 7,
+    bestScore: 11111,
+    bestSector,
+    bestLevel: bestSector,
+    bestRank: 4,
+    bestRunTimeSeconds: 420,
+    survivedSeconds: 420,
+    totalBossesDefeated: 6,
+    totalWavesCleared: 32,
+    totalCodexDiscoveries: 10,
+    runClears: 0,
+    noHitWaves: 0,
+    noHitSectors: 0,
+    clearWithLivesRemaining: 0,
+    highestScoreMultiplier: 1,
+    shipSpecificMilestones: {},
+    discoveredThreatIds: [],
+    defeatedBossIds: [],
+    runThemesSurvived: [],
+    secretShipUnlockIds: [],
+    creditsEasterEggFound: false,
+    unlockedShipIds: ['nova_ship_01'],
+    lastNewlyUnlockedShipIds: [],
+    newRanksThisRun: [],
+    rankAchievementsUnlocked: [],
+    updatedAt: '2026-06-19T00:00:00.000Z'
+  };
+}
+
+async function readState(page) {
+  return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+}
+
+async function waitForGame(page) {
+  await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), { timeout: 30000 });
+}
+
+async function waitForScene(page, sceneName) {
+  await page.waitForFunction((expected) => JSON.parse(window.render_game_to_text?.() || '{}').scene === expected, sceneName, { timeout: 15000 });
+  return readState(page);
+}
+
+async function seedProfile(page, progress = makeProgress()) {
+  await page.goto(`${baseUrl}/?mockSteamLeaderboard=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForGame(page);
+  await page.evaluate((nextProgress) => {
+    localStorage.clear();
+    localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
+    localStorage.setItem('novaSwarm.mockSteamPersona.v1', 'RUN MODE ACE');
+    localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', '[]');
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(nextProgress));
+    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({
+      bestScore: nextProgress.bestScore,
+      bestRank: nextProgress.bestRank,
+      bestLevel: nextProgress.bestLevel
+    }));
+    localStorage.setItem('nova_swarm_achievements_v1', JSON.stringify({
+      version: 1,
+      unlocked: [],
+      updatedAt: '2026-06-19T00:00:00.000Z'
+    }));
+    localStorage.setItem('novaSwarm.localLeaderboard.v2', '[]');
+    localStorage.setItem('burt.shipUsage.v1', '{}');
+    localStorage.setItem('burt.shipUsageTotal.v1', '0');
+  }, progress);
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForGame(page);
+  return waitForScene(page, 'menu');
+}
+
+async function storageSnapshot(page) {
+  return page.evaluate(() => ({
+    hangar: JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}'),
+    legacy: JSON.parse(localStorage.getItem('burt.shipUnlockProgress.v1') || '{}'),
+    achievements: JSON.parse(localStorage.getItem('nova_swarm_achievements_v1') || '{}'),
+    localLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.localLeaderboard.v2') || '[]'),
+    mockSteamLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'),
+    sectorChallenge: JSON.parse(localStorage.getItem('novaSwarm.sectorStartChallengeRecords.v1') || '{"byCheckpoint":{}}'),
+    shipUsage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}'),
+    shipUsageTotal: localStorage.getItem('burt.shipUsageTotal.v1') || '0'
+  }));
+}
+
+async function focusMenuOption(page, optionId) {
+  await page.evaluate((id) => {
+    const menu = window.__game?.scenes?.menu || window.__game?.scene;
+    const index = menu?.menuOptions?.findIndex((option) => option?.id === id);
+    if (index >= 0) {
+      menu.setInputDevice?.('keyboard');
+      menu.setMenuFocus?.(index);
+    }
+  }, optionId);
+  await page.waitForTimeout(80);
+  await page.evaluate((id) => {
+    const menu = window.__game?.scenes?.menu || window.__game?.scene;
+    const index = menu?.menuOptions?.findIndex((option) => option?.id === id);
+    if (index >= 0) {
+      menu.setMenuFocus?.(index);
+      menu.focusedMenuIndex = index;
+      menu.menuOptions?.forEach((option, optionIndex) => {
+        if (!option?.button) return;
+        option.button._focused = optionIndex === index;
+        menu.drawMenuButton?.(option.button, false);
+      });
+    }
+  }, optionId);
+  await page.waitForTimeout(150);
+  const state = await readState(page);
+  assert.equal(state.menu?.focusedOption, optionId, `expected ${optionId} menu focus`);
+  return state;
+}
+
+async function selectSectorSelectorCheckpoint(page, checkpoint) {
+  await page.evaluate((sector) => {
+    const menu = window.__game?.scenes?.menu || window.__game?.scene;
+    const index = menu?.sectorSelectorSectors?.findIndex((entry) => entry?.sector === sector);
+    if (index >= 0) {
+      menu.selectedSectorSelectorIndex = index;
+      menu.updateSectorSelectorSelection?.();
+    }
+  }, checkpoint);
+  await page.waitForTimeout(150);
+  const state = await readState(page);
+  assert.equal(state.menu?.sectorStart?.selector?.selectedSector, checkpoint, `expected Sector Run selector checkpoint ${checkpoint}`);
+  return state;
+}
+
+function assertStaticRules() {
+  assert.equal(STEAM_LEADERBOARD_NAME, 'nova_swarm_global_score_v2');
+  assert.equal(isRankedRunMode(RUN_MODES.RANKED), true);
+  assert.equal(isRankedRunMode(RUN_MODES.SCOUT), false);
+  assert.equal(isRankedRunMode(RUN_MODES.SECTOR_START), false);
+  assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.RANKED), true);
+  assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.SCOUT), false);
+  assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.SECTOR_START), false);
+  assert.equal(canRunModeUnlockAchievements(RUN_MODES.RANKED), true);
+  assert.equal(canRunModeUnlockAchievements(RUN_MODES.SCOUT), false);
+  assert.equal(canRunModeUnlockAchievements(RUN_MODES.SECTOR_START), false);
+  assert.equal(getRunModeProfile(RUN_MODES.RANKED).difficultyProfileId, 'accepted_harder_ranked');
+  assert.equal(getRunModeProfile(RUN_MODES.SCOUT).difficultyProfileId, 'scout_lower_pressure_v1');
+  assert.equal(getRunModeProfile(RUN_MODES.SCOUT).normalWaveDifficultyLevelOffsetDelta, -5);
+  assert.deepEqual(getSectorStartCheckpoints({ bestSector: 31 }), [5, 10, 15, 20, 25, 30]);
+  assert.equal(getSectorStartPlaySector(5), 5);
+  assert.equal(getSectorStartPlaySector(10), 11);
+  assert.equal(getSectorStartPlaySector(20), 21);
+  assert.equal(getSectorStartPlaySector(30), 31);
+
+  const mayhemPressure = new RunPressureDirector({ runMode: RUN_MODES.RANKED, level: 1 });
+  const scoutPressure = new RunPressureDirector({ runMode: RUN_MODES.SCOUT, level: 1 });
+  assert.equal(mayhemPressure.getNormalWaveDifficultyLevel(1), 10, 'Mayhem must keep accepted harder Sector 1 normal-wave difficulty');
+  assert.equal(scoutPressure.getNormalWaveDifficultyLevel(1), 5, 'Scout should lower the accepted profile pressure');
+  assert.ok(scoutPressure.getMultipliers().fireChanceMult < mayhemPressure.getMultipliers().fireChanceMult);
+  assert.ok(scoutPressure.getMultipliers().projectileSpeedMult < mayhemPressure.getMultipliers().projectileSpeedMult);
+
+  const [achievementId] = getAchievementIds();
+  const mayhemAchievements = new AchievementManager({
+    storage: new MemoryStorage(),
+    steamSync: false,
+    getRunState: () => ({ runMode: RUN_MODES.RANKED, isDebugRun: false })
+  });
+  assert.equal(mayhemAchievements.unlock(achievementId, {
+    runMode: RUN_MODES.RANKED,
+    allowAchievements: true
+  })?.id, achievementId);
+  const scoutAchievements = new AchievementManager({
+    storage: new MemoryStorage(),
+    steamSync: false,
+    getRunState: () => ({ runMode: RUN_MODES.SCOUT, isDebugRun: false })
+  });
+  assert.equal(scoutAchievements.unlock(achievementId, {
+    runMode: RUN_MODES.SCOUT,
+    allowAchievements: false
+  }), null);
+  const sectorAchievements = new AchievementManager({
+    storage: new MemoryStorage(),
+    steamSync: false,
+    getRunState: () => ({ runMode: RUN_MODES.SECTOR_START, isDebugRun: false })
+  });
+  assert.equal(sectorAchievements.unlock(achievementId, {
+    runMode: RUN_MODES.SECTOR_START,
+    allowAchievements: false
+  }), null);
+}
+
+mkdirSync(outputDir, { recursive: true });
+assertStaticRules();
+
+const server = await startDevServer();
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: findChrome(),
+  args: ['--autoplay-policy=no-user-gesture-required']
+});
+const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+const pageErrors = [];
+const consoleErrors = [];
+page.on('pageerror', (error) => pageErrors.push(error.message));
+page.on('console', (message) => {
+  if (message.type() === 'error') consoleErrors.push(message.text());
+});
+
+const report = {
+  generatedAt: new Date().toISOString(),
+  baseUrl,
+  outputDir,
+  staticRules: 'passed'
+};
+
+try {
+  const menu = await seedProfile(page);
+  assert.equal(menu.menu?.items?.launchButton?.width > 0, true, 'Mayhem Run should be visible');
+  assert.equal(menu.menu?.items?.scoutRunButton?.width > 0, true, 'Scout Run should be visible');
+  assert.equal(menu.menu?.items?.sectorStartButton?.width > 0, true, 'Sector Run should be visible');
+  assert.equal(menu.menu?.scoutRun?.buttonText, 'SCOUT RUN');
+  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR|CHECKPOINT/);
+  await page.screenshot({ path: path.join(outputDir, 'menu-run-modes-1366x768.png'), fullPage: false });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await waitForScene(page, 'menu');
+  await page.screenshot({ path: path.join(outputDir, 'menu-run-modes-1280x800.png'), fullPage: false });
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await waitForScene(page, 'menu');
+  await focusMenuOption(page, 'launch');
+  await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-focused.png'), fullPage: false });
+  await focusMenuOption(page, 'scout');
+  await page.screenshot({ path: path.join(outputDir, 'menu-scout-focused.png'), fullPage: false });
+  await focusMenuOption(page, 'sectorStart');
+  await page.screenshot({ path: path.join(outputDir, 'menu-sector-run-focused.png'), fullPage: false });
+  await page.evaluate(() => window.__game?.scenes?.menu?.openSectorSelector?.());
+  await page.waitForTimeout(250);
+  const sectorSelector = await selectSectorSelectorCheckpoint(page, 10);
+  const selectorText = [
+    sectorSelector.menu?.sectorStart?.selector?.subtitle,
+    sectorSelector.menu?.sectorStart?.selector?.detailText
+  ].filter(Boolean).join('\n');
+  assert.match(selectorText, /START POINTS UNLOCK EVERY 5 SECTORS/i);
+  assert.match(selectorText, /BEGINS AT SECTOR 11/i);
+  await page.screenshot({ path: path.join(outputDir, 'sector-run-selector-every-5-sectors.png'), fullPage: false });
+  await page.evaluate(() => window.__game?.scenes?.menu?.closeSectorSelector?.());
+  await waitForScene(page, 'menu');
+
+  const beforeScout = await storageSnapshot(page);
+  await page.evaluate(() => window.__game.startGame(undefined, { runMode: 'scout' }));
+  const scoutPlay = await waitForScene(page, 'play');
+  assert.equal(scoutPlay.runMode, RUN_MODES.SCOUT);
+  assert.equal(scoutPlay.runModeProfile?.difficultyProfileId, 'scout_lower_pressure_v1');
+  assert.equal(scoutPlay.scoreSubmissionAllowed, false);
+  assert.equal(scoutPlay.runModeProfile?.unlocksAchievements, false);
+  await page.evaluate(() => {
+    const game = window.__game;
+    game.addScore(250000, 'baseScore');
+    game.level = 11;
+    game.unlockAchievement?.('ACH_SCORE_250K', { source: 'scout_guard' });
+    game.finalizeRunProgression?.();
+    game.gameOver({ fromInterlude: true });
+  });
+  const scoutGameOver = await waitForScene(page, 'gameOver');
+  assert.equal(scoutGameOver.runMode, RUN_MODES.SCOUT);
+  assert.equal(scoutGameOver.scoreSubmissionAllowed, false);
+  assert.match(scoutGameOver.gameOver?.ceremonyTitle || '', /SCOUT RUN/);
+  const scoutResultText = [
+    scoutGameOver.gameOver?.ceremonyComment,
+    scoutGameOver.gameOver?.prompt,
+    scoutGameOver.gameOver?.leaderboardStatus
+  ].filter(Boolean).join('\n');
+  assert.match(scoutResultText, /Scout|Unranked|no submission|SCORE NOT LOGGED/i);
+  assert.doesNotMatch(scoutResultText, /submitted to global leaderboard|achievement unlocked/i);
+  assert.equal(scoutGameOver.gameOver?.primaryCta?.label, 'ONE MORE SCOUT RUN');
+  const afterScout = await storageSnapshot(page);
+  assert.deepEqual(afterScout.hangar, beforeScout.hangar, 'Scout must not update hangar progress');
+  assert.deepEqual(afterScout.legacy, beforeScout.legacy, 'Scout must not update legacy bests');
+  assert.deepEqual(afterScout.achievements, beforeScout.achievements, 'Scout must not unlock achievements');
+  assert.deepEqual(afterScout.localLeaderboard, [], 'Scout must not save local leaderboard entries');
+  assert.equal(afterScout.mockSteamLeaderboard.some((entry) => entry.leaderboardName === STEAM_LEADERBOARD_NAME), false, 'Scout must not submit to global Steam leaderboard');
+  assert.deepEqual(afterScout.shipUsage, {}, 'Scout must not increment ship usage');
+  assert.equal(afterScout.shipUsageTotal, '0', 'Scout must not increment total ship usage');
+  await page.screenshot({ path: path.join(outputDir, 'scout-result-unranked.png'), fullPage: false });
+
+  await page.keyboard.press('Enter');
+  const scoutRestart = await waitForScene(page, 'play');
+  assert.equal(scoutRestart.runMode, RUN_MODES.SCOUT, 'One More Scout Run must preserve Scout mode');
+
+  await seedProfile(page);
+  await page.evaluate(() => window.__game.startGame(undefined, { runMode: 'ranked' }));
+  const mayhemPlay = await waitForScene(page, 'play');
+  assert.equal(mayhemPlay.runMode, RUN_MODES.RANKED);
+  assert.equal(mayhemPlay.runModeProfile?.difficultyProfileId, 'accepted_harder_ranked');
+  assert.equal(mayhemPlay.scoreSubmissionAllowed, true);
+  assert.equal(mayhemPlay.runModeProfile?.unlocksAchievements, true);
+  await page.screenshot({ path: path.join(outputDir, 'mayhem-focused-ranked.png'), fullPage: false });
+
+  await seedProfile(page);
+  await page.evaluate(() => window.__game.startGame(undefined, { runMode: 'sector_start', startSector: 30 }));
+  const sectorPlay = await waitForScene(page, 'play');
+  assert.equal(sectorPlay.runMode, RUN_MODES.SECTOR_START);
+  assert.equal(sectorPlay.level, 31);
+  assert.equal(sectorPlay.sectorStartChallenge?.checkpoint, 30);
+  assert.equal(sectorPlay.scoreSubmissionAllowed, false);
+  assert.equal(sectorPlay.runModeProfile?.unlocksAchievements, false);
+  await page.screenshot({ path: path.join(outputDir, 'sector-run-checkpoint-30.png'), fullPage: false });
+
+  Object.assign(report, {
+    ok: pageErrors.length === 0 && consoleErrors.length === 0,
+    scout: {
+      difficultyProfile: scoutPlay.runModeProfile?.difficultyProfileId,
+      sideEffectsBlocked: true,
+      retryLabel: scoutGameOver.gameOver?.primaryCta?.label
+    },
+    mayhem: {
+      difficultyProfile: mayhemPlay.runModeProfile?.difficultyProfileId,
+      scoreSubmissionAllowed: mayhemPlay.scoreSubmissionAllowed
+    },
+    sectorRun: {
+      checkpoint: sectorPlay.sectorStartChallenge?.checkpoint,
+      playSector: sectorPlay.level,
+      achievements: sectorPlay.runModeProfile?.unlocksAchievements
+    },
+    pageErrors,
+    consoleErrors
+  });
+  writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
+  if (!report.ok) {
+    console.error(JSON.stringify(report, null, 2));
+    process.exitCode = 1;
+  } else {
+    console.log(`[run-modes] PASS report=${path.join(outputDir, 'report.json')}`);
+  }
+} finally {
+  await browser.close();
+  if (server) server.kill();
+}
