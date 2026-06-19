@@ -36,7 +36,16 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Risk: medium-high. Broad nerfs could flatten the high-skill loop or invalidate leaderboard feel.
 - Recommended next action: reproduce with a seeded/debug late-sector route, capture damage-source logs/video, then tune the smallest specific issue: respawn grace, missile turn/return readability, Gravity Comedian cadence, or hazard overlap. Keep ranked rules unchanged until proven.
 
-### 2. Dodge still reads like "nothing happened" for some players
+### 2. Sector runs start with an extra-life powerup
+
+- Category: bugs, balance, onboarding
+- Evidence/source: User-reported follow-up on 2026-06-19: every sector run starts with an extra-life powerup.
+- Player impact: high. If sector/checkpoint runs always grant an extra life pickup, practice starts are no longer representative of normal ranked run economy, and balance feedback from sector starts becomes distorted.
+- Likely fix area: sector start / checkpoint initialization, guaranteed pickup scheduling, `PowerupManager`, sector run mode state, overrun/level-start pickup gates.
+- Risk: medium. Extra-life scheduling has been touched before around overrun and boss-clear recovery, so the fix needs to avoid breaking legitimate rare/guaranteed life drops in normal arcade runs.
+- Recommended next action: reproduce from Sector Start/checkpoint flow, verify whether the extra life is seeded by guaranteed-drop carryover or sector-run initialization, then gate extra-life spawning so sector starts do not always begin with a life pickup unless explicitly intended.
+
+### 3. Dodge still reads like "nothing happened" for some players
 
 - Category: UX/readability, onboarding, balance
 - Evidence/source: Steam Bug Reports and Sector Challenges posts describe Shift/Dodge as greying the ship without moving or avoiding the boss grid. Gmail follow-up clarifies Dodge is currently invulnerability, not a thrust dash. Memory-backed prior code read says the input layer recognizes both Shift keys, while the gameplay trigger previously used only `ShiftLeft`.
@@ -46,7 +55,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Recommended next action: implement or verify symmetric Shift handling, add a player-facing "short invulnerability, not movement dash" explanation, and add a tiny boss-danger practice prompt or challenge hint. Decide separately whether a thrust-away mechanic belongs in a later feature patch.
 - Specific input backlog note: bind Right Shift to the same dodge action as Left Shift, or verify it if already fixed, because the action is presented as generic `Shift` and left-handed players expect either Shift key to work.
 
-### 3. GUI/list readability on large displays and leaderboard lists
+### 4. GUI/list readability on large displays and leaderboard lists
 
 - Category: UX/readability, Steam/page/community issues
 - Evidence/source: Steam Feedback & Suggestions reports small UI on ultrawide/4K, requests GUI scaling, and asks for larger text plus scrolling rather than squeezing everything into one window. Gmail from Jim independently says leaderboard lists/placements should be larger and easier to read. The accepted menu legibility milestone is done, but it does not close global UI/list scaling.
@@ -57,7 +66,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 
 ## P1 - High Value, Next 1-2 Patches
 
-### 4. Display/window/resolution options
+### 5. Display/window/resolution options
 
 - Category: UX/readability, performance, Steam/page/community issues
 - Evidence/source: Steam Feedback & Suggestions asks whether the game can only be played fullscreen with no resolution options; another player repeats resolution support as an issue.
@@ -66,7 +75,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Risk: medium-high. Window/fullscreen changes can regress focus, controller flow, and Steam overlay.
 - Recommended next action: design a minimal display-options slice: windowed/fullscreen toggle, resolution/window scale if technically safe, and exact regression tests for focus-loss auto-pause and controller navigation.
 
-### 5. Sector Challenges need stronger explanation and maybe separate leaderboards
+### 6. Sector Challenges need stronger explanation and maybe separate leaderboards
 
 - Category: onboarding, content requests, Steam/page/community issues
 - Evidence/source: Steam Sector Challenges thread asks what benefits Sector 5/10/15 challenges provide, whether they are training, why leaderboard shuts off, and whether a separate leaderboard stat system should exist. Developer reply says practice leaderboards are in the works.
@@ -75,7 +84,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Risk: high if Steam leaderboard identities change; low for explanatory UI. Steamworks settings must remain untouched unless explicitly approved.
 - Recommended next action: first improve in-game explanation and result messaging without changing Steamworks. Treat separate Sector Challenge leaderboards as a scoped feature requiring explicit leaderboard-ID policy and Steamworks approval.
 
-### 6. Boss attack clarity after current fixes
+### 7. Boss attack clarity after current fixes
 
 - Category: bugs, UX/readability, balance
 - Evidence/source: Steam review by VALIS says one boss style, especially large beam/fakeout attacks, still needs tuning despite improvements. Forum feedback also calls out boss #4 chunky movement, warning cones, hit clarity, and tractor/scan clarity.
@@ -84,7 +93,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Risk: medium. Boss identity is praised, so this should be readability tuning, not broad simplification.
 - Recommended next action: create a boss-readability matrix for the top complained-about archetypes: beam/fakeout/grid/scan/Gravity Comedian. Use video and automation evidence before tuning.
 
-### 7. Onboarding/tutorial and pickup/HUD explanation
+### 8. Onboarding/tutorial and pickup/HUD explanation
 
 - Category: onboarding, UX/readability
 - Evidence/source: Steam Feedback & Suggestions says new players are thrown in, one initially thought the game was mouse-controlled, asks for HUD/control explanations, target practice, a small boss encounter, and clearer pickup explanations. Another player asks whether there is a menu for pickups and what they do.
@@ -93,7 +102,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Risk: medium. New text must go through i18n and all locale files.
 - Recommended next action: do not build a full tutorial first. Add a compact "First Run Brief" and pickup/controls help page, then evaluate whether a training boss mode is still needed.
 
-### 8. Early waves can feel too easy / not enough dodge prep
+### 9. Early waves can feel too easy / not enough dodge prep
 
 - Category: balance, onboarding
 - Evidence/source: Steam Feedback & Suggestions says first waves are simple and enemies barely move; local `docs/DIFFICULTY_QA_REVIEW.md` independently says normal enemies die quickly and may not teach dodge rhythm before boss pressure.
@@ -104,7 +113,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 
 ## P2 - Backlog / Design Decisions
 
-### 9. Long-term progression: upgrades, collectibles, permanent ship boosts
+### 10. Long-term progression: upgrades, collectibles, permanent ship boosts
 
 - Category: content requests, balance
 - Evidence/source: Steam Sector Challenges asks about collectables, upgrades, ship boosts, shields, weapons, and permanent improvements. Developer reply frames this as a larger design topic because Nova Swarm is currently ship unlocks, score chasing, and mastery.
@@ -113,7 +122,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Risk: high. Permanent power can damage leaderboard trust and change the arcade identity.
 - Recommended next action: keep as a design RFC, not a quick patch. If pursued, separate ranked arcade from meta-upgraded modes or keep upgrades cosmetic/practice-only.
 
-### 10. Trading cards
+### 11. Trading cards
 
 - Category: Steam/page/community issues, content requests
 - Evidence/source: Steam review lists no trading cards as the only explicit negative besides a boss attack; forum player asks for trading cards. Developer reply notes trading cards are a separate Steamworks decision.
@@ -122,7 +131,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Risk: medium due to Steamworks/public metadata dependency.
 - Recommended next action: defer until after gameplay patch. Requires explicit approval before any Steamworks metadata action.
 
-### 11. Additional modes: Practice Run, Fatal Error, Light Jump, Arcade Mode
+### 12. Additional modes: Practice Run, Fatal Error, Light Jump, Arcade Mode
 
 - Category: content requests, onboarding, balance
 - Evidence/source: Steam Feedback & Suggestions proposes replayable bosses/practice, one-life hardcore, timed score-goal mode, and bottom-screen arcade mode.
@@ -131,7 +140,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Risk: high if modes share scoreboards or ranked progression.
 - Recommended next action: split Practice/Boss Replay from the more speculative modes. Practice supports current pain; Fatal Error/Light Jump/Arcade Mode should wait.
 
-### 12. French localization offer
+### 13. French localization offer
 
 - Category: onboarding, Steam/page/community issues
 - Evidence/source: Steam French Localization thread includes a translator offering to help; developer reply says localization should wait until the text workflow is clean.
@@ -140,7 +149,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 - Risk: high if rushed. `AGENTS.md` requires all player-facing text through i18n and human QA before Steam language claims.
 - Recommended next action: do not start French until core text settles after readability/onboarding patch. Keep contact warm.
 
-### 13. Audio/music polish
+### 14. Audio/music polish
 
 - Category: content requests, UX/readability
 - Evidence/source: Steam top review says sound effects are nice and music is "so-so"; other reviews praise energetic soundtrack.
@@ -165,6 +174,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 ## Bugs
 
 - P0: Late-game chain deaths / Gravity Comedian sector 19-21.
+- P0: Sector/checkpoint runs appear to always start with an extra-life powerup.
 - P0/P1: Dodge feedback may be technically active but still reads as non-functional.
 - P1: Boss fakeout/beam/grid/hazard clarity still not fully trusted by at least one reviewer/player.
 - Done: Leaderboard Back accidental quit, focus-loss auto-pause, scrollbar dragging, invisible leaderboard names.
@@ -186,6 +196,7 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 ## Balance
 
 - P0: Late-run chain-death and respawn fairness.
+- P0: Sector-start extra-life spawning may be distorting practice/run economy.
 - P1: Boss clarity and late boss-specific tuning.
 - P1: Early waves need to teach more without becoming level-2 attrition.
 - P2: Permanent upgrades require ranked-mode policy before implementation.
@@ -214,15 +225,16 @@ Recommended next public-facing patch: a "readability and late-run trust" patch w
 ## Recommended Next Patch Plan
 
 1. Build a late-run fairness investigation harness for sector 19-21 / Gravity Comedian and capture damage-source evidence before any tuning.
-2. Ship a small Dodge clarity/accessibility pass: symmetric Shift verification, clearer How To Play copy, and a visible invulnerability-window explanation.
-3. Add a targeted Large UI/List Text pass for leaderboard, Codex/list rows, and help text, with screenshot QA at common and large-display sizes.
-4. Improve Sector Challenge explanation in the menu/result flow without changing Steam leaderboard identities yet.
-5. Write the scoped display-options plan and only implement it after focus-loss, Steam overlay, and controller-flow risks are mapped.
+2. Reproduce the sector-start extra-life pickup bug and gate extra-life scheduling so sector runs do not always begin with one.
+3. Ship a small Dodge clarity/accessibility pass: symmetric Shift verification, clearer How To Play copy, and a visible invulnerability-window explanation.
+4. Add a targeted Large UI/List Text pass for leaderboard, Codex/list rows, and help text, with screenshot QA at common and large-display sizes.
+5. Improve Sector Challenge explanation in the menu/result flow without changing Steam leaderboard identities yet.
 
 ## Open Questions
 
 - Can the 2026-06-18 Gaming Gods Steam thread be opened directly in a signed-in browser to capture the full player posts, not only Gmail mirrors of replies?
 - Does the current accepted branch already contain symmetric Right Shift dodge behavior, or does it still need a tiny input helper patch?
+- Is the sector-start extra-life pickup coming from guaranteed-drop carryover, checkpoint initialization, or intended practice-mode support that now needs clearer gating?
 - Is Gravity Comedian a single boss/archetype issue, a late-sector scaling issue, or a respawn protection issue?
 - Should Sector Challenge leaderboards be Steam global boards, local-only records, or unranked practice history?
 - Is a UI scaling setting preferred over targeted larger leaderboard/Codex/help text?
