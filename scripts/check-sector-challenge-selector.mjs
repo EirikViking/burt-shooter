@@ -77,18 +77,26 @@ function findChrome() {
   ].filter(Boolean).find((candidate) => existsSync(candidate));
 }
 
-function makeProgress() {
+function makeProgress({
+  bestSector = 32,
+  bestLevel = bestSector,
+  pilotXp = 6800,
+  pilotRank = 5,
+  highestPilotRank = pilotRank,
+  bestScore = 8848,
+  totalRuns = 12
+} = {}) {
   return {
     version: 1,
     unlockTuningVersion: 3,
-    pilotXp: 6800,
-    pilotRank: 5,
-    highestPilotRank: 5,
-    totalRuns: 12,
-    bestScore: 8848,
-    bestSector: 32,
-    bestLevel: 32,
-    bestRank: 5,
+    pilotXp,
+    pilotRank,
+    highestPilotRank,
+    totalRuns,
+    bestScore,
+    bestSector,
+    bestLevel,
+    bestRank: pilotRank,
     bestRunTimeSeconds: 720,
     survivedSeconds: 720,
     totalBossesDefeated: 10,
@@ -168,7 +176,7 @@ async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
-async function seedProfile(page) {
+async function seedProfile(page, progress = makeProgress(), records = challengeRecords()) {
   await page.addInitScript(({ progress, records }) => {
     localStorage.clear();
     localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
@@ -179,18 +187,18 @@ async function seedProfile(page) {
       bestLevel: progress.bestLevel
     }));
     localStorage.setItem('novaSwarm.sectorStartChallengeRecords.v1', JSON.stringify(records));
-  }, { progress: makeProgress(), records: challengeRecords() });
+  }, { progress, records });
 }
 
-async function waitForMenu(page) {
+async function waitForMenu(page, progress = makeProgress(), records = challengeRecords()) {
   await page.waitForFunction(() => document.body?.dataset?.menuReady === '1', null, { timeout: 30000 });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'menu', null, { timeout: 30000 });
-  await refreshLoadedMenuProfile(page);
+  await refreshLoadedMenuProfile(page, progress, records);
   await page.waitForTimeout(400);
   return readState(page);
 }
 
-async function refreshLoadedMenuProfile(page) {
+async function refreshLoadedMenuProfile(page, progress = makeProgress(), records = challengeRecords()) {
   await page.evaluate(({ progress, records }) => {
     localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(progress));
@@ -205,7 +213,7 @@ async function refreshLoadedMenuProfile(page) {
     menu.refreshSectorStartState?.();
     menu.updateSectorStartButton?.({ forceGpuRefresh: true });
     menu.layoutMenu?.({ forceLabelGpuRefresh: true });
-  }, { progress: makeProgress(), records: challengeRecords() });
+  }, { progress, records });
 }
 
 async function clickBounds(page, bounds) {
@@ -230,15 +238,20 @@ async function selectSectorForScreenshot(page, sector) {
   return readState(page);
 }
 
-async function newSeededPage(browser, viewport = { width: 1920, height: 1080 }) {
+async function newSeededPage(
+  browser,
+  viewport = { width: 1920, height: 1080 },
+  progress = makeProgress(),
+  records = challengeRecords()
+) {
   const page = await browser.newPage({ viewport });
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
-  await seedProfile(page);
+  await seedProfile(page, progress, records);
   await page.goto(withQuery({ skipIntro: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await waitForMenu(page);
+  await waitForMenu(page, progress, records);
   return page;
 }
 
@@ -374,9 +387,12 @@ try {
 
   const selector = state.menu.sectorStart.selector;
   assert.equal(selector.title, 'SELECT START POINT', 'selector title mismatch');
+  assert.equal(selector.subtitle, 'START POINTS UNLOCK EVERY 5 SECTORS', 'selector subtitle should explain every-five checkpoint unlocks');
   assert.ok(selector.sectors.length >= 32, 'selector should list at least 32 sectors');
   assert.equal(sectorEntry(state, 5)?.unlocked, true, 'sector 5 should be unlocked by seeded progress');
+  assert.equal(sectorEntry(state, 5)?.checkpointEligible, true, 'sector 5 should be a checkpoint start point');
   assert.equal(sectorEntry(state, 5)?.playSector, 5, 'sector 5 must map to play sector 5');
+  assert.equal(sectorEntry(state, 4)?.checkpointEligible, false, 'sector 4 should be marked as a non-checkpoint sector');
   assert.equal(sectorEntry(state, 10)?.playSector, 11, 'checkpoint 10 must map to play sector 11');
   assert.equal(sectorEntry(state, 20)?.playSector, 21, 'checkpoint 20 must map to play sector 21');
   assert.equal(sectorEntry(state, 30)?.playSector, 31, 'checkpoint 30 must map to play sector 31');
@@ -388,6 +404,10 @@ try {
   assert.ok(selector.panelBounds?.width > 0 && selector.gridBounds?.width > 0, 'selector bounds should be visible');
   assert.ok(selector.launchButtonBounds?.width > 0, 'selector launch action should be visible');
   assert.ok(selector.backButtonBounds?.width > 0, 'selector back action should be visible');
+  state = await selectSectorForScreenshot(page, 4);
+  assert.match(state.menu.sectorStart.selector.detailText || '', /NO START POINT HERE/);
+  assert.match(state.menu.sectorStart.selector.detailText || '', /NEW START POINTS EVERY 5 SECTORS/);
+  assert.match(state.menu.sectorStart.selector.detailText || '', /PLAY LAUNCH RUN TO UNLOCK CHECKPOINTS/);
   report.cases.push({
     open: true,
     selectedSector: selector.selectedSector,
@@ -398,6 +418,22 @@ try {
     sector4: sectorEntry(state, 4),
     sector32: sectorEntry(state, 32)
   });
+
+  const lockedCheckpointPage = await newSeededPage(
+    browser,
+    { width: 1366, height: 768 },
+    makeProgress({ bestSector: 9, bestLevel: 9, pilotXp: 1200, pilotRank: 2, highestPilotRank: 2, bestScore: 4000, totalRuns: 3 }),
+    { version: 1, updatedAt: '2026-06-19T00:00:00.000Z', byCheckpoint: {} }
+  );
+  let lockedCheckpointState = await openSelector(lockedCheckpointPage);
+  assert.deepEqual(lockedCheckpointState.menu.sectorStart.checkpoints, [5], 'sector 9 career progress should only unlock Sector 5');
+  lockedCheckpointState = await selectSectorForScreenshot(lockedCheckpointPage, 10);
+  assert.equal(sectorEntry(lockedCheckpointState, 10)?.checkpointEligible, true, 'sector 10 should be a checkpoint-eligible cell');
+  assert.equal(sectorEntry(lockedCheckpointState, 10)?.unlocked, false, 'sector 10 should remain locked before clearing into sector 11');
+  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /CLEAR SECTOR 10 IN LAUNCH RUN/);
+  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /BEGINS AT SECTOR 11/);
+  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /SECTOR CHALLENGE DOES NOT UNLOCK START POINTS/);
+  await lockedCheckpointPage.close();
 
   for (const sector of [5, 10, 20, 30]) {
     state = await selectSectorForScreenshot(page, sector);

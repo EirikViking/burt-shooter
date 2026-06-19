@@ -61,6 +61,7 @@ export function getSectorStartPlaySector(checkpointSector) {
 export function isSectorStartCheckpointUnlocked(checkpointSector, progressOrHighest = {}) {
   const checkpoint = floorSector(checkpointSector, 0);
   if (checkpoint < 1) return false;
+  if (checkpoint % SECTOR_START_CHECKPOINT_INTERVAL !== 0) return false;
   const highest = getHighestReachedSector(progressOrHighest);
   const requiredSector = getSectorStartPlaySector(checkpoint);
   return requiredSector !== null && highest >= requiredSector;

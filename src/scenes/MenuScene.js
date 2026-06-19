@@ -16,7 +16,7 @@ import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState } from '../progression/HangarProgressState.js';
 import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
 import { getSectorInfo } from '../config/SectorCatalog.js';
-import { RUN_MODES, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
+import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
@@ -1751,7 +1751,7 @@ export class MenuScene {
     this.sectorSelectorTitle.x = panelX + pad;
     this.sectorSelectorTitle.y = panelY + pad + 18;
     this.sectorSelectorSubtitle.style.fontSize = Math.round(clampNumber(width * 0.0085, 12, 16));
-    this.sectorSelectorSubtitle.text = translateText('CHOOSE YOUR STARTING POINT');
+    this.sectorSelectorSubtitle.text = translateText('START POINTS UNLOCK EVERY 5 SECTORS');
     this.sectorSelectorSubtitle.x = panelX + pad + 2;
     this.sectorSelectorSubtitle.y = this.sectorSelectorTitle.y + 35;
 
@@ -1857,7 +1857,7 @@ export class MenuScene {
     item.addChild(number);
     const status = createText(entry.unlocked
       ? translateText(entry.overrunCheckpoint ? 'OVERRUN' : 'READY')
-      : translateText('LOCKED'), {
+      : translateText(entry.checkpointEligible ? 'LOCKED' : 'NO START'), {
       fontFamily: FONT_MONO,
       fontSize: Math.round(clampNumber(width * 0.07, 8, 10)),
       fontWeight: '900',
@@ -2065,7 +2065,7 @@ export class MenuScene {
     if (item._cellStatus) {
       item._cellStatus.text = unlocked
         ? translateText(isOverrun ? 'OVERRUN' : 'READY')
-        : translateText('LOCKED');
+        : translateText(entry.checkpointEligible ? 'LOCKED' : 'NO START');
       item._cellStatus.style.fill = unlocked ? (selected ? '#ffe584' : (isOverrun ? '#ff9bff' : '#7fffd8')) : '#68727c';
       item._cellStatus.updateText?.(false);
     }
@@ -2074,16 +2074,29 @@ export class MenuScene {
   getSectorSelectorDetailText() {
     const entry = this.sectorSelectorSectors[this.selectedSectorSelectorIndex];
     if (!entry) return '';
-    const startPointLine = entry.overrunCheckpoint
+    const startPointLine = !entry.checkpointEligible
+      ? translateText('NO START POINT HERE')
+      : entry.overrunCheckpoint
       ? translateText('CHECKPOINT {sector}', { sector: entry.sector })
       : translateText('START POINT {sector}', { sector: entry.sector });
     if (!entry.unlocked) {
+      if (!entry.checkpointEligible) {
+        return [
+          startPointLine,
+          translateText('NEW START POINTS EVERY 5 SECTORS'),
+          translateText('PLAY LAUNCH RUN TO UNLOCK CHECKPOINTS')
+        ].join('\n');
+      }
       const required = getSectorStartPlaySector(entry.sector);
+      const requirement = entry.overrunCheckpoint
+        ? translateText('CLEAR SECTOR {sector} IN LAUNCH RUN', { sector: entry.sector })
+        : translateText('REACH SECTOR {sector} IN LAUNCH RUN', { sector: required || entry.sector });
       return [
         startPointLine,
         translateText('LOCKED'),
-        required ? translateText('REACH SECTOR {sector} TO UNLOCK', { sector: required }) : translateText('SECTOR START LOCKED'),
-        entry.overrunCheckpoint ? translateText('OVERRUN STARTS AFTER BONUS') : ''
+        requirement,
+        required && required !== entry.sector ? translateText('BEGINS AT SECTOR {sector}', { sector: required }) : '',
+        translateText('SECTOR CHALLENGE DOES NOT UNLOCK START POINTS')
       ].filter(Boolean).join('\n');
     }
     const playSector = entry.playSector || entry.sector;
@@ -2108,6 +2121,7 @@ export class MenuScene {
       startLine,
       launchLine,
       best,
+      translateText('SECTOR CHALLENGE RECORD ONLY'),
       note
     ].join('\n');
   }
@@ -2276,6 +2290,7 @@ export class MenuScene {
       gridBounds: boundsForDisplayObject(this.sectorSelectorGrid),
       sectors: (this.sectorSelectorSectors || []).map((entry, index) => ({
         sector: entry.sector,
+        checkpointEligible: Boolean(entry.checkpointEligible),
         unlocked: Boolean(entry.unlocked),
         playSector: entry.playSector || null,
         overrunCheckpoint: Boolean(entry.overrunCheckpoint),
@@ -2423,7 +2438,7 @@ export class MenuScene {
     this.sectorSelectorTitle.anchor.set(0, 0.5);
     overlay.addChild(this.sectorSelectorTitle);
 
-    this.sectorSelectorSubtitle = createText(translateText('CHOOSE YOUR STARTING POINT'), {
+    this.sectorSelectorSubtitle = createText(translateText('START POINTS UNLOCK EVERY 5 SECTORS'), {
       fontFamily: FONT_MONO,
       fontSize: Math.max(12, getResponsiveFontSize(layout, 'small')),
       fontWeight: '900',
@@ -2531,13 +2546,15 @@ export class MenuScene {
     const maxCheckpoint = checkpoints.length ? Math.max(...checkpoints) : 0;
     const displayMax = Math.max(32, Math.min(64, Math.ceil(Math.max(highest, maxCheckpoint, 5) / 8) * 8));
     return Array.from({ length: displayMax }, (_, index) => index + 1).map((sector) => {
-      const record = getSectorStartChallengeRecord(sector);
-      const unlocked = checkpoints.includes(sector);
+      const checkpointEligible = sector % SECTOR_START_CHECKPOINT_INTERVAL === 0;
+      const record = checkpointEligible ? getSectorStartChallengeRecord(sector) : null;
+      const unlocked = checkpointEligible && checkpoints.includes(sector);
       const playSector = unlocked ? getSectorStartPlaySector(sector) : null;
       const info = getSectorInfo(playSector || sector);
-      const overrunCheckpoint = sector % 10 === 0;
+      const overrunCheckpoint = checkpointEligible && sector % 10 === 0;
       return {
         sector,
+        checkpointEligible,
         unlocked,
         playSector,
         record,
