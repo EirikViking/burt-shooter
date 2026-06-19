@@ -421,7 +421,6 @@ function startLocalServer() {
 
 function createWindow() {
   const displaySettings = readDisplaySettings(app.getPath('userData'));
-  const startFullscreen = shouldStartFullscreen && displaySettings.mode === DISPLAY_MODE_FULLSCREEN;
   const startBorderless = shouldStartFullscreen && displaySettings.mode === DISPLAY_MODE_BORDERLESS;
   const primaryDisplay = screen.getPrimaryDisplay?.();
   const displayBounds = primaryDisplay?.bounds || { x: 0, y: 0, width: 1920, height: 1080 };
@@ -433,7 +432,7 @@ function createWindow() {
     height: startBorderless ? displayBounds.height : windowSize.height,
     minWidth: 960,
     minHeight: 540,
-    fullscreen: startFullscreen,
+    fullscreen: shouldStartFullscreen && displaySettings.mode === DISPLAY_MODE_FULLSCREEN,
     frame: !startBorderless,
     resizable: !startBorderless,
     backgroundColor: '#030714',
