@@ -80,6 +80,15 @@
   - `Nova Swarm Press Coverage: Impressions & Interview by Tim Bowman Media` - Jun 16
   - `Nova Swarm Update - 2026-06-17: Sector Signals and bugfixes` - Jun 17
 
+## Steam Draft Image Sources Used
+
+- `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (218).png` - Select Start Point image, embedded as `[img]{STEAM_CLAN_IMAGE}/46138701/2751fda9aedb138471606cf42ac531ff42082c27.png[/img]`
+- `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (219).png` - hangar / main menu image, embedded as `[img]{STEAM_CLAN_IMAGE}/46138701/532a9313e9716c4cd40b5e25f37111b126927af6.png[/img]`
+- `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (221).png` - Global Score Deck image, embedded as `[img]{STEAM_CLAN_IMAGE}/46138701/f1e824f4eaeb2fe0cf7788d45f2055b4074b40c5.png[/img]`
+- `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde 2026-06-19 002311.png` - Steam achievements image, embedded as `[img]{STEAM_CLAN_IMAGE}/46138701/84ab34b220f284b0e33bab6fc45e64d687459000.png[/img]`
+- `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (215).png` - gameplay / sector polish image, embedded as `[img]{STEAM_CLAN_IMAGE}/46138701/20b6935218c0ca048314ae4dcacd3384948a2d04.png[/img]`
+- Steam preview check on 2026-06-19 verified all five image hashes present, no failed-image warning, no placeholder text, no thumbnail-only hashes, and status still `Hidden, Unpublished`.
+
 ## Sources That Could Not Be Checked
 
 - Steamworks final publishing preview state before browser automation was attempted was not treated as a source for article claims.

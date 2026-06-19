@@ -13,9 +13,6 @@ Nova Swarm launched on Steam on 9 June 2026, and the days since then have been i
 
 Thank you for playing, posting notes, sending screenshots, leaving reviews, chasing scores, testing rough edges, and helping Tiny Foundry see what needed to get sharper first. The first stretch after launch has not been quiet. It has been a fast, daily push to make Nova Swarm clearer, louder, smoother, fairer, and more exciting to return to.
 
-[img]{IMAGE_1_STEAM_UPLOAD_URL}[/img]
-[i]Steam achievements and global progress are now a much bigger part of the post-launch chase.[/i]
-
 [h2]The First Days After Release[/h2]
 
 Nova Swarm went live on 9 June with the core promise intact: survive the sectors, defeat boss waves, unlock ships, climb the global leaderboard, and keep trying for one cleaner run.
@@ -30,7 +27,7 @@ Sector Start / Sector Challenge received a lot of attention after launch. Checkp
 
 The start-point selector also became clearer and more deliberate, with checkpoint starts preserved for later practice and cleaner rules around overrun rewards.
 
-[img]{IMAGE_2_STEAM_UPLOAD_URL}[/img]
+[img]{STEAM_CLAN_IMAGE}/46138701/2751fda9aedb138471606cf42ac531ff42082c27.png[/img]
 [i]The Select Start Point screen now makes sector practice and checkpoint starts easier to understand.[/i]
 
 [h2]A New Cinematic Hangar Menu[/h2]
@@ -41,8 +38,8 @@ The main menu was rebuilt around the hangar fantasy: the ship, the swarm, the do
 
 That accepted menu legibility milestone is now the baseline Tiny Foundry is building forward from.
 
-[img]{IMAGE_3_STEAM_UPLOAD_URL}[/img]
-[i]The accepted Cinematic Hangar menu is now the forward baseline for menu presentation and readability.[/i]
+[img]{STEAM_CLAN_IMAGE}/46138701/532a9313e9716c4cd40b5e25f37111b126927af6.png[/img]
+[i]The rebuilt hangar menu gives the post-launch version of Nova Swarm a clearer front door.[/i]
 
 [h2]Leaderboards, Score Chasing, And Steam Progress[/h2]
 
@@ -50,8 +47,8 @@ The score chase has also become cleaner and more visible. Leaderboards now suppo
 
 The HUD and run feedback also got attention: score, level, rank, and chase targets were tightened so the important information is easier to scan while the screen is busy.
 
-[img]{IMAGE_4_STEAM_UPLOAD_URL}[/img]
-[i]The Global Score Deck was cleaned up to better support the score chase and leaderboard climb.[/i]
+[img]{STEAM_CLAN_IMAGE}/46138701/f1e824f4eaeb2fe0cf7788d45f2055b4074b40c5.png[/img]
+[i]The Global Score Deck makes the score chase and leaderboard climb easier to read.[/i]
 
 [h2]Achievements Became A Bigger Chase[/h2]
 
@@ -61,6 +58,9 @@ Achievement badge art also received follow-up work so the hard and legendary set
 
 That achievement work is meant to give committed pilots more long-term goals without pretending every goal should be easy or immediate.
 
+[img]{STEAM_CLAN_IMAGE}/46138701/84ab34b220f284b0e33bab6fc45e64d687459000.png[/img]
+[i]Steam achievements and global progress are now a much bigger part of the post-launch chase.[/i]
+
 [h2]Bosses, Powerups, And The Threat Codex[/h2]
 
 Bosses received more identity, more readable support pressure, stronger death presentation, and more Codex coverage. Sonia, Sam the Misfit, and KurtBossEdgar became clearer parts of the roster identity, while boss support ships were tuned to read as ships and priority targets rather than visual noise.
@@ -69,6 +69,9 @@ The Threat Codex grew as well. Entries became easier to discover and read, disco
 
 Powerups also received visual and catalog attention, with refreshed generated powerup icon work and checks to keep the shipped assets stable.
 
+[img]{STEAM_CLAN_IMAGE}/46138701/20b6935218c0ca048314ae4dcacd3384948a2d04.png[/img]
+[i]Run feedback, boss moments, sector presentation, and readability have all received post-launch polish.[/i]
+
 [h2]Art, Readability, And Audio Polish[/h2]
 
 Several updates focused on making the chaos easier to parse. Late-run enemies and boss-support ships were redrawn toward darker hulls, sharper outlines, smaller cores, and cleaner neon accents. Sector Codex art was replaced with unique generated sector signal art. Menu icons, dock spacing, powerup visuals, and gameplay presentation all received focused passes.
@@ -76,9 +79,6 @@ Several updates focused on making the chaos easier to parse. Late-run enemies an
 Audio also kept getting sharper: boss death voice priority was fixed, boss voice playback received a Settings toggle, level-clear and combat voice moments were widened, rare alien attack barks were added, and the selectable Overdrive soundtrack options landed in Settings.
 
 The goal is still arcade chaos. The work has been about making that chaos feel intentional and readable.
-
-[img]{IMAGE_5_STEAM_UPLOAD_URL}[/img]
-[i]Run feedback, boss moments, sector presentation, and readability have all received post-launch polish.[/i]
 
 [h2]Performance And Quality-Of-Life Fixes[/h2]
 
@@ -112,20 +112,20 @@ Tiny Foundry
 
 ## Attached Image Mapping
 
-Use the attached images in this order:
+The saved Steam draft uses all five uploaded screenshots as full-size Steam-hosted inline images. Steam preview was verified with no failed-image boxes, no placeholder tokens, and no tiny thumbnail image hashes.
 
-1. `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde 2026-06-19 002311.png`
-   - Placeholder: `{IMAGE_1_STEAM_UPLOAD_URL}`
-   - Caption: Steam achievements and global progress are now a much bigger part of the post-launch chase.
-2. `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (218).png`
-   - Placeholder: `{IMAGE_2_STEAM_UPLOAD_URL}`
+1. `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (218).png`
+   - Steam token: `[img]{STEAM_CLAN_IMAGE}/46138701/2751fda9aedb138471606cf42ac531ff42082c27.png[/img]`
    - Caption: The Select Start Point screen now makes sector practice and checkpoint starts easier to understand.
-3. `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (216).png`
-   - Placeholder: `{IMAGE_3_STEAM_UPLOAD_URL}`
-   - Caption: The accepted Cinematic Hangar menu is now the forward baseline for menu presentation and readability.
-4. `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (221).png`
-   - Placeholder: `{IMAGE_4_STEAM_UPLOAD_URL}`
-   - Caption: The Global Score Deck was cleaned up to better support the score chase and leaderboard climb.
-5. `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (214).png`
-   - Placeholder: `{IMAGE_5_STEAM_UPLOAD_URL}`
+2. `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (219).png`
+   - Steam token: `[img]{STEAM_CLAN_IMAGE}/46138701/532a9313e9716c4cd40b5e25f37111b126927af6.png[/img]`
+   - Caption: The rebuilt hangar menu gives the post-launch version of Nova Swarm a clearer front door.
+3. `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (221).png`
+   - Steam token: `[img]{STEAM_CLAN_IMAGE}/46138701/f1e824f4eaeb2fe0cf7788d45f2055b4074b40c5.png[/img]`
+   - Caption: The Global Score Deck makes the score chase and leaderboard climb easier to read.
+4. `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde 2026-06-19 002311.png`
+   - Steam token: `[img]{STEAM_CLAN_IMAGE}/46138701/84ab34b220f284b0e33bab6fc45e64d687459000.png[/img]`
+   - Caption: Steam achievements and global progress are now a much bigger part of the post-launch chase.
+5. `C:\Users\cromk\OneDrive\Bilder\Screenshots\Skjermbilde (215).png`
+   - Steam token: `[img]{STEAM_CLAN_IMAGE}/46138701/20b6935218c0ca048314ae4dcacd3384948a2d04.png[/img]`
    - Caption: Run feedback, boss moments, sector presentation, and readability have all received post-launch polish.
