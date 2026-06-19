@@ -76,9 +76,10 @@ export class Boss {
     const diff = BalanceConfig.difficulty;
     const rawHealth = Math.round(diff.bossBaseHealth + Math.max(0, level - 1) * diff.bossHealthPerLevel);
     const healthBeforePostFirstEase = Math.max(rawHealth, diff.bossMinHealth || 70);
+    this.earlyDifficultyScalar = this.getEarlyBossDifficultyScalar();
     this.difficultyScalar = this.getPostFirstBossDifficultyScalar();
     const firstBossHealthScalar = level <= 1 ? 0.86 : 1;
-    this.health = Math.max(1, Math.round(healthBeforePostFirstEase * this.difficultyScalar * firstBossHealthScalar));
+    this.health = Math.max(1, Math.round(healthBeforePostFirstEase * this.earlyDifficultyScalar * this.difficultyScalar * firstBossHealthScalar));
     this.maxHealth = this.health;
     this.shootCooldown = 0;
     this.shootDelay = this.getPhaseShootDelay(1);
@@ -1402,6 +1403,18 @@ export class Boss {
     return Number.isFinite(scalar) ? clamp(scalar, 0.2, 1) : 1;
   }
 
+  getEarlyBossDifficultyScalar() {
+    const diff = BalanceConfig.difficulty || {};
+    const maxLevel = Math.max(1, Math.round(Number(diff.bossEarlyDifficultyMaxLevel) || 0));
+    if (this.level > maxLevel) return 1;
+    const scalar = Number(diff.bossEarlyDifficultyScalar);
+    return Number.isFinite(scalar) ? clamp(scalar, 0.2, 1) : 1;
+  }
+
+  getCombinedBossDifficultyScalar() {
+    return this.getEarlyBossDifficultyScalar() * this.getPostFirstBossDifficultyScalar();
+  }
+
   getBossPressureScalar() {
     let scalar = 1;
     if (this.level <= 1) scalar = 0.58;
@@ -1409,7 +1422,7 @@ export class Boss {
     else if (this.level <= 4) scalar = 0.92;
     else if (this.level <= 6) scalar = 0.96;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 0.72 : 1;
-    return scalar * this.getPostFirstBossDifficultyScalar() * chaosRelief;
+    return scalar * this.getCombinedBossDifficultyScalar() * chaosRelief;
   }
 
   getPhaseShootDelay(phase) {
@@ -1420,7 +1433,7 @@ export class Boss {
         ? diff.bossShootDelayPhase2
         : diff.bossShootDelayPhase3;
     const openingDelayScalar = this.level <= 1 ? 1.55 : this.level === 2 ? 1.2 : 1;
-    return (baseDelay * openingDelayScalar) / this.getPostFirstBossDifficultyScalar();
+    return (baseDelay * openingDelayScalar) / this.getCombinedBossDifficultyScalar();
   }
 
   getBossProjectileSpeed(phase) {
@@ -1458,7 +1471,7 @@ export class Boss {
       ? (this.phase === 1 ? 1 : 1.28)
       : this.phase === 2 ? 0.95 : 0.9;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
-    return Math.round((base * phaseScalar * chaosRelief) / this.getPostFirstBossDifficultyScalar());
+    return Math.round((base * phaseScalar * chaosRelief) / this.getCombinedBossDifficultyScalar());
   }
 
   getRegularTelegraphDurationMs() {

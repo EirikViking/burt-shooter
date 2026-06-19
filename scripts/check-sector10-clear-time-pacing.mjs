@@ -12,7 +12,7 @@ import { getSectorStartPlaySector } from '../src/game/RunMode.js';
 import { STEAM_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
 
 const EXPECTED_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
-const EXPECTED_BOSS_BODY_HASH = '39175994f789ad9578741f72138e0a22ae49dcc7bfa51308fc7c6a7a0d00e2a3';
+const EXPECTED_BOSS_BODY_HASH = '07dbfa617171650ef8efa9cb78305984401764ebd9a931e2e09671d3eec6db72';
 const EXPECTED_WAVES_PER_BOSS_BASE = 5;
 const EXPECTED_MIN_WAVES_BETWEEN_BOSSES = 5;
 
@@ -152,10 +152,16 @@ function bossHp(level) {
   const diff = BalanceConfig.difficulty;
   const rawHealth = Math.round(diff.bossBaseHealth + Math.max(0, level - 1) * diff.bossHealthPerLevel);
   const healthBeforeEase = Math.max(rawHealth, diff.bossMinHealth || 70);
-  const firstBossHealthScalar = level === 1
+  const startsAt = Math.max(2, Math.round(Number(diff.bossPostFirstDifficultyStartsAt) || 2));
+  const postFirstScalar = level >= startsAt
     ? Math.max(0.1, Number(diff.bossPostFirstDifficultyScalar) || 1)
     : 1;
-  return Math.max(1, Math.round(healthBeforeEase * firstBossHealthScalar));
+  const earlyMaxLevel = Math.max(1, Math.round(Number(diff.bossEarlyDifficultyMaxLevel) || 0));
+  const earlyScalar = level <= earlyMaxLevel
+    ? Math.max(0.1, Number(diff.bossEarlyDifficultyScalar) || 1)
+    : 1;
+  const firstBossHealthScalar = level === 1 ? 0.86 : 1;
+  return Math.max(1, Math.round(healthBeforeEase * postFirstScalar * earlyScalar * firstBossHealthScalar));
 }
 
 function starterShipDps() {
@@ -278,7 +284,7 @@ assert.deepEqual(report.sectorStartPlaySectors, {
 for (const row of report.measurements) {
   assert.ok(row.current.totalSeconds < row.raisedBefore.totalSeconds, `${row.hitEfficiency}: five-wave pacing should be faster than the raised-before state`);
   assert.ok(row.current.waves === row.raisedBefore.waves - 10, `${row.hitEfficiency}: sectors 1-10 should remove one normal wave per sector`);
-  assert.equal(row.current.bossSeconds, row.raisedBefore.bossSeconds, `${row.hitEfficiency}: modeled boss seconds should be unchanged`);
+  assert.equal(row.current.bossSeconds, row.raisedBefore.bossSeconds, `${row.hitEfficiency}: modeled boss seconds should be unchanged by normal-wave pacing`);
   for (const sector of [1, 5, 10]) {
     const currentSector = row.current.sectors.find((entry) => entry.sector === sector);
     assert.ok(currentSector?.waves >= EXPECTED_MIN_WAVES_BETWEEN_BOSSES, `Sector ${sector} should still generate normal waves`);

@@ -85,20 +85,28 @@ function findChrome() {
 function expectedForLevel(level) {
   const diff = BalanceConfig.difficulty;
   const startsAt = Math.max(2, Math.round(Number(diff.bossPostFirstDifficultyStartsAt) || 2));
-  const scalar = level >= startsAt ? Number(diff.bossPostFirstDifficultyScalar) : 1;
+  const postFirstScalar = level >= startsAt ? Number(diff.bossPostFirstDifficultyScalar) : 1;
+  const earlyMaxLevel = Math.max(1, Math.round(Number(diff.bossEarlyDifficultyMaxLevel) || 0));
+  const earlyScalar = level <= earlyMaxLevel ? Number(diff.bossEarlyDifficultyScalar) : 1;
+  const combinedScalar = earlyScalar * postFirstScalar;
   const rawHealth = Math.round(diff.bossBaseHealth + Math.max(0, level - 1) * diff.bossHealthPerLevel);
   const unscaledHealth = Math.max(rawHealth, diff.bossMinHealth || 70);
-  const maxHealth = Math.max(1, Math.round(unscaledHealth * scalar));
-  const basePressure = level <= 1 ? 0.78 : level === 2 ? 0.88 : level <= 4 ? 0.92 : level <= 6 ? 0.96 : 1;
+  const firstBossHealthScalar = level <= 1 ? 0.86 : 1;
+  const maxHealth = Math.max(1, Math.round(unscaledHealth * combinedScalar * firstBossHealthScalar));
+  const basePressure = level <= 1 ? 0.58 : level === 2 ? 0.88 : level <= 4 ? 0.92 : level <= 6 ? 0.96 : 1;
   const phase1DelayUnscaled = diff.bossShootDelayBase * (level <= 1 ? 1.55 : level === 2 ? 1.2 : 1);
-  const regularIntervalUnscaled = level <= 1 ? 2200 : level === 2 ? 2400 : 2700;
+  const regularBase = level <= 1 ? 3800 : level === 2 ? 2580 : 2920;
+  const regularPhaseScalar = level <= 1 ? 1 : 0.9;
+  const regularIntervalUnscaled = regularBase * regularPhaseScalar;
   return {
-    scalar,
+    postFirstScalar,
+    earlyScalar,
+    combinedScalar,
     unscaledHealth,
     maxHealth,
-    pressure: basePressure * scalar,
-    phase1Delay: phase1DelayUnscaled / scalar,
-    regularInterval: Math.round(regularIntervalUnscaled / scalar)
+    pressure: basePressure * combinedScalar,
+    phase1Delay: phase1DelayUnscaled / combinedScalar,
+    regularInterval: Math.round(regularIntervalUnscaled / combinedScalar)
   };
 }
 
@@ -161,6 +169,8 @@ try {
         level: boss.level,
         maxHealth: boss.maxHealth,
         scalar: boss.getPostFirstBossDifficultyScalar(),
+        earlyScalar: boss.getEarlyBossDifficultyScalar(),
+        combinedScalar: boss.getCombinedBossDifficultyScalar(),
         pressure: boss.getBossPressureScalar(),
         phase1Delay: boss.getPhaseShootDelay(1),
         regularInterval: boss.getRegularAttackIntervalMs()
@@ -172,7 +182,9 @@ try {
       actual,
       expected,
       ok: actual.maxHealth === expected.maxHealth &&
-        closeEnough(actual.scalar, expected.scalar) &&
+        closeEnough(actual.scalar, expected.postFirstScalar) &&
+        closeEnough(actual.earlyScalar, expected.earlyScalar) &&
+        closeEnough(actual.combinedScalar, expected.combinedScalar) &&
         closeEnough(actual.pressure, expected.pressure) &&
         closeEnough(actual.phase1Delay, expected.phase1Delay) &&
         actual.regularInterval === expected.regularInterval
@@ -184,7 +196,8 @@ try {
   const report = {
     ok: results.every((result) => result.ok) &&
       results[0].actual.scalar === 1 &&
-      results.slice(1).every((result) => result.actual.scalar === 0.8 && result.actual.maxHealth < result.expected.unscaledHealth) &&
+      results.every((result) => result.actual.earlyScalar === 0.9 && result.actual.maxHealth <= result.expected.unscaledHealth) &&
+      results.slice(1).every((result) => result.actual.scalar === 0.8) &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0,
     baseUrl,

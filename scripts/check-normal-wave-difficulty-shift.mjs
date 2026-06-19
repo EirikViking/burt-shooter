@@ -20,7 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
 const EXPECTED_NORMAL_WAVE_OFFSET = 9;
-const EXPECTED_BOSS_BODY_METRIC_HASH = '39175994f789ad9578741f72138e0a22ae49dcc7bfa51308fc7c6a7a0d00e2a3';
+const EXPECTED_BOSS_BODY_METRIC_HASH = '07dbfa617171650ef8efa9cb78305984401764ebd9a931e2e09671d3eec6db72';
 const EXPECTED_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 const EXPECTED_MIN_WAVES = 5;
 

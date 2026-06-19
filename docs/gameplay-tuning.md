@@ -24,5 +24,6 @@
 
 ## 2026-05-23 Post-First Boss Ease
 
-- Boss 1 remains unchanged. Starting with boss number 2, `bossPostFirstDifficultyScalar=0.8` applies a 20% overall difficulty reduction across boss health, boss projectile pressure, and boss regular/phase shooting cadence.
-- The focused guard is `npm run check:boss-post-first-difficulty`; it verifies level 1 stays unscaled while later bosses receive the 0.8 scalar.
+- Bosses 1-11 also receive `bossEarlyDifficultyScalar=0.9`, a 10% early-boss relief across boss health, boss projectile pressure, and boss regular/phase shooting cadence. Bosses 12+ stay on the previous post-first curve.
+- Starting with boss number 2, `bossPostFirstDifficultyScalar=0.8` still applies a 20% overall difficulty reduction across boss health, boss projectile pressure, and boss regular/phase shooting cadence.
+- The focused guards are `npm run check:early-boss-difficulty-relief` and `npm run check:boss-post-first-difficulty`; they verify levels 1-11 receive the early 0.9 scalar while level 12+ returns to the accepted post-first curve.
