@@ -309,7 +309,8 @@ try {
   assert.equal(menu.menu?.sectorStart?.available, true);
   assert.deepEqual(menu.menu?.sectorStart?.checkpoints, [5, 10, 15]);
   assert.equal(menu.menu?.sectorStart?.selectedCheckpoint, 15);
-  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR 15 RUN/);
+  assert.equal(menu.menu?.sectorStart?.buttonText, 'SECTOR RUN');
+  assert.equal(menu.menu?.sectorStart?.buttonSubtext, 'Checkpoint starts - Every 5 sectors');
   assert.equal(menu.menu?.sectorStart?.arrowCueVisible, false, 'Sector Run dock tile should open the selector instead of showing switch arrows');
 
   const invalidStart = await page.evaluate(async () => window.__game.startGame(undefined, {
