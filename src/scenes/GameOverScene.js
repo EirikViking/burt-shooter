@@ -847,7 +847,7 @@ export class GameOverScene {
     if (this.isSectorStartChallengeResult()) {
       return this.getSectorStartChallengeRecordLine() || translateText('SECTOR RUN');
     }
-    if (!this.isRankedRun) return translateText('Local: Scout practice run');
+    if (!this.isRankedRun) return translateText('Local: Scout practice score only');
     const rank = this.getVisibleLocalPlacementRank();
     const rawRank = this.getLocalPlacementRank();
     const result = this.getCurrentLeaderboardResult();
@@ -865,7 +865,7 @@ export class GameOverScene {
 
   getGlobalPlacementLine() {
     if (this.isSectorStartChallengeResult()) return this.getSectorStartChallengeReachedLine();
-    if (!this.isRankedRun) return translateText('Global: Unranked - no submission');
+    if (!this.isRankedRun) return translateText('Global: Scout unranked - no submission');
     if (this.steamSubmissionMode) return this.getSteamPlacementLine();
     const rank = this.getGlobalPlacementRank();
     if (rank) {
@@ -922,7 +922,7 @@ export class GameOverScene {
   getUnrankedScoreBlockedText() {
     return this.game?.runMode === RUN_MODES.SECTOR_START
       ? translateText('SECTOR RUN - MAIN SCORE NOT LOGGED - NO ACHIEVEMENTS')
-      : translateText('SCOUT RUN - UNRANKED - SCORE NOT LOGGED');
+      : translateText('SCOUT RUN - UNRANKED LOCAL SCORE ONLY');
   }
 
   getSectorStartChallengeRecordLine() {
@@ -1186,6 +1186,12 @@ export class GameOverScene {
         this.formatElapsedTime(elapsedSeconds)
       ].filter(Boolean).join('\n');
     }
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
+      return [
+        translateText('SCOUT RUN') + ` | ${this.formatElapsedTime(elapsedSeconds)} | Level ${this.finalLevel || 1}`,
+        translateText('NO CAREER XP')
+      ].join('\n');
+    }
     const gained = Math.max(0, Math.floor(Number(summary.pilotXpGained) || 0));
     return [
       `Sector ${this.finalLevel || 1} | ${this.formatElapsedTime(elapsedSeconds)} | Level ${this.finalLevel || 1}`,
@@ -1202,6 +1208,9 @@ export class GameOverScene {
 
   createRunbackRankProgressSummary(currentProgress = this.currentProgressForResult || {}) {
     if (this.isSectorStartChallengeResult()) return '';
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
+      return translateText('SCOUT RUN: NO CAREER XP OR RANKED PROGRESS');
+    }
     const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
     if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
       return `${translateText('NEXT RANK')}: ${getRankTitle(MAX_RANK_INDEX)}  |  ${translateText('XP TO NEXT')}: 0`;
@@ -1212,6 +1221,7 @@ export class GameOverScene {
 
   createRunbackShipProgressSummary(currentProgress = this.currentProgressForResult || {}) {
     if (this.isSectorStartChallengeResult()) return '';
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return '';
     return this.createShipUnlockProgressLines(currentProgress, {
       newlyUnlocked: this.newlyUnlockedShips || []
     }).filter(Boolean).join('\n');
@@ -1367,10 +1377,10 @@ export class GameOverScene {
     if (!this.isRankedRun) {
       if (this.game?.runMode === RUN_MODES.SECTOR_START) {
         const resultText = this.getSectorStartChallengeResultLines().join('\n');
-        const base = translateText('Sector Run complete. Checkpoint context saved separately; achievements, Mayhem leaderboard, and career progress stayed untouched.');
+        const base = translateText('Sector Run complete. Checkpoint context saved separately; achievements, Mayhem leaderboard, and career progress stayed untouched. Sector board records are separate.');
         return resultText ? `${base}\n${resultText}` : base;
       }
-      return translateText('Scout Run complete. Unranked local score only: no leaderboard submission, no achievements, and no Mayhem checkpoint unlocks.');
+      return translateText('Scout Run complete. Local practice score only: no leaderboard submission, no achievements, no career XP, and no Mayhem checkpoint unlocks.');
     }
     const placement = this.globalPlacement;
     const localRank = this.getVisibleLocalPlacementRank();
@@ -2071,6 +2081,7 @@ export class GameOverScene {
   }
 
   shouldShowLeaderboardButton() {
+    if (this.game?.runMode === RUN_MODES.SCOUT) return false;
     return this.isResultActionStage() && (
       !this.isSectorStartChallengeResult() ||
       Boolean(this.leaderboardAdapter?.isSteamAvailable?.())

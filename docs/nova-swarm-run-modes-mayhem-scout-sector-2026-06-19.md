@@ -14,6 +14,8 @@ Scout Run is an unranked lower-pressure practice run for testing ships, learning
 
 Scout Run does not submit to the global leaderboard, does not update global best or ranked best, does not unlock Mayhem/Sector Run checkpoints, does not update career progress, and does not unlock Steam achievements. There is no Scout leaderboard in this version.
 
+The main menu presents Scout as `SCOUT RUN / UNRANKED PRACTICE`, with the Mission Briefing panel explaining that it is lower-pressure practice for testing ships and learning routes. The Scout result screen is also explicit: local practice score only, no leaderboard submission, no achievements, no career XP, and no Mayhem checkpoint unlocks. Scout results do not show a leaderboard CTA.
+
 The first Scout profile is `scout_lower_pressure_v1` in `src/game/RunMode.js`:
 
 - `normalWaveDifficultyLevelOffsetDelta: -5`
@@ -32,6 +34,8 @@ This is intentionally below Mayhem pressure and slightly softer than the old pre
 
 Sector Run is the checkpoint-start system. It uses unlocked ranked checkpoints, keeps the existing checkpoint behavior, and is unranked for achievement purposes in this first version.
 
+The main menu presents Sector as `SECTOR RUN / CHECKPOINT STARTS`. The Mission Briefing panel explains that Sector Run uses unlocked Mayhem checkpoints, that new start points unlock every 5 sectors, and that achievements are disabled. Sector Run records can appear on the separate Sector board; that board is distinct from the Mayhem global leaderboard.
+
 Checkpoint behavior:
 
 - Sector 5 starts at Sector 5.
@@ -48,7 +52,7 @@ Checkpoint unlocks come from Mayhem Run ranked progression. Scout Run and Sector
 
 Mayhem Run is ranked. It affects the global leaderboard, ranked bests, career progression, checkpoint unlocks, and Steam achievements.
 
-Scout Run and Sector Run are unranked. They are allowed to show local run results and mode context, but must not claim global leaderboard submission or achievement unlocks.
+Scout Run and Sector Run are unranked. They are allowed to show local run results and mode context, but must not claim Mayhem global leaderboard submission or achievement unlocks. Sector Run can record checkpoint-specific results on the separate Sector board.
 
 ## Achievement Policy
 

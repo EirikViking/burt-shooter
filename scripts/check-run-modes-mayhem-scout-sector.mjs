@@ -149,6 +149,25 @@ async function waitForScene(page, sceneName) {
   return readState(page);
 }
 
+async function waitForGameOverActionStage(page) {
+  const actionStages = new Set(['runback', 'submitted', 'skipped', 'unranked']);
+  const deadline = Date.now() + 20000;
+  let lastState = await readState(page);
+  while (Date.now() < deadline) {
+    lastState = await waitForScene(page, 'gameOver');
+    const stage = lastState.gameOver?.state;
+    if (actionStages.has(stage)) return lastState;
+    if (
+      (stage === 'submitted_hold' && lastState.gameOver?.submittedHoldReady) ||
+      (stage === 'result_hold' && lastState.gameOver?.resultHoldReady)
+    ) {
+      await page.keyboard.press('Enter');
+    }
+    await page.waitForTimeout(250);
+  }
+  throw new Error(`Game Over result action stage not reached; last state=${lastState.gameOver?.state || 'unknown'}`);
+}
+
 async function seedProfile(page, progress = makeProgress()) {
   await page.goto(`${baseUrl}/?mockSteamLeaderboard=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForGame(page);
@@ -317,22 +336,37 @@ const report = {
 
 try {
   const menu = await seedProfile(page);
+  await page.waitForTimeout(1500);
+  const settledMenu = await readState(page);
   assert.equal(menu.menu?.items?.launchButton?.width > 0, true, 'Mayhem Run should be visible');
   assert.equal(menu.menu?.items?.scoutRunButton?.width > 0, true, 'Scout Run should be visible');
   assert.equal(menu.menu?.items?.sectorStartButton?.width > 0, true, 'Sector Run should be visible');
-  assert.equal(menu.menu?.scoutRun?.buttonText, 'SCOUT RUN');
-  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR|CHECKPOINT/);
+  assert.equal(settledMenu.menu?.missionBriefing?.mode, 'launch', 'Mission briefing should default to Mayhem Run');
+  assert.match(settledMenu.menu?.missionBriefing?.title || '', /MISSION BRIEFING.*MAYHEM RUN/i);
+  assert.match(settledMenu.menu?.missionBriefing?.body || '', /ranked.*global leaderboard.*achievements/i);
+  assert.ok(settledMenu.menu?.missionBriefing?.panelBounds?.width > 0, 'Mission briefing panel should be visible');
+  assert.equal(settledMenu.menu?.scoutRun?.buttonText, 'SCOUT RUN');
+  assert.equal(settledMenu.menu?.scoutRun?.buttonSubtext, 'UNRANKED PRACTICE');
+  assert.equal(settledMenu.menu?.sectorStart?.buttonText, 'SECTOR RUN');
+  assert.equal(settledMenu.menu?.sectorStart?.buttonSubtext, 'CHECKPOINT STARTS');
   await page.screenshot({ path: path.join(outputDir, 'menu-run-modes-1366x768.png'), fullPage: false });
   await page.setViewportSize({ width: 1280, height: 800 });
   await waitForScene(page, 'menu');
+  await page.waitForTimeout(500);
   await page.screenshot({ path: path.join(outputDir, 'menu-run-modes-1280x800.png'), fullPage: false });
   await page.setViewportSize({ width: 1366, height: 768 });
   await waitForScene(page, 'menu');
-  await focusMenuOption(page, 'launch');
+  const mayhemFocus = await focusMenuOption(page, 'launch');
+  assert.equal(mayhemFocus.menu?.missionBriefing?.mode, 'launch');
+  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /global leaderboard.*achievements.*career XP.*checkpoints/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-focused.png'), fullPage: false });
-  await focusMenuOption(page, 'scout');
+  const scoutFocus = await focusMenuOption(page, 'scout');
+  assert.equal(scoutFocus.menu?.missionBriefing?.mode, 'scout');
+  assert.match(scoutFocus.menu?.missionBriefing?.body || '', /unranked.*practice.*No leaderboard submission.*Mayhem checkpoint unlocks/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-scout-focused.png'), fullPage: false });
-  await focusMenuOption(page, 'sectorStart');
+  const sectorFocus = await focusMenuOption(page, 'sectorStart');
+  assert.equal(sectorFocus.menu?.missionBriefing?.mode, 'sectorStart');
+  assert.match(sectorFocus.menu?.missionBriefing?.body || '', /unlocked Mayhem checkpoints.*every 5 sectors.*No achievements.*separate/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-sector-run-focused.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.openSectorSelector?.());
   await page.waitForTimeout(250);
@@ -373,6 +407,7 @@ try {
   ].filter(Boolean).join('\n');
   assert.match(scoutResultText, /Scout|Unranked|no submission|SCORE NOT LOGGED/i);
   assert.doesNotMatch(scoutResultText, /submitted to global leaderboard|achievement unlocked/i);
+  assert.equal(scoutGameOver.gameOver?.leaderboardCta?.visible, false, 'Scout result must not show a leaderboard CTA');
   assert.equal(scoutGameOver.gameOver?.primaryCta?.label, 'ONE MORE SCOUT RUN');
   const afterScout = await storageSnapshot(page);
   assert.deepEqual(afterScout.hangar, beforeScout.hangar, 'Scout must not update hangar progress');
@@ -396,6 +431,23 @@ try {
   assert.equal(mayhemPlay.scoreSubmissionAllowed, true);
   assert.equal(mayhemPlay.runModeProfile?.unlocksAchievements, true);
   await page.screenshot({ path: path.join(outputDir, 'mayhem-focused-ranked.png'), fullPage: false });
+  await page.evaluate(() => {
+    const game = window.__game;
+    game.addScore(250000, 'baseScore');
+    game.level = 6;
+    game.gameOver({ fromInterlude: true });
+  });
+  const mayhemGameOver = await waitForGameOverActionStage(page);
+  const mayhemResultText = [
+    mayhemGameOver.gameOver?.ceremonyTitle,
+    mayhemGameOver.gameOver?.ceremonyComment,
+    mayhemGameOver.gameOver?.leaderboardStatus,
+    mayhemGameOver.gameOver?.prompt
+  ].filter(Boolean).join('\n');
+  assert.equal(mayhemGameOver.runMode, RUN_MODES.RANKED);
+  assert.equal(mayhemGameOver.scoreSubmissionAllowed, true);
+  assert.doesNotMatch(mayhemResultText, /SCOUT RUN|UNRANKED|NO ACHIEVEMENTS/i);
+  await page.screenshot({ path: path.join(outputDir, 'mayhem-result-ranked.png'), fullPage: false });
 
   await seedProfile(page);
   await page.evaluate(() => window.__game.startGame(undefined, { runMode: 'sector_start', startSector: 30 }));
@@ -406,6 +458,27 @@ try {
   assert.equal(sectorPlay.scoreSubmissionAllowed, false);
   assert.equal(sectorPlay.runModeProfile?.unlocksAchievements, false);
   await page.screenshot({ path: path.join(outputDir, 'sector-run-checkpoint-30.png'), fullPage: false });
+  await page.evaluate(() => {
+    const game = window.__game;
+    game.addScore(125000, 'baseScore');
+    game.level = 32;
+    game.unlockAchievement?.('ACH_SCORE_250K', { source: 'sector_guard' });
+    game.finalizeRunProgression?.();
+    game.gameOver({ fromInterlude: true });
+  });
+  const sectorGameOver = await waitForScene(page, 'gameOver');
+  const sectorResultText = [
+    sectorGameOver.gameOver?.ceremonyTitle,
+    sectorGameOver.gameOver?.ceremonyComment,
+    sectorGameOver.gameOver?.prompt,
+    sectorGameOver.gameOver?.leaderboardStatus
+  ].filter(Boolean).join('\n');
+  assert.equal(sectorGameOver.runMode, RUN_MODES.SECTOR_START);
+  assert.match(sectorResultText, /SECTOR RUN/i);
+  assert.match(sectorResultText, /NO ACHIEVEMENTS/i);
+  assert.match(sectorResultText, /Sector board|STEAM SECTOR/i);
+  assert.equal(sectorGameOver.scoreSubmissionAllowed, false);
+  await page.screenshot({ path: path.join(outputDir, 'sector-result-run.png'), fullPage: false });
 
   Object.assign(report, {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,
@@ -421,7 +494,8 @@ try {
     sectorRun: {
       checkpoint: sectorPlay.sectorStartChallenge?.checkpoint,
       playSector: sectorPlay.level,
-      achievements: sectorPlay.runModeProfile?.unlocksAchievements
+      achievements: sectorPlay.runModeProfile?.unlocksAchievements,
+      resultExplained: /NO ACHIEVEMENTS/i.test(sectorResultText)
     },
     pageErrors,
     consoleErrors

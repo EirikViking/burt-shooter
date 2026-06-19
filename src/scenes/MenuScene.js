@@ -156,6 +156,7 @@ export class MenuScene {
     this.flavor = null;
     this.primaryHint = null;
     this.runModePanel = null;
+    this.runModeBriefingTitle = null;
     this.runModeExplainer = null;
     this.disclaimer = null;
     this.startBtn = null;
@@ -975,6 +976,23 @@ export class MenuScene {
     this.container.addChild(this.runModePanel);
 
     const runModeSize = Math.max(11, getResponsiveFontSize(layout, 'small'));
+    this.runModeBriefingTitle = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: Math.max(11, Math.round(runModeSize * 0.94)),
+      fontWeight: '900',
+      fill: '#ffd15c',
+      stroke: '#020711',
+      strokeThickness: 3,
+      align: 'left',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.7, layout),
+      lineHeight: Math.round(runModeSize * 1.18)
+    });
+    this.runModeBriefingTitle.anchor.set(0, 0);
+    this.runModeBriefingTitle.alpha = 0;
+    this.runModeBriefingTitle.zIndex = 10;
+    this.container.addChild(this.runModeBriefingTitle);
+
     this.runModeExplainer = createText(this.getRunModeExplainerText(), {
       fontFamily: FONT_MONO,
       fontSize: runModeSize,
@@ -987,7 +1005,7 @@ export class MenuScene {
       wordWrapWidth: clampTextWidth(width * 0.7, layout),
       lineHeight: Math.round(runModeSize * 1.32)
     });
-    this.runModeExplainer.anchor.set(0.5);
+    this.runModeExplainer.anchor.set(0, 0);
     this.runModeExplainer.alpha = 0;
     this.runModeExplainer.zIndex = 10;
     this.container.addChild(this.runModeExplainer);
@@ -1019,7 +1037,7 @@ export class MenuScene {
     this.container.addChild(this.menuPanel);
     this.createSectorSelectorOverlay(layout);
 
-    this.startBtn = this.createButton('MAYHEM RUN', layout, { variant: 'primary', accent: 0xffd15c, icon: 'launch', subLabel: 'RANKED · LEADERBOARDS · ACHIEVEMENTS' });
+    this.startBtn = this.createButton('MAYHEM RUN', layout, { variant: 'primary', accent: 0xffd15c, icon: 'launch', subLabel: 'RANKED PRESSURE' });
     this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
       this.quickStartRun();
@@ -1028,8 +1046,8 @@ export class MenuScene {
 
     this.scoutRunBtn = this.createButton('SCOUT RUN', layout, {
       accent: 0x7fffd8,
-      icon: 'launch',
-      subLabel: 'UNRANKED · LOWER PRESSURE · NO ACHIEVEMENTS'
+      icon: 'hangar',
+      subLabel: 'UNRANKED PRACTICE'
     });
     this.scoutRunBtn.alpha = 0;
     this.scoutRunBtn.on('pointerdown', () => this.quickStartRun(RUN_MODES.SCOUT));
@@ -1246,6 +1264,7 @@ export class MenuScene {
       this.flavor,
       this.primaryHint,
       this.runModePanel,
+      this.runModeBriefingTitle,
       this.runModeExplainer,
       this.disclaimer,
       this.controls,
@@ -1391,18 +1410,22 @@ export class MenuScene {
     this.flavor.visible = false;
     this.flavor.alpha = 0;
     this.primaryHint.visible = false;
-    this.runModePanel.visible = false;
-    this.runModeExplainer.visible = false;
+    this.runModePanel.visible = true;
+    this.runModeBriefingTitle.visible = true;
+    this.runModeExplainer.visible = true;
     this.disclaimer.visible = false;
     this.controls.visible = false;
     this.primaryHint.text = this.getPrimaryHintText();
     this.primaryHint.style.fontSize = Math.max(10, controlsSize);
-    this.runModeExplainer.text = this.getRunModeExplainerText();
+    const runModeBriefing = this.getRunModeBriefing();
+    this.runModeBriefingTitle.text = translateText('MISSION BRIEFING') + ' // ' + runModeBriefing.title;
+    this.runModeExplainer.text = runModeBriefing.body;
     this.disclaimer.text = this.getDisclaimerText(layout);
 
     this.title.updateText?.(false);
     this.subtitle.updateText?.(false);
     this.primaryHint.updateText?.(false);
+    this.runModeBriefingTitle.updateText?.(false);
     this.runModeExplainer.updateText?.(false);
     fitTextToWidth(this.title, titleWidth, { minScale: 0.54 });
     fitTextToWidth(this.subtitle, titleWidth, { minScale: 0.72 });
@@ -1463,6 +1486,44 @@ export class MenuScene {
       this.drawMenuButton(button, false);
       cursorX += btnWidth + gap;
     });
+
+    const briefingWidth = Math.min(
+      width - marginX * 2,
+      Math.max(isMobileLayout ? 320 : 520, Math.min(width * (isMobileLayout ? 0.88 : 0.5), isMobileLayout ? 520 : 700))
+    );
+    const briefingHeight = isShortLayout ? 74 : 86;
+    const focusedButton = this.menuOptions?.[this.focusedMenuIndex]?.button || this.startBtn;
+    const targetX = focusedButton?.visible ? focusedButton.x : (marginX + briefingWidth / 2);
+    const briefingX = clampNumber(targetX - briefingWidth / 2, marginX, width - marginX - briefingWidth);
+    const briefingY = Math.max(
+      safeMargin.top + (isMobileLayout ? 112 : 138),
+      dockTop - briefingHeight - clampNumber(height * 0.025, 14, 24)
+    );
+    const briefingPadX = isMobileLayout ? 16 : 20;
+    const briefingPadY = isShortLayout ? 10 : 12;
+    this.runModeBriefingTitle.style.fontSize = isMobileLayout ? 11 : 12;
+    this.runModeBriefingTitle.style.wordWrapWidth = briefingWidth - briefingPadX * 2;
+    this.runModeBriefingTitle.x = briefingX + briefingPadX;
+    this.runModeBriefingTitle.y = briefingY + briefingPadY;
+    this.runModeBriefingTitle.alpha = this.runModeBriefingTitle.alpha || 1;
+    this.runModeExplainer.style.fontSize = Math.max(11, isMobileLayout ? controlsSize : controlsSize + 1);
+    this.runModeExplainer.style.wordWrapWidth = briefingWidth - briefingPadX * 2;
+    this.runModeExplainer.style.lineHeight = Math.round(this.runModeExplainer.style.fontSize * 1.28);
+    this.runModeExplainer.x = briefingX + briefingPadX;
+    this.runModeExplainer.y = briefingY + briefingPadY + (isShortLayout ? 19 : 23);
+    this.runModeExplainer.alpha = this.runModeExplainer.alpha || 1;
+    this.runModePanel.alpha = this.runModePanel.alpha || 1;
+    this.runModePanel._briefingBounds = {
+      x: Math.round(briefingX),
+      y: Math.round(briefingY),
+      width: Math.round(briefingWidth),
+      height: Math.round(briefingHeight),
+      right: Math.round(briefingX + briefingWidth),
+      bottom: Math.round(briefingY + briefingHeight)
+    };
+    this.runModePanel._briefingAccent = runModeBriefing.accent;
+    this.runModePanel._briefingSecondary = runModeBriefing.secondary;
+    this.drawRunModeExplainerPanel(layout, width, height);
 
     if (this.exitNotice) {
       this.exitNotice.style.fontSize = Math.max(11, controlsSize);
@@ -1549,6 +1610,7 @@ export class MenuScene {
     [
       [this.menuPanel, 0.72],
       [this.runModePanel, 0.38],
+      [this.runModeBriefingTitle, 0.46],
       [this.runModeExplainer, 0.46]
     ].forEach(([item, alpha]) => {
       if (!item) return;
@@ -1586,46 +1648,68 @@ export class MenuScene {
   }
 
   getRunModeExplainerText() {
+    return this.getRunModeBriefing().body;
+  }
+
+  getRunModeBriefing() {
     const focused = this.getSelectedMenuOptionId();
     if (focused === 'scout') {
-      return translateText('SCOUT RUN: unranked lower-pressure practice for testing ships and learning routes. No leaderboard, achievements, or Mayhem checkpoints.');
+      return {
+        id: 'scout',
+        title: translateText('SCOUT RUN'),
+        accent: 0x7fffd8,
+        secondary: 0x37f5ff,
+        body: translateText('Scout is unranked lower-pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or Mayhem checkpoint unlocks.')
+      };
     }
     if (focused === 'sectorStart') {
-      return translateText('SECTOR RUN: uses unlocked ranked checkpoints. No achievements. New starts unlock every 5 sectors in Mayhem Run.');
+      return {
+        id: 'sectorStart',
+        title: translateText('SECTOR RUN'),
+        accent: 0x37f5ff,
+        secondary: 0xffd15c,
+        body: translateText('Sector Run uses unlocked Mayhem checkpoints. New starts unlock every 5 sectors. No achievements; Sector board records are separate from the Mayhem leaderboard.')
+      };
     }
     if (focused === 'launch') {
-      return translateText('MAYHEM RUN: ranked Sector 1 climb. Submits to the global leaderboard and unlocks achievements.');
+      return {
+        id: 'launch',
+        title: translateText('MAYHEM RUN'),
+        accent: 0xffd15c,
+        secondary: 0x7fffd8,
+        body: translateText('Mayhem is the ranked Sector 1 climb. It submits to the global leaderboard, unlocks achievements, earns career XP, and opens ranked checkpoints.')
+      };
     }
-    return translateText('MAYHEM RUN: ranked. SCOUT RUN: practice. SECTOR RUN: checkpoint starts.');
+    return {
+      id: 'overview',
+      title: translateText('RUN MODES'),
+      accent: 0x37f5ff,
+      secondary: 0xffd15c,
+      body: translateText('Mayhem is ranked. Scout is unranked practice. Sector Run starts from unlocked Mayhem checkpoints.')
+    };
   }
 
   drawRunModeExplainerPanel(layout, width, height) {
-    if (!this.runModePanel || !this.runModeExplainer) return;
-    const textBounds = boundsForDisplayObject(this.runModeExplainer);
-    if (!textBounds) return;
-    const isMobileLayout = layout.isMobile || width < 720;
-    const padX = isMobileLayout ? 12 : 18;
-    const padY = isMobileLayout ? 7 : 8;
-    const x = textBounds.x - padX;
-    const y = textBounds.y - padY;
-    const panelWidth = textBounds.width + padX * 2;
-    const panelHeight = textBounds.height + padY * 2;
-    const focusedId = this.getSelectedMenuOptionId();
-    const accent = focusedId === 'sectorStart' ? 0xffef7e : 0x37f5ff;
-    const secondary = focusedId === 'sectorStart' ? 0xff55d9 : 0x7fffd8;
+    if (!this.runModePanel) return;
+    const panelBounds = this.runModePanel._briefingBounds;
+    if (!panelBounds) return;
+    const x = panelBounds.x;
+    const y = panelBounds.y;
+    const panelWidth = panelBounds.width;
+    const panelHeight = panelBounds.height;
+    const accent = this.runModePanel._briefingAccent || 0x37f5ff;
+    const secondary = this.runModePanel._briefingSecondary || 0x7fffd8;
 
     this.runModePanel.clear();
-    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 6);
-    this.runModePanel.fill({ color: 0x031323, alpha: 0.56 });
-    this.runModePanel.roundRect(x, y, panelWidth, panelHeight, 6);
-    this.runModePanel.stroke({ color: accent, width: 1.5, alpha: 0.72 });
-    this.runModePanel.rect(x + 7, y + 6, 3, Math.max(6, panelHeight - 12));
-    this.runModePanel.fill({ color: secondary, alpha: 0.88 });
-    this.runModePanel.rect(x + panelWidth - 10, y + 6, 3, Math.max(6, panelHeight - 12));
-    this.runModePanel.fill({ color: 0xffd15c, alpha: 0.58 });
-    this.runModePanel.moveTo(x + 18, y + panelHeight - 6);
-    this.runModePanel.lineTo(x + panelWidth - 18, y + panelHeight - 6);
-    this.runModePanel.stroke({ color: 0x7fffd8, width: 1, alpha: 0.2 });
+    drawCutPanel(this.runModePanel, x, y, panelWidth, panelHeight, 10, { color: 0x031323, alpha: 0.78 }, { color: accent, width: 1.5, alpha: 0.82 });
+    this.runModePanel.rect(x + 10, y + 9, 3, Math.max(6, panelHeight - 18));
+    this.runModePanel.fill({ color: secondary, alpha: 0.9 });
+    this.runModePanel.rect(x + panelWidth - 13, y + 9, 3, Math.max(6, panelHeight - 18));
+    this.runModePanel.fill({ color: accent, alpha: 0.64 });
+    this.runModePanel.rect(x + 22, y + 30, panelWidth - 44, 1);
+    this.runModePanel.fill({ color: 0xffffff, alpha: 0.16 });
+    this.runModePanel.rect(x + 22, y + panelHeight - 8, panelWidth - 44, 1);
+    this.runModePanel.fill({ color: secondary, alpha: 0.2 });
   }
 
   drawMenuPanel(layout) {
@@ -2155,6 +2239,7 @@ export class MenuScene {
       flavor: this.flavor,
       primaryHint: this.primaryHint,
       runModePanel: this.runModePanel,
+      runModeBriefingTitle: this.runModeBriefingTitle,
       runModeExplainer: this.runModeExplainer,
       disclaimer: this.disclaimer,
       controls: this.controls,
@@ -2181,6 +2266,14 @@ export class MenuScene {
       optionOrder: this.menuOptions?.map((option) => option.id).filter(Boolean) || [],
       inputDevice: this.lastInputDevice,
       menuIconVariant: this.menuIconVariant,
+      missionBriefing: {
+        title: this.runModeBriefingTitle?.text || null,
+        body: this.runModeExplainer?.text || null,
+        mode: this.getRunModeBriefing().id,
+        panelBounds: this.runModePanel?._briefingBounds || boundsForDisplayObject(this.runModePanel),
+        titleBounds: boundsForDisplayObject(this.runModeBriefingTitle),
+        bodyBounds: boundsForDisplayObject(this.runModeExplainer)
+      },
       howToPlay: this.howToPlayOverlay?.getDebugState ? this.howToPlayOverlay.getDebugState() : null,
       menuIcons: Object.fromEntries(this.getMenuButtonList().map((button) => [
         button?._iconAssetKey || button?._iconType || 'unknown',
@@ -3134,7 +3227,8 @@ export class MenuScene {
     this.animateElement(this.flavor, 0.55, 0.5);
     this.animateElement(this.primaryHint, 0.68, 0.42);
     this.animateElement(this.runModePanel, 0.74, 0.42);
-    this.animateElement(this.runModeExplainer, 0.76, 0.42);
+    this.animateElement(this.runModeBriefingTitle, 0.75, 0.42);
+    this.animateElement(this.runModeExplainer, 0.77, 0.42);
     this.animateElement(this.menuPanel, 0.78, 0.45);
     this.animateElement(this.startBtn, 0.92, 0.4);
     this.animateElement(this.scoutRunBtn, 1.02, 0.4);
@@ -3252,7 +3346,11 @@ export class MenuScene {
     });
     this.focusedMenuIndex = next;
     if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
-    if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText();
+    if (this.runModeBriefingTitle || this.runModeExplainer) {
+      const briefing = this.getRunModeBriefing();
+      if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = translateText('MISSION BRIEFING') + ' // ' + briefing.title;
+      if (this.runModeExplainer) this.runModeExplainer.text = briefing.body;
+    }
     this.drawSectorStartStepperCue();
     this.layoutMenu();
   }
@@ -3363,26 +3461,12 @@ export class MenuScene {
   }
 
   getSectorStartButtonLabel() {
-    const checkpoint = this.getSelectedSectorStartCheckpoint();
-    if (!checkpoint) return translateText('SECTOR RUN');
-    const record = getSectorStartChallengeRecord(checkpoint);
-    const base = checkpoint % 10 === 0
-      ? translateText('CHECKPOINT {sector} RUN', { sector: checkpoint })
-      : translateText('SECTOR {sector} RUN', { sector: checkpoint });
-    if (record?.scoreEarned > 0) {
-      return `${base} | ${translateText('BEST')} ${this.formatSectorStartMenuBestScore(record.scoreEarned)}`;
-    }
-    return base;
+    return translateText('SECTOR RUN');
   }
 
   getSectorStartButtonSubLabel() {
-    const checkpoint = this.getSelectedSectorStartCheckpoint();
-    if (!checkpoint || !this.sectorStartState?.available) return translateText('LOCKED');
-    const record = getSectorStartChallengeRecord(checkpoint);
-    if (record?.scoreEarned > 0) {
-      return `${translateText('BEST')} ${this.formatSectorStartMenuBestScore(record.scoreEarned)}`;
-    }
-    return translateText('CHOOSE START POINT');
+    if (!this.sectorStartState?.available) return translateText('LOCKED');
+    return translateText('CHECKPOINT STARTS');
   }
 
   updateSectorStartButton({ forceGpuRefresh = false } = {}) {

@@ -360,10 +360,12 @@ function assertMenuState(state, viewport) {
   assertHorizontalDock(state, viewport.name);
   assertUtilityCluster(state, viewport.name);
   assert.equal(menu.sectorStart.buttonVisualText, 'SECTOR RUN', `${viewport.name}: sector tile visual label`);
-  assert.match(menu.sectorStart.buttonText || '', /CHECKPOINT 30 RUN/, `${viewport.name}: debug keeps selected checkpoint label`);
-  assert.doesNotMatch(menu.sectorStart.buttonSubtext || '', /BEGINS AT SECTOR 31/, `${viewport.name}: dock tile should not carry overrun start detail`);
+  assert.equal(menu.sectorStart.buttonText, 'SECTOR RUN', `${viewport.name}: sector dock label should stay stable`);
+  assert.equal(menu.sectorStart.buttonSubtext, 'CHECKPOINT STARTS', `${viewport.name}: sector dock should summarize checkpoint starts`);
+  assert.match(menu.missionBriefing?.body || '', /ranked.*global leaderboard.*achievements/i, `${viewport.name}: mission briefing should explain the focused run mode`);
+  assert.doesNotMatch(menu.sectorStart.buttonSubtext || '', /BEGINS AT SECTOR 31|BEST|CHECKPOINT 30/, `${viewport.name}: dock tile should not carry overrun start detail`);
   assert.equal(menu.sectorStart.arrowCueVisible, false, `${viewport.name}: sector tile should not show dock stepper arrows`);
-  assert.ok((menu.items.runModePanel?.width || 0) === 0, `${viewport.name}: old run mode panel should not be visible`);
+  assert.ok((menu.items.runModePanel?.width || 0) > 0, `${viewport.name}: mission briefing panel should be visible`);
   assert.ok((menu.items.flavor?.width || 0) === 0, `${viewport.name}: old flavor text should not be visible`);
 }
 
