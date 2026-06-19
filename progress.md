@@ -1,5 +1,12 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-20 P0 Explicit Profile Rescue Import
+
+- Current user report: private Steam test BuildID `23829231` still shows low progress because the active runtime save is `steam-76561198953993508`, while the preserved high-progress save is a sibling explicit Steam profile `steam-76561198692310517`.
+- Added an explicit local rescue script, `npm run profile:rescue`, that is dry-run by default and applies only with `--apply`. It refuses automatic cross-profile merges unless the operator names source and target profile keys, backs up target files before writing, writes ignored audit evidence, and preserves Steam profile isolation.
+- The merge is additive/monotonic: Codex discoveries, Hangar ships, checkpoints, highscores, achievements mirror, ship usage, and set-like progress are unioned, numeric progress uses max, and active target settings are preserved unless missing.
+- Added `npm run check:profile-rescue-import` with high-profile, low-active-profile, legacy, unrelated-profile, and already-merged fixtures proving dry-run safety, apply behavior, idempotence, wrong-direction refusal, normal profile loading, and no deletion or modification of unrelated Steam profiles. No packaging, upload, SetLive, or Steam branch assignment is part of this pass.
+
 ## 2026-06-16 Sector Arrival Safety And Performance
 
 - Current user request: delay enemy fly-ins until the sector arrival animation finishes, investigate uneven FPS/stutter, smooth parked enemy ships, then deploy to Steam.

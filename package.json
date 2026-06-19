@@ -84,6 +84,8 @@
     "check:steam-cloud-save": "node scripts/check-steam-cloud-save.mjs",
     "check:profile-isolation": "node scripts/check-profile-isolation.mjs",
     "check:save-profile-migration": "node scripts/check-save-profile-migration.mjs",
+    "check:profile-rescue-import": "node scripts/check-profile-rescue-import.mjs",
+    "profile:rescue": "node scripts/rescue-profile-progress.mjs",
     "check:progression-pacing": "node scripts/check-progression-pacing.mjs",
     "check:release-line": "node scripts/check-release-line.mjs",
     "check:release-hardening": "node scripts/check-release-hardening.mjs",
