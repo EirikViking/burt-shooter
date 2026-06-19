@@ -1,6 +1,21 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "DISPLAY": "화면",
+  "Display Mode": "화면 모드",
+  "Window Size": "창 크기",
+  "Safe Reset": "안전 초기화",
+  "AUDIO": "오디오",
+  "Fullscreen": "전체 화면",
+  "Windowed": "창 모드",
+  "Borderless": "테두리 없음",
+  "Native {size}": "기본 {size}",
+  "Current {size}": "현재 {size}",
+  "Display changes apply immediately": "화면 변경은 즉시 적용됩니다",
+  "Display changes applied": "화면 변경 적용됨",
+  "Window size applied": "창 크기 적용됨",
+  "Safe display reset applied": "안전 화면 설정 초기화됨",
+  "Browser display fallback active": "브라우저 화면 대체 모드 활성",
   'NEW HULL ARRIVED': 'SAE GICHE DAEGI',
   'NEW HULLS ARRIVED': 'SAE GICHEDEUL DAEGI',
   'HANGAR DOORS OPEN': 'HANGAR MUN YEOLRIM',

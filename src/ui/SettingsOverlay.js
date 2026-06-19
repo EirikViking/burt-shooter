@@ -7,6 +7,14 @@ import {
   setPlayerFocusScale,
   setScreenShakeScale
 } from '../config/AccessibilitySettings.js';
+import {
+  DEFAULT_WINDOW_SIZE_OPTIONS,
+  DISPLAY_MODES,
+  applyDisplaySettings,
+  getDisplayOptions,
+  getDisplaySettings,
+  resetDisplaySettings
+} from '../config/DisplaySettings.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -88,6 +96,13 @@ export class SettingsOverlay {
     this.draggingSlider = null;
     this.audioTestButtons = {};
     this.musicPackButton = null;
+    this.displayModeButton = null;
+    this.displaySizeButton = null;
+    this.displayStatusText = null;
+    this.displayOptions = {
+      modes: DISPLAY_MODES.map((entry) => ({ ...entry, supported: true })),
+      sizes: DEFAULT_WINDOW_SIZE_OPTIONS
+    };
     this.footerButtons = {};
     this.languageButton = null;
     this.languageHint = null;
@@ -110,6 +125,7 @@ export class SettingsOverlay {
     this.languageUnsubscribe = onLanguageChange(() => this.rebuild());
     this.keyHandler = null;
     this.build();
+    this.refreshDisplayOptions();
     this.setupKeyboardNavigation();
     this.setControlFocus(0);
   }
@@ -141,8 +157,8 @@ export class SettingsOverlay {
     });
 
     const isCompact = width < 620 || height < 820;
-    const panelWidth = Math.min(560, width * 0.82);
-    const panelHeight = Math.min(isCompact ? 790 : 730, height * (isCompact ? 0.98 : 0.97));
+    const panelWidth = Math.min(680, width * 0.9);
+    const panelHeight = Math.min(isCompact ? 790 : 760, height * (isCompact ? 0.98 : 0.97));
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
 
@@ -164,12 +180,24 @@ export class SettingsOverlay {
     titleText.position.set(width / 2, panelY + (isCompact ? 42 : 48));
     this.container.addChild(titleText);
 
-    const toggleGap = isCompact ? 34 : 38;
-    const testGap = isCompact ? 32 : 36;
-    const sliderGap = isCompact ? 34 : 38;
+    const dense = height < 760;
+    const sectionGap = dense ? 22 : 26;
+    const toggleGap = dense ? 30 : (isCompact ? 32 : 34);
+    const testGap = dense ? 30 : (isCompact ? 31 : 34);
+    const sliderGap = dense ? 31 : (isCompact ? 32 : 34);
     const footerButtonHeight = isCompact ? 32 : 38;
     const stackedButtonWidth = Math.min(240, panelWidth - 56);
-    let y = panelY + (isCompact ? 84 : 100);
+    let y = panelY + (dense ? 74 : (isCompact ? 84 : 92));
+    this.addSectionLabel('DISPLAY', y);
+    y += sectionGap;
+    this.addDisplayModeRow('Display Mode', y);
+    y += toggleGap;
+    this.addDisplaySizeRow('Window Size', y);
+    y += testGap;
+    this.addDisplayResetRow('Safe Reset', y);
+    y += sectionGap;
+    this.addSectionLabel('AUDIO', y);
+    y += sectionGap;
     this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
     y += toggleGap;
     this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
@@ -579,6 +607,179 @@ export class SettingsOverlay {
     return button;
   }
 
+  addSectionLabel(label, y) {
+    const width = this.game.getWidth();
+    const text = createText(translateText(label), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 14,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      letterSpacing: 0
+    });
+    text.anchor.set(0.5);
+    text.position.set(width / 2, y);
+    fitTextToWidth(text, Math.min(420, this.game.getWidth() - 72), { minScale: 0.74 });
+    this.container.addChild(text);
+  }
+
+  getAvailableDisplayModes() {
+    const current = getDisplaySettings().mode;
+    const options = Array.isArray(this.displayOptions?.modes) ? this.displayOptions.modes : [];
+    const supportedIds = options
+      .filter((entry) => entry?.supported !== false || entry?.id === current)
+      .map((entry) => entry.id);
+    const ids = supportedIds.length ? supportedIds : DISPLAY_MODES.map((entry) => entry.id);
+    return DISPLAY_MODES.filter((entry) => ids.includes(entry.id));
+  }
+
+  getWindowSizeOptions() {
+    const options = Array.isArray(this.displayOptions?.sizes) && this.displayOptions.sizes.length
+      ? this.displayOptions.sizes
+      : DEFAULT_WINDOW_SIZE_OPTIONS;
+    return options;
+  }
+
+  getModeLabel(mode) {
+    return translateText(DISPLAY_MODES.find((entry) => entry.id === mode)?.label || 'Windowed');
+  }
+
+  getSizeLabel(size) {
+    const clean = size || getDisplaySettings().windowSize;
+    const label = String(clean.label || '').trim();
+    const sizeText = `${Math.round(clean.width)} x ${Math.round(clean.height)}`;
+    if (label.startsWith('Native')) return translateText('Native {size}', { size: sizeText });
+    if (label.startsWith('Current')) return translateText('Current {size}', { size: sizeText });
+    return sizeText;
+  }
+
+  setDisplayStatus(message, vars = {}) {
+    if (!this.displayStatusText) return;
+    this.displayStatusText.text = translateText(message, vars);
+    fitTextToWidth(this.displayStatusText, 300, { minScale: 0.65 });
+  }
+
+  updateDisplayControls() {
+    const settings = getDisplaySettings();
+    if (this.displayModeButton?._label) {
+      this.displayModeButton._label.text = this.getModeLabel(settings.mode);
+      fitTextToWidth(this.displayModeButton._label, 174);
+    }
+    if (this.displaySizeButton?._label) {
+      this.displaySizeButton._label.text = this.getSizeLabel(settings.windowSize);
+      fitTextToWidth(this.displaySizeButton._label, 174);
+    }
+  }
+
+  async refreshDisplayOptions() {
+    try {
+      this.displayOptions = await getDisplayOptions();
+      this.updateDisplayControls();
+    } catch (error) {
+      console.warn('[SettingsOverlay] Display options unavailable:', error);
+    }
+  }
+
+  async applyDisplayUpdate(settings, status = 'Display changes applied') {
+    const result = await applyDisplaySettings(settings);
+    this.updateDisplayControls();
+    this.setDisplayStatus(result?.ok ? status : 'Browser display fallback active');
+    AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+    return result;
+  }
+
+  addDisplayModeRow(label, y) {
+    const settings = getDisplaySettings();
+    this.addChoiceRow(label, this.getModeLabel(settings.mode), y, async (direction = 1) => {
+      const modes = this.getAvailableDisplayModes();
+      const currentIndex = Math.max(0, modes.findIndex((entry) => entry.id === getDisplaySettings().mode));
+      const next = modes[((currentIndex + Math.sign(direction || 1)) % modes.length + modes.length) % modes.length];
+      await this.applyDisplayUpdate({ ...getDisplaySettings(), mode: next.id });
+    }, {
+      id: 'display_mode',
+      buttonWidth: 222,
+      onButton: (button) => {
+        this.displayModeButton = button;
+      }
+    });
+  }
+
+  addDisplaySizeRow(label, y) {
+    const settings = getDisplaySettings();
+    this.addChoiceRow(label, this.getSizeLabel(settings.windowSize), y, async (direction = 1) => {
+      const sizes = this.getWindowSizeOptions();
+      const current = getDisplaySettings().windowSize;
+      const currentIndex = Math.max(0, sizes.findIndex((entry) => entry.width === current.width && entry.height === current.height));
+      const next = sizes[((currentIndex + Math.sign(direction || 1)) % sizes.length + sizes.length) % sizes.length];
+      await this.applyDisplayUpdate({ ...getDisplaySettings(), mode: 'windowed', windowSize: next }, 'Window size applied');
+    }, {
+      id: 'display_size',
+      buttonWidth: 222,
+      onButton: (button) => {
+        this.displaySizeButton = button;
+      }
+    });
+  }
+
+  addDisplayResetRow(label, y) {
+    const width = this.game.getWidth();
+    const row = new PIXI.Container();
+    row.position.set(width / 2, y);
+
+    const button = this.createButton(label, -60, 0, async () => {
+      const settings = resetDisplaySettings();
+      await this.applyDisplayUpdate(settings, 'Safe display reset applied');
+    }, { width: 168, height: 30 });
+    row.addChild(button);
+
+    const status = createText(translateText('Display changes apply immediately'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 12,
+      fill: '#ffc96e'
+    });
+    status.anchor.set(0, 0.5);
+    status.x = 44;
+    this.displayStatusText = status;
+    row.addChild(status);
+
+    this.container.addChild(row);
+    this.rows.push(row);
+    this.registerControl({ type: 'button', id: 'display_reset', button, label });
+  }
+
+  addChoiceRow(label, valueLabel, y, onCycle, { id, buttonWidth = 190, onButton = null } = {}) {
+    const width = this.game.getWidth();
+    const row = new PIXI.Container();
+    row.position.set(width / 2, y);
+
+    const labelText = createText(translateText(label), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 16,
+      fill: '#9befff'
+    });
+    labelText.anchor.set(1, 0.5);
+    labelText.x = -154;
+    fitTextToWidth(labelText, 132, { minScale: 0.7 });
+    row.addChild(labelText);
+
+    const cycle = (direction = 1) => {
+      Promise.resolve(onCycle?.(direction)).catch((error) => console.warn('[SettingsOverlay] Choice update failed:', error));
+    };
+    const button = this.createButton(valueLabel, 34, 0, () => cycle(1), { width: buttonWidth, height: 32 });
+    button.label = `ui_settings_${id}`;
+    row.addChild(button);
+    onButton?.(button);
+
+    this.container.addChild(row);
+    this.rows.push(row);
+    this.registerControl({
+      type: 'choice',
+      id,
+      button,
+      label,
+      cycle
+    });
+  }
+
   addFooterButton(key, label, x, y, onPress, options) {
     const button = this.createButton(label, x, y, onPress, options);
     button.label = `ui_settingsFooter_${key}`;
@@ -737,19 +938,6 @@ export class SettingsOverlay {
     if (nav.pressed.left) this.adjustFocusedControl(-1);
     if (nav.pressed.right) this.adjustFocusedControl(1);
     if (nav.pressed.confirm) this.activateFocusedControl();
-  }
-
-  toggleFullscreen() {
-    try {
-      if (document.fullscreenElement) {
-        document.exitFullscreen?.();
-      } else {
-        document.documentElement.requestFullscreen?.();
-      }
-      AudioManager.playSfx('ui_open', { volume: 0.2, minIntervalMs: 120 });
-    } catch (error) {
-      console.warn('[SettingsOverlay] Fullscreen toggle failed:', error);
-    }
   }
 
   openCreditsPanel() {
@@ -1494,7 +1682,23 @@ export class SettingsOverlay {
   }
 
   getDebugState() {
+    const displaySettings = getDisplaySettings();
     return {
+      display: {
+        mode: displaySettings.mode,
+        windowSize: displaySettings.windowSize,
+        modeLabel: this.displayModeButton?._label?.text || null,
+        sizeLabel: this.displaySizeButton?._label?.text || null,
+        status: this.displayStatusText?.text || null,
+        options: {
+          modes: this.getAvailableDisplayModes().map((entry) => entry.id),
+          sizes: this.getWindowSizeOptions().map((entry) => ({
+            width: entry.width,
+            height: entry.height,
+            label: entry.label || null
+          }))
+        }
+      },
       musicPack: {
         value: AudioManager.getSettings().musicPack,
         button: debugBounds(this.musicPackButton),

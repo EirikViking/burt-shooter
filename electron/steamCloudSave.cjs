@@ -12,6 +12,7 @@ const LOCAL_OFFLINE_PROFILE_ID = 'local-offline';
 const LEGACY_SHARED_PROFILE_ID = 'legacy-shared';
 const SUPPORTED_LANGUAGE_MODES = new Set(['system', 'en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']);
 const MUSIC_PACKS = new Set(['classic', 'generated']);
+const DISPLAY_MODES = new Set(['fullscreen', 'windowed', 'borderless']);
 
 function nowIso() {
   return new Date().toISOString();
@@ -495,6 +496,18 @@ function sanitizeAudioSettings(audio = {}) {
   return next;
 }
 
+function sanitizeDisplaySettings(display = {}) {
+  const raw = display && typeof display === 'object' ? display : {};
+  const mode = DISPLAY_MODES.has(raw.mode) ? raw.mode : 'fullscreen';
+  const size = raw.windowSize || raw.resolution || raw.size || {};
+  const width = sanitizeNumber(size.width, 1280, { min: 960, max: 7680 });
+  const height = sanitizeNumber(size.height, 720, { min: 540, max: 4320 });
+  return {
+    mode,
+    windowSize: { width, height }
+  };
+}
+
 function sanitizeSettings(settings = {}) {
   const clampUnit = (value, fallback) => {
     const number = Number(value);
@@ -505,7 +518,8 @@ function sanitizeSettings(settings = {}) {
     screenShake: clampUnit(settings.screenShake, 1),
     playerFocus: clampUnit(settings.playerFocus, 0.72),
     colorAssist: Boolean(settings.colorAssist),
-    audio: sanitizeAudioSettings(settings.audio || {})
+    audio: sanitizeAudioSettings(settings.audio || {}),
+    display: sanitizeDisplaySettings(settings.display || {})
   };
 }
 

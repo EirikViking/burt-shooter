@@ -4,6 +4,14 @@ import {
   isBetterSectorStartChallengeRecord,
   normalizeSectorStartChallengeRecord
 } from './progression/SectorStartChallengeRecords.js';
+import {
+  DISPLAY_MODE_KEY,
+  DISPLAY_WINDOW_SIZE_KEY,
+  getDisplaySettings,
+  normalizeDisplaySettings
+} from './config/DisplaySettings.js';
+
+export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY };
 
 export const CLOUD_LANGUAGE_KEY = 'novaSwarm.languagePreference.v1';
 export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
@@ -396,7 +404,8 @@ export function collectSteamCloudPersistenceState({
       screenShake: clampUnit(settings.screenShake, 1),
       playerFocus: clampUnit(settings.playerFocus, 0.72),
       colorAssist: Boolean(settings.colorAssist),
-      audio: collectAudioSettings(storage)
+      audio: collectAudioSettings(storage),
+      display: getDisplaySettings({ storage })
     }
   };
 }
@@ -526,6 +535,15 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     summary.restored = true;
   }
   summary.settings += restoreAudioSettings(storage, settings.audio || save.audioSettings);
+  if (settings.display !== undefined) {
+    const display = normalizeDisplaySettings(settings.display);
+    const wroteMode = writeStorage(storage, DISPLAY_MODE_KEY, display.mode);
+    const wroteSize = writeStorage(storage, DISPLAY_WINDOW_SIZE_KEY, JSON.stringify(display.windowSize));
+    if (wroteMode || wroteSize) {
+      summary.settings += 1;
+      summary.restored = true;
+    }
+  }
   if (summary.settings > 0) summary.restored = true;
 
   return summary;

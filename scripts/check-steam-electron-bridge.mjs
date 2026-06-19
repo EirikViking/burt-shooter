@@ -291,8 +291,12 @@ async function checkUploadInFlightGuard() {
 function checkPreloadSurface() {
   const preload = readFileSync(path.resolve('electron/preload.cjs'), 'utf8');
   assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaSteamLeaderboard'/);
+  assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaDisplay'/);
   assert.doesNotMatch(preload, /fs\.|child_process|shell|process\.env/);
   for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getFriendsScores', 'submitScore', 'submitScoreDetailed', 'requestCurrentStats', 'getLastUploadDiagnostics', 'getRuntimeInfo']) {
+    assert.match(preload, new RegExp(`${method}:`));
+  }
+  for (const method of ['getSettings', 'getInfo', 'applySettings']) {
     assert.match(preload, new RegExp(`${method}:`));
   }
 }

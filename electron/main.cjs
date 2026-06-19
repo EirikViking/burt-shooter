@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
@@ -9,6 +9,15 @@ const { runSteamLeaderboardRuntimeProbe } = require('./steamLeaderboardRuntimePr
 const { createNativeGamepadBridge } = require('./nativeGamepadBridge.cjs');
 const { createSteamCloudSave } = require('./steamCloudSave.cjs');
 const { getMaintainerDevtoolsState } = require('./maintainerDevtoolsGate.cjs');
+const {
+  DISPLAY_MODE_BORDERLESS,
+  DISPLAY_MODE_FULLSCREEN,
+  DEFAULT_WINDOW_SIZE,
+  applyDisplaySettingsToWindow,
+  getDisplayInfo,
+  readDisplaySettings,
+  writeDisplaySettings
+} = require('./displaySettings.cjs');
 
 const isSmoke = process.argv.includes('--smoke') || process.env.NOVA_SWARM_ELECTRON_SMOKE === '1';
 const isControlSmoke = process.argv.includes('--control-smoke') || process.env.NOVA_SWARM_ELECTRON_CONTROL_SMOKE === '1';
@@ -115,6 +124,21 @@ function registerAppIpc() {
     }
     setImmediate(() => app.quit());
     return { ok: true };
+  });
+}
+
+function registerDisplayIpc(window) {
+  ipcMain.handle('nova-display:getSettings', () => readDisplaySettings(app.getPath('userData')));
+  ipcMain.handle('nova-display:getInfo', () => {
+    const settings = readDisplaySettings(app.getPath('userData'));
+    return {
+      settings,
+      ...getDisplayInfo(screen, window, settings)
+    };
+  });
+  ipcMain.handle('nova-display:applySettings', (_event, payload) => {
+    const settings = writeDisplaySettings(app.getPath('userData'), payload);
+    return applyDisplaySettingsToWindow(window, screen, settings);
   });
 }
 
@@ -396,12 +420,22 @@ function startLocalServer() {
 }
 
 function createWindow() {
+  const displaySettings = readDisplaySettings(app.getPath('userData'));
+  const startFullscreen = shouldStartFullscreen && displaySettings.mode === DISPLAY_MODE_FULLSCREEN;
+  const startBorderless = shouldStartFullscreen && displaySettings.mode === DISPLAY_MODE_BORDERLESS;
+  const primaryDisplay = screen.getPrimaryDisplay?.();
+  const displayBounds = primaryDisplay?.bounds || { x: 0, y: 0, width: 1920, height: 1080 };
+  const windowSize = displaySettings.windowSize || DEFAULT_WINDOW_SIZE;
   const win = new BrowserWindow({
-    width: 1280,
-    height: 720,
+    x: startBorderless ? displayBounds.x : undefined,
+    y: startBorderless ? displayBounds.y : undefined,
+    width: startBorderless ? displayBounds.width : windowSize.width,
+    height: startBorderless ? displayBounds.height : windowSize.height,
     minWidth: 960,
     minHeight: 540,
-    fullscreen: shouldStartFullscreen,
+    fullscreen: startFullscreen,
+    frame: !startBorderless,
+    resizable: !startBorderless,
     backgroundColor: '#030714',
     show: !isSmoke && !isSteamLeaderboardProbe,
     autoHideMenuBar: true,
@@ -1130,6 +1164,7 @@ app.whenReady().then(async () => {
   registerSteamCloudIpc();
   await startLocalServer();
   const win = createWindow();
+  registerDisplayIpc(win);
   const notifyWindowBlur = () => sendWindowBlurToRenderer(win);
   win.on('blur', notifyWindowBlur);
   app.on('browser-window-blur', (_event, blurredWindow) => {

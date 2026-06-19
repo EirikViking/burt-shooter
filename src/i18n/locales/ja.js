@@ -1,6 +1,21 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "DISPLAY": "表示",
+  "Display Mode": "表示モード",
+  "Window Size": "ウィンドウサイズ",
+  "Safe Reset": "安全リセット",
+  "AUDIO": "オーディオ",
+  "Fullscreen": "フルスクリーン",
+  "Windowed": "ウィンドウ",
+  "Borderless": "ボーダーレス",
+  "Native {size}": "ネイティブ {size}",
+  "Current {size}": "現在 {size}",
+  "Display changes apply immediately": "表示変更はすぐ適用されます",
+  "Display changes applied": "表示変更を適用しました",
+  "Window size applied": "ウィンドウサイズを適用しました",
+  "Safe display reset applied": "安全表示にリセットしました",
+  "Browser display fallback active": "ブラウザ表示フォールバック中",
   'NEW HULL ARRIVED': 'ATARASHII KITAI TOUCHAKU',
   'NEW HULLS ARRIVED': 'ATARASHII KITAI GUN TOUCHAKU',
   'HANGAR DOORS OPEN': 'HANGAR TOBIRA KAIHOU',

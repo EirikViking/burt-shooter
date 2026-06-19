@@ -241,7 +241,7 @@ try {
   checkpoint('menu-settings-open', settingsOpen, { screenshot: await screenshot(page, '02-menu-settings-open') });
 
   const masterBefore = settingsOpen.audio?.masterVolume;
-  for (let i = 0; i < 7; i += 1) await tapButton(page, 13);
+  for (let i = 0; i < 10; i += 1) await tapButton(page, 13);
   const languageFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'language', 'language selector focus');
   checkpoint('menu-settings-language-focus', languageFocused);
   await tapButton(page, 13);
@@ -373,7 +373,7 @@ try {
   await tapButton(page, 0);
   const pauseSettings = await waitForState(page, (state) => state.overlays?.pause && state.overlays?.settings && state.settingsOverlay?.focus, 'pause settings opened by controller');
   const pauseMasterBefore = pauseSettings.audio?.masterVolume;
-  for (let i = 0; i < 7; i += 1) await tapButton(page, 13);
+  for (let i = 0; i < 10; i += 1) await tapButton(page, 13);
   const pauseLanguageFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'language', 'pause language selector focus');
   checkpoint('pause-settings-language-focus', pauseLanguageFocused);
   await tapButton(page, 13);

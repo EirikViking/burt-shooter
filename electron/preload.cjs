@@ -17,6 +17,12 @@ const APP_CHANNELS = {
   exitGame: 'nova-app:exitGame'
 };
 
+const DISPLAY_CHANNELS = {
+  getSettings: 'nova-display:getSettings',
+  getInfo: 'nova-display:getInfo',
+  applySettings: 'nova-display:applySettings'
+};
+
 const MAINTAINER_DEVTOOLS_CHANNELS = {
   getState: 'nova-maintainer-devtools:getState'
 };
@@ -99,6 +105,12 @@ contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
 
 contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
   exitGame: (payload) => invoke(APP_CHANNELS.exitGame, payload)
+}));
+
+contextBridge.exposeInMainWorld('__novaDisplay', Object.freeze({
+  getSettings: () => invoke(DISPLAY_CHANNELS.getSettings),
+  getInfo: () => invoke(DISPLAY_CHANNELS.getInfo),
+  applySettings: (payload) => invoke(DISPLAY_CHANNELS.applySettings, payload)
 }));
 
 ipcRenderer.on('nova-app:window-blur', () => {

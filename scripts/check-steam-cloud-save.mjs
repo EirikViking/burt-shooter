@@ -12,6 +12,8 @@ import {
   CLOUD_SHIP_USAGE_KEY,
   CLOUD_SHIP_USAGE_TOTAL_KEY,
   CLOUD_THREAT_DISCOVERY_KEY,
+  DISPLAY_MODE_KEY,
+  DISPLAY_WINDOW_SIZE_KEY,
   collectSteamCloudPersistenceState,
   restoreSteamCloudPersistenceToStorage
 } from '../src/steamCloudPersistence.js';
@@ -86,6 +88,10 @@ try {
         bossVoiceEnabled: false,
         ctaVoiceEnabled: false,
         musicPack: 'generated'
+      },
+      display: {
+        mode: 'windowed',
+        windowSize: { width: 1600, height: 900 }
       }
     },
     hangarProgress: {
@@ -156,6 +162,8 @@ try {
   assert.equal(merged.settings.colorAssist, true);
   assert.equal(merged.settings.audio.musicPack, 'generated');
   assert.equal(merged.settings.audio.bossVoiceEnabled, false);
+  assert.equal(merged.settings.display.mode, 'windowed');
+  assert.deepEqual(merged.settings.display.windowSize, { width: 1600, height: 900 });
   assert.equal(Object.hasOwn(merged, 'debugFlags'), false);
   assert.equal(Object.hasOwn(merged, 'absolutePath'), false);
 
@@ -304,7 +312,8 @@ try {
       screenShake: 0.2,
       playerFocus: 0.75,
       colorAssist: true,
-      audio: { musicEnabled: false, bossVoiceEnabled: false, musicPack: 'classic' }
+      audio: { musicEnabled: false, bossVoiceEnabled: false, musicPack: 'classic' },
+      display: { mode: 'borderless', windowSize: { width: 1920, height: 1080 } }
     }
   }, { storage: restartStorage });
   assert.equal(restoreSummary.language, 'ja');
@@ -316,6 +325,8 @@ try {
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY)).nova_ship_01, 5);
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY))['row2_ship_1.png'], 3);
   assert.equal(restartStorage.getItem(CLOUD_SHIP_USAGE_TOTAL_KEY), '8');
+  assert.equal(restartStorage.getItem(DISPLAY_MODE_KEY), 'borderless');
+  assert.deepEqual(JSON.parse(restartStorage.getItem(DISPLAY_WINDOW_SIZE_KEY)), { width: 1920, height: 1080 });
   const restoredSectorRecords = JSON.parse(restartStorage.getItem(CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY));
   assert.equal(restoredSectorRecords.byCheckpoint['10'].scoreEarned, 9000);
   assert.equal(restoredSectorRecords.byCheckpoint['20'].scoreEarned, 12000);

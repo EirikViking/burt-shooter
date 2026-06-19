@@ -1,6 +1,21 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "DISPLAY": "TELA",
+  "Display Mode": "Modo de tela",
+  "Window Size": "Tamanho da janela",
+  "Safe Reset": "Redefinir seguro",
+  "AUDIO": "AUDIO",
+  "Fullscreen": "Tela cheia",
+  "Windowed": "Janela",
+  "Borderless": "Sem bordas",
+  "Native {size}": "Nativo {size}",
+  "Current {size}": "Atual {size}",
+  "Display changes apply immediately": "Mudancas de tela aplicam na hora",
+  "Display changes applied": "Mudancas de tela aplicadas",
+  "Window size applied": "Tamanho da janela aplicado",
+  "Safe display reset applied": "Tela segura redefinida",
+  "Browser display fallback active": "Modo seguro do navegador ativo",
   'NEW HULL ARRIVED': 'NOVO CASCO CHEGOU',
   'NEW HULLS ARRIVED': 'NOVOS CASCOS CHEGARAM',
   'HANGAR DOORS OPEN': 'PORTAS DO HANGAR ABERTAS',

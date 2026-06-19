@@ -1,6 +1,21 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "DISPLAY": "显示",
+  "Display Mode": "显示模式",
+  "Window Size": "窗口大小",
+  "Safe Reset": "安全重置",
+  "AUDIO": "音频",
+  "Fullscreen": "全屏",
+  "Windowed": "窗口",
+  "Borderless": "无边框",
+  "Native {size}": "原生 {size}",
+  "Current {size}": "当前 {size}",
+  "Display changes apply immediately": "显示更改会立即应用",
+  "Display changes applied": "显示更改已应用",
+  "Window size applied": "窗口大小已应用",
+  "Safe display reset applied": "安全显示设置已重置",
+  "Browser display fallback active": "浏览器显示回退已启用",
   'NEW HULL ARRIVED': 'XIN JITI DAO DA',
   'NEW HULLS ARRIVED': 'XIN JITI DAO DA',
   'HANGAR DOORS OPEN': 'JIKU MEN DAKAI',

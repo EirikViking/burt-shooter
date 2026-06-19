@@ -1,6 +1,21 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "DISPLAY": "ЭКРАН",
+  "Display Mode": "Режим экрана",
+  "Window Size": "Размер окна",
+  "Safe Reset": "Безопасный сброс",
+  "AUDIO": "АУДИО",
+  "Fullscreen": "Полный экран",
+  "Windowed": "В окне",
+  "Borderless": "Без рамки",
+  "Native {size}": "Родное {size}",
+  "Current {size}": "Текущее {size}",
+  "Display changes apply immediately": "Настройки экрана применяются сразу",
+  "Display changes applied": "Настройки экрана применены",
+  "Window size applied": "Размер окна применен",
+  "Safe display reset applied": "Безопасный экран восстановлен",
+  "Browser display fallback active": "Активен браузерный запасной режим",
   'NEW HULL ARRIVED': 'NOVYY KORPUS PRIBYL',
   'NEW HULLS ARRIVED': 'NOVYE KORPUSA PRIBYLI',
   'HANGAR DOORS OPEN': 'DVERI ANGARA OTKRYTY',

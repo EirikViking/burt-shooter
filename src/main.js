@@ -8,6 +8,7 @@ import { installConsoleLogFilter } from './utils/Logger.js';
 import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
+import { applyDisplaySettings, getDisplaySettings } from './config/DisplaySettings.js';
 import { getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
 import { getSectorInfo } from './config/SectorCatalog.js';
 import { getRunPacingDebugState } from './config/RunPacingConfig.js';
@@ -606,7 +607,7 @@ function buildGameTextState(game) {
     isPaused: Boolean(playScene?.isPaused),
     overlays: {
       pause: Boolean(playScene?.pauseOverlay?.visible && playScene?.pauseOverlay?.parent),
-      settings: Boolean(activeSettingsOverlay?.container?.parent),
+    settings: Boolean(activeSettingsOverlay?.container?.parent),
       howToPlay: Boolean(activeHowToPlayOverlay?.container?.parent),
       credits: Boolean(activeSettingsOverlay?.creditsPanel?.parent),
       fatal: Boolean(document.getElementById('fatal-overlay'))
@@ -617,6 +618,7 @@ function buildGameTextState(game) {
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
     howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
+    display: getDisplaySettings(),
     accessibility: getAccessibilitySettings(),
     input: {
       gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null
@@ -1541,6 +1543,7 @@ async function init() {
       document.body.dataset.menuReady = '1';
     }
     syncSteamCloudRendererState().catch(() => {});
+    applyDisplaySettings(getDisplaySettings()).catch(() => {});
     if (isAutoStartEnabled() && !autoStartTriggered) {
       autoStartTriggered = true;
       setTimeout(() => {
