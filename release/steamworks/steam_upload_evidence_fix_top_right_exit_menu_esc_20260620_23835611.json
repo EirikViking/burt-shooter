@@ -1,0 +1,166 @@
+{
+    "purpose":  "Top right Exit Game and main menu Esc quit confirmation private Steam test build",
+    "createdAt":  "2026-06-20T14:07:37.000Z",
+    "branch":  "codex/fix-top-right-exit-menu-esc-20260620",
+    "startingCommit":  "de0a1b0cc7f724c8d1e83391ff178a33e54ae09e",
+    "sourceCommit":  "82d6ef3818f7d6fb4696525be241f211fc56822f",
+    "packagedBuild":  {
+                          "version":  "v2026-06-20_15-55-35",
+                          "gitSha":  "82d6ef3",
+                          "payloadManifest":  "release/steamworks/steam_payload_manifest.json",
+                          "payloadManifestHash":  "d7afe41ce867201bd7aa8992d873fb6d420661192948fa5fb724a54abaee0ad4",
+                          "fileCount":  336,
+                          "totalBytes":  879588057,
+                          "executableSha256":  "7862fc36c03d514a741d852b139dc3fbd381ae70eb14c4f92df050b4c7f8a117",
+                          "packagedSmokeReport":  "test-results/packaged-exe-smoke-2026-06-20T13-59-29-054Z/report.json",
+                          "currentSmokeReport":  "test-results/electron-smoke-2026-06-20T14-00-22-339Z/report.json",
+                          "currentPerfReport":  "test-results/electron-perf-smoke-2026-06-20T14-00-41-015Z/report.json",
+                          "browserSmoke":  {
+                                               "status":  "non_blocking_known_flake",
+                                               "reason":  "Timeout at scripts/smoke-playtest.mjs:764:26 after level 3 debug capture",
+                                               "log":  "npm run smoke console output, 2026-06-20T14:01Z"
+                                           }
+                      },
+    "steam":  {
+                  "appId":  "4765070",
+                  "depotId":  "4765071",
+                  "buildId":  "23835611",
+                  "depotManifest":  "7431524059367533982",
+                  "baselineDepotManifest":  "2093552943102439710",
+                  "setLive":  "",
+                  "branchAssignment":  null,
+                  "publicDefaultAssigned":  false,
+                  "sectorContinueTestAssigned":  false,
+                  "steamworksMetadataChanged":  false,
+                  "appBuildVdf":  "release/steamworks/app_build_LOCAL.vdf",
+                  "depotBuildVdf":  "release/steam-build-output/depot_build_4765071.vdf",
+                  "appBuildLog":  "release/steam-build-output/app_build_4765070.log",
+                  "depotBuildLog":  "release/steam-build-output/depot_build_4765071.log",
+                  "steamCmd":  "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe",
+                  "steamCmdUploadLog":  "test-results/steam-upload-fix-top-right-exit-menu-esc-20260620-160334/steamcmd-upload.log",
+                  "resultLine":  "[2026-06-20 16:05:15]: Successfully finished AppID 4765070 build (BuildID 23835611)."
+              },
+    "vdfVerification":  {
+                            "appId":  "4765070",
+                            "depotId":  "4765071",
+                            "setLiveBlank":  true,
+                            "containsPublicDefaultBranch":  false,
+                            "containsSectorContinueTestBranch":  false,
+                            "containsAnyBranchAssignment":  false,
+                            "description":  "Nova Swarm Windows release candidate"
+                        },
+    "checks":  [
+                   {
+                       "command":  "node --check src/scenes/MenuScene.js",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "node --check scripts/check-menu-exit-focus-safety.mjs",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:menu-exit-focus-safety",
+                       "status":  "passed",
+                       "artifact":  "test-results/menu-exit-focus-safety-1781963378023"
+                   },
+                   {
+                       "command":  "git diff --check",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:i18n",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:i18n-ui",
+                       "status":  "passed",
+                       "artifact":  "test-results/i18n-ui-2026-06-20T13-50-00-794Z"
+                   },
+                   {
+                       "command":  "npm run check:run-modes",
+                       "status":  "passed",
+                       "artifact":  "test-results/run-modes-mayhem-scout-sector-2026-06-20T13-50-00-852Z/report.json"
+                   },
+                   {
+                       "command":  "npm run check:cinematic-hangar-menu",
+                       "status":  "passed",
+                       "artifact":  "test-results/cinematic-hangar-menu-2026-06-20T13-51-30-808Z/report.json"
+                   },
+                   {
+                       "command":  "npm run check:controller-flow",
+                       "status":  "passed_after_standalone_rerun",
+                       "artifact":  "test-results/controller-only-flow-2026-06-20T13-53-55-866Z"
+                   },
+                   {
+                       "command":  "npm run check:steam-electron-bridge",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run build:current",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:release-line",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run package:steam:win",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run package:steam:win:current",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run desktop:smoke:packaged",
+                       "status":  "passed",
+                       "artifact":  "test-results/packaged-exe-smoke-2026-06-20T13-59-29-054Z/report.json"
+                   },
+                   {
+                       "command":  "npm run desktop:smoke:current",
+                       "status":  "passed",
+                       "artifact":  "test-results/electron-smoke-2026-06-20T14-00-22-339Z/report.json"
+                   },
+                   {
+                       "command":  "npm run desktop:perf:current",
+                       "status":  "passed",
+                       "artifact":  "test-results/electron-perf-smoke-2026-06-20T14-00-41-015Z/report.json"
+                   },
+                   {
+                       "command":  "npm run smoke",
+                       "status":  "non_blocking_known_flake",
+                       "note":  "Only failure was the known scripts/smoke-playtest.mjs:764:26 timeout after level 3 debug capture."
+                   },
+                   {
+                       "command":  "npm run steamworks:payload-manifest",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "SteamCMD run_app_build app_build_LOCAL.vdf",
+                       "status":  "passed"
+                   }
+               ],
+    "notes":  [
+                  "Build uploaded privately with SetLive blank and no branch assignment in the VDF.",
+                  "SteamCMD used cached credentials and did not request Steam Guard/MFA.",
+                  "No Steamworks metadata, AppID, depot ID, leaderboard identity, save/profile rescue, live save files, Scout local best behavior, run mode rules, balance, achievements, Codex, powerups, display settings, or result screens were changed.",
+                  "Top-right Exit Game and main-menu Escape now share a recoverable quit-confirmation flow with Cancel as the default focus."
+              ],
+    "manualSteamworksTestSteps":  [
+                                      "Open Steamworks \u003e App Admin \u003e SteamPipe \u003e Builds for AppID 4765070.",
+                                      "Find BuildID 23835611 and leave it unassigned unless intentionally selecting it for private testing.",
+                                      "If assigning privately, install that BuildID in the Steam client.",
+                                      "Launch Nova Swarm and confirm build v2026-06-20_15-55-35 and gitSha 82d6ef3 in diagnostics or smoke text.",
+                                      "On the main menu, press Escape and confirm the Quit Nova Swarm modal opens with Cancel focused.",
+                                      "Click top-right Exit Game and confirm the same modal opens with Cancel focused.",
+                                      "Cancel with click, Escape, and controller B, then verify Escape still opens the modal again afterward.",
+                                      "Select Exit Game only from inside the confirmation modal and confirm the game exits.",
+                                      "Verify Sector selector Back/Escape and normal menu buttons still work after canceling the quit modal.",
+                                      "Do not assign this BuildID to public/default until explicitly approved."
+                                  ],
+    "rollback":  {
+                     "source":  "git revert 82d6ef3818f7d6fb4696525be241f211fc56822f",
+                     "steam":  "No Steam rollback is required while BuildID 23835611 remains unassigned. If it is later assigned manually and needs rollback, reassign that Steam branch back to the previous desired BuildID."
+                 }
+}
+
