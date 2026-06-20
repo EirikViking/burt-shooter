@@ -65,7 +65,7 @@ Sam-specific changes:
 - Phase 3 burst is reduced from 5 shots to 4.
 - Sam's pressure scalar gets a local `0.82` multiplier.
 
-This is deliberately not a global boss nerf. Sector 22 `NOVA DEVOURER` remains on the existing late-boss pressure curve and still throws the 5-shot Forge burst.
+This is deliberately not a global boss nerf. In this Sam-specific pass, sector 22 `NOVA DEVOURER` remained on the existing late-boss pressure curve. A later boss cliff audit intentionally keeps a softer sector 22 playtest version; see `docs/nova-swarm-boss-cliff-audit-smoothing-2026-06-20.md`.
 
 ## Scout And Mayhem Impact
 
@@ -91,7 +91,7 @@ Key metrics from the report:
 - Boss 2 phase 2 regular burst: 3 shots.
 - Boss 2 phase 3 regular burst: 4 shots.
 - Sector 22 repeats the Forge burst/ring family.
-- Sector 22 phase 2 regular burst remains 5 shots.
+- Sector 22 is handled by the later boss cliff audit playtest exception.
 - Sector 22 pre-guard model: 5 losses in 12 seconds, 0 lives remaining.
 - Sector 22 post-guard model: 3 losses in 12 seconds, 2 lives remaining.
 

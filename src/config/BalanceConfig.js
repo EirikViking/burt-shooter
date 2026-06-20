@@ -481,6 +481,51 @@ export const BalanceConfig = {
                     ringSafeWedgeBonus: 0.16,
                     burstShotsPhase2: 3,
                     burstShotsPhase3: 4
+                },
+                nova_boss_09: {
+                    maxLevel: 9,
+                    pressureScalarMult: 0.94,
+                    openingAttackDelayMs: 1900,
+                    regularAttackIntervalMult: 1.05,
+                    regularTelegraphMult: 1.08,
+                    signatureTelegraphMult: 1.06
+                },
+                nova_boss_15: {
+                    maxLevel: 15,
+                    pressureScalarMult: 0.94,
+                    openingAttackDelayMs: 1850,
+                    regularAttackIntervalMult: 1.04,
+                    regularTelegraphMult: 1.07,
+                    signatureTelegraphMult: 1.06,
+                    ringSafeWedgeBonus: 0.04
+                },
+                nova_boss_18: {
+                    maxLevel: 18,
+                    pressureScalarMult: 0.95,
+                    openingAttackDelayMs: 1850,
+                    regularAttackIntervalMult: 1.04,
+                    regularTelegraphMult: 1.06,
+                    signatureTelegraphMult: 1.06,
+                    ringSafeWedgeBonus: 0.04
+                },
+                nova_boss_19: {
+                    maxLevel: 19,
+                    pressureScalarMult: 0.92,
+                    openingAttackDelayMs: 1950,
+                    regularAttackIntervalMult: 1.05,
+                    regularTelegraphMult: 1.08,
+                    signatureTelegraphMult: 1.06
+                },
+                nova_boss_22: {
+                    maxLevel: 22,
+                    pressureScalarMult: 0.86,
+                    openingAttackDelayMs: 2050,
+                    regularAttackIntervalMult: 1.12,
+                    regularTelegraphMult: 1.1,
+                    signatureTelegraphMult: 1.1,
+                    ringSafeWedgeBonus: 0.08,
+                    burstShotsPhase2: 4,
+                    burstShotsPhase3: 4
                 }
             }
         },
