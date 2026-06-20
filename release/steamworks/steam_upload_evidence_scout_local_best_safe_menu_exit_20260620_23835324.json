@@ -1,0 +1,100 @@
+{
+  "purpose": "Scout local personal best and safe main menu exit private Steam test build",
+  "createdAt": "2026-06-20T13:25:00.000Z",
+  "branch": "codex/scout-local-best-safe-menu-exit-20260620",
+  "startingCommit": "a9c697c560245c06382812b0afa2b4e09d34eb09",
+  "sourceCommit": "911a98371f30ae4e5273d591d6d49a9e565174f4",
+  "packagedBuild": {
+    "version": "v2026-06-20_15-11-46",
+    "gitSha": "911a983",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "588dd2c871b1bd1cb29fe7e51644be4a5dd9d7654f07ef3faa6d564334d784c0",
+    "fileCount": 336,
+    "totalBytes": 879587552,
+    "executableSha256": "a70d4f6d7fd35382da162fe1329a58b6ffe38c635c88612ff7692f4949e2d90b",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-20T13-16-12-988Z/report.json",
+    "currentSmokeReport": "test-results/electron-smoke-2026-06-20T13-16-49-072Z/report.json",
+    "currentPerfReport": "test-results/electron-perf-smoke-2026-06-20T13-16-49-073Z/report.json",
+    "browserSmoke": {
+      "status": "non_blocking_known_flake",
+      "reason": "Timeout at scripts/smoke-playtest.mjs:764:26 after level 3 debug capture",
+      "log": "npm run smoke console output, 2026-06-20T13:17Z"
+    }
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23835324",
+    "depotManifest": "941730523904880359",
+    "baselineDepotManifest": "2093552943102439710",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssigned": false,
+    "sectorContinueTestAssigned": false,
+    "steamworksMetadataChanged": false,
+    "appBuildVdf": "release/steamworks/app_build_LOCAL.vdf",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "steamCmd": "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe",
+    "steamCmdUploadLog": "test-results/steam-upload-scout-local-best-safe-menu-exit-20260620-152138/steamcmd-upload.log",
+    "resultLine": "[2026-06-20 15:23:35]: Successfully finished AppID 4765070 build (BuildID 23835324)."
+  },
+  "vdfVerification": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLiveBlank": true,
+    "containsPublicDefaultBranch": false,
+    "containsSectorContinueTestBranch": false,
+    "containsAnyBranchAssignment": false,
+    "description": "Nova Swarm Windows release candidate"
+  },
+  "checks": [
+    { "command": "git diff --check", "status": "passed" },
+    { "command": "npm run check:i18n", "status": "passed" },
+    { "command": "npm run check:i18n-ui", "status": "passed", "artifact": "test-results/i18n-ui-2026-06-20T13-06-50-482Z" },
+    { "command": "npm run check:run-modes", "status": "passed", "artifact": "test-results/run-modes-mayhem-scout-sector-2026-06-20T13-06-12-095Z/report.json" },
+    { "command": "npm run check:scout-local-best", "status": "passed" },
+    { "command": "npm run check:cinematic-hangar-menu", "status": "passed", "artifact": "test-results/cinematic-hangar-menu-2026-06-20T13-06-53-326Z/report.json" },
+    { "command": "npm run check:sector-challenge-selector", "status": "passed", "artifact": "test-results/sector-challenge-selector-2026-06-20T13-08-37-105Z/report.json" },
+    { "command": "npm run check:sector-start-checkpoint-unlocks", "status": "passed" },
+    { "command": "npm run check:sector-continue-mode", "status": "passed", "artifact": "test-results/sector-continue-mode-2026-06-20T13-08-37-128Z/report.json" },
+    { "command": "npm run check:controller-flow", "status": "passed", "artifact": "test-results/controller-only-flow-2026-06-20T13-08-37-119Z" },
+    { "command": "npm run check:steam-electron-bridge", "status": "passed" },
+    { "command": "npm run check:steam-achievements-mock", "status": "passed" },
+    { "command": "npm run check:save-profile-migration", "status": "passed" },
+    { "command": "npm run check:profile-isolation", "status": "passed" },
+    { "command": "npm run check:mayhem-scout-difficulty-delta", "status": "passed", "artifact": "test-results/mayhem-scout-difficulty-delta-2026-06-20T13-09-34-925Z/report.json" },
+    { "command": "npm run build:current", "status": "passed" },
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run package:steam:win", "status": "passed" },
+    { "command": "npm run package:steam:win:current", "status": "passed_after_sequential_rerun" },
+    { "command": "npm run desktop:smoke:packaged", "status": "passed", "artifact": "test-results/packaged-exe-smoke-2026-06-20T13-16-12-988Z/report.json" },
+    { "command": "npm run desktop:smoke:current", "status": "passed", "artifact": "test-results/electron-smoke-2026-06-20T13-16-49-072Z/report.json" },
+    { "command": "npm run desktop:perf:current", "status": "passed", "artifact": "test-results/electron-perf-smoke-2026-06-20T13-16-49-073Z/report.json" },
+    { "command": "npm run smoke", "status": "non_blocking_known_flake", "note": "Only failure was the known scripts/smoke-playtest.mjs:764:26 timeout after level 3 debug capture." },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "SteamCMD run_app_build app_build_LOCAL.vdf", "status": "passed" }
+  ],
+  "notes": [
+    "Build uploaded privately with SetLive blank and no branch assignment in the VDF.",
+    "SteamCMD used cached credentials and did not request Steam Guard/MFA.",
+    "No Steamworks metadata, AppID, depot ID, leaderboard identity, save/profile rescue, or live save files were changed.",
+    "Scout local best is profile-local only; Scout still does not submit to Steam/global/friends leaderboards, achievements, career XP, ranked bests, or checkpoints.",
+    "Main menu Escape and the top-right Exit button open a Cancel-focused quit confirmation before any exit request."
+  ],
+  "manualSteamworksTestSteps": [
+    "Open Steamworks > App Admin > SteamPipe > Builds for AppID 4765070.",
+    "Find BuildID 23835324 and leave it unassigned unless intentionally selecting it for private testing.",
+    "If assigning privately, install that BuildID in the Steam client.",
+    "Launch Nova Swarm and confirm build v2026-06-20_15-11-46 and gitSha 911a983 in diagnostics or smoke text.",
+    "Start Scout Run, finish a run, and confirm the result screen shows Scout Best, This Run, New Scout Best when applicable, and No leaderboard submission.",
+    "Confirm Scout does not submit to global/friends leaderboards, does not unlock achievements, does not grant career XP, and does not unlock checkpoints.",
+    "On the main menu, press Escape and confirm the Quit Nova Swarm modal opens with Cancel focused; Escape or B should close it, and Exit Game should quit only after explicit selection.",
+    "Do not assign this BuildID to public/default until explicitly approved."
+  ],
+  "rollback": {
+    "source": "git revert 911a98371f30ae4e5273d591d6d49a9e565174f4",
+    "steam": "No Steam rollback is required while BuildID 23835324 remains unassigned. If it is later assigned manually and needs rollback, reassign that Steam branch back to the previous desired BuildID."
+  }
+}
