@@ -225,6 +225,15 @@ function sectorEntry(state, sector) {
   return state.menu?.sectorStart?.selector?.sectors?.find((entry) => entry.sector === sector);
 }
 
+function assertNoNonCheckpointTiles(state, label) {
+  const sectors = state.menu?.sectorStart?.selector?.sectors || [];
+  assert.ok(sectors.length > 0, `${label}: selector should expose checkpoint cards`);
+  for (const entry of sectors) {
+    assert.equal(entry.sector % 5, 0, `${label}: selector should only show 5-sector checkpoint cards, found ${entry.sector}`);
+    assert.equal(entry.checkpointEligible, true, `${label}: checkpoint card ${entry.sector} should be marked eligible`);
+  }
+}
+
 async function selectSectorForScreenshot(page, sector) {
   await page.evaluate((targetSector) => {
     const menu = window.__game?.scenes?.menu;
@@ -387,27 +396,30 @@ try {
 
   const selector = state.menu.sectorStart.selector;
   assert.equal(selector.title, 'SELECT START POINT', 'selector title mismatch');
-  assert.equal(selector.subtitle, 'START POINTS UNLOCK EVERY 5 SECTORS', 'selector subtitle should explain every-five checkpoint unlocks');
-  assert.ok(selector.sectors.length >= 32, 'selector should list at least 32 sectors');
+  assert.match(selector.subtitle || '', /Use Mayhem-unlocked checkpoints to push deeper/i, 'selector subtitle should explain the Sector Run purpose');
+  assert.match(selector.subtitle || '', /New start points unlock every 5 sectors in Mayhem/i, 'selector subtitle should explain every-five checkpoint unlocks');
+  assertNoNonCheckpointTiles(state, '1920 selector');
+  assert.ok(selector.sectors.length >= 6, 'selector should list checkpoint start cards through current progress');
   assert.equal(sectorEntry(state, 5)?.unlocked, true, 'sector 5 should be unlocked by seeded progress');
   assert.equal(sectorEntry(state, 5)?.checkpointEligible, true, 'sector 5 should be a checkpoint start point');
   assert.equal(sectorEntry(state, 5)?.playSector, 5, 'sector 5 must map to play sector 5');
-  assert.equal(sectorEntry(state, 4)?.checkpointEligible, false, 'sector 4 should be marked as a non-checkpoint sector');
+  assert.equal(sectorEntry(state, 4), undefined, 'sector 4 should not be shown because it is not a Sector Run start card');
   assert.equal(sectorEntry(state, 10)?.playSector, 11, 'checkpoint 10 must map to play sector 11');
   assert.equal(sectorEntry(state, 20)?.playSector, 21, 'checkpoint 20 must map to play sector 21');
   assert.equal(sectorEntry(state, 30)?.playSector, 31, 'checkpoint 30 must map to play sector 31');
   assert.equal(sectorEntry(state, 10)?.overrunCheckpoint, true, 'checkpoint 10 should be flagged as Overrun boundary');
   assert.equal(sectorEntry(state, 20)?.overrunCheckpoint, true, 'checkpoint 20 should be flagged as Overrun boundary');
   assert.equal(sectorEntry(state, 30)?.overrunCheckpoint, true, 'checkpoint 30 should be flagged as Overrun boundary');
-  assert.equal(sectorEntry(state, 4)?.unlocked, false, 'sector 4 should be locked because it is not an existing checkpoint');
-  assert.equal(sectorEntry(state, 32)?.unlocked, false, 'sector 32 should not be invented as an unlocked checkpoint');
+  assert.equal(sectorEntry(state, 35)?.unlocked, false, 'checkpoint 35 should be visible but locked before reaching it');
+  assert.equal(sectorEntry(state, 32), undefined, 'sector 32 should not be shown because it is not a checkpoint card');
   assert.ok(selector.panelBounds?.width > 0 && selector.gridBounds?.width > 0, 'selector bounds should be visible');
   assert.ok(selector.launchButtonBounds?.width > 0, 'selector launch action should be visible');
   assert.ok(selector.backButtonBounds?.width > 0, 'selector back action should be visible');
-  state = await selectSectorForScreenshot(page, 4);
-  assert.match(state.menu.sectorStart.selector.detailText || '', /NO START POINT HERE/);
-  assert.match(state.menu.sectorStart.selector.detailText || '', /NEW START POINTS EVERY 5 SECTORS/);
-  assert.match(state.menu.sectorStart.selector.detailText || '', /PLAY MAYHEM RUN TO UNLOCK RANKED CHECKPOINTS/);
+  state = await selectSectorForScreenshot(page, 35);
+  assert.match(state.menu.sectorStart.selector.detailText || '', /LOCKED/);
+  assert.match(state.menu.sectorStart.selector.detailText || '', /Unlock new start points every 5 sectors in Mayhem/i);
+  assert.match(state.menu.sectorStart.selector.detailText || '', /Use Sector Run later to jump deeper without replaying early sectors/i);
+  await page.screenshot({ path: path.join(outputDir, 'selector-locked-checkpoint-35-1920x1080.png'), fullPage: false });
   report.cases.push({
     open: true,
     selectedSector: selector.selectedSector,
@@ -415,7 +427,7 @@ try {
     checkpoint10: sectorEntry(state, 10),
     checkpoint20: sectorEntry(state, 20),
     checkpoint30: sectorEntry(state, 30),
-    sector4: sectorEntry(state, 4),
+    checkpoint35: sectorEntry(state, 35),
     sector32: sectorEntry(state, 32)
   });
 
@@ -426,13 +438,16 @@ try {
     { version: 1, updatedAt: '2026-06-19T00:00:00.000Z', byCheckpoint: {} }
   );
   let lockedCheckpointState = await openSelector(lockedCheckpointPage);
+  assertNoNonCheckpointTiles(lockedCheckpointState, 'locked checkpoint selector');
   assert.deepEqual(lockedCheckpointState.menu.sectorStart.checkpoints, [5], 'sector 9 career progress should only unlock Sector 5');
   lockedCheckpointState = await selectSectorForScreenshot(lockedCheckpointPage, 10);
   assert.equal(sectorEntry(lockedCheckpointState, 10)?.checkpointEligible, true, 'sector 10 should be a checkpoint-eligible cell');
   assert.equal(sectorEntry(lockedCheckpointState, 10)?.unlocked, false, 'sector 10 should remain locked before clearing into sector 11');
   assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /CLEAR SECTOR 10 IN MAYHEM RUN/);
-  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /BEGINS AT SECTOR 11/);
-  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /SCOUT AND SECTOR RUNS DO NOT UNLOCK MAYHEM CHECKPOINTS/);
+  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /Begins at Sector 11/i);
+  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /Unlock new start points every 5 sectors in Mayhem/i);
+  assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /Use Sector Run later to jump deeper without replaying early sectors/i);
+  await lockedCheckpointPage.screenshot({ path: path.join(outputDir, 'selector-locked-checkpoint-10-1366x768.png'), fullPage: false });
   await lockedCheckpointPage.close();
 
   for (const sector of [5, 10, 20, 30]) {
@@ -440,10 +455,10 @@ try {
     const expectedPlaySector = sector === 5 ? 5 : sector + 1;
     const label = state.menu.sectorStart.selector.launchLabel;
     assert.ok(label.includes(String(expectedPlaySector)), `launch label for ${sector} should mention play sector ${expectedPlaySector}`);
-    if (sector !== 5) {
-      assert.ok(state.menu.sectorStart.selector.detailText.includes('OVERRUN'), `checkpoint ${sector} detail should explain Overrun`);
-      assert.ok(state.menu.sectorStart.selector.detailText.includes(String(expectedPlaySector)), `checkpoint ${sector} detail should mention sector ${expectedPlaySector}`);
-    }
+    assert.match(state.menu.sectorStart.selector.detailText || '', /Unlocked in Mayhem/i, `checkpoint ${sector} detail should explain Mayhem unlock source`);
+    assert.match(state.menu.sectorStart.selector.detailText || '', /Sector record only/i, `checkpoint ${sector} detail should explain separate records`);
+    assert.match(state.menu.sectorStart.selector.detailText || '', /No achievements/i, `checkpoint ${sector} detail should explain achievement lockout`);
+    assert.match(state.menu.sectorStart.selector.detailText || '', new RegExp(`Begins at Sector ${expectedPlaySector}`, 'i'), `checkpoint ${sector} detail should mention play sector ${expectedPlaySector}`);
     await page.screenshot({ path: path.join(outputDir, `selector-selected-${sector}-1920x1080.png`), fullPage: false });
   }
 
@@ -462,7 +477,7 @@ try {
   assert.equal(state.menu.sectorStart.selector.open, true, 'underlying launch button should be inert while selector is open');
   assert.equal(await page.evaluate(() => window.__sectorSelectorStartArgs), null, 'underlying launch must not start a run while selector is open');
 
-  await clickBounds(page, sectorEntry(state, 4).bounds);
+  await clickBounds(page, sectorEntry(state, 35).bounds);
   await page.waitForTimeout(150);
   state = await readState(page);
   assert.equal(state.scene, 'menu', 'locked sector click must not leave menu');

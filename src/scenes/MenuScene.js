@@ -1042,8 +1042,7 @@ export class MenuScene {
       variant: 'primary',
       accent: 0xffd15c,
       icon: 'launch',
-      subLabel: 'Ranked - Leaderboards - Achievements',
-      bodyLabel: 'Full swarm pressure. Unlocks ranked checkpoints.'
+      subLabel: 'RANKED'
     });
     this.configureRunModeCard(this.startBtn, { id: 'mayhem', secondary: 0xffef7e });
     this.startBtn.alpha = 0;  // Start invisible
@@ -1055,8 +1054,7 @@ export class MenuScene {
     this.scoutRunBtn = this.createButton('SCOUT RUN', layout, {
       accent: 0x7fffd8,
       icon: 'hangar',
-      subLabel: 'Unranked - Lower pressure - Practice',
-      bodyLabel: 'No leaderboard. No achievements. No checkpoint unlocks.'
+      subLabel: 'PRACTICE'
     });
     this.configureRunModeCard(this.scoutRunBtn, { id: 'scout', secondary: 0x37f5ff });
     this.scoutRunBtn.alpha = 0;
@@ -1066,8 +1064,7 @@ export class MenuScene {
     this.sectorStartBtn = this.createButton('SECTOR RUN', layout, {
       accent: 0x37f5ff,
       icon: 'target',
-      dynamicSubLabel: () => this.getSectorStartButtonSubLabel(),
-      bodyLabel: 'Start from unlocked ranked checkpoints. No achievements.'
+      subLabel: 'CHECKPOINT PUSH'
     });
     this.configureRunModeCard(this.sectorStartBtn, { id: 'sector', secondary: 0xffd15c });
     this.sectorStartBtn.alpha = 0;
@@ -1498,7 +1495,7 @@ export class MenuScene {
       right: marginX + dockWidth,
       bottom: Math.min(height - 8, dockTop + dockHeight)
     };
-    const briefingHeight = isShortLayout ? 54 : 60;
+    const briefingHeight = Math.round(clampNumber(height * 0.15, isShortLayout ? 118 : 132, isShortLayout ? 142 : 164));
     const titleClearForDeck = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
     const cardGap = clampNumber(height * 0.008, 6, 9);
     const cardWidth = Math.round(clampNumber(width * 0.17, isMobileLayout ? 238 : 246, isMobileLayout ? 300 : 320));
@@ -1507,7 +1504,7 @@ export class MenuScene {
     const deckX = Math.round(isMobileLayout
       ? (width - cardWidth) / 2
       : clampNumber(width * 0.018, 20, 46));
-    const minimumDeckTop = titleClearForDeck + briefingHeight + clampNumber(height * 0.024, 16, 24);
+    const minimumDeckTop = titleClearForDeck + clampNumber(height * 0.055, 34, 58);
     const preferredDeckTop = safeMargin.top + clampNumber(height * 0.34, isMobileLayout ? 200 : 246, isMobileLayout ? 272 : 326);
     const cardTop = Math.round(clampNumber(
       preferredDeckTop,
@@ -1530,11 +1527,11 @@ export class MenuScene {
       button._variant = button === this.startBtn ? 'primary' : 'secondary';
       button._dockIndex = null;
       button._launchDeckIndex = index;
-      button._label.style.fontSize = Math.round(clampNumber(cardWidth * 0.052, 14, 18));
-      button._sublabel.style.fontSize = Math.round(clampNumber(cardWidth * 0.026, 7, 9));
+      button._label.style.fontSize = Math.round(clampNumber(cardWidth * 0.05, 13, 17));
+      button._sublabel.style.fontSize = Math.round(clampNumber(cardWidth * 0.031, 8, 10));
       if (button._bodyLabel) {
-        button._bodyLabel.style.fontSize = Math.round(clampNumber(cardWidth * 0.032, 11, 15));
-        button._bodyLabel.style.lineHeight = Math.round(button._bodyLabel.style.fontSize * 1.34);
+        button._bodyLabel.text = '';
+        button._bodyLabel.visible = false;
       }
       this.refreshButtonCopy(button, { forceGpuRefresh: forceLabelGpuRefresh });
       button.x = deckX + cardWidth / 2;
@@ -1571,26 +1568,40 @@ export class MenuScene {
 
     const briefingWidth = Math.min(
       width - marginX * 2,
-      Math.max(isMobileLayout ? 320 : 360, Math.min((this.launchDeckBounds?.width || 320) + 110, isMobileLayout ? 460 : 500))
+      Math.round(clampNumber(width * (isMobileLayout ? 0.36 : 0.29), isMobileLayout ? 360 : 420, isMobileLayout ? 470 : 560))
     );
-    const briefingX = clampNumber((this.launchDeckBounds?.x || marginX) + ((this.launchDeckBounds?.width || briefingWidth) - briefingWidth) / 2, marginX, width - marginX - briefingWidth);
-    const titleClearY = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
-    const briefingY = Math.max(
-      titleClearY,
-      (this.launchDeckBounds?.y || dockTop) - briefingHeight - clampNumber(height * 0.014, 10, 16)
+    const briefingX = Math.round(clampNumber(
+      width - marginX - briefingWidth,
+      Math.max((this.launchDeckBounds?.right || 0) + 42, width * 0.61),
+      width - marginX - briefingWidth
+    ));
+    const plannedUtilityHeight = isMobileLayout ? 28 : 32;
+    const plannedUtilityGap = isMobileLayout ? 6 : 7;
+    const plannedUtilityBottom = safeMargin.top + (isMobileLayout ? 22 : 28) + (plannedUtilityHeight + plannedUtilityGap) * 2 + plannedUtilityHeight / 2;
+    const utilityBottom = Math.max(
+      plannedUtilityBottom,
+      boundsForDisplayObject(this.musicBtn)?.bottom || 0,
+      boundsForDisplayObject(this.helpBtn)?.bottom || 0,
+      boundsForDisplayObject(this.exitBtn)?.bottom || 0
     );
-    const briefingPadX = isMobileLayout ? 16 : 20;
-    const briefingPadY = isShortLayout ? 10 : 12;
-    this.runModeBriefingTitle.style.fontSize = isMobileLayout ? 11 : 12;
+    const titleClearY = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 14;
+    const briefingY = Math.round(clampNumber(
+      Math.max(titleClearY, utilityBottom + clampNumber(height * 0.02, 14, 24)),
+      safeMargin.top + clampNumber(height * 0.12, 92, 142),
+      Math.max(safeMargin.top + 90, dockTop - briefingHeight - 24)
+    ));
+    const briefingPadX = isMobileLayout ? 18 : 22;
+    const briefingPadY = isShortLayout ? 12 : 14;
+    this.runModeBriefingTitle.style.fontSize = isMobileLayout ? 12 : 14;
     this.runModeBriefingTitle.style.wordWrapWidth = briefingWidth - briefingPadX * 2;
     this.runModeBriefingTitle.x = briefingX + briefingPadX;
     this.runModeBriefingTitle.y = briefingY + briefingPadY;
     this.runModeBriefingTitle.alpha = this.runModeBriefingTitle.alpha || 1;
-    this.runModeExplainer.style.fontSize = Math.max(9, isMobileLayout ? controlsSize - 2 : controlsSize - 1);
+    this.runModeExplainer.style.fontSize = Math.max(11, isMobileLayout ? controlsSize - 1 : controlsSize);
     this.runModeExplainer.style.wordWrapWidth = briefingWidth - briefingPadX * 2;
-    this.runModeExplainer.style.lineHeight = Math.round(this.runModeExplainer.style.fontSize * 1.16);
+    this.runModeExplainer.style.lineHeight = Math.round(this.runModeExplainer.style.fontSize * 1.24);
     this.runModeExplainer.x = briefingX + briefingPadX;
-    this.runModeExplainer.y = briefingY + briefingPadY + (isShortLayout ? 19 : 23);
+    this.runModeExplainer.y = briefingY + briefingPadY + (isShortLayout ? 26 : 31);
     this.runModeExplainer.alpha = this.runModeExplainer.alpha || 1;
     this.runModePanel.alpha = this.runModePanel.alpha || 1;
     this.runModePanel._briefingBounds = {
@@ -1689,9 +1700,9 @@ export class MenuScene {
     });
     [
       [this.menuPanel, 0.72],
-      [this.runModePanel, 0.38],
-      [this.runModeBriefingTitle, 0.46],
-      [this.runModeExplainer, 0.46]
+      [this.runModePanel, 0.14],
+      [this.runModeBriefingTitle, 0.06],
+      [this.runModeExplainer, 0.06]
     ].forEach(([item, alpha]) => {
       if (!item) return;
       if (modalOpen) {
@@ -1739,8 +1750,11 @@ export class MenuScene {
         title: translateText('SCOUT RUN'),
         accent: 0x7fffd8,
         secondary: 0x37f5ff,
-        menuBody: translateText('Unranked practice. No leaderboard, achievements, or checkpoint unlocks.'),
-        body: translateText('Scout is unranked lower-pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or Mayhem checkpoint unlocks.')
+        menuBody: [
+          translateText('UNRANKED PRACTICE'),
+          translateText('Lower pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or checkpoint unlocks.')
+        ].join('\n'),
+        body: translateText('Lower pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or checkpoint unlocks.')
       };
     }
     if (focused === 'sectorStart') {
@@ -1749,8 +1763,11 @@ export class MenuScene {
         title: translateText('SECTOR RUN'),
         accent: 0x37f5ff,
         secondary: 0xffd15c,
-        menuBody: translateText('Checkpoint starts every 5 sectors. No achievements.'),
-        body: translateText('Sector Run uses unlocked Mayhem checkpoints. New starts unlock every 5 sectors. No achievements; Sector board records are separate from the Mayhem leaderboard.')
+        menuBody: [
+          translateText('CHECKPOINT PUSH'),
+          translateText('Jump to checkpoints unlocked in Mayhem. Push deeper for fun, routing, and practice without replaying the early sectors. No achievements. Sector records are separate.')
+        ].join('\n'),
+        body: translateText('Jump to checkpoints unlocked in Mayhem. Push deeper for fun, routing, and practice without replaying the early sectors. No achievements. Sector records are separate.')
       };
     }
     if (focused === 'launch') {
@@ -1759,8 +1776,11 @@ export class MenuScene {
         title: translateText('MAYHEM RUN'),
         accent: 0xffd15c,
         secondary: 0x7fffd8,
-        menuBody: translateText('Ranked run: leaderboard, achievements, XP, checkpoints.'),
-        body: translateText('Mayhem is the ranked Sector 1 climb. It submits to the global leaderboard, unlocks achievements, earns career XP, and opens ranked checkpoints.')
+        menuBody: [
+          translateText('MAIN RANKED RUN'),
+          translateText('Start from Sector 1 and fight as far as you can. Scores go to the global leaderboard. Achievements, career XP, and checkpoint unlocks happen here.')
+        ].join('\n'),
+        body: translateText('Start from Sector 1 and fight as far as you can. Scores go to the global leaderboard. Achievements, career XP, and checkpoint unlocks happen here.')
       };
     }
     return {
@@ -1768,7 +1788,10 @@ export class MenuScene {
       title: translateText('RUN MODES'),
       accent: 0x37f5ff,
       secondary: 0xffd15c,
-      menuBody: translateText('Mayhem ranked. Scout practice. Sector checkpoint starts.'),
+      menuBody: [
+        translateText('MAYHEM RUN: ranked. SCOUT RUN: practice. SECTOR RUN: checkpoint starts.'),
+        translateText('Mayhem is ranked. Scout is unranked practice. Sector Run starts from unlocked Mayhem checkpoints.')
+      ].join('\n'),
       body: translateText('Mayhem is ranked. Scout is unranked practice. Sector Run starts from unlocked Mayhem checkpoints.')
     };
   }
@@ -1790,9 +1813,9 @@ export class MenuScene {
     this.runModePanel.fill({ color: secondary, alpha: 0.9 });
     this.runModePanel.rect(x + panelWidth - 13, y + 9, 3, Math.max(6, panelHeight - 18));
     this.runModePanel.fill({ color: accent, alpha: 0.64 });
-    this.runModePanel.rect(x + 22, y + 30, panelWidth - 44, 1);
+    this.runModePanel.rect(x + 22, y + 38, panelWidth - 44, 1);
     this.runModePanel.fill({ color: 0xffffff, alpha: 0.16 });
-    this.runModePanel.rect(x + 22, y + panelHeight - 8, panelWidth - 44, 1);
+    this.runModePanel.rect(x + 22, y + panelHeight - 10, panelWidth - 44, 1);
     this.runModePanel.fill({ color: secondary, alpha: 0.2 });
   }
 
@@ -1915,8 +1938,8 @@ export class MenuScene {
       : this.buildSectorSelectorSectors();
 
     const isCompact = width < 1450 || height < 850;
-    const panelWidth = clampNumber(width * (isCompact ? 0.82 : 0.72), 760, Math.min(1280, width - 72));
-    const panelHeight = clampNumber(height * (isCompact ? 0.62 : 0.54), 500, Math.min(610, height - 150));
+    const panelWidth = clampNumber(width * (isCompact ? 0.78 : 0.66), 720, Math.min(1180, width - 72));
+    const panelHeight = clampNumber(height * (isCompact ? 0.58 : 0.5), 460, Math.min(570, height - 150));
     const panelX = Math.round((width - panelWidth) / 2);
     const panelY = Math.round(Math.max(40, height * 0.12));
     const pad = isCompact ? 24 : 34;
@@ -1937,20 +1960,25 @@ export class MenuScene {
     this.sectorSelectorTitle.x = panelX + pad;
     this.sectorSelectorTitle.y = panelY + pad + 18;
     this.sectorSelectorSubtitle.style.fontSize = Math.round(clampNumber(width * 0.0085, 12, 16));
-    this.sectorSelectorSubtitle.text = translateText('START POINTS UNLOCK EVERY 5 SECTORS');
+    this.sectorSelectorSubtitle.style.lineHeight = Math.round(this.sectorSelectorSubtitle.style.fontSize * 1.22);
+    this.sectorSelectorSubtitle.style.wordWrapWidth = Math.max(360, panelWidth * 0.52);
+    this.sectorSelectorSubtitle.text = [
+      translateText('Use Mayhem-unlocked checkpoints to push deeper.'),
+      translateText('New start points unlock every 5 sectors in Mayhem.')
+    ].join('\n');
     this.sectorSelectorSubtitle.x = panelX + pad + 2;
-    this.sectorSelectorSubtitle.y = this.sectorSelectorTitle.y + 35;
+    this.sectorSelectorSubtitle.y = this.sectorSelectorTitle.y + 44;
 
-    const detailWidth = clampNumber(panelWidth * 0.29, 250, 350);
+    const detailWidth = clampNumber(panelWidth * 0.31, 260, 360);
     const gridX = panelX + pad;
-    const gridY = panelY + (isCompact ? 96 : 110);
+    const gridY = panelY + (isCompact ? 112 : 126);
     const gridW = panelWidth - pad * 3 - detailWidth;
-    const gridH = panelHeight - (isCompact ? 170 : 190);
-    const columns = this.getSectorSelectorColumns();
+    const gridH = panelHeight - (isCompact ? 186 : 206);
+    const columns = Math.min(this.getSectorSelectorColumns(), Math.max(1, this.sectorSelectorSectors.length));
     const rows = Math.ceil(this.sectorSelectorSectors.length / columns);
     const gap = isCompact ? 8 : 10;
     const cellW = Math.floor((gridW - gap * (columns - 1)) / columns);
-    const cellH = Math.floor(Math.min(58, (gridH - gap * Math.max(0, rows - 1)) / rows));
+    const cellH = Math.floor(Math.min(82, (gridH - gap * Math.max(0, rows - 1)) / rows));
     const actualGridH = rows * cellH + Math.max(0, rows - 1) * gap;
 
     this.sectorSelectorGrid.x = gridX;
@@ -2028,9 +2056,9 @@ export class MenuScene {
     item._sector = entry.sector;
     const bg = new PIXI.Graphics();
     item.addChild(bg);
-    const number = createText(String(entry.sector).padStart(2, '0'), {
+    const number = createText(translateText('CHECKPOINT {sector}', { sector: entry.sector }), {
       fontFamily: FONT_DISPLAY,
-      fontSize: Math.round(clampNumber(width * 0.2, 15, 22)),
+      fontSize: Math.round(clampNumber(width * 0.095, 13, 18)),
       fontWeight: '900',
       fill: entry.unlocked ? '#dffcff' : '#5f7283',
       stroke: '#020711',
@@ -2039,11 +2067,26 @@ export class MenuScene {
     });
     number.anchor.set(0.5);
     number.x = width * 0.5;
-    number.y = height * 0.38;
+    number.y = height * 0.3;
     item.addChild(number);
+    const play = createText(translateText('Begins at Sector {sector}', {
+      sector: entry.playSector || getSectorStartPlaySector(entry.sector) || entry.sector
+    }), {
+      fontFamily: FONT_MONO,
+      fontSize: Math.round(clampNumber(width * 0.055, 8, 11)),
+      fontWeight: '900',
+      fill: entry.unlocked ? '#9feeff' : '#6c7884',
+      stroke: '#020711',
+      strokeThickness: 2,
+      padding: 8
+    });
+    play.anchor.set(0.5);
+    play.x = width * 0.5;
+    play.y = height * 0.54;
+    item.addChild(play);
     const status = createText(entry.unlocked
       ? translateText(entry.overrunCheckpoint ? 'OVERRUN' : 'READY')
-      : translateText(entry.checkpointEligible ? 'LOCKED' : 'NO START'), {
+      : translateText('LOCKED'), {
       fontFamily: FONT_MONO,
       fontSize: Math.round(clampNumber(width * 0.07, 8, 10)),
       fontWeight: '900',
@@ -2054,7 +2097,7 @@ export class MenuScene {
     });
     status.anchor.set(0.5);
     status.x = width * 0.5;
-    status.y = height * 0.72;
+    status.y = height * 0.78;
     item.addChild(status);
     item.on('pointerover', () => {
       this.setInputDevice('keyboard');
@@ -2071,6 +2114,7 @@ export class MenuScene {
     });
     item._cellBg = bg;
     item._cellNumber = number;
+    item._cellPlay = play;
     item._cellStatus = status;
     item._cellWidth = width;
     item._cellHeight = height;
@@ -2251,50 +2295,40 @@ export class MenuScene {
     if (item._cellStatus) {
       item._cellStatus.text = unlocked
         ? translateText(isOverrun ? 'OVERRUN' : 'READY')
-        : translateText(entry.checkpointEligible ? 'LOCKED' : 'NO START');
+        : translateText('LOCKED');
       item._cellStatus.style.fill = unlocked ? (selected ? '#ffe584' : (isOverrun ? '#ff9bff' : '#7fffd8')) : '#68727c';
       item._cellStatus.updateText?.(false);
+    }
+    if (item._cellPlay) {
+      item._cellPlay.text = translateText('Begins at Sector {sector}', {
+        sector: entry.playSector || getSectorStartPlaySector(entry.sector) || entry.sector
+      });
+      item._cellPlay.style.fill = unlocked ? (selected ? '#dffcff' : '#9feeff') : '#6f7a84';
+      item._cellPlay.updateText?.(false);
     }
   }
 
   getSectorSelectorDetailText() {
     const entry = this.sectorSelectorSectors[this.selectedSectorSelectorIndex];
     if (!entry) return '';
-    const startPointLine = !entry.checkpointEligible
-      ? translateText('NO START POINT HERE')
-      : entry.overrunCheckpoint
+    const startPointLine = entry.overrunCheckpoint
       ? translateText('CHECKPOINT {sector}', { sector: entry.sector })
       : translateText('START POINT {sector}', { sector: entry.sector });
     if (!entry.unlocked) {
-      if (!entry.checkpointEligible) {
-        return [
-          startPointLine,
-          translateText('NEW START POINTS EVERY 5 SECTORS'),
-          translateText('PLAY MAYHEM RUN TO UNLOCK RANKED CHECKPOINTS')
-        ].join('\n');
-      }
       const required = getSectorStartPlaySector(entry.sector);
       const requirement = entry.overrunCheckpoint
         ? translateText('CLEAR SECTOR {sector} IN MAYHEM RUN', { sector: entry.sector })
         : translateText('REACH SECTOR {sector} IN MAYHEM RUN', { sector: required || entry.sector });
       return [
-        startPointLine,
-        translateText('LOCKED'),
+        translateText('LOCKED CHECKPOINT'),
+        translateText('Unlock new start points every 5 sectors in Mayhem.'),
         requirement,
-        required && required !== entry.sector ? translateText('BEGINS AT SECTOR {sector}', { sector: required }) : '',
-        translateText('SCOUT AND SECTOR RUNS DO NOT UNLOCK MAYHEM CHECKPOINTS')
+        required && required !== entry.sector ? translateText('Begins at Sector {sector}', { sector: required }) : '',
+        translateText('Use Sector Run later to jump deeper without replaying early sectors.')
       ].filter(Boolean).join('\n');
     }
     const playSector = entry.playSector || entry.sector;
-    const startLine = entry.overrunCheckpoint
-      ? translateText('BEGINS AT SECTOR {sector}', { sector: playSector })
-      : translateText('STARTS AT SECTOR {sector}', { sector: playSector });
-    const overrunLine = entry.overrunCheckpoint
-      ? translateText('OVERRUN CLEARED')
-      : translateText('READY');
-    const note = entry.overrunCheckpoint
-      ? translateText('OVERRUN STARTS AFTER BONUS')
-      : translateText('DIRECT SECTOR START');
+    const startLine = translateText('Begins at Sector {sector}', { sector: playSector });
     const launchLine = this.getSectorSelectorLaunchLabel(entry);
     const record = entry.record;
     const best = record?.scoreEarned > 0
@@ -2302,13 +2336,12 @@ export class MenuScene {
       : translateText('NO RECORD YET');
     return [
       startPointLine,
-      entry.name,
-      overrunLine,
       startLine,
+      translateText('Unlocked in Mayhem'),
+      translateText('Sector record only'),
+      translateText('No achievements'),
       launchLine,
-      best,
-      translateText('SECTOR RUN RECORD ONLY'),
-      note
+      best
     ].join('\n');
   }
 
@@ -2659,7 +2692,7 @@ export class MenuScene {
     button._isRunModeCard = true;
     button._runModeCardId = id || button._runModeCardId || 'runMode';
     button._secondaryAccent = secondary;
-    if (button._bodyLabel) button._bodyLabel.visible = true;
+    if (button._bodyLabel) button._bodyLabel.visible = false;
     return button;
   }
 
@@ -2704,7 +2737,9 @@ export class MenuScene {
       fill: '#7fffd8',
       stroke: '#020711',
       strokeThickness: 3,
-      padding: 12
+      padding: 12,
+      lineHeight: Math.max(15, Math.round(getResponsiveFontSize(layout, 'small') * 1.26)),
+      wordWrap: true
     });
     this.sectorSelectorSubtitle.anchor.set(0, 0.5);
     overlay.addChild(this.sectorSelectorSubtitle);
@@ -2794,26 +2829,32 @@ export class MenuScene {
 
   getSectorSelectorColumns() {
     const width = this.game?.getWidth?.() || this.game?.app?.screen?.width || 1280;
-    if (width < 900) return 4;
-    if (width < 1450) return 6;
-    return 8;
+    if (width < 900) return 2;
+    if (width < 1450) return 3;
+    return 5;
   }
 
   buildSectorSelectorSectors() {
     const highest = Math.max(1, Math.floor(Number(this.sectorStartState?.highestReachedSector) || 1));
     const checkpoints = this.sectorStartState?.checkpoints || [];
     const maxCheckpoint = checkpoints.length ? Math.max(...checkpoints) : 0;
-    const displayMax = Math.max(32, Math.min(64, Math.ceil(Math.max(highest, maxCheckpoint, 5) / 8) * 8));
-    return Array.from({ length: displayMax }, (_, index) => index + 1).map((sector) => {
-      const checkpointEligible = sector % SECTOR_START_CHECKPOINT_INTERVAL === 0;
-      const record = checkpointEligible ? getSectorStartChallengeRecord(sector) : null;
-      const unlocked = checkpointEligible && checkpoints.includes(sector);
+    const displayMax = Math.max(
+      SECTOR_START_CHECKPOINT_INTERVAL,
+      Math.min(65, Math.ceil(Math.max(highest, maxCheckpoint, 5) / SECTOR_START_CHECKPOINT_INTERVAL) * SECTOR_START_CHECKPOINT_INTERVAL)
+    );
+    const sectors = [];
+    for (let sector = SECTOR_START_CHECKPOINT_INTERVAL; sector <= displayMax; sector += SECTOR_START_CHECKPOINT_INTERVAL) {
+      sectors.push(sector);
+    }
+    return sectors.map((sector) => {
+      const record = getSectorStartChallengeRecord(sector);
+      const unlocked = checkpoints.includes(sector);
       const playSector = unlocked ? getSectorStartPlaySector(sector) : null;
       const info = getSectorInfo(playSector || sector);
-      const overrunCheckpoint = checkpointEligible && sector % 10 === 0;
+      const overrunCheckpoint = sector % 10 === 0;
       return {
         sector,
-        checkpointEligible,
+        checkpointEligible: true,
         unlocked,
         playSector,
         record,
@@ -3250,7 +3291,7 @@ export class MenuScene {
       sublabel.y = compactCard ? (y + h * 0.66) : (y + 56);
     }
     if (body) {
-      body.visible = !compactCard;
+      body.visible = false;
       body.anchor.set(0, 0);
       body.style.align = 'left';
       body.style.fill = active ? '#ffffff' : '#dffcff';
@@ -3739,7 +3780,7 @@ export class MenuScene {
 
   getSectorStartButtonSubLabel() {
     if (!this.sectorStartState?.available) return translateText('LOCKED');
-    return translateText('Checkpoint starts - Every 5 sectors');
+    return translateText('CHECKPOINT PUSH');
   }
 
   updateSectorStartButton({ forceGpuRefresh = false } = {}) {
