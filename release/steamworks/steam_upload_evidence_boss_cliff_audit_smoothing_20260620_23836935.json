@@ -1,0 +1,116 @@
+{
+  "type": "steam_upload_evidence",
+  "slug": "boss_cliff_audit_smoothing",
+  "generatedAt": "2026-06-20T18:00:00.000Z",
+  "branch": "codex/boss-cliff-audit-smoothing-20260620",
+  "sourceCommit": "b7c84ddae76015f154dbfbf3cdaf051ed50269c0",
+  "packagedBuild": "v2026-06-20_19-07-49",
+  "packagedGitSha": "b7c84dd",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23836935",
+    "depotManifest": "2955022468520943076",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "steamworksMetadataChanged": false
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdConfirmed": true,
+    "depotConfirmed": true,
+    "setLiveBlankConfirmed": true,
+    "containsPublicOrDefaultAssignment": false,
+    "containsSectorContinueTestAssignment": false,
+    "containsSteamBranchAssignment": false
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "sha256": "54FD91CBD08F637B9B37EBECB11180674914688083E7E2EB65F2CE51AD8CC379",
+    "manifestHash": "788951c2c9f43b916df64589989d1d6bcb412d1dd24562afc3fa283c65dde91f",
+    "fileCount": 336,
+    "totalBytes": 879600384,
+    "executable": "Nova Swarm.exe"
+  },
+  "uploadEvidence": {
+    "steamcmdLog": "test-results/steam-upload-boss-cliff-audit-smoothing-20260620-191803/steamcmd-upload.log",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "appBuildLogProof": "Successfully finished AppID 4765070 build (BuildID 23836935).",
+    "depotManifestProof": "Success! New manifestID 2955022468520943076 created and 7 new chunks uploaded."
+  },
+  "checks": {
+    "sourceChecksBeforePackaging": [
+      "git diff --check",
+      "npm run check:boss-cliff-audit",
+      "npm run check:boss-fairness-cadence-wall",
+      "npm run check:early-boss-difficulty-relief",
+      "npm run check:boss-mercy",
+      "npm run check:mayhem-scout-difficulty-delta",
+      "npm run check:i18n",
+      "npm run check:steam-electron-bridge",
+      "npm run check:steam-achievements-mock",
+      "npm run check:run-modes",
+      "npm run build:current"
+    ],
+    "releaseChecks": [
+      "npm run check:release-line",
+      "npm run package:steam:win",
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:smoke:current",
+      "npm run smoke",
+      "npm run steamworks:payload-manifest"
+    ],
+    "desktopPerfCurrent": {
+      "command": "npm run desktop:perf:current",
+      "status": "failed",
+      "blocking": false,
+      "reason": "FPS was healthy but the check failed on one WaveStallWatchdog console warning.",
+      "artifact": "test-results/electron-perf-smoke-2026-06-20T17-14-39-208Z/report.json"
+    }
+  },
+  "automatedHumanSmoke": {
+    "method": "debug-safe sector-by-sector human-ish keyboard smoke through vite preview; Mayhem and Scout runMode profiles preserved; score submission disabled by isDebugRun=true",
+    "artifact": "test-results/human-playtest-level1-40-2026-06-20T19-42-37-119Z/report.json",
+    "summary": "106 samples covering sectors 1-40 in Mayhem-profile and Scout-profile starts, plus boss-start samples for representative sectors.",
+    "status": "passed",
+    "samples": 106,
+    "fatalSamples": 0,
+    "modeDriftSamples": 0,
+    "scoreSubmissionAllowedSamples": 0,
+    "consoleErrors": 0,
+    "consoleWarnings": 34,
+    "warningNote": "Warnings were requestFullscreen warnings caused by automated browser context without a user gesture.",
+    "screenshotsDirectory": "test-results/human-playtest-level1-40-2026-06-20T19-42-37-119Z",
+    "screenshotCount": 42,
+    "earlierDevServerAttempt": {
+      "artifact": "test-results/human-playtest-level1-40-2026-06-20T19-23-52-420Z/report.json",
+      "status": "completed_samples_but_failed_on_browser_resource_errors",
+      "note": "The first run completed all samples but Chrome/Vite dev-server websocket/audio resource errors produced ERR_NO_BUFFER_SPACE, so the clean preview-server run is the accepted smoke artifact."
+    }
+  },
+  "protectedSystems": {
+    "setLiveChanged": false,
+    "steamBranchAssigned": false,
+    "steamworksMetadataChanged": false,
+    "leaderboardIdentityChanged": false,
+    "liveSavesTouched": false,
+    "steamCloudSavesTouched": false,
+    "profileRescueRan": false
+  },
+  "manualSteamworksTestSteps": [
+    "Assign BuildID 23836935 to the intended private test branch in Steamworks.",
+    "Install that private branch through Steam.",
+    "Verify the title screen reports the expected current build.",
+    "Play Mayhem from Sector 1 through the early boss sequence and then test Sector 22 if available.",
+    "Play Scout from Sector 1 and confirm the lower-pressure profile remains unranked."
+  ],
+  "rollback": {
+    "git": "git revert b7c84ddae76015f154dbfbf3cdaf051ed50269c0",
+    "steamworks": "Do not assign BuildID 23836935, or reassign the previous private test BuildID."
+  }
+}
