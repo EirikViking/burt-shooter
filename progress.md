@@ -5,6 +5,11 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Current request: add profile-scoped Scout local personal best, keep Scout out of Steam/global/friends/ranked progression, and make main-menu Esc/top-right Exit open an explicit quit confirmation instead of quitting immediately.
 - Implementation direction: keep Scout Best separate from Hangar/career progress in a dedicated profile-scoped local save key so existing Scout no-XP/no-ranked-progress rules remain true.
 
+## 2026-06-20 Top Right Exit Surgical Fix
+
+- Current request: fix only the top-right Exit Game and main-menu Esc quit confirmation flow after BuildID `23835324`; do not touch Scout local best, run rules, balance, saves, or Steamworks metadata.
+- Fix direction: route top-right Exit through the shared quit confirmation path with pointer propagation stopped, reset stale modal state before opening, and add regression coverage for top-right Exit -> Cancel/Esc/B -> Esc recovery.
+
 ## 2026-06-20 P0 Explicit Profile Rescue Import
 
 - Current user report: private Steam test BuildID `23829231` still shows low progress because the active runtime save is `steam-76561198953993508`, while the preserved high-progress save is a sibling explicit Steam profile `steam-76561198692310517`.

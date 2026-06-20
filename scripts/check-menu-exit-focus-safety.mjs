@@ -77,6 +77,33 @@ async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
+async function clickBounds(page, bounds, label = 'bounds') {
+  assert(bounds?.width > 0 && bounds?.height > 0, `cannot click ${label}: ${JSON.stringify(bounds)}`);
+  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+}
+
+async function setGamepad(page, { buttons = [], axes = [0, 0], connected = true } = {}) {
+  await page.evaluate(({ buttons: pressedButtons, axes: nextAxes, connected: nextConnected }) => {
+    window.__burtGamepadOverride = {
+      id: 'menu-exit-focus-safety-pad',
+      index: 0,
+      connected: nextConnected,
+      axes: nextAxes,
+      buttons: Array.from({ length: 17 }, (_, index) => {
+        const pressed = pressedButtons.includes(index);
+        return { pressed, value: pressed ? 1 : 0 };
+      })
+    };
+  }, { buttons, axes, connected });
+}
+
+async function tapGamepadButton(page, buttonIndex) {
+  await setGamepad(page, { buttons: [buttonIndex] });
+  await page.waitForTimeout(140);
+  await setGamepad(page);
+  await page.waitForTimeout(160);
+}
+
 async function waitForState(page, predicate, label, timeout = 20000) {
   await page.waitForFunction((predicateSource) => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -119,6 +146,46 @@ async function runMenuExitChecks(browser) {
   });
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForState(page, (state) => state.scene === 'menu', 'menu ready');
+
+  let state = await readState(page);
+  await clickBounds(page, state.menu?.items?.exitButton, 'top-right Exit Game');
+  const afterTopRightExit = await waitForState(page, (next) =>
+    next.scene === 'menu' &&
+    next.menu?.quitConfirmation?.open === true &&
+    next.menu?.quitConfirmation?.defaultFocusIsCancel === true,
+  'top-right Exit opens quit confirmation');
+  assert(afterTopRightExit.menu.quitConfirmation.focusedLabel === 'CANCEL', `top-right Exit should default modal focus to Cancel: ${JSON.stringify(afterTopRightExit.menu.quitConfirmation)}`);
+  assert((await page.evaluate(() => window.__novaExitRequests?.length || 0)) === 0, 'top-right Exit should not request exit before confirmation');
+
+  await clickBounds(page, afterTopRightExit.menu.quitConfirmation.buttons?.[0]?.bounds, 'quit confirmation Cancel');
+  await waitForState(page, (next) => next.scene === 'menu' && next.menu?.quitConfirmation?.open === false, 'Cancel closes quit confirmation after top-right Exit');
+  assert((await page.evaluate(() => window.__novaExitRequests?.length || 0)) === 0, 'Cancel should not request exit');
+
+  await page.keyboard.press('Escape');
+  await waitForState(page, (next) =>
+    next.scene === 'menu' &&
+    next.menu?.quitConfirmation?.open === true &&
+    next.menu?.quitConfirmation?.defaultFocusIsCancel === true,
+  'Esc still opens quit confirmation after top-right Exit then Cancel');
+  await page.keyboard.press('Escape');
+  await waitForState(page, (next) => next.scene === 'menu' && next.menu?.quitConfirmation?.open === false, 'Esc closes recovered quit confirmation');
+
+  state = await readState(page);
+  await clickBounds(page, state.menu?.items?.exitButton, 'top-right Exit Game second pass');
+  await waitForState(page, (next) => next.scene === 'menu' && next.menu?.quitConfirmation?.open === true, 'top-right Exit opens quit confirmation second pass');
+  await page.keyboard.press('Escape');
+  await waitForState(page, (next) => next.scene === 'menu' && next.menu?.quitConfirmation?.open === false, 'Esc closes top-right Exit modal');
+  await page.keyboard.press('Escape');
+  await waitForState(page, (next) => next.scene === 'menu' && next.menu?.quitConfirmation?.open === true, 'Esc reopens after top-right Exit then Esc close');
+  await tapGamepadButton(page, 1);
+  await waitForState(page, (next) => next.scene === 'menu' && next.menu?.quitConfirmation?.open === false, 'controller B closes quit confirmation');
+  await page.evaluate(() => { window.__burtGamepadOverride = null; });
+
+  state = await readState(page);
+  await clickBounds(page, state.menu?.items?.helpButton, 'How To Play after quit cancel');
+  await waitForState(page, (next) => next.scene === 'menu' && next.overlays?.howToPlay && Boolean(next.howToPlayOverlay), 'other menu buttons still work after quit modal cancel');
+  await page.keyboard.press('Escape');
+  await waitForState(page, (next) => next.scene === 'menu' && !next.overlays?.howToPlay, 'How To Play closes before continuing quit tests');
 
   await page.keyboard.press('Escape');
   const afterMenuEsc = await waitForState(page, (state) =>

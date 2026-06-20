@@ -1168,8 +1168,9 @@ export class MenuScene {
       icon: 'exit'
     });
     this.exitBtn.alpha = 0;
-    this.exitBtn.on('pointerdown', () => {
-      this.openQuitConfirmation();
+    this.exitBtn.on('pointerdown', (event) => {
+      event?.stopPropagation?.();
+      this.openQuitConfirmation({ source: 'exit_button' });
     });
     this.container.addChild(this.exitBtn);
 
@@ -3973,16 +3974,30 @@ export class MenuScene {
     this.quitConfirmOverlay = overlay;
   }
 
-  openQuitConfirmation() {
-    this.ensureQuitConfirmation();
-    this.closeSectorSelector();
-    this.quitConfirmOpen = true;
-    this.quitConfirmOverlay.visible = true;
-    this.quitConfirmOverlay.alpha = 1;
-    this.setQuitConfirmFocus(0);
-    AudioManager.init();
-    AudioManager.playSfx('ui_open', { volume: 0.28 });
-    this.layoutQuitConfirmation();
+  openQuitConfirmation({ source = 'keyboard' } = {}) {
+    try {
+      this.ensureQuitConfirmation();
+      this.closeSectorSelector();
+      this.quitConfirmOpen = true;
+      this.quitConfirmFocusIndex = 0;
+      this.quitConfirmOverlay.visible = true;
+      this.quitConfirmOverlay.alpha = 1;
+      this.setInputDevice(source === 'controller' ? 'controller' : 'keyboard');
+      this.setQuitConfirmFocus(0);
+      this.applyMenuModalDimming();
+      AudioManager.init();
+      AudioManager.playSfx('ui_open', { volume: 0.28 });
+      this.layoutQuitConfirmation();
+    } catch (error) {
+      console.error('[MenuScene] Quit Confirmation Error:', error);
+      this.quitConfirmOpen = false;
+      this.quitConfirmFocusIndex = 0;
+      if (this.quitConfirmOverlay) {
+        this.quitConfirmOverlay.visible = false;
+        this.quitConfirmOverlay.alpha = 0;
+      }
+      this.applyMenuModalDimming();
+    }
   }
 
   closeQuitConfirmation({ silent = false } = {}) {
@@ -4074,6 +4089,7 @@ export class MenuScene {
       return;
     }
     if (this.game?.isMenuExitGuardActive?.()) {
+      this.closeQuitConfirmation();
       return;
     }
     try {
