@@ -469,7 +469,20 @@ export const BalanceConfig = {
             contactRadiusScalar: 0.62,
             beamHazardRadius: 11,
             coneHazardRadius: 23,
-            hazardArmingMs: 320
+            hazardArmingMs: 320,
+            profileRelief: {
+                nova_boss_02: {
+                    maxLevel: 2,
+                    pressureScalarMult: 0.82,
+                    openingAttackDelayMs: 2200,
+                    regularAttackIntervalMult: 1.25,
+                    regularTelegraphMult: 1.22,
+                    signatureTelegraphMult: 1.18,
+                    ringSafeWedgeBonus: 0.16,
+                    burstShotsPhase2: 3,
+                    burstShotsPhase3: 4
+                }
+            }
         },
 
         precisionPenalty: true, // If true, reduced score for missed shots (concept)

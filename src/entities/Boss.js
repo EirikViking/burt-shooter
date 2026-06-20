@@ -123,7 +123,7 @@ export class Boss {
     this.delayedSignature = null;
     this.phaseNotified = { 2: false, 3: false };
     this.spawnedAtMs = Date.now();
-    this.regularAttackReadyAt = this.spawnedAtMs + (level <= 1 ? 1800 : 1400);
+    this.regularAttackReadyAt = this.spawnedAtMs + this.getOpeningAttackDelayMs();
     this.invulnerableUntilMs = this.spawnedAtMs + 800;
     this.minimumFightMs = Math.max(9000, Math.min(12600, 9400 + Math.max(0, level - 1) * 170));
     this.finishGateUntilMs = 0;
@@ -1431,6 +1431,26 @@ export class Boss {
     return clamp(finiteNumber(profile?.bossDifficultyMult, 1), 0.1, 2);
   }
 
+  getBossProfileRelief() {
+    const fairness = BalanceConfig.difficulty?.bossFairness || {};
+    const profile = this.profile || getBossProfile(this.level);
+    const relief = fairness.profileRelief?.[profile?.id] || null;
+    if (!relief) return null;
+    const minLevel = Math.max(1, Math.floor(finiteNumber(relief.minLevel, 1)));
+    const maxLevel = Math.max(minLevel, Math.floor(finiteNumber(relief.maxLevel, this.level)));
+    return this.level >= minLevel && this.level <= maxLevel ? relief : null;
+  }
+
+  getBossProfileReliefNumber(key, fallback = 1) {
+    const relief = this.getBossProfileRelief();
+    return relief ? finiteNumber(relief[key], fallback) : fallback;
+  }
+
+  getOpeningAttackDelayMs() {
+    const base = this.level <= 1 ? 1800 : 1400;
+    return Math.max(base, Math.round(this.getBossProfileReliefNumber('openingAttackDelayMs', base)));
+  }
+
   getBossPressureScalar() {
     let scalar = 1;
     if (this.level <= 1) scalar = 0.58;
@@ -1438,7 +1458,10 @@ export class Boss {
     else if (this.level <= 4) scalar = 0.92;
     else if (this.level <= 6) scalar = 0.96;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 0.72 : 1;
-    return scalar * this.getCombinedBossDifficultyScalar() * chaosRelief;
+    return scalar *
+      this.getCombinedBossDifficultyScalar() *
+      chaosRelief *
+      clamp(this.getBossProfileReliefNumber('pressureScalarMult', 1), 0.2, 1.2);
   }
 
   getPhaseShootDelay(phase) {
@@ -1490,17 +1513,21 @@ export class Boss {
       ? (this.phase === 1 ? 1 : 1.28)
       : this.phase === 2 ? 0.95 : 0.9;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
-    return Math.round((base * phaseScalar * chaosRelief) / (
+    const reliefMult = clamp(this.getBossProfileReliefNumber('regularAttackIntervalMult', 1), 0.5, 2);
+    return Math.round(((base * phaseScalar * chaosRelief) / (
       this.getCombinedBossDifficultyScalar() *
       this.getRunModeBossDifficultyMultiplier()
-    ));
+    )) * reliefMult);
   }
 
   getRegularTelegraphDurationMs() {
     const fairness = BalanceConfig.difficulty.bossFairness || {};
-    if (this.level <= 2) return fairness.regularTelegraphEarlyMs ?? 960;
-    if (this.level <= 8) return fairness.regularTelegraphMidMs ?? 880;
-    return fairness.regularTelegraphLateMs ?? 780;
+    const base = this.level <= 2
+      ? (fairness.regularTelegraphEarlyMs ?? 960)
+      : this.level <= 8
+        ? (fairness.regularTelegraphMidMs ?? 880)
+        : (fairness.regularTelegraphLateMs ?? 780);
+    return Math.round(base * clamp(this.getBossProfileReliefNumber('regularTelegraphMult', 1), 0.75, 1.6));
   }
 
   applyRecoveryPause(durationMs = 0, reason = 'boss_recovery') {
@@ -1590,10 +1617,12 @@ export class Boss {
 
   setRingSafeLane(count = 16, wedge = 0.38) {
     const angle = this.getRingSafeAngle(count);
+    const reliefBonus = this.getBossProfileReliefNumber('ringSafeWedgeBonus', 0);
+    const safeWedge = clamp(Number(wedge) + reliefBonus, 0.1, 1.2);
     this.safeLanes = [this.getSafeLaneHint('ring-wedge', {
       signature: 'ring',
       angle: Number(angle.toFixed(3)),
-      width: Number(wedge.toFixed(3)),
+      width: Number(safeWedge.toFixed(3)),
       label: 'BOTTOM WEDGE'
     })];
   }
@@ -1680,11 +1709,12 @@ export class Boss {
     const aimedTelegraphMs = earlyBoss
       ? (fairness.signatureTelegraphEarlyMs ?? fairness.signatureTelegraphMs ?? 1120)
       : (fairness.signatureTelegraphMs ?? 1120);
+    const telegraphReliefMult = clamp(this.getBossProfileReliefNumber('signatureTelegraphMult', 1), 0.75, 1.7);
     this.telegraph = {
       type,
       label: this.getSignatureLabel(type),
       start: Date.now(),
-      duration: type === 'ring' || type === 'adds' ? ringTelegraphMs : aimedTelegraphMs
+      duration: Math.round((type === 'ring' || type === 'adds' ? ringTelegraphMs : aimedTelegraphMs) * telegraphReliefMult)
     };
     this.setPresentationState('charge', this.telegraph.duration);
     const playScene = this.game?.scenes?.play;
@@ -1965,7 +1995,12 @@ export class Boss {
     });
     const safeAngle = this.getRingSafeAngle(count);
     const fairness = BalanceConfig.difficulty.bossFairness || {};
-    const safeWedge = this.level <= 2 ? (fairness.ringSafeWedgeEarly ?? 0.58) : (fairness.ringSafeWedge ?? 0.5);
+    const safeWedge = clamp(
+      (this.level <= 2 ? (fairness.ringSafeWedgeEarly ?? 0.58) : (fairness.ringSafeWedge ?? 0.5)) +
+        this.getBossProfileReliefNumber('ringSafeWedgeBonus', 0),
+      0.1,
+      1.2
+    );
     this.setRingSafeLane(count, safeWedge);
     for (let i = 0; i < count; i++) {
       if (i % gapSize === 0) continue;
@@ -2046,7 +2081,14 @@ export class Boss {
 
     if (attack === 'fan' || attack === 'burst' || attack === 'fakeout') {
       const firstBoss = this.level <= 1;
-      const count = this.phase === 1 || firstBoss ? 1 : attack === 'burst' ? 5 : 3;
+      const configuredBurstCount = this.phase >= 3
+        ? this.getBossProfileReliefNumber('burstShotsPhase3', 5)
+        : this.getBossProfileReliefNumber('burstShotsPhase2', 5);
+      const count = this.phase === 1 || firstBoss
+        ? 1
+        : attack === 'burst'
+          ? clamp(Math.round(configuredBurstCount), 1, 5)
+          : 3;
       const spread = this.phase === 1 || firstBoss ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
       const speed = this.getBossProjectileSpeed(this.phase === 1 || firstBoss ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
       for (let i = 0; i < count; i++) {

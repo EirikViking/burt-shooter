@@ -38,12 +38,22 @@ function getModeMultiplier(mode) {
   return RUN_MODE_PROFILES[mode]?.bossDifficultyMult ?? 1;
 }
 
-function makeGame(mode) {
+function makeGame(mode, bulletSink = []) {
   return {
     getWidth: () => 1280,
     getHeight: () => 720,
     getRunModeProfile: () => RUN_MODE_PROFILES[mode],
-    scenes: { play: null }
+    scenes: {
+      play: {
+        bulletManager: {
+          addEnemyBullet: (bullet) => bulletSink.push(bullet)
+        },
+        registerBossHazardFromBoss() {},
+        enemyManager: {
+          spawnBossAdds() {}
+        }
+      }
+    }
   };
 }
 
@@ -69,6 +79,15 @@ function getWipeoutRecoveryMs(level, deathNumber) {
   if (deathNumber >= 3) return third;
   if (deathNumber >= 2) return second;
   return base;
+}
+
+function getProfileReliefFor(level) {
+  const profile = getBossProfile(level);
+  const relief = diff.bossFairness?.profileRelief?.[profile.id] || null;
+  if (!relief) return null;
+  const minLevel = Math.max(1, Math.floor(Number(relief.minLevel) || 1));
+  const maxLevel = Math.max(minLevel, Math.floor(Number(relief.maxLevel) || level));
+  return level >= minLevel && level <= maxLevel ? relief : null;
 }
 
 function simulateWipeout({ level, lives = 5, durationMs = 12000, attemptEveryMs = 250, guardEnabled = true } = {}) {
@@ -100,15 +119,25 @@ function simulateWipeout({ level, lives = 5, durationMs = 12000, attemptEveryMs 
   };
 }
 
+function simulateRegularShotCount(level, mode, phase) {
+  const bullets = [];
+  const boss = new Boss(640, 180, level, makeGame(mode, bullets));
+  boss.phase = phase;
+  boss.profile = getBossProfile(level);
+  const fired = boss.shoot(640, 640) || [];
+  return Math.max(bullets.length, fired.length);
+}
+
 function getBossMetrics(level, mode) {
   const game = makeGame(mode);
   const boss = new Boss(640, 180, level, game);
   const profile = getBossProfile(level);
   const regularTelegraphMs = boss.getRegularTelegraphDurationMs();
-  const firstRegularTellStartMs = Math.max(1400, boss.entryDurationMs + 250);
+  const firstRegularTellStartMs = Math.max(boss.getOpeningAttackDelayMs?.() ?? 1400, boss.entryDurationMs + 250);
   const firstDangerousAttackMs = firstRegularTellStartMs + regularTelegraphMs;
   const attack = profile.attack;
   const signature = profile.signature;
+  const relief = getProfileReliefFor(level);
   const regularShots = attack === 'burst'
     ? (boss.phase === 1 ? 1 : 5)
     : attack === 'fan' || attack === 'fakeout'
@@ -138,9 +167,14 @@ function getBossMetrics(level, mode) {
     boss.getBossPressureScalar() *
     boss.getBossAttackSpeedMultiplier(signature);
   const hazardArmingMs = diff.bossFairness?.hazardArmingMs ?? 320;
-  const reactionWindowMs = Math.min(regularTelegraphMs, signature === 'ring'
+  const signatureTelegraphBaseMs = signature === 'ring'
     ? (level <= 2 ? diff.bossFairness.signatureRingTelegraphEarlyMs : diff.bossFairness.signatureRingTelegraphMs)
-    : (level <= 2 ? diff.bossFairness.signatureTelegraphEarlyMs : diff.bossFairness.signatureTelegraphMs));
+    : (level <= 2 ? diff.bossFairness.signatureTelegraphEarlyMs : diff.bossFairness.signatureTelegraphMs);
+  const signatureTelegraphMs = Math.round(signatureTelegraphBaseMs * (Number(relief?.signatureTelegraphMult) || 1));
+  const ringSafeWedge = (signature === 'ring'
+    ? (level <= 2 ? diff.bossFairness.ringSafeWedgeEarly : diff.bossFairness.ringSafeWedge)
+    : null);
+  const reactionWindowMs = Math.min(regularTelegraphMs, signatureTelegraphMs);
   const pressureIndex = ((regularShots / Math.max(1, regularIntervalMs / 1000)) * regularProjectileSpeed) +
     ((signatureShots / 20) * signatureProjectileSpeed);
   return {
@@ -155,14 +189,19 @@ function getBossMetrics(level, mode) {
     signature,
     maxHealth: boss.maxHealth,
     bossDifficultyMult: getModeMultiplier(mode),
+    profileRelief: relief ? { ...relief } : null,
+    openingAttackDelayMs: boss.getOpeningAttackDelayMs?.() ?? null,
     firstDangerousAttackMs,
     regularTelegraphMs,
-    signatureTelegraphMs: signature === 'ring'
-      ? (level <= 2 ? diff.bossFairness.signatureRingTelegraphEarlyMs : diff.bossFairness.signatureRingTelegraphMs)
-      : (level <= 2 ? diff.bossFairness.signatureTelegraphEarlyMs : diff.bossFairness.signatureTelegraphMs),
+    signatureTelegraphMs,
     attackCadenceMs: regularIntervalMs,
     regularShots,
+    phase2RegularShots: simulateRegularShotCount(level, mode, 2),
+    phase3RegularShots: simulateRegularShotCount(level, mode, 3),
     signatureShots,
+    ringSafeWedge: ringSafeWedge == null
+      ? null
+      : approxNumber(ringSafeWedge + (Number(relief?.ringSafeWedgeBonus) || 0)),
     projectileSpeed: approxNumber(regularProjectileSpeed),
     signatureProjectileSpeed: approxNumber(signatureProjectileSpeed),
     hazardArmingMs,
@@ -203,6 +242,8 @@ function assertSourceMarkers() {
 const mayhem = sectors.map((sector) => getBossMetrics(sector, RUN_MODES.MAYHEM));
 const scout = sectors.map((sector) => getBossMetrics(sector, RUN_MODES.SCOUT));
 const boss2 = getBossMetrics(2, RUN_MODES.MAYHEM);
+const boss2Scout = getBossMetrics(2, RUN_MODES.SCOUT);
+const boss52 = getBossMetrics(52, RUN_MODES.MAYHEM);
 const sector21 = getBossMetrics(21, RUN_MODES.MAYHEM);
 const sector22 = getBossMetrics(22, RUN_MODES.MAYHEM);
 const beforeWipeout = simulateWipeout({ level: 22, guardEnabled: false });
@@ -210,10 +251,15 @@ const afterWipeout = simulateWipeout({ level: 22, guardEnabled: true });
 
 assert.equal(BOSS_ROSTER[1].name, 'Sam the Misfit', 'boss 2 identity should stay Sam the Misfit');
 assert.equal(boss2.archetype, 'forge', 'boss 2 should remain the forge archetype under investigation');
+assert.equal(boss2.profileRelief?.maxLevel, 2, 'Sam relief should be scoped to the actual second boss only');
+assert.equal(boss52.profileRelief, null, 'later Sam repeats should not inherit the sector 2 learning relief');
 assert.equal(sector22.archetype, boss2.archetype, 'sector 22 should share boss 2 forge cadence family');
 assert.notEqual(sector21.archetype, boss2.archetype, 'sector 21 itself should be documented as adjacent, not the same forge boss');
-assert.ok(boss2.firstDangerousAttackMs >= 2500, `boss 2 first dangerous attack too early: ${boss2.firstDangerousAttackMs}`);
-assert.ok(boss2.estimatedMinimumReactionWindowMs >= 1100, `boss 2 reaction window too low: ${boss2.estimatedMinimumReactionWindowMs}`);
+assert.ok(boss2.firstDangerousAttackMs >= 3500, `boss 2 first dangerous attack too early: ${boss2.firstDangerousAttackMs}`);
+assert.ok(boss2.estimatedMinimumReactionWindowMs >= 1350, `boss 2 reaction window too low: ${boss2.estimatedMinimumReactionWindowMs}`);
+assert.equal(boss2.phase2RegularShots, 3, `boss 2 phase 2 burst should be reduced to 3 shots, got ${boss2.phase2RegularShots}`);
+assert.equal(boss2.phase3RegularShots, 4, `boss 2 phase 3 burst should be capped at 4 shots, got ${boss2.phase3RegularShots}`);
+assert.ok(boss2Scout.pressureIndex < boss2.pressureIndex, 'Scout boss 2 pressure should stay below Mayhem boss 2');
 assert.equal(wipeoutGuard.enabled, true, 'boss wipeout guard must be enabled');
 assert.equal(wipeoutGuard.clearBossHazardsOnDeath, true, 'boss hazards should clear after boss-caused death');
 assert.ok(afterWipeout.losses <= 3, `guard should prevent 4-5 rapid losses, got ${afterWipeout.losses}`);

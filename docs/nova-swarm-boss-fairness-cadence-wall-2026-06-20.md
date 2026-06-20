@@ -48,6 +48,25 @@ Behavior:
 
 This is not an easy-mode cap. It does not make the player permanently invincible, skip bosses, lower boss HP, lower boss projectile speed, or change score. It only prevents repeated instant losses to the same boss before the player has regained real control.
 
+## Follow-up Boss 2 Playtest Relief
+
+After private BuildID `23836473`, live playtest feedback still showed `Sam the Misfit` killing the player twice in Mayhem and feeling punishing again in Scout. That means the wipeout guard solved the rapid chain-death failure mode, but the second boss was still too sharp as the first serious boss check.
+
+The follow-up relief is scoped to `nova_boss_02` only while it appears as sector 2. It does not apply to later roster repeats such as sector 52.
+
+Sam-specific changes:
+
+- First regular danger moves from about 2.65 seconds to 3.566 seconds.
+- Regular telegraph increases from 1120 ms to 1366 ms.
+- Signature ring telegraph increases from 1500 ms to 1770 ms.
+- Regular attack cadence slows to 4031 ms in Mayhem and 5375 ms in Scout.
+- Ring safe wedge widens from 0.74 to 0.9.
+- Phase 2 burst is reduced from 5 shots to 3.
+- Phase 3 burst is reduced from 5 shots to 4.
+- Sam's pressure scalar gets a local `0.82` multiplier.
+
+This is deliberately not a global boss nerf. Sector 22 `NOVA DEVOURER` remains on the existing late-boss pressure curve and still throws the 5-shot Forge burst.
+
 ## Scout And Mayhem Impact
 
 Mayhem remains the main ranked hard mode and keeps `bossDifficultyMult: 1`.
@@ -60,14 +79,19 @@ Sector Run uses the same boss encounters and also receives the guard.
 
 Generated report:
 
-`test-results/boss-fairness-cadence-wall-2026-06-20T15-56-18-550Z/report.json`
+`test-results/boss-fairness-cadence-wall-2026-06-20T16-33-05-426Z/report.json`
 
 Key metrics from the report:
 
-- Boss 2 first dangerous attack: 2650 ms.
-- Boss 2 regular telegraph: 1120 ms.
-- Boss 2 signature ring telegraph: 1500 ms.
+- Boss 2 first dangerous attack: 3566 ms.
+- Boss 2 regular telegraph: 1366 ms.
+- Boss 2 signature ring telegraph: 1770 ms.
+- Boss 2 Mayhem pressure index: 0.462.
+- Boss 2 Scout pressure index: 0.316.
+- Boss 2 phase 2 regular burst: 3 shots.
+- Boss 2 phase 3 regular burst: 4 shots.
 - Sector 22 repeats the Forge burst/ring family.
+- Sector 22 phase 2 regular burst remains 5 shots.
 - Sector 22 pre-guard model: 5 losses in 12 seconds, 0 lives remaining.
 - Sector 22 post-guard model: 3 losses in 12 seconds, 2 lives remaining.
 
