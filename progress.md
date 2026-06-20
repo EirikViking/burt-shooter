@@ -16,6 +16,14 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Investigation direction: trace `recordThreatSeen`, `ThreatDiscoveryState`, Hangar/profile progress mirrors, renderer save collection, and Electron Steam Cloud merge/normalize to find why Scout discoveries can appear in-session but later reload to the older count.
 - Root cause found: Electron Steam Cloud sanitization capped each Codex category at 500 entries, which could drop high-progress Scout-added discoveries from the profile save. The fix raises the bounded cap to current catalog scale and changes renderer/Electron Codex save merges to union/max semantics. The regression also proves profile-local Scout Best survives stale sync and restart.
 
+## 2026-06-20 Boss Fairness Cadence Wall
+
+- Current request: investigate boss fairness after BuildID `23836186`, especially boss 2, the sector 21 to 22 wall, and reports of bosses draining 4 or 5 lives within seconds. Do not make Mayhem or Scout globally easier.
+- Investigation result: boss 2 is `Sam the Misfit`, a `forge` / `burst` / `ring` boss. Sector 21 is adjacent but not the same cadence family; sector 22 is `NOVA DEVOURER`, also `forge` / `burst` / `ring`, repeating boss 2's pattern family at much higher pressure.
+- Root cause found: existing boss mercy was time-based but not encounter-aware, and respawn cleanup did not clear active boss hazard overlays or pause an already-queued boss attack. Late-sector minimum mercy could allow the same boss to chain-kill a player before real control returned.
+- Fix direction: added a boss wipeout guard that tracks same-boss deaths, clears boss hazards after boss-caused death, grants stronger recovery after the second and third same-boss deaths, pauses current boss telegraphs/attack cadence briefly after respawn, and resets on boss defeat or level start. No boss HP, boss damage, mode balance, score, save, leaderboard, Steamworks, or achievement metadata changed.
+- Deterministic proof: `npm run check:boss-fairness-cadence-wall` reports boss 2 first dangerous attack at 2650 ms, sector 22 sharing the Forge burst/ring cadence, pre-guard model draining 5 lives in 12 seconds, and post-guard model stopping at 3 losses with 2 lives remaining. Latest report: `test-results/boss-fairness-cadence-wall-2026-06-20T15-56-18-550Z/report.json`.
+
 ## 2026-06-20 P0 Explicit Profile Rescue Import
 
 - Current user report: private Steam test BuildID `23829231` still shows low progress because the active runtime save is `steam-76561198953993508`, while the preserved high-progress save is a sibling explicit Steam profile `steam-76561198692310517`.

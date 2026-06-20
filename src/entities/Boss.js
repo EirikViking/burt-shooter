@@ -1503,6 +1503,27 @@ export class Boss {
     return fairness.regularTelegraphLateMs ?? 780;
   }
 
+  applyRecoveryPause(durationMs = 0, reason = 'boss_recovery') {
+    const duration = Math.max(0, Number(durationMs) || 0);
+    if (duration <= 0) return 0;
+
+    const now = Date.now();
+    const cooldownFrames = Math.ceil(duration / 16.67);
+    this.regularTelegraph = null;
+    this.telegraph = null;
+    this.clearRegularAttackTelegraphVisual();
+    this.clearTelegraphVisual();
+    this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, now + duration);
+    this.shootCooldown = Math.max(this.shootCooldown || 0, cooldownFrames);
+    this.signatureCooldown = Math.max(this.signatureCooldown || 0, cooldownFrames);
+    if (this.delayedSignature) {
+      this.delayedSignature.dueAt = Math.max(this.delayedSignature.dueAt || 0, now + duration);
+    }
+    this.chaosPressureReliefUntilMs = Math.max(this.chaosPressureReliefUntilMs || 0, now + duration);
+    console.log(`[BossRecoveryPause] level=${this.level} reason=${reason} durationMs=${Math.round(duration)}`);
+    return duration;
+  }
+
   getPhasePlan() {
     return BOSS_PHASE_PLANS[this.profile?.archetype] || BOSS_PHASE_PLANS.conductor;
   }

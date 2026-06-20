@@ -145,6 +145,8 @@ export class PlayScene {
     this.bossMercyUntilMs = 0;
     this.lastBossMercyBlockLogAt = 0;
     this.lastBossMercyFeedbackAt = 0;
+    this.bossWipeoutGuard = null;
+    this.pendingBossWipeoutRecovery = null;
     this.debugInvincible = false;
     this.debugLastBlockedDamageAt = 0;
     this.debugLevelToolsUsed = false;
@@ -767,6 +769,7 @@ export class PlayScene {
     this.bossHazards = [];
     this.lastBossHazardHit = null;
     this.bossMercyUntilMs = 0;
+    this.resetBossWipeoutGuard('debug_level_jump');
     this.game.level = targetLevel;
     const computedRank = rankManager.getRankFromLevel(targetLevel);
     this.game.rankIndex = computedRank;
@@ -1108,6 +1111,7 @@ export class PlayScene {
     this._lastStartedLevel = this.game.level;
 
     this.levelAdvancePending = false;
+    this.resetBossWipeoutGuard('level_start');
     const postBossLevelIntro = Boolean(this.postBossLevelIntroPending);
     this.postBossLevelIntroPending = false;
     if (this.levelAdvanceTimeout) {
@@ -4300,7 +4304,8 @@ export class PlayScene {
       this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
       this.player.grantInvulnerability?.(RESPAWN_INVULNERABILITY_MS, 'respawn');
       this.recordBalanceRespawn();
-      const clearedHazards = this.clearRespawnHazards('life_lost');
+      const clearedHazards = this.clearRespawnHazards('life_lost') +
+        this.applyBossWipeoutRespawnProtection(this.pendingBossWipeoutRecovery, this.enemyManager?.boss);
       if (clearedHazards > 0) {
         const compactHud = this.game.getWidth() < 620;
         this.showToast(`RESPAWN SHOCKWAVE x${clearedHazards}`, {
@@ -4375,6 +4380,101 @@ export class PlayScene {
       return Math.max(lateCooldownMs, earlyCooldownMs - (safeLevel - 1) * levelReductionMs);
     }
     return Math.max(minimumCooldownMs, lateCooldownMs - (safeLevel - maxProtectedLevel) * levelReductionMs);
+  }
+
+  getBossWipeoutConfig() {
+    const config = BalanceConfig.bossMercy?.wipeoutGuard || {};
+    return config.enabled === true ? config : null;
+  }
+
+  getBossEncounterKey(boss = this.enemyManager?.boss) {
+    const level = Math.max(1, Math.floor(Number(boss?.level) || Number(this.game?.level) || 1));
+    const bossId = boss?.profile?.id || boss?.name || boss?.bossType || 'boss';
+    return `${level}:${bossId}`;
+  }
+
+  resetBossWipeoutGuard(reason = 'reset') {
+    if (this.bossWipeoutGuard && this.debugPowerups) {
+      console.log(`[BossWipeoutGuard] reset reason=${reason} deaths=${this.bossWipeoutGuard.totalDeaths || 0}`);
+    }
+    this.bossWipeoutGuard = null;
+    this.pendingBossWipeoutRecovery = null;
+  }
+
+  recordBossWipeoutLifeLoss(source = 'boss_damage', boss = this.enemyManager?.boss) {
+    const config = this.getBossWipeoutConfig();
+    if (!config || !boss?.active) return null;
+
+    const now = Date.now();
+    const encounterKey = this.getBossEncounterKey(boss);
+    const recentWindowMs = Math.max(1000, Number(config.recentDeathWindowMs) || 14000);
+    const previous = this.bossWipeoutGuard?.encounterKey === encounterKey
+      ? this.bossWipeoutGuard
+      : {
+          encounterKey,
+          level: Math.max(1, Math.floor(Number(boss?.level) || Number(this.game?.level) || 1)),
+          bossName: boss?.name || boss?.profile?.name || 'Boss',
+          bossArchetype: boss?.profile?.archetype || null,
+          totalDeaths: 0,
+          deathTimes: []
+        };
+
+    const deathTimes = (previous.deathTimes || []).filter((time) => now - time <= recentWindowMs);
+    deathTimes.push(now);
+    const totalDeaths = (Number(previous.totalDeaths) || 0) + 1;
+    const repeatedDeaths = Math.max(totalDeaths, deathTimes.length);
+    const secondDeathRecoveryMs = Math.max(0, Number(config.secondDeathRecoveryMs) || 8500);
+    const thirdDeathRecoveryMs = Math.max(secondDeathRecoveryMs, Number(config.thirdDeathRecoveryMs) || 11500);
+    const thirdDeathControlMs = Math.max(thirdDeathRecoveryMs, Number(config.thirdDeathControlMs) || 10000);
+    const attackRunwayMs = Math.max(0, Number(config.attackRunwayMs) || 1800);
+    const secondAttackRunwayMs = Math.max(attackRunwayMs, Number(config.secondDeathAttackRunwayMs) || 3200);
+    const thirdAttackRunwayMs = Math.max(secondAttackRunwayMs, Number(config.thirdDeathAttackRunwayMs) || 4800);
+    const baseMercyMs = this.getBossMercyCooldownMs(previous.level);
+    const recoveryMs = repeatedDeaths >= 3
+      ? Math.max(baseMercyMs, thirdDeathRecoveryMs, thirdDeathControlMs)
+      : repeatedDeaths >= 2
+        ? Math.max(baseMercyMs, secondDeathRecoveryMs)
+        : baseMercyMs;
+    const attackRunway = repeatedDeaths >= 3
+      ? thirdAttackRunwayMs
+      : repeatedDeaths >= 2
+        ? secondAttackRunwayMs
+        : attackRunwayMs;
+
+    const guard = {
+      ...previous,
+      totalDeaths,
+      recentDeaths: deathTimes.length,
+      deathTimes,
+      lastDeathAt: now,
+      lastSource: source,
+      recoveryMs,
+      attackRunwayMs: attackRunway,
+      controlUntilMs: now + recoveryMs,
+      clearBossHazards: config.clearBossHazardsOnDeath !== false
+    };
+    this.bossWipeoutGuard = guard;
+    this.pendingBossWipeoutRecovery = guard;
+    console.log(
+      `[BossWipeoutGuard] life_loss level=${guard.level} boss=${guard.bossName}` +
+      ` source=${source} deaths=${guard.totalDeaths} recent=${guard.recentDeaths}` +
+      ` recoveryMs=${Math.round(recoveryMs)} attackRunwayMs=${Math.round(attackRunway)}`
+    );
+    return guard;
+  }
+
+  applyBossWipeoutRespawnProtection(guard = this.pendingBossWipeoutRecovery, boss = this.enemyManager?.boss) {
+    if (!guard || !boss?.active) return 0;
+    let cleared = 0;
+    if (guard.clearBossHazards) {
+      cleared += this.clearBossHazards(`boss_wipeout_guard:${guard.lastSource || 'boss'}`);
+    }
+    const now = Date.now();
+    this.bossMercyUntilMs = Math.max(this.bossMercyUntilMs || 0, now + Math.max(0, Number(guard.recoveryMs) || 0));
+    this.player?.grantInvulnerability?.(Math.max(0, Number(guard.recoveryMs) || 0), 'boss_wipeout_guard');
+    boss.applyRecoveryPause?.(Math.max(0, Number(guard.attackRunwayMs) || 0), 'boss_wipeout_guard');
+    this.pendingBossWipeoutRecovery = null;
+    return cleared;
   }
 
   canBossCauseLifeLoss(source = 'boss_damage', boss = this.enemyManager?.boss) {
@@ -4469,7 +4569,12 @@ export class PlayScene {
       return false;
     }
 
-    const cooldownMs = this.startBossMercyWindow(source, boss);
+    const wipeoutGuard = this.recordBossWipeoutLifeLoss(source, boss);
+    const cooldownMs = this.startBossMercyWindow(
+      source,
+      boss,
+      Math.max(this.getBossMercyCooldownMs(boss?.level || this.game?.level || 1), Number(wipeoutGuard?.recoveryMs) || 0)
+    );
     this.player.grantInvulnerability?.(cooldownMs, 'boss_mercy');
     if (source === 'boss_contact') this.applyBossRecoverySeparation(boss);
     this.triggerCabinetLog('boss-mercy-read', {
@@ -5439,6 +5544,18 @@ export class PlayScene {
     this.bulletManager.enemyBullets = [];
     if (cleared > 0 && this.debugPowerups) {
       console.log(`[BulletCleanup] reason=${reason} cleared=${cleared}`);
+    }
+    return cleared;
+  }
+
+  clearBossHazards(reason = 'cleanup') {
+    const hazards = Array.isArray(this.bossHazards) ? this.bossHazards : [];
+    const cleared = hazards.length;
+    this.bossHazards = [];
+    this.lastBossHazardHit = null;
+    this.bossHazardLayer?.clear?.();
+    if (cleared > 0 && this.debugPowerups) {
+      console.log(`[BossHazardCleanup] reason=${reason} cleared=${cleared}`);
     }
     return cleared;
   }
@@ -8918,6 +9035,7 @@ export class PlayScene {
   }
 
   showBossCelebration({ level = this.game.level, type = 'UNKNOWN' } = {}) {
+    this.resetBossWipeoutGuard('boss_defeated');
     if (!this.uiOverlay) return;
     this.recordBalanceBossEnd();
     const bossId = this.enemyManager?.boss?.profile?.id || String(type || `boss_${level}`).toLowerCase();

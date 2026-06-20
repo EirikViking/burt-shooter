@@ -500,7 +500,18 @@ export const BalanceConfig = {
         minimumCooldownMs: 2500,
         levelReductionMs: 250,
         contactPushbackPx: 72,
-        blockedHitFeedbackCooldownMs: 600
+        blockedHitFeedbackCooldownMs: 600,
+        wipeoutGuard: {
+            enabled: true,
+            recentDeathWindowMs: 14000,
+            secondDeathRecoveryMs: 8500,
+            thirdDeathRecoveryMs: 11500,
+            thirdDeathControlMs: 10000,
+            attackRunwayMs: 1800,
+            secondDeathAttackRunwayMs: 3200,
+            thirdDeathAttackRunwayMs: 4800,
+            clearBossHazardsOnDeath: true
+        }
     },
 
     // Modifiers
