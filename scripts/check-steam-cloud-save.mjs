@@ -254,7 +254,7 @@ try {
   assert.equal(collectedSave.hangarProgress.pilotXp, 7777);
   assert.equal(collectedSave.hangarProgress.unlockedShipIds.includes('nova_ship_04'), true);
   assert.equal(collectedSave.threatDiscovery.items.enemies.scout.name, 'Scout');
-  assert.deepEqual(collectedSave.threatDiscovery.unreadIds, ['enemies:scout']);
+  assert.deepEqual([...collectedSave.threatDiscovery.unreadIds].sort(), ['bosses:nova_boss_01', 'enemies:scout']);
   assert.equal(collectedSave.shipUsage.nova_ship_01, 4);
   assert.equal(collectedSave.shipUsage.nova_ship_04, 3);
   assert.equal(collectedSave.shipUsage['nova-player-ship-04.png'], 2);

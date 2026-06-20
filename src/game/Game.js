@@ -305,7 +305,9 @@ export class Game {
     this.contentDirector = new RunContentDirector(this, {
       seed: `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
     });
-    if (this.isRankedRun() && RunPacingConfig.threatCodexEnabled) startThreatDiscoveryRun();
+    if ((this.isRankedRun() || requestedRunMode === RUN_MODES.SCOUT) && RunPacingConfig.threatCodexEnabled) {
+      startThreatDiscoveryRun();
+    }
     if (RunPacingConfig.contentDirectorEnabled) this.contentDirector.startRun();
 
     // Rank System (cross-run pilot career)

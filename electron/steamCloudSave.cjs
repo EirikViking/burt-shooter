@@ -10,6 +10,8 @@ const LEGACY_HIGHSCORE_FILE = 'local-highscores-v2.json';
 const OLD_HIGHSCORE_FILE = 'local-highscores.json';
 const LOCAL_OFFLINE_PROFILE_ID = 'local-offline';
 const LEGACY_SHARED_PROFILE_ID = 'legacy-shared';
+const MAX_THREAT_DISCOVERY_CATEGORIES = 48;
+const MAX_THREAT_DISCOVERY_ITEMS_PER_CATEGORY = 5000;
 const SUPPORTED_LANGUAGE_MODES = new Set(['system', 'en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']);
 const MUSIC_PACKS = new Set(['classic', 'generated']);
 const DISPLAY_MODES = new Set(['fullscreen', 'windowed', 'borderless']);
@@ -435,12 +437,12 @@ function sanitizeThreatDiscovery(discovery = {}) {
   const raw = discovery && typeof discovery === 'object' ? discovery : {};
   const rawItems = raw.items && typeof raw.items === 'object' ? raw.items : {};
   const items = {};
-  for (const [category, bucket] of Object.entries(rawItems).slice(0, 24)) {
+  for (const [category, bucket] of Object.entries(rawItems).slice(0, MAX_THREAT_DISCOVERY_CATEGORIES)) {
     const cleanCategory = String(category || '').slice(0, 80);
     if (!cleanCategory || !bucket || typeof bucket !== 'object') continue;
     items[cleanCategory] = Object.fromEntries(
       Object.entries(bucket)
-        .slice(0, 500)
+        .slice(0, MAX_THREAT_DISCOVERY_ITEMS_PER_CATEGORY)
         .filter(([id]) => String(id || '').trim())
         .map(([id, item]) => [String(id).slice(0, 160), sanitizeThreatItem(item, { id, category: cleanCategory })])
     );
@@ -690,6 +692,67 @@ function mergeShipUsage(localUsage = {}, rendererUsage = {}) {
     .filter(([, value]) => value > 0));
 }
 
+function mergeThreatItem(localItem = {}, rendererItem = {}, fallback = {}) {
+  const local = localItem && typeof localItem === 'object' ? localItem : {};
+  const renderer = rendererItem && typeof rendererItem === 'object' ? rendererItem : {};
+  return sanitizeThreatItem({
+    ...local,
+    ...renderer,
+    id: renderer.id || local.id || fallback.id,
+    category: renderer.category || local.category || fallback.category,
+    name: renderer.name || local.name || fallback.name || renderer.id || local.id || fallback.id,
+    firstSeenAt: local.firstSeenAt || renderer.firstSeenAt,
+    lastSeenAt: renderer.lastSeenAt || local.lastSeenAt,
+    timesSeen: Math.max(sanitizeNumber(local.timesSeen, 0), sanitizeNumber(renderer.timesSeen, 0)),
+    timesDefeated: Math.max(sanitizeNumber(local.timesDefeated, 0), sanitizeNumber(renderer.timesDefeated, 0)),
+    timesSurvived: Math.max(sanitizeNumber(local.timesSurvived, 0), sanitizeNumber(renderer.timesSurvived, 0)),
+    timesKilledPlayer: Math.max(sanitizeNumber(local.timesKilledPlayer, 0), sanitizeNumber(renderer.timesKilledPlayer, 0)),
+    bestClearTimeAgainst: Number.isFinite(Number(local.bestClearTimeAgainst)) && Number.isFinite(Number(renderer.bestClearTimeAgainst))
+      ? Math.min(Number(local.bestClearTimeAgainst), Number(renderer.bestClearTimeAgainst))
+      : (Number.isFinite(Number(local.bestClearTimeAgainst)) ? Number(local.bestClearTimeAgainst) : (Number.isFinite(Number(renderer.bestClearTimeAgainst)) ? Number(renderer.bestClearTimeAgainst) : null)),
+    highestScoreDuringEncounter: Math.max(
+      sanitizeNumber(local.highestScoreDuringEncounter, 0),
+      sanitizeNumber(renderer.highestScoreDuringEncounter, 0)
+    ),
+    metadata: {
+      ...(local.metadata && typeof local.metadata === 'object' ? local.metadata : {}),
+      ...(renderer.metadata && typeof renderer.metadata === 'object' ? renderer.metadata : {})
+    }
+  }, fallback);
+}
+
+function mergeThreatDiscovery(localDiscovery = {}, rendererDiscovery = {}) {
+  const local = sanitizeThreatDiscovery(localDiscovery);
+  const renderer = sanitizeThreatDiscovery(rendererDiscovery);
+  const categories = [...new Set([
+    ...Object.keys(local.items || {}),
+    ...Object.keys(renderer.items || {})
+  ])];
+  const items = {};
+  for (const category of categories) {
+    const localBucket = local.items?.[category] && typeof local.items[category] === 'object' ? local.items[category] : {};
+    const rendererBucket = renderer.items?.[category] && typeof renderer.items[category] === 'object' ? renderer.items[category] : {};
+    items[category] = {};
+    for (const id of [...new Set([...Object.keys(localBucket), ...Object.keys(rendererBucket)])]) {
+      items[category][id] = mergeThreatItem(localBucket[id], rendererBucket[id], { id, category });
+    }
+  }
+  return sanitizeThreatDiscovery({
+    ...local,
+    ...renderer,
+    items,
+    discoveriesThisRun: Array.isArray(renderer.discoveriesThisRun) ? renderer.discoveriesThisRun : local.discoveriesThisRun,
+    recentRunThemes: [...new Set([
+      ...(Array.isArray(local.recentRunThemes) ? local.recentRunThemes : []),
+      ...(Array.isArray(renderer.recentRunThemes) ? renderer.recentRunThemes : [])
+    ])].slice(-8),
+    unreadIds: [...new Set([
+      ...(Array.isArray(local.unreadIds) ? local.unreadIds : []),
+      ...(Array.isArray(renderer.unreadIds) ? renderer.unreadIds : [])
+    ])]
+  });
+}
+
 function sanitizeRendererState(state = {}) {
   const selectedShipKey = typeof state.selectedShipKey === 'string' && state.selectedShipKey.trim()
     ? state.selectedShipKey.trim().slice(0, 160)
@@ -874,7 +937,7 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
         ? rendererState.hangarProgress
         : current.hangarProgress,
       threatDiscovery: Object.hasOwn(state, 'threatDiscovery')
-        ? rendererState.threatDiscovery
+        ? mergeThreatDiscovery(current.threatDiscovery, rendererState.threatDiscovery)
         : current.threatDiscovery,
       sectorStartChallengeRecords: Object.hasOwn(state, 'sectorStartChallengeRecords') || Object.hasOwn(state, 'sectorStartRecords')
         ? mergeSectorStartChallengeRecords(current.sectorStartChallengeRecords, rendererState.sectorStartChallengeRecords)

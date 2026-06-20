@@ -255,6 +255,36 @@ function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
   };
 }
 
+function mergeThreatDiscoveryItem(localItem = {}, cloudItem = {}, fallback = {}) {
+  const local = localItem && typeof localItem === 'object' ? localItem : {};
+  const cloud = cloudItem && typeof cloudItem === 'object' ? cloudItem : {};
+  return {
+    ...local,
+    ...cloud,
+    id: String(cloud.id || local.id || fallback.id || ''),
+    category: String(cloud.category || local.category || fallback.category || ''),
+    name: String(cloud.name || local.name || fallback.name || cloud.id || local.id || fallback.id || 'Unknown Signal'),
+    firstSeenAt: local.firstSeenAt || cloud.firstSeenAt || new Date().toISOString(),
+    lastSeenAt: cloud.lastSeenAt || local.lastSeenAt || new Date().toISOString(),
+    timesSeen: Math.max(0, Math.floor(Number(local.timesSeen) || 0), Math.floor(Number(cloud.timesSeen) || 0)),
+    timesDefeated: Math.max(0, Math.floor(Number(local.timesDefeated) || 0), Math.floor(Number(cloud.timesDefeated) || 0)),
+    timesSurvived: Math.max(0, Math.floor(Number(local.timesSurvived) || 0), Math.floor(Number(cloud.timesSurvived) || 0)),
+    timesKilledPlayer: Math.max(0, Math.floor(Number(local.timesKilledPlayer) || 0), Math.floor(Number(cloud.timesKilledPlayer) || 0)),
+    bestClearTimeAgainst: Number.isFinite(Number(local.bestClearTimeAgainst)) && Number.isFinite(Number(cloud.bestClearTimeAgainst))
+      ? Math.min(Number(local.bestClearTimeAgainst), Number(cloud.bestClearTimeAgainst))
+      : (Number.isFinite(Number(local.bestClearTimeAgainst)) ? Number(local.bestClearTimeAgainst) : (Number.isFinite(Number(cloud.bestClearTimeAgainst)) ? Number(cloud.bestClearTimeAgainst) : null)),
+    highestScoreDuringEncounter: Math.max(
+      0,
+      Math.floor(Number(local.highestScoreDuringEncounter) || 0),
+      Math.floor(Number(cloud.highestScoreDuringEncounter) || 0)
+    ),
+    metadata: {
+      ...(local.metadata && typeof local.metadata === 'object' ? local.metadata : {}),
+      ...(cloud.metadata && typeof cloud.metadata === 'object' ? cloud.metadata : {})
+    }
+  };
+}
+
 function mergeThreatDiscovery(localState = {}, cloudState = {}) {
   const local = localState && typeof localState === 'object' ? localState : {};
   const cloud = cloudState && typeof cloudState === 'object' ? cloudState : {};
@@ -264,10 +294,12 @@ function mergeThreatDiscovery(localState = {}, cloudState = {}) {
   ])];
   const items = {};
   for (const category of categories) {
-    items[category] = {
-      ...(local.items?.[category] || {}),
-      ...(cloud.items?.[category] || {})
-    };
+    const localBucket = local.items?.[category] && typeof local.items[category] === 'object' ? local.items[category] : {};
+    const cloudBucket = cloud.items?.[category] && typeof cloud.items[category] === 'object' ? cloud.items[category] : {};
+    items[category] = {};
+    for (const id of [...new Set([...Object.keys(localBucket), ...Object.keys(cloudBucket)])]) {
+      items[category][id] = mergeThreatDiscoveryItem(localBucket[id], cloudBucket[id], { id, category });
+    }
   }
   return {
     ...local,
