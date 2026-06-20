@@ -204,6 +204,7 @@ async function storageSnapshot(page) {
     localLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.localLeaderboard.v2') || '[]'),
     mockSteamLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'),
     sectorChallenge: JSON.parse(localStorage.getItem('novaSwarm.sectorStartChallengeRecords.v1') || '{"byCheckpoint":{}}'),
+    scoutRunRecords: JSON.parse(localStorage.getItem('novaSwarm.scoutRunRecords.v1') || '{"best":null}'),
     shipUsage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}'),
     shipUsageTotal: localStorage.getItem('burt.shipUsageTotal.v1') || '0'
   }));
@@ -494,6 +495,12 @@ try {
   assert.deepEqual(afterScout.legacy, beforeScout.legacy, 'Scout must not update legacy bests');
   assert.deepEqual(afterScout.achievements, beforeScout.achievements, 'Scout must not unlock achievements');
   assert.deepEqual(afterScout.localLeaderboard, [], 'Scout must not save local leaderboard entries');
+  const scoutFinalScoreText = new Intl.NumberFormat('en-US').format(scoutGameOver.score || 0);
+  assert.equal(afterScout.scoutRunRecords.best?.score, scoutGameOver.score, 'Scout should save the profile-local Scout best for the actual run score');
+  assert.match(scoutResultText, new RegExp(`Scout Best:\\s*${scoutFinalScoreText.replace(/,/g, ',?')}`, 'i'), 'Scout result should show local Scout best');
+  assert.match(scoutResultText, new RegExp(`This Run:\\s*${scoutFinalScoreText.replace(/,/g, ',?')}`, 'i'), 'Scout result should show this run score');
+  assert.match(scoutResultText, /New Scout Best/i, 'Scout result should celebrate a new Scout best');
+  assert.match(scoutResultText, /No leaderboard submission/i, 'Scout result should explicitly block leaderboard submission');
   assert.equal(afterScout.mockSteamLeaderboard.some((entry) => entry.leaderboardName === STEAM_LEADERBOARD_NAME), false, 'Scout must not submit to global Steam leaderboard');
   assert.deepEqual(afterScout.shipUsage, {}, 'Scout must not increment ship usage');
   assert.equal(afterScout.shipUsageTotal, '0', 'Scout must not increment total ship usage');

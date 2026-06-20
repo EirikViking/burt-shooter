@@ -5,6 +5,11 @@ import {
   normalizeSectorStartChallengeRecord
 } from './progression/SectorStartChallengeRecords.js';
 import {
+  SCOUT_RUN_RECORDS_KEY,
+  isBetterScoutRunRecord,
+  normalizeScoutRunRecord
+} from './progression/ScoutRunRecords.js';
+import {
   DISPLAY_MODE_KEY,
   DISPLAY_WINDOW_SIZE_KEY,
   getDisplaySettings,
@@ -23,6 +28,7 @@ export const CLOUD_THREAT_DISCOVERY_KEY = 'nova.threatDiscovery.v1';
 export const CLOUD_SHIP_USAGE_KEY = 'burt.shipUsage.v1';
 export const CLOUD_SHIP_USAGE_TOTAL_KEY = 'burt.shipUsageTotal.v1';
 export const CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY = SECTOR_START_CHALLENGE_RECORDS_KEY;
+export const CLOUD_SCOUT_RUN_RECORDS_KEY = SCOUT_RUN_RECORDS_KEY;
 
 const SCREEN_SHAKE_KEY = 'burt_accessibility_screen_shake';
 const PLAYER_FOCUS_KEY = 'burt_accessibility_player_focus';
@@ -313,6 +319,26 @@ function mergeSectorStartChallengeRecords(localRecords = {}, cloudRecords = {}) 
   };
 }
 
+function normalizeScoutRunRecordsPayload(rawRecords = {}) {
+  const raw = rawRecords && typeof rawRecords === 'object' ? rawRecords : {};
+  return {
+    version: Math.max(1, Math.floor(Number(raw.version) || 1)),
+    updatedAt: raw.updatedAt ? String(raw.updatedAt) : null,
+    best: normalizeScoutRunRecord(raw.best ?? raw.personalBest ?? raw) || null
+  };
+}
+
+function mergeScoutRunRecords(localRecords = {}, cloudRecords = {}) {
+  const local = normalizeScoutRunRecordsPayload(localRecords);
+  const cloud = normalizeScoutRunRecordsPayload(cloudRecords);
+  const best = isBetterScoutRunRecord(cloud.best, local.best) ? cloud.best : local.best;
+  return {
+    version: Math.max(local.version, cloud.version, 1),
+    updatedAt: cloud.updatedAt || local.updatedAt || new Date().toISOString(),
+    best: best || null
+  };
+}
+
 function normalizeAchievementPayload(raw = {}) {
   const ids = Array.isArray(raw) ? raw : raw?.unlocked;
   const unlocked = Array.isArray(ids)
@@ -395,6 +421,9 @@ export function collectSteamCloudPersistenceState({
     sectorStartChallengeRecords: normalizeSectorStartChallengeRecordsPayload(
       readJsonStorage(storage, CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY, {})
     ),
+    scoutRunRecords: normalizeScoutRunRecordsPayload(
+      readJsonStorage(storage, CLOUD_SCOUT_RUN_RECORDS_KEY, {})
+    ),
     shipUsage: normalizeUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {})),
     shipUsageTotal: Math.max(
       Math.floor(Number(readStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY)) || 0),
@@ -423,6 +452,7 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     shipUsage: 0,
     shipUsageTotal: 0,
     sectorStartChallengeRecords: 0,
+    scoutRunBest: 0,
     settings: 0
   };
   if (!storage || !save || typeof save !== 'object') return summary;
@@ -521,6 +551,19 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     ) || summary.restored;
   }
 
+  if (save.scoutRunRecords || save.scoutBest || save.scoutRunBest) {
+    const mergedScout = mergeScoutRunRecords(
+      readJsonStorage(storage, CLOUD_SCOUT_RUN_RECORDS_KEY, {}),
+      save.scoutRunRecords || { best: save.scoutBest || save.scoutRunBest }
+    );
+    summary.scoutRunBest = mergedScout.best?.score || 0;
+    summary.restored = writeStorage(
+      storage,
+      CLOUD_SCOUT_RUN_RECORDS_KEY,
+      JSON.stringify(mergedScout)
+    ) || summary.restored;
+  }
+
   const settings = save.settings || {};
   if (settings.screenShake !== undefined && writeStorage(storage, SCREEN_SHAKE_KEY, clampUnit(settings.screenShake, 1))) {
     summary.settings += 1;
@@ -562,6 +605,7 @@ export function summarizeSteamCloudPersistence(save = {}) {
     hangarPilotXp: Math.max(0, Math.floor(Number(save?.hangarProgress?.pilotXp) || 0)),
     shipUsageShips: Object.keys(normalizeUsageMap(save?.shipUsage || save?.shipUsageByShip || {})).length,
     shipUsageTotal: Math.max(Math.floor(Number(save?.shipUsageTotal) || 0), sumUsageMap(save?.shipUsage || save?.shipUsageByShip || {})),
+    scoutRunBestScore: normalizeScoutRunRecordsPayload(save?.scoutRunRecords || { best: save?.scoutBest || save?.scoutRunBest }).best?.score || 0,
     threatDiscoveryCategories: Object.keys(save?.threatDiscovery?.items || {}).length,
     sectorStartChallengeCheckpoints: Object.keys(
       normalizeSectorStartChallengeRecordsPayload(save?.sectorStartChallengeRecords || save?.sectorStartRecords || {}).byCheckpoint

@@ -847,6 +847,9 @@ export class GameOverScene {
     if (this.isSectorStartChallengeResult()) {
       return this.getSectorStartChallengeRecordLine() || translateText('SECTOR RUN');
     }
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
+      return this.getScoutRunBestLine() || translateText('Local: Scout practice score only');
+    }
     if (!this.isRankedRun) return translateText('Local: Scout practice score only');
     const rank = this.getVisibleLocalPlacementRank();
     const rawRank = this.getLocalPlacementRank();
@@ -913,6 +916,9 @@ export class GameOverScene {
     if (this.isSectorStartChallengeResult()) {
       return this.getSectorStartChallengeResultLines();
     }
+    if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
+      return this.getScoutRunResultLines();
+    }
     return [
       this.getLocalPlacementLine(),
       this.getGlobalPlacementLine()
@@ -923,6 +929,26 @@ export class GameOverScene {
     return this.game?.runMode === RUN_MODES.SECTOR_START
       ? translateText('SECTOR RUN - MAIN SCORE NOT LOGGED - NO ACHIEVEMENTS')
       : translateText('SCOUT RUN - UNRANKED LOCAL SCORE ONLY');
+  }
+
+  getScoutRunBestLine() {
+    const summary = this.game?.runSummary || {};
+    const best = summary.scoutRunBest || summary.scoutRunAttempt || null;
+    if (!best) return null;
+    return translateText('Scout Best: {score}', { score: this.formatScoreNumber(best.score) });
+  }
+
+  getScoutRunResultLines() {
+    const summary = this.game?.runSummary || {};
+    const best = summary.scoutRunBest || summary.scoutRunAttempt || null;
+    const lines = [
+      translateText('Unranked practice'),
+      translateText('Scout Best: {score}', { score: this.formatScoreNumber(best?.score || 0) }),
+      translateText('This Run: {score}', { score: this.formatScoreNumber(this.finalScore || summary.score || 0) }),
+      translateText('No leaderboard submission')
+    ];
+    if (summary.scoutRunNewBest) lines.splice(1, 0, translateText('New Scout Best'));
+    return lines;
   }
 
   getSectorStartChallengeRecordLine() {
@@ -1380,7 +1406,9 @@ export class GameOverScene {
         const base = translateText('Sector Run complete. Checkpoint context saved separately; achievements, Mayhem leaderboard, and career progress stayed untouched. Sector board records are separate.');
         return resultText ? `${base}\n${resultText}` : base;
       }
-      return translateText('Scout Run complete. Local practice score only: no leaderboard submission, no achievements, no career XP, and no Mayhem checkpoint unlocks.');
+      const resultText = this.getScoutRunResultLines().join('\n');
+      const base = translateText('Scout Run complete. Local practice score only: no leaderboard submission, no achievements, no career XP, and no Mayhem checkpoint unlocks.');
+      return resultText ? `${base}\n${resultText}` : base;
     }
     const placement = this.globalPlacement;
     const localRank = this.getVisibleLocalPlacementRank();

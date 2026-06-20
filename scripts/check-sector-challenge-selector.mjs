@@ -388,8 +388,18 @@ try {
     };
   });
   await clickBounds(page, state.menu.items.exitButton);
-  await page.waitForFunction(() => window.__exitButtonCalled === true, null, { timeout: 5000 });
-  report.cases.push({ exitAccessible: true, exitButton: state.menu.items.exitButton });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.menu?.quitConfirmation?.open === true &&
+      state.menu?.quitConfirmation?.defaultFocusIsCancel === true;
+  }, null, { timeout: 5000 });
+  assert.equal(await page.evaluate(() => window.__exitButtonCalled), false, 'top-right Exit should not quit before confirmation');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.menu?.quitConfirmation?.open === false;
+  }, null, { timeout: 5000 });
+  report.cases.push({ exitAccessible: true, exitButton: state.menu.items.exitButton, quitConfirmation: 'cancel-focused' });
 
   state = await openSelector(page);
   await page.screenshot({ path: path.join(outputDir, 'selector-open-1920x1080.png'), fullPage: false });

@@ -8,6 +8,7 @@ import {
   CLOUD_HANGAR_PROGRESS_KEY,
   CLOUD_LANGUAGE_KEY,
   CLOUD_LOCAL_LEADERBOARD_KEY,
+  CLOUD_SCOUT_RUN_RECORDS_KEY,
   CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY,
   CLOUD_SHIP_USAGE_KEY,
   CLOUD_SHIP_USAGE_TOTAL_KEY,
@@ -140,6 +141,17 @@ try {
         }
       }
     },
+    scoutRunRecords: {
+      version: 1,
+      updatedAt: '2026-01-06T00:00:00.000Z',
+      best: {
+        score: 120000,
+        sectorReached: 8,
+        levelReached: 8,
+        shipName: 'Nova Sparrow',
+        completedAt: '2026-01-06T00:00:00.000Z'
+      }
+    },
     debugFlags: { shouldNotPersist: true },
     absolutePath: 'C:/Users/example/AppData/Roaming/Nova Swarm'
   });
@@ -157,6 +169,7 @@ try {
   assert.equal(merged.shipUsageTotal, 6);
   assert.equal(merged.sectorStartChallengeRecords.byCheckpoint['5'].scoreEarned, 1200);
   assert.equal(merged.sectorStartChallengeRecords.byCheckpoint['5'].highestSectorReached, 7);
+  assert.equal(merged.scoutRunRecords.best.score, 120000);
   assert.equal(merged.settings.screenShake, 0.35);
   assert.equal(merged.settings.playerFocus, 0.8);
   assert.equal(merged.settings.colorAssist, true);
@@ -207,6 +220,17 @@ try {
           completedAt: '2026-01-07T00:00:00.000Z'
         }
       }
+    })],
+    [CLOUD_SCOUT_RUN_RECORDS_KEY, JSON.stringify({
+      version: 1,
+      updatedAt: '2026-01-07T00:00:00.000Z',
+      best: {
+        score: 130000,
+        sectorReached: 9,
+        levelReached: 9,
+        shipName: 'Local Scout',
+        completedAt: '2026-01-07T00:00:00.000Z'
+      }
     })]
   ]);
   const collected = collectSteamCloudPersistenceState({
@@ -237,6 +261,7 @@ try {
   assert.equal(collectedSave.shipUsageTotal, 9);
   assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].scoreEarned, 4444);
   assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].highestSectorReached, 12);
+  assert.equal(collectedSave.scoutRunRecords.best.score, 130000);
 
   const restartStorage = new MemoryStorage([
     [CLOUD_LANGUAGE_KEY, 'de'],
@@ -258,6 +283,17 @@ try {
           shipName: 'Local Best',
           completedAt: '2026-01-08T00:00:00.000Z'
         }
+      }
+    })],
+    [CLOUD_SCOUT_RUN_RECORDS_KEY, JSON.stringify({
+      version: 1,
+      updatedAt: '2026-01-08T00:00:00.000Z',
+      best: {
+        score: 140000,
+        sectorReached: 12,
+        levelReached: 12,
+        shipName: 'Local Scout Best',
+        completedAt: '2026-01-08T00:00:00.000Z'
       }
     })]
   ]);
@@ -308,6 +344,17 @@ try {
         }
       }
     },
+    scoutRunRecords: {
+      version: 1,
+      updatedAt: '2026-01-09T00:00:00.000Z',
+      best: {
+        score: 120000,
+        sectorReached: 18,
+        levelReached: 18,
+        shipName: 'Cloud Lower Score',
+        completedAt: '2026-01-09T00:00:00.000Z'
+      }
+    },
     settings: {
       screenShake: 0.2,
       playerFocus: 0.75,
@@ -330,6 +377,9 @@ try {
   const restoredSectorRecords = JSON.parse(restartStorage.getItem(CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY));
   assert.equal(restoredSectorRecords.byCheckpoint['10'].scoreEarned, 9000);
   assert.equal(restoredSectorRecords.byCheckpoint['20'].scoreEarned, 12000);
+  const restoredScoutRecords = JSON.parse(restartStorage.getItem(CLOUD_SCOUT_RUN_RECORDS_KEY));
+  assert.equal(restoredScoutRecords.best.score, 140000);
+  assert.equal(restoredScoutRecords.best.shipName, 'Local Scout Best');
   assert.equal(restartStorage.getItem('burt_boss_voice_enabled'), 'false');
 
   const systemStorage = new MemoryStorage([[CLOUD_LANGUAGE_KEY, 'de']]);

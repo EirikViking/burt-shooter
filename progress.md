@@ -1,5 +1,10 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-20 Scout Local Best And Safe Menu Exit
+
+- Current request: add profile-scoped Scout local personal best, keep Scout out of Steam/global/friends/ranked progression, and make main-menu Esc/top-right Exit open an explicit quit confirmation instead of quitting immediately.
+- Implementation direction: keep Scout Best separate from Hangar/career progress in a dedicated profile-scoped local save key so existing Scout no-XP/no-ranked-progress rules remain true.
+
 ## 2026-06-20 P0 Explicit Profile Rescue Import
 
 - Current user report: private Steam test BuildID `23829231` still shows low progress because the active runtime save is `steam-76561198953993508`, while the preserved high-progress save is a sibling explicit Steam profile `steam-76561198692310517`.

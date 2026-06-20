@@ -14,6 +14,8 @@ Scout Run is an unranked lower-pressure practice run for testing ships, learning
 
 Scout Run does not submit to the global leaderboard, does not update global best or ranked best, does not unlock Mayhem/Sector Run checkpoints, does not update career progress, and does not unlock Steam achievements. There is no Scout leaderboard in this version.
 
+Scout Run now keeps a profile-local personal best so practice still has a visible target: `Scout Best`. That value is saved only in the active player profile and is excluded from Steam, global leaderboards, friends leaderboards, Mayhem ranked bests, and the local ranked top 40.
+
 The main menu presents Scout as a Launch Deck card: `SCOUT RUN / Unranked - Lower pressure - Practice`, with card copy explaining no leaderboard, no achievements, and no checkpoint unlocks. The Mission Briefing panel still explains that Scout is lower-pressure practice for testing ships and learning routes. The Scout result screen is also explicit: local practice score only, no leaderboard submission, no achievements, no career XP, and no Mayhem checkpoint unlocks. Scout results do not show a leaderboard CTA.
 
 The first Scout profile is `scout_lower_pressure_v1` in `src/game/RunMode.js`:

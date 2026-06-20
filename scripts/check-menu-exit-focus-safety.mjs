@@ -121,11 +121,29 @@ async function runMenuExitChecks(browser) {
   await waitForState(page, (state) => state.scene === 'menu', 'menu ready');
 
   await page.keyboard.press('Escape');
+  const afterMenuEsc = await waitForState(page, (state) =>
+    state.scene === 'menu' &&
+    state.menu?.quitConfirmation?.open === true &&
+    state.menu?.quitConfirmation?.defaultFocusIsCancel === true,
+  'menu quit confirmation after escape');
+  const firstExitRequests = await page.evaluate(() => window.__novaExitRequests?.length || 0);
+  assert(firstExitRequests === 0, `menu ESC should open confirmation before requesting exit (${firstExitRequests} request(s))`);
+  assert(afterMenuEsc.menu.quitConfirmation.focusedLabel === 'CANCEL', `quit confirmation should default to Cancel: ${JSON.stringify(afterMenuEsc.menu.quitConfirmation)}`);
+
+  await page.keyboard.press('Escape');
+  await waitForState(page, (state) => state.scene === 'menu' && state.menu?.quitConfirmation?.open === false, 'menu quit confirmation closed by escape');
+  const afterCancelRequests = await page.evaluate(() => window.__novaExitRequests?.length || 0);
+  assert(afterCancelRequests === 0, `closing quit confirmation should not request exit (${afterCancelRequests} request(s))`);
+
+  await page.keyboard.press('Escape');
+  await waitForState(page, (state) => state.scene === 'menu' && state.menu?.quitConfirmation?.open === true, 'menu quit confirmation reopened');
+  await page.keyboard.press('ArrowRight');
+  await waitForState(page, (state) => state.menu?.quitConfirmation?.focusedLabel === 'EXIT GAME', 'quit confirmation exit focused');
+  await page.keyboard.press('Enter');
   await page.waitForFunction(() => window.__novaExitRequests?.length === 1, null, { timeout: 10000 });
   const firstExitPayload = await page.evaluate(() => window.__novaExitRequests[0]);
-  assert(!firstExitPayload.message && !firstExitPayload.title, `menu ESC should not pass native exit dialog copy: ${JSON.stringify(firstExitPayload)}`);
-  const afterMenuEsc = await readState(page);
-  assert(afterMenuEsc.scene === 'menu', `menu ESC changed scene unexpectedly: ${afterMenuEsc.scene}`);
+  assert(!firstExitPayload.message && !firstExitPayload.title, `confirmed menu exit should not pass native dialog copy: ${JSON.stringify(firstExitPayload)}`);
+  await waitForState(page, (state) => state.scene === 'menu', 'menu after confirmed browser exit fallback');
 
   await page.evaluate(() => { window.__novaExitRequests = []; });
   await page.evaluate(() => {
@@ -172,17 +190,27 @@ async function runMenuExitChecks(browser) {
   await page.waitForTimeout(250);
   const guardedExitRequests = await page.evaluate(() => window.__novaExitRequests?.length || 0);
   assert(guardedExitRequests === 0, `leaderboard pointer Back carried into menu exit (${guardedExitRequests} exit request(s))`);
+  const afterGuardedEscape = await readState(page);
+  if (afterGuardedEscape.menu?.quitConfirmation?.open) {
+    assert(afterGuardedEscape.menu.quitConfirmation.defaultFocusIsCancel, `leaderboard pointer Back should only open a cancel-focused quit modal: ${JSON.stringify(afterGuardedEscape.menu.quitConfirmation)}`);
+    await page.keyboard.press('Escape');
+    await waitForState(page, (state) => state.scene === 'menu' && state.menu?.quitConfirmation?.open === false, 'guarded quit confirmation closed');
+  }
 
   await page.waitForTimeout(1000);
   await page.keyboard.press('Escape');
-  await page.waitForFunction(() => window.__novaExitRequests?.length === 1, null, { timeout: 10000 });
-  const guardedReleasePayload = await page.evaluate(() => window.__novaExitRequests[0]);
-  assert(!guardedReleasePayload.message && !guardedReleasePayload.title, `menu exit should recover after guard without dialog copy: ${JSON.stringify(guardedReleasePayload)}`);
+  const guardedReleaseModal = await waitForState(page, (state) =>
+    state.scene === 'menu' &&
+    state.menu?.quitConfirmation?.open === true &&
+    state.menu?.quitConfirmation?.defaultFocusIsCancel === true,
+  'menu quit confirmation after guard release');
+  const guardedReleaseRequests = await page.evaluate(() => window.__novaExitRequests?.length || 0);
+  assert(guardedReleaseRequests === 0, `menu exit should recover after guard by opening confirmation first (${guardedReleaseRequests} request(s))`);
 
   await page.screenshot({ path: path.join(outputDir, 'menu-after-leaderboard-pointer-back.png'), fullPage: true });
   assert(pageErrors.length === 0, `menu page errors: ${pageErrors.join('; ')}`);
   await page.close();
-  return { firstExitPayload, leakedExitRequests, guardedExitRequests, guardedReleasePayload };
+  return { firstExitPayload, leakedExitRequests, guardedExitRequests, guardedReleaseModal };
 }
 
 async function runFocusPauseCheck(browser) {

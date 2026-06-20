@@ -48,6 +48,7 @@ import {
   readHangarProgressState,
   updateHangarProgress
 } from '../progression/HangarProgressState.js';
+import { recordScoutRun } from '../progression/ScoutRunRecords.js';
 import { getSectorStartChallengeRecord, recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
 import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 
@@ -945,6 +946,22 @@ export class Game {
         sectorStartChallengePreviousBest: challengeRecord.previousRecord,
         sectorStartChallengeBest: challengeRecord.bestRecord,
         sectorStartChallengeNewBest: challengeRecord.isNewBest
+      };
+    }
+    if (this.runMode === RUN_MODES.SCOUT) {
+      const ship = getShipMetadata(this.selectedShipSpriteKey);
+      const scoutRecord = recordScoutRun(this.runSummary, {
+        selectedShipSpriteKey: this.selectedShipSpriteKey,
+        shipId: ship?.id || this.selectedShipSpriteKey || null,
+        shipName: ship?.name || null
+      });
+      this.lastScoutRunRecord = scoutRecord;
+      this.runSummary = {
+        ...this.runSummary,
+        scoutRunAttempt: scoutRecord.attemptRecord,
+        scoutRunPreviousBest: scoutRecord.previousRecord,
+        scoutRunBest: scoutRecord.bestRecord,
+        scoutRunNewBest: scoutRecord.isNewBest
       };
     }
     if (this.isRankedRun()) {

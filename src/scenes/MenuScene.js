@@ -196,6 +196,12 @@ export class MenuScene {
     this.exitBtn = null;
     this.exitNotice = null;
     this.exitNoticeTimeout = null;
+    this.quitConfirmOpen = false;
+    this.quitConfirmFocusIndex = 0;
+    this.quitConfirmOverlay = null;
+    this.quitConfirmPanel = null;
+    this.quitConfirmTitle = null;
+    this.quitConfirmButtons = [];
     this.musicBtn = null;
     this.controls = null;
     this.easter = null;
@@ -308,6 +314,16 @@ export class MenuScene {
 
       event.preventDefault();
       this.setInputDevice('keyboard');
+      if (this.quitConfirmOpen) {
+        if (isMoveLeft || isMoveRight || isMoveUp || isMoveDown || event.key === 'Tab') {
+          this.setQuitConfirmFocus(this.quitConfirmFocusIndex === 0 ? 1 : 0);
+        } else if (isCancel) {
+          this.closeQuitConfirmation();
+        } else {
+          this.activateQuitConfirmation();
+        }
+        return;
+      }
       if (this.sectorSelectorOpen) {
         if (isMoveUp) this.moveSectorSelectorFocus(-this.getSectorSelectorColumns());
         else if (isMoveDown) this.moveSectorSelectorFocus(this.getSectorSelectorColumns());
@@ -326,7 +342,7 @@ export class MenuScene {
       } else if (isMoveRight) {
         this.moveMenuFocus(1);
       } else if (isCancel) {
-        this.exitGame();
+        this.openQuitConfirmation();
       } else {
         this.activateFocusedMenuOption();
       }
@@ -1153,7 +1169,7 @@ export class MenuScene {
     });
     this.exitBtn.alpha = 0;
     this.exitBtn.on('pointerdown', () => {
-      this.exitGame();
+      this.openQuitConfirmation();
     });
     this.container.addChild(this.exitBtn);
 
@@ -1665,10 +1681,11 @@ export class MenuScene {
     }
     this.applyMenuModalDimming();
     this.layoutSectorSelector(layout, width, height);
+    this.layoutQuitConfirmation(width, height);
   }
 
   applyMenuModalDimming() {
-    const modalOpen = Boolean(this.sectorSelectorOpen);
+    const modalOpen = Boolean(this.sectorSelectorOpen || this.quitConfirmOpen);
     const dockAlpha = 0.42;
     const utilityAlpha = 0.34;
     [
@@ -1682,7 +1699,7 @@ export class MenuScene {
       this.settingsBtn
     ].filter(Boolean).forEach((button) => {
       if (modalOpen) {
-        button._preSelectorAlpha = button.alpha;
+        if (button._preSelectorAlpha == null) button._preSelectorAlpha = button.alpha;
         button.alpha = dockAlpha;
       } else if (button._preSelectorAlpha != null) {
         button.alpha = Math.max(button._preSelectorAlpha, 1);
@@ -1691,7 +1708,7 @@ export class MenuScene {
     });
     [this.musicBtn, this.helpBtn, this.exitBtn].filter(Boolean).forEach((button) => {
       if (modalOpen) {
-        button._preSelectorAlpha = button.alpha;
+        if (button._preSelectorAlpha == null) button._preSelectorAlpha = button.alpha;
         button.alpha = utilityAlpha;
       } else if (button._preSelectorAlpha != null) {
         button.alpha = Math.max(button._preSelectorAlpha, 1);
@@ -1706,7 +1723,7 @@ export class MenuScene {
     ].forEach(([item, alpha]) => {
       if (!item) return;
       if (modalOpen) {
-        item._preSelectorAlpha = item.alpha;
+        if (item._preSelectorAlpha == null) item._preSelectorAlpha = item.alpha;
         item.alpha = alpha;
       } else if (item._preSelectorAlpha != null) {
         item.alpha = Math.max(item._preSelectorAlpha, 1);
@@ -2413,6 +2430,19 @@ export class MenuScene {
             bounds: boundsForDisplayObject(this.sectorStartBtn?.visible ? this.sectorStartBtn : null)
           }
         }
+      },
+      quitConfirmation: {
+        open: Boolean(this.quitConfirmOpen),
+        focusedIndex: this.quitConfirmFocusIndex,
+        focusedLabel: this.quitConfirmButtons?.[this.quitConfirmFocusIndex]?._label?.text || null,
+        defaultFocusIsCancel: this.quitConfirmFocusIndex === 0 && this.quitConfirmButtons?.[0]?._label?.text === translateText('CANCEL'),
+        overlayBounds: boundsForDisplayObject(this.quitConfirmOverlay?.visible ? this.quitConfirmOverlay : null),
+        panelBounds: boundsForDisplayObject(this.quitConfirmPanel),
+        buttons: (this.quitConfirmButtons || []).map((button) => ({
+          label: button?._label?.text || null,
+          focused: Boolean(button?._focused),
+          bounds: boundsForDisplayObject(button)
+        }))
       },
       howToPlay: this.howToPlayOverlay?.getDebugState ? this.howToPlayOverlay.getDebugState() : null,
       menuIcons: Object.fromEntries(this.getMenuButtonList().map((button) => [
@@ -3623,7 +3653,7 @@ export class MenuScene {
           this.openHowToPlayOverlay();
         }
       },
-      { id: 'exit', button: this.exitBtn, activate: () => this.exitGame() }
+      { id: 'exit', button: this.exitBtn, activate: () => this.openQuitConfirmation() }
     ].filter((option) => option.button);
 
     this.menuOptions.forEach((option) => {
@@ -3683,6 +3713,14 @@ export class MenuScene {
     const nav = this.menuGamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     this.setInputDevice('controller');
+    if (this.quitConfirmOpen) {
+      if (nav.pressed.left || nav.pressed.right || nav.pressed.up || nav.pressed.down) {
+        this.setQuitConfirmFocus(this.quitConfirmFocusIndex === 0 ? 1 : 0);
+      }
+      if (nav.pressed.confirm) this.activateQuitConfirmation();
+      if (nav.pressed.cancel || nav.pressed.back) this.closeQuitConfirmation();
+      return;
+    }
     if (this.sectorSelectorOpen) {
       if (nav.pressed.left) this.moveSectorSelectorFocus(-1);
       if (nav.pressed.right) this.moveSectorSelectorFocus(1);
@@ -3697,7 +3735,7 @@ export class MenuScene {
     if (nav.pressed.up) this.moveMenuFocus(-1);
     if (nav.pressed.down) this.moveMenuFocus(1);
     if (nav.pressed.confirm) this.activateFocusedMenuOption();
-    if (nav.pressed.cancel || nav.pressed.back) this.exitGame();
+    if (nav.pressed.cancel || nav.pressed.back) this.openQuitConfirmation();
   }
 
   openShipSelect() {
@@ -3857,11 +3895,189 @@ export class MenuScene {
     }
   }
 
-  async exitGame() {
+  ensureQuitConfirmation() {
+    if (this.quitConfirmOverlay) return;
+    const overlay = new PIXI.Container();
+    overlay.label = 'ui_quitConfirmation';
+    overlay.zIndex = 12000;
+    overlay.visible = false;
+    overlay.alpha = 0;
+    overlay.eventMode = 'static';
+    overlay.on('pointerdown', (event) => {
+      if (event.target === overlay) this.closeQuitConfirmation();
+    });
+
+    const shade = new PIXI.Graphics();
+    shade.label = 'ui_quitConfirmationShade';
+    overlay.addChild(shade);
+    this.quitConfirmShade = shade;
+
+    const panel = new PIXI.Container();
+    panel.label = 'ui_quitConfirmationPanel';
+    panel.eventMode = 'static';
+    const panelBg = new PIXI.Graphics();
+    panel.addChild(panelBg);
+    this.quitConfirmPanel = panel;
+    this.quitConfirmPanelBg = panelBg;
+
+    const title = createText(translateText('QUIT NOVA SWARM?'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 26,
+      fill: '#ffe66d',
+      fontWeight: '900',
+      stroke: '#02060d',
+      strokeThickness: 4,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    panel.addChild(title);
+    this.quitConfirmTitle = title;
+
+    const makeButton = (label, action, variant = 'secondary') => {
+      const button = new PIXI.Container();
+      button.label = `ui_quitConfirm_${label}`;
+      button.eventMode = 'static';
+      button.cursor = 'pointer';
+      button._variant = variant;
+      button._action = action;
+      button._bg = new PIXI.Graphics();
+      button._label = createText(translateText(label), {
+        fontFamily: FONT_BUTTON,
+        fontSize: 18,
+        fill: '#e6fbff',
+        fontWeight: '900',
+        stroke: '#02060d',
+        strokeThickness: 3,
+        align: 'center'
+      });
+      button._label.anchor.set(0.5);
+      button.addChild(button._bg, button._label);
+      button.on('pointerover', () => {
+        this.setQuitConfirmFocus(this.quitConfirmButtons.indexOf(button));
+      });
+      button.on('pointerdown', (event) => {
+        event.stopPropagation();
+        this.setQuitConfirmFocus(this.quitConfirmButtons.indexOf(button));
+        this.activateQuitConfirmation();
+      });
+      return button;
+    };
+
+    this.quitConfirmButtons = [
+      makeButton('CANCEL', () => this.closeQuitConfirmation(), 'secondary'),
+      makeButton('EXIT GAME', () => this.exitGame({ confirmed: true }), 'danger')
+    ];
+    this.quitConfirmButtons.forEach((button) => panel.addChild(button));
+    overlay.addChild(panel);
+    this.container.addChild(overlay);
+    this.quitConfirmOverlay = overlay;
+  }
+
+  openQuitConfirmation() {
+    this.ensureQuitConfirmation();
+    this.closeSectorSelector();
+    this.quitConfirmOpen = true;
+    this.quitConfirmOverlay.visible = true;
+    this.quitConfirmOverlay.alpha = 1;
+    this.setQuitConfirmFocus(0);
+    AudioManager.init();
+    AudioManager.playSfx('ui_open', { volume: 0.28 });
+    this.layoutQuitConfirmation();
+  }
+
+  closeQuitConfirmation({ silent = false } = {}) {
+    if (!this.quitConfirmOverlay) return;
+    const wasOpen = this.quitConfirmOpen;
+    this.quitConfirmOpen = false;
+    this.quitConfirmFocusIndex = 0;
+    this.quitConfirmOverlay.visible = false;
+    this.quitConfirmOverlay.alpha = 0;
+    if (wasOpen && !silent) AudioManager.playSfx('ui_cancel', { volume: 0.26, minIntervalMs: 80 });
+    this.applyMenuModalDimming();
+  }
+
+  setQuitConfirmFocus(index = 0) {
+    if (!this.quitConfirmButtons?.length) return;
+    const next = ((Math.floor(Number(index) || 0) % this.quitConfirmButtons.length) + this.quitConfirmButtons.length) % this.quitConfirmButtons.length;
+    this.quitConfirmFocusIndex = next;
+    this.quitConfirmButtons.forEach((button, buttonIndex) => {
+      button._focused = buttonIndex === next;
+    });
+    this.layoutQuitConfirmation();
+  }
+
+  activateQuitConfirmation() {
+    const button = this.quitConfirmButtons?.[this.quitConfirmFocusIndex] || this.quitConfirmButtons?.[0];
+    button?._action?.();
+  }
+
+  layoutQuitConfirmation(width = this.game.app.screen.width, height = this.game.app.screen.height) {
+    if (!this.quitConfirmOverlay) return;
+    const layout = getCurrentLayout();
+    const panelW = Math.min(width - 40, layout.isMobile ? 420 : 500);
+    const panelH = layout.isMobile ? 190 : 210;
+    const panelX = Math.round((width - panelW) / 2);
+    const panelY = Math.round((height - panelH) / 2);
+    this.quitConfirmShade?.clear();
+    this.quitConfirmShade?.rect(0, 0, width, height);
+    this.quitConfirmShade?.fill({ color: 0x020610, alpha: 0.62 });
+
+    this.quitConfirmPanel.position.set(panelX, panelY);
+    this.quitConfirmPanelBg.clear();
+    drawCutPanel(this.quitConfirmPanelBg, 0, 0, panelW, panelH, 18, { color: 0x061321, alpha: 0.96 }, { color: 0xff6b6b, alpha: 0.82, width: 2.5 });
+    this.quitConfirmPanelBg.rect(18, 14, panelW - 36, 2);
+    this.quitConfirmPanelBg.fill({ color: 0xffe66d, alpha: 0.5 });
+
+    if (this.quitConfirmTitle) {
+      this.quitConfirmTitle.text = translateText('QUIT NOVA SWARM?');
+      this.quitConfirmTitle.style.fontSize = layout.isMobile ? 22 : 27;
+      this.quitConfirmTitle.x = panelW / 2;
+      this.quitConfirmTitle.y = layout.isMobile ? 54 : 62;
+      fitTextToWidth(this.quitConfirmTitle, panelW - 60, { minScale: 0.72 });
+    }
+
+    const gap = layout.isMobile ? 14 : 18;
+    const buttonW = Math.min(190, (panelW - 58 - gap) / 2);
+    const buttonH = layout.isMobile ? 48 : 54;
+    const startX = (panelW - buttonW * 2 - gap) / 2;
+    const y = panelH - buttonH - (layout.isMobile ? 32 : 38);
+    this.quitConfirmButtons.forEach((button, index) => {
+      button.x = startX + buttonW / 2 + index * (buttonW + gap);
+      button.y = y + buttonH / 2;
+      button._btnWidth = buttonW;
+      button._btnHeight = buttonH;
+      button.hitArea = new PIXI.Rectangle(-buttonW / 2, -buttonH / 2, buttonW, buttonH);
+      const focused = Boolean(button._focused);
+      const danger = button._variant === 'danger';
+      button._bg.clear();
+      drawCutPanel(
+        button._bg,
+        -buttonW / 2,
+        -buttonH / 2,
+        buttonW,
+        buttonH,
+        10,
+        { color: danger ? 0x35121a : 0x092237, alpha: focused ? 0.95 : 0.78 },
+        { color: focused ? 0xffe66d : (danger ? 0xff6b6b : 0x6adfff), alpha: focused ? 0.96 : 0.62, width: focused ? 3 : 1.8 }
+      );
+      button._label.text = translateText(index === 0 ? 'CANCEL' : 'EXIT GAME');
+      button._label.style.fontSize = layout.isMobile ? 16 : 18;
+      button._label.x = 0;
+      button._label.y = 0;
+      fitTextToWidth(button._label, buttonW - 28, { minScale: 0.72 });
+    });
+  }
+
+  async exitGame({ confirmed = false } = {}) {
+    if (!confirmed) {
+      this.openQuitConfirmation();
+      return;
+    }
     if (this.game?.isMenuExitGuardActive?.()) {
       return;
     }
     try {
+      this.closeQuitConfirmation({ silent: true });
       AudioManager.init();
       AudioManager.playSfx('ui_open', { volume: 0.28 });
       const result = await requestExitGame();
@@ -4138,6 +4354,7 @@ export class MenuScene {
   }
 
   destroy() {
+    this.closeQuitConfirmation();
     this.closeSectorSelector();
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
