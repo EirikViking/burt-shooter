@@ -1,0 +1,123 @@
+﻿{
+    "purpose":  "Scout boss difficulty private Steam test build",
+    "createdAt":  "2026-06-20T12:15:00.000Z",
+    "branch":  "codex/scout-boss-difficulty-reduction-20260620",
+    "sourceCommit":  "d89d509b2dec272230f12ec60ddcf7c51bd2a1b1",
+    "packagedBuild":  {
+                          "version":  "v2026-06-20_13-58-35",
+                          "gitSha":  "d89d509",
+                          "payloadManifest":  "release/steamworks/steam_payload_manifest.json",
+                          "payloadManifestHash":  "b296c4a321b09cd9d060c03e27aced59cb9ead0c23f25998971637668b2ad685",
+                          "fileCount":  336,
+                          "totalBytes":  879571623,
+                          "packagedSmokeReport":  "test-results/packaged-exe-smoke-2026-06-20T12-03-10-589Z/report.json",
+                          "currentSmokeReport":  "test-results/electron-smoke-2026-06-20T12-03-39-672Z/report.json",
+                          "currentPerfReport":  "test-results/electron-perf-smoke-2026-06-20T12-03-48-585Z/report.json",
+                          "browserSmokeReport":  "test-results/smoke-2026-06-20T12-04-56-714Z/report.json"
+                      },
+    "steam":  {
+                  "appId":  "4765070",
+                  "depotId":  "4765071",
+                  "buildId":  "23834891",
+                  "depotManifest":  "7619867850134443831",
+                  "baselineDepotManifest":  "2093552943102439710",
+                  "setLive":  "",
+                  "branchAssignment":  null,
+                  "publicDefaultAssigned":  false,
+                  "sectorContinueTestAssigned":  false,
+                  "steamworksMetadataChanged":  false,
+                  "appBuildVdf":  "release/steamworks/app_build_LOCAL.vdf",
+                  "depotBuildVdf":  "release/steam-build-output/depot_build_4765071.vdf",
+                  "appBuildLog":  "release/steam-build-output/app_build_4765070.log",
+                  "depotBuildLog":  "release/steam-build-output/depot_build_4765071.log",
+                  "steamCmd":  "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe",
+                  "resultLine":  "[2026-06-20 14:10:23]: Successfully finished AppID 4765070 build (BuildID 23834891)."
+              },
+    "vdfVerification":  {
+                            "appId":  "4765070",
+                            "depotId":  "4765071",
+                            "setLiveBlank":  true,
+                            "containsPublicDefaultBranch":  false,
+                            "containsSectorContinueTestBranch":  false,
+                            "containsAnyBranchAssignment":  false,
+                            "description":  "Nova Swarm Windows release candidate"
+                        },
+    "checks":  [
+                   {
+                       "command":  "git diff --check",
+                       "status":  "passed",
+                       "artifact":  "test-results/steam-upload-scout-boss-20260620-1138/git-diff-check.log"
+                   },
+                   {
+                       "command":  "npm run check:release-line",
+                       "status":  "passed",
+                       "artifact":  "test-results/steam-upload-scout-boss-20260620-1138/check-release-line.log"
+                   },
+                   {
+                       "command":  "npm run check:mayhem-scout-difficulty-delta",
+                       "status":  "passed",
+                       "artifact":  "test-results/steam-upload-scout-boss-20260620-1138/check-mayhem-scout-difficulty-delta.log"
+                   },
+                   {
+                       "command":  "npm run package:steam:win",
+                       "status":  "passed",
+                       "artifact":  "test-results/steam-upload-scout-boss-20260620-1138/package-steam-win.log"
+                   },
+                   {
+                       "command":  "npm run package:steam:win:current",
+                       "status":  "passed",
+                       "artifact":  "test-results/steam-upload-scout-boss-20260620-1138/package-steam-win-current.log"
+                   },
+                   {
+                       "command":  "npm run desktop:smoke:packaged",
+                       "status":  "passed",
+                       "artifact":  "test-results/packaged-exe-smoke-2026-06-20T12-03-10-589Z/report.json"
+                   },
+                   {
+                       "command":  "npm run desktop:smoke:current",
+                       "status":  "passed",
+                       "artifact":  "test-results/electron-smoke-2026-06-20T12-03-39-672Z/report.json"
+                   },
+                   {
+                       "command":  "npm run desktop:perf:current",
+                       "status":  "passed",
+                       "artifact":  "test-results/electron-perf-smoke-2026-06-20T12-03-48-585Z/report.json"
+                   },
+                   {
+                       "command":  "npm run smoke",
+                       "status":  "passed",
+                       "artifact":  "test-results/smoke-2026-06-20T12-04-56-714Z/report.json"
+                   },
+                   {
+                       "command":  "npm run steamworks:payload-manifest",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run steamworks:write-vdf",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "SteamCMD run_app_build app_build_LOCAL.vdf",
+                       "status":  "passed"
+                   }
+               ],
+    "notes":  [
+                  "Build uploaded privately with SetLive blank and no branch assignment in the VDF.",
+                  "SteamCMD used cached credentials and did not request Steam Guard/MFA.",
+                  "No Steamworks metadata, AppID, depot ID, leaderboard identity, save/profile rescue, or live save files were changed.",
+                  "Browser smoke passed; no known flaky timeout exception was needed for this upload."
+              ],
+    "manualSteamworksTestSteps":  [
+                                      "Open Steamworks \u003e App Admin \u003e SteamPipe \u003e Builds for AppID 4765070.",
+                                      "Find BuildID 23834891 and leave it unassigned unless intentionally selecting it for private testing.",
+                                      "If assigning privately, install that BuildID in the Steam client.",
+                                      "Launch Nova Swarm and confirm build v2026-06-20_13-58-35 and gitSha d89d509 in diagnostics or smoke text.",
+                                      "Start Scout Run and verify boss encounters feel roughly 25 percent lower pressure than Mayhem while Scout remains unranked.",
+                                      "Confirm Scout does not submit to the global leaderboard, does not unlock achievements, and does not unlock checkpoints.",
+                                      "Do not assign this BuildID to public/default until explicitly approved."
+                                  ],
+    "rollback":  {
+                     "source":  "git revert d89d509b2dec272230f12ec60ddcf7c51bd2a1b1",
+                     "steam":  "No Steam rollback is required while BuildID 23834891 remains unassigned. If it is later assigned manually and needs rollback, reassign that Steam branch back to the previous desired BuildID."
+                 }
+}
