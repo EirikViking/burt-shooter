@@ -36,6 +36,7 @@ export const RUN_MODE_PROFILES = Object.freeze({
     updatesCareerProgress: true,
     difficultyProfileId: 'accepted_harder_ranked',
     normalWaveDifficultyLevelOffsetDelta: 0,
+    bossDifficultyMult: 1,
     pressureMultipliers: DEFAULT_MULTIPLIERS
   }),
   [RUN_MODES.SCOUT]: Object.freeze({
@@ -54,6 +55,7 @@ export const RUN_MODE_PROFILES = Object.freeze({
     updatesCareerProgress: false,
     difficultyProfileId: 'scout_lower_pressure_v1',
     normalWaveDifficultyLevelOffsetDelta: -5,
+    bossDifficultyMult: 0.75,
     pressureMultipliers: Object.freeze({
       fireChanceMult: 0.72,
       projectileSpeedMult: 0.82,
@@ -81,6 +83,7 @@ export const RUN_MODE_PROFILES = Object.freeze({
     updatesCareerProgress: false,
     difficultyProfileId: 'sector_checkpoint_practice_v1',
     normalWaveDifficultyLevelOffsetDelta: 0,
+    bossDifficultyMult: 1,
     pressureMultipliers: DEFAULT_MULTIPLIERS
   }),
   [RUN_MODES.UNRANKED]: Object.freeze({
@@ -99,6 +102,7 @@ export const RUN_MODE_PROFILES = Object.freeze({
     updatesCareerProgress: false,
     difficultyProfileId: 'debug_unranked',
     normalWaveDifficultyLevelOffsetDelta: 0,
+    bossDifficultyMult: 1,
     pressureMultipliers: DEFAULT_MULTIPLIERS
   })
 });

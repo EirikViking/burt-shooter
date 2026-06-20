@@ -33,6 +33,11 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function finiteNumber(value, fallback = 1) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
 function normalizeAngle(angle) {
   let a = angle;
   while (a > Math.PI) a -= Math.PI * 2;
@@ -79,7 +84,13 @@ export class Boss {
     this.earlyDifficultyScalar = this.getEarlyBossDifficultyScalar();
     this.difficultyScalar = this.getPostFirstBossDifficultyScalar();
     const firstBossHealthScalar = level <= 1 ? 0.86 : 1;
-    this.health = Math.max(1, Math.round(healthBeforePostFirstEase * this.earlyDifficultyScalar * this.difficultyScalar * firstBossHealthScalar));
+    this.health = Math.max(1, Math.round(
+      healthBeforePostFirstEase *
+      this.earlyDifficultyScalar *
+      this.difficultyScalar *
+      firstBossHealthScalar *
+      this.getRunModeBossDifficultyMultiplier()
+    ));
     this.maxHealth = this.health;
     this.shootCooldown = 0;
     this.shootDelay = this.getPhaseShootDelay(1);
@@ -1415,6 +1426,11 @@ export class Boss {
     return this.getEarlyBossDifficultyScalar() * this.getPostFirstBossDifficultyScalar();
   }
 
+  getRunModeBossDifficultyMultiplier() {
+    const profile = this.game?.getRunModeProfile?.() || null;
+    return clamp(finiteNumber(profile?.bossDifficultyMult, 1), 0.1, 2);
+  }
+
   getBossPressureScalar() {
     let scalar = 1;
     if (this.level <= 1) scalar = 0.58;
@@ -1433,7 +1449,10 @@ export class Boss {
         ? diff.bossShootDelayPhase2
         : diff.bossShootDelayPhase3;
     const openingDelayScalar = this.level <= 1 ? 1.55 : this.level === 2 ? 1.2 : 1;
-    return (baseDelay * openingDelayScalar) / this.getCombinedBossDifficultyScalar();
+    return (baseDelay * openingDelayScalar) / (
+      this.getCombinedBossDifficultyScalar() *
+      this.getRunModeBossDifficultyMultiplier()
+    );
   }
 
   getBossProjectileSpeed(phase) {
@@ -1448,7 +1467,7 @@ export class Boss {
     return Math.min(
       diff.bossProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
       baseSpeed + levelScale * (diff.bossProjectileSpeedPerLevel ?? 0)
-    ) * (fairness.globalProjectileMultiplier ?? 1);
+    ) * (fairness.globalProjectileMultiplier ?? 1) * this.getRunModeBossDifficultyMultiplier();
   }
 
   getBossAttackSpeedMultiplier(attackType = 'normal') {
@@ -1471,7 +1490,10 @@ export class Boss {
       ? (this.phase === 1 ? 1 : 1.28)
       : this.phase === 2 ? 0.95 : 0.9;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
-    return Math.round((base * phaseScalar * chaosRelief) / this.getCombinedBossDifficultyScalar());
+    return Math.round((base * phaseScalar * chaosRelief) / (
+      this.getCombinedBossDifficultyScalar() *
+      this.getRunModeBossDifficultyMultiplier()
+    ));
   }
 
   getRegularTelegraphDurationMs() {

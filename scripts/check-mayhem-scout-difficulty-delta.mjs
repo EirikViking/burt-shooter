@@ -95,7 +95,11 @@ function hpPerEnemy(level, config = BalanceConfig) {
   return Math.ceil(hpScale);
 }
 
-function bossHp(sector, config = BalanceConfig) {
+function runModeBossDifficultyMult(mode) {
+  return Math.max(0.1, Math.min(2, finite(getRunModeProfile(mode).bossDifficultyMult, 1)));
+}
+
+function bossHp(sector, mode = RUN_MODES.RANKED, config = BalanceConfig) {
   const diff = config.difficulty;
   const rawHealth = Math.round((diff.bossBaseHealth ?? 40) + Math.max(0, sector - 1) * (diff.bossHealthPerLevel ?? 3.6));
   const healthBeforeEase = Math.max(rawHealth, diff.bossMinHealth || 70);
@@ -108,7 +112,46 @@ function bossHp(sector, config = BalanceConfig) {
     ? Math.max(0.1, Number(diff.bossEarlyDifficultyScalar) || 1)
     : 1;
   const firstBossHealthScalar = sector === 1 ? 0.86 : 1;
-  return Math.max(1, Math.round(healthBeforeEase * postFirstScalar * earlyScalar * firstBossHealthScalar));
+  return Math.max(1, Math.round(
+    healthBeforeEase *
+    postFirstScalar *
+    earlyScalar *
+    firstBossHealthScalar *
+    runModeBossDifficultyMult(mode)
+  ));
+}
+
+function bossShootDelay(sector, phase, mode = RUN_MODES.RANKED, config = BalanceConfig) {
+  const diff = config.difficulty;
+  const baseDelay = phase === 1
+    ? diff.bossShootDelayBase
+    : phase === 2
+      ? diff.bossShootDelayPhase2
+      : diff.bossShootDelayPhase3;
+  const openingDelayScalar = sector <= 1 ? 1.55 : sector === 2 ? 1.2 : 1;
+  const startsAt = Math.max(2, Math.round(Number(diff.bossPostFirstDifficultyStartsAt) || 2));
+  const postFirstScalar = sector >= startsAt
+    ? Math.max(0.1, Number(diff.bossPostFirstDifficultyScalar) || 1)
+    : 1;
+  const earlyMaxLevel = Math.max(1, Math.round(Number(diff.bossEarlyDifficultyMaxLevel) || 0));
+  const earlyScalar = sector <= earlyMaxLevel
+    ? Math.max(0.1, Number(diff.bossEarlyDifficultyScalar) || 1)
+    : 1;
+  return (baseDelay * openingDelayScalar) / (postFirstScalar * earlyScalar * runModeBossDifficultyMult(mode));
+}
+
+function bossProjectileSpeed(sector, phase, mode = RUN_MODES.RANKED, config = BalanceConfig) {
+  const diff = config.difficulty;
+  const fairness = diff.bossFairness || {};
+  const baseSpeed = phase === 1
+    ? diff.bossProjectileSpeedPhase1
+    : phase === 2
+      ? diff.bossProjectileSpeedPhase2
+      : diff.bossProjectileSpeedPhase3;
+  return Math.min(
+    diff.bossProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
+    baseSpeed + Math.max(0, sector - 1) * (diff.bossProjectileSpeedPerLevel ?? 0)
+  ) * finite(fairness.globalProjectileMultiplier, 1) * runModeBossDifficultyMult(mode);
 }
 
 function starterShipDps() {
@@ -236,8 +279,15 @@ function metricForMode(mode, sector, seed) {
     clearTimePressureSeconds: round(clearTimePressure, 1),
     boss: {
       sector,
-      hp: bossHp(sector),
-      changedByRunMode: false
+      hp: bossHp(sector, mode),
+      difficultyMult: runModeBossDifficultyMult(mode),
+      phase1ShootDelay: round(bossShootDelay(sector, 1, mode), 3),
+      phase2ShootDelay: round(bossShootDelay(sector, 2, mode), 3),
+      phase3ShootDelay: round(bossShootDelay(sector, 3, mode), 3),
+      phase1ProjectileSpeed: round(bossProjectileSpeed(sector, 1, mode), 3),
+      phase2ProjectileSpeed: round(bossProjectileSpeed(sector, 2, mode), 3),
+      phase3ProjectileSpeed: round(bossProjectileSpeed(sector, 3, mode), 3),
+      changedByRunMode: runModeBossDifficultyMult(mode) !== 1
     },
     pressureMultipliers: multipliers
   };
@@ -295,7 +345,10 @@ function compareSector(sector) {
       specialThreatPressureRatio: ratio(scout.specialThreatPressureAvg, mayhem.specialThreatPressureAvg),
       incomingPressureRatio: ratio(scout.incomingPressureIndexAvg, mayhem.incomingPressureIndexAvg),
       incomingPressureWorstRatio: ratio(scout.incomingPressureIndexWorst, mayhem.incomingPressureIndexWorst),
-      clearTimePressureRatio: ratio(scout.clearTimePressureSecondsAvg, mayhem.clearTimePressureSecondsAvg)
+      clearTimePressureRatio: ratio(scout.clearTimePressureSecondsAvg, mayhem.clearTimePressureSecondsAvg),
+      bossHpRatio: ratio(scout.boss.hp, mayhem.boss.hp),
+      bossProjectileSpeedRatio: ratio(scout.boss.phase1ProjectileSpeed, mayhem.boss.phase1ProjectileSpeed),
+      bossShootDelayRatio: ratio(scout.boss.phase1ShootDelay, mayhem.boss.phase1ShootDelay)
     }
   };
 }
@@ -369,6 +422,7 @@ function actualProfile(mode) {
     unlocksRankedCheckpoints: profile.unlocksRankedCheckpoints,
     updatesCareerProgress: profile.updatesCareerProgress,
     normalWaveDifficultyLevelOffsetDelta: profile.normalWaveDifficultyLevelOffsetDelta,
+    bossDifficultyMult: profile.bossDifficultyMult,
     pressureMultipliers: profile.pressureMultipliers
   };
 }
@@ -380,12 +434,14 @@ function assertRunModeRules() {
   assert.equal(STEAM_LEADERBOARD_NAME, 'nova_swarm_global_score_v2');
   assert.equal(mayhemProfile.difficultyProfileId, 'accepted_harder_ranked');
   assert.equal(mayhemProfile.normalWaveDifficultyLevelOffsetDelta, 0);
+  assert.equal(mayhemProfile.bossDifficultyMult, 1);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.RANKED), true);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.RANKED), true);
 
   assert.equal(scoutProfile.difficultyProfileId, 'scout_lower_pressure_v1');
   assert.notEqual(scoutProfile.normalWaveDifficultyLevelOffsetDelta, mayhemProfile.normalWaveDifficultyLevelOffsetDelta);
   assert.equal(scoutProfile.normalWaveDifficultyLevelOffsetDelta, -5);
+  assert.equal(scoutProfile.bossDifficultyMult, 0.75);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.SCOUT), false);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.SCOUT), false);
   assert.equal(scoutProfile.submitsLocalLeaderboard, false);
@@ -393,6 +449,7 @@ function assertRunModeRules() {
   assert.equal(scoutProfile.unlocksRankedCheckpoints, false);
 
   const sectorProfile = getRunModeProfile(RUN_MODES.SECTOR_START);
+  assert.equal(sectorProfile.bossDifficultyMult, 1);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.SECTOR_START), false);
   assert.equal(sectorProfile.submitsGlobalLeaderboard, false);
   assert.equal(getSectorStartPlaySector(5), 5);
@@ -431,8 +488,13 @@ function assertDifficultyDelta(comparisons) {
     assert.ok(row.scoutVsMayhem.enemySpeedPressureRatio < 1, `${label}: Scout enemy speed pressure should be lower`);
     assert.ok(row.scoutVsMayhem.eliteThreatPressureRatio < 1, `${label}: Scout elite threat pressure should be lower`);
     assert.ok(row.scoutVsMayhem.specialThreatPressureRatio < 1, `${label}: Scout special threat pressure should be lower`);
-    assert.equal(row.scout.boss.hp, row.mayhem.boss.hp, `${label}: Scout must not silently change boss HP`);
-    assert.equal(row.scout.boss.changedByRunMode, false, `${label}: Scout boss params should not be mode-modified`);
+    assert.ok(row.scoutVsMayhem.bossHpRatio <= 0.77, `${label}: Scout boss HP should be about 25% lower`);
+    assert.ok(row.scoutVsMayhem.bossHpRatio >= 0.72, `${label}: Scout boss HP reduction should stay near 25%`);
+    assert.equal(row.scoutVsMayhem.bossProjectileSpeedRatio, 0.75, `${label}: Scout boss projectile speed should be 75% of Mayhem`);
+    assert.ok(row.scoutVsMayhem.bossShootDelayRatio > 1.3, `${label}: Scout boss firing delay should be slower than Mayhem`);
+    assert.equal(row.mayhem.boss.difficultyMult, 1, `${label}: Mayhem boss multiplier must stay baseline`);
+    assert.equal(row.scout.boss.difficultyMult, 0.75, `${label}: Scout boss multiplier must be 0.75`);
+    assert.equal(row.scout.boss.changedByRunMode, true, `${label}: Scout boss params should be mode-modified`);
   }
 }
 
@@ -472,8 +534,9 @@ const report = {
   oldBaseline,
   conclusion: {
     scoutMeaningfullyEasier: true,
-    balanceCodeChangedByThisCheck: false,
-    recommendation: 'Keep scout_lower_pressure_v1 for this build; validate feel manually after the automated pressure gap remains healthy.'
+    scoutBossesReducedBy25Percent: true,
+    balanceCodeChangedByThisCheck: true,
+    recommendation: 'Keep scout_lower_pressure_v1 with Scout bossDifficultyMult 0.75; validate boss feel manually against Mayhem.'
   }
 };
 
@@ -487,7 +550,9 @@ const table = comparisons.map((row) => ({
   hpRatio: row.scoutVsMayhem.hpBudgetRatio,
   pressureRatio: row.scoutVsMayhem.incomingPressureRatio,
   worstRatio: row.scoutVsMayhem.incomingPressureWorstRatio,
-  clearTimeRatio: row.scoutVsMayhem.clearTimePressureRatio
+  clearTimeRatio: row.scoutVsMayhem.clearTimePressureRatio,
+  bossHpRatio: row.scoutVsMayhem.bossHpRatio,
+  bossProjectileRatio: row.scoutVsMayhem.bossProjectileSpeedRatio
 }));
 
 console.table(table);
