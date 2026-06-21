@@ -1,5 +1,13 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-21 Public Release Closeout
+
+- Public release status: Steam BuildID `23846155` is the released public build for the Mayhem, Scout, and Sector Run release line. Previous public build for rollback is Steam BuildID `23809188`.
+- Release branch and evidence: `codex/rc-final-tuning-20260621` at evidence commit `082eadb823854b80998330f9e7e0ce1de8d3172f`, with source commits `76c49adbd92f1bbcb228740e93a4d66c14e28398` and `fae9e18f98fa98e7cce23563b76ac97d7304d56f`.
+- Summary: introduced Mayhem, Scout, and Sector Run; improved Mayhem performance and frame pacing; fixed Scout Codex and Scout Best persistence; restored realtime HIGH SCORE TARGET behavior; improved boss fairness; made Scout boss attacks safer without reducing HP further; made Mayhem normal waves 5 percent more aggressive without touching bosses; added display/window options; and kept Steam leaderboard identity and achievement configuration unchanged.
+- Steam constants preserved: AppID `4765070`, Depot `4765071`, global leaderboard identity `nova_swarm_global_score_v2`.
+- Rollback: reassign Steam public/default back to BuildID `23809188`. No packaging, Steam upload, Steam branch assignment, gameplay/source, Steamworks metadata, leaderboard, achievement, Steam Cloud, save format, or store text changes were made during this closeout pass.
+
 ## 2026-06-21 Release Candidate Final Tuning
 
 - Current request: prepare a possible release-candidate private build from the accepted Mayhem performance line after BuildID `23845237`, keeping realtime high-score chase and menu exit fixes intact unless focused checks fail.
