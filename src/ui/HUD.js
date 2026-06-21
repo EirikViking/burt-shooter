@@ -48,6 +48,7 @@ export class HUD {
     this.missionLabel = null;
     this.missionText = null;
     this.activePowerupRows = [];
+    this.highscoreChaseRenderKey = '';
 
     // Rank Elements
     this.rankGroup = new PIXI.Container();
@@ -376,6 +377,24 @@ export class HUD {
     const label = chase?.runMode === 'sector_start'
       ? translateText('SECTOR RECORD TARGET')
       : translateText('HIGH SCORE TARGET');
+    const w = this.highscoreChaseGroup.__w || 178;
+    const h = this.highscoreChaseGroup.__h || 52;
+    const pulseFrame = Math.floor(Date.now() / 125);
+    const renderKey = [
+      chase?.runMode || 'none',
+      target,
+      score,
+      syncingTarget ? 1 : 0,
+      surpassed ? 1 : 0,
+      w,
+      h,
+      this.highscoreChaseTitle?.style?.fontSize || '',
+      this.highscoreChaseTarget?.style?.fontSize || '',
+      this.highscoreChaseGap?.style?.fontSize || '',
+      pulseFrame
+    ].join('|');
+    if (renderKey === this.highscoreChaseRenderKey) return;
+    this.highscoreChaseRenderKey = renderKey;
 
     this.highscoreChaseTitle.text = label;
     this.highscoreChaseTarget.text = hasTarget
@@ -393,8 +412,6 @@ export class HUD {
     this.highscoreChaseGroup.alpha = hasTarget ? 0.86 + pulse * 0.14 : 0.78;
     this.highscoreChaseGroup.scale.set(1);
 
-    const w = this.highscoreChaseGroup.__w || 178;
-    const h = this.highscoreChaseGroup.__h || 52;
     const barW = Math.max(48, w - 22);
     const progress = hasTarget ? Math.min(1, ratio) : 0.08 + pulse * 0.08;
     this.highscoreChaseTitle.updateText?.(false);

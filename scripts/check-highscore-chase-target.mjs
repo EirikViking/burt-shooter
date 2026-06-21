@@ -136,14 +136,59 @@ try {
       gapText: hud?.highscoreChaseGap?.text || null
     };
   });
+  const renderCacheProbe = await page.evaluate(() => {
+    const hud = window.__game?.scenes?.play?.hud;
+    if (!hud?.updateHighscoreChase) return { available: false };
+    let graphicsClearCalls = 0;
+    let textUpdateCalls = 0;
+    const graphics = [hud.highscoreChaseBg, hud.highscoreChaseBarBg, hud.highscoreChaseBarFill].filter(Boolean);
+    const texts = [hud.highscoreChaseTitle, hud.highscoreChaseTarget, hud.highscoreChaseGap].filter(Boolean);
+    const restore = [];
+    for (const graphic of graphics) {
+      const original = graphic.clear?.bind(graphic);
+      if (!original) continue;
+      graphic.clear = (...args) => {
+        graphicsClearCalls += 1;
+        return original(...args);
+      };
+      restore.push(() => {
+        graphic.clear = original;
+      });
+    }
+    for (const text of texts) {
+      const original = text.updateText?.bind(text);
+      if (!original) continue;
+      text.updateText = (...args) => {
+        textUpdateCalls += 1;
+        return original(...args);
+      };
+      restore.push(() => {
+        text.updateText = original;
+      });
+    }
+    for (let index = 0; index < 40; index += 1) {
+      hud.updateHighscoreChase();
+    }
+    for (const undo of restore) undo();
+    return {
+      available: true,
+      graphicsClearCalls,
+      textUpdateCalls,
+      renderKey: hud.highscoreChaseRenderKey || null
+    };
+  });
 
   assert.equal(finalState.targetScore, realBest.score, 'high-score chase should use the highest known personal score');
   assert.match(finalState.targetText || '', /120,140/, 'HUD should print the real best score target');
+  assert.equal(renderCacheProbe.available, true, 'high-score chase render cache probe should attach');
+  assert.ok(renderCacheProbe.renderKey, 'high-score chase should retain a render cache key');
+  assert.equal(renderCacheProbe.graphicsClearCalls, 0, 'unchanged high-score chase state should not redraw graphics on repeated HUD updates');
+  assert.equal(renderCacheProbe.textUpdateCalls, 0, 'unchanged high-score chase state should not rerun text layout on repeated HUD updates');
   assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join('; ')}`);
 
   mkdirSync(outputDir, { recursive: true });
-  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify({ ok: true, baseUrl, finalState }, null, 2)}\n`);
-  console.log(`[highscore-chase-target] PASS target=${finalState.targetScore} source=${finalState.targetSource} report=${path.join(outputDir, 'report.json')}`);
+  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify({ ok: true, baseUrl, finalState, renderCacheProbe }, null, 2)}\n`);
+  console.log(`[highscore-chase-target] PASS target=${finalState.targetScore} source=${finalState.targetSource} redraws=${renderCacheProbe.graphicsClearCalls} textLayouts=${renderCacheProbe.textUpdateCalls} report=${path.join(outputDir, 'report.json')}`);
   await page.close();
 } catch (error) {
   mkdirSync(outputDir, { recursive: true });

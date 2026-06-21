@@ -568,6 +568,7 @@ try {
   };
   const video = {
     mayhem: analyzeVideo(path.join('performance-video', 'mayhem_run.mp4')),
+    mayhemRun2: analyzeVideo(path.join('performance-video', 'mayhem_run2.mp4')),
     sector: analyzeVideo(path.join('performance-video', 'sector_run.mp4'))
   };
   const failures = [];

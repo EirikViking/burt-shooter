@@ -24,6 +24,7 @@ On high-progress profiles this creates repeated main-thread JSON/localStorage/me
 - Deferred Threat Codex persistence while the active scene is gameplay.
 - Flush pending Codex persistence on run finalization, page hide, visibility hidden, and before unload.
 - Kept the in-memory Codex state authoritative during play so result screens, Scout Codex persistence, and run summaries still see current discoveries.
+- Second pass: cached the ranked high-score chase HUD render state so unchanged frames do not repeatedly redraw the target card or rerun PIXI text layout. The card still updates immediately when score, target, run mode, layout, or board-sync state changes, and its pulse refreshes at a capped visual cadence.
 
 No Mayhem balance, Scout balance, boss tuning, wave tuning, score formula, leaderboard identity, achievements metadata, Steam bridge, Steamworks metadata, display settings, powerup art, save format, profile rescue behavior, or live saves were changed.
 
@@ -44,10 +45,11 @@ The check seeds a high-progress profile with a large Codex state, launches Mayhe
 - Threat Codex localStorage write count and bytes
 - full `buildRunSummary()` calls during active play
 - optional optical cadence analysis of `performance-video/mayhem_run.mp4` and `performance-video/sector_run.mp4`
+- optional optical cadence analysis of `performance-video/mayhem_run.mp4`, `performance-video/mayhem_run2.mp4`, and `performance-video/sector_run.mp4`
 
 Latest report:
 
-`test-results/mayhem-sector-frame-pacing-2026-06-21T11-50-02-053Z/report.json`
+`test-results/mayhem-sector-frame-pacing-2026-06-21T12-29-14-025Z/report.json`
 
 ## Measured Evidence
 
@@ -56,6 +58,7 @@ Supplied video optical cadence:
 | Capture | Low-motion frames | Low-then-jump cadence events | Jerk p95 |
 | --- | ---: | ---: | ---: |
 | Mayhem Run | 153 | 16 | 0.845 |
+| Mayhem Run 2 | 166 | 18 | 0.910 |
 | Sector Run | 13 | 1 | 0.295 |
 
 Runtime after fix:
@@ -65,6 +68,15 @@ Runtime after fix:
 | Mayhem Sector 1 opening | 16.7 ms | 16.8 ms | 17.1 ms | 17.7 ms | 0 | 0 | 0 |
 | Sector Run checkpoint 20 | 16.7 ms | 16.8 ms | 16.9 ms | 17.1 ms | 0 | 0 | 0 |
 
+Second-pass runtime check:
+
+| Scenario | Active p50 | Active p95 | Active p99 | Max | >33 ms | >50 ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Mayhem Sector 1 opening | 16.7 ms | 16.8 ms | 16.8 ms | 17.2 ms | 0 | 0 |
+| Sector Run checkpoint 20 | 16.7 ms | 16.8 ms | 17.0 ms | 17.5 ms | 0 | 0 |
+
+The browser harness now reports Mayhem/Sector active p95 ratio at `1.000`; the newer Steam capture still showed more visual low-motion/then-jump cadence in Mayhem than Sector, so the high-score chase HUD cache is a targeted additional reduction in ranked-only render work rather than a claim that every field symptom is conclusively eliminated.
+
 Runtime persistence evidence during active wave:
 
 | Scenario | Threat Codex writes | Full run summary calls |
@@ -73,6 +85,14 @@ Runtime persistence evidence during active wave:
 | Sector Run checkpoint 20 | 1 | 0 |
 
 The remaining single Codex write is the deferred flush, not repeated per-enemy combat work.
+
+High-score chase HUD guard:
+
+```bash
+npm run check:highscore-chase-target
+```
+
+The check launches Mayhem with a known personal best and verifies that 40 repeated unchanged high-score chase HUD updates cause `0` target-card graphics redraws and `0` text layout reruns.
 
 ## Manual Test Plan
 
