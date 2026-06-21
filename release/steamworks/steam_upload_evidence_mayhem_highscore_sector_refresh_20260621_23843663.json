@@ -1,0 +1,104 @@
+{
+  "type": "steam_upload_evidence",
+  "slug": "mayhem_highscore_sector_refresh",
+  "generatedAt": "2026-06-21T13:10:00.000Z",
+  "branch": "codex/mayhem-highscore-chase-sector-refresh-20260621",
+  "startingCommit": "c871b88954be7d7ddd3a8b3d53078c9daf5226f8",
+  "sourceCommit": "c73f33a434c9c48fc54a481c226e6670e65da3e7",
+  "packagedBuild": "v2026-06-21_15-01-42",
+  "packagedGitSha": "c73f33a",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23843663",
+    "depotManifest": "8211672616444559549",
+    "baselineDepotManifest": "2093552943102439710",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "steamworksMetadataChanged": false
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdConfirmed": true,
+    "depotConfirmed": true,
+    "setLiveBlankConfirmed": true,
+    "containsPublicOrDefaultAssignment": false,
+    "containsSectorContinueTestAssignment": false,
+    "containsSteamBranchAssignment": false,
+    "description": "Nova Swarm Mayhem highscore chase sector refresh private test"
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "sha256": "61e85e0c8da3ff4b48d5c6c200727bb68e7c104ddf7ea761be164379a29d78eb",
+    "manifestHash": "ffce0ab9e7ecfbb01d7658131d7f78ea0db6ef0a2d0cecd0ec0811244a43b056",
+    "fileCount": 336,
+    "totalBytes": 879618705,
+    "executable": "Nova Swarm.exe",
+    "executableSha256": "ffab4a0eeca91dd9d84396861824feeb1b197a24591eab52e4626b1b3f354a03"
+  },
+  "uploadEvidence": {
+    "steamcmdLog": "test-results/steam-upload-mayhem-highscore-sector-refresh-20260621-150538/steamcmd.log",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "appBuildLogProof": "Successfully finished AppID 4765070 build (BuildID 23843663).",
+    "depotManifestProof": "Success! New manifestID 8211672616444559549 created and 7 new chunks uploaded.",
+    "depotSummary": "0 files added, 2 files changed, 0 files removed, 7 new chunks uploaded"
+  },
+  "performanceEvidence": {
+    "runtimeReport": "test-results/mayhem-sector-frame-pacing-2026-06-21T12-58-26-774Z/report.json",
+    "highscoreChaseReport": "test-results/highscore-chase-target-2026-06-21T13-00-48-795Z/report.json",
+    "mayhemActiveP95Ms": 16.8,
+    "mayhemActiveP99Ms": 16.9,
+    "mayhemActiveLongFramesOver33Ms": 0,
+    "mayhemVsSectorActiveP95Ratio": 1.0,
+    "sameSectorHighscoreChaseRedraws": 0,
+    "nextSectorHighscoreChaseRedraws": 3,
+    "videoReproMayhemRun3LowThenJumpEvents": 28
+  },
+  "checks": {
+    "sourceChecks": [
+      "npm run build:current",
+      "npm run check:highscore-chase-target",
+      "npm run check:mayhem-sector-frame-pacing",
+      "npm run check:run-modes",
+      "git diff --check",
+      "npm run check:steam-electron-bridge",
+      "npm run check:i18n"
+    ],
+    "releaseChecks": [
+      "npm run package:steam:win",
+      "npm run steamworks:payload-manifest",
+      "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf"
+    ],
+    "smoke": {
+      "status": "skipped_by_user_request",
+      "reason": "User asked to deploy without all the smoke tests."
+    },
+    "steamPackageRuntime": "test-results/steam-package-runtime-2026-06-21T13-05-29-805Z/report.json"
+  },
+  "protectedSystems": {
+    "setLiveChanged": false,
+    "steamBranchAssigned": false,
+    "steamworksMetadataChanged": false,
+    "leaderboardIdentityChanged": false,
+    "liveSavesTouched": false,
+    "profileRescueRun": false,
+    "balanceChanged": false,
+    "powerupArtChanged": false,
+    "displaySettingsChanged": false
+  },
+  "manualSteamworksTestSteps": [
+    "Assign BuildID 23843663 to the intended private test branch in Steamworks.",
+    "Install that private branch through Steam.",
+    "Start Mayhem Run from Sector 1 and confirm the high-score chase counter no longer ticks up/down in real time during a sector.",
+    "Confirm the high-score chase target card refreshes at the next sector and when the target is beaten.",
+    "Compare opening Mayhem cadence against BuildID 23843533 and performance-video/mayhem_run3.mp4."
+  ],
+  "rollback": {
+    "git": "git revert c73f33a434c9c48fc54a481c226e6670e65da3e7",
+    "steamworks": "Do not assign BuildID 23843663, or reassign the previous private test BuildID."
+  }
+}
