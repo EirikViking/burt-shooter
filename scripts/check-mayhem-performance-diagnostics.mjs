@@ -114,20 +114,22 @@ try {
   await page.route('**/api/highscores', async (route) => {
     await route.fulfill({ status: 200, headers: { 'Content-Type': 'application/json' }, body: '[]' });
   });
-  await page.goto(`${baseUrl}?novaPerfDiag=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await startMayhem(page);
   await page.waitForFunction(() => window.__novaMayhemPerformanceDiagnostics?.getReport?.()?.sampleCount > 20, null, { timeout: 12000 });
   const initialReport = await page.evaluate(() => window.__novaMayhemPerformanceDiagnostics.getReport());
   const sectionLabels = initialReport.topSections.map((section) => section.label);
-  for (const required of ['frame_start', 'player', 'bullets', 'enemies', 'hud', 'starfield', 'collisions']) {
+  for (const required of ['frame_start', 'player', 'bullets', 'enemies', 'hud', 'starfield', 'collisions', 'collision.player_bullets_enemies', 'collision.enemy_bullets_player']) {
     assert.ok(sectionLabels.includes(required), `diagnostics should record ${required}`);
   }
-  assert.equal(initialReport.enabled, true, 'diagnostics should be enabled by query flag');
+  assert.equal(initialReport.enabled, true, 'diagnostics should be auto-enabled in this private diagnostic build');
+  assert.equal(initialReport.options.showOverlay, false, 'diagnostic overlay should stay hidden by default while auto logging');
   assert.ok(initialReport.frame.maxMs >= 0, 'diagnostics should report max frame timing');
   assert.ok(initialReport.lastCounts.sector >= 1, 'diagnostics should report sector count');
   assert.ok(initialReport.lastCounts.runMode === 'ranked', 'diagnostics should report Mayhem run mode');
-  const overlayVisible = await page.locator('[data-nova-mayhem-performance-diagnostics="true"]').isVisible();
-  assert.equal(overlayVisible, true, 'diagnostic overlay should be visible when enabled');
+  assert.ok(initialReport.lastCounts.collision, 'diagnostics should attach collision counters to frame counts');
+  const overlayCount = await page.locator('[data-nova-mayhem-performance-diagnostics="true"]').count();
+  assert.equal(overlayCount, 0, 'diagnostic overlay should not be created until requested');
 
   const toggledReport = await page.evaluate(async () => {
     window.__novaMayhemPerformanceDiagnostics.setOptions({
@@ -155,9 +157,25 @@ try {
   await page.keyboard.press('F8');
   await page.keyboard.up('Shift');
   await page.keyboard.up('Control');
-  const disabledByHotkey = await page.evaluate(() => window.__novaMayhemPerformanceDiagnostics.getReport().enabled);
-  assert.equal(disabledByHotkey, false, 'Ctrl+Shift+F8 should disable diagnostics');
-  reports.enabledRun = { initialReport, toggledReport, disabledByHotkey };
+  const overlayByHotkey = await page.evaluate(() => window.__novaMayhemPerformanceDiagnostics.getReport().options.showOverlay);
+  assert.equal(overlayByHotkey, true, 'Ctrl+Shift+F8 should reveal diagnostics overlay without stopping logging');
+  const manualWrite = await page.evaluate(async () => {
+    window.__novaPerformanceDiagnostics = {
+      writeReport: async (payload) => ({
+        ok: true,
+        latestPath: 'mock/userData/performance-diagnostics/run-collision-diagnostics-latest.json',
+        sessionPath: `mock/userData/performance-diagnostics/run-collision-diagnostics-${payload.sessionId}.json`
+      })
+    };
+    const result = await window.__novaMayhemPerformanceDiagnostics.writeReport('automated_check');
+    const stored = JSON.parse(localStorage.getItem('novaSwarm.mayhemPerformanceDiagnostics.latestReport.v1') || '{}');
+    return { result, stored };
+  });
+  assert.equal(manualWrite.result.ok, true, 'manual diagnostic write should use native writer bridge when available');
+  assert.match(manualWrite.result.latestPath, /run-collision-diagnostics-latest\.json$/, 'diagnostic latest path should be stable');
+  assert.equal(manualWrite.stored.reason, 'automated_check', 'diagnostic report should also be cached in localStorage');
+  assert.ok(manualWrite.stored.lastCounts?.collision, 'written diagnostic report should include collision counters');
+  reports.enabledRun = { initialReport, toggledReport, overlayByHotkey, manualWrite };
   assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join('; ')}`);
   await page.close();
 

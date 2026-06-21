@@ -2437,25 +2437,67 @@ export class PlayScene {
 
   checkCollisions() {
     const { width, height } = this.game.app.screen;
+    const perfDiag = this.performanceDiagnostics;
+    const measure = perfDiag?.measure?.bind(perfDiag) || ((_label, callback) => callback());
+    const collisionStats = {
+      runMode: this.game?.runMode || 'unknown',
+      sector: Math.max(1, Math.floor(Number(this.game?.level) || 1)),
+      playerBullets: this.bulletManager?.playerBullets?.length || 0,
+      enemyBullets: this.bulletManager?.enemyBullets?.length || 0,
+      enemies: this.enemyManager?.enemies?.length || 0,
+      powerups: this.powerupManager?.powerups?.length || 0,
+      ambientBonusDrones: this.ambientBonusDrones?.length || 0,
+      bossHazards: this.bossHazards?.length || 0,
+      bombApexChecks: 0,
+      bombApexDetonations: 0,
+      playerBulletEnemyPairs: 0,
+      playerBulletEnemyHits: 0,
+      playerBulletEnemyKills: 0,
+      playerBulletEnemyDamageOnly: 0,
+      playerBulletHijackerPairs: 0,
+      playerBulletHijackerHits: 0,
+      projectileDefensePairs: 0,
+      projectileDefenseHits: 0,
+      enemyBulletPlayerChecks: 0,
+      enemyBulletPlayerNearMisses: 0,
+      enemyBulletPlayerHits: 0,
+      ambientDronePlayerChecks: 0,
+      ambientDronePlayerHits: 0,
+      playerBulletAmbientPairs: 0,
+      playerBulletAmbientHits: 0,
+      playerBulletAmbientKills: 0,
+      enemyPlayerChecks: 0,
+      enemyPlayerHits: 0,
+      powerupPlayerChecks: 0,
+      powerupPickups: 0
+    };
+    this.collisionDiagnosticStats = collisionStats;
 
     // Safety checks for managers
     if (!this.bulletManager || !this.enemyManager || !this.powerupManager || !this.player) return;
 
     // Bomb detonation check
+    measure('collision.bomb_apex', () => {
     const screenHeight = this.game.app.screen.height;
     const detonationY = screenHeight * 0.45; // Detonate at 45% of screen height
     this.bulletManager.playerBullets.forEach(bullet => {
+      collisionStats.bombApexChecks += 1;
       if (bullet.active && bullet.isBomb && bullet.y <= detonationY) {
+        collisionStats.bombApexDetonations += 1;
         this.detonateBombBullet(bullet, 'apex');
       }
     });
+    });
 
     // Player bullets vs enemies
+    measure('collision.player_bullets_enemies', () => {
     this.bulletManager.playerBullets.forEach(bullet => {
       if (bullet.active) {
         this.enemyManager.enemies.forEach(enemy => {
           if (!bullet.active) return;
+          if (enemy.active) collisionStats.playerBulletEnemyPairs += 1;
           if (enemy.active && this.checkCollision(bullet, enemy)) {
+            collisionStats.playerBulletEnemyHits += 1;
             if (bullet.isBomb) {
               this.detonateBombBullet(bullet, 'impact');
               return;
@@ -2468,6 +2510,7 @@ export class PlayScene {
             this.applyShipTraitBulletImpact(bullet, enemy);
 
             if (destroyed) {
+              collisionStats.playerBulletEnemyKills += 1;
               // XP Logic handled by score now
 
               // Feature: Slow Time Trade-off
@@ -2486,6 +2529,7 @@ export class PlayScene {
               // Powerup Drop Check (Manager handles chance & guarantees)
               this.powerupManager.spawn(enemy.x, enemy.y);
             } else {
+              collisionStats.playerBulletEnemyDamageOnly += 1;
               this.particleManager.createHitSpark(enemy.x, enemy.y);
               AudioManager.playSfx('hit', { volume: 0.4 });
             }
@@ -2493,13 +2537,17 @@ export class PlayScene {
         });
       }
     });
+    });
 
     // Player bullets vs hijacker
+    measure('collision.player_bullets_hijacker', () => {
     if (this.enemyManager.hijacker && this.enemyManager.hijacker.active) {
       this.bulletManager.playerBullets.forEach(bullet => {
         if (bullet.active) {
           const hijacker = this.enemyManager.hijacker;
+          collisionStats.playerBulletHijackerPairs += 1;
           if (this.checkCollision(bullet, hijacker)) {
+            collisionStats.playerBulletHijackerHits += 1;
             if (bullet.isBomb) {
               this.detonateBombBullet(bullet, 'hijacker_impact');
               return;
@@ -2522,8 +2570,10 @@ export class PlayScene {
         }
       });
     }
+    });
 
     // Point Defense and Graze Break: Player bullets vs enemy bullets
+    measure('collision.projectile_defense', () => {
     const hasGrazeBreaker = this.bulletManager.playerBullets.some(playerBullet =>
       playerBullet?.active !== false && playerBullet.isGrazeBreaker
     );
@@ -2535,6 +2585,7 @@ export class PlayScene {
         this.bulletManager.enemyBullets.forEach(enemyBullet => {
           if (!enemyBullet.active) return;
           if (!pointDefenseActive && !playerBullet.isGrazeBreaker) return;
+          collisionStats.projectileDefensePairs += 1;
 
           // Check collision between player bullet and enemy bullet
           const dx = playerBullet.x - enemyBullet.x;
@@ -2543,6 +2594,7 @@ export class PlayScene {
           const hitRadius = (playerBullet.radius || 4) + (enemyBullet.radius || 6);
 
           if (dist < hitRadius) {
+            collisionStats.projectileDefenseHits += 1;
             if (playerBullet.isGrazeBreaker) {
               this.triggerGrazeBreak(playerBullet, enemyBullet);
               return;
@@ -2563,19 +2615,24 @@ export class PlayScene {
         });
       });
     }
+    });
 
     // Enemy bullets vs player
+    measure('collision.enemy_bullets_player', () => {
     this.bulletManager.enemyBullets.forEach(bullet => {
       if (bullet.active && this.player.active) {
+        collisionStats.enemyBulletPlayerChecks += 1;
         const dx = bullet.x - this.player.x;
         const dy = bullet.y - this.player.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const nearThreshold = (this.player.radius || 12) + (bullet.radius || 6) + 12;
         if (!bullet.nearMissed && dist < nearThreshold && dist > (this.player.radius || 12)) {
           bullet.nearMissed = true;
+          collisionStats.enemyBulletPlayerNearMisses += 1;
           this.applyNearMiss(bullet);
         }
         if (this.checkCollision(bullet, this.player)) {
+          collisionStats.enemyBulletPlayerHits += 1;
           // Feature: Ghost Ship prevents hit
           if (this.player.isGhostActive?.()) return;
 
@@ -2604,11 +2661,15 @@ export class PlayScene {
         }
       }
     });
+    });
 
     // Ambient bonus drones and collectible power cores
+    measure('collision.ambient_drones_player', () => {
     this.ambientBonusDrones.forEach(bonusDrone => {
       if (bonusDrone.active && this.player.active) {
+        collisionStats.ambientDronePlayerChecks += 1;
         if (this.checkCollision(bonusDrone, this.player)) {
+          collisionStats.ambientDronePlayerHits += 1;
           if (bonusDrone.type === 'POWERUP') {
             // Collect!
             this.recordBalancePickup({ type: 'bonus_core' });
@@ -2640,16 +2701,21 @@ export class PlayScene {
         }
       }
     });
+    });
 
     // Player bullets vs ambient hazard drones
+    measure('collision.player_bullets_ambient_drones', () => {
     this.bulletManager.playerBullets.forEach(bullet => {
       if (bullet.active) {
         this.ambientBonusDrones.forEach(bonusDrone => {
           // Only damage hazard drones, not collectible power cores.
+          if (bonusDrone.active && bonusDrone.type === 'HAZARD') collisionStats.playerBulletAmbientPairs += 1;
           if (bonusDrone.active && bonusDrone.type === 'HAZARD' && this.checkCollision(bullet, bonusDrone)) {
+            collisionStats.playerBulletAmbientHits += 1;
             if (!bullet.piercing) bullet.active = false;
             const destroyed = bonusDrone.takeDamage(bullet.damage || 1);
             if (destroyed) {
+              collisionStats.playerBulletAmbientKills += 1;
               if (!this.player.isSlowTimeActive?.()) {
                 this.game.addScore(this.getComboScore(500));
               }
@@ -2664,11 +2730,15 @@ export class PlayScene {
         });
       }
     });
+    });
 
     // Enemies vs player
+    measure('collision.enemies_player', () => {
     this.enemyManager.enemies.forEach(enemy => {
       if (enemy.active && this.player.active) {
+        collisionStats.enemyPlayerChecks += 1;
         if (this.checkCollision(enemy, this.player)) {
+          collisionStats.enemyPlayerHits += 1;
           // Feature: Ghost Ship prevents hit
           if (this.player.isGhostActive?.()) return;
 
@@ -2719,11 +2789,15 @@ export class PlayScene {
         }
       }
     });
+    });
 
     // Powerups vs player
+    measure('collision.powerups_player', () => {
     this.powerupManager.powerups.forEach(powerup => {
       if (powerup.active && this.player.active) {
+        collisionStats.powerupPlayerChecks += 1;
         if (this.checkCollision(powerup, this.player)) {
+          collisionStats.powerupPickups += 1;
           this.recordBalancePickup(powerup);
           powerup.collect(this.player, this);
           AudioManager.playSfx('powerup_pickup', { volume: 0.35, minIntervalMs: 120 });
@@ -2733,6 +2807,7 @@ export class PlayScene {
           this.player.ensureRenderable('afterPowerupPickup');
         }
       }
+    });
     });
   }
 

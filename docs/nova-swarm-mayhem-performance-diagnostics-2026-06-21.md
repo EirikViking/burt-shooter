@@ -2,32 +2,50 @@
 
 ## Purpose
 
-This private diagnostic build adds an opt-in runtime profiler for the remaining Mayhem cadence issue seen in `performance-video/mayhem_run4.mp4`. The goal is to isolate whether the hitch comes from HUD/high-score chase work, particles, starfield/background work, score popups, leaderboard target priming, or core combat update cost.
+This private diagnostic build adds an automatic runtime profiler for the remaining Mayhem cadence issue seen in `performance-video/mayhem_run4.mp4`. The goal is to isolate whether the hitch comes from HUD/high-score chase work, particles, starfield/background work, score popups, leaderboard target priming, core combat update cost, or a specific collision subsection.
 
 No gameplay balance, save format, Steam leaderboard identity, achievements, Steamworks metadata, or profile rescue behavior is changed by this diagnostic pass.
 
-## Enable Diagnostics
+## Automatic Logging
 
-Diagnostics are disabled by default.
+Diagnostics are enabled by default in this private branch. You do not need to press any key combination.
 
-Supported enable paths:
+The build writes reports automatically to the local app data folder. It writes an initial report shortly after gameplay starts, refreshes it about every 10 seconds, and writes again when slow frames occur.
 
-- URL: `?novaPerfDiag=1`
-- Local storage: `novaSwarm.mayhemPerformanceDiagnostics.v1` with `{"enabled":true}`
-- In the running build: press `Ctrl+Shift+F8` to toggle the overlay on or off.
+```text
+%APPDATA%\nova-swarm\performance-diagnostics\run-collision-diagnostics-latest.json
+```
 
-The overlay writes a compact live summary to the top-left corner:
+It also writes a per-session file in the same folder:
+
+```text
+%APPDATA%\nova-swarm\performance-diagnostics\run-collision-diagnostics-<session>.json
+```
+
+The report includes:
 
 - average, p95, and max measured PlayScene frame update time
 - current sector, run mode, enemy count, bullet count, particle count, score popup count, boss hazard count
 - the highest-cost update sections in the most recent sampled frame
-- active diagnostic toggles
+- slow-frame samples and worst slow frames
+- collision counters and collision subsection timings
+- native write result/path
 
 The same data is available in DevTools:
 
 ```js
 window.__novaMayhemPerformanceDiagnostics.getReport()
 ```
+
+The latest report is also cached in local storage:
+
+```js
+localStorage.getItem('novaSwarm.mayhemPerformanceDiagnostics.latestReport.v1')
+```
+
+## Optional Overlay
+
+The overlay is hidden by default so the test can be played normally. Press `Ctrl+Shift+F8` only if you want to reveal the compact live summary.
 
 ## Diagnostic Toggles
 
@@ -55,28 +73,27 @@ window.__novaMayhemPerformanceDiagnostics.enable({
 ## Steam Test Procedure
 
 1. Launch the private Steam test build.
-2. Start Mayhem normally and watch for the cadence issue.
-3. Press `Ctrl+Shift+F8` to show the overlay.
-4. Reproduce the issue and note the top update sections when the stutter appears.
-5. Toggle one subsystem at a time:
-   - `Ctrl+Shift+1` high-score chase widget
-   - `Ctrl+Shift+2` HUD update
-   - `Ctrl+Shift+3` particles
-   - `Ctrl+Shift+4` starfield
-   - `Ctrl+Shift+5` score popups
-6. Restart the run after changing `noLeaderboardTargets`; it only affects target priming before launch.
+2. Start Mayhem normally and play until the cadence issue appears.
+3. Optionally run Sector Run too, so the same logger captures a smoother comparison mode.
+4. Quit or return to menu.
+5. Send or inspect `%APPDATA%\nova-swarm\performance-diagnostics\run-collision-diagnostics-latest.json`.
+
+No hotkey sequence is required for the main test.
 
 ## Automated Coverage
 
 `npm run check:mayhem-performance-diagnostics` verifies:
 
 - diagnostics can be enabled by URL
-- the overlay appears
+- diagnostics are automatically enabled
+- the overlay stays hidden by default
 - real PlayScene sections are sampled
+- collision subsection timings are sampled
 - counts are reported
 - toggles persist to local storage
 - high-score chase can be hidden by the diagnostic toggle
-- `Ctrl+Shift+F8` disables the profiler
+- `Ctrl+Shift+F8` reveals the profiler overlay without disabling logging
+- diagnostic reports are cached locally and can be written through the Electron bridge
 - `noLeaderboardTargets` prevents target priming when set before Mayhem launch
 
 ## Recommendation

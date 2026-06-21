@@ -1,8 +1,15 @@
 const STORAGE_KEY = 'novaSwarm.mayhemPerformanceDiagnostics.v1';
+const STORAGE_REPORT_KEY = 'novaSwarm.mayhemPerformanceDiagnostics.latestReport.v1';
 const GLOBAL_KEY = '__novaMayhemPerformanceDiagnostics';
+const AUTO_DIAGNOSTICS_ENABLED = true;
+const SLOW_FRAME_MS = 20;
+const IMPORTANT_SLOW_FRAME_MS = 33;
+const AUTO_WRITE_INTERVAL_MS = 5000;
+const PERIODIC_WRITE_INTERVAL_MS = 10000;
 
 const DEFAULT_OPTIONS = Object.freeze({
-  enabled: false,
+  enabled: AUTO_DIAGNOSTICS_ENABLED,
+  showOverlay: false,
   hideHighscoreChase: false,
   hudLite: false,
   noParticles: false,
@@ -51,6 +58,7 @@ function safeWriteStorage(options) {
   try {
     win.localStorage.setItem(STORAGE_KEY, JSON.stringify({
       enabled: Boolean(options.enabled),
+      showOverlay: Boolean(options.showOverlay),
       hideHighscoreChase: Boolean(options.hideHighscoreChase),
       hudLite: Boolean(options.hudLite),
       noParticles: Boolean(options.noParticles),
@@ -70,6 +78,7 @@ function readQueryOptions() {
     const params = new URLSearchParams(win.location.search);
     return {
       enabled: parseBoolean(params.get('novaPerfDiag'), undefined),
+      showOverlay: parseBoolean(params.get('novaDiagOverlay'), undefined),
       hideHighscoreChase: parseBoolean(params.get('novaDiagHideHighscore'), undefined),
       hudLite: parseBoolean(params.get('novaDiagHudLite'), undefined),
       noParticles: parseBoolean(params.get('novaDiagNoParticles'), undefined),
@@ -91,10 +100,12 @@ function normalizeOptions(options = {}) {
 }
 
 export function readMayhemPerformanceDiagnosticsOptions() {
-  return normalizeOptions({
+  const options = normalizeOptions({
     ...safeReadStorage(),
     ...readQueryOptions()
   });
+  if (AUTO_DIAGNOSTICS_ENABLED) options.enabled = true;
+  return options;
 }
 
 export function isMayhemPerformanceOptionEnabled(option) {
@@ -138,7 +149,8 @@ function getCounts(scene) {
     particles: scene?.particleManager?.particles?.length || 0,
     scorePopups: scene?.scorePopupManager?.popups?.length || 0,
     bossHazards: scene?.bossHazards?.length || 0,
-    ambientBonusDrones: scene?.ambientBonusDrones?.length || 0
+    ambientBonusDrones: scene?.ambientBonusDrones?.length || 0,
+    collision: scene?.collisionDiagnosticStats || null
   };
 }
 
@@ -147,17 +159,27 @@ class MayhemPerformanceDiagnostics {
     this.scene = scene;
     this.options = readMayhemPerformanceDiagnosticsOptions();
     this.enabled = Boolean(this.options.enabled);
+    this.sessionId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(36).slice(2, 8)}`;
     this.samples = [];
     this.slowFrames = [];
     this.sections = new Map();
     this.frameStartedAt = 0;
     this.lastOverlayUpdateAt = 0;
+    this.lastReportWriteAt = 0;
+    this.lastWrittenSlowFrameCount = 0;
+    this.lastWriteResult = null;
+    this.reportWritePending = false;
+    this.periodicWriteInterval = null;
+    this.initialWriteTimeout = null;
     this.lastCounts = getCounts(scene);
     this.overlay = null;
     this.hotkeyHandler = this.handleHotkey.bind(this);
+    this.visibilityHandler = this.handleVisibilityChange.bind(this);
     this.installHotkeys();
+    this.installLifecycleFlush();
+    this.installPeriodicWrites();
     this.publishGlobal();
-    if (this.enabled) this.ensureOverlay();
+    if (this.enabled && this.options.showOverlay) this.ensureOverlay();
   }
 
   installHotkeys() {
@@ -166,9 +188,28 @@ class MayhemPerformanceDiagnostics {
     win.addEventListener('keydown', this.hotkeyHandler);
   }
 
+  installLifecycleFlush() {
+    const win = getWindow();
+    if (!win?.addEventListener) return;
+    win.addEventListener('pagehide', this.visibilityHandler);
+    win.document?.addEventListener?.('visibilitychange', this.visibilityHandler);
+  }
+
+  installPeriodicWrites() {
+    const win = getWindow();
+    if (!win?.setInterval || !this.enabled) return;
+    this.initialWriteTimeout = win.setTimeout?.(() => this.writeReport('initial_auto_flush'), 2500) || null;
+    this.periodicWriteInterval = win.setInterval(() => this.writeReport('periodic_auto_flush'), PERIODIC_WRITE_INTERVAL_MS);
+  }
+
   destroy() {
     const win = getWindow();
     if (win?.removeEventListener) win.removeEventListener('keydown', this.hotkeyHandler);
+    if (win?.removeEventListener) win.removeEventListener('pagehide', this.visibilityHandler);
+    win?.document?.removeEventListener?.('visibilitychange', this.visibilityHandler);
+    if (this.initialWriteTimeout && win?.clearTimeout) win.clearTimeout(this.initialWriteTimeout);
+    if (this.periodicWriteInterval && win?.clearInterval) win.clearInterval(this.periodicWriteInterval);
+    this.writeReport('scene_destroy');
     if (this.overlay?.parentNode) this.overlay.parentNode.removeChild(this.overlay);
     this.overlay = null;
     if (win?.[GLOBAL_KEY]?.owner === this) {
@@ -180,7 +221,7 @@ class MayhemPerformanceDiagnostics {
     if (!event?.ctrlKey || !event?.shiftKey) return;
     if (event.code === 'F8') {
       event.preventDefault?.();
-      this.setOptions({ enabled: !this.enabled });
+      this.setOptions({ showOverlay: !this.options.showOverlay });
       return;
     }
     const key = HOTKEYS[event.code];
@@ -199,15 +240,17 @@ class MayhemPerformanceDiagnostics {
       setOptions: (options = {}) => this.setOptions(options),
       enable: (options = {}) => this.setOptions({ ...options, enabled: true }),
       disable: () => this.setOptions({ enabled: false }),
-      reset: () => this.resetSamples()
+      reset: () => this.resetSamples(),
+      writeReport: (reason = 'manual') => this.writeReport(reason)
     };
   }
 
   setOptions(options = {}) {
     this.options = normalizeOptions({ ...this.options, ...options });
+    if (AUTO_DIAGNOSTICS_ENABLED) this.options.enabled = true;
     this.enabled = Boolean(this.options.enabled);
     safeWriteStorage(this.options);
-    if (this.enabled) {
+    if (this.enabled && this.options.showOverlay) {
       this.ensureOverlay();
       this.updateOverlay(true);
     } else if (this.overlay) {
@@ -220,6 +263,13 @@ class MayhemPerformanceDiagnostics {
     this.samples = [];
     this.slowFrames = [];
     this.sections.clear();
+  }
+
+  handleVisibilityChange() {
+    const win = getWindow();
+    if (win?.document?.visibilityState === 'hidden') {
+      this.writeReport('visibility_hidden');
+    }
   }
 
   beginFrame(delta, scene = this.scene) {
@@ -265,12 +315,60 @@ class MayhemPerformanceDiagnostics {
     };
     this.samples.push(sample);
     if (this.samples.length > 900) this.samples.shift();
-    if (elapsed >= 20) {
+    if (elapsed >= SLOW_FRAME_MS) {
       this.slowFrames.push(sample);
       if (this.slowFrames.length > 120) this.slowFrames.shift();
+      this.scheduleReportWrite(elapsed >= IMPORTANT_SLOW_FRAME_MS ? 'important_slow_frame' : 'slow_frame');
     }
     this.currentFrame = null;
     this.updateOverlay(false);
+  }
+
+  scheduleReportWrite(reason = 'scheduled') {
+    const now = Date.now();
+    if (
+      reason !== 'important_slow_frame' &&
+      now - this.lastReportWriteAt < AUTO_WRITE_INTERVAL_MS &&
+      this.slowFrames.length === this.lastWrittenSlowFrameCount
+    ) {
+      return;
+    }
+    if (this.reportWritePending) return;
+    this.reportWritePending = true;
+    setTimeout(() => {
+      this.reportWritePending = false;
+      this.writeReport(reason);
+    }, 0);
+  }
+
+  async writeReport(reason = 'manual') {
+    if (!this.enabled) return null;
+    const report = this.getReport();
+    const payload = {
+      ...report,
+      reason,
+      sessionId: this.sessionId,
+      buildId: this.scene?.game?.buildId || null,
+      generatedAt: new Date().toISOString()
+    };
+    const win = getWindow();
+    try {
+      win?.localStorage?.setItem?.(STORAGE_REPORT_KEY, JSON.stringify(payload));
+    } catch {
+      // Browser storage is best-effort only.
+    }
+    this.lastReportWriteAt = Date.now();
+    this.lastWrittenSlowFrameCount = this.slowFrames.length;
+    if (win?.__novaPerformanceDiagnostics?.writeReport) {
+      try {
+        this.lastWriteResult = await win.__novaPerformanceDiagnostics.writeReport(payload);
+      } catch (error) {
+        this.lastWriteResult = { ok: false, error: error?.message || String(error) };
+      }
+    } else {
+      this.lastWriteResult = { ok: false, reason: 'native_writer_unavailable' };
+    }
+    return this.lastWriteResult;
   }
 
   ensureOverlay() {
@@ -304,7 +402,7 @@ class MayhemPerformanceDiagnostics {
   }
 
   updateOverlay(force) {
-    if (!this.enabled) return;
+    if (!this.enabled || !this.options.showOverlay) return;
     const now = performance.now();
     if (!force && now - this.lastOverlayUpdateAt < 250) return;
     this.lastOverlayUpdateAt = now;
@@ -325,7 +423,8 @@ class MayhemPerformanceDiagnostics {
       `sector ${counts.sector} ${counts.runMode}  enemies ${counts.enemies}  bullets ${counts.playerBullets}/${counts.enemyBullets}`,
       `particles ${counts.particles}  popups ${counts.scorePopups}  hazards ${counts.bossHazards}`,
       `top ${top || 'collecting...'}`,
-      `toggles ${toggles}`
+      `toggles ${toggles}`,
+      `log ${this.lastWriteResult?.latestPath || this.lastWriteResult?.reason || 'pending'}`
     ].join('\n');
   }
 
@@ -346,6 +445,7 @@ class MayhemPerformanceDiagnostics {
       .sort((a, b) => b.lastMs - a.lastMs);
     return {
       enabled: this.enabled,
+      sessionId: this.sessionId,
       options: { ...this.options },
       sampleCount: this.samples.length,
       slowFrameCount: this.slowFrames.length,
@@ -355,9 +455,13 @@ class MayhemPerformanceDiagnostics {
         maxMs: roundMs(maxMs)
       },
       lastCounts: this.lastCounts,
+      lastWriteResult: this.lastWriteResult,
       topSections,
       recentSamples: this.samples.slice(-30),
-      recentSlowFrames: this.slowFrames.slice(-20)
+      recentSlowFrames: this.slowFrames.slice(-40),
+      worstSlowFrames: [...this.slowFrames]
+        .sort((a, b) => b.frameMs - a.frameMs)
+        .slice(0, 20)
     };
   }
 }

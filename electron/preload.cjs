@@ -17,6 +17,10 @@ const APP_CHANNELS = {
   exitGame: 'nova-app:exitGame'
 };
 
+const PERFORMANCE_DIAGNOSTICS_CHANNELS = {
+  writeReport: 'nova-performance-diagnostics:writeReport'
+};
+
 const DISPLAY_CHANNELS = {
   getSettings: 'nova-display:getSettings',
   getInfo: 'nova-display:getInfo',
@@ -105,6 +109,10 @@ contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
 
 contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
   exitGame: (payload) => invoke(APP_CHANNELS.exitGame, payload)
+}));
+
+contextBridge.exposeInMainWorld('__novaPerformanceDiagnostics', Object.freeze({
+  writeReport: (payload) => invoke(PERFORMANCE_DIAGNOSTICS_CHANNELS.writeReport, payload)
 }));
 
 contextBridge.exposeInMainWorld('__novaDisplay', Object.freeze({

@@ -125,6 +125,29 @@ function registerAppIpc() {
     setImmediate(() => app.quit());
     return { ok: true };
   });
+
+  ipcMain.handle('nova-performance-diagnostics:writeReport', async (_event, payload = {}) => {
+    try {
+      const root = path.join(app.getPath('userData'), 'performance-diagnostics');
+      fs.mkdirSync(root, { recursive: true });
+      const sessionId = String(payload.sessionId || 'session')
+        .replace(/[^a-z0-9_-]/gi, '-')
+        .slice(0, 80) || 'session';
+      const report = {
+        writtenAt: new Date().toISOString(),
+        source: 'nova-performance-diagnostics',
+        ...JSON.parse(JSON.stringify(payload || {}))
+      };
+      const sessionPath = path.join(root, `run-collision-diagnostics-${sessionId}.json`);
+      const latestPath = path.join(root, 'run-collision-diagnostics-latest.json');
+      const text = `${JSON.stringify(report, null, 2)}\n`;
+      fs.writeFileSync(sessionPath, text, 'utf8');
+      fs.writeFileSync(latestPath, text, 'utf8');
+      return { ok: true, sessionPath, latestPath };
+    } catch (error) {
+      return { ok: false, error: error?.message || String(error) };
+    }
+  });
 }
 
 function registerDisplayIpc(window) {
