@@ -19,6 +19,15 @@ const DEFAULT_MULTIPLIERS = Object.freeze({
   contentRarityMult: 1
 });
 
+const MAYHEM_RC_NORMAL_WAVE_MULTIPLIERS = Object.freeze({
+  ...DEFAULT_MULTIPLIERS,
+  fireChanceMult: 1.05,
+  projectileSpeedMult: 1.05,
+  enemySpeedMult: 1.05,
+  eliteChanceMult: 1.05,
+  specialThreatMult: 1.05
+});
+
 export const RUN_MODE_PROFILES = Object.freeze({
   [RUN_MODES.RANKED]: Object.freeze({
     id: RUN_MODES.RANKED,
@@ -37,7 +46,9 @@ export const RUN_MODE_PROFILES = Object.freeze({
     difficultyProfileId: 'accepted_harder_ranked',
     normalWaveDifficultyLevelOffsetDelta: 0,
     bossDifficultyMult: 1,
-    pressureMultipliers: DEFAULT_MULTIPLIERS
+    bossAttackDangerMult: 1,
+    normalWaveAggressionMult: 1.05,
+    pressureMultipliers: MAYHEM_RC_NORMAL_WAVE_MULTIPLIERS
   }),
   [RUN_MODES.SCOUT]: Object.freeze({
     id: RUN_MODES.SCOUT,
@@ -56,6 +67,8 @@ export const RUN_MODE_PROFILES = Object.freeze({
     difficultyProfileId: 'scout_lower_pressure_v1',
     normalWaveDifficultyLevelOffsetDelta: -5,
     bossDifficultyMult: 0.75,
+    bossAttackDangerMult: 0.85,
+    normalWaveAggressionMult: 1,
     pressureMultipliers: Object.freeze({
       fireChanceMult: 0.72,
       projectileSpeedMult: 0.82,
@@ -84,6 +97,8 @@ export const RUN_MODE_PROFILES = Object.freeze({
     difficultyProfileId: 'sector_checkpoint_practice_v1',
     normalWaveDifficultyLevelOffsetDelta: 0,
     bossDifficultyMult: 1,
+    bossAttackDangerMult: 1,
+    normalWaveAggressionMult: 1,
     pressureMultipliers: DEFAULT_MULTIPLIERS
   }),
   [RUN_MODES.UNRANKED]: Object.freeze({
@@ -103,6 +118,8 @@ export const RUN_MODE_PROFILES = Object.freeze({
     difficultyProfileId: 'debug_unranked',
     normalWaveDifficultyLevelOffsetDelta: 0,
     bossDifficultyMult: 1,
+    bossAttackDangerMult: 1,
+    normalWaveAggressionMult: 1,
     pressureMultipliers: DEFAULT_MULTIPLIERS
   })
 });

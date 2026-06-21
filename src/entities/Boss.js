@@ -1431,6 +1431,13 @@ export class Boss {
     return clamp(finiteNumber(profile?.bossDifficultyMult, 1), 0.1, 2);
   }
 
+  getRunModeBossAttackDangerMultiplier() {
+    const profile = this.game?.getRunModeProfile?.() || null;
+    const hpMultiplier = this.getRunModeBossDifficultyMultiplier();
+    const attackMultiplier = clamp(finiteNumber(profile?.bossAttackDangerMult, 1), 0.1, 2);
+    return clamp(hpMultiplier * attackMultiplier, 0.1, 2);
+  }
+
   getBossProfileRelief() {
     const fairness = BalanceConfig.difficulty?.bossFairness || {};
     const profile = this.profile || getBossProfile(this.level);
@@ -1474,7 +1481,7 @@ export class Boss {
     const openingDelayScalar = this.level <= 1 ? 1.55 : this.level === 2 ? 1.2 : 1;
     return (baseDelay * openingDelayScalar) / (
       this.getCombinedBossDifficultyScalar() *
-      this.getRunModeBossDifficultyMultiplier()
+      this.getRunModeBossAttackDangerMultiplier()
     );
   }
 
@@ -1490,7 +1497,7 @@ export class Boss {
     return Math.min(
       diff.bossProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
       baseSpeed + levelScale * (diff.bossProjectileSpeedPerLevel ?? 0)
-    ) * (fairness.globalProjectileMultiplier ?? 1) * this.getRunModeBossDifficultyMultiplier();
+    ) * (fairness.globalProjectileMultiplier ?? 1) * this.getRunModeBossAttackDangerMultiplier();
   }
 
   getBossAttackSpeedMultiplier(attackType = 'normal') {
@@ -1516,7 +1523,7 @@ export class Boss {
     const reliefMult = clamp(this.getBossProfileReliefNumber('regularAttackIntervalMult', 1), 0.5, 2);
     return Math.round(((base * phaseScalar * chaosRelief) / (
       this.getCombinedBossDifficultyScalar() *
-      this.getRunModeBossDifficultyMultiplier()
+      this.getRunModeBossAttackDangerMultiplier()
     )) * reliefMult);
   }
 

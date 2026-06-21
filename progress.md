@@ -1,5 +1,12 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-21 Release Candidate Final Tuning
+
+- Current request: prepare a possible release-candidate private build from the accepted Mayhem performance line after BuildID `23845237`, keeping realtime high-score chase and menu exit fixes intact unless focused checks fail.
+- Scout boss tuning: keep the existing Scout boss HP multiplier exactly at `0.75`, but add a Scout-only `bossAttackDangerMult: 0.85` so boss projectile speed and attack cadence become 15% less dangerous without reducing boss HP again. Mayhem and Sector Run boss attack multipliers stay `1`.
+- Mayhem normal-wave tuning: add Mayhem-only `normalWaveAggressionMult: 1.05` by applying `1.05` to normal-wave fire chance, projectile speed, enemy speed, elite chance, and special-threat pressure. Score, sustain, content rarity, bosses, Sector Run, and Scout waves are unchanged by this tuning.
+- Guardrail proof direction: `npm run check:mayhem-scout-difficulty-delta` now proves Scout boss HP remains around the existing 25% reduction while attack danger is about `0.6375` of Mayhem, and proves Mayhem bosses stay baseline while normal-wave pressure is 5% higher.
+
 ## 2026-06-21 Mayhem/Sector Frame Pacing
 
 - Current request: investigate Mayhem Run microstutter visible in `performance-video/mayhem_run.mp4` compared with smoother `sector_run.mp4`, preserve the harder ranked baseline, and deploy only after a measured source fix.

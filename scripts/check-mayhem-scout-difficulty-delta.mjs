@@ -99,6 +99,14 @@ function runModeBossDifficultyMult(mode) {
   return Math.max(0.1, Math.min(2, finite(getRunModeProfile(mode).bossDifficultyMult, 1)));
 }
 
+function runModeBossAttackDangerMult(mode) {
+  const profile = getRunModeProfile(mode);
+  return Math.max(0.1, Math.min(2,
+    runModeBossDifficultyMult(mode) *
+    Math.max(0.1, Math.min(2, finite(profile.bossAttackDangerMult, 1)))
+  ));
+}
+
 function bossHp(sector, mode = RUN_MODES.RANKED, config = BalanceConfig) {
   const diff = config.difficulty;
   const rawHealth = Math.round((diff.bossBaseHealth ?? 40) + Math.max(0, sector - 1) * (diff.bossHealthPerLevel ?? 3.6));
@@ -137,7 +145,7 @@ function bossShootDelay(sector, phase, mode = RUN_MODES.RANKED, config = Balance
   const earlyScalar = sector <= earlyMaxLevel
     ? Math.max(0.1, Number(diff.bossEarlyDifficultyScalar) || 1)
     : 1;
-  return (baseDelay * openingDelayScalar) / (postFirstScalar * earlyScalar * runModeBossDifficultyMult(mode));
+  return (baseDelay * openingDelayScalar) / (postFirstScalar * earlyScalar * runModeBossAttackDangerMult(mode));
 }
 
 function bossProjectileSpeed(sector, phase, mode = RUN_MODES.RANKED, config = BalanceConfig) {
@@ -151,7 +159,7 @@ function bossProjectileSpeed(sector, phase, mode = RUN_MODES.RANKED, config = Ba
   return Math.min(
     diff.bossProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
     baseSpeed + Math.max(0, sector - 1) * (diff.bossProjectileSpeedPerLevel ?? 0)
-  ) * finite(fairness.globalProjectileMultiplier, 1) * runModeBossDifficultyMult(mode);
+  ) * finite(fairness.globalProjectileMultiplier, 1) * runModeBossAttackDangerMult(mode);
 }
 
 function starterShipDps() {
@@ -281,13 +289,14 @@ function metricForMode(mode, sector, seed) {
       sector,
       hp: bossHp(sector, mode),
       difficultyMult: runModeBossDifficultyMult(mode),
+      attackDangerMult: runModeBossAttackDangerMult(mode),
       phase1ShootDelay: round(bossShootDelay(sector, 1, mode), 3),
       phase2ShootDelay: round(bossShootDelay(sector, 2, mode), 3),
       phase3ShootDelay: round(bossShootDelay(sector, 3, mode), 3),
       phase1ProjectileSpeed: round(bossProjectileSpeed(sector, 1, mode), 3),
       phase2ProjectileSpeed: round(bossProjectileSpeed(sector, 2, mode), 3),
       phase3ProjectileSpeed: round(bossProjectileSpeed(sector, 3, mode), 3),
-      changedByRunMode: runModeBossDifficultyMult(mode) !== 1
+      changedByRunMode: runModeBossDifficultyMult(mode) !== 1 || runModeBossAttackDangerMult(mode) !== 1
     },
     pressureMultipliers: multipliers
   };
@@ -423,6 +432,8 @@ function actualProfile(mode) {
     updatesCareerProgress: profile.updatesCareerProgress,
     normalWaveDifficultyLevelOffsetDelta: profile.normalWaveDifficultyLevelOffsetDelta,
     bossDifficultyMult: profile.bossDifficultyMult,
+    bossAttackDangerMult: profile.bossAttackDangerMult,
+    normalWaveAggressionMult: profile.normalWaveAggressionMult,
     pressureMultipliers: profile.pressureMultipliers
   };
 }
@@ -435,6 +446,16 @@ function assertRunModeRules() {
   assert.equal(mayhemProfile.difficultyProfileId, 'accepted_harder_ranked');
   assert.equal(mayhemProfile.normalWaveDifficultyLevelOffsetDelta, 0);
   assert.equal(mayhemProfile.bossDifficultyMult, 1);
+  assert.equal(mayhemProfile.bossAttackDangerMult, 1);
+  assert.equal(mayhemProfile.normalWaveAggressionMult, 1.05);
+  assert.equal(mayhemProfile.pressureMultipliers.fireChanceMult, 1.05);
+  assert.equal(mayhemProfile.pressureMultipliers.projectileSpeedMult, 1.05);
+  assert.equal(mayhemProfile.pressureMultipliers.enemySpeedMult, 1.05);
+  assert.equal(mayhemProfile.pressureMultipliers.eliteChanceMult, 1.05);
+  assert.equal(mayhemProfile.pressureMultipliers.specialThreatMult, 1.05);
+  assert.equal(mayhemProfile.pressureMultipliers.scoreMult, 1);
+  assert.equal(mayhemProfile.pressureMultipliers.sustainMult, 1);
+  assert.equal(mayhemProfile.pressureMultipliers.contentRarityMult, 1);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.RANKED), true);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.RANKED), true);
 
@@ -442,6 +463,8 @@ function assertRunModeRules() {
   assert.notEqual(scoutProfile.normalWaveDifficultyLevelOffsetDelta, mayhemProfile.normalWaveDifficultyLevelOffsetDelta);
   assert.equal(scoutProfile.normalWaveDifficultyLevelOffsetDelta, -5);
   assert.equal(scoutProfile.bossDifficultyMult, 0.75);
+  assert.equal(scoutProfile.bossAttackDangerMult, 0.85);
+  assert.equal(runModeBossAttackDangerMult(RUN_MODES.SCOUT), 0.6375);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.SCOUT), false);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.SCOUT), false);
   assert.equal(scoutProfile.submitsLocalLeaderboard, false);
@@ -450,6 +473,11 @@ function assertRunModeRules() {
 
   const sectorProfile = getRunModeProfile(RUN_MODES.SECTOR_START);
   assert.equal(sectorProfile.bossDifficultyMult, 1);
+  assert.equal(sectorProfile.bossAttackDangerMult, 1);
+  assert.equal(sectorProfile.normalWaveAggressionMult, 1);
+  assert.equal(sectorProfile.pressureMultipliers.fireChanceMult, 1);
+  assert.equal(sectorProfile.pressureMultipliers.projectileSpeedMult, 1);
+  assert.equal(sectorProfile.pressureMultipliers.enemySpeedMult, 1);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.SECTOR_START), false);
   assert.equal(sectorProfile.submitsGlobalLeaderboard, false);
   assert.equal(getSectorStartPlaySector(5), 5);
@@ -490,10 +518,15 @@ function assertDifficultyDelta(comparisons) {
     assert.ok(row.scoutVsMayhem.specialThreatPressureRatio < 1, `${label}: Scout special threat pressure should be lower`);
     assert.ok(row.scoutVsMayhem.bossHpRatio <= 0.77, `${label}: Scout boss HP should be about 25% lower`);
     assert.ok(row.scoutVsMayhem.bossHpRatio >= 0.72, `${label}: Scout boss HP reduction should stay near 25%`);
-    assert.equal(row.scoutVsMayhem.bossProjectileSpeedRatio, 0.75, `${label}: Scout boss projectile speed should be 75% of Mayhem`);
-    assert.ok(row.scoutVsMayhem.bossShootDelayRatio > 1.3, `${label}: Scout boss firing delay should be slower than Mayhem`);
+    assert.ok(
+      row.scoutVsMayhem.bossProjectileSpeedRatio >= 0.637 && row.scoutVsMayhem.bossProjectileSpeedRatio <= 0.638,
+      `${label}: Scout boss projectile speed should include the extra 15% attack relief`
+    );
+    assert.ok(row.scoutVsMayhem.bossShootDelayRatio > 1.55, `${label}: Scout boss firing delay should include the extra 15% attack relief`);
     assert.equal(row.mayhem.boss.difficultyMult, 1, `${label}: Mayhem boss multiplier must stay baseline`);
+    assert.equal(row.mayhem.boss.attackDangerMult, 1, `${label}: Mayhem boss attack danger must stay baseline`);
     assert.equal(row.scout.boss.difficultyMult, 0.75, `${label}: Scout boss multiplier must be 0.75`);
+    assert.equal(row.scout.boss.attackDangerMult, 0.6375, `${label}: Scout boss attack danger should be 15% lower than the existing Scout boss multiplier`);
     assert.equal(row.scout.boss.changedByRunMode, true, `${label}: Scout boss params should be mode-modified`);
   }
 }
@@ -534,9 +567,12 @@ const report = {
   oldBaseline,
   conclusion: {
     scoutMeaningfullyEasier: true,
-    scoutBossesReducedBy25Percent: true,
+    scoutBossHpPreservedAtExisting25PercentReduction: true,
+    scoutBossAttackDangerReducedByAdditional15Percent: true,
+    mayhemNormalWavesFivePercentMoreAggressive: true,
+    mayhemBossesUnchanged: true,
     balanceCodeChangedByThisCheck: true,
-    recommendation: 'Keep scout_lower_pressure_v1 with Scout bossDifficultyMult 0.75; validate boss feel manually against Mayhem.'
+    recommendation: 'Keep Scout boss HP at bossDifficultyMult 0.75, apply bossAttackDangerMult 0.85 for attacks only, and validate Mayhem normal-wave feel manually.'
   }
 };
 
