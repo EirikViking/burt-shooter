@@ -564,6 +564,8 @@ export class Game {
     const base = Number(points) || 0;
     const gameMult = Number(this.scoreMultiplier) || 1;
     const playScene = this.scenes?.play;
+    const diagnostics = playScene?.performanceDiagnostics;
+    const measurePerformance = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
     const playerMult = playScene?.player?.scoreMultiplier || 1;
     const preDangerAward = normalizeScoreDelta(base, gameMult * playerMult);
     const applied = this.getScoreAward(points);
@@ -589,7 +591,7 @@ export class Game {
     if (deferProgress) {
       playScene.requestDeferredLiveRankRefresh?.();
     } else {
-      this.updateLiveRunRank({ force: true });
+      measurePerformance('rank_highscore_cue_update.live_rank', () => this.updateLiveRunRank({ force: true }));
     }
     const computedRank = this.rankIndex;
 
@@ -602,8 +604,8 @@ export class Game {
     if (deferProgress) {
       playScene.requestDeferredScoreCueRefresh?.();
     } else {
-      this.updateGlobalLeaderboardVoiceCues();
-      this.updateHighscoreChaseCues();
+      measurePerformance('rank_highscore_cue_update.global_leaderboard', () => this.updateGlobalLeaderboardVoiceCues());
+      measurePerformance('rank_highscore_cue_update.highscore_chase', () => this.updateHighscoreChaseCues());
     }
     return applied;
   }

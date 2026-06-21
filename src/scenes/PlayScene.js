@@ -1127,6 +1127,11 @@ export class PlayScene {
   }
 
   startLevel(source = 'unknown') {
+    const measurePerformance = this.performanceDiagnostics?.measure?.bind(this.performanceDiagnostics) || ((_label, callback) => callback());
+    this.performanceDiagnostics?.mark?.('level_start.scene_begin', {
+      source,
+      level: this.game?.level || 1
+    });
     if (this.game?.currentScene && this.game.currentScene !== this) {
       return;
     }
@@ -1176,15 +1181,17 @@ export class PlayScene {
       this.shownCabinetLogIds.clear();
     }
 
-    this.prewarmLevelEntryAssets(this.game.level, { ahead: 2 }).catch((error) => {
-      console.warn('[PlayScene] level entry asset prewarm failed:', error);
+    measurePerformance('first_use_asset_effect_creation.level_entry_prewarm_start', () => {
+      this.prewarmLevelEntryAssets(this.game.level, { ahead: 2 }).catch((error) => {
+        console.warn('[PlayScene] level entry asset prewarm failed:', error);
+      });
     });
     const showArrivalStinger = this.shouldShowSectorArrivalStinger(this.game.level);
     const enemyStartDelayMs = showArrivalStinger
       ? this.getSectorArrivalStingerDuration({ postBoss: postBossLevelIntro }) + 120
       : 0;
-    this.showSectorArrivalStinger({ postBoss: postBossLevelIntro });
-    this.showLevelIntro({ postBoss: postBossLevelIntro });
+    measurePerformance('incoming_wave_banner.sector_arrival', () => this.showSectorArrivalStinger({ postBoss: postBossLevelIntro }));
+    measurePerformance('incoming_wave_banner.level_intro', () => this.showLevelIntro({ postBoss: postBossLevelIntro }));
     this.scheduleEnemyStartForLevel(this.game.level, {
       startAtBoss,
       delayMs: enemyStartDelayMs,
@@ -1390,17 +1397,20 @@ export class PlayScene {
   }
 
   prewarmLevelEntryAssets(level = this.game?.level || 1, { ahead = 1 } = {}) {
-    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
-    const aheadCount = Math.max(0, Math.min(4, Math.floor(Number(ahead) || 0)));
-    const key = `${safeLevel}:${aheadCount}:${this.shipCatalogLoaded ? 'ships' : 'art'}`;
-    if (!this.entryAssetWarmupCache.has(key)) {
-      const warmup = Promise.allSettled([
-        this.preloadSectorArrivalArt(safeLevel, { ahead: aheadCount }),
-        this.prewarmGeneratedEnemyTexturesForLevel(safeLevel, { aheadLevels: aheadCount })
-      ]).then(() => true);
-      this.entryAssetWarmupCache.set(key, warmup);
-    }
-    return this.entryAssetWarmupCache.get(key);
+    const measurePerformance = this.performanceDiagnostics?.measure?.bind(this.performanceDiagnostics) || ((_label, callback) => callback());
+    return measurePerformance('first_use_asset_effect_creation.level_entry_prewarm_start', () => {
+      const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+      const aheadCount = Math.max(0, Math.min(4, Math.floor(Number(ahead) || 0)));
+      const key = `${safeLevel}:${aheadCount}:${this.shipCatalogLoaded ? 'ships' : 'art'}`;
+      if (!this.entryAssetWarmupCache.has(key)) {
+        const warmup = Promise.allSettled([
+          this.preloadSectorArrivalArt(safeLevel, { ahead: aheadCount }),
+          this.prewarmGeneratedEnemyTexturesForLevel(safeLevel, { aheadLevels: aheadCount })
+        ]).then(() => true);
+        this.entryAssetWarmupCache.set(key, warmup);
+      }
+      return this.entryAssetWarmupCache.get(key);
+    });
   }
 
   clearBackgroundLevelEntryWarmup() {
@@ -1832,7 +1842,9 @@ export class PlayScene {
       });
       if (!perfOptions?.noScorePopups) {
         measure('score_popups', () => {
-          if (this.scorePopupManager) this.scorePopupManager.update(delta);
+          measure('score_combo_popup_cleanup', () => {
+            if (this.scorePopupManager) this.scorePopupManager.update(delta);
+          });
         });
       }
 
@@ -7524,6 +7536,7 @@ export class PlayScene {
   }
 
   flushDeferredHotPathProgress() {
+    const measurePerformance = this.performanceDiagnostics?.measure?.bind(this.performanceDiagnostics) || ((_label, callback) => callback());
     const awards = this.deferredHotPathScoreAwards || {};
     this.deferredHotPathScoreAwards = {};
     for (const [source, points] of Object.entries(awards)) {
@@ -7540,12 +7553,12 @@ export class PlayScene {
     }
     if (this.deferredLiveRankRefreshRequested) {
       this.deferredLiveRankRefreshRequested = false;
-      this.game?.updateLiveRunRank?.({ force: true });
+      measurePerformance('rank_highscore_cue_update.live_rank', () => this.game?.updateLiveRunRank?.({ force: true }));
     }
     if (this.deferredScoreCueRefreshRequested) {
       this.deferredScoreCueRefreshRequested = false;
-      this.game?.updateGlobalLeaderboardVoiceCues?.();
-      this.game?.updateHighscoreChaseCues?.();
+      measurePerformance('rank_highscore_cue_update.global_leaderboard', () => this.game?.updateGlobalLeaderboardVoiceCues?.());
+      measurePerformance('rank_highscore_cue_update.highscore_chase', () => this.game?.updateHighscoreChaseCues?.());
     }
     return {
       progressFlushed: Boolean(progress),

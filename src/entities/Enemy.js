@@ -928,6 +928,12 @@ export class Enemy {
       this.eliteAbility.state = 'telegraph';
       this.eliteAbility.startedAt = now;
       this.eliteAbility.triggered = false;
+      this.game?.scenes?.play?.performanceDiagnostics?.mark?.('elite_signal_start', {
+        kind: 'elite_ability',
+        id: profile.id,
+        level: this.level,
+        waveSlot: this.waveSlot
+      });
       AudioManager.playSfx(profile.sfx?.charge || 'elite_special_charge', { volume: 0.42, minIntervalMs: 360 });
     }
 
@@ -1285,6 +1291,12 @@ export class Enemy {
       };
       this.threatTelegraphStartedAt = now;
       this.threatActionLockedTarget = locked;
+      this.game?.scenes?.play?.performanceDiagnostics?.mark?.('boss_event_telegraph_start', {
+        kind: 'enemy_threat',
+        id: action.id,
+        level: this.level,
+        waveSlot: this.waveSlot
+      });
       AudioManager.playSfx('enemy_threat_soft_warn', { volume: 0.12, minIntervalMs: 1800 });
     }
 

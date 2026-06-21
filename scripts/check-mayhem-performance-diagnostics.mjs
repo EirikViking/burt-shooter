@@ -116,8 +116,56 @@ try {
   });
   await page.goto(`${baseUrl}?novaPerfDiag=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await startMayhem(page);
+  const transitionProbe = await page.evaluate(async () => {
+    window.__game?.addScore?.(1234, 'baseScore');
+    const play = window.__game?.scenes?.play;
+    const manager = play?.enemyManager;
+    if (manager?.startLevel && (!Array.isArray(manager.waves) || manager.waves.length === 0)) {
+      manager.startLevel(Math.max(1, Math.floor(Number(window.__game?.level) || 1)));
+    }
+    await play?.prewarmLevelEntryAssets?.((window.__game?.level || 1) + 1, { ahead: 1 });
+    if (manager?.announceWaveBriefing) {
+      manager.pendingWaveConfig = manager.pendingWaveConfig || manager.waves?.[manager.currentWaveIndex] || manager.waves?.[0] || null;
+      manager.announceWaveBriefing();
+    }
+    const spawnConfig = manager?.waves?.[manager.currentWaveIndex]
+      || manager?.waves?.find?.((wave) => wave?.type !== 'BOSS')
+      || manager?.waves?.[0]
+      || null;
+    const beforeLabels = window.__novaMayhemPerformanceDiagnostics?.getReport?.()?.topSections?.map?.((section) => section.label) || [];
+    let spawnAttempted = false;
+    let spawnError = null;
+    if (manager?.spawnWave && spawnConfig) {
+      spawnAttempted = true;
+      try {
+        manager.spawnWave({
+          ...spawnConfig,
+          type: spawnConfig.type === 'BOSS' ? 'BASIC' : spawnConfig.type,
+          count: Math.min(2, Math.max(1, Number(spawnConfig.count) || 1))
+        });
+      } catch (error) {
+        spawnError = error?.stack || error?.message || String(error);
+      }
+    }
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const afterLabels = window.__novaMayhemPerformanceDiagnostics?.getReport?.()?.topSections?.map?.((section) => section.label) || [];
+    return {
+      hasManager: Boolean(manager),
+      managerState: manager?.state || null,
+      currentWaveIndex: manager?.currentWaveIndex ?? null,
+      waveCount: Array.isArray(manager?.waves) ? manager.waves.length : null,
+      firstWaveType: manager?.waves?.[0]?.type || null,
+      spawnConfigType: spawnConfig?.type || null,
+      spawnConfigCount: spawnConfig?.count ?? null,
+      spawnAttempted,
+      spawnError,
+      addedLabels: afterLabels.filter((label) => !beforeLabels.includes(label))
+    };
+  });
   await page.waitForFunction(() => window.__novaMayhemPerformanceDiagnostics?.getReport?.()?.sampleCount > 20, null, { timeout: 12000 });
   const initialReport = await page.evaluate(() => window.__novaMayhemPerformanceDiagnostics.getReport());
+  reports.transitionProbe = transitionProbe;
+  reports.initialReport = initialReport;
   const sectionLabels = initialReport.topSections.map((section) => section.label);
   for (const required of [
     'frame_start',
@@ -125,6 +173,7 @@ try {
     'bullets',
     'enemies',
     'hud',
+    'hud.highscore_chase_realtime',
     'starfield',
     'collisions',
     'collision.player_bullets_enemies',
@@ -141,15 +190,28 @@ try {
     'collision.side_effects.audio',
     'collision.side_effects.powerups',
     'collision.side_effects.ui_feedback',
+    'score_combo_popup_cleanup',
     'deferred_progression.score_progress',
     'deferred_progression.threat_defeats',
-    'deferred_visual_feedback.collision_ui'
+    'deferred_visual_feedback.collision_ui',
+    'rank_highscore_cue_update.live_rank',
+    'rank_highscore_cue_update.global_leaderboard',
+    'rank_highscore_cue_update.highscore_chase',
+    'first_use_asset_effect_creation.level_entry_prewarm_start',
+    'incoming_wave_banner',
+    'next_wave_spawn_planning',
+    'enemy_batch_creation',
+    'enemy_generation.create_enemy',
+    'wave_spawn.discovery_hooks'
   ]) {
     assert.ok(sectionLabels.includes(required), `diagnostics should record ${required}`);
   }
   assert.equal(initialReport.enabled, true, 'diagnostics should enable by explicit URL flag');
   assert.equal(initialReport.options.showOverlay, false, 'diagnostic overlay should stay hidden by default while auto logging');
   assert.ok(initialReport.frame.maxMs >= 0, 'diagnostics should report max frame timing');
+  assert.ok(initialReport.frame.preFrameGapMaxMs >= 0, 'diagnostics should report pre-frame gap timing');
+  assert.ok('worstSlowFrame' in initialReport, 'diagnostics should expose a latched worst slow frame slot');
+  assert.ok(Array.isArray(initialReport.recentEvents), 'diagnostics should include transition/event markers');
   assert.ok(initialReport.lastCounts.sector >= 1, 'diagnostics should report sector count');
   assert.ok(initialReport.lastCounts.runMode === 'ranked', 'diagnostics should report Mayhem run mode');
   assert.ok(initialReport.lastCounts.collision, 'diagnostics should attach collision counters to frame counts');

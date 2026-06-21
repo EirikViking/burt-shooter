@@ -186,6 +186,10 @@ function getFrameTopSections(sections = {}) {
     .sort((a, b) => b.ms - a.ms);
 }
 
+function getSlowFrameCost(sample = {}) {
+  return Math.max(Number(sample.frameMs) || 0, Number(sample.preFrameGapMs) || 0);
+}
+
 class MayhemPerformanceDiagnostics {
   constructor(scene) {
     this.scene = scene;
@@ -196,6 +200,7 @@ class MayhemPerformanceDiagnostics {
     this.slowFrames = [];
     this.sections = new Map();
     this.frameStartedAt = 0;
+    this.previousFrameStartedAt = 0;
     this.lastOverlayUpdateAt = 0;
     this.lastReportWriteAt = 0;
     this.lastWrittenSlowFrameCount = 0;
@@ -204,6 +209,8 @@ class MayhemPerformanceDiagnostics {
     this.periodicWriteInterval = null;
     this.initialWriteTimeout = null;
     this.lastCounts = getCounts(scene);
+    this.pendingEvents = [];
+    this.eventLog = [];
     this.overlay = null;
     this.hotkeyHandler = this.handleHotkey.bind(this);
     this.visibilityHandler = this.handleVisibilityChange.bind(this);
@@ -272,6 +279,7 @@ class MayhemPerformanceDiagnostics {
       setOptions: (options = {}) => this.setOptions(options),
       enable: (options = {}) => this.setOptions({ ...options, enabled: true }),
       disable: () => this.setOptions({ enabled: false }),
+      mark: (label, details = {}) => this.mark(label, details),
       reset: () => this.resetSamples(),
       writeReport: (reason = 'manual') => this.writeReport(reason)
     };
@@ -295,6 +303,8 @@ class MayhemPerformanceDiagnostics {
     this.samples = [];
     this.slowFrames = [];
     this.sections.clear();
+    this.pendingEvents = [];
+    this.eventLog = [];
   }
 
   handleVisibilityChange() {
@@ -306,14 +316,18 @@ class MayhemPerformanceDiagnostics {
 
   beginFrame(delta, scene = this.scene) {
     if (!this.enabled) return;
+    const previousStartedAt = this.previousFrameStartedAt;
     this.frameStartedAt = performance.now();
+    this.previousFrameStartedAt = this.frameStartedAt;
     this.lastCounts = getCounts(scene);
     this.currentFrame = {
       delta: roundMs(delta),
       startedAt: this.frameStartedAt,
+      preFrameGapMs: previousStartedAt > 0 ? roundMs(this.frameStartedAt - previousStartedAt) : 0,
       counts: this.lastCounts,
       memory: getMemorySignal(),
-      sections: {}
+      sections: {},
+      events: this.pendingEvents.splice(0, 24)
     };
   }
 
@@ -338,6 +352,24 @@ class MayhemPerformanceDiagnostics {
     if (this.currentFrame) this.currentFrame.sections[label] = roundMs(elapsed);
   }
 
+  mark(label, details = {}) {
+    if (!this.enabled || !label) return;
+    const event = {
+      label: String(label),
+      at: roundMs(performance.now()),
+      counts: getCounts(this.scene),
+      details: details && typeof details === 'object' ? { ...details } : {}
+    };
+    if (this.currentFrame) {
+      this.currentFrame.events = [...(this.currentFrame.events || []), event].slice(-24);
+    } else {
+      this.pendingEvents.push(event);
+      if (this.pendingEvents.length > 48) this.pendingEvents.shift();
+    }
+    this.eventLog.push(event);
+    if (this.eventLog.length > 180) this.eventLog.shift();
+  }
+
   endFrame(scene = this.scene) {
     if (!this.enabled || !this.currentFrame) return;
     const elapsed = performance.now() - this.frameStartedAt;
@@ -350,10 +382,10 @@ class MayhemPerformanceDiagnostics {
     };
     this.samples.push(sample);
     if (this.samples.length > 900) this.samples.shift();
-    if (elapsed >= SLOW_FRAME_MS) {
+    if (elapsed >= SLOW_FRAME_MS || sample.preFrameGapMs >= SLOW_FRAME_MS) {
       this.slowFrames.push(sample);
       if (this.slowFrames.length > 120) this.slowFrames.shift();
-      this.scheduleReportWrite(elapsed >= IMPORTANT_SLOW_FRAME_MS ? 'important_slow_frame' : 'slow_frame');
+      this.scheduleReportWrite(getSlowFrameCost(sample) >= IMPORTANT_SLOW_FRAME_MS ? 'important_slow_frame' : 'slow_frame');
     }
     this.currentFrame = null;
     this.updateOverlay(false);
@@ -465,6 +497,7 @@ class MayhemPerformanceDiagnostics {
 
   getReport() {
     const frameValues = this.samples.map((sample) => sample.frameMs);
+    const preFrameGapValues = this.samples.map((sample) => Number(sample.preFrameGapMs) || 0);
     const maxMs = frameValues.length ? Math.max(...frameValues) : 0;
     const avgMs = frameValues.length
       ? frameValues.reduce((sum, value) => sum + value, 0) / frameValues.length
@@ -487,16 +520,21 @@ class MayhemPerformanceDiagnostics {
       frame: {
         avgMs: roundMs(avgMs),
         p95Ms: roundMs(percentile(frameValues, 95)),
-        maxMs: roundMs(maxMs)
+        maxMs: roundMs(maxMs),
+        preFrameGapP95Ms: roundMs(percentile(preFrameGapValues, 95)),
+        preFrameGapMaxMs: roundMs(preFrameGapValues.length ? Math.max(...preFrameGapValues) : 0)
       },
       lastCounts: this.lastCounts,
       lastWriteResult: this.lastWriteResult,
       topSections,
+      recentEvents: this.eventLog.slice(-60),
       recentSamples: this.samples.slice(-30),
       recentSlowFrames: this.slowFrames.slice(-40),
       worstSlowFrames: [...this.slowFrames]
-        .sort((a, b) => b.frameMs - a.frameMs)
-        .slice(0, 20)
+        .sort((a, b) => getSlowFrameCost(b) - getSlowFrameCost(a))
+        .slice(0, 20),
+      worstSlowFrame: [...this.slowFrames]
+        .sort((a, b) => getSlowFrameCost(b) - getSlowFrameCost(a))[0] || null
     };
   }
 }

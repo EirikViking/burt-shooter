@@ -357,7 +357,9 @@ export class HUD {
 
     this.updateActivePowerup();
     this.updateTraitMeter();
-    this.updateHighscoreChase();
+    const diagnostics = this.game?.scenes?.play?.performanceDiagnostics;
+    const measure = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
+    measure('hud.highscore_chase_realtime', () => this.updateHighscoreChase());
   }
 
   formatScore(score) {

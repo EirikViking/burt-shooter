@@ -251,11 +251,12 @@ export class EnemyManager {
 
   startLevel(level) {
     console.log(`[EnemyManager] STARTING LEVEL ${level}`);
+    this.markPerformance('level_start.begin', { level });
     this.marketingDebugMode = false;
     this.marketingDebugBossSpawnCount = 0;
     this.level = level;
     this.clearPendingWaveSpawns();
-    this.clearEnemies();
+    this.measurePerformance('level_start.array_cleanup_compaction', () => this.clearEnemies());
 
     this.currentWaveIndex = 0;
     this.state = 'WAVE_ACTIVE';
@@ -327,7 +328,7 @@ export class EnemyManager {
     // Generate Waves
     // TASK D: Normal waves, then boss at end of every level
     this.isBossLevel = true;
-    const normalWaves = this.generateWaves(level);
+    const normalWaves = this.measurePerformance('level_start.enemy_generation', () => this.generateWaves(level));
     this.waves = normalWaves;
     this.normalWavesTotal = normalWaves.length;
     this.bossWaveIndex = this.normalWavesTotal;
@@ -339,7 +340,7 @@ export class EnemyManager {
 
     if (this.normalWavesTotal > 0) {
       const config = this.waves[this.currentWaveIndex];
-      this.spawnWave(config);
+      this.measurePerformance('level_start.initial_wave_spawn', () => this.spawnWave(config));
       this.state = 'WAVE_ACTIVE';
     } else if (this.isBossLevel) {
       this.phase = 'BOSS';
@@ -513,6 +514,15 @@ export class EnemyManager {
     this.bossGateTauntShown = false;
     this.bossGateTauntDelayMs = 0;
     this.bossGateTauntDelayResolved = false;
+  }
+
+  measurePerformance(label, callback) {
+    const diagnostics = this.game?.scenes?.play?.performanceDiagnostics;
+    return diagnostics?.measure ? diagnostics.measure(label, callback) : callback();
+  }
+
+  markPerformance(label, details = {}) {
+    this.game?.scenes?.play?.performanceDiagnostics?.mark?.(label, details);
   }
 
   getNormalWaveDifficultyLevel(level = this.level) {
@@ -996,6 +1006,11 @@ export class EnemyManager {
           }
           // Start wave ending immediately when last objective enemy dies
           this.waveEnding = true;
+          this.markPerformance('wave_clear.objectives_zero', {
+            level: this.level,
+            wave: this.currentWaveIndex + 1,
+            total: this.normalWavesTotal
+          });
 
           // WAVE FIX: Diagnostic - wave ending start
           const playScene = this.game.scenes.play;
@@ -1029,17 +1044,17 @@ export class EnemyManager {
           // Phase 1: Slow bonus drones immediately (already in SLOWING)
           if (this.cleanupPhase === 'SLOWING' && this.cleanupTimer > 100) {
             // Slow bonus drones to 20% speed
-            allTargets.forEach(t => {
+            this.measurePerformance('wave_clear.cleanup_slow_targets', () => allTargets.forEach(t => {
               if (t.vx) t.vx *= 0.2;
               if (t.vy) t.vy *= 0.2;
-            });
+            }));
             this.cleanupPhase = 'CLEARING';
           }
 
           const waveCleanupMs = BalanceConfig.difficulty.waveCleanupMs || 2000;
           if (this.cleanupTimer > waveCleanupMs && this.cleanupPhase === 'CLEARING') {
             const clearedCount = allTargets.length;
-            this.forceClearAllEnemies();
+            this.measurePerformance('wave_clear.array_cleanup_compaction', () => this.forceClearAllEnemies());
 
             // WAVE FIX: Diagnostic - cleanup end
             console.log(`[WaveCleanup] end objectiveAlive=0 bonusDroneAlive=0 cleared=${clearedCount}`);
@@ -1051,7 +1066,7 @@ export class EnemyManager {
 
         // After cleanup finishes, progress phase
         if (this.waveEnding && this.cleanupPhase === 'NONE') {
-          this.onWaveCleared();
+          this.measurePerformance('wave_clear.reward_and_transition', () => this.onWaveCleared());
           this.waveEnding = false; // Reset for next wave
         }
         break;
@@ -1062,7 +1077,7 @@ export class EnemyManager {
         const announceMs = diff.waveBriefingAnnounceMs || 650;
         const briefingMs = diff.waveDelayMs || 1600;
         if (!this.waveBriefingAnnounced && this.waveBriefingTimer >= announceMs) {
-          this.announceWaveBriefing();
+          this.measurePerformance('incoming_wave_banner', () => this.announceWaveBriefing());
           this.waveBriefingAnnounced = true;
         }
         if (this.waveBriefingTimer >= briefingMs && this.pendingWaveConfig) {
@@ -1071,7 +1086,7 @@ export class EnemyManager {
           this.waveBriefingTimer = 0;
           this.waveBriefingAnnounced = false;
           this.state = 'WAVE_ACTIVE';
-          this.spawnWave(config);
+          this.measurePerformance('incoming_wave.spawn_wave', () => this.spawnWave(config));
         }
         break;
 
@@ -1102,6 +1117,7 @@ export class EnemyManager {
           console.log(`[BossFlow] spawn boss level=${this.level}`);
           AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800, bypassGlobalCooldown: true });
           this.bossSpawning = true;
+          this.markPerformance('boss_event_telegraph_start', { level: this.level, phase: 'boss_gate_spawn' });
           this.spawnBoss(this.level).then(() => {
             this.state = 'BOSS_ACTIVE';
             this.bossGateTimer = 0;
@@ -1518,6 +1534,13 @@ export class EnemyManager {
   }
 
   spawnWave(config) {
+    this.markPerformance('wave_spawn.begin', {
+      level: this.level,
+      wave: this.currentWaveIndex + 1,
+      total: this.normalWavesTotal,
+      type: config?.type,
+      count: config?.count
+    });
     this.clearPendingWaveSpawns();
     if (config.type === 'BOSS') {
       AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800, bypassGlobalCooldown: true });
@@ -1527,9 +1550,18 @@ export class EnemyManager {
 
     this.resetWaveWatchdog();
     const { count, formation, type } = config;
-    const normalWaveLevel = Math.max(1, Number(config.normalWaveDifficultyLevel) || this.getNormalWaveDifficultyLevel(this.level));
+    let normalWaveLevel = 1;
+    let tactic = null;
+    let positions = [];
+    let threatPlan = null;
+    this.measurePerformance('next_wave_spawn_planning', () => {
+      normalWaveLevel = Math.max(1, Number(config.normalWaveDifficultyLevel) || this.getNormalWaveDifficultyLevel(this.level));
+      this.currentNormalWaveDifficultyLevel = normalWaveLevel;
+      tactic = { ...this.resolveWaveTactic(config) };
+      positions = this.getFormationPositions(formation, count);
+      threatPlan = this.createThreatActionPlan({ count, formation, tactic, config, level: normalWaveLevel });
+    });
     this.currentNormalWaveDifficultyLevel = normalWaveLevel;
-    let tactic = { ...this.resolveWaveTactic(config) };
     const multiEliteIds = Array.isArray(config.multiEliteMiddleShipIds) ? config.multiEliteMiddleShipIds : [];
     const multiEliteCompensation = config.multiEliteCompensation || null;
     if (multiEliteIds.length && multiEliteCompensation) {
@@ -1540,8 +1572,6 @@ export class EnemyManager {
         entrySpeed: (tactic.entrySpeed || 1) * 1.08
       };
     }
-    const positions = this.getFormationPositions(formation, count);
-    const threatPlan = this.createThreatActionPlan({ count, formation, tactic, config, level: normalWaveLevel });
     tactic = this.applyThreatPressureCompensation(tactic, threatPlan);
     tactic = this.applyNormalWavePressureToTactic(tactic);
     this.currentWaveTactic = tactic;
@@ -1594,59 +1624,61 @@ export class EnemyManager {
         markWaveSpawnDone();
         return;
       }
-      const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
-      const dangerProfile = dangerAssignments.get(i);
-      const dangerMidType = dangerProfile && Number.isFinite(dangerProfile.spriteIndex)
-        ? getGeneratedEnemyTypeForSpriteIndex(dangerProfile.spriteIndex)
-        : null;
-      const enemyType = dangerMidType || type;
-      const enemy = new Enemy(startX, -100, enemyType, normalWaveLevel, this.game, waveColor);
-      if (config.isChallenge && enemy.kind === 'bonus_drone') {
-        enemy.kind = 'enemy';
-      }
-      const lanePressure = this.getLanePressureForPosition(pos.x, formation);
-      const enemyTactic = this.applyLanePressureToTactic(tactic, lanePressure);
-      this.applyModifier(enemy);
-      if (dangerProfile) {
-        this.applyDangerMidShipProfile(enemy, dangerProfile);
-      }
-      const resolvedEnemyTactic = dangerProfile
-        ? {
-            ...enemyTactic,
-            move: dangerProfile.move || enemyTactic.move,
-            shot: dangerProfile.shot || enemyTactic.shot,
-            fireScalar: (enemyTactic.fireScalar || 1) * (dangerProfile.fireScalar || 1),
-            fireDelayMult: (enemyTactic.fireDelayMult || 1) * (dangerProfile.fireDelayMult || 1),
-            projectileSpeedScalar: (enemyTactic.projectileSpeedScalar || 1) * (dangerProfile.projectileSpeedScalar || 1)
-          }
-        : enemyTactic;
-      enemy.applyWaveTactic?.(resolvedEnemyTactic, {
-        index: i,
-        count,
-        formation,
-        centerX: center.x || screenW / 2,
-        centerY: center.y || 128,
-        side: pos.x < screenW / 2 ? -1 : 1,
-        combatBounds
-      });
-      const threatAction = threatPlan.assignmentBySlot.get(i) || null;
-      if (threatAction && !dangerProfile) {
-        enemy.applyThreatAction?.(threatAction, {
+      this.measurePerformance('enemy_batch_creation', () => {
+        const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
+        const dangerProfile = dangerAssignments.get(i);
+        const dangerMidType = dangerProfile && Number.isFinite(dangerProfile.spriteIndex)
+          ? getGeneratedEnemyTypeForSpriteIndex(dangerProfile.spriteIndex)
+          : null;
+        const enemyType = dangerMidType || type;
+        const enemy = this.measurePerformance('enemy_generation.create_enemy', () => new Enemy(startX, -100, enemyType, normalWaveLevel, this.game, waveColor));
+        if (config.isChallenge && enemy.kind === 'bonus_drone') {
+          enemy.kind = 'enemy';
+        }
+        const lanePressure = this.getLanePressureForPosition(pos.x, formation);
+        const enemyTactic = this.applyLanePressureToTactic(tactic, lanePressure);
+        this.applyModifier(enemy);
+        if (dangerProfile) {
+          this.applyDangerMidShipProfile(enemy, dangerProfile);
+        }
+        const resolvedEnemyTactic = dangerProfile
+          ? {
+              ...enemyTactic,
+              move: dangerProfile.move || enemyTactic.move,
+              shot: dangerProfile.shot || enemyTactic.shot,
+              fireScalar: (enemyTactic.fireScalar || 1) * (dangerProfile.fireScalar || 1),
+              fireDelayMult: (enemyTactic.fireDelayMult || 1) * (dangerProfile.fireDelayMult || 1),
+              projectileSpeedScalar: (enemyTactic.projectileSpeedScalar || 1) * (dangerProfile.projectileSpeedScalar || 1)
+            }
+          : enemyTactic;
+        enemy.applyWaveTactic?.(resolvedEnemyTactic, {
           index: i,
-          waveIndex: this.currentWaveIndex,
           count,
-          initialDelayMult: config.threatStartDelayMult,
-          initialDelayMs: config.threatStartDelayMs
+          formation,
+          centerX: center.x || screenW / 2,
+          centerY: center.y || 128,
+          side: pos.x < screenW / 2 ? -1 : 1,
+          combatBounds
         });
-      }
-      if (enemyTactic.forcedDive) {
-        enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
-      }
-      const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs);
-      enemy.startEntry(startX, -50, pos.x, pos.y, entryDurationMs, entryDelayMs);
-      this.enemies.push(enemy);
-      this.container.addChild(enemy.sprite);
-      markWaveSpawnDone();
+        const threatAction = threatPlan.assignmentBySlot.get(i) || null;
+        if (threatAction && !dangerProfile) {
+          enemy.applyThreatAction?.(threatAction, {
+            index: i,
+            waveIndex: this.currentWaveIndex,
+            count,
+            initialDelayMult: config.threatStartDelayMult,
+            initialDelayMs: config.threatStartDelayMs
+          });
+        }
+        if (enemyTactic.forcedDive) {
+          enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
+        }
+        const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs);
+        enemy.startEntry(startX, -50, pos.x, pos.y, entryDurationMs, entryDelayMs);
+        this.enemies.push(enemy);
+        this.container.addChild(enemy.sprite);
+        markWaveSpawnDone();
+      });
     };
 
     positions.forEach((pos, i) => {
@@ -1663,7 +1695,8 @@ export class EnemyManager {
       this.waveSpawnTimers.push(timer);
     });
     if (config.eliteMiddleShipId) {
-      this.spawnEliteMiddleShip(config.eliteMiddleShipId, {
+      this.markPerformance('elite_signal_start', { id: config.eliteMiddleShipId, level: this.level });
+      this.measurePerformance('elite_signal_start', () => this.spawnEliteMiddleShip(config.eliteMiddleShipId, {
         formation,
         tactic,
         waveColor,
@@ -1673,58 +1706,69 @@ export class EnemyManager {
         healthScalar: Number.isFinite(Number(config.eliteHealthScalar)) ? Number(config.eliteHealthScalar) : undefined,
         fireDelayMult: Number.isFinite(Number(config.eliteFireDelayMult)) ? Number(config.eliteFireDelayMult) : undefined,
         specialDelayMs: Number.isFinite(Number(config.eliteSpecialDelayMs)) ? Number(config.eliteSpecialDelayMs) : undefined
-      });
+      }));
     }
     if (multiEliteIds.length) {
-      this.spawnMultiEliteMiddleShips(multiEliteIds, {
+      this.markPerformance('elite_signal_start', { ids: multiEliteIds, level: this.level });
+      this.measurePerformance('elite_signal_start', () => this.spawnMultiEliteMiddleShips(multiEliteIds, {
         formation,
         tactic,
         waveColor,
         entry: 'split',
         normalWaveDifficultyLevel: normalWaveLevel,
         compensation: multiEliteCompensation
-      });
+      }));
     }
     if (positions.length > 1) {
       const xs = positions.map((pos) => pos.x);
       const span = Math.max(...xs) - Math.min(...xs);
       console.log(`[FormationWidth] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} formation=${formation} count=${count} spanPct=${(span / screenW).toFixed(2)} policy=engagement_band`);
     }
-    const playScene = this.game?.scenes?.play;
-    playScene?.recordThreatDiscovery?.(tactic.id, 'waveTactics', {
-      name: tactic.label || tactic.id,
-      role: tactic.move || 'formation pressure',
-      sector: this.level
-    });
-    const enemyProfile = getGeneratedEnemyProfile(type);
-    playScene?.recordThreatDiscovery?.(type, 'enemies', {
-      name: enemyProfile?.displayName || type,
-      role: enemyProfile?.role || config.type || 'wave enemy',
-      movementStyle: enemyProfile?.movementStyle || null,
-      fireStyle: enemyProfile?.fireStyle || null,
-      rarity: enemyProfile?.tier || null,
-      sector: this.level,
-      waveIndex: this.currentWaveIndex || 0
-    });
-    dangerAssignments.forEach((profile) => {
-      playScene?.recordThreatDiscovery?.(profile.id, 'enemies', {
-        name: profile.displayName,
-        role: profile.role,
-        movementStyle: profile.move,
-        fireStyle: profile.shot,
-        rarity: profile.tier,
-        sector: this.level,
-        waveIndex: this.currentWaveIndex || 0
+    const runDiscoveryHooks = () => {
+      if (this.waveSpawnSerial !== waveSpawnSerial || this.game?.currentScene !== this.game?.scenes?.play) return;
+      this.measurePerformance('wave_spawn.discovery_hooks', () => {
+        const playScene = this.game?.scenes?.play;
+        playScene?.recordThreatDiscovery?.(tactic.id, 'waveTactics', {
+          name: tactic.label || tactic.id,
+          role: tactic.move || 'formation pressure',
+          sector: this.level
+        });
+        const enemyProfile = getGeneratedEnemyProfile(type);
+        playScene?.recordThreatDiscovery?.(type, 'enemies', {
+          name: enemyProfile?.displayName || type,
+          role: enemyProfile?.role || config.type || 'wave enemy',
+          movementStyle: enemyProfile?.movementStyle || null,
+          fireStyle: enemyProfile?.fireStyle || null,
+          rarity: enemyProfile?.tier || null,
+          sector: this.level,
+          waveIndex: this.currentWaveIndex || 0
+        });
+        dangerAssignments.forEach((profile) => {
+          playScene?.recordThreatDiscovery?.(profile.id, 'enemies', {
+            name: profile.displayName,
+            role: profile.role,
+            movementStyle: profile.move,
+            fireStyle: profile.shot,
+            rarity: profile.tier,
+            sector: this.level,
+            waveIndex: this.currentWaveIndex || 0
+          });
+        });
+        threatPlan.assignedIds.forEach((actionId) => {
+          const action = getEnemyThreatAction(actionId);
+          playScene?.recordThreatDiscovery?.(actionId, 'attackPatterns', {
+            name: action?.label || actionId,
+            role: action?.description || 'special attack',
+            sector: this.level
+          });
+        });
       });
-    });
-    threatPlan.assignedIds.forEach((actionId) => {
-      const action = getEnemyThreatAction(actionId);
-      playScene?.recordThreatDiscovery?.(actionId, 'attackPatterns', {
-        name: action?.label || actionId,
-        role: action?.description || 'special attack',
-        sector: this.level
-      });
-    });
+    };
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(runDiscoveryHooks);
+    } else {
+      setTimeout(runDiscoveryHooks, 0);
+    }
     console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count} threats=${threatPlan.assignedIds.join(',') || 'none'}`);
   }
 
@@ -3034,7 +3078,9 @@ export class EnemyManager {
       const bonus = 3000;
       const appliedBonus = this.game.addScore(bonus);
       if (this.game.scenes.play) {
-        this.game.scenes.play.showWaveBonusEffect(appliedBonus, 'BONUS DRONE RAID CLEAR!');
+        this.measurePerformance('first_use_asset_effect_creation.wave_bonus_effect', () => {
+          this.game.scenes.play.showWaveBonusEffect(appliedBonus, 'BONUS DRONE RAID CLEAR!');
+        });
       }
       if (hasUpcomingWave) {
         AudioManager.playVoice('mission_control_wave_clear', { cooldownMs: 30000, duckMs: 1300 });
@@ -3058,10 +3104,12 @@ export class EnemyManager {
           : 'BOSS GATE NEXT';
         const repairLabel = repairDelta > 0 ? ` - REPAIR +${repairDelta}` : '';
         const transitionLabel = hasUpcomingWave ? 'WAVE CLEARED!' : 'SECTOR CLEAR';
-        this.game.scenes.play.showWaveBonusEffect(appliedBonus, transitionLabel, {
-          compact: hasUpcomingWave,
-          subtitle: `${nextLabel}${repairLabel}`,
-          sfxKey: hasUpcomingWave ? 'nova_wave_clear_sweep' : 'levelComplete'
+        this.measurePerformance('first_use_asset_effect_creation.wave_bonus_effect', () => {
+          this.game.scenes.play.showWaveBonusEffect(appliedBonus, transitionLabel, {
+            compact: hasUpcomingWave,
+            subtitle: `${nextLabel}${repairLabel}`,
+            sfxKey: hasUpcomingWave ? 'nova_wave_clear_sweep' : 'levelComplete'
+          });
         });
       }
     }
@@ -3131,6 +3179,7 @@ export class EnemyManager {
   }
 
   announceWaveBriefing() {
+    return this.measurePerformance('incoming_wave_banner', () => {
     if (this.game.scenes.play) {
       const compactHud = this.game.getWidth() < 620;
       const descriptor = this.getWaveDescriptor(this.pendingWaveConfig);
@@ -3149,6 +3198,7 @@ export class EnemyManager {
       });
       AudioManager.playSfx('ui_open', { volume: 0.25, minIntervalMs: 500 });
     }
+    });
   }
 
   getWaveDescriptor(config) {

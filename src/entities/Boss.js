@@ -1690,6 +1690,8 @@ export class Boss {
   }
 
   startSignatureTelegraph(type, playerX, playerY) {
+    const diagnostics = this.game?.scenes?.play?.performanceDiagnostics;
+    const measurePerformance = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
     const fairness = BalanceConfig.difficulty.bossFairness || {};
     const earlyBoss = this.level <= 2;
     if (type === 'ring' || type === 'adds') {
@@ -1718,6 +1720,12 @@ export class Boss {
     };
     this.setPresentationState('charge', this.telegraph.duration);
     const playScene = this.game?.scenes?.play;
+    diagnostics?.mark?.('boss_event_telegraph_start', {
+      kind: 'boss_signature',
+      type,
+      level: this.level,
+      duration: this.telegraph.duration
+    });
     if (playScene?.enqueueToast) {
       playScene.enqueueToast(this.telegraph.label, {
         fontSize: 18,
@@ -1728,7 +1736,7 @@ export class Boss {
       });
     }
     this.playSignatureTelegraphSfx(type);
-    this.updateTelegraphVisual(0, playerX, playerY);
+    measurePerformance('boss_event_telegraph_start.visual_creation', () => this.updateTelegraphVisual(0, playerX, playerY));
   }
 
   updateTelegraphVisual(progress, playerX, playerY) {
