@@ -2435,10 +2435,108 @@ export class PlayScene {
     return true;
   }
 
+  createCollisionSideEffectQueue() {
+    return {
+      scorePopups: [],
+      hitSparks: [],
+      deathFeedback: [],
+      audio: [],
+      powerupSpawns: []
+    };
+  }
+
+  queueCollisionSideEffect(queue, type, payload = {}) {
+    if (!queue?.[type]) return false;
+    queue[type].push(payload);
+    return true;
+  }
+
+  processCollisionSideEffects(queue, stats, measure) {
+    if (!queue) return;
+    const measured = measure || ((_label, callback) => callback());
+    const diagnosticOptions = this.performanceDiagnostics?.options || {};
+    const skipAllSideEffects = Boolean(diagnosticOptions.rawCollisionOnly || diagnosticOptions.noCollisionSideEffects);
+
+    measured('collision.side_effects.score_popups', () => {
+      if (skipAllSideEffects || diagnosticOptions.noScorePopups) {
+        stats.scorePopupQueued = (stats.scorePopupQueued || 0) + queue.scorePopups.length;
+        stats.scorePopupDropped = (stats.scorePopupDropped || 0) + queue.scorePopups.length;
+        return;
+      }
+      for (const popup of queue.scorePopups) {
+        this.scorePopupManager?.queueScorePopup?.(popup.x, popup.y, popup.score, popup.options || {});
+      }
+      const flushed = this.scorePopupManager?.flushQueuedPopups?.(3) || {
+        queued: queue.scorePopups.length,
+        created: 0,
+        dropped: queue.scorePopups.length,
+        remaining: 0
+      };
+      stats.scorePopupQueued = (stats.scorePopupQueued || 0) + flushed.queued;
+      stats.scorePopupCreated = (stats.scorePopupCreated || 0) + flushed.created;
+      stats.scorePopupDropped = (stats.scorePopupDropped || 0) + flushed.dropped;
+      stats.scorePopupPending = flushed.remaining;
+    });
+
+    measured('collision.side_effects.particles', () => {
+      if (skipAllSideEffects || diagnosticOptions.noParticles) {
+        stats.hitSparkQueued = (stats.hitSparkQueued || 0) + queue.hitSparks.length;
+        stats.deathFeedbackQueued = (stats.deathFeedbackQueued || 0) + queue.deathFeedback.length;
+        return;
+      }
+      let hitSparkCreated = 0;
+      let deathFeedbackCreated = 0;
+      for (const spark of queue.hitSparks) {
+        if (!this.particleManager || spark?.enabled === false) continue;
+        this.particleManager.createHitSpark(spark.x, spark.y, spark.color, spark.intensity);
+        hitSparkCreated += 1;
+      }
+      for (const entry of queue.deathFeedback) {
+        if (!entry?.enemy) continue;
+        this.playEnemyDeathFeedback(entry.enemy, entry.options || {});
+        deathFeedbackCreated += 1;
+      }
+      stats.hitSparkQueued = (stats.hitSparkQueued || 0) + queue.hitSparks.length;
+      stats.hitSparkCreated = (stats.hitSparkCreated || 0) + hitSparkCreated;
+      stats.deathFeedbackQueued = (stats.deathFeedbackQueued || 0) + queue.deathFeedback.length;
+      stats.deathFeedbackCreated = (stats.deathFeedbackCreated || 0) + deathFeedbackCreated;
+    });
+
+    measured('collision.side_effects.audio', () => {
+      if (skipAllSideEffects || diagnosticOptions.noHitAudio) {
+        stats.audioQueued = (stats.audioQueued || 0) + queue.audio.length;
+        return;
+      }
+      let played = 0;
+      for (const entry of queue.audio) {
+        if (!entry?.sfx) continue;
+        AudioManager.playSfx(entry.sfx, entry.options || {});
+        played += 1;
+      }
+      stats.audioQueued = (stats.audioQueued || 0) + queue.audio.length;
+      stats.audioPlayed = (stats.audioPlayed || 0) + played;
+    });
+
+    measured('collision.side_effects.powerups', () => {
+      if (skipAllSideEffects) {
+        stats.powerupSpawnQueued = (stats.powerupSpawnQueued || 0) + queue.powerupSpawns.length;
+        return;
+      }
+      let spawned = 0;
+      for (const entry of queue.powerupSpawns) {
+        this.powerupManager?.spawn?.(entry.x, entry.y);
+        spawned += 1;
+      }
+      stats.powerupSpawnQueued = (stats.powerupSpawnQueued || 0) + queue.powerupSpawns.length;
+      stats.powerupSpawned = (stats.powerupSpawned || 0) + spawned;
+    });
+  }
+
   checkCollisions() {
     const { width, height } = this.game.app.screen;
     const perfDiag = this.performanceDiagnostics;
     const measure = perfDiag?.measure?.bind(perfDiag) || ((_label, callback) => callback());
+    const sideEffects = this.createCollisionSideEffectQueue();
     const collisionStats = {
       runMode: this.game?.runMode || 'unknown',
       sector: Math.max(1, Math.floor(Number(this.game?.level) || 1)),
@@ -2469,7 +2567,19 @@ export class PlayScene {
       enemyPlayerChecks: 0,
       enemyPlayerHits: 0,
       powerupPlayerChecks: 0,
-      powerupPickups: 0
+      powerupPickups: 0,
+      scorePopupQueued: 0,
+      scorePopupCreated: 0,
+      scorePopupDropped: 0,
+      scorePopupPending: 0,
+      hitSparkQueued: 0,
+      hitSparkCreated: 0,
+      deathFeedbackQueued: 0,
+      deathFeedbackCreated: 0,
+      audioQueued: 0,
+      audioPlayed: 0,
+      powerupSpawnQueued: 0,
+      powerupSpawned: 0
     };
     this.collisionDiagnosticStats = collisionStats;
 
@@ -2517,21 +2627,34 @@ export class PlayScene {
               if (!this.player.isSlowTimeActive?.()) {
                 const scoreAwarded = this.getComboScore(enemy.scoreValue);
                 const appliedScore = this.game.addScore(scoreAwarded);
-                // Score popup with combo
-                if (this.scorePopupManager) {
-                  this.scorePopupManager.addScorePopup(enemy.x, enemy.y, appliedScore);
-                }
+                this.queueCollisionSideEffect(sideEffects, 'scorePopups', {
+                  x: enemy.x,
+                  y: enemy.y,
+                  score: appliedScore
+                });
               }
-              this.onEnemyKilled(enemy);
-              this.playEnemyDeathFeedback(enemy, { volume: 0.5 });
+              measure('collision.progression_hooks.enemy_killed', () => this.onEnemyKilled(enemy));
+              this.queueCollisionSideEffect(sideEffects, 'deathFeedback', {
+                enemy,
+                options: { volume: 0.5 }
+              });
               this.screenShake.shake(3);
 
               // Powerup Drop Check (Manager handles chance & guarantees)
-              this.powerupManager.spawn(enemy.x, enemy.y);
+              this.queueCollisionSideEffect(sideEffects, 'powerupSpawns', {
+                x: enemy.x,
+                y: enemy.y
+              });
             } else {
               collisionStats.playerBulletEnemyDamageOnly += 1;
-              this.particleManager.createHitSpark(enemy.x, enemy.y);
-              AudioManager.playSfx('hit', { volume: 0.4 });
+              this.queueCollisionSideEffect(sideEffects, 'hitSparks', {
+                x: enemy.x,
+                y: enemy.y
+              });
+              this.queueCollisionSideEffect(sideEffects, 'audio', {
+                sfx: 'hit',
+                options: { volume: 0.4 }
+              });
             }
           }
         });
@@ -2808,6 +2931,10 @@ export class PlayScene {
         }
       }
     });
+    });
+
+    measure('collision.side_effects.total', () => {
+      this.processCollisionSideEffects(sideEffects, collisionStats, measure);
     });
   }
 

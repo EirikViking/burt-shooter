@@ -119,7 +119,22 @@ try {
   await page.waitForFunction(() => window.__novaMayhemPerformanceDiagnostics?.getReport?.()?.sampleCount > 20, null, { timeout: 12000 });
   const initialReport = await page.evaluate(() => window.__novaMayhemPerformanceDiagnostics.getReport());
   const sectionLabels = initialReport.topSections.map((section) => section.label);
-  for (const required of ['frame_start', 'player', 'bullets', 'enemies', 'hud', 'starfield', 'collisions', 'collision.player_bullets_enemies', 'collision.enemy_bullets_player']) {
+  for (const required of [
+    'frame_start',
+    'player',
+    'bullets',
+    'enemies',
+    'hud',
+    'starfield',
+    'collisions',
+    'collision.player_bullets_enemies',
+    'collision.enemy_bullets_player',
+    'collision.side_effects.total',
+    'collision.side_effects.score_popups',
+    'collision.side_effects.particles',
+    'collision.side_effects.audio',
+    'collision.side_effects.powerups'
+  ]) {
     assert.ok(sectionLabels.includes(required), `diagnostics should record ${required}`);
   }
   assert.equal(initialReport.enabled, true, 'diagnostics should be auto-enabled in this private diagnostic build');
@@ -149,6 +164,9 @@ try {
   assert.equal(toggledReport.report.options.hideHighscoreChase, true, 'hideHighscoreChase toggle should apply');
   assert.equal(toggledReport.report.options.hudLite, true, 'hudLite toggle should apply');
   assert.equal(toggledReport.report.options.noParticles, true, 'noParticles toggle should apply');
+  assert.equal(toggledReport.report.options.noHitAudio, false, 'noHitAudio should remain off unless requested');
+  assert.equal(toggledReport.report.options.noCollisionSideEffects, false, 'collision side effects should remain on by default');
+  assert.equal(toggledReport.report.options.rawCollisionOnly, false, 'raw collision-only mode should remain off by default');
   assert.equal(toggledReport.highscoreVisible, false, 'high-score chase widget should be hidden by diagnostic toggle');
   assert.equal(toggledReport.storage.hudLite, true, 'diagnostic toggles should persist to localStorage');
 
@@ -175,6 +193,7 @@ try {
   assert.match(manualWrite.result.latestPath, /run-collision-diagnostics-latest\.json$/, 'diagnostic latest path should be stable');
   assert.equal(manualWrite.stored.reason, 'automated_check', 'diagnostic report should also be cached in localStorage');
   assert.ok(manualWrite.stored.lastCounts?.collision, 'written diagnostic report should include collision counters');
+  assert.ok(Array.isArray(manualWrite.stored.worstSlowFrames), 'written report should include latched slow-frame records');
   reports.enabledRun = { initialReport, toggledReport, overlayByHotkey, manualWrite };
   assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join('; ')}`);
   await page.close();

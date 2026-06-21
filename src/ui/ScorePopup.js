@@ -81,6 +81,8 @@ export class ScorePopupManager {
   constructor(container) {
     this.container = container;
     this.popups = [];
+    this.pendingPopups = [];
+    this.maxActivePopups = 24;
 
     // Combo system
     this.comboCount = 0;
@@ -113,6 +115,34 @@ export class ScorePopupManager {
     const popup = new ScorePopup(x, y, displayScore, color, isCombo);
     this.popups.push(popup);
     this.container.addChild(popup.sprite);
+    if (this.popups.length > this.maxActivePopups) {
+      const stale = this.popups.shift();
+      stale?.destroy?.();
+    }
+  }
+
+  queueScorePopup(x, y, score, options = {}) {
+    this.pendingPopups.push({ x, y, score, options });
+  }
+
+  flushQueuedPopups(maxPerFrame = 3) {
+    const limit = Math.max(0, Math.floor(Number(maxPerFrame) || 0));
+    const total = this.pendingPopups.length;
+    let created = 0;
+    while (created < limit && this.pendingPopups.length > 0) {
+      const popup = this.pendingPopups.shift();
+      this.addScorePopup(popup.x, popup.y, popup.score, popup.options);
+      created += 1;
+    }
+    if (this.pendingPopups.length > 12) {
+      this.pendingPopups.splice(0, this.pendingPopups.length - 12);
+    }
+    return {
+      queued: total,
+      created,
+      dropped: Math.max(0, total - created - this.pendingPopups.length),
+      remaining: this.pendingPopups.length
+    };
   }
 
   update(delta) {
@@ -144,6 +174,7 @@ export class ScorePopupManager {
   cleanup() {
     this.popups.forEach(popup => popup.destroy());
     this.popups = [];
+    this.pendingPopups = [];
     this.comboCount = 0;
   }
 }

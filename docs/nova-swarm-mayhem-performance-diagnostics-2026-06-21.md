@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This private diagnostic build adds an automatic runtime profiler for the remaining Mayhem cadence issue seen in `performance-video/mayhem_run4.mp4`. The goal is to isolate whether the hitch comes from HUD/high-score chase work, particles, starfield/background work, score popups, leaderboard target priming, core combat update cost, or a specific collision subsection.
+This private diagnostic build adds an automatic runtime profiler for the remaining Mayhem cadence issue seen in `performance-video/mayhem_run4.mp4`. The stronger clue from debug screenshots is that HUD/high-score work is tiny while the collision/hit-resolution path repeatedly spikes, so this pass focuses on separating cheap collision checks from expensive hit side effects.
 
 No gameplay balance, save format, Steam leaderboard identity, achievements, Steamworks metadata, or profile rescue behavior is changed by this diagnostic pass.
 
@@ -26,9 +26,11 @@ The report includes:
 
 - average, p95, and max measured PlayScene frame update time
 - current sector, run mode, enemy count, bullet count, particle count, score popup count, boss hazard count
-- the highest-cost update sections in the most recent sampled frame
+- the highest-cost update sections in each latched slow frame
 - slow-frame samples and worst slow frames
-- collision counters and collision subsection timings
+- collision counters, collision subsection timings, and queued side-effect counts
+- side-effect timings for score popups, particles/death feedback, hit audio, and powerup drops
+- a browser JS heap signal when Chromium exposes it
 - native write result/path
 
 The same data is available in DevTools:
@@ -59,6 +61,9 @@ When diagnostics are enabled, these toggles can be set through `window.__novaMay
 | `noStarfield` | `novaDiagNoStarfield=1` | `Ctrl+Shift+4` | Skips starfield animation update. |
 | `noScorePopups` | `novaDiagNoScorePopups=1` | `Ctrl+Shift+5` | Skips score popup update. |
 | `noLeaderboardTargets` | `novaDiagNoLeaderboardTargets=1` | `Ctrl+Shift+6` | Skips Mayhem high-score and global leaderboard target priming when set before run launch. |
+| `noHitAudio` | `novaDiagNoHitAudio=1` | `Ctrl+Shift+7` | Skips queued hit audio from the collision side-effect flush. |
+| `noCollisionSideEffects` | `novaDiagNoCollisionSideEffects=1` | `Ctrl+Shift+8` | Applies damage and score, but skips queued collision visuals/audio/drop side effects for isolation. |
+| `rawCollisionOnly` | `novaDiagRawCollisionOnly=1` | `Ctrl+Shift+9` | Raw collision isolation mode for diagnosis; off by default and not intended for normal play. |
 
 Example DevTools command:
 
@@ -89,7 +94,9 @@ No hotkey sequence is required for the main test.
 - the overlay stays hidden by default
 - real PlayScene sections are sampled
 - collision subsection timings are sampled
+- collision side-effect timings are sampled
 - counts are reported
+- latched slow-frame reports include per-frame top sections
 - toggles persist to local storage
 - high-score chase can be hidden by the diagnostic toggle
 - `Ctrl+Shift+F8` reveals the profiler overlay without disabling logging
@@ -98,4 +105,4 @@ No hotkey sequence is required for the main test.
 
 ## Recommendation
 
-Use this diagnostic build to collect subsystem evidence before the next performance fix. The previous MP4 analysis showed clean encoded frame timing but repeated low-motion-then-jump optical events, which points toward a gameplay/render cadence issue rather than just the high-score text counter.
+Use this diagnostic build to collect subsystem evidence before the next performance fix. The expected signature, if the current theory is right, is a slow frame whose `topSections` points at `collision.side_effects.*`, high hit/kill counts, or a burst of queued popups/particles during early Mayhem waves.

@@ -15,7 +15,10 @@ const DEFAULT_OPTIONS = Object.freeze({
   noParticles: false,
   noStarfield: false,
   noScorePopups: false,
-  noLeaderboardTargets: false
+  noLeaderboardTargets: false,
+  noHitAudio: false,
+  noCollisionSideEffects: false,
+  rawCollisionOnly: false
 });
 
 const HOTKEYS = Object.freeze({
@@ -24,7 +27,10 @@ const HOTKEYS = Object.freeze({
   Digit3: 'noParticles',
   Digit4: 'noStarfield',
   Digit5: 'noScorePopups',
-  Digit6: 'noLeaderboardTargets'
+  Digit6: 'noLeaderboardTargets',
+  Digit7: 'noHitAudio',
+  Digit8: 'noCollisionSideEffects',
+  Digit9: 'rawCollisionOnly'
 });
 
 function getWindow() {
@@ -64,7 +70,10 @@ function safeWriteStorage(options) {
       noParticles: Boolean(options.noParticles),
       noStarfield: Boolean(options.noStarfield),
       noScorePopups: Boolean(options.noScorePopups),
-      noLeaderboardTargets: Boolean(options.noLeaderboardTargets)
+      noLeaderboardTargets: Boolean(options.noLeaderboardTargets),
+      noHitAudio: Boolean(options.noHitAudio),
+      noCollisionSideEffects: Boolean(options.noCollisionSideEffects),
+      rawCollisionOnly: Boolean(options.rawCollisionOnly)
     }));
   } catch {
     // Diagnostics must never break gameplay storage.
@@ -84,7 +93,10 @@ function readQueryOptions() {
       noParticles: parseBoolean(params.get('novaDiagNoParticles'), undefined),
       noStarfield: parseBoolean(params.get('novaDiagNoStarfield'), undefined),
       noScorePopups: parseBoolean(params.get('novaDiagNoScorePopups'), undefined),
-      noLeaderboardTargets: parseBoolean(params.get('novaDiagNoLeaderboardTargets'), undefined)
+      noLeaderboardTargets: parseBoolean(params.get('novaDiagNoLeaderboardTargets'), undefined),
+      noHitAudio: parseBoolean(params.get('novaDiagNoHitAudio'), undefined),
+      noCollisionSideEffects: parseBoolean(params.get('novaDiagNoCollisionSideEffects'), undefined),
+      rawCollisionOnly: parseBoolean(params.get('novaDiagRawCollisionOnly'), undefined)
     };
   } catch {
     return {};
@@ -148,10 +160,28 @@ function getCounts(scene) {
     pendingEnemyBullets: bulletManager?.pendingEnemyBullets?.length || 0,
     particles: scene?.particleManager?.particles?.length || 0,
     scorePopups: scene?.scorePopupManager?.popups?.length || 0,
+    pendingScorePopups: scene?.scorePopupManager?.pendingPopups?.length || 0,
     bossHazards: scene?.bossHazards?.length || 0,
     ambientBonusDrones: scene?.ambientBonusDrones?.length || 0,
     collision: scene?.collisionDiagnosticStats || null
   };
+}
+
+function getMemorySignal() {
+  const win = getWindow();
+  const memory = win?.performance?.memory;
+  if (!memory) return null;
+  return {
+    usedJSHeapSize: Math.round(Number(memory.usedJSHeapSize) || 0),
+    totalJSHeapSize: Math.round(Number(memory.totalJSHeapSize) || 0),
+    jsHeapSizeLimit: Math.round(Number(memory.jsHeapSizeLimit) || 0)
+  };
+}
+
+function getFrameTopSections(sections = {}) {
+  return Object.entries(sections)
+    .map(([label, ms]) => ({ label, ms: roundMs(ms) }))
+    .sort((a, b) => b.ms - a.ms);
 }
 
 class MayhemPerformanceDiagnostics {
@@ -280,6 +310,7 @@ class MayhemPerformanceDiagnostics {
       delta: roundMs(delta),
       startedAt: this.frameStartedAt,
       counts: this.lastCounts,
+      memory: getMemorySignal(),
       sections: {}
     };
   }
@@ -311,7 +342,9 @@ class MayhemPerformanceDiagnostics {
     const sample = {
       ...this.currentFrame,
       frameMs: roundMs(elapsed),
-      counts: getCounts(scene)
+      counts: getCounts(scene),
+      memory: getMemorySignal(),
+      topSections: getFrameTopSections(this.currentFrame.sections)
     };
     this.samples.push(sample);
     if (this.samples.length > 900) this.samples.shift();
