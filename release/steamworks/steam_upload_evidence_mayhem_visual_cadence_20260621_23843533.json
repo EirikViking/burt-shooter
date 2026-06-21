@@ -1,0 +1,117 @@
+{
+  "type": "steam_upload_evidence",
+  "slug": "mayhem_visual_cadence",
+  "generatedAt": "2026-06-21T12:50:00.000Z",
+  "branch": "codex/fix-mayhem-visual-cadence-stutter-20260621",
+  "startingCommit": "aefda49151faba3b40a2c944b7c98efe3a7a7e1d",
+  "sourceCommit": "60aaa9df141974aa8bdbe75434408d0811d8fde2",
+  "packagedBuild": "v2026-06-21_14-34-27",
+  "packagedGitSha": "60aaa9d",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23843533",
+    "depotManifest": "1847638596600461723",
+    "baselineDepotManifest": "2093552943102439710",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "steamworksMetadataChanged": false
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdConfirmed": true,
+    "depotConfirmed": true,
+    "setLiveBlankConfirmed": true,
+    "containsPublicOrDefaultAssignment": false,
+    "containsSectorContinueTestAssignment": false,
+    "containsSteamBranchAssignment": false,
+    "description": "Nova Swarm Mayhem visual cadence private test"
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "sha256": "f6e08d6d101f3600285781357f3a2143a5390f65b24b54235becb705d41449bd",
+    "manifestHash": "e0ed32fbd3388e59b0b45aa76adabc89a889db541fb08531936809abd28a32f1",
+    "fileCount": 336,
+    "totalBytes": 879618309,
+    "executable": "Nova Swarm.exe",
+    "executableSha256": "8b93da69af3a13ab6a5bea8cd4b66c7d48dc1505548bc01fa8500ebc7bf0bb58"
+  },
+  "uploadEvidence": {
+    "steamcmdLog": "test-results/steam-upload-mayhem-visual-cadence-20260621-144346/steamcmd.log",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "appBuildLogProof": "Successfully finished AppID 4765070 build (BuildID 23843533).",
+    "depotManifestProof": "Success! New manifestID 1847638596600461723 created and 8 new chunks uploaded.",
+    "depotSummary": "0 files added, 2 files changed, 0 files removed, 8 new chunks uploaded"
+  },
+  "performanceEvidence": {
+    "runtimeReport": "test-results/mayhem-sector-frame-pacing-2026-06-21T12-31-38-284Z/report.json",
+    "highscoreChaseReport": "test-results/highscore-chase-target-2026-06-21T12-31-38-109Z/report.json",
+    "mayhemActiveP95Ms": 16.8,
+    "mayhemActiveP99Ms": 16.9,
+    "mayhemActiveLongFramesOver33Ms": 0,
+    "sectorActiveP95Ms": 16.8,
+    "sectorActiveP99Ms": 16.9,
+    "sectorActiveLongFramesOver33Ms": 0,
+    "mayhemVsSectorActiveP95Ratio": 1.0,
+    "unchangedHighscoreChaseGraphicsRedraws": 0,
+    "unchangedHighscoreChaseTextLayouts": 0,
+    "videoReproMayhemRun2LowThenJumpEvents": 18
+  },
+  "checks": {
+    "sourceChecks": [
+      "git diff --check",
+      "npm run build:current",
+      "npm run check:i18n",
+      "npm run check:i18n-ui",
+      "npm run check:run-modes",
+      "npm run check:steam-electron-bridge",
+      "npm run check:highscore-chase-target",
+      "npm run check:mayhem-sector-frame-pacing"
+    ],
+    "releaseChecks": [
+      "npm run package:steam:win",
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:smoke:current",
+      "npm run desktop:perf:current",
+      "npm run smoke",
+      "npm run steamworks:payload-manifest",
+      "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf"
+    ],
+    "smoke": {
+      "status": "non_blocking_known_timeout",
+      "reason": "Only failure was known timeout at scripts/smoke-playtest.mjs:764:26 after level 3 debug capture.",
+      "artifact": "test-results/smoke-2026-06-21T12-41-19-777Z"
+    },
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-21T12-39-05-218Z/report.json",
+    "currentSmoke": "test-results/electron-smoke-2026-06-21T12-39-45-510Z/report.json",
+    "currentPerf": "test-results/electron-perf-smoke-2026-06-21T12-39-45-534Z/report.json"
+  },
+  "protectedSystems": {
+    "setLiveChanged": false,
+    "steamBranchAssigned": false,
+    "steamworksMetadataChanged": false,
+    "leaderboardIdentityChanged": false,
+    "liveSavesTouched": false,
+    "profileRescueRun": false,
+    "balanceChanged": false,
+    "powerupArtChanged": false,
+    "displaySettingsChanged": false
+  },
+  "manualSteamworksTestSteps": [
+    "Assign BuildID 23843533 to the intended private test branch in Steamworks.",
+    "Install that private branch through Steam.",
+    "Launch Mayhem Run from Sector 1 on the high-progress profile and watch the first two normal waves for microstutter.",
+    "Compare against BuildID 23843341 and the Sector Run checkpoint 20 capture if the symptom is still visible.",
+    "Confirm the ranked high-score target card still appears and updates as score increases.",
+    "Confirm Mayhem remains the only mode submitting to nova_swarm_global_score_v2 and unlocking Steam achievements."
+  ],
+  "rollback": {
+    "git": "git revert 60aaa9df141974aa8bdbe75434408d0811d8fde2",
+    "steamworks": "Do not assign BuildID 23843533, or reassign the previous private test BuildID."
+  }
+}
