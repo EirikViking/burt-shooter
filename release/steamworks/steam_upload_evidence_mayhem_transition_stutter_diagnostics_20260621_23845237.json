@@ -1,0 +1,93 @@
+{
+  "title": "Nova Swarm Mayhem transition stutter diagnostics private Steam test",
+  "uploadedAt": "2026-06-21T19:10:13+02:00",
+  "branch": "codex/mayhem-transition-stutter-diagnostics-20260621",
+  "startingCommit": "086d1603160d161fe16c07afe261253bc5dac1b5",
+  "sourceCommit": "ce0ae0405af1a149f7b37721a1ff258a2f98983b",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23845237",
+    "depotManifest": "2330118577922286960",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf"
+  },
+  "package": {
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "buildVersion": "v2026-06-21_19-00-51",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-21T17-05-15-759Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-06-21T17-06-01-484Z/report.json",
+    "packagedGitSha": "ce0ae04",
+    "packagedGitShaMatchesSource": true
+  },
+  "diagnostics": {
+    "report": "test-results/mayhem-performance-diagnostics-2026-06-21T16-49-11-651Z/report.json",
+    "sectorComparisonReport": "test-results/mayhem-sector-frame-pacing-2026-06-21T16-49-40-134Z/report.json",
+    "collisionHotpathReport": "test-results/mayhem-collision-hotpath-stress-2026-06-21T16-49-25-501Z/report.json",
+    "highscoreChaseReport": "test-results/highscore-chase-target-2026-06-21T16-49-34-992Z/report.json",
+    "slowFrameLatching": true,
+    "eventMarkers": true,
+    "realtimeHighscoreChasePreserved": true,
+    "waveDiscoveryHooksDeferredOneFrame": true
+  },
+  "checks": [
+    "git diff --check",
+    "npm run check:i18n",
+    "npm run check:run-modes",
+    "npm run check:steam-electron-bridge",
+    "npm run check:highscore-chase-target",
+    "npm run check:mayhem-collision-hotpath-stress",
+    "npm run check:mayhem-performance-diagnostics",
+    "npm run check:mayhem-sector-frame-pacing",
+    "npm run build:current",
+    "npm run check:release-line",
+    "npm run desktop:perf:current",
+    "npm run desktop:smoke:current",
+    "npm run smoke",
+    "npm run package:steam:win",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run steamworks:payload-manifest"
+  ],
+  "smokePolicy": {
+    "npmRunSmoke": "non_blocking_known_timeout",
+    "knownTimeout": "scripts/smoke-playtest.mjs:764:26 after level 3 debug capture",
+    "packagedSmokePassed": true,
+    "currentSmokePassed": true,
+    "currentPerfPassed": true,
+    "packagedPerfPassed": true
+  },
+  "steamUploadLogs": {
+    "steamCmdUploadLog": "test-results/steam-upload-mayhem-transition-stutter-diagnostics-20260621-190833/steamcmd-upload.log",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf"
+  },
+  "protectedSystems": {
+    "gameplayBalanceChanged": false,
+    "scoreFormulaChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsMetadataChanged": false,
+    "saveFormatChanged": false,
+    "steamCloudSettingsChanged": false,
+    "profileRescueTouched": false,
+    "steamworksMetadataChanged": false,
+    "steamBranchAssigned": false,
+    "setLiveUsed": false
+  },
+  "manualTest": [
+    "Assign BuildID 23845237 to the intended private Steam test branch in Steamworks.",
+    "Launch Nova Swarm from Steam.",
+    "Play Mayhem from Sector 1 through several wave transitions and watch for remaining near-freezes around incoming wave and event starts.",
+    "Confirm the HIGH SCORE TARGET gap still updates during the same sector.",
+    "Optionally compare Sector Run checkpoint 20 against Mayhem wave transitions."
+  ],
+  "rollback": {
+    "git": "git revert ce0ae0405af1a149f7b37721a1ff258a2f98983b",
+    "steam": "Do not assign BuildID 23845237, or reassign the private test branch back to the previous desired BuildID."
+  }
+}
