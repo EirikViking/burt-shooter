@@ -63,9 +63,12 @@ import {
   pickBossSupportShipProfile
 } from '../config/BossSupportShips.js';
 import {
+  readThreatDiscoveryState,
   recordThreatDefeated,
+  recordThreatDefeatedBatch,
   recordThreatSeen
 } from '../progression/ThreatDiscoveryState.js';
+import { updateHangarProgress } from '../progression/HangarProgressState.js';
 import { getBossProfile } from '../config/BossRoster.js';
 import { RUN_MODES } from '../game/RunMode.js';
 import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDiagnostics.js';
@@ -148,6 +151,23 @@ export class PlayScene {
     this.lastBossMercyFeedbackAt = 0;
     this.bossWipeoutGuard = null;
     this.pendingBossWipeoutRecovery = null;
+    this.deferredThreatDefeats = [];
+    this.deferredThreatDefeatStats = {
+      queued: 0,
+      flushed: 0,
+      firstDefeats: 0
+    };
+    this.threatDefeatSeenKeys = null;
+    this.isCollisionHotPathActive = false;
+    this.deferredHotPathScoreProgress = null;
+    this.deferredHotPathScoreAwards = {};
+    this.deferredCollisionUiFeedback = {
+      toasts: [],
+      screenShakes: [],
+      playerExplosions: []
+    };
+    this.deferredLiveRankRefreshRequested = false;
+    this.deferredScoreCueRefreshRequested = false;
     this.debugInvincible = false;
     this.debugLastBlockedDamageAt = 0;
     this.debugLevelToolsUsed = false;
@@ -324,6 +344,23 @@ export class PlayScene {
     this.isReady = false;
     this.performanceDiagnostics?.destroy?.();
     this.performanceDiagnostics = createMayhemPerformanceDiagnostics(this);
+    this.deferredThreatDefeats = [];
+    this.deferredThreatDefeatStats = {
+      queued: 0,
+      flushed: 0,
+      firstDefeats: 0
+    };
+    this.threatDefeatSeenKeys = this.createThreatDefeatSeenKeyCache();
+    this.isCollisionHotPathActive = false;
+    this.deferredHotPathScoreProgress = null;
+    this.deferredHotPathScoreAwards = {};
+    this.deferredCollisionUiFeedback = {
+      toasts: [],
+      screenShakes: [],
+      playerExplosions: []
+    };
+    this.deferredLiveRankRefreshRequested = false;
+    this.deferredScoreCueRefreshRequested = false;
     if (!this.inputManager || this.inputManager.destroyed) {
       this.inputManager = new InputManager();
     }
@@ -1811,6 +1848,9 @@ export class PlayScene {
       measure('player_metrics', () => this.updatePlayerMetrics(delta));
 
       measure('collisions', () => this.checkCollisions());
+      measure('deferred_progression.score_progress', () => this.flushDeferredHotPathProgress());
+      measure('deferred_progression.threat_defeats', () => this.processDeferredThreatDefeats(40));
+      measure('deferred_visual_feedback.collision_ui', () => this.flushDeferredCollisionUiFeedback());
       measure('overrun_celebrations', () => this.updateOverrunClearCelebrations());
 
       // Level progression
@@ -2441,7 +2481,10 @@ export class PlayScene {
       hitSparks: [],
       deathFeedback: [],
       audio: [],
-      powerupSpawns: []
+      powerupSpawns: [],
+      toasts: [],
+      playerExplosions: [],
+      screenShakes: []
     };
   }
 
@@ -2486,20 +2529,24 @@ export class PlayScene {
       }
       let hitSparkCreated = 0;
       let deathFeedbackCreated = 0;
-      for (const spark of queue.hitSparks) {
+      const maxHitSparks = 4;
+      const maxDeathFeedback = 1;
+      for (const spark of queue.hitSparks.slice(0, maxHitSparks)) {
         if (!this.particleManager || spark?.enabled === false) continue;
         this.particleManager.createHitSpark(spark.x, spark.y, spark.color, spark.intensity);
         hitSparkCreated += 1;
       }
-      for (const entry of queue.deathFeedback) {
+      for (const entry of queue.deathFeedback.slice(0, maxDeathFeedback)) {
         if (!entry?.enemy) continue;
         this.playEnemyDeathFeedback(entry.enemy, entry.options || {});
         deathFeedbackCreated += 1;
       }
       stats.hitSparkQueued = (stats.hitSparkQueued || 0) + queue.hitSparks.length;
       stats.hitSparkCreated = (stats.hitSparkCreated || 0) + hitSparkCreated;
+      stats.hitSparkDropped = (stats.hitSparkDropped || 0) + Math.max(0, queue.hitSparks.length - hitSparkCreated);
       stats.deathFeedbackQueued = (stats.deathFeedbackQueued || 0) + queue.deathFeedback.length;
       stats.deathFeedbackCreated = (stats.deathFeedbackCreated || 0) + deathFeedbackCreated;
+      stats.deathFeedbackDropped = (stats.deathFeedbackDropped || 0) + Math.max(0, queue.deathFeedback.length - deathFeedbackCreated);
     });
 
     measured('collision.side_effects.audio', () => {
@@ -2508,7 +2555,8 @@ export class PlayScene {
         return;
       }
       let played = 0;
-      for (const entry of queue.audio) {
+      const maxAudioEvents = 8;
+      for (const entry of queue.audio.slice(0, maxAudioEvents)) {
         if (!entry?.sfx) continue;
         AudioManager.playSfx(entry.sfx, entry.options || {});
         played += 1;
@@ -2530,6 +2578,26 @@ export class PlayScene {
       stats.powerupSpawnQueued = (stats.powerupSpawnQueued || 0) + queue.powerupSpawns.length;
       stats.powerupSpawned = (stats.powerupSpawned || 0) + spawned;
     });
+
+    measured('collision.side_effects.ui_feedback', () => {
+      if (skipAllSideEffects) return;
+      this.deferredCollisionUiFeedback.toasts.push(...queue.toasts);
+      this.deferredCollisionUiFeedback.screenShakes.push(...queue.screenShakes);
+      this.deferredCollisionUiFeedback.playerExplosions.push(...queue.playerExplosions);
+    });
+  }
+
+  getCollisionRadius(entity) {
+    const radius = Number(entity?.radius) || 10;
+    if (entity?.kind === 'boss') {
+      const fairness = BalanceConfig.difficulty?.bossFairness || {};
+      const level = Number(entity.level) || Number(this.game?.level) || 1;
+      const scalar = level <= 1
+        ? (fairness.contactRadiusScalarEarly ?? fairness.contactRadiusScalar ?? 0.5)
+        : (fairness.contactRadiusScalar ?? 0.62);
+      return Math.max(42, radius * scalar);
+    }
+    return radius;
   }
 
   checkCollisions() {
@@ -2550,8 +2618,11 @@ export class PlayScene {
       bombApexDetonations: 0,
       playerBulletEnemyPairs: 0,
       playerBulletEnemyHits: 0,
+      playerBulletEnemyHitEvents: 0,
       playerBulletEnemyKills: 0,
       playerBulletEnemyDamageOnly: 0,
+      playerBulletEnemyProxies: 0,
+      enemyCollisionProxies: 0,
       playerBulletHijackerPairs: 0,
       playerBulletHijackerHits: 0,
       projectileDefensePairs: 0,
@@ -2574,8 +2645,10 @@ export class PlayScene {
       scorePopupPending: 0,
       hitSparkQueued: 0,
       hitSparkCreated: 0,
+      hitSparkDropped: 0,
       deathFeedbackQueued: 0,
       deathFeedbackCreated: 0,
+      deathFeedbackDropped: 0,
       audioQueued: 0,
       audioPlayed: 0,
       powerupSpawnQueued: 0,
@@ -2585,6 +2658,8 @@ export class PlayScene {
 
     // Safety checks for managers
     if (!this.bulletManager || !this.enemyManager || !this.powerupManager || !this.player) return;
+    this.isCollisionHotPathActive = true;
+    try {
 
     // Bomb detonation check
     measure('collision.bomb_apex', () => {
@@ -2601,64 +2676,120 @@ export class PlayScene {
 
     // Player bullets vs enemies
     measure('collision.player_bullets_enemies', () => {
-    this.bulletManager.playerBullets.forEach(bullet => {
-      if (bullet.active) {
-        this.enemyManager.enemies.forEach(enemy => {
-          if (!bullet.active) return;
-          if (enemy.active) collisionStats.playerBulletEnemyPairs += 1;
-          if (enemy.active && this.checkCollision(bullet, enemy)) {
-            collisionStats.playerBulletEnemyHits += 1;
-            if (bullet.isBomb) {
-              this.detonateBombBullet(bullet, 'impact');
-              return;
-            }
-            if (!bullet.piercing) bullet.active = false;
-            const destroyed = enemy.takeDamage(bullet.damage);
+    let bulletProxies = [];
+    let enemyProxies = [];
+    let hitEvents = [];
 
-            // Chain Lightning: Arc to nearby enemies
-            this.triggerChainLightning(enemy, bullet.damage);
-            this.applyShipTraitBulletImpact(bullet, enemy);
+    measure('collision.player_bullets_enemies.build_proxies', () => {
+      bulletProxies = this.bulletManager.playerBullets
+        .filter((bullet) => bullet?.active)
+        .map((bullet) => ({
+          ref: bullet,
+          x: Number(bullet.x) || 0,
+          y: Number(bullet.y) || 0,
+          radius: this.getCollisionRadius(bullet),
+          damage: Math.max(0, Number(bullet.damage) || 0),
+          piercing: Boolean(bullet.piercing),
+          isBomb: Boolean(bullet.isBomb)
+        }));
+      enemyProxies = this.enemyManager.enemies
+        .filter((enemy) => enemy?.active)
+        .map((enemy) => ({
+          ref: enemy,
+          x: Number(enemy.x) || 0,
+          y: Number(enemy.y) || 0,
+          radius: this.getCollisionRadius(enemy)
+        }));
+      collisionStats.playerBulletEnemyProxies = bulletProxies.length;
+      collisionStats.enemyCollisionProxies = enemyProxies.length;
+    });
 
-            if (destroyed) {
-              collisionStats.playerBulletEnemyKills += 1;
-              // XP Logic handled by score now
+    measure('collision.player_bullets_enemies.broadphase', () => {
+      // Reserved for a spatial grid if proxy counts prove the N*M pass is still too costly.
+    });
 
-              // Feature: Slow Time Trade-off
-              if (!this.player.isSlowTimeActive?.()) {
-                const scoreAwarded = this.getComboScore(enemy.scoreValue);
-                const appliedScore = this.game.addScore(scoreAwarded);
-                this.queueCollisionSideEffect(sideEffects, 'scorePopups', {
-                  x: enemy.x,
-                  y: enemy.y,
-                  score: appliedScore
-                });
-              }
-              measure('collision.progression_hooks.enemy_killed', () => this.onEnemyKilled(enemy));
-              this.queueCollisionSideEffect(sideEffects, 'deathFeedback', {
-                enemy,
-                options: { volume: 0.5 }
-              });
-              this.screenShake.shake(3);
-
-              // Powerup Drop Check (Manager handles chance & guarantees)
-              this.queueCollisionSideEffect(sideEffects, 'powerupSpawns', {
-                x: enemy.x,
-                y: enemy.y
-              });
-            } else {
-              collisionStats.playerBulletEnemyDamageOnly += 1;
-              this.queueCollisionSideEffect(sideEffects, 'hitSparks', {
-                x: enemy.x,
-                y: enemy.y
-              });
-              this.queueCollisionSideEffect(sideEffects, 'audio', {
-                sfx: 'hit',
-                options: { volume: 0.4 }
-              });
-            }
-          }
-        });
+    measure('collision.player_bullets_enemies.hit_test', () => {
+      for (const bulletProxy of bulletProxies) {
+        const bullet = bulletProxy.ref;
+        if (!bullet?.active) continue;
+        for (const enemyProxy of enemyProxies) {
+          const enemy = enemyProxy.ref;
+          if (!bullet.active) break;
+          if (!enemy?.active) continue;
+          collisionStats.playerBulletEnemyPairs += 1;
+          const radius = bulletProxy.radius + enemyProxy.radius;
+          const dx = bulletProxy.x - enemyProxy.x;
+          const dy = bulletProxy.y - enemyProxy.y;
+          if ((dx * dx + dy * dy) >= radius * radius) continue;
+          collisionStats.playerBulletEnemyHits += 1;
+          hitEvents.push({ bullet, enemy, bulletProxy });
+          if (!bulletProxy.piercing) bullet.active = false;
+          if (bulletProxy.isBomb) break;
+        }
       }
+      collisionStats.playerBulletEnemyHitEvents = hitEvents.length;
+    });
+
+    measure('collision.player_bullets_enemies.apply_damage', () => {
+      for (const event of hitEvents) {
+        const { bullet, enemy, bulletProxy } = event;
+        if (!enemy?.active) continue;
+        if (bulletProxy.isBomb) {
+          this.detonateBombBullet(bullet, 'impact');
+          continue;
+        }
+        const destroyed = enemy.takeDamage(bulletProxy.damage);
+        event.destroyed = destroyed;
+        this.triggerChainLightning(enemy, bulletProxy.damage);
+        this.applyShipTraitBulletImpact(bullet, enemy);
+      }
+    });
+
+    measure('collision.player_bullets_enemies.kill_marking', () => {
+      for (const event of hitEvents) {
+        const { enemy, destroyed } = event;
+        if (event.bulletProxy?.isBomb) continue;
+        if (destroyed) {
+          collisionStats.playerBulletEnemyKills += 1;
+          if (!this.player.isSlowTimeActive?.()) {
+            const scoreAwarded = this.getComboScore(enemy.scoreValue);
+            const appliedScore = this.game.addScore(scoreAwarded);
+            this.queueCollisionSideEffect(sideEffects, 'scorePopups', {
+              x: enemy.x,
+              y: enemy.y,
+              score: appliedScore
+            });
+          }
+          measure('collision.progression_hooks.enemy_killed', () => this.onEnemyKilled(enemy, { sideEffects }));
+          this.queueCollisionSideEffect(sideEffects, 'deathFeedback', {
+            enemy,
+            options: { volume: 0.5 }
+          });
+          this.queueCollisionSideEffect(sideEffects, 'screenShakes', {
+            intensity: 3
+          });
+          this.queueCollisionSideEffect(sideEffects, 'powerupSpawns', {
+            x: enemy.x,
+            y: enemy.y
+          });
+        } else {
+          collisionStats.playerBulletEnemyDamageOnly += 1;
+          this.queueCollisionSideEffect(sideEffects, 'hitSparks', {
+            x: enemy.x,
+            y: enemy.y
+          });
+          this.queueCollisionSideEffect(sideEffects, 'audio', {
+            sfx: 'hit',
+            options: { volume: 0.4 }
+          });
+        }
+      }
+    });
+
+    measure('collision.player_bullets_enemies.cleanup', () => {
+      bulletProxies = null;
+      enemyProxies = null;
+      hitEvents = null;
     });
     });
 
@@ -2936,6 +3067,9 @@ export class PlayScene {
     measure('collision.side_effects.total', () => {
       this.processCollisionSideEffects(sideEffects, collisionStats, measure);
     });
+    } finally {
+      this.isCollisionHotPathActive = false;
+    }
   }
 
   updatePlayerMetrics(delta) {
@@ -2993,19 +3127,7 @@ export class PlayScene {
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    const collisionRadius = (entity) => {
-      const radius = Number(entity?.radius) || 10;
-      if (entity?.kind === 'boss') {
-        const fairness = BalanceConfig.difficulty?.bossFairness || {};
-        const level = Number(entity.level) || Number(this.game?.level) || 1;
-        const scalar = level <= 1
-          ? (fairness.contactRadiusScalarEarly ?? fairness.contactRadiusScalar ?? 0.5)
-          : (fairness.contactRadiusScalar ?? 0.62);
-        return Math.max(42, radius * scalar);
-      }
-      return radius;
-    };
-    const minDistance = collisionRadius(a) + collisionRadius(b);
+    const minDistance = this.getCollisionRadius(a) + this.getCollisionRadius(b);
     return distance < minDistance;
   }
 
@@ -3324,6 +3446,9 @@ export class PlayScene {
 
   destroy() {
     this.flushBalanceDebugSummary('scene_destroy');
+    if (this.deferredThreatDefeats?.length) {
+      this.processDeferredThreatDefeats(this.deferredThreatDefeats.length);
+    }
     this.performanceDiagnostics?.destroy?.();
     this.performanceDiagnostics = null;
     this.closeSettingsOverlay();
@@ -7312,6 +7437,152 @@ export class PlayScene {
     return result;
   }
 
+  createThreatDefeatSeenKeyCache() {
+    const seen = new Set();
+    if (!RunPacingConfig.threatCodexEnabled || !this.game?.isRankedRun?.()) return seen;
+    try {
+      const items = readThreatDiscoveryState()?.items || {};
+      for (const category of ['enemies', 'bosses']) {
+        const bucket = items[category] || {};
+        for (const [id, item] of Object.entries(bucket)) {
+          if ((Number(item?.timesDefeated) || 0) > 0) seen.add(`${category}:${id}`);
+        }
+      }
+    } catch (error) {
+      console.warn('[ThreatDiscoveryState] Failed to warm defeat cache:', error);
+    }
+    return seen;
+  }
+
+  queueThreatDefeat(id, category, metadata = {}) {
+    if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
+    if (!this.game?.isRankedRun?.()) return null;
+
+    const key = `${category}:${String(id)}`;
+    if (!this.threatDefeatSeenKeys) this.threatDefeatSeenKeys = this.createThreatDefeatSeenKeyCache();
+    const isFirstDefeat = !this.threatDefeatSeenKeys.has(key);
+    this.threatDefeatSeenKeys.add(key);
+    this.deferredThreatDefeats.push({
+      threatId: String(id),
+      category,
+      metadata
+    });
+    this.deferredThreatDefeatStats.queued += 1;
+
+    if (isFirstDefeat) {
+      const bonus = category === 'bosses'
+        ? RunPacingConfig.discovery.firstBossDefeatBonus
+        : RunPacingConfig.discovery.firstDefeatBonus;
+      if (this.isCollisionHotPathActive) {
+        this.deferHotPathScoreAward(bonus, category === 'bosses' ? 'bossBonus' : 'discoveryBonus');
+      } else {
+        const appliedBonus = this.game.addScore(bonus, category === 'bosses' ? 'bossBonus' : 'discoveryBonus');
+        if (category !== 'bosses') this.discoveryBonus = (Number(this.discoveryBonus) || 0) + appliedBonus;
+      }
+      this.deferredThreatDefeatStats.firstDefeats += 1;
+      return { isFirstDefeat, appliedBonus: this.isCollisionHotPathActive ? 0 : bonus };
+    }
+
+    return { isFirstDefeat, appliedBonus: 0 };
+  }
+
+  processDeferredThreatDefeats(maxEntries = 40) {
+    if (!this.deferredThreatDefeats?.length) return { flushed: 0, pending: 0, firstDefeats: 0 };
+    const batchSize = Math.max(1, Math.floor(Number(maxEntries) || 1));
+    const batch = this.deferredThreatDefeats.splice(0, batchSize);
+    const result = recordThreatDefeatedBatch(batch);
+    const firstDefeats = result.results?.filter((entry) => entry?.isFirstDefeat).length || 0;
+    this.deferredThreatDefeatStats.flushed += batch.length;
+    return {
+      flushed: batch.length,
+      pending: this.deferredThreatDefeats.length,
+      firstDefeats
+    };
+  }
+
+  deferHotPathScoreProgress(progress = {}) {
+    const previous = this.deferredHotPathScoreProgress || {};
+    this.deferredHotPathScoreProgress = {
+      bestScore: Math.max(Number(previous.bestScore) || 0, Number(progress.bestScore) || 0),
+      bestRank: Math.max(Number(previous.bestRank) || 0, Number(progress.bestRank) || 0),
+      bestLevel: Math.max(Number(previous.bestLevel) || 0, Number(progress.bestLevel) || 0),
+      bestSector: Math.max(Number(previous.bestSector) || 0, Number(progress.bestSector) || 0)
+    };
+  }
+
+  deferHotPathScoreAward(points, source = 'baseScore') {
+    const key = String(source || 'baseScore');
+    this.deferredHotPathScoreAwards[key] = (Number(this.deferredHotPathScoreAwards[key]) || 0) + (Number(points) || 0);
+  }
+
+  requestDeferredLiveRankRefresh() {
+    this.deferredLiveRankRefreshRequested = true;
+  }
+
+  requestDeferredScoreCueRefresh() {
+    this.deferredScoreCueRefreshRequested = true;
+  }
+
+  flushDeferredHotPathProgress() {
+    const awards = this.deferredHotPathScoreAwards || {};
+    this.deferredHotPathScoreAwards = {};
+    for (const [source, points] of Object.entries(awards)) {
+      if ((Number(points) || 0) > 0) {
+        const applied = this.game?.addScore?.(points, source) || 0;
+        if (source === 'discoveryBonus') this.discoveryBonus = (Number(this.discoveryBonus) || 0) + applied;
+      }
+    }
+
+    const progress = this.deferredHotPathScoreProgress;
+    this.deferredHotPathScoreProgress = null;
+    if (progress && this.game?.canUnlockAchievementsForCurrentRun?.()) {
+      updateHangarProgress(progress);
+    }
+    if (this.deferredLiveRankRefreshRequested) {
+      this.deferredLiveRankRefreshRequested = false;
+      this.game?.updateLiveRunRank?.({ force: true });
+    }
+    if (this.deferredScoreCueRefreshRequested) {
+      this.deferredScoreCueRefreshRequested = false;
+      this.game?.updateGlobalLeaderboardVoiceCues?.();
+      this.game?.updateHighscoreChaseCues?.();
+    }
+    return {
+      progressFlushed: Boolean(progress),
+      liveRankRefreshed: !this.deferredLiveRankRefreshRequested,
+      scoreCuesRefreshed: !this.deferredScoreCueRefreshRequested
+    };
+  }
+
+  flushDeferredCollisionUiFeedback() {
+    const feedback = this.deferredCollisionUiFeedback || {};
+    this.deferredCollisionUiFeedback = {
+      toasts: [],
+      screenShakes: [],
+      playerExplosions: []
+    };
+    for (const toast of (feedback.toasts || []).slice(0, 1)) {
+      if (toast?.message) this.enqueueToast(toast.message, toast.options || {});
+    }
+    for (const shake of (feedback.screenShakes || []).slice(0, 3)) {
+      this.screenShake?.shake?.(shake.intensity, shake.duration);
+    }
+    if (!this.performanceDiagnostics?.options?.noParticles) {
+      for (const entry of (feedback.playerExplosions || []).slice(0, 1)) {
+        const x = Number.isFinite(entry?.x) ? entry.x : this.player?.x;
+        const y = Number.isFinite(entry?.y) ? entry.y : this.player?.y;
+        if (Number.isFinite(x) && Number.isFinite(y)) {
+          this.particleManager?.createExplosion?.(x, y, entry.color, entry.intensity);
+        }
+      }
+    }
+    return {
+      toasts: feedback.toasts?.length || 0,
+      screenShakes: feedback.screenShakes?.length || 0,
+      playerExplosions: feedback.playerExplosions?.length || 0
+    };
+  }
+
   recordThreatDefeat(id, category, metadata = {}) {
     if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
     const isRankedRun = Boolean(this.game?.isRankedRun?.());
@@ -7374,18 +7645,39 @@ export class PlayScene {
     });
   }
 
-  onEnemyKilled(enemy) {
+  onEnemyKilled(enemy, options = {}) {
     const now = Date.now();
+    const sideEffects = options.sideEffects || null;
+    const queueToast = (message, toastOptions) => {
+      if (!this.queueCollisionSideEffect(sideEffects, 'toasts', { message, options: toastOptions })) {
+        this.enqueueToast(message, toastOptions);
+      }
+    };
+    const queueAudio = (sfx, audioOptions) => {
+      if (!this.queueCollisionSideEffect(sideEffects, 'audio', { sfx, options: audioOptions })) {
+        AudioManager.playSfx(sfx, audioOptions);
+      }
+    };
+    const queuePlayerExplosion = (x, y, color, intensity) => {
+      if (!this.queueCollisionSideEffect(sideEffects, 'playerExplosions', { x, y, color, intensity })) {
+        this.particleManager?.createExplosion?.(x, y, color, intensity);
+      }
+    };
+    const queueScreenShake = (intensity, duration) => {
+      if (!this.queueCollisionSideEffect(sideEffects, 'screenShakes', { intensity, duration })) {
+        this.screenShake?.shake?.(intensity, duration);
+      }
+    };
     if (enemy?.kind === 'boss') {
       const bossId = enemy?.profile?.id || enemy?.bossType || `boss_${this.game.level}`;
       this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
-      this.recordThreatDefeat(bossId, 'bosses', {
+      this.queueThreatDefeat(bossId, 'bosses', {
         name: enemy?.profile?.name || enemy?.name || bossId,
         role: enemy?.profile?.title || 'boss',
         sector: this.game.level
       });
     } else {
-      this.recordThreatDefeat(enemy?.type, 'enemies', {
+      this.queueThreatDefeat(enemy?.type, 'enemies', {
         name: enemy?.generatedProfile?.displayName || enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || enemy?.type,
         role: enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy',
         sector: this.game.level
@@ -7411,20 +7703,16 @@ export class PlayScene {
       if (this.comboCount === milestone.threshold && !this.comboMilestonesReached.has(milestone.threshold)) {
         this.comboMilestonesReached.add(milestone.threshold);
         const appliedBonus = this.game.addScore(milestone.bonus);
-        this.enqueueToast(`${milestone.label} +${appliedBonus}`, {
+        queueToast(`${milestone.label} +${appliedBonus}`, {
           fontSize: 26,
           fill: '#ffaa00',
           slot: 'center',
           type: 'milestone',
           duration: 1800
         });
-        AudioManager.playSfx('combo_breakout', { force: true, volume: 0.95 });
-        if (this.particleManager && this.player) {
-          this.particleManager.createExplosion(this.player.x, this.player.y - 40, 0xffaa00);
-        }
-        if (this.screenShake) {
-          this.screenShake.shake(6, 15); // Medium shake: 6 intensity, 15 duration
-        }
+        queueAudio('combo_breakout', { force: true, volume: 0.95 });
+        queuePlayerExplosion(this.player?.x, (this.player?.y || 0) - 40, 0xffaa00);
+        queueScreenShake(6, 15);
       }
     }
 
@@ -7436,20 +7724,18 @@ export class PlayScene {
 
     if (this.comboMultiplier !== prevMultiplier) {
       const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
-      this.enqueueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
-      AudioManager.playSfx('combo_breakout', { force: true, volume: 0.82 });
-      if (this.particleManager && this.player) {
-        this.particleManager.createExplosion(this.player.x, this.player.y, 0x00ffff);
-      }
+      queueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
+      queueAudio('combo_breakout', { force: true, volume: 0.82 });
+      queuePlayerExplosion(this.player?.x, this.player?.y, 0x00ffff);
     }
 
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
       const bonus = this.getComboScore(100 * (this.comboCount / 10));
       const appliedBonus = this.game.addScore(bonus);
       if (this.comboCount % 20 === 0) {
-        this.enqueueToast(`COMBO BONUS +${appliedBonus}`, { fontSize: 16, fill: '#fff3a2', slot: 'top', type: 'combo', duration: 900, priority: 1 });
+        queueToast(`COMBO BONUS +${appliedBonus}`, { fontSize: 16, fill: '#fff3a2', slot: 'top', type: 'combo', duration: 900, priority: 1 });
       }
-      AudioManager.playSfx('combo_tick', { force: false, volume: 0.16, minIntervalMs: 900 });
+      queueAudio('combo_tick', { force: false, volume: 0.16, minIntervalMs: 900 });
     }
 
     const clutchChance = 0;

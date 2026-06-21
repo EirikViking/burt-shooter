@@ -563,7 +563,8 @@ export class Game {
   addScore(points, source = 'baseScore') {
     const base = Number(points) || 0;
     const gameMult = Number(this.scoreMultiplier) || 1;
-    const playerMult = this.scenes?.play?.player?.scoreMultiplier || 1;
+    const playScene = this.scenes?.play;
+    const playerMult = playScene?.player?.scoreMultiplier || 1;
     const preDangerAward = normalizeScoreDelta(base, gameMult * playerMult);
     const applied = this.getScoreAward(points);
     this.score += applied;
@@ -572,12 +573,24 @@ export class Game {
     this.scoreBreakdown.dangerMultiplierBonus += Math.max(0, applied - preDangerAward);
     this.scoreBreakdown.finalScore = this.score;
 
-    if (this.canUnlockAchievementsForCurrentRun()) {
+    const deferProgress = Boolean(playScene?.isCollisionHotPathActive);
+    if (this.canUnlockAchievementsForCurrentRun() && !deferProgress) {
       updateHangarProgress({ bestScore: this.score, bestRank: this.rankIndex, bestLevel: this.level, bestSector: this.level });
+    } else if (this.canUnlockAchievementsForCurrentRun() && deferProgress) {
+      playScene.deferHotPathScoreProgress?.({
+        bestScore: this.score,
+        bestRank: this.rankIndex,
+        bestLevel: this.level,
+        bestSector: this.level
+      });
     }
 
     const previousRank = this.rankIndex;
-    this.updateLiveRunRank({ force: true });
+    if (deferProgress) {
+      playScene.requestDeferredLiveRankRefresh?.();
+    } else {
+      this.updateLiveRunRank({ force: true });
+    }
     const computedRank = this.rankIndex;
 
     // Diag Update
@@ -586,8 +599,12 @@ export class Game {
     this.diag.asComp = computedRank;
     this.diag.asBefore = previousRank;
     this.diag.asAfter = computedRank;
-    this.updateGlobalLeaderboardVoiceCues();
-    this.updateHighscoreChaseCues();
+    if (deferProgress) {
+      playScene.requestDeferredScoreCueRefresh?.();
+    } else {
+      this.updateGlobalLeaderboardVoiceCues();
+      this.updateHighscoreChaseCues();
+    }
     return applied;
   }
 

@@ -365,6 +365,72 @@ export function recordThreatDefeated(threatId, category = 'enemies', metadata = 
   };
 }
 
+export function recordThreatDefeatedBatch(entries = []) {
+  const validEntries = Array.isArray(entries)
+    ? entries.filter((entry) => entry?.threatId && DISCOVERY_CATEGORIES.includes(entry.category || 'enemies'))
+    : [];
+  if (validEntries.length === 0) {
+    return { state: readThreatDiscoveryState(), results: [] };
+  }
+
+  const state = readThreatDiscoveryState();
+  const results = [];
+  let changed = false;
+
+  for (const entry of validEntries) {
+    const category = entry.category || 'enemies';
+    const key = String(entry.threatId);
+    const metadata = entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
+    const bucket = state.items[category] || {};
+    const previous = bucket[key] || null;
+    const previousDefeats = Math.max(0, Math.floor(Number(previous?.timesDefeated) || 0));
+    const isNew = !previous;
+    const item = normalizeItem(previous || {
+      id: key,
+      category,
+      name: metadata.name || metadata.label || key,
+      firstSeenAt: nowIso()
+    }, { id: key, category });
+
+    item.name = String(metadata.name || metadata.label || item.name || key);
+    item.lastSeenAt = nowIso();
+    item.timesDefeated += 1;
+    item.metadata = {
+      ...item.metadata,
+      ...metadata
+    };
+    bucket[key] = item;
+    state.items[category] = bucket;
+
+    if (isNew) {
+      const discovery = {
+        id: key,
+        category,
+        name: item.name,
+        discoveredAt: item.firstSeenAt,
+        metadata: item.metadata
+      };
+      state.discoveriesThisRun = [...state.discoveriesThisRun, discovery].slice(-80);
+      state.unreadIds = [...new Set([...state.unreadIds, `${category}:${key}`])];
+    }
+
+    changed = true;
+    results.push({
+      item,
+      isNew,
+      isFirstDefeat: previousDefeats === 0
+    });
+  }
+
+  if (changed) {
+    state.updatedAt = nowIso();
+    cachedThreatDiscoveryState = state;
+    scheduleThreatDiscoveryPersist(state);
+  }
+
+  return { state, results };
+}
+
 export function recordThreatSurvived(threatId, category = 'enemies', metadata = {}) {
   return record(category, threatId, metadata, (item) => {
     item.timesSurvived += 1;

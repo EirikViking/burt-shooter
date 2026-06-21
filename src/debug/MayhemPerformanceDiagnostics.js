@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'novaSwarm.mayhemPerformanceDiagnostics.v1';
 const STORAGE_REPORT_KEY = 'novaSwarm.mayhemPerformanceDiagnostics.latestReport.v1';
 const GLOBAL_KEY = '__novaMayhemPerformanceDiagnostics';
-const AUTO_DIAGNOSTICS_ENABLED = true;
+const AUTO_DIAGNOSTICS_ENABLED = false;
 const SLOW_FRAME_MS = 20;
 const IMPORTANT_SLOW_FRAME_MS = 33;
 const AUTO_WRITE_INTERVAL_MS = 5000;
@@ -163,6 +163,8 @@ function getCounts(scene) {
     pendingScorePopups: scene?.scorePopupManager?.pendingPopups?.length || 0,
     bossHazards: scene?.bossHazards?.length || 0,
     ambientBonusDrones: scene?.ambientBonusDrones?.length || 0,
+    deferredThreatDefeats: scene?.deferredThreatDefeats?.length || 0,
+    deferredThreatDefeatStats: scene?.deferredThreatDefeatStats || null,
     collision: scene?.collisionDiagnosticStats || null
   };
 }

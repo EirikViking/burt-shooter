@@ -114,7 +114,7 @@ try {
   await page.route('**/api/highscores', async (route) => {
     await route.fulfill({ status: 200, headers: { 'Content-Type': 'application/json' }, body: '[]' });
   });
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.goto(`${baseUrl}?novaPerfDiag=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await startMayhem(page);
   await page.waitForFunction(() => window.__novaMayhemPerformanceDiagnostics?.getReport?.()?.sampleCount > 20, null, { timeout: 12000 });
   const initialReport = await page.evaluate(() => window.__novaMayhemPerformanceDiagnostics.getReport());
@@ -128,16 +128,26 @@ try {
     'starfield',
     'collisions',
     'collision.player_bullets_enemies',
+    'collision.player_bullets_enemies.build_proxies',
+    'collision.player_bullets_enemies.broadphase',
+    'collision.player_bullets_enemies.hit_test',
+    'collision.player_bullets_enemies.apply_damage',
+    'collision.player_bullets_enemies.kill_marking',
+    'collision.player_bullets_enemies.cleanup',
     'collision.enemy_bullets_player',
     'collision.side_effects.total',
     'collision.side_effects.score_popups',
     'collision.side_effects.particles',
     'collision.side_effects.audio',
-    'collision.side_effects.powerups'
+    'collision.side_effects.powerups',
+    'collision.side_effects.ui_feedback',
+    'deferred_progression.score_progress',
+    'deferred_progression.threat_defeats',
+    'deferred_visual_feedback.collision_ui'
   ]) {
     assert.ok(sectionLabels.includes(required), `diagnostics should record ${required}`);
   }
-  assert.equal(initialReport.enabled, true, 'diagnostics should be auto-enabled in this private diagnostic build');
+  assert.equal(initialReport.enabled, true, 'diagnostics should enable by explicit URL flag');
   assert.equal(initialReport.options.showOverlay, false, 'diagnostic overlay should stay hidden by default while auto logging');
   assert.ok(initialReport.frame.maxMs >= 0, 'diagnostics should report max frame timing');
   assert.ok(initialReport.lastCounts.sector >= 1, 'diagnostics should report sector count');
