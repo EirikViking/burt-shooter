@@ -376,7 +376,8 @@ export class HUD {
       chase?.runMode || 'none',
       target,
       syncingTarget ? 1 : 0,
-      sectorKey
+      sectorKey,
+      rawScore
     ].join('|');
     const crossedTarget = hasTarget &&
       rawScore > target &&

@@ -258,9 +258,8 @@ try {
   assert.ok(renderCacheProbe.renderKey, 'high-score chase should retain a render cache key');
   assert.equal(renderCacheProbe.graphicsClearCalls, 0, 'unchanged high-score chase state should not redraw graphics on repeated HUD updates');
   assert.equal(renderCacheProbe.textUpdateCalls, 0, 'unchanged high-score chase state should not rerun text layout on repeated HUD updates');
-  assert.equal(renderCacheProbe.sameSectorScore.graphicsClearCalls, 0, 'same-sector score changes should not redraw the high-score chase widget');
-  assert.equal(renderCacheProbe.sameSectorScore.textUpdateCalls, 0, 'same-sector score changes should not rerun high-score chase text layout');
-  assert.equal(renderCacheProbe.afterSameSectorText, renderCacheProbe.beforeScoreText, 'same-sector high-score chase text should stay frozen instead of counting in real time');
+  assert.ok(renderCacheProbe.sameSectorScore.graphicsClearCalls > 0, 'same-sector score changes should redraw the high-score chase widget');
+  assert.notEqual(renderCacheProbe.afterSameSectorText, renderCacheProbe.beforeScoreText, 'same-sector high-score chase text should count down in real time');
   assert.ok(renderCacheProbe.nextSector.graphicsClearCalls > 0, 'next sector should refresh high-score chase graphics');
   assert.ok(renderCacheProbe.displayScore >= 7777, 'next-sector high-score chase display should snapshot the latest score');
   assert.equal(targetCrossingProbe.available, true, 'target-crossing probe should attach');
