@@ -1,0 +1,121 @@
+{
+  "type": "steam_upload_evidence",
+  "slug": "mayhem_sector_frame_pacing",
+  "generatedAt": "2026-06-21T12:12:00.000Z",
+  "branch": "codex/perf-mayhem-sector-frame-pacing-20260621",
+  "startingCommit": "36c9a251d01d19d443dcf3ae269c5a20372004d4",
+  "sourceCommit": "faec6f4e99111398e344a28457f1e64ca1599a80",
+  "packagedBuild": "v2026-06-21_13-58-56",
+  "packagedGitSha": "faec6f4",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23843341",
+    "depotManifest": "4944939550660702571",
+    "baselineDepotManifest": "2093552943102439710",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "steamworksMetadataChanged": false
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdConfirmed": true,
+    "depotConfirmed": true,
+    "setLiveBlankConfirmed": true,
+    "containsPublicOrDefaultAssignment": false,
+    "containsSectorContinueTestAssignment": false,
+    "containsSteamBranchAssignment": false,
+    "description": "Nova Swarm Mayhem frame pacing private test"
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "sha256": "a8b2a5200ef11590a1c458d32f55aff4912bf5c7f6f846a4fe158461ee024140",
+    "manifestHash": "eb59351151435cb7dc4562836ca0c5e530ec703ec78f153a6f1eb71cceb014d1",
+    "fileCount": 336,
+    "totalBytes": 879617840,
+    "executable": "Nova Swarm.exe",
+    "executableSha256": "a387509f75771ae3562648e8360eaf372583f2da840ad849330feab5bc884678"
+  },
+  "uploadEvidence": {
+    "steamcmdLog": "test-results/steam-upload-mayhem-sector-frame-pacing-20260621-140916/steamcmd.log",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "appBuildLogProof": "Successfully finished AppID 4765070 build (BuildID 23843341).",
+    "depotManifestProof": "Success! New manifestID 4944939550660702571 created and 8 new chunks uploaded.",
+    "depotSummary": "0 files added, 2 files changed, 0 files removed, 8 new chunks uploaded"
+  },
+  "performanceEvidence": {
+    "runtimeReport": "test-results/mayhem-sector-frame-pacing-2026-06-21T11-50-02-053Z/report.json",
+    "mayhemActiveP95Ms": 16.8,
+    "mayhemActiveP99Ms": 17.1,
+    "mayhemActiveLongFramesOver20Ms": 0,
+    "sectorActiveP95Ms": 16.8,
+    "sectorActiveP99Ms": 16.9,
+    "sectorActiveLongFramesOver20Ms": 0,
+    "mayhemFullRunSummaryCallsDuringActiveWave": 0,
+    "mayhemThreatDiscoveryWritesDuringActiveWave": 1,
+    "videoReproMayhemLowThenJumpEvents": 16,
+    "videoReproSectorLowThenJumpEvents": 1
+  },
+  "checks": {
+    "sourceChecks": [
+      "git diff --check",
+      "npm run check:i18n",
+      "npm run check:i18n-ui",
+      "npm run check:run-modes",
+      "npm run check:mayhem-sector-frame-pacing",
+      "npm run check:steam-electron-bridge",
+      "npm run check:save-profile-migration",
+      "npm run check:profile-isolation",
+      "npm run check:scout-codex-persistence",
+      "npm run check:controller-flow",
+      "npm run check:steam-achievements-mock",
+      "npm run build:current",
+      "npm run check:release-line"
+    ],
+    "releaseChecks": [
+      "npm run package:steam:win",
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:smoke:current",
+      "npm run desktop:perf:current",
+      "npm run smoke",
+      "npm run steamworks:payload-manifest",
+      "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf"
+    ],
+    "smoke": {
+      "status": "non_blocking_known_timeout",
+      "reason": "Only failure was known timeout at scripts/smoke-playtest.mjs:764:26 after level 3 debug capture.",
+      "artifact": "test-results/smoke-2026-06-21T12-05-58-713Z"
+    },
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-21T12-03-58-451Z/report.json",
+    "currentSmoke": "test-results/electron-smoke-2026-06-21T12-04-11-279Z/report.json",
+    "currentPerf": "test-results/electron-perf-smoke-2026-06-21T12-04-11-333Z/report.json"
+  },
+  "protectedSystems": {
+    "setLiveChanged": false,
+    "steamBranchAssigned": false,
+    "steamworksMetadataChanged": false,
+    "leaderboardIdentityChanged": false,
+    "liveSavesTouched": false,
+    "profileRescueRun": false,
+    "balanceChanged": false,
+    "powerupArtChanged": false,
+    "displaySettingsChanged": false
+  },
+  "manualSteamworksTestSteps": [
+    "Assign BuildID 23843341 to the intended private test branch in Steamworks.",
+    "Install that private branch through Steam.",
+    "Launch Mayhem Run from Sector 1 on a high-progress profile and watch the first two normal waves for microstutter.",
+    "Launch Sector Run from checkpoint 20 and compare frame pacing against Mayhem.",
+    "End a run with new Codex discoveries, restart, and confirm Codex discoveries persisted.",
+    "Confirm Mayhem remains the only mode submitting to nova_swarm_global_score_v2 and unlocking Steam achievements."
+  ],
+  "rollback": {
+    "git": "git revert faec6f4e99111398e344a28457f1e64ca1599a80",
+    "steamworks": "Do not assign BuildID 23843341, or reassign the previous private test BuildID."
+  }
+}
