@@ -52,6 +52,7 @@ import {
 import { recordScoutRun } from '../progression/ScoutRunRecords.js';
 import { getSectorStartChallengeRecord, recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
 import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
+import { isMayhemPerformanceOptionEnabled } from '../debug/MayhemPerformanceDiagnostics.js';
 
 const MENU_EXIT_GUARD_MS = 900;
 const SCENE_INPUT_GUARD_MS = 180;
@@ -331,8 +332,10 @@ export class Game {
 
     this.switchScene('play');
     this.prepareGameplayInputFocus();
-    this.primeHighscoreChaseTarget();
-    this.primeGlobalLeaderboardTargets();
+    if (!isMayhemPerformanceOptionEnabled('noLeaderboardTargets')) {
+      this.primeHighscoreChaseTarget();
+      this.primeGlobalLeaderboardTargets();
+    }
     if (this.isRankedRun()) incrementShipUsage(selectedSpriteKey);
     return true;
   }

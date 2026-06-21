@@ -185,6 +185,7 @@
     "check:gameplay-cursor": "node scripts/check-gameplay-cursor.mjs",
     "check:gameplay-performance-analysis": "node scripts/check-gameplay-performance-analysis.mjs",
     "check:mayhem-sector-frame-pacing": "node scripts/check-mayhem-sector-frame-pacing.mjs",
+    "check:mayhem-performance-diagnostics": "node scripts/check-mayhem-performance-diagnostics.mjs",
     "check:small-enemy-roster-feel": "node scripts/check-small-enemy-roster-feel.mjs",
     "check:keyboard-launches": "node scripts/check-keyboard-launch-paths.mjs",
     "check:live-deployment": "node scripts/check-live-deployment.mjs",

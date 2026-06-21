@@ -68,6 +68,7 @@ import {
 } from '../progression/ThreatDiscoveryState.js';
 import { getBossProfile } from '../config/BossRoster.js';
 import { RUN_MODES } from '../game/RunMode.js';
+import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDiagnostics.js';
 
 const BOSS_WARNING_JOKES = [
   'Mission Control is hiding under the desk.',
@@ -316,10 +317,13 @@ export class PlayScene {
     this._activeTickers = [];
     this.balanceDebug = null;
     this.bossClearRecoveryLevels = new Set();
+    this.performanceDiagnostics = null;
   }
 
   init() {
     this.isReady = false;
+    this.performanceDiagnostics?.destroy?.();
+    this.performanceDiagnostics = createMayhemPerformanceDiagnostics(this);
     if (!this.inputManager || this.inputManager.destroyed) {
       this.inputManager = new InputManager();
     }
@@ -1613,20 +1617,26 @@ export class PlayScene {
   update(delta) {
     if (!Number.isFinite(delta) || delta > 100 || delta < 0) return;
     if (!this.isReady) return;
+    const perfDiag = this.performanceDiagnostics;
+    const perfOptions = perfDiag?.enabled ? perfDiag.options : null;
+    const measure = perfDiag?.measure?.bind(perfDiag) || ((_label, callback) => callback());
+    perfDiag?.beginFrame?.(delta, this);
 
     try {
-      this.updateDiagnosticsLayout();
-      this.cleanupSkippedFrameVisuals('frame_start');
+      measure('frame_start', () => {
+        this.updateDiagnosticsLayout();
+        this.cleanupSkippedFrameVisuals('frame_start');
+      });
 
       if (this.gameOverInterlude?.active) {
         this.cleanupSkippedFrameVisuals('gameover_interlude');
-        this.updateGameOverInterlude(delta);
+        measure('gameover_interlude', () => this.updateGameOverInterlude(delta));
         return;
       }
 
       if (this.overrunMilestoneInterlude?.active) {
         this.cleanupSkippedFrameVisuals('overrun_interlude');
-        this.updateOverrunMilestoneInterlude(delta);
+        measure('overrun_interlude', () => this.updateOverrunMilestoneInterlude(delta));
         return;
       }
 
@@ -1656,13 +1666,16 @@ export class PlayScene {
       this.updateControllerPresencePause();
     if (this.isPaused) {
       this.cleanupSkippedFrameVisuals('pause');
-      this.pauseMenuFx?.update?.(delta);
-      this.updatePauseMenuControls(delta);
+      measure('pause_menu', () => {
+        this.pauseMenuFx?.update?.(delta);
+        this.updatePauseMenuControls(delta);
+      });
       return;
     }
 
       // Player update
-      if (this.game.lives > 0 && this.player) {
+      measure('player', () => {
+        if (!(this.game.lives > 0 && this.player)) return;
         // Pass touch input to player
         if (this.touchControls) {
           const touchInput = this.touchControls.getInput();
@@ -1684,16 +1697,18 @@ export class PlayScene {
             this.gameContainer.addChild(sprite);
           }
         }
-      }
+      });
 
-      this.updateComboTimers(delta);
-      this.updateDangerDodgeTimer(delta);
-      this.updateGrazeBreakTimer();
-      if (this.player?.synergyState?.type) {
-        this.setSynergyBadge(this.player.synergyState.label || this.player.synergyState.type);
-      } else {
-        this.setSynergyBadge('');
-      }
+      measure('player_state', () => {
+        this.updateComboTimers(delta);
+        this.updateDangerDodgeTimer(delta);
+        this.updateGrazeBreakTimer();
+        if (this.player?.synergyState?.type) {
+          this.setSynergyBadge(this.player.synergyState.label || this.player.synergyState.type);
+        } else {
+          this.setSynergyBadge('');
+        }
+      });
 
 
       if (this.freezeTimerMs > 0) {
@@ -1740,44 +1755,66 @@ export class PlayScene {
       const firePressed = this.inputManager.isFiring() || touchInput.firing;
 
       if (firePressed && this.player && !this.introActive) {
-        if (this.player.canShoot()) {
+        measure('shooting', () => {
+          if (!this.player.canShoot()) return;
           const bullets = this.player.shoot();
           this.markGrazeBreakShot(bullets);
           bullets.forEach(bullet => this.bulletManager.addPlayerBullet(bullet));
 
           // TASK 4: Shooting sound with health check
           this.playShootSoundWithHealthCheck();
-        }
+        });
       }
 
       // Managers update
       const slowTimeActive = this.player?.isSlowTimeActive?.() === true;
       const enemyBulletScale = slowTimeActive ? 0.6 : 1;
-      if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
-      if (this.enemyManager) this.enemyManager.update(delta);
-      this.sampleBalanceBoss();
-      this.maybeSpawnBossClutchShield();
-      this.applyGameplayBackdropLevel(this.game?.level || 1);
-      if (this.powerupManager) this.powerupManager.update(delta, this);
-      this.updateTractorHijack(delta);
-      this.updateBossHazards(delta);
-      if (this.particleManager) this.particleManager.update(delta);
-      if (this.screenShake) this.screenShake.update(delta);
-      if (this.scorePopupManager) this.scorePopupManager.update(delta);
+      measure('bullets', () => {
+        if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
+      });
+      measure('enemies', () => {
+        if (this.enemyManager) this.enemyManager.update(delta);
+      });
+      measure('boss_director', () => {
+        this.sampleBalanceBoss();
+        this.maybeSpawnBossClutchShield();
+      });
+      measure('backdrop_level', () => this.applyGameplayBackdropLevel(this.game?.level || 1));
+      measure('powerups', () => {
+        if (this.powerupManager) this.powerupManager.update(delta, this);
+      });
+      measure('tractor', () => this.updateTractorHijack(delta));
+      measure('boss_hazards', () => this.updateBossHazards(delta));
+      if (!perfOptions?.noParticles) {
+        measure('particles', () => {
+          if (this.particleManager) this.particleManager.update(delta);
+        });
+      }
+      measure('screen_shake', () => {
+        if (this.screenShake) this.screenShake.update(delta);
+      });
+      if (!perfOptions?.noScorePopups) {
+        measure('score_popups', () => {
+          if (this.scorePopupManager) this.scorePopupManager.update(delta);
+        });
+      }
 
       // Audio Update (Sequencer)
-      if (AudioManager && AudioManager.update) AudioManager.update(delta);
+      measure('audio', () => {
+        if (AudioManager && AudioManager.update) AudioManager.update(delta);
+      });
 
       // Tractor beam
       // Tractor Beam Removed
 
       // Adaptive Enemy Feature: Track Player Position
-      this.updatePlayerMetrics(delta);
+      measure('player_metrics', () => this.updatePlayerMetrics(delta));
 
-      this.checkCollisions();
-      this.updateOverrunClearCelebrations();
+      measure('collisions', () => this.checkCollisions());
+      measure('overrun_celebrations', () => this.updateOverrunClearCelebrations());
 
       // Level progression
+      measure('level_progression', () => {
       if (this.enemyManager.isLevelComplete() && !this.enemyManager.spawning && !this.levelAdvancePending) {
         this.levelAdvancePending = true;
 
@@ -1875,15 +1912,30 @@ export class PlayScene {
           });
         }, BalanceConfig.level.sequenceDuration || 3000);
       }
+      });
 
-      this.hud.update();
-      this.updateStarfield(delta); // TASK D: Animate background stars
-      this.updateAmbientBonusDrones(delta); // Handles hazard drones and collectible power cores
-      this.applyMagnetPull(delta);
-      this.updateOrbitalStrike(delta);
-      this.updateEasterEgg(delta);
-      this.updateRandomPopups(delta);
-      this.checkLowLives();
+      if (!perfOptions?.hudLite) {
+        measure('hud', () => {
+          this.hud?.update?.();
+          if (this.hud?.highscoreChaseGroup) {
+            const showHighscoreChase = !perfOptions?.hideHighscoreChase;
+            this.hud.highscoreChaseGroup.visible = showHighscoreChase;
+            this.hud.highscoreChaseGroup.renderable = showHighscoreChase;
+          }
+        });
+      } else if (this.hud?.highscoreChaseGroup) {
+        this.hud.highscoreChaseGroup.visible = false;
+        this.hud.highscoreChaseGroup.renderable = false;
+      }
+      if (!perfOptions?.noStarfield) {
+        measure('starfield', () => this.updateStarfield(delta)); // TASK D: Animate background stars
+      }
+      measure('ambient_bonus_drones', () => this.updateAmbientBonusDrones(delta)); // Handles hazard drones and collectible power cores
+      measure('magnet_pull', () => this.applyMagnetPull(delta));
+      measure('orbital_strike', () => this.updateOrbitalStrike(delta));
+      measure('easter_egg', () => this.updateEasterEgg(delta));
+      measure('random_popups', () => this.updateRandomPopups(delta));
+      measure('low_lives', () => this.checkLowLives());
 
       const scoreDelta = this.game.score - this.lastScoreSeen;
       if (scoreDelta > 0) {
@@ -1894,7 +1946,7 @@ export class PlayScene {
         this.lastBossDefeatedLevel = this.game.level;
         this.updateMetaProgress(0, true);
       }
-      this.updateDevOverlay();
+      measure('dev_overlay', () => this.updateDevOverlay());
 
     } catch (e) {
       console.error('GAME LOOP CRASH:', e);
@@ -1902,6 +1954,8 @@ export class PlayScene {
         this.game.app.ticker.stop();
       }
       this.showErrorOverlay(e);
+    } finally {
+      perfDiag?.endFrame?.(this);
     }
   }
 
@@ -3068,6 +3122,8 @@ export class PlayScene {
 
   destroy() {
     this.flushBalanceDebugSummary('scene_destroy');
+    this.performanceDiagnostics?.destroy?.();
+    this.performanceDiagnostics = null;
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
     this.destroyPauseOverlay();
