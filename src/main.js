@@ -367,7 +367,10 @@ function createPerfOverlay(enabled) {
 function updatePerfStats(app, game, delta, clampedDelta) {
   perfState.lastFrameTime = performance.now();
   perfState.frameMs = app.ticker.deltaMS || (Number.isFinite(delta) && delta > 0 ? delta * (1000 / 60) : 0);
-  perfState.fps = app.ticker.FPS || (perfState.frameMs ? 1000 / perfState.frameMs : 0);
+  const tickerFps = Number(app.ticker.FPS);
+  perfState.fps = Number.isFinite(tickerFps) && tickerFps > 0
+    ? tickerFps
+    : (perfState.frameMs ? 1000 / perfState.frameMs : 0);
   perfState.delta = delta;
   perfState.clampedDelta = clampedDelta;
   perfState.level = game?.level || 0;
