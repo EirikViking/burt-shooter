@@ -43,6 +43,36 @@ class MemoryStorage {
   }
 }
 
+function makeRichCodexDiscovery() {
+  const sectors = {};
+  for (let sector = 1; sector <= 60; sector += 1) {
+    const id = `sector_${String(sector).padStart(3, '0')}`;
+    sectors[id] = { id, category: 'sectors', name: `SECTOR ${sector}`, timesSeen: 1 };
+  }
+  const pilotRanks = {};
+  for (let rank = 0; rank <= 19; rank += 1) {
+    const id = `pilot_rank_${String(rank).padStart(2, '0')}`;
+    pilotRanks[id] = { id, category: 'pilotRanks', name: `Rank ${rank}`, timesSeen: 1 };
+  }
+  const enemies = {};
+  for (let index = 0; index < 560; index += 1) {
+    const id = `nova_enemy_${index}`;
+    enemies[id] = { id, category: 'enemies', name: `Enemy ${index}`, timesSeen: 1 };
+  }
+  const bosses = {};
+  for (let index = 1; index <= 26; index += 1) {
+    const id = `nova_boss_${String(index).padStart(2, '0')}`;
+    bosses[id] = { id, category: 'bosses', name: `Boss ${index}`, timesSeen: 1 };
+  }
+  return {
+    version: 1,
+    items: { enemies, sectors, pilotRanks, bosses },
+    unreadIds: [],
+    recentRunThemes: [],
+    updatedAt: '2026-06-21T00:00:00.000Z'
+  };
+}
+
 try {
   writeFileSync(paths.legacyHighscorePath, JSON.stringify([
     { name: 'ACE', score: 1200, level: 4, rankIndex: 2, timestamp: '2026-01-01T00:00:00.000Z' }
@@ -251,7 +281,7 @@ try {
   assert.equal(collectedSave.language.preference, 'pt-BR');
   assert.equal(collectedSave.localHighscores[0].score, 4444);
   assert.deepEqual(collectedSave.achievements.unlocked, ['first_launch']);
-  assert.equal(collectedSave.hangarProgress.pilotXp, 7777);
+  assert.equal(collectedSave.hangarProgress.pilotXp, 54321, 'Steam Cloud Hangar XP should keep the richer existing value');
   assert.equal(collectedSave.hangarProgress.unlockedShipIds.includes('nova_ship_04'), true);
   assert.equal(collectedSave.threatDiscovery.items.enemies.scout.name, 'Scout');
   assert.deepEqual([...collectedSave.threatDiscovery.unreadIds].sort(), ['bosses:nova_boss_01', 'enemies:scout']);
@@ -262,6 +292,86 @@ try {
   assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].scoreEarned, 4444);
   assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].highestSectorReached, 12);
   assert.equal(collectedSave.scoutRunRecords.best.score, 130000);
+
+  const richCodex = makeRichCodexDiscovery();
+  const lowHangar = {
+    pilotXp: 0,
+    pilotRank: 0,
+    highestPilotRank: 0,
+    bestScore: 9689,
+    bestSector: 3,
+    bestLevel: 3,
+    bestRank: 1,
+    totalCodexDiscoveries: 0,
+    unlockedShipIds: ['nova_ship_01', 'nova_ship_02'],
+    discoveredThreatIds: []
+  };
+  const codexOnlyStorage = new MemoryStorage([
+    [CLOUD_LOCAL_LEADERBOARD_KEY, JSON.stringify([
+      { name: 'TFOUNDGAMES', score: 168666, level: 20, rankIndex: 16, timestamp: '2026-06-17T11:29:03.775Z' }
+    ])],
+    [CLOUD_HANGAR_PROGRESS_KEY, JSON.stringify(lowHangar)],
+    [CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify(richCodex)]
+  ]);
+  const codexRepairedCollect = collectSteamCloudPersistenceState({ storage: codexOnlyStorage });
+  assert.equal(codexRepairedCollect.hangarProgress.pilotRank, 19, 'Codex pilot-rank entries should repair a reset Hangar rank before cloud write');
+  assert.equal(codexRepairedCollect.hangarProgress.highestPilotRank, 19);
+  assert.equal(codexRepairedCollect.hangarProgress.pilotXp >= 177500, true);
+  assert.equal(codexRepairedCollect.hangarProgress.bestSector, 60);
+  assert.equal(codexRepairedCollect.hangarProgress.bestLevel, 60);
+  assert.equal(codexRepairedCollect.hangarProgress.bestScore, 168666);
+  assert.equal(codexRepairedCollect.hangarProgress.totalCodexDiscoveries >= 646, true);
+  assert.equal(codexRepairedCollect.hangarProgress.discoveredThreatIds.includes('nova_enemy_559'), true, 'Codex-derived Hangar IDs must not be truncated at 500');
+
+  saveSystem.writeSave({
+    localHighscores: [
+      { name: 'TFOUNDGAMES', score: 168666, level: 20, rankIndex: 16, timestamp: '2026-06-17T11:29:03.775Z' }
+    ],
+    progression: { bestScore: 168666, bestRank: 19, bestLevel: 60 },
+    hangarProgress: {
+      pilotXp: 203131,
+      pilotRank: 19,
+      highestPilotRank: 19,
+      bestScore: 168666,
+      bestSector: 60,
+      bestLevel: 60,
+      bestRank: 19,
+      totalCodexDiscoveries: 783,
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_24'],
+      discoveredThreatIds: ['nova_enemy_559']
+    },
+    threatDiscovery: richCodex
+  });
+  const protectedCloud = saveSystem.mergeRendererState({
+    localHighscores: [
+      { name: 'LOW', score: 9689, level: 3, rankIndex: 1, timestamp: '2026-06-21T00:00:00.000Z' }
+    ],
+    progression: { bestScore: 9689, bestRank: 1, bestLevel: 3 },
+    hangarProgress: lowHangar,
+    threatDiscovery: richCodex
+  });
+  assert.equal(protectedCloud.hangarProgress.pilotXp, 203131, 'Steam Cloud Hangar XP must never be replaced by a lower renderer snapshot');
+  assert.equal(protectedCloud.hangarProgress.pilotRank, 19);
+  assert.equal(protectedCloud.hangarProgress.bestSector, 60);
+  assert.equal(protectedCloud.hangarProgress.bestScore, 168666);
+  assert.equal(protectedCloud.hangarProgress.totalCodexDiscoveries >= 783, true);
+  assert.equal(protectedCloud.progression.bestScore, 168666);
+  assert.equal(protectedCloud.hangarProgress.bestLevel, 60);
+
+  const splitSectorStorage = new MemoryStorage();
+  restoreSteamCloudPersistenceToStorage({
+    hangarProgress: {
+      pilotXp: 203131,
+      pilotRank: 19,
+      highestPilotRank: 19,
+      bestSector: 31,
+      bestLevel: 60,
+      bestScore: 168666
+    }
+  }, { storage: splitSectorStorage });
+  const splitSectorHangar = JSON.parse(splitSectorStorage.getItem(CLOUD_HANGAR_PROGRESS_KEY));
+  assert.equal(splitSectorHangar.bestSector, 60, 'bestSector must not lag behind restored bestLevel');
+  assert.equal(splitSectorHangar.bestLevel, 60);
 
   const restartStorage = new MemoryStorage([
     [CLOUD_LANGUAGE_KEY, 'de'],

@@ -322,6 +322,9 @@ function mergeHangarProgress(target, source, updatedAt) {
   ];
   const next = { ...a };
   for (const key of numericKeys) next[key] = maxNumber(a[key], b[key]);
+  const reachedSector = maxNumber(next.bestSector, next.bestLevel);
+  next.bestSector = reachedSector;
+  next.bestLevel = reachedSector;
   for (const key of [
     'discoveredThreatIds', 'defeatedBossIds', 'runThemesSurvived', 'secretShipUnlockIds', 'unlockedShipIds',
     'lastNewlyUnlockedShipIds', 'newRanksThisRun', 'rankAchievementsUnlocked'

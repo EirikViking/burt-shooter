@@ -114,8 +114,13 @@ export function normalizeHangarProgress(raw = {}) {
     : rawPilotXp;
   const pilotRank = Math.min(MAX_RANK_INDEX, getRankFromPilotXp(pilotXp));
   const legacySector = legacyLevelToSector(legacy.bestLevel);
-  const bestLevel = Math.max(1, floor(raw.bestLevel ?? raw.bestSector ?? legacySector, legacySector));
-  const bestSector = Math.max(1, floor(raw.bestSector ?? raw.bestLevel ?? legacySector, bestLevel));
+  const reachedSector = Math.max(
+    1,
+    floor(raw.bestLevel ?? raw.bestSector ?? legacySector, legacySector),
+    floor(raw.bestSector ?? raw.bestLevel ?? legacySector, legacySector)
+  );
+  const bestLevel = reachedSector;
+  const bestSector = reachedSector;
   const unlocked = new Set([
     ...defaults.unlockedShipIds,
     ...legacyUnlockedShipIds(legacy.bestLevel)
