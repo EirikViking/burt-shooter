@@ -1,0 +1,79 @@
+{
+  "kind": "steam_upload_evidence",
+  "slug": "mayhem_collision_hotpath_progression",
+  "generatedAt": "2026-06-21T15:55:10Z",
+  "branch": "codex/mayhem-kill-hook-bullet-collision-hotpath-20260621",
+  "startingCommit": "701bf45a9171c39c61058a6052e9dc281a31f8e0",
+  "sourceCommit": "171b9c98ac2bea7e3e8adf07fe2123a98cfb3847",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23844765",
+    "depotManifest": "3068197720298071732",
+    "baselineDepotManifest": "2093552943102439710",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false
+  },
+  "packaging": {
+    "buildVersion": "v2026-06-21_17-47-46",
+    "packagedGitSha": "171b9c9",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "3541da4de5a4b67a637746c33f611eb6f97e5957bde35ed47ba7f487e23b675c",
+    "fileCount": 336,
+    "totalBytes": 879649826
+  },
+  "performanceEvidence": {
+    "sourceVideo": "performance-video/mayhem_run5.mp4",
+    "stressReport": "test-results/mayhem-collision-hotpath-stress-2026-06-21T15-45-31-739Z/report.json",
+    "beforeFromUserProfiler": {
+      "collision.progression_hooks.enemy_killed.maxMs": 38.0,
+      "collision.player_bullets_enemies.maxMs": 45.8,
+      "collision.side_effects.total.approxMs": 0.9
+    },
+    "afterSyntheticStress": {
+      "scenario": "100 bullets, 50 enemies, 100 hits, 50 kills",
+      "collision.player_bullets_enemies.maxMs": 5.3,
+      "collision.player_bullets_enemies.hit_test.maxMs": 0.4,
+      "collision.progression_hooks.enemy_killed.avgMs": 0.042,
+      "collision.progression_hooks.enemy_killed.maxMs": 1.1,
+      "collision.side_effects.total.maxMs": 3.7,
+      "storageWritesDuringCollision": 0,
+      "deferredThreatDefeats": 50,
+      "scorePopupsActive": 3
+    }
+  },
+  "checks": [
+    "git diff --check",
+    "npm run check:i18n",
+    "npm run check:run-modes",
+    "npm run check:steam-electron-bridge",
+    "npm run check:release-line",
+    "npm run build:current",
+    "npm run check:mayhem-collision-hotpath-stress",
+    "npm run check:mayhem-performance-diagnostics",
+    "npm run package:steam:win",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:smoke:current",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf"
+  ],
+  "protectedSystems": {
+    "steamworksMetadataChanged": false,
+    "steamBranchAssigned": false,
+    "setLiveUsed": false,
+    "leaderboardIdentityChanged": false,
+    "balanceChanged": false,
+    "savesTouched": false,
+    "profileRescueTouched": false,
+    "debugInstrumentationEnabledByDefault": false
+  },
+  "logs": {
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf"
+  }
+}
