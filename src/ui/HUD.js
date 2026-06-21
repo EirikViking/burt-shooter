@@ -49,6 +49,8 @@ export class HUD {
     this.missionText = null;
     this.activePowerupRows = [];
     this.highscoreChaseRenderKey = '';
+    this.highscoreChaseDisplayKey = '';
+    this.highscoreChaseDisplayScore = 0;
 
     // Rank Elements
     this.rankGroup = new PIXI.Container();
@@ -366,32 +368,46 @@ export class HUD {
     if (!this.highscoreChaseGroup) return;
     const chase = this.game?.getHighscoreChaseState?.() || null;
     const target = Math.max(0, Math.floor(Number(chase?.targetScore) || 0));
-    const score = Math.max(0, Math.floor(Number(this.game?.score) || 0));
-    const remaining = Math.max(0, target - score);
+    const rawScore = Math.max(0, Math.floor(Number(this.game?.score) || 0));
+    const sectorKey = Math.max(1, Math.floor(Number(this.game?.level) || 1));
     const syncingTarget = Boolean(chase?.syncingTarget);
     const hasTarget = target > 0 && !syncingTarget;
+    const displayKey = [
+      chase?.runMode || 'none',
+      target,
+      syncingTarget ? 1 : 0,
+      sectorKey
+    ].join('|');
+    const crossedTarget = hasTarget &&
+      rawScore > target &&
+      Math.max(0, Math.floor(Number(this.highscoreChaseDisplayScore) || 0)) <= target;
+    if (displayKey !== this.highscoreChaseDisplayKey || crossedTarget) {
+      this.highscoreChaseDisplayKey = displayKey;
+      this.highscoreChaseDisplayScore = rawScore;
+    }
+    const score = Math.max(0, Math.floor(Number(this.highscoreChaseDisplayScore) || 0));
+    const remaining = Math.max(0, target - score);
     const ratio = hasTarget ? Math.min(1.25, score / target) : 0;
     const surpassed = hasTarget && score > target;
-    const pulse = 0.5 + Math.sin(Date.now() * (surpassed ? 0.017 : 0.011)) * 0.5;
+    const pulse = 0.5;
     const dangerColor = surpassed ? 0xffef7e : (ratio >= 0.9 ? 0xff55d9 : (ratio >= 0.5 ? 0x7fffd8 : 0x37f5ff));
     const label = chase?.runMode === 'sector_start'
       ? translateText('SECTOR RECORD TARGET')
       : translateText('HIGH SCORE TARGET');
     const w = this.highscoreChaseGroup.__w || 178;
     const h = this.highscoreChaseGroup.__h || 52;
-    const pulseFrame = Math.floor(Date.now() / 125);
     const renderKey = [
       chase?.runMode || 'none',
       target,
       score,
+      sectorKey,
       syncingTarget ? 1 : 0,
       surpassed ? 1 : 0,
       w,
       h,
       this.highscoreChaseTitle?.style?.fontSize || '',
       this.highscoreChaseTarget?.style?.fontSize || '',
-      this.highscoreChaseGap?.style?.fontSize || '',
-      pulseFrame
+      this.highscoreChaseGap?.style?.fontSize || ''
     ].join('|');
     if (renderKey === this.highscoreChaseRenderKey) return;
     this.highscoreChaseRenderKey = renderKey;

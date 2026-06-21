@@ -25,6 +25,7 @@ On high-progress profiles this creates repeated main-thread JSON/localStorage/me
 - Flush pending Codex persistence on run finalization, page hide, visibility hidden, and before unload.
 - Kept the in-memory Codex state authoritative during play so result screens, Scout Codex persistence, and run summaries still see current discoveries.
 - Second pass: cached the ranked high-score chase HUD render state so unchanged frames do not repeatedly redraw the target card or rerun PIXI text layout. The card still updates immediately when score, target, run mode, layout, or board-sync state changes, and its pulse refreshes at a capped visual cadence.
+- Third pass: after `performance-video/mayhem_run3.mp4` still showed visible Mayhem cadence issues and the live high-score chase counter was observed updating in real time, froze the high-score chase score-dependent display within each sector. The target card now snapshots score once per sector, plus a one-time immediate refresh when the player actually beats the target. This removes per-score target-card redraws during normal combat.
 
 No Mayhem balance, Scout balance, boss tuning, wave tuning, score formula, leaderboard identity, achievements metadata, Steam bridge, Steamworks metadata, display settings, powerup art, save format, profile rescue behavior, or live saves were changed.
 
@@ -45,7 +46,7 @@ The check seeds a high-progress profile with a large Codex state, launches Mayhe
 - Threat Codex localStorage write count and bytes
 - full `buildRunSummary()` calls during active play
 - optional optical cadence analysis of `performance-video/mayhem_run.mp4` and `performance-video/sector_run.mp4`
-- optional optical cadence analysis of `performance-video/mayhem_run.mp4`, `performance-video/mayhem_run2.mp4`, and `performance-video/sector_run.mp4`
+- optional optical cadence analysis of `performance-video/mayhem_run.mp4`, `performance-video/mayhem_run2.mp4`, `performance-video/mayhem_run3.mp4`, and `performance-video/sector_run.mp4`
 
 Latest report:
 
@@ -59,6 +60,7 @@ Supplied video optical cadence:
 | --- | ---: | ---: | ---: |
 | Mayhem Run | 153 | 16 | 0.845 |
 | Mayhem Run 2 | 166 | 18 | 0.910 |
+| Mayhem Run 3 | 111 | 28 | 0.753 |
 | Sector Run | 13 | 1 | 0.295 |
 
 Runtime after fix:
@@ -93,6 +95,8 @@ npm run check:highscore-chase-target
 ```
 
 The check launches Mayhem with a known personal best and verifies that 40 repeated unchanged high-score chase HUD updates cause `0` target-card graphics redraws and `0` text layout reruns.
+
+The third-pass check also verifies that same-sector score gains cause `0` target-card redraws, while the next sector refreshes the high-score chase card from the latest score. This intentionally makes the "to beat high score" counter less live in exchange for less ranked-only HUD work during combat.
 
 ## Manual Test Plan
 

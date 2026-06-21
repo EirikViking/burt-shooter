@@ -139,10 +139,85 @@ try {
   const renderCacheProbe = await page.evaluate(() => {
     const hud = window.__game?.scenes?.play?.hud;
     if (!hud?.updateHighscoreChase) return { available: false };
-    let graphicsClearCalls = 0;
-    let textUpdateCalls = 0;
+    const measure = (callback) => {
+      let graphicsClearCalls = 0;
+      let textUpdateCalls = 0;
+      const graphics = [hud.highscoreChaseBg, hud.highscoreChaseBarBg, hud.highscoreChaseBarFill].filter(Boolean);
+      const texts = [hud.highscoreChaseTitle, hud.highscoreChaseTarget, hud.highscoreChaseGap].filter(Boolean);
+      const restore = [];
+      for (const graphic of graphics) {
+        const original = graphic.clear?.bind(graphic);
+        if (!original) continue;
+        graphic.clear = (...args) => {
+          graphicsClearCalls += 1;
+          return original(...args);
+        };
+        restore.push(() => {
+          graphic.clear = original;
+        });
+      }
+      for (const text of texts) {
+        const original = text.updateText?.bind(text);
+        if (!original) continue;
+        text.updateText = (...args) => {
+          textUpdateCalls += 1;
+          return original(...args);
+        };
+        restore.push(() => {
+          text.updateText = original;
+        });
+      }
+      callback();
+      for (const undo of restore) undo();
+      return {
+        graphicsClearCalls,
+        textUpdateCalls
+      };
+    };
+
+    const unchanged = measure(() => {
+      for (let index = 0; index < 40; index += 1) {
+        hud.updateHighscoreChase();
+      }
+    });
+
+    const beforeScoreText = hud.highscoreChaseGap?.text || '';
+    const sameSectorScore = measure(() => {
+      window.__game.score = (Number(window.__game.score) || 0) + 7777;
+      for (let index = 0; index < 12; index += 1) {
+        hud.updateHighscoreChase();
+      }
+    });
+    const afterSameSectorText = hud.highscoreChaseGap?.text || '';
+
+    const nextSector = measure(() => {
+      window.__game.level = (Number(window.__game.level) || 1) + 1;
+      hud.updateHighscoreChase();
+    });
+    const afterNextSectorText = hud.highscoreChaseGap?.text || '';
+    return {
+      available: true,
+      graphicsClearCalls: unchanged.graphicsClearCalls,
+      textUpdateCalls: unchanged.textUpdateCalls,
+      unchanged,
+      sameSectorScore,
+      nextSector,
+      beforeScoreText,
+      afterSameSectorText,
+      afterNextSectorText,
+      displayKey: hud.highscoreChaseDisplayKey || null,
+      displayScore: hud.highscoreChaseDisplayScore || 0,
+      renderKey: hud.highscoreChaseRenderKey || null
+    };
+  });
+
+  const targetCrossingProbe = await page.evaluate((targetScore) => {
+    const hud = window.__game?.scenes?.play?.hud;
+    if (!hud?.updateHighscoreChase) return { available: false };
     const graphics = [hud.highscoreChaseBg, hud.highscoreChaseBarBg, hud.highscoreChaseBarFill].filter(Boolean);
     const texts = [hud.highscoreChaseTitle, hud.highscoreChaseTarget, hud.highscoreChaseGap].filter(Boolean);
+    let graphicsClearCalls = 0;
+    let textUpdateCalls = 0;
     const restore = [];
     for (const graphic of graphics) {
       const original = graphic.clear?.bind(graphic);
@@ -166,17 +241,16 @@ try {
         text.updateText = original;
       });
     }
-    for (let index = 0; index < 40; index += 1) {
-      hud.updateHighscoreChase();
-    }
+    window.__game.score = targetScore + 1;
+    hud.updateHighscoreChase();
     for (const undo of restore) undo();
     return {
       available: true,
       graphicsClearCalls,
       textUpdateCalls,
-      renderKey: hud.highscoreChaseRenderKey || null
+      text: hud.highscoreChaseGap?.text || null
     };
-  });
+  }, realBest.score);
 
   assert.equal(finalState.targetScore, realBest.score, 'high-score chase should use the highest known personal score');
   assert.match(finalState.targetText || '', /120,140/, 'HUD should print the real best score target');
@@ -184,11 +258,19 @@ try {
   assert.ok(renderCacheProbe.renderKey, 'high-score chase should retain a render cache key');
   assert.equal(renderCacheProbe.graphicsClearCalls, 0, 'unchanged high-score chase state should not redraw graphics on repeated HUD updates');
   assert.equal(renderCacheProbe.textUpdateCalls, 0, 'unchanged high-score chase state should not rerun text layout on repeated HUD updates');
+  assert.equal(renderCacheProbe.sameSectorScore.graphicsClearCalls, 0, 'same-sector score changes should not redraw the high-score chase widget');
+  assert.equal(renderCacheProbe.sameSectorScore.textUpdateCalls, 0, 'same-sector score changes should not rerun high-score chase text layout');
+  assert.equal(renderCacheProbe.afterSameSectorText, renderCacheProbe.beforeScoreText, 'same-sector high-score chase text should stay frozen instead of counting in real time');
+  assert.ok(renderCacheProbe.nextSector.graphicsClearCalls > 0, 'next sector should refresh high-score chase graphics');
+  assert.ok(renderCacheProbe.displayScore >= 7777, 'next-sector high-score chase display should snapshot the latest score');
+  assert.equal(targetCrossingProbe.available, true, 'target-crossing probe should attach');
+  assert.ok(targetCrossingProbe.graphicsClearCalls > 0, 'crossing the target should still redraw the high-score chase widget');
+  assert.match(targetCrossingProbe.text || '', /OLD SCORE HUMILIATED/i, 'crossing the target should still show the success line');
   assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join('; ')}`);
 
   mkdirSync(outputDir, { recursive: true });
-  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify({ ok: true, baseUrl, finalState, renderCacheProbe }, null, 2)}\n`);
-  console.log(`[highscore-chase-target] PASS target=${finalState.targetScore} source=${finalState.targetSource} redraws=${renderCacheProbe.graphicsClearCalls} textLayouts=${renderCacheProbe.textUpdateCalls} report=${path.join(outputDir, 'report.json')}`);
+  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify({ ok: true, baseUrl, finalState, renderCacheProbe, targetCrossingProbe }, null, 2)}\n`);
+  console.log(`[highscore-chase-target] PASS target=${finalState.targetScore} source=${finalState.targetSource} sameSectorRedraws=${renderCacheProbe.sameSectorScore.graphicsClearCalls} sectorRedraws=${renderCacheProbe.nextSector.graphicsClearCalls} report=${path.join(outputDir, 'report.json')}`);
   await page.close();
 } catch (error) {
   mkdirSync(outputDir, { recursive: true });
