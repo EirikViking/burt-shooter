@@ -15,6 +15,7 @@ import {
   getDisplaySettings,
   normalizeDisplaySettings
 } from './config/DisplaySettings.js';
+import { invalidateThreatDiscoveryStateCache } from './progression/ThreatDiscoveryState.js';
 import { getPilotXpThreshold } from './shared/RankPolicy.js';
 
 export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY };
@@ -737,6 +738,7 @@ export function restoreSteamCloudPersistenceToStorage(save, {
   if (save.threatDiscovery) {
     summary.threatDiscovery = true;
     summary.restored = writeStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify(mergedDiscovery)) || summary.restored;
+    invalidateThreatDiscoveryStateCache();
   }
 
   if (save.shipUsage || save.shipUsageByShip) {

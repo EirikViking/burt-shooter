@@ -39,6 +39,7 @@ import {
   getCodexCompletionCounts,
   getDiscoveriesThisRun,
   getDiscoveryStats,
+  flushThreatDiscoveryState,
   startThreatDiscoveryRun
 } from '../progression/ThreatDiscoveryState.js';
 import {
@@ -868,6 +869,32 @@ export class Game {
     return { ...summary, ...overrides };
   }
 
+  buildLiveRankProgressionSummary() {
+    const play = this.scenes?.play;
+    const discoveries = getDiscoveriesThisRun();
+    const elapsed = Number(play?.gameTime) || (this.runStartedAtMs ? (Date.now() - this.runStartedAtMs) / 1000 : 0);
+    const levelReached = Math.max(1, Number(this.level) || 1, (Number(play?.bossKills) || 0) + 1);
+    return {
+      score: this.score,
+      finalScore: this.score,
+      levelReached,
+      sectorReached: levelReached,
+      runElapsedSeconds: Math.max(0, elapsed),
+      bossesKilled: Number(play?.bossKills) || 0,
+      wavesCleared: Number(play?.wavesCleared) || 0,
+      codexDiscoveries: discoveries.length,
+      runThemeDiscoveries: discoveries.filter((entry) => entry.category === 'runThemes').length,
+      noHitWaves: Number(play?.noHitWavesThisRun) || 0,
+      noHitSectors: Number(play?.noHitSectorsThisRun) || 0,
+      livesRemaining: this.lives,
+      runCleared: Boolean(this.runCleared),
+      clearReason: this.runClearReason || null,
+      clearLivesRemaining: Math.max(0, Number(this.runClearLivesRemaining) || 0),
+      runMode: this.runMode,
+      runModeReason: this.runModeReason
+    };
+  }
+
   updateLiveRunRank({ force = false } = {}) {
     if (!RunPacingConfig.pilotRankProgressionEnabled) return this.liveRankProgression;
     if (this.runFinalized || !this.isRankedRun() || this.currentSceneName !== 'play') return this.liveRankProgression;
@@ -876,7 +903,7 @@ export class Game {
     this.nextLiveRankCheckAtMs = now + 300;
 
     const result = previewRunProgression(
-      this.buildRunSummary(),
+      this.buildLiveRankProgressionSummary(),
       this.liveRankBaseProgress || this.hangarProgressAtRunStart || readHangarProgressState()
     );
     this.liveRankProgression = result;
@@ -912,6 +939,7 @@ export class Game {
     if (this.runFinalized) return this.runProgressionResult;
     this.runFinalized = true;
     this.runSummary = this.buildRunSummary(overrides);
+    flushThreatDiscoveryState();
     const previousProgress = readHangarProgressState();
     const result = this.isRankedRun() && RunPacingConfig.pilotRankProgressionEnabled
       ? applyRunProgression(this.runSummary)

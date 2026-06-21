@@ -8,6 +8,7 @@ RESCUE_*.txt
 .codex-snapshots/
 .wrangler/
 test-results/
+performance-video/
 tmp/
 tmpclaude-*
 tools/steamcmd/

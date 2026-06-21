@@ -19,6 +19,14 @@ export const DISCOVERY_CATEGORIES = Object.freeze([
   'rareModifiers'
 ]);
 
+const ACTIVE_PLAY_PERSIST_DELAY_MS = 8000;
+const DEFAULT_PERSIST_DELAY_MS = 500;
+
+let cachedThreatDiscoveryState = null;
+let pendingPersistState = null;
+let pendingPersistTimer = null;
+let flushHandlersInstalled = false;
+
 function storage() {
   try {
     return typeof localStorage !== 'undefined' ? localStorage : null;
@@ -44,6 +52,82 @@ function emptyState() {
     unreadIds: [],
     updatedAt: nowIso()
   };
+}
+
+function isActivePlayScene() {
+  try {
+    return typeof window !== 'undefined' && window.__game?.currentSceneName === 'play';
+  } catch {
+    return false;
+  }
+}
+
+function hasGameRuntime() {
+  try {
+    return typeof window !== 'undefined' && Boolean(window.__game);
+  } catch {
+    return false;
+  }
+}
+
+function installFlushHandlers() {
+  if (flushHandlersInstalled || typeof window === 'undefined') return;
+  flushHandlersInstalled = true;
+  window.addEventListener?.('pagehide', () => {
+    flushThreatDiscoveryState();
+  });
+  window.addEventListener?.('beforeunload', () => {
+    flushThreatDiscoveryState();
+  });
+  if (typeof document !== 'undefined') {
+    document.addEventListener?.('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushThreatDiscoveryState();
+    });
+  }
+}
+
+function persistThreatDiscoveryState(state, { sync = true } = {}) {
+  if (!state) return state;
+  try {
+    storage()?.setItem(THREAT_DISCOVERY_KEY, JSON.stringify(state));
+    if (sync && typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
+  } catch (error) {
+    console.warn('[ThreatDiscoveryState] Failed to write state:', error);
+  }
+  return state;
+}
+
+function scheduleThreatDiscoveryPersist(state, { delayMs = null } = {}) {
+  pendingPersistState = state;
+  installFlushHandlers();
+  if (pendingPersistTimer) return state;
+  const delay = Number.isFinite(delayMs)
+    ? Math.max(0, delayMs)
+    : (isActivePlayScene() ? ACTIVE_PLAY_PERSIST_DELAY_MS : DEFAULT_PERSIST_DELAY_MS);
+  pendingPersistTimer = setTimeout(() => {
+    pendingPersistTimer = null;
+    flushThreatDiscoveryState();
+  }, delay);
+  return state;
+}
+
+export function flushThreatDiscoveryState(options = {}) {
+  if (pendingPersistTimer) {
+    clearTimeout(pendingPersistTimer);
+    pendingPersistTimer = null;
+  }
+  const state = pendingPersistState || cachedThreatDiscoveryState;
+  pendingPersistState = null;
+  return persistThreatDiscoveryState(state, options);
+}
+
+export function invalidateThreatDiscoveryStateCache() {
+  cachedThreatDiscoveryState = null;
+  pendingPersistState = null;
+  if (pendingPersistTimer) {
+    clearTimeout(pendingPersistTimer);
+    pendingPersistTimer = null;
+  }
 }
 
 function normalizeItem(item = {}, fallback = {}) {
@@ -188,6 +272,7 @@ export function normalizeThreatDiscoveryState(raw = {}) {
 }
 
 export function readThreatDiscoveryState() {
+  if (cachedThreatDiscoveryState) return cachedThreatDiscoveryState;
   let parsed = {};
   try {
     const raw = storage()?.getItem(THREAT_DISCOVERY_KEY);
@@ -195,7 +280,8 @@ export function readThreatDiscoveryState() {
   } catch (error) {
     console.warn('[ThreatDiscoveryState] Failed to read state:', error);
   }
-  return hydrateFromHangarProgress(normalizeThreatDiscoveryState(parsed));
+  cachedThreatDiscoveryState = hydrateFromHangarProgress(normalizeThreatDiscoveryState(parsed));
+  return cachedThreatDiscoveryState;
 }
 
 export function writeThreatDiscoveryState(state) {
@@ -203,12 +289,12 @@ export function writeThreatDiscoveryState(state) {
     ...state,
     updatedAt: nowIso()
   });
-  try {
-    storage()?.setItem(THREAT_DISCOVERY_KEY, JSON.stringify(normalized));
-    if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
-  } catch (error) {
-    console.warn('[ThreatDiscoveryState] Failed to write state:', error);
+  cachedThreatDiscoveryState = normalized;
+  if (!hasGameRuntime()) {
+    persistThreatDiscoveryState(normalized);
+    return normalized;
   }
+  scheduleThreatDiscoveryPersist(normalized);
   return normalized;
 }
 
@@ -356,6 +442,12 @@ export function clearThreatCodexUnread() {
 
 export function resetDiscoveryStateForTests() {
   const state = emptyState();
+  cachedThreatDiscoveryState = state;
+  pendingPersistState = null;
+  if (pendingPersistTimer) {
+    clearTimeout(pendingPersistTimer);
+    pendingPersistTimer = null;
+  }
   try {
     storage()?.setItem(THREAT_DISCOVERY_KEY, JSON.stringify(state));
   } catch {

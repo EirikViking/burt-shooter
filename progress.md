@@ -1,5 +1,12 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-21 Mayhem/Sector Frame Pacing
+
+- Current request: investigate Mayhem Run microstutter visible in `performance-video/mayhem_run.mp4` compared with smoother `sector_run.mp4`, preserve the harder ranked baseline, and deploy only after a measured source fix.
+- Root cause found: Mayhem's live career-rank preview called the full game-over run summary every 300 ms during ranked gameplay, which normalized large Codex state and completion counts. Threat Codex updates also wrote the full Codex profile and requested Steam Cloud merges on every seen/defeated update.
+- Fix direction: use a lightweight XP-only summary for live rank preview, keep Codex state authoritative in memory during combat, defer heavy Codex persistence while gameplay is active, and flush on run finalization/page hide. No Mayhem/Scout/Sector balance, save format, leaderboard identity, achievements metadata, Steam bridge, Steamworks settings, or profile rescue code changed.
+- New evidence: `npm run check:mayhem-sector-frame-pacing` compares Mayhem Sector 1 against Sector Run checkpoint 20, records p50/p95/p99/max/long-frame counts, catches full summary calls during active play, and analyzes the ignored MP4 repro clips when present.
+
 ## 2026-06-20 Scout Local Best And Safe Menu Exit
 
 - Current request: add profile-scoped Scout local personal best, keep Scout out of Steam/global/friends/ranked progression, and make main-menu Esc/top-right Exit open an explicit quit confirmation instead of quitting immediately.
