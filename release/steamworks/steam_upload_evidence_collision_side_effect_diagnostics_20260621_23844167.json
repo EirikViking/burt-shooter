@@ -1,0 +1,87 @@
+{
+  "title": "Nova Swarm collision side-effect diagnostics private Steam test",
+  "uploadedAt": "2026-06-21T16:30:42+02:00",
+  "branch": "codex/collision-side-effect-split-diagnostics-20260621",
+  "startingCommit": "19fa65ac6b5be7cc2993b87168b435fc8d483ee7",
+  "sourceCommit": "10f80ad31609e1c3ce7f4317baf61f3894b23115",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23844167",
+    "depotManifest": "8552123102178841072",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf"
+  },
+  "package": {
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-21T14-28-06-290Z/report.json",
+    "packagedGitSha": "10f80ad",
+    "packagedGitShaMatchesSource": true
+  },
+  "changes": {
+    "gameplayBalanceChanged": false,
+    "scoreFormulaChanged": false,
+    "collisionDetectionChanged": false,
+    "damageAndScoreRemainImmediate": true,
+    "queuedCollisionSideEffects": [
+      "score popups",
+      "hit sparks",
+      "enemy death feedback",
+      "hit audio",
+      "powerup spawn side effects"
+    ],
+    "scorePopupCreationCappedPerCollisionFlush": 3,
+    "diagnosticLabelsAdded": [
+      "collision.side_effects.total",
+      "collision.side_effects.score_popups",
+      "collision.side_effects.particles",
+      "collision.side_effects.audio",
+      "collision.side_effects.powerups",
+      "collision.progression_hooks.enemy_killed"
+    ],
+    "diagnosticTogglesAdded": [
+      "noHitAudio",
+      "noCollisionSideEffects",
+      "rawCollisionOnly"
+    ],
+    "latestReportPath": "%APPDATA%/nova-swarm/performance-diagnostics/run-collision-diagnostics-latest.json"
+  },
+  "checks": [
+    "git diff --check",
+    "npm run check:mayhem-performance-diagnostics",
+    "npm run check:steam-electron-bridge",
+    "npm run check:run-modes",
+    "npm run check:release-line",
+    "npm run build:current",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf"
+  ],
+  "steamUploadLogs": {
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf"
+  },
+  "protectedSystems": {
+    "saveOrProfileRescueTouched": false,
+    "steamworksMetadataChanged": false,
+    "steamBranchAssigned": false,
+    "setLiveUsed": false,
+    "leaderboardIdentityChanged": false
+  },
+  "manualTest": [
+    "Assign BuildID 23844167 to the intended private Steam test branch in Steamworks.",
+    "Launch Nova Swarm from Steam.",
+    "Start Mayhem normally and play until the stutter appears or feels improved.",
+    "Optionally run Sector Run for comparison because collisions happen there too.",
+    "Send %APPDATA%/nova-swarm/performance-diagnostics/run-collision-diagnostics-latest.json."
+  ],
+  "rollback": {
+    "git": "git revert 10f80ad31609e1c3ce7f4317baf61f3894b23115",
+    "steam": "Do not assign BuildID 23844167, or reassign the previous private test BuildID."
+  }
+}
