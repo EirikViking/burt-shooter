@@ -1,0 +1,79 @@
+{
+  "title": "Nova Swarm automatic collision diagnostics private Steam test",
+  "uploadedAt": "2026-06-21T16:15:27+02:00",
+  "branch": "codex/auto-collision-diagnostic-logger-20260621",
+  "startingCommit": "8bd48f0ac853944d08169051e20a4d6096eb2c48",
+  "sourceCommit": "7535db2f59aa5212e042fc7768e0e69f8f8aaa5e",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23844092",
+    "depotManifest": "7837379768115010860",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf"
+  },
+  "package": {
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-21T14-12-21-935Z/report.json",
+    "packagedGitSha": "7535db2",
+    "packagedGitShaMatchesSource": true
+  },
+  "diagnostics": {
+    "automaticLogging": true,
+    "overlayHiddenByDefault": true,
+    "latestReportPath": "%APPDATA%/nova-swarm/performance-diagnostics/run-collision-diagnostics-latest.json",
+    "sessionReportPattern": "%APPDATA%/nova-swarm/performance-diagnostics/run-collision-diagnostics-<session>.json",
+    "focus": [
+      "collisions",
+      "collision.bomb_apex",
+      "collision.player_bullets_enemies",
+      "collision.player_bullets_hijacker",
+      "collision.projectile_defense",
+      "collision.enemy_bullets_player",
+      "collision.ambient_drones_player",
+      "collision.player_bullets_ambient_drones",
+      "collision.enemies_player",
+      "collision.powerups_player"
+    ]
+  },
+  "checks": [
+    "git diff --check",
+    "npm run check:mayhem-performance-diagnostics",
+    "npm run check:steam-electron-bridge",
+    "npm run check:i18n",
+    "npm run check:run-modes",
+    "npm run check:release-line",
+    "npm run build:current",
+    "npm run package:steam:win",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf"
+  ],
+  "steamUploadLogs": {
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf"
+  },
+  "protectedSystems": {
+    "gameplayBalanceChanged": false,
+    "saveOrProfileRescueTouched": false,
+    "steamworksMetadataChanged": false,
+    "steamBranchAssigned": false,
+    "setLiveUsed": false
+  },
+  "manualTest": [
+    "Assign BuildID 23844092 to the intended private Steam test branch in Steamworks.",
+    "Launch Nova Swarm from Steam.",
+    "Start Mayhem normally and play until the frame-pacing issue is visible.",
+    "Optionally repeat in Sector Run for comparison.",
+    "Send %APPDATA%/nova-swarm/performance-diagnostics/run-collision-diagnostics-latest.json."
+  ],
+  "rollback": {
+    "git": "git revert 7535db2f59aa5212e042fc7768e0e69f8f8aaa5e",
+    "steam": "Do not assign BuildID 23844092, or reassign the previous private test BuildID."
+  }
+}
