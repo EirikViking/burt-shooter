@@ -1,0 +1,56 @@
+{
+  "uploadedAt": "2026-06-21T13:41:51.000Z",
+  "steamBuildId": "23843879",
+  "sourceCommit": "a6aa404f9994e1435452bbca5facbf48ce338c72",
+  "branch": "codex/mayhem-diagnostic-profiler-toggles-20260621",
+  "description": "Nova Swarm Mayhem performance diagnostics private test",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "depotManifest": "1676754406634134708",
+    "baselineManifest": "2093552943102439710",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "depot": "4765071",
+    "containsBranchAssignment": false
+  },
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "buildVersion": "v2026-06-21_15-34-19",
+    "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "fd97389607b56ec249482d05ca7228f5cf4756b3684252f809ea6c6d296d8ba1",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-21T13-39-09-737Z/report.json",
+    "packagedSmokeGitSha": "a6aa404"
+  },
+  "uploadLogs": {
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf"
+  },
+  "checks": [
+    "git diff --check",
+    "npm run check:i18n",
+    "npm run check:i18n-ui",
+    "npm run check:run-modes",
+    "npm run check:steam-electron-bridge",
+    "npm run check:highscore-chase-target",
+    "npm run check:mayhem-sector-frame-pacing",
+    "npm run check:mayhem-performance-diagnostics",
+    "npm run check:release-line",
+    "npm run build:current",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged"
+  ],
+  "notes": [
+    "No Steam branch assignment was requested or written.",
+    "SetLive was verified blank before upload.",
+    "Full smoke ladder was intentionally skipped per user instruction to deploy without all smoke tests."
+  ]
+}
