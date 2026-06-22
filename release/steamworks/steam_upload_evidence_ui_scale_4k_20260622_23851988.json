@@ -1,0 +1,36 @@
+{
+  "title": "Nova Swarm UI Scale 4K readability private Steam upload",
+  "date": "2026-06-22",
+  "steamBuildId": "23851988",
+  "sourceCommit": "da9fa73c6b96cfa98f6503c82bd0295a37717609",
+  "packagedBuild": "v2026-06-22_09-42-40",
+  "packagedGitSha": "da9fa73",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "globalLeaderboardIdentity": "nova_swarm_global_score_v2",
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "depotLine": "\"4765071\"",
+    "contentRootLine": "\"ContentRoot\" \"..\\\\desktop\\\\win-unpacked\"",
+    "setLiveLine": "\"SetLive\" \"\""
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 879660655,
+    "manifestHash": "64814f8542175ce52c56b7ad91aecc4265a3b2773760955dcff8171c440644c7"
+  },
+  "evidence": {
+    "uiScaleReport": "test-results/ui-scale-4k-2026-06-22T07-20-24-013Z/report.json",
+    "uiScaleScreenshots": "test-results/ui-scale-4k-2026-06-22T07-20-24-013Z/",
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-22T07-48-12-247Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-06-22T07-48-12-247Z/report.json",
+    "steamCmdLog": "test-results/steam-upload-ui-scale-4k-20260622-095749/steamcmd.log"
+  },
+  "notes": [
+    "SteamCMD completed successfully with BuildID 23851988.",
+    "The VDF kept SetLive blank, so no Steam branch was assigned by the upload.",
+    "No Steamworks metadata, store visibility, AppID, depot ID, leaderboard identity, achievements metadata, or Steam Cloud settings were changed."
+  ]
+}
