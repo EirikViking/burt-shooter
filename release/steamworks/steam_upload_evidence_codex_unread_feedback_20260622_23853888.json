@@ -1,0 +1,42 @@
+{
+  "title": "Nova Swarm Codex unread and feedback polish private Steam upload",
+  "date": "2026-06-22",
+  "steamBuildId": "23853888",
+  "sourceCommit": "3acf5990e3a9533482a4cc6b23df2fcc8fab3aee",
+  "packagedBuild": "v2026-06-22_12-10-56",
+  "packagedGitSha": "3acf599",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "globalLeaderboardIdentity": "nova_swarm_global_score_v2",
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "depotLine": "\"4765071\"",
+    "contentRootLine": "\"ContentRoot\" \"..\\\\desktop\\\\win-unpacked\"",
+    "setLiveLine": "\"SetLive\" \"\""
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 879665624,
+    "manifestHash": "4eaaa5be778215771fcc101779cdc0151945cb6a92579ca8e725eb16d0489d75",
+    "manifestFileSha256": "dfdcfd6a6b7aef68a857e432a3dd78c0038462dc93f8ce20f57545e8baf9f032"
+  },
+  "evidence": {
+    "howToPlayReport": "test-results/how-to-play-2026-06-22T10-00-41-603Z/report.json",
+    "howToPlayScreenshots": "test-results/how-to-play-2026-06-22T10-00-41-603Z/",
+    "collisionHotpathReport": "test-results/mayhem-collision-hotpath-stress-2026-06-22T10-01-37-128Z/report.json",
+    "currentDesktopSmoke": "test-results/electron-smoke-2026-06-22T10-08-17-822Z",
+    "currentDesktopPerf": "test-results/electron-perf-smoke-2026-06-22T10-08-17-822Z",
+    "browserSmoke": "test-results/smoke-2026-06-22T10-07-58-605Z/report.json",
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-22T10-15-25-878Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-06-22T10-17-19-473Z/report.json",
+    "steamCmdLog": "test-results/steam-upload-codex-unread-polish-20260622-121944/steamcmd.log"
+  },
+  "notes": [
+    "SteamCMD completed successfully with BuildID 23853888.",
+    "The VDF kept SetLive blank, so no Steam branch was assigned by the upload.",
+    "Packaged smoke and the second packaged perf run passed with gitSha 3acf599.",
+    "No Steamworks metadata, store visibility, AppID, depot ID, leaderboard identity, achievements metadata, or Steam Cloud settings were changed."
+  ]
+}
