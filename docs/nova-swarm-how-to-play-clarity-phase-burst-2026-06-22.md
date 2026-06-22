@@ -46,3 +46,12 @@ Current focused evidence:
 ## Scope
 
 No gameplay mechanics, balance, score formula, XP formula, progression, save format, leaderboard identity, achievements metadata, Steam Cloud settings, AppID, depot IDs, or Steamworks metadata were changed.
+
+## Private Steam Build
+
+- Source commit: `24dc7bf56f2ff06c2db687226c5c21c19479556a`
+- Packaged version: `v2026-06-22_23-22-17`
+- Packaged gitSha proof: `24dc7bf` in `test-results/packaged-exe-smoke-2026-06-22T21-25-48-560Z/report.json` and `test-results/packaged-perf-smoke-2026-06-22T21-26-27-604Z/report.json`
+- VDF proof: AppID `4765070`, depot `4765071`, and `"SetLive" ""`
+- Private unassigned Steam BuildID: `23863622`
+- Upload evidence: `release/steamworks/steam_upload_evidence_how_to_play_phase_burst_20260622_23863622.json`
