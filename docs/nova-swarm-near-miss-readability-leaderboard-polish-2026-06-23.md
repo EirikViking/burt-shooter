@@ -28,6 +28,10 @@ No hitboxes, collision, difficulty, projectile speed, spawn rate, score formula,
 
 ## Evidence
 
-- Near Miss forced runtime proof: `test-results/danger-dodge-2026-06-22T23-15-10-624Z/report.json`
-- Near Miss screenshot: `test-results/danger-dodge-2026-06-22T23-15-10-624Z/danger-dodge.png`
+- Near Miss forced runtime proof: `test-results/danger-dodge-2026-06-22T23-16-54-093Z/report.json`
+- Near Miss screenshot: `test-results/danger-dodge-2026-06-22T23-16-54-093Z/danger-dodge.png`
 - Steam pending queue proof: `npm run check:leaderboard-pending-steam`
+- UI scale regression proof: `test-results/ui-scale-4k-2026-06-22T23-17-21-805Z/report.json`
+- Private Steam upload evidence: `release/steamworks/steam_upload_evidence_near_miss_leaderboard_polish_20260623_23865181.json`
+- Packaged smoke/perf proof: `test-results/packaged-exe-smoke-2026-06-22T23-31-05-241Z/report.json` and `test-results/packaged-perf-smoke-2026-06-22T23-31-05-242Z/report.json`, both reporting package gitSha `f4c9410`.
+- SteamCMD uploaded private unassigned BuildID `23865181` with AppID `4765070`, depot `4765071`, and `SetLive` blank.
