@@ -314,7 +314,11 @@ function assertStaticRules() {
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.SECTOR_START), false);
   assert.equal(getRunModeProfile(RUN_MODES.RANKED).difficultyProfileId, 'accepted_harder_ranked');
   assert.equal(getRunModeProfile(RUN_MODES.SCOUT).difficultyProfileId, 'scout_lower_pressure_v1');
-  assert.equal(getRunModeProfile(RUN_MODES.SCOUT).normalWaveDifficultyLevelOffsetDelta, -5);
+  assert.equal(getRunModeProfile(RUN_MODES.RANKED).normalWaveScoreXpMult, 1.2);
+  assert.equal(getRunModeProfile(RUN_MODES.SCOUT).normalWaveDifficultyLevelOffsetDelta, -3);
+  assert.equal(getRunModeProfile(RUN_MODES.SCOUT).normalWaveScoreXpMult, 1);
+  assert.equal(getRunModeProfile(RUN_MODES.SECTOR_START).normalWaveDifficultyLevelOffsetDelta, 2);
+  assert.equal(getRunModeProfile(RUN_MODES.SECTOR_START).normalWaveScoreXpMult, 1);
   assert.deepEqual(getSectorStartCheckpoints({ bestSector: 31 }), [5, 10, 15, 20, 25, 30]);
   assert.equal(getSectorStartPlaySector(5), 5);
   assert.equal(getSectorStartPlaySector(10), 11);
@@ -323,7 +327,7 @@ function assertStaticRules() {
 
   const mayhemPressure = new RunPressureDirector({ runMode: RUN_MODES.RANKED, level: 1 });
   const scoutPressure = new RunPressureDirector({ runMode: RUN_MODES.SCOUT, level: 1 });
-  assert.equal(mayhemPressure.getNormalWaveDifficultyLevel(1), 10, 'Mayhem must keep accepted harder Sector 1 normal-wave difficulty');
+  assert.equal(mayhemPressure.getNormalWaveDifficultyLevel(1), 8, 'Mayhem should use the recalibrated Sector 1 normal-wave difficulty');
   assert.equal(scoutPressure.getNormalWaveDifficultyLevel(1), 5, 'Scout should lower the accepted profile pressure');
   assert.ok(scoutPressure.getMultipliers().fireChanceMult < mayhemPressure.getMultipliers().fireChanceMult);
   assert.ok(scoutPressure.getMultipliers().projectileSpeedMult < mayhemPressure.getMultipliers().projectileSpeedMult);

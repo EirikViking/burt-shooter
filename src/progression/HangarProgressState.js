@@ -9,6 +9,7 @@ import {
   getPilotRankProgress,
   getRankFromPilotXp
 } from '../shared/RankPolicy.js';
+import { getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
 
 export const HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const LEGACY_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
@@ -311,13 +312,14 @@ export function grantSecretShipUnlock(shipId, { source = 'secret' } = {}) {
 
 export function calculatePilotXpForRun(summary = {}) {
   const xp = RunPacingConfig.pilotXp;
+  const normalWaveXpMult = getRunModeNormalWaveScoreXpMultiplier(summary.runMode);
   const scoreXp = Math.floor((Number(summary.score) || 0) / Math.max(1, xp.scoreDivisor));
   const sectorXp = Math.max(0, floor(summary.sectorReached, 1) - 1) * xp.sectorReachedBase;
-  const waveXp = floor(summary.wavesCleared) * xp.waveClear;
+  const waveXp = floor(summary.wavesCleared) * xp.waveClear * normalWaveXpMult;
   const bossXp = floor(summary.bossesKilled) * xp.bossDefeat;
   const discoveryXp = floor(summary.codexDiscoveries) * xp.codexDiscovery;
   const themeXp = floor(summary.runThemeDiscoveries) * xp.runThemeDiscovery;
-  const noHitWaveXp = floor(summary.noHitWaves) * xp.noHitWave;
+  const noHitWaveXp = floor(summary.noHitWaves) * xp.noHitWave * normalWaveXpMult;
   const noHitSectorXp = floor(summary.noHitSectors) * xp.noHitSector;
   const clearXp = summary.runCleared ? xp.runClear : 0;
   const clearLivesRemaining = floor(summary.clearLivesRemaining ?? summary.livesRemaining);

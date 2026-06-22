@@ -71,7 +71,7 @@ import {
 } from '../progression/ThreatDiscoveryState.js';
 import { updateHangarProgress } from '../progression/HangarProgressState.js';
 import { getBossProfile } from '../config/BossRoster.js';
-import { RUN_MODES } from '../game/RunMode.js';
+import { RUN_MODES, getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
 import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDiagnostics.js';
 
 const BOSS_WARNING_JOKES = [
@@ -2465,7 +2465,7 @@ export class PlayScene {
       const destroyed = enemy.takeDamage(damage);
       this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xffaa00);
       if (destroyed) {
-        this.game.addScore(enemy.scoreValue || 0);
+        this.addNormalWaveScore(enemy.scoreValue || 0, 'baseScore', enemy);
         if (enemy.kind !== 'boss') {
           this.onEnemyKilled(enemy);
           this.enemyManager?.removeEnemySprite?.(enemy, 'bomb_blast');
@@ -2765,7 +2765,7 @@ export class PlayScene {
         if (destroyed) {
           collisionStats.playerBulletEnemyKills += 1;
           if (!this.player.isSlowTimeActive?.()) {
-            const scoreAwarded = this.getComboScore(enemy.scoreValue);
+            const scoreAwarded = this.getNormalWaveScoreAward(this.getComboScore(enemy.scoreValue), enemy);
             const appliedScore = this.game.addScore(scoreAwarded);
             this.queueCollisionSideEffect(sideEffects, 'scorePopups', {
               x: enemy.x,
@@ -7740,7 +7740,7 @@ export class PlayScene {
     for (const milestone of COMBO_MILESTONES) {
       if (this.comboCount === milestone.threshold && !this.comboMilestonesReached.has(milestone.threshold)) {
         this.comboMilestonesReached.add(milestone.threshold);
-        const appliedBonus = this.game.addScore(milestone.bonus);
+        const appliedBonus = this.addNormalWaveScore(milestone.bonus, 'baseScore', enemy);
         queueToast(`${milestone.label} +${appliedBonus}`, {
           fontSize: 26,
           fill: '#ffaa00',
@@ -7769,7 +7769,7 @@ export class PlayScene {
 
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
       const bonus = this.getComboScore(100 * (this.comboCount / 10));
-      const appliedBonus = this.game.addScore(bonus);
+      const appliedBonus = this.addNormalWaveScore(bonus, 'baseScore', enemy);
       if (this.comboCount % 20 === 0) {
         queueToast(`COMBO BONUS +${appliedBonus}`, { fontSize: 16, fill: '#fff3a2', slot: 'top', type: 'combo', duration: 900, priority: 1 });
       }
@@ -7964,7 +7964,7 @@ export class PlayScene {
       this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xff66ff);
       if (destroyed) {
         enemiesDestroyed += 1;
-        const scoreAwarded = this.getComboScore(enemy.scoreValue);
+        const scoreAwarded = this.getNormalWaveScoreAward(this.getComboScore(enemy.scoreValue), enemy);
         const appliedScore = this.game.addScore(scoreAwarded);
         this.scorePopupManager?.addScorePopup(enemy.x, enemy.y, appliedScore);
         this.onEnemyKilled(enemy);
@@ -7973,7 +7973,9 @@ export class PlayScene {
     }
 
     const comboMult = Math.max(1, this.comboMultiplier || 1);
-    const bonusScore = Math.round((520 + cleared.length * 85 + enemiesHit * 160 + enemiesDestroyed * 220) * comboMult);
+    const bonusScore = this.getNormalWaveScoreAward(
+      Math.round((520 + cleared.length * 85 + enemiesHit * 160 + enemiesDestroyed * 220) * comboMult)
+    );
     const appliedBonusScore = this.game.addScore(bonusScore);
     this.scorePopupManager?.addScorePopup(impactX, impactY, appliedBonusScore, {
       comboEligible: false,
@@ -8086,7 +8088,7 @@ export class PlayScene {
         if (this.particleManager) this.particleManager.createHitSpark(enemy.x, enemy.y, accent);
 
         if (destroyed) {
-          const scoreAwarded = this.getComboScore(enemy.scoreValue);
+          const scoreAwarded = this.getNormalWaveScoreAward(this.getComboScore(enemy.scoreValue), enemy);
           const appliedScore = this.game.addScore(scoreAwarded);
           if (this.scorePopupManager) this.scorePopupManager.addScorePopup(enemy.x, enemy.y, appliedScore);
           this.onEnemyKilled(enemy);
@@ -8141,6 +8143,24 @@ export class PlayScene {
     return Math.round(base * Math.max(1, this.comboMultiplier));
   }
 
+  isNormalWaveScoreCompensationEligible(enemy = null) {
+    if (this.enemyManager?.phase !== 'WAVES') return false;
+    if (enemy?.kind === 'boss' || enemy?.kind === 'bonus_drone' || enemy instanceof BonusDrone) return false;
+    return getRunModeNormalWaveScoreXpMultiplier(this.game?.runMode) > 1;
+  }
+
+  getNormalWaveScoreAward(points, enemy = null) {
+    const base = Number(points) || 0;
+    const mult = this.isNormalWaveScoreCompensationEligible(enemy)
+      ? getRunModeNormalWaveScoreXpMultiplier(this.game?.runMode)
+      : 1;
+    return Math.round(base * mult);
+  }
+
+  addNormalWaveScore(points, source = 'baseScore', enemy = null) {
+    return this.game.addScore(this.getNormalWaveScoreAward(points, enemy), source);
+  }
+
   triggerChainLightning(sourceEnemy, baseDamage) {
     if (!this.player?.chainLightningActive) return;
 
@@ -8179,7 +8199,7 @@ export class PlayScene {
         // Award score
         if (!this.player.isSlowTimeActive?.()) {
           const scoreAwarded = this.getComboScore(nearest.scoreValue);
-          const appliedScore = this.game.addScore(scoreAwarded);
+          const appliedScore = this.game.addScore(this.getNormalWaveScoreAward(scoreAwarded, nearest));
           if (this.scorePopupManager) {
             this.scorePopupManager.addScorePopup(nearest.x, nearest.y, appliedScore);
           }
@@ -8577,7 +8597,7 @@ export class PlayScene {
           if (destroyed) {
             if (!this.player.isSlowTimeActive?.()) {
               const scoreAwarded = this.getComboScore(enemy.scoreValue);
-              const appliedScore = this.game.addScore(scoreAwarded);
+              const appliedScore = this.game.addScore(this.getNormalWaveScoreAward(scoreAwarded, enemy));
               if (this.scorePopupManager) {
                 this.scorePopupManager.addScorePopup(enemy.x, enemy.y, appliedScore);
               }

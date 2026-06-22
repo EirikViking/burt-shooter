@@ -3056,7 +3056,7 @@ export class EnemyManager {
       playScene.wavesCleared = (Number(playScene.wavesCleared) || 0) + 1;
       if ((Number(playScene.damageTakenThisWave) || 0) === 0) {
         playScene.noHitWavesThisRun = (Number(playScene.noHitWavesThisRun) || 0) + 1;
-        this.game.addScore(400, 'noHitBonus');
+        playScene.addNormalWaveScore?.(400, 'noHitBonus') ?? this.game.addScore(400, 'noHitBonus');
       }
       playScene.damageTakenThisWave = 0;
     }
@@ -3089,7 +3089,7 @@ export class EnemyManager {
       // Normal Bonus
       const rewardConfig = BalanceConfig.rewards || {};
       const bonus = (rewardConfig.waveClearScoreBase || 500) * clearedWaveNumber;
-      const appliedBonus = this.game.addScore(bonus);
+      const appliedBonus = this.game.scenes.play?.addNormalWaveScore?.(bonus, 'waveClearBonus') ?? this.game.addScore(bonus, 'waveClearBonus');
       if (this.game.scenes.play) {
         let repairDelta = 0;
         const repairTarget = rewardConfig.waveClearRepairTargetLives || 0;

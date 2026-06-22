@@ -434,6 +434,7 @@ function actualProfile(mode) {
     bossDifficultyMult: profile.bossDifficultyMult,
     bossAttackDangerMult: profile.bossAttackDangerMult,
     normalWaveAggressionMult: profile.normalWaveAggressionMult,
+    normalWaveScoreXpMult: profile.normalWaveScoreXpMult,
     pressureMultipliers: profile.pressureMultipliers
   };
 }
@@ -447,12 +448,13 @@ function assertRunModeRules() {
   assert.equal(mayhemProfile.normalWaveDifficultyLevelOffsetDelta, 0);
   assert.equal(mayhemProfile.bossDifficultyMult, 1);
   assert.equal(mayhemProfile.bossAttackDangerMult, 1);
-  assert.equal(mayhemProfile.normalWaveAggressionMult, 1.05);
-  assert.equal(mayhemProfile.pressureMultipliers.fireChanceMult, 1.05);
-  assert.equal(mayhemProfile.pressureMultipliers.projectileSpeedMult, 1.05);
-  assert.equal(mayhemProfile.pressureMultipliers.enemySpeedMult, 1.05);
-  assert.equal(mayhemProfile.pressureMultipliers.eliteChanceMult, 1.05);
-  assert.equal(mayhemProfile.pressureMultipliers.specialThreatMult, 1.05);
+  assert.equal(mayhemProfile.normalWaveAggressionMult, 1);
+  assert.equal(mayhemProfile.normalWaveScoreXpMult, 1.2);
+  assert.equal(mayhemProfile.pressureMultipliers.fireChanceMult, 1);
+  assert.equal(mayhemProfile.pressureMultipliers.projectileSpeedMult, 1);
+  assert.equal(mayhemProfile.pressureMultipliers.enemySpeedMult, 1);
+  assert.equal(mayhemProfile.pressureMultipliers.eliteChanceMult, 1);
+  assert.equal(mayhemProfile.pressureMultipliers.specialThreatMult, 1);
   assert.equal(mayhemProfile.pressureMultipliers.scoreMult, 1);
   assert.equal(mayhemProfile.pressureMultipliers.sustainMult, 1);
   assert.equal(mayhemProfile.pressureMultipliers.contentRarityMult, 1);
@@ -461,9 +463,10 @@ function assertRunModeRules() {
 
   assert.equal(scoutProfile.difficultyProfileId, 'scout_lower_pressure_v1');
   assert.notEqual(scoutProfile.normalWaveDifficultyLevelOffsetDelta, mayhemProfile.normalWaveDifficultyLevelOffsetDelta);
-  assert.equal(scoutProfile.normalWaveDifficultyLevelOffsetDelta, -5);
+  assert.equal(scoutProfile.normalWaveDifficultyLevelOffsetDelta, -3);
   assert.equal(scoutProfile.bossDifficultyMult, 0.75);
   assert.equal(scoutProfile.bossAttackDangerMult, 0.85);
+  assert.equal(scoutProfile.normalWaveScoreXpMult, 1);
   assert.equal(runModeBossAttackDangerMult(RUN_MODES.SCOUT), 0.6375);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.SCOUT), false);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.SCOUT), false);
@@ -474,7 +477,9 @@ function assertRunModeRules() {
   const sectorProfile = getRunModeProfile(RUN_MODES.SECTOR_START);
   assert.equal(sectorProfile.bossDifficultyMult, 1);
   assert.equal(sectorProfile.bossAttackDangerMult, 1);
+  assert.equal(sectorProfile.normalWaveDifficultyLevelOffsetDelta, 2);
   assert.equal(sectorProfile.normalWaveAggressionMult, 1);
+  assert.equal(sectorProfile.normalWaveScoreXpMult, 1);
   assert.equal(sectorProfile.pressureMultipliers.fireChanceMult, 1);
   assert.equal(sectorProfile.pressureMultipliers.projectileSpeedMult, 1);
   assert.equal(sectorProfile.pressureMultipliers.enemySpeedMult, 1);
@@ -497,8 +502,8 @@ function assertDifficultyDelta(comparisons) {
       `${label}: Scout effective normal-wave level must be lower than Mayhem`
     );
     assert.ok(
-      row.scoutVsMayhem.effectiveLevelDelta <= -5,
-      `${label}: Scout should keep the -5 effective normal-wave level delta`
+      row.scoutVsMayhem.effectiveLevelDelta <= -3,
+      `${label}: Scout should keep the lower-pressure effective normal-wave level delta`
     );
     assert.ok(
       row.scout.incomingPressureIndexAvg < row.mayhem.incomingPressureIndexAvg,
@@ -569,10 +574,11 @@ const report = {
     scoutMeaningfullyEasier: true,
     scoutBossHpPreservedAtExisting25PercentReduction: true,
     scoutBossAttackDangerReducedByAdditional15Percent: true,
-    mayhemNormalWavesFivePercentMoreAggressive: true,
+    mayhemNormalWavesFivePercentMoreAggressive: false,
+    mayhemNormalWaveScoreXpCompensation: 1.2,
     mayhemBossesUnchanged: true,
     balanceCodeChangedByThisCheck: true,
-    recommendation: 'Keep Scout boss HP at bossDifficultyMult 0.75, apply bossAttackDangerMult 0.85 for attacks only, and validate Mayhem normal-wave feel manually.'
+    recommendation: 'Mayhem removes the final +5% normal-wave aggression and applies ranked normal-wave score/XP compensation while Scout boss relief stays intact.'
   }
 };
 

@@ -19,14 +19,7 @@ const DEFAULT_MULTIPLIERS = Object.freeze({
   contentRarityMult: 1
 });
 
-const MAYHEM_RC_NORMAL_WAVE_MULTIPLIERS = Object.freeze({
-  ...DEFAULT_MULTIPLIERS,
-  fireChanceMult: 1.05,
-  projectileSpeedMult: 1.05,
-  enemySpeedMult: 1.05,
-  eliteChanceMult: 1.05,
-  specialThreatMult: 1.05
-});
+export const MAYHEM_NORMAL_WAVE_SCORE_XP_MULTIPLIER = 1.2;
 
 export const RUN_MODE_PROFILES = Object.freeze({
   [RUN_MODES.RANKED]: Object.freeze({
@@ -47,8 +40,9 @@ export const RUN_MODE_PROFILES = Object.freeze({
     normalWaveDifficultyLevelOffsetDelta: 0,
     bossDifficultyMult: 1,
     bossAttackDangerMult: 1,
-    normalWaveAggressionMult: 1.05,
-    pressureMultipliers: MAYHEM_RC_NORMAL_WAVE_MULTIPLIERS
+    normalWaveAggressionMult: 1,
+    normalWaveScoreXpMult: MAYHEM_NORMAL_WAVE_SCORE_XP_MULTIPLIER,
+    pressureMultipliers: DEFAULT_MULTIPLIERS
   }),
   [RUN_MODES.SCOUT]: Object.freeze({
     id: RUN_MODES.SCOUT,
@@ -65,10 +59,11 @@ export const RUN_MODE_PROFILES = Object.freeze({
     unlocksRankedCheckpoints: false,
     updatesCareerProgress: false,
     difficultyProfileId: 'scout_lower_pressure_v1',
-    normalWaveDifficultyLevelOffsetDelta: -5,
+    normalWaveDifficultyLevelOffsetDelta: -3,
     bossDifficultyMult: 0.75,
     bossAttackDangerMult: 0.85,
     normalWaveAggressionMult: 1,
+    normalWaveScoreXpMult: 1,
     pressureMultipliers: Object.freeze({
       fireChanceMult: 0.72,
       projectileSpeedMult: 0.82,
@@ -95,10 +90,11 @@ export const RUN_MODE_PROFILES = Object.freeze({
     unlocksRankedCheckpoints: false,
     updatesCareerProgress: false,
     difficultyProfileId: 'sector_checkpoint_practice_v1',
-    normalWaveDifficultyLevelOffsetDelta: 0,
+    normalWaveDifficultyLevelOffsetDelta: 2,
     bossDifficultyMult: 1,
     bossAttackDangerMult: 1,
     normalWaveAggressionMult: 1,
+    normalWaveScoreXpMult: 1,
     pressureMultipliers: DEFAULT_MULTIPLIERS
   }),
   [RUN_MODES.UNRANKED]: Object.freeze({
@@ -116,10 +112,11 @@ export const RUN_MODE_PROFILES = Object.freeze({
     unlocksRankedCheckpoints: false,
     updatesCareerProgress: false,
     difficultyProfileId: 'debug_unranked',
-    normalWaveDifficultyLevelOffsetDelta: 0,
+    normalWaveDifficultyLevelOffsetDelta: 2,
     bossDifficultyMult: 1,
     bossAttackDangerMult: 1,
     normalWaveAggressionMult: 1,
+    normalWaveScoreXpMult: 1,
     pressureMultipliers: DEFAULT_MULTIPLIERS
   })
 });
@@ -132,6 +129,13 @@ export function normalizeRunMode(value) {
 
 export function getRunModeProfile(mode) {
   return RUN_MODE_PROFILES[normalizeRunMode(mode)] || RUN_MODE_PROFILES[RUN_MODES.RANKED];
+}
+
+export function getRunModeNormalWaveScoreXpMultiplier(mode) {
+  const profile = getRunModeProfile(mode);
+  if (profile.ranked !== true) return 1;
+  const value = Number(profile.normalWaveScoreXpMult);
+  return Number.isFinite(value) ? Math.max(0.1, value) : 1;
 }
 
 export function isRankedRunMode(mode, { isDebugRun = false } = {}) {

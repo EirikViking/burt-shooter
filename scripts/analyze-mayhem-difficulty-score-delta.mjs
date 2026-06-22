@@ -280,14 +280,16 @@ function git(args, cwd = repoRoot) {
   return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
-function validateWorktree(label, worktree, expectedCommit) {
+function validateWorktree(label, worktree, expectedCommit, { allowDirty = false } = {}) {
   if (!existsSync(worktree)) {
     throw new Error(`${label} worktree missing: ${worktree}`);
   }
   const actual = git(['rev-parse', 'HEAD'], worktree);
   assert.equal(actual, expectedCommit, `${label} worktree HEAD mismatch`);
   const status = git(['status', '--short'], worktree);
-  assert.equal(status, '', `${label} worktree is dirty: ${status}`);
+  if (!allowDirty) {
+    assert.equal(status, '', `${label} worktree is dirty: ${status}`);
+  }
   return actual;
 }
 
@@ -306,8 +308,8 @@ function leaderboardNameFromSource(worktree) {
   return match?.[1] || null;
 }
 
-async function loadBuild({ id, label, buildId, commit, worktree }) {
-  validateWorktree(label, worktree, commit);
+async function loadBuild({ id, label, buildId, commit, worktree, allowDirty = false }) {
+  validateWorktree(label, worktree, commit, { allowDirty });
   const balanceModule = await importSource(worktree, 'src/config/BalanceConfig.js');
   const generatedModule = await importSource(worktree, 'src/config/GeneratedEnemyProfiles.js');
   const shipModule = await importSource(worktree, 'src/config/ShipMetadata.js');
@@ -409,11 +411,18 @@ function cloneCurrentBuildVariant(baseBuild, definition) {
 }
 
 function normalWaveScoreMultiplier(build) {
-  return Math.max(0.1, Number(build.variant?.normalWaveScoreXpComp) || 1);
+  if (
+    build.variant?.normalWaveScoreXpComp !== null &&
+    build.variant?.normalWaveScoreXpComp !== undefined &&
+    Number.isFinite(Number(build.variant.normalWaveScoreXpComp))
+  ) {
+    return Math.max(0.1, Number(build.variant.normalWaveScoreXpComp));
+  }
+  return Math.max(0.1, Number(build.runModeProfile?.normalWaveScoreXpMult) || 1);
 }
 
 function normalWaveXpMultiplier(build) {
-  return Math.max(0.1, Number(build.variant?.normalWaveScoreXpComp) || 1);
+  return normalWaveScoreMultiplier(build);
 }
 
 function normalWaveDifficultyLevel(build, sector) {
@@ -1404,13 +1413,24 @@ const currentBuild = await loadBuild({
   commit: CURRENT_SOURCE_COMMIT,
   worktree: CURRENT_WORKTREE
 });
+const implementedSourceCommit = git(['rev-parse', 'HEAD'], repoRoot);
+const implementedBuild = await loadBuild({
+  id: 'implemented_source',
+  label: 'Implemented source working tree',
+  buildId: 'working-tree',
+  commit: implementedSourceCommit,
+  worktree: repoRoot,
+  allowDirty: true
+});
 
 assert.equal(oldBuild.leaderboardName, EXPECTED_LEADERBOARD, 'old leaderboard identity mismatch');
 assert.equal(currentBuild.leaderboardName, EXPECTED_LEADERBOARD, 'current leaderboard identity mismatch');
+assert.equal(implementedBuild.leaderboardName, EXPECTED_LEADERBOARD, 'implemented leaderboard identity mismatch');
 
 const variantBuilds = VARIANT_DEFINITIONS.map((definition) => cloneCurrentBuildVariant(currentBuild, definition));
 const currentVariant = variantBuilds.find((build) => build.id === 'A_current_baseline');
-const allBuilds = [oldBuild, ...variantBuilds];
+const evaluatedBuilds = [...variantBuilds, implementedBuild];
+const allBuilds = [oldBuild, ...evaluatedBuilds];
 
 const allRuns = [];
 for (const build of allBuilds) {
@@ -1438,7 +1458,7 @@ for (const build of allBuilds) {
 }
 
 const comparisonsByBuild = {};
-for (const build of variantBuilds) {
+for (const build of evaluatedBuilds) {
   comparisonsByBuild[build.id] = {};
   for (const skill of SKILL_PROFILES) {
     comparisonsByBuild[build.id][skill.id] = compareAggregates(
@@ -1473,7 +1493,7 @@ const sectorOpportunityComparison = Object.fromEntries(TARGET_SECTORS.map((secto
   }];
 }));
 
-const sectorOpportunityComparisonByBuild = Object.fromEntries(variantBuilds.map((build) => [
+const sectorOpportunityComparisonByBuild = Object.fromEntries(evaluatedBuilds.map((build) => [
   build.id,
   Object.fromEntries(TARGET_SECTORS.map((sector) => {
     const oldRow = sectorOpportunityByBuild[oldBuild.id][sector];
@@ -1494,6 +1514,7 @@ const highSkillProbability = highSkillPersonalBestProbability(
 const bossFairness = bossFairnessAnalysis(oldBuild, currentVariant);
 const conclusion = conclusionFrom(comparison, bossFairness);
 const variantSummaryRows = buildVariantSummaryRows(aggregatesByBuild, comparisonsByBuild, oldBuild.id, variantBuilds);
+const implementedSummaryRow = buildVariantSummaryRows(aggregatesByBuild, comparisonsByBuild, oldBuild.id, [implementedBuild])[0];
 const variantRecommendation = selectRecommendation(variantSummaryRows, aggregatesByBuild[oldBuild.id].high_skill_aggressive);
 const bestCandidateBuild = variantBuilds.find((build) => build.id === variantRecommendation.bestCandidateId) || currentVariant;
 const bestCandidateHighSkillPersonalBestProbability = highSkillPersonalBestProbability(
@@ -1501,6 +1522,50 @@ const bestCandidateHighSkillPersonalBestProbability = highSkillPersonalBestProba
   runsByBuildAndSkill[bestCandidateBuild.id].high_skill_aggressive
 );
 const bestCandidateBossFairness = bossFairnessAnalysis(oldBuild, bestCandidateBuild);
+const implementedHighSkillPersonalBestProbability = highSkillPersonalBestProbability(
+  runsByBuildAndSkill[oldBuild.id].high_skill_aggressive,
+  runsByBuildAndSkill[implementedBuild.id].high_skill_aggressive
+);
+const implementedBossFairness = bossFairnessAnalysis(oldBuild, implementedBuild);
+const implementedVsBestCandidate = {
+  bestCandidateId: bestCandidateBuild.id,
+  medianSectorDelta: implementedSummaryRow.medianSector - (
+    aggregatesByBuild[bestCandidateBuild.id].high_skill_aggressive.survival.medianSector
+  ),
+  medianScoreDeltaPct: deltaPct(
+    implementedSummaryRow.medianScore,
+    aggregatesByBuild[bestCandidateBuild.id].high_skill_aggressive.score.median
+  ),
+  medianXpDeltaPct: deltaPct(
+    implementedSummaryRow.medianXp,
+    aggregatesByBuild[bestCandidateBuild.id].high_skill_aggressive.xp.median
+  ),
+  scorePerMinuteDeltaPct: deltaPct(
+    implementedSummaryRow.scorePerMinute,
+    aggregatesByBuild[bestCandidateBuild.id].high_skill_aggressive.score.avgPerMinute
+  ),
+  probability250kDelta: round(
+    implementedSummaryRow.probability250k -
+      aggregatesByBuild[bestCandidateBuild.id].high_skill_aggressive.probabilities.score250k,
+    4
+  ),
+  probability390kDelta: round(
+    implementedSummaryRow.probability390k -
+      aggregatesByBuild[bestCandidateBuild.id].high_skill_aggressive.probabilities.score390k,
+    4
+  ),
+  normalWaveDeathsDelta: round(
+    implementedSummaryRow.normalWaveDeaths -
+      aggregatesByBuild[bestCandidateBuild.id].high_skill_aggressive.combat.avgNormalWaveDeaths,
+    3
+  ),
+  materiallyMatches: Math.abs(implementedSummaryRow.medianSector - aggregatesByBuild[bestCandidateBuild.id].high_skill_aggressive.survival.medianSector) <= 1 &&
+    Math.abs(deltaPct(implementedSummaryRow.medianScore, aggregatesByBuild[bestCandidateBuild.id].high_skill_aggressive.score.median)) <= 10 &&
+    Math.abs(deltaPct(implementedSummaryRow.scorePerMinute, aggregatesByBuild[bestCandidateBuild.id].high_skill_aggressive.score.avgPerMinute)) <= 10 &&
+    implementedSummaryRow.probability250k >= 0.85 &&
+    implementedSummaryRow.probability390k >= 0.4 &&
+    implementedSummaryRow.medianSector >= 30
+};
 
 const report = {
   generatedAt: new Date().toISOString(),
@@ -1543,6 +1608,23 @@ const report = {
         hasBossWipeoutGuard: currentVariant.hasBossWipeoutGuard,
         hasBossHazardRespawnCleanup: currentVariant.hasBossHazardRespawnCleanup
       }
+    },
+    implemented: {
+      id: implementedBuild.id,
+      buildId: implementedBuild.buildId,
+      commit: implementedBuild.commit,
+      worktree: implementedBuild.worktree,
+      leaderboardName: implementedBuild.leaderboardName,
+      settings: {
+        maxLives: implementedBuild.MAX_PLAYER_LIVES,
+        normalWaveDifficultyLevelOffset: implementedBuild.BalanceConfig.difficulty?.normalWaveDifficultyLevelOffset || 0,
+        minWavesBetweenBosses: implementedBuild.BalanceConfig.difficulty?.MIN_WAVES_BETWEEN_BOSSES,
+        wavesPerBossBase: implementedBuild.BalanceConfig.difficulty?.wavesPerBossBase,
+        wavesPerBossMax: implementedBuild.BalanceConfig.difficulty?.wavesPerBossMax,
+        runModeProfile: implementedBuild.runModeProfile,
+        hasBossWipeoutGuard: implementedBuild.hasBossWipeoutGuard,
+        hasBossHazardRespawnCleanup: implementedBuild.hasBossHazardRespawnCleanup
+      }
     }
   },
   starterShipDps: {
@@ -1572,6 +1654,18 @@ const report = {
     sectorOpportunity: sectorOpportunityByBuild[bestCandidateBuild.id],
     sectorOpportunityComparison: sectorOpportunityComparisonByBuild[bestCandidateBuild.id]
   },
+  implementedSource: {
+    id: implementedBuild.id,
+    label: implementedBuild.label,
+    highSkillPersonalBestProbability: implementedHighSkillPersonalBestProbability,
+    bossFairness: implementedBossFairness,
+    summaryRow: implementedSummaryRow,
+    aggregates: aggregatesByBuild[implementedBuild.id],
+    comparison: comparisonsByBuild[implementedBuild.id],
+    sectorOpportunity: sectorOpportunityByBuild[implementedBuild.id],
+    sectorOpportunityComparison: sectorOpportunityComparisonByBuild[implementedBuild.id],
+    implementedVsBestCandidate
+  },
   variants: variantBuilds.map((build) => ({
     id: build.id,
     label: build.label,
@@ -1586,12 +1680,13 @@ const report = {
   tables: {
     oldVsCurrentBySkill: buildTableRows(aggregates, comparison),
     highSkillVariantSummary: variantSummaryRows
+      .concat([implementedSummaryRow])
   },
   conclusion,
   allRuns,
   limitations: [
     'This is an automated deterministic comparative model, not a full rendered playthrough. It loads source constants from both checked-out worktrees and applies the same seeded controller model to both versions.',
-    'Variant tuning is modeled through temporary in-script overrides only. No gameplay balance source file is changed by this analysis.',
+    'Variant tuning is modeled through temporary in-script overrides; implementedSource also loads the current workspace source directly so implementation commits can be compared against the selected candidate.',
     'Score output is calibrated by a fixed 0.25 scale after the raw deterministic score-opportunity budget is calculated; this keeps 250k/390k sanity checks in the same order of magnitude as the reported top-player context while preserving old-vs-current percentage deltas.',
     'The model estimates bot movement, pickup collection, graze opportunities, and deaths from source pressure indices. It does not submit leaderboards, write saves, write Steam Cloud data, or launch Steam.',
     'The result is strongest for directional old-vs-current deltas: waves before bosses, score/XP opportunity, normal-wave pressure, and boss chain-death risk.',
@@ -1603,7 +1698,7 @@ mkdirSync(OUTPUT_DIR, { recursive: true });
 const reportPath = path.join(OUTPUT_DIR, 'report.json');
 writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 
-const summaryRows = variantSummaryRows.map((row) => ({
+const summaryRows = variantSummaryRows.concat([implementedSummaryRow]).map((row) => ({
   variant: row.id.replace(/_no_aggression|_baseline/g, ''),
   sector: row.medianSector,
   score: row.medianScore,
@@ -1614,4 +1709,4 @@ const summaryRows = variantSummaryRows.map((row) => ({
   normalDeaths: row.normalWaveDeaths
 }));
 console.table(summaryRows);
-console.log(`[mayhem-difficulty-score-delta] PASS verdict=${conclusion.verdict} best=${variantRecommendation.bestCandidateId} seeds=${SEEDS.length} report=${reportPath}`);
+console.log(`[mayhem-difficulty-score-delta] PASS verdict=${conclusion.verdict} best=${variantRecommendation.bestCandidateId} implementedMatches=${implementedVsBestCandidate.materiallyMatches} seeds=${SEEDS.length} report=${reportPath}`);

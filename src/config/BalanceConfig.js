@@ -64,7 +64,7 @@ export const BalanceConfig = {
         wavesPerBossMax: 7,
         bossTargetIntervalSeconds: { earlyMin: 60, earlyMax: 90 },
         estimatedWaveSeconds: 18,
-        normalWaveDifficultyLevelOffset: 9,
+        normalWaveDifficultyLevelOffset: 7,
 
         earlyWaveEnemyCounts: {
             1: [6, 7, 8, 8, 8, 9],
