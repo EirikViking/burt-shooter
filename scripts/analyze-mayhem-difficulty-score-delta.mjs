@@ -23,6 +23,7 @@ const TARGET_SECTORS = [5, 10, 15, 20, 25, 30];
 const MAX_SECTOR = 35;
 const RUN_CLEAR_SECTOR = 10;
 const SCORE_CALIBRATION_SCALE = 0.25;
+const SCORE_THRESHOLDS = [250000, 390000];
 
 const SCORE = Object.freeze({
   waveClearBase: 500,
@@ -36,6 +37,97 @@ const SCORE = Object.freeze({
   grazeBreakPerBullet: 85,
   pickupScoreAverage: 140
 });
+
+const VARIANT_DEFINITIONS = [
+  {
+    id: 'A_current_baseline',
+    label: 'A. Current baseline',
+    summary: 'Current accepted Mayhem tuning',
+    removeFinalMayhemAggression: false,
+    normalWaveDifficultyLevelOffset: null,
+    normalWaveScoreXpComp: 1
+  },
+  {
+    id: 'B_no_final_5pct_aggression',
+    label: 'B. Remove +5% Mayhem wave aggression',
+    summary: 'Current minus final +5% Mayhem normal-wave pressure multipliers',
+    removeFinalMayhemAggression: true,
+    normalWaveDifficultyLevelOffset: null,
+    normalWaveScoreXpComp: 1
+  },
+  {
+    id: 'C_no_aggression_comp120',
+    label: 'C. B + 1.20 normal-wave score/XP compensation',
+    summary: 'Remove +5% aggression and compensate normal-wave score/XP opportunity by 6/5',
+    removeFinalMayhemAggression: true,
+    normalWaveDifficultyLevelOffset: null,
+    normalWaveScoreXpComp: 1.2
+  },
+  {
+    id: 'D_no_aggression_offset8',
+    label: 'D. B + normalWaveDifficultyLevelOffset 8',
+    summary: 'Remove +5% aggression and reduce effective normal-wave offset from 9 to 8',
+    removeFinalMayhemAggression: true,
+    normalWaveDifficultyLevelOffset: 8,
+    normalWaveScoreXpComp: 1
+  },
+  {
+    id: 'E_no_aggression_offset7',
+    label: 'E. B + normalWaveDifficultyLevelOffset 7',
+    summary: 'Remove +5% aggression and reduce effective normal-wave offset from 9 to 7',
+    removeFinalMayhemAggression: true,
+    normalWaveDifficultyLevelOffset: 7,
+    normalWaveScoreXpComp: 1
+  },
+  {
+    id: 'F_no_aggression_offset7_comp120',
+    label: 'F. B + offset 7 + 1.20 compensation',
+    summary: 'Remove +5% aggression, reduce offset to 7, and compensate normal-wave score/XP by 1.20',
+    removeFinalMayhemAggression: true,
+    normalWaveDifficultyLevelOffset: 7,
+    normalWaveScoreXpComp: 1.2
+  },
+  {
+    id: 'G_no_aggression_offset6_comp120',
+    label: 'G. B + offset 6 + 1.20 compensation',
+    summary: 'Remove +5% aggression, reduce offset to 6, and compensate normal-wave score/XP by 1.20',
+    removeFinalMayhemAggression: true,
+    normalWaveDifficultyLevelOffset: 6,
+    normalWaveScoreXpComp: 1.2
+  },
+  {
+    id: 'H1_no_aggression_offset7_comp115',
+    label: 'H1. Offset 7 + 1.15 compensation',
+    summary: 'Sensitivity pass around F with lower compensation',
+    removeFinalMayhemAggression: true,
+    normalWaveDifficultyLevelOffset: 7,
+    normalWaveScoreXpComp: 1.15
+  },
+  {
+    id: 'H2_no_aggression_offset7_comp125',
+    label: 'H2. Offset 7 + 1.25 compensation',
+    summary: 'Sensitivity pass around F with higher compensation',
+    removeFinalMayhemAggression: true,
+    normalWaveDifficultyLevelOffset: 7,
+    normalWaveScoreXpComp: 1.25
+  },
+  {
+    id: 'H3_no_aggression_offset6_comp115',
+    label: 'H3. Offset 6 + 1.15 compensation',
+    summary: 'Sensitivity pass around G with lower compensation',
+    removeFinalMayhemAggression: true,
+    normalWaveDifficultyLevelOffset: 6,
+    normalWaveScoreXpComp: 1.15
+  },
+  {
+    id: 'H4_no_aggression_offset6_comp125',
+    label: 'H4. Offset 6 + 1.25 compensation',
+    summary: 'Sensitivity pass around G with higher compensation',
+    removeFinalMayhemAggression: true,
+    normalWaveDifficultyLevelOffset: 6,
+    normalWaveScoreXpComp: 1.25
+  }
+];
 
 const LEGACY_SCORE_VALUES = {
   chaser: 15,
@@ -267,6 +359,61 @@ async function loadBuild({ id, label, buildId, commit, worktree }) {
     hasBossHazardRespawnCleanup: playSceneText.includes('clearRespawnHazards') && playSceneText.includes('boss_hazard'),
     hasBossAttackPauseAfterRespawn: bossText.includes('pauseAttackCadenceAfterRespawn') || playSceneText.includes('pauseBossAttackCadence')
   };
+}
+
+function cloneCurrentBuildVariant(baseBuild, definition) {
+  const pressure = {
+    fireChanceMult: Number(baseBuild.runModeProfile?.pressureMultipliers?.fireChanceMult) || 1,
+    projectileSpeedMult: Number(baseBuild.runModeProfile?.pressureMultipliers?.projectileSpeedMult) || 1,
+    enemySpeedMult: Number(baseBuild.runModeProfile?.pressureMultipliers?.enemySpeedMult) || 1,
+    eliteChanceMult: Number(baseBuild.runModeProfile?.pressureMultipliers?.eliteChanceMult) || 1,
+    specialThreatMult: Number(baseBuild.runModeProfile?.pressureMultipliers?.specialThreatMult) || 1,
+    sustainMult: Number(baseBuild.runModeProfile?.pressureMultipliers?.sustainMult) || 1,
+    scoreMult: Number(baseBuild.runModeProfile?.pressureMultipliers?.scoreMult) || 1,
+    contentRarityMult: Number(baseBuild.runModeProfile?.pressureMultipliers?.contentRarityMult) || 1
+  };
+  if (definition.removeFinalMayhemAggression) {
+    pressure.fireChanceMult = 1;
+    pressure.projectileSpeedMult = 1;
+    pressure.enemySpeedMult = 1;
+    pressure.eliteChanceMult = 1;
+    pressure.specialThreatMult = 1;
+  }
+  const difficulty = {
+    ...(baseBuild.BalanceConfig.difficulty || {})
+  };
+  if (
+    definition.normalWaveDifficultyLevelOffset !== null &&
+    definition.normalWaveDifficultyLevelOffset !== undefined &&
+    Number.isFinite(Number(definition.normalWaveDifficultyLevelOffset))
+  ) {
+    difficulty.normalWaveDifficultyLevelOffset = Math.max(0, Math.floor(Number(definition.normalWaveDifficultyLevelOffset)));
+  }
+  return {
+    ...baseBuild,
+    id: definition.id,
+    label: definition.label,
+    variant: { ...definition },
+    BalanceConfig: {
+      ...baseBuild.BalanceConfig,
+      difficulty
+    },
+    runModeProfile: {
+      ...(baseBuild.runModeProfile || {}),
+      normalWaveAggressionMult: definition.removeFinalMayhemAggression
+        ? 1
+        : (Number(baseBuild.runModeProfile?.normalWaveAggressionMult) || 1),
+      pressureMultipliers: pressure
+    }
+  };
+}
+
+function normalWaveScoreMultiplier(build) {
+  return Math.max(0.1, Number(build.variant?.normalWaveScoreXpComp) || 1);
+}
+
+function normalWaveXpMultiplier(build) {
+  return Math.max(0.1, Number(build.variant?.normalWaveScoreXpComp) || 1);
 }
 
 function normalWaveDifficultyLevel(build, sector) {
@@ -598,14 +745,14 @@ function comboTickBonus(comboCountAfter) {
   return Math.round((100 * (comboCountAfter / 10)) * multiplier);
 }
 
-function addComboKillScore(run, baseScore) {
-  const score = comboKillScore(baseScore, run.comboCount);
+function addComboKillScore(run, baseScore, scoreMultiplier = 1) {
+  const score = Math.round(comboKillScore(baseScore, run.comboCount) * scoreMultiplier);
   run.score += score;
   run.enemyScore += score;
   run.comboCount += 1;
   run.comboMax = Math.max(run.comboMax, run.comboCount);
-  const milestone = comboMilestoneBonus(run.comboCount);
-  const tick = comboTickBonus(run.comboCount);
+  const milestone = Math.round(comboMilestoneBonus(run.comboCount) * scoreMultiplier);
+  const tick = Math.round(comboTickBonus(run.comboCount) * scoreMultiplier);
   run.score += milestone + tick;
   run.comboBonus += milestone + tick;
 }
@@ -629,11 +776,11 @@ function calculatePilotXp(build, summary) {
   };
   const scoreXp = Math.floor((Number(summary.score) || 0) / Math.max(1, xp.scoreDivisor));
   const sectorXp = Math.max(0, floor(summary.sectorReached, 1) - 1) * xp.sectorReachedBase;
-  const waveXp = floor(summary.wavesCleared) * xp.waveClear;
+  const waveXp = floor(summary.wavesCleared) * xp.waveClear * normalWaveXpMultiplier(build);
   const bossXp = floor(summary.bossesKilled) * xp.bossDefeat;
   const discoveryXp = floor(summary.codexDiscoveries) * xp.codexDiscovery;
   const themeXp = floor(summary.runThemeDiscoveries) * xp.runThemeDiscovery;
-  const noHitWaveXp = floor(summary.noHitWaves) * xp.noHitWave;
+  const noHitWaveXp = floor(summary.noHitWaves) * xp.noHitWave * normalWaveXpMultiplier(build);
   const noHitSectorXp = floor(summary.noHitSectors) * xp.noHitSector;
   const clearXp = summary.runCleared ? xp.runClear : 0;
   const livesXp = summary.runCleared ? floor(summary.clearLivesRemaining ?? summary.livesRemaining) * xp.clearWithLivesRemaining : 0;
@@ -677,7 +824,7 @@ function markDeaths(run, count, source, nowSeconds, { boss = null, chainWindow =
 }
 
 function simulateRun(build, skill, seed) {
-  const rng = mulberry32(seed ^ hashString(build.id) ^ hashString(skill.id));
+  const rng = mulberry32(seed ^ hashString(skill.id));
   const run = {
     seed,
     build: build.id,
@@ -727,6 +874,7 @@ function simulateRun(build, skill, seed) {
     run.finalSectorReached = sector;
     const level = normalWaveDifficultyLevel(build, sector);
     const wavesThisSector = normalWaveCount(build, level);
+    const normalWaveScoreMult = normalWaveScoreMultiplier(build);
     let sectorHadDeath = false;
     let sectorEnemiesKilled = 0;
     let sectorWaveDeaths = 0;
@@ -747,32 +895,33 @@ function simulateRun(build, skill, seed) {
       const completion = gameOver ? clamp(0.22 + rng() * 0.52, 0.1, 0.88) : 1;
       const kills = Math.floor(metric.count * completion);
       for (let kill = 0; kill < kills; kill += 1) {
-        addComboKillScore(run, metric.scoreValue);
+        addComboKillScore(run, metric.scoreValue, normalWaveScoreMult);
       }
       run.enemyKills += kills;
       sectorEnemiesKilled += kills;
       if (kills > 0 && rng() < 0.018 * kills * skill.pickupBias) {
         const pickups = 1 + (rng() < 0.08 ? 1 : 0);
         run.powerupsCollected += pickups;
-        const pickupScore = Math.round(pickups * SCORE.pickupScoreAverage * (0.7 + skill.aggression * 0.55));
+        const pickupScore = Math.round(pickups * SCORE.pickupScoreAverage * (0.7 + skill.aggression * 0.55) * normalWaveScoreMult);
         run.score += pickupScore;
         run.pickupScore += pickupScore;
       }
       const graze = Math.floor((metric.fireChance * metric.projectileSpeed * metric.count * 8.5) * skill.grazeAggression * (0.65 + rng() * 0.7));
       run.grazeNearMissCount += graze;
       if (graze >= 16 && rng() < skill.grazeAggression * 0.2) {
-        const grazeScore = Math.round((SCORE.grazeBreakBase + graze * SCORE.grazeBreakPerBullet) * Math.max(1, run.comboCount >= 25 ? 2 : 1));
+        const grazeScore = Math.round((SCORE.grazeBreakBase + graze * SCORE.grazeBreakPerBullet) * Math.max(1, run.comboCount >= 25 ? 2 : 1) * normalWaveScoreMult);
         run.score += grazeScore;
         run.grazeBreakScore += grazeScore;
       }
       if (!gameOver) {
         run.wavesCleared += 1;
-        const waveClear = SCORE.waveClearBase * (waveIndex + 1);
+        const waveClear = Math.round(SCORE.waveClearBase * (waveIndex + 1) * normalWaveScoreMult);
         run.score += waveClear;
         run.waveClearScore += waveClear;
         if (deaths === 0 && rng() < clamp(skill.comboRetention + (1 / Math.max(1, 1 + metric.pressureIndex / 1200)) * 0.18, 0, 0.95)) {
-          run.score += SCORE.noHitWaveBonus;
-          run.noHitWaveScore += SCORE.noHitWaveBonus;
+          const noHitWaveScore = Math.round(SCORE.noHitWaveBonus * normalWaveScoreMult);
+          run.score += noHitWaveScore;
+          run.noHitWaveScore += noHitWaveScore;
           run.noHitWaves += 1;
         }
       }
@@ -858,6 +1007,13 @@ function simulateRun(build, skill, seed) {
   run.xpPerMinute = round(run.xpEarned / Math.max(1, run.runDurationSeconds / 60), 1);
   run.xpPerSector = round(run.xpEarned / Math.max(1, run.finalSectorReached), 1);
   run.xpPerWave = round(run.xpEarned / Math.max(1, run.wavesCleared), 1);
+  run.killsPerSector = round(run.enemyKills / Math.max(1, run.finalSectorReached), 2);
+  run.timeTo250kSeconds = run.score >= 250000
+    ? round((250000 / Math.max(1, run.score)) * run.runDurationSeconds, 1)
+    : null;
+  run.timeTo390kSeconds = run.score >= 390000
+    ? round((390000 / Math.max(1, run.score)) * run.runDurationSeconds, 1)
+    : null;
   run.chainDeaths2Within10 = countClusters(run.deathTimeline, 2, 10, 'boss');
   run.chainDeaths3Within20 = countClusters(run.deathTimeline, 3, 20, 'boss');
   return run;
@@ -875,9 +1031,17 @@ function countClusters(timeline, needed, windowSeconds, source = null) {
 }
 
 function aggregateRuns(runs) {
-  const values = (field) => runs.map((run) => Number(run[field])).filter(Number.isFinite);
+  const values = (field) => runs.map((run) => run[field]).filter(Number.isFinite);
   const pct = (field, p) => round(percentile(values(field), p), field.includes('score') || field.includes('xp') ? 0 : 2);
   const avg = (field) => round(average(values(field)), field.includes('score') || field.includes('xp') ? 0 : 2);
+  const medianNullable = (field) => {
+    const found = values(field);
+    return found.length ? round(percentile(found, 50), 1) : null;
+  };
+  const avgNullable = (field) => {
+    const found = values(field);
+    return found.length ? round(average(found), 1) : null;
+  };
   return {
     attempts: runs.length,
     survival: {
@@ -898,7 +1062,11 @@ function aggregateRuns(runs) {
       avg: avg('score'),
       avgPerMinute: avg('scorePerMinute'),
       avgPerSector: avg('scorePerSector'),
-      avgPerWave: avg('scorePerWave')
+      avgPerWave: avg('scorePerWave'),
+      medianTimeTo250kSeconds: medianNullable('timeTo250kSeconds'),
+      medianTimeTo390kSeconds: medianNullable('timeTo390kSeconds'),
+      avgTimeTo250kSeconds: avgNullable('timeTo250kSeconds'),
+      avgTimeTo390kSeconds: avgNullable('timeTo390kSeconds')
     },
     xp: {
       median: pct('xpEarned', 50),
@@ -919,6 +1087,7 @@ function aggregateRuns(runs) {
       avgComboMax: avg('comboMax'),
       avgGrazeNearMiss: avg('grazeNearMissCount'),
       avgPowerupsCollected: avg('powerupsCollected'),
+      avgKillsPerSector: avg('killsPerSector'),
       boss2PlusDeathClusterRate: round(runs.filter((run) => run.chainDeaths2Within10 > 0).length / Math.max(1, runs.length), 4),
       boss3PlusDeathClusterRate: round(runs.filter((run) => run.chainDeaths3Within20 > 0).length / Math.max(1, runs.length), 4)
     },
@@ -952,6 +1121,12 @@ function compareAggregates(oldAgg, currentAgg) {
     xpPerMinuteDeltaPct: deltaPct(currentAgg.xp.avgPerMinute, oldAgg.xp.avgPerMinute),
     xpPerSectorDeltaPct: deltaPct(currentAgg.xp.avgPerSector, oldAgg.xp.avgPerSector),
     xpPerWaveDeltaPct: deltaPct(currentAgg.xp.avgPerWave, oldAgg.xp.avgPerWave),
+    timeTo250kDeltaPct: currentAgg.score.medianTimeTo250kSeconds == null || oldAgg.score.medianTimeTo250kSeconds == null
+      ? null
+      : deltaPct(currentAgg.score.medianTimeTo250kSeconds, oldAgg.score.medianTimeTo250kSeconds),
+    timeTo390kDeltaPct: currentAgg.score.medianTimeTo390kSeconds == null || oldAgg.score.medianTimeTo390kSeconds == null
+      ? null
+      : deltaPct(currentAgg.score.medianTimeTo390kSeconds, oldAgg.score.medianTimeTo390kSeconds),
     normalWaveDeathsDeltaPct: deltaPct(currentAgg.combat.avgNormalWaveDeaths, oldAgg.combat.avgNormalWaveDeaths),
     bossDeathsDeltaPct: deltaPct(currentAgg.combat.avgBossDeaths, oldAgg.combat.avgBossDeaths),
     boss2PlusClusterDeltaPct: deltaPct(currentAgg.combat.boss2PlusDeathClusterRate, oldAgg.combat.boss2PlusDeathClusterRate),
@@ -969,7 +1144,7 @@ function aggregateBySector(build, runs) {
     const waveCounts = [];
     const enemyCounts = [];
     for (const seed of SEEDS.slice(0, Math.min(25, SEEDS.length))) {
-      const rng = mulberry32(seed ^ hashString(build.id) ^ sector);
+      const rng = mulberry32(seed ^ hashString('sector-opportunity') ^ sector);
       const level = normalWaveDifficultyLevel(build, sector);
       const waveCount = normalWaveCount(build, level);
       waveCounts.push(waveCount);
@@ -1118,6 +1293,103 @@ function conclusionFrom(comparison, bossFairness) {
   };
 }
 
+function buildVariantSummaryRows(aggregatesByBuild, comparisonsByBuild, oldBuildId, variantBuilds) {
+  const oldHigh = aggregatesByBuild[oldBuildId].high_skill_aggressive;
+  return variantBuilds.map((build) => {
+    const agg = aggregatesByBuild[build.id].high_skill_aggressive;
+    const compare = comparisonsByBuild[build.id].high_skill_aggressive;
+    return {
+      id: build.id,
+      label: build.label,
+      offset: build.BalanceConfig.difficulty?.normalWaveDifficultyLevelOffset ?? null,
+      finalAggressionRemoved: Boolean(build.variant?.removeFinalMayhemAggression),
+      normalWaveScoreXpComp: normalWaveScoreMultiplier(build),
+      medianSector: agg.survival.medianSector,
+      p75Sector: agg.survival.p75Sector,
+      p90Sector: agg.survival.p90Sector,
+      medianScore: agg.score.median,
+      p90Score: agg.score.p90,
+      medianXp: agg.xp.median,
+      scorePerMinute: agg.score.avgPerMinute,
+      xpPerMinute: agg.xp.avgPerMinute,
+      timeTo250kSeconds: agg.score.medianTimeTo250kSeconds,
+      timeTo390kSeconds: agg.score.medianTimeTo390kSeconds,
+      probability250k: agg.probabilities.score250k,
+      probability390k: agg.probabilities.score390k,
+      normalWaveDeaths: agg.combat.avgNormalWaveDeaths,
+      bossDeaths: agg.combat.avgBossDeaths,
+      boss2PlusDeathClusterRate: agg.combat.boss2PlusDeathClusterRate,
+      killsPerSector: agg.combat.avgKillsPerSector,
+      medianSectorVsOld: compare.medianSectorDelta,
+      medianScoreDeltaPct: compare.medianScoreDeltaPct,
+      medianXpDeltaPct: compare.medianXpDeltaPct,
+      scorePerMinuteVsOldPct: compare.scorePerMinuteDeltaPct,
+      xpPerMinuteVsOldPct: compare.xpPerMinuteDeltaPct,
+      normalWaveDeathsVsOldPct: compare.normalWaveDeathsDeltaPct,
+      bossDeathsVsOldPct: compare.bossDeathsDeltaPct,
+      scorePerMinuteAboveOld: agg.score.avgPerMinute > oldHigh.score.avgPerMinute
+    };
+  });
+}
+
+function scoreCandidate(row, oldHigh) {
+  let score = 0;
+  if (row.probability250k >= 0.85) score += 18;
+  else score += row.probability250k * 12;
+  if (row.probability390k >= 0.4) score += 24;
+  else score += row.probability390k * 28;
+  if (row.medianSector >= 30) score += 18;
+  else score += Math.max(0, row.medianSector - 20) * 1.2;
+  if (row.normalWaveDeaths <= oldHigh.combat.avgNormalWaveDeaths * 1.05) score += 18;
+  else score -= Math.min(18, (row.normalWaveDeaths - oldHigh.combat.avgNormalWaveDeaths) * 5);
+  if (row.bossDeaths <= oldHigh.combat.avgBossDeaths) score += 8;
+  if (row.scorePerMinuteAboveOld) score += 12;
+  const compPenalty = Math.abs((Number(row.normalWaveScoreXpComp) || 1) - 1.2) * 8;
+  const offsetPenalty = Math.max(0, 9 - (Number(row.offset) || 9)) * 1.4;
+  return round(score - compPenalty - offsetPenalty, 3);
+}
+
+function selectRecommendation(variantRows, oldHigh) {
+  const eligible = variantRows
+    .filter((row) => row.id !== 'A_current_baseline')
+    .map((row) => ({
+      ...row,
+      targetMet: row.probability250k >= 0.85 &&
+        row.probability390k >= 0.4 &&
+        row.medianSector >= 30 &&
+        row.normalWaveDeaths <= oldHigh.combat.avgNormalWaveDeaths * 1.05 &&
+        row.scorePerMinuteAboveOld,
+      candidateScore: scoreCandidate(row, oldHigh)
+    }));
+  const targetMet = eligible.filter((row) => row.targetMet)
+    .sort((a, b) =>
+      (b.offset - a.offset) ||
+      (Math.abs(a.normalWaveScoreXpComp - 1) - Math.abs(b.normalWaveScoreXpComp - 1)) ||
+      (b.candidateScore - a.candidateScore)
+    );
+  const ranked = [...eligible].sort((a, b) => b.candidateScore - a.candidateScore);
+  const best = targetMet[0] || ranked[0] || null;
+  return {
+    bestCandidateId: best?.id || null,
+    bestCandidateLabel: best?.label || null,
+    targetFullyMet: Boolean(best?.targetMet),
+    rankedCandidates: ranked.map((row) => ({
+      id: row.id,
+      label: row.label,
+      candidateScore: row.candidateScore,
+      targetMet: row.targetMet,
+      medianSector: row.medianSector,
+      probability250k: row.probability250k,
+      probability390k: row.probability390k,
+      scorePerMinute: row.scorePerMinute,
+      normalWaveDeaths: row.normalWaveDeaths
+    })),
+    recommendation: best
+      ? `Best analysis candidate: ${best.label}. Remove the +5% normal-wave aggression, use normalWaveDifficultyLevelOffset ${best.offset}, and use ${best.normalWaveScoreXpComp.toFixed(2)} normal-wave score/XP pacing compensation.`
+      : 'No candidate was available.'
+  };
+}
+
 const oldBuild = await loadBuild({
   id: 'old_public_23809188',
   label: 'Previous public ranked build',
@@ -1136,8 +1408,12 @@ const currentBuild = await loadBuild({
 assert.equal(oldBuild.leaderboardName, EXPECTED_LEADERBOARD, 'old leaderboard identity mismatch');
 assert.equal(currentBuild.leaderboardName, EXPECTED_LEADERBOARD, 'current leaderboard identity mismatch');
 
+const variantBuilds = VARIANT_DEFINITIONS.map((definition) => cloneCurrentBuildVariant(currentBuild, definition));
+const currentVariant = variantBuilds.find((build) => build.id === 'A_current_baseline');
+const allBuilds = [oldBuild, ...variantBuilds];
+
 const allRuns = [];
-for (const build of [oldBuild, currentBuild]) {
+for (const build of allBuilds) {
   for (const skill of SKILL_PROFILES) {
     for (const seed of SEEDS) {
       allRuns.push(simulateRun(build, skill, seed));
@@ -1146,26 +1422,45 @@ for (const build of [oldBuild, currentBuild]) {
 }
 
 const runsByBuildAndSkill = {};
-for (const build of [oldBuild, currentBuild]) {
+for (const build of allBuilds) {
   runsByBuildAndSkill[build.id] = {};
   for (const skill of SKILL_PROFILES) {
     runsByBuildAndSkill[build.id][skill.id] = allRuns.filter((run) => run.build === build.id && run.skillProfile === skill.id);
   }
 }
 
-const aggregates = { old: {}, current: {} };
-const comparison = {};
-for (const skill of SKILL_PROFILES) {
-  const oldRuns = runsByBuildAndSkill[oldBuild.id][skill.id];
-  const currentRuns = runsByBuildAndSkill[currentBuild.id][skill.id];
-  aggregates.old[skill.id] = aggregateRuns(oldRuns);
-  aggregates.current[skill.id] = aggregateRuns(currentRuns);
-  comparison[skill.id] = compareAggregates(aggregates.old[skill.id], aggregates.current[skill.id]);
+const aggregatesByBuild = {};
+for (const build of allBuilds) {
+  aggregatesByBuild[build.id] = {};
+  for (const skill of SKILL_PROFILES) {
+    aggregatesByBuild[build.id][skill.id] = aggregateRuns(runsByBuildAndSkill[build.id][skill.id]);
+  }
 }
 
+const comparisonsByBuild = {};
+for (const build of variantBuilds) {
+  comparisonsByBuild[build.id] = {};
+  for (const skill of SKILL_PROFILES) {
+    comparisonsByBuild[build.id][skill.id] = compareAggregates(
+      aggregatesByBuild[oldBuild.id][skill.id],
+      aggregatesByBuild[build.id][skill.id]
+    );
+  }
+}
+
+const aggregates = {
+  old: aggregatesByBuild[oldBuild.id],
+  current: aggregatesByBuild[currentVariant.id]
+};
+const comparison = comparisonsByBuild[currentVariant.id];
+
+const sectorOpportunityByBuild = Object.fromEntries(allBuilds.map((build) => [
+  build.id,
+  aggregateBySector(build, allRuns.filter((run) => run.build === build.id))
+]));
 const sectorOpportunity = {
-  old: aggregateBySector(oldBuild, allRuns.filter((run) => run.build === oldBuild.id)),
-  current: aggregateBySector(currentBuild, allRuns.filter((run) => run.build === currentBuild.id))
+  old: sectorOpportunityByBuild[oldBuild.id],
+  current: sectorOpportunityByBuild[currentVariant.id]
 };
 const sectorOpportunityComparison = Object.fromEntries(TARGET_SECTORS.map((sector) => {
   const oldRow = sectorOpportunity.old[sector];
@@ -1178,12 +1473,34 @@ const sectorOpportunityComparison = Object.fromEntries(TARGET_SECTORS.map((secto
   }];
 }));
 
+const sectorOpportunityComparisonByBuild = Object.fromEntries(variantBuilds.map((build) => [
+  build.id,
+  Object.fromEntries(TARGET_SECTORS.map((sector) => {
+    const oldRow = sectorOpportunityByBuild[oldBuild.id][sector];
+    const candidateRow = sectorOpportunityByBuild[build.id][sector];
+    return [sector, {
+      scoreAtSectorDeltaPct: deltaPct(candidateRow.medianScoreAtSector, oldRow.medianScoreAtSector),
+      xpAtSectorDeltaPct: deltaPct(candidateRow.medianXpAtSector, oldRow.medianXpAtSector),
+      wavesBeforeBossDeltaPct: deltaPct(candidateRow.avgWavesBeforeBoss, oldRow.avgWavesBeforeBoss),
+      enemiesBeforeBossDeltaPct: deltaPct(candidateRow.avgEnemiesBeforeBoss, oldRow.avgEnemiesBeforeBoss)
+    }];
+  }))
+]));
+
 const highSkillProbability = highSkillPersonalBestProbability(
   runsByBuildAndSkill[oldBuild.id].high_skill_aggressive,
-  runsByBuildAndSkill[currentBuild.id].high_skill_aggressive
+  runsByBuildAndSkill[currentVariant.id].high_skill_aggressive
 );
-const bossFairness = bossFairnessAnalysis(oldBuild, currentBuild);
+const bossFairness = bossFairnessAnalysis(oldBuild, currentVariant);
 const conclusion = conclusionFrom(comparison, bossFairness);
+const variantSummaryRows = buildVariantSummaryRows(aggregatesByBuild, comparisonsByBuild, oldBuild.id, variantBuilds);
+const variantRecommendation = selectRecommendation(variantSummaryRows, aggregatesByBuild[oldBuild.id].high_skill_aggressive);
+const bestCandidateBuild = variantBuilds.find((build) => build.id === variantRecommendation.bestCandidateId) || currentVariant;
+const bestCandidateHighSkillPersonalBestProbability = highSkillPersonalBestProbability(
+  runsByBuildAndSkill[oldBuild.id].high_skill_aggressive,
+  runsByBuildAndSkill[bestCandidateBuild.id].high_skill_aggressive
+);
+const bestCandidateBossFairness = bossFairnessAnalysis(oldBuild, bestCandidateBuild);
 
 const report = {
   generatedAt: new Date().toISOString(),
@@ -1211,42 +1528,70 @@ const report = {
       }
     },
     current: {
-      id: currentBuild.id,
-      buildId: currentBuild.buildId,
-      commit: currentBuild.commit,
-      worktree: currentBuild.worktree,
-      leaderboardName: currentBuild.leaderboardName,
+      id: currentVariant.id,
+      buildId: currentVariant.buildId,
+      commit: currentVariant.commit,
+      worktree: currentVariant.worktree,
+      leaderboardName: currentVariant.leaderboardName,
       settings: {
-        maxLives: currentBuild.MAX_PLAYER_LIVES,
-        normalWaveDifficultyLevelOffset: currentBuild.BalanceConfig.difficulty?.normalWaveDifficultyLevelOffset || 0,
-        minWavesBetweenBosses: currentBuild.BalanceConfig.difficulty?.MIN_WAVES_BETWEEN_BOSSES,
-        wavesPerBossBase: currentBuild.BalanceConfig.difficulty?.wavesPerBossBase,
-        wavesPerBossMax: currentBuild.BalanceConfig.difficulty?.wavesPerBossMax,
-        runModeProfile: currentBuild.runModeProfile,
-        hasBossWipeoutGuard: currentBuild.hasBossWipeoutGuard,
-        hasBossHazardRespawnCleanup: currentBuild.hasBossHazardRespawnCleanup
+        maxLives: currentVariant.MAX_PLAYER_LIVES,
+        normalWaveDifficultyLevelOffset: currentVariant.BalanceConfig.difficulty?.normalWaveDifficultyLevelOffset || 0,
+        minWavesBetweenBosses: currentVariant.BalanceConfig.difficulty?.MIN_WAVES_BETWEEN_BOSSES,
+        wavesPerBossBase: currentVariant.BalanceConfig.difficulty?.wavesPerBossBase,
+        wavesPerBossMax: currentVariant.BalanceConfig.difficulty?.wavesPerBossMax,
+        runModeProfile: currentVariant.runModeProfile,
+        hasBossWipeoutGuard: currentVariant.hasBossWipeoutGuard,
+        hasBossHazardRespawnCleanup: currentVariant.hasBossHazardRespawnCleanup
       }
     }
   },
   starterShipDps: {
     old: starterShipDps(oldBuild),
-    current: starterShipDps(currentBuild)
+    current: starterShipDps(currentVariant)
   },
   scoreConstants: SCORE,
   scoreCalibrationScale: SCORE_CALIBRATION_SCALE,
   aggregates,
+  aggregatesByBuild,
   comparison,
+  comparisonsByBuild,
   sectorOpportunity,
+  sectorOpportunityByBuild,
   sectorOpportunityComparison,
+  sectorOpportunityComparisonByBuild,
   highSkillPersonalBestProbability: highSkillProbability,
   bossFairness,
+  bestCandidate: {
+    id: bestCandidateBuild.id,
+    label: bestCandidateBuild.label,
+    variant: bestCandidateBuild.variant,
+    highSkillPersonalBestProbability: bestCandidateHighSkillPersonalBestProbability,
+    bossFairness: bestCandidateBossFairness,
+    aggregates: aggregatesByBuild[bestCandidateBuild.id],
+    comparison: comparisonsByBuild[bestCandidateBuild.id],
+    sectorOpportunity: sectorOpportunityByBuild[bestCandidateBuild.id],
+    sectorOpportunityComparison: sectorOpportunityComparisonByBuild[bestCandidateBuild.id]
+  },
+  variants: variantBuilds.map((build) => ({
+    id: build.id,
+    label: build.label,
+    summary: build.variant?.summary || build.label,
+    removeFinalMayhemAggression: Boolean(build.variant?.removeFinalMayhemAggression),
+    normalWaveDifficultyLevelOffset: build.BalanceConfig.difficulty?.normalWaveDifficultyLevelOffset ?? null,
+    normalWaveScoreXpComp: normalWaveScoreMultiplier(build),
+    pressureMultipliers: build.runModeProfile?.pressureMultipliers
+  })),
+  variantSummaryRows,
+  variantRecommendation,
   tables: {
-    oldVsCurrentBySkill: buildTableRows(aggregates, comparison)
+    oldVsCurrentBySkill: buildTableRows(aggregates, comparison),
+    highSkillVariantSummary: variantSummaryRows
   },
   conclusion,
   allRuns,
   limitations: [
     'This is an automated deterministic comparative model, not a full rendered playthrough. It loads source constants from both checked-out worktrees and applies the same seeded controller model to both versions.',
+    'Variant tuning is modeled through temporary in-script overrides only. No gameplay balance source file is changed by this analysis.',
     'Score output is calibrated by a fixed 0.25 scale after the raw deterministic score-opportunity budget is calculated; this keeps 250k/390k sanity checks in the same order of magnitude as the reported top-player context while preserving old-vs-current percentage deltas.',
     'The model estimates bot movement, pickup collection, graze opportunities, and deaths from source pressure indices. It does not submit leaderboards, write saves, write Steam Cloud data, or launch Steam.',
     'The result is strongest for directional old-vs-current deltas: waves before bosses, score/XP opportunity, normal-wave pressure, and boss chain-death risk.',
@@ -1258,13 +1603,15 @@ mkdirSync(OUTPUT_DIR, { recursive: true });
 const reportPath = path.join(OUTPUT_DIR, 'report.json');
 writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 
-const summaryRows = report.tables.oldVsCurrentBySkill.map((row) => ({
-  skill: row.skill,
-  sector: `${row.oldMedianSector}->${row.currentMedianSector}`,
-  scorePct: row.scoreDeltaPct,
-  xpPct: row.xpDeltaPct,
-  normalDeathsPct: row.normalDeathsDeltaPct,
-  bossDeathsPct: row.bossDeathsDeltaPct
+const summaryRows = variantSummaryRows.map((row) => ({
+  variant: row.id.replace(/_no_aggression|_baseline/g, ''),
+  sector: row.medianSector,
+  score: row.medianScore,
+  xp: row.medianXp,
+  scorePerMinute: row.scorePerMinute,
+  p250k: row.probability250k,
+  p390k: row.probability390k,
+  normalDeaths: row.normalWaveDeaths
 }));
 console.table(summaryRows);
-console.log(`[mayhem-difficulty-score-delta] PASS verdict=${conclusion.verdict} seeds=${SEEDS.length} report=${reportPath}`);
+console.log(`[mayhem-difficulty-score-delta] PASS verdict=${conclusion.verdict} best=${variantRecommendation.bestCandidateId} seeds=${SEEDS.length} report=${reportPath}`);
