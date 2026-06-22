@@ -29,6 +29,15 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Follow-up private upload: source commit `f6d372a11b084550753047436432a1929591adc6` packaged as `v2026-06-22_12-58-38`; packaged smoke/perf proved gitSha `f6d372a`; payload manifest hash `345eccd781c5e8b31198a3c93c4c569a5428e0c6ad7135382e547ab67697c133`; VDF kept `SetLive ""`; SteamCMD uploaded private BuildID `23854561`. No Steam branch, public/default assignment, store metadata, AppID, depot ID, achievements, leaderboard, Steam Cloud settings, gameplay balance, save format, or deploy changes were made.
 - Scope guard: no Steamworks metadata, AppID/depot, leaderboard identity, achievements metadata/behavior, Steam Cloud settings, score formula, save format, balance, enemies, bosses, or progression rules were intentionally changed.
 
+## 2026-06-22 How To Play Clarity And Phase Burst
+
+- Current request: improve How To Play clarity after player feedback, especially the misleading `Dodge` wording, while keeping UI Scale, Codex unread glow, Confirm Exit, bonus drone feedback, How To Play polish, Scout persistence, Mayhem performance, and recalibration fixes intact.
+- Mechanics verified before copy changes: Shift/Gamepad B starts a short invulnerability/phase window without moving the ship; near misses score from passing close to enemy shots without contact; tractor ships reward destroying active beams by breaking the pull, clearing nearby shots, and hijacking enemies; combos are maintained by fast enemy kills.
+- Implementation direction: renamed the How To Play card to `PHASE BURST`, changed the small active ship label from `DODGE` to `PHASE`, replaced the joke-heavy How To Play cards with direct tactical guidance, localized the new strings across supported locales, and fixed the two-column card layout so the final full-width Run Modes card no longer overlaps Pickups & Bonus.
+- Focused evidence: `npm run check:i18n` and `npm run check:how-to-play` passed. The How To Play harness now simulates `1920x1080` and `3840x2160` at `100%`, `150%`, `175%`, and `200%`, covering main-menu and pause-menu screenshots plus label/layout/off-screen text checks. Current evidence is under `test-results/how-to-play-2026-06-22T21-11-03-471Z/`.
+- Docs note: `docs/nova-swarm-how-to-play-clarity-phase-burst-2026-06-22.md`.
+- Scope guard: no gameplay mechanics, balance, score/XP formula, progression, saves, leaderboard identity, achievements metadata, Steam Cloud settings, AppID/depot, or Steamworks metadata were intentionally changed.
+
 ## 2026-06-22 Mayhem Difficulty And Score Delta Analysis
 
 - Current request: analysis-only comparison of the old public ranked flow against the current Mayhem ranked flow after a high-skill player reported harder runs, lower score/XP, harsher RNG, and worse personal-high-score pushing. No gameplay/balance fix, packaging, upload, save write, Steam Cloud write, leaderboard submission, or Steamworks change is part of this pass.

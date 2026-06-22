@@ -292,7 +292,7 @@ export class Player {
     }
 
     if (!this.dodgeText) {
-      this.dodgeText = createText(translateText('DODGE'), {
+      this.dodgeText = createText(translateText('PHASE'), {
         fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
         fontSize: 13,
         fill: '#ffffff',

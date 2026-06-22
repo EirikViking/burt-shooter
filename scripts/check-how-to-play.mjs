@@ -8,6 +8,24 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4355));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/how-to-play-${timestamp()}`);
+const scenarios = [
+  { name: '1920x1080-scale100', width: 1920, height: 1080, scale: 1 },
+  { name: '1920x1080-scale150', width: 1920, height: 1080, scale: 1.5 },
+  { name: '1920x1080-scale175', width: 1920, height: 1080, scale: 1.75 },
+  { name: '1920x1080-scale200', width: 1920, height: 1080, scale: 2 },
+  { name: '3840x2160-scale100', width: 3840, height: 2160, scale: 1 },
+  { name: '3840x2160-scale150', width: 3840, height: 2160, scale: 1.5 },
+  { name: '3840x2160-scale175', width: 3840, height: 2160, scale: 1.75 },
+  { name: '3840x2160-scale200', width: 3840, height: 2160, scale: 2 }
+];
+const expectedRows = [
+  'PHASE BURST',
+  'COMBOS',
+  'NEAR MISS',
+  'TRACTOR SHIPS',
+  'PICKUPS & BONUS',
+  'RUN MODES'
+];
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -102,15 +120,84 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function assertCleanHelpCopy(state, label) {
+  const rows = state.howToPlayOverlay?.rows || [];
+  const joined = JSON.stringify(state.howToPlayOverlay || {});
+  for (const row of expectedRows) {
+    assert(rows.includes(row), `${label} missing ${row}`);
+  }
+  assert(!rows.includes('DODGE'), `${label} still labels the phase protection as DODGE`);
+  assert(!rows.includes('NEAR MISSES'), `${label} still uses the old NEAR MISSES card label`);
+  assert(!rows.includes('TRACTOR BEAMS'), `${label} still uses the old TRACTOR BEAMS card label`);
+  for (const oldPhrase of ['doorbell', 'paperwork', 'spicy geometry', 'training wheels', 'legal theft']) {
+    assert(!joined.includes(oldPhrase), `${label} still contains old joke copy: ${oldPhrase}`);
+  }
+}
+
+function assertScreenshotAudit(audit, label) {
+  assert(!audit.failures?.length, `${label} screenshot audit failures: ${(audit.failures || []).join('; ')}`);
+}
+
 function assertOverlayLayout(state, label) {
   const overlay = state.howToPlayOverlay;
   const layout = overlay?.layout;
-  assert(overlay?.cardCount >= 7, `${label} missing help cards`);
+  assert(overlay?.cardCount === 8, `${label} expected 8 help cards, saw ${overlay?.cardCount}`);
   assert(layout?.cards?.length === overlay.cardCount, `${label} card layout count mismatch`);
   assert(!layout.layoutWarnings?.length, `${label} layout warnings: ${(layout.layoutWarnings || []).join('; ')}`);
   assert(layout.panel?.width > 500 && layout.panel?.height > 420, `${label} panel too small`);
   assert(layout.footer?.y > Math.max(...layout.cards.map((card) => card.y + card.height)), `${label} footer overlaps card grid`);
   assert(layout.button?.y >= layout.footer?.y, `${label} back button escaped footer rail`);
+  for (const card of layout.cards) {
+    assert(card.x >= -2 && card.y >= -2, `${label} card ${card.label} escaped top/left bounds`);
+    assert(card.x + card.width <= layout.panel.x + layout.panel.width + 2, `${label} card ${card.label} escaped right panel bounds`);
+    assert(card.y + card.height <= layout.footer.y + 2, `${label} card ${card.label} escaped bottom panel bounds`);
+  }
+}
+
+async function screenshotWithAudit(page, scenarioDir, name) {
+  const file = path.join(scenarioDir, `${name}.png`);
+  await page.screenshot({ path: file, fullPage: false });
+  const audit = await page.evaluate(() => {
+    const width = window.__game?.getWidth?.() || window.innerWidth;
+    const height = window.__game?.getHeight?.() || window.innerHeight;
+    const failures = [];
+    const samples = [];
+    const seen = new Set();
+    const visit = (node) => {
+      if (!node || seen.has(node)) return;
+      seen.add(node);
+      if (node.visible === false || node.renderable === false || node.alpha === 0) return;
+      const isText = node.constructor?.name === 'Text';
+      if (isText) {
+        const text = String(node.text ?? '');
+        if (/NaN|undefined|null/.test(text)) failures.push(`bad text "${text}"`);
+        try {
+          const rect = node.getBounds?.();
+          if (rect && rect.width > 0 && rect.height > 0) {
+            const bounds = {
+              text: text.slice(0, 80),
+              x: Math.round(rect.x || 0),
+              y: Math.round(rect.y || 0),
+              right: Math.round((rect.x || 0) + (rect.width || 0)),
+              bottom: Math.round((rect.y || 0) + (rect.height || 0))
+            };
+            if (bounds.right < -20 || bounds.bottom < -20 || bounds.x > width + 20 || bounds.y > height + 20) {
+              failures.push(`text outside viewport ${JSON.stringify(bounds)}`);
+            }
+            if (samples.length < 80) samples.push(bounds);
+          }
+        } catch {
+          failures.push(`unable to measure text "${text.slice(0, 40)}"`);
+        }
+      }
+      for (const child of node.children || []) visit(child);
+    };
+    visit(window.__game?.currentScene?.container);
+    visit(window.__game?.scenes?.play?.uiOverlay);
+    return { width, height, failures, samples };
+  });
+  assertScreenshotAudit(audit, `${name}`);
+  return { file, audit };
 }
 
 const server = await startPreviewServer();
@@ -120,61 +207,87 @@ const browser = await chromium.launch({
   args: ['--autoplay-policy=no-user-gesture-required']
 });
 
-const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
-const pageErrors = [];
-const consoleErrors = [];
-page.on('pageerror', (error) => pageErrors.push(error.message));
-page.on('console', (message) => {
-  if (message.type() === 'error') consoleErrors.push(message.text());
-});
-
 try {
   mkdirSync(outputDir, { recursive: true });
+  const scenariosReport = [];
+  for (const scenario of scenarios) {
+    const scenarioDir = path.join(outputDir, scenario.name);
+    mkdirSync(scenarioDir, { recursive: true });
+    const page = await browser.newPage({ viewport: { width: scenario.width, height: scenario.height } });
+    const pageErrors = [];
+    const consoleErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    page.on('console', (message) => {
+      if (message.type() === 'error') consoleErrors.push(message.text());
+    });
+    await page.addInitScript((next) => {
+      window.localStorage?.setItem?.('nova_ui_scale_v1', String(next.scale));
+      window.localStorage?.setItem?.('nova_display_mode_v1', 'windowed');
+      window.localStorage?.setItem?.('nova_display_window_size_v1', JSON.stringify({
+        width: next.width,
+        height: next.height
+      }));
+    }, scenario);
 
-  await page.goto(withQuery(baseUrl, { skipIntro: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-  const menu = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, 'menu ready');
-  assert(menu.menu?.optionOrder?.includes('howToPlay'), 'Main menu controller order does not include How To Play');
-  assert(menu.menu?.items?.helpButton?.width > 80, 'How To Play menu button is missing or too small');
+    try {
+      await page.goto(withQuery(baseUrl, { skipIntro: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+      const menu = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, `${scenario.name} menu ready`);
+      assert(Number(menu.display?.uiScale) === scenario.scale, `${scenario.name} display uiScale mismatch: ${menu.display?.uiScale}`);
+      assert(Number(menu.layout?.uiScale) === scenario.scale, `${scenario.name} layout uiScale mismatch: ${menu.layout?.uiScale}`);
+      assert(menu.menu?.optionOrder?.includes('howToPlay'), `${scenario.name} main menu controller order does not include How To Play`);
+      assert(menu.menu?.items?.helpButton?.width > 80, `${scenario.name} How To Play menu button is missing or too small`);
 
-  await page.evaluate(() => window.__game?.currentScene?.openHowToPlayOverlay?.());
-  const menuHelp = await waitForState(page, (state) => state.overlays?.howToPlay && state.howToPlayOverlay?.rows?.length >= 7, 'menu help overlay');
-  assertOverlayLayout(menuHelp, 'menu help overlay');
-  assert(menuHelp.howToPlayOverlay?.rows?.includes('NEAR MISSES'), 'How To Play should explain graze/near-miss bonus windows');
-  assert(menuHelp.howToPlayOverlay?.rows?.includes('TRACTOR BEAMS'), 'How To Play should explain tractor beam ships');
-  await page.screenshot({ path: path.join(outputDir, 'menu-how-to-play.png'), fullPage: true });
-  await page.keyboard.press('Escape');
-  await waitForState(page, (state) => state.scene === 'menu' && !state.overlays?.howToPlay, 'menu help closed');
+      await page.evaluate(() => window.__game?.currentScene?.openHowToPlayOverlay?.());
+      const menuHelp = await waitForState(page, (state) => state.overlays?.howToPlay && state.howToPlayOverlay?.rows?.length >= 8, `${scenario.name} menu help overlay`);
+      assertOverlayLayout(menuHelp, `${scenario.name} menu help overlay`);
+      assertCleanHelpCopy(menuHelp, `${scenario.name} menu help overlay`);
+      const menuShot = await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play');
+      await page.keyboard.press('Escape');
+      await waitForState(page, (state) => state.scene === 'menu' && !state.overlays?.howToPlay, `${scenario.name} menu help closed`);
 
-  await page.goto(withQuery(baseUrl, { autostart: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await waitForState(page, (state) => state.scene === 'play' && state.lives > 0, 'play ready');
-  await page.evaluate(() => {
-    const play = window.__game?.scenes?.play;
-    play?.setPaused?.(true);
-    play?.openHowToPlayOverlay?.();
-  });
-  const pauseHelp = await waitForState(page, (state) => state.scene === 'play' && state.isPaused && state.overlays?.pause && state.overlays?.howToPlay, 'pause help overlay');
-  assertOverlayLayout(pauseHelp, 'pause help overlay');
-  await page.screenshot({ path: path.join(outputDir, 'pause-how-to-play.png'), fullPage: true });
+      await page.goto(withQuery(baseUrl, { autostart: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await waitForState(page, (state) => state.scene === 'play' && state.lives > 0, `${scenario.name} play ready`);
+      await page.evaluate(() => {
+        const play = window.__game?.scenes?.play;
+        play?.setPaused?.(true);
+        play?.openHowToPlayOverlay?.();
+      });
+      const pauseHelp = await waitForState(page, (state) => state.scene === 'play' && state.isPaused && state.overlays?.pause && state.overlays?.howToPlay, `${scenario.name} pause help overlay`);
+      assertOverlayLayout(pauseHelp, `${scenario.name} pause help overlay`);
+      assertCleanHelpCopy(pauseHelp, `${scenario.name} pause help overlay`);
+      const pauseShot = await screenshotWithAudit(page, scenarioDir, 'pause-how-to-play');
 
+      scenariosReport.push({
+        ...scenario,
+        ok: pageErrors.length === 0 && consoleErrors.length === 0,
+        menuRows: menuHelp.howToPlayOverlay?.rows,
+        pauseRows: pauseHelp.howToPlayOverlay?.rows,
+        menuLayout: menuHelp.howToPlayOverlay?.layout,
+        pauseLayout: pauseHelp.howToPlayOverlay?.layout,
+        screenshots: {
+          menu: menuShot.file,
+          pause: pauseShot.file
+        },
+        audits: {
+          menu: menuShot.audit,
+          pause: pauseShot.audit
+        },
+        pageErrors,
+        consoleErrors
+      });
+      assert(pageErrors.length === 0 && consoleErrors.length === 0, `${scenario.name} browser diagnostics failed`);
+    } finally {
+      await page.close();
+    }
+  }
   const report = {
-    ok: pageErrors.length === 0 && consoleErrors.length === 0,
+    ok: scenariosReport.every((scenario) => scenario.ok),
     baseUrl,
-    menuFocus: menu.menu?.focusedOption,
-    menuOrder: menu.menu?.optionOrder,
-    menuRows: menuHelp.howToPlayOverlay?.rows,
-    pauseRows: pauseHelp.howToPlayOverlay?.rows,
-    menuLayout: menuHelp.howToPlayOverlay?.layout,
-    pauseLayout: pauseHelp.howToPlayOverlay?.layout,
-    screenshots: {
-      menu: path.join(outputDir, 'menu-how-to-play.png'),
-      pause: path.join(outputDir, 'pause-how-to-play.png')
-    },
-    pageErrors,
-    consoleErrors
+    scenarios: scenariosReport
   };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   assert(report.ok, `Help overlay diagnostics failed: ${JSON.stringify(report)}`);
-  console.log(`[how-to-play] PASS menu+pause rows=${report.menuRows?.length || 0} report=${path.join(outputDir, 'report.json')}`);
+  console.log(`[how-to-play] PASS scenarios=${scenariosReport.length} report=${path.join(outputDir, 'report.json')}`);
 } finally {
   await browser.close();
   if (server) server.kill();

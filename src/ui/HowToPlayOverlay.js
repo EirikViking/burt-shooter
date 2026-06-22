@@ -12,56 +12,56 @@ const HELP_ROWS = Object.freeze([
     code: '01',
     label: 'MOVE',
     control: 'WASD / ARROWS / LEFT STICK',
-    tip: 'Tiny moves beat heroic drifting. The ship is expensive. Please stop using it as a doorbell.',
+    tip: 'Stay mobile. Controlled movement keeps you alive longer than drifting into open space.',
     accent: 0x37f5ff
   },
   {
     code: '02',
     label: 'SHOOT',
     control: 'SPACE / GAMEPAD A',
-    tip: 'Hold fire. If space has paperwork, bullets are your signature.',
+    tip: 'Hold fire and choose targets. Clearing the right enemies keeps the run under control.',
     accent: 0xffef7e
   },
   {
     code: '03',
-    label: 'DODGE',
-    control: 'SHIFT / GAMEPAD B. Short burst, best used through warning cones.',
-    tip: 'Tap through warning cones. Do not live inside the spicy geometry.',
+    label: 'PHASE BURST',
+    control: 'SHIFT / GAMEPAD B',
+    tip: 'Tap to phase through danger for a short moment. It protects you briefly, but it does not move the ship for you.',
     accent: 0xff55d9
   },
   {
     code: '04',
-    label: 'NEAR MISSES',
-    control: 'SKIM, THEN CASH IN',
-    tip: 'Graze close to danger to build bonus windows, then break away before confidence becomes debris.',
+    label: 'COMBOS',
+    control: 'FAST KILLS KEEP THE CHAIN',
+    tip: 'Destroy enemies quickly to keep the chain alive. Tough targets can slow the rhythm, so target choice matters.',
     accent: 0xff8f5a
   },
   {
     code: '05',
-    label: 'TRACTOR BEAMS',
-    control: 'BREAK THE PULL',
-    tip: 'Destroy tractor ships during their beam to break the pull and turn nearby shots friendly.',
+    label: 'NEAR MISS',
+    control: 'SKIM DANGER, THEN ESCAPE',
+    tip: 'Pass close to enemy shots without getting hit to build near-miss score. Risk pays, but do not live in the bullet cloud.',
     accent: 0x66ff9d
   },
   {
     code: '06',
-    label: 'PICKUPS',
-    control: 'GRAB THE BRIGHT STUFF',
-    tip: 'Bright icons are legal theft: shields, repairs, weapons, score boosts, and emergency nonsense.',
+    label: 'TRACTOR SHIPS',
+    control: 'BREAK ACTIVE BEAMS',
+    tip: 'Destroy tractor ships during their beam to break the pull, clear nearby shots, and hijack enemies for bonus score.',
     accent: 0x7ee9ff
   },
   {
     code: '07',
-    label: 'UPGRADES',
-    control: 'PROGRESS SURVIVES',
-    tip: 'Ranks, traits, ships, achievements, and Codex intel survive the explosion report.',
+    label: 'PICKUPS & BONUS',
+    control: 'BRIGHT ICONS ARE SAFE',
+    tip: 'Collect bright pickup icons. Shoot bonus drones for extra score and watch for the BONUS popup.',
     accent: 0xb285ff
   },
   {
     code: '08',
-    label: 'RANKED RUNS',
-    control: 'STEAM WHEN AWAKE',
-    tip: 'Launch Run submits when Steam is awake. Sector Start is practice with the training wheels on fire.',
+    label: 'RUN MODES',
+    control: 'MAYHEM / SCOUT / SECTOR RUN',
+    tip: 'Mayhem is the ranked climb. Scout is practice. Sector Run lets you rehearse unlocked later starts.',
     accent: 0xff8f5a
   }
 ]);
@@ -229,7 +229,7 @@ export class HowToPlayOverlay {
     fitTextToBox(title, panelWidth - pad * 3, 54, { minScale: 0.58 });
     this.container.addChild(title);
 
-    const subtitle = createText(translateText('READ ONCE. MOVE TWICE. KEEP FIRING.'), {
+    const subtitle = createText(translateText('FIGHT SMART. SCORE HIGH. SURVIVE LONGER.'), {
       fontFamily: FONT_BODY,
       fontSize: subtitleSize,
       fontWeight: '800',
@@ -260,8 +260,9 @@ export class HowToPlayOverlay {
 
     HELP_ROWS.forEach((row, index) => {
       const isWideFinalCard = columns > 1 && index === HELP_ROWS.length - 1;
+      const finalWideRow = Math.ceil((HELP_ROWS.length - 1) / columns);
       const column = columns === 1 || isWideFinalCard ? 0 : index % columns;
-      const rowIndex = columns === 1 ? index : Math.floor(index / columns);
+      const rowIndex = columns === 1 ? index : isWideFinalCard ? finalWideRow : Math.floor(index / columns);
       const cardX = gridX + column * (cardWidth + gridGap);
       const cardY = gridY + rowIndex * (cardHeight + gridGap);
       const actualCardWidth = isWideFinalCard ? gridWidth : cardWidth;
@@ -340,6 +341,13 @@ export class HowToPlayOverlay {
       }
       if (rectsOverlap(card, buttonBounds, 4)) {
         layoutWarnings.push(`card ${card.code} overlaps back button`);
+      }
+    }
+    for (let i = 0; i < cardLayouts.length; i += 1) {
+      for (let j = i + 1; j < cardLayouts.length; j += 1) {
+        if (rectsOverlap(cardLayouts[i], cardLayouts[j], 2)) {
+          layoutWarnings.push(`card ${cardLayouts[i].code} overlaps card ${cardLayouts[j].code}`);
+        }
       }
     }
     this.debugLayout = {
