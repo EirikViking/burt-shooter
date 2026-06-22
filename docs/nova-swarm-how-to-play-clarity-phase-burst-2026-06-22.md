@@ -70,3 +70,13 @@ No gameplay mechanics, balance, score formula, XP formula, progression, save for
 - VDF proof: AppID `4765070`, depot `4765071`, and `"SetLive" ""`
 - Private unassigned Steam BuildID: `23863622`
 - Upload evidence: `release/steamworks/steam_upload_evidence_how_to_play_phase_burst_20260622_23863622.json`
+
+## Follow-Up Private Steam Build
+
+- Source commit: `9399c88ceb3d8f23f7cedf8315b184ecb715c861`
+- Packaged version: `v2026-06-23_00-22-47`
+- Packaged gitSha proof: `9399c88` in `test-results/packaged-exe-smoke-2026-06-22T22-27-20-564Z/report.json` and `test-results/packaged-perf-smoke-2026-06-22T22-27-20-564Z/report.json`
+- Payload manifest: 336 files / 879,700,259 bytes, content manifest hash `d6c33064bd62995f9c3704764a434865092e1c049242fd6333c783d2bb107f83`
+- VDF proof: AppID `4765070`, depot `4765071`, and `"SetLive" ""`
+- Private unassigned Steam BuildID: `23864352`
+- Upload evidence: `release/steamworks/steam_upload_evidence_how_to_play_input_feedback_20260623_23864352.json`
