@@ -133,6 +133,7 @@ const {
 const userData = mkdtempSync(path.join(tmpdir(), 'nova-scout-codex-'));
 try {
   const baselineDiscovery = makeThreatState(763);
+  baselineDiscovery.unreadIds = ['enemies:known_0763'];
   const baselineHangar = makeHangarProgress(763);
   storage.setItem(CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify(baselineDiscovery));
   storage.setItem(CLOUD_HANGAR_PROGRESS_KEY, JSON.stringify(baselineHangar));
@@ -201,6 +202,8 @@ try {
   saveSystem.ensureInitialized();
   const savedAfterScout = saveSystem.mergeRendererState(collected);
   assert.equal(discoveryCount(savedAfterScout.threatDiscovery), expectedAfterScout, 'Electron save should persist Scout Codex discoveries');
+  assert.ok(savedAfterScout.threatDiscovery.unreadIds.includes('enemies:known_0763'), 'large Codex unread marker above 500 entries should survive Electron save');
+  assert.ok(savedAfterScout.threatDiscovery.unreadIds.includes('enemies:scout_added_040'), 'new Scout unread marker should survive Electron save');
   assert.equal(savedAfterScout.scoutRunRecords.best.score, 185000, 'Electron save should persist Scout local best');
 
   const staleRenderer = collectSteamCloudPersistenceState({
@@ -245,6 +248,8 @@ try {
   assert.equal(restoreSummary.threatDiscovery, true, 'Restart restore should report Threat Codex restoration');
   assert.equal(discoveryCount(restoredDiscovery), expectedAfterScout, 'Restart/profile reload should restore Scout Codex discoveries above 763');
   assert.equal(restoredDiscovery.items.enemies.scout_added_040.name, 'Scout Signal 40');
+  assert.ok(restoredDiscovery.unreadIds.includes('enemies:known_0763'), 'Restart restore should preserve valid large-Codex unread markers');
+  assert.ok(restoredDiscovery.unreadIds.includes('enemies:scout_added_040'), 'Restart restore should preserve new Scout unread markers');
   assert.equal(restoreSummary.scoutRunBest, 185000, 'Restart restore should report restored Scout local best');
   assert.equal(restoredScoutBest.best.score, 185000, 'Restart/profile reload should restore Scout local best above the stale value');
 

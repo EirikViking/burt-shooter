@@ -16,6 +16,15 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - New evidence harness: `npm run check:ui-scale-4k` simulates `1920x1080@100%`, `2560x1440@100%`, `3840x2160@100%`, `3840x2160@150%`, and `3840x2160@200%`, saving screenshots and `report.json`; current passing evidence is under `test-results/ui-scale-4k-2026-06-22T07-20-24-013Z/`.
 - Steam package/upload evidence: source commit `da9fa73c6b96cfa98f6503c82bd0295a37717609` packaged as `v2026-06-22_09-42-40`; packaged smoke proved gitSha `da9fa73`; payload manifest recorded 336 files / 879,660,655 bytes with hash `64814f8542175ce52c56b7ad91aecc4265a3b2773760955dcff8171c440644c7`; VDF kept `SetLive ""`; SteamCMD uploaded private BuildID `23851988`. No Steam branch, public/default assignment, store metadata, AppID, depot ID, achievements, leaderboard, Steam Cloud settings, gameplay balance, save format, or deploy changes were made.
 
+## 2026-06-22 Codex Unread And Feedback Polish
+
+- Current player-feedback pass: keep the UI-scale hotfix release line intact, then fix the main-menu Threat Codex glow so it represents only entries discovered after the last Codex view.
+- Implementation direction: Threat Codex unread markers remain profile-scoped inside `nova.threatDiscovery.v1`, but runtime, renderer cloud merge, and Electron save sanitation now filter unread IDs against actual discovered Codex items. Opening Threat Codex still clears the current unread list; starting a run, returning to menu, or restarting does not clear unread markers by itself.
+- Bonus drone feedback: ambient hazard drone destruction still awards the same existing score path, but now queues a `BONUS +score` score popup through the collision side-effect queue and localizes the existing `BONUS DRONE DOWN!` toast.
+- How-to-Play text: added a compact near-miss/graze card and tightened tractor-beam guidance for destroying tractor ships during their beam, with all supported locale files updated.
+- Focused evidence so far: `npm run check:i18n`, `npm run check:threat-codex`, `npm run check:profile-isolation`, `npm run check:scout-codex-persistence`, `npm run check:how-to-play`, and `npm run check:mayhem-collision-hotpath-stress` pass. Reports/screenshots include `test-results/how-to-play-2026-06-22T10-00-41-603Z/` and `test-results/mayhem-collision-hotpath-stress-2026-06-22T10-01-37-128Z/report.json`.
+- Scope guard: no Steamworks metadata, AppID/depot, leaderboard identity, achievements metadata/behavior, Steam Cloud settings, score formula, save format, balance, enemies, bosses, or progression rules were intentionally changed.
+
 ## 2026-06-21 Release Candidate Final Tuning
 
 - Current request: prepare a possible release-candidate private build from the accepted Mayhem performance line after BuildID `23845237`, keeping realtime high-score chase and menu exit fixes intact unless focused checks fail.

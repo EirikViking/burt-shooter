@@ -442,6 +442,18 @@ function mergeThreatDiscoveryItem(localItem = {}, cloudItem = {}, fallback = {})
   };
 }
 
+function filterUnreadThreatIds(unreadIds = [], items = {}) {
+  const discovered = new Set();
+  for (const [category, bucket] of Object.entries(items || {})) {
+    if (!bucket || typeof bucket !== 'object') continue;
+    for (const id of Object.keys(bucket)) {
+      if (id) discovered.add(`${category}:${id}`);
+    }
+  }
+  return [...new Set((Array.isArray(unreadIds) ? unreadIds : []).map(String).filter(Boolean))]
+    .filter((id) => discovered.has(id));
+}
+
 function mergeThreatDiscovery(localState = {}, cloudState = {}) {
   const local = localState && typeof localState === 'object' ? localState : {};
   const cloud = cloudState && typeof cloudState === 'object' ? cloudState : {};
@@ -467,10 +479,10 @@ function mergeThreatDiscovery(localState = {}, cloudState = {}) {
       ...(Array.isArray(local.recentRunThemes) ? local.recentRunThemes : []),
       ...(Array.isArray(cloud.recentRunThemes) ? cloud.recentRunThemes : [])
     ])].slice(-8),
-    unreadIds: [...new Set([
+    unreadIds: filterUnreadThreatIds([
       ...(Array.isArray(local.unreadIds) ? local.unreadIds : []),
       ...(Array.isArray(cloud.unreadIds) ? cloud.unreadIds : [])
-    ])]
+    ], items)
   };
 }
 

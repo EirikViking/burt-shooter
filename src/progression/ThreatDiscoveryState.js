@@ -54,6 +54,27 @@ function emptyState() {
   };
 }
 
+function makeUnreadId(category, id) {
+  return `${String(category || '')}:${String(id || '')}`;
+}
+
+function getDiscoveredUnreadIdSet(items = {}) {
+  const discovered = new Set();
+  for (const [category, bucket] of Object.entries(items || {})) {
+    if (!bucket || typeof bucket !== 'object') continue;
+    for (const id of Object.keys(bucket)) {
+      if (id) discovered.add(makeUnreadId(category, id));
+    }
+  }
+  return discovered;
+}
+
+function normalizeUnreadIds(unreadIds = [], items = {}) {
+  const discovered = getDiscoveredUnreadIdSet(items);
+  return [...new Set((Array.isArray(unreadIds) ? unreadIds : []).map(String).filter(Boolean))]
+    .filter((id) => discovered.has(id));
+}
+
 function isActivePlayScene() {
   try {
     return typeof window !== 'undefined' && window.__game?.currentSceneName === 'play';
@@ -266,7 +287,7 @@ export function normalizeThreatDiscoveryState(raw = {}) {
   }
   state.discoveriesThisRun = Array.isArray(raw?.discoveriesThisRun) ? raw.discoveriesThisRun.slice(-80) : [];
   state.recentRunThemes = Array.isArray(raw?.recentRunThemes) ? raw.recentRunThemes.slice(-8) : [];
-  state.unreadIds = Array.isArray(raw?.unreadIds) ? [...new Set(raw.unreadIds.map(String).filter(Boolean))] : [];
+  state.unreadIds = normalizeUnreadIds(raw?.unreadIds, state.items);
   state.updatedAt = raw?.updatedAt || nowIso();
   return state;
 }
@@ -334,7 +355,7 @@ function record(category, id, metadata = {}, mutate = null, options = {}) {
       metadata: item.metadata
     };
     state.discoveriesThisRun = [...state.discoveriesThisRun, discovery].slice(-80);
-    state.unreadIds = [...new Set([...state.unreadIds, `${category}:${key}`])];
+    state.unreadIds = [...new Set([...state.unreadIds, makeUnreadId(category, key)])];
   }
   return {
     state: writeThreatDiscoveryState(state),
@@ -411,7 +432,7 @@ export function recordThreatDefeatedBatch(entries = []) {
         metadata: item.metadata
       };
       state.discoveriesThisRun = [...state.discoveriesThisRun, discovery].slice(-80);
-      state.unreadIds = [...new Set([...state.unreadIds, `${category}:${key}`])];
+      state.unreadIds = [...new Set([...state.unreadIds, makeUnreadId(category, key)])];
     }
 
     changed = true;
@@ -472,7 +493,7 @@ export function getDiscoveryStats(state = readThreatDiscoveryState()) {
   return {
     totalDiscovered,
     counts,
-    unreadCount: Array.isArray(state.unreadIds) ? state.unreadIds.length : 0,
+    unreadCount: normalizeUnreadIds(state.unreadIds, state.items).length,
     discoveriesThisRun: getDiscoveriesThisRun(state).length
   };
 }

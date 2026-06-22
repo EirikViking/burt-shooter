@@ -139,6 +139,8 @@ try {
   await page.evaluate(() => window.__game?.currentScene?.openHowToPlayOverlay?.());
   const menuHelp = await waitForState(page, (state) => state.overlays?.howToPlay && state.howToPlayOverlay?.rows?.length >= 7, 'menu help overlay');
   assertOverlayLayout(menuHelp, 'menu help overlay');
+  assert(menuHelp.howToPlayOverlay?.rows?.includes('NEAR MISSES'), 'How To Play should explain graze/near-miss bonus windows');
+  assert(menuHelp.howToPlayOverlay?.rows?.includes('TRACTOR BEAMS'), 'How To Play should explain tractor beam ships');
   await page.screenshot({ path: path.join(outputDir, 'menu-how-to-play.png'), fullPage: true });
   await page.keyboard.press('Escape');
   await waitForState(page, (state) => state.scene === 'menu' && !state.overlays?.howToPlay, 'menu help closed');

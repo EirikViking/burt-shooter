@@ -2983,13 +2983,35 @@ export class PlayScene {
             const destroyed = bonusDrone.takeDamage(bullet.damage || 1);
             if (destroyed) {
               collisionStats.playerBulletAmbientKills += 1;
+              let appliedScore = 0;
               if (!this.player.isSlowTimeActive?.()) {
-                this.game.addScore(this.getComboScore(500));
+                appliedScore = this.game.addScore(this.getComboScore(500));
+                if (!this.queueCollisionSideEffect(sideEffects, 'scorePopups', {
+                  x: bonusDrone.x,
+                  y: bonusDrone.y,
+                  score: appliedScore,
+                  options: {
+                    comboEligible: false,
+                    color: 0xffef7e,
+                    prefix: translateText('BONUS')
+                  }
+                })) {
+                  this.scorePopupManager?.addScorePopup?.(bonusDrone.x, bonusDrone.y, appliedScore, {
+                    comboEligible: false,
+                    color: 0xffef7e,
+                    prefix: translateText('BONUS')
+                  });
+                }
               }
               this.onEnemyKilled(bonusDrone);
               this.particleManager.createExplosion(bonusDrone.x, bonusDrone.y, 0xffaa00);
               AudioManager.playSfx('enemy_explode', { volume: 0.5 });
-              this.showToast('BONUS DRONE DOWN!', { fontSize: 18, y: bonusDrone.y, fill: '#ffff00' });
+              if (!this.queueCollisionSideEffect(sideEffects, 'toasts', {
+                message: translateText('BONUS DRONE DOWN!'),
+                options: { fontSize: 18, y: bonusDrone.y, fill: '#ffff00' }
+              })) {
+                this.showToast(translateText('BONUS DRONE DOWN!'), { fontSize: 18, y: bonusDrone.y, fill: '#ffff00' });
+              }
             } else {
               this.particleManager.createHitSpark(bonusDrone.x, bonusDrone.y);
             }

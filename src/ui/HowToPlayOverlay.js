@@ -31,27 +31,34 @@ const HELP_ROWS = Object.freeze([
   },
   {
     code: '04',
-    label: 'TRACTOR BEAMS',
-    control: 'BREAK THE PULL',
-    tip: 'Kill the hijacker mid-beam; the pull breaks and nearby shots join your terrible little union.',
-    accent: 0x66ff9d
+    label: 'NEAR MISSES',
+    control: 'SKIM, THEN CASH IN',
+    tip: 'Graze close to danger to build bonus windows, then break away before confidence becomes debris.',
+    accent: 0xff8f5a
   },
   {
     code: '05',
+    label: 'TRACTOR BEAMS',
+    control: 'BREAK THE PULL',
+    tip: 'Destroy tractor ships during their beam to break the pull and turn nearby shots friendly.',
+    accent: 0x66ff9d
+  },
+  {
+    code: '06',
     label: 'PICKUPS',
     control: 'GRAB THE BRIGHT STUFF',
     tip: 'Bright icons are legal theft: shields, repairs, weapons, score boosts, and emergency nonsense.',
     accent: 0x7ee9ff
   },
   {
-    code: '06',
+    code: '07',
     label: 'UPGRADES',
     control: 'PROGRESS SURVIVES',
     tip: 'Ranks, traits, ships, achievements, and Codex intel survive the explosion report.',
     accent: 0xb285ff
   },
   {
-    code: '07',
+    code: '08',
     label: 'RANKED RUNS',
     control: 'STEAM WHEN AWAKE',
     tip: 'Launch Run submits when Steam is awake. Sector Start is practice with the training wheels on fire.',

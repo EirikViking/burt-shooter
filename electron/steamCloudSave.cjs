@@ -468,12 +468,16 @@ function sanitizeThreatDiscovery(discovery = {}) {
   const discoveriesThisRun = Array.isArray(raw.discoveriesThisRun)
     ? raw.discoveriesThisRun.slice(-80).map((entry) => sanitizeJsonValue(entry, 2)).filter(Boolean)
     : [];
+  const discoveredUnreadIds = new Set();
+  for (const [category, bucket] of Object.entries(items)) {
+    for (const id of Object.keys(bucket || {})) discoveredUnreadIds.add(`${category}:${id}`);
+  }
   return {
     version: Math.max(1, sanitizeNumber(raw.version, 1)),
     items,
     discoveriesThisRun,
     recentRunThemes: sanitizeStringArray(raw.recentRunThemes, { maxItems: 8 }),
-    unreadIds: sanitizeStringArray(raw.unreadIds),
+    unreadIds: sanitizeStringArray(raw.unreadIds).filter((id) => discoveredUnreadIds.has(id)),
     updatedAt: raw.updatedAt ? String(raw.updatedAt).slice(0, 80) : nowIso()
   };
 }

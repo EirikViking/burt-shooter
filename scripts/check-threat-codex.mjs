@@ -7,7 +7,9 @@ import {
   THREAT_DISCOVERY_KEY,
   clearThreatCodexUnread,
   getCodexCompletionCounts,
+  getDiscoveryStats,
   getThreatCodexState,
+  invalidateThreatDiscoveryStateCache,
   recordThreatSeen,
   resetDiscoveryStateForTests
 } from '../src/progression/ThreatDiscoveryState.js';
@@ -120,6 +122,7 @@ fakeStorage.set(HANGAR_PROGRESS_KEY, JSON.stringify({
   rankAchievementsUnlocked: ['ACH_RANK_13'],
   updatedAt: new Date(Date.UTC(2026, 0, 1)).toISOString()
 }));
+invalidateThreatDiscoveryStateCache();
 const restoredState = getThreatCodexState();
 const restoredCompletion = getCodexCompletionCounts(catalog, restoredState);
 if ((restoredCompletion.attackPatterns?.discovered || 0) < 1) fail('Threat Codex should hydrate attack pattern discoveries from hangar progress');
@@ -139,6 +142,7 @@ fakeStorage.set(HANGAR_PROGRESS_KEY, JSON.stringify({
   bestLevel: 75,
   updatedAt: new Date(Date.UTC(2026, 0, 2)).toISOString()
 }));
+invalidateThreatDiscoveryStateCache();
 const farCatalog = getThreatCodexCatalog();
 const farSector = farCatalog.sectors?.find((entry) => entry.id === 'sector_075');
 if (!farSector) fail('visiting higher sectors should reveal sector Codex entries beyond 60');
@@ -156,6 +160,7 @@ fakeStorage.set(LEGACY_UNLOCK_PROGRESS_KEY, JSON.stringify({
   bestRank: 18,
   bestLevel: 18
 }));
+invalidateThreatDiscoveryStateCache();
 const legacyRestoredState = getThreatCodexState();
 const legacyCompletion = getCodexCompletionCounts(catalog, legacyRestoredState);
 if ((legacyCompletion.pilotRanks?.discovered || 0) < 19) fail('Threat Codex should hydrate earned pilot ranks from legacy hangar progress');
@@ -167,6 +172,8 @@ const seen = recordThreatSeen('telegraph_rail_lance', 'attackPatterns', { name: 
 if (!seen.isNew) fail('new discovery should be marked new');
 const completion = getCodexCompletionCounts(catalog);
 if (!Number.isFinite(completion.attackPatterns.percent)) fail('codex completion percent must be finite');
+if (getDiscoveryStats().unreadCount !== 1) fail('new discovery should create exactly one unread Codex signal');
+startUnreadLifecycleChecks();
 const cleared = clearThreatCodexUnread();
 if (cleared.unreadIds.length !== 0) fail('codex unread badge should clear');
 
@@ -180,6 +187,37 @@ for (const token of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'pointer
 }
 for (const token of ['UNKNOWN SIGNAL', 'NEW THREAT SCANNED', 'THREAT CODEX UPDATED']) {
   if (!sceneSource.includes(token) && !readFileSync('src/scenes/PlayScene.js', 'utf8').includes(token)) fail(`missing player feedback text ${token}`);
+}
+
+function startUnreadLifecycleChecks() {
+  const largeItems = { enemies: {} };
+  for (let index = 0; index < 650; index += 1) {
+    const id = `large_codex_${String(index + 1).padStart(3, '0')}`;
+    largeItems.enemies[id] = {
+      id,
+      category: 'enemies',
+      name: `Large Codex ${index + 1}`,
+      timesSeen: 1
+    };
+  }
+  fakeStorage.set(THREAT_DISCOVERY_KEY, JSON.stringify({
+    version: 1,
+    items: largeItems,
+    discoveriesThisRun: [],
+    recentRunThemes: [],
+    unreadIds: ['enemies:large_codex_650', 'enemies:missing_or_stale'],
+    updatedAt: new Date(Date.UTC(2026, 5, 22)).toISOString()
+  }));
+  invalidateThreatDiscoveryStateCache();
+  const largeState = getThreatCodexState();
+  if (Object.keys(largeState.items.enemies || {}).length !== 650) fail('large Codex state should not be capped at 500 entries');
+  if (getDiscoveryStats().unreadCount !== 1) fail('stale unread IDs should not drive the menu glow');
+  const opened = clearThreatCodexUnread();
+  if (opened.unreadIds.length !== 0) fail('opening Threat Codex should mark current discoveries read');
+  invalidateThreatDiscoveryStateCache();
+  if (getDiscoveryStats().unreadCount !== 0) fail('cleared unread state should survive restart/profile reload');
+  const later = recordThreatSeen('large_codex_651', 'enemies', { name: 'Later Signal' });
+  if (!later.isNew || getDiscoveryStats().unreadCount !== 1) fail('later new discoveries should bring back the Codex glow');
 }
 
 if (errors.length) {

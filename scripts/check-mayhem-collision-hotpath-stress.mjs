@@ -211,6 +211,63 @@ try {
       const report = play.performanceDiagnostics.getReport();
       const byLabel = Object.fromEntries(report.topSections.map((section) => [section.label, section]));
       const scorePopupsActive = play.scorePopupManager?.popups?.length || 0;
+      play.scorePopupManager?.cleanup?.();
+
+      play.enemyManager.enemies = [];
+      play.enemyManager.hijacker = null;
+      play.bulletManager.enemyBullets = [];
+      play.powerupManager.powerups = [];
+      play.bossHazards = [];
+      const bonusDrone = {
+        id: 'bonus_drone_reward_probe',
+        type: 'HAZARD',
+        kind: 'bonus_drone',
+        active: true,
+        x: 500,
+        y: 240,
+        radius: 22,
+        health: 1,
+        scoreValue: 0,
+        generatedProfile: { displayName: 'Bonus Drone Reward Probe', role: 'bonus' },
+        takeDamage(damage) {
+          this.health -= Math.max(1, Number(damage) || 1);
+          if (this.health <= 0) {
+            this.active = false;
+            return true;
+          }
+          return false;
+        },
+        destroy() {
+          this.destroyed = true;
+        }
+      };
+      play.ambientBonusDrones = [bonusDrone];
+      play.bulletManager.playerBullets = [{
+        active: true,
+        x: bonusDrone.x,
+        y: bonusDrone.y,
+        radius: 5,
+        damage: 2,
+        piercing: false,
+        isBomb: false
+      }];
+      const beforeBonusScore = play.game.score;
+      const nominalBonusAward = play.getComboScore(500);
+      const expectedBonusAward = play.game.getScoreAward?.(nominalBonusAward) || nominalBonusAward;
+      window.__novaCollisionHotpathStressActive = true;
+      play.checkCollisions();
+      window.__novaCollisionHotpathStressActive = false;
+      const bonusPopupTexts = (play.scorePopupManager?.popups || [])
+        .map((popup) => String(popup?.sprite?.text || ''))
+        .filter(Boolean);
+      const bonusDroneFeedback = {
+        beforeScore: beforeBonusScore,
+        afterScore: play.game.score,
+        expectedAward: expectedBonusAward,
+        popupTexts: bonusPopupTexts,
+        storageWritesDuringCollision,
+        active: bonusDrone.active
+      };
 
       return {
         collisionMs,
@@ -221,6 +278,7 @@ try {
         storageWritesDuringCollision,
         storageWriteKeys: [...new Set(storageWriteKeys)].slice(0, 20),
         scorePopupsActive,
+        bonusDroneFeedback,
         deferredThreatDefeats: play.deferredThreatDefeats?.length || 0,
         deferredThreatDefeatStats: play.deferredThreatDefeatStats
       };
@@ -243,6 +301,16 @@ try {
   assert.ok((stress.sections['collision.player_bullets_enemies.hit_test']?.maxMs || 0) < 4, 'hit_test should stay below 4ms');
   assert.ok((stress.sections['collision.side_effects.total']?.maxMs || 0) < 8, 'side effects should remain low under massive kill bursts');
   assert.ok(stress.scorePopupsActive <= 3, 'score popup text creation should be capped during collision flush');
+  assert.equal(
+    stress.bonusDroneFeedback.afterScore - stress.bonusDroneFeedback.beforeScore,
+    stress.bonusDroneFeedback.expectedAward,
+    'bonus drone reward feedback must not change the score award amount'
+  );
+  assert.ok(
+    stress.bonusDroneFeedback.popupTexts.some((text) => /^BONUS \+\d+/.test(text)),
+    `bonus drone reward should create a clear bonus payout popup, got ${stress.bonusDroneFeedback.popupTexts.join(', ')}`
+  );
+  assert.equal(stress.bonusDroneFeedback.active, false, 'bonus drone should be destroyed by the reward probe');
   assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join('; ')}`);
 
   mkdirSync(outputDir, { recursive: true });

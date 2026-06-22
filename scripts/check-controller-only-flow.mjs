@@ -173,6 +173,15 @@ async function steerMenuTo(page, optionId) {
   throw new Error(`Menu focus did not reach ${optionId}`);
 }
 
+async function steerSettingsFocusTo(page, focusId, { maxSteps = 28, directionButton = 13 } = {}) {
+  for (let i = 0; i < maxSteps; i += 1) {
+    const state = await readState(page);
+    if (state.settingsOverlay?.focus === focusId) return state;
+    await tapButton(page, directionButton);
+  }
+  return waitForState(page, (state) => state.settingsOverlay?.focus === focusId, `${focusId} settings focus`);
+}
+
 const server = await startPreviewServer();
 const browser = await chromium.launch({
   headless: true,
@@ -241,8 +250,7 @@ try {
   checkpoint('menu-settings-open', settingsOpen, { screenshot: await screenshot(page, '02-menu-settings-open') });
 
   const masterBefore = settingsOpen.audio?.masterVolume;
-  for (let i = 0; i < 10; i += 1) await tapButton(page, 13);
-  const languageFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'language', 'language selector focus');
+  const languageFocused = await steerSettingsFocusTo(page, 'language');
   checkpoint('menu-settings-language-focus', languageFocused);
   await tapButton(page, 13);
   const masterFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'slider_master', 'master slider focus');
@@ -253,8 +261,7 @@ try {
     masterAfter: masterAfter.audio?.masterVolume
   });
   assert(masterAfter.audio?.masterVolume !== masterBefore, 'Controller did not adjust the master volume slider');
-  for (let i = 0; i < 7; i += 1) await tapButton(page, 13);
-  const creditsFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'footer_credits', 'settings credits focus');
+  const creditsFocused = await steerSettingsFocusTo(page, 'footer_credits');
   checkpoint('menu-settings-credits-focused', creditsFocused);
   await tapButton(page, 0);
   const creditsOpen = await waitForState(page, (state) => state.overlays?.credits && state.settingsOverlay?.credits, 'credits opened from settings by controller');
@@ -373,8 +380,7 @@ try {
   await tapButton(page, 0);
   const pauseSettings = await waitForState(page, (state) => state.overlays?.pause && state.overlays?.settings && state.settingsOverlay?.focus, 'pause settings opened by controller');
   const pauseMasterBefore = pauseSettings.audio?.masterVolume;
-  for (let i = 0; i < 10; i += 1) await tapButton(page, 13);
-  const pauseLanguageFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'language', 'pause language selector focus');
+  const pauseLanguageFocused = await steerSettingsFocusTo(page, 'language');
   checkpoint('pause-settings-language-focus', pauseLanguageFocused);
   await tapButton(page, 13);
   await tapButton(page, 15);

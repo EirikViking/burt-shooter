@@ -133,6 +133,7 @@ try {
   assert.equal(mainSaved.hangarProgress.totalCodexDiscoveries, 107);
   assert.equal(Object.keys(mainSaved.threatDiscovery.items.powerups || {}).length, 22);
   assert.equal(Object.keys(mainSaved.threatDiscovery.items.sectors || {}).length, 12);
+  assert.deepEqual(mainSaved.threatDiscovery.unreadIds, ['powerups:powerup_001'], 'main profile should retain its own unread Codex marker');
 
   const freshSaveSystem = createSteamCloudSave(userData, { warn() {} }, { profile: freshProfile });
   const freshInitialized = freshSaveSystem.ensureInitialized();
@@ -145,12 +146,14 @@ try {
   assert.equal(JSON.parse(freshStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.powerups
     ? Object.keys(JSON.parse(freshStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.powerups).length
     : 0, 0);
+  assert.deepEqual(JSON.parse(freshStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).unreadIds || [], [], 'fresh Steam profile should not inherit unread Codex markers');
   assert.equal(freshStorage.getItem(CLOUD_SELECTED_SHIP_KEY), null);
 
   const mainReloaded = createSteamCloudSave(userData, { warn() {} }, { profile: mainProfile }).ensureInitialized();
   assert.equal(mainReloaded.hangarProgress.pilotRank, 5, 'switching back to main profile should restore main rank');
   assert.equal(mainReloaded.hangarProgress.totalCodexDiscoveries, 107, 'switching back should restore main Codex progress');
   assert.equal(Object.keys(mainReloaded.threatDiscovery.items.powerups || {}).length, 22, 'main profile powerups should remain intact');
+  assert.deepEqual(mainReloaded.threatDiscovery.unreadIds, ['powerups:powerup_001'], 'switching back should restore the main profile unread Codex marker only');
 
   const localFallback = createSteamCloudSave(userData, { warn() {} }, { profile: { id: 'local-offline', reason: 'steam_missing' } });
   const localInitialized = localFallback.ensureInitialized();

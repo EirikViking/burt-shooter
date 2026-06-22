@@ -5,7 +5,7 @@ import * as PIXI from 'pixi.js';
 import { createText } from '../utils/pixiText.js';
 
 export class ScorePopup {
-  constructor(x, y, score, color = 0xffff00, isCombo = false) {
+  constructor(x, y, score, color = 0xffff00, isCombo = false, options = {}) {
     this.x = x;
     this.minY = 104;
     this.y = Math.max(this.minY, y);
@@ -15,7 +15,8 @@ export class ScorePopup {
 
     // Create text
     const fontSize = isCombo ? 24 : 18;
-    const text = isCombo ? `${score} COMBO!` : `+${score}`;
+    const prefix = options.prefix ? `${String(options.prefix).trim()} ` : '';
+    const text = isCombo ? `${score} COMBO!` : `${prefix}+${score}`;
 
     this.sprite = createText(text, {
       fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
@@ -112,7 +113,9 @@ export class ScorePopupManager {
     const displayScore = isCombo ? this.comboCount : score;
     const color = options.color ?? (isCombo ? 0xff00ff : (score >= 100 ? 0xffaa00 : 0xffff00));
 
-    const popup = new ScorePopup(x, y, displayScore, color, isCombo);
+    const popup = new ScorePopup(x, y, displayScore, color, isCombo, {
+      prefix: options.prefix
+    });
     this.popups.push(popup);
     this.container.addChild(popup.sprite);
     if (this.popups.length > this.maxActivePopups) {
