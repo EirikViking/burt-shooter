@@ -59,6 +59,18 @@ No schema version bump, profile rescue path, Steam Cloud setting, or Steamworks 
 - `test-results/mayhem-collision-hotpath-stress-2026-06-22T10-01-37-128Z/report.json`
 - `test-results/menu-exit-focus-safety-1782125137450/report.json`
 - `test-results/menu-exit-focus-safety-1782125137450/native-blur-pause.png`
+- `test-results/packaged-exe-smoke-2026-06-22T11-01-52-379Z/report.json`
+- `test-results/packaged-perf-smoke-2026-06-22T11-02-32-526Z/report.json`
+- `release/steamworks/steam_upload_evidence_codex_signature_confirm_exit_20260622_23854561.json`
+- `release/steamworks/steam_upload_console_20260622_codex_signature_confirm_exit.log`
+
+## Steam Upload
+
+- Source commit: `f6d372a11b084550753047436432a1929591adc6`
+- Packaged build: `v2026-06-22_12-58-38`
+- Packaged gitSha proof: `f6d372a` in packaged smoke and packaged perf reports.
+- Private Steam BuildID: `23854561`
+- VDF guardrails: AppID `4765070`, Depot `4765071`, `SetLive ""`; no Steam branch assignment.
 
 ## Known Limitations
 
