@@ -2,6 +2,8 @@ import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
   "SECTOR RUN DECK": "MARCADOR DE SECTOR RUN",
+  "Steam leaderboard unavailable. Local score is saved.": "Clasificacion de Steam no disponible. La puntuacion local esta guardada.",
+  "Steam friends who play Nova Swarm and submit scores will appear here.": "Los amigos de Steam que jueguen Nova Swarm y envien puntuaciones apareceran aqui.",
   "Steam sector run records loaded.": "Registros de Sector Run de Steam cargados.",
   "Steam sector run board has no entries yet.": "La tabla de Sector Run de Steam aun no tiene entradas.",
   "Steam unavailable. Sector Run scores cannot load.": "Steam no disponible. No se pueden cargar puntuaciones de Sector Run.",

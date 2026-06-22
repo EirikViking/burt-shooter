@@ -5,6 +5,8 @@ const sourceText = Object.freeze({
   "UI Scale": "Jiemian suofang",
   "UI scale applied": "Jiemian suofang yi yingyong",
   "SECTOR RUN DECK": "SECTOR RUN DECK",
+  "Steam leaderboard unavailable. Local score is saved.": "Steam paihangbang buke yong. Bendi fenshu yi baocun.",
+  "Steam friends who play Nova Swarm and submit scores will appear here.": "Youwan Nova Swarm bing tijiao fenshu de Steam haoyou hui xianshi zai zheli.",
   "Steam sector run records loaded.": "Steam Sector Run records loaded.",
   "Steam sector run board has no entries yet.": "Steam Sector Run board has no entries yet.",
   "Steam unavailable. Sector Run scores cannot load.": "Steam unavailable. Sector Run scores cannot load.",

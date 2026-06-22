@@ -5,6 +5,8 @@ const sourceText = Object.freeze({
   "UI Scale": "UI keugi",
   "UI scale applied": "UI keugi jeogyong",
   "SECTOR RUN DECK": "SECTOR RUN DECK",
+  "Steam leaderboard unavailable. Local score is saved.": "Steam sunwipyo sayong bulga. lokeol jeomsuneun jeojangdoeeotseumnida.",
+  "Steam friends who play Nova Swarm and submit scores will appear here.": "Nova Swarm-eul peulleihago jeomsureul jechulhan Steam chinguga yeogie pyosidoemnida.",
   "Steam sector run records loaded.": "Steam Sector Run records loaded.",
   "Steam sector run board has no entries yet.": "Steam Sector Run board has no entries yet.",
   "Steam unavailable. Sector Run scores cannot load.": "Steam unavailable. Sector Run scores cannot load.",

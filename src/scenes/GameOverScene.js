@@ -4501,13 +4501,6 @@ export class GameOverScene {
 
   async submitSectorStartSteamScore() {
     if (!this.isSectorStartChallengeResult() || this.sectorSteamSubmitting) return;
-    if (!this.leaderboardAdapter?.isSteamAvailable?.()) {
-      this.sectorSteamStatus = 'unavailable';
-      this.sectorSteamError = 'Steam leaderboard unavailable';
-      this.updateLeaderboardStatusText();
-      this.updateCeremonyPresentation();
-      return;
-    }
     if (this.finalScore <= 0) {
       this.sectorSteamStatus = 'skipped';
       this.updateLeaderboardStatusText();

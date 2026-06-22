@@ -5,6 +5,8 @@ const sourceText = Object.freeze({
   "UI Scale": "UI sukēru",
   "UI scale applied": "UI sukēru wo tekiyou",
   "SECTOR RUN DECK": "SECTOR RUN DECK",
+  "Steam leaderboard unavailable. Local score is saved.": "Steam ranking wa riyou dekimasen. Local score wa hozon zumi desu.",
+  "Steam friends who play Nova Swarm and submit scores will appear here.": "Nova Swarm o play shi score o soushin shita Steam friends ga koko ni hyouji saremasu.",
   "Steam sector run records loaded.": "Steam Sector Run records loaded.",
   "Steam sector run board has no entries yet.": "Steam Sector Run board has no entries yet.",
   "Steam unavailable. Sector Run scores cannot load.": "Steam unavailable. Sector Run scores cannot load.",

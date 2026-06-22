@@ -11,12 +11,14 @@ export class ScorePopup {
     this.y = Math.max(this.minY, y);
     this.active = true;
     this.lifetime = 0;
-    this.maxLifetime = 800; // 800ms
+    this.maxLifetime = Math.max(250, Number(options.maxLifetime) || 800); // 800ms default
 
     // Create text
-    const fontSize = isCombo ? 24 : 18;
+    const fontSize = Number(options.fontSize) || (isCombo ? 24 : 18);
     const prefix = options.prefix ? `${String(options.prefix).trim()} ` : '';
-    const text = isCombo ? `${score} COMBO!` : `${prefix}+${score}`;
+    const text = options.text
+      ? String(options.text)
+      : (isCombo ? `${score} COMBO!` : `${prefix}+${score}`);
 
     this.sprite = createText(text, {
       fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
@@ -31,6 +33,8 @@ export class ScorePopup {
     this.sprite.x = x;
     this.sprite.y = this.y;
     this.sprite.alpha = 1;
+    this.sprite.__novaScorePopupText = text;
+    this.sprite.__novaScorePopupType = options.type || (isCombo ? 'combo' : 'score');
 
     this.vy = -2; // Float upward
   }
@@ -114,7 +118,11 @@ export class ScorePopupManager {
     const color = options.color ?? (isCombo ? 0xff00ff : (score >= 100 ? 0xffaa00 : 0xffff00));
 
     const popup = new ScorePopup(x, y, displayScore, color, isCombo, {
-      prefix: options.prefix
+      prefix: options.prefix,
+      text: options.text,
+      type: options.type,
+      fontSize: options.fontSize,
+      maxLifetime: options.maxLifetime
     });
     this.popups.push(popup);
     this.container.addChild(popup.sprite);

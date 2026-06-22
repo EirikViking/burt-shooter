@@ -353,7 +353,7 @@ export class SteamLeaderboardProvider {
         source: 'steam',
         sourceLabel: options.sourceLabel || 'Steam Global',
         entries: [],
-        message: 'Steam unavailable. Local scores are safe.'
+        message: 'Steam leaderboard unavailable. Local score is saved.'
       };
     }
     const limit = Number(options.limit) || LEADERBOARD_DISPLAY_LIMIT;
@@ -421,7 +421,9 @@ export class SteamLeaderboardProvider {
       source: 'steam-friends',
       sourceLabel: 'Steam Friends',
       entries,
-      message: entries.length > 0 ? 'Steam friends records loaded.' : 'No friends scores yet.'
+      message: entries.length > 0
+        ? 'Steam friends records loaded.'
+        : 'Steam friends who play Nova Swarm and submit scores will appear here.'
     };
   }
 

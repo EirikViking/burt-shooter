@@ -137,7 +137,8 @@ try {
       particles: state.counts?.particles || 0,
       beforeToasts,
       idleToasts,
-      activeToastMessages: (state.toast?.active || []).map((toast) => toast.message)
+      activeToastMessages: (state.toast?.active || []).map((toast) => toast.message),
+      scorePopupMessages: (state.toast?.scorePopups || []).map((popup) => popup.message)
     };
   });
 
@@ -155,6 +156,7 @@ try {
       result.lastDangerDodgeScore > 0 &&
       result.particles > 0 &&
       result.activeToastMessages.some((message) => /NEAR MISS/i.test(message || '')) &&
+      result.scorePopupMessages.some((message) => /NEAR MISS/i.test(message || '')) &&
       !result.idleToasts.some((message) => /NEAR MISS/i.test(message || '')) &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0

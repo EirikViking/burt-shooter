@@ -5,6 +5,8 @@ const sourceText = Object.freeze({
   "UI Scale": "Masshtab UI",
   "UI scale applied": "Masshtab UI primenen",
   "SECTOR RUN DECK": "TABLICA SECTOR RUN",
+  "Steam leaderboard unavailable. Local score is saved.": "Tablitsa Steam nedostupna. Lokalnyi schet sohranen.",
+  "Steam friends who play Nova Swarm and submit scores will appear here.": "Druzya Steam, kotorye igrayut v Nova Swarm i otpravlyayut ochki, poyavyatsya zdes.",
   "Steam sector run records loaded.": "Zapisi Steam Sector Run zagruzheny.",
   "Steam sector run board has no entries yet.": "V tablitsye Steam Sector Run poka net zapisey.",
   "Steam unavailable. Sector Run scores cannot load.": "Steam nedostupen. Ochki Sector Run ne zagruzit.",

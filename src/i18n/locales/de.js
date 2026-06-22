@@ -1,5 +1,7 @@
 const sourceText = Object.freeze({
   "SECTOR RUN DECK": "SEKTOR-RUN-DECK",
+  "Steam leaderboard unavailable. Local score is saved.": "Steam-Bestenliste nicht verfuegbar. Lokale Punktzahl ist gespeichert.",
+  "Steam friends who play Nova Swarm and submit scores will appear here.": "Steam-Freunde, die Nova Swarm spielen und Punktzahlen einreichen, erscheinen hier.",
   "Steam sector run records loaded.": "Steam-Sektor-Run-Eintraege geladen.",
   "Steam sector run board has no entries yet.": "Noch keine Steam-Sektor-Run-Eintraege.",
   "Steam unavailable. Sector Run scores cannot load.": "Steam nicht verfuegbar. Sektor-Run-Punktzahlen koennen nicht geladen werden.",

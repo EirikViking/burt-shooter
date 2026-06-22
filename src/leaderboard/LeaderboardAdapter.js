@@ -3,6 +3,7 @@ import { LocalLeaderboardProvider } from './LocalLeaderboardProvider.js';
 import { SteamLeaderboardProvider } from './SteamLeaderboardProvider.js';
 import {
   LEADERBOARD_DISPLAY_LIMIT,
+  STEAM_LEADERBOARD_NAME,
   STEAM_SECTOR_LEADERBOARD_NAME,
   LeaderboardView,
   createSectorStartRunResultFromGame,
@@ -11,6 +12,8 @@ import {
 } from './LeaderboardTypes.js';
 
 const STEAM_UPLOAD_DIAGNOSTICS_KEY = 'novaSwarm.lastSteamUploadDiagnostics.v1';
+export const PENDING_STEAM_SUBMISSIONS_KEY = 'novaSwarm.pendingSteamLeaderboardSubmits.v1';
+const MAX_PENDING_STEAM_SUBMISSIONS = 8;
 
 function safeWindow() {
   try {
@@ -39,6 +42,95 @@ function scoreFromPersonalBest(value) {
     ? value
     : value.score ?? value.m_nScore ?? value.value ?? value.bestScore ?? value.highScore;
   return Math.max(0, Math.floor(Number(rawScore) || 0));
+}
+
+function readJsonStorage(key, fallback) {
+  const win = safeWindow();
+  if (!win) return fallback;
+  try {
+    const parsed = JSON.parse(win.localStorage?.getItem(key) || 'null');
+    return parsed == null ? fallback : parsed;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJsonStorage(key, value) {
+  const win = safeWindow();
+  if (!win) return false;
+  try {
+    win.localStorage?.setItem(key, JSON.stringify(value));
+    win.__novaSteamCloudDiagnostics?.sync?.()?.catch?.(() => {});
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function clampScore(value) {
+  return Math.max(0, Math.min(2147483647, Math.floor(Number(value) || 0)));
+}
+
+function sanitizePendingRunResult(runResult = {}) {
+  return {
+    name: runResult.playerName || runResult.name || null,
+    playerName: runResult.playerName || runResult.name || null,
+    score: clampScore(runResult.score),
+    level: Math.max(1, Math.floor(Number(runResult.level ?? runResult.levelReached) || 1)),
+    levelReached: Math.max(1, Math.floor(Number(runResult.levelReached ?? runResult.level) || 1)),
+    rankIndex: Math.max(0, Math.floor(Number(runResult.rankIndex) || 0)),
+    submissionId: runResult.submissionId || null,
+    shipId: runResult.shipId || null,
+    shipNumericId: Math.max(0, Math.floor(Number(runResult.shipNumericId) || 0)),
+    selectedShipSpriteKey: runResult.selectedShipSpriteKey || null,
+    shipName: runResult.shipName || null,
+    runTimeSeconds: Math.max(0, Math.floor(Number(runResult.runTimeSeconds) || 0)),
+    kills: Math.max(0, Math.floor(Number(runResult.kills) || 0)),
+    bossKills: Math.max(0, Math.floor(Number(runResult.bossKills) || 0)),
+    wavesCleared: Math.max(0, Math.floor(Number(runResult.wavesCleared) || 0)),
+    startSector: runResult.startSector ?? runResult.sectorStart ?? null,
+    sectorStart: runResult.sectorStart ?? runResult.startSector ?? null,
+    highestSectorReached: runResult.highestSectorReached ?? null,
+    finalSector: runResult.finalSector ?? null,
+    leaderboardName: runResult.leaderboardName || null,
+    leaderboardKind: runResult.leaderboardKind || null,
+    buildId: runResult.buildId || null,
+    source: runResult.source || null
+  };
+}
+
+function pendingBoardKind(runResult = {}) {
+  if (runResult.leaderboardKind === 'sector_start' || runResult.leaderboardName === STEAM_SECTOR_LEADERBOARD_NAME) {
+    return 'sector_start';
+  }
+  return 'global';
+}
+
+function pendingDedupeKey(runResult = {}) {
+  const kind = pendingBoardKind(runResult);
+  if (kind === 'sector_start') {
+    const start = Math.max(1, Math.floor(Number(runResult.startSector ?? runResult.sectorStart) || 1));
+    return `${STEAM_SECTOR_LEADERBOARD_NAME}:start-${start}`;
+  }
+  return `${STEAM_LEADERBOARD_NAME}:global`;
+}
+
+function normalizePendingQueue(raw) {
+  const entries = Array.isArray(raw?.entries) ? raw.entries : (Array.isArray(raw) ? raw : []);
+  return entries
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      ...entry,
+      key: String(entry.key || pendingDedupeKey(entry.runResult || entry)),
+      score: clampScore(entry.score ?? entry.runResult?.score),
+      attempts: Math.max(0, Math.floor(Number(entry.attempts) || 0)),
+      queuedAt: entry.queuedAt || new Date().toISOString(),
+      updatedAt: entry.updatedAt || entry.queuedAt || new Date().toISOString(),
+      runResult: sanitizePendingRunResult(entry.runResult || entry)
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_PENDING_STEAM_SUBMISSIONS);
 }
 
 function personalBestCandidate(source, value) {
@@ -96,6 +188,11 @@ export class LeaderboardAdapter {
       : false;
     this.availability = { steam, steamFriends, cloud, local };
     this.refreshed = true;
+    if (steam) {
+      this.retryPendingSteamSubmissions({ reason: 'availability' }).catch((error) => {
+        console.warn('[LeaderboardAdapter] pending Steam retry failed:', error?.message || error);
+      });
+    }
     return this.availability;
   }
 
@@ -127,9 +224,7 @@ export class LeaderboardAdapter {
       return [
         { id: LeaderboardView.GLOBAL, label: 'GLOBAL', title: 'GLOBAL SCORE DECK', sourceLabel: 'Steam Global' },
         { id: LeaderboardView.SECTOR, label: 'SECTOR', title: 'SECTOR RUN DECK', sourceLabel: 'Steam Sector' },
-        ...(this.availability.steamFriends
-          ? [{ id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' }]
-          : []),
+        { id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' },
         { id: LeaderboardView.LOCAL, label: 'LOCAL', title: 'LOCAL SCORE DECK', sourceLabel: 'Local Memory' }
       ];
     }
@@ -163,7 +258,7 @@ export class LeaderboardAdapter {
     const limit = Number(options.limit) || LEADERBOARD_DISPLAY_LIMIT;
     try {
       if (normalizedView === LeaderboardView.LOCAL) {
-        return this.localProvider.getLocalScores({ ...options, limit });
+        return await this.localProvider.getLocalScores({ ...options, limit });
       }
       if (normalizedView === LeaderboardView.FRIENDS) {
         if (!this.availability.steam) {
@@ -172,10 +267,10 @@ export class LeaderboardAdapter {
             source: 'steam-friends',
             sourceLabel: 'Steam Friends',
             entries: [],
-            message: 'Steam unavailable. Friends scores cannot load.'
+            message: 'Steam leaderboard unavailable. Local score is saved.'
           };
         }
-        return this.steamProvider.getFriendsScores({ ...options, limit });
+        return await this.steamProvider.getFriendsScores({ ...options, limit });
       }
       if (normalizedView === LeaderboardView.SECTOR) {
         if (!this.availability.steam) {
@@ -184,10 +279,10 @@ export class LeaderboardAdapter {
             source: 'steam',
             sourceLabel: 'Steam Sector',
             entries: [],
-            message: 'Steam unavailable. Sector Run scores cannot load.'
+            message: 'Steam leaderboard unavailable. Local score is saved.'
           };
         }
-        return this.steamProvider.getTopScores({
+        return await this.steamProvider.getTopScores({
           ...options,
           limit,
           leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
@@ -197,12 +292,12 @@ export class LeaderboardAdapter {
         });
       }
       if (this.availability.steam) {
-        return this.steamProvider.getTopScores({ ...options, limit });
+        return await this.steamProvider.getTopScores({ ...options, limit });
       }
       if (this.availability.cloud) {
-        return this.cloudProvider.getTopScores({ ...options, limit });
+        return await this.cloudProvider.getTopScores({ ...options, limit });
       }
-      return this.localProvider.getLocalScores({ ...options, limit });
+      return await this.localProvider.getLocalScores({ ...options, limit });
     } catch (error) {
       console.warn(`[LeaderboardAdapter] ${normalizedView} provider failed:`, error?.message || error);
       return {
@@ -211,11 +306,11 @@ export class LeaderboardAdapter {
         sourceLabel: this.getSourceLabel(normalizedView),
         entries: [],
         message: normalizedView === LeaderboardView.FRIENDS
-          ? 'Could not load Steam friends scores.'
+          ? 'Steam leaderboard unavailable. Local score is saved.'
           : normalizedView === LeaderboardView.SECTOR
-            ? 'Could not load Steam sector run scores.'
+            ? 'Steam leaderboard unavailable. Local score is saved.'
           : normalizedView === LeaderboardView.GLOBAL
-            ? 'Global board offline. Local scores are safe.'
+            ? 'Steam leaderboard unavailable. Local score is saved.'
             : 'Could not load local scores.',
         error: error?.message || 'unknown'
       };
@@ -275,6 +370,12 @@ export class LeaderboardAdapter {
         result.globalProvider = 'steam';
         result.steamStatus = 'failed';
         result.steamError = error?.message || 'unknown';
+        const pending = this.enqueuePendingSteamSubmission(runResult, {
+          reason: result.steamError,
+          target: 'global'
+        });
+        result.steamPendingQueued = pending.queued;
+        result.steamPendingCount = pending.pendingCount;
       }
       result.steamPostSubmitDownload = await this.getSteamPostSubmitDownloadSnapshot();
       mergeSteamUploadDiagnostics({
@@ -330,6 +431,18 @@ export class LeaderboardAdapter {
     };
     if (!this.availability.steam) {
       result.sectorSteamError = 'Steam leaderboard unavailable';
+      const pending = this.enqueuePendingSteamSubmission({
+        ...runResult,
+        playerName: result.name,
+        name: result.name,
+        leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
+        leaderboardKind: 'sector_start'
+      }, {
+        reason: result.sectorSteamError,
+        target: 'sector_start'
+      });
+      result.sectorSteamPendingQueued = pending.queued;
+      result.sectorSteamPendingCount = pending.pendingCount;
       return result;
     }
     if (!result.name) {
@@ -360,6 +473,18 @@ export class LeaderboardAdapter {
       result.sectorSteamError = error?.message || 'unknown';
       result.leaderboardName = STEAM_SECTOR_LEADERBOARD_NAME;
       result.leaderboardKind = 'sector_start';
+      const pending = this.enqueuePendingSteamSubmission({
+        ...runResult,
+        playerName: result.name,
+        name: result.name,
+        leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
+        leaderboardKind: 'sector_start'
+      }, {
+        reason: result.sectorSteamError,
+        target: 'sector_start'
+      });
+      result.sectorSteamPendingQueued = pending.queued;
+      result.sectorSteamPendingCount = pending.pendingCount;
     }
     mergeSteamUploadDiagnostics({
       source: 'LeaderboardAdapter.submitSectorStartScore',
@@ -445,6 +570,90 @@ export class LeaderboardAdapter {
 
   createRunResult(game, overrides = {}) {
     return createRunResultFromGame(game, overrides);
+  }
+
+  getPendingSteamSubmissions() {
+    return normalizePendingQueue(readJsonStorage(PENDING_STEAM_SUBMISSIONS_KEY, { version: 1, entries: [] }));
+  }
+
+  writePendingSteamSubmissions(entries = []) {
+    const normalized = normalizePendingQueue({ entries });
+    writeJsonStorage(PENDING_STEAM_SUBMISSIONS_KEY, {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      entries: normalized
+    });
+    return normalized;
+  }
+
+  enqueuePendingSteamSubmission(runResult = {}, options = {}) {
+    const sanitized = sanitizePendingRunResult(runResult);
+    if (sanitized.score <= 0) {
+      return { queued: false, reason: 'no_score', pendingCount: this.getPendingSteamSubmissions().length };
+    }
+    const key = pendingDedupeKey(sanitized);
+    const now = new Date().toISOString();
+    const queue = this.getPendingSteamSubmissions();
+    const existing = queue.find((entry) => entry.key === key);
+    if (existing && existing.score > sanitized.score) {
+      return { queued: false, reason: 'existing_pending_is_better', pendingCount: queue.length };
+    }
+    const nextEntry = {
+      key,
+      score: sanitized.score,
+      target: options.target || pendingBoardKind(sanitized),
+      reason: options.reason || 'steam_unavailable',
+      attempts: existing?.attempts || 0,
+      queuedAt: existing?.queuedAt || now,
+      updatedAt: now,
+      runResult: sanitized
+    };
+    const next = [
+      nextEntry,
+      ...queue.filter((entry) => entry.key !== key)
+    ];
+    const written = this.writePendingSteamSubmissions(next);
+    return { queued: true, reason: nextEntry.reason, pendingCount: written.length, key };
+  }
+
+  clearPendingSteamSubmission(key) {
+    const queue = this.getPendingSteamSubmissions();
+    const next = this.writePendingSteamSubmissions(queue.filter((entry) => entry.key !== key));
+    return { pendingCount: next.length };
+  }
+
+  async retryPendingSteamSubmissions(options = {}) {
+    await this.ensureAvailability();
+    if (!this.availability.steam) {
+      return { attempted: 0, submitted: 0, remaining: this.getPendingSteamSubmissions().length, reason: 'steam_unavailable' };
+    }
+    const queue = this.getPendingSteamSubmissions();
+    let submitted = 0;
+    const remaining = [];
+    for (const entry of queue) {
+      try {
+        await this.steamProvider.submitScore(entry.runResult);
+        submitted += 1;
+      } catch (error) {
+        remaining.push({
+          ...entry,
+          attempts: Math.max(0, Number(entry.attempts) || 0) + 1,
+          lastError: error?.message || 'unknown',
+          updatedAt: new Date().toISOString()
+        });
+      }
+    }
+    const written = this.writePendingSteamSubmissions(remaining);
+    mergeSteamUploadDiagnostics({
+      source: 'LeaderboardAdapter.retryPendingSteamSubmissions',
+      pendingRetry: {
+        reason: options.reason || null,
+        attempted: queue.length,
+        submitted,
+        remaining: written.length
+      }
+    });
+    return { attempted: queue.length, submitted, remaining: written.length };
   }
 
   createSectorStartRunResult(game, overrides = {}) {

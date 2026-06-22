@@ -158,6 +158,22 @@ export class Bullet {
         cross.lineTo(0, r);
         cross.stroke({ color: 0x10131c, width: 2, alpha: 0.82 });
         this.sprite.addChild(cross);
+      } else {
+        const hazardMark = new PIXI.Graphics();
+        const r = this.radius + 8;
+        hazardMark.moveTo(-r, -r * 0.58);
+        hazardMark.lineTo(-r * 0.58, -r);
+        hazardMark.moveTo(r, -r * 0.58);
+        hazardMark.lineTo(r * 0.58, -r);
+        hazardMark.moveTo(-r, r * 0.58);
+        hazardMark.lineTo(-r * 0.58, r);
+        hazardMark.moveTo(r, r * 0.58);
+        hazardMark.lineTo(r * 0.58, r);
+        hazardMark.stroke({ color: this.visualConfig.warningColor || 0xff3030, width: 2.2, alpha: 0.86 });
+        hazardMark.circle(0, 0, Math.max(1.5, this.radius * 0.22));
+        hazardMark.fill({ color: 0xff3030, alpha: 0.74 });
+        hazardMark.__novaHazardReadabilityMark = true;
+        this.sprite.addChild(hazardMark);
       }
     }
 

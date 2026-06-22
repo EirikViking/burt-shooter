@@ -8054,7 +8054,11 @@ export class PlayScene {
     if (this.scorePopupManager && this.player) {
       this.scorePopupManager.addScorePopup(this.player.x, this.player.y - 34, appliedScore, {
         comboEligible: false,
-        color: this.dangerDodgeCount >= 3 ? 0xff66ff : 0xffcc00
+        color: this.dangerDodgeCount >= 3 ? 0xff66ff : 0xffcc00,
+        prefix: this.dangerDodgeCount >= 2 ? `${nearMissLabel} x${this.dangerDodgeCount}` : nearMissLabel,
+        type: 'nearMiss',
+        fontSize: this.dangerDodgeCount >= 3 ? 21 : 19,
+        maxLifetime: 950
       });
     }
     if (this.dangerDodgeCount >= 3) {

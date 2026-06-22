@@ -672,6 +672,7 @@ export class HighscoreScene {
     const lastResult = this.game.lastLeaderboardResult || null;
     const globalResult = lastResult?.globalStatus ? String(lastResult.globalStatus).replace(/_/g, ' ').toUpperCase() : null;
     const sourceLabel = this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Leaderboard';
+    const resultMessage = this.activeLeaderboardResult?.message || null;
     switch (newState) {
       case 'LOADED':
         if (this.activeLeaderboard === LeaderboardView.LOCAL) {
@@ -688,7 +689,7 @@ export class HighscoreScene {
         break;
       case 'EMPTY':
         if (this.activeLeaderboard === LeaderboardView.FRIENDS) {
-          this.stateMessage.text = translateText('No friends scores yet.');
+          this.stateMessage.text = translateText('Steam friends who play Nova Swarm and submit scores will appear here.');
         } else if (this.activeLeaderboard === LeaderboardView.SECTOR) {
           this.stateMessage.text = translateText('Steam sector run board has no entries yet.');
         } else {
@@ -698,13 +699,13 @@ export class HighscoreScene {
         }
         break;
       case 'ERROR':
-        this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.LOCAL
+        this.stateMessage.text = translateText(resultMessage || (this.activeLeaderboard === LeaderboardView.LOCAL
           ? `Local scores unavailable.`
           : this.activeLeaderboard === LeaderboardView.FRIENDS
             ? 'Could not load Steam friends scores.'
             : this.activeLeaderboard === LeaderboardView.SECTOR
               ? 'Could not load Steam sector run scores.'
-            : `Global board offline. Local scores are safe.`);
+            : `Global board offline. Local scores are safe.`));
         break;
       default:
         this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.FRIENDS
