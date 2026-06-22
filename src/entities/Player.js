@@ -1000,7 +1000,7 @@ export class Player {
     this.updateStatusEffectVisuals(deltaSeconds);
 
     // Dodge Logic
-    if (this.inputManager.isKeyPressed('ShiftLeft') && this.dodgeCooldown <= 0 && !this.isDodging) {
+    if ((this.inputManager.isKeyPressed('ShiftLeft') || this.inputManager.isKeyPressed('ShiftRight')) && this.dodgeCooldown <= 0 && !this.isDodging) {
       this.startDodge();
     }
 

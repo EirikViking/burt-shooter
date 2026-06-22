@@ -18,14 +18,14 @@ const HELP_ROWS = Object.freeze([
   {
     code: '02',
     label: 'SHOOT',
-    control: 'SPACE / GAMEPAD A',
+    control: 'SPACE / LEFT MOUSE / GAMEPAD A',
     tip: 'Hold fire and choose targets. Clearing the right enemies keeps the run under control.',
     accent: 0xffef7e
   },
   {
     code: '03',
     label: 'PHASE BURST',
-    control: 'SHIFT / GAMEPAD B',
+    control: 'LEFT/RIGHT SHIFT / GAMEPAD B',
     tip: 'Tap to phase through danger for a short moment. It protects you briefly, but it does not move the ship for you.',
     accent: 0xff55d9
   },
@@ -40,14 +40,14 @@ const HELP_ROWS = Object.freeze([
     code: '05',
     label: 'NEAR MISS',
     control: 'SKIM DANGER, THEN ESCAPE',
-    tip: 'Pass close to enemy shots without getting hit to build near-miss score. Risk pays, but do not live in the bullet cloud.',
+    tip: 'Pass close to enemy shots without getting hit to earn NEAR MISS score popups. Risk pays, but do not live in the bullet cloud.',
     accent: 0x66ff9d
   },
   {
     code: '06',
     label: 'TRACTOR SHIPS',
     control: 'BREAK ACTIVE BEAMS',
-    tip: 'Destroy tractor ships during their beam to break the pull, clear nearby shots, and hijack enemies for bonus score.',
+    tip: 'Destroy tractor ships during their beam to break the pull, clear nearby shots, and earn bonus score from nearby enemies.',
     accent: 0x7ee9ff
   },
   {
@@ -61,7 +61,7 @@ const HELP_ROWS = Object.freeze([
     code: '08',
     label: 'RUN MODES',
     control: 'MAYHEM / SCOUT / SECTOR RUN',
-    tip: 'Mayhem is the ranked climb. Scout is practice. Sector Run lets you rehearse unlocked later starts.',
+    tip: 'Mayhem is the ranked climb. Scout is practice. Sector Run lets you practice unlocked later starts.',
     accent: 0xff8f5a
   }
 ]);
@@ -523,6 +523,14 @@ export class HowToPlayOverlay {
     return {
       visible: Boolean(this.container?.parent),
       rows: HELP_ROWS.map((row) => row.label),
+      cards: HELP_ROWS.map((row) => ({
+        label: row.label,
+        control: row.control,
+        tip: row.tip,
+        translatedLabel: translateText(row.label),
+        translatedControl: translateText(row.control),
+        translatedTip: translateText(row.tip)
+      })),
       cardCount: HELP_ROWS.length,
       focusedControl: 'back',
       layout: this.debugLayout,

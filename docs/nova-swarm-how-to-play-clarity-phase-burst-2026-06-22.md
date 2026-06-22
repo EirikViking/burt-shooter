@@ -7,8 +7,12 @@ A player reported that the How To Play screen was confusing, especially the `Dod
 ## Verified Mechanics
 
 - `Phase Burst`: Shift / Gamepad B starts a short protected phase window. It sets temporary invulnerability and visual alpha/ring feedback, but it does not add ship movement.
+- `Phase Burst` follow-up: Right Shift is now accepted by the player update path in addition to Left Shift and Gamepad B. Duration, cooldown, hitboxes, and invulnerability timing are unchanged.
+- `Shoot`: Left mouse already fired through the existing pointer input path; the How To Play label now tells players that `SPACE / LEFT MOUSE / GAMEPAD A` all fire.
 - `Near Miss`: passing close to enemy shots without contact awards near-miss score and can build danger-dodge/graze reward windows.
+- `Near Miss` follow-up: the existing score/toast feedback now says `NEAR MISS +score` or `NEAR MISS xN +score` instead of the misleading dodge wording.
 - `Tractor Ships`: destroying a tractor ship while its beam is active breaks the pull, clears nearby shots, and can hijack nearby enemies for bonus score.
+- `Tractor Ships` follow-up: the How To Play wording no longer promises visible enemy hijacking. It now describes the visible payoff as breaking the pull, clearing nearby shots, and earning bonus score from nearby enemies.
 - `Combos`: fast enemy kills maintain the kill chain; tough targets can slow or break the rhythm.
 
 ## Implementation Summary
@@ -16,6 +20,10 @@ A player reported that the How To Play screen was confusing, especially the `Dod
 - Renamed the How To Play `DODGE` card to `PHASE BURST`.
 - Changed the short in-game active phase label from `DODGE` to `PHASE`.
 - Replaced the joke-heavy How To Play copy with concise tactical guidance for movement, shooting, Phase Burst, combos, near misses, tractor ships, pickups/bonus drones, and run modes.
+- Added Left Mouse to the Shoot control label.
+- Added Right Shift support for Phase Burst and updated the control label to `LEFT/RIGHT SHIFT / GAMEPAD B`.
+- Renamed near-miss feedback popups from `CLOSE DODGE` / `DANGER DODGE` to `NEAR MISS`.
+- Reworded Tractor Ships to avoid implying that visible friendly enemies are created.
 - Added all new How To Play strings to supported locale files.
 - Fixed the How To Play card layout so the final full-width `RUN MODES` card no longer overlaps the `PICKUPS & BONUS` card.
 - Expanded `npm run check:how-to-play` to simulate:
@@ -42,6 +50,13 @@ Current focused evidence:
 - `test-results/how-to-play-2026-06-22T21-11-03-471Z/report.json`
 - `test-results/how-to-play-2026-06-22T21-11-03-471Z/3840x2160-scale200/menu-how-to-play.png`
 - `test-results/how-to-play-2026-06-22T21-11-03-471Z/3840x2160-scale200/pause-how-to-play.png`
+
+Follow-up input/feedback evidence:
+
+- `test-results/how-to-play-2026-06-22T22-11-29-785Z/report.json`
+- `test-results/how-to-play-2026-06-22T22-11-29-785Z/3840x2160-scale200/menu-how-to-play.png`
+- `test-results/how-to-play-2026-06-22T22-11-29-785Z/3840x2160-scale200/pause-how-to-play.png`
+- `test-results/danger-dodge-2026-06-22T22-11-30-023Z/report.json`
 
 ## Scope
 

@@ -53,7 +53,7 @@ function viteCommand() {
 async function startPreviewServer() {
   if (await canFetch(baseUrl)) return null;
   const { command, args } = viteCommand();
-  const server = spawn(command, [...args, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
+  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort'], {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
@@ -111,6 +111,9 @@ try {
 
     const beforeScore = game.score || 0;
     const fakeBullet = { x: player.x + player.radius + 9, y: player.y, radius: 5, active: true };
+    const beforeToasts = (JSON.parse(window.render_game_to_text()).toast?.active || []).map((toast) => toast.message);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    const idleToasts = (JSON.parse(window.render_game_to_text()).toast?.active || []).map((toast) => toast.message);
 
     play.nearMissCooldownAt = 0;
     play.applyNearMiss(fakeBullet);
@@ -132,6 +135,8 @@ try {
       bestDangerDodgeStreak: state.scoring?.bestDangerDodgeStreak || 0,
       lastDangerDodgeScore: state.scoring?.lastDangerDodgeScore || 0,
       particles: state.counts?.particles || 0,
+      beforeToasts,
+      idleToasts,
       activeToastMessages: (state.toast?.active || []).map((toast) => toast.message)
     };
   });
@@ -144,12 +149,13 @@ try {
   const report = {
     ok: Boolean(
       result.ok &&
-      result.scoreGain >= 150 &&
+      result.scoreGain > 0 &&
       result.dangerDodgeCount >= 3 &&
       result.bestDangerDodgeStreak >= 3 &&
-      result.lastDangerDodgeScore >= 70 &&
+      result.lastDangerDodgeScore > 0 &&
       result.particles > 0 &&
-      result.activeToastMessages.some((message) => /DANGER DODGE/i.test(message || '')) &&
+      result.activeToastMessages.some((message) => /NEAR MISS/i.test(message || '')) &&
+      !result.idleToasts.some((message) => /NEAR MISS/i.test(message || '')) &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),

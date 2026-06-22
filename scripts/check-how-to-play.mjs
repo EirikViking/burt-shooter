@@ -129,6 +129,9 @@ function assertCleanHelpCopy(state, label) {
   assert(!rows.includes('DODGE'), `${label} still labels the phase protection as DODGE`);
   assert(!rows.includes('NEAR MISSES'), `${label} still uses the old NEAR MISSES card label`);
   assert(!rows.includes('TRACTOR BEAMS'), `${label} still uses the old TRACTOR BEAMS card label`);
+  assert(joined.includes('SPACE / LEFT MOUSE / GAMEPAD A'), `${label} should mention left mouse shooting`);
+  assert(joined.includes('LEFT/RIGHT SHIFT / GAMEPAD B'), `${label} should mention both Shift keys for Phase Burst`);
+  assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);
   for (const oldPhrase of ['doorbell', 'paperwork', 'spicy geometry', 'training wheels', 'legal theft']) {
     assert(!joined.includes(oldPhrase), `${label} still contains old joke copy: ${oldPhrase}`);
   }
@@ -247,6 +250,42 @@ try {
 
       await page.goto(withQuery(baseUrl, { autostart: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
       await waitForState(page, (state) => state.scene === 'play' && state.lives > 0, `${scenario.name} play ready`);
+      const inputProof = await page.evaluate(() => {
+        const play = window.__game?.scenes?.play;
+        const input = play?.inputManager;
+        const player = play?.player;
+        if (!play || !input || !player) return { ok: false, reason: 'missing_play_input_or_player' };
+        const wasTouchFireActive = input.touchFireActive;
+        input.touchFireActive = true;
+        const leftMouseFires = Boolean(input.isFiring?.());
+        input.touchFireActive = wasTouchFireActive;
+
+        const oldOverride = window.__burtKeyboardOverride;
+        const oldDodging = player.isDodging;
+        const oldDodgeCooldown = player.dodgeCooldown;
+        const oldDodgeDuration = player.dodgeDuration;
+        const oldDodgeFlashMs = player.dodgeFlashMs;
+        const oldInvulnerable = player.invulnerable;
+        window.__burtKeyboardOverride = { ShiftRight: true };
+        player.isDodging = false;
+        player.dodgeCooldown = 0;
+        player.dodgeDuration = 0;
+        player.dodgeFlashMs = 0;
+        player.invulnerable = false;
+        player.update(1);
+        const rightShiftStartsPhase = Boolean(player.isDodging && player.invulnerable && player.dodgeDuration > 0);
+        player.isDodging = oldDodging;
+        player.dodgeCooldown = oldDodgeCooldown;
+        player.dodgeDuration = oldDodgeDuration;
+        player.dodgeFlashMs = oldDodgeFlashMs;
+        player.invulnerable = oldInvulnerable;
+        if (player.dodgeText) player.dodgeText.visible = false;
+        if (player.dodgeRing) player.dodgeRing.visible = false;
+        if (player.sprite) player.sprite.alpha = 1;
+        window.__burtKeyboardOverride = oldOverride;
+        return { ok: leftMouseFires && rightShiftStartsPhase, leftMouseFires, rightShiftStartsPhase };
+      });
+      assert(inputProof.ok, `${scenario.name} input proof failed: ${JSON.stringify(inputProof)}`);
       await page.evaluate(() => {
         const play = window.__game?.scenes?.play;
         play?.setPaused?.(true);

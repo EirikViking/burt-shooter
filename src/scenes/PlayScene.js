@@ -8032,9 +8032,10 @@ export class PlayScene {
     const score = Math.round(streakBonus * comboMult * (Number.isFinite(traitMult) ? traitMult : 1));
     const appliedScore = this.game.addScore(score);
     this.lastDangerDodgeScore = appliedScore;
+    const nearMissLabel = translateText('NEAR MISS');
     const label = this.dangerDodgeCount >= 2
-      ? `DANGER DODGE x${this.dangerDodgeCount} +${appliedScore}`
-      : `CLOSE DODGE +${appliedScore}`;
+      ? `${nearMissLabel} x${this.dangerDodgeCount} +${appliedScore}`
+      : `${nearMissLabel} +${appliedScore}`;
     this.enqueueToast(label, {
       fontSize: this.dangerDodgeCount >= 3 ? 18 : 16,
       fill: '#ffcc00',
